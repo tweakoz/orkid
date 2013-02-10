@@ -1,4 +1,6 @@
-Orkid is a flexible media presentation engine. By media, we mean realtime 2d/3d graphics, and/or audio. 
+![Orkid Logo](http://www.tweakoz.com/orkid/ovrvw/orkid_wb_logo5.gif)
+
+Orkid is a flexible media presentation engine. By media, we mean games, realtime 2d/3d graphics, and/or audio. 
 
 Some Features Include:
 * Built in multiplatform asset management.
@@ -14,3 +16,10 @@ Some Features Include:
 * HlslFx/CgFx/GlslFx shader based renderer.
 * Fixed Function and Node based compositing engine.
 * Many more...
+
+![Particles](http://www.tweakoz.com/portfolio/sshot_psys.jpg)
+
+![ProceduralTextures](http://www.tweakoz.com/portfolio/sshot_proctex.jpg)
+
+![TerrainGen](http://www.tweakoz.com/portfolio/terrain03.jpg)
+
