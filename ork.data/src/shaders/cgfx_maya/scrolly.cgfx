@@ -1,0 +1,140 @@
+#include "miniork_common.cgfxi"
+
+string description = "morkshader<scrolly>";
+
+// tweakables //////////////////////////////////////////
+
+uniform texture2D Texture1;
+
+uniform sampler2D Sampler1 = sampler_state
+{
+	Texture = <Texture1>;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+uniform float time : time;
+uniform float2 uvscale;
+uniform float2 uvscroll;
+
+
+uniform float engine_float_0<
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.01; >;
+
+// untweakables //////////////////////////////////////////
+
+float4x4 WorldViewProjXf : WorldViewProjection;
+float4x4 ViewIT : ViewInverseTranspose;
+
+struct appdata {
+    float3 Position	: POSITION;
+    float2 uv0      : TEXCOORD0;
+    float3 color    : COLOR0;
+};
+
+struct outVertexData {
+    float4 HPosition	: POSITION;
+    float2 uv0          : TEXCOORD0;
+    float3 fragcolor    : TEXCOORD1;
+};
+
+outVertexData timeVS(appdata IN)
+{
+	outVertexData OUT;
+	float4 Po = float4(IN.Position.xyz, 1.0);	
+	OUT.HPosition = mul(WorldViewProjXf, Po);
+	OUT.fragcolor = IN.color;
+	float2 inuv = float2(0.0f,1.0f)+IN.uv0*float2(1.0f,-1.0f);
+	OUT.uv0 = inuv * uvscale + float2(uvscroll.x,uvscroll.y) * time;
+	return OUT;
+}
+
+outVertexData engineVS(appdata IN)
+{
+	outVertexData OUT;
+	float4 Po = float4(IN.Position.xyz, 1.0);	
+	OUT.HPosition = mul(WorldViewProjXf, Po);
+	OUT.fragcolor = IN.color;
+	float2 inuv = float2(0.0f,1.0f)+IN.uv0*float2(1.0f,-1.0f);
+	OUT.uv0 = inuv * uvscale + float2(uvscroll.x, uvscroll.y) * engine_float_0;
+	return OUT;
+}
+
+float4 bareFS(outVertexData IN)	: COLOR
+{
+	float4 tex1 = tex2D(Sampler1, IN.uv0).xyzw;
+	return tex1.xyzw;
+}
+float4 vtxcolorFS(outVertexData IN)	: COLOR
+{
+	float4 tex1 = tex2D(Sampler1, IN.uv0).xyzw;
+	float3 rgb = tex1.rgb*IN.fragcolor.rgb;
+	float a = tex1.a;
+	return float4( rgb, a );
+}
+float4 dbgvtxcolorFS(outVertexData IN)	: COLOR
+{
+	float3 rgb = IN.fragcolor.rgb;
+	float a = 1.0f;
+	return float4( rgb, a );
+}
+
+technique time_scroll {
+	pass p0 {
+		VertexProgram = compile arbvp1 timeVS();
+		FragmentProgram = compile arbfp1 bareFS();
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f) ;
+	}
+}
+
+technique time_scroll_vtxcol {
+	pass p0 {
+		VertexProgram = compile arbvp1 timeVS();
+		FragmentProgram = compile arbfp1 vtxcolorFS();
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f) ;
+	}
+}
+technique engine_scroll {
+	pass p0 {
+		VertexProgram = compile arbvp1 engineVS();
+		FragmentProgram = compile arbfp1 bareFS();
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+}
+technique engine_scroll_vtxcol {
+	pass p0 {
+		VertexProgram = compile arbvp1 engineVS();
+		FragmentProgram = compile arbfp1 vtxcolorFS();
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+}
+
+technique dbg_vtxcol {
+	pass p0 {
+		VertexProgram = compile arbvp1 timeVS();
+		FragmentProgram = compile arbfp1 dbgvtxcolorFS();
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f) ;
+	}
+}

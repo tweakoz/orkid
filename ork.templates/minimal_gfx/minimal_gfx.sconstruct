@@ -1,0 +1,39 @@
+import os
+import glob
+import string
+import ork.build.utils as obu
+import ork.build.slnprj as sln
+
+##########################################
+# set scons options
+##########################################
+
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src' )
+SetOption('num_jobs', obu.num_cores) 
+
+##########################################
+# basics
+##########################################
+#print ARGUMENTS
+
+ARGS = dict()
+ARGS["PLATFORM"] = "ix"
+ARGS["BUILD"] = "release"
+
+BasicEnv = Environment( ENV=os.environ )
+
+prj = sln.Project(ARGS,BasicEnv,"ork.template.minimal_gfx")
+prj.SetSrcBase( "src" )
+prj.AddIncludePaths( "%s/include"%sln.stage_dir )
+prj.AddIncludePaths( "/usr/include/qt4" )
+prj.AddLibPaths( "./lib" )
+prj.AddLibPaths( "%s/lib"%sln.stage_dir )
+prj.AddFolders( ".", "*.cpp" )
+prj.AddLibs( "ork.core.ix.release" )
+prj.AddLibs( "ork.lev2.ix.release" )
+prj.AddProjectDep( prj )
+prj.Configure()
+prg = prj.Program( )
+

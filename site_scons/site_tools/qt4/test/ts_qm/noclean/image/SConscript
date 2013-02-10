@@ -1,0 +1,4 @@
+Import("qtEnv")
+
+qtEnv.Ts4('my_en.ts', Glob('*.cpp'))
+qtEnv.Qm4('my_en','my_en')

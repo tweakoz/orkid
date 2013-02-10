@@ -1,0 +1,25 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2012, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+//////////////////////////////////////////////////////////////// 
+
+#pragma once
+
+//////////////////////////////////////////////////////////////////////////////
+
+# if defined(_WIN32)
+	#if defined(_XBOX_VER)
+		#if _XBOX_VER >= 200 
+			#define XBOX360
+		#endif
+		#define _XBOX
+		#include <xtl.h>
+		#include <xboxmath.h>
+		#undef min
+		#undef max
+	#endif
+# endif
+
+//////////////////////////////////////////////////////////////////////////////

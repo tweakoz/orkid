@@ -1,0 +1,295 @@
+///////////////////////////////////////////////////////////////////////////////
+// Orkid
+// Copyright 1996-2010, Michael T. Mayers
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float4x4        MatMVP;
+uniform float4x4        MatMV;
+uniform float4x4        MatM;
+uniform float4x4        MatV;
+uniform float4x4        MatP;
+uniform float4x4        MatAux;
+
+uniform float4          modcolor;
+uniform float           Time;
+uniform float4			User0;
+
+///////////////////////////////////////////////////////////////////////////////
+
+sampler2D ColorMap = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+//    LODBias = 0.0f;
+  //  GenerateMipMap = false;
+};
+sampler2D ColorMap2 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+//    LODBias = 0.0f;
+  //  GenerateMipMap = false;
+};
+sampler2D ColorMap3 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SimpleVertex
+{
+    float3 Position : POSITION;
+    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float2 Uv0 : TEXCOORD0;
+};
+struct Vertex2Uv
+{
+    float3 Position : POSITION;
+    float4 Color : COLOR;
+    float2 Uv0 : TEXCOORD0;
+    float2 Uv1 : TEXCOORD1;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Fragment2Uv
+{
+    float4 ClipPos : POSITION;
+    float4 Color   : COLOR;
+    float2 Uv0 : TEXCOORD0;
+    float2 Uv1 : TEXCOORD1;
+};
+struct Fragment3Uv
+{
+    float4 ClipPos : POSITION;
+    float4 Color   : COLOR;
+    float2 Uv0 : TEXCOORD0;
+    float2 Uv1 : TEXCOORD1;
+    float2 Uv2 : TEXCOORD2;
+};
+struct Fragment4Uv
+{
+    float4 ClipPos : POSITION;
+    float4 Color   : COLOR;
+    float2 Uv0 : TEXCOORD0;
+    float2 Uv1 : TEXCOORD1;
+    float2 Uv2 : TEXCOORD2;
+    float2 Uv3 : TEXCOORD3;
+};
+
+Fragment3Uv vs_knob( SimpleVertex VtxIn )
+{
+	Fragment3Uv FragOut;
+
+	float2 outuv = VtxIn.Uv0.xy;
+	float4 opos = mul( float4( VtxIn.Position, 1.0f ), MatMVP );
+	FragOut.ClipPos = opos;
+	FragOut.Uv0.x = outuv.x;
+	FragOut.Uv0.y = -outuv.y;
+    FragOut.Uv1.x = opos.x;
+    FragOut.Uv1.y = opos.y;
+    FragOut.Uv2.x = VtxIn.Position.x;
+    FragOut.Uv2.y = VtxIn.Position.y;
+	FragOut.Color = modcolor;
+	return FragOut;
+}
+
+struct MrtPixOut_deferred
+{
+	float4 nrml_out : COLOR0;
+	float4 surf_out : COLOR1;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment3Uv vs_panel( SimpleVertex VtxIn )
+{
+    Fragment3Uv FragOut;
+    
+    float2 outuv = mul( float4( VtxIn.Uv0.xy,0.0f,1.0f),MatAux).xy;
+    float4 opos = mul( float4( VtxIn.Position, 1.0f ), MatMVP );
+    FragOut.ClipPos = opos;
+    FragOut.Uv0.x = outuv.x;
+    FragOut.Uv0.y = -outuv.y;
+    FragOut.Uv1.x = opos.x;
+    FragOut.Uv1.y = opos.y;
+    FragOut.Uv2.x = VtxIn.Position.x;
+    FragOut.Uv2.y = VtxIn.Position.y;
+    FragOut.Color = VtxIn.Color;
+    return FragOut;
+}
+
+uniform float fHEIGHT = 300.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+MrtPixOut_deferred ps_panel_nmap( Fragment3Uv FragIn ) : COLOR
+{
+	MrtPixOut_deferred mrtout;
+	
+	float nlerp = FragIn.Color.x;
+	float3 tn = tex2D( ColorMap, FragIn.Uv0.xy*float2(1.0f,1.0f) ).zyx;
+	float3 bn = (tn*2.0f)-float3(1.0f,1.0f,1.0f);
+ 	float3 nU = float3(0.0,0.0,1.0);
+ 	float3 n = normalize(lerp(bn,nU,nlerp));
+	mrtout.nrml_out = float4(bn,1.0f);
+	mrtout.surf_out = float4(1.0f,1.0f,1.0f,1.0f);
+	return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment4Uv vs_panel_pointlite( Vertex2Uv VtxIn )
+{
+    Fragment4Uv FragOut;
+    
+    float2 outuv = mul( float4( VtxIn.Uv0.xy,0.0f,1.0f),MatAux).xy;
+    float4 opos = mul( float4( VtxIn.Position, 1.0f ), MatMVP );
+    FragOut.ClipPos = opos;
+    FragOut.Uv0.x = VtxIn.Uv0.x;
+    FragOut.Uv0.y = VtxIn.Uv0.y;
+    FragOut.Uv1.x = VtxIn.Uv1.x;
+    FragOut.Uv1.y = VtxIn.Uv1.y;
+    FragOut.Uv2.x = 0.5f+opos.x*0.5f;
+    FragOut.Uv2.y = 0.5f+opos.y*0.5f;
+    FragOut.Uv3.x = VtxIn.Position.x;
+    FragOut.Uv3.y = VtxIn.Position.y;
+    FragOut.Color = VtxIn.Color;
+    return FragOut;
+}
+
+float4 ps_panel_pointlite( Fragment4Uv FragIn ) : COLOR
+{
+	//////////////////
+	float2 uvUD = float2(FragIn.Uv2.x,FragIn.Uv2.y);
+	float4 surface_color = tex2D( ColorMap2, FragIn.Uv2.xy ).xyzw;
+	float3 tn = tex2D( ColorMap, uvUD ).xyz;
+	float3 n = normalize(tn);
+	float fX = FragIn.Uv3.x;
+	float fY = FragIn.Uv3.y;
+	//////////////////
+	float3 lpos = float3(FragIn.Uv0.xy,FragIn.Uv1.x);
+	float3 hpos = float3(fX,fY,0.0f);
+	float fdist = distance(lpos,hpos);
+ 	float3 l = normalize(lpos-hpos);
+	float3 lA = float3(0,0,1);
+	//////////////////
+	//float aA = 0.0f; //ao.x*(0.2f+pow(dot(n,lA),0.05f)*0.5f);
+	float aD = saturate(dot(l,n))*500.0f/pow(fdist,FragIn.Uv1.y);
+	float3 light_color = FragIn.Color.yzw;
+	float3 cD = (surface_color.xyz*light_color)*surface_color.w;
+	//////////////////
+	/*
+	//////////////////
+	//////////////////
+	float3 c3 = tex2D( ColorMap3, float2(0.5f,0.5f)+FragIn.Uv1.xy*float2(0.5f,-0.5f) );
+	//////////////////
+	//////////////////
+	//////////////////
+	/////////////
+	//float3 cA = float3(0.9f,0.0f,0.5f);
+	/////////////
+	float3 cD = float3(.0f,0.0f,0.2f)+c3*3.0f;
+	cD = float3( 0.1, 0.25, 0.1 ) + cD * float3(1.0f,1.0f,1.0f);
+	cD *= FragIn.Color.wzy;
+	/////////////
+	float aS = pow(saturate(dot(l,n)),80.0f)*(1.0-nlerp);
+	float3 cS = float3(1.0f,1.0f,1.0f);*/
+	/////////////	
+	//return float4((aA+aD)*cD+(aS*cS),1.0f);
+	if( surface_color.w == 0.0f )
+		discard;
+	return float4(cD*aD,surface_color.w);
+	//return float4(n,1.0f);
+}
+float4 ps_knob( Fragment2Uv FragIn ) : COLOR
+{
+	float4 c1w = tex2D( ColorMap, FragIn.Uv0.xy*float2(1.0,1.0) );
+ 	float4 c2 = tex2D( ColorMap2, FragIn.Uv0.xy );
+	c2.xyz = float3(0.1f,0.1f,0.1f)+c2.zyx*1.0f;
+	//////////////////
+	float fX = FragIn.Uv1.x;
+	float fY = FragIn.Uv1.y;
+	//////////////////
+	float3 lpos = float3(User0.xy,fHEIGHT);
+	float3 hpos = float3(fX,fY,0.0f);
+	//////////////////
+ 	float3 c1 = c1w.zyx;
+	/////////////////////////////////
+	float3 bn = (c1*2.0f)-float3(1.0f,1.0f,1.0f);
+ 	float4 n = float4(normalize(bn),0);
+	float4 n2 = mul(MatAux,n);
+	float3 nN = normalize(n2.xyz);
+ 	float3 l = normalize(lpos-hpos);
+	float3 lA = float3(0,0,1);
+	/////////////
+	float aA = 0.1f+pow(saturate(dot(nN.xyz,lA)),0.3f)*0.8f;
+	float aD = saturate(dot(l,nN.xyz))*0.9;
+	float aS = pow(saturate(dot(l,nN)),80.0f)*4.00;
+	/////////////
+	float3 cD = c2.xyz*float3(0.85,0.85,1.0f);
+	float3 cS = c2.xyz;
+	/////////////	
+	return float4((aA+aD)*cD+(aS*cS),c1w.w);
+	//return float4(nN,c2.w);
+}
+MrtPixOut_deferred ps_knob_nmap( Fragment3Uv FragIn ) : COLOR
+{
+	MrtPixOut_deferred mrtout;
+	//////////////////	
+	float4 normal_map = tex2D( ColorMap, FragIn.Uv0.xy*float2(1.0,1.0) );
+	//////////////////
+ 	float3 tn = normal_map.zyx;
+	float3 bn = (tn*2.0f)-float3(1.0f,1.0f,1.0f);
+ 	float4 n = float4(normalize(bn),0);
+	float4 n2 = mul(MatAux,n);
+	float3 nN = normalize(n2.xyz);
+	//////////////////
+	mrtout.nrml_out = float4(nN,normal_map.w);
+	mrtout.surf_out = float4(0.99f,0.9f,0.99f,normal_map.w);
+	return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique knob_nmap
+{
+    pass p0
+    {
+        VertexShader = compile vp40 vs_knob();
+        PixelShader = compile fp40 ps_knob_nmap();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique panel_point_lite
+{
+    pass p0
+    {
+        VertexShader = compile vp40 vs_panel_pointlite();
+        PixelShader = compile fp40 ps_panel_pointlite();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique panel_nmap
+{
+	pass p0
+	{
+        VertexShader = compile vp40 vs_panel();
+        PixelShader = compile fp40 ps_panel_nmap();
+	}
+}
+
+

@@ -1,0 +1,528 @@
+///////////////////////////////////////////////////////////////////////////////
+// Orkid
+// Copyright 1996-2010, Michael T. Mayers
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float4x4 mvp;
+uniform float4 modcolor;
+uniform float time;
+uniform float BlurFactor;
+uniform int BlurFactorI;
+uniform float2 viewportdim;
+uniform float EffectAmount;
+
+///////////////////////////////////////////////////////////////////////////////
+
+sampler2D MrtMap0 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D MrtMap1 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D MrtMap2 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D MrtMap3 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D AuxMap0 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+};
+sampler2D AuxMap1 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+struct SimpleVertex
+{
+   float3 Position : POSITION;
+   float3 Uv0      : TEXCOORD0;
+};
+
+struct Fragment
+{
+    float4 ClipPos : POSITION;
+   float3 Uv0      : TEXCOORD0;
+   float4 Color    : COLOR0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_basic( SimpleVertex VtxIn )
+{
+    float4 vpos = float4( VtxIn.Position, 1.0f );
+    float4 npos = mul( vpos, mvp );
+    Fragment FragOut;
+    FragOut.ClipPos = npos;
+    FragOut.Uv0 = VtxIn.Uv0;
+    FragOut.Color = modcolor;
+    return FragOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_standard( Fragment FragIn ) : COLOR
+{
+   float2 Uv0 = FragIn.Uv0.xy;
+    float4 PixOut = tex2D( MrtMap0, Uv0 ) + tex2D( MrtMap1, Uv0 );
+    PixOut = float4(1.0f,0.0f,1.0f,1.0f);
+    return PixOut;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const uniform float stepval = (1.0f/256.0f);
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 ps_blurx( Fragment FragIn ) : COLOR
+{
+	const float glowscale = (1.0f/BlurFactor);
+	float2 Uv0 = float2( FragIn.Uv0.x, 1.0f-FragIn.Uv0.y );
+
+	float2 RealUv = Uv0.xy;
+	float4 PixOut = float4(0.0f,0.0f,0.0f,0.0f);
+	float2 UvOffset = float2(stepval*-BlurFactor,0.0f);
+	float framp = 0.0f;
+	for( int i=0; i<BlurFactorI; i++ )
+	{
+		PixOut += tex2D( MrtMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( stepval,0.0f );
+		framp += (1/BlurFactor);
+	}
+	for( int i=0; i<BlurFactorI; i++ )
+	{
+		PixOut += tex2D( MrtMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( stepval,0.0f );
+		framp -= (1/BlurFactor);
+	}
+
+	PixOut *= glowscale;
+	//PixOut = float4(1.0f,0.0f,0.0f,1.0f);
+    return PixOut;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 ps_blury( Fragment FragIn ) : COLOR
+{
+	const float glowscale = (1.0f/BlurFactor);
+	float2 Uv0 = float2( FragIn.Uv0.x, 1.0f-FragIn.Uv0.y );
+
+	float2 RealUv = Uv0.xy;
+	float4 PixOut = float4(0.0f,0.0f,0.0f,0.0f);
+	float2 UvOffset = float2(0.0f,stepval*-BlurFactor);
+	float framp = 0.0f;
+	for( int i=0; i<BlurFactorI; i++ )
+	{
+		PixOut += tex2D( AuxMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( 0.0f,stepval );
+		framp += (1.0f/BlurFactor);
+	}
+	for( int i=0; i<BlurFactorI; i++ )
+	{
+		PixOut += tex2D( AuxMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( 0.0f,stepval );
+		framp -= (1.0f/BlurFactor);
+	}
+	PixOut *= glowscale;
+    return PixOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_hdr_join_ghost( Fragment FragIn ) : COLOR
+{
+	float2 Uv0 = float2( FragIn.Uv0.x, FragIn.Uv0.y );
+    float3 Diffuse = tex2D( MrtMap0, Uv0.xy ).xyz;
+    float4 Glow = tex2D( AuxMap1, Uv0.xy );
+	float dist = pow( saturate( distance( Glow.rgb*Glow.a, Diffuse ) ), 1.2f );
+	
+	float3 black = float3(0.0f,0.0f,0.0f);
+	float3 blue = float3(0.0f,0.0f,1.0f);
+	float3 white = float3(1.0f,1.0f,1.0f);
+	
+	float3	OutColor = lerp( black, blue, dist );
+			OutColor = lerp( OutColor, white, dist );
+			
+	OutColor = lerp( Diffuse, OutColor, EffectAmount );
+			
+	return float4( OutColor, 1.0f ); 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_hdr_join_afterlife( Fragment FragIn ) : COLOR
+{
+	float2 Uv0 = float2( FragIn.Uv0.x, FragIn.Uv0.y );
+
+    float3 Diffuse = tex2D( MrtMap0, Uv0.xy ).xyz;
+   // float4 SpecularDepth = tex2D( MrtMap2, Uv0.xy );
+
+	float Depth = pow( abs(1.0f+Diffuse.x), 0.05f );
+	
+    float4 Glow = tex2D( AuxMap1, Uv0.xy );
+					
+	return float4( Diffuse - Depth*Glow.xyz, 1.0f ); 
+	//return float4( Depth, Depth, Depth, 1.0f ); 
+	//return Glow; //float4(1.0f,0.0f,1.0f,0.0f);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_hdr_join( Fragment FragIn ) : COLOR
+{
+	float2 Uv0 = float2( FragIn.Uv0.x, FragIn.Uv0.y );
+    float3 Diffuse = tex2D( MrtMap0, Uv0.xy ).xyz;
+    float4 Glow = tex2D( AuxMap1, Uv0.xy );
+    float4 tes = (Glow.a,Glow.a,Glow.a,1.0f);
+   // float3 Full = ((Diffuse+(Glow.rgb*Glow.a)))*.5f;
+    float3 Full = Diffuse.rgb*0.3f+Glow.rgb*0.7f;
+	return float4( lerp(Diffuse.rgb,Glow.xyz,EffectAmount), 1.0f ); 
+	//return float4( Glow.xyz, 1.0f ); 
+}
+
+float3 hsv2rgb( float3 hsv )
+{
+//	hsv.x = saturate(hsv.x);
+//	hsv.y = saturate(hsv.y);
+//	hsv.z = saturate(hsv.z);
+
+	float3 rgb;
+	if ( hsv.y == 0 )
+	{
+		// Grayscale 
+		rgb.r = rgb.g = rgb.b = hsv.z;
+	}
+	else
+	{
+		if (1.0 <= hsv.x) hsv.x -= 1.0;
+		hsv.x *= 6.0;
+		float i = floor (hsv.x);
+		float f = hsv.x - i;
+		float aa = hsv.z * (1 - hsv.y);
+		float bb = hsv.z * (1 - (hsv.y * f));
+		float cc = hsv.z * (1 - (hsv.y * (1 - f)));
+		if( i < 1 )
+		{
+			rgb.r = hsv.z;
+			rgb.g = cc;
+			rgb.b = aa;
+		}
+		else if( i < 2 )
+		{
+			rgb.r = bb;
+			rgb.g = hsv.z;
+			rgb.b = aa;
+		}
+		else if( i < 3 )
+		{
+			rgb.r = aa;
+			rgb.g = hsv.z;
+			rgb.b = cc;
+		}
+		else if( i < 4 )
+		{
+			rgb.r = aa;
+			rgb.g = bb;
+			rgb.b = hsv.z;
+		}
+		else if( i < 5 )
+		{
+			rgb.r = cc;
+			rgb.g = aa;
+			rgb.b = hsv.z;
+		}
+		else
+		{
+			rgb.r = hsv.z;
+			rgb.g = aa;
+			rgb.b = bb;
+		}
+	}
+
+	return rgb;
+}
+
+float3 rgb2hsv(float3 rgb)
+ {   
+     float4 ret = float4(0.0f,0.0f,0.0f,0.0f); //float4)0;
+     float3 hsv;
+     
+     // RGB 2 HSV
+     float mmax = max(rgb.r, max(rgb.g, rgb.b));
+     float mmin = min(rgb.r, min(rgb.g, rgb.b));
+     float delta = mmax - mmin;
+ 
+     hsv.z = mmax; // v
+     if (mmax != 0.0)
+	 {
+         hsv.y = delta / mmax;//s
+     }
+	 else
+	 {
+         hsv.y = 0.0;//s
+     }
+     
+       if ( rgb.r == mmax )
+	   {
+           hsv.x =     (rgb.g - rgb.b) / delta;// h
+       }
+	   else if (rgb.g == mmax)
+	   {
+           hsv.x = 2 + (rgb.b - rgb.r) / delta;// h
+       }
+	   else
+	   {
+           hsv.x = 4 + (rgb.r - rgb.g) / delta;// h
+       }
+       hsv.x /= 6.0;
+       if (hsv.x < 0) hsv.x += 1.0;
+     
+     //hsv.x += fShift;                                // F‘Š•â³
+     //if (1.0 <= hsv.x) hsv.x -= 1.0;
+     
+	return hsv;
+ }
+
+////////////////////////////////////////////////////////////////////////////////
+
+float3 quantize( float3 rgbin, float fnumsteps )
+{
+	float i = 1.0f/fnumsteps;
+	float r = round(rgbin.r*fnumsteps)*i;
+	float g = round(rgbin.g*fnumsteps)*i;
+	float b = round(rgbin.b*fnumsteps)*i;
+	return float3(r,g,b);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float3 quantizeHSV( float3 hsvin, float fnumsteps )
+{
+	float i = 1.0f/fnumsteps;
+	float h = round(hsvin.x*fnumsteps*3.0f)*(i/3.0f);
+	float s = round(hsvin.y*fnumsteps)*i;
+	float v = round(hsvin.z*fnumsteps)*i;
+	return float3(h,s,v);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 ps_comic( Fragment FragIn ) : COLOR
+{
+	static const float kdx = 1.007f/1024.0f;
+	static const float kdy = 1.007f/768.0f;
+	static const float kf = 0.01f;
+	static const float knumsteps = 6.0f;
+	static const float knumstepsHSV = 5.0f;
+	const float fphase = 6.283*kf*time;
+		
+	/////////////////////////////////////////////////////////
+	static const float kaadim = 2.0f;
+	static const float ksc = (1.0f/(kaadim*kaadim)); // 9 16 25 49
+	static const float kfb = -1.5f;
+	static const float kfe = -kfb;
+	static const float kfed = (kfe-kfb)/kaadim;
+	/////////////////////////////////////////////////////////
+	float2 Uv0 = float2( FragIn.Uv0.x, FragIn.Uv0.y );
+    float3 PixOri = tex2D( MrtMap0, Uv0 ).rgb;
+	float3 HsvOri = rgb2hsv(PixOri);
+    float3 PixCtr = quantize( PixOri, knumsteps);
+    float3 HsvCtr = HsvOri;
+	float fwt = 0.0f;
+	float dist = 0.0f;
+	/////////////////////////////////////////////////////////
+	for( float fy=0.0f; fy<kaadim; fy+=1.0f )
+	{
+		float fya = kfb+(fy*kfed);
+		
+		for( float fx=0.0f; fx<kaadim; fx+=1.0f )
+		{
+			float fxa = kfb+(fx*kfed);
+			fwt += 1.0f;
+			float2 Uv = Uv0 + float2( kdx*fxa, kdy*fya );
+			float3 ThisRgb = tex2D( MrtMap0, Uv ).rgb;
+		    float3 ThisPix = quantize(ThisRgb,knumsteps);
+			dist += distance(ThisPix,PixCtr);
+		}
+	}
+	/////////////////////////////////////////////////////////    
+    float idist = 1.0f-saturate(dist);
+    idist = saturate(pow(idist,2.0f));
+	/////////////////////////////////////////////////////////	
+	float3 HsvOut = HsvOri;
+    HsvOut.z = HsvOri.z*idist;
+	/////////////////////////////////////////////////////////	
+	HsvOut = quantizeHSV( HsvOut, knumstepsHSV);
+	HsvOut = lerp( HsvOri, HsvOut, EffectAmount );
+	/////////////////////////////////////////////////////////	
+    return float4(hsv2rgb(HsvOut),1.0f);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// 512x512->512x512
+///////////////////////////////////////////////////////////////////////////////
+float4 ps_fbout( Fragment FragIn ) : COLOR
+{
+    const float kftexX = 0.0f/512.0f;
+    const float kftexY = 0.0f/512.0f;
+    float2 Uv0 = float2( FragIn.Uv0.x-kftexX, FragIn.Uv0.y-kftexY );
+    return tex2D( MrtMap0, Uv0 );
+}
+float4 ps_fbin( Fragment FragIn ) : COLOR
+{
+    float2 Uv0 = float2( FragIn.Uv0.x, FragIn.Uv0.y );
+    return tex2D( MrtMap0, Uv0 )*0.1f;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+technique frameeffect_standard
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_standard();
+    }
+}
+technique frameeffect_fbout
+{
+    pass p0
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_fbout();
+    }
+}
+technique frameeffect_fbin
+{
+    pass p0
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_fbin();
+    }
+}
+technique frameeffect_glow_blurx
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_blurx();
+    }
+}
+
+technique frameeffect_glow_blury
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_blury();
+    }
+}
+
+technique frameeffect_radialblur
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_radialblur();
+    }
+}
+
+technique frameeffect_comic
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_comic();
+    }
+}
+
+technique frameeffect_glow_join
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_hdr_join();
+    }
+}
+
+technique frameeffect_ghost_join
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_hdr_join_ghost();
+    }
+}
+
+technique frameeffect_afterlife_join
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_hdr_join_afterlife();
+    }
+}
+
+technique frameeffect_dof_join
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_standard();
+    }
+}
+
+technique frameeffect_debugdepth
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_standard();
+    }
+}
+
+technique frameeffect_debugnormals
+{
+    pass
+    {
+        VertexProgram = compile glslv vs_basic();
+        FragmentProgram = compile glslf ps_standard();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+

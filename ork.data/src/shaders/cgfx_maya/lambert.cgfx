@@ -1,0 +1,102 @@
+#include "miniork_common.cgfxi"
+
+string description = "morkshader<lambert>";
+string ggmvtxconfig = "v12c4t8";
+string xgmvtxconfig = "v12c4t8";
+
+uniform texture2D ColorMap;
+
+uniform sampler2D Color = sampler_state
+{
+	Texture = <ColorMap>;
+	WrapS = Wrap;
+    WrapT = Wrap;
+};
+
+float4x4 WorldViewProjXf : worldviewprojection;
+float4x4 MatM : world;
+float4x4 MatMV : worldview;
+float4x4 MatMVI : worldviewinverse;
+float4x4 MatP : projection;
+float4x4 MatMVIT : worldviewInverseTranspose;
+float4x4 MatMIT : worldInverseTranspose;
+float4x4 MatV : view;
+float4x4 MatVI : ViewInverse;
+float4x4 MatVT : ViewTranspose;
+float4x4 MatVIT : ViewInverseTranspose;
+
+struct Vertex {
+	float4 Position : POSITION; // in object space
+	float4 TexCoord : TEXCOORD0;
+	float3 Normal   : NORMAL;
+	float3 Binormal : BINORMAL;
+};
+
+struct outVertexData
+{
+    float4 position	: POSITION;
+    float2 uv0		: TEXCOORD0;
+    float3 color	: COLOR0;
+};
+
+outVertexData lambertVS(Vertex IN)
+{
+	outVertexData OUT;
+
+	float4 ObjPos = float4(IN.Position.xyz, 1.0f);	
+	float3 ObjNormal = normalize(IN.Normal.xyz);
+	float3 WorldNormal = normalize(mul(MatM, float4(ObjNormal, 0.0f))).xyz;
+	
+	float3 ViewNormal = normalize(mul(MatV, float4(WorldNormal, 0.0f))).xyz;
+
+	float headlight = saturate(dot(ViewNormal, float3(0.0f, 0.0f, 1.0f)));
+
+	OUT.uv0 = IN.TexCoord * float2(1.0f, -1.0f);	
+	OUT.color = headlight;
+	OUT.position = mul(WorldViewProjXf, ObjPos);
+
+	return OUT;
+}
+
+float4 lambertFS(outVertexData IN) : COLOR
+{
+	return tex2D(Color, IN.uv0);
+}
+
+technique main {
+	pass p0 {
+		DepthTestEnable = true;
+		DepthMask = true;
+		CullFaceEnable = true;
+		FrontFace = CCW;
+		ShadeModel = Smooth;
+
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+
+		VertexProgram = compile arbvp1 lambertVS();
+		FragmentProgram = compile arbfp1 lambertFS();
+	}
+}
+
+technique noZwrite {
+	pass p0 {
+		DepthTestEnable = true;
+		DepthMask = false;
+		CullFaceEnable = true;
+		FrontFace = CCW;
+		ShadeModel = Smooth;
+
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+
+		VertexProgram = compile arbvp1 lambertVS();
+		FragmentProgram = compile arbfp1 lambertFS();
+	}
+}

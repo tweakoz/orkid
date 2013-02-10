@@ -1,0 +1,83 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float4x4 World : world;
+uniform float4x4 WorldI : worldinverse;
+uniform float4x4 WorldViewProj : worldviewprojection;
+uniform float4x4 WorldView : worldview;
+uniform float4x4 ViewIT : ViewInverseTranspose;
+uniform float4x4 itw : worldinversetranspose;
+uniform float4x4 itwv : worldviewinversetranspose;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct TanLytData
+{
+	float3 ObjLyt;
+	float3 ObjEye;
+	float3 ObjHalf;
+
+	float3 TanLyt;
+	float3 TanEye;
+	float3 TanHalf;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+float2 TransformUv( float2 InUv, float3 XfMatA, float3 XfMatB )
+{
+	float2 rval;
+	rval.x = dot( float3( InUv, 1.0f ), XfMatA );
+	rval.y = -dot( float3( InUv, 1.0f ), XfMatB );
+	return rval;
+}
+
+float3x3 Inverse3x3( float3x3 M )
+{
+	float det = dot( cross( M[0], M[1] ), M[2] );
+	float3x3 T = transpose( M );
+	return float3x3( cross( T[1], T[2] ), cross( T[2], T[0] ), cross( T[0], T[1] ) );
+}
+
+float3x3 ComputeTangentFrame( float3 N, float3 P, float2 UV )
+{
+	float3 dp1 = ddx(P);
+	float3 dp2 = ddy(P);
+	float2 duv1 = ddx(UV);
+	float2 duv2 = ddy(UV);
+	float3x3 M = float3x3( dp1, dp2, cross(dp1,dp2) );
+	float3x3 IM = Inverse3x3(M);
+	float3 T = mul( IM, float3( duv1.x, duv2.x, 0.0f ) );
+	float3 B = mul( IM, float3( duv1.y, duv2.y, 0.0f ) );
+	float maxlen = max( length(T), length(B) );
+	return float3x3( normalize(T/maxlen), normalize(B/maxlen), normalize(N) );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+TanLytData GenTanLytData( float4x4 WorldMat, float3 wToLight, float3 wToEye, float3 Normal, float3 Binormal, float3 Tangent )
+{
+	TanLytData data;
+
+	float3 wToHalf			= normalize((wToLight+wToEye));
+
+	float3x3 MatTanToObj	= float3x3( normalize(Tangent), normalize(Binormal), normalize(Normal) );
+	//float3x3 MatObjToTan	= transpose(float3x3( normalize(Tangent), normalize(Binormal), normalize(Normal) ));
+
+	float4 RotToLight		= float4( wToLight, 0.0f );
+	float4 RotToEye			= float4( wToEye, 0.0f );
+	float4 RotToHalf		= float4( wToHalf, 0.0f );
+
+	data.ObjLyt				= normalize(mul( WorldI, RotToLight ).xyz);
+	data.ObjHalf			= normalize(mul( WorldI, RotToHalf ).xyz);
+	data.ObjEye				= normalize(mul( WorldI, RotToEye ).xyz);
+
+	data.TanLyt				= normalize( mul( MatTanToObj, data.ObjLyt ) );
+	data.TanHalf			= normalize( mul( MatTanToObj, data.ObjHalf ) );
+	data.TanEye				= normalize( mul( MatTanToObj, data.ObjEye ) );
+
+	return data;
+
+}

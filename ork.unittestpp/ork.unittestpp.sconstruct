@@ -1,0 +1,61 @@
+import os, glob, string
+import ork.build.utils as obu
+import ork.build.common as cmn
+import ork.build.slnprj as sln
+
+# set scons options ######################
+
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src',duplicate=0 )
+SetOption('num_jobs', obu.num_cores) 
+sln.optset.add("ork.upp")
+BasicEnv = Environment( ENV=os.environ )
+
+obu.install_files("src/*.h","include/unittest++")
+obu.install_files("src/Posix/*.h","include/unittest++/Posix")
+#obu.install_headers("ext/inc/*")
+
+# basics #################################
+
+class upp:
+  def __init__(self):
+	ARGS = cmn.BuildArgs
+	##########################################
+
+	SRC_FOLDERS  = " . Posix "
+
+	LIBS = 'boost_system-mt boost_filesystem-mt boost_thread-mt'
+
+	##########################################
+
+	prj_lib = sln.Project(ARGS,BasicEnv,"ork.unittestpp")
+	prj_lib.SetSrcBase( "src" )
+	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
+	prj_lib.AddLibs( LIBS )
+	prj_lib.Configure()
+	self.lib = prj_lib.SharedLibrary( )
+
+	##########################################
+
+	#prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")
+	#prj_test.SetSrcBase( "src" )
+	#prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
+	#prj_test.AddLibPaths( "./lib" )
+	#prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
+	#prj_test.AddFolders( "test", "*.cpp" )
+	##prj_test.AddLibs( LIBS + " unittest++" )
+	#prj_test.AddProjectDep( prj_core_lib )
+	#prj_test.Configure()
+	#self.test_prg = prj_test.Program( )
+	#Depends( self.test_prg, self.core_lib )
+
+###########################
+
+a = upp()
+ret = list()
+ret += a.lib
+#ork_upp_lib = a.lib
+Return("ret")
+#Export('prj_core_lib')
+

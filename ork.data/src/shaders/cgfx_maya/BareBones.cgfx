@@ -1,0 +1,140 @@
+/*********************************************************************NVMH3****
+Path:  NVSDK\Common\media\cgfx1.4
+File:  $Id: //sw/devtools/FXComposer2/Alpha4+/SDK/MEDIA/CgFX1.4/BareBones.cgfx#1 $
+
+Copyright NVIDIA Corporation 2003
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THIS SOFTWARE IS PROVIDED
+*AS IS* AND NVIDIA AND ITS SUPPLIERS DISCLAIM ALL WARRANTIES, EITHER EXPRESS
+OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS FOR A PARTICULAR PURPOSE.  IN NO EVENT SHALL NVIDIA OR ITS SUPPLIERS
+BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES
+WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR LOSS OF BUSINESS PROFITS,
+BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, OR ANY OTHER PECUNIARY LOSS)
+ARISING OUT OF THE USE OF OR INABILITY TO USE THIS SOFTWARE, EVEN IF NVIDIA HAS
+BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+Comments:
+	Just Show Geometry
+	$Date: 2006/04/10 $
+	$Revision: #1 $
+
+******************************************************************************/
+
+// string Category = "Effects\\Cg\\BRDF";
+// string keywords = "texture";
+string description = "morkshader<barebones_test>";
+
+
+
+// tweakables //////////////////////////////////////////
+
+float3 BaseColor : Ambient
+<
+	string UIHelp = "Base Color";
+> = {1.0f, 1.0f, 1.0f};
+
+uniform float RenderSort : rpass
+<
+	string UIHelp = "Render Pass";
+    float UIMin = 0.0;
+    float UIMax = 1.0;
+    float UIStep = 0.1;
+>;
+
+uniform float TexScroll
+<
+	string UIHelp = "TexScroll";
+    float UIMin = 0.0;
+    float UIMax = 1.0;
+    float UIStep = 0.1;
+>;
+
+uniform texture2D Texture1;
+uniform texture2D Texture2;
+
+uniform sampler2D Sampler1 = sampler_state
+{
+	Texture = <Texture1>;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+uniform sampler2D Sampler2 = sampler_state
+{
+	Texture = <Texture2>;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+// untweakables //////////////////////////////////////////
+
+float4x4 WorldViewProjXf : WorldViewProjection;
+float4x4 ViewIT : ViewInverseTranspose;
+
+/****************************************************/
+/********** CG SHADER FUNCTIONS *********************/
+/****************************************************/
+
+/**************************************/
+/***** SHARED STRUCT ******************/
+/**** Data from app vertex buffer *****/
+/****     for all passes          *****/
+/**************************************/
+
+struct appdata {
+    float3 Position	: POSITION;
+    float2 uv0      : TEXCOORD0;
+    float3 tangent	: TEXCOORD1;
+};
+
+/*****************************************************/
+/*** values passed from vertex shader to fragments ***/
+/*****************************************************/
+
+// vertex->fragment registers used for this pass only
+struct outVertexData {
+    float4 HPosition	: POSITION;
+    float2 uv0          : TEXCOORD0;
+    float3 fragcolor    : TEXCOORD1;
+};
+
+/****************************************/
+/****************************************/
+
+outVertexData bareVS(appdata IN)
+{
+	outVertexData OUT;
+	float4 Po = float4(IN.Position.xyz,1.0);	
+	OUT.HPosition = mul(WorldViewProjXf, Po);
+	OUT.fragcolor = mul(ViewIT,float4(IN.tangent,0.0f)).xyz;
+	OUT.uv0 = IN.uv0 + float2( 0.0f,TexScroll );
+	return OUT;
+}
+
+float4 bareFS(outVertexData IN)	: COLOR
+{
+	float3 tex1 = tex2D( Sampler1, IN.uv0 ).xxx;
+	float3 tex2 = tex2D( Sampler2, IN.uv0.yx ).xxx;
+	float3 texo = lerp( tex1, tex2, RenderSort );
+
+	//return float4(BaseColor.xyz*(1.0f/RenderSort),1.0f);
+	return float4(texo*IN.fragcolor,BaseColor.x);
+}
+
+/****************************************************/
+/********** TECHNIQUES ******************************/
+/****************************************************/
+
+technique main {
+	pass p0 {
+		VertexProgram = compile arbvp1 bareVS();
+		DepthTestEnable = true;
+		DepthMask = false;
+		CullFaceEnable = true;
+		FrontFace       = CCW;
+		FragmentProgram = compile arbfp1 bareFS();
+		BlendEnable=true;
+		BlendFunc = int2(SrcAlpha,SrcColor	);
+	}
+}
+
+/***************************** eof ***/

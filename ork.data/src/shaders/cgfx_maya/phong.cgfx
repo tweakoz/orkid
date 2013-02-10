@@ -1,0 +1,641 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "miniork_common.cgfxi"
+#include "tanspace.cgh"
+
+string description = "morkshader<phong>";
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float time : time;
+
+///////////////////////////////////////////////////////////////////////////////
+// artist parameters
+
+uniform float		UvScaleClr	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		UvScaleNrm	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		UvScaleEmi	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		UvScaleSpc	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		BumpLevA	<	float UIMin = 0.0;    float UIMax = 1.0;    float UIStep = 0.01; >;
+uniform float		EmissiveMix	<	float UIMin = 0.0;    float UIMax = 2.0;    float UIStep = 0.1; >;
+uniform float		DiffuseMix	<	float UIMin = 0.0;    float UIMax = 2.0;    float UIStep = 0.01; >;
+uniform float		SpecularMix	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.01; >;
+uniform float		Shininess	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform texture2D ColorTex;
+uniform texture2D EmmisiveTex;
+uniform texture2D NormalTex;
+uniform texture2D SpecuTex;
+uniform float DotBiasDiffuse;
+uniform float DotScaleDiffuse;
+uniform float DotBiasSpecular;
+uniform float DotScaleSpecular;
+
+sampler2D ColorMap = sampler_state
+{
+	Texture = <ColorTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler2D EmissiveMap = sampler_state
+{
+	Texture = <EmmisiveTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler2D NormalMap = sampler_state
+{
+	Texture = <NormalTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler2D SpecuMap = sampler_state
+{
+	Texture = <SpecuTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Fragment {
+
+        float4 ClipPos			: POSITION;  // in clip space
+        float4 Color			: COLOR;
+        float3 UVW0             : TEXCOORD0;
+        float3 Diffuse		    : TEXCOORD1;
+        float3 Specular		    : TEXCOORD2;
+        
+};
+
+struct FragmentPP {
+
+        float4 ClipPos			: POSITION;  // in clip space
+        float4 Color			: COLOR;
+        float3 UVW0             : TEXCOORD0;
+        float3 WorldPos			: TEXCOORD1;
+        float3 WorldNormal		: TEXCOORD2;
+};
+
+struct FragmentN {
+
+        float4 ClipPos : POSITION;  // in clip space
+        float4 Color : COLOR;
+
+        float3 UVW0             : TEXCOORD0;
+
+        float3 TanLight         : TEXCOORD1;
+        float3 TanHalf          : TEXCOORD2;
+        float3 TanEye           : TEXCOORD3;
+        float3 VtxTangent       : TEXCOORD4;
+        float3 VtxPosition      : TEXCOORD5;
+        
+};
+
+struct Vertex {
+        float4 Position : POSITION;   // in object space
+        float4 TexCoord : TEXCOORD0;
+        float3 Normal   : NORMAL;
+        float3 Binormal : BINORMAL;
+};
+struct VertexWithCol {
+        float4 Position : POSITION;   // in object space
+        float4 TexCoord : TEXCOORD0;
+        float3 Normal   : NORMAL;
+        float3 Binormal : BINORMAL;
+        float4 Color    : COLOR0;
+};
+
+struct phongdatainp
+{
+    float4 Position;
+    float4 TexCoord;
+    float3 Normal;
+    float3 Binormal;
+    float4 Color;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_phong_common( phongdatainp VtxIn )
+{
+    Fragment pxout;
+	
+	time = fmod( time, 10000 );
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(WorldView, VtxIn.Position ).xyz;
+    float3 worldPos = mul(World,VtxIn.Position).xyz;
+                
+    //////////////////////////////////////
+        
+    float3 worldNormal  = normalize( mul( World, float4( VtxIn.Normal,0.0f ) ).xyz );
+    float3 worldEye     = ViewIT[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye;
+
+	DifAndSpec das = DiffuseSpecularLight( worldPos, worldNormal, worldEye, Shininess,
+											 DotBiasDiffuse, DotScaleDiffuse,
+											  DotBiasSpecular, DotScaleSpecular );
+	
+	pxout.Diffuse = das.Diffuse*DiffuseMix;
+	pxout.Specular = das.Specular*SpecularMix;
+	
+    /////////////////////////////////////
+    pxout.UVW0.xyz = float3( VtxIn.TexCoord.xy, 0.0f );
+    /////////////////////////////////////
+
+    pxout.ClipPos = mul(WorldViewProj,VtxIn.Position);
+	pxout.Color = VtxIn.Color;
+	
+    return pxout;
+}
+
+
+FragmentPP vs_phong_commonpp( phongdatainp VtxIn )
+{
+    FragmentPP pxout;
+	
+	float mtime = fmod( time, 10000 );
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(WorldView, VtxIn.Position ).xyz;
+    float3 worldPos = mul(World,VtxIn.Position).xyz;        
+    float3 worldNormal  = normalize( mul( World, float4( VtxIn.Normal,0.0f ) ).xyz );
+    float3 worldEye     = ViewIT[3].xyz;
+	
+    /////////////////////////////////////
+
+    pxout.ClipPos = mul(WorldViewProj,VtxIn.Position);
+	pxout.Color = VtxIn.Color;
+	pxout.WorldNormal = worldNormal;
+	pxout.WorldPos = worldPos;
+    pxout.UVW0.xyz = float3( VtxIn.TexCoord.xy, 0.0f );
+	
+    return pxout;
+}
+///////////////////////////////////////////////////////////////////////////////
+
+FragmentN vs_phong_commonN( phongdatainp VtxIn )
+{
+    FragmentN pxout;
+	
+	time = fmod( time, 10000 );
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(WorldView, VtxIn.Position ).xyz;
+    float3 worldPos = mul(World,VtxIn.Position).xyz;
+                
+    //////////////////////////////////////
+        
+    float3 worldNormal  = normalize( mul( World, float4( VtxIn.Normal,0.0f ) ).xyz );
+    float3 worldEye     = ViewIT[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye; //normalize( - SunDir );
+
+    /////////////////////////////////////
+    // ( Tangent Space Lighting )
+
+	float3 nbin = normalize( VtxIn.Binormal );
+	float3 nnrm = normalize( VtxIn.Normal );
+
+	float3 Tangent = ( cross( nbin, nnrm ) );
+	TanLytData tldata = GenTanLytData(	World,
+										worldToLyt, worldToEye,
+										nnrm, nbin, Tangent
+									 );
+
+    pxout.TanLight = tldata.TanLyt; 
+    pxout.TanHalf = tldata.TanHalf;
+    pxout.TanEye = tldata.TanEye;
+
+    /////////////////////////////////////
+    pxout.UVW0.xyz = float3( VtxIn.TexCoord.xy, 0.0f );
+    /////////////////////////////////////
+
+    pxout.VtxPosition = VtxIn.Position.xyz;
+    pxout.VtxTangent = Tangent.xyz;
+
+    pxout.ClipPos = mul(WorldViewProj,VtxIn.Position);
+
+	pxout.Color = VtxIn.Color;
+	
+    /////////////////////////////////////
+
+    return pxout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+FragmentPP vs_phongpp( Vertex VtxIn )
+{
+	phongdatainp pxinp;
+	pxinp.Position = VtxIn.Position;
+	pxinp.TexCoord = float4(VtxIn.TexCoord.x, -VtxIn.TexCoord.y, 0.0f, 0.0f);
+	pxinp.Normal = VtxIn.Normal;
+	pxinp.Binormal = VtxIn.Binormal;
+	pxinp.Color = float4(1.0f,1.0f,1.0f,1.0f);
+	return vs_phong_commonpp( pxinp );
+	
+}
+
+Fragment vs_gouraud( Vertex VtxIn )
+{
+	phongdatainp pxinp;
+	pxinp.Position = VtxIn.Position;
+	pxinp.TexCoord = float4(VtxIn.TexCoord.x, -VtxIn.TexCoord.y, 0.0f, 0.0f);
+	pxinp.Normal = VtxIn.Normal;
+	pxinp.Binormal = VtxIn.Binormal;
+	pxinp.Color = float4(1.0f,1.0f,1.0f,1.0f);
+	return vs_phong_common( pxinp );
+}
+Fragment vs_phongV( VertexWithCol VtxIn )
+{
+	phongdatainp pxinp;
+	pxinp.Position = VtxIn.Position;
+	pxinp.TexCoord = float4(VtxIn.TexCoord.x, -VtxIn.TexCoord.y, 0.0f, 0.0f);
+	pxinp.Normal = VtxIn.Normal;
+	pxinp.Binormal = VtxIn.Binormal;
+	pxinp.Color = VtxIn.Color.xyzw;
+	return vs_phong_common( pxinp );
+}    
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_phongpp( FragmentPP FragIn ) : COLOR
+{	const float3 FlatNormal = float3( 0.5f, 0.5f, 1.0f );
+	/////////////////////////
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	/////////////////////////
+	// Get Other Maps
+	float4 cmap = tex2D( ColorMap , UvC );
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	/////////////////////////
+	float3 WorldEye = ViewIT[3].xyz;
+	float3 WorldNormal = normalize(FragIn.WorldNormal);
+	DifAndSpec das = DiffuseSpecularLight(	FragIn.WorldPos, WorldNormal, WorldEye, Shininess,
+											DotBiasDiffuse, DotScaleDiffuse,
+											DotBiasSpecular, DotScaleSpecular );
+	/////////////////////////
+	float3 DC = cmap.xyz*FragIn.Color.xyz*das.Diffuse*DiffuseMix;
+	float3 SC = smap*das.Specular*SpecularMix;
+	/////////////////////////
+	float4 mrtout = float4( DC+SC, cmap.w );
+    return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_gouraud( Fragment FragIn ) : COLOR
+{
+	const float3 FlatNormal = float3( 0.5f, 0.5f, 1.0f );
+	/////////////////////////
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	/////////////////////////
+	// Get Other Maps
+	float4 cmap = tex2D( ColorMap , UvC );
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	////////////////////////
+	float3 DC = cmap.xyz*FragIn.Diffuse*FragIn.Color.xyz;
+	float3 SC = smap*FragIn.Specular;
+	/////////////////////////
+	float4 mrtout = float4( DC+SC, cmap.w );
+    return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// ps Phong+Emissive
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_phongppE( FragmentPP FragIn ) : COLOR
+{	const float3 FlatNormal = float3( 0.5f, 0.5f, 1.0f );
+	/////////////////////////
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	float2 UvE = FragIn.UVW0.xy*UvScaleEmi;
+	/////////////////////////
+	// Get Other Maps
+	float4 cmap = tex2D( ColorMap , UvC );
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	float3 emap = tex2D( EmissiveMap , UvE ).xyz;
+	/////////////////////////
+	float3 WorldEye = ViewIT[3].xyz;
+	float3 WorldNormal = normalize(FragIn.WorldNormal);
+	DifAndSpec das = DiffuseSpecularLight( FragIn.WorldPos, WorldNormal, WorldEye, Shininess, 
+													 DotBiasDiffuse, DotScaleDiffuse,
+											  DotBiasSpecular, DotScaleSpecular	);
+ 
+	/////////////////////////
+	float3 DC = cmap.xyz*FragIn.Color.xyz*das.Diffuse*DiffuseMix;
+	float3 SC = smap*das.Specular*SpecularMix;
+	float3 EC = emap*EmissiveMix;
+	/////////////////////////
+	float4 mrtout = float4( EC+DC+SC, cmap.w );
+    return mrtout;
+}
+
+float4 ps_gouraudE( Fragment FragIn ) : COLOR
+{
+	/////////////////////////
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	float2 UvE = FragIn.UVW0.xy*UvScaleEmi;
+	/////////////////////////
+	// Get Other Maps
+	float4 cmap = tex2D( ColorMap , UvC );
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	float3 emap = tex2D( EmissiveMap , UvE ).xyz;
+	/////////////////////////
+	float3 DC = cmap.xyz*FragIn.Color.xyz*FragIn.Diffuse*DiffuseMix;
+	float3 SC = smap*FragIn.Specular*SpecularMix;
+	float3 EC = emap*EmissiveMix;
+	/////////////////////////
+	float4 mrtout = float4( EC+DC+SC, cmap.w );
+	return mrtout;
+}
+
+
+float4 ps_dbgaplha( Fragment FragIn ) : COLOR
+{
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float4 cmap = tex2D( ColorMap , UvC );
+	float4 mrtout = float4( cmap.w, cmap.w, cmap.w, 1.0f );
+	return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_difemionly( FragmentPP FragIn ) : COLOR
+{	/////////////////////////
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvE = FragIn.UVW0.xy*UvScaleEmi;
+	/////////////////////////
+	// Get Other Maps
+	float4 cmap = tex2D( ColorMap , UvC );
+	float3 emap = tex2D( EmissiveMap , UvE ).xyz;
+	/////////////////////////
+	float3 WorldEye = ViewIT[3].xyz;
+	float3 WorldNormal = normalize(FragIn.WorldNormal);
+	DifAndSpec das = DiffuseSpecularLight( FragIn.WorldPos, WorldNormal, WorldEye, Shininess,
+													 DotBiasDiffuse, DotScaleDiffuse,
+											  DotBiasSpecular, DotScaleSpecular	);
+
+	/////////////////////////
+	float3 DC = cmap.xyz*FragIn.Color.xyz*das.Diffuse*DiffuseMix;
+	float3 EC = emap*EmissiveMix;
+	/////////////////////////
+	float4 mrtout = float4( EC+DC, cmap.w );
+    return mrtout;
+}
+
+float4 ps_spconly( FragmentPP FragIn ) : COLOR
+{	/////////////////////////
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	/////////////////////////
+	// Get Other Maps
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	/////////////////////////
+	float3 WorldEye = ViewIT[3].xyz;
+	float3 WorldNormal = normalize(FragIn.WorldNormal);
+	DifAndSpec das = DiffuseSpecularLight( FragIn.WorldPos, WorldNormal, WorldEye, Shininess, DotBiasDiffuse, DotScaleDiffuse, DotBiasSpecular, DotScaleSpecular	);
+	/////////////////////////
+	float3 SC = smap*das.Specular*SpecularMix;
+	/////////////////////////
+	float4 mrtout = float4( SC, 1.0f );
+    return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+technique DbgAlpha
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phong();
+		PixelShader = compile glslf ps_dbgaplha();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		AlphaTestEnable = false;
+		BlendEnable = false;
+	}
+}
+technique Gouraud
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_gouraud();
+		PixelShader = compile glslf ps_gouraud();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+		BlendEnable = false;
+	}
+}
+technique PhongPP
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_phongpp();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+		BlendEnable = false;
+	}
+}
+technique PhongEPP
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_phongppE();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		BlendEnable = false;
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+		BlendEnable = false;
+	}
+}
+technique PhongEBlendPP
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_phongppE();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+}
+technique PhongEBlendPP2S
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_phongppE();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+	pass p1
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_phongppE();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+}
+technique PhongEBlend2PP
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_difemionly();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace = CCW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(One, OneMinusSrcAlpha);
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+	pass p1
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_spconly();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(One, One);
+		AlphaTestEnable = false;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+}
+technique PhongEBlend2PP2S
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_difemionly();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace = CW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(One, OneMinusSrcAlpha);
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+	pass p1
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_spconly();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(One, One);
+		AlphaTestEnable = false;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+	pass p2
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_difemionly();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace = CCW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(One, OneMinusSrcAlpha);
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+	}
+	pass p3
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_spconly();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		BlendEnable = true;
+		BlendFunc = int2(One, One);
+		AlphaTestEnable = false;
+		AlphaFunc = float2(Greater, 0.0f);
+	}}
+technique GouraudE
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_gouraud();
+		PixelShader = compile glslf ps_gouraudE();
+		DepthTestEnable = true;
+		DepthMask = true;
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f);
+		BlendEnable = false;
+	}
+}
+
+
+///////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,5 @@
+
+Import("qtEnv")
+qtEnv.EnableQt4Modules(['QtCore'])
+qtEnv.Program(target = 'aaa', source = 'aaa.cpp')
+

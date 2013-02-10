@@ -1,0 +1,149 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "150";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault
+{
+	uniform mat4 WVPMatrix;
+	uniform mat4 VPMatrix;
+	uniform mat4 PMatrix;
+	uniform mat4 WMatrix;
+	uniform mat4 WVMatrix;
+	uniform mat4 VMatrix;
+	uniform mat4 WRotMatrix;
+	uniform mat4 DiffuseMapMatrix;
+	uniform mat4 NormalMapMatrix;
+	uniform mat4 SpecularMapMatrix;
+
+	uniform mat4 BoneMatrices;
+
+	uniform vec4 modcolor;
+	uniform float time;
+
+	uniform vec3 AmbientLight;
+	uniform int NumDirectionalLights;
+	uniform vec3 DirectionalLightDir[4];
+	uniform vec3 DirectionalLightColor[4];
+	uniform vec3 EmissiveColor;
+
+	uniform vec3 WCamLoc;
+	uniform float SpecularPower;
+
+	//
+	in vec4 position : POSITION;
+	in vec4 vtxcolor : COLOR0;
+	in vec2 uv0 : TEXCOORD0;
+	in vec2 uv1 : TEXCOORD1;
+	//
+	out vec4 frg_clr;
+	out vec2 frg_uv0;
+	out vec2 frg_uv1;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdefault
+{
+	in vec4 frg_clr;
+	in vec2 frg_uv0;
+	in vec2 frg_uv1;
+	//
+	out vec4 out_clr;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt
+{
+	uniform vec4 modcolor;
+	uniform sampler2D DiffuseMap;
+	//
+	out vec4 out_clr;
+	//
+	in vec4 frg_clr;
+	in vec2 frg_uv0;
+	in vec2 frg_uv1;
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default
+{
+	inherits default;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_lerpblend
+{
+	inherits sb_default;
+	BlendMode = ALPHA;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_additive
+{
+	inherits sb_default;
+	BlendMode = ADDITIVE;
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxtexcolor : iface_vdefault
+{
+	gl_Position = WVPMatrix*position;
+	frg_clr = vtxcolor.bgra;
+	frg_uv0 = uv0;
+	frg_uv1 = uv1;
+}
+///////////////////////////////////////////////////////////////
+
+fragment_shader ps_modtex : iface_fmt
+{
+	vec4 texc = texture( DiffuseMap, frg_uv0 );
+	out_clr = texc*modcolor*frg_clr;
+	if( out_clr.a==0.0f ) discard;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor : iface_vdefault
+{
+	gl_Position = WVPMatrix*position;
+	frg_clr = vtxcolor;
+	frg_uv0 = uv0;
+	frg_uv1 = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fragclr : iface_fdefault
+{
+	out_clr = frg_clr;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modclr : iface_fmt
+{
+	out_clr = modcolor;
+}
+///////////////////////////////////////////////////////////////
+technique tek_lamberttex
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_fragclr;
+		state_block=sb_lerpblend;
+	}
+}
+technique tek_modcolor
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_modclr;
+		state_block=sb_default;
+	}
+}
+technique tek_wnormal
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_modclr;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////

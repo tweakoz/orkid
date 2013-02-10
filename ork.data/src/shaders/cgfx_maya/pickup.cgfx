@@ -1,0 +1,73 @@
+#include "miniork_common.cgfxi"
+
+string description = "morkshader<pickup>";
+
+// tweakables //////////////////////////////////////////
+
+uniform texture2D Texture1;
+
+uniform sampler2D Sampler1 = sampler_state
+{
+	Texture = <Texture1>;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+uniform float time : time;
+uniform float2 uvscale;
+uniform float2 uvscroll;
+uniform float2 uvshift;
+
+uniform float engine_float_0<
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.01; >;
+
+// untweakables //////////////////////////////////////////
+
+float4x4 WorldViewProjXf : WorldViewProjection;
+float4x4 ViewIT : ViewInverseTranspose;
+
+struct appdata {
+    float3 Position	: POSITION;
+    float2 uv0      : TEXCOORD0;
+};
+
+struct outVertexData {
+    float4 HPosition	: POSITION;
+    float2 uv0          : TEXCOORD0;
+    float3 fragcolor    : TEXCOORD1;
+};
+
+outVertexData pickupVS(appdata IN)
+{
+	outVertexData OUT;
+	float4 Po = float4(IN.Position.xyz, 1.0);	
+	OUT.HPosition = mul(WorldViewProjXf, Po);
+	OUT.fragcolor = float3(1.0f, 1.0f, 1.0f);
+	float2 shift = uvshift * float(engine_float_0 < 1.0f);
+	float2 inuv = float2(0.0f,1.0f)+IN.uv0*float2(1.0f,-1.0f);
+    OUT.uv0 = shift + (inuv * uvscale) + (uvscroll*float2(1.0f,1.0f)) * time;
+	return OUT;
+}
+
+float4 bareFS(outVertexData IN)	: COLOR
+{
+	float u = fmod( IN.uv0.x, 1.0f );
+	float v = fmod( IN.uv0.y, 1.0f );
+	float4 tex1 = tex2D(Sampler1, IN.uv0).xyzw;
+	return tex1.xyzw;
+	//return float4(u,v,0.0f,1.0f);
+}
+
+technique pickup {
+	pass p0 {
+		VertexProgram = compile arbvp1 pickupVS();
+		FragmentProgram = compile arbfp1 bareFS();
+		BlendEnable = true;
+		BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f) ;
+	}
+}

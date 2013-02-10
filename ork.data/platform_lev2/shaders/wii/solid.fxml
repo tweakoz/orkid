@@ -1,0 +1,84 @@
+<wiifx>
+
+	<param name="MatMV" type="matrix44" semantic="modelviewmatrix"/>
+	<param name="MatP" type="matrix44" semantic="perspmatrix"/>
+  <param name="MatOrthoP" type="matrix44" semantic="orthopmatrix" options="mvidentity"/>
+  <param name="MatMVP" type="nop" semantic="nop"/>
+
+	<param name="modcolor" type="color4" semantic="modcolor"/>
+
+	<param name="ColorMap" type="tex2D" semantic="diffusetex"/>
+
+  <param name="RepeatUV" type="float4" semantic="RepeatUV"/>
+
+  <technique name="vtxcolor">
+		<pass name="0">
+			<VertexShader type="default"/>
+			<PixelShader type="fragcolor"/>; 
+			<Cull Mode="NONE"/>
+			<AlphaTest Enable="true" Ref="127" Func = "GREATER"/>
+			<params list="modcolor MatP MatMV MatMV MatMVP"/>
+		</pass>
+	</technique>
+
+	<technique name="vtxmodcolor">
+		<pass name="0">
+			<VertexShader type="default"/>
+			<PixelShader type="fragcolor"/>;
+			<Cull Mode="NONE"/>
+			<AlphaTest Enable="true" Ref="127" Func = "GREATER"/>
+			<params list="modcolor MatP MatMV MatMVP"/>
+		</pass>
+	</technique>
+
+	<technique name="modcolor">
+		<pass name="0">
+			<VertexShader type="default"/>
+			<PixelShader type="modcolor"/>;
+			<Cull Mode="NONE"/>
+			<AlphaTest Enable="true" Ref="127" Func = "GREATER"/>
+			<params list="modcolor MatP MatMV MatMV MatMVP"/>
+		</pass>
+	</technique>
+
+	<technique name="texvtxcolor">
+		<pass name="0">
+			<VertexShader type="default"/>
+			<PixelShader type="vtxtex"/>;
+			<Cull Mode="NONE"/>
+			<AlphaTest Enable="true" Ref="127" Func = "GREATER"/>
+			<params list="modcolor MatP MatMV MatMVP RepeatUV"/>
+		</pass>
+	</technique>
+
+	<technique name="texcolor">
+		<pass name="0">
+			<VertexShader type="default"/>
+			<PixelShader type="tex"/>;
+			<Cull Mode="NONE"/>
+			<AlphaTest Enable="true" Ref="127" Func = "GREATER"/>
+			<params list="modcolor MatP MatMV MatMVP"/>
+		</pass>
+	</technique>
+
+  <technique name="particle">
+    <pass name="0">
+      <VertexShader type="default"/>
+      <PixelShader type="vtxtex"/>;
+      <Cull Mode="NONE"/>
+      <AlphaTest Enable="true" Ref="127" Func = "GREATER"/>
+      <params list="modcolor MatP MatMV MatMVP"/>
+    </pass>
+  </technique>
+
+  <technique name="ortho_tex">
+    <pass name="0">
+      <VertexShader type="default"/>
+      <PixelShader type="tex"/>;
+      <Cull Mode="NONE"/>
+      <AlphaTest Enable="true" Ref="127" Func = "GREATER"/>
+      <params list="modcolor MatOrthoP"/>
+    </pass>
+  </technique>
+
+</wiifx>

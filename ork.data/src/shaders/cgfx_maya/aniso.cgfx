@@ -1,0 +1,273 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "tanspace.cgh"
+
+string description = "morkshader<aniso>";
+string ggmvtxconfig = "v12c4t8";
+string xgmvtxconfig = "v12c4t8";
+
+///////////////////////////////////////////////////////////////////////////////
+// matrices
+
+uniform float3 SunDir = float3( 0.0f, 1.0f, 0.0f );
+uniform float2 AnIsoAng = float2( 1.0f, 0.0f );
+
+texture ColorMap : Color;
+texture SpecuMap : Specular;
+texture AngleMap : Angle;
+
+uniform float ColorUvScale
+<
+    string UIHelp = "ColorUvScale";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.1;
+>;
+
+uniform float SpecuUvScale
+<
+    string UIHelp = "SpecuUvScale";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.1;
+>;
+
+uniform float AngleUvScale
+<
+    string UIHelp = "AngleUvScale";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.1;
+>;
+
+uniform float SpecularPower
+<
+    string UIHelp = "SpecularPower";
+    float UIMin = 0.0;
+    float UIMax = 100.0;
+    float UIStep = 0.1;
+>;
+
+uniform float AngleMapScale
+<
+    string UIHelp = "AngleMapScale";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.1;
+>;
+
+uniform float AngleMapBias
+<
+    string UIHelp = "AngleMapBias";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.1;
+>;
+
+///////////////////////////////////////////////////////////////////////////////
+// water parameters
+
+uniform float time : time;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Vertex {
+        float4 Position : POSITION;   // in object space
+        float4 TexCoord : TEXCOORD0;
+        float3 Normal   : NORMAL;
+        float3 Binormal : BINORMAL;
+        float3 Tangent  : TANGENT;
+        float4 Color    : COLOR0;
+};
+
+struct Fragment {
+
+        float4 ClipPos : POSITION;  // in clip space
+        float4 Color : COLOR;
+
+        float3 UVW0             : TEXCOORD0;
+        float3 UVW1             : TEXCOORD1;
+        float3 UVW2             : TEXCOORD2;
+
+        float3 TanLight         : TEXCOORD3;
+        float3 TanHalf          : TEXCOORD4;
+        float3 TanEye           : TEXCOORD5;
+        float3 VtxTangent       : TEXCOORD6;
+        float3 VtxPosition      : TEXCOORD7;
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+sampler2D ColorMapSampler = sampler_state
+{
+    Texture = <ColorMap>;
+    MagFilter = Linear;
+    MinFilter = Linear;
+};
+
+sampler2D SpecuMapSampler = sampler_state
+{
+    Texture = <SpecuMap>;
+    MagFilter = Linear;
+    MinFilter = Linear;
+};
+
+sampler2D AngleMapSampler = sampler_state
+{
+    Texture = <AngleMap>;
+    MagFilter = Linear;
+    MinFilter = Linear;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+Fragment AnIsoVS( Vertex VtxIn )
+{
+    Fragment FragOut;
+
+	time = fmod( time, 10000 );
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(WorldView, VtxIn.Position ).xyz;
+    float3 worldPos = mul(World,VtxIn.Position).xyz;
+
+    //////////////////////////////////////
+
+    float3 worldNormal  = normalize( mul( World, float4( VtxIn.Normal,0.0f ) ).xyz );
+    float3 worldEye     = ViewIT[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye; //normalize( - SunDir );
+
+    /////////////////////////////////////
+    // ( Tangent Space Lighting )
+
+	float3 nbin = normalize( VtxIn.Binormal );
+	float3 nnrm = normalize( VtxIn.Normal );
+
+	float3 Tangent = ( cross( nbin, nnrm ) );
+	TanLytData tldata = GenTanLytData(	World,
+										worldToLyt, worldToEye,
+										VtxIn.Normal, VtxIn.Binormal, Tangent
+									 );
+
+    /////////////////////////////////////
+
+    FragOut.TanLight = tldata.TanLyt;
+    FragOut.TanHalf = tldata.TanHalf;
+    FragOut.TanEye = tldata.TanEye;
+
+    FragOut.VtxPosition = VtxIn.Position.xyz;
+    FragOut.VtxTangent = nbin.xyz; //VtxIn.Tangent.xyz;
+
+    /////////////////////////////////////
+
+	float MayaV = 1.0f - VtxIn.TexCoord.y;
+
+    FragOut.UVW0.x = VtxIn.TexCoord.x*ColorUvScale;//*ColorUvScale;
+    FragOut.UVW0.y = MayaV*ColorUvScale;
+    FragOut.UVW0.z = 0.0f;
+
+    FragOut.UVW1.x = VtxIn.TexCoord.x*SpecuUvScale;
+    FragOut.UVW1.y = MayaV*SpecuUvScale;
+    FragOut.UVW1.z = 0.0f;
+
+    FragOut.UVW2.x = VtxIn.TexCoord.x*AngleUvScale;
+    FragOut.UVW2.y = MayaV*AngleUvScale;
+    FragOut.UVW2.z = 0.0f;
+
+    /////////////////////////////////////
+
+    float diffuse = saturate( dot( worldNormal, worldToLyt.xyz ) );
+
+    /////////////////////////////////////
+
+    FragOut.Color.xyz = diffuse;
+    //FragOut.Color.xyz = tldata.TanLyt.xyz;
+    FragOut.Color.w = 1.0f;
+    FragOut.ClipPos = mul(WorldViewProj,VtxIn.Position);
+    return FragOut;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 AnIsoPS( Fragment FragIn ) : COLOR
+{
+    float4 PixelOut;
+
+	float3 E = ( FragIn.TanEye  );
+	float3 T = ( FragIn.VtxTangent );
+
+    float3 texColor = tex2D( ColorMapSampler,  FragIn.UVW0.xy ).rgb;
+    float3 texSpecu = tex2D( SpecuMapSampler,  FragIn.UVW1.xy ).rgb;
+    float3 texAngle = tex2D( AngleMapSampler,  FragIn.UVW2.xy ).rgb;
+
+    float fang = (AngleMapScale*texAngle.x)+AngleMapBias;
+    float fx = sin(fang)+AnIsoAng.x;
+    float fy = cos(fang)+AnIsoAng.y;
+
+    float3 tang = normalize( float3( fx, fy, 0.0f ) );
+
+    float cl = dot( - E, tang );
+    float sl = sqrt(1 - cl * cl);
+    float Specular = pow(saturate(sl), SpecularPower );
+
+	float U = fmod( FragIn.UVW0.x, 1.0f );
+	float V = fmod( FragIn.UVW0.y, 1.0f );
+
+	 PixelOut.rgb = (texColor*FragIn.Color).rgb+(texSpecu*Specular).rgb;
+	 //PixelOut.rgb = float3( U, V, 0.0f );
+     PixelOut.a = 1.0f;
+    return PixelOut;
+}
+
+float4 ps_uvdebugclr( Fragment FragIn ) : COLOR
+{
+	/////////////////////////
+	
+	float2 UvA = FragIn.UVW0.xy;
+
+	float r = fmod( abs(UvA.r), 1.0f );
+	float g = fmod( abs(UvA.g), 1.0f );
+	
+	float4 mrtout = float4( r, g, 0.0f, 1.0f );
+    return mrtout;
+	
+}    
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique AnIsoLod0
+{
+    pass p0
+    {
+        VertexProgram = compile arbvp1 AnIsoVS( );
+        FragmentProgram = compile arbfp1 AnIsoPS( );
+
+        Zenable = true;
+        ZWriteEnable = true;
+		CullFaceEnable = true;
+        FrontFace = CCW; // ccw
+        FogEnable = false;
+        BlendEnable = false;
+        BlendFunc = int2(SrcAlpha,SrcColor ); // OneMinusSrcAlpha
+    }
+}
+
+technique UvDebugClr
+{
+	pass p0
+	{
+		VertexShader = compile vp40 AnIsoVS();
+		PixelShader = compile fp40 ps_uvdebugclr();
+		DepthTestEnable = true;
+		DepthMask = true;
+
+		FrontFace       = CCW;
+		CullFaceEnable = true;
+	}
+}

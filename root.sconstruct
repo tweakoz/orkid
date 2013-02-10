@@ -1,0 +1,42 @@
+import os, glob, string
+import ork.build.utils as obu
+import ork.build.slnprj as sln
+import sys
+
+AddOption('--build', default='stage')
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+#VariantDir( 'obj', 'src' )
+SetOption('num_jobs', obu.num_cores) 
+sln.optset.add("ork.core")
+BasicEnv = Environment( ENV=os.environ )
+
+#####################################################
+
+utpp = SConscript('ork.unittestpp/ork.unittestpp.sconstruct')
+core = SConscript('ork.core/ork.core.sconstruct')
+fcol = SConscript('ork.fcollada305/ork.fcollada305.sconstruct')
+bull = SConscript('ork.bullet273/ork.bullet273.sconstruct')
+lev2 = SConscript('ork.lev2/ork.lev2.sconstruct')
+ent = SConscript('ork.ent/ork.ent.sconstruct')
+tool = SConscript('ork.tool/ork.tool.sconstruct')
+
+#####################################################
+
+def DeclDep( itemlist, deplist ):
+	if itemlist!=None and deplist!=None:
+		for item in itemlist:
+			for it2 in deplist:
+				Depends( item, it2 )
+
+DeclDep( core, utpp )
+DeclDep( lev2, core )
+DeclDep( lev2, utpp )
+DeclDep( ent, core )
+DeclDep( ent, bull )
+DeclDep( ent, lev2 )
+DeclDep( ent, utpp )
+DeclDep( tool, core )
+DeclDep( tool, lev2 )
+DeclDep( tool, ent )
+DeclDep( tool, utpp )

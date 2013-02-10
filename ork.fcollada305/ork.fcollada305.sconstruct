@@ -1,0 +1,53 @@
+import os, glob,string
+import ork.build.utils as obu
+import ork.build.common as cmn
+import ork.build.pathtools as obp
+import ork.build.slnprj as sln
+
+##########################################
+# set scons options
+##########################################
+
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src' )
+SetOption('num_jobs', obu.num_cores) 
+
+# basics #################################
+
+class collada:
+  def __init__(self):
+	ARGS = cmn.BuildArgs
+
+	BasicEnv = Environment( ENV=os.environ )
+
+	##########################################
+
+	ColladaDir = "ext/fcollada"
+
+	##########################################
+
+	prj = sln.Project(ARGS,BasicEnv,"ork.fcollada")
+	prj.SetSrcBase( "ext/fcollada" )
+	prj.AddIncludePaths( "ext/fcollada/FCollada" )
+	prj.AddIncludePaths( "ext/fcollada/FCollada/LibXML/include/" )
+	prj.AddFolders( ". FCollada/LibXML", "*.c" )
+	prj.AddFolders( "FCollada FCollada/FCDocument", "*.cpp" )
+	prj.AddFolders( "FCollada/FMath FCollada/FUtils", "*.cpp" )
+	prj.AddFolders( "FCollada/Output FColladaPlugins/FArchiveXML", "*.cpp" )
+	prj.AddDefines( "NDEBUG LINUX" )
+	prj.Configure()
+	self.coll_lib = prj.SharedLibrary( )
+
+	##########################################
+
+	os.system( "mkdir -p %s/include/fcollada" % obu.stage_dir )
+	os.system( "cp -r ext/fcollada/* %s/include/fcollada/" % (obu.stage_dir) )
+
+################################
+
+a = collada()
+ret = list()
+ret += a.coll_lib
+Return('ret')
+

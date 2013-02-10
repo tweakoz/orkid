@@ -1,0 +1,218 @@
+uniform int			NumDirectionalLights;
+uniform float4		DirectionalLightPos[8];
+uniform float4		DirectionalLightDir[8];
+uniform float4		DirectionalLightColor[8];
+uniform float4		DirectionalAttenA[8];
+uniform float4		DirectionalAttenK[8];
+uniform float		LightMode[8];
+uniform float3		AmbientLight;
+////////////////////////////////////////////////////////////////
+uniform float4      ModColor;
+uniform texture2D SamplerLmp;
+////////////////////////////////////////////////////////////////
+
+uniform sampler2D SamplerLmpSampler = sampler_state
+{
+	Texture = <SamplerLmp>;
+    MagFilter = Linear;
+    MinFilter = Linear;
+    MipFilter = Linear;
+};
+
+float3 GetPowColor(float3 inp, float fpow, float fsc)
+{
+	float3 lmpCol;
+	lmpCol.x = pow( abs(inp.x), fpow )*fsc;
+	lmpCol.y = pow( abs(inp.y), fpow )*fsc;
+	lmpCol.z = pow( abs(inp.z), fpow )*fsc;
+	return lmpCol;
+}
+float3 GetInvPowColor(float3 inp, float fpow, float fsc)
+{
+	float3 lmpCol;
+	lmpCol.x = pow( abs(inp.x*fsc), fpow );
+	lmpCol.y = pow( abs(inp.y*fsc), fpow );
+	lmpCol.z = pow( abs(inp.z*fsc), fpow );
+	return lmpCol;
+}
+float3 GetLightmap(float2 lmuv)
+{
+	float3 lmpCol = tex2D(SamplerLmpSampler, lmuv).xyz;
+	lmpCol.x = pow( abs(lmpCol.x*1.0f), 1.5f )*2.0f;
+	lmpCol.y = pow( abs(lmpCol.y*1.0f), 1.5f )*2.0f;
+	lmpCol.z = pow( abs(lmpCol.z*1.0f), 1.5f )*2.0f;
+	return lmpCol;
+}
+float3 ProcPreVtxLitColor(float3 inp)
+{
+	float3 outp = GetPowColor(inp,1.7f,2.5f);
+	return outp;
+}
+
+float3 PreviewLightSaturate( float3 inp )
+{
+#if 0
+	float3 outp = inp;
+#else
+	float3 outp = GetPowColor(inp,0.5f,0.5f);
+	//float3 outp = GetPowColor(inp,1.0f,1.0f);
+	if( outp.x >= 1.0f ) outp.x=0.0f;
+	if( outp.y >= 1.0f ) outp.y=0.0f;
+	if( outp.z >= 1.0f ) outp.z=0.0f;
+	outp = GetInvPowColor( outp, 2.0f, 2.0f );
+#endif
+	
+	return outp;
+}
+////////////////////////////////////////////////////////////////
+
+float3 DiffuseLight( float3 WorldPos, float3 WorldNormal )
+{
+#ifdef PERFTEST
+	return float3(1.0f,1.0f,1.0f);
+#else	
+	float3 DiffuseAccum = float3( 1.0f, 1.0f, 1.0f );
+
+	int inl = max( NumDirectionalLights, 1 );
+
+	if( inl )
+	{
+		DiffuseAccum = float3( 0.0f, 0.0f, 0.0f );
+	}
+	
+	float3 wnn = normalize(WorldNormal);
+	
+	for( int i=0; i<inl; i++ )
+	{
+#if 1
+		///////////////////////////////////////////////////
+		float3 dlpwp = (WorldPos.xyz-DirectionalLightPos[i].xyz);
+		float3 PosToLight = normalize(dlpwp);	
+		///////////////////////////////////////////////////
+		float CosaP = dot(-PosToLight,wnn);
+		float CosaD = saturate(dot(wnn,normalize(-DirectionalLightDir[i])));
+		float Cosa = lerp( CosaD, CosaP, LightMode[i] );
+		float numer = max( 0.0f, 
+		                DirectionalAttenA[i].x
+		              + Cosa*DirectionalAttenA[i].y
+		              + Cosa*Cosa*DirectionalAttenA[i].z );
+		///////////////////////////////////////////////////
+		float Dist = length(dlpwp);
+		float denom = DirectionalAttenK[i].x
+		            + Dist*DirectionalAttenK[i].y
+		            + Dist*Dist*DirectionalAttenK[i].z;
+		///////////////////////////////////////////////////
+		// WII emu
+		// float Diffuse = saturate(dot(normalize(WorldNormal),-ldir));
+		// float atten = Diffuse*numer/denom;
+		///////////////////////////////////////////////////
+		float atten = numer/denom;
+		///////////////////////////////////////////////////
+		///////////////////////////////////////////////////
+		DiffuseAccum += DirectionalLightColor[i]*atten;
+#else
+		float CosaD = saturate(dot(normalize(WorldNormal),-normalize(DirectionalLightDir[i])));
+		DiffuseAccum += DirectionalLightColor[i]*CosaD;
+#endif		
+	}
+
+	return DiffuseAccum;
+#endif
+}
+	
+
+struct DifAndSpec
+{
+	float3	Diffuse;
+	float3	Specular;
+};
+
+struct AttenParam
+{
+	float3 A;
+	float3 K;
+	float3 WorldNormal;
+	float3 PosToLight;
+	float3 LightDir;
+	float Dist;
+	float LightMode;
+	float DotBias;
+	float DotScale;
+};
+
+float LightAtten( AttenParam ap )
+{
+	float CosaP = saturate(ap.DotBias+ap.DotScale*dot(-ap.PosToLight,ap.WorldNormal));
+	float CosaD = saturate(ap.DotBias+ap.DotScale*dot(-ap.LightDir,ap.WorldNormal));
+	float Cosa = lerp( CosaD, CosaP, ap.LightMode );
+	float numer = max( 0.0f, 
+	                ap.A.x
+	              + Cosa*ap.A.y
+	              + Cosa*Cosa*ap.A.z );
+	///////////////////////////////////////////////////
+	float denom = ap.K.x
+	            + ap.Dist*ap.K.y
+	            + ap.Dist*ap.Dist*ap.K.z;
+	///////////////////////////////////////////////////
+	// WII emu
+	// float Diffuse = saturate(dot(WorldNormal,-ldir));
+	// float atten = Diffuse*numer/denom;
+	///////////////////////////////////////////////////
+	return numer/denom;
+}
+
+DifAndSpec DiffuseSpecularLight( float3 WorldPos,
+								 float3 WorldNormal,
+								 float3 EyePos,
+								 float Shininess,
+								 float4 DotScaleBias )
+{
+	float3 World2Eye = (EyePos-WorldPos);
+
+	//float3 LightDir = -normalize(World2Eye);
+	///////////////////////////////////////////////////
+	int inl = max( NumDirectionalLights, 1 );
+
+	float3 SpecularAccum = float3(0.0f,0.0f,0.0f);
+	float3 DiffuseAccum = float3(0.0f,0.0f,0.0f);
+
+	for( int i=0; i<inl; i++ )
+	{
+		float3 LightColor = DirectionalLightColor[i];
+		float3 dlpwp = (DirectionalLightPos[i].xyz-WorldPos.xyz);
+		float3 PosToLight = normalize(dlpwp);	
+		
+		float Dist = length(dlpwp);
+		///////////////////////////////////////////////////
+		AttenParam ap;
+		///////////////////////////////////////////////////
+		// Diffuse
+		///////////////////////////////////////////////////
+		ap.A = DirectionalAttenA[i].xyz;
+		ap.K = DirectionalAttenK[i].xyz;
+		ap.WorldNormal = WorldNormal;
+		ap.PosToLight = PosToLight;
+		ap.LightDir = DirectionalLightDir[i];//LightDir;
+		ap.Dist = Dist;
+		ap.LightMode = LightMode[i];
+		ap.DotBias = 0.0f;//DotScaleBias.x;
+		ap.DotScale = 1.0f;//DotScaleBias.y;
+		float diffuse = LightAtten( ap );
+		///////////////////////////////////////////////////
+		///////////////////////////////////////////////////
+		DiffuseAccum += LightColor*diffuse;
+		///////////////////////////////////////////////////
+		ap.A = float3(1.0f,0.0f,0.0f); // no directional atten for specular, handled below...
+		float specatn = LightAtten( ap );
+		float3 refv = -normalize(2.0f*dot(WorldNormal.xyz,PosToLight.xyz)*WorldNormal-PosToLight);
+		float fdot = saturate(DotScaleBias.z+DotScaleBias.w*dot(refv,-PosToLight.xyz));
+		float fp = pow(fdot,Shininess);
+		SpecularAccum += LightColor*(fp*specatn);
+		///////////////////////////////////////////////////
+	}
+
+	DifAndSpec das;
+	das.Diffuse = DiffuseAccum;
+	das.Specular = SpecularAccum;
+	return das;
+}

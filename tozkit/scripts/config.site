@@ -1,0 +1,5 @@
+# config.site for configure
+#
+# Change some defaults.
+test "$prefix" = NONE && prefix=$TOZ_STAGE
+test "$exec_prefix" = NONE && exec_prefix=$TOZ_STAGE

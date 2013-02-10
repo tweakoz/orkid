@@ -1,0 +1,446 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2012, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
+#import <ork/pch.h>
+#if defined( ORK_CONFIG_OPENGL ) && defined( ORK_OSX )
+#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
+#import <CoreData/CoreData.h>
+#import <OpenGL/OpenGL.h>
+#import <dispatch/dispatch.h>
+#import <ork/lev2/gfx/gfxenv.h>
+#import "gl.h"
+#include <ork/lev2/gfx/gfxmaterial_ui.h>
+#import <ork/lev2/qtui/qtui.h>
+#import <ork/file/fileenv.h>
+#import <ork/file/filedev.h>
+#import <ork/kernel/opq.h>
+
+#import <ork/kernel/objc.h>
+
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
+
+extern "C"
+{
+	bool gbVSYNC = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+namespace ork { namespace lev2 {
+///////////////////////////////////////////////////////////////////////////////
+
+tbb::concurrent_queue<void*> GfxTargetGL::mLoadTokens;
+
+struct GlOsxPlatformObject
+{
+	static NSOpenGLContext* gShareMaster;
+	
+	NSOpenGLContext*	mNSOpenGLContext;
+	NSView*				mOsxView;
+	bool				mbInit;
+	bool				mbNSOpenGlView;
+	Opq 				mOpQ;
+
+	GlOsxPlatformObject()
+		: mNSOpenGLContext(nil)
+		, mOsxView(nil)
+		, mbInit(true)
+		, mbNSOpenGlView(false)
+		, mOpQ(0,"GlOsxPlatformObject")
+	{
+	}
+};
+
+/////////////////////////////////////////////////////////////////////////
+
+struct GlOsxLoadContext
+{
+	NSOpenGLContext*	mGlContext;
+	NSOpenGLContext*	mPushedContext;
+};
+
+/////////////////////////////////////////////////////////////////////////
+
+GlOsxPlatformObject* gshareplato = nullptr;
+
+CGLContextObj gOGLdefaultctx;
+CGLPixelFormatObj gpixfmt = nullptr;
+NSOpenGLContext* gNSGLdefaultctx = nil;
+NSOpenGLContext* gNSGLfirstctx = nil;
+NSOpenGLContext* gNSGLcurrentctx = nil;
+NSOpenGLContext* GlOsxPlatformObject::gShareMaster = nil;
+NSOpenGLPixelFormat* gNSPixelFormat = nil;
+std::vector<NSOpenGLContext*> gWindowContexts;
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GfxTargetGL::GLinit()
+{
+	orkprintf( "INITOPENGL\n" );
+	
+	CGLPixelFormatAttribute attribs[] =
+	{
+	#if defined(USE_GL3)
+		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core,
+	#else
+		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)kCGLOGLPVersion_Legacy,
+		kCGLPFAWindow,//(CGLPixelFormatAttribute)true, (implied)
+		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
+	#endif
+		//kCGLPFANoRecovery,
+		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
+ 		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
+ 		kCGLPFAAccelerated,
+		kCGLPFADoubleBuffer,
+		//kCGLPFASampleBuffers, (CGLPixelFormatAttribute)1,
+		//kCGLPFAMultisample,
+		//kCGLPFASamples, (CGLPixelFormatAttribute)16,
+		//kCGLPFASamples, (CGLPixelFormatAttribute)4,
+		//kCGLPFASamples, (CGLPixelFormatAttribute)1,
+		(CGLPixelFormatAttribute) 0
+	};
+	
+	size_t last_attribute = sizeof(attribs) / sizeof(CGLPixelFormatAttribute) - 1ul;
+	 
+	GLint numPixelFormats;
+	long value;
+	
+
+	CGLChoosePixelFormat (attribs, &gpixfmt, &numPixelFormats);
+	 
+	printf( "numPixelFormats<%d>\n", int(numPixelFormats) );
+
+	if( gpixfmt == nullptr ) {
+		attribs[last_attribute - 2] = (CGLPixelFormatAttribute)NULL;
+		CGLChoosePixelFormat (attribs, &gpixfmt, &numPixelFormats);
+	}
+	 		
+	printf( "gpixfmt<%p>\n", (void*) gpixfmt );
+
+	CGLError err = CGLCreateContext ( gpixfmt, NULL, & gOGLdefaultctx );
+
+	OrkAssert( err==kCGLNoError );
+
+	gNSGLdefaultctx = [[NSOpenGLContext alloc] initWithCGLContextObj:gOGLdefaultctx];
+	
+	OrkAssert( gNSGLdefaultctx!=nil );
+	
+	GlOsxPlatformObject::gShareMaster = gNSGLdefaultctx;
+	printf( "gShareMaster<%p>\n", (void*) gNSGLdefaultctx );
+
+	err = CGLSetCurrentContext( gOGLdefaultctx );
+	OrkAssert( err==kCGLNoError );
+
+	gNSPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
+
+	printf( "gNSPixelFormat<%p>\n", (void*) gNSPixelFormat );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::string GetGlErrorString( void );
+
+void OpenGlGfxTargetInit()
+{
+	///////////////////////////////////////////////////////////
+	NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+	///////////////////////////////////////////////////////////
+	GfxEnv::SetTargetClass(GfxTargetGL::GetClassStatic());
+	//const ork::SFileDevContext& datactx = ork::CFileEnv::UrlBaseToContext( "data" );//, DataDirContext );
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+GfxTargetGL::GfxTargetGL() 
+	: GfxTarget()
+	, mFxI( *this )
+	, mImI( *this )
+	, mRsI()
+	, mGbI( *this )
+	, mFbI( *this )
+	, mTxI( *this )
+	, mMtxI( *this )
+{
+	static dispatch_once_t ginit_once;
+	auto once_blk = ^ void (void)
+	{
+		GfxTargetGL::GLinit();
+	};
+	dispatch_once(&ginit_once, once_blk );
+	
+	FxInit();
+
+	NSOpenGLPixelFormat* nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
+	for( int i=0; i<4; i++ )
+	{
+		GlOsxLoadContext* loadctx = new GlOsxLoadContext;
+
+		NSOpenGLContext* gctx = [[NSOpenGLContext alloc] initWithFormat:gNSPixelFormat shareContext:GlOsxPlatformObject::gShareMaster];
+	
+		OrkAssert( gctx!=nil );
+	
+		loadctx->mGlContext = gctx;
+
+		mLoadTokens.push( (void*) loadctx );
+	}
+
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+GfxTargetGL::~GfxTargetGL()
+{
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
+{
+	///////////////////////
+	GlOsxPlatformObject* plato = new GlOsxPlatformObject;
+	mCtxBase = pctxbase;
+	mPlatformHandle = (void*) plato;
+	///////////////////////
+	NSView* osxview = (NSView*) mCtxBase->GetThisXID();
+	bool is_nsopenglview = [[osxview class]isSubclassOfClass:[NSOpenGLView class]];
+	Class osxviewclass = object_getClass(osxview);
+	Class osxviewparentclass = class_getSuperclass(osxviewclass);
+	const char* osxviewClassName = object_getClassName(osxview);
+	const char* osxviewParentClassName = class_getName(osxviewparentclass);
+	orkprintf( "osxview<%p> class<%s> parclass<%s> is_nsopenglview<%d>\n", osxview, osxviewClassName, osxviewParentClassName, int(is_nsopenglview) );
+	plato->mOsxView = osxview;
+
+	///////////////////////
+
+	//////////////////////////////////////////////
+	// create and init nsContext
+	//////////////////////////////////////////////
+	
+	NSOpenGLPixelFormat* nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
+	plato->mNSOpenGLContext = [[NSOpenGLContext alloc] initWithFormat:nsPixelFormat shareContext:GlOsxPlatformObject::gShareMaster];
+
+	printf( "mNSOpenGLContext<%p>\n", (void*) plato->mNSOpenGLContext );
+
+	if( is_nsopenglview ) // externally created NSOpenGlView
+	{
+		plato->mbNSOpenGlView = true;
+		NSOpenGLView* poglv = (NSOpenGLView*) osxview;
+		[poglv setOpenGLContext:plato->mNSOpenGLContext];
+	}
+	
+	if( gNSGLfirstctx==nil )
+		gNSGLfirstctx = plato->mNSOpenGLContext;
+
+	gWindowContexts.push_back( plato->mNSOpenGLContext );
+
+  		
+	//////////////////////////////////////////////
+	// set its view
+
+	auto initvblk = [=]()
+	{
+		[plato->mNSOpenGLContext setView:osxview];
+	};
+	//plato->mOpQ.push(initvblk);
+	initvblk();
+
+	printf( "osxgl:1\n");
+	[plato->mNSOpenGLContext makeCurrentContext];
+	printf( "osxgl:2\n");
+
+	//////////////////////////////////////////////
+	// turn on vsync
+	printf( "osxgl:3\n");
+
+	GLint vsyncparams[] = 
+	{
+		gbVSYNC ? 1 : 0,
+	};
+
+	[plato->mNSOpenGLContext setValues:&vsyncparams[0] forParameter:NSOpenGLCPSwapInterval];
+	printf( "osxgl:4\n");
+
+	mFbI.SetThisBuffer( pWin );
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
+{
+	miW = pBuf->GetBufferW();
+	miH = pBuf->GetBufferH();
+	miX = 0;
+	miY = 0;
+
+	mCtxBase = 0;
+
+	GlOsxPlatformObject* plato = new GlOsxPlatformObject;			
+	mPlatformHandle = (void*) plato;
+	mFbI.SetThisBuffer( pBuf );
+
+	plato->mNSOpenGLContext = GlOsxPlatformObject::gShareMaster;
+	plato->mOsxView = nullptr;
+	plato->mbNSOpenGlView = nullptr;
+	plato->mbInit = false;
+
+	FBI()->SetOffscreenTarget( true );
+
+	//////////////////////////////////////////
+	// Bind Texture
+
+	Texture* pTexture = new Texture();
+	pTexture->SetWidth( miW );
+	pTexture->SetHeight( miH );
+	pTexture->SetBytesPerPixel( 4 );
+	pTexture->SetTexClass( ork::lev2::Texture::ETEXCLASS_RENDERTARGET );
+
+	FBI()->SetBufferTexture( pTexture );
+
+	///////////////////////////////////////////
+	// create material
+
+	GfxMaterialUITextured* pmtl = new GfxMaterialUITextured(this);
+	pBuf->SetMaterial(pmtl);
+	pmtl->SetTexture( ETEXDEST_DIFFUSE, pTexture );
+	pBuf->SetTexture(pTexture);
+
+//	[plato->mNSOpenGLContext makeCurrentContext];
+  		
+	//////////////////////////////////////////////
+	
+	//mFbI.InitializeContext( pBuf );
+	pBuf->SetContext(this);
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void GfxTargetGL::MakeCurrentContext( void )
+{
+	//if( 0 == mCtxBase ) return;
+	
+	// GetCtxBase
+	GlOsxPlatformObject* plato = (GlOsxPlatformObject*) mPlatformHandle;
+	if( plato )
+	{
+		plato->mOpQ.Process();
+
+		if( plato->mbNSOpenGlView) 
+		{
+			gNSGLcurrentctx = plato->mNSOpenGLContext;
+			[plato->mNSOpenGLContext makeCurrentContext];
+			return;
+		}
+			
+		if( mCtxBase )
+		{
+			NSView* osxview = (NSView*) mCtxBase->GetThisXID();
+			GfxWindow *pWin = (GfxWindow *) mFbI.GetThisBuffer();
+			if( osxview != plato->mOsxView )
+			{
+				OrkAssert(false);
+				InitializeContext( pWin,mCtxBase );
+			}
+		}
+		//printf( "UPDATE<%p>\n", this );
+		if(plato->mbInit)
+		{
+			if( plato->mOsxView )
+			{
+				[plato->mNSOpenGLContext setView:plato->mOsxView];
+			}
+			plato->mbInit=false;
+		}
+		[plato->mNSOpenGLContext makeCurrentContext];
+		[plato->mNSOpenGLContext update];
+		
+		gNSGLcurrentctx = plato->mNSOpenGLContext;
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
+{
+	//if( 0 == pCTFL ) return;
+	
+	if( 0 )
+	{
+		glViewport( miX, miY, miW, miH );
+		glScissor( miX, miY, miW, miH );
+		
+		MTXI()->PushUIMatrix();
+		CMatrix4 uimtx_M = MTXI()->RefMMatrix();
+		CMatrix4 uimtx_V = MTXI()->RefVMatrix();
+		CMatrix4 uimtx_P = MTXI()->RefPMatrix();
+		//CMatrix4 
+		MTXI()->PopUIMatrix();
+	//	glMatrixMode( GL_PROJECTION );
+		//glLoadMatrixf( uimtx_P.GetArray() );
+	//	glMatrixMode( GL_MODELVIEW );
+	//	glLoadMatrixf( uimtx_V.GetArray() );
+		glDisable(GL_TEXTURE_2D);
+		//glDisable(GL_ALPHA_TEST);
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+		//glColor4f( 0.0f, 0.0f, 0.0f, 1.0f );
+		
+		//glBegin( GL_LINES );
+		//	glVertex2f( miX, miY );
+		//	glVertex2f( miX+miW, miY+miH );
+		//	glVertex2f( miX+miW, miY );
+		//	glVertex2f( miX, miY+miH );
+		//glEnd();
+		glFinish();
+	}
+	// GetCtxBase
+	GlOsxPlatformObject* plato = (GlOsxPlatformObject*) mPlatformHandle;
+	if( plato )
+	{
+		if( plato->mbNSOpenGlView) 
+		{
+			//return;
+		}
+		//printf( "SWAP<%p>\n", this );
+		[plato->mNSOpenGLContext flushBuffer];
+	}
+	//Objc::Class("NSOpenGLContext").InvokeClassMethodV("clearCurrentContext" );
+}
+
+void* GfxTargetGL::DoBeginLoad()
+{
+	void* pvoiddat = nullptr;
+
+	while(false==mLoadTokens.try_pop(pvoiddat))
+	{
+		usleep(1<<10);
+	}
+
+	GlOsxLoadContext* loadctx = (GlOsxLoadContext*) pvoiddat;
+
+
+	loadctx->mPushedContext = [NSOpenGLContext currentContext];
+	[loadctx->mGlContext makeCurrentContext];
+
+	printf( "BEGINLOAD loadctx<%p> glx<%p>\n", loadctx,loadctx->mGlContext);
+
+	//OrkAssert(bOK);
+
+	return pvoiddat;
+}
+
+void GfxTargetGL::DoEndLoad(void*ploadtok)
+{
+	GlOsxLoadContext* loadctx = (GlOsxLoadContext*) ploadtok;
+	printf( "ENDLOAD loadctx<%p> glx<%p>\n", loadctx,loadctx->mGlContext);
+	mLoadTokens.push(ploadtok);
+}
+
+}}
+///////////////////////////////////////////////////////////////////////////////
+
+#endif // #if defined( ORK_CONFIG_OPENGL ) && defined(IX)

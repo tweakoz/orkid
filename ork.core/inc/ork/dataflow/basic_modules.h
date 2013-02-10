@@ -1,0 +1,27 @@
+///////////////////////////////////////////////////////////////////////////////
+// Orkid
+// Copyrigh 1996-2004, Michael T. Mayers
+// See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid/license.html
+///////////////////////////////////////////////////////////////////////////////
+
+#pragma once
+
+#include <ork/dataflow/dataflow.h>
+
+namespace ork { namespace dataflow {
+///////////////////////////////////////////////////////////////////////////////
+
+class sinplug : public outplug<float>
+{
+	RttiDeclareAbstract(sinplug,outplug<float>);
+
+	float output;
+
+	sinplug( module*pmod, const char* pname)
+		: outplug<float>( pmod,dataflow::EPR_UNIFORM, & output, pname )
+	{
+	}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+}}

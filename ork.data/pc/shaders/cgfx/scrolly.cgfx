@@ -1,0 +1,218 @@
+///////////////////////////////////////////////////////////////////////////////
+// Orkid
+// Copyright 1996-2010, Michael T. Mayers
+///////////////////////////////////////////////////////////////////////////////
+
+#include "lighting_common.fxi"
+#include "tanspace.fxi"
+
+///////////////////////////////////////////////////////////////////////////////
+
+//uniform float4          ModColor;
+uniform float2			uvscroll;
+uniform float2			uvscale;
+uniform float			engine_float_0 : engine_float_0;
+
+///////////////////////////////////////////////////////////////////////////////
+
+sampler2D Sampler1 = sampler_state
+{
+	//Texture = <ColorMap>;
+    MagFilter = Linear;
+    MinFilter = Anisotropic;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SimpleVertex
+{
+    float3 Position : POSITION;
+    float3 Normal : NORMAL;
+    float2 Uv0 : TEXCOORD0;
+};
+
+struct ColorVertex
+{
+    float3 Position : POSITION;
+    float4 Color : COLOR;
+    float2 Uv0 : TEXCOORD0;
+};
+
+struct NormalVertex
+{
+    float3 Position : POSITION;
+    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float2 Uv0 : TEXCOORD0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Fragment
+{
+    float4 ClipPos : POSITION;
+    float4 Color   : COLOR;
+    float2 Uv0     : TEXCOORD0;
+    float4 UserPos : TEXCOORD1;
+    float3 Normal  : TEXCOORD2;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_fragcolor( Fragment FragIn ) : COLOR
+{
+    float4 PixOut;
+    PixOut = FragIn.Color;
+    return PixOut;
+}
+
+float4 PSModColor( Fragment FragIn ) : COLOR
+{
+    float4 PixOut;
+    PixOut = ModColor;
+    return PixOut;
+}
+
+float4 PSTextured( Fragment FragIn ) : COLOR
+{
+	float2 Uv0 = FragIn.Uv0.xy;
+    float4 PixOut = tex2D( Color, Uv0 );
+   // float4 PixOut = float4( Uv0, 0.0f, 1.0f );
+    return PixOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 TransformVertex( float3 inv )
+{
+	float4 hpos = mul( float4( inv.xyz, 1.0f ), WorldViewProjection );
+	return hpos;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_scrollontime( NormalVertex VtxIn )
+{
+    Fragment FragOut;
+	FragOut.ClipPos = TransformVertex(VtxIn.Position);
+    FragOut.Color = VtxIn.Color;
+	FragOut.Uv0 = (VtxIn.Uv0 * uvscale) + uvscroll * time;
+    //FragOut.ClipUserPos = FragOut.ClipPos;
+    return FragOut;
+}
+MrtPixel ps_lambert( Fragment FragIn ) 
+{
+	float2 Uv0 = FragIn.Uv0.xy;
+
+    //float4 PixOut = float4( fmod(Uv0.x,1.0f), fmod(Uv0.y,1.0f), 0.0f, 1.0f );
+    float4 PixOut = tex2D( Sampler1, Uv0 )*FragIn.Color;
+	MrtPixel mrtout;
+	mrtout.DiffuseBuffer = float4(0.3f,0.5f,0.8f,1.0f);
+	mrtout.SpecularBuffer = float4(0.3f,0.5f,0.8f,1.0f);
+	mrtout.NormalDepthBuffer = float4(0.3f,0.5f,0.8f,1.0f);
+	return mrtout;
+}
+
+/*LambertFragment vs_scrollontime( LambertVertex VtxIn )
+{
+	float3 ObjectPos = VtxIn.Position.xyz;
+	float3 ObjectNrm = VtxIn.Normal.xyz;
+	float4 WorldPos = mul(float4(ObjectPos.xyz, 1.0f), World);
+	float3 WorldNrm = mul(float4(ObjectNrm.xyz, 0.0f), World).xyz;
+	float3 ViewNrm = mul(float4(WorldNrm.xyz, 0.0f), ViewInverseTranspose).xyz;
+
+	float3 LightCol = DiffuseLight( WorldPos.xyz, WorldNrm ).xyz;
+
+	LambertFragment FragOut;
+
+    FragOut.ClipPos = mul(WorldPos, ViewProjection);
+	FragOut.Color = float4(ModColor.xyz*LightCol,1.0f);
+	FragOut.Uv0 = (VtxIn.Uv0 * uvscale) + uvscroll * time;
+
+	return FragOut;
+}
+
+float4 ps_lambert( LambertFragment FragIn ) : COLOR
+{
+	float2 Uv0 = FragIn.Uv0.xy;
+
+    //float4 PixOut = float4( fmod(Uv0.x,1.0f), fmod(Uv0.y,1.0f), 0.0f, 1.0f );
+    float4 PixOut = tex2D( Sampler1, Uv0 )*FragIn.Color;
+    return PixOut;
+}
+*/
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment VSModColor( SimpleVertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.ClipPos = mul( float4( VtxIn.Position, 1.0f ), WorldViewProjection );
+    FragOut.Color = ModColor;
+	FragOut.Uv0 = VtxIn.Uv0;
+    return FragOut;
+}
+
+Fragment VSVtxColor( ColorVertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.ClipPos = mul( float4( VtxIn.Position, 1.0f ), WorldViewProjection );
+    FragOut.Color = VtxIn.Color;
+	FragOut.Uv0 = VtxIn.Uv0;
+    return FragOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique time_scroll
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_scrollontime();
+		PixelShader = compile glslf ps_lambert();
+		DepthTestEnable=true;
+		DepthMask=true;
+		CullFace=Back;
+	}
+}
+technique time_scroll_vtxcol {
+	pass p0 {
+		VertexShader = compile glslv vs_scrollontime();
+		PixelShader = compile glslf ps_lambert();
+		DepthTestEnable=true;
+		DepthMask=true;
+		CullFace=Back;
+	}
+}
+
+technique time_scrollSkinned
+{
+    pass p0
+    {
+		VertexShader = compile glslv vs_scrollontime();
+		PixelShader = compile glslf ps_lambert();
+		DepthTestEnable=true;
+		DepthMask=true;
+		CullFace=Back;
+	}
+};
+
+technique engine_scroll
+{
+    pass p0
+    {
+		VertexShader = compile glslv vs_scrollontime();
+		PixelShader = compile glslf ps_lambert();
+		DepthTestEnable=true;
+		DepthMask=true;
+		CullFace=Back;
+	}
+};
+
+
+
+

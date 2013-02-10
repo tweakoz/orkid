@@ -1,0 +1,310 @@
+string description = "morkshader<layered>";
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform texture2D ColorTex;
+uniform texture2D DetailTex;
+
+uniform sampler2D ColorMap = sampler_state
+{
+	Texture = <ColorTex>;
+	WrapS = Wrap;
+    WrapT = Wrap;
+};
+uniform sampler2D DetailMap = sampler_state
+{
+	Texture = <DetailTex>;
+	WrapS = Wrap;
+    WrapT = Wrap;
+};
+float4x4 WorldViewProjXf : worldviewprojection;
+float4x4 MatM : world;
+float4x4 MatMV : worldview;
+float4x4 MatMVI : worldviewinverse;
+float4x4 MatP : projection;
+float4x4 MatMVIT : worldviewInverseTranspose;
+float4x4 MatMIT : worldInverseTranspose;
+float4x4 MatV : view;
+float4x4 MatVI : ViewInverse;
+float4x4 MatVT : ViewTranspose;
+float4x4 MatVIT : ViewInverseTranspose;
+
+uniform float2 clr_uvscale;
+uniform float2 clr_uvbias;
+uniform float2 det_uvscale;
+uniform float2 det_uvbias;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct vtx_pnct
+{
+    float3 position	: POSITION;
+    float2 uv0      : TEXCOORD0;
+    float3 normal	: NORMAL;
+    float4 color	: COLOR0;
+};
+struct vtx_pnctt
+{
+    float3 position	: POSITION;
+    float2 uv0      : TEXCOORD0;
+    float2 uv1      : TEXCOORD1;
+    float3 normal	: NORMAL;
+    float4 color	: COLOR0;
+};
+
+struct fragment
+{
+    float4 position	: POSITION;
+    float2 uv0		: TEXCOORD0;
+    float2 uv1		: TEXCOORD1;
+	float4 userpos	: TEXCOORD2;
+    float4 color	: COLOR0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+fragment vs_layered(vtx_pnct IN)
+{
+	fragment OUT;
+
+	float4 ObjPos = float4(IN.position.xyz, 1.0f);	
+	float3 ObjNormal = normalize(IN.normal.xyz);
+	float3 WorldNormal = normalize(mul(MatM, float4(ObjNormal, 0.0f))).xyz;
+	
+	float3 ViewNormal = normalize(mul(MatV, float4(WorldNormal, 0.0f))).xyz;
+
+	float headlight = saturate(dot(ViewNormal, float3(0.0f, 0.0f, 1.0f)));
+
+	OUT.uv0 = (clr_uvbias+(IN.uv0 * clr_uvscale)) * float2(1.0f, -1.0f);	
+	OUT.color = float4(IN.color.xyz * headlight,IN.color.w);
+	
+	float4 outp  = mul(WorldViewProjXf, ObjPos);
+	OUT.position = outp;
+	OUT.userpos = outp;
+
+	return OUT;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+fragment vs_layered_det(vtx_pnctt IN)
+{
+	fragment OUT;
+
+	float4 ObjPos = float4(IN.position.xyz, 1.0f);	
+	float3 ObjNormal = normalize(IN.normal.xyz);
+	float3 WorldNormal = normalize(mul(MatM, float4(ObjNormal, 0.0f))).xyz;
+	
+	float3 ViewNormal = normalize(mul(MatV, float4(WorldNormal, 0.0f))).xyz;
+
+	float headlight = saturate(dot(ViewNormal, float3(0.0f, 0.0f, 1.0f)));
+
+	OUT.uv0 = (clr_uvbias+(IN.uv0 * clr_uvscale)) * float2(1.0f, -1.0f);	
+	OUT.uv1 = (det_uvbias+(IN.uv1 * det_uvscale)) * float2(1.0f, -1.0f);	
+	OUT.color = float4(IN.color.xyz * headlight,IN.color.w);
+	
+	float4 outp  = mul(WorldViewProjXf, ObjPos);
+	OUT.position = outp;
+	OUT.userpos = outp;
+
+	return OUT;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_texonly(fragment IN) : COLOR
+{
+	return tex2D(ColorMap, IN.uv0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_texvtx(fragment IN) : COLOR
+{
+	return tex2D(ColorMap, IN.uv0)*IN.color;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_texvtxdetail(fragment IN) : COLOR
+{
+	float4 dmap = tex2D(DetailMap, IN.uv1);
+
+	float3 cmap = tex2D(ColorMap, IN.uv0).xyz;
+	float  dmap_blend = IN.color.w*dmap.w;
+	float3 dmapl = lerp( float3(1.0f,1.0f,1.0f), dmap.xyz, dmap_blend );
+	
+	return float4(cmap*dmapl*IN.color.xyz,1.0f);
+}
+
+float4 ps_blendvtx(fragment IN) : COLOR
+{
+	float3 amap = tex2D(ColorMap, IN.uv0).xyz;
+	float3 bmap = tex2D(DetailMap, IN.uv1).xyz;
+	float  blend = IN.color.w;
+	float3 blended = lerp( amap, bmap, blend );
+	
+	return float4(blended*IN.color.xyz,1.0f);
+	
+}
+
+float4 ps_blendvtx2(fragment IN) : COLOR
+{
+	float3 amap = tex2D(ColorMap, IN.uv0).xyz;
+	float3 bmap = tex2D(DetailMap, IN.uv1).xyz;
+	float  blend = IN.color.w;
+	float3 blended = lerp( amap*IN.color.xyz, bmap, blend );
+	
+	return float4(blended,1.0f);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_vtxonly(fragment IN) : COLOR
+{
+	static const float ksc = 24.0f;
+	float2 upos = IN.userpos.xy/IN.userpos.w;
+	int ix = int(upos.x*ksc);
+	int iy = int(upos.y*ksc);
+	int ox = (((ix/2)*2)==ix);
+	int oy = (((iy/2)*2)==iy);
+	int xy = (int(ox)==int(oy));
+	float oc = (xy==1) ? 1.0f : 0.8f;
+	float3 oc3 = float3(oc,oc,oc);
+	float3 inc = IN.color.xyz;
+	float3 outc = lerp(oc3*inc,inc,IN.color.w);
+
+	return float4(outc,1.0f);
+}
+
+float4 ps_baseonly(fragment IN) : COLOR
+{
+	float4 dmap = tex2D(ColorMap, IN.uv1);
+	return dmap;
+}
+float4 ps_detonly(fragment IN) : COLOR
+{
+	float4 dmap = tex2D(DetailMap, IN.uv1);
+	float4 dmapl = lerp( float4(1.0f,1.0f,1.0f,1.0f), dmap, IN.color.w );
+	
+	return dmapl;
+}
+float4 ps_vtxdet(fragment IN) : COLOR
+{
+	float4 dmap = tex2D(DetailMap, IN.uv1);
+	float4 dmapl = lerp( float4(1.0f,1.0f,1.0f,1.0f), dmap, IN.color.w );
+	
+	return dmapl*IN.color;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique LayeredVtxABModulate {
+	pass p0 {
+		//DepthTestEnable = true;
+		//DepthMask = true;
+		//CullFaceEnable = false;
+		//FrontFace = CCW;
+		//ShadeModel = Smooth; 
+		//BlendEnable=false;
+		//BlendFunc = int2(SrcAlpha, SrcColor);
+		VertexProgram = compile arbvp1 vs_layered_det();
+		FragmentProgram = compile arbfp1 ps_texvtxdetail();
+	}
+}
+///////////////////////////////////////////////////////////////////////////////
+
+technique LayeredVtxABBlend {
+	pass p0 {
+		//DepthTestEnable = true;
+		//DepthMask = true;
+		//CullFaceEnable = false;
+		//FrontFace = CCW;
+		//ShadeModel = Smooth; 
+		//BlendEnable=false;
+		//BlendFunc = int2(SrcAlpha, SrcColor);
+		VertexProgram = compile arbvp1 vs_layered_det();
+		FragmentProgram = compile arbfp1 ps_blendvtx();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique LayeredVtxABBlend2 {
+	pass p0 {
+		//DepthTestEnable = true;
+		//DepthMask = true;
+		//CullFaceEnable = false;
+		//FrontFace = CCW;
+		//ShadeModel = Smooth; 
+		//BlendEnable=false;
+		//BlendFunc = int2(SrcAlpha, SrcColor);
+		VertexProgram = compile arbvp1 vs_layered_det();
+		FragmentProgram = compile arbfp1 ps_blendvtx2();
+	}
+}
+///////////////////////////////////////////////////////////////////////////////
+
+technique DbgBaseOnly {
+	pass p0 {
+		//DepthTestEnable = true;
+		//DepthMask = true;
+		//CullFaceEnable = false;
+		//FrontFace = CCW;
+		//ShadeModel = Smooth; 
+		//BlendEnable=true;
+		//BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+		VertexProgram = compile arbvp1 vs_layered_det();
+		FragmentProgram = compile arbfp1 ps_baseonly();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique DbgVtxOnly {
+	pass p0 {
+		//DepthTestEnable = true;
+		//DepthMask = true;
+		//CullFaceEnable = false;
+		//FrontFace = CCW;
+		//ShadeModel = Smooth; 
+		//BlendEnable=true;
+		//BlendFunc = int2(SrcAlpha, OneMinusSrcAlpha);
+		VertexProgram = compile vp40 vs_layered_det();
+		FragmentProgram = compile fp40 ps_vtxonly();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique DbgDetOnly {
+	pass p0 {
+		//DepthTestEnable = true;
+		//DepthMask = true;
+		//CullFaceEnable = false;
+		//FrontFace = CCW;
+		//ShadeModel = Smooth; 
+		//BlendEnable=false;
+		//BlendFunc = int2(SrcAlpha, SrcColor);
+		VertexProgram = compile arbvp1 vs_layered_det();
+		FragmentProgram = compile arbfp1 ps_detonly();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique DbgVtxDetOnly {
+	pass p0 {
+		//DepthTestEnable = true;
+		//DepthMask = true;
+		//CullFaceEnable = false;
+		//FrontFace = CCW;
+		//ShadeModel = Smooth; 
+		//BlendEnable=false;
+		//BlendFunc = int2(SrcAlpha, SrcColor);
+		VertexProgram = compile arbvp1 vs_layered_det();
+		FragmentProgram = compile arbfp1 ps_vtxdet();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////

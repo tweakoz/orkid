@@ -1,0 +1,340 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "tanspace_gdche.cgh"
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform string fxname<> = "test";
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float4x4 wvp : WorldViewProjection;
+uniform float4x4 wv : WorldView;
+uniform float4x4 wvit : WorldViewInverseTranspose;
+uniform float4x4 wld : World;
+uniform float4x4 wit : WorldInverseTranspose;
+uniform float4x4 vit : ViewInverseTranspose;
+
+uniform float Time
+<
+    string UIName = "Time";
+    string UIWidget = "Slider";
+    float UIMin = 1.0;
+    float UIMax = 100.0;
+    float UIStep = 0.01;
+> = 1.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Vertex
+{
+    float4 Position : POSITION;   // in object space
+    float2 TexCoord : TEXCOORD0;
+    float3 Normal   : TEXCOORD1;
+    float3 Binormal : TEXCOORD2;
+    float3 Tangent  : TEXCOORD3;
+    float4 Color    : COLOR;
+};
+
+struct Fragment
+{
+    float4 ClipPos : POSITION;  // in clip space
+    float3 Normal : TEXCOORD0;
+    float4 ObjPosDist : TEXCOORD1;
+    float3 ObjLyt : TEXCOORD2;
+    float3 ObjHalf : TEXCOORD3;
+    float3 ObjEye : TEXCOORD4;
+    float2 Uv0 : TEXCOORD5;
+    float4 Color : COLOR0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float3 LightDir;
+
+///////////////////////////////////////////////////////////////////////////////
+
+const float3 VHalf = float3( 0.5f, 0.5f, 0.5f );
+
+uniform float4 DiffuseColor
+<
+> = {0.8f, 0.5f, 0.1f, 1.0f};
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float Shininess
+<
+    string UIName = "Shininess";
+    string UIWidget = "Slider";
+    float UIMin = 1.0;
+    float UIMax = 300.0;
+    float UIStep = 0.01;
+> = 1.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float HeightScale
+<
+    string UIWidget = "Slider";
+    float UIMin = -0.03;
+    float UIMax = 0.03;
+    float UIStep = 0.001;
+> = 0.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float HeightBias
+<
+    string UIWidget = "Slider";
+    float UIMin = -0.03;
+    float UIMax = 0.03;
+    float UIStep = 0.001;
+> = 0.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float DetailScale
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 1.0;
+    float UIStep = 0.001;
+> = 0.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float DetailBias
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 1.0;
+    float UIStep = 0.001;
+> = 0.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float BumpLevA
+<
+    string UIName = "BumpLevA";
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.01;
+> = 0.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float UvScaleA
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.01;
+> = 0.0f;
+uniform float UvScaleB
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.01;
+> = 0.0f;
+
+uniform float AmbientMix
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 3.0;
+    float UIStep = 0.01;
+> = 1.0f;
+uniform float DiffuseMix
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 3.0;
+    float UIStep = 0.01;
+> = 1.0f;
+uniform float SpecularMix
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.01;
+> = 1.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+texture HeightMap<>;
+texture NormalMap<>;
+texture ColorMap<>;
+texture SpecuMap<>;
+texture DetailMap<>;
+
+////////////////////////////////////////////////////////////////////////////////
+
+sampler2D HeightMapSampler = sampler_state
+{
+	Texture = <HeightMap>;
+	magFilter = Linear;
+	minFilter = LinearMipmapLinear;
+};
+sampler2D NormalMapSampler = sampler_state
+{
+	Texture = <NormalMap>;
+	magFilter = Linear;
+	minFilter = LinearMipmapLinear;
+};
+sampler2D ColorMapSampler = sampler_state
+{
+	Texture = <ColorMap>;
+	magFilter = Linear;
+	minFilter = LinearMipmapLinear;
+};
+sampler2D SpecuMapSampler = sampler_state
+{
+	Texture = <SpecuMap>;
+	magFilter = Linear;
+	minFilter = LinearMipmapLinear;
+};
+sampler2D DetailMapSampler = sampler_state
+{
+	Texture = <DetailMap>;
+	magFilter = Linear;
+	minFilter = LinearMipmapLinear;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+Fragment MainVS( Vertex VtxIn, uniform float4x4 WorldViewProj )
+{
+	Fragment FragOut;
+	
+	FragOut.ClipPos = mul(wvp,VtxIn.Position);
+	FragOut.Normal = VtxIn.Normal;
+	
+	FragOut.ObjPosDist.xyz = VtxIn.Position;
+	FragOut.ObjPosDist.w = 0.0f;
+	
+	FragOut.Uv0 = VtxIn.TexCoord.xy*float2(UvScaleA,UvScaleA)+float2(0.0f,Time);
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(wv, VtxIn.Position ).xyz;
+    float3 worldPos = mul(wld,VtxIn.Position).xyz;
+                
+    //////////////////////////////////////
+        
+    float3 worldNormal  = normalize( mul( wld, float4( VtxIn.Normal, 0.0f ) ).xyz );
+    float3 worldEye     = vit[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye; //normalize(LightDir);
+
+    /////////////////////////////////////
+    // ( Tangent Space Lighting )
+
+	TanLytData tldata = GenTanLytData(	wld,
+										worldToLyt, worldToEye,
+										VtxIn.Normal, VtxIn.Binormal, VtxIn.Tangent
+									 );
+
+	/////////////////////////////////////
+
+	FragOut.ObjLyt = normalize(tldata.ObjLyt);
+	FragOut.ObjHalf = tldata.ObjHalf;
+	FragOut.ObjEye = tldata.ObjEye;
+	FragOut.Color = float4( tldata.TanLyt, 1.0f );
+
+	/////////////////////////////////////
+
+	return FragOut;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 ParallaxPS( Fragment FragIn ) : COLOR
+{
+	const float3 FlatNormal = float3( 0.5f, 0.5f, 1.0f );
+
+	/////////////////////////
+	// read base UV
+	
+	float2 UvA = FragIn.Uv0*UvScaleA;//*float2(-1.0f,-1.0f);
+	float2 UvB = FragIn.Uv0*UvScaleB;//*float2(-1.0f,-1.0f);
+	
+	/////////////////////////
+	// Get HeightMap
+	
+	float HeightMap = tex2D( HeightMapSampler , UvA ).z;
+	float Offset = HeightBias + (HeightScale*HeightMap);
+
+	/////////////////////////
+	// Compute Tangent Basis
+
+    float3x3 TanFrameA = ComputeTangentFrame( normalize(FragIn.Normal), FragIn.ObjPosDist.xyz, UvA );
+    float3x3 TanFrameB = ComputeTangentFrame( normalize(FragIn.Normal), FragIn.ObjPosDist.xyz, UvB );
+	float3 ObjEye = normalize( FragIn.ObjEye );
+	float3 TanEyeA = normalize(mul( TanFrameA,ObjEye ));
+	float3 TanEyeB = normalize(mul( TanFrameB,ObjEye ));
+
+	/////////////////////////
+	// Parallax Mapping
+	
+	UvA = UvA + (TanEyeA.xy*Offset);
+	//UvB = UvB + (TanEyeB.xy*Offset);
+	
+	HeightMap += tex2D(HeightMapSampler, UvA).z;
+	Offset = HeightScale * (HeightMap - 1.0);
+	
+	UvA = UvA + (TanEyeA.xy*Offset);
+	UvB = UvB + (TanEyeB.xy*Offset*UvScaleB);
+
+    float3x3 TanFrame = ComputeTangentFrame( normalize(FragIn.Normal), FragIn.ObjPosDist.xyz, UvA );
+
+	/////////////////////////
+	// Get Other Maps
+	
+	float3 NormalMap = tex2D( NormalMapSampler , UvA ).rgb;
+	float4 ColorMap = tex2D( ColorMapSampler , UvA ).xyzw;
+	float3 SpecuMap = tex2D( SpecuMapSampler , UvA ).xyz;
+	float3 DetailMap = tex2D( DetailMapSampler , UvB ).xyz;
+
+	/////////////////////////
+
+	NormalMap = lerp( FlatNormal, NormalMap, BumpLevA );
+	float3 TanNormal = normalize((NormalMap*2.0f)-float3(1.0f,1.0f,1.0f)); 
+    float3 ObjNormal = normalize(mul( TanNormal, TanFrame ));
+	
+	/////////////////////////
+	// Lighting Equation
+	
+	float fdotL = saturate(dot(ObjNormal,normalize(FragIn.ObjLyt)));
+	float fdotH = saturate(dot(ObjNormal,normalize(FragIn.ObjHalf)));
+	
+	float Diffuse = AmbientMix+(DiffuseMix*fdotL);
+	float3 Specular = SpecuMap*(SpecularMix*pow( fdotH, Shininess ));
+	float3 Detail = (DetailMap*DetailScale)+float3(DetailBias,DetailBias,DetailBias);
+	
+	return float4( (ColorMap.xyz*Diffuse*Detail)+Specular, ColorMap.w );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+technique FullLighting
+{   pass p0
+    {   VertexProgram = compile vp40 MainVS(wvp);
+        FragmentProgram = compile fp40 ParallaxPS();
+        AlphaBlendEnable = false;
+    }
+}
+
+technique FullLightingBlendMix // transparent
+{   pass p0
+    {
+		VertexProgram = compile vp40 MainVS(wvp);
+		FragmentProgram = compile fp40 ParallaxPS();
+        AlphaBlendEnable = true;
+        BlendFunc = int2( SrcAlpha, OneMinusSrcAlpha );
+    }
+}

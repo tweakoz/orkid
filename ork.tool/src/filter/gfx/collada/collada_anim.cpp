@@ -1,0 +1,613 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2012, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
+#include <orktool/orktool_pch.h>
+#include <ork/file/path.h>
+
+#if defined(USE_FCOLLADA)
+#include <FCollada.h>
+#include <FCDocument/FCDocument.h>
+#include <FCDocument/FCDExtra.h>
+#include <FCDocument/FCDGeometry.h>
+#include <FCDocument/FCDGeometryMesh.h>
+#include <FCDocument/FCDGeometryPolygons.h>
+#include <FCDocument/FCDGeometryPolygonsInput.h>
+#include <FCDocument/FCDGeometryPolygonsTools.h> // For Triagulate
+#include <FCDocument/FCDGeometrySource.h>
+#include <FCDocument/FCDGeometryInstance.h>
+#include <FCDocument/FCDLibrary.h>
+#include <FCDocument/FCDAsset.h>
+
+#include <FCDocument/FCDTexture.h>
+
+#include <FCDocument/FCDAnimation.h>
+#include <FCDocument/FCDAnimationChannel.h>
+#include <FCDocument/FCDAnimationCurve.h>
+
+#include <FCDocument/FCDController.h>
+#include <FCDocument/FCDSkinController.h>
+
+#include <FCDocument/FCDSceneNode.h>
+
+#include <FUtils/FUString.h> // For fm::StingList
+
+#include <FCDocument/FCDAnimationKey.h>
+
+#include <orktool/filter/gfx/collada/collada.h>
+#include <orktool/filter/gfx/collada/daeutil.h>
+
+typedef ork::tool::ColladaFxAnimChannel<float> ColladaFxAnimChannelFloat;
+typedef ork::tool::ColladaFxAnimChannel<ork::CVector3> ColladaFxAnimChannelFloat3;
+
+///////////////////////////////////////////////////////////////////////////////
+
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaAnimChannel,"ColladaAnimChannel");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaUvAnimChannel,"ColladaUvAnimChannel");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ColladaMatrixAnimChannel,"ColladaMatrixAnimChannel");
+
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ColladaFxAnimChannelFloat,"ColladaFxAnimChannelFloat");
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(ColladaFxAnimChannelFloat3,"ColladaFxAnimChannelFloat3");
+
+///////////////////////////////////////////////////////////////////////////////
+
+using namespace ork::lev2;
+namespace ork { namespace tool {
+
+///////////////////////////////////////////////////////////////////////////////
+
+Place2dData::Place2dData()
+	: rotateUV(0.0f)
+	, repeatU(0.0f)
+	, repeatV(0.0f)
+	, offsetU(0.0f)
+	, offsetV(0.0f)
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ColladaAnimChannel::Describe()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ColladaUvAnimChannel::Describe()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ColladaMatrixAnimChannel::Describe()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<> void ColladaFxAnimChannel<float>::Describe()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<>void ColladaFxAnimChannel<ork::CVector3>::Describe()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ColladaUvAnimChannel::SetData( int iframe, const std::string& itemname, float fval )
+{
+	if( iframe >= miSettingFrame )
+	{
+		OrkAssert( miSettingFrame == iframe ); // only allow adding 1 at a time 4 now
+		mSampledFrames.push_back( Place2dData() );
+		miSettingFrame = int(mSampledFrames.size());
+	}
+
+	Place2dData& pdata = mSampledFrames[ iframe ];
+
+	if( itemname == "rotateUV" )
+	{
+		pdata.rotateUV = fval;
+	}
+	else if( itemname == "repeatU" )
+	{
+		pdata.repeatU = fval;
+	}
+	else if( itemname == "repeatV" )
+	{
+		pdata.repeatV = fval;
+	}
+	else if( itemname == "offsetU" )
+	{
+		pdata.offsetU = fval;
+	}
+	else if( itemname == "offsetV" )
+	{
+		pdata.offsetV = fval;
+	}
+	else
+	{
+	//	OrkAssert(false);
+	}
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ColladaMatrixAnimChannel::SetParam( int iframe, int irow, int icol, CReal fval )
+{
+	if( iframe >= miSettingFrame )
+	{
+		OrkAssert( miSettingFrame == iframe ); // only allow adding 1 at a time 4 now
+		mSampledFrames.push_back( CMatrix4::Identity );
+
+		miSettingFrame = mSampledFrames.size();
+	}
+
+	CMatrix4 & Mtx = mSampledFrames[ iframe ];
+	Mtx.SetElemYX(irow,icol,fval);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool CColladaAnim::GetPose( void )
+{
+	const FCDVisualSceneNodeLibrary *VizLib = mDocument->GetVisualSceneLibrary();
+
+	int inument( VizLib->GetEntityCount() );
+
+	if( 1 == inument )
+	{
+		const FCDSceneNode *prootnode = VizLib->GetEntity(0);
+		CMatrix4 RootMtx = FCDMatrixToCMatrix4( prootnode->ToMatrix() );
+
+		orkstack<const FCDSceneNode *> NodeStack;
+		orkstack<CMatrix4> MtxStack;
+
+		NodeStack.push( prootnode );
+		MtxStack.push( RootMtx );
+
+		while( false == NodeStack.empty() )
+		{
+			const FCDSceneNode *pnode = NodeStack.top();
+			bool bparentjoint = pnode->GetJointFlag();
+
+			const CMatrix4 ParentMtx = MtxStack.top();
+			NodeStack.pop();
+			MtxStack.pop();
+
+
+			int inumchildren = int(pnode->GetChildrenCount());
+			for( int i=0; i<inumchildren; i++ )
+			{	const FCDSceneNode *pchild = pnode->GetChild(i);
+				bool bchildjoint = pchild->GetJointFlag();
+				std::string ChildName = pchild->GetName().c_str();
+
+				CMatrix4 ChildMtx = FCDMatrixToCMatrix4( pchild->ToMatrix() );
+
+				NodeStack.push(pchild);
+				MtxStack.push(ChildMtx);
+			}
+
+			std::string NodeName = pnode->GetName().c_str();
+
+			if( bparentjoint )
+			{
+				mPose[ NodeName ] = ParentMtx;
+			}
+			else
+			{
+				//orkprintf( "discarding parent<%s>\n", NodeName.c_str() );
+			}
+		}
+
+	}
+
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CColladaAnim::ParseTextures()
+{
+	// TODO: Skip textures/materials on shapes in the ref layer
+	for( orkmap<std::string,SColladaMaterial>::iterator it=mMaterialMap.begin(); it!=mMaterialMap.end(); it++ )
+	{
+		SColladaMaterial& mat = it->second;
+
+		if( mat.mStdProfile )
+		{
+			int TexCount( mat.mStdProfile->GetTextureCount(FUDaeTextureChannel::DIFFUSE) );
+			if(TexCount < 1)
+				orkerrorlog("ERROR: Collada Parse Textures: Diffuse texture count is zero for %s (%s)\n", mat.mMaterialName.c_str(), mat.mShadingGroupName.c_str());
+			else
+			{
+				const FCDTexture* ptex = mat.mStdProfile->GetTexture(FUDaeTextureChannel::DIFFUSE,0);
+				if( ptex )
+				{
+					const FCDExtra *TexExtra = ptex->GetExtra();
+					const FCDETechnique* TexMayaTek = TexExtra->GetDefaultType()->FindTechnique("MAYA");
+
+					const FCDEffectParameterSampler* Sampler = ptex->GetSampler();
+					const fm::string & refname = Sampler->GetReference();
+					std::string srefname = refname.c_str();
+
+					const char * prefname = srefname.c_str();
+
+					const FCDENode *Place2dNode = TexMayaTek->FindChildNode( "MayaNodeName" );
+
+					const fchar *Place2dNodeName = Place2dNode ? Place2dNode->GetContent() : ""; 
+
+					std::string Place2dNodeNameStr( Place2dNodeName );
+
+					////////////////////////////////////////////////////////////
+					// strip ref name
+
+					const fchar* colon = std::strstr(Place2dNodeName, ":" );
+
+					if( colon )
+					{
+						Place2dNodeNameStr = colon+1;
+					}
+
+					////////////////////////////////////////////////////////////
+
+					mat.mDiffuseMapChannel.mPlacementNodeName = Place2dNodeNameStr;
+
+					ColladaUvAnimChannel* pchannel = new ColladaUvAnimChannel( Place2dNodeNameStr );
+
+					mUvAnimatables.insert( std::make_pair(Place2dNodeNameStr,pchannel) );
+
+					pchannel->SetMaterialName( mat.mMaterialName.c_str() );
+				}
+			}
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CColladaAnim::ParseMaterials()
+{
+	bool bmat_bindings = ParseColladaMaterialBindings( *mDocument, mShadingGroupMap );
+
+	if( bmat_bindings )
+	{
+		for( orkmap<std::string,std::string>::const_iterator it=mShadingGroupMap.begin(); it!=mShadingGroupMap.end(); it++ )
+		{
+			const std::string& ShadingGroupName = it->first;
+			const std::string& MaterialName = it->second;
+
+			SColladaMaterial colladamaterial;
+			colladamaterial.ParseMaterial( mDocument, ShadingGroupName, MaterialName );
+
+			mMaterialMap[ MaterialName ] = colladamaterial;
+
+			lev2::GfxMaterialFx* pmatfx = rtti::autocast( colladamaterial.mpOrkMaterial );
+
+			if( pmatfx )
+			{
+				const GfxMaterialFxEffectInstance& fxi = pmatfx->GetEffectInstance();
+
+				for( orklut<std::string,GfxMaterialFxParamBase*>::const_iterator it2=fxi.mParameterInstances.begin(); it2!=fxi.mParameterInstances.end(); it2++ )
+				{
+					const std::string& paramname = it2->first;
+
+					GfxMaterialFxParamBase* param = it2->second;
+
+					GfxMaterialFxParamArtist<float>* paramfloat = rtti::autocast( param );
+					if( paramfloat )
+					{
+						std::string FullParamName = MaterialName + std::string("_") + paramname;
+						mFxAnimatables.insert( std::make_pair(FullParamName,param) );
+						continue;
+					}
+
+					GfxMaterialFxParamArtist<CVector3>* paramvect3 = rtti::autocast( param );
+					if( paramvect3 )
+					{
+						std::string FullParamName = MaterialName + std::string("_") + paramname;
+						mFxAnimatables.insert( std::make_pair(FullParamName,param) );
+						continue;
+					}
+
+				}
+			}
+		}
+	}
+
+	ParseTextures();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void ParseJoints( FCDocument* document, orkset<std::string>& jointset )
+{
+	const FCDControllerLibrary * ConLib = document->GetControllerLibrary();
+
+	if( 0 == ConLib ) return;
+
+	orkvector<const FCDSkinController*>	SkinControllers;
+
+	size_t inument =  ConLib->GetEntityCount ();
+
+	for( size_t ient=0; ient<inument; ient++ )
+	{
+		const FCDController* ConObj = ConLib->GetEntity(ient);
+		if(ConObj->IsSkin())
+		{
+			const FCDSkinController *skinController = ConObj->GetSkinController();
+			SkinControllers.push_back( skinController );
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////
+
+	const FCDVisualSceneNodeLibrary *VizLib = document->GetVisualSceneLibrary();
+
+	int inumvizent( VizLib->GetEntityCount() );
+
+	orkmap<std::string,std::string> NodeSubIdMap;
+
+	if( 1 == inumvizent )
+	{
+		const FCDSceneNode *prootnode = VizLib->GetEntity(0);
+
+		orkstack<const FCDSceneNode *> NodeStack;
+
+		NodeStack.push( prootnode );
+
+		while( false == NodeStack.empty() )
+		{
+			const FCDSceneNode *pnode = NodeStack.top();
+			NodeStack.pop();
+			
+			bool bjoint = pnode->GetJointFlag();
+
+			if( bjoint )
+			{
+				std::string NodeName = pnode->GetName().c_str();
+				std::string NodeSid = pnode->GetSubId().c_str();
+				jointset.insert(  NodeName );
+			}
+						
+			int inumchildren = int(pnode->GetChildrenCount());		
+			
+			for( int i=0; i<inumchildren; i++ )
+			{	
+				const FCDSceneNode *pchild = pnode->GetChild(i);
+				FCDEntity::Type typ = pchild->GetType();
+				NodeStack.push(pchild);
+			}
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool CColladaAnim::Parse( void )
+{
+	orkset<std::string> jointset;
+
+	ParseJoints( mDocument, jointset );
+
+	for( orkset<std::string>::const_iterator it=jointset.begin(); it!=jointset.end(); it++ )
+	{
+		const std::string& str = (*it);
+
+		//orkprintf( "joint<%s>\n", str.c_str() );
+	}
+
+	///////////////////////////////////
+
+	ParseMaterials(); // check materials
+
+	///////////////////////////////////
+
+	bool brval = true;
+
+	const float kfsampleincrement = 1.0f / mfSampleRate;
+
+	///////////////////////////////////
+	// sample the animation curves at a given framerate
+
+	FCDAnimationLibrary *AnimLib = mDocument->GetAnimationLibrary();
+
+	int inument( AnimLib->GetEntityCount() );
+
+	for( int ie=0; ie<inument; ie++ )
+	{
+		FCDAnimation *Anim = AnimLib->GetEntity(ie);
+
+		const std::string AnimName = Anim->GetName().c_str();
+
+		////////////////////////////////////////////////
+		// split AnimName into base and component
+		////////////////////////////////////////////////
+
+		const size_t it_uscore = AnimName.find( "_" );
+		const size_t it_euscore = AnimName.rfind( "_" );
+		const size_t it_length = AnimName.length();
+		const size_t it_npos = std::string::npos;
+
+		const std::string AnimBaseName = (it_uscore!=it_npos) ? AnimName.substr( 0, it_uscore ) : AnimName;
+		const std::string AnimCompName = (it_uscore!=it_npos) ? AnimName.substr( it_uscore+1, it_length-(it_uscore+1) ) : "";
+
+
+		const std::string AnimRBaseName = (it_euscore!=it_npos) ? AnimName.substr( 0, it_euscore ) : AnimName;
+		const std::string AnimRCompName = (it_euscore!=it_npos) ? AnimName.substr( it_euscore+1, it_length-(it_euscore+1) ) : "";
+
+		////////////////////////////////////////////////
+		// uv anim channel ?
+		////////////////////////////////////////////////
+		
+		orkmap<std::string,ColladaUvAnimChannel*>::iterator it_uv = mUvAnimatables.find(AnimRBaseName);
+		orkmap<std::string,GfxMaterialFxParamBase*>::const_iterator it_ma = mFxAnimatables.find(AnimName);
+
+		if( it_uv != mUvAnimatables.end() ) // channel name found in FxAnimatables ?
+		{
+			ColladaUvAnimChannel* pchan = it_uv->second;
+
+			mAnimationChannels[ AnimRBaseName ] = pchan;
+
+			int inumchannels = Anim->GetChannelCount();
+			OrkAssert( inumchannels==1 );
+			FCDAnimationChannel* InputChannel = Anim->GetChannel(0);
+			int inumcurves = InputChannel->GetCurveCount();
+			OrkAssert( inumcurves==1 );
+			FCDAnimationCurve *InputCurve = InputChannel->GetCurve(0);
+			int inumkeys = InputCurve->GetKeyCount();
+			float ffirstkey = InputCurve->GetKey(0)->input;
+			float flastkey = InputCurve->GetKey( inumkeys-1 )->input; 
+			int iframe = 0;
+			for( float fi=ffirstkey; fi<=flastkey; fi+=kfsampleincrement, iframe++ )
+			{
+				float KeyFrame = InputCurve->Evaluate( fi );
+				pchan->SetData( iframe, AnimRCompName, KeyFrame );
+			}
+			
+		}
+
+		////////////////////////////////////////////////
+		// material anim channel ?
+		////////////////////////////////////////////////
+
+		else if( it_ma != mFxAnimatables.end() ) // channel name found in FxAnimatables ?
+		{
+			const std::string& name = it_ma->first;
+			const GfxMaterialFxParamBase* param = it_ma->second;
+
+			int inumchannels = Anim->GetChannelCount();
+
+			switch( param->GetRecord().meParameterType )
+			{
+				case ork::EPROPTYPE_REAL:
+				{
+					OrkAssert( inumchannels==1 );
+					FCDAnimationChannel* InputChannel = Anim->GetChannel(0);
+					int inumcurves = InputChannel->GetCurveCount();
+					OrkAssert( inumcurves==1 );
+					FCDAnimationCurve *InputCurve = InputChannel->GetCurve(0);
+					ColladaFxAnimChannel<float>* OutputAnimChannel = new ColladaFxAnimChannel<float>( AnimName, AnimBaseName, AnimCompName );
+					mAnimationChannels[ AnimName ] = OutputAnimChannel;
+					int inumkeys = InputCurve->GetKeyCount();
+					float ffirstkey = InputCurve->GetKey(0)->input;
+					float flastkey = InputCurve->GetKey( inumkeys-1 )->input; 
+					int iframe = 0;
+					for( float fi=ffirstkey; fi<=flastkey; fi+=kfsampleincrement, iframe++ )
+					{
+						float KeyFrame = InputCurve->Evaluate( fi );
+						OutputAnimChannel->AddFrame( KeyFrame );
+					}
+					break;
+				}
+				case ork::EPROPTYPE_VEC3FLOAT:
+				{
+					OrkAssert( inumchannels==1 );
+					FCDAnimationChannel* InputChannel = Anim->GetChannel(0);
+					int inumcurves = InputChannel->GetCurveCount();
+					OrkAssert( inumcurves==3 );
+					ColladaFxAnimChannel<CVector3>* OutputAnimChannel = new ColladaFxAnimChannel<CVector3>( AnimName, AnimBaseName, AnimCompName );
+					mAnimationChannels[ AnimName ] = OutputAnimChannel;
+					FCDAnimationCurve *Curve0 = InputChannel->GetCurve(0);
+					int inumkeys = Curve0->GetKeyCount();
+					float ffirstkey = Curve0->GetKey(0)->input;
+					float flastkey = Curve0->GetKey( inumkeys-1 )->input; 
+					int iframe = 0;
+					FCDAnimationCurve *CurveX = InputChannel->GetCurve(0);
+					FCDAnimationCurve *CurveY = InputChannel->GetCurve(1);
+					FCDAnimationCurve *CurveZ = InputChannel->GetCurve(2);
+					for( float fi=ffirstkey; fi<=flastkey; fi+=kfsampleincrement, iframe++ )
+					{
+						float KeyFrameX = CurveX->Evaluate( fi );
+						float KeyFrameY = CurveY->Evaluate( fi );
+						float KeyFrameZ = CurveZ->Evaluate( fi );
+						OutputAnimChannel->AddFrame( CVector3(KeyFrameX,KeyFrameY,KeyFrameZ) );
+					}
+					break;
+				}
+			}
+
+		}
+
+		////////////////////////////////////////////////
+		// joint or matrix anim channel ?
+		////////////////////////////////////////////////
+
+		else if( AnimName.find( "_matrix" ) != std::string::npos ) // must be a joint or group matrix node
+		{
+			int ilen = AnimName.length();
+			std::string MtxName = AnimName.substr( 0, ilen-7 );
+
+			int inumchannels = Anim->GetChannelCount();
+			ColladaMatrixAnimChannel *OrkMtxAnimChannel = new ColladaMatrixAnimChannel( MtxName );
+			for( int ic=0; ic<inumchannels; ic++ )
+			{
+				FCDAnimationChannel  *Channel = Anim->GetChannel(ic);
+				int inumcurves = Channel->GetCurveCount();
+				if( 16 == inumcurves )
+				{
+					mAnimationChannels[ MtxName ] = OrkMtxAnimChannel;
+					for( int icu=0; icu<inumcurves; icu++ )
+					{
+						FCDAnimationCurve *Curve = Channel->GetCurve(icu);
+						int inumkeys = Curve->GetKeyCount();
+						float ffirstkey = Curve->GetKey(0)->input;
+						float flastkey = Curve->GetKey( inumkeys-1 )->input; 
+						float KeyFrame = 0.0f;
+						int iframe = 0;
+						for( float fi=ffirstkey; fi<=flastkey; fi+=kfsampleincrement )
+						{
+							KeyFrame = Curve->Evaluate( fi );
+							int irow = (icu/4);
+							int icol = (icu%4);
+							OrkMtxAnimChannel->SetParam( iframe, irow, icol, KeyFrame );
+							iframe++;
+						}
+					}
+				}
+			}
+		}
+
+		////////////////////////////////////////////////
+
+	}
+
+	///////////////////////////////////
+	// make sure everone has the same number of frames!
+
+	if( mAnimationChannels.size() )
+	{
+		const int knumframesref = mAnimationChannels.begin()->second->GetNumFrames();
+
+		for( orkmap<std::string,ColladaAnimChannel*>::const_iterator it=mAnimationChannels.begin(); it!=mAnimationChannels.end(); it++ )
+		{
+			ColladaAnimChannel * Channel = (*it).second;
+			int inumframes = Channel->GetNumFrames();
+
+			if( knumframesref != inumframes )
+			{
+				orkerrorlog( "ERROR: ColladaAnim[%s] not all anim channels have the same number of frames!\n", this->mFileName.c_str() );				
+				return false;
+			}
+		}
+		miNumFrames = knumframesref;
+	}
+
+	///////////////////////////////////
+
+	return brval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+}}
+#endif // USE_FCOLLADA

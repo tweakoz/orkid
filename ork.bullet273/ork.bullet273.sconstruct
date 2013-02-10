@@ -1,0 +1,113 @@
+import os, glob,string, sys
+import ork.build.utils as obu
+import ork.build.common as cmn
+import ork.build.pathtools as obp
+import ork.build.slnprj as sln
+
+#imported_so = Import('import_so')
+
+##########################################
+# set scons options
+##########################################
+
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src' )
+SetOption('num_jobs', obu.num_cores) 
+
+
+# basics #################################
+
+class bullet:
+  def __init__(self):
+	ARGS = cmn.BuildArgs
+
+	BasicEnv = Environment( ENV=os.environ )
+
+	##########################################
+
+	BulletVer = "bullet-2.73"
+	BulletDir = "ext/%s/src"%BulletVer
+
+	##########################################
+	# install headers to stage
+	##########################################
+
+	folders  = obu.folder_tree("%s"%BulletDir)
+	folders += obu.folder_tree("%s/LinearMath"%BulletDir)
+	folders += obu.folder_tree("%s/BulletCollision"%BulletDir)
+	folders += obu.folder_tree("%s/BulletDynamics"%BulletDir)
+	folders += obu.folder_tree("%s/BulletSoftBody"%BulletDir)
+
+	obu.install_tree(BulletDir,folders,"*.h","include/bullet")
+
+	extbase = "ext/%s/Extras/GIMPACTUtils"%BulletVer
+	folders  = obu.folder_tree(extbase)
+	obu.install_tree(extbase,folders,"*.h","include/bullet/Extras/GIMPACTUtils")
+
+	##########################################
+
+	suffix = sln.BuildSuffix(ARGS)
+	print suffix
+	XFL  = "bullet-2.73-math bullet-2.73-collision "
+	XFL += "bullet-2.73-dynamics bullet-2.73-extras "
+
+	self.libs = sln.xflibnams("ork.%%s.%s"%suffix,XFL)
+
+	##########################################
+	prj_extras = sln.Project(ARGS,BasicEnv,"ork.%s-extras"%BulletVer)
+	prj_math = sln.Project(ARGS,BasicEnv,"ork.%s-math"%BulletVer)
+	prj_coll = sln.Project(ARGS,BasicEnv,"ork.%s-collision"%BulletVer)
+	prj_dynm = sln.Project(ARGS,BasicEnv,"ork.%s-dynamics"%BulletVer)
+	##########################################
+	math_lib_name = sln.xflibnams("ork.%%s.%s "%suffix,"%s-math"%BulletVer)
+	coll_lib_name = sln.xflibnams("ork.%%s.%s "%suffix,"%s-collision"%BulletVer)
+	##########################################
+	print "BulletDir<%s>" % BulletDir
+	prj_extras.SetSrcBase( "ext/%s/Extras"%BulletVer )
+	prj_extras.AddIncludePaths( BulletDir )
+	prj_extras.AddIncludePaths( "ext/%s/Extras/ConvexDecomposition"%BulletVer )
+	prj_extras.AddFolders( "ConvexDecomposition GIMPACTUtils Gimpact", "*.cpp" )
+	prj_extras.AddLibs(math_lib_name)
+	prj_extras.AddLibs(coll_lib_name)
+	prj_extras.Configure()
+	self.lib_extras = prj_extras.SharedLibrary( )
+
+	prj_math.SetSrcBase( "%s/LinearMath"%BulletDir )
+	prj_math.AddIncludePaths( BulletDir )
+	prj_math.AddFolders( ".", "*.cpp" )
+	prj_math.Configure()
+	self.lib_math = prj_math.SharedLibrary( )
+
+	prj_coll.SetSrcBase( "%s/BulletCollision"%BulletDir )
+	prj_coll.AddIncludePaths( BulletDir )
+	prj_coll.AddIncludePaths( "ext/%s/Extras/ConvexDecomposition"%BulletVer )
+	prj_coll.AddFolders( ". BroadphaseCollision CollisionDispatch CollisionShapes NarrowPhaseCollision Gimpact", "*.cpp" )
+	prj_coll.AddLibs( math_lib_name )
+	prj_coll.Configure()
+	self.lib_coll = prj_coll.SharedLibrary( )
+
+	prj_dynm.SetSrcBase( "%s/BulletDynamics"%BulletDir )
+	prj_dynm.AddIncludePaths( BulletDir )
+	prj_dynm.AddFolders( ". Character ConstraintSolver Dynamics Vehicle", "*.cpp" )
+	prj_dynm.AddLibs(math_lib_name)
+	prj_dynm.AddLibs(coll_lib_name)
+	prj_dynm.Configure()
+	self.lib_dynm = prj_dynm.SharedLibrary( )
+
+	#os.system( "cp -r ext/%s %s/include/bullet" % (BulletVer,obu.stage_dir) )
+
+##########################################
+
+a = bullet()
+ret = list()
+ret.append(a.lib_math)
+ret.append(a.lib_coll)
+ret.append(a.lib_dynm)
+ret.append(a.lib_extras)
+
+Depends(a.lib_coll,a.lib_math)
+Depends(a.lib_dynm,a.lib_coll)
+
+Return("ret")
+

@@ -1,0 +1,117 @@
+///////////////////////////////////////////////////////////////////////////////
+// Orkid
+// Copyright 1996-2010, Michael T. Mayers
+///////////////////////////////////////////////////////////////////////////////
+
+struct LightSpaceVectors
+{
+    float3 Lyt;
+    float3 Half;
+    float3 Eye;
+};
+
+struct LightSpaceVectors4
+{
+    float3 Lyt[4];
+    float3 Half[4];
+    float3 Eye;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+LightSpaceVectors GetTangentSpaceLight( float4x4 World, float3 WorldEye, float3 WorldPos, float3 SunDir, float3 Normal, float3 Binormal )
+{
+    LightSpaceVectors rval;
+
+    float3 WorldPosToEye = normalize( WorldEye - WorldPos );         // dir to eye in world coordinates
+    float3 WorldToLyt   = normalize( -SunDir );
+    float3 wHalf        = normalize( WorldToLyt + WorldPosToEye );
+
+    ///////////////////////////////////
+    // calculate Obj to Tan Matrix
+
+    float3 Cross = normalize( cross( Binormal, Normal ));
+    //float3x3 MatObjToTan = float3x3( normalize(Cross), normalize(Binormal), normalize(Normal) );
+    float3x3 MatObjToTan = float3x3( normalize(Binormal), normalize(Cross), normalize(Normal) );
+
+    MatObjToTan = transpose( MatObjToTan );
+
+    ///////////////////////////////////
+    // get vectors in object space
+
+    float3 ObjLyt = normalize( mul( World, WorldToLyt ) );
+    float3 ObjHalf = normalize( mul( World, wHalf ) );
+    float3 ObjEye = normalize( mul( World, WorldPosToEye ) );
+
+    ///////////////////////////////////
+    // get vectors in tangent space
+
+    rval.Lyt = normalize( mul( ObjLyt.xyz, MatObjToTan ) ).xyz;
+    rval.Half = normalize( mul( ObjHalf.xyz, MatObjToTan ) ).xyz;
+    rval.Eye = normalize( mul( ObjEye.xyz, MatObjToTan ) ).xyz;          // parallax mapping (light=eye here)
+
+    ///////////////////////////////////
+
+    return rval;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+LightSpaceVectors GetObjSpaceLight( float4x4 World, float4 WorldEye, float4 WorldPos, float3 SunDir )
+{
+    LightSpaceVectors rval;
+
+    float4 WorldPosToEye = normalize( WorldEye - WorldPos );         // dir to eye in world coordinates
+    float4 WorldToLyt   = normalize( float4( -SunDir, 1.0f ) );
+    float4 wHalf        = normalize( WorldToLyt + WorldPosToEye );
+
+    ///////////////////////////////////
+    // get vectors in object space
+
+    rval.Lyt = normalize( mul( World, WorldToLyt ) );
+    rval.Half = normalize( mul( World, wHalf ) );
+    rval.Eye = normalize( mul( World, WorldPosToEye ) );
+
+    ///////////////////////////////////
+
+    return rval;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/*LightSpaceVectors4 GetObjSpaceLight4( float4x4 World, float4 WorldEye, float4 WorldPos, float4 LightDirs[4] )
+{
+    LightSpaceVectors4 rval;
+
+    float4 WorldPosToEye = normalize( WorldEye - WorldPos );         // dir to eye in world coordinates
+
+    float3 WorldToLyt0   = normalize( float4( -LightDirs[0], 1.0f ) ).xyz;
+    float3 WorldToLyt1   = normalize( float4( -LightDirs[1], 1.0f ) ).xyz;
+    float3 WorldToLyt2   = normalize( float4( -LightDirs[2], 1.0f ) ).xyz;
+    float3 WorldToLyt3   = normalize( float4( -LightDirs[3], 1.0f ) ).xyz;
+
+    float4 wHalf0        = normalize( WorldToLyt0 + WorldPosToEye );
+    float4 wHalf1        = normalize( WorldToLyt1 + WorldPosToEye );
+    float4 wHalf2        = normalize( WorldToLyt2 + WorldPosToEye );
+    float4 wHalf3        = normalize( WorldToLyt3 + WorldPosToEye );
+
+    ///////////////////////////////////
+    // get vectors in object space
+
+    rval.Lyt[0] = normalize( mul( World, WorldToLyt0 ) );
+    rval.Lyt[1] = normalize( mul( World, WorldToLyt1 ) );
+    rval.Lyt[2] = normalize( mul( World, WorldToLyt2 ) );
+    rval.Lyt[3] = normalize( mul( World, WorldToLyt3 ) );
+    rval.Half[0] = normalize( mul( World, wHalf0 ) );
+    rval.Half[1] = normalize( mul( World, wHalf1 ) );
+    rval.Half[2] = normalize( mul( World, wHalf2 ) );
+    rval.Half[3] = normalize( mul( World, wHalf3 ) );
+    rval.Eye = normalize( mul( World, WorldPosToEye ) );
+
+    ///////////////////////////////////
+
+    return rval;
+
+}*/

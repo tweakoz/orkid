@@ -1,0 +1,132 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "tanspace.cgh"
+
+string description = "morkshader<test>";
+
+///////////////////////////////////////////////////////////////////////////////
+// water parameters
+
+uniform float time : time;
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Vertex {
+        float4 Position : POSITION;   // in object space
+        float4 TexCoord : TEXCOORD0;
+        float3 Normal   : NORMAL;
+        float3 Binormal : BINORMAL;
+        float3 Tangent  : TANGENT;
+        float4 Color    : COLOR0;
+};
+
+struct Fragment {
+
+        float4 ClipPos : POSITION;  // in clip space
+        float4 Color : COLOR;
+
+        float3 UVW0             : TEXCOORD0;
+
+        float3 TanLight         : TEXCOORD3;
+        float3 TanHalf          : TEXCOORD4;
+        float3 TanEye           : TEXCOORD5;
+        float3 VtxTangent       : TEXCOORD6;
+        float3 VtxPosition      : TEXCOORD7;
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+Fragment AnIsoVS( Vertex VtxIn )
+{
+    Fragment FragOut;
+
+    time = fmod( time, 10000 );
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(WorldView, VtxIn.Position ).xyz;
+    float3 worldPos = mul(World,VtxIn.Position).xyz;
+
+    //////////////////////////////////////
+
+    float3 worldNormal  = normalize( mul( World, float4( VtxIn.Normal,0.0f ) ).xyz );
+    float3 worldEye     = ViewIT[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye; //normalize( - SunDir );
+
+    /////////////////////////////////////
+    // ( Tangent Space Lighting )
+
+	float3 nbin = normalize( VtxIn.Binormal );
+	float3 nnrm = normalize( VtxIn.Normal );
+
+	float3 Tangent = ( cross( nbin, nnrm ) );
+	TanLytData tldata = GenTanLytData(	World,
+										worldToLyt, worldToEye,
+										VtxIn.Normal, VtxIn.Binormal, Tangent
+									 );
+
+    /////////////////////////////////////
+
+    FragOut.TanLight = tldata.TanLyt;
+    FragOut.TanHalf = tldata.TanHalf;
+    FragOut.TanEye = tldata.TanEye;
+
+    FragOut.VtxPosition = VtxIn.Position.xyz;
+    FragOut.VtxTangent = nbin.xyz; //VtxIn.Tangent.xyz;
+
+    /////////////////////////////////////
+
+    FragOut.UVW0.x = VtxIn.TexCoord.x;
+    FragOut.UVW0.y = 1.0f-VtxIn.TexCoord.y;
+    FragOut.UVW0.z = 0.0f;
+
+    /////////////////////////////////////
+
+    float diffuse = saturate( dot( worldNormal, worldToLyt.xyz ) );
+
+    /////////////////////////////////////
+
+    FragOut.Color.xyz = diffuse;
+    //FragOut.Color.xyz = tldata.TanLyt.xyz;
+    FragOut.Color.w = 1.0f;
+    FragOut.ClipPos = mul(WorldViewProj,VtxIn.Position);
+    return FragOut;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 AnIsoPS( Fragment FragIn ) : COLOR
+{
+    float4 PixelOut;
+
+	float U = fmod( FragIn.UVW0.x, 1.0f );
+	float V = fmod( FragIn.UVW0.y, 1.0f );
+
+ PixelOut.rgb = float3( U, V, 0.0f );
+     PixelOut.a = 1.0f;
+    return PixelOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique AnIsoLod0
+{
+    pass p0
+    {
+        VertexProgram = compile arbvp1 AnIsoVS( );
+        FragmentProgram = compile arbfp1 AnIsoPS( );
+
+        Zenable = true;
+        ZWriteEnable = true;
+        FrontFace = CCW; // ccw
+        FogEnable = false;
+        BlendEnable = false;
+        //BlendFunc = int2( SrcAlpha, OneMinusSrcAlpha );
+        BlendFunc = int2(SrcAlpha,SrcColor        );
+    }
+}
