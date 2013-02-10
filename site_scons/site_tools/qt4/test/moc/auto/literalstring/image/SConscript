@@ -1,0 +1,6 @@
+Import("qtEnv")
+
+env = qtEnv.Clone()
+env.EnableQt4Modules(['QtCore','QtGui'])
+
+env.Program('main', Glob('*.cpp'))

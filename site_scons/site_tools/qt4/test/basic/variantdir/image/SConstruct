@@ -1,0 +1,12 @@
+import qtenv
+
+qtEnv = qtenv.createQtEnvironment()
+qtEnv.EnableQt4Modules(['QtCore','QtGui'])
+
+qtEnv.VariantDir('bld', '.')
+qtEnv.Uic4('bld/anUiFile.ui')
+qtEnv.Program('bld/test_realqt', ['bld/mocFromCpp.cpp',
+                                  'bld/mocFromH.cpp',
+                                  'bld/MyForm.cpp',
+                                  'bld/main.cpp'])
+

@@ -1,0 +1,17 @@
+stage
+dist
+data
+hotkeys.ork
+*dblite
+*/obj/*
+*/lib/*
+*.cst
+*.swatch*
+*.moc
+.mayaSwatches/*
+workspace.mel
+ork.core/bin
+ork.ent/bin
+ork.lev2/bin
+ork.tool/bin
+miniorkbuild.ini

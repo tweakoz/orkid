@@ -1,0 +1,3 @@
+Import("qtEnv")
+
+qtEnv.Ts4('my_en', ['MyFile.cpp','subdir'])

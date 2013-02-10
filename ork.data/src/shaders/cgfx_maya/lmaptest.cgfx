@@ -1,0 +1,67 @@
+#include "miniork_common.cgfxi"
+
+string description = "morkshader<scrolly>";
+
+// tweakables //////////////////////////////////////////
+
+uniform texture2D colortex;
+uniform texture2D lighttex;
+
+uniform sampler2D colormap = sampler_state
+{
+	Texture = <colortex>;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+uniform sampler2D lightmap = sampler_state
+{
+	Texture = <lighttex>;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+// untweakables //////////////////////////////////////////
+
+float4x4 WorldViewProjXf : WorldViewProjection;
+float4x4 ViewIT : ViewInverseTranspose;
+
+struct appdata {
+    float3 Position	: POSITION;
+    float2 uv0      : TEXCOORD0;
+    float2 uv1      : TEXCOORD1;
+};
+
+struct outVertexData {
+    float4 HPosition	: POSITION;
+    float2 uv0          : TEXCOORD0;
+    float2 uv1          : TEXCOORD1;
+    float3 fragcolor    : TEXCOORD2;
+};
+
+outVertexData vs_lmap(appdata IN)
+{
+	outVertexData OUT;
+	float4 Po = float4(IN.Position.xyz, 1.0);	
+	OUT.HPosition = mul(WorldViewProjXf, Po);
+	OUT.fragcolor = float3(1.0f, 1.0f, 1.0f);
+	OUT.uv0 = IN.uv0*float2(1.0f,+1.0f);
+	OUT.uv1 = IN.uv1*float2(1.0f,+1.0f);
+	return OUT;
+}
+
+float4 fs_lmap(outVertexData IN)	: COLOR
+{
+	float4 color = tex2D(colormap, IN.uv0).xyzw;
+	float4 light = tex2D(lightmap, IN.uv1).xyzw;
+	return float4(color.xyz*light.xyz,color.w);
+}
+
+technique lmaptest {
+	pass p0 {
+		VertexProgram = compile arbvp1 vs_lmap();
+		FragmentProgram = compile arbfp1 fs_lmap();
+		BlendEnable = false;
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, 0.0f) ;
+	}
+}

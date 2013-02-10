@@ -1,0 +1,325 @@
+#include "miniork_common.cgfxi"
+
+string description = "morkshader<novaglass>";
+string ggmvtxconfig = "v12c4t8";
+string xgmvtxconfig = "v12c4t8";
+
+float time : time;
+
+///////////////////////////////////////////////////////////
+
+float3 BaseColor : Ambient
+<
+	string UIHelp = "Base Color";
+> = {1.0f, 1.0f, 1.0f};
+
+uniform float BaseTrans
+<
+	string UIHelp = "BaseTrans";
+    float UIMin = 0.0;
+    float UIMax = 10.0;
+    float UIStep = 0.1;
+>;
+
+///////////////////////////////////////////////////////////
+
+uniform texture2D ColorMap;
+uniform texture2D ReflectionMap;
+
+///////////////////////////////////////////////////////////
+
+uniform sampler2D SamplerCol = sampler_state
+{
+	Texture = <ColorMap>;
+	WrapS = Wrap;
+    WrapT = Wrap;
+};
+uniform sampler2D SamplerRef = sampler_state
+{
+	Texture = <ReflectionMap>;
+	WrapS = Wrap;
+    WrapT = Wrap;
+};
+
+///////////////////////////////////////////////////////////
+
+float4x4 WorldViewProjXf : worldviewprojection;
+float4x4 MatM : world;
+float4x4 MatMV : worldview;
+float4x4 MatMVI : worldviewinverse;
+float4x4 MatP : projection;
+float4x4 MatMVIT : worldviewInverseTranspose;
+float4x4 MatMIT : worldInverseTranspose;
+float4x4 MatV : view;
+//float4x4 MatVP : viewprojection;
+float4x4 MatVI : ViewInverse;
+float4x4 MatVT : ViewTranspose;
+float4x4 MatVIT : ViewInverseTranspose;
+
+///////////////////////////////////////////////////////////
+
+struct appdata {
+    float3 Position	: POSITION;
+    float2 uv0      : TEXCOORD0;
+    float3 normal	: NORMAL;
+    float3 color	: COLOR0;
+};
+
+///////////////////////////////////////////////////////////
+
+struct outVertexData {
+    float4 HPosition	: POSITION;
+    float2 uv0          : TEXCOORD0;
+    float2 uv1			: TEXCOORD1;
+    float3 color		: COLOR0;
+};
+
+///////////////////////////////////////////////////////////
+
+outVertexData vs_diffuse(appdata IN)
+{
+	outVertexData OUT;
+
+	float4 ObjPos = float4(IN.Position.xyz,1.0);	
+	float3 ObjNormal = normalize(IN.normal.xyz);
+	float3 WldPos = mul(MatM,ObjPos).xyz;	
+	float3 WldNormal = normalize(mul( MatM,float4(ObjNormal,0.0f) ) ).xyz;
+	//////////////////////////////////////////////////
+	float3 WldEyePos = MatVIT[3].xyz;
+	float3 WldEyeDir = normalize(WldPos-WldEyePos);
+	float3 WR = normalize(reflect(WldEyeDir,WldNormal));
+	//////////////////////////////////////////////////
+	float3 VewPos = mul(MatMV,ObjPos).xyz;	
+	float3 VewNormal = normalize(mul( MatV,float4(WldNormal,0.0f) ) ).xyz;
+	float3 veye = normalize(VewPos).xyz;
+	float3 VR = normalize(reflect(veye,VewNormal));
+	//////////////////////////////////////////////////
+	WR = normalize(mul(float4(VR,0.0f),MatVT)).xyz;
+	//////////////////////////////////////////////////
+	float headlight = saturate( dot( VewNormal, float3(0.0f,0.0f,1.0f) ) );
+	//////////////////////////////////////////////////
+	
+	const float4x4 matst = {	0.5f, 0.0f, 0.0f, 0.5f,
+								0.0f, 0.5f, 0.0f, 0.5f,
+								0.0f, 0.0f, 0.5f, 0.5f,
+								0.0f, 0.0f, 0.0f, 1.0f 	};
+		
+	////////////////////////////
+	// rot only v->w matrix
+	////////////////////////////
+	float4x4 matvrt = MatVT;
+	matvrt[3].xyz = float3(0.0f,0.0f,0.0f);
+		
+	////////////////////////////
+
+	float4x4 matstvt = mul(matst,matvrt);
+
+	////////////////////////////
+
+	//float4 uvt = float4( WR, 1.0f );
+	//uvt = mul(matst,uvt);
+	
+	float3 uvt = mul(matstvt,float4(VR,1.0f));
+
+	//float3 uvt = (WR.xyz*0.5f)+float3(0.5f,0.5f,0.5f);
+
+	//////////////////////////////////
+
+	OUT.uv0 = float2(0.0f,1.0f)+(IN.uv0*float2(1.0f,1.0f));	
+	OUT.uv1 = uvt.xz;	
+	OUT.color = 0.5f+float3(headlight,headlight,headlight)*0.5f;
+	OUT.HPosition = mul(WorldViewProjXf, ObjPos);
+
+	return OUT;
+}
+
+
+outVertexData vs_glass(appdata IN)
+{
+	outVertexData OUT;
+
+	float4 ObjPos = float4(IN.Position.xyz,1.0);	
+	float3 ObjNormal = normalize(IN.normal.xyz);
+	float3 WldPos = mul(MatM,ObjPos).xyz;	
+	float3 WldNormal = normalize(mul( MatM,float4(ObjNormal,0.0f) ) ).xyz;
+	//////////////////////////////////////////////////
+	float3 WldEyePos = MatVIT[3].xyz;
+	float3 WldEyeDir = normalize(WldPos-WldEyePos);
+	float3 WR = normalize(reflect(WldEyeDir,WldNormal));
+	//////////////////////////////////////////////////
+	float3 VewPos = mul(MatMV,ObjPos).xyz;	
+	float3 VewNormal = normalize(mul( MatV,float4(WldNormal,0.0f) ) ).xyz;
+	float3 veye = normalize(VewPos).xyz;
+	float3 VR = normalize(reflect(veye,VewNormal));
+	//////////////////////////////////////////////////
+	WR = normalize(mul(float4(VR,0.0f),MatVT)).xyz;
+	//////////////////////////////////////////////////
+	float headlight = saturate( dot( VewNormal, float3(0.0f,0.0f,1.0f) ) );
+	//////////////////////////////////////////////////
+	
+	const float4x4 matst = {	0.5f, 0.0f, 0.0f, 0.5f,
+								0.0f, 0.5f, 0.0f, 0.5f,
+								0.0f, 0.0f, 0.5f, 0.5f,
+								0.0f, 0.0f, 0.0f, 1.0f 	};
+		
+	////////////////////////////
+	// rot only v->w matrix
+	////////////////////////////
+	float4x4 matvrt = MatVT;
+	matvrt[3].xyz = float3(0.0f,0.0f,0.0f);
+		
+	////////////////////////////
+
+	float4x4 matstvt = mul(matst,matvrt);
+
+	////////////////////////////
+
+	//float4 uvt = float4( WR, 1.0f );
+	//uvt = mul(matst,uvt);
+	
+	float3 uvt = mul(matstvt,float4(VR,1.0f)).xyz;
+
+	//float3 uvt = (WR.xyz*0.5f)+float3(0.5f,0.5f,0.5f);
+
+	//////////////////////////////////
+
+	OUT.uv0 = float2(0.0f,1.0f)+(IN.uv0*float2(1.0f,1.0f));	
+	OUT.uv1 = uvt.xz;	
+	OUT.color = IN.color*headlight;
+	OUT.HPosition = mul(WorldViewProjXf, ObjPos);
+
+	return OUT;
+}
+
+///////////////////////////////////////////////////////////
+
+float4 ps_diffuse(outVertexData IN)	: COLOR
+{
+	float4 texCol = tex2D( SamplerCol, IN.uv0 );
+	float3 refCol = tex2D( SamplerRef, IN.uv1 ).xyz;
+	float outa = texCol.a*BaseTrans;
+	float3 myout = (texCol.xyz*BaseColor*IN.color.xyz);
+	
+	return float4(myout,outa);
+}
+
+///////////////////////////////////////////////////////////
+
+float4 ps_glass(outVertexData IN)	: COLOR
+{
+	float2 uv0 = IN.uv0;
+	float2 uv0a = IN.uv0+float2(1.0f,1.0f);
+	float2 uv1 = IN.uv1;
+	float4 texCol = tex2D( SamplerCol, uv0 );
+	float4 refCol = tex2D( SamplerRef, uv1 );
+	float4 refAlp = tex2D( SamplerRef, uv0 );
+	
+	float gloss = refCol.a; //texCol.a;
+	
+	float3 myout = (texCol.xyz*BaseColor*IN.color.xyz)+(refCol*BaseTrans*gloss);
+	
+	return float4(myout,1.0f);
+}
+
+///////////////////////////////////////////////////////////
+
+float4 ps_sep_glass(outVertexData IN)	: COLOR
+{
+	float2 uv0 = IN.uv0;
+	float2 uv1 = IN.uv1;
+	float4 refCol = tex2D( SamplerRef, uv1 );
+	float4 refAlp = tex2D( SamplerRef, uv0 );
+	
+	float gloss = refAlp.a;
+	
+	float3 myout = (refCol.xyz*gloss);
+	
+	return float4(myout,1.0f);
+}
+
+
+///////////////////////////////////////////////////////////
+
+technique main {
+	pass p0 {
+		DepthTestEnable = true;
+		DepthMask = true;
+		CullFaceEnable = false;
+		FrontFace      = CCW;
+		ShadeModel = Smooth; 
+		BlendEnable=false;
+		BlendFunc = int2(SrcAlpha,SrcColor);
+		VertexProgram = compile glslv vs_glass();
+		FragmentProgram = compile glslf ps_glass();
+	}
+}
+technique mainSkinned
+{
+	pass p0 {
+		DepthTestEnable = true;
+		DepthMask = true;
+		CullFaceEnable = false;
+		FrontFace      = CCW;
+		ShadeModel = Smooth; 
+		BlendEnable=false;
+		BlendFunc = int2(SrcAlpha,SrcColor);
+		VertexProgram = compile glslv vs_glass();
+		FragmentProgram = compile glslf ps_glass();
+	}
+};
+
+technique translucent {
+	pass p0 {
+		DepthTestEnable = true;
+		DepthMask = true;
+		CullFaceEnable = false;
+		FrontFace      = CCW;
+		ShadeModel = Smooth; 
+		BlendEnable=true;
+		BlendFunc = int2(SrcAlpha,OneMinusSrcAlpha);
+		VertexProgram = compile glslv vs_diffuse();
+		FragmentProgram = compile glslf ps_diffuse();
+	}
+	pass p1 {
+		DepthTestEnable = true;
+		DepthMask = true;
+		CullFaceEnable = false;
+		FrontFace      = CCW;
+		ShadeModel = true; 
+		BlendEnable=true;
+		BlendFunc = int2(One,One);
+		VertexProgram = compile glslv vs_glass();
+		FragmentProgram = compile glslf ps_sep_glass();
+	}
+}
+
+technique DbgDiffuse {
+	pass p0 {
+		DepthTestEnable = true;
+		DepthMask = true;
+		CullFaceEnable = false;
+		FrontFace      = CCW;
+		ShadeModel = Smooth; 
+		BlendEnable=true;
+		BlendFunc = int2(SrcAlpha,SrcColor);
+		VertexProgram = compile glslv vs_diffuse();
+		FragmentProgram = compile glslf ps_diffuse();
+	}
+}
+
+technique DbgGloss {
+	pass p0 {
+		DepthTestEnable = true;
+		DepthMask = true;
+		CullFaceEnable = false;
+		FrontFace      = CCW;
+		ShadeModel = Smooth; 
+		BlendEnable=false;
+		BlendFunc = int2(SrcAlpha,SrcColor);
+		VertexProgram = compile glslv vs_glass();
+		FragmentProgram = compile glslf ps_sep_glass();
+	}
+}
+
+///////////////////////////////////////////////////////////
+

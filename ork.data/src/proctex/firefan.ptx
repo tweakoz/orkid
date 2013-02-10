@@ -1,0 +1,414 @@
+
+<reference category='ObjectClass'>
+    <object type='proctex' id='0'>
+        <property name='Modules'>
+            <item key='clr'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::Colorize' id='1'>
+                        <property name='mgvpos'>-60 -40</property>
+                        <property name='ImgOut'>
+                            <object type='proctex::OutImgPlug' id='2'>
+                            </object>
+                        </property>
+                        <property name='AntiAlias'>true</property>
+                        <property name='InputA'>
+                            <object type='proctex::InImgPlug' id='3'>
+                            </object>
+                        </property>
+                        <property name='InputB'>
+                            <object type='proctex::InImgPlug' id='4'>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='g'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::Global' id='5'>
+                        <property name='mgvpos'>-60 -210</property>
+                    </object>
+                </reference>
+            </item>
+            <item key='gr'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::Gradient' id='6'>
+                        <property name='mgvpos'>40 -40</property>
+                        <property name='ImgOut'>
+                            <object type='proctex::OutImgPlug' id='7'>
+                            </object>
+                        </property>
+                        <property name='AntiAlias'>true</property>
+                        <property name='Repeat'>1</property>
+                        <property name='RepeatMode'>"EGS_PINGPONG"</property>
+                        <property name='Type'>"EGT_HORIZONTAL"</property>
+                        <property name='gradient'>
+                            <object type='GradientV4' id='8'>
+                                <property name='points'>
+                                    <item key='0'>0 0 0 1</item>
+                                    <item key='0.0350109'>0 0 0 0.996094</item>
+                                    <item key='0.264036'>0.373535 0.373535 0.373535 0.998535</item>
+                                    <item key='0.622155'>0.257813 0.257813 0.257813 0.996094</item>
+                                    <item key='0.723824'>0 0 0 0.996094</item>
+                                    <item key='1'>0 0 0 0.996094</item>
+                                </property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='h'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::H2N' id='9'>
+                        <property name='mgvpos'>-60 120</property>
+                        <property name='ImgOut'>
+                            <object type='proctex::OutImgPlug' id='10'>
+                            </object>
+                        </property>
+                        <property name='AntiAlias'>true</property>
+                        <property name='Input'>
+                            <object type='proctex::InImgPlug' id='11'>
+                            </object>
+                        </property>
+                        <property name='ScaleY'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='12'>
+                                <property name='value'>0.00116735</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='13'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='oct1'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::Octaves' id='14'>
+                        <property name='mgvpos'>-60 40</property>
+                        <property name='ImgOut'>
+                            <object type='proctex::OutImgPlug' id='15'>
+                            </object>
+                        </property>
+                        <property name='BaseAmp'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='16'>
+                                <property name='value'>1</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='17'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='BaseFreq'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='18'>
+                                <property name='value'>1</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='19'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='BaseOffsetX'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='20'>
+                                <property name='value'>0</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='21'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='BaseOffsetY'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='22'>
+                                <property name='value'>0</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='23'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='Input'>
+                            <object type='proctex::InImgPlug' id='24'>
+                            </object>
+                        </property>
+                        <property name='NumOctaves'>2</property>
+                        <property name='ScalAmp'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='25'>
+                                <property name='value'>0.5</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='26'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='ScalFreq'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='27'>
+                                <property name='value'>2</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='28'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='ScalOffsetX'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='29'>
+                                <property name='value'>1</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='30'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='ScalOffsetY'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='31'>
+                                <property name='value'>1</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='32'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='rot1'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::RotSolid' id='33'>
+                        <property name='mgvpos'>-60 -120</property>
+                        <property name='ImgOut'>
+                            <object type='proctex::OutImgPlug' id='34'>
+                            </object>
+                        </property>
+                        <property name='AntiAlias'>true</property>
+                        <property name='BlendMode'>"EBLENDING_OFF"</property>
+                        <property name='Intens'>
+                            <object type='proctex::periodic' id='35'>
+                                <property name='mgvpos'>0 0</property>
+                                <property name='Amplitude'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='36'>
+                                        <property name='value'>0.470489</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='37'>
+                                                <property name='Transforms'></property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='Bias'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='38'>
+                                        <property name='value'>0.470489</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='39'>
+                                                <property name='Transforms'></property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='Frequency'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='40'>
+                                        <property name='value'>7.58853</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='41'>
+                                                <property name='Transforms'></property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='PhaseOffset'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='42'>
+                                        <property name='value'>0</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='43'>
+                                                <property name='Transforms'></property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='Shape'>"ESH_SIN"</property>
+                            </object>
+                        </property>
+                        <property name='NumSides'>360</property>
+                        <property name='PhaseOffset'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='44'>
+                                <property name='value'>164.501</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='45'>
+                                        <property name='Transforms'>
+                                            <item key='xf1'>
+                                                <reference category='ObjectClass'>
+                                                    <object type='dflow/floatxfmsbcurve' id='46'>
+                                                        <property name='ModScaleBias'>
+                                                            <object type='dflow/ModScaleBias' id='47'>
+                                                                <property name='bias'>0</property>
+                                                                <property name='mod'>1</property>
+                                                                <property name='scale'>1</property>
+                                                            </object>
+                                                        </property>
+                                                        <property name='curve'>
+                                                            <object type='MultiCurve1D' id='48'>
+                                                                <property name='Curve'>
+                                                                    <object type='Object' id='49'>
+                                                                    </object>
+                                                                </property>
+                                                                <property name='Segs' size='1'>
+                                                                    <item>"EMCST_LINEAR"</item>
+                                                                </property>
+                                                                <property name='Verts'>
+                                                                    <item key='0'>0</item>
+                                                                    <item key='1'>1</item>
+                                                                </property>
+                                                                <property name='max'>360</property>
+                                                                <property name='min'>0</property>
+                                                            </object>
+                                                        </property>
+                                                        <property name='docurve'>true</property>
+                                                        <property name='domodscabia'>false</property>
+                                                    </object>
+                                                </reference>
+                                            </item>
+                                        </property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='Radius'>
+                            <object type='proctex::periodic' id='50'>
+                                <property name='mgvpos'>0 0</property>
+                                <property name='Amplitude'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='51'>
+                                        <property name='value'>0.634409</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='52'>
+                                                <property name='Transforms'>
+                                                    <item key='xf1'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='dflow/floatxfmsbcurve' id='53'>
+                                                                <property name='ModScaleBias'>
+                                                                    <object type='dflow/ModScaleBias' id='54'>
+                                                                        <property name='bias'>0</property>
+                                                                        <property name='mod'>1</property>
+                                                                        <property name='scale'>1</property>
+                                                                    </object>
+                                                                </property>
+                                                                <property name='curve'>
+                                                                    <object type='MultiCurve1D' id='55'>
+                                                                        <property name='Curve'>
+                                                                            <object type='Object' id='56'>
+                                                                            </object>
+                                                                        </property>
+                                                                        <property name='Segs' size='2'>
+                                                                            <item>"EMCST_LINEAR"</item>
+                                                                            <item>"EMCST_LINEAR"</item>
+                                                                        </property>
+                                                                        <property name='Verts'>
+                                                                            <item key='0'>0</item>
+                                                                            <item key='0.476331'>1</item>
+                                                                            <item key='1'>0</item>
+                                                                        </property>
+                                                                        <property name='max'>531.792</property>
+                                                                        <property name='min'>0</property>
+                                                                    </object>
+                                                                </property>
+                                                                <property name='docurve'>false</property>
+                                                                <property name='domodscabia'>false</property>
+                                                            </object>
+                                                        </reference>
+                                                    </item>
+                                                </property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='Bias'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='57'>
+                                        <property name='value'>0.125</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='58'>
+                                                <property name='Transforms'></property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='Frequency'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='59'>
+                                        <property name='value'>1</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='60'>
+                                                <property name='Transforms'></property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='PhaseOffset'>
+                                    <object type='dflow/inplugxf<float,floatxf>' id='61'>
+                                        <property name='value'>0</property>
+                                        <property name='xf'>
+                                            <object type='dflow/floatxf' id='62'>
+                                                <property name='Transforms'></property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </property>
+                                <property name='Shape'>"ESH_SQU"</property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='sph'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::SphMap' id='63'>
+                        <property name='mgvpos'>40 120</property>
+                        <property name='ImgOut'>
+                            <object type='proctex::OutImgPlug' id='64'>
+                            </object>
+                        </property>
+                        <property name='AntiAlias'>true</property>
+                        <property name='Directionality'>
+                            <object type='dflow/inplugxf<float,floatxf>' id='65'>
+                                <property name='value'>0.346437</property>
+                                <property name='xf'>
+                                    <object type='dflow/floatxf' id='66'>
+                                        <property name='Transforms'></property>
+                                    </object>
+                                </property>
+                            </object>
+                        </property>
+                        <property name='InputA'>
+                            <object type='proctex::InImgPlug' id='67'>
+                            </object>
+                        </property>
+                        <property name='InputB'>
+                            <object type='proctex::InImgPlug' id='68'>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='t2'>
+                <reference category='ObjectClass'>
+                    <object type='proctex::Texture' id='69'>
+                        <property name='mgvpos'>40 40</property>
+                        <property name='ImgOut'>
+                            <object type='proctex::OutImgPlug' id='70'>
+                            </object>
+                        </property>
+                        <property name='Input'>
+                            <reference category='AssetClass'>
+                                "lev2tex" "data://effect_textures/noise01"
+                            </reference>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+        </property>
+        <property name='zzz_connections'>7 "clr" "InputA" "rot1" "ImgOut" "clr" "InputB" "gr" "ImgOut" "h" "Input" "oct1" "ImgOut" "oct1" "Input" "clr" "ImgOut" "rot1" "pho" "g" "Time" "sph" "InputA" "h" "ImgOut" "sph" "InputB" "t2" "ImgOut"</property>
+    </object>
+</reference>

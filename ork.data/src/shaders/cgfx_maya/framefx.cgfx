@@ -1,0 +1,281 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float4x4 mvp;
+uniform float4 modcolor;
+uniform float time;
+uniform float BlurFactor;
+
+///////////////////////////////////////////////////////////////////////////////
+
+sampler2D MrtMap0 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Clamp;
+    WrapT = Clamp;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D MrtMap1 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Clamp;
+    WrapT = Clamp;
+    LODBias = 0.0f;
+    GenerateMipMap = true;
+};
+sampler2D MrtMap2 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Clamp;
+    WrapT = Clamp;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D MrtMap3 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Clamp;
+    WrapT = Clamp;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D AuxMap0 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Clamp;
+    WrapT = Clamp;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D AuxMap1 = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Clamp;
+    WrapT = Clamp;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D NoiseMap = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = Linear;
+    WrapS = Clamp;
+    WrapT = Clamp;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+struct SimpleVertex
+{
+	float3 Position	: POSITION;
+	float3 Uv0		: TEXCOORD0;
+};
+
+struct Fragment
+{
+    float4 ClipPos	: POSITION;
+	float3 Uv0		: TEXCOORD0;
+	float4 Color	: COLOR0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_basic( SimpleVertex VtxIn )
+{
+    float4 vpos = float4( VtxIn.Position, 1.0f );
+    float4 npos = mul( vpos, mvp );
+    Fragment FragOut;
+    FragOut.ClipPos = npos;
+    FragOut.Uv0 = VtxIn.Uv0;
+    FragOut.Color = modcolor;
+    return FragOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Standard FrameEffect, just add Mrt0 and Mrt1 together
+
+float4 ps_standard( Fragment FragIn ) : COLOR
+{
+    float4 PixOut = tex2D( MrtMap0, FragIn.Uv0.xy ) + tex2D( MrtMap1, FragIn.Uv0.xy );
+    return PixOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_painterly( Fragment FragIn ) : COLOR
+{
+	const float fbase = 0.75f;
+	const float ftimebase = 7.5f;
+	const float2 fdir0 = float2( 0.0f, 0.02f )*ftimebase;
+	const float2 fdir1 = float2( 0.005f, 0.015f )*ftimebase;
+	const float2 fdir2 = float2( 0.007f, 0.005f )*ftimebase;
+
+	float ftime = fmod( time, 100.0f );
+
+	const float2 khalf = float2( 0.5f, 0.5f );
+
+	float2	UvDistortion =  (tex2D( NoiseMap, FragIn.Uv0.xy*4.0f+(fdir0*ftime) ).xy-khalf)*0.025f*fbase;
+			UvDistortion += (tex2D( NoiseMap, FragIn.Uv0.xy*7.3f+(fdir1*ftime) ).xy-khalf)*0.01f*fbase;
+			UvDistortion += (tex2D( NoiseMap, FragIn.Uv0.xy*10.7f+(fdir2*ftime) ).xy-khalf)*0.005f*fbase;
+	
+	float2 RealUv = FragIn.Uv0.xy+UvDistortion;
+	
+	float4 PixOut = tex2D( MrtMap0, RealUv ) + tex2D( MrtMap1, RealUv );
+    return PixOut;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+const uniform float glowscale = (1.0f/BlurFactor);
+const uniform float stepval = (1.0f/512.0f);
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 ps_blurx( Fragment FragIn ) : COLOR
+{
+	float2 RealUv = FragIn.Uv0.xy;
+	float4 PixOut = float4(0.0f,0.0f,0.0f,0.0f);
+	
+	float2 UvOffset = float2(stepval*-BlurFactor,0.0f);
+	float framp = 0.0f;
+	for( float i=0.0f; i<BlurFactor; i+=1.0f )
+	{
+		PixOut += tex2D( MrtMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( stepval,0.0f );
+		framp += (1.0f/BlurFactor);
+	}
+	for( float i=0.0f; i<BlurFactor; i+=1.0f )
+	{
+		PixOut += tex2D( MrtMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( stepval,0.0f );
+		framp -= (1.0f/BlurFactor);
+	}
+
+	PixOut *= glowscale;
+    return PixOut;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+float4 ps_blury( Fragment FragIn ) : COLOR
+{
+	float2 RealUv = FragIn.Uv0.xy;
+	float4 PixOut = float4(0.0f,0.0f,0.0f,0.0f);
+	float2 UvOffset = float2(0.0f,stepval*-BlurFactor);
+	float framp = 0.0f;
+	for( float i=0.0f; i<BlurFactor; i+=1.0f )
+	{
+		PixOut += tex2D( AuxMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( 0.0f,stepval );
+		framp += (1.0f/BlurFactor);
+	}
+	for( float i=0.0f; i<BlurFactor; i+=1.0f )
+	{
+		PixOut += tex2D( AuxMap0, RealUv+UvOffset ).xyzw*framp;
+		UvOffset += float2( 0.0f,stepval );
+		framp -= (1.0f/BlurFactor);
+	}
+	PixOut *= glowscale;
+    return PixOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_hdr_join( Fragment FragIn ) : COLOR
+{
+    float3 Diffuse = tex2D( MrtMap0, FragIn.Uv0.xy ).xyz;
+    float3 Specular = tex2D( MrtMap1, FragIn.Uv0.xy ).xyz;
+    float4 Glow = tex2D( AuxMap1, FragIn.Uv0.xy );
+    
+	return float4( (Diffuse+Specular+(Glow.rgb*Glow.a))*0.7f, 1.0f ); 
+	//return float4( lerp((Glow.rgb*Glow.a),(Diffuse*0.5f),0.5f), 1.0f ); 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_hdr_join_ghost( Fragment FragIn ) : COLOR
+{
+    float3 Diffuse = tex2D( MrtMap0, FragIn.Uv0.xy ).xyz;
+    float3 Specular = tex2D( MrtMap1, FragIn.Uv0.xy ).xyz;
+    float4 Glow = tex2D( AuxMap1, FragIn.Uv0.xy );
+	float dist = distance( (Glow.rgb*Glow.a),Diffuse );
+	return float4( dist,dist,dist, 1.0f ); 
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+technique frameeffect_standard
+{
+    pass
+    {
+        VertexProgram = compile vp40 vs_basic();
+        FragmentProgram = compile fp40 ps_standard();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique frameeffect_painterly
+{
+    pass
+    {
+        VertexProgram = compile vp40 vs_basic();
+        FragmentProgram = compile fp40 ps_painterly();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique frameeffect_glow_blurx
+{
+    pass
+    {
+        VertexProgram = compile vp40 vs_basic();
+        FragmentProgram = compile fp40 ps_blurx();
+        CullFaceEnable = false;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique frameeffect_glow_blury
+{
+    pass
+    {
+        VertexProgram = compile vp40 vs_basic();
+        FragmentProgram = compile fp40 ps_blury();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique frameeffect_glow_join
+{
+    pass
+    {
+        VertexProgram = compile vp40 vs_basic();
+        FragmentProgram = compile fp40 ps_hdr_join();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique frameeffect_ghost_join
+{
+    pass
+    {
+        VertexProgram = compile vp40 vs_basic();
+        FragmentProgram = compile fp40 ps_hdr_join_ghost();
+    }
+}
+///////////////////////////////////////////////////////////////////////////////

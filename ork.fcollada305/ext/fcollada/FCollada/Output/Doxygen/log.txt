@@ -1,0 +1,401 @@
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArrayPointer.h:29: Warning: namespace fm already has a brief description. Skipping the documentation found here.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterSampler.h:7: Warning: file FCDEffectParameter.h already documented. Skipping documentation.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEmitterParticle.h:7: Warning: the name `FCDEmitterParticle' supplied as the second argument in the \file statement is not an input file
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygonsTools.h:7: Warning: file FCDGeometryPolygonsSpecial.h already documented. Skipping documentation.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:15: Warning: Compound IFunctor0 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:58: Warning: Compound IFunctor1 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:101: Warning: Compound IFunctor2 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:144: Warning: Compound IFunctor3 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsParameter.h:17: Warning: Compound FCDPhysicsParameter is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAsset.h:91: Warning: Compound FCDAssetContributor is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:24: Warning: Compound FUFunctor0 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:67: Warning: Compound FUFunctor1 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:110: Warning: Compound FUFunctor2 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:153: Warning: Compound FUFunctor3 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFile.h:10: Warning: Compound FUFile is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:20: Warning: Compound FCDPhysicsAnalyticalGeometry is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPlaceHolder.h:22: Warning: Compound FCDPlaceHolder is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsModel.h:23: Warning: Compound FCDPhysicsModel is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FULogFile.h:12: Warning: Compound FULogFile is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsShape.h:35: Warning: Compound FCDPhysicsShape is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidConstraintInstance.h:21: Warning: Compound FCDPhysicsRigidConstraintInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUTestBed.h:40: Warning: Compound FUTestSuite is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:177: Warning: Compound FCDPASFactory is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:41: Warning: Compound FUStaticFunctor0 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:84: Warning: Compound FUStaticFunctor1 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:127: Warning: Compound FUStaticFunctor2 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFunctor.h:170: Warning: Compound FUStaticFunctor3 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUEvent.h:19: Warning: Compound FUEvent0 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUEvent.h:75: Warning: Compound FUEvent1 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAsset.h:20: Warning: Compound FCDAsset is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUTestBed.h:19: Warning: Compound FUTestBed is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUEvent.h:132: Warning: Compound FUEvent2 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUXmlNodeIdPair.h:16: Warning: Compound FUXmlNodeIdPair is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:83: Warning: Compound FCDPASSphere is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidConstraint.h:27: Warning: Compound FCDPhysicsRigidConstraint is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:158: Warning: Compound FCDPASTaperedCylinder is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:64: Warning: Compound FCDPASPlane is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:101: Warning: Compound FCDPASCylinder is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:46: Warning: Compound FCDPASBox is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBody.h:22: Warning: Compound FCDPhysicsRigidBody is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:120: Warning: Compound FCDPASCapsule is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsParameterGeneric.h:16: Warning: Compound FCDPhysicsParameterGeneric is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsScene.h:29: Warning: Compound FCDPhysicsScene is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArray.h:154: Warning: Compound fm::list is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsMaterial.h:16: Warning: Compound FCDPhysicsMaterial is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsAnalyticalGeometry.h:139: Warning: Compound FCDPASTaperedCapsule is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:44: Warning: Compound FUDebug is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReferenceManager.h:26: Warning: Compound FCDExternalReferenceManager is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsModelInstance.h:22: Warning: Compound FCDPhysicsModelInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimated.h:33: Warning: Member FCDAnimationCurveListList of file FCDAnimated.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameter.h:22: Warning: Member FCDEffectParameterAnnotationList of file FCDEffectParameter.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEmitterInstance.h:22: Warning: Member FCDMaterialInstanceContainer of file FCDEmitterInstance.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEntity.h:28: Warning: Member FCDAssetList of file FCDEntity.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEntity.h:29: Warning: Member FCDAssetConstList of file FCDEntity.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReferenceManager.h:22: Warning: Member FCDExternalReferenceContainer of file FCDExternalReferenceManager.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReferenceManager.h:23: Warning: Member FCDPlaceHolderContainer of file FCDExternalReferenceManager.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryMesh.h:35: Warning: Member FCDGeometrySourceContainer of file FCDGeometryMesh.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryMesh.h:37: Warning: Member FCDGeometryPolygonsContainer of file FCDGeometryMesh.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPlaceHolder.h:19: Warning: Member FCDExternalReferenceTrackList of file FCDPlaceHolder.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDSceneNodeIterator.h:15: Warning: Member FCDSceneNodeList of file FCDSceneNodeIterator.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUBoundingBox.h:107: Warning: Member FUBOUNDINGBOX_COORDINATE_COUNT of file FUBoundingBox.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUBoundingBox.h:117: Warning: Member FUBOUNDINGBOX_COORDINATES(coordinates, boundingBox) of file FUBoundingBox.h is not documented.
+<FUBOUNDINGBOX_COORDINATES>:1: Warning: parameters of member FUBOUNDINGBOX_COORDINATES are not (all) documented
+<FUBOUNDINGBOX_COORDINATES>:1: Warning: return type of member FUBOUNDINGBOX_COORDINATES is not documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:14: Warning: Member FU_LOG_DEBUG of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:15: Warning: Member FU_LOG_WARNING of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:16: Warning: Member FU_LOG_ERROR of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:17: Warning: Member FU_LOG_INDEX of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:22: Warning: Member WARNING_OUT(token) of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:23: Warning: Member ERROR_OUT(token) of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:29: Warning: Member WARNING_OUT1(token, arg1) of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:30: Warning: Member ERROR_OUT1(token, arg1) of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:37: Warning: Member WARNING_OUT2(token, arg1, arg2) of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDebug.h:38: Warning: Member ERROR_OUT2(token, arg1, arg2) of file FUDebug.h is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUXmlWriter.h:71: Warning: Member AddContentUnprocessed(xmlNode *node, const fm::string &content) of namespace FUXmlWriter is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUXmlWriter.h:72: Warning: Member AddContentUnprocessed(xmlNode *node, FUSStringBuilder &content) of namespace FUXmlWriter is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUXmlWriter.h:74: Warning: Member AddChild(xmlNode *parent, const char *name, const T &value) of namespace FUXmlWriter is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimated.h:226: Warning: argument `animated' of command @param is not found in the argument list of FCDAnimated::Clone(FCDAnimated *clone) const
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimated.h:226: Warning: The following parameters of FCDAnimated::Clone(FCDAnimated *clone) const are not documented:
+  parameter clone
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimation.h:85: Warning: Member GetParent() const  of class FCDAnimation is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimation.h:65: Warning: The following parameters of FCDAnimation::FCDAnimation(FCDocument *document, FCDAnimation *parent=NULL) are not documented:
+  parameter parent
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimationChannel.h:83: Warning: argument `clone' of command @param is not found in the argument list of FCDAnimationChannel::Clone(FCDAnimationChannel *_clone=NULL) const
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimationChannel.h:83: Warning: The following parameters of FCDAnimationChannel::Clone(FCDAnimationChannel *_clone=NULL) const are not documented:
+  parameter _clone
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimationClip.h:47: Warning: The following parameters of FCDAnimationClip::Clone(FCDEntity *clone=NULL, bool cloneChildren=false, FCDAnimationCurve *dependentAnimationCurve=NULL) const are not documented:
+  parameter dependentAnimationCurve
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimationCurve.h:197: Warning: The following parameters of FCDAnimationCurve::Clone(FCDAnimationCurve *clone=NULL, bool includeClips=true, FCDAnimationClip *dependentAnimationClip=NULL) const are not documented:
+  parameter clone
+  parameter dependentAnimationClip
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:159: Warning: Member FCDBezierSpline(FCDocument *document) of class FCDBezierSpline is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:174: Warning: parameters of member FCDBezierSpline::IsValid are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDControllerInstance.h:83: Warning: argument `The' of command @param is not found in the argument list of FCDControllerInstance::SetSkeletonRoot(fstring id)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDControllerInstance.h:83: Warning: The following parameters of FCDControllerInstance::SetSkeletonRoot(fstring id) are not documented:
+  parameter id
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimationCurve.h:295: Warning: Member SetScale(float v) of class FCDConversionScaleFunctor is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimationCurve.h:293: Warning: argument `the' of command @param is not found in the argument list of FCDConversionScaleFunctor::SetScaleFactor(float factor)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDAnimationCurve.h:293: Warning: The following parameters of FCDConversionScaleFunctor::SetScaleFactor(float factor) are not documented:
+  parameter factor
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameter.h:117: Warning: Member GetAnnotations() const  of class FCDEffectParameter is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameter.h:134: Warning: The following parameters of FCDEffectParameter::AddAnnotation(const fchar *name, FCDEffectParameter::Type type, const fchar *value) are not documented:
+  parameter type
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterList.h:67: Warning: Member begin() const  of class FCDEffectParameterList is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterList.h:72: Warning: Member end() const  of class FCDEffectParameterList is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterSurface.h:441: Warning: parameters of member FCDEffectParameterSurfaceInitAsTarget::Clone are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameter.h:723: Warning: argument `value' of command @param is not found in the argument list of FCDEffectParameterVector::SetValue(const FMVector4 &_value)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameter.h:723: Warning: The following parameters of FCDEffectParameterVector::SetValue(const FMVector4 &_value) are not documented:
+  parameter _value
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectPassShader.h:115: Warning: argument `reference' of command @param is not found in the argument list of FCDEffectPassShader::FindBindingSymbol(const char *symbol) const
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectPassShader.h:115: Warning: The following parameters of FCDEffectPassShader::FindBindingSymbol(const char *symbol) const are not documented:
+  parameter symbol
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectStandard.h:156: Warning: Member GetTextureBucket(uint32 bucket) const  of class FCDEffectStandard is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectStandard.h:190: Warning: Member GetTranslucencyColor() const  of class FCDEffectStandard is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectTechnique.h:55: Warning: argument `document' of command @param is not found in the argument list of FCDEffectTechnique::FCDEffectTechnique(FCDEffectProfileFX *_parent)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExtra.h:318: Warning: Member AddChildNode(const fm::string &name) of class FCDENode is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEntity.h:195: Warning: The following parameters of FCDEntity::WriteToEntityXML(xmlNode *parentNode, const char *nodeName, bool writeId=true) const are not documented:
+  parameter writeId
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEntityInstance.h:116: Warning: Member GetExternalReference() const  of class FCDEntityInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEntityInstance.h:132: Warning: Member GetParent() const  of class FCDEntityInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEntityInstance.h:123: Warning: argument `The' of command @param is not found in the argument list of FCDEntityInstance::UseExternalReferenceID(bool u)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEntityInstance.h:123: Warning: The following parameters of FCDEntityInstance::UseExternalReferenceID(bool u) are not documented:
+  parameter u
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExtra.h:214: Warning: Unsupported xml/html tag <extra> found
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReference.h:48: Warning: Member FCDExternalReference(FCDocument *document, FCDEntityInstance *instance) of class FCDExternalReference is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReference.h:78: Warning: parameters of member FCDExternalReference::GetUri are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReference.h:65: Warning: argument `entityId' of command @param is not found in the argument list of FCDExternalReference::SetEntityId(const fm::string &id)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReference.h:65: Warning: The following parameters of FCDExternalReference::SetEntityId(const fm::string &id) are not documented:
+  parameter id
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReference.h:83: Warning: argument `_uri' of command @param is not found in the argument list of FCDExternalReference::SetUri(const FUUri &uri)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExternalReference.h:83: Warning: The following parameters of FCDExternalReference::SetUri(const FUUri &uri) are not documented:
+  parameter uri
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDExtra.h:116: Warning: Unsupported xml/html tag <extra> found
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterSurface.h:30: Warning: Member channelValues of class FCDFormatHint is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterSurface.h:31: Warning: Member rangeValue of class FCDFormatHint is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterSurface.h:32: Warning: Member precisionValue of class FCDFormatHint is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDEffectParameterSurface.h:33: Warning: Member optionValue of class FCDFormatHint is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometry.h:103: Warning: Member IsPSurface() const  of class FCDGeometry is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:43: Warning: Member FCDGeometryInstance(FCDocument *document, FCDSceneNode *parent, FCDEntity::Type entityType=FCDEntity::GEOMETRY) of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:53: Warning: Member FindMaterialInstance(const fchar *semantic) of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:54: Warning: Member FindMaterialInstance(const fstring &semantic) of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:55: Warning: Member FindMaterialInstance(const fchar *semantic) const  of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:56: Warning: Member FindMaterialInstance(const fstring &semantic) const  of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:57: Warning: Member GetMaterialInstanceCount() const  of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:58: Warning: Member GetMaterialInstance(size_t index) of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:59: Warning: Member GetMaterialInstance(size_t index) const  of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:60: Warning: Member GetMaterialInstances() of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:61: Warning: Member GetMaterialInstances() const  of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:62: Warning: Member AddMaterialInstance() of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:63: Warning: Member AddMaterialInstance(FCDMaterial *material, FCDGeometryPolygons *polygons) of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:64: Warning: Member AddMaterialInstance(FCDMaterial *material, const fchar *semantic) of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryInstance.h:65: Warning: Member AddMaterialInstance(FCDMaterial *material, const fstring &semantic) of class FCDGeometryInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryMesh.h:164: Warning: argument `material' of command @param is not found in the argument list of FCDGeometryMesh::FindPolygonsByMaterial(const fstring &semantic, FCDGeometryPolygonsList &sets)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryMesh.h:164: Warning: The following parameters of FCDGeometryMesh::FindPolygonsByMaterial(const fstring &semantic, FCDGeometryPolygonsList &sets) are not documented:
+  parameter semantic
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryMesh.h:204: Warning: parameters of member FCDGeometryMesh::IsVertexSource are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:52: Warning: Member PrimitiveType of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:57: Warning: Member inputs of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:58: Warning: Member idxOwners of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:59: Warning: Member faceVertexCounts of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:60: Warning: Member parent of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:61: Warning: Member faceVertexCount of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:62: Warning: Member holeFaces of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:65: Warning: Member faceOffset of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:66: Warning: Member faceVertexOffset of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:67: Warning: Member holeOffset of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygons.h:70: Warning: Member materialSemantic of class FCDGeometryPolygons is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygonsSpecial.h:58: Warning: Member GetNumberOfVerticesPerList() of class FCDGeometryPolygonsSpecial is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygonsSpecial.h:41: Warning: The following parameters of FCDGeometryPolygonsSpecial::FCDGeometryPolygonsSpecial(FCDocument *document, FCDGeometryMesh *parent, PrimitiveType _type) are not documented:
+  parameter _type
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySource.h:121: Warning: Member GetValue(size_t index) const  of class FCDGeometrySource is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:296: Warning: The following parameters of FCDGeometrySpline::FCDGeometrySpline(FCDocument *document, FCDGeometry *parent, FUDaeSplineType::Type type=FUDaeSplineType::UNKNOWN) are not documented:
+  parameter type
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:326: Warning: argument `The' of command @param is not found in the argument list of FCDGeometrySpline::GetSpline(size_t index)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:326: Warning: The following parameters of FCDGeometrySpline::GetSpline(size_t index) are not documented:
+  parameter index
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:313: Warning: argument `The' of command @param is not found in the argument list of FCDGeometrySpline::SetType(FUDaeSplineType::Type _type)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:314: Warning: Found unknown command `\retrun'
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:313: Warning: The following parameters of FCDGeometrySpline::SetType(FUDaeSplineType::Type _type) are not documented:
+  parameter _type
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDLibrary.h:66: Warning: parameters of member FCDLibrary::AddEntity are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:120: Warning: Member FCDLinearSpline(FCDocument *document) of class FCDLinearSpline is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:135: Warning: parameters of member FCDLinearSpline::IsValid are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:131: Warning: argument `The' of command @param is not found in the argument list of FCDLinearSpline::ToBezier(FCDBezierSpline &toFill)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:131: Warning: The following parameters of FCDLinearSpline::ToBezier(FCDBezierSpline &toFill) are not documented:
+  parameter toFill
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:83: Warning: Member FCDMaterialInstance(FCDEntityInstance *parent) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:89: Warning: Member GetParent() const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:91: Warning: Member GetSemantic() const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:92: Warning: Member SetSemantic(const fchar *_semantic) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:93: Warning: Member SetSemantic(const fstring &_semantic) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:95: Warning: Member GetMaterial() of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:96: Warning: Member GetMaterial() const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:97: Warning: Member SetMaterial(FCDMaterial *_material) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:99: Warning: Member GetBindings() of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:100: Warning: Member GetBindings() const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:101: Warning: Member GetBindingCount() const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:102: Warning: Member GetBinding(size_t index) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:103: Warning: Member GetBinding(size_t index) const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:107: Warning: Member GetPolygons() of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:109: Warning: Member AddBinding() of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:110: Warning: Member AddBinding(const char *semantic, const char *target) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:111: Warning: Member AddBinding(const fm::string &semantic, const char *target) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:112: Warning: Member AddBinding(const char *semantic, const fm::string &target) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:113: Warning: Member AddBinding(const fm::string &semantic, const fm::string &target) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:114: Warning: Member ReleaseBinding(size_t index) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:119: Warning: Member GetVertexInputBindings() const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:120: Warning: Member GetVertexInputBindingCount() const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:121: Warning: Member GetVertexInputBinding(size_t index) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:122: Warning: Member GetVertexInputBinding(size_t index) const  of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:134: Warning: Member AddVertexInputBinding() of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:135: Warning: Member AddVertexInputBinding(const char *semantic, FUDaeGeometryInput::Semantic inputSemantic, int32 inputSet) of class FCDMaterialInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:36: Warning: Member semantic of class FCDMaterialInstanceBind is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:37: Warning: Member target of class FCDMaterialInstanceBind is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:57: Warning: Member semantic of class FCDMaterialInstanceBindTextureSurface is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:58: Warning: Member surfaceIndex of class FCDMaterialInstanceBindTextureSurface is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:59: Warning: Member textureIndex of class FCDMaterialInstanceBindTextureSurface is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:46: Warning: Member semantic of class FCDMaterialInstanceBindVertexInput is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:47: Warning: Member inputSemantic of class FCDMaterialInstanceBindVertexInput is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDMaterialInstance.h:48: Warning: Member inputSet of class FCDMaterialInstanceBindVertexInput is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:202: Warning: Member FCDNURBSSpline(FCDocument *document) of class FCDNURBSSpline is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:240: Warning: Member GetKnot(size_t index) const  of class FCDNURBSSpline is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:252: Warning: parameters of member FCDNURBSSpline::IsValid are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDObject.h:152: Warning: argument `id' of command @param is not found in the argument list of FCDObjectWithId::SetSubId(fm::string &newId)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDObject.h:152: Warning: The following parameters of FCDObjectWithId::SetSubId(fm::string &newId) are not documented:
+  parameter newId
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:272: Warning: Member GetLayer(size_t index) const  of class FCDocument is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:320: Warning: Member GetForceFieldLibrary() const  of class FCDocument is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:432: Warning: parameters of member FCDocument::FindEntity are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:210: Warning: argument `filepath' of command @param is not found in the argument list of FCDocument::SetFileUrl(const fstring &filename)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:210: Warning: The following parameters of FCDocument::SetFileUrl(const fstring &filename) are not documented:
+  parameter filename
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:46: Warning: Member FCDPhysicsRigidBodyInstance(FCDocument *document, FCDPhysicsModelInstance *_parent) of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:49: Warning: Member GetParameters() of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:50: Warning: Member AddParameter(FCDPhysicsParameterGeneric *parameter) of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:51: Warning: Member AddParameter(const char *name, _T value) of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:53: Warning: Member GetPhysicsMaterial() of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:54: Warning: Member GetPhysicsMaterial() const  of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:55: Warning: Member SetPhysicsMaterial(FCDPhysicsMaterial *material) of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:56: Warning: Member AddOwnPhysicsMaterial() of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:58: Warning: Member GetRigidBody() of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:59: Warning: Member SetRigidBody(FCDPhysicsRigidBody *rigidBody) of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:60: Warning: Member FlattenRigidBody() of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:62: Warning: Member GetTargetNode() of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:63: Warning: Member GetTargetNode() const  of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDPhysicsRigidBodyInstance.h:64: Warning: Member SetTargetNode(FCDSceneNode *target) of class FCDPhysicsRigidBodyInstance is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDSceneNode.h:109: Warning: Member GetParents() const  of class FCDSceneNode is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDSceneNode.h:213: Warning: argument `daeId' of command @param is not found in the argument list of FCDSceneNode::FindSubId(const fm::string &subId)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDSceneNode.h:213: Warning: The following parameters of FCDSceneNode::FindSubId(const fm::string &subId) are not documented:
+  parameter subId
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDSkinController.h:139: Warning: Member GetJointIds() const  of class FCDSkinController is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDSkinController.h:145: Warning: argument `joint' of command @param is not found in the argument list of FCDSkinController::AddJoint(const fm::string jSubId, const FMMatrix44 &bindPose)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDSkinController.h:145: Warning: The following parameters of FCDSkinController::AddJoint(const fm::string jSubId, const FMMatrix44 &bindPose) are not documented:
+  parameter jSubId
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:39: Warning: Member FCDSpline(FCDocument *document) of class FCDSpline is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:71: Warning: Member GetCV(size_t index) const  of class FCDSpline is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometrySpline.h:36: Warning: Member cvs of class FCDSpline is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTargetedEntity.h:80: Warning: argument `sceneRoot' of command @param is not found in the argument list of FCDTargetedEntity::LinkTarget()
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTexture.h:62: Warning: The following parameters of FCDTexture::FCDTexture(FCDocument *document, FCDEffectStandard *parent=NULL) are not documented:
+  parameter parent
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTexture.h:125: Warning: argument `cloneChildren' of command @param is not found in the argument list of FCDTexture::Clone(FCDTexture *clone=NULL) const
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTexture.h:82: Warning: Found unknown command `\parameter'
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTexture.h:80: Warning: parameters of member FCDTexture::SetImage are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTransform.h:114: Warning: Member GetAnimated() const =0 of class FCDTransform is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTransform.h:621: Warning: Member GetRotateAxis() of class FCDTSkew is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTransform.h:630: Warning: Member GetAroundAxis() of class FCDTSkew is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDTransform.h:639: Warning: Member GetAngle() of class FCDTSkew is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:71: Warning: Member IsHigherThan(const fm::string &v) const  of class FCDVersion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:72: Warning: Member Is(const fm::string &v) const  of class FCDVersion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:55: Warning: Member major of class FCDVersion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:56: Warning: Member minor of class FCDVersion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDocument.h:57: Warning: Member revision of class FCDVersion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMColor.h:61: Warning: argument `vector' of command @param is not found in the argument list of FMColor::FMColor(const FMVector3 &v)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMColor.h:61: Warning: The following parameters of FMColor::FMColor(const FMVector3 &v) are not documented:
+  parameter v
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMColor.h:66: Warning: argument `vector' of command @param is not found in the argument list of FMColor::FMColor(const FMVector4 &v)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMColor.h:66: Warning: The following parameters of FMColor::FMColor(const FMVector4 &v) are not documented:
+  parameter v
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMMatrix44.h:73: Warning: Member Set(const double *_m) of class FMMatrix44 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMMatrix44.h:110: Warning: parameters of member FMMatrix44::SetTranslation are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMVector2.h:95: Warning: Member Zero of class FMVector2 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMVector2.h:96: Warning: Member Origin of class FMVector2 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMVector3.h:58: Warning: Member FMVector3(const double *source, uint32 startIndex=0) of class FMVector3 is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUBoundingBox.h:86: Warning: argument `boundingBox' of command @param is not found in the argument list of FUBoundingBox::Overlaps(const FUBoundingSphere &boundingSphere, FMVector3 *overlapCenter=NULL) const
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUBoundingBox.h:86: Warning: The following parameters of FUBoundingBox::Overlaps(const FUBoundingSphere &boundingSphere, FMVector3 *overlapCenter=NULL) const are not documented:
+  parameter boundingSphere
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUError.h:244: Warning: argument `errorCallback' of command @param is not found in the argument list of FUError::SetErrorCallback(FUError::Level errorLevel, FUErrorFunctor *callback)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUError.h:244: Warning: The following parameters of FUError::SetErrorCallback(FUError::Level errorLevel, FUErrorFunctor *callback) are not documented:
+  parameter callback
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUError.h:276: Warning: Member FUErrorSimpleHandler(FUError::Level fatalLevel=FUError::ERROR) of class FUErrorSimpleHandler is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUError.h:279: Warning: Member GetErrorString() const  of class FUErrorSimpleHandler is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUError.h:280: Warning: Member IsSuccessful() const  of class FUErrorSimpleHandler is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFileManager.h:46: Warning: argument `path' of command @param is not found in the argument list of FUFileManager::PushRootFile(const fstring &filename)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUFileManager.h:46: Warning: The following parameters of FUFileManager::PushRootFile(const fstring &filename) are not documented:
+  parameter filename
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:317: Warning: Member find(const ObjectClass *item) const  of class FUObjectList is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:379: Warning: argument `it' of command @param is not found in the argument list of FUObjectList< ObjectClass >::erase(iterator first, iterator last)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:379: Warning: The following parameters of FUObjectList::erase(iterator first, iterator last) are not documented:
+  parameter first
+  parameter last
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:369: Warning: argument `it' of command @param is not found in the argument list of FUObjectList< ObjectClass >::erase(iterator _it)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:369: Warning: The following parameters of FUObjectList::erase(iterator _it) are not documented:
+  parameter _it
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:339: Warning: argument `startIterator' of command @param is not found in the argument list of FUObjectList< ObjectClass >::insert(iterator _where, _It _startIterator, _It _endIterator)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:339: Warning: argument `endIterator' of command @param is not found in the argument list of FUObjectList< ObjectClass >::insert(iterator _where, _It _startIterator, _It _endIterator)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:339: Warning: The following parameters of FUObjectList::insert(iterator _where, _It _startIterator, _It _endIterator) are not documented:
+  parameter _startIterator
+  parameter _endIterator
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:422: Warning: parameters of member FUObjectList::operator= are not (all) documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:223: Warning: argument `ptr' of command @param is not found in the argument list of FUObjectRef< ObjectClass >::FUObjectRef(ObjectClass *_ptr=NULL)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:223: Warning: The following parameters of FUObjectRef::FUObjectRef(ObjectClass *_ptr=NULL) are not documented:
+  parameter _ptr
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:239: Warning: argument `_ptr' of command @param is not found in the argument list of FUObjectRef< ObjectClass >::operator=(ObjectClass *__ptr)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUObject.h:239: Warning: The following parameters of FUObjectRef::operator=(ObjectClass *__ptr) are not documented:
+  parameter __ptr
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUStringConversion.h:127: Warning: Member ToVector3(const char **value, float lengthFactor=1.0f) of class FUStringConversion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUStringConversion.h:130: Warning: Member ToVector4(const char **value, float lengthFactor=1.0f) of class FUStringConversion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUStringConversion.h:140: Warning: Member ToVector4(const fchar **value, float lengthFactor=1.0f) of class FUStringConversion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUStringConversion.h:291: Warning: Member ToFString(const FMVector4 &p, float lengthFactor=1.0f) of class FUStringConversion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUStringConversion.h:306: Warning: Member ToFString(const FMVector2 &value, float lengthFactor=1.0f) of class FUStringConversion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUStringConversion.h:346: Warning: Member ToFString(FUStringBuilder &builder, const FMVector2 &value, float lengthFactor=1.0f) of class FUStringConversion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUStringConversion.h:362: Warning: Member ToFString(FUStringBuilder &builder, const FMVector4 &p, float lengthFactor=1.0f) of class FUStringConversion is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUUri.h:17: Warning: Found unknown command `\ARGUMENTS'
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUUri.h:17: Warning: explicit link request to 'DAE_ID' could not be resolved
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygonsTools.h:34: Warning: argument `source' of command @param is not found in the argument list of FCDGeometryPolygonsTools::GenerateTextureTangentBasis(FCDGeometryMesh *mesh, FCDGeometrySource *texcoordSource, bool generateBinormals=true)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FCDocument/FCDGeometryPolygonsTools.h:34: Warning: The following parameters of FCDGeometryPolygonsTools::GenerateTextureTangentBasis(FCDGeometryMesh *mesh, FCDGeometrySource *texcoordSource, bool generateBinormals=true) are not documented:
+  parameter texcoordSource
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArray.h:115: Warning: argument `default' of command @param is not found in the argument list of fm::vector< T >::resize(size_t count, const T &value=T())
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArray.h:115: Warning: The following parameters of fm::vector::resize(size_t count, const T &value=T()) are not documented:
+  parameter value
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArrayPointer.h:109: Warning: Member find(const T *item) const  of class fm::pvector is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArrayPointer.h:147: Warning: argument `it' of command @param is not found in the argument list of fm::pvector< T >::erase(iterator _it)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArrayPointer.h:147: Warning: The following parameters of fm::pvector::erase(iterator _it) are not documented:
+  parameter _it
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArrayPointer.h:131: Warning: argument `startIterator' of command @param is not found in the argument list of fm::pvector< T >::insert(iterator _where, _It _startIterator, _It _endIterator)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArrayPointer.h:131: Warning: argument `endIterator' of command @param is not found in the argument list of fm::pvector< T >::insert(iterator _where, _It _startIterator, _It _endIterator)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FMath/FMArrayPointer.h:131: Warning: The following parameters of fm::pvector::insert(iterator _where, _It _startIterator, _It _endIterator) are not documented:
+  parameter _startIterator
+  parameter _endIterator
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:380: Warning: Member Equation of namespace FUDaePassStateBlendEquation is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:356: Warning: Member Type of namespace FUDaePassStateFaceType is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:456: Warning: Member Type of namespace FUDaePassStateFogCoordinateType is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:432: Warning: Member Type of namespace FUDaePassStateFogType is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:479: Warning: Member Type of namespace FUDaePassStateFrontFaceType is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:585: Warning: Member Type of namespace FUDaePassStateLightModelColorControlType is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:502: Warning: Member Operation of namespace FUDaePassStateLogicOperation is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:406: Warning: Member Type of namespace FUDaePassStateMaterialType is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:538: Warning: Member Mode of namespace FUDaePassStatePolygonMode is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:562: Warning: Member Model of namespace FUDaePassStateShadeModel is not documented.
+<Model>:1: Warning: parameters of member FUDaePassStateShadeModel::Model are not (all) documented
+<Model>:1: Warning: return type of member FUDaePassStateShadeModel::Model is not documented
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:575: Warning: argument `mode' of command @param is not found in the argument list of FUDaePassStateShadeModel::ToString(Model model)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeEnum.h:575: Warning: The following parameters of FUDaePassStateShadeModel::ToString(Model model) are not documented:
+  parameter model
+
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeWriter.h:207: Warning: argument `parameter' of command @param is not found in the argument list of FUDaeWriter::AddSourceFloat(xmlNode *parent, const char *id, const FMVector2List &values)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeWriter.h:207: Warning: argument `lengthFactor' of command @param is not found in the argument list of FUDaeWriter::AddSourceFloat(xmlNode *parent, const char *id, const FMVector2List &values)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeWriter.h:196: Warning: argument `parameter' of command @param is not found in the argument list of FUDaeWriter::AddSourceFloat(xmlNode *parent, const char *id, const FMVector3List &values)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUDaeWriter.h:196: Warning: argument `lengthFactor' of command @param is not found in the argument list of FUDaeWriter::AddSourceFloat(xmlNode *parent, const char *id, const FMVector3List &values)
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUXmlWriter.h:71: Warning: Member AddContentUnprocessed(xmlNode *node, const fm::string &content) of namespace FUXmlWriter is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUXmlWriter.h:72: Warning: Member AddContentUnprocessed(xmlNode *node, FUSStringBuilder &content) of namespace FUXmlWriter is not documented.
+C:/Work/SVN/FeelingSoftware/branches/ColladaFree/FCollada/FUtils/FUXmlWriter.h:74: Warning: Member AddChild(xmlNode *parent, const char *name, const T &value) of namespace FUXmlWriter is not documented.

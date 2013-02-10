@@ -1,0 +1,150 @@
+uniform int ork_rqsort_pass<
+	int UIMin = -1;
+	int UIMax = 7;
+	int UIStep = 1;
+	string UIName = "ork_rqsort_pass";
+	 >;
+uniform int ork_rqsort<
+	int UIMin = 0;
+	int UIMax = 7;
+	int UIStep = 1;
+	//string UIHelp = "yo";
+	string UIName = "ork_rqsort_offset";
+	 >;
+
+struct DifAndSpec
+{
+	float3	Diffuse;
+	float3	Specular;
+};
+
+struct AttenParam
+{
+	float3 A;
+	float3 K;
+	float3 WorldNormal;
+	float3 PosToLight;
+	float3 LightDir;
+	float Dist;
+	float LightMode;
+	float DotBias;
+	float DotScale;
+};
+
+float LightAtten( AttenParam ap )
+{
+	float CosaP = saturate(ap.DotBias+ap.DotScale*dot(-ap.PosToLight,ap.WorldNormal));
+	float CosaD = saturate(ap.DotBias+ap.DotScale*dot(-ap.LightDir,ap.WorldNormal));
+	float Cosa = lerp( CosaD, CosaP, ap.LightMode );
+	float numer = max( 0.0f, 
+	                ap.A.x
+	              + Cosa*ap.A.y
+	              + Cosa*Cosa*ap.A.z );
+	///////////////////////////////////////////////////
+	float denom = ap.K.x
+	            + ap.Dist*ap.K.y
+	            + ap.Dist*ap.Dist*ap.K.z;
+	///////////////////////////////////////////////////
+	// WII emu
+	// float Diffuse = saturate(dot(WorldNormal,-ldir));
+	// float atten = Diffuse*numer/denom;
+	///////////////////////////////////////////////////
+	return numer/denom;
+}
+
+float3 DiffuseLight(	float3 WorldPos,
+						float3 WorldNormal,
+						float3 EyePos,
+						float DotBiasDiffuse,
+						float DotScaleDiffuse )
+{
+	float fambientshade = 0.757f;
+	float fa0 = (1.0f-fambientshade);
+	float fa1 = fambientshade;
+
+	float3 World2Eye = (EyePos-WorldPos);
+
+	float3 LightDir = -normalize(World2Eye);
+	float3 LightColor = float3(1.0f,1.0f,1.0f);
+	///////////////////////////////////////////////////
+	float3 dlpwp = (WorldPos.xyz-EyePos.xyz);
+	float3 PosToLight = normalize(dlpwp);	
+	float Dist = length(dlpwp);
+	///////////////////////////////////////////////////
+	AttenParam ap;
+	///////////////////////////////////////////////////
+	// Diffuse
+	///////////////////////////////////////////////////
+	ap.A = float3(fa0,fa1,0.0f);
+	ap.K = float3(1.0f,0.0f,0.0f);
+	ap.WorldNormal = WorldNormal;
+	ap.PosToLight = PosToLight;
+	ap.LightDir = LightDir;
+	ap.Dist = Dist;
+	ap.LightMode = 0.0f;
+	ap.DotBias = DotBiasDiffuse;
+	ap.DotScale = DotScaleDiffuse;
+	float diffuse = LightAtten( ap );
+	///////////////////////////////////////////////////
+	///////////////////////////////////////////////////
+	float3 DiffuseAccum = LightColor*diffuse;
+	///////////////////////////////////////////////////
+
+	return DiffuseAccum;
+}
+
+DifAndSpec DiffuseSpecularLight( float3 WorldPos,
+								 float3 WorldNormal,
+								 float3 EyePos,
+								 float Shininess,
+								 float DotBiasDiffuse,
+								 float DotScaleDiffuse,
+								 float DotBiasSpecular,
+								 float DotScaleSpecular )
+{
+	float fambientshade = 0.757f;
+	float fa0 = (1.0f-fambientshade);
+	float fa1 = fambientshade;
+
+	float3 World2Eye = (EyePos-WorldPos);
+
+	float3 LightDir = -normalize(World2Eye);
+	float3 LightColor = float3(1.0f,1.0f,1.0f);
+	///////////////////////////////////////////////////
+	float3 dlpwp = (WorldPos.xyz-EyePos.xyz);
+	float3 PosToLight = normalize(dlpwp);	
+	float Dist = length(dlpwp);
+	///////////////////////////////////////////////////
+	AttenParam ap;
+	///////////////////////////////////////////////////
+	// Diffuse
+	///////////////////////////////////////////////////
+	ap.A = float3(fa0,fa1,0.0f);
+	ap.K = float3(1.0f,0.0f,0.0f);
+	ap.WorldNormal = WorldNormal;
+	ap.PosToLight = PosToLight;
+	ap.LightDir = LightDir;
+	ap.Dist = Dist;
+	ap.LightMode = 0.0f;
+	ap.DotBias = DotBiasDiffuse;
+	ap.DotScale = DotScaleDiffuse;
+	float diffuse = LightAtten( ap );
+	///////////////////////////////////////////////////
+	///////////////////////////////////////////////////
+	float3 DiffuseAccum = LightColor*diffuse;
+	///////////////////////////////////////////////////
+	ap.A = float3(0.0f,1.0f,0.0f);
+	ap.K = float3(1.0f,0.0f,0.0f);
+	float specatn = LightAtten( ap );
+	float3 refv = -normalize(2.0f*dot(WorldNormal.xyz,PosToLight.xyz)*WorldNormal-PosToLight);
+	float fdot = saturate(DotBiasSpecular+DotScaleSpecular*dot(refv,-PosToLight.xyz));
+	float fp = pow(fdot,Shininess);
+	float3 SpecularAccum = LightColor*fp;//(fp*specatn);
+	///////////////////////////////////////////////////
+
+	DifAndSpec das;
+	das.Diffuse = DiffuseAccum;
+	das.Specular = SpecularAccum;
+	return das;
+}
+	

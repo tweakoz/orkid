@@ -1,0 +1,90 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float4x4 WorldViewProj : worldviewprojection;
+
+struct Vertex {
+        float4 Position : POSITION;   // in object space
+        float4 Color    : COLOR0;
+};
+
+struct Fragment {
+
+        float4 ClipPos : POSITION;  // in clip space
+        float4 Color : COLOR;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_vtxcol( Vertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.Color.xyz = VtxIn.Color;
+    FragOut.ClipPos = mul(WorldViewProj,VtxIn.Position);
+    return FragOut;
+}
+
+
+float3 GetLogColor(float3 inp)
+{
+	float3 lmpCol;
+	lmpCol.x = pow( inp.x*1.0f, 1.5f )*2.0f;
+	lmpCol.y = pow( inp.y*1.0f, 1.5f )*2.0f;
+	lmpCol.z = pow( inp.z*1.0f, 1.5f )*2.0f;
+	return lmpCol;
+}
+
+Fragment vs_vtxcolLOG( Vertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.Color.xyz = GetLogColor(VtxIn.Color.xyz);
+    FragOut.ClipPos = mul(WorldViewProj,VtxIn.Position);
+    return FragOut;
+}
+////////////////////////////////////////////////////////////////////////////////
+
+float4 ps_vtxcol( Fragment FragIn ) : COLOR
+{
+    float4 PixelOut;
+
+	PixelOut.rgb = FragIn.Color.xyz;
+	PixelOut.a = 1.0f;
+    return PixelOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique vtxcol
+{
+    pass p0
+    {
+        VertexProgram = compile arbvp1 vs_vtxcol( );
+        FragmentProgram = compile arbfp1 ps_vtxcol( );
+
+        Zenable = true;
+        ZWriteEnable = true;
+        FrontFace = CCW; // ccw
+        FogEnable = false;
+        BlendEnable = false;
+        //BlendFunc = int2( SrcAlpha, OneMinusSrcAlpha );
+        BlendFunc = int2(SrcAlpha,SrcColor        );
+    }
+}
+technique vtxcolLOG
+{
+    pass p0
+    {
+        VertexProgram = compile arbvp1 vs_vtxcolLOG( );
+        FragmentProgram = compile arbfp1 ps_vtxcol( );
+
+        Zenable = true;
+        ZWriteEnable = true;
+        FrontFace = CCW; // ccw
+        FogEnable = false;
+        BlendEnable = false;
+        //BlendFunc = int2( SrcAlpha, OneMinusSrcAlpha );
+        BlendFunc = int2(SrcAlpha,SrcColor        );
+    }
+}

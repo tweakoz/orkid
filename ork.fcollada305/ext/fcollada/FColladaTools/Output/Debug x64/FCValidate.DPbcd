@@ -1,0 +1,289 @@
+
+;File created by BoundsChecker.
+;Version 8.1.1 (Build 105)
+
+;Do Not Edit.
+
+; C:\Program Files\Common Files\Compuware\NMShared\4.6\wcore.dll Version = 4.6.19.0
+; C:\Program Files\Common Files\Compuware\NMShared\4.6\nmaedfd.dll Version = N/A
+; C:\Program Files\Common Files\Compuware\NMShared\4.6\nmaedf.dll Version = 4.6.6.0
+; C:\Program Files\Compuware\DevPartner Studio\BoundsChecker\wssmemorytrack.dll Version = 8.1.1 (Build 105)
+
+[Root]
+
+[BC File Variables]
+FilePath=
+FileName=
+FileSource=2
+FileTime=0
+FileDirty=0
+
+[BC Suppression Object]
+SaveToFile=0
+SaveExclusions=1
+ReportOnlyIfSource=0
+EnableEventLogging=1
+
+[BC Output Object]
+Encoding Depth=1
+
+[Configuration file management]
+
+[BC DeadLock]
+WarnReWaitMutex=0
+WarnUnNamed=0
+EnableWatcher=0
+EnableDeadLock=0
+AssumeSingle=1
+ReasonableWait=60000
+MaxHistory=10
+WarnNamed=0
+ReportTimeouts=0
+WarnReEnterCS=0
+
+[CLR Analysis]
+EnableCLRAnalysis=0
+
+[NMBCDotNetExceptions]
+EnableExceptions=1
+
+[NMBCDotNetFinalizer]
+EnableFinalizer=1
+
+[NMBCDotNetPInvoke]
+EnablePInvoke=1
+DetectionThreshold=1
+
+[NMBCDotNETGCMonitor]
+EnableGCMonitor=1
+
+[NMBCDotNETInterop]
+EnableCOMInterop=1
+
+[ManagedToUnmanagedCOMInterop]
+DetectionThreshold=1
+
+[UnmanagedToManagedCOMInterop]
+DetectionThreshold=1
+
+[System Files]
+ViewAll=0
+
+[FileHook User]
+
+[FileHook System]
+C:\Windows\WinSxS=2
+C:\Windows\system32=2
+C:\Windows\Assembly=2
+C:\Program Files\Common Files=2
+C:\Windows\Microsoft.NET\Framework=2
+
+[Fonts and Colors]
+
+[WCore]
+DynamicNlbFiles=0
+CommandLineArguments=
+MaxAllocCallStackDepth=5
+PromptToSave=0
+Search Path=c:\work\svn\feelingsoftware\branches\colladafree\3.05\fcolladatools\output\debug\;c:\work\svn\feelingsoftware\branches\colladafree\3.05\fcolladatools\output\debug;C:\Program Files\Microsoft Visual Studio 8\VC\crt\src\;C:\Program Files\Microsoft Visual Studio 8\VC\atlmfc\src\mfc\;C:\Program Files\Microsoft Visual Studio 8\VC\atlmfc\src\atl\;C:\Program Files\Microsoft Visual Studio 8\VC\atlmfc\include\;.;..
+EnablePopup=1
+MaxCallStackDepth=20
+NlbFileDir=c:\work\svn\feelingsoftware\branches\colladafree\3.05\fcolladatools\output\debug x64\
+DisplayPopup=Always
+WorkingDirectory=c:\work\svn\feelingsoftware\branches\colladafree\3.05\fcolladatools\output\debug\
+SymbolPath=
+
+[WCore Fake Stuff]
+
+[Interface Track]
+EnableInterfaceTrack=0
+
+[TrackingInterfaces]
+TrackAllCom=2
+
+[TrackingGuids]
+
+[API Logging]
+LogWndProcCalls=0
+LogApiCheck=1
+ViewOnly=1
+LogSubsystem=0
+
+[APIModules]
+D3D8.DLL=2
+MSVCRT*.DLL=2
+kernel32.DLL=2
+D3D9.DLL=2
+Iadmw.DLL=2
+LZ32.DLL=2
+gdi32.DLL=2
+Advapi32.DLL=2
+mshtml.DLL=2
+msxml3.DLL=2
+OLEDLG.DLL=2
+ComSvcs.DLL=2
+ole32.DLL=2
+NTDLL.DLL=2
+msado15.DLL=2
+XOLEHLP.DLL=2
+HTTPAPI.DLL=2
+wtsapi32.DLL=2
+DBMSSOCN.DLL=2
+User32.DLL=2
+shlwapi.DLL=2
+comdlg32.DLL=2
+OLEPRO32.DLL=2
+SSNETLIB.DLL=2
+MTXEX.DLL=2
+d3dx9d.DLL=2
+url.DLL=2
+Crypt32.DLL=2
+IPHLPAPI.DLL=2
+DINPUT.DLL=2
+MSVBVM60.DLL=2
+glu32.DLL=2
+opengl32.DLL=2
+RPCRT4.DLL=2
+MSVBVM50.DLL=2
+ACTIVDBG.DLL=2
+version.DLL=2
+uxtheme.DLL=2
+msrating.DLL=2
+SetupAPI.DLL=2
+MSCOREE.DLL=2
+ISATQ.DLL=2
+msdtcprx.DLL=2
+userenv.DLL=2
+mpr.DLL=2
+ComCtl32.DLL=2
+ws2_32.DLL=2
+SHDOCVW.DLL=2
+HLINK.DLL=2
+ACTIVSCP.DLL=2
+secur32.DLL=2
+shell32.DLL=2
+ApiModules=2
+wininet.DLL=2
+OleAut32.DLL=2
+ASP.DLL=2
+urlmon.DLL=2
+winTrust.DLL=2
+MTXDM.DLL=2
+msado20.DLL=2
+netapi32.DLL=2
+WinSpool.DLL=2
+GdiPlus.DLL=2
+Odbc32.DLL=2
+msado21.DLL=2
+
+[COM Logging]
+EnableComLogging=0
+COM User Components=2
+COM System Components=2
+System Options Loadtime=0
+LogComNoModuleVTables=2
+LogComCheck=2
+
+[COM User Components]
+
+[COM System Components]
+
+[DotNet Logging]
+System Options Loadtime=0
+.NET User Assemblies=2
+EnableDotNetLogging=0
+.NET System Assemblies=1
+LogDotNetCheck=3
+
+[.NET User Assemblies]
+
+[.NET System Assemblies]
+
+[BC MemoryTracker]
+RealtimeLeak=1
+GuardByte=FC
+CheckHeapNever=1
+PoisonByte=FD
+UninitMemCheckBasic=1
+FillByte=FB
+EnableFinalCheck=1
+CheckHeapAlways=0
+EnableNestedLeak=0
+PoisonOnFree=1
+EnableGuardByte=1
+FillFlag=1
+EnableMemoryTrack=1
+GuardByteCount=4
+UninitMinCheck=2
+FussyRealloc=0
+CheckHeapAdaptive=0
+ShowMRVOnExit=0
+
+[Resource Track]
+EnableResourceTrack=1
+
+[ResourceSuperTypes]
+3=*
+11=*
+4=*
+12=*
+5=*
+13=*
+6=*
+14=*
+7=*
+15=*
+8=*
+16=*
+9=*
+17=*
+1=*
+2=*
+10=*
+
+[BC Validation]
+EnableFill=0
+ComInvArg=1
+ComReturnCheck=1
+ApiReturnCheck=1
+Cat_Flags_Enums_Ranges=1
+EnableMemValidation=0
+NotImpl=1
+FillByte=FE
+EnableStaticHooks=1
+ApiInvArg=1
+EnableValidation=0
+Cat_Handles_Pointers=1
+
+[API]
+KERNEL32.DLL=1
+D3D8.DLL=1
+ADVAPI32.DLL=1
+GDI32.DLL=1
+OLE32.DLL=1
+OLEDLG.DLL=1
+USER32.DLL=1
+COMDLG32.DLL=1
+MSWSOCK.DLL=1
+SHLWAPI.DLL=1
+OLEPRO32.DLL=1
+URL.DLL=1
+OPENGL32.DLL=1
+GLU32.DLL=1
+IPHLPAPI.DLL=1
+MSRATING.DLL=1
+UXTHEME.DLL=1
+VERSION.DLL=1
+MSVCRT.DLL=1
+MPR.DLL=1
+USERENV.DLL=1
+SHELL32.DLL=1
+COMCTL32.DLL=1
+HLINK.DLL=1
+WS2_32.DLL=1
+OLEAUT32.DLL=1
+WININET.DLL=1
+URLMON.DLL=1
+WINTRUST.DLL=1
+NETAPI32.DLL=1
+ODBC32.DLL=1

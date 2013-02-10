@@ -1,0 +1,9 @@
+Import('qtEnv')
+
+env = qtEnv.Clone()
+env.EnableQt4Modules(['QtCore','QtGui'])
+
+source_files = Glob('*.cpp')+Glob('*.qrc')
+env['QT4_QRCFLAGS'] = ['-name', 'icons']
+
+env.Program('main', source_files)

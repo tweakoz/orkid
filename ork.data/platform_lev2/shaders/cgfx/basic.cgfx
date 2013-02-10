@@ -1,0 +1,164 @@
+///////////////////////////////////////////////////////////////////////////////
+// Orkid
+// Copyright 1996-2010, Michael T. Mayers
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float4x4        WVPMatrix;
+uniform float4x4        VPMatrix;
+uniform float4x4        PMatrix;
+uniform float4x4        WMatrix;
+uniform float4x4        WVMatrix;
+uniform float4x4        VMatrix;
+uniform float4x4        WRotMatrix;
+uniform float4x4        DiffuseMapMatrix;
+uniform float4x4        NormalMapMatrix;
+uniform float4x4        SpecularMapMatrix;
+
+uniform float4x4        BoneMatrices;
+
+uniform float4          modcolor;
+uniform float           time;
+
+uniform float3			AmbientLight;
+uniform int				NumDirectionalLights;
+uniform float3			DirectionalLightDir[4];
+uniform float3			DirectionalLightColor[4];
+uniform float3			EmissiveColor;
+
+uniform float3			WCamLoc;
+uniform float			SpecularPower;
+
+///////////////////////////////////////////////////////////////////////////////
+
+sampler2D DiffuseMap = sampler_state
+{
+    MagFilter = NEAREST;
+    MinFilter = NEAREST;
+};
+
+sampler2D SpecularMap = sampler_state
+{
+    MagFilter = NEAREST;
+    MinFilter = NEAREST;
+};
+
+sampler2D AmbientMap = sampler_state
+{
+    MagFilter = NEAREST;
+    MinFilter = NEAREST;
+};
+
+sampler2D NormalMap = sampler_state
+{
+    MagFilter = NEAREST;
+    MinFilter = NEAREST;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SimpleVertex
+{
+    float3 Position : POSITION;
+    float3 Normal : NORMAL;
+    float2 Uv0 : TEXCOORD0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Fragment
+{
+    float4 ClipPos : Position;
+    float4 Color   : Color;
+    float2 Uv0 : TEXCOORD0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment VSLambertTex( SimpleVertex VtxIn )
+{
+    Fragment FragOut;
+
+    float4 WorldPos = mul( float4( VtxIn.Position, 1.0f ), WMatrix );
+    float3 WorldNormal = normalize( mul( float4(VtxIn.Normal,0.0f), WRotMatrix ).xyz );
+    FragOut.ClipPos = mul( float4( VtxIn.Position, 1.0f ), WVPMatrix );
+            	
+	//float3 DiffuseAccum = saturate(		PerVertexDiffuseLight(0,WorldNormal)
+	//								+	PerVertexDiffuseLight(1,WorldNormal)
+	//								+	PerVertexDiffuseLight(2,WorldNormal)
+	//								+	PerVertexDiffuseLight(3,WorldNormal)
+	//								+	EmissiveColor );
+ 
+	float Diffuse = dot( WorldNormal, float3( 1.0f, 0.0f, 0.0f ) );//float4( WorldNormal, 1.0f ); //;
+    FragOut.Color = float4( DirectionalLightColor[0], 1.0f );
+    FragOut.Uv0 = mul( float4( VtxIn.Uv0, 0.0f, 1.0f ), DiffuseMapMatrix ).xy;
+    //FragOut.UV1 = VtxIn.Position;
+    //FragOut.UV2 = VtxIn.Normal;        
+    return FragOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_fragcolor( Fragment FragIn ) : COLOR
+{
+    float4 PixOut;
+    PixOut = FragIn.Color;
+    return PixOut;
+}
+
+float4 ps_texcolor( Fragment FragIn ) : COLOR
+{
+    float4 PixOut = FragIn.Color*tex2D( DiffuseMap, FragIn.Uv0*float2(1.0f,-1.0f) ) * modcolor;
+    return PixOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_modcolor( SimpleVertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.ClipPos = mul( float4( VtxIn.Position, 1.0f ), WVPMatrix );
+    FragOut.Color = modcolor;
+    return FragOut;
+}
+Fragment vs_wnormal( SimpleVertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.ClipPos = mul( float4( VtxIn.Position, 1.0f ), WVPMatrix );
+	float4 wnorm = mul( float4(VtxIn.Normal.xyz,0.0f), WRotMatrix );
+    FragOut.Color = float4(normalize(wnorm.xyz),1.0f);
+    return FragOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique tek_lamberttex
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSLambertTex();
+		PixelShader = compile glslf ps_texcolor();
+		DepthTestEnable=true;
+		DepthMask=true;
+	}
+}
+technique tek_modcolor
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_modcolor();
+		PixelShader = compile glslf ps_fragcolor();
+		DepthTestEnable=true;
+		DepthMask=true;
+	}
+}
+technique tek_wnormal
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_wnormal();
+		PixelShader = compile glslf ps_fragcolor();
+		DepthTestEnable=true;
+		DepthMask=true;
+	}
+}
+

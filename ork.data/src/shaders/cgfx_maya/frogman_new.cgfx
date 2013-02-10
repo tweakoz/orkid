@@ -1,0 +1,342 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "tanspace.cgh"
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform string fxname<> = "frogskin";
+string description = "morkshader<frogman>";
+
+uniform float time : time;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float2 nmap_dir0<> = {0.0f, 0.0f};
+uniform float2 nmap_dir1<> = {0.0f, 0.0f};
+
+uniform float SubDermDepth
+<
+    string UIWidget = "Slider";
+    float UIMin = -0.5;
+    float UIMax = 0.5;
+    float UIStep = 0.001;
+> = 0.0f;
+
+uniform float SubDermMix
+<
+    string UIWidget = "Slider";
+    float UIMin = -1.0f;
+    float UIMax = 1.0f;
+    float UIStep = 0.001;
+> = 0.0f;
+
+uniform float3 DiffuseColor
+<
+> = {0.8f, 0.5f, 0.1f};
+uniform float3 AmbientColor
+<
+> = {0.8f, 0.5f, 0.1f};
+uniform float3 SpecularColor
+<
+> = {0.8f, 0.5f, 0.1f};
+
+uniform float ShineUvScale
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 30.0;
+    float UIStep = 0.01;
+> = 0.0f;
+uniform float DetailUvScale0
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 30.0;
+    float UIStep = 0.01;
+> = 0.0f;
+uniform float DetailUvScale1
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 30.0;
+    float UIStep = 0.01;
+> = 0.0f;
+
+uniform float DetailBumpScale0
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 1.0;
+    float UIStep = 0.01;
+> = 0.0f;
+uniform float DetailBumpScale1
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 1.0;
+    float UIStep = 0.01;
+> = 0.0f;
+
+uniform float NormalLerp
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 1.0;
+    float UIStep = 0.01;
+> = 0.0f;
+
+uniform float Shininess
+<
+    string UIName = "Shininess";
+    string UIWidget = "Slider";
+    float UIMin = 1.0;
+    float UIMax = 10.0;
+    float UIStep = 0.01;
+> = 1.0f;
+
+uniform float DiffuseMix
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 3.0;
+    float UIStep = 0.01;
+> = 1.0f;
+uniform float SpecularMix
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 3.0;
+    float UIStep = 0.01;
+> = 1.0f;
+uniform float AmbientMix
+<
+    string UIWidget = "Slider";
+    float UIMin = 0.0;
+    float UIMax = 3.0;
+    float UIStep = 0.01;
+> = 1.0f;
+
+///////////////////////////////////////////////////////////////////////////////
+
+texture ColorTex;
+texture ObjNormalTex;
+texture DetailNormalTex;
+texture DetailNormalTex2;
+texture AmbTex;
+texture ShineTex;
+texture SubDermTex;
+uniform textureCUBE CubeTex : Cube
+<
+	string ResourceType = "Cube";
+>;
+
+struct Vertex
+{
+    float4 Position : POSITION;   // in object space
+    //float4 Color : COLOR;
+    float2 Uv0 : TEXCOORD0;
+    float3 Normal : NORMAL;
+    float3 Binormal : BINORMAL;
+};
+
+struct Fragment
+{
+    float4 ClipPos    : POSITION;  // in clip space
+    float4 Color      : COLOR0;
+    float2 Uv0        : TEXCOORD0;
+    float3 Normal     : TEXCOORD1;
+    float3 ObjToLyt   : TEXCOORD2;
+    float3 ObjToHalf  : TEXCOORD3;
+    float3 ObjToEye   : TEXCOORD4;
+    float4 ObjPos     : TEXCOORD5;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+sampler2D ColorMap = sampler_state
+{
+        Texture = <ColorTex>;
+        magFilter = Linear;
+        minFilter = LinearMipmapLinear;
+};
+sampler2D ObjNormalMap = sampler_state
+{
+        Texture = <ObjNormalTex>;
+        magFilter = Linear;
+        minFilter = LinearMipmapLinear;
+};
+sampler2D DetailNormalMap = sampler_state
+{
+        Texture = <DetailNormalTex>;
+        magFilter = Linear;
+        minFilter = LinearMipmapLinear;
+};
+
+sampler2D DetailNormalMap2 = sampler_state
+{
+        Texture = <DetailNormalTex2>;
+        magFilter = Linear;
+        minFilter = LinearMipmapLinear;
+};
+////////////////////////////////////////////////////////////////////////////////
+
+sampler2D AmbMap = sampler_state
+{
+        Texture = <AmbTex>;
+        magFilter = Linear;
+        minFilter = LinearMipmapLinear;
+};
+
+sampler2D ShineMap = sampler_state
+{
+        Texture = <ShineTex>;
+        magFilter = Linear;
+        minFilter = LinearMipmapLinear;
+};
+
+sampler2D SubDermMap = sampler_state
+{
+        Texture = <SubDermTex>;
+        magFilter = Linear;
+        minFilter = LinearMipmapLinear;
+};
+
+samplerCUBE CubeMap = sampler_state
+{
+    Texture = <CubeTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+Fragment MainVS( Vertex VtxIn )
+{
+
+    float3 worldPos     = mul(World,VtxIn.Position).xyz;
+    float3 worldEye     = ViewIT[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye;
+
+	float3 WorldNormal = mul( World, float4( VtxIn.Normal, 0.0f ) ).xyz;
+	float3 WorldBiNormal = mul( World, float4( VtxIn.Binormal, 0.0f ) ).xyz;
+	float3 Tangent = normalize( cross( VtxIn.Normal, VtxIn.Binormal ) );
+	float3 WorldTangent = mul( World, float4( Tangent, 0.0f ) ).xyz;
+
+    /////////////////////////////////////
+    // ( Tangent Space Lighting )
+
+   TanLytData tldata = GenTanLytData( World, worldToLyt, worldToEye, WorldNormal, WorldBiNormal, WorldTangent );
+
+    /////////////////////////////////////
+
+    Fragment FragOut;
+    FragOut.ClipPos = mul(WorldViewProj,VtxIn.Position);
+    FragOut.Color = float4(1.0f,1.0f,1.0f,1.0f);
+    FragOut.Normal = VtxIn.Normal;
+    FragOut.Uv0 = VtxIn.Uv0 * float2(1.0f,1.0f);
+    FragOut.ObjToLyt = normalize(tldata.ObjLyt);
+    FragOut.ObjToHalf = normalize(tldata.ObjHalf);
+    FragOut.ObjToEye = normalize(tldata.ObjEye);
+    FragOut.ObjPos = VtxIn.Position;
+    return FragOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 VtxColorPs( Fragment FragIn ) : COLOR
+{
+    return float4( FragIn.Color.xyz, 1.0f );
+}
+float4 MainPS3( Fragment FragIn ) : COLOR
+{
+    float3 VtxNormal = FragIn.Normal;
+    float3 NormalMap = (tex2D( ObjNormalMap , FragIn.Uv0 ).rgb-float3(0.5f,0.5f,0.5f))*2.0f;
+    float3 ObjSpaceNormal = lerp( VtxNormal, NormalMap, NormalLerp );
+    return float4( ObjSpaceNormal.xyz, 1.0f );
+}
+float4 MainPS4( Fragment FragIn ) : COLOR
+{
+	float3 ObjEye = normalize( FragIn.ObjToEye );
+
+	///////////////////////
+	// SubDermal (parallax)
+	
+	float2 SubDermUv = FragIn.Uv0*30.0f;
+	
+	float sdd = SubDermDepth*3.0f;
+
+    float SubDermHeight = tex2D( SubDermMap , SubDermUv ).r*sdd;
+
+    float3x3 SubDermTanFrame = ComputeTangentFrame( normalize(FragIn.Normal), FragIn.ObjPos.xyz, SubDermUv );
+	float3 SubDermTanEye = normalize(mul( SubDermTanFrame,ObjEye ));
+
+	SubDermUv += (SubDermTanEye.xy*SubDermHeight);
+
+    float3 SubDermMapS = tex2D( SubDermMap , SubDermUv ).rgb;
+
+	///////////////////////
+
+    float3 ColorMapS = tex2D( ColorMap , FragIn.Uv0 ).rgb;
+
+	///////////////////////
+
+    float3 AmbientMap = tex2D( AmbMap , FragIn.Uv0 ).rgb;
+    float3 NormalMap = (tex2D( ObjNormalMap , FragIn.Uv0 ).rgb-float3(0.5f,0.5f,0.5f))*2.0f;
+    float3 ShineMapS = tex2D( ShineMap , FragIn.Uv0*ShineUvScale ).rgb;
+
+    float2 DetUv0 = (FragIn.Uv0*DetailUvScale0)+(nmap_dir0*time);
+    float2 DetUv1 = (FragIn.Uv0*DetailUvScale1)+(nmap_dir1*time);
+    float3 DetNormalMap = (tex2D( DetailNormalMap , DetUv0 ).rgb-float3(0.5f,0.5f,0.5f))*2.0f;
+    float3 DetNormalMap2 = (tex2D( DetailNormalMap2 , DetUv1 ).rgb-float3(0.5f,0.5f,0.5f))*2.0f;
+    float3 DetScale0 = float3( DetailBumpScale0, DetailBumpScale0, 1.0f );
+    float3 DetScale1 = float3( DetailBumpScale1, DetailBumpScale1, 1.0f );
+    float3 CombDetNormalMap = normalize(float3(0.0f,0.0f,0.01f)+(DetNormalMap*DetScale0)+(DetNormalMap2*DetScale1));
+
+    float3 VtxNormal = FragIn.Normal;
+
+    float3 ObjSpaceNormal = normalize(lerp( VtxNormal, NormalMap, NormalLerp ));
+    float3x3 TanFrame = ComputeTangentFrame( ObjSpaceNormal, FragIn.ObjPos, DetUv0 );
+    float3 ObjDetNorm = normalize(mul( CombDetNormalMap, TanFrame ));
+
+    float fdotL = saturate( dot( ObjDetNorm, FragIn.ObjToLyt ) );
+    float fdotH = saturate( dot( ObjDetNorm, FragIn.ObjToHalf ) );
+
+    float Specular = SpecularMix*pow( fdotH , Shininess*(1.0f+((1.0f-ShineMapS.x))) )*(1.0f-ShineMapS.y);
+    float Diffuse = DiffuseMix*fdotL;
+
+    float3 lookup = normalize( reflect( FragIn.ObjToLyt, ObjDetNorm) );
+
+    float3 texCube = texCUBE( CubeMap,  lookup ).rgb;
+
+    float3 OutColor =	(AmbientMap*AmbientMix*AmbientColor*FragIn.Color.rgb*ColorMapS)
+					+	(Diffuse*DiffuseColor.rgb*AmbientMap*FragIn.Color.rgb*ColorMapS)
+					+	(Specular*SpecularColor.rgb*texCube)
+					+	(SubDermMapS*SubDermMix);
+	
+	//OutColor = DetNormalMap;
+	
+    return float4( OutColor, 1.0f );
+}
+
+technique VertexColor
+{   pass p0
+    {   VertexProgram = compile arbvp1 MainVS();
+        FragmentProgram = compile arbfp1 VtxColorPs();
+    }
+}
+technique NormalLerpTest
+{   pass p0
+    {   VertexProgram = compile arbvp1 MainVS();
+        FragmentProgram = compile arbfp1 MainPS3();
+    }
+}
+technique FrogMan
+{   pass p0
+    {   VertexProgram = compile vp40 MainVS();
+        FragmentProgram = compile fp40 MainPS4();
+    }
+}

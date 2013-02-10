@@ -1,0 +1,221 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "tanspace.cgh"
+
+string description = "morkshader<volnoise>";
+string ggmvtxconfig = "v12c4t8";
+string xgmvtxconfig = "v12c4t8";
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float time : time;
+
+///////////////////////////////////////////////////////////////////////////////
+// artist parameters
+
+uniform float		UvScaleClr	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.1; >;
+uniform float		UvScaleNseA	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.1; >;
+uniform float		UvScaleNseB	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.1; >;
+uniform float		UvScaleNseC	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.1; >;
+
+uniform float		UvNseSpeedA	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.01; >;
+uniform float		UvNseSpeedB	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.01; >;
+uniform float		UvNseSpeedC	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.01; >;
+
+uniform float		AlphaThresh	<	float UIMin = 0.0;    float UIMax = 1.0;    float UIStep = 0.01; >;
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform texture2D ColorTex;
+uniform texture3D VolumeTex
+<
+	string ResourceType = "3D";
+>;
+
+sampler2D ColorMap = sampler_state
+{
+	Texture = <ColorTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler3D VolumeMap = sampler_state
+{
+	Texture = <VolumeTex>;
+    MagFilter = Linear;
+    MinFilter = Nearest;
+	WrapS = Repeat;
+    WrapT = Repeat;
+    WrapR = Repeat;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Fragment {
+
+        float4 ClipPos : POSITION;  // in clip space
+        float4 Color : COLOR;
+
+        float3 UVW0             : TEXCOORD0;
+        float3 UVW1             : TEXCOORD1;
+        float3 UVW2             : TEXCOORD2;
+        
+        float2 UVC             : TEXCOORD3;
+};
+
+struct Vertex {
+        float4 Position : POSITION;   // in object space
+        float4 TexCoord : TEXCOORD0;
+        float3 Normal   : NORMAL;
+        //float3 Binormal : BINORMAL;
+        float4 Color    : COLOR0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_volnoise_objspace( Vertex VtxIn )
+{
+    Fragment FragOut;
+	
+	time = fmod( time, 10000 );
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(WorldView, VtxIn.Position ).xyz;
+    float3 worldPos = mul(World,VtxIn.Position).xyz;
+                
+    //////////////////////////////////////
+        
+    float3 worldNormal  = normalize( mul( World, float4( VtxIn.Normal,0.0f ) ).xyz );
+    float3 worldEye     = ViewIT[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye; //normalize( - SunDir );
+
+    /////////////////////////////////////
+
+	float3 OffsetX = float3( 1.0f, 0.0f, 0.0f );
+	float3 OffsetY = float3( 0.0f, 1.0f, 0.0f );
+	float3 OffsetZ = float3( 0.0f, 0.0f, 1.0f );
+
+    FragOut.UVW0.xyz = float3( VtxIn.Position.xyz*UvScaleNseA+(OffsetX*time*UvNseSpeedA) );
+    FragOut.UVW1.xyz = float3( VtxIn.Position.xyz*UvScaleNseB+(OffsetY*time*UvNseSpeedB) );
+    FragOut.UVW2.xyz = float3( VtxIn.Position.xyz*UvScaleNseC+(OffsetZ*time*UvNseSpeedC) );
+
+    FragOut.UVC.xy = VtxIn.TexCoord.xy;
+
+    /////////////////////////////////////
+
+    FragOut.Color.xyz = float3(1.0f,1.0f,1.0f);
+
+    FragOut.ClipPos = mul(WorldViewProj,VtxIn.Position);
+
+    /////////////////////////////////////
+
+    return FragOut;
+}
+    
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_volnoise( Fragment FragIn ) : COLOR
+{	
+	float2 UvA = FragIn.UVW0.xy*UvScaleClr;
+	
+	float3 rgb = tex3D( VolumeMap, FragIn.UVW0.xyz ).xyz;
+	       rgb += tex3D( VolumeMap, FragIn.UVW1.xyz ).xyz;
+	       rgb += tex3D( VolumeMap, FragIn.UVW2.xyz ).xyz;
+	
+	rgb *= 0.333f;
+	
+	float3 tclr = tex2D(ColorMap, float2(rgb.r*rgb.r,0.5f) ).xyz;
+	
+	float4 mrtout = float4( tclr, rgb.r );
+
+    return mrtout;
+	
+}
+
+float4 ps_uvdebugclr( Fragment FragIn ) : COLOR
+{
+	/////////////////////////
+	
+	float2 UvA = FragIn.UVW0.xy*UvScaleClr;
+
+	float r = fmod( abs(UvA.r), 1.0f );
+	float g = fmod( abs(UvA.g), 1.0f );
+	
+	float4 mrtout = float4( r, g, 0.0f, 1.0f );
+    return mrtout;
+	
+}    
+///////////////////////////////////////////////////////////////////////////////
+
+technique volnoise_objspace
+{
+	pass p0
+	{
+		VertexShader = compile vp40 vs_volnoise_objspace();
+		PixelShader = compile fp40 ps_volnoise();
+		DepthTestEnable = false;
+		DepthMask = true;
+		Texture3DEnable[0] = true; 
+		//DepthWriteEnable = false;
+
+		FrontFace       = CW;
+		CullFaceEnable = false;
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, AlphaThresh) ;
+	
+
+        BlendEnable = true;
+        //BlendEnable = true;
+        BlendFunc = int2( SrcAlpha,OneMinusSrcAlpha ); // OneMinusSrcAlpha
+        //BlendFunc = int2( One,One ); // OneMinusSrcAlpha
+	}
+}
+
+technique volnoise_additive_objspace
+{
+	pass p0
+	{
+		VertexShader = compile vp40 vs_volnoise_objspace();
+		PixelShader = compile fp40 ps_volnoise();
+		DepthTestEnable = false;
+		DepthMask = true;
+		Texture3DEnable[0] = true; 
+		//DepthWriteEnable = false;
+
+		FrontFace       = CW;
+		CullFaceEnable = false;
+
+		AlphaTestEnable = true;
+		AlphaFunc = float2(Greater, AlphaThresh) ;
+	
+
+        BlendEnable = true;
+        //BlendEnable = true;
+        //BlendFunc = int2( SrcAlpha,OneMinusSrcAlpha ); // OneMinusSrcAlpha
+        BlendFunc = int2( One,One ); // OneMinusSrcAlpha
+	}
+}
+
+technique UvDebugClr
+{
+	pass p0
+	{
+		VertexShader = compile vp40 vs_volnoise_objspace();
+		PixelShader = compile fp40 ps_uvdebugclr();
+		DepthTestEnable = true;
+		DepthMask = true;
+
+		FrontFace       = CW;
+		CullFaceEnable = true;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////

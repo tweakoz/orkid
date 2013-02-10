@@ -1,0 +1,65 @@
+import os
+import glob
+import string
+import ork.build.utils as obu
+import ork.build.slnprj as sln
+
+#imported_so = Import('import_so')
+
+##########################################
+# set scons options
+##########################################
+
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src' )
+SetOption('num_jobs', obu.num_cores) 
+
+##########################################
+# basics
+##########################################
+#print ARGUMENTS
+
+ARGS = dict()
+ARGS["PLATFORM"] = "ix"
+ARGS["BUILD"] = "release"
+
+BasicEnv = Environment( ENV=os.environ )
+
+prj = sln.Project(ARGS,BasicEnv,"$PRJNAME")
+prj.SetSrcBase( "src" )
+prj.AddFolders( ".", "*.cpp" )
+
+##########################################
+# compute compile options
+##########################################
+
+#prj.cpppath 	+= "/opt/od/include /usr/include/qt4/ "
+#prj.cpppath 	+= "/usr/include/freetype2 ./inc"
+
+#prj.pkgs += " ImageMagick++ "
+
+#prj.libs =  " tsx_common "
+#prj.libs += " boost_system-mt boost_filesystem-mt"
+#prj.libs += " ftgl GL GLU CgGL Cg ork"
+#prj.libs += " freetype avformat avcodec avutil swscale"
+#prj.libs += " pthread BlocksRuntime rt tbb curses"
+
+##########################################
+# build  environment
+##########################################
+
+#env = Environment(ENV=os.environ)
+#prj.init_env(env)
+
+##########################################
+# declare the shared lib
+##########################################
+
+#exename = "%s/bin/$PRJNAME.exe" % prj.stage_dir
+
+prj.Configure()
+prg = prj.Program( )
+
+#Depends( prg, imported_so )
+

@@ -1,0 +1,394 @@
+///////////////////////////////////////////////////////////////////////////////
+// Orkid
+// Copyright 1996-2010, Michael T. Mayers
+///////////////////////////////////////////////////////////////////////////////
+
+#include "lighting_common.fxi"
+#include "tanspace.fxi"
+
+uniform float		UvScaleClr;
+uniform float		UvScaleNrm;
+uniform float		UvScaleEmi;
+uniform float		UvScaleSpc;
+uniform float		BumpLevA;
+uniform float		EmissiveMix;
+uniform float		DiffuseMix;
+uniform float		SpecularMix;
+uniform float		Shininess;
+uniform float		DotBiasDiffuse;
+uniform float		DotScaleDiffuse;
+uniform float		DotBiasSpecular;
+uniform float		DotScaleSpecular;
+
+///////////////////////////////////////////////////////////////////////////////
+
+sampler2D ColorMap = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D SpecuMap = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D EmissiveMap = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+sampler2D NormalMap = sampler_state
+{
+    MagFilter = Linear;
+    MinFilter = LinearMipmapLinear;
+    WrapS = Repeat;
+    WrapT = Repeat;
+    LODBias = 0.0f;
+    GenerateMipMap = false;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct SimpleVertex
+{
+    float3 Position : POSITION;
+    float3 Normal : NORMAL;
+    float2 Uv0 : TEXCOORD0;
+};
+
+struct ColorVertex
+{
+    float3 Position : POSITION;
+    float4 Color : COLOR;
+    float2 Uv0 : TEXCOORD0;
+};
+
+struct NormalVertex
+{
+    float3 Position : POSITION;
+    float4 Color : COLOR;
+    float3 Normal : NORMAL;
+    float2 Uv0 : TEXCOORD0;
+};
+struct PhongVertex
+{
+    float3 Position : POSITION;
+    float4 TexCoord : TEXCOORD0;
+    float3 Normal : NORMAL;
+    float3 Binormal : TEXCOORD1;
+};
+struct PhongVertexSkinned
+{
+    float4 Position     : POSITION;
+    float4 TexCoord     : TEXCOORD0;
+    float3 Normal       : NORMAL;
+    float3 Binormal		: BINORMAL;
+    //int4   BoneIndices	: BLENDINDICES;
+    //float4 BoneWeights	: BLENDWEIGHT;
+};
+struct phongdatainp
+{	float4 Position;
+	float4 TexCoord;
+	float3 Normal;
+	float3 Binormal;
+	float4 Color;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Fragment
+{
+    float4 ClipPos : POSITION;
+    float4 Color   : COLOR;
+    float2 Uv0     : TEXCOORD0;
+    float4 UserPos : TEXCOORD1;
+    float3 Normal  : TEXCOORD2;
+};
+struct FragmentPP
+{	float4 ClipPos			: POSITION;  // in clip space
+	float4 Color			: COLOR;
+	float3 UVW0             : TEXCOORD0;
+	float3 WorldPos			: TEXCOORD1;
+	float3 WorldNormal		: TEXCOORD2;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_fragcolor( Fragment FragIn ) : COLOR
+{
+    float4 PixOut;
+    PixOut = FragIn.Color;
+    return PixOut;
+}
+
+float4 PSModColor( Fragment FragIn ) : COLOR
+{
+    float4 PixOut;
+    PixOut = ModColor;
+    return PixOut;
+}
+
+float4 PSTextured( Fragment FragIn ) : COLOR
+{
+	float2 Uv0 = FragIn.Uv0.xy;
+    float4 PixOut = tex2D( ColorMap, Uv0 );
+   // float4 PixOut = float4( Uv0, 0.0f, 1.0f );
+    return PixOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_lambert(NormalVertex VtxIn)
+{
+	float3 ObjectPos = VtxIn.Position.xyz;
+	float3 ObjectNrm = VtxIn.Normal.xyz;
+	float4 WorldPos = mul(float4(ObjectPos.xyz, 1.0f), World);
+	float3 WorldNrm = mul(float4(ObjectNrm.xyz, 0.0f), World).xyz;
+	float3 ViewNrm = mul(float4(WorldNrm.xyz, 0.0f), ViewInverseTranspose).xyz;
+
+	float3 LightCol = DiffuseLight( WorldPos, WorldNrm );
+
+	Fragment FragOut;
+
+    FragOut.ClipPos = mul(WorldPos, ViewProjection);
+	FragOut.Color = float4(ModColor.xyz*LightCol,1.0f);
+	FragOut.Uv0 = VtxIn.Uv0;
+	//FragOut.Uv1 = VtxIn.Uv0;
+	//FragOut.ClipUserPos = FragOut.ClipPos;
+
+	return FragOut;
+}
+
+float4 ps_lambert( Fragment FragIn ) : COLOR
+{
+	float2 Uv0 = FragIn.Uv0.xy;
+    float4 PixOut = tex2D( Color, Uv0 )*FragIn.Color;
+    return PixOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment VSModColor( SimpleVertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.ClipPos = mul( float4( VtxIn.Position, 1.0f ), WorldViewProjection );
+    FragOut.Color = ModColor;
+	FragOut.Uv0 = VtxIn.Uv0;
+    return FragOut;
+}
+
+Fragment VSVtxColor( ColorVertex VtxIn )
+{
+    Fragment FragOut;
+    FragOut.ClipPos = mul( float4( VtxIn.Position, 1.0f ), WorldViewProjection );
+    FragOut.Color = VtxIn.Color;
+	FragOut.Uv0 = VtxIn.Uv0;
+    return FragOut;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if 1
+FragmentPP vs_phong_commonpp( phongdatainp VtxIn )
+{
+    FragmentPP pxout;
+	
+    //////////////////////////////////////
+
+    float3 camPos = mul(VtxIn.Position,WorldView ).xyz;
+    float3 worldPos = mul(VtxIn.Position,World).xyz;        
+    float3 worldNormal  = normalize( mul( float4( VtxIn.Normal,0.0f ),World ).xyz );
+    float3 worldEye     = GetEyePos();
+	
+    /////////////////////////////////////
+
+    pxout.ClipPos = mul(VtxIn.Position,WorldViewProjection);
+	pxout.Color = VtxIn.Color;
+	pxout.WorldNormal = worldNormal;
+	pxout.WorldPos = worldPos;
+    pxout.UVW0.xyz = float3( VtxIn.TexCoord.xy, 0.0f );
+	
+    return pxout;
+}
+FragmentPP vs_phongpp( PhongVertex VtxIn )
+{
+	phongdatainp pxinp;
+	pxinp.Position = float4(VtxIn.Position,1.0f);
+	pxinp.TexCoord = float4(VtxIn.TexCoord.x, VtxIn.TexCoord.y, 0.0f, 0.0f);
+	pxinp.Normal = VtxIn.Normal;
+	pxinp.Binormal = VtxIn.Binormal;
+	pxinp.Color = float4(1.0f,1.0f,1.0f,1.0f);
+	return vs_phong_commonpp( pxinp );
+}
+FragmentPP vs_phongpp_skinned( PhongVertexSkinned VtxIn )
+{
+	float3 ObjectPos = VtxIn.Position; //SkinPosition4( VtxIn.BoneIndices, VtxIn.BoneWeights, VtxIn.Position );
+	float3 ObjectNormal = VtxIn.Normal; //SkinNormal4( VtxIn.BoneIndices, VtxIn.BoneWeights, VtxIn.Normal );
+	float3 ObjectBinormal = VtxIn.Binormal; //SkinNormal4( VtxIn.BoneIndices, VtxIn.BoneWeights, VtxIn.Binormal );
+
+	phongdatainp pxinp;
+	pxinp.Position = float4( ObjectPos, 1.0f );
+	pxinp.TexCoord = float4(VtxIn.TexCoord.x, VtxIn.TexCoord.y, 0.0f, 0.0f);
+	pxinp.Normal = ObjectNormal;
+	pxinp.Binormal = ObjectBinormal;
+	pxinp.Color = float4(1.0f,1.0f,1.0f,1.0f);
+	return vs_phong_commonpp( pxinp );
+}
+float4 ps_phongpp( FragmentPP FragIn ) : COLOR
+{	const float3 FlatNormal = float3( 0.5f, 0.5f, 1.0f );
+	/////////////////////////
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	/////////////////////////
+	// Get Other Maps
+	float4 cmap = tex2D( ColorMap , UvC );
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	/////////////////////////
+	float3 WorldEye = GetEyePos();
+	float3 WorldNormal = normalize(FragIn.WorldNormal);
+	float4 DotScaleBias = float4( DotBiasDiffuse, DotScaleDiffuse, DotBiasSpecular, DotScaleSpecular );
+	DifAndSpec das = DiffuseSpecularLight( FragIn.WorldPos, WorldNormal, WorldEye, Shininess, DotScaleBias );
+	/////////////////////////
+	float3 DC = cmap.xyz*FragIn.Color.xyz*das.Diffuse*DiffuseMix;
+	float3 SC = smap*das.Specular*SpecularMix;
+	/////////////////////////
+	float4 mrtout = float4( DC+SC, cmap.w );
+	//float4 mrtout = float4( SC, cmap.w );
+    return mrtout;
+}
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_difemionly( FragmentPP FragIn ) : COLOR
+{	/////////////////////////
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvE = FragIn.UVW0.xy*UvScaleEmi;
+	/////////////////////////
+	// Get Other Maps
+	float4 cmap = tex2D( ColorMap , UvC );
+	float3 emap = tex2D( EmissiveMap , UvE ).xyz;
+	/////////////////////////
+	float3 WorldEye = GetEyePos();
+	float3 WorldNormal = normalize(FragIn.WorldNormal);
+	float4 DotScaleBias = float4( DotBiasDiffuse, DotScaleDiffuse, DotBiasSpecular, DotScaleSpecular );
+	DifAndSpec das = DiffuseSpecularLight( FragIn.WorldPos, WorldNormal, WorldEye, Shininess, DotScaleBias );
+	/////////////////////////
+	float3 DC = cmap.xyz*FragIn.Color.xyz*das.Diffuse*DiffuseMix;
+	float3 EC = emap*EmissiveMix;
+	/////////////////////////
+	float4 mrtout = float4( EC+DC, cmap.w );
+    return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_spconly( FragmentPP FragIn ) : COLOR
+{	/////////////////////////
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	/////////////////////////
+	// Get Other Maps
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	/////////////////////////
+	float3 WorldEye = GetEyePos();
+	float3 WorldNormal = normalize(FragIn.WorldNormal);
+	float4 DotScaleBias = float4( DotBiasDiffuse, DotScaleDiffuse, DotBiasSpecular, DotScaleSpecular );
+	DifAndSpec das = DiffuseSpecularLight( FragIn.WorldPos, WorldNormal, WorldEye, Shininess, DotScaleBias );
+	/////////////////////////
+	float3 SC = smap*das.Specular*SpecularMix;
+	/////////////////////////
+	float4 mrtout = float4( SC, 1.0f );
+    return mrtout;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique PhongPP
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_lambert();
+		PixelShader = compile glslf ps_lambert();
+	}
+}
+technique PhongPPSkinned
+{
+	pass p0
+	{
+		VertexShader = compile glslv vs_phongpp_skinned();
+		PixelShader = compile glslf ps_phongpp();
+	}
+}
+technique PhongPPLightPreview
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSModColor();
+		PixelShader = compile glslf PSTextured();
+	}
+}
+technique PhongPPVertexLit
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSModColor();
+		PixelShader = compile glslf PSTextured();
+	}
+}
+technique PhongPPLightMapped
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSModColor();
+		PixelShader = compile glslf PSTextured();
+	}
+}
+////////////////////////////////////////////////////////////////////////
+
+technique PhongEBlend2PP
+{
+	pass p0 <> 
+	{
+		VertexShader = compile glslv vs_phongpp();
+		PixelShader = compile glslf ps_difemionly();
+	}
+}
+
+technique PhongEBlend2PPSkinned
+{
+	pass p0 <>
+	{
+		VertexShader = compile glslv vs_phongpp_skinned();
+		PixelShader = compile glslf ps_difemionly();
+        SrcBlend = SRCALPHA;
+        DestBlend = INVSRCALPHA;
+		//AlphaBlendEnable = true;
+		//CullMode = CW; // CCW
+		//ZFunc = LESSEQUAL;
+	}
+	pass p1 <>
+	{
+		VertexShader = compile glslv vs_phongpp_skinned();
+		PixelShader = compile glslf ps_spconly();
+        //SrcBlend = ONE;
+        //DestBlend = ONE;
+		//AlphaBlendEnable = true;
+		//CullMode = CW; // CCW
+		//ZFunc = LESSEQUAL;
+	}
+}
+
+
+

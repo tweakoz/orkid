@@ -1,0 +1,90 @@
+import os, glob, string
+import ork.build.utils as obu
+import ork.build.common as cmn
+import ork.build.slnprj as sln
+
+# set scons options ######################
+
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src' )
+SetOption('num_jobs', obu.num_cores) 
+
+#obu.install_headers("inc/pkg")
+
+# basics #################################
+
+class ent:
+
+  def __init__(self):
+	BasicEnv = Environment( ENV=os.environ )
+	ARGS = cmn.BuildArgs
+
+	##########################################
+
+	SRC_FOLDERS  = ". event "
+
+	suffix = sln.BuildSuffix(ARGS)
+        print suffix
+        XFL  = "bullet-2.73-math bullet-2.73-collision "
+        XFL += "bullet-2.73-dynamics bullet-2.73-extras "
+
+        bullet_libs = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
+
+	#LIBS = "GL Cg CgGL  IL ILU ILUT QtCore QtGui "
+	XFL = "core lev2 "
+	#LIBS 3delight rihelper
+	LIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
+	LIBS += "%s " % bullet_libs
+
+	##########################################
+
+	prj = sln.Project(ARGS,BasicEnv,"ork.ent")
+	prj.SetSrcBase( "src" )
+	prj.AddIncludePaths("inc")
+	prj.AddIncludePaths("../ork.core/inc")
+	prj.AddIncludePaths("../ork.lev2/inc")
+	prj.AddIncludePaths("../ork.tool/inc")
+	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
+	prj.AddIncludePaths( "%s/include/QtCore/5.0.0/QtCore/"%sln.stage_dir )
+	#prj.AddIncludePaths( "/usr/include/qt4" )
+	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
+	prj.AddLibPaths( "%s/lib"%sln.stage_dir )
+	#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
+	prj.AddLibs( LIBS )
+	prj.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
+	#prj.AddLibs( "ork.tool.osx.release" )
+	prj.qt_enable()
+	prj.qt_add_mod("Core Gui Widgets")
+	prj.Configure()
+	self.ent_lib = prj.SharedLibrary( )
+	##########################################
+
+	prj_test = sln.Project(ARGS,BasicEnv,"ork.ent.test")
+	prj_test.SetSrcBase( "src" )
+	prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
+	#prj_test.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
+	prj_test.AddFolders( "test", "*.cpp" )
+	prj_test.AddLibs( LIBS )
+	#prj_test.AddLibs("Qt5Core Qt5Gui" )
+	prj_test.AddLibs( "ork.ent.%s"%suffix )
+	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
+	prj_test.AddProjectDep( prj )
+	prj_test.AddIncludePaths("../ork.core/inc")
+	prj_test.AddIncludePaths("../ork.lev2/inc")
+	prj_test.AddIncludePaths("../ork.ent/inc")
+	prj_test.Configure()
+	self.test_prg = prj_test.Program( )
+	Depends( self.test_prg, self.ent_lib )
+
+##########################################
+
+a = ent()
+ret = list()
+ret += a.ent_lib
+ret += a.test_prg
+Return('ret')
+
+##########################################
+
+

@@ -1,0 +1,347 @@
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#include "miniork_common.cgfxi"
+#include "tanspace.cgh"
+
+string description = "morkshader<parallax>";
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform float time : time;
+
+///////////////////////////////////////////////////////////////////////////////
+// artist parameters
+
+uniform float		UvScaleClr	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		UvScaleNrm	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		UvScaleHgt	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		UvScaleEmi	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		UvScaleSpc	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		BumpLevA	<	float UIMin = 0.0;    float UIMax = 1.0;    float UIStep = 0.01; >;
+uniform float		EmissiveMix	<	float UIMin = 0.0;    float UIMax = 2.0;    float UIStep = 0.1; >;
+uniform float		DiffuseMix	<	float UIMin = 0.0;    float UIMax = 2.0;    float UIStep = 0.01; >;
+uniform float		SpecularMix	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.01; >;
+uniform float		Shininess	<	float UIMin = 0.0;    float UIMax = 100.0;    float UIStep = 0.1; >;
+uniform float		HeightBias	<	float UIMin = 0.0;    float UIMax = 10.0;    float UIStep = 0.1; >;
+uniform float		HeightScale	<	float UIMin = 0.0;    float UIMax = 1.0;    float UIStep = 0.1; >;
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+uniform texture2D ColorTex;
+uniform texture2D EmmisiveTex;
+uniform texture2D NormalTex;
+uniform texture2D HeightTex;
+uniform texture2D SpecuTex;
+
+sampler2D ColorMap = sampler_state
+{
+	Texture = <ColorTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler2D EmissiveMap = sampler_state
+{
+	Texture = <EmmisiveTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler2D HeightMap = sampler_state
+{
+	Texture = <HeightTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler2D NormalMap = sampler_state
+{
+	Texture = <NormalTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+sampler2D SpecuMap = sampler_state
+{
+	Texture = <SpecuTex>;
+    MagFilter = Linear;
+    MinFilter = LinearMipMapLinear;
+	WrapS = Repeat;
+    WrapT = Repeat;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Fragment {
+
+        float4 ClipPos : POSITION;  // in clip space
+        float4 Color : COLOR;
+
+        float3 UVW0             : TEXCOORD0;
+
+        float3 TanLight         : TEXCOORD1;
+        float3 TanHalf          : TEXCOORD2;
+        float3 TanEye           : TEXCOORD3;
+        float3 VtxTangent       : TEXCOORD4;
+        float3 VtxPosition      : TEXCOORD5;
+        
+};
+
+struct Vertex {
+        float4 Position : POSITION;   // in object space
+        float4 TexCoord : TEXCOORD0;
+        float3 Normal   : NORMAL;
+        float3 Binormal : BINORMAL;
+};
+struct VertexWithCol {
+        float4 Position : POSITION;   // in object space
+        float4 TexCoord : TEXCOORD0;
+        float3 Normal   : NORMAL;
+        float3 Binormal : BINORMAL;
+        float4 Color    : COLOR0;
+};
+
+struct parallaxdatainp
+{
+    float4 Position;
+    float4 TexCoord;
+    float3 Normal;
+    float3 Binormal;
+    float4 Color;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+Fragment vs_parallax_common( parallaxdatainp VtxIn )
+{
+    Fragment pxout;
+	
+	time = fmod( time, 10000 );
+
+    //////////////////////////////////////
+
+    float3 camPos = mul(WorldView, VtxIn.Position ).xyz;
+    float3 worldPos = mul(World,VtxIn.Position).xyz;
+                
+    //////////////////////////////////////
+        
+    float3 worldNormal  = normalize( mul( World, float4( VtxIn.Normal,0.0f ) ).xyz );
+    float3 worldEye     = ViewIT[3].xyz;
+    float3 worldToEye   = normalize( worldEye - worldPos );
+    float3 worldToLyt   = worldToEye; //normalize( - SunDir );
+
+    /////////////////////////////////////
+    // ( Tangent Space Lighting )
+
+	float3 nbin = normalize( VtxIn.Binormal );
+	float3 nnrm = normalize( VtxIn.Normal );
+
+	float3 Tangent = ( cross( nbin, nnrm ) );
+	TanLytData tldata = GenTanLytData(	World,
+										worldToLyt, worldToEye,
+										nnrm, nbin, Tangent
+									 );
+
+    pxout.TanLight = tldata.TanLyt; 
+    pxout.TanHalf = tldata.TanHalf;
+    pxout.TanEye = tldata.TanEye;
+
+    /////////////////////////////////////
+    pxout.UVW0.xyz = float3( VtxIn.TexCoord.xy, 0.0f );
+    /////////////////////////////////////
+
+    pxout.VtxPosition = VtxIn.Position.xyz;
+    pxout.VtxTangent = Tangent.xyz;
+
+    pxout.ClipPos = mul(WorldViewProj,VtxIn.Position);
+
+	pxout.Color = VtxIn.Color;
+	
+    /////////////////////////////////////
+
+    return pxout;
+}
+
+Fragment VSParallaxStd( Vertex VtxIn )
+{
+	parallaxdatainp pxinp;
+	pxinp.Position = VtxIn.Position;
+	pxinp.TexCoord = float4(VtxIn.TexCoord.x, -VtxIn.TexCoord.y, 0.0f, 0.0f);
+	pxinp.Normal = VtxIn.Normal;
+	pxinp.Binormal = VtxIn.Binormal;
+	pxinp.Color = float4(1.0f,1.0f,1.0f,1.0f);
+	return vs_parallax_common( pxinp );
+}
+Fragment VSParallaxVtxCol( VertexWithCol VtxIn )
+{
+	parallaxdatainp pxinp;
+	pxinp.Position = VtxIn.Position;
+	pxinp.TexCoord = float4(VtxIn.TexCoord.x, -VtxIn.TexCoord.y, 0.0f, 0.0f);
+	pxinp.Normal = VtxIn.Normal;
+	pxinp.Binormal = VtxIn.Binormal;
+	pxinp.Color = VtxIn.Color.xyzw;
+	return vs_parallax_common( pxinp );
+}    
+
+float4 PSTexColor( Fragment FragIn ) : COLOR
+{
+	const float3 FlatNormal = float3( 0.5f, 0.5f, 1.0f );
+
+	/////////////////////////
+	
+	float2 UvC = FragIn.UVW0.xy*UvScaleClr;
+	float2 UvN = FragIn.UVW0.xy*UvScaleNrm;
+	float2 UvS = FragIn.UVW0.xy*UvScaleSpc;
+	float2 UvE = FragIn.UVW0.xy*UvScaleEmi;
+	float2 UvH = FragIn.UVW0.xy*UvScaleHgt;
+
+	/////////////////////////
+	// Compute Tangent Basis
+
+	float3 TanEye = normalize( FragIn.TanEye );
+
+	/////////////////////////
+	// Get HeightMap
+		
+	float hs = HeightScale;
+	float HeightVal = tex2D( HeightMap , UvH ).z;
+	float Offset = HeightBias + (hs*HeightVal);
+
+	/////////////////////////
+	// Parallax Mapping
+	
+	UvC = UvC + (TanEye.xy*Offset);
+	
+	//HeightVal += tex2D(HeightMap, UvH ).z;
+	//Offset = hs * (HeightVal - 1.0);
+	//UvA = UvA + (TanEye.xy*Offset);
+
+	/////////////////////////
+	// Get Other Maps
+	
+	float3 nmap = tex2D( NormalMap , UvN ).xyz;
+	float3 cmap = tex2D( ColorMap , UvC ).xyz;
+	float3 smap = tex2D( SpecuMap , UvS ).xyz;
+	float3 emap = tex2D( EmissiveMap , UvE ).xyz*EmissiveMix;
+
+	/////////////////////////
+
+	nmap = lerp( FlatNormal, nmap, BumpLevA );
+	float3 TanNormal = normalize((nmap*2.0f)-float3(1.0f,1.0f,1.0f)); 
+
+	/////////////////////////
+	// Lighting Equation
+	
+	float fdotL = saturate(dot(TanNormal,normalize(FragIn.TanLight)));
+	float fdotH = saturate(dot(TanNormal,normalize(FragIn.TanHalf)));
+	
+	float Diffuse = (DiffuseMix*fdotL);
+	float Specular = (SpecularMix*pow( fdotH, Shininess ));
+	
+	float3 DC = Diffuse*cmap*FragIn.Color.xyz;
+	float3 SC = Specular*smap;
+	
+	float4 mrtout = float4( emap+DC+SC, 1.0f );
+	
+    return mrtout;
+	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_uvdebugclr( Fragment FragIn ) : COLOR
+{
+	/////////////////////////
+	
+	float2 UvA = FragIn.UVW0.xy*UvScaleClr;
+
+	float r = fmod( UvA.r, 1.0f );
+	float g = fmod( UvA.g, 1.0f );
+	
+	float4 mrtout = float4( r, g, 0.0f, 1.0f );
+    return mrtout;
+	
+}    
+
+///////////////////////////////////////////////////////////////////////////////
+
+float4 ps_tanspacedebug( Fragment FragIn ) : COLOR
+{
+	float3 onepo = float3(1.0f,1.0f,1.0f);
+	float3 fragtan = normalize(FragIn.VtxTangent).rgb;
+	float4 mrtout = float4( fragtan, 1.0f );
+    return mrtout;
+	
+}    
+
+///////////////////////////////////////////////////////////////////////////////
+
+technique FullLighting
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSParallaxStd();
+		PixelShader = compile glslf PSTexColor();
+		DepthTestEnable = true;
+		DepthMask = true;
+
+		FrontFace       = CCW;
+		CullFaceEnable = false;
+	}
+}
+
+technique FullLightingVtxCol
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSParallaxVtxCol();
+		PixelShader = compile glslf PSTexColor();
+		DepthTestEnable = true;
+		DepthMask = true;
+
+		FrontFace       = CCW;
+		CullFaceEnable = false;
+	}
+}
+
+technique UvDebugClr
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSParallaxStd();
+		PixelShader = compile glslf ps_uvdebugclr();
+		DepthTestEnable = true;
+		DepthMask = true;
+
+		FrontFace       = CCW;
+		CullFaceEnable = false;
+	}
+}
+
+technique TanSpaceDebug
+{
+	pass p0
+	{
+		VertexShader = compile glslv VSParallaxStd();
+		PixelShader = compile glslf ps_tanspacedebug();
+		DepthTestEnable = true;
+		DepthMask = true;
+
+		FrontFace       = CCW;
+		CullFaceEnable = false;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////

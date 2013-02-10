@@ -1,0 +1,9 @@
+Import("qtEnv")
+
+env = qtEnv.Clone()
+env['QT4_GOBBLECOMMENTS']=1
+env['QT4_DEBUG']=1
+env.EnableQt4Modules(['QtCore','QtGui'])
+
+env.Program('main', Glob('*.cpp'))
+

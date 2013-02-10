@@ -1,0 +1,20 @@
+Import("qtEnv")
+sources = ['aaa.cpp', 'bbb.cpp', 'ddd.cpp', 'eee.cpp', 'main.cpp']
+
+qtEnv.EnableQt4Modules(['QtCore','QtGui'])
+
+# normal invocation
+sources.append(qtEnv.Moc4('include/aaa.h'))
+sources.append(qtEnv.Moc4('ui/ccc.h'))
+qtEnv.Moc4('bbb.cpp')
+qtEnv.Uic4('ui/ccc.ui')
+
+# manual target specification
+sources.append(qtEnv.ExplicitMoc4('moc-ddd.cpp','include/ddd.h'))
+qtEnv.ExplicitMoc4('moc_eee.cpp','eee.cpp')
+qtEnv.ExplicitUic4('include/uic_fff.hpp','ui/fff.ui')
+
+qtEnv.Program(target='aaa',
+              source=sources,
+              CPPPATH=['$CPPPATH', './include'],
+              QT4_AUTOSCAN=0)
