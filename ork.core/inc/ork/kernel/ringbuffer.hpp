@@ -93,6 +93,7 @@ MpMcRingBuf<T,max_items>::MpMcRingBuf()
 	for (size_t i=0; i<max_items; i++ )
 	{
 		cell_t& the_cell = mCellBuffer[i];
+		//the_cell.mSequence.template store<MemRelaxed>(i);
 		the_cell.mSequence.template store<MemRelaxed>(i);
 	}
 

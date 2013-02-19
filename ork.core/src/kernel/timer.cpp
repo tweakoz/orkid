@@ -53,7 +53,7 @@ void Timer::End()
 float Timer::InternalSecsSinceStart() const
 {
     tbb::tick_count now = tbb::tick_count::now();
-    return (now-mStartTime).seconds();
+    return float((now-mStartTime).seconds());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ float Timer::SecsSinceStart() const
 
 float Timer::SpanInSecs() const
 {
-    return (mEndTime-mStartTime).seconds();
+    return float((mEndTime-mStartTime).seconds());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ float get_sync_time()
     uint64_t tms_del = tms_now-tms_base;
     double millis = double(tms_del) * resolution;
 	return float(millis*0.001);
-#else
+#elif defined(IX)
     static struct timespec ts1st;
     static bool b1sttime = true;
     if( b1sttime )
@@ -105,6 +105,10 @@ float get_sync_time()
 
     float sec = float(tms_del)*0.001f;
     return sec;
+#elif defined(ORK_VS2012)
+	return CSystem::GetRef().GetLoResTime();
+#else
+#error // not implemented
 #endif
 }
 
@@ -169,7 +173,7 @@ void usleep( int microsec )
 {
 	::usleep( microsec );
 }
-#elif defined( _WIN32 )
+#elif defined( ORK_WIN32 )
 void msleep( int millisec )
 {
 	Sleep( millisec );
@@ -197,7 +201,7 @@ int CSystem::GetNumCores()
 {
 	#if defined(IX)
 	int numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
-	#elif defined(_XBOX)
+	#elif defined(_XBOX) || defined(ORK_WIN32)
 	int numCPUs=3;
 	#else
 	SYSTEM_INFO sysinfo;
@@ -213,7 +217,7 @@ int CSystem::GetNumCores()
 
 S64 CSystem::GetClockCycle(void)
 {
-#ifdef _MSVC
+#if defined(ORK_WIN32)
 	f64 ftime = GetRef().GetHiResTime();
 	S64 output = S64(ftime*GetRef().mfClockRate);
     return output;
@@ -288,7 +292,7 @@ f32	CSystem::GetLoResTime( void )
 	return float(millis*0.001);
 }
 ///////////////////////////////////////////////
-#elif defined( _WIN32 ) && defined( _MSVC )
+#elif defined( ORK_WIN32 ) && defined( _MSVC )
 ///////////////////////////////////////////////
 static volatile int inumtimercallbacks = 0;
 static void CALLBACK TimerCallback(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DWORD dw1, DWORD dw2 ) 

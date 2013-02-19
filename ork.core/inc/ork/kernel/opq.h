@@ -10,13 +10,12 @@
 #define _DEBUG_OPQ
 #include <ork/orkstl.h>
 #include <ork/util/Context.h>
-#include <ork/kernel/mutex.h>
+
 
 #include <tbb/atomic.h>
 
-#if defined(IX)
-#include <semaphore.h>
-#endif
+#include "semaphore.h"
+
 #include <set>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,9 +144,8 @@ struct Opq
 
 	std::set<OpGroup*> 			mOpGroups;
 
-#if defined(IX)
-	sem_t mSemaphore;
-#endif
+	ork::semaphore mSemaphore;
+
 	bool mbGoingDown;
 	tbb::atomic<int> mThreadsRunning;
 	std::string mName;
