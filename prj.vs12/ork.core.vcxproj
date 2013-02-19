@@ -110,9 +110,7 @@ copy $(OutDir)$(TargetName)$(TargetExt) $(StageLibDir)\$(TargetName)$(TargetExt)
     <ClCompile Include="..\ork.core\src\kernel\objc.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ork.core\src\kernel\opq.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\ork.core\src\kernel\opq.cpp" />
     <ClCompile Include="..\ork.core\src\kernel\prop.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
     </ClCompile>
@@ -128,12 +126,53 @@ copy $(OutDir)$(TargetName)$(TargetExt) $(StageLibDir)\$(TargetName)$(TargetExt)
     <ClCompile Include="..\ork.core\src\kernel\tempstring.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\ork.core\src\kernel\thread_pool.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="..\ork.core\src\kernel\thread_pool.cpp" />
     <ClCompile Include="..\ork.core\src\kernel\timer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ork.core\inc\ork\kernel\any.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\Array.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\Array.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\ArraySpecializations.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\concurrent_queue.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\core\interface.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\core\kerneltypes.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\core\singleton.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\core_interface.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\csystem.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\debug.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\environment.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\fixedlut.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\fixedlut.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\fixedstring.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\fixedstring.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\future.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\gstack.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\gstack.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\kernel.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\mutex.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\objc.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\opq.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\orkalloc.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\orklut.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\orklut.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\orkmem.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\orkmem.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\orkpool.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\orkvector.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\prop.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\prop.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\ringbuffer.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\semaphore.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\slashnode.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\svariant.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\tempstring.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\tempstring.hpp" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\thread.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\thread_pool.h" />
+    <ClInclude Include="..\ork.core\inc\ork\kernel\timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -3,6 +3,7 @@
 ///////////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <ork/kernel/thread.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/string.h>
 #include <ork/util/Context.hpp>
@@ -143,10 +144,16 @@ struct OpqDrained : public IOpqSynchrComparison
 	}
 };
 ///////////////////////////////////////////////////////////////////////////
-void* OpqThreadImpl( void* arg_opaq )
+struct OpqThreadImpl : public ork::Thread {
+	OpqThreadData mData;
+	OpqThreadImpl(Opq*popq,int thid)
+	{
+		mData.mpOpQ = popq;
+		mData.miThreadID = thid;
+	}
+void run() // virtual
 {
-
-	OpqThreadData* opqthreaddata = (OpqThreadData*) arg_opaq;
+	OpqThreadData* opqthreaddata = & mData;
 	Opq* popq = opqthreaddata->mpOpQ;
 	std::string opqn = popq->mName;
 	SetCurrentThreadName( opqn.c_str() );
@@ -182,8 +189,8 @@ void* OpqThreadImpl( void* arg_opaq )
 
 	//printf( "popq<%p> thread exiting...\n", popq );
 
-	return (void*) 0;
 }
+};
 ///////////////////////////////////////////////////////////////////////////
 bool Opq::Process()
 {
@@ -297,23 +304,16 @@ OpGroup* Opq::CreateOpGroup(const char* pname)
 Opq::Opq(int inumthreads, const char* name)
 	: mbGoingDown(false)
 	, mName(name)
+	, mSemaphore(name)
 {
 	mGroupCounter = 0;
 	mThreadsRunning = 0;
 
 	mDefaultGroup = CreateOpGroup("defconq");
 
-#if defined(IX)
-	sem_init(&mSemaphore,0,0);
-#endif
 	for( int i=0; i<inumthreads; i++ )
 	{
-		OpqThreadData* thd = new OpqThreadData;
-		thd->miThreadID = i;
-
-		thd->mpOpQ = this;
-	    pthread_t* thread_handle = new pthread_t;  
-	    int rc = pthread_create(thread_handle, NULL, OpqThreadImpl, (void*)thd);
+	    ork::Thread* thread_handle = new OpqThreadImpl(this,i);  
 	}
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -329,7 +329,7 @@ Opq::~Opq()
 
 	while(int(mThreadsRunning)!=0)
 	{
-		sem_post(&mSemaphore);
+		mSemaphore.notify();
 		usleep(10);
 	}
 
@@ -379,7 +379,8 @@ void OpGroup::push(const Op& the_op)
 	mpOpQ->mSynchro.AddItem();
 
 	mOpSerialIndex++;
-	sem_post(&mpOpQ->mSemaphore);
+
+	mpOpQ->mSemaphore.notify();
 }
 ///////////////////////////////////////////////////////////////////////////
 void OpGroup::drain()

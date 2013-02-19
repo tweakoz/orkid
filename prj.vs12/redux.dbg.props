@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros">
     <ReduxDir>$(SolutionDir)..</ReduxDir>
     <CoreInc>$(ReduxDir)\ork.core\inc</CoreInc>
-    <OrkWin32Defs>ORK_VS2012;_CRT_SECURE_NO_WARNINGS</OrkWin32Defs>
+    <OrkWin32Defs>ORK_WIN32;ORK_VS2012;_CRT_SECURE_NO_WARNINGS;TBB_USE_CAPTURED_EXCEPTION</OrkWin32Defs>
     <StageDir>$(ReduxDir)\stage</StageDir>
     <StageLibDir>$(StageDir)\$(Configuration)\lib</StageLibDir>
   </PropertyGroup>

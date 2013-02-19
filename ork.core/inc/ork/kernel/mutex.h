@@ -10,9 +10,15 @@
 #include <ork/orkstd.h>
 #include <ork/orkprotos.h>
 
-#if defined(ORK_OSX) || defined(ORK_VS2012)
+#if defined(ORK_VS2012) // builtin mutex
+#define USE_STD_MUTEX
+#include <condition_variable>
+#include <mutex>
+#elif defined(ORK_OSX)
+#define USE_TBB_MUTEX
 #include <condition_variable>
 #include <tbb/mutex.h>
+#include <tbb/recursive_mutex.h>
 #else
 #include <tbb/compat/condition_variable>
 #include <tbb/mutex.h>
@@ -24,7 +30,190 @@ namespace std
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined( WII )
+#if defined(USE_STD_MUTEX)
+
+namespace ork
+{
+	class recursive_mutex
+	{
+	public:
+		recursive_mutex( const char* name )
+			: mTheMutex()
+			, mName(name)
+			, miLockCount(0)
+		{
+		}
+		void Lock(int lid=-1)
+		{
+			mTheMutex.lock();
+			mLockIDs.push(lid);
+			miLockCount++;
+		}
+		void UnLock()
+		{
+			miLockCount--;
+			mLockIDs.pop();
+			mTheMutex.unlock();
+		}
+		bool TryLock()
+		{
+			bool bv = mTheMutex.try_lock();
+			if( bv )
+			{
+				mLockIDs.push(-2);
+				miLockCount++;
+			}
+			return bv;
+		}
+		int GetLockCount() const { return miLockCount; }
+		typedef std::unique_lock<std::recursive_mutex> recursive_scoped_lock;
+	private:
+		std::recursive_mutex	mTheMutex;
+		std::string mName;
+		std::stack<int> mLockIDs;
+		int miLockCount;
+	};
+	class mutex
+	{
+	public:
+
+		typedef std::mutex mutex_impl_t;
+
+		mutex( const char* name ) 
+			: mTheMutex()
+			, mName(name)
+			, miLockID(-1)
+		{
+		}
+		void Lock(int lid=-1)
+		{
+			mTheMutex.lock();
+			miLockID = lid;
+		}
+		void UnLock()
+		{
+			mTheMutex.unlock();
+		}
+		bool TryLock()
+		{
+			return mTheMutex.try_lock();
+		}
+
+		struct unique_lock
+		{
+			typedef std::unique_lock<mutex_impl_t> lock_impl_t;
+			unique_lock(ork::mutex& mtx) : mLockImpl(mtx.mTheMutex) {}
+			~unique_lock() {}
+			lock_impl_t mLockImpl;
+		};
+
+		//typedef tbb::mutex::scoped_lock scoped_lock;
+	private:
+		mutex_impl_t mTheMutex;
+		std::string mName;
+		int miLockID;
+	};
+
+};
+
+#elif defined(USE_TBB_MUTEX)
+
+namespace ork
+{
+	class recursive_mutex
+	{
+	public:
+		recursive_mutex( const char* name )
+			: mTheMutex()
+			, mName(name)
+			, miLockCount(0)
+		{
+		}
+		void Lock(int lid=-1)
+		{
+			mTheMutex.lock();
+			mLockIDs.push(lid);
+			miLockCount++;
+		}
+		void UnLock()
+		{
+			miLockCount--;
+			mLockIDs.pop();
+			mTheMutex.unlock();
+		}
+		bool TryLock()
+		{
+			bool bv = mTheMutex.try_lock();
+			if( bv )
+			{
+				mLockIDs.push(-2);
+				miLockCount++;
+			}
+			return bv;
+		}
+		int GetLockCount() const { return miLockCount; }
+		typedef tbb::recursive_mutex::scoped_lock recursive_scoped_lock;
+	private:
+		tbb::recursive_mutex	mTheMutex;
+		std::string mName;
+		std::stack<int> mLockIDs;
+		int miLockCount;
+	};
+	class mutex
+	{
+	public:
+
+		typedef tbb::mutex mutex_impl_t;
+
+		mutex( const char* name ) 
+			: mTheMutex()
+			, mName(name)
+			, miLockID(-1)
+		{
+		}
+		void Lock(int lid=-1)
+		{
+			mTheMutex.lock();
+			miLockID = lid;
+		}
+		void UnLock()
+		{
+			mTheMutex.unlock();
+		}
+		bool TryLock()
+		{
+			return mTheMutex.try_lock();
+		}
+		struct scoped_lock
+		{
+			typedef mutex_impl_t::scoped_lock lock_impl_t;
+
+			scoped_lock(ork::mutex& mtx) : mLockImpl(mtx.mTheMutex) {}
+			~scoped_lock() {}
+
+
+			lock_impl_t mLockImpl;
+
+		};
+
+		struct unique_lock
+		{
+			typedef std::unique_lock<mutex_impl_t> lock_impl_t;
+			unique_lock(ork::mutex& mtx) : mLockImpl(mtx.mTheMutex) {}
+			~unique_lock() {}
+			lock_impl_t mLockImpl;
+		};
+
+		//typedef tbb::mutex::scoped_lock scoped_lock;
+	private:
+		mutex_impl_t mTheMutex;
+		std::string mName;
+		int miLockID;
+	};
+
+};
+
+#elif defined( WII )
 
 #include <revolution/os.h>
 
