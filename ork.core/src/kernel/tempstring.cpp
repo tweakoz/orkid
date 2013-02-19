@@ -24,11 +24,11 @@ FixedStringBase::FixedStringBase()
 
 }
 
-typename FixedStringBase::HashType FixedStringBase::Hash() const
+FixedStringBase::HashType FixedStringBase::Hash() const
 {
     size_t rval = 5381;
     const char* pbas = c_str();
-    for( int i=0; i<mLength; i++ )
+    for( size_t i=0; i<mLength; i++ )
         rval = ((rval << 5) + rval) + size_t(pbas[i]); /* hash * 33 + c */
     return rval;
 }

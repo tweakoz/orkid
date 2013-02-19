@@ -9,7 +9,12 @@
 
 #include <ork/kernel/svariant.h>
 
+#if defined(ORK_VS2012)
+template <size_t tsize> struct any : public ork::static_variant<tsize> {};
+#else
 template <size_t tsize> using any = ork::static_variant<tsize>;
+#endif
+
 
 typedef ork::svar4_t any4;
 typedef ork::svarp_t anyp;

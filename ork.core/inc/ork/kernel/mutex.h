@@ -10,7 +10,7 @@
 #include <ork/orkstd.h>
 #include <ork/orkprotos.h>
 
-#if defined(ORK_OSX)
+#if defined(ORK_OSX) || defined(ORK_VS2012)
 #include <condition_variable>
 #include <tbb/mutex.h>
 #else
