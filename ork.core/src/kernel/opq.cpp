@@ -6,7 +6,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/string.h>
 #include <ork/util/Context.hpp>
-#include <lockfree/atomic.hpp>
+//#include <lockfree/atomic.hpp>
 #include <ork/kernel/debug.h>
 #include <ork/kernel/future.hpp>
 #if defined(ORK_LINUX)
@@ -167,7 +167,9 @@ void* OpqThreadImpl( void* arg_opaq )
 
 	while(false==popq->mbGoingDown)
 	{
+#if defined(IX)
 		sem_wait(&popq->mSemaphore); // wait for an op (without spinning)
+#endif
 
 		if( popq->mbGoingDown ) continue; // exit clause
 
@@ -301,7 +303,9 @@ Opq::Opq(int inumthreads, const char* name)
 
 	mDefaultGroup = CreateOpGroup("defconq");
 
+#if defined(IX)
 	sem_init(&mSemaphore,0,0);
+#endif
 	for( int i=0; i<inumthreads; i++ )
 	{
 		OpqThreadData* thd = new OpqThreadData;

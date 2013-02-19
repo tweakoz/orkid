@@ -2,15 +2,30 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <ReduxDir>$(SolutionDir)\..</ReduxDir>
+    <ReduxDir>$(SolutionDir)..</ReduxDir>
     <CoreInc>$(ReduxDir)\ork.core\inc</CoreInc>
     <OrkWin32Defs>ORK_VS2012;_CRT_SECURE_NO_WARNINGS</OrkWin32Defs>
+    <StageDir>$(ReduxDir)\stage</StageDir>
+    <StageLibDir>$(StageDir)\$(Configuration)\lib</StageLibDir>
   </PropertyGroup>
-  <PropertyGroup />
+  <PropertyGroup>
+    <OutDir>$(StageDir)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(OutDir)intermed\</IntDir>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>$(OrkWin32Defs);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
+    <BuildLog>
+      <Path>$(IntDir)build.log</Path>
+    </BuildLog>
+    <Link>
+      <OutputFile>$(StageLibDir)\$(TargetName)$(TargetExt)</OutputFile>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <BuildMacro Include="ReduxDir">
@@ -23,6 +38,14 @@
     </BuildMacro>
     <BuildMacro Include="OrkWin32Defs">
       <Value>$(OrkWin32Defs)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="StageDir">
+      <Value>$(StageDir)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="StageLibDir">
+      <Value>$(StageLibDir)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
   </ItemGroup>

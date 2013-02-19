@@ -30,7 +30,7 @@ void OrkAssertFunction( const char *fmtstr, ... );
 
 #if (defined(_DEBUG) || ! defined(_XBOX)) && ! defined(RETAIL)
 //# define OrkAssert( x ) ((void *)0)
-# define OrkAssert( x ) { if( (x) == 0 ) { char buffer[1024]; sprintf( buffer, "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed]", __FILE__, __LINE__, #x ); OrkAssertFunction(&buffer[0]); } }
+# define OrkAssert( x ) { if( (x) == 0 ) { char buffer[1024]; snprintf( buffer, sizeof(buffer), "Assert At: [File %s] [Line %d] [Reason: Assertion %s failed]", __FILE__, __LINE__, #x ); OrkAssertFunction(&buffer[0]); } }
 # define OrkAssertI( x, i ) { if( (x) == 0 ) OrkAssertFunction( "Assert At: [File %s] [Line %d] [Reason: %s]", __FILE__, __LINE__, i  ); }
 # define OrkAssertEqual( x, y ) OrkAssert( x == y )
 # define OrkAssertEqualI( x, y, i ) OrkAssertI( x == y, i )

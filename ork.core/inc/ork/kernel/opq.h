@@ -3,8 +3,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
-#include <boost/threadpool.hpp>
-#include <boost/tr1/memory.hpp>
+//#include <boost/threadpool.hpp>
+//#include <boost/tr1/memory.hpp>
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/any.h>
 #define _DEBUG_OPQ
@@ -13,7 +13,10 @@
 #include <ork/kernel/mutex.h>
 
 #include <tbb/atomic.h>
+
+#if defined(IX)
 #include <semaphore.h>
+#endif
 #include <set>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,7 +145,9 @@ struct Opq
 
 	std::set<OpGroup*> 			mOpGroups;
 
+#if defined(IX)
 	sem_t mSemaphore;
+#endif
 	bool mbGoingDown;
 	tbb::atomic<int> mThreadsRunning;
 	std::string mName;
