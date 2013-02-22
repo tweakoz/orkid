@@ -31,7 +31,12 @@ Orkid is divided into several shared libraries:
 			+ KB/mouse
 			+ XInput
 	- low level renderables and audibles.
-		+ Rigid/Skinned models
+		+ MultiBuffered threaded renderer
+		+ Frustum culler
+		+ RenderQueue (with coarse depth and state sorting)
+		+ Rigid/Skinned models with variable partitioning support
+		+ Custom callback based renderables (soon lambda based)
+
 		+ Animation controllers with masking and blending
 		+ Fixed Function and Modular particle systems
 		+ Spatialized audio effect system
