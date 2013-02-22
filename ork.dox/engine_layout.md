@@ -54,6 +54,7 @@ Orkid is divided into several shared libraries:
 ---
 
 * ork.ent : archetype / entity / component / scene system. Lets you load a pregenerated 'scene' document and run it as a simulation. Contains a collection of commonly useful components, including:
+	- Fixed Function and Node based frame compositor
 	- Rigid/Skinned 3D model components / archetypes
 	- Animation controllers component with animation blending support
 	- Particle controller component and archetype
