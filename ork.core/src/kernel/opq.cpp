@@ -174,9 +174,7 @@ void run() // virtual
 
 	while(false==popq->mbGoingDown)
 	{
-#if defined(IX)
-		sem_wait(&popq->mSemaphore); // wait for an op (without spinning)
-#endif
+		popq->mSemaphore.wait(); // wait for an op (without spinning)
 
 		if( popq->mbGoingDown ) continue; // exit clause
 

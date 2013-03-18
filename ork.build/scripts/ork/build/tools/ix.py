@@ -42,10 +42,12 @@ def DefaultBuildEnv( env, prj ):
 		LIBPATH += ' /usr/lib/x86_64-linux-gnu/debug '
 	LINK = '-Wl,--trace-symbol="_ZN18QMetaObjectPrivate21decodeMethodSignatureEPKcR15QVarLengthArrayI13QArgumentTypeLi10EE"'
 	##
+	#clang = "gcc-4.7"
+	#clangpp = "g++-4.7"
 	clang = "clang"
 	clangpp = "clang++"
 	env.Replace( CXX = clangpp, CC = clang )
-	env.Replace( LINK = "clang++" )
+	env.Replace( LINK = clangpp )
 	env.Replace( CPPDEFINES = string.split(DEFS) )
 	env.Replace( CCFLAGS = string.split(CCFLG) )
 	env.Replace( CXXFLAGS = string.split(CXXFLG) )

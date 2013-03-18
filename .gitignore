@@ -14,4 +14,5 @@ ork.core/bin
 ork.ent/bin
 ork.lev2/bin
 ork.tool/bin
+docs/ork.core/*
 miniorkbuild.ini

@@ -16,12 +16,14 @@
 #include <mutex>
 #elif defined(ORK_OSX)
 #define USE_TBB_MUTEX
-#include <condition_variable>
+//#include <condition_variable>
 #include <tbb/mutex.h>
 #include <tbb/recursive_mutex.h>
 #else
+#define USE_TBB_MUTEX
 #include <tbb/compat/condition_variable>
 #include <tbb/mutex.h>
+#include <tbb/recursive_mutex.h>
 namespace std
 {
     typedef tbb::mutex mutex;
