@@ -130,41 +130,6 @@ namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-OrkQtApp* gpQtApplication = 0;
-
-OrkQtApp::OrkQtApp( int argc, char** argv )
-	: QApplication( argc, argv )
-	, mpMainWindow(0)
-{
-	bool bcon = mIdleTimer.connect( & mIdleTimer, &QTimer::timeout, this, &OrkQtApp::OnTimer );
-	assert(bcon);
-	mIdleTimer.setInterval(5);
-	mIdleTimer.setSingleShot(false);
-	mIdleTimer.start();
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void OrkQtApp::OnTimer()
-{
-	OpqTest opqtest(&MainThreadOpQ());
-	while(MainThreadOpQ().Process());
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-/*void OrkQtApp::MocInit( void )
-{
-	OrkQtApp::Moc.AddSlot0( "OnTimer()", & OrkQtApp::OnTimer );
-}
-
-ImplementMoc( OrkQtApp, QApplication );
-*/
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 class ProxyStyle : public QStyle
 {
 public:
@@ -300,6 +265,8 @@ struct InputArgs
     char **argv;
 };
 
+OrkQtApp* gpQtApplication = nullptr;
+
 void* BootQtThreadImpl(void* arg_opaq )
 {
 	InputArgs *args = (InputArgs*) arg_opaq;
@@ -334,7 +301,7 @@ void* BootQtThreadImpl(void* arg_opaq )
 
 	ent::EditorMainWindow MainWin(0, AppClassName, *gpQtApplication );
 	ent::gEditorMainWindow = &MainWin;
-	MainWin.showMaximized();
+	//MainWin.showMaximized();
 
 	gpQtApplication->mpMainWindow = & MainWin;
 	

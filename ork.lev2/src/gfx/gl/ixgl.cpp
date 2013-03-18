@@ -219,7 +219,7 @@ void GfxTargetGL::GLinit()
 #endif
     if (GLXCCA == nullptr)
     {
-        std::cout << "glXCreateContextAttribsARB entry point not found. Aborting." << std::endl;
+        printf( "glXCreateContextAttribsARB entry point not found. Aborting.\n");
         assert(false);
     }
     
