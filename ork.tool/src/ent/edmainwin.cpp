@@ -62,7 +62,7 @@ void RegisterLightingModule( EditorMainWindow& emw );
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-//ImplementMoc( EditorMainWindow, tool::MiniorkMainWindow );
+ImplementMoc( EditorMainWindow, tool::MiniorkMainWindow );
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::Describe()
 {	///////////////////////////////////////////////////////////
@@ -115,6 +115,11 @@ void EditorMainWindow::SlotObjectDeSelected( ork::Object* pobj )
 void EditorMainWindow::SlotClearSelection()
 {
 	mGedModelObj.Attach(NULL);
+}
+void EditorMainWindow::SigNewObject( ork::Object* pOBJ )
+{
+	mSignalNewObject(&EditorMainWindow::SigNewObject,pOBJ);
+
 }
 ///////////////////////////////////////////////////////////////////////////
 EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicationClassName, QApplication & App)
@@ -323,7 +328,7 @@ void EditorMainWindow::SlotOnTimer()
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-/*void EditorMainWindow::MocInit( void )
+void EditorMainWindow::MocInit( void )
 {
 	///////////////////////////////////////
 	Moc.AddSlot0( "NewEntity()", & EditorMainWindow::NewEntity );
@@ -336,7 +341,7 @@ void EditorMainWindow::SlotOnTimer()
 	Moc.AddSlot0( "RefreshHFSMs()", & EditorMainWindow::RefreshHFSMs );
 	///////////////////////////////////////
 	Moc.AddSlot0( "SlotOnTimer()", & EditorMainWindow::SlotOnTimer );
-}*/
+}
 ///////////////////////////////////////////////////////////////////////////
 bool EditorMainWindow::event(QEvent *qevent)
 {
@@ -414,7 +419,7 @@ void EditorMainWindow::NewEntity()
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::NewEntities()
 {	bool ok;
-	int i = QInputDialog::getInt(this, tr("New Entities..."), tr("Entity Count:"), 1, 1, 0x7FFFFFFF, 1, &ok);
+	int i = QInputDialog::getInteger(this, tr("New Entities..."), tr("Entity Count:"), 1, 1, 0x7FFFFFFF, 1, &ok);
 	if(ok)
 	{	auto lamb = [=]()
 		{	this->mEditorBase.EditorNewEntities(i);
@@ -692,5 +697,3 @@ void EntArchSplit::Describe() {}
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::EntArchDeRef, "EntArchDeRef" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::EntArchReRef, "EntArchReRef" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::EntArchSplit, "EntArchSplit" );
-
-#include "edmainwin.moc"

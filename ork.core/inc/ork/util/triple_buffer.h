@@ -4,6 +4,7 @@
 #include <tbb/atomic.h>
 #include <tbb/concurrent_queue.h>
 #include <assert.h>
+#include <unistd.h>
 
 template <typename T>
 class concurrent_triple_buffer

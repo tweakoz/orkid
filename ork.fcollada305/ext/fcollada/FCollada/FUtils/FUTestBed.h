@@ -123,7 +123,7 @@ public: \
 	virtual bool RunTest(FUTestBed& testBed, FULogFile& fileOut, bool& __testSuiteDone, size_t testIndex) \
 	{ \
 		switch (testIndex) { \
-			case ~0 : { \
+			case 0xffffffffffffffff : { \
 				if (testBed.IsVerbose()) { \
 					fileOut.WriteLine("Running %s...", #suiteName); \
 				}

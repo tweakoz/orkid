@@ -93,7 +93,7 @@ EUIHandled ManipHandler::UIEventHandler( CUIEvent *pEV )
 			pickctx->mHandler = this;
 			pickctx->mViewport = GetViewport();
 
-			//static auto on_pick = ^(DeferredPickOperationContext*pctx)
+			static auto on_pick = ^(DeferredPickOperationContext*pctx)
 			{
 				/*ork::rtti::ICastable *pobj = ctx.GetObject(GetViewport()->GetPickBuffer(),0);
 				ork::rtti::ICastable *pillegal = (ork::rtti::ICastable *) 0xffffffff;

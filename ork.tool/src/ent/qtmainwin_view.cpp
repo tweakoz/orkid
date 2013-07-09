@@ -14,7 +14,7 @@
 
 #include <pkg/ent/editor/qtui_scenevp.h>
 #include <pkg/ent/editor/edmainwin.h>
-#include "outliner.h"
+#include <pkg/ent/editor/outliner.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {

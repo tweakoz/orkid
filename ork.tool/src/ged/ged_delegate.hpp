@@ -5,9 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
-
-#include <QtWidgets/QInputDialog>
+#include <QtGui/QInputDialog>
 //#include <QtGui/ButtonState>
 #include <orktool/ged/ged_io.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -173,7 +171,7 @@ void Slider<T>::mouseDoubleClickEvent ( QMouseEvent * event )
 	//QString qstr = GedInputDialog::getText ( event, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, miLabelH );
 	QString qstr = GedInputDialog::getText ( event, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
 
-	std::string sstr = qstr.toUtf8().data();
+	std::string sstr = qstr.toAscii().data();
 	if( sstr.length() )
 	{
 		PropTypeString pts( sstr.c_str() );
@@ -529,7 +527,7 @@ void GedSimpleNode<IODriver,T>::mouseDoubleClickEvent ( QMouseEvent * pEV )
 				{
 					QVariant UserData = pact->data();
 					QString UserName = UserData.toString();
-					std::string pname = UserName.toUtf8().data();
+					std::string pname = UserName.toAscii().data();
 					
 					const CAttrChoiceValue *Chc = uchc.FindFromLongName(pname);
 
@@ -551,7 +549,7 @@ void GedSimpleNode<IODriver,T>::mouseDoubleClickEvent ( QMouseEvent * pEV )
 	else
 	{	int ilabw = GetNameWidth()+16;
 		QString qstr = GedInputDialog::getText ( pEV, this, ptsg.c_str(), ilabw, 2, miW-ilabw, miH-3 );
-		std::string sstr = qstr.toUtf8().data();
+		std::string sstr = qstr.toAscii().data();
 		if( sstr.length() )
 		{	PropTypeString pts( sstr.c_str() );
 			val = CPropType<T>::FromString( pts );

@@ -15,7 +15,7 @@ namespace ork { namespace tool {
 
 extern OrkQtApp* gpQtApplication;
 
-/*void ProcessView::MocInit( void )
+void ProcessView::MocInit( void )
 {
 	ProcessView::Moc.AddSlot0( "updateError()", & ProcessView::updateError );
 	ProcessView::Moc.AddSlot0( "updateText()", & ProcessView::updateText );
@@ -27,7 +27,7 @@ extern OrkQtApp* gpQtApplication;
 }
 
 ImplementMoc( ProcessView, QObject );
-*/
+
 ProcessView::ProcessView(const char* title, QMainWindow* mainwin)
 	: mTextEdit(0)
 	, mTitle(title)
@@ -204,5 +204,3 @@ void ProcessView::CreatePanel( const char* title, QMainWindow* mainwin )
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-
-#include "qtprocessview.moc"

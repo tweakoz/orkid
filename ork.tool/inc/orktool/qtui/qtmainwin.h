@@ -5,7 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _ORK_TOOL_QTMAINWIN_H 
+#define _ORK_TOOL_QTMAINWIN_H 
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -28,8 +29,7 @@ namespace tool {
 
 class EditorModule : public QObject
 {
-	Q_OBJECT
-	//DeclareMoc( EditorModule, QObject );
+	DeclareMoc( EditorModule, QObject );
 	
 protected:
 
@@ -46,8 +46,6 @@ public:
 	virtual void Activate( QMenuBar* qmb ) {}
 	virtual void DeActivate( QMenuBar* qmb ) {}
 	virtual void OnAction( const char* pact ) {}
-
-public Q_SLOTS:
 	void ActionSlot();
 };
 
@@ -70,12 +68,11 @@ public:
 /// Common window class for any Miniork window (both editor and game) that displays information on the title bar
 class MiniorkMainWindow : public QMainWindow
 {
-	//DeclareMoc( MiniorkMainWindow, QMainWindow );
-	Q_OBJECT
-	
+	DeclareMoc( MiniorkMainWindow, QMainWindow );
+
 public:
 
-	MiniorkMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
+	MiniorkMainWindow(QWidget* parent = 0, Qt::WFlags flags = 0);
 
 	const QString& GetMainTitle() const;
 	void SetMainTitle(const QString& str);
@@ -144,3 +141,4 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
+#endif // _ORK_TOOL_QTMAINWIN_H

@@ -5,8 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once  
-
+#ifndef _QTOUTLINER_H 
+#define _QTOUTLINER_H 
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/object/AutoConnector.h>
 #include <QtCore/QAbstractItemModel>
@@ -65,9 +65,9 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 class OutlinerView : public QTreeView, public AutoConnector
 {
-	Q_OBJECT
+	//Q_OBJECT
 	RttiDeclareAbstract(OutlinerView, AutoConnector)
-	//DeclareMoc(OutlinerView,QTreeView);
+	DeclareMoc(OutlinerView,QTreeView);
 
 	OutlinerModel*					mOutlinerModel;
 
@@ -84,7 +84,6 @@ public:
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	void setModel ( QAbstractItemModel * model ); /*virtual*/
-
 public slots:
 
 	void UserSelectionChanged(QItemSelection selected, QItemSelection deselected);
@@ -101,8 +100,7 @@ private:
 class SceneData;
 class QtOutlinerWindow : public QWidget
 {
-	Q_OBJECT
-	//DeclareMoc(QtOutlinerWindow,QWidget);
+	DeclareMoc(QtOutlinerWindow,QWidget);
 
 	static QtOutlinerWindow*	gpWindow;
 
