@@ -8,6 +8,7 @@
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/Array.hpp>
+#if 0
 #include <dispatch/dispatch.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtconsole.h>
@@ -272,3 +273,5 @@ QtConsoleWindow *QtConsoleWindow::GetCurrentOutputConsole( void )
 }*/
 ///////////////////////////////////////////////////////////////////////////////
 } } // namespace ork::tool
+
+#endif
