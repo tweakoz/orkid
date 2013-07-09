@@ -56,7 +56,8 @@ class lev2:
 	## IX libs
 	########################
 	else:
-		prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui OpenImageIO" )
+		prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui " )
+	#	prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui OpenImageIO" )
 	########################
 	## Common libs
 	########################
