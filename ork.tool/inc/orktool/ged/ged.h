@@ -5,8 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
-
+#ifndef _ORKTOOL_GED_H_
+#define _ORKTOOL_GED_H_
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/object/AutoConnector.h>
 #include <ork/kernel/string/ArrayString.h>
@@ -615,5 +615,42 @@ public:
 
 };
 ///////////////////////////////////////////////////////////////////////////////
+class GedTextEdit : public QLineEdit
+{
+	DeclareMoc( GedTextEdit, QLineEdit );
+
+public:
+
+	GedTextEdit( QWidget* parent );
+	void focusOutEvent( QFocusEvent* pev ); // virtual
+	void keyPressEvent ( QKeyEvent * pev ); // virtual
+	void SigEditFinished();
+	void SigCanceled();
+	void SetText( const char* ptext );
+
+};
+class GedInputDialog : public QDialog
+{
+	DeclareMoc( GedInputDialog, QDialog );
+
+	GedTextEdit	mTextEdit;
+	QString		mResult;
+	bool		mbChanged;
+
+	GedInputDialog();
+	void done( );
+	void canceled( );
+	void SlotTextChanged(QString str);
+	QString GetResult();
+	void clear() { mTextEdit.clear(); }
+
+public:
+
+	static QString getText( QMouseEvent* pev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
+
+};
+///////////////////////////////////////////////////////////////////////////////
 } } }
+///////////////////////////////////////////////////////////////////////////////
+#endif
 ///////////////////////////////////////////////////////////////////////////////

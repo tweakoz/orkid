@@ -14,7 +14,7 @@
 
 #include <orktool/toolcore/FunctionManager.h>
 
-#include <QtWidgets/QMessageBox>
+#include <QtGui/QMessageBox>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -48,7 +48,7 @@ void MySetToolDataFolder()
 	//////////////////////////////////////////
 }
 
-int main(int argc, char** argv )
+int main(int argc, char **argv)
 {	
 	int iret = 0;
 

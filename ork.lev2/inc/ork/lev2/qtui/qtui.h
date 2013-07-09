@@ -5,9 +5,10 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
-
 #include <ork/orkconfig.h>
+
+#ifndef _ORK_LEV2_QTUI_H
+#define _ORK_LEV2_QTUI_H
 
 #if defined( ORK_CONFIG_QT )
 
@@ -18,54 +19,49 @@
 extern int QtTest( int argc, char **argv );
 
 ///////////////////////////////////////////////////////////////////////////////
-//#include <QtCore/QMetaObject>
-//#include <private/qmetaobject_p.h>
-//#include <QtCore/qmetatype.h>
-//#include <QtCore/qdatastream.h>
-//#include <QtCore/QMetaMethod>
-#include <QtCore/QObject>
+#include <QtCore/QMetaObject>
+#include <QtCore/qmetatype.h>
+#include <QtCore/qdatastream.h>
+#include <QtCore/QMetaMethod>
 #include <QtCore/QSize>
 #include <QtCore/QTimer>
-
+#include <QtGui/qapplication.h>
+#include <QtGui/qpushbutton.h>
+#include <QtGui/qfont.h>
+#include <QtGui/qmainwindow.h>
+#include <QtGui/qmenu.h>
+#include <QtGui/qmenubar.h>
+#include <QtGui/qdockwidget.h>
+#include <QtGui/qlistwidget.h>
+#include <QtGui/qtoolbar.h>
+#include <QtGui/qgroupbox.h>
 #include <QtGui/QResizeEvent>
 #include <QtGui/QShowEvent>
 #include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
-
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QDialog>
-//#include <QtWidgets/qpushbutton.h>
-//#include <QtWidgets/qfont.h>
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QMenu>
-#include <QtWidgets/QMenuBar>
-#include <QtWidgets/QDockWidget>
-//#include <QtWidgets/qlistwidget.h>
-//#include <QtWidgets/qtoolbar.h>
-//#include <QtWidgets/qgroupbox.h>
-#include <QtWidgets/QStyleFactory>
-//#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QWidget>
-//#include <QtWidgets/qshortcut.h>
-#include <QtWidgets/QSplashScreen>
-#include <QtWidgets/QInputDialog>
+#include <QtGui/QStyleFactory>
+#include <QtGui/QCheckBox>
+#include <QtGui/QWidget>
+#include <QtGui/qshortcut.h>
+#include <QtGui/QSplashScreen>
+#include <QtGui/QInputDialog>
 
 #if defined( IX )
-#include <QtWidgets/QTreeView>
-#include <QtWidgets/QListView>
-#include <QtWidgets/QDirModel>
-//#include <Qt3Support/Q3HBox>
+#include <QtGui/QTreeView>
+#include <QtGui/QListView>
+#include <QtGui/QDirModel>
+#include <Qt3Support/Q3HBox>
 #include <QtCore/QAbstractItemModel>
 #include <QtGui/QStandardItemModel>
-#include <QtWidgets/QItemDelegate>
-#include <QtWidgets/QItemEditorFactory>
-#include <QtWidgets/QFileDialog>
-//#include <QtGui/QSpinBox>
-//#include <QtGui/QComboBox>
-//#include <QtGui/QHBoxLayout>
-#include <QtWidgets/QTextEdit>
-#include <QtWidgets/QLineEdit>
+#include <QtGui/QItemDelegate>
+#include <QtGui/QItemEditorFactory>
+#include <QtGui/QFileDialog>
+#include <QtGui/QSpinBox>
+#include <QtGui/QComboBox>
+#include <QtGui/QHBoxLayout>
+#include <QtGui/QTextEdit>
+#include <QtGui/QLineEdit>
 #else
 #include <QtGui/QTreeView.h>
 #include <QtGui/QListView.h>
@@ -219,7 +215,6 @@ class CQtGfxWindow : public ork::lev2::GfxWindow
 ///////////////////////////////////////////////////////////////////////////////
 // we no like the MOC so fake the MOC with templates
 
-#if 0
 struct MocFunctorBase
 {
 	std::string	mMethodName;
@@ -239,6 +234,36 @@ struct MocFunctorBase
 
 class CQNoMocBase
 {
+	///////////////////////////
+	// these may need updating with new versions of QT (from qmetaobject.cpp)
+	///////////////////////////
+
+	struct QMetaObjectPrivate
+	{
+		int revision;
+		int className;
+		int classInfoCount, classInfoData;
+		int methodCount, methodData;
+		int propertyCount, propertyData;
+		int enumeratorCount, enumeratorData;
+	};
+
+	enum MethodFlags  {
+		AccessPrivate = 0x00,
+		AccessProtected = 0x01,
+		AccessPublic = 0x02,
+		AccessMask = 0x03, //mask
+
+		MethodMethod = 0x00,
+		MethodSignal = 0x04,
+		MethodSlot = 0x08,
+		MethodTypeMask = 0x0c,
+
+		MethodCompatibility = 0x10,
+		MethodCloned = 0x20,
+		MethodScriptable = 0x40
+	};
+
 	CQNoMocBase*						mPrevMocBase;
 	
 	static CQNoMocBase*& GetPreMainMocBaseIter();
@@ -254,6 +279,7 @@ public: //
 	QMetaObject*						staticMetaObject;
 	const uint*							mpQtMetaData;
 	const std::string					mClassName;
+	//CStringTable						mStringTable;
 	const char*							mStringBlock;
 	int									mStringBlockLen;
 	int									mClassVersion;
@@ -431,7 +457,6 @@ static void MocInit();
 #define ImplementMoc(Sub,Base)\
 lev2::MocImp<Sub, Base> Sub::Moc( Sub::MocInit );\
 QMetaObject Sub::staticMetaObject;
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -441,3 +466,4 @@ QMetaObject Sub::staticMetaObject;
 ///////////////////////////////////////////////////////////////////////////////
 
 #endif // ORK_CONFIG_QT
+#endif // ! defined( _ORK_LEV2_QTUI_H )

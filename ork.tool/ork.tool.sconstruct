@@ -7,11 +7,11 @@ import ork.build.common as cmn
 
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
-VariantDir( 'obj', 'src', duplicate=0 )
+VariantDir( 'obj', 'src' )
 SetOption('num_jobs', obu.num_cores) 
 
-#obu.install_headers("inc/orktool")
-#obu.install_headers("inc/pkg")
+obu.install_headers("inc/orktool")
+obu.install_headers("inc/pkg")
 
 ##########################################
 
@@ -38,27 +38,13 @@ class orktool:
 
 	prj = sln.Project(ARGS,BasicEnv,"ork.tool")
 	prj.SetSrcBase( "src" )
-	prj.AddIncludePaths("inc")
 	prj.AddIncludePaths( "src" )
-	prj.AddIncludePaths("../ork.core/inc")
-	prj.AddIncludePaths("../ork.lev2/inc")
-	prj.AddIncludePaths("../ork.ent/inc")
 	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
 	prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
 	prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
-	#prj.AddIncludePaths( "%s/include/QtCore/5.0.0/QtCore/"%sln.stage_dir )
-	#prj.AddIncludePaths( "/usr/include/qt4" )
+	prj.AddIncludePaths( "/usr/include/qt4" )
 	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
 	prj.AddDefines( "LINUX" )
-	prj.qt_enable()
-	prj.qt_add_mod("Core Gui Widgets")
-	#prj.BaseEnv.Append(QT4_AUTOMOC_CPPPATH,"%s/include/ork"%sln.stage_dir)
-	#prj.BaseEnv.Append(QT4_AUTOMOC_CPPPATH,"%s/include/orktool"%sln.stage_dir)
-	#prj.qt_disable_autoscan()
-	#prj.qt_moc_explicit('obj/moc_TsxToolbar.cpp','inc/tsx/TsxToolbar.h')
-
-	#prj.qt_moc_explicit('obj/moc_TsxToolbar.cpp','inc/tsx/TsxToolbar.h')
-	#ork.tool/obj/ix.release.ork.tool/ent/SurfaceBakerBaker.moc
 	#########################
 	## OSX libs
 	#########################
@@ -72,7 +58,7 @@ class orktool:
 	## IX libs
 	#########################
 	elif prj.IsIx:
-		LIBS = "GL Cg CgGL IL ILU ILUT "
+		LIBS = "GL Cg CgGL IL ILU ILUT QtCore QtGui dispatch "
 		#LIBS += " rihelper 3delight "
 		#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 		prj.AddLibs( LIBS )
@@ -93,12 +79,8 @@ class orktool:
 
 	prj_test = sln.Project(ARGS,BasicEnv,"ork.tool.test")
 	prj_test.SetSrcBase( "src" )
-	prj_test.AddIncludePaths("../ork.core/inc")
-	prj_test.AddIncludePaths("../ork.lev2/inc")
-	prj_test.AddIncludePaths("../ork.ent/inc")
-	prj_test.AddIncludePaths("../ork.tool/inc")
 	prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
-	prj_test.AddIncludePaths( "%s/include/QtCore/5.0.0/QtCore/"%sln.stage_dir )
+	prj_test.AddIncludePaths( "/usr/include/qt4" )
 	prj_test.AddIncludePaths( "%s/include/bullet/src"%sln.stage_dir )
 	prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
 	#prj_test.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )

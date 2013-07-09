@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <QtWidgets/QInputDialog>
+#include <QtGui/QInputDialog>
 #include <orktool/ged/ged_io.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/asset/Asset.h>
@@ -74,7 +74,7 @@ void GedAssetNode<IODriver>::OnCreateObject()
 		{
 			QVariant UserData = pact->data();
 			QString UserName = UserData.toString();
-			std::string pname = UserName.toUtf8().data();
+			std::string pname = UserName.toAscii().data();
 
 			file::Path apath( pname.c_str() );
 			

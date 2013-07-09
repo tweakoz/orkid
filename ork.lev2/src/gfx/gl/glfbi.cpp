@@ -13,9 +13,13 @@
 #include <ork/lev2/ui/ui.h>
 
 #include <ork/lev2/gfx/dbgfontman.h>
+
+#if defined(USE_OIIO)
+
 #include <OpenImageIO/imageio.h>
 
 OIIO_NAMESPACE_USING
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -604,6 +608,7 @@ void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, const file::Path& pth )
 
 	}
 
+#if defined(USE_OIIO)
 	ImageOutput *out = ImageOutput::create (pth.c_str());
 	if (! out)
 		return;
@@ -614,6 +619,8 @@ void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, const file::Path& pth )
 	delete out;
 
 	free((void*)pu8);
+#endif
+
 }
 void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer )
 {

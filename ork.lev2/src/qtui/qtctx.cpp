@@ -14,8 +14,8 @@
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/qtui/qtui.h>
 
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QGesture>
+#include <QtGui/QMainWindow>
+#include <QtGui/QGesture>
 
 #if defined(_DARWIN)
 #include <dispatch/dispatch.h>

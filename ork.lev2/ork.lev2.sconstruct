@@ -16,7 +16,7 @@ VariantDir( 'obj', 'src' )
 SetOption('num_jobs', obu.num_cores) 
 BasicEnv = Environment( ENV=os.environ )
 
-#obu.install_headers("inc/ork")
+obu.install_headers("inc/ork")
 
 # basics #################################
 
@@ -37,17 +37,11 @@ class lev2:
 
 	prj_lib = sln.Project(ARGS,BasicEnv,"ork.lev2")
 	prj_lib.SetSrcBase( "src" )
-	prj_lib.AddIncludePaths("inc")
-	prj_lib.AddIncludePaths("../ork.core/inc")
-	prj_lib.AddIncludePaths("../ork.tool/inc")
 	prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
-	prj_lib.AddIncludePaths( "%s/include/QtCore/5.0.0/QtCore/"%sln.stage_dir )
-	
+	prj_lib.AddIncludePaths( "/usr/include/qt4" )
 	prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
 	#prj_lib.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
-	#prj_lib.qt_enable()
-	#prj_lib.qt_add_mod("Core Gui Widgets")
 	#########################
 	## OSX libs
 	#########################
@@ -62,7 +56,7 @@ class lev2:
 	## IX libs
 	########################
 	else:
-		prj_lib.AddLibs( "GL Cg CgGL Qt5Core Qt5Gui Qt5Widgets OpenImageIO" )
+		prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui OpenImageIO" )
 	########################
 	## Common libs
 	########################
@@ -80,15 +74,12 @@ class lev2:
 
 	prj_test = sln.Project(ARGS,BasicEnv,"ork.lev2.test")
 	prj_test.SetSrcBase( "src" )
-	prj_test.AddIncludePaths("../ork.core/inc")
-	prj_test.AddIncludePaths("../ork.lev2/inc")
 	prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
 	prj_test.AddFolders( "test", "*.cpp" )
 	prj_test.AddLibs( "ork.core.%s"%suffix )
 	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
 	#prj_test.AddLibs( "ork.lev2.%s"%prj_test.SUFFIX )
-	prj_test.AddLibs("Qt5Core Qt5Gui" )
-	prj_test.AddFrameworks("OpenGL Cg Qt5Core Qt5Gui" )
+	prj_test.AddFrameworks("OpenGL Cg QtCore QtGui" )
 	prj_test.AddProjectDep( prj_lib )
 	prj_test.Configure()
 	self.prg = prj_test.Program( )

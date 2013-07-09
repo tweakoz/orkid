@@ -12,7 +12,7 @@ SetOption('num_jobs', obu.num_cores)
 sln.optset.add("ork.core")
 BasicEnv = Environment( ENV=os.environ )
 
-#obu.install_headers("inc/ork")
+obu.install_headers("inc/ork")
 obu.install_headers("ext/inc/*")
 
 # basics #################################
@@ -39,7 +39,6 @@ class core:
 	prj_core_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
 	prj_core_lib.AddLibs( LIBS )
 	prj_core_lib.AddFrameworks("Foundation")
-	prj_core_lib.AddIncludePaths("./inc")
 	prj_core_lib.Configure()
 	self.core_lib = prj_core_lib.SharedLibrary( )
 
@@ -51,7 +50,6 @@ class core:
 	prj_test.AddLibs( LIBS )
 	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
 	prj_test.AddProjectDep( prj_core_lib )
-	prj_test.AddIncludePaths("../ork.core/inc")
 	prj_test.Configure()
 	self.test_prg = prj_test.Program( )
 	prj_test.AddProjectDep( prj_core_lib )

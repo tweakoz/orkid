@@ -21,6 +21,7 @@
 #pragma once
 
 #include <tbb/atomic.h>
+#include <unistd.h>
 
 #if 1 // relaxed mem consistency model (~50% faster than MSC)
 #define MemFullFence tbb::full_fence

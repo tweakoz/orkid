@@ -37,7 +37,6 @@ void PyNewEntity(const std::string& name,const std::string& archname="")
 	//////////////////////
 	// attempt to make an appropriate archetype
 	//////////////////////
-	#if 0
 	auto GenArch = ^ e::Archetype*(const std::string& alias,const std::string& aname,const std::string& classname)
 	{
 		e::SceneObject* fso = get_editor().FindSceneObject(_archname.c_str());
@@ -66,7 +65,6 @@ void PyNewEntity(const std::string& name,const std::string& archname="")
 	auto pent = new_ent.GetResult().Get<e::EntData*>();
 
 	get_editor().EditorRenameSceneObject( pent, name.c_str() );
-	#endif
 }
 /////////////////////////////////////////////////////////////
 void PyNewRefArch(const std::string& name)
