@@ -1086,13 +1086,13 @@ void ReEmitter::DoLink()
 	if( mDeathQueueID4.GetU32() )
 		mDeathEventQueue = mpParticleContext->MergeQueue(mDeathQueueID4);
 
-	printf( "ReEmitter<%p>::DoLink() SpawnQ<%s:%p>\n", this, mSpawnQueueID4.c_str(), mSpawnEventQueue );
-	printf( "ReEmitter<%p>::DoLink() DeathQ<%s:%p>\n", this, mDeathQueueID4.c_str(), mDeathEventQueue );
+	//printf( "ReEmitter<%p>::DoLink() SpawnQ<%s:%p>\n", this, mSpawnQueueID4.c_str(), mSpawnEventQueue );
+	//printf( "ReEmitter<%p>::DoLink() DeathQ<%s:%p>\n", this, mDeathQueueID4.c_str(), mDeathEventQueue );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ReEmitter::Compute( float dt )
 {
-	printf( "ReEmitter<%p>::Compute() SpawnQ<%p>\n", this, mSpawnEventQueue );
+	//printf( "ReEmitter<%p>::Compute() SpawnQ<%p>\n", this, mSpawnEventQueue );
 	
 	const psys_ptclbuf& pb = mPlugInpInput.GetValue();
 	if( pb.mPool )

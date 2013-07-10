@@ -223,7 +223,7 @@ void DirectedEmitter::EmitSQ( EmitterCtx& ctx )
 	int icount = ctx.mSpawnQueue->GetNumEvents();
 	CVector3 odir, dir, pos, disp, vbin, vtan, yo;
 	
-	printf( "DirectedEmitter<%p>::EmitSQ() count<%d>\n", this, icount );
+	//printf( "DirectedEmitter<%p>::EmitSQ() count<%d>\n", this, icount );
 	float EmitterSpeed = ctx.mfEmissionVelocity;
 	bool bUseEmitterSpeed = (EmitterSpeed!=0.0f);
 
@@ -314,13 +314,13 @@ void DirectedEmitter::Reap( EmitterCtx& ctx )
                     DeathEv.mLastPosition = ptc->mLastPosition;
                     DeathEv.mVelocity = ptc->mVelocity;
                     ctx.mDeathQueue->QueueEvent(DeathEv);
-                    printf( "sending particle<%p> kill event DQ<%p> pos<%f %f %f>\n", 
+                    /*printf( "sending particle<%p> kill event DQ<%p> pos<%f %f %f>\n", 
                     		ptc,
                     		ctx.mDeathQueue,
                     		DeathEv.mPosition.GetX(),
                     		DeathEv.mPosition.GetY(),
                     		DeathEv.mPosition.GetZ()
-                    		);
+                    		);*/
                 }
                 ctx.mPool->mInactiveParticles.push_back(ptc);
                 int ilast_alive = ctx.mPool->GetNumAlive()-1;

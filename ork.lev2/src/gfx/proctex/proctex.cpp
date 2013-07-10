@@ -180,6 +180,7 @@ void RenderQuad( ork::lev2::GfxTarget* pTARG, float fX1, float fY1, float fX2, f
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UpdateThumb( ProcTex& ptex )
 {
+	return;
 	Buffer& computebuffer = GetWriteBuffer(ptex);
 	lev2::Texture* ptexture = computebuffer.OutputTexture();
 
@@ -334,7 +335,7 @@ void ProcTex::compute( ProcTexContext& ptctx )
 					ImgModule* pimgmod = rtti::autocast(pmod);
 					if( pimgmod )
 					{
-						pimgmod->UpdateThumb(*this);
+						//pimgmod->UpdateThumb(*this);
 						Buffer& b = pimgmod->GetWriteBuffer( *this );
 						mpResTex = b.OutputTexture();
 					}
