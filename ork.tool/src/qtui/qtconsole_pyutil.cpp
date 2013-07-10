@@ -9,7 +9,7 @@
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/editor/edmainwin.h>
 #include <ork/kernel/prop.h>
-#include <dispatch/dispatch.h>
+//#include <dispatch/dispatch.h>
 #include <pkg/ent/ReferenceArchetype.h>
 
 namespace e = ork::ent;
@@ -37,7 +37,7 @@ void PyNewEntity(const std::string& name,const std::string& archname="")
 	//////////////////////
 	// attempt to make an appropriate archetype
 	//////////////////////
-	auto GenArch = ^ e::Archetype*(const std::string& alias,const std::string& aname,const std::string& classname)
+	auto GenArch = [=](const std::string& alias,const std::string& aname,const std::string& classname) -> e::Archetype*
 	{
 		e::SceneObject* fso = get_editor().FindSceneObject(_archname.c_str());
 		bool bMATCH = (_archname == alias) && (nullptr==fso);
