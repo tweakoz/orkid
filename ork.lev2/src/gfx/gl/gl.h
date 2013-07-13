@@ -495,7 +495,7 @@ protected:
 	GlGeometryBufferInterface	mGbI;
 	GlFrameBufferInterface		mFbI;
 	GlTextureInterface			mTxI;
-
+	bool 						mTargetDrawableSizeDirty;
 	void* DoBeginLoad(); // virtual
 	void DoEndLoad(void*ploadtok); // virtual
 

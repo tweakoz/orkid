@@ -536,6 +536,7 @@ void GfxTargetGL::SetSize( int ix, int iy, int iw, int ih )
 	miY=iy;
 	miW=iw;
 	miH=ih;
+	mTargetDrawableSizeDirty = true;
 	//mFbI.DeviceReset(ix,iy,iw,ih );
 }
 

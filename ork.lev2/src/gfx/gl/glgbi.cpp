@@ -42,7 +42,7 @@ enum edynvbopath
 };
 
 #if defined(ORK_OSX) && !defined(USE_GL3)
-static edynvbopath gDynVboPath = EVB_BUFFER_SUBDATA;
+static edynvbopath gDynVboPath = EVB_APPLE_FLUSH_RANGE;
 #else
 static edynvbopath gDynVboPath = EVB_MAP_BUFFER_RANGE;
 #endif
