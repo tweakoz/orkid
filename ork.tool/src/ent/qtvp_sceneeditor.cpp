@@ -19,6 +19,7 @@
 #include <orktool/qtui/gfxbuffer.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/kernel/timer.h>
 
 #include <pkg/ent/scene.h>
@@ -339,13 +340,13 @@ void SceneEditorVP::DoDraw()
 				{
 					auto poutbuf = new GfxBuffer(0,0,0,1280,720);
 					mpTarget->InitializeContext(poutbuf);
-					auto rtg = new RtGroup(poutbuf,1280,720);
-					auto mrt = new CMrtBuffer(	
-						poutbuf,
+					auto rtg = new RtGroup(mpTarget,1280,720);
+					auto mrt = new RtBuffer(	
+						rtg,
 						lev2::ETGTTYPE_MRT0,
 						lev2::EBUFFMT_RGBA32,
-						0, 0, 1280,720 );
-					mpTarget->InitializeContext(mrt);
+						1280,720 );
+					//mpTarget->InitializeContext(mrt);
 
 					rtg->SetMrt( 0, mrt );
 
@@ -358,7 +359,7 @@ void SceneEditorVP::DoDraw()
 					mpTarget->FBI()->SetViewport( 0,0, itw, ith );
 					mpTarget->FBI()->SetScissor( 0,0, itw, ith );
 					mpTarget->BeginFrame();
-					mpTarget->FBI()->SetRtGroup(rtg);
+					mpTarget->FBI()->PushRtGroup(rtg);
 					{	
 						pCMCI->ComposeToScreen( mpTarget );
 						////////////////////////////////////////
@@ -369,7 +370,7 @@ void SceneEditorVP::DoDraw()
 						mpTarget->FBI()->Capture( *poutbuf, file::Path(fnamesyn.c_str()) );
 						////////////////////////////////////////
 					}
-					mpTarget->FBI()->SetRtGroup(0);
+					mpTarget->FBI()->PopRtGroup();
 					mpTarget->EndFrame();// the_renderer );
 				}
 				////////////////////////////////////////

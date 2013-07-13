@@ -9,6 +9,7 @@
 
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
+#include <ork/lev2/gfx/rtgroup.h>
 
 #if defined( ORK_CONFIG_QT )
 #include <ork/lev2/qtui/qtui.h>
@@ -30,7 +31,7 @@ PickBufferBase::PickBufferBase( lev2::GfxBuffer *Parent, int iX, int iY, int iW,
 	: ork::lev2::GfxBuffer( Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA32,lev2::ETGTTYPE_EXTBUFFER )
 	, meType( etyp )
 	, mbInitTex( true )
-	, mpPickRtGroup( new lev2::RtGroup( Parent, iW, iH ) )
+	, mpPickRtGroup( new lev2::RtGroup( GetContext(), iW, iH ) )
 {
 	mpUIMaterial = new ork::lev2::GfxMaterialUITextured( GetContext() );
 }
@@ -53,26 +54,26 @@ ork::Object* PickBufferBase::GetObjectFromPickId(uint32_t pid)
 
 void PickBufferBase::Init()
 {
-	mpPickRtGroup->SetMrt( 0, new ork::lev2::CMrtBuffer(	mParent,
+	mpPickRtGroup->SetMrt( 0, new ork::lev2::RtBuffer(	mpPickRtGroup,
 													lev2::ETGTTYPE_MRT0,
 													lev2::EBUFFMT_RGBA64,
-													0, 0, miWidth, miHeight ) );
+													miWidth, miHeight ) );
 
-	mpPickRtGroup->SetMrt( 1, new ork::lev2::CMrtBuffer(	mParent,
+	mpPickRtGroup->SetMrt( 1, new ork::lev2::RtBuffer(	mpPickRtGroup,
 													lev2::ETGTTYPE_MRT1,
 													lev2::EBUFFMT_RGBA64,
-													0, 0, miWidth, miHeight ) );
+													miWidth, miHeight ) );
 
-	mpPickRtGroup->GetMrt(0)->RefClearColor() = mParent->GetClearColor();
+	//mpPickRtGroup->GetMrt(0)->RefClearColor() = mParent->GetClearColor();
 
 	////////////////////////////////////////////////////////////////
 	// Umm, Mrt's cant have seperate clear colors, that suxorz...
 	////////////////////////////////////////////////////////////////
-	mpPickRtGroup->GetMrt(0)->RefClearColor() = CVector4(0.0f,0.0f,0.0f,0.0f);
-	mpPickRtGroup->GetMrt(1)->RefClearColor() = CVector4(0.0f,0.0f,0.0f,0.0f);
+	//mpPickRtGroup->GetMrt(0)->RefClearColor() = CVector4(0.0f,0.0f,0.0f,0.0f);
+	//mpPickRtGroup->GetMrt(1)->RefClearColor() = CVector4(0.0f,0.0f,0.0f,0.0f);
 
-	mpPickRtGroup->GetMrt(0)->SetContext(mParent->GetContext());
-	mpPickRtGroup->GetMrt(1)->SetContext(mParent->GetContext());
+	//mpPickRtGroup->GetMrt(0)->SetContext(mParent->GetContext());
+	//mpPickRtGroup->GetMrt(1)->SetContext(mParent->GetContext());
 }
 
 /////////////////////////////////////////////////////////////////////////

@@ -73,12 +73,13 @@ void ProcTexArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 			float fcurtime = psi->GetGameTime();
 			proctex::ProcTex& templ = cd.GetTemplate();
 			
-			if( std::abs(pyo->mPrevTime-fcurtime)>0.1f )
+			if( std::abs(pyo->mPrevTime-fcurtime)>0.016666f )
 			{
+				ssci->mContext.mTarget = targ;
 				ssci->mContext.mdflowctx.Clear();
 				ssci->mContext.mCurrentTime = fcurtime;
 				templ.compute(ssci->mContext);
-				printf( "fcurtime <%f>\n", fcurtime );
+				//printf( "fcurtime <%f>\n", fcurtime );
 				pyo->mPrevTime = fcurtime;
 			}
 			ork::lev2::Texture* ptx = templ.ResultTexture();

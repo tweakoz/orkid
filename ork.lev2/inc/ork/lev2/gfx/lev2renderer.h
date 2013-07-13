@@ -272,18 +272,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CMrtBuffer : public GfxBuffer
-{
-	public:
-
-	CMrtBuffer( GfxBuffer *parent,
-				ETargetType etype,
-				EBufferFormat efmt,
-				int iX, int iY, int iW, int iH );
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 class FrameTechniqueBase
 {
 public:

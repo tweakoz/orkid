@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/gfxctxdummy.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/rtgroup.h>
 
 
 #include <ork/lev2/gfx/renderer.h>
@@ -423,31 +424,19 @@ void FrameTechniqueBase::Init(GfxTarget* targ)
 	targ = parent ? parent->GetContext() : targ;
 	auto clear_color = fbi->GetClearColor();
 
-	mpMrtFinal = new RtGroup( parent, kFINALW, kFINALH, kmultisamples );
+	mpMrtFinal = new RtGroup( targ, kFINALW, kFINALH, kmultisamples );
 
-	mpMrtFinal->SetMrt( 0, new CMrtBuffer(		parent,
+	mpMrtFinal->SetMrt( 0, new RtBuffer(		mpMrtFinal,
 												lev2::ETGTTYPE_MRT0,
 												lev2::EBUFFMT_RGBA32,
-												0, 0, kFINALW, kFINALH ) );
+												kFINALW, kFINALH ) );
 
-	mpMrtFinal->GetMrt(0)->RefClearColor() = clear_color;
-
-	mpMrtFinal->GetMrt(0)->SetContext( targ );
+	//mpMrtFinal->GetMrt(0)->RefClearColor() = clear_color;
+	//mpMrtFinal->GetMrt(0)->SetContext( targ );
 
 	DoInit(targ);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-CMrtBuffer::CMrtBuffer( GfxBuffer *parent,
-						ETargetType etype,
-						EBufferFormat efmt,
-						int iX, int iY, int iW, int iH )
-	: GfxBuffer( parent, iX, iY, iW, iH, efmt, etype )
-{
-
-
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 } }
