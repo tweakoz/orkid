@@ -171,6 +171,7 @@ GfxTargetGL::GfxTargetGL()
 	, mFbI( *this )
 	, mTxI( *this )
 	, mMtxI( *this )
+	, mTargetDrawableSizeDirty(true)
 {
 	static dispatch_once_t ginit_once;
 	auto once_blk = ^ void (void)
@@ -312,7 +313,11 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 		}
 		//printf( "MCC PATH F\n" );
 		[plato->mNSOpenGLContext makeCurrentContext];
-		[plato->mNSOpenGLContext update];
+		if( plato->mTarget->mTargetDrawableSizeDirty )
+		{
+			[plato->mNSOpenGLContext update];
+			plato->mTarget->mTargetDrawableSizeDirty = false;
+		}
 	};
 
 	//////////////////////////////////////////////
@@ -440,7 +445,7 @@ void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 	{
 		if( plato->mbNSOpenGlView) 
 		{
-			//return;
+			return;
 		}
 		//printf( "SWAP<%p>\n", this );
 		[plato->mNSOpenGLContext flushBuffer];
