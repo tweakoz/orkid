@@ -84,12 +84,13 @@ dataflow::inplugbase* Octaves::GetInput(int idx)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Octaves::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	//printf( "Octaves wrbuf<%p> wrtex<%p>\n", & buffer, buffer.OutputTexture() );
 	const ImgOutPlug* conplug = rtti::autocast(mPlugInpInput.GetExternalOutput());
 	if(conplug)
 	{
-		ork::lev2::GfxTarget* pTARG = buffer.GetContext();
 		mOctMaterial.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 		mOctMaterial.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 		mOctMaterial.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
@@ -97,7 +98,8 @@ void Octaves::compute( ProcTex& ptex )
 		mOctMaterial.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 		mOctMaterial.mRasterState.SetZWriteMask( false );
 
-		auto inptex = conplug->GetValue().GetBuffer(ptex).OutputTexture();
+		auto inptex = conplug->GetValue().GetTexture(ptex);
+
 		inptex->TexSamplingMode().PresetTrilinearWrap();
 		pTARG->TXI()->ApplySamplingMode(inptex);
 
@@ -108,8 +110,8 @@ void Octaves::compute( ProcTex& ptex )
 		float famp = mPlugInpBaseAmp.GetValue();
 		float offx = mPlugInpBaseOffsetX.GetValue();
 		float offy = mPlugInpBaseOffsetY.GetValue();
-		buffer.GetContext()->FBI()->SetAutoClear(true);
-		buffer.PtexBegin();
+		pTARG->FBI()->SetAutoClear(true);
+		buffer.PtexBegin(pTARG);
 		pTARG->BindMaterial( & mOctMaterial );
 		for( int i=0; i<miNumOctaves; i++ )
 		{
@@ -203,7 +205,7 @@ dataflow::inplugbase* Cells::GetInput(int idx)
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Cells::ComputeVB( lev2::GfxBuffer& buffer )
+void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 {	CVector3 wrapu( float(miDimU), 0.0f, 0.0f );
 	CVector3 wrapv( 0.0f, float(miDimV), 0.0f );
 	////////////////////////////////////////////////
@@ -243,7 +245,6 @@ void Cells::ComputeVB( lev2::GfxBuffer& buffer )
 	}
 	float flerp = mPlugInpSeedLerp.GetValue();
 	////////////////////////////////////////////////
-	ork::lev2::GfxTarget* pTARG = buffer.GetContext();
 	mVertexBuffer.Reset();
 	mVW.Lock( pTARG, & mVertexBuffer, 3*8*(1+miSmoothing)*miDimU*miDimV );
 	////////////////////////////////////////////////
@@ -347,7 +348,9 @@ void Cells::ComputeVB( lev2::GfxBuffer& buffer )
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Cells::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	////////////////////////////////////////////////////////////////
 	dataflow::node_hash testhash;
 	testhash.Hash( miDimU );
@@ -360,17 +363,17 @@ void Cells::compute( ProcTex& ptex )
 	testhash.Hash( mPlugInpSeedLerp.GetValue() );
 	testhash.Hash( mPlugInpSmoothingRadius.GetValue() );
 	if( testhash != mVBHash )
-	{	ComputeVB( buffer );
+	{	ComputeVB( pTARG );
 		mVBHash = testhash;
 	}
 	////////////////////////////////////////////////////////////////
 	struct AA16RenderCells : public AA16Render
 	{
 		virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-		{	buf.GetContext()->PushModColor( ork::CVector4::Red() );
-			CMatrix4 mtxortho = buf.GetContext()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
-			buf.GetContext()->PushMaterial( & stdmat );
-			buf.GetContext()->MTXI()->PushPMatrix( mtxortho );
+		{	mPTX.GetTarget()->PushModColor( ork::CVector4::Red() );
+			CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+			mPTX.GetTarget()->PushMaterial( & stdmat );
+			mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 			for( int iw=0; iw<9; iw++ )
 			{	int ix = (iw%3)-1;
 				int iy = (iw/3)-1;
@@ -378,13 +381,13 @@ void Cells::compute( ProcTex& ptex )
 				CVector3 wpv = (iy>0) ? wrapv : (iy<0) ? -wrapv : CVector3::Zero(); 
 				CMatrix4 mtx;
 				mtx.SetTranslation( wpu+wpv );
-				buf.GetContext()->MTXI()->PushMMatrix( mtx );
-				buf.GetContext()->GBI()->DrawPrimitive( mVW, ork::lev2::EPRIM_TRIANGLES );
-				buf.GetContext()->MTXI()->PopMMatrix();
+				mPTX.GetTarget()->MTXI()->PushMMatrix( mtx );
+				mPTX.GetTarget()->GBI()->DrawPrimitive( mVW, ork::lev2::EPRIM_TRIANGLES );
+				mPTX.GetTarget()->MTXI()->PopMMatrix();
 			}
-			buf.GetContext()->MTXI()->PopPMatrix();
-			buf.GetContext()->PopMaterial();
-			buf.GetContext()->PopModColor();
+			mPTX.GetTarget()->MTXI()->PopPMatrix();
+			mPTX.GetTarget()->PopMaterial();
+			mPTX.GetTarget()->PopModColor();
 		}
 		lev2::GfxMaterial3DSolid stdmat;
 		ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16>& mVW;
@@ -394,7 +397,7 @@ void Cells::compute( ProcTex& ptex )
 						 ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16>& vw,
 						 int idimU, int idimV )
 			: AA16Render( ptx, bo )
-			, stdmat( bo.GetContext() )
+			, stdmat( ptx.GetTarget() )
 			, mVW(vw)
 			, wrapu( float(idimU), 0.0f, 0.0f )
 			, wrapv( 0.0f, float(idimV), 0.0f )

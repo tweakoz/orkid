@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/rtgroup.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/scene.h>
 #include <pkg/ent/entity.h>

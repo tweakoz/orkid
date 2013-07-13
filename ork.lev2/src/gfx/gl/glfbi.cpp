@@ -242,8 +242,6 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 		//  pop viewport/scissor that was pushed by SetRtGroup( nonzero )
 		// on xbox, happens after resolve
 		////////////////////////////////////////////////
-		PopScissor();
-		PopViewport();
 		SetAsRenderTarget();
 		mCurrentRtGroup = 0;
 		return;
@@ -292,7 +290,7 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 
 		for( int it=0; it<inumtargets; it++ )
 		{
-			GfxBuffer* pB = Base->GetMrt(it);
+			RtBuffer* pB = Base->GetMrt(it);
 			pB->SetSizeDirty(true);
 			//////////////////////////////////////////
 			Texture* ptex = new Texture;
@@ -341,7 +339,7 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 		//////
 		for( int it=0; it<inumtargets; it++ )
 		{
-			GfxBuffer* pB = Base->GetMrt(it);
+			RtBuffer* pB = Base->GetMrt(it);
 			//D3DFORMAT efmt = D3DFMT_A8R8G8B8;
 			GLuint glinternalformat = 0;
 			GLuint glformat = GL_RGBA;
@@ -410,9 +408,6 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 				GL_ERRORCHECK();
 
 	//////////////////////////////////////////
-
-	PushViewport( SRect(0,0, Base->GetW(), Base->GetH()) );
-	PushScissor( SRect(0,0, Base->GetW(), Base->GetH()) );
 
 	static const SRasterState defstate;
 	mTarget.RSI()->BindRasterState( defstate, true );
