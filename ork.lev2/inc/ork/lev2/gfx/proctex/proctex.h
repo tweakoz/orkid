@@ -45,7 +45,7 @@ class IDeserializer;
 namespace ork { namespace proctex {
 class Module;
 ///////////////////////////////////////////////////////////////////////////////
-class Buffer //: public lev2::GfxBuffer
+class Buffer 
 {
 public:
 	static const int kx = 0;
@@ -59,8 +59,8 @@ public:
 
 	lev2::Texture* OutputTexture();
 
-	void PtexBegin(lev2::GfxTarget*ptgt);
-	void PtexEnd();
+	void PtexBegin(lev2::GfxTarget*ptgt, bool push_full_vp, bool clear_all );
+	void PtexEnd( bool pop_vp );
 
 	bool IsBuf32() const { return GetBufferFormat()==lev2::EBUFFMT_RGBA32; }
 	bool IsBuf64() const { return GetBufferFormat()==lev2::EBUFFMT_RGBA64; }

@@ -110,8 +110,7 @@ void Octaves::compute( ProcTex& ptex )
 		float famp = mPlugInpBaseAmp.GetValue();
 		float offx = mPlugInpBaseOffsetX.GetValue();
 		float offy = mPlugInpBaseOffsetY.GetValue();
-		pTARG->FBI()->SetAutoClear(true);
-		buffer.PtexBegin(pTARG);
+		buffer.PtexBegin(pTARG,true,true);
 		pTARG->BindMaterial( & mOctMaterial );
 		for( int i=0; i<miNumOctaves; i++ )
 		{
@@ -129,7 +128,7 @@ void Octaves::compute( ProcTex& ptex )
 			offx *= mPlugInpScalOffsetX.GetValue();
 			offy *= mPlugInpScalOffsetY.GetValue();
 		}
-		buffer.PtexEnd();
+		buffer.PtexEnd(true);
 		////////////////////////////////////
 		pTARG->BindMaterial( 0 );
 	}
