@@ -496,7 +496,7 @@ void Kaled::compute( ProcTex& ptex )
 		////////////////////////////////////////////////////////////////
 		auto mtxi = targ->MTXI();
 		CMatrix4 mtxortho = mtxi->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
-		buffer.PtexBegin(targ);
+		buffer.PtexBegin(targ,true,false);
 		mtxi->PushPMatrix( mtxortho );
 		mtxi->PushVMatrix( CMatrix4::Identity );
 		mtxi->PushMMatrix( CMatrix4::Identity );
@@ -592,7 +592,7 @@ void Kaled::compute( ProcTex& ptex )
 		mtxi->PopVMatrix();
 		mtxi->PopMMatrix();
 
-		buffer.PtexEnd();
+		buffer.PtexEnd(true);
 	}
 	MarkClean();
 }

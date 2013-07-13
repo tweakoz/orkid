@@ -513,7 +513,7 @@ void GlFrameBufferInterface::SetViewport( int iX, int iY, int iW, int iH )
 
 void GlFrameBufferInterface::ClearViewport( CUIViewport *pVP )
 {
-	const CColor3 &rCol = pVP->GetClearColorRef();
+	const CColor3 &rCol = (pVP!=nullptr) ? pVP->GetClearColorRef() : CColor3::Black();
 
 	if( IsPickState() )
 		glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );

@@ -55,17 +55,29 @@ Buffer::Buffer(ork::lev2::EBufferFormat efmt)
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Buffer::PtexBegin(lev2::GfxTarget*ptgt)
+void Buffer::PtexBegin(lev2::GfxTarget*ptgt, bool push_full_vp, bool clear_all )
 {	mTarget = ptgt;
+	mTarget->FBI()->SetAutoClear(false);
+	//mTarget->FBI()->BeginFrame();	
 	mTarget->FBI()->PushRtGroup(GetRtGroup(ptgt));
-	mTarget->FBI()->BeginFrame();	
-
+	SRect vprect_full(0,0,kw,kh);
+	if( push_full_vp )
+	{	mTarget->FBI()->PushViewport(vprect_full);
+		mTarget->FBI()->PushScissor(vprect_full);
+	}
+	if( clear_all )
+		mTarget->FBI()->ClearViewport(nullptr);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Buffer::PtexEnd()
+void Buffer::PtexEnd(bool pop_vp )
 {
-	mTarget->FBI()->EndFrame();	
+	if( pop_vp )
+	{	mTarget->FBI()->PopViewport();
+		mTarget->FBI()->PopScissor();
+	}
+
 	mTarget->FBI()->PopRtGroup();
+	//mTarget->FBI()->EndFrame();	
 	mTarget = nullptr;
 }
 lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
@@ -145,14 +157,7 @@ void Img64Module::Describe()
 {	RegisterObjOutPlug( Img64Module, ImgOut );
 }
 ImgModule::ImgModule()
-//	: mThumbBuffer( 0, 0, 0, 256, 256, lev2::EBUFFMT_RGBA32, lev2::ETGTTYPE_EXTBUFFER, 	"ProcTexThumbBuffer")
 {
-	/*lev2::GfxTargetCreationParams params;
-	params.miNumSharedVerts = 4<<10;
-	lev2::GfxEnv::GetRef().PushCreationParams( params );
-	mThumbBuffer.CreateContext();
-	lev2::GfxEnv::GetRef().PopCreationParams( );
-*/
 }
 Img32Module::Img32Module()
 	: ConstructOutTypPlug( ImgOut,dataflow::EPR_UNIFORM, typeid(Img32) )
@@ -231,13 +236,16 @@ void RenderQuad( ork::lev2::GfxTarget* pTARG, float fX1, float fY1, float fX2, f
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UpdateThumb( ProcTex& ptex )
 {
-	return;
-	/*
-	Buffer& computebuffer = GetWriteBuffer(ptex);
-	lev2::Texture* ptexture = computebuffer.OutputTexture();
+	auto pTARG = ptex.GetTarget();
+	auto fbi = pTARG->FBI();
+	auto ptexture = GetWriteBuffer(ptex).OutputTexture();
 
-	mThumbBuffer.BeginFrame();
-	GfxTarget* pTARG = mThumbBuffer.GetContext();
+	if( nullptr == ptexture )
+		return;
+
+	//mThumbBuffer.BeginFrame();
+	
+	fbi->PushRtGroup(mThumbBuffer.GetRtGroup(pTARG));
 	GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
 	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 	gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
@@ -264,7 +272,7 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 	pTARG->MTXI()->PopMMatrix();
 	pTARG->PopModColor();
 	MarkClean();
-	mThumbBuffer.EndFrame();*/
+	fbi->PopRtGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTex::Describe()
@@ -334,6 +342,7 @@ void ProcTex::compute( ProcTexContext& ptctx )
 					dataflow::workunit mywunit( dgmod, & mycluster, 0);
 					mywunit.SetContextData( this );
 					dgmod->Compute( & mywunit );
+
 				}
 			}
 			ImgModule* img_module = ork::rtti::autocast(dgmod);
@@ -358,7 +367,9 @@ void ProcTex::compute( ProcTexContext& ptctx )
 
 					auto tex = base.GetTexture(*this);
 					if( tex != nullptr )
-						mpResTex = tex;
+					{	mpResTex = tex;
+						img_module->UpdateThumb(*this);
+					}
 				}
 				else
 				{
@@ -506,6 +517,9 @@ struct quad
 void AA16Render::RenderAA()
 {
 	auto target = mPTX.GetTarget();
+	auto fbi = target->FBI();
+	auto mtxi = target->MTXI();
+	auto txi = target->TXI();
 
 	CMatrix4 mtxortho;
 
@@ -554,8 +568,6 @@ void AA16Render::RenderAA()
 		{ ua, vd, ub, ve }, { ub, vd, uc, ve }, { uc, vd, ud, ve },  { ud, vd, ue, ve }, 
 	};
 
-
-	target->FBI()->SetAutoClear(true);
 	
 	auto temp_buffer = bufout.IsBuf32() ? ProcTexContext::AllocBuffer32() 
 										: ProcTexContext::AllocBuffer64();
@@ -573,11 +585,8 @@ void AA16Render::RenderAA()
 		// Render subsection to BufTA
 		//////////////////////////////////////////////////////
 		
-		{
-			auto mtxi = target->MTXI();
-			
-			target->FBI()->SetAutoClear(true);
-			temp_buffer->PtexBegin(target);
+		{			
+			temp_buffer->PtexBegin(target, true, true );
 			CMatrix4 mtxortho = mtxi->Ortho( left,right,top,bottom, 0.0f, 1.0f );
 			mtxi->PushMMatrix( CMatrix4::Identity );
 			mtxi->PushVMatrix( CMatrix4::Identity );
@@ -586,7 +595,7 @@ void AA16Render::RenderAA()
 			mtxi->PopPMatrix();
 			mtxi->PopVMatrix();
 			mtxi->PopMMatrix();
-			temp_buffer->PtexEnd();
+			temp_buffer->PtexEnd(true);
 
 		}
 
@@ -594,16 +603,16 @@ void AA16Render::RenderAA()
 		// Resolve to output buffer
 		//////////////////////////////////////////////////////
 
-		bufout.PtexBegin(target);
+		bufout.PtexBegin(target, true, (i==0) );
 		{
 			float l = boxx;
 			float r = boxx+boxw;
 			float t = boxy;
 			float b = boxy+boxh;
 
+			//SRect vprect(boxx,boxy,boxw,boxh);
+			//fbi->PushViewport(vprect);
 
-			auto mtxi = target->MTXI();
-			auto txi = target->TXI();
 			auto tex = temp_buffer->OutputTexture();
 			downsamplemat.SetTexture(tex);
 			tex->TexSamplingMode().PresetPointAndClamp();
@@ -620,17 +629,14 @@ void AA16Render::RenderAA()
 			mtxi->PopPMatrix();
 			mtxi->PopVMatrix();
 			mtxi->PopMMatrix();
+			//fbi->PopViewport();
 		}
-		bufout.PtexEnd();
+		bufout.PtexEnd(true);
 
 		//////////////////////////////////////////////////////
-		// disable clear for addittional passes
-		//////////////////////////////////////////////////////
-
-		target->FBI()->SetAutoClear(false);
 	}
 	ProcTexContext::ReturnBuffer(temp_buffer);
-	target->FBI()->SetAutoClear(true);
+	fbi->SetAutoClear(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -639,6 +645,7 @@ void AA16Render::RenderNoAA()
 {
 	auto target = mPTX.GetTarget();
 	auto mtxi = target->MTXI();
+	auto fbi = target->FBI();
 
 	float x = mOrthoBoxXYWH.GetX();
 	float y = mOrthoBoxXYWH.GetY();
@@ -649,9 +656,7 @@ void AA16Render::RenderNoAA()
 	float t = y;
 	float b = y+h;
 
-	
-	target->FBI()->SetAutoClear(true);
-	bufout.PtexBegin(target);
+	bufout.PtexBegin(target,true,true);
 	{	CMatrix4 mtxortho = mtxi->Ortho( l,r,t,b, 0.0f, 1.0f );
 		mtxi->PushMMatrix( CMatrix4::Identity );
 		mtxi->PushVMatrix( CMatrix4::Identity );
@@ -661,7 +666,7 @@ void AA16Render::RenderNoAA()
 		mtxi->PopVMatrix();
 		mtxi->PopMMatrix();
 	}
-	bufout.PtexEnd();
+	bufout.PtexEnd(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
