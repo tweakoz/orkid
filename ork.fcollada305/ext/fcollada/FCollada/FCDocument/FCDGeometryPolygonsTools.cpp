@@ -852,7 +852,7 @@ namespace FCDGeometryPolygonsTools
 		targSource->SetDataCount(nValues * stride);
 		float* targData = targSource->GetData();
 
-		ApplyUniqueIndices(targData, oldData.begin(), stride, translationMap);
+		ApplyUniqueIndices(targData, &oldData.at(0), stride, translationMap);
 	}
 		
 	void ApplyUniqueIndices(FCDGeometryMesh* targMesh, FCDGeometryMesh* baseMesh, const UInt32List& newIndices, const FCDGeometryIndexTranslationMapList& translationMaps)
@@ -889,7 +889,7 @@ namespace FCDGeometryPolygonsTools
 		}
 
 		// Reset the indices.  The indices in newIndices are all polygon indices combined
-		const uint32* newIdxPtr = newIndices.begin();
+		const uint32* newIdxPtr = & newIndices.at(0);
 		size_t nNewIndices = newIndices.size();
 		for (size_t p = 0; p < targMesh->GetPolygonsCount(); p++)
 		{
@@ -1083,7 +1083,7 @@ namespace FCDGeometryPolygonsTools
 			}
 		}
 
-		outPInput.SetIndices(indices.begin(), indices.size());
+		outPInput.SetIndices(&indices.at(0), indices.size());
 	}
 
 	// Splits the mesh's polygons sets to ensure that none of them have

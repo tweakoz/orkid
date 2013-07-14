@@ -82,6 +82,7 @@ CColladaAsset::EAssetType CColladaAsset::GetAssetType( const AssetPath & fname )
 
 bool CColladaAsset::LoadDocument(const AssetPath& fname)
 {
+	printf( "CColladaAsset::LoadDocument fname<%s>\n", fname.c_str() );
 	FCollada::Initialize();
 	mDocument = new FCDocument;
 

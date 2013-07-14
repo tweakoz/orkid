@@ -396,7 +396,9 @@ bool FArchiveXML::LoadGeometryPolygons(FCDObject* object, xmlNode* baseNode)
 			if (vCountDataString != NULL) FUStringConversion::ToUInt32List(vCountDataString, vCountData);
 			size_t vCountCount = vCountData.size();
 			geometryPolygons->SetFaceVertexCountCount(vCountCount);
-			memcpy((void*) geometryPolygons->GetFaceVertexCounts(), vCountData.begin(), sizeof(uint32) * vCountCount);
+
+			geometryPolygons->RefFaceVertexCounts() = vCountData;
+			//memcpy((void*) geometryPolygons->GetFaceVertexCounts(), vCountData.begin(), sizeof(uint32) * vCountCount);
 
 			// Count the total number of face-vertices expected, to pre-buffer the index lists
 			// The absolute maximum possible is the number of vertices (That is, a face 

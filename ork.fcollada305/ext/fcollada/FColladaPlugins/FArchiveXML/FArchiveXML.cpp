@@ -525,8 +525,10 @@ bool FArchiveXML::EndExport(fm::vector<uint8>& outData)
 	xmlOutputBufferPtr buf = xmlAllocOutputBuffer(NULL);
 	xmlNodeDumpOutput(buf, rootNode->doc, rootNode, 0, 0, NULL);
 
-	outData.resize(buf->buffer->use * sizeof(xmlChar));
-	memcpy(outData.begin(), buf->buffer->content, outData.size());
+	size_t siz = buf->buffer->use * sizeof(xmlChar);
+	outData.clear();
+	outData.reserve(siz);
+	outData.append(buf->buffer->content,siz);
 
 	xmlOutputBufferClose(buf);
 	daeDocument.ReleaseXmlData();
@@ -539,7 +541,7 @@ bool FArchiveXML::EndExport(const fchar* UNUSED(filePath))
 
 bool FArchiveXML::ImportObject(FCDObject* object, const fm::vector<uint8>& data)
 {
-	FUXmlDocument loadDocument((const char*) data.begin(), data.size());
+	FUXmlDocument loadDocument((const char*) &data.at(0), data.size());
 	bool retVal = LoadSwitch(object, &object->GetObjectType(), loadDocument.GetRootNode());
 	if (FArchiveXML::loadedDocumentCount == 0)
 		FArchiveXML::ClearIntermediateData();

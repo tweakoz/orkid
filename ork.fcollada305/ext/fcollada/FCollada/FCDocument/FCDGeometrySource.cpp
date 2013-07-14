@@ -70,7 +70,7 @@ void FCDGeometrySource::SetData(const FloatList& _sourceData, uint32 _sourceStri
 	size_t beg = min(offset, _sourceData.size()), end;
 	if (count == 0) end = _sourceData.size();
 	else end = min(count + offset, _sourceData.size());
-	sourceData.insert(0, _sourceData.begin() + beg, end - beg);
+	sourceData.insert(0, &_sourceData.at(0) + beg, end - beg);
 
 	SetDirtyFlag();
 }
