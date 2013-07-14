@@ -143,7 +143,8 @@ public:
 		Indirectly, the face-vertex count indicates the degree of the polygon.
 		@see GetHoleFaces @see GetHoleCount
 		@return The list of face-vertex counts.*/
-	inline const uint32* GetFaceVertexCounts() const { return faceVertexCounts.begin(); } /**< See above. */
+	inline const uint32* GetFaceVertexCounts() const { return &faceVertexCounts.at(0); } /**< See above. */
+	inline fm::vector<UInt32,true> RefFaceVertexCounts() { return faceVertexCounts; } /**< See above. */
 
 	/** Adds a new count to the face-vertex count list.
 		This function only modifies the face-vertex count list.
@@ -288,7 +289,7 @@ public:
 		so each entry within this list implies a hole within the previous face.
 		@see GetFaceVertexCounts
 		@return The list of hole entries within the face-vertex counts. */
-	inline const uint32* GetHoleFaces() const { return holeFaces.begin(); } /**< See above. */
+	inline const uint32* GetHoleFaces() const { return &holeFaces.at(0); } /**< See above. */
 
 	/** Adds a new hole identifier.
 		The face-vertex count entry should already exist and the identifier will be place

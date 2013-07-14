@@ -286,7 +286,8 @@ public:
 			character will be added if it is not empty.
 		@param values The list of unsigned integers to convert. */
 	template <class CH>
-	inline FCOLLADA_EXPORT static void ToString(FUStringBuilderT<CH>& builder, const UInt32List& values) { return ToString(builder, values.begin(), values.size()); }
+	inline FCOLLADA_EXPORT static void ToString(FUStringBuilderT<CH>& builder, const UInt32List& values)
+	{ return ToString(builder, &values.at(0), values.size()); }
 
 	/** Converts a list of unsigned integers into a string.
 		@param builder The string builder that will contain the list of values.

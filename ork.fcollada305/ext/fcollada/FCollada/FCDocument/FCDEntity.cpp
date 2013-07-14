@@ -69,7 +69,7 @@ fstring FCDEntity::CleanName(const fchar* c)
 	size_t len = 0;
 	for (; len < MAX_NAME_LENGTH; len++) { if (c[len] == 0) break; }
 	fstring cleanName(len, *c);
-	fchar* id = cleanName.begin();
+	fchar* id = & cleanName.at(0);
 	if (*c != 0)
 	{
 	

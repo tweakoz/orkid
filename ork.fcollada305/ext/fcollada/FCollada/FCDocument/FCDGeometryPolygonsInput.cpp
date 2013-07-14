@@ -97,7 +97,7 @@ void FCDGeometryPolygonsInput::SetIndexCount(size_t count)
 
 const uint32* FCDGeometryPolygonsInput::GetIndices() const
 {
-	return FindIndices().begin();
+	return & FindIndices().at(0);
 }
 
 size_t FCDGeometryPolygonsInput::GetIndexCount() const
@@ -119,7 +119,7 @@ void FCDGeometryPolygonsInput::AddIndex(uint32 index)
 void FCDGeometryPolygonsInput::AddIndices(const UInt32List& _indices)
 {
 	FUParameterUInt32List& indices = FindIndices();
-	indices.insert(indices.size(), _indices.begin(), _indices.size());
+	indices.insert(indices.size(), &_indices.at(0), _indices.size());
 }
 
 const FUParameterUInt32List& FCDGeometryPolygonsInput::FindIndices() const

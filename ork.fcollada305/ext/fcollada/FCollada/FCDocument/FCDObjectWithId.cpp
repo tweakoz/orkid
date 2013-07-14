@@ -86,7 +86,7 @@ fm::string FCDObjectWithId::CleanId(const char* c)
 	size_t len = 0;
 	for (; len < MAX_ID_LENGTH; len++) { if (c[len] == 0) break; }
 	fm::string out(len, *c);
-	char* id = out.begin();
+	char* id = & out.at(0);
 	if (*c != 0)
 	{
 		// First character: alphabetic or '_'.
@@ -114,7 +114,7 @@ fm::string FCDObjectWithId::CleanSubId(const char* c)
 	size_t len = 0;
 	for (; len < MAX_ID_LENGTH; len++) { if (c[len] == 0) break; }
 	fm::string out(len, *c);
-	char* sid = out.begin();
+	char* sid = & out.at(0);
 	if (*c != 0)
 	{
 		// First character: alphabetic or '_'.

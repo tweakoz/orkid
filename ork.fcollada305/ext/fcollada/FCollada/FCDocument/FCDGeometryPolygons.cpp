@@ -196,8 +196,8 @@ void FCDGeometryPolygons::AddHole(uint32 index)
 	FUAssert(!IsHoleFaceHole(index), return);
 
 	// Ordered insert
-	const uint32* it = holeFaces.begin();
-	for (; it != holeFaces.end(); ++it)
+	auto it=holeFaces.begin();
+	for( auto it=holeFaces.begin(); it!=holeFaces.end(); it++ )
 	{
 		if (index < (*it)) break;
 	}
@@ -257,9 +257,9 @@ void FCDGeometryPolygons::FindInputs(FUDaeGeometryInput::Semantic semantic, FCDG
 void FCDGeometryPolygons::Recalculate()
 {
 	faceVertexCount = 0;
-	for (const uint32* itC = faceVertexCounts.begin(); itC != faceVertexCounts.end(); ++itC)
+	for (const auto& item : faceVertexCounts)
 	{
-		faceVertexCount += (*itC);
+		faceVertexCount += item;
 	}
 	SetDirtyFlag();
 }

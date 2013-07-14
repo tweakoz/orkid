@@ -102,8 +102,8 @@ namespace FCDSceneNodeTools
 								float addSampleTime = (currentKey->input * fd + previousKey->input * fid) / (fd + fid);
 								
 								// Sorted insert.
-								float* endIt = sampleKeys.end();
-								for (float* sampleKeyTime = sampleKeys.begin(); sampleKeyTime != endIt; ++sampleKeyTime)
+								auto endIt = sampleKeys.end();
+								for (auto sampleKeyTime = sampleKeys.begin(); sampleKeyTime != endIt; ++sampleKeyTime)
 								{
 									if (IsEquivalent(*sampleKeyTime, addSampleTime)) break;
 									else if (*sampleKeyTime > addSampleTime)

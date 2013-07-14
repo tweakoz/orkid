@@ -75,7 +75,7 @@ void FCDParameterListAnimatableT<TYPE, QUALIFIERS>::insert(size_t index, const T
 template <class TYPE, int QUALIFIERS>
 void FCDParameterListAnimatableT<TYPE, QUALIFIERS>::insert(size_t index, const TYPE* _values, size_t count)
 {
-	values.insert(values.begin() + index, _values, count);
+	values.insert(index, _values, count);
 	GetParent()->SetStructureChangedFlag();
 	GetParent()->SetDirtyFlag(); 
 	OnInsertion(index, count);
