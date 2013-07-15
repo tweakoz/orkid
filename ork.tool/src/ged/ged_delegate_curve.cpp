@@ -143,7 +143,7 @@ public:
 				{
 					QVariant UserData = pact->data();
 					QString UserName = UserData.toString();
-					std::string sval = UserName.toUtf8().data();
+					std::string sval = UserName.toAscii().data();
 					if( sval == "lin" ) mCurveObject->SetSegmentType(miSeg,EMCST_LINEAR);
 					if( sval == "box" ) mCurveObject->SetSegmentType(miSeg,EMCST_BOX);
 					if( sval == "log" )	mCurveObject->SetSegmentType(miSeg,EMCST_LOG);

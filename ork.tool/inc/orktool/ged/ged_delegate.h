@@ -5,8 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
-
 #include <ork/reflect/IObjectMapPropertyType.h>
 #include <ork/kernel/core_interface.h>
 #include <orktool/toolcore/choiceman.h>
@@ -392,46 +390,6 @@ class ObjectExportDelegate : public IOpsDelegate
 	RttiDeclareConcrete( ObjectExportDelegate, tool::ged::IOpsDelegate );
 	void Execute( ork::Object* ptarget ); // virtual
 };
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-class GedTextEdit : public QLineEdit
-{
-	//DeclareMoc( GedTextEdit, QLineEdit );
-
-	Q_OBJECT
-
-public:
-
-	GedTextEdit( QWidget* parent );
-	void focusOutEvent( QFocusEvent* pev ); // virtual
-	void keyPressEvent ( QKeyEvent * pev ); // virtual
-	void SigEditFinished();
-	void SigCanceled();
-	void SetText( const char* ptext );
-
-};
-class GedInputDialog : public QDialog
-{
-	Q_OBJECT
-	//DeclareMoc( GedInputDialog, QDialog );
-
-	GedTextEdit	mTextEdit;
-	QString		mResult;
-	bool		mbChanged;
-
-	GedInputDialog();
-	void done( );
-	void canceled( );
-	void SlotTextChanged(QString str);
-	QString GetResult();
-	void clear() { mTextEdit.clear(); }
-
-public:
-
-	static QString getText( QMouseEvent* pev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
-
-};
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void EnumerateFactories( const ork::Object* pdestobj, const reflect::IObjectProperty* prop,  orkset<object::ObjectClass*>& FactoryClassVect );
 void EnumerateFactories( object::ObjectClass* pbaseclass, orkset<object::ObjectClass*>& FactoryClassVect );

@@ -245,9 +245,8 @@ RotSolid::RotSolid()
 	
 }
 ///////////////////////////////////////////////////////////////////////////////
-void RotSolid::ComputeVB( lev2::GfxBuffer& buffer )
+void RotSolid::ComputeVB( ork::lev2::GfxTarget* pTARG )
 {	int inumv = miNumSides*3;
-	ork::lev2::GfxTarget* pTARG = buffer.GetContext();
 	mVertexBuffer.Reset();
 	ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;
 	vw.Lock( pTARG, & mVertexBuffer, inumv );
@@ -304,7 +303,8 @@ void RotSolid::compute( ProcTex& ptex )
 {	Buffer& buffer = GetWriteBuffer(ptex);
 	//printf( "rotsolid wrbuf<%p> wrtex<%p>\n", & buffer, buffer.OutputTexture() );
 
-	ork::lev2::GfxTarget* pTARG = buffer.GetContext();
+	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
 	
 	//////////////////////////////////////
 	dataflow::node_hash testhash;
@@ -314,7 +314,7 @@ void RotSolid::compute( ProcTex& ptex )
 	testhash.Hash( mPlugInpPhaseOffset.GetValue() );
 	//////////////////////////////////////
 	if( testhash != mVBHash )
-	{	ComputeVB( buffer );
+	{	ComputeVB( pTARG );
 		mVBHash = testhash;
 	}
 	////////////////////////////////////////////////////////////////
@@ -324,7 +324,7 @@ void RotSolid::compute( ProcTex& ptex )
 	struct AA16RenderRot : public AA16Render
 	{
 		virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-		{	auto targ = buf.GetContext();
+		{	auto targ = mPTX.GetTarget();
 			targ->PushMaterial( & stdmat );
 			targ->GBI()->DrawPrimitive( mVB, ork::lev2::EPRIM_TRIANGLES, 0, mVB.GetNumVertices() );
 			targ->PopMaterial();
@@ -335,7 +335,7 @@ void RotSolid::compute( ProcTex& ptex )
 
 		AA16RenderRot( ProcTex& ptx, Buffer& bo, lev2::EBlending ebm, lev2::VertexBufferBase& vb )
 			: AA16Render( ptx, bo )
-			, stdmat( bo.GetContext() )
+			, stdmat( ptx.GetTarget() )
 			, mVB(vb)
 		{
 			stdmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
@@ -384,13 +384,18 @@ ImgOp2::ImgOp2()
 {
 }
 void ImgOp2::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	
+	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputB.GetExternalOutput());
 	if(conplugA && conplugB )
-	{	buffer.PtexBegin();
-		ork::lev2::GfxTarget* pTARG = buffer.GetContext();
+	{	
 
+		buffer.PtexBegin(pTARG,true,false);
+		
 		const char* pop = 0;
 		switch( meOp )
 		{
@@ -419,7 +424,7 @@ void ImgOp2::compute( ProcTex& ptex )
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
 		UnitTexQuad( pTARG );
-		buffer.PtexEnd();
+		buffer.PtexEnd(true);
 				
 	}
 	MarkClean();
@@ -454,13 +459,17 @@ ImgOp3::ImgOp3()
 {
 }
 void ImgOp3::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	
+	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputB.GetExternalOutput());
 	const ImgOutPlug* conplugM = rtti::autocast(mPlugInpInputM.GetExternalOutput());
 	if(conplugA && conplugB && conplugM )
-	{	buffer.PtexBegin();
-		ork::lev2::GfxTarget* pTARG = buffer.GetContext();
+	{	buffer.PtexBegin(pTARG,true,false);
+		
 		const char* pop = 0;
 		switch( meOp )
 		{
@@ -490,7 +499,7 @@ void ImgOp3::compute( ProcTex& ptex )
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
 		UnitTexQuad( pTARG );
-		buffer.PtexEnd();
+		buffer.PtexEnd(true);
 	}
 	MarkClean();
 }
@@ -528,11 +537,14 @@ Transform::Transform()
 {
 }
 void Transform::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplug = rtti::autocast(mPlugInpInput.GetExternalOutput());
 	if(conplug)
-	{	buffer.PtexBegin();
-		ork::lev2::GfxTarget* pTARG = buffer.GetContext();
+	{	buffer.PtexBegin(pTARG,true,false);
+		
 		lev2::GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "transform" );
 		gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 		gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
@@ -542,13 +554,13 @@ void Transform::compute( ProcTex& ptex )
 		CMatrix4 mtxS, mtxB;
 		mtxS.Scale( mPlugInpScaleX.GetValue(), mPlugInpScaleY.GetValue(), 1.0f );
 		mtxB.SetTranslation( mPlugInpOffsetX.GetValue(), mPlugInpOffsetY.GetValue(), 0.0f );
-		gridmat.SetTexture( conplug->GetValue().GetBuffer(ptex).OutputTexture() );
+		gridmat.SetTexture( conplug->GetValue().GetTexture(ptex) );
 		gridmat.SetAuxMatrix( mtxS*mtxB );
 		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
 		UnitTexQuad( pTARG );
-		buffer.PtexEnd();
+		buffer.PtexEnd(true);
 	}
 	MarkClean();
 }
@@ -566,10 +578,14 @@ Texture::Texture()
 {
 }
 void Texture::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
-	buffer.PtexBegin();
-	ork::lev2::GfxTarget* pTARG = buffer.GetContext();
-		lev2::GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
+{
+	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+
+	Buffer& buffer = GetWriteBuffer(ptex);
+	buffer.PtexBegin(pTARG,true,false);
+
+	lev2::GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
 	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 	gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 	gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
@@ -599,7 +615,7 @@ void Texture::compute( ProcTex& ptex )
 	//UnitTexQuad( pTARG );
 	//pTARG->PopModColor();
 	MarkClean();
-	buffer.PtexEnd();
+	buffer.PtexEnd(true);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -636,10 +652,12 @@ SolidColor::SolidColor()
 {
 }
 void SolidColor::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
-	buffer.PtexBegin();
-	ork::lev2::GfxTarget* pTARG = buffer.GetContext();
-		lev2::GfxMaterial3DSolid gridmat( pTARG );
+{	
+	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
+	buffer.PtexBegin(pTARG,true,false);
+	lev2::GfxMaterial3DSolid gridmat( pTARG );
 	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
 	gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 	gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
@@ -662,7 +680,7 @@ void SolidColor::compute( ProcTex& ptex )
 	pTARG->MTXI()->PopMMatrix();
 	pTARG->PopModColor();
 	MarkClean();
-	buffer.PtexEnd();
+	buffer.PtexEnd(true);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -699,7 +717,11 @@ Gradient::Gradient()
 {
 }
 void Gradient::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	
+	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+
+	Buffer& buffer = GetWriteBuffer(ptex);
 
 	const orklut<float,ork::CVector4> & data = mGradient.Data();
 	float frw = 1.0f / float(miRepeat);
@@ -752,7 +774,7 @@ void Gradient::compute( ProcTex& ptex )
 	/////////////////////////////////////////
 
 	lev2::VtxWriter<SVtxV12C4T16> vw;
-	vw.Lock( buffer.GetContext(), & mVertexBuffer, ivtxcount );
+	vw.Lock( pTARG, & mVertexBuffer, ivtxcount );
 
 	for( int ir=0; ir<miRepeat; ir++ )
 	{
@@ -885,17 +907,17 @@ void Gradient::compute( ProcTex& ptex )
 			}
 		}
 	}
-	vw.UnLock(buffer.GetContext());
+	vw.UnLock(pTARG);
 	struct AA16RenderGrad : public AA16Render
 	{	virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-		{	CMatrix4 mtxortho = buf.GetContext()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
-			buf.GetContext()->PushModColor( CVector3::White() );
-			buf.GetContext()->PushMaterial( & mtl );
-			buf.GetContext()->MTXI()->PushPMatrix( mtxortho );
-			buf.GetContext()->GBI()->DrawPrimitive( mVertexBuffer, ork::lev2::EPRIM_TRIANGLES, 0, mVertexBuffer.GetNumVertices() );
-			buf.GetContext()->MTXI()->PopPMatrix();
-			buf.GetContext()->PopMaterial();
-			buf.GetContext()->PopModColor(); 
+		{	CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+			mPTX.GetTarget()->PushModColor( CVector3::White() );
+			mPTX.GetTarget()->PushMaterial( & mtl );
+			mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
+			mPTX.GetTarget()->GBI()->DrawPrimitive( mVertexBuffer, ork::lev2::EPRIM_TRIANGLES, 0, mVertexBuffer.GetNumVertices() );
+			mPTX.GetTarget()->MTXI()->PopPMatrix();
+			mPTX.GetTarget()->PopMaterial();
+			mPTX.GetTarget()->PopModColor(); 
 		}
 		lev2::GfxMaterial3DSolid mtl;
 		ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& mVertexBuffer;
@@ -903,7 +925,7 @@ void Gradient::compute( ProcTex& ptex )
 						Buffer& bo,
 						ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb )
 			: AA16Render( ptex, bo )
-			, mtl( bo.GetContext() )
+			, mtl( ptex.GetTarget() )
 			, mVertexBuffer(vb)
 		{
 			mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
@@ -941,7 +963,10 @@ Group::Group()
 {
 }
 void Group::compute( ProcTex& ptex )
-{	Buffer& computebuffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+
+	Buffer& computebuffer = GetWriteBuffer(ptex);
 	if( mpProcTex )
 	{	mpProcTex->compute( *ptex.GetPTC() );
 		lev2::Texture* ptexture = mpProcTex->ResultTexture();
@@ -949,8 +974,8 @@ void Group::compute( ProcTex& ptex )
 		// put into our buffer
 		//////////////////////////
 		//lev2::Texture* ptexture = ptex.GetResultTexture(*ptex.GetPTC());
-		computebuffer.PtexBegin();
-		ork::lev2::GfxTarget* pTARG = computebuffer.GetContext();
+		computebuffer.PtexBegin(pTARG,true,false);
+
 		lev2::GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
 		gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 		gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
@@ -976,7 +1001,7 @@ void Group::compute( ProcTex& ptex )
 		pTARG->MTXI()->PopMMatrix();
 		pTARG->PopModColor();
 		MarkClean();
-		computebuffer.PtexEnd();	
+		computebuffer.PtexEnd(true);	
 		//////////////////////////
 	}
 }

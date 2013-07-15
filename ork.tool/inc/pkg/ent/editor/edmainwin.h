@@ -5,7 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#ifndef _ENT3D_EDMAINWIN_H 
+#define _ENT3D_EDMAINWIN_H 
 
 #include <pkg/ent/editor/editor.h>
 #include <orktool/ged/ged.h>
@@ -16,10 +17,9 @@
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////
 
+
 class EditorMainWindow : public tool::MiniorkMainWindow, public ork::AutoConnector
 {
-	Q_OBJECT
-
 	RttiDeclareAbstract( EditorMainWindow, ork::AutoConnector );
 
 	//////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@ class EditorMainWindow : public tool::MiniorkMainWindow, public ork::AutoConnect
 
 	//////////////////////////////////////////////////////////
 
-	//DeclareMoc( EditorMainWindow, tool::MiniorkMainWindow );
+	DeclareMoc( EditorMainWindow, tool::MiniorkMainWindow );
 
 	//////////////////////////////////////////////////////////
 
@@ -67,10 +67,6 @@ public://
 
 	///////////////////////////////////////////////////////////////////////////
 
-Q_SIGNALS:
-	void SigNewObject( ork::Object* pobj );
-
-public Q_SLOTS:
 	void SlotUpdateAll();
 	void SlotOnTimer();
 	void SlotSceneInstInvalidated( ork::Object* pSI );
@@ -80,7 +76,8 @@ public Q_SLOTS:
 	void SlotClearSelection();
 	void SlotPostNewObject( ork::Object* pobj );
 
-public:
+	void SigNewObject( ork::Object* pobj );
+
 	bool event(QEvent *qevent); /*virtual*/
 
 	///////////////////////////////////////////////////////////////////////////
@@ -170,3 +167,4 @@ inline void EditorMainWindow::NewDataflowViewFloating()
 } // ent
 } // ork
 ///////////////////////////////////////////////////////////////////////////
+#endif

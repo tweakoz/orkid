@@ -17,7 +17,7 @@
 #include <ork/lev2/input/input.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 
-#include <QtWidgets/QStyle>
+#include <QtGui/QStyle>
 
 // This include is relative to src/miniork which is temporarily added an a include search path.
 // We'll need to come up with a long-term solution eventually.
@@ -32,7 +32,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/thread.h>
 
-#include <dispatch/dispatch.h>
+//#include <dispatch/dispatch.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -130,6 +130,39 @@ namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+OrkQtApp::OrkQtApp( int argc, char** argv )
+	: QApplication( argc, argv )
+	, mpMainWindow(0)
+{
+	bool bcon = mIdleTimer.connect( & mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
+
+	mIdleTimer.setInterval(5);
+	mIdleTimer.setSingleShot(false);
+	mIdleTimer.start();
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void OrkQtApp::OnTimer()
+{
+	OpqTest opqtest(&MainThreadOpQ());
+	while(MainThreadOpQ().Process());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void OrkQtApp::MocInit( void )
+{
+	OrkQtApp::Moc.AddSlot0( "OnTimer()", & OrkQtApp::OnTimer );
+}
+
+ImplementMoc( OrkQtApp, QApplication );
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 class ProxyStyle : public QStyle
 {
 public:
@@ -143,10 +176,10 @@ public:
 		for( auto item = keys.begin(); item!=keys.end(); item++ )
 		{
 			QString val = *item;
-			const char* as_str = val.toUtf8();
+			const char* as_str = val.toAscii();
 			printf( "stylefact<%s>\n", as_str );
 		}
-	 	style = QStyleFactory::create("Fusion");
+	 	style = QStyleFactory::create("Oxygen");
 	 }
 #endif
 	////////////////////////////////
@@ -224,18 +257,7 @@ public:
 	OrkStyle(const QString &baseStyle) : ProxyStyle(baseStyle) {}
 
 	int pixelMetric(PixelMetric metric,const QStyleOption* option, const QWidget *widget) const;
-
-	int layoutSpacing(QSizePolicy::ControlType control1,
-                              QSizePolicy::ControlType control2, Qt::Orientation orientation,
-                              const QStyleOption *option, const QWidget *widget) const;
 };
-
-int OrkStyle::layoutSpacing(QSizePolicy::ControlType control1,
-                              QSizePolicy::ControlType control2, Qt::Orientation orientation,
-                              const QStyleOption *option, const QWidget *widget) const
-{
-		return 8;
-}
 
 int OrkStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget *widget) const
 {
@@ -245,7 +267,7 @@ int OrkStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const 
 		case PM_SmallIconSize:
 			return 32;
 		case PM_SplitterWidth:
-			return 32;
+			return 6;
 		case PM_SizeGripSize:
 			return 8;
 		case PM_DockWidgetSeparatorExtent:
@@ -282,7 +304,7 @@ void* BootQtThreadImpl(void* arg_opaq )
 	gpQtApplication = new OrkQtApp( args->argc, args->argv );
 
 #if defined(IX)
-	QStyle *MainStyle = new OrkStyle("Fusion");
+	QStyle *MainStyle = new OrkStyle("Macintosh");
 
 #else
 	QStyle *MainStyle = QStyleFactory::create( "WindowsXP" );
@@ -301,7 +323,7 @@ void* BootQtThreadImpl(void* arg_opaq )
 
 	ent::EditorMainWindow MainWin(0, AppClassName, *gpQtApplication );
 	ent::gEditorMainWindow = &MainWin;
-	//MainWin.showMaximized();
+	MainWin.showMaximized();
 
 	gpQtApplication->mpMainWindow = & MainWin;
 	

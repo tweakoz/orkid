@@ -52,6 +52,10 @@ void ProcTexArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 	{
 		const ProcTexArchetype* parch;
 		Entity *pent;
+		mutable float mPrevTime;
+		mutable lev2::GfxMaterial3DSolid* mtl;
+
+		yo() : parch(nullptr), pent(nullptr), mPrevTime(-1.0f), mtl(nullptr) {}
 
 		static void doit( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren )
 		{
@@ -66,12 +70,19 @@ void ProcTexArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 			ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
 			const ProcTexControllerData&	cd = ssci->GetCD();
 
-			ssci->mContext.mdflowctx.Clear();
-			ssci->mContext.mCurrentTime = psi->GetGameTime();
+			float fcurtime = psi->GetGameTime();
 			proctex::ProcTex& templ = cd.GetTemplate();
-			templ.compute(ssci->mContext);
+			
+			if( std::abs(pyo->mPrevTime-fcurtime)>0.016666f )
+			{
+				ssci->mContext.mTarget = targ;
+				ssci->mContext.mdflowctx.Clear();
+				ssci->mContext.mCurrentTime = fcurtime;
+				templ.compute(ssci->mContext);
+				//printf( "fcurtime <%f>\n", fcurtime );
+				pyo->mPrevTime = fcurtime;
+			}
 			ork::lev2::Texture* ptx = templ.ResultTexture();
-			//printf( "restex<%p>\n", ptx );
 
 			lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
 
@@ -107,11 +118,13 @@ void ProcTexArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 			}
 			vw.UnLock( targ );
 
-			lev2::GfxMaterial3DSolid mtl(targ);
-			mtl.SetTexture(ptx);
-			mtl.SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
+			if( 0 == pyo->mtl )
+				pyo->mtl = new lev2::GfxMaterial3DSolid(targ);
 
-			targ->BindMaterial( &mtl );
+			pyo->mtl->SetTexture(ptx);
+			pyo->mtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
+
+			targ->BindMaterial( pyo->mtl );
 
 			const CMatrix4& mtx = pren->GetMatrix();
 

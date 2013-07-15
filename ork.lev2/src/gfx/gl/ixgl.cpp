@@ -6,13 +6,12 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/kernel/environment.h>
 #include <ork/lev2/qtui/qtui.h>
 #include <tbb/tbb.h>
 
 #if defined( ORK_CONFIG_OPENGL ) && defined( LINUX ) 
 
-#include <QtWidgets/qwidget.h>
+#include <QtGui/QX11Info>
 #include <GL/glx.h>
 
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
@@ -301,19 +300,11 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	mCtxBase = pctxbase;
 	mPlatformHandle = (void*) plato;
 	///////////////////////
-
-	std::string DISPLAY_VAR;
-	bool have_display_var = genviron.get("DISPLAY",DISPLAY_VAR);
-	assert(have_display_var);
-
-
-	Display* x_dpy = XOpenDisplay(DISPLAY_VAR.c_str());
-
 	CTQT* pctqt = (CTQT*) pctxbase;
 	QCtxWidget* pctxW = pctqt->GetQWidget();
-	//const QX11Info& x11info = pctxW->x11Info();
-	//Display* x_dpy = x11info.display();
-	int x_screen = 0; //x11info.screen();
+	const QX11Info& x11info = pctxW->x11Info();
+	Display* x_dpy = x11info.display();
+	int x_screen = x11info.screen();
 	//auto pvis = (XVisualInfo*) x11info.visual();
 	XVisualInfo* vinfo = GlIxPlatformObject::gVisInfo;
 	///////////////////////

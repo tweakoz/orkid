@@ -5,15 +5,15 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once
+#ifndef _ORKTOOL_QTPROCESS_VIEW_H
+#define _ORKTOOL_QTPROCESS_VIEW_H
 
 #include <QtCore/QProcess>
 
 namespace ork { namespace tool {
 
 class ProcessView : public QObject
-{	//DeclareMoc(ProcessView,QObject);
-	Q_OBJECT
+{	DeclareMoc(ProcessView,QObject);
 public:
 	QProcess	mProcess;
 	QTextEdit* mTextEdit;
@@ -40,3 +40,5 @@ public:
 };
 
 }} // namespace ork::tool
+
+#endif

@@ -24,12 +24,12 @@ namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-//ImplementMoc( GedInputDialog, QDialog );
-//ImplementMoc( GedTextEdit, QLineEdit );
+ImplementMoc( GedInputDialog, QDialog );
+ImplementMoc( GedTextEdit, QLineEdit );
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*void GedInputDialog::MocInit()
+void GedInputDialog::MocInit()
 {
 	Moc.AddSlot1( "SlotTextChanged(QString)", & GedInputDialog::SlotTextChanged );
 	Moc.AddSlot0( "done()", & GedInputDialog::done );
@@ -42,7 +42,7 @@ void GedTextEdit::MocInit()
 {
 	Moc.AddSignal0( "SigEditFinished()", & GedTextEdit::SigEditFinished );
 	Moc.AddSignal0( "SigCanceled()", & GedTextEdit::SigCanceled );
-}*/
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -88,14 +88,14 @@ void GedTextEdit::keyPressEvent ( QKeyEvent * pev )
 
 void GedTextEdit::SigEditFinished()
 {
-	//Moc.Emit( this, "SigEditFinished()" );
+	Moc.Emit( this, "SigEditFinished()" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GedTextEdit::SigCanceled()
 {
-	//Moc.Emit( this, "SigCanceled()" );
+	Moc.Emit( this, "SigCanceled()" );
 }
 
 void GedTextEdit::SetText( const char* ptext )
@@ -194,6 +194,6 @@ QString GedInputDialog::getText( QMouseEvent* pev, GedItemNode* pnode, const cha
 }}} // namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
-//namespace ork { namespace lev2 {
-//template class MocImp<ork::tool::ged::GedTextEdit,QLineEdit>;
-//}}
+namespace ork { namespace lev2 {
+template class MocImp<ork::tool::ged::GedTextEdit,QLineEdit>;
+}}

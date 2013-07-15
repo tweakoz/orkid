@@ -274,7 +274,7 @@ void GedObjNode<Setter>::OnCreateObject()
 		{
 			QVariant UserData = pact->data();
 			QString UserName = UserData.toString();
-			QByteArray qb = UserName.toUtf8();
+			QByteArray qb = UserName.toAscii();
 			std::string pname = qb.data();
 
 			const CAttrChoiceValue *Chc = chclist->FindFromLongName(pname);
@@ -323,7 +323,7 @@ void GedObjNode<Setter>::OnCreateObject()
 			{
 				QVariant UserData = pact->data();
 				QString UserName = UserData.toString();
-				std::string sname = UserName.toUtf8().data();
+				std::string sname = UserName.toAscii().data();
 				const char* pname = sname.c_str();
 				rtti::Class* pclass = rtti::Class::FindClass(pname); 
 				ork::object::ObjectClass* poclass = rtti::autocast(pclass);

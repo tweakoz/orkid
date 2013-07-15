@@ -5,24 +5,25 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "outliner.h"
+#include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
 #include <ork/lev2/qtui/qtui.hpp>
 #include <ork/reflect/Functor.h>
 #include <ork/reflect/RegisterProperty.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <QtWidgets/QScrollBar>
+#include <QtGui/QScrollBar>
 ///////////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/scene.h>
 #include <pkg/ent/entity.h>
+#include <pkg/ent/editor/outliner.h>
 #include <pkg/ent/editor/editor.h>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::OutlinerView, "OutlinerView")
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-//ImplementMoc( QtOutlinerWindow, QWidget );
-//ImplementMoc(OutlinerView,QTreeView);
+ImplementMoc( QtOutlinerWindow, QWidget );
+ImplementMoc(OutlinerView,QTreeView);
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,9 +53,9 @@ QtOutlinerWindow::~QtOutlinerWindow()
 	gpWindow = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-//void QtOutlinerWindow::MocInit( void )
-//{
-//}
+void QtOutlinerWindow::MocInit( void )
+{
+}
 ///////////////////////////////////////////////////////////////////////////////
 void QtOutlinerWindow::AttachToSceneData( SceneData* pscene )
 {
@@ -75,9 +76,9 @@ void OutlinerView::Describe()
 	reflect::RegisterFunctor("SlotObjectDeSelected", & OutlinerView::SlotObjectDeSelected );
 }
 ///////////////////////////////////////////////////////////////////////////////
-//void OutlinerView::MocInit()
-//{	Moc.AddSlot2( "UserSelectionChanged(QItemSelection,QItemSelection)", "const QItemSelection&, const QItemSelection&", & OutlinerView::UserSelectionChanged ); 
-//}
+void OutlinerView::MocInit()
+{	Moc.AddSlot2( "UserSelectionChanged(QItemSelection,QItemSelection)", "const QItemSelection&, const QItemSelection&", & OutlinerView::UserSelectionChanged ); 
+}
 ///////////////////////////////////////////////////////////////////////////////
 OutlinerView::OutlinerView(QWidget* parent)
 	: QTreeView(parent)
@@ -264,4 +265,3 @@ void OutlinerView::contextMenuEvent(QContextMenuEvent * ev)
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-#include "outliner.moc"

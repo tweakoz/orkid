@@ -13,9 +13,13 @@
 #include <ork/lev2/ui/ui.h>
 
 #include <ork/lev2/gfx/dbgfontman.h>
+
+#if defined(USE_OIIO)
+
 #include <OpenImageIO/imageio.h>
 
 OIIO_NAMESPACE_USING
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -238,8 +242,6 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 		//  pop viewport/scissor that was pushed by SetRtGroup( nonzero )
 		// on xbox, happens after resolve
 		////////////////////////////////////////////////
-		PopScissor();
-		PopViewport();
 		SetAsRenderTarget();
 		mCurrentRtGroup = 0;
 		return;
@@ -288,7 +290,7 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 
 		for( int it=0; it<inumtargets; it++ )
 		{
-			GfxBuffer* pB = Base->GetMrt(it);
+			RtBuffer* pB = Base->GetMrt(it);
 			pB->SetSizeDirty(true);
 			//////////////////////////////////////////
 			Texture* ptex = new Texture;
@@ -337,7 +339,7 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 		//////
 		for( int it=0; it<inumtargets; it++ )
 		{
-			GfxBuffer* pB = Base->GetMrt(it);
+			RtBuffer* pB = Base->GetMrt(it);
 			//D3DFORMAT efmt = D3DFMT_A8R8G8B8;
 			GLuint glinternalformat = 0;
 			GLuint glformat = GL_RGBA;
@@ -406,9 +408,6 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 				GL_ERRORCHECK();
 
 	//////////////////////////////////////////
-
-	PushViewport( SRect(0,0, Base->GetW(), Base->GetH()) );
-	PushScissor( SRect(0,0, Base->GetW(), Base->GetH()) );
 
 	static const SRasterState defstate;
 	mTarget.RSI()->BindRasterState( defstate, true );
@@ -514,7 +513,7 @@ void GlFrameBufferInterface::SetViewport( int iX, int iY, int iW, int iH )
 
 void GlFrameBufferInterface::ClearViewport( CUIViewport *pVP )
 {
-	const CColor3 &rCol = pVP->GetClearColorRef();
+	const CColor3 &rCol = (pVP!=nullptr) ? pVP->GetClearColorRef() : CColor3::Black();
 
 	if( IsPickState() )
 		glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
@@ -537,6 +536,7 @@ void GfxTargetGL::SetSize( int ix, int iy, int iw, int ih )
 	miY=iy;
 	miW=iw;
 	miH=ih;
+	mTargetDrawableSizeDirty = true;
 	//mFbI.DeviceReset(ix,iy,iw,ih );
 }
 
@@ -604,6 +604,7 @@ void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, const file::Path& pth )
 
 	}
 
+#if defined(USE_OIIO)
 	ImageOutput *out = ImageOutput::create (pth.c_str());
 	if (! out)
 		return;
@@ -614,6 +615,8 @@ void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, const file::Path& pth )
 	delete out;
 
 	free((void*)pu8);
+#endif
+
 }
 void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer )
 {

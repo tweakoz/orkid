@@ -679,10 +679,10 @@ class GraphImportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getOpenFileName( 0, "Import Dataflow Graph", 0, "DataflowGraph (*.dfg)");
-			file::Path::NameType fname = FileName.toUtf8().data();
+			file::Path::NameType fname = FileName.toAscii().data();
 			if( fname.length() )
 			{
-				//SetRecentSceneFile(FileName.toUtf8().data(),SCENEFILE_DIR);
+				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
 				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".dfg";
 				stream::FileInputStream istream(fname.c_str());
 				reflect::serialize::XMLDeserializer iser(istream);
@@ -707,10 +707,10 @@ class GraphExportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getSaveFileName( 0, "Export Dataflow Graph", 0, "DataflowGraph (*.dfg)");
-			file::Path::NameType fname = FileName.toUtf8().data();
+			file::Path::NameType fname = FileName.toAscii().data();
 			if( fname.length() )
 			{
-				//SetRecentSceneFile(FileName.toUtf8().data(),SCENEFILE_DIR);
+				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
 				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".dfg";
 				ork::stream::FileOutputStream ostream(fname.c_str());
 				ork::reflect::serialize::XMLSerializer oser(ostream);
@@ -728,10 +728,10 @@ class GraphExportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getOpenFileName( 0, "Import Object (Be careful!)", 0, "Orkid Object (*.mox)");
-			file::Path::NameType fname = FileName.toUtf8().data();
+			file::Path::NameType fname = FileName.toAscii().data();
 			if( fname.length() )
 			{
-				//SetRecentSceneFile(FileName.toUtf8().data(),SCENEFILE_DIR);
+				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
 				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";
 				stream::FileInputStream istream(fname.c_str());
 				reflect::serialize::XMLDeserializer iser(istream);
@@ -752,7 +752,7 @@ class GraphExportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getSaveFileName( 0, "Export Object ", 0, "Orkid Object (*.mox)");
-			file::Path::NameType fname = FileName.toUtf8().data();
+			file::Path::NameType fname = FileName.toAscii().data();
 			if( fname.length() )
 			{
 				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";
@@ -775,5 +775,3 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::tool::ged::GraphImportDelegate, "dflowgraphim
 INSTANTIATE_TRANSPARENT_RTTI( ork::tool::ged::GraphExportDelegate, "dflowgraphexport");
 INSTANTIATE_TRANSPARENT_RTTI( ork::tool::ged::ObjectImportDelegate, "objectimport");
 INSTANTIATE_TRANSPARENT_RTTI( ork::tool::ged::ObjectExportDelegate, "objectexport");
-
-#include "ged_delegate.moc"
