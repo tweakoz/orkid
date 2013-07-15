@@ -315,7 +315,8 @@ Opq::Opq(int inumthreads, const char* name)
 ///////////////////////////////////////////////////////////////////////////
 Opq::~Opq()
 {
-	drain();
+	//drain();
+	//sync();
 
 	/////////////////////////////////
 	// signal to thread we are going down, then wait for it to go down

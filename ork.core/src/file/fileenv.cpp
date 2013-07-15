@@ -72,15 +72,15 @@ file::Path::NameType GetCurDir() // the curdir of the process, not the CFileDevi
 	char cwdbuf[4096];
 	const char* cwdr = getcwd(cwdbuf, sizeof(cwdbuf));
 	OrkAssert(cwdr!=0);
-	printf( "cwdbuf<%s>\n", cwdbuf );
+	//printf( "cwdbuf<%s>\n", cwdbuf );
 	outspec = cwdr;
 #else
 	// Not implemented for this platform!
 	OrkAssert(false);
 #endif
-	printf( "aa\n");
+	//printf( "aa\n");
 	file::Path mypath( outspec.c_str() );
-	printf( "ab\n");
+	//printf( "ab\n");
 	//std::transform( outspec.begin(), outspec.end(), outspec.begin(), dos2unixpathsep() );
 	mypath = mypath.c_str();
 	return outspec;
