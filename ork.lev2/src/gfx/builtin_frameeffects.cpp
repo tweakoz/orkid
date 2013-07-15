@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/lev2/lev2_asset.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/gfx/camera.h>
 #include <ork/kernel/string/string.h>
@@ -127,52 +128,53 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
 	for( int i=0; i<knumpingpongbufs; i++ )
 	{
-		mpHDRRtGroup[i] = new RtGroup( Parent, miW, miH, kmultisamplesH );
-		mpHDRRtGroup[i]->SetMrt( 0, new CMrtBuffer(	Parent,
-											lev2::ETGTTYPE_MRT0,
-											lev2::EBUFFMT_RGBA64,
-											0, 0, miW, miH ) );
-		mpHDRRtGroup[i]->GetMrt(0)->RefClearColor() = clear_color;
-		mpHDRRtGroup[i]->GetMrt(0)->SetContext(pTARG);
+		auto grp = new RtGroup( pTARG, miW, miH, kmultisamplesH );
+		mpHDRRtGroup[i] = grp;
+		mpHDRRtGroup[i]->SetMrt( 0, new RtBuffer( grp,
+												  lev2::ETGTTYPE_MRT0,
+												  lev2::EBUFFMT_RGBA64,
+												   miW, miH ) );
+		//mpHDRRtGroup[i]->GetMrt(0)->RefClearColor() = clear_color;
+		//mpHDRRtGroup[i]->GetMrt(0)->SetContext(pTARG);
 	}
 
-	mpMrtAux0 = new RtGroup( Parent, kGLOWBUFSIZE, kGLOWBUFSIZE, 1 );
-	mpMrtAux1 = new RtGroup( Parent, kGLOWBUFSIZE, kGLOWBUFSIZE, 1 );
+	mpMrtAux0 = new RtGroup( pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1 );
+	mpMrtAux1 = new RtGroup( pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1 );
 
 
-	mpMrtAux0->SetMrt( 0, new CMrtBuffer(		Parent,
-												lev2::ETGTTYPE_MRT0,
-												lev2::EBUFFMT_RGBA32,
-												0, 0, kGLOWBUFSIZE, kGLOWBUFSIZE ) );
+	mpMrtAux0->SetMrt( 0, new RtBuffer(		mpMrtAux0,
+											lev2::ETGTTYPE_MRT0,
+											lev2::EBUFFMT_RGBA32,
+											kGLOWBUFSIZE, kGLOWBUFSIZE ) );
 
-	mpMrtAux1->SetMrt( 0, new CMrtBuffer(		Parent,
-												lev2::ETGTTYPE_MRT0,
-												lev2::EBUFFMT_RGBA32,
-												0, 0, kGLOWBUFSIZE, kGLOWBUFSIZE ) );
+	mpMrtAux1->SetMrt( 0, new RtBuffer(		mpMrtAux1,
+											lev2::ETGTTYPE_MRT0,
+											lev2::EBUFFMT_RGBA32,
+											kGLOWBUFSIZE, kGLOWBUFSIZE ) );
 
 
-	mpMrtAux0->GetMrt(0)->RefClearColor() = clear_color;
-	mpMrtAux1->GetMrt(0)->RefClearColor() = clear_color;
+	//mpMrtAux0->GetMrt(0)->RefClearColor() = clear_color;
+	//mpMrtAux1->GetMrt(0)->RefClearColor() = clear_color;
 
 	////////////////////////////////////////////////////////////////
 
-	mpMrtAux0->GetMrt(0)->SetContext(pTARG);
-	mpMrtAux1->GetMrt(0)->SetContext(pTARG);
+	//mpMrtAux0->GetMrt(0)->SetContext(pTARG);
+	//mpMrtAux1->GetMrt(0)->SetContext(pTARG);
 	mpAuxBuffer0 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA32, kGLOWBUFSIZE, kGLOWBUFSIZE );
 	mpAuxBuffer1 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA32, kGLOWBUFSIZE, kGLOWBUFSIZE );
 
 	////////////////////////////////////////////////////////////////
 
-	mpMrtFinalHD = new RtGroup( Parent, kFINALHDW, kFINALHDH, kmultisamplesH );
+	mpMrtFinalHD = new RtGroup( pTARG, kFINALHDW, kFINALHDH, kmultisamplesH );
 
-	mpMrtFinalHD->SetMrt( 0, new CMrtBuffer(	Parent,
-												lev2::ETGTTYPE_MRT0,
-												lev2::EBUFFMT_RGBA32,
-												0, 0, kFINALHDW, kFINALHDH ) );
+	mpMrtFinalHD->SetMrt( 0, new RtBuffer(	mpMrtFinalHD,
+											lev2::ETGTTYPE_MRT0,
+											lev2::EBUFFMT_RGBA32,
+											kFINALHDW, kFINALHDH ) );
 
-	mpMrtFinalHD->GetMrt(0)->RefClearColor() = clear_color;
+	//mpMrtFinalHD->GetMrt(0)->RefClearColor() = clear_color;
 
-	mpMrtFinalHD->GetMrt(0)->SetContext(pTARG);
+	//mpMrtFinalHD->GetMrt(0)->SetContext(pTARG);
 
 	mOutputRt = mpMrtFinalHD;
 	
@@ -463,12 +465,12 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 		FrameData.SetDstRect( dst_rect );
 		RtGroupRenderTarget rt(mpMrtFinalHD);
 		FrameData.PushRenderTarget(&rt);
-		pTARG->FBI()->SetRtGroup( mpMrtFinalHD );	
+		pTARG->FBI()->PushRtGroup( mpMrtFinalHD );	
 		pTARG->BeginFrame();
 			FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
 			frenderer.Render();
 		pTARG->EndFrame();
-		pTARG->FBI()->SetRtGroup( 0 );	
+		pTARG->FBI()->PopRtGroup();	
 		FrameData.PopRenderTarget();
 		pTARG->SetRenderContextFrameData( 0 );
 		
@@ -483,7 +485,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 			RtGroup* rtgroupFBW = GetNextWriteRtGroup();
 			pTARG->FBI()->SetAutoClear(true);
 			FrameData.SetDstRect( mrt_rect );
-			pTARG->FBI()->SetRtGroup( rtgroupFBW );
+			pTARG->FBI()->PushRtGroup( rtgroupFBW );
 			pTARG->SetRenderContextFrameData( & FrameData );
 			RtGroupRenderTarget rt(rtgroupFBW);
 			FrameData.PushRenderTarget(&rt);
@@ -552,7 +554,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 			}
 			pTARG->EndFrame();
 
-			pTARG->FBI()->SetRtGroup(0);
+			pTARG->FBI()->PopRtGroup();
 			SetReadRtGroup( rtgroupFBW );
 			//dumpfname = CreateFormattedString( "dump_fr_%d_A.tga", gdumpidx );
 			//WriteRtgTex( dumpfname.c_str(), pTARG, group, 0 );
@@ -595,7 +597,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 				static const float kMAXH = 1.0f;// - 1.0f/float(igH);
 				mFBoutMaterial.BindRtGroups( rtgroupFBINP, 0 );
 				mFBoutMaterial.mRasterState.SetBlending( EBLENDING_OFF );
-				pTARG->FBI()->SetRtGroup( rtgroupFBOUT );
+				pTARG->FBI()->PushRtGroup( rtgroupFBOUT );
 				pTARG->GBI()->BeginFrame( );
 				{
 					SRect vprect(0,0,igW,igH);
@@ -609,7 +611,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 				//dumpfname = CreateFormattedString( "dump_fr_%d_POSTFB.tga", gdumpidx );
 				//WriteRtgTex( dumpfname.c_str(), pTARG, GetPreviousRtGroup(), 0 );
 
-				pTARG->FBI()->SetRtGroup( 0 );
+				pTARG->FBI()->PopRtGroup();
 
 				SetReadRtGroup(rtgroupFBOUT);
 			}
@@ -704,12 +706,12 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		mFrameEffectBlurX.BindRtGroups( GetReadRtGroup(), 0 );
 		mFrameEffectBlurX.SetAuxMaps( 0, 0 );
 		//
-		pTARG->FBI()->SetRtGroup( mpMrtAux0 );	
+		pTARG->FBI()->PushRtGroup( mpMrtAux0 );	
 		pTARG->GBI()->BeginFrame();
 		pTARG->FXI()->BeginFrame();
 		RenderMatOrthoQuad( pTARG, MTXI0, SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE), SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE), & mFrameEffectBlurX );
 		pTARG->GBI()->EndFrame();
-		pTARG->FBI()->SetRtGroup( 0 );	
+		pTARG->FBI()->PopRtGroup();	
 		//
 		lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->GetTexture();
 		////////////////////////////////////////
@@ -718,12 +720,12 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		mFrameEffectBlurY.BindRtGroups( 0, 0 );
 		mFrameEffectBlurY.SetAuxMaps( pAux0Tex, 0 );
 		//
-		pTARG->FBI()->SetRtGroup( mpMrtAux1 );	
+		pTARG->FBI()->PushRtGroup( mpMrtAux1 );	
 		pTARG->GBI()->BeginFrame();
 		pTARG->FXI()->BeginFrame();
 		RenderMatOrthoQuad( pTARG, MTXI1, SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE), SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE), & mFrameEffectBlurY );
 		pTARG->GBI()->EndFrame();
-		pTARG->FBI()->SetRtGroup( 0 );	
+		pTARG->FBI()->PopRtGroup();	
 	}
 }
 
@@ -735,7 +737,7 @@ void BuiltinFrameTechniques::PostProcess( RenderContextFrameData& FrameData )
 {
 	GfxTarget *pTARG = FrameData.GetTarget();
 
-	pTARG->FBI()->SetRtGroup( mpMrtFinal );	
+	pTARG->FBI()->PushRtGroup( mpMrtFinal );	
 	pTARG->GBI()->BeginFrame();
 	pTARG->FXI()->BeginFrame();
 	{
@@ -826,7 +828,7 @@ void BuiltinFrameTechniques::PostProcess( RenderContextFrameData& FrameData )
 		//}
 	}
 	pTARG->GBI()->EndFrame();
-	pTARG->FBI()->SetRtGroup( 0 );	
+	pTARG->FBI()->PopRtGroup();	
 	
 	mOutputRt = mpMrtFinal;
 

@@ -15,7 +15,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/editor/editor.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include "outliner.h"
+#include <pkg/ent/editor/outliner.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::OutlinerModel, "OutlinerModel")
 //INSTANTIATE_TRANSPARENT_RTTI(ork::ent::OutlinerNode, "OutlinerNode")
@@ -33,7 +33,7 @@ void OutlinerModel::Describe()
 
 OutlinerModel::OutlinerModel(SceneEditorBase&ed)
 	: mEditor( ed )
-	, mSceneIndex(createIndex(0,0,nullptr))
+	, mSceneIndex(createIndex(0,0,0))
 
 {
 	SlotSceneTopoChanged();
@@ -305,7 +305,7 @@ bool OutlinerModel::setData(const QModelIndex& index, const QVariant& value, int
 	if(!value.isValid())
 		return false;
 
-	ChangeNodeName( index, qvariant_cast<QString>(value).toUtf8().data());
+	ChangeNodeName( index, qvariant_cast<QString>(value).toAscii().data());
 	//emit dataChanged(index, index);
 
 	return true;

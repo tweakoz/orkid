@@ -163,7 +163,7 @@ public:
 		{
 			QVariant UserData = pact->data();
 			QString UserName = UserData.toString();
-			mCurrentValue = UserName.toUtf8().data();
+			mCurrentValue = UserName.toAscii().data();
 			meWriter.SetValue( mCurrentValue.c_str() );
 			SigInvalidateProperty();
 		}

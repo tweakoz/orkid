@@ -28,8 +28,7 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 class LightingModule : public tool::EditorModule
 {
-	Q_OBJECT
-	//DeclareMoc( LightingModule, EditorModule );
+	DeclareMoc( LightingModule, EditorModule );
 	/*virtual*/ void OnAction( const char* pact );
 	/*virtual*/ void Activate( QMenuBar* qmb );
 	/*virtual*/ void DeActivate( QMenuBar* qmb );
@@ -43,7 +42,7 @@ public:
 	}
 };
 ///////////////////////////////////////////////////////////////////////////////
-//ImplementMoc( LightingModule, tool::EditorModule );
+ImplementMoc( LightingModule, tool::EditorModule );
 ///////////////////////////////////////////////////////////////////////////////
 void LightingModule::Activate( QMenuBar* qmb )
 {
@@ -64,9 +63,9 @@ void LightingModule::OnAction( const char* pact )
 	if( 0 == strcmp( "/Lighting/Test", pact ) )	{ orkprintf("yo\n"); }
 }
 ///////////////////////////////////////////////////////////////////////////////
-//void LightingModule::MocInit()
-//{
-//}
+void LightingModule::MocInit()
+{
+}
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::LightingSetLightPos()
 {
@@ -134,4 +133,3 @@ void EditorLightManager::GetMovingLights( const Frustum& frustum, lev2::LightCon
 }*/
 }}
 ///////////////////////////////////////////////////////////////////////////////
-#include "lighting_module.moc"

@@ -1,36 +1,38 @@
 #pragma once
 
 #include "mutex.h"
+#include <pthread.h>
 
 namespace ork {
 
-class semaphore
+struct condition_variable
 {
+    condition_variable(bool do_init = false);
+
+    void init();
+    void notify_one();
+    void notify_all();
+    int wait(unsigned long usec);
+
+private:
+
+    pthread_mutex_t mMutex;
+    pthread_cond_t  mCondVar;
+    std::atomic<int64_t> mWaitCount;
+    std::atomic<int64_t> mReleaseCount;
+};
+
+struct semaphore
+{
+    semaphore(const char* name);
+    void notify();
+    void wait();
+
 private:
     ork::mutex mMutex;
     std::condition_variable mCondition;
     int mCount;
-
-public:
-    inline semaphore(const char* name)
-        : mMutex(name)
-		, mCount(0)
-    {}
-
-    inline void notify()
-    {
-        ork::mutex::unique_lock lock(mMutex);
-		++mCount;
-        mCondition.notify_one();
-    }
-
-    inline void wait()
-    {
-       ork::mutex::unique_lock lock(mMutex);
-        while(!mCount)
-            mCondition.wait(lock.mLockImpl);
-        --mCount;
-    }
 };
+
 
 } // namespace ork

@@ -33,7 +33,7 @@
 
 #include <orktool/toolcore/dataflow.h>
 #include <ork/reflect/Command.h>
-#include <QtWidgets/QInputDialog>
+#include <QtGui/QInputDialog>
 #include <ork/asset/Asset.h>
 
 #include "ged_delegate_map.h"
@@ -563,7 +563,7 @@ void MapItemWriteSerializer::Duplicate( const KeyDecoName& kdeco, const char* pn
 void MapItemWriteSerializer::Import( const KeyDecoName& kdeco, const char* pname )
 {
 	QString FileName = QFileDialog::getOpenFileName( 0, "Import Map Item from mit File", 0, "MapItemFile (*.mit)");
-	std::string fname = FileName.toUtf8().data();
+	std::string fname = FileName.toAscii().data();
 	if( fname.length() )
 	{
 		ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
@@ -594,10 +594,10 @@ void MapItemWriteSerializer::Import( const KeyDecoName& kdeco, const char* pname
 void MapItemWriteSerializer::Export( const KeyDecoName& kdeco, const char* pname )
 {
 	QString FileName = QFileDialog::getSaveFileName( 0, "Export MapItem to File", 0, "MapItem (*.mit)");
-	file::Path::NameType fname = FileName.toUtf8().data();
+	file::Path::NameType fname = FileName.toAscii().data();
 	if( fname.length() )
 	{
-		//SetRecentSceneFile(FileName.toUtf8().data(),SCENEFILE_DIR);
+		//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
 		if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mit";
 
 		ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
@@ -886,7 +886,7 @@ void GedMapNode::AddItem(QMouseEvent * pEV)
 
 	QString qstr = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstr = qstr.toUtf8().data();
+	std::string sstr = qstr.toAscii().data();
 	if( sstr.length() )
 	{
 		KeyDecoName kdeca( sstr.c_str() );
@@ -953,7 +953,7 @@ void GedMapNode::RemoveItem(QMouseEvent * pEV)
 
 	QString qstr = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstr = qstr.toUtf8().data();
+	std::string sstr = qstr.toAscii().data();
 	if( sstr.length() )
 	{
 		KeyDecoName kdec( sstr.c_str() );
@@ -980,8 +980,8 @@ void GedMapNode::DuplicateItem(QMouseEvent * pEV)
 	ork::msleep(100);
 	QString qstrb = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstra = qstra.toUtf8().data();
-	std::string sstrb = qstrb.toUtf8().data();
+	std::string sstra = qstra.toAscii().data();
+	std::string sstrb = qstrb.toAscii().data();
 
 	if( sstra.length() && sstrb.length() && sstra!=sstrb )
 	{
@@ -1019,8 +1019,8 @@ void GedMapNode::MoveItem(QMouseEvent * pEV)
 	ork::msleep(100);
 	QString qstrb = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstra = qstra.toUtf8().data();
-	std::string sstrb = qstrb.toUtf8().data();
+	std::string sstra = qstra.toAscii().data();
+	std::string sstrb = qstrb.toAscii().data();
 
 	if( sstra.length() && sstrb.length() )
 	{
@@ -1048,7 +1048,7 @@ void GedMapNode::ImportItem(QMouseEvent * pEV)
 	const int kdim = klabh-2;
 	int ibasex = (kdim+4)*3+3;
 	QString qstra = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
-	std::string sstra = qstra.toUtf8().data();
+	std::string sstra = qstra.toAscii().data();
 	if( sstra.length() )
 	{	KeyDecoName kdeca( sstra.c_str() );
 		if( IsKeyPresent( kdeca ) )
@@ -1067,7 +1067,7 @@ void GedMapNode::ExportItem(QMouseEvent * pEV)
 	const int kdim = klabh-2;
 	int ibasex = (kdim+4)*3+3;
 	QString qstra = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
-	std::string sstra = qstra.toUtf8().data();
+	std::string sstra = qstra.toAscii().data();
 	if( sstra.length() )
 	{	KeyDecoName kdeca( sstra.c_str() );
 		if( IsKeyPresent( kdeca ) )
@@ -1193,7 +1193,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 	{
 		QVariant UserData = pact->data();
 		QString UserName = UserData.toString();
-		QByteArray qb; qb=UserName.toUtf8();
+		QByteArray qb; qb=UserName.toAscii();
 		const char* pn = qb.data();
 		std::string pname(pn);
 		int index = 0;
@@ -1495,7 +1495,7 @@ void GedMapFactoryNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 	{
 		QVariant UserData = pact->data();
 		QString UserName = UserData.toString();
-		std::string sname = UserName.toUtf8().data();
+		std::string sname = UserName.toAscii().data();
 		const char* pname = sname.c_str();
 		rtti::Class* pclass = rtti::Class::FindClass(pname); 
 		ork::object::ObjectClass* poclass = rtti::autocast(pclass);

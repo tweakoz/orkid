@@ -47,25 +47,27 @@ Colorize::Colorize()
 {
 }
 void Colorize::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputB.GetExternalOutput());
 	if(conplugA && conplugB )
 	{	struct AA16RenderCells : public AA16Render
 		{	virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-			{	buf.GetContext()->PushModColor( ork::CVector4::Red() );
-				CMatrix4 mtxortho = buf.GetContext()->MTXI()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
-				buf.GetContext()->BindMaterial( & mtl );
-				buf.GetContext()->MTXI()->PushPMatrix( mtxortho );
+			{	mPTX.GetTarget()->PushModColor( ork::CVector4::Red() );
+				CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
+				mPTX.GetTarget()->BindMaterial( & mtl );
+				mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 
 				float u0 = (0.5f+(left*0.5f));
 				float u1 = (0.5f+(right*0.5f));
 				float v0 = 0.5f+(top*0.5f);
 				float v1 = 0.5f+(bot*0.5f);
-				RenderQuad( buf.GetContext(), 0.0f, 0.0f, 1.0f, 1.0f, u0, v0, u1, v1 );
+				RenderQuad( mPTX.GetTarget(), 0.0f, 0.0f, 1.0f, 1.0f, u0, v0, u1, v1 );
 
-				buf.GetContext()->MTXI()->PopPMatrix();
-				buf.GetContext()->PopModColor();
+				mPTX.GetTarget()->MTXI()->PopPMatrix();
+				mPTX.GetTarget()->PopModColor();
 			}
 			lev2::GfxMaterial3DSolid mtl;
 			AA16RenderCells(	ProcTex& ptex,
@@ -73,16 +75,16 @@ void Colorize::compute( ProcTex& ptex )
 								const ImgOutPlug* cpa,
 								const ImgOutPlug* cpb )
 				: AA16Render( ptex, bo )
-				, mtl( bo.GetContext(), "orkshader://proctex", "colorize" )
+				, mtl( ptex.GetTarget(), "orkshader://proctex", "colorize" )
 			{
-				auto targ = bo.GetContext();
+				auto targ = mPTX.GetTarget();
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 				mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 				mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 				mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-				auto inptexa = cpa->GetValue().GetBuffer(ptex).OutputTexture();
-				auto inptexb = cpb->GetValue().GetBuffer(ptex).OutputTexture();
+				auto inptexa = cpa->GetValue().GetTexture(ptex);
+				auto inptexb = cpb->GetValue().GetTexture(ptex);
 				inptexa->TexSamplingMode().PresetTrilinearWrap();
 				inptexb->TexSamplingMode().PresetTrilinearWrap();
 				targ->TXI()->ApplySamplingMode(inptexa);
@@ -127,20 +129,22 @@ UvMap::UvMap()
 {
 }
 void UvMap::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputB.GetExternalOutput());
 	if(conplugA && conplugB )
 	{	struct AA16RenderCells : public AA16Render
 		{	virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-			{	buf.GetContext()->PushModColor( ork::CVector4::Red() );
-				CMatrix4 mtxortho = buf.GetContext()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
-				buf.GetContext()->BindMaterial( & mtl );
-				buf.GetContext()->MTXI()->PushPMatrix( mtxortho );
+			{	mPTX.GetTarget()->PushModColor( ork::CVector4::Red() );
+				CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+				mPTX.GetTarget()->BindMaterial( & mtl );
+				mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 
-				RenderQuad( buf.GetContext(), -1,-1,1,1 );
-				buf.GetContext()->MTXI()->PopPMatrix();
-				buf.GetContext()->PopModColor();
+				RenderQuad( mPTX.GetTarget(), -1,-1,1,1 );
+				mPTX.GetTarget()->MTXI()->PopPMatrix();
+				mPTX.GetTarget()->PopModColor();
 			}
 			lev2::GfxMaterial3DSolid mtl;
 			AA16RenderCells(	ProcTex& ptex,
@@ -148,16 +152,16 @@ void UvMap::compute( ProcTex& ptex )
 								const ImgOutPlug* cpa,
 								const ImgOutPlug* cpb )
 				: AA16Render( ptex, bo )
-				, mtl( bo.GetContext(), "orkshader://proctex", "uvmap" )
+				, mtl( ptex.GetTarget(), "orkshader://proctex", "uvmap" )
 			{
-				auto targ = bo.GetContext();
+				auto targ = mPTX.GetTarget();
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 				mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 				mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 				mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-				auto inptexa = cpa->GetValue().GetBuffer(ptex).OutputTexture();
-				auto inptexb = cpb->GetValue().GetBuffer(ptex).OutputTexture();
+				auto inptexa = cpa->GetValue().GetTexture(ptex);
+				auto inptexb = cpb->GetValue().GetTexture(ptex);
 				inptexa->TexSamplingMode().PresetTrilinearWrap();
 				inptexb->TexSamplingMode().PresetTrilinearWrap();
 				targ->TXI()->ApplySamplingMode(inptexa);
@@ -203,21 +207,23 @@ SphMap::SphMap()
 {
 }
 void SphMap::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputN.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputR.GetExternalOutput());
 	if(conplugA && conplugB )
 	{	struct AA16RenderSphMap : public AA16Render
 		{
 			virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-			{	buf.GetContext()->PushModColor( ork::CVector4::Red() );
-				CMatrix4 mtxortho = buf.GetContext()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
-				buf.GetContext()->BindMaterial( & mtl );
-				buf.GetContext()->MTXI()->PushPMatrix( mtxortho );
+			{	mPTX.GetTarget()->PushModColor( ork::CVector4::Red() );
+				CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+				mPTX.GetTarget()->BindMaterial( & mtl );
+				mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 
-				RenderQuad( buf.GetContext(), -1,-1,1,1 );
-				buf.GetContext()->MTXI()->PopPMatrix();
-				buf.GetContext()->PopModColor();
+				RenderQuad( mPTX.GetTarget(), -1,-1,1,1 );
+				mPTX.GetTarget()->MTXI()->PopPMatrix();
+				mPTX.GetTarget()->PopModColor();
 			}
 			lev2::GfxMaterial3DSolid mtl;
 			AA16RenderSphMap(	ProcTex& ptex,
@@ -226,16 +232,16 @@ void SphMap::compute( ProcTex& ptex )
 								const ImgOutPlug* cpb,
 								float direc )
 				: AA16Render( ptex, bo )
-				, mtl( bo.GetContext(), "orkshader://proctex", "sphmap" )
+				, mtl( ptex.GetTarget(), "orkshader://proctex", "sphmap" )
 			{
-				auto targ = bo.GetContext();
+				auto targ = mPTX.GetTarget();
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 				mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 				mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 				mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-				auto inptexa = cpa->GetValue().GetBuffer(ptex).OutputTexture();
-				auto inptexb = cpb->GetValue().GetBuffer(ptex).OutputTexture();
+				auto inptexa = cpa->GetValue().GetTexture(ptex);
+				auto inptexb = cpb->GetValue().GetTexture(ptex);
 				inptexa->TexSamplingMode().PresetTrilinearWrap();
 				inptexb->TexSamplingMode().PresetTrilinearWrap();
 				targ->TXI()->ApplySamplingMode(inptexa);
@@ -287,21 +293,23 @@ SphRefract::SphRefract()
 {
 }
 void SphRefract::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputB.GetExternalOutput());
 	if(conplugA && conplugB )
 	{	struct AA16RenderRefr : public AA16Render
 		{
 			virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-			{	buf.GetContext()->PushModColor( ork::CVector4::Red() );
-				CMatrix4 mtxortho = buf.GetContext()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
-				buf.GetContext()->BindMaterial( & mtl );
-				buf.GetContext()->MTXI()->PushPMatrix( mtxortho );
+			{	mPTX.GetTarget()->PushModColor( ork::CVector4::Red() );
+				CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+				mPTX.GetTarget()->BindMaterial( & mtl );
+				mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 
-				RenderQuad( buf.GetContext(), -1,-1,1,1 );
-				buf.GetContext()->MTXI()->PopPMatrix();
-				buf.GetContext()->PopModColor();
+				RenderQuad( mPTX.GetTarget(), -1,-1,1,1 );
+				mPTX.GetTarget()->MTXI()->PopPMatrix();
+				mPTX.GetTarget()->PopModColor();
 			}
 			lev2::GfxMaterial3DSolid mtl;
 			AA16RenderRefr(	ProcTex& ptex,
@@ -310,15 +318,15 @@ void SphRefract::compute( ProcTex& ptex )
 							const ImgOutPlug* cpb,
 							float direc, float ior )
 				: AA16Render( ptex, bo )
-				, mtl( bo.GetContext(), "orkshader://proctex", "sphrefract" )
+				, mtl( ptex.GetTarget(), "orkshader://proctex", "sphrefract" )
 			{
 				mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 				mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 				mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 				mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-				mtl.SetTexture( cpa->GetValue().GetBuffer(ptex).OutputTexture() );
-				mtl.SetTexture2( cpb->GetValue().GetBuffer(ptex).OutputTexture() );
+				mtl.SetTexture( cpa->GetValue().GetTexture(ptex) );
+				mtl.SetTexture2( cpb->GetValue().GetTexture(ptex) );
 				mtl.SetUser0( CVector4(0.0f,direc,ior,float(Buffer::kw)) );
 
 				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
@@ -380,7 +388,9 @@ H2N::H2N()
 	mMTL.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 }
 void H2N::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplug = rtti::autocast(mPlugInpInput.GetExternalOutput());
 	if(nullptr==conplug) return;
 	////////////////////////////////////////////////////////////////
@@ -388,8 +398,7 @@ void H2N::compute( ProcTex& ptex )
 	CMatrix4 mtxS;
 	mtxS.Scale( 1.0f, fscy, 1.0f );
 	////////////////////////////////////////////////////////////////
-	ork::lev2::GfxTarget* pTARG = buffer.GetContext();
-	auto inptex = conplug->GetValue().GetBuffer(ptex).OutputTexture();
+	auto inptex = conplug->GetValue().GetTexture(ptex);
 	inptex->TexSamplingMode().PresetPointAndClamp();
 	pTARG->TXI()->ApplySamplingMode(inptex);
 	//printf( "HSNinputtex<%p>\n", inptex );
@@ -400,12 +409,12 @@ void H2N::compute( ProcTex& ptex )
 	{
 		H2N& mH2N;
 		virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-		{	auto pTARG = buf.GetContext();
+		{	auto pTARG = mPTX.GetTarget();
 			pTARG->PushMaterial( & mH2N.mMTL );
-			CMatrix4 mtxortho = buf.GetContext()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
-			buf.GetContext()->MTXI()->PushPMatrix( mtxortho );
+			CMatrix4 mtxortho = pTARG->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+			pTARG->MTXI()->PushPMatrix( mtxortho );
 			RenderQuad( pTARG, -1.0f, -1.0f, 1.0f, 1.0f );
-			buf.GetContext()->MTXI()->PopPMatrix();
+			pTARG->MTXI()->PopPMatrix();
 			pTARG->PopMaterial();
 		}
 		AA16RenderH2N(	H2N& h2n, ProcTex& ptex, Buffer& bo )
@@ -466,17 +475,20 @@ void Kaled::addvtx( float fx, float fy, float fu, float fv )
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Kaled::compute( ProcTex& ptex )
-{	Buffer& buffer = GetWriteBuffer(ptex);
+{	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplug = rtti::autocast(mPlugInpInput.GetExternalOutput());
 	if(conplug)
-	{	auto targ = buffer.GetContext();
+	{	auto targ = ptex.GetTarget();
 		lev2::GfxMaterial3DSolid gridmat( targ );
 		gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
 		gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
 		gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 		gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-		auto inptexa = conplug->GetValue().GetBuffer(ptex).OutputTexture();
+		auto inptexa = conplug->GetValue().GetTexture(ptex);
+
 		inptexa->TexSamplingMode().PresetTrilinearWrap();
 		targ->TXI()->ApplySamplingMode(inptexa);
 		gridmat.SetTexture( inptexa );
@@ -484,7 +496,7 @@ void Kaled::compute( ProcTex& ptex )
 		////////////////////////////////////////////////////////////////
 		auto mtxi = targ->MTXI();
 		CMatrix4 mtxortho = mtxi->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
-		buffer.PtexBegin();
+		buffer.PtexBegin(targ,true,false);
 		mtxi->PushPMatrix( mtxortho );
 		mtxi->PushVMatrix( CMatrix4::Identity );
 		mtxi->PushMMatrix( CMatrix4::Identity );
@@ -580,7 +592,7 @@ void Kaled::compute( ProcTex& ptex )
 		mtxi->PopVMatrix();
 		mtxi->PopMMatrix();
 
-		buffer.PtexEnd();
+		buffer.PtexEnd(true);
 	}
 	MarkClean();
 }

@@ -49,18 +49,75 @@ Img32 ImgModule::gNoCon;
 tbb::concurrent_queue<Buffer*>	ProcTexContext::gBuf32Q;
 tbb::concurrent_queue<Buffer*>	ProcTexContext::gBuf64Q;
 
-void Buffer::PtexBegin()
+///////////////////////////////////////////////////////////////////////////////
+Buffer::Buffer(ork::lev2::EBufferFormat efmt)
+	: mRtGroup(nullptr)
 {
-	GetContext()->FBI()->PushRtGroup(&mRtGroup);
 }
-void Buffer::PtexEnd()
+///////////////////////////////////////////////////////////////////////////////
+void Buffer::PtexBegin(lev2::GfxTarget*ptgt, bool push_full_vp, bool clear_all )
+{	mTarget = ptgt;
+	mTarget->FBI()->SetAutoClear(false);
+	//mTarget->FBI()->BeginFrame();	
+	mTarget->FBI()->PushRtGroup(GetRtGroup(ptgt));
+	SRect vprect_full(0,0,kw,kh);
+	if( push_full_vp )
+	{	mTarget->FBI()->PushViewport(vprect_full);
+		mTarget->FBI()->PushScissor(vprect_full);
+	}
+	if( clear_all )
+		mTarget->FBI()->ClearViewport(nullptr);
+}
+///////////////////////////////////////////////////////////////////////////////
+void Buffer::PtexEnd(bool pop_vp )
 {
-	GetContext()->FBI()->PopRtGroup();
+	if( pop_vp )
+	{	mTarget->FBI()->PopViewport();
+		mTarget->FBI()->PopScissor();
+	}
+
+	mTarget->FBI()->PopRtGroup();
+	//mTarget->FBI()->EndFrame();	
+	mTarget = nullptr;
 }
+lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
+{
+	if( mRtGroup==nullptr )
+	{
+		mRtGroup = new RtGroup( ptgt, kw, kh );
+
+		auto mrt = new ork::lev2::RtBuffer(	
+			mRtGroup,
+			lev2::ETGTTYPE_MRT0,
+			lev2::EBUFFMT_RGBA64,
+			kw, kh );
+
+		mRtGroup->SetMrt( 0, mrt );
+
+		ptgt->FBI()->PushRtGroup(mRtGroup);
+		ptgt->FBI()->PopRtGroup();
+	}
+	return mRtGroup;	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+lev2::Texture* Buffer::OutputTexture()
+{
+	return (mRtGroup!=nullptr)	? mRtGroup->GetMrt(0)->GetTexture()
+								: nullptr;
+}
+
+Buffer32::Buffer32() : Buffer( lev2::EBUFFMT_RGBA32 ) {}	// EBUFFMT_RGBA32
+Buffer64::Buffer64() : Buffer( lev2::EBUFFMT_RGBA64 ) {}	// EBUFFMT_RGBA64
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 ork::lev2::Texture* Img32::GetTexture( ProcTex& ptex ) const
 {
-	return GetBuffer(ptex).OutputTexture();
+	Buffer& buf = GetBuffer(ptex);
+	buf.GetRtGroup(ptex.GetTarget());
+	return buf.OutputTexture();
 }
 Buffer& Img32::GetBuffer( ProcTex& ptex ) const
 {
@@ -69,7 +126,9 @@ Buffer& Img32::GetBuffer( ProcTex& ptex ) const
 }
 ork::lev2::Texture* Img64::GetTexture( ProcTex& ptex ) const
 {
-	return GetBuffer(ptex).OutputTexture();
+	Buffer& buf = GetBuffer(ptex);
+	buf.GetRtGroup(ptex.GetTarget());
+	return buf.OutputTexture();
 }
 Buffer& Img64::GetBuffer( ProcTex& ptex ) const
 {
@@ -81,8 +140,8 @@ Buffer& Img64::GetBuffer( ProcTex& ptex ) const
 static lev2::Texture* GetImgModuleIcon( ork::dataflow::dgmodule* pmod )
 {
 	ImgModule* pimgmod = rtti::autocast(pmod);
-	lev2::GfxBuffer& buffer = pimgmod->GetThumbBuffer();
-	return buffer.GetTexture();
+	auto& buffer = pimgmod->GetThumbBuffer();
+	return buffer.OutputTexture();
 }
 
 void ImgModule::Describe()
@@ -98,13 +157,7 @@ void Img64Module::Describe()
 {	RegisterObjOutPlug( Img64Module, ImgOut );
 }
 ImgModule::ImgModule()
-//	: mThumbBuffer( 0, 0, 0, 256, 256, lev2::EBUFFMT_RGBA32, lev2::ETGTTYPE_EXTBUFFER, 	"ProcTexThumbBuffer")
 {
-	lev2::GfxTargetCreationParams params;
-	params.miNumSharedVerts = 4<<10;
-	lev2::GfxEnv::GetRef().PushCreationParams( params );
-	mThumbBuffer.CreateContext();
-	lev2::GfxEnv::GetRef().PopCreationParams( );
 }
 Img32Module::Img32Module()
 	: ConstructOutTypPlug( ImgOut,dataflow::EPR_UNIFORM, typeid(Img32) )
@@ -126,9 +179,12 @@ Buffer& ImgModule::GetWriteBuffer( ProcTex& ptex )
 }
 void ImgModule::Compute( dataflow::workunit* wu )
 {
-	lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-	const_cast<ImgModule*>(this)->compute( *wu->GetContextData().Get<ProcTex*>() );
-	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+	auto ptex = wu->GetContextData().Get<ProcTex*>();
+	ProcTexContext* ptex_ctx = ptex->GetPTC();
+	//lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
+	//printf( "imgmod<%p>::compute\n", this );
+	const_cast<ImgModule*>(this)->compute( *ptex );
+	//lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UnitTexQuad( ork::lev2::GfxTarget* pTARG )
@@ -180,11 +236,16 @@ void RenderQuad( ork::lev2::GfxTarget* pTARG, float fX1, float fY1, float fX2, f
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UpdateThumb( ProcTex& ptex )
 {
-	Buffer& computebuffer = GetWriteBuffer(ptex);
-	lev2::Texture* ptexture = computebuffer.OutputTexture();
+	auto pTARG = ptex.GetTarget();
+	auto fbi = pTARG->FBI();
+	auto ptexture = GetWriteBuffer(ptex).OutputTexture();
 
-	mThumbBuffer.BeginFrame();
-	GfxTarget* pTARG = mThumbBuffer.GetContext();
+	if( nullptr == ptexture )
+		return;
+
+	//mThumbBuffer.BeginFrame();
+	
+	fbi->PushRtGroup(mThumbBuffer.GetRtGroup(pTARG));
 	GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
 	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 	gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
@@ -211,7 +272,7 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 	pTARG->MTXI()->PopMMatrix();
 	pTARG->PopModColor();
 	MarkClean();
-	mThumbBuffer.EndFrame();
+	fbi->PopRtGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTex::Describe()
@@ -256,43 +317,59 @@ void ProcTex::compute( ProcTexContext& ptctx )
 	Clear();
 	SetAccumulateWork(true);
 	RefreshTopology(ptctx.mdflowctx);
+
 	//////////////////////////////////
-	// bind to image buffers
+
+	mpResTex = nullptr;
+
 	//////////////////////////////////
+	// execute df graph
+	//////////////////////////////////
+
 	#if 1
 	const orklut<int,dataflow::dgmodule*>& TopoSorted = LockTopoSortedChildrenForRead(1);
-	{	int ilastwritebuf = -1;
-		ork::lev2::Texture* restex = 0;
-		for( orklut<int,dataflow::dgmodule*>::const_iterator it=TopoSorted.begin(); it!=TopoSorted.end(); it++ )
-		{	ork::Object* pobj = it->second;
-			ImgModule* pmodule = ork::rtti::autocast(pobj);
-			Group* pgroup = rtti::autocast(pmodule);
+	{	for( orklut<int,dataflow::dgmodule*>::const_iterator it=TopoSorted.begin(); it!=TopoSorted.end(); it++ )
+		{	dataflow::dgmodule* dgmod = it->second;
+			Group* pgroup = rtti::autocast(dgmod);
 			if( pgroup )
 			{
 			}
-			if(pmodule)
+			else
+			{
+				bool bmoddirty = true; //pmod->IsDirty();
+				if( bmoddirty )
+				{	dataflow::cluster mycluster;
+					dataflow::workunit mywunit( dgmod, & mycluster, 0);
+					mywunit.SetContextData( this );
+					dgmod->Compute( & mywunit );
+
+				}
+			}
+			ImgModule* img_module = ork::rtti::autocast(dgmod);
+			if(img_module)
 			{	ImgOutPlug* outplug = 0;
-				pmodule->GetTypedOutput<ImgBase>(0,outplug);
+				img_module->GetTypedOutput<ImgBase>(0,outplug);
 				const ImgBase& base = outplug->GetValue();
 
-				int ipixsize = base.PixelSize();
-				bool is_32bit = (ipixsize==32);
-				int ibufmax = is_32bit ? ProcTexContext::k32buffers : ProcTexContext::k64buffers;
+				//int ipixsize = base.PixelSize();
+				//bool is_32bit = (ipixsize==32);
+				//int ibufmax = is_32bit ? ProcTexContext::k32buffers : ProcTexContext::k64buffers;
 
 				//printf( "pmod<%p> pixsiz<%d> reg<%p>\n", pmodule, ipixsize, outplug->GetRegister() );
 
 				if( outplug->GetRegister() )
 				{
-					int ireg = outplug->GetRegister()->mIndex;
-	
-					OrkAssert( ireg>=0 && ireg<ibufmax );
 
-					ilastwritebuf = ireg%ibufmax;
+
+					int ireg = outplug->GetRegister()->mIndex;	
+					//OrkAssert( ireg>=0 && ireg<ibufmax );
 					outplug->GetValue().miBufferIndex = ireg;
 
-					restex	= is_32bit 
-							?	ptctx.GetBuffer32(ilastwritebuf).OutputTexture()
-							:	ptctx.GetBuffer64(ilastwritebuf).OutputTexture();
+					auto tex = base.GetTexture(*this);
+					if( tex != nullptr )
+					{	mpResTex = tex;
+						img_module->UpdateThumb(*this);
+					}
 				}
 				else
 				{
@@ -305,76 +382,13 @@ void ProcTex::compute( ProcTexContext& ptctx )
 				}*/
 			}
 		}
-		mpResTex=restex;
 	}
 	UnLockTopoSortedChildren();
 	#endif
-	//////////////////////////////////
-	// execute
-	//////////////////////////////////
-	//dataflow::cluster gcluster;
-	//dataflow::workunit gwunit( & mGlobal, & gcluster, 0);
-	//gwunit.SetContextData( this );
-	//static_cast<dataflow::dgmodule&>(mGlobal).Compute( & gwunit );
-	//////////////////////////////////
-	int inumwuassigned = 0;
-	//while( mGraph.IsDirty() )
-	{	const orklut<int,dataflow::dgmodule*>& toposorted = LockTopoSortedChildrenForRead(2);
-		{	int inum = toposorted.size();
-			for( int itopo=0; itopo<inum; itopo++ )
-			{	int inum2 = toposorted.size();
-				OrkAssert( inum==inum2 );
-				dataflow::dgmodule* pmod = toposorted.GetItemAtIndex( itopo ).second;
-				bool bmoddirty = true; //pmod->IsDirty();
-				if( bmoddirty )
-				{	dataflow::cluster mycluster;
-					dataflow::workunit mywunit( pmod, & mycluster, 0);
-					mywunit.SetContextData( this );
-					pmod->Compute( & mywunit );
-					ImgModule* pimgmod = rtti::autocast(pmod);
-					if( pimgmod )
-					{
-						pimgmod->UpdateThumb(*this);
-						Buffer& b = pimgmod->GetWriteBuffer( *this );
-						mpResTex = b.OutputTexture();
-					}
-				}
-			}
-		}
-		UnLockTopoSortedChildren();
-	}
+
 	//////////////////////////////////
 	//mpctx = 0;
 }
-///////////////////////////////////////////////////////////////////////////////
-Buffer::Buffer(ork::lev2::EBufferFormat efmt)
-	: lev2::GfxBuffer(
-		0,
-		kx, ky,
-		kw, kh, 
-		efmt,
-		lev2::ETGTTYPE_EXTBUFFER,
-		"ProcTexBuffer" )
-	, mRtGroup( this, kw, kh )
-{
-	CreateContext();
-
-	auto mrt = new ork::lev2::CMrtBuffer(	
-		this,
-		lev2::ETGTTYPE_MRT0,
-		lev2::EBUFFMT_RGBA64,
-		0, 0, kw, kh );
-
-	mRtGroup.SetMrt( 0, mrt );
-
-}
-lev2::Texture* Buffer::OutputTexture()
-{
-	return mRtGroup.GetMrt(0)->GetTexture();
-}
-Buffer32::Buffer32() : Buffer( lev2::EBUFFMT_RGBA32 ) {}	// EBUFFMT_RGBA32
-Buffer64::Buffer64() : Buffer( lev2::EBUFFMT_RGBA64 ) {}	// EBUFFMT_RGBA64
-
 ///////////////////////////////////////////////////////////////////////////////
 void Module::Describe()
 {
@@ -405,6 +419,7 @@ ProcTexContext::ProcTexContext()
 	, mImage64Regs(k64buffers)
 	, mTrashBuffer()
 	, mCurrentTime(0.0f)
+	, mTarget(nullptr)
 {
 	mdflowctx.SetRegisters<float>( & mFloatRegs );
 	mdflowctx.SetRegisters<Img32>( & mImage32Regs );
@@ -501,6 +516,11 @@ struct quad
 
 void AA16Render::RenderAA()
 {
+	auto target = mPTX.GetTarget();
+	auto fbi = target->FBI();
+	auto mtxi = target->MTXI();
+	auto txi = target->TXI();
+
 	CMatrix4 mtxortho;
 
 	float boxx = mOrthoBoxXYWH.GetX();
@@ -547,7 +567,7 @@ void AA16Render::RenderAA()
 		{ ua, vc, ub, vd }, { ub, vc, uc, vd }, { uc, vc, ud, vd },  { ud, vc, ue, vd }, 
 		{ ua, vd, ub, ve }, { ub, vd, uc, ve }, { uc, vd, ud, ve },  { ud, vd, ue, ve }, 
 	};
-	bufout.GetContext()->FBI()->SetAutoClear(true);
+
 	
 	auto temp_buffer = bufout.IsBuf32() ? ProcTexContext::AllocBuffer32() 
 										: ProcTexContext::AllocBuffer64();
@@ -565,12 +585,8 @@ void AA16Render::RenderAA()
 		// Render subsection to BufTA
 		//////////////////////////////////////////////////////
 		
-		{
-			auto targ = temp_buffer->GetContext();
-			auto mtxi = targ->MTXI();
-			
-			targ->FBI()->SetAutoClear(true);
-			temp_buffer->PtexBegin();
+		{			
+			temp_buffer->PtexBegin(target, true, true );
 			CMatrix4 mtxortho = mtxi->Ortho( left,right,top,bottom, 0.0f, 1.0f );
 			mtxi->PushMMatrix( CMatrix4::Identity );
 			mtxi->PushVMatrix( CMatrix4::Identity );
@@ -579,7 +595,7 @@ void AA16Render::RenderAA()
 			mtxi->PopPMatrix();
 			mtxi->PopVMatrix();
 			mtxi->PopMMatrix();
-			temp_buffer->PtexEnd();
+			temp_buffer->PtexEnd(true);
 
 		}
 
@@ -587,17 +603,16 @@ void AA16Render::RenderAA()
 		// Resolve to output buffer
 		//////////////////////////////////////////////////////
 
-		bufout.PtexBegin();
+		bufout.PtexBegin(target, true, (i==0) );
 		{
 			float l = boxx;
 			float r = boxx+boxw;
 			float t = boxy;
 			float b = boxy+boxh;
 
+			//SRect vprect(boxx,boxy,boxw,boxh);
+			//fbi->PushViewport(vprect);
 
-			auto targ = bufout.GetContext();
-			auto mtxi = targ->MTXI();
-			auto txi = targ->TXI();
 			auto tex = temp_buffer->OutputTexture();
 			downsamplemat.SetTexture(tex);
 			tex->TexSamplingMode().PresetPointAndClamp();
@@ -608,29 +623,30 @@ void AA16Render::RenderAA()
 			mtxi->PushMMatrix( CMatrix4::Identity );
 			mtxi->PushVMatrix( CMatrix4::Identity );
 			mtxi->PushPMatrix( mtxortho );
-			targ->PushMaterial( & downsamplemat );
-				RenderQuad( targ, q.fx0,q.fy1,q.fx1,q.fy0, 0.0f, 0.0f, 1.0f, 1.0f );
-			targ->PopMaterial();
+			target->PushMaterial( & downsamplemat );
+				RenderQuad( target, q.fx0,q.fy1,q.fx1,q.fy0, 0.0f, 0.0f, 1.0f, 1.0f );
+			target->PopMaterial();
 			mtxi->PopPMatrix();
 			mtxi->PopVMatrix();
 			mtxi->PopMMatrix();
+			//fbi->PopViewport();
 		}
-		bufout.PtexEnd();
+		bufout.PtexEnd(true);
 
 		//////////////////////////////////////////////////////
-		// disable clear for addittional passes
-		//////////////////////////////////////////////////////
-
-		bufout.GetContext()->FBI()->SetAutoClear(false);
 	}
 	ProcTexContext::ReturnBuffer(temp_buffer);
-	bufout.GetContext()->FBI()->SetAutoClear(true);
+	fbi->SetAutoClear(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void AA16Render::RenderNoAA()
 {
+	auto target = mPTX.GetTarget();
+	auto mtxi = target->MTXI();
+	auto fbi = target->FBI();
+
 	float x = mOrthoBoxXYWH.GetX();
 	float y = mOrthoBoxXYWH.GetY();
 	float w = mOrthoBoxXYWH.GetZ();
@@ -640,11 +656,7 @@ void AA16Render::RenderNoAA()
 	float t = y;
 	float b = y+h;
 
-	auto targ = bufout.GetContext();
-	auto mtxi = targ->MTXI();
-	
-	targ->FBI()->SetAutoClear(true);
-	bufout.PtexBegin();
+	bufout.PtexBegin(target,true,true);
 	{	CMatrix4 mtxortho = mtxi->Ortho( l,r,t,b, 0.0f, 1.0f );
 		mtxi->PushMMatrix( CMatrix4::Identity );
 		mtxi->PushVMatrix( CMatrix4::Identity );
@@ -654,7 +666,7 @@ void AA16Render::RenderNoAA()
 		mtxi->PopVMatrix();
 		mtxi->PopMMatrix();
 	}
-	bufout.PtexEnd();
+	bufout.PtexEnd(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

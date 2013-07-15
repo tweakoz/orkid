@@ -14,6 +14,7 @@
 
 #include <tbb/atomic.h>
 
+#include "mutex.h"
 #include "semaphore.h"
 
 #include <set>

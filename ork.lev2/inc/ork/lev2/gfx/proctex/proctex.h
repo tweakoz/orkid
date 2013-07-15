@@ -3,12 +3,12 @@
 // Copyright 1996-2010, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_RUNTIME_PROCTEX_H
-#define _ORK_RUNTIME_PROCTEX_H
+#pragma once 
 
 #include <ork/object/Object.h>
 #include <ork/rtti/RTTI.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/dataflow/scheduler.h>
@@ -45,35 +45,42 @@ class IDeserializer;
 namespace ork { namespace proctex {
 class Module;
 ///////////////////////////////////////////////////////////////////////////////
-class Buffer : public lev2::GfxBuffer
+class Buffer 
 {
 public:
 	static const int kx = 0;
 	static const int ky = 0;
-	static const int kw = 3072;
-	static const int kh = 3072;
+	static const int kw = 1024;
+	static const int kh = 1024;
 	Buffer(ork::lev2::EBufferFormat efmt);
 	dataflow::node_hash	mHash;
-	lev2::RtGroup mRtGroup;
+	lev2::RtGroup* mRtGroup;
+	lev2::GfxTarget* mTarget;
 
 	lev2::Texture* OutputTexture();
 
-	void PtexBegin();
-	void PtexEnd();
+	void PtexBegin(lev2::GfxTarget*ptgt, bool push_full_vp, bool clear_all );
+	void PtexEnd( bool pop_vp );
 
 	bool IsBuf32() const { return GetBufferFormat()==lev2::EBUFFMT_RGBA32; }
 	bool IsBuf64() const { return GetBufferFormat()==lev2::EBUFFMT_RGBA64; }
+
+	lev2::RtGroup* GetRtGroup( lev2::GfxTarget* pt );
+
+	virtual ork::lev2::EBufferFormat GetBufferFormat() const = 0;
 
 };
 class Buffer32 : public Buffer
 {
 public:
 	Buffer32();
+	ork::lev2::EBufferFormat GetBufferFormat() const override { return lev2::EBUFFMT_RGBA32; }
 };
 class Buffer64 : public Buffer
 {
 public:
 	Buffer64();
+	ork::lev2::EBufferFormat GetBufferFormat() const override { return lev2::EBUFFMT_RGBA64; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -294,7 +301,7 @@ struct ProcTexContext
 	float 									mCurrentTime;
 	Buffer& GetBuffer32(int edest); 
 	Buffer& GetBuffer64(int edest); 
-
+	lev2::GfxTarget*						mTarget;
 	static tbb::concurrent_queue<Buffer*>	gBuf32Q;
 	static tbb::concurrent_queue<Buffer*>	gBuf64Q;
 
@@ -332,6 +339,7 @@ public:
 	bool GetTexQuality() const { return mbTexQuality; }
 
 	ProcTexContext* GetPTC() { return mpctx; }
+	lev2::GfxTarget* GetTarget() { return (mpctx!=nullptr) ? mpctx->mTarget : nullptr; }
 
 	ork::lev2::Texture* ResultTexture();
 
@@ -419,7 +427,7 @@ class RotSolid : public Img32Module
 
 	ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>	mVertexBuffer;
 
-	void ComputeVB( lev2::GfxBuffer& buffer );
+	void ComputeVB( lev2::GfxTarget* tgt );
 
 	virtual void compute( ProcTex& ptex );
 
@@ -606,7 +614,7 @@ class Cells : public Img32Module
 
 	virtual void compute( ProcTex& ptex );
 	int site_index( int ix, int iy ) { return (iy*miDimU)+ix; }
-	void ComputeVB( lev2::GfxBuffer& buffer );
+	void ComputeVB( lev2::GfxTarget* tgt );
 
 public:
 	Cells();
@@ -882,5 +890,5 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 }}
-#endif
+
 

@@ -14,10 +14,11 @@
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/qtui/qtui.h>
 
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QGesture>
+#include <QtGui/QMainWindow>
+#include <QtGui/QGesture>
 
 #if defined(_DARWIN)
+//#define USE_MTOUCH
 #include <dispatch/dispatch.h>
 #include "touch.h"
 #elif defined(IX)
@@ -33,7 +34,7 @@ extern "C" void StartTouchReciever(void*tr);
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_DARWIN)
+#if defined(USE_MTOUCH)
 struct QCtxWidgetTR : public ::ITouchReciever
 {
 	
@@ -80,7 +81,7 @@ QCtxWidget::QCtxWidget( CTQT* pctxbase, QWidget* parent )
     
     //grabGesture(Qt::PanGesture);
 
-#if defined(_DARWIN)
+#if defined(USE_MTOUCH)
 	QCtxWidgetTR* ptr = new QCtxWidgetTR(this);
 	mTouchReciver = (void*) ptr;
 	StartTouchReciever(mTouchReciver);
@@ -101,7 +102,7 @@ std::map<int,int> gId2Idx;
 
 void QCtxWidget::OnTouchBegin( const MtFinger* pfinger )
 {
-#if defined(_DARWIN)
+#if defined(USE_MTOUCH)
 	int ID = pfinger->identifier;
 	int idx = ginump++;
 	gId2Idx[ID]=idx;
@@ -136,7 +137,7 @@ int ilastnpoints = 0;
 
 void QCtxWidget::OnTouchUpdate( const MtFinger* pfinger )
 {
-#if defined(_DARWIN)
+#if defined(USE_MTOUCH)
 	int ID = pfinger->identifier;
 	int idx = gId2Idx[ID];
 
@@ -183,7 +184,7 @@ void QCtxWidget::OnTouchUpdate( const MtFinger* pfinger )
 
 void QCtxWidget::OnTouchEnd( const MtFinger* pfinger )
 {
-#if defined(_DARWIN)
+#if defined(USE_MTOUCH)
 	int ID = pfinger->identifier;
 	int idx = gId2Idx[ID];
 	gId2Idx.erase(ID);

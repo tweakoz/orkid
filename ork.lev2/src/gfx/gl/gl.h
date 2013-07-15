@@ -71,6 +71,7 @@
 /////////////////////////////
 
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <tbb/concurrent_queue.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -494,7 +495,7 @@ protected:
 	GlGeometryBufferInterface	mGbI;
 	GlFrameBufferInterface		mFbI;
 	GlTextureInterface			mTxI;
-
+	bool 						mTargetDrawableSizeDirty;
 	void* DoBeginLoad(); // virtual
 	void DoEndLoad(void*ploadtok); // virtual
 

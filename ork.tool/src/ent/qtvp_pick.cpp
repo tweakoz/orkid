@@ -175,7 +175,7 @@ void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
 		SRect VPRect( itx0, ity0, itx1, ity1 );
 		//printf( "itx0<%d> ity0<%d> itx1<%d> ity1<%d> fW<%f> fH<%f>\n", itx0, ity0, itx1, ity1, fW, fH );
 		///////////////////////////////////////////////////////////////////////////
-		pTEXTARG->FBI()->SetRtGroup( mpPickRtGroup );	// Enable Mrt
+		pTEXTARG->FBI()->PushRtGroup( mpPickRtGroup );	// Enable Mrt
 		pTEXTARG->FBI()->EnterPickState(this);
 		pTEXTARG->RSI()->SetOverrideBlending(true);
 		pTEXTARG->RSI()->GetOverrideRasterState().muBlending = EBLENDING_OFF;
@@ -205,10 +205,10 @@ void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
 		}
 		mpViewport->mCompositingGroupStack.pop();
 		pTEXTARG->PopModColor();
+		pTEXTARG->FBI()->PopRtGroup();
 		pTEXTARG->FBI()->PopViewport();
 		pTEXTARG->RSI()->ClearOverrides();
 		pTEXTARG->FBI()->LeavePickState();
-		pTEXTARG->FBI()->SetRtGroup(0);
 	}
 	EndFrame();
 	///////////////////////////////////////////////////////////////////////////

@@ -9,8 +9,7 @@
 // Graphics Environment (Driver/HAL)
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _LEV2_GFX_GFXENV_H
-#define _LEV2_GFX_GFXENV_H
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -44,6 +43,8 @@ class GfxBuffer;
 class CUIViewport;
 class TextureAnimationInst;
 class PickBufferBase;
+class RtGroup;
+class RtBuffer;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -92,55 +93,6 @@ private:
 	int				miH;
 	void*			mpData;
 	////////////////////////////
-};
-
-/// ////////////////////////////////////////////////////////////////////////////
-/// ////////////////////////////////////////////////////////////////////////////
-/// RtGroup (Multiple Render Target Group)
-/// collection of buffers that can be rendered to in parallel
-/// on Geforce 6800 and lower, blend modes are common to active on all MRT sub buffers
-/// on 7xxx and higher this restriction is removed
-/// ////////////////////////////////////////////////////////////////////////////
-/// ////////////////////////////////////////////////////////////////////////////
-
-class RtGroup
-{
-public:
-	/////////////////////////////////////////
-	RtGroup( GfxBuffer* ppar, int iW, int iH, int iSamples=1 );
-	~RtGroup();
-	/////////////////////////////////////////
-	GfxBuffer* GetMrt( int idx ) const
-	{
-		OrkAssert( (idx>=0) && (idx<kmaxmrts) );
-		return mMrt[ idx ];
-	}
-	/////////////////////////////////////////
-	void	SetMrt( int idx, GfxBuffer *Buffer );
-	int		GetNumTargets( void ) const { return mNumMrts; }
-	void	SetInternalHandle( void*h ) { mInternalHandle=h; }
-	void*	GetInternalHandle( void ) const { return mInternalHandle; }
-	void	Resize( int iw, int ih );
-	void	SetSizeDirty( bool bv ) { mbSizeDirty=bv; }
-	bool	IsSizeDirty() const { return mbSizeDirty; }
-
-	/////////////////////////////////////////
-	int		GetW() const { return miW; }
-	int		GetH() const { return miH; }
-	int		GetSamples() const { return miSamples; }
-	/////////////////////////////////////////
-	static const int	kmaxmrts = 4;
-private:
-
-	GfxBuffer*			mParent;
-	GfxBuffer*			mMrt[kmaxmrts];
-	GfxBuffer*			mDepth;
-	int					mNumMrts;
-	int					miW;
-	int					miH;
-	int					miSamples;
-	bool				mbSizeDirty;
-	void*				mInternalHandle;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -693,5 +645,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif

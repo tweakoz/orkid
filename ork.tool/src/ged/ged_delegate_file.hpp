@@ -114,7 +114,7 @@ void GedFileNode<IODriver>::OnCreateObject()
 		{
 			QVariant UserData = pact->data();
 			QString UserName = UserData.toString();
-			std::string pname = UserName.toUtf8().data();
+			std::string pname = UserName.toAscii().data();
 
 			file::Path apath( pname.c_str() );
 

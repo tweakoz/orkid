@@ -12,21 +12,28 @@
 
 #if defined(ORK_VS2012) // builtin mutex
 #define USE_STD_MUTEX
-#include <condition_variable>
-#include <mutex>
 #elif defined(ORK_OSX)
-#define USE_TBB_MUTEX
-//#include <condition_variable>
-#include <tbb/mutex.h>
-#include <tbb/recursive_mutex.h>
+//#define USE_TBB_MUTEX
+#define USE_STD_MUTEX
 #else
 #define USE_TBB_MUTEX
+//#define USE_STD_MUTEX
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+#if defined(USE_STD_MUTEX)
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
+#elif defined(USE_TBB_MUTEX)
 #include <tbb/compat/condition_variable>
 #include <tbb/mutex.h>
 #include <tbb/recursive_mutex.h>
+#include <tbb/atomic.h>
 namespace std
 {
     typedef tbb::mutex mutex;
+	template <typename T> using unique_lock = tbb::interface5::unique_lock<T>;
 }
 #endif
 

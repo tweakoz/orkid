@@ -7,6 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/lev2renderer.h>
 namespace ork { namespace lev2 {
 
@@ -45,14 +46,30 @@ void FrameBufferInterface::PushRtGroup( RtGroup* Base )
 {
 	mRtGroupStack.push(mCurrentRtGroup);
 	SetRtGroup( Base );
-	BeginFrame();	
+
+	int iw = mTarget.GetW();
+	int ih = mTarget.GetH();
+
+	if( Base != nullptr )
+	{
+		iw = Base->GetW();
+		ih = Base->GetH();
+	}
+
+	SRect r(0,0,iw,ih);
+
+	PushScissor( r );
+	PushViewport( r );
+	//BeginFrame();	
 }
 void FrameBufferInterface::PopRtGroup()
 {
 	RtGroup* prev = mRtGroupStack.top();
 	mRtGroupStack.pop();
-	EndFrame();
+	//EndFrame();
 	SetRtGroup( prev );	// Enable Mrt
+	PopViewport();
+	PopScissor();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

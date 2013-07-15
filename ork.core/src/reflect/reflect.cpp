@@ -181,7 +181,7 @@ template class DirectObjectPropertyType< TQuaternion<float> >;
 template class DirectObjectMapPropertyType<orkmap< float, CVector4> >;
 //template class DirectObjectPropertyType<orkvector<CVector2> >;
 
-bool reflect::SetInvokationParameter(IInvokation *invokation, int param, const char *paramdata)
+bool SetInvokationParameter(IInvokation *invokation, int param, const char *paramdata)
 {
 	if(param >= invokation->GetNumParameters())
 		return false;

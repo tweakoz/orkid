@@ -311,40 +311,6 @@ class Project:
 
 	############################################
 
-	def qt_enable(self):
-
-	   self.BaseEnv['QTDIR'] = stage_dir
-	   self.BaseEnv['QT4DIR'] = stage_dir
-	   self.BaseEnv.Tool('qt4')
-	   self.BaseEnv.Append(CXXFLAGS=['-fPIC',"-g"])  #  or  whatever
-	   self.BaseEnv.Append(CXXFLAGS=['-DQT_NO_KEYWORDS'])  #  needed if compiling with boost
-	   #self.add_header_paths(" ./stage/include/".join( "Qt QtWidgets QtGui QtCore".split()))
-	   self.BaseEnv['QT4_DEBUG'] = 1
-	   self.BaseEnv.Append(LINKFLAGS="-m64 -Wl,--no-undefined")
-	   self.BaseEnv['QT4_AUTOSCAN_STRATEGY'] = 1
-
-	def qt_disable_autoscan(self):
-	  self.BaseEnv['QT4_AUTOSCAN'] = 0
-
-	def qt_add_mod(self,str):
-	   lis = ["Qt5" + s for s in str.split()]
-	   self.BaseEnv.EnableQt4Modules( lis )
-	
-	def qt_add_qrc(self,str):
-  	  qrccc = self.BaseEnv.Qrc4(str.split())
-  	  self.objects += qrccc
-
-	def qt_add_uic(self,str):
-	   self.BaseEnv.Uic4(str.split())
-
-	def qt_moc_explicit(self,a,b):
-	   self.objects += self.BaseEnv.ExplicitMoc4(a,b)
-
- 	def qt_moc(self,a,b):
-   	   self.BaseEnv.Moc4(a,b)
-
-   	############################################
-
 	def Configure(self):
 
 

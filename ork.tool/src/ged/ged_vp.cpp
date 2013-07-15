@@ -41,7 +41,7 @@ void CPickBuffer<ork::tool::ged::GedVP>::Draw( void )
 	pTEXTARG->FBI()->PushScissor( VPRect );
 	BeginFrame();
 	{
-		pTEXTARG->FBI()->SetRtGroup( mpPickRtGroup );	// Enable Mrt
+		pTEXTARG->FBI()->PushRtGroup( mpPickRtGroup );	// Enable Mrt
 		pTEXTARG->FBI()->EnterPickState(this);
 		///////////////////////////////////////////////////////////////////////////
 		SRect VPRect( itx0, ity0, itx1, ity1 );
@@ -57,7 +57,7 @@ void CPickBuffer<ork::tool::ged::GedVP>::Draw( void )
 		pTEXTARG->FBI()->PopViewport();
 		///////////////////////////////////////////////////////////////////////////
 		pTEXTARG->FBI()->LeavePickState();
-		pTEXTARG->FBI()->SetRtGroup(0);
+		pTEXTARG->FBI()->PopRtGroup();
 	}
 	EndFrame();
 	pTEXTARG->FBI()->PopViewport();
@@ -150,7 +150,7 @@ void GedVP::DoDraw(  )
 			framedata.SetDstRect( tgt_rect );
 			pTEXTARG->SetRenderContextFrameData( & framedata );
 			///////////////////////////////////////////////////////////////////////////
-			//pTEXTARG->FBI()->SetRtGroup( mpPickRtGroup );	// Enable Mrt
+			//pTEXTARG->FBI()->PushRtGroup( mpPickRtGroup );	// Enable Mrt
 			this->BeginFrame(pTEXTARG);
 			pTEXTARG->FBI()->EnterPickState(mpPickBuffer);
 			///////////////////////////////////////////////////////////////////////////
@@ -176,7 +176,7 @@ void GedVP::DoDraw(  )
 			///////////////////////////////////////////////////////////////////////////
 			pTEXTARG->FBI()->LeavePickState();
 			EndFrame(pTEXTARG);
-			//pTEXTARG->FBI()->SetRtGroup(0);
+			//pTEXTARG->FBI()->PopRtGroup();
 			pTEXTARG->SetRenderContextFrameData( 0 );
 			///////////////////////////////////////////////////////////////////////////
 			//SetDirty( false );

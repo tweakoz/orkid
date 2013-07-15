@@ -8,10 +8,11 @@
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/Array.hpp>
+#if 0
 #include <dispatch/dispatch.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtconsole.h>
-#include <QtWidgets/QScrollBar>
+#include <QtGui/QScrollBar>
 #include <ork/lev2/qtui/qtui.hpp>
 #include <fcntl.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@ namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 void console_handler();
 ///////////////////////////////////////////////////////////////////////////////
-/*dispatch_queue_t CONQ()
+dispatch_queue_t CONQ()
 {	
 	static dispatch_queue_t gQ=0;
 	static dispatch_once_t ginit_once;
@@ -38,14 +39,14 @@ void console_handler();
 	};
 	dispatch_once(&ginit_once, once_blk );
 	return gQ;
-}*/
+}
 ///////////////////////////////////////////////////////////////////////////////
 static vp_cons* gPCON = nullptr;
 void vp_cons::Register()
 {
 	gPCON = this;
 	
-	/*auto handler_blk = ^ void (void)
+	auto handler_blk = ^ void (void)
 	{
 		//const char* inpname = slave_inp_name;
 		const char* outname = slave_out_name;
@@ -62,9 +63,9 @@ void vp_cons::Register()
 		usleep(1<<18);
 
 		console_handler();
-	};*/
-	//dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/2 );
-	//dispatch_after( at, CONQ(), handler_blk );
+	};
+	dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/2 );
+	dispatch_after( at, CONQ(), handler_blk );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void vp_cons::AppendOutput( const std::string & data )
@@ -145,14 +146,14 @@ void console_handler()
 	
 	/////////////////////
 
-//	auto repeat_blk = ^ void (void)
-//	{
-//		console_handler();
-//	};
+	auto repeat_blk = ^ void (void)
+	{
+		console_handler();
+	};
 	
 	
-//	dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/10 );
-//	dispatch_after( at, CONQ(), repeat_blk );
+	dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/10 );
+	dispatch_after( at, CONQ(), repeat_blk );
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -272,3 +273,5 @@ QtConsoleWindow *QtConsoleWindow::GetCurrentOutputConsole( void )
 }*/
 ///////////////////////////////////////////////////////////////////////////////
 } } // namespace ork::tool
+
+#endif

@@ -44,6 +44,8 @@ struct GlOsxPlatformObject
 	bool				mbInit;
 	bool				mbNSOpenGlView;
 	Opq 				mOpQ;
+	void_lambda_t       mBindOp;
+	GfxTargetGL*		mTarget;
 
 	GlOsxPlatformObject()
 		: mNSOpenGLContext(nil)
@@ -52,6 +54,7 @@ struct GlOsxPlatformObject
 		, mbNSOpenGlView(false)
 		, mOpQ(0,"GlOsxPlatformObject")
 	{
+		mBindOp = [=](){};
 	}
 };
 
@@ -129,16 +132,20 @@ void GfxTargetGL::GLinit()
 	
 	OrkAssert( gNSGLdefaultctx!=nil );
 	
-	GlOsxPlatformObject::gShareMaster = gNSGLdefaultctx;
-	printf( "gShareMaster<%p>\n", (void*) gNSGLdefaultctx );
 
 	err = CGLSetCurrentContext( gOGLdefaultctx );
 	OrkAssert( err==kCGLNoError );
 
 	gNSPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
 
+	GlOsxPlatformObject::gShareMaster = [[NSOpenGLContext alloc] initWithFormat:gNSPixelFormat shareContext:nil];
+	printf( "gShareMaster<%p>\n", (void*) gNSGLdefaultctx );
+
 	printf( "gNSPixelFormat<%p>\n", (void*) gNSPixelFormat );
 }
+
+//	NSOpenGLPixelFormat* nsPixelFormat = [[NSOpenGLPixelFormat alloc] initWithCGLPixelFormatObj:gpixfmt];
+//	plato->mNSOpenGLContext = [[NSOpenGLContext alloc] initWithFormat:nsPixelFormat shareContext:GlOsxPlatformObject::gShareMaster];
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -164,6 +171,7 @@ GfxTargetGL::GfxTargetGL()
 	, mFbI( *this )
 	, mTxI( *this )
 	, mMtxI( *this )
+	, mTargetDrawableSizeDirty(true)
 {
 	static dispatch_once_t ginit_once;
 	auto once_blk = ^ void (void)
@@ -213,6 +221,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	const char* osxviewParentClassName = class_getName(osxviewparentclass);
 	orkprintf( "osxview<%p> class<%s> parclass<%s> is_nsopenglview<%d>\n", osxview, osxviewClassName, osxviewParentClassName, int(is_nsopenglview) );
 	plato->mOsxView = osxview;
+	plato->mTarget = this;
 
 	///////////////////////
 
@@ -265,12 +274,61 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	printf( "osxgl:4\n");
 
 	mFbI.SetThisBuffer( pWin );
+
+	//////////////////////////////////////////////
+
+	plato->mBindOp = [=]()
+	{
+		if( plato->mbNSOpenGlView) 
+		{
+			//printf( "MCC PATH A\n" );
+			[plato->mNSOpenGLContext makeCurrentContext];
+			return;
+		}
+			
+		//printf( "MCC PATH B\n" );
+		if(plato->mbInit)
+		{
+			auto tgt = 	plato->mTarget;
+
+			if( tgt->mCtxBase )
+			{
+				//printf( "MCC PATH C\n" );
+				NSView* osxview = (NSView*) tgt->mCtxBase->GetThisXID();
+				GfxWindow *pWin = (GfxWindow *) tgt->mFbI.GetThisBuffer();
+				if( osxview != plato->mOsxView )
+				{
+					//printf( "MCC PATH D\n" );
+					OrkAssert(false);
+					tgt->InitializeContext( pWin,mCtxBase );
+				}
+			}
+
+			if( plato->mOsxView )
+			{
+				//printf( "MCC PATH E\n" );
+				[plato->mNSOpenGLContext setView:plato->mOsxView];
+			}
+			plato->mbInit=false;
+		}
+		//printf( "MCC PATH F\n" );
+		[plato->mNSOpenGLContext makeCurrentContext];
+		if( plato->mTarget->mTargetDrawableSizeDirty )
+		{
+			[plato->mNSOpenGLContext update];
+			plato->mTarget->mTargetDrawableSizeDirty = false;
+		}
+	};
+
+	//////////////////////////////////////////////
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 {
+	///////////////////////
+
 	miW = pBuf->GetBufferW();
 	miH = pBuf->GetBufferH();
 	miX = 0;
@@ -279,6 +337,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 	mCtxBase = 0;
 
 	GlOsxPlatformObject* plato = new GlOsxPlatformObject;			
+	plato->mTarget = this;
 	mPlatformHandle = (void*) plato;
 	mFbI.SetThisBuffer( pBuf );
 
@@ -314,6 +373,16 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 	
 	//mFbI.InitializeContext( pBuf );
 	pBuf->SetContext(this);
+
+	//////////////////////////////////////////////
+
+	plato->mBindOp = [=]()
+	{
+		[plato->mNSOpenGLContext makeCurrentContext];
+		//[plato->mNSOpenGLContext update];
+	};
+
+	//////////////////////////////////////////////
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -328,34 +397,7 @@ void GfxTargetGL::MakeCurrentContext( void )
 	{
 		plato->mOpQ.Process();
 
-		if( plato->mbNSOpenGlView) 
-		{
-			gNSGLcurrentctx = plato->mNSOpenGLContext;
-			[plato->mNSOpenGLContext makeCurrentContext];
-			return;
-		}
-			
-		if( mCtxBase )
-		{
-			NSView* osxview = (NSView*) mCtxBase->GetThisXID();
-			GfxWindow *pWin = (GfxWindow *) mFbI.GetThisBuffer();
-			if( osxview != plato->mOsxView )
-			{
-				OrkAssert(false);
-				InitializeContext( pWin,mCtxBase );
-			}
-		}
-		//printf( "UPDATE<%p>\n", this );
-		if(plato->mbInit)
-		{
-			if( plato->mOsxView )
-			{
-				[plato->mNSOpenGLContext setView:plato->mOsxView];
-			}
-			plato->mbInit=false;
-		}
-		[plato->mNSOpenGLContext makeCurrentContext];
-		[plato->mNSOpenGLContext update];
+		plato->mBindOp();
 		
 		gNSGLcurrentctx = plato->mNSOpenGLContext;
 	}
@@ -403,7 +445,7 @@ void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 	{
 		if( plato->mbNSOpenGlView) 
 		{
-			//return;
+			return;
 		}
 		//printf( "SWAP<%p>\n", this );
 		[plato->mNSOpenGLContext flushBuffer];

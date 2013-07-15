@@ -65,8 +65,7 @@ public:
 
 class BakeProcessor : public QObject
 {
-	Q_OBJECT
-	//DeclareMoc(BakeProcessor,QObject);
+	DeclareMoc(BakeProcessor,QObject);
 
 public:
 
@@ -168,11 +167,11 @@ notok:
 	///////////////////////////////////////////////////////////////////////////////
 };
 
-//ImplementMoc(BakeProcessor,QObject);
+ImplementMoc(BakeProcessor,QObject);
 
-//void BakeProcessor::MocInit()
-//{
-//}
+void BakeProcessor::MocInit()
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -235,7 +234,7 @@ void BakeJobThread::OnTimer()
 
 void BakeJobThread::SigAppendString( QString str )
 {
-	//Moc.Emit( this, "Sig1(QString)", str );
+	Moc.Emit( this, "Sig1(QString)", str );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -417,13 +416,13 @@ void BakeJobThread::run()
 	orkprintf( "exiting thread!\n" );
 }
 
-//ImplementMoc( BakeJobThread, QThread );
+ImplementMoc( BakeJobThread, QThread );
 
-//void BakeJobThread::MocInit()
-//{
-//	BakeJobThread::Moc.AddSlot0( "OnTimer()", & BakeJobThread::OnTimer );
-//	BakeJobThread::Moc.AddSignal1<QString>( "SigAppendString(QString)", & BakeJobThread::SigAppendString ); 
-//}
+void BakeJobThread::MocInit()
+{
+	BakeJobThread::Moc.AddSlot0( "OnTimer()", & BakeJobThread::OnTimer );
+	BakeJobThread::Moc.AddSignal1<QString>( "SigAppendString(QString)", & BakeJobThread::SigAppendString ); 
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -631,5 +630,3 @@ void WriteLightsFile( const MeshUtil::LightContainer& lights, const file::Path& 
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-
-#include "SurfaceBakerBaker.moc"
