@@ -41,7 +41,7 @@ typedef fm::pvector<FCDGeometryPolygonsInput> FCDGeometryPolygonsInputList; /**<
 typedef fm::pvector<const FCDGeometryPolygonsInput> FCDGeometryPolygonsInputConstList; /**< A dynamically-sized array of FCDGeometryPolygonsInput objects. */
 typedef fm::map<const FCDGeometrySource*, FCDGeometrySource*> FCDGeometrySourceCloneMap; /**< A map of old FCDGeometrySource objects to newly cloned FCDGeometrySource objects. */
 
-typedef fm::vector<UInt32,true> vec_uint32_t;
+typedef fm::vector<uint32,true> vec_uint32_t;
 
 /**
 	A mesh polygon set.
