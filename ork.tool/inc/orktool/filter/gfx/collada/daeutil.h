@@ -9,7 +9,7 @@ class DaeDataSource
 {
 	int							miStride;
 	int							miCount;
-	const float**				mData;
+	//const float*				mData;
 	uint32*						mpIndices;
 	const FCDGeometrySource*	mSource;
 	FCDGeometryPolygons *		mMatGroup;

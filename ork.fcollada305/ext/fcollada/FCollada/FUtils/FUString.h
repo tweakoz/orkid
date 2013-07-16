@@ -58,7 +58,6 @@ namespace fm
 		stringT(const CH* c) : Parent()
 		{
 			append(c);
-			if (c == NULL || (*c) == 0) Parent::push_back((CH) 0);
 		}
 
 		/** Copy constructor.
@@ -72,13 +71,13 @@ namespace fm
 			if (length != npos)
 			{
 				Parent::resize(length + 1);
-				memcpy(Parent::begin(), c, sizeof(CH) * length);
-				Parent::back() = 0; // NULL-terminate.
+				for( size_t i=0; i<length; i++ )
+					Parent::at(i)=c[i];
+				Parent::at(length) = 0; // NULL-terminate.
 			}
 			else
 			{
 				append(c);
-				if (c == NULL || (*c) == 0) Parent::push_back((CH) 0);
 			}
 		}
 
@@ -136,9 +135,31 @@ namespace fm
 			@param str A NULL-terminated character buffer.
 			@param count The number of characters to append. If the count
 				is 'npos', all available characters are appended. */
+
+		void de_terminate()
+		{
+			if( Parent::size() && (*Parent::rbegin())==0 )
+				Parent::pop_back();
+		}
+		void terminate()
+		{
+			if( Parent::size() )
+			{	if( (*Parent::rbegin())!=0 )
+					Parent::push_back(0);
+			}
+			else 
+					Parent::push_back(0);
+		}
 		inline void append(const CH* str, size_t count=npos)
 		{
-			insert(npos, str, count);
+			if(str!=nullptr)
+			{	de_terminate();
+				if(count==npos)
+					count = strlen(str);
+				Parent::append(str,count);
+				terminate();
+			}
+			//insert(npos, str, count);
 		}
 
 		/** Appends one character to this string.
@@ -161,7 +182,8 @@ namespace fm
 				is 'npos', all available characters are appended. */
 		void insert(size_t offset, const CH* str, size_t count=npos)
 		{
-			if (str != NULL && (*str != 0))
+			Parent::insert(offset,str,count);
+			/*if (str != NULL && (*str != 0))
 			{
 				size_t originalSize = length();
 				offset = min(offset, originalSize);
@@ -176,7 +198,7 @@ namespace fm
 				}
 				memcpy(Parent::begin() + offset, str, sizeof(CH) * str_length);
 				Parent::back() = 0; // NULL-terminate
-			}
+			}*/
 		}
 
 		/** Inserts a string in this string.
@@ -184,7 +206,14 @@ namespace fm
 			@param str A second string. */
 		void insert(size_t offset, const stringT& str)
 		{
-			size_t str_length = str.length();
+			if( offset == npos )
+				append(str.c_str());
+			else
+			{
+				size_t str_length = str.length();
+				Parent::insert(offset,str.c_str(),str_length);
+			}
+			/*
 			if (str_length > 0)
 			{
 				size_t originalSize = length();
@@ -195,7 +224,7 @@ namespace fm
 					memmove(Parent::begin() + offset + str_length, Parent::begin() + offset, (originalSize - offset) * sizeof(CH));
 				}
 				memcpy(Parent::begin() + offset, str.c_str(), sizeof(CH) * str_length);
-			}
+			}*/
 		}
 
 		/** Retrieves the character buffer attached to this string.
@@ -204,7 +233,7 @@ namespace fm
 		{
 			static CH empty = 0;
 			if (Parent::size() == 0) return &empty;
-			return Parent::begin();
+			return & Parent::at(0);
 		}
 		inline operator const CH*() const { return c_str(); } /**< See above. */
 
@@ -217,7 +246,7 @@ namespace fm
 		{
 			if (character > 0)
 			{
-				for (const CH* it = Parent::begin() + offset; it < Parent::end(); ++it)
+				for (auto it = Parent::begin() + offset; it < Parent::end(); ++it)
 				{
 					if ((*it) == character) return it - Parent::begin();
 				}
@@ -236,14 +265,14 @@ namespace fm
 			if (str.length() > 0 && length() >= str.length())
 			{
 				CH firstMatch = str.front();
-				const CH* end_fence = Parent::end() - str.size() + 1;
-				for (const CH* it = Parent::begin() + offset; it < end_fence; ++it)
+				const auto end_fence = Parent::end() - str.size() + 1;
+				for (auto it = Parent::begin() + offset; it < end_fence; ++it)
 				{
 					if ((*it) == firstMatch)
 					{
-						const CH* it2 = it;
-						const CH* sit = str.begin();
-						const CH* endIt = (*(str.end() - 1) == 0) ? str.end() - 1 : str.end();
+						auto it2 = it;
+						auto sit = str.begin();
+						const auto endIt = (*(str.end() - 1) == 0) ? str.end() - 1 : str.end();
 						for (; it2 != Parent::end() && sit != endIt; ++sit, ++it2)
 						{
 							if ((*sit) != (*it2)) break;
@@ -262,15 +291,17 @@ namespace fm
 				character buffer was not matched within the given (sub)string. */
 		size_t find(const CH* c, size_t offset=0) const
 		{
-			size_t length = 0; const CH* d = c; while (*d != 0) { ++length; ++d; }
+			size_t length = 0;
+			const CH* d = c; 
+			while (*d != 0) { ++length; ++d; }
 			if (length > 0 && Parent::size() >= length)
 			{
-				const CH* end_fence = Parent::end() - length + 1;
-				for (const CH* it = Parent::begin() + offset; it < end_fence; ++it)
+				auto end_fence = Parent::end() - length + 1;
+				for (auto it = Parent::begin() + offset; it < end_fence; ++it)
 				{
 					if ((*it) == (*c))
 					{
-						const CH* it2 = it;
+						auto it2 = it;
 						for (d = c; it2 != Parent::end() && (*d) != 0; ++it2, ++d)
 						{
 							if ((*it2) != (*d)) break;
@@ -292,7 +323,7 @@ namespace fm
 			size_t ret = npos;
 			if (character > 0)
 			{
-				for (const CH* it = Parent::begin() + offset; it < Parent::end(); ++it)
+				for (auto it = Parent::begin() + offset; it < Parent::end(); ++it)
 				{
 					if ((*it) == character) ret = it - Parent::begin();
 				}
@@ -312,14 +343,14 @@ namespace fm
 			if (str.length() > 0 && length() >= str.length())
 			{
 				CH firstMatch = str.front();
-				const CH* end_fence = Parent::end() - str.size() + 1;
-				for (const CH* it = Parent::begin() + offset; it < end_fence; ++it)
+				auto end_fence = Parent::end() - str.size() + 1;
+				for (auto it = Parent::begin() + offset; it < end_fence; ++it)
 				{
 					if ((*it) == firstMatch)
 					{
-						const CH* it2 = it;
-						const CH* sit = str.begin();
-						const CH* endIt = (*(str.end() - 1) == 0) ? str.end() - 1 : str.end();
+						auto it2 = it;
+						auto sit = str.begin();
+						const auto endIt = (*(str.end() - 1) == 0) ? str.end() - 1 : str.end();
 						for (; it2 != Parent::end() && sit != endIt; ++sit, ++it2)
 						{
 							if ((*sit) != (*it2)) break;
@@ -339,15 +370,19 @@ namespace fm
 		size_t rfind(const CH* c, size_t offset=0) const
 		{
 			size_t ret = npos;
-			size_t length = 0; const CH* d = c; while (*d != 0) { ++length; ++d; }
+			size_t length = 0;
+			const CH* d = c;
+			while (*d != 0)
+				{ ++length; ++d; }
+			
 			if (length > 0 && Parent::size() >= length)
 			{
-				const CH* end_fence = Parent::end() - length + 1;
-				for (const CH* it = Parent::begin() + offset; it < end_fence; ++it)
+				const auto end_fence = Parent::end() - length + 1;
+				for (auto it = Parent::begin() + offset; it < end_fence; ++it)
 				{
 					if ((*it) == (*c))
 					{
-						const CH* it2 = it;
+						auto it2 = it;
 						for (d = c; it2 != Parent::end() && (*d) != 0; ++it2, ++d)
 						{
 							if ((*it2) != (*d)) break;
@@ -366,10 +401,13 @@ namespace fm
 				If 'npos' is returned, none of the possible characters were found within the (sub)string. */
 		size_t find_first_of(const CH* c, size_t offset=0) const
 		{
-			size_t length = 0; const CH* d = c; while (*d != 0) { ++length; ++d; }
+			size_t length = 0;
+			const CH* d = c;
+			while (*d != 0)
+				{ ++length; ++d; }
 			if (length > 0 && Parent::size() >= length)
 			{
-				for (const CH* it = Parent::begin() + offset; it < Parent::end(); ++it)
+				for (auto it = Parent::begin() + offset; it < Parent::end(); ++it)
 				{
 					d = c;
 					while (*d != 0 && *d != *it) { ++d; }
@@ -390,9 +428,9 @@ namespace fm
 			size_t length = 0; const CH* d = c; while (*d != 0) { ++length; ++d; }
 			if (length > 0 && Parent::size() >= length)
 			{
-				const CH* end = Parent::end() - (length + offset);
-				const CH* begin = Parent::begin();
-				for (const CH* it = end; it >= begin; --it)
+				const auto end = Parent::end() - (length + offset);
+				const auto begin = Parent::begin();
+				for (auto it = end; it >= begin; --it)
 				{
 					d = c;
 					while (*d != 0) 

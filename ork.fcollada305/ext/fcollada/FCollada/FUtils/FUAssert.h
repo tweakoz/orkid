@@ -11,8 +11,9 @@
 	This file contains a simple debugging assertion mechanism.
 */
 
-#ifndef _FU_ASSERT_H_
-#define _FU_ASSERT_H_
+#pragma once 
+
+#include <assert.h>
 
 #ifndef _FU_FUNCTOR_H_
 #include "FUtils/FUFunctor.h"
@@ -63,4 +64,3 @@ namespace FUAssertion
 	@param fall_back The command to execute if the condition is not met. */
 #define FUAssert(condition, fall_back) { if (!(condition)) { FUBreak; fall_back; } }
 
-#endif // _FU_ASSERT_H_

@@ -86,8 +86,8 @@ public:
 	/** Retrieves a ptr to the data of the data source. This allows external objects to
 		store pointers to our data even when the data memory is reallocated
 		@return The ptr to the pure data of the data source. */
-	inline float** GetDataPtr() { return (float**) sourceData.GetDataPtr(); }
-	inline const float** GetDataPtr() const { return (const float**) sourceData.GetDataPtr(); } /**< See above. */
+	//inline float** GetDataPtr() { return (float**) sourceData.GetDataPtr(); }
+	//inline const float** GetDataPtr() const { return (const float**) sourceData.GetDataPtr(); } /**< See above. */
 
 	/** Retrieves the amount of data inside the source.
 		@return The number of data entries in the source. */

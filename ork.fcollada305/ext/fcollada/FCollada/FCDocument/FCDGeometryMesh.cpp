@@ -218,6 +218,7 @@ void FCDGeometryMesh::Recalculate()
 {
 	faceCount = holeCount = faceVertexCount = 0;
 	size_t polygonsCount = polygons.size();
+	printf( "fcdmesh<%p:%s> polygonsCount<%d>\n", this, GetDaeId().c_str(), polygonsCount );
 	for (size_t p = 0; p < polygonsCount; ++p)
 	{
 		FCDGeometryPolygons* polys = polygons[p];
@@ -226,7 +227,10 @@ void FCDGeometryMesh::Recalculate()
 		polys->SetFaceOffset(faceCount);
 		polys->SetHoleOffset(holeCount);
 		polys->SetFaceVertexOffset(faceVertexCount);
-		faceCount += polys->GetFaceCount();
+		auto faccnt = polys->GetFaceCount();
+		faceCount += faccnt;
+		printf( "faccnt<%d>\n", faccnt );
+		assert(faccnt!=0);
 		holeCount += polys->GetHoleCount();
 		faceVertexCount += polys->GetFaceVertexCount();
 	}

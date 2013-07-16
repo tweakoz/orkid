@@ -63,6 +63,8 @@ bool CColladaModel::FindDaeMeshes( void )
 
 		const fm::string& layername = layer->name;
 
+		printf( "layer<%d:%s>\n", il, layername.c_str() );
+
 		std::string lname = layername.c_str();
 		std::transform( lname.begin(), lname.end(), lname.begin(), lower() );
 
@@ -182,6 +184,8 @@ bool CColladaModel::FindDaeMeshes( void )
 					if( IgnoreMeshSet.find( ChildName ) != IgnoreMeshSet.end() )
 					{
 						IgnoreMeshSet.insert( instname );
+
+						printf( "ignoring mesh<%s>\n", instname.c_str() );
 					}
 				}
 			}
@@ -210,7 +214,11 @@ bool CColladaModel::FindDaeMeshes( void )
 		for( size_t ient=0; ient<inument; ient++ )
 		{
 			FCDGeometry *GeoObj = GeoLib->GetEntity(ient);
-			if( GeoObj->IsMesh() )
+	
+			bool is_mesh = GeoObj->IsMesh();
+			printf( "collada_ent<%d> is_mesh<%d>\n", ient, int(is_mesh) );
+
+			if( is_mesh )
 			{
 				FCDGeometryMesh* mesh = GeoObj->GetMesh();
 				DaeMeshes.push_back(mesh);
@@ -648,7 +656,7 @@ bool CColladaModel::ParseGeometries()
 
 			size_t inummatgroups = Mesh->GetPolygonsCount();
 
-			//orkprintf( "Mesh[%d] NumFaces %d NumMatGroups %d\n", imesh, inumfaces, inummatgroups );
+			orkprintf( "Mesh id<%s> NumFaces %d NumMatGroups %d\n", it->first.c_str(), inumfaces, inummatgroups );
 
 			///////////////////////////////////////////////////////////////////////////////
 			// fill in SourceMap

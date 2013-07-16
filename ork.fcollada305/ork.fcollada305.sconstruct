@@ -35,7 +35,8 @@ class collada:
 	prj.AddFolders( "FCollada FCollada/FCDocument", "*.cpp" )
 	prj.AddFolders( "FCollada/FMath FCollada/FUtils", "*.cpp" )
 	prj.AddFolders( "FCollada/Output FColladaPlugins/FArchiveXML", "*.cpp" )
-	prj.AddDefines( "NDEBUG LINUX" )
+	#prj.AddDefines( "NDEBUG LINUX" )
+	prj.AddDefines( "_DEBUG LINUX" )
 	prj.Configure()
 	self.coll_lib = prj.SharedLibrary( )
 

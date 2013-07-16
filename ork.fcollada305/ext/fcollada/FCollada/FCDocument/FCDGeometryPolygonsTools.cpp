@@ -40,7 +40,7 @@ namespace FCDGeometryPolygonsTools
 
 		// Pre-allocate and ready the end index/count buffers
 		size_t oldFaceCount = polygons->GetFaceVertexCountCount();
-		UInt32List oldFaceVertexCounts(polygons->GetFaceVertexCounts(), oldFaceCount);
+		UInt32List oldFaceVertexCounts(polygons->RefFaceVertexCounts());
 		polygons->SetFaceVertexCountCount(0);
 		fm::pvector<FCDGeometryPolygonsInput> indicesOwners;
 		fm::vector<UInt32List> oldDataIndices;
@@ -230,7 +230,7 @@ namespace FCDGeometryPolygonsTools
 			size_t faceVertexOffset = 0;
 			for (size_t faceIndex = 0; faceIndex < faceCount; ++faceIndex)
 			{
-				size_t faceVertexCount = polygons->GetFaceVertexCounts()[faceIndex];
+				size_t faceVertexCount = polygons->RefFaceVertexCounts()[faceIndex];
 				for (size_t vertexIndex = 0; vertexIndex < faceVertexCount; ++vertexIndex)
 				{
 					// For each face-vertex pair, retrieve the current/previous/next vertex position/normal/texcoord.
@@ -852,7 +852,7 @@ namespace FCDGeometryPolygonsTools
 		targSource->SetDataCount(nValues * stride);
 		float* targData = targSource->GetData();
 
-		ApplyUniqueIndices(targData, oldData.begin(), stride, translationMap);
+		ApplyUniqueIndices(targData, &oldData.at(0), stride, translationMap);
 	}
 		
 	void ApplyUniqueIndices(FCDGeometryMesh* targMesh, FCDGeometryMesh* baseMesh, const UInt32List& newIndices, const FCDGeometryIndexTranslationMapList& translationMaps)
@@ -889,7 +889,7 @@ namespace FCDGeometryPolygonsTools
 		}
 
 		// Reset the indices.  The indices in newIndices are all polygon indices combined
-		const uint32* newIdxPtr = newIndices.begin();
+		const uint32* newIdxPtr = & newIndices.at(0);
 		size_t nNewIndices = newIndices.size();
 		for (size_t p = 0; p < targMesh->GetPolygonsCount(); p++)
 		{
@@ -1083,7 +1083,7 @@ namespace FCDGeometryPolygonsTools
 			}
 		}
 
-		outPInput.SetIndices(indices.begin(), indices.size());
+		outPInput.SetIndices(&indices.at(0), indices.size());
 	}
 
 	// Splits the mesh's polygons sets to ensure that none of them have
@@ -1102,7 +1102,7 @@ namespace FCDGeometryPolygonsTools
 
 			size_t faceCount = polygons->GetFaceVertexCountCount();
 			if (faceCount == 0) continue;
-			UInt32List faceVertexCounts(polygons->GetFaceVertexCounts(), faceCount);
+			UInt32List faceVertexCounts(polygons->RefFaceVertexCounts());
 			size_t inputCount = polygons->GetInputCount();
 
 			UInt32List::iterator splitIt = faceVertexCounts.end();
@@ -1162,7 +1162,11 @@ namespace FCDGeometryPolygonsTools
 				// And increment the copy counters.
 				size_t faceCopyCount = faceCopyEnd - faceCopyStart;
 				polygonsCopy->SetFaceVertexCountCount(faceCopyCount);
-				memcpy((void*) polygonsCopy->GetFaceVertexCounts(), &(*(faceVertexCounts.begin() + faceCopyStart)), faceCopyCount * sizeof(uint32));
+
+				for( size_t i=0; i<faceCopyCount; i++)
+					polygonsCopy->RefFaceVertexCounts().push_back(faceVertexCounts[faceCopyStart+i]);
+				//toz memcpy((void*) polygonsCopy->GetFaceVertexCounts(), &(*(faceVertexCounts.begin() + faceCopyStart)), faceCopyCount * sizeof(uint32));
+
 				faceCopyStart = faceCopyEnd;
 				faceVertexCopyStart = faceVertexCopyEnd;
 			}

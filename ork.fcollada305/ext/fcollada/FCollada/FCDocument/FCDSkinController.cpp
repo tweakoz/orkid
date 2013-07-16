@@ -145,7 +145,7 @@ void FCDSkinController::ReduceInfluences(uint32 maxInfluenceCount, float minimum
 	fm::vector<FCDJointWeightPair> reducedWeights;
 	reducedWeights.reserve(maxInfluenceCount + 1);
 
-	for (FCDSkinControllerVertex* itM = influences.begin(); itM != influences.end(); ++itM)
+	for (auto itM = influences.begin(); itM != influences.end(); ++itM)
 	{
 		FCDSkinControllerVertex& influence = (*itM);
 		size_t oldInfluenceCount = influence.GetPairCount();
@@ -159,7 +159,7 @@ void FCDSkinController::ReduceInfluences(uint32 maxInfluenceCount, float minimum
 			FCDJointWeightPair* pair = influence.GetPair(i);
 			if (pair->weight >= minimumWeight)
 			{
-				FCDJointWeightPair* itRW = reducedWeights.begin();
+				auto itRW = reducedWeights.begin();
 				for (; itRW != reducedWeights.end() && (*itRW).weight > pair->weight; ++itRW) {}
 				if (itRW != reducedWeights.end() || reducedWeights.size() <= maxInfluenceCount)
 				{
