@@ -259,7 +259,9 @@ bool CgFxContainer::Load( CGcontext ctx, const AssetPath& filename, FxShader*pfx
 		CGpass pass = cgGetFirstPass(cgtek);
 		while( pass )
 		{
-			ptekcont->mPasses.push_back(pass);
+			CgFxPass* pass_h = new CgFxPass;
+			pass_h->mPlatformPass = pass;
+			ptekcont->mPasses.push_back(pass_h);
 			pass = cgGetNextPass(pass);
 		}
 
@@ -302,7 +304,9 @@ void CgFxInterface::CommitParams( void )
 	//if( (mpActiveEffect->mActivePass != mLastPass) || (mTarget.GetCurMaterial()!=mpLastFxMaterial) )
 	{
 		//orkprintf( "CgFxInterface::CommitParams() activepass<%p>\n", mpActiveEffect->mActivePass );
-		cgSetPassState( mpActiveEffect->mActivePass );
+		CgFxPass* pass_h = mpActiveEffect->mActivePass;
+		assert(pass_h != nullptr );
+		cgSetPassState( pass_h->mPlatformPass );
 		mpLastFxMaterial = mTarget.GetCurMaterial();
 		mLastPass = mpActiveEffect->mActivePass;
 	}
@@ -358,7 +362,8 @@ bool CgFxInterface::BindPass( FxShader* hfx, int ipass )
 void CgFxInterface::EndPass( FxShader* hfx )
 {
 	CgFxContainer* container = static_cast<CgFxContainer*>( hfx->GetInternalHandle() );
-	cgResetPassState( container->mActivePass );
+	CgFxPass* pass_h = container->mActivePass;
+	cgResetPassState( pass_h->mPlatformPass );
 	GL_ERRORCHECK();
 }
 

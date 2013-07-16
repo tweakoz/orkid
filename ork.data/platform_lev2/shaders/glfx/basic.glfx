@@ -37,20 +37,20 @@ vertex_interface iface_vdefault
 
 	//
 	in vec4 position : POSITION;
-	in vec4 vtxcolor : COLOR0;
+	//in vec4 vtxcolor : COLOR0;
 	in vec2 uv0 : TEXCOORD0;
-	in vec2 uv1 : TEXCOORD1;
+	//in vec2 uv1 : TEXCOORD1;
 	//
 	out vec4 frg_clr;
 	out vec2 frg_uv0;
-	out vec2 frg_uv1;
+	//out vec2 frg_uv1;
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault
 {
 	in vec4 frg_clr;
 	in vec2 frg_uv0;
-	in vec2 frg_uv1;
+	//in vec2 frg_uv1;
 	//
 	out vec4 out_clr;
 }
@@ -64,7 +64,7 @@ fragment_interface iface_fmt
 	//
 	in vec4 frg_clr;
 	in vec2 frg_uv0;
-	in vec2 frg_uv1;
+	//in vec2 frg_uv1;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -91,9 +91,9 @@ state_block sb_additive
 vertex_shader vs_vtxtexcolor : iface_vdefault
 {
 	gl_Position = WVPMatrix*position;
-	frg_clr = vtxcolor.bgra;
+	frg_clr = vec4(1.0f,1.0f,1.0f,1.0f); //vtxcolor.bgra;
 	frg_uv0 = uv0;
-	frg_uv1 = uv1;
+	//frg_uv1 = uv1;
 }
 ///////////////////////////////////////////////////////////////
 
@@ -107,9 +107,10 @@ fragment_shader ps_modtex : iface_fmt
 vertex_shader vs_vtxcolor : iface_vdefault
 {
 	gl_Position = WVPMatrix*position;
-	frg_clr = vtxcolor;
+	//frg_clr = vtxcolor;
+	frg_clr = vec4(1.0f,0.0f,0.0f,1.0f); //vtxcolor.bgra;
 	frg_uv0 = uv0;
-	frg_uv1 = uv0;
+	//frg_uv1 = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault
@@ -119,7 +120,8 @@ fragment_shader ps_fragclr : iface_fdefault
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : iface_fmt
 {
-	out_clr = modcolor;
+	out_clr = frg_clr;
+	//out_clr = modcolor;
 }
 ///////////////////////////////////////////////////////////////
 technique tek_lamberttex

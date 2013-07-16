@@ -13,11 +13,17 @@
 namespace ork { namespace lev2
 {
 
+struct CgFxPass
+{
+	CGpass		mPlatformPass;
+	CgFxPass() : mPlatformPass(0) {}
+};
+
 struct CgFxTechnique
 {
-	orkvector<CGpass>	mPasses;
-	CGtechnique			mCgTek;
-	std::string			mName;
+	orkvector<CgFxPass*>	mPasses;
+	CGtechnique				mCgTek;
+	std::string				mName;
 };
 
 struct CgFxContainer
@@ -26,7 +32,7 @@ struct CgFxContainer
 	CGeffect								mCgEffect;
 	const CgFxTechnique*					mActiveTechnique;
 	std::map<std::string,CgFxTechnique*>	mTechniqueMap;
-	CGpass									mActivePass;
+	CgFxPass*								mActivePass;
 	int										mActiveNumPasses;
 
 	bool Load( CGcontext ctx, const AssetPath& filename, FxShader*pfxshader );
@@ -74,11 +80,13 @@ public:
 
 	CgFxInterface( GfxTargetGL& glctx );
 
+	CgFxContainer* GetActiveEffect() const { return mpActiveEffect; }
+
 protected:
 
 	static CGcontext					mCgContext;
 	CgFxContainer*						mpActiveEffect;
-	CGpass								mLastPass;
+	CgFxPass*							mLastPass;
 	FxShaderTechnique*					mhCurrentTek;
 
 	GfxTargetGL&						mTarget;

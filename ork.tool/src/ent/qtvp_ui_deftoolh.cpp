@@ -198,8 +198,10 @@ EUIHandled TestVPDefaultHandler::UIEventHandler( CUIEvent *pEV )
 		case UIEV_PUSH:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
+
 			//if( isright || ismid ) break;
 			if( AreAnyMoveKeysDown ) break;
+
 
 			if( isleft && false==isright )
 			{

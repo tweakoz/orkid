@@ -16,10 +16,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////
 #if defined(USE_GL3)
-  #define USEVAO 
+  #define USE_IBO
+  #define USE_VAO 
   #define _USE_GLSLFX
   #define GL3_PROTOTYPES 1
 #else
+  #define USE_VAO 
+  #define USE_IBO
   #define _USE_CGFX
   #define GL_GLEXT_PROTOTYPES 1
 #endif
@@ -155,37 +158,43 @@ public:
 
 class GlGeometryBufferInterface: public GeometryBufferInterface
 {	
+
+public:
+
+	GlGeometryBufferInterface( GfxTargetGL& target );
+
+private:
 	///////////////////////////////////////////////////////////////////////
 	// VtxBuf Interface
 
-	virtual void* LockVB( VertexBufferBase& VBuf, int ivbase, int icount );
-	virtual void UnLockVB( VertexBufferBase& VBuf );
+	void* LockVB( VertexBufferBase& VBuf, int ivbase, int icount ) final;
+	void UnLockVB( VertexBufferBase& VBuf ) final;
 
-	virtual const void* LockVB( const VertexBufferBase& VBuf, int ivbase=0, int icount=0 );
-	virtual void UnLockVB( const VertexBufferBase& VBuf );
+	const void* LockVB( const VertexBufferBase& VBuf, int ivbase=0, int icount=0 ) final;
+	void UnLockVB( const VertexBufferBase& VBuf ) final;
 
-	virtual void ReleaseVB( VertexBufferBase& VBuf );
+	void ReleaseVB( VertexBufferBase& VBuf ) final;
 
 	//
 	
-	virtual void*LockIB ( IndexBufferBase& VBuf, int ivbase, int icount );
-	virtual void UnLockIB ( IndexBufferBase& VBuf );
+	void*LockIB ( IndexBufferBase& VBuf, int ivbase, int icount ) final;
+	void UnLockIB ( IndexBufferBase& VBuf ) final;
 
-	virtual const void* LockIB ( const IndexBufferBase& VBuf, int ibase=0, int icount=0 );
-	virtual void UnLockIB ( const IndexBufferBase& VBuf );
+	const void* LockIB ( const IndexBufferBase& VBuf, int ibase=0, int icount=0 ) final;
+	void UnLockIB ( const IndexBufferBase& VBuf ) final;
 
-	virtual void ReleaseIB( IndexBufferBase& VBuf );
+	void ReleaseIB( IndexBufferBase& VBuf ) final;
 
 	//
 
-	void BindIndexStreamSource( const IndexBufferBase& IBuf );
+	bool BindStreamSources( const VertexBufferBase& VBuf, const IndexBufferBase& IBuf );
 	bool BindVertexStreamSource( const VertexBufferBase& VBuf );
 	void BindVertexDeclaration( EVtxStreamFormat efmt );
 
-	virtual void DrawPrimitive( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 );
-	virtual void DrawIndexedPrimitive( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 );
-	virtual void DrawPrimitiveEML( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 );
-	virtual void DrawIndexedPrimitiveEML( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 );
+	void DrawPrimitive( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
+	void DrawIndexedPrimitive( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
+	void DrawPrimitiveEML( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
+	void DrawIndexedPrimitiveEML( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
 	
 	GfxTargetGL& mTargetGL;
 
@@ -194,9 +203,7 @@ class GlGeometryBufferInterface: public GeometryBufferInterface
 	void DoBeginFrame() final { mLastComponentMask=0; }
 	//virtual void DoEndFrame() {}
 
-public:
 
-	GlGeometryBufferInterface( GfxTargetGL& target );
 };
 
 ///////////////////////////////////////////////////////////////////////////////

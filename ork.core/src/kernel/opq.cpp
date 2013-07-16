@@ -311,15 +311,15 @@ Opq::Opq(int inumthreads, const char* name)
 
 	for( int i=0; i<inumthreads; i++ )
 	{
-	    ork::Thread* thread_handle = new OpqThreadImpl(this,i);  
+	    ork::Thread* thread_handle = new OpqThreadImpl(this,i);
+	    thread_handle->start();
 	}
 }
 ///////////////////////////////////////////////////////////////////////////
 Opq::~Opq()
 {
-	//drain();
-	usleep(2<<20);
-	
+	drain();
+
 	/////////////////////////////////
 	// signal to thread we are going down, then wait for it to go down
 	/////////////////////////////////

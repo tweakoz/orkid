@@ -1047,9 +1047,11 @@ void GlTextureInterface::VRamUpload( Texture *ptex )
 static auto addrlamb = [&](ETextureAddressMode inp) -> GLenum
 {	switch( inp )
 	{
-		case ETEXADDR_CLAMP:
+ 		case ETEXADDR_CLAMP:
+#if ! defined(USE_GL3)
 			return GL_CLAMP;
 			break;
+#endif
 		case ETEXADDR_WRAP:
 			return GL_REPEAT;
 			break;
