@@ -308,7 +308,7 @@ void GlslFxInterface::CommitParams( void )
 	if( mpActiveEffect && mpActiveEffect->mActivePass && mpActiveEffect->mActivePass->mStateBlock )
 	{
 		const SRasterState& rstate = mpActiveEffect->mActivePass->mStateBlock->mState;
-		mTarget.RSI()->BindRasterState(rstate);
+		//mTarget.RSI()->BindRasterState(rstate);
 	}
 	//if( (mpActiveEffect->mActivePass != mLastPass) || (mTarget.GetCurMaterial()!=mpLastFxMaterial) )
 	{

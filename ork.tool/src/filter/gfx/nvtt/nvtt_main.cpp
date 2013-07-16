@@ -44,8 +44,8 @@ bool Tga2DdsFilterDriver( const tokenlist& toklist )
 	
 	/////////////////////////////////////////////
 	OrkAssert(false);
-	return false;
-//	return NvttCompress( OptionsMap );
+	//return false;
+	return NvttCompress( OptionsMap );
 	
 }
 

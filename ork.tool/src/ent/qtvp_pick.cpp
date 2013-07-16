@@ -36,7 +36,8 @@ void OuterPickOp( DeferredPickOperationContext* pickctx )
 		return;
 
 	auto outer_op = [=]()
-	{	AssertOnOpQ2( gPickOPQ );
+	{	
+		AssertOnOpQ2( gPickOPQ );
 		////////////
 		// stop updates, and wait for mainthread to acknowledge
 		////////////
