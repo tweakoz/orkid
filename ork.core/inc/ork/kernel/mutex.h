@@ -33,7 +33,11 @@
 namespace std
 {
     typedef tbb::mutex mutex;
+#if defined(ORK_OSX)
 	template <typename T> using unique_lock = tbb::interface5::unique_lock<T>;
+#else
+	template <typename T> using atomic = tbb::atomic<T>;
+#endif
 }
 #endif
 
