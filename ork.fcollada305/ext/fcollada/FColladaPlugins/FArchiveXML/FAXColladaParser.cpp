@@ -532,7 +532,7 @@ namespace FUDaeParser
 		{
 			if (child->type == XML_ELEMENT_NODE)
 			{
-				FAXNodeIdPair* it = pairs.insert(pairs.end(), FAXNodeIdPair());
+				auto it = pairs.insert(pairs.end(), FAXNodeIdPair());
 				it->first = child;
 				it->second = ReadNodePropertyCRC(child, DAE_ID_ATTRIBUTE);
 			}

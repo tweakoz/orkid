@@ -14,8 +14,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 DaeDataSource::DaeDataSource( const FCDGeometrySource * pcolladasrc, FCDGeometryPolygons * MatGroup )
-	: mData(0)
-	, mSource( 0 )
+	: mSource( 0 )
 	, mMatGroup( 0 )
 	, miStride( 0 )
 	, miCount( 0 )
@@ -29,7 +28,7 @@ DaeDataSource::DaeDataSource( const FCDGeometrySource * pcolladasrc, FCDGeometry
 
 void DaeDataSource::Bind( const FCDGeometrySource * pcolladasrc, FCDGeometryPolygons * MatGroup )
 {
-	mData = pcolladasrc ? pcolladasrc->GetDataPtr() : 0;
+	//mData = pcolladasrc ? pcolladasrc->GetDataPtr() : 0;
 	mSource = pcolladasrc;
 	mMatGroup = MatGroup;
 
@@ -40,7 +39,7 @@ void DaeDataSource::Bind( const FCDGeometrySource * pcolladasrc, FCDGeometryPoly
 	if( pinput )
 	{
 		miStride = pcolladasrc ? mSource->GetStride() : 0;
-		miCount = mData ? (int) mSource->GetValueCount() : 0;
+		miCount = mSource->GetValueCount();
 		mpIndices = pcolladasrc ? pinput->GetIndices() : 0; //FindIndices(pcolladasrc) : 0;
 	}
 }
@@ -62,7 +61,8 @@ size_t DaeDataSource::GetDataSize() const
 
 float DaeDataSource::GetData( int idx ) const
 {
-	return mData ? (*mData)[idx] : 0.0f;
+	const auto& src_data = mSource->GetSourceData();
+	return src_data[idx];
 }
 
 int DaeDataSource::GetStride() const { return miStride; }

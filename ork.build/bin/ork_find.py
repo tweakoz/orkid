@@ -34,7 +34,7 @@ def search_at_root(word, root):
    not_obj = (spl[0].find("/obj/")==-1) and (spl[0].find("/pluginobj/")==-1)
    #print spl[0], fobj
    if not_obj:
-    if ext==".cpp" or ext==".h" or ext==".hpp" or ext==".qml" or ext==".m" or ext==".mm":
+    if ext==".c" or ext==".cpp" or ext==".cc" or ext==".h" or ext==".hpp" or ext==".inl" or ext==".qml" or ext==".m" or ext==".mm":
      for line_number, line in finder(path):
       line = line.replace("\n","")
       res = result(path,line_number,line)

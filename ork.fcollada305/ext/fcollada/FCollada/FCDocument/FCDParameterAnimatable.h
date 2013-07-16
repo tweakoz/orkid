@@ -321,8 +321,8 @@ public:
 
 	/** [INTERNAL] Retrieves a pointer to the source data. Not recommended.
 		@return A pointer to the source data. */
-	inline TYPE** GetDataPtr() { return values.GetDataPtr(); }
-	inline const TYPE** GetDataPtr() const { return values.GetDataPtr(); } /**< See above. */
+	//inline TYPE** GetDataPtr() { return values.GetDataPtr(); }
+	//inline const TYPE** GetDataPtr() const { return values.GetDataPtr(); } /**< See above. */
 
 	/** [INTERNAL] Retrieves a reference to the inner value list. Not recommended.
 		@return A reference to the value list. */

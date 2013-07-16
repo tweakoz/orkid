@@ -340,8 +340,6 @@ int Main_Filter( tokenlist toklist )
 	ork::lev2::GfxEnv::GetRef().RegisterWinContext(w);
 	ork::lev2::GfxEnv::GetRef().SetLoaderTarget( w->GetContext() );
 
-	
-
 	//////////////////////////////
 
 	bool blist = toklist.empty();
@@ -357,6 +355,7 @@ int Main_Filter( tokenlist toklist )
 	else
 	{
 		SFilterInfo* FilterInfo = OrkSTXFindValFromKey(CAssetFilter::smFilterMap, FindPooledString(ftype.c_str()),  (SFilterInfo*) 0 );
+		printf( "collada Main_Filter find<%s> finfo<%p>\n", ftype.c_str(), FilterInfo );
 		if(FilterInfo)
 		{
 			tokenlist newtoklist;

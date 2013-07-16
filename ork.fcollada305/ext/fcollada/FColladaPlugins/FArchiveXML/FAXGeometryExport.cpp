@@ -211,7 +211,7 @@ xmlNode* FArchiveXML::WriteGeometryPolygons(FCDObject* object, xmlNode* parentNo
 	// For the poly-list case, export the list of vertex counts
 	if (!hasHoles && hasNPolys)
 	{
-		FUStringConversion::ToString(builder, geometryPolygons->GetFaceVertexCounts(), geometryPolygons->GetFaceVertexCountCount());
+		FUStringConversion::ToString(builder, geometryPolygons->RefFaceVertexCounts());
 		xmlNode* vcountNode = AddChild(polygonsNode, DAE_VERTEXCOUNT_ELEMENT);
 		AddContentUnprocessed(vcountNode, builder.ToCharPtr());
 		builder.clear();
@@ -249,7 +249,7 @@ xmlNode* FArchiveXML::WriteGeometryPolygons(FCDObject* object, xmlNode* parentNo
 		for (size_t holeIndex = 0; holeIndex < holeCount + 1; ++holeIndex)
 		{
 			// Write out the tessellation information for all the vertices of this face
-			uint32 faceVertexCount = geometryPolygons->GetFaceVertexCounts()[faceIndex + holeOffset + holeIndex];
+			uint32 faceVertexCount = geometryPolygons->RefFaceVertexCounts()[faceIndex + holeOffset + holeIndex];
 			for (uint32 faceVertexIndex = faceVertexOffset; faceVertexIndex < faceVertexOffset + faceVertexCount; ++faceVertexIndex)
 			{
 				for (fm::pvector<const FCDGeometryPolygonsInput>::iterator itI = idxOwners.begin(); itI != idxOwners.end(); ++itI)

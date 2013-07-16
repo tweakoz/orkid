@@ -21,6 +21,8 @@
 #include "FMath/FMSort.h"
 #endif // _FM_SORT_H_
 
+#include <vector>
+
 #ifdef WIN32
 #pragma warning(disable:4127)
 #endif //WIN32
@@ -43,24 +45,26 @@ namespace fm
 	class vector
 	{
 	protected:
-		size_t reserved; /**< The capacity of the vector. */
-		size_t sized; /**< The number of values contained in the vector. */
-		T* heapBuffer; /**< The heap buffer that contains the values. */
+		typedef typename std::vector<T> impl_t;
+
+		impl_t mIMPL;
 
 	public:
-		/** The basic list iterator. */
-		typedef T* iterator;
 
-		/** The non-modifiable list iterator. */
-		typedef const T* const_iterator;
+		typedef typename impl_t::reverse_iterator reverse_iterator;
+		typedef typename impl_t::const_reverse_iterator const_reverse_iterator;
+		typedef typename impl_t::iterator iterator;
+		typedef typename impl_t::const_iterator const_iterator;
+		typedef typename impl_t::reference reference;
+		typedef typename impl_t::const_reference const_reference;
 
 	public:
 		/** Default constructor. */
-		vector() : reserved(0), sized(0), heapBuffer(NULL) {}
+		vector() {}
 
 		/** Constructor. Builds a dynamically-sized array of the wanted size.
 			@param size The wanted size of the array. */
-		vector(size_t size) : reserved(0), sized(0), heapBuffer(NULL)
+		vector(size_t size) 
 		{
 			resize(size);
 		}
@@ -68,30 +72,34 @@ namespace fm
 		/** Constructor. Builds a dynamically-sized array of the wanted size.
 			@param size The wanted size of the array
 			@param defaultValue The default value to use for all the entries of the array. */
-		vector(size_t size, const T& defaultValue) : reserved(0), sized(0), heapBuffer(NULL)
+		vector(size_t size, const T& defaultValue) 
 		{
 			resize(size, defaultValue);
 		}
 
 		/** Copy constructor.
 			@param copy The dynamically-sized array to copy the values from. */
-		vector(const fm::vector<T,PRIMITIVE>& copy) : reserved(0), sized(0), heapBuffer(NULL)
+		vector(const fm::vector<T,PRIMITIVE>& copy) 
 		{
-			insert(heapBuffer, copy.begin(), copy.size());
+			mIMPL = copy.mIMPL;
+			//insert(heapBuffer, copy.begin(), copy.size());
 		}
 
 		/** Constructor. Builds a dynamically-sized array from a constant-sized array.
 			@param values A constant-sized array of floating-point values.
 			@param count The size of the constant-sized array. */
-		vector(const T* values, size_t count) : reserved(0), sized(0), heapBuffer(NULL)
+		vector(const T* values, size_t count) 
 		{
-			insert(heapBuffer, values, count);
+			mIMPL.resize(count);
+			for( size_t i=0; i<count; i++ )
+				mIMPL[i] = values[i];
+			//insert(heapBuffer, values, count);
 		}
 
 		/** Destructor. */
 		~vector()
 		{
-			if (!PRIMITIVE)
+			/*if (!PRIMITIVE)
 			{
 				for (intptr_t i = sized - 1; i >= 0; --i)
 				{
@@ -101,14 +109,14 @@ namespace fm
 			if (heapBuffer != NULL)
 			{
 				fm::Release(heapBuffer);
-			}
+			}*/
 		}
 
 		/** Retrieves a pointer to our internal buffer.
 			Be very careful when using this.
 			@return A pointer to our internal buffer. */
-		inline T** GetDataPtr() { return &heapBuffer; }
-		inline const T** GetDataPtr() const { return (const T**) &heapBuffer; } /**< See above. */
+		//inline T** GetDataPtr() { return &mIMPL[0]; }
+		//inline const T** GetDataPtr() const { return (const T**) &mIMPL[0]; } /**< See above. */
 
 		/** Retrieves an iterator for a given element.
 			@param value The value, contained within the list, to search for.
@@ -116,40 +124,44 @@ namespace fm
 				is returned if the value is not found. */
 		template <class Type2> iterator find(const Type2& value)
 		{
-			T* i = begin(),* e = end();
+			return std::find(mIMPL.begin(),mIMPL.end(),value);//find(value);
+			/*T* i = begin(),* e = end();
 			for (; i != e; ++i) if ((*i) == value) break;
-			return i;
+			return i;*/
 		}
 		template <class Type2> const_iterator find(const Type2& value) const
 		{
-			const T* i = begin(),* e = end();
+			return std::find(mIMPL.begin(),mIMPL.end(),value);//find(value);
+			/*T* i = begin(),* e = end();
 			for (; i != e; ++i) if ((*i) == value) break;
-			return i;
+			return i;*/
 		} /**< See above. */
 
 		/** Sorts this vector using the default comparisons operator. */
 		inline void sort()
 		{
 			comparator<T> comp;
-			comp.sort(heapBuffer, sized);
+			comp.sort(mIMPL);
 		}
 
 		/** Sorts this vector using the given fm::comparator.
 			@param comparator The comparator used to sort the vector.*/
 		inline void sort(comparator<T>& comp)
 		{
-			comp.sort(heapBuffer, sized);
+			comp.sort(mIMPL);
+			//comp.sort(heapBuffer, sized);
 		}
 
 		/** Removes the value at the given position within the list.
 			@param it The list position for the value to remove. */
 		iterator erase(iterator it)
 		{
-			FUAssert(it >= begin() && it < end(), return it);
+			return mIMPL.erase(it);
+			/*FUAssert(it >= begin() && it < end(), return it);
 			if (!PRIMITIVE) (*it).~T();
 			if (end() - it - 1 > 0) memmove(it, it+1, (end() - it - 1) * sizeof(T));
 			--sized;
-			return it;
+			return it;*/
 		}
 
 		/** Removes a range of values from the list. The range is determined as every value
@@ -159,26 +171,33 @@ namespace fm
 			@param last An iterator past the last list value to remove. */
 		void erase(iterator first, iterator last)
 		{
-			FUAssert(first >= begin() && first < end(), return);
+			mIMPL.erase(first,last);
+			/*FUAssert(first >= begin() && first < end(), return);
 			FUAssert(last > begin() && last <= end(), return);
 			if (!PRIMITIVE) for (iterator it = first; it != last; ++it) (*it).~T();
 			if (end() - last > 0) memmove(first, last, (end() - last) * sizeof(T));
-			sized -= last - first;
+			sized -= last - first;*/
 		}
 
 		/** Removes a range of values from the list.
 			@param first The index of the first value to remove.
 			@param last The index just passed the last value to remove. */
-		inline void erase(size_t first, size_t last) { erase(begin() + first, begin() + last); }
+		inline void erase(size_t first, size_t last)
+		{	mIMPL.erase(begin() + first, begin() + last);
+		}
 
 		/** Removes a value contained within the list, once.
 			@param value The value, contained within the list, to erase from it.
 			@return Whether the value was found and erased from the list. */
-		inline bool erase(const T& value) { iterator it = find(value); if (it != end()) { erase(it); return true; } return false; }
+		inline bool erase(const T& value)
+		{
+			iterator it = mIMPL.find(value);
+			if (it != end()) { mIMPL.erase(it); return true; } return false;
+		}
 
 		/** Removes an indexed value contained within the list.
 			@param index The index of the value to erase. */
-		inline void erase(size_t index) { erase(begin() + index); }
+		inline void erase(size_t index) { mIMPL.erase(begin() + index); }
 
 		/** Retrieves whether the list contains a given value.
 			@param value A value that could be contained in the list.
@@ -217,30 +236,16 @@ namespace fm
 
 		/** Retrieves the number of values contained in the list.
 			@return The number of values contained in the list. */
-		inline size_t size() const { return sized; }
+		inline size_t size() const { return mIMPL.size(); }
 
 		/** Retrieves whether there are any elements in the list. */
-		inline bool empty() const { return sized == 0; }
+		inline bool empty() const { return mIMPL.empty(); }
 
 		/** Sets the number of values contained in the list.
 			@param count The new number of values contained in the list. */
 		void resize(size_t count)
 		{
-			reserve(count);
-
-			if (!PRIMITIVE)
-			{
-				T* it = end();
-				for (; sized < count; ++sized)
-				{
-					// For non-primitive types, make sure we call the constructors of all the values.
-					fm::Construct(it++);
-				}
-			}
-			else
-			{
-				sized = reserved;
-			}
+			mIMPL.resize(count);
 		}
 
 		/** Sets the number of values contained in the list.
@@ -248,25 +253,11 @@ namespace fm
 			@param value The value to assign to the new entries in the list. */
 		void resize(size_t count, const T& value)
 		{
-			reserve(count);
-			T* it = end();
-
-			for (; sized < count; ++sized)
-			{
-				// For non-primitive types, make sure we call the constructors of all the values.
-				if (!PRIMITIVE)
-				{
-					fm::Construct(it++, value);
-				}
-				else
-				{
-					*(it++) = value;
-				}
-			}
+			mIMPL.resize(count,value);
 		}
 
 		/** Removes all the element in the list. */
-		inline void clear() { reserve(0); }
+		inline void clear() { mIMPL.clear(); }
 
 		/** Pre-allocate the list to a certain number of values.
 			You can use reserve zero values in order to clear the memory
@@ -274,61 +265,28 @@ namespace fm
 			@param count The new number of values pre-allocated in the list. */
 		void reserve(size_t count)
 		{
-			// Basic check for stupidly large allocations;
-			// basically all this is for is to catch (size_t)-1 calls
-			// in debug mode. Ensure release will optimize out this call!
-			FUAssert(count < INT_MAX, ;);
-			if (reserved != count)
-			{
-				// For non-primitives, make sure we destroy all the values individually.
-				if (PRIMITIVE)
-				{
-					if (sized > count) sized = count;
-				}
-				else
-				{
-					while (sized > count) pop_back();
-				}
-
-				// If we are reserving data, re-allocate a new buffer.
-				T* newValues;
-				if (count > 0)
-				{
-					newValues = (T*) fm::Allocate(count * sizeof(T));
-					if (sized > 0)
-					{
-						for( int i=0; i<sized; i++ )
-						  newValues[i] = heapBuffer[i];
-						//memcpy(newValues, heapBuffer, sized * sizeof(T));
-					}
-				}
-				else newValues = NULL;
-
-				// Free the old buffer.
-				if (heapBuffer != NULL)
-				{
-					fm::Release(heapBuffer);
-				}
-				heapBuffer = newValues;
-				reserved = count;
-			}
+			mIMPL.reserve(count);
 		}
 
 		/** Retrieves the maximum size the array can grow to without allocating memory
 			size is always less than or equal to capacity
 			@return The number of values the array currently has memory allocated for */
-		inline size_t capacity() { return reserved; }
-		inline size_t capacity() const { return reserved; } /**< See above. */
+		inline size_t capacity() { return mIMPL.capacity(); }
+		inline size_t capacity() const { return mIMPL.capacity(); } /**< See above. */
 
 		/** Retrieves the iterator for the first value in the list.
 			@return The iterator for the first value in the list. */
-		inline iterator begin() { return heapBuffer; }
-		inline const_iterator begin() const { return heapBuffer; } /**< See above. */
+		inline iterator begin() { return mIMPL.begin(); }
+		inline const_iterator begin() const { return mIMPL.begin(); } /**< See above. */
+		inline reverse_iterator rbegin() { return mIMPL.rbegin(); }
+		inline const_reverse_iterator rbegin() const { return mIMPL.rbegin(); } /**< See above. */
 
 		/** Retrieves the iterator just past the last value in the list.
 			@return The iterator for just past the last value in the list. */
-		inline iterator end() { return heapBuffer + sized; }
-		inline const_iterator end() const { return heapBuffer + sized; } /**< See above. */
+		inline iterator end() { return mIMPL.end(); }
+		inline const_iterator end() const { return mIMPL.end(); } /**< See above. */
+		inline reverse_iterator rend() { return mIMPL.rend(); }
+		inline const_reverse_iterator rend() const { return mIMPL.rend(); } /**< See above. */
 
 		/** Inserts a new item at a given position within the list.
 			@param it An iterator pointing to where to insert the item.
@@ -336,7 +294,8 @@ namespace fm
 			@return An iterator pointing to the inserted item within the list. */
 		iterator insert(iterator it, const T& item)
 		{
-			FUAssert(it >= begin() && it <= end(), return it);
+			return mIMPL.insert(it,item);
+			/*FUAssert(it >= begin() && it <= end(), return it);
 			if (sized == reserved)
 			{
 				size_t offset = it - begin();
@@ -356,30 +315,28 @@ namespace fm
 				*it = item;
 			}
 			++sized;
-			return it;
+			return it;*/
 		}
 
 		/** Inserts a new item at a given position within the list.
 			@param index Where to insert the given value.
 			@param item The item to insert. */
-		inline void insert(size_t index, const T& item) { insert(begin() + index, item); }
+		inline void insert(size_t index, const T& item) { mIMPL.insert(mIMPL.begin() + index, item); }
 		
 		/** Inserts a new item at the end of the list.
 			@param item The item to insert. */
-		inline void push_back(const T& item) { insert(end(), item); }
+		inline void push_back(const T& item) { mIMPL.push_back(item); }
 		
 		/** Inserts a new item at the front of the list.
 			This operation is very expansive and not recommended
 			for real-time operations.
 			@param item The item to insert. */
-		inline void push_front(const T& item) { insert(begin(), item); }
+		inline void push_front(const T& item) { mIMPL.insert(mIMPL.begin(),item); }
 
 		/** Removes the last item from a list. */
 		void pop_back()
 		{
-			FUAssert(sized > 0, return);
-			if (!PRIMITIVE) (*(heapBuffer + sized - 1)).~T();
-			--sized;
+			mIMPL.pop_back();
 		}
 		
 		/** Removes the first item from a list.
@@ -387,7 +344,9 @@ namespace fm
 			for real-time operations. */
 		inline void pop_front()
 		{
-			erase(begin());
+			if( mIMPL.size() )
+				mIMPL.erase(mIMPL.begin());
+			//mIMPL.pop_front();
 		}
 
 		/** Inserts multiple items at a given position within the list.
@@ -396,8 +355,9 @@ namespace fm
 			@param last An iterator past the last item to insert. */
 		template <typename _IT> inline void insert(iterator it, _IT first, _IT last)
 		{
-			size_t count = last - first;
-			insert(it, first, count);
+			mIMPL.insert(it,first,last);
+			//size_t count = last - first;
+			//insert(it, first, count);
 		}
 
 		/** Inserts one item, multiple times at a given position within the list.
@@ -406,7 +366,8 @@ namespace fm
 			@param item The item to insert. */
 		inline void insert(iterator it, size_t count, const T& item, bool noInit=false)
 		{
-			if (count > 0)
+			mIMPL.insert(it,count,item);
+			/*if (count > 0)
 			{
 				FUAssert(it >= begin() && it <= end(), return);
 				if (sized + count > reserved)
@@ -440,14 +401,15 @@ namespace fm
 						while (--count > 0);
 					}
 				}
-			}
+			}*/
 		}
 
 		/** Inserts one value, multiple times, to this list.
 			@param index Where to insert the value.
 			@param count The number of times to insert this value.
 			@param value The value to insert. */
-		inline void insert(size_t index, size_t count, const T& value) { insert(begin() + index, count, value); }
+		inline void insert(size_t index, size_t count, const T& value)
+		{ mIMPL.insert(mIMPL.begin() + index, count, value); }
 
 		/** Inserts multiple items at a given position within the list,
 			from a static list.
@@ -455,7 +417,7 @@ namespace fm
 			@param first A pointer to the first item to insert.
 			@param count The number of element within the static list
 				that must be inserted within the list. */
-		void insert(iterator it, const T* first, size_t count)
+		/*void insert(iterator it, const T* first, size_t count)
 		{
 			if (count > 0)
 			{
@@ -484,44 +446,58 @@ namespace fm
 					memcpy(it, first, count * sizeof(T));
 				}
 			}
-		}
+		}*/
 
 		/** Inserts multiple values to this list.
 			@param index Where to insert the values.
 			@param values A static list of values.
 			@param count The number of values to insert. */
-		inline void insert(size_t index, const T* values, size_t count) { insert(begin() + index, values, count); }
+		inline void insert(size_t index, const T* values, size_t count)
+		{
+			for( size_t i=0; i<count; i++ )
+				mIMPL.insert(mIMPL.begin()+index+i, values[i] );
+		}
+		inline void append(const T* values, size_t count)
+		{
+			size_t old_size = mIMPL.size();
+			mIMPL.resize(old_size+count);
+			for( size_t i=0; i<count; i++ )
+				mIMPL[i+old_size] = values[i];
+		}
 
 		/** Retrieves the first element of the pointer array.
 			@return The first element in the pointer array. */
-		T& front() { FUAssert(sized > 0,); return (*heapBuffer); }
-		const T& front() const { FUAssert(sized > 0,); return (*heapBuffer); } /**< See above. */
+		T& front() { return mIMPL.front(); }
+		const T& front() const { return mIMPL.front(); } /**< See above. */
 
 		/** Retrieves the last element of the pointer array.
 			@return The last element in the pointer array. */
-		T& back() { FUAssert(sized > 0,); return *(heapBuffer + sized - 1); }
-		const T& back() const { FUAssert(sized > 0,); return *(heapBuffer + sized - 1); } /**< See above. */
+		T& back() { return mIMPL.back(); }
+		const T& back() const { return mIMPL.back(); } /**< See above. */
 
 		/** Retrieves an indexed object in the pointer array.
 			@param index An index.
 			@return The given object. */
-		T& at(size_t index) { FUAssert(index < sized,); return heapBuffer[index]; }
-		const T& at(size_t index) const { FUAssert(index < sized,); return heapBuffer[index]; } /**< See above. */
-		template <class INTEGER> inline T& operator[](INTEGER index) { FUAssert((size_t) index < sized,); return heapBuffer[index]; } /**< See above. */
-		template <class INTEGER> inline const T& operator[](INTEGER index) const { FUAssert((size_t) index < sized,); return heapBuffer[index]; } /**< See above. */
+		reference at(size_t index) { return mIMPL.at(index); }
+		const_reference at(size_t index) const { return mIMPL.at(index); } /**< See above. */
+		inline reference operator[](size_t index)
+			{ return mIMPL[index]; } /**< See above. */
+		inline const_reference operator[](size_t index) const 
+		{ return mIMPL[index]; } /**< See above. */
 
 		/** Retrieves whether two lists are equivalent.
 			@param other A second list.
 			@return Whether the two lists are equivalent. */
 		bool operator==(const fm::vector<T,PRIMITIVE>& other) const
 		{
-			bool equals = sized == other.size();
+			return mIMPL==other.mIMPL;
+			/*bool equals = sized == other.size();
 			const T* e = end();
 			for (const T* it = begin(),* it2 = other.begin(); it != e && equals; ++it, ++it2)
 			{
 				equals = (*it) == (*it2);
 			}
-			return equals;
+			return equals;*/
 		}
 
 		/** Copy operator. Copies the contents of one vector to another.
@@ -529,7 +505,9 @@ namespace fm
 			@return A reference to this (LHS of operation). */
 		vector<T,PRIMITIVE>& operator =(const fm::vector<T,PRIMITIVE>& rhs)
 		{
-			if (this != &rhs)
+			mIMPL=rhs.mIMPL;
+			return *this;
+			/*if (this != &rhs)
 			{
 				if (PRIMITIVE)
 				{
@@ -546,7 +524,7 @@ namespace fm
 					}
 				}
 			}
-			return *this;
+			return *this;*/
 		}
 	};
 };

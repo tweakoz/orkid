@@ -101,7 +101,7 @@ void FColladaPluginManager::CreateExtraTechniquePluginMap(FCPExtraMap& map)
 bool FColladaPluginManager::LoadDocumentFromFile(FCDocument* document, const fchar* filename)
 {
 	FCPArchive* archiver = FindArchivePlugin(filename);
-	//printf( "archiver<%08x>\n", archiver );
+	printf( "archiver<%p>\n", archiver );
 	if (archiver != NULL)
 	{
 		bool success = archiver->ImportFile(filename, document);
@@ -164,6 +164,8 @@ FCPArchive* FColladaPluginManager::FindArchivePlugin(const fchar* filename)
 		{
 			fstring targetExt = FUStringConversion::ToFString(curArchive->GetSupportedExtensionAt(j));
 
+			printf( "targetExt<%s>\n", targetExt.c_str() );
+			printf( "extension<%s>\n", extension.c_str() );
 			if (IsEquivalentI(extension, targetExt))
 			{
 				return curArchive;

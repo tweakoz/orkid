@@ -366,7 +366,7 @@ xmlNode* FArchiveXML::FindChildByIdFCDAnimation(FCDAnimation* animation, const f
 	FCDAnimationData& data = animationIt->second;
 
 	FUCrc32::crc32 id = FUCrc32::CRC32(_id.c_str() + ((_id[0] == '#') ? 1 : 0));
-	for (FAXNodeIdPair* it = data.childNodes.begin(); it != data.childNodes.end(); ++it)
+	for (auto it = data.childNodes.begin(); it != data.childNodes.end(); ++it)
 	{
 		if (it->second == id) return it->first;
 	}

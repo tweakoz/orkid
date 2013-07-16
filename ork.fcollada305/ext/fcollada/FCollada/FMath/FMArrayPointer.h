@@ -35,7 +35,7 @@ namespace fm
 	private:
 		/** Use this pointer to get typed information in the debugger.
 			The few bytes that we loose are nothing compared to the annoyance of trying to debug in these. */
-		T*** first; 
+		//T*** first; 
 		
 	public:
 		typedef typename fm::vector<const void*, true> Parent; /**< Defines the parent class to the pointer array. */
@@ -47,14 +47,14 @@ namespace fm
 		/** Default constructor. */
 		pvector() : Parent()
 		{
-			first = (T***) (size_t) &heapBuffer;
+			//first = (T***) (size_t) &heapBuffer;
 		}
 
 		/** Constructor. Builds a dynamically-sized pointer array of the desired size.
 			@param size The desired size of the array. */
 		pvector(size_t size) : Parent(size, NULL)
 		{
-			first = (T***) (size_t) &heapBuffer;
+			//first = (T***) (size_t) &heapBuffer;
 		}
 
 		/** Constructor. Builds a dynamically-sized pointer array of the desired size.
@@ -62,14 +62,14 @@ namespace fm
 			@param defaultValue The default value to use for all the pointers of the array. */
 		pvector(size_t size, const T& defaultValue) : Parent(size, defaultValue)
 		{
-			first = (T***) &heapBuffer;
+			//first = (T***) &heapBuffer;
 		}
 
 		/** Copy constructor.
 			@param copy The dynamically-sized pointer array to copy the values from. */
 		pvector(const pvector<T>& copy) : Parent(copy)
 		{
-			first = (T***) (size_t) &heapBuffer;
+			//first = (T***) (size_t) &heapBuffer;
 		}
 
 		/** Constructor. Builds a dynamically-sized pointer array from a constant-sized array.
@@ -77,7 +77,7 @@ namespace fm
 			@param count The size of the constant-sized array. */
 		pvector(const T** values, size_t count) : Parent()
 		{
-			first = (T***) (size_t) &heapBuffer;
+			//first = (T***) (size_t) &heapBuffer;
 			resize(count);
 			memcpy(&front(), values, count * sizeof(void*));
 		}
@@ -85,11 +85,6 @@ namespace fm
 		/** Destructor. */
 		~pvector()
 		{
-#ifdef _DEBUG
-			Parent::clear();
-			Parent::push_back((void*) (size_t) 0xFFFFFFFF);
-			first = (T***) (size_t) 0xDEADDEAD;
-#endif // _DEBUG
 		}
 
 		/** Retrieves the first element of the pointer array.
