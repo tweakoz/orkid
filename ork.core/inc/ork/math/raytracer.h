@@ -2,6 +2,9 @@
 // Orkid
 // Copyrigh 1996-2009, Michael T. Mayers
 // See License at OrkidRoot/license.html or http://www.tweakoz.com/orkid/license.html
+//
+// based on code from Jacco Bikker
+//
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef _ORK_MATH_RAYTRACER_H
