@@ -290,7 +290,7 @@
                         <property name='Name'>"ground_plane"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='30'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                                <property name='TransformNode'>1 0 0 0 0 -0.992047 -0.125869 0 0 0.125869 -0.992047 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>

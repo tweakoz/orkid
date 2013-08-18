@@ -20,10 +20,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
 //#include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <pkg/ent/Lighting.h>
 #include <pkg/ent/Compositor.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 //#include <pkg/ent/FullscreenEffects.h>
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -101,9 +103,9 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////
-class SceneEditorVP : public lev2::CUIViewport
+class SceneEditorVP : public ui::Viewport
 {
-	RttiDeclareAbstract( SceneEditorVP, lev2::CUIViewport );
+	RttiDeclareAbstract( SceneEditorVP, ui::Viewport );
 	friend class lev2::CPickBuffer<SceneEditorVP>;
 
 public:
@@ -112,7 +114,7 @@ public:
 	~SceneEditorVP();
 
 	//////////////////////   
-	virtual lev2::EUIHandled UIEventHandler( lev2::CUIEvent *pEV );
+	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	//////////////////////   
 	void QueueSDLD(ent::DrawableBuffer*pDB);
 	void RenderSDLD( ork::lev2::RenderContextFrameData & ContextData );
@@ -142,7 +144,7 @@ public:
 	void DrawGrid( lev2::RenderContextFrameData& fdata );
 	void Draw3dContent( lev2::RenderContextFrameData& FrameData );
 	void DrawHUD( lev2::RenderContextFrameData& FrameData );
-	void DoDraw( /*ork::lev2::GfxTarget* pTARG*/ ); //virtual
+	void DoDraw( ui::DrawEvent& drwev ); //virtual
 	void DrawSpinner(lev2::RenderContextFrameData & FrameData);
 	void Init();
 	///////////////////////////////////////////////////
@@ -196,8 +198,6 @@ private:
 
 	UpdateThread* 									mUpdateThread;
 
-	bool DoNotify(const ork::event::Event* pev); // virtual
-
 	void DisableSceneDisplay();
 	void EnableSceneDisplay();
 
@@ -211,7 +211,8 @@ private:
 	};
 	////////////////////////////////////////////
 
-	void Init( ork::lev2::GfxTarget* pTARG ); // virtual 
+	void DoInit( ork::lev2::GfxTarget* pTARG ) override;
+	bool DoNotify(const ork::event::Event* pev) override;
 
 	static orkset<SceneEditorInitCb>	mInitCallbacks;
 

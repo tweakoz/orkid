@@ -219,11 +219,69 @@ Grid2d::Grid2d()
 {
 
 }
+
 ///////////////////////////////////////////////////////////////////////////////
-void Grid2d::ReCalc( GfxTarget* pTARG )
+/*
+static const int kdiv_base = 240 * 4;
+static const int kfreqmult = 5;
+static const float klogbias = 0.3f; // adjust to change threshold of lod switch
+
+struct grid_calculator
 {
-	float ftW = float(pTARG->GetW());
-	float ftH = float(pTARG->GetH());
+    int ispace;
+    int il;
+    int ir;
+    int it;
+    int ib;
+    int ic;
+    float flog;
+    float filog;
+    float flogb;
+
+    grid_calculator( const Rectangle& devviewrect, float scale_factor )
+    {
+        static const float div_base = kdiv_base; // base distance between gridlines at unity scale
+
+        auto log_base = []( float base, float inp ) ->float
+        {
+            float rval = std::log( inp ) / std::log( base );
+            return rval;
+        };
+        auto pow_base = []( float base, float inp ) ->float
+        {
+            float rval = std::pow( base, inp );
+            return rval;
+        };
+
+        const float kfbase = kfreqmult;
+        flogb = log_base( kfbase, div_base );
+        flog = log_base( kfbase, scale_factor );
+        flog = klogbias+std::round(flog*10.0f)/10.0f;
+        flog = (flog<1.0f) ? 1.0f : flog;
+        filog = pow_base( kfbase, flogb+std::floor(flog) );
+        filog = std::round(filog/kfbase)*kfbase;
+
+        ispace = int(filog);
+        il = (int(devviewrect.x-filog)/ispace)*ispace;
+        ir = (int(devviewrect.x2+filog)/ispace)*ispace;
+        it = (int(devviewrect.y-filog)/ispace)*ispace;
+        ib = (int(devviewrect.y2+filog)/ispace)*ispace;
+        ic = (ir-il)/ispace;
+        printf( "scale_factor<%f> flog<%f> filog<%f> il<%d> ir<%d> ispace<%d> ic<%d>\n", scale_factor, flog, filog, il, ir, ispace, ic );
+    }
+
+
+};
+*/
+////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+void Grid2d::ReCalc( int iw, int ih )
+{
+	//float scale_factor = (dev_view_rect.y2 - dev_view_rect.y) / gmastercfg.ideviceH;
+	//grid_calculator the_grid_calc(dev_view_rect,scale_factor);
+	float ftW = float(iw);
+	float ftH = float(ih);
 	float fASPECT = ftH/ftW;
 
 	float fnext = mExtent/mZoom;
@@ -294,21 +352,25 @@ CVector2 Grid2d::Snap( CVector2 inp ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Grid2d::Render( GfxTarget* pTARG )
+void Grid2d::Render( GfxTarget* pTARG, int iw, int ih )
 {
-	ReCalc( pTARG );
+	auto mtxi = pTARG->MTXI();
 
-	mMtxOrtho = pTARG->MTXI()->Ortho( mTopLeft.GetX(), mBotRight.GetX(), mTopLeft.GetY(), mBotRight.GetY(), 0.0f, 1.0f );
+	lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
 
-	pTARG->MTXI()->PushPMatrix( mMtxOrtho );
-	pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+	ReCalc( iw,ih );
+
+	mMtxOrtho = mtxi->Ortho( mTopLeft.GetX(), mBotRight.GetX(), mTopLeft.GetY(), mBotRight.GetY(), 0.0f, 1.0f );
+
+	mtxi->PushPMatrix( mMtxOrtho );
+	mtxi->PushVMatrix( CMatrix4::Identity );
+	mtxi->PushMMatrix( CMatrix4::Identity );
 	{
 		static GfxMaterial3DSolid gridmat( pTARG );
-		gridmat.SetColorMode( GfxMaterial3DSolid::EMODE_MOD_COLOR );
+		gridmat.SetColorMode( GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
 		gridmat.mRasterState.SetBlending( EBLENDING_ADDITIVE );
 
-		pTARG->BindMaterial( & gridmat );
+		pTARG->PushMaterial( & gridmat );
 	
 		////////////////////////////////
 		// Grid
@@ -318,33 +380,52 @@ void Grid2d::Render( GfxTarget* pTARG )
 		CVector4 BaseGridColor( GridGrey,GridGrey,GridGrey );
 		CVector4 HiliGridColor( GridHili,GridHili,GridHili );
 
-		pTARG->PushModColor( BaseGridColor );
-		
-		for( CReal fX=mTopLeft.GetX(); fX<=mBotRight.GetX(); fX+=mVisGridSize )
-		{
-			bool bORIGIN = (fX==0.0f);
-			bool bhi = std::fmod( CFloat::Abs(fX), mVisGridHiliteDiv ) <CFloat::Epsilon();
+		float x1 = mTopLeft.GetX();
+		float x2 = mBotRight.GetX();
+		float y1 = mTopLeft.GetY();
+		float y2 = mBotRight.GetY();
 
-			pTARG->PushModColor( bORIGIN ? CColor4::Green() : (bhi ? HiliGridColor : BaseGridColor) );
-			//pTARG->IMI()->DrawLine( CVector4( fX, mTopLeft.GetY(), 0.0f, 1.0f ), CVector4( fX, mBotRight.GetY(), 0.0f, 1.0f ) );
-			//pTARG->IMI()->QueFlush( false );
-			pTARG->PopModColor();
-		}
-		for( CReal fY=mTopLeft.GetY(); fY<=mBotRight.GetY(); fY+=mVisGridSize )
-		{
-			bool bORIGIN = (fY==0.0f);
-			bool bhi = std::fmod( CFloat::Abs(fY),mVisGridHiliteDiv ) < CFloat::Epsilon();
+		int inumx = 0;
+		int inumy = 0;
+		for( float fx=x1; fx<=x2; fx+=mVisGridSize ) inumx++;
+		for( float fy=y1; fy<=y2; fy+=mVisGridSize ) inumy++;
 
-			pTARG->PushModColor( bORIGIN ? CColor4::Red() : (bhi ? HiliGridColor : BaseGridColor) );
-			//pTARG->IMI()->DrawLine( CVector4( mTopLeft.GetX(), fY, 0.0f, 1.0f ), CVector4( mBotRight.GetX(), fY, 0.0f, 1.0f ) );
-			//pTARG->IMI()->QueFlush( false );
-			pTARG->PopModColor();
+		lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
+		vw.Lock( pTARG, &VB, (inumx+inumy)*2 );
+
+		CVector2 uv0(0.0f,0.0f);
+		for( float fx=x1; fx<=x2; fx+=mVisGridSize )
+		{
+			bool bORIGIN = (fx==0.0f);
+			bool bhi = std::fmod( CFloat::Abs(fx), mVisGridHiliteDiv ) <CFloat::Epsilon();
+
+			auto color = bORIGIN ? CColor4::Green() : (bhi ? HiliGridColor : BaseGridColor);
+			u32 ucolor = color.GetVtxColorAsU32();
+			ork::lev2::SVtxV12C4T16 v0( CVector3(fx,y1,0.0f), uv0, ucolor );
+			ork::lev2::SVtxV12C4T16 v1( CVector3(fx,y2,0.0f), uv0, ucolor );
+			vw.AddVertex(v0);
+			vw.AddVertex(v1);
 		}
-		pTARG->PopModColor( );
+		for( float fy=y1; fy<=y2; fy+=mVisGridSize )
+		{
+			bool bORIGIN = (fy==0.0f);
+			bool bhi = std::fmod( CFloat::Abs(fy),mVisGridHiliteDiv ) < CFloat::Epsilon();
+
+			auto color = bORIGIN ? CColor4::Red() : (bhi ? HiliGridColor : BaseGridColor);
+			u32 ucolor = color.GetVtxColorAsU32();
+			ork::lev2::SVtxV12C4T16 v0( CVector3(x1,fy,0.0f), uv0, ucolor );
+			ork::lev2::SVtxV12C4T16 v1( CVector3(x2,fy,0.0f), uv0, ucolor );
+			vw.AddVertex(v0);
+			vw.AddVertex(v1);
+
+		}
+		vw.UnLock(pTARG);
+		pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_LINES );
+		pTARG->PopMaterial();
 	}
-	pTARG->MTXI()->PopPMatrix();
-	pTARG->MTXI()->PopVMatrix();
-	pTARG->MTXI()->PopMMatrix();
+	mtxi->PopPMatrix();
+	mtxi->PopVMatrix();
+	mtxi->PopMMatrix();
 
 }
 

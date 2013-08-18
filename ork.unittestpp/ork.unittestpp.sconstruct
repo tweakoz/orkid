@@ -12,14 +12,27 @@ SetOption('num_jobs', obu.num_cores)
 sln.optset.add("ork.upp")
 BasicEnv = Environment( ENV=os.environ )
 
-obu.install_files("src/*.h","include/unittest++")
-obu.install_files("src/Posix/*.h","include/unittest++/Posix")
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+is_fast = (TARGET=="fast")
+#
+
+skip_utpp = (is_prep or is_fast)
+
+if is_prep:
+	obu.install_files("src/*.h","include/unittest++")
+	obu.install_files("src/Posix/*.h","include/unittest++/Posix")
 #obu.install_headers("ext/inc/*")
 
 # basics #################################
 
 class upp:
   def __init__(self):
+
+	if skip_utpp:
+		return
+
 	ARGS = cmn.BuildArgs
 	##########################################
 
@@ -54,7 +67,8 @@ class upp:
 
 a = upp()
 ret = list()
-ret += a.lib
+if False==skip_utpp:
+	ret += a.lib
 #ork_upp_lib = a.lib
 Return("ret")
 #Export('prj_core_lib')

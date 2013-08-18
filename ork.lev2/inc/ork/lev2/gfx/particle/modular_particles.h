@@ -5,8 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_LEV2_MODULARPARTICLES_H
-#define ORK_LEV2_MODULARPARTICLES_H
+#pragma once
+
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/particle/particle.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
@@ -1014,14 +1014,16 @@ class ModelRenderer : public RendererModule
 {
 	RttiDeclareConcrete( ModelRenderer, RendererModule );
 
+
 	//////////////////////////////////////////////////
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 2; }
+	virtual int GetNumInputs() const { return 3; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
-	DeclareFloatXfPlug( Scale );
+	DeclareFloatXfPlug( AnimScale );
+	DeclareFloatXfPlug( AnimRot );
 
 	//////////////////////////////////////////////////
 	// outputs
@@ -1035,6 +1037,9 @@ class ModelRenderer : public RendererModule
 	//////////////////////////////////////////////////
 
 	ork::lev2::XgmModelAsset*		mModel;
+	CVector3 						mUpVector;
+	CVector4 						mBaseRotAxisAngle;
+	CVector3 						mAnimRotAxis;
 
 	void SetModelAccessor( ork::rtti::ICastable* const & tex);
 	void GetModelAccessor( ork::rtti::ICastable* & tex) const;
@@ -1119,4 +1124,3 @@ public:
 	//void GetVolumeTextureAccessor( ork::rtti::ICastable* & tex) const;
 
 }}}
-#endif

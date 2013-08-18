@@ -8,6 +8,7 @@
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
 
 #if defined(IX)
 #include <cxxabi.h>
@@ -277,25 +278,6 @@ void CQNoMocBase::Compile( void )
 	staticMetaObject->d.extradata = 0;
 
 	//////////////////////
-}
-
-void CQtGfxWindow::OnShow()
-{
-	ork::lev2::GfxTarget *pTARG = GetContext();
-
-	//if( mbinit )
-	{
-		//mbinit = false;
-		/////////////////////////////////////////////////////////////////////
-		mpviewport->SetX( GetContextX() );		// TODO add resize call
-		mpviewport->SetY( GetContextY() );
-		mpviewport->SetW( GetContextW() );
-		mpviewport->SetH( GetContextH() );		
-		SetViewport( mpviewport );
-	}
-
-	//SetTopUIGroup( mpviewport );
-
 }
 
 }

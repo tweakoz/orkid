@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#if ! defined( _GFX_GFXMATERIAL_TEST_H )
-#define	_GFX_GFXMATERIAL_TEST_H
+#pragma once 
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 
@@ -127,5 +126,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif

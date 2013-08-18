@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_GFXRASTERSTATE_H
-#define _ORK_LEV2_GFXRASTERSTATE_H
+#pragma once
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 
@@ -59,9 +58,8 @@ struct	SRasterState
 	/////////////////////////////
 	// Accessors
 
+	void				SetRGBAWriteMask( bool rgb, bool a ) { muRGBWriteMask = (unsigned) rgb; muAWriteMask = (unsigned) a; }
 	void				SetZWriteMask( bool bv ) { muZWriteMask = (unsigned) bv; }
-	void				SetAWriteMask( bool bv ) { muAWriteMask = (unsigned) bv; }
-	void				SetRGBWriteMask( bool bv ) { muRGBWriteMask = (unsigned) bv; }
 
 	bool				GetZWriteMask( void ) const { return (bool) muZWriteMask; }
 	bool				GetAWriteMask( void ) const { return (bool) muAWriteMask; }
@@ -124,4 +122,3 @@ struct	SRasterState
 
 } }
 
-#endif

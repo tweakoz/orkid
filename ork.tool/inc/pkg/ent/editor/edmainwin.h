@@ -18,7 +18,8 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////
 
 
-class EditorMainWindow : public tool::MiniorkMainWindow, public ork::AutoConnector
+class EditorMainWindow 	: public tool::MiniorkMainWindow
+						, public ork::AutoConnector
 {
 	RttiDeclareAbstract( EditorMainWindow, ork::AutoConnector );
 
@@ -83,11 +84,13 @@ public://
 	///////////////////////////////////////////////////////////////////////////
 
 	QDockWidget *  NewCamView( bool bfloat );
-	QDockWidget * NewToolView( bool bfloat );
-	QDockWidget * NewDataflowView( bool bfloat );
-	QDockWidget * NewOutlinerView( bool bfloat );
-	QDockWidget * NewOutliner2View( bool bfloat );
-	QDockWidget * NewPyConView( bool bfloat );
+
+	void NewOutliner2View();
+	void NewDataflowView();
+	
+	//QDockWidget * NewToolView( bool bfloat );
+	//QDockWidget * NewDataflowView( bool bfloat );
+	//QDockWidget * NewPyConView( bool bfloat );
 	
 	/////////////////////////////////////////////////
 	// this Ged is special it is the "master" ged, it cannot be closed
@@ -96,7 +99,7 @@ public://
 	// the editormainwindow
 	/////////////////////////////////////////////////
 
-	QDockWidget * SceneObjPropEdit( bool bfloat );
+	void SceneObjPropEdit();
 
 	///////////////////////////////////////////////////////////////////////////
 
@@ -150,17 +153,17 @@ extern ent::EditorMainWindow *gEditorMainWindow;
 
 inline void EditorMainWindow::NewCamViewFloating()
 {
-	NewCamView(true);
+//	NewCamView(true);
 }
 
 inline void EditorMainWindow::NewToolViewFloating()
 {
-	NewToolView(true);
+//	NewToolView(true);
 }
 
 inline void EditorMainWindow::NewDataflowViewFloating()
 {
-	NewDataflowView(true);
+//	NewDataflowView(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////

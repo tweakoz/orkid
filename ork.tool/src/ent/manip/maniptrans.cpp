@@ -12,6 +12,7 @@
 #include <orktool/manip/manip.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/ui/event.h>
 
 namespace ork { namespace lev2 {
 
@@ -80,25 +81,25 @@ CManipTYZ::CManipTYZ(CManipManager& mgr)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CManipTrans::UIEventHandler( CUIEvent *pEV )
+bool CManipTrans::UIEventHandler( const ui::Event& EV )
 {	
-	ork::CVector2 cm = pEV->GetUnitCoordBP();
+	ork::CVector2 cm = EV.GetUnitCoordBP();
 
 	//printf( "CManipTrans<%p>::UIEventHandler() evcod<%d>\n", this, int(pEV->miEventCode) );
 	bool brval = false;
-	switch( pEV->miEventCode )
-	{	case UIEV_PUSH:
+	switch( EV.miEventCode )
+	{	case ui::UIEV_PUSH:
 		{	HandleMouseDown(cm);
 			brval = true;
 			break;
 		}
-		case UIEV_RELEASE:
+		case ui::UIEV_RELEASE:
 		{
 			HandleMouseUp(cm);
 			brval = true;
 			break;
 		}
-		case UIEV_DRAG:
+		case ui::UIEV_DRAG:
 		{
 			HandleDrag(cm);
 			brval = true;
@@ -140,31 +141,36 @@ void CManipTrans::HandleDrag(const ork::CVector2& pos)
 
 void CManipSingleTrans::DrawAxis(GfxTarget* pTARG) const
 {
-	pTARG->FXI()->InvalidateStateBlock();
+	auto mtl = mManager.GetMaterial();
+	auto fbi = pTARG->FBI();
+	auto fxi = pTARG->FXI();
+	auto gbi = pTARG->GBI();
 
-	int inumpasses = mManager.GetMaterial()->BeginBlock(pTARG);
+	fxi->InvalidateStateBlock();
+
+	int inumpasses = mtl->BeginBlock(pTARG);
 	{
 		for( int ipass=0; ipass<inumpasses; ipass++ )
 		{
-			bool bDRAW = mManager.GetMaterial()->BeginPass( pTARG, ipass );
+			bool bDRAW = mtl->BeginPass( pTARG, ipass );
 
 			if( bDRAW )
 			{
-				if( pTARG->FBI()->IsPickState() )
+				if( fbi->IsPickState() )
 				{
-					pTARG->GBI()->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisBoxVB() );
+					gbi->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisBoxVB() );
 				}
 				else
 				{
-					pTARG->GBI()->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisLineVB() );
-					pTARG->GBI()->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisConeVB() );
+					gbi->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisLineVB() );
+					gbi->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisConeVB() );
 				}
 			}
 
-			mManager.GetMaterial()->EndPass(pTARG);
+			mtl->EndPass(pTARG);
 		}
 	}
-	mManager.GetMaterial()->EndBlock(pTARG);
+	mtl->EndBlock(pTARG);
 
 }
 
@@ -284,7 +290,6 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 void CManipSingleTrans::HandleDrag(const ork::CVector2& pos)
 {
 	CCamera *pcam = mManager.GetActiveCamera();
-	//CUIViewport *pVP = 0; //pcam->GetViewport();
 
 	IntersectWithPlanes( pos );
 	bool bisect = CheckIntersect();
@@ -359,7 +364,7 @@ void CManipDualTrans::Draw(GfxTarget *pTARG ) const
 void CManipDualTrans::HandleDrag(const ork::CVector2& pos)
 {
 	/*CCamera *pcam = mManager.GetActiveCamera();
-	CUIViewport *pVP = pcam->GetViewport();
+	ui::Viewport *pVP = pcam->GetViewport();
 
 	ork::CMatrix4 view;// = pcam->GetVMatrix();
 	ork::CMatrix4 proj;// = pcam->GetPMatrix();

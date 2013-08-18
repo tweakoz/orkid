@@ -20,6 +20,7 @@
 #include <ork/kernel/prop.hpp>
 #include <ork/kernel/opq.h>
 #include <ork/reflect/enum_serializer.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 
 #include <ork/reflect/RegisterProperty.h>
 //#include <orktool/qtui/gfxbuffer.h>
@@ -216,8 +217,7 @@ SRasterState::SRasterState()
 	SetShadeModel( ESHADEMODEL_SMOOTH );
 	SetCullTest( ECULLTEST_PASS_FRONT );
 	SetZWriteMask( true );
-	SetAWriteMask( true );
-	SetRGBWriteMask( true );
+	SetRGBAWriteMask( true, true );
 	SetPolyOffset( false );
 	SetStencilMode( ESTENCILTEST_OFF, ESTENCILOP_KEEP, ESTENCILOP_KEEP, 0, 0 );
 	SetSortID( 0 );
@@ -257,7 +257,7 @@ GfxEnv::GfxEnv()
 {
 	mVtxBufSharedVect.SetRingLock(true);
 	GfxTargetCreationParams params;
-	params.miNumSharedVerts = 512<<10;
+	params.miNumSharedVerts = 64<<10;
 
 	PushCreationParams( params );
 

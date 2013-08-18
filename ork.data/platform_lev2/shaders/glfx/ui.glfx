@@ -44,18 +44,22 @@ fragment_interface iface_fmt
 state_block sb_default
 {
 	inherits default;
+	DepthTest=OFF;
+	CullTest=OFF;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_lerpblend
 {
 	inherits sb_default;
 	BlendMode = ALPHA;
+	CullTest=OFF;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_additive
 {
 	inherits sb_default;
 	BlendMode = ADDITIVE;
+	CullTest=OFF;
 }
 ///////////////////////////////////////////////////////////////
 // shaders
@@ -72,6 +76,12 @@ fragment_shader ps_uitext : iface_fmt
 	vec4 texc = texture( ColorMap, frg_uv );
 	if( texc.r==0.0f ) discard;
 	out_clr = vec4(texc.xyz*ModColor.xyz,texc.r);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uitextured : iface_fmt
+{
+	vec4 texc = texture( ColorMap, frg_uv );
+	out_clr = vec4(texc.xyz,texc.w);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault
@@ -104,6 +114,12 @@ technique uitext
 ///////////////////////////////////////////////////////////////
 technique uitextured
 {
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_uitext;
+		fragment_shader=ps_uitextured;
+		state_block=sb_default;
+	}
 }
 ///////////////////////////////////////////////////////////////
 technique ui_vtx

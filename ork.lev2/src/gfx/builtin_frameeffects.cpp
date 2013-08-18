@@ -144,12 +144,12 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
 	mpMrtAux0->SetMrt( 0, new RtBuffer(		mpMrtAux0,
 											lev2::ETGTTYPE_MRT0,
-											lev2::EBUFFMT_RGBA32,
+											lev2::EBUFFMT_RGBA64,
 											kGLOWBUFSIZE, kGLOWBUFSIZE ) );
 
 	mpMrtAux1->SetMrt( 0, new RtBuffer(		mpMrtAux1,
 											lev2::ETGTTYPE_MRT0,
-											lev2::EBUFFMT_RGBA32,
+											lev2::EBUFFMT_RGBA64,
 											kGLOWBUFSIZE, kGLOWBUFSIZE ) );
 
 
@@ -160,8 +160,8 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
 	//mpMrtAux0->GetMrt(0)->SetContext(pTARG);
 	//mpMrtAux1->GetMrt(0)->SetContext(pTARG);
-	mpAuxBuffer0 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA32, kGLOWBUFSIZE, kGLOWBUFSIZE );
-	mpAuxBuffer1 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA32, kGLOWBUFSIZE, kGLOWBUFSIZE );
+	mpAuxBuffer0 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA64, kGLOWBUFSIZE, kGLOWBUFSIZE );
+	mpAuxBuffer1 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA64, kGLOWBUFSIZE, kGLOWBUFSIZE );
 
 	////////////////////////////////////////////////////////////////
 
@@ -169,7 +169,7 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
 	mpMrtFinalHD->SetMrt( 0, new RtBuffer(	mpMrtFinalHD,
 											lev2::ETGTTYPE_MRT0,
-											lev2::EBUFFMT_RGBA32,
+											lev2::EBUFFMT_RGBA64,
 											kFINALHDW, kFINALHDH ) );
 
 	//mpMrtFinalHD->GetMrt(0)->RefClearColor() = clear_color;
@@ -304,7 +304,7 @@ void BuiltinFrameEffectMaterial::PostInit( GfxTarget* pTarg, const char *FxFile,
 
 	if(FxShaderAsset *asset = asset::AssetManager<FxShaderAsset>::Load( mFxFile.c_str() ))
 	{
-		//orkprintf( "Asset<%s> %p\n", FxFile, asset );
+		//orkprintf( "Asset<%s> %p mTekName<%s>\n", FxFile, asset, mTekName.c_str() );
 
 		hFX = asset->GetFxShader();
 		OrkAssert( hFX!=0 );
@@ -349,18 +349,20 @@ void BuiltinFrameEffectMaterial::Update( void )
 
 bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 {
+	auto rsi = pTarg->RSI();
+	auto fxi = pTarg->FXI();
+	auto fbi = pTarg->FBI();
+	auto mxi = pTarg->MTXI();
+
 	mRasterState.SetCullTest( ECULLTEST_OFF );
 	///////////////////////////////
-	pTarg->RSI()->BindRasterState( mRasterState );
+	rsi->BindRasterState( mRasterState );
 	///////////////////////////////
 
-	//F32 fVPW = (F32) pTarg->GetW(); 
-	//F32 fVPH = (F32) pTarg->GetH();
-	F32 fVPW = (F32) pTarg->FBI()->GetVPW(); 
-	F32 fVPH = (F32) pTarg->FBI()->GetVPH();
-
+	F32 fVPW = (F32) fbi->GetVPW(); 
+	F32 fVPH = (F32) fbi->GetVPH();
 	
-	CMatrix4 MatP = pTarg->MTXI()->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f ); 
+	CMatrix4 MatP = mxi->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f ); 
 
 	///////////////////////////////
 
@@ -370,11 +372,11 @@ bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 
 	///////////////////////////////
 
-	pTarg->FXI()->BindPass( hFX, iPass );
-	pTarg->FXI()->BindParamMatrix( hFX, hMVP, MatP );
-	pTarg->FXI()->BindParamVect4( hFX, hModColor, pTarg->RefModColor() );
-	pTarg->FXI()->BindParamFloat( hFX, hTime, (float)CSystem::GetRef().GetLoResRelTime() );
-	pTarg->FXI()->BindParamFloat2( hFX, hViewportDim, float(Dims.GetX()), float(Dims.GetY()) );
+	fxi->BindPass( hFX, iPass );
+	fxi->BindParamMatrix( hFX, hMVP, MatP );
+	fxi->BindParamVect4( hFX, hModColor, pTarg->RefModColor() );
+	fxi->BindParamFloat( hFX, hTime, (float)CSystem::GetRef().GetLoResRelTime() );
+	fxi->BindParamFloat2( hFX, hViewportDim, float(Dims.GetX()), float(Dims.GetY()) );
 	
 	Texture* ptex0 = 0;
 	Texture* ptex1 = 0;
@@ -382,28 +384,31 @@ bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 	
 	if( mpCurrentRtGroup )
 	{
-		ptex0 = ( mpCurrentRtGroup->GetNumTargets() > 0 ) ? mpCurrentRtGroup->GetMrt(0)->GetTexture() : 0;
-		ptex1 = ( mpCurrentRtGroup->GetNumTargets() > 1 ) ? mpCurrentRtGroup->GetMrt(1)->GetTexture() : 0;
-		ptex3 = ( mpCurrentRtGroup->GetNumTargets() > 3 ) ? mpCurrentRtGroup->GetMrt(2)->GetTexture() : 0;
+		int inumtargs = mpCurrentRtGroup->GetNumTargets();
+		ptex0 = ( inumtargs > 0 ) ? mpCurrentRtGroup->GetMrt(0)->GetTexture() : 0;
+		ptex1 = ( inumtargs > 1 ) ? mpCurrentRtGroup->GetMrt(1)->GetTexture() : 0;
+		ptex3 = ( inumtargs > 3 ) ? mpCurrentRtGroup->GetMrt(2)->GetTexture() : 0;
 	}
-	pTarg->FXI()->BindParamCTex( hFX, hMrtMap0, ptex0 );
-	pTarg->FXI()->BindParamCTex( hFX, hMrtMap1, ptex1 );
-	pTarg->FXI()->BindParamCTex( hFX, hMrtMap3, ptex3 );
+	fxi->BindParamCTex( hFX, hMrtMap0, ptex0 );
+	fxi->BindParamCTex( hFX, hMrtMap1, ptex1 );
+	fxi->BindParamCTex( hFX, hMrtMap3, ptex3 );
 	
-	if( mpPreviousRtGroup ) pTarg->FXI()->BindParamCTex( hFX, hMrtMap2, mpPreviousRtGroup->GetMrt(0)->GetTexture() );
-	else  pTarg->FXI()->BindParamCTex( hFX, hMrtMap2, 0 );
+	if( mpPreviousRtGroup ) 
+		fxi->BindParamCTex( hFX, hMrtMap2, mpPreviousRtGroup->GetMrt(0)->GetTexture() );
+	else
+		fxi->BindParamCTex( hFX, hMrtMap2, 0 );
 
-	pTarg->FXI()->BindParamCTex( hFX, hNoiseMap, mpNoiseMap );
-	pTarg->FXI()->BindParamCTex( hFX, hAuxMap0, mpAuxMap0 );
-	pTarg->FXI()->BindParamCTex( hFX, hAuxMap1, mpAuxMap1 );
+	fxi->BindParamCTex( hFX, hNoiseMap, mpNoiseMap );
+	fxi->BindParamCTex( hFX, hAuxMap0, mpAuxMap0 );
+	fxi->BindParamCTex( hFX, hAuxMap1, mpAuxMap1 );
 
 	CReal BlurFactor(16.0f);
-	pTarg->FXI()->BindParamFloat( hFX, hBlurFactor, BlurFactor );
-	pTarg->FXI()->BindParamInt( hFX, hBlurFactorI, int(BlurFactor) );
+	fxi->BindParamFloat( hFX, hBlurFactor, BlurFactor );
+	fxi->BindParamInt( hFX, hBlurFactorI, int(BlurFactor) );
 
-	pTarg->FXI()->BindParamFloat( hFX, hEffectAmount, mfEffectAmount );
+	fxi->BindParamFloat( hFX, hEffectAmount, mfEffectAmount );
 	
-	pTarg->FXI()->CommitParams();
+	fxi->CommitParams();
 
 	return true;
 }
@@ -429,6 +434,70 @@ int BuiltinFrameEffectMaterial::BeginBlock( GfxTarget* pTarg,const RenderContext
 void BuiltinFrameEffectMaterial::EndBlock( GfxTarget* pTarg )
 {
 	pTarg->FXI()->EndBlock( hFX );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void RenderMatOrthoQuad(	GfxTarget* pTARG,
+							MatrixStackInterface* MTXIO,
+							const SRect& ViewportRect,
+							const SRect& QuadRect,
+							GfxMaterial *pmat, 
+							float fu0=0.0f, float fv0=0.0f,
+							float fu1=1.0f, float fv1=1.0f,
+							float *uv2=0, const CColor4& clr=CColor4::White() )
+{
+	static SRasterState DefaultRasterState;
+	
+	// align source pixels to target pixels if sizes match
+	float fx0 = float(QuadRect.miX);
+	float fy0 = float(QuadRect.miY);
+	float fx1 = float(QuadRect.miX2);
+	float fy1 = float(QuadRect.miY2);
+
+	float zeros[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	if (NULL == uv2)
+		uv2 = zeros;
+		
+	MTXIO = pTARG->MTXI();
+	auto fbi = pTARG->FBI();
+	auto fxi = pTARG->FXI();
+	auto gbi = pTARG->GBI();
+
+	MTXIO->PushPMatrix( MTXIO->Ortho(fx0,fx1,fy0,fy1,0.0f,1.0f) );
+	MTXIO->PushVMatrix( CMatrix4::Identity );
+	MTXIO->PushMMatrix( CMatrix4::Identity );
+	pTARG->RSI()->BindRasterState( DefaultRasterState, true );
+	fbi->PushViewport( ViewportRect );
+	fbi->PushScissor( ViewportRect );
+	{	// Draw Full Screen Quad with specified material
+		pTARG->BindMaterial( pmat );
+		fxi->InvalidateStateBlock();
+		pTARG->PushModColor( clr );
+		{	
+			ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> &vb = lev2::GfxEnv::GetSharedDynamicVB();
+
+			U32 uc = 0xffffffff;
+			ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;
+			vw.Lock( pTARG, &vb, 6 );
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy0, 0.0f, fu1, fv0, uv2[2], uv2[3], uc));
+
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy1, 0.0f, fu0, fv1, uv2[6], uv2[7], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
+			vw.UnLock(pTARG);
+
+			gbi->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
+		}
+		pTARG->PopModColor();
+	}
+	fbi->PopScissor();
+	fbi->PopViewport();
+	MTXIO->PopPMatrix();
+	MTXIO->PopVMatrix();
+	MTXIO->PopMMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -622,70 +691,6 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 	}
 }
 
-void RenderMatOrthoQuad(	ork::lev2::GfxTarget* pTARG,
-							lev2::MatrixStackInterface* MTXIO,
-//							lev2::GeometryBufferInterface* GBIO,
-							const SRect& ViewportRect,
-							const SRect& QuadRect,
-							GfxMaterial *pmat, 
-							float fu0=0.0f, float fv0=0.0f,
-							float fu1=1.0f, float fv1=1.0f,
-							float *uv2=0, const CColor4& clr=CColor4::White() )
-{
-	static SRasterState DefaultRasterState;
-	
-	// align source pixels to target pixels if sizes match
-	float fx0 = float(QuadRect.miX);
-	float fy0 = float(QuadRect.miY);
-	float fx1 = float(QuadRect.miX2);
-	float fy1 = float(QuadRect.miY2);
-	//float fx0 = float(QuadRect.miX-0.5f);
-	//float fy0 = float(QuadRect.miY-0.5f);
-	//float fx1 = float(QuadRect.miX2-0.5f);
-	//float fy1 = float(QuadRect.miY2-0.5f);
-
-	float zeros[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-	if (NULL == uv2)
-		uv2 = zeros;
-		
-	MTXIO = pTARG->MTXI();
-
-	pTARG->MTXI()->PushPMatrix( MTXIO->Ortho(fx0,fx1,fy0,fy1,0.0f,1.0f) );
-	pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
-	pTARG->RSI()->BindRasterState( DefaultRasterState, true );
-	pTARG->FBI()->PushViewport( ViewportRect );
-	pTARG->FBI()->PushScissor( ViewportRect );
-	{	// Draw Full Screen Quad with specified material
-		pTARG->BindMaterial( pmat );
-		pTARG->FXI()->InvalidateStateBlock();
-		pTARG->PushModColor( clr );
-		{	
-			ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> &vb = lev2::GfxEnv::GetSharedDynamicVB();
-
-			U32 uc = 0xffffffff;
-			ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;
-			vw.Lock( pTARG, &vb, 6 );
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy0, 0.0f, fu1, fv0, uv2[2], uv2[3], uc));
-
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy1, 0.0f, fu0, fv1, uv2[6], uv2[7], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
-			vw.UnLock(pTARG);
-
-			pTARG->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
-		}
-		pTARG->PopModColor();
-	}
-	pTARG->FBI()->PopScissor();
-	pTARG->FBI()->PopViewport();
-	pTARG->MTXI()->PopPMatrix();
-	pTARG->MTXI()->PopVMatrix();
-	pTARG->MTXI()->PopMMatrix();
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
@@ -697,12 +702,15 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		|| (mEffectName == "dof" ) 
 		|| (mEffectName == "afterlife" ) )
 	{	
-		lev2::MatrixStackInterface* MTXI0 = mpAuxBuffer0->GetContext()->MTXI();
-		lev2::MatrixStackInterface* MTXI1 = mpAuxBuffer1->GetContext()->MTXI();
+		auto MTXI0 = mpAuxBuffer0->GetContext()->MTXI();
+		auto MTXI1 = mpAuxBuffer1->GetContext()->MTXI();
+
 		////////////////////////////////////////
 		// Blur in X Direction
-		// mFrameEffectBlurX's shader always reads from Mrt0
+		// From: Mrt0 
+		// To: Aux0
 		////////////////////////////////////////
+
 		mFrameEffectBlurX.BindRtGroups( GetReadRtGroup(), 0 );
 		mFrameEffectBlurX.SetAuxMaps( 0, 0 );
 		//
@@ -714,9 +722,13 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		pTARG->FBI()->PopRtGroup();	
 		//
 		lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->GetTexture();
+
 		////////////////////////////////////////
 		// Blur in Y Direction
+		// From: Aux0
+		// To: Aux1
 		////////////////////////////////////////
+
 		mFrameEffectBlurY.BindRtGroups( 0, 0 );
 		mFrameEffectBlurY.SetAuxMaps( pAux0Tex, 0 );
 		//
@@ -773,19 +785,19 @@ void BuiltinFrameTechniques::PostProcess( RenderContextFrameData& FrameData )
 		{	
 			mFrameEffectGlowJoin.BindRtGroups( cur, 0 );
 			mFrameEffectGlowJoin.SetAuxMaps( 0, 0 );
-			lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->GetTexture();
-			lev2::Texture* pAux1Tex = mpMrtAux1->GetMrt(0)->GetTexture();
+			auto tex_aux0 = mpMrtAux0->GetMrt(0)->GetTexture();
+			auto tex_aux1 = mpMrtAux1->GetMrt(0)->GetTexture();
 
-			mFrameEffectGlowJoin.SetAuxMaps( pAux0Tex, pAux1Tex );
+			mFrameEffectGlowJoin.SetAuxMaps( tex_aux0, tex_aux1 );
 			mFrameEffectGlowJoin.SetEffectAmount( mfAmount );
 			pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad( rect_vp, rect_quad, & mFrameEffectGlowJoin );
 		}
 		else if( mEffectName == "ghostly" )
 		{	
 			mFrameEffectGhostJoin.BindRtGroups( cur, 0 ); 
-			lev2::Texture* pAux0Tex = mpMrtAux0->GetMrt(0)->GetTexture();
-			lev2::Texture* pAux1Tex = mpMrtAux1->GetMrt(0)->GetTexture();
-			mFrameEffectGhostJoin.SetAuxMaps( pAux0Tex, pAux1Tex );
+			auto tex_aux0 = mpMrtAux0->GetMrt(0)->GetTexture();
+			auto tex_aux1 = mpMrtAux1->GetMrt(0)->GetTexture();
+			mFrameEffectGhostJoin.SetAuxMaps( tex_aux0, tex_aux1 );
 			mFrameEffectGhostJoin.SetEffectAmount( mfAmount );
 			pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad( rect_vp, rect_quad, & mFrameEffectGhostJoin );
 		}
@@ -886,7 +898,7 @@ void PickFrameTechnique::Render( FrameRenderer & frenderer )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ShadowFrameTechnique::ShadowFrameTechnique(  GfxWindow* Parent, CUIViewport* pvp, int iW, int iH )
+ShadowFrameTechnique::ShadowFrameTechnique(  GfxWindow* Parent, ui::Viewport* pvp, int iW, int iH )
 	: FrameTechniqueBase( iW, iH )
 	, mpShadowBuffer( 0 )
 {

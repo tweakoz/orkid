@@ -47,7 +47,6 @@ GedWidget::GedWidget( ObjModel& mdl )
 	, mViewport( 0 )
 	, mStackHash(0)
 	, mRootObject(0)
-	, mCTQT(0)
 	, miSkin(0)
 	, mbDeleteModel(false)
 	, ConstructAutoSlot(Repaint)
@@ -66,6 +65,10 @@ GedWidget::GedWidget( ObjModel& mdl )
 		GedSkin* pskin = (*it);
 		AddSkin(pskin);
 	}
+
+	
+	/*object::Connect(	& this->GetSigRepaint(),
+						& mCTQT->GetSlotRepaint() );*/
 }
 
 GedWidget::~GedWidget()
@@ -82,18 +85,6 @@ GedWidget::~GedWidget()
 	}
 }
 
-void GedWidget::BindCTQT(lev2::CTQT*ct)
-{
-	mCTQT=ct; 
-	if( mCTQT )
-	{
-		object::Connect(	& this->GetSigRepaint(),
-							& mCTQT->GetSlotRepaint() );
-
-		//object::Connect(	& this->GetSigModelInvalidated(),
-		//					& mCTQT->GetSlotRepaint() );
-	}
-}
 
 
 void GedWidget::PropertyInvalidated( ork::Object* pobj, const reflect::IObjectProperty* prop )
@@ -131,18 +122,14 @@ void GedWidget::PropertyInvalidated( ork::Object* pobj, const reflect::IObjectPr
 
 void GedWidget::SlotRepaint( )
 {
-	if( mCTQT )
-	{
-		mCTQT->SlotRepaint();
-	}
+	printf( "GedWidget::SlotRepaint\n" );
+	GetViewport()->MarkSurfaceDirty();
 }
 
 void GedWidget::SlotModelInvalidated( )
 {
-	if( mCTQT )
-	{
-		mCTQT->SlotRepaint();
-	}
+	printf( "GedWidget::SlotModelInvalidated\n" );
+	GetViewport()->MarkSurfaceDirty();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -255,11 +242,11 @@ void GedWidget::Attach( ork::Object* obj )
 
 //////////////////////////////////////////////////////////////////////////////
 
-void GedWidget::Draw( lev2::GfxTarget* pTARG, int iscrolly )
+void GedWidget::Draw( lev2::GfxTarget* pTARG, int iw, int ih, int iscrolly )
 {
 	///////////////////////////////////////////////
-	miW = pTARG->GetW();
-	miH = pTARG->GetH();
+	miW = iw;
+	miH = ih;
 	GedItemNode* root = GetRootItem();
 	///////////////////////////////////////////////
 	if( false == pTARG->FBI()->IsPickState() )

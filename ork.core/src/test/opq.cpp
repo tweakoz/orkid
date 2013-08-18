@@ -22,7 +22,7 @@ TEST(opq_maxinflight)
     printf( "sizeof(OpGroup) %d\n", int(sizeof(OpGroup)));
     printf( "sizeof(void_lambda_t) %d\n", int(sizeof(void_lambda_t)));
 
-    for( int i=0; i<16; i++ )
+    for( int i=0; i<4; i++ )
     {
         const int knumthreads = 1 + rand()%64;
         const int kopqconcurr = knumthreads;

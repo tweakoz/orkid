@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <orktool/qtui/gfxbuffer.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {

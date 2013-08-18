@@ -87,7 +87,6 @@ ObjModel::ObjModel()
 	, mQueueObject( 0 )
 	, mCurrentObject( 0 )
 	, mRootObject( 0 )
-	, mbQueueUpdateAll( false )
 	, mbEnablePaint(false)
 	, ConstructAutoSlot(NewObject)
 	, ConstructAutoSlot(RelayModelInvalidated)
@@ -136,28 +135,42 @@ ObjModel::~ObjModel()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void ObjModel::QueueUpdate()
+{
+	auto lamb = [=]()
+	{	
+		FlushQueue();
+	};
+	UpdateSerialOpQ().push(Op(lamb));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void ObjModel::QueueUpdateAll()
 {
-	mbQueueUpdateAll = true;
+	auto lamb = [=]()
+	{	
+		FlushAllQueues();
+	};
+	UpdateSerialOpQ().push(Op(lamb));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::FlushQueue()
 {
-	if( mbQueueUpdateAll )
-	{
-		Attach(CurrentObject());
-		SigModelInvalidated();
-		//SigNewObject(pobj);
-		mbQueueUpdateAll = false;
-	}
+	printf( "ObjModel::FlushQueue\n");
+
+	Attach(CurrentObject());
+	SigModelInvalidated();
+	//SigNewObject(pobj);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::SigModelInvalidated()
 {
+	printf( "ObjModel::SigModelInvalidated\n");
 	mSignalModelInvalidated(&ObjModel::SigModelInvalidated);
 }
 void ObjModel::SigPreNewObject()
@@ -235,6 +248,7 @@ void ObjModel::ProcessQueue()
 
 void ObjModel::SlotObjectSelected( ork::Object* pobj )
 {
+	printf( "ObjModel<%p> Object<%p> selected\n", this, pobj );
 	Attach( pobj );
 }
 

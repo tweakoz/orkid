@@ -7,8 +7,7 @@
 
 #include <ork/orkconfig.h>
 
-#ifndef _ORK_LEV2_QTUI_H
-#define _ORK_LEV2_QTUI_H
+#pragma once 
 
 #if defined( ORK_CONFIG_QT )
 
@@ -81,7 +80,9 @@ extern int QtTest( int argc, char **argv );
 #include <QtGui/QLineEdit.h>
 #endif
 
-#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/event.h>
+
+#include <ork/lev2/gfx/ctxbase.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -143,7 +144,8 @@ public:
 
 	void MouseEventCommon( QMouseEvent * event );
 
-	CUIEvent* UIEvent() const;
+	const ui::Event& UIEvent() const;
+	ui::Event& UIEvent();
 	GfxTarget*	Target() const;
 	GfxWindow* GetGfxWindow() const;
 	bool AlwaysRun() const;
@@ -153,7 +155,13 @@ public:
 	QCtxWidget( CTQT* pctxbase, QWidget* parent );
 	~QCtxWidget();
     
-	MultiTouchPoint mMultiTouchTrackPoints[CUIEvent::kmaxmtpoints];
+	ui::MultiTouchPoint mMultiTouchTrackPoints[ui::Event::kmaxmtpoints];
+
+
+private:
+
+	void SendOrkUiEvent();
+	
 };
 
 class CTQT : public CTXBASE 
@@ -187,6 +195,9 @@ public:
 	void SlotRepaint(); // virtual 
 	QCtxWidget* GetQWidget() const { return mpQtWidget; }
 	QWidget* GetParent() const { return mParent; }
+
+	CVector2 MapCoordToGlobal( const CVector2& v ) const override;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -195,10 +206,10 @@ class CQtGfxWindow : public ork::lev2::GfxWindow
 {
 	public:
 
-	bool						mbinit;
-	ork::lev2::CUIViewport	*	mpviewport;
+	bool			mbinit;
+	ui::Widget*	    mRootWidget;
 	
-	CQtGfxWindow( ork::lev2::CUIViewport *pVP );
+	CQtGfxWindow( ui::Widget* root_widget );
 	~CQtGfxWindow();
 
 	virtual void Draw( void );
@@ -466,4 +477,3 @@ QMetaObject Sub::staticMetaObject;
 ///////////////////////////////////////////////////////////////////////////////
 
 #endif // ORK_CONFIG_QT
-#endif // ! defined( _ORK_LEV2_QTUI_H )

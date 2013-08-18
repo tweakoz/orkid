@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _CAMERAMANAGER_H
-#define _CAMERAMANAGER_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/core/singleton.h>
@@ -19,10 +18,6 @@ namespace ork { namespace lev2 {
 
 #define DEF_EYEZ	-500.0f
 #define DEF_DEPTH	1000.0f
-
-///////////////////////////////////////////////////////////////////////////////
-
-class CUIEvent;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -137,7 +132,7 @@ public:
 
 	CReal locscale;
 
-	CUIViewport *mpViewport;
+	ui::Viewport *mpViewport;
 	
 	CManipHandler ManipHandler;
 
@@ -159,7 +154,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////////
 
-	virtual void UIEventHandler( CUIEvent *pEvent ) = 0;
+	virtual void UIEventHandler( const ui::Event& EV ) = 0;
 	virtual void draw(GfxTarget *pT) = 0;
 	
 	virtual void RenderUpdate( void ) = 0;
@@ -173,8 +168,8 @@ public:
 
 	void CommonPostSetup( void );
 
-	void AttachViewport( CUIViewport* pVP ) { mpViewport = pVP; }
-	CUIViewport* GetViewport( void ) const { return mpViewport; }
+	void AttachViewport( ui::Viewport* pVP ) { mpViewport = pVP; }
+	ui::Viewport* GetViewport( void ) const { return mpViewport; }
 
 	void SetName( const std::string& Name ) { instance_name=Name; }
 	const std::string& GetName() const { return instance_name; }
@@ -242,7 +237,7 @@ class CCamera_persp : public CCamera
 	int beginx, beginy;
 	int leftbutton, middlebutton, rightbutton;
 
-	virtual void UIEventHandler( CUIEvent *pEvent );
+	virtual void UIEventHandler( const ui::Event& EV );
 	virtual void draw( GfxTarget *pT );
 
 	void RenderUpdate( void ); // virtual
@@ -276,5 +271,3 @@ class CCamera_persp : public CCamera
 } }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif

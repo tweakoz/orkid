@@ -10,6 +10,7 @@
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/math/cvector4.h>
+#include <ork/lev2/ui/viewport.h>
 
 #include "lev3_test.h"
 #include "render_graph.h"
@@ -20,20 +21,19 @@ extern GLuint gLastBoundNonZeroTex;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class MyViewport : public ork::lev2::CUIViewport
+class MyViewport : public ork::ui::Viewport
 {
     	
 public:
 
 	MyViewport( const std::string & name )
-        : ork::lev2::CUIViewport(name, 1, 1, 1, 1, ork::CColor3( 0.0f, 0.0f, 0.0f ), 1.0f )
+        : ork::ui::Viewport(name, 1, 1, 1, 1, ork::CColor3( 0.0f, 0.0f, 0.0f ), 1.0f )
         , gltex(0)
     {
     }
 
-	ork::lev2::EUIHandled UIEventHandler( ork::lev2::CUIEvent *pEV ) // virtual
-    {
-        return ork::lev2::EUI_HANDLED;
+	ork::ui::HandlerResult DoOnUiEvent( ork::ui::Event *pEV ) // virtual
+    {   return ork::ui::HandlerResult(this);
     }
 
 	void Init( ork::lev2::GfxTarget* pTARG ) // virtual
@@ -50,7 +50,7 @@ public:
             }
         tex->SetDirty(true);
     }
-    void DoDraw() // virtual
+    void DoRePaintSurface(ork::ui::DrawEvent& ev) override
     {
         mpTarget->FBI()->SetAutoClear(true);
         const SRect tgtrect = SRect( 0, 0, mpTarget->GetW(), mpTarget->GetH() );

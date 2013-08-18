@@ -5,15 +5,17 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORKTOOL_GED_H_
-#define _ORKTOOL_GED_H_
+#pragma once
+
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/object/AutoConnector.h>
 #include <ork/kernel/string/ArrayString.h>
-#include <ork/lev2/gfx/builtin_frameeffects.h>
+//#include <ork/lev2/gfx/builtin_frameeffects.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/orkpool.h>
 #include <ork/kernel/any.h>
+#include <ork/lev2/ui/viewport.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 class Object;
@@ -113,6 +115,7 @@ public:
 	PersistantMap* GetPersistMap( const PersistHashContext& ctx );
 
 	void QueueUpdateAll();
+	void QueueUpdate();
 
 	void FlushQueue();
 
@@ -132,7 +135,6 @@ private:
 	ork::Object*													mQueueObject;
 	CChoiceManager*													mChoiceManager;
 	orkstack<ork::Object*>											mBrowseStack;
-	bool															mbQueueUpdateAll;
 	PersistMapContainer												mPersistMapContainer;
 	bool															mbEnablePaint;
 
@@ -513,7 +515,6 @@ class GedWidget : public ork::AutoConnector
 	static const int kdim = 8;
 
 	GedItemNode*				mRootItem;
-	lev2::CTQT*					mCTQT;
 	int							miW;
 	int							miH;
 	ork::Object*				mRootObject;
@@ -545,13 +546,11 @@ public:
 
 	void PropertyInvalidated( ork::Object* pobj, const reflect::IObjectProperty* prop );
 
-	lev2::CTQT*					GetCTQT() const { return mCTQT; }
-
 	GedWidget( ObjModel& model );
 	~GedWidget();
 	void Attach( ork::Object* obj );
 
-	void Draw( lev2::GfxTarget* pTARG, int iscrolly );
+	void Draw( lev2::GfxTarget* pTARG, int iw, int ih, int iscrolly );
 
 	ObjModel& GetModel() { return mModel; }
 
@@ -567,7 +566,6 @@ public:
 	int GetStackDepth() const { return int( mItemStack.size() ); }
 	int GetRootHeight() const { return miRootH; }
 
-	void BindCTQT(lev2::CTQT*ct);
 	void SetViewport( GedVP* pvp ) { mViewport=pvp; }
 	U64 GetStackHash() const; 
 
@@ -577,33 +575,14 @@ public:
 
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedVP : public lev2::CUIViewport
+class GedVP : public ui::Surface
 {
-	class FrameRenderer : public ork::lev2::FrameRenderer
-	{
-		GedVP*	mpViewport;
-		virtual void Render();
-		public:
-		FrameRenderer( GedVP* pvp ) : mpViewport(pvp) {}
-	};
-
-	virtual lev2::EUIHandled UIEventHandler( lev2::CUIEvent *pEV );
-
-	ObjModel&						mModel;
-	GedWidget						mWidget;
-	lev2::CPickBuffer<GedVP>*		mpPickBuffer;
-	GedObject*						mpActiveNode;
-	int								miScrollY;
-	const GedObject*				mpMouseOverNode;
-	lev2::BasicFrameTechnique*		mpBasicFrameTek;
-
-	void DoDraw( /*ork::lev2::GfxTarget* pTARG*/ ); // virtual
-
 public:
 	
+	friend class lev2::CPickBuffer<GedVP>;
+
     uint32_t AssignPickId(GedObject*pobj);
 	GedWidget& GetGedWidget() { return mWidget; }
-	void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
 	GedVP( const std::string & name, ObjModel& model );
 	~GedVP();
 
@@ -612,6 +591,19 @@ public:
 	const GedObject* GetMouseOverNode() const { return mpMouseOverNode; }
 
 	static orkset<GedVP*> gAllViewports;
+
+private:
+
+	void DoRePaintSurface(ui::DrawEvent& drwev) override;
+	void DoSurfaceResize() override;
+	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
+	void DoInit( lev2::GfxTarget* pt ) override;
+	
+	ObjModel&						mModel;
+	GedWidget						mWidget;
+	GedObject*						mpActiveNode;
+	int								miScrollY;
+	const GedObject*				mpMouseOverNode;
 
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -647,10 +639,9 @@ class GedInputDialog : public QDialog
 public:
 
 	static QString getText( QMouseEvent* pev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
+	bool WasChanged() const { return mbChanged; }
 
 };
 ///////////////////////////////////////////////////////////////////////////////
 } } }
-///////////////////////////////////////////////////////////////////////////////
-#endif
 ///////////////////////////////////////////////////////////////////////////////

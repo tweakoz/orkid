@@ -1,0 +1,516 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "130";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault
+{
+	uniform mat4 MatM;
+	uniform mat4 MatMV;
+	uniform mat4 MatMVP;
+	uniform mat4 MatP;
+	uniform mat4 MatAux;
+
+	uniform vec4	 modcolor;
+	uniform vec4   User0;
+	//
+	in vec4 position : POSITION;
+	in vec4 vtxcolor : COLOR0;
+	in vec2 uv0 : TEXCOORD0;
+	in vec2 uv1 : TEXCOORD1;
+	//
+	out vec4 frg_clr;
+	out vec2 frg_uv;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdefault
+{
+	in vec4 frg_clr;
+	in vec2 frg_uv;
+	//
+	out vec4 out_clr;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt
+{
+	uniform mat4 MatAux;
+	uniform vec4   User0;
+	uniform vec4	 modcolor;
+	//
+	uniform sampler2D ColorMap;
+	uniform sampler2D ColorMap2;
+	uniform sampler2D ColorMap3;
+	//
+	out vec4 out_clr;
+	//
+	in vec2 frg_uv;
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default
+{
+	inherits default;
+	DepthTest=OFF;
+	CullTest=OFF;
+}
+libblock ptex_tools
+{
+	vec4 pointsampletex2d( sampler2D s, vec2 uv )
+	{
+		ivec2 ts = textureSize( s, 0 );
+		vec2 fts = vec2(float(ts.x)*uv.x,float(ts.y)*uv.y);
+		ts.x = int(fts.x);
+		ts.y = int(fts.y);
+		vec4 r = texelFetch(s,ts,0);
+		return r;
+	}
+
+	float max4( vec4 inp )
+	{
+		return max(inp.w,max(inp.z,max(inp.x,inp.y)));
+	}
+
+	vec3 raydir( vec3 center, vec3 pnt )
+	{
+		vec3 dir = normalize( pnt-center);
+		return dir;
+	}
+
+	vec3 compnormal( vec2 fuv ) 
+	{
+		float kidiv = 1.0/User0.w;
+
+		float fU = fuv.x;
+		float fV = fuv.y;
+
+		//////////////////////////////////////
+		// sampling 9 points, a center point and 8 surrounding points
+		//////////////////////////////////////
+
+		vec3 nrm = vec3(0.0,0.0,0.0);
+		
+		for( int ix=-1; ix<2; ix++ )
+		{
+			float fx = float(kidiv)*float(ix);
+			
+			for( int iy=-1; iy<2; iy++ )
+			{
+				float fy = float(kidiv)*float(iy);
+		
+				vec2 uv4 = vec2(fU+fx,fV+fy);
+
+				vec2 uv0 = uv4+vec2(-kidiv,-kidiv);
+				vec2 uv1 = uv4+vec2(0.0,-kidiv);
+				vec2 uv2 = uv4+vec2(kidiv,-kidiv);
+
+				vec2 uv3 = uv4+vec2(-kidiv,0.0);
+				vec2 uv5 = uv4+vec2(kidiv,0.0);
+
+				vec2 uv6 = uv4+vec2(-kidiv,kidiv);
+				vec2 uv7 = uv4+vec2(0.0,kidiv);
+				vec2 uv8 = uv4+vec2(kidiv,kidiv);
+
+				//////////////////////////////////////
+				float h4 = pointsampletex2d( ColorMap, uv4 ).x*modcolor.x;
+				
+				float h0 = pointsampletex2d( ColorMap, uv0 ).x*modcolor.x;
+				float h1 = pointsampletex2d( ColorMap, uv1 ).x*modcolor.x;
+				float h2 = pointsampletex2d( ColorMap, uv2 ).x*modcolor.x;
+
+				float h3 = pointsampletex2d( ColorMap, uv3 ).x*modcolor.x;
+				float h5 = pointsampletex2d( ColorMap, uv5 ).x*modcolor.x;
+				
+				float h6 = pointsampletex2d( ColorMap, uv6 ).x*modcolor.x;
+				float h7 = pointsampletex2d( ColorMap, uv7 ).x*modcolor.x;
+				float h8 = pointsampletex2d( ColorMap, uv8 ).x*modcolor.x;
+				//////////////////////////////////////
+				
+				vec3 p4 = vec3( uv4.x, h4, uv4.y );
+
+				vec3 p0 = vec3( uv0.x, h0, uv0.y );
+				vec3 p1 = vec3( uv1.x, h1, uv1.y );
+				vec3 p2 = vec3( uv2.x, h2, uv2.y );
+
+				vec3 p3 = vec3( uv3.x, h3, uv3.y );
+				vec3 p5 = vec3( uv5.x, h5, uv5.y );
+
+				vec3 p6 = vec3( uv6.x, h6, uv6.y );
+				vec3 p7 = vec3( uv7.x, h7, uv7.y );
+				vec3 p8 = vec3( uv8.x, h8, uv8.y );
+
+				vec3 d0 = raydir( p4, p0 );
+				vec3 d1 = raydir( p4, p1 );
+				vec3 d2 = raydir( p4, p2 );
+				vec3 d3 = raydir( p4, p5 );
+				vec3 d4 = raydir( p4, p8 );
+				vec3 d5 = raydir( p4, p7 );
+				vec3 d6 = raydir( p4, p6 );
+				vec3 d7 = raydir( p4, p3 );
+				
+				vec3 n0 = cross( d1, d0 );
+				vec3 n1 = cross( d2, d1 );
+				vec3 n2 = cross( d3, d2 );
+				vec3 n3 = cross( d4, d3 );
+				vec3 n4 = cross( d6, d4 );
+				vec3 n5 = cross( d6, d5 );
+				vec3 n6 = cross( d7, d6 );
+				vec3 n7 = cross( d0, d7 );
+
+				nrm += normalize(n0+n1+n2+n3+n4+n5+n6+n7);
+			}
+		}
+		
+		nrm = normalize(nrm);
+		
+		//////////////////////////////////////
+	    
+	    return nrm;
+	}
+
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_std : iface_vdefault
+{
+	gl_Position = MatMVP*position;
+	frg_clr = vtxcolor;
+	frg_uv = uv0;
+}
+fragment_shader ps_std : iface_fmt
+{
+	out_clr = vec4(1.0,0.0,0.0,1.0);
+}
+fragment_shader ps_texcolor : iface_fmt
+{
+	vec4 texc = texture( ColorMap, frg_uv );
+	out_clr = vec4(texc.xyz,texc.r);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_downsample16 
+	: iface_fmt
+	: ptex_tools
+{
+	float o = 1.0/User0.w;
+
+	vec4 outp = vec4(0.0,0.0,0.0,1.0);
+	for( int i=0; i<4; i++ )
+	{	float fx = float(i)*o;
+		for( int j=0; j<4; j++ )
+		{	float fy = float(j)*o;
+			vec2 tc = frg_uv.xy+vec2(fx,fy);
+			vec2 tc2 = vec2( tc.x, tc.y );
+			outp += pointsampletex2d( ColorMap, tc2 ).xyzw*(1.0/16.0);	
+		}
+	}
+	out_clr=outp;
+}
+technique downsample16
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_downsample16;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_uvxf : iface_vdefault
+{
+	vec4 vpos = position;
+	vec4 npos = MatMVP*position;
+	vec2 uvxf = (MatAux*vec4(uv0,0.0,1.0)).xy;
+
+	gl_Position = npos;
+	frg_uv = uvxf;
+}
+fragment_shader ps_octave 
+	: iface_fmt
+	: ptex_tools
+{
+	float famp = MatAux[2][2];
+	vec3 texA = texture( ColorMap, frg_uv ).xyz*famp;
+	out_clr = vec4(texA,1.0);
+}
+technique octaves
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_uvxf;
+		fragment_shader=ps_octave;
+		state_block=sb_default;
+	}
+}
+technique transform
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_uvxf;
+		fragment_shader=ps_texcolor;
+		state_block=sb_default;
+	}
+}
+
+///////////////////////////////////////////////////////////////
+fragment_shader ps_colorize : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, vec2(texA.x,0.5) ).xyz;
+	out_clr = vec4(texB,1.0);
+}
+technique colorize
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_colorize;
+		state_block=sb_default;
+	}
+}
+
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+fragment_shader ps_h2n 
+	: iface_fmt
+	: ptex_tools
+{
+	vec3 n = vec3(0.5,0.5,0.5)+compnormal( frg_uv )*0.5;
+	out_clr = vec4(n,1.0);
+}
+
+vertex_shader vs_h2n : iface_vdefault
+{
+	gl_Position = MatMVP*position;
+	frg_clr = vec4(1.0,0.0,0.0,1.0);
+	frg_uv = uv0;
+}
+technique h2n
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_h2n;
+		fragment_shader=ps_h2n;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+technique downsample
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_texcolor;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_uvmap : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, texA.xy ).xyz;
+	out_clr = vec4(texB,1.0);
+}
+technique uvmap
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_uvmap;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_sphmap 
+	: iface_fmt
+	: ptex_tools
+{
+	vec4 PixOut;
+	
+	float dir = User0.z;
+	
+	vec2 uspos = (frg_uv.xy-vec2(0.5,0.5))*2.0;
+	
+	vec3 xyz = normalize(mix(vec3(0.0,1.0,0.0), vec3( uspos.x, 0.01, uspos.y ), dir ));
+	
+	
+	vec3 objn = normalize((texture( ColorMap, frg_uv ).xyz*2.0)-vec3(1.0,1.0,1.0));
+    vec3 objrefl = normalize(reflect(xyz,objn));
+    vec3 uvt = (objrefl.xyz*0.5)+vec3(0.5,0.5,0.5);
+
+	vec3 texB = texture( ColorMap2, uvt.xz ).xyz;
+		
+	out_clr = vec4(texB,1.0);
+}
+technique sphmap
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_sphmap;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_sphrefract
+	: iface_fmt
+	: ptex_tools
+{
+	vec4 PixOut;
+	
+	float ior = User0.z;
+	float dir = User0.y;
+	
+	vec2 uspos = (frg_uv.xy-vec2(0.5,0.5))*2.0;
+	
+	vec3 xyz = normalize(mix(vec3(0.0,1.0,0.0), vec3( uspos.x, 0.01, uspos.y ), dir ));
+	
+	
+	vec3 objn = normalize((texture( ColorMap, frg_uv ).xyz*2.0)-vec3(1.0,1.0,1.0));
+    vec3 objrefl = normalize(refract(xyz,objn,ior));
+    vec3 uvt = (objrefl.xyz*0.5)+vec3(0.5,0.5,0.5);
+
+	vec3 texB = texture( ColorMap2, uvt.xz ).xyz;
+		
+	out_clr = vec4(texB,1.0);
+}
+technique sphrefract
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_sphrefract;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop2_add : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	out_clr = vec4(texA+texB,1.0);
+}
+technique imgop2_add
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_imgop2_add;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop2_aminusb : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	out_clr = vec4(texA-texB,1.0);
+}
+technique imgop2_aminusb
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_imgop2_aminusb;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop2_bminusa : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	out_clr = vec4(texB-texA,1.0);
+}
+technique imgop2_bminusa
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_imgop2_bminusa;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop2_mul : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	out_clr = vec4(texB*texA,1.0);
+}
+technique imgop2_mul
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_imgop2_mul;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop3_lerp : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	vec3 texM = texture( ColorMap3, frg_uv ).xyz;
+	out_clr = vec4(mix(texA,texB,texM),1.0);
+}
+technique imgop3_lerp
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_imgop3_lerp;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop3_addw : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	vec3 texM = texture( ColorMap3, frg_uv ).xyz;
+	out_clr = vec4(texA+(texB*texM),1.0);
+}
+technique imgop3_addw
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_imgop3_addw;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////
+technique imgop3_subw
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_std;
+		state_block=sb_default;
+	}
+}
+technique imgop3_mul3
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_std;
+		state_block=sb_default;
+	}
+}
+technique ttex
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_std;
+		fragment_shader=ps_texcolor;
+		state_block=sb_default;
+	}
+}

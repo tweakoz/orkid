@@ -178,10 +178,10 @@ void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
 		///////////////////////////////////////////////////////////////////////////
 		pTEXTARG->FBI()->PushRtGroup( mpPickRtGroup );	// Enable Mrt
 		pTEXTARG->FBI()->EnterPickState(this);
-		pTEXTARG->RSI()->SetOverrideBlending(true);
-		pTEXTARG->RSI()->GetOverrideRasterState().muBlending = EBLENDING_OFF;
-		pTEXTARG->RSI()->SetOverrideAlphaTest(true);
-		pTEXTARG->RSI()->GetOverrideRasterState().muAlphaTest = EALPHATEST_OFF;
+		//pTEXTARG->RSI()->SetOverrideBlending(true);
+		//pTEXTARG->RSI()->GetOverrideRasterState().muBlending = EBLENDING_OFF;
+		//pTEXTARG->RSI()->SetOverrideAlphaTest(true);
+		//EXTARG->RSI()->GetOverrideRasterState().muAlphaTest = EALPHATEST_OFF;
 		pTEXTARG->FBI()->PushViewport( VPRect );
 		pTEXTARG->BindMaterial( GfxEnv::GetDefault3DMaterial() );
 		pTEXTARG->PushModColor( CColor4::Yellow() );
@@ -208,7 +208,7 @@ void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
 		pTEXTARG->PopModColor();
 		pTEXTARG->FBI()->PopRtGroup();
 		pTEXTARG->FBI()->PopViewport();
-		pTEXTARG->RSI()->ClearOverrides();
+		//pTEXTARG->RSI()->ClearOverrides();
 		pTEXTARG->FBI()->LeavePickState();
 	}
 	EndFrame();

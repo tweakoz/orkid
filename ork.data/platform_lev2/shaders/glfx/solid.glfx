@@ -85,6 +85,12 @@ fragment_shader ps_uitext : iface_fmt
 	out_clr = vec4(texc.xyz*ModColor.xyz,texc.r);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_texcolor : iface_fmt
+{
+	vec4 texc = texture( ColorMap, frg_uv );
+	out_clr = vec4(texc.xyz,texc.r);
+}
+///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault
 {
 	gl_Position = MatMVP*position;
@@ -131,7 +137,7 @@ technique texcolor {
 	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_fragclr;
+		fragment_shader=ps_texcolor;
 		state_block=sb_default;
 	}
 }

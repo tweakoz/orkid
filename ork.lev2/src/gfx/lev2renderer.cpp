@@ -18,7 +18,7 @@
 #include <ork/lev2/gfx/renderer.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
-#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/renderable.h>
 #include <ork/lev2/gfx/lev2renderer.h>
 #include <ork/kernel/orklut.hpp>
@@ -332,29 +332,6 @@ IRenderTarget::IRenderTarget()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ContextRenderTarget::ContextRenderTarget(GfxTarget* pContext)
-	: mpContext(pContext)
-{
-}
-int ContextRenderTarget::GetW()
-{
-	return mpContext->GetW();
-}
-int ContextRenderTarget::GetH()
-{
-	return mpContext->GetH();
-}
-void ContextRenderTarget::BeginFrame(FrameRenderer&frenderer)
-{
-	mpContext->BeginFrame();
-}
-void ContextRenderTarget::EndFrame(FrameRenderer&frenderer)
-{
-	mpContext->EndFrame();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 RtGroupRenderTarget::RtGroupRenderTarget(RtGroup* prtgroup)
 	: mpRtGroup(prtgroup)
 {
@@ -377,7 +354,7 @@ void RtGroupRenderTarget::EndFrame(FrameRenderer&frenderer)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-UiViewportRenderTarget::UiViewportRenderTarget(CUIViewport* pVP)
+UiViewportRenderTarget::UiViewportRenderTarget(ui::Viewport* pVP)
 	: mpViewport(pVP)
 {
 }
@@ -400,6 +377,29 @@ void UiViewportRenderTarget::EndFrame(FrameRenderer&frenderer)
 	RenderContextFrameData&	FrameData = frenderer.GetFrameData();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	mpViewport->EndFrame( pTARG );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+UiSurfaceRenderTarget::UiSurfaceRenderTarget(ui::Surface* pVP)
+	: mSurface(pVP)
+{
+}
+int UiSurfaceRenderTarget::GetW()
+{
+	return mSurface->GetW();
+}
+int UiSurfaceRenderTarget::GetH()
+{
+	return mSurface->GetH();
+}
+void UiSurfaceRenderTarget::BeginFrame(FrameRenderer&frenderer)
+{
+	mSurface->BeginSurface( frenderer );
+}
+void UiSurfaceRenderTarget::EndFrame(FrameRenderer&frenderer)
+{
+	mSurface->EndSurface( frenderer );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

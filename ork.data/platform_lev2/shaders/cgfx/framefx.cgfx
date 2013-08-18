@@ -159,27 +159,28 @@ float4 ps_blury( Fragment FragIn ) : COLOR
 	}
 	PixOut *= glowscale;
     return PixOut;
+	//return tex2D( AuxMap0, RealUv ).xyzw;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 float4 ps_hdr_join_ghost( Fragment FragIn ) : COLOR
 {
-	float2 Uv0 = float2( FragIn.Uv0.x, FragIn.Uv0.y );
-    float3 Diffuse = tex2D( MrtMap0, Uv0.xy ).xyz;
-    float4 Glow = tex2D( AuxMap1, Uv0.xy );
-	float dist = pow( saturate( distance( Glow.rgb*Glow.a, Diffuse ) ), 1.2f );
+    float3 base = tex2D( MrtMap0, FragIn.Uv0.xy ).xyz;
+    float3 glow = tex2D( AuxMap1, FragIn.Uv0.xy ).xyz;
+    float diff = distance( glow, base );
+	float dist = pow( saturate( diff ), 1.2f );
 	
 	float3 black = float3(0.0f,0.0f,0.0f);
 	float3 blue = float3(0.0f,0.0f,1.0f);
 	float3 white = float3(1.0f,1.0f,1.0f);
 	
-	float3	OutColor = lerp( black, blue, dist );
-			OutColor = lerp( OutColor, white, dist );
+	float3	outc3 = lerp( black, blue, dist );
+			outc3 = lerp( outc3, white, dist );
 			
-	OutColor = lerp( Diffuse, OutColor, EffectAmount );
+	outc3 = lerp( base, outc3, EffectAmount );
 			
-	return float4( OutColor, 1.0f ); 
+	return float4( diff,diff,diff, 1.0f ); 
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -12,17 +12,13 @@
 #pragma once
 
 /////////////////////////////
-//#define USE_GL3
+#define USE_GL3
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////
 #if defined(USE_GL3)
-  #define USE_IBO
-  #define USE_VAO 
   #define _USE_GLSLFX
   #define GL3_PROTOTYPES 1
 #else
-  #define USE_VAO 
-  #define USE_IBO
   #define _USE_CGFX
   #define GL_GLEXT_PROTOTYPES 1
 #endif
@@ -80,7 +76,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 
-#if 1 //defined( _DEBUG )
+#if 0 //defined( _DEBUG )
 #define GL_ERRORCHECK() { GLenum iErr = GetGlError(); OrkAssert( iErr==GL_NO_ERROR ); }
 #else
 #define GL_ERRORCHECK() {}
@@ -139,7 +135,15 @@ public:
 
 class GlRasterStateInterface : public RasterStateInterface
 {
-	virtual void BindRasterState( const SRasterState &rState, bool bForce = false );
+	void BindRasterState( const SRasterState &rState, bool bForce ) override;
+
+	void SetZWriteMask( bool bv ) override;
+	void SetRGBAWriteMask( bool rgb, bool a ) override;
+	void SetBlending( EBlending eVal ) override;
+	void SetDepthTest( EDepthTest eVal ) override;
+	void SetCullTest( ECullTest eVal ) override;
+	void SetScissorTest( EScissorTest eVal ) override;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,10 +226,10 @@ public:
 
 	///////////////////////////////////////////////////////
 
+	virtual void	Clear( const CColor4 &rCol, float fdepth );
+
 	virtual void	SetViewport( int iX, int iY, int iW, int iH );
 	virtual void	SetScissor( int iX, int iY, int iW, int iH );
-	virtual void	AttachViewport( CUIViewport *pVP = 0 );
-	virtual void	ClearViewport( CUIViewport *pVP );
 
 	virtual void	PushScissor( const SRect &rScissorRect );
 	virtual SRect&	PopScissor( void );

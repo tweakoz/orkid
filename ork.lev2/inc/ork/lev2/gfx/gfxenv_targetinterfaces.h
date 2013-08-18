@@ -21,7 +21,7 @@
 
 #include <ork/lev2/gfx/gfxrasterstate.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>
-#include <ork/lev2/ui/ui_enum.h>
+#include <ork/lev2/ui/ui.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/kernel/mutex.h>
 #include <ork/math/TransformNode.h>
@@ -40,7 +40,6 @@ class GfxMaterial;
 class VertexBufferBase;
 class IndexBufferBase;
 class GfxBuffer;
-class CUIViewport;
 class TextureAnimationInst;
 class PickBufferBase;
 class RtGroup;
@@ -262,13 +261,19 @@ public:
 	SRasterState &GetRasterState( void ) { return mCurrentState; }
 	SRasterState & RefUIRasterState( void ) { return mUIRasterState; }
 	virtual void BindRasterState( const SRasterState &rState, bool bForce = false ) = 0;
-	const SRasterState &GetOverrideRasterState() const { return mOverrideState; }
-	SRasterState &GetOverrideRasterState() { return mOverrideState; }
+	//const SRasterState &GetOverrideRasterState() const { return mOverrideState; }
+	//SRasterState &GetOverrideRasterState() { return mOverrideState; }
 
 	SRasterState &GetLastState( void ) { return mLastState; }
 
+	virtual void SetZWriteMask( bool bv ) = 0;
+	virtual void SetRGBAWriteMask( bool rgb, bool a ) = 0;
+	virtual void SetBlending( EBlending eVal ) = 0;
+	virtual void SetDepthTest( EDepthTest eVal ) = 0;
+	virtual void SetCullTest( ECullTest eVal ) = 0;
+	virtual void SetScissorTest( EScissorTest eVal ) = 0;
 
-	void SetOverrideZWriteMask(bool override) { mOverrideZWriteMask = override; }
+	/*void SetOverrideZWriteMask(bool override) { mOverrideZWriteMask = override; }
 	void SetOverrideAWriteMask(bool override) { mOverrideAWriteMask = override; }
 	void SetOverrideRGBWriteMask(bool override) { mOverrideRGBWriteMask = override; }
 	void SetOverrideAlphaTest(bool override) { mOverrideAlphaTest = override; }
@@ -287,7 +292,7 @@ public:
 	void SetOverrideSortID(bool override) { mOverrideSortID = override; }
 	void SetOverrideTransparent(bool override) { mOverrideTransparent = override; }
 	void SetOverridePointSize(bool override) { mOverridePointSize = override; }
-	void ClearOverrides();
+	void ClearOverrides();*/
 
 protected:
 
@@ -298,11 +303,11 @@ protected:
 	////////////////////////////////////////////////////////
 	// used to globally override any state set (useful for pick mode)
 
-	SRasterState						mOverrideState;
+	//SRasterState						mOverrideState;
 
 	////////////////////////////////////////////////////////
 
-	bool mOverrideZWriteMask;
+	/*bool mOverrideZWriteMask;
 	bool mOverrideAWriteMask;
 	bool mOverrideRGBWriteMask;
 	bool mOverrideAlphaTest;
@@ -322,7 +327,7 @@ protected:
 	bool mOverrideTransparent;
 	bool mOverridePointSize;
 	void GetOverrideMergedRasterState(const SRasterState &in, SRasterState &out);
-
+*/
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -394,6 +399,7 @@ public:
 	///////////////////////////////////////////////////////////////////////
 
 	void PushUIMatrix();
+	void PushUIMatrix(int iw, int ih);
 	void PopUIMatrix();
 
 	///////////////////////////////////////////////////////////////////////
@@ -542,8 +548,7 @@ public:
 
 	virtual void	SetViewport( int iX, int iY, int iW, int iH ) = 0;
 	virtual void	SetScissor( int iX, int iY, int iW, int iH ) = 0;
-	virtual void	AttachViewport( CUIViewport *pVP = 0 ) = 0;
-	virtual void	ClearViewport( CUIViewport *pVP ) = 0;
+	virtual void	Clear( const CColor4 &rCol, float fdepth ) = 0;
 	virtual void	PushViewport( const SRect &rViewportRect );
 	virtual SRect&	PopViewport( void );
 	SRect&			GetViewport( void );

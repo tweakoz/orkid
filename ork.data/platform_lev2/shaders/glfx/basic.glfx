@@ -16,7 +16,7 @@ vertex_interface iface_vdefault
 	uniform mat4 WMatrix;
 	uniform mat4 WVMatrix;
 	uniform mat4 VMatrix;
-	uniform mat4 WRotMatrix;
+	uniform mat3 WRotMatrix;
 	uniform mat4 DiffuseMapMatrix;
 	uniform mat4 NormalMapMatrix;
 	uniform mat4 SpecularMapMatrix;
@@ -37,6 +37,7 @@ vertex_interface iface_vdefault
 
 	//
 	in vec4 position : POSITION;
+	in vec3 normal : NORMAL;
 	//in vec4 vtxcolor : COLOR0;
 	in vec2 uv0 : TEXCOORD0;
 	//in vec2 uv1 : TEXCOORD1;
@@ -72,6 +73,10 @@ fragment_interface iface_fmt
 state_block sb_default
 {
 	inherits default;
+	//BlendMode = ADDITIVE;
+	DepthTest=LESS;
+	DepthMask=true;
+	CullTest=PASS_FRONT;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_lerpblend
@@ -95,6 +100,16 @@ vertex_shader vs_vtxtexcolor : iface_vdefault
 	frg_uv0 = uv0;
 	//frg_uv1 = uv1;
 }
+
+///////////////////////////////////////////////////////////////
+vertex_shader vs_wnormal : iface_vdefault
+{
+	gl_Position = WVPMatrix*position;
+	vec3 wnorm = normalize(WRotMatrix*normal);
+	frg_clr = vec4(wnorm.xyz,1.0);
+	frg_uv0 = uv0;
+}
+
 ///////////////////////////////////////////////////////////////
 
 fragment_shader ps_modtex : iface_fmt
@@ -143,8 +158,8 @@ technique tek_modcolor
 technique tek_wnormal
 {	fxconfig=fxcfg_default;
 	pass p0
-	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_modclr;
+	{	vertex_shader=vs_wnormal;
+		fragment_shader=ps_fragclr;
 		state_block=sb_default;
 	}
 }

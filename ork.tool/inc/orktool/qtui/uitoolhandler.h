@@ -5,11 +5,12 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORKTOOL_QTUI_TOOLHANDLER_H
-#define _ORKTOOL_QTUI_TOOLHANDLER_H
+#pragma once
+
 ///////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/ui/widget.h>
 ///////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////
@@ -21,23 +22,8 @@ namespace ork { namespace tool {
 ///
 ///////////////////////////////////////////////////////////////////////////
 
-template <typename VPTYPE> class UIToolHandler
+template <typename VPTYPE> class UIToolHandler : public ui::Widget
 {
-
-	VPTYPE*								mpViewport;
-
-	virtual void DoAttach( VPTYPE* ) = 0;
-	virtual void DoDetach( VPTYPE* ) = 0;
-
-protected:
-	
-	lev2::Texture*						mpBaseIcon;
-	std::string							mBaseIconName;
-
-	orkvector<lev2::Texture*>			mpSubIconVector;
-	orkvector<std::string>				mpSubIconNameVector;
-
-	int									mState;
 
 public:
 
@@ -46,10 +32,10 @@ public:
 	void Attach( VPTYPE* );
 	void Detach( VPTYPE* );
 
-	virtual ork::lev2::EUIHandled UIEventHandler(ork::lev2::CUIEvent* pEV);
+	ui::HandlerResult DoOnUiEvent( const ui::Event& EV) override;
 	void LoadToolIcon();
-	virtual void DrawToolIcon(ork::lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite);
-	virtual void DrawSubToolIcon( ork::lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite );
+	virtual void DrawToolIcon(lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite);
+	virtual void DrawSubToolIcon( lev2::GfxTarget* pTARG, int ix, int iy, bool bhilite );
 
 	VPTYPE* GetViewport() const { return mpViewport; }
 
@@ -60,9 +46,29 @@ public:
 	void SetState(int state);
 	virtual void OnEnter(int state) {}
 	virtual void OnExit(int state) {}
+	void DoDraw(ui::DrawEvent& drwev) {}
+
+	void SetToolName(const std::string& nam ) { mToolName=nam; }
+	const std::string& GetToolName() const { return mToolName; }
+	
+protected:
+	
+	lev2::Texture*						mpBaseIcon;
+	std::string							mBaseIconName;
+	std::string 						mToolName;
+	orkvector<lev2::Texture*>			mpSubIconVector;
+	orkvector<std::string>				mpSubIconNameVector;
+
+	int									mState;
+
+private:
+
+	VPTYPE*	mpViewport;
+
+	virtual void DoAttach( VPTYPE* ) = 0;
+	virtual void DoDetach( VPTYPE* ) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////
 } }
 ///////////////////////////////////////////////////////////////////////////
-#endif

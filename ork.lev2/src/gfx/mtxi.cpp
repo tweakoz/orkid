@@ -48,6 +48,16 @@ void MatrixStackInterface::PushUIMatrix()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void MatrixStackInterface::PushUIMatrix(int iw, int ih)
+{
+	ork::CMatrix4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, float(iw), 0.0f, float(ih), 0.0f, 1.0f );
+	PushPMatrix( mtxMVP ); 
+	PushVMatrix( ork::CMatrix4::Identity ); 
+	PushMMatrix( ork::CMatrix4::Identity ); 
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void MatrixStackInterface::PopUIMatrix()
 {
 	PopPMatrix( ); 

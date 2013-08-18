@@ -1090,6 +1090,8 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 	int ix = pEV->x() - this->miX;
 	int iy = pEV->y() - this->miY;
 
+	printf( "GedMapNode<%p> ilx<%d> ily<%d>\n", this, ix, iy );
+
 	if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
 	{
 		mbSingle = ! mbSingle;
@@ -1117,7 +1119,8 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 			ObjModel& model = mModel; 
 			AddItem(pEV);
 			//model.Attach(model.CurrentObject());
-			model.QueueUpdateAll();
+			printf( "MAPADDITEM\n");
+			model.QueueUpdate();
 			return;
 		}
 		ix -= (kdim+4);
@@ -1126,7 +1129,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 			ObjModel& model = mModel; 
 			RemoveItem(pEV);
 			//model.Attach(model.CurrentObject());
-			model.QueueUpdateAll();
+			model.QueueUpdate();
 			return;
 		}
 		ix -= (kdim+4);
@@ -1135,7 +1138,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 			ObjModel& model = mModel; 
 			MoveItem(pEV);
 			//model.Attach(model.CurrentObject());
-			model.QueueUpdateAll();
+			model.QueueUpdate();
 			return;
 		}
 		ix -= (kdim+4);
@@ -1144,7 +1147,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 			ObjModel& model = mModel; 
 			DuplicateItem(pEV);
 			//model.Attach(model.CurrentObject());
-			model.QueueUpdateAll();
+			model.QueueUpdate();
 			return;
 		}
 	}
@@ -1159,7 +1162,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 			ObjModel& model = mModel; 
 			ImportItem(pEV);
 			//model.Attach(model.CurrentObject());
-			model.QueueUpdateAll();
+			model.QueueUpdate();
 			return;
 		}
 		ix -= (kdim+4);
@@ -1168,7 +1171,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 			ObjModel& model = mModel; 
 			ExportItem(pEV);
 			//model.Attach(model.CurrentObject());
-			model.QueueUpdateAll();
+			model.QueueUpdate();
 			return;
 		}
 	}
@@ -1465,7 +1468,6 @@ void GedMapIoDriver::SetValue(const CVector3& flt)
 {
 	MapItemWriteSerializer deser_key( *this );
 	deser_key.SetValue( flt );
-	//GetModel().QueueUpdateAll();
 	ObjectGedEditEvent ev;
 	ev.mProperty = GetProp();
 	GetObject()->Notify(&ev);
@@ -1516,7 +1518,7 @@ void GedMapFactoryNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 
 			GetOrkObj()->Notify( & mice );
 
-			mModel.QueueUpdateAll();
+			mModel.QueueUpdate();
 		}
 	}
 }

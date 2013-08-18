@@ -9,14 +9,13 @@
 // Grpahics Environment (Driver/HAL)
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _EXECENV_GFX_GFXENV_H
-#define _EXECENV_GFX_GFXENV_H
+#pragma once
 
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
-#include <ork/lev2/ui/ui_enum.h>
+#include <ork/lev2/ui/ui.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/kernel/mutex.h>
 #include <ork/lev2/gfx/gfxenv_targetinterfaces.h>
@@ -47,9 +46,6 @@ class GfxMaterial;
 class GfxMaterialUITextured;
 
 class GfxEnv;
-
-class CUIEvent;
-class CUIViewport;
 
 /// ////////////////////////////////////////////////////////////////////////////
 ///
@@ -302,7 +298,7 @@ class GfxBuffer : public ork::Object
 	//////////////////////////////////////////////
 
 	RtGroup* GetParentMrt( void ) const { return mParentRtGroup; }
-	CUIViewport* GetViewport( void ) const { return mpViewport; }
+	ui::Widget* GetRootWidget( void ) const { return mRootWidget; }
 	bool IsDirty( void ) const { return mbDirty; }
 	bool IsSizeDirty( void ) const { return mbSizeIsDirty; }
 	const std::string & GetName( void ) const { return msName; }
@@ -351,13 +347,17 @@ class GfxBuffer : public ork::Object
 
 	//////////////////////////////////////////////
 
+	void SetRootWidget( ui::Widget* pwidg ) { mRootWidget=pwidg; }
+
+	//////////////////////////////////////////////
+
 	virtual void BeginFrame( void );
 	virtual void EndFrame( void );
 	virtual void CreateContext();
 
 protected:
 
-	CUIViewport*		mpViewport;
+	ui::Widget*			mRootWidget;
 	GfxTarget*			mpContext;
 	GfxMaterial*		mpMaterial;
 	Texture*			mpTexture;
@@ -373,137 +373,6 @@ protected:
 	RtGroup*			mParentRtGroup;
     void*              	mPlatformHandle;
 
-};
-
-///////////////////////////////////////////////////////////////////////////
-
-class PickBufferBase : public ork::lev2::GfxBuffer
-{
-	RttiDeclareAbstract(PickBufferBase,ork::lev2::GfxBuffer);
-
-	public:
-
-	enum EPickBufferType
-	{
-		EPICK_FACE_VTX = 0,
-		EPICK_NORMAL ,
-		EPICK_WPOS ,
-		EPICK_ST
-	};
-
-	PickBufferBase( GfxBuffer *parent,
-					 int iX, int iY, int iW, int iH,
-					 EPickBufferType etyp );
-
-	void Init();
-	
-    uint32_t        AssignPickId(ork::Object*);
-    ork::Object*    GetObjectFromPickId(uint32_t);
-
-	virtual void Draw( void ) = 0;
-
-	///////////////////////
-
-	EPickBufferType				meType;
-	bool						mbInitTex;
-	GfxMaterialUITextured*		mpUIMaterial;
-    std::map<uint32_t,ork::Object*>	mPickIds;
-	ork::lev2::RtGroup*			mpPickRtGroup;
-
-};
-
-///////////////////////////////////////////////////////////////////////////
-
-template <typename VPT> class CPickBuffer : public PickBufferBase
-{
-	public:
-
-	CPickBuffer(	lev2::GfxBuffer* pbuf,
-					VPT* pVP,
-					int iX, int iY, int iW, int iH,
-					EPickBufferType etyp );
-	
-
-	virtual void Draw( void );
-	
-	VPT* mpViewport;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename TLev2Viewport>
-CPickBuffer<TLev2Viewport>::CPickBuffer(	lev2::GfxBuffer *Parent,
-											TLev2Viewport *pVP,
-											int iX, int iY, int iW, int iH,
-											EPickBufferType etyp )
-
-	: PickBufferBase( Parent, iX, iY, iW, iH, etyp )
-	, mpViewport( pVP )
-{
-	Init();
-}
-
-/// ////////////////////////////////////////////////////////////////////////////
-/// Graphics Context Base
-/// this abstraction allows us to switch UI toolkits (Qt/Fltk, etc...)
-/// ////////////////////////////////////////////////////////////////////////////
-
-#if defined( _WIN32 )
- typedef HWND CTFLXID;
-#elif defined( _OSX )
- typedef WindowPtr CTFLXID;
-#elif defined (IX)
- typedef void* CTFLXID;
-#elif defined (WII)
- typedef unsigned long int CTFLXID;
-#endif
-
- class CTXBASE : public ork::AutoConnector
-{
-	RttiDeclareAbstract( CTXBASE, ork::AutoConnector );
-
-	DeclarePublicAutoSlot( Repaint );
-
-public:
-
-	enum ERefreshPolicy
-	{	
-		EREFRESH_FASTEST = 0,	// refresh as fast as the update loop can go
-		EREFRESH_WHENDIRTY,		// refresh whenever dirty 
-		EREFRESH_FIXEDFPS,		// refresh at a fixed frame rate
-	};
-
-
-	CTFLXID GetThisXID( void ) const { return mxidThis; }
-	CTFLXID GetTopXID( void ) const { return mxidTopLevel; }
-	void SetThisXID( CTFLXID xid ) { mxidThis=xid; }
-	void SetTopXID( CTFLXID xid ) { mxidTopLevel=xid; }
-	ERefreshPolicy GetRefreshPolicy() const { return meRefreshPolicy; }
-
-	CTXBASE( GfxWindow* pwin );
-
-	virtual void SlotRepaint( void ) {}
-	virtual void SetRefreshRate( int ihz ) {}
-	virtual void SetRefreshPolicy( ERefreshPolicy epolicy ) { meRefreshPolicy=epolicy; }
-
-	virtual void Show() {}
-	virtual void Hide() {}
-
-	GfxTarget* GetTarget() const { return mpTarget; }
-	GfxWindow* GetWindow() const { return mpGfxWindow; }
-	void SetTarget(GfxTarget*pt) { mpTarget=pt; }
-	void SetWindow(GfxWindow*pw) { mpGfxWindow=pw; }
-
-protected:
-
-	GfxTarget*					mpTarget;
-	GfxWindow*					mpGfxWindow;
-
-	CUIEvent*					UIEvent;
-	CTFLXID						mxidThis;
-	CTFLXID						mxidTopLevel;
-	bool						mbInitialize;
-	ERefreshPolicy				meRefreshPolicy;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -528,8 +397,6 @@ class GfxWindow : public GfxBuffer
 	virtual void GotFocus( void ) { mbHasFocus=true; }
 	virtual void LostFocus( void ) { mbHasFocus=false; }
 	bool HasFocus() const { return mbHasFocus; }
-
-	void SetViewport( CUIViewport*pvp ) { mpViewport=pvp; }
 
 	//////////////////////////////////////////////
 
@@ -647,5 +514,3 @@ private:
 } }
 
 #define gGfxEnv ork::lev2::GfxEnv::GetRef()
-
-#endif //  _EXECENV_GFX_GFXENV_H

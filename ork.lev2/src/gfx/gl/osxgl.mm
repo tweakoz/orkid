@@ -92,16 +92,17 @@ void GfxTargetGL::GLinit()
 	#else
 		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)kCGLOGLPVersion_Legacy,
 		kCGLPFAWindow,//(CGLPixelFormatAttribute)true, (implied)
-		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
 	#endif
-		//kCGLPFANoRecovery,
+		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
+		kCGLPFANoRecovery,
 		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
  		kCGLPFAAlphaSize, (CGLPixelFormatAttribute)8,
  		kCGLPFAAccelerated,
 		kCGLPFADoubleBuffer,
-		//kCGLPFASampleBuffers, (CGLPixelFormatAttribute)1,
-		//kCGLPFAMultisample,
-		//kCGLPFASamples, (CGLPixelFormatAttribute)16,
+		kCGLPFASampleBuffers, (CGLPixelFormatAttribute)1,
+		kCGLPFAMultisample,
+		kCGLPFASamples, (CGLPixelFormatAttribute)16,
+
 		//kCGLPFASamples, (CGLPixelFormatAttribute)4,
 		//kCGLPFASamples, (CGLPixelFormatAttribute)1,
 		(CGLPixelFormatAttribute) 0
@@ -262,7 +263,18 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	printf( "osxgl:2\n");
 
 	//////////////////////////////////////////////
+
+	auto cglctx = (CGLContextObj) [plato->mNSOpenGLContext CGLContextObj];
+	GLint p0 = 0;
+	GLint p1 = 8;
+	CGLSetParameter(cglctx,kCGLCPSwapInterval, &p0);
+	CGLSetParameter(cglctx,kCGLCPMPSwapsInFlight,&p1);
+
+	//////////////////////////////////////////////
 	// turn on vsync
+
+
+
 	printf( "osxgl:3\n");
 
 	GLint vsyncparams[] = 
@@ -281,7 +293,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	{
 		if( plato->mbNSOpenGlView) 
 		{
-			//printf( "MCC PATH A\n" );
+			printf( "MCC PATH A\n" );
 			[plato->mNSOpenGLContext makeCurrentContext];
 			return;
 		}
@@ -315,6 +327,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 		[plato->mNSOpenGLContext makeCurrentContext];
 		if( plato->mTarget->mTargetDrawableSizeDirty )
 		{
+			printf( "MCC PATH G\n" );
 			[plato->mNSOpenGLContext update];
 			plato->mTarget->mTargetDrawableSizeDirty = false;
 		}
@@ -407,39 +420,6 @@ void GfxTargetGL::MakeCurrentContext( void )
 
 void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 {
-	//if( 0 == pCTFL ) return;
-	
-	if( 0 )
-	{
-		glViewport( miX, miY, miW, miH );
-		glScissor( miX, miY, miW, miH );
-		
-		MTXI()->PushUIMatrix();
-		CMatrix4 uimtx_M = MTXI()->RefMMatrix();
-		CMatrix4 uimtx_V = MTXI()->RefVMatrix();
-		CMatrix4 uimtx_P = MTXI()->RefPMatrix();
-		//CMatrix4 
-		MTXI()->PopUIMatrix();
-	//	glMatrixMode( GL_PROJECTION );
-		//glLoadMatrixf( uimtx_P.GetArray() );
-	//	glMatrixMode( GL_MODELVIEW );
-	//	glLoadMatrixf( uimtx_V.GetArray() );
-		glDisable(GL_TEXTURE_2D);
-		//glDisable(GL_ALPHA_TEST);
-		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_STENCIL_TEST);
-		glDisable(GL_BLEND);
-		//glColor4f( 0.0f, 0.0f, 0.0f, 1.0f );
-		
-		//glBegin( GL_LINES );
-		//	glVertex2f( miX, miY );
-		//	glVertex2f( miX+miW, miY+miH );
-		//	glVertex2f( miX+miW, miY );
-		//	glVertex2f( miX, miY+miH );
-		//glEnd();
-		glFinish();
-	}
-	// GetCtxBase
 	GlOsxPlatformObject* plato = (GlOsxPlatformObject*) mPlatformHandle;
 	if( plato )
 	{

@@ -10,6 +10,7 @@
 #include <ork/math/polar.h>
 #include <math.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/ui/viewport.h>
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::CCamera, "CCamera" );
 
@@ -130,7 +131,7 @@ CQuaternion CCamera::HorizontalRot( CReal amt ) const
 
 bool CCamera::CheckMotion()
 {
-	CUIViewport *pVP = GetViewport();
+	auto pVP = GetViewport();
 
 	LastMeasuredCameraVelocity = MeasuredCameraVelocity;
 	MeasuredCameraVelocity = (CamLoc-PrevCamLoc);

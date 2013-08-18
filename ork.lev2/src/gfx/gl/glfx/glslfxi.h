@@ -38,7 +38,10 @@ struct GlslFxUniformInstance
 {
 	GLint			mLocation;
 	GlslFxUniform*	mpUniform;
-	GlslFxUniformInstance() : mLocation(-1), mpUniform(nullptr) {}
+	int 			mSubItemIndex;
+	svar16_t		mPrivData;
+	
+	GlslFxUniformInstance() : mLocation(-1), mpUniform(nullptr), mSubItemIndex(0) {}
 };
 
 struct GlslFxAttribute
@@ -67,10 +70,16 @@ struct GlslFxStreamInterface
 	GlslFxAttribute* MergeAttribute( const std::string& name );
 };
 
+typedef std::function<void(GfxTarget*)> state_applicator_t;
+
 struct GlslFxStateBlock
 {
 	std::string		mName;
-	SRasterState	mState;
+	//SRasterState	mState;
+	std::vector<state_applicator_t> mApplicators;
+
+	void AddStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
+
 };
 	
 struct GlslFxShader
@@ -107,6 +116,14 @@ struct GlslFxShaderFrg : GlslFxShader
 	GlslFxShaderFrg( const std::string& nam="" ) : GlslFxShader(nam,GL_FRAGMENT_SHADER) {}
 };
 
+struct GlslFxLibBlock
+{
+	GlslFxLibBlock( const std::string& nam="" ){}
+
+	std::string				mName;
+	std::string 			mLibBlockText;
+};
+
 struct GlslFxPass
 {
 	static const int kmaxattrID = 16;
@@ -118,6 +135,7 @@ struct GlslFxPass
 	std::map<std::string,GlslFxUniformInstance*>	mUniformInstances;
 	std::map<std::string,GlslFxAttribute*>			mAttributes;
 	GlslFxAttribute*								mAttributeById[kmaxattrID];
+	int 				mSamplerCount;
 
 	GlslFxPass( const std::string& name, GlslFxShader* pvs=nullptr, GlslFxShader* pfs=nullptr )
 		: mName(name)
@@ -125,6 +143,7 @@ struct GlslFxPass
 		, mFragmentProgram(pfs)
 		, mProgramObjectId(0)
 		, mStateBlock(nullptr)
+		, mSamplerCount(0)
 	{
 		for( int i=0; i<kmaxattrID; i++ ) mAttributeById[i] = nullptr;
 	}
@@ -155,6 +174,7 @@ struct GlslFxContainer
 	std::map<std::string,GlslFxShader*>				mVertexPrograms;
 	std::map<std::string,GlslFxShader*>				mFragmentPrograms;
 	std::map<std::string,GlslFxTechnique*>			mTechniqueMap;
+	std::map<std::string,GlslFxLibBlock*>			mLibBlocks;
 	const GlslFxPass*								mActivePass;
 	int												mActiveNumPasses;
 
@@ -171,6 +191,7 @@ struct GlslFxContainer
 	void AddTechnique( GlslFxTechnique* ptek );
 	void AddVertexProgram( GlslFxShader* psha );
 	void AddFragmentProgram( GlslFxShader* psha );
+	void AddLibBlock( GlslFxLibBlock* plb );
 
 	GlslFxStateBlock* GetStateBlock( const std::string& name ) const;
 	GlslFxUniform* GetUniform( const std::string& name ) const;

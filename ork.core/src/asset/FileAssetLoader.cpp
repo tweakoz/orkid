@@ -31,7 +31,7 @@ void FileAssetLoader::AddFileExtension(ConstString extension)
 
 bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, int first_extension)
 {
-    orkprintf( "FindAsset<%s>\n", ork::Application::AddPooledString(name).c_str() );
+    //orkprintf( "FindAsset<%s>\n", ork::Application::AddPooledString(name).c_str() );
 	//////////////////////////////////////////
 	// do we already have an extension
 	//////////////////////////////////////////

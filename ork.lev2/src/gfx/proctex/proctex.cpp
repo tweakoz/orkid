@@ -66,7 +66,7 @@ void Buffer::PtexBegin(lev2::GfxTarget*ptgt, bool push_full_vp, bool clear_all )
 		mTarget->FBI()->PushScissor(vprect_full);
 	}
 	if( clear_all )
-		mTarget->FBI()->ClearViewport(nullptr);
+		mTarget->FBI()->Clear(CColor3::Black(),1.0f);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Buffer::PtexEnd(bool pop_vp )

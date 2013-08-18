@@ -1,0 +1,132 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "130";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault
+{
+	uniform mat4        mvp;
+	uniform vec4        modcolor;
+
+	//
+	in vec4 position : POSITION;
+	in vec4 vtxcolor : COLOR0;
+	in vec2 uv0 : TEXCOORD0;
+	in vec2 uv1 : TEXCOORD1;
+	//
+	out vec4 frg_clr;
+	out vec2 frg_uv;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fmt
+{
+	uniform vec4 modcolor;
+	//
+	//in vec2 frg_uv;
+	//
+	out vec4 out_clr;
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default
+{
+	inherits default;
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_vtxcolor 
+	: iface_vdefault
+{
+	gl_Position = mvp*position;
+	frg_clr = vtxcolor;
+	frg_uv = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_modclr 
+	: iface_fmt
+{
+	out_clr = modcolor;
+}
+fragment_shader ps_modclrd2 
+	: iface_fmt
+{
+	out_clr = vec4(modcolor.xyz*0.5,0.5);
+}
+fragment_shader ps_modclrd3 
+	: iface_fmt
+{
+	out_clr = vec4(modcolor.xyz*0.3,1.0);
+}
+///////////////////////////////////////////////////////////////
+state_block sb_m1
+{
+	inherits sb_default;
+	DepthTest=OFF;
+	DepthMask=true;
+	CullTest=OFF;
+	BlendMode = OFF;
+}
+/*
+state_block sb_m2
+{
+	inherits sb_m1;
+	DepthTest=OFF;
+	DepthMask=false;
+	CullTest=PASS_FRONT;
+	BlendMode = ALPHA;
+}
+state_block sb_m3
+{
+	inherits sb_m2;
+	DepthTest=LEQUALS;
+	DepthMask=true;
+	CullTest=PASS_BACK;
+	BlendMode = ADDITIVE;
+}
+*/
+state_block sb_pick
+{
+	inherits sb_default;
+	DepthTest=OFF;
+	DepthMask=true;
+	CullTest=OFF;
+	BlendMode = OFF;
+}
+
+technique std
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_modclr;
+		state_block=sb_m1;
+	}	
+}
+technique pick {
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_modclr;
+		state_block=sb_pick;
+	}
+}
+
+	/*pass p1
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_modclrd2;
+		state_block=sb_m2;
+	}	
+	pass p2
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_modclrd3;
+		state_block=sb_m3;
+	}*/
+
+///////////////////////////////////////////////////////////////

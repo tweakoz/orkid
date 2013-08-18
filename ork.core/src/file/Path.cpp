@@ -1299,5 +1299,28 @@ void Path::SplitQuery( NameType& preq, NameType& postq ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Path::Split( NameType& preq, NameType& postq, char sep ) const
+{
+	const char* c_str = mPathString.c_str();
+	const char* sep_loc = strrchr(c_str,sep);
+
+	if( sep_loc )
+	{
+		size_t p = (sep_loc-c_str);
+		preq.SetChar( 0,0 );
+		preq.append( c_str, p);
+		postq.SetChar(0,0);
+		postq.append( c_str+p+1, strlen(c_str)-p-1 );
+
+	}
+	else
+	{
+		preq = mPathString;
+		postq.SetChar(0,0);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // ork
 } // file

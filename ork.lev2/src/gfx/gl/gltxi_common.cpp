@@ -1048,10 +1048,8 @@ static auto addrlamb = [&](ETextureAddressMode inp) -> GLenum
 {	switch( inp )
 	{
  		case ETEXADDR_CLAMP:
-#if ! defined(USE_GL3)
-			return GL_CLAMP;
+			return GL_CLAMP_TO_EDGE;
 			break;
-#endif
 		case ETEXADDR_WRAP:
 			return GL_REPEAT;
 			break;

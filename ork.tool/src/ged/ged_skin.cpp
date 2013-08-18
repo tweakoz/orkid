@@ -308,13 +308,15 @@ class GedSkin0 : public GedSkin
 	///////////////////////////////////////////////////////////////////
 	void End( ork::lev2::GfxTarget* pTARG )
 	{
+		int iw = mpCurrentGedVp->GetW();
+		int ih = mpCurrentGedVp->GetH();
 		lev2::GfxMaterialUI uimat(pTARG);
 		miRejected = 0;
 		miAccepted = 0;
 		lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
 		////////////////////////
 		ork::CMatrix4 mtxW = pTARG->MTXI()->RefMMatrix();
-		pTARG->MTXI()->PushUIMatrix();
+		pTARG->MTXI()->PushUIMatrix(iw,ih);
 		pTARG->MTXI()->PushMMatrix(mtxW);
 		////////////////////////
 		//pTARG->IMI()->QueFlush();

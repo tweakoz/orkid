@@ -32,7 +32,7 @@ namespace ork {
 namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 vp_cons::vp_cons( const std::string & name )
-	: CUIViewport( name, 0, 0, 0, 0, CColor3::Black(), 0.0f )
+	: ui::Viewport( name, 0, 0, 0, 0, CColor3::Black(), 0.0f )
 	, mCTQT(nullptr)
 {
 }
@@ -47,21 +47,21 @@ void ork::tool::vp_cons::BindCTQT(ork::lev2::CTQT* pctqt)
 	mCTQT->SetRefreshRate(2);
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::EUIHandled vp_cons::UIEventHandler( lev2::CUIEvent *pEV )
+ui::HandlerResult vp_cons::DoOnUiEvent( ui::Event *pEV )
 {
 	bool bisshift = pEV->mbSHIFT;
 
 	switch( pEV->miEventCode )
 	{	
-		case lev2::UIEV_KEY:
+		case ui::UIEV_KEY:
 		{
 			break;
 		}
 	}
-	return lev2::EUI_HANDLED;
+	return ui::HandlerResult(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void vp_cons::DoDraw( )
+void vp_cons::DoDraw(ui::DrawEvent& drwev)
 {
 	typedef lev2::SVtxV12C4T16 basevtx_t;
 	

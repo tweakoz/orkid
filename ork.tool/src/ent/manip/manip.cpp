@@ -18,6 +18,8 @@
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/reflect/RegisterProperty.h>
+#include <ork/lev2/ui/event.h>
+#include <ork/lev2/gfx/pickbuffer.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManip,"CManip");
 
@@ -125,16 +127,16 @@ void CManipManager::SlotClearSelection()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CManipManager::UIEventHandler( CUIEvent *pEV )
+bool CManipManager::UIEventHandler( const ui::Event& EV )
 {
 	bool rval = false;
 
-	switch(pEV->miEventCode)
+	switch(EV.miEventCode)
 	{
-		case UIEV_KEY:
-		case UIEV_KEYUP:
+		case ui::UIEV_KEY:
+		case ui::UIEV_KEYUP:
 		{
-			if(pEV->mbSHIFT)
+			if(EV.mbSHIFT)
 				mDualAxis = true;
 			else
 				mDualAxis = false;
@@ -145,7 +147,7 @@ bool CManipManager::UIEventHandler( CUIEvent *pEV )
 	//printf( "CManipManager::UIEventHandler mpCurrentManip<%p>\n", mpCurrentManip );
 
 	if(mpCurrentManip)
-		rval = mpCurrentManip->UIEventHandler( pEV );
+		rval = mpCurrentManip->UIEventHandler( EV );
 
 	return rval;
 }

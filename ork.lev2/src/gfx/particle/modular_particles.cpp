@@ -282,10 +282,14 @@ void psys_graph_pool::BindTemplate( const psys_graph& InTemplate )
 ///////////////////////////////////////////////////////////////////////////////
 
 psys_graph* psys_graph_pool::Allocate()
-{	psys_graph* pinstance = mGraphPool->allocate();
-	if( pinstance )
+{	psys_graph* pinstance = nullptr;
+	if( mGraphPool )
 	{
-		pinstance->BindExternal(0);
+		pinstance = mGraphPool->allocate();
+		if( pinstance )
+		{
+			pinstance->BindExternal(0);
+		}
 	}
 	return pinstance;
 }

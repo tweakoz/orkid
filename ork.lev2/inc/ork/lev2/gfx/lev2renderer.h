@@ -5,12 +5,10 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_RENDERER_H
-#define _ORK_LEV2_RENDERER_H
+#pragma once
 
 #include <ork/lev2/gfx/renderer_base.h>
 #include <ork/gfx/camera.h>
-
 #include <ork/lev2/gfx/gfxenv.h>
 
 namespace ork { class CCameraData; }
@@ -27,7 +25,6 @@ class RtGroup;
 class GfxWindow;
 class XgmMaterialStateInst;
 class IRenderableDag;
-class CUIViewport;
 
 class FrameRenderer;
 
@@ -134,22 +131,6 @@ public:
 	virtual void EndFrame(FrameRenderer&frenderer) = 0;
 };
 
-class ContextRenderTarget : public IRenderTarget
-{
-public:
-
-	ContextRenderTarget( GfxTarget* pContext );
-	
-	private:
-	
-	GfxTarget* mpContext;
-
-	int GetW();
-	int GetH();
-	void BeginFrame(FrameRenderer&frenderer);
-	void EndFrame(FrameRenderer&frenderer);
-};
-
 class RtGroupRenderTarget : public IRenderTarget
 {
 public:
@@ -170,11 +151,27 @@ class UiViewportRenderTarget : public IRenderTarget
 {
 public:
 
-	UiViewportRenderTarget( CUIViewport* pVP );
+	UiViewportRenderTarget( ui::Viewport* pVP );
 	
 	private:
 	
-	CUIViewport* mpViewport;
+	ui::Viewport* mpViewport;
+
+	int GetW();
+	int GetH();
+	void BeginFrame(FrameRenderer&frenderer);
+	void EndFrame(FrameRenderer&frenderer);
+};
+
+class UiSurfaceRenderTarget : public IRenderTarget
+{
+public:
+
+	UiSurfaceRenderTarget( ui::Surface* pVP );
+	
+	private:
+	
+	ui::Surface* mSurface;
 
 	int GetW();
 	int GetH();
@@ -297,5 +294,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 }}
-
-#endif

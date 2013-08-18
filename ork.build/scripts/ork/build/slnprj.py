@@ -5,9 +5,9 @@
 # The Orkid Build System is published under the GPL 2.0 license
 # see http://www.gnu.org/licenses/gpl-2.0.html
 ###############################################################################
-import glob, re, string
+import glob, re, string, StringIO
 import commands, sys, os
-import shutil, fnmatch, platform
+import shutil, fnmatch, platform, pickle
 from sets import Set
 
 import ork.build.utils as utils
@@ -306,13 +306,25 @@ class Project:
 		
 	############################################
 
+	def ComputeSources(self):
+		srcs = self.enumerator.sourceobjs
+		#sio = StringIO.StringIO()
+		#fname = "%s.pickle"%self.OutputName
+		#pickle.dump(srcs,sio)
+		#print sio.getvalue()
+		#sio.close()
+		self.cached_sources = srcs
+
+	############################################
+
 	def GetSources(self):
-		return self.enumerator.sourceobjs
+		return self.cached_sources
 
 	############################################
 
 	def Configure(self):
 
+		self.ComputeSources()
 
 		libpaths = list(Set(self.PreLibraryPaths))
 		libpaths += list(Set(self.LibraryPaths))
@@ -384,11 +396,44 @@ class Project:
 
 	############################################
 
+	def Plugin(self,dest,subd,deps):
+		self.IsLibrary = True
+		lib_dir = '%s/lib' % stage_dir
+		libname = '#stage/lib/%s'%self.OutputName
+		self.TargetName = self.OutputName
+
+		the_list = list()
+		lib = self.CompileEnv.LoadableModule(libname, self.GetSources() )
+		the_list += lib
+
+		self.CompileEnv.Append( LINKFLAGS = string.split("-rpath ./" ) )
+
+		basenam = "#stage/plugin/%s"%os.path.basename(dest)
+		destdir = os.path.dirname(dest)
+
+
+		if self.IsOsx:
+			subd["%BUNDLE_EXECUTABLE%"] = os.path.basename(str(lib[0]))
+			bun = self.CompileEnv.MakeBundle(basenam,lib,"Info.plist",subst_dict=subd)
+			the_list += bun
+			self.CompileEnv.Alias('install', self.CompileEnv.Install(destdir, basenam))
+			for item in deps:
+				self.CompileEnv.Install(destdir, item)
+			#self.CompileEnv.Depends(target, env['GchSh'])	
+		else:
+			self.CompileEnv.Alias('install', self.CompileEnv.Install(destdir, lib))
+			bun = lib
+
+		return the_list
+
+	############################################
+
 	def SharedLibrary(self):
 		self.IsLibrary = True
 		lib_dir = '%s/lib' % stage_dir
 		libname = '#stage/lib/%s.so'%self.OutputName
 		self.TargetName = self.OutputName
+		self.CompileEnv.Append( SHLINKFLAGS = string.split("-install_name @executable_path/../lib/lib%s.so" % self.OutputName) )
 		lib = self.CompileEnv.SharedLibrary( libname, self.GetSources() )
 		env = self.CompileEnv
 		#env.Alias('install', env.Install(lib_dir, lib))
@@ -405,6 +450,7 @@ class Project:
 		return lib
 
 	def Program(self):
+
 		self.IsExe = True
 		bin_dir = '%s/bin' % stage_dir
 		#exename = '%s/bin/%s' % (stage_dir,self.OutputName)
@@ -414,7 +460,41 @@ class Project:
 		prg = self.CompileEnv.Program( exename , self.GetSources() )
 		env = self.CompileEnv
 		#env.Alias('install', env.Install(bin_dir, prg))
-		return prg
+		ret = prg
+		return ret
+
+	def Bundle(self,name):
+		destdir = '%s/bundle' % stage_dir
+		self.IsExe = True
+		bin_dir = '%s/bin' % stage_dir
+		#exename = '%s/bin/%s' % (stage_dir,self.OutputName)
+		exename = '#stage/bin/%s'%self.OutputName
+		self.TargetName = self.OutputName
+		#print "exename<%s>" % exename
+		prg = self.CompileEnv.Program( exename , self.GetSources() )
+		env = self.CompileEnv
+		#env.Alias('install', env.Install(bin_dir, prg))
+
+		ret = prg
+
+		if self.IsOsx:
+			basenam = os.path.basename(str(self.OutputName))
+			subd = dict()
+			subd["%BUNDLE_NAME%"] = "Yo"
+			subd["%BUNDLE_ID%"] = "com.tweakoz.orkid.pro"
+			subd["%BUNDLE_EXECUTABLE%"] = os.path.basename(str(self.OutputName))
+			bun = self.CompileEnv.MakeBundle(name,prg,"Info.plist",subst_dict=subd,typecode='APPL')
+			ret = bun
+			self.CompileEnv.Alias('install', self.CompileEnv.Install(destdir, name))
+			#for item in deps:
+			#	self.CompileEnv.Install(destdir, item)
+			#self.CompileEnv.Depends(target, env['GchSh'])	
+		else:
+			self.CompileEnv.Alias('install', self.CompileEnv.Install(destdir, prg))
+			ret = prg
+
+		return ret
+
 
 def xflibnams(fmt,lis):
 	a = ""

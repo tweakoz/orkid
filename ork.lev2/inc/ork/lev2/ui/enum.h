@@ -5,19 +5,10 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_UI_ENUM_H_
-#define _ORK_LEV2_UI_ENUM_H_
+#pragma once
 
-namespace ork { namespace lev2 {
+namespace ork { namespace ui {
 	
-///////////////////////////////////////////////////////////////////////////////
-
-enum EUIHandled
-{
-	EUI_NOT_HANDLED = 0,
-	EUI_HANDLED ,
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 enum EUIWidgetState
@@ -30,8 +21,27 @@ enum EUIWidgetState
 	EUI_WIDGET_DRAG ,					// mouse is dragging widget							no		yes		no
 };	// 3 bits
 
+enum EUIEventCode
+{
+	UIEV_UNKNOWN  = 0,
+	UIEV_SHOW ,
+	UIEV_HIDE ,
+	UIEV_PUSH ,
+	UIEV_DOUBLECLICK ,
+	UIEV_RELEASE ,
+	UIEV_DRAG ,
+	UIEV_MOVE ,
+	UIEV_KEY ,
+	UIEV_KEYUP ,
+	UIEV_DRAW ,
+	UIEV_MOUSEWHEEL ,
+	UIEV_MULTITOUCH ,
+	UIEV_TABLET_BRUSH ,
+	UIEV_GOT_KEYFOCUS ,
+	UIEV_LOST_KEYFOCUS ,
+	UIEV_ACTION ,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif

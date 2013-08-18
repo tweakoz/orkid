@@ -18,82 +18,167 @@
 
 namespace ork { namespace lev2 {
 
+void GlRasterStateInterface::SetZWriteMask( bool bv )
+{	
+	GLenum zmask = bv ? GL_TRUE : GL_FALSE;
+	glDepthMask( zmask );
+}
+void GlRasterStateInterface::SetRGBAWriteMask( bool rgb, bool a )
+{	
+	GLenum rgbmask = rgb ? GL_TRUE : GL_FALSE;
+	GLenum amask = a ? GL_TRUE : GL_FALSE;
+	glColorMask( rgbmask,
+				 rgbmask,
+				 rgbmask,
+				 amask );
+}
+void GlRasterStateInterface::SetBlending( EBlending eVal )
+{
+	switch( eVal )
+	{
 
-void GlRasterStateInterface::BindRasterState( SRasterState const &refNewState, bool bForce )
+		case EBLENDING_OFF:
+			glDisable( GL_BLEND );
+			break;
+		case EBLENDING_DSTALPHA:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA );
+			break;
+		case EBLENDING_PREMA:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
+			//glBlendFunc( GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA );
+			break;
+		case EBLENDING_ALPHA:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+			//glBlendFunc( GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA );
+			break;
+		case EBLENDING_ADDITIVE:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_ONE, GL_ONE );
+			break;
+		case EBLENDING_SUBTRACTIVE:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_COLOR );
+			break;
+		case EBLENDING_ALPHA_ADDITIVE:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_SRC_ALPHA, GL_ONE );
+			break;
+		case EBLENDING_ALPHA_SUBTRACTIVE:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_ALPHA );
+			break;
+		case EBLENDING_MODULATE:
+			glEnable( GL_BLEND );
+			glBlendFunc( GL_ZERO, GL_SRC_ALPHA );
+			break;
+		default :
+			OrkAssert( false );
+			break;
+
+	}
+}
+void GlRasterStateInterface::SetDepthTest( EDepthTest eVal )
+{	
+	GL_ERRORCHECK();
+	switch( eVal )
+	{	
+		case EDEPTHTEST_OFF:
+			glDisable( GL_DEPTH_TEST );
+			break;
+		case EDEPTHTEST_LESS:
+			glEnable( GL_DEPTH_TEST );
+			glDepthFunc( GL_LESS );
+			break;
+		case EDEPTHTEST_LEQUALS:
+			glEnable( GL_DEPTH_TEST );
+			glDepthFunc( GL_LEQUAL );
+			break;
+		case EDEPTHTEST_GREATER:
+			glEnable( GL_DEPTH_TEST );
+			glDepthFunc( GL_GREATER );
+			break;
+		case EDEPTHTEST_GEQUALS:
+			glEnable( GL_DEPTH_TEST );
+			glDepthFunc( GL_GEQUAL );
+			break;
+		case EDEPTHTEST_EQUALS:
+			glEnable( GL_DEPTH_TEST );
+			glDepthFunc( GL_EQUAL );
+			break;
+		case EDEPTHTEST_ALWAYS:
+			glEnable( GL_DEPTH_TEST );
+			glDepthFunc( GL_ALWAYS );
+			break;
+		default:
+			OrkAssert( false );
+			break;
+	}
+	GL_ERRORCHECK();
+}
+void GlRasterStateInterface::SetCullTest( ECullTest eVal )
+{	
+	GL_ERRORCHECK();
+	switch( eVal )
+	{
+		case ECULLTEST_OFF:
+			glDisable( GL_CULL_FACE );
+			break;
+		case ECULLTEST_PASS_FRONT:
+			glCullFace( GL_BACK );
+			glFrontFace( GL_CCW );
+			glEnable( GL_CULL_FACE );
+			break;
+		case ECULLTEST_PASS_BACK:
+			glCullFace( GL_FRONT );
+			glFrontFace( GL_CCW );
+			glEnable( GL_CULL_FACE );
+			break;
+	}
+	GL_ERRORCHECK();
+}
+void GlRasterStateInterface::SetScissorTest( EScissorTest eVal )
+{	GL_ERRORCHECK();
+	switch( eVal )
+	{
+		case ESCISSORTEST_OFF:
+//			glDisable( GL_SCISSOR_TEST );
+			break;
+		case ESCISSORTEST_ON:
+//			glEnable( GL_SCISSOR_TEST );
+			break;
+	}
+	GL_ERRORCHECK();
+
+}
+
+void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool bForce )
 {
 	bForce = true;
-
-	SRasterState rNewState = refNewState;
-
-	SRasterState overridden;
-	GetOverrideMergedRasterState(rNewState, overridden);
-
-	SRasterState &rLast = mLastState;
 	
-	bool bAlphaTestChanged =		(	overridden.GetAlphaTest()	!=	rLast.GetAlphaTest()		);
-//	bool bTextureModeChanged =		(	overridden.GetTextureMode()	!=	rLast.GetTextureMode()		);
-//	bool bTextureActiveChanged =	(	overridden.GetTextureActive()!=	rLast.GetTextureActive()	);
-	bool bBlendingChanged =			(	overridden.GetBlending()		!=	rLast.GetBlending()			);
-	bool bDepthTestChanged =		(	overridden.GetDepthTest()	!=	rLast.GetDepthTest()		);
-	//bool bStencilModeChanged =		(	overridden.GetStencilID()	!=	rLast.GetStencilID()		);
-	bool bShadeModelChanged =		(	overridden.GetShadeModel()	!=	rLast.GetShadeModel()		);
-	bool bCullTestChanged =			(	overridden.GetCullTest()		!=	rLast.GetCullTest()			);
-	bool bScissorTestChanged =		(	overridden.GetScissorTest()	!=	rLast.GetScissorTest()		);
+	bool bAlphaTestChanged =	(newstate.GetAlphaTest()	!=	mLastState.GetAlphaTest()		);
+//	bool bTextureModeChanged =	(newstate.GetTextureMode()	!=	rLast.GetTextureMode()		);
+//	bool bTextureActiveChanged =(newstate.GetTextureActive()!=	rLast.GetTextureActive()	);
+	bool bBlendingChanged =		(newstate.GetBlending()		!=	mLastState.GetBlending()			);
+	bool bDepthTestChanged =	(newstate.GetDepthTest()	!=	mLastState.GetDepthTest()		);
+	//bool bStencilModeChanged =(newstate.GetStencilID()	!=	rLast.GetStencilID()		);
+	bool bShadeModelChanged =	(newstate.GetShadeModel()	!=	mLastState.GetShadeModel()		);
+	bool bCullTestChanged =		(newstate.GetCullTest()		!=	mLastState.GetCullTest()			);
+	bool bScissorTestChanged =	(newstate.GetScissorTest()	!=	mLastState.GetScissorTest()		);
 	
 	GL_ERRORCHECK();
 
-	if( true )
+	if( bCullTestChanged || bForce )
 	{
-		glDisable( GL_CULL_FACE );
-	}
-	else if( bCullTestChanged || bForce )
-	{
-		switch( overridden.GetCullTest() )
-		{
-			case ECULLTEST_OFF:
-				glDisable( GL_CULL_FACE );
-				break;
-			case ECULLTEST_PASS_FRONT:
-				glCullFace( GL_BACK );
-				glFrontFace( GL_CCW );
-				glEnable( GL_CULL_FACE );
-				break;
-			case ECULLTEST_PASS_BACK:
-				glCullFace( GL_FRONT );
-				glFrontFace( GL_CCW );
-				glEnable( GL_CULL_FACE );
-				break;
-		}
+		SetCullTest( newstate.GetCullTest() );
 	}
 
-	//////////////////////////////
-	/*#if( _BUILD_LEVEL > 1 )
-	if( IsPickState() )
-	{
-		bBlendingChanged = true;
-		bDepthTestChanged = true;
-		bShadeModelChanged = true;
-		//bTextureModeChanged = true;
-		bAlphaTestChanged = true;
-
-		overridden.SetBlending( EBLENDING_OFF );
-		overridden.SetAlphaTest( EALPHATEST_OFF, 0 );
-		overridden.SetDepthTest( EDEPTHTEST_LEQUALS );
-		overridden.SetShadeModel( ESHADEMODEL_FLAT );
-		//overridden.SetTextureMode( ETEXMODE_OFF );
-	}
-	#endif*/
-	//////////////////////////////
-
-	GL_ERRORCHECK();
-				
 	/////////////////////////////////////////////////
 
-	glDepthMask( overridden.GetZWriteMask() );
-	glColorMask( overridden.GetRGBWriteMask(), overridden.GetRGBWriteMask(), overridden.GetRGBWriteMask(), overridden.GetAWriteMask() );
-
-//	glDepthMask( GL_TRUE );
-//	glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
+	SetZWriteMask( newstate.GetZWriteMask() );
+	SetRGBAWriteMask( newstate.GetRGBWriteMask(), newstate.GetAWriteMask() );
 
 	/////////////////////////////////////////////////
 
@@ -113,9 +198,9 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &refNewState, b
 	{	
 		static const F32 frecip = 1.0f / 15.0f;
 
-		F32 fAlphaRef = frecip * (F32) overridden.muAlphaRef;
+		F32 fAlphaRef = frecip * (F32) newstate.muAlphaRef;
 
-		switch( overridden.muAlphaTest )
+		switch( newstate.muAlphaTest )
 		{	case EALPHATEST_OFF:
 				//glDisable( GL_ALPHA_TEST );
 				GL_ERRORCHECK();
@@ -136,127 +221,21 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &refNewState, b
 	/////////////////////////////////////////////////
 	//	Win32 GL Depth
 
-	if( false )
-	{
-		glDisable( GL_DEPTH_TEST );
-	}
-	else if( bDepthTestChanged || bForce )
-	{	
-		GL_ERRORCHECK();
-		switch( overridden.GetDepthTest() )
-		{	
-			case EDEPTHTEST_OFF:
-				glDisable( GL_DEPTH_TEST );
-				break;
-			case EDEPTHTEST_LESS:
-				glEnable( GL_DEPTH_TEST );
-				glDepthFunc( GL_LESS );
-				break;
-			case EDEPTHTEST_LEQUALS:
-				glEnable( GL_DEPTH_TEST );
-				glDepthFunc( GL_LEQUAL );
-				break;
-			case EDEPTHTEST_GREATER:
-				glEnable( GL_DEPTH_TEST );
-				glDepthFunc( GL_GREATER );
-				break;
-			case EDEPTHTEST_GEQUALS:
-				glEnable( GL_DEPTH_TEST );
-				glDepthFunc( GL_GEQUAL );
-				break;
-			case EDEPTHTEST_EQUALS:
-				glEnable( GL_DEPTH_TEST );
-				glDepthFunc( GL_EQUAL );
-				break;
-			case EDEPTHTEST_ALWAYS:
-				glEnable( GL_DEPTH_TEST );
-				glDepthFunc( GL_ALWAYS );
-				break;
-			default:
-				OrkAssert( false );
-				break;
-		}
-		GL_ERRORCHECK();
-	}
+	if(1)// bDepthTestChanged || bForce )
+		SetDepthTest( newstate.GetDepthTest() );
 
 	/////////////////////////////////////////////////
 
-	if( false )
+	if( bScissorTestChanged || bForce )
 	{
-		glDisable( GL_SCISSOR_TEST );
-	}
-	else if( bScissorTestChanged || bForce )
-	{
-		GL_ERRORCHECK();
-		switch( overridden.GetScissorTest() )
-		{
-			case ESCISSORTEST_OFF:
-//				glDisable( GL_SCISSOR_TEST );
-				break;
-			case ESCISSORTEST_ON:
-//				glEnable( GL_SCISSOR_TEST );
-				break;
-		}
-		GL_ERRORCHECK();
+		SetScissorTest( newstate.GetScissorTest() );
 	}
 	
 	/////////////////////////////////////////////////
 
-	if( false )
+	if( bBlendingChanged || bForce )
 	{
-		glDisable( GL_BLEND );
-	}
-	else if( bBlendingChanged || bForce )
-	{
-		//glDisable( GL_BLEND );
-		//glEnable( GL_BLEND );
-		//glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-
-		switch( overridden.GetBlending() )
-		{
-
-			case EBLENDING_OFF:
-				glDisable( GL_BLEND );
-				break;
-			case EBLENDING_DSTALPHA:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA );
-				break;
-			case EBLENDING_PREMA:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
-				//glBlendFunc( GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA );
-				break;
-			case EBLENDING_ALPHA:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-				//glBlendFunc( GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA );
-				break;
-			case EBLENDING_ADDITIVE:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_ONE, GL_ONE );
-				break;
-			case EBLENDING_SUBTRACTIVE:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_COLOR );
-				break;
-			case EBLENDING_ALPHA_ADDITIVE:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_SRC_ALPHA, GL_ONE );
-				break;
-			case EBLENDING_ALPHA_SUBTRACTIVE:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_ALPHA );
-				break;
-			case EBLENDING_MODULATE:
-				glEnable( GL_BLEND );
-				glBlendFunc( GL_ZERO, GL_SRC_ALPHA );
-				break;
-			default :
-				OrkAssert( false );
-				break;
-
-		}
+		SetBlending( newstate.GetBlending() );
 	}
 	
 	GL_ERRORCHECK();
@@ -267,7 +246,7 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &refNewState, b
 	}
 	else if( bShadeModelChanged || bForce )
 	{
-		switch( overridden.GetShadeModel() )
+		switch( newstate.GetShadeModel() )
 		{
 			case ESHADEMODEL_FLAT:
 				//glShadeModel( GL_FLAT );
@@ -281,7 +260,7 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &refNewState, b
 	}
 	GL_ERRORCHECK();
 
-	u32 upolyoffset = overridden.GetPolyOffset();
+	u32 upolyoffset = newstate.GetPolyOffset();
 
 	if( false ) //0 == upolyoffset )
 	{

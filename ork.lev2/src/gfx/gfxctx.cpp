@@ -9,9 +9,10 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/string/string.h>
-#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/event.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/lev2/gfx/ctxbase.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +36,7 @@ CTXBASE::CTXBASE( GfxWindow* pwin )
 	: mbInitialize( true )
 	, mpGfxWindow( pwin )
 	, mpTarget( 0 )
-	, UIEvent( new CUIEvent )
+	, mUIEvent()
 	, ConstructAutoSlot(Repaint)
 
 {
@@ -48,7 +49,6 @@ CTXBASE::CTXBASE( GfxWindow* pwin )
 void GfxTarget::BeginFrame( void )
 {
 	FBI()->BeginFrame();
-	RSI()->ClearOverrides();
 	GBI()->BeginFrame();
 	FXI()->BeginFrame();
 //	IMI()->BeginFrame();

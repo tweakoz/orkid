@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _EXECENV_GFX_DUMMY_H
-#define _EXECENV_GFX_DUMMY_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +56,14 @@ public:
 
 class DuRasterStateInterface : public RasterStateInterface
 {
-	virtual void BindRasterState( const SRasterState &rState, bool bForce = false ) {}
+	void BindRasterState( const SRasterState &rState, bool bForce = false ) override {}
+	void SetZWriteMask( bool bv ) override {}
+	void SetRGBAWriteMask( bool rgb, bool a ) override {}
+	void SetBlending( EBlending eVal ) override {}
+	void SetDepthTest( EDepthTest eVal ) override {}
+	void SetCullTest( ECullTest eVal ) override {}
+	void SetScissorTest( EScissorTest eVal ) override {}
+
 public:
 };
 
@@ -123,8 +129,7 @@ public:
 
 	virtual void	SetViewport( int iX, int iY, int iW, int iH ) {}
 	virtual void	SetScissor( int iX, int iY, int iW, int iH ) {}
-	virtual void	AttachViewport( CUIViewport *pVP = 0 ) {}
-	virtual void	ClearViewport( CUIViewport *pVP ) {}
+	virtual void	Clear( const CColor4 &rCol, float fdepth ) {}
 
 	virtual void	GetPixel( const CVector4 &rAt, GetPixelContext& ctx ) {}
 
@@ -221,5 +226,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif // _EXECENV_GFX_WIN32GL_H

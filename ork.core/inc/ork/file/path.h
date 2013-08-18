@@ -159,6 +159,7 @@ class Path
 	//////////////////////////////////////////////
 
 	void SplitQuery( NameType& BeforeQuerySep, NameType& AfterQuerySep ) const;
+	void Split( NameType& BeforeQuerySep, NameType& AfterQuerySep, char sep ) const;
 
 	//////////////////////////////////////////////
 

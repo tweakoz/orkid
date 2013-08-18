@@ -1,5 +1,11 @@
 all:
-	scons -f root.sconstruct 
+	scons -f root.sconstruct --site-dir ./ork.build/site_scons
+
+fast:
+	scons -f root.sconstruct fast --site-dir ./ork.build/site_scons
+
+prep:
+	scons -f root.sconstruct prep --site-dir ./ork.build/site_scons
 
 env:
 	./ork.build/bin/ork.build.int_env.py
@@ -22,7 +28,7 @@ pristine:
 	tozkit_deps_build.py clean
 
 clean:
-	scons -c -f root.sconstruct 
+	scons -c -f root.sconstruct --site-dir ./ork.build/site_scons
 	rm -rf stage/include/ork
 	rm -rf stage/include/orktool
 	rm -rf stage/include/pkg

@@ -26,8 +26,9 @@ namespace reflect { class ISerializer; class IDeserializer; class BidirectionalS
 
 //typedef rtti::RTTI<Object, rtti::ICastable, rtti::DefaultPolicy, object::ObjectClass> ObjectBase;
         
-class  Object : public rtti::ICastable
+struct  Object : public rtti::ICastable
 {
+private:
     RttiDeclareAbstractWithCategory( Object, rtti::ICastable, object::ObjectClass );
 
     //RttiDeclareConcrete( Object, ObjectBase );

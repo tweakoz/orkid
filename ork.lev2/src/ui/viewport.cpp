@@ -7,119 +7,35 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/event.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 
-INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::CUIViewport, "CUIViewport" );
+INSTANTIATE_TRANSPARENT_RTTI( ork::ui::Viewport, "ui::Viewport" );
 
-namespace ork { namespace lev2 {
+namespace ork { namespace ui {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CUIViewport::Describe()
+void Viewport::Describe()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CUIViewport::CUIViewport( const std::string & name, int x, int y, int w, int h, CColor3 color, F32 depth )
-	: msName( name )
-	, mbClear( true )
-	, mcClearColor( color )
-	, mfClearDepth( depth )
-	, mpTarget( 0 )
-	, miX( x )
-	, miY( y )
-	, miW( w )
-	, miH( h )
-	, miX2( x+w )
-	, miY2( y+h )
-	, miLevel(0)
-	, mbInit(true)
-	, mpDrawEvent(0)
+Viewport::Viewport( const std::string & name, int x, int y, int w, int h, CColor3 color, F32 depth )
+	: Surface(name,x,y,w,h,color,depth)
 	, mpPickBuffer(nullptr)
 {
-	mWidgetFlags.Enable();
-	mWidgetFlags.SetState( EUI_WIDGET_OFF );
-}
-
-void CUIViewport::PushFrameTechnique(FrameTechniqueBase*ptek)
-{
-	mpActiveFrameTek.push( ptek );
-}
-
-void CUIViewport::PopFrameTechnique( )
-{
-	mpActiveFrameTek.pop();
-}
-
-FrameTechniqueBase* CUIViewport::GetFrameTechnique( ) const
-{
-	return mpActiveFrameTek.size() ? mpActiveFrameTek.top() : 0;
+	//mWidgetFlags.Enable();
+	//mWidgetFlags.SetState( EUI_WIDGET_OFF );
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void CUIViewport::Attach()
-{
-	mpTarget->FBI()->AttachViewport( this );
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-void CUIViewport::Clear()
-{
-	mpTarget->FBI()->ClearViewport( this );
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-void CUIViewport::resize( void )
-{
-	mWidgetFlags.SetSizeDirty( false );
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-bool CUIViewport::IsKeyDepressed( int ch )
-{
-	if( false==HasKeyboardFocus() )
-	{
-		return false;
-	}
-
-	return CSystem::GetRef().IsKeyDepressed( ch );
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-bool CUIViewport::IsHotKeyDepressed( const char* pact )
-{
-	if( false==HasKeyboardFocus() )
-	{
-		return false;
-	}
-
-	return HotKeyManager::IsDepressed( pact );
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-bool CUIViewport::IsHotKeyDepressed( const HotKey& hk )
-{
-	if( false==HasKeyboardFocus() )
-	{
-		return false;
-	}
-
-	return HotKeyManager::IsDepressed( hk );
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-void CUIViewport::BeginFrame( GfxTarget* pTARG )
+void Viewport::BeginFrame( lev2::GfxTarget* pTARG )
 {
 	ork::lev2::CFontMan::GetRef();
 	//////////////////////////////////////////////////////////
@@ -132,7 +48,7 @@ void CUIViewport::BeginFrame( GfxTarget* pTARG )
 
 	if( mbDrawOK )
 	{
-		//orkprintf( "BEG CUIViewport::BeginFrame::mbDrawOK\n" );
+		//orkprintf( "BEG Viewport::BeginFrame::mbDrawOK\n" );
 		CMatrix4 MatOrtho = CMatrix4::Identity;
 		MatOrtho.Ortho( 0.0f, (F32)GetW(), 0.0f, (F32)GetH(), 0.0f, 1.0f );
 
@@ -141,17 +57,17 @@ void CUIViewport::BeginFrame( GfxTarget* pTARG )
 		SRect SciRect( miX, miY, miX+miW, miY+miH );
 		pTARG->FBI()->PushScissor( SciRect );
 		pTARG->MTXI()->PushPMatrix( pTARG->MTXI()->GetOrthoMatrix() );
-		pTARG->BindMaterial( GfxEnv::GetRef().GetDefaultUIMaterial() );
+		pTARG->BindMaterial( lev2::GfxEnv::GetRef().GetDefaultUIMaterial() );
 	}
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void CUIViewport::EndFrame( GfxTarget* pTARG )
+void Viewport::EndFrame( lev2::GfxTarget* pTARG )
 {
 	if( mbDrawOK )
 	{
-		//orkprintf( "END CUIViewport::BeginFrame::mbDrawOK\n" );
+		//orkprintf( "END Viewport::BeginFrame::mbDrawOK\n" );
 		pTARG->MTXI()->PopPMatrix();
 		pTARG->FBI()->PopScissor();
 		pTARG->BindMaterial( 0 );
@@ -162,38 +78,6 @@ void CUIViewport::EndFrame( GfxTarget* pTARG )
 	//////////////////////////////////////////////////////////
 
 	mbDrawOK = false;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-void CUIViewport::Draw(DrawEvent& drwev)
-{
-	mpDrawEvent = & drwev;
-	mpTarget = drwev.GetTarget();
-
-	if( mbInit )
-	{
-		ork::lev2::CFontMan::GetRef();
-		Init(mpTarget);
-		mbInit = false;
-	}
-
-	DoDraw();
-	mpTarget = 0;
-	mpDrawEvent = 0;
-}
-
-void CUIViewport::ExtDraw( GfxTarget* pTARG )
-{
-	if( mbInit )
-	{
-		ork::lev2::CFontMan::GetRef();
-		Init(mpTarget);
-		mbInit = false;
-	}
-	mpTarget = pTARG;
-	DoDraw();
-	mpTarget = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////

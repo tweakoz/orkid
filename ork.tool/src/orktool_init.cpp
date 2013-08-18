@@ -224,6 +224,8 @@ tokenlist Init(int argc, char **argv)
 
 //	xmlInitParser(); // must init libxml in main thread
 
+    printf( "CPX\n");
+
 	return toklist;
 
 }

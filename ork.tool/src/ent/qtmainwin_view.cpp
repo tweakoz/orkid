@@ -14,7 +14,8 @@
 
 #include <pkg/ent/editor/qtui_scenevp.h>
 #include <pkg/ent/editor/edmainwin.h>
-#include <pkg/ent/editor/outliner.h>
+#include <ork/lev2/ui/panel.h>
+#include "outliner2.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -33,8 +34,19 @@ QDockWidget * EditorMainWindow::NewCamView( bool bfloat )
 	gfxdock->setAutoFillBackground(false); 
 	gfxdock->setObjectName(viewname.c_str());
 
-	gpvp = new SceneEditorVP( "yo", mEditorBase, *this );
-	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( gpvp );
+	//////////////
+	// had to fix a deadlock by passing in nullptr to CQtGfxWindow
+	//  and setting mRootWidget after the SceneEditorVP constructor
+	//  the deadlock was wiating for a loader target to be instantiated
+	// in lev2::TexLoader::LoadFileAsset
+	//////////////
+
+	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( nullptr );
+	lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
+	lev2::GfxEnv::GetRef().SetLoaderTarget( pgfxwin->GetContext() );
+
+	gpvp = new SceneEditorVP( "SceneViewport", mEditorBase, *this );
+	pgfxwin->mRootWidget = gpvp;
 
 	lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
 
@@ -49,8 +61,6 @@ QDockWidget * EditorMainWindow::NewCamView( bool bfloat )
 	viewnum++;
 
 
-	lev2::GfxEnv::GetRef().SetLoaderTarget( pgfxwin->GetContext() );
-	lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
 
 	gpvp->Init();
 	//////////////////////////////////////////////
@@ -72,26 +82,14 @@ QDockWidget * EditorMainWindow::NewCamView( bool bfloat )
 
 ///////////////////////////////////////////////////////////////////////////
 
-QDockWidget* EditorMainWindow::SceneObjPropEdit(bool bfloat)
+void EditorMainWindow::SceneObjPropEdit()
 {
-	std::string viewname = CreateFormattedString( "SceneObjProperties" );
-	QDockWidget*gfxdock = new QDockWidget(tr(viewname.c_str()), this);
-	gfxdock->setFloating( bfloat );
-	gfxdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-	gfxdock->setAutoFillBackground(false); 
-	gfxdock->setObjectName(viewname.c_str());
 	mGedModelObj.Attach( 0 );
-	tool::ged::GedVP* pvp = new tool::ged::GedVP( viewname, mGedModelObj );
-	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( pvp );
-	lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
-	pvp->GetGedWidget().BindCTQT( pctqt );
-	QWidget* pqw = pctqt->GetQWidget();
-	gfxdock->setWidget( pqw );
-	gfxdock->setMinimumSize( 64, 64 );
-	gfxdock->resize( 288, 800 );
-	addDockWidget(Qt::LeftDockWidgetArea, gfxdock);
-	pctqt->Show();
-	pctqt->GetQWidget()->Enable();
+	auto pnl = new ui::Panel( "props.panel", 0,128,256,256 );
+	auto pvp = new tool::ged::GedVP( "props.vp", mGedModelObj );
+	pnl->SetChild(pvp);
+	gpvp->AddChild(pnl);
+
 	/////////////////////////////////////////////////////////////////////////////////////
 	// 
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -118,25 +116,33 @@ QDockWidget* EditorMainWindow::SceneObjPropEdit(bool bfloat)
 	/////////////////////////////////////////////////////////////////////////////////////
 	// 
 	/////////////////////////////////////////////////////////////////////////////////////
-	return gfxdock;
 }
 
-QDockWidget* EditorMainWindow::NewOutliner2View( bool bfloat )
+void EditorMainWindow::NewOutliner2View()
 {
-	ork::ent::SceneInst* psi = mEditorBase.GetActiveSceneInst();
-	if( psi )
-	{
-		ork::ent::SceneData* psd = const_cast<ork::ent::SceneData*>( & psi->GetData() );
+	auto pnl = new ui::Panel( "outliner2.panel", 0,384,256,128 );
+	auto pvp = new Outliner2View(mEditorBase);
+	pnl->SetChild(pvp);
+	gpvp->AddChild(pnl);
+}
 
-		SlotSpawnNewGed(psd);
-	}	
-	return 0;
+void EditorMainWindow::NewDataflowView()
+{
+	static int viewnum = 0;
+	std::string viewname = CreateFormattedString( "DataflowGraph:%d", viewnum+1 );
+	viewnum++;
+
+	auto pnl = new ui::Panel( "dataflow2.panel", 0,512,256,512 );
+	auto pvp = new ork::tool::GraphVP(mDataflowEditor,mGedModelObj,viewname);
+	pnl->SetChild(pvp);
+	gpvp->AddChild(pnl);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
-{	static int viewnum = 0;
+{
+/*	static int viewnum = 0;
 	rtti::Class* pclass = pobj->GetClass();
 	std::string classname = pclass->Name().c_str();
 	std::string viewname = CreateFormattedString( "%s:%p", classname.c_str(), pobj );
@@ -151,7 +157,6 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 	tool::ged::GedVP* pvp = new tool::ged::GedVP( viewname, *pnewobjmodel );
 	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( pvp );
 	lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
-	pvp->GetGedWidget().BindCTQT( pctqt );
 	pvp->GetGedWidget().SetDeleteModel(true);
 	QWidget* pqw = pctqt->GetQWidget();
 	gfxdock->setWidget( pqw );
@@ -206,89 +211,13 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 	/////////////////////////////////////////////////////////////////////////////////////
 	// 
 	/////////////////////////////////////////////////////////////////////////////////////
-	pnewobjmodel->Attach( pobj );
+	pnewobjmodel->Attach( pobj );*/
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-QDockWidget *EditorMainWindow::NewDataflowView(bool bfloat)
-{
-	static int viewnum = 0;
-	std::string viewname = CreateFormattedString( "DataflowGraph:%d", viewnum+1 );
-	viewnum++;
+#if 0
 
-	QDockWidget*gfxdock = new QDockWidget(tr(viewname.c_str()), this);
-	gfxdock->setFloating( bfloat );
-	gfxdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-	gfxdock->setAutoFillBackground(false); 
-	gfxdock->setObjectName(viewname.c_str());
-
-	ork::tool::GraphVP* pvp = new ork::tool::GraphVP( mDataflowEditor, mGedModelObj, viewname );
-	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( pvp );
-	lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
-
-	QWidget* pqw = pctqt->GetQWidget();
-
-	gfxdock->setWidget( pqw );
-	
-	gfxdock->setMinimumSize( 256, 128 );
-	addDockWidget(Qt::RightDockWidgetArea, gfxdock);
-	setCorner(Qt::TopLeftCorner,Qt::LeftDockWidgetArea );
-	gfxdock->resize( 256, 128 );
-
-	pctqt->Show();
-	pctqt->GetQWidget()->Enable();
-	pgfxwin->GetContext()->FBI()->SetClearColor( CColor3(0.2f,0.2f,0.25f) );
-	
-	//pvp->SetTarget( pgfxwin->GetContext() );
-
-	return gfxdock;
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-QDockWidget *EditorMainWindow::NewOutlinerView(bool bfloat)
-{
-	static int viewnum = 0;
-	std::string viewname = CreateFormattedString( "Outliner:%d", viewnum+1 );
-	viewnum++;
-
-	QtOutlinerWindow* owin = new QtOutlinerWindow(true,0,mEditorBase);
-
-	QDockWidget*gfxdock = new QDockWidget(tr(viewname.c_str()), this);
-	gfxdock->setFloating( bfloat );
-	gfxdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-	gfxdock->setAutoFillBackground(false); 
-	gfxdock->setObjectName(viewname.c_str());
-
-	gfxdock->setWidget( owin );
-	
-	gfxdock->setMinimumSize( 256, 100 );
-	addDockWidget(Qt::LeftDockWidgetArea, gfxdock);
-
-	gfxdock->show();
-
-	bool bconOK;
-	//bconOK = object::Connect(	&mEditorBase, AddPooledLiteral("SigUpdateAll"),
-	//								& owin->Model(), AddPooledLiteral("SlotRefresh") );
-	//OrkAssert( bconOK );
-	bconOK = object::Connect(	&mEditorBase, AddPooledLiteral("SigSceneTopoChanged"),
-								& owin->Model(), AddPooledLiteral("SlotSceneTopoChanged"));
-	OrkAssert( bconOK );
-
-	///////////////////////////////////////////////////
-
-    bconOK = object::Connect(	& mEditorBase.SelectionManager(), AddPooledLiteral("SigObjectSelected"),
-								& owin->View(), AddPooledLiteral("SlotObjectSelected"));
-	OrkAssert( bconOK );
-	bconOK = object::Connect(	& mEditorBase.SelectionManager(), AddPooledLiteral("SigObjectDeSelected"),
-								& owin->View(), AddPooledLiteral("SlotObjectDeSelected"));
-	OrkAssert( bconOK );
-
-	///////////////////////////////////////////////////
-
-	return gfxdock;
-}
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -366,7 +295,7 @@ QDockWidget *EditorMainWindow::NewToolView( bool bfloat )
 
 	return gfxdock;
 }
-
+#endif
 ///////////////////////////////////////////////////////////////////////////
 
 void EditorMainWindow::NewDirView()

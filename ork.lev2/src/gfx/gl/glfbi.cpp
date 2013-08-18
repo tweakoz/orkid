@@ -10,7 +10,7 @@
 #include "gl.h"
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
-#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
 
 #include <ork/lev2/gfx/dbgfontman.h>
 
@@ -156,7 +156,6 @@ void GlFrameBufferInterface::DoEndFrame( void )
 	}
 	else
 	{
-		//printf( "ENDFRAME<WIN>\n" );
 		//glFinish();
 		mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
 	}
@@ -511,18 +510,16 @@ void GlFrameBufferInterface::SetViewport( int iX, int iY, int iW, int iH )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::ClearViewport( CUIViewport *pVP )
+void GlFrameBufferInterface::Clear( const CColor4 &color, float fdepth )
 {
-	const CColor3 &rCol = (pVP!=nullptr) ? pVP->GetClearColorRef() : CColor3::Black();
-
 	if( IsPickState() )
 		glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
 	else
-		glClearColor( rCol.GetX(), rCol.GetY(), rCol.GetZ(), 1.0f );
+		glClearColor( color.GetX(), color.GetY(), color.GetZ(), color.GetW() );
 
 	//printf( "GlFrameBufferInterface::ClearViewport()\n" );
 	GL_ERRORCHECK();
-	glClearDepth( 1.0f );
+	glClearDepth( fdepth );
 	GL_ERRORCHECK();
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	GL_ERRORCHECK();
@@ -540,32 +537,10 @@ void GfxTargetGL::SetSize( int ix, int iy, int iw, int ih )
 	//mFbI.DeviceReset(ix,iy,iw,ih );
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void GlFrameBufferInterface::AttachViewport( CUIViewport *pVP )
-{
-	OrkAssert( pVP );
-
-	int vpx = pVP->GetX();
-	int vpy = pVP->GetY();
-	int vpw = pVP->GetW();
-	int vph = pVP->GetH();
-
-	vpx = OrkSTXClampToRange( vpx, 0, 4096 );
-	vpy = OrkSTXClampToRange( vpy, 0, 4096 );
-	vpw = OrkSTXClampToRange( vpw, 32, 4096 );
-	vph = OrkSTXClampToRange( vph, 32, 4096 );
-
-	//printf( "AttachViewport<%d %d %d %d>\n", vpx, vpy, vpw, vph );
-
-	SetScissor( vpx, vpy, vpw, vph );
-	SetViewport( vpx, vpy, vpw, vph );
-}
-
 void GlFrameBufferInterface::ForceFlush( void )
 {
 	GL_ERRORCHECK();
-	glFlush();
+	//glFlush();
 	GL_ERRORCHECK();
 }
 
