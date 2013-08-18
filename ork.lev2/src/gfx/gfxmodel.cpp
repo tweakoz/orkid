@@ -475,7 +475,7 @@ void XgmModel::RenderRigid(	const CColor4 & ModColor,
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModel::RenderMultipleRigid(	const CColor4 & ModColor,
-									const CMatrix4* WorldMats, int icount,
+									const CMatrix4* WorldMatrices, int icount,
 									ork::lev2::GfxTarget *pTARG,
 									const RenderContextInstData & ctx,
 									const RenderContextInstModelData & mdlctx ) const
@@ -486,36 +486,38 @@ void XgmModel::RenderMultipleRigid(	const CColor4 & ModColor,
 		const XgmMesh & XgmMesh =		*mdlctx.mMesh;
 		const XgmCluster & XgmClus =	*mdlctx.mCluster;
 		const XgmSubMesh & XgmClusSet =	*mdlctx.mSubMesh;
+		const auto modelinst = mdlctx.GetModelInst();
 
 		int inummesh = GetNumMeshes();
 		int inumclusset = XgmMesh.GetNumSubMeshes();
 		int imat = ctx.GetMaterialIndex();
 		OrkAssert(imat<inumclusset);
-		GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
+		GfxMaterial* pmaterial = XgmClusSet.GetMaterial();
 
-		if( mdlctx.GetModelInst() )
+		if( modelinst )
 		{
-			if( mdlctx.GetModelInst()->GetLayerFxMaterial() != 0 ) pmat = mdlctx.GetModelInst()->GetLayerFxMaterial();
+			if( nullptr == modelinst->GetLayerFxMaterial() ) 
+				pmaterial = modelinst->GetLayerFxMaterial();
 		}
 
-		if( 0 != pmat )
+		if( nullptr != pmaterial )
 		{
-			pTARG->BindMaterial( pmat );
-			int inumpasses = pmat->BeginBlock(pTARG,ctx);
+			pTARG->BindMaterial( pmaterial );
+			int inumpasses = pmaterial->BeginBlock(pTARG,ctx);
 
 			for( int ipass=0; ipass<inumpasses; ipass++ )
 			{
 				OrkAssert(ipass<inumpasses);
-				bool bDRAW = pmat->BeginPass( pTARG,ipass );
+				bool bDRAW = pmaterial->BeginPass( pTARG,ipass );
 
 				if( bDRAW )
 				{
 					for( int imtx=0; imtx<icount; imtx++ )
 					{
 
-						const CMatrix4& mtxW = WorldMats[imtx];
+						const CMatrix4& mtxW = WorldMatrices[imtx];
 						pTARG->MTXI()->SetMMatrix(mtxW);
-						pmat->UpdateMVPMatrix( pTARG );
+						pmaterial->UpdateMVPMatrix( pTARG );
 
 	#if USE_XGM_DISPLAYLISTS
 						pTARG->GBI()->DisplayListDrawEML( XgmClus.mDisplayList );
@@ -531,9 +533,9 @@ void XgmModel::RenderMultipleRigid(	const CColor4 & ModColor,
 		#endif
 					}
 				}
-				pmat->EndPass(pTARG);
+				pmaterial->EndPass(pTARG);
 			}
-			pmat->EndBlock(pTARG);
+			pmaterial->EndBlock(pTARG);
 		}
 	}
 	pTARG->PopModColor();

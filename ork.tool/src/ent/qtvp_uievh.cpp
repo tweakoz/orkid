@@ -10,7 +10,6 @@
 
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/input/input.h>
-#include <orktool/qtui/gfxbuffer.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
@@ -70,13 +69,14 @@ void SceneEditorVP::RegisterToolHandler( const std::string& toolname, SceneEdito
 {
 	OrkAssert( mToolHandlers.find( toolname ) == mToolHandlers.end() );
 	mToolHandlers[ toolname ] = handler;
+	handler->SetToolName(toolname);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-EUIHandled SceneEditorVP::UIEventHandler( CUIEvent *pEV )
+ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 {
-	EUIHandled eH = CUIViewport::UIEventHandler( pEV );
+	ui::HandlerResult ret;
 	//OrkAssert( 0 != mpCurrentHandler );
 
 	lev2::CTXBASE * CtxBase = GetTarget() ? GetTarget()->GetCtxBase() : 0;
@@ -87,51 +87,52 @@ EUIHandled SceneEditorVP::UIEventHandler( CUIEvent *pEV )
 	// ALT KEY IS ALWAYS CAMERA OPS
 	////////////////////////////////////////////////////////////////
 
-	bool isshift = pEV->mbSHIFT;
-	bool isalt	 = pEV->mbALT;
-	bool isctrl	 = pEV->mbCTRL;
-    bool ismeta  = pEV->mbMETA;
+	bool isshift = EV.mbSHIFT;
+	bool isalt	 = EV.mbALT;
+	bool isctrl	 = EV.mbCTRL;
+    bool ismeta  = EV.mbMETA;
     bool ismulti = false;
 //	isshift = CSystem::IsKeyDepressed(VK_SHIFT);
 //	isalt = CSystem::IsKeyDepressed(VK_LMENU);
 //	isctrl = CSystem::IsKeyDepressed(VK_CONTROL);
 
-	switch( pEV->miEventCode )
+	switch( EV.miEventCode )
 	{
-		case UIEV_GOT_KEYFOCUS:
+		case ui::UIEV_GOT_KEYFOCUS:
 		{
 			//bool brunning = psceneinst ? psceneinst->GetSceneInstMode()==ork::ent::ESCENEMODE_RUN : false;
 			//CtxBase->SetRefreshPolicy( brunning ? lev2::CTXBASE::EREFRESH_FASTEST : lev2::CTXBASE::EREFRESH_WHENDIRTY );
 			break;
 		}
-		case UIEV_LOST_KEYFOCUS:
+		case ui::UIEV_LOST_KEYFOCUS:
 		{
 			//CtxBase->SetRefreshPolicy( lev2::CTXBASE::EREFRESH_WHENDIRTY);
 			break;
 		}
-        case UIEV_MULTITOUCH:
+        case ui::UIEV_MULTITOUCH:
             ismulti=true;
             break;
 	}
 	if( isalt || ismulti )
 	{
-		if( mActiveCamera ) mActiveCamera->UIEventHandler( pEV );
-		return eH;
+		if( mActiveCamera ) mActiveCamera->UIEventHandler( EV );
+		ret.SetHandled(this);
+		return ret;
 	}
 
-	if( 0 == pEV->miEventCode ) return eH;
+	if( 0 == EV.miEventCode ) return ret;
 
 	////////////////////////////////////////////////////////////////
 
-	switch( pEV->miEventCode )
+	switch( EV.miEventCode )
 	{
-		case UIEV_KEYUP:
+		case ui::UIEV_KEYUP:
 		{
 			break;
 		}
-		case UIEV_KEY:
+		case ui::UIEV_KEY:
 		{
-			int icode = pEV->miKeyCode;
+			int icode = EV.miKeyCode;
 
 			if( icode == 't' )
 			{
@@ -199,40 +200,41 @@ EUIHandled SceneEditorVP::UIEventHandler( CUIEvent *pEV )
 				else
 					miCullCameraIndex=miCameraIndex;
 				printf( "CULLCAMERAINDEX<%d>\n", miCullCameraIndex );
-				eH = EUI_HANDLED;
+				ret.SetHandled(this);
 			}
 			else if( icode == '`' )
 			{
 				miCameraIndex++;
 				printf( "CAMERAINDEX<%d>\n", miCameraIndex );
-				eH = EUI_HANDLED;
+				ret.SetHandled(this);
 			}
 			else if( icode == '1' )
 			{
 				mCompositorSceneIndex++;
-				eH = EUI_HANDLED;
+				ret.SetHandled(this);
 			}
 			else if( icode == '2' )
 			{
 				mCompositorSceneItemIndex++;
-				eH = EUI_HANDLED;
+				ret.SetHandled(this);
 			}
 			else if( icode == '!' )
 			{
 				mCompositorSceneIndex=-1;
-				eH = EUI_HANDLED;
+				ret.SetHandled(this);
 			}
 			else if( icode == '@' )
 			{
 				mCompositorSceneItemIndex=-1;
-				eH = EUI_HANDLED;
+				ret.SetHandled(this);
 			}
 			break;
 		}
-		case UIEV_PUSH:
+		case ui::UIEV_PUSH:
 		{
-			int ix = pEV->miX;
-			int iy = pEV->miY;
+			printf( "scenevp::uiev_push\n" );
+			int ix = EV.miX;
+			int iy = EV.miY;
 
 			int ity = 4;
 			int itx = 4;
@@ -247,8 +249,11 @@ EUIHandled SceneEditorVP::UIEventHandler( CUIEvent *pEV )
 
 				if( bInWidget )
 				{
-					BindToolHandler( (*it).second );
-					eH = EUI_HANDLED;
+					auto th = (*it).second;
+
+					printf( "bInWidget<%d>, th<%p>\n", int(bInWidget), th );
+					BindToolHandler( th );
+					ret.SetHandled( th );
 				}
 				ity += 36;
 			}
@@ -258,13 +263,14 @@ EUIHandled SceneEditorVP::UIEventHandler( CUIEvent *pEV )
 
 	if( mpCurrentHandler )
 	{
-		if( eH == EUI_NOT_HANDLED )
+		if( ! ret.WasHandled() )
 		{
-			eH = mpCurrentHandler->UIEventHandler( pEV );
+			//printf( "CurrentHandler<%s>\n", mpCurrentHandler->GetToolName().c_str() );
+			ret = mpCurrentHandler->OnUiEvent( EV );
 		}
 	}
 
-	return eH;
+	return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////

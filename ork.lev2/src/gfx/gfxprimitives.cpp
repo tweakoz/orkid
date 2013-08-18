@@ -1403,14 +1403,13 @@ void CGfxPrimitives::RenderPerlinTerrain( GfxTarget *pTarg )
 
 void CGfxPrimitives::RenderOrthoQuad( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
-	static DynamicVertexBuffer<SVtxV12C4T16> gpQuadBuffer( 6, 0, EPRIM_TRIANGLES );
+	auto vb = & GfxEnv::GetSharedDynamicVB();
 
 	///////////////////////////////////////////
 	// SET VERTICES (range 0..1)
 
-	gpQuadBuffer.Reset();
 	lev2::VtxWriter<SVtxV12C4T16> vw;
-	vw.Lock( pTarg, & gpQuadBuffer, 0 );
+	vw.Lock( pTarg, vb, 6 );
 
 	vw.AddVertex( SVtxV12C4T16( fX1, fY1, 0.0f, iminU, iminV, 0xffffffff ) );
 	vw.AddVertex( SVtxV12C4T16( fX2, fY1, 0.0f, imaxU, iminV, 0xffffffff ) );
@@ -1450,14 +1449,13 @@ void CGfxPrimitives::RenderOrthoQuad( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY
 
 void CGfxPrimitives::RenderQuadAtX( GfxTarget *pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
-	static DynamicVertexBuffer<SVtxV12C4T16> gpQuadBuffer( 6, 0, EPRIM_TRIANGLES );
+	auto vb = & GfxEnv::GetSharedDynamicVB();
 
 	///////////////////////////////////////////
 	// SET VERTICES (range 0..1)
 
-	gpQuadBuffer.Reset();
 	lev2::VtxWriter<SVtxV12C4T16> vw;
-	vw.Lock( pTarg, & gpQuadBuffer, 0 );
+	vw.Lock( pTarg, vb, 6 );
 
 	vw.AddVertex( SVtxV12C4T16( fX, fY1, fZ1, iminU, iminV, 0xffffffff ) );
 	vw.AddVertex( SVtxV12C4T16( fX, fY2, fZ1, imaxU, iminV, 0xffffffff ) );
@@ -1481,14 +1479,13 @@ void CGfxPrimitives::RenderQuadAtX( GfxTarget *pTarg, f32 fY1, f32 fY2, f32 fZ1,
 
 void CGfxPrimitives::RenderQuadAtY( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
-	static DynamicVertexBuffer<SVtxV12C4T16> gpQuadBuffer( 6, 0, EPRIM_TRIANGLES );
+	auto vb = & GfxEnv::GetSharedDynamicVB();
 
 	///////////////////////////////////////////
 	// SET VERTICES (range 0..1)
 
-	gpQuadBuffer.Reset();
 	lev2::VtxWriter<SVtxV12C4T16> vw;
-	vw.Lock( pTarg, & gpQuadBuffer, 0 );
+	vw.Lock( pTarg, vb, 6 );
 
 	vw.AddVertex( SVtxV12C4T16( fX2, fY, fZ2, imaxU, imaxV, 0xffffffff ) );
 	vw.AddVertex( SVtxV12C4T16( fX2, fY, fZ1, imaxU, iminV, 0xffffffff ) );
@@ -1512,14 +1509,13 @@ void CGfxPrimitives::RenderQuadAtY( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fZ1,
 
 void CGfxPrimitives::RenderQuadAtZ( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
-	static DynamicVertexBuffer<SVtxV12C4T16> gpQuadBuffer( 6, 0, EPRIM_TRIANGLES );
+	auto vb = & GfxEnv::GetSharedDynamicVB();
 
 	///////////////////////////////////////////
 	// SET VERTICES (range 0..1)
 
-	gpQuadBuffer.Reset();
 	lev2::VtxWriter<SVtxV12C4T16> vw;
-	vw.Lock( pTarg, & gpQuadBuffer, 0 );
+	vw.Lock( pTarg, vb, 6 );
 
 	vw.AddVertex( SVtxV12C4T16( fX1, fY1, fZ, iminU, iminV, 0xffffffff ) );
 	vw.AddVertex( SVtxV12C4T16( fX2, fY1, fZ, imaxU, iminV, 0xffffffff ) );
@@ -1543,14 +1539,13 @@ void CGfxPrimitives::RenderQuadAtZ( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1,
 
 void CGfxPrimitives::RenderQuad( GfxTarget *pTarg, CVector4 &V0, CVector4 &V1, CVector4 &V2, CVector4 &V3 )
 {
-	static DynamicVertexBuffer<SVtxV12C4T16> gpQuadBuffer( 6, 0, EPRIM_TRIANGLES );
+	auto vb = & GfxEnv::GetSharedDynamicVB();
 
 	///////////////////////////////////////////
 	// SET VERTICES (range 0..1)
 
-	gpQuadBuffer.Reset();
 	lev2::VtxWriter<SVtxV12C4T16> vw;
-	vw.Lock( pTarg, & gpQuadBuffer, 0 );
+	vw.Lock( pTarg, vb, 6 );
 
 	f32 iminU = 0.0f;
 	f32 iminV = 0.0f;

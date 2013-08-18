@@ -16,7 +16,7 @@ dereferenceXRefs=1;cameraXFov=0;cameraYFov=1</comments>
     </contributor>
     <created>2008-08-14T22:29:21Z</created>
     <modified>2008-08-14T22:29:21Z</modified>
-    <unit meter="0.01" name="centimeter"/>
+    <unit meter="1.0" name="meter"/>
     <up_axis>Y_UP</up_axis>
   </asset>
   <library_images>

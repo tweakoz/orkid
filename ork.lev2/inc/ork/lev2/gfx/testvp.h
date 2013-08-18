@@ -5,14 +5,14 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_TESTVP_H
-#define _ORK_LEV2_TESTVP_H
+#pragma once
+
 ///////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/particle/particle.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/gfx/renderer.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/gfx/camera.h>
@@ -135,7 +135,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-class CTestVP2 : public ork::lev2::CUIViewport
+class CTestVP2 : public ui::Viewport
 {
 	ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>	mParticleVerts;
 	ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>	mSolidVerts;
@@ -181,7 +181,7 @@ public:
 	///////////////////////////////////////////////////////////////////////////////
 
 	CTestVP2( int x, int y, int w, int h )
-		: ork::lev2::CUIViewport( "testvp", x, y, w, h, ork::CColor3::Red(), 1.0f )
+		: ui::Viewport( "testvp", x, y, w, h, ork::CColor3::Red(), 1.0f )
 		, mParticleVerts( kmaxptcl, kmaxptcl, ork::lev2::EPRIM_LINESTRIP )
 		, mSolidVerts( 256, 256, ork::lev2::EPRIM_TRIANGLES )
 		, mbinit( true )
@@ -827,4 +827,3 @@ template<typename VP> class CTestGfxWindow : public ork::lev2::GfxWindow
 
 ///////////////////////////////////////////////////////////////////////////
 } }
-#endif

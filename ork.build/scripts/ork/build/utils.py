@@ -28,7 +28,7 @@ else:
     import select
     import fcntl
 
-num_cores = multiprocessing.cpu_count()
+num_cores = multiprocessing.cpu_count()+1
 stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
 
 ###############################################################################

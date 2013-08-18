@@ -5,13 +5,16 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_TOOL_QTDATAFLOW_H 
-#define _ORK_TOOL_QTDATAFLOW_H 
+#pragma once
+
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/dataflow/dataflow.h>
 #include <ork/dataflow/scheduler.h>
-#include <orktool/qtui/gfxbuffer.h>
 #include <ork/lev2/gfx/util/grid.h>
+#include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/gfx/pickbuffer.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,35 +51,31 @@ public:
 
 };
 
-class GraphVP : public lev2::CUIViewport
+struct GraphVP : public ui::Surface
 {
+	GraphVP( DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::string & name );
+
+private:
+
 	static const int kvppickdimw = 512;
 
-	virtual lev2::EUIHandled UIEventHandler( lev2::CUIEvent *pEV );
+	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
+	void DoRePaintSurface( ui::DrawEvent& drwev) override; 
+	void DoInit(lev2::GfxTarget* pt ) override;
 
-	lev2::CPickBuffer<GraphVP>*					mpPickBuffer;
+	DataFlowEditor& GetDataFlowEditor() { return mDflowEditor; }
+	void ReCenter();
+	void draw_connections( ork::lev2::GfxTarget* pTARG );
+	//void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
+
 	lev2::Grid2d								mGrid;
 	ork::lev2::Texture*							mpArrowTex;
 	ged::ObjModel&								mObjectModel;
 	DataFlowEditor&								mDflowEditor;
 	ork::dataflow::graph* GetTopGraph();
 	ork::lev2::GfxMaterial3DSolid				mGridMaterial; 
-
-public:
-	
-	void ReCenter();
-
-	void draw_connections( ork::lev2::GfxTarget* pTARG );
-
-	void DoDraw( /*ork::lev2::GfxTarget* pTARG*/ ); // virtual 
-
-	void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
-	GraphVP( DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::string & name );
-
-	DataFlowEditor& GetDataFlowEditor() { return mDflowEditor; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-#endif // _ORK_TOOL_QTCONSOLE_H

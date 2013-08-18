@@ -55,7 +55,7 @@ class Grid2d
 {
 public:
 
-	void Render( GfxTarget* pTARG );
+	void Render( GfxTarget* pTARG, int iw, int ih );
 
 	float				GetVisGridBase() const { return mVisGridBase; }
 	float				GetVisGridDiv() const { return mVisGridDiv; }
@@ -80,7 +80,7 @@ public:
 
 private:
 
-	void ReCalc(GfxTarget* pTARG);
+	void ReCalc(int iw, int ih);
 
 
 	CMatrix4			mMtxOrtho;

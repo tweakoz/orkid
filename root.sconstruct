@@ -11,6 +11,9 @@ SetOption('num_jobs', obu.num_cores)
 sln.optset.add("ork.core")
 BasicEnv = Environment( ENV=os.environ )
 
+TARGET = COMMAND_LINE_TARGETS
+print "root.TARGET<%s>" % TARGET
+
 #####################################################
 
 utpp = SConscript('ork.unittestpp/ork.unittestpp.sconstruct')
@@ -20,6 +23,16 @@ bull = SConscript('ork.bullet273/ork.bullet273.sconstruct')
 lev2 = SConscript('ork.lev2/ork.lev2.sconstruct')
 ent = SConscript('ork.ent/ork.ent.sconstruct')
 tool = SConscript('ork.tool/ork.tool.sconstruct')
+
+#####################################################
+
+prep = BasicEnv.Alias('prep')
+fast = BasicEnv.Alias('fast',tool)
+
+#####################################################
+
+if TARGET == "prep":
+	print "making prep"
 
 #####################################################
 

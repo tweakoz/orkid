@@ -66,7 +66,7 @@ public:
 	CManip( CManipManager& mgr );
 
 	virtual void Draw( GfxTarget *pTARG ) const = 0;
-	virtual bool UIEventHandler( CUIEvent *pEV ) = 0;
+	virtual bool UIEventHandler( const ui::Event& EV ) = 0;
 
 	CVector3 IntersectWithPlanes(const ork::CVector2& posubp);
 	void SelectBestPlane(const ork::CVector2& posubp);
@@ -90,7 +90,7 @@ public:
     CManipTrans(CManipManager& mgr);
 
 	virtual void Draw( GfxTarget *pTARG ) const = 0;
-	bool UIEventHandler( CUIEvent *pEV );
+	bool UIEventHandler( const ui::Event& EV );
 
 protected:
 
@@ -235,7 +235,7 @@ public: //
     CManipRot( CManipManager& mgr, const CVector4 &LocRotMat );
 
 	virtual void Draw( GfxTarget *pTARG ) const;
-	virtual bool UIEventHandler( CUIEvent *pEV );
+	virtual bool UIEventHandler( const ui::Event& EV );
 
 	virtual F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const = 0;
 
@@ -426,7 +426,7 @@ public:
 	void EnableManip( CManip *pOBJ );
 	void DisableManip( void );
 
-	bool UIEventHandler( CUIEvent *pEV );
+	bool UIEventHandler( const ui::Event& EV );
 
 	CCamera*			GetActiveCamera( void ) const { return mpActiveCamera; }
 	void				SetActiveCamera( CCamera*pCam ) { mpActiveCamera=pCam; }

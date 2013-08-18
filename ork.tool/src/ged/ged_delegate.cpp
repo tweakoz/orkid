@@ -557,6 +557,7 @@ GedGroupNode::GedGroupNode( ObjModel& mdl, const char* name, const reflect::IObj
 ///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 {
+	printf( "GedGroupNode<%p>::mouseDoubleClickEvent\n", this);
 	int inumitems = GetNumItems();
 
 	Qt::MouseButtons Buttons = pEV->buttons();

@@ -773,22 +773,33 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelRenderer::Describe()
-{	RegisterFloatXfPlug( ModelRenderer, Scale, -100.0f, 100.0f, ged::OutPlugChoiceDelegate );
+{	RegisterFloatXfPlug( ModelRenderer, AnimScale, -100.0f, 100.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( ModelRenderer, AnimRot, -720.0f, 720.0f, ged::OutPlugChoiceDelegate );
 	ork::reflect::RegisterProperty( "Model", & ModelRenderer::GetModelAccessor, & ModelRenderer::SetModelAccessor );
+	ork::reflect::RegisterProperty( "BaseRotAxisAngle", & ModelRenderer::mBaseRotAxisAngle );	
+	ork::reflect::RegisterProperty( "AnimRotAxis", & ModelRenderer::mAnimRotAxis );	
+	ork::reflect::RegisterProperty( "UpVector", & ModelRenderer::mUpVector );	
+
 	ork::reflect::AnnotatePropertyForEditor<ModelRenderer>("Model", "editor.class", "ged.factory.assetlist" );
 	ork::reflect::AnnotatePropertyForEditor<ModelRenderer>("Model", "editor.assettype", "xgmodel" );
 	ork::reflect::AnnotatePropertyForEditor<ModelRenderer>("Model", "editor.assetclass", "xgmodel");
+
 	static const char* EdGrpStr =
-		        "sort://Input Model Scale";
+		        "sort://Input Model UpVector BaseRotAxisAngle AnimRotAxis AnimScale AnimRot";
 	reflect::AnnotateClassForEditor<ModelRenderer>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
 ModelRenderer::ModelRenderer()
 	: ConstructOutPlug( UnitAge, dataflow::EPR_UNIFORM)
-	, ConstructInpPlug( Scale, dataflow::EPR_UNIFORM, mfScale )
+	, ConstructInpPlug( AnimScale, dataflow::EPR_UNIFORM, mfAnimScale )
+	, ConstructInpPlug( AnimRot, dataflow::EPR_UNIFORM, mfAnimRot )
 	, mOutDataUnitAge(0.0f)
 	, mModel( 0 )
-	, mfScale(1.0f)
+	, mfAnimScale(1.0f)
+	, mfAnimRot(0.0f)
+	, mBaseRotAxisAngle(0.0f,0.0f,1.0f,0.0f)
+	, mAnimRotAxis(0.0f,0.0f,1.0f)
+	, mUpVector(0.0f,1.0f,0.0f)
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -807,8 +818,9 @@ ork::lev2::XgmModel* ModelRenderer::GetModel() const
 dataflow::inplugbase* ModelRenderer::GetInput(int idx)
 {	dataflow::inplugbase* rval = 0;
 	switch(idx)
-	{	case 0:	rval = & mPlugInpInput;		break;
-		case 1:	rval = & mPlugInpScale;		break;
+	{	case 0:	rval = & mPlugInpInput;			break;
+		case 1:	rval = & mPlugInpAnimScale;		break;
+		case 2:	rval = & mPlugInpAnimRot;		break;
 	}
 	return rval;
 }
@@ -835,20 +847,42 @@ void ModelRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData
 		// uniform properties
 		////////////////////////////////////////////////	
 		//printf( "psys::ModelRenderer::Render() icnt<%d>\n", icnt );
-		CMatrix4 nmtx;
+		CMatrix4 nmtx, rmtx, r2mtx, smtx;
+
+		CQuaternion qrot;
+		CVector4 axisang = mBaseRotAxisAngle;
+		axisang.SetW( 3.1415926*axisang.GetW()/90.0f );
+		qrot.FromAxisAngle(axisang);
+		rmtx.FromQuaternion(qrot);		
+
+		CVector3 upvec = (mUpVector.Mag()==0.0f) ? CVector3::Green() : mUpVector.Normal();
+
 		for( int i=0; i<icnt; i++ )
 		{	const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles+i;
 			////////////////////////////////////////////////
 			// varying properties
 			////////////////////////////////////////////////
 			float fage = ptcl->mfAge;
+			const auto zaxis = ptcl->mVelocity.Normal();
+			const auto xaxis = (upvec.Cross(zaxis)).Normal();
+			const auto yaxis = zaxis.Cross(xaxis);
+
 			mOutDataUnitAge = (fage/ptcl->mfLifeSpan);
 			mOutDataUnitAge = (mOutDataUnitAge<0.0f) ? 0.0f : mOutDataUnitAge;
 			mOutDataUnitAge = (mOutDataUnitAge>1.0f) ? 1.0f : mOutDataUnitAge;
-			float fscale = mPlugInpScale.GetValue();
-			nmtx.SetScale( fscale, fscale, fscale );
+
+			float fscale = mPlugInpAnimScale.GetValue();
+			smtx.SetScale( fscale, fscale, fscale );
+
+			float fanimrot = mPlugInpAnimRot.GetValue();
+			CVector4 anim_axis_angle(mAnimRotAxis,3.1415926*fanimrot/90.0f);
+			qrot.FromAxisAngle(anim_axis_angle);
+			r2mtx.FromQuaternion(qrot);
+
+			nmtx.NormalVectorsIn(xaxis,yaxis,zaxis);
 			nmtx.SetTranslation( ptcl->mPosition );
-			gmatrixblock[i] = (nmtx*mtx);
+
+			gmatrixblock[i] = (rmtx*r2mtx*smtx*nmtx*mtx);
 		}
 		ork::lev2::XgmModelInst minst( GetModel() );
 		ork::lev2::RenderContextInstData MatCtx;

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_GFX_BUILTIN_FRAMEEFFECTS_H
-#define _ORK_LEV2_GFX_BUILTIN_FRAMEEFFECTS_H
+#pragma once
 
 #include <ork/lev2/gfx/renderer.h>
 #include <ork/lev2/gfx/lev2renderer.h>
@@ -195,10 +194,9 @@ class ShadowFrameTechnique : public FrameTechniqueBase
 
 public:
 
-	ShadowFrameTechnique( GfxWindow* Parent, CUIViewport* pvp, int iW, int iH );
+	ShadowFrameTechnique( GfxWindow* Parent, ui::Viewport* pvp, int iW, int iH );
 	virtual void Render( FrameRenderer & ContextData );
 };
 
 }} // namespace ork::lev2
 
-#endif

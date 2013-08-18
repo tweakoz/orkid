@@ -12,7 +12,10 @@
 #include <ork/reflect/IProperty.h>
 #include <ork/reflect/IObjectProperty.h>
 #include <ork/reflect/IObjectPropertyObject.h>
-#include <orktool/qtui/gfxbuffer.h>
+#include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/math/basicfilters.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 template class ork::lev2::CPickBuffer<ork::tool::ged::GedVP>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,51 +24,31 @@ template<>
 void CPickBuffer<ork::tool::ged::GedVP>::Draw( void )
 {	
     mPickIds.clear();
-    lev2::PickFrameTechnique pktek;
-	mpViewport->PushFrameTechnique( & pktek );
-	ork::lev2::GfxTarget *pTEXTARG = GetContext();
-	///////////////////////////////////////////////////////////////////////////
-	int itx0 = GetContextX();	int itx1 = GetContextX()+GetContextW();
-	int ity0 = GetContextY();	int ity1 = GetContextY()+GetContextH();
-	///////////////////////////////////////////////////////////////////////////
-	ork::lev2::RenderContextFrameData framedata; //
-	pTEXTARG->SetRenderContextFrameData( & framedata );
-	framedata.SetRenderingMode( ork::lev2::RenderContextFrameData::ERENDMODE_STANDARD );
-	framedata.SetTarget( pTEXTARG );
-	SRect tgt_rect( 0, 0, pTEXTARG->GetW(), pTEXTARG->GetH() );
-	framedata.SetDstRect( tgt_rect );
-	pTEXTARG->SetRenderContextFrameData( & framedata );
-	///////////////////////////////////////////////////////////////////////////
-	SRect VPRect( itx0, ity0, itx1, ity1 );
-	pTEXTARG->FBI()->PushViewport( VPRect );
-	pTEXTARG->FBI()->PushScissor( VPRect );
-	BeginFrame();
+
+    auto tgt = GetContext();
+	auto mtxi = tgt->MTXI();
+	auto fbi = tgt->FBI();
+	auto fxi = tgt->FXI();
+	auto rsi = tgt->RSI();
+
+	int irtgw = mpPickRtGroup->GetW();
+	int irtgh = mpPickRtGroup->GetH();
+	int isurfw = mpViewport->GetW();
+	int isurfh = mpViewport->GetH();
+	if( irtgw!=isurfw || irtgh!=isurfh )
 	{
-		pTEXTARG->FBI()->PushRtGroup( mpPickRtGroup );	// Enable Mrt
-		pTEXTARG->FBI()->EnterPickState(this);
-		///////////////////////////////////////////////////////////////////////////
-		SRect VPRect( itx0, ity0, itx1, ity1 );
-		pTEXTARG->FBI()->PushViewport( VPRect );
-			pTEXTARG->MTXI()->PushPMatrix( CMatrix4::Identity );
-			pTEXTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-			pTEXTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
-				//printf( "DRAWPICK\n" );
-				mpViewport->ExtDraw( pTEXTARG );
-			pTEXTARG->MTXI()->PopPMatrix();
-			pTEXTARG->MTXI()->PopVMatrix();
-			pTEXTARG->MTXI()->PopMMatrix();
-		pTEXTARG->FBI()->PopViewport();
-		///////////////////////////////////////////////////////////////////////////
-		pTEXTARG->FBI()->LeavePickState();
-		pTEXTARG->FBI()->PopRtGroup();
+		printf( "resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
+		this->SetBufferWidth(isurfw);
+		this->SetBufferHeight(isurfh);
+		tgt->SetSize(0,0,isurfw,isurfh);
+		mpPickRtGroup->Resize(isurfw,isurfh);
 	}
-	EndFrame();
-	pTEXTARG->FBI()->PopViewport();
-	pTEXTARG->FBI()->PopScissor();
-	pTEXTARG->SetRenderContextFrameData( 0 );
-	///////////////////////////////////////////////////////////////////////////
-	SetDirty( false );
-	mpViewport->PopFrameTechnique( );
+	fbi->PushRtGroup(mpPickRtGroup);
+	fbi->EnterPickState(this);
+		ui::DrawEvent drwev(tgt);
+		mpViewport->RePaintSurface(drwev);
+	fbi->LeavePickState();
+	fbi->PopRtGroup();
 }
 }}
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,30 +61,24 @@ uint32_t ged::GedVP::AssignPickId(GedObject*pobj)
 ///////////////////////////////////////////////////////////////////////////////
 namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
-static const int kvppickdimw = 1024;
-static const int kvppickdimh = 1024;
 static const int kscrollw = 32;
 orkset<GedVP*> GedVP::gAllViewports;
 ///////////////////////////////////////////////////////////////////////////////
 GedVP::GedVP( const std::string & name, ObjModel& model )
-	: CUIViewport( name, 0, 0, 0, 0, CColor3::Black(), 0.0f )
+	: ui::Surface( name, 0, 0, 0, 0, CColor3::Black(), 0.0f )
 	, mModel( model )
 	, mWidget( model )
-	, mpPickBuffer( 0 )
 	, mpActiveNode( 0 )
 	, miScrollY( 0 )
 	, mpMouseOverNode(0)
-	, mpBasicFrameTek( 0 )
 {
 	mWidget.SetViewport( this );
-
-	mpBasicFrameTek = new lev2::BasicFrameTechnique;
-	PushFrameTechnique( mpBasicFrameTek );
 
 	gAllViewports.insert( this );
 
 	object::Connect( & model.GetSigRepaint(), & mWidget.GetSlotRepaint() );
 	object::Connect( & model.GetSigModelInvalidated(), & mWidget.GetSlotModelInvalidated() );
+
 }
 GedVP::~GedVP()
 {
@@ -113,200 +90,122 @@ GedVP::~GedVP()
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedVP::DoDraw(  )
+void GedVP::DoInit( lev2::GfxTarget* pt )
 {
-	//orkprintf( "GedVP::DoDraw()\n" );
-	
-	if( 0 == mpPickBuffer )
-	{
-		mpPickBuffer = new lev2::CPickBuffer<GedVP>(	mpTarget->FBI()->GetThisBuffer(), 
-														this,
-														0, 0, kvppickdimw, kvppickdimh,
-														lev2::PickBufferBase::EPICK_FACE_VTX
-												   );
-		mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
-		mpPickBuffer->CreateContext();
-		mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
-	}
+	auto par = pt->FBI()->GetThisBuffer();
+	mpPickBuffer = new lev2::CPickBuffer<GedVP>( par, 
+												 this,
+												 0, 0, miW, miH,
+												 lev2::PickBufferBase::EPICK_FACE_VTX );
 
-	if( GetFrameTechnique() )
-	{
-		//orkprintf( "BEG: GedVP::DoDraw::2()\n" );
-		static const bool bfakepik = false;
-		if( bfakepik )
-		{
-			lev2::PickFrameTechnique pktek;
-			this->PushFrameTechnique( & pktek );
-			ork::lev2::GfxTarget *pTEXTARG = mpTarget;
-			///////////////////////////////////////////////////////////////////////////
-			int itx0 = GetX();	int itx1 = GetX()+GetW();
-			int ity0 = GetY();	int ity1 = GetY()+GetH();
-			///////////////////////////////////////////////////////////////////////////
-			ork::lev2::RenderContextFrameData framedata; //
-			pTEXTARG->SetRenderContextFrameData( & framedata );
-			//framedata.SetRenderingMode( ork::lev2::RenderContextFrameData::ERENDMODE_PICK );
-			framedata.SetTarget( pTEXTARG );
-			SRect tgt_rect( 0, 0, pTEXTARG->GetW(), pTEXTARG->GetH() );
-			framedata.SetDstRect( tgt_rect );
-			pTEXTARG->SetRenderContextFrameData( & framedata );
-			///////////////////////////////////////////////////////////////////////////
-			//pTEXTARG->FBI()->PushRtGroup( mpPickRtGroup );	// Enable Mrt
-			this->BeginFrame(pTEXTARG);
-			pTEXTARG->FBI()->EnterPickState(mpPickBuffer);
-			///////////////////////////////////////////////////////////////////////////
-			SRect VPRect( itx0, ity0, itx1, ity1 );
-			pTEXTARG->FBI()->PushViewport( VPRect );
-				pTEXTARG->MTXI()->PushPMatrix( CMatrix4::Identity );
-				pTEXTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-				pTEXTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
-					//this->ExtDraw( pTEXTARG );
-				{
-					FrameRenderer the_renderer( this );
-					the_renderer.GetFrameData().SetTarget( mpTarget );
-					lev2::UiViewportRenderTarget rt( this );
-					the_renderer.GetFrameData().PushRenderTarget( & rt );
-					//the_renderer.GetFrameData().SetRenderingMode( RenderContextFrameData::ERENDMODE_PICK );
-					GetFrameTechnique()->Render( the_renderer );
-					the_renderer.GetFrameData().PopRenderTarget();
-				}
-				pTEXTARG->MTXI()->PopPMatrix();
-				pTEXTARG->MTXI()->PopVMatrix();
-				pTEXTARG->MTXI()->PopMMatrix();
-			pTEXTARG->FBI()->PopViewport();
-			///////////////////////////////////////////////////////////////////////////
-			pTEXTARG->FBI()->LeavePickState();
-			EndFrame(pTEXTARG);
-			//pTEXTARG->FBI()->PopRtGroup();
-			pTEXTARG->SetRenderContextFrameData( 0 );
-			///////////////////////////////////////////////////////////////////////////
-			//SetDirty( false );
-			this->PopFrameTechnique( );
-
-		}	
-		else
-		{
-			FrameRenderer the_renderer( this );
-			lev2::UiViewportRenderTarget rt( this );
-			the_renderer.GetFrameData().PushRenderTarget( & rt );
-			the_renderer.GetFrameData().SetTarget( mpTarget );
-			//printf( "GED::FTEKRENDER\n" );
-			GetFrameTechnique()->Render( the_renderer );
-			the_renderer.GetFrameData().PopRenderTarget();
-		}
-		//orkprintf( "END: GedVP::DoDraw::2()\n" );
-	}
+	mpPickBuffer->CreateContext();
+	mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
+	mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
 }
-
-void GedVP::FrameRenderer::Render()
+///////////////////////////////////////////////////////////////////////////////
+void GedVP::DoSurfaceResize()
 {
-	//OrkAssert(false);
-	//orkprintf( "BEG: GedVP::FrameRenderer::Render()\n" );
+	if( 0 == mpPickBuffer && (nullptr!=mpTarget) )
+	{
+	}
+	//TODO: mpPickBuffer->Resize()
+}
+///////////////////////////////////////////////////////////////////////////////
+void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
+{
+	//printf( "GedVP<%p>::Draw x<%d> y<%d> w<%d> h<%d>\n", this, miX, miY, miW, miH );
 
-	ork::tool::ged::ObjModel::FlushAllQueues();
-	bool bval = true;
+	//ork::tool::ged::ObjModel::FlushAllQueues();
 
-	ork::lev2::GfxTarget* pTARG = GetFrameData().GetTarget();
-	bool bispick = GetFrameData().IsPickMode(); 
+	//orkprintf( "GedVP::DoDraw()\n" );
 
+	auto tgt = drwev.GetTarget();
+	auto mtxi = tgt->MTXI();
+	auto fbi = tgt->FBI();
+	//bool bispick = GetFrameData().IsPickMode(); 
 
 	//////////////////////////////////////////////////
 	// Compute Scoll Transform
 	//////////////////////////////////////////////////
 
-	ork::CMatrix4 matV;
-	matV.SetTranslation( 0.0f, float(mpViewport->miScrollY), 0.0f );
+	ork::CMatrix4 matSCROLL;
+	matSCROLL.SetTranslation( 0.0f, float(miScrollY), 0.0f );
 
 	//////////////////////////////////////////////////
 
-	const ork::rtti::ICastable* pobj = mpViewport->mModel.CurrentObject();
-
-	int iw = pTARG->GetRenderContextFrameData()->GetDstRect().miW;
-	int ih = pTARG->GetRenderContextFrameData()->GetDstRect().miH;
-
-	//pTARG->FBI()->PushScissor( SRect( 0, 0, pTARG->GetW(), GetH() ) );
-	pTARG->FBI()->PushViewport( pTARG->GetRenderContextFrameData()->GetDstRect() );
-	
-	mpViewport->Clear(); // FrameData.GetTarget() );
-
-	pTARG->MTXI()->PushMMatrix( matV );
+	fbi->PushScissor( SRect( 0,0,miW,miH) );
+	fbi->PushViewport( SRect( 0,0,miW,miH) );
+	mtxi->PushMMatrix( matSCROLL );
 	{
-		int itx = pTARG->GetRenderContextFrameData()->GetDstRect().miX;
-		int itw = pTARG->GetRenderContextFrameData()->GetDstRect().miW;
-		int ity = pTARG->GetRenderContextFrameData()->GetDstRect().miY;
-		int ith = pTARG->GetRenderContextFrameData()->GetDstRect().miH;
-		////////////////////////////////////////////////////////
-		// draw some 2d crap
-		////////////////////////////////////////////////////////
-
-		float aspect = float(iw)/float(ih);
-
-		if( false == bispick )
-		{
-			//uimat.SetUIColorMode( ork::lev2::EUICOLOR_MODVTX );
-			//ork::lev2::NUI::EBoxStyle eBoxStyle( ork::lev2::NUI::EBOXSTYLE_FILLED_GREY );
-			//ork::lev2::NUI::DrawStyledBox( pTARG, itx+8, ity+8, itx+(itw-8), ity+(ith-8), eBoxStyle );
-		}
-		//pTARG->IMI()->QueFlush();
-
+		fbi->Clear( GetClearColorRef(), 1.0f );
+	
+		const ork::rtti::ICastable* pobj = mModel.CurrentObject();
 		if( pobj )
 		{
-			GedWidget* pw = mpViewport->mModel.GetGedWidget();
+			GedWidget* pw = mModel.GetGedWidget();
 
-			pw->Draw( pTARG, mpViewport->miScrollY );
+			pw->Draw( tgt, miW, miH, miScrollY );
 
-		}
-		else if( false == bispick )
-		{
-			//pTARG->IMI()->DrawLine( s16(itx), s16(ity), s16(itx+itw), s16(ity+ith), 0x00ffffff );
-			//pTARG->IMI()->DrawLine( s16(itx+itw), s16(ity), s16(itx), s16(ity+ith), 0x00ffffff );
-			//pTARG->IMI()->QueFlush();
 		}
 	}
-	pTARG->MTXI()->PopMMatrix();
-	pTARG->FBI()->PopViewport();
-	//orkprintf( "END: GedVP::FrameRenderer::Render()\n" );
+	mtxi->PopMMatrix();
+	fbi->PopViewport();
+	fbi->PopScissor();
 }
+
 ///////////////////////////////////////////////////////////////////////////////
-lev2::EUIHandled GedVP::UIEventHandler( lev2::CUIEvent *pEV )
+
+ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 {
-	ork::tool::ged::ObjModel::FlushAllQueues();
-	int ix = pEV->miX;
-	int iy = pEV->miY;
-	float fx = float(ix) / float(GetW());
-	float fy = float(iy) / float(GetH());
+	ui::HandlerResult ret(this);
+
+	const auto& filtev = EV.mFilteredEvent;
+
+	//ork::tool::ged::ObjModel::FlushAllQueues();
+	int ix = EV.miX;
+	int iy = EV.miY;
+	int ilocx, ilocy;
+	RootToLocal(ix,iy,ilocx,ilocy);
 
 	lev2::GetPixelContext ctx;
 	ctx.miMrtMask = (1<<0) | (1<<1); // ObjectID and ObjectUVD
 	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
 	ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
 
-	QInputEvent* qip = (QInputEvent*) pEV->mpBlindEventData;
+	QInputEvent* qip = (QInputEvent*) EV.mpBlindEventData;
 
-	bool bisshift = pEV->mbSHIFT;
+	bool bisshift = EV.mbSHIFT;
 
-	switch( pEV->miEventCode )
+	switch( filtev.miEventCode )
 	{
-	case lev2::UIEV_KEY:
+		case ui::UIEV_KEY:
 		{
-			int mikeyc = pEV->miKeyCode;
+			int mikeyc = filtev.miKeyCode;
 			if( mikeyc == '!' )
 			{
 				mWidget.IncrementSkin();
+				mNeedsSurfaceRepaint=true;
 			}
 			break;
 		}
-		case lev2::UIEV_MOUSEWHEEL:
+		case ui::UIEV_MOUSEWHEEL:
 		{
 			QWheelEvent* qem = (QWheelEvent*) qip;
+
 
 			//GetPixel( ix, iy, ctx );
 			//ork::Object *pobj = ctx.GetObject(0);			
 
 			int iscrollamt = bisshift ? 256 : 32;
 
+			static avg_filter<3> gScrollFilter;
+
+
 			//if( pobj )
 			{
-				int idelta = qem->delta();
+				int irawdelta = qem->delta();
+
+				int idelta = gScrollFilter.compute(irawdelta);
 
 				if( idelta > 0 )
 				{
@@ -344,17 +243,20 @@ lev2::EUIHandled GedVP::UIEventHandler( lev2::CUIEvent *pEV )
 					}
 					
 				}
+				printf( "predelta<%d> miScrollY<%d>\n", idelta, miScrollY );
+
 			}
+			mNeedsSurfaceRepaint=true;
 			break;
 		}
-		case lev2::UIEV_MOVE:
+		case ui::UIEV_MOVE:
 		{	QMouseEvent* qem = (QMouseEvent*) qip;
-			QPoint mypos = qem->pos();
+			QPoint mypos(ilocx,ilocy-miScrollY);
 			mypos.setY( mypos.y() - miScrollY );
 			QMouseEvent myme( qem->type(), mypos, qem->button(), qem->buttons(), qem->modifiers() );
 			static int gctr = 0;
 			if( 0 == gctr%4 ) 
-			{	GetPixel( ix, iy, ctx );
+			{	GetPixel( ilocx, ilocy, ctx );
 				rtti::ICastable *pobj = ctx.GetObject(mpPickBuffer,0);
 				if( 0 ) //TODO pobj )
 				{	GedObject *pnode = rtti::autocast(pobj);
@@ -367,10 +269,9 @@ lev2::EUIHandled GedVP::UIEventHandler( lev2::CUIEvent *pEV )
 			gctr++;
 			break;
 		}
-		case lev2::UIEV_DRAG:
+		case ui::UIEV_DRAG:
 		{	QMouseEvent* qem = (QMouseEvent*) qip;
-			QPoint mypos = qem->pos();
-			mypos.setY( mypos.y() - miScrollY );
+			QPoint mypos(ilocx,ilocy-miScrollY);
 			QMouseEvent myme( qem->type(), mypos, qem->button(), qem->buttons(), qem->modifiers() );
 			//GetPixel( ix, iy, ctx );
 			//ork::Object *pobj = ctx.GetObject(0);
@@ -379,6 +280,7 @@ lev2::EUIHandled GedVP::UIEventHandler( lev2::CUIEvent *pEV )
 				//OrkAssert(pnode);
 				if( mpActiveNode )
 				{	mpActiveNode->mouseMoveEvent( & myme );
+					mNeedsSurfaceRepaint=true;
 				}
 				else
 				{
@@ -388,73 +290,55 @@ lev2::EUIHandled GedVP::UIEventHandler( lev2::CUIEvent *pEV )
 			}
 			break;
 		}
-		case lev2::UIEV_PUSH:
-		case lev2::UIEV_RELEASE:
-		case lev2::UIEV_DOUBLECLICK:
+		case ui::UIEV_PUSH:
+		case ui::UIEV_RELEASE:
+		case ui::UIEV_DOUBLECLICK:
 		{
+
 			QMouseEvent* qem = (QMouseEvent*) qip;
 
-			QPoint mypos = qem->pos();
-			mypos.setY( mypos.y() - miScrollY );
 
-			QMouseEvent myme( qem->type(), mypos, qem->button(), qem->buttons(), qem->modifiers() );
-
-			GetPixel( ix, iy, ctx );
-
+			GetPixel( ilocx, ilocy, ctx );
+			float fx = float(ilocx)/float(GetW());
+			float fy = float(ilocy)/float(GetH());
 			ork::rtti::ICastable* pobj = ctx.GetObject(mpPickBuffer,0);
-			orkprintf( "Object<%p>\n", pobj );
+
+			bool is_in_set = IsObjInSet(pobj);
+
+			orkprintf( "Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy );
 
 			/////////////////////////////////////
 			// test object against known set
-			if( false == IsObjInSet(pobj) ) pobj = 0;
+			if( false == is_in_set ) pobj = 0;
 			/////////////////////////////////////
 
 			if( pobj )
 			if(GedObject *pnode = ork::rtti::autocast(pobj))
 			{
-				switch( pEV->miEventCode )
+				QPoint mypos(ilocx,ilocy-miScrollY);
+				QMouseEvent myme( qem->type(), mypos, qem->button(), qem->buttons(), qem->modifiers() );
+
+				switch( filtev.miEventCode )
 				{
-					case lev2::UIEV_PUSH:
+					case ui::UIEV_PUSH:
 						mpActiveNode = pnode;
 						pnode->mousePressEvent( & myme );
 						break;
-					case lev2::UIEV_RELEASE:
+					case ui::UIEV_RELEASE:
 						if( mpActiveNode ) mpActiveNode->mouseReleaseEvent( & myme );
 						mpActiveNode = 0;
 						break;
-					case lev2::UIEV_DOUBLECLICK:
+					case ui::UIEV_DOUBLECLICK:
 						pnode->mouseDoubleClickEvent( & myme );
 						break;
 				}
 			}
+			mNeedsSurfaceRepaint=true;
 		}
 		default:
 			break;
 	}
-	return lev2::EUI_HANDLED;
-}
-///////////////////////////////////////////////////////////////////////////////
-void GedVP::GetPixel( int ix, int iy, lev2::GetPixelContext& ctx )
-{
-	float fx = float(ix) / float(kvppickdimw);
-	float fy = float(iy) / float(kvppickdimh);
-	/////////////////////////////////////////////////////////////
-	if( mpPickBuffer )
-	{	ctx.mRtGroup = mpPickBuffer->mpPickRtGroup;
-		ctx.mAsBuffer = mpPickBuffer;
-		/////////////////////////////////////////////////////////////
-		mpPickBuffer->Draw();
-		/////////////////////////////////////////////////////////////
-		int iW = mpPickBuffer->GetContext()->GetW();
-		int iH = mpPickBuffer->GetContext()->GetH();
-		/////////////////////////////////////////////////////////////
-		mpPickBuffer->GetContext()->FBI()->SetViewport( 0,0,iW,iH );
-		mpPickBuffer->GetContext()->FBI()->SetScissor( 0,0,iW,iH );
-		/////////////////////////////////////////////////////////////
-		mpPickBuffer->GetContext()->FBI()->GetPixel( CVector4( fx, fy, 0.0f ), ctx );
-		/////////////////////////////////////////////////////////////
-	}
-	/////////////////////////////////////////////////////////////
+	return ret;
 }
 ///////////////////////////////////////////////////////////////////////////////////
 static std::set<void*>& GetObjSet()

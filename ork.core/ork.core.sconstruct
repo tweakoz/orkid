@@ -12,8 +12,15 @@ SetOption('num_jobs', obu.num_cores)
 sln.optset.add("ork.core")
 BasicEnv = Environment( ENV=os.environ )
 
-obu.install_headers("inc/ork")
-obu.install_headers("ext/inc/*")
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+is_install = (TARGET=="install")
+#
+
+if is_install:
+	obu.install_headers("inc/ork")
+	obu.install_headers("ext/inc/*")
 
 # basics #################################
 
@@ -34,33 +41,37 @@ class core:
 
 	##########################################
 
-	prj_core_lib = sln.Project(ARGS,BasicEnv,"ork.core")
-	prj_core_lib.SetSrcBase( "src" )
-	prj_core_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
-	prj_core_lib.AddLibs( LIBS )
-	prj_core_lib.AddFrameworks("Foundation")
-	prj_core_lib.Configure()
-	self.core_lib = prj_core_lib.SharedLibrary( )
+	if False==is_prep:
+		prj_core_lib = sln.Project(ARGS,BasicEnv,"ork.core")
+		prj_core_lib.SetSrcBase( "src" )
+		prj_core_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
+		prj_core_lib.AddLibs( LIBS )
+		prj_core_lib.AddFrameworks("Foundation")
+		prj_core_lib.AddIncludePaths( "inc/" )
+		prj_core_lib.Configure()
+		self.core_lib = prj_core_lib.SharedLibrary( )
 
-	##########################################
+		##########################################
 
-	prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")
-	prj_test.SetSrcBase( "src" )
-	prj_test.AddFolders( "test", "*.cpp" )
-	prj_test.AddLibs( LIBS )
-	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
-	prj_test.AddProjectDep( prj_core_lib )
-	prj_test.Configure()
-	self.test_prg = prj_test.Program( )
-	prj_test.AddProjectDep( prj_core_lib )
-	Depends(self.test_prg,self.core_lib)
-	#prj_test.AddProjectDep( upp_lib )
+		prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")
+		prj_test.SetSrcBase( "src" )
+		prj_test.AddFolders( "test", "*.cpp" )
+		prj_test.AddLibs( LIBS )
+		prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
+		prj_test.AddProjectDep( prj_core_lib )
+		prj_test.AddIncludePaths( "inc/" )
+		prj_test.Configure()
+		self.test_prg = prj_test.Program( )
+		prj_test.AddProjectDep( prj_core_lib )
+		Depends(self.test_prg,self.core_lib)
+		#prj_test.AddProjectDep( upp_lib )
 
 ##########################
 
 a = core()
 ret = list()
-ret += a.core_lib
-ret += a.test_prg
+if False == is_prep:
+	ret += a.core_lib
+	ret += a.test_prg
 Return('ret')
 

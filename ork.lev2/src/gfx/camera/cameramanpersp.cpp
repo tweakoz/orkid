@@ -10,6 +10,7 @@
 #include <ork/util/stl_ext.h>
 
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/ctxbase.h>
 
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/input/input.h>
@@ -19,6 +20,9 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/string/string.h>
 #include <ork/file/tinyxml/tinyxml.h>
+#include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/ui/touch.h>
+#include <ork/math/basicfilters.h>
 
 #if defined(ORK_CONFIG_EDITORBUILD)
 #include <QtGui/QCursor>
@@ -28,6 +32,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CCamera_persp, "CCamera_persp");
 
 void OrkGlobalDisableMousePointer();
 void OrkGlobalEnableMousePointer();
+
+using namespace ork::ui;
 
 namespace ork { namespace lev2 {
 
@@ -454,27 +460,29 @@ void CCamera_persp::DollyEnd()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::UIEventHandler( CUIEvent *pEvent )
+void CCamera_persp::UIEventHandler( const ui::Event& EV )
 {
-    CUIViewport *pVP = GetViewport();
+	const ui::EventCooked& filtev = EV.mFilteredEvent;
 
-	int esx = pEvent->miX;
-    int esy = pEvent->miY;
-	float fux = pEvent->mfUnitX;
-	float fuy = pEvent->mfUnitY;
+    ui::Viewport *pVP = GetViewport();
+
+	int esx = filtev.miX;
+    int esy = filtev.miY;
+	float fux = filtev.mUnitX;
+	float fuy = filtev.mUnitY;
 	float fpux = (fux*2.0f)-1.0f;
 	float fpuy = (fuy*2.0f)-1.0f;
 	
 	CVector2 pos2D( fpux, fpuy );
 		
 	int state = 0;
-	bool isctrl = pEvent->mbCTRL;
-	bool isalt = pEvent->mbALT;
-	bool isshift = pEvent->mbSHIFT;
-	bool ismeta = pEvent->mbMETA;
-	bool isleft = pEvent->mbLeftButton;
-	bool ismid = pEvent->mbMiddleButton;
-	bool isright = pEvent->mbRightButton;
+	bool isctrl = filtev.mCTRL;
+	bool isalt = filtev.mALT;
+	bool isshift = filtev.mSHIFT;
+	bool ismeta = filtev.mMETA;
+	bool isleft = filtev.mBut0;
+	bool ismid = filtev.mBut1;
+	bool isright = filtev.mBut2;
     bool bPAN_MidAlt = (ismid && isalt);
 
 	bool bcamL = HotKeyManager::IsDepressed(mHK_MovL);
@@ -488,7 +496,7 @@ void CCamera_persp::UIEventHandler( CUIEvent *pEvent )
 	static int ipushy = 0;
 	static f32 flerp = 0.0f;
     
-    switch(pEvent->miEventCode)
+    switch(filtev.miEventCode)
     {
 		case UIEV_PUSH:
         {
@@ -523,9 +531,9 @@ void CCamera_persp::UIEventHandler( CUIEvent *pEvent )
 			ipushy = esy;
             
 
-			leftbutton = pEvent->mbLeftButton;
-			middlebutton = pEvent->mbMiddleButton;
-			rightbutton = pEvent->mbRightButton;
+			leftbutton = filtev.mBut0;
+			middlebutton = filtev.mBut1;
+			rightbutton = filtev.mBut2;
 
 			vPushNX = mCameraData.GetXNormal();
 			vPushNY = mCameraData.GetYNormal();
@@ -545,152 +553,10 @@ void CCamera_persp::UIEventHandler( CUIEvent *pEvent )
         {
 			CommonPostSetup();
 			//could do fall-through or maybe even but this outside of switch
-			leftbutton = pEvent->mbLeftButton;
-			middlebutton = pEvent->mbMiddleButton;
-			rightbutton = pEvent->mbRightButton;
+			leftbutton = filtev.mBut0;
+			middlebutton = filtev.mBut1;
+			rightbutton = filtev.mBut2;
 			break;
-        }
-        case UIEV_MULTITOUCH:
-        {
-            static bool gbInMtDolly = false;
-            static bool gbInMtPan = false;
-            static bool gbInMtRot = false;
-            struct PointProc
-            {
-                static CVector2 unitPos( const MultiTouchPoint& pnt, CUIViewport *pVP )
-                {
-                    CVector2 rval;
-                    rval.SetX( pnt.mfCurrX/float(pVP->GetW()) );
-                    rval.SetY( pnt.mfCurrY/float(pVP->GetH()) );
-                    return rval;
-                }
-            };
-        
-            const MultiTouchPoint* mp[3];
-            CVector2 upos[3];
-            if( pEvent->miNumMultiTouchPoints )
-            {
-                int inumpushed = 0;
-                int inumdown = 0;
-                
-                int inumtopgate = 0;
-                int inumbotgate = 0;
-                int inummot = 0;
-                int imotidx = -1;
-                bool bmotpushed = false;
-                bool bmotreleased = false;
-                bool bmotdown = false;
-                
-                for( int i=0; i<pEvent->miNumMultiTouchPoints; i++ )
-                {
-                    mp[i] = & pEvent->mMultiTouchPoints[i];
-                    upos[i] = PointProc::unitPos( *mp[i], pVP );
-
-                    bool btopgate = (upos[i].GetX()<0.2f) && (upos[i].GetY()<0.4f);
-                    bool bbotgate = (upos[i].GetX()<0.2f) && (upos[i].GetY()>=0.4f);
-                    bool bismot   = (upos[i].GetX()>=0.2f);
-                    
-                    inumtopgate += int(btopgate);
-                    inumbotgate += int(bbotgate);
-
-                    inummot += int(bismot);
-                    
-                    inumpushed += int(mp[i]->mState==MultiTouchPoint::PS_PUSHED);
-                    inumdown += int(mp[i]->mState==MultiTouchPoint::PS_DOWN);
-
-                    if( bismot )
-                    {
-                        imotidx = i;
-                        bmotpushed |= (mp[i]->mState==MultiTouchPoint::PS_PUSHED);
-                        bmotreleased |= (mp[i]->mState==MultiTouchPoint::PS_RELEASED);
-                        bmotdown |= (mp[i]->mState==MultiTouchPoint::PS_DOWN);
-                    }
-                }
-
-                int iX = (imotidx>=0) ? int(mp[imotidx]->mfCurrX) : 0;
-                int iY = (imotidx>=0) ? int(mp[imotidx]->mfCurrY) : 0;
-                
-                //printf( "nmp<%d> int<%d> inb<%d> imi<%d> ix<%d> iy<%d>\n", pEvent->miNumMultiTouchPoints, inumtopgate, inumbotgate, imotidx, iX, iY );
-                
-                ////////////////////////
-                // pan
-                ////////////////////////
-                if( (inumtopgate==1)&&(inumbotgate==0)&&(imotidx>=0) )
-                {
-                    if( bmotpushed )
-                    {
-                        mEvTrackData.vPushCenter = mvCenter;
-                        mEvTrackData.ipushX = iX;
-                        mEvTrackData.ipushY = iY;
-                        DollyBegin(mEvTrackData);
-                        gbInMtDolly = true;
-                    }
-                    else if( bmotdown )
-                    {
-                        mEvTrackData.icurX = iX;
-                        mEvTrackData.icurY = iY;
-                        DollyUpdate(mEvTrackData);
-                        mEvTrackData.ipushX = iX;
-                        mEvTrackData.ipushY = iY;
-                        gbInMtDolly = true;
-                    }
-                }
-                ////////////////////////
-                // dolly
-                ////////////////////////
-                if( (inumtopgate==2)&&(inumbotgate==0)&&(imotidx>=0) )
-                {
-                    if( bmotpushed )
-                    {
-                        mEvTrackData.vPushCenter = mvCenter;
-                        mEvTrackData.ipushX = iX;
-                        mEvTrackData.ipushY = iY;
-                        PanBegin(mEvTrackData);
-                        gbInMtPan = true;
-                    }
-                    else if( bmotdown )
-                    {
-                        mEvTrackData.icurX = iX;
-                        mEvTrackData.icurY = iY;
-                        PanUpdate(mEvTrackData);
-                        gbInMtPan = true;
-                    }
-                }
-                ////////////////////////
-                // rot
-                ////////////////////////
-                if( (inumtopgate==0)&&(inumbotgate==1)&&(imotidx>=0) )
-                {
-                    if( bmotpushed )
-                    {
-                        mEvTrackData.vPushCenter = mvCenter;
-                        mEvTrackData.ipushX = iX;
-                        mEvTrackData.ipushY = iY;
-                        RotBegin(mEvTrackData);
-                        gbInMtRot = true;
-                    }
-                    else if( bmotdown )
-                    {
-                        mEvTrackData.icurX = iX;
-                        mEvTrackData.icurY = iY;
-                        RotUpdate(mEvTrackData);
-                        mEvTrackData.ipushX = iX;
-                        mEvTrackData.ipushY = iY;
-                        gbInMtRot = true;
-                    }
-                }
-            }
-            else // miNumMultiTouchPoints==0 (end mt event)
-            {
-                if( gbInMtDolly )
-                    DollyEnd();
-                if( gbInMtPan )
-                    PanEnd();
-                if( gbInMtRot )
-                    RotEnd();
-            }
-            //printf( "cam<%p> recieved mt event\n" );
-            break;
         }
 		case UIEV_MOVE:
 		{
@@ -852,9 +718,154 @@ void CCamera_persp::UIEventHandler( CUIEvent *pEvent )
 			}
 			break;
         }
-		case UIEV_MOUSEWHEEL:
+        case UIEV_MULTITOUCH:
+        {
+            static bool gbInMtDolly = false;
+            static bool gbInMtPan = false;
+            static bool gbInMtRot = false;
+            struct PointProc
+            {
+                static CVector2 unitPos( const ui::MultiTouchPoint& pnt, 
+                						 ui::Viewport* pVP )
+                {
+                    CVector2 rval;
+                    rval.SetX( pnt.mfCurrX/float(pVP->GetW()) );
+                    rval.SetY( pnt.mfCurrY/float(pVP->GetH()) );
+                    return rval;
+                }
+            };
+        
+            const ui::MultiTouchPoint* mp[3];
+            CVector2 upos[3];
+            if( EV.miNumMultiTouchPoints )
+            {
+                int inumpushed = 0;
+                int inumdown = 0;
+                
+                int inumtopgate = 0;
+                int inumbotgate = 0;
+                int inummot = 0;
+                int imotidx = -1;
+                bool bmotpushed = false;
+                bool bmotreleased = false;
+                bool bmotdown = false;
+                
+                for( int i=0; i<EV.miNumMultiTouchPoints; i++ )
+                {
+                    mp[i] = & EV.mMultiTouchPoints[i];
+                    upos[i] = PointProc::unitPos( *mp[i], pVP );
+
+                    bool btopgate = (upos[i].GetX()<0.2f) && (upos[i].GetY()<0.4f);
+                    bool bbotgate = (upos[i].GetX()<0.2f) && (upos[i].GetY()>=0.4f);
+                    bool bismot   = (upos[i].GetX()>=0.2f);
+                    
+                    inumtopgate += int(btopgate);
+                    inumbotgate += int(bbotgate);
+
+                    inummot += int(bismot);
+                    
+                    inumpushed += int(mp[i]->mState==MultiTouchPoint::PS_PUSHED);
+                    inumdown += int(mp[i]->mState==MultiTouchPoint::PS_DOWN);
+
+                    if( bismot )
+                    {
+                        imotidx = i;
+                        bmotpushed |= (mp[i]->mState==MultiTouchPoint::PS_PUSHED);
+                        bmotreleased |= (mp[i]->mState==MultiTouchPoint::PS_RELEASED);
+                        bmotdown |= (mp[i]->mState==MultiTouchPoint::PS_DOWN);
+                    }
+                }
+
+                int iX = (imotidx>=0) ? int(mp[imotidx]->mfCurrX) : 0;
+                int iY = (imotidx>=0) ? int(mp[imotidx]->mfCurrY) : 0;
+                
+                //printf( "nmp<%d> int<%d> inb<%d> imi<%d> ix<%d> iy<%d>\n", EV.miNumMultiTouchPoints, inumtopgate, inumbotgate, imotidx, iX, iY );
+                
+                ////////////////////////
+                // pan
+                ////////////////////////
+                if( (inumtopgate==1)&&(inumbotgate==0)&&(imotidx>=0) )
+                {
+                    if( bmotpushed )
+                    {
+                        mEvTrackData.vPushCenter = mvCenter;
+                        mEvTrackData.ipushX = iX;
+                        mEvTrackData.ipushY = iY;
+                        DollyBegin(mEvTrackData);
+                        gbInMtDolly = true;
+                    }
+                    else if( bmotdown )
+                    {
+                        mEvTrackData.icurX = iX;
+                        mEvTrackData.icurY = iY;
+                        DollyUpdate(mEvTrackData);
+                        mEvTrackData.ipushX = iX;
+                        mEvTrackData.ipushY = iY;
+                        gbInMtDolly = true;
+                    }
+                }
+                ////////////////////////
+                // dolly
+                ////////////////////////
+                if( (inumtopgate==2)&&(inumbotgate==0)&&(imotidx>=0) )
+                {
+                    if( bmotpushed )
+                    {
+                        mEvTrackData.vPushCenter = mvCenter;
+                        mEvTrackData.ipushX = iX;
+                        mEvTrackData.ipushY = iY;
+                        PanBegin(mEvTrackData);
+                        gbInMtPan = true;
+                    }
+                    else if( bmotdown )
+                    {
+                        mEvTrackData.icurX = iX;
+                        mEvTrackData.icurY = iY;
+                        PanUpdate(mEvTrackData);
+                        gbInMtPan = true;
+                    }
+                }
+                ////////////////////////
+                // rot
+                ////////////////////////
+                if( (inumtopgate==0)&&(inumbotgate==1)&&(imotidx>=0) )
+                {
+                    if( bmotpushed )
+                    {
+                        mEvTrackData.vPushCenter = mvCenter;
+                        mEvTrackData.ipushX = iX;
+                        mEvTrackData.ipushY = iY;
+                        RotBegin(mEvTrackData);
+                        gbInMtRot = true;
+                    }
+                    else if( bmotdown )
+                    {
+                        mEvTrackData.icurX = iX;
+                        mEvTrackData.icurY = iY;
+                        RotUpdate(mEvTrackData);
+                        mEvTrackData.ipushX = iX;
+                        mEvTrackData.ipushY = iY;
+                        gbInMtRot = true;
+                    }
+                }
+            }
+            else // miNumMultiTouchPoints==0 (end mt event)
+            {
+                if( gbInMtDolly )
+                    DollyEnd();
+                if( gbInMtPan )
+                    PanEnd();
+                if( gbInMtRot )
+                    RotEnd();
+            }
+            //printf( "cam<%p> recieved mt event\n" );
+            break;
+        }
+        case UIEV_MOUSEWHEEL:
 		{
-			int deltawheel = (pEvent->miMWY>0) ? -1 : (pEvent->miMWY<0) ? 1 : 0;
+			static avg_filter<3> gScrollFilter;
+
+			int deltawheel = (2*gScrollFilter.compute(-EV.miMWY)/9);
 
 			LengthReal ZMoveAmount(0.3f, LengthUnit::Meters());
 			if( isctrl ) ZMoveAmount*=0.2f;
@@ -931,7 +942,7 @@ void CCamera_persp::RenderUpdate( void )
 	//////////////////////////////////////
 	//////////////////////////////////////
 
-	CUIViewport *pVP = GetViewport();
+	auto pVP = GetViewport();
 
 	bool isctrl = false; //pVP->IsKeyDepressed( VK_CONTROL );
 	bool isshift = false; //pVP->IsKeyDepressed( VK_SHIFT );

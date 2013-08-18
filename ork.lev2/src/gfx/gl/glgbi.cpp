@@ -138,7 +138,6 @@ static void RetBufMapPool(GlVtxBufMapPool* p)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(USE_IBO)
 struct GLIdxBufHandle
 {
 	u32	mIBO;
@@ -147,19 +146,17 @@ struct GLIdxBufHandle
 
 	GLIdxBufHandle() : mIBO(0), mBuffer(nullptr), mNumIndices(0) {}
 };
-#endif
 
-#if defined(USE_VAO)
 struct GLVaoHandle
 {
 	GLuint mVAO;
 	
 	const GLIdxBufHandle* mIBO;
+	bool mInited;
 
-	GLVaoHandle() : mVAO(0), mIBO(nullptr) {}
+	GLVaoHandle() : mVAO(0), mIBO(nullptr), mInited(false) {}
 
 };
-#endif
 
 struct GLVtxBufHandle
 {
@@ -170,9 +167,7 @@ struct GLVtxBufHandle
 	bool mbSetupSource;
 	GlVtxBufMapData* mMappedRegion;
 
-#if defined(USE_VAO)
 	std::map<size_t,GLVaoHandle*> mVaoMap;
-#endif
 
 	GLVtxBufHandle() 
 		: mVBO(0)
@@ -184,7 +179,6 @@ struct GLVtxBufHandle
 	{
 
 	}
-	#if defined(USE_VAO)
 	GLVaoHandle* GetVAO(const void*plat_h,const void* pidcs)
 	{	GLVaoHandle* rval = nullptr;
 		size_t k1 = size_t(plat_h);
@@ -209,7 +203,6 @@ struct GLVtxBufHandle
 		glBindVertexArray(r->mVAO);
 		return r;
 	}
-	#endif
 	void CreateVbo(VertexBufferBase & VBuf)
 	{
 		VertexBufferBase * pnonconst = const_cast<VertexBufferBase *>( & VBuf );
@@ -234,7 +227,7 @@ struct GLVtxBufHandle
 		
 		static void* gzerobuf = calloc( 64<<20, 1 );
 		//glBufferData( GL_ARRAY_BUFFER, iVBlen, bSTATIC ? gzerobuf : 0, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
-		glBufferData( GL_ARRAY_BUFFER, iVBlen, gzerobuf, bSTATIC ? GL_STATIC_DRAW : GL_STREAM_DRAW );
+		glBufferData( GL_ARRAY_BUFFER, iVBlen, gzerobuf, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
 		GL_ERRORCHECK();
 		
 		//////////////////////////////////////////////
@@ -249,9 +242,18 @@ struct GLVtxBufHandle
 				break;
 #if defined(HAVE_MAP_BUFFER_RANGE)
 			case EVB_MAP_BUFFER_RANGE:
+			{	
+				/*
+				GLuint gl_BUFFER_SERIALIZED_MODIFY_APPLE = 0x8A12;
+        		GLuint gl_BUFFER_FLUSHING_UNMAP_APPLE = 0x8A13;
+				glBufferParameteriAPPLE(GL_ARRAY_BUFFER, gl_BUFFER_SERIALIZED_MODIFY_APPLE, GL_FALSE);
+				GL_ERRORCHECK();
+				glBufferParameteriAPPLE(GL_ARRAY_BUFFER, gl_BUFFER_FLUSHING_UNMAP_APPLE, GL_FALSE);
+				GL_ERRORCHECK();
+				*/
 				break;
-#endif
-#if defined(ORK_OSX)
+			}
+#elif defined(ORK_OSX)
 			case EVB_APPLE_FLUSH_RANGE:
 			{	GLuint gl_BUFFER_SERIALIZED_MODIFY_APPLE = 0x8A12;
         		GLuint gl_BUFFER_FLUSHING_UNMAP_APPLE = 0x8A13;
@@ -285,9 +287,7 @@ GlGeometryBufferInterface::GlGeometryBufferInterface( GfxTargetGL& target )
 
 static void ClearVao()
 {
-#if defined(USE_VAO)
 	glBindVertexArray(0);
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -356,13 +356,14 @@ void* GlGeometryBufferInterface::LockVB( VertexBufferBase & VBuf, int ibase, int
 			{
 #if defined(HAVE_MAP_BUFFER_RANGE)
 				case EVB_MAP_BUFFER_RANGE:
-					rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_UNSYNCHRONIZED_BIT); // MAP_UNSYNCHRONIZED_BIT?
+					//rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT ); // MAP_UNSYNCHRONIZED_BIT?
+					rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT); // MAP_UNSYNCHRONIZED_BIT?
 					//rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT ); // MAP_UNSYNCHRONIZED_BIT?
 					GL_ERRORCHECK();
 					OrkAssert( rVal );
+					//rVal = (void*) (((char*)rVal)+ibasebytes);
 					break;
-#endif
-#if defined(ORK_OSX)
+#elif defined(ORK_OSX)
 				case EVB_APPLE_FLUSH_RANGE:
 					rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY );
 					GL_ERRORCHECK();
@@ -491,7 +492,9 @@ void GlGeometryBufferInterface::UnLockVB( VertexBufferBase& VBuf )
 #if defined(HAVE_MAP_BUFFER_RANGE)
 			case EVB_MAP_BUFFER_RANGE:
 				GL_ERRORCHECK();
+				glFlushMappedBufferRange(GL_ARRAY_BUFFER, (GLintptr)0, countbytes);
 				glUnmapBuffer( GL_ARRAY_BUFFER );
+
 				break;
 #endif
 #if defined(ORK_OSX)
@@ -579,7 +582,7 @@ struct vtx_config
 		}
 		if( mAttr )
 		{	
-			printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
+			//printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
 			glVertexAttribPointer(	mAttr->mLocation, 
 									mNumComponents,
 									mType,
@@ -590,7 +593,7 @@ struct vtx_config
 		}
 		else
 		{
-			printf( "gbi::bind_attr no_attr\n" );
+			//printf( "gbi::bind_attr no_attr\n" );
 		}
 		return rval;
 	}
@@ -600,7 +603,7 @@ struct vtx_config
 
 			bool bena = (tmask&cmask);
 
-			printf( "gbi::enable_attrs iloc<%d> : %d\n", iloc, int(bena) );
+			//printf( "gbi::enable_attrs iloc<%d> : %d\n", iloc, int(bena) );
 
 
 			if( bena )
@@ -615,6 +618,7 @@ struct vtx_config
 
 static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t priv_data)
 {
+	printf( "EnableVtxBufComponents\n");
 	bool rval = false;
 	//////////////////////////////////////////////
 	#if defined(_USE_GLSLFX)
@@ -702,7 +706,8 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12T8I4W4:
-		{	/*
+		{	
+			#if defined(_USE_CGFX)
 			glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );
 			glEnableClientState( GL_VERTEX_ARRAY );
 			glNormalPointer( GL_FLOAT, iStride, (void*) 12 );	
@@ -718,7 +723,8 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
 			glClientActiveTextureARB(GL_TEXTURE2);
 			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			rval = true;*/
+			rval = true;
+			#endif
 			break;
 		}
 		case EVTXSTREAMFMT_V12N12B12T8C4:
@@ -931,6 +937,11 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	vtx_config::enable_attrs(component_mask);
 	#endif
 	//////////////////////////////////////////////
+	if( false == rval )
+	{
+		printf( "unhandled vtxfmt<%d>\n", int(eStrFmt) );
+	}
+
 	assert(rval);
 	return rval;
 }
@@ -958,17 +969,22 @@ bool GlGeometryBufferInterface::BindVertexStreamSource( const VertexBufferBase& 
 	OrkAssert( hBuf );
 	GL_ERRORCHECK();
 
-#if defined(USE_VAO)
 	void* plat_h = mTargetGL.GetPlatformHandle();
 	GLVaoHandle* vao_obj = hBuf->BindVao(plat_h,0);
-#endif
-	glBindBuffer( GL_ARRAY_BUFFER, hBuf->mVBO );
-	//printf( "VBO<%d>\n", int(hBuf->mVBO) );
-	GL_ERRORCHECK();
-	//////////////////////////////////////////////
-	bool rval = EnableVtxBufComponents(VBuf,evb_priv);
-	//////////////////////////////////////////////	
-	hBuf->mbSetupSource = true;
+
+	bool rval = true;
+
+	if( vao_obj->mInited == false )
+	{
+		vao_obj->mInited = true;
+		glBindBuffer( GL_ARRAY_BUFFER, hBuf->mVBO );
+		//printf( "VBO<%d>\n", int(hBuf->mVBO) );
+		GL_ERRORCHECK();
+		//////////////////////////////////////////////
+		rval = EnableVtxBufComponents(VBuf,evb_priv);
+		//////////////////////////////////////////////	
+		hBuf->mbSetupSource = true;
+	}
 	return rval;
 }
 
@@ -1002,8 +1018,6 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 
 	void* plat_h = mTargetGL.GetPlatformHandle();
 
-#if defined(USE_VAO)
-
 	const auto ph = (const GLIdxBufHandle*) IdxBuf.GetHandle();
 	OrkAssert( ph!=0 );
 
@@ -1012,6 +1026,8 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 	size_t key = k1 xor k2;
 
 	GLVaoHandle* vao_container = hBuf->BindVao(plat_h,(const void*) key );
+
+	//printf( "vao_container<%p> ibo<%p>\n", vao_container, vao_container->mIBO );
 
 	assert(vao_container!=nullptr);
 
@@ -1035,16 +1051,6 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 		//GLuint ibo = it->second;
 		//glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ibo );
 	}
-#elif defined(USE_IBO)
-	glBindBuffer( GL_ARRAY_BUFFER, hBuf->mVBO );
-	rval = EnableVtxBufComponents(VBuf,evb_priv);
-	const auto ph = (const GLIdxBufHandle*) IdxBuf.GetHandle();
-	assert(ph!=nullptr);
-	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ph->mIBO );
-#else
-	glBindBuffer( GL_ARRAY_BUFFER, hBuf->mVBO );
-	rval = EnableVtxBufComponents(VBuf,evb_priv);
-#endif
 
 	//#error assign idxbuf to VAO here
 	//////////////////////////////////////////////	
@@ -1210,19 +1216,9 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 
 	////////////////////////////////////////////////////////////////////
 
+	void* pindices = nullptr;
+
 	int iNum = IdxBuf.GetNumIndices();
-
-#if defined(USE_IBO)
-	const auto ph = (const GLIdxBufHandle*) IdxBuf.GetHandle();
-	//const U16* pindices = ph->mBuffer;
-	//glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-	const U16* pindices = 0;
-	//glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-#else
-	const U16* pindices = (const U16*) IdxBuf.GetHandle();
-#endif
-
-	////////////////////////////////////////////////////////////////////
 
 	if( iNum )
 	{
@@ -1295,8 +1291,6 @@ void* GlGeometryBufferInterface::LockIB( IndexBufferBase& IdxBuf, int ibase, int
 	if( nullptr == IdxBuf.GetHandle() )
 	{
 
-#if defined(USE_IBO)
-
 		GLIdxBufHandle* plat_handle = new GLIdxBufHandle;
 
 		auto p16 = new U16[icount];
@@ -1306,12 +1300,6 @@ void* GlGeometryBufferInterface::LockIB( IndexBufferBase& IdxBuf, int ibase, int
 
 		IdxBuf.SetHandle( (void*) plat_handle );
 
-#else
-
-		rval = malloc( IdxBuf.GetNumIndices() * IdxBuf.GetIndexSize());
-		IdxBuf.SetHandle( rval );
-
-#endif
 	}
 	else
 	{
@@ -1324,7 +1312,6 @@ void* GlGeometryBufferInterface::LockIB( IndexBufferBase& IdxBuf, int ibase, int
 
 void GlGeometryBufferInterface::UnLockIB( IndexBufferBase& IdxBuf)
 {
-#if defined(USE_IBO)
 	auto plat_handle = (GLIdxBufHandle*) IdxBuf.GetHandle();
 	assert(plat_handle!=nullptr);
 	{
@@ -1336,8 +1323,6 @@ void GlGeometryBufferInterface::UnLockIB( IndexBufferBase& IdxBuf)
 		glBufferData( GL_ELEMENT_ARRAY_BUFFER, iblen, src_data, GL_STATIC_DRAW );
 		//glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 	}
-#else
-#endif
 }
 
 
@@ -1345,14 +1330,10 @@ void GlGeometryBufferInterface::UnLockIB( IndexBufferBase& IdxBuf)
 
 const void* GlGeometryBufferInterface::LockIB( const IndexBufferBase& IdxBuf, int ibase, int icount )
 {
-#if defined(USE_IBO)
 	auto ph = (GLIdxBufHandle*) IdxBuf.GetHandle();
 	assert(ph!=nullptr);
 	const void* rval = ph->mBuffer;
 	return rval;
-#else
-	return (const void*) IdxBuf.GetHandle();
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1365,13 +1346,11 @@ void GlGeometryBufferInterface::UnLockIB( const IndexBufferBase& IdxBuf)
 
 void GlGeometryBufferInterface::ReleaseIB( IndexBufferBase& IdxBuf )
 {
-#if defined(USE_IBO)
 	auto plat_handle = (GLIdxBufHandle*) IdxBuf.GetHandle();
 
 	if( plat_handle )
 		delete plat_handle;
 
-#endif
 	IdxBuf.SetHandle(0);
 }
 

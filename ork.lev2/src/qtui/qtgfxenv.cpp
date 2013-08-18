@@ -7,10 +7,13 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/ctxbase.h>
 #include <ork/lev2/input/input.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/qtui/qtui.h>
+#include <ork/lev2/ui/event.h>
+#include <ork/lev2/ui/widget.h>
 
 #if ! defined (_CYGWIN) 
 
@@ -21,18 +24,18 @@ namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CQtGfxWindow::CQtGfxWindow( ork::lev2::CUIViewport *pVP )
+CQtGfxWindow::CQtGfxWindow( ui::Widget* prw )
 	: GfxWindow( 0, 0, 640, 448, "yo" ) 
 	, mbinit( true )
-	, mpviewport( pVP )
+	, mRootWidget( prw )
 {
 }
 
 CQtGfxWindow::~CQtGfxWindow()
 {
-	if( mpviewport )
+	if( mRootWidget )
 	{
-		delete mpviewport;
+		delete mRootWidget;
 	}
 }
 
@@ -40,26 +43,27 @@ CQtGfxWindow::~CQtGfxWindow()
 
 void CQtGfxWindow::Draw( void )
 {
-	mpviewport->SetX( GetContextX() );		// TODO add resize call
-	mpviewport->SetY( GetContextY() );
-	mpviewport->SetW( GetContextW() );
-	mpviewport->SetH( GetContextH() );
+	int ix = GetContextX();
+	int iy = GetContextY();
+	int iw = GetContextW();
+	int ih = GetContextH();
+	mRootWidget->SetRect( ix,iy,iw,ih );
 
-	DrawEvent drwev( GetContext() );
-	mpviewport->Draw( drwev );
+	ui::DrawEvent drwev( GetContext() );
+	mRootWidget->Draw( drwev );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CQtGfxWindow::GotFocus( void )
 {
-	if( mpviewport )
+	if( mRootWidget )
 	{
-		mpviewport->GotKeyboardFocus();
+		mRootWidget->GotKeyboardFocus();
 
-		ork::lev2::CUIEvent uievent;
-		uievent.mEventCode = ork::lev2::UIEV_GOT_KEYFOCUS;
-		mpviewport->UIEventHandler( & uievent );
+		ui::Event uievent;
+		uievent.mEventCode = ork::ui::UIEV_GOT_KEYFOCUS;
+		mRootWidget->HandleUiEvent( uievent );
 	}
 	mbHasFocus = true;
 }
@@ -68,15 +72,34 @@ void CQtGfxWindow::GotFocus( void )
 
 void CQtGfxWindow::LostFocus( void )
 {
-	if( mpviewport )
+	if( mRootWidget )
 	{
-		mpviewport->LostKeyboardFocus();
+		mRootWidget->LostKeyboardFocus();
 
-		ork::lev2::CUIEvent uievent;
-		uievent.mEventCode = ork::lev2::UIEV_LOST_KEYFOCUS;
-		mpviewport->UIEventHandler( & uievent );
+		ui::Event uievent;
+		uievent.mEventCode = ork::ui::UIEV_LOST_KEYFOCUS;
+		mRootWidget->HandleUiEvent( uievent );
 	}
 	mbHasFocus = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CQtGfxWindow::OnShow()
+{
+	ork::lev2::GfxTarget *pTARG = GetContext();
+
+	//if( mbinit )
+	{
+		//mbinit = false;
+		/////////////////////////////////////////////////////////////////////
+		int ix = GetContextX();
+		int iy = GetContextY();
+		int iw = GetContextW();
+		int ih = GetContextH();
+		mRootWidget->SetRect( ix,iy,iw,ih );
+		SetRootWidget( mRootWidget );
+	}
 }
 
 } // namespace tool

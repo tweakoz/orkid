@@ -128,6 +128,7 @@ GedInputDialog::GedInputDialog()
 void GedInputDialog::done( )
 {
 	QDialog::done(0);
+	mbChanged = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,6 +136,7 @@ void GedInputDialog::done( )
 void GedInputDialog::canceled( )
 {
 	QDialog::done(-1);
+	mbChanged = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

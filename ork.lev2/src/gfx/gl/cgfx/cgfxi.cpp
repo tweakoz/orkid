@@ -496,8 +496,10 @@ void CgFxInterface::BindParamU32( FxShader* hfx, const FxShaderParam* hpar, U32 
 
 void CgFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 & Mat )
 {
+	if( 0 == hpar ) return; 
 	CgFxContainer* container = static_cast<CgFxContainer*>( hfx->GetInternalHandle() );
 	CGeffect cgeffect = container->mCgEffect;
+	
 	CGparameter cgparam = reinterpret_cast<CGparameter>(hpar->GetPlatformHandle());
 	cgSetMatrixParameterfr( cgparam, (const float *) Mat.GetArray() );
 	GL_ERRORCHECK();

@@ -26,19 +26,19 @@ vertex_interface iface_vdefault
 	//
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
-	in vec2 uv0 : TEXCOORD0;
-	in vec2 uv1 : TEXCOORD1;
+	in vec4 uv0 : TEXCOORD0;
+	in vec4 uv1 : TEXCOORD1;
 	//
 	out vec4 frg_clr;
-	out vec2 frg_uv0;
-	out vec2 frg_uv1;
+	out vec4 frg_uv0;
+	out vec4 frg_uv1;
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault
 {
 	in vec4 frg_clr;
-	in vec2 frg_uv0;
-	in vec2 frg_uv1;
+	in vec4 frg_uv0;
+	in vec4 frg_uv1;
 	//
 	out vec4 out_clr;
 }
@@ -47,12 +47,13 @@ fragment_interface iface_fmt
 {
 	uniform vec4 modcolor;
 	uniform sampler2D ColorMap;
+	uniform sampler3D VolumeMap;
 	//
 	out vec4 out_clr;
 	//
 	in vec4 frg_clr;
-	in vec2 frg_uv0;
-	in vec2 frg_uv1;
+	in vec4 frg_uv0;
+	in vec4 frg_uv1;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -60,18 +61,27 @@ fragment_interface iface_fmt
 state_block sb_default
 {
 	inherits default;
+	//DepthTest=LEQUALS;
+	//DepthMask=true;
+	//CullTest=PASS_FRONT;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_lerpblend
 {
 	inherits sb_default;
-	BlendMode = ALPHA;
+	BlendMode = ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
 state_block sb_additive
 {
 	inherits sb_default;
 	BlendMode = ADDITIVE;
+}
+///////////////////////////////////////////////////////////////
+state_block sb_alpadd
+{
+	inherits sb_default;
+	BlendMode = ALPHA_ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
 // shaders
@@ -87,7 +97,13 @@ vertex_shader vs_vtxtexcolor : iface_vdefault
 
 fragment_shader ps_modtex : iface_fmt
 {
-	vec4 texc = texture( ColorMap, frg_uv0 );
+	vec4 texc = texture( ColorMap, frg_uv0.xy );
+	out_clr = texc*modcolor;
+	if( out_clr.a==0.0f ) discard;
+}
+fragment_shader ps_modtexclr : iface_fmt
+{
+	vec4 texc = texture( ColorMap, frg_uv0.xy );
 	out_clr = texc*modcolor*frg_clr;
 	if( out_clr.a==0.0f ) discard;
 }
@@ -97,7 +113,7 @@ vertex_shader vs_vtxcolor : iface_vdefault
 	gl_Position = MatMVP*position;
 	frg_clr = vtxcolor;
 	frg_uv0 = uv0;
-	frg_uv1 = uv0;
+	frg_uv1 = uv1;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault
@@ -109,13 +125,21 @@ fragment_shader ps_modclr : iface_fmt
 {
 	out_clr = modcolor;
 }
+fragment_shader ps_volume : iface_fmt
+{
+	vec2 uv = frg_uv0.xy;
+	float w = frg_uv1.x;
+	vec3 uvw = vec3(uv,w);
+    vec4 TexInp0 = texture( VolumeMap, uvw ).xyzw;
+	out_clr = TexInp0.bgra*modcolor*frg_clr.bgra;
+}
 ///////////////////////////////////////////////////////////////
 technique tbasicparticle
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxtexcolor;
-		fragment_shader=ps_modtex;
-		state_block=sb_lerpblend;
+		fragment_shader=ps_modtexclr;
+		state_block=sb_default;
 	}
 }
 technique tbasicparticle_pick
@@ -138,8 +162,8 @@ technique tvolumeparticle
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_modtex;
-		state_block=sb_default;
+		fragment_shader=ps_volume;
+		state_block=sb_alpadd;
 	}
 }
 ///////////////////////////////////////////////////////////////

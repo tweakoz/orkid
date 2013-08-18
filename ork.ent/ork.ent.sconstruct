@@ -7,10 +7,17 @@ import ork.build.slnprj as sln
 
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
-VariantDir( 'obj', 'src' )
+VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
 
-obu.install_headers("inc/pkg")
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+is_install = (TARGET=="install")
+#
+
+if is_install:
+	obu.install_headers("inc/pkg")
 
 # basics #################################
 
@@ -19,6 +26,9 @@ class ent:
   def __init__(self):
 	BasicEnv = Environment( ENV=os.environ )
 	ARGS = cmn.BuildArgs
+
+	if is_prep:
+		return
 
 	##########################################
 
@@ -41,6 +51,9 @@ class ent:
 
 	prj = sln.Project(ARGS,BasicEnv,"ork.ent")
 	prj.SetSrcBase( "src" )
+	prj.AddIncludePaths( "../ork.core/inc/" )
+	prj.AddIncludePaths( "../ork.lev2/inc/" )
+	prj.AddIncludePaths( "inc" )
 	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
 	prj.AddIncludePaths( "/usr/include/qt4" )
 	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
@@ -55,6 +68,9 @@ class ent:
 
 	prj_test = sln.Project(ARGS,BasicEnv,"ork.ent.test")
 	prj_test.SetSrcBase( "src" )
+	prj_test.AddIncludePaths( "inc" )
+	prj_test.AddIncludePaths( "../ork.core/inc/" )
+	prj_test.AddIncludePaths( "../ork.lev2/inc/" )
 	prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
 	#prj_test.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 	prj_test.AddFolders( "test", "*.cpp" )
@@ -70,8 +86,9 @@ class ent:
 
 a = ent()
 ret = list()
-ret += a.ent_lib
-ret += a.test_prg
+if False==is_prep:
+	ret += a.ent_lib
+	ret += a.test_prg
 Return('ret')
 
 ##########################################

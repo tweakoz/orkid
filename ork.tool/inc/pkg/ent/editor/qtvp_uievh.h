@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ENT3D_QTVP_UIEVH_H
-#define _ENT3D_QTVP_UIEVH_H
+#pragma once 
 
 #include <orktool/qtui/uitoolhandler.h>
 #include <pkg/ent/editor/qtui_scenevp.h>
@@ -55,7 +54,7 @@ struct DeferredPickOperationContext
 	bool	is_right;
 	bool	is_ctrl;
 	bool	is_shift;
-	lev2::CUIEvent mEV;
+	ui::Event mEV;
 
 	ork::rtti::ICastable*		mpCastable;
 	SceneEditorVPToolHandler*	mHandler;
@@ -64,24 +63,21 @@ struct DeferredPickOperationContext
 	tbb::atomic<int>			mState;
 };
 
-class TestVPDefaultHandler : public SceneEditorVPToolHandler
+struct TestVPDefaultHandler : public SceneEditorVPToolHandler
 {
-public:
 	TestVPDefaultHandler( SceneEditorBase& editor );
 private:
-	ork::lev2::EUIHandled UIEventHandler( ork::lev2::CUIEvent *pEV ); // virtual
-	void DoAttach(SceneEditorVP* ); // virtual
-	void DoDetach(SceneEditorVP* ); // virtual
-
+	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
+	void DoAttach(SceneEditorVP* ) override;
+	void DoDetach(SceneEditorVP* ) override;
 	void HandlePickOperation( DeferredPickOperationContext* ppickop );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ManipHandler : public SceneEditorVPToolHandler
+struct ManipHandler : public SceneEditorVPToolHandler
 {
-public:
-	virtual ork::lev2::EUIHandled UIEventHandler( ork::lev2::CUIEvent *pEV );
+	ui::HandlerResult DoOnUiEvent( const ui::Event& EV) override;
 
 protected:
 	ManipHandler( SceneEditorBase& editor );
@@ -89,25 +85,25 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ManipRotHandler : public ManipHandler
+struct ManipRotHandler : public ManipHandler
 {	
-	virtual void DoAttach(SceneEditorVP* );
-	virtual void DoDetach(SceneEditorVP* );
-public:
 	ManipRotHandler( SceneEditorBase& editor );
+private:
+	void DoAttach(SceneEditorVP* ) override;
+	void DoDetach(SceneEditorVP* ) override;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ManipTransHandler : public ManipHandler
+struct ManipTransHandler : public ManipHandler
 {	
-	virtual void DoAttach(SceneEditorVP* );
-	virtual void DoDetach(SceneEditorVP* );
-public:
 	ManipTransHandler( SceneEditorBase& editor );
+private:
+	void DoAttach(SceneEditorVP* ) override;
+	void DoDetach(SceneEditorVP* ) override;
 };
 
 }
 }
 
-#endif

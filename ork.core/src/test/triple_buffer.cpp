@@ -25,7 +25,7 @@ struct YOTEST
 };
 
 static const int knummsgs = 4<<10;
-static const float ktesttime = 60.0f;
+static const float ktesttime = 5.0f;
 
 template <typename queue_type>
 	struct yo 

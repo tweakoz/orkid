@@ -233,21 +233,23 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	
 	auto genviewblk = [=]()
 	{
-	QDockWidget *pdw1 = SceneObjPropEdit(false);
-	QDockWidget *pdw0 = NewCamView(false);
-	QDockWidget *pdw2 = NewOutlinerView(false);
-	
+		QDockWidget *pdw0 = NewCamView(false);
+		SceneObjPropEdit();
+		NewOutliner2View();
+		NewDataflowView();
+		//QDockWidget *pdw2 = NewOutlinerView(false);
+		
 
-#if defined(ORK_OSX)
-	if( gPythonEnabled )
-	{	QDockWidget *pdw3 = NewPyConView(false);
-	}
-#endif
-	//QDockWidget *pdw3 = NewDataflowView(false);
-	////////////////////////////////////
-	//tabifyDockWidget( pdw2, pdw3 );
-	//tabifyDockWidget( pdw4, pdw2 );
-	setCentralWidget( pdw0 );
+		#if 0 //defined(ORK_OSX)
+		if( gPythonEnabled )
+		{	QDockWidget *pdw3 = NewPyConView(false);
+		}
+		#endif
+		//QDockWidget *pdw3 = NewDataflowView(false);
+		////////////////////////////////////
+		//tabifyDockWidget( pdw2, pdw3 );
+		//tabifyDockWidget( pdw4, pdw2 );
+		setCentralWidget( pdw0 );
 	};
 	//MainThreadOpQ().push(genviewblk);
 	genviewblk();
@@ -301,11 +303,12 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	
 	LoadLayout();
 
-	auto lamb = [=]()
+/*	auto lamb = [=]()
 	{
 		this->SlotSpawnNewGed( ork::Application::GetContext() );
 	};
 	MainThreadOpQ().push(Op(lamb));
+*/
 }
 
 EditorMainWindow::~EditorMainWindow()

@@ -16,7 +16,6 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/input/input.h>
-#include <orktool/qtui/gfxbuffer.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/rtgroup.h>
@@ -107,7 +106,7 @@ void SceneEditorVP::EnableSceneDisplay()
 }
 
 SceneEditorVP::SceneEditorVP( const std::string & name, SceneEditorBase & Editor, EditorMainWindow &MainWin )
-	: CUIViewport( name, 1, 1, 1, 1, CColor3( 0.0f, 0.0f, 0.0f ), 1.0f )
+	: ui::Viewport( name, 1, 1, 1, 1, CColor3( 0.0f, 0.0f, 0.0f ), 1.0f )
 	, mMainWindow( MainWin )
 	, miPickDirtyCount( 0 )
 	, mbHeadLight( true )
@@ -130,29 +129,6 @@ SceneEditorVP::SceneEditorVP( const std::string & name, SceneEditorBase & Editor
 	mRenderLock = 0;
 	ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
 	bcaster.AddListenerOnChannel( this, ork::ent::SceneInst::EventChannel() );
-
-	///////////////////////////////////////////////////////////
-	// INIT BUILT IN TOOL HANDLERS
-
-	ork::msleep(500);
-	RegisterToolHandler( "0Default", new TestVPDefaultHandler( Editor ) );
-	RegisterToolHandler( "1ManipTrans", new ManipTransHandler( Editor ) );
-	RegisterToolHandler( "2ManipRot", new ManipRotHandler( Editor ) );
-	//RegisterToolHandler( "3Collision", new PaintCollisionHandler( this, Editor ) );
-	//RegisterToolHandler( "4Bsp", new BspToolHandler( this, Editor ) );
-	
-	mpDefaultHandler = mToolHandlers[ "0Default" ];
-	BindToolHandler( "0Default" );
-
-	///////////////////////////////////////////////////////////
-	// INIT MODULAR TOOL HANDLERS
-
-	for( orkset<SceneEditorInitCb>::iterator it =mInitCallbacks.begin();
-			it!=mInitCallbacks.end();
-			it++ )
-	{
-		(*it)( *this );
-	}
 
 	///////////////////////////////////////////////////////////
 
@@ -185,6 +161,30 @@ SceneEditorVP::~SceneEditorVP()
 void SceneEditorVP::Init()
 {
 	((ork::tool::Renderer*)(mRenderer))->Init();
+
+	///////////////////////////////////////////////////////////
+	// INIT BUILT IN TOOL HANDLERS
+
+	ork::msleep(500);
+	RegisterToolHandler( "0Default", new TestVPDefaultHandler( mEditor ) );
+	RegisterToolHandler( "1ManipTrans", new ManipTransHandler( mEditor ) );
+	RegisterToolHandler( "2ManipRot", new ManipRotHandler( mEditor ) );
+	//RegisterToolHandler( "3Collision", new PaintCollisionHandler( this, mEditor ) );
+	//RegisterToolHandler( "4Bsp", new BspToolHandler( this, mEditor ) );
+	
+	mpDefaultHandler = mToolHandlers[ "0Default" ];
+	BindToolHandler( "0Default" );
+
+	///////////////////////////////////////////////////////////
+	// INIT MODULAR TOOL HANDLERS
+
+	for( orkset<SceneEditorInitCb>::iterator it =mInitCallbacks.begin();
+			it!=mInitCallbacks.end();
+			it++ )
+	{
+		(*it)( *this );
+	}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -236,7 +236,7 @@ SceneEditorView::SceneEditorView(SceneEditorVP*vp)
 }
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::Init( ork::lev2::GfxTarget* pTARG )
+void SceneEditorVP::DoInit( ork::lev2::GfxTarget* pTARG )
 {
 	mpPickBuffer = new lev2::CPickBuffer<SceneEditorVP>(	pTARG->FBI()->GetThisBuffer(), 
 															this,
@@ -259,7 +259,7 @@ void SceneEditorVP::Init( ork::lev2::GfxTarget* pTARG )
 // Draw INTO the onscreen target
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DoDraw()
+void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 {
 	if( gUpdateStatus.GetState()!=EUPD_RUNNING) return;
 
@@ -331,6 +331,7 @@ void SceneEditorVP::DoDraw()
 
 				////////////////////////////////////////
 				// setup destination buffer as offscreen buffer
+				//  (for write to disk)
 				////////////////////////////////////////
 
 				int itw = mpTarget->GetW();
@@ -453,6 +454,7 @@ void SceneEditorVP::DoDraw()
 					mpBasicFrameTek->Render( the_renderer );
 					mCompositingGroupStack.pop();
 					DrawHUD(the_renderer.GetFrameData());
+					DrawChildren(drwev);
 				}
 				mpTarget->EndFrame();// the_renderer );
 				the_renderer.GetFrameData().PopRenderTarget();
@@ -506,10 +508,11 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	lev2::IRenderTarget* pIT = FrameData.GetRenderTarget();
 	///////////////////////////////////////////////////////////////////////////
 	const SRect & frame_rect = FrameData.GetDstRect();
-	SetX( pTARG->GetX() );		// TODO add resize call
-	SetY( pTARG->GetX() );
-	SetW( pTARG->GetW() );
-	SetH( pTARG->GetH() );
+	int ix = pTARG->GetX();
+	int iy = pTARG->GetY();
+	int iw = pTARG->GetW();
+	int ih = pTARG->GetH();
+	SetRect(ix,iy,iw,ih);
 	///////////////////////////////////////////////////////////////////////////
 	float fW = float(pTARG->GetW());
 	float fH = float(pTARG->GetH());
@@ -564,9 +567,8 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	}
 	///////////////////////////////////////////////////////////////////////////
 	SRect VPRect( 0, 0, pIT->GetW(), pIT->GetH() );
-	CUIViewport::Attach();										// Set Viewport Params
-	CUIViewport::Clear();										// Clear Viewport
 	pTARG->FBI()->PushViewport( VPRect );
+	pTARG->FBI()->PushScissor( VPRect );
 	{	mRenderer->SetTarget( pTARG );
 		FrameData.AddLayer(AddPooledLiteral("Default"));
 		FrameData.AddLayer(AddPooledLiteral("A"));
@@ -589,9 +591,11 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 		ent::SceneInst* psi = GetSceneInst();
 		mSceneView.UpdateRefreshPolicy(FrameData,psi);
 	
+		Clear(); 
 		if( node.mbDrawSource ) 
 			RenderSDLD( FrameData );
-	}
+	};
+	pTARG->FBI()->PopScissor();
 	pTARG->FBI()->PopViewport();
 	///////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////
@@ -852,7 +856,7 @@ void SceneEditorView::UpdateRefreshPolicy( lev2::RenderContextFrameData& FrameDa
 {
 	if( 0 == sinst ) return;
 	
-	ork::tool::ged::ObjModel::FlushAllQueues();
+	//ork::tool::ged::ObjModel::FlushAllQueues();
 	///////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////
 	// refresh control

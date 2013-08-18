@@ -61,7 +61,7 @@ int main(int argc, char** argv, char** argp)
 	ork::lev2::CQNoMocBase::MocInitAll();
     ork::rtti::Class::InitializeClasses();
 	ork::lev2::GfxTargetCreationParams CreationParams;
-	CreationParams.miNumSharedVerts = 512<<10;
+	CreationParams.miNumSharedVerts = 64<<10;
 	ork::lev2::GfxEnv::GetRef().PushCreationParams(CreationParams);
 
 	ork::Opq& mainthreadopq = ork::MainThreadOpQ();

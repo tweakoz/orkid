@@ -12,6 +12,7 @@
 #include <ork/lev2/input/input.h>
 #include <ork/math/misc_math.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/ui/event.h>
 
 #define MatRotScale 1.0f
 
@@ -182,12 +183,12 @@ CReal SnapReal( CReal Input, CReal SnapVal )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CManipRot::UIEventHandler( CUIEvent *pEV )
+bool CManipRot::UIEventHandler( const ui::Event& EV )
 {	
-	int ex = pEV->miX;
-	int ey = pEV->miY;
+	int ex = EV.miX;
+	int ey = EV.miY;
 	
-	CVector2 posubp = pEV->GetUnitCoordBP();
+	CVector2 posubp = EV.GetUnitCoordBP();
 
 	CCamera *pcam = mManager.GetActiveCamera();
 	
@@ -196,9 +197,9 @@ bool CManipRot::UIEventHandler( CUIEvent *pEV )
 	bool isshift = false; //CSystem::IsKeyDepressed(VK_SHIFT );
 	bool isctrl = false; //CSystem::IsKeyDepressed(VK_CONTROL );
 	
-	switch( pEV->miEventCode )
+	switch( EV.miEventCode )
 	{
-		case UIEV_PUSH:
+		case ui::UIEV_PUSH:
 		{	
 			mManager.mManipHandler.Init(posubp, pcam->mCameraData.GetIVPMatrix(), pcam->QuatC );
 			mBaseTransform = mManager.mCurTransform;
@@ -209,7 +210,7 @@ bool CManipRot::UIEventHandler( CUIEvent *pEV )
 		}
 		break;
 
-		case UIEV_RELEASE:
+		case ui::UIEV_RELEASE:
 		{
 			mManager.DisableManip();
 
@@ -217,7 +218,7 @@ bool CManipRot::UIEventHandler( CUIEvent *pEV )
 		}
 		break;
 
-		case UIEV_DRAG:
+		case ui::UIEV_DRAG:
 		{
 			IntersectWithPlanes( posubp );
 

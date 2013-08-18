@@ -30,26 +30,27 @@ void UIToolHandler<VPTYPE>::Detach( VPTYPE* pvp)
 }
 
 template <typename VPTYPE>
-lev2::EUIHandled UIToolHandler<VPTYPE>::UIEventHandler(lev2::CUIEvent* pEV)
+ui::HandlerResult UIToolHandler<VPTYPE>::DoOnUiEvent(const ui::Event& EV)
 {
-	switch(pEV->miEventCode)
+	ui::HandlerResult ret;
+	switch(EV.miEventCode)
 	{
-		case lev2::UIEV_KEY:
+		case ui::UIEV_KEY:
 		{
-			switch(pEV->miKeyCode)
+			switch(EV.miKeyCode)
 			{
 				case 13:
 					if(mState < int(mpSubIconNameVector.size() - 1))
 						SetState(mState + 1);
 					else
 						SetState(0);
-					return lev2::EUI_HANDLED;
-				break;
+					ret.SetHandled(this);
+					break;
 			}
 		}
 	}
 
-	return lev2::EUI_NOT_HANDLED;
+	return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,7 +181,8 @@ void UIToolHandler<VPTYPE>::SetState(int state)
 
 template <typename VPTYPE>
 UIToolHandler<VPTYPE>::UIToolHandler()
-	: mpBaseIcon(0)
+	: Widget("uitoolh", 0,0,0,0)
+	, mpBaseIcon(0)
 	, mState(0)
 	, mpViewport(0)
 {

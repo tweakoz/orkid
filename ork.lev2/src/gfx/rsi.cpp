@@ -37,7 +37,7 @@ RasterStateInterface::RasterStateInterface()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 void RasterStateInterface::ClearOverrides()
 {
 	mOverrideZWriteMask = false;
@@ -106,7 +106,7 @@ void RasterStateInterface::GetOverrideMergedRasterState(const SRasterState &in, 
 	if(mOverridePointSize)
 		out.mPointSize = mOverrideState.mPointSize;
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 } }

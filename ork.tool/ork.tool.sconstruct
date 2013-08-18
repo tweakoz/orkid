@@ -7,16 +7,27 @@ import ork.build.common as cmn
 
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
-VariantDir( 'obj', 'src' )
+VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
 
-obu.install_headers("inc/orktool")
-obu.install_headers("inc/pkg")
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+is_install = (TARGET=="install")
+#
+
+if is_install:
+	obu.install_headers("inc/orktool")
+	obu.install_headers("inc/pkg")
 
 ##########################################
 
 class orktool:
   def __init__(self):  	
+
+	if is_prep:
+		return
+
 	BasicEnv = Environment( ENV=os.environ )
 	ARGS = cmn.BuildArgs
 	suffix = sln.BuildSuffix(ARGS)
@@ -38,6 +49,10 @@ class orktool:
 
 	prj = sln.Project(ARGS,BasicEnv,"ork.tool")
 	prj.SetSrcBase( "src" )
+	prj.AddIncludePaths( "../ork.core/inc/" )
+	prj.AddIncludePaths( "../ork.lev2/inc/" )
+	prj.AddIncludePaths( "../ork.ent/inc/" )
+	prj.AddIncludePaths( "inc" )
 	prj.AddIncludePaths( "src" )
 	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
 	prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
@@ -79,6 +94,10 @@ class orktool:
 
 	prj_test = sln.Project(ARGS,BasicEnv,"ork.tool.test")
 	prj_test.SetSrcBase( "src" )
+	prj_test.AddIncludePaths( "../ork.core/inc/" )
+	prj_test.AddIncludePaths( "../ork.lev2/inc/" )
+	prj_test.AddIncludePaths( "../ork.ent/inc/" )
+	prj_test.AddIncludePaths( "inc" )
 	prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
 	prj_test.AddIncludePaths( "/usr/include/qt4" )
 	prj_test.AddIncludePaths( "%s/include/bullet/src"%sln.stage_dir )
@@ -89,14 +108,15 @@ class orktool:
 	prj_test.AddLibs( ORKLIBS )
 	prj_test.AddProjectDep( prj )
 	prj_test.Configure()
-	self.test_prg = prj_test.Program( )
+	self.test_prg = prj_test.Program()
 	Depends( self.test_prg, self.tool_lib )
 
 ##########################################
 
 a = orktool()
 ret = list()
-ret += a.tool_lib
+if False==is_prep:
+	ret += a.tool_lib
 Return('ret')
 
 ##########################################

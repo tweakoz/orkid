@@ -10,7 +10,6 @@
 
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/input/input.h>
-#include <orktool/qtui/gfxbuffer.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
@@ -45,35 +44,35 @@ ManipHandler::ManipHandler( SceneEditorBase& editor )
 
 ///////////////////////////////////////////////////////////////////////////
 
-EUIHandled ManipHandler::UIEventHandler( CUIEvent *pEV )
+ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 {
 	auto& updQ = UpdateSerialOpQ();
 
-	EUIHandled eH = EUI_NOT_HANDLED;
+	ui::HandlerResult ret;
 
-	bool isshift = pEV->mbSHIFT;
-	bool isctrl	 = pEV->mbCTRL;
-	bool isleft = pEV->mbLeftButton;
-	bool isright = pEV->mbRightButton;
+	bool isshift = EV.mbSHIFT;
+	bool isctrl	 = EV.mbCTRL;
+	bool isleft = EV.mbLeftButton;
+	bool isright = EV.mbRightButton;
 
-	int ix = pEV->miX;
-	int iy = pEV->miY;
-	float fx = pEV->mfUnitX;
-	float fy = pEV->mfUnitY;
+	int ix = EV.miX;
+	int iy = EV.miY;
+	float fx = EV.mfUnitX;
+	float fy = EV.mfUnitY;
 
 	mEditor.ManipManager().SetGridSnap( isshift );
 
-	switch( pEV->miEventCode )
+	switch( EV.miEventCode )
 	{
-		case UIEV_RELEASE:
+		case ui::UIEV_RELEASE:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 			mEditor.ManipManager().DisableManip();
 			mEditor.ManipManager().SetActiveCamera( 0 );
-			eH = EUI_HANDLED;
+			ret.SetHandled(this);
 		}
 		break;
-		case UIEV_DOUBLECLICK:
+		case ui::UIEV_DOUBLECLICK:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 			
@@ -114,7 +113,7 @@ EUIHandled ManipHandler::UIEventHandler( CUIEvent *pEV )
 			OuterPickOp(pickctx);		
 		}
 		break;
-		case UIEV_PUSH:
+		case ui::UIEV_PUSH:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 
@@ -140,7 +139,7 @@ EUIHandled ManipHandler::UIEventHandler( CUIEvent *pEV )
 							//printf( "maniptest2<%p>\n", pobj );
 							//mEditor.ManipManager().SetActiveCamera(GetViewport()->GetCamera());
 							editor.ManipManager().EnableManip(manip);
-							editor.ManipManager().UIEventHandler( &pctx->mEV );
+							editor.ManipManager().UIEventHandler( pctx->mEV );
 						}
 						else if(ork::Object *object = ork::rtti::autocast(pobj))
 						{
@@ -166,7 +165,7 @@ EUIHandled ManipHandler::UIEventHandler( CUIEvent *pEV )
 			///////////////////////////////////////////////////////////
 
 			DeferredPickOperationContext* pickctx = new DeferredPickOperationContext;
-			pickctx->mEV = *pEV;
+			pickctx->mEV = EV;
 			pickctx->miX = ix;
 			pickctx->miY = iy;
 			pickctx->is_shift = isshift;
@@ -179,24 +178,24 @@ EUIHandled ManipHandler::UIEventHandler( CUIEvent *pEV )
 			OuterPickOp(pickctx);		
 			///////////////////////////////////////////////////////////
 
-			mEditor.ManipManager().UIEventHandler( pEV );
-			eH = EUI_HANDLED;
+			mEditor.ManipManager().UIEventHandler( EV );
+			ret.SetHandled(this);
 		}
 		break;
 
-		case UIEV_DRAG:
+		case ui::UIEV_DRAG:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
-			if(mEditor.ManipManager().UIEventHandler( pEV ))
-				eH = EUI_HANDLED;
+			if(mEditor.ManipManager().UIEventHandler( EV ))
+				ret.SetHandled(this);
 		}
 		break;
 
-		case UIEV_MOVE:
+		case ui::UIEV_MOVE:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 			if(!mEditor.ManipManager().IsVisible())
-				return eH;
+				return ret;
 
 			///////////////////////////////////////////////////////////
 
@@ -235,12 +234,12 @@ EUIHandled ManipHandler::UIEventHandler( CUIEvent *pEV )
 			OuterPickOp(pickctx);		
 			///////////////////////////////////////////////////////////
 
-			eH = EUI_HANDLED;
+			ret.SetHandled(this);
 		}
 		break;
 	}
 
-	return eH;
+	return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////

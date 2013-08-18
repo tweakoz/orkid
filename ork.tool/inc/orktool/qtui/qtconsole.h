@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_TOOL_QTCONSOLE_H 
-#define _ORK_TOOL_QTCONSOLE_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -17,6 +16,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/ui/viewport.h>
 //#include <Qt3Support/q3textedit.h>
 //#include <Qt3Support/Q3PopupMenu>
 
@@ -60,7 +60,7 @@ struct ConsoleLine
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class vp_cons : public lev2::CUIViewport
+class vp_cons : public ui::Viewport
 {
 public:
 
@@ -71,8 +71,8 @@ public:
 	void AppendOutput( const std::string & outputline );
 
 private:
-	virtual lev2::EUIHandled UIEventHandler( lev2::CUIEvent *pEV );
-	void DoDraw(); // virtual
+	virtual ui::HandlerResult DoOnUiEvent( ui::Event *pEV );
+	void DoDraw(ui::DrawEvent& drwev); // virtual
 	lev2::CTQT*							mCTQT;
 	ork::lev2::GfxMaterial3DSolid		mBaseMaterial;
 #if defined(IX)
@@ -127,5 +127,3 @@ inline QDockWidget *QtConsoleWindow::GetDockWidget( void )
 }*/
 
 } }	// namespace ork::tool
-
-#endif // _ORK_TOOL_QTCONSOLE_H

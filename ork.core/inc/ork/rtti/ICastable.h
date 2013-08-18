@@ -11,12 +11,10 @@
 
 namespace ork { namespace rtti {
 
-class Class;
+struct Class;
 
-class  ICastable
+struct  ICastable
 {
-public:
-
 	virtual ~ICastable() {}
 	virtual Class *GetClass() const = 0;
 	static Class *GetClassStatic();

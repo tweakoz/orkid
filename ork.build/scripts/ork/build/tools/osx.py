@@ -121,66 +121,10 @@ def DefaultBuildEnv( env, prj ):
 	env.Replace( ARFLAGS="-static -c -v -arch_only %s" % Arch )
 	env.Replace( ARCOM="$AR $ARFLAGS -o $TARGET $SOURCES" )
 	env.Replace( RANLIBCOM="" )
-	prj.AddLibs( ' bz2' )
+
+	env.Tool('osxbundle')
 
 	prj.PostIncludePaths += string.split('/opt/local/include')
 
-"""def DefaultBuildEnv( env, prj ):
-	ARCH = Arch
-	DEFS = '_IX _GCC ORK_CONFIG_QT ORK_CONFIG_OPENGL ORK_CONFIG_EDITORBUILD ORK_OSX _DARWIN'
-	CFLG = ' '
-	LIBS = 'm objc bz2'
-	LIBPATH = '. '
-	LINK = ''
-	##
-	bindir = "%s/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin" % XcodeDir
-	clang = "%s/clang"%bindir
-	clangpp = "%s/clang++"%bindir
-	env.Replace( CXX = clangpp, CC = clang )
-	env.Replace( LINK = clangpp )
-	env.Replace( CPPDEFINES = string.split(DEFS) )
-	env.Replace( CCFLAGS = string.split(CFLG) )
-	env.Replace( CPPPATH  = [ '.' ] )
-	env.Replace( LINKFLAGS=string.split(LINK) )
-	env.Replace( LIBS=string.split(LIBS) )
-	env.Replace( LIBPATH=string.split(LIBPATH) )
-	env.Replace( RANLIB = 'ranlib' )	
-	env.Append( FRAMEWORKS = [ 'QtGui', 'QtCore', 'OpenGL', 'CoreMIDI', 'CoreAudio', 'AudioUnit', 'AudioToolbox' ] )
-	env.Append( FRAMEWORKS = [ 'Carbon', 'Foundation', 'QuartzComposer' ] )
-	env.Append( FRAMEWORKS = [ 'ApplicationServices', 'AppKit' ] )
-	env.Append( FRAMEWORKS = [ 'MultitouchSupport' ] )
-	env.Replace( AR="libtool" )
-	env.Replace( ARFLAGS="-static -c -v -arch_only %s" % ARCH )
-	env.Replace( ARCOM="$AR $ARFLAGS -o $TARGET $SOURCES" )
-	env.Replace( RANLIBCOM="" )
-	prj.XCFLG += '-fno-common -fno-strict-aliasing -fexceptions -g -Wno-switch-enum -Wno-deprecated-declarations '
-	prj.XCCFLG += '-std=gnu++0x -stdlib=libc++ ' + prj.XCFLG
-	prj.XCCFLG += '-F%s/Contents/Resources/include ' % AqsisDir
-	prj.AddLibs( ' m c stdc++' )
-	prj.AddLibs( ' boost_thread bz2' )
-	prj.CompilerType = 'gcc'
+	prj.AddLibs( ' bz2' )
 
-	if( prj.IsDarwin() ):
-		DarwinArchs = string.split("-arch %s" % ARCH)
-		env.Append( CCFLAGS = DarwinArchs )
-		env.Append( LINK = DarwinArchs )
-
-	prj.IncludePaths += string.split('/opt/local/include')
-	prj.IncludePaths += string.split('/usr/local/include')
-	prj.IncludePaths += string.split('./ext/src')
-	prj.IncludePaths += string.split('./ext/src/boost_ext')
-	prj.IncludePaths += string.split('./ext/include')
-	prj.LibraryPaths += string.split('/usr/local/lib')
-	prj.LibraryPaths += string.split('/opt/tweakoz/lib')
-	prj.LibraryPaths += string.split('/opt/tweakoz/lib/python2.7/config');
-	prj.LibraryPaths += string.split('ext/src/boost_1_48_0/stage/lib');
-
-	prj.LibraryPaths += string.split('/opt/local/lib')
-	prj.XLINK = '-stdlib=libc++ -v -g -F/Library/Frameworks '
-	prj.XLINK += '-F/System/Library/Frameworks/Quartz.framework/Frameworks '
-	prj.XLINK += '-F%s/Contents/Resources/include ' % AqsisDir
-	prj.XLINK += '-F/System/Library/PrivateFrameworks '
-	prj.XLINK += '-F/opt/local/lib '
-	for item in env['FRAMEWORKS']:
-		prj.XLINK += '-framework %s ' % item
-"""

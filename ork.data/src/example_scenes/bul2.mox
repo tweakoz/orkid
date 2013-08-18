@@ -346,6 +346,10 @@
                                                 </reference>
                                             </item>
                                         </property>
+                                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
+                                        <property name='OutputFrames'>false</property>
+                                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
+                                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
                                         <property name='Scenes'>
                                             <item key='s1'>
                                                 <reference category='ObjectClass'>
@@ -463,7 +467,7 @@
                         <property name='Name'>"ground_plane"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='47'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                                <property name='TransformNode'>1 0 0 0 0 -0.975656 -0.219305 0 0 0.219305 -0.975656 0 0 -0.663639 -0.14917 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>

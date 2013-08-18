@@ -10,7 +10,6 @@
 #include <orktool/qtui/qtmainwin.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <orktool/qtui/gfxbuffer.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/lev2/lev2_asset.h>
@@ -19,6 +18,9 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/PerfController.h>
+#include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/rtgroup.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::tool::DataFlowEditor, "DataFlowEditor" );
@@ -32,39 +34,32 @@ namespace lev2 {
 template<> 
 void CPickBuffer<ork::tool::GraphVP>::Draw( void )
 {
-	mPickIds.clear();
-	GfxTarget *pTEXTARG = GetContext();
-	GfxTarget* pPARENTTARG = GetParent()->GetContext();
-	///////////////////////////////////////////////////////////////////////////
-	int itx0 = 0;
-	int itx1 = mpViewport->GetW();
-	int ity0 = 0;
-	int ity1 = mpViewport->GetH();
-	///////////////////////////////////////////////////////////////////////////
-	mpViewport->BeginFrame(pTEXTARG);
-	pTEXTARG->FBI()->SetRtGroup( mpPickRtGroup );	// Enable Mrt
-	pTEXTARG->FBI()->EnterPickState(this);
-	///////////////////////////////////////////////////////////////////////////
-	SRect VPRect( itx0, ity0, itx1, ity1 );
-	pTEXTARG->FBI()->PushViewport( VPRect );
+    mPickIds.clear();
+
+    auto tgt = GetContext();
+	auto mtxi = tgt->MTXI();
+	auto fbi = tgt->FBI();
+	auto fxi = tgt->FXI();
+	auto rsi = tgt->RSI();
+
+	int irtgw = mpPickRtGroup->GetW();
+	int irtgh = mpPickRtGroup->GetH();
+	int isurfw = mpViewport->GetW();
+	int isurfh = mpViewport->GetH();
+	if( irtgw!=isurfw || irtgh!=isurfh )
 	{
-		pTEXTARG->MTXI()->PushPMatrix( CMatrix4::Identity );
-		pTEXTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-		pTEXTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
-		{
-			mpViewport->ExtDraw( pTEXTARG );
-		}
-		pTEXTARG->MTXI()->PopPMatrix();
-		pTEXTARG->MTXI()->PopVMatrix();
-		pTEXTARG->MTXI()->PopMMatrix();
+		printf( "resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
+		this->SetBufferWidth(isurfw);
+		this->SetBufferHeight(isurfh);
+		tgt->SetSize(0,0,isurfw,isurfh);
+		mpPickRtGroup->Resize(isurfw,isurfh);
 	}
-	pTEXTARG->FBI()->PopViewport();
-	///////////////////////////////////////////////////////////////////////////
-	pTEXTARG->FBI()->LeavePickState();
-	pTEXTARG->FBI()->SetRtGroup(0);
-	mpViewport->EndFrame(pTEXTARG);
-	///////////////////////////////////////////////////////////////////////////
-	SetDirty( false );
+	fbi->PushRtGroup(mpPickRtGroup);
+	fbi->EnterPickState(this);
+		ui::DrawEvent drwev(tgt);
+		mpViewport->RePaintSurface(drwev);
+	fbi->LeavePickState();
+	fbi->PopRtGroup();
 }
 }}
 
@@ -109,8 +104,7 @@ ork::dataflow::graph* GraphVP::GetTopGraph()
 }
 
 GraphVP::GraphVP( DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::string & name )
-	: CUIViewport( name, 0, 0, 0, 0, CColor3(0.1f,0.1f,0.1f), 0.0f )
-	, mpPickBuffer( 0 )
+	: ui::Surface( name, 0, 0, 0, 0, CColor3(0.1f,0.1f,0.1f), 0.0f )
 	, mObjectModel(objmdl)
 	, mDflowEditor(dfed)
 	, mGridMaterial( ork::lev2::GfxEnv::GetRef().GetLoaderTarget() )
@@ -132,9 +126,12 @@ GraphVP::GraphVP( DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::
 
 void GraphVP::draw_connections( ork::lev2::GfxTarget* pTARG )
 {
-	if( 0 == GetTopGraph() ) return;
-	const orklut<ork::PoolString,ork::Object*>& modules = GetTopGraph()->Modules();
-	ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vbuf = lev2::GfxEnv::GetSharedDynamicVB();
+	auto fbi = pTARG->FBI();
+	bool is_pick = fbi->IsPickState();
+
+	if( nullptr == GetTopGraph() ) return;
+	const auto& modules = GetTopGraph()->Modules();
+	auto& VB = lev2::GfxEnv::GetSharedDynamicVB();
 	ork::lev2::SVtxV12C4T16 v0,v1,v2,v3;
 	CVector2 uv0(0.0f,0.0f);
 	CVector2 uv1(1.0f,0.0f);
@@ -144,17 +141,17 @@ void GraphVP::draw_connections( ork::lev2::GfxTarget* pTARG )
 	float fh(kvppickdimw);
 	float fwd2=fw*0.5f;
 	float fhd2=fh*0.5f;
-	float faspect = float(pTARG->GetW())/float(pTARG->GetH());
+	float faspect = float(miW)/float(miH);
 	pTARG->BindMaterial( & mGridMaterial );
 	{	/////////////////////////////////
 		// wires
 		/////////////////////////////////
 		int ivcount = 0;
 		// count the number of verts we will use
-		for( orklut<ork::PoolString,ork::Object*>::const_iterator it=modules.begin(); it!=modules.end(); it++ )
-		{	ork::dataflow::dgmodule* pmod = rtti::autocast(it->second);
+		for( const auto& item : modules )
+		{	ork::dataflow::dgmodule* pmod = rtti::autocast(item.second);
 			if( pmod )
-			{	if( false == pTARG->FBI()->IsPickState() )
+			{	if( false == is_pick )
 				{	int inuminps = pmod->GetNumInputs();
 					for( int ip=0; ip<inuminps; ip++ )
 					{	dataflow::inplugbase* pinp = pmod->GetInput(ip);
@@ -167,22 +164,22 @@ void GraphVP::draw_connections( ork::lev2::GfxTarget* pTARG )
 		if( ivcount )
 		{	//int ivbbase = vbuf.GetNumVertices();
 			lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-			vw.Lock(pTARG,&vbuf,ivcount);
+			vw.Lock(pTARG,&VB,ivcount);
 			for( orklut<ork::PoolString,ork::Object*>::const_iterator it=modules.begin(); it!=modules.end(); it++ )
 			{	ork::dataflow::dgmodule* pmod = rtti::autocast(it->second);
 				if( pmod )
 				{	const CVector2& pos = pmod->GetGVPos();
-					U32 ucolor = pTARG->FBI()->IsPickState() ?  (U32)((u64) pmod) : 0xffffffff;
+					U32 ucolor = is_pick ?  (U32)((u64) pmod) : 0xffffffff;
 					ucolor = CVector4(ucolor).GetARGBU32();
-					if( false == pTARG->FBI()->IsPickState() )
+					if( false == is_pick )
 					{	int inuminps = pmod->GetNumInputs();
 						for( int ip=0; ip<inuminps; ip++ )
 						{	dataflow::inplugbase* pinp = pmod->GetInput(ip);
 							const dataflow::outplugbase* poutplug = pinp->GetExternalOutput();
 							if( poutplug )
-							{	ucolor = pTARG->FBI()->IsPickState() ?  (U32)((u64) pinp) : 0xffffffff;
+							{	ucolor = is_pick ?  (U32)((u64) pinp) : 0xffffffff;
 								ucolor = CVector4(ucolor).GetARGBU32();
-								U32 ucolor2 = pTARG->FBI()->IsPickState() ?  (U32)((u64) pinp) : 0x2f2f2f2f;
+								U32 ucolor2 = is_pick ?  (U32)((u64) pinp) : 0x2f2f2f2f;
 								ucolor2 = CVector4(ucolor2).GetARGBU32();
 								ork::dataflow::dgmodule* pothmod = rtti::autocast( poutplug->GetModule() );		
 								const CVector2& othpos = pothmod->GetGVPos();
@@ -207,7 +204,7 @@ void GraphVP::draw_connections( ork::lev2::GfxTarget* pTARG )
 				}
 			}
 			vw.UnLock(pTARG);
-			if( false==pTARG->FBI()->IsPickState() )
+			if( false==is_pick )
 			{	mGridMaterial.SetTexture(mpArrowTex);
 				mGridMaterial.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
 			}
@@ -225,40 +222,54 @@ struct regstr
 		int ireg;
 	};
 
-
-void GraphVP::DoDraw(  )
+void GraphVP::DoInit(lev2::GfxTarget* pt )
 {
-	ork::lev2::GfxTarget* pTARG = GetTarget();
+	auto fbi = pt->FBI();
+	auto par = fbi->GetThisBuffer();
+	mpPickBuffer = new lev2::CPickBuffer<GraphVP>(	
+		par, 
+		this,
+		0, 0, miW, miH,
+		lev2::PickBufferBase::EPICK_FACE_VTX
+	);
+	
+	mpPickBuffer->CreateContext();
+	mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
+	mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
 
-	if( 0 == mpPickBuffer )
+}
+void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
+{
+	auto tgt = drwev.GetTarget();
+	auto mtxi = tgt->MTXI();
+	auto fbi = tgt->FBI();
+	auto fxi = tgt->FXI();
+	auto rsi = tgt->RSI();
+	auto gbi = tgt->GBI();
+	auto& primi = lev2::CGfxPrimitives::GetRef();
+	auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
+	lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
+	bool has_foc = HasMouseFocus();
+	bool is_pick = fbi->IsPickState(); 
+	const orklut<ork::PoolString,ork::Object*>& modules = GetTopGraph()->Modules();
+
+	if( nullptr == GetTopGraph() )
 	{
-		mpPickBuffer = new lev2::CPickBuffer<GraphVP>(	pTARG->FBI()->GetThisBuffer(), 
-															this,
-															0, 0, kvppickdimw, kvppickdimw,
-															lev2::PickBufferBase::EPICK_FACE_VTX
-														);
-		mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
-		mpPickBuffer->CreateContext();
-		mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
+		fbi->PushScissor( SRect( 0,0,miW,miH) );
+		fbi->PushViewport( SRect( 0,0,miW,miH) );
+			fbi->Clear( CVector4::Black(), 1.0f );
+		fbi->PopViewport();
+		fbi->PopScissor();
+		return;
 	}
 
-	if( 0 == GetTopGraph() ) return;
-
-	SRect tgt_rect = SRect( 0,0, pTARG->GetW(), pTARG->GetH() );
-	ork::lev2::RenderContextFrameData framedata;
-	framedata.SetDstRect(tgt_rect);
-	framedata.SetTarget( pTARG );
+	//SRect tgt_rect = SRect( 0,0, pTARG->GetW(), pTARG->GetH() );
+	//ork::lev2::RenderContextFrameData framedata;
+	//framedata.SetDstRect(tgt_rect);
+	//framedata.SetTarget( pTARG );
 	
-	pTARG->SetRenderContextFrameData( & framedata );
+	//pTARG->SetRenderContextFrameData( & framedata );
 
-
-	bool bpickstate = pTARG->FBI()->IsPickState();
-
-	static const char* assetname = "lev2://textures/dfnodebg2";
-	static lev2::TextureAsset* ptexasset = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
-
-	const orklut<ork::PoolString,ork::Object*>& modules = GetTopGraph()->Modules();
-	ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vbuf = lev2::GfxEnv::GetSharedDynamicVB();
 	ork::lev2::SVtxV12C4T16 v0,v1,v2,v3;
 
 	CVector2 uv0(0.0f,0.0f);
@@ -285,23 +296,27 @@ void GraphVP::DoDraw(  )
 	mGridMaterial.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
 	mGridMaterial.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF, 0.0f );
 
-	vector<regstr> regstrs;
-
 	////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////
-	pTARG->BeginFrame();
+	fbi->PushScissor( SRect( 0,0,miW,miH) );
+	fbi->PushViewport( SRect( 0,0,miW,miH) );
 	{
-		pTARG->MTXI()->PushPMatrix( mGrid.GetOrthoMatrix() );
-		pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-		pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+
+		vector<regstr> regstrs;
+
+		fbi->Clear( CVector4::Blue(), 1.0f );
+		mtxi->PushPMatrix( mGrid.GetOrthoMatrix() );
+		mtxi->PushVMatrix( CMatrix4::Identity );
+		mtxi->PushMMatrix( CMatrix4::Identity );
 		{
 			uint32_t pickID = mpPickBuffer->AssignPickId( GetTopGraph() );
 			uint32_t uobj = PickIdToVertexColor(pickID);
-			U32 ucolor = bpickstate ? uobj : 0xffffffff;
+			U32 ucolor = is_pick ? uobj : 0xffffffff;
 
 			///////////////////////////////////////////////////////
-
+			// draw background
+			///////////////////////////////////////////////////////
 
 			float fxa = mGrid.GetTopLeft().GetX();
 			float fxb = mGrid.GetBotRight().GetX();
@@ -314,43 +329,56 @@ void GraphVP::DoDraw(  )
 			v3 = ork::lev2::SVtxV12C4T16( CVector3(fxa,fyb,0.0f), uv3, ucolor );
 
 			//int ivbbase = vbuf.GetNum();
-
-			lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-			vw.Lock( pTARG, &vbuf, 6 );
 			{
-				vw.AddVertex( v0 );
-				vw.AddVertex( v1 );
-				vw.AddVertex( v2 );
-				
-				vw.AddVertex( v0 );
-				vw.AddVertex( v2 );
-				vw.AddVertex( v3 );
+
+				lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
+				vw.Lock( tgt, &VB, 6 );
+				{
+					vw.AddVertex( v0 );
+					vw.AddVertex( v1 );
+					vw.AddVertex( v2 );
+					
+					vw.AddVertex( v0 );
+					vw.AddVertex( v2 );
+					vw.AddVertex( v3 );
+				}
+				vw.UnLock(tgt);
+
+				static const char* assetname = "lev2://textures/dfnodebg2";
+				static lev2::TextureAsset* ptexasset = asset::AssetManager<lev2::TextureAsset>::Load(assetname);
+
+				mGridMaterial.SetTexture( ptexasset->GetTexture() );
+
+				mGridMaterial.SetColorMode( is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR 
+													: lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
+
+				tgt->BindMaterial( & mGridMaterial );
+
+				gbi->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, 6 );
 			}
-			vw.UnLock(pTARG);
-
-			mGridMaterial.SetTexture( ptexasset->GetTexture() );
-
-			mGridMaterial.SetColorMode( bpickstate ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR : lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
-			pTARG->BindMaterial( & mGridMaterial );
-
-			pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, 6 );
 
 			///////////////////////////////////////////////////////
-			
-			if( false == bpickstate ) mGrid.Render( pTARG );
+			// draw grid
+			///////////////////////////////////////////////////////
 
-
-			draw_connections( pTARG );
+			if( false == is_pick ) mGrid.Render( tgt, miW, miH );
 
 			///////////////////////////////////////////////////////
-		
-			pTARG->BindMaterial( & mGridMaterial );
+
+			draw_connections( tgt );
+
+			///////////////////////////////////////////////////////
+			// draw modules
+			///////////////////////////////////////////////////////
+
+			tgt->PushMaterial( & mGridMaterial );
 
 			int inummod = (int) modules.size();
 
-			for( orklut<ork::PoolString,ork::Object*>::const_iterator it=modules.begin(); it!=modules.end(); it++ )
+			int imod = 0;
+			for( const auto& item : modules )
 			{
-				ork::dataflow::dgmodule* pmod = rtti::autocast(it->second);
+				ork::dataflow::dgmodule* pmod = rtti::autocast(item.second);
 
 				if( pmod )
 				{
@@ -360,88 +388,111 @@ void GraphVP::DoDraw(  )
 
 					uint32_t uobj = PickIdToVertexColor(pickID);
 
-					ucolor = bpickstate ? uobj : 0xffffffff;
+					ucolor = is_pick ? uobj : 0xffffffff;
 
-					if( bpickstate )
+					if( is_pick )
 					{
 						printf( "dpick yo uobj<%p>\n", (void*) uobj );
 					}
 
-
-					v0 = ork::lev2::SVtxV12C4T16( pos+of0, uv0, ucolor );
-					v1 = ork::lev2::SVtxV12C4T16( pos+of1, uv1, ucolor );
-					v2 = ork::lev2::SVtxV12C4T16( pos+of2, uv2, ucolor );
-					v3 = ork::lev2::SVtxV12C4T16( pos+of3, uv3, ucolor );
-
 					//int ivbbase = vbuf.GetNum();
 
-					vw.Lock( pTARG, &vbuf, 6 );
-					//pTARG->GBI()->LockVB( vbuf, ivbbase, 6 );
-			
-					vw.AddVertex( v0 );
-					vw.AddVertex( v1 );
-					vw.AddVertex( v2 );
-					
-					vw.AddVertex( v0 );
-					vw.AddVertex( v2 );
-					vw.AddVertex( v3 );
-
-					vw.UnLock(pTARG);
-
-					lev2::Texture* picon = 0;
-
-					if( false == bpickstate )
 					{
-						any16 iconcbanno = pmod->GetClass()->Description().GetClassAnnotation( "dflowicon" );
 
-						if( iconcbanno.IsA<lev2::Texture*(*)( ork::dataflow::dgmodule* )>() )
-						{
-							lev2::Texture* (*IconCB)( ork::dataflow::dgmodule* ) = 
-								iconcbanno.Get<lev2::Texture*(*)( ork::dataflow::dgmodule* )>();
+						v0 = ork::lev2::SVtxV12C4T16( pos+of0, uv0, ucolor );
+						v1 = ork::lev2::SVtxV12C4T16( pos+of1, uv1, ucolor );
+						v2 = ork::lev2::SVtxV12C4T16( pos+of2, uv2, ucolor );
+						v3 = ork::lev2::SVtxV12C4T16( pos+of3, uv3, ucolor );
+
+						lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
+						vw.Lock( tgt, &VB, 6 );
+				
+						vw.AddVertex( v0 );
+						vw.AddVertex( v1 );
+						vw.AddVertex( v2 );
 						
-							picon = IconCB( pmod );
+						vw.AddVertex( v0 );
+						vw.AddVertex( v2 );
+						vw.AddVertex( v3 );
+
+						vw.UnLock(tgt);
+
+						//////////////////////
+						// select texture (using dynamic interface if requested)
+						//////////////////////
+
+						lev2::Texture* picon = 0;
+
+						if( false == is_pick )
+						{
+							any16 iconcbanno = pmod->GetClass()->Description().GetClassAnnotation( "dflowicon" );
+
+							typedef lev2::Texture*(*icon_cb_t)( ork::dataflow::dgmodule* );
+
+							if( iconcbanno.IsA<icon_cb_t>() )
+							{
+								auto IconCB = 
+									iconcbanno.Get<icon_cb_t>();
+							
+								picon = IconCB( pmod );
+							}
+						}
+
+						mGridMaterial.SetColorMode( is_pick 
+													? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR 
+													: (picon!=0) 
+														? lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR
+														: lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
+
+						mGridMaterial.SetTexture( picon );
+
+						//printf( "imod<%d:%p> icon<%p> pos<%f %f>\n", imod, pmod, picon, pos.GetX(), pos.GetY() );
+
+						//////////////////////
+						// draw the dataflow node
+						//////////////////////
+
+						fxi->InvalidateStateBlock();
+
+						gbi->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES );
+
+						//////////////////////
+						// queue register mapping for draw
+						//////////////////////
+
+						if( 1 )
+						{
+							int ireg = pmod->GetOutput(0)->GetRegister() ? pmod->GetOutput(0)->GetRegister()->mIndex : -1;
+
+							regstr rs;
+							rs.pos = pos;
+							rs.ser = pmod->Key().mSerial;
+							rs.ireg = ireg;
+							regstrs.push_back( rs );
 						}
 					}
-
-					mGridMaterial.SetColorMode( pTARG->FBI()->IsPickState() 
-												? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR 
-												: (picon!=0) 
-													? lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR
-													: lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
-
-					mGridMaterial.SetTexture( picon );
-
-					if( 1 ) // draw register allocations
-					{
-						int ireg = pmod->GetOutput(0)->GetRegister() ? pmod->GetOutput(0)->GetRegister()->mIndex : -1;
-
-						regstr rs;
-						rs.pos = pos;
-						rs.ser = pmod->Key().mSerial;
-						rs.ireg = ireg;
-						regstrs.push_back( rs );
-					}
-					pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, 6 );
 				}
+				imod++;
 			}
+			tgt->PopMaterial();
 		}
-		pTARG->MTXI()->PopPMatrix();
-		pTARG->MTXI()->PopVMatrix();
-		pTARG->MTXI()->PopMMatrix();
+		mtxi->PopPMatrix();
+		mtxi->PopVMatrix();
+		mtxi->PopMMatrix();
 
 		////////////////////////////////////////////////////////////////
 
-		pTARG->MTXI()->PushUIMatrix();
-		if( false == pTARG->FBI()->IsPickState() )
+		mtxi->PushUIMatrix(miW,miH);
+		if( false == is_pick )
 		{
-			lev2::CFontMan::BeginTextBlock(pTARG);
-			pTARG->PushModColor( CColor4::Yellow() );
+			lev2::CFontMan::BeginTextBlock(tgt);
+			tgt->PushModColor( CColor4::Yellow() );
 			{
-				lev2::CFontMan::DrawText( pTARG, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth() );
+				lev2::CFontMan::DrawText( tgt, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth() );
 				if( mDflowEditor.GetSelModule() )
 				{
 					ork::dataflow::dgmodule* pdgmod = mDflowEditor.GetSelModule();
-					lev2::CFontMan::DrawText( pTARG, 8, 16, "Sel<%s>", pdgmod->GetName().c_str() );
+					lev2::CFontMan::DrawText( tgt, 8, 16, "Sel<%s>", pdgmod->GetName().c_str() );
 				}
 
 				float fxa = mGrid.GetTopLeft().GetX();
@@ -450,8 +501,8 @@ void GraphVP::DoDraw(  )
 				float fyb = mGrid.GetBotRight().GetY();
 				float fgw = fxb-fxa;
 				float fgh = fyb-fya;
-				float ftw = pTARG->GetW();
-				float fth = pTARG->GetH();
+				float ftw = miW;
+				float fth = miH;
 				float fwr = ftw/fgw;
 				float fhr = fth/fgh;
 				float fzoom = mGrid.GetZoom();
@@ -474,48 +525,26 @@ void GraphVP::DoDraw(  )
 
 					float ioff = fmodsizew*(ftw/fgw);
 
-					if( false == pTARG->FBI()->IsPickState() )
+					if( false == is_pick )
 					{
-						lev2::CFontMan::DrawText( pTARG, imx+ioff, imy+ioff, "%d:%d"
+						lev2::CFontMan::DrawText( tgt, imx+ioff, imy+ioff, "%d:%d"
 							, rs.ser
 							, rs.ireg
 							);
 					}
 				}
 			}
-			lev2::CFontMan::EndTextBlock(pTARG);
-			pTARG->PopModColor();
+			lev2::CFontMan::EndTextBlock(tgt);
+			tgt->PopModColor();
 		}
-		pTARG->MTXI()->PopUIMatrix();
+		mtxi->PopUIMatrix();
 
 		////////////////////////////////////////////////////////////////
 	}
-	 pTARG->EndFrame();
+	fbi->PopViewport();
+	fbi->PopScissor();
 	////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////
 
-
-	pTARG->SetRenderContextFrameData( 0 );
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GraphVP::GetPixel( int ix, int iy, lev2::GetPixelContext& ctx )
-{
-	float fx = float(ix) / float(GetW());
-	float fy = float(iy) / float(GetH());
-	/////////////////////////////////////////////////////////////
-	if( mpPickBuffer )
-	{	ctx.mRtGroup = mpPickBuffer->mpPickRtGroup;
-		ctx.mAsBuffer = mpPickBuffer;
-		/////////////////////////////////////////////////////////////
-		mpPickBuffer->Draw();
-		/////////////////////////////////////////////////////////////
-		mpPickBuffer->GetContext()->FBI()->GetPixel( CVector4( fx, fy, 0.0f ), ctx );
-	}
-	/////////////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -551,39 +580,45 @@ void GraphVP::ReCenter()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-lev2::EUIHandled GraphVP::UIEventHandler( lev2::CUIEvent *pEV )
+ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 {
-	int ix = pEV->miX;
-	int iy = pEV->miY;
-	float fx = float(ix) / float(GetW());
-	float fy = float(iy) / float(GetH());
-
-	float faspect = float(GetW())/float(GetH());
+	int ix = EV.miX;
+	int iy = EV.miY;
+	int ilocx, ilocy;
+	RootToLocal(ix,iy,ilocx,ilocy);
+	float fx = float(ilocx)/float(GetW());
+	float fy = float(ilocy)/float(GetH());
 
 	lev2::GetPixelContext ctx;
 	ctx.miMrtMask = (1<<0) | (1<<1); // ObjectID and ObjectUVD
 	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
 	ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
 
-	QInputEvent* qip = (QInputEvent*) pEV->mpBlindEventData;
+	QInputEvent* qip = (QInputEvent*) EV.mpBlindEventData;
 
-	bool bisshift = pEV->mbSHIFT;
-	bool bisalt = pEV->mbALT;
-	bool bisctrl = pEV->mbCTRL;
+	bool bisshift = EV.mbSHIFT;
+	bool bisalt = EV.mbALT;
+	bool bisctrl = EV.mbCTRL;
 
 	static ork::dataflow::dgmodule* gpmodule = 0;
 
 	static CVector2 gbasexym;
 	static CVector2 gbasexy;
 
-	switch( pEV->miEventCode )
-	{	case lev2::UIEV_KEY:
-		{	if( pEV->miKeyCode == 'a' )
+	switch( EV.miEventCode )
+	{	case ui::UIEV_KEY:
+		{	if( EV.miKeyCode == 'a' )
 			{	
 				ReCenter();
+				SetDirty();
 			}
 		}
-		case lev2::UIEV_DRAG:
+		case ui::UIEV_MOVE:
+		{
+			SetDirty();
+			break;
+		}
+		case ui::UIEV_DRAG:
 		{
 			if( gpmodule )
 			{
@@ -596,18 +631,19 @@ lev2::EUIHandled GraphVP::UIEventHandler( lev2::CUIEvent *pEV )
 			{
 				mGrid.SetCenter( gbasexy-(CVector2(ix,iy)-gbasexym) );
 			}
+			SetDirty();
 			break;
 		}
-		case lev2::UIEV_RELEASE:
+		case ui::UIEV_RELEASE:
 		{
 			gpmodule = 0;
 			break;
 		}
-		case lev2::UIEV_PUSH:
+		case ui::UIEV_PUSH:
 		{
 			if( false == bisctrl )
 			{
-				GetPixel( ix, iy, ctx );
+				GetPixel( ilocx, ilocy, ctx );
 				ork::Object* pobj = (ork::Object*) ctx.GetObject(mpPickBuffer,0);
 
 				printf( "pobj<%p>\n", pobj );
@@ -619,11 +655,12 @@ lev2::EUIHandled GraphVP::UIEventHandler( lev2::CUIEvent *pEV )
 				dataflow::dgmodule* dgmod = rtti::autocast(pobj);
 				mDflowEditor.SelModule( dgmod );
 			}			
+			SetDirty();
 			break;
 		}
-		case lev2::UIEV_DOUBLECLICK:
+		case ui::UIEV_DOUBLECLICK:
 		{
-			GetPixel( ix, iy, ctx );
+			GetPixel( ilocx, ilocy, ctx );
 			ork::rtti::ICastable *pobj = ctx.GetObject(mpPickBuffer,0);
 			gpmodule = rtti::autocast(pobj);		
 
@@ -644,20 +681,23 @@ lev2::EUIHandled GraphVP::UIEventHandler( lev2::CUIEvent *pEV )
 			{
 				mDflowEditor.SetProbeModule( gpmodule );
 			}
+			SetDirty();
 			break;
 		}
-		case lev2::UIEV_MOUSEWHEEL:
+		case ui::UIEV_MOUSEWHEEL:
 		{
 			QWheelEvent* qem = (QWheelEvent*) qip;
 			int iscrollamt = bisshift ? 256 : 32;
 			int idelta = qem->delta();
-			float fdelta = (idelta>0) ? 0.0333f : (idelta<0) ? -0.0333f : 0.0f;
+			const float kstep = 1.0f/100.0f;
+			float fdelta = (idelta>0) ? kstep : (idelta<0) ? -kstep : 0.0f;
 			float fz = mGrid.GetZoom() + fdelta;
 			if( fz < 0.1f ) fz = 0.1f;
 			mGrid.SetZoom(fz);
+			SetDirty();
 		}
 	}
-	return lev2::EUI_HANDLED;
+	return ui::HandlerResult(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

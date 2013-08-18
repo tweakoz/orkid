@@ -10,14 +10,31 @@ import ork.build.slnprj as sln
 
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
-VariantDir( 'obj', 'src' )
+VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
+
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+is_fast = (TARGET=="fast")
+#
+
+if is_prep:
+	obu.install_headers("ext/fcollada")
+
+skip_fcollada = (is_prep or is_fast)
 
 # basics #################################
 
 class collada:
   def __init__(self):
+
+  	if skip_fcollada:
+  		return
+
 	ARGS = cmn.BuildArgs
+
+
 
 	BasicEnv = Environment( ENV=os.environ )
 
@@ -42,13 +59,14 @@ class collada:
 
 	##########################################
 
-	os.system( "mkdir -p %s/include/fcollada" % obu.stage_dir )
-	os.system( "cp -r ext/fcollada/* %s/include/fcollada/" % (obu.stage_dir) )
+	#os.system( "mkdir -p %s/include/fcollada" % obu.stage_dir )
+	#os.system( "cp -r ext/fcollada/* %s/include/fcollada/" % (obu.stage_dir) )
 
 ################################
 
 a = collada()
 ret = list()
-ret += a.coll_lib
+if False==skip_fcollada:
+	ret += a.coll_lib
 Return('ret')
 

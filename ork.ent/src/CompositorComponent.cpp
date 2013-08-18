@@ -310,6 +310,12 @@ void CompositingComponentData::Describe()
 	AnnotatePropertyForEditor<CompositingComponentData>( "OutputResMult", "editor.class", "ged.factory.enum" );
 	AnnotatePropertyForEditor<CompositingComponentData>( "OutputFrameRate", "editor.class", "ged.factory.enum" );
 
+	static const char* EdGrpStr =
+		        "grp://Main Enable ActiveScene ActiveItem "
+		        "grp://Output OutputFrames OutputResBase OutputResMult OutputFrameRate "
+		        "grp://Data Groups Scenes ";
+	reflect::AnnotateClassForEditor<CompositingComponentData>( "editor.prop.groups", EdGrpStr );
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

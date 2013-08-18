@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_LEV2_INPUT_INPUT_H
-#define ORK_LEV2_INPUT_INPUT_H
+#pragma once
 
 #include <ork/kernel/core/singleton.h>
 
@@ -371,5 +370,3 @@ private:
 };
 
 } }
-
-#endif // ORK_LEV2_INPUT_INPUT_H

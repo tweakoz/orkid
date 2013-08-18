@@ -16,6 +16,10 @@
 
 #include <QtGui/QMessageBox>
 
+#if defined(ORK_OSX)
+ #include <mach-o/dyld.h>
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static bool exit_gracefully = false;
@@ -50,6 +54,30 @@ void MySetToolDataFolder()
 
 int main(int argc, char **argv)
 {	
+#if defined(ORK_OSX)
+	char path[1024];
+	uint32_t size = sizeof(path);
+	if (_NSGetExecutablePath(path, &size) == 0)
+	{
+		ork::file::Path p(path);
+		ork::file::Path::NameType l, r, l2, r2;
+		p.Split(l,r,'/');
+		ork::file::Path p2(l);
+		p2.Split(l2,r2,'/');
+
+	    printf("executable path is %s\n", path);
+	    printf("l:%s\n", l.c_str());
+	    printf("r:%s\n", r.c_str());
+	    printf("l2:%s\n", l2.c_str());
+	    printf("r2:%s\n", r2.c_str());
+
+	    if( r2 == ork::file::Path::NameType("MacOS") ) // we are in a bundle
+		    chdir(l2.c_str());
+	}
+	else
+    	printf("buffer too small; need size %u\n", size);
+
+#endif
 	int iret = 0;
 
 	try
@@ -127,6 +155,11 @@ int main(int argc, char **argv)
 			CSystem::SetGlobalIntVariable( "ViewCollisionSpheres", 1 );
 			ork::tool::QtTest( argc, argv, true, false );
 			#endif
+		}
+		else
+		{
+			MySetToolDataFolder();
+			ork::tool::QtTest( argc, argv, false, false );
 		}
 	}
 	catch(std::exception&)

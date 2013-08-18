@@ -10,7 +10,6 @@
 
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/input/input.h>
-#include <orktool/qtui/gfxbuffer.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
@@ -102,28 +101,29 @@ void TestVPDefaultHandler::HandlePickOperation( DeferredPickOperationContext* pp
 
 ///////////////////////////////////////////////////////////////////////////
 
-EUIHandled TestVPDefaultHandler::UIEventHandler( CUIEvent *pEV )
+ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent( const ui::Event& EV )
 {
-	EUIHandled eH = EUI_HANDLED;
+	//printf( "TestVPDefaultHandler::DoOnUiEvent\n");
+	ui::HandlerResult ret(this);
 
-	bool isshift = pEV->mbSHIFT;
-	bool isctrl	 = pEV->mbCTRL;
+	bool isshift = EV.mbSHIFT;
+	bool isctrl	 = EV.mbCTRL;
 
-	bool isleft = pEV->mbLeftButton;
-	bool isright = pEV->mbRightButton;
-	bool ismid = pEV->mbMiddleButton;
+	bool isleft = EV.mbLeftButton;
+	bool isright = EV.mbRightButton;
+	bool ismid = EV.mbMiddleButton;
 
-	int ix = pEV->miX;
-	int iy = pEV->miY;
+	int ix = EV.miX;
+	int iy = EV.miY;
 
 	float fx = float(ix) / float(GetViewport()->GetW());
 	float fy = float(iy) / float(GetViewport()->GetH());
 
 	bool AreAnyMoveKeysDown = CSystem::IsKeyDepressed('W') | CSystem::IsKeyDepressed('A') | CSystem::IsKeyDepressed('S') | CSystem::IsKeyDepressed('D');
 
-	switch( pEV->miEventCode )
+	switch( EV.miEventCode )
 	{
-		case UIEV_SHOW:
+		case ui::UIEV_SHOW:
 		{
 			if( GetViewport()->GetTarget() )
 			{
@@ -133,13 +133,13 @@ EUIHandled TestVPDefaultHandler::UIEventHandler( CUIEvent *pEV )
 			}
 			break;
 		}
-		case UIEV_GOT_KEYFOCUS:
+		case ui::UIEV_GOT_KEYFOCUS:
 		{
 			break;
 		}
-		case UIEV_KEY:
+		case ui::UIEV_KEY:
 		{
-			switch( pEV->miKeyCode )
+			switch( EV.miKeyCode )
 			{
 				case 'f':
 				{
@@ -184,24 +184,27 @@ EUIHandled TestVPDefaultHandler::UIEventHandler( CUIEvent *pEV )
 			}
 			break;
 		}
-		case UIEV_RELEASE:
+		case ui::UIEV_RELEASE:
 		{
+			ret.mHoldFocus = false;
 			break;
 		}
-		case UIEV_DRAG:
+		case ui::UIEV_DRAG:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 			if( AreAnyMoveKeysDown ) break;
 
+			ret.mHoldFocus = true;
 			break;
 		}
-		case UIEV_PUSH:
+		case ui::UIEV_PUSH:
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 
 			//if( isright || ismid ) break;
 			if( AreAnyMoveKeysDown ) break;
 
+			ret.mHoldFocus = true;
 
 			if( isleft && false==isright )
 			{
@@ -244,7 +247,7 @@ EUIHandled TestVPDefaultHandler::UIEventHandler( CUIEvent *pEV )
 		}
 	}
 
-	return eH;
+	return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

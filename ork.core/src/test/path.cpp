@@ -60,6 +60,22 @@ TEST(PathCanNotStoreQueryStrings)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+TEST(PathSplit)
+{
+    Path testPath("testaa://hello/world/test.txt");
+    Path::NameType l, r;
+    testPath.Split(l,r,'.');
+    CHECK_EQUAL( l.c_str(), "testaa://hello/world/test");
+    CHECK_EQUAL( r.c_str(), "txt");
+    Path::NameType l2, r2;
+    Path p2(l);
+    p2.Split(l2,r2,'/');
+    CHECK_EQUAL( l2.c_str(), "testaa://hello/world");
+    CHECK_EQUAL( r2.c_str(), "test");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 //TEST(PathHostNameTest)
 //{
 //    Path p1("http://localhost:5901/yo.txt");

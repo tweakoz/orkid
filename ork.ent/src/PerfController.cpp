@@ -19,9 +19,9 @@
 #if defined(_DARWIN)
 #include <dispatch/dispatch.h>
 #endif
-#include <orktool/qtui/qtui_tool.h>
-#include <orktool/ged/ged.h>
-#include <orktool/ged/ged_delegate.h>
+//#include <orktool/qtui/qtui_tool.h>
+//#include <orktool/ged/ged.h>
+//#include <orktool/ged/ged_delegate.h>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::PerfControllerArchetype, "PerfControllerArchetype" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::PerfControllerComponentInst, "PerfControllerComponentInst" );

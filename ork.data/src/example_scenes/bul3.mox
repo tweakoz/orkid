@@ -241,7 +241,7 @@
                                                 <property name='Center'>0.242955 0.598577 0.200618</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>9.6166</property>
-                                                <property name='QuatC'>-0.013294 0.715919 0.0205074 0.697828</property>
+                                                <property name='QuatC'>0.0359041 0.698146 -0.0399565 0.714012</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -346,6 +346,10 @@
                                                 </reference>
                                             </item>
                                         </property>
+                                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
+                                        <property name='OutputFrames'>false</property>
+                                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
+                                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
                                         <property name='Scenes'>
                                             <item key='s1'>
                                                 <reference category='ObjectClass'>
@@ -479,7 +483,7 @@
                         <property name='Name'>"ground_plane"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='49'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                                <property name='TransformNode'>1 0 0 0 0 -0.999546 -0.0301286 0 0 0.0301286 -0.999546 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
