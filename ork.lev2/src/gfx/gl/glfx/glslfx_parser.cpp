@@ -570,7 +570,7 @@ struct GlSlFxParser
 		pshader->mpInterface = iface;
 		///////////////////////////////////
 #if defined(USE_GL3)
-		std::string shaderbody = "#version 400 core\n";
+		std::string shaderbody = "#version 150 core\n";
 #else
 		std::string shaderbody = "#version 120\n";
 #endif
