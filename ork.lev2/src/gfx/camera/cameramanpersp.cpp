@@ -70,6 +70,9 @@ CCamera_persp::CCamera_persp()
 	, move_vel(0.0f)
 	, mMoveVelocity( 0.0f, 0.0f, 0.0f )
 	, meRotMode( EROT_SCREENXY )
+	, mDoDolly(false)
+	, mDoRotate(false)
+	, mDoPan(false)
 {
 	//InitInstance(CCamera_persp::GetClassStatic());
 	mCameraData.Persp( 1.0f,1000.0f,70.0f );
@@ -260,9 +263,12 @@ void CCamera_persp::PanBegin( const CamEvTrackData& ed )
    // pmousepos = QCursor::pos();
     //OrkGlobalDisableMousePointer();
 #endif
+	mDoPan = true;
 }
 void CCamera_persp::PanUpdate( const CamEvTrackData& ed )
 {
+	assert(mDoPan);
+
     int esx = ed.icurX;
     int esy = ed.icurY;
     int ipushx = ed.ipushX;
@@ -290,6 +296,7 @@ void CCamera_persp::PanEnd()
    // QCursor::setPos(pmousepos);
     //OrkGlobalEnableMousePointer();
 #endif
+	mDoPan = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -305,6 +312,8 @@ void CCamera_persp::RotBegin( const CamEvTrackData& ed )
     //pmousepos = QCursor::pos();
     //OrkGlobalDisableMousePointer();
 #endif
+    mDoRotate = true;
+
 }
 void CCamera_persp::RotUpdate( const CamEvTrackData& ed )
 {
@@ -313,6 +322,8 @@ void CCamera_persp::RotUpdate( const CamEvTrackData& ed )
     CVector4 RotX = mCameraData.GetXNormal();
     CVector4 RotY = mCameraData.GetYNormal();
     CVector4 RotZ = mCameraData.GetZNormal();
+
+    assert(mDoRotate);
 
     int esx = ed.icurX;
     int esy = ed.icurY;
@@ -397,6 +408,7 @@ void CCamera_persp::RotEnd()
     //QCursor::setPos(pmousepos);
     //OrkGlobalEnableMousePointer();
 #endif
+    mDoRotate = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -408,6 +420,7 @@ void CCamera_persp::DollyBegin( const CamEvTrackData& ed )
     //pmousepos = QCursor::pos();
     //OrkGlobalDisableMousePointer();
 #endif
+    mDoDolly = true;
 }
 void CCamera_persp::DollyUpdate( const CamEvTrackData& ed )
 {
@@ -416,6 +429,7 @@ void CCamera_persp::DollyUpdate( const CamEvTrackData& ed )
     int ipushx = ed.ipushX;
     int ipushy = ed.ipushY;
     
+    assert( mDoDolly );
     CVector2 VP( CReal(mpViewport->GetW()), CReal(mpViewport->GetH()) );
 
     CVector3 outx, outy;
@@ -447,6 +461,7 @@ void CCamera_persp::DollyUpdate( const CamEvTrackData& ed )
    // QCursor::setPos(pmousepos);
 #endif
     
+
     
 }
 void CCamera_persp::DollyEnd()
@@ -455,13 +470,14 @@ void CCamera_persp::DollyEnd()
     //QCursor::setPos(pmousepos);
     //OrkGlobalEnableMousePointer();
 #endif
+    mDoDolly = false;
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::UIEventHandler( const ui::Event& EV )
-{
+bool CCamera_persp::UIEventHandler( const ui::Event& EV )
+{	
 	const ui::EventCooked& filtev = EV.mFilteredEvent;
 
     ui::Viewport *pVP = GetViewport();
@@ -483,14 +499,11 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 	bool isleft = filtev.mBut0;
 	bool ismid = filtev.mBut1;
 	bool isright = filtev.mBut2;
-    bool bPAN_MidAlt = (ismid && isalt);
 
 	bool bcamL = HotKeyManager::IsDepressed(mHK_MovL);
 	bool bcamR = HotKeyManager::IsDepressed(mHK_MovR);
 	bool bcamU = HotKeyManager::IsDepressed(mHK_MovU);
 	bool bcamD = HotKeyManager::IsDepressed(mHK_MovD);
-
-	bool ismoving = isalt & (bcamL|bcamR|bcamU|bcamD);
 
 	static int ipushx = 0;
 	static int ipushy = 0;
@@ -539,12 +552,24 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 			vPushNY = mCameraData.GetYNormal();
 			vPushNZ = mCameraData.GetZNormal();
 
-            if( bPAN_MidAlt )
-            {
-                mEvTrackData.vPushCenter = mvCenter;
-                mEvTrackData.ipushX = ipushx;
-                mEvTrackData.ipushY = ipushy;
-                PanBegin(mEvTrackData);
+			bool filt_kpush = (filtev.mAction=="keypush");
+
+ 		    bool do_rot = (isleft && (isalt||filt_kpush));
+ 		    bool do_pan = (ismid && (isalt||filt_kpush));
+
+	        if( do_rot )
+	        {
+	        	mEvTrackData.vPushCenter = mvCenter;
+	            mEvTrackData.ipushX = ipushx;
+	            mEvTrackData.ipushY = ipushy;
+	            RotBegin(mEvTrackData);
+            }
+	        else if( do_pan )
+	        {
+	        	mEvTrackData.vPushCenter = mvCenter;
+	            mEvTrackData.ipushX = ipushx;
+	            mEvTrackData.ipushY = ipushy;
+	            PanBegin(mEvTrackData);
             }
             
 			break;
@@ -556,6 +581,18 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 			leftbutton = filtev.mBut0;
 			middlebutton = filtev.mBut1;
 			rightbutton = filtev.mBut2;
+
+			if( mDoDolly )
+            	DollyEnd();
+            if( mDoPan )
+                PanEnd();
+            if( mDoRotate )
+                RotEnd();
+
+			mDoPan = false;
+			mDoDolly = false;
+			mDoRotate = false;
+
 			break;
         }
 		case UIEV_MOVE:
@@ -596,13 +633,6 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 
 			CReal tmult = 1.0f;
 
-			bool bROTATE = (isleft && (false==isright)) && (isalt|ismoving);
-			bool bDOLLY = (isright && (false==isleft)) && isalt;
-			bDOLLY |= (isleft && ismeta);
-			bool bPAN = (ismid && isalt);
-
-			if( bDOLLY ) bROTATE = false;
-
 			//////////////////////////////////////////////////
 
 			CVector4 RotX = mCameraData.GetXNormal();
@@ -610,7 +640,7 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 			CVector4 RotZ = mCameraData.GetZNormal();
 
 			//////////////////////////////////////////////////
-			if( bROTATE )
+			if( mDoRotate )
 			{
 				dx *= 0.5f;
 				dy *= 0.5f;
@@ -675,7 +705,7 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 				beginy = esy;
 
 			}
-			else if( bDOLLY )
+			else if( mDoDolly )
 			{
 				CVector2 VP( CReal(mpViewport->GetW()), CReal(mpViewport->GetH()) );
  
@@ -710,7 +740,7 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 				beginx = esx;
                 beginy = esy;
             }
-			else if( bPAN_MidAlt )
+			else if( mDoPan )
 			{
                 mEvTrackData.icurX = esx;
                 mEvTrackData.icurY = esy;
@@ -907,6 +937,8 @@ void CCamera_persp::UIEventHandler( const ui::Event& EV )
 
 	UpdateMatrices();
 	//CommonPostSetup();
+
+	return(mDoPan||mDoRotate||mDoDolly);
 
 }
 

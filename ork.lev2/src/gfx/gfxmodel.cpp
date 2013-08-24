@@ -59,6 +59,7 @@ XgmModelInst::XgmModelInst( const XgmModel* Model )
 	, mLocalPose( Model->RefSkel() )
 	, mMaterialStateInst( *this )
 	, mLayerFxMaterial( 0 )
+	, mbSkinned(false)
 {
 	EnableAllMeshes();
 
@@ -561,6 +562,8 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 
 	//const XgmLocalPose& LocalPose = minst->RefLocalPose();
 
+
+	printf( "rendering skinned!!\n");
 	////////////////////
 	// Draw Skinned Mesh
 	//e eggtest++;
@@ -574,19 +577,19 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 
 		bool bmatpushed = false;
 
-		GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
+		auto mtl = XgmClusSet.GetMaterial();
 
-		if( minst->GetLayerFxMaterial() != 0 ) pmat = minst->GetLayerFxMaterial();
+		if( minst->GetLayerFxMaterial() != 0 ) mtl = minst->GetLayerFxMaterial();
 
-		if( 0 != pmat )
+		if( 0 != mtl )
 		{
-			pTARG->BindMaterial( pmat );
-			int inumpasses = pmat->BeginBlock(pTARG,Ctx);
+			pTARG->BindMaterial( mtl );
+			int inumpasses = mtl->BeginBlock(pTARG,Ctx);
 
 			for( int ip=0; ip<inumpasses; ip++ )
 			{
 				OrkAssert(ip<inumpasses);
-				bool bDRAW = pmat->BeginPass( pTARG,ip );
+				bool bDRAW = mtl->BeginPass( pTARG,ip );
 
 				if( bDRAW )
 				{
@@ -608,6 +611,7 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 						const CMatrix4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
 
 						//////////////////////////////////////
+						//MatrixBlock[ijointreg] = CMatrix4::Identity; //(MatIBind * MatAnimJCat); 
 						MatrixBlock[ijointreg] = MatAnimJCat; //(MatIBind * MatAnimJCat); 
 					}
 
@@ -618,12 +622,14 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 					MaterialInstItemMatrixBlock mtxblockitem;
 					mtxblockitem.SetNumMatrices( inumjoints );
 					mtxblockitem.SetMatrixBlock( MatrixBlock );
-					pmat->BindMaterialInstItem( & mtxblockitem );
+					mtl->BindMaterialInstItem( & mtxblockitem );
 					{
 						mtxblockitem.mApplicator->ApplyToTarget( pTARG );
 					}
-					pmat->UnBindMaterialInstItem( & mtxblockitem );
+					mtl->UnBindMaterialInstItem( & mtxblockitem );
 					
+					mtl->UpdateMVPMatrix( pTARG );
+
 					//////////////////////////////////////////////////////
 					#if USE_XGM_DISPLAYLISTS
 					pTARG->GBI()->DisplayListDrawEML( XgmCluster.mDisplayList );
@@ -637,17 +643,19 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 						{
 							const XgmPrimGroup & PrimGroup = XgmCluster.mpPrimGroups[ iprim ];
 							const ork::lev2::IndexBufferBase *pIndexBuffer = PrimGroup.GetIndexBuffer();
+
+							//printf( "rskin DrawIndexedPrimitiveEML iprim<%d>\n", iprim );
 							pTARG->GBI()->DrawIndexedPrimitiveEML( *pVertexBuffer, *pIndexBuffer, PrimGroup.GetPrimType() );
 						}
 					}
 					//////////////////////////////////////////////////////
 					#endif
 					//////////////////////////////////////////////////////
-					pmat->EndPass(pTARG);
+					mtl->EndPass(pTARG);
 				}
 			}
 			if( inumpasses )
-				pmat->EndBlock(pTARG);
+				mtl->EndBlock(pTARG);
 		}
 	}
 	pTARG->PopModColor();

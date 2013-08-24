@@ -822,6 +822,11 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	
 	GL_ERRORCHECK();
 
+	GLuint sampler_obj = 0;
+	glGenSamplers(1,&sampler_obj);
+	assert(sampler_obj!=0);
+	printf( "sampler_obj<%d>\n", int(sampler_obj));
+
 	glGenTextures( 1, & pTEXOBJ->mObject );
 	glBindTexture( TARGET, pTEXOBJ->mObject );
 	GL_ERRORCHECK();

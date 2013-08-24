@@ -84,7 +84,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 	ork::ent::SceneInst* psceneinst = mEditor.GetActiveSceneInst();
 
 	////////////////////////////////////////////////////////////////
-	// ALT KEY IS ALWAYS CAMERA OPS
+
 	////////////////////////////////////////////////////////////////
 
 	bool isshift = EV.mbSHIFT;
@@ -92,9 +92,6 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 	bool isctrl	 = EV.mbCTRL;
     bool ismeta  = EV.mbMETA;
     bool ismulti = false;
-//	isshift = CSystem::IsKeyDepressed(VK_SHIFT);
-//	isalt = CSystem::IsKeyDepressed(VK_LMENU);
-//	isctrl = CSystem::IsKeyDepressed(VK_CONTROL);
 
 	switch( EV.miEventCode )
 	{
@@ -113,11 +110,15 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
             ismulti=true;
             break;
 	}
-	if( isalt || ismulti )
+	bool bcamhandled = false;
+
+	if( mActiveCamera )
 	{
-		if( mActiveCamera ) mActiveCamera->UIEventHandler( EV );
-		ret.SetHandled(this);
-		return ret;
+		bcamhandled = mActiveCamera->UIEventHandler( EV );
+		if( bcamhandled )
+		{	ret.SetHandled(this);
+			return ret;
+		}
 	}
 
 	if( 0 == EV.miEventCode ) return ret;
@@ -134,99 +135,131 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 		{
 			int icode = EV.miKeyCode;
 
-			if( icode == 't' )
+			switch( icode )
 			{
-				if( isctrl ) mEditor.EditorPlaceEntity();
-			}
-			else if( icode == 'k' )
-			{
-				if(isshift)
+				case 't':
 				{
-					// move editor camera to selected locator
-					CMatrix4 matrix;
-					if(mEditor.EditorGetEntityLocation(matrix) && mActiveCamera )
+					if( isctrl ) mEditor.EditorPlaceEntity();
+					break;
+				}
+				case 'k':
+				{
+					if(isshift)
 					{
-						mActiveCamera->SetFromWorldSpaceMatrix(matrix);
+						// move editor camera to selected locator
+						CMatrix4 matrix;
+						if(mEditor.EditorGetEntityLocation(matrix) && mActiveCamera )
+						{
+							mActiveCamera->SetFromWorldSpaceMatrix(matrix);
+						}
 					}
+					break;
 				}
-			}
-			else if( icode == 'l' )
-			{
-				if(isshift)
+				case 'l':
 				{
-					// move selected locator to editor camera
-					//CMatrix4 matrix = mpActiveCamera->GetVMatrix();
-					//matrix.Inverse();
-					//mEditor.EditorLocateEntity(matrix);
+					if(isshift)
+					{
+						// move selected locator to editor camera
+						//CMatrix4 matrix = mpActiveCamera->GetVMatrix();
+						//matrix.Inverse();
+						//mEditor.EditorLocateEntity(matrix);
+					}
+					break;
 				}
-			}
-			else if( icode == 'e' )
-			{
-				if( isctrl ) mEditor.EditorNewEntity();
-			}
-			else if( icode == 'r' )
-			{
-				if( isctrl ) mEditor.EditorReplicateEntity();
-			}
-			else if( icode == 'q' )
-			{
-				if( isctrl )
+				case 'e':
 				{
-					tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
-					mMainWindow.SlotUpdateAll();
-					tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
+					if( isctrl ) mEditor.EditorNewEntity();
+					break;
 				}
-			}
-			else if( icode == Qt::Key_Pause )
-			{
-				/*switch( mEditor.mpSceneInst->GetSceneInstMode() )
+				case 'r':
 				{
-					case ent::ESCENEMODE_RUN:
-						mEditor.mpSceneInst->SetSceneInstMode( ent::ESCENEMODE_EDIT );
-						break;
-					default:
-						mEditor.mpSceneInst->SetSceneInstMode( ent::ESCENEMODE_RUN );
-						break;
-				}*/
-			}
-			else if( icode == 'g' )
-			{
-				if( isctrl ) mGridMode = (mGridMode+1)%3;
-			}
-			else if( icode == '~' )
-			{
-				if( miCullCameraIndex>=0 )
-					miCullCameraIndex=-1;
-				else
-					miCullCameraIndex=miCameraIndex;
-				printf( "CULLCAMERAINDEX<%d>\n", miCullCameraIndex );
-				ret.SetHandled(this);
-			}
-			else if( icode == '`' )
-			{
-				miCameraIndex++;
-				printf( "CAMERAINDEX<%d>\n", miCameraIndex );
-				ret.SetHandled(this);
-			}
-			else if( icode == '1' )
-			{
-				mCompositorSceneIndex++;
-				ret.SetHandled(this);
-			}
-			else if( icode == '2' )
-			{
-				mCompositorSceneItemIndex++;
-				ret.SetHandled(this);
-			}
-			else if( icode == '!' )
-			{
-				mCompositorSceneIndex=-1;
-				ret.SetHandled(this);
-			}
-			else if( icode == '@' )
-			{
-				mCompositorSceneItemIndex=-1;
-				ret.SetHandled(this);
+					if( isctrl ) mEditor.EditorReplicateEntity();
+					break;
+				}
+				case 'q':
+				{
+					if( isctrl )
+					{
+						tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
+						mMainWindow.SlotUpdateAll();
+						tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
+					}
+					break;
+				}
+				case  Qt::Key_Pause:
+				{
+					/*switch( mEditor.mpSceneInst->GetSceneInstMode() )
+					{
+						case ent::ESCENEMODE_RUN:
+							mEditor.mpSceneInst->SetSceneInstMode( ent::ESCENEMODE_EDIT );
+							break;
+						default:
+							mEditor.mpSceneInst->SetSceneInstMode( ent::ESCENEMODE_RUN );
+							break;
+					}*/
+					break;
+				}
+				case 'g':
+				{
+					if( isctrl ) mGridMode = (mGridMode+1)%3;
+					break;
+				}
+				case '~':
+				{
+					if( miCullCameraIndex>=0 )
+						miCullCameraIndex=-1;
+					else
+						miCullCameraIndex=miCameraIndex;
+					printf( "CULLCAMERAINDEX<%d>\n", miCullCameraIndex );
+					ret.SetHandled(this);
+					break;
+				}
+				case '`':
+				{
+					miCameraIndex++;
+					printf( "CAMERAINDEX<%d>\n", miCameraIndex );
+					ret.SetHandled(this);
+					break;
+				}
+				case '1':
+				{
+					mCompositorSceneIndex++;
+					ret.SetHandled(this);
+					break;
+				}
+				case '2':
+				{
+					mCompositorSceneItemIndex++;
+					ret.SetHandled(this);
+					break;
+				}
+				case '!':
+				{
+					mCompositorSceneIndex=-1;
+					ret.SetHandled(this);
+					break;
+				}
+				case '@':
+				{
+					mCompositorSceneItemIndex=-1;
+					ret.SetHandled(this);
+					break;
+				}
+				case ' ':
+				{
+					ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
+					const ent::CompositingComponentInst* pCCI = GetCompositingComponentInst(0);
+					const CompositingGroup* pCG = 0;
+					if( pCCI )
+					{
+						const CompositingComponentData& CCD = pCCI->GetCompositingData();
+
+						CCD.Toggle();
+					}
+					break;
+				}
+				default:
+					break;
 			}
 			break;
 		}

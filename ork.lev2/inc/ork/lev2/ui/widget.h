@@ -7,10 +7,12 @@ namespace ork { namespace ui {
 
 struct Group;
 
-struct WidgetEventFilter
+struct IWidgetEventFilter
 {
-	WidgetEventFilter(Widget& w);
+	IWidgetEventFilter(Widget&w);
 	void Filter( const Event& Ev );
+
+	virtual void DoFilter(const Event& Ev) = 0;
 
 	Widget& mWidget;
 	bool mShiftDown;
@@ -29,6 +31,13 @@ struct WidgetEventFilter
 	Timer mKeyTimer;
 	Timer mDoubleTimer;
 	Timer mMoveTimer;
+
+};
+
+struct WidgetEventFilter1 : public IWidgetEventFilter
+{
+	WidgetEventFilter1(Widget& w) : IWidgetEventFilter(w) {}
+	void DoFilter( const Event& Ev );
 };
 
 struct Widget : public ork::Object
@@ -120,7 +129,7 @@ protected:
 	bool				mSizeDirty;
 	bool				mPosDirty;
 	Widget*				mParent;						
-	WidgetEventFilter   mEventFilter;
+	std::stack<IWidgetEventFilter*> mEventFilterStack;
 
 	static void UpdateMouseFocus(const HandlerResult& e, const Event& Ev);
 

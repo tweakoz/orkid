@@ -16,12 +16,14 @@ vertex_interface iface_vdefault
 	uniform mat4 WMatrix;
 	uniform mat4 WVMatrix;
 	uniform mat4 VMatrix;
+	uniform mat4 IWMatrix;
 	uniform mat3 WRotMatrix;
 	uniform mat4 DiffuseMapMatrix;
 	uniform mat4 NormalMapMatrix;
 	uniform mat4 SpecularMapMatrix;
 
-	uniform mat4 BoneMatrices;
+
+	uniform mat4 BoneMatrices[32];
 
 	uniform vec4 modcolor;
 	uniform float time;
@@ -40,6 +42,8 @@ vertex_interface iface_vdefault
 	in vec3 normal : NORMAL;
 	//in vec4 vtxcolor : COLOR0;
 	in vec2 uv0 : TEXCOORD0;
+	in vec4 boneindices : BONEINDICES;
+	in vec4 boneweights : BONEWEIGHTS;
 	//in vec2 uv1 : TEXCOORD1;
 	//
 	out vec4 frg_clr;
@@ -111,6 +115,44 @@ vertex_shader vs_wnormal : iface_vdefault
 }
 
 ///////////////////////////////////////////////////////////////
+libblock skin_tools
+{
+	vec3 SkinPosition( vec4 idcs, vec4 wghts, vec3 InPos )
+	{
+		vec4 Pos4 = vec4( InPos, 1.0 );
+
+		int i0 = int(idcs.w*255.0);
+		int i1 = int(idcs.z*255.0);
+		int i2 = int(idcs.y*255.0);
+		int i3 = int(idcs.x*255.0);
+		float w0 = wghts.w;
+		float w1 = wghts.z;
+		float w2 = wghts.y;
+		float w3 = wghts.x;
+
+		float wt = (w0+w1+w2+w3)*0.5;
+
+		vec3 WeightedVertex =	((BoneMatrices[i0]*Pos4)*w0).xyz;
+		WeightedVertex += 		((BoneMatrices[i1]*Pos4)*w1).xyz;
+		WeightedVertex +=		((BoneMatrices[i2]*Pos4)*w2).xyz;
+		WeightedVertex +=		((BoneMatrices[i3]*Pos4)*w3).xyz;
+	 
+		return WeightedVertex.xyz;
+	}
+}
+vertex_shader vs_wnormalsk 
+	: iface_vdefault
+	: skin_tools
+{
+	vec3 obj_pos = position.xyz;
+	vec3 skn_pos = SkinPosition( boneindices, boneweights, position.xyz );
+	gl_Position = WVPMatrix*vec4(skn_pos,1.0);
+	vec3 wnorm = normalize(WRotMatrix*normal);
+	frg_clr = vec4(wnorm.xyz,1.0);
+	frg_uv0 = uv0;
+}
+
+///////////////////////////////////////////////////////////////
 
 fragment_shader ps_modtex : iface_fmt
 {
@@ -132,6 +174,11 @@ fragment_shader ps_fragclr : iface_fdefault
 {
 	out_clr = frg_clr;
 }
+fragment_shader ps_wnormalsk : iface_fdefault
+{
+	out_clr = vec4(0,1,0,1);//frg_clr;
+}
+
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : iface_fmt
 {
@@ -159,6 +206,14 @@ technique tek_wnormal
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_wnormal;
+		fragment_shader=ps_fragclr;
+		state_block=sb_default;
+	}
+}
+technique tek_wnormal_skinned
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_wnormalsk;
 		fragment_shader=ps_fragclr;
 		state_block=sb_default;
 	}

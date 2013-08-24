@@ -716,15 +716,28 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			glClientActiveTextureARB(GL_TEXTURE0);
 			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 			glTexCoordPointer( 2, GL_FLOAT,	iStride, (void*) 24 );	// T8
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 
-			glDisableClientState( GL_COLOR_ARRAY );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
+			glEnableClientState( GL_COLOR_ARRAY );
+			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 32 );	// T8
+
+			glEnableClientState( GL_SECONDARY_COLOR_ARRAY );
+			glSecondaryColorPointer( 3, GL_UNSIGNED_BYTE, iStride, (void*) 36 );	// T8
+
 			glClientActiveTextureARB(GL_TEXTURE2);
 			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			rval = true;
+
+			#else // _USE_GLSLFX
+			static vtx_config cfgs[] = 
+			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
+				{"NORMAL",		3,	GL_FLOAT,			true,	12,		0,0},
+				{"TEXCOORD0",	2,	GL_FLOAT,			false,	24,		0,0},
+				{"BONEINDICES",	4,	GL_UNSIGNED_BYTE,	true,	32,		0,0},
+				{"BONEWEIGHTS",	4,	GL_UNSIGNED_BYTE,	true,	36,		0,0},
+			};
+			for( vtx_config& vcfg : cfgs )
+				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);
 			#endif
+			rval = true;
 			break;
 		}
 		case EVTXSTREAMFMT_V12N12B12T8C4:
@@ -1241,6 +1254,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 				miTrianglesRendered += (iNum/3);
 				break;
 			case EPRIM_TRIANGLESTRIP:
+				//printf( "drawtristrip inum<%d>\n", iNum );
 				glDrawElements( GL_TRIANGLE_STRIP, iNum, GL_UNSIGNED_SHORT, pindices );
 				miTrianglesRendered += (iNum-2);
 				break;

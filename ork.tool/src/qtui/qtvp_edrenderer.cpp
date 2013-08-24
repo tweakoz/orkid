@@ -195,20 +195,20 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 
 //	OrkAssert(	GetTarget()->FBI()->IsPickState() == false );
 
-	//orkprintf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
+	//printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
 	lev2::LightingGroup lgrp;
 	lgrp.mLightManager = target->GetRenderContextFrameData()->GetLightManager();
 	lgrp.mLightMask = ModelRen.GetLightMask();
 	MatCtx.SetLightingGroup(&lgrp);
 
-	if( minst->GetXgmModel()->IsSkinned() )
+	if( model->IsSkinned() )
 	{
 		MatCtx.SetSkinned( true );
-		minst->GetXgmModel()->RenderSkinned( minst, color, nmat, GetTarget(), MatCtx, MdlCtx );
+		model->RenderSkinned( minst, color, nmat, GetTarget(), MatCtx, MdlCtx );
 	}
 	else
 	{
-		minst->GetXgmModel()->RenderRigid( color, nmat, GetTarget(), MatCtx, MdlCtx );
+		model->RenderRigid( color, nmat, GetTarget(), MatCtx, MdlCtx );
 	}
 
 

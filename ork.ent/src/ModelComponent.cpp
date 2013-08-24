@@ -191,7 +191,7 @@ void ModelComponentInst::DoUpdate( ork::ent::SceneInst* psi )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ModelComponentInst::Notify(const ork::event::Event *event)
+bool ModelComponentInst::DoNotify(const ork::event::Event *event)
 {
 	if(const event::MeshEnableEvent *meshenaev = ork::rtti::autocast(event))
 	{

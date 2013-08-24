@@ -154,7 +154,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////////
 
-	virtual void UIEventHandler( const ui::Event& EV ) = 0;
+	virtual bool UIEventHandler( const ui::Event& EV ) = 0;
 	virtual void draw(GfxTarget *pT) = 0;
 	
 	virtual void RenderUpdate( void ) = 0;
@@ -237,8 +237,12 @@ class CCamera_persp : public CCamera
 	int beginx, beginy;
 	int leftbutton, middlebutton, rightbutton;
 
-	virtual void UIEventHandler( const ui::Event& EV );
-	virtual void draw( GfxTarget *pT );
+	bool mDoRotate;
+	bool mDoDolly;
+	bool mDoPan;
+
+	bool UIEventHandler( const ui::Event& EV ) override;
+	void draw( GfxTarget *pT ) override;
 
 	void RenderUpdate( void ); // virtual
 	void SetFromWorldSpaceMatrix(const CMatrix4 &matrix); // virtual

@@ -403,7 +403,7 @@ bool CColladaAnim::Parse( void )
 	{
 		const std::string& str = (*it);
 
-		//orkprintf( "joint<%s>\n", str.c_str() );
+		orkprintf( "joint<%s>\n", str.c_str() );
 	}
 
 	///////////////////////////////////
@@ -423,11 +423,63 @@ bool CColladaAnim::Parse( void )
 
 	int inument( AnimLib->GetEntityCount() );
 
+	printf( "CColladaAnim::Parse() inument<%d>\n", inument );
+	
+	std::map<std::string,FCDAnimationChannel*> ValidMatrixAnimSet;
+	std::map<std::string,FCDAnimationChannel*> ValidUvAnimSet;
+	std::map<std::string,FCDAnimationChannel*> ValidFxAnimSet;
+
 	for( int ie=0; ie<inument; ie++ )
 	{
-		FCDAnimation *Anim = AnimLib->GetEntity(ie);
+		FCDAnimation* Anim = AnimLib->GetEntity(ie);
 
-		const std::string AnimName = Anim->GetName().c_str();
+		std::string AnimName = Anim->GetName().c_str();
+
+		size_t num_chans = Anim->GetChannelCount();
+		size_t num_child = Anim->GetChildrenCount();
+
+		printf( "AnimName<%s> num_chans<%d> num_child<%d>\n", AnimName.c_str(), int(num_chans), int(num_child) );
+
+		auto it_duscore = AnimName.find( "__" );
+
+		if( it_duscore != std::string::npos )
+		{
+			size_t len = AnimName.length();
+			AnimName = AnimName.substr(it_duscore+2,len-(it_duscore+2));
+		}
+
+		auto itstrmtx = AnimName.find( "_matrix" );
+
+		if( itstrmtx != std::string::npos )
+		{
+			AnimName = AnimName.substr(0,itstrmtx);
+			for( int icha=0; icha<num_chans; icha++ )
+			{
+				auto chan = Anim->GetChannel(icha);				
+				size_t numcrv = chan->GetCurveCount();// const { return curves.size(); }
+
+				printf( "  AnimName<%s> Chan<%d><%p> numcurves<%d>\n", AnimName.c_str(), icha, chan, numcrv );
+				if( numcrv==16 )
+					ValidMatrixAnimSet[AnimName]=chan;
+			}
+			//ValidMatrixAnimSet.insert(Anim);
+		}
+		else for( int ich=0; ich<num_child; ich++ )
+		{
+			auto chld = Anim->GetChild(ich);
+			const std::string ChildName = chld->GetName().c_str();
+			size_t num_cchans = chld->GetChannelCount();
+			printf( "  Child<%d> Name<%s> numchans<%d>\n", ich, ChildName.c_str(), num_cchans  );
+			for( int icha=0; icha<num_cchans; icha++ )
+			{
+				auto chan = chld->GetChannel(icha);				
+				size_t numcrv = chan->GetCurveCount();// const { return curves.size(); }
+
+				printf( "  Chan<%d><%p> numcurves<%d>\n", icha, chan, numcrv );
+				if( numcrv==16 )
+					ValidMatrixAnimSet[AnimName]=chan;
+			}
+		}
 
 		////////////////////////////////////////////////
 		// split AnimName into base and component
@@ -448,7 +500,7 @@ bool CColladaAnim::Parse( void )
 		////////////////////////////////////////////////
 		// uv anim channel ?
 		////////////////////////////////////////////////
-		
+		/*
 		orkmap<std::string,ColladaUvAnimChannel*>::iterator it_uv = mUvAnimatables.find(AnimRBaseName);
 		orkmap<std::string,GfxMaterialFxParamBase*>::const_iterator it_ma = mFxAnimatables.find(AnimName);
 
@@ -537,52 +589,93 @@ bool CColladaAnim::Parse( void )
 			}
 
 		}
+		*/
+	}
 
-		////////////////////////////////////////////////
-		// joint or matrix anim channel ?
-		////////////////////////////////////////////////
+	////////////////////////////////////////////////
+	// joint or matrix anim channel ?
+	////////////////////////////////////////////////
 
-		else if( AnimName.find( "_matrix" ) != std::string::npos ) // must be a joint or group matrix node
+	printf( "ValidMatrixAnimSet size<%d>\n", int(ValidMatrixAnimSet.size()));
+
+	//////////////////////////
+	// find domain
+	//////////////////////////
+
+	float fevallo = 9999999.0f;
+	float fevalhi = 0.0f;
+
+	for( auto& ITEM : ValidMatrixAnimSet )
+	{
+		const std::string& MtxName = ITEM.first;
+		FCDAnimationChannel* Channel = ITEM.second;
+		FCDAnimation* Anim = Channel->GetParent();
+		int inumcurves = Channel->GetCurveCount();
+		assert( 16 == inumcurves );
+		for( int icu=0; icu<inumcurves; icu++ )
 		{
-			int ilen = AnimName.length();
-			std::string MtxName = AnimName.substr( 0, ilen-7 );
+			FCDAnimationCurve *Curve = Channel->GetCurve(icu);
+			int inumkeys = Curve->GetKeyCount();
+			float ffirstkey = Curve->GetKey(0)->input;
+			float flastkey = Curve->GetKey( inumkeys-1 )->input; 
 
-			int inumchannels = Anim->GetChannelCount();
-			ColladaMatrixAnimChannel *OrkMtxAnimChannel = new ColladaMatrixAnimChannel( MtxName );
-			for( int ic=0; ic<inumchannels; ic++ )
+			if( ffirstkey<fevallo )
+				fevallo = ffirstkey;
+			if( flastkey>fevalhi )
+				fevalhi = flastkey;
+
+			printf( "chan<%s> lo<%f> hi<%f>\n", MtxName.c_str(), ffirstkey, flastkey );
+
+		}
+	}
+
+	if( fevallo<0.0f )
+		fevallo = 0.0f;
+
+	printf( "fevallo<%f> fevalhi<%f>\n", fevallo, fevalhi );
+
+	//////////////////////////
+	// sample
+	//////////////////////////
+
+	for( auto& ITEM : ValidMatrixAnimSet )
+	{
+		const std::string& MtxName = ITEM.first;
+		FCDAnimationChannel* Channel = ITEM.second;
+
+		FCDAnimation* Anim = Channel->GetParent();
+
+		ColladaMatrixAnimChannel *OrkMtxAnimChannel = new ColladaMatrixAnimChannel( MtxName );
+
+		int inumcurves = Channel->GetCurveCount();
+		assert( 16 == inumcurves );
+
+		mAnimationChannels[ MtxName ] = OrkMtxAnimChannel;
+		for( int icu=0; icu<inumcurves; icu++ )
+		{
+			FCDAnimationCurve *Curve = Channel->GetCurve(icu);
+			int inumkeys = Curve->GetKeyCount();
+			float ffirstkey = Curve->GetKey(0)->input;
+			float flastkey = Curve->GetKey( inumkeys-1 )->input; 
+			float KeyFrame = 0.0f;
+			int iframe = 0;
+			for( float fi=fevallo; fi<=fevalhi; fi+=kfsampleincrement )
 			{
-				FCDAnimationChannel  *Channel = Anim->GetChannel(ic);
-				int inumcurves = Channel->GetCurveCount();
-				if( 16 == inumcurves )
-				{
-					mAnimationChannels[ MtxName ] = OrkMtxAnimChannel;
-					for( int icu=0; icu<inumcurves; icu++ )
-					{
-						FCDAnimationCurve *Curve = Channel->GetCurve(icu);
-						int inumkeys = Curve->GetKeyCount();
-						float ffirstkey = Curve->GetKey(0)->input;
-						float flastkey = Curve->GetKey( inumkeys-1 )->input; 
-						float KeyFrame = 0.0f;
-						int iframe = 0;
-						for( float fi=ffirstkey; fi<=flastkey; fi+=kfsampleincrement )
-						{
-							KeyFrame = Curve->Evaluate( fi );
-							int irow = (icu/4);
-							int icol = (icu%4);
-							OrkMtxAnimChannel->SetParam( iframe, irow, icol, KeyFrame );
-							iframe++;
-						}
-					}
-				}
+				KeyFrame = Curve->Evaluate( fi );
+				int irow = (icu/4);
+				int icol = (icu%4);
+				OrkMtxAnimChannel->SetParam( iframe, irow, icol, KeyFrame );
+				iframe++;
 			}
 		}
 
-		////////////////////////////////////////////////
 
 	}
 
 	///////////////////////////////////
 	// make sure everone has the same number of frames!
+
+	printf( "NUMANIMCHAN<%d>\n", int(mAnimationChannels.size()));
 
 	if( mAnimationChannels.size() )
 	{
@@ -592,6 +685,8 @@ bool CColladaAnim::Parse( void )
 		{
 			ColladaAnimChannel * Channel = (*it).second;
 			int inumframes = Channel->GetNumFrames();
+
+			printf( "CHANNEL<%s> iframe<%d>\n", Channel->GetName().c_str(), inumframes );
 
 			if( knumframesref != inumframes )
 			{

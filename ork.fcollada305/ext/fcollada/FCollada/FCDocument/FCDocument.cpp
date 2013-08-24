@@ -162,8 +162,11 @@ const FCDSceneNode* FCDocument::GetVisualSceneInstance() const
 {
 	if (visualSceneRoot == NULL) return NULL;
 	const FCDEntity* entity = visualSceneRoot->GetEntity();
-	if (entity != NULL && entity->HasType(FCDSceneNode::GetClassType())) return (const FCDSceneNode*) entity;
-	else return NULL;
+	printf( "visualSceneRoot ent<%p>\n", entity );
+	if (entity != NULL && entity->HasType(FCDSceneNode::GetClassType())) 
+		return (const FCDSceneNode*) entity;
+	else
+		return NULL;
 }
 
 const FCDPhysicsScene* FCDocument::GetPhysicsSceneInstance(size_t index) const

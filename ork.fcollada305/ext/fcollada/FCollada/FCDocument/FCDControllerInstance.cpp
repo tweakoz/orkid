@@ -21,8 +21,8 @@ ImplementObjectType(FCDControllerInstance);
 ImplementParameterObjectNoCtr(FCDControllerInstance, FCDSceneNode, joints);
 
 FCDControllerInstance::FCDControllerInstance(FCDocument* document, FCDSceneNode* parent, FCDEntity::Type entityType)
-:	FCDGeometryInstance(document, parent, entityType)
-,	InitializeParameterNoArg(joints)
+	:	FCDGeometryInstance(document, parent, entityType)
+	,	InitializeParameterNoArg(joints)
 {
 }
 
@@ -115,6 +115,7 @@ void FCDControllerInstance::AppendJoint(FCDSceneNode* j)
 
 const FCDSkinController* FCDControllerInstance::FindSkin(const FCDEntity* entity) const
 {
+	assert(false);
 	if (entity != NULL && entity->GetType() == FCDEntity::CONTROLLER)
 	{
 		const FCDController* controller = (const FCDController*) entity;
@@ -133,6 +134,7 @@ void FCDControllerInstance::FindSkeletonNodes(FCDSceneNodeList& skeletonNodes) c
 	const FCDocument* document = GetDocument();
 	size_t numRoots = skeletonRoots.size();
 	skeletonNodes.reserve(numRoots);
+	printf( "numRoots<%d>\n", numRoots );
 	for (size_t i = 0; i < numRoots; ++i)
 	{
 		const FCDSceneNode* aRoot = document->FindSceneNode(TO_STRING(skeletonRoots[i].GetFragment()).c_str());
@@ -140,12 +142,17 @@ void FCDControllerInstance::FindSkeletonNodes(FCDSceneNodeList& skeletonNodes) c
 		{
 			FUError::Error(FUError::WARNING_LEVEL, FUError::WARNING_UNKNOWN_JOINT, 0);
 		}
-		else skeletonNodes.push_back(const_cast<FCDSceneNode*>(aRoot));
+		else
+		{
+			skeletonNodes.push_back(const_cast<FCDSceneNode*>(aRoot));
+		}
 	}
 
 	// If we have no root, add the visual scene root.
 	if (skeletonNodes.empty()) 
 	{
-		skeletonNodes.push_back(const_cast<FCDSceneNode*>(document->GetVisualSceneInstance()));
+		auto vizroot = const_cast<FCDSceneNode*>(document->GetVisualSceneInstance());
+		assert(vizroot!=nullptr);
+		skeletonNodes.push_back(vizroot);
 	}
 }

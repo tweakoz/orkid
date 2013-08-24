@@ -533,14 +533,27 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 
 			for( int i=0; i<numunis; i++ )
 			{
-				GLchar nambuf[256];
 				GLsizei namlen = 0;
 				GLint unisiz = 0;
 				GLenum unityp = GL_ZERO;
-				glGetActiveUniform( prgo, i, sizeof(nambuf), & namlen, & unisiz, & unityp, nambuf );
-				OrkAssert( namlen<sizeof(nambuf) );
-				GL_ERRORCHECK();
-				const auto& it=container->mUniforms.find(nambuf);
+				std::string str_name;
+				
+				{
+					GLchar nambuf[256];
+					glGetActiveUniform( prgo, i, sizeof(nambuf), & namlen, & unisiz, & unityp, nambuf );
+					OrkAssert( namlen<sizeof(nambuf) );
+					printf( "find uni<%s>\n", nambuf );
+					GL_ERRORCHECK();
+
+					str_name = nambuf;
+					auto its = str_name.find('[');
+					if( its != str_name.npos )
+					{
+						str_name = str_name.substr(0,its);
+						printf( "nnam<%s>\n", str_name.c_str() );
+					}
+				}
+				const auto& it=container->mUniforms.find(str_name);
 				OrkAssert( it!=container->mUniforms.end() );
 				GlslFxUniform* puni = it->second;
 
@@ -549,7 +562,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 				GlslFxUniformInstance* pinst = new GlslFxUniformInstance;
 				pinst->mpUniform = puni;
 
-				GLint uniloc = glGetUniformLocation( prgo, nambuf );
+				GLint uniloc = glGetUniformLocation( prgo, str_name.c_str() );
 				pinst->mLocation = uniloc;
 
 				if( puni->mTypeName == "sampler2D" )
@@ -567,7 +580,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 
 				const char* fshnam = pfrgshader->mName.c_str();
 
-				printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, nambuf, (int) uniloc );
+				printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(), (int) uniloc );
 
 				const_cast<GlslFxPass*>(container->mActivePass)->mUniformInstances[puni->mName] = pinst;
 
@@ -834,6 +847,7 @@ void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar,
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
+	assert(container->mActivePass!=nullptr);
 	const GlslFxUniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
 	if( pinst )
 	{
@@ -876,6 +890,26 @@ void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar,
 
 void GlslFxInterface::BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 * Mat, int iCount )
 {
+	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
+	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
+	const GlslFxUniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+	if( pinst )
+	{
+		int iloc = pinst->mLocation;
+		if( iloc>=0 )
+		{
+			const char* psem = puni->mSemantic.c_str();
+			const char* pnam = puni->mName.c_str();
+			GLenum etyp = puni->meType;
+			OrkAssert( etyp == GL_FLOAT_MAT4 );
+
+			//printf( "pnam<%s>\n", pnam );
+			GL_ERRORCHECK();
+			glUniformMatrix4fv( iloc, iCount, GL_FALSE, (const float*) Mat );
+			GL_ERRORCHECK();
+		}
+	}
+
 	/*GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
 	int iloc = puni->mLocation;

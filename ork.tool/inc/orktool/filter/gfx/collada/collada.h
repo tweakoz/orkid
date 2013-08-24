@@ -653,6 +653,7 @@ public:
 	{
 	}
 
+	const std::string& GetName() const { return ChannelName; }
 	virtual int GetNumFrames() const = 0;
 
 };

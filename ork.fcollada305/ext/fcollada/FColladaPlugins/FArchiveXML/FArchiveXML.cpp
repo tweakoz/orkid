@@ -720,14 +720,21 @@ bool FArchiveXML::Import(FCDocument* theDocument, xmlNode* colladaNode)
 			}
 
 			FUUri instanceUri = ReadNodeUrl(child);
+
+			printf( "nam<%s> isVisualSceneInstance<%d> instanceUri<%s>\n", child->name, int(isVisualSceneInstance), instanceUri.GetAbsoluteUri().c_str() );
 			if (instanceUri.GetFragment().empty())
 			{
+				printf( "invuri!\n");
 				FUError::Error(FUError::ERROR_LEVEL, FUError::ERROR_INVALID_URI, child->line);
 			}
 			else
 			{
-				FCDEntityReference* reference = (isVisualSceneInstance) ? theDocument->GetVisualSceneInstanceReference() : theDocument->AddPhysicsSceneInstanceReference();
+				FCDEntityReference* reference 	= (isVisualSceneInstance) 
+												? theDocument->GetVisualSceneInstanceReference() 
+												: theDocument->AddPhysicsSceneInstanceReference();
 				reference->SetUri(instanceUri);
+
+				printf( "reference<%p>\n", reference );
 				if (reference->IsLocal() && reference->GetEntity() == NULL)
 				{
 					FUError::Error(FUError::WARNING_LEVEL, FUError::WARNING_MISSING_URI_TARGET, child->line);
