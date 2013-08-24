@@ -335,6 +335,10 @@ void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGrou
 	{
 		stdtechname += "/skinned";
 	}
+	else
+	{
+		assert(false);
+	}
 
 	FCDEffectStandard::TransparencyMode transmode = ColladaMaterial.mTransparencyMode;
 

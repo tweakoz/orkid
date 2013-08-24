@@ -322,6 +322,7 @@ void CompositingComponentData::Describe()
 
 CompositingComponentData::CompositingComponentData()
 	: mbEnable(true)
+	, mToggle(true)
 	, mbOutputFrames(false)
 	, mOutputFrameRate(EOutputTimeStep_RealTime)
 	, mOutputBaseResolution(EOutputRes_1280x720)

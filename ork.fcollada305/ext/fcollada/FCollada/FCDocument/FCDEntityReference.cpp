@@ -153,9 +153,11 @@ void FCDEntityReference::LoadEntity()
 	if (!entityId.empty())
 	{
 		entity = entityDocument->FindEntity(entityId);
-		if (entity != NULL) TrackObject(entity);
+		if (entity != NULL) 
+			TrackObject(entity);
 		else
 		{
+			printf( "cannot find DaeEntityId<%s>\n", entityId.c_str() );
 			FUError::Error(FUError::ERROR_LEVEL, FUError::ERROR_INVALID_URI);
 			FUFail(return);
 		}

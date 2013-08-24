@@ -1,5 +1,6 @@
 stage
 dist
+.DS_Store
 data
 hotkeys.ork
 *dblite
@@ -11,6 +12,7 @@ hotkeys.ork
 .mayaSwatches/*
 workspace.mel
 ork.core/bin
+ork.data/*.mox
 ork.ent/bin
 ork.lev2/bin
 ork.tool/bin

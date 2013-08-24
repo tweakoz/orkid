@@ -284,6 +284,8 @@ bool CColladaModel::ParseControllers( )
 		}
 	}
 
+	printf( "NumSkinControllers<%d>\n", int(SkinControllers.size()));
+
 	const FCDVisualSceneNodeLibrary *VizLib = mDocument->GetVisualSceneLibrary();
 
 	int inumvizent( VizLib->GetEntityCount() );
@@ -307,13 +309,16 @@ bool CColladaModel::ParseControllers( )
 		NodeStack.push( prootnode );
 
 		//mSkeleton[ prootnode->GetName().c_str() ] = mSkeletonRoot;
-	
+
 		while( false == NodeStack.empty() )
 		{
 			const FCDSceneNode *pnode = NodeStack.top();
 			NodeStack.pop();
 			std::string NodeName = pnode->GetName().c_str();
 			int inumchildren = int(pnode->GetChildrenCount());		
+	
+			printf( "Node<%s> numchild<%d>\n", NodeName.c_str(), inumchildren );
+
 			for( int i=0; i<inumchildren; i++ )
 			{	
 				const FCDSceneNode *pchild = pnode->GetChild(i);

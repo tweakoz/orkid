@@ -324,8 +324,9 @@ struct GlSlFxParser
 				{
 					assert(toks[i+5].text=="]");
 					puni->mArraySize = atoi(toks[i+4].text.c_str());
-					printf( "arraysize<%d>\n", puni->mArraySize );
+					printf( "uniname<%s> arraysize<%d>\n", nam_tok.text.c_str(), puni->mArraySize );
 					i += 7;
+					//assert(false);
 				}
 				else
 				{
@@ -569,7 +570,7 @@ struct GlSlFxParser
 		pshader->mpInterface = iface;
 		///////////////////////////////////
 #if defined(USE_GL3)
-		std::string shaderbody = "#version 150 core\n";
+		std::string shaderbody = "#version 400 core\n";
 #else
 		std::string shaderbody = "#version 120\n";
 #endif
@@ -581,7 +582,16 @@ struct GlSlFxParser
 			GlslFxUniform* pu = itu->second;
 			shaderbody += "uniform ";
 			shaderbody += pu->mTypeName + " ";
-			shaderbody += pu->mName + ";\n";
+			shaderbody += pu->mName;
+
+			if( pu->mArraySize )
+			{
+				ork::FixedString<32> fxs;
+				fxs.format("[%d]", pu->mArraySize );
+				shaderbody += std::string(fxs.c_str());
+			}
+
+			shaderbody += ";\n";
 		}
 		for( GlslFxStreamInterface::AttrMap::const_iterator
 			ita=iface->mAttributes.begin();

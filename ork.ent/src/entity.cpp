@@ -35,6 +35,7 @@
 #include <pkg/ent/Compositor.h>
 #include <pkg/ent/AudioAnalyzer.h>
 #include <pkg/ent/ModelComponent.h>
+#include <pkg/ent/SimpleCharacterArchetype.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/Lighting.h>
 #include "ObserverCamera.h"
@@ -561,6 +562,7 @@ void Init()
 	BulletObjectArchetype::GetClassStatic();
 	PerfControllerArchetype::GetClassStatic();
 	PerformanceAnalyzerArchetype::GetClassStatic();
+	SimpleCharacterArchetype::GetClassStatic();
 	EntData::GetClassStatic();
 	SceneObject::GetClassStatic();
 	SceneData::GetClassStatic();

@@ -439,9 +439,11 @@ public:
 	PoolString& GetActiveScene() const { return mActiveScene; }
 	PoolString& GetActiveItem() const { return mActiveItem; }
 
-	bool IsEnabled() const { return mbEnable; }
+	bool IsEnabled() const { return mbEnable&&mToggle; }
 	bool IsOutputFramesEnabled() const { return mbOutputFrames; }
 	EOutputTimeStep OutputFrameRate() const { return mOutputFrameRate; }
+
+	void Toggle() const { mToggle=!mToggle; }
 
 private:
 
@@ -449,6 +451,7 @@ private:
 	orklut<PoolString,ork::Object*> mScenes;
 	mutable PoolString mActiveScene;
 	mutable PoolString mActiveItem;
+	mutable bool mToggle;
 	bool mbEnable;
 	bool mbOutputFrames;
 	EOutputRes mOutputBaseResolution;

@@ -26,12 +26,16 @@ namespace ork { namespace tool {
 
 bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 {
+	ork::tool::FilterOptMap options;
+	options.SetDefault( "-in" ,"yo" );
+	options.SetDefault( "-out" ,"yo" );
+	options.SetOptions( toklist );
+
+	const std::string inf = options.GetOption( "-in" )->GetValue();
+	const std::string outf = options.GetOption( "-out" )->GetValue();
+
 	ColladaExportPolicy policy;
 	policy.mUnits = UNITS_METER;
-
-	tokenlist::const_iterator it = toklist.begin();
-	const std::string& inf = *it++;
-	const std::string& outf = *it++;
 
 	bool brval = false;
 	
@@ -46,8 +50,11 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 		pendianctx->mendian = ork::EENDIAN_BIG;
 	}
 
+	printf( "inf<%s>\n", inf.c_str() );
+
 	CColladaAnim *colanim = CColladaAnim::Load( inf.c_str() );
 
+	printf( "colanim<%p>\n", colanim );
 	if( colanim )
 	{
 		int inumframes = colanim->GetNumFrames();
@@ -194,6 +201,8 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 	int inumchannels = inumjointchannels+inummaterialchannels;
 
 	int inumframes = anm->GetNumFrames();
+
+	printf( "XGAOUT inumjointchannels<%d> inumframes<%d>\n", inumchannels, inumframes );
 
 	HeaderStream->AddItem( inumframes  );
 	HeaderStream->AddItem( inumchannels );

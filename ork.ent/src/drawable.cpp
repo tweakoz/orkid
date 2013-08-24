@@ -341,7 +341,7 @@ void ModelDrawable::QueueToBuffer(DrawableBufLayer&buffer) const
 	item.mMatrix = matw;
 	item.SetDrawable(this);
 
-	//orkprintf( " ModelDrawable::QueueToBuffer() mdl<%p> \n", Model );
+	//orkprintf( " ModelDrawable::QueueToBuffer() mdl<%p> IsSkinned<%d>\n", Model, int(IsSkinned) );
 
 	if( IsSkinned )
 	{
@@ -355,6 +355,7 @@ void ModelDrawable::QueueToBuffer(DrawableBufLayer&buffer) const
 			int inumch = locpos.NumJoints();
 			for( int ich=0; ich<inumch; ich++ )
 			{
+				//orkprintf( " mdrwq2b setmtxblk ich<%d>\n", ich );
 				const CMatrix4 & MatIBind = Skeleton.RefInverseBindMatrix(ich);
 				const CMatrix4 & MatJ = Skeleton.RefJointMatrix( ich );
 				const CMatrix4& MatAnimJCat = locpos.RefLocalMatrix(ich);

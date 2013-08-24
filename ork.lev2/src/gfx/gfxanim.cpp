@@ -546,6 +546,7 @@ void XgmLocalPose::ApplyAnimInst( const XgmAnimInst& AnimInst )
 		{
 			const XgmAnimInst::Binding& binding = AnimInst.GetAnimBinding(iaidx);
 			int iskelindex = binding.mSkelIndex;
+			//printf( "iaidx<%d> iskelindex<%d> inumanimchannels<%d>\n", iaidx, iskelindex, inumanimchannels );
 			if( iskelindex != 0xffff )
 			{
 				int ichanindex = binding.mChanIndex;
@@ -553,6 +554,9 @@ void XgmLocalPose::ApplyAnimInst( const XgmAnimInst& AnimInst )
 				const DecompMtx44& AnimMtx = MtxChannelData->GetFrame(iframe);
 				EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
 				RefBlendPoseInfo(iskelindex).AddPose(AnimMtx, fweight, components);
+
+				//printf( "apply frame<%d> on iskelidx<%d>\n", iframe, iskelindex );
+
 			}
 			else
 			{
@@ -612,14 +616,27 @@ void XgmLocalPose::BuildPose( void )
 {
 #ifdef ENABLE_ANIM
 	int inumjoints = NumJoints();
+
+	static int gctr = 0;
 	for( int i=0; i<inumjoints; i++ )
 	{
-		if( mBlendPoseInfos[i].GetNumAnims() )
+		int inumanms = mBlendPoseInfos[i].GetNumAnims();
+
+		//printf( "j<%d> inumanms<%d>\n", i, inumanms );
+		if( inumanms )
 		{
 			 mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
+
+			 /*if( i == ((gctr/1000)%inumjoints) )
+			 {
+			 	ork::FixedString<64> fxs;
+			 	fxs.format( "buildpose i<%d>", i );
+			 	mLocalMatrices[i].dump((char*)fxs.c_str());
+			 }*/
 			 // TODO: Callback for after previous/current have been blended in local space
 		}
 	}
+	gctr++;
 
 	Concatenate();
 #endif
@@ -666,6 +683,7 @@ void XgmLocalPose::Concatenate( void )
 			fmaxx = CFloat::Max( fmaxx, vtrans.GetX() );
 			fmaxy = CFloat::Max( fmaxy, vtrans.GetY() );
 			fmaxz = CFloat::Max( fmaxz, vtrans.GetZ() );
+
 		}
 	}
 

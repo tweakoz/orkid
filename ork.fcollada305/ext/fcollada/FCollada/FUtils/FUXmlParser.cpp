@@ -130,15 +130,22 @@ namespace FUXmlParser
 	}
 
 	// Retrieves all the child nodes of a given type
-	void FindChildrenByType(xmlNode* parent, const char* type, xmlNodeList& nodes)
+	void FindChildrenByType(xmlNode* parent, const char* type, xmlNodeList& nodes, bool bdbg)
 	{
+	    if(bdbg)
+	    {
+	    	printf( "FindChildrenByType par<%p> typ<%s>\n", parent, type );
+	    }
 		if (parent != NULL)
 		{
 			for (xmlNode* child = parent->children; child != NULL; child = child->next)
 			{
+				if(bdbg)
+					printf( "   child<%s>\n", child->name );
 				if (child->type == XML_ELEMENT_NODE)
 				{
-					if (IsEquivalent(child->name, type)) nodes.push_back(child);
+					if (IsEquivalent(child->name, type))
+						nodes.push_back(child);
 				} 
 			}
 		}

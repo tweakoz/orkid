@@ -30,7 +30,7 @@ namespace FUXmlParser
 	// Retrieve specific child nodes
 	FCOLLADA_EXPORT xmlNode* FindChildByType(xmlNode* parent, const char* type);
 	FCOLLADA_EXPORT xmlNode* FindChildByName(xmlNode* parent, const char* name);
-	FCOLLADA_EXPORT void FindChildrenByType(xmlNode* parent, const char* type, xmlNodeList& nodes);
+	FCOLLADA_EXPORT void FindChildrenByType(xmlNode* parent, const char* type, xmlNodeList& nodes, bool bdbg=false);
 	FCOLLADA_EXPORT xmlNode* FindChildByProperty(xmlNode* parent, const char* prop, const char* val);
 	FCOLLADA_EXPORT xmlNode* FindNodeInListByProperty(xmlNodeList list, const char* property, const char* prop);
 

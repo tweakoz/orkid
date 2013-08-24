@@ -362,7 +362,8 @@ public:
 	bool						IsMeshEnabled( int index );
 	bool						IsMeshEnabled( const PoolString& ps );
 	bool						IsAnyMeshEnabled();
-
+	bool 						IsSkinned() const { return mbSkinned; }
+	void 						EnableSkinning() { mbSkinned=true; }
 
 private:
 
@@ -373,6 +374,7 @@ private:
 	XgmMaterialStateInst			mMaterialStateInst;
 	GfxMaterialFx*					mLayerFxMaterial;
 	int								miNumChannels;
+	bool							mbSkinned;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -47,8 +47,9 @@ Widget::Widget( const std::string & name, int x, int y, int w, int h )
 	, mDirty(true)
 	, mSizeDirty(true)
 	, mPosDirty(true)
-	, mEventFilter(*this)
 {
+	auto f1 = new WidgetEventFilter1(*this);
+	mEventFilterStack.push(f1);
 
 }
 
@@ -87,7 +88,12 @@ bool Widget::HasMouseFocus() const
 HandlerResult Widget::OnUiEvent( const Event& Ev )
 {
 	Ev.mFilteredEvent.Reset();
-	mEventFilter.Filter(Ev);
+
+	if( mEventFilterStack.size() )
+	{
+		auto top = mEventFilterStack.top();
+		top->Filter(Ev);
+	}
 	if( Ev.mFilteredEvent.miEventCode == 0 )
 		return HandlerResult();
 	return DoOnUiEvent(Ev);
@@ -130,7 +136,7 @@ void EventCooked::Reset()
     mAction = "";
 }
 
-WidgetEventFilter::WidgetEventFilter(Widget& w)
+IWidgetEventFilter::IWidgetEventFilter(Widget& w)
 	: mWidget(w)
 	, mShiftDown(false)
 	, mCtrlDown(false)
@@ -150,7 +156,7 @@ WidgetEventFilter::WidgetEventFilter(Widget& w)
 	mMoveTimer.Start();
 }
 
-void WidgetEventFilter::Filter( const Event& Ev )
+void IWidgetEventFilter::Filter( const Event& Ev )
 {
 	auto& fev = Ev.mFilteredEvent;
 	fev.miEventCode = Ev.miEventCode;
@@ -173,10 +179,18 @@ void WidgetEventFilter::Filter( const Event& Ev )
 	fev.mSHIFT = Ev.mbSHIFT;
 	fev.mMETA = Ev.mbMETA;
 
+	DoFilter(Ev);
+}
+void WidgetEventFilter1::DoFilter( const Event& Ev )
+{
+	auto& fev = Ev.mFilteredEvent;
+
+	fev.mAction = "none";
+
 	switch( Ev.miEventCode )
 	{	
 		case ui::UIEV_KEY:
-		{	//printf( "keydown<%d>\n", Ev.miKeyCode );
+		{	printf( "keydown<%d>\n", Ev.miKeyCode );
 
 			bool bdouble 	= (mKeyTimer.SecsSinceStart()<0.8f)
 							& (mDoubleTimer.SecsSinceStart()>1.0f)
@@ -187,7 +201,9 @@ void WidgetEventFilter::Filter( const Event& Ev )
 
 			mKeyTimer.Start();
 			switch( Ev.miKeyCode )
-			{	case 49: // 1
+			{	
+				case 122: // z
+				case 49: // 1
 					fev.miEventCode = mBut0Down ? 0 : evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
 						{} //printf( "SYNTH DOUBLECLICK\n" );
@@ -197,7 +213,9 @@ void WidgetEventFilter::Filter( const Event& Ev )
 					}
 					fev.mBut0 = true;
 					mBut0Down = true;
+					fev.mAction = "keypush";
 					break;
+				case 120: // x
 				case 50: // 2
 					fev.miEventCode = mBut1Down ? 0 : evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
@@ -208,7 +226,9 @@ void WidgetEventFilter::Filter( const Event& Ev )
 					}
 					fev.mBut1 = true;
 					mBut1Down = true;
+					fev.mAction = "keypush";
 					break;
+				case 99: // c
 				case 51: // 3
 					fev.miEventCode = mBut2Down ? 0 : evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
@@ -219,6 +239,7 @@ void WidgetEventFilter::Filter( const Event& Ev )
 					}
 					fev.mBut2 = true;
 					mBut2Down = true;
+					fev.mAction = "keypush";
 					break;
 				case Widget::keycode_shift:
 					mShiftDown = true;
@@ -246,15 +267,18 @@ void WidgetEventFilter::Filter( const Event& Ev )
 			//printf( "keyup<%d>\n", Ev.miKeyCode );
 			switch( Ev.miKeyCode )
 			{	case 49:
+				case 122: // z
 					fev.miEventCode = ui::UIEV_RELEASE;
 					fev.mBut0 = false;
 					mBut0Down = false;
 					break;
+				case 120: // x
 				case 50:
 					fev.miEventCode = ui::UIEV_RELEASE;
 					fev.mBut1 = false;
 					mBut1Down = false;
 					break;
+				case 99: // c
 				case 51:
 					fev.miEventCode = ui::UIEV_RELEASE;
 					fev.mBut2 = false;
@@ -288,6 +312,11 @@ void WidgetEventFilter::Filter( const Event& Ev )
 			break;
 		case ui::UIEV_PUSH:
 			fev.mBut0 = Ev.mbLeftButton;
+			fev.mBut1 = Ev.mbMiddleButton;
+			fev.mBut2 = Ev.mbRightButton;
+			mBut0Down = Ev.mbLeftButton;
+			mBut1Down = Ev.mbMiddleButton;
+			mBut2Down = Ev.mbRightButton;
 			mLeftDown = Ev.mbLeftButton;
 			mMiddleDown = Ev.mbMiddleButton;
 			mRightDown = Ev.mbRightButton;
@@ -295,6 +324,11 @@ void WidgetEventFilter::Filter( const Event& Ev )
 			break;
 		case ui::UIEV_RELEASE:
 			fev.mBut0 = Ev.mbLeftButton;
+			fev.mBut1 = Ev.mbMiddleButton;
+			fev.mBut2 = Ev.mbRightButton;
+			mBut0Down = Ev.mbLeftButton;
+			mBut1Down = Ev.mbMiddleButton;
+			mBut2Down = Ev.mbRightButton;
 			mLeftDown = Ev.mbLeftButton;
 			mMiddleDown = Ev.mbMiddleButton;
 			mRightDown = Ev.mbRightButton;

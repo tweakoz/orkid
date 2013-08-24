@@ -145,8 +145,11 @@ bool FArchiveXML::LoadControllerInstance(FCDObject* object, xmlNode* instanceNod
 	FCDControllerInstance* controllerInstance = (FCDControllerInstance*)object;
 
 	xmlNodeList skeletonList;
-	FUDaeParser::FindChildrenByType(instanceNode, DAE_SKELETON_ELEMENT, skeletonList);
+	FUDaeParser::FindChildrenByType(instanceNode, DAE_SKELETON_ELEMENT, skeletonList,true);
 	size_t numRoots = skeletonList.size();
+
+	printf( "numRoots<%d>\n", int(numRoots));
+	//assert(false);
 	controllerInstance->GetSkeletonRoots().resize(numRoots);
 
 	for (size_t i = 0; i < numRoots; ++i)
@@ -379,11 +382,14 @@ bool FArchiveXML::LoadPhysicsRigidConstraintInstance(FCDObject* object, xmlNode*
 bool FArchiveXML::LinkControllerInstance(FCDControllerInstance* controllerInstance)
 {
 	const FCDSkinController* skin =  FArchiveXML::FindSkinController(controllerInstance, controllerInstance->GetEntity());
+	printf( "skin<%p>\n", skin );
 	if (skin == NULL) return true;
 	FCDSkinControllerData& data = FArchiveXML::documentLinkDataMap[skin->GetDocument()].skinControllerDataMap.find(const_cast<FCDSkinController*>(skin))->second;
 
 	// Look for each joint, by COLLADA id, within the scene graph
 	size_t jointCount = skin->GetJointCount();
+
+	printf( "jointcount<%d>\n", int(jointCount) );
 	
 	FCDSceneNodeList rootNodes;
 	controllerInstance->FindSkeletonNodes(rootNodes);
@@ -400,7 +406,9 @@ bool FArchiveXML::LinkControllerInstance(FCDControllerInstance* controllerInstan
 			// Find by subId
 			for (size_t i = 0; i < numRoots; i++)
 			{
-				boneNode = (FCDSceneNode*)rootNodes[i]->FindSubId(jid);
+				auto r = rootNodes[i];
+				assert(r!=nullptr);
+				boneNode = (FCDSceneNode*)r->FindSubId(jid);
 				if (boneNode != NULL) break;
 			}
 		}

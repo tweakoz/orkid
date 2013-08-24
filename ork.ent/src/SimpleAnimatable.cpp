@@ -29,8 +29,8 @@
 
 #include <ork/lev2/gfx/gfxmodel.h>
 
-#define ANIMATE_VERBOSE					(0)
-#define PRINT_CONDITION_NAME(__name)	(ork::PieceString(__name).find("ship1") != ork::PieceString::npos)
+#define ANIMATE_VERBOSE					(1)
+#define PRINT_CONDITION_NAME(__name)	true //(ork::PieceString(__name).find("ship1") != ork::PieceString::npos)
 #define PRINT_CONDITION					(PRINT_CONDITION_NAME(GetEntity()->GetEntData().GetName()))
 #define PRINT_CONDITION_AD				(entity && PRINT_CONDITION_NAME(entity->GetEntData().GetName()))
 #if ANIMATE_VERBOSE
@@ -178,6 +178,11 @@ static void SetJointsFromExpression(orkset<int> &joints, const ork::lev2::XgmSke
 				joints.insert(skeleton.GetJointIndex(exprStr));
 		}
 	}
+	for( auto& j : joints )
+	{
+		printf( "enabled joint<%d>\n", j );
+	}
+	//assert(false);
 }
 
 SimpleAnimatableInst::SimpleAnimatableInst(const SimpleAnimatableData &data, ork::ent::Entity *pent)
@@ -185,53 +190,73 @@ SimpleAnimatableInst::SimpleAnimatableInst(const SimpleAnimatableData &data, ork
 	, mData(data)
 	, mModelInst(NULL)
 {
-	if(mData.GetAnimMaskMap().size() > 0)
-		for(SimpleAnimatableData::AnimMaskMap::const_iterator it = mData.GetAnimMaskMap().begin();
-				it != mData.GetAnimMaskMap().end(); it++)
+	auto& maskmap = mData.GetAnimMaskMap();
+	auto& animmap = mData.GetAnimationMap();
+
+	if(maskmap.size() > 0)
+		for(SimpleAnimatableData::AnimMaskMap::const_iterator it = maskmap.begin();
+				it != maskmap.end(); it++)
 			mBodyPartMap.AddSorted(it->first, new AnimBodyPart(*this));
 	else
-		mBodyPartMap.AddSorted(ork::AddPooledLiteral(""), new AnimBodyPart(*this));
+		mBodyPartMap.AddSorted(ork::AddPooledLiteral("All"), new AnimBodyPart(*this));
 
-	for(SimpleAnimatableData::AnimationMap::const_iterator it = mData.GetAnimationMap().begin();
-			it != mData.GetAnimationMap().end(); it++)
-		mAnimToMaskMap.AddSorted(it->first, orklist<BodyPartMap::iterator>());
+	for(const auto& it : animmap )
+		mAnimToMaskMap.AddSorted(it.first, orklist<BodyPartMap::iterator>());
 }
 SimpleAnimatableInst::~SimpleAnimatableInst()
 {
-	for( BodyPartMap::const_iterator it=mBodyPartMap.begin(); it!=mBodyPartMap.end(); it++ )
+	for( const auto& item : mBodyPartMap )
 	{
-		AnimBodyPart* part = it->second;
+		AnimBodyPart* part = item.second;
 		delete part;
 	}
 }
 
 bool SimpleAnimatableInst::DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world)
 {
+	const auto& amap = mData.GetAnimationMap();
+	auto nam = AddPooledLiteral("start");
+	auto it = amap.find(nam);
+	if( it!=amap.end() )
+	{
+		PlayAnimation(nam);
+	}
+
 	return true;
 }
 
 bool SimpleAnimatableInst::DoLink(ork::ent::SceneInst *psi)
 {
-	ork::ent::ModelComponentInst *modelcinst = GetEntity()->GetTypedComponent<ork::ent::ModelComponentInst>();
+	auto modelcinst = GetEntity()->GetTypedComponent<ork::ent::ModelComponentInst>();
 	
-	if( 0 == modelcinst) return false;
+	if( nullptr == modelcinst) return false;
 
-	ork::ent::ModelDrawable &mdraw = modelcinst->GetModelDrawable();
+	auto& mdraw = modelcinst->GetModelDrawable();
 	mModelInst = mdraw.GetModelInst();
+
 	if(mModelInst)
 	{
+		const auto& skel = mModelInst->GetXgmModel()->RefSkel();
+
+		const auto& mask_map = mData.GetAnimMaskMap();
 		// Cache joints from masks
 		if(mData.GetAnimMaskMap().size() > 0)
-			for(SimpleAnimatableData::AnimMaskMap::const_iterator it = mData.GetAnimMaskMap().begin();
-					it != mData.GetAnimMaskMap().end(); it++)
-				SetJointsFromExpression(mBodyPartMap.find(it->first)->second->mCachedJoints
-					, mModelInst->GetXgmModel()->RefSkel(), &mData, it->second);
+		{	for(auto it : mask_map )
+			{
+				const auto& nam = it.first;
+				const auto& expr = it.second;
+				auto& joint_set = mBodyPartMap.find(nam)->second->mCachedJoints; 
+
+				SetJointsFromExpression(joint_set, skel, &mData, expr);
+			}
+		}
 		else
 		{
-			SimpleAnimatableInst::BodyPartMap::const_iterator it = mBodyPartMap.begin();
-			SetJointsFromExpression(it->second->mCachedJoints, mModelInst->GetXgmModel()->RefSkel()
-				, &mData, sAsteriskString);
+			auto it = mBodyPartMap.begin();
+			SetJointsFromExpression(it->second->mCachedJoints, skel, &mData, sAsteriskString);
 		}
+
+		mModelInst->EnableSkinning();
 	}
 
 	return true;
@@ -636,7 +661,7 @@ bool SimpleAnimatableInst::AnimDataUpdate(AnimData &data, float delta, ork::lev2
 			data.mAnimSeqTable->NotifyListener(oldframe, frame, entity);
 	}
 
-	DEBUG_ANIMATE_PRINT_AD("frame %f\n", frame);
+	//DEBUG_ANIMATE_PRINT_AD("frame %f\n", frame);
 	data.SetFrame(frame);
 
 	// Apply the previous anim to the model using its weight
@@ -669,27 +694,32 @@ void SimpleAnimatableInst::DoUpdate(ork::ent::SceneInst *inst)
 
 		for(BodyPartMap::iterator itmask = mBodyPartMap.begin(); itmask != mBodyPartMap.end(); itmask++)
 		{
+			const auto& part_name = itmask->first;
+
 			bool finish = false;
 
-			if(itmask->second->mCurrentAnimData.AnimInst().GetAnim() && itmask->second->mCurrentAnimData.AnimInst().GetNumFrames())
+			auto& the_animdat = itmask->second->mCurrentAnimData;
+			auto& the_animinst = itmask->second->mCurrentAnimData.AnimInst();
+
+			if(	the_animinst.GetAnim() && the_animinst.GetNumFrames())
 			{
 				// if current anim is valid, animate the weight
-				if(itmask->second->mCurrentAnimData.AnimInst().GetWeight() < 1.0f)
+				if(the_animinst.GetWeight() < 1.0f)
 				{
-					float weight = itmask->second->mCurrentAnimData.AnimInst().GetWeight() + itmask->second->mInterpSpeed * dt;
+					float weight = the_animinst.GetWeight() + itmask->second->mInterpSpeed * dt;
 					if(weight >= 1.0f)
-						itmask->second->mCurrentAnimData.SetWeight(1.0f);
+						the_animdat.SetWeight(1.0f);
 					else
-						itmask->second->mCurrentAnimData.SetWeight(weight);
+						the_animdat.SetWeight(weight);
 				}
 
 				// update current anim (weight is always greater than zero for current anim)
-				finish = AnimDataUpdate(itmask->second->mCurrentAnimData, dt, mModelInst, GetEntity());
+				finish = AnimDataUpdate(the_animdat, dt, mModelInst, GetEntity());
 
 				DEBUG_ANIMATE_PRINT("Current Anim: %s anim is on mask %s at frame %g with weight %g on entity %s\n",
-					itmask->second->mCurrentAnimData.mName.c_str(),
+					the_animdat.mName.c_str(),
 					strlen(itmask->first.c_str()) ? itmask->first.c_str() : "<fullbody>",
-					itmask->second->mCurrentAnimData.GetFrame(), itmask->second->mCurrentAnimData.GetWeight(),
+					the_animdat.GetFrame(), the_animdat.GetWeight(),
 					GetEntity()->GetEntData().GetName().c_str());
 			}
 

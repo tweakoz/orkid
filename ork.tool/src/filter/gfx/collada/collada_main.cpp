@@ -63,14 +63,15 @@ CColladaAsset::EAssetType CColladaAsset::GetAssetType( const AssetPath & fname )
 	size_t isize = 0;
 	ColladaFile.GetLength(isize);
 	printf( "ColladaFile<%s> Size<%d>\n", fname.c_str(), int(isize) );
-	OrkAssert( isize >= 1024 );
-	char buffer[1024];
-	ColladaFile.Read( (void*) buffer, 1024 );
-	buffer[1023] = 0;
+	//OrkAssert( isize >= 1024 );
+	char* buffer = new char[isize+1];
+	ColladaFile.Read( (void*) buffer, isize );
+	buffer[isize] = 0;
 	etype = CColladaAsset::ECOLLADA_MODEL;
 	const char* AnimEq0 = strstr( buffer, "exportAnimations=0" );
 	const char* AnimEq1 = strstr( buffer, "exportAnimations=1" );
-	if( AnimEq1 )
+	const char* AnimEq2 = strstr( buffer, "library_animations" );
+	if( AnimEq1 || AnimEq2 )
 	{
 		etype = CColladaAsset::ECOLLADA_ANIM;
 	}
@@ -100,7 +101,7 @@ bool CColladaAsset::LoadDocument(const AssetPath& fname)
 
 	if(ColladaExportPolicy::GetContext() && ColladaExportPolicy::GetContext()->mUnits != UNITS_ANY)
 	{
-		if(ColladaExportPolicy::GetContext()->mUnits == UNITS_METER
+		/*if(ColladaExportPolicy::GetContext()->mUnits == UNITS_METER
 				&& std::string("meter") != UnitName)
 		{
 			orkerrorlog("ERROR: Units must be in meters! Set your Maya preferences accordingly. (%s)\n", fname.c_str());
@@ -114,7 +115,7 @@ bool CColladaAsset::LoadDocument(const AssetPath& fname)
 
 			FCollada::Release();
 			return false;
-		}
+		}*/
 	}
 	FCollada::Release();
 	return bok;
@@ -200,15 +201,22 @@ CColladaAnim *CColladaAnim::Load(const AssetPath &fname)
 
 	bool bok = Anim->LoadDocument( fname );
 
+	assert( bok );
+
 	bok &= (CColladaAsset::ECOLLADA_ANIM==Anim->meAssetType);
 
 	if( bok )
 	{
 		FCDAnimationLibrary *AnimLib = Anim->mDocument->GetAnimationLibrary();
+		printf( "AnimLib<%p>\n", AnimLib );
+		assert(AnimLib!=nullptr);
 		bok = Anim->Parse();
 		bok = Anim->GetPose();
 	}
-
+	else
+	{
+		printf( "Not an AnimAsset!\n" );
+	}
 	if( false == bok )
 	{
 		delete Anim;

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENT_BASICMODELARCH_H_
-#define _ORK_ENT_BASICMODELARCH_H_
+#pragma once 
 
 #include <pkg/ent/component.h>
 #include <pkg/ent/componenttable.h>
@@ -111,4 +110,3 @@ public:
 
 } }
 
-#endif
