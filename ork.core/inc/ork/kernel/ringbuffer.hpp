@@ -20,20 +20,8 @@
 
 #pragma once
 
-#include <tbb/atomic.h>
+#include <ork/kernel/atomic.h>
 #include <unistd.h>
-
-#if 1 // relaxed mem consistency model (~50% faster than MSC)
-#define MemFullFence tbb::full_fence
-#define MemRelaxed tbb::relaxed
-#define MemAcquire tbb::acquire
-#define MemRelease tbb::release
-#else // memory sequential consistent 
-#define MemFullFence tbb::full_fence
-#define MemRelaxed tbb::full_fence
-#define MemAcquire tbb::full_fence
-#define MemRelease tbb::full_fence
-#endif
 
 namespace ork {
 
@@ -61,7 +49,7 @@ private:
 
 	struct cell_t
 	{
-		tbb::atomic<size_t>   mSequence;
+		ork::atomic<size_t>   mSequence;
 		T                     mData;
 	};
 
@@ -69,9 +57,9 @@ private:
 	cell_t  		        mCellBuffer[max_items];
 	const size_t            kBufferMask;
 	cacheline_pad_t         mPAD1;
-	tbb::atomic<size_t>     mEnqueuePos;
+	ork::atomic<size_t>     mEnqueuePos;
 	cacheline_pad_t         mPAD2;
-	tbb::atomic<size_t>     mDequeuePos;
+	ork::atomic<size_t>     mDequeuePos;
 	cacheline_pad_t         mPAD3;
 
 }; 
@@ -89,7 +77,7 @@ MpMcRingBuf<T,max_items>::MpMcRingBuf()
 
 	const bool is_size_power_of_two = (max_items >= 2) && ((max_items & (max_items - 1)) == 0);
 	static_assert(is_size_power_of_two,"max_items must be a power of two");
-	static_assert(sizeof(tbb::atomic<size_t>)==sizeof(size_t),"yo");
+	static_assert(sizeof(ork::atomic<size_t>)==sizeof(size_t),"yo");
 	//static_assert(1==2,"one must be equal to one");
 	for (size_t i=0; i<max_items; i++ )
 	{
@@ -111,7 +99,7 @@ MpMcRingBuf<T,max_items>::MpMcRingBuf(const MpMcRingBuf&oth)
 	for (size_t i=0; i<bufsize; i++ )
 	{
 		const cell_t& src_cell = oth.mCellBuffer[i];
-		cell_t& dst_cell = oth.mCellBuffer[i];
+		cell_t& dst_cell = mCellBuffer[i];
 		dst_cell = src_cell;
 	}
 	mEnqueuePos = oth.mEnqueuePos;

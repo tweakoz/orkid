@@ -16,7 +16,7 @@
                                                     <item key='a'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Cells' id='4'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>50 -60</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='5'>
                                                                     </object>
@@ -99,14 +99,14 @@
                                                     <item key='g'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Global' id='16'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>-60 -60</property>
                                                             </object>
                                                         </reference>
                                                     </item>
                                                     <item key='x'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Octaves' id='17'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>50 50</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='18'>
                                                                     </object>
@@ -202,7 +202,7 @@
                                                     <item key='z'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Kaled' id='36'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>-60 50</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='37'>
                                                                     </object>

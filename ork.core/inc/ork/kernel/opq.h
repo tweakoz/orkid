@@ -12,7 +12,7 @@
 #include <ork/util/Context.h>
 
 
-#include <tbb/atomic.h>
+#include <ork/kernel/atomic.h>
 
 #include "mutex.h"
 #include "semaphore.h"
@@ -73,7 +73,7 @@ struct OpqSynchro
 	void WaitOnCondition(const IOpqSynchrComparison& comparator); // wait til mOpCounter changes
 	int NumOps() const;
 
-	tbb::atomic<int> 				mOpCounter;
+	ork::atomic<int> 				mOpCounter;
 	std::condition_variable			mOpWaitCV;
 	std::mutex 						mOpWaitMtx;
 
@@ -105,8 +105,8 @@ struct OpGroup
 	////////////////////////////////
 
 	MpMcBoundedQueue<Op,4096> 		mOps;
-	tbb::atomic<int>			 	mOpsInFlightCounter;
-	tbb::atomic<int>			 	mOpSerialIndex;
+	ork::atomic<int>			 	mOpsInFlightCounter;
+	ork::atomic<int>			 	mOpSerialIndex;
 
 	OpqSynchro						mSynchro;
 
@@ -138,8 +138,8 @@ struct Opq
 	bool Process();
 
 	OpGroup* 					mDefaultGroup;
-	//tbb::atomic<int>			 mOpCounter;
-	tbb::atomic<int>			 mGroupCounter;
+	//ork::atomic<int>			 mOpCounter;
+	ork::atomic<int>			 mGroupCounter;
 
 	OpqSynchro						mSynchro;
 
@@ -148,7 +148,7 @@ struct Opq
 	ork::semaphore mSemaphore;
 
 	bool mbGoingDown;
-	tbb::atomic<int> mThreadsRunning;
+	ork::atomic<int> mThreadsRunning;
 	std::string mName;
 };
 

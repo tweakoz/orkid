@@ -8,7 +8,6 @@
 #pragma once
 
 #include <ork/kernel/kernel.h>
-#include <tbb/tbb.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -19,8 +18,8 @@ float get_sync_time();
 
 struct Timer
 {
-    tbb::tick_count mStartTime;
-    tbb::tick_count mEndTime;
+    float mStartTime;
+    float mEndTime;
 
     void Start();
     void End();
@@ -41,6 +40,8 @@ void PerfMarkerPush( const char* str );
 bool PerfMarkerPop( PerfItem2& outmkr );
 void PerfMarkerEnable();
 void PerfMarkerDisable();
+void PerfMarkerPushState();
+void PerfMarkerPopState();
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace lev2 { class GfxTarget; }

@@ -132,8 +132,8 @@ public:
 	int												miReadCount;
 	//mutable ork::recursive_mutex					mBufferMutex;
 	orkset<PoolString>								mLayers;
-	static tbb::concurrent_queue<RenderSyncToken>	mOfflineRenderSynchro;	
-	static tbb::concurrent_queue<RenderSyncToken>	mOfflineUpdateSynchro;	
+	static ork::MpMcBoundedQueue<RenderSyncToken>	mOfflineRenderSynchro;	
+	static ork::MpMcBoundedQueue<RenderSyncToken>	mOfflineUpdateSynchro;	
 	SceneDrawLayerData								mSDLD;
 
 	void Reset();

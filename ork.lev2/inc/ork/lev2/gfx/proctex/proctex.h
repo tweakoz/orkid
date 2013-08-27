@@ -16,7 +16,7 @@
 #include <ork/math/multicurve.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/lev2_asset.h>
-#include <tbb/concurrent_queue.h>
+#include <ork/kernel/concurrent_queue.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -302,8 +302,8 @@ struct ProcTexContext
 	Buffer& GetBuffer32(int edest); 
 	Buffer& GetBuffer64(int edest); 
 	lev2::GfxTarget*						mTarget;
-	static tbb::concurrent_queue<Buffer*>	gBuf32Q;
-	static tbb::concurrent_queue<Buffer*>	gBuf64Q;
+	static ork::MpMcBoundedQueue<Buffer*>	gBuf32Q;
+	static ork::MpMcBoundedQueue<Buffer*>	gBuf64Q;
 
 	static Buffer* AllocBuffer32();
 	static Buffer* AllocBuffer64();

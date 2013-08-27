@@ -46,6 +46,8 @@ void EditorMainWindow::OpenSceneFile()
 {
 	ork::AssertOnOpQ2( MainThreadOpQ() );
 
+	PerfMarkerPushState();
+	PerfMarkerDisable();
 
 	std::string oldpth;// = GetRecentSceneFile(SCENEFILE_DIR);
 	const char* oldnam = oldpth.c_str();
@@ -53,6 +55,8 @@ void EditorMainWindow::OpenSceneFile()
 	QString FileName = QFileDialog::getOpenFileName(NULL, "Load OrkidScene File", oldnam, "OrkSceneFile (*.mox *.mob)");
 	gUpdateStatus.SetState(EUPD_START);
 	std::string fname = FileName.toAscii().data();
+	PerfMarkerPopState();
+	
 	if(fname.length()==0)
 		return;
 

@@ -519,12 +519,13 @@ void CgFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, c
 	GL_ERRORCHECK();
 }
 
-void CgFxInterface::BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 * Mat, int iCount )
+void CgFxInterface::BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4* pmtxblock, int iCount )
 {
 	if( 0 == hpar ) return; 
 	CgFxContainer* container = static_cast<CgFxContainer*>( hfx->GetInternalHandle() );
 	CGeffect cgeffect = container->mCgEffect;
 	CGparameter cgparam = reinterpret_cast<CGparameter>(hpar->GetPlatformHandle());
+	cgGLSetMatrixParameterArrayfr( cgparam, 0, iCount, (const float*) pmtxblock );
 	GL_ERRORCHECK();
 }
 

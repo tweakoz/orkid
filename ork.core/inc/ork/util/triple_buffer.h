@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include <tbb/atomic.h>
-#include <tbb/concurrent_queue.h>
+#include <ork/kernel/atomic.h>
+#include <ork/kernel/concurrent_queue.h>
 #include <assert.h>
 #include <unistd.h>
 
@@ -234,6 +234,6 @@ private:
 	private: // 
 	/////////////////////////////
 	T* mValues[3]; 						
-	tbb::atomic<int> mState;	
+	ork::atomic<int> mState;	
 };
 

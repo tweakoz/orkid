@@ -33,8 +33,7 @@
 #include <type_traits>
 #include <new>
 
-#include <tbb/atomic.h>
-#include <tbb/tick_count.h>
+#include <ork/kernel/atomic.h>
 
 namespace ork {
 
@@ -201,8 +200,8 @@ public:
 	//////////////////////////////////////////////////////////////
 private:
 	char					 mbuffer[ksize];
-	tbb::atomic<destroyer_t> mDestroyer;
-	tbb::atomic<copier_t>    mCopier;
+	ork::atomic<destroyer_t> mDestroyer;
+	ork::atomic<copier_t>    mCopier;
 	const std::type_info*	 mtinfo;
 	//////////////////////////////////////////////////////////////
 };

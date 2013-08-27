@@ -68,6 +68,7 @@ libblock ptex_tools
 		ts.x = int(fts.x);
 		ts.y = int(fts.y);
 		vec4 r = texelFetch(s,ts,0);
+		//vec4 r = texture(s,uv);
 		return r;
 	}
 
@@ -84,7 +85,8 @@ libblock ptex_tools
 
 	vec3 compnormal( vec2 fuv ) 
 	{
-		float kidiv = 1.0/User0.w;
+		//float kidiv = 1.0/User0.w;
+		float kidiv = 0.25/User0.w;
 
 		float fU = fuv.x;
 		float fV = fuv.y;

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_DFLOW_RENDER_GRAPH_H
-#define _ORK_DFLOW_RENDER_GRAPH_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -14,9 +13,6 @@
 //#include <D2d1.h>
 #include <ork/math/frustum.h>
 #include <unordered_map>
-//#include <tbb/atomic.h>
-//#include <tbb/concurrent_hash_map.h>
-//#include <tbb/concurrent_queue.h>
 #include <ork/kernel/thread_pool.h>
 #include <ork/gfx/radixsort.h>
 #include <ork/math/misc_math.h>
@@ -674,4 +670,3 @@ private:
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif

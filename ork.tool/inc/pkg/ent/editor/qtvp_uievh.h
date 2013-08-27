@@ -10,7 +10,7 @@
 #include <orktool/qtui/uitoolhandler.h>
 #include <pkg/ent/editor/qtui_scenevp.h>
 #include <ork/kernel/opq.h>
-#include <tbb/atomic.h>
+#include <ork/kernel/atomic.h>
 
 namespace ork { namespace ent {
 	
@@ -60,7 +60,7 @@ struct DeferredPickOperationContext
 	SceneEditorVPToolHandler*	mHandler;
 	SceneEditorVP*				mViewport;
 	on_pick_lambda_t 			mOnPick;
-	tbb::atomic<int>			mState;
+	ork::atomic<int>			mState;
 };
 
 struct TestVPDefaultHandler : public SceneEditorVPToolHandler
