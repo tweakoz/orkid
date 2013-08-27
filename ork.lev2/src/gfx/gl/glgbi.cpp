@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <ork/lev2/ui/ui.h>
 //#include <ork/lev2/gfx/modeler/modeler_base.h>
-#include <tbb/concurrent_queue.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +63,7 @@ void GfxTargetGL::TakeThreadOwnership()
 struct GlVtxBufMapPool;
 struct GlVtxBufMapData;
 
-typedef tbb::concurrent_queue<GlVtxBufMapData*> vtxbufmapdata_q_t;
+typedef ork::MpMcBoundedQueue<GlVtxBufMapData*> vtxbufmapdata_q_t;
 
 ///////////////////////////////////////////////////////////
 
@@ -104,9 +103,10 @@ struct GlVtxBufMapPool
 		int potsize = 1;
 		while(potsize<isize) potsize<<=1;
 		assert(potsize>=isize);
-		auto it = mVbmdMaps.find(potsize);
+		std::map<int,vtxbufmapdata_q_t>::iterator it = mVbmdMaps.find(potsize);
 		if( it==mVbmdMaps.end() )
-		{	mVbmdMaps.insert(std::make_pair(potsize,vtxbufmapdata_q_t()));
+		{	vtxbufmapdata_q_t q;
+			mVbmdMaps.insert(std::make_pair(potsize,q));
 			it = mVbmdMaps.find(potsize);
 		}
 		vtxbufmapdata_q_t& q = it->second;
@@ -118,7 +118,7 @@ struct GlVtxBufMapPool
 
 ///////////////////////////////////////////////////////////
 
-static tbb::concurrent_queue<GlVtxBufMapPool*> gBufMapPool;
+static ork::MpMcBoundedQueue<GlVtxBufMapPool*> gBufMapPool;
 
 static GlVtxBufMapPool* GetBufMapPool()
 {
@@ -718,10 +718,10 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			glTexCoordPointer( 2, GL_FLOAT,	iStride, (void*) 24 );	// T8
 
 			glEnableClientState( GL_COLOR_ARRAY );
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 32 );	// T8
+			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 32 );	// I4
 
 			glEnableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glSecondaryColorPointer( 3, GL_UNSIGNED_BYTE, iStride, (void*) 36 );	// T8
+			glSecondaryColorPointer( 3, GL_UNSIGNED_BYTE, iStride, (void*) 36 );	// W4
 
 			glClientActiveTextureARB(GL_TEXTURE2);
 			glDisableClientState( GL_TEXTURE_COORD_ARRAY );

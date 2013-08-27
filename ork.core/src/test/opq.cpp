@@ -32,8 +32,8 @@ TEST(opq_maxinflight)
         auto gopg1 = gopq1->CreateOpGroup("g1");
         gopg1->mLimitMaxOpsInFlight = kopqconcurr;
 
-        tbb::atomic<int> ops_in_flight;
-        tbb::atomic<int> counter;
+        ork::atomic<int> ops_in_flight;
+        ork::atomic<int> counter;
         ops_in_flight = 0;
         counter = 0;
 

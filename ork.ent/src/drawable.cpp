@@ -37,8 +37,8 @@ extern bool USE_THREADED_RENDERER;
 
 namespace ork { namespace ent {
 
-tbb::concurrent_queue<RenderSyncToken> DrawableBuffer::mOfflineRenderSynchro;
-tbb::concurrent_queue<RenderSyncToken> DrawableBuffer::mOfflineUpdateSynchro;
+ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineRenderSynchro;
+ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineUpdateSynchro;
 
 concurrent_triple_buffer<DrawableBuffer> DrawableBuffer::gBuffers;
 

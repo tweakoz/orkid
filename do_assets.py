@@ -24,7 +24,7 @@ def exp_actor( actnam ):
 #exp_anim("Diver", "walk")
 #exp_anim("Diver", "jump")
 #exp_anim("Diver", "run")
-exp_anim("houdtest", "a1")
+#exp_anim("houdtest", "a1")
 
-#exp_actor("Diver")
+exp_actor("Diver")
 #exp_actor("houdtest")

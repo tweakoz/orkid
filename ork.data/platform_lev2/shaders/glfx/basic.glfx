@@ -130,8 +130,6 @@ libblock skin_tools
 		float w2 = wghts.y;
 		float w3 = wghts.x;
 
-		float wt = (w0+w1+w2+w3)*0.5;
-
 		vec3 WeightedVertex =	((BoneMatrices[i0]*Pos4)*w0).xyz;
 		WeightedVertex += 		((BoneMatrices[i1]*Pos4)*w1).xyz;
 		WeightedVertex +=		((BoneMatrices[i2]*Pos4)*w2).xyz;

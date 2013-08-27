@@ -46,8 +46,8 @@ template<> const ork::proctex::ImgBase& outplug<ork::proctex::ImgBase>::GetValue
 namespace ork { namespace proctex {
 
 Img32 ImgModule::gNoCon;
-tbb::concurrent_queue<Buffer*>	ProcTexContext::gBuf32Q;
-tbb::concurrent_queue<Buffer*>	ProcTexContext::gBuf64Q;
+ork::MpMcBoundedQueue<Buffer*>	ProcTexContext::gBuf32Q;
+ork::MpMcBoundedQueue<Buffer*>	ProcTexContext::gBuf64Q;
 
 ///////////////////////////////////////////////////////////////////////////////
 Buffer::Buffer(ork::lev2::EBufferFormat efmt)

@@ -7,7 +7,6 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/qtui/qtui.h>
-#include <tbb/tbb.h>
 
 #if defined( ORK_CONFIG_OPENGL ) && defined( LINUX ) 
 
@@ -29,7 +28,7 @@ extern "C"
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-tbb::concurrent_queue<void*> GfxTargetGL::mLoadTokens;
+ork::MpMcBoundedQueue<void*> GfxTargetGL::mLoadTokens;
 
 struct GlIxPlatformObject
 {
@@ -68,7 +67,7 @@ Display* GlIxPlatformObject::gDisplay = nullptr;
 GLXContext GlIxPlatformObject::gShareMaster = nullptr;
 GLXFBConfig* GlIxPlatformObject::gFbConfigs = nullptr;
 XVisualInfo* GlIxPlatformObject::gVisInfo = nullptr;
-static tbb::atomic<int> atomic_init;
+static ork::atomic<int> atomic_init;
 int g_rootwin = 0;
 ///////////////////////////////////////////////////////////////////////////////
 

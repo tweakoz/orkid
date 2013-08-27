@@ -16,7 +16,7 @@
                                                     <item key='a'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Cells' id='4'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>0 -100</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='5'>
                                                                     </object>
@@ -39,7 +39,7 @@
                                                                 <property name='SeedB'>260</property>
                                                                 <property name='SeedLerp'>
                                                                     <object type='dflow/inplugxf<float,floatxf>' id='8'>
-                                                                        <property name='value'>1</property>
+                                                                        <property name='value'>0</property>
                                                                         <property name='xf'>
                                                                             <object type='dflow/floatxf' id='9'>
                                                                                 <property name='Transforms'>
@@ -99,7 +99,7 @@
                                                     <item key='b'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Kaled' id='16'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>100 -100</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='17'>
                                                                     </object>
@@ -241,7 +241,7 @@
                                                     <item key='d'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::H2N' id='44'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>-90 0</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='45'>
                                                                     </object>
@@ -267,7 +267,7 @@
                                                     <item key='e'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Gradient' id='49'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>100 0</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='50'>
                                                                     </object>
@@ -293,7 +293,7 @@
                                                     <item key='f'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::SphMap' id='52'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>0 100</property>
                                                                 <property name='ImgOut'>
                                                                     <object type='proctex::OutImgPlug' id='53'>
                                                                     </object>
@@ -323,7 +323,7 @@
                                                     <item key='g'>
                                                         <reference category='ObjectClass'>
                                                             <object type='proctex::Global' id='58'>
-                                                                <property name='mgvpos'>0 0</property>
+                                                                <property name='mgvpos'>-100 -100</property>
                                                             </object>
                                                         </reference>
                                                     </item>
@@ -348,10 +348,10 @@
                                     <object type='EditorCamControllerData' id='60'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='61'>
-                                                <property name='Center'>0 0 0</property>
+                                                <property name='Center'>-1.12126 -0.179087 -0.404116</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>6.90766</property>
-                                                <property name='QuatC'>-0.0204712 -0.997728 -0.0641722 -0.00132786</property>
+                                                <property name='Loc'>1.73413</property>
+                                                <property name='QuatC'>0.0262685 0.812292 0.582375 0.0183232</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>

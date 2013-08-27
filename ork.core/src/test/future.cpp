@@ -25,7 +25,7 @@ TEST(OrkFuture)
     Opq the_opq(1);
 
 	Future the_future;
-	tbb::atomic<int> gcounter;
+	ork::atomic<int> gcounter;
 	gcounter = 0;
 	for( int i=0; i<100; i++ )
 	{

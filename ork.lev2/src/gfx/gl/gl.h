@@ -71,7 +71,7 @@
 
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/rtgroup.h>
-#include <tbb/concurrent_queue.h>
+#include <ork/kernel/concurrent_queue.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -471,7 +471,7 @@ protected:
 	#endif
 	//////////////////////////////////////////////
 
-	static tbb::concurrent_queue<void*> mLoadTokens;
+	static ork::MpMcBoundedQueue<void*> mLoadTokens;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Rendering State Info

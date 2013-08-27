@@ -20,6 +20,8 @@
 //#define USE_STD_MUTEX
 #endif
 
+#include <ork/kernel/atomic.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(USE_STD_MUTEX)
 #include <condition_variable>
@@ -29,14 +31,11 @@
 #include <tbb/compat/condition_variable>
 #include <tbb/mutex.h>
 #include <tbb/recursive_mutex.h>
-#include <tbb/atomic.h>
 namespace std
 {
     typedef tbb::mutex mutex;
 #if defined(ORK_OSX)
 	template <typename T> using unique_lock = tbb::interface5::unique_lock<T>;
-#else
-	template <typename T> using atomic = tbb::atomic<T>;
 #endif
 }
 #endif

@@ -165,7 +165,7 @@ public:
 
 protected:
 
-	tbb::atomic<int>								mRenderLock;
+	ork::atomic<int>								mRenderLock;
 
 	//lev2::CPickBuffer<SceneEditorVP>*				mpPickBuffer;
 	int												miPickDirtyCount;

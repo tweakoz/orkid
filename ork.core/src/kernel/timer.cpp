@@ -23,7 +23,6 @@
 #include <sys/time.h>
 #include <ork/kernel/mutex.h>
 #include <sched.h>
-#include <tbb/tick_count.h>
 #endif
 //////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/kernel.h>
@@ -34,26 +33,28 @@
 #include <cmath>
 namespace ork {
 
+float get_sync_time();
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void Timer::Start()
 {
-    mStartTime = tbb::tick_count::now();
+    mStartTime = get_sync_time();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void Timer::End()
 {
-    mEndTime = tbb::tick_count::now();
+    mEndTime = get_sync_time();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 float Timer::InternalSecsSinceStart() const
 {
-    tbb::tick_count now = tbb::tick_count::now();
-    return float((now-mStartTime).seconds());
+    float now = get_sync_time();
+    return (now-mStartTime);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,7 +69,7 @@ float Timer::SecsSinceStart() const
 
 float Timer::SpanInSecs() const
 {
-    return float((mEndTime-mStartTime).seconds());
+    return (mEndTime-mStartTime);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,33 +113,69 @@ float get_sync_time()
 #endif
 }
 
-static ork::ConcurrentQueue<PerfItem2> gpiq;
-static bool gpmena = false;
+static ork::MpMcBoundedQueue<PerfItem2,1024> gpiq;
+
+static bool gmena = false;
+
+typedef std::stack<bool> perf_ena_stack_t;
+
+static ork::LockedResource<perf_ena_stack_t> gPES;
+
+
+void PerfMarkerPushState()
+{
+	perf_ena_stack_t& pes = gPES.LockForWrite();
+	pes.push(gmena);
+	gPES.UnLock();
+}
+void PerfMarkerPopState()
+{
+	perf_ena_stack_t& pes = gPES.LockForWrite();
+	gmena = pes.top();
+	pes.pop();
+	gPES.UnLock();
+}
 
 void PerfMarkerEnable()
 {
-	gpmena = true;
+	gmena = true;
 }
 void PerfMarkerDisable()
 {
-	gpmena = false;
+	gmena = false;
 }
+
+ork::atomic<int> gctr;
 
 void PerfMarkerPush( const char* mkrname )
 {
-	if( gpmena )
+	if( gmena )
 	{
 		f32	ftime = CSystem::GetRef().GetLoResTime();
 		PerfItem2 pi;
 		pi.mpMarkerName = mkrname;
 		pi.mfMarkerTime = ftime;
-		gpiq.push( pi );
+		if( gpiq.try_push( pi ) )
+		{
+			gctr++;
+
+			printf( "gctr<%d>\n", int(gctr) );
+		}
 	}
 }
 bool PerfMarkerPop( PerfItem2& outmkr )
 {
-	return gpmena ? gpiq.try_pop( outmkr ) : false;
-}
+	bool rval = false;
+
+	if( gmena )
+	{
+		rval = gpiq.try_pop( outmkr );
+		if( rval )
+			gctr--;
+
+	}
+	return rval;
+}	
 
 
 #if defined(_DARWIN) || defined(IX)//( _BUILD_LEVEL <= _CONSOLE_BUILD_LEVEL ) || defined( _LINUX ) || defined( _OSX )
@@ -265,17 +302,7 @@ S64 CSystem::ClockCyclesToMicroSeconds(S64 cycles)
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////
-#if defined( IX )
-///////////////////////////////////////////////
-f32	CSystem::GetLoResTime( void )
-{
-	static tbb::tick_count zed = tbb::tick_count::now();
-	tbb::tick_count tc = tbb::tick_count::now();
-    float fsecs = float((tc-zed).seconds());
-    return fsecs;
-}
-///////////////////////////////////////////////
-#elif defined( _DARWIN )
+#if defined( _DARWIN )
 ///////////////////////////////////////////////
 f32	CSystem::GetLoResTime( void )
 {
@@ -290,6 +317,16 @@ f32	CSystem::GetLoResTime( void )
     uint64_t machtime_cur = mach_absolute_time();
     double millis = double(machtime_cur-gmachtime_ref) * resolution;
 	return float(millis*0.001);
+}
+///////////////////////////////////////////////
+#elif defined( IX )
+///////////////////////////////////////////////
+f32	CSystem::GetLoResTime( void )
+{
+	static tbb::tick_count zed = tbb::tick_count::now();
+	tbb::tick_count tc = tbb::tick_count::now();
+    float fsecs = float((tc-zed).seconds());
+    return fsecs;
 }
 ///////////////////////////////////////////////
 #elif defined( ORK_WIN32 ) && defined( _MSVC )

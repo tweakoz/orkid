@@ -14,7 +14,7 @@ uniform float4x4        DiffuseMapMatrix;
 uniform float4x4        NormalMapMatrix;
 uniform float4x4        SpecularMapMatrix;
 
-uniform float4x4        BoneMatrices[32] : BoneMatrices;
+uniform float4x4        BoneMatrices[32];
 
 uniform float4          modcolor;
 uniform float           time;
@@ -137,15 +137,12 @@ float3 SkinPosition4( float4 BoneIndices, float4 BoneWeights, float3 InPos )
     float w2 = BoneWeights.z;
     float w3 = BoneWeights.w;
 
-    float wt = (w0+w1+w2) * 0.5f;
-
-    float3 WeightedVertex =  (mul(BoneMatrices[i0],Pos4)).xyz;
-           //WeightedVertex += (mul(BoneMatrices[i1],Pos4)*w1).xyz;
-           //WeightedVertex += (mul(BoneMatrices[i2],Pos4)*w2).xyz;
-           //WeightedVertex += (mul(BoneMatrices[i3],Pos4)*w3).xyz;
+    float3 WeightedVertex =  (mul(BoneMatrices[i0],Pos4)*w0).xyz;
+    WeightedVertex += (mul(BoneMatrices[i1],Pos4)*w1).xyz;
+    WeightedVertex += (mul(BoneMatrices[i2],Pos4)*w2).xyz;
+    WeightedVertex += (mul(BoneMatrices[i3],Pos4)*w3).xyz;
  
-    return normalize(WeightedVertex.xyz);
-    //return float3(wt,wt,wt);
+    return WeightedVertex.xyz;
 }
 
 Fragment vs_modcolor( SimpleVertex VtxIn )
@@ -169,7 +166,7 @@ Fragment vs_wnormal_skinned( SkinnedVertex VtxIn )
     float3 skpos = SkinPosition4( VtxIn.BoneIndices, VtxIn.BoneWeights, VtxIn.Position.xyz );
     FragOut.ClipPos = mul( float4( VtxIn.Position.xyz, 1.0f ), WVPMatrix );
     float4 wnorm = mul( float4(VtxIn.Normal.xyz,0.0f), WRotMatrix );
-    FragOut.Color = float4(skpos.xyz,1.0f);
+    FragOut.Color = float4(normalize(wnorm.xyz),1.0f);
     return FragOut;
 }
 
