@@ -15,6 +15,7 @@
 #include "../gl.h"
 #if defined(_USE_GLSLFX)
 #include "glslfxi.h"
+#include "glslfxi_scanner.h"
 #include <ork/file/file.h>
 #include <regex>
 #include <stdlib.h>
@@ -22,218 +23,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-struct token
-{
-	int iline;
-	int icol;
-	std::string text;
-	token( const std::string& txt, int il, int ic ) : text(txt), iline(il), icol(ic) {}
-};
-
-typedef enum scan_state
-{
-	ESTA_NONE = 0,
-	ESTA_C_COMMENT,
-	ESTA_CPP_COMMENT,
-	ESTA_DQ_STRING,
-	ESTA_SQ_STRING,
-	ESTA_WSPACE,
-	ESTA_CONTENT
-	
-};
-
-struct GlslFxScanner
-{
-	static const int kmaxfxblen = 64<<10;
-	char fxbuffer[ kmaxfxblen ];
-	size_t ifilelen;
-	std::vector<token> tokens;
-	token cur_token;
-	scan_state ss;
-	/////////////////////////////////////////
-	GlslFxScanner()
-		: ss(ESTA_NONE)
-		, cur_token("",0,0)
-		, ifilelen(0)
-	{
-	}
-	/////////////////////////////////////////
-	char to_lower( char ch ) { return ((ch>='A')&&(ch<='Z')) ? (ch-'A'+'a') : ch; }
-	/////////////////////////////////////////
-	bool is_alf( char ch ) { return (to_lower(ch)>='a')&&(to_lower(ch<='z')); }
-	/////////////////////////////////////////
-	bool is_num( char ch ) { return (ch>='0')&&(ch<='9'); }
-	/////////////////////////////////////////
-	bool is_alfnum( char ch ) { return is_alf(ch)||is_num(ch); }
-	/////////////////////////////////////////
-	bool is_spc( char ch ) { return (ch==' ')||(ch==' ')||(ch=='\t'); }
-	/////////////////////////////////////////
-	bool is_septok( char ch )
-	{	return
-		(ch==';')||(ch==':')||(ch=='{')||(ch=='}')
-		||	(ch=='[')||(ch==']')||(ch=='(')||(ch==')')
-		||	(ch=='*')||(ch=='+')||(ch=='-')||(ch=='=')
-		||  (ch==',')||(ch=='?')||(ch=='%')
-		||	(ch=='<')||(ch=='>')||(ch=='&')||(ch=='|')
-		||	(ch=='!')||(ch=='/')
-		;
-	}
-	/////////////////////////////////////////
-	bool is_content( char ch ) { return is_alfnum(ch)||(ch=='_')||(ch=='.'); }
-	/////////////////////////////////////////
-	void FlushToken()
-	{
-		if( cur_token.text.length() )
-			tokens.push_back( cur_token );
-		cur_token.text="";
-		cur_token.iline=0;
-		cur_token.icol=0;
-		ss=ESTA_NONE;
-	}
-	/////////////////////////////////////////
-	void AddToken( const token& tok )
-	{
-		tokens.push_back(tok);
-		cur_token.text="";
-		cur_token.iline=0;
-		cur_token.icol=0;
-		ss=ESTA_NONE;
-	}
-	/////////////////////////////////////////
-	void Scan()
-	{
-		
-		int iscanst_cpp_comment = 0;
-		int iscanst_c_comment = 0;
-		int iscanst_whitespace = 0;
-		int iscanst_dqstring = 0;
-		int iscanst_sqstring = 0;
-		
-		int iline = 0;
-		int icol = 0;
-		
-		int itoksta_line = 0;
-		int itoksta_colm = 0;
-		
-		bool b_in_number = false;
-		
-		for( size_t i=0; i<ifilelen; i++ )
-		{
-			char PCH = (i==0) ? 0 : fxbuffer[i-1];
-			char CH = fxbuffer[i];
-			char NCH = (i<ifilelen-1) ? fxbuffer[i+1] : 0;
-			
-			char ch_buf[2];
-			ch_buf[0] = CH;
-			ch_buf[1] = 0;
-			
-			bool benctok = false;
-			
-			int adv_col = 1;
-			int adv_lin = 0;
-			
-			switch( ss )
-			{
-				case ESTA_NONE:
-					if( (CH=='/') && (NCH=='/') ) { ss=ESTA_CPP_COMMENT; iscanst_cpp_comment++; i++; }
-					else if( (CH=='/') && (NCH=='*') ) { ss=ESTA_C_COMMENT; iscanst_c_comment++; i++; }
-					else if( CH=='\'' ) { ss=ESTA_SQ_STRING; benctok=true; }
-					else if( CH=='\"' ) { ss=ESTA_DQ_STRING; benctok=true; }
-					else if( CH=='\n' ) { adv_lin=1; }
-					else if( is_spc(CH) ) { ss=ESTA_WSPACE; }
-					else if( is_septok(CH) )
-					{
-						if(		((CH=='=')&&(NCH=='=')) || ((CH=='!')&&(NCH=='='))
-						   ||	((CH=='*')&&(NCH=='=')) || ((CH=='/')&&(NCH=='='))
-						   ||	((CH=='&')&&(NCH=='=')) || ((CH=='|')&&(NCH=='='))
-						   ||	((CH=='&')&&(NCH=='&')) || ((CH=='|')&&(NCH=='|'))
-						   ||	((CH=='<')&&(NCH=='<')) || ((CH=='>')&&(NCH=='>'))
-						   ||	((CH=='<')&&(NCH=='=')) || ((CH=='>')&&(NCH=='='))
-						   ||	((CH==':')&&(NCH==':')) || ((CH=='$')&&(NCH=='('))
-						   ||	((CH=='+')&&(NCH=='+')) || ((CH=='-')&&(NCH=='-'))
-						   ||	((CH=='+')&&(NCH=='=')) || ((CH=='-')&&(NCH=='='))
-						   )
-						{
-							char ch_buf2[3];
-							ch_buf2[0] = CH;
-							ch_buf2[1] = NCH;
-							ch_buf2[2] = 0;
-							AddToken( token( ch_buf2, iline, icol ) );
-							i++;
-						}
-						else
-							AddToken( token( ch_buf, iline, icol ) );
-						
-					}
-					else
-					{	ss = ESTA_CONTENT;
-						benctok=true;
-						cur_token.iline = iline;
-						cur_token.icol = icol;
-					}
-					break;
-				case ESTA_C_COMMENT:
-					if( (CH=='/') && (PCH=='*') ) { iscanst_c_comment--; if( iscanst_c_comment==0 ) ss=ESTA_NONE; }
-					break;
-				case ESTA_CPP_COMMENT:
-					if( CH=='/' ) {}
-					if( CH=='\n' ) { ss=ESTA_NONE; adv_lin=1; }
-					break;
-				case ESTA_DQ_STRING:
-					if( CH=='\"' ) { cur_token.text += ch_buf; FlushToken(); }
-					else { benctok=true; }
-					break;
-				case ESTA_SQ_STRING:
-					if( CH=='\'' ) { cur_token.text += ch_buf; FlushToken(); }
-					else { benctok=true; }
-					break;
-				case ESTA_WSPACE:
-					if( (false == is_spc(CH))&&(CH!='\n') ) { ss=ESTA_NONE; i--; }
-					break;
-				case ESTA_CONTENT:
-				{
-					if( is_septok(CH) )
-					{
-						FlushToken();
-						i--;
-					}
-					else if( CH=='\n' )
-					{
-						FlushToken();
-						adv_lin = 1;
-					}
-					else if( is_spc(CH) )
-					{
-						FlushToken();
-					}
-					else if( is_content(CH) )
-					{
-						benctok = true;
-					}
-					break;
-				}
-			}
-			if( benctok )
-			{
-				cur_token.text += ch_buf;
-			}
-			if( adv_col )
-			{
-				icol+=adv_col;
-			}
-			if( adv_lin )
-			{
-				iline++;
-				icol=0;
-			}
-			
-		}
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
 
 struct GlSlFxParser
 {
@@ -250,14 +39,17 @@ struct GlSlFxParser
 		return std::regex_match(tok.text, regex_block);
 	}
 	///////////////////////////////////////////////////////////
-	int FindEndOfBlock( const int block_name, const int block_start )
+	int FindEndOfBlock( const int block_name, int block_start )
 	{
 		const std::vector<token>& tokens = scanner.tokens;
 		
 		const token& block_name_tok = tokens[block_name];
 		const token& block_beg_tok = tokens[block_start];
-		//printf( "FindEndOfBlock BlockName<%s> BraceTok<%s>\n", block_name_tok.text.c_str(), block_beg_tok.text.c_str() );
+		printf( "FindEndOfBlock BlockName<%s> BraceTok<%s>\n", block_name_tok.text.c_str(), block_beg_tok.text.c_str() );
 		
+		if( block_beg_tok.text=="\n" )
+			block_start++;
+
 		int itok = block_start+1;
 		OrkAssert( block_beg_tok.text == "{" );
 		int ibracelev = 1;
@@ -287,9 +79,15 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	GlslFxConfig* ParseFxConfig()
 	{
+		GlslFxScanViewRegex r("(\n)",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(itokidx);
+
 		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
 		const token& etok = scanner.tokens[iend+1];
-		//printf( "ParseFxConfig Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
+		printf( "ParseFxConfig Eob<%d> ScEnd<%d> Next<%s>\n", iend, v.mEnd, etok.text.c_str() );
+		v.Dump();
+
 		GlslFxConfig* pcfg = new GlslFxConfig;
 		pcfg->mName = scanner.tokens[ itokidx+1 ].text;
 		itokidx = iend+1;
@@ -298,6 +96,11 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	GlslFxStreamInterface* ParseFxInterface()
 	{	
+		GlslFxScanViewRegex r("(\n)",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(itokidx);
+		v.Dump();
+
 		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
 		const token& etok = scanner.tokens[iend+1];
 		const auto& toks = scanner.tokens;
@@ -363,6 +166,10 @@ struct GlSlFxParser
 				psi->mAttributes[ nam_tok.text ] = pattr;
 				i += 4;
 			}
+			else if( vt_tok.text == "\n" )
+			{
+				i++;
+			}
 			else
 			{
 				printf( "invalid token<%s>\n", vt_tok.text.c_str() );
@@ -376,6 +183,11 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	GlslFxStateBlock* ParseFxStateBlock()
 	{
+		GlslFxScanViewRegex r("(\n)",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(itokidx);
+		v.Dump();
+
 		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
 		const token& etok = scanner.tokens[iend+1];
 		//printf( "ParseFxStateBlock Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
@@ -473,6 +285,10 @@ struct GlSlFxParser
 					} );
 				i += 4;
 			}
+			else if( vt_tok.text == "\n" )
+			{
+				i++;
+			}
 			else
 			{
 				OrkAssert(false);
@@ -485,6 +301,11 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	GlslFxLibBlock* ParseLibraryBlock()
 	{
+		GlslFxScanViewRegex r("(\n)",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(itokidx);
+		v.Dump();
+
 		auto pret = new GlslFxLibBlock;
 		pret->mName = scanner.tokens[ itokidx+1 ].text;
 
@@ -524,6 +345,11 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	int ParseFxShaderCommon(GlslFxShader* pshader)
 	{
+		GlslFxScanViewRegex r("()",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(itokidx);
+		v.Dump();
+
 		pshader->mpContainer = mpContainer;
 
 		///////////////////////////////////
@@ -686,6 +512,10 @@ struct GlSlFxParser
 			{
 				i = ParseFxPass(i,ptek);
 			}
+			else if( vt_tok.text == "\n" )
+			{
+				i++;
+			}
 			else
 			{
 				OrkAssert(false);
@@ -735,6 +565,10 @@ struct GlSlFxParser
 				ppass->mStateBlock = psb;
 				i+=4;
 			}
+			else if( vt_tok.text == "\n" )
+			{
+				i++;
+			}
 			else
 			{
 				OrkAssert(false);
@@ -768,7 +602,11 @@ struct GlSlFxParser
 			const token& tok = tokens[itokidx];
 			printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1, tok.icol+1, tok.text.c_str() );
 			
-			if( tok.text == "fxconfig" )
+			if( tok.text == "\n" )
+			{
+				itokidx++;
+			}
+			else if( tok.text == "fxconfig" )
 			{
 				GlslFxConfig* pconfig = ParseFxConfig();
 				mpContainer->AddConfig( pconfig );
