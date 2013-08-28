@@ -75,8 +75,9 @@ void GlslFxScannerView::ScanBlock( size_t is )
 			case 0:	// have not yet found block type
 			{
 				if( is_term )
-				{	mBlockType = i;
-					mBlockName = i+1;
+				{	
+					mBlockType = mIndices.size();
+					mBlockName = mBlockType+1;
 					istate = 1;
 					mIndices.push_back(i);
 				}
@@ -90,7 +91,7 @@ void GlslFxScannerView::ScanBlock( size_t is )
 			case 1:	// have not yet found starting brace
 				if( is_open )
 				{	assert(ibracelev==0);
-					mStart = i;
+					mStart = mIndices.size();
 					ibracelev++;
 					istate=2;
 					mIndices.push_back(i);
@@ -111,7 +112,7 @@ void GlslFxScannerView::ScanBlock( size_t is )
 				{	ibracelev--;
 					mIndices.push_back(i);
 					if( ibracelev==0 )
-					{	mEnd = i;
+					{	mEnd = mIndices.size()-1;
 						mBlockOk = true;
 						return;
 					}
@@ -165,6 +166,15 @@ const token* GlslFxScannerView::GetToken(size_t i) const
 	}
 
 	return pt;
+}
+size_t GlslFxScannerView::GetTokenIndex(size_t i) const
+{
+	size_t ret = ~0;
+	if( i<mIndices.size() )
+	{
+		ret = mIndices[i];
+	}
+	return ret;
 }
 
 GlslFxScanner::GlslFxScanner()

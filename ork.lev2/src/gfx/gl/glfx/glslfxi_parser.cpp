@@ -353,41 +353,44 @@ struct GlSlFxParser
 		pshader->mpContainer = mpContainer;
 
 		///////////////////////////////////
-		std::string shadername = scanner.tokens[ itokidx+1 ].text;
-		std::string shadercln = scanner.tokens[ itokidx+2 ].text;
-		std::string outiface = scanner.tokens[ itokidx+3 ].text;
+		std::string shadername = v.GetToken(v.mBlockName)->text;
+		std::string shadercln = v.GetToken(v.mBlockName+1)->text;
+		std::string outiface = v.GetToken(v.mBlockName+2)->text;
 
 		GlslFxLibBlock* plibblock = nullptr;
 
-		int iblockstart = itokidx+4;
+		const token* ptok = nullptr;
+		int itok = v.mBlockName+3;
 
 		//////////////////////////////////////////////
-		// enumerate lib blocks
+		// enumerate lib blocks / interfaces
 		//////////////////////////////////////////////
 
 		std::vector<GlslFxLibBlock*> lib_blocks;
 
-		std::string t4 = scanner.tokens[ iblockstart ].text;
-		while( t4 == ":" )
 		{
-			const std::string& libt = scanner.tokens[ iblockstart+1 ].text;
-			auto it = mpContainer->mLibBlocks.find(libt);
-			if( it != mpContainer->mLibBlocks.end() )
+			ptok = v.GetToken(itok);
+
+			while( ptok->text == ":" )
 			{
-				auto plibblock = it->second;
-				lib_blocks.push_back( plibblock );
+				ptok = v.GetToken(++itok);
+				auto it = mpContainer->mLibBlocks.find(ptok->text);
+				if( it != mpContainer->mLibBlocks.end() )
+				{
+					auto plibblock = it->second;
+					lib_blocks.push_back( plibblock );
+				}
+				ptok = v.GetToken(++itok);
 			}
-			iblockstart += 2;
-			t4 = scanner.tokens[ iblockstart ].text;
 		}
+
+		//////////////////////////////////////////////
 
 		//////////////////////////////////////////////
 
 		bool bvtx = pshader->mShaderType == GL_VERTEX_SHADER;
 		
 
-		int iend = FindEndOfBlock( itokidx+1, iblockstart );
-		const token& etok = scanner.tokens[iend+1];
 		//printf( "ParseFxShaderCommon Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
 		///////////////////////////////////
 		GlslFxStreamInterface* iface = bvtx ? mpContainer->GetVertexInterface( outiface ) : mpContainer->GetFragmentInterface( outiface );
@@ -444,20 +447,24 @@ struct GlSlFxParser
 		shaderbody += "void " + shadername + "()\n{";
 		bool bnewline = true;
 		int indent = 1;
-		for( int i=iblockstart+1; i<iend; i++ )
+		size_t iblockstart = v.mStart;
+		size_t iblockend = v.mEnd;
+
+		for( size_t i=iblockstart+1; i<iblockend; i++ )
 		{
+			ptok = v.GetToken(i);
+
 			if( bnewline )
 			{
 				for( int in=0; in<indent; in++ )
 					shaderbody += "\t";
 			}
-			bnewline=false;
-			const std::string& cur_tok = scanner.tokens[i].text;
+			const std::string& cur_tok = ptok->text;
 			//printf( "  ParseFxShaderCommon Tok<%s>\n", vt_tok.text.c_str() );
-			shaderbody += cur_tok + " ";
-			if( cur_tok==";" )
-			{	shaderbody += "\n";
-				bnewline = true;
+			shaderbody += cur_tok;
+			bnewline = false;
+			if( cur_tok=="\n" )
+			{	bnewline = true;
 			}
 			else if( cur_tok=="{" )
 				indent++;
@@ -474,7 +481,7 @@ struct GlSlFxParser
 		pshader->mName = shadername;
 		pshader->mShaderText = shaderbody;
 		///////////////////////////////////
-		return iend+1;
+		return v.GetTokenIndex(iblockend+1);
 	}
 	///////////////////////////////////////////////////////////
 	GlslFxShaderVtx* ParseFxVertexShader()

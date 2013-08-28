@@ -93,6 +93,7 @@ struct GlslFxScannerView
 
 	size_t GetNumTokens() const { return mIndices.size(); }
 	const token* GetToken(size_t i) const;
+	size_t GetTokenIndex(size_t i) const;
 	void ScanRange( size_t is, size_t ie );
 	void ScanBlock( size_t is );
 	void Dump();
