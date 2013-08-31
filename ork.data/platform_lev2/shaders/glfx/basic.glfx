@@ -4,11 +4,13 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "150";
+	import "skintools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault
+	: iface_skintools // inherit skinned unis/attrs
 {
 	uniform mat4 WVPMatrix;
 	uniform mat4 VPMatrix;
@@ -22,9 +24,6 @@ vertex_interface iface_vdefault
 	uniform mat4 NormalMapMatrix;
 	uniform mat4 SpecularMapMatrix;
 
-
-	uniform mat4 BoneMatrices[32];
-
 	uniform vec4 modcolor;
 	uniform float time;
 
@@ -37,26 +36,19 @@ vertex_interface iface_vdefault
 	uniform vec3 WCamLoc;
 	uniform float SpecularPower;
 
-	//
 	in vec4 position : POSITION;
 	in vec3 normal : NORMAL;
-	//in vec4 vtxcolor : COLOR0;
 	in vec2 uv0 : TEXCOORD0;
-	in vec4 boneindices : BONEINDICES;
-	in vec4 boneweights : BONEWEIGHTS;
-	//in vec2 uv1 : TEXCOORD1;
-	//
+
 	out vec4 frg_clr;
 	out vec2 frg_uv0;
-	//out vec2 frg_uv1;
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault
 {
 	in vec4 frg_clr;
 	in vec2 frg_uv0;
-	//in vec2 frg_uv1;
-	//
+
 	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
@@ -64,34 +56,30 @@ fragment_interface iface_fmt
 {
 	uniform vec4 modcolor;
 	uniform sampler2D DiffuseMap;
-	//
-	out vec4 out_clr;
-	//
+
 	in vec4 frg_clr;
 	in vec2 frg_uv0;
-	//in vec2 frg_uv1;
+
+	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
 state_block sb_default
 {
-	inherits default;
 	//BlendMode = ADDITIVE;
 	DepthTest=LESS;
 	DepthMask=true;
 	CullTest=PASS_FRONT;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend
+state_block sb_lerpblend : sb_default
 {
-	inherits sb_default;
 	BlendMode = ALPHA;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_additive
+state_block sb_additive : sb_default
 {
-	inherits sb_default;
 	BlendMode = ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
@@ -115,29 +103,6 @@ vertex_shader vs_wnormal : iface_vdefault
 }
 
 ///////////////////////////////////////////////////////////////
-libblock skin_tools
-{
-	vec3 SkinPosition( vec4 idcs, vec4 wghts, vec3 InPos )
-	{
-		vec4 Pos4 = vec4( InPos, 1.0 );
-
-		int i0 = int(idcs.w*255.0);
-		int i1 = int(idcs.z*255.0);
-		int i2 = int(idcs.y*255.0);
-		int i3 = int(idcs.x*255.0);
-		float w0 = wghts.w;
-		float w1 = wghts.z;
-		float w2 = wghts.y;
-		float w3 = wghts.x;
-
-		vec3 WeightedVertex =	((BoneMatrices[i0]*Pos4)*w0).xyz;
-		WeightedVertex += 		((BoneMatrices[i1]*Pos4)*w1).xyz;
-		WeightedVertex +=		((BoneMatrices[i2]*Pos4)*w2).xyz;
-		WeightedVertex +=		((BoneMatrices[i3]*Pos4)*w3).xyz;
-	 
-		return WeightedVertex.xyz;
-	}
-}
 vertex_shader vs_wnormalsk 
 	: iface_vdefault
 	: skin_tools
@@ -145,7 +110,8 @@ vertex_shader vs_wnormalsk
 	vec3 obj_pos = position.xyz;
 	vec3 skn_pos = SkinPosition( boneindices, boneweights, position.xyz );
 	gl_Position = WVPMatrix*vec4(skn_pos,1.0);
-	vec3 wnorm = normalize(WRotMatrix*normal);
+	vec3 sknorm = SkinNormal(boneindices, boneweights, normal.xyz);
+	vec3 wnorm = normalize(WRotMatrix*sknorm);
 	frg_clr = vec4(wnorm.xyz,1.0);
 	frg_uv0 = uv0;
 }

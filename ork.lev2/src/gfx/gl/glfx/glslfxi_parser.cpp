@@ -27,54 +27,21 @@ namespace ork { namespace lev2 {
 struct GlSlFxParser
 {
 	int itokidx;
-	const GlslFxScanner& scanner;
+	GlslFxScanner& scanner;
+	const AssetPath mPath;
 	GlslFxContainer* mpContainer;
 	
 	///////////////////////////////////////////////////////////
-	GlSlFxParser( const GlslFxScanner& s ) : scanner(s), mpContainer(nullptr) {}
+	GlSlFxParser( const AssetPath& pth, GlslFxScanner& s ) 
+		: mPath(pth)
+		, scanner(s)
+		, mpContainer(nullptr)
+	{}
 	///////////////////////////////////////////////////////////
 	bool IsTokenOneOfTheBlockTypes( const token& tok )
 	{
 		std::regex regex_block( "(fxconfig|vertex_interface|fragment_interface|libblock|state_block|vertex_shader|fragment_shader|technique|pass)");
 		return std::regex_match(tok.text, regex_block);
-	}
-	///////////////////////////////////////////////////////////
-	int FindEndOfBlock( const int block_name, int block_start )
-	{
-		const std::vector<token>& tokens = scanner.tokens;
-		
-		const token& block_name_tok = tokens[block_name];
-		const token& block_beg_tok = tokens[block_start];
-		printf( "FindEndOfBlock BlockName<%s> BraceTok<%s>\n", block_name_tok.text.c_str(), block_beg_tok.text.c_str() );
-		
-		if( block_beg_tok.text=="\n" )
-			block_start++;
-
-		int itok = block_start+1;
-		OrkAssert( block_beg_tok.text == "{" );
-		int ibracelev = 1;
-		
-		int iend = 0;
-		
-		while( ibracelev>0 )
-		{
-			const token& tok = tokens[itok];
-			if( tok.text == "{" )
-				ibracelev++;
-			else if ( tok.text == "}" )
-			{	ibracelev--;
-				if( ibracelev==0 )
-					iend = itok;
-			}
-			//else if( IsTokenOneOfTheBlockTypes( tok ) )
-			//{
-			//	printf( "ERROR: expected }, got <%s> instead\n", tok.text.c_str() );
-			//	OrkAssert(false);
-			//}
-			itok++;
-		}
-		
-		return iend;
 	}
 	///////////////////////////////////////////////////////////
 	GlslFxConfig* ParseFxConfig()
@@ -83,14 +50,63 @@ struct GlSlFxParser
 		GlslFxScannerView v( scanner, r );
 		v.ScanBlock(itokidx);
 
-		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
-		const token& etok = scanner.tokens[iend+1];
-		printf( "ParseFxConfig Eob<%d> ScEnd<%d> Next<%s>\n", iend, v.mEnd, etok.text.c_str() );
-		v.Dump();
-
 		GlslFxConfig* pcfg = new GlslFxConfig;
-		pcfg->mName = scanner.tokens[ itokidx+1 ].text;
-		itokidx = iend+1;
+		pcfg->mName = v.GetBlockName();
+
+		int ist = v.mStart+1;
+		int ien = v.mEnd-1;
+
+		std::vector<std::string> imports;
+		for( size_t i=ist; i<=ien; )
+		{
+			const token* vt_tok = v.GetToken(i);
+
+			printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
+
+			if( vt_tok->text == "import" )
+			{
+				const token* impnam = v.GetToken(i+1);
+				std::string p = impnam->text.substr(1,impnam->text.length()-2);
+				imports.push_back(p);
+
+				i +=3;
+			}
+			else 
+				i++;
+		}
+
+		itokidx = v.GetBlockEnd()+1;
+
+		for( const auto& imp : imports)
+		{
+			GlslFxScanner scanner2;
+
+			file::Path::NameType a, b;
+			mPath.Split(a,b,':');
+
+			ork::FixedString<256> fxs;
+			fxs.format("%s://%s", a.c_str(),imp.c_str());
+			file::Path imppath = fxs.c_str();
+			//assert(false);
+
+			printf( "impnam<%s> a<%s> b<%s> imppath<%s>\n", imp.c_str(), a.c_str(), b.c_str(), imppath.c_str() );
+			///////////////////////////////////
+			CFile fx_file( imppath.c_str(), EFM_READ );
+			OrkAssert( fx_file.IsOpen() );
+			EFileErrCode eFileErr = fx_file.GetLength( scanner2.ifilelen );
+			OrkAssert( scanner2.ifilelen<scanner2.kmaxfxblen );
+			eFileErr = fx_file.Read( scanner2.fxbuffer, scanner2.ifilelen );
+			scanner2.fxbuffer[scanner2.ifilelen] = 0;
+			///////////////////////////////////
+			scanner2.Scan();
+
+			const auto& stoks = scanner2.tokens;
+			auto& dtoks = scanner.tokens;
+
+			dtoks.insert(dtoks.begin()+itokidx,stoks.begin(),stoks.end());
+
+		}
+
 		return pcfg;
 	}
 	///////////////////////////////////////////////////////////
@@ -99,35 +115,64 @@ struct GlSlFxParser
 		GlslFxScanViewRegex r("(\n)",true);
 		GlslFxScannerView v( scanner, r );
 		v.ScanBlock(itokidx);
-		v.Dump();
 
-		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
-		const token& etok = scanner.tokens[iend+1];
-		const auto& toks = scanner.tokens;
-
-		//printf( "ParseFxInterface Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
-		GlslFxStreamInterface* psi = new GlslFxStreamInterface;
-		psi->mName = toks[ itokidx+1 ].text;
 		////////////////////////
-		OrkAssert( toks[itokidx+2].text=="{" );
-		for( int i=itokidx+3; i<iend; )
+
+		GlslFxStreamInterface* psi = new GlslFxStreamInterface;
+		psi->mName = v.GetBlockName();
+
+		////////////////////////
+
+		const std::string BlockType = v.GetToken(v.mBlockType)->text;
+
+		bool is_vtx = BlockType=="vertex_interface";
+
+		size_t inumdecos = v.GetNumBlockDecorators();
+
+		for( size_t ideco=0; ideco<inumdecos; ideco++ )
 		{
-			const token& vt_tok = toks[i];
-			const token& dt_tok = toks[i+1];
-			const token& nam_tok = toks[i+2];
-			
-			//printf( "  ParseFxInterface Tok<%s>\n", vt_tok.text.c_str() );
-			
-			if( vt_tok.text == "uniform" )
+			auto ptok = v.GetBlockDecorator(ideco);
+
+			if( is_vtx )
 			{
-				GlslFxUniform* puni = mpContainer->MergeUniform( nam_tok.text );
-				puni->mTypeName = dt_tok.text;
-				psi->mUniforms[ nam_tok.text ] = puni;
-				if( toks[i+3].text=="[" )
+				auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
+				assert(it_vi!=mpContainer->mVertexInterfaces.end());
+				psi->Inherit(*it_vi->second);
+			}
+			else
+			{	
+				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
+				assert(it_fi!=mpContainer->mFragmentInterfaces.end());
+				psi->Inherit(*it_fi->second);
+			}			
+		}
+
+		////////////////////////
+
+		int ist = v.mStart+1;
+		int ien = v.mEnd-1;
+
+		for( size_t i=ist; i<=ien; )
+		{
+			const token* vt_tok = v.GetToken(i);
+			const token* dt_tok = v.GetToken(i+1);
+			const token* nam_tok = v.GetToken(i+2);
+			
+			//printf( "  ParseFxInterface Tok<%s>\n", vt_tok->text.c_str() );
+			
+			if( vt_tok->text == "uniform" )
+			{
+				auto it = psi->mUniforms.find(nam_tok->text);
+				assert(it==psi->mUniforms.end()); // make sure there are no duplicate uniforms
+
+				GlslFxUniform* puni = mpContainer->MergeUniform( nam_tok->text );
+				puni->mTypeName = dt_tok->text;
+				psi->mUniforms[ nam_tok->text ] = puni;
+				if( v.GetToken(i+3)->text=="[" )
 				{
-					assert(toks[i+5].text=="]");
-					puni->mArraySize = atoi(toks[i+4].text.c_str());
-					printf( "uniname<%s> arraysize<%d>\n", nam_tok.text.c_str(), puni->mArraySize );
+					assert(v.GetToken(i+5)->text=="]");
+					puni->mArraySize = atoi(v.GetToken(i+4)->text.c_str());
+					printf( "uniname<%s> arraysize<%d>\n", nam_tok->text.c_str(), puni->mArraySize );
 					i += 7;
 					//assert(false);
 				}
@@ -136,48 +181,51 @@ struct GlSlFxParser
 					i += 4;
 				}
 			}
-			else if( vt_tok.text == "in" )
+			else if( vt_tok->text == "in" )
 			{
+				auto it = psi->mAttributes.find(nam_tok->text);
+				assert(it==psi->mAttributes.end()); // make sure there are no duplicate attrs
+
 				int iloc = int(psi->mAttributes.size());
-				GlslFxAttribute* pattr = new GlslFxAttribute( nam_tok.text );
-				pattr->mTypeName = dt_tok.text;
+				GlslFxAttribute* pattr = new GlslFxAttribute( nam_tok->text );
+				pattr->mTypeName = dt_tok->text;
 				pattr->mDirection = "in";
 				pattr->mLocation = iloc;
-				psi->mAttributes[ nam_tok.text ] = pattr;
-				if( toks[i+3].text==":" )
+				psi->mAttributes[ nam_tok->text ] = pattr;
+				if( v.GetToken(i+3)->text==":" )
 				{
-					pattr->mSemantic = toks[i+4].text;
+					pattr->mSemantic = v.GetToken(i+4)->text;
 					printf( "SEMANTIC<%s>\n", pattr->mSemantic.c_str() );	
 					i += 6;
 				}
 				else
 				{
-					assert( toks[i+3].text==";" );
+					assert( v.GetToken(i+3)->text==";" );
 					i += 4;
 				}
 			}
-			else if( vt_tok.text == "out" )
+			else if( vt_tok->text == "out" )
 			{
 				int iloc = int(psi->mAttributes.size());
-				GlslFxAttribute* pattr = new GlslFxAttribute( nam_tok.text );
-				pattr->mTypeName = dt_tok.text;
+				GlslFxAttribute* pattr = new GlslFxAttribute( nam_tok->text );
+				pattr->mTypeName = dt_tok->text;
 				pattr->mDirection = "out";
 				pattr->mLocation = iloc;
-				psi->mAttributes[ nam_tok.text ] = pattr;
+				psi->mAttributes[ nam_tok->text ] = pattr;
 				i += 4;
 			}
-			else if( vt_tok.text == "\n" )
+			else if( vt_tok->text == "\n" )
 			{
 				i++;
 			}
 			else
 			{
-				printf( "invalid token<%s>\n", vt_tok.text.c_str() );
+				printf( "invalid token<%s>\n", vt_tok->text.c_str() );
 				OrkAssert(false);
 			}
 		}
 		////////////////////////
-		itokidx = iend+1;
+		itokidx = v.GetBlockEnd()+1;
 		return psi;
 	}
 	///////////////////////////////////////////////////////////
@@ -186,34 +234,49 @@ struct GlSlFxParser
 		GlslFxScanViewRegex r("(\n)",true);
 		GlslFxScannerView v( scanner, r );
 		v.ScanBlock(itokidx);
-		v.Dump();
 
-		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
-		const token& etok = scanner.tokens[iend+1];
-		//printf( "ParseFxStateBlock Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
 		GlslFxStateBlock* psb = new GlslFxStateBlock;
-		psb->mName = scanner.tokens[ itokidx+1 ].text;
+		psb->mName = v.GetBlockName();
 		mpContainer->AddStateBlock( psb );
 		//////////////////////
 
 		auto& apptors = psb->mApplicators;
 
 		//////////////////////
-		for( int i=itokidx+3; i<iend; )
+
+		size_t inumdecos = v.GetNumBlockDecorators();
+
+		assert(inumdecos<2);
+		
+		for( size_t ideco=0; ideco<inumdecos; ideco++ )
 		{
-			const token& vt_tok = scanner.tokens[i];
+			auto ptok = v.GetBlockDecorator(ideco);
+			GlslFxStateBlock* ppar = mpContainer->GetStateBlock( ptok->text );
+			OrkAssert(ppar!=nullptr);
+			psb->mApplicators = ppar->mApplicators;
+		}
+
+		//////////////////////
+
+		int ist = v.mStart+1;
+		int ien = v.mEnd-1;
+
+		for( size_t i=ist; i<=ien; )
+		{
+
+			const token* vt_tok = v.GetToken(i);
 			//printf( "  ParseFxStateBlock Tok<%s>\n", vt_tok.text.c_str() );
-			if( vt_tok.text == "inherits" )
+			if( vt_tok->text == "inherits" )
 			{
-				const token& parent_tok = scanner.tokens[i+1];
-				GlslFxStateBlock* ppar = mpContainer->GetStateBlock( parent_tok.text );
+				const token* parent_tok = v.GetToken(i+1);
+				GlslFxStateBlock* ppar = mpContainer->GetStateBlock( parent_tok->text );
 				OrkAssert(ppar!=nullptr);
 				psb->mApplicators = ppar->mApplicators;
 				i += 3;
 			}
-			else if( vt_tok.text == "CullTest" )
+			else if( vt_tok->text == "CullTest" )
 			{
-				const std::string& mode = scanner.tokens[i+2].text;
+				const std::string& mode = v.GetToken(i+2)->text;
 				if( mode=="OFF" )
 					psb->AddStateFn( [=](GfxTarget*t)
 					{	t->RSI()->SetCullTest(lev2::ECULLTEST_OFF);
@@ -229,9 +292,9 @@ struct GlSlFxParser
 
 				i += 4;
 			}
-			else if( vt_tok.text == "DepthMask" )
+			else if( vt_tok->text == "DepthMask" )
 			{
-				const std::string& mode = scanner.tokens[i+2].text;
+				const std::string& mode = v.GetToken(i+2)->text;
 				bool bena = (mode == "true");
 				psb->AddStateFn( [=](GfxTarget*t)
 				{	t->RSI()->SetZWriteMask(bena);
@@ -239,9 +302,9 @@ struct GlSlFxParser
 				printf( "DepthMask<%d>\n", int(bena) );
 				i += 4;
 			}
-			else if( vt_tok.text == "DepthTest" )
+			else if( vt_tok->text == "DepthTest" )
 			{
-				const std::string& mode = scanner.tokens[i+2].text;
+				const std::string& mode = v.GetToken(i+2)->text;
 				if( mode=="OFF" )
 					psb->AddStateFn( [=](GfxTarget*t)
 					{	t->RSI()->SetDepthTest(lev2::EDEPTHTEST_OFF);
@@ -268,9 +331,9 @@ struct GlSlFxParser
 					} );
 				i += 4;
 			}
-			else if( vt_tok.text == "BlendMode" )
+			else if( vt_tok->text == "BlendMode" )
 			{
-				const std::string& mode = scanner.tokens[i+2].text;
+				const std::string& mode = v.GetToken(i+2)->text;
 				if( mode=="ADDITIVE" )
 					psb->AddStateFn( [=](GfxTarget*t)
 					{	t->RSI()->SetBlending(lev2::EBLENDING_ADDITIVE);
@@ -285,7 +348,7 @@ struct GlSlFxParser
 					} );
 				i += 4;
 			}
-			else if( vt_tok.text == "\n" )
+			else if( vt_tok->text == "\n" )
 			{
 				i++;
 			}
@@ -295,51 +358,15 @@ struct GlSlFxParser
 			}
 		}
 		//////////////////////
-		itokidx = iend+1;
+		itokidx = v.GetBlockEnd()+1;
 		return psb;
 	}
 	///////////////////////////////////////////////////////////
 	GlslFxLibBlock* ParseLibraryBlock()
-	{
-		GlslFxScanViewRegex r("(\n)",true);
-		GlslFxScannerView v( scanner, r );
-		v.ScanBlock(itokidx);
-		v.Dump();
-
-		auto pret = new GlslFxLibBlock;
+	{	auto pret = new GlslFxLibBlock(scanner);
+		pret->mView->ScanBlock(itokidx);
 		pret->mName = scanner.tokens[ itokidx+1 ].text;
-
-		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
-		const token& etok = scanner.tokens[iend+1];
-		int indent = 0;
-		std::string libblktext;
-		for( int i=itokidx+3; i<iend; i++ )
-		{
-			for( int in=0; in<indent; in++ )
-				libblktext += " ";
-
-			const std::string& cur_tok = scanner.tokens[i].text;
-			//printf( "  ParseFxShaderCommon Tok<%s>\n", vt_tok.text.c_str() );
-			libblktext += cur_tok + " ";
-			if( cur_tok==";" )
-			{	
-			}
-			else if( cur_tok=="{" )
-				indent++;
-			else if( cur_tok=="}" )
-			{
-				indent--;
-				if( indent == 0 )
-					libblktext += "\n";
-			}
-		}
-
-		pret->mLibBlockText = libblktext;
-
-		printf( "libblktext\n///////////////////////\n%s\n/////////////////////\n", libblktext.c_str() );
-
-		itokidx = iend+1;
-
+		itokidx = pret->mView->GetBlockEnd()+1;
 		return pret;
 	}
 	///////////////////////////////////////////////////////////
@@ -348,66 +375,94 @@ struct GlSlFxParser
 		GlslFxScanViewRegex r("()",true);
 		GlslFxScannerView v( scanner, r );
 		v.ScanBlock(itokidx);
-		v.Dump();
+		//v.Dump();
 
 		pshader->mpContainer = mpContainer;
 
 		///////////////////////////////////
-		std::string shadername = v.GetToken(v.mBlockName)->text;
-		std::string shadercln = v.GetToken(v.mBlockName+1)->text;
-		std::string outiface = v.GetToken(v.mBlockName+2)->text;
+		std::string shadername = v.GetBlockName();
 
 		GlslFxLibBlock* plibblock = nullptr;
 
 		const token* ptok = nullptr;
-		int itok = v.mBlockName+3;
+		//int itok = v.mBlockName+1;
 
 		//////////////////////////////////////////////
 		// enumerate lib blocks / interfaces
 		//////////////////////////////////////////////
 
+		bool bvtx = pshader->mShaderType == GL_VERTEX_SHADER;
+
 		std::vector<GlslFxLibBlock*> lib_blocks;
 
-		{
-			ptok = v.GetToken(itok);
+		GlslFxStreamInterface* iface = nullptr;
 
-			while( ptok->text == ":" )
+		{
+			size_t inumdecos = v.GetNumBlockDecorators();
+
+			for( size_t ideco=0; ideco<inumdecos; ideco++ )
 			{
-				ptok = v.GetToken(++itok);
-				auto it = mpContainer->mLibBlocks.find(ptok->text);
-				if( it != mpContainer->mLibBlocks.end() )
+				ptok = v.GetBlockDecorator(ideco);
+
+				auto it_lib = mpContainer->mLibBlocks.find(ptok->text);
+				auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
+				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
+					
+				if( it_lib != mpContainer->mLibBlocks.end() )
 				{
-					auto plibblock = it->second;
+					auto plibblock = it_lib->second;
 					lib_blocks.push_back( plibblock );
+					printf( "LIBBLOCK <%s>\n", ptok->text.c_str() );
 				}
-				ptok = v.GetToken(++itok);
+				else if( bvtx && it_vi != (mpContainer->mVertexInterfaces.end()) )
+				{
+					iface = mpContainer->GetVertexInterface( ptok->text );
+					pshader->mpInterface = iface;
+					printf( "VINF <%s>\n", ptok->text.c_str() );
+				}
+				else if( (!bvtx) && ( it_fi != mpContainer->mFragmentInterfaces.end() ) ) 
+				{	iface = mpContainer->GetFragmentInterface( ptok->text );
+					pshader->mpInterface = iface;
+					printf( "FINF <%s>\n", ptok->text.c_str() );
+				}
+				else
+				{
+					assert(false);
+				}
 			}
 		}
 
 		//////////////////////////////////////////////
 
+		assert( iface!=nullptr );
+
 		//////////////////////////////////////////////
-
-		bool bvtx = pshader->mShaderType == GL_VERTEX_SHADER;
-		
-
 		//printf( "ParseFxShaderCommon Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
 		///////////////////////////////////
-		GlslFxStreamInterface* iface = bvtx ? mpContainer->GetVertexInterface( outiface ) : mpContainer->GetFragmentInterface( outiface );
-		OrkAssert( shadercln == ":" );
-		OrkAssert( iface != nullptr );
-		pshader->mpInterface = iface;
-		///////////////////////////////////
+
+		std::string shaderbody;
+
+		size_t iline = 0;
+		FixedString<64> fxstr;
+		auto prline = [&]()
+		{
+			fxstr.format("/*%03d*/", int(iline) );
+			shaderbody += fxstr.c_str();
+			iline++;
+		};
+
+		prline();
 #if defined(USE_GL3)
-		std::string shaderbody = "#version 150 core\n";
+		shaderbody += "#version 150 core\n";
 #else
-		std::string shaderbody = "#version 120\n";
+		shaderbody += "#version 120\n";
 #endif
 		for( GlslFxStreamInterface::UniMap::const_iterator
 			itu=iface->mUniforms.begin();
 			itu!=iface->mUniforms.end();
 			itu++ )
 		{
+			prline();
 			GlslFxUniform* pu = itu->second;
 			shaderbody += "uniform ";
 			shaderbody += pu->mTypeName + " ";
@@ -427,6 +482,7 @@ struct GlSlFxParser
 			ita!=iface->mAttributes.end();
 			ita++ )
 		{
+			prline();
 			GlslFxAttribute* pa = ita->second;
 #if defined(USE_GL3)
 			shaderbody += pa->mDirection + " ";
@@ -435,42 +491,75 @@ struct GlSlFxParser
 			shaderbody += pa->mName + ";\n";
 		}
 		///////////////////////////////////
+		auto code_inject = [&](const GlslFxScannerView& view)
+		{
+
+			int ist = view.mStart+1;
+			int ien = view.mEnd-1;
+
+			bool bnewline = true;
+
+			size_t column = 0;
+			int indent = 1;
+
+			for( size_t i=ist; i<=ien; i++ )
+			{
+				ptok = view.GetToken(i);
+
+				if( bnewline )
+				{
+					prline();
+
+					for( int in=0; in<indent; in++ )
+						shaderbody += "\t";
+					column = 0;
+
+				}
+
+				const std::string& cur_tok = ptok->text;
+				//printf( "  ParseFxShaderCommon Tok<%s>\n", cur_tok.c_str() );
+				shaderbody += cur_tok;
+
+				//if( column < 2 )
+					shaderbody += " ";
+
+				column++;
+
+				bnewline = false;
+				if( cur_tok=="\n" )
+				{	bnewline = true;
+				}
+				else if( cur_tok=="{" )
+					indent++;
+				else if( cur_tok=="}" )
+					indent--;
+			}
+		};
+
+
+		///////////////////////////////////
 		// inject libblock code
 		///////////////////////////////////
 		for( const auto& libblk : lib_blocks )
 		{
+			prline();
 			shaderbody += "// libblock<" + libblk->mName + "> ///////////////////////////////////\n";
-			shaderbody += libblk->mLibBlockText;
+
+			const GlslFxScannerView& lib_view = *libblk->mView;
+			//printf( "LibBlockView.Start<%d> LibBlockView.End<%d> scanner.numtoks<%d> view.numtoks<%d>\n", view.mStart,view.mEnd, int(scanner.tokens.size()), int(view.mIndices.size()) );
+			code_inject(lib_view);
+
 			shaderbody += "///////////////////////////////////////////////////////////////////\n";
 		}	
 		///////////////////////////////////
+		prline();
 		shaderbody += "void " + shadername + "()\n{";
-		bool bnewline = true;
-		int indent = 1;
+
 		size_t iblockstart = v.mStart;
 		size_t iblockend = v.mEnd;
 
-		for( size_t i=iblockstart+1; i<iblockend; i++ )
-		{
-			ptok = v.GetToken(i);
+		code_inject( v );
 
-			if( bnewline )
-			{
-				for( int in=0; in<indent; in++ )
-					shaderbody += "\t";
-			}
-			const std::string& cur_tok = ptok->text;
-			//printf( "  ParseFxShaderCommon Tok<%s>\n", vt_tok.text.c_str() );
-			shaderbody += cur_tok;
-			bnewline = false;
-			if( cur_tok=="\n" )
-			{	bnewline = true;
-			}
-			else if( cur_tok=="{" )
-				indent++;
-			else if( cur_tok=="}" )
-				indent--;
-		}
 		shaderbody += "}\n";
 		///////////////////////////////////
 		printf( "shaderbody\n" );
@@ -481,7 +570,9 @@ struct GlSlFxParser
 		pshader->mName = shadername;
 		pshader->mShaderText = shaderbody;
 		///////////////////////////////////
-		return v.GetTokenIndex(iblockend+1);
+		int new_end = v.GetBlockEnd()+1;
+		printf( "newend be<%d> deref<%d>\n", iblockend, new_end );
+		return new_end;
 	}
 	///////////////////////////////////////////////////////////
 	GlslFxShaderVtx* ParseFxVertexShader()
@@ -500,26 +591,41 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	GlslFxTechnique* ParseFxTechnique()
 	{
-		int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
-		const token& etok = scanner.tokens[iend+1];
+		GlslFxScanViewRegex r("(\n)",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(itokidx);
+
+		//int iend = FindEndOfBlock( itokidx+1, itokidx+2 );
+		//const token& etok = scanner.tokens[iend+1];
 		//printf( "ParseFxTechnique Eob<%d> Next<%s>\n", iend, etok.text.c_str() );
-		GlslFxTechnique* ptek = new GlslFxTechnique( scanner.tokens[ itokidx+1 ].text );
+
+		std::string tekname = v.GetBlockName();
+
+		GlslFxTechnique* ptek = new GlslFxTechnique( tekname );
 		////////////////////////////////////////
-		OrkAssert( scanner.tokens[itokidx+2].text == "{" );
+		//OrkAssert( scanner.tokens[itokidx+2].text == "{" );
 		////////////////////////////////////////
-		for( int i=itokidx+3; i<iend; )
+
+		int ist = v.mStart+1;
+		int ien = v.mEnd-1;
+
+		for( int i=ist; i<=ien; )
 		{
-			const token& vt_tok = scanner.tokens[i];
+			const token* vt_tok = v.GetToken(i);
 			//printf( "  ParseFxTechnique Tok<%s>\n", vt_tok.text.c_str() );
-			if( vt_tok.text == "fxconfig" )
+			if( vt_tok->text == "fxconfig" )
 			{
 				i+=4;
 			}
-			else if( vt_tok.text == "pass" )
+			else if( vt_tok->text == "pass" )
 			{
-				i = ParseFxPass(i,ptek);
+				printf( "parsing pass at i<%d>\n", i );
+				// i is in view space, we need the globspace index to 
+				//  start the pass parse
+				int globspac_passtoki = v.GetTokenIndex(i); 
+				i = ParseFxPass(globspac_passtoki,ptek);
 			}
-			else if( vt_tok.text == "\n" )
+			else if( vt_tok->text == "\n" )
 			{
 				i++;
 			}
@@ -529,50 +635,56 @@ struct GlSlFxParser
 			}
 		}
 		////////////////////////////////////////
-		itokidx = iend+1;
+		itokidx = v.GetBlockEnd()+1;
 		return ptek;
 	}
 	///////////////////////////////////////////////////////////
 	int ParseFxPass( int istart, GlslFxTechnique* ptek )
 	{
-		int iend = FindEndOfBlock( istart+1, istart+2 );
-		const token& etok = scanner.tokens[iend+1];
-		std::string name = scanner.tokens[ istart+1 ].text;
+		GlslFxScanViewRegex r("(\n)",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(istart);
+
+		std::string name = v.GetBlockName();
 		//printf( "ParseFxPass Name<%s> Eob<%d> Next<%s>\n", name.c_str(), iend, etok.text.c_str() );
 		GlslFxPass* ppass = new GlslFxPass( name );
 		////////////////////////////////////////
-		OrkAssert( scanner.tokens[istart+2].text == "{" );
+		//OrkAssert( scanner.tokens[istart+2].text == "{" );
 		/////////////////////////////////////////////
-		for( int i=istart+3; i<iend; )
+
+		int ist = v.mStart+1;
+		int ien = v.mEnd-1;
+
+		for( size_t i=ist; i<=ien; )
 		{
-			const token& vt_tok = scanner.tokens[i];
-			//printf( "  ParseFxPass Tok<%s>\n", vt_tok.text.c_str() );
+			const token* vt_tok = v.GetToken(i);
+			//printf( "  ParseFxPass Tok<%s>\n", vt_tok->text.c_str() );
 			
-			if( vt_tok.text == "vertex_shader" )
+			if( vt_tok->text == "vertex_shader" )
 			{
-				std::string vsnam = scanner.tokens[i+2].text;
+				std::string vsnam = v.GetToken(i+2)->text;
 				GlslFxShader* pshader = mpContainer->GetVertexProgram( vsnam );
 				OrkAssert( pshader != nullptr );
 				ppass->mVertexProgram = pshader;
 				i+=4;
 			}
-			else if( vt_tok.text == "fragment_shader" )
+			else if( vt_tok->text == "fragment_shader" )
 			{
-				std::string fsnam = scanner.tokens[i+2].text;
+				std::string fsnam = v.GetToken(i+2)->text;
 				GlslFxShader* pshader = mpContainer->GetFragmentProgram( fsnam );
 				OrkAssert( pshader != nullptr );
 				ppass->mFragmentProgram = pshader;
 				i+=4;
 			}
-			else if( vt_tok.text == "state_block" )
+			else if( vt_tok->text == "state_block" )
 			{
-				std::string sbnam = scanner.tokens[i+2].text;
+				std::string sbnam = v.GetToken(i+2)->text;
 				GlslFxStateBlock* psb = mpContainer->GetStateBlock( sbnam );
 				OrkAssert(psb!=nullptr);
 				ppass->mStateBlock = psb;
 				i+=4;
 			}
-			else if( vt_tok.text == "\n" )
+			else if( vt_tok->text == "\n" )
 			{
 				i++;
 			}
@@ -585,7 +697,17 @@ struct GlSlFxParser
 		/////////////////////////////////////////////
 		ptek->AddPass( ppass );
 		/////////////////////////////////////////////
-		return iend+1;
+		return v.GetBlockEnd()+1;
+	}
+	///////////////////////////////////////////////////////////
+	void DumpAllTokens()
+	{	size_t itokidx = 0;
+		const std::vector<token>& tokens = scanner.tokens;
+		while( itokidx<tokens.size() )
+		{
+			const token& tok = tokens[itokidx++];
+			//printf( "tok<%d> <%s>\n", itokidx, tok.text.c_str() );
+		}
 	}
 	///////////////////////////////////////////////////////////
 	GlslFxContainer* Parse( const std::string& fxname)
@@ -593,17 +715,12 @@ struct GlSlFxParser
 		const std::vector<token>& tokens = scanner.tokens;
 		
 		//printf( "NumTokens<%d>\n", int(tokens.size()) );
-		itokidx = 0;
-		while( itokidx<tokens.size() )
-		{
-			const token& tok = tokens[itokidx++];
-			//printf( "tok<%d> <%s>\n", itokidx, tok.text.c_str() );
-		}
-		itokidx = 0;
 		
 		mpContainer = new GlslFxContainer( fxname.c_str() );
 		bool bOK = true;
 		
+		itokidx = 0;
+
 		while( itokidx<tokens.size() )
 		{
 			const token& tok = tokens[itokidx];
@@ -707,6 +824,14 @@ struct GlSlFxParser
  // v.push_back(it->str()); or something similar     
  //}*/
 
+GlslFxLibBlock::GlslFxLibBlock( const GlslFxScanner& s )
+	: mFilter(nullptr)
+	, mView(nullptr)
+{
+	mFilter =  new GlslFxScanViewFilter();
+	mView = new GlslFxScannerView( s, *mFilter );
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
@@ -714,7 +839,7 @@ struct GlSlFxParser
 GlslFxContainer* LoadFxFromFile( const AssetPath& pth )
 {
 	GlslFxScanner scanner;
-	GlSlFxParser parser(scanner);
+	GlSlFxParser parser(pth,scanner);
 	///////////////////////////////////
 	CFile fx_file( pth, EFM_READ );
 	OrkAssert( fx_file.IsOpen() );

@@ -4,6 +4,7 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "130";
+	import "skintools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces

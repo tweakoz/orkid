@@ -987,5 +987,30 @@ void GlslFxInterface::BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, c
 */
 }
 
+void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
+{
+	for( const auto& u : par.mUniforms )
+	{
+		auto it = mUniforms.find(u.first);
+		assert(it==mUniforms.end()); // make sure there are no duplicate unifs
+		
+		mUniforms[u.first] = u.second;
+	}
+	for( const auto& a : par.mAttributes )
+	{
+		auto it = mAttributes.find(a.first);
+		assert(it==mAttributes.end()); // make sure there are no duplicate attrs
+
+		const GlslFxAttribute* src = a.second;
+		GlslFxAttribute* cpy = new GlslFxAttribute(src->mName,src->mSemantic);
+		cpy->mTypeName = src->mTypeName;
+		cpy->mDirection = src->mDirection;
+		cpy->meType = src->meType;
+		cpy->mLocation = int(mAttributes.size());
+		mAttributes[a.first] = cpy;
+	}
+}
+
+
 } }
 #endif

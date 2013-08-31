@@ -195,14 +195,11 @@ libblock h2n_tools
 
 	vec3 compnormal( vec2 fuv ) 
 	{
-		//float kidiv = 1.0/User0.w;
-		float kidiv = 0.125/1024.0;//5/User0.w;
-
-		int itexdim = 1024;
+		int itexdim = 256;
 		float ftexdim = float(itexdim);
 
 		vec2 fuvs = vec2(fuv.x*ftexdim,fuv.y*ftexdim);
-		ivec2 iuv( int(fuvs.x), int(fuvs.y) ) ;
+		ivec2 iuv = ivec2( int(fuvs.x), int(fuvs.y) ) ;
 
 		//////////////////////////////////////
 		// sampling 9 points, a center point and 8 surrounding points
@@ -213,7 +210,7 @@ libblock h2n_tools
 		float yscal = 1.0; // modcolor.x
 		for( int idx=-1; idx<2; idx++ )
 		{			
-			for( int iy=-1; iy<2; iy++ )
+			for( int idy=-1; idy<2; idy++ )
 			{
 				ivec2 uv4 = iuv+ivec2(idx,idy);
 
