@@ -907,6 +907,8 @@ void CTQT::SlotRepaint()
 			return;
 
 		ork::PerfMarkerPush( "ork.SceneEditorVP.draw.begin" );
+			assert(false);
+
 		this->mDrawLock++;
 		if( this->mDrawLock == 1 )
 		{

@@ -20,7 +20,7 @@ TEST(OrkFuture)
 {
 	printf( "futtest\n" );
 
-	OpqTest ot(nullptr);
+/*	OpqTest ot(nullptr);
 
     Opq the_opq(1);
 
@@ -36,5 +36,5 @@ TEST(OrkFuture)
 		the_opq.push_sync(Op(lam));
 	}
 	printf( "test:OrkFuture gcounter<%d>\n", int(gcounter) );
-
+*/
 }

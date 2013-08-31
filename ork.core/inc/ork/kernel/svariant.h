@@ -75,8 +75,8 @@ public:
 	static_variant()
 		: mtinfo(nullptr)
 	{
-		mDestroyer.fetch_and_store(nullptr);
-		mCopier.fetch_and_store(nullptr);
+		mDestroyer=nullptr;
+		mCopier=nullptr;
 	}
 	//////////////////////////////////////////////////////////////
 	// copy constuctor
@@ -84,17 +84,19 @@ public:
 	static_variant( const static_variant& oth )
 		: mtinfo(nullptr)
 	{
-        mDestroyer.fetch_and_store(nullptr);
-        mCopier.fetch_and_store(nullptr);
+		mDestroyer=nullptr;
+		mCopier=nullptr;
        	
-       	if( oth.mCopier )
-			oth.mCopier( *this, oth );
+		auto c = oth.mCopier.load();
+		if( c )
+			c( *this, oth );
 	}
 	//////////////////////////////////////////////////////////////
 	static_variant& operator = ( const static_variant& oth )
 	{
-		if( oth.mCopier )
-			oth.mCopier( *this, oth );
+		auto c = oth.mCopier.load();
+		if( c )
+			c( *this, oth );
 
 		return *this;
 	}
@@ -125,7 +127,7 @@ public:
 	//////////////////////////////////////////////////////////////
 	void Destroy() 
 	{
-		destroyer_t pdestr = mDestroyer.fetch_and_store(nullptr);
+		destroyer_t pdestr = mDestroyer.exchange(nullptr,MemFullFence);
 		if( pdestr ) pdestr( *this );
 	}
 	//////////////////////////////////////////////////////////////
@@ -133,14 +135,14 @@ public:
 	//////////////////////////////////////////////////////////////
 	template <typename T> void AssignDestroyer()
 	{
-		mDestroyer.fetch_and_store(& static_variant_destroyer_t<tsize,T>::destroy);
+		mDestroyer.store(& static_variant_destroyer_t<tsize,T>::destroy,MemFullFence);
 	}
 	//////////////////////////////////////////////////////////////
 	//	assign a copier
 	//////////////////////////////////////////////////////////////
 	template <typename T> void AssignCopier()
 	{
-		mCopier.fetch_and_store(& static_variant_copier_t<tsize,T>::copy);
+		mCopier.store(& static_variant_copier_t<tsize,T>::copy,MemFullFence);
 	}
 	//////////////////////////////////////////////////////////////
 	// return true if the contained object is a T

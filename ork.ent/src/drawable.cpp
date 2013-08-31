@@ -155,9 +155,11 @@ DrawableBuffer::~DrawableBuffer()
 /////////////////////////////////////////////////////////////////////
 const DrawableBuffer* DrawableBuffer::LockReadBuffer(int lid)
 {
+	assert(false);
 	const DrawableBuffer* rbuf = gBuffers.begin_pull();
 	//if( rbuf )
 	//	rbuf->mBufferMutex.Lock();
+	//printf( "rbuf<%p> beginpull\n", rbuf );
 	return rbuf;
 }
 /////////////////////
@@ -165,11 +167,13 @@ void DrawableBuffer::UnLockReadBuffer(const DrawableBuffer*db)
 {
 	//db->mBufferMutex.UnLock();
 	gBuffers.end_pull(db);
+	//printf( "rbuf<%p> endpull\n", db );
 }
 /////////////////////////////////////////////////////////////////////
 DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid)
 {	AssertOnOpQ2( UpdateSerialOpQ() );
 	DrawableBuffer* wbuf = gBuffers.begin_push();
+	//printf( "wbuf<%p> beginpush\n", wbuf );
 	//wbuf->mBufferMutex.Lock();
 	return wbuf;
 }
@@ -177,6 +181,7 @@ void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer*db)
 {	AssertOnOpQ2( UpdateSerialOpQ() );
 	//db->mBufferMutex.UnLock();
 	gBuffers.end_push(db);
+	//printf( "wbuf<%p> endpush\n", db );
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::BeginClearAndSync()
