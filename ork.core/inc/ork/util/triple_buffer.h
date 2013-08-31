@@ -107,7 +107,7 @@ private:
 	/////////////////////////////
 	T* begin_push(void) // get handle to a write buffer
 	{	while(1)
-		{	uint32_t ost(mState);
+		{	uint32_t ost(mState.load(MemFullFence));
 			StateField nsf(ost);
 			nsf.CommonUpdate();
 			uint32_t ord = nsf.mRead;
@@ -134,7 +134,8 @@ private:
 			}
 			nsf.mWrit=nwr;
 			uint32_t nst = nsf.Pack();
-			if( ost==mState.compare_and_swap(nst,ost) )
+			bool changed = mState.compare_exchange_strong(ost,nst,MemFullFence);
+			if( changed )
 			{
 				if(nwr>0)
 					assert(ord!=nwr);
@@ -150,11 +151,12 @@ private:
 	/////////////////////////////
 	void end_push(T* pret)
 	{	while(1)
-		{	uint32_t ost(mState);
+		{	uint32_t ost(mState.load(MemFullFence));
 			StateField nsf(ost);
 			nsf.mNxtR = nsf.mWrit;
 			uint32_t nst = nsf.Pack();
-			if( ost==mState.compare_and_swap(nst,ost) )
+			bool changed = mState.compare_exchange_strong(ost,nst,MemFullFence);
+			if( changed )
 			{
 				return;
 			}
@@ -165,14 +167,15 @@ private:
 	const T* begin_pull(void) const// get a read buffer
 	{
 		while(1)
-		{	uint32_t ost(mState);
+		{	uint32_t ost(mState.load(MemFullFence));
 			StateField nsf(ost);
 			nsf.CommonUpdate();
 			uint32_t nrd = (nsf.mEnab==2) ? nsf.mNxtR : 0;
 			nsf.mRead=nrd;
 			uint32_t nst = nsf.Pack();
 			auto nonc = const_cast<concurrent_triple_buffer*>(this);
-			if( ost==nonc->mState.compare_and_swap(nst,ost) )
+			bool changed = nonc->mState.compare_exchange_strong(ost,nst,MemFullFence);
+			if( changed )
 			{
 				return (nrd>0) ? mValues[nrd-1] : nullptr;
 			}
@@ -186,13 +189,14 @@ private:
 	void end_pull(const T*pret) const
 	{
 		while(1)
-		{	uint32_t ost(mState);
+		{	uint32_t ost(mState.load(MemFullFence));
 			StateField nsf(ost);
 			nsf.CommonUpdate();
 			nsf.mRead = 0;
 			uint32_t nst = nsf.Pack();
 			auto nonc = const_cast<concurrent_triple_buffer*>(this);
-			if( ost==nonc->mState.compare_and_swap(nst,ost) )
+			bool changed = nonc->mState.compare_exchange_strong(ost,nst,MemFullFence);
+			if( changed )
 			{
 				return;
 			}
@@ -205,20 +209,20 @@ private:
 		bool bc = true;
 		while(bc)
 		{
-			uint32_t ost(mState);
+			uint32_t ost(mState.load(MemFullFence));
 			StateField sf(ost);
 			sf.mEnab = 3; // stopping
 			sf.mWrit = 0;
 			sf.mNxtR = 0;
 			uint32_t nst = sf.Pack();
-			bool was_set = (ost==mState.compare_and_swap(nst,ost));
-			bc = (false==was_set);
+			bool changed = mState.compare_exchange_strong(ost,nst,MemFullFence);
+			bc = (false==changed);
 			usleep(kquanta);
 		}
 		bc = true;
 		while(bc)
 		{
-			uint32_t ost(mState);
+			uint32_t ost(mState.load(MemFullFence));
 			StateField sf(ost);
 			bc = (sf.mRead!=0);
 			usleep(kquanta);
@@ -228,12 +232,12 @@ private:
 	/////////////////////////////	
 	void enable()
 	{
-		mState = 1<<4; // starting
+		mState.store(1<<4,MemFullFence); // starting
 	}
 	/////////////////////////////	
 	private: // 
 	/////////////////////////////
 	T* mValues[3]; 						
-	ork::atomic<int> mState;	
+	ork::atomic<uint32_t> mState;	
 };
 

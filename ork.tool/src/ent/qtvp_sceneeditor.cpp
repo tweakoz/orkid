@@ -263,6 +263,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 {
 	if( gUpdateStatus.GetState()!=EUPD_RUNNING) return;
 
+	assert(false);
 	mRenderLock = 1;
 
 	const SRect tgtrect = SRect( 0, 0, mpTarget->GetW(), mpTarget->GetH() );

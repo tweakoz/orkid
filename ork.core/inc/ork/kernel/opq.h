@@ -13,6 +13,7 @@
 
 
 #include <ork/kernel/atomic.h>
+#include <tbb/atomic.h>
 
 #include "mutex.h"
 #include "semaphore.h"
