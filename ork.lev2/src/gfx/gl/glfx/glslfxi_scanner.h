@@ -57,6 +57,7 @@ struct GlslFxScanner
 	void AddToken( const token& tok );
 	void Scan();
 	/////////////////////////////////////////
+	const token* GetToken(size_t i) const;
 	/////////////////////////////////////////
 	static const int kmaxfxblen = 64<<10;
 	char fxbuffer[ kmaxfxblen ];
@@ -97,15 +98,20 @@ struct GlslFxScannerView
 	void ScanRange( size_t is, size_t ie );
 	void ScanBlock( size_t is );
 	void Dump();
+	size_t GetBlockEnd() const;
+	std::string GetBlockName() const;
 
+	const int GetNumBlockDecorators() const { return mBlockDecorators.size(); }
+	const token* GetBlockDecorator(size_t i) const;
 
 	std::vector<int> mIndices;
 	GlslFxScanViewFilter& mFilter;
 	const GlslFxScanner& mScanner;
 	std::regex mBlockTerminators;
 
-	size_t mStart;
-	size_t mEnd;
+	size_t mStart; // will point to lev0 { if exists in blockmode
+	size_t mEnd; // will point to lev0 } if exists in blockmode
+	std::vector<int> mBlockDecorators;
 	size_t mBlockType;
 	size_t mBlockName;
 	bool   mBlockOk;

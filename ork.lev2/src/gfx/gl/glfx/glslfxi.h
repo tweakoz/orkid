@@ -14,6 +14,9 @@
 namespace ork { namespace lev2 {
 
 struct GlslFxContainer;
+struct GlslFxScanner;
+struct GlslFxScannerView;
+struct GlslFxScanViewFilter;
 
 struct GlslFxConfig
 {
@@ -68,6 +71,8 @@ struct GlslFxStreamInterface
 	UniMap			mUniforms;
 	AttrMap			mAttributes;
 	GlslFxAttribute* MergeAttribute( const std::string& name );
+
+	void Inherit( const GlslFxStreamInterface& par );
 };
 
 typedef std::function<void(GfxTarget*)> state_applicator_t;
@@ -118,10 +123,12 @@ struct GlslFxShaderFrg : GlslFxShader
 
 struct GlslFxLibBlock
 {
-	GlslFxLibBlock( const std::string& nam="" ){}
+	GlslFxLibBlock( const GlslFxScanner& s );
 
 	std::string				mName;
-	std::string 			mLibBlockText;
+	GlslFxScanViewFilter*	mFilter;
+	GlslFxScannerView* 		mView;
+
 };
 
 struct GlslFxPass

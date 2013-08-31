@@ -50,6 +50,16 @@ void GlslFxScannerView::ScanRange( size_t ist, size_t ien )
 	}
 }
 
+size_t GlslFxScannerView::GetBlockEnd() const
+{
+	return GetTokenIndex(mEnd);
+}
+
+std::string GlslFxScannerView::GetBlockName() const
+{
+	return GetToken(mBlockName)->text;	
+}
+
 void GlslFxScannerView::ScanBlock( size_t is )
 {
 	size_t max_t = mScanner.tokens.size();
@@ -67,8 +77,8 @@ void GlslFxScannerView::ScanBlock( size_t is )
 		bool is_open = ( t.text == "{" );
 		bool is_close = ( t.text == "}" );
 
-		printf( "t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
-				t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
+		printf( "itok<%d> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
+				i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
 
 		switch( istate )
 		{
@@ -89,12 +99,18 @@ void GlslFxScannerView::ScanBlock( size_t is )
 				break;
 			}
 			case 1:	// have not yet found starting brace
+			{	bool is_deco = ( t.text == ":" );
 				if( is_open )
 				{	assert(ibracelev==0);
 					mStart = mIndices.size();
 					ibracelev++;
 					istate=2;
 					mIndices.push_back(i);
+				}
+				else if( is_deco )
+				{
+					i++;
+					mBlockDecorators.push_back(i);
 				}
 				else
 				{	assert(false==is_close);
@@ -104,9 +120,11 @@ void GlslFxScannerView::ScanBlock( size_t is )
 						mIndices.push_back(i);
 				}
 				break;
+			}
 			case 2:	// content
 				if( is_open )
 				{	ibracelev++;
+					mIndices.push_back(i);
 				}
 				else if( is_close )
 				{	ibracelev--;
@@ -151,22 +169,39 @@ void GlslFxScannerView::Dump()
 	}
 }
 
+const token* GlslFxScanner::GetToken(size_t i) const
+{
+	const token* pt = nullptr;
+	if( i < tokens.size() )
+	{
+		pt = & tokens[i];
+	}
+	return pt;
+}
+
 const token* GlslFxScannerView::GetToken(size_t i) const
 {
 	const token* pt = nullptr;
-
 	if( i<mIndices.size() )
-	{
-		int tokidx = mIndices[i];
-
-		if( tokidx < mScanner.tokens.size() )
-		{
-			pt = & mScanner.tokens[tokidx];
-		}
+	{	int tokidx = mIndices[i];
+		pt = mScanner.GetToken(tokidx);
 	}
 
 	return pt;
 }
+
+const token* GlslFxScannerView::GetBlockDecorator(size_t i) const
+{
+	const token* pt = nullptr;
+
+	if( i<mBlockDecorators.size() )
+	{
+		int tokidx = mBlockDecorators[i];
+		pt = mScanner.GetToken(tokidx);
+	}
+	return pt;
+}
+
 size_t GlslFxScannerView::GetTokenIndex(size_t i) const
 {
 	size_t ret = ~0;
