@@ -31,7 +31,7 @@ struct semaphore
 private:
     ork::mutex mMutex;
     std::condition_variable mCondition;
-    int mCount;
+    std::atomic<int> mCount;
 };
 
 
