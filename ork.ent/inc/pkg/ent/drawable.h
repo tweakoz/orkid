@@ -22,7 +22,6 @@
 #include "componentfamily.h"
 #include "component.h"
 #include <ork/gfx/camera.h>
-#include <lockfree/lockfree/fifo.hpp>
 #include <ork/util/triple_buffer.h>
 #include <ork/kernel/concurrent_queue.h>
 

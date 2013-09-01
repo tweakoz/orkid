@@ -6,7 +6,7 @@
 #include "rib_test.h"
 #include "render_graph.h"
 #include <math.h>
-#include <boost/foreach.hpp>
+
 //#include <aqsis/ri/ri.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ struct RibOut
     {
         FILE* fout = fopen(path.c_str(),"wt");
         
-        BOOST_FOREACH( const std::string& item, mOutputStream )
+        for( const std::string& item : mOutputStream )
         {
             fprintf( fout, "%s", item.c_str() );
         }

@@ -30,7 +30,7 @@
 
 #if defined(USE_FCOLLADA)
 #include <orktool/filter/gfx/collada/daeutil.h>
-#include <boost/thread.hpp>
+#include <ork/kernel/thread.h>
 bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::string>& MatSemMap );
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -733,42 +733,47 @@ struct DaeReadThreadData
 };
 ///////////////////////////////////////////////////////////////////////////////
 
-void* DaeReadJobThread(void*pval)
+struct DaeReadJobThread : public ork::Thread
 {
-	DaeReadThreadData* thread_data = (DaeReadThreadData*) pval;
-	DaeReadQueue* q = thread_data->mQ;
+	DaeReadJobThread( DaeReadThreadData* pdata ) : mData(pdata) {}
 
-	bool bdone = false;
-	while( ! bdone )
+	DaeReadThreadData* mData;
+	
+	void run() override
 	{
-		orkvector<DaeReadQueueItem>& qq = q->mJobSet.LockForWrite();
-		if( qq.size() )
+		DaeReadQueue* q = mData->mQ;
+
+		bool bdone = false;
+		while( ! bdone )
 		{
-			orkvector<DaeReadQueueItem>::iterator it = (qq.end()-1);
-			DaeReadQueueItem qitem = *it;
-			qq.erase(it);
-			q->mJobSet.UnLock();
-			///////////////////////////////
-			qitem.ReadPolys(thread_data->miThreadIndex);
-			///////////////////////////////
-			q->mSourceMutex.Lock();
+			orkvector<DaeReadQueueItem>& qq = q->mJobSet.LockForWrite();
+			if( qq.size() )
 			{
-				q->miNumFinished++;
-				bdone = (q->miNumFinished==q->miNumQueued);
-				//qitem.mpSourceToolMesh->RemoveSubMesh(qitem.mSourceSubName);
+				orkvector<DaeReadQueueItem>::iterator it = (qq.end()-1);
+				DaeReadQueueItem qitem = *it;
+				qq.erase(it);
+				q->mJobSet.UnLock();
+				///////////////////////////////
+				qitem.ReadPolys(mData->miThreadIndex);
+				///////////////////////////////
+				q->mSourceMutex.Lock();
+				{
+					q->miNumFinished++;
+					bdone = (q->miNumFinished==q->miNumQueued);
+					//qitem.mpSourceToolMesh->RemoveSubMesh(qitem.mSourceSubName);
+				}
+				q->mSourceMutex.UnLock();
+				///////////////////////////////
+				ork::msleep(1000);
 			}
-			q->mSourceMutex.UnLock();
-			///////////////////////////////
-			ork::msleep(1000);
-		}
-		else
-		{
-			q->mJobSet.UnLock();
-			bdone=true;
+			else
+			{
+				q->mJobSet.UnLock();
+				bdone=true;
+			}
 		}
 	}
-	return 0;
-}
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 void DaeReadQueueItem::ReadPolys(int ithreadidx) const
@@ -1252,13 +1257,13 @@ void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopt
 	// start threads
 	/////////////////////////////////////////////////////////
 	int inumcores = 1; //readopts.miNumThreads;
-	orkvector<boost::thread*>	ThreadVect;
+	orkvector<ork::Thread*>	ThreadVect;
 	for( int ic=0; ic<inumcores; ic++ )
 	{
 		DaeReadThreadData* thread_data = new DaeReadThreadData;
 		thread_data->mQ = & Q;
 		thread_data->miThreadIndex = ic;
-		boost::thread* job_thread = new boost::thread(DaeReadJobThread,thread_data);
+		auto job_thread = new DaeReadJobThread(thread_data);
 		ThreadVect.push_back(job_thread);
 	}
 	/////////////////////////////////////////////////////////
@@ -1266,7 +1271,7 @@ void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopt
 	/////////////////////////////////////////////////////////
 	for( auto it=ThreadVect.begin(); it!=ThreadVect.end(); it++ )
 	{
-		boost::thread* job = (*it);
+		auto job = (*it);
         printf( "joining thread<%p>\n", job );
 		job->join();
         delete job;

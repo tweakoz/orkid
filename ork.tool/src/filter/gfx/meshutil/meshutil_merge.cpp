@@ -11,7 +11,7 @@
 #include <ork/kernel/csystem.h>
 #include <ork/kernel/mutex.h>
 
-#include <boost/thread.hpp>
+#include <ork/kernel/thread.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace MeshUtil {
@@ -156,40 +156,46 @@ struct MergeToolMeshThreadData
 	int					miThreadIndex;
 };
 
-static void* MergeToolMeshJobThread( MergeToolMeshThreadData* thread_data )
+struct MergeToolMeshJobThread : public ork::Thread 
 {
-	MergeToolMeshQueue* Q = thread_data->mQ;
+	MergeToolMeshJobThread( MergeToolMeshThreadData* thread_data ) : mData(thread_data ) {}
 
-	bool bdone = false;
-	while( ! bdone )
+	MergeToolMeshThreadData* mData;
+
+	void run() override
 	{
-		orkvector<MergeToolMeshQueueItem>& qq = Q->mJobSet.LockForWrite();
-		if( qq.size() )
+		MergeToolMeshQueue* Q = mData->mQ;
+
+		bool bdone = false;
+		while( ! bdone )
 		{
-			orkvector<MergeToolMeshQueueItem>::iterator it = (qq.end()-1);
-			MergeToolMeshQueueItem qitem = *it;
-			qq.erase(it);
-			Q->mJobSet.UnLock();
-			////////////////////////////////
-			qitem.DoIt(thread_data->miThreadIndex);
-			////////////////////////////////
-			Q->mSourceMutex.Lock();
+			orkvector<MergeToolMeshQueueItem>& qq = Q->mJobSet.LockForWrite();
+			if( qq.size() )
 			{
-				Q->miNumFinished++;
-				bdone = (Q->miNumFinished==Q->miNumQueued);
-				//qitem.mpSourceToolMesh->RemoveSubMesh(qitem.mSourceSubName);
+				orkvector<MergeToolMeshQueueItem>::iterator it = (qq.end()-1);
+				MergeToolMeshQueueItem qitem = *it;
+				qq.erase(it);
+				Q->mJobSet.UnLock();
+				////////////////////////////////
+				qitem.DoIt(mData->miThreadIndex);
+				////////////////////////////////
+				Q->mSourceMutex.Lock();
+				{
+					Q->miNumFinished++;
+					bdone = (Q->miNumFinished==Q->miNumQueued);
+					//qitem.mpSourceToolMesh->RemoveSubMesh(qitem.mSourceSubName);
+				}
+				Q->mSourceMutex.UnLock();
+				////////////////////////////////
 			}
-			Q->mSourceMutex.UnLock();
-			////////////////////////////////
-		}
-		else
-		{
-			Q->mJobSet.UnLock();
-			bdone=true;
+			else
+			{
+				Q->mJobSet.UnLock();
+				bdone=true;
+			}
 		}
 	}
-	return 0;
-}
+};
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,13 +231,13 @@ void toolmesh::MergeToolMeshThreadedExcluding( const toolmesh & sr, int inumthre
 	/////////////////////////////////////////////////////////
 	// start threads
 	/////////////////////////////////////////////////////////
-	orkvector<boost::thread*>	ThreadVect;
+	orkvector<ork::Thread*>	ThreadVect;
 	for( int ic=0; ic<inumthreads; ic++ )
 	{
 		MergeToolMeshThreadData* thread_data = new MergeToolMeshThreadData;
 		thread_data->mQ = & Q;
 		thread_data->miThreadIndex = ic;
-		boost::thread* job_thread = new boost::thread( MergeToolMeshJobThread, thread_data );
+		auto job_thread = new MergeToolMeshJobThread( thread_data );
 		ThreadVect.push_back(job_thread);
 	}
 	/////////////////////////////////////////////////////////
@@ -239,7 +245,7 @@ void toolmesh::MergeToolMeshThreadedExcluding( const toolmesh & sr, int inumthre
 	/////////////////////////////////////////////////////////
 	for( auto it=ThreadVect.begin(); it!=ThreadVect.end(); it++ )
 	{
-		boost::thread* job = (*it);
+		auto job = (*it);
 		job->join();
         delete job;
 	}

@@ -73,7 +73,7 @@ class orktool:
 	## IX libs
 	#########################
 	elif prj.IsIx:
-		LIBS = "GL Cg CgGL IL ILU ILUT QtCore QtGui "
+		LIBS = "GL Cg CgGL QtCore QtGui "
 		#LIBS += " rihelper 3delight "
 		#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 		prj.AddLibs( LIBS )
@@ -81,8 +81,6 @@ class orktool:
 	## common libs
 	#########################
 	prj.AddLibs( ORKLIBS )
-	prj.AddLibs( "IL ILU ILUT" )
-	prj.AddLibs( 'boost_system-mt boost_filesystem-mt boost_thread-mt' )
 	prj.AddLibs( "ork.unittestpp.%s"%suffix )
 	#########################
 	prj.Configure()
