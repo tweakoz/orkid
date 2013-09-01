@@ -114,10 +114,13 @@ void thread_pool::init( int inumthreads )
 {
 	for( int i=0; i<inumthreads; i++ )
 	{
-		struct thread_exec
+		struct tpthread : public ork::Thread
 		{
-			thread_exec(thread_pool_worker*pworker) : mpWorker(pworker) {}
-			void operator()()
+			tpthread(thread_pool_worker*pworker) 
+				: mpWorker(pworker)
+			{}
+
+			void run() override
 			{
 				if( mpWorker )
 				{
@@ -130,8 +133,7 @@ void thread_pool::init( int inumthreads )
 
 		thread* pthread = new thread;
 		pthread->mpWorker = new thread_pool_worker( this );
-		thread_exec exec(pthread->mpWorker);
-		pthread->mpThread = new boost::thread(exec);
+		pthread->mpThread = new tpthread(pthread->mpWorker);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -26,8 +26,6 @@
 #include <ork/math/collision_test.h>
 #include <ork/gfx/camera.h>
 
-#include <lockfree/atomic.hpp>
-
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::Drawable, "Drawable");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ModelDrawable, "ModelDrawable");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CallbackDrawable, "CallbackDrawable");
@@ -41,11 +39,6 @@ ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineRenderSynchro;
 ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineUpdateSynchro;
 
 concurrent_triple_buffer<DrawableBuffer> DrawableBuffer::gBuffers;
-
-//boost::lockfree::fifo<DrawableBuffer*> DrawableBuffer::gFreeBuffers(DrawableBuffer::kmaxbuffers);
-//boost::lockfree::fifo<DrawableBuffer*> DrawableBuffer::gReadBuffers(DrawableBuffer::kmaxbuffers);
-//boost::lockfree::fifo<DrawableBuffer*> DrawableBuffer::gTempBuffers(DrawableBuffer::kmaxbuffers);
-//DrawableBuffer DrawableBuffer::gBuffers[DrawableBuffer::kmaxbuffers];
 
 bool DrawableBuffer::gbInsideClearAndSync = false;
 

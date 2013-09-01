@@ -22,8 +22,8 @@
 #include <ork/file/chunkfile.h>
 #include <ork/file/chunkfile.hpp>
 #include <queue>
-#include <boost/gil/typedefs.hpp>
-#include <boost/cast.hpp>
+//#include <boost/gil/typedefs.hpp>
+//#include <boost/cast.hpp>
 //#include <boost/gil/extension/io/png_dynamic_io.hpp>
 //#include <IL/il.h>
 //#include <IL/ilut.h>

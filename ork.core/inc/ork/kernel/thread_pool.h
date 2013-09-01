@@ -11,7 +11,7 @@
 #include <vector>
 #include <ork/kernel/any.h>
 #include <ork/kernel/concurrent_queue.h>
-#include <boost/thread.hpp>
+#include <ork/kernel/thread.h>
 
 namespace ork { namespace threadpool {
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,7 +130,7 @@ private:
 struct thread
 {
 	thread_pool_worker*	mpWorker;
-	boost::thread*		mpThread;
+	ork::Thread*		mpThread;
 
 	thread();
 	~thread();

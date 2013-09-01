@@ -7,7 +7,7 @@
 
 #include <ork/kernel/any.h>
 
-#if defined(ORK_VS2012) // builtin mutex
+#if 1 // defined(ORK_VS2012) // builtin mutex
 #define USE_STD_THREAD
 #include <thread>
 #elif defined(IX)
@@ -58,6 +58,7 @@ namespace ork
 		{
 #if defined(USE_STD_THREAD)
 			mThreadH->join();
+			return true;
 #elif defined(USE_PTHREAD)
 			void* pret = 0;
 			int iret = pthread_join(mThreadH, & pret);
@@ -67,6 +68,8 @@ namespace ork
 		virtual void run() = 0;
 
 		anyp& UserData() { return mUserData; }
+		
+		virtual ~Thread() {}
 		
 	protected:
 		

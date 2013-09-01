@@ -7,7 +7,6 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/string.h>
 #include <ork/util/Context.hpp>
-//#include <lockfree/atomic.hpp>
 #include <ork/kernel/debug.h>
 #include <ork/kernel/future.hpp>
 #if defined(ORK_LINUX)
