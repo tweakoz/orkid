@@ -13,7 +13,7 @@ struct Future
     typedef int future_id_t;
 
     Future();
-    bool IsSignaled() const { return mState>0; }
+    bool IsSignaled() const { return mState.load()>0; }
     template <typename T> void Signal( const T& result );
     void Clear();
     void WaitForSignal() const;
@@ -27,7 +27,7 @@ struct Future
     ////////////////////
 
     future_id_t             mID;
-    ork::atomic<int>        mState;
+    std::atomic<int>        mState;
     var_t                   mResult;
     var_t                   mCallback;
     //mutable std::condition_variable mWaitCV;
@@ -45,7 +45,7 @@ void Future::Signal( const T& result )
         blk(*this);
     }
 
-    mState++;
+    mState.fetch_add(1);
 }
 
 }
