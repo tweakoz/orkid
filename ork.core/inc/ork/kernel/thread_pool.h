@@ -13,7 +13,7 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <boost/thread.hpp>
 
-#include <ork/kernel/atomic.h>
+#include <atomic>
 
 namespace ork { namespace threadpool {
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,27 +26,27 @@ template <typename T> class MyAtomicNum
 public:
 	void Store( int inew )
 	{
-		mData.fetch_and_store(inew);
+		mData.store(inew);
 	}
 	T FetchAndStore( int inew )
 	{
-		return mData.fetch_and_store(inew);		
+		return mData.exchange(inew);		
 	}
 	T FetchAndIncrement(int ival=1)
 	{
-		return mData.fetch_and_add(ival);		
+		return mData.fetch_add(ival);		
 	}
 	T FetchAndDecrement()
 	{
-		return mData.fetch_and_decrement();		
+		return mData.fetch_sub(1);		
 	}
 	T Fetch() const
 	{
-		return mData;		
+		return mData.load();		
 	}
 
 private:
-	ork::atomic<T>	mData;
+	std::atomic<T>	mData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
