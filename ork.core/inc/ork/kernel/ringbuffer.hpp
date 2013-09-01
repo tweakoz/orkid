@@ -21,6 +21,7 @@
 #pragma once
 
 #include <ork/kernel/atomic.h>
+#include <atomic>
 #include <unistd.h>
 
 namespace ork {
@@ -49,7 +50,7 @@ private:
 
 	struct cell_t
 	{
-		ork::atomic<size_t>   mSequence;
+		std::atomic<size_t>   mSequence;
 		T                     mData;
 	};
 
@@ -83,7 +84,7 @@ MpMcRingBuf<T,max_items>::MpMcRingBuf()
 	{
 		cell_t& the_cell = mCellBuffer[i];
 		//the_cell.mSequence.template store<MemRelaxed>(i);
-		the_cell.mSequence.template store<MemRelaxed>(i);
+		the_cell.mSequence.store(i,MemRelaxed2);
 	}
 
 	mEnqueuePos.store<MemRelaxed>(0);
@@ -100,7 +101,8 @@ MpMcRingBuf<T,max_items>::MpMcRingBuf(const MpMcRingBuf&oth)
 	{
 		const cell_t& src_cell = oth.mCellBuffer[i];
 		cell_t& dst_cell = mCellBuffer[i];
-		dst_cell = src_cell;
+		dst_cell.mSequence.store(src_cell.mSequence.load());
+		dst_cell.mData = src_cell.mData;
 	}
 	mEnqueuePos = oth.mEnqueuePos;
 	mDequeuePos = oth.mDequeuePos;
@@ -137,7 +139,7 @@ bool MpMcRingBuf<T,max_items>::try_push(const T& data)
 	{
 		cell = mCellBuffer + (pos & kBufferMask);
 		//////////////////////////////////////
-		size_t seq = cell->mSequence.template load<MemAcquire>();
+		size_t seq = cell->mSequence.load(MemAcquire2);
 		intptr_t dif = intptr_t(seq) - intptr_t(pos);
 		//////////////////////////////////////
 		if (dif == 0)
@@ -155,7 +157,7 @@ bool MpMcRingBuf<T,max_items>::try_push(const T& data)
 	}
 
 	cell->mData = data;
-	cell->mSequence.template store<MemRelease>(pos + 1);
+	cell->mSequence.store(pos + 1,MemRelease2);
 	return true;
 }
 
@@ -171,7 +173,7 @@ bool MpMcRingBuf<T,max_items>::try_pop(T& data)
 	for (;;)
 	{	cell = mCellBuffer + (pos & kBufferMask);
 		//////////////////////////////////////
-		size_t seq = cell->mSequence.template load<MemAcquire>();
+		size_t seq = cell->mSequence.load(MemAcquire2);
 		intptr_t dif = intptr_t(seq) - intptr_t(pos + 1);
 		//////////////////////////////////////
 		if (dif == 0)
@@ -193,7 +195,7 @@ bool MpMcRingBuf<T,max_items>::try_pop(T& data)
 	// Read From Cell 
 	//////////////////////
 	data = cell->mData;
-	cell->mSequence.template store<MemRelease>(1+pos+kBufferMask);
+	cell->mSequence.store(1+pos+kBufferMask,MemRelease2);
 	return true;
 
 }
