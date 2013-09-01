@@ -13,17 +13,20 @@ semaphore::semaphore(const char* name)
 
 void semaphore::notify()
 {
+	printf( "semaphore<%p>::notify() mCount<%d>\n", this, mCount.load() );
     ork::mutex::unique_lock lock(mMutex);
-	++mCount;
+	mCount.fetch_add(1);
     mCondition.notify_one();
 }
 
 void semaphore::wait()
 {
+	printf( "semaphore<%p>::wait() mCount<%d>\n", this, mCount.load() );
    ork::mutex::unique_lock lock(mMutex);
-    while(!mCount)
+    while(mCount.load()<=0)
         mCondition.wait(lock.mLockImpl);
-    --mCount;
+        //mCondition.wait(1<<20);
+	mCount.fetch_sub(1);
 }
 
 condition_variable::condition_variable(bool do_init)
