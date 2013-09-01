@@ -21,7 +21,6 @@
 #pragma once
 
 #include <ork/kernel/atomic.h>
-#include <atomic>
 #include <unistd.h>
 
 namespace ork {
@@ -50,7 +49,7 @@ private:
 
 	struct cell_t
 	{
-		std::atomic<size_t>   mSequence;
+		ork::atomic<size_t>   mSequence;
 		T                     mData;
 	};
 
@@ -58,9 +57,9 @@ private:
 	cell_t  		        mCellBuffer[max_items];
 	const size_t            kBufferMask;
 	cacheline_pad_t         mPAD1;
-	std::atomic<size_t>     mEnqueuePos;
+	ork::atomic<size_t>     mEnqueuePos;
 	cacheline_pad_t         mPAD2;
-	std::atomic<size_t>     mDequeuePos;
+	ork::atomic<size_t>     mDequeuePos;
 	cacheline_pad_t         mPAD3;
 
 }; 
@@ -83,11 +82,11 @@ MpMcRingBuf<T,max_items>::MpMcRingBuf()
 	for (size_t i=0; i<max_items; i++ )
 	{
 		cell_t& the_cell = mCellBuffer[i];
-		the_cell.mSequence.store(i,MemRelaxed2);
+		the_cell.mSequence.store(i,MemRelaxed);
 	}
 
-	mEnqueuePos.store(0,MemRelaxed2);
-	mDequeuePos.store(0,MemRelaxed2);
+	mEnqueuePos.store(0,MemRelaxed);
+	mDequeuePos.store(0,MemRelaxed);
 }
 
 template<typename T,size_t max_items>
@@ -133,18 +132,18 @@ template<typename T,size_t max_items>
 bool MpMcRingBuf<T,max_items>::try_push(const T& data)
 {
 	cell_t* cell = nullptr;
-	size_t pos = mEnqueuePos.load(MemRelaxed2);
+	size_t pos = mEnqueuePos.load(MemRelaxed);
 	for (;;)
 	{
 		cell = mCellBuffer + (pos & kBufferMask);
 		//////////////////////////////////////
-		size_t seq = cell->mSequence.load(MemAcquire2);
+		size_t seq = cell->mSequence.load(MemAcquire);
 		intptr_t dif = intptr_t(seq) - intptr_t(pos);
 		//////////////////////////////////////
 		if (dif == 0)
 		{
 			size_t newval = pos+1;
-			bool changed = mEnqueuePos.compare_exchange_weak(pos,newval,MemRelaxed2);
+			bool changed = mEnqueuePos.compare_exchange_weak(pos,newval,MemRelaxed);
 			if(changed)
 				break;
 		}
@@ -153,11 +152,11 @@ bool MpMcRingBuf<T,max_items>::try_push(const T& data)
 			return false;
 		//////////////////////////////////////
 		else
-			pos = mEnqueuePos.load(MemRelaxed2);
+			pos = mEnqueuePos.load(MemRelaxed);
 	}
 
 	cell->mData = data;
-	cell->mSequence.store(pos + 1,MemRelease2);
+	cell->mSequence.store(pos + 1,MemRelease);
 	return true;
 }
 
@@ -168,18 +167,18 @@ bool MpMcRingBuf<T,max_items>::try_pop(T& data)
 {
 	cell_t* cell;
 
-	size_t pos = mDequeuePos.load(MemRelaxed2);
+	size_t pos = mDequeuePos.load(MemRelaxed);
 
 	for (;;)
 	{	cell = mCellBuffer + (pos & kBufferMask);
 		//////////////////////////////////////
-		size_t seq = cell->mSequence.load(MemAcquire2);
+		size_t seq = cell->mSequence.load(MemAcquire);
 		intptr_t dif = intptr_t(seq) - intptr_t(pos + 1);
 		//////////////////////////////////////
 		if (dif == 0)
 		{
 			size_t newval = pos+1;
-			bool changed = mDequeuePos.compare_exchange_weak(pos,newval,MemRelaxed2);
+			bool changed = mDequeuePos.compare_exchange_weak(pos,newval,MemRelaxed);
 			if(changed)
 				break;
 		}
@@ -190,13 +189,13 @@ bool MpMcRingBuf<T,max_items>::try_pop(T& data)
 		}
 		//////////////////////////////////////
 		else
-			pos = mDequeuePos.load(MemRelaxed2);
+			pos = mDequeuePos.load(MemRelaxed);
 	}
 	//////////////////////
 	// Read From Cell 
 	//////////////////////
 	data = cell->mData;
-	cell->mSequence.store(1+pos+kBufferMask,MemRelease2);
+	cell->mSequence.store(1+pos+kBufferMask,MemRelease);
 	return true;
 
 }

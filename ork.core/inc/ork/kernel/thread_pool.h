@@ -13,8 +13,6 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <boost/thread.hpp>
 
-#include <atomic>
-
 namespace ork { namespace threadpool {
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +44,7 @@ public:
 	}
 
 private:
-	std::atomic<T>	mData;
+	ork::atomic<T>	mData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -92,7 +92,7 @@ def DefaultBuildEnv( env, prj ):
 	#	DEFS += "LINUX "
 	CCFLG = ' '
 	CXXFLG = ' '
-	LIBS = "m tbb pthread"
+	LIBS = "m pthread"
 	LIBPATH = ' /opt/local/lib '
 	#if USE_DEBUG_CXX:
 	#	LIBPATH += ' /usr/lib/x86_64-linux-gnu/debug '

@@ -27,7 +27,7 @@ struct Future
     ////////////////////
 
     future_id_t             mID;
-    std::atomic<int>        mState;
+    ork::atomic<int>        mState;
     var_t                   mResult;
     var_t                   mCallback;
     //mutable std::condition_variable mWaitCV;

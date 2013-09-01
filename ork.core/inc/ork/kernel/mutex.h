@@ -92,7 +92,6 @@ namespace ork
 			lock_impl_t mLockImpl;
 		};
 
-		//typedef tbb::mutex::scoped_lock scoped_lock;
 	private:
 		mutex_impl_t mTheMutex;
 		std::string mName;
