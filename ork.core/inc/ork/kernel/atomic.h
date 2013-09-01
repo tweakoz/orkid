@@ -15,6 +15,11 @@
 #define MemRelease tbb::full_fence
 #endif
 
+#define MemFullFence2 std::memory_order_acq_rel
+#define MemRelaxed2 std::memory_order_relaxed
+#define MemAcquire2 std::memory_order_acquire
+#define MemRelease2 std::memory_order_release
+
 namespace ork
 {
 	template <typename T> using atomic = tbb::atomic<T>;

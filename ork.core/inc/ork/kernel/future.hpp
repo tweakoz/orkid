@@ -2,6 +2,7 @@
 
 #include <ork/kernel/svariant.h>
 #include <ork/kernel/mutex.h>
+#include <ork/kernel/atomic.h>
 #include <functional>
 
 namespace ork {
