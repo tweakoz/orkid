@@ -67,7 +67,6 @@ void task::wait()
 {
 	while(false == HasFinished() )
 	{
-		//tbb::this_tbb_thread::yield();
 		ork::msleep(0);
 	}
 	int ichk = mNumSubTasks.FetchAndStore(kTaskIdle);
@@ -239,7 +238,7 @@ void thread_pool_worker::Process()
 				ptask->process( subtask, this );
 			}
 		}
-		ork::msleep(0);//tbb::this_tbb_thread::yield();
+		ork::msleep(0);
 	}
 	mbExited=true;
 }
@@ -249,7 +248,6 @@ void thread_pool_worker::Kill()
 	while( false == mbExited )
 	{
 		ork::msleep(0);
-		//tbb::this_tbb_thread::yield();
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

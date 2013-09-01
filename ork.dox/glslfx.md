@@ -1,4 +1,4 @@
-#Orkid GLSLFX Effect Format
+#Orkid GLSL FX Effect Format (Ork.Fx)
 
 ---
 
@@ -14,7 +14,7 @@ An OpenGLes2 version will be coming soon - This is the last prerequisite for get
 	 - import/include from other glfx files 
 	 - familiar shader/technique/pass layout
 	 - "state blocks" - reusable state vectors
-	 - "library blocks" - reusable code
+	 - "library blocks" - reusable code libraries
 	 - shader "interfaces" - uniform/attribute declarations with semantics
 	 - data inheritance for stateblocks and interfaces 
 	 

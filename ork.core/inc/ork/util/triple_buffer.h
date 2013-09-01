@@ -1,8 +1,7 @@
 
 #pragma once
 
-#include <atomic>
-//#include <ork/kernel/concurrent_queue.h>
+#include <ork/kernel/atomic.h>
 #include <assert.h>
 #include <unistd.h>
 
@@ -238,6 +237,6 @@ private:
 	private: // 
 	/////////////////////////////
 	T* mValues[3]; 						
-	std::atomic<uint32_t> mState;	
+	ork::atomic<uint32_t> mState;	
 };
 
