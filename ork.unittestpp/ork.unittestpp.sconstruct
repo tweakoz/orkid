@@ -38,8 +38,8 @@ class upp:
 
 	SRC_FOLDERS  = " . Posix "
 
-	LIBS = 'boost_system-mt boost_filesystem-mt boost_thread-mt'
-
+	LIBS = ''
+	
 	##########################################
 
 	prj_lib = sln.Project(ARGS,BasicEnv,"ork.unittestpp")

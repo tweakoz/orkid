@@ -9,6 +9,13 @@ I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI car
 
 In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies. Some of these dependencies include the 3delight renderer, cortex-vfx, alembic, Open Shading Language, QT5.0.1, etc.. Some of these will eventually be used for offline production quality rendering of content generated with Orkid. Note that 3Delight is free (even for commercial work), though it will be limited to 2 cores for rendering. If you want full renderman acceleration you will need to buy a license from http://www.3delight.com
 
+To build on Osx MountainLion (10.8)+
+==================================
+* clone it, cd into repo 
+* make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
+* make prep (copy some deps to the stage folder)
+* make (to build orkid itself)
+
 To build on Ubuntu12.04 LTS x86/64
 ==================================
 * clone it, cd into repo 
@@ -25,6 +32,11 @@ To run
 ======
 * symlink data->ork.data , Once I get an installer made, this step will become unnecessary. 
 * run ork.tool.test.ix.release (from the repo root folder). It is in your path already, so just type ork.[tab tab] and see which orkid executables are present.
+
+misc
+=====
+tsx_find.py "phrase" - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
+
 
 
 

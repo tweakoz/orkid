@@ -17,8 +17,8 @@
 #include <ork/math/plane.hpp>
 #include <ork/math/line.h>
 #include "render_graph.h"
-#include <IL/il.h>
-#include <IL/ilut.h>
+//#include <IL/il.h>
+//#include <IL/ilut.h>
 
 namespace devil { void InitDevIL(); }
 
@@ -277,6 +277,7 @@ void rend_texture2D::Init( /*const CLDevice* pdev*/ ) const
 
 void rend_texture2D::Load( const std::string& pth )
 {
+#if 0
 	devil::InitDevIL();
 	ILuint image;
 	ilGenImages(1, &image);
@@ -325,6 +326,7 @@ void rend_texture2D::Load( const std::string& pth )
 		}
 	}
 	ilDeleteImage(image);
+#endif
 }
 
 rend_texture2D::~rend_texture2D() { delete[] mpData; }

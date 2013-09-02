@@ -11,9 +11,7 @@
 #include <vector>
 #include <ork/kernel/any.h>
 #include <ork/kernel/concurrent_queue.h>
-#include <boost/thread.hpp>
-
-#include <ork/kernel/atomic.h>
+#include <ork/kernel/thread.h>
 
 namespace ork { namespace threadpool {
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,7 +40,7 @@ public:
 	}
 	T Fetch() const
 	{
-		return mData;		
+		return mData.load();		
 	}
 
 private:
@@ -132,7 +130,7 @@ private:
 struct thread
 {
 	thread_pool_worker*	mpWorker;
-	boost::thread*		mpThread;
+	ork::Thread*		mpThread;
 
 	thread();
 	~thread();

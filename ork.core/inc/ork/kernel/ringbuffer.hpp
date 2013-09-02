@@ -123,7 +123,8 @@ MpMcRingBuf<T,max_items>::MpMcRingBuf(const MpMcRingBuf&oth)
 	{
 		const cell_t& src_cell = oth.mCellBuffer[i];
 		cell_t& dst_cell = mCellBuffer[i];
-		dst_cell = src_cell;
+		dst_cell.mSequence.store(src_cell.mSequence.load());
+		dst_cell.mData = src_cell.mData;
 	}
 	mEnqueuePos.store(oth.mEnqueuePos.load());
 	mDequeuePos.store(oth.mDequeuePos.load());
@@ -166,9 +167,6 @@ bool MpMcRingBuf<T,max_items>::try_push(const T& data)
 		if (dif == 0)
 		{
 			size_t newval = pos+1;
-			//size_t eq_read = mEnqueuePos.compare_and_swap<MemRelaxed>(newval,pos);
-			//if( eq_read==pos )
-			//	break;
 			bool changed = mEnqueuePos.compare_exchange_weak(pos,newval,MemRelaxed);
 			if(changed)
 				break;
@@ -203,12 +201,8 @@ bool MpMcRingBuf<T,max_items>::try_pop(T& data)
 		//////////////////////////////////////
 		if (dif == 0)
 		{
-			//size_t dq_read = mDequeuePos.compare_and_swap<MemRelaxed>(pos+1,pos);
-			//if( dq_read==pos )
-			//	break;
-
 			size_t newval = pos+1;
-			bool changed = mEnqueuePos.compare_exchange_weak(pos,newval,MemRelaxed);
+			bool changed = mDequeuePos.compare_exchange_weak(pos,newval,MemRelaxed);
 			if(changed)
 				break;
 		}

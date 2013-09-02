@@ -563,7 +563,7 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 	//const XgmLocalPose& LocalPose = minst->RefLocalPose();
 
 
-	printf( "rendering skinned!!\n");
+	//printf( "rendering skinned!!\n");
 	////////////////////
 	// Draw Skinned Mesh
 	//e eggtest++;

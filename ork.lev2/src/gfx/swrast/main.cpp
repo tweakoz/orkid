@@ -13,8 +13,8 @@
 #include <ork/math/collision_test.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/qtui/qtui.h>
-#include <IL/il.h>
-#include <IL/ilut.h>
+//#include <IL/il.h>
+//#include <IL/ilut.h>
 ////////////////////////////////////////////////////////////
 
 #include "lev3_test.h"

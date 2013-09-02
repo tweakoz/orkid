@@ -73,8 +73,8 @@ class lev2:
 	########################
 	## Common libs
 	########################
-	prj_lib.AddLibs( "IL ILU ILUT" )
-	prj_lib.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
+	#prj_lib.AddLibs( "IL ILU ILUT" )
+	#prj_lib.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
 	
 	if False:
 		prj_lib.AddLibs( " 3delight rihelper " )

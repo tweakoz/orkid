@@ -67,7 +67,6 @@ void task::wait()
 {
 	while(false == HasFinished() )
 	{
-		//tbb::this_tbb_thread::yield();
 		ork::msleep(0);
 	}
 	int ichk = mNumSubTasks.FetchAndStore(kTaskIdle);
@@ -115,10 +114,13 @@ void thread_pool::init( int inumthreads )
 {
 	for( int i=0; i<inumthreads; i++ )
 	{
-		struct thread_exec
+		struct tpthread : public ork::Thread
 		{
-			thread_exec(thread_pool_worker*pworker) : mpWorker(pworker) {}
-			void operator()()
+			tpthread(thread_pool_worker*pworker) 
+				: mpWorker(pworker)
+			{}
+
+			void run() override
 			{
 				if( mpWorker )
 				{
@@ -131,8 +133,7 @@ void thread_pool::init( int inumthreads )
 
 		thread* pthread = new thread;
 		pthread->mpWorker = new thread_pool_worker( this );
-		thread_exec exec(pthread->mpWorker);
-		pthread->mpThread = new boost::thread(exec);
+		pthread->mpThread = new tpthread(pthread->mpWorker);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,7 +240,7 @@ void thread_pool_worker::Process()
 				ptask->process( subtask, this );
 			}
 		}
-		ork::msleep(0);//tbb::this_tbb_thread::yield();
+		ork::msleep(0);
 	}
 	mbExited=true;
 }
@@ -249,7 +250,6 @@ void thread_pool_worker::Kill()
 	while( false == mbExited )
 	{
 		ork::msleep(0);
-		//tbb::this_tbb_thread::yield();
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

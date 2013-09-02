@@ -126,5 +126,3 @@ def DefaultBuildEnv( env, prj ):
 
 	prj.PostIncludePaths += string.split('/opt/local/include')
 
-	prj.AddLibs( ' bz2' )
-

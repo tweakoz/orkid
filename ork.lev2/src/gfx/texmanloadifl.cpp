@@ -9,7 +9,7 @@
 
 #include <ork/file/file.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#if ! defined(_IOS)
+#if 0 //! defined(_IOS)
 #include <ork/lev2/gfx/util/ddsfile.h>
 #include <ork/lev2/gfx/texman.h>
 //#include "gl/gl.h"

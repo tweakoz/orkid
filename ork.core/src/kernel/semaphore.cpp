@@ -22,10 +22,10 @@ void semaphore::notify()
 void semaphore::wait()
 {
 	printf( "semaphore<%p>::wait() mCount<%d>\n", this, mCount.load() );
-   //ork::mutex::unique_lock lock(mMutex);
+   ork::mutex::unique_lock lock(mMutex);
     while(mCount.load()<=0)
-        //mCondition.wait(lock.mLockImpl);
-        mCondition.wait(1<<20);
+        mCondition.wait(lock.mLockImpl);
+        //mCondition.wait(1<<20);
 	mCount.fetch_sub(1);
 }
 

@@ -10,8 +10,6 @@
 #include <ork/orkstd.h>
 #include <ork/orkprotos.h>
 
-#include <ork/kernel/atomic.h>
-
 ///////////////////////////////////////////////////////////////////////////////
 #include <condition_variable>
 #include <mutex>
@@ -94,7 +92,6 @@ namespace ork
 			lock_impl_t mLockImpl;
 		};
 
-		//typedef tbb::mutex::scoped_lock scoped_lock;
 	private:
 		mutex_impl_t mTheMutex;
 		std::string mName;
