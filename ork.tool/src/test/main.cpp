@@ -17,7 +17,11 @@
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/qtui/qtui.h>
+
+#if !defined(ORK_OSX)
 #include <X11/Xlib.h>
+#endif
+
 #include <ork/kernel/opq.h>
 #include <ork/kernel/environment.h>
 

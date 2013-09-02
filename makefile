@@ -17,6 +17,9 @@ toz:
 	make pristine
 	tozkit_deps_build.py all
 
+bundle:
+	./ork.build/bin/ork.bundle.make.py
+
 .PHONY: docs
 
 docs: .

@@ -3,7 +3,7 @@ At one time or another Orkid has been ported to the PS2, NintendoDS, Wii, XBox36
 Unfortunately, with my job and family, I currently only have the bandwidth to maintain the Linux and Osx builds.
 The Windows/D3D9 driver is still present in the source tree though it has likely fallen out of date. That said, it would not take too much effort to get it back in working condition.
 
-If you want to minimize any pain, right now I would recommend Linux (Ubuntu 12.04LTS x86/64). The MacOsx (lion+) build needs a little work as it fails to build the loki library, my temporary solution for this will be to disable the tozkit dependency.
+If you want to minimize any pain, right now I would recommend Linux (Ubuntu 12.04LTS x86/64). The MacOsx (10.8+) build needs a little work as it fails to build the loki library, my temporary solution for this will be to disable the tozkit dependency.
 
 I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI card that should be fine. I also recommend proprietary drivers over the open source ones. Open source is great and all, but I find the open source video drivers are still not up to par with their proprietary counterparts.
 
@@ -15,6 +15,7 @@ To build on Osx MountainLion (10.8)+
 * make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
 * make prep (copy some deps to the stage folder)
 * make (to build orkid itself)
+* make bundle (to build an osx app bundle in <src_root>/stage/bundle/
 
 To build on Ubuntu12.04 LTS x86/64
 ==================================

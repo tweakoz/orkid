@@ -41,9 +41,7 @@ class ent:
 
         bullet_libs = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
 
-	#LIBS = "GL Cg CgGL  IL ILU ILUT QtCore QtGui "
 	XFL = "core lev2 "
-	#LIBS 3delight rihelper
 	LIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
 	LIBS += "%s " % bullet_libs
 

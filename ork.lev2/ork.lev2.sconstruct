@@ -59,7 +59,7 @@ class lev2:
 	#########################
 	if prj_lib.IsOsx:
 		prj_lib.AddFolders( SRC_FOLDERS, "*.mm" )
-		prj_lib.AddFrameworks("OpenGL Cg QtCore QtGui" )
+		prj_lib.AddFrameworks("OpenGL QtCore QtGui" )
 		prj_lib.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
 		prj_lib.AddFrameworks("Carbon Foundation ApplicationServices" )
 		prj_lib.AddFrameworks("AppKit QuartzComposer")
@@ -94,7 +94,7 @@ class lev2:
 	prj_test.AddLibs( "ork.core.%s"%suffix )
 	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
 	#prj_test.AddLibs( "ork.lev2.%s"%prj_test.SUFFIX )
-	prj_test.AddFrameworks("OpenGL Cg QtCore QtGui" )
+	prj_test.AddFrameworks("OpenGL QtCore QtGui" )
 	prj_test.AddProjectDep( prj_lib )
 	prj_test.Configure()
 	self.prg = prj_test.Program( )

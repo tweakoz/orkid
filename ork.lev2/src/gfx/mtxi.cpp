@@ -9,7 +9,9 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/lev2renderer.h>
 
-#if defined(_IOS)
+#if defined(ORK_OSX)
+#include <OpenGL/gl.h>
+#elif defined(_IOS)
 #include <OpenGLES/ES2/gl.h>
 //#include <OpenGLES/glu.h>
 #elif defined(IX)
