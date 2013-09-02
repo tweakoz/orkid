@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ork/kernel/atomic.h>
 #include "mutex.h"
 #include <pthread.h>
 
@@ -18,8 +19,8 @@ private:
 
     pthread_mutex_t mMutex;
     pthread_cond_t  mCondVar;
-    std::atomic<int64_t> mWaitCount;
-    std::atomic<int64_t> mReleaseCount;
+    ork::atomic<int64_t> mWaitCount;
+    ork::atomic<int64_t> mReleaseCount;
 };
 
 struct semaphore
@@ -30,8 +31,8 @@ struct semaphore
 
 private:
     ork::mutex mMutex;
-    ork::condition_variable mCondition;
-    std::atomic<int> mCount;
+    std::condition_variable mCondition;
+    ork::atomic<int> mCount;
 };
 
 

@@ -127,7 +127,7 @@ public:
 	//////////////////////////////////////////////////////////////
 	void Destroy() 
 	{
-		destroyer_t pdestr = mDestroyer.exchange(nullptr,MemFullFence);
+		destroyer_t pdestr = mDestroyer.exchange(nullptr);
 		if( pdestr ) pdestr( *this );
 	}
 	//////////////////////////////////////////////////////////////
@@ -135,14 +135,14 @@ public:
 	//////////////////////////////////////////////////////////////
 	template <typename T> void AssignDestroyer()
 	{
-		mDestroyer.store(& static_variant_destroyer_t<tsize,T>::destroy,MemFullFence);
+		mDestroyer.store(& static_variant_destroyer_t<tsize,T>::destroy);
 	}
 	//////////////////////////////////////////////////////////////
 	//	assign a copier
 	//////////////////////////////////////////////////////////////
 	template <typename T> void AssignCopier()
 	{
-		mCopier.store(& static_variant_copier_t<tsize,T>::copy,MemFullFence);
+		mCopier.store(& static_variant_copier_t<tsize,T>::copy);
 	}
 	//////////////////////////////////////////////////////////////
 	// return true if the contained object is a T

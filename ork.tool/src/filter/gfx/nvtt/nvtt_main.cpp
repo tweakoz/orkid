@@ -7,7 +7,7 @@
 
 #include <orktool/orktool_pch.h>
 
-#include <IL/il.h>
+//#include <IL/il.h>
 //#include <squish.h>
 //#include "nvtt_main.h"
 #include <orktool/filter/filter.h>

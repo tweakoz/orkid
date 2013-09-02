@@ -2,6 +2,7 @@
 
 #include <ork/kernel/svariant.h>
 #include <ork/kernel/mutex.h>
+#include <ork/kernel/atomic.h>
 #include <functional>
 
 namespace ork {
@@ -12,7 +13,7 @@ struct Future
     typedef int future_id_t;
 
     Future();
-    bool IsSignaled() const { return mState>0; }
+    bool IsSignaled() const { return mState.load()>0; }
     template <typename T> void Signal( const T& result );
     void Clear();
     void WaitForSignal() const;
@@ -44,7 +45,7 @@ void Future::Signal( const T& result )
         blk(*this);
     }
 
-    mState++;
+    mState.fetch_add(1);
 }
 
 }

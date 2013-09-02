@@ -2,7 +2,6 @@
 #pragma once
 
 #include <ork/kernel/atomic.h>
-#include <ork/kernel/concurrent_queue.h>
 #include <assert.h>
 #include <unistd.h>
 
@@ -134,7 +133,7 @@ private:
 			}
 			nsf.mWrit=nwr;
 			uint32_t nst = nsf.Pack();
-			bool changed = mState.compare_exchange_strong(ost,nst,MemFullFence);
+			bool changed = mState.compare_exchange_weak(ost,nst);
 			if( changed )
 			{
 				if(nwr>0)
@@ -155,7 +154,7 @@ private:
 			StateField nsf(ost);
 			nsf.mNxtR = nsf.mWrit;
 			uint32_t nst = nsf.Pack();
-			bool changed = mState.compare_exchange_strong(ost,nst,MemFullFence);
+			bool changed = mState.compare_exchange_weak(ost,nst);
 			if( changed )
 			{
 				return;
@@ -174,7 +173,7 @@ private:
 			nsf.mRead=nrd;
 			uint32_t nst = nsf.Pack();
 			auto nonc = const_cast<concurrent_triple_buffer*>(this);
-			bool changed = nonc->mState.compare_exchange_strong(ost,nst,MemFullFence);
+			bool changed = nonc->mState.compare_exchange_weak(ost,nst);
 			if( changed )
 			{
 				return (nrd>0) ? mValues[nrd-1] : nullptr;
@@ -195,7 +194,7 @@ private:
 			nsf.mRead = 0;
 			uint32_t nst = nsf.Pack();
 			auto nonc = const_cast<concurrent_triple_buffer*>(this);
-			bool changed = nonc->mState.compare_exchange_strong(ost,nst,MemFullFence);
+			bool changed = nonc->mState.compare_exchange_weak(ost,nst);
 			if( changed )
 			{
 				return;
@@ -215,8 +214,8 @@ private:
 			sf.mWrit = 0;
 			sf.mNxtR = 0;
 			uint32_t nst = sf.Pack();
-			bool changed = mState.compare_exchange_strong(ost,nst,MemFullFence);
-			bc = (false==changed);
+			bool was_set = (mState.compare_exchange_weak(ost,nst));
+			bc = (false==was_set);
 			usleep(kquanta);
 		}
 		bc = true;

@@ -16,8 +16,8 @@
 #include <ork/math/plane.hpp>
 #include <ork/math/line.h>
 #include "render_graph.h"
-#include <IL/il.h>
-#include <IL/ilut.h>
+//#include <IL/il.h>
+//#include <IL/ilut.h>
 
 bool boxisect(	float fax0, float fay0, float fax1, float fay1,
 				float fbx0, float fby0, float fbx1, float fby1 );

@@ -159,7 +159,7 @@ void PerfMarkerPush( const char* mkrname )
 		{
 			gctr++;
 
-			printf( "gctr<%d>\n", int(gctr) );
+			//printf( "gctr<%d>\n", int(gctr) );
 		}
 	}
 }

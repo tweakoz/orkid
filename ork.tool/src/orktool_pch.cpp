@@ -20,6 +20,8 @@
  #include <mach-o/dyld.h>
 #endif
 
+#include <unistd.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static bool exit_gracefully = false;
