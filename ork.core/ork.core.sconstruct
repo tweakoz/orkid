@@ -37,7 +37,7 @@ class core:
 	SRC_FOLDERS += "reflect reflect/serialize "
 	SRC_FOLDERS += "util util/dependency ."
 
-	LIBS = 'boost_system-mt boost_filesystem-mt boost_thread-mt'
+	LIBS = ' '#boost_system-mt boost_filesystem-mt boost_thread-mt'
 
 	##########################################
 

@@ -60,7 +60,7 @@ class ent:
 	prj.AddLibPaths( "%s/lib"%sln.stage_dir )
 	#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 	prj.AddLibs( LIBS )
-	prj.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
+	#prj.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
 	#prj.AddLibs( "ork.tool.osx.release" )
 	prj.Configure()
 	self.ent_lib = prj.SharedLibrary( )
