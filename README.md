@@ -15,7 +15,7 @@ Some Features Include:
 * Integrated Bullet Physics Engine.
 * HlslFx/CgFx/GlslFx shader based renderer.
 * Fixed Function and Node based compositing engine with offline rendering mode (dumps to image files on disk).
-* QT5/OpenGL based UI
+* QT4.8/OpenGL based UI
 * Many more...
 
 ![Particles](http://www.tweakoz.com/portfolio/sshot_psys.jpg)
