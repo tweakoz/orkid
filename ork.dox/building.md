@@ -7,10 +7,11 @@ If you want to minimize any pain, right now I would recommend Linux (Ubuntu 12.0
 
 I do not currently test on Intel gfx chips. If you have an NVidia or AMD/ATI card that should be fine. I also recommend proprietary drivers over the open source ones. Open source is great and all, but I find the open source video drivers are still not up to par with their proprietary counterparts.
 
-In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies. Some of these dependencies include the 3delight renderer, cortex-vfx, alembic, Open Shading Language, QT5.0.1, etc.. Some of these will eventually be used for offline production quality rendering of content generated with Orkid. Note that 3Delight is free (even for commercial work), though it will be limited to 2 cores for rendering. If you want full renderman acceleration you will need to buy a license from http://www.3delight.com
+In general building will require a bunch of dependencies which are not included. There is a script included that automates the downloading, building and installation of these dependencies. Some of these dependencies include the 3delight renderer, cortex-vfx, alembic, Open Shading Language, QT4.8, etc.. Some of these will eventually be used for offline production quality rendering of content generated with Orkid. Note that 3Delight is free (even for commercial work), though it will be limited to 2 cores for rendering. If you want full renderman acceleration you will need to buy a license from http://www.3delight.com
 
 To build on Osx MountainLion (10.8)+
 ==================================
+* install qt4.8/osx from http://qt-project.org/downloads
 * clone it, cd into repo 
 * make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
 * make prep (copy some deps to the stage folder)
