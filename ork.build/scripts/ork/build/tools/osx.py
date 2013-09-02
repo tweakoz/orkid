@@ -116,7 +116,7 @@ def DefaultBuildEnv( env, prj ):
 	env.Append( FRAMEWORKS = [ 'QtGui', 'QtCore', 'OpenGL', 'CoreMIDI', 'CoreAudio', 'AudioUnit', 'AudioToolbox' ] )
 	env.Append( FRAMEWORKS = [ 'Carbon', 'Foundation', 'QuartzComposer' ] )
 	env.Append( FRAMEWORKS = [ 'ApplicationServices', 'AppKit' ] )
-	env.Append( FRAMEWORKS = [ 'MultitouchSupport', 'Cg' ] )
+	env.Append( FRAMEWORKS = [ 'MultitouchSupport' ] )
 	env.Replace( AR="libtool" )
 	env.Replace( ARFLAGS="-static -c -v -arch_only %s" % Arch )
 	env.Replace( ARCOM="$AR $ARFLAGS -o $TARGET $SOURCES" )
@@ -124,5 +124,5 @@ def DefaultBuildEnv( env, prj ):
 
 	env.Tool('osxbundle')
 
-	prj.PostIncludePaths += string.split('/opt/local/include')
+	#prj.PostIncludePaths += string.split('/opt/local/include')
 

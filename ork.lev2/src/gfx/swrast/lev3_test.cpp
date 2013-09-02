@@ -15,7 +15,12 @@
 #include "lev3_test.h"
 #include "render_graph.h"
 #include <math.h>
+
+#if defined(ORK_OSX)
+#include <OpenGL/gl.h>
+#else
 #include <GL/gl.h>
+#endif 
 
 extern GLuint gLastBoundNonZeroTex;
 
