@@ -10,10 +10,19 @@ stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
 bundle_dir = "%s/bundle" % stage_dir
 root_dir = "%s/../" % stage_dir
 tool_dir = "%s/ork.tool" % root_dir
+lib_dir = "%s/%s/lib" % (bundle_dir,bundle_name)
+cont_dir = "%s/%s/Contents" % (bundle_dir,bundle_name)
+fw_dir = "%s/%s/Frameworks" % (bundle_dir,bundle_name)
+
 print "root_dir<%s>" % root_dir
 print "stage_dir<%s>" % stage_dir
 print "bundle_dir<%s>" % bundle_dir
 print "tool_dir<%s>" % tool_dir
+print "lib_dir<%s>" % lib_dir
+print "cont_dir<%s>" % cont_dir
+print "fw_dir<%s>" % fw_dir
+
+###################################
 
 cmd_rm = "rm -rf %s/%s" % (bundle_dir,bundle_name)
 print "cmd_rm<%s>" % cmd_rm
@@ -23,16 +32,57 @@ cmd_cp = "cp -r %s/%s %s/" % (tool_dir,bundle_name,bundle_dir)
 print "cmd_cp<%s>" % cmd_cp
 os.system(cmd_cp)
 
-cmd_cp = "cp -r %s/lib %s/%s/Contents" % (stage_dir,bundle_dir,bundle_name)
+cmd_cp = "cp -r %s/lib %s" % (stage_dir,cont_dir)
 print "cmd_cp<%s>" % cmd_cp
 os.system(cmd_cp)
 
-cmd_cp = "cp -r %s/data %s/%s/Contents" % (root_dir,bundle_dir,bundle_name)
+cmd_cp = "cp -r %s/data %s" % (root_dir,cont_dir)
 print "cmd_cp<%s>" % cmd_cp
 os.system(cmd_cp)
 
-cmd_cp = "cp -r %s/bin/ork.tool.test.osx.release %s/%s/Contents/MacOS" % (stage_dir,bundle_dir,bundle_name)
+cmd_cp = "cp -r %s/bin/ork.tool.test.osx.release %s/MacOS" % (stage_dir,cont_dir)
 print "cmd_cp<%s>" % cmd_cp
 os.system(cmd_cp)
+
+###################################
+
+os.system( "mkdir -p %s/Frameworks" % cont_dir )
+
+def copy_framework( fw_name ):
+	fwpath = "%s.framework" % fw_name
+	libpath = "%s/Versions/4/%s" % (fwpath,fw_name)
+
+	cmd_cp = "cp -r /Library/Frameworks/%s %s/Frameworks/%s" % (fwpath,cont_dir,fwpath)
+	print "cmd_cp<%s>" % cmd_cp
+	os.system(cmd_cp)
+
+###################################
+
+def install_name( fw_name, exe_name ):
+	fwpath = "%s.framework" % fw_name
+	libpath = "%s/Versions/4/%s" % (fwpath,fw_name)
+
+	chp_exe = "install_name_tool -change %s @executable_path/../Frameworks/%s %s" % (libpath,libpath,exe_name)
+	print chp_exe
+	os.system(chp_exe)
+
+	chp_lib = "install_name_tool -id @executable_path/../Frameworks/%s stage/bundle/OrkidTool.app/Contents/Frameworks/%s" % (libpath,libpath)
+	print chp_lib
+	os.system(chp_lib)
+
+###################################
+
+copy_framework( "QtCore" )
+copy_framework( "QtGui" )
+
+install_name( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
+install_name( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
+install_name( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
+install_name( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
+install_name( "QtCore", "stage/bundle/OrkidTool.app/Contents/Frameworks/QtGui.framework/Versions/4/QtGui" )
+
+os.system( "rm -f stage/bundle/OrkidTool.app.tar")
+os.system( "tar cvf stage/bundle/OrkidTool.app.tar stage/bundle/OrkidTool.app")
+os.system( "bzip2  stage/bundle/OrkidTool.app.tar")
 #print os.environ
 #cmd_cp = "cp -r %s/%s" % (bundle_dir,bundle_name)

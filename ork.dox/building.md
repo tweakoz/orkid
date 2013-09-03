@@ -18,6 +18,8 @@ To build on Osx MountainLion (10.8)+
 * make prep (copy some deps to the stage folder)
 * make (to build orkid itself)
 * make bundle (to build an osx app bundle in <src_root>/stage/bundle/
+* just run the bundle like you would any other app
+* alternatively you can run the raw executable from the commandline, with the same running steps as the ubuntu build
 
 To build on Ubuntu12.04 LTS x86/64
 ==================================
@@ -31,7 +33,7 @@ To build on Ubuntu12.04 LTS x86/64
 everything will be built/installed into the <repo_root>/stage folder.
 the stage/bin and stage/lib paths were added to your environment variables already when you did a 'make env'.
 
-To run
+To run on Ubuntu12.04 LTS x86/64
 ======
 * symlink data->ork.data , Once I get an installer made, this step will become unnecessary. 
 * run ork.tool.test.ix.release (from the repo root folder). It is in your path already, so just type ork.[tab tab] and see which orkid executables are present.
