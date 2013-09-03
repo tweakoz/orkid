@@ -40,9 +40,12 @@ cmd_cp = "cp -r %s/data %s" % (root_dir,cont_dir)
 print "cmd_cp<%s>" % cmd_cp
 os.system(cmd_cp)
 
-cmd_cp = "cp -r %s/bin/ork.tool.test.osx.release %s/MacOS" % (stage_dir,cont_dir)
+cmd_cp = "cp -R %s/bin/ork.tool.test.osx.release %s/MacOS" % (stage_dir,cont_dir)
 print "cmd_cp<%s>" % cmd_cp
 os.system(cmd_cp)
+
+os.system( "rm %s/*.cst" % cont_dir )
+os.system( "rm %s/*.ork" % cont_dir )
 
 ###################################
 
@@ -52,13 +55,13 @@ def copy_framework( fw_name ):
 	fwpath = "%s.framework" % fw_name
 	libpath = "%s/Versions/4/%s" % (fwpath,fw_name)
 
-	cmd_cp = "cp -r /Library/Frameworks/%s %s/Frameworks/%s" % (fwpath,cont_dir,fwpath)
+	cmd_cp = "cp -R /Library/Frameworks/%s %s/Frameworks/%s" % (fwpath,cont_dir,fwpath)
 	print "cmd_cp<%s>" % cmd_cp
 	os.system(cmd_cp)
 
 ###################################
 
-def install_name( fw_name, exe_name ):
+def install_name_exe( fw_name, exe_name ):
 	fwpath = "%s.framework" % fw_name
 	libpath = "%s/Versions/4/%s" % (fwpath,fw_name)
 
@@ -66,23 +69,33 @@ def install_name( fw_name, exe_name ):
 	print chp_exe
 	os.system(chp_exe)
 
+def install_name_lib( fw_name ):
+	fwpath = "%s.framework" % fw_name
+	libpath = "%s/Versions/4/%s" % (fwpath,fw_name)
+
 	chp_lib = "install_name_tool -id @executable_path/../Frameworks/%s stage/bundle/OrkidTool.app/Contents/Frameworks/%s" % (libpath,libpath)
 	print chp_lib
 	os.system(chp_lib)
 
 ###################################
 
-copy_framework( "QtCore" )
-copy_framework( "QtGui" )
+if 1:
+	copy_framework( "QtCore" )
+	copy_framework( "QtGui" )
 
-install_name( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
-install_name( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
-install_name( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
-install_name( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
-install_name( "QtCore", "stage/bundle/OrkidTool.app/Contents/Frameworks/QtGui.framework/Versions/4/QtGui" )
+	install_name_lib("QtCore")
+	install_name_lib("QtGui")
 
-os.system( "rm -f stage/bundle/OrkidTool.app.tar")
-os.system( "tar cvf stage/bundle/OrkidTool.app.tar stage/bundle/OrkidTool.app")
-os.system( "bzip2  stage/bundle/OrkidTool.app.tar")
+	install_name_exe( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
+	install_name_exe( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
+	install_name_exe( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
+	install_name_exe( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
+	install_name_exe( "QtCore", "stage/bundle/OrkidTool.app/Contents/Frameworks/QtGui.framework/Versions/4/QtGui" )
+
+os.system( "macdeployqt stage/bundle/OrkidTool.app -verbose=2 -dmg")
+
+if 0:
+	os.system( "bzip2  stage/bundle/OrkidTool.app.tar")
+
 #print os.environ
 #cmd_cp = "cp -r %s/%s" % (bundle_dir,bundle_name)
