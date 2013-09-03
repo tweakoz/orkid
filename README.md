@@ -25,3 +25,9 @@ Some Features Include:
 ![TerrainGen](http://www.tweakoz.com/portfolio/terrain03.jpg)
 
 for other examples of content, go [here](http://www.youtube.com/user/tweakoz) and [here](http://tweakoz.com/portfolio/p2d.mp4)
+
+
+Binary Distributions
+====================
+Osx: http://www.tweakoz.com/orkid/OsxTool.dmg (includes GPL licensed Qt4.8)
+
