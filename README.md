@@ -29,5 +29,5 @@ for other examples of content, go [here](http://www.youtube.com/user/tweakoz) an
 
 Binary Distributions
 ====================
-Osx: http://www.tweakoz.com/orkid/OsxTool.dmg (includes GPL licensed Qt4.8)
+Osx: http://www.tweakoz.com/orkid/OrkidTool.dmg (includes LGPL licensed Qt4.8)
 
