@@ -77,8 +77,8 @@ void GlslFxScannerView::ScanBlock( size_t is )
 		bool is_open = ( t.text == "{" );
 		bool is_close = ( t.text == "}" );
 
-		printf( "itok<%d> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
-				i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
+		//printf( "itok<%d> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
+		//		i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
 
 		switch( istate )
 		{

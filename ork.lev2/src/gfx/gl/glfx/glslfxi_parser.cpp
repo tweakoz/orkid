@@ -24,6 +24,46 @@
 namespace ork { namespace lev2 {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+static const std::map<std::string,int> gattrsorter = 
+{
+	{"POSITION",0},
+	{"NORMAL",1},
+	{"COLOR0",2},
+	{"COLOR1",3},
+	{"TEXCOORD0",4},
+	{"TEXCOORD0",5},
+	{"TEXCOORD1",6},
+	{"TEXCOORD2",7},
+	{"TEXCOORD3",8},
+	{"BONEINDICES",9},
+	{"BONEWEIGHTS",10},
+};
+
+void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
+{
+	for( const auto& u : par.mUniforms )
+	{
+		auto it = mUniforms.find(u.first);
+		assert(it==mUniforms.end()); // make sure there are no duplicate unifs
+		
+		mUniforms[u.first] = u.second;
+	}
+	for( const auto& a : par.mAttributes )
+	{
+		auto it = mAttributes.find(a.first);
+		assert(it==mAttributes.end()); // make sure there are no duplicate attrs
+
+		const GlslFxAttribute* src = a.second;
+		GlslFxAttribute* cpy = new GlslFxAttribute(src->mName,src->mSemantic);
+		cpy->mTypeName = src->mTypeName;
+		cpy->mDirection = src->mDirection;
+		cpy->meType = src->meType;
+
+		cpy->mLocation = int(mAttributes.size());
+		mAttributes[a.first] = cpy;
+	}
+}
+
 struct GlSlFxParser
 {
 	int itokidx;
@@ -190,7 +230,8 @@ struct GlSlFxParser
 				GlslFxAttribute* pattr = new GlslFxAttribute( nam_tok->text );
 				pattr->mTypeName = dt_tok->text;
 				pattr->mDirection = "in";
-				pattr->mLocation = iloc;
+
+
 				psi->mAttributes[ nam_tok->text ] = pattr;
 				if( v.GetToken(i+3)->text==":" )
 				{
@@ -203,6 +244,9 @@ struct GlSlFxParser
 					assert( v.GetToken(i+3)->text==";" );
 					i += 4;
 				}
+
+				pattr->mLocation = int(psi->mAttributes.size());
+
 			}
 			else if( vt_tok->text == "out" )
 			{
@@ -224,6 +268,33 @@ struct GlSlFxParser
 				OrkAssert(false);
 			}
 		}
+
+		////////////////////////
+		// sort attributes for performance
+		//  (see http://stackoverflow.com/questions/16415037/opengl-core-profile-incredible-slowdown-on-os-x)
+		////////////////////////
+
+		std::multimap<int,GlslFxAttribute*> attr_sort_map;
+		for( const auto& it : psi->mAttributes )
+		{
+			auto attr = it.second;
+			auto itloc = gattrsorter.find(attr->mSemantic);
+			int isort = 100;
+			if( itloc!=gattrsorter.end() )
+			{
+				isort = itloc->second;
+			}
+			attr_sort_map.insert(std::make_pair(isort,attr));
+			//pattr->mLocation = itloc->second;
+		}
+
+		int isort = 0;
+		for( const auto& it : attr_sort_map)
+		{
+			auto attr = it.second;
+			attr->mLocation = isort++;
+		}
+
 		////////////////////////
 		itokidx = v.GetBlockEnd()+1;
 		return psi;

@@ -70,7 +70,6 @@ struct GlslFxStreamInterface
 	std::string		mName;
 	UniMap			mUniforms;
 	AttrMap			mAttributes;
-	GlslFxAttribute* MergeAttribute( const std::string& name );
 
 	void Inherit( const GlslFxStreamInterface& par );
 };
