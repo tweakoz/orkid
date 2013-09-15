@@ -16,10 +16,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//#define USE_GENERIC_VATTRIB
-
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
-
 static const bool USEVBO = true;
 #define USEIBO 0
 
@@ -143,8 +139,10 @@ struct GLIdxBufHandle
 	u32	mIBO;
 	const U16* mBuffer;
 	int mNumIndices;
+	int mMinIndex;
+	int mMaxIndex;
 
-	GLIdxBufHandle() : mIBO(0), mBuffer(nullptr), mNumIndices(0) {}
+	GLIdxBufHandle() : mIBO(0), mMinIndex(0), mMaxIndex(0), mBuffer(nullptr), mNumIndices(0) {}
 };
 
 struct GLVaoHandle
@@ -603,7 +601,7 @@ struct vtx_config
 
 			bool bena = (tmask&cmask);
 
-			//printf( "gbi::enable_attrs iloc<%d> : %d\n", iloc, int(bena) );
+			printf( "gbi::enable_attrs iloc<%d> : %d\n", iloc, int(bena) );
 
 
 			if( bena )
@@ -1158,6 +1156,8 @@ void GlGeometryBufferInterface::DrawPrimitiveEML( const VertexBufferBase& VBuf, 
 	if( false == bOK ) return;
 	////////////////////////////////////////////////////////////////////
 
+	//glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
 	int inum = (ivcount==0) ? VBuf.GetNumVertices() : ivcount;
 
 	if( eType == EPRIM_NONE )
@@ -1187,6 +1187,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML( const VertexBufferBase& VBuf, 
 				miTrianglesRendered += (inum/3);
 				break;
 			case EPRIM_TRIANGLESTRIP:
+				//printf( "drawarrays: <ivbase %d> <inum %d> tristrip\n", ivbase, inum );
 				glDrawArrays( GL_TRIANGLE_STRIP, ivbase, inum );
 				miTrianglesRendered += (inum-2);
 				break;
@@ -1227,11 +1228,18 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 
 	BindStreamSources( VBuf, IdxBuf );	
 
-	////////////////////////////////////////////////////////////////////
-
-	void* pindices = nullptr;
-
 	int iNum = IdxBuf.GetNumIndices();
+
+	auto plat_handle = static_cast<const GLIdxBufHandle*>( IdxBuf.GetHandle() );
+
+	int imin = plat_handle->mMinIndex;
+	int imax = plat_handle->mMaxIndex;
+
+	//GLint maxidx = 0;
+	//glGetIntegerv( GL_MAX_ELEMENTS_INDICES, & maxidx );
+	//printf( "maxidx<%d>\n", maxidx );
+
+	//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
 	if( iNum )
 	{
@@ -1240,26 +1248,28 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 		{
 			case EPRIM_LINES:
 			{	//orkprintf( "drawarrays: %d lines\n", iNum );
-				glDrawElements( GL_LINES, iNum, GL_UNSIGNED_SHORT, pindices );
+				glDrawElements( GL_LINES, iNum, GL_UNSIGNED_SHORT, nullptr );
 				break;
 			}
 			case EPRIM_QUADS:
 				//GL_ERRORCHECK();
-				//glDrawElements( GL_QUADS, iNum, GL_UNSIGNED_SHORT, pindices );
+				//glDrawElements( GL_QUADS, iNum, GL_UNSIGNED_SHORT, nullptr );
 				//GL_ERRORCHECK();
 				//miTrianglesRendered += (iNum/2);
 				break;
 			case EPRIM_TRIANGLES:
-				glDrawElements( GL_TRIANGLES, iNum, GL_UNSIGNED_SHORT, pindices );
+				//printf( "drawindexedtris inum<%d> imin<%d> imax<%d>\n", iNum/3, imin, imax );
+				glDrawRangeElements( GL_TRIANGLES, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr );
 				miTrianglesRendered += (iNum/3);
 				break;
 			case EPRIM_TRIANGLESTRIP:
-				//printf( "drawtristrip inum<%d>\n", iNum );
-				glDrawElements( GL_TRIANGLE_STRIP, iNum, GL_UNSIGNED_SHORT, pindices );
+				//printf( "drawindexedtristrip inum<%d>\n", iNum-2 );
+				//glDrawElements( GL_TRIANGLE_STRIP, iNum, GL_UNSIGNED_SHORT, nullptr );
+				glDrawRangeElements( GL_TRIANGLE_STRIP, imin, imax, iNum, GL_UNSIGNED_SHORT, nullptr );
 				miTrianglesRendered += (iNum-2);
 				break;
 			case EPRIM_POINTS:
-				glDrawElements( GL_POINTS, iNum, GL_UNSIGNED_SHORT, pindices );
+				glDrawElements( GL_POINTS, iNum, GL_UNSIGNED_SHORT, nullptr );
 				break;
 			case EPRIM_POINTSPRITES:
 				//GL_ERRORCHECK();
@@ -1332,9 +1342,25 @@ void GlGeometryBufferInterface::UnLockIB( IndexBufferBase& IdxBuf)
 		const void* src_data = plat_handle->mBuffer;
 		int iblen = plat_handle->mNumIndices*sizeof(U16);
 
+		printf( "UNLOCKIBO\n");
 		glGenBuffers( 1, (GLuint*) & plat_handle->mIBO );
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, plat_handle->mIBO );
 		glBufferData( GL_ELEMENT_ARRAY_BUFFER, iblen, src_data, GL_STATIC_DRAW );
+
+		auto p16 = static_cast<const uint16_t*>(src_data);
+
+		uint16_t umin = 65535;
+		uint16_t umax = 0;
+		for( int i=0; i<plat_handle->mNumIndices; i++ )
+		{
+			uint16_t u = p16[i];
+			if( u>umax ) umax=u;
+			if( u<umin ) umin=u;
+		}
+		plat_handle->mMinIndex = int(umin);
+		plat_handle->mMaxIndex = int(umax);
+
+		printf( "umin<%d> umax<%d>\n", int(umin), int(umax) );
 		//glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 	}
 }

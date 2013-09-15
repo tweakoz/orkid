@@ -253,6 +253,9 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 	int iw = Base->GetW();
 	int ih = Base->GetH();
 
+	iw = (iw<16) ? 16 : iw;
+	ih = (ih<16) ? 16 : ih;
+
 	GlFboObject *FboObj = (GlFboObject *) Base->GetInternalHandle();
 
 	int inumtargets = Base->GetNumTargets();
