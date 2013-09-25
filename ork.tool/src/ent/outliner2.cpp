@@ -29,6 +29,8 @@ void Outliner2Model::Describe()
 	RegisterAutoSlot( Outliner2Model, ObjectSelected );
 	RegisterAutoSlot( Outliner2Model, ObjectDeSelected );
 	RegisterAutoSlot( Outliner2Model, ClearSelection );
+
+	RegisterAutoSignal( Outliner2Model, ModelChanged );
 }
 
 Outliner2Model::Outliner2Model(SceneEditorBase&ed,Outliner2View&v)
@@ -40,7 +42,7 @@ Outliner2Model::Outliner2Model(SceneEditorBase&ed,Outliner2View&v)
 	, mVP(v)
 	, mLastSelection(-1)
 {
-
+	SetupSignalsAndSlots();
 }
 Outliner2Model::~Outliner2Model()
 {
@@ -123,11 +125,20 @@ void Outliner2Model::UpdateModel()
 	}
 
 	mVP.SetDirty();
+
+	SigModelChanged();
+
+
 }
 void Outliner2Model::SlotSceneTopoChanged()
 {
 	UpdateModel();
 }
+void Outliner2Model::SigModelChanged()
+{
+	//mSignalModelChanged(&Outliner2Model::SigModelChanged);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2Model::SlotObjectSelected( ork::Object* pobj )
 {
@@ -160,9 +171,17 @@ Outliner2View::Outliner2View(SceneEditorBase&ed)
 	, mOutlinerModel(ed,*this)
 	, mFont(nullptr)
 	, mCtxBase(nullptr)
+	, miScrollY(0)
+	, mContentH(0)
+	, ConstructAutoSlot(ModelChanged)
 {
+
 	object::Connect(	& ed.GetSigSceneTopoChanged(),
 						& mOutlinerModel.GetSlotSceneTopoChanged()
+						 );
+
+	object::Connect(	& mOutlinerModel.GetSigModelChanged(),
+						& this->GetSlotModelChanged()
 						 );
 
 	object::Connect(	& ed.SelectionManager().GetSigObjectSelected(),
@@ -182,6 +201,11 @@ void Outliner2View::SlotObjectDeSelected( ork::Object* pobj )
 {
 
 }	
+
+void Outliner2View::SlotModelChanged()
+{
+	assert(false);
+}
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2View::DoInit( lev2::GfxTarget* pt )
 {
@@ -225,15 +249,15 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 	// Compute Scoll Transform
 	//////////////////////////////////////////////////
 
-	//ork::CMatrix4 matSCROLL;
-	//matSCROLL.SetTranslation( 0.0f, float(miScrollY), 0.0f );
+	ork::CMatrix4 matSCROLL;
+	matSCROLL.SetTranslation( 0.0f, float(miScrollY), 0.0f );
 	lev2::SRasterState defstate;
 
 	//////////////////////////////////////////////////
 
 	fbi->PushScissor( SRect( 0,0,miW,miH) );
 	fbi->PushViewport( SRect( 0,0,miW,miH) );
-	//mtxi->PushMMatrix( matSCROLL );
+
 	{
 		fbi->Clear( CVector4::Blue(), 1.0f );
 	
@@ -242,15 +266,25 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 
 		const std::vector<Outliner2Item>& items = mOutlinerModel.Items();
 
+		mContentH = items.size()*kitemh;
+
 		CVector4 c1(0.7f,0.7f,0.8f);
 		CVector4 c2(0.8f,0.8f,0.8f);
 		CVector4 c3(0.8f,0.0f,0.0f);
 
+		const int kheaderH = miScrollY;
+
 		tgt->PushMaterial( defmtl );
 		mtxi->PushUIMatrix(miW,miH);
+		//CMatrix4 mtxw = mtxi->RefMMatrix();
+		//mtxw = matSCROLL*mtxw;
+		//mtxi->PushMMatrix(mtxw);
 		{
-			int iy = 0;
+
+			int iy = kheaderH;
 			bool alt = false;
+
+			//////////////////////////////////////
 
 			for( const auto& item : items )
 			{	const std::string& name = item.mName;
@@ -264,20 +298,23 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 					tgt->PushModColor( pick_color );
 				else
 					tgt->PushModColor( is_sel ? c3 : (alt ? c1 : c2) );
+
 				primi.RenderQuadAtZ(
 					tgt,
-					0, miW, 	// x0, x1
+					0, miW, 		// x0, x1
 					iy, iy+kitemh, 	// y0, y1
 					0.0f,			// z
 					0.0f, 1.0f,		// u0, u1
 					0.0f, 1.0f		// v0, v1
 					);
+
 				tgt->PopModColor();
 				iy += kitemh;
 				alt = ! alt;
 			}
 
 			//////////////////////////////////////
+
 			if( false == is_pick )
 			{
 				lev2::GfxMaterialUI uimat(tgt);
@@ -287,7 +324,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 				tgt->PushMaterial( & uimat );
 				tgt->PushModColor( CColor4::Black() );
 				lev2::CFontMan::BeginTextBlock( tgt );
-				iy = 5;
+				iy = kheaderH+5;
 				for( const auto& item : items )
 				{	const std::string& name = item.mName;
 					auto pobj = item.mObject;
@@ -307,6 +344,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 			//int iy_root = 0;
 			//LocalToRoot( 0, 0, ix_root, iy_root );
 		}
+		//mtxi->PopMMatrix();
 		mtxi->PopUIMatrix();
 		tgt->PopMaterial();
 	}
@@ -319,7 +357,7 @@ void Outliner2View::SetNameOfSelectedItem()
 	int ilastsel = mOutlinerModel.GetLastSelection();
 
 	int irx, iry;
-	LocalToRoot(0,ilastsel*kitemh,irx,iry);
+	LocalToRoot(0,(ilastsel*kitemh)+miScrollY,irx,iry);
 
 	const std::vector<Outliner2Item>& items = mOutlinerModel.Items();
 	const Outliner2Item& item = items[ilastsel];
@@ -443,6 +481,22 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 		case ui::UIEV_DOUBLECLICK:
 		{
 			SetNameOfSelectedItem();
+			break;
+		}
+		case ui::UIEV_MOUSEWHEEL:
+		{
+			//QWheelEvent* qem = (QWheelEvent*) qip;
+			int idelta = EV.miMWY;
+			miScrollY += idelta;
+
+			int scrollb = -(mContentH-miH);
+			printf( "miScrollY<%d> mContentH<%d> scrollb<%d>\n", miScrollY, mContentH, scrollb );
+			if( miScrollY<scrollb )
+				miScrollY = scrollb;
+			if( miScrollY>0 )
+				miScrollY = 0;
+			mNeedsSurfaceRepaint=true;
+
 			break;
 		}
 		default:
