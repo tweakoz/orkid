@@ -4,7 +4,7 @@ import ork.build.slnprj as sln
 import sys
 
 AddOption('--build', default='stage')
-SetOption('implicit_cache',1)
+#SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 #VariantDir( 'obj', 'src' )
 SetOption('num_jobs', obu.num_cores) 

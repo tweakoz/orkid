@@ -554,7 +554,7 @@ void GlGeometryBufferInterface::ReleaseVB( VertexBufferBase& VBuf )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(USE_GL3)
+#if defined(_USE_GLSLFX)
 ///////////////////////////////////////////////////////////////////////////////
 struct vtx_config
 {
@@ -631,7 +631,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	const GLenum kGLVTXCOLS = 4;
 	#endif
 	//////////////////////////////////////////////
-	#if defined(USE_GL3)
+	#if defined(_USE_GLSLFX)
 	uint32_t component_mask = 0;
 	#endif // USE_GL3
 	//////////////////////////////////////////////

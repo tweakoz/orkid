@@ -10,7 +10,7 @@ import ork.build.slnprj as sln
 
 # set scons options ######################
 
-SetOption('implicit_cache',1)
+#SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
@@ -68,7 +68,7 @@ class lev2:
 	## IX libs
 	########################
 	else:
-		prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui " )
+		prj_lib.AddLibs( "GL QtCore QtGui " )
 	#	prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui OpenImageIO" )
 	########################
 	## Common libs
