@@ -23,6 +23,7 @@
 #include <sys/time.h>
 #include <ork/kernel/mutex.h>
 #include <sched.h>
+#include <tbb/tbb.h>
 #endif
 //////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/kernel.h>

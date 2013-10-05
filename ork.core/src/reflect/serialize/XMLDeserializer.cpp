@@ -16,6 +16,7 @@
 #include <ork/rtti/downcast.h>
 
 #include <ork/orkprotos.h>
+#include <cstring>
 
 namespace ork { namespace reflect { namespace serialize {
 

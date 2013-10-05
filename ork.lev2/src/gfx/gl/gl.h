@@ -12,14 +12,14 @@
 #pragma once
 
 /////////////////////////////
-#define USE_GL3
+//#define USE_GL3
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////
 #if defined(USE_GL3)
   #define _USE_GLSLFX
   #define GL3_PROTOTYPES 1
 #else
-  #define _USE_CGFX
+  #define _USE_GLSLFX
   #define GL_GLEXT_PROTOTYPES 1
 #endif
 /////////////////////////////

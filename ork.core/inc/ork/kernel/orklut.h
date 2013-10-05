@@ -38,7 +38,7 @@ struct LutComparator
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename K, typename V, typename Allocator=allocator<std::pair<K, V> > >
+template <typename K, typename V, typename Allocator=std::allocator<std::pair<K, V> > >
 class orklut 
 {
 	EOrkLutKeyPolicy meKeyPolicy;

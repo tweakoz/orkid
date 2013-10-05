@@ -36,10 +36,13 @@ def DefaultBuildEnv( env, prj ):
 		DEFS += "LINUX ORK_LINUX"
 	CCFLG = ' '
 	CXXFLG = ' '
-	LIBS = "m rt tbb pthread"
+	LIBS = "m rt tbb pthread "
 	LIBPATH = ' . '
 	if USE_DEBUG_CXX:
 		LIBPATH += ' /usr/lib/x86_64-linux-gnu/debug '
+	else:
+		LIBPATH += ' /usr/lib/x86_64-linux-gnu '
+
 	LINK = '-Wl,--trace-symbol="_ZN18QMetaObjectPrivate21decodeMethodSignatureEPKcR15QVarLengthArrayI13QArgumentTypeLi10EE"'
 	##
 	#clang = "gcc-4.7"

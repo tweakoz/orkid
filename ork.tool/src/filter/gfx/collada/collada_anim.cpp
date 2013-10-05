@@ -40,6 +40,8 @@
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/collada/daeutil.h>
 
+#include <cstring>
+
 typedef ork::tool::ColladaFxAnimChannel<float> ColladaFxAnimChannelFloat;
 typedef ork::tool::ColladaFxAnimChannel<ork::CVector3> ColladaFxAnimChannelFloat3;
 

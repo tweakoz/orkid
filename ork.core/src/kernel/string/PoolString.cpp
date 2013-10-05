@@ -14,6 +14,7 @@
 #include <ork/reflect/BidirectionalSerializer.h>
 #include <ork/kernel/string/StringPool.h>
 #include <ork/application/application.h>
+#include <cstring>
 
 #ifndef ORK_CONFIG_EDITORBUILD
 # define COMPARE(op,y) mpString op (y).mpString

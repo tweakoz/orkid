@@ -15,6 +15,7 @@
 #include <ork/rtti/Category.h>
 #include <ork/rtti/downcast.h>
 #include <ork/kernel/string/string.h>
+#include <cstring>
 
 namespace ork { namespace reflect { namespace serialize {
 
