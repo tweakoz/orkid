@@ -40,7 +40,7 @@ To run on Ubuntu12.04 LTS x86/64
 
 misc
 =====
-tsx_find.py "phrase" - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
+ork_find.py "phrase" - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
 
 
 
