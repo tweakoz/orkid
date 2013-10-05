@@ -40,10 +40,12 @@ public:
 	DeclarePublicAutoSlot( ClearSelection );
 	DeclarePublicAutoSlot( ObjectSelected );
 	DeclarePublicAutoSlot( ObjectDeSelected );
+	DeclarePublicSignal( ModelChanged );
 
 	Outliner2Model(SceneEditorBase&ed,Outliner2View&v);
 	~Outliner2Model();
 	////////////////////////////////////////////////////////////////////
+	void SigModelChanged();
 	void SlotSceneTopoChanged();
 	void SlotClearSelection();
 	void SlotObjectSelected(ork::Object*pobj);
@@ -75,6 +77,9 @@ struct Outliner2View : public ui::Surface
 
 	////////////////////////////////////////////////////////////////////
 
+	DeclarePublicAutoSlot( ModelChanged );
+
+	void SlotModelChanged();
 	void SlotObjectSelected( ork::Object* pobj );			// notification of externally changed selection
 	void SlotObjectDeSelected( ork::Object* pobj );			// notification of externally changed selection
 
@@ -93,6 +98,8 @@ private:
 	bool mInSlotFromSelectionManager;
 	ork::lev2::CFont* mFont;
 	int mCharW, mCharH;
+	int miScrollY;
+	int mContentH;
 	ork::lev2::CTXBASE* mCtxBase;
 
 };
