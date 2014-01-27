@@ -36,14 +36,14 @@ def DefaultBuildEnv( env, prj ):
 		DEFS += "LINUX ORK_LINUX"
 	CCFLG = ' '
 	CXXFLG = ' '
-	LIBS = "m rt tbb pthread "
+	LIBS = "m rt tbb pthread c++"
 	LIBPATH = ' . '
 	if USE_DEBUG_CXX:
 		LIBPATH += ' /usr/lib/x86_64-linux-gnu/debug '
 	else:
 		LIBPATH += ' /usr/lib/x86_64-linux-gnu '
 
-	LINK = '-Wl,--trace-symbol="_ZN18QMetaObjectPrivate21decodeMethodSignatureEPKcR15QVarLengthArrayI13QArgumentTypeLi10EE"'
+	LINK = ''
 	##
 	#clang = "gcc-4.7"
 	#clangpp = "g++-4.7"
@@ -62,7 +62,7 @@ def DefaultBuildEnv( env, prj ):
 	CxFLG = '-fPIE -fno-common -fno-strict-aliasing -g -Wno-switch-enum '
 	CxFLG += '-Imkspecs/linux-g++-64 -D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB '
 	prj.XCCFLG += CxFLG
-	prj.XCXXFLG += CxFLG + " --std=c++11 -fexceptions "
+	prj.XCXXFLG += CxFLG + " --std=c++11 --stdlib=libc++ -fexceptions "
 
 	prj.CompilerType = 'gcc'
 

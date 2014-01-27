@@ -186,8 +186,8 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	//////////////////////////////////
 
 	QPixmap pixmap("editor/splash.png");
-	mpSplashScreen = new QSplashScreen(pixmap);
-	mpSplashScreen->show();
+	//mpSplashScreen = new QSplashScreen(pixmap);
+	//mpSplashScreen->show();
 
 	f64 SplashTimeBase = CSystem::GetRef().GetLoResTime();
 
@@ -273,8 +273,8 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	//	Sleep(10);
 	//}
 
-    mpSplashScreen->finish(this);
-    delete mpSplashScreen;
+    //mpSplashScreen->finish(this);
+    //delete mpSplashScreen;
 
 	//connect( & mQtTimer, SIGNAL(timeout()), this, SLOT(SlotOnTimer()));
 	//mQtTimer.setInterval(50);

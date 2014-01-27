@@ -14,7 +14,7 @@ class OrkQtApp : public QApplication
 {	DeclareMoc(OrkQtApp,QApplication);
 public:
 	///////////////////////////////////
-	OrkQtApp( int argc, char** argv );
+	OrkQtApp( int& argc, char** argv );
 	void OnTimer();
 	///////////////////////////////////
 	QTimer				mIdleTimer;

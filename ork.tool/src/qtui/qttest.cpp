@@ -130,7 +130,7 @@ namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-OrkQtApp::OrkQtApp( int argc, char** argv )
+OrkQtApp::OrkQtApp( int& argc, char** argv )
 	: QApplication( argc, argv )
 	, mpMainWindow(0)
 {
@@ -283,8 +283,13 @@ int OrkStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const 
 
 struct InputArgs
 {
-    int argc;
+    int& argc;
     char **argv;
+
+    InputArgs( int& ac, char** av )
+    	: argc(ac)
+    	, argv(av)
+    {}
 };
 
 OrkQtApp* gpQtApplication = nullptr;
@@ -345,13 +350,9 @@ void BootQtThread( InputArgs &args )
     pthread_t thread1;
     int rc = pthread_create(&thread1, NULL, BootQtThreadImpl, (void*)&args);
 }
-int QtTest( int argc, char **argv, bool bgamemode, bool bmenumode )
+int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode )
 {
-    InputArgs args;
-    args.argc = argc;
-    args.argv = argv;
-   // BootQtThread(args);
-    //dispatch_main();
+    InputArgs args(argc,argv);
 
     BootQtThreadImpl((void*)& args);
 }

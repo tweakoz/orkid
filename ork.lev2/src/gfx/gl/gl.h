@@ -12,15 +12,13 @@
 #pragma once
 
 /////////////////////////////
-//#define USE_GL3
+#define USE_GL3
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////////
 #if defined(USE_GL3)
   #define _USE_GLSLFX
-  #define GL3_PROTOTYPES 1
 #else
   #define _USE_GLSLFX
-  #define GL_GLEXT_PROTOTYPES 1
 #endif
 /////////////////////////////
 #if defined( _WIN32 )
@@ -34,9 +32,11 @@
 /////////////////////////////
   #include <ork/kernel/objc.h>
   #if defined(USE_GL3)
+    #define GL3_PROTOTYPES 1
     #include <OpenGL/gl3.h>
     #include <OpenGL/glext.h>
   #else
+   #define GL_GLEXT_PROTOTYPES 1
     #include <OpenGL/gl.h>
     #include <OpenGL/glext.h>
   #endif
@@ -45,10 +45,11 @@
 /////////////////////////////
   #include <ork/lev2/qtui/qtui.h>
   #include <QtCore/QMetaObject>
-  #if defined(USE_GL3)
+  #if 0 //defined(USE_GL3)
     #include <GL/gl3.h>
   #else
-    #include <GL/gl.h>
+	#define GL_GLEXT_PROTOTYPES
+    #include "glcorearb.h"
     #include <GL/glu.h>
     #include <GL/glx.h>
   #endif

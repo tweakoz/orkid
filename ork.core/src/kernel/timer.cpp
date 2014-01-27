@@ -23,7 +23,8 @@
 #include <sys/time.h>
 #include <ork/kernel/mutex.h>
 #include <sched.h>
-#include <tbb/tbb.h>
+#include <time.h>
+//#include <tbb/tbb.h>
 #endif
 //////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/kernel.h>
@@ -324,10 +325,8 @@ f32	CSystem::GetLoResTime( void )
 ///////////////////////////////////////////////
 f32	CSystem::GetLoResTime( void )
 {
-	static tbb::tick_count zed = tbb::tick_count::now();
-	tbb::tick_count tc = tbb::tick_count::now();
-    float fsecs = float((tc-zed).seconds());
-    return fsecs;
+	static const float kbasetime = get_sync_time();
+	return get_sync_time()-kbasetime;
 }
 ///////////////////////////////////////////////
 #elif defined( ORK_WIN32 ) && defined( _MSVC )

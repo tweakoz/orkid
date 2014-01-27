@@ -160,7 +160,7 @@ void GfxTargetGL::GLinit()
 	orkprintf( "INITOPENGL\n" );
 	
 	GLXFBConfig fb_config;
-	XInitThreads();
+	//XInitThreads();
 	Display* x_dpy = XOpenDisplay(0);
 	assert(x_dpy!=0);
 	int x_screen = 0; // screen?
