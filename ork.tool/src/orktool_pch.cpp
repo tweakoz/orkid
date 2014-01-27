@@ -41,7 +41,7 @@ namespace tool {
 
 int Main_Filter( tokenlist toklist );
 int Main_FilterTree( tokenlist toklist );
-int QtTest( int argc, char **argv, bool bgamemode, bool bmenumode );
+//int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode );
 
 void MySetToolDataFolder()
 {
@@ -54,7 +54,7 @@ void MySetToolDataFolder()
 	//////////////////////////////////////////
 }
 
-int main(int argc, char **argv)
+int main(int& argc, char **argv)
 {	
 #if defined(ORK_OSX)
 	char path[1024];

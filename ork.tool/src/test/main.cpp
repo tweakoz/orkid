@@ -31,7 +31,7 @@ using namespace ork::MeshUtil;
 using namespace ork::tool;
 
 namespace ork { namespace tool { tokenlist Init(int argc, char **argv); }}
-namespace ork { namespace tool { int main(int argc, char **argv); }}
+namespace ork { namespace tool { int main(int& argc, char **argv); }}
 namespace ork { namespace lev2 { void Init(); }}
 
 class TestApplication : public ork::Application
@@ -57,7 +57,7 @@ int main(int argc, char** argv, char** argp)
 	SetCurrentThreadName( "MainThread" );
 
 #if defined(IX) && ! defined(ORK_OSX)
-	XInitThreads();
+//	XInitThreads();
 #endif
 	TestApplication the_app;
     ApplicationStack::Push(&the_app);

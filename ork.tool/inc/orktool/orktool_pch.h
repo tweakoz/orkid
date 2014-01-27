@@ -26,7 +26,7 @@ namespace ork {
 namespace tool {
 int Main_Filter( tokenlist toklist );
 int Main_FilterTree( tokenlist toklist );
-int QtTest( int argc, char **argv, bool bgamemode, bool bmenumode );
+int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode );
 tokenlist Init( int argc, char **argv );
 }
 }
