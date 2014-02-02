@@ -177,10 +177,10 @@ struct GLVtxBufHandle
 	{
 
 	}
-	GLVaoHandle* GetVAO(const void*plat_h,const void* pidcs)
+	GLVaoHandle* GetVAO(const void*plat_h,const void* vao_key)
 	{	GLVaoHandle* rval = nullptr;
 		size_t k1 = size_t(plat_h);
-		size_t k2= size_t(pidcs);
+		size_t k2= size_t(vao_key);
 		size_t key = k1 xor k2;
 		const auto& it = mVaoMap.find(key);
 		if( it==mVaoMap.end() )
@@ -194,9 +194,9 @@ struct GLVtxBufHandle
 			rval = it->second;
 		return rval;
 	}
-	GLVaoHandle* BindVao(const void*plat_h,const void* pidcs)
+	GLVaoHandle* BindVao(const void*plat_h,const void* vao_key)
 	{
-		GLVaoHandle* r = GetVAO(plat_h,pidcs);
+		GLVaoHandle* r = GetVAO(plat_h,vao_key);
 		assert(r!=nullptr);
 		glBindVertexArray(r->mVAO);
 		return r;
@@ -576,11 +576,15 @@ struct vtx_config
 			{
 				mAttr = it->second;
 			}
+			else
+			{
+				printf( "gbi::bind_attr attr<%s> istride<%d> not found!\n", mName.c_str(), istride );
+			}
 			mPass = pfxpass;
 		}
 		if( mAttr )
 		{	
-			//printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
+			printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
 			glVertexAttribPointer(	mAttr->mLocation, 
 									mNumComponents,
 									mType,
@@ -611,7 +615,7 @@ struct vtx_config
 		}
 	}
 };
-#endif // USE_GL3
+#endif // _USE_GLSLFX
 ///////////////////////////////////////////////////////////////////////////////
 
 static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t priv_data)
@@ -619,11 +623,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	printf( "EnableVtxBufComponents\n");
 	bool rval = false;
 	//////////////////////////////////////////////
-	#if defined(_USE_GLSLFX)
 	auto pfxpass = priv_data.Get<const GlslFxPass*>();
-	#else
-	auto pfxpass = priv_data.Get<const CgFxPass*>();
-	#endif
 	//////////////////////////////////////////////
 	#if defined(WIN32)
 	const GLenum kGLVTXCOLS = GL_BGRA;
@@ -631,9 +631,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	const GLenum kGLVTXCOLS = 4;
 	#endif
 	//////////////////////////////////////////////
-	#if defined(_USE_GLSLFX)
 	uint32_t component_mask = 0;
-	#endif // USE_GL3
 	//////////////////////////////////////////////
 	EVtxStreamFormat eStrFmt = VBuf.GetStreamFormat();
 	int iStride = VBuf.GetVtxSize();
@@ -705,26 +703,6 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 		}
 		case lev2::EVTXSTREAMFMT_V12N12T8I4W4:
 		{	
-			#if defined(_USE_CGFX)
-			glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glNormalPointer( GL_FLOAT, iStride, (void*) 12 );	
-			glEnableClientState( GL_NORMAL_ARRAY );
-
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 2, GL_FLOAT,	iStride, (void*) 24 );	// T8
-
-			glEnableClientState( GL_COLOR_ARRAY );
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 32 );	// I4
-
-			glEnableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glSecondaryColorPointer( 3, GL_UNSIGNED_BYTE, iStride, (void*) 36 );	// W4
-
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-
-			#else // _USE_GLSLFX
 			static vtx_config cfgs[] = 
 			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
 				{"NORMAL",		3,	GL_FLOAT,			true,	12,		0,0},
@@ -734,7 +712,6 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			};
 			for( vtx_config& vcfg : cfgs )
 				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);
-			#endif
 			rval = true;
 			break;
 		}
@@ -812,23 +789,6 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 		}
 		case lev2::EVTXSTREAMFMT_V12N12T16C4:
 		{	
-			#if defined(_USE_CGFX)
-			glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glNormalPointer( GL_FLOAT, iStride, (void*) 12 );   
-			glEnableClientState( GL_NORMAL_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 2, GL_FLOAT, iStride, (void*) 24 );  // T8
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 2, GL_FLOAT, iStride, (void*) 32 );  // T8
-			glEnableClientState( GL_COLOR_ARRAY );
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 40 );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			#else // _USE_GLSLFX
 			static vtx_config cfgs[] = 
 			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
 				{"NORMAL",		3,	GL_FLOAT,			true,	12,		0,0},
@@ -838,29 +798,11 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			};
 			for( vtx_config& vcfg : cfgs )
 				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);
-			#endif
 			rval = true;
 			break;
 		}
 		case EVTXSTREAMFMT_V12C4T16:
 		{
-			#if defined(_USE_CGFX)
-			glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 12 );
-			glEnableClientState( GL_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glTexCoordPointer( 2, GL_FLOAT, iStride, (void*) 16 );
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glTexCoordPointer( 2, GL_FLOAT, iStride, (void*) 24 );
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			////////////////////////////////////////////
-			glDisableClientState( GL_NORMAL_ARRAY );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			#else // _USE_GLSLFX
 			static vtx_config cfgs[] = 
 			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
 				{"COLOR0",		4,	GL_UNSIGNED_BYTE,	true,	12,		0,0},
@@ -869,7 +811,6 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			};
 			for( vtx_config& vcfg : cfgs )
 				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);
-			#endif
 			rval = true;
 			break;
 		}
@@ -963,17 +904,10 @@ bool GlGeometryBufferInterface::BindVertexStreamSource( const VertexBufferBase& 
 {
 	svarp_t evb_priv;
 	////////////////////////////////////////////////////////////////////
-#if defined(_USE_GLSLFX)
 	GlslFxInterface* pFXI = static_cast<GlslFxInterface*>(mTargetGL.FXI());
 	const GlslFxPass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
 	OrkAssert( pfxpass!=nullptr );
 	evb_priv.Set<const GlslFxPass*>(pfxpass);
-#else
-	CgFxInterface* pFXI = static_cast<CgFxInterface*>(mTargetGL.FXI());
-	const CgFxPass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
-	OrkAssert( pfxpass!=nullptr );
-	evb_priv.Set<const CgFxPass*>(pfxpass);
-#endif
 	////////////////////////////////////////////////////////////////////
 	// setup VBO or DL
 	GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
@@ -981,7 +915,9 @@ bool GlGeometryBufferInterface::BindVertexStreamSource( const VertexBufferBase& 
 	GL_ERRORCHECK();
 
 	void* plat_h = mTargetGL.GetPlatformHandle();
-	GLVaoHandle* vao_obj = hBuf->BindVao(plat_h,0);
+	auto vao_key = (void*) pfxpass;
+
+	GLVaoHandle* vao_obj = hBuf->BindVao(plat_h,vao_key);
 
 	bool rval = true;
 
@@ -1009,17 +945,10 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 
 	svarp_t evb_priv;
 
-#if defined(_USE_GLSLFX)
 	GlslFxInterface* pFXI = static_cast<GlslFxInterface*>(mTargetGL.FXI());
 	const GlslFxPass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
 	OrkAssert( pfxpass!=nullptr );
 	evb_priv.Set<const GlslFxPass*>(pfxpass);
-#else
-	CgFxInterface* pFXI = static_cast<CgFxInterface*>(mTargetGL.FXI());
-	const CgFxPass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
-	OrkAssert( pfxpass!=nullptr );
-	evb_priv.Set<const CgFxPass*>(pfxpass);
-#endif
 
 	////////////////////////////////////////////////////////////////////
 
@@ -1034,9 +963,9 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 
 	size_t k1 = size_t(ph);
 	size_t k2 = size_t(pfxpass);
-	size_t key = k1 xor k2;
+	auto vao_key = (void*)(k1 xor k2);
 
-	GLVaoHandle* vao_container = hBuf->BindVao(plat_h,(const void*) key );
+	GLVaoHandle* vao_container = hBuf->BindVao(plat_h, vao_key );
 
 	//printf( "vao_container<%p> ibo<%p>\n", vao_container, vao_container->mIBO );
 

@@ -220,7 +220,7 @@ bool Opq::Process()
 	{
 		pexecgrp->mOpsInFlightCounter++;
 
-		printf( "  runop OIF<%d>\n", int(pexecgrp->mOpsInFlightCounter) );
+		//printf( "  runop OIF<%d>\n", int(pexecgrp->mOpsInFlightCounter) );
 		const char* ppnam = "opx";
 		
 		if( the_op.mName.length() )

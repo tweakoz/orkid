@@ -83,7 +83,7 @@ CFile::CFile( const char* sFileName, EFileMode eMode, CFileDev* pdev )
 	if(NULL == mpDevice)
 		mpDevice = CFileEnv::GetRef().GetDeviceForUrl(msFileName);
 
-	OpenFile( msFileName, eMode );
+	OpenFile( sFileName, eMode );
 }
 
 CFile::CFile(const file::Path &sFileName, EFileMode eMode, CFileDev *pdev)

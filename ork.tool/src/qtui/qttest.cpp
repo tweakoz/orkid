@@ -176,7 +176,7 @@ public:
 		for( auto item = keys.begin(); item!=keys.end(); item++ )
 		{
 			QString val = *item;
-			const char* as_str = val.toAscii();
+			const char* as_str = val.toAscii().constData();
 			printf( "stylefact<%s>\n", as_str );
 		}
 	 	style = QStyleFactory::create("Oxygen");
