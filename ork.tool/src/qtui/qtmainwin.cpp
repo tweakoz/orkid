@@ -49,6 +49,7 @@ QQedRefreshEvent::QQedRefreshEvent()
 MiniorkMainWindow::MiniorkMainWindow(QWidget* parent, Qt::WFlags flags) 
 	: QMainWindow(parent, flags)
 	, mEditorModuleMgr( menuBar() )
+	, mReadOnly(false)
 {
 	SetMainTitle(QString("Miniork Tool"));
 	SetMiniorkRepos(QString(MINIORK_REPOS));
@@ -56,7 +57,6 @@ MiniorkMainWindow::MiniorkMainWindow(QWidget* parent, Qt::WFlags flags)
 	SetGameRepos(QString(GAME_REPOS));
 	SetGameRev(QString(GAME_REVISION));
 	SetSceneFile(QString("UNTITLED"));
-	SetReadOnly(false);
 }
 //////////////////////////////////////////////////////////////////////////////
 const QString& MiniorkMainWindow::GetMainTitle() const

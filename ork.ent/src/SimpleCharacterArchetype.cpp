@@ -88,7 +88,7 @@ public:
 		{
 			mAnimVect.push_back(item.first);
 		}
-
+		return true;
 	}
 
 	SimpleAnimatableInst* mAnima;

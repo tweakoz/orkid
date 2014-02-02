@@ -44,10 +44,9 @@ void OuterPickOp( DeferredPickOperationContext* pickctx )
 		gUpdateStatus.SetState(EUPD_STOP);
 		UpdateSerialOpQ().sync();
 		////////////
-		auto op_pick = [&]()
+		auto op_pick = [=]()
 		{	AssertOnOpQ2( MainThreadOpQ() );
 			pickctx->mState = 1;
-			SceneEditorVPToolHandler* handler = pickctx->mHandler;
 			SceneEditorVP* pVP = pickctx->mViewport;
 			assert(pVP!=nullptr);
 			lev2::GetPixelContext ctx;
@@ -71,7 +70,7 @@ void OuterPickOp( DeferredPickOperationContext* pickctx )
 			}
 			//UpdateSerialOpQ().sync();
 		};
-		Op(op_pick).QueueSync(MainThreadOpQ());
+		Op(op_pick).QueueASync(MainThreadOpQ());
 		////////////
 		// restart updates, and wait for mainthread to acknowledge
 		////////////

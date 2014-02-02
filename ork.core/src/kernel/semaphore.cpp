@@ -13,7 +13,7 @@ semaphore::semaphore(const char* name)
 
 void semaphore::notify()
 {
-	printf( "semaphore<%p>::notify() mCount<%d>\n", this, mCount.load() );
+	//printf( "semaphore<%p>::notify() mCount<%d>\n", this, mCount.load() );
     ork::mutex::unique_lock lock(mMutex);
 	mCount.fetch_add(1);
     mCondition.notify_one();
@@ -21,7 +21,7 @@ void semaphore::notify()
 
 void semaphore::wait()
 {
-	printf( "semaphore<%p>::wait() mCount<%d>\n", this, mCount.load() );
+	//printf( "semaphore<%p>::wait() mCount<%d>\n", this, mCount.load() );
    ork::mutex::unique_lock lock(mMutex);
     while(mCount.load()<=0)
         mCondition.wait(lock.mLockImpl);

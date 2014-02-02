@@ -296,8 +296,8 @@ void GfxEnv::RegisterWinContext( GfxWindow *pWin )
 /////////////////////////////////////////////////////////////////////////
 
 GetPixelContext::GetPixelContext()
-	: mAsBuffer(0)
-	, mRtGroup(0)
+	: mAsBuffer(nullptr)
+	, mRtGroup(nullptr)
 	, miMrtMask(0)
 {
 	for( int i=0; i<kmaxitems; i++ )

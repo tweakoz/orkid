@@ -156,9 +156,13 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent( const ui::Event& EV )
 				case 0x01000007: // delete
 				{
 					orkset<ork::Object*> selection = mEditor.SelectionManager().GetActiveSelection();
-					mEditor.ClearSelection();
-					for(orkset<ork::Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
-						mEditor.EditorDeleteObject(*it);
+					auto l = [=]()
+					{
+						mEditor.ClearSelection();
+						for(orkset<ork::Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
+							mEditor.EditorDeleteObject(*it);
+					};
+					Op(l).QueueASync(UpdateSerialOpQ());
 					break;
 				}
 				case 'c':

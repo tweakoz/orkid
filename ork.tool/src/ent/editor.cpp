@@ -1065,7 +1065,7 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj)
 		/////////////////////////////////////////
 		SigSceneTopoChanged();
 	};
-	Op(lamb).QueueSync(UpdateSerialOpQ());	
+	Op(lamb).QueueASync(UpdateSerialOpQ());	
 }
 void SceneEditorBase::DisableUpdates()
 {

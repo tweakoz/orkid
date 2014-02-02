@@ -13,13 +13,7 @@
 
 /////////////////////////////
 #define USE_GL3
-///////////////////////////////////////////////////////////////////////////////
-/////////////////////////////
-#if defined(USE_GL3)
-  #define _USE_GLSLFX
-#else
-  #define _USE_GLSLFX
-#endif
+#define _USE_GLSLFX
 /////////////////////////////
 #if defined( _WIN32 )
 /////////////////////////////
@@ -45,25 +39,16 @@
 /////////////////////////////
   #include <ork/lev2/qtui/qtui.h>
   #include <QtCore/QMetaObject>
-  #if 0 //defined(USE_GL3)
-    #include <GL/gl3.h>
-  #else
 	#define GL_GLEXT_PROTOTYPES
     #include "glcorearb.h"
     #include <GL/glu.h>
     #include <GL/glx.h>
-  #endif
 /////////////////////////////
 #endif
 /////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_USE_CGFX)
-#include <Cg/cg.h>
-#include <Cg/cgGL.h>
-#include "cgfx/cgfxi.h"
-#define GlFxInterfaceType CgFxInterface
-#elif defined(_USE_GLSLFX)
+#if defined(_USE_GLSLFX)
 #include "glfx/glslfxi.h"
 #define GlFxInterfaceType GlslFxInterface
 #endif

@@ -157,6 +157,8 @@ struct TexSetter
 		int isize = iw*ih*BPP;
 		for( int imip=0; imip<inummips; imip++ )
 		{			
+			if( iw<4 ) continue;
+			if( ih<4 ) continue;
 
 			GLuint nfmt = fmt;
 
@@ -204,7 +206,7 @@ struct TexSetter
 			OrkAssert(intfmt!=0);
 					
 
-			printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,nfmt,typ);
+			printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
 			GL_ERRORCHECK();
 
 			bool bUSEPBO = false;
@@ -403,8 +405,8 @@ struct TexSetter
 
 			bool bUSEPBO = false;
 
-			printf("alloc texdata tgt<%d> imip<%d> fmt<%d> iw<%d> ih<%d> extfmt<%d>\n",
-				tgt,imip,fmt,iw,ih,extfmt );
+			//printf("alloc texdata tgt<%d> imip<%d> fmt<%d> iw<%d> ih<%d> extfmt<%d>\n",
+			//	tgt,imip,fmt,iw,ih,extfmt );
 
 			if( false==bUSEPBO )
 			{

@@ -549,12 +549,19 @@ bool fixedvector<T,kmax>::const_iterator::operator != (const const_iterator& oth
 template<typename T, int kmax>
 const T* fixedvector<T,kmax>::const_iterator::operator ->() const
 {
+	//printf( "mpfixedary<%p>\n", (void*) mpfixedary );
+	fflush(stdout);
 	OrkAssert( mpfixedary != 0 );
 	iter_type isize = iter_type(mpfixedary->size());
+	//printf( "mpfixedary<%p> isize<%d> this->mindex<%d>\n", (void*) mpfixedary, (int) isize, (int) this->mindex );
+	fflush(stdout);
 	OrkAssert( this->mindex >= 0 );
 	OrkAssert( this->mindex < isize );
-	const typename fixedvector<T,kmax>::value_type* p0 = 
-		(this->mdirection>0) ? & (*mpfixedary)[this->mindex] : & (*mpfixedary)[(isize-1)-this->mindex];
+
+	const T* p0 = (this->mdirection>0) 
+				? & mpfixedary->operator[](this->mindex) 
+				: & mpfixedary->operator[]((isize-1)-this->mindex);
+
 	return p0;
 }
 

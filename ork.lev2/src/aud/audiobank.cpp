@@ -244,6 +244,9 @@ AudioInstrumentPlayback::AudioInstrumentPlayback()
 	, mpAudioGraph( 0 )
 	, mEmitterMatrix(0)
 {
+	for( int i=0; i<kmaxzonesperevent; i++ )
+		mZonePlaybacks[i] = 0; // just to shut up valgrind
+
 	ReInit();
 }
 

@@ -28,6 +28,9 @@ FrameBufferInterface::FrameBufferInterface( GfxTarget& tgt )
 	, mCurrentRtGroup( 0 )
     , mpPickBuffer(0)
 {
+	//for( int i=0; i<kiVPStackMax; i++ )
+	//	maViewportStack[i]
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
