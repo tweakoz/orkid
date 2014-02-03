@@ -567,11 +567,11 @@ class OutPlugChoiceDelegate : public tool::ged::IPlugChoiceDelegate
 {	
 	RttiDeclareConcrete( OutPlugChoiceDelegate, tool::ged::IPlugChoiceDelegate );
 public:
-	OutPlugChoiceDelegate() : IPlugChoiceDelegate() , mpgraph(0) {}
+	OutPlugChoiceDelegate() : IPlugChoiceDelegate() , mpgraph(nullptr) {}
 private:
 	void EnumerateChoices( tool::ged::GedItemNode* pnode, OutPlugMapType& Choices ); // virtual 
 	//ProcTex* mptex;
-	dataflow::graph_inst* mpgraph;
+	dataflow::graph_data* mpgraph;
 };
 
 void OutPlugChoiceDelegate::Describe(){}
@@ -591,7 +591,7 @@ void OutPlugChoiceDelegate::EnumerateChoices( tool::ged::GedItemNode* pnode, Out
 			static void doit(	const ork::PoolString& name,
 								dataflow::inplugbase* pinputplug,
 								dataflow::module* pmodule,
-								dataflow::graph_inst* pgraph,
+								dataflow::graph_data* pgraph,
 								OutPlugMapType& Choices )
 			{
 				int inumoutputs = pmodule->GetNumOutputs();
@@ -621,7 +621,7 @@ void OutPlugChoiceDelegate::EnumerateChoices( tool::ged::GedItemNode* pnode, Out
 					||	(pinputplug->GetDataTypeId() == typeid(CVector3))
 				)
 				{	dataflow::dgmodule* dgmod = rtti::autocast(pmodule);
-					dataflow::graph_inst* pgraph2 = dgmod->GetParent();
+					dataflow::graph_data* pgraph2 = dgmod->GetParent();
 					if( pgraph2 )
 					{	OrkAssert( mpgraph==pgraph2 );
 						yo::doit( name, pinputplug, pmodule, mpgraph, Choices );
