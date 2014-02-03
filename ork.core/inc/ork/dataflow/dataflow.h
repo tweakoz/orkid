@@ -848,6 +848,7 @@ public:
 	const orklut<int,dgmodule*>& LockTopoSortedChildrenForRead(int lid) const;
 	orklut<int,dgmodule*>& LockTopoSortedChildrenForWrite(int lid);
 	void UnLockTopoSortedChildren() const;
+	virtual void Clear() = 0;
 
 protected:
 
@@ -855,6 +856,10 @@ protected:
 	orklut<ork::PoolString,ork::Object*> mModules;
 	bool mbTopologyIsDirty;
 	recursive_mutex	mMutex;
+
+	bool SerializeConnections(ork::reflect::ISerializer &ser) const;
+	bool DeserializeConnections(ork::reflect::IDeserializer &deser);
+	bool PreDeserialize(reflect::IDeserializer &); // virtual
 
 };
 
@@ -873,7 +878,7 @@ public:
 	void BindExternal( dyn_external* pexternal );
 	void UnBindExternal();
 	dyn_external* GetExternal() const;
-	void Clear();
+	void Clear() override;
 	////////////////////////////////////////////
 	bool IsComplete() const;
 	bool IsPending() const;
@@ -888,18 +893,11 @@ public:
 	void SetScheduler( scheduler* psch );
 	scheduler* GetScheduler() const { return mScheduler; }
 	////////////////////////////////////////////
-	void AddSourcePlug(inplugbase*);
-	void AddSinkPlug(outplugbase*);
-	////////////////////////////////////////////
-	////////////////////////////////////////////
 
 protected:
 
 	dyn_external*									mExternal;
 	scheduler*										mScheduler;
-
-	orkvector<inplugbase*>							mSourcePlugs;
-	orkvector<outplugbase*>							mSinkPlugs;
 	
 	bool											mbAccumulateWork;
 	bool											mbInProgress;
@@ -907,10 +905,6 @@ protected:
 	std::priority_queue<dgmodule*>					mModuleQueue;
 
 	std::set<int>									mOutputRegisters;
-
-	bool SerializeConnections(ork::reflect::ISerializer &ser) const;
-	bool DeserializeConnections(ork::reflect::IDeserializer &deser);
-	bool PreDeserialize(reflect::IDeserializer &); // virtual
 
 	virtual void DoReInit() {}
 
