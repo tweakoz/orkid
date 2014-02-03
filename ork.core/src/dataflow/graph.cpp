@@ -90,6 +90,21 @@ bool graph_data::CanConnect( const inplugbase* pin, const outplugbase* pout ) co
 {	return ((&pin->GetDataTypeId()) == (&pout->GetDataTypeId()));
 }
 ///////////////////////////////////////////////////////////////////////////////
+const orklut<int,dgmodule*>& graph_data::LockTopoSortedChildrenForRead(int lid) const
+{	const orklut<int,dgmodule*>& topos = mChildrenTopoSorted.LockForRead(lid);
+	OrkAssert( IsTopologyDirty() == false );
+	return topos;
+}
+///////////////////////////////////////////////////////////////////////////////
+orklut<int, dgmodule*>& graph_data::LockTopoSortedChildrenForWrite(int lid)
+{	orklut<int,dgmodule*>& topos = mChildrenTopoSorted.LockForWrite(lid);
+	return topos;
+}
+///////////////////////////////////////////////////////////////////////////////
+void graph_data::UnLockTopoSortedChildren() const
+{	mChildrenTopoSorted.UnLock();
+}
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,21 +186,6 @@ void graph_inst::ReInit()
 		delete pobj;
 	}
 	Clear();
-}
-///////////////////////////////////////////////////////////////////////////////
-const orklut<int,dgmodule*>& graph_inst::LockTopoSortedChildrenForRead(int lid) const
-{	const orklut<int,dgmodule*>& topos = mChildrenTopoSorted.LockForRead(lid);
-	OrkAssert( IsTopologyDirty() == false );
-	return topos;
-}
-///////////////////////////////////////////////////////////////////////////////
-orklut<int, dgmodule*>& graph_inst::LockTopoSortedChildrenForWrite(int lid)
-{	orklut<int,dgmodule*>& topos = mChildrenTopoSorted.LockForWrite(lid);
-	return topos;
-}
-///////////////////////////////////////////////////////////////////////////////
-void graph_inst::UnLockTopoSortedChildren() const
-{	mChildrenTopoSorted.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void graph_inst::SetScheduler( scheduler* psch )
