@@ -315,9 +315,9 @@ struct ProcTexContext
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ProcTex : public ork::dataflow::graph
+class ProcTex : public ork::dataflow::graph_inst
 {
-	RttiDeclareConcrete( ProcTex, ork::dataflow::graph );
+	RttiDeclareConcrete( ProcTex, ork::dataflow::graph_inst );
 
 public:
 
@@ -843,7 +843,7 @@ class Group : public Img32Module
 
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex) { mpProcTex = tex ? ork::rtti::autocast( tex ) : 0; }
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const { tex = mpProcTex; }
-	ork::dataflow::graph* GetChildGraph() const { return mpProcTex; } // virtual
+	ork::dataflow::graph_inst* GetChildGraph() const { return mpProcTex; } // virtual
 
 public:
 

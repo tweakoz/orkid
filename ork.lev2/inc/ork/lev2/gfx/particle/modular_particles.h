@@ -1060,11 +1060,11 @@ class psys_graph_pool;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class psys_graph : public ork::dataflow::graph
+class psys_graph : public ork::dataflow::graph_inst
 {
 	friend class psys_graph_pool;
 
-	RttiDeclareAbstract(psys_graph,ork::dataflow::graph);
+	RttiDeclareAbstract(psys_graph,ork::dataflow::graph_inst);
 
 	bool CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const;
 	ork::dataflow::dgregisterblock					mdflowregisters;

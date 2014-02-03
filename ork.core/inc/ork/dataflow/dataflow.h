@@ -90,7 +90,8 @@ template <typename vartype> class plug;
 template <typename vartype> class inplug;
 template <typename vartype> class outplug;
 class module;
-class graph;
+class graph_data;
+class graph_inst;
 class inplugbase;
 class outplugbase;
 typedef int Affinity;
@@ -100,7 +101,6 @@ typedef int Affinity;
 class workunit;
 class scheduler;
 class cluster;
-class graph;
 struct dgregister;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,7 +204,7 @@ public:
 	inplugbase(	module*pmod, EPlugRate epr, const std::type_info& tid, const char* pname );
 	~inplugbase();
 	outplugbase* GetExternalOutput() const { return mExternalOutput; }
-	void SafeConnect( graph& gr, outplugbase* vt );
+	void SafeConnect( graph_inst& gr, outplugbase* vt );
 	void Disconnect();
 	void SetMorphable( morphable* pmorph ) { mpMorphable=pmorph; }
 	morphable* GetMorphable() const { return mpMorphable; }
@@ -670,10 +670,10 @@ class  dgmodule : public module
 public:
 	dgmodule();
 	////////////////////////////////////////////
-	void SetParent( graph* par ) { mParent=par; }
+	void SetParent( graph_inst* par ) { mParent=par; }
 	nodekey& Key() { return mKey; }
 	const nodekey& Key() const { return mKey; }
-	graph* GetParent() const { return mParent; }
+	graph_inst* GetParent() const { return mParent; }
 	////////////////////////////////////////////
 	//bool IsOutputDirty( const outplugbase* pplug ) const;
 	////////////////////////////////////////////
@@ -687,7 +687,7 @@ public:
 	////////////////////////////////////////////
 	virtual void ReleaseWorkUnit( workunit* wu );
 	////////////////////////////////////////////
-	virtual graph* GetChildGraph() const { return 0; }
+	virtual graph_inst* GetChildGraph() const { return 0; }
 	bool IsGroup() const { return GetChildGraph()!=0; }
 	////////////////////////////////////////////
 	const CVector2& GetGVPos() const { return mgvpos; }
@@ -700,7 +700,7 @@ protected:
 private:
 
 	Affinity		mAffinity;
-	graph*			mParent;
+	graph_inst*		mParent;
 	nodekey			mKey;
 	CVector2		mgvpos;
 };
@@ -816,7 +816,7 @@ struct dgqueue
 	void QueModule( dgmodule* pmod, int irecd );
 	bool HasPendingInputs( dgmodule* mod );
 	//////////////////////////////////////////////////////////
-	dgqueue( const graph* pg, dgcontext& ctx );
+	dgqueue( const graph_inst* pg, dgcontext& ctx );
 	//////////////////////////////////////////////////////////
 };
 
@@ -824,17 +824,26 @@ struct dgqueue
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class  graph : public ork::Object
+class graph_data : public ork::Object
 {
-	RttiDeclareAbstract(graph,ork::Object);	
+	RttiDeclareAbstract(graph_data,ork::Object);	
+
+protected:
+
+	graph_data();
+};
+
+class graph_inst : public graph_data
+{
+	RttiDeclareAbstract(graph_inst,graph_data);	
 
 public:
 	const std::set<int>& OutputRegisters() const { return mOutputRegisters; }
 	const orklut<ork::PoolString,ork::Object*>& Modules() { return mModules; }
 	////////////////////////////////////////////
-	graph();
-	~graph();
-	graph( const graph& oth );
+	graph_inst();
+	~graph_inst();
+	graph_inst( const graph_inst& oth );
 	void ReInit();
 	////////////////////////////////////////////
 	virtual bool CanConnect( const inplugbase* pin, const outplugbase* pout ) const;
@@ -904,6 +913,7 @@ protected:
 	bool DoNotify(const ork::event::Event *event); // virtual
 
 };
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #define OutPlugName( name ) mPlugOut##name

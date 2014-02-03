@@ -155,7 +155,7 @@ bool psys_graph::Query(event::Event *event) const
 		return true;
 	}
 
-	return dataflow::graph::Query(event);
+	return dataflow::graph_inst::Query(event);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
