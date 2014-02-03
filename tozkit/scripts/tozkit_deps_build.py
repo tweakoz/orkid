@@ -31,7 +31,9 @@ print "EB_DIR<%s>" % EB_DIR
 def chrel(s):
 	os.chdir("%s/%s"%(ROOT_DIR,s))
 def chstgrel(s):
-	os.chdir("%s/%s"%(STAGE_DIR,s))
+	ndir = "%s/%s"%(STAGE_DIR,s)
+	print( "chdir <%s>" % ndir )
+	os.chdir(ndir)
 
 class build_context:
 	def __init__(self):
