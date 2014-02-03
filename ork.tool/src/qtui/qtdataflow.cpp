@@ -84,7 +84,7 @@ class dflowgraphedit : public tool::ged::IOpsDelegate
 	RttiDeclareConcrete( dflowgraphedit, tool::ged::IOpsDelegate );
 	virtual void Execute( ork::Object* ptarget )
 	{
-		ork::dataflow::graph* pgrf = rtti::autocast(ptarget);
+		ork::dataflow::graph_inst* pgrf = rtti::autocast(ptarget);
 		if( gdfloweditor && pgrf)
 		{
 			gdfloweditor->Attach( pgrf );
@@ -98,7 +98,7 @@ void dflowgraphedit::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::dataflow::graph* GraphVP::GetTopGraph()
+ork::dataflow::graph_inst* GraphVP::GetTopGraph()
 {
 	return mDflowEditor.GetTopGraph();
 }
@@ -551,7 +551,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 
 void GraphVP::ReCenter()
 {
-	ork::dataflow::graph* pgrf = mDflowEditor.GetTopGraph();
+	ork::dataflow::graph_inst* pgrf = mDflowEditor.GetTopGraph();
 	if( pgrf )
 	{	
 		CVector2 vmin(+CFloat::TypeMax(),+CFloat::TypeMax());
@@ -708,12 +708,12 @@ DataFlowEditor::DataFlowEditor()
 	, mpProbeModule(0)
 {
 }
-void DataFlowEditor::Attach( ork::dataflow::graph* pgrf )
+void DataFlowEditor::Attach( ork::dataflow::graph_inst* pgrf )
 {
 	while( mGraphStack.empty() == false ) mGraphStack.pop();
 	mGraphStack.push(pgrf);
 }
-void DataFlowEditor::Push( ork::dataflow::graph* pgrf )
+void DataFlowEditor::Push( ork::dataflow::graph_inst* pgrf )
 {
 	mGraphStack.push(pgrf);
 }
@@ -724,7 +724,7 @@ void DataFlowEditor::Pop()
 		mGraphStack.pop();
 	}
 }
-ork::dataflow::graph* DataFlowEditor::GetTopGraph()
+ork::dataflow::graph_inst* DataFlowEditor::GetTopGraph()
 {
 	return mGraphStack.empty() ? 0 : mGraphStack.top();
 }

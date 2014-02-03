@@ -166,9 +166,11 @@ public:
 
 class scheduler
 {
+	typedef orkset<graph_inst*> graph_set_t;
+	typedef orkset<processor*> proc_set_t;
 	/////////////////////////////////////////////
-	LockedResource< orkset<graph*> >		mGraphSet;
-	LockedResource< orkset<processor*> >	mProcessors;
+	LockedResource< graph_set_t >	mGraphSet;
+	LockedResource< proc_set_t >	mProcessors;
 	/////////////////////////////////////////////
 	//std::priority_queue<module*>mModuleQueue;
 
@@ -195,19 +197,19 @@ public:
 	void QueueModule( module* pmod );
 
 	void AddProcessor( processor* proc );
-	LockedResource< orkset<processor*> >& GetProcessors() { return mProcessors; }
+	LockedResource< proc_set_t >& GetProcessors() { return mProcessors; }
 
 	//////////////////////////
 	// ANY Thread
 
-	void AddGraph( graph* graf );
-	void RemoveGraph( graph* graf );
+	void AddGraph( graph_inst* graf );
+	void RemoveGraph( graph_inst* graf );
 
 	int GetNumProcessors( const Affinity& affin ) const;
 
 	void WaitForIdle();								// BLOCKING
 
-	LockedResource< orkset<graph*> >& GraphSet() { return mGraphSet; }
+	LockedResource< graph_set_t >& GraphSet() { return mGraphSet; }
 
 	//////////////////////////
 

@@ -311,7 +311,7 @@ bool dgqueue::HasPendingInputs( dgmodule* mod )
 	return bhaspending;
 }
 //////////////////////////////////////////////////////////
-dgqueue::dgqueue( const graph* pg, dgcontext& ctx )
+dgqueue::dgqueue( const graph_inst* pg, dgcontext& ctx )
 	: mSerial(0)
 	, mCompCtx( ctx )
 {	/////////////////////////////////////////

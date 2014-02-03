@@ -674,7 +674,7 @@ class GraphImportDelegate : public IOpsDelegate
 	RttiDeclareConcrete( GraphImportDelegate, tool::ged::IOpsDelegate );
 	virtual void Execute( ork::Object* ptarget )
 	{
-		ork::dataflow::graph* pgraph = rtti::autocast( ptarget );
+		ork::dataflow::graph_inst* pgraph = rtti::autocast( ptarget );
 
 		if( pgraph )
 		{
@@ -702,7 +702,7 @@ class GraphExportDelegate : public IOpsDelegate
 	RttiDeclareConcrete( GraphExportDelegate, tool::ged::IOpsDelegate );
 	virtual void Execute( ork::Object* ptarget )
 	{
-		ork::dataflow::graph* pgraph = rtti::autocast( ptarget );
+		ork::dataflow::graph_inst* pgraph = rtti::autocast( ptarget );
 
 		if( pgraph )
 		{

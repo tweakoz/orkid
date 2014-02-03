@@ -397,9 +397,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioGraph : public ork::dataflow::graph
+class AudioGraph : public ork::dataflow::graph_inst
 {
-	RttiDeclareAbstract(AudioGraph,ork::dataflow::graph);
+	RttiDeclareAbstract(AudioGraph,ork::dataflow::graph_inst);
 
 public:
 

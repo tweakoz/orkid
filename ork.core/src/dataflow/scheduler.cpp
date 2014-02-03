@@ -271,11 +271,11 @@ void scheduler::AssignWorkUnit( workunit* wu )
 void scheduler::Process()
 {
 	int inumwuassigned = 0;
-	const orkset<graph*>& GraphSet = mGraphSet.LockForRead();
+	const graph_set_t& GraphSet = mGraphSet.LockForRead();
 	{
-		for( orkset<graph*>::const_iterator it=GraphSet.begin(); it!=GraphSet.end(); it++ )
+		for( graph_set_t::const_iterator it=GraphSet.begin(); it!=GraphSet.end(); it++ )
 		{
-			graph* graf =(*it);
+			graph_inst* graf =(*it);
 
 			const orklut<int,dgmodule*>& toposorted = graf->LockTopoSortedChildrenForRead(0);
 			{
@@ -360,10 +360,10 @@ void scheduler::QueueModule( module* pmod )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void scheduler::AddGraph( graph* graf )
+void scheduler::AddGraph( graph_inst* graf )
 {
-	orkset<graph*>& gset = mGraphSet.LockForWrite();
-	orkset<graph*>::const_iterator it = gset.find(graf);
+	graph_set_t& gset = mGraphSet.LockForWrite();
+	graph_set_t::const_iterator it = gset.find(graf);
 	OrkAssert( it == gset.end() );
 	gset.insert( graf );
 	mGraphSet.UnLock();
@@ -371,10 +371,10 @@ void scheduler::AddGraph( graph* graf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void scheduler::RemoveGraph( graph* graf )
+void scheduler::RemoveGraph( graph_inst* graf )
 {
-	orkset<graph*>& gset = mGraphSet.LockForWrite();
-	orkset<graph*>::iterator it = gset.find(graf);
+	graph_set_t& gset = mGraphSet.LockForWrite();
+	graph_set_t::iterator it = gset.find(graf);
 	OrkAssert( it != gset.end() );
 	gset.erase( it );
 	mGraphSet.UnLock();

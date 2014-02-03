@@ -26,7 +26,8 @@ typedef ork::dataflow::inplug<ork::CVector3>	OrkDataflowInpPlugFloat3;
 typedef ork::dataflow::floatinplugxf<ork::dataflow::floatxf> OrkDataflowFloatInpPlugXf; 
 typedef ork::dataflow::vect3inplugxf<ork::dataflow::vect3xf> OrkDataflowFloat3InpPlugXf; 
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::graph,"dflow/graph");
+INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::graph_data,"dflow/graphdata");
+INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::graph_inst,"dflow/graph");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::module,"dflow/module");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::dgmodule,"dflow/dgmodule");
 INSTANTIATE_TRANSPARENT_RTTI(ork::dataflow::plugroot,"dflow/plugroot");
@@ -340,7 +341,7 @@ void inplugbase::ConnectExternal( outplugbase* vt )
 	vt->mExternalInputConnections.push_back(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void inplugbase::SafeConnect( graph& gr, outplugbase* vt )
+void inplugbase::SafeConnect( graph_inst& gr, outplugbase* vt )
 {	//OrkAssert( GetDataTypeId() == vt->GetDataTypeId() );
 	bool cc = gr.CanConnect( this, vt );
 	OrkAssert( cc );
@@ -511,17 +512,23 @@ void dgmodule::ReleaseWorkUnit( workunit* wu )
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void graph::Describe()
-{	ork::reflect::RegisterMapProperty("Modules", &graph::mModules);
-	ork::reflect::AnnotatePropertyForEditor< graph >("Modules", "editor.factorylistbase", "dflow/dgmodule" );
-	ork::reflect::RegisterProperty( "zzz_connections", & graph::SerializeConnections, & graph::DeserializeConnections );
-	ork::reflect::AnnotatePropertyForEditor< graph >("zzz_connections", "editor.visible", "false" );
-
-	ork::reflect::AnnotateClassForEditor< graph >("editor.object.ops", ConstString("dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport") );
+void graph_data::Describe()
+{
+}
+graph_data::graph_data()
+{
 }
 ///////////////////////////////////////////////////////////////////////////////
-graph::graph()
+void graph_inst::Describe()
+{	ork::reflect::RegisterMapProperty("Modules", &graph_inst::mModules);
+	ork::reflect::AnnotatePropertyForEditor< graph_inst >("Modules", "editor.factorylistbase", "dflow/dgmodule" );
+	ork::reflect::RegisterProperty( "zzz_connections", & graph_inst::SerializeConnections, & graph_inst::DeserializeConnections );
+	ork::reflect::AnnotatePropertyForEditor< graph_inst >("zzz_connections", "editor.visible", "false" );
+
+	ork::reflect::AnnotateClassForEditor< graph_inst >("editor.object.ops", ConstString("dfgraph:dflowgraphedit import:dflowgraphimport export:dflowgraphexport") );
+}
+///////////////////////////////////////////////////////////////////////////////
+graph_inst::graph_inst()
 	: mbTopologyIsDirty( true )
 	, mScheduler( 0 )
 	, mbAccumulateWork( false )
@@ -533,7 +540,7 @@ graph::graph()
 	mChildrenTopoSorted.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-graph::~graph()
+graph_inst::~graph_inst()
 {	SetScheduler( 0 );
 
 	for( orklut<ork::PoolString,ork::Object*>::const_iterator it=mModules.begin(); it!=mModules.end(); it++ )
@@ -544,7 +551,7 @@ graph::~graph()
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-graph::graph( const graph& oth )
+graph_inst::graph_inst( const graph_inst& oth )
 	: mbTopologyIsDirty( true )
 	, mScheduler( 0 )
 	, mbAccumulateWork( false )
@@ -554,9 +561,9 @@ graph::graph( const graph& oth )
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::DoNotify(const ork::event::Event *event)
+bool graph_inst::DoNotify(const ork::event::Event *event)
 {	if( const ItemRemovalEvent* pev = rtti::autocast(event) )
-	{	if( pev->mProperty == graph::GetClassStatic()->Description().FindProperty("Modules") )
+	{	if( pev->mProperty == graph_inst::GetClassStatic()->Description().FindProperty("Modules") )
 		{	ork::PoolString ps = pev->mKey.Get<ork::PoolString>();
 			ork::Object* pobj = pev->mOldValue.Get<ork::Object*>();
 			delete pobj;
@@ -564,7 +571,7 @@ bool graph::DoNotify(const ork::event::Event *event)
 		}
 	}
 	else if( const MapItemCreationEvent* pev = rtti::autocast(event) )
-	{	if( pev->mProperty == graph::GetClassStatic()->Description().FindProperty("Modules") )
+	{	if( pev->mProperty == graph_inst::GetClassStatic()->Description().FindProperty("Modules") )
 		{
 			PoolString psname = pev->mKey.Get<PoolString>();
 			ork::Object* pnewobj = pev->mNewItem.Get<ork::Object*>();
@@ -577,7 +584,7 @@ bool graph::DoNotify(const ork::event::Event *event)
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::Clear()
+void graph_inst::Clear()
 {	mSourcePlugs.clear();
 	mSinkPlugs.clear();
 	while( false==mModuleQueue.empty() ) mModuleQueue.pop();
@@ -587,7 +594,7 @@ void graph::Clear()
 	mbInProgress = false;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::ReInit()
+void graph_inst::ReInit()
 {
 	for( orklut<ork::PoolString,ork::Object*>::const_iterator it=mModules.begin(); it!=mModules.end(); it++ )
 	{
@@ -597,26 +604,26 @@ void graph::ReInit()
 	Clear();
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::CanConnect( const inplugbase* pin, const outplugbase* pout ) const
+bool graph_inst::CanConnect( const inplugbase* pin, const outplugbase* pout ) const
 {	return ((&pin->GetDataTypeId()) == (&pout->GetDataTypeId()));
 }
 ///////////////////////////////////////////////////////////////////////////////
-const orklut<int,dgmodule*>& graph::LockTopoSortedChildrenForRead(int lid) const
+const orklut<int,dgmodule*>& graph_inst::LockTopoSortedChildrenForRead(int lid) const
 {	const orklut<int,dgmodule*>& topos = mChildrenTopoSorted.LockForRead(lid);
 	OrkAssert( IsTopologyDirty() == false );
 	return topos;
 }
 ///////////////////////////////////////////////////////////////////////////////
-orklut<int, dgmodule*>& graph::LockTopoSortedChildrenForWrite(int lid)
+orklut<int, dgmodule*>& graph_inst::LockTopoSortedChildrenForWrite(int lid)
 {	orklut<int,dgmodule*>& topos = mChildrenTopoSorted.LockForWrite(lid);
 	return topos;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::UnLockTopoSortedChildren() const
+void graph_inst::UnLockTopoSortedChildren() const
 {	mChildrenTopoSorted.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::SetScheduler( scheduler* psch )
+void graph_inst::SetScheduler( scheduler* psch )
 {	if( psch )
 	{	psch->AddGraph( this );
 	}
@@ -626,7 +633,7 @@ void graph::SetScheduler( scheduler* psch )
 	mScheduler = psch;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::UnBindExternal()
+void graph_inst::UnBindExternal()
 {
 	mMutex.Lock();
 	{
@@ -636,7 +643,7 @@ void graph::UnBindExternal()
 	mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::BindExternal( dyn_external* pext )
+void graph_inst::BindExternal( dyn_external* pext )
 {
 	mMutex.Lock();
 	{
@@ -646,7 +653,7 @@ void graph::BindExternal( dyn_external* pext )
 	mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::AddChild( const PoolString& named, dgmodule* pchild )
+void graph_inst::AddChild( const PoolString& named, dgmodule* pchild )
 {	pchild->SetName( named );
 	mMutex.Lock();
 	{
@@ -657,12 +664,12 @@ void graph::AddChild( const PoolString& named, dgmodule* pchild )
 	mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::AddChild( const char* named, dgmodule* pchild )
+void graph_inst::AddChild( const char* named, dgmodule* pchild )
 {
 	AddChild( AddPooledString(named), pchild );
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::RemoveChild( dgmodule* pchild )
+void graph_inst::RemoveChild( dgmodule* pchild )
 {	mMutex.Lock();
 	{
 		OrkAssert(false); // not implemented yet
@@ -673,7 +680,7 @@ void graph::RemoveChild( dgmodule* pchild )
 	mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-dgmodule* graph::GetChild( const PoolString& named ) const
+dgmodule* graph_inst::GetChild( const PoolString& named ) const
 {	dgmodule *pret = 0;
 	orklut<PoolString,Object*>::const_iterator it = mModules.find( named );
 	if( it != mModules.end() )
@@ -683,17 +690,17 @@ dgmodule* graph::GetChild( const PoolString& named ) const
 	return pret;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dgmodule* graph::GetChild( size_t indexed ) const
+dgmodule* graph_inst::GetChild( size_t indexed ) const
 {	dgmodule* pret = rtti::autocast(mModules.GetItemAtIndex(indexed).second);
 	return pret;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dyn_external* graph::GetExternal() const
+dyn_external* graph_inst::GetExternal() const
 {
 	return mExternal;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::RefreshTopology(dgcontext& ctx )
+void graph_inst::RefreshTopology(dgcontext& ctx )
 {	if( false == IsComplete() ) return;
 	size_t inumchild = GetNumChildren();
 	dgqueue dq(this,ctx);
@@ -732,21 +739,21 @@ void graph::RefreshTopology(dgcontext& ctx )
 	mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::AddSourcePlug(inplugbase* pin)
+void graph_inst::AddSourcePlug(inplugbase* pin)
 {	mMutex.Lock();
 	{	mSourcePlugs.push_back(pin);
 	}
 	mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::AddSinkPlug(outplugbase* pout)
+void graph_inst::AddSinkPlug(outplugbase* pout)
 {	mMutex.Lock();
 	{	mSinkPlugs.push_back(pout);
 	}
 	mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::IsDirty(void) const
+bool graph_inst::IsDirty(void) const
 {	OrkAssert( mbTopologyIsDirty == false );
 	bool bdirty = false;
 	for( orklut<PoolString,Object*>::const_iterator it=mModules.begin(); ((it!=mModules.end())&&(bdirty==false)); it++ )
@@ -757,15 +764,15 @@ bool graph::IsDirty(void) const
 	return bdirty;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::IsPending() const
+bool graph_inst::IsPending() const
 {	return mbInProgress;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void graph::SetPending(bool bv)
+void graph_inst::SetPending(bool bv)
 {	mbInProgress=bv;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::IsComplete() const
+bool graph_inst::IsComplete() const
 {	bool bcomp = true;
 	for( orklut<PoolString,Object*>::const_iterator it=mModules.begin(); it!=mModules.end(); it++ )
 	{	dgmodule* module = rtti::autocast(it->second);
@@ -790,7 +797,7 @@ bool graph::IsComplete() const
 	//}
 }*/
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::SerializeConnections(ork::reflect::ISerializer &ser) const
+bool graph_inst::SerializeConnections(ork::reflect::ISerializer &ser) const
 {	for( orklut<ork::PoolString,ork::Object*>::const_iterator it=mModules.begin(); it!=mModules.end(); it++ )
 	{	ork::Object* pobj = it->second;
 		ork::dataflow::dgmodule* pdgmodule = ork::rtti::autocast(pobj);
@@ -837,7 +844,7 @@ bool graph::SerializeConnections(ork::reflect::ISerializer &ser) const
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::DeserializeConnections(ork::reflect::IDeserializer &deser)
+bool graph_inst::DeserializeConnections(ork::reflect::IDeserializer &deser)
 {	for( orklut<ork::PoolString,ork::Object*>::const_iterator it=mModules.begin(); it!=mModules.end(); it++ )
 	{	ork::Object* pobj = it->second;
 		ork::dataflow::dgmodule* pdgmodule = ork::rtti::autocast(pobj);
@@ -879,7 +886,7 @@ bool graph::DeserializeConnections(ork::reflect::IDeserializer &deser)
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool graph::PreDeserialize(reflect::IDeserializer &)
+bool graph_inst::PreDeserialize(reflect::IDeserializer &)
 {
 	LockTopoSortedChildrenForWrite(101);
 	Clear();
