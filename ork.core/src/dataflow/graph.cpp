@@ -216,7 +216,6 @@ void graph_inst::Describe()
 ///////////////////////////////////////////////////////////////////////////////
 graph_inst::graph_inst()
 	: mScheduler( 0 )
-	, mbAccumulateWork( false )
 	, mbInProgress(false)
 	, mExternal(0)
 {
@@ -237,7 +236,6 @@ graph_inst::~graph_inst()
 ///////////////////////////////////////////////////////////////////////////////
 graph_inst::graph_inst( const graph_inst& oth )
 	: mScheduler( 0 )
-	, mbAccumulateWork( false )
 	, mbInProgress(false)
 	, mExternal(0)
 {
@@ -271,19 +269,8 @@ void graph_inst::Clear()
 		mModuleQueue.pop();
 	mbTopologyIsDirty = true;
 	mScheduler = 0;
-	mbAccumulateWork = false;
 	mbInProgress = false;
 	mExternal = 0;
-}
-///////////////////////////////////////////////////////////////////////////////
-void graph_inst::ReInit()
-{
-	for( orklut<ork::PoolString,ork::Object*>::const_iterator it=mModules.begin(); it!=mModules.end(); it++ )
-	{
-		ork::Object* pobj = it->second;
-		delete pobj;
-	}
-	Clear();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void graph_inst::SetScheduler( scheduler* psch )

@@ -315,7 +315,6 @@ void ProcTex::compute( ProcTexContext& ptctx )
 	// build the execution graph
 	//////////////////////////////////
 	Clear();
-	SetAccumulateWork(true);
 	RefreshTopology(ptctx.mdflowctx);
 
 	//////////////////////////////////

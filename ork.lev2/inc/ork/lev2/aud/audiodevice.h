@@ -420,7 +420,6 @@ private:
 	bool CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const;
 	ork::dataflow::dgregisterblock					mdflowregisters;
 	ork::dataflow::dgcontext						mdflowctx;
-	void DoReInit(); // virtual 
 
 };
 
