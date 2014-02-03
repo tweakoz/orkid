@@ -30,15 +30,15 @@ class DataFlowEditor : public ork::Object
 public:
 
 	GraphVP*							mGraphVP;	
-	std::stack<ork::dataflow::graph_inst*>	mGraphStack;
+	std::stack<ork::dataflow::graph_data*>	mGraphStack;
 	ork::dataflow::dgmodule*			mpSelModule;
 	ork::dataflow::dgmodule*			mpProbeModule;
 
 	DataFlowEditor();
-	void Attach( ork::dataflow::graph_inst* pgrf );
-	void Push( ork::dataflow::graph_inst* pgrf );
+	void Attach( ork::dataflow::graph_data* pgrf );
+	void Push( ork::dataflow::graph_data* pgrf );
 	void Pop();
-	ork::dataflow::graph_inst* GetTopGraph();
+	ork::dataflow::graph_data* GetTopGraph();
 	size_t StackDepth() const { return mGraphStack.size(); }
 
 	void SelModule( ork::dataflow::dgmodule* pmod ) { mpSelModule=pmod; }
@@ -72,7 +72,7 @@ private:
 	ork::lev2::Texture*							mpArrowTex;
 	ged::ObjModel&								mObjectModel;
 	DataFlowEditor&								mDflowEditor;
-	ork::dataflow::graph_inst* GetTopGraph();
+	ork::dataflow::graph_data* GetTopGraph();
 	ork::lev2::GfxMaterial3DSolid				mGridMaterial; 
 };
 

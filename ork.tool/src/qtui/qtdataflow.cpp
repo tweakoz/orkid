@@ -98,7 +98,7 @@ void dflowgraphedit::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::dataflow::graph_inst* GraphVP::GetTopGraph()
+ork::dataflow::graph_data* GraphVP::GetTopGraph()
 {
 	return mDflowEditor.GetTopGraph();
 }
@@ -551,7 +551,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 
 void GraphVP::ReCenter()
 {
-	ork::dataflow::graph_inst* pgrf = mDflowEditor.GetTopGraph();
+	ork::dataflow::graph_data* pgrf = mDflowEditor.GetTopGraph();
 	if( pgrf )
 	{	
 		CVector2 vmin(+CFloat::TypeMax(),+CFloat::TypeMax());
@@ -708,12 +708,12 @@ DataFlowEditor::DataFlowEditor()
 	, mpProbeModule(0)
 {
 }
-void DataFlowEditor::Attach( ork::dataflow::graph_inst* pgrf )
+void DataFlowEditor::Attach( ork::dataflow::graph_data* pgrf )
 {
 	while( mGraphStack.empty() == false ) mGraphStack.pop();
 	mGraphStack.push(pgrf);
 }
-void DataFlowEditor::Push( ork::dataflow::graph_inst* pgrf )
+void DataFlowEditor::Push( ork::dataflow::graph_data* pgrf )
 {
 	mGraphStack.push(pgrf);
 }
@@ -724,7 +724,7 @@ void DataFlowEditor::Pop()
 		mGraphStack.pop();
 	}
 }
-ork::dataflow::graph_inst* DataFlowEditor::GetTopGraph()
+ork::dataflow::graph_data* DataFlowEditor::GetTopGraph()
 {
 	return mGraphStack.empty() ? 0 : mGraphStack.top();
 }

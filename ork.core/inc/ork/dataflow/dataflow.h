@@ -204,7 +204,7 @@ public:
 	inplugbase(	module*pmod, EPlugRate epr, const std::type_info& tid, const char* pname );
 	~inplugbase();
 	outplugbase* GetExternalOutput() const { return mExternalOutput; }
-	void SafeConnect( graph_inst& gr, outplugbase* vt );
+	void SafeConnect( graph_data& gr, outplugbase* vt );
 	void Disconnect();
 	void SetMorphable( morphable* pmorph ) { mpMorphable=pmorph; }
 	morphable* GetMorphable() const { return mpMorphable; }
@@ -670,10 +670,10 @@ class  dgmodule : public module
 public:
 	dgmodule();
 	////////////////////////////////////////////
-	void SetParent( graph_inst* par ) { mParent=par; }
+	void SetParent( graph_data* par ) { mParent=par; }
 	nodekey& Key() { return mKey; }
 	const nodekey& Key() const { return mKey; }
-	graph_inst* GetParent() const { return mParent; }
+	graph_data* GetParent() const { return mParent; }
 	////////////////////////////////////////////
 	//bool IsOutputDirty( const outplugbase* pplug ) const;
 	////////////////////////////////////////////
@@ -687,7 +687,7 @@ public:
 	////////////////////////////////////////////
 	virtual void ReleaseWorkUnit( workunit* wu );
 	////////////////////////////////////////////
-	virtual graph_inst* GetChildGraph() const { return 0; }
+	virtual graph_data* GetChildGraph() const { return 0; }
 	bool IsGroup() const { return GetChildGraph()!=0; }
 	////////////////////////////////////////////
 	const CVector2& GetGVPos() const { return mgvpos; }
@@ -700,7 +700,7 @@ protected:
 private:
 
 	Affinity		mAffinity;
-	graph_inst*		mParent;
+	graph_data*		mParent;
 	nodekey			mKey;
 	CVector2		mgvpos;
 };
@@ -828,9 +828,29 @@ class graph_data : public ork::Object
 {
 	RttiDeclareAbstract(graph_data,ork::Object);	
 
+public:
+	graph_data();
+	~graph_data();
+	graph_data( const graph_data& oth );
+
+	const orklut<ork::PoolString,ork::Object*>& Modules() { return mModules; }
+	size_t GetNumChildren() const { return mModules.size(); }
+	dgmodule* GetChild( const PoolString& named ) const;
+	dgmodule* GetChild( size_t indexed ) const;
+	void AddChild( const PoolString& named, dgmodule* pchild );
+	void AddChild( const char* named, dgmodule* pchild );
+	void RemoveChild( dgmodule* pchild );
+	bool IsTopologyDirty() const { return mbTopologyIsDirty; }
+	void SetTopologyDirty( bool bv ) { mbTopologyIsDirty=bv; }
+	recursive_mutex& GetMutex() { return mMutex; }
+	virtual bool CanConnect( const inplugbase* pin, const outplugbase* pout ) const;
+
 protected:
 
-	graph_data();
+	orklut<ork::PoolString,ork::Object*> mModules;
+	bool mbTopologyIsDirty;
+	recursive_mutex	mMutex;
+
 };
 
 class graph_inst : public graph_data
@@ -839,33 +859,22 @@ class graph_inst : public graph_data
 
 public:
 	const std::set<int>& OutputRegisters() const { return mOutputRegisters; }
-	const orklut<ork::PoolString,ork::Object*>& Modules() { return mModules; }
 	////////////////////////////////////////////
 	graph_inst();
 	~graph_inst();
 	graph_inst( const graph_inst& oth );
 	void ReInit();
 	////////////////////////////////////////////
-	virtual bool CanConnect( const inplugbase* pin, const outplugbase* pout ) const;
-	////////////////////////////////////////////
-	size_t GetNumChildren() const { return mModules.size(); }
-	void AddChild( const PoolString& named, dgmodule* pchild );
-	void AddChild( const char* named, dgmodule* pchild );
 	void BindExternal( dyn_external* pexternal );
-	void RemoveChild( dgmodule* pchild );
 	void UnBindExternal();
-	dgmodule* GetChild( const PoolString& named ) const;
-	dgmodule* GetChild( size_t indexed ) const;
 	dyn_external* GetExternal() const;
 	void Clear();
 	////////////////////////////////////////////
 	bool IsComplete() const;
 	bool IsPending() const;
-	bool IsTopologyDirty() const { return mbTopologyIsDirty; }
 	bool IsDirty(void) const;
 	bool DoesAccumulateWork() const { return mbAccumulateWork; }
 	////////////////////////////////////////////
-	void SetTopologyDirty( bool bv ) { mbTopologyIsDirty=bv; }
 	void SetPending(bool bv);
 	void SetAccumulateWork(bool bv) { mbAccumulateWork=bv; }
 	////////////////////////////////////////////
@@ -873,8 +882,6 @@ public:
 	////////////////////////////////////////////
 	void SetScheduler( scheduler* psch );
 	scheduler* GetScheduler() const { return mScheduler; }
-	////////////////////////////////////////////
-	recursive_mutex& GetMutex() { return mMutex; }
 	////////////////////////////////////////////
 	void AddSourcePlug(inplugbase*);
 	void AddSinkPlug(outplugbase*);
@@ -887,12 +894,9 @@ public:
 protected:
 
 	LockedResource<	orklut<int,dgmodule*> >			mChildrenTopoSorted;
-	bool											mbTopologyIsDirty;
 
-	orklut<ork::PoolString,ork::Object*>			mModules;
 	dyn_external*									mExternal;
 	scheduler*										mScheduler;
-	recursive_mutex									mMutex;
 
 	orkvector<inplugbase*>							mSourcePlugs;
 	orkvector<outplugbase*>							mSinkPlugs;
