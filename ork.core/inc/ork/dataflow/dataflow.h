@@ -873,7 +873,6 @@ public:
 	graph_inst();
 	~graph_inst();
 	graph_inst( const graph_inst& oth );
-	void ReInit();
 	////////////////////////////////////////////
 	void BindExternal( dyn_external* pexternal );
 	void UnBindExternal();
@@ -883,10 +882,8 @@ public:
 	bool IsComplete() const;
 	bool IsPending() const;
 	bool IsDirty(void) const;
-	bool DoesAccumulateWork() const { return mbAccumulateWork; }
 	////////////////////////////////////////////
 	void SetPending(bool bv);
-	void SetAccumulateWork(bool bv) { mbAccumulateWork=bv; }
 	////////////////////////////////////////////
 	void RefreshTopology( dgcontext& ctx );
 	////////////////////////////////////////////
@@ -899,14 +896,11 @@ protected:
 	dyn_external*									mExternal;
 	scheduler*										mScheduler;
 	
-	bool											mbAccumulateWork;
 	bool											mbInProgress;
 
 	std::priority_queue<dgmodule*>					mModuleQueue;
 
 	std::set<int>									mOutputRegisters;
-
-	virtual void DoReInit() {}
 
 	bool DoNotify(const ork::event::Event *event); // virtual
 

@@ -483,9 +483,6 @@ void AudioGraph::Reset()
 	//mfElapsed = 0.0f;
 	//mbEmitEnable = true;
 }
-void AudioGraph::DoReInit()
-{
-}
 void AudioGraph::compute()
 {
 }
