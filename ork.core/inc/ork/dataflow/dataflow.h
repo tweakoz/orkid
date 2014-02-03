@@ -845,8 +845,13 @@ public:
 	recursive_mutex& GetMutex() { return mMutex; }
 	virtual bool CanConnect( const inplugbase* pin, const outplugbase* pout ) const;
 
+	const orklut<int,dgmodule*>& LockTopoSortedChildrenForRead(int lid) const;
+	orklut<int,dgmodule*>& LockTopoSortedChildrenForWrite(int lid);
+	void UnLockTopoSortedChildren() const;
+
 protected:
 
+	LockedResource<	orklut<int,dgmodule*> >	mChildrenTopoSorted;
 	orklut<ork::PoolString,ork::Object*> mModules;
 	bool mbTopologyIsDirty;
 	recursive_mutex	mMutex;
@@ -887,13 +892,8 @@ public:
 	void AddSinkPlug(outplugbase*);
 	////////////////////////////////////////////
 	////////////////////////////////////////////
-	const orklut<int,dgmodule*>& LockTopoSortedChildrenForRead(int lid) const;
-	orklut<int,dgmodule*>& LockTopoSortedChildrenForWrite(int lid);
-	void UnLockTopoSortedChildren() const;
 
 protected:
-
-	LockedResource<	orklut<int,dgmodule*> >			mChildrenTopoSorted;
 
 	dyn_external*									mExternal;
 	scheduler*										mScheduler;
