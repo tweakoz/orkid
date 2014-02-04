@@ -833,17 +833,19 @@ public:
 	~graph_data();
 	graph_data( const graph_data& oth );
 
-	const orklut<ork::PoolString,ork::Object*>& Modules() { return mModules; }
-	size_t GetNumChildren() const { return mModules.size(); }
+	virtual bool CanConnect( const inplugbase* pin, const outplugbase* pout ) const;
+	bool IsComplete() const;
+	bool IsTopologyDirty() const { return mbTopologyIsDirty; }
 	dgmodule* GetChild( const PoolString& named ) const;
 	dgmodule* GetChild( size_t indexed ) const;
+	const orklut<ork::PoolString,ork::Object*>& Modules() { return mModules; }
+	size_t GetNumChildren() const { return mModules.size(); }
+
 	void AddChild( const PoolString& named, dgmodule* pchild );
 	void AddChild( const char* named, dgmodule* pchild );
 	void RemoveChild( dgmodule* pchild );
-	bool IsTopologyDirty() const { return mbTopologyIsDirty; }
 	void SetTopologyDirty( bool bv ) { mbTopologyIsDirty=bv; }
 	recursive_mutex& GetMutex() { return mMutex; }
-	virtual bool CanConnect( const inplugbase* pin, const outplugbase* pout ) const;
 
 	const orklut<int,dgmodule*>& LockTopoSortedChildrenForRead(int lid) const;
 	orklut<int,dgmodule*>& LockTopoSortedChildrenForWrite(int lid);
@@ -879,7 +881,6 @@ public:
 	dyn_external* GetExternal() const;
 	void Clear() override;
 	////////////////////////////////////////////
-	bool IsComplete() const;
 	bool IsPending() const;
 	bool IsDirty(void) const;
 	////////////////////////////////////////////
