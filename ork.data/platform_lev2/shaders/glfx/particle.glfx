@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default
 {
-	glsl_version = "150";
+	glsl_version = "330";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -28,6 +28,20 @@ vertex_interface iface_vdefault
 	in vec4 vtxcolor : COLOR0;
 	in vec4 uv0 : TEXCOORD0;
 	in vec4 uv1 : TEXCOORD1;
+	//
+	out vec4 geo_clr;
+	out vec4 geo_uv0;
+	out vec4 geo_uv1;
+}
+///////////////////////////////////////////////////////////////
+geometry_interface iface_gdefault
+{
+	layout (triangles) in;
+	layout (triangle_strip, max_vertices=3) out; 
+	//
+	in vec4 geo_clr[3];
+	in vec4 geo_uv0[3];
+	in vec4 geo_uv1[3];
 	//
 	out vec4 frg_clr;
 	out vec4 frg_uv0;
@@ -89,9 +103,9 @@ state_block sb_alpadd
 vertex_shader vs_vtxtexcolor : iface_vdefault
 {
 	gl_Position = MatMVP*position;
-	frg_clr = vtxcolor.bgra;
-	frg_uv0 = uv0;
-	frg_uv1 = uv1;
+	geo_clr = vtxcolor.bgra;
+	geo_uv0 = uv0;
+	geo_uv1 = uv1;
 }
 ///////////////////////////////////////////////////////////////
 
@@ -111,9 +125,26 @@ fragment_shader ps_modtexclr : iface_fmt
 vertex_shader vs_vtxcolor : iface_vdefault
 {
 	gl_Position = MatMVP*position;
-	frg_clr = vtxcolor;
-	frg_uv0 = uv0;
-	frg_uv1 = uv1;
+	geo_clr = vtxcolor;
+	geo_uv0 = uv0;
+	geo_uv1 = uv1;
+}
+///////////////////////////////////////////////////////////////
+geometry_shader gs_identity : iface_gdefault
+{
+	for( int n=0; n<gl_in.length(); n++ )
+	{
+		gl_Position = gl_in[n].gl_Position;
+		frg_clr = geo_clr[n];
+		frg_uv0 = geo_uv0[n];
+		frg_uv1 = geo_uv1[n];
+		EmitVertex();
+	}
+	EndPrimitive();
+}
+geometry_shader gs_billboardquad : iface_gdefault
+{
+	gl_Position = gl_in[0].gl_Position;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault
@@ -125,6 +156,7 @@ fragment_shader ps_modclr : iface_fmt
 {
 	out_clr = modcolor;
 }
+///////////////////////////////////////////////////////////////
 fragment_shader ps_volume : iface_fmt
 {
 	vec2 uv = frg_uv0.xy;
@@ -138,6 +170,7 @@ technique tbasicparticle
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxtexcolor;
+		geometry_shader=gs_identity;
 		fragment_shader=ps_modtexclr;
 		state_block=sb_default;
 	}
@@ -146,6 +179,7 @@ technique tbasicparticle_pick
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
+		geometry_shader=gs_identity;
 		fragment_shader=ps_modtex;
 		state_block=sb_default;
 	}
@@ -154,6 +188,7 @@ technique tvolnoiseparticle
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
+		geometry_shader=gs_identity;
 		fragment_shader=ps_modtex;
 		state_block=sb_default;
 	}
@@ -162,6 +197,7 @@ technique tvolumeparticle
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
+		geometry_shader=gs_identity;
 		fragment_shader=ps_volume;
 		state_block=sb_alpadd;
 	}

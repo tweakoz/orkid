@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _SHADERMANAGER_H
-#define _SHADERMANAGER_H
+#pragma once
 
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/prop.h>
@@ -131,4 +130,3 @@ public:
 
 } }
 
-#endif

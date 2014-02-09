@@ -138,6 +138,13 @@ void GlslFxContainer::AddFragmentInterface( GlslFxStreamInterface* pif )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlslFxContainer::AddGeometryInterface( GlslFxStreamInterface* pif )
+{
+	mGeometryInterfaces[ pif->mName ] = pif;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void GlslFxContainer::AddStateBlock( GlslFxStateBlock* psb )
 {
 	mStateBlocks[ psb->mName ] = psb;
@@ -173,6 +180,13 @@ void GlslFxContainer::AddFragmentProgram( GlslFxShader* psha )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlslFxContainer::AddGeometryProgram( GlslFxShader* psha )
+{
+	mGeometryPrograms[ psha->mName ] = psha;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 GlslFxStateBlock* GlslFxContainer::GetStateBlock( const std::string& name ) const
 {
 	const auto& it = mStateBlocks.find(name);
@@ -197,6 +211,14 @@ GlslFxShader* GlslFxContainer::GetFragmentProgram( const std::string& name ) con
 
 ///////////////////////////////////////////////////////////////////////////////
 
+GlslFxShader* GlslFxContainer::GetGeometryProgram( const std::string& name ) const
+{
+	const auto& it = mGeometryPrograms.find(name);
+	return (it==mGeometryPrograms.end()) ? nullptr : it->second;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 GlslFxStreamInterface* GlslFxContainer::GetVertexInterface( const std::string& name ) const
 {
 	const auto& it = mVertexInterfaces.find(name);
@@ -213,16 +235,19 @@ GlslFxStreamInterface* GlslFxContainer::GetFragmentInterface( const std::string&
 
 ///////////////////////////////////////////////////////////////////////////////
 
+GlslFxStreamInterface* GlslFxContainer::GetGeometryInterface( const std::string& name ) const
+{
+	const auto& it = mGeometryInterfaces.find(name);
+	return (it==mGeometryInterfaces.end()) ? nullptr : it->second;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 GlslFxUniform* GlslFxContainer::GetUniform( const std::string& name ) const
 {
 	const auto& it = mUniforms.find(name);
 	return (it==mUniforms.end()) ? nullptr : it->second;
 }
-//GlslFxAttribute* GlslFxContainer::GetAttribute( const std::string& name ) const
-//{
-//	std::map<std::string,GlslFxAttribute*>::const_iterator it=mAttributes.find(name);
-//	return (it==mAttributes.end()) ? nullptr : it->second;
-//}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -348,7 +373,10 @@ void GlslFxShader::Compile()
 {
 	mShaderObjectId = glCreateShader( mShaderType );
 	
-	std::string shadertext = mShaderText;
+	std::string shadertext = "";
+
+	shadertext += mShaderText;
+
 	shadertext += "void main() { ";
 	shadertext += mName;
 	shadertext += "(); }\n";
@@ -400,6 +428,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 	{
 		GlslFxShader* pvtxshader = container->mActivePass->mVertexProgram;
 		GlslFxShader* pfrgshader = container->mActivePass->mFragmentProgram;
+		GlslFxShader* pgeoshader = container->mActivePass->mGeometryProgram;
 
 		OrkAssert( pvtxshader!=nullptr );
 		OrkAssert( pfrgshader!=nullptr );
@@ -408,6 +437,8 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			pvtxshader->Compile();
 		if( pfrgshader->IsCompiled() == false )
 			pfrgshader->Compile();
+		if( pgeoshader && pgeoshader->IsCompiled() == false )
+			pgeoshader->Compile();
 			
 		if( pvtxshader->IsCompiled() && pfrgshader->IsCompiled() )
 		{
@@ -419,6 +450,13 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			glAttachShader( prgo, pfrgshader->mShaderObjectId );
 				GL_ERRORCHECK();
 			
+			if( pgeoshader && pgeoshader->IsCompiled() )
+			{
+				glAttachShader( prgo, pgeoshader->mShaderObjectId );
+					GL_ERRORCHECK();
+			}
+
+
 			GlslFxStreamInterface* vtx_iface = pvtxshader->mpInterface;
 			GlslFxStreamInterface* frg_iface = pfrgshader->mpInterface;
 			
@@ -438,7 +476,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			{
 				GlslFxAttribute* pattr = itp.second;
 				int iloc = pattr->mLocation;
-				printf( "vtxattr<%s> loc<%d> dir<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str() );
+				//printf( "vtxattr<%s> loc<%d> dir<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str() );
 				glBindAttribLocation( prgo, iloc, pattr->mName.c_str() );
 				GL_ERRORCHECK();
 				ppass->mAttributeById[iloc] = pattr;
@@ -448,18 +486,21 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			// ensure vtx_iface exports what frg_iface imports
 			//////////////////////////
 
-			for( const auto& itp : frg_iface->mAttributes )
-			{	const GlslFxAttribute* pfrgattr = itp.second;
-				if( pfrgattr->mDirection=="in" )
-				{
-					int iloc = pfrgattr->mLocation;
-					const std::string& name = pfrgattr->mName;
-					printf( "frgattr<%s> loc<%d> dir<%s>\n", pfrgattr->mName.c_str(), iloc, pfrgattr->mDirection.c_str() );
-					const auto& itf=vtx_iface->mAttributes.find(name);
-					const GlslFxAttribute* pvtxattr = (itf!=vtx_iface->mAttributes.end()) ? itf->second : nullptr;
-					OrkAssert( pfrgattr != nullptr );
-					OrkAssert( pvtxattr != nullptr );
-					OrkAssert( pvtxattr->mTypeName == pfrgattr->mTypeName );
+			if( nullptr == pgeoshader )
+			{
+				for( const auto& itp : frg_iface->mAttributes )
+				{	const GlslFxAttribute* pfrgattr = itp.second;
+					if( pfrgattr->mDirection=="in" )
+					{
+						int iloc = pfrgattr->mLocation;
+						const std::string& name = pfrgattr->mName;
+						//printf( "frgattr<%s> loc<%d> dir<%s>\n", pfrgattr->mName.c_str(), iloc, pfrgattr->mDirection.c_str() );
+						const auto& itf=vtx_iface->mAttributes.find(name);
+						const GlslFxAttribute* pvtxattr = (itf!=vtx_iface->mAttributes.end()) ? itf->second : nullptr;
+						OrkAssert( pfrgattr != nullptr );
+						OrkAssert( pvtxattr != nullptr );
+						OrkAssert( pvtxattr->mTypeName == pfrgattr->mTypeName );
+					}
 				}
 			}
 			//////////////////////////
@@ -469,6 +510,16 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			GL_ERRORCHECK();
 			GLint linkstat = 0;
 			glGetProgramiv( prgo, GL_LINK_STATUS, & linkstat );
+			if( linkstat!=GL_TRUE )
+			{
+				char infoLog[ 1 << 16 ];
+				glGetProgramInfoLog( prgo, sizeof(infoLog), NULL, infoLog );
+				printf( "//////////////////////////////////\n" );
+				printf( "program InfoLog<%s>\n", infoLog );
+				printf( "//////////////////////////////////\n" );
+				OrkAssert(false);
+
+			}
 			OrkAssert( linkstat == GL_TRUE );
 
 			//////////////////////////
@@ -492,7 +543,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 				const auto& it=vtx_iface->mAttributes.find(nambuf);
 				OrkAssert( it!=vtx_iface->mAttributes.end() );
 				GlslFxAttribute* pattr = it->second;
-				printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf );
+				//printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf );
 				pattr->meType = atrtyp;
 				//pattr->mLocation = i;
 

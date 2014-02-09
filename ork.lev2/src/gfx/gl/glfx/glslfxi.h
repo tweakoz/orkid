@@ -55,12 +55,14 @@ struct GlslFxAttribute
 	GLenum			meType;
 	GLint			mLocation;
 	std::string		mSemantic;
+	int             mArraySize;
 
 	GlslFxAttribute(const std::string& nam,const std::string& sem="") 
 		: mName(nam)
 		, mSemantic(sem)
 		, meType(GL_ZERO)
-		, mLocation(-1) {}
+		, mLocation(-1)
+		, mArraySize(0) {}
 };
 
 struct GlslFxStreamInterface
@@ -70,6 +72,7 @@ struct GlslFxStreamInterface
 	std::string		mName;
 	UniMap			mUniforms;
 	AttrMap			mAttributes;
+	std::vector<std::string>     mPreamble;
 
 	void Inherit( const GlslFxStreamInterface& par );
 };
@@ -119,6 +122,10 @@ struct GlslFxShaderFrg : GlslFxShader
 {
 	GlslFxShaderFrg( const std::string& nam="" ) : GlslFxShader(nam,GL_FRAGMENT_SHADER) {}
 };
+struct GlslFxShaderGeo : GlslFxShader
+{
+	GlslFxShaderGeo( const std::string& nam="" ) : GlslFxShader(nam,GL_GEOMETRY_SHADER) {}
+};
 
 struct GlslFxLibBlock
 {
@@ -135,6 +142,7 @@ struct GlslFxPass
 	static const int kmaxattrID = 16;
 	std::string			mName;
 	GlslFxShader*		mVertexProgram;
+	GlslFxShader*		mGeometryProgram;
 	GlslFxShader*		mFragmentProgram;
 	GlslFxStateBlock*	mStateBlock;
 	GLuint				mProgramObjectId;
@@ -143,10 +151,14 @@ struct GlslFxPass
 	GlslFxAttribute*								mAttributeById[kmaxattrID];
 	int 				mSamplerCount;
 
-	GlslFxPass( const std::string& name, GlslFxShader* pvs=nullptr, GlslFxShader* pfs=nullptr )
+	GlslFxPass(  const std::string& name,
+				 GlslFxShader* pvs=nullptr,
+				 GlslFxShader* pfs=nullptr,
+				 GlslFxShader* pgs=nullptr )
 		: mName(name)
 		, mVertexProgram(pvs)
 		, mFragmentProgram(pfs)
+		, mGeometryProgram(pgs)
 		, mProgramObjectId(0)
 		, mStateBlock(nullptr)
 		, mSamplerCount(0)
@@ -174,11 +186,12 @@ struct GlslFxContainer
 	std::map<std::string,GlslFxConfig*>				mConfigs;
 	std::map<std::string,GlslFxStreamInterface*>	mVertexInterfaces;
 	std::map<std::string,GlslFxStreamInterface*>	mFragmentInterfaces;
+	std::map<std::string,GlslFxStreamInterface*>	mGeometryInterfaces;
 	std::map<std::string,GlslFxStateBlock*>			mStateBlocks;
 	std::map<std::string,GlslFxUniform*>			mUniforms;
-	//std::map<std::string,GlslFxAttribute*>			mAttributes;
 	std::map<std::string,GlslFxShader*>				mVertexPrograms;
 	std::map<std::string,GlslFxShader*>				mFragmentPrograms;
+	std::map<std::string,GlslFxShader*>				mGeometryPrograms;
 	std::map<std::string,GlslFxTechnique*>			mTechniqueMap;
 	std::map<std::string,GlslFxLibBlock*>			mLibBlocks;
 	const GlslFxPass*								mActivePass;
@@ -191,21 +204,23 @@ struct GlslFxContainer
 	void AddConfig( GlslFxConfig* pcfg );
 	void AddVertexInterface( GlslFxStreamInterface* pif );
 	void AddFragmentInterface( GlslFxStreamInterface* pif );
+	void AddGeometryInterface( GlslFxStreamInterface* pif );
 	GlslFxUniform* MergeUniform( const std::string& name );
-	//GlslFxAttribute* MergeAttribute( const std::string& name );
 	void AddStateBlock( GlslFxStateBlock* pSB );
 	void AddTechnique( GlslFxTechnique* ptek );
 	void AddVertexProgram( GlslFxShader* psha );
 	void AddFragmentProgram( GlslFxShader* psha );
+	void AddGeometryProgram( GlslFxShader* psha );
 	void AddLibBlock( GlslFxLibBlock* plb );
 
 	GlslFxStateBlock* GetStateBlock( const std::string& name ) const;
 	GlslFxUniform* GetUniform( const std::string& name ) const;
-	//GlslFxAttribute* GetAttribute( const std::string& name ) const;
 	GlslFxShader* GetVertexProgram( const std::string& name ) const;
 	GlslFxShader* GetFragmentProgram( const std::string& name ) const;
+	GlslFxShader* GetGeometryProgram( const std::string& name ) const;
 	GlslFxStreamInterface* GetVertexInterface( const std::string& name ) const;
 	GlslFxStreamInterface* GetFragmentInterface( const std::string& name ) const;
+	GlslFxStreamInterface* GetGeometryInterface( const std::string& name ) const;
 	
 	GlslFxContainer(const std::string& nam);
 };
