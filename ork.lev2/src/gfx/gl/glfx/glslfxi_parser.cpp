@@ -80,7 +80,7 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	bool IsTokenOneOfTheBlockTypes( const token& tok )
 	{
-		std::regex regex_block( "(fxconfig|vertex_interface|fragment_interface|libblock|state_block|vertex_shader|fragment_shader|technique|pass)");
+		std::regex regex_block( "(fxconfig|vertex_interface|fragment_interface|geometry_interface|libblock|state_block|vertex_shader|fragment_shader|geometry_shader|technique|pass)");
 		return std::regex_match(tok.text, regex_block);
 	}
 	///////////////////////////////////////////////////////////
@@ -164,8 +164,8 @@ struct GlSlFxParser
 		////////////////////////
 
 		const std::string BlockType = v.GetToken(v.mBlockType)->text;
-
 		bool is_vtx = BlockType=="vertex_interface";
+		bool is_geo = BlockType=="geometry_interface";
 
 		size_t inumdecos = v.GetNumBlockDecorators();
 
@@ -173,12 +173,19 @@ struct GlSlFxParser
 		{
 			auto ptok = v.GetBlockDecorator(ideco);
 
+		
 			if( is_vtx )
 			{
 				auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
 				assert(it_vi!=mpContainer->mVertexInterfaces.end());
 				psi->Inherit(*it_vi->second);
 			}
+			else if( is_geo )
+			{	
+				auto it_fi = mpContainer->mGeometryInterfaces.find(ptok->text);
+				assert(it_fi!=mpContainer->mGeometryInterfaces.end());
+				psi->Inherit(*it_fi->second);
+			}			
 			else
 			{	
 				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
@@ -199,8 +206,29 @@ struct GlSlFxParser
 			const token* nam_tok = v.GetToken(i+2);
 			
 			//printf( "  ParseFxInterface Tok<%s>\n", vt_tok->text.c_str() );
-			
-			if( vt_tok->text == "uniform" )
+
+			if( vt_tok->text == "layout" )
+			{
+				std::string layline;
+				bool done = false;
+				while( false==done )
+				{
+					const auto& txt = vt_tok->text;
+
+					bool add_space = (txt == "(")||(txt == ")")||(txt == ",");
+					if( add_space )
+						layline += " ";
+					layline += vt_tok->text;
+					if( add_space )
+						layline += " ";
+					done = vt_tok->text == ";";
+					i++;
+					vt_tok = v.GetToken(i);
+				}
+				layline += "\n";
+				psi->mPreamble.push_back(layline);
+			}
+			else if( vt_tok->text == "uniform" )
 			{
 				auto it = psi->mUniforms.find(nam_tok->text);
 				assert(it==psi->mUniforms.end()); // make sure there are no duplicate uniforms
@@ -239,12 +267,19 @@ struct GlSlFxParser
 					printf( "SEMANTIC<%s>\n", pattr->mSemantic.c_str() );	
 					i += 6;
 				}
-				else
+				else if( v.GetToken(i+3)->text==";" )
 				{
-					assert( v.GetToken(i+3)->text==";" );
 					i += 4;
 				}
-
+				else if( v.GetToken(i+3)->text=="[" )
+				{
+					pattr->mArraySize = atoi( v.GetToken(i+4)->text.c_str() );
+					i += 7;
+				}
+				else
+				{
+					assert(false);
+				}
 				pattr->mLocation = int(psi->mAttributes.size());
 
 			}
@@ -463,6 +498,8 @@ struct GlSlFxParser
 		//////////////////////////////////////////////
 
 		bool bvtx = pshader->mShaderType == GL_VERTEX_SHADER;
+		bool bgeo = pshader->mShaderType == GL_GEOMETRY_SHADER;
+		bool bfrg = pshader->mShaderType == GL_FRAGMENT_SHADER;
 
 		std::vector<GlslFxLibBlock*> lib_blocks;
 
@@ -478,6 +515,7 @@ struct GlSlFxParser
 				auto it_lib = mpContainer->mLibBlocks.find(ptok->text);
 				auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
 				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
+				auto it_gi = mpContainer->mGeometryInterfaces.find(ptok->text);
 					
 				if( it_lib != mpContainer->mLibBlocks.end() )
 				{
@@ -491,7 +529,12 @@ struct GlSlFxParser
 					pshader->mpInterface = iface;
 					printf( "VINF <%s>\n", ptok->text.c_str() );
 				}
-				else if( (!bvtx) && ( it_fi != mpContainer->mFragmentInterfaces.end() ) ) 
+				else if( bgeo && ( it_gi != mpContainer->mGeometryInterfaces.end() ) ) 
+				{	iface = mpContainer->GetGeometryInterface( ptok->text );
+					pshader->mpInterface = iface;
+					printf( "GINF <%s>\n", ptok->text.c_str() );
+				}
+				else if( bfrg && ( it_fi != mpContainer->mFragmentInterfaces.end() ) ) 
 				{	iface = mpContainer->GetFragmentInterface( ptok->text );
 					pshader->mpInterface = iface;
 					printf( "FINF <%s>\n", ptok->text.c_str() );
@@ -523,11 +566,16 @@ struct GlSlFxParser
 		};
 
 		prline();
-#if defined(USE_GL3)
-		shaderbody += "#version 150 core\n";
-#else
-		shaderbody += "#version 120\n";
-#endif
+
+		shaderbody += "#version 330 core\n";
+
+		for( const auto& preamble_line : iface->mPreamble )
+		{
+			prline();
+			shaderbody += preamble_line;
+		}
+
+
 		for( GlslFxStreamInterface::UniMap::const_iterator
 			itu=iface->mUniforms.begin();
 			itu!=iface->mUniforms.end();
@@ -555,11 +603,18 @@ struct GlSlFxParser
 		{
 			prline();
 			GlslFxAttribute* pa = ita->second;
-#if defined(USE_GL3)
+
 			shaderbody += pa->mDirection + " ";
-#endif
 			shaderbody += pa->mTypeName + " ";
-			shaderbody += pa->mName + ";\n";
+
+			if( pa->mArraySize )
+			{
+				ork::FixedString<128> fxs;
+				fxs.format("%s[%d];\n", pa->mName.c_str(), pa->mArraySize );
+				shaderbody += fxs.c_str();
+			}
+			else
+				shaderbody += pa->mName + ";\n";
 		}
 		///////////////////////////////////
 		auto code_inject = [&](const GlslFxScannerView& view)
@@ -660,6 +715,13 @@ struct GlSlFxParser
 		return pshader;
 	}
 	///////////////////////////////////////////////////////////
+	GlslFxShaderGeo* ParseFxGeometryShader()
+	{
+		GlslFxShaderGeo* pshader = new GlslFxShaderGeo();
+		itokidx = ParseFxShaderCommon( pshader );
+		return pshader;
+	}
+	///////////////////////////////////////////////////////////
 	GlslFxTechnique* ParseFxTechnique()
 	{
 		GlslFxScanViewRegex r("(\n)",true);
@@ -747,6 +809,14 @@ struct GlSlFxParser
 				ppass->mFragmentProgram = pshader;
 				i+=4;
 			}
+			else if( vt_tok->text == "geometry_shader" )
+			{
+				std::string fsnam = v.GetToken(i+2)->text;
+				GlslFxShader* pshader = mpContainer->GetGeometryProgram( fsnam );
+				OrkAssert( pshader != nullptr );
+				ppass->mGeometryProgram = pshader;
+				i+=4;
+			}
 			else if( vt_tok->text == "state_block" )
 			{
 				std::string sbnam = v.GetToken(i+2)->text;
@@ -821,6 +891,11 @@ struct GlSlFxParser
 				GlslFxStreamInterface* pif = ParseFxInterface();
 				mpContainer->AddFragmentInterface( pif );
 			}
+			else if( tok.text == "geometry_interface" )
+			{
+				GlslFxStreamInterface* pif = ParseFxInterface();
+				mpContainer->AddGeometryInterface( pif );
+			}
 			else if( tok.text == "state_block" )
 			{
 				GlslFxStateBlock* psblock = ParseFxStateBlock();
@@ -835,6 +910,11 @@ struct GlSlFxParser
 			{
 				GlslFxShaderFrg* pshader = ParseFxFragmentShader();
 				mpContainer->AddFragmentProgram( pshader );
+			}
+			else if( tok.text == "geometry_shader" )
+			{
+				GlslFxShaderGeo* pshader = ParseFxGeometryShader();
+				mpContainer->AddGeometryProgram( pshader );
 			}
 			else if( tok.text == "technique" )
 			{

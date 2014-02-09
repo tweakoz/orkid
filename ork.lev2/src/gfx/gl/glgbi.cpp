@@ -584,7 +584,7 @@ struct vtx_config
 		}
 		if( mAttr )
 		{	
-			printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
+			//printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
 			glVertexAttribPointer(	mAttr->mLocation, 
 									mNumComponents,
 									mType,
@@ -605,7 +605,7 @@ struct vtx_config
 
 			bool bena = (tmask&cmask);
 
-			printf( "gbi::enable_attrs iloc<%d> : %d\n", iloc, int(bena) );
+			//printf( "gbi::enable_attrs iloc<%d> : %d\n", iloc, int(bena) );
 
 
 			if( bena )
