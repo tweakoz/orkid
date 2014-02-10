@@ -244,20 +244,26 @@ DynamicVertexBuffer<SVtxV12C4T16>& GfxEnv::GetSharedDynamicVB()
 	return GetRef().mVtxBufSharedVect;
 }
 
+DynamicVertexBuffer<SVtxV12N12B12T8C4>& GfxEnv::GetSharedDynamicVB2()
+{
+	return GetRef().mVtxBufSharedVect2;
+}
+
 GfxEnv::GfxEnv()
 	: NoRttiSingleton< GfxEnv >()
 	, mpMainWindow(0)
-//	, mCurrentColor( 1.0f, 1.0f, 1.0f, 0.0f )
-//	, meUIColorMode( EUICOLOR_MOD )
 	, mpUIMaterial( 0 )
 	, mp3DMaterial( 0 )
 	, mGfxEnvMutex( "GfxEnvGlobalMutex" )
 	, gLoaderTarget( 0 )
 	, mVtxBufSharedVect( 2<<20, 0, EPRIM_TRIANGLES ) // SVtxV12C4T16==32bytes
+	, mVtxBufSharedVect2( 2<<20, 0, EPRIM_TRIANGLES ) // SvtxV12N12B12T8C4==48bytes
 {
 	mVtxBufSharedVect.SetRingLock(true);
+	mVtxBufSharedVect2.SetRingLock(true);
 	GfxTargetCreationParams params;
 	params.miNumSharedVerts = 64<<10;
+
 
 	PushCreationParams( params );
 

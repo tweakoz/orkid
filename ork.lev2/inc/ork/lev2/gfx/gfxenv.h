@@ -462,6 +462,7 @@ class GfxEnv : public NoRttiSingleton< GfxEnv >
 	}
 
 	static DynamicVertexBuffer<SVtxV12C4T16>&	GetSharedDynamicVB();
+	static DynamicVertexBuffer<SVtxV12N12B12T8C4>&	GetSharedDynamicVB2();
 
 	//////////////////////////////////////////////////////////////////////////////
 	protected:
@@ -477,6 +478,7 @@ class GfxEnv : public NoRttiSingleton< GfxEnv >
 	orkvector<GfxBuffer *>				mvInactiveWindows;
 
 	DynamicVertexBuffer<SVtxV12C4T16>	mVtxBufSharedVect;
+	DynamicVertexBuffer<SVtxV12N12B12T8C4> mVtxBufSharedVect2;
 	orkmap<std::string,std::string>		mRuntimeEnvironment;
 	orkstack<GfxTargetCreationParams>	mCreationParams;
 	recursive_mutex						mGfxEnvMutex;

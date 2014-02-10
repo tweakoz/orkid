@@ -538,45 +538,17 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					U32 ucolor = color.GetVtxColorAsU32();
 					float fang = mPlugInpRot.GetValue()*DTOR;
 					//////////////////////////////////////////////////////
-					//float sinfr = ork::CFloat::Sin(fang)*fsize;
-					//float cosfr = ork::CFloat::Cos(fang)*fsize;
-					//CVector3 rota = (NX_NY*cosfr)+(NX_PY*sinfr);
-					//CVector3 rotb = (NX_PY*cosfr)-(NX_NY*sinfr);
-					//CVector3 p0 = ptcl->mPosition+rota;
-					//CVector3 p1 = ptcl->mPosition+rotb;
-					//CVector3 p2 = ptcl->mPosition-rota;
-					//CVector3 p3 = ptcl->mPosition-rotb;
-					//////////////////////////////////////////////////////
 					float flastframe = float(miTexCnt-1);
 					float ftexframe = mPlugInpAnimFrame.GetValue()*flastframe;
 					ftexframe = ( ftexframe<0.0f ) ? 0.0f : (ftexframe>=flastframe) ? flastframe : ftexframe;
-					ork::CVector2 uvA( ftexframe, 1.0f ); 
-					if( miAnimTexDim>1 )
-					{
-						//int iframe = int(ftexframe)%miTexCnt;
-						//int ifrX = iframe%miAnimTexDim;
-						//int ifrY = iframe/miAnimTexDim;
-						//miTexCnt = (miAnimTexDim*miAnimTexDim);
-						//mfTexs = 1.0f/float(miAnimTexDim);
-						//float fu0 = float(ifrX)*mfTexs;
-						//float fu1 = float(ifrX+1)*mfTexs;
-						//float fv0 = float(ifrY)*mfTexs;
-						//float fv1 = float(ifrY+1)*mfTexs;
-						//uvr0 = ork::CVector2( fu0, fv0 );
-						//uvr1 = ork::CVector2( fu1, fv0 );
-						//uvr2 = ork::CVector2( fu1, fv1 );
-						//uvr3 = ork::CVector2( fu0, fv1 );						
-						ork::CVector2 uv0( fang, fsize ); //mOutDataUnitAge,mOutDataPtcRandom );
-						ork::CVector2 uv1( ftexframe, 0.0f ); //mOutDataUnitAge,mOutDataPtcRandom );
-						vw.AddVertex( ork::lev2::SVtxV12C4T16(ptcl->mPosition,uv0,uv1, ucolor) );
-					}
-					else
-					{
-						ork::CVector2 uv0( fang, fsize ); //mOutDataUnitAge,mOutDataPtcRandom );
-						ork::CVector2 uv1( mOutDataUnitAge,mOutDataPtcRandom ); //mOutDataUnitAge,mOutDataPtcRandom );
-						//uvA = ork::CVector2( mOutDataUnitAge,mOutDataPtcRandom );
-						vw.AddVertex( ork::lev2::SVtxV12C4T16(ptcl->mPosition,uv0,uv1, ucolor) );
-					}
+					bool is_texanim = ( miAnimTexDim>1 );
+
+					ork::CVector2 uv0( fang, fsize ); 
+					ork::CVector2 uv1 = is_texanim 
+									  ? ork::CVector2( ftexframe, 0.0f )
+									  : ork::CVector2( mOutDataUnitAge,mOutDataPtcRandom );
+					
+					vw.AddVertex( ork::lev2::SVtxV12C4T16(ptcl->mPosition,uv0,uv1, ucolor) );
 				}
 			}
 			////////////////////////////////////////////////////////////////////
@@ -648,7 +620,7 @@ StreakRenderer::StreakRenderer()
 	, mfGradientIntensity(1.0f)
 {
 	ork::lev2::GfxTarget* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
-	mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://particle", "tbasicparticle");
+	mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://particle", "tstreakparticle");
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StreakRenderer::SetTextureAccessor( ork::rtti::ICastable* const & tex)
@@ -686,7 +658,7 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 {	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
 	const ork::CCameraData* cdata = framedata->GetCameraData();
 	//////////////////////////////////////////
-	ork::lev2::CVtxBuffer<ork::lev2::SVtxV12C4T16>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB(); 
+	ork::lev2::CVtxBuffer<ork::lev2::SVtxV12N12B12T8C4>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2(); 
 	float Scale = 1.0f;
 	ork::CMatrix4 MatScale;
 	MatScale.SetScale( Scale,Scale,Scale );
@@ -696,16 +668,14 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 	// compute particle dynamic vertex buffer
 	//////////////////////////////////////////
 	int icnt = buffer.miNumParticles;
-	int ivertexlockcount = icnt*6;
-	//int ivertexlockbase = vtxbuf.GetNumVertices();
 	if( icnt )
 	{	////////////////////////////////////////////////////////////////////////////
 		ork::CMatrix4 mtx_iw = mtx;
 		mtx_iw.Inverse();
 		CVector3 obj_nrmz = CVector4(cdata->GetZNormal(),0.0f).Transform(mtx_iw).Normal();
 		////////////////////////////////////////////////////////////////////////////
-		lev2::VtxWriter<SVtxV12C4T16> vw;
-		vw.Lock( targ, &vtxbuf, ivertexlockcount );
+		lev2::VtxWriter<SVtxV12N12B12T8C4> vw;
+		vw.Lock( targ, &vtxbuf, icnt );
 		{	////////////////////////////////////////////////
 			// uniform properties
 			////////////////////////////////////////////////	
@@ -730,22 +700,18 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 				////////////////////////////////////////////////
 				// compute streak positions
 				////////////////////////////////////////////////
-				CVector3 lpos = ptcl->mPosition - ptcl->mVelocity*flength;
+				ork::CVector3 p0 = ptcl->mPosition;
+				CVector3 lpos = p0 - ptcl->mVelocity*flength;
 				CVector3 pvel = ptcl->mVelocity.Cross(obj_nrmz).Normal()*fwidth;
-				ork::CVector3 p0 = ptcl->mPosition + pvel;
-				ork::CVector3 p1 = ptcl->mPosition - pvel;
-				ork::CVector3 p2 = lpos - pvel;
-				ork::CVector3 p3 = lpos + pvel;
 				////////////////////////////////////////////////
 				CVector4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
 				U32 ucolor = color.GetVtxColorAsU32();
-
-				vw.AddVertex( ork::lev2::SVtxV12C4T16( p0, uvr0, ucolor ) );
-				vw.AddVertex( ork::lev2::SVtxV12C4T16( p1, uvr1, ucolor ) );
-				vw.AddVertex( ork::lev2::SVtxV12C4T16( p2, uvr2, ucolor ) );
-				vw.AddVertex( ork::lev2::SVtxV12C4T16( p0, uvr0, ucolor ) );
-				vw.AddVertex( ork::lev2::SVtxV12C4T16( p2, uvr2, ucolor ) );
-				vw.AddVertex( ork::lev2::SVtxV12C4T16( p3, uvr3, ucolor ) );
+				////////////////////////////////////////////////
+				vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( p0,
+															lpos,
+															pvel,
+															uvr0,
+															ucolor ) );
 				////////////////////////////////////////////////
 			}
 		}	
@@ -766,7 +732,7 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 		// Draw Particles 
 		//////////////////////////////////////////
 		targ->MTXI()->PushMMatrix(MatScale*mtx);
-		targ->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, ivertexlockcount ); 
+		targ->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_POINTS, icnt ); 
 		targ->MTXI()->PopMMatrix();
 		//////////////////////////////////////////
 		targ->BindMaterial( 0 );
