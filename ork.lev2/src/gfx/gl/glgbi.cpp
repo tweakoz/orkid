@@ -1120,12 +1120,12 @@ void GlGeometryBufferInterface::DrawPrimitiveEML( const VertexBufferBase& VBuf, 
 				glDrawArrays( GL_TRIANGLE_STRIP, ivbase, inum );
 				miTrianglesRendered += (inum-2);
 				break;
-/*			case EPRIM_POINTS:
+			case EPRIM_POINTS:
 				GL_ERRORCHECK();
-				glDrawArrays( GL_POINTS, 0, iNum );
+				glDrawArrays( GL_POINTS, ivbase, inum );
 				GL_ERRORCHECK();
 				break;
-			case EPRIM_POINTSPRITES:
+/*			case EPRIM_POINTSPRITES:
 				GL_ERRORCHECK();
 				glPointSize( mTargetGL.GetCurMaterial()->mfParticleSize );
 											

@@ -261,8 +261,6 @@ public:
 	SRasterState &GetRasterState( void ) { return mCurrentState; }
 	SRasterState & RefUIRasterState( void ) { return mUIRasterState; }
 	virtual void BindRasterState( const SRasterState &rState, bool bForce = false ) = 0;
-	//const SRasterState &GetOverrideRasterState() const { return mOverrideState; }
-	//SRasterState &GetOverrideRasterState() { return mOverrideState; }
 
 	SRasterState &GetLastState( void ) { return mLastState; }
 
@@ -273,61 +271,12 @@ public:
 	virtual void SetCullTest( ECullTest eVal ) = 0;
 	virtual void SetScissorTest( EScissorTest eVal ) = 0;
 
-	/*void SetOverrideZWriteMask(bool override) { mOverrideZWriteMask = override; }
-	void SetOverrideAWriteMask(bool override) { mOverrideAWriteMask = override; }
-	void SetOverrideRGBWriteMask(bool override) { mOverrideRGBWriteMask = override; }
-	void SetOverrideAlphaTest(bool override) { mOverrideAlphaTest = override; }
-	void SetOverrideAlphaRef(bool override) { mOverrideAlphaRef = override; }
-	void SetOverrideBlending(bool override) { mOverrideBlending = override; }
-	void SetOverrideDepthTest(bool override) { mOverrideDepthTest = override; }
-	void SetOverrideScissorTest(bool override) { mOverrideScissorTest = override; }
-	void SetOverrideShadeModel(bool override) { mOverrideShadeModel = override; }
-	void SetOverrideCullTest(bool override) { mOverrideCullTest = override; }
-	void SetOverrideStencilMode(bool override) { mOverrideStencilMode = override; }
-	void SetOverrideStencilRef(bool override) { mOverrideStencilRef = override; }
-	void SetOverrideStencilMask(bool override) { mOverrideStencilMask = override; }
-	void SetOverrideStencilOpPass(bool override) { mOverrideStencilOpPass = override; }
-	void SetOverrideStencilOpFail(bool override) { mOverrideStencilOpFail = override; }
-	void SetOverridePolyOffset(bool override) { mOverridePolyOffset = override; }
-	void SetOverrideSortID(bool override) { mOverrideSortID = override; }
-	void SetOverrideTransparent(bool override) { mOverrideTransparent = override; }
-	void SetOverridePointSize(bool override) { mOverridePointSize = override; }
-	void ClearOverrides();*/
-
 protected:
 
 	SRasterState						mUIRasterState;
 	SRasterState						mCurrentState;
 	SRasterState						mLastState;
 
-	////////////////////////////////////////////////////////
-	// used to globally override any state set (useful for pick mode)
-
-	//SRasterState						mOverrideState;
-
-	////////////////////////////////////////////////////////
-
-	/*bool mOverrideZWriteMask;
-	bool mOverrideAWriteMask;
-	bool mOverrideRGBWriteMask;
-	bool mOverrideAlphaTest;
-	bool mOverrideAlphaRef;
-	bool mOverrideBlending;
-	bool mOverrideDepthTest;
-	bool mOverrideScissorTest;
-	bool mOverrideShadeModel;
-	bool mOverrideCullTest;
-	bool mOverrideStencilMode;
-	bool mOverrideStencilRef;
-	bool mOverrideStencilMask;
-	bool mOverrideStencilOpPass;
-	bool mOverrideStencilOpFail;
-	bool mOverridePolyOffset;
-	bool mOverrideSortID;
-	bool mOverrideTransparent;
-	bool mOverridePointSize;
-	void GetOverrideMergedRasterState(const SRasterState &in, SRasterState &out);
-*/
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
