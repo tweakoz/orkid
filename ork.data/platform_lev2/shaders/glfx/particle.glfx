@@ -238,24 +238,27 @@ vertex_interface vface_streak : vface_base
 	in vec4 normal : NORMAL;
 	in vec4 binormal : BINORMAL;
 	in vec4 vtxcolor : COLOR0;
+	in vec4 uv0 : TEXCOORD0;
 	//
-	//out vec4 geo_pos;
-	out vec4 geo_lpos;
+	out vec4 geo_cnrm;
 	out vec4 geo_vel;
 	out vec4 geo_clr;
+	out vec4 geo_lw;
 }
 vertex_shader vs_streak : vface_streak
 {
 	gl_Position = position;
 	geo_clr = vtxcolor.bgra;
-	geo_lpos = normal;
+	geo_cnrm = normal;
 	geo_vel = binormal;
+	geo_lw = uv0;
 }
 geometry_interface gface_streak : gface_base
 {
 	in vec4 geo_clr[1];
-	in vec4 geo_lpos[1];
+	in vec4 geo_cnrm[1];
 	in vec4 geo_vel[1];
+	in vec4 geo_lw[1];
 	//
 	out vec4 frg_clr;
 	out vec4 frg_uv0;
@@ -264,13 +267,19 @@ geometry_shader gs_streak : gface_streak
 {
 	frg_clr = geo_clr[0];
 	vec3 vel = geo_vel[0].xyz;
-	vec3 lpos = geo_lpos[0].xyz;
+	vec3 cnrm = geo_cnrm[0].xyz;
+	float wid = geo_lw[0].x;
+	float len = geo_lw[0].y;
 
-	vec3 ctr = gl_in[0].gl_Position.xyz;
-	vec3 p0 = ctr+vel;
-	vec3 p1 = ctr-vel;
-	vec3 p2 = lpos-vel;
-	vec3 p3 = lpos+vel;
+	vec3 pos = gl_in[0].gl_Position.xyz;
+
+	vec3 lpos = pos-vel*len;
+	vec3 crs = wid*normalize(cross(vel,cnrm));
+
+	vec3 p0 = pos+crs;
+	vec3 p1 = pos-crs;
+	vec3 p2 = lpos-crs;
+	vec3 p3 = lpos+crs;
 
 	vec4 pos0 = MatMVP * vec4(p0,1.0);
 	vec4 pos1 = MatMVP * vec4(p1,1.0);
