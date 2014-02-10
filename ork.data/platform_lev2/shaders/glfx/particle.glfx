@@ -120,7 +120,7 @@ vertex_shader vs_vtxcolor : iface_vdefault
 	geo_uv1 = uv1;
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface iface_gdefault
+geometry_interface gface_base
 {
 	layout (points) in;
 	layout (triangle_strip, max_vertices=6) out; 
@@ -131,7 +131,9 @@ geometry_interface iface_gdefault
 	uniform vec4 User0;
 	uniform vec4 User1;
 	uniform vec4 User2;
-	//
+}
+geometry_interface gface_streak : gface_base
+{
 	in vec4 geo_clr[1];
 	in vec4 geo_uv0[1];
 	in vec4 geo_uv1[1];
@@ -140,7 +142,7 @@ geometry_interface iface_gdefault
 	out vec4 frg_uv0;
 	out vec4 frg_uv1;
 }
-geometry_shader gs_identity : iface_gdefault
+geometry_shader gs_identity : gface_streak
 {
 	for( int n=0; n<gl_in.length(); n++ )
 	{
@@ -152,7 +154,7 @@ geometry_shader gs_identity : iface_gdefault
 	}
 	EndPrimitive();
 }
-geometry_shader gs_billboardquad : iface_gdefault
+geometry_shader gs_billboardquad : gface_streak
 {
 	frg_clr = geo_clr[0];
 	frg_uv1 = geo_uv1[0];
@@ -249,18 +251,8 @@ vertex_shader vs_streak : vface_streak
 	geo_lpos = normal;
 	geo_vel = binormal;
 }
-geometry_interface gface_streak
+geometry_interface gface_streak : gface_base
 {
-	layout (points) in;
-	layout (triangle_strip, max_vertices=6) out; 
-	//
-	uniform mat4 MatP;	
-	uniform mat4 MatV;	
-	uniform mat4 MatMVP;	
-	uniform vec4 User0;
-	uniform vec4 User1;
-	uniform vec4 User2;
-	//
 	in vec4 geo_clr[1];
 	in vec4 geo_lpos[1];
 	in vec4 geo_vel[1];
