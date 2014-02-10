@@ -38,6 +38,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
 	, hMatMVP( 0 )
 	, hMatMV( 0 )
 	, hMatM( 0 )
+	, hMatV( 0 )
 	, hMatP( 0 )
 	, hParamModColor( 0 )
 	, mVolumeTexture( 0 )
@@ -93,6 +94,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, co
 	, hMatMVP( 0 )
 	, hMatMV( 0 )
 	, hMatM( 0 )
+	, hMatV( 0 )
 	, hMatP( 0 )
 	, hParamModColor( 0 )
 	, mVolumeTexture( 0 )
@@ -172,6 +174,7 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget *pTarg)
 
 	hMatMVP = pTarg->FXI()->GetParameterH( hModFX, "MatMVP" );
 	hMatMV = pTarg->FXI()->GetParameterH( hModFX, "MatMV" );
+	hMatV = pTarg->FXI()->GetParameterH( hModFX, "MatV" );
 	hMatM = pTarg->FXI()->GetParameterH( hModFX, "MatM" );
 	hMatP = pTarg->FXI()->GetParameterH( hModFX, "MatP" );
 	hParamModColor = pTarg->FXI()->GetParameterH( hModFX, "modcolor" );
@@ -183,7 +186,9 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget *pTarg)
 	hColorMap4 = pTarg->FXI()->GetParameterH( hModFX, "ColorMap4" );
 
 	hParamUser0 = pTarg->FXI()->GetParameterH( hModFX, "User0" );
-
+	hParamUser1 = pTarg->FXI()->GetParameterH( hModFX, "User1" );
+	hParamUser2 = pTarg->FXI()->GetParameterH( hModFX, "User2" );
+	hParamUser3 = pTarg->FXI()->GetParameterH( hModFX, "User3" );
 
 	hParamTime = pTarg->FXI()->GetParameterH( hModFX, "Time" );
 	
@@ -252,6 +257,11 @@ bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 	pTarg->FXI()->BindParamMatrix( hModFX, hMatMVP, pTarg->MTXI()->RefMVPMatrix() );
 
 	pTarg->FXI()->BindParamMatrix( hModFX, hMatAux, mMatAux );
+
+	if( hMatV )
+	{
+		pTarg->FXI()->BindParamMatrix( hModFX, hMatV, pTarg->MTXI()->RefVMatrix() );
+	}
 	
 	if( pTarg->FBI()->IsPickState() )
 	{
@@ -292,6 +302,18 @@ bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 	if( hParamUser0 )
 	{
 		pTarg->FXI()->BindParamVect4( hModFX, hParamUser0, mUser0 );
+	}
+	if( hParamUser1 )
+	{
+		pTarg->FXI()->BindParamVect4( hModFX, hParamUser1, mUser1 );
+	}
+	if( hParamUser2 )
+	{
+		pTarg->FXI()->BindParamVect4( hModFX, hParamUser2, mUser2 );
+	}
+	if( hParamUser3 )
+	{
+		pTarg->FXI()->BindParamVect4( hModFX, hParamUser3, mUser3 );
 	}
 
 	if( mVolumeTexture && hVolumeMap )

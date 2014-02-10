@@ -383,7 +383,7 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 	// compute particle dynamic vertex buffer
 	//////////////////////////////////////////
 	int icnt = buffer.miNumParticles;
-	int ivertexlockcount = icnt*6;
+	int ivertexlockcount = icnt;
 	//int ivertexlockbase = mpVB->GetNumVertices();
 	if( icnt )
 	{	lev2::VtxWriter<SVtxV12C4T16> vw;
@@ -508,15 +508,15 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					ork::CVector2 uvA( funitage, 1.0f ); //float(miAnimTexDim) );
 					//////////////////////////////////////////////////////
 					vw.AddVertex( ork::lev2::SVtxV12C4T16(p0,uvr0,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p1,uvr1,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p0,uvr0,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p3,uvr3,uvA, ucolor) );	
+					//vw.AddVertex( ork::lev2::SVtxV12C4T16(p1,uvr1,uvA, ucolor) );
+					//vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
+					//vw.AddVertex( ork::lev2::SVtxV12C4T16(p0,uvr0,uvA, ucolor) );
+					//vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
+					//vw.AddVertex( ork::lev2::SVtxV12C4T16(p3,uvr3,uvA, ucolor) );	
 				}
 			}
 			////////////////////////////////////////////////////////////////////
-			else
+			else // no sort
 			////////////////////////////////////////////////////////////////////
 			{	
 				const ork::lev2::particle::BasicParticle* __restrict pbase = buffer.mpParticles;
@@ -524,7 +524,6 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 				for( int i=0; i<icnt; i++ )
 				{	
 					const ork::lev2::particle::BasicParticle* __restrict ptcl = pbase + i;
-					//DrawParticle( buffer.mpParticles + i );
 					float fage = ptcl->mfAge;
 					float flspan = (ptcl->mfLifeSpan!=0.0f)?ptcl->mfLifeSpan:0.01f;
 					mOutDataUnitAge = (fage/flspan);
@@ -534,52 +533,50 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					float fiunitage = (1.0f-mOutDataUnitAge);
 					float fsize = mPlugInpSize.GetValue();
 					CVector4 color;
-					 if( pGRAD )
+					if( pGRAD )
 						color = (pGRAD->Sample(mOutDataUnitAge)*mCurFGI).Saturate();
 					U32 ucolor = color.GetVtxColorAsU32();
 					float fang = mPlugInpRot.GetValue()*DTOR;
 					//////////////////////////////////////////////////////
-					float sinfr = ork::CFloat::Sin(fang)*fsize;
-					float cosfr = ork::CFloat::Cos(fang)*fsize;
-					CVector3 rota = (NX_NY*cosfr)+(NX_PY*sinfr);
-					CVector3 rotb = (NX_PY*cosfr)-(NX_NY*sinfr);
-					CVector3 p0 = ptcl->mPosition+rota;
-					CVector3 p1 = ptcl->mPosition+rotb;
-					CVector3 p2 = ptcl->mPosition-rota;
-					CVector3 p3 = ptcl->mPosition-rotb;
+					//float sinfr = ork::CFloat::Sin(fang)*fsize;
+					//float cosfr = ork::CFloat::Cos(fang)*fsize;
+					//CVector3 rota = (NX_NY*cosfr)+(NX_PY*sinfr);
+					//CVector3 rotb = (NX_PY*cosfr)-(NX_NY*sinfr);
+					//CVector3 p0 = ptcl->mPosition+rota;
+					//CVector3 p1 = ptcl->mPosition+rotb;
+					//CVector3 p2 = ptcl->mPosition-rota;
+					//CVector3 p3 = ptcl->mPosition-rotb;
 					//////////////////////////////////////////////////////
 					float flastframe = float(miTexCnt-1);
 					float ftexframe = mPlugInpAnimFrame.GetValue()*flastframe;
 					ftexframe = ( ftexframe<0.0f ) ? 0.0f : (ftexframe>=flastframe) ? flastframe : ftexframe;
-					ork::CVector2 uvA( ftexframe, 1.0f ); //float(miAnimTexDim) );
+					ork::CVector2 uvA( ftexframe, 1.0f ); 
 					if( miAnimTexDim>1 )
 					{
-						int iframe = int(ftexframe)%miTexCnt;
-						int ifrX = iframe%miAnimTexDim;
-						int ifrY = iframe/miAnimTexDim;
+						//int iframe = int(ftexframe)%miTexCnt;
+						//int ifrX = iframe%miAnimTexDim;
+						//int ifrY = iframe/miAnimTexDim;
 						//miTexCnt = (miAnimTexDim*miAnimTexDim);
 						//mfTexs = 1.0f/float(miAnimTexDim);
-						float fu0 = float(ifrX)*mfTexs;
-						float fu1 = float(ifrX+1)*mfTexs;
-						float fv0 = float(ifrY)*mfTexs;
-						float fv1 = float(ifrY+1)*mfTexs;
-						uvr0 = ork::CVector2( fu0, fv0 );
-						uvr1 = ork::CVector2( fu1, fv0 );
-						uvr2 = ork::CVector2( fu1, fv1 );
-						uvr3 = ork::CVector2( fu0, fv1 );						
-						uvA = ork::CVector2( 1.0f, 0.0f ); //mOutDataUnitAge,mOutDataPtcRandom );
+						//float fu0 = float(ifrX)*mfTexs;
+						//float fu1 = float(ifrX+1)*mfTexs;
+						//float fv0 = float(ifrY)*mfTexs;
+						//float fv1 = float(ifrY+1)*mfTexs;
+						//uvr0 = ork::CVector2( fu0, fv0 );
+						//uvr1 = ork::CVector2( fu1, fv0 );
+						//uvr2 = ork::CVector2( fu1, fv1 );
+						//uvr3 = ork::CVector2( fu0, fv1 );						
+						ork::CVector2 uv0( fang, fsize ); //mOutDataUnitAge,mOutDataPtcRandom );
+						ork::CVector2 uv1( ftexframe, 0.0f ); //mOutDataUnitAge,mOutDataPtcRandom );
+						vw.AddVertex( ork::lev2::SVtxV12C4T16(ptcl->mPosition,uv0,uv1, ucolor) );
 					}
 					else
 					{
-						uvA = ork::CVector2( mOutDataUnitAge,mOutDataPtcRandom );
+						ork::CVector2 uv0( fang, fsize ); //mOutDataUnitAge,mOutDataPtcRandom );
+						ork::CVector2 uv1( mOutDataUnitAge,mOutDataPtcRandom ); //mOutDataUnitAge,mOutDataPtcRandom );
+						//uvA = ork::CVector2( mOutDataUnitAge,mOutDataPtcRandom );
+						vw.AddVertex( ork::lev2::SVtxV12C4T16(ptcl->mPosition,uv0,uv1, ucolor) );
 					}
-					//////////////////////////////////////////////////////
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p0,uvr0,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p1,uvr1,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p0,uvr0,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p2,uvr2,uvA, ucolor) );
-					vw.AddVertex( ork::lev2::SVtxV12C4T16(p3,uvr3,uvA, ucolor) );
 				}
 			}
 			////////////////////////////////////////////////////////////////////
@@ -592,13 +589,21 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 						
 		if( pMTLBASE )
 		{	
-			lev2::GfxMaterial* bound_mtl = pMTLBASE->Bind( targ );
+			auto bound_mtl = (lev2::GfxMaterial3DSolid*) pMTLBASE->Bind( targ );
 		
 			if( bound_mtl )
 			{
+				CVector4 user0 = NX_NY;
+				CVector4 user1 = NX_PY;
+				CVector4 user2( float(miAnimTexDim), float(miTexCnt), 0.0f );
+
+				bound_mtl->SetUser0( user0 );
+				bound_mtl->SetUser1( user1 );
+				bound_mtl->SetUser2( user2 );
+
 				bound_mtl->mRasterState.SetBlending( meBlendMode );
 				targ->MTXI()->PushMMatrix(MatScale*mtx);
-				targ->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, ivertexlockcount ); 
+				targ->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_POINTS, ivertexlockcount ); 
 				mpVB = 0;
 				targ->MTXI()->PopMMatrix();
 				targ->BindMaterial( 0 );
@@ -971,8 +976,6 @@ TextureMaterial::TextureMaterial()
 	ork::lev2::GfxTarget* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
 	mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://particle", "tbasicparticle");
 	mpMaterial->SetColorMode( GfxMaterial3DSolid::EMODE_USER );
-	//mpMaterialVOLUME = new GfxMaterial3DSolid(targ, "orkshader://particle", "tvolumeparticle");
-	//mpMaterialVOLUME->SetColorMode( GfxMaterial3DSolid::EMODE_USER );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void TextureMaterial::SetTextureAccessor( ork::rtti::ICastable* const & tex)
@@ -1072,63 +1075,6 @@ lev2::GfxMaterial* VolTexMaterial::Bind( lev2::GfxTarget* pT )
 
 	return mpMaterial;
 }
-
-
-	/*
-		if( mVolumeTexture && mVolumeTexture->GetTexture() && mVolumeTexture->GetTexture()->IsVolumeTexture() )
-		{	//printf( "VOLTEK\n" );
-			pmat = mpMaterialVOLUME;
-			pmat->SetVolumeTexture( mVolumeTexture->GetTexture() );
-		}
-		//////////////////////////////////////////		
-		//////////////////////////////////////////
-		CVector3 NoiseAmp, NoiseFreq, NoiseShift;
-
-		NoiseAmp.SetX( mPlugInpNoiseAmp0.GetValue() );
-		NoiseAmp.SetY( mPlugInpNoiseAmp1.GetValue() );
-		NoiseAmp.SetZ( mPlugInpNoiseAmp2.GetValue() );
-
-		NoiseFreq.SetX( mPlugInpNoiseFreq0.GetValue() );
-		NoiseFreq.SetY( mPlugInpNoiseFreq1.GetValue() );
-		NoiseFreq.SetZ( mPlugInpNoiseFreq2.GetValue() );
-
-		NoiseShift.SetX( mPlugInpNoiseShift0.GetValue() );
-		NoiseShift.SetY( mPlugInpNoiseShift1.GetValue() );
-		NoiseShift.SetZ( mPlugInpNoiseShift2.GetValue() );
-		pmat->SetNoiseAmp( NoiseAmp );
-		pmat->SetNoiseFreq( NoiseFreq );
-		pmat->SetNoiseShift( NoiseShift );
-		//////////////////////////////////////////
-
-
-*/
-		/*
-		if( mbImageSequenceOK )
-		{
-			printf( "mbImageSequenceOK\n" );
-			
-			int maxframes = mSequenceTextures.size();
-			if( maxframes < 1 )
-			{
-				pmat->SetTexture( 0 );
-			}
-			else
-			{
-				int iframe = miImageFrame%maxframes;
-				printf( "SetTex frame<%d>\n", iframe );
-				lev2::TextureAsset* passet = mSequenceTextures[iframe];
-				lev2::Texture* ptex = (passet==0) ? 0 : passet->GetTexture();
-				pmat->SetTexture( ptex );
-				
-			}
-			
-		}
-		else
-		{
-			pmat->SetTexture( GetTexture() );
-			
-		}
-		targ->BindMaterial( pmat );*/
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

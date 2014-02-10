@@ -34,6 +34,9 @@ public:
 	void SetTexture4( Texture* ptex ) { mCurrentTexture4=ptex; }
 
 	void SetUser0( const CVector4& vuser ) { mUser0=vuser; }
+	void SetUser1( const CVector4& vuser ) { mUser1=vuser; }
+	void SetUser2( const CVector4& vuser ) { mUser2=vuser; }
+	void SetUser3( const CVector4& vuser ) { mUser3=vuser; }
 
 	void SetUserFx( const char* puserfx, const char* pusertek )
 	{
@@ -85,6 +88,9 @@ public:
 	CVector4		mNoiseShift;
 	CVector4		Color;
 	CVector4		mUser0;
+	CVector4		mUser1;
+	CVector4		mUser2;
+	CVector4		mUser3;
 	FxShader*		hModFX;
 	Texture*		mVolumeTexture;
 	Texture*		mCurrentTexture;
@@ -105,8 +111,9 @@ public:
 	const FxShaderTechnique*	hTekModColor;
 
 	const FxShaderParam*		hMatM;
-	const FxShaderParam*		hMatMV;
+	const FxShaderParam*		hMatV;
 	const FxShaderParam*		hMatP;
+	const FxShaderParam*		hMatMV;
 	const FxShaderParam*		hMatMVP;
 	const FxShaderParam*		hMatAux;
 	const FxShaderParam*		hVolumeMap;
@@ -115,6 +122,9 @@ public:
 	const FxShaderParam*		hColorMap3;
 	const FxShaderParam*		hColorMap4;
 	const FxShaderParam*		hParamUser0;
+	const FxShaderParam*		hParamUser1;
+	const FxShaderParam*		hParamUser2;
+	const FxShaderParam*		hParamUser3;
 	const FxShaderParam*		hParamModColor;
 	const FxShaderParam*		hParamTime;
 	const FxShaderParam*		hParamNoiseShift;
