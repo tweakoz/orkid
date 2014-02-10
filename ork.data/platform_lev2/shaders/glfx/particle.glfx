@@ -8,7 +8,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault
+vertex_interface vface_base
 {
 	uniform mat4        MatM;
 	uniform mat4        MatV;
@@ -25,8 +25,9 @@ vertex_interface iface_vdefault
 	uniform vec4		NoiseShift;
 	uniform vec4		NoiseFreq;
 	uniform vec4		NoiseAmp;
-
-	//uniform mat4 mvp;
+}
+vertex_interface iface_vdefault : vface_base
+{
 	//
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
@@ -98,7 +99,6 @@ vertex_shader vs_vtxtexcolor : iface_vdefault
 	geo_uv1 = uv1;
 }
 ///////////////////////////////////////////////////////////////
-
 fragment_shader ps_modtex : iface_fmt
 {
 	vec4 texc = texture( ColorMap, frg_uv0.xy );
@@ -130,6 +130,7 @@ geometry_interface iface_gdefault
 	uniform mat4 MatMVP;	
 	uniform vec4 User0;
 	uniform vec4 User1;
+	uniform vec4 User2;
 	//
 	in vec4 geo_clr[1];
 	in vec4 geo_uv0[1];
@@ -156,6 +157,12 @@ geometry_shader gs_billboardquad : iface_gdefault
 	frg_clr = geo_clr[0];
 	frg_uv1 = geo_uv1[0];
 
+	float ftexanimdim = User2.x;
+	int texanimdim = int(ftexanimdim);
+	int texcnt = int(User2.y);
+
+    bool is_texanim = texanimdim>1;
+
 	float ang = geo_uv0[0].x;
 	float siz = geo_uv0[0].y;
 
@@ -172,6 +179,106 @@ geometry_shader gs_billboardquad : iface_gdefault
 	vec3 p1 = ctr+rotb;
 	vec3 p2 = ctr-rota;
 	vec3 p3 = ctr-rotb;
+
+	vec4 pos0 = MatMVP * vec4(p0,1.0);
+	vec4 pos1 = MatMVP * vec4(p1,1.0);
+	vec4 pos2 = MatMVP * vec4(p2,1.0);
+	vec4 pos3 = MatMVP * vec4(p3,1.0);
+
+	vec4 uv0 = vec4(0.0,0.0,0.0,0.0);
+	vec4 uv1 = vec4(1.0,0.0,0.0,0.0);
+	vec4 uv2 = vec4(1.0,1.0,0.0,0.0);
+	vec4 uv3 = vec4(0.0,1.0,0.0,0.0);
+
+	if( is_texanim )
+	{
+		float ftexframe = frg_uv1.x;
+		int itexframe = int(ftexframe)%texcnt;
+		int ifrX = itexframe%texanimdim;
+		int ifrY = itexframe/texanimdim;
+		float ftexs = 1.0f/ftexanimdim;
+		float fu0 = float(ifrX)*ftexs;
+		float fu1 = float(ifrX+1)*ftexs;
+		float fv0 = float(ifrY)*ftexs;
+		float fv1 = float(ifrY+1)*ftexs;
+		uv0 = vec4( fu0, fv0, 0.0, 0.0 );
+		uv1 = vec4( fu1, fv0, 0.0, 0.0 );
+		uv2 = vec4( fu1, fv1, 0.0, 0.0 );
+		uv3 = vec4( fu0, fv1, 0.0, 0.0 );						
+	}
+
+	gl_Position = pos0;
+	frg_uv0 = uv0;
+	EmitVertex();
+	gl_Position = pos1;
+	frg_uv0 = uv1;
+	EmitVertex();
+	gl_Position = pos2;
+	frg_uv0 = uv2;
+	EmitVertex();
+	gl_Position = pos0;
+	frg_uv0 = uv0;
+	EmitVertex();
+	gl_Position = pos2;
+	frg_uv0 = uv2;
+	EmitVertex();
+	gl_Position = pos3;
+	frg_uv0 = uv3;
+	EmitVertex();
+
+	EndPrimitive();
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vface_streak : vface_base
+{
+	//
+	in vec4 position : POSITION;
+	in vec4 normal : NORMAL;
+	in vec4 binormal : BINORMAL;
+	in vec4 vtxcolor : COLOR0;
+	//
+	//out vec4 geo_pos;
+	out vec4 geo_lpos;
+	out vec4 geo_vel;
+	out vec4 geo_clr;
+}
+vertex_shader vs_streak : vface_streak
+{
+	gl_Position = position;
+	geo_clr = vtxcolor.bgra;
+	geo_lpos = normal;
+	geo_vel = binormal;
+}
+geometry_interface gface_streak
+{
+	layout (points) in;
+	layout (triangle_strip, max_vertices=6) out; 
+	//
+	uniform mat4 MatP;	
+	uniform mat4 MatV;	
+	uniform mat4 MatMVP;	
+	uniform vec4 User0;
+	uniform vec4 User1;
+	uniform vec4 User2;
+	//
+	in vec4 geo_clr[1];
+	in vec4 geo_lpos[1];
+	in vec4 geo_vel[1];
+	//
+	out vec4 frg_clr;
+	out vec4 frg_uv0;
+}
+geometry_shader gs_streak : gface_streak
+{
+	frg_clr = geo_clr[0];
+	vec3 vel = geo_vel[0].xyz;
+	vec3 lpos = geo_lpos[0].xyz;
+
+	vec3 ctr = gl_in[0].gl_Position.xyz;
+	vec3 p0 = ctr+vel;
+	vec3 p1 = ctr-vel;
+	vec3 p2 = lpos-vel;
+	vec3 p3 = lpos+vel;
 
 	vec4 pos0 = MatMVP * vec4(p0,1.0);
 	vec4 pos1 = MatMVP * vec4(p1,1.0);
@@ -203,6 +310,7 @@ geometry_shader gs_billboardquad : iface_gdefault
 	EmitVertex();
 
 	EndPrimitive();
+
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault
@@ -229,6 +337,15 @@ technique tbasicparticle
 	pass p0
 	{	vertex_shader=vs_vtxtexcolor;
 		geometry_shader=gs_billboardquad;
+		fragment_shader=ps_modtexclr;
+		state_block=sb_default;
+	}
+}
+technique tstreakparticle
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_streak;
+		geometry_shader=gs_streak;
 		fragment_shader=ps_modtexclr;
 		state_block=sb_default;
 	}
