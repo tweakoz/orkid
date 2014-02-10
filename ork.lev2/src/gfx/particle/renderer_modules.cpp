@@ -679,11 +679,6 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 		{	////////////////////////////////////////////////
 			// uniform properties
 			////////////////////////////////////////////////	
-			ork::CColor4 CL;
-			ork::CVector2 uvr0( 0.0f, 0.0f );
-			ork::CVector2 uvr1( 1.0f, 0.0f );
-			ork::CVector2 uvr2( 1.0f, 1.0f );
-			ork::CVector2 uvr3( 0.0f, 1.0f );
 			const ork::lev2::particle::BasicParticle* __restrict ptclbase = buffer.mpParticles;
 			for( int i=0; i<icnt; i++ )
 			{	const ork::lev2::particle::BasicParticle* __restrict ptcl = ptclbase+i;
@@ -694,24 +689,16 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 				mOutDataUnitAge = (fage/ptcl->mfLifeSpan);
 				mOutDataUnitAge = (mOutDataUnitAge<0.0f) ? 0.0f : mOutDataUnitAge;
 				mOutDataUnitAge = (mOutDataUnitAge>1.0f) ? 1.0f : mOutDataUnitAge;
-				float fiunitage = (1.0f-mOutDataUnitAge);
+				//
 				float fwidth = mPlugInpWidth.GetValue();
 				float flength = mPlugInpLength.GetValue();
-				////////////////////////////////////////////////
-				// compute streak positions
-				////////////////////////////////////////////////
-				ork::CVector3 p0 = ptcl->mPosition;
-				CVector3 lpos = p0 - ptcl->mVelocity*flength;
-				CVector3 pvel = ptcl->mVelocity.Cross(obj_nrmz).Normal()*fwidth;
-				////////////////////////////////////////////////
 				CVector4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
-				U32 ucolor = color.GetVtxColorAsU32();
 				////////////////////////////////////////////////
-				vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( p0,
-															lpos,
-															pvel,
-															uvr0,
-															ucolor ) );
+				vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
+															obj_nrmz,
+															ptcl->mVelocity,
+															ork::CVector2( fwidth, flength ),
+															color.GetVtxColorAsU32() ) );
 				////////////////////////////////////////////////
 			}
 		}	
