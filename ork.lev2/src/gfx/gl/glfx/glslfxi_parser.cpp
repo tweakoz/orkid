@@ -41,6 +41,8 @@ static const std::map<std::string,int> gattrsorter =
 
 void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 {
+	mPreamble = par.mPreamble;
+	
 	for( const auto& u : par.mUniforms )
 	{
 		auto it = mUniforms.find(u.first);
