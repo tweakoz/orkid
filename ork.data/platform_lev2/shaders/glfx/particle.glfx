@@ -26,20 +26,21 @@ vertex_interface vface_base
 	uniform vec4		NoiseFreq;
 	uniform vec4		NoiseAmp;
 }
-vertex_interface iface_vdefault : vface_base
+///////////////////////////////////////////////////////////////
+geometry_interface gface_base
 {
+	layout (points) in;
+	layout (triangle_strip, max_vertices=6) out; 
 	//
-	in vec4 position : POSITION;
-	in vec4 vtxcolor : COLOR0;
-	in vec4 uv0 : TEXCOORD0;
-	in vec4 uv1 : TEXCOORD1;
-	//
-	out vec4 geo_clr;
-	out vec4 geo_uv0;
-	out vec4 geo_uv1;
+	uniform mat4 MatP;	
+	uniform mat4 MatV;	
+	uniform mat4 MatMVP;	
+	uniform vec4 User0;
+	uniform vec4 User1;
+	uniform vec4 User2;
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault
+fragment_interface fface_minimal
 {
 	in vec4 frg_clr;
 	in vec4 frg_uv0;
@@ -47,8 +48,7 @@ fragment_interface iface_fdefault
 	//
 	out vec4 out_clr;
 }
-///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt
+fragment_interface fface_psys
 {
 	uniform vec4 modcolor;
 	uniform sampler2D ColorMap;
@@ -89,9 +89,29 @@ state_block sb_alpadd
 	BlendMode = ALPHA_ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
-// shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxtexcolor : iface_vdefault
+vertex_interface vface_bill : vface_base
+{
+	//
+	in vec4 position : POSITION;
+	in vec4 vtxcolor : COLOR0;
+	in vec4 uv0 : TEXCOORD0;
+	in vec4 uv1 : TEXCOORD1;
+	//
+	out vec4 geo_clr;
+	out vec4 geo_uv0;
+	out vec4 geo_uv1;
+}
+vertex_shader vs_vtxcolor 
+	: vface_bill
+{
+	gl_Position = position;
+	geo_clr = vtxcolor;
+	geo_uv0 = uv0;
+	geo_uv1 = uv1;
+}
+vertex_shader vs_vtxtexcolor
+	: vface_bill
 {
 	gl_Position = position;
 	geo_clr = vtxcolor.bgra;
@@ -99,50 +119,21 @@ vertex_shader vs_vtxtexcolor : iface_vdefault
 	geo_uv1 = uv1;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_modtex : iface_fmt
-{
-	vec4 texc = texture( ColorMap, frg_uv0.xy );
-	out_clr = texc*modcolor;
-	if( out_clr.a==0.0f ) discard;
-}
-fragment_shader ps_modtexclr : iface_fmt
-{
-	vec4 texc = texture( ColorMap, frg_uv0.xy );
-	out_clr = texc*modcolor*frg_clr;
-	if( out_clr.a==0.0f ) discard;
-}
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault
+geometry_interface gface_bill 
+	: gface_base
+	: vface_bill
 {
-	gl_Position = position;
-	geo_clr = vtxcolor;
-	geo_uv0 = uv0;
-	geo_uv1 = uv1;
-}
-///////////////////////////////////////////////////////////////
-geometry_interface gface_base
-{
-	layout (points) in;
-	layout (triangle_strip, max_vertices=6) out; 
-	//
-	uniform mat4 MatP;	
-	uniform mat4 MatV;	
-	uniform mat4 MatMVP;	
-	uniform vec4 User0;
-	uniform vec4 User1;
-	uniform vec4 User2;
-}
-geometry_interface gface_streak : gface_base
-{
-	in vec4 geo_clr[1];
-	in vec4 geo_uv0[1];
-	in vec4 geo_uv1[1];
+	//in vec4 geo_clr[1];
+	//in vec4 geo_uv0[1];
+	//in vec4 geo_uv1[1];
 	//
 	out vec4 frg_clr;
 	out vec4 frg_uv0;
 	out vec4 frg_uv1;
 }
-geometry_shader gs_identity : gface_streak
+geometry_shader gs_identity 
+	: gface_bill
 {
 	for( int n=0; n<gl_in.length(); n++ )
 	{
@@ -154,7 +145,8 @@ geometry_shader gs_identity : gface_streak
 	}
 	EndPrimitive();
 }
-geometry_shader gs_billboardquad : gface_streak
+geometry_shader gs_billboardquad 
+	: gface_bill
 {
 	frg_clr = geo_clr[0];
 	frg_uv1 = geo_uv1[0];
@@ -253,12 +245,14 @@ vertex_shader vs_streak : vface_streak
 	geo_vel = binormal;
 	geo_lw = uv0;
 }
-geometry_interface gface_streak : gface_base
+geometry_interface gface_streak 
+	: gface_base
+	: vface_streak
 {
-	in vec4 geo_clr[1];
-	in vec4 geo_cnrm[1];
-	in vec4 geo_vel[1];
-	in vec4 geo_lw[1];
+	//in vec4 geo_clr[1];
+	//in vec4 geo_cnrm[1];
+	//in vec4 geo_vel[1];
+	//in vec4 geo_lw[1];
 	//
 	out vec4 frg_clr;
 	out vec4 frg_uv0;
@@ -314,17 +308,27 @@ geometry_shader gs_streak : gface_streak
 
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fragclr : iface_fdefault
-{
-	out_clr = frg_clr;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr : iface_fmt
+fragment_shader ps_modclr : fface_psys
 {
 	out_clr = modcolor;
 }
-///////////////////////////////////////////////////////////////
-fragment_shader ps_volume : iface_fmt
+fragment_shader ps_fragclr : fface_minimal
+{
+	out_clr = frg_clr;
+}
+fragment_shader ps_modtex : fface_psys
+{
+	vec4 texc = texture( ColorMap, frg_uv0.xy );
+	out_clr = texc*modcolor;
+	if( out_clr.a==0.0f ) discard;
+}
+fragment_shader ps_modtexclr : fface_psys
+{
+	vec4 texc = texture( ColorMap, frg_uv0.xy );
+	out_clr = texc*modcolor*frg_clr;
+	if( out_clr.a==0.0f ) discard;
+}
+fragment_shader ps_volume : fface_psys
 {
 	vec2 uv = frg_uv0.xy;
 	float w = frg_uv1.x;
