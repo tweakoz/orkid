@@ -33,13 +33,6 @@ FixedStringBase::HashType FixedStringBase::Hash() const
     return rval;
 }
 
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool const_string::operator==(const const_string &other) const
-{
-	return strcmp(mpstr,other.mpstr)==0;
-}
 ///////////////////////////////////////////////////////////////////////////////
 
 template class FixedString<4>;
@@ -57,25 +50,6 @@ template class FixedString<8192>;
 template class FixedString<16384>;
 template class FixedString<65536>;
 
-
-/*template struct FixedString<16>::iterator;
-template struct FixedString<24>::iterator;
-template struct FixedString<32>::iterator;
-template struct FixedString<64>::iterator;
-template struct FixedString<96>::iterator;
-template struct FixedString<128>::iterator;
-template struct FixedString<256>::iterator;
-template struct FixedString<1024>::iterator;
-
-template struct FixedString<16>::const_iterator;
-template struct FixedString<24>::const_iterator;
-template struct FixedString<32>::const_iterator;
-template struct FixedString<64>::const_iterator;
-template struct FixedString<96>::const_iterator;
-template struct FixedString<128>::const_iterator;
-template struct FixedString<256>::const_iterator;
-template struct FixedString<1024>::const_iterator;
-*/
 ///////////////////////////////////////////////////////////////////////////////
 
 bool ork_cstr_replace(	const char *src,

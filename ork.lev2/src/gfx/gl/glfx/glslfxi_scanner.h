@@ -14,7 +14,7 @@ struct token
 	token( const std::string& txt, int il, int ic ) : text(txt), iline(il), icol(ic) {}
 };
 
-typedef enum scan_state
+enum scan_state
 {
 	ESTA_NONE = 0,
 	ESTA_C_COMMENT,

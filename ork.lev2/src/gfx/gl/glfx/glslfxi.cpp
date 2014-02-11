@@ -382,11 +382,15 @@ void GlslFxShader::Compile()
 	shadertext += "(); }\n";
 	const char* c_str = shadertext.c_str();
 
+	printf( "Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str );
+
 	GL_ERRORCHECK();
 	glShaderSource( mShaderObjectId, 1, & c_str, NULL );
 	GL_ERRORCHECK();
 	glCompileShader( mShaderObjectId );
 	GL_ERRORCHECK();
+
+
 
 	GLint compiledOk = 0;
 	glGetShaderiv( mShaderObjectId, GL_COMPILE_STATUS, & compiledOk );
@@ -433,34 +437,48 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 		OrkAssert( pvtxshader!=nullptr );
 		OrkAssert( pfrgshader!=nullptr );
 
-		if( pvtxshader->IsCompiled() == false )
+		if( pvtxshader && pvtxshader->IsCompiled() == false )
 			pvtxshader->Compile();
-		if( pfrgshader->IsCompiled() == false )
+		if( pfrgshader && pfrgshader->IsCompiled() == false )
 			pfrgshader->Compile();
 		if( pgeoshader && pgeoshader->IsCompiled() == false )
 			pgeoshader->Compile();
 			
-		if( pvtxshader->IsCompiled() && pfrgshader->IsCompiled() )
+		if( 	pvtxshader->IsCompiled()
+			&&	pfrgshader->IsCompiled() )
 		{
-				GL_ERRORCHECK();
+			GL_ERRORCHECK();
 			GLuint prgo = glCreateProgram();
 			ppass->mProgramObjectId = prgo;
+
+			//////////////
+			// attach shaders
+			//////////////
+
 			glAttachShader( prgo, pvtxshader->mShaderObjectId );
-				GL_ERRORCHECK();
-			glAttachShader( prgo, pfrgshader->mShaderObjectId );
-				GL_ERRORCHECK();
+			GL_ERRORCHECK();
 			
 			if( pgeoshader && pgeoshader->IsCompiled() )
 			{
 				glAttachShader( prgo, pgeoshader->mShaderObjectId );
-					GL_ERRORCHECK();
+				GL_ERRORCHECK();
 			}
 
+			glAttachShader( prgo, pfrgshader->mShaderObjectId );
+			GL_ERRORCHECK();
+
+			//////////////
+			// link
+			//////////////
 
 			GlslFxStreamInterface* vtx_iface = pvtxshader->mpInterface;
 			GlslFxStreamInterface* frg_iface = pfrgshader->mpInterface;
 			
-			printf( "Linking vtxshader<%s> frgshader<%s>\n", pvtxshader->mName.c_str(), pfrgshader->mName.c_str() );
+			if( pgeoshader )
+				printf( "Linking vtxshader<%s> geoshader<%s> frgshader<%s>\n", pvtxshader->mName.c_str(), pgeoshader->mName.c_str(), pfrgshader->mName.c_str() );
+			else
+				printf( "Linking vtxshader<%s> frgshader<%s>\n", pvtxshader->mName.c_str(), pfrgshader->mName.c_str() );
+
 			if( nullptr == vtx_iface )
 			{
 				printf( "vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str() );
@@ -476,7 +494,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			{
 				GlslFxAttribute* pattr = itp.second;
 				int iloc = pattr->mLocation;
-				//printf( "vtxattr<%s> loc<%d> dir<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str() );
+				printf( "vtxattr<%s> loc<%d> dir<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str() );
 				glBindAttribLocation( prgo, iloc, pattr->mName.c_str() );
 				GL_ERRORCHECK();
 				ppass->mAttributeById[iloc] = pattr;

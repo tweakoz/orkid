@@ -137,24 +137,6 @@ namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined ( __cplusplus )
-
-struct const_string
-{
-	const char * mpstr;
-
-	const_string( const char *pstr=0 ) : mpstr( pstr ) {}
-
-	bool operator==(const const_string &other) const;
-
-	const char* c_str() const
-	{
-		return mpstr;
-	}
-};
-
-#endif
-
 class Object;
 
 class CAssetHandle
@@ -173,17 +155,10 @@ class CAssetHandle
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef size_t FileH;
-typedef size_t FileStampH; // (Y6M4D5:H5M6S6) (15:17) Base Year 2000 6 bits for year goes to 2063
-typedef size_t LibraryH;
-typedef size_t FunctionH;
-
 #if defined( __cplusplus )
 }
 
 #endif
-
-#define Invalid_Handle	0xffffffff
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -215,46 +190,9 @@ typedef size_t FunctionH;
 #define EPSILON 0.0001f
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#define BIT00 0x00000001
-#define BIT01 0x00000002
-#define BIT02 0x00000004
-#define BIT03 0x00000008
-#define BIT04 0x00000010
-#define BIT05 0x00000020
-#define BIT06 0x00000040
-#define BIT07 0x00000080
-#define BIT08 0x00000100
-#define BIT09 0x00000200
-#define BIT10 0x00000400
-#define BIT11 0x00000800
-#define BIT12 0x00001000
-#define BIT13 0x00002000
-#define BIT14 0x00004000
-#define BIT15 0x00008000
-#define BIT16 0x00010000
-#define BIT17 0x00020000
-#define BIT18 0x00040000
-#define BIT19 0x00080000
-#define BIT20 0x00100000
-#define BIT21 0x00200000
-#define BIT22 0x00400000
-#define BIT23 0x00800000
-#define BIT24 0x01000000
-#define BIT25 0x02000000
-#define BIT26 0x04000000
-#define BIT27 0x08000000
-#define BIT28 0x10000000
-#define BIT29 0x20000000
-#define BIT30 0x40000000
-#define BIT31 0x80000000
-
-///////////////////////////////////////////////////////////////////////////////
 // C++ Only Types
 
 #if defined(__cplusplus)
-
-inline bool AreBitsEnabled( U32 uval, U32 bittest ) { return (bittest==(uval&bittest)); }
 
 struct SRect
 {
