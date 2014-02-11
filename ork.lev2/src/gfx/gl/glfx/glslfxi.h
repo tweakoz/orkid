@@ -55,6 +55,7 @@ struct GlslFxAttribute
 	GLenum			meType;
 	GLint			mLocation;
 	std::string		mSemantic;
+	std::string		mComment;
 	int             mArraySize;
 
 	GlslFxAttribute(const std::string& nam,const std::string& sem="") 
@@ -72,6 +73,7 @@ struct GlslFxStreamInterface
 	std::string		mName;
 	UniMap			mUniforms;
 	AttrMap			mAttributes;
+	GLenum			mInterfaceType;
 	std::vector<std::string>     mPreamble;
 
 	void Inherit( const GlslFxStreamInterface& par );
