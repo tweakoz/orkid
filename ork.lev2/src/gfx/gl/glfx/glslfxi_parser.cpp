@@ -39,30 +39,93 @@ static const std::map<std::string,int> gattrsorter =
 	{"BONEWEIGHTS",10},
 };
 
+GlslFxStreamInterface::GlslFxStreamInterface()
+	: mInterfaceType(GL_NONE)
+	, mGsPrimSize(0)
+{
+
+}
+
 void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 {
-	mPreamble = par.mPreamble;
-	
-	for( const auto& u : par.mUniforms )
+	bool is_vtx = mInterfaceType==GL_VERTEX_SHADER;
+	bool is_geo = mInterfaceType==GL_GEOMETRY_SHADER;
+	bool is_frg = mInterfaceType==GL_FRAGMENT_SHADER;
+
+	bool par_is_vtx = par.mInterfaceType==GL_VERTEX_SHADER;
+
+	bool types_match = mInterfaceType==par.mInterfaceType;
+	bool geoinhvtx = is_geo&&par_is_vtx;
+	bool inherit_ok = types_match|geoinhvtx;
+
+	assert( inherit_ok );
+
+	////////////////////////////////
+
+	if( types_match )
+	{
+		for( const auto& item : par.mPreamble )
+			mPreamble.push_back(item);
+	}
+
+	if( is_geo && types_match )
+	{
+		mGsPrimSize = par.mGsPrimSize;
+	}
+
+	////////////////////////////////
+	// convert vertex out attrs
+	// to geom in array attrs
+	////////////////////////////////
+
+	bool conv_vtx_to_geo = ( is_geo && par_is_vtx );
+
+	////////////////////////////////
+
+	if( false == conv_vtx_to_geo )
+		for( const auto& u : par.mUniforms )
 	{
 		auto it = mUniforms.find(u.first);
 		assert(it==mUniforms.end()); // make sure there are no duplicate unifs
 		
 		mUniforms[u.first] = u.second;
 	}
+	
 	for( const auto& a : par.mAttributes )
 	{
 		auto it = mAttributes.find(a.first);
 		assert(it==mAttributes.end()); // make sure there are no duplicate attrs
 
 		const GlslFxAttribute* src = a.second;
-		GlslFxAttribute* cpy = new GlslFxAttribute(src->mName,src->mSemantic);
-		cpy->mTypeName = src->mTypeName;
-		cpy->mDirection = src->mDirection;
-		cpy->meType = src->meType;
 
-		cpy->mLocation = int(mAttributes.size());
-		mAttributes[a.first] = cpy;
+		if( conv_vtx_to_geo )
+		{
+			if( src->mDirection=="out" )
+			{
+				GlslFxAttribute* cpy = new GlslFxAttribute(src->mName,src->mSemantic);
+				cpy->mTypeName = src->mTypeName;
+				cpy->mDirection = "in";
+				cpy->meType = src->meType;
+				assert(mGsPrimSize!=0);
+				cpy->mArraySize = mGsPrimSize;
+				cpy->mLocation = int(mAttributes.size());
+				cpy->mComment = "// vtx->geo";
+
+				mAttributes[a.first] = cpy;
+
+				printf( "copied vtx->geo nam<%s> typ<%s>\n", src->mName.c_str(), src->mTypeName.c_str() );
+			}
+		}
+		else
+		{
+			GlslFxAttribute* cpy = new GlslFxAttribute(src->mName,src->mSemantic);
+			cpy->mTypeName = src->mTypeName;
+			cpy->mDirection = src->mDirection;
+			cpy->meType = src->meType;
+
+			cpy->mLocation = int(mAttributes.size());
+			mAttributes[a.first] = cpy;
+		}
 	}
 }
 
@@ -152,7 +215,7 @@ struct GlSlFxParser
 		return pcfg;
 	}
 	///////////////////////////////////////////////////////////
-	GlslFxStreamInterface* ParseFxInterface()
+	GlslFxStreamInterface* ParseFxInterface(GLenum iftype)
 	{	
 		GlslFxScanViewRegex r("(\n)",true);
 		GlslFxScannerView v( scanner, r );
@@ -162,6 +225,7 @@ struct GlSlFxParser
 
 		GlslFxStreamInterface* psi = new GlslFxStreamInterface;
 		psi->mName = v.GetBlockName();
+		psi->mInterfaceType = iftype;
 
 		////////////////////////
 
@@ -175,7 +239,6 @@ struct GlSlFxParser
 		{
 			auto ptok = v.GetBlockDecorator(ideco);
 
-		
 			if( is_vtx )
 			{
 				auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
@@ -184,9 +247,21 @@ struct GlSlFxParser
 			}
 			else if( is_geo )
 			{	
-				auto it_fi = mpContainer->mGeometryInterfaces.find(ptok->text);
-				assert(it_fi!=mpContainer->mGeometryInterfaces.end());
-				psi->Inherit(*it_fi->second);
+				auto it_fig = mpContainer->mGeometryInterfaces.find(ptok->text);
+				auto it_fiv = mpContainer->mVertexInterfaces.find(ptok->text);
+				bool is_geo = (it_fig!=mpContainer->mGeometryInterfaces.end());
+				bool is_vtx = (it_fiv!=mpContainer->mVertexInterfaces.end());
+				assert(is_geo||is_vtx);
+
+				auto par = is_geo 
+				         ? it_fig->second 
+					     : it_fiv->second;
+
+				printf( "iface<%s> inherit<%s:%p>\n", 
+					psi->mName.c_str(),
+					ptok->text.c_str(), par );
+
+				psi->Inherit(*par);
 			}			
 			else
 			{	
@@ -213,15 +288,28 @@ struct GlSlFxParser
 			{
 				std::string layline;
 				bool done = false;
+				bool is_input = false;
+				bool has_punc = false;
+				bool is_points = false;
+				bool is_lines = false;
+				bool is_tris = false;
+
 				while( false==done )
 				{
 					const auto& txt = vt_tok->text;
 
-					bool add_space = (txt == "(")||(txt == ")")||(txt == ",");
-					if( add_space )
+					is_input |= (txt=="in");
+					is_points |= (txt=="points");
+					is_lines |= (txt=="lines");
+					is_tris |= (txt=="triangles");
+
+					bool is_punc = (txt == "(")||(txt == ")")||(txt == ",");
+					has_punc |= is_punc;
+
+					if( is_punc )
 						layline += " ";
 					layline += vt_tok->text;
-					if( add_space )
+					if( is_punc )
 						layline += " ";
 					done = vt_tok->text == ";";
 					i++;
@@ -229,6 +317,17 @@ struct GlSlFxParser
 				}
 				layline += "\n";
 				psi->mPreamble.push_back(layline);
+
+				if( has_punc && is_input )
+				{
+					if( is_points )
+						psi->mGsPrimSize = 1;
+					if( is_lines )
+						psi->mGsPrimSize = 2;
+					if( is_tris )
+						psi->mGsPrimSize = 3;
+				}
+
 			}
 			else if( vt_tok->text == "uniform" )
 			{
@@ -480,6 +579,8 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	int ParseFxShaderCommon(GlslFxShader* pshader)
 	{
+		bool bkill = false;
+
 		GlslFxScanViewRegex r("()",true);
 		GlslFxScannerView v( scanner, r );
 		v.ScanBlock(itokidx);
@@ -543,6 +644,10 @@ struct GlSlFxParser
 				}
 				else
 				{
+					printf( "bad shader interface decorator!\n");
+					printf( "shader<%s>\n", shadername.c_str() );
+					printf( "deco<%s>\n", ptok->text.c_str() );
+					printf( "is_vtx<%d> is_geo<%d> is_frg<%d>\n", int(bvtx), int(bgeo), int(bfrg) );
 					assert(false);
 				}
 			}
@@ -577,6 +682,9 @@ struct GlSlFxParser
 			shaderbody += preamble_line;
 		}
 
+		///////////////////////
+		// UNIFORMS
+		///////////////////////
 
 		for( GlslFxStreamInterface::UniMap::const_iterator
 			itu=iface->mUniforms.begin();
@@ -598,6 +706,9 @@ struct GlSlFxParser
 
 			shaderbody += ";\n";
 		}
+		///////////////////////
+		// ATTRIBUTES
+		///////////////////////
 		for( GlslFxStreamInterface::AttrMap::const_iterator
 			ita=iface->mAttributes.begin();
 			ita!=iface->mAttributes.end();
@@ -612,11 +723,20 @@ struct GlSlFxParser
 			if( pa->mArraySize )
 			{
 				ork::FixedString<128> fxs;
-				fxs.format("%s[%d];\n", pa->mName.c_str(), pa->mArraySize );
+				fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
 				shaderbody += fxs.c_str();
 			}
 			else
-				shaderbody += pa->mName + ";\n";
+				shaderbody += pa->mName;
+
+			shaderbody += ";";
+
+			if( pa->mComment.length() )
+			{	shaderbody += pa->mComment;
+				bkill = true;
+			}
+
+			shaderbody += "\n";
 		}
 		///////////////////////////////////
 		auto code_inject = [&](const GlslFxScannerView& view)
@@ -699,7 +819,10 @@ struct GlSlFxParser
 		pshader->mShaderText = shaderbody;
 		///////////////////////////////////
 		int new_end = v.GetBlockEnd()+1;
-		printf( "newend be<%d> deref<%d>\n", iblockend, new_end );
+		printf( "newend be<%d> deref<%d>\n", int(iblockend), new_end );
+
+		//assert(false==bkill);
+
 		return new_end;
 	}
 	///////////////////////////////////////////////////////////
@@ -885,17 +1008,17 @@ struct GlSlFxParser
 			}
 			else if( tok.text == "vertex_interface" )
 			{
-				GlslFxStreamInterface* pif = ParseFxInterface();
+				GlslFxStreamInterface* pif = ParseFxInterface(GL_VERTEX_SHADER);
 				mpContainer->AddVertexInterface( pif );
 			}
 			else if( tok.text == "fragment_interface" )
 			{
-				GlslFxStreamInterface* pif = ParseFxInterface();
+				GlslFxStreamInterface* pif = ParseFxInterface(GL_FRAGMENT_SHADER);
 				mpContainer->AddFragmentInterface( pif );
 			}
 			else if( tok.text == "geometry_interface" )
 			{
-				GlslFxStreamInterface* pif = ParseFxInterface();
+				GlslFxStreamInterface* pif = ParseFxInterface(GL_GEOMETRY_SHADER);
 				mpContainer->AddGeometryInterface( pif );
 			}
 			else if( tok.text == "state_block" )

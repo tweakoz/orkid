@@ -1013,7 +1013,8 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 		this->LoadDDSTextureMainThreadPart( load_req );
 		//ptex->TexSamplingMode().PresetTrilinearWrap();
 	};
-	MainThreadOpQ().push(lamb,get_backtrace());
+	//MainThreadOpQ().push(lamb,get_backtrace());
+	MainThreadOpQ().push(lamb);
 	///////////////////////////////////////////////
 
 	return true;
