@@ -39,6 +39,13 @@ static const std::map<std::string,int> gattrsorter =
 	{"BONEWEIGHTS",10},
 };
 
+GlslFxStreamInterface::GlslFxStreamInterface()
+	: mInterfaceType(GL_NONE)
+	, mGsPrimSize(0)
+{
+
+}
+
 void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 {
 	bool is_vtx = mInterfaceType==GL_VERTEX_SHADER;
@@ -55,7 +62,16 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 
 	////////////////////////////////
 
-	mPreamble = par.mPreamble;
+	if( types_match )
+	{
+		for( const auto& item : par.mPreamble )
+			mPreamble.push_back(item);
+	}
+
+	if( is_geo && types_match )
+	{
+		mGsPrimSize = par.mGsPrimSize;
+	}
 
 	////////////////////////////////
 	// convert vertex out attrs
@@ -90,7 +106,8 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 				cpy->mTypeName = src->mTypeName;
 				cpy->mDirection = "in";
 				cpy->meType = src->meType;
-				cpy->mArraySize = 1;
+				assert(mGsPrimSize!=0);
+				cpy->mArraySize = mGsPrimSize;
 				cpy->mLocation = int(mAttributes.size());
 				cpy->mComment = "// vtx->geo";
 
@@ -271,15 +288,28 @@ struct GlSlFxParser
 			{
 				std::string layline;
 				bool done = false;
+				bool is_input = false;
+				bool has_punc = false;
+				bool is_points = false;
+				bool is_lines = false;
+				bool is_tris = false;
+
 				while( false==done )
 				{
 					const auto& txt = vt_tok->text;
 
-					bool add_space = (txt == "(")||(txt == ")")||(txt == ",");
-					if( add_space )
+					is_input |= (txt=="in");
+					is_points |= (txt=="points");
+					is_lines |= (txt=="lines");
+					is_tris |= (txt=="triangles");
+
+					bool is_punc = (txt == "(")||(txt == ")")||(txt == ",");
+					has_punc |= is_punc;
+
+					if( is_punc )
 						layline += " ";
 					layline += vt_tok->text;
-					if( add_space )
+					if( is_punc )
 						layline += " ";
 					done = vt_tok->text == ";";
 					i++;
@@ -287,6 +317,17 @@ struct GlSlFxParser
 				}
 				layline += "\n";
 				psi->mPreamble.push_back(layline);
+
+				if( has_punc && is_input )
+				{
+					if( is_points )
+						psi->mGsPrimSize = 1;
+					if( is_lines )
+						psi->mGsPrimSize = 2;
+					if( is_tris )
+						psi->mGsPrimSize = 3;
+				}
+
 			}
 			else if( vt_tok->text == "uniform" )
 			{
