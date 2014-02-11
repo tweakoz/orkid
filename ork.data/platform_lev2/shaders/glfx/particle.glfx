@@ -30,7 +30,7 @@ vertex_interface vface_base
 geometry_interface gface_base
 {
 	layout (points) in;
-	layout (triangle_strip, max_vertices=6) out; 
+	layout (triangle_strip, max_vertices=4) out; 
 	//
 	uniform mat4 MatP;	
 	uniform mat4 MatV;	
@@ -54,11 +54,11 @@ fragment_interface fface_psys
 	uniform sampler2D ColorMap;
 	uniform sampler3D VolumeMap;
 	//
-	out vec4 out_clr;
-	//
 	in vec4 frg_clr;
 	in vec4 frg_uv0;
 	in vec4 frg_uv1;
+	//
+	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -92,7 +92,6 @@ state_block sb_alpadd
 ///////////////////////////////////////////////////////////////
 vertex_interface vface_bill : vface_base
 {
-	//
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
 	in vec4 uv0 : TEXCOORD0;
@@ -122,12 +121,8 @@ vertex_shader vs_vtxtexcolor
 ///////////////////////////////////////////////////////////////
 geometry_interface gface_bill 
 	: gface_base
-	: vface_bill
+	: vface_bill // import vtxshader outputs
 {
-	//in vec4 geo_clr[1];
-	//in vec4 geo_uv0[1];
-	//in vec4 geo_uv1[1];
-	//
 	out vec4 frg_clr;
 	out vec4 frg_uv0;
 	out vec4 frg_uv1;
@@ -207,17 +202,11 @@ geometry_shader gs_billboardquad
 	gl_Position = pos1;
 	frg_uv0 = uv1;
 	EmitVertex();
-	gl_Position = pos2;
-	frg_uv0 = uv2;
-	EmitVertex();
-	gl_Position = pos0;
-	frg_uv0 = uv0;
-	EmitVertex();
-	gl_Position = pos2;
-	frg_uv0 = uv2;
-	EmitVertex();
 	gl_Position = pos3;
 	frg_uv0 = uv3;
+	EmitVertex();
+	gl_Position = pos2;
+	frg_uv0 = uv2;
 	EmitVertex();
 
 	EndPrimitive();
@@ -225,7 +214,6 @@ geometry_shader gs_billboardquad
 ///////////////////////////////////////////////////////////////
 vertex_interface vface_streak : vface_base
 {
-	//
 	in vec4 position : POSITION;
 	in vec4 normal : NORMAL;
 	in vec4 binormal : BINORMAL;
@@ -247,13 +235,8 @@ vertex_shader vs_streak : vface_streak
 }
 geometry_interface gface_streak 
 	: gface_base
-	: vface_streak
+	: vface_streak // import vtxshader outputs
 {
-	//in vec4 geo_clr[1];
-	//in vec4 geo_cnrm[1];
-	//in vec4 geo_vel[1];
-	//in vec4 geo_lw[1];
-	//
 	out vec4 frg_clr;
 	out vec4 frg_uv0;
 }
@@ -291,17 +274,11 @@ geometry_shader gs_streak : gface_streak
 	gl_Position = pos1;
 	frg_uv0 = uv1;
 	EmitVertex();
-	gl_Position = pos2;
-	frg_uv0 = uv2;
-	EmitVertex();
-	gl_Position = pos0;
-	frg_uv0 = uv0;
-	EmitVertex();
-	gl_Position = pos2;
-	frg_uv0 = uv2;
-	EmitVertex();
 	gl_Position = pos3;
 	frg_uv0 = uv3;
+	EmitVertex();
+	gl_Position = pos2;
+	frg_uv0 = uv2;
 	EmitVertex();
 
 	EndPrimitive();
