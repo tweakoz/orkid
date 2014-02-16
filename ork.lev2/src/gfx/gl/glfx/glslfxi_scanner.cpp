@@ -1,7 +1,6 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "../gl.h"
-#if defined(_USE_GLSLFX)
 #include "glslfxi.h"
 #include "glslfxi_scanner.h"
 #include <ork/file/file.h>
@@ -28,7 +27,7 @@ bool GlslFxScanViewRegex::Test(const token& t)
 GlslFxScannerView::GlslFxScannerView( const GlslFxScanner& s, GlslFxScanViewFilter& f  )
 	: mScanner(s)
 	, mFilter(f)
-	, mBlockTerminators( "(fxconfig|vertex_interface|geometry_interface|fragment_interface|libblock|state_block|vertex_shader|fragment_shader|geometry_shader|technique|pass)")
+	, mBlockTerminators( "(fxconfig|uniform_block|vertex_interface|tessctrl_interface|tesseval_interface|geometry_interface|fragment_interface|libblock|state_block|vertex_shader|tessctrl_shader|tesseval_shader|fragment_shader|geometry_shader|technique|pass)")
 	, mStart(0)
 	, mEnd(0)
 	, mBlockType(0)
@@ -374,5 +373,3 @@ void GlslFxScanner::Scan()
 /////////////////////////////////////////////////////////////////////////////////////////////////
 }} //namespace ork { namespace lev2 {
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-#endif

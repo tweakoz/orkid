@@ -155,6 +155,8 @@ template< typename T > class CVtxBuffer : public VertexBufferBase
 {
 	public:
 
+	typedef T vertex_t;
+
 	CVtxBuffer( int iMax, int iFlush, EPrimitiveType eType ) :
 		VertexBufferBase( iMax, iFlush, sizeof(T), eType, T::meFormat )
 	{

@@ -8,11 +8,15 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault
+uniform_block ub_vtx
 {
 	uniform mat4        mvp;
 	uniform vec4        modcolor;
-
+	
+}
+vertex_interface iface_vdefault
+	: ub_vtx
+{
 	//
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
@@ -23,10 +27,13 @@ vertex_interface iface_vdefault
 	out vec2 frg_uv;
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt
+uniform_block ub_frg
 {
 	uniform vec4 modcolor;
-	//
+}
+fragment_interface iface_fmt
+	: ub_frg
+{
 	//in vec2 frg_uv;
 	//
 	out vec4 out_clr;

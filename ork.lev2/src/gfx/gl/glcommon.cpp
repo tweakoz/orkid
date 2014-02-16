@@ -56,6 +56,8 @@ std::string GetGlErrorString( int iGLERR )
 
 /////////////////////////////////////////////////////////////////////////
 
+void check_debug_log();
+
 int GetGlError( void )
 {
 	int err = glGetError();
@@ -63,7 +65,10 @@ int GetGlError( void )
 	std::string errstr = GetGlErrorString( err );
 
 	if( err != GL_NO_ERROR )
+	{
 		orkprintf( "GLERROR [%s]\n", errstr.c_str() );
+		check_debug_log();
+	}
 
 	return err;
 }

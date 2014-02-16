@@ -13,7 +13,6 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "../gl.h"
-#if defined(_USE_GLSLFX)
 #include "glslfxi.h"
 #include "glslfxi_scanner.h"
 #include <ork/file/file.h>
@@ -49,14 +48,18 @@ GlslFxStreamInterface::GlslFxStreamInterface()
 void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 {
 	bool is_vtx = mInterfaceType==GL_VERTEX_SHADER;
+	bool is_tec = mInterfaceType==GL_TESS_CONTROL_SHADER;
+	bool is_tee = mInterfaceType==GL_TESS_EVALUATION_SHADER;
 	bool is_geo = mInterfaceType==GL_GEOMETRY_SHADER;
 	bool is_frg = mInterfaceType==GL_FRAGMENT_SHADER;
 
 	bool par_is_vtx = par.mInterfaceType==GL_VERTEX_SHADER;
+	bool par_is_tee = par.mInterfaceType==GL_TESS_EVALUATION_SHADER;
 
 	bool types_match = mInterfaceType==par.mInterfaceType;
 	bool geoinhvtx = is_geo&&par_is_vtx;
-	bool inherit_ok = types_match|geoinhvtx;
+	bool geoinhtee = is_geo&&par_is_tee;
+	bool inherit_ok = types_match|geoinhvtx|geoinhtee;
 
 	assert( inherit_ok );
 
@@ -66,11 +69,17 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 	{
 		for( const auto& item : par.mPreamble )
 			mPreamble.push_back(item);
+
+		for( const auto& ub : par.mUniformBlockSet )
+			mUniformBlockSet.insert(ub);
 	}
 
-	if( is_geo && types_match )
+	if( is_geo && (types_match||geoinhvtx||geoinhtee) )
 	{
-		mGsPrimSize = par.mGsPrimSize;
+		printf( "pre_inherit mGsPrimSize<%d>\n", mGsPrimSize );
+		if( mGsPrimSize==0 && par.mGsPrimSize!=0 )
+			mGsPrimSize = par.mGsPrimSize;
+		printf( "inherit mGsPrimSize<%d>\n", mGsPrimSize );
 	}
 
 	////////////////////////////////
@@ -79,18 +88,11 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 	////////////////////////////////
 
 	bool conv_vtx_to_geo = ( is_geo && par_is_vtx );
+	bool conv_tee_to_geo = ( is_geo && par_is_tee );
+	bool conv_to_geo = conv_vtx_to_geo || conv_tee_to_geo;
 
 	////////////////////////////////
 
-	if( false == conv_vtx_to_geo )
-		for( const auto& u : par.mUniforms )
-	{
-		auto it = mUniforms.find(u.first);
-		assert(it==mUniforms.end()); // make sure there are no duplicate unifs
-		
-		mUniforms[u.first] = u.second;
-	}
-	
 	for( const auto& a : par.mAttributes )
 	{
 		auto it = mAttributes.find(a.first);
@@ -98,7 +100,7 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 
 		const GlslFxAttribute* src = a.second;
 
-		if( conv_vtx_to_geo )
+		if( conv_to_geo )
 		{
 			if( src->mDirection=="out" )
 			{
@@ -109,11 +111,11 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 				assert(mGsPrimSize!=0);
 				cpy->mArraySize = mGsPrimSize;
 				cpy->mLocation = int(mAttributes.size());
-				cpy->mComment = "// vtx->geo";
+				cpy->mComment = "// (vtx/tee)->geo";
 
 				mAttributes[a.first] = cpy;
 
-				printf( "copied vtx->geo nam<%s> typ<%s>\n", src->mName.c_str(), src->mTypeName.c_str() );
+				printf( "copied (vtx/tee)->geo nam<%s> typ<%s>\n", src->mName.c_str(), src->mTypeName.c_str() );
 			}
 		}
 		else
@@ -145,7 +147,7 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	bool IsTokenOneOfTheBlockTypes( const token& tok )
 	{
-		std::regex regex_block( "(fxconfig|vertex_interface|fragment_interface|geometry_interface|libblock|state_block|vertex_shader|fragment_shader|geometry_shader|technique|pass)");
+		std::regex regex_block( "(fxconfig|uniform_block|vertex_interface|tessctrl_interface|tesseval_interface|geometry_interface|fragment_interface|libblock|state_block|vertex_shader|tessctrl_shader|tesseval_shader|fragment_shader|geometry_shader|technique|pass)");
 		return std::regex_match(tok.text, regex_block);
 	}
 	///////////////////////////////////////////////////////////
@@ -215,6 +217,82 @@ struct GlSlFxParser
 		return pcfg;
 	}
 	///////////////////////////////////////////////////////////
+	GlslUniformBlock* ParseUniformBlock()
+	{
+		GlslFxScanViewRegex r("(\n)",true);
+		GlslFxScannerView v( scanner, r );
+		v.ScanBlock(itokidx);
+
+		const std::string BlockType = v.GetToken(v.mBlockType)->text;
+
+		assert( BlockType=="uniform_block" );
+
+		////////////////////////
+
+		auto pret = new GlslUniformBlock;
+		pret->mName = v.GetBlockName();
+		////////////////////////
+
+		size_t inumdecos = v.GetNumBlockDecorators();
+
+		for( size_t ideco=0; ideco<inumdecos; ideco++ )
+		{
+			auto ptok = v.GetBlockDecorator(ideco);
+
+		}
+
+		////////////////////////
+
+		size_t ist = v.mStart+1;
+		size_t ien = v.mEnd-1;
+		size_t i=ist;
+		bool done = false;
+
+
+		while( false==done  )
+		{
+			const token* vt_tok = v.GetToken(i);
+			const token* dt_tok = v.GetToken(i+1);
+			const token* nam_tok = v.GetToken(i+2);
+
+			printf( "oi<%d> done<%d> ist<%d> ien<%d>\n", int(i), int(done), int(ist),int(ien) );
+
+			if( vt_tok->text == "uniform" )
+			{
+				auto it = pret->mUniforms.find(nam_tok->text);
+				assert(it==pret->mUniforms.end()); // make sure there are no duplicate uniforms
+
+				GlslFxUniform* puni = mpContainer->MergeUniform( nam_tok->text );
+				puni->mTypeName = dt_tok->text;
+				pret->mUniforms[ nam_tok->text ] = puni;
+				if( v.GetToken(i+3)->text=="[" )
+				{
+					assert(v.GetToken(i+5)->text=="]");
+					puni->mArraySize = atoi(v.GetToken(i+4)->text.c_str());
+					printf( "uniname<%s> arraysize<%d>\n", nam_tok->text.c_str(), puni->mArraySize );
+					i += 7;
+				}
+				else
+				{
+					i += 4;
+				}
+			}
+			else if( vt_tok->text == "\n" )
+			{
+				i++;
+			}
+			else
+			{
+				assert(false);
+			}
+
+			done = (i >= ien);
+			printf( "ni<%d> ien<%d> done<%d>\n", int(i), int(ien), int(done) );
+		}
+		itokidx = v.GetBlockEnd()+1;
+		return pret;
+	}
+	///////////////////////////////////////////////////////////
 	GlslFxStreamInterface* ParseFxInterface(GLenum iftype)
 	{	
 		GlslFxScanViewRegex r("(\n)",true);
@@ -233,13 +311,23 @@ struct GlSlFxParser
 		bool is_vtx = BlockType=="vertex_interface";
 		bool is_geo = BlockType=="geometry_interface";
 
+		/////////////////////////////
+		// interface inheritance
+		/////////////////////////////
+
 		size_t inumdecos = v.GetNumBlockDecorators();
 
 		for( size_t ideco=0; ideco<inumdecos; ideco++ )
 		{
 			auto ptok = v.GetBlockDecorator(ideco);
 
-			if( is_vtx )
+			auto it_ub = mpContainer->mUniformBlocks.find(ptok->text);
+
+			if( it_ub != mpContainer->mUniformBlocks.end() )
+			{
+				psi->mUniformBlockSet.insert(it_ub->second);
+			}
+			else if( is_vtx )
 			{
 				auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
 				assert(it_vi!=mpContainer->mVertexInterfaces.end());
@@ -249,13 +337,21 @@ struct GlSlFxParser
 			{	
 				auto it_fig = mpContainer->mGeometryInterfaces.find(ptok->text);
 				auto it_fiv = mpContainer->mVertexInterfaces.find(ptok->text);
+				auto it_fie = mpContainer->mTessEvalInterfaces.find(ptok->text);
 				bool is_geo = (it_fig!=mpContainer->mGeometryInterfaces.end());
 				bool is_vtx = (it_fiv!=mpContainer->mVertexInterfaces.end());
-				assert(is_geo||is_vtx);
+				bool is_tee = (it_fie!=mpContainer->mTessEvalInterfaces.end());
+				assert(is_geo||is_vtx||is_tee);
 
 				auto par = is_geo 
 				         ? it_fig->second 
-					     : it_fiv->second;
+					     : is_vtx
+					     ? it_fiv->second
+					     : is_tee
+					     ? it_fie->second
+					     : nullptr;
+
+				assert( par != nullptr );
 
 				printf( "iface<%s> inherit<%s:%p>\n", 
 					psi->mName.c_str(),
@@ -273,8 +369,8 @@ struct GlSlFxParser
 
 		////////////////////////
 
-		int ist = v.mStart+1;
-		int ien = v.mEnd-1;
+		size_t ist = v.mStart+1;
+		size_t ien = v.mEnd-1;
 
 		for( size_t i=ist; i<=ien; )
 		{
@@ -306,10 +402,10 @@ struct GlSlFxParser
 					bool is_punc = (txt == "(")||(txt == ")")||(txt == ",");
 					has_punc |= is_punc;
 
-					if( is_punc )
+					//if( is_punc )
 						layline += " ";
 					layline += vt_tok->text;
-					if( is_punc )
+					//if( is_punc )
 						layline += " ";
 					done = vt_tok->text == ";";
 					i++;
@@ -328,27 +424,6 @@ struct GlSlFxParser
 						psi->mGsPrimSize = 3;
 				}
 
-			}
-			else if( vt_tok->text == "uniform" )
-			{
-				auto it = psi->mUniforms.find(nam_tok->text);
-				assert(it==psi->mUniforms.end()); // make sure there are no duplicate uniforms
-
-				GlslFxUniform* puni = mpContainer->MergeUniform( nam_tok->text );
-				puni->mTypeName = dt_tok->text;
-				psi->mUniforms[ nam_tok->text ] = puni;
-				if( v.GetToken(i+3)->text=="[" )
-				{
-					assert(v.GetToken(i+5)->text=="]");
-					puni->mArraySize = atoi(v.GetToken(i+4)->text.c_str());
-					printf( "uniname<%s> arraysize<%d>\n", nam_tok->text.c_str(), puni->mArraySize );
-					i += 7;
-					//assert(false);
-				}
-				else
-				{
-					i += 4;
-				}
 			}
 			else if( vt_tok->text == "in" )
 			{
@@ -392,7 +467,20 @@ struct GlSlFxParser
 				pattr->mDirection = "out";
 				pattr->mLocation = iloc;
 				psi->mAttributes[ nam_tok->text ] = pattr;
-				i += 4;
+
+				if( v.GetToken(i+3)->text==";" )
+				{
+					i += 4;
+				}
+				else if( v.GetToken(i+3)->text=="[" )
+				{
+					pattr->mArraySize = atoi( v.GetToken(i+4)->text.c_str() );
+					i += 7;
+				}
+				else
+				{
+					assert(false);
+				}
 			}
 			else if( vt_tok->text == "\n" )
 			{
@@ -601,6 +689,8 @@ struct GlSlFxParser
 		//////////////////////////////////////////////
 
 		bool bvtx = pshader->mShaderType == GL_VERTEX_SHADER;
+		bool btsc = pshader->mShaderType == GL_TESS_CONTROL_SHADER;
+		bool btse = pshader->mShaderType == GL_TESS_EVALUATION_SHADER;
 		bool bgeo = pshader->mShaderType == GL_GEOMETRY_SHADER;
 		bool bfrg = pshader->mShaderType == GL_FRAGMENT_SHADER;
 
@@ -617,8 +707,10 @@ struct GlSlFxParser
 
 				auto it_lib = mpContainer->mLibBlocks.find(ptok->text);
 				auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
-				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
+				auto it_tc = mpContainer->mTessCtrlInterfaces.find(ptok->text);
+				auto it_te = mpContainer->mTessEvalInterfaces.find(ptok->text);
 				auto it_gi = mpContainer->mGeometryInterfaces.find(ptok->text);
+				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
 					
 				if( it_lib != mpContainer->mLibBlocks.end() )
 				{
@@ -631,6 +723,16 @@ struct GlSlFxParser
 					iface = mpContainer->GetVertexInterface( ptok->text );
 					pshader->mpInterface = iface;
 					printf( "VINF <%s>\n", ptok->text.c_str() );
+				}
+				else if( btsc && ( it_tc != mpContainer->mTessCtrlInterfaces.end() ) ) 
+				{	iface = mpContainer->GetTessCtrlInterface( ptok->text );
+					pshader->mpInterface = iface;
+					printf( "TCINF <%s>\n", ptok->text.c_str() );
+				}
+				else if( btse && ( it_te != mpContainer->mTessEvalInterfaces.end() ) ) 
+				{	iface = mpContainer->GetTessEvalInterface( ptok->text );
+					pshader->mpInterface = iface;
+					printf( "TEINF <%s>\n", ptok->text.c_str() );
 				}
 				else if( bgeo && ( it_gi != mpContainer->mGeometryInterfaces.end() ) ) 
 				{	iface = mpContainer->GetGeometryInterface( ptok->text );
@@ -663,7 +765,7 @@ struct GlSlFxParser
 
 		std::string shaderbody;
 
-		size_t iline = 0;
+		size_t iline = 1;
 		FixedString<64> fxstr;
 		auto prline = [&]()
 		{
@@ -674,7 +776,7 @@ struct GlSlFxParser
 
 		prline();
 
-		shaderbody += "#version 330 core\n";
+		shaderbody += "#version 410 core\n";
 
 		for( const auto& preamble_line : iface->mPreamble )
 		{
@@ -686,25 +788,28 @@ struct GlSlFxParser
 		// UNIFORMS
 		///////////////////////
 
-		for( GlslFxStreamInterface::UniMap::const_iterator
-			itu=iface->mUniforms.begin();
-			itu!=iface->mUniforms.end();
-			itu++ )
+		for( const auto& ub : iface->mUniformBlockSet )
 		{
-			prline();
-			GlslFxUniform* pu = itu->second;
-			shaderbody += "uniform ";
-			shaderbody += pu->mTypeName + " ";
-			shaderbody += pu->mName;
-
-			if( pu->mArraySize )
+			for( GlslUniformBlock::UniMap::const_iterator
+				itu=ub->mUniforms.begin();
+				itu!=ub->mUniforms.end();
+				itu++ )
 			{
-				ork::FixedString<32> fxs;
-				fxs.format("[%d]", pu->mArraySize );
-				shaderbody += std::string(fxs.c_str());
-			}
+				prline();
+				GlslFxUniform* pu = itu->second;
+				shaderbody += "uniform ";
+				shaderbody += pu->mTypeName + " ";
+				shaderbody += pu->mName;
 
-			shaderbody += ";\n";
+				if( pu->mArraySize )
+				{
+					ork::FixedString<32> fxs;
+					fxs.format("[%d]", pu->mArraySize );
+					shaderbody += std::string(fxs.c_str());
+				}
+
+				shaderbody += ";\n";
+			}
 		}
 		///////////////////////
 		// ATTRIBUTES
@@ -723,7 +828,8 @@ struct GlSlFxParser
 			if( pa->mArraySize )
 			{
 				ork::FixedString<128> fxs;
-				fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
+				//fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
+				fxs.format("%s[]", pa->mName.c_str() );
 				shaderbody += fxs.c_str();
 			}
 			else
@@ -828,21 +934,35 @@ struct GlSlFxParser
 	///////////////////////////////////////////////////////////
 	GlslFxShaderVtx* ParseFxVertexShader()
 	{
-		GlslFxShaderVtx* pshader = new GlslFxShaderVtx();
+		auto pshader = new GlslFxShaderVtx();
 		itokidx = ParseFxShaderCommon( pshader );
 		return pshader;
 	}
 	///////////////////////////////////////////////////////////
-	GlslFxShaderFrg* ParseFxFragmentShader()
+	GlslFxShaderTsC* ParseFxTessCtrlShader()
 	{
-		GlslFxShaderFrg* pshader = new GlslFxShaderFrg();
+		auto pshader = new GlslFxShaderTsC();
+		itokidx = ParseFxShaderCommon( pshader );
+		return pshader;
+	}
+	///////////////////////////////////////////////////////////
+	GlslFxShaderTsE* ParseFxTessEvalShader()
+	{
+		auto pshader = new GlslFxShaderTsE();
 		itokidx = ParseFxShaderCommon( pshader );
 		return pshader;
 	}
 	///////////////////////////////////////////////////////////
 	GlslFxShaderGeo* ParseFxGeometryShader()
 	{
-		GlslFxShaderGeo* pshader = new GlslFxShaderGeo();
+		auto pshader = new GlslFxShaderGeo();
+		itokidx = ParseFxShaderCommon( pshader );
+		return pshader;
+	}
+	///////////////////////////////////////////////////////////
+	GlslFxShaderFrg* ParseFxFragmentShader()
+	{
+		auto pshader = new GlslFxShaderFrg();
 		itokidx = ParseFxShaderCommon( pshader );
 		return pshader;
 	}
@@ -921,25 +1041,41 @@ struct GlSlFxParser
 			if( vt_tok->text == "vertex_shader" )
 			{
 				std::string vsnam = v.GetToken(i+2)->text;
-				GlslFxShader* pshader = mpContainer->GetVertexProgram( vsnam );
+				auto pshader = mpContainer->GetVertexProgram( vsnam );
 				OrkAssert( pshader != nullptr );
 				ppass->mVertexProgram = pshader;
 				i+=4;
 			}
-			else if( vt_tok->text == "fragment_shader" )
+			else if( vt_tok->text == "tessctrl_shader" )
 			{
 				std::string fsnam = v.GetToken(i+2)->text;
-				GlslFxShader* pshader = mpContainer->GetFragmentProgram( fsnam );
+				auto pshader = mpContainer->GetTessCtrlProgram( fsnam );
 				OrkAssert( pshader != nullptr );
-				ppass->mFragmentProgram = pshader;
+				ppass->mTessCtrlProgram = pshader;
+				i+=4;
+			}
+			else if( vt_tok->text == "tesseval_shader" )
+			{
+				std::string fsnam = v.GetToken(i+2)->text;
+				auto pshader = mpContainer->GetTessEvalProgram( fsnam );
+				OrkAssert( pshader != nullptr );
+				ppass->mTessEvalProgram = pshader;
 				i+=4;
 			}
 			else if( vt_tok->text == "geometry_shader" )
 			{
 				std::string fsnam = v.GetToken(i+2)->text;
-				GlslFxShader* pshader = mpContainer->GetGeometryProgram( fsnam );
+				auto pshader = mpContainer->GetGeometryProgram( fsnam );
 				OrkAssert( pshader != nullptr );
 				ppass->mGeometryProgram = pshader;
+				i+=4;
+			}
+			else if( vt_tok->text == "fragment_shader" )
+			{
+				std::string fsnam = v.GetToken(i+2)->text;
+				auto pshader = mpContainer->GetFragmentProgram( fsnam );
+				OrkAssert( pshader != nullptr );
+				ppass->mFragmentProgram = pshader;
 				i+=4;
 			}
 			else if( vt_tok->text == "state_block" )
@@ -990,7 +1126,7 @@ struct GlSlFxParser
 		while( itokidx<tokens.size() )
 		{
 			const token& tok = tokens[itokidx];
-			printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1, tok.icol+1, tok.text.c_str() );
+			//printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1, tok.icol+1, tok.text.c_str() );
 			
 			if( tok.text == "\n" )
 			{
@@ -1006,20 +1142,35 @@ struct GlSlFxParser
 				auto lb = ParseLibraryBlock();
 				mpContainer->AddLibBlock(lb);
 			}
+			else if( tok.text == "uniform_block" )
+			{
+				auto pif = ParseUniformBlock();
+				mpContainer->AddUniformBlock( pif );
+			}
 			else if( tok.text == "vertex_interface" )
 			{
 				GlslFxStreamInterface* pif = ParseFxInterface(GL_VERTEX_SHADER);
 				mpContainer->AddVertexInterface( pif );
 			}
-			else if( tok.text == "fragment_interface" )
+			else if( tok.text == "tessctrl_interface" )
 			{
-				GlslFxStreamInterface* pif = ParseFxInterface(GL_FRAGMENT_SHADER);
-				mpContainer->AddFragmentInterface( pif );
+				GlslFxStreamInterface* pif = ParseFxInterface(GL_TESS_CONTROL_SHADER);
+				mpContainer->AddTessCtrlInterface( pif );
+			}
+			else if( tok.text == "tesseval_interface" )
+			{
+				GlslFxStreamInterface* pif = ParseFxInterface(GL_TESS_EVALUATION_SHADER);
+				mpContainer->AddTessEvalInterface( pif );
 			}
 			else if( tok.text == "geometry_interface" )
 			{
 				GlslFxStreamInterface* pif = ParseFxInterface(GL_GEOMETRY_SHADER);
 				mpContainer->AddGeometryInterface( pif );
+			}
+			else if( tok.text == "fragment_interface" )
+			{
+				GlslFxStreamInterface* pif = ParseFxInterface(GL_FRAGMENT_SHADER);
+				mpContainer->AddFragmentInterface( pif );
 			}
 			else if( tok.text == "state_block" )
 			{
@@ -1031,15 +1182,25 @@ struct GlSlFxParser
 				GlslFxShaderVtx* pshader = ParseFxVertexShader();
 				mpContainer->AddVertexProgram( pshader );
 			}
-			else if( tok.text == "fragment_shader" )
+			else if( tok.text == "tessctrl_shader" )
 			{
-				GlslFxShaderFrg* pshader = ParseFxFragmentShader();
-				mpContainer->AddFragmentProgram( pshader );
+				GlslFxShaderTsC* pshader = ParseFxTessCtrlShader();
+				mpContainer->AddTessCtrlProgram( pshader );
+			}
+			else if( tok.text == "tesseval_shader" )
+			{
+				GlslFxShaderTsE* pshader = ParseFxTessEvalShader();
+				mpContainer->AddTessEvalProgram( pshader );
 			}
 			else if( tok.text == "geometry_shader" )
 			{
 				GlslFxShaderGeo* pshader = ParseFxGeometryShader();
 				mpContainer->AddGeometryProgram( pshader );
+			}
+			else if( tok.text == "fragment_shader" )
+			{
+				GlslFxShaderFrg* pshader = ParseFxFragmentShader();
+				mpContainer->AddFragmentProgram( pshader );
 			}
 			else if( tok.text == "technique" )
 			{
@@ -1133,5 +1294,3 @@ GlslFxContainer* LoadFxFromFile( const AssetPath& pth )
 /////////////////////////////////////////////////////////////////////////////////////////////////
 }}
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
-#endif

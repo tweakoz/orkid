@@ -12,9 +12,6 @@
 #pragma once
 
 /////////////////////////////
-#define USE_GL3
-#define _USE_GLSLFX
-/////////////////////////////
 #if defined( _WIN32 )
 /////////////////////////////
   #define GLEW_STATIC
@@ -25,34 +22,22 @@
 #elif defined( ORK_OSX )
 /////////////////////////////
   #include <ork/kernel/objc.h>
-  #if defined(USE_GL3)
     #define GL3_PROTOTYPES 1
     #include <OpenGL/gl3.h>
     #include <OpenGL/glext.h>
-  #else
-   #define GL_GLEXT_PROTOTYPES 1
-    #include <OpenGL/gl.h>
-    #include <OpenGL/glext.h>
-  #endif
 /////////////////////////////
 #elif defined( IX )
 /////////////////////////////
-  #include <ork/lev2/qtui/qtui.h>
-  #include <QtCore/QMetaObject>
-	#define GL_GLEXT_PROTOTYPES
+  	#define GL_GLEXT_PROTOTYPES
     #include "glcorearb.h"
     #include <GL/glu.h>
-    #include <GL/glx.h>
 /////////////////////////////
 #endif
 /////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_USE_GLSLFX)
 #include "glfx/glslfxi.h"
 #define GlFxInterfaceType GlslFxInterface
-#endif
-
 /////////////////////////////
 
 #include <ork/lev2/gfx/texman.h>
@@ -501,10 +486,6 @@ protected:
 } }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(GL_MAP_READ_BIT)
-#define HAVE_MAP_BUFFER_RANGE
-#endif
 
 #if ! defined(GL_RGBA16F)
 #define GL_RGBA16F GL_RGBA16F_ARB

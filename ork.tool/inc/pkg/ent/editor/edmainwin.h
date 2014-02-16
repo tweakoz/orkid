@@ -81,6 +81,8 @@ public://
 
 	bool event(QEvent *qevent); /*virtual*/
 
+	void QueueLoadScene( const std::string& filename );
+
 	///////////////////////////////////////////////////////////////////////////
 
 	QDockWidget *  NewCamView( bool bfloat );

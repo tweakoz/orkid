@@ -8,7 +8,8 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_base
+
+uniform_block ublock_vtx
 {
 	uniform mat4        MatM;
 	uniform mat4        MatV;
@@ -26,12 +27,9 @@ vertex_interface vface_base
 	uniform vec4		NoiseFreq;
 	uniform vec4		NoiseAmp;
 }
-///////////////////////////////////////////////////////////////
-geometry_interface gface_base
+
+uniform_block ublock_geo
 {
-	layout (points) in;
-	layout (triangle_strip, max_vertices=4) out; 
-	//
 	uniform mat4 MatP;	
 	uniform mat4 MatV;	
 	uniform mat4 MatMVP;	
@@ -39,8 +37,25 @@ geometry_interface gface_base
 	uniform vec4 User1;
 	uniform vec4 User2;
 }
+
+uniform_block ublock_frg
+{
+	uniform vec4 modcolor;
+	uniform sampler2D ColorMap;
+	uniform sampler3D VolumeMap;
+}
+
+///////////////////////////////////////////////////////////////
+geometry_interface gface_base
+	: ublock_geo
+{
+	layout (points) in;
+	layout (triangle_strip, max_vertices=4) out; 
+	//
+}
 ///////////////////////////////////////////////////////////////
 fragment_interface fface_minimal
+	: ublock_frg
 {
 	in vec4 frg_clr;
 	in vec4 frg_uv0;
@@ -49,10 +64,8 @@ fragment_interface fface_minimal
 	out vec4 out_clr;
 }
 fragment_interface fface_psys
+	: ublock_frg
 {
-	uniform vec4 modcolor;
-	uniform sampler2D ColorMap;
-	uniform sampler3D VolumeMap;
 	//
 	in vec4 frg_clr;
 	in vec4 frg_uv0;
@@ -90,7 +103,8 @@ state_block sb_alpadd
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_bill : vface_base
+vertex_interface vface_bill 
+	: ublock_vtx
 {
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
@@ -212,7 +226,18 @@ geometry_shader gs_billboardquad
 	EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_streak : vface_base
+tessctrl_interface tcface_base
+{
+	layout (vertices=4) out;
+}
+tessctrl_shader tcs_passthru : tcface_base
+{
+	int invid = gl_InvocationID;
+	gl_out[invid].gl_Position = gl_in[invid].gl_Position;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface vface_streak 
+	: ublock_vtx
 {
 	in vec4 position : POSITION;
 	in vec4 normal : NORMAL;

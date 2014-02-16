@@ -78,23 +78,30 @@ void EditorMainWindow::OpenSceneFile()
 	else
 		this->SetReadOnly(false);
 	///////////////////////////////////////////////
+	QueueLoadScene(fname);
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void EditorMainWindow::QueueLoadScene( const std::string& filename )
+{
+	///////////////////////////////////////////////
 	// outer load on concurrent thread
 	///////////////////////////////////////////////
 	auto on_loaded = [=]()
 	{	MainThreadOpQ().push(
 		Op([=]()
 		{
-			SetRecentSceneFile(fname.c_str(),SCENEFILE_DIR);
-			this->mCurrentFileName = FileName;
+			SetRecentSceneFile(filename.c_str(),SCENEFILE_DIR);
+			this->mCurrentFileName = QString(filename.c_str());
 			this->SlotUpdateAll();
 		}));
 	};
 	///////////////////////////////////////////////
 	LoadSceneReq R;
-	R.mFileName = fname;
+	R.mFileName = filename;
 	R.SetOnLoadedOp(on_loaded);
 	mEditorBase.QueueOpASync(R);
-	///////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////

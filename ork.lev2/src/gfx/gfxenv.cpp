@@ -264,9 +264,7 @@ GfxEnv::GfxEnv()
 	GfxTargetCreationParams params;
 	params.miNumSharedVerts = 64<<10;
 
-
 	PushCreationParams( params );
-
 	Texture::RegisterLoaders();
 
 }													   
@@ -280,20 +278,22 @@ void GfxEnv::RegisterWinContext( GfxWindow *pWin )
 
 	auto gfxenvlateinit = [=]()
 	{
+		gLoaderTarget->BeginFrame();
+		ork::lev2::CGfxPrimitives::Init( gLoaderTarget );
 
-	ork::lev2::CGfxPrimitives::Init( pWin->GetContext() );
+		if( 0 != GetRef().mpUIMaterial )
+		{
+			delete GetRef().mpUIMaterial;
+			delete GetRef().mp3DMaterial;
+		}
 
-	if( 0 != GetRef().mpUIMaterial )
-	{
-		delete GetRef().mpUIMaterial;
-		delete GetRef().mp3DMaterial;
-	}
+		mpUIMaterial = new GfxMaterialUI();
+		mp3DMaterial = new GfxMaterial3DSolid();
 
-	mpUIMaterial = new GfxMaterialUI();
-	mp3DMaterial = new GfxMaterial3DSolid();
+		mpUIMaterial->Init( gLoaderTarget );
+		mp3DMaterial->Init( gLoaderTarget );
+		gLoaderTarget->EndFrame();
 
-	mpUIMaterial->Init( pWin->GetContext() );
-	mp3DMaterial->Init( pWin->GetContext() );
 	};
 	MainThreadOpQ().push(gfxenvlateinit);
 	//gfxenvlateinit();

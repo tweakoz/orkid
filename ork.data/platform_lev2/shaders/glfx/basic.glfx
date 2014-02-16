@@ -9,8 +9,8 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault
-	: iface_skintools // inherit skinned unis/attrs
+
+uniform_block ub_vtx
 {
 	uniform mat4 WVPMatrix;
 	uniform mat4 VPMatrix;
@@ -34,8 +34,13 @@ vertex_interface iface_vdefault
 	uniform vec3 EmissiveColor;
 
 	uniform vec3 WCamLoc;
-	uniform float SpecularPower;
+	uniform float SpecularPower;	
+}
 
+vertex_interface iface_vdefault
+	: iface_skintools // inherit skinned unis/attrs
+	: ub_vtx
+{
 	in vec4 position : POSITION;
 	in vec3 normal : NORMAL;
 	in vec2 uv0 : TEXCOORD0;
@@ -52,11 +57,16 @@ fragment_interface iface_fdefault
 	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt
+
+uniform_block ub_frg
 {
 	uniform vec4 modcolor;
-	uniform sampler2D DiffuseMap;
+	uniform sampler2D DiffuseMap;	
+}
 
+fragment_interface iface_fmt
+	: ub_frg
+{
 	in vec4 frg_clr;
 	in vec2 frg_uv0;
 

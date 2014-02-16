@@ -79,6 +79,10 @@ NSOpenGLContext* GlOsxPlatformObject::gShareMaster = nil;
 NSOpenGLPixelFormat* gNSPixelFormat = nil;
 std::vector<NSOpenGLContext*> gWindowContexts;
 
+void check_debug_log()
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxTargetGL::GLinit()
@@ -87,12 +91,7 @@ void GfxTargetGL::GLinit()
 	
 	CGLPixelFormatAttribute attribs[] =
 	{
-	#if defined(USE_GL3)
 		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)kCGLOGLPVersion_3_2_Core,
-	#else
-		kCGLPFAOpenGLProfile, (CGLPixelFormatAttribute)kCGLOGLPVersion_Legacy,
-		kCGLPFAWindow,//(CGLPixelFormatAttribute)true, (implied)
-	#endif
 		kCGLPFADepthSize, (CGLPixelFormatAttribute)24,
 		kCGLPFANoRecovery,
 		kCGLPFAColorSize, (CGLPixelFormatAttribute)24,
@@ -402,10 +401,8 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 
 void GfxTargetGL::MakeCurrentContext( void )
 {
-	//if( 0 == mCtxBase ) return;
-	
-	// GetCtxBase
 	GlOsxPlatformObject* plato = (GlOsxPlatformObject*) mPlatformHandle;
+	
 	if( plato )
 	{
 		plato->mOpQ.Process();

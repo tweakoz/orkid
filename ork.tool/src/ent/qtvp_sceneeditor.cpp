@@ -988,7 +988,7 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 		}
 		pTARG->PopModColor();
 		/////////////////////////////////////////////////
-		if( mEditor.GetActiveSceneInst() )
+		if( 0 ) // mEditor.GetActiveSceneInst() )
 		{
 			//pTARG->IMI()->QueFlush( false );
 			ent::ESceneInstMode emode = mEditor.GetActiveSceneInst()->GetSceneInstMode();

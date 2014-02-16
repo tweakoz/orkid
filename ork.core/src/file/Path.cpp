@@ -13,6 +13,9 @@
 #include <ork/kernel/Array.h>
 #include <ork/kernel/Array.hpp>
 #include <ork/util/stl_ext.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 template class ork::fixedvector< ork::file::Path,8 >;
 bool gbas1 = true;
@@ -1318,6 +1321,37 @@ void Path::Split( NameType& preq, NameType& postq, char sep ) const
 		preq = mPathString;
 		postq.SetChar(0,0);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool Path::DoesPathExist() const
+{
+    struct stat file_stat;
+    int ist = stat( c_str(), & file_stat );
+    printf( "stat<%s> : %d\n", c_str(), ist );
+    return (ist==0);
+}
+bool Path::IsFile() const
+{
+    struct stat file_stat;
+    int ist = stat( c_str(), & file_stat );
+    printf( "stat<%s> : %d\n", c_str(), ist );
+    return (ist==0) ? bool(S_ISREG(file_stat.st_mode)) : false;
+}
+bool Path::IsFolder() const
+{
+    struct stat file_stat;
+    int ist = stat( c_str(), & file_stat );
+    printf( "stat<%s> : %d\n", c_str(), ist );
+    return (ist==0) ? bool(S_ISREG(file_stat.st_mode)) : false;
+}
+bool Path::IsSymLink() const
+{
+    struct stat file_stat;
+    int ist = stat( c_str(), & file_stat );
+    printf( "stat<%s> : %d\n", c_str(), ist );
+    return (ist==0) ? bool(S_ISREG(file_stat.st_mode)) : false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
