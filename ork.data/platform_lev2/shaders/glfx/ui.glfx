@@ -8,10 +8,20 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault
+
+uniform_block ublock_vtx
 {
 	uniform mat4 mvp;
-	//
+}
+uniform_block ublock_frg
+{
+	uniform vec4 ModColor;
+	uniform sampler2D ColorMap;
+}
+
+vertex_interface iface_vdefault
+	: ublock_vtx
+{
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
 	in vec2 uv0 : TEXCOORD0;
@@ -30,10 +40,8 @@ fragment_interface iface_fdefault
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fmt
+	: ublock_frg
 {
-	uniform vec4 ModColor;
-	uniform sampler2D ColorMap;
-	//
 	out vec4 out_clr;
 	//
 	in vec2 frg_uv;

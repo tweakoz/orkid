@@ -1,9 +1,13 @@
 //
 
-vertex_interface iface_skintools
+uniform_block ublock_skinned
 {
 	uniform mat4 BoneMatrices[32];
+}
 
+vertex_interface iface_skintools
+	: ublock_skinned
+{
 	in vec4 boneindices : BONEINDICES;
 	in vec4 boneweights : BONEWEIGHTS;
 }

@@ -6,16 +6,17 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
-#include <ork/lev2/qtui/qtui.h>
-
-#if defined( ORK_CONFIG_OPENGL ) && defined( LINUX ) 
-
-#include <QtGui/QX11Info>
-#include <GL/glx.h>
-
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "gl.h"
+
+
+#if defined( ORK_CONFIG_OPENGL ) && defined( LINUX ) 
+
+#include <ork/lev2/qtui/qtui.h>
+#include <QtCore/QMetaObject>
+#include <QtGui/QX11Info>
+#include <GL/glx.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
 
@@ -90,6 +91,8 @@ static int  g_glx_win_attrlist[] =
 //    GLX_ALPHA_SIZE, 8,
 //    GLX_DEPTH_SIZE, 24,
 //    GLX_STENCIL_SIZE, 8,
+    GLX_SAMPLE_BUFFERS, 1,            // <-- MSAA
+    GLX_SAMPLES, 16,            // <-- MSAA
     GLX_DOUBLEBUFFER, True,
     None
 };
@@ -112,6 +115,8 @@ static int  g_glx_off_attrlist[] =
 //    GLX_ALPHA_SIZE, 8,
 //    GLX_DEPTH_SIZE, 24,
 //    GLX_STENCIL_SIZE, 8,
+    GLX_SAMPLE_BUFFERS, 1,            // <-- MSAA
+    GLX_SAMPLES, 16,            // <-- MSAA
     GLX_DOUBLEBUFFER, True,
     None
 };
@@ -129,24 +134,45 @@ static int  g_glx_off_attrlist[] =
 typedef GLXContext (*glXcca_proc_t)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 static GLXFBConfig gl_this_fb_config;
 static glXcca_proc_t GLXCCA = nullptr;
+PFNGLPATCHPARAMETERIPROC GLPPI = nullptr;
 
-
-#if defined(USE_GL3)
 
 static int gl3_context_attribs[] =
 {
-    GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-    GLX_CONTEXT_MINOR_VERSION_ARB, 2,
-    None
-};
-#else
-static int gl3_context_attribs[] =
-{
-    GLX_CONTEXT_MAJOR_VERSION_ARB, 1,
+    GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
     GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+    GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+#if 1
+    GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_DEBUG_BIT_ARB,
+#endif
     None
 };
-#endif
+
+void check_debug_log()
+{
+    GLuint count = 1024; // max. num. of messages that will be read from the log
+    GLsizei bufsize = 32768;
+    GLenum sources[count];
+    GLenum types[count];
+    GLuint ids[count];
+    GLenum severities[count];
+    GLsizei lengths[count];
+    GLchar messageLog[bufsize];
+    
+    auto retVal = glGetDebugMessageLogARB( count, bufsize, sources, types,
+                                           ids, severities, lengths, messageLog);
+    if(retVal > 0)
+    {
+        int pos = 0;
+        for(int i=0; i<retVal; i++)
+        {
+            //DebugOutputToFile(sources[i], types[i], ids[i], severities[i],&messageLog[pos]);
+            printf( "GLDEBUG msg<%d:%s>\n", i, & messageLog[pos] );
+
+            pos += lengths[i];
+        }
+    }
+}
 
 void GfxTargetGL::GLinit()
 {
@@ -211,10 +237,13 @@ void GfxTargetGL::GLinit()
     
     GLXCCA =  (glXcca_proc_t) glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
 
-    #if defined(USE_GL3)
+    GLPPI = (PFNGLPATCHPARAMETERIPROC) glXGetProcAddress((const GLubyte*)"glPatchParameteri");
+
+    assert( GLPPI!=nullptr );
+
     glXMakeCurrent(x_dpy, 0, 0);
     glXDestroyContext(x_dpy, old_school);
-#endif
+
     if (GLXCCA == nullptr)
     {
         printf( "glXCreateContextAttribsARB entry point not found. Aborting.\n");
@@ -226,11 +255,8 @@ void GfxTargetGL::GLinit()
     ///////////////////////////////////////////////////////////////
 
 
-#if 1 //defined(USE_GL3)
     GlIxPlatformObject::gShareMaster = GLXCCA(x_dpy, gl_this_fb_config, NULL, true, gl3_context_attribs);
-#else
-    GlIxPlatformObject::gShareMaster = old_school;
-#endif
+
     glXMakeCurrent(x_dpy, dummy_win, GlIxPlatformObject::gShareMaster);
 
     assert(GlIxPlatformObject::gShareMaster!=nullptr);
@@ -242,11 +268,7 @@ void GfxTargetGL::GLinit()
 	{
 		GlxLoadContext* loadctx = new GlxLoadContext;
 
-#if defined(USE_GL3)
-  GLXContext gctx = GLXCCA(x_dpy,gl_this_fb_config,GlIxPlatformObject::gShareMaster,GL_TRUE,gl3_context_attribs);
-#else
-  GLXContext gctx = glXCreateContext(GlIxPlatformObject::gDisplay,GlIxPlatformObject::gVisInfo,GlIxPlatformObject::gShareMaster,GL_TRUE);
-#endif
+        GLXContext gctx = GLXCCA(x_dpy,gl_this_fb_config,GlIxPlatformObject::gShareMaster,GL_TRUE,gl3_context_attribs);
 
 		loadctx->mGlxContext = gctx;
 		loadctx->mWindow = g_rootwin;
@@ -310,12 +332,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 
 	printf( "GfxTargetGL<%p> dpy<%p> screen<%d> vis<%p>\n", this, x_dpy, x_screen, vinfo );
 
-#if 1 //defined(USE_GL3)
 	plato->mGlxContext = GLXCCA(x_dpy,gl_this_fb_config,plato->gShareMaster,GL_TRUE,gl3_context_attribs);
-	//GlIxPlatformObject::gShareMaster = GLXCCA(x_dpy, this_fb_config, NULL, true, context_attribs);
-#else
-	plato->mGlxContext = glXCreateContext(x_dpy,vinfo,plato->gShareMaster,GL_TRUE);
-#endif
 
 	plato->mDisplay = x_dpy;
 	plato->mXWindowId = pctxW->winId();

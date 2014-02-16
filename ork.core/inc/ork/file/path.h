@@ -183,6 +183,14 @@ class Path
 
 	HashType Hash() const;
 
+	//////////////////////////////////////
+
+	bool DoesPathExist() const;
+	bool IsFile() const;
+	bool IsFolder() const;
+	bool IsSymLink() const;
+
+
 private:
 
 	//////////////////////////////////////

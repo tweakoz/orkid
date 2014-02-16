@@ -91,21 +91,11 @@ int main(int& argc, char **argv)
 
 		//////////////////////////////////////////
 		
-		if( toklist.empty() )
+		if( toklist.empty() || toklist.front() == std::string("-edit") )
 		{
 			MySetToolDataFolder();
 			//////////////////////////////////////////
 			#if defined( ORK_CONFIG_QT )
-			//ork::lev2::CAnimManager::GetRef().SetLoaderMode( ork::ELOADMODE_FILTER );
-			ork::tool::QtTest( argc, argv, false, false );
-			#endif
-		}
-		else if((argc == 1) || (toklist.front() == std::string("-editor")))
-		{
-			MySetToolDataFolder();
-			//////////////////////////////////////////
-			#if defined( ORK_CONFIG_QT )
-			//ork::lev2::CAnimManager::GetRef().SetLoaderMode( ork::ELOADMODE_FILTER );
 			ork::tool::QtTest( argc, argv, false, false );
 			#endif
 		}
