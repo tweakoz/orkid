@@ -1,0 +1,327 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "330";
+}
+///////////////////////////////////////////////////////////////
+// Uniform Blocks
+///////////////////////////////////////////////////////////////
+uniform_block ublock_vtx
+{
+	uniform mat4        MatM;
+	uniform mat4        MatV;
+	uniform mat4        MatP;
+	uniform mat4        MatMV;
+	uniform mat4        MatMVP;
+	uniform mat4        MatAux;
+	uniform vec4		modcolor;
+	uniform vec4        User0;
+	uniform vec4        User1;
+	uniform vec4        User2;
+	uniform vec4        User3;
+	uniform float		Time;
+	uniform vec4		NoiseShift;
+	uniform vec4		NoiseFreq;
+	uniform vec4		NoiseAmp;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ublock_geo
+{
+	uniform mat4 MatP;	
+	uniform mat4 MatV;	
+	uniform mat4 MatMVP;	
+	uniform vec4 User0;
+	uniform vec4 User1;
+	uniform vec4 User2;
+	uniform vec4 User3;
+}
+uniform_block ublock_frg
+{
+	uniform vec4 User3;
+	uniform vec4 modcolor;
+	uniform sampler2D ColorMap;
+	uniform sampler3D VolumeMap;
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default
+{
+	inherits default;
+	//DepthTest=LEQUALS;
+	//DepthMask=true;
+	//CullTest=PASS_FRONT;
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+vertex_interface vface_vbas : ublock_vtx
+{
+	in vec4 position : POSITION;
+	in vec4 normal : NORMAL;
+	in vec4 binormal : BINORMAL;
+	in vec4 vtxcolor : COLOR0;
+	in vec4 uv0 : TEXCOORD0;
+}
+
+
+vertex_interface vface_vt : vface_vbas
+{
+	layout (location = 0) out vec4 vtx_pos;
+	layout (location = 1) out vec4 vtx_nrm;
+	layout (location = 2) out vec4 vtx_clr;
+	layout (location = 3) out vec4 vtx_uv0;
+}
+vertex_shader vs_fb1
+	: vface_vt
+{
+	//gl_Position = position;
+	vtx_pos = position;
+	vtx_nrm = normal;
+	vtx_clr = vtxcolor.bgra;
+	vtx_uv0 = uv0;
+}
+vertex_interface vface_vp : vface_vbas
+{
+	out vec4 frg_clr;
+	out vec4 frg_uv0;
+}
+vertex_shader vs_fbp
+	: vface_vp
+{
+	gl_Position = MatMVP*position;
+	frg_clr = vtxcolor.bgra;
+	frg_uv0 = uv0;
+}
+
+libblock lb1 
+{
+}
+
+///////////////////////////////////////////////////////////////
+tessctrl_interface tcface_base
+	: ublock_vtx
+{
+	layout (vertices=3) out;
+
+	layout (location = 0) in vec4 vtx_pos[];
+	layout (location = 1) in vec4 vtx_nrm[];
+	layout (location = 2) in vec4 vtx_clr[];
+	layout (location = 3) in vec4 vtx_uv0[];
+	//
+	layout (location = 0) out vec4 tec_pos[3];
+	layout (location = 1) out vec4 tec_nrm[3];
+	layout (location = 2) out vec4 tec_clr[3];
+	layout (location = 3) out vec4 tec_uv0[3];
+}
+tessctrl_shader tcs_fb1 
+	: tcface_base
+	: lb1
+{
+	#define iid gl_InvocationID
+
+	tec_pos[iid] = vtx_pos[iid];
+	tec_nrm[iid] = vtx_nrm[iid];
+	tec_clr[iid] = vtx_clr[iid];
+	tec_uv0[iid] = vtx_uv0[iid];
+
+	if( iid==0 )
+	{
+		vec4 p0 = mix(vtx_pos[0],vtx_pos[1],0.5);
+		vec4 p1 = mix(vtx_pos[1],vtx_pos[2],0.5);
+		vec4 p2 = mix(vtx_pos[2],vtx_pos[3],0.5);
+
+		mat4 view_model = inverse(MatMV);
+  		vec3 camera_pos = view_model[3].xyz;
+
+		vec3 mpp0 = (MatM*p0).xyz;
+		vec3 mpp1 = (MatM*p1).xyz;
+		vec3 mpp2 = (MatM*p2).xyz;
+
+		float dist0 = distance(camera_pos,mpp0);
+		float dist1 = distance(camera_pos,mpp1);
+		float dist2 = distance(camera_pos,mpp2);
+
+
+		float dist_sc = 0.08;
+		float flev0 = 64.0/(dist0*dist_sc);
+		float flev1 = 64.0/(dist1*dist_sc);
+		float flev2 = 64.0/(dist2*dist_sc);
+
+		float flev = (flev0+flev1+flev2)*0.333333;
+
+		gl_TessLevelOuter[0] = flev0;
+		gl_TessLevelOuter[1] = flev1;
+		gl_TessLevelOuter[2] = flev2;
+		gl_TessLevelInner[0] = flev;
+	}
+}
+libblock fns
+{
+	highp float rand(vec2 co)
+	{
+    	highp float a = 12.9898;
+    	highp float b = 78.233;
+    	highp float c = 43758.5453;
+    	highp float dt= dot(co.xy ,vec2(a,b));
+    	highp float sn= mod(dt,3.14);
+    	return fract(sin(sn) * c);
+	}
+
+	float amplify(float d, float scale, float offset)
+	{
+	    d = scale * d + offset;
+	    d = clamp(d, 0, 1);
+	    d = 1 - exp2(-2*d*d);
+	    return d;
+	}
+}
+///////////////////////////////////////////////////////////////
+tesseval_interface teface_base
+	: ublock_vtx
+{
+	layout (triangles,equal_spacing,ccw) in;
+	//layout (points) out;
+	//
+	layout (location = 0) in vec4 tec_pos[];
+	layout (location = 1) in vec4 tec_nrm[];
+	layout (location = 2) in vec4 tec_clr[];
+	layout (location = 3) in vec4 tec_uv0[];
+	//
+	layout (location = 0) out vec4 tee_pos;
+	layout (location = 1) out vec4 tee_clr;
+	layout (location = 2) out vec4 tee_patchdist;
+}
+tesseval_shader tes_fb1
+	: teface_base
+	: fns
+{
+	vec3 tessc = gl_TessCoord.xyz;
+	vec3 n0 = normalize(tec_nrm[0].xyz);
+	vec3 n1 = normalize(tec_nrm[1].xyz);
+	vec3 n2 = normalize(tec_nrm[2].xyz);
+	vec3 p0 = n0*User3.z;
+	vec3 p1 = n1*User3.z;
+	vec3 p2 = n2*User3.z;
+
+	vec3 pb = tessc.x*p0+tessc.y*p1+tessc.z*p2;
+	vec3 n = normalize(tessc.x*n0+tessc.y*n1+tessc.z*n2);
+
+	float tsc = 0.3;
+	float fphia = tessc.x+Time*tsc;
+	float fphib = tessc.y+Time*2.0*tsc;
+
+	float displacement = User3.y;
+	displacement += sin(fphia*3.14*4.0);
+	displacement += sin(fphib*3.14*4.0);
+
+	tee_pos = vec4(pb+n*displacement,1.0);
+	tee_clr = vec4(n.xyz,1.0);
+	
+	tee_patchdist = vec4( tessc.xyz, 1.0 );
+
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+geometry_interface gface_base 
+	: ublock_geo
+{
+	layout (triangles) in;
+	layout (triangle_strip, max_vertices=3) out; 
+	//
+	layout (location = 0) in vec4 tee_pos[];
+	layout (location = 1) in vec4 tee_clr[];
+	layout (location = 2) in vec4 tee_patchdist[];
+	//
+	layout (location = 1) out vec4 geo_clr;
+	layout (location = 2) out vec4 geo_uv0;
+	layout (location = 3) out vec3 geo_patchdist;
+	layout (location = 4) out vec3 geo_tridist;
+}
+geometry_shader gs_identity 
+	: gface_base
+{
+	for( int n=0; n<gl_in.length(); n++ )
+	{
+		gl_Position = MatMVP*tee_pos[n];
+		geo_clr = tee_clr[n];
+		geo_uv0 = vec4(0.0,0.0,0.0,0.0);
+		geo_patchdist = tee_patchdist[n].xyz;
+		EmitVertex();
+	}
+	EndPrimitive();
+}
+geometry_shader gs_fb1
+	: gface_base
+{
+	geo_clr = (tee_clr[0]+tee_clr[1]+tee_clr[2])*0.33;
+	//geo_uv0 = tee_uv0[0];
+
+	gl_Position = MatMVP*tee_pos[0];
+	geo_patchdist = tee_patchdist[0].xyz;
+	geo_tridist = vec3(1,0,0);
+	EmitVertex();
+	gl_Position = MatMVP*tee_pos[1];
+	geo_patchdist = tee_patchdist[1].xyz;
+	geo_tridist = vec3(0,1,0);
+	EmitVertex();
+	gl_Position = MatMVP*tee_pos[2];
+	geo_patchdist = tee_patchdist[2].xyz;
+	geo_tridist = vec3(0,0,1);
+	EmitVertex();
+
+	EndPrimitive();
+}
+///////////////////////////////////////////////////////////////
+fragment_interface fface_fb1
+	: ublock_frg
+{
+	layout (location = 1) in vec4 geo_clr;
+	layout (location = 2) in vec4 geo_uv0;
+	layout (location = 3) in vec3 geo_patchdist;
+	layout (location = 4) in vec3 geo_tridist;
+	//
+	out vec4 out_clr;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_fb1 
+	: fface_fb1
+	: fns
+{
+	float min_d1 = min(min(geo_patchdist.x,geo_patchdist.y),geo_patchdist.z);
+	float min_d2 = min(min(geo_tridist.x,geo_tridist.y),geo_tridist.z);
+
+	float ds = 1.0 + User3.x*4.0;
+	float d1 = amplify(min_d1,50, -0.5);
+	float d2 = amplify(min_d2/ds,40, -0.5);
+	float d = d1*d2;
+
+	vec3 c = geo_clr.xyz;
+	vec3 c2 = mix( vec3(1,1,1), c, d1 );
+	vec3 c3 = mix( c2, vec3(0,0,0), d2 );
+
+	//out_clr = vec4(geo_clr.xyz*min_d,1.0);
+	out_clr = vec4(c3,1.0);
+}
+///////////////////////////////////////////////////////////////
+technique fb1
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_fb1;
+		tessctrl_shader=tcs_fb1;
+		tesseval_shader=tes_fb1;
+		geometry_shader=gs_fb1;
+		fragment_shader=ps_fb1;
+		state_block=sb_default;
+	}
+}
+technique fb_pnt
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_fbp;
+		fragment_shader=ps_fb1;
+		state_block=sb_default;
+	}
+}
+///////////////////////////////////////////////////////////////

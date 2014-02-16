@@ -25,28 +25,16 @@ namespace ork { namespace lev2 {
 //	GL Vertex Buffer Implementation
 ///////////////////////////////////////////////////////////////////////////////
 
-#if !defined(HAVE_MAP_BUFFER_RANGE)&&defined(USE_GL3)
-#define HAVE_MAP_BUFFER_RANGE
-#endif
-
 enum edynvbopath
 {
 	EVB_BUFFER_SUBDATA = 0,
-#if defined(HAVE_MAP_BUFFER_RANGE)
 	EVB_MAP_BUFFER_RANGE,
-#endif
 #if defined(ORK_OSX)
 	EVB_APPLE_FLUSH_RANGE, // seems broken
 #endif
 };
 
-#if defined(ORK_OSX) && !defined(USE_GL3)
-static edynvbopath gDynVboPath = EVB_APPLE_FLUSH_RANGE;
-#define glGenVertexArrays glGenVertexArraysAPPLE 
-#define glBindVertexArray glBindVertexArrayAPPLE 
-#else
 static edynvbopath gDynVboPath = EVB_MAP_BUFFER_RANGE;
-#endif
 
 void GfxTargetGL::TakeThreadOwnership()
 {
@@ -238,30 +226,10 @@ struct GLVtxBufHandle
 		{
 			case EVB_BUFFER_SUBDATA:
 				break;
-#if defined(HAVE_MAP_BUFFER_RANGE)
 			case EVB_MAP_BUFFER_RANGE:
 			{	
-				/*
-				GLuint gl_BUFFER_SERIALIZED_MODIFY_APPLE = 0x8A12;
-        		GLuint gl_BUFFER_FLUSHING_UNMAP_APPLE = 0x8A13;
-				glBufferParameteriAPPLE(GL_ARRAY_BUFFER, gl_BUFFER_SERIALIZED_MODIFY_APPLE, GL_FALSE);
-				GL_ERRORCHECK();
-				glBufferParameteriAPPLE(GL_ARRAY_BUFFER, gl_BUFFER_FLUSHING_UNMAP_APPLE, GL_FALSE);
-				GL_ERRORCHECK();
-				*/
 				break;
 			}
-#elif defined(ORK_OSX)
-			case EVB_APPLE_FLUSH_RANGE:
-			{	GLuint gl_BUFFER_SERIALIZED_MODIFY_APPLE = 0x8A12;
-        		GLuint gl_BUFFER_FLUSHING_UNMAP_APPLE = 0x8A13;
-				glBufferParameteriAPPLE(GL_ARRAY_BUFFER, gl_BUFFER_SERIALIZED_MODIFY_APPLE, GL_FALSE);
-				GL_ERRORCHECK();
-				glBufferParameteriAPPLE(GL_ARRAY_BUFFER, gl_BUFFER_FLUSHING_UNMAP_APPLE, GL_FALSE);
-				GL_ERRORCHECK();
-				break;
-			}
-#endif
 		}
 
 		//////////////////////////////////////////////
@@ -285,7 +253,9 @@ GlGeometryBufferInterface::GlGeometryBufferInterface( GfxTargetGL& target )
 
 static void ClearVao()
 {
+	GL_ERRORCHECK();
 	glBindVertexArray(0);
+	GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -294,6 +264,7 @@ void* GlGeometryBufferInterface::LockVB( VertexBufferBase & VBuf, int ibase, int
 {
 	mTargetGL.MakeCurrentContext();
 
+	GL_ERRORCHECK();
 
 	OrkAssert( false == VBuf.IsLocked() );
 
@@ -315,6 +286,8 @@ void* GlGeometryBufferInterface::LockVB( VertexBufferBase & VBuf, int ibase, int
 
 	int ibasebytes = ibase*VBuf.GetVtxSize();
 	int isizebytes = icount*VBuf.GetVtxSize();
+
+	GL_ERRORCHECK();
 
 	ClearVao();
 
@@ -352,23 +325,14 @@ void* GlGeometryBufferInterface::LockVB( VertexBufferBase & VBuf, int ibase, int
 
 			switch( gDynVboPath )
 			{
-#if defined(HAVE_MAP_BUFFER_RANGE)
 				case EVB_MAP_BUFFER_RANGE:
 					//rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT ); // MAP_UNSYNCHRONIZED_BIT?
-					rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT); // MAP_UNSYNCHRONIZED_BIT?
+					rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_FLUSH_EXPLICIT_BIT|GL_MAP_UNSYNCHRONIZED_BIT); // MAP_UNSYNCHRONIZED_BIT?
 					//rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT ); // MAP_UNSYNCHRONIZED_BIT?
 					GL_ERRORCHECK();
 					OrkAssert( rVal );
 					//rVal = (void*) (((char*)rVal)+ibasebytes);
 					break;
-#elif defined(ORK_OSX)
-				case EVB_APPLE_FLUSH_RANGE:
-					rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY );
-					GL_ERRORCHECK();
-					OrkAssert( rVal );
-					rVal = (void*) (((char*)rVal)+ibasebytes);
-					break;
-#endif
 				case EVB_BUFFER_SUBDATA:
 				{	GlVtxBufMapPool* pool = GetBufMapPool();
 					hBuf->mMappedRegion = pool->GetVbmd(isizebytes);
@@ -431,20 +395,11 @@ const void* GlGeometryBufferInterface::LockVB( const VertexBufferBase & VBuf, in
 
 	if( isizebytes )
 	{
-#if defined(HAVE_MAP_BUFFER_RANGE)
 		rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_READ_BIT); // MAP_UNSYNCHRONIZED_BIT?
 		OrkAssert( rVal );
 		OrkAssert( rVal!=(void*)0xffffffff );
 		hBuf->miLockBase = ibase;
 		hBuf->miLockCount = icount;
-#else
-		rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_READ_ONLY );
-		OrkAssert( rVal );
-		rVal = (void*) (((char*)rVal)+ibasebytes);
-		hBuf->miLockBase = ibasebytes;
-		hBuf->miLockCount = isizebytes;
-	#endif
-
 	}
 	
 	GL_ERRORCHECK();
@@ -487,21 +442,11 @@ void GlGeometryBufferInterface::UnLockVB( VertexBufferBase& VBuf )
 
 		switch( gDynVboPath )
 		{
-#if defined(HAVE_MAP_BUFFER_RANGE)
 			case EVB_MAP_BUFFER_RANGE:
 				GL_ERRORCHECK();
 				glFlushMappedBufferRange(GL_ARRAY_BUFFER, (GLintptr)0, countbytes);
 				glUnmapBuffer( GL_ARRAY_BUFFER );
-
 				break;
-#endif
-#if defined(ORK_OSX)
-			case EVB_APPLE_FLUSH_RANGE:
-				glFlushMappedBufferRangeAPPLE(GL_ARRAY_BUFFER, (GLintptr)(basebytes), countbytes);
-				GL_ERRORCHECK();
-				glUnmapBuffer( GL_ARRAY_BUFFER );
-				break;
-#endif
 			case EVB_BUFFER_SUBDATA:
 			{	assert(hBuf->mMappedRegion!=nullptr);
 				glBufferSubData( GL_ARRAY_BUFFER,basebytes,countbytes,hBuf->mMappedRegion->mpData);
@@ -554,11 +499,9 @@ void GlGeometryBufferInterface::ReleaseVB( VertexBufferBase& VBuf )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_USE_GLSLFX)
-///////////////////////////////////////////////////////////////////////////////
 struct vtx_config
 {
-	const std::string 		mName;
+	const std::string 		mSemantic;
 	const int         		mNumComponents;
 	const GLenum      		mType;
 	const bool        		mNormalize;
@@ -571,14 +514,16 @@ struct vtx_config
 		uint32_t rval = 0;
 		if( mPass != pfxpass )
 		{
-			const auto& it = pfxpass->mAttributes.find(mName);
-			if(it!=pfxpass->mAttributes.end())
+			const auto& it = pfxpass->mVtxAttributesBySemantic.find(mSemantic);
+			if(it!=pfxpass->mVtxAttributesBySemantic.end())
 			{
+				printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> found!\n", pfxpass, mSemantic.c_str(), istride );
 				mAttr = it->second;
 			}
 			else
 			{
-				printf( "gbi::bind_attr attr<%s> istride<%d> not found!\n", mName.c_str(), istride );
+				printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> NOT found!\n", pfxpass, mSemantic.c_str(), istride );
+				//assert(false);
 			}
 			mPass = pfxpass;
 		}
@@ -615,7 +560,7 @@ struct vtx_config
 		}
 	}
 };
-#endif // _USE_GLSLFX
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t priv_data)
@@ -640,66 +585,10 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	switch( eStrFmt )
 	{
 		case lev2::EVTXSTREAMFMT_V12N12B12T16:
-		{
-			/*
-			// VNB
-			if( 0 )
-			{
-				GL_ERRORCHECK();
-				glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, iStride, (void*) 0 );
-				GL_ERRORCHECK();
-				glEnableVertexAttribArray( 0 );
-				GL_ERRORCHECK();
-			}
-			else
-			{
-
-				GL_ERRORCHECK();
-				glEnableClientState( GL_VERTEX_ARRAY );
-				glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );
-
-				glNormalPointer( GL_FLOAT, iStride, (void*) 12 );	
-				glEnableClientState( GL_NORMAL_ARRAY );
-				glClientActiveTextureARB(GL_TEXTURE2);
-				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 3, GL_FLOAT,	iStride, (void*) 24 );	// T8
-				// UV01
-				glClientActiveTextureARB(GL_TEXTURE0);
-				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 2, GL_FLOAT,	iStride, (void*) 36 );	// T8
-				glClientActiveTextureARB(GL_TEXTURE1);
-				glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-				glTexCoordPointer( 2, GL_FLOAT,	iStride, (void*) 48 );	// T8
-
-				glDisableClientState( GL_COLOR_ARRAY );
-				glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			}
-			rval = true;*/
-			break;
+		{	break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12B12T8I4W4:
-		{	/*
-			glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glNormalPointer( GL_FLOAT, iStride, (void*) 12 );	
-			glEnableClientState( GL_NORMAL_ARRAY );
-			//glBinormalPointerARB( GL_FLOAT, iStride, (void*) 24 );	
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 3, GL_FLOAT,	iStride, (void*) 24 );	// T8
-			//glEnableClientState( GL_BINORMAL_ARRAY_ARB );
-
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glTexCoordPointer( 2, GL_FLOAT,	iStride, (void*) 36 );	// T8
-
-			glDisableClientState( GL_COLOR_ARRAY );
-			//glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 40 );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			rval = true;*/
-			break;
+		{	break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12T8I4W4:
 		{	
@@ -716,50 +605,10 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			break;
 		}
 		case EVTXSTREAMFMT_V12C4N6I2T8:
-		{	/*
-
-			glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );	// V12
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 12 );	// C4
-			glNormalPointer( GL_SHORT, iStride, (void*) 16 );	// N6
-			GL_ERRORCHECK();
-
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glEnableClientState( GL_COLOR_ARRAY );
-			glEnableClientState( GL_NORMAL_ARRAY );
-
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			rval = true;*/
-			break;
+		{	break;
 		}
 		case EVTXSTREAMFMT_V12I4N12T8:
-		{	/*
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glTexCoordPointer( 2, GL_FLOAT,	iStride, (void*) 28 );	// T8
-
-			glVertexPointer( 3, GL_FLOAT, iStride, (void*) 0 );	// V12
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 12 );	// C4
-			glNormalPointer( GL_FLOAT, iStride, (void*) 16 );	// N6
-			GL_ERRORCHECK();
-
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glEnableClientState( GL_COLOR_ARRAY );
-			glEnableClientState( GL_NORMAL_ARRAY );
-
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			rval = true;*/
-			break;
+		{	break;
 		}
 		case EVTXSTREAMFMT_V12N12B12T8C4:
 		{
@@ -803,69 +652,17 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			break;
 		}
 		case EVTXSTREAMFMT_V4C4:
-		{
-			/*glVertexPointer( 2, GL_SHORT, iStride, (void*) 0 );
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 4);
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glEnableClientState( GL_COLOR_ARRAY );
-
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			glDisableClientState( GL_NORMAL_ARRAY );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );*/
-			rval = false;
-
+		{	rval = false;
 			break;
 		}
 		case EVTXSTREAMFMT_V4T4:
-		{
-			/*glVertexPointer( 2, GL_SHORT, iStride, (void*) 0 );
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glTexCoordPointer( 2, GL_SHORT,	iStride, (void*) 4 );
-
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glEnableClientState( GL_VERTEX_ARRAY );
-
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			glDisableClientState( GL_NORMAL_ARRAY );
-			glDisableClientState( GL_COLOR_ARRAY );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );*/
-			rval = false;
-
-
+		{	rval = false;
 			break;
 		}
 		case EVTXSTREAMFMT_V4T4C4:
-		{
-			/*glVertexPointer( 2, GL_SHORT, iStride, (void*) 0 );
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glTexCoordPointer( 2, GL_SHORT,	iStride, (void*) 4 );
-			glColorPointer( 4, GL_UNSIGNED_BYTE, iStride, (void*) 8 );
-
-			glClientActiveTextureARB(GL_TEXTURE0);
-			glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-			glEnableClientState( GL_VERTEX_ARRAY );
-			glEnableClientState( GL_COLOR_ARRAY );
-			
-			glClientActiveTextureARB(GL_TEXTURE1);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-			glDisableClientState( GL_NORMAL_ARRAY );
-			glDisableClientState( GL_SECONDARY_COLOR_ARRAY );
-			glClientActiveTextureARB(GL_TEXTURE2);
-			glDisableClientState( GL_TEXTURE_COORD_ARRAY );*/
-			rval = false;
-
+		{	rval = false;
 			break;
 		}
-
 		default:
 		{	OrkAssert(false);
 			break;
@@ -873,9 +670,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	}
 	GL_ERRORCHECK();
 	//////////////////////////////////////////////
-	#if defined(USE_GL3)
 	vtx_config::enable_attrs(component_mask);
-	#endif
 	//////////////////////////////////////////////
 	if( false == rval )
 	{
@@ -1110,7 +905,20 @@ void GlGeometryBufferInterface::DrawPrimitiveEML( const VertexBufferBase& VBuf, 
 				break;
 			case EPRIM_POINTS:
 				GL_ERRORCHECK();
+				glPointSize( 32.0f );
 				glDrawArrays( GL_POINTS, ivbase, inum );
+				GL_ERRORCHECK();
+				break;
+			case EPRIM_PATCHES:
+				GL_ERRORCHECK();
+				glPointSize( 32.0f );
+				#if defined(ORK_OSX)
+				glPatchParameteri( GL_PATCH_VERTICES, 3 );
+				#else
+				extern PFNGLPATCHPARAMETERIPROC GLPPI;
+				GLPPI( GL_PATCH_VERTICES, 3 );
+				#endif
+				glDrawArrays( GL_PATCHES, ivbase, inum );
 				GL_ERRORCHECK();
 				break;
 /*			case EPRIM_POINTSPRITES:

@@ -156,7 +156,7 @@ void GlFrameBufferInterface::DoEndFrame( void )
 	}
 	else
 	{
-		//glFinish();
+		glFinish();
 		mTargetGL.SwapGLContext(mTargetGL.GetCtxBase());
 	}
 	////////////////////////////////

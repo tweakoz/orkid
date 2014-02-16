@@ -8,11 +8,15 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault
+uniform_block ub_vtx
 {
 	uniform mat4 mvp;
 	uniform vec4 modcolor;
 	uniform float time;
+}
+vertex_interface iface_vdefault
+	: ub_vtx
+{
 	//
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
@@ -31,7 +35,7 @@ fragment_interface iface_fdefault
 	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt
+uniform_block ub_frg
 {
 	uniform vec4 ModColor;
 	uniform float time;
@@ -46,11 +50,13 @@ fragment_interface iface_fmt
 	uniform sampler2D AuxMap0;
 	uniform sampler2D AuxMap1;
 	uniform sampler2D NoiseMap;
-
+}
+fragment_interface iface_fmt
+	: ub_frg
+{
+	in vec2 frg_uv;
 	//
 	out vec4 out_clr;
-	//
-	in vec2 frg_uv;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -253,11 +259,16 @@ fragment_shader ps_standard : iface_fmt
 	out_clr = vec4(texc.xyz,texc.w);
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_blurx
+uniform_block ub_blur
 {
 	uniform float BlurFactor;
 	uniform int BlurFactorI;
-	uniform sampler2D MrtMap0;
+	uniform sampler2D MrtMap0;	
+	uniform sampler2D AuxMap0;
+}
+fragment_interface iface_blurx
+	: ub_blur
+{
 	//
 	out vec4 out_clr;
 	//
@@ -293,11 +304,8 @@ fragment_shader ps_blurx
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_blury
+	: ub_blur
 {
-	uniform float BlurFactor;
-	uniform int BlurFactorI;
-	uniform sampler2D AuxMap0;
-	//
 	out vec4 out_clr;
 	//
 	in vec2 frg_uv;
@@ -338,12 +346,15 @@ fragment_shader ps_hdr_join : iface_fmt
 	out_clr = vec4(full.xyz,1.0); 
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_hdr_join_ghost
+uniform_block ub_ghost
 {
 	uniform float EffectAmount;
 	uniform sampler2D MrtMap0;
-	uniform sampler2D AuxMap1;
-	//
+	uniform sampler2D AuxMap1;	
+}
+fragment_interface iface_hdr_join_ghost
+	: ub_ghost
+{
 	out vec4 out_clr;
 	//
 	in vec2 frg_uv;

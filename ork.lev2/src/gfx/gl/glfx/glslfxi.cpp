@@ -8,7 +8,6 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "../gl.h"
-#if defined(_USE_GLSLFX)
 #include "glslfxi.h"
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
@@ -121,69 +120,63 @@ void GlslFxContainer::AddConfig( GlslFxConfig* pcfg )
 {
 	mConfigs[ pcfg->mName ] = pcfg;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
+void GlslFxContainer::AddUniformBlock( GlslUniformBlock* pif )
+{
+	mUniformBlocks[ pif->mName ] = pif;
+}
 void GlslFxContainer::AddVertexInterface( GlslFxStreamInterface* pif )
 {
 	mVertexInterfaces[ pif->mName ] = pif;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GlslFxContainer::AddFragmentInterface( GlslFxStreamInterface* pif )
+void GlslFxContainer::AddTessCtrlInterface( GlslFxStreamInterface* pif )
 {
-	mFragmentInterfaces[ pif->mName ] = pif;
+	mTessCtrlInterfaces[ pif->mName ] = pif;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
+void GlslFxContainer::AddTessEvalInterface( GlslFxStreamInterface* pif )
+{
+	mTessEvalInterfaces[ pif->mName ] = pif;
+}
 void GlslFxContainer::AddGeometryInterface( GlslFxStreamInterface* pif )
 {
 	mGeometryInterfaces[ pif->mName ] = pif;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
+void GlslFxContainer::AddFragmentInterface( GlslFxStreamInterface* pif )
+{
+	mFragmentInterfaces[ pif->mName ] = pif;
+}
 void GlslFxContainer::AddStateBlock( GlslFxStateBlock* psb )
 {
 	mStateBlocks[ psb->mName ] = psb;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
 void GlslFxContainer::AddLibBlock( GlslFxLibBlock* plb )
 {
 	mLibBlocks[ plb->mName ] = plb;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
 void GlslFxContainer::AddTechnique( GlslFxTechnique* ptek )
 {
 	mTechniqueMap[ ptek->mName ] = ptek;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GlslFxContainer::AddVertexProgram( GlslFxShader* psha )
+void GlslFxContainer::AddVertexProgram( GlslFxShaderVtx* psha )
 {
 	mVertexPrograms[ psha->mName ] = psha;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GlslFxContainer::AddFragmentProgram( GlslFxShader* psha )
+void GlslFxContainer::AddTessCtrlProgram( GlslFxShaderTsC* psha )
+{
+	mTessCtrlPrograms[ psha->mName ] = psha;
+}
+void GlslFxContainer::AddTessEvalProgram( GlslFxShaderTsE* psha )
+{
+	mTessEvalPrograms[ psha->mName ] = psha;
+}
+void GlslFxContainer::AddGeometryProgram( GlslFxShaderGeo* psha )
+{
+	mGeometryPrograms[ psha->mName ] = psha;
+}
+void GlslFxContainer::AddFragmentProgram( GlslFxShaderFrg* psha )
 {
 	mFragmentPrograms[ psha->mName ] = psha;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void GlslFxContainer::AddGeometryProgram( GlslFxShader* psha )
-{
-	mGeometryPrograms[ psha->mName ] = psha;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -192,57 +185,61 @@ GlslFxStateBlock* GlslFxContainer::GetStateBlock( const std::string& name ) cons
 	const auto& it = mStateBlocks.find(name);
 	return (it==mStateBlocks.end()) ? nullptr : it->second;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-GlslFxShader* GlslFxContainer::GetVertexProgram( const std::string& name ) const
+GlslFxShaderVtx* GlslFxContainer::GetVertexProgram( const std::string& name ) const
 {
 	const auto& it = mVertexPrograms.find(name);
 	return (it==mVertexPrograms.end()) ? nullptr : it->second;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-GlslFxShader* GlslFxContainer::GetFragmentProgram( const std::string& name ) const
+GlslFxShaderTsC* GlslFxContainer::GetTessCtrlProgram( const std::string& name ) const
 {
-	const auto& it = mFragmentPrograms.find(name);
-	return (it==mFragmentPrograms.end()) ? nullptr : it->second;
+	const auto& it = mTessCtrlPrograms.find(name);
+	return (it==mTessCtrlPrograms.end()) ? nullptr : it->second;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-GlslFxShader* GlslFxContainer::GetGeometryProgram( const std::string& name ) const
+GlslFxShaderTsE* GlslFxContainer::GetTessEvalProgram( const std::string& name ) const
+{
+	const auto& it = mTessEvalPrograms.find(name);
+	return (it==mTessEvalPrograms.end()) ? nullptr : it->second;
+}
+GlslFxShaderGeo* GlslFxContainer::GetGeometryProgram( const std::string& name ) const
 {
 	const auto& it = mGeometryPrograms.find(name);
 	return (it==mGeometryPrograms.end()) ? nullptr : it->second;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
+GlslFxShaderFrg* GlslFxContainer::GetFragmentProgram( const std::string& name ) const
+{
+	const auto& it = mFragmentPrograms.find(name);
+	return (it==mFragmentPrograms.end()) ? nullptr : it->second;
+}
+GlslUniformBlock* GlslFxContainer::GetUniformBlock( const std::string& name ) const
+{
+	const auto& it = mUniformBlocks.find(name);
+	return (it==mUniformBlocks.end()) ? nullptr : it->second;
+}
 GlslFxStreamInterface* GlslFxContainer::GetVertexInterface( const std::string& name ) const
 {
 	const auto& it = mVertexInterfaces.find(name);
 	return (it==mVertexInterfaces.end()) ? nullptr : it->second;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-GlslFxStreamInterface* GlslFxContainer::GetFragmentInterface( const std::string& name ) const
+GlslFxStreamInterface* GlslFxContainer::GetTessCtrlInterface( const std::string& name ) const
 {
-	const auto& it = mFragmentInterfaces.find(name);
-	return (it==mFragmentInterfaces.end()) ? nullptr : it->second;
+	const auto& it = mTessCtrlInterfaces.find(name);
+	return (it==mTessCtrlInterfaces.end()) ? nullptr : it->second;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
+GlslFxStreamInterface* GlslFxContainer::GetTessEvalInterface( const std::string& name ) const
+{
+	const auto& it = mTessEvalInterfaces.find(name);
+	return (it==mTessEvalInterfaces.end()) ? nullptr : it->second;
+}
 GlslFxStreamInterface* GlslFxContainer::GetGeometryInterface( const std::string& name ) const
 {
 	const auto& it = mGeometryInterfaces.find(name);
 	return (it==mGeometryInterfaces.end()) ? nullptr : it->second;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
+GlslFxStreamInterface* GlslFxContainer::GetFragmentInterface( const std::string& name ) const
+{
+	const auto& it = mFragmentInterfaces.find(name);
+	return (it==mFragmentInterfaces.end()) ? nullptr : it->second;
+}
 GlslFxUniform* GlslFxContainer::GetUniform( const std::string& name ) const
 {
 	const auto& it = mUniforms.find(name);
@@ -400,6 +397,7 @@ void GlslFxShader::Compile()
 		glGetShaderInfoLog( mShaderObjectId, sizeof(infoLog), NULL, infoLog );
 		printf( "//////////////////////////////////\n" );
 		printf( "Effect<%s>\n", mpContainer->mEffectName.c_str() );
+		printf( "ShaderType<0x%x>\n", mShaderType );
 		printf( "Shader<%s> InfoLog<%s>\n", mName.c_str(), infoLog );
 		printf( "//////////////////////////////////\n" );
 		printf( "%s\n", c_str );
@@ -431,18 +429,24 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 	if( 0 == container->mActivePass->mProgramObjectId )
 	{
 		GlslFxShader* pvtxshader = container->mActivePass->mVertexProgram;
-		GlslFxShader* pfrgshader = container->mActivePass->mFragmentProgram;
+		GlslFxShader* ptecshader = container->mActivePass->mTessCtrlProgram;
+		GlslFxShader* pteeshader = container->mActivePass->mTessEvalProgram;
 		GlslFxShader* pgeoshader = container->mActivePass->mGeometryProgram;
+		GlslFxShader* pfrgshader = container->mActivePass->mFragmentProgram;
 
 		OrkAssert( pvtxshader!=nullptr );
 		OrkAssert( pfrgshader!=nullptr );
 
 		if( pvtxshader && pvtxshader->IsCompiled() == false )
 			pvtxshader->Compile();
-		if( pfrgshader && pfrgshader->IsCompiled() == false )
-			pfrgshader->Compile();
+		if( ptecshader && ptecshader->IsCompiled() == false )
+			ptecshader->Compile();
+		if( pteeshader && pteeshader->IsCompiled() == false )
+			pteeshader->Compile();
 		if( pgeoshader && pgeoshader->IsCompiled() == false )
 			pgeoshader->Compile();
+		if( pfrgshader && pfrgshader->IsCompiled() == false )
+			pfrgshader->Compile();
 			
 		if( 	pvtxshader->IsCompiled()
 			&&	pfrgshader->IsCompiled() )
@@ -458,6 +462,18 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			glAttachShader( prgo, pvtxshader->mShaderObjectId );
 			GL_ERRORCHECK();
 			
+			if( ptecshader && ptecshader->IsCompiled() )
+			{
+				glAttachShader( prgo, ptecshader->mShaderObjectId );
+				GL_ERRORCHECK();
+			}
+
+			if( pteeshader && pteeshader->IsCompiled() )
+			{
+				glAttachShader( prgo, pteeshader->mShaderObjectId );
+				GL_ERRORCHECK();
+			}
+
 			if( pgeoshader && pgeoshader->IsCompiled() )
 			{
 				glAttachShader( prgo, pgeoshader->mShaderObjectId );
@@ -474,37 +490,55 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			GlslFxStreamInterface* vtx_iface = pvtxshader->mpInterface;
 			GlslFxStreamInterface* frg_iface = pfrgshader->mpInterface;
 			
+			printf( "//////////////////////////////////\n");
+
+			printf( "Linking pass<%p> {\n", ppass );
+
+			if( pvtxshader )
+				printf( "	vtxshader<%s:%p> compiled<%d>\n", pvtxshader->mName.c_str(), pvtxshader, pvtxshader->IsCompiled() );
+			if( ptecshader )
+				printf( "	tecshader<%s:%p> compiled<%d>\n", ptecshader->mName.c_str(), ptecshader, ptecshader->IsCompiled() );
+			if( pteeshader )
+				printf( "	teeshader<%s:%p> compiled<%d>\n", pteeshader->mName.c_str(), pteeshader, pteeshader->IsCompiled() );
 			if( pgeoshader )
-				printf( "Linking vtxshader<%s> geoshader<%s> frgshader<%s>\n", pvtxshader->mName.c_str(), pgeoshader->mName.c_str(), pfrgshader->mName.c_str() );
-			else
-				printf( "Linking vtxshader<%s> frgshader<%s>\n", pvtxshader->mName.c_str(), pfrgshader->mName.c_str() );
+				printf( "	geoshader<%s:%p> compiled<%d>\n", pgeoshader->mName.c_str(), pgeoshader, pgeoshader->IsCompiled() );
+			if( pfrgshader )
+				printf( "	frgshader<%s:%p> compiled<%d>\n", pfrgshader->mName.c_str(), pfrgshader, pfrgshader->IsCompiled() );
+
 
 			if( nullptr == vtx_iface )
 			{
-				printf( "vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str() );
+				printf( "	vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str() );
 				OrkAssert( false );
 			}
 			if( nullptr == frg_iface )
 			{
-				printf( "frgshader<%s> has no interface!\n", pfrgshader->mName.c_str() );
+				printf( "	frgshader<%s> has no interface!\n", pfrgshader->mName.c_str() );
 				OrkAssert( false );
 			}
+
+			printf( "	binding vertex attributes count<%d>\n", int(vtx_iface->mAttributes.size()) );
+
+			//////////////////////////
+			// Bind Vertex Attributes
+			//////////////////////////
 
 			for( const auto& itp : vtx_iface->mAttributes )
 			{
 				GlslFxAttribute* pattr = itp.second;
 				int iloc = pattr->mLocation;
-				printf( "vtxattr<%s> loc<%d> dir<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str() );
+				printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str(), pattr->mSemantic.c_str() );
 				glBindAttribLocation( prgo, iloc, pattr->mName.c_str() );
 				GL_ERRORCHECK();
-				ppass->mAttributeById[iloc] = pattr;
+				ppass->mVtxAttributeById[iloc] = pattr;
+				ppass->mVtxAttributesBySemantic[pattr->mSemantic] = pattr;
 			}
 
 			//////////////////////////
 			// ensure vtx_iface exports what frg_iface imports
 			//////////////////////////
 
-			if( nullptr == pgeoshader )
+			/*if( nullptr == pgeoshader )
 			{
 				for( const auto& itp : frg_iface->mAttributes )
 				{	const GlslFxAttribute* pfrgattr = itp.second;
@@ -520,7 +554,8 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 						OrkAssert( pvtxattr->mTypeName == pfrgattr->mTypeName );
 					}
 				}
-			}
+			}*/
+				
 			//////////////////////////
 
 			GL_ERRORCHECK();
@@ -532,13 +567,17 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			{
 				char infoLog[ 1 << 16 ];
 				glGetProgramInfoLog( prgo, sizeof(infoLog), NULL, infoLog );
-				printf( "//////////////////////////////////\n" );
+				printf( "\n\n//////////////////////////////////\n" );
 				printf( "program InfoLog<%s>\n", infoLog );
-				printf( "//////////////////////////////////\n" );
+				printf( "//////////////////////////////////\n\n" );
 				OrkAssert(false);
 
 			}
 			OrkAssert( linkstat == GL_TRUE );
+
+			printf( "} // linking complete..\n" );
+
+			printf( "//////////////////////////////////\n");
 
 			//////////////////////////
 			// query attr
@@ -564,8 +603,6 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 				//printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf );
 				pattr->meType = atrtyp;
 				//pattr->mLocation = i;
-
-				ppass->mAttributes[pattr->mSemantic] = pattr;
 			}
 
 			//////////////////////////
@@ -1037,4 +1074,3 @@ void GlslFxInterface::BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, c
 
 
 } }
-#endif

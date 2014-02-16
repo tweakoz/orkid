@@ -47,7 +47,7 @@ prepend_env("PYTHONPATH",scripts_dir)
 prepend_env("PATH",bin_dir)
 prepend_env("PATH","%s/bin"%stg_dir)
 prepend_env("LD_LIBRARY_PATH","%s/lib"%stg_dir)
-prepend_env("SITE_SCONS","%s/site_scons"%scripts_dir)
+prepend_env("SITE_SCONS","%s/site_scons/site_tools/"%root_dir)
 sys.path.append(scripts_dir)
 import ork.build.utils as obt
 
