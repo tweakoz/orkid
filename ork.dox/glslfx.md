@@ -17,7 +17,7 @@ An OpenGLes2 version will be coming soon - This is the last prerequisite for get
 	 - "library blocks" - reusable code libraries
 	 - shader "interfaces" - uniform/attribute declarations with semantics
 	 - data inheritance for stateblocks and interfaces
-	 - supports Vertex, Geometry and Fragment shaders
+	 - supports Vertex, Tesselation, Geometry and Fragment shaders
 
 ---
 
