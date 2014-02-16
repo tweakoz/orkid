@@ -231,7 +231,7 @@ struct TexSetter
 				
 				glBindBuffer( GL_PIXEL_UNPACK_BUFFER, PBOOBJ );
 				GL_ERRORCHECK();
-#if defined(HAVE_MAP_BUFFER_RANGE)
+
 				//void* pgfxmem = glMapBuffer( GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY );
 				u32 map_flags = GL_MAP_WRITE_BIT;
 				map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
@@ -241,7 +241,7 @@ struct TexSetter
 				file.Read( pgfxmem, isiz2 );
 				glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 				GL_ERRORCHECK();
-#endif
+
 				////////////////////////
 				// PBO->texture
 				////////////////////////

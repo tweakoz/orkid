@@ -610,6 +610,9 @@ void QCtxWidget::wheelEvent ( QWheelEvent * event )
 
 void QCtxWidget::keyPressEvent ( QKeyEvent * event )
 {
+    if( event->isAutoRepeat() )
+        return;
+
 	auto& uiev = UIEvent();
 	auto gfxwin = uiev.mpGfxWin;
 	auto vp = gfxwin ? gfxwin->GetRootWidget() : nullptr;
@@ -629,7 +632,6 @@ void QCtxWidget::keyPressEvent ( QKeyEvent * event )
 
 	if( (ikeyUNI>=Qt::Key_A) && (ikeyUNI<=Qt::Key_Z) )
 	{
-
 		uiev.miKeyCode = (ikeyUNI-Qt::Key_A)+int('a');
 	}
 	if( ikeyUNI==0x01000004 ) // enter != (Qt::Key_Enter)
@@ -648,6 +650,9 @@ void QCtxWidget::keyPressEvent ( QKeyEvent * event )
 
 void QCtxWidget::keyReleaseEvent ( QKeyEvent * event )
 {
+    if( event->isAutoRepeat() )
+        return;
+
 	auto& uiev = UIEvent();
 	auto gfxwin = uiev.mpGfxWin;
 	auto vp = gfxwin ? gfxwin->GetRootWidget() : nullptr;

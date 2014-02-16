@@ -9,7 +9,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault
+uniform_block ublock_vtx
 {
 	uniform mat4        MatMVP;
 	uniform mat4        MatMV;
@@ -20,7 +20,19 @@ vertex_interface iface_vdefault
 
 	uniform vec4          modcolor;
 	uniform float           Time;
+}
 
+uniform_block ublock_frg
+{
+	uniform vec4 ModColor;
+	uniform sampler2D ColorMap;
+	uniform sampler2D ColorMap2;
+	uniform sampler2D ColorMap3;	
+}
+
+vertex_interface iface_vdefault
+	: ublock_vtx
+{
 	//
 	in vec4 position : POSITION;
 	in vec4 vtxcolor : COLOR0;
@@ -32,6 +44,7 @@ vertex_interface iface_vdefault
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault
+	: ublock_frg
 {
 	in vec4 frg_clr;
 	in vec2 frg_uv;
@@ -40,15 +53,11 @@ fragment_interface iface_fdefault
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fmt
+	: ublock_frg
 {
-	uniform vec4 ModColor;
-	uniform sampler2D ColorMap;
-	uniform sampler2D ColorMap2;
-	uniform sampler2D ColorMap3;
+	in vec2 frg_uv;
 	//
 	out vec4 out_clr;
-	//
-	in vec2 frg_uv;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks

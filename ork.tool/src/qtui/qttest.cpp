@@ -331,7 +331,16 @@ void* BootQtThreadImpl(void* arg_opaq )
 	MainWin.showMaximized();
 
 	gpQtApplication->mpMainWindow = & MainWin;
-	
+
+    file::Path fname;
+
+    for( int i=0; i<args->argc; i++ )
+        if( 0 == strcmp(args->argv[i],"-edit") && (i<args->argc-1) ) 
+            fname = args->argv[++i];
+
+    if( fname.IsFile() )
+        MainWin.QueueLoadScene( fname.c_str() );
+
 	iret = gpQtApplication->exec();
 
 	ork::ent::DrawableBuffer::ClearAndSync();
@@ -339,6 +348,8 @@ void* BootQtThreadImpl(void* arg_opaq )
 	delete paudio;
 
 	delete gpQtApplication;
+
+    gpQtApplication = nullptr;
 
 	///////////////////////////////////////////////////////////////////////////////
 #endif
