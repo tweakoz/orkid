@@ -98,65 +98,6 @@ vertex_shader vs_fbp
 libblock lb1 
 {
 }
-
-///////////////////////////////////////////////////////////////
-tessctrl_interface tcface_base
-	: ublock_vtx
-{
-	layout (vertices=3) out;
-
-	layout (location = 0) in vec4 vtx_pos[];
-	layout (location = 1) in vec4 vtx_nrm[];
-	layout (location = 2) in vec4 vtx_clr[];
-	layout (location = 3) in vec4 vtx_uv0[];
-	//
-	layout (location = 0) out vec4 tec_pos[3];
-	layout (location = 1) out vec4 tec_nrm[3];
-	layout (location = 2) out vec4 tec_clr[3];
-	layout (location = 3) out vec4 tec_uv0[3];
-}
-tessctrl_shader tcs_fb1 
-	: tcface_base
-	: lb1
-{
-	#define iid gl_InvocationID
-
-	tec_pos[iid] = vtx_pos[iid];
-	tec_nrm[iid] = vtx_nrm[iid];
-	tec_clr[iid] = vtx_clr[iid];
-	tec_uv0[iid] = vtx_uv0[iid];
-
-	if( iid==0 )
-	{
-		vec4 p0 = mix(vtx_pos[0],vtx_pos[1],0.5);
-		vec4 p1 = mix(vtx_pos[1],vtx_pos[2],0.5);
-		vec4 p2 = mix(vtx_pos[2],vtx_pos[3],0.5);
-
-		mat4 view_model = inverse(MatMV);
-  		vec3 camera_pos = view_model[3].xyz;
-
-		vec3 mpp0 = (MatM*p0).xyz;
-		vec3 mpp1 = (MatM*p1).xyz;
-		vec3 mpp2 = (MatM*p2).xyz;
-
-		float dist0 = distance(camera_pos,mpp0);
-		float dist1 = distance(camera_pos,mpp1);
-		float dist2 = distance(camera_pos,mpp2);
-
-
-		float dist_sc = 0.08;
-		float flev0 = 64.0/(dist0*dist_sc);
-		float flev1 = 64.0/(dist1*dist_sc);
-		float flev2 = 64.0/(dist2*dist_sc);
-
-		float flev = (flev0+flev1+flev2)*0.333333;
-
-		gl_TessLevelOuter[0] = flev0;
-		gl_TessLevelOuter[1] = flev1;
-		gl_TessLevelOuter[2] = flev2;
-		gl_TessLevelInner[0] = flev;
-	}
-}
 libblock fns
 {
 	highp float rand(vec2 co)
@@ -176,7 +117,78 @@ libblock fns
 	    d = 1 - exp2(-2*d*d);
 	    return d;
 	}
+	float map_dist( float d, float sc, float p )
+	{
+		float rv = pow(d/sc,p)*sc;
+		return rv;
+	}
 }
+///////////////////////////////////////////////////////////////
+tessctrl_interface tcface_base
+	: ublock_vtx
+{
+	layout (vertices=3) out;
+
+	layout (location = 0) in vec4 vtx_pos[];
+	layout (location = 1) in vec4 vtx_nrm[];
+	layout (location = 2) in vec4 vtx_clr[];
+	layout (location = 3) in vec4 vtx_uv0[];
+	//
+	layout (location = 0) out vec4 tec_pos[3];
+	layout (location = 1) out vec4 tec_nrm[3];
+	layout (location = 2) out vec4 tec_clr[3];
+	layout (location = 3) out vec4 tec_uv0[3];
+}
+tessctrl_shader tcs_fb1 
+	: tcface_base
+	: lb1
+	: fns
+{
+	#define iid gl_InvocationID
+
+	tec_pos[iid] = vtx_pos[iid];
+	tec_nrm[iid] = vtx_nrm[iid];
+	tec_clr[iid] = vtx_clr[iid];
+	tec_uv0[iid] = vtx_uv0[iid];
+
+	if( iid==0 )
+	{
+		vec4 p0 = mix(vtx_pos[0],vtx_pos[1],0.5);
+		vec4 p1 = mix(vtx_pos[1],vtx_pos[2],0.5);
+		vec4 p2 = mix(vtx_pos[2],vtx_pos[0],0.5);
+
+		mat4 view_model = inverse(MatMV);
+  		vec3 camera_pos = view_model[3].xyz;
+
+		vec3 mpp0 = (MatM*p0).xyz;
+		vec3 mpp1 = (MatM*p1).xyz;
+		vec3 mpp2 = (MatM*p2).xyz;
+
+		float dist0 = distance(camera_pos,mpp0);
+		float dist1 = distance(camera_pos,mpp1);
+		float dist2 = distance(camera_pos,mpp2);
+
+		dist0 = map_dist( dist0, 100.0, 1.2 );
+		dist1 = map_dist( dist1, 100.0, 1.2 );
+		dist2 = map_dist( dist2, 100.0, 1.2 );
+
+
+		float dist_sc = 0.08;
+		float flev0 = 64.0/(dist0*dist_sc);
+		float flev1 = 64.0/(dist1*dist_sc);
+		float flev2 = 64.0/(dist2*dist_sc);
+
+
+
+		float flev = (flev0+flev1+flev2)*0.333333;
+
+		gl_TessLevelOuter[0] = flev1;
+		gl_TessLevelOuter[1] = flev2;
+		gl_TessLevelOuter[2] = flev0;
+		gl_TessLevelInner[0] = flev;
+	}
+}
+
 ///////////////////////////////////////////////////////////////
 tesseval_interface teface_base
 	: ublock_vtx
@@ -205,12 +217,15 @@ tesseval_shader tes_fb1
 	vec3 p1 = n1*User3.z;
 	vec3 p2 = n2*User3.z;
 
+	vec2 uv = tessc.x*tec_uv0[0].xy+tessc.y*tec_uv0[1].xy+tessc.z*tec_uv0[2].xy;
+
 	vec3 pb = tessc.x*p0+tessc.y*p1+tessc.z*p2;
 	vec3 n = normalize(tessc.x*n0+tessc.y*n1+tessc.z*n2);
 
 	float tsc = 0.3;
-	float fphia = tessc.x+Time*tsc;
-	float fphib = tessc.y+Time*2.0*tsc;
+	float t = Time;
+	float fphia = uv.y+t*tsc;
+	float fphib = uv.y+t*2.0*tsc;
 
 	float displacement = User3.y;
 	displacement += sin(fphia*3.14*4.0);
