@@ -173,12 +173,20 @@ void FnBallArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
                 CVector3 near(0.0f,0.0f,-kdim);
                 CVector3 far(0.0f,0.0f,+kdim);
 
-                auto do_vtx = [&]( const CVector3& pos ) -> vertex_t
+                CVector2 u_top(0.0f,0.0f);
+                CVector2 u_bot(0.0f,1.0f);
+                CVector2 u_lft(0.0f,0.5f);
+                CVector2 u_rht(0.5f,0.5f);
+                CVector2 u_near(0.25f,0.5f);
+                CVector2 u_far(0.75f,0.5f);
+
+                auto do_vtx = [&]( const CVector3& pos,
+                                    const CVector2& uv ) -> vertex_t
                 {
                     return vertex_t( pos,
                                      pos.Normal(),
                                      ori,
-                                     CVector2( 0.0f, 0.0f ),
+                                     uv,
                                      0xffffffff );
 
                 };
@@ -189,25 +197,26 @@ void FnBallArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
                     vw.AddVertex(v2);
                 };
 
-                auto vbot = do_vtx( bot );
-                auto vtop = do_vtx( top );
-                auto vner = do_vtx( near );
-                auto vfar = do_vtx( far );
-                auto vrht = do_vtx( rht );
-                auto vlft = do_vtx( lft );
+                auto vbot = do_vtx( bot, u_bot );
+                auto vtop = do_vtx( top, u_top );
+                auto vner = do_vtx( near, u_near );
+                auto vfar = do_vtx( far, u_far );
+                auto vrht = do_vtx( rht, u_rht );
+                auto vlft = do_vtx( lft, u_lft );
 
                 static const int knumv = 24;
 
                 vw.Lock( targ, &vtxbuf, knumv );
                 {
                     do_tri( vtop, vner, vrht );
-                    do_tri( vtop, vfar, vrht );
+                    do_tri( vtop, vrht, vfar );
                     do_tri( vtop, vner, vlft );
-                    do_tri( vtop, vfar, vlft );
+                    do_tri( vtop, vlft, vfar );
+
                     do_tri( vbot, vner, vrht );
-                    do_tri( vbot, vfar, vrht );
+                    do_tri( vbot, vrht, vfar );
                     do_tri( vbot, vner, vlft );
-                    do_tri( vbot, vfar, vlft );
+                    do_tri( vbot, vlft, vfar );
                 }
                 vw.UnLock(targ);            
 
