@@ -663,7 +663,7 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 {
 	////////////////////////////////
 	if( false == mbHasLightingInterface ) {	return;	}
-	if( false == mpShader ) { return; }
+	if( nullptr == mpShader ) { return; }
 
 	const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
 	const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();

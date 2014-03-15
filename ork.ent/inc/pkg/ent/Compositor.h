@@ -5,9 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
 
-
-#ifndef _PKG_ENT_COMPOSITOR_H
-#define _PKG_ENT_COMPOSITOR_H
+#pragma once
 
 #include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/dataflow/dataflow.h>
@@ -86,13 +84,26 @@ public:
 	void SetTextureA( lev2::Texture* ptex ) { mCurrentTextureA=ptex; }
 	void SetTextureB( lev2::Texture* ptex ) { mCurrentTextureB=ptex; }
 	void SetTextureC( lev2::Texture* ptex ) { mCurrentTextureC=ptex; }
-	void SetWeights( const CVector3& weights ) { mWeights=weights; }
+	void SetLevelA( const CVector4& la ) { mLevelA=la; }
+	void SetLevelB( const CVector4& lb ) { mLevelB=lb; }
+	void SetLevelC( const CVector4& lc ) { mLevelC=lc; }
+	void SetBiasA( const CVector4& ba ) { mBiasA=ba; }
+	void SetBiasB( const CVector4& bb ) { mBiasB=bb; }
+	void SetBiasC( const CVector4& bc ) { mBiasC=bc; }
 	void SetTechnique( const std::string& tek );
 	/////////////////////////////////////////////////
 	lev2::Texture* mCurrentTextureA;
 	lev2::Texture* mCurrentTextureB;
 	lev2::Texture* mCurrentTextureC;
-	CVector3 mWeights;
+	CVector4 mLevelA;
+	CVector4 mLevelB;
+	CVector4 mLevelC;
+	CVector4 mBiasA;
+	CVector4 mBiasB;
+	CVector4 mBiasC;
+
+	const lev2::FxShaderTechnique*	hTekOp2AmulB;
+	const lev2::FxShaderTechnique*	hTekOp2AdivB;
 
 	const lev2::FxShaderTechnique*	hTekBoverAplusC;
 	const lev2::FxShaderTechnique*	hTekAplusBplusC;
@@ -105,7 +116,12 @@ public:
 	
 	const lev2::FxShaderParam*		hMapA;
 	const lev2::FxShaderParam*		hMapB;
-	const lev2::FxShaderParam*		hLevels;
+	const lev2::FxShaderParam*		hLevelA;
+	const lev2::FxShaderParam*		hLevelB;
+	const lev2::FxShaderParam*		hLevelC;
+	const lev2::FxShaderParam*		hBiasA;
+	const lev2::FxShaderParam*		hBiasB;
+	const lev2::FxShaderParam*		hBiasC;
 	const lev2::FxShaderParam*		hMapC;
 	const lev2::FxShaderParam*		hMatMVP;
 	lev2::FxShader*					hModFX;
@@ -179,12 +195,12 @@ public:
 	CompositingNode();
 	~CompositingNode();
 	void Init( lev2::GfxTarget* pTARG, int w, int h );
-	void Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI);
-	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx );
+	void Render(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI);
+	virtual lev2::RtGroup* GetOutput() const { return nullptr; }
+
 private:
 	virtual void DoInit( lev2::GfxTarget* pTARG, int w, int h ) = 0;
-	virtual void DoDraw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) = 0;
-	virtual void DoCompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx ) = 0;
+	virtual void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) = 0;
 
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,12 +222,72 @@ public:
 	~PassThroughCompositingNode();
 private:
 	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
-	void DoDraw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
-	void DoCompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx ); // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+
+	void GetGroup(ork::rtti::ICastable*& val) const;
+	void SetGroup( ork::rtti::ICastable* const & val);
+	lev2::RtGroup* GetOutput() const override;
 
 	CompositingMaterial				mCompositingMaterial;
-	PoolString						mGroup;
+	CompositingGroup*				mGroup;
 	lev2::BuiltinFrameTechniques*	mFTEK;
+};
+///////////////////////////////////////////////////////////////////////////////
+class SeriesCompositingNode : public CompositingNode
+{
+	RttiDeclareConcrete(SeriesCompositingNode, CompositingNode);
+public:
+	SeriesCompositingNode();
+	~SeriesCompositingNode();
+private:
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+
+	void GetNode(ork::rtti::ICastable*& val) const;
+	void SetNode( ork::rtti::ICastable* const & val);
+
+	lev2::RtGroup* GetOutput() const override;
+
+	CompositingMaterial				mCompositingMaterial;
+	CompositingNode*				mNode;
+	lev2::RtGroup*					mOutput;
+	lev2::BuiltinFrameTechniques*	mFTEK;
+};
+///////////////////////////////////////////////////////////////////////////////
+enum EOp2CompositeMode
+{
+	Op2AsumB = 0,
+	Op2AmulB,
+	Op2AdivB,
+	Op2BoverA,
+	Op2AoverB,
+	Op2Asolo,
+	Op2Bsolo,
+};
+class Op2CompositingNode : public CompositingNode
+{
+	RttiDeclareConcrete(Op2CompositingNode, CompositingNode);
+public:
+	Op2CompositingNode();
+	~Op2CompositingNode();
+private:
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+	void GetNodeA(ork::rtti::ICastable*& val) const;
+	void SetNodeA( ork::rtti::ICastable* const & val);
+	void GetNodeB(ork::rtti::ICastable*& val) const;
+	void SetNodeB( ork::rtti::ICastable* const & val);
+	lev2::RtGroup* GetOutput() const override { return mOutput; }
+
+	CompositingNode* mSubA;
+	CompositingNode* mSubB;
+	CompositingMaterial				mCompositingMaterial;
+	lev2::RtGroup*					mOutput;
+	EOp2CompositeMode				mMode;
+	CVector4						mLevelA;
+	CVector4						mLevelB;
+	CVector4						mBiasA;
+	CVector4						mBiasB;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class NodeCompositingTechnique : public CompositingTechnique
@@ -233,6 +309,8 @@ private:
 
 	ork::ObjectMap			mBufferMap;
 	CompositingNode*		mpRootNode;
+	CompositingMaterial		mCompositingMaterial;
+
 	
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -526,4 +604,3 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace { ork { namespace ent {
-#endif

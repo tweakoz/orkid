@@ -56,7 +56,8 @@ void EditorMainWindow::OpenSceneFile()
 	gUpdateStatus.SetState(EUPD_START);
 	std::string fname = FileName.toAscii().data();
 	PerfMarkerPopState();
-	
+	this->activateWindow();
+
 	if(fname.length()==0)
 		return;
 
@@ -113,6 +114,7 @@ void EditorMainWindow::SaveSceneFile()
 	//mEditorBase.EditorUnGroup();
 
 	QString FileName = QFileDialog::getSaveFileName( 0, "Save OrkidScene File", mCurrentFileName, "OrkSceneFile (*.mox *.mob)");
+	this->activateWindow();
 	file::Path::NameType fname = FileName.toAscii().data();
 	if( fname.length() )
 	{

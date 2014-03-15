@@ -303,6 +303,8 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	
 	LoadLayout();
 
+	this->activateWindow();
+	
 /*	auto lamb = [=]()
 	{
 		this->SlotSpawnNewGed( ork::Application::GetContext() );
