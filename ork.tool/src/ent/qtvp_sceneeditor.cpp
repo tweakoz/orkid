@@ -44,6 +44,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+extern bool gtoggle_hud;
+
 using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -418,7 +420,13 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				/////////////////////////////////////////////////////////////////////
 				// HUD
 				/////////////////////////////////////////////////////////////////////
-				//DrawHUD(the_renderer.GetFrameData());
+				
+				if( gtoggle_hud )
+				{
+					DrawHUD(the_renderer.GetFrameData());
+					DrawChildren(drwev);
+				}
+
 				/////////////////////////////////////////////////////////////////////				
 				mpTarget->EndFrame();// the_renderer );
 			}		
@@ -453,8 +461,12 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 					mpBasicFrameTek->mbDoBeginEndFrame = false;
 					mpBasicFrameTek->Render( the_renderer );
 					mCompositingGroupStack.pop();
-					DrawHUD(the_renderer.GetFrameData());
-					DrawChildren(drwev);
+
+					if( gtoggle_hud )
+					{
+						DrawHUD(the_renderer.GetFrameData());
+						DrawChildren(drwev);
+					}
 				}
 				mpTarget->EndFrame();// the_renderer );
 				the_renderer.GetFrameData().PopRenderTarget();

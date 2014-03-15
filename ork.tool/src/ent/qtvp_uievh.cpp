@@ -32,6 +32,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+bool gtoggle_hud = true;
+
 using namespace ork::lev2;
 
 namespace ork { namespace ent {
@@ -243,6 +245,11 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 				{
 					mCompositorSceneItemIndex=-1;
 					ret.SetHandled(this);
+					break;
+				}
+				case '/':
+				{
+					gtoggle_hud = ! gtoggle_hud;
 					break;
 				}
 				case ' ':

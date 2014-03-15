@@ -1418,3 +1418,4 @@ bool XgmAnim::LoadUnManaged( XgmAnim* anm, const AssetPath& fname )
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::MaterialInstItem_UvXf, "MaterialInstItem_UvXf" );
 template class ork::chunkfile::Reader<ork::lev2::AnimLoadAllocator>;
 template void ork::chunkfile::OutputStream::AddItem<ork::lev2::DecompMtx44>( const ork::lev2::DecompMtx44& item );
+template class ork::orklut<ork::PoolString,ork::lev2::DecompMtx44>;

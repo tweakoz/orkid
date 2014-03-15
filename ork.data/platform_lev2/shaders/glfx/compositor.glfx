@@ -11,7 +11,6 @@ fxconfig fxcfg_default
 uniform_block ub_vtx
 {
 	uniform mat4 MatMVP;
-	uniform vec3 Levels;
 }
 vertex_interface iface_vdefault
 	: ub_vtx
@@ -35,7 +34,12 @@ fragment_interface iface_fdefault
 ///////////////////////////////////////////////////////////////
 uniform_block ub_frg
 {
-	uniform vec3 Levels;
+	uniform vec4 BiasA;
+	uniform vec4 BiasB;
+	uniform vec4 BiasC;
+	uniform vec4 LevelA;
+	uniform vec4 LevelB;
+	uniform vec4 LevelC;
 	uniform vec4 ModColor;
 	uniform sampler2D ColorMap;
 	uniform sampler2D MapA;
@@ -108,7 +112,7 @@ fragment_shader ps_aplusbplusc : iface_fmt
 	vec4 texa = texture( MapA, frg_uv );
 	vec4 texb = texture( MapB, frg_uv );
 	vec4 texc = texture( MapC, frg_uv );
-	out_clr = (texa*Levels.x)+(texb*Levels.y)+(texc*Levels.z);
+	out_clr = (BiasA+texa*LevelA)+(BiasB+texb*LevelB)+(BiasC+texc*LevelC);
 }
 fragment_shader ps_boveraplusc 
 	: iface_fmt
@@ -134,19 +138,33 @@ fragment_shader ps_alerpbwithc
 fragment_shader ps_soloa : iface_fmt
 {
 	vec4 texc = texture( MapA, frg_uv );
-	out_clr = vec4(texc.xyz,texc.w);
+	out_clr = BiasA+LevelA*vec4(texc.xyz,texc.w);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_solob : iface_fmt
 {
 	vec4 texc = texture( MapB, frg_uv );
-	out_clr = vec4(texc.xyz,texc.w);
+	out_clr = BiasB+LevelB*vec4(texc.xyz,texc.w);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_soloc : iface_fmt
 {
 	vec4 texc = texture( MapC, frg_uv );
 	out_clr = vec4(texc.xyz,texc.w);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_op2amulb : iface_fmt
+{
+	vec4 texa = texture( MapA, frg_uv );
+	vec4 texb = texture( MapB, frg_uv );
+	out_clr = (BiasA+LevelA*texa)*(BiasB+LevelB*texb);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_op2adivb : iface_fmt
+{
+	vec4 texa = texture( MapA, frg_uv );
+	vec4 texb = texture( MapB, frg_uv );
+	out_clr = (BiasA+LevelA*texa)/(BiasB+LevelB*texb);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault
@@ -165,6 +183,25 @@ fragment_shader ps_fragclr : iface_fdefault
 fragment_shader ps_modclr : iface_fmt
 {
 	out_clr = ModColor;
+}
+///////////////////////////////////////////////////////////////
+technique Op2AmulB
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_op2amulb;
+		state_block=sb_default;
+	}
+}
+technique Op2AdivB
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_op2adivb;
+		state_block=sb_default;
+	}
 }
 ///////////////////////////////////////////////////////////////
 technique BoverAplusC

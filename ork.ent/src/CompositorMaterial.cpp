@@ -32,6 +32,11 @@ CompositingMaterial::CompositingMaterial()
 	, hMapA(nullptr)
 	, hMapB(nullptr)
 	, hMapC(nullptr)
+	, hBiasA(nullptr)
+	, hBiasB(nullptr)
+	, hBiasC(nullptr)
+	, hTekOp2AmulB(nullptr)
+	, hTekOp2AdivB(nullptr)
 	, hTekBoverAplusC(nullptr)
 	, hTekAplusBplusC(nullptr)
 	, hTekAlerpBwithC(nullptr)
@@ -39,6 +44,11 @@ CompositingMaterial::CompositingMaterial()
 	, mCurrentTextureA(nullptr)
 	, mCurrentTextureB(nullptr)
 	, mCurrentTextureC(nullptr)
+	, mBiasA(0.0f,0.0f,0.0f,0.0f)
+	, mBiasB(0.0f,0.0f,0.0f,0.0f)
+	, mLevelA(1.0f,1.0f,1.0f,1.0f)
+	, mLevelB(1.0f,1.0f,1.0f,1.0f)
+	, mLevelC(1.0f,1.0f,1.0f,1.0f)
 {
 }
 /////////////////////////////////////////////////
@@ -52,20 +62,31 @@ void CompositingMaterial::Init( lev2::GfxTarget* pTarg )
 	{
 		hModFX = asset::AssetManager<lev2::FxShaderAsset>::Load( "orkshader://compositor" )->GetFxShader();
 
-		hMatMVP = pTarg->FXI()->GetParameterH( hModFX, "MatMVP" );
-		hLevels	= pTarg->FXI()->GetParameterH( hModFX, "Levels" );
+		auto fxi = pTarg->FXI();
 
-		hMapA = pTarg->FXI()->GetParameterH( hModFX, "MapA" );
-		hMapB = pTarg->FXI()->GetParameterH( hModFX, "MapB" );
-		hMapC = pTarg->FXI()->GetParameterH( hModFX, "MapC" );
+		hMatMVP = fxi->GetParameterH( hModFX, "MatMVP" );
+		hBiasA	= fxi->GetParameterH( hModFX, "BiasA" );
+		hBiasB	= fxi->GetParameterH( hModFX, "BiasB" );
+		hBiasC	= fxi->GetParameterH( hModFX, "BiasC" );
 
-		hTekBoverAplusC		= pTarg->FXI()->GetTechnique( hModFX, "BoverAplusC" );
-		hTekAplusBplusC		= pTarg->FXI()->GetTechnique( hModFX, "AplusBplusC" );
-		hTekAlerpBwithC		= pTarg->FXI()->GetTechnique( hModFX, "AlerpBwithC" );
+		hLevelA	= fxi->GetParameterH( hModFX, "LevelA" );
+		hLevelB	= fxi->GetParameterH( hModFX, "LevelB" );
+		hLevelC	= fxi->GetParameterH( hModFX, "LevelC" );
+
+		hMapA = fxi->GetParameterH( hModFX, "MapA" );
+		hMapB = fxi->GetParameterH( hModFX, "MapB" );
+		hMapC = fxi->GetParameterH( hModFX, "MapC" );
+
+		hTekOp2AmulB = fxi->GetTechnique( hModFX, "Op2AmulB" );
+		hTekOp2AdivB = fxi->GetTechnique( hModFX, "Op2AdivB" );
 		
-		hTekAsolo			= pTarg->FXI()->GetTechnique( hModFX, "Asolo" );
-		hTekBsolo			= pTarg->FXI()->GetTechnique( hModFX, "Bsolo" );
-		hTekCsolo			= pTarg->FXI()->GetTechnique( hModFX, "Csolo" );
+		hTekBoverAplusC = fxi->GetTechnique( hModFX, "BoverAplusC" );
+		hTekAplusBplusC = fxi->GetTechnique( hModFX, "AplusBplusC" );
+		hTekAlerpBwithC = fxi->GetTechnique( hModFX, "AlerpBwithC" );
+		
+		hTekAsolo = fxi->GetTechnique( hModFX, "Asolo" );
+		hTekBsolo = fxi->GetTechnique( hModFX, "Bsolo" );
+		hTekCsolo = fxi->GetTechnique( hModFX, "Csolo" );
 
 		mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 		mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
@@ -76,6 +97,11 @@ void CompositingMaterial::Init( lev2::GfxTarget* pTarg )
 /////////////////////////////////////////////////
 void CompositingMaterial::SetTechnique( const std::string& tek )
 {
+	if( tek == "Op2AmulB" )
+		hTekCurrent = hTekOp2AmulB;
+	if( tek == "Op2AdivB" )
+		hTekCurrent = hTekOp2AdivB;
+
 	if( tek == "BoverAplusC" )
 		hTekCurrent = hTekBoverAplusC;
 	if( tek == "AplusBplusC" )
@@ -99,7 +125,13 @@ bool CompositingMaterial::BeginPass( lev2::GfxTarget* pTarg, int iPass )
 	pTarg->FXI()->BindPass( hModFX, iPass );
 	pTarg->FXI()->BindParamMatrix( hModFX, hMatMVP, pTarg->MTXI()->RefMVPMatrix() );
 
-	pTarg->FXI()->BindParamVect3( hModFX, hLevels, mWeights );
+	pTarg->FXI()->BindParamVect4( hModFX, hLevelA, mLevelA );
+	pTarg->FXI()->BindParamVect4( hModFX, hLevelB, mLevelB );
+	pTarg->FXI()->BindParamVect4( hModFX, hLevelC, mLevelC );
+
+	pTarg->FXI()->BindParamVect4( hModFX, hBiasA, mBiasA );
+	pTarg->FXI()->BindParamVect4( hModFX, hBiasB, mBiasB );
+	pTarg->FXI()->BindParamVect4( hModFX, hBiasC, mBiasC );
 
 	if( mCurrentTextureA && hMapA ) 
 	{

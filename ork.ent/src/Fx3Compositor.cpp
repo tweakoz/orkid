@@ -183,8 +183,9 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(	lev2::GfxTarget* pT,
 		mCompositingMaterial.SetTextureB( ptexB );
 		mCompositingMaterial.SetTextureC( ptexC );
 
-		CVector3 Levels(levA,levB,levC);
-		mCompositingMaterial.SetWeights( Levels );
+		mCompositingMaterial.SetLevelA( CVector4(levA,levA,levA,levA) );
+		mCompositingMaterial.SetLevelB( CVector4(levB,levB,levB,levB) );
+		mCompositingMaterial.SetLevelC( CVector4(levC,levC,levC,levC) );
 			
 		switch( eblend )
 		{
