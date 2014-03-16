@@ -431,6 +431,7 @@ bool FArchiveXML::LinkControllerInstance(FCDControllerInstance* controllerInstan
 			FUError::Error(FUError::WARNING_LEVEL, FUError::WARNING_UNKNOWN_JOINT, 0);
 		}
 	}
+	printf( "faxlci: ok\n" );
 	return true;
 }
 

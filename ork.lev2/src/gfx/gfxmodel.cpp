@@ -560,111 +560,113 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 
 	const XgmWorldPose* __restrict pworldpose = mdlctx.mpWorldPose;
 
-	//const XgmLocalPose& LocalPose = minst->RefLocalPose();
+	const XgmLocalPose& LocalPose = minst->RefLocalPose();
 
 
 	//printf( "rendering skinned!!\n");
 	////////////////////
 	// Draw Skinned Mesh
-	//e eggtest++;
 
-	pTARG->MTXI()->PushMMatrix( WorldMat );
-	pTARG->PushModColor( ModColor );
+	if( 1 ) // draw mesh
 	{
-		const XgmMesh & XgmMesh = * mdlctx.mMesh; 
-		const XgmCluster& XgmCluster = * mdlctx.mCluster;
-		const XgmSubMesh& XgmClusSet = * mdlctx.mSubMesh;
-
-		bool bmatpushed = false;
-
-		auto mtl = XgmClusSet.GetMaterial();
-
-		if( minst->GetLayerFxMaterial() != 0 ) mtl = minst->GetLayerFxMaterial();
-
-		if( 0 != mtl )
+		pTARG->MTXI()->PushMMatrix( WorldMat );
+		pTARG->PushModColor( ModColor );
 		{
-			pTARG->BindMaterial( mtl );
-			int inumpasses = mtl->BeginBlock(pTARG,Ctx);
+			const XgmMesh & XgmMesh = * mdlctx.mMesh; 
+			const XgmCluster& XgmCluster = * mdlctx.mCluster;
+			const XgmSubMesh& XgmClusSet = * mdlctx.mSubMesh;
 
-			for( int ip=0; ip<inumpasses; ip++ )
+			bool bmatpushed = false;
+
+			auto mtl = XgmClusSet.GetMaterial();
+
+			if( minst->GetLayerFxMaterial() != 0 ) mtl = minst->GetLayerFxMaterial();
+
+			if( 0 != mtl )
 			{
-				OrkAssert(ip<inumpasses);
-				bool bDRAW = mtl->BeginPass( pTARG,ip );
+				pTARG->BindMaterial( mtl );
+				int inumpasses = mtl->BeginBlock(pTARG,Ctx);
 
-				if( bDRAW )
+				for( int ip=0; ip<inumpasses; ip++ )
 				{
-					//////////////////////////////////////////////////////
-					// upload bones to bone registers (probably vertex shader constant registers (Lev2), possibly matrix palette registers (PSP, GameCube)
+					OrkAssert(ip<inumpasses);
+					bool bDRAW = mtl->BeginPass( pTARG,ip );
 
-					size_t inumjoints = XgmCluster.mJoints.size();
-
-					OrkAssert( miBonesPerCluster<=kMatrixBlockSize );
-
-					for( size_t ijointreg=0; ijointreg<inumjoints; ijointreg++ )
+					if( bDRAW )
 					{
-						const PoolString& JointName = XgmCluster.mJoints[ ijointreg ];
-						int JointSkelIndex = XgmCluster.mJointSkelIndices[ ijointreg ];
-						//const CMatrix4 & MatIBind = Skeleton.RefInverseBindMatrix(JointSkelIndex);
-						//const CMatrix4 & MatJ = Skeleton.RefJointMatrix( JointSkelIndex );
-						//const CMatrix4 & MatAnimJCat = LocalPose.RefLocalMatrix(JointSkelIndex);
-						//const CMatrix4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
-						const CMatrix4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
+						//////////////////////////////////////////////////////
+						// upload bones to bone registers (probably vertex shader constant registers (Lev2), possibly matrix palette registers (PSP, GameCube)
 
-						//////////////////////////////////////
-						//MatrixBlock[ijointreg] = CMatrix4::Identity; //(MatIBind * MatAnimJCat); 
-						MatrixBlock[ijointreg] = MatAnimJCat; //(MatIBind * MatAnimJCat); 
-					}
+						size_t inumjoints = XgmCluster.mJoints.size();
 
-					//////////////////////////////////////////////////////
-					// apply bones
-					//////////////////////////////////////////////////////
+						OrkAssert( miBonesPerCluster<=kMatrixBlockSize );
 
-					MaterialInstItemMatrixBlock mtxblockitem;
-					mtxblockitem.SetNumMatrices( inumjoints );
-					mtxblockitem.SetMatrixBlock( MatrixBlock );
-					mtl->BindMaterialInstItem( & mtxblockitem );
-					{
-						mtxblockitem.mApplicator->ApplyToTarget( pTARG );
-					}
-					mtl->UnBindMaterialInstItem( & mtxblockitem );
-					
-					mtl->UpdateMVPMatrix( pTARG );
-
-					//////////////////////////////////////////////////////
-					#if USE_XGM_DISPLAYLISTS
-					pTARG->GBI()->DisplayListDrawEML( XgmCluster.mDisplayList );
-					#else
-					//////////////////////////////////////////////////////
-					const ork::lev2::VertexBufferBase * pVertexBuffer = XgmCluster.GetVertexBuffer();
-					if( pVertexBuffer )
-					{
-						int inumprim = XgmCluster.GetNumPrimGroups();
-						for( int iprim=0; iprim<inumprim; iprim++ )
+						for( size_t ijointreg=0; ijointreg<inumjoints; ijointreg++ )
 						{
-							const XgmPrimGroup & PrimGroup = XgmCluster.mpPrimGroups[ iprim ];
-							const ork::lev2::IndexBufferBase *pIndexBuffer = PrimGroup.GetIndexBuffer();
+							const PoolString& JointName = XgmCluster.mJoints[ ijointreg ];
+							int JointSkelIndex = XgmCluster.mJointSkelIndices[ ijointreg ];
+							//const CMatrix4 & MatIBind = Skeleton.RefInverseBindMatrix(JointSkelIndex);
+							//const CMatrix4 & MatJ = Skeleton.RefJointMatrix( JointSkelIndex );
+							//const CMatrix4 & MatAnimJCat = LocalPose.RefLocalMatrix(JointSkelIndex);
+							//const CMatrix4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
+							const CMatrix4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
 
-							//printf( "rskin DrawIndexedPrimitiveEML iprim<%d>\n", iprim );
-							pTARG->GBI()->DrawIndexedPrimitiveEML( *pVertexBuffer, *pIndexBuffer, PrimGroup.GetPrimType() );
+							//////////////////////////////////////
+							//MatrixBlock[ijointreg] = CMatrix4::Identity; //(MatIBind * MatAnimJCat); 
+							MatrixBlock[ijointreg] = MatAnimJCat; //(MatIBind * MatAnimJCat); 
 						}
+
+						//////////////////////////////////////////////////////
+						// apply bones
+						//////////////////////////////////////////////////////
+
+						MaterialInstItemMatrixBlock mtxblockitem;
+						mtxblockitem.SetNumMatrices( inumjoints );
+						mtxblockitem.SetMatrixBlock( MatrixBlock );
+						mtl->BindMaterialInstItem( & mtxblockitem );
+						{
+							mtxblockitem.mApplicator->ApplyToTarget( pTARG );
+						}
+						mtl->UnBindMaterialInstItem( & mtxblockitem );
+						
+						mtl->UpdateMVPMatrix( pTARG );
+
+						//////////////////////////////////////////////////////
+						#if USE_XGM_DISPLAYLISTS
+						pTARG->GBI()->DisplayListDrawEML( XgmCluster.mDisplayList );
+						#else
+						//////////////////////////////////////////////////////
+						const ork::lev2::VertexBufferBase * pVertexBuffer = XgmCluster.GetVertexBuffer();
+						if( pVertexBuffer )
+						{
+							int inumprim = XgmCluster.GetNumPrimGroups();
+							for( int iprim=0; iprim<inumprim; iprim++ )
+							{
+								const XgmPrimGroup & PrimGroup = XgmCluster.mpPrimGroups[ iprim ];
+								const ork::lev2::IndexBufferBase *pIndexBuffer = PrimGroup.GetIndexBuffer();
+
+								//printf( "rskin DrawIndexedPrimitiveEML iprim<%d>\n", iprim );
+								pTARG->GBI()->DrawIndexedPrimitiveEML( *pVertexBuffer, *pIndexBuffer, PrimGroup.GetPrimType() );
+							}
+						}
+						//////////////////////////////////////////////////////
+						#endif
+						//////////////////////////////////////////////////////
+						mtl->EndPass(pTARG);
 					}
-					//////////////////////////////////////////////////////
-					#endif
-					//////////////////////////////////////////////////////
-					mtl->EndPass(pTARG);
 				}
+				if( inumpasses )
+					mtl->EndBlock(pTARG);
 			}
-			if( inumpasses )
-				mtl->EndBlock(pTARG);
 		}
+		pTARG->PopModColor();
+		pTARG->MTXI()->PopMMatrix();
 	}
-	pTARG->PopModColor();
-	pTARG->MTXI()->PopMMatrix();
 
 	////////////////////////////////////////
 	// Draw Skeleton
 
-	if( 0 )
+	if( 1 )
 	{
 		pTARG->PushModColor( ModColor );
 		GfxEnv::GetDefault3DMaterial()->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
@@ -672,28 +674,22 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 		{
 			int inumbones = RefSkel().GetNumBones();
 			const CMatrix4 & MatBindShape = RefSkel().mBindShapeMatrix;
-			CMatrix4 MatIScale;
-			CMatrix4 MatScale;
 			CMatrix4 MatStatScale;
-			CReal rs(80.0f);
-			CReal rsi(5.0f/80.0f);
-			CReal rstat(5.0f);
-			MatScale.Scale(rs,rs,rs);
-			MatIScale.Scale(rsi,rsi,rsi);
+			CReal rstat(0.5f);
 			MatStatScale.Scale(rstat,rstat,rstat);
 			
 			for( int ib=0; ib<inumbones; ib++ )
 			{
 				const CMatrix4 & MatIBind = RefSkel().RefInverseBindMatrix( ib );
 				const CMatrix4 & MatJ = RefSkel().RefJointMatrix( ib );
-				//const CMatrix4 & MatAnimJCat = LocalPose.RefLocalMatrix(ib);
-				//CMatrix4 MatW = MatStatScale * MatAnimJCat * WorldMat;
-				//CVector3 Pos = MatW.GetTranslation();
-				//pTARG->MTXI()->PushMMatrix( MatW );
+				const CMatrix4 & MatAnimJCat = LocalPose.RefLocalMatrix(ib);
+				CMatrix4 MatW = MatStatScale * MatAnimJCat * WorldMat;
+				CVector3 Pos = MatW.GetTranslation();
+				pTARG->MTXI()->PushMMatrix( MatW );
 				{
-					//CGfxPrimitives::GetRef().RenderAxis( pTARG );
+					CGfxPrimitives::GetRef().RenderAxis( pTARG );
 				}
-				//pTARG->MTXI()->PopMMatrix();
+				pTARG->MTXI()->PopMMatrix();
 			}
 		}
 		pTARG->PopModColor();

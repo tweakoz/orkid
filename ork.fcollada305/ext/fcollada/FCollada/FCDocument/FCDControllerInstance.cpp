@@ -138,6 +138,7 @@ void FCDControllerInstance::FindSkeletonNodes(FCDSceneNodeList& skeletonNodes) c
 	for (size_t i = 0; i < numRoots; ++i)
 	{
 		const FCDSceneNode* aRoot = document->FindSceneNode(TO_STRING(skeletonRoots[i].GetFragment()).c_str());
+		printf( "aRoot<%p>\n", aRoot );
 		if (aRoot == NULL)
 		{
 			FUError::Error(FUError::WARNING_LEVEL, FUError::WARNING_UNKNOWN_JOINT, 0);

@@ -71,11 +71,21 @@ CColladaAsset::EAssetType CColladaAsset::GetAssetType( const AssetPath & fname )
 	const char* AnimEq0 = strstr( buffer, "exportAnimations=0" );
 	const char* AnimEq1 = strstr( buffer, "exportAnimations=1" );
 	const char* AnimEq2 = strstr( buffer, "library_animations" );
-	if( AnimEq1 || AnimEq2 )
+	const char* GeomLib = strstr( buffer, "library_geometries" );
+
+	printf( "AnimEq0<%p>\n", AnimEq0 );
+	printf( "AnimEq1<%p>\n", AnimEq1 );
+	printf( "AnimEq2<%p>\n", AnimEq2 );
+	printf( "GeomLib<%p>\n", GeomLib );
+
+	if( (nullptr==GeomLib) && (AnimEq1 || AnimEq2) )
 	{
 		etype = CColladaAsset::ECOLLADA_ANIM;
 	}
 	OrkAssert( etype!=CColladaAsset::ECOLLADA_END );
+
+	printf( "AssetType<%d>\n", int(etype) );
+
 	return etype;
 }
 
@@ -118,6 +128,7 @@ bool CColladaAsset::LoadDocument(const AssetPath& fname)
 		}*/
 	}
 	FCollada::Release();
+
 	return bok;
 
 }
@@ -132,14 +143,20 @@ CColladaModel * CColladaModel::Load( const AssetPath & fname )
 
 	bool bok = Model->LoadDocument( fname );
 
+	printf( "model loaded<%d>\n", int(bok) );
+
 	bok &= (CColladaAsset::ECOLLADA_MODEL==Model->meAssetType);
+
+	printf( "model loaded2<%d>\n", int(bok) );
 
 	if( bok )
 	{
 		///////////////////////////
 		// is it a model ?
 
-		FCDGeometryLibrary *GeoLib = Model->mDocument->GetGeometryLibrary();
+		FCDGeometryLibrary* GeoLib = Model->mDocument->GetGeometryLibrary();
+
+		printf( "has geolib<%p>\n", GeoLib );
 
 		bok = false;
 
@@ -163,7 +180,9 @@ CColladaModel * CColladaModel::Load( const AssetPath & fname )
 		FCDAnimationLibrary *AnimLib = Model->mDocument->GetAnimationLibrary();
 		int inument( AnimLib->GetEntityCount() );
 
-		if( inument ) bok=false;
+		//if( inument ) bok=false;
+
+		printf( "has animlib<%p>\n", AnimLib );
 
 		/////////////////////////////////////
 		if(bok) bok=Model->FindDaeMeshes();

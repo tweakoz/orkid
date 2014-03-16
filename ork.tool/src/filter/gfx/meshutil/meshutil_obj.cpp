@@ -474,9 +474,14 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 				}
 				case '#':
 					break;
+				case 'o': // object name
+					break;
 				default:
+				{
+					printf( "unknown obj line<%d> token <%c>\n", il, firstch );
 					OrkAssert(false);				
 					break;
+				}
 
 			}
 			
