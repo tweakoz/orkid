@@ -436,6 +436,10 @@ bool CColladaAnim::Parse( void )
 		FCDAnimation* Anim = AnimLib->GetEntity(ie);
 
 		std::string AnimName = Anim->GetName().c_str();
+		FixedString<256> fx2 = AnimName.c_str();
+		fx2.replace_in_place("Armature_","");
+		fx2.replace_in_place("_pose","");
+		AnimName = fx2.c_str();
 
 		size_t num_chans = Anim->GetChannelCount();
 		size_t num_child = Anim->GetChildrenCount();

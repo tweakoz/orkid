@@ -4,6 +4,11 @@ import os
 
 tool = "ork.tool.test.osx.release"
 
+def mkdir( actnam ):
+	cmd = "mkdir -p data/pc/actors/%s" % actnam
+	print cmd
+	os.system(cmd)
+
 def exp_anim( actnam, anmnam ):
 	cmd = "%s -filter dae:xga -in data/src/actors/%s/anims/%s.dae -out data/pc/actors/%s/%s.xga" % (tool,actnam,anmnam,actnam,anmnam)
 	print cmd
@@ -26,5 +31,9 @@ def exp_actor( actnam ):
 #exp_anim("Diver", "run")
 #exp_anim("houdtest", "a1")
 
-exp_actor("Diver")
+#exp_actor("Diver")
 #exp_actor("houdtest")
+
+mkdir("4limb")
+exp_actor("4limb")
+exp_anim("4limb", "sprawl")

@@ -10,9 +10,11 @@ hotkeys.ork
 *.swatch*
 *.moc
 .mayaSwatches/*
+ork.build.ini
 workspace.mel
 ork.core/bin
 ork.data/*.mox
+ork.data/pc/*
 ork.ent/bin
 ork.lev2/bin
 ork.tool/bin

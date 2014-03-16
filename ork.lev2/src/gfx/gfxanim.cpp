@@ -316,6 +316,8 @@ void DecompMtx44::EndianSwap()
 
 void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
 {
+	//printf( "miNumAnims<%d>\n", miNumAnims );
+
 	switch(miNumAnims)
 	{
 		case 1: // just copy the first matrix
@@ -337,7 +339,9 @@ void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
 
 		case 2: // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
 		{
-			OrkAssert(std::fabs(AnimWeight[0] + AnimWeight[1] - 1.0f) < CReal(0.01f));
+			float fw = std::fabs(AnimWeight[0] + AnimWeight[1] - 1.0f);
+			//printf( "aw0<%f> aw1<%f>\n", AnimWeight[0], AnimWeight[1]);
+			OrkAssert(fw < CReal(0.01f));
 
 			const DecompMtx44 &a = AnimMat[0];
 			const DecompMtx44 &b = AnimMat[1];
@@ -432,13 +436,22 @@ void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 		for(orklut<PoolString, DecompMtx44>::const_iterator it = StaticPose.begin(); it != StaticPose.end(); it++)
 		{
 			const PoolString& JointName = it->first;
+
 			int iskelindex = mSkeleton.GetJointIndex(JointName);
+
+			printf( "spose jname<%s> iskelindex<%d>\n", JointName.c_str(), iskelindex );
+
 			if(-1 != iskelindex)
 			{
 				EXFORM_COMPONENT components = AnimInst.RefMask().GetComponents(iskelindex);
 				if(XFORM_COMPONENT_NONE != components)
 				{
 					ork::lev2::XgmAnim::JointChannelsMap::const_iterator itanim = Channels.find(JointName);
+
+
+					bool found = itanim == Channels.end();
+					printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );
+
 					if(itanim == Channels.end())
 					{
 						int ispi = int(it-StaticPose.begin());
@@ -459,11 +472,17 @@ void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 		//float numframes = AnimInst.GetNumFrames();
 		//int iframe = int(frame);
 		int ichidx = 0;
+
+		for( int is=0; is<mSkeleton.GetNumJoints(); is++ )
+			printf( "skel bone<%d:%s>\n", is, mSkeleton.GetJointName(is).c_str() );
+
 		for(ork::lev2::XgmAnim::JointChannelsMap::const_iterator it = Channels.begin(); it != Channels.end(); it++)
 		{
 			const PoolString &ChannelName = it->first;
 			const ork::lev2::XgmDecompAnimChannel* __restrict MtxChannelData = it->second;
 			int iskelindex = mSkeleton.GetJointIndex(ChannelName);
+
+			printf( "bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex );
 
 			if(-1 != iskelindex)
 			{

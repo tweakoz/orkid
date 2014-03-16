@@ -37,5 +37,8 @@ clean:
 	rm -rf stage/include/pkg
 	rm -rf stage/include/bullet
 
+assets:
+	./do_assets.py
+	
 install:
 	scons -f root.sconstruct install
