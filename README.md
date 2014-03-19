@@ -30,4 +30,5 @@ for other examples of content, go [here](http://www.youtube.com/user/tweakoz) an
 Binary Distributions
 ====================
 Osx: http://www.tweakoz.com/orkid/OrkidTool.dmg (includes LGPL licensed Qt4.8)
+ Requires OSX Mavericks and an OpenGL4.1 compatible GPU
 
