@@ -235,7 +235,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	{
 		QDockWidget *pdw0 = NewCamView(false);
 		SceneObjPropEdit();
-		NewOutliner2View();
+		//NewOutliner2View();
 		NewDataflowView();
 		//QDockWidget *pdw2 = NewOutlinerView(false);
 		

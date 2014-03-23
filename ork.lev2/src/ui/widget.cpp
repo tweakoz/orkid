@@ -56,6 +56,11 @@ Widget::Widget( const std::string & name, int x, int y, int w, int h )
 	mEventFilterStack.push(f1);
 
 }
+Widget::~Widget()
+{
+	if( gFastPath==this )
+		gFastPath = nullptr;
+}
 
 void Widget::Init( lev2::GfxTarget* pT )
 {

@@ -45,6 +45,9 @@ public:
 	Outliner2Model(SceneEditorBase&ed,Outliner2View&v);
 	~Outliner2Model();
 	////////////////////////////////////////////////////////////////////
+	bool ToggleEnts();
+	bool ToggleArchs();
+	////////////////////////////////////////////////////////////////////
 	void SigModelChanged();
 	void SlotSceneTopoChanged();
 	void SlotClearSelection();
@@ -69,6 +72,8 @@ private:
 	std::vector<Outliner2Item>			mItems;
 	std::set<ork::Object*>				mSelected;
 	int mLastSelection;
+	bool mShowEnts;
+	bool mShowArchs;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct Outliner2View : public ui::Surface

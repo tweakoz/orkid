@@ -6,12 +6,12 @@ namespace ork { namespace ui {
 
 ////////////////////////////////////////////////////////////////////
 
-struct Panel : public Group
+struct SplitPanel : public Group
 {
-	Panel( const std::string & name, int x, int y, int w, int h );
-	~Panel();
+	SplitPanel( const std::string & name, int x, int y, int w, int h );
 
-	void SetChild( Widget* pch);
+	void SetChild1( Widget* pch);
+	void SetChild2( Widget* pch);
 
 private:
 
@@ -22,10 +22,10 @@ private:
 	void DoOnExit() override;
 	HandlerResult DoRouteUiEvent( const Event& Ev ) override;
 
-	Widget* mChild;
+	Widget* mChild1;
+	Widget* mChild2;
 	int mPanelUiState;
-	bool mDockedAtTop;
-	int mCloseX, mCloseY;
+	float mSplitVal;
 };
 
 }} // namespace ork { namespace ui {
