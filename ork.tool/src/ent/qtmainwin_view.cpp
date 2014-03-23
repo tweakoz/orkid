@@ -15,6 +15,7 @@
 #include <pkg/ent/editor/qtui_scenevp.h>
 #include <pkg/ent/editor/edmainwin.h>
 #include <ork/lev2/ui/panel.h>
+#include <ork/lev2/ui/split_panel.h>
 #include "outliner2.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,12 +83,16 @@ QDockWidget * EditorMainWindow::NewCamView( bool bfloat )
 
 ///////////////////////////////////////////////////////////////////////////
 
+
 void EditorMainWindow::SceneObjPropEdit()
 {
 	mGedModelObj.Attach( 0 );
-	auto pnl = new ui::Panel( "props.panel", 0,128,256,256 );
-	auto pvp = new tool::ged::GedVP( "props.vp", mGedModelObj );
-	pnl->SetChild(pvp);
+
+	auto pnl = new ui::SplitPanel( "ged.panel", 48,24,256,384 );
+	auto pvp1 = new Outliner2View(mEditorBase);
+	auto pvp2 = new tool::ged::GedVP( "props.vp", mGedModelObj );
+	pnl->SetChild1(pvp1);
+	pnl->SetChild2(pvp2);
 	gpvp->AddChild(pnl);
 
 	/////////////////////////////////////////////////////////////////////////////////////
@@ -120,10 +125,6 @@ void EditorMainWindow::SceneObjPropEdit()
 
 void EditorMainWindow::NewOutliner2View()
 {
-	auto pnl = new ui::Panel( "outliner2.panel", 0,384,256,128 );
-	auto pvp = new Outliner2View(mEditorBase);
-	pnl->SetChild(pvp);
-	gpvp->AddChild(pnl);
 }
 
 void EditorMainWindow::NewDataflowView()
@@ -142,41 +143,19 @@ void EditorMainWindow::NewDataflowView()
 
 void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 {
-/*	static int viewnum = 0;
 	rtti::Class* pclass = pobj->GetClass();
 	std::string classname = pclass->Name().c_str();
 	std::string viewname = CreateFormattedString( "%s:%p", classname.c_str(), pobj );
-	viewnum++;
-	QDockWidget*gfxdock = new QDockWidget(tr(viewname.c_str()), this);
-	gfxdock->setFloating( false );
-	gfxdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-	gfxdock->setAutoFillBackground(false); 
-	gfxdock->setObjectName(viewname.c_str());
+
 	ork::tool::ged::ObjModel* pnewobjmodel = new ork::tool::ged::ObjModel;
 	pnewobjmodel->Attach( 0 );
-	tool::ged::GedVP* pvp = new tool::ged::GedVP( viewname, *pnewobjmodel );
-	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( pvp );
-	lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
-	pvp->GetGedWidget().SetDeleteModel(true);
-	QWidget* pqw = pctqt->GetQWidget();
-	gfxdock->setWidget( pqw );
-	gfxdock->setMinimumSize( 100, 100 );
-	gfxdock->resize( 256, 768 );
-	gfxdock->setAttribute( Qt::WA_DeleteOnClose );
-	
-	gfxdock->setFeatures( 
-			QDockWidget::DockWidgetClosable
-		|	QDockWidget::DockWidgetMovable
-		|	QDockWidget::DockWidgetFloatable
-		|	QDockWidget::DockWidgetVerticalTitleBar
-	);
-	addDockWidget(Qt::RightDockWidgetArea, gfxdock);
-	pctqt->Show();
-	pctqt->GetQWidget()->Enable();
-	pnewobjmodel->SetChoiceManager( & mEditorBase.mChoiceMan );
 
-	/////////////////////////////////////////////////////////////////////////////////////
-	// clone collapse state
+	auto pnl = new ui::Panel( "ged.panel", 0,128,128,256 );
+	auto pvp = new tool::ged::GedVP( "props.vp", *pnewobjmodel );
+	pnl->SetChild(pvp);
+	gpvp->AddChild(pnl);
+	pvp->GetGedWidget().SetDeleteModel(true);
+	pnewobjmodel->SetChoiceManager( & mEditorBase.mChoiceMan );
 
 	pnewobjmodel->GetPersistMapContainer().CloneFrom( mGedModelObj.GetPersistMapContainer() );
 
@@ -211,7 +190,9 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 	/////////////////////////////////////////////////////////////////////////////////////
 	// 
 	/////////////////////////////////////////////////////////////////////////////////////
-	pnewobjmodel->Attach( pobj );*/
+	pnewobjmodel->Attach( pobj );
+	pnl->SetDirty();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////

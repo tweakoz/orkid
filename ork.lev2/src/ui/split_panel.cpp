@@ -1,8 +1,7 @@
 #include <ork/pch.h>
-#include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/ui/panel.h>
+#include <ork/lev2/ui/split_panel.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/util/hotkey.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -10,39 +9,33 @@
 
 namespace ork { namespace ui {
 
-static const int kpanelw = 12;
-
 /////////////////////////////////////////////////////////////////////////
 
-Panel::Panel( const std::string & name, int x, int y, int w, int h )
+SplitPanel::SplitPanel( const std::string & name, int x, int y, int w, int h )
 	: Group(name,x,y,w,h)
-	, mChild(nullptr)
-	, mDockedAtTop(false)
+	, mChild1(nullptr)
+	, mChild2(nullptr)
+	, mSplitVal(0.3f)
 {
 
-}
-
-Panel::~Panel()
-{
-	if( mChild )
-	{	mChild->SetParent(nullptr);
-		mChild = nullptr;
-	}
-	if( mParent )
-		mParent->RemoveChild(this);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void Panel::SetChild( Widget* pch)
+void SplitPanel::SetChild1( Widget* pch)
 {
-	mChild = pch;
+	mChild1 = pch;
+	AddChild(pch);
+}
+void SplitPanel::SetChild2( Widget* pch)
+{
+	mChild2 = pch;
 	AddChild(pch);
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-void Panel::DoDraw(ui::DrawEvent& drwev)
+void SplitPanel::DoDraw(ui::DrawEvent& drwev)
 {
 	auto tgt = drwev.GetTarget();
 	auto fbi = tgt->FBI();
@@ -57,103 +50,77 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 	tgt->PushMaterial( defmtl );
 
 	bool has_foc = HasMouseFocus();
-
-	auto ren_quad = [&](int x,int y, int x2, int y2)
+	tgt->PushModColor( has_foc?CColor4::White():CColor4::Red() );
+	mtxi->PushUIMatrix();
 	{
+		int ix_root = 0;
+		int iy_root = 0;
+		LocalToRoot( 0, 0, ix_root, iy_root );
+
 		primi.RenderQuadAtZ(
 			tgt,
-			x, x2, 	// x0, x1
-			y, y2, 	// y0, y1
+			ix_root, ix_root+miW, 	// x0, x1
+			iy_root, iy_root+miH, 	// y0, y1
 			0.0f,			// z
 			0.0f, 1.0f,		// u0, u1
 			0.0f, 1.0f		// v0, v1
 			);
-	};
-	auto ren_line = [&](int x,int y, int x2, int y2)
-	{
-		auto vb = & lev2::GfxEnv::GetSharedDynamicVB();
-		lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-		vw.Lock( tgt, vb, 2 );
-		vw.AddVertex( lev2::SVtxV12C4T16( x, y, 0.0f, 0.0f, 0.0f, 0xffffffff ) );
-		vw.AddVertex( lev2::SVtxV12C4T16( x2, y2, 0.0f, 0.0f, 0.0f, 0xffffffff ) );
-		vw.UnLock( tgt );
-		tgt->GBI()->DrawPrimitive( vw, lev2::EPRIM_LINES );
-	};
-
-	mtxi->PushUIMatrix();
-	{
-		int ixr, iyr;
-		LocalToRoot( 0, 0, ixr, iyr );
-
-		/////////////
-		// panel outline (resize/moving)
-		/////////////
-
-		tgt->PushModColor( has_foc?CColor4::White():CColor4::Red() );
-		ren_quad( ixr, iyr, ixr+miW, iyr+miH );
-		tgt->PopModColor();
-
-		/////////////
-		// close button
-		/////////////
-
-		LocalToRoot( mCloseX, mCloseY, ixr, iyr );
-		tgt->PushModColor( CColor4(0.3f,0.0f,0.0f) );
-		ren_quad( ixr+1, iyr+1, ixr+kpanelw-1, iyr+kpanelw-1 );
-		tgt->PopModColor();
-		tgt->PushModColor( CColor4(1.0f,0.3f,0.3f) );
-		ren_quad( ixr+2, iyr+2, ixr+kpanelw-2, iyr+kpanelw-2 );
-		tgt->PopModColor();
-		tgt->PushModColor( CColor4(0.3f,0.0f,0.0f) );
-		ren_line( ixr+1, iyr+1, ixr+kpanelw-1, iyr+kpanelw-1 );
-		ren_line( ixr+kpanelw-1, iyr+1, ixr+1, iyr+kpanelw-1 );
-		tgt->PopModColor();
-
-
 	}
 	mtxi->PopUIMatrix();
+	tgt->PopModColor();
 	tgt->PopMaterial();
 
-	if( mChild )
-		mChild->Draw(drwev);
+	if( mChild1 )
+		mChild1->Draw(drwev);
 
-
-	//fbi->PopViewport();
-	//fbi->PopScissor();
+	if( mChild2 )
+		mChild2->Draw(drwev);
 }
 
+static const int kpanelw = 12;
+static const int ksplith= 7;
 /////////////////////////////////////////////////////////////////////////
 
-void Panel::DoLayout()
+void SplitPanel::DoLayout()
 {
-	mDockedAtTop = (miY==-kpanelw);
-	printf( "mDockedAtTop<%d>\n", int(mDockedAtTop) );
-
-	mCloseX = kpanelw;
-	mCloseY = mDockedAtTop ? miH-kpanelw : 0;
-
 	int cw = miW-(kpanelw*2);
-	int ch = miH-(kpanelw*2);
+
+	int ch = miH/2;
+	int p1y = kpanelw;
+	int p1h = int(float(miH)*mSplitVal)-ksplith;
+	int p2y = p1y+p1h+ksplith;
+	int p2h = miH-kpanelw-p2y;
 
 	//printf( "Panel<%s>::DoLayout x<%d> y<%d> w<%d> h<%d>\n", msName.c_str(), miX, miY, miW, miH );
-	if( mChild )
+	if( mChild1 )
 	{
-		mChild->SetRect(kpanelw,kpanelw,cw,ch);
+		mChild1->SetRect(kpanelw,p1y,cw,p1h);
+	}
+	if( mChild2 )
+	{
+		mChild2->SetRect(kpanelw,p2y,cw,p2h);
 	}
 }
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult Panel::DoRouteUiEvent( const Event& Ev )
+HandlerResult SplitPanel::DoRouteUiEvent( const Event& Ev )
 {
 	//printf( "Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState );
 
-	if( mChild && mChild->IsEventInside(Ev) && mPanelUiState==0 )
+	if( mChild1 && mChild1->IsEventInside(Ev) && mPanelUiState==0 )
 	{
-		HandlerResult res = mChild->RouteUiEvent(Ev);
+		HandlerResult res = mChild1->RouteUiEvent(Ev);
 		if( res.mHandler != nullptr )
 			return res;	
 	}
+	else if( mChild2 && mChild2->IsEventInside(Ev) && mPanelUiState==0 )
+	{
+		HandlerResult res = mChild2->RouteUiEvent(Ev);
+		if( res.mHandler != nullptr )
+			return res;	
+	}
+
 	return OnUiEvent(Ev);
 
 }
@@ -167,7 +134,7 @@ static int iprevpy = 0;
 static int iprevpw = 0;
 static int iprevph = 0;
 
-HandlerResult Panel::DoOnUiEvent( const Event& Ev )
+HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 {
 	HandlerResult ret(this);
 
@@ -183,33 +150,22 @@ HandlerResult Panel::DoOnUiEvent( const Event& Ev )
 	switch( filtev.miEventCode )
 	{
 		case ui::UIEV_PUSH: // idle
-			idownx = evx;
+		{	idownx = evx;
 			idowny = evy;
 			iprevpx = miX;
 			iprevpy = miY;
 			iprevpw = miW;
 			iprevph = miH;
 			ret.mHoldFocus = true;
+			bool is_splitter = (ilocy>kpanelw)&&(ilocy<(miH-kpanelw*2));
+			is_splitter &= (ilocx>kpanelw)&&(ilocx<(miW-kpanelw));
+			printf( "ilocy<%d> is_splitter<%d> b0<%d>\n", ilocy, int(is_splitter), int(filtev.mBut0) );
 			if( filtev.mBut0 )
-			{
-				printf( "ilocx<%d> mCloseX<%d>\n", ilocx, mCloseX );
-				if(    (ilocx>=mCloseX)
-					&& ((ilocx-mCloseX)<kpanelw)
-					&& (ilocy>=mCloseY)
-					&& ((ilocy-mCloseY)<kpanelw)
-					)
-				{
-					auto lamb = [=]() 
-					{	delete this;
-					};
-					Op(lamb).QueueASync(MainThreadOpQ());
-
-				}
-				else
-					mPanelUiState = 1;
+			{	mPanelUiState = is_splitter ? 6 : 1;
 			}
 			else if( filtev.mBut1||filtev.mBut2 )
 			{
+
 				if( abs(ilocy)<kpanelw ) // top
 					mPanelUiState = 2;
 				else if( abs(ilocy-miH)<kpanelw ) // bot
@@ -220,6 +176,7 @@ HandlerResult Panel::DoOnUiEvent( const Event& Ev )
 					mPanelUiState = 5;
 			}
 			break;
+		}
 		case ui::UIEV_RELEASE: // idle
 			ret.mHoldFocus = false;
 
@@ -286,18 +243,25 @@ HandlerResult Panel::DoOnUiEvent( const Event& Ev )
 		case 5:
 			SetSize(iprevpw+dx,iprevph);
 			break;
+		case 6:
+		{	
+			mSplitVal = float(ilocy-ksplith)/float(miH);
+			DoLayout();
+			SetDirty();
+			break;
+		}
 	}
 
 	return ret;
 }
 //
 
-void Panel::DoOnEnter()
+void SplitPanel::DoOnEnter()
 {
 
 }
 
-void Panel::DoOnExit()
+void SplitPanel::DoOnExit()
 {
 
 }

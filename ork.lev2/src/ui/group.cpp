@@ -25,6 +25,24 @@ void Group::AddChild( Widget* pch )
 	assert(pch->GetParent()==nullptr);
 	mChildren.push_back( pch );
 	pch->mParent = this;
+	DoLayout();
+}
+
+void Group::RemoveChild( Widget* pch )
+{
+	mChildren.erase(
+	    std::remove_if(
+	        mChildren.begin(),
+	        mChildren.end(),
+	        [=](Widget* test) -> bool {
+	            // Do "some stuff", then return true if element should be removed.
+	            return test==pch;
+	        }
+	    ),
+	    mChildren.end()
+	);
+
+	DoLayout();
 }
 
 /////////////////////////////////////////////////////////////////////////

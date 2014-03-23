@@ -41,6 +41,8 @@ Outliner2Model::Outliner2Model(SceneEditorBase&ed,Outliner2View&v)
 	, ConstructAutoSlot(ClearSelection)
 	, mVP(v)
 	, mLastSelection(-1)
+	, mShowArchs(true)
+	, mShowEnts(true)
 {
 	SetupSignalsAndSlots();
 }
@@ -83,6 +85,17 @@ void Outliner2Model::DecSel()
 	}
 
 }
+bool Outliner2Model::ToggleEnts()
+{
+	mShowEnts=!mShowEnts;
+	UpdateModel();
+}
+bool Outliner2Model::ToggleArchs()
+{
+	mShowArchs=!mShowArchs;
+	UpdateModel();
+}
+
 void Outliner2Model::UpdateModel()
 {
 	printf( "Outliner2Model<%p>::SlotSceneTopoChanged\n", this );
@@ -108,19 +121,35 @@ void Outliner2Model::UpdateModel()
 			const PoolString& name = item.first;
 			SceneObject* pobj = item.second;
 
-			Outliner2Item  o2i;
-			o2i.mName = item.first.c_str();
-			o2i.mObject = pobj;
+			Archetype* as_arch = rtti::autocast(pobj);
+			EntData* as_ent = rtti::autocast(pobj);
 
-			bool is_sel = mSelected.find((ork::Object*)pobj)!=mSelected.end();
+			if( as_ent && false==mShowEnts ) pobj=nullptr;
+			if( as_arch && false==mShowArchs ) pobj=nullptr;
 
-			if( is_sel )
-				mLastSelection = index;
+			if( pobj )
+			{
+				FixedString<256> decnam;
+				if( as_arch )
+					decnam.format("(a) %s", item.first.c_str() );
+				if( as_ent )
+					decnam.format("(e) %s", item.first.c_str() );
 
-			o2i.mSelected = is_sel;
-			mItems.push_back(o2i);
+				Outliner2Item  o2i;
 
-			index++;
+				o2i.mName = decnam.c_str();
+				o2i.mObject = pobj;
+
+				bool is_sel = mSelected.find((ork::Object*)pobj)!=mSelected.end();
+
+				if( is_sel )
+					mLastSelection = index;
+
+				o2i.mSelected = is_sel;
+				mItems.push_back(o2i);
+
+				index++;
+			}
 		}
 	}
 
@@ -429,6 +458,16 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 			
 			switch( ikeyc )
 			{
+				case 97: // a
+				{
+					mOutlinerModel.ToggleArchs();
+					break;
+				}
+				case 101: // e
+				{
+					mOutlinerModel.ToggleEnts();
+					break;
+				}
 				case 13: // enter
 				{	
 					SetNameOfSelectedItem();

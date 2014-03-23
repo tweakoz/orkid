@@ -54,7 +54,8 @@ public:
 	static const int keycode_ctrl = 16777250;
 
 	Widget( const std::string & name, int x, int y, int w, int h );
-
+	~Widget();
+	
 	void Init( lev2::GfxTarget* pTARG );
 
 	const std::string & GetName( void ) const { return msName; }
@@ -105,14 +106,14 @@ public:
 
 	void SetDirty();
 	bool IsDirty() const { return mDirty; }
-	Widget* GetParent() const { return mParent; }
+	Group* GetParent() const { return mParent; }
 	//CWidgetFlags &GetFlagsRef( void ) { return mWidgetFlags; }
 
 	virtual void OnResize( void );
 	HandlerResult OnUiEvent( const Event& Ev );
 
 	bool HasMouseFocus() const;
-	void SetParent(Widget*p) { mParent=p; }
+	void SetParent(Group*p) { mParent=p; }
 
 	HandlerResult RouteUiEvent( const Event& Ev );
 
@@ -128,7 +129,7 @@ protected:
 	bool				mDirty;
 	bool				mSizeDirty;
 	bool				mPosDirty;
-	Widget*				mParent;						
+	Group*				mParent;						
 	std::stack<IWidgetEventFilter*> mEventFilterStack;
 
 	static void UpdateMouseFocus(const HandlerResult& e, const Event& Ev);
@@ -156,6 +157,7 @@ public:
 	Group( const std::string & name, int x, int y, int w, int h );
 
 	void AddChild( Widget* pch );
+	void RemoveChild( Widget* pch );
 
 	void DrawChildren(ui::DrawEvent& drwev);
 
