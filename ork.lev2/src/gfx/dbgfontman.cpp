@@ -126,6 +126,7 @@ void CFontMan::InitFonts( GfxTarget *pTARG )
 	Inconsolata13.miCharOffsetY = 11;
 	Inconsolata13.miAdvanceWidth = 7;
 	Inconsolata13.miAdvanceHeight = 13;
+	Inconsolata13.miYShift = -1;
 
 	FontDesc Inconsolata14;
 	Inconsolata14.mFontName = "i14";
@@ -138,7 +139,7 @@ void CFontMan::InitFonts( GfxTarget *pTARG )
 	Inconsolata14.miCharHeight = 24;
 	Inconsolata14.miCharOffsetX = 10;
 	Inconsolata14.miCharOffsetY = 8;
-	Inconsolata14.miYShift = 1;
+	Inconsolata14.miYShift = -1;
 	Inconsolata14.miAdvanceWidth = 7;
 	Inconsolata14.miAdvanceHeight = 16;
 

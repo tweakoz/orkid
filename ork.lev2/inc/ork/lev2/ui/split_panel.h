@@ -9,9 +9,12 @@ namespace ork { namespace ui {
 struct SplitPanel : public Group
 {
 	SplitPanel( const std::string & name, int x, int y, int w, int h );
+	~SplitPanel();
 
 	void SetChild1( Widget* pch);
 	void SetChild2( Widget* pch);
+
+	bool EnableCloseButton() { mEnableCloseButton=true; }
 
 private:
 
@@ -25,7 +28,10 @@ private:
 	Widget* mChild1;
 	Widget* mChild2;
 	int mPanelUiState;
+	bool mDockedAtTop;
 	float mSplitVal;
+	int mCloseX, mCloseY;
+	bool mEnableCloseButton;
 };
 
 }} // namespace ork { namespace ui {

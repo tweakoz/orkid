@@ -249,7 +249,7 @@ void Outliner2View::DoInit( lev2::GfxTarget* pt )
 	mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
 	mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
 
-	mFont = lev2::CFontMan::GetFont("i16");
+	mFont = lev2::CFontMan::GetFont("i13");
 	auto& fontdesc = mFont->GetFontDesc();
 
 	mCharW = fontdesc.miAdvanceWidth;

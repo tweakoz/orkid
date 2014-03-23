@@ -467,6 +467,7 @@ static const int koff = 1;
 void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 {
 	int inumitems = GetNumItems();
+	int stack_depth = mModel.StackSize();
 
 	/////////////////
 	// drop down box
@@ -481,14 +482,28 @@ void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 	int dby2 = dby1+idim;
 
 	int labw = this->GetNameWidth();
-	int labx = miX+(miW>>1)-(labw>>1);
+	int labx = miX+12;
 	if( labx<dbx2+3 ) labx = dbx2+3;
 
 	GetSkin()->DrawBgBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1 );
 	GetSkin()->DrawOutlineBox( this, miX+ioff, miY+ioff, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
 	GetSkin()->DrawText( this, labx, miY+4, mName.c_str() );
-
 	GetSkin()->DrawBgBox( this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL );
+
+	////////////////////////////////
+	// draw stack depth indicator on top node
+	////////////////////////////////
+
+	if( (stack_depth-1) && (GetOrkObj()==mModel.BrowseStackTop()))
+	{
+		std::string arrs;
+		for( int i=0; i<(stack_depth-1); i++ )
+			arrs += "<";
+		GetSkin()->DrawText( this, miX+miW-8-((stack_depth-1)*get_charw()), miY+4, arrs.c_str() );
+
+	}
+
+	////////////////////////////////
 
 	if( inumitems )
 	{
@@ -608,8 +623,16 @@ void GedGroupNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 			return;
 		}
 		///////////////////////////////////////////////////
-		///////////////////////////////////////////////////
 		else if( isCTRL )
+		{
+			if( GetOrkObj() )
+			{
+				// spawn new window here	
+				mModel.SigSpawnNewGed( GetOrkObj() );
+			}
+		}
+		///////////////////////////////////////////////////
+		else
 		{
 			if( GetOrkObj() )
 			{
@@ -633,14 +656,6 @@ void GedGroupNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		///////////////////////////////////////////////////
 		// SPAWN a new GED
 		///////////////////////////////////////////////////
-		else if( modifiers&Qt::AltModifier )
-		{
-			if( GetOrkObj() )
-			{
-				// spawn new window here	
-				mModel.SigSpawnNewGed( GetOrkObj() );
-			}
-		}
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

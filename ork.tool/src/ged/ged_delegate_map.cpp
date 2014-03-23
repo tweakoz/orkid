@@ -246,7 +246,7 @@ bool MapTraverseSerializer::Serialize(const rtti::ICastable *value)
 			{
 				ork::object::ObjectClass* pclass = psubobj->GetClass();
 				const char* pclassname = pclass->Name().c_str();
-				std::string fstr = CreateFormattedString( "%s    <%s>", pclassname, GetDecoKeyString().c_str() );
+				std::string fstr = CreateFormattedString( "<%s> : %s", GetDecoKeyString().c_str(), pclassname );
 				GedItemNode* pchild = mModel.Recurse( psubobj, fstr.c_str() );
 			}
 			else
@@ -1239,11 +1239,14 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
+
+	int inumind = mbConst ? 0 : 4;
+	if( mbImpExp ) inumind += 2;
+
 	/////////////////
 	// drop down box
 	/////////////////
 
-	static const int klabelminX = klabh*10;
 	int ioff = koff;
 	int idim = (kdim);
 
@@ -1254,14 +1257,11 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 
 	int labw = this->GetNameWidth();
 	
-	int labx = miX+(miW>>1)-(labw>>1);
-	if( labx<(miX+klabelminX) ) labx = miX+klabelminX;
 
 	int ity = get_text_center_y();
 
 	GetSkin()->DrawBgBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1 );
 	GetSkin()->DrawOutlineBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE );
-	GetSkin()->DrawText( this, labx, ity, mName.c_str() );
 
 	GetSkin()->DrawBgBox( this, miX, miY, miW, klabh, GedSkin::ESTYLE_BACKGROUND_MAPNODE_LABEL );
 
@@ -1310,6 +1310,7 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 		dbx2 = 	dbx1+idim;
 	}
 
+
 	if( mbImpExp )
 	{
 		int idimh = idim>>1;
@@ -1329,6 +1330,8 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 		//GetSkin()->DrawLine( this, dbx1, dby1, dbxc, dby1+idimh, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
 		//GetSkin()->DrawLine( this, dbxc, dby1+idimh, dbx2, dby1, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
 	}
+	GetSkin()->DrawText( this, dbx1, ity, mName.c_str() );
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 
