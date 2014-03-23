@@ -43,6 +43,7 @@ Outliner2Model::Outliner2Model(SceneEditorBase&ed,Outliner2View&v)
 	, mLastSelection(-1)
 	, mShowArchs(true)
 	, mShowEnts(true)
+	, mShowComps(true)
 {
 	SetupSignalsAndSlots();
 }
@@ -85,14 +86,19 @@ void Outliner2Model::DecSel()
 	}
 
 }
-bool Outliner2Model::ToggleEnts()
+void Outliner2Model::ToggleEnts()
 {
 	mShowEnts=!mShowEnts;
 	UpdateModel();
 }
-bool Outliner2Model::ToggleArchs()
+void Outliner2Model::ToggleArchs()
 {
 	mShowArchs=!mShowArchs;
+	UpdateModel();
+}
+void Outliner2Model::ToggleComps()
+{
+	mShowComps=!mShowComps;
 	UpdateModel();
 }
 
@@ -147,8 +153,32 @@ void Outliner2Model::UpdateModel()
 
 				o2i.mSelected = is_sel;
 				mItems.push_back(o2i);
-
 				index++;
+
+				if( as_arch && mShowComps )
+				{
+					const auto& comps = as_arch->GetComponentDataTable().GetComponents();
+					for( const auto& citem : comps )
+					{
+						auto c = citem.second;
+						is_sel = mSelected.find((ork::Object*)c)!=mSelected.end();
+						if( is_sel )
+							mLastSelection = index;
+
+						auto clazz = c->GetClass();
+						auto class_name = clazz->Name().c_str();
+						
+						decnam.format("(c) %s", class_name );
+						Outliner2Item  o2ic;
+						o2ic.mName = decnam.c_str();
+						o2ic.mObject = c;
+						o2ic.mSelected = is_sel;
+						o2ic.mIndent = 1;
+						mItems.push_back(o2ic);
+						index++;
+					}
+
+				}
 			}
 		}
 	}
@@ -357,8 +387,9 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 				for( const auto& item : items )
 				{	const std::string& name = item.mName;
 					auto pobj = item.mObject;
+					int indent = item.mIndent;
 			        
-					lev2::CFontMan::DrawText( tgt, 16, iy, name.c_str() );
+					lev2::CFontMan::DrawText( tgt, (indent+1)*16, iy, name.c_str() );
 			        iy += kitemh;
 					alt = ! alt;
 				}
@@ -458,17 +489,25 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 			
 			switch( ikeyc )
 			{
-				case 97: // a
+				case 'a': 
 				{
-					mOutlinerModel.ToggleArchs();
+					if( false==mOutlinerModel.AreArchsEnabled() )
+						mOutlinerModel.ToggleArchs();
+					else if( mOutlinerModel.AreArchsEnabled() && false==mOutlinerModel.AreCompsEnabled() )
+						mOutlinerModel.ToggleComps();
+					else if( mOutlinerModel.AreArchsEnabled() && mOutlinerModel.AreCompsEnabled() )
+					{
+						mOutlinerModel.ToggleArchs();
+						mOutlinerModel.ToggleComps();
+					}
 					break;
 				}
-				case 101: // e
+				case 'e': 
 				{
 					mOutlinerModel.ToggleEnts();
 					break;
 				}
-				case 13: // enter
+				case '\n': 
 				{	
 					SetNameOfSelectedItem();
 					break; 

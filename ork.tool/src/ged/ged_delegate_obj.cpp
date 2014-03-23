@@ -198,13 +198,13 @@ void GedObjNode<Setter>::DoDraw( lev2::GfxTarget* pTARG )
 
 		if( mbCollapse )
 		{
-			GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-			GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+			GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+			GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		}
 		else
 		{
-			GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-			GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+			GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+			GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		}
 		GetSkin()->DrawText( this, labix, ity, mName.c_str() );
 	}

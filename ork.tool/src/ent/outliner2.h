@@ -25,8 +25,10 @@ struct Outliner2View;
 
 struct Outliner2Item
 {
+	Outliner2Item() : mObject(nullptr), mIndent(0), mSelected(false) {}
 	std::string mName;
 	ork::Object* mObject;
+	int mIndent;
 	bool mSelected;
 };
 
@@ -45,8 +47,12 @@ public:
 	Outliner2Model(SceneEditorBase&ed,Outliner2View&v);
 	~Outliner2Model();
 	////////////////////////////////////////////////////////////////////
-	bool ToggleEnts();
-	bool ToggleArchs();
+	void ToggleEnts();
+	void ToggleArchs();
+	void ToggleComps();
+	bool AreEntsEnabled() const { return mShowEnts; }
+	bool AreArchsEnabled() const { return mShowArchs; }
+	bool AreCompsEnabled() const { return mShowComps; }
 	////////////////////////////////////////////////////////////////////
 	void SigModelChanged();
 	void SlotSceneTopoChanged();
@@ -74,6 +80,7 @@ private:
 	int mLastSelection;
 	bool mShowEnts;
 	bool mShowArchs;
+	bool mShowComps;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct Outliner2View : public ui::Surface

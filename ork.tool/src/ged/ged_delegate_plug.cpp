@@ -125,13 +125,13 @@ private:
 		{
 			if( mbSingle )
 			{
-				GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-				GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+				GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+				GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE );
 			}
 			else
 			{
-				GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-				GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+				GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+				GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE );
 			}
 
 			dbx1 += (idim+4);
@@ -142,7 +142,7 @@ private:
 		for( int i=0; i<=6; i+=3 )
 		{	
 			int j = (i*2);
-			GetSkin()->DrawOutlineBox( this, dbx1+i, dby1+i, idim-j, idim-j, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+			GetSkin()->DrawOutlineBox( this, dbx1+i, dby1+i, idim-j, idim-j, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		}
 
 		dbx1 += ifdim;
