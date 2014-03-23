@@ -294,7 +294,7 @@ class GedSkin0 : public GedSkin
 	{	
 		if( 0 == mpFONT )
 		{
-			mpFONT = lev2::CFontMan::GetFont("i16");
+			mpFONT = lev2::CFontMan::GetFont("i14");
 			miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
 			miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
 		}
@@ -393,7 +393,8 @@ class GedSkin0 : public GedSkin
 		if( false == mbPickMode )
 		{	////////////////////////
 			uimat.SetUIColorMode( ork::lev2::EUICOLOR_MOD );
-			pTARG->PushModColor(CColor4(0.0f,0.0f,0.2f));
+			//pTARG->PushModColor(CColor4(0.0f,0.0f,0.2f));
+			pTARG->PushModColor( CColor4::Black() );
 			lev2::CFontMan::PushFont(mpFONT);
 			lev2::CFontMan::BeginTextBlock( pTARG );
 			{	int inumt = (int) mTexts.size();
@@ -467,10 +468,10 @@ class GedSkin1 : public GedSkin
 				color = CVector3(0.1f,0.2f,0.3f);
 				break;
 			case ESTYLE_DEFAULT_OUTLINE:
-				color = CVector3(0.5f,0.5f,0.5f);
+				color = CVector3(0.7f,0.7f,0.7f);
 				break;
 			case ESTYLE_DEFAULT_CHECKBOX:
-				color = CVector3(1.0f,1.0f,1.0f);
+				color = CVector3(0.7f,0.7f,0.7f);
 				bsc = false;
 				break;
 			default:
@@ -606,7 +607,7 @@ class GedSkin1 : public GedSkin
 	{
 		if( 0 == mpFONT )
 		{
-			mpFONT = lev2::CFontMan::GetFont("i24");
+			mpFONT = lev2::CFontMan::GetFont("i14");
 			miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
 			miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
 		}
@@ -620,13 +621,15 @@ class GedSkin1 : public GedSkin
 	///////////////////////////////////////////////////////////////////
 	void End( ork::lev2::GfxTarget* pTARG )
 	{
+		int iw = mpCurrentGedVp->GetW();
+		int ih = mpCurrentGedVp->GetH();
 		lev2::GfxMaterialUI uimat(pTARG);
 		miRejected = 0;
 		miAccepted = 0;
 		lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
 		////////////////////////
 		const ork::CMatrix4& mtxW = pTARG->MTXI()->RefMMatrix();
-		pTARG->MTXI()->PushUIMatrix();
+		pTARG->MTXI()->PushUIMatrix(iw,ih);
 		pTARG->MTXI()->PushMMatrix(mtxW);
 		////////////////////////
 		//pTARG->IMI()->QueFlush();
@@ -665,6 +668,7 @@ class GedSkin1 : public GedSkin
 			}
 			vw.UnLock(pTARG);
 			
+
 			pTARG->BindMaterial( & uimat );
 		
 			pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES );

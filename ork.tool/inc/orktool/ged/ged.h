@@ -122,6 +122,7 @@ public:
 	void PushBrowseStack( ork::Object* pobj );
 	void PopBrowseStack();
 	ork::Object* BrowseStackTop() const;
+	int StackSize() const;
 
 	PersistMapContainer& GetPersistMapContainer() { return mPersistMapContainer; }
 	const PersistMapContainer& GetPersistMapContainer() const { return mPersistMapContainer; }

@@ -143,6 +143,9 @@ void EditorMainWindow::NewDataflowView()
 
 void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 {
+	dataflow::graph_data* dflow_graph = rtti::autocast(pobj);
+	bool is_dflow = (dflow_graph!=nullptr);
+
 	rtti::Class* pclass = pobj->GetClass();
 	std::string classname = pclass->Name().c_str();
 	std::string viewname = CreateFormattedString( "%s:%p", classname.c_str(), pobj );
@@ -150,11 +153,36 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 	ork::tool::ged::ObjModel* pnewobjmodel = new ork::tool::ged::ObjModel;
 	pnewobjmodel->Attach( 0 );
 
-	auto pnl = new ui::Panel( "ged.panel", 0,128,128,256 );
 	auto pvp = new tool::ged::GedVP( "props.vp", *pnewobjmodel );
-	pnl->SetChild(pvp);
-	gpvp->AddChild(pnl);
 	pvp->GetGedWidget().SetDeleteModel(true);
+
+	ui::Widget* pnlw = nullptr;
+
+	if( is_dflow )
+	{
+
+		auto pvpdf = new ork::tool::GraphVP(mDataflowEditor,*pnewobjmodel,"yo");
+
+		auto pnl = new ui::SplitPanel( "ged.panel", 512,0,256,256 );
+		pnl->SetChild1(pvpdf);
+		pnl->SetChild2(pvp);
+		pnl->EnableCloseButton();
+
+		gpvp->AddChild(pnl);
+		pnlw = pnl;
+
+		mDataflowEditor.Attach( dflow_graph );
+
+
+	}
+	else
+	{
+		auto pnl = new ui::Panel( "ged.panel", 0,128,128,256 );
+		pnl->SetChild(pvp);
+		gpvp->AddChild(pnl);
+		pnlw = pnl;
+	}
+
 	pnewobjmodel->SetChoiceManager( & mEditorBase.mChoiceMan );
 
 	pnewobjmodel->GetPersistMapContainer().CloneFrom( mGedModelObj.GetPersistMapContainer() );
@@ -191,7 +219,6 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 	// 
 	/////////////////////////////////////////////////////////////////////////////////////
 	pnewobjmodel->Attach( pobj );
-	pnl->SetDirty();
 
 }
 

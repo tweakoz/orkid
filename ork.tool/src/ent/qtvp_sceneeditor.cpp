@@ -45,6 +45,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 extern bool gtoggle_hud;
+static const bool draw_pickbuffer = false;
 
 using namespace ork::lev2;
 
@@ -1000,7 +1001,7 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 		}
 		pTARG->PopModColor();
 		/////////////////////////////////////////////////
-		if( 0 ) // mEditor.GetActiveSceneInst() )
+		if( draw_pickbuffer && mEditor.GetActiveSceneInst() )
 		{
 			//pTARG->IMI()->QueFlush( false );
 			ent::ESceneInstMode emode = mEditor.GetActiveSceneInst()->GetSceneInstMode();

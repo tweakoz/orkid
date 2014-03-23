@@ -120,6 +120,8 @@ GraphVP::GraphVP( DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::
 
 	mpArrowTex = ork::asset::AssetManager<ork::lev2::TextureAsset>::Load("lev2://textures/dfarrow")->GetTexture();
 
+	mObjectModel.EnablePaint();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -582,6 +584,8 @@ void GraphVP::ReCenter()
 
 ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 {
+	const auto& filtev = EV.mFilteredEvent;
+
 	int ix = EV.miX;
 	int iy = EV.miY;
 	int ilocx, ilocy;
@@ -605,9 +609,9 @@ ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 	static CVector2 gbasexym;
 	static CVector2 gbasexy;
 
-	switch( EV.miEventCode )
+	switch( filtev.miEventCode )
 	{	case ui::UIEV_KEY:
-		{	if( EV.miKeyCode == 'a' )
+		{	if( filtev.miKeyCode == 'a' )
 			{	
 				ReCenter();
 				SetDirty();
@@ -620,16 +624,16 @@ ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 		}
 		case ui::UIEV_DRAG:
 		{
-			if( gpmodule )
+			if( bisalt || filtev.mBut1 )
+			{
+				mGrid.SetCenter( gbasexy-(CVector2(ix,iy)-gbasexym) );
+			}
+			else if( gpmodule )
 			{
 				float fix = (fx*mGrid.GetBotRight().GetX())+((1.0-fx)*mGrid.GetTopLeft().GetX());
 				float fiy = (fy*mGrid.GetBotRight().GetY())+((1.0-fy)*mGrid.GetTopLeft().GetY());
 				gpmodule->SetGVPos( mGrid.Snap(CVector2( fix, fiy )) );
 
-			}
-			else if( bisalt )
-			{
-				mGrid.SetCenter( gbasexy-(CVector2(ix,iy)-gbasexym) );
 			}
 			SetDirty();
 			break;
@@ -641,12 +645,12 @@ ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 		}
 		case ui::UIEV_PUSH:
 		{
-			if( false == bisctrl )
+			if( false == bisctrl && filtev.mBut0 )
 			{
 				GetPixel( ilocx, ilocy, ctx );
 				ork::Object* pobj = (ork::Object*) ctx.GetObject(mpPickBuffer,0);
 
-				printf( "pobj<%p>\n", pobj );
+				printf( "dflow pick pobj<%p>\n", pobj );
 				if(ork::Object *object = ork::rtti::autocast(pobj))
 					mObjectModel.Attach(object);
 				gpmodule = rtti::autocast(pobj);

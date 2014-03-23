@@ -669,6 +669,11 @@ ork::Object* ObjModel::BrowseStackTop() const
 	return rval;
 }
 
+int ObjModel::StackSize() const
+{
+	return mBrowseStack.size();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ObjModel::Dump( const char* header) const

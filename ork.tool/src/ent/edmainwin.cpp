@@ -234,11 +234,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	auto genviewblk = [=]()
 	{
 		QDockWidget *pdw0 = NewCamView(false);
-		SceneObjPropEdit();
-		//NewOutliner2View();
-		NewDataflowView();
-		//QDockWidget *pdw2 = NewOutlinerView(false);
-		
+		SceneObjPropEdit();		
 
 		#if 0 //defined(ORK_OSX)
 		if( gPythonEnabled )

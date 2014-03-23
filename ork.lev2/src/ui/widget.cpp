@@ -211,8 +211,7 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 			mKeyTimer.Start();
 			switch( Ev.miKeyCode )
 			{	
-				case 122: // z
-				case 49: // 1
+				case 'z': // synthetic left button
 					fev.miEventCode = mBut0Down ? 0 : evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
 						{} //printf( "SYNTH DOUBLECLICK\n" );
@@ -224,8 +223,7 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 					mBut0Down = true;
 					fev.mAction = "keypush";
 					break;
-				case 120: // x
-				case 50: // 2
+				case 'x': // synthetic middle button
 					fev.miEventCode = mBut1Down ? 0 : evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
 						{}// printf( "SYNTH DOUBLECLICK\n" );
@@ -237,8 +235,7 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 					mBut1Down = true;
 					fev.mAction = "keypush";
 					break;
-				case 99: // c
-				case 51: // 3
+				case 'c': // synthetic right button
 					fev.miEventCode = mBut2Down ? 0 : evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
 						{}//printf( "SYNTH DOUBLECLICK\n" );

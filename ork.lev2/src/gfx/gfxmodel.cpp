@@ -666,7 +666,7 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 	////////////////////////////////////////
 	// Draw Skeleton
 
-	if( 1 )
+	if( 0 )
 	{
 		pTARG->PushModColor( ModColor );
 		GfxEnv::GetDefault3DMaterial()->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );

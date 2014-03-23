@@ -66,7 +66,7 @@
                                                                     <item key='G'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Global' id='10'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 -20</property>
                                                                                 <property name='TimeScale'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='11'>
                                                                                         <property name='value'>1</property>
@@ -83,7 +83,7 @@
                                                                     <item key='e'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::RingEmitterModule' id='13'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 40</property>
                                                                                 <property name='DeathQID'>"q1"</property>
                                                                                 <property name='Direction'>
                                                                                     <object type='dflow/inplugxf<vect3,vect3xf>' id='14'>
@@ -199,7 +199,7 @@
                                                                     <item key='p'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Pool' id='36'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-70 0</property>
                                                                                 <property name='MaxParticles'>10000</property>
                                                                                 <property name='Output'>
                                                                                     <object type='psys::pbufoutplug' id='37'>
@@ -233,7 +233,7 @@
                                                                     <item key='r'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::SpriteRenderer' id='42'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>70 0</property>
                                                                                 <property name='Input'>
                                                                                     <object type='psys::pbufinpplug' id='43'>
                                                                                     </object>
