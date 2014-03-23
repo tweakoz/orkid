@@ -24,7 +24,7 @@ print "fw_dir<%s>" % fw_dir
 
 ###################################
 
-cmd_rm = "rm -rf %s/%s" % (bundle_dir,bundle_name)
+cmd_rm = "rm -rf %s/*" % (bundle_dir)
 print "cmd_rm<%s>" % cmd_rm
 os.system(cmd_rm)
 

@@ -1267,13 +1267,13 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 
 	if( mbSingle )
 	{
-		GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE );
 	}
 	else
 	{
-		GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE );
 	}
 
 	dbx1 += (idim+4);
@@ -1283,27 +1283,27 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 	{
 		int idimh = idim>>1;
 
-		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		GetSkin()->DrawLine( this, dbx1+idimh, dby1, dbx1+idimh, dby1+idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		GetSkin()->DrawLine( this, dbx1, dby1+idimh, dbx2, dby1+idimh, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, dbx1+idimh, dby1, dbx1+idimh, dby1+idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, dbx1, dby1+idimh, dbx2, dby1+idimh, GedSkin::ESTYLE_BUTTON_OUTLINE );
 
 		dbx1 += (idim+4);
 		dbx2 = 	dbx1+idim;
 
-		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		GetSkin()->DrawLine( this, dbx1, dby1+idimh, dbx2, dby1+idimh, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, dbx1, dby1+idimh, dbx2, dby1+idimh, GedSkin::ESTYLE_BUTTON_OUTLINE );
 
 		dbx1 += (idim+4);
 		dbx2 = 	dbx1+idim;
 		int dbxc = dbx1+idimh;
 
-		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		GetSkin()->DrawText( this, dbx1+1, dby1+1, "R" );
 
 		dbx1 += (idim+4);
 		dbx2 = 	dbx1+idim;
 		dbxc = dbx1+idimh;
-		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		GetSkin()->DrawText( this, dbx1+1, dby1+1, "D" );
 
 		dbx1 += (idim+4);
@@ -1315,20 +1315,20 @@ void GedMapNode::DoDraw( lev2::GfxTarget* pTARG )
 	{
 		int idimh = idim>>1;
 
-		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		GetSkin()->DrawText( this, dbx1+1, dby1+1, "I" );
 
 		dbx1 += (idim+4);
 		dbx2 = 	dbx1+idim;
 		int dbxc = dbx1+idimh;
 
-		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		GetSkin()->DrawOutlineBox( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		GetSkin()->DrawText( this, dbx1+1, dby1+1, "O" );
 
 		dbx1 += (idim+4);
 		dbx2 = 	dbx1+idim;
-		//GetSkin()->DrawLine( this, dbx1, dby1, dbxc, dby1+idimh, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		//GetSkin()->DrawLine( this, dbxc, dby1+idimh, dbx2, dby1, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+		//GetSkin()->DrawLine( this, dbx1, dby1, dbxc, dby1+idimh, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		//GetSkin()->DrawLine( this, dbxc, dby1+idimh, dbx2, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE );
 	}
 	GetSkin()->DrawText( this, dbx1, ity, mName.c_str() );
 

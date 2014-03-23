@@ -486,7 +486,6 @@ void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 	if( labx<dbx2+3 ) labx = dbx2+3;
 
 	GetSkin()->DrawBgBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1 );
-	GetSkin()->DrawOutlineBox( this, miX+ioff, miY+ioff, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
 	GetSkin()->DrawText( this, labx, miY+4, mName.c_str() );
 	GetSkin()->DrawBgBox( this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL );
 
@@ -509,13 +508,13 @@ void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 	{
 		if( mbCollapsed )
 		{
-			GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-			GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+			GetSkin()->DrawRightArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+			GetSkin()->DrawLine( this, dbx1+1, dby1, dbx1+1, dby2, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		}
 		else
 		{
-			GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-			GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+			GetSkin()->DrawDownArrow( this, dbx1, dby1, idim, idim, GedSkin::ESTYLE_BUTTON_OUTLINE );
+			GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		}
 	}
 }

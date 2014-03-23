@@ -140,11 +140,11 @@ class GedSkin0 : public GedSkin
 				balternate = false;
 				break;
 			case ESTYLE_BACKGROUND_GROUP_LABEL:
-				color = CVector3(0.2f,0.7f,0.7f);
+				color = CVector3(0.5f,0.5f,0.7f);
 				balternate = false;
 				break;
 			case ESTYLE_BACKGROUND_MAPNODE_LABEL:
-				color = CVector3(0.7f,0.2f,0.7f);
+				color = CVector3(0.7f,0.5f,0.5f);
 				balternate = false;
 				break;
 			case ESTYLE_DEFAULT_HIGHLIGHT:
@@ -154,6 +154,10 @@ class GedSkin0 : public GedSkin
 				color = CVector3(0.5f,0.5f,0.5f);
 				break;
 			case ESTYLE_DEFAULT_CHECKBOX:
+				color = CVector3(0.0f,0.0f,0.0f);
+				bsc = false;
+				break;
+			case ESTYLE_BUTTON_OUTLINE:
 				color = CVector3(0.0f,0.0f,0.0f);
 				bsc = false;
 				break;
@@ -269,15 +273,15 @@ class GedSkin0 : public GedSkin
 	}
 	///////////////////////////////////////////////////////////////////
 	void DrawDownArrow( GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic )
-	{	DrawLine( pnode, ix, iy, ix+iw, iy, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix+iw, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+	{	DrawLine( pnode, ix, iy, ix+iw, iy, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix+iw, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
 	}
 	///////////////////////////////////////////////////////////////////
 	void DrawRightArrow( GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic )
-	{	DrawLine( pnode, ix, iy, ix, iy+ih, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix, iy, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix, iy+ih, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+	{	DrawLine( pnode, ix, iy, ix, iy+ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix, iy, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix, iy+ih, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_BUTTON_OUTLINE );
 	}
 	///////////////////////////////////////////////////////////////////
 	virtual void DrawText( GedObject* pnode, int ix, int iy, const char* ptext )
@@ -457,11 +461,11 @@ class GedSkin1 : public GedSkin
 				balternate = false;
 				break;
 			case ESTYLE_BACKGROUND_GROUP_LABEL:
-				color = CVector3(0.2f,0.7f,0.7f);
+				color = CVector3(0.5f,0.5f,0.7f);
 				balternate = false;
 				break;
 			case ESTYLE_BACKGROUND_MAPNODE_LABEL:
-				color = CVector3(0.7f,0.2f,0.7f);
+				color = CVector3(0.7f,0.5f,0.5f);
 				balternate = false;
 				break;
 			case ESTYLE_DEFAULT_HIGHLIGHT:
@@ -470,8 +474,13 @@ class GedSkin1 : public GedSkin
 			case ESTYLE_DEFAULT_OUTLINE:
 				color = CVector3(0.7f,0.7f,0.7f);
 				break;
+			case ESTYLE_BUTTON_OUTLINE:
+				color = CVector3(0.6f,0.6f,0.7f);
+				balternate = false;
+				bsc = false;
+				break;
 			case ESTYLE_DEFAULT_CHECKBOX:
-				color = CVector3(0.7f,0.7f,0.7f);
+				color = CVector3(0.6f,0.6f,0.7f);
 				bsc = false;
 				break;
 			default:
@@ -582,15 +591,15 @@ class GedSkin1 : public GedSkin
 	}
 	///////////////////////////////////////////////////////////////////
 	void DrawDownArrow( GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic )
-	{	DrawLine( pnode, ix, iy, ix+iw, iy, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix+iw, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+	{	DrawLine( pnode, ix, iy, ix+iw, iy, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix+iw, iy, ix+(iw>>1), iy+ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
 	}
 	///////////////////////////////////////////////////////////////////
 	void DrawRightArrow( GedObject* pnode, int ix, int iy, int iw, int ih, ESTYLE ic )
-	{	DrawLine( pnode, ix, iy, ix, iy+ih, GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix, iy, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_DEFAULT_CHECKBOX );
-		DrawLine( pnode, ix, iy+ih, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_DEFAULT_CHECKBOX );
+	{	DrawLine( pnode, ix, iy, ix, iy+ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix, iy, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_BUTTON_OUTLINE );
+		DrawLine( pnode, ix, iy+ih, ix+iw, iy+(ih>>1), GedSkin::ESTYLE_BUTTON_OUTLINE );
 	}
 	///////////////////////////////////////////////////////////////////
 	virtual void DrawText( GedObject* pnode, int ix, int iy, const char* ptext )

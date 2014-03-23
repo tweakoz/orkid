@@ -258,6 +258,7 @@ public:
 		ESTYLE_DEFAULT_OUTLINE,
 		ESTYLE_DEFAULT_CAPTION,
 		ESTYLE_DEFAULT_CHECKBOX,
+		ESTYLE_BUTTON_OUTLINE,
 	} ESTYLE;
 
 	virtual void Begin( ork::lev2::GfxTarget* pTARG, GedVP* pgedvp ) = 0;
