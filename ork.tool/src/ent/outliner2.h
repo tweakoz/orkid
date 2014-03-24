@@ -99,8 +99,8 @@ struct Outliner2View : public ui::Surface
 
 private:
 
-	const int kitemh = 24;
-
+	int kitemh() const;
+	
 	void DoRePaintSurface(ui::DrawEvent& drwev) override;
 	void DoInit( lev2::GfxTarget* pt ) override;
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
@@ -112,6 +112,7 @@ private:
 	int mCharW, mCharH;
 	int miScrollY;
 	int mContentH;
+	bool mDark;
 	ork::lev2::CTXBASE* mCtxBase;
 
 };

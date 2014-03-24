@@ -177,7 +177,7 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 	}
 	else
 	{
-		auto pnl = new ui::Panel( "ged.panel", 0,128,128,256 );
+		auto pnl = new ui::Panel( "ged.panel", 512,0,256,256 );
 		pnl->SetChild(pvp);
 		gpvp->AddChild(pnl);
 		pnlw = pnl;
