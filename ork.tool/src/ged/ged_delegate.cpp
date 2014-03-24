@@ -486,7 +486,7 @@ void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 	if( labx<dbx2+3 ) labx = dbx2+3;
 
 	GetSkin()->DrawBgBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1 );
-	GetSkin()->DrawText( this, labx, miY+4, mName.c_str() );
+	GetSkin()->DrawText( this, labx, miY+2, mName.c_str() );
 	GetSkin()->DrawBgBox( this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL );
 
 	////////////////////////////////

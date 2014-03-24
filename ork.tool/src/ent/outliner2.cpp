@@ -233,6 +233,7 @@ Outliner2View::Outliner2View(SceneEditorBase&ed)
 	, miScrollY(0)
 	, mContentH(0)
 	, ConstructAutoSlot(ModelChanged)
+	, mDark(true)
 {
 
 	object::Connect(	& ed.GetSigSceneTopoChanged(),
@@ -264,6 +265,11 @@ void Outliner2View::SlotObjectDeSelected( ork::Object* pobj )
 void Outliner2View::SlotModelChanged()
 {
 	assert(false);
+}
+///////////////////////////////////////////////////////////////////////////////
+int Outliner2View::kitemh() const
+{
+	return mCharH+4;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2View::DoInit( lev2::GfxTarget* pt )
@@ -325,19 +331,23 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 
 		const std::vector<Outliner2Item>& items = mOutlinerModel.Items();
 
-		mContentH = items.size()*kitemh;
+		mContentH = items.size()*kitemh();
 
 		CVector4 c1(0.7f,0.7f,0.8f);
 		CVector4 c2(0.8f,0.8f,0.8f);
 		CVector4 c3(0.8f,0.0f,0.0f);
 
+		if( mDark )
+		{
+			c1 = CVector4( 0.3f,0.3f,0.4f );
+			c2 = CVector4( 0.2f,0.2f,0.3f );
+			c3 = CVector4( 0.5f,0.0f,0.0f );
+		}
+
 		const int kheaderH = miScrollY;
 
 		tgt->PushMaterial( defmtl );
 		mtxi->PushUIMatrix(miW,miH);
-		//CMatrix4 mtxw = mtxi->RefMMatrix();
-		//mtxw = matSCROLL*mtxw;
-		//mtxi->PushMMatrix(mtxw);
 		{
 
 			int iy = kheaderH;
@@ -361,14 +371,14 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 				primi.RenderQuadAtZ(
 					tgt,
 					0, miW, 		// x0, x1
-					iy, iy+kitemh, 	// y0, y1
+					iy, iy+kitemh(), 	// y0, y1
 					0.0f,			// z
 					0.0f, 1.0f,		// u0, u1
 					0.0f, 1.0f		// v0, v1
 					);
 
 				tgt->PopModColor();
-				iy += kitemh;
+				iy += kitemh();
 				alt = ! alt;
 			}
 
@@ -381,7 +391,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 
 				lev2::CFontMan::PushFont(mFont);
 				tgt->PushMaterial( & uimat );
-				tgt->PushModColor( CColor4::Black() );
+				tgt->PushModColor( mDark ? CColor4(0.7f,0.7f,0.8f) : CColor4::Black() );
 				lev2::CFontMan::BeginTextBlock( tgt );
 				iy = kheaderH+5;
 				for( const auto& item : items )
@@ -390,7 +400,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 					int indent = item.mIndent;
 			        
 					lev2::CFontMan::DrawText( tgt, (indent+1)*16, iy, name.c_str() );
-			        iy += kitemh;
+			        iy += kitemh();
 					alt = ! alt;
 				}
 				lev2::CFontMan::EndTextBlock( tgt );
@@ -398,13 +408,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 				tgt->PopMaterial();
 				tgt->PopModColor();
 			}
-
-
-			//int ix_root = 0;
-			//int iy_root = 0;
-			//LocalToRoot( 0, 0, ix_root, iy_root );
 		}
-		//mtxi->PopMMatrix();
 		mtxi->PopUIMatrix();
 		tgt->PopMaterial();
 	}
@@ -417,7 +421,7 @@ void Outliner2View::SetNameOfSelectedItem()
 	int ilastsel = mOutlinerModel.GetLastSelection();
 
 	int irx, iry;
-	LocalToRoot(0,(ilastsel*kitemh)+miScrollY,irx,iry);
+	LocalToRoot(0,(ilastsel*kitemh())+miScrollY,irx,iry);
 
 	const std::vector<Outliner2Item>& items = mOutlinerModel.Items();
 	const Outliner2Item& item = items[ilastsel];
@@ -431,9 +435,9 @@ void Outliner2View::SetNameOfSelectedItem()
 	tool::ged::GedInputDialog dialog;
 	dialog.setModal( true );
 
-	dialog.setGeometry( g.GetX(), g.GetY(), miW, kitemh );
+	dialog.setGeometry( g.GetX(), g.GetY(), miW, kitemh() );
 	dialog.clear();
-	dialog.mTextEdit.setGeometry( 0, 0, miW, kitemh );
+	dialog.mTextEdit.setGeometry( 0, 0, miW, kitemh() );
 	dialog.mTextEdit.SetText( item.mName.c_str() );
 
 	int iv = dialog.exec();
@@ -500,6 +504,12 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 						mOutlinerModel.ToggleArchs();
 						mOutlinerModel.ToggleComps();
 					}
+					break;
+				}
+				case '!':
+				{
+					mDark = !mDark;
+					SetDirty();
 					break;
 				}
 				case 'e': 

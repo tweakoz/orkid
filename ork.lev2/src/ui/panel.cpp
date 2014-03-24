@@ -50,7 +50,6 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 	auto& primi = lev2::CGfxPrimitives::GetRef();
 	auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
 
-	//lev2::GfxMaterialUI UiMat(tgt);
 	lev2::SRasterState defstate;
 	tgt->RSI()->BindRasterState( defstate );
 	tgt->FXI()->InvalidateStateBlock();
@@ -89,9 +88,15 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 		// panel outline (resize/moving)
 		/////////////
 
-		tgt->PushModColor( has_foc?CColor4::White():CColor4::Red() );
+		CVector4 clr = CColor4(1.0f,0.0f,1.0f,0.4f);
+		if( has_foc )
+			clr = CColor4::White();
+
+		defmtl->mRasterState.SetBlending( lev2::EBLENDING_ALPHA );
+		tgt->PushModColor( clr );
 		ren_quad( ixr, iyr, ixr+miW, iyr+miH );
 		tgt->PopModColor();
+		defmtl->mRasterState.SetBlending( lev2::EBLENDING_OFF );
 
 		/////////////
 		// close button
@@ -117,9 +122,6 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 	if( mChild )
 		mChild->Draw(drwev);
 
-
-	//fbi->PopViewport();
-	//fbi->PopScissor();
 }
 
 /////////////////////////////////////////////////////////////////////////
