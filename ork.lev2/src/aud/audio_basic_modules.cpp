@@ -415,7 +415,7 @@ void AudioGraph::Describe()
 {
 }
 AudioGraph::AudioGraph()
-	: mdflowregisters(16)
+	: mdflowregisters("audio",16)
 {
 }
 AudioGraph::~AudioGraph()

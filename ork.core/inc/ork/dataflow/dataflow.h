@@ -751,10 +751,13 @@ private:
 // It knows the dependent clients downstream of it self (for managing the
 //  lifetime of given data attached to the register
 
+class dgregisterblock;
+
 struct dgregister
 {	int					mIndex;
 	std::set<dgmodule*>	mChildren;
 	dgmodule*			mpOwner;
+	dgregisterblock* 	mpBlock;
 	//////////////////////////////////
 	void SetModule( dgmodule*pmod );
 	//////////////////////////////////
@@ -770,15 +773,17 @@ class dgregisterblock
 {
 public:
 
-	dgregisterblock(int isize);
+	dgregisterblock(const std::string& name, int isize);
 
 	dgregister* Alloc();
 	void Free( dgregister* preg );
 	const orkset<dgregister*>& Allocated() const { return mAllocated; }
 	void Clear();
+	const std::string& GetName() const { return mName; }
 private:
 	ork::pool<dgregister>		mBlock;
 	orkset<dgregister*>			mAllocated;
+	std::string 				mName;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -815,6 +820,8 @@ struct dgqueue
 	void PruneRegisters(dgmodule* pmod );
 	void QueModule( dgmodule* pmod, int irecd );
 	bool HasPendingInputs( dgmodule* mod );
+	void DumpInputs( dgmodule* mod ) const;
+	void DumpOutputs( dgmodule* mod ) const;
 	//////////////////////////////////////////////////////////
 	dgqueue( const graph_inst* pg, dgcontext& ctx );
 	//////////////////////////////////////////////////////////

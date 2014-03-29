@@ -8,7 +8,6 @@
 #include <orktool/qtui/qtui_tool.h>
 #include <orktool/qtui/qtmainwin.h>
 #include <orktool/qtui/qtconsole.h>
-#include <ork/lev2/gfx/testvp.h>
 #include <orktool/toolcore/dataflow.h>
 #include <orktool/qtui/qtdataflow.h>
 

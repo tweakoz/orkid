@@ -130,13 +130,10 @@ void toolmesh::Dump( const std::string& comment ) const
 	fprintf( fout, "// toolmesh dump<%s>\n", comment.c_str() );
 	fprintf( fout, "////////////////////////////////////////////////\n" );
 	fprintf( fout, "////////////////////////////////////////////////\n" );
-	for(	orkmap<std::string,std::string>::const_iterator 
-			itm=mShadingGroupToMaterialMap.begin();
-			itm!=mShadingGroupToMaterialMap.end();
-			itm++ )
-	{	const std::string& key = itm->first;
-		const std::string& val = itm->second;
-		fprintf( fout, "// toolmesh::shadinggroup<%s> material<%s>\n", key.c_str(), val.c_str() );
+	for(	const auto& item : mShadingGroupToMaterialMap )
+	{	const std::string& key = item.first;
+		const auto& val = item.second;
+		fprintf( fout, "// toolmesh::shadinggroup<%s> material_id<%s> material_name<%s>\n", key.c_str(), val.mMaterialDaeId.c_str(), val.mMaterialName.c_str() );
 	}
 	fprintf( fout, "////////////////////////////////////////////////\n" );
 	for(	orkmap<std::string,std::string>::const_iterator 
@@ -482,9 +479,10 @@ int	submesh::GetNumPolys( int inumsides ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 const submesh * toolmesh::FindSubMeshFromMaterialName( const std::string& materialname ) const
-{	for( orkmap<std::string,std::string>::const_iterator it=mShadingGroupToMaterialMap.begin(); it!=mShadingGroupToMaterialMap.end(); it++ )
-	{	if( materialname == it->second )
-		{	const std::string& shgrpname = it->first;
+{	for( const auto& item : mShadingGroupToMaterialMap )
+	{	
+		if( materialname == item.second.mMaterialDaeId )
+		{	const std::string& shgrpname = item.first;
 			orklut<std::string, submesh*>::const_iterator itpg=mPolyGroupLut.find(shgrpname);
 			if( itpg != mPolyGroupLut.end() )
 			{	return itpg->second;
@@ -497,9 +495,9 @@ const submesh * toolmesh::FindSubMeshFromMaterialName( const std::string& materi
 ///////////////////////////////////////////////////////////////////////////////
 
 submesh * toolmesh::FindSubMeshFromMaterialName( const std::string& materialname )
-{	for( orkmap<std::string,std::string>::const_iterator it=mShadingGroupToMaterialMap.begin(); it!=mShadingGroupToMaterialMap.end(); it++ )
-	{	if( materialname == it->second )
-		{	const std::string& shgrpname = it->first;
+{	for( const auto& item : mShadingGroupToMaterialMap )
+	{	if( materialname == item.second.mMaterialDaeId )
+		{	const std::string& shgrpname = item.first;
 			orklut<std::string, submesh*>::iterator itpg=mPolyGroupLut.find(shgrpname);
 			if( itpg != mPolyGroupLut.end() )
 			{	return itpg->second;

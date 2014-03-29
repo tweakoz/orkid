@@ -8,7 +8,6 @@
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/application/application.h>
 #include <orktool/qtui/qtmainwin.h>
-#include <ork/lev2/gfx/testvp.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <QtGui/QMessageBox>
 #include <QtCore/QSettings>

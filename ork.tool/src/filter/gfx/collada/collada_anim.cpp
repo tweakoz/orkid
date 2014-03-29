@@ -281,10 +281,10 @@ void CColladaAnim::ParseMaterials()
 
 	if( bmat_bindings )
 	{
-		for( orkmap<std::string,std::string>::const_iterator it=mShadingGroupMap.begin(); it!=mShadingGroupMap.end(); it++ )
+		for( const auto& item : mShadingGroupMap )
 		{
-			const std::string& ShadingGroupName = it->first;
-			const std::string& MaterialName = it->second;
+			const std::string& ShadingGroupName = item.first;
+			const std::string& MaterialName = item.second.mMaterialDaeId;
 
 			SColladaMaterial colladamaterial;
 			colladamaterial.ParseMaterial( mDocument, ShadingGroupName, MaterialName );

@@ -235,29 +235,6 @@ void CameraDrawable::QueueToBuffer(DrawableBufLayer&buffer) const
 	item.SetDrawable(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-ModelDrawable::ModelDrawable( Entity* pent )
-	: Drawable( pent )
-	, mModelInst( NULL )
-	, mfScale( 1.0f )
-	, mRotate(0.0f,0.0f,0.0f)
-	, mOffset(0.0f,0.0f,0.0f)
-	, mOverrideXF(0)
-	, mpWorldPose( 0 )
-	, mbShowBoundingSphere(false)
-{
-	for(int i = 0; i < kMaxEngineParamFloats; i++)
-		mEngineParamFloats[i] = 0.0f;
-}
-/////////////////////////////////////////////////////////////////////
-ModelDrawable::~ModelDrawable()
-{
-	if( mpWorldPose )
-	{
-		delete mpWorldPose;
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
 Drawable::Drawable(Entity* pent)
 	: mEntity(pent)
 	, mOwner( 0 )
@@ -287,6 +264,28 @@ const DagNode *Drawable::GetDagNode() const
 		return &mEntity->GetEntData().GetDagNode();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+ModelDrawable::ModelDrawable( Entity* pent )
+	: Drawable( pent )
+	, mModelInst( NULL )
+	, mfScale( 1.0f )
+	, mRotate(0.0f,0.0f,0.0f)
+	, mOffset(0.0f,0.0f,0.0f)
+	, mOverrideXF(0)
+	, mpWorldPose( 0 )
+	, mbShowBoundingSphere(false)
+{
+	for(int i = 0; i < kMaxEngineParamFloats; i++)
+		mEngineParamFloats[i] = 0.0f;
+}
+/////////////////////////////////////////////////////////////////////
+ModelDrawable::~ModelDrawable()
+{
+	if( mpWorldPose )
+	{
+		delete mpWorldPose;
+	}
+}
 void ModelDrawable::SetEngineParamFloat(int idx, float fv)
 {
 	OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
@@ -417,13 +416,13 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer
 	// render bounding sphere ?
 	//////////////////////////////////////////////////////////////////////
 
-	/*if( false==IsPickState && mbShowBoundingSphere )
+	if( false==IsPickState && mbShowBoundingSphere )
 	{
 		lev2::SphereRenderable& sphrend = renderer->QueueSphere();
 		sphrend.SetColor( ork::CColor4::White() );
 		sphrend.SetPosition( ctr );
 		sphrend.SetRadius( frad*mfScale );
-	}*/
+	}
 		
 	//////////////////////////////////////////////////////////////////////
 	// generate coarse light mask
@@ -576,7 +575,8 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer
 						renderable.SetMesh( & mesh );
 						renderable.SetSubMesh( & submesh );
 						renderable.SetCluster( & cluster );
-						renderable.SetModColor(renderer->GetTarget()->RefModColor());
+						renderable.SetModColor(CColor4::White());
+						//renderable.SetModColor(renderer->GetTarget()->RefModColor());
 						renderable.SetMatrix(matw);
 						renderable.SetLightMask( lmask );
 						renderable.SetScale( mfScale );

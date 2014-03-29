@@ -31,7 +31,7 @@
 #if defined(USE_FCOLLADA)
 #include <orktool/filter/gfx/collada/daeutil.h>
 #include <ork/kernel/thread.h>
-bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::string>& MatSemMap );
+//bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::string>& MatSemMap );
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace MeshUtil {
@@ -400,10 +400,10 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 		if( pfx )
 		{
 			std::string omatname = mtlname;
-			orkmap<std::string, std::string>::const_iterator itml = tmesh.RefShadingGroupToMaterialMap().find(mtlname);					
+			const auto& itml = tmesh.RefShadingGroupToMaterialMap().find(mtlname);					
 			if( itml != tmesh.RefShadingGroupToMaterialMap().end() )
 			{
-				omatname = itml->second;
+				omatname = itml->second.mMaterialDaeId;
 			}
 
 			FCDEffect* DaeEfx = EfxLib->AddEntity();
@@ -1185,7 +1185,8 @@ void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopt
 			FCDMaterialLibrary *MatLib = daedoc.GetMaterialLibrary();
 			std::string ShadingGroupName = MatGroup->GetMaterialSemantic ().c_str();
 			std::string MeshShGrp = MeshDaeID+std::string("_")+ShadingGroupName;
-			std::string MaterialName = mShadingGroupToMaterialMap[ ShadingGroupName ];
+			const auto& mtl_bind = mShadingGroupToMaterialMap[ ShadingGroupName ];
+			std::string MaterialName = mtl_bind.mMaterialDaeId;
 			
 			AnnoMap* anno_map = new AnnoMap;
 			anno_map->SetAnnotation("shadinggroup",ShadingGroupName);

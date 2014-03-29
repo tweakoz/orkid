@@ -32,11 +32,11 @@ const SColladaMaterial & CColladaModel::GetMaterialFromShadingGroup( const std::
 {
 	static const SColladaMaterial kDefaultMaterial;
 
-	orkmap<std::string,std::string>::const_iterator itsh = mMaterialSemanticBindingMap.find( ShadingGroupName );
+	MeshUtil::material_semanticmap_t::const_iterator itsh = mMaterialSemanticBindingMap.find( ShadingGroupName );
 
 	if( mMaterialSemanticBindingMap.end() != itsh )
 	{
-		const std::string & MaterialName = itsh->second;
+		const std::string & MaterialName = itsh->second.mMaterialDaeId;
 
 		orkmap<std::string,SColladaMaterial>::const_iterator itmat = mMaterialMap.find( ShadingGroupName );
 
@@ -63,10 +63,14 @@ struct StandardEffectTexGetter
 
 		GetImgData( Image, TexFileName );
 
+
+
 		const FCDExtra *TexExtra = ptex->GetExtra();
 		const FCDExtra *ImageExtra = Image->GetExtra();
 		const FCDETechnique* TexMayaTek = TexExtra->GetDefaultType()->FindTechnique("MAYA");
 		const FCDETechnique* ImgMayaTek = ImageExtra->GetDefaultType()->FindTechnique("MAYA");
+
+		printf( "TEXNAME<%s>\n", TexFileName.c_str() );
 
 		///////////////////////////////////////////////////////////
 		// check image name (or image name base)
@@ -182,6 +186,7 @@ void SColladaMaterial::ParseStdMaterial( FCDEffectStandard *StdProf )
 	mSpecularPower = StdProf->GetShininess();
 	mSpecularPower = (0.0f==mSpecularPower) ? 256.0f : (10.0f / mSpecularPower);
 
+	printf( "ParseStdMaterial\n");
 	switch( lighting_type )
 	{
 		case FCDEffectStandard::LAMBERT:
@@ -504,13 +509,17 @@ void SColladaMaterial::ParseFxMaterial( FCDEffectProfileFX *FxProf )
 
 void SColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & ShadingGroupName, const std::string& MaterialName )
 {
+
+	printf( "ParseMaterial\n");
+
 	FCDMaterialLibrary *MatLib = doc->GetMaterialLibrary();
 	FCDMaterial* material = MatLib->FindDaeId(MaterialName.c_str());
 
-	/*const fstring& material_note = material->GetNote();
-	std::string smaterial_note = material_note.c_str();
-	
-	u32 itm = smaterial_note.find( "materialobject(" );
+	//const fstring& material_note = material->GetNote();
+	//std::string smaterial_note = material_note.c_str();
+	//printf( "smaterial_note<%s>\n", smaterial_note.c_str() );
+
+	/*u32 itm = smaterial_note.find( "materialobject(" );
 	std::string material_object;
 	std::string material_namespace;
 	if( itm != std::string::npos )
@@ -536,6 +545,9 @@ void SColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & Shadi
 	mShadingGroupName = ShadingGroupName;
 	mMaterialName = MaterialName;
 	mSpecularPower = 1.0f;
+
+	printf( "mShadingGroupName<%s> MaterialName<%s> material<%p>\n", mShadingGroupName.c_str(), MaterialName.c_str(), material );
+
 	if(material)
 	{
 		FCDEffect* Effect = material->GetEffect();
@@ -611,31 +623,41 @@ bool CColladaModel::ConvertTextures(const file::Path& outmdlpth, ork::tool::Filt
 	OutDir.SetExtension(0);
 	OutDir.SetFile(0);
 
-	for( orkset<lev2::TextureAsset*>::const_iterator it = mTextures.begin(); it!=mTextures.end(); it++ )
+	for( auto passet : mTextures )
 	{
-		lev2::TextureAsset* passet = (*it);
-		lev2::Texture* ptex = (passet==0) ? 0 : passet->GetTexture();
-
 		const ork::AssetPath& path = passet->GetName();
+
+		lev2::Texture* ptex = (passet==nullptr) ? nullptr : passet->GetTexture();
 
 		ork::file::Path InPath = path;
 
 		std::string tmpstr(InPath.c_str());
-		if(tmpstr.find("data/src/") != 0)
+
+		size_t f = tmpstr.find("data/src/");
+		if(f == std::string::npos)
 		{
 			orkerrorlog("ERROR: Input texture path is outside of 'data/src/'! (%s)\n", InPath.c_str());
 			return false;
 		}
-		tmpstr = std::string("data/") + options.GetOption("-platform")->GetValue() + std::string("/") + tmpstr.substr(9);
-		ork::file::Path OutPath(tmpstr.c_str());
+		auto base_out_dir = std::string("data/") + options.GetOption("-platform")->GetValue();
 
+		file::Path OutPath = outmdlpth;
+		OutPath.SetFile( path.GetName().c_str() );
+		OutPath.SetExtension( path.GetExtension().c_str() );
 		options.GetOption( "-in" )->SetValue( InPath.c_str() );
 		options.GetOption( "-out" )->SetValue( OutPath.c_str() );
 
 		ork::file::Path::SmallNameType extension = InPath.GetExtension();
 
-		if(strcmp(extension.c_str(), "dds") != 0)
+		if(strcmp(extension.c_str(), "dds") == 0)
 		{
+			printf( "OutPath<%s>\n", OutPath.c_str() );
+			fxstring<1024> cmd_str;
+			cmd_str.format( "cp %s %s", InPath.c_str(),  OutPath.c_str() );
+			system( cmd_str.c_str() );
+		}
+		else
+		{	// convert via NVTT ?
 			if(ColladaExportPolicy::GetContext() && ColladaExportPolicy::GetContext()->mDDSInputOnly)
 			{
 				orkerrorlog("ERROR: <%s> Only DDS files should be referenced from DAE (and hence Maya) models! (%s)\n", InPath.c_str(), mFileName.c_str());

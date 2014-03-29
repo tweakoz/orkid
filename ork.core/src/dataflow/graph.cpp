@@ -322,21 +322,34 @@ dyn_external* graph_inst::GetExternal() const
 ///////////////////////////////////////////////////////////////////////////////
 void graph_inst::RefreshTopology(dgcontext& ctx )
 {	if( false == IsComplete() ) return;
+	
+	const bool debug_dump = false;
+
+
+
 	size_t inumchild = GetNumChildren();
 	dgqueue dq(this,ctx);
 	mMutex.Lock();
-	{	while( dq.NumPending() )
-		{	///////////////////////////////////////
-			orklut<int,dgmodule*> PendingAndReady(ork::EKEYPOLICY_MULTILUT);
-			for( std::set<dgmodule*>::iterator it = dq.pending.begin(); it!=dq.pending.end(); it++ )
-			{	dgmodule* pmod = *it;
+	{	///////////////////////////////////////
+		if( debug_dump )
+		{
+			printf( "/////////////////////////////////////\n" );
+			printf( "graph<%p> RefreshTopology\n", this );
+		}
+		///////////////////////////////////////	
+		while( dq.NumPending() )
+		{	orklut<int,dgmodule*> PendingAndReady(ork::EKEYPOLICY_MULTILUT);
+			
+			for( dgmodule* pmod : dq.pending )
+			{	
 				if( false==dq.HasPendingInputs( pmod ) )
 				{	int ikey = (pmod->Key().mDepth*16)+pmod->Key().mModifier;
+					//printf( " mod<%s> depth<%d> mod<%d> sort_key<%d>\n", pmod->GetName().c_str(), pmod->Key().mDepth, pmod->Key().mModifier, ikey );
 					PendingAndReady.AddSorted( ikey, pmod );
 				}
 			}
-			for( orklut<int,dgmodule*>::iterator it=PendingAndReady.begin(); it!=PendingAndReady.end(); it++ )
-			{	dq.QueModule(it->second,0);
+			for( const auto& next : PendingAndReady )
+			{	dq.QueModule(next.second,0);
 			}
 			///////////////////////////////////////
 		}
@@ -352,6 +365,22 @@ void graph_inst::RefreshTopology(dgcontext& ctx )
 			}
 		}
 		SetTopologyDirty( false );
+
+		if( debug_dump )
+		{
+			printf( "////////////\n" );
+			for( const auto& ch : TopoSorted )
+			{	printf( "toposort k<%d> mod<%s>\n", ch.first, ch.second->GetName().c_str() );
+				dq.DumpOutputs(ch.second);
+				dq.DumpInputs(ch.second);
+			}
+			printf( "////////////\n" );
+		}
+
+		if( debug_dump )
+			printf( "/////////////////////////////////////\n" );
+
+		//assert(false);
 		UnLockTopoSortedChildren();
 		///////////////////////////////////////
 		///////////////////////////////////////

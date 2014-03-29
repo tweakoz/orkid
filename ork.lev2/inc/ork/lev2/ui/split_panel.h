@@ -14,7 +14,7 @@ struct SplitPanel : public Group
 	void SetChild1( Widget* pch);
 	void SetChild2( Widget* pch);
 
-	bool EnableCloseButton() { mEnableCloseButton=true; }
+	void EnableCloseButton() { mEnableCloseButton=true; }
 
 private:
 

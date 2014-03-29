@@ -129,7 +129,7 @@ void psys_graph::Describe()
 ///////////////////////////////////////////////////////////////////////////////
 
 psys_graph::psys_graph()
-	: mdflowregisters(16)
+	: mdflowregisters("ptcl_buf",16)
 	, mbEmitEnable(true)
 	//, mfDuration(0.0f)
 	, mfElapsed(0.0f)

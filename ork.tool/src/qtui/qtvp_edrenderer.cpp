@@ -156,6 +156,14 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 	//CMatrix4 nmat = smat*wmat;
 	CMatrix4 nmat = tmat*rmat*smat*wmat;
 
+	if( minst->IsBlenderZup() )
+	{
+		CMatrix4 rmatx,rmaty;
+		rmatx.RotateX(3.14159f*0.5f);
+		rmaty.RotateX(3.14159f);
+		nmat = (rmatx*rmaty)*nmat;
+	}
+
 	/////////////////////////////////////////////////////////////
 
 	ork::lev2::RenderContextInstData MatCtx;
@@ -191,7 +199,7 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
     uint32_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)ModelRen.GetObject()) : 0;
 	ObjColor.SetRGBAU32( pid );
 
-	CColor4 color = target->FBI()->IsPickState() ? ObjColor : ModelRen.GetModColor();
+	CColor4 color = CColor4::White(); //target->FBI()->IsPickState() ? ObjColor : ModelRen.GetModColor();
 
 //	OrkAssert(	GetTarget()->FBI()->IsPickState() == false );
 

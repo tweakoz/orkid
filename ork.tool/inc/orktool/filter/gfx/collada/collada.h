@@ -589,7 +589,7 @@ public:
 	orkmap<std::string,ColMeshRec*>				mMeshIdMap;
 	lev2::XgmModel 								mXgmModel;
 	orkmap<std::string,SColladaMaterial>		mMaterialMap;
-	orkmap<std::string,std::string>				mMaterialSemanticBindingMap;
+	MeshUtil::material_semanticmap_t			mMaterialSemanticBindingMap;
 	orkmap<std::string,ork::lev2::XgmSkelNode*>	mSkeleton;
 	ork::lev2::XgmSkelNode*						mSkeletonRoot;
 	CVector3									mAABoundXYZ;
@@ -767,7 +767,7 @@ public:
 	ChannelsMap	mAnimationChannels;
 
 	///////////////////////////////////////////////////////////////////
-	orkmap<std::string,std::string>							mShadingGroupMap;
+	MeshUtil::material_semanticmap_t						mShadingGroupMap;
 	orkmap<std::string,SColladaMaterial>					mMaterialMap;
 	orkmap<std::string,ork::lev2::GfxMaterialFxParamBase*>	mFxAnimatables;
 	orkmap<std::string,ColladaUvAnimChannel*>				mUvAnimatables;

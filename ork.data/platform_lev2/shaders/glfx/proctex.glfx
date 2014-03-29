@@ -501,21 +501,36 @@ technique imgop3_addw
 	}
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop3_subw : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	vec3 texM = texture( ColorMap3, frg_uv ).xyz;
+	out_clr = vec4(texA-(texB*texM),1.0);
+}
 technique imgop3_subw
 {
 	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_std;
-		fragment_shader=ps_std;
+		fragment_shader=ps_imgop3_subw;
 		state_block=sb_default;
 	}
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_imgop3_mul3 : iface_fmt
+{
+	vec3 texA = texture( ColorMap, frg_uv ).xyz;
+	vec3 texB = texture( ColorMap2, frg_uv ).xyz;
+	vec3 texM = texture( ColorMap3, frg_uv ).xyz;
+	out_clr = vec4(texA*texB*texM,1.0);
 }
 technique imgop3_mul3
 {
 	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_std;
-		fragment_shader=ps_std;
+		fragment_shader=ps_imgop3_mul3;
 		state_block=sb_default;
 	}
 }

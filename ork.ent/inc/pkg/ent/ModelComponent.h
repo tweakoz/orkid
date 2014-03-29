@@ -69,6 +69,8 @@ public:
 
 	bool IsCopyDag() const { return mbCopyDag; }
 	
+	bool IsBlenderZup() const { return mBlenderZup; }
+
 private:
 
 	void GetModelAccessor(ork::rtti::ICastable *&model) const;
@@ -81,6 +83,7 @@ private:
 	lev2::XgmModelAsset*					mModel;
 	bool									mbShowBoundingSphere;
 	bool									mbCopyDag;
+	bool									mBlenderZup;
 	
 	orklut<PoolString,lev2::FxShaderAsset*>	mLayerFx;
 };

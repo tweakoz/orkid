@@ -328,6 +328,8 @@ class Char8 // run time low overhead std::string (max 4 characters)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template<int tsize> using fxstring = FixedString<tsize>;
+
 //typedef FixedString<16> FixedString16;
 //typedef FixedString<32> FixedString32;
 //typedef FixedString<64> FixedString64;

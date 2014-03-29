@@ -37,7 +37,19 @@ uniform_block ub_vtx
 	uniform float SpecularPower;	
 }
 
-vertex_interface iface_vdefault
+vertex_interface iface_rigid
+	: ub_vtx
+{
+	in vec4 position : POSITION;
+	in vec3 normal : NORMAL;
+	in vec4 vtxcolor : COLOR0;
+	in vec2 uv0 : TEXCOORD0;
+
+	out vec4 frg_clr;
+	out vec2 frg_uv0;
+}
+
+vertex_interface iface_skinned
 	: iface_skintools // inherit skinned unis/attrs
 	: ub_vtx
 {
@@ -48,6 +60,7 @@ vertex_interface iface_vdefault
 	out vec4 frg_clr;
 	out vec2 frg_uv0;
 }
+
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault
 {
@@ -95,7 +108,7 @@ state_block sb_additive : sb_default
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxtexcolor : iface_vdefault
+vertex_shader vs_vtxtexcolor : iface_rigid
 {
 	gl_Position = WVPMatrix*position;
 	frg_clr = vec4(1.0f,1.0f,1.0f,1.0f); //vtxcolor.bgra;
@@ -104,7 +117,7 @@ vertex_shader vs_vtxtexcolor : iface_vdefault
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_wnormal : iface_vdefault
+vertex_shader vs_wnormal : iface_rigid
 {
 	gl_Position = WVPMatrix*position;
 	vec3 wnorm = normalize(WRotMatrix*normal);
@@ -114,7 +127,7 @@ vertex_shader vs_wnormal : iface_vdefault
 
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_wnormalsk 
-	: iface_vdefault
+	: iface_skinned
 	: skin_tools
 {
 	vec3 obj_pos = position.xyz;
@@ -135,12 +148,12 @@ fragment_shader ps_modtex : iface_fmt
 	if( out_clr.a==0.0f ) discard;
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault
+vertex_shader vs_vtxcolor : iface_rigid
 {
 	gl_Position = WVPMatrix*position;
 	//frg_clr = vtxcolor;
-	frg_clr = vec4(1.0f,0.0f,0.0f,1.0f); //vtxcolor.bgra;
-	frg_uv0 = uv0;
+	frg_clr = vtxcolor.bgra;
+	frg_uv0 = uv0*vec2(1.0f,-1.0f);
 	//frg_uv1 = uv0;
 }
 ///////////////////////////////////////////////////////////////
@@ -164,7 +177,7 @@ technique tek_lamberttex
 {	fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_fragclr;
+		fragment_shader=ps_modtex;
 		state_block=sb_lerpblend;
 	}
 }
