@@ -69,7 +69,7 @@ int DaeDataSource::GetStride() const { return miStride; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::string>& MatSemMap )
+bool ParseColladaMaterialBindings( FCDocument& daedoc, ork::MeshUtil::material_semanticmap_t& MatSemMap )
 {
 	FCDVisualSceneNodeLibrary* VizSceneLib = daedoc.GetVisualSceneLibrary();
 
@@ -133,26 +133,24 @@ bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::s
 						if( Material )
 						{
 							std::string MatName = Material->GetName().c_str();
-
+							std::string MatId = Material->GetDaeId().c_str();
 							size_t inumbind = MaterialBinding->GetBindingCount();
 
-							//if( inumbind )
-							{
-								MatSemMap[ Semantic ] = MatName;
-							}
-							//else
-							//{
-							//	orkprintf( "WARNING: shading group<%s> material<%s> not used!!\n", Semantic.c_str(), MatName.c_str() );
-							//}
+							printf( "Material<%zu> name<%s> id<%s> inumbind<%zu>\n", imat, MatName.c_str(), MatId.c_str(), inumbind );
+
+							ork::MeshUtil::MaterialBindingItem nitem;
+							nitem.mMaterialName = MatName;
+							nitem.mMaterialDaeId = MatId;
 
 							for( size_t ibind=0; ibind<inumbind; ibind++ )
 							{
 								FCDMaterialInstanceBind *Binding = MaterialBinding->GetBinding( ibind );
-
 								const FCDMaterialInstanceBind::Parameter_semantic & Semantic = Binding->semantic;
 								const FCDMaterialInstanceBind::Parameter_target & Target = Binding->target;
-
+								//nitem.mBindings.push_back(Binding);
 							}
+
+							MatSemMap[ Semantic ] = nitem;
 						}
 					}
 				}

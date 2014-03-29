@@ -19,15 +19,12 @@ namespace ork { namespace MeshUtil {
 
 void toolmesh::MergeMaterialsFromToolMesh( const toolmesh& from )
 {
-	for( orkmap<std::string,std::string>::const_iterator 
-			itm=from.mShadingGroupToMaterialMap.begin();
-			itm!=from.mShadingGroupToMaterialMap.end();
-			itm++ )
+	for( const auto& item : from.mShadingGroupToMaterialMap )
 	{
-		const std::string& key = itm->first;
-		const std::string& val = itm->second;
+		const std::string& key = item.first;
+		const auto& val = item.second;
 
-		orkmap<std::string,std::string>::const_iterator itf = mShadingGroupToMaterialMap.find(key);
+		const auto& itf = mShadingGroupToMaterialMap.find(key);
 		OrkAssert(itf==mShadingGroupToMaterialMap.end());
 		mShadingGroupToMaterialMap[key] = val;
 	}

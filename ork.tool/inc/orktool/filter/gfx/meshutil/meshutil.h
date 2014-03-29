@@ -29,11 +29,24 @@
 struct DaeReadOpts;
 struct DaeWriteOpts;
 
-namespace ork { namespace tool { struct SColladaMaterial; } }
+namespace ork { namespace tool {
+
+struct SColladaMaterial; 
+
+}}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace MeshUtil {
+
+struct MaterialBindingItem
+{
+	std::string mMaterialName;
+	std::string mMaterialDaeId;
+	//std::vector<FCDMaterialInstanceBind*> mBindings;
+};
+
+typedef orkmap<std::string,MaterialBindingItem> material_semanticmap_t;
 
 class Light : public ork::Object
 {
@@ -221,6 +234,10 @@ struct vertex
 		, miNumColors( 0 )
 		, miNumUvs( 0 )
 	{
+		for( int i=0; i<kmaxcolors; i++ )
+		{
+			mCol[i] = CVector4::White();
+		}
 		for( int i=0; i<kmaxinfluences; i++ )
 		{
 			mJointNames[i] = "";
@@ -505,7 +522,7 @@ class toolmesh
 	CMatrix4							mMatRange;
 	orkmap<std::string,std::string>		mAnnotations;
 	orklut<std::string, submesh*>		mPolyGroupLut;
-	orkmap<std::string,std::string>		mShadingGroupToMaterialMap;
+	material_semanticmap_t				mShadingGroupToMaterialMap;
 	LightContainer						mLights;
 	bool								mbMergeEdges;
 	ork::lev2::MaterialMap				mFxmMaterialMap;
@@ -579,8 +596,8 @@ public:
 	/////////////////////////////////////////////////////////////////////////
 
 	const orklut<std::string, submesh*>& RefSubMeshLut() const;
-	const orkmap<std::string, std::string>& RefShadingGroupToMaterialMap() const { return mShadingGroupToMaterialMap; }
-	orkmap<std::string, std::string>& RefShadingGroupToMaterialMap() { return mShadingGroupToMaterialMap; }
+	const material_semanticmap_t& RefShadingGroupToMaterialMap() const { return mShadingGroupToMaterialMap; }
+	material_semanticmap_t& RefShadingGroupToMaterialMap() { return mShadingGroupToMaterialMap; }
 	
 	int GetNumSubMeshes() const { return int(mPolyGroupLut.size()); }
 

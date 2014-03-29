@@ -965,14 +965,11 @@ void SceneInst::RenderDrawableBuffer(lev2::Renderer *renderer, const ork::ent::D
 		{
 			bool DoAll = (0==strcmp(LayerName.c_str(),"All"));
 		
-			for( DrawableBuffer::LayerLut::const_iterator
-					itL=dbuffer.mLayerLut.begin();
-					itL!=dbuffer.mLayerLut.end();
-					itL++
-				)
+			for( const auto& layer_item : dbuffer.mLayerLut )
 			{
-				const DrawableBufLayer* player = itL->second;
-				const PoolString& TestLayerName = itL->first;
+				const PoolString& TestLayerName = layer_item.first;
+				const DrawableBufLayer* player = layer_item.second;
+
 				bool Match = (LayerName==TestLayerName);
 				
 				if( DoAll || (Match && pfdata->HasLayer( TestLayerName ) ) )

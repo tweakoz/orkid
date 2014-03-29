@@ -21,13 +21,15 @@
 namespace ork { namespace dataflow {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-dgregisterblock::dgregisterblock(int isize)
+dgregisterblock::dgregisterblock(const std::string& name, int isize)
 	: mBlock( isize )
+	, mName(name)
 {
 	for( int io=0; io<isize; io++ )
 	{
 		mBlock.direct_access(io).mIndex = (isize-1)-io;
 		mBlock.direct_access(io).mChildren.clear();
+		mBlock.direct_access(io).mpBlock = this;
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,14 +51,13 @@ void dgregisterblock::Free( dgregister* preg )
 void dgregisterblock::Clear()
 {
 	orkvector<dgregister*> deallocvec;
-	for( orkset<dgregister*>::const_iterator it=mAllocated.begin(); it!=mAllocated.end(); it++ )
-	{	dgregister* reg = (*it);
+
+	for( dgregister* reg : mAllocated )
 		deallocvec.push_back(reg);
-	}
-	for( orkvector<dgregister*>::iterator it=deallocvec.begin(); it!=deallocvec.end(); it++ )
-	{	dgregister* reg = *it;
+
+	for( dgregister* reg : deallocvec )
 		Free(reg);
-	}
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -95,6 +96,7 @@ void dgregister::SetModule( dgmodule*pmod )
 dgregister::dgregister( dgmodule*pmod, int idx ) 
 	: mIndex(idx)
 	, mpOwner(0)
+	, mpBlock(nullptr)
 {
 	SetModule( pmod );
 }
@@ -104,17 +106,16 @@ dgregister::dgregister( dgmodule*pmod, int idx )
 void dgcontext::Prune(dgmodule* pmod) // we are done with pmod, prune registers associated with it
 {
 	// check all register sets
-	for( auto itc=mRegisterSets.begin(); itc!=mRegisterSets.end(); itc++ )
+	for( auto itc : mRegisterSets )
 	{
-		dgregisterblock* regs = itc->second;
+		dgregisterblock* regs = itc.second;
 		const orkset<dgregister*>& allocated = regs->Allocated();
 		orkvector<dgregister*> deallocvec;
 
 		// check all allocated registers
-		for( orkset<dgregister*>::const_iterator it=allocated.begin(); it!=allocated.end(); it++ )
-		{	dgregister* reg = (*it);	
-			
-			std::set<dgmodule*>::iterator itfind = reg->mChildren.find(pmod);
+		for( auto reg : allocated )
+		{	
+			auto itfind = reg->mChildren.find(pmod);
 			
 			// were any allocated registers feeding this module?
 			// is it also not a probed module ?
@@ -131,16 +132,15 @@ void dgcontext::Prune(dgmodule* pmod) // we are done with pmod, prune registers 
 				deallocvec.push_back(reg);
 			}
 		}
-		for( orkvector<dgregister*>::iterator it=deallocvec.begin(); it!=deallocvec.end(); it++ )
-		{	dgregister* reg = *it;
-			regs->Free(reg);
+		for( dgregister* free_reg : deallocvec )
+		{	regs->Free(free_reg);
 		}
 	}
 }
 //////////////////////////////////////////////////////////
 void dgcontext::Alloc(outplugbase* poutplug)
 {	const std::type_info* tinfo = & poutplug->GetDataTypeId();
-	orkmap<const std::type_info*, dgregisterblock*>::iterator itc=mRegisterSets.find( tinfo );
+	auto itc=mRegisterSets.find( tinfo );
 	if( itc != mRegisterSets.end() )
 	{	dgregisterblock* regs = itc->second;
 		dgregister* preg = regs->Alloc();
@@ -154,15 +154,13 @@ void dgcontext::SetRegisters( const std::type_info*pinfo,dgregisterblock* pregs 
 }
 //////////////////////////////////////////////////////////
 dgregisterblock* dgcontext::GetRegisters(const std::type_info*pinfo)
-{	orkmap<const std::type_info*, dgregisterblock*>::const_iterator it=mRegisterSets.find(pinfo);
+{	auto it=mRegisterSets.find(pinfo);
 	return (it==mRegisterSets.end()) ? 0 : it->second;
 }
 //////////////////////////////////////////////////////////
 void dgcontext::Clear()
-{	for( orkmap<const std::type_info*, dgregisterblock*>::const_iterator	it =  mRegisterSets.begin();
-																			it != mRegisterSets.end();
-																			it ++ )
-	{	dgregisterblock* pregs = it->second;
+{	for( auto it : mRegisterSets )
+	{	dgregisterblock* pregs = it.second;
 		pregs->Clear();
 	}
 }
@@ -290,6 +288,35 @@ void dgqueue::QueModule( dgmodule* pmod, int irecd )
 	}
 }
 //////////////////////////////////////////////////////////
+void dgqueue::DumpOutputs( dgmodule* mod ) const
+{	int inump = mod->GetNumOutputs();
+	for( int ip=0; ip<inump; ip++ )
+	{	const outplugbase* poutplug = mod->GetOutput(ip);
+		dgregister* preg = poutplug->GetRegister();	
+		dgregisterblock* pblk = (preg!=nullptr) ? preg->mpBlock : nullptr;
+		std::string regb = (pblk!=nullptr) ? pblk->GetName() : "";
+		int reg_index = (preg!=nullptr) ? preg->mIndex : -1;		
+		printf( "  mod<%s> out<%d> reg<%s:%d>\n", mod->GetName().c_str(), ip, regb.c_str(), reg_index );
+	}
+}
+void dgqueue::DumpInputs( dgmodule* mod ) const
+{	int inumins = mod->GetNumInputs();
+	for( int ip=0; ip<inumins; ip++ )
+	{	const inplugbase* pinplug = mod->GetInput(ip);
+		if( pinplug->GetExternalOutput() )
+		{	const outplugbase* poutplug = pinplug->GetExternalOutput();
+			dgmodule* pconcon = rtti::autocast(poutplug->GetModule());
+			dgregister* preg = poutplug->GetRegister();	
+			if( preg )
+			{
+				dgregisterblock* pblk = preg->mpBlock;
+				std::string regb = (pblk!=nullptr) ? pblk->GetName() : "";
+				int reg_index = preg->mIndex;		
+				printf( "  mod<%s> inp<%d> -< module<%s> reg<%s:%d>\n", mod->GetName().c_str(), ip, pconcon->GetName().c_str(), regb.c_str(), reg_index );
+			}
+		}
+	}
+}
 bool dgqueue::HasPendingInputs( dgmodule* mod )
 {	bool bhaspending = false;
 	int inumins = mod->GetNumInputs();
@@ -346,6 +373,8 @@ dgqueue::dgqueue( const graph_inst* pg, dgcontext& ctx )
 					inumchg++;
 				}
 			}
+			//printf( " mod<%s> comp_depth<%d>\n", pmod->GetName().c_str(), pmod->Key().mDepth );
+					
 		}
 	}
 }

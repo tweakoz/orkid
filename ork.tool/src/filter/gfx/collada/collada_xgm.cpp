@@ -258,6 +258,7 @@ void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGrou
 
 	const std::string & ShadingGroupName = ColMatGroup->mShadingGroupName;
 	const SColladaMaterial &ColladaMaterial = ColModel->GetMaterialFromShadingGroup( ShadingGroupName );
+	const std::string& MaterialName = ColladaMaterial.mMaterialName;
 
 	const file::Path mdlname = CFileEnv::GetPathFromUrlExt(ColModel->mFileName.c_str());
 	const file::Path::NameType model_directory = CFileEnv::FilespecToContainingDirectory(ColModel->mFileName.c_str());
@@ -335,6 +336,8 @@ void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGrou
 	{
 		stdtechname += "/skinned";
 	}
+
+	printf( "StdMaterial shgrp<%s> shnam<%s> using technique<%s>\n", ShadingGroupName.c_str(), MaterialName.c_str(), stdtechname.c_str() );
 
 	FCDEffectStandard::TransparencyMode transmode = ColladaMaterial.mTransparencyMode;
 

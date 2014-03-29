@@ -71,6 +71,7 @@ void ModelComponentData::Describe()
 
 	ork::reflect::RegisterProperty("AlwaysVisible", &ModelComponentData::mAlwaysVisible);
 	ork::reflect::RegisterProperty("Scale", &ModelComponentData::mfScale);
+	ork::reflect::RegisterProperty("BlenderZup", &ModelComponentData::mBlenderZup);
 
 	reflect::AnnotatePropertyForEditor<ModelComponentData>( "Scale", "editor.range.min", "-1000.0" );
 	reflect::AnnotatePropertyForEditor<ModelComponentData>( "Scale", "editor.range.max", "1000.0" );
@@ -94,6 +95,7 @@ ModelComponentData::ModelComponentData()
 	, mOffset(0.0f,0.0f,0.0f)
 	, mbShowBoundingSphere(false)
 	, mbCopyDag(false)
+	, mBlenderZup(false)
 {
 }
 
@@ -152,6 +154,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData &data, Entity *p
 
 		mXgmModelInst->RefLocalPose().BindPose();
 		mXgmModelInst->RefLocalPose().BuildPose();
+		mXgmModelInst->SetBlenderZup( mData.IsBlenderZup() );
 	}
 
 	const orklut<PoolString,lev2::FxShaderAsset*>& lfxmap = mData.GetLayerFXMap();

@@ -850,8 +850,10 @@ bool CColladaModel::ParseGeometries()
 				/////////////////////////////////////////////////////
 
 				std::string ShadingGroupName = MatGroup->GetMaterialSemantic ().c_str();
-				std::string MaterialName = mMaterialSemanticBindingMap[ ShadingGroupName ];
+				auto binding = mMaterialSemanticBindingMap[ ShadingGroupName ];
 
+				auto MaterialName = binding.mMaterialDaeId;
+				
 				ColMatGroup->mShadingGroupName = ShadingGroupName;
 
 				orkmap<std::string,SColladaMaterial>::iterator itmat = mMaterialMap.find( ShadingGroupName );

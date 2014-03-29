@@ -60,6 +60,7 @@ XgmModelInst::XgmModelInst( const XgmModel* Model )
 	, mMaterialStateInst( *this )
 	, mLayerFxMaterial( 0 )
 	, mbSkinned(false)
+	, mBlenderZup(false)
 {
 	EnableAllMeshes();
 
@@ -286,13 +287,7 @@ void XgmModel::RenderRigid(	const CColor4 & ModColor,
 							ork::lev2::GfxTarget *pTARG,\
 							const RenderContextInstData & RCID,
 							const RenderContextInstModelData & mdlctx ) const
-{
-	//if(1) return;
-
-//	ork::PropTypeString str;
-//	ork::CPropType<CMatrix4>::ToString( WorldMat, str );
-//	printf( "XgmModel::RenderRigid() mdl<%p> mtx<%s>\n", this, str.c_str() );
-	
+{	
 	ork::lev2::RenderGroupState rgs = RCID.GetRenderGroupState();
 
 	pTARG->MTXI()->SetMMatrix( WorldMat );

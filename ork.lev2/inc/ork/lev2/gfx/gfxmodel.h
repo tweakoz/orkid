@@ -364,6 +364,8 @@ public:
 	bool						IsAnyMeshEnabled();
 	bool 						IsSkinned() const { return mbSkinned; }
 	void 						EnableSkinning() { mbSkinned=true; }
+	bool IsBlenderZup() const { return mBlenderZup; }
+	void SetBlenderZup( bool bv ) { mBlenderZup=bv; }
 
 private:
 
@@ -375,6 +377,7 @@ private:
 	GfxMaterialFx*					mLayerFxMaterial;
 	int								miNumChannels;
 	bool							mbSkinned;
+	bool							mBlenderZup;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

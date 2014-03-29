@@ -24,4 +24,4 @@ public:
 	int GetStride() const;
 };
 
-bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::string>& MatSemMap );
+bool ParseColladaMaterialBindings( FCDocument& daedoc, ork::MeshUtil::material_semanticmap_t& MatSemMap );

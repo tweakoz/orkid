@@ -119,7 +119,7 @@ template <typename T> class GfxMaterialFxParamArtist : public GfxMaterialFxParam
 
 public:
 
-	inline GfxMaterialFxParamArtist(GfxMaterialFx *parent = NULL);
+	GfxMaterialFxParamArtist(GfxMaterialFx *parent = NULL);
 	virtual const T& GetValue( GfxTarget *pTARG ) const { return mValue; }
 
 	T mValue;
