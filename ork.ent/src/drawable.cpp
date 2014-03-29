@@ -575,8 +575,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer
 						renderable.SetMesh( & mesh );
 						renderable.SetSubMesh( & submesh );
 						renderable.SetCluster( & cluster );
-						renderable.SetModColor(CColor4::White());
-						//renderable.SetModColor(renderer->GetTarget()->RefModColor());
+						renderable.SetModColor(renderer->GetTarget()->RefModColor());
 						renderable.SetMatrix(matw);
 						renderable.SetLightMask( lmask );
 						renderable.SetScale( mfScale );

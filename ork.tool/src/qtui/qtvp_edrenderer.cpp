@@ -16,13 +16,16 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <orktool/qtui/qtvp_edrenderer.h>
+#include <pkg/ent/editor/editor.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 
-Renderer::Renderer( ::ork::lev2::GfxTarget *ptarg )
+Renderer::Renderer( ent::SceneEditorBase& ed, lev2::GfxTarget *ptarg )
 	: lev2::Renderer( ptarg )
+	, mEditor(ed)
 {
 	mTopSkyEnvMap = 0;
 	mBotSkyEnvMap = 0;
@@ -44,12 +47,6 @@ void Renderer::Init( )
 U32 Renderer::ComposeSortKey( U32 texIndex, U32 depthIndex, U32 passIndex, U32 transIndex ) const
 {
 	return 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Renderer::RenderBillboard( const lev2::CBillboardRenderable & BBRen ) const
-{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -131,6 +128,10 @@ void Renderer::RenderModelGroup( const ork::lev2::CModelRenderable** Renderables
 
 void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::RenderGroupState rgs  ) const
 {
+	lev2::GfxTarget* target = GetTarget();
+
+	const auto& SelMgr = mEditor.SelectionManager();
+
 	const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
 	const lev2::XgmModel* model = minst->GetXgmModel();
 
@@ -164,6 +165,14 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 		nmat = (rmatx*rmaty)*nmat;
 	}
 
+	auto owner = ModelRen.GetObject();
+	//ent::EntData* pent = rtti::autocast(owner);
+
+	printf( "owner<%p>\n", owner );
+
+	bool is_sel = (owner==nullptr) ? false : SelMgr.IsObjectSelected(owner);
+	bool is_pick_state = target->FBI()->IsPickState();
+
 	/////////////////////////////////////////////////////////////
 
 	ork::lev2::RenderContextInstData MatCtx;
@@ -192,14 +201,20 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 	MatCtx.SetMaterialIndex(0);
 	MatCtx.SetRenderer( this );
 
-	lev2::GfxTarget* target = GetTarget();
     lev2::PickBufferBase* pickBuf = target->FBI()->GetCurrentPickBuffer();
 
 	CColor4 ObjColor;
-    uint32_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)ModelRen.GetObject()) : 0;
-	ObjColor.SetRGBAU32( pid );
+	if( is_pick_state )
+	{	uint32_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)ModelRen.GetObject()) : 0;
+		ObjColor.SetRGBAU32( pid );
+	}
+	else if( is_sel )
+	{
+		ObjColor = CColor4::Red();
 
-	CColor4 color = CColor4::White(); //target->FBI()->IsPickState() ? ObjColor : ModelRen.GetModColor();
+		printf( "ISSELECTED<%p>\n", owner );
+	}
+	CColor4 color = is_pick_state ? ObjColor : ModelRen.GetModColor();
 
 //	OrkAssert(	GetTarget()->FBI()->IsPickState() == false );
 
