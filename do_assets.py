@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
-import os
+import os,string
 
-tool = "ork.tool.test.osx.release"
+tool = "ork.tool"
 
 def mkdir( actnam ):
 	cmd = "mkdir -p data/pc/actors/%s" % actnam
@@ -19,21 +19,30 @@ def exp_actor( actnam ):
 	print cmd
 	os.system(cmd)
 
+def do_actors( act_str ):
+ for a in string.split(act_str):
+    mkdir(a)
+    exp_actor(a)
 
-#ork.tool.test.osx.release -filter dae:xgm -in data/src/actors/Diver/ref/diver.dae -out data/pc/actors/Diver/diver.xgm
-#ork.tool.test.osx.release -filter dae:xga -in data/src/actors/Diver/anims/idle.dae -out data/pc/actors/Diver/idle.xga
-#ork.tool.test.osx.release -filter dae:xga -in data/src/actors/Diver/anims/walk.dae -out data/pc/actors/Diver/walk.xga
-#ork.tool.test.osx.release -filter dae:xgm -in data/src/actors/frogman/mesh_export/sk3.dae -out data/pc/actors/frogman/sk3.xgm
+def do_anims( anm_str ):
+ for k in anm_str:
+    a = anm_str[k]
+    for i in string.split(a):
+        exp_anim(k, a)
 
-#exp_anim("Diver", "idle")
-#exp_anim("Diver", "walk")
-#exp_anim("Diver", "jump")
-#exp_anim("Diver", "run")
-#exp_anim("houdtest", "a1")
+#######################################
 
-#exp_actor("Diver")
-#exp_actor("houdtest")
+actors = "4limb rijid frogman"
 
-mkdir("4limb")
-exp_actor("4limb")
-exp_anim("4limb", "sprawl")
+anims = dict()
+anims["4limb"] = "sprawl"
+anims["frogman"] = "an1"
+
+#######################################
+
+do_actors( actors )
+do_anims( anims )
+
+#######################################
+
+

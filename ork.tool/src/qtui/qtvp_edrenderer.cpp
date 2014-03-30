@@ -153,11 +153,12 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 	CMatrix4 wmat = ModelRen.GetMatrix();
 
 	/////////////////////////////////////////////////////////////
+	// compute world matrix
+	/////////////////////////////////////////////////////////////
 
-	//CMatrix4 nmat = smat*wmat;
 	CMatrix4 nmat = tmat*rmat*smat*wmat;
 
-	if( minst->IsBlenderZup() )
+	if( minst->IsBlenderZup() ) // zup to yup conversion matrix
 	{
 		CMatrix4 rmatx,rmaty;
 		rmatx.RotateX(3.14159f*0.5f);
@@ -165,10 +166,17 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 		nmat = (rmatx*rmaty)*nmat;
 	}
 
-	auto owner = ModelRen.GetObject();
-	//ent::EntData* pent = rtti::autocast(owner);
+    ///////////////////////////////////////
 
-	printf( "owner<%p>\n", owner );
+	auto owner = ModelRen.GetObject();
+	auto c = owner->GetClass();
+
+	const ent::Entity* as_ent = rtti::autocast(owner);
+	if( as_ent )
+	{
+		owner = & as_ent->GetEntData();
+		c = owner->GetClass();
+	}
 
 	bool is_sel = (owner==nullptr) ? false : SelMgr.IsObjectSelected(owner);
 	bool is_pick_state = target->FBI()->IsPickState();
@@ -196,14 +204,20 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 	MdlCtx.mCluster = ModelRen.GetCluster();
 	MdlCtx.mpWorldPose = ModelRen.GetWorldPose();
 
-	MdlCtx.SetSkinned(false);
 
 	MatCtx.SetMaterialIndex(0);
 	MatCtx.SetRenderer( this );
 
     lev2::PickBufferBase* pickBuf = target->FBI()->GetCurrentPickBuffer();
 
-	CColor4 ObjColor;
+    ///////////////////////////////////////
+    // select mod color
+    //  if in pick state - override with colorfied object pick id
+    //  if selected - override with red
+    ///////////////////////////////////////
+
+	CColor4 ObjColor = ModelRen.GetModColor();
+
 	if( is_pick_state )
 	{	uint32_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)ModelRen.GetObject()) : 0;
 		ObjColor.SetRGBAU32( pid );
@@ -211,12 +225,9 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 	else if( is_sel )
 	{
 		ObjColor = CColor4::Red();
-
-		printf( "ISSELECTED<%p>\n", owner );
 	}
-	CColor4 color = is_pick_state ? ObjColor : ModelRen.GetModColor();
 
-//	OrkAssert(	GetTarget()->FBI()->IsPickState() == false );
+    ///////////////////////////////////////
 
 	//printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
 	lev2::LightingGroup lgrp;
@@ -224,14 +235,14 @@ void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::
 	lgrp.mLightMask = ModelRen.GetLightMask();
 	MatCtx.SetLightingGroup(&lgrp);
 
+	MdlCtx.SetSkinned(model->IsSkinned());
 	if( model->IsSkinned() )
 	{
-		MatCtx.SetSkinned( true );
-		model->RenderSkinned( minst, color, nmat, GetTarget(), MatCtx, MdlCtx );
+		model->RenderSkinned( minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx );
 	}
 	else
 	{
-		model->RenderRigid( color, nmat, GetTarget(), MatCtx, MdlCtx );
+		model->RenderRigid( ObjColor, nmat, GetTarget(), MatCtx, MdlCtx );
 	}
 
 
