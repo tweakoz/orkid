@@ -90,6 +90,7 @@ void SelectManager::ClearSelection()
 
 void SelectManager::AddObjectToSelection( ork::Object *pobj )
 {
+	printf( "SelectManager::AddObjectToSelection<%p>\n", pobj );
 	InternalAddObjectToSelection(pobj);
 }
 

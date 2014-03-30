@@ -55,7 +55,7 @@ void OuterPickOp( DeferredPickOperationContext* pickctx )
 			ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
 			pVP->GetPixel( pickctx->miX, pickctx->miY, ctx );
 			pickctx->mpCastable = ctx.GetObject(pVP->GetPickBuffer(),0);
-			//printf( "GOTOBJ<%p>\n", pickctx->mpCastable );
+			printf( "GOTOBJ<%p>\n", pickctx->mpCastable );
 			if( pickctx->mOnPick )
 			{	auto on_pick = [=]()
 				{ 	pickctx->mOnPick(pickctx);
