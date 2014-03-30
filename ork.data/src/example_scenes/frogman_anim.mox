@@ -146,9 +146,9 @@
                                                 <object type='EditorCamControllerData' id='17'>
                                                     <property name='Camera'>
                                                         <object type='CCamera_persp' id='18'>
-                                                            <property name='Center'>-10.686 38.3369 2.61147</property>
+                                                            <property name='Center'>-433.947 2216.93 428.866</property>
                                                             <property name='Focus'>0 0 0</property>
-                                                            <property name='Loc'>141.147</property>
+                                                            <property name='Loc'>6666.81</property>
                                                             <property name='QuatC'>0.0409687 -0.948189 -0.0350895 0.313121</property>
                                                             <property name='Aperature'>40</property>
                                                             <property name='MaxFar'>10000</property>
@@ -196,7 +196,7 @@
                                                     <property name='AnimationMap'>
                                                         <item key='start'>
                                                             <reference category='AssetClass'>
-                                                                "xganim" "data:///actors/frogman/frogman2"
+                                                                "xganim" "data:///actors/frogman/an1"
                                                             </reference>
                                                         </item>
                                                     </property>
@@ -207,6 +207,7 @@
                                             <reference category='ComponentDataClass'>
                                                 <object type='ModelComponentData' id='24'>
                                                     <property name='AlwaysVisible'>false</property>
+                                                    <property name='BlenderZup'>false</property>
                                                     <property name='EditorDagDebug'>false</property>
                                                     <property name='LayerFxMap'></property>
                                                     <property name='Model'>
@@ -221,6 +222,12 @@
                                                 </object>
                                             </reference>
                                         </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='SimpleCharControllerData' id='25'>
+                                                </object>
+                                            </reference>
+                                        </item>
                                     </property>
                                 </object>
                             </reference>
@@ -231,20 +238,21 @@
             </item>
             <item key='SceneObject1'>
                 <reference category='SceneObjectClass'>
-                    <object type='ModelArchetype' id='25'>
+                    <object type='ModelArchetype' id='26'>
                         <property name='Name'>"SceneObject1"</property>
                         <property name='Components'>
                             <item key=''>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorPropMapData' id='26'>
+                                    <object type='EditorPropMapData' id='27'>
                                         <property name='Properties'></property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='27'>
+                                    <object type='ModelComponentData' id='28'>
                                         <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
                                         <property name='Model'>

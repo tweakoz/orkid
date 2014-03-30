@@ -889,11 +889,78 @@ bool CColladaModel::ParseGeometries()
 				size_t imatnumfaces = MatGroup->GetFaceCount();
 				FCDGeometryPolygons::PrimitiveType eprimtype = MatGroup->GetPrimitiveType();
 				orkvector<unsigned int> TriangleIndices;
+
+				const auto& facvtx_counts = MatGroup->RefFaceVertexCounts();
+				const auto& hole_faces = MatGroup->RefHoleFaces();
+
+				// Calculates the number of holes within the polygon set that appear before the given face index.
+				auto GetHoleCountBefore = [&](size_t index) -> size_t
+				{
+					size_t holeCount = 0;
+					for (UInt32List::const_iterator it = hole_faces.begin(); it != hole_faces.end(); ++it)
+					{
+						if ((*it) <= index) { ++holeCount; ++index; }
+					}
+					return holeCount;
+				};
+
+				// Retrieves the number of holes within a given face.
+				auto GetHoleCount = [&](size_t index) -> size_t
+				{
+					size_t holeCount = 0;
+					for (size_t i = index + GetHoleCountBefore(index) + 1; i < facvtx_counts.size(); ++i)
+					{
+						bool isHoled = hole_faces.find((uint32) i) != hole_faces.end();
+						if (!isHoled) break;
+						else ++holeCount;
+					}
+					return holeCount;
+				};
+				auto GetFaceCount = [&]() -> size_t
+				{
+					return facvtx_counts.size()-hole_faces.size();
+				};
+				// The number of face-vertex pairs for a given face.
+				auto GetFaceVertexCount = [&](size_t index) -> size_t
+				{
+					size_t count = 0;
+					if (index < GetFaceCount())
+					{
+						size_t holeCount = GetHoleCount(index);
+						UInt32List::const_iterator it = facvtx_counts.begin() + index + GetHoleCountBefore(index);
+						UInt32List::const_iterator end = it + holeCount + 1; // +1 in order to sum the face-vertex pairs of the polygon as its holes.
+						for (; it != end; ++it) count += (*it);
+					}
+					return count;
+				};
+				auto GetFaceVertexOffset = [&](size_t index) -> size_t
+				{
+					size_t offset = 0;
+
+					// We'll need to skip over the holes
+					size_t holeCount = GetHoleCountBefore(index);
+					if (index + holeCount < facvtx_counts.size())
+					{
+						// Sum up the wanted offset
+						UInt32List::const_iterator end = facvtx_counts.begin() + index + holeCount;
+						for (UInt32List::const_iterator it = facvtx_counts.begin(); it != end; ++it)
+						{
+							offset += (*it);
+						}
+					}
+					return offset;
+				};
+
 				for( size_t iface=0; iface<imatnumfaces; iface++ )
-				{	size_t iface_numfverts = MatGroup->GetFaceVertexCount(iface);
-					size_t iface_fvertbase = MatGroup->GetFaceVertexOffset(iface);
+				{	
+
+
+					size_t iface_numfverts = GetFaceVertexCount(iface);
+					size_t iface_fvertbase = GetFaceVertexOffset(iface);
 					OrkAssert( 3 == iface_numfverts );
 					XgmClusterTri ClusTri;
+					if( iface%1000 == 0 )
+						printf( "iface<%d> of %d\n", iface, imatnumfaces );
 					for( size_t iface_v=0; iface_v<iface_numfverts; iface_v++ )
 					{	MeshUtil::vertex& MuVtx = ClusTri.Vertex[ iface_v ];
 						/////////////////////////////////
