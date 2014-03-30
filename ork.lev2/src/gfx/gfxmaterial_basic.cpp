@@ -96,11 +96,13 @@ void GfxMaterialWiiBasic::StaticInit( )
 		BasicTekMap["/modvtx/skinned"] = "tek_wnormal_skinned";
 		BasicTekMap["/lambert/tex"] = "tek_lamberttex";
 		BasicTekMap["/lambert/tex/skinned"] = "tek_wnormal";
+		BasicTekMap["/phong/tex/bump/skinned"] = "tek_lamberttex_skinned";
 
 		PickTekMap["/modvtx"] = "tek_modcolor";
 		PickTekMap["/modvtx/skinned"] = "tek_modcolor";
 		PickTekMap["/lambert/tex"] = "tek_modcolor";
 		PickTekMap["/lambert/tex/skinned"] = "tek_modcolor";
+		PickTekMap["/phong/tex/bump/skinned"] = "tek_modcolor";
 	}
 }
 

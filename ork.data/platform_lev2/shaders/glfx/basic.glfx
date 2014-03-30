@@ -204,4 +204,12 @@ technique tek_wnormal_skinned
 		state_block=sb_default;
 	}
 }
+technique tek_lamberttex_skinned
+{	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_modtex;
+		state_block=sb_default;
+	}
+}
 ///////////////////////////////////////////////////////////////

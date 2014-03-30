@@ -19,6 +19,16 @@ def exp_actor( actnam ):
 	print cmd
 	os.system(cmd)
 
+def exp_object( objnam ):
+	cmd = "%s -filter dae:xgm -in data/src/environ/%s/ref/%s.dae -out data/pc/environ/%s/%s.xgm" % (tool,objnam,objnam,objnam,objnam)
+	print cmd
+	os.system(cmd)
+
+def do_objects( obj_str ):
+ for a in string.split(obj_str):
+    mkdir(a)
+    exp_object(a)
+
 def do_actors( act_str ):
  for a in string.split(act_str):
     mkdir(a)
@@ -32,6 +42,7 @@ def do_anims( anm_str ):
 
 #######################################
 
+objects = "mtn1"
 actors = "4limb rijid frogman"
 
 anims = dict()
@@ -42,6 +53,7 @@ anims["frogman"] = "an1"
 
 do_actors( actors )
 do_anims( anims )
+do_objects( objects )
 
 #######################################
 
