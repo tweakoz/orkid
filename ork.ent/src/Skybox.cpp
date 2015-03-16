@@ -159,6 +159,7 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 		}
 	};
 
+	#if 0 //DRAWTHREADS
 	CallbackDrawable* pdrw = new CallbackDrawable(pent);
 	pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
 	pdrw->SetCallback( yo::doit );
@@ -173,7 +174,8 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 	anyp ap;
 	ap.Set<const yo*>( pyo );
 	pdrw->SetData( ap );
-
+#endif
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////

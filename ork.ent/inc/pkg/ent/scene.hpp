@@ -10,6 +10,7 @@
 
 #include <ork/rtti/downcast.h>
 #include <ork/application/application.h>
+#include <ork/kernel/orklut.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -28,6 +29,34 @@ namespace ent {
 /// SceneData is the "model" of the scene that is serialized and edited, and thats it....
 /// this should never get subclassed
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> std::set<EntData*> SceneData::FindEntitiesWithComponent() const
+{
+	std::set<EntData*> rval;
+	return rval;
+}
+
+template <typename T> std::set<EntData*> SceneData::FindEntitiesOfArchetype() const
+{
+	std::set<EntData*> rval;
+
+	for ( auto item : mSceneObjects )
+	{
+		EntData* isa_ent = rtti::autocast( item.second );
+
+		if( isa_ent )
+		{
+			auto arch = isa_ent->GetArchetype();
+
+			if( arch && arch->GetClass() == T::GetClassStatic() )
+			{
+				rval.insert(isa_ent);
+			}
+		}
+	}
+
+	return rval;
+}
 
 template <typename T> T* SceneData::FindTypedObject( const PoolString& pstr )
 {
@@ -78,6 +107,7 @@ template <typename T> T* SceneInst::FindTypedEntityComponent( const PoolString& 
 	{
 		pret = pent->GetTypedComponent<T>();
 	}
+	printf( "FINDENT<%s:%p> comp<%p>\n", entname.c_str(), pent, pret );
 	return pret;
 }
 template <typename T > 

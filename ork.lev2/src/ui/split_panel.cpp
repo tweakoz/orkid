@@ -19,9 +19,10 @@ SplitPanel::SplitPanel( const std::string & name, int x, int y, int w, int h )
 	: Group(name,x,y,w,h)
 	, mChild1(nullptr)
 	, mChild2(nullptr)
-	, mSplitVal(0.3f)
+	, mSplitVal(0.5f)
 	, mDockedAtTop(false)
 	, mEnableCloseButton(false)
+	, mPanelUiState(0)
 {
 
 }
@@ -203,6 +204,41 @@ static int iprevpy = 0;
 static int iprevpw = 0;
 static int iprevph = 0;
 
+void SplitPanel::Snap()
+{
+	if( nullptr == mParent )
+		return;
+
+	int x2 = GetX2();
+	int pw = mParent->GetW();
+	int xd = abs(x2-pw);
+	int y2 = GetY2();
+	int ph = mParent->GetH();
+	int yd = abs(y2-ph);
+	printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
+	printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
+	bool snapl = ( miX<kpanelw );
+	bool snapr = ( xd<kpanelw );
+	bool snapt = ( miY<kpanelw );
+	bool snapb = ( yd<kpanelw );
+	if( snapt&&snapb )
+	{	SetY(-kpanelw);
+		SetH(ph+2*kpanelw);
+	}
+	else if( snapt )
+		SetY(-kpanelw);
+	else if( snapb )
+		SetY(ph+kpanelw-GetH());
+	if( snapl&&snapr )
+	{	SetX(-kpanelw);
+		SetW(pw+2*kpanelw);
+	}
+	if( snapl )
+		SetX(-kpanelw);
+	else if( snapr )
+		SetX(pw+kpanelw-GetW());
+}
+
 HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 {
 	HandlerResult ret(this);
@@ -226,9 +262,17 @@ HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 			iprevpw = miW;
 			iprevph = miH;
 			ret.mHoldFocus = true;
-			bool is_splitter = (ilocy>kpanelw)&&(ilocy<(miH-kpanelw*2));
-			is_splitter &= (ilocx>kpanelw)&&(ilocx<(miW-kpanelw));
-			printf( "ilocy<%d> is_splitter<%d> b0<%d>\n", ilocy, int(is_splitter), int(filtev.mBut0) );
+
+			float funity = float(ilocy)/float(miH);
+			float funitks = float(kpanelw)/float(miH);
+
+			bool is_splitter = (fabs(funity-mSplitVal)<funitks)
+							&& (ilocy<(miH-kpanelw*2));
+			
+			is_splitter &= (ilocx>kpanelw)&&(ilocx<(miW-kpanelw)); // x check
+
+			//printf( "ilocy<%d> funity<%f> funitks<%f> mSplitVal<%f> is_splitter<%d> b0<%d>\n", ilocy, funity, funitks, mSplitVal, int(is_splitter), int(filtev.mBut0) );
+			
 			if( filtev.mBut0 )
 			{
 				if(     mEnableCloseButton
@@ -267,34 +311,7 @@ HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 
 			if( mPanelUiState ) // moving or sizing w
 			{
-				int x2 = GetX2();
-				int pw = mParent->GetW();
-				int xd = abs(x2-pw);
-				int y2 = GetY2();
-				int ph = mParent->GetH();
-				int yd = abs(y2-ph);
-				printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
-				printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
-				bool snapl = ( miX<kpanelw );
-				bool snapr = ( xd<kpanelw );
-				bool snapt = ( miY<kpanelw );
-				bool snapb = ( yd<kpanelw );
-				if( snapt&&snapb )
-				{	SetY(-kpanelw);
-					SetH(ph+2*kpanelw);
-				}
-				else if( snapt )
-					SetY(-kpanelw);
-				else if( snapb )
-					SetY(ph+kpanelw-GetH());
-				if( snapl&&snapr )
-				{	SetX(-kpanelw);
-					SetW(pw+2*kpanelw);
-				}
-				if( snapl )
-					SetX(-kpanelw);
-				else if( snapr )
-					SetX(pw+kpanelw-GetW());
+				Snap();
 			}
 			mPanelUiState = 0;
 
@@ -328,7 +345,7 @@ HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 		case 5:
 			SetSize(iprevpw+dx,iprevph);
 			break;
-		case 6:
+		case 6: // set splitter
 		{	
 			mSplitVal = float(ilocy-ksplith)/float(miH);
 			DoLayout();

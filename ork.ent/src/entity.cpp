@@ -39,7 +39,6 @@
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/Lighting.h>
 #include "ObserverCamera.h"
-#include "EditorCamera.h"
 #include "SpinnyCamera.h"
 #include "Skybox.h"
 #include "ProcTex.h"
@@ -70,12 +69,12 @@ public:
 
 	SceneDagObjectManipInterface() {}
 
-	virtual const TransformNode3D &GetTransform(rtti::ICastable *pobj)
+	virtual const TransformNode& GetTransform(rtti::ICastable *pobj)
 	{
 		SceneDagObject *pdago = rtti::autocast(pobj);
 		return pdago->GetDagNode().GetTransformNode();
 	}
-	virtual void SetTransform(rtti::ICastable *pobj, const TransformNode3D &node)
+	virtual void SetTransform(rtti::ICastable *pobj, const TransformNode& node)
 	{
 		SceneDagObject *pdago = rtti::autocast(pobj);
 		pdago->GetDagNode().GetTransformNode() = node;
@@ -219,6 +218,35 @@ Entity::Entity( const EntData& edata, SceneInst *inst )
 	//mDrawable.reserve(4);
 }
 ///////////////////////////////////////////////////////////////////////////////
+CMatrix4 Entity::GetEffectiveMatrix() const
+{
+	CMatrix4 rval;
+	switch( mSceneInst->GetSceneInstMode() )
+	{
+		case ESCENEMODE_RUN:
+		case ESCENEMODE_SINGLESTEP:
+		case ESCENEMODE_PAUSE:
+		{	const DagNode& dagn = this->GetDagNode();
+			const auto& xf = dagn.GetTransformNode().GetTransform();
+			rval = xf.GetMatrix();
+			break;
+		}
+		default:
+		{	const DagNode& dagn = this->GetEntData().GetDagNode();
+			const auto& xf = dagn.GetTransformNode().GetTransform();
+			rval = xf.GetMatrix();
+			break;
+		}
+	}
+	return rval;
+}
+
+void Entity::SetDynMatrix( const CMatrix4& mtx )
+{
+	this->GetDagNode().SetTransformMatrix(mtx);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 Entity::~Entity()
 {
 	//printf( "Delete Entity<%p>\n", this );
@@ -241,7 +269,7 @@ Entity::~Entity()
 ///////////////////////////////////////////////////////////////////////////////
 CVector3 Entity::GetEntityPosition() const
 {
-	return GetDagNode().GetTransformNode().GetTransform()->GetPosition();
+	return GetDagNode().GetTransformNode().GetTransform().GetPosition();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::PrintName()
@@ -504,7 +532,7 @@ void Archetype::StartEntity(SceneInst *psi, const CMatrix4 &world, Entity *pent)
 {
 	StopEntity( psi, pent);
 
-	pent->GetDagNode().GetTransformNode().GetTransform()->SetMatrix( world );
+	pent->GetDagNode().GetTransformNode().GetTransform().SetMatrix( world );
 
 	if( GetClass() != ReferenceArchetype::GetClassStatic() )
 	{
@@ -559,7 +587,6 @@ void Init()
 	SkyBoxArchetype::GetClassStatic();
 	ProcTexArchetype::GetClassStatic();
 	ObserverCamArchetype::GetClassStatic();
-	EditorCamArchetype::GetClassStatic();
 	SequenceCamArchetype::GetClassStatic();
 	BulletWorldArchetype::GetClassStatic();
 	BulletObjectArchetype::GetClassStatic();
@@ -571,6 +598,8 @@ void Init()
 	SceneData::GetClassStatic();
 	SceneInst::GetClassStatic();
     
+    //ork::ent::heightfield_rt_inst::GetClassStatic();
+
 	ork::ent::CompositingManagerComponentData::GetClassStatic();
 	ork::ent::CompositingManagerComponentInst::GetClassStatic();
 	ork::ent::CompositingComponentData::GetClassStatic();

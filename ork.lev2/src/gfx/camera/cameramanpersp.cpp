@@ -47,7 +47,7 @@ void CCamera_persp::Describe()
 
 	ork::reflect::RegisterProperty( "MaxFar", & CCamera_persp::far_max );
 	ork::reflect::AnnotatePropertyForEditor< CCamera_persp >( "MaxFar", "editor.range.min", "1.0f" );
-	ork::reflect::AnnotatePropertyForEditor< CCamera_persp >( "MaxFar", "editor.range.max", "10000.0f" );
+	ork::reflect::AnnotatePropertyForEditor< CCamera_persp >( "MaxFar", "editor.range.max", "100000.0f" );
 
 	ork::reflect::RegisterProperty( "MinNear", & CCamera_persp::near_min );
 	ork::reflect::AnnotatePropertyForEditor< CCamera_persp >( "MinNear", "editor.range.min", "0.1f" );
@@ -915,7 +915,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 				CVector3 UpVector;
 				CVector3 RightVector;
 				mCameraData.GetPixelLengthVectors( Pos, VP, UpVector, RightVector );
-				CReal CameraFactor = RightVector.Mag()*CReal(100.0f); // 20 pixels of movement
+				CReal CameraFactor = RightVector.Mag()*CReal(20.0f); // 20 pixels of movement
 				
 				const float kmin = 0.1f;
 				const float kmax = 20000.0f;

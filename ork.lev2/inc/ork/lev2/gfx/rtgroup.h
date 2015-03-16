@@ -47,6 +47,7 @@ class RtBuffer //: public GfxBuffer
 	EBufferFormat mFormat;
 	svarp_t mPlatformHandle;
 	bool mSizeDirty;
+	bool mComputeMips;
 };
 
 class RtGroup

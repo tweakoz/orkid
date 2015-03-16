@@ -126,7 +126,8 @@ void Renderer::RenderModelGroup( const ork::lev2::CModelRenderable** Renderables
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::RenderGroupState rgs  ) const
+void Renderer::RenderModel( const lev2::CModelRenderable & ModelRen,
+							ork::lev2::RenderGroupState rgs  ) const
 {
 	lev2::GfxTarget* target = GetTarget();
 
@@ -347,9 +348,9 @@ void Renderer::RenderCallback( const lev2::CallbackRenderable & cbren ) const
 	lev2::GfxTarget* pTARG = GetTarget();
 	MatCtx.SetRenderer( this );
 
-	if( cbren.GetCallback() )
+	if( cbren.GetRenderCallback() )
 	{
-		cbren.GetCallback()( MatCtx, pTARG, & cbren );
+		cbren.GetRenderCallback()( MatCtx, pTARG, & cbren );
 	}
 }
 

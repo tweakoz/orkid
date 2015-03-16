@@ -611,6 +611,9 @@ class  module : public ork::Object
 
 public:
 
+	module();
+	~module();
+
 	////////////////////////////////////////////
 	const dataflow::node_hash& GetModuleHash() { return mModuleHash; }
 	virtual void UpdateHash() { mModuleHash=dataflow::node_hash(); }
@@ -623,10 +626,12 @@ public:
 	void SetOutputDirty( outplugbase* plg );
 	virtual bool IsDirty(void);
 	////////////////////////////////////////////
-	virtual int GetNumInputs() const { return 0; }
-	virtual int GetNumOutputs() const { return 0; }
-	virtual inplugbase* GetInput(int idx) { return 0; }
-	virtual outplugbase* GetOutput(int idx) { return 0; }
+	virtual int GetNumInputs() const { return mNumStaticInputs; }
+	virtual int GetNumOutputs() const { return mNumStaticOutputs; }
+	virtual inplugbase* GetInput(int idx) { return GetStaticInput(idx); }
+	virtual outplugbase* GetOutput(int idx) { return GetStaticOutput(idx); }
+	inplugbase* GetStaticInput(int idx) const;
+	outplugbase* GetStaticOutput(int idx) const;
 	inplugbase* GetInputNamed( const PoolString& named ) ;
 	outplugbase* GetOutputNamed( const PoolString& named );
 	////////////////////////////////////////////
@@ -651,12 +656,20 @@ public:
 	morphable* GetMorphable() const { return mpMorphable; }
 	bool IsMorphable() const { return (mpMorphable!=0); }
 	////////////////////////////////////////////
+	void AddInput( inplugbase* plg );
+	void AddOutput( outplugbase* plg );
+	void RemoveInput( inplugbase* plg );
+	void RemoveOutput( outplugbase* plg );
 
 protected:
 
 	PoolString				mName;
 	dataflow::node_hash		mModuleHash;
 	morphable*				mpMorphable;
+	int 					mNumStaticInputs;
+	int 					mNumStaticOutputs;
+	std::set<inplugbase*> mStaticInputs;
+	std::set<outplugbase*> mStaticOutputs;
 
 	void AddDependency( outplugbase& pout, inplugbase& pin ); 
 };
@@ -858,6 +871,7 @@ public:
 	orklut<int,dgmodule*>& LockTopoSortedChildrenForWrite(int lid);
 	void UnLockTopoSortedChildren() const;
 	virtual void Clear() = 0;
+	void OnGraphChanged();
 
 protected:
 
@@ -868,7 +882,8 @@ protected:
 
 	bool SerializeConnections(ork::reflect::ISerializer &ser) const;
 	bool DeserializeConnections(ork::reflect::IDeserializer &deser);
-	bool PreDeserialize(reflect::IDeserializer &); // virtual
+	bool PreDeserialize(reflect::IDeserializer &) override;
+	bool PostDeserialize(reflect::IDeserializer &) override;
 
 };
 
@@ -923,6 +938,8 @@ protected:
 #define ConstructOutTypPlug( name, epr, typ ) OutPlugName(name)( this, epr, &mOutData##name, typ, #name )
 #define ConstructInpPlug( name, epr, def ) InpPlugName(name)( this, epr, def, #name )
 
+///////////
+
 #define DeclareFloatXfPlug( name )\
 	float mf##name;\
 	ork::dataflow::floatxfinplug	InpPlugName(name);\
@@ -932,6 +949,18 @@ protected:
 	ork::CVector3 mv##name;\
 	ork::dataflow::vect3xfinplug	InpPlugName(name);\
 	ork::Object* InpAccessor##name() { return & InpPlugName(name); }
+
+#define DeclareFloatOutPlug( name )\
+	float OutDataName(name);\
+	ork::dataflow::outplug<float> OutPlugName(name);\
+	ork::Object* PlgAccessor##name() { return & OutPlugName(name); }
+
+#define DeclareVect3OutPlug( name )\
+	ork::CVector3 OutDataName(name);\
+	ork::dataflow::outplug<ork::CVector3> OutPlugName(name);\
+	ork::Object* PlgAccessor##name() { return & OutPlugName(name); }
+
+///////////
 
 #define RegisterFloatXfPlug( cls, name, mmin, mmax, deleg )\
 	ork::reflect::RegisterProperty( #name, & cls::InpAccessor##name );\
@@ -947,15 +976,6 @@ protected:
 	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.range.min", #mmin );\
 	ork::reflect::AnnotatePropertyForEditor< cls >( #name, "editor.range.max", #mmax );
 
-#define DeclareFloatOutPlug( name )\
-	float OutDataName(name);\
-	ork::dataflow::outplug<float> OutPlugName(name);\
-	ork::Object* PlgAccessor##name() { return & OutPlugName(name); }
-
-#define DeclareVect3OutPlug( name )\
-	ork::CVector3 OutDataName(name);\
-	ork::dataflow::outplug<ork::CVector3> OutPlugName(name);\
-	ork::Object* PlgAccessor##name() { return & OutPlugName(name); }
 
 #define RegisterObjInpPlug( cls, name )\
 	ork::reflect::RegisterProperty( #name, & cls::InpAccessor##name );\

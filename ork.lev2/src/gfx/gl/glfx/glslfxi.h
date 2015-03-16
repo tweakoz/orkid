@@ -125,7 +125,7 @@ struct GlslFxShader
 	{
 	}
 
-	void Compile();
+	bool Compile();
 	bool IsCompiled() const;
 };
 struct GlslFxShaderVtx : GlslFxShader
@@ -228,8 +228,10 @@ struct GlslFxContainer
 	std::map<std::string,GlslFxLibBlock*>			mLibBlocks;
 	const GlslFxPass*								mActivePass;
 	int												mActiveNumPasses;
+	const FxShader* 								mFxShader;
+	bool 											mShaderCompileFailed;
 
-	bool Load( const AssetPath& filename, FxShader*pfxshader );
+	//bool Load( const AssetPath& filename, FxShader*pfxshader );
 	void Destroy( void );
 	bool IsValid( void );
 

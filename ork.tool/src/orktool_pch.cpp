@@ -16,6 +16,8 @@
 
 #include <QtGui/QMessageBox>
 
+#include <sys/resource.h>
+
 #if defined(ORK_OSX)
  #include <mach-o/dyld.h>
 #endif
@@ -31,6 +33,7 @@ extern char errorbuffer[];
 
 namespace ork {
 
+
 void LoadLocalization(const char langcode[2]);
 
 //namespace lev1 { void Init(); }	
@@ -41,7 +44,6 @@ namespace tool {
 
 int Main_Filter( tokenlist toklist );
 int Main_FilterTree( tokenlist toklist );
-//int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode );
 
 void MySetToolDataFolder()
 {
@@ -56,6 +58,15 @@ void MySetToolDataFolder()
 
 int main(int& argc, char **argv)
 {	
+	struct rlimit oldlimit, newlimit;
+
+	int el = getrlimit( RLIMIT_STACK, & oldlimit );
+		
+	printf( "stack cur<%p> max<%p<\n", (void*) oldlimit.rlim_cur, oldlimit.rlim_max );
+
+	//el = setrlimit( RLIMIT_STACK, & newlimit );
+
+
 #if defined(ORK_OSX)
 	char path[1024];
 	uint32_t size = sizeof(path);

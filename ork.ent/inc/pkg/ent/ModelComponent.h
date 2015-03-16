@@ -51,7 +51,7 @@ public:
 	ModelComponentData();
 
 	lev2::XgmModel* GetModel() const;
-	//void SetModel( lev2::XgmModel* mdl ) { mModel=mdl; }
+	void SetModel( lev2::XgmModelAsset* mdl );
 
 	void SetAlwaysVisible(bool always) { mAlwaysVisible = always; }
 	bool IsAlwaysVisible() const { return mAlwaysVisible; }

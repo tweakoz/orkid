@@ -187,9 +187,9 @@ void ParticleControllableInst::DoUpdate(ork::ent::SceneInst *inst)
 	if( mpAttachEntity )
 	{
 		ent::DagNode& dnodeSRC = mpAttachEntity->GetDagNode();
-		TransformNode3D& t3dSRC = dnodeSRC.GetTransformNode();
+		TransformNode& t3dSRC = dnodeSRC.GetTransformNode();
 		ent::DagNode& dnodeDST = GetEntity()->GetDagNode();
-		TransformNode3D& t3dDST = dnodeDST.GetTransformNode();
+		TransformNode& t3dDST = dnodeDST.GetTransformNode();
 		t3dDST = t3dSRC;
 	}
 
@@ -300,7 +300,7 @@ void ParticleArchetype::DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity
 
 void ParticleArchetype::DoStartEntity(ork::ent::SceneInst*, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const
 {
-	pent->GetDagNode().GetTransformNode().GetTransform()->SetMatrix(mtx);
+	pent->GetDagNode().GetTransformNode().GetTransform().SetMatrix(mtx);
 
 	ParticleControllableInst* pci = pent->GetTypedComponent<ParticleControllableInst>();
 	if(pci)

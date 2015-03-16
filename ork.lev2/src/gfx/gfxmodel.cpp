@@ -14,11 +14,7 @@
 #include <ork/lev2/gfx/renderer.h>
 #include <ork/kernel/prop.h>
 
-#if defined(WII)
-#define USE_XGM_DISPLAYLISTS 1
-#else
 #define USE_XGM_DISPLAYLISTS 0
-#endif
 
 
 template class ork::orklut<ork::PoolString,ork::lev2::XgmMesh*>;

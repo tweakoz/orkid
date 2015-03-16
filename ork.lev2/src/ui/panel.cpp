@@ -169,6 +169,42 @@ static int iprevpy = 0;
 static int iprevpw = 0;
 static int iprevph = 0;
 
+void Panel::Snap()
+{
+	if( nullptr == mParent)
+		return;
+
+	int x2 = GetX2();
+	int pw = mParent->GetW();
+	int xd = abs(x2-pw);
+	int y2 = GetY2();
+	int ph = mParent->GetH();
+	int yd = abs(y2-ph);
+	printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
+	printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
+	bool snapl = ( miX<kpanelw );
+	bool snapr = ( xd<kpanelw );
+	bool snapt = ( miY<kpanelw );
+	bool snapb = ( yd<kpanelw );
+	if( snapt&&snapb )
+	{	SetY(-kpanelw);
+		SetH(ph+2*kpanelw);
+	}
+	else if( snapt )
+		SetY(-kpanelw);
+	else if( snapb )
+		SetY(ph+kpanelw-GetH());
+	if( snapl&&snapr )
+	{	SetX(-kpanelw);
+		SetW(pw+2*kpanelw);
+	}
+	if( snapl )
+		SetX(-kpanelw);
+	else if( snapr )
+		SetX(pw+kpanelw-GetW());
+
+}
+
 HandlerResult Panel::DoOnUiEvent( const Event& Ev )
 {
 	HandlerResult ret(this);
@@ -227,34 +263,7 @@ HandlerResult Panel::DoOnUiEvent( const Event& Ev )
 
 			if( mPanelUiState ) // moving or sizing w
 			{
-				int x2 = GetX2();
-				int pw = mParent->GetW();
-				int xd = abs(x2-pw);
-				int y2 = GetY2();
-				int ph = mParent->GetH();
-				int yd = abs(y2-ph);
-				printf( "x2<%d> pw<%d> xd<%d>\n", x2, pw, xd );
-				printf( "y2<%d> ph<%d> yd<%d>\n", y2, ph, yd );
-				bool snapl = ( miX<kpanelw );
-				bool snapr = ( xd<kpanelw );
-				bool snapt = ( miY<kpanelw );
-				bool snapb = ( yd<kpanelw );
-				if( snapt&&snapb )
-				{	SetY(-kpanelw);
-					SetH(ph+2*kpanelw);
-				}
-				else if( snapt )
-					SetY(-kpanelw);
-				else if( snapb )
-					SetY(ph+kpanelw-GetH());
-				if( snapl&&snapr )
-				{	SetX(-kpanelw);
-					SetW(pw+2*kpanelw);
-				}
-				if( snapl )
-					SetX(-kpanelw);
-				else if( snapr )
-					SetX(pw+kpanelw-GetW());
+				Snap();
 			}
 			mPanelUiState = 0;
 

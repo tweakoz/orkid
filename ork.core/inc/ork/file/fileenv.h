@@ -20,9 +20,6 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef size_t FileH;
-typedef size_t FileStampH; // (Y6M4D5:H5M6S6) (15:17) Base Year 2000 6 bits for year goes to 2063
-
 class CFileDev;
 class CFile;
 

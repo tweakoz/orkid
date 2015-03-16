@@ -260,18 +260,6 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 	}
 	GL_ERRORCHECK();
 
-	u32 upolyoffset = newstate.GetPolyOffset();
-
-	if( false ) //0 == upolyoffset )
-	{
-		glDisable( GL_POLYGON_OFFSET_FILL );
-	}
-	else
-	{
-		glEnable( GL_POLYGON_OFFSET_FILL );
-		glPolygonOffset( -1.0f, float(upolyoffset) );
-	}
-	GL_ERRORCHECK();
 }
 
 } } //namespace ork::lev2

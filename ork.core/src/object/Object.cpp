@@ -186,6 +186,22 @@ Object *Object::Clone() const
 	return NULL;
 }
 
+Md5Sum Object::CalcMd5() const
+{
+	ork::ResizableString str;
+	ork::stream::ResizableStringOutputStream ostream(str);
+	ork::reflect::serialize::BinarySerializer binoser(ostream);
+	//ork::reflect::serialize::ShallowSerializer oser(binoser);
+	GetClass()->Description().SerializeProperties(binoser, this);
+
+	CMD5 md5_context;
+	md5_context.update( (const uint8_t*) str.data(),str.length());
+	md5_context.finalize();
+
+	return md5_context.Result();
+}
+
+
 reflect::BidirectionalSerializer &operator ||(reflect::BidirectionalSerializer &bidi, Object &object)
 {
 	if(bidi.Serializing())
@@ -320,7 +336,7 @@ AutoConnector::~AutoConnector()
 }
 void AutoConnector::DisconnectAll()
 {
-	/*int inumcon = mConnections.size();
+	int inumcon = mConnections.size();
 
 	while( false == mConnections.empty() )
 	{
@@ -358,7 +374,7 @@ void AutoConnector::DisconnectAll()
 		////////////////////////////////////////////////////
 
 		delete conn;
-	}*/
+	}
 }
 
 void AutoConnector::Connect( const char* SignalName, AutoConnector* pReciever, const char* SlotName )

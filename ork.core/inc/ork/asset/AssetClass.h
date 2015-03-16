@@ -8,13 +8,13 @@
 #include <ork/rtti/RTTI.h>
 #include <ork/asset/AssetCategory.h>
 #include <ork/asset/AssetSet.h>
-#include <ork/util/RingLink.h>
+#include <ork/file/path.h>
 
 namespace ork { namespace asset {
 
 class Asset;
 class AssetLoader;
-class AssetNamer;
+class FileAssetNamer;
 
 class AssetClass 
 	: public object::ObjectClass
@@ -24,35 +24,31 @@ class AssetClass
 public:
 	AssetClass(const rtti::RTTIData &);
 
-	AssetLoader *FindLoader(PieceString);
-	Asset *DeclareAsset(PieceString);
-	Asset *FindAsset(PieceString);
+	AssetLoader* FindLoader(PieceString);
+	Asset* LoadUnManagedAsset(PieceString);
+	Asset* DeclareAsset(PieceString);
+	Asset* FindAsset(PieceString);
 
-	void SetPlatformImplementation(AssetClass *platform_implementation);
-	AssetClass *GenericImplementation() const;
-	void AddLoader(AssetLoader &loader);
+	void AddLoader(AssetLoader *loader);
 
-	Asset *CreateUnmanagedAsset(PieceString);
+	Asset* CreateUnmanagedAsset(PieceString);
 
-	AssetSet &GetAssetSet();
+	AssetSet& GetAssetSet();
 
-	void SetAssetNamer(AssetNamer *namer);
+	void SetAssetNamer(const std::string& namer);
 	void AddTypeAlias(ConstString alias);
 	
 	bool AutoLoad(int depth = -1);
 
+	std::set<file::Path> EnumerateExisting() const;
+
 private:
-	AssetNamer *GetAssetNamer() const;
-	AssetNamer *mAssetNamer;
-	AssetClass *mPlatformImplementation;
-	AssetClass *mGenericImplementation;
-	util::RingLink<AssetLoader> mLoaders;
+
+	FileAssetNamer *GetAssetNamer() const;
+	FileAssetNamer *mAssetNamer;
+	std::set<AssetLoader*> mLoaders;
 	AssetSet mAssetSet;
 
-    // CMemoryManager::Notification implementation
-	/*virtual*/ void OnPush();
-	/*virtual*/ void OnPop();
-	/*virtual*/ void OnPrintInfo();
 };
 
 } }

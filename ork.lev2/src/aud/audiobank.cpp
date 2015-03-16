@@ -15,7 +15,6 @@
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/asset/FileAssetLoader.h>
-#include <ork/asset/FileAssetNamer.h>
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/math/audiomath.h>
 #include <ork/application/application.h>
@@ -49,8 +48,9 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 AudioBankLoader::AudioBankLoader()
+	:  FileAssetLoader( AudioBank::GetClassStatic() )
 {
-	AddFileExtension(".xab");
+	AddLocation("data://",".xab");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,13 +66,11 @@ bool AudioBankLoader::LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static AudioBankLoader gloader;
-static ork::asset::FileAssetNamer gnamer("data://audio/banks");
-
 void AudioBank::Describe()
 {
-	GetClassStatic()->AddLoader(gloader);
-	GetClassStatic()->SetAssetNamer(&gnamer);
+	auto loader = new AudioBankLoader;
+	GetClassStatic()->AddLoader(loader);
+	GetClassStatic()->SetAssetNamer("data://audio/banks");
 	GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("lev2::audiobank"));
 }
 

@@ -26,6 +26,7 @@
 #include <pkg/ent/dataflow.h>
 #include <pkg/ent/PerfController.h>
 #include <ork/kernel/Array.h>
+#include <ork/kernel/opq.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -145,8 +146,10 @@ struct ModItemRenderData
 	{
 		mEntity = 0;
 	}
-	static void QueueToBuffer(ork::ent::DrawableBufItem&cdb)
+	static void QueueToLayerCallback(ork::ent::DrawableBufItem&cdb)
 	{	
+		AssertOnOpQ2( UpdateSerialOpQ() );
+
 		ModItemRenderData* pmird = cdb.mUserData0.Get<ModItemRenderData*>();
 		
 		if( 0 == pmird->mpItem )
@@ -183,13 +186,17 @@ struct ModItemRenderData
 		}
 
 	}
-	static void doit( ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* targ, const ork::lev2::CallbackRenderable* pren )
+	static void QueueToRendererCallback( ork::lev2::RenderContextInstData& rcid,
+										 ork::lev2::GfxTarget* targ,
+										 const ork::lev2::CallbackRenderable* pren )
 	{	
+		AssertOnOpQ2( MainThreadOpQ() );
+
 		//////////////////////////////////////////
 		if( targ->FBI()->IsPickState() ) return;
 		//////////////////////////////////////////
 
-		ModItemRenderData* pdata = pren->GetUserData0().Get<ModItemRenderData*>();
+		ModItemRenderData* pdata = pren->GetDrawableDataA().Get<ModItemRenderData*>();
 		ModItemBufferData& mibd = pdata->mMIBD;
 
 		ModItemBufferDataDB* pbufd = pren->GetUserData1().Get<ModItemBufferDataDB*>();
@@ -394,9 +401,12 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 		int inumrenderers = GetNumRenderers();
 		for( int ir=0; ir<inumrenderers; ir++ )
 		{	RendererModule* renderer = GetRenderer(ir);
+			
+
+			#if 1 //DRAWTHREADS
 			ork::ent::CallbackDrawable* pdrw = new ork::ent::CallbackDrawable( pent );
-			pdrw->SetCallback( ModItemRenderData::doit );
-			pdrw->SetBufferCallback( ModItemRenderData::QueueToBuffer );
+			pdrw->SetRenderCallback( ModItemRenderData::QueueToRendererCallback );
+			pdrw->SetQueueToLayerCallback( ModItemRenderData::QueueToLayerCallback );
 			pdrw->SetOwner(  & pent->GetEntData() );
 			pdrw->SetSortKey(isort);
 
@@ -418,7 +428,6 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 			////////////////////////////////////////////////////////
 
 			ModItemRenderData* mird = new ModItemRenderData( pent, & mItem, this, renderer );
-			//pdrw->SetData( mird );
 			pdrw->SetDataDestroyer( new Destroyer(mird) );
 
 			///////////////////////////////////////////////////////////
@@ -428,10 +437,11 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 
 			anyp ap;
 			ap.Set(mird);
-			pdrw->SetData(ap);
+			pdrw->SetUserDataA(ap);
 			///////////////////////////////////////////////////////////
 
 			pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
+			#endif
 		}
 		//////////////////////////////////////////////////////////////////////////////
 

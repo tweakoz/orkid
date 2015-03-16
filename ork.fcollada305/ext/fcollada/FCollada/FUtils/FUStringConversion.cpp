@@ -263,6 +263,7 @@ fm::string operator+(const fm::string& sz1, int32 i)
 // Called by TrickLinker2 in FUStringBuilder.cpp
 extern void TrickLinkerFUStringConversion(void)
 {
+
 	// Exercise the template functions in order to force the linker to generate and expose the methods.
 	FUSStringBuilder sbuilder;
 	FUStringBuilder fbuilder;
@@ -278,6 +279,10 @@ extern void TrickLinkerFUStringConversion(void)
 	u32 = FUStringConversion::ToUInt32(&fc);
 	u32 = FUStringConversion::HexToUInt32(&c);
 	u32 = FUStringConversion::HexToUInt32(&fc);
+
+	i32 = FUStringConversion::ToInt32<char>((char const**)&c);
+
+
 	FMMatrix44 m44;
 	FUStringConversion::ToMatrix(&c, m44);
 	FUStringConversion::ToMatrix(&fc, m44);

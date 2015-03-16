@@ -28,11 +28,13 @@ __version__ = "1.0"
 # Basic Build Environment
 
 XcodeDir = localopts.XCODEDIR()
+OsxSdkRoot = localopts.OSXSDKROOT()
 AqsisDir = localopts.AQSISDIR()
 Arch = localopts.ARCH()
 
 print "OSX: using arch<%s>" % Arch
 print "OSX: using xcode<%s>" % XcodeDir
+
 
 USE_DEBUG_CXX = False
 
@@ -46,42 +48,13 @@ class ClangToolChain:
 	env.Replace( LINK = cpp_compiler )
 	prj.AddLibs( ' m c c++' )
 	prj.CompilerType = 'gcc'
-	prj.XCFLG += "-arch %s " % Arch
-	prj.XCFLG += '-fno-common -fno-strict-aliasing -g -Wno-switch-enum -Wno-deprecated-declarations '
-	prj.XCXXFLG += '-std=c++11 -stdlib=libc++ ' + prj.XCFLG
-	prj.XCXXFLG += '-F%s/Contents/Resources/include ' % AqsisDir
+	prj.XCCFLG += "-arch %s " % Arch
+	prj.XCCFLG += "-isysroot %s " % OsxSdkRoot
+	prj.XCCFLG += '-fno-common -fno-strict-aliasing -g -Wno-switch-enum -Wno-deprecated-declarations '
+	prj.XCXXFLG += '-std=c++11 -stdlib=libc++ ' + prj.XCCFLG
+	prj.XCXXFLG += '-F%s/Contents/Resources/include -F/Library/Frameworks ' % AqsisDir
 	prj.XLINK = '-stdlib=libc++ -v -g -F/Library/Frameworks -arch %s '%Arch
 	prj.XLINK += '-F/System/Library/Frameworks/Quartz.framework/Frameworks '
-#############################################
-class MacPortsToolChain:
-  def __init__(self,env, prj):
-	c_compiler = "gcc-mp-4.8"
-	cpp_compiler = "g++-mp-4.8"
-	env.Replace( CXX = cpp_compiler, CC = c_compiler )
-	env.Replace( LINK = cpp_compiler )
-	prj.AddLibs( ' m c ' )
-	prj.CompilerType = 'gcc'
-	prj.XCFLG += "-arch %s " % Arch
-	prj.XCFLG += '-fno-common -fno-strict-aliasing -g -Wno-switch-enum -Wno-deprecated-declarations '
-	prj.XCXXFLG += '-std=c++0x -fexceptions ' + prj.XCFLG
-	prj.XCXXFLG += '-F%s/Contents/Resources/include ' % AqsisDir
-	prj.XLINK = '-v -g '
-	prj.XLINK += "-arch %s " % Arch
-#############################################
-class HpcToolChain:
-  def __init__(self,env, prj):
-	c_compiler = "/opt/gcc48/bin/gcc"
-	cpp_compiler = "/opt/gcc48/bin/g++"
-	env.Replace( CXX = cpp_compiler, CC = c_compiler )
-	env.Replace( LINK = cpp_compiler )
-	prj.AddLibs( ' m c ' )
-	prj.CompilerType = 'gcc'
-	prj.XCFLG += "-arch %s " % Arch
-	prj.XCFLG += '-fno-common -fno-strict-aliasing -g -Wno-switch-enum -Wno-deprecated-declarations '
-	prj.XCXXFLG += '-std=c++0x -fexceptions ' + prj.XCFLG
-	prj.XCXXFLG += '-F%s/Contents/Resources/include ' % AqsisDir
-	prj.XLINK = '-v -g '
-	prj.XLINK += "-arch %s " % Arch
 #############################################
 def DefaultBuildEnv( env, prj ):
 	##
@@ -115,7 +88,7 @@ def DefaultBuildEnv( env, prj ):
 	env.Replace( RANLIB = 'ranlib' )	
 	env.Append( FRAMEWORKS = [ 'QtGui', 'QtCore', 'OpenGL', 'CoreMIDI', 'CoreAudio', 'AudioUnit', 'AudioToolbox' ] )
 	env.Append( FRAMEWORKS = [ 'Carbon', 'Foundation', 'QuartzComposer' ] )
-	env.Append( FRAMEWORKS = [ 'ApplicationServices', 'AppKit' ] )
+	env.Append( FRAMEWORKS = [ 'ApplicationServices', 'AppKit', "Python" ] )
 	env.Append( FRAMEWORKS = [ 'MultitouchSupport' ] )
 	env.Replace( AR="libtool" )
 	env.Replace( ARFLAGS="-static -c -v -arch_only %s" % Arch )

@@ -24,7 +24,7 @@ uniform_block ublock_vtx
 
 uniform_block ublock_frg
 {
-	uniform vec4 ModColor;
+	uniform vec4 modcolor;
 	uniform sampler2D ColorMap;
 	uniform sampler2D ColorMap2;
 	uniform sampler2D ColorMap3;	
@@ -92,7 +92,7 @@ fragment_shader ps_uitext : iface_fmt
 {
 	vec4 texc = texture( ColorMap, frg_uv );
 	if( texc.r==0.0f ) discard;
-	out_clr = vec4(texc.xyz*ModColor.xyz,texc.r);
+	out_clr = vec4(texc.xyz*modcolor.xyz,texc.r);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_texcolor : iface_fmt
@@ -108,6 +108,12 @@ vertex_shader vs_vtxcolor : iface_vdefault
 	frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_texvtxcolor : iface_fdefault
+{
+	vec4 texc = texture( ColorMap, frg_uv );
+	out_clr = vec4(texc.xyz*frg_clr.xyz,texc.r);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault
 {
 	out_clr = frg_clr;
@@ -116,7 +122,7 @@ fragment_shader ps_fragclr : iface_fdefault
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_modclr : iface_fmt
 {
-	out_clr = ModColor;
+	out_clr = modcolor;
 }
 ///////////////////////////////////////////////////////////////
 technique vtxcolor {
@@ -139,7 +145,7 @@ technique mmodcolor {
 fxconfig=fxcfg_default;
 	pass p0
 	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_fragclr;
+		fragment_shader=ps_modclr;
 		state_block=sb_default;
 	}	
 }
@@ -151,12 +157,19 @@ technique texcolor {
 		state_block=sb_default;
 	}
 }
+technique texvtxcolor {
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_vtxcolor;
+		fragment_shader=ps_texvtxcolor;
+		state_block=sb_default;
+	}
+}
 technique texcolorwrap {}
 technique texcolorralp {}
 technique knob {}
 technique texmodcolor {}
 technique textexmodcolor {}
-technique texvtxcolor {}
 technique texmodcolorFB {}
 technique distortedfeedback {}
 ///////////////////////////////////////////////////////////////

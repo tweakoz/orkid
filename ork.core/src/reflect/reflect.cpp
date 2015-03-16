@@ -87,7 +87,7 @@ namespace ork { namespace reflect {\
     MACRO(CLASS<double>); \
 	MACRO(CLASS<PoolString>); \
 	MACRO(CLASS<file::Path>); \
-	MACRO(CLASS<TransformNode3D>); \
+	MACRO(CLASS<TransformNode>); \
 	MACRO(CLASS<CVector2>); \
 	MACRO(CLASS<CVector3>); \
 	MACRO(CLASS<CVector4>); \

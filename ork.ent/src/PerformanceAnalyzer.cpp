@@ -83,11 +83,11 @@ void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
 				iupdsampleindex ++;
 				iupdsampleindex%=kmaxsamples;
 			}
-			if( 0 == strcmp(pi.mpMarkerName, "ork.SceneEditorVP.draw.begin") )
+			if( 0 == strcmp(pi.mpMarkerName, "ork.viewport.draw.begin") )
 			{
 				drwbeg[idrwsampleindex] = pi.mfMarkerTime;
 			}
-			if( 0 == strcmp(pi.mpMarkerName, "ork.SceneEditorVP.draw.end") )
+			if( 0 == strcmp(pi.mpMarkerName, "ork.viewport.draw.end") )
 			{
 				drwend[idrwsampleindex] = pi.mfMarkerTime;
 				idrwsampleindex ++;
@@ -99,10 +99,16 @@ void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
 	favgupdate = 0.0f;
 	favgdraw = 0.0f;
 	
-	for( int i=0; i<kmaxsamples; i++ )
+	int inumup = 0;
+	for( int i=1; i<kmaxsamples; i++ )
 	{
-		favgupdate += std::fabs(updend[i]-updbeg[i]);
-	}
+		float fb1 = updbeg[i-1];
+		float fb2 = updbeg[i];
+		if( fb1<fb2 )
+		{	favgupdate += (fb2-fb1);
+			inumup++;
+		}
+	}	
 	int inumds = 0;
 	for( int i=1; i<kmaxsamples; i++ )
 	{
@@ -113,7 +119,7 @@ void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
 			inumds++;
 		}
 	}	
-	favgupdate /= float(kmaxsamples);
+	favgupdate /= float(inumup);
 	favgdraw /= float(inumds);
 	
 }
@@ -183,7 +189,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 		
 		static void doit( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren )
 		{
-			const yo* pyo = pren->GetUserData0().Get<const yo*>();
+			const yo* pyo = pren->GetDrawableDataA().Get<const yo*>();
 
 			const PerformanceAnalyzerArchetype* parch = pyo->parch;
 			const Entity* pent = pyo->pent;
@@ -218,10 +224,11 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 		}
 	};
 
+	#if 1 //DRAWTHREADS
 	CallbackDrawable* pdrw = new CallbackDrawable(pent);
 	pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
-	pdrw->SetCallback( yo::doit );
-	pdrw->SetBufferCallback( yo::BufferCB );
+	pdrw->SetRenderCallback( yo::doit );
+	pdrw->SetQueueToLayerCallback( yo::BufferCB );
 	pdrw->SetOwner(  & pent->GetEntData() );
 	pdrw->SetSortKey(0x7fffffff);
 
@@ -232,7 +239,8 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 
 	anyp ap;
 	ap.Set<const yo*>( pyo );
-	pdrw->SetData( ap );
+	pdrw->SetUserDataA( ap );
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

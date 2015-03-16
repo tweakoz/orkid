@@ -16,6 +16,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 extern int QtTest( int argc, char **argv );
+#define register 
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <QtCore/QMetaObject>
@@ -80,6 +81,8 @@ extern int QtTest( int argc, char **argv );
 #include <QtGui/QLineEdit.h>
 #endif
 
+#undef register 
+
 #include <ork/lev2/ui/event.h>
 
 #include <ork/lev2/gfx/ctxbase.h>
@@ -92,7 +95,8 @@ typedef struct SmtFinger MtFinger;
 namespace ork { 
 	
 std::string TypeIdNameStrip( const char * name );
-	
+std::string TypeIdName(const std::type_info*ti);
+
 namespace lev2
 {
 

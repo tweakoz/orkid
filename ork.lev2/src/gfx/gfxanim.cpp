@@ -646,12 +646,12 @@ void XgmLocalPose::BuildPose( void )
 		{
 			 mBlendPoseInfos[i].ComputeMatrix(mLocalMatrices[i]);
 
-			 /*if( i == ((gctr/1000)%inumjoints) )
+			 if(0)//( i == ((gctr/1000)%inumjoints) )
 			 {
 			 	ork::FixedString<64> fxs;
 			 	fxs.format( "buildpose i<%d>", i );
 			 	mLocalMatrices[i].dump((char*)fxs.c_str());
-			 }*/
+			 }
 			 // TODO: Callback for after previous/current have been blended in local space
 		}
 	}

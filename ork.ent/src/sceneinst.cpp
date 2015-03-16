@@ -38,12 +38,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(_XBOX)
-bool bFIXEDTIMESTEP = true;
-#else
-bool bFIXEDTIMESTEP = true;
-#endif
-
 namespace ork
 {
 	void EnterRunMode();
@@ -149,7 +143,7 @@ SceneInst::SceneInst( const SceneData* sdata, Application *application )
 SceneInst::~SceneInst()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	DrawableBuffer::BeginClearAndSync();
+	DrawableBuffer::BeginClearAndSyncReaders();
 	for( orkmap<PoolString,Entity*>::iterator it=mEntities.begin(); it!=mEntities.end(); it++ )
 	{
 		Entity* pent = it->second;
@@ -168,7 +162,7 @@ SceneInst::~SceneInst()
 			delete pSCI;
 		}
 	}
-	DrawableBuffer::EndClearAndSync();
+	DrawableBuffer::EndClearAndSyncReaders();
 
 	////////////////////////////
 	// steal all RenderSyncToken's
@@ -328,7 +322,7 @@ void SceneInst::SetEntity( const ent::EntData* pentdata, ent::Entity* pent )
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::EnterEditState()
 {
-	DrawableBuffer::BeginClearAndSync();
+	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
 	SceneInstEvent bindev( this, SceneInstEvent::ESIEV_BIND );
@@ -358,7 +352,7 @@ void SceneInst::EnterEditState()
 	ServiceDeactivateQueue();
 	SceneInstEvent outev( this, SceneInstEvent::ESIEV_START );
 	ork::Application::GetContext()->Notify( & outev );
-	DrawableBuffer::EndClearAndSync();
+	DrawableBuffer::EndClearAndSyncReaders();
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::EnterPauseState()
@@ -368,7 +362,7 @@ void SceneInst::EnterPauseState()
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::EnterRunState()
 {
-	DrawableBuffer::BeginClearAndSync();
+	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	EnterRunMode();
 
@@ -424,7 +418,7 @@ void SceneInst::EnterRunState()
 
 	SceneInstEvent outev( this, SceneInstEvent::ESIEV_START );
 	ork::Application::GetContext()->Notify( & outev );
-	DrawableBuffer::EndClearAndSync();
+	DrawableBuffer::EndClearAndSyncReaders();
 
 	RenderSyncToken rentok;
 	while(DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)){}
@@ -464,8 +458,8 @@ void SceneInst::OnSceneInstMode( ESceneInstMode emode )
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::DecomposeEntities()
 {
-	printf( "SceneInst<%p> BEGIN DecomposeEntities()\n", this );
-	printf( "/////////////////////////////////////\n");
+	//printf( "SceneInst<%p> BEGIN DecomposeEntities()\n", this );
+	//printf( "/////////////////////////////////////\n");
 	std::string bt = get_backtrace();
 	printf( "%s", bt.c_str() );
 	AssertOnOpQ2( UpdateSerialOpQ() );
@@ -478,12 +472,12 @@ void SceneInst::DecomposeEntities()
 
 		//ork::ent::Archetype* arch = pent->GetArchetype();
 
-		printf( "deleting ent<%p:%s>\n", pent, name.c_str() );
+		//printf( "deleting ent<%p:%s>\n", pent, name.c_str() );
 		delete pent;
 	}
 	mEntities.clear();
-	printf( "/////////////////////////////////////\n");
-	printf( "SceneInst<%p> END DecomposeEntities()\n", this );
+	//printf( "/////////////////////////////////////\n");
+	//printf( "SceneInst<%p> END DecomposeEntities()\n", this );
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::ComposeEntities()
@@ -514,7 +508,7 @@ void SceneInst::ComposeEntities()
 	// Compose Entities
 	///////////////////////////////////
 
-	orkprintf( "beg si<%p> Compose Entities..\n", this );
+	//orkprintf( "beg si<%p> Compose Entities..\n", this );
 
 	for( orkmap<ork::PoolString, ork::ent::SceneObject*>::const_iterator it=mSceneData->GetSceneObjects().begin(); it!=mSceneData->GetSceneObjects().end(); it++ )
 	{
@@ -552,12 +546,12 @@ void SceneInst::ComposeEntities()
 	
 	GetData().AutoLoadAssets();	
 
-	orkprintf( "end si<%p> Compose Entities..\n", this );
+	//orkprintf( "end si<%p> Compose Entities..\n", this );
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::LinkEntities()
 {
-	orkprintf( "beg si<%p> Link Entities..\n", this );
+	//orkprintf( "beg si<%p> Link Entities..\n", this );
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	///////////////////////////////////
 	// Link Entities
@@ -576,7 +570,7 @@ void SceneInst::LinkEntities()
 			edata.GetArchetype()->LinkEntity( this, pent );
 		}
 	}
-	orkprintf( "end si<%p> Link Entities..\n", this );
+	//orkprintf( "end si<%p> Link Entities..\n", this );
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::StartEntities()
@@ -586,7 +580,7 @@ void SceneInst::StartEntities()
 	// Start Entities
 	///////////////////////////////////
 
-	orkprintf( "Start Entities..\n" );
+	//orkprintf( "Start Entities..\n" );
 	for( orkmap<ork::PoolString, ork::ent::Entity*>::const_iterator it=mEntities.begin(); it!=mEntities.end(); it++ )
 	{
 		ork::ent::Entity* pent = it->second;
@@ -596,7 +590,7 @@ void SceneInst::StartEntities()
 
 		if( edata.GetArchetype() )
 		{
-			CMatrix4 world = pent->GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
+			CMatrix4 world = pent->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 			edata.GetArchetype()->StartEntity( this, world, pent );
 		}
 	}
@@ -625,20 +619,20 @@ void SceneInst::StopEntities()
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item) 
 { 
-	DEBUG_PRINT( "QueueActivateEntity<%p:%s>\n",  item.mpEntity, item.mpEntity->GetEntData().GetName().c_str() );
+	//DEBUG_PRINT( "QueueActivateEntity<%p:%s>\n",  item.mpEntity, item.mpEntity->GetEntData().GetName().c_str() );
 	mEntityActivateQueue.push_back(item); 
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::QueueDeactivateEntity(Entity *pent) 
 { 
-	DEBUG_PRINT( "QueueDeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
+	//DEBUG_PRINT( "QueueDeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
 	mEntityDeactivateQueue.push_back(pent); 
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::ActivateEntity(ent::Entity* pent)
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	DEBUG_PRINT( "ActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str()  );
+	//DEBUG_PRINT( "ActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str()  );
 	EntitySet::iterator it = mActiveEntities.find( pent );
 	if(it == mActiveEntities.end())
 	{
@@ -676,7 +670,7 @@ void SceneInst::ActivateEntity(ent::Entity* pent)
 void SceneInst::DeActivateEntity(ent::Entity* pent)
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	DEBUG_PRINT( "DeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
+	//DEBUG_PRINT( "DeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
 
 	EntitySet::iterator listit = mActiveEntities.find(pent);
 
@@ -795,91 +789,13 @@ static void CopyCameraData( const SceneInst::CameraLut& srclut, CameraLut& dstlu
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::QueueActiveDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const
-{
-	AssertOnOpQ2( UpdateSerialOpQ() );
-	float ftimeA = ork::CSystem::GetRef().GetLoResTime();
-
-	float t0 = ork::CSystem::GetRef().GetLoResTime();
-
-	{
-		float ftimeB = ork::CSystem::GetRef().GetLoResTime();
-
-		////////////////////////////////////////////////////////////////
-		// copy camera data from sceneinst to dbuffer
-		////////////////////////////////////////////////////////////////
-
-		CopyCameraData( mCameraLut, buffer.mCameraDataLUT );
-
-		////////////////////////////////////////////////////////////////
-
-		const EntitySet& ActiveEntities = GetActiveEntities();
-		for( EntitySet::const_iterator it=ActiveEntities.begin(); it!=ActiveEntities.end(); it++ )
-		{
-			const ork::ent::Entity* pent = (*it);
-
-			//NOTE: No culling! May need "was visible last frame" hack to be fast
-			const ork::ent::EntData& pentdata = pent->GetEntData();
-			const ork::ent::DagNode& dnode = pent->GetDagNode();
-			const ork::TransformNode3D& node3d = dnode.GetTransformNode();
-						
-			const Entity::LayerMap& entlayers = pent->GetLayers();
-            
-
-			for( Entity::LayerMap::const_iterator itL=entlayers.begin(); itL!=entlayers.end(); itL++ )
-			{
-				const PoolString& layer_name = itL->first;
-				const ent::Entity::DrawableVector* dv = itL->second;
-				DrawableBufLayer* buflayer = buffer.MergeLayer(layer_name);
-				if( dv && buflayer )
-				{
-					size_t inumdv = dv->size();
-					for(size_t i = 0; i < inumdv; i++ )
-					{	Drawable* pdrw = dv->operator[](i);
-						if( pdrw )
-						{
-							//printf( "queue drw<%p>\n", pdrw );
-							pdrw->QueueToBuffer(*buflayer);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	////////////////////////////////////////////////
-	static int ictr = 0;
-	float fcurtime = ork::CSystem::GetRef().GetLoResTime();
-	static float lltime = fcurtime;
-	float fdelta = fcurtime-lltime;
-	if( fdelta > 1.0f )
-	{
-		float fps = float(ictr)/fdelta;
-		//orkprintf( "QBPS<%f>\n", fps );
-
-		ictr = 0;
-		lltime=fcurtime;
-	}
-	ictr++;
-	////////////////////////////////////////////////
-
-	float t1 = ork::CSystem::GetRef().GetLoResTime();
-	float tn = (t1-t0);
-	if( ictr==1 )
-	{
-		orkprintf( "time<QueueActiveDrawablesToBuffer> %f sec", tn );
-	}
-
-}
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
 void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const
 {
 	//orkprintf( "beg si<%p> qad2b..\n", this );
 	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	buffer.Reset();
+
 	////////////////////////////////////////////////////////////////
 	// copy camera data from sceneinst to dbuffer
 	////////////////////////////////////////////////////////////////
@@ -890,17 +806,18 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 
 	float t0 = ork::CSystem::GetRef().GetLoResTime();
 
-	for( orkmap<PoolString,Entity*>::const_iterator it=mEntities.begin(); it!=mEntities.end(); it++ )
+	for( const auto& it : mEntities )
 	{
-		const ork::ent::Entity* pent = it->second;
+		const ork::ent::Entity* pent = it.second;
+		const Entity::LayerMap& entlayers = pent->GetLayers();
+		//const ork::TransformNode3D& node3d = pent->GetDagNode().GetTransformNode();
 
 		//NOTE: No culling! May need "was visible last frame" hack to be fast
-		const ork::ent::EntData& pentdata = pent->GetEntData();
-		const ork::ent::DagNode& dnode = pent->GetDagNode();
-		const ork::TransformNode3D& node3d = dnode.GetTransformNode();
-		//const ork::ent::Entity::DrawableVector& dv = pent->GetDrawables();
 
-		const Entity::LayerMap& entlayers = pent->GetLayers();
+		DrawQueueXfData xfdata;
+		xfdata.mWorldMatrix = pent->GetEffectiveMatrix();
+		
+		//node3d.GetMatrix(xfdata.mWorldMatrix);
 
 		for( Entity::LayerMap::const_iterator itL=entlayers.begin(); itL!=entlayers.end(); itL++ )
 		{
@@ -915,36 +832,12 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 					if( pdrw )
 					{
 						//printf( "queue drw<%p>\n", pdrw );
-						pdrw->QueueToBuffer(*buflayer);
+						pdrw->QueueToLayer(xfdata,*buflayer);
 					}
 				}
 			}
 		}
 	}
-
-	////////////////////////////////////////////////
-	static int ictr = 0;
-	float fcurtime = ork::CSystem::GetRef().GetLoResTime();
-	static float lltime = fcurtime;
-	float fdelta = fcurtime-lltime;
-	if( fdelta > 1.0f )
-	{
-		float fps = float(ictr)/fdelta;
-		//orkprintf( "QBPS<%f>\n", fps );
-
-		ictr = 0;
-		lltime=fcurtime;
-	}
-	ictr++;
-	////////////////////////////////////////////////
-
-	float t1 = ork::CSystem::GetRef().GetLoResTime();
-	float tn = (t1-t0);
-	if( ictr==1 )
-	{
-	//	orkprintf( "time<QueueAllDrawablesToBuffer> %f sec", tn );
-	}
-	//orkprintf( "end si<%p> qad2b..\n", this );
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1158,6 +1051,8 @@ void SceneInst::Update()
 		}
 		case ork::ent::ESCENEMODE_RUN:
 		{
+			ork::PerfMarkerPush( "ork.sceneinst.update.begin" );
+
 			///////////////////////////////
 			// Update Components
 			///////////////////////////////
@@ -1177,25 +1072,10 @@ void SceneInst::Update()
 				mDeltaTimeAccum = fdelta;
 				step = fdelta; //(1.0f/120.0f); // ideally should be (1.0f/vsync rate) / some integer
 			}
-			else if( bFIXEDTIMESTEP )
+			else 
 			{
 				mDeltaTimeAccum += fdelta;
-				step = 1.0f/120.0f; //(1.0f/120.0f); // ideally should be (1.0f/vsync rate) / some integer
-			}
-			else
-			{
-				mfAvgDtAcc += fdelta;
-				mfAvgDtCtr += 1.0f;
-
-				//float frate = 0.0f;
-				//float favgdelta = (mfAvgDtAcc/mfAvgDtCtr);
-				//if( favgdelta>.0333f ) frate=30.0f;
-				//else if( favgdelta>.01666f ) frate=60.0f;
-				//else frate=120.0f;
-
-				mDeltaTimeAccum += fdelta;
-				//step = (1.0f/frate);
-				step = (1.0f/120.0f);
+				step = 1.0f/60.0f; //(1.0f/120.0f); // ideally should be (1.0f/vsync rate) / some integer
 			}
 
 			// Nasa - We are doing our own accumulator because there are frame-rate independence bugs
@@ -1206,7 +1086,7 @@ void SceneInst::Update()
 			
 			mDeltaTimeAccum = fdelta;
 			step = fdelta;
-			
+						
 			while(mDeltaTimeAccum >= step)
 			{
 				mDeltaTimeAccum -= step;
@@ -1220,7 +1100,6 @@ void SceneInst::Update()
 
 				if(update)
 				{
-					ork::PerfMarkerPush( "ork.sceneinst.update.begin" );
 
 					UpdateEntityComponents(GetActiveComponents(sInputFamily));
 					UpdateEntityComponents(GetActiveComponents(sControlFamily));
@@ -1242,13 +1121,12 @@ void SceneInst::Update()
 					ServiceDeactivateQueue();
 					ServiceActivateQueue();
 
-					ork::PerfMarkerPush( "ork.sceneinst.update.end" );
 				}
 
 				if( mApplication ) mApplication->PostUpdate();
 			}
 
-			SetDeltaTime( fdelta );
+			SetDeltaTime( step );
 
 			UpdateEntityComponents(GetActiveComponents(sCameraFamily));
 
@@ -1258,6 +1136,8 @@ void SceneInst::Update()
 				SceneComponentInst* pinst = mSceneComponents.GetItemAtIndex(isc).second;
 				pinst->Update( this );
 			}
+
+			ork::PerfMarkerPush( "ork.sceneinst.update.end" );
 
 			///////////////////////////////
 			break;

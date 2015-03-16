@@ -28,6 +28,7 @@ public:
 	PoolString GetName() const;
 	virtual PoolString GetType() const;
 	bool Load() const;
+	bool LoadUnManaged() const;
 	bool IsLoaded() const;
 private:
 	PoolString mName;

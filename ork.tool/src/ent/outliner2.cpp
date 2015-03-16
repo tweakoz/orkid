@@ -1,17 +1,25 @@
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/opq.h>
-#include <ork/lev2/qtui/qtui.hpp>
 #include <ork/reflect/Functor.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
-#include <pkg/ent/editor/editor.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/dbgfontman.h>
-
-#include "outliner2.h"
 #include <orktool/ged/ged.h>
+#include <pkg/ent/editor/editor.h>
+
+#include "EditorCamera.h"
+#include "outliner2.h"
+
+///////////////////////////////////////////////////////////////////////////////
+
+#include <pkg/ent/scene.hpp>
+#include <pkg/ent/entity.hpp>
+#include <ork/lev2/qtui/qtui.hpp>
+
+///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::Outliner2Model, "Outliner2Model" );
 
@@ -106,6 +114,8 @@ void Outliner2Model::UpdateModel()
 {
 	printf( "Outliner2Model<%p>::SlotSceneTopoChanged\n", this );
 
+	mItems.clear();
+	
 	auto scene_data = mEditor.GetSceneData();
 
 	if( scene_data )
@@ -117,7 +127,6 @@ void Outliner2Model::UpdateModel()
 
 		bool alt = false;
 
-		mItems.clear();
 		int index = 0;
 
 		mLastSelection = -1;
@@ -517,6 +526,54 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					mOutlinerModel.ToggleEnts();
 					break;
 				}
+				case 'f':
+				{
+					CVector3 new_target;
+
+					auto scene = ed.GetSceneData();
+					const EntData* entdata = nullptr;
+					// TODO: Implement Visitor pattern to collect and grow bounding boxes for selected items
+					const auto& selection = ed.SelectionManager().GetActiveSelection();
+					for( auto it : selection )
+					{
+						if( const EntData* an_entdata = rtti::autocast(it) )
+						{
+							entdata = an_entdata;
+							const DagNode& dnode = entdata->GetDagNode();
+							const TransformNode& t3d = dnode.GetTransformNode();
+							auto pos = t3d.GetTransform().GetPosition();
+							new_target = pos;
+						}
+					}
+
+					//////////////////////
+					// find the editor cameras
+					//////////////////////
+
+					auto edcams = scene->FindEntitiesOfArchetype<ent::EditorCamArchetype>();
+
+					for( auto edc : edcams )
+					{
+						auto comp = edc->GetTypedComponent<EditorCamControllerData>();
+
+						if( comp )
+						{
+							auto cam = (lev2::CCamera_persp*) comp->GetCamera();
+							//auto eye = cam->GetEye();
+							//auto tgt = cam->GetTarget();
+							//auto dir = (tgt-eye).Normal();
+							//auto upd = cam->GetUp();
+
+							cam->mvCenter = new_target;
+							cam->UpdateMatrices();
+
+						}
+					}
+
+					//////////////////////
+
+					break;
+				}
 				case '\n': 
 				{	
 					SetNameOfSelectedItem();
@@ -529,7 +586,11 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					{
 						const std::vector<Outliner2Item>& items = mOutlinerModel.Items();
 						const Outliner2Item& item = items[ilastsel];
-						ed.EditorDeleteObject(item.mObject);
+						if( item.mObject )
+						{
+							printf( "OUTLINER2 delete obj<%p>\n", item.mObject );
+							ed.EditorDeleteObject(item.mObject);
+						}
 					}
 					break;
 				}
@@ -602,7 +663,7 @@ template class ork::lev2::CPickBuffer<ork::ent::Outliner2View>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 template<> 
-void CPickBuffer<ork::ent::Outliner2View>::Draw( void )
+void CPickBuffer<ork::ent::Outliner2View>::Draw( lev2::GetPixelContext& ctx )
 {	
     mPickIds.clear();
 

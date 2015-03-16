@@ -32,8 +32,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 static const bool USE_GIMPACT = true;
-extern bool USE_THREADED_RENDERER;
-extern bool bFIXEDTIMESTEP;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -45,8 +43,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletWorldControllerInst, "BulletWorldCo
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletDebugDrawQueueToBuffer(ork::ent::DrawableBufItem&cdb);
-void DrawBulletDebugDraw(	ork::lev2::RenderContextInstData& rcid,
+void BulletDebugQueueToLayerCallback(ork::ent::DrawableBufItem&cdb);
+void BulletDebugRenderCallback(	ork::lev2::RenderContextInstData& rcid,
 							ork::lev2::GfxTarget* targ,
 							const ork::lev2::CallbackRenderable* pren );
 
@@ -166,13 +164,18 @@ static void BulletWorldControllerInstInternalTickCallback(btDynamicsWorld *world
 
 	ork::ent::SceneInst *sinst = reinterpret_cast<ork::ent::SceneInst *>(world->getWorldUserInfo());
 
-	float framedelta = sinst->GetDeltaTime();
+	float previous_dt = sinst->GetDeltaTime();
 
 	dynaworld->applyGravity();
 
+	////////////////////////////////////////
+	// update bullet family components
+	//  at bullet tick rate (independent from scene tick rate)
+	////////////////////////////////////////
+
 	sinst->SetDeltaTime(timeStep);
 		sinst->UpdateActiveComponents(sBulletFamily);
-	sinst->SetDeltaTime(framedelta);
+	sinst->SetDeltaTime(previous_dt);
 	
 }
 
@@ -220,9 +223,9 @@ void BulletWorldControllerInst::InitWorld()
 	cinfo.m_persistentManifoldPool = 0;
 	cinfo.m_collisionAlgorithmPool = 0;
 
-	cinfo.m_defaultMaxPersistentManifoldPoolSize = 512;
-	cinfo.m_defaultMaxCollisionAlgorithmPoolSize = 512;
-	cinfo.m_defaultStackAllocatorSize = 8<<20; // 2MB
+	cinfo.m_defaultMaxPersistentManifoldPoolSize = 4096;
+	cinfo.m_defaultMaxCollisionAlgorithmPoolSize = 4096;
+	cinfo.m_defaultStackAllocatorSize = 64<<20; // 2MB
 
 	// collision configuration contains default setup for memory, collision setup
 	mBtConfig = new btDefaultCollisionConfiguration(cinfo);
@@ -262,20 +265,26 @@ void BulletWorldControllerInst::LinkPhysics(ork::ent::SceneInst *inst, ork::ent:
 	
 	mDynamicsWorld->setInternalTickCallback(BulletWorldControllerInstInternalTickCallback, inst);
 
+	#if 1 //DRAWTHREADS
 	ork::ent::CallbackDrawable* pdrw = new ork::ent::CallbackDrawable( pent );
 	pdrw->SetOwner(  & pent->GetEntData() );
 	pdrw->SetSortKey(0x7fffffff);
 	pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
-	pdrw->SetCallback( DrawBulletDebugDraw );
-	pdrw->SetBufferCallback( BulletDebugDrawQueueToBuffer );
+	pdrw->SetRenderCallback( BulletDebugRenderCallback );
+	pdrw->SetQueueToLayerCallback( BulletDebugQueueToLayerCallback );
 	pdrw->SetOwner(  & pent->GetEntData() );
 	pdrw->SetSortKey(0x3fffffff);
 
 	BulletDebugDrawDBData* pdata = new BulletDebugDrawDBData( this, pent );
-	pdrw->SetData( pdata );
+	pdrw->SetUserDataA( pdata );
 
 	pdata->mpDebugger = & mDebugger;
 	mDynamicsWorld->setDebugDrawer( & mDebugger );
+
+	btVector3 grav = !mBWCBD.GetGravity();
+	mDynamicsWorld->setGravity(grav);
+	#endif
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,25 +301,6 @@ void BulletWorldControllerInst::DoUpdate(ork::ent::SceneInst* inst)
 
 		float fdts = dt * mBWCBD.GetTimeScale();
 		float frate = mBWCBD.GetSimulationRate();
-
-		//frate = 60.0f;
-
-		if( bFIXEDTIMESTEP )
-		{
-			//frate = 120.0f;
-		}
-		else
-		{
-			mfAvgDtAcc += dt;
-			mfAvgDtCtr += 1.0f;
-
-			float favgdt = (mfAvgDtAcc/mfAvgDtCtr);
-
-			/*if( favgdt>.0333f ) frate=30.0f;
-			else if( favgdt>.0166f ) frate=60.0f;
-			else frate=120.0f;*/
-
-		}
 
 		float ffts = 1.0f / frate;
 

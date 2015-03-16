@@ -67,14 +67,10 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
 
 	miNumPasses = 1;
 
-#if 0//  WII
-	hModFX = asset::AssetManager<FxShaderAsset>::Load( "ram://solid" )->GetFxShader();
-#else
 	if( false == gearlyhack )
 	{
 		hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://solid" )->GetFxShader();
 	}
-#endif
 
 	if( pTARG )
 	{
@@ -82,7 +78,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
 	}
 }
 
-GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek )
+GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure, bool unmanaged )
 	: meColorMode( EMODE_USER )
 	, hTekVertexColor( 0 )
 	, hTekVertexModColor( 0 )
@@ -115,6 +111,8 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, co
 	, hParamNoiseAmp(0)
 	, hParamTime( 0 )
 	, hModFX( 0 )
+	, mUnManaged(unmanaged)
+	, mAllowCompileFailure(allowcompilefailure)
 {
 
 	mRasterState.SetShadeModel( ESHADEMODEL_SMOOTH );
@@ -125,14 +123,25 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, co
 	mRasterState.SetCullTest( ECULLTEST_OFF );
 
 	miNumPasses = 1;
-
-	FxShaderAsset* passet = asset::AssetManager<FxShaderAsset>::Load( mUserFxName.c_str() );
-
-	hModFX = passet ? passet->GetFxShader() : 0;
-
+	
 	if( pTARG )
 	{
 		Init(pTARG);
+	}
+	else
+	{
+		FxShaderAsset* passet = nullptr;
+
+		if( mUnManaged )
+			passet = asset::AssetManager<FxShaderAsset>::LoadUnManaged( mUserFxName.c_str() );
+		else
+			passet = asset::AssetManager<FxShaderAsset>::Load( mUserFxName.c_str() );
+
+		hModFX = passet ? passet->GetFxShader() : 0;
+
+		if( hModFX )
+			hModFX->SetAllowCompileFailure(mAllowCompileFailure);
+
 	}
 }
 
@@ -140,15 +149,26 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, co
 
 void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget *pTarg)
 {
-	if( 0 == hModFX )
-	{
-		orkprintf( "Attempting to Load Shader<orkshader://solid>\n" );
-		hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://solid")->GetFxShader();
-	}
+
 	if( mUserFxName.length() )
 	{
-		const char* loadname =  mUserFxName.c_str();
-		hModFX = asset::AssetManager<FxShaderAsset>::Load(loadname)->GetFxShader();
+		FxShaderAsset* passet = nullptr;
+
+		if( mUnManaged )
+			passet = asset::AssetManager<FxShaderAsset>::LoadUnManaged( mUserFxName.c_str() );
+		else
+			passet = asset::AssetManager<FxShaderAsset>::Load( mUserFxName.c_str() );
+
+		hModFX = passet ? passet->GetFxShader() : 0;
+
+		if( hModFX )
+			hModFX->SetAllowCompileFailure(mAllowCompileFailure);
+
+	}
+	else
+	{
+		//orkprintf( "Attempting to Load Shader<orkshader://solid>\n" );
+		hModFX = asset::AssetManager<FxShaderAsset>::Load("orkshader://solid")->GetFxShader();
 	}
 	if( 0 == hModFX )
 	{
@@ -195,6 +215,15 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget *pTarg)
 	hParamNoiseAmp = pTarg->FXI()->GetParameterH( hModFX, "NoiseAmp" );
 	hParamNoiseFreq = pTarg->FXI()->GetParameterH( hModFX, "NoiseFreq" );
 	hParamNoiseShift = pTarg->FXI()->GetParameterH( hModFX, "NoiseShift" );
+}
+
+/////////////////////////////////////////////////////////////////////////
+
+bool GfxMaterial3DSolid::IsUserFxOk() const
+{
+	if( meColorMode == EMODE_USER )
+		return (hTekUser!=nullptr);
+	return false;
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -249,8 +278,20 @@ static bool gbskip = false;
 bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 {
 	if( gbskip ) return false;
+	
+	const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
+	const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
+	const CCameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
+	bool bforcenoz = rdata->IsForceNoZWrite();
+
+	//mRasterState.SetZWriteMask( ! bforcenoz );
+
 	pTarg->RSI()->BindRasterState( mRasterState );
 	pTarg->FXI()->BindPass( hModFX, iPass );
+
+	if( hModFX->GetFailedCompile() )
+		return false;
+
 	pTarg->FXI()->BindParamMatrix( hModFX, hMatM, pTarg->MTXI()->RefMMatrix() );
 	pTarg->FXI()->BindParamMatrix( hModFX, hMatMV, pTarg->MTXI()->RefMVMatrix() );
 	pTarg->FXI()->BindParamMatrix( hModFX, hMatP, pTarg->MTXI()->RefPMatrix() );

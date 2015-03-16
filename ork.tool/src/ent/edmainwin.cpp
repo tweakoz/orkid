@@ -91,7 +91,7 @@ void EditorMainWindow::SlotObjectSelected( ork::Object* pobj )
 	if( pdata )
 	{
 		CMatrix4 mtx;
-		mtx = pdata->GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
+		mtx = pdata->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 		mEditorBase.SetSpawnMatrix( mtx );
 		mEditorBase.ManipManager().AttachObject( pobj );
 	}
@@ -185,7 +185,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	//////////////////////////////////
 	//////////////////////////////////
 
-	QPixmap pixmap("editor/splash.png");
+	//QPixmap pixmap("editor/splash.png");
 	//mpSplashScreen = new QSplashScreen(pixmap);
 	//mpSplashScreen->show();
 

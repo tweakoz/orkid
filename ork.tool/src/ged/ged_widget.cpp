@@ -210,6 +210,8 @@ void GedWidget::PopItemNode(GedItemNode*qw)
 
 void GedWidget::AddChild(GedItemNode*pw)
 {	
+	//printf( "GedWidget<%p> AddChild<%p>\n", this, pw );
+
 	GedItemNode* TopItem = (mItemStack.size()>0) ? mItemStack.front() : 0;
 	if( TopItem==0 ) // our root item widget
 	{
@@ -224,13 +226,22 @@ void GedWidget::DoResize()
 {
 	if( mRootItem )
 	{
+		int inum = mRootItem->GetNumItems();
 		miRootH = mRootItem->CalcHeight();
 		mRootItem->Layout( 2, 2, miW-4, miH-4);
+		//printf( "GedWidget<%p>::DoResize() dims<%d %d> miRootH<%d> inumitems<%d>\n", this, miW, miH, miRootH, inum );
 	}
 	else
 	{
 		miRootH = 0;
 	}
+}
+
+void GedWidget::SetDims( int iw, int ih )
+{
+	miW=iw;
+	miH=ih;
+	DoResize();
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -245,14 +256,14 @@ void GedWidget::Attach( ork::Object* obj )
 void GedWidget::Draw( lev2::GfxTarget* pTARG, int iw, int ih, int iscrolly )
 {
 	///////////////////////////////////////////////
-	miW = iw;
-	miH = ih;
+	//miW = iw;
+	//miH = ih;
 	GedItemNode* root = GetRootItem();
 	///////////////////////////////////////////////
-	if( false == pTARG->FBI()->IsPickState() )
-	{
-		root->Layout( 2, 2, miW-4, miH-4 );
-	}
+	//if( false == pTARG->FBI()->IsPickState() )
+	//{
+	//	root->Layout( 2, 2, miW-4, miH-4 );
+	//}
 	///////////////////////////////////////////////
 	GetSkin()->SetScrollY( iscrolly );
 	GetSkin()->Begin(pTARG,mViewport);

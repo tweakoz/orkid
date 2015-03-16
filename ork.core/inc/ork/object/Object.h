@@ -11,6 +11,7 @@
 #include <ork/reflect/Serializable.h>
 #include <ork/object/ObjectClass.h>
 #include <ork/config/config.h>
+#include <ork/util/md5.h>
 
 namespace ork {
 
@@ -49,7 +50,8 @@ public:
 	virtual bool PostDeserialize(reflect::IDeserializer &);
 
 	virtual Object* Clone() const;
-
+	Md5Sum CalcMd5() const;
+	
 	bool Notify(const event::Event* pEV) { return DoNotify(pEV); }
 	bool Query(event::Event* pEV) const { return DoQuery(pEV); }
 	

@@ -56,6 +56,7 @@ void graph_data::AddChild( const PoolString& named, dgmodule* pchild )
 		mModules.AddSorted( named, pchild );
 		pchild->SetParent(this);
 		mbTopologyIsDirty = true;
+		this->OnGraphChanged();
 	}
 	mMutex.UnLock();
 }
@@ -126,6 +127,10 @@ bool graph_data::SerializeConnections(ork::reflect::ISerializer &ser) const
 		{	int inuminputplugs = pmodule->GetNumInputs();
 			for( int ip=0; ip<inuminputplugs; ip++ )
 			{	ork::dataflow::inplugbase* pinput = pmodule->GetInput(ip);
+				
+				auto clazz = pmodule->GetClass();
+
+				//printf( "module<%s:%s> inp<%d:%p> of <%d>\n", it->first.c_str(), clazz->Name().c_str(), ip, pinput, inuminputplugs );
 				const ork::dataflow::outplugbase* poutput = pinput->GetExternalOutput();
 				if( poutput )
 				{	module* poutmodule = rtti::autocast(poutput->GetModule());
@@ -183,8 +188,8 @@ bool graph_data::DeserializeConnections(ork::reflect::IDeserializer &deser)
 		/////////////////////////
 		// make the connection
 		/////////////////////////
-		orklut<ork::PoolString,ork::Object*>::const_iterator it_inp = mModules.find(ork::AddPooledString(inp_mod_name));
-		orklut<ork::PoolString,ork::Object*>::const_iterator it_out = mModules.find(ork::AddPooledString(out_mod_name));
+		auto it_inp = mModules.find(ork::AddPooledString(inp_mod_name));
+		auto it_out = mModules.find(ork::AddPooledString(out_mod_name));
 		if( it_inp!=mModules.end() && it_out!=mModules.end() )
 		{	dgmodule* pinp_mod = rtti::autocast( it_inp->second );
 			dgmodule* pout_mod = rtti::autocast( it_out->second );
@@ -207,17 +212,33 @@ bool graph_data::PreDeserialize(reflect::IDeserializer &)
 	UnLockTopoSortedChildren();
 	return true;
 }
+bool graph_data::PostDeserialize(reflect::IDeserializer &)
+{
+	OnGraphChanged();
+	return true;
+}
+
+void graph_data::OnGraphChanged()
+{
+	for( auto item : mModules )
+	{	dgmodule* module = rtti::autocast(item.second);
+
+		printf( "graph<%p> module<%p> name<%s>\n", this, module, item.first.c_str() );
+		module->SetName(item.first);
+	}
+}
 ///////////////////////////////////////////////////////////////////////////////
 bool graph_data::IsComplete() const
 {	bool bcomp = true;
-	for( orklut<PoolString,Object*>::const_iterator it=mModules.begin(); it!=mModules.end(); it++ )
-	{	dgmodule* module = rtti::autocast(it->second);
+	for( auto item : mModules )
+	{	dgmodule* module = rtti::autocast(item.second);
 		if( 0 == module )
 		{	bcomp = false;
 		}
 	}
 	return bcomp;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

@@ -69,6 +69,8 @@ void GlslFxScannerView::ScanBlock( size_t is )
 	const token& block_name = mScanner.tokens[is];
 	mBlockName = is;
 
+	//printf( "ScanBlock name<%s> is<%zu>\n", block_name.text.c_str(), is );
+
 	for( size_t i=is; i<max_t; i++ )
 	{	const token& t = mScanner.tokens[i];
 		bool is_term = std::regex_match(t.text,mBlockTerminators);
@@ -76,8 +78,10 @@ void GlslFxScannerView::ScanBlock( size_t is )
 		bool is_open = ( t.text == "{" );
 		bool is_close = ( t.text == "}" );
 
-		//printf( "itok<%d> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
+		//printf( "itok<%zu> t<%s> istate<%d> is_open<%d> is_close<%d> is_term<%d>\n",
 		//		i, t.text.c_str(), istate, int(is_open), int(is_close), int(is_term) );
+
+		fflush(stdout);
 
 		switch( istate )
 		{

@@ -970,13 +970,13 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 				float fuV4 = (fZ4+1.0f)*0.5f;
 				/////////////////////////
 
-				vw.AddVertex( SVtxV12C4T16( fX1, fY1, fZ1, S16(fuU1*32767.0f), S16(fuV1*32767.0f), 0x11111111 ) );
-				vw.AddVertex( SVtxV12C4T16( fX2, fY2, fZ2, S16(fuU2*32767.0f), S16(fuV2*32767.0f), 0x44444444 ) );
-				vw.AddVertex( SVtxV12C4T16( fX3, fY3, fZ3, S16(fuU3*32767.0f), S16(fuV3*32767.0f), 0x77777777 ) );
+				vw.AddVertex( SVtxV12C4T16( fX1, fY1, fZ1, fuU1, fuV1, 0x11111111 ) );
+				vw.AddVertex( SVtxV12C4T16( fX2, fY2, fZ2, fuU2, fuV2, 0x44444444 ) );
+				vw.AddVertex( SVtxV12C4T16( fX3, fY3, fZ3, fuU3, fuV3, 0x77777777 ) );
 
-				vw.AddVertex( SVtxV12C4T16( fX4, fY4, fZ4, S16(fuU4*32767.0f), S16(fuV4*32767.0f), 0xaaaaaaaa ) );
-				vw.AddVertex( SVtxV12C4T16( fX3, fY3, fZ3, S16(fuU3*32767.0f), S16(fuV3*32767.0f), 0xcccccccc ) );
-				vw.AddVertex( SVtxV12C4T16( fX2, fY2, fZ2, S16(fuU2*32767.0f), S16(fuV2*32767.0f), 0xffffffff ) );
+				vw.AddVertex( SVtxV12C4T16( fX4, fY4, fZ4, fuU4, fuV4, 0xaaaaaaaa ) );
+				vw.AddVertex( SVtxV12C4T16( fX3, fY3, fZ3, fuU3, fuV3, 0xcccccccc ) );
+				vw.AddVertex( SVtxV12C4T16( fX2, fY2, fZ2, fuU2, fuV2, 0xffffffff ) );
 			}
 		}
 

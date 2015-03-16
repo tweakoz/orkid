@@ -135,7 +135,7 @@ SceneEditorVP::SceneEditorVP( const std::string& name, SceneEditorBase& the_ed, 
 
 	///////////////////////////////////////////////////////////
 
-	ent::DrawableBuffer::ClearAndSync();
+	ent::DrawableBuffer::ClearAndSyncWriters();
 
 	///////////////////////////////////////////////////////////
 
@@ -204,7 +204,7 @@ void SceneEditorView::SlotObjectSelected( ork::Object* pobj )
 	EntData* pdata = rtti::autocast(pobj);
 	if( pdata )
 	{
-		CVector3 pos = pdata->GetDagNode().GetTransformNode().GetTransform()->GetPosition();
+		CVector3 pos = pdata->GetDagNode().GetTransformNode().GetTransform().GetPosition();
 		//if( mVP->GetCamera() )
 		//	mVP->GetCamera()->CamFocus = pos;
 		//mVP->mpPickBuffer->SetDirty(true);
@@ -264,9 +264,12 @@ void SceneEditorVP::DoInit( ork::lev2::GfxTarget* pTARG )
 
 void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 {
-	if( gUpdateStatus.GetState()!=EUPD_RUNNING) return;
+	bool update_running = gUpdateStatus.GetState()==EUPD_RUNNING;
 
-	mRenderLock = 1;
+	//printf( "SceneEditorVP::DoDraw() updrun<%d>\n", int(update_running) );
+
+
+	//if( false == update_running ) return;
 
 	const SRect tgtrect = SRect( 0, 0, mpTarget->GetW(), mpTarget->GetH() );
 	FrameRenderer the_renderer( this );
@@ -276,6 +279,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 	the_renderer.GetFrameData().SetTarget( mpTarget );
 		
 	/////////////////////////////////////////////////////////////////////////////////
+
+	mRenderLock = 1;
 	
 	bool bFX = false;
 	auto pCMCI = GetCMCI();
@@ -293,6 +298,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				break;
 		}
 	}
+
+	mRenderLock = 0;
 	
 	/////////////////////////////////////////////////////////////////////////////////
 
@@ -303,7 +310,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 		/////////////////////////////////
 		{	float frame_rate = pCMCI ? pCMCI->GetCurrentFrameRate() : 0.0f;
 			bool externally_fixed_rate = (frame_rate!=0.0f);
-			ent::SceneInst* psi = this->GetSceneInst();
+			const ent::SceneInst* psi = this->GetSceneInst();
 
 			RenderSyncToken syntok;
 			/////////////////////////////
@@ -371,7 +378,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 						////////////////////////////////////////
 						file::Path::NameType fnamesyn;
 						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);			
-						mpTarget->FBI()->Capture( *poutbuf, file::Path(fnamesyn.c_str()) );
+						//mpTarget->FBI()->Capture( *poutbuf, file::Path(fnamesyn.c_str()) );
 						////////////////////////////////////////
 					}
 					mpTarget->FBI()->PopRtGroup();
@@ -396,7 +403,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 						auto buf = mpTarget->FBI()->GetThisBuffer();
 						file::Path::NameType fnamesyn;
 						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);			
-						mpTarget->FBI()->Capture( *buf, file::Path(fnamesyn.c_str()) );
+						//mpTarget->FBI()->Capture( *buf, file::Path(fnamesyn.c_str()) );
 						////////////////////////////////////////
 				}
 
@@ -437,7 +444,10 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 		else
 		/////////////////////////////////
 		{
-			const ent::DrawableBuffer* DB = DrawableBuffer::LockReadBuffer(7);//mDbLock.Aquire(7);
+			const ent::DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7);//mDbLock.Aquire(7);
+
+			mRenderLock = 1;
+
 			the_renderer.GetFrameData().SetUserProperty("DB",anyp(DB) );
 			
 			if( DB )
@@ -472,14 +482,16 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				mpTarget->EndFrame();// the_renderer );
 				the_renderer.GetFrameData().PopRenderTarget();
 			
+				DrawableBuffer::EndDbRead(DB);
 			}
-			DrawableBuffer::UnLockReadBuffer(DB);
+
+			mRenderLock = 0;
+
 		}
 	}
 	the_renderer.GetFrameData().PopRenderTarget();
 	
 	the_renderer.GetFrameData().SetDstRect( tgtrect );
-	mRenderLock = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -601,12 +613,13 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 		FrameData.AddLayer(AddPooledLiteral("O"));
 		FrameData.AddLayer(AddPooledLiteral("P"));
 		FrameData.AddLayer(AddPooledLiteral("Q"));
-		ent::SceneInst* psi = GetSceneInst();
+		
+		const ent::SceneInst* psi = GetSceneInst();
 		mSceneView.UpdateRefreshPolicy(FrameData,psi);
 	
 		Clear(); 
 		if( node.mbDrawSource ) 
-			RenderSDLD( FrameData );
+			RenderQueuedScene( FrameData );
 	};
 	pTARG->FBI()->PopScissor();
 	pTARG->FBI()->PopViewport();
@@ -626,9 +639,13 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::QueueSDLD(ent::DrawableBuffer*pDB) // Queue SceneDrawLayerData
+void SceneEditorVP::QueueSceneInstToDb(ent::DrawableBuffer*pDB) // Queue SceneDrawLayerData
 {
-	pDB->mSDLD.Queue(GetSceneInst(), pDB );
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	if( GetSceneInst() )
+		GetSceneInst()->QueueAllDrawablesToBuffer( *pDB );
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -668,8 +685,8 @@ const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::SceneInst* SceneEditorVP::GetSceneInst()
-{	ent::SceneInst* psi = 0;
+const ent::SceneInst* SceneEditorVP::GetSceneInst()
+{	const ent::SceneInst* psi = 0;
 	if( mEditor.mpScene )
 	{	if(ApplicationStack::Top())
 		{	psi = mEditor.GetActiveSceneInst();
@@ -685,7 +702,7 @@ ent::SceneInst* SceneEditorVP::GetSceneInst()
 
 #define GL_ERRORCHECK() { int iErr = GetGlError(); OrkAssert( iErr==0 ); }
 
-void SceneEditorVP::RenderSDLD( lev2::RenderContextFrameData & FrameData )
+void SceneEditorVP::RenderQueuedScene( lev2::RenderContextFrameData & FrameData )
 {
 GL_ERRORCHECK();
 	lev2::IRenderTarget* pIRT = FrameData.GetRenderTarget();
@@ -720,10 +737,13 @@ GL_ERRORCHECK();
 	const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
 	if( 0 == DB ) return;
 
-	const CCameraData* pcamdata = DB->mSDLD.GetCameraData(miCameraIndex);
-	const CCameraData* pcullcamdata = DB->mSDLD.GetCameraData(miCullCameraIndex);
+	const CCameraData* pcamdata = DB->GetCameraData(miCameraIndex);
+	const CCameraData* pcullcamdata = DB->GetCameraData(miCullCameraIndex);
 	//FrameData.GetTarget()->FBI()->ForceFlush();
 	
+	if( nullptr == pcamdata )
+		return;
+
 	if( pcamdata )
 	{
 		mActiveCamera = pcamdata->GetLev2Camera();
@@ -731,7 +751,7 @@ GL_ERRORCHECK();
 
 	if( pCAMNAME )
 	{
-		const CCameraData* pcamdataNAMED = DB->mSDLD.GetCameraData(*pCAMNAME);
+		const CCameraData* pcamdataNAMED = DB->GetCameraData(*pCAMNAME);
 		if( pcamdataNAMED )
 			pcamdata = pcamdataNAMED;
 		//printf( "Using CameraName<%s> CamData<%p>\n", pCAMNAME->c_str(), pcamdataNAMED );
@@ -1191,6 +1211,8 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
 				GetRenderer()->SetTarget( pOutputTarget );
 				break;
 			}
+			default:
+				break;
 		}
 	}
 	pOutputTarget->MTXI()->PopPMatrix();

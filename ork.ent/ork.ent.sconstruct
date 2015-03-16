@@ -38,7 +38,7 @@ class ent:
         print suffix
         XFL  = "bullet-2.73-math bullet-2.73-collision "
         XFL += "bullet-2.73-dynamics bullet-2.73-extras "
-
+        
         bullet_libs = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
 
 	XFL = "core lev2 "
@@ -58,6 +58,7 @@ class ent:
 	prj.AddLibPaths( "%s/lib"%sln.stage_dir )
 	#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 	prj.AddLibs( LIBS )
+	prj.AddLibs( "OpenImageIO OpenImageIO_Util" )
 	#prj.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
 	#prj.AddLibs( "ork.tool.osx.release" )
 	prj.Configure()

@@ -19,6 +19,8 @@ extern bool gearlyhack;
 
 FxShader::FxShader()
 	: mInternalHandle( 0 )
+	, mAllowCompileFailure(false)
+	, mFailedCompile(false)
 {
 }
 ///////////////////////////////////////////////////////////////////////////////

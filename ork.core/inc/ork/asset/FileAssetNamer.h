@@ -4,16 +4,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <ork/asset/AssetNamer.h>
 #include <ork/kernel/string/PoolString.h>
+#include <ork/kernel/string/PieceString.h>
+#include <ork/kernel/string/ArrayString.h>
 
 namespace ork { namespace asset {
 
-class FileAssetNamer : public AssetNamer
+class FileAssetNamer 
 {
 public:
 	FileAssetNamer(ConstString prefix = "");
-	/*virtual*/ bool Canonicalize(MutableString result, PieceString input);
+	bool Canonicalize(MutableString result, PieceString input);
 private:
 	ConstString mPrefix;
 };

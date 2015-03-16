@@ -44,13 +44,12 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 AudioStreamLoader::AudioStreamLoader()
+	:  FileAssetLoader( AudioStream::GetClassStatic() )
 {
-#if defined(WII)
-	AddFileExtension(".fsb");
-#elif defined(_XBOX)
-	AddFileExtension(".xwma");
+#if defined(_XBOX)
+	AddLocation("data://",".xwma");
 #else
-	AddFileExtension(".wav");
+	AddLocation("data://",".wav");
 #endif
 }
 
@@ -68,13 +67,11 @@ bool AudioStreamLoader::LoadFileAsset(asset::Asset *pAsset, ConstString filename
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static AudioStreamLoader gloader;
-static ork::asset::FileAssetNamer gnamer("data://audio/streams");
-
 void AudioStream::Describe()
 {
-	GetClassStatic()->AddLoader(gloader);
-	GetClassStatic()->SetAssetNamer(&gnamer);
+	auto loader = new AudioStreamLoader;
+	GetClassStatic()->AddLoader(loader);
+	GetClassStatic()->SetAssetNamer("data://audio/streams");
 	GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("lev2::audiostream"));
 
 }

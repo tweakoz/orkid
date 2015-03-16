@@ -23,9 +23,9 @@ namespace ged { class ObjModel; }
 
 class GraphVP;
 
-class DataFlowEditor : public ork::Object
+class DataFlowEditor :  public ork::AutoConnector
 {
-	RttiDeclareAbstract( DataFlowEditor, ork::Object );
+	RttiDeclareAbstract( DataFlowEditor, ork::AutoConnector );
 
 public:
 
@@ -48,12 +48,18 @@ public:
 	ork::dataflow::dgmodule* GetProbeModule() const { return mpProbeModule; }
 
 	void SlotClear();
+	void SlotModelInvalidated();
+
+	//DeclarePublicAutoSlot( RelayModelInvalidated );
+	DeclarePublicAutoSlot( ModelInvalidated );
 
 };
 
 struct GraphVP : public ui::Surface
 {
 	GraphVP( DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::string & name );
+
+	void ReCenter();
 
 private:
 
@@ -64,7 +70,6 @@ private:
 	void DoInit(lev2::GfxTarget* pt ) override;
 
 	DataFlowEditor& GetDataFlowEditor() { return mDflowEditor; }
-	void ReCenter();
 	void draw_connections( ork::lev2::GfxTarget* pTARG );
 	//void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
 

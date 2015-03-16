@@ -27,8 +27,12 @@ int main(int argc, char** argv)
     /////////////////////////////////////////////
     // default Run All Tests
     /////////////////////////////////////////////
-    if( argc < 2 )
-    {       rval = UnitTest::RunAllTests();
+    if( argc != 2 )
+    {    
+        printf( "ork.core unit test : usage :\n");
+        printf( "<exename> list : list test names\n" );
+        printf( "<exename> testname : run 1 test named\n" );
+        printf( "<exename> all : run all tests\n" );
     }
     /////////////////////////////////////////////
     // run a single test (higher signal/noise for debugging)
@@ -36,8 +40,11 @@ int main(int argc, char** argv)
     else if( argc == 2 )
     {
         bool blist_tests = (0 == strcmp( argv[1], "list" ));
+        bool all_tests = (0 == strcmp( argv[1], "all" ));
 
-        //UnitTest::TestResults Results;
+        if( all_tests )
+            return UnitTest::RunAllTests();
+
         const char *testname = argv[1];
         const UnitTest::TestList & List = UnitTest::Test::GetTestList();
         const UnitTest::Test* ptest = List.GetHead();

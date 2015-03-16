@@ -138,6 +138,24 @@ Asset *AssetCategory::DeclareAsset(PieceString type, PieceString name) const
 		return result;
 	}
 }
+///////////////////////////////////////////////////////////////////////////////
+
+Asset *AssetCategory::LoadUnManagedAsset(PieceString type, PieceString name) const
+{
+	AssetClass *clazz = FindAssetClass(type);
+
+	if(clazz)
+	{
+		return clazz->LoadUnManagedAsset(name);
+	}
+	else
+	{
+		VirtualAsset *result = new VirtualAsset();
+		result->SetType(ork::AddPooledString(type));
+		result->SetName(ork::AddPooledString(name));
+		return result;
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } }

@@ -43,7 +43,7 @@ def search_at_root(word, root):
 
 #################################################################################
 
-pathset =  "ork.build ork.core ork.lev2 ork.ent ork.tool ork.fcollada305"
+pathset =  "ork.build ork.core ork.lev2 ork.ent ork.tool ork.fcollada305 tweakout"
 pathspl = string.split(pathset)
 
 #################################################################################

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _TEXTUREMANAGER_H
-#define _TEXTUREMANAGER_H
+#pragma once
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/kernel/core/singleton.h>
@@ -164,8 +163,8 @@ public:
 	void Clear( const CColor4 & color );
 	void SetTexel( const CColor4 & color, const CVector2 & ST );
 
-	CMd5Sum GetMd5Sum( void ) const { return mMd5Sum; }
-	void SetMd5Sum( CMd5Sum sum ) { mMd5Sum=sum; }
+	Md5Sum GetMd5Sum( void ) const { return mMd5Sum; }
+	void SetMd5Sum( Md5Sum sum ) { mMd5Sum=sum; }
 
     const TextureSamplingModeData& TexSamplingMode() const { return mTexSampleMode; }
     TextureSamplingModeData& TexSamplingMode() { return mTexSampleMode; }
@@ -237,7 +236,7 @@ public:
 
 	private:
 
-	CMd5Sum							mMd5Sum;	// for dirty checking (mipgen/palettegen)
+	Md5Sum							mMd5Sum;	// for dirty checking (mipgen/palettegen)
 	orkvector< CTextureMipData >	mMipImages;
 	int								miTotalUniqueColors;
 	int								miMaxMipUniqueColors;
@@ -271,5 +270,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif

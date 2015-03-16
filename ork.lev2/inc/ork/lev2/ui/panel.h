@@ -13,6 +13,8 @@ struct Panel : public Group
 
 	void SetChild( Widget* pch);
 
+	void Snap();
+
 private:
 
 	HandlerResult DoOnUiEvent( const Event &Ev ) override;

@@ -166,21 +166,6 @@ void GfxMaterialFx::LoadEffect( const AssetPath& EffectAssetName )
 	if( hasurl == false )
 	{
 		pth.SetUrlBase( "orkshader://" );
-
-		file::Path ms_found = asset::AssetManager<FxShaderAsset>::FindOnDisk(pth.c_str());
-
-		if( ms_found.length() == 0 )
-		{
-			pth.SetUrlBase( "prjshader://" );
-		}
-
-		ms_found = asset::AssetManager<FxShaderAsset>::FindOnDisk(pth.c_str());
-
-		if( ms_found.length() == 0 )
-		{
-			orkprintf( "\n" );
-
-		}
 	}
 
 

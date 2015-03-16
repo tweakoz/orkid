@@ -40,31 +40,29 @@ documentation and/or software.
 
 */
 
-#ifndef _UTIL_MD5_H
-#define _UTIL_MD5_H
+#pragma once
 
 #include <stdio.h>
-//#include <fstream.h>
-//#include <iostream.h>
+#include <string>
 
-class CMd5Sum
+class Md5Sum
 {
 public:
 
-	U32	muMD5[4];
+	uint8_t	muMD5[16];
 
-	CMd5Sum()
+	Md5Sum()
 	{
-		muMD5[0] = 0;
-		muMD5[1] = 0;
-		muMD5[2] = 0;
-		muMD5[3] = 0;
+    for( int i=0; i<16; i++ )
+        muMD5[i]=0;
 	}
 
-	bool operator==( const CMd5Sum & ref )
+	/*bool operator==( const Md5Sum & ref )
 	{
 		return ( (muMD5[0]==ref.muMD5[0]) && (muMD5[1]==ref.muMD5[1]) && (muMD5[2]==ref.muMD5[2]) && (muMD5[3]==ref.muMD5[3]) );
-	}
+	}*/
+
+  std::string hex_digest() const ;
 };
 
 class CMD5 {
@@ -87,14 +85,8 @@ public:
 
 // methods to acquire finalized result
 
-  void					ResultU32( U32 & resa, U32 & resb, U32 & resc, U32 & resd );
-  CMd5Sum				Result( void );
-
-  const unsigned char    *raw_digest ();  // digest as a 16-byte binary array
-  char *            hex_digest ();  // digest as a 33-byte ascii-hex std::string
-  //friend ostream&   operator<< (ostream&, MD5 context);
-
-
+  void					ResultU32( U32 & resa, U32 & resb, U32 & resc, U32 & resd ) const;
+  Md5Sum				Result() const;
 
 private:
 
@@ -135,7 +127,3 @@ private:
 			    uint4 s, uint4 ac);
 
 };
-
-
-
-#endif

@@ -37,10 +37,6 @@ struct	SRasterState
 	unsigned	muStencilOpPass		:3;
 	unsigned	muStencilOpFail		:3;
 
-	//////////////////
-
-	unsigned	muPolyOffset		:2;		// 32
-
 	// Sort (Highest Priority)
 
 	unsigned	muSortID			:11;	// 63		512 Hard Sort Bins (Use Object Depth and Pass Num for This)
@@ -96,12 +92,6 @@ struct	SRasterState
 									uRef=muStencilRef;
 									uMsk=muStencilMask;
 								}
-
-	/////////////////////////////
-
-	void				SetPolyOffset( unsigned int iVal ) { muPolyOffset = iVal; }
-
-	unsigned int		GetPolyOffset( void ) const { return unsigned(muPolyOffset); }
 
 	/////////////////////////////
 

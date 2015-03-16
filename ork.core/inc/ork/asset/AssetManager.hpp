@@ -38,21 +38,6 @@ AssetType *AssetManager<AssetType>::Find(const PieceString& asset_name)
 
 template<typename AssetType>
 inline
-file::Path AssetManager<AssetType>::FindOnDisk(const PieceString& asset_name)
-{
-	file::Path rval;
-	gLock.Lock();
-	AssetClass* pclazz = AssetType::GetClassStatic();
-	AssetLoader* loader = pclazz->FindLoader(asset_name);
-	if( loader )
-	{
-	}
-	gLock.UnLock();
-	return rval;
-}
-
-template<typename AssetType>
-inline
 AssetType *AssetManager<AssetType>::Load(const PieceString& asset_name)
 {
 	gLock.Lock();
@@ -70,6 +55,15 @@ AssetType *AssetManager<AssetType>::Load(const PieceString& asset_name)
 	}
 	gLock.UnLock();
 	return NULL;
+}
+template<typename AssetType>
+inline
+AssetType *AssetManager<AssetType>::LoadUnManaged(const PieceString& asset_name)
+{
+	gLock.Lock();
+	AssetType* prval = rtti::safe_downcast<AssetType *>(AssetType::GetClassStatic()->LoadUnManagedAsset(asset_name));
+	gLock.UnLock();
+	return prval;
 }
 
 template<typename AssetType>
@@ -100,5 +94,3 @@ bool AssetManager<AssetType>::AutoUnLoad(int depth)
 
 
 } }
-
-template class ork::util::RingLink<ork::asset::AssetLoader>;

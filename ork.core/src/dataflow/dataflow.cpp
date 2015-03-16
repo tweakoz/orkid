@@ -235,9 +235,9 @@ float floatxf::transform( float input ) const
 {
 	if( ! mTransforms.Empty() )
 	{
-		for( auto it=mTransforms.begin(); it!=mTransforms.end(); it++ )
+		for( auto itxf : mTransforms )
 		{
-			floatxfitembase* pitem = rtti::autocast(it->second);
+			floatxfitembase* pitem = rtti::autocast(itxf.second);
 			if( pitem )
 			{
 				input = pitem->transform(input);
@@ -284,7 +284,11 @@ plugroot::plugroot( module*pmod, EPlugDir edir, EPlugRate epr, const std::type_i
     , mTypeId(tid)
     , mePlugRate( epr )
     , mPlugName( pname ? ork::AddPooledLiteral( pname ) : ork::AddPooledLiteral( "noname" ) )
-{}
+{
+	printf( "plugroot<%p> pmod<%p> construct name<%s>\n", this, pmod, mPlugName.c_str() );
+
+
+}
 void plugroot::SetDirty( bool bv )
 {
 	mbDirty=bv;
@@ -311,21 +315,23 @@ inplugbase::inplugbase(	module* pmod, EPlugRate epr,const std::type_info& tid, c
 	, mExternalOutput(0)
 	, mpMorphable(0)
 {
+	if( GetModule() )
+		GetModule()->AddInput(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 inplugbase::~inplugbase()
 {
+	if( GetModule() )
+		GetModule()->RemoveInput(this);
 	Disconnect();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void inplugbase::DoSetDirty( bool bd )
 {	if( bd )
 	{	GetModule()->SetInputDirty( this );
-		for( orkvector<outplugbase*>::const_iterator	it=mInternalOutputConnections.begin();
-														it!=mInternalOutputConnections.end();
-														it++ )
+		for( auto& item : mInternalOutputConnections )
 		{
-			(*it)->SetDirty(bd);
+			item->SetDirty(bd);
 		}
 	}
 }
@@ -359,10 +365,16 @@ outplugbase::outplugbase( module*pmod, EPlugRate epr, const std::type_info& tid,
 	: plugroot(pmod,EPD_OUTPUT,epr,tid,pname)
 	, mpRegister(0)
 {
+	if( GetModule() )
+		GetModule()->AddOutput(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 outplugbase::~outplugbase()
-{	while( GetNumExternalOutputConnections() )
+{	
+	if( GetModule() )
+		GetModule()->RemoveOutput(this);
+
+	while( GetNumExternalOutputConnections() )
 	{	inplugbase* pcon = GetExternalOutputConnection(GetNumExternalOutputConnections()-1);
 		pcon->Disconnect();
 	}
@@ -371,17 +383,15 @@ outplugbase::~outplugbase()
 void outplugbase::DoSetDirty( bool bd )
 {	if( bd )
 	{	GetModule()->SetOutputDirty( this );
-		for( orkvector<inplugbase*>::const_iterator it=mExternalInputConnections.begin();
-													it!=mExternalInputConnections.end();
-													it++ )
+		for( auto& item : mExternalInputConnections )
 		{
-			(*it)->SetDirty(bd);
+			item->SetDirty(bd);
 		}
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 void outplugbase::Disconnect( inplugbase* pinplug )
-{	orkvector<inplugbase*>::iterator it= std::find(mExternalInputConnections.begin(),mExternalInputConnections.end(), pinplug );
+{	auto it= std::find(mExternalInputConnections.begin(),mExternalInputConnections.end(), pinplug );
 	if( it!=mExternalInputConnections.end() )
 	{
 		mExternalInputConnections.erase(it);
@@ -393,6 +403,18 @@ void outplugbase::Disconnect( inplugbase* pinplug )
 void module::Describe()
 {
 }
+module::module()
+	: mpMorphable(nullptr)
+	, mNumStaticInputs(0)
+	, mNumStaticOutputs(0)
+{
+
+}
+module::~module()
+{
+	
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 void module::SetInputDirty( inplugbase* plg )
 {	DoSetInputDirty( plg );
@@ -406,6 +428,68 @@ void module::AddDependency( outplugbase& pout, inplugbase& pin )
 {	pin.ConnectInternal( & pout );
 	//DepPlugSet::value_type v( & pin, & pout );
 	//mDependencies.insert( v );
+}
+void module::AddInput( inplugbase* plg )
+{
+	auto it = mStaticInputs.find( plg );
+	if( it==mStaticInputs.end() )
+	{
+		mStaticInputs.insert(plg);
+		mNumStaticInputs++;
+	}
+}
+void module::AddOutput( outplugbase* plg )
+{
+	auto it = mStaticOutputs.find( plg );
+	if( it==mStaticOutputs.end() )
+	{
+		mStaticOutputs.insert(plg);
+		mNumStaticOutputs++;
+	}
+}
+void module::RemoveInput( inplugbase* plg )
+{
+	auto it = mStaticInputs.find( plg );
+	if( it!=mStaticInputs.end() )
+	{
+		mStaticInputs.erase(it);
+		mNumStaticInputs--;
+	}
+}
+void module::RemoveOutput( outplugbase* plg )
+{
+	auto it = mStaticOutputs.find( plg );
+	if( it!=mStaticOutputs.end() )
+	{
+		mStaticOutputs.erase(it);
+		mNumStaticOutputs--;
+	}
+}
+inplugbase* module::GetStaticInput(int idx) const
+{
+	int size = mStaticInputs.size();
+	auto it = mStaticInputs.begin();
+	for( int i=0; i<idx; i++ )
+	{
+		it++;
+	}
+	inplugbase* rval = (it!=mStaticInputs.end())
+					 ? *it
+					 : nullptr;
+	return rval;
+}
+outplugbase* module::GetStaticOutput(int idx) const
+{
+	int size = mStaticOutputs.size();
+	auto it = mStaticOutputs.begin();
+	for( int i=0; i<idx; i++ )
+	{
+		it++;
+	}
+	outplugbase* rval = (it!=mStaticOutputs.end())
+					 ? *it
+					 : nullptr;
+	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool module::IsDirty()
@@ -424,11 +508,20 @@ bool module::IsDirty()
 	}
 	return rval;
 }
+inplugbase* GetInput(int idx) 
+{
+	return 0;
+}
+outplugbase* GetOutput(int idx)
+{
+	return 0;
+}
 ///////////////////////////////////////////////////////////////////////////////
 inplugbase* module::GetInputNamed( const PoolString& named ) 
 {	int inuminp = GetNumInputs();
 	for( int ip=0; ip<inuminp; ip++ )
 	{	inplugbase* rval = GetInput(ip);
+		OrkAssert( rval!=nullptr );
 		if( named == rval->GetName() )
 		{
 			return rval;
@@ -439,8 +532,10 @@ inplugbase* module::GetInputNamed( const PoolString& named )
 ///////////////////////////////////////////////////////////////////////////////
 outplugbase* module::GetOutputNamed( const PoolString& named )
 {	int inumout = GetNumOutputs();
+	printf("module<%p> numouts<%d>\n", this, inumout );
 	for( int ip=0; ip<inumout; ip++ )
 	{	outplugbase* rval = GetOutput(ip);
+		OrkAssert( rval!=nullptr );
 		if( named == rval->GetName() )
 		{
 			return rval;

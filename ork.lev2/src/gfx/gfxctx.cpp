@@ -105,7 +105,7 @@ GfxTarget::GfxTarget()
 	, mPlatformHandle(0)
 {
 	//CPerformanceTracker::GetRef().AddItem( mFramePerfItem );
-	ork::lev2::GfxEnv::GetRef().SetLoaderTarget( this ) ;
+	//ork::lev2::GfxEnv::GetRef().SetLoaderTarget( this ) ;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

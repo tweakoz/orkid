@@ -162,6 +162,7 @@ void Constants::Describe()
 	//ork::reflect::AnnotatePropertyForEditor< Constants >("FloatPlugs", "editor.factorylistbase", "dflow/outplug<float>" );
 	//ork::reflect::AnnotatePropertyForEditor< Constants >("Vect3Plugs", "editor.factorylistbase", "dflow/outplug<vect3>" );
 }
+
 int Constants::GetNumOutputs() const
 {	int iret = 0;
 	size_t inumfp = mFloatPlugs.size();
@@ -1147,6 +1148,8 @@ dataflow::inplugbase* ReEmitter::GetInput(int idx)
 		case 2:	rval = & mPlugInpEmissionRate;		break;
 		case 3:	rval = & mPlugInpEmissionVelocity;	break;
 		case 4: rval = & mPlugInpDispersionAngle;	break;
+		case 5: rval = & mPlugInpSpawnProbability;	break;
+		case 6: rval = & mPlugInpSpawnMultiplier;	break;
 	}
 	return rval;
 }

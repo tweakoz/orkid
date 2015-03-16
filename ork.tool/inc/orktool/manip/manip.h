@@ -52,7 +52,7 @@ class CManip : public ork::Object
 public:
 
 	CMatrix4				InvMatrix;
-	TransformNode3D			mBaseTransform;
+	TransformNode			mBaseTransform;
 
 	IntersectionRecord		mIntersection[EPLANE_END];
 	IntersectionRecord*		mActiveIntersection;
@@ -420,8 +420,8 @@ public:
 	void SetDualAxis(bool dual) { mDualAxis = dual; }
 	bool IsDualAxis() { return mDualAxis; }
 
-	void ApplyTransform( const TransformNode3D &SetMat );
-	const TransformNode3D& GetCurTransform() { return mCurTransform; }
+	void ApplyTransform( const TransformNode &SetMat );
+	const TransformNode& GetCurTransform() { return mCurTransform; }
 
 	void EnableManip( CManip *pOBJ );
 	void DisableManip( void );
@@ -457,7 +457,7 @@ private:
 
 	bool				mDualAxis;
 
-	TransformNode3D		mParentTransform;
+	TransformNode		mParentTransform;
 
 	GfxMaterialManip*	mpManipMaterial;
 	CManip*				mpTXManip;
@@ -492,8 +492,8 @@ private:
 	IManipInterface*	mpCurrentInterface;
 	Object*				mpCurrentObject;
 
-	TransformNode3D		mOldTransform;
-	TransformNode3D		mCurTransform;
+	TransformNode		mOldTransform;
+	TransformNode		mCurTransform;
 
 	CReal				mObjScale;
 	CReal				mObjInvScale;

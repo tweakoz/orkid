@@ -24,7 +24,7 @@ uint32_t PickIdToVertexColor( uint32_t pid );
 //////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
 //////////////////////////////////////////////////////////////////////////////
-GedSkin::GedSkin()
+GedSkin::GedSkin(ork::lev2::GfxTarget* ptarg)
 	: miScrollY(0)
 	, mpCurrentGedVp(nullptr)
 	, mpFONT(nullptr)
@@ -100,10 +100,17 @@ void GedSkin::clear()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-class GedSkin0 : public GedSkin
+struct GedSkin0 : public GedSkin
 {	///////////////////////////////////////////////////////////////////
 	bool				mbPickMode;
 	orkvector<GedText>	mTexts;
+	GedSkin0(ork::lev2::GfxTarget* ptarg)
+		: GedSkin(ptarg)
+	{
+		mpFONT = lev2::CFontMan::GetFont("i14");
+		miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
+		miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
+	}
 	///////////////////////////////////////////////////////////////////
 	U32 GetStyleColor(GedObject* pnode, ESTYLE ic)
 	{
@@ -296,13 +303,6 @@ class GedSkin0 : public GedSkin
 	///////////////////////////////////////////////////////////////////
 	void Begin( ork::lev2::GfxTarget* pTARG, GedVP* pVP )
 	{	
-		if( 0 == mpFONT )
-		{
-			mpFONT = lev2::CFontMan::GetFont("i14");
-			miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
-			miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
-		}
-	
 		mbPickMode = pTARG->FBI()->IsPickState();
 		mpCurrentGedVp=pVP;
         mTexts.clear();
@@ -421,10 +421,18 @@ class GedSkin0 : public GedSkin
 	}
 };
 ///////////////////////////////////////////////////////////////////////////////
-class GedSkin1 : public GedSkin
+struct GedSkin1 : public GedSkin
 {	///////////////////////////////////////////////////////////////////
 	bool				mbPickMode;
 	orkvector<GedText>	mTexts;
+	///////////////////////////////////////////////////////////////////
+	GedSkin1(ork::lev2::GfxTarget* ptarg)
+		: GedSkin(ptarg)
+	{
+		mpFONT = lev2::CFontMan::GetFont("i14");
+		miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
+		miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
+	}
 	///////////////////////////////////////////////////////////////////
 	U32 GetStyleColor(GedObject* pnode, ESTYLE ic)
 	{
@@ -614,13 +622,6 @@ class GedSkin1 : public GedSkin
 	///////////////////////////////////////////////////////////////////
 	void Begin( ork::lev2::GfxTarget* pTARG, GedVP* pVP )
 	{
-		if( 0 == mpFONT )
-		{
-			mpFONT = lev2::CFontMan::GetFont("i14");
-			miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
-			miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
-		}
-	
 		mbPickMode = pTARG->FBI()->IsPickState();
         mpCurrentGedVp=pVP;
 		mTexts.clear();
@@ -740,9 +741,15 @@ class GedSkin1 : public GedSkin
 };
 orkvector<GedSkin*> InstantiateSkins()
 {
+	while( 0 == lev2::GfxEnv::GetRef().GetLoaderTarget() )
+	{
+		ork::msleep(100);
+	}
+	auto targ = lev2::GfxEnv::GetRef().GetLoaderTarget();
+
 	orkvector<GedSkin*> skins;
-	skins.push_back( new GedSkin0 );
-	skins.push_back( new GedSkin1 );
+	skins.push_back( new GedSkin0(targ) );
+	skins.push_back( new GedSkin1(targ) );
 	return skins;
 }
 //////////////////////////////////////////////////////////////////////////////

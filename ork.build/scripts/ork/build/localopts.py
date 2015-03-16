@@ -21,7 +21,7 @@ if IsWindows():
 	import win32api
 
 ################################################################
-__all__ = [ "XCODEDIR", "AQSISDIR", "ARCH", "ConfigFileName", "ConfigData", "dump" ]
+__all__ = [ "XCODEDIR", "OSXSDKROOT", "AQSISDIR", "ARCH", "ConfigFileName", "ConfigData", "dump" ]
 ################################################################
 
 ################################################################
@@ -50,8 +50,10 @@ if os.path.isfile( ConfigFileName() ):
 	print ConfigData
 else:
 	print "LOCALOPTS: Cannot find %s : using default options" % ConfigFileName()
+	sdkroot = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
 	ConfigData.add_section( "PATHS" )
 	ConfigData.set( "PATHS", "XCODEDIR", GetDefault("XCODEDIR", "/Applications/Xcode.app") )
+	ConfigData.set( "PATHS", "OSXSDKROOT", GetDefault("OSXSDKROOT", sdkroot) )
 	ConfigData.add_section( "CONFIG" )
 	ConfigData.set( "CONFIG", "ARCH", GetDefault("ARCH", "x86_64") )
 	cfgfile = open(ConfigFileName(),'w')
@@ -83,6 +85,8 @@ def GetEnv( sect, varname ):
 
 def XCODEDIR(): # qt base dir
         return GetEnv( "PATHS", "XCODEDIR" )
+def OSXSDKROOT(): # qt base dir
+        return GetEnv( "PATHS", "OSXSDKROOT" )
 def AQSISDIR():
         return GetEnv( "PATHS", "AQSISDIR" )
 def ARCH():

@@ -343,7 +343,7 @@ void* BootQtThreadImpl(void* arg_opaq )
 
 	iret = gpQtApplication->exec();
 
-	ork::ent::DrawableBuffer::ClearAndSync();
+	ork::ent::DrawableBuffer::ClearAndSyncWriters();
 
 	delete paudio;
 
@@ -356,16 +356,11 @@ void* BootQtThreadImpl(void* arg_opaq )
 ///////////////////////////////////////////////////////////////////////////////
 	return 0;	
 }
-void BootQtThread( InputArgs &args )
-{
-    pthread_t thread1;
-    int rc = pthread_create(&thread1, NULL, BootQtThreadImpl, (void*)&args);
-}
 int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode )
 {
     InputArgs args(argc,argv);
-
-    BootQtThreadImpl((void*)& args);
+    //BootQtThreadImpl((void*)& args);
+    BootQtThreadImpl( & args );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -94,7 +94,8 @@ class FxShader
 	orkmap<std::string,const FxShaderTechnique*>		mTechniques;
 	orkmap<std::string,const FxShaderParam*>			mParameterByName;
 	//orkmap<std::string,const FxShaderParam*>			mParameterBySemantic;
-
+	bool												mAllowCompileFailure;
+	bool												mFailedCompile;
 	std::string mName;
 
 public:
@@ -121,6 +122,11 @@ public:
 
 	FxShaderParam* FindParamByName( const std::string& named );
 	FxShaderTechnique* FindTechniqueByName( const std::string& named );
+
+	void SetAllowCompileFailure( bool bv ) { mAllowCompileFailure=bv; }
+	bool GetAllowCompileFailure() const { return mAllowCompileFailure; }
+	void SetFailedCompile( bool bv ) { mFailedCompile=bv; }
+	bool GetFailedCompile() const { return mFailedCompile; }
 
 	void SetName(const char *);
 	const char *GetName();

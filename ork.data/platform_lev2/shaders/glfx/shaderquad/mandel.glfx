@@ -1,0 +1,131 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "130";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_block ub_vtx
+{
+	uniform mat4        MatMVP;
+	uniform mat4        MatMV;
+	uniform mat4        MatM;
+	uniform mat4        MatV;
+	uniform mat4        MatP;
+	uniform mat4        MatAux;
+	uniform vec4   		User0; // buffersize
+
+	uniform vec4        modcolor;
+	uniform float       Time;
+	
+}
+vertex_interface iface_vdefault
+	: ub_vtx
+{
+	in vec4 position : POSITION;
+	in vec4 vtxcolor : COLOR0;
+	in vec2 uv0 : TEXCOORD0;
+	in vec2 uv1 : TEXCOORD1;
+	//
+	out vec4 frg_clr;
+	out vec2 frg_uv;
+}
+///////////////////////////////////////////////////////////////
+uniform_block ub_frg
+{
+	uniform vec4 ModColor;
+	uniform sampler2D ColorMap;
+	uniform sampler2D ColorMap2;
+	uniform sampler2D ColorMap3;	
+	uniform vec4   		User0; // buffersize
+	uniform float       Time;
+}
+fragment_interface iface_fmt
+	: ub_frg
+{
+	in vec2 frg_uv;
+	//
+	out vec4 out_clr;
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_m1
+{
+	inherits default;
+	DepthTest=OFF;
+	//DepthMask=true;
+	CullTest=OFF;
+	//BlendMode = OFF;
+}
+///////////////////////////////////////////////////////////////
+libblock shq_tools
+{
+
+	const int maxSteps = 128;
+	const float epsilon = 0.001;
+	const float dmax = 0.5;
+
+	vec2 buffersize()
+	{
+		return vec2(User0.w,User0.w);
+	}
+
+    vec4 do_it()
+    {
+        vec2 center = User0.xy;
+        float scale = User0.z;
+        int iter = 128;
+
+        vec2 c;
+        c.x = 1.3333 * (frg_uv.x - 0.5) * scale - center.x;
+        c.y = (frg_uv.y - 0.5) * scale - center.y;
+
+        int i;
+        vec2 z = c;
+        for(i=0; i<iter; i++) {
+            float x = (z.x * z.x - z.y * z.y) + c.x;
+            float y = (z.y * z.x + z.x * z.y) + c.y;
+
+            if((x * x + y * y) > 4.0) break;
+            z.x = x;
+            z.y = y;
+        }
+
+        vec2 uv = vec2( (i == iter ? 0.0 : float(i)) / 100.0, 0.5 );
+        return texture(ColorMap, uv);
+    }
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_shq1 
+	: iface_vdefault
+{
+	gl_Position = MatMVP*position;
+	frg_clr = vtxcolor;
+	frg_uv = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_shq1
+	: iface_fmt
+	: shq_tools
+{
+	out_clr = do_it();
+}
+///////////////////////////////////////////////////////////////
+technique shaderquad
+{
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_shq1;
+		fragment_shader=ps_shq1;
+		state_block=sb_m1;
+	}	
+}
+
+///////////////////////////////////////////////////////////////
+

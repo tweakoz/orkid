@@ -476,7 +476,7 @@ file::Path::NameType CFileEnv::FilespecToContainingDirectory(const file::Path::N
 
 //	printf( "FilespecToContainingDirectory<%s>\n", path.c_str() );
 //	printf( "ix:UrlStrippedPath<%s>\n", UrlStrippedPath.c_str() );
-	int idx = UrlStrippedPath.find_last_of("/");
+	auto idx = UrlStrippedPath.find_last_of("/");
 //	printf( "idx<%d>\n", idx );
 	if( idx!=file::Path::NameType::npos )
 	{

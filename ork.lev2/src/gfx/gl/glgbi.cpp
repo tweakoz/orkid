@@ -193,12 +193,12 @@ struct GLVtxBufHandle
 	{
 		VertexBufferBase * pnonconst = const_cast<VertexBufferBase *>( & VBuf );
 
-		printf( "CreateVBO()\n");
+		//printf( "CreateVBO()\n");
 
 		// Create A VBO and copy data into it
 		mVBO = 0;
 		glGenBuffers( 1, (GLuint*) & mVBO );
-		printf( "CreateVBO:: genvbo<%d>\n", int(mVBO));
+		//printf( "CreateVBO:: genvbo<%d>\n", int(mVBO));
 		
 
 		//hPB = GLuint(ubh);
@@ -565,7 +565,7 @@ struct vtx_config
 
 static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t priv_data)
 {
-	printf( "EnableVtxBufComponents\n");
+	//printf( "EnableVtxBufComponents\n");
 	bool rval = false;
 	//////////////////////////////////////////////
 	auto pfxpass = priv_data.Get<const GlslFxPass*>();
@@ -905,7 +905,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML( const VertexBufferBase& VBuf, 
 				break;
 			case EPRIM_POINTS:
 				GL_ERRORCHECK();
-				glPointSize( 32.0f );
+				glPointSize( 1.0f );
 				glDrawArrays( GL_POINTS, ivbase, inum );
 				GL_ERRORCHECK();
 				break;
@@ -962,7 +962,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 
 	//GLint maxidx = 0;
 	//glGetIntegerv( GL_MAX_ELEMENTS_INDICES, & maxidx );
-	//printf( "maxidx<%d>\n", maxidx );
+	//printf( "iminidx<%d> maxidx<%d> iNum<%d>\n", imin, imax, iNum );
 
 	//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 

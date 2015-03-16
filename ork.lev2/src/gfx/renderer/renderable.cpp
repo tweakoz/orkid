@@ -31,6 +31,8 @@ IRenderableDag::IRenderableDag()
 	: IRenderable()
 	, mpObject(0)
 	, mModColor( CColor4::White() )
+	, mDrwDataA(nullptr)
+	, mDrwDataB(nullptr)
 {
 }
 
@@ -65,7 +67,7 @@ CallbackRenderable::CallbackRenderable(Renderer *renderer)
 	, mMaterialPassIndex( 0 )
 	, mUserData0()
 	, mUserData1()
-	, mCallback( 0 )
+	, mRenderCallback( 0 )
 {
 }
 

@@ -26,6 +26,7 @@
 #include <QtGui/qclipboard.h>
 #include <QtCore/QSettings>
 #include <pkg/ent/scene.h>
+
 #include <ork/lev2/gfx/camera/cameraman.h>
 
 #include <orktool/qtui/uitoolhandler.hpp>
@@ -119,7 +120,10 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent( const ui::Event& EV )
 	float fx = float(ix) / float(GetViewport()->GetW());
 	float fy = float(iy) / float(GetViewport()->GetH());
 
-	bool AreAnyMoveKeysDown = CSystem::IsKeyDepressed('W') | CSystem::IsKeyDepressed('A') | CSystem::IsKeyDepressed('S') | CSystem::IsKeyDepressed('D');
+	bool AreAnyMoveKeysDown = CSystem::IsKeyDepressed('W') 
+							| CSystem::IsKeyDepressed('A')
+							| CSystem::IsKeyDepressed('S') 
+							| CSystem::IsKeyDepressed('D');
 
 	switch( EV.miEventCode )
 	{
@@ -141,18 +145,6 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent( const ui::Event& EV )
 		{
 			switch( EV.miKeyCode )
 			{
-				case 'f':
-				{
-					// TODO: Implement Visitor pattern to collect and grow bounding boxes for selected items
-					const orkset<ork::Object*> &selection = mEditor.SelectionManager().GetActiveSelection();
-					for(orkset<ork::Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
-					{
-						if(const EntData *entdata = rtti::autocast(*it))
-						{
-						}
-					}
-					break;
-				}
 				case 0x01000007: // delete
 				{
 					orkset<ork::Object*> selection = mEditor.SelectionManager().GetActiveSelection();

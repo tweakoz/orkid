@@ -29,7 +29,6 @@ void SetCurrentThreadName(const char* threadName);
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef any128 op_wrap_t;
-typedef std::function<void()> void_lambda_t;
 
 struct Opq;
 

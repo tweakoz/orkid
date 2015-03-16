@@ -74,11 +74,48 @@ float Timer::SpanInSecs() const
     return (mEndTime-mStartTime);
 }
 
+Timer::Timer()
+	: mOnInterval(nullptr)
+	, mThread(nullptr)
+	, mKill(false)
+{
+
+}
+
+Timer::~Timer()
+{
+	mKill = true;
+	if(mThread)
+		mThread->join();
+	delete mThread;
+}
+
+void Timer::OnInterval( float interval, const void_lambda_t& oper )
+{
+	mOnInterval = oper;
+
+	mThread = new ork::Thread;
+
+	if( mOnInterval )
+	{
+		mThread->start( [=]()
+		{
+			while(false==mKill)
+			{
+				usleep(uint64_t(interval*1e6f) );
+				mOnInterval();
+			}
+		});
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 float get_sync_time()
 {
+////////////////////////////////
 #if defined(ORK_OSX)
+////////////////////////////////
 	auto getres = []()->double
 	{
 		mach_timebase_info_data_t timebase;
@@ -87,11 +124,14 @@ float get_sync_time()
 	};
 	static double resolution = getres();
     uint64_t tms_now = mach_absolute_time();
-    uint64_t tms_base = ((tms_now>>16)<<16);
+    static uint64_t tms_base = ((tms_now>>16)<<16);
     uint64_t tms_del = tms_now-tms_base;
     double millis = double(tms_del) * resolution;
+    //printf( "resolution<%g> tms_del<%zu> millis<%g>\n", resolution, tms_del, millis );
 	return float(millis*0.001);
+////////////////////////////////
 #elif defined(IX)
+////////////////////////////////
     static struct timespec ts1st;
     static bool b1sttime = true;
     if( b1sttime )
@@ -108,11 +148,17 @@ float get_sync_time()
 
     float sec = float(tms_del)*0.001f;
     return sec;
+////////////////////////////////
 #elif defined(ORK_VS2012)
+////////////////////////////////
 	return CSystem::GetRef().GetLoResTime();
+////////////////////////////////
 #else
+////////////////////////////////
 #error // not implemented
+////////////////////////////////
 #endif
+////////////////////////////////
 }
 
 static ork::MpMcBoundedQueue<PerfItem2,1024> gpiq;
@@ -153,7 +199,7 @@ void PerfMarkerPush( const char* mkrname )
 {
 	if( gmena )
 	{
-		f32	ftime = CSystem::GetRef().GetLoResTime();
+		f32	ftime = get_sync_time();
 		PerfItem2 pi;
 		pi.mpMarkerName = mkrname;
 		pi.mfMarkerTime = ftime;

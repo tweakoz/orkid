@@ -16,7 +16,6 @@
 #include <ork/kernel/timer.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/DirectObjectMapPropertyType.h>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
 
 #include <orktool/toolcore/dataflow.h>
 
@@ -28,6 +27,11 @@
 #include <pkg/ent/scene.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
 
+///////////////////////////////////////////////////////////////////////////////
+
+#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <pkg/ent/scene.hpp>
+#include <pkg/ent/entity.hpp>
 #include <orktool/qtui/uitoolhandler.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -264,6 +268,38 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 						CCD.Toggle();
 					}
 					break;
+				}
+				case 'f': // focus on selected entity
+				{
+					auto& selmgr = mEditor.SelectionManager();
+					auto selset = selmgr.GetActiveSelection();
+
+					if( selset.size()==1 )
+					{
+						EntData* as_ent = rtti::autocast(*selset.begin());
+
+						if( as_ent )
+						{
+							auto& dn = as_ent->GetDagNode();
+							CMatrix4 mtx;
+							dn.GetMatrix(mtx);
+
+							auto pos = mtx.GetTranslation();
+
+							if( mActiveCamera )
+							{
+								CCamera_persp* as_persp = rtti::autocast(mActiveCamera);
+								
+								if( as_persp )
+								{
+									as_persp->mvCenter = pos;
+								}
+							}
+
+
+						}
+
+					}
 				}
 				default:
 					break;

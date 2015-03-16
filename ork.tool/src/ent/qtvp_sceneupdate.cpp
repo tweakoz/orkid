@@ -103,9 +103,10 @@ void UpdateThread::run() // virtual
 			{
 				//ork::PerfMarkerPush( "ork.begin_update" );
 				ent::DrawableBuffer* dbuf = ork::ent::DrawableBuffer::LockWriteBuffer(7);
-				if( dbuf )
-				{	
-					ent::SceneInst* psi = mpVP->GetSceneInst();
+				{
+					OrkAssert(dbuf);
+
+					auto psi = (ent::SceneInst*) mpVP->GetSceneInst();
 					if( psi )
 					{
 						auto cmci = psi->GetCMCI();
@@ -125,9 +126,9 @@ void UpdateThread::run() // virtual
 						else
 							psi->Update();
 					}
-					mpVP->QueueSDLD(dbuf);
-					ork::ent::DrawableBuffer::UnLockWriteBuffer(dbuf);
+					mpVP->QueueSceneInstToDb(dbuf);
 				}
+				ork::ent::DrawableBuffer::UnLockWriteBuffer(dbuf);
 				//ork::PerfMarkerPush( "ork.end_update" );
 				break;
 			}

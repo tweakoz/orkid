@@ -240,7 +240,7 @@ void CompositingManagerComponentInst::Draw( CMCIdrawdata& drawdata )
 	// Lock Drawable Buffer
 	/////////////////////////////////
 
-	const DrawableBuffer* DB = DrawableBuffer::LockReadBuffer(7);//mDbLock.Aquire(7);
+	const DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7);//mDbLock.Aquire(7);
 	framedata.SetUserProperty( "DB", anyp(DB) );
 
 	if( DB )
@@ -256,8 +256,8 @@ void CompositingManagerComponentInst::Draw( CMCIdrawdata& drawdata )
 			CompositingContext& CTX = pCCI->GetCCtx();
 			CTX.Draw(pTARG,drawdata,pCCI);
 		}	
+		DrawableBuffer::EndDbRead(DB);//mDbLock.Aquire(7);
 	}
-	DrawableBuffer::UnLockReadBuffer(DB);//mDbLock.Aquire(7);
 
 }
 

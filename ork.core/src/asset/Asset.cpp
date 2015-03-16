@@ -44,14 +44,19 @@ PoolString Asset::GetName() const
 
 PoolString Asset::GetType() const
 {
-	return rtti::safe_downcast<AssetClass *>(GetClass())
-		->GenericImplementation()
-		->Name();
+	return rtti::safe_downcast<AssetClass *>(GetClass())->Name();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Asset::Load() const
+{
+	AssetSetEntry *entry = GetAssetSetEntry(this);
+
+	return entry->Load(GetClass()->GetAssetSet().GetTopLevel());
+}
+
+bool Asset::LoadUnManaged() const
 {
 	AssetSetEntry *entry = GetAssetSetEntry(this);
 

@@ -210,7 +210,7 @@ public:
 
 	const AudioMultiEffectPlayData&	GetData() const { return mData; }
 
-	ork::lev2::AudioInstrumentPlayback* Play( AudioEffectComponentInst* aeci, int inote, int ivel, const ork::TransformNode3D* pnode );
+	ork::lev2::AudioInstrumentPlayback* Play( AudioEffectComponentInst* aeci, int inote, int ivel, const ork::TransformNode* pnode );
 	virtual ork::lev2::AudioInstrumentPlayback* DoPlay( AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param );
 	void Stop(AudioEffectComponentInst* aeci,ork::lev2::AudioInstrumentPlayback*pb);
 	virtual void DoStop(AudioEffectComponentInst* aeci,ork::lev2::AudioInstrumentPlayback*pb);
@@ -284,7 +284,7 @@ public:
 	const AudioEffectComponentData& GetData() const { return mData; }
 	void UpdateEmitter( const ork::CCameraData* camdat1, const ork::CCameraData* camdat2 );
 
-	ork::lev2::AudioInstrumentPlayback* PlaySound( ork::PoolString soundname, const ork::TransformNode3D* pnode = 0 );
+	ork::lev2::AudioInstrumentPlayback* PlaySound( ork::PoolString soundname, const ork::TransformNode* pnode = nullptr );
 	void StopSound( ork::PoolString soundname );
 
 	ork::ent::DataflowRecieverComponentInst* GetDflowReciver() const { return mDflowRecv; }
@@ -297,11 +297,11 @@ private:
 	ork::orklut<ork::PoolString,AudioMultiEffectPlayInst*>				mSoundMap;
 	orkvector<ork::lev2::AudioInstrumentPlayback*>						mPlaybacks;
 	ork::ent::DataflowRecieverComponentInst*							mDflowRecv;
-	const ork::TransformNode3D*											mXform;
+	const ork::TransformNode*											mXform;
 	orkvector<EmitterCtx>												mEmitters;
 
 	void DoUpdate(ork::ent::SceneInst *inst);
-	ork::lev2::AudioInstrumentPlayback* PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode3D* pnode );
+	ork::lev2::AudioInstrumentPlayback* PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode* pnode );
 	
 	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world); // virtual
 	bool DoLink( ork::ent::SceneInst *psi );

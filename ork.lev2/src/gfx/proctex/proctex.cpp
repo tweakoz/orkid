@@ -16,7 +16,13 @@
 #include <ork/stream/FileOutputStream.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
+#include <ork/reflect/enum_serializer.h>
 #include <ork/asset/AssetManager.h>
+
+BEGIN_ENUM_SERIALIZER(ork::proctex,EPTEX_TYPE)
+	DECLARE_ENUM(EPTEXTYPE_REALTIME)
+	DECLARE_ENUM(EPTEXTYPE_EXPORT)
+END_ENUM_SERIALIZER()
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ProcTex,"proctex");
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ImgModule,"proctex::ImgModule");
@@ -43,7 +49,11 @@ template<> const ork::proctex::ImgBase& outplug<ork::proctex::ImgBase>::GetValue
 }
 }}
 
-namespace ork { namespace proctex {
+namespace ork { 
+
+file::Path SaveFileRequester( const std::string& title, const std::string& ext );
+
+namespace proctex {
 
 Img32 ImgModule::gNoCon;
 ork::MpMcBoundedQueue<Buffer*>	ProcTexContext::gBuf32Q;
@@ -52,15 +62,34 @@ ork::MpMcBoundedQueue<Buffer*>	ProcTexContext::gBuf64Q;
 ///////////////////////////////////////////////////////////////////////////////
 Buffer::Buffer(ork::lev2::EBufferFormat efmt)
 	: mRtGroup(nullptr)
+	, miW(256)
+	, miH(256)
 {
 }
+void Buffer::SetBufferSize( int w, int h )
+{
+	if( w!=miW && h!=miH )
+	{
+
+		miW = w;
+		miH = h;
+		delete mRtGroup;
+		mRtGroup = nullptr;
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 void Buffer::PtexBegin(lev2::GfxTarget*ptgt, bool push_full_vp, bool clear_all )
 {	mTarget = ptgt;
 	mTarget->FBI()->SetAutoClear(false);
 	//mTarget->FBI()->BeginFrame();	
-	mTarget->FBI()->PushRtGroup(GetRtGroup(ptgt));
-	SRect vprect_full(0,0,kw,kh);
+	auto rtg = GetRtGroup(ptgt);
+
+	mTarget->FBI()->PushRtGroup(rtg);
+	SRect vprect_full(0,0,miW,miH);
+
+	//printf( "  buffer<%p> w<%d> h<%d> rtg<%p> begin\n", this, miW,miH,rtg);
+
 	if( push_full_vp )
 	{	mTarget->FBI()->PushViewport(vprect_full);
 		mTarget->FBI()->PushScissor(vprect_full);
@@ -76,6 +105,8 @@ void Buffer::PtexEnd(bool pop_vp )
 		mTarget->FBI()->PopScissor();
 	}
 
+	//printf( "  buffer<%p> end\n", this);
+
 	mTarget->FBI()->PopRtGroup();
 	//mTarget->FBI()->EndFrame();	
 	mTarget = nullptr;
@@ -84,14 +115,15 @@ lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
 {
 	if( mRtGroup==nullptr )
 	{
-		mRtGroup = new RtGroup( ptgt, kw, kh );
+		mRtGroup = new RtGroup( ptgt, miW, miH );
 
 		auto mrt = new ork::lev2::RtBuffer(	
 			mRtGroup,
 			lev2::ETGTTYPE_MRT0,
-			lev2::EBUFFMT_RGBA64,
-			kw, kh );
+			lev2::EBUFFMT_RGBA32,
+			miW, miH );
 
+		mrt->mComputeMips = true;
 		mRtGroup->SetMrt( 0, mrt );
 
 		ptgt->FBI()->PushRtGroup(mRtGroup);
@@ -148,15 +180,34 @@ void ImgModule::Describe()
 {
 	reflect::AnnotateClassForEditor<ImgModule>( "dflowicon", & GetImgModuleIcon );
 
+	auto opm = new ork::reflect::OpMap;
+
+	opm->mLambdaMap["ExportPng"] = [=]( Object* pobj )
+	{
+		Img32Module* as_module = rtti::autocast(pobj);
+
+		printf( "ExportPNG pobj<%p> as_mod<%p>\n", pobj, as_module );
+		if(as_module)
+		{
+			as_module->mExport=true;
+		}
+	};
+
+	reflect::AnnotateClassForEditor< Img32Module >("editor.object.ops", opm );
+
 
 }
 void Img32Module::Describe()
-{	RegisterObjOutPlug( Img32Module, ImgOut );
+{	
+	RegisterObjOutPlug( Img32Module, ImgOut );
+
+
 }
 void Img64Module::Describe()
 {	RegisterObjOutPlug( Img64Module, ImgOut );
 }
 ImgModule::ImgModule()
+	: mExport(false)
 {
 }
 Img32Module::Img32Module()
@@ -181,10 +232,36 @@ void ImgModule::Compute( dataflow::workunit* wu )
 {
 	auto ptex = wu->GetContextData().Get<ProcTex*>();
 	ProcTexContext* ptex_ctx = ptex->GetPTC();
-	//lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-	//printf( "imgmod<%p>::compute\n", this );
 	const_cast<ImgModule*>(this)->compute( *ptex );
-	//lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+
+	if( mExport )
+	{
+		auto& wrbuf = GetWriteBuffer(*ptex);
+		auto ptexture = wrbuf.OutputTexture();
+
+		if( nullptr == ptexture )
+			return;
+
+
+
+		auto pTARG = ptex->GetTarget();
+		auto fbi = pTARG->FBI();
+
+		auto rtg = wrbuf.GetRtGroup(pTARG);
+		
+		auto fname = SaveFileRequester( "Export ProcTexImage", "DDS (*.dds)" );
+
+		if( fname.length() )
+		{
+
+			//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
+			if( ork::CFileEnv::filespec_to_extension( fname.c_str() ).length() == 0 ) 
+				fname += ".dds";
+			fbi->Capture( *rtg, 0, fname );
+		}
+
+		mExport = false;
+	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UnitTexQuad( ork::lev2::GfxTarget* pTARG )
@@ -238,7 +315,8 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 {
 	auto pTARG = ptex.GetTarget();
 	auto fbi = pTARG->FBI();
-	auto ptexture = GetWriteBuffer(ptex).OutputTexture();
+	auto& wrbuf = GetWriteBuffer(ptex);
+	auto ptexture = wrbuf.OutputTexture();
 
 	if( nullptr == ptexture )
 		return;
@@ -253,7 +331,7 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 	gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 	gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 	gridmat.SetTexture( ptexture );
-	gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+	gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(wrbuf.miW)) );
 	pTARG->BindMaterial( & gridmat );
 	////////////////////////////////////////////////////////////////
 	float ftexw = ptexture ? ptexture->GetWidth() : 1.0f;
@@ -326,10 +404,44 @@ void ProcTex::compute( ProcTexContext& ptctx )
 	//////////////////////////////////
 
 	#if 1
+	ImgModule* res_module = nullptr;
 	const orklut<int,dataflow::dgmodule*>& TopoSorted = LockTopoSortedChildrenForRead(1);
 	{	for( orklut<int,dataflow::dgmodule*>::const_iterator it=TopoSorted.begin(); it!=TopoSorted.end(); it++ )
 		{	dataflow::dgmodule* dgmod = it->second;
 			Group* pgroup = rtti::autocast(dgmod);
+			ImgModule* img_module = ork::rtti::autocast(dgmod);
+			///////////////////////////////////
+			ImgModule* img_module_updthumb = nullptr;
+			///////////////////////////////////
+			if(img_module)
+			{	ImgOutPlug* outplug = 0;
+				img_module->GetTypedOutput<ImgBase>(0,outplug);
+				const ImgBase& base = outplug->GetValue();
+
+				if( outplug->GetRegister() )
+				{
+					int ireg = outplug->GetRegister()->mIndex;	
+					//OrkAssert( ireg>=0 && ireg<ibufmax );
+					outplug->GetValue().miBufferIndex = ireg;
+					//printf( "pmod<%p> reg<%d>\n", img_module, ireg );
+					auto tex = base.GetTexture(*this);
+					if( tex != nullptr )
+					{	mpResTex = tex;
+						res_module = img_module;
+						img_module_updthumb = img_module;
+					}
+				}
+				else
+				{
+					outplug->GetValue().miBufferIndex = -2;
+				}
+
+				/*if( mpProbeImage == pmodule )
+				{
+					outplug->GetValue().miBufferIndex = ibufmax-1;
+				}*/
+			}
+			///////////////////////////////////
 			if( pgroup )
 			{
 			}
@@ -344,46 +456,46 @@ void ProcTex::compute( ProcTexContext& ptctx )
 
 				}
 			}
-			ImgModule* img_module = ork::rtti::autocast(dgmod);
-			if(img_module)
-			{	ImgOutPlug* outplug = 0;
-				img_module->GetTypedOutput<ImgBase>(0,outplug);
-				const ImgBase& base = outplug->GetValue();
-
-				//int ipixsize = base.PixelSize();
-				//bool is_32bit = (ipixsize==32);
-				//int ibufmax = is_32bit ? ProcTexContext::k32buffers : ProcTexContext::k64buffers;
-
-				//printf( "pmod<%p> pixsiz<%d> reg<%p>\n", pmodule, ipixsize, outplug->GetRegister() );
-
-				if( outplug->GetRegister() )
-				{
-
-
-					int ireg = outplug->GetRegister()->mIndex;	
-					//OrkAssert( ireg>=0 && ireg<ibufmax );
-					outplug->GetValue().miBufferIndex = ireg;
-
-					auto tex = base.GetTexture(*this);
-					if( tex != nullptr )
-					{	mpResTex = tex;
-						img_module->UpdateThumb(*this);
-					}
-				}
-				else
-				{
-					outplug->GetValue().miBufferIndex = -2;
-				}
-
-				/*if( mpProbeImage == pmodule )
-				{
-					outplug->GetValue().miBufferIndex = ibufmax-1;
-				}*/
+			///////////////////////////////////
+			if( img_module_updthumb )
+			{
+				img_module_updthumb->UpdateThumb(*this);
 			}
+
 		}
 	}
 	UnLockTopoSortedChildren();
 	#endif
+
+	//////////////////////////////////
+
+	if( ptctx.mWriteFrames && res_module )
+	{
+		auto& wrbuf = res_module->GetWriteBuffer(*this);
+		auto ptexture = wrbuf.OutputTexture();
+
+		if( nullptr == ptexture )
+			return;
+
+		auto targ = ptctx.mTarget;
+		auto fbi = targ->FBI();
+
+		auto rtg = wrbuf.GetRtGroup(targ);
+
+		if( ptctx.mWritePath.length() )
+		{
+			file::DecomposedPath dpath;
+			ptctx.mWritePath.DeCompose( dpath );
+			fxstring<64> fidstr; fidstr.format("_%04d",ptctx.mWriteFrameIndex);
+			dpath.mFile += fidstr.c_str();
+			ork::file::Path indexed_path;
+			indexed_path.Compose(dpath);
+			printf( "indexed_path<%s>\n", indexed_path.c_str() );
+
+			fbi->Capture( *rtg, 0, indexed_path );
+
+		}
+	}
 
 	//////////////////////////////////
 	//mpctx = 0;
@@ -419,6 +531,11 @@ ProcTexContext::ProcTexContext()
 	, mTrashBuffer()
 	, mCurrentTime(0.0f)
 	, mTarget(nullptr)
+	, mBufferDim(0)
+	, mProcTexType(EPTEXTYPE_REALTIME)
+	, mWriteFrames(false)
+	, mWriteFrameIndex(0)
+	, mWritePath("ptex_out.png")
 {
 	mdflowctx.SetRegisters<float>( & mFloatRegs );
 	mdflowctx.SetRegisters<Img32>( & mImage32Regs );
@@ -438,6 +555,15 @@ ProcTexContext::~ProcTexContext()
 	for( int i=0; i<k32buffers; i++ )
 		ReturnBuffer( mBuffer32[i] );
 }
+void ProcTexContext::SetBufferDim( int idim )
+{
+	mBufferDim = idim;
+	for( int i=0; i<k64buffers; i++ )
+		mBuffer64[i]->SetBufferSize(idim,idim);
+
+	for( int i=0; i<k32buffers; i++ )
+		mBuffer32[i]->SetBufferSize(idim,idim);
+}
 ///////////////////////////////////////////////////////////////////////////////
 ProcTex* ProcTex::Load( const ork::file::Path& pth )
 {	ProcTex* rval = 0;
@@ -451,9 +577,6 @@ ProcTex* ProcTex::Load( const ork::file::Path& pth )
 	if( bOK )
 	{	ork::asset::AssetManager<ork::lev2::TextureAsset>::AutoLoad();
 		rval = rtti::safe_downcast<ProcTex*>( pcastable );
-		//ObjModel().Attach( mProcTex );
-		//mPreviewVP->SetProcTex( mProcTex );
-		//mGraphVP->SetProcTex( mProcTex );
 	}
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 	return rval;
@@ -500,7 +623,7 @@ AA16Render::AA16Render( ProcTex& ptx, Buffer& bo )
 	downsamplemat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 	downsamplemat.mRasterState.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
 	downsamplemat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-	downsamplemat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+	downsamplemat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -609,16 +732,12 @@ void AA16Render::RenderAA()
 			float t = boxy;
 			float b = boxy+boxh;
 
-			//SRect vprect(boxx,boxy,boxw,boxh);
-			//fbi->PushViewport(vprect);
-
 			auto tex = temp_buffer->OutputTexture();
 			downsamplemat.SetTexture(tex);
 			tex->TexSamplingMode().PresetPointAndClamp();
 			txi->ApplySamplingMode(tex);
 
 			CMatrix4 mtxortho = mtxi->Ortho( l,r,t,b, 0.0f, 1.0f );
-			//mtxortho = mtxi->Ortho( 0, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
 			mtxi->PushMMatrix( CMatrix4::Identity );
 			mtxi->PushVMatrix( CMatrix4::Identity );
 			mtxi->PushPMatrix( mtxortho );
@@ -628,7 +747,6 @@ void AA16Render::RenderAA()
 			mtxi->PopPMatrix();
 			mtxi->PopVMatrix();
 			mtxi->PopMMatrix();
-			//fbi->PopViewport();
 		}
 		bufout.PtexEnd(true);
 

@@ -17,21 +17,71 @@
 #include <ork/file/file.h>
 #include <ork/kernel/Array.h>
 #include <ork/kernel/string/string.h>
+#include <ork/file/path.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace asset {
 ///////////////////////////////////////////////////////////////////////////////
 
-void FileAssetLoader::AddFileExtension(ConstString extension)
+std::set<file::Path> FileAssetLoader::EnumerateExisting()
 {
-	mFileExtensions.push_back(extension);
+	std::set<file::Path> rval;
+	//GetLoaders
+	for( auto& item : mLocations )
+	{
+		auto wild = file_ext_t("*")+item.mExt;
+		auto dir = item.mPathBase;
+
+
+		auto files = CFileEnv::filespec_search( wild.c_str(), dir );
+		int inumfiles = (int) files.size();
+
+		orkprintf( "FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n",
+					this,
+					dir.c_str(),
+					wild.c_str(),
+					inumfiles );
+
+		file::Path::NameType searchdir( dir.ToAbsolute().c_str() );
+		searchdir.replace_in_place("\\","/");
+		for( int ifile=0; ifile<inumfiles; ifile++ )
+		{
+			auto the_file = files[ifile];
+			auto the_stripped = CFileEnv::filespec_strip_base( the_file, "./" );
+			file::Path::NameType ObjPtrStr = CFileEnv::filespec_no_extension( the_stripped );
+			file::Path::NameType ObjPtrStrA;
+			ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "" );
+			//OrkSTXFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
+			file::Path::NameType ObjPtrStr2 = file::Path::NameType(dir.c_str()) + ObjPtrStrA;
+			file::Path OutPath( ObjPtrStr2.c_str() );
+			//orkprintf( "FOUND ASSET<%s>\n", the_file.c_str() );
+
+			rval.insert(OutPath);
+		}
+	}
+	return rval;
+}
+
+void FileAssetLoader::AddLocation( file_pathbase_t b, file_ext_t e)
+{
+	file::Path p(b.c_str());
+
+	FileSet fset;
+	fset.mExt = e;
+	fset.mLoc = p.HasUrlBase() ? p.GetUrlBase() : "";
+	fset.mPathBase = b;
+	mLocations.push_back(fset);
+
+	printf( "FileAssetLoader added set ext<%s> loc<%s> base<%s>\n",
+			fset.mExt.c_str(),
+			fset.mLoc.c_str(),
+			fset.mPathBase.c_str() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, int first_extension)
 {
-    //orkprintf( "FindAsset<%s>\n", ork::Application::AddPooledString(name).c_str() );
 	//////////////////////////////////////////
 	// do we already have an extension
 	//////////////////////////////////////////
@@ -48,14 +98,19 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 	bool has_valid_extension = false;
 	if( has_extension )
 	{
-		for( std::size_t ext = std::size_t(first_extension); ext < mFileExtensions.size(); ext++ )
+		for( auto l : mLocations )
 		{
-			if( 0 == strcmp(mFileExtensions[ext].c_str(),preext.c_str()) )
+			if( 0 == strcmp(l.mExt.c_str(),preext.c_str()) )
 			{
 				has_valid_extension = true;
 			}
 		}
 	}
+
+    orkprintf( "FindAsset<%s> has_valid_extension<%d>\n",
+     ork::Application::AddPooledString(name).c_str(),
+     int(has_valid_extension)
+     );
 
 	//////////////////////////////////////////
 	// check Munged Paths first (Munged path is a path run thru 1 or more path converters)
@@ -111,11 +166,11 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 		}
 		else // no extension test the registered extensions
 		{
-			for(std::size_t ext = std::size_t(first_extension); ext < mFileExtensions.size(); ext++)
+			for( auto l : mLocations )
 			{
-				ork::ConstString extension = mFileExtensions[ext];
+				MungedPath.SetExtension( l.mExt.c_str() );
 
-				MungedPath.SetExtension( extension.c_str() );
+				printf( "munged_ext<%s>\n", MungedPath.c_str() );
 
 				if(CFileEnv::DoesFileExist(MungedPath))
 				{
@@ -148,11 +203,9 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 	}
 	else
 	{
-		for(std::size_t ext = std::size_t(first_extension); ext < mFileExtensions.size(); ext++)
+		for( auto l : mLocations )
 		{
-			ConstString extension = mFileExtensions[ext];
-
-			pathobjnoq.SetExtension( extension.c_str() );
+			pathobjnoq.SetExtension( l.mExt.c_str() );
 
 			//		printf( "TESTPTH4<%s>\n", pathobjnoq.c_str() );
 			if(CFileEnv::DoesFileExist(pathobjnoq))

@@ -70,7 +70,7 @@ GlslFxInterface::GlslFxInterface( GfxTargetGL& glctx )
 
 bool GlslFxInterface::LoadFxShader( const AssetPath& pth, FxShader*pfxshader )
 {
-	printf( "GLSLFXI LoadShader<%s>\n", pth.c_str() );
+	//printf( "GLSLFXI LoadShader<%s>\n", pth.c_str() );
 	GL_ERRORCHECK();
 	bool bok = false;
 	pfxshader->SetInternalHandle(0);
@@ -79,6 +79,8 @@ bool GlslFxInterface::LoadFxShader( const AssetPath& pth, FxShader*pfxshader )
 	OrkAssert(pcontainer!=nullptr);
 	pfxshader->SetInternalHandle( (void*) pcontainer );
 	bok = pcontainer->IsValid();
+
+	pcontainer->mFxShader = pfxshader;
 
 	if( bok )
 	{
@@ -261,7 +263,7 @@ GlslFxUniform* GlslFxContainer::MergeUniform( const std::string& name )
 	{
 		pret = it->second;
 	}
-	printf( "MergedUniform<%s><%p>\n", name.c_str(), pret );
+	//printf( "MergedUniform<%s><%p>\n", name.c_str(), pret );
 	return pret;
 }
 
@@ -272,6 +274,7 @@ GlslFxContainer::GlslFxContainer(const std::string& nam)
 	, mActiveTechnique( nullptr )
 	, mActivePass( nullptr )
 	, mActiveNumPasses(0)
+	, mShaderCompileFailed(false)
 {
 	GlslFxStateBlock* pdefsb = new GlslFxStateBlock;
 	pdefsb->mName = "default";
@@ -299,6 +302,8 @@ int GlslFxInterface::BeginBlock( FxShader* hfx, const RenderContextInstData& dat
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	mpActiveEffect = container;
 	mpActiveFxShader = hfx;
+	if( nullptr == container->mActiveTechnique )
+		return 0;
 	return container->mActiveTechnique->mPasses.size();
 }
 
@@ -354,6 +359,9 @@ const FxShaderTechnique* GlslFxInterface::GetTechnique( FxShader* hfx, const std
 
 bool GlslFxInterface::BindTechnique( FxShader* hfx, const FxShaderTechnique* htek )
 {
+	if( nullptr == hfx ) return false;
+	if( nullptr == htek ) return false;
+
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	const GlslFxTechnique* ptekcont = static_cast<const GlslFxTechnique*>( htek->GetPlatformHandle() );
 	container->mActiveTechnique = ptekcont;
@@ -366,8 +374,9 @@ bool GlslFxInterface::BindTechnique( FxShader* hfx, const FxShaderTechnique* hte
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxShader::Compile()
+bool GlslFxShader::Compile()
 {
+	GL_NF_ERRORCHECK();
 	mShaderObjectId = glCreateShader( mShaderType );
 	
 	std::string shadertext = "";
@@ -379,13 +388,13 @@ void GlslFxShader::Compile()
 	shadertext += "(); }\n";
 	const char* c_str = shadertext.c_str();
 
-	printf( "Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str );
+	//printf( "Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str );
 
-	GL_ERRORCHECK();
+	GL_NF_ERRORCHECK();
 	glShaderSource( mShaderObjectId, 1, & c_str, NULL );
-	GL_ERRORCHECK();
+	GL_NF_ERRORCHECK();
 	glCompileShader( mShaderObjectId );
-	GL_ERRORCHECK();
+	GL_NF_ERRORCHECK();
 
 
 
@@ -396,18 +405,21 @@ void GlslFxShader::Compile()
 		char infoLog[ 1 << 16 ];
 		glGetShaderInfoLog( mShaderObjectId, sizeof(infoLog), NULL, infoLog );
 		printf( "//////////////////////////////////\n" );
+		printf( "%s\n", c_str );
+		printf( "//////////////////////////////////\n" );
 		printf( "Effect<%s>\n", mpContainer->mEffectName.c_str() );
 		printf( "ShaderType<0x%x>\n", mShaderType );
 		printf( "Shader<%s> InfoLog<%s>\n", mName.c_str(), infoLog );
 		printf( "//////////////////////////////////\n" );
-		printf( "%s\n", c_str );
-		printf( "//////////////////////////////////\n" );
-		OrkAssert(false);
+
+		if( mpContainer->mFxShader->GetAllowCompileFailure() == false )
+			OrkAssert(false);
+
 		mbError = true;
-		return;
+		return false;
 	}
 	mbCompiled = true;
-	GL_ERRORCHECK();
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -422,6 +434,9 @@ bool GlslFxShader::IsCompiled() const
 bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
+	if( container->mShaderCompileFailed )
+		return false;
+
 	container->mActivePass = container->mActiveTechnique->mPasses[ipass];
 	GlslFxPass* ppass = const_cast<GlslFxPass*>(container->mActivePass);
 
@@ -437,17 +452,29 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 		OrkAssert( pvtxshader!=nullptr );
 		OrkAssert( pfrgshader!=nullptr );
 
-		if( pvtxshader && pvtxshader->IsCompiled() == false )
-			pvtxshader->Compile();
-		if( ptecshader && ptecshader->IsCompiled() == false )
-			ptecshader->Compile();
-		if( pteeshader && pteeshader->IsCompiled() == false )
-			pteeshader->Compile();
-		if( pgeoshader && pgeoshader->IsCompiled() == false )
-			pgeoshader->Compile();
-		if( pfrgshader && pfrgshader->IsCompiled() == false )
-			pfrgshader->Compile();
+		auto l_compile = [&]( GlslFxShader* psh ) {
+
+			bool compile_ok = true;
+			if( psh && psh->IsCompiled() == false )
+				compile_ok = psh->Compile();
+
+			if( false == compile_ok )
+			{
+				container->mShaderCompileFailed = true;
+				hfx->SetFailedCompile(true);
+			}
+		};
+
+		l_compile( pvtxshader );
+		l_compile( ptecshader );
+		l_compile( pteeshader );
+		l_compile( pgeoshader );
+		l_compile( pfrgshader );
 			
+
+		if( container->mShaderCompileFailed )
+			return false;
+
 		if( 	pvtxshader->IsCompiled()
 			&&	pfrgshader->IsCompiled() )
 		{
@@ -490,7 +517,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			GlslFxStreamInterface* vtx_iface = pvtxshader->mpInterface;
 			GlslFxStreamInterface* frg_iface = pfrgshader->mpInterface;
 			
-			printf( "//////////////////////////////////\n");
+			/*printf( "//////////////////////////////////\n");
 
 			printf( "Linking pass<%p> {\n", ppass );
 
@@ -504,7 +531,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 				printf( "	geoshader<%s:%p> compiled<%d>\n", pgeoshader->mName.c_str(), pgeoshader, pgeoshader->IsCompiled() );
 			if( pfrgshader )
 				printf( "	frgshader<%s:%p> compiled<%d>\n", pfrgshader->mName.c_str(), pfrgshader, pfrgshader->IsCompiled() );
-
+*/
 
 			if( nullptr == vtx_iface )
 			{
@@ -517,7 +544,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 				OrkAssert( false );
 			}
 
-			printf( "	binding vertex attributes count<%d>\n", int(vtx_iface->mAttributes.size()) );
+			//printf( "	binding vertex attributes count<%d>\n", int(vtx_iface->mAttributes.size()) );
 
 			//////////////////////////
 			// Bind Vertex Attributes
@@ -527,7 +554,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			{
 				GlslFxAttribute* pattr = itp.second;
 				int iloc = pattr->mLocation;
-				printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str(), pattr->mSemantic.c_str() );
+				//printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n", pattr->mName.c_str(), iloc, pattr->mDirection.c_str(), pattr->mSemantic.c_str() );
 				glBindAttribLocation( prgo, iloc, pattr->mName.c_str() );
 				GL_ERRORCHECK();
 				ppass->mVtxAttributeById[iloc] = pattr;
@@ -575,9 +602,9 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 			}
 			OrkAssert( linkstat == GL_TRUE );
 
-			printf( "} // linking complete..\n" );
+			//printf( "} // linking complete..\n" );
 
-			printf( "//////////////////////////////////\n");
+			//printf( "//////////////////////////////////\n");
 
 			//////////////////////////
 			// query attr
@@ -627,7 +654,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 					GLchar nambuf[256];
 					glGetActiveUniform( prgo, i, sizeof(nambuf), & namlen, & unisiz, & unityp, nambuf );
 					OrkAssert( namlen<sizeof(nambuf) );
-					printf( "find uni<%s>\n", nambuf );
+					//printf( "find uni<%s>\n", nambuf );
 					GL_ERRORCHECK();
 
 					str_name = nambuf;
@@ -635,7 +662,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 					if( its != str_name.npos )
 					{
 						str_name = str_name.substr(0,its);
-						printf( "nnam<%s>\n", str_name.c_str() );
+						//printf( "nnam<%s>\n", str_name.c_str() );
 					}
 				}
 				const auto& it=container->mUniforms.find(str_name);
@@ -665,7 +692,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 
 				const char* fshnam = pfrgshader->mName.c_str();
 
-				printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(), (int) uniloc );
+				//printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(), (int) uniloc );
 
 				const_cast<GlslFxPass*>(container->mActivePass)->mUniformInstances[puni->mName] = pinst;
 

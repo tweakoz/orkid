@@ -45,6 +45,9 @@ def IsWindows():
 	ismso = SYSTEM.lower().find( "microsoft" )!=-1
 	return iswin or ismso
 
+def IsDarwin():
+	return SYSTEM.lower().find( "darwin" )!=-1
+
 ###########################################
 
 def set_env(key,val):
@@ -79,6 +82,13 @@ def install_files(pth,dst):
 	print "Installing files from <%s> to <%s/%s/>" % (pth,stage_dir,dst)
 	os.system( "mkdir -p %s/%s" % (stage_dir,dst) )
 	os.system( "cp -rf %s %s/%s" % (pth,stage_dir,dst) )
+
+def osx_dylib_changeref(lib,ref):
+	os.system( "install_name_tool -change %s @executable_path/../lib/%s %s" % (ref,ref,lib) )
+
+def osx_dylib_setid(lib):
+	basename = os.path.basename(lib)
+	os.system("install_name_tool -id @executable_path/../lib/%s %s" % (basename,lib) )
 
 ###########################################
 
@@ -175,7 +185,10 @@ def untar(arc,strip=False):
 	is_bz2 = arc.find(".bz2")>0
 	opts = "--extract --verbose "
 	if is_gz:
-		opts += "--ungzip "
+		if IsDarwin():
+			opts += "-z "
+		else:
+			opts += "--ungzip "
 	elif is_bz2:
 		opts += "--bzip2 "
 	if strip:
