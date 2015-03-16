@@ -911,7 +911,7 @@ void CTQT::SlotRepaint()
 		if( nullptr == GfxEnv::GetRef().GetDefaultUIMaterial() )
 			return;
 
-		ork::PerfMarkerPush( "ork.SceneEditorVP.draw.begin" );
+		ork::PerfMarkerPush( "ork.viewport.draw.begin" );
 
 		this->mDrawLock++;
 		if( this->mDrawLock == 1 )
@@ -931,7 +931,7 @@ void CTQT::SlotRepaint()
 			}
 		}
 		this->mDrawLock--;
-		ork::PerfMarkerPush( "ork.SceneEditorVP.draw.end" );
+		ork::PerfMarkerPush( "ork.viewport.draw.end" );
 	};
 
 	if( OpqTest::GetContext()->mOPQ == & MainThreadOpQ() )

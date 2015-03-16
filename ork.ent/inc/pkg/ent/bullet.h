@@ -20,9 +20,11 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
+#include <pkg/ent/heightmap.h>
 #include <ork/math/PIDController.h>
 #include <ork/kernel/orkpool.h>
 #include <ork/math/box.h>
+#include <ork/kernel/mutex.h>
 
 //#define BT_USE_DOUBLE_PRECISION
 
@@ -80,20 +82,12 @@ struct PhysicsDebuggerLine
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class PhysicsDebugger : public btIDebugDraw
+struct PhysicsDebugger : public btIDebugDraw
 {
-	orkvector<PhysicsDebuggerLine> mClearOnBeginInternalTickLines;
-	orkvector<PhysicsDebuggerLine> mClearOnRenderLines;
-	bool mClearOnBeginInternalTick;
-
-	bool mbDEBUG;
-
-public:
-
 	const orkvector<PhysicsDebuggerLine>& GetLines1() const { return mClearOnBeginInternalTickLines; }
 	const orkvector<PhysicsDebuggerLine>& GetLines2() const { return mClearOnRenderLines; }
 
-	PhysicsDebugger() : mClearOnBeginInternalTick(true), mbDEBUG(false) {}
+	PhysicsDebugger();
 
 	void ClearOnBeginInternalTick() { mClearOnBeginInternalTick = true; }
 	void ClearOnRender() { mClearOnBeginInternalTick = false; }
@@ -102,24 +96,36 @@ public:
 	bool IsDebugEnabled() const { return mbDEBUG; }
 
 	void AddLine(const ork::CVector3& from, const ork::CVector3& to, const ork::CVector3& color);
-
-	/*virtual*/ void beginInternalStep() { BeginInternalTickClear(); }
-	/*virtual*/ void endInternalStep() {}
-	/*virtual*/ void drawLine(const btVector3& from,const btVector3& to,const btVector3& color);
-	/*virtual*/ void drawContactPoint(const btVector3& PointOnB,const btVector3& normalOnB,btScalar distance,int lifeTime,const btVector3& color);
-	/*virtual*/ void reportErrorWarning(const char* warningString);
-	/*virtual*/ void draw3dText(const btVector3& location,const char* textString);
-	/*virtual*/ void setDebugMode(int debugMode);
-	/*virtual*/ int getDebugMode() const;
-
 	void Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::GfxTarget *ptarg);
-
 	void Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::GfxTarget *ptarg, const orkvector<PhysicsDebuggerLine> &lines);
-
 	void SetDebug( bool bv ) { mbDEBUG=bv; }
-
 	void BeginInternalTickClear() { mClearOnBeginInternalTickLines.clear(); }
 	void RenderClear() { mClearOnRenderLines.clear(); }
+
+	//////////////////////////
+
+	void beginInternalStep() override { BeginInternalTickClear(); }
+	void endInternalStep() override {}
+	void drawLine(const btVector3& from,const btVector3& to,const btVector3& color) override;
+	void drawContactPoint(const btVector3& PointOnB,const btVector3& normalOnB,btScalar distance,int lifeTime,const btVector3& color) override;
+	void reportErrorWarning(const char* warningString) override;
+	void draw3dText(const btVector3& location,const char* textString) override;
+	void setDebugMode(int debugMode) override;
+	int getDebugMode() const override;
+
+	void Lock();
+	void UnLock();
+
+private:
+
+	ork::mutex mMutex;
+	orkvector<PhysicsDebuggerLine> mClearOnBeginInternalTickLines;
+	orkvector<PhysicsDebuggerLine> mClearOnRenderLines;
+	bool mClearOnBeginInternalTick;
+	bool mbDEBUG;
+
+	//////////////////////////
+
 };
 
 class BulletWorldControllerData : public ComponentData
@@ -141,7 +147,7 @@ public:
 	const CVector3& GetGravity() const { return mGravity; }
 	
 protected:
-	/*virtual*/ ComponentInst *CreateComponent(Entity *pent) const;
+	ComponentInst *CreateComponent(Entity *pent) const override;
 
 };
 
@@ -149,13 +155,10 @@ class BulletWorldControllerInst;
 
 struct BulletDebugDrawDBRec
 {
-	//ork::CVector3				v[4];
 	const ork::ent::Entity*			mpEntity;
 	BulletWorldControllerInst*		mpBWCI;
 	orkvector<PhysicsDebuggerLine>	mLines1;
 	orkvector<PhysicsDebuggerLine>	mLines2;
-	//const ShipPhysicsInst*		mpPhysics;
-	//ork::CVector3					lloc;
 };
 struct BulletDebugDrawDBData
 {
@@ -239,9 +242,9 @@ class BulletWorldArchetype : public ork::ent::Archetype
 {
 	RttiDeclareConcrete( BulletWorldArchetype, ork::ent::Archetype );
 
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
-	/*virtual*/ void DoLinkEntity( ork::ent::SceneInst* psi, ork::ent::Entity *pent ) const;
-	/*virtual*/ void DoStartEntity(ork::ent::SceneInst* psi, const ork::CMatrix4 &world, ork::ent::Entity *pent ) const;
+	void DoCompose(ork::ent::ArchComposer& composer) override;
+	void DoLinkEntity( ork::ent::SceneInst* psi, ork::ent::Entity *pent ) const override;
+	void DoStartEntity(ork::ent::SceneInst* psi, const ork::CMatrix4 &world, ork::ent::Entity *pent ) const override;
 
 };
 
@@ -253,9 +256,9 @@ class BulletObjectArchetype : public ork::ent::Archetype
 
 private:
 
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
-	/*virtual*/ void DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const;
-	/*virtual*/ void DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const;
+    void DoCompose(ork::ent::ArchComposer& composer) override;
+	void DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const override;
+	void DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const override;
 
 };
 
@@ -296,7 +299,18 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 class BulletShapeBaseInst;
+class BulletShapeBaseData;
+
 class BulletObjectControllerData;
+
+struct ShapeCreateData
+{
+	Entity* mEntity;
+	BulletWorldControllerInst* mWorld;
+	BulletObjectControllerInst* mObject;
+};
+
+typedef std::function<BulletShapeBaseInst*(const ShapeCreateData& data)> shape_factory_t;
 
 class BulletShapeBaseData : public ork::Object
 {
@@ -307,21 +321,25 @@ public:
 	BulletShapeBaseData();
 	~BulletShapeBaseData();
 
-	virtual btCollisionShape* GetBulletShape() const = 0;
-
-	const AABox& GetBoundingBox() const { return mBoundingBox; }
+	BulletShapeBaseInst* CreateShape(const ShapeCreateData& data) const;
 
 protected:
 
-	btCollisionShape*		mCollisionShape;
-	AABox					mBoundingBox;
+	shape_factory_t mShapeFactory;
 
-	bool DoNotify(const event::Event *event); //virtual
+	bool DoNotify(const event::Event *event) override;
 	
 };
 
-class BulletShapeBaseInst
+struct BulletShapeBaseInst
 {
+	BulletShapeBaseInst() : mCollisionShape(nullptr) {}
+
+	const AABox& GetBoundingBox() const { return mBoundingBox; }
+	btCollisionShape* GetBulletShape() const { return mCollisionShape; }
+
+	btCollisionShape*		mCollisionShape;
+	AABox					mBoundingBox;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -332,9 +350,7 @@ class BulletShapeCapsuleData : public BulletShapeBaseData
 
 public:
 
-	BulletShapeCapsuleData() : mfRadius(0.10f), mfExtent(1.0f) {}
-
-	btCollisionShape* GetBulletShape() const; // virtual
+	BulletShapeCapsuleData();
 	
 private:
 
@@ -351,11 +367,7 @@ class BulletShapePlaneData : public BulletShapeBaseData
 
 public:
 
-	BulletShapePlaneData(){}
-
-	btCollisionShape* GetBulletShape() const; // virtual
-	
-private:
+	BulletShapePlaneData();
 
 };
 
@@ -367,9 +379,7 @@ class BulletShapeSphereData : public BulletShapeBaseData
 
 public:
 
-	BulletShapeSphereData() : mfRadius(1.0f) {}
-
-	btCollisionShape* GetBulletShape() const; // virtual
+	BulletShapeSphereData();
 	
 private:
 
@@ -390,7 +400,6 @@ public:
 	lev2::XgmModelAsset* GetAsset() { return mModelAsset; }
 	void SetModelAccessor( ork::rtti::ICastable* const & mdl);
 	void GetModelAccessor( ork::rtti::ICastable* & mdl) const;
-	btCollisionShape* GetBulletShape() const; // virtual
 	float GetScale() const { return mfScale; }
 	
 private:
@@ -402,13 +411,45 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class BulletShapeHeightfieldData : public BulletShapeBaseData
+{
+	RttiDeclareConcrete( BulletShapeHeightfieldData, BulletShapeBaseData );
+
+public:
+
+	BulletShapeHeightfieldData();
+	~BulletShapeHeightfieldData();
+
+	void SetHeightMapName( file::Path const & lmap );
+	void GetHeightMapName( file::Path & lmap ) const;
+	
+	const file::Path& HeightMapPath() const { return mHeightMapName; }
+	float WorldHeight() const { return mWorldHeight; }
+	float WorldSize() const { return mWorldSize; }
+	const CVector3& GetVisualOffset() const { return mVisualOffset; }
+	
+	ork::lev2::TextureAsset* GetSphereMap() const { return mSphereLightMap; }
+
+private:
+
+	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
+	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
+
+	file::Path							mHeightMapName;
+	float								mWorldHeight;
+	float								mWorldSize;
+	CVector3 							mVisualOffset;
+	ork::lev2::TextureAsset*			mSphereLightMap;
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 class BulletObjectControllerData : public ComponentData
 {
 	RttiDeclareConcrete( BulletObjectControllerData, ComponentData );
 
 public:
-
-	//typedef orkmap<PoolString,ork::Object*> ObjectMap;
 
 	BulletObjectControllerData();
 	~BulletObjectControllerData();
@@ -427,7 +468,8 @@ public:
 	void ShapeSetter(ork::rtti::ICastable* const & val);
 			
 protected:
-	/*virtual*/ ComponentInst *CreateComponent(Entity *pent) const;
+
+	ComponentInst *CreateComponent(Entity *pent) const override;
 	
 	const BulletShapeBaseData*				mShapeData;
 	ork::ObjectMap							mForceControllerDataMap;
@@ -451,11 +493,14 @@ public:
 	btRigidBody* GetRigidBody() { return mRigidBody; }
 	const BulletObjectControllerData& GetData() const { return mBOCD; }
 
+	const BulletShapeBaseInst* GetShapeInst() const { return mShapeInst; }
+
 private:
 
 	const BulletObjectControllerData&					mBOCD;
 	btRigidBody*										mRigidBody;
 	orkmap<PoolString,BulletObjectForceControllerInst*>	mForceControllerInstMap;
+	BulletShapeBaseInst*								mShapeInst;
 
 	void DoUpdate(ork::ent::SceneInst* inst); // virtual
 	bool DoNotify(const ork::event::Event *event) { return false; } // virtual

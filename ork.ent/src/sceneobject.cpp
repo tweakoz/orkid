@@ -146,7 +146,8 @@ DagNode::DagNode( const ork::rtti::ICastable* powner )
 ///////////////////////////////////////////////////////////////////////////////
 void DagNode::AddChild( DagNode* pobj )
 {	mChildren.push_back(pobj);
-	pobj->GetTransformNode().SetParent( & GetTransformNode() );
+	const auto& this_xfn = GetTransformNode();
+	pobj->GetTransformNode().SetParent( & this_xfn );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DagNode::RemoveChild( DagNode* pobj )
@@ -156,5 +157,15 @@ void DagNode::RemoveChild( DagNode* pobj )
 	pobj->GetTransformNode().UnParent();
 }
 ///////////////////////////////////////////////////////////////////////////////
+void DagNode::CopyTransformMatrixFrom( const DagNode& other )
+{
+	const auto& other_mtx = other.GetTransformNode().GetTransform().GetMatrix();
+	GetTransformNode().GetTransform().SetMatrix( other_mtx );
+}
+void DagNode::SetTransformMatrix( const CMatrix4& mtx )
+{
+	GetTransformNode().GetTransform().SetMatrix( mtx );
+}
+
 }}
 ///////////////////////////////////////////////////////////////////////////////

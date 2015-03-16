@@ -34,9 +34,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-extern bool USE_THREADED_RENDERER;
-extern bool bFIXEDTIMESTEP;
-
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletObjectArchetype, "BulletObjectArchetype");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletObjectControllerData, "BulletObjectControllerData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletObjectControllerInst, "BulletObjectControllerInst");
@@ -146,6 +143,7 @@ BulletObjectControllerInst::BulletObjectControllerInst(const BulletObjectControl
 	: ork::ent::ComponentInst(&data,pent)
 	, mBOCD(data)
 	, mRigidBody(0)
+	, mShapeInst(nullptr)
 {
 	const orkmap<PoolString,ork::Object*> forcecontrollers = data.GetForceControllerData();
 
@@ -165,15 +163,17 @@ BulletObjectControllerInst::BulletObjectControllerInst(const BulletObjectControl
 }				
 BulletObjectControllerInst::~BulletObjectControllerInst()
 {
+	if( mShapeInst )
+		delete mShapeInst;
 }
 bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 {
-	ork::ent::Entity* this_ent = GetEntity();
+	auto this_ent = GetEntity();
 	
-	ork::ent::Entity *bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
+	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
 	if( bullet_world )
 	{
-		if(ork::ent::BulletWorldControllerInst *wController
+		if(auto wController
 				= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true))
 		{
 			const BulletWorldControllerData& world_data = wController->GetWorldData();
@@ -186,16 +186,24 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 				//printf( "SHAPEDATA<%p>\n", shapedata );
 				if( shapedata )
 				{
-					btCollisionShape* pshape = shapedata->GetBulletShape();
+					ShapeCreateData shape_create_data;
+					shape_create_data.mEntity = GetEntity();
+					shape_create_data.mWorld = wController;
+					shape_create_data.mObject = this;
+
+					mShapeInst = shapedata->CreateShape(shape_create_data);
+
+					btCollisionShape* pshape = mShapeInst->mCollisionShape;
+
 					if( pshape )
-					{	Entity* ThisEnt = GetEntity();
+					{	
 						////////////////////////////////
-						DagNode& dnode = ThisEnt->GetDagNode();
-						TransformNode3D& t3d = dnode.GetTransformNode();
-						CMatrix4 mtx = t3d.GetTransform()->GetMatrix();
+						const DagNode& dnode = shape_create_data.mEntity->GetEntData().GetDagNode();
+						const TransformNode& t3d = dnode.GetTransformNode();
+						CMatrix4 mtx = t3d.GetTransform().GetMatrix();
 						////////////////////////////////
 						btTransform btTrans = ! mtx;
-						mRigidBody = wController->AddLocalRigidBody(ThisEnt,mBOCD.GetMass(),btTrans,pshape);
+						mRigidBody = wController->AddLocalRigidBody(shape_create_data.mEntity,mBOCD.GetMass(),btTrans,pshape);
 						mRigidBody->setGravity(grav);
 						
 						bool ballowsleep = mBOCD.GetAllowSleeping();
@@ -204,7 +212,6 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 						//orkprintf( "mRigidBody<%p>\n", mRigidBody );
 					}
 				}
-				world->setGravity(grav);
 
 
 
@@ -242,8 +249,8 @@ void BulletObjectControllerInst::DoUpdate(ork::ent::SceneInst* inst)
 		motionState->getWorldTransform(xf);
 		CMatrix4 xfW = ! xf;
 		DagNode& dnode = GetEntity()->GetDagNode();
-		TransformNode3D& t3d = dnode.GetTransformNode();
-		t3d.GetTransform()->SetMatrix( xfW );
+		TransformNode& t3d = dnode.GetTransformNode();
+		t3d.GetTransform().SetMatrix( xfW );
 
 		//////////////////////////////////////////////////
 		// update dynamic rigid body params
@@ -280,17 +287,45 @@ void BulletShapeBaseData::Describe()
 {
 }
 BulletShapeBaseData::BulletShapeBaseData()
-	: mCollisionShape(0)
+	: mShapeFactory(nullptr)
 {
 }
 BulletShapeBaseData::~BulletShapeBaseData()
 {
 }
+BulletShapeBaseInst* BulletShapeBaseData::CreateShape(const ShapeCreateData& data) const
+{
+	BulletShapeBaseInst* rval = nullptr;
+
+	if( mShapeFactory )
+	{
+
+		rval = mShapeFactory(data);
+
+		if( rval && rval->mCollisionShape )
+		{
+			btTransform ident;
+			ident.setIdentity();
+
+			btVector3 bbmin;
+			btVector3 bbmax;
+			
+			rval->mCollisionShape->getAabb( ident, bbmin, bbmax );
+			rval->mBoundingBox.SetMinMax( ! bbmin, ! bbmax );
+		}
+
+	}
+
+	OrkAssert(rval);
+
+	return rval;
+}
 
 bool BulletShapeBaseData::DoNotify(const event::Event *event)
 {
-	if( const ObjectGedEditEvent* pgev = rtti::autocast(event) )
+	/*if( const ObjectGedEditEvent* pgev = rtti::autocast(event) )
 	{
+
 #if defined(_DARWIN) // TODO fixme (serialize on editorqueue)
 		dispatch_async( EditOnlyQueue(), 
 		^{
@@ -301,7 +336,8 @@ bool BulletShapeBaseData::DoNotify(const event::Event *event)
 #if defined(_DARWIN)
 		});
 #endif
-	}
+	}*/
+
 	return true;
 }
 
@@ -313,22 +349,16 @@ void BulletShapeCapsuleData::Describe()
 	reflect::RegisterFloatMinMaxProp( &BulletShapeCapsuleData::mfRadius, "Radius", "0.1", "1000.0" );
 }
 
-btCollisionShape* BulletShapeCapsuleData::GetBulletShape() const
+BulletShapeCapsuleData::BulletShapeCapsuleData() 
+	: mfRadius(0.10f)
+	, mfExtent(1.0f)
 {
-	BulletShapeCapsuleData* pnonconst = const_cast<BulletShapeCapsuleData*>(this);
-	//printf( "NONCONST<%p>\n", pnonconst );
-	if( mCollisionShape==0 )
+	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
-		pnonconst->mCollisionShape = new btCapsuleShapeZ( mfRadius, mfExtent );
-
-		//printf( "mCompoundShape<%p>\n", mCollisionShape );
-		btTransform ident;
-		btVector3 bbmin;
-		btVector3 bbmax;
-		mCollisionShape->getAabb( ident, bbmin, bbmax );
-		pnonconst->mBoundingBox.SetMinMax( ! bbmin, ! bbmax );
-	}
-	return mCollisionShape;
+		auto rval = new BulletShapeBaseInst;
+		rval->mCollisionShape = new btCapsuleShapeZ( this->mfRadius, this->mfExtent );
+		return rval;
+	};
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -336,22 +366,15 @@ btCollisionShape* BulletShapeCapsuleData::GetBulletShape() const
 void BulletShapePlaneData::Describe()
 {
 }
-btCollisionShape* BulletShapePlaneData::GetBulletShape() const
-{
-	BulletShapePlaneData* pnonconst = const_cast<BulletShapePlaneData*>(this);
-	//printf( "NONCONST<%p>\n", pnonconst );
-	if( mCollisionShape==0 )
-	{
-		pnonconst->mCollisionShape = new btStaticPlaneShape( ! CVector3::Green(), 0.0f );
 
-		//printf( "mCompoundShape<%p>\n", mCollisionShape );
-		btTransform ident;
-		btVector3 bbmin;
-		btVector3 bbmax;
-		mCollisionShape->getAabb( ident, bbmin, bbmax );
-		pnonconst->mBoundingBox.SetMinMax( ! bbmin, ! bbmax );
-	}
-	return mCollisionShape;
+BulletShapePlaneData::BulletShapePlaneData() 
+{
+	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
+	{
+		auto rval = new BulletShapeBaseInst;
+		rval->mCollisionShape = new btStaticPlaneShape(  ! CVector3::Green(), 0.0f );
+		return rval;
+	};
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -361,24 +384,16 @@ void BulletShapeSphereData::Describe()
 	ork::reflect::RegisterFloatMinMaxProp( &BulletShapeSphereData::mfRadius, "Radius", "0.1", "1000.0" );
 }
 
-btCollisionShape* BulletShapeSphereData::GetBulletShape() const
+BulletShapeSphereData::BulletShapeSphereData()
+	: mfRadius(1.0f)
 {
-	BulletShapeSphereData* pnonconst = const_cast<BulletShapeSphereData*>(this);
-	//printf( "NONCONST<%p>\n", pnonconst );
-	if( mCollisionShape==0 )
+	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
-		pnonconst->mCollisionShape = new btSphereShape( mfRadius );
-
-		//printf( "mCompoundShape<%p>\n", mCollisionShape );
-		btTransform ident;
-		btVector3 bbmin;
-		btVector3 bbmax;
-		mCollisionShape->getAabb( ident, bbmin, bbmax );
-		pnonconst->mBoundingBox.SetMinMax( ! bbmin, ! bbmax );
-	}
-	return mCollisionShape;
+		auto rval = new BulletShapeBaseInst;
+		rval->mCollisionShape = new btSphereShape(  this->mfRadius );
+		return rval;
+	};
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -396,48 +411,27 @@ BulletShapeModelData::BulletShapeModelData()
 	: mModelAsset(0)
 	, mfScale( 1.0f )
 {
-}
-BulletShapeModelData::~BulletShapeModelData()
-{
-	if( mCollisionShape ) delete mCollisionShape;
-}
-btCollisionShape* BulletShapeModelData::GetBulletShape() const
-{
-	BulletShapeModelData* pnonconst = const_cast<BulletShapeModelData*>(this);
-	//printf( "NONCONST<%p>\n", pnonconst );
-	if( mCollisionShape==0 )
+	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
+		auto rval = new BulletShapeBaseInst;
 		if( mModelAsset )
-		{
-			const lev2::XgmModel* model = mModelAsset->GetModel();
+		{	const lev2::XgmModel* model = this->mModelAsset->GetModel();
 			if( model && model->GetNumMeshes() )
-			{
-				pnonconst->mCollisionShape = XgmModelToGimpactShape(model,mfScale);
-				//pnonconst->mCollisionShape = XgmModelToSphereShape(model,mfScale);
-
-				//printf( "mCompoundShape<%p>\n", mCollisionShape );
-				btTransform ident;
-				btVector3 bbmin;
-				btVector3 bbmax;
-				mCollisionShape->getAabb( ident, bbmin, bbmax );
-				pnonconst->mBoundingBox.SetMinMax( ! bbmin, ! bbmax );
-			}
+				rval->mCollisionShape = XgmModelToGimpactShape(model,this->mfScale);
 		}
 		else
-		{
-			if( mCollisionShape ) delete mCollisionShape;
-			pnonconst->mCollisionShape = new btSphereShape(mfScale);
+			rval->mCollisionShape = new btSphereShape(this->mfScale);
+		return rval;
+	};	
+}
 
-		}
-	}
-	return mCollisionShape;
+BulletShapeModelData::~BulletShapeModelData()
+{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void BulletShapeModelData::SetModelAccessor( ork::rtti::ICastable* const & mdl)
 {	mModelAsset = mdl ? ork::rtti::autocast( mdl ) : 0;
-	if( mCollisionShape ) delete mCollisionShape;
-	mCollisionShape = 0;
 }
 void BulletShapeModelData::GetModelAccessor( ork::rtti::ICastable* & mdl) const
 {	mdl = mModelAsset;
@@ -588,7 +582,7 @@ private:
 
 void TestForceControllerData::Describe()
 {
-	reflect::RegisterFloatMinMaxProp( &TestForceControllerData::mForce, "Force", "-8.0", "8.0" );
+	reflect::RegisterFloatMinMaxProp( &TestForceControllerData::mForce, "Force", "-80.0", "80.0" );
 	reflect::RegisterFloatMinMaxProp( &TestForceControllerData::mTorque, "Torque", "0.0", "100.0" );
 	reflect::RegisterFloatMinMaxProp( &TestForceControllerData::mPFACTOR, "PFactor", "-1.0", "1.0" );
 	reflect::RegisterFloatMinMaxProp( &TestForceControllerData::mIFACTOR, "IFactor", "-1.0", "1.0" );
@@ -623,7 +617,8 @@ bool TestForceControllerInst::DoLink(SceneInst *psi)
 	return true;
 }
 
-void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci)
+void TestForceControllerInst::UpdateForces( ork::ent::SceneInst* inst,
+											BulletObjectControllerInst* boci)
 {
 	float fDT = inst->GetDeltaTime();
 	const BulletObjectControllerData& BOCD = boci->GetData();
@@ -640,10 +635,13 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
 	if( mpTarget )
 	{
 		DagNode& dnode = mpTarget->GetDagNode();
-		TransformNode3D& t3d = dnode.GetTransformNode();
-		CMatrix4 mtx = t3d.GetTransform()->GetMatrix();
+		TransformNode& t3d = dnode.GetTransformNode();
+		CMatrix4 mtx = t3d.GetTransform().GetMatrix();
 		ORIGIN = mtx.GetTranslation();
 	}
+
+		//printf( "target<%f %f %f\n", 
+		//	ORIGIN.GetX(), ORIGIN.GetY(), ORIGIN.GetZ() );
 
 	/////////////////////////////
 	btTransform xf;
@@ -654,7 +652,10 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
 	CVector3 xnormal = xfW.GetXNormal();
 	CVector3 ynormal = xfW.GetYNormal();
 	/////////////////////////////
-	const AABox& bbox = BOCD.GetShapeData()->GetBoundingBox();
+
+	auto shape_inst = boci->GetShapeInst();
+
+	const AABox& bbox = shape_inst->GetBoundingBox();
 	CVector3 ctr = (bbox.Min()+bbox.Max())*0.5f;
 	CVector3 ctr_bak( ctr.GetX(), ctr.GetY(), bbox.Max().GetZ() );
 	CVector3 force_pos = pos;// - ctr_bak;
@@ -840,7 +841,9 @@ void DirectionalForceInst::UpdateForces(ork::ent::SceneInst* inst, BulletObjectC
 	CVector3 xnormal = xfW.GetXNormal();
 	CVector3 ynormal = xfW.GetYNormal();
 	/////////////////////////////
-	const AABox& bbox = BOCD.GetShapeData()->GetBoundingBox();
+	auto shape_inst = boci->GetShapeInst();
+	const AABox& bbox = shape_inst->GetBoundingBox();
+
 	CVector3 ctr = (bbox.Min()+bbox.Max())*0.5f;
 	CVector3 ctr_bak( ctr.GetX(), ctr.GetY(), bbox.Max().GetZ() );
 	CVector3 force_pos = pos;// - ctr_bak;

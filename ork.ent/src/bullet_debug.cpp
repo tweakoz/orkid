@@ -23,11 +23,30 @@
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/renderer.h>
+#include <ork/kernel/opq.h>
 
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
+
+PhysicsDebugger::PhysicsDebugger() 
+	: mClearOnBeginInternalTick(true)
+	, mbDEBUG(false)
+	, mMutex("bulletdebuggerlines")
+{
+
+}
+
+void PhysicsDebugger::Lock()
+{
+	mMutex.Lock();
+}
+
+void PhysicsDebugger::UnLock()
+{
+	mMutex.UnLock();
+}
 
 BulletDebugDrawDBData::BulletDebugDrawDBData(BulletWorldControllerInst* psi, ork::ent::Entity* pent )
 	: mpEntity( pent )
@@ -43,8 +62,10 @@ BulletDebugDrawDBData::BulletDebugDrawDBData(BulletWorldControllerInst* psi, ork
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletDebugDrawQueueToBuffer(ork::ent::DrawableBufItem&cdb)
+void BulletDebugQueueToLayerCallback(ork::ent::DrawableBufItem&cdb)
 {
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
 	BulletDebugDrawDBData* pdata = cdb.mUserData0.Get<BulletDebugDrawDBData*>();
 
 	if( pdata->mpDebugger->IsDebugEnabled() )
@@ -57,8 +78,10 @@ void BulletDebugDrawQueueToBuffer(ork::ent::DrawableBufItem&cdb)
 		if( pinst )
 		{
 			pinst->BulletWorld()->debugDrawWorld();
+			pdata->mpDebugger->Lock();
 			prec->mLines1 = pinst->Debugger().GetLines1();
 			prec->mLines2 = pinst->Debugger().GetLines2();
+			pdata->mpDebugger->UnLock();
 			pinst->Debugger().RenderClear();
 
 		}
@@ -67,14 +90,16 @@ void BulletDebugDrawQueueToBuffer(ork::ent::DrawableBufItem&cdb)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawBulletDebugDraw(	ork::lev2::RenderContextInstData& rcid,
+void BulletDebugRenderCallback(	ork::lev2::RenderContextInstData& rcid,
 							ork::lev2::GfxTarget* targ,
 							const ork::lev2::CallbackRenderable* pren )
 {
-	//////////////////////////////////////////
-	BulletDebugDrawDBData* pyo = pren->GetUserData0().Get<BulletDebugDrawDBData*>();
+	AssertOnOpQ2( MainThreadOpQ() );
 
-	if( pyo->mpDebugger->IsDebugEnabled() )
+	//////////////////////////////////////////
+	BulletDebugDrawDBData* pyo = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
+
+	if( pyo->mpDebugger->IsDebugEnabled() && pren->GetUserData1().IsA<BulletDebugDrawDBRec*>() )
 	{
 		BulletDebugDrawDBRec* srec = pren->GetUserData1().Get<BulletDebugDrawDBRec*>();
 		//////////////////////////////////////////
@@ -88,8 +113,10 @@ void DrawBulletDebugDraw(	ork::lev2::RenderContextInstData& rcid,
 			const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
 			const ork::CCameraData* cdata = framedata->GetCameraData();
 
+			pyo->mpDebugger->Lock();
 			pyo->mpDebugger->Render(rcid, targ, srec->mLines1);	
 			pyo->mpDebugger->Render(rcid, targ, srec->mLines2);
+			pyo->mpDebugger->UnLock();
 			//	RenderClear();
 
 		}
@@ -140,13 +167,19 @@ void PhysicsDebugger::Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::
 		}
 		vwriter.UnLock(ptarg);
 
+
+		auto cam_z = pcamdata->GetZNormal();
+
 		static GfxMaterial3DSolid material( ptarg );
 		material.mRasterState.SetZWriteMask( true );
 		material.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
 		ptarg->BindMaterial( & material );
 		ptarg->PushModColor( CVector4::White() );
 		ptarg->FXI()->InvalidateStateBlock();
-		ptarg->MTXI()->PushMMatrix(ork::CMatrix4::Identity);
+		ork::CMatrix4 mtx_dbg;
+		mtx_dbg.SetTranslation( cam_z*-1.3f );
+
+		ptarg->MTXI()->PushMMatrix(mtx_dbg);
 		ptarg->GBI()->DrawPrimitive( vwriter, ork::lev2::EPRIM_LINES );
 		ptarg->MTXI()->PopMMatrix();
 		ptarg->PopModColor();
@@ -203,7 +236,8 @@ int  PhysicsDebugger::getDebugMode() const
 	return (false==mbDEBUG)
 		? 0
 		: btIDebugDraw::DBG_DrawContactPoints
-		| btIDebugDraw::DBG_DrawWireframe;
+		| btIDebugDraw::DBG_DrawWireframe
+		| btIDebugDraw::DBG_DrawAabb;
 		//| btIDebugDraw::DBG_DrawAabb;
 	//return btIDebugDraw::DBG_DrawContactPoints|btIDebugDraw::DBG_DrawWireframe|btIDebugDraw::DBG_DrawAabb;
 }

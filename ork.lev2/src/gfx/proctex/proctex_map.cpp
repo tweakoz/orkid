@@ -91,7 +91,7 @@ void Colorize::compute( ProcTex& ptex )
 				targ->TXI()->ApplySamplingMode(inptexb);
 				mtl.SetTexture( inptexa );
 				mtl.SetTexture2( inptexb );
-				mtl.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+				mtl.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
 				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
 				//mOrthoBoxXYWH = CVector4( 1.0f, 1.0f, -2.0f, -2.0f );
@@ -134,7 +134,7 @@ void RenderMapQuad(lev2::GfxTarget* targ, lev2::GfxMaterial3DSolid& mtl, float l
 	CMatrix4 mtxortho = mtxi->Ortho( l, r, t, b, 0.0f, 1.0f );
 	targ->BindMaterial( & mtl );
 	mtxi->PushPMatrix( mtxortho );
-	RenderQuad( targ, -1,-1,1,1 );
+	RenderQuad( targ, -1,1,1,-1 );
 	mtxi->PopPMatrix();
 	targ->PopModColor();
 }
@@ -171,7 +171,7 @@ void UvMap::compute( ProcTex& ptex )
 				targ->TXI()->ApplySamplingMode(inptexb);
 				mtl.SetTexture( inptexa );
 				mtl.SetTexture2( inptexb );
-				mtl.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+				mtl.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
 				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
 			}
@@ -244,7 +244,7 @@ void SphMap::compute( ProcTex& ptex )
 				targ->TXI()->ApplySamplingMode(inptexb);
 				mtl.SetTexture( inptexa );
 				mtl.SetTexture2( inptexb );
-				mtl.SetUser0( CVector4(0.0f,0.0f,direc,float(Buffer::kw)) );
+				mtl.SetUser0( CVector4(0.0f,0.0f,direc,float(bo.miW)) );
 
 				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
 			}
@@ -316,7 +316,7 @@ void SphRefract::compute( ProcTex& ptex )
 				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 				mtl.SetTexture( cpa->GetValue().GetTexture(ptex) );
 				mtl.SetTexture2( cpb->GetValue().GetTexture(ptex) );
-				mtl.SetUser0( CVector4(0.0f,direc,ior,float(Buffer::kw)) );
+				mtl.SetUser0( CVector4(0.0f,direc,ior,float(bo.miW)) );
 
 				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
 			}
@@ -373,7 +373,6 @@ H2N::H2N()
 	mMTL.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 	mMTL.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 	mMTL.mRasterState.SetZWriteMask( false );
-	mMTL.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
 	mMTL.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 }
 void H2N::compute( ProcTex& ptex )
@@ -393,6 +392,7 @@ void H2N::compute( ProcTex& ptex )
 	//printf( "HSNinputtex<%p>\n", inptex );
 	mMTL.SetTexture( inptex );
 	mMTL.SetAuxMatrix( mtxS );
+	mMTL.SetUser0( CVector4(0.0f,fscy,0.0f,buffer.miW) );
 	////////////////////////////////////////////////////////////////
 	struct AA16RenderH2N : public AA16Render
 	{
@@ -483,7 +483,7 @@ void Kaled::compute( ProcTex& ptex )
 		inptexa->TexSamplingMode().PresetTrilinearWrap();
 		targ->TXI()->ApplySamplingMode(inptexa);
 		gridmat.SetTexture( inptexa );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 		////////////////////////////////////////////////////////////////
 		auto mtxi = targ->MTXI();
 		CMatrix4 mtxortho = mtxi->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );

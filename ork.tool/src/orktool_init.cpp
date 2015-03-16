@@ -11,11 +11,16 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxanim.h> // For CAnimManager
 #include <ork/kernel/string/string.h>
-
 #include <orktool/toolcore/FunctionManager.h>
 
-#if defined(_DARWIN)
-#include <Python2.7/Python.h>
+#include "EditorCamera.h"
+
+#if 0 //defined(_DARWIN) 
+#define USE_PYTHON
+#endif
+
+#if defined(USE_PYTHON)
+#include <Python.h>
 #include <dispatch/dispatch.h>
 #endif
 
@@ -35,11 +40,13 @@ namespace ent
 	class EntArchSplit;
 }
 
+namespace tweakout { void Init(); }
+
 namespace lev2 { void Init(); }
 
 namespace tool {
 
-#if defined(_DARWIN)
+#if defined(USE_PYTHON)
 void InitPython();
 #endif
 
@@ -64,6 +71,10 @@ void LinkMe()
 	ork::rtti::Link<ork::ent::EntArchDeRef>();
 	ork::rtti::Link<ork::ent::EntArchReRef>();
 	ork::rtti::Link<ork::ent::EntArchSplit>();
+
+	ent::EditorCamArchetype::GetClassStatic();
+	ent::EditorCamControllerData::GetClassStatic();
+	ent::EditorCamControllerInst::GetClassStatic();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -218,8 +229,8 @@ tokenlist Init(int argc, char **argv)
 
 	ork::lev2::Init();
 
-#if defined(_DARWIN)
-	//InitPython();
+#if defined(USE_PYTHON)
+	InitPython();
 #endif
 
 //	xmlInitParser(); // must init libxml in main thread

@@ -76,10 +76,10 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 
 	if( is_geo && (types_match||geoinhvtx||geoinhtee) )
 	{
-		printf( "pre_inherit mGsPrimSize<%d>\n", mGsPrimSize );
+		//printf( "pre_inherit mGsPrimSize<%d>\n", mGsPrimSize );
 		if( mGsPrimSize==0 && par.mGsPrimSize!=0 )
 			mGsPrimSize = par.mGsPrimSize;
-		printf( "inherit mGsPrimSize<%d>\n", mGsPrimSize );
+		//printf( "inherit mGsPrimSize<%d>\n", mGsPrimSize );
 	}
 
 	////////////////////////////////
@@ -115,7 +115,7 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par)
 
 				mAttributes[a.first] = cpy;
 
-				printf( "copied (vtx/tee)->geo nam<%s> typ<%s>\n", src->mName.c_str(), src->mTypeName.c_str() );
+				//printf( "copied (vtx/tee)->geo nam<%s> typ<%s>\n", src->mName.c_str(), src->mTypeName.c_str() );
 			}
 		}
 		else
@@ -168,7 +168,7 @@ struct GlSlFxParser
 		{
 			const token* vt_tok = v.GetToken(i);
 
-			printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
+			//printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
 
 			if( vt_tok->text == "import" )
 			{
@@ -196,7 +196,7 @@ struct GlSlFxParser
 			file::Path imppath = fxs.c_str();
 			//assert(false);
 
-			printf( "impnam<%s> a<%s> b<%s> imppath<%s>\n", imp.c_str(), a.c_str(), b.c_str(), imppath.c_str() );
+			//printf( "impnam<%s> a<%s> b<%s> imppath<%s>\n", imp.c_str(), a.c_str(), b.c_str(), imppath.c_str() );
 			///////////////////////////////////
 			CFile fx_file( imppath.c_str(), EFM_READ );
 			OrkAssert( fx_file.IsOpen() );
@@ -255,7 +255,7 @@ struct GlSlFxParser
 			const token* dt_tok = v.GetToken(i+1);
 			const token* nam_tok = v.GetToken(i+2);
 
-			printf( "oi<%d> done<%d> ist<%d> ien<%d>\n", int(i), int(done), int(ist),int(ien) );
+			//printf( "oi<%d> done<%d> ist<%d> ien<%d>\n", int(i), int(done), int(ist),int(ien) );
 
 			if( vt_tok->text == "uniform" )
 			{
@@ -269,7 +269,7 @@ struct GlSlFxParser
 				{
 					assert(v.GetToken(i+5)->text=="]");
 					puni->mArraySize = atoi(v.GetToken(i+4)->text.c_str());
-					printf( "uniname<%s> arraysize<%d>\n", nam_tok->text.c_str(), puni->mArraySize );
+					//printf( "uniname<%s> arraysize<%d>\n", nam_tok->text.c_str(), puni->mArraySize );
 					i += 7;
 				}
 				else
@@ -287,7 +287,7 @@ struct GlSlFxParser
 			}
 
 			done = (i >= ien);
-			printf( "ni<%d> ien<%d> done<%d>\n", int(i), int(ien), int(done) );
+			//printf( "ni<%d> ien<%d> done<%d>\n", int(i), int(ien), int(done) );
 		}
 		itokidx = v.GetBlockEnd()+1;
 		return pret;
@@ -353,9 +353,9 @@ struct GlSlFxParser
 
 				assert( par != nullptr );
 
-				printf( "iface<%s> inherit<%s:%p>\n", 
-					psi->mName.c_str(),
-					ptok->text.c_str(), par );
+				//printf( "iface<%s> inherit<%s:%p>\n", 
+				//	psi->mName.c_str(),
+				//	ptok->text.c_str(), par );
 
 				psi->Inherit(*par);
 			}			
@@ -440,7 +440,7 @@ struct GlSlFxParser
 				if( v.GetToken(i+3)->text==":" )
 				{
 					pattr->mSemantic = v.GetToken(i+4)->text;
-					printf( "SEMANTIC<%s>\n", pattr->mSemantic.c_str() );	
+					//printf( "SEMANTIC<%s>\n", pattr->mSemantic.c_str() );	
 					i += 6;
 				}
 				else if( v.GetToken(i+3)->text==";" )
@@ -594,7 +594,7 @@ struct GlSlFxParser
 				psb->AddStateFn( [=](GfxTarget*t)
 				{	t->RSI()->SetZWriteMask(bena);
 				} );
-				printf( "DepthMask<%d>\n", int(bena) );
+				//printf( "DepthMask<%d>\n", int(bena) );
 				i += 4;
 			}
 			else if( vt_tok->text == "DepthTest" )
@@ -716,33 +716,33 @@ struct GlSlFxParser
 				{
 					auto plibblock = it_lib->second;
 					lib_blocks.push_back( plibblock );
-					printf( "LIBBLOCK <%s>\n", ptok->text.c_str() );
+					//printf( "LIBBLOCK <%s>\n", ptok->text.c_str() );
 				}
 				else if( bvtx && it_vi != (mpContainer->mVertexInterfaces.end()) )
 				{
 					iface = mpContainer->GetVertexInterface( ptok->text );
 					pshader->mpInterface = iface;
-					printf( "VINF <%s>\n", ptok->text.c_str() );
+					//printf( "VINF <%s>\n", ptok->text.c_str() );
 				}
 				else if( btsc && ( it_tc != mpContainer->mTessCtrlInterfaces.end() ) ) 
 				{	iface = mpContainer->GetTessCtrlInterface( ptok->text );
 					pshader->mpInterface = iface;
-					printf( "TCINF <%s>\n", ptok->text.c_str() );
+					//printf( "TCINF <%s>\n", ptok->text.c_str() );
 				}
 				else if( btse && ( it_te != mpContainer->mTessEvalInterfaces.end() ) ) 
 				{	iface = mpContainer->GetTessEvalInterface( ptok->text );
 					pshader->mpInterface = iface;
-					printf( "TEINF <%s>\n", ptok->text.c_str() );
+					//printf( "TEINF <%s>\n", ptok->text.c_str() );
 				}
 				else if( bgeo && ( it_gi != mpContainer->mGeometryInterfaces.end() ) ) 
 				{	iface = mpContainer->GetGeometryInterface( ptok->text );
 					pshader->mpInterface = iface;
-					printf( "GINF <%s>\n", ptok->text.c_str() );
+					//printf( "GINF <%s>\n", ptok->text.c_str() );
 				}
 				else if( bfrg && ( it_fi != mpContainer->mFragmentInterfaces.end() ) ) 
 				{	iface = mpContainer->GetFragmentInterface( ptok->text );
 					pshader->mpInterface = iface;
-					printf( "FINF <%s>\n", ptok->text.c_str() );
+					//printf( "FINF <%s>\n", ptok->text.c_str() );
 				}
 				else
 				{
@@ -916,16 +916,16 @@ struct GlSlFxParser
 
 		shaderbody += "}\n";
 		///////////////////////////////////
-		printf( "shaderbody\n" );
-		printf( "///////////////////////////////\n" );
-		printf( "%s", shaderbody.c_str() );
-		printf( "///////////////////////////////\n" );
+		//printf( "shaderbody\n" );
+		//printf( "///////////////////////////////\n" );
+		//printf( "%s", shaderbody.c_str() );
+		//printf( "///////////////////////////////\n" );
 		///////////////////////////////////
 		pshader->mName = shadername;
 		pshader->mShaderText = shaderbody;
 		///////////////////////////////////
 		int new_end = v.GetBlockEnd()+1;
-		printf( "newend be<%d> deref<%d>\n", int(iblockend), new_end );
+		//printf( "newend be<%d> deref<%d>\n", int(iblockend), new_end );
 
 		//assert(false==bkill);
 
@@ -997,7 +997,7 @@ struct GlSlFxParser
 			}
 			else if( vt_tok->text == "pass" )
 			{
-				printf( "parsing pass at i<%d>\n", i );
+				//printf( "parsing pass at i<%d>\n", i );
 				// i is in view space, we need the globspace index to 
 				//  start the pass parse
 				int globspac_passtoki = v.GetTokenIndex(i); 

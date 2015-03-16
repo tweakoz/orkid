@@ -25,6 +25,7 @@ RtBuffer::RtBuffer( RtGroup* pgroup,
 	, mFormat(efmt)
 	, mMaterial(nullptr)
 	, mTexture(nullptr)
+	, mComputeMips(false)
 {
 }
 

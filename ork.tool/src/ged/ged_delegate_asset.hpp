@@ -157,6 +157,8 @@ void GedAssetNode<IODriver>::SetLabel()
 
 	ConstString anno = GetOrkProp()->GetAnnotation( "editor.assettype" );
 
+	printf( "passet<%p> nam<%s>\n", passet, (passet!=0) ? passet->GetName().c_str() : nullptr );
+
 	if( passet )
 	{
 		mLabel = ork::CreateFormattedString("%s<%s>", anno.c_str(), passet->GetName().c_str() );

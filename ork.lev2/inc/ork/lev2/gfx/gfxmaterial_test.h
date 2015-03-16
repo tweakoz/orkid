@@ -21,7 +21,7 @@ public:
 	
 	static void ClassInit();
 	GfxMaterial3DSolid(GfxTarget* pTARG=0);
-	GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek );
+	GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure=false,bool unmanaged=false );
 	
 	virtual ~GfxMaterial3DSolid() {};
 	virtual void Update( void ) {}
@@ -43,6 +43,8 @@ public:
 		mUserFxName = puserfx;
 		mUserTekName = pusertek;
 	}
+
+	bool IsUserFxOk() const;
 
 	////////////////////////////////////////////
 
@@ -100,6 +102,8 @@ public:
 	std::string		mUserFxName;
 	std::string		mUserTekName;
 	CMatrix4		mMatAux;
+	bool 			mUnManaged;
+	bool			mAllowCompileFailure;
 
 	const FxShaderTechnique*	hTekUser;
 	const FxShaderTechnique*	hTekTexColor;

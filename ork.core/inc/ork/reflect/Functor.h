@@ -10,6 +10,7 @@
 #include <ork/reflect/Function.h>
 #include <ork/reflect/Serializable.h>
 #include <ork/reflect/BidirectionalSerializer.h>
+#include <functional>
 
 namespace ork { namespace reflect { 
 
@@ -36,6 +37,8 @@ public:
 	virtual IInvokation *CreateInvokation() const = 0;
 	virtual bool Pure() const = 0;
 };
+
+
 
 template<typename ParameterType>
 class Invokation : public IInvokation
@@ -80,6 +83,7 @@ private:
 				(invokation)->GetParams());
 	}
 };
+
 
 template<typename ReturnType>
 static void WriteResult__(BidirectionalSerializer *bidi, const ReturnType& result)
@@ -132,12 +136,12 @@ public:
 private:
 	FType mFunction;
 
-	/*virtual*/ IInvokation *CreateInvokation() const
+	IInvokation *CreateInvokation() const override
 	{
 		return new Invokation<typename Function<FType>::Parameters>();
 	}
 
-	/*virtual*/ void invoke(Object *obj, const IInvokation *invokation, BidirectionalSerializer *bidi) const
+	void invoke(Object *obj, const IInvokation *invokation, BidirectionalSerializer *bidi) const override
 	{
 		Function<FType>::invoke(
 				*static_cast<typename Function<FType>::ClassType *>(obj),
@@ -146,11 +150,40 @@ private:
 				(invokation)->GetParams());
 	}
 
-	/*virtual*/ bool Pure() const
+	bool Pure() const override
 	{
 		return false;
 	}
 };
+
+class LambdaInvokation : public IInvokation
+{
+	int GetNumParameters() const override { return 0; }
+	void ApplyParam(BidirectionalSerializer &, int) override {}
+	void *ParameterData() override { return nullptr; }
+};
+
+struct LambdaFunctor 
+{
+	typedef std::function<void(Object*)> lambda_t;
+
+	IInvokation *CreateInvokation() const
+	{
+		return new LambdaInvokation;
+	}
+
+	void invoke(Object* obj, const IInvokation *, BidirectionalSerializer * = 0) const
+	{
+		if( mLambda )
+			mLambda(obj);
+	}
+
+	LambdaFunctor() : mLambda(nullptr) {}
+
+	lambda_t mLambda;
+};
+
+////////////////////////////////////////////////////////////////////////////
 
 template<typename FType>
 inline IObjectFunctor *CreateObjectFunctor(FType f, bool pure = false)
@@ -158,11 +191,15 @@ inline IObjectFunctor *CreateObjectFunctor(FType f, bool pure = false)
 	return new ObjectFunctor<FType>(f, pure);
 }
 
+////////////////////////////////////////////////////////////////////////////
+
 template<typename FType>
 inline IFunctor *CreateFunctor(FType f)
 {
 	return new Functor<FType>(f);
 }
+
+////////////////////////////////////////////////////////////////////////////
 
 bool SetInvokationParameter(IInvokation *invokation, int param, const char *paramdata);
 

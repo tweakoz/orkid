@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENT_OBSCAMERAARCH_H_
-#define _ORK_ENT_OBSCAMERAARCH_H_
+#pragma once
 
 #include <pkg/ent/component.h>
 #include <pkg/ent/componenttable.h>
@@ -45,6 +44,7 @@ class ObserverCamControllerData : public ent::ComponentData
 	PoolString	mEye;
 	PoolString	mTarget;
 	CVector3	mEyeOffset;
+	CVector3	mEyeUp;
 	CVector3	mTgtOffset;
 	float		mfAperature;
 	float		mfNear;
@@ -57,6 +57,7 @@ public:
 	ObserverCamControllerData();
 	PoolString GetTarget() const { return mTarget; }
 	PoolString GetEye() const { return mEye; }
+	CVector3 GetEyeUp() const { return mEyeUp; }
 	CVector3 GetEyeOffset() const { return mEyeOffset; }
 	CVector3 GetTgtOffset() const { return mTgtOffset; }
 	float GetAperature() const { return mfAperature; }
@@ -89,5 +90,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif

@@ -84,6 +84,10 @@ lev2::XgmModel* ModelComponentData::GetModel() const
 {
 	return (mModel==0) ? 0 : mModel->GetModel();
 }
+void ModelComponentData::SetModel(lev2::XgmModelAsset* passet)
+{
+	mModel=passet;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -147,8 +151,6 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData &data, Entity *p
 		mModelDrawable->SetModelInst( mXgmModelInst );
 		mModelDrawable->SetScale( mData.GetScale() );
 
-	//	ork::ent::ModelDrawable *drawable = new ork::ent::ModelDrawable(pent);
-	//	drawable->SetModelInst(minst);
 		pent->AddDrawable(AddPooledLiteral("Default"),mModelDrawable);
 		mModelDrawable->SetOwner(pent);
 

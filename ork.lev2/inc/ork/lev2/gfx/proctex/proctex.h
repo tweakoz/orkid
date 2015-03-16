@@ -44,18 +44,26 @@ class IDeserializer;
 }};
 namespace ork { namespace proctex {
 class Module;
+
+enum EPTEX_TYPE
+{
+	EPTEXTYPE_REALTIME=0,
+	EPTEXTYPE_EXPORT,
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 class Buffer 
 {
 public:
 	static const int kx = 0;
 	static const int ky = 0;
-	static const int kw = 1024;
-	static const int kh = 1024;
+	//static const int kw = 1024;
+	//static const int kh = 1024;
 	Buffer(ork::lev2::EBufferFormat efmt);
 	dataflow::node_hash	mHash;
 	lev2::RtGroup* mRtGroup;
 	lev2::GfxTarget* mTarget;
+	int miW, miH;
 
 	lev2::Texture* OutputTexture();
 
@@ -68,6 +76,8 @@ public:
 	lev2::RtGroup* GetRtGroup( lev2::GfxTarget* pt );
 
 	virtual ork::lev2::EBufferFormat GetBufferFormat() const = 0;
+
+	void SetBufferSize( int w, int h );
 
 };
 class Buffer32 : public Buffer
@@ -100,14 +110,14 @@ struct ImgBase
 struct Img32 : public ImgBase
 {
 	ork::lev2::Texture* GetTexture( ProcTex& ptex ) const;
-	Buffer& GetBuffer( ProcTex& ptex ) const;
-	virtual int PixelSize() const { return 32; }
+	Buffer& GetBuffer( ProcTex& ptex ) const override;
+	virtual int PixelSize() const override { return 32; }
 };
 struct Img64 : public ImgBase
 {
 	ork::lev2::Texture* GetTexture( ProcTex& ptex ) const;
-	Buffer& GetBuffer( ProcTex& ptex ) const;
-	virtual int PixelSize() const { return 64; }
+	Buffer& GetBuffer( ProcTex& ptex ) const override;
+	virtual int PixelSize() const override { return 64; }
 };
 
 typedef ork::dataflow::outplug<ImgBase> ImgOutPlug;
@@ -157,6 +167,9 @@ class ImgModule : public Module
 
 	bool IsDirty(void) const { return true; } // virtual
 
+
+	bool mExport;
+	
 protected:
 
 	void UnitTexQuad(ork::lev2::GfxTarget* pTARG);
@@ -193,7 +206,7 @@ protected:
 
 	Img64Module();
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutImgOut; }
 
 };
@@ -210,7 +223,7 @@ protected:
 
 	Img32Module();
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutImgOut; }
 
 };
@@ -223,9 +236,9 @@ class Curve1D : public Module
 
 private:
 
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) ;
 
 	float							mOutValue;
@@ -261,7 +274,7 @@ private:
 
 	DeclareFloatXfPlug( TimeScale );
 
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual dataflow::inplugbase* GetInput(int idx) { return &mPlugInpTimeScale; } 
 
 	//////////////////////////////////////////////////
@@ -272,7 +285,7 @@ private:
 	DeclareFloatOutPlug( TimeDiv10 );
 	DeclareFloatOutPlug( TimeDiv100 );
 
-	virtual int GetNumOutputs() const { return 3; }
+	//virtual int GetNumOutputs() const { return 3; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	//////////////////////////////////////////////////
@@ -299,6 +312,12 @@ struct ProcTexContext
 	Buffer*									mBuffer64[k64buffers];
 	Buffer32								mTrashBuffer;
 	float 									mCurrentTime;
+	int 									mBufferDim;
+	EPTEX_TYPE								mProcTexType;
+	bool									mWriteFrames;
+	int 									mWriteFrameIndex;
+	ork::file::Path 						mWritePath;
+	
 	Buffer& GetBuffer32(int edest); 
 	Buffer& GetBuffer64(int edest); 
 	lev2::GfxTarget*						mTarget;
@@ -308,6 +327,8 @@ struct ProcTexContext
 	static Buffer* AllocBuffer32();
 	static Buffer* AllocBuffer64();
 	static void ReturnBuffer(Buffer*pbuf);
+
+	void SetBufferDim( int buffer_dim );
 
 	ProcTexContext();
 	~ProcTexContext();
@@ -379,7 +400,7 @@ public:
 private:
 
 	////////////////////////////////////////////
-	virtual int GetNumInputs() const { return 4; }
+	//virtual int GetNumInputs() const { return 4; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 	////////////////////////////////////////////
 	
@@ -409,7 +430,7 @@ class RotSolid : public Img32Module
 
 	DeclareFloatXfPlug( PhaseOffset );
 
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx) { return & mPlugInpPhaseOffset; }
 
 	/////////////////////////////////////////
@@ -453,7 +474,7 @@ class Colorize : public Img32Module
 	DeclareImgInpPlug( InputA );
 	DeclareImgInpPlug( InputB );
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -480,7 +501,7 @@ class UvMap : public Img32Module
 	DeclareImgInpPlug( InputA );
 	DeclareImgInpPlug( InputB );
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -506,7 +527,7 @@ class SphMap : public Img32Module
 	DeclareImgInpPlug( InputR );
 	DeclareFloatXfPlug( Directionality );
 
-	virtual int GetNumInputs() const { return 3; }
+	//virtual int GetNumInputs() const { return 3; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -533,7 +554,7 @@ class SphRefract : public Img32Module
 	DeclareFloatXfPlug( Directionality );
 	DeclareFloatXfPlug( IOR );
 
-	virtual int GetNumInputs() const { return 4; }
+	//virtual int GetNumInputs() const { return 4; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -547,13 +568,14 @@ public:
 
 };
 ///////////////////////////////////////////////////////////////////////////////
-class SolidColor : public Img64Module
+class SolidColor : public Img32Module
 {
-	RttiDeclareConcrete( SolidColor, Img64Module );
+	RttiDeclareConcrete( SolidColor, Img32Module );
 
 	virtual void compute( ProcTex& ptex );
 
 	float mfr,mfg,mfb,mfa;
+	lev2::GfxMaterial3DSolid* mMaterial;
 
 public:
 	SolidColor();
@@ -607,7 +629,7 @@ class Cells : public Img32Module
 	DeclareFloatXfPlug( Dispersion );
 	DeclareFloatXfPlug( SeedLerp );
 	DeclareFloatXfPlug( SmoothingRadius );
-	virtual int GetNumInputs() const { return 3; }
+	//virtual int GetNumInputs() const { return 3; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -645,7 +667,7 @@ class Kaled : public Img32Module
 	DeclareFloatXfPlug( OffsetX );
 	DeclareFloatXfPlug( OffsetY );
 
-	virtual int GetNumInputs() const { return 4; }
+	//virtual int GetNumInputs() const { return 4; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -678,7 +700,6 @@ class ImgOp2 : public Img32Module
 	DeclareImgInpPlug( InputA );
 	DeclareImgInpPlug( InputB );
 
-	virtual int GetNumInputs() const { return 2; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -705,9 +726,9 @@ enum EIMGOP3CHAN
 	EIO3_CH_RGB,
 	EIO3_CH_RGBA,
 };
-class ImgOp3 : public Img64Module
+class ImgOp3 : public Img32Module
 {
-	RttiDeclareConcrete( ImgOp3, Img64Module );
+	RttiDeclareConcrete( ImgOp3, Img32Module );
 
 	//////////////////////////////////////////////////
 	// inputs
@@ -717,15 +738,19 @@ class ImgOp3 : public Img64Module
 	DeclareImgInpPlug( InputB );
 	DeclareImgInpPlug( InputM );
 
-	virtual int GetNumInputs() const { return 3; }
-	virtual ork::dataflow::inplugbase* GetInput(int idx);
+	ork::dataflow::inplugbase* GetInput(int idx) override;
 
 	//////////////////////////////////////////////////
 
 	EIMGOP3								meOp;
 	EIMGOP3CHAN							meChanCtrl;
+	lev2::GfxMaterial3DSolid* 			mMtlLerp;
+	lev2::GfxMaterial3DSolid* 			mMtlAddw;
+	lev2::GfxMaterial3DSolid* 			mMtlSubw;
+	lev2::GfxMaterial3DSolid* 			mMtlMul3;
 
-	virtual void compute( ProcTex& ptex );
+
+	void compute( ProcTex& ptex ) override;
 
 public:
 	ImgOp3();
@@ -745,13 +770,16 @@ class Transform : public Img32Module
 	DeclareFloatXfPlug( ScaleY );
 	DeclareFloatXfPlug( OffsetX );
 	DeclareFloatXfPlug( OffsetY );
+	DeclareFloatXfPlug( Rotate );
 
-	virtual int GetNumInputs() const { return 5; }
+	//virtual int GetNumInputs() const { return 6; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
 
-	virtual void compute( ProcTex& ptex );
+	void compute( ProcTex& ptex ) override;
+
+	lev2::GfxMaterial3DSolid* mMaterial;
 
 public:
 	Transform();
@@ -768,7 +796,7 @@ class H2N : public Img64Module
 	DeclareImgInpPlug( Input );
 	DeclareFloatXfPlug( ScaleY );
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual ork::dataflow::inplugbase* GetInput(int idx);
 
 	//////////////////////////////////////////////////
@@ -802,7 +830,7 @@ class Octaves : public Img32Module
 	DeclareFloatXfPlug( BaseAmp );
 	DeclareFloatXfPlug( ScalAmp );
 
-	virtual int GetNumInputs() const { return 9; }
+	//virtual int GetNumInputs() const { return 9; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	ork::lev2::GfxMaterial3DSolid	mOctMaterial;
@@ -819,7 +847,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 class Texture : public Img32Module
 {
-	RttiDeclareConcrete( Texture, Img64Module );
+	RttiDeclareConcrete( Texture, Img32Module );
 
 	ork::lev2::TextureAsset* mpTexture;
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex) { mpTexture = tex ? ork::rtti::autocast( tex ) : 0; }
@@ -831,6 +859,34 @@ class Texture : public Img32Module
 
 public:
 	Texture();
+};
+///////////////////////////////////////////////////////////////////////////////
+class ShaderQuad : public Img32Module
+{
+	RttiDeclareConcrete( ShaderQuad, Img32Module );
+
+	void SetTextureAccessor( ork::rtti::ICastable* const & tex) { mpTexture = tex ? ork::rtti::autocast( tex ) : 0; }
+	void GetTextureAccessor( ork::rtti::ICastable* & tex) const { tex = mpTexture; }
+
+	void compute( ProcTex& ptex ) override;
+
+	ork::lev2::Texture* GetTexture() { return (0==mpTexture) ? 0 : mpTexture->GetTexture(); }
+
+	//int GetNumInputs() const override { return 4; }
+	dataflow::inplugbase* GetInput(int idx) override;
+
+	ork::file::Path mShaderPath;
+	lev2::GfxMaterial3DSolid* mShader;
+	ork::lev2::TextureAsset* mpTexture;
+
+	DeclareImgInpPlug( ImgInput0 );
+	DeclareFloatXfPlug( User0X );
+	DeclareFloatXfPlug( User0Y );
+	DeclareFloatXfPlug( User0Z );
+
+
+public:
+	ShaderQuad();
 };
 ///////////////////////////////////////////////////////////////////////////////
 class Group : public Img32Module
@@ -875,6 +931,7 @@ class Gradient : public Img32Module
 	int								miRepeat;
 	EGradientRepeatMode				meRepeatMode;
 	EGradientType					meGradientType;
+	lev2::GfxMaterial3DSolid* 		mMtl;
 
 	ork::Object* GradientAccessor() { return & mGradient; }
 

@@ -16,6 +16,8 @@ struct SplitPanel : public Group
 
 	void EnableCloseButton() { mEnableCloseButton=true; }
 
+	void Snap();
+
 private:
 
 	HandlerResult DoOnUiEvent( const Event &Ev ) override;

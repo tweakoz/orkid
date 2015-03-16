@@ -32,8 +32,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 static const bool USE_GIMPACT = true;
-extern bool USE_THREADED_RENDERER;
-extern bool bFIXEDTIMESTEP;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -132,7 +130,7 @@ void EntMotionState::setWorldTransform(const btTransform &transform)
 
 		mEntity->GetDagNode().GetTransformNode().GetTransform()->SetRotation(rotationMat);*/
 
-		mEntity->GetDagNode().GetTransformNode().GetTransform()->SetMatrix( ! transform );
+		mEntity->GetDagNode().GetTransformNode().GetTransform().SetMatrix( ! transform );
 		mTransform = transform;
 	}
 }

@@ -7,6 +7,7 @@
 #include <ork/asset/AssetLoader.h>
 #include <ork/orkstl.h> // for orkvector
 #include <ork/kernel/string/MutableString.h> // for orkvector
+#include <ork/kernel/fixedstring.h>
 
 namespace ork {
 class PieceString;
@@ -17,18 +18,32 @@ namespace ork { namespace asset {
 
 class Asset;
 
-class FileAssetLoader : public AssetLoader
-{
-	orkvector<ConstString> mFileExtensions;
-public:
-	bool FindAsset(const PieceString &, MutableString result, int first_extension = 0);
-	/*virtual*/ bool CheckAsset(const PieceString &);
-	/*virtual*/ bool LoadAsset(Asset *asset);
+typedef fxstring<8> file_ext_t;
+typedef fxstring<32> file_loc_t;
+typedef file::Path file_pathbase_t;
 
-	void AddFileExtension(ConstString extension);
+struct FileSet
+{
+	file_ext_t mExt;
+	file_loc_t mLoc;
+	file_pathbase_t mPathBase;
+};
+
+struct FileAssetLoader : public AssetLoader
+{
+	FileAssetLoader(const AssetClass* ac) : mAssetClass(ac) {}
+	bool FindAsset(const PieceString &, MutableString result, int first_extension = 0);
+	bool CheckAsset(const PieceString &) override;
+	bool LoadAsset(Asset *asset) override;
+	void AddLocation( file_pathbase_t b, file_ext_t e );
 
 protected:
+
 	virtual bool LoadFileAsset(Asset *asset, ConstString filename) = 0;
+	std::set<file::Path> EnumerateExisting() override;
+
+	const AssetClass* mAssetClass;
+	std::vector<FileSet> mLocations;
 };
 
 } }

@@ -43,24 +43,15 @@ documentation and/or software.
 
 #include <ork/pch.h>
 
-
 #ifdef ORK_CONFIG_EDITORBUILD
 
 #include <ork/util/md5.h>
-
 #include <assert.h>
-//#include <strings.h>
-//#include <iostream.h>
-
-
-
 
 // CMD5 simple initialization method
 
 CMD5::CMD5(){
-
   init();
-
 }
 
 
@@ -130,53 +121,6 @@ void CMD5::update(FILE *file){
 
 }
 
-
-
-
-
-
-// CMD5 update for istreams.
-// Like update for files; see above.
-
-/*void CMD5::update(istream& stream){
-
-  unsigned char buffer[1024];
-  int len;
-
-  while (stream.good()){
-    stream.read(buffer, 1024); // note that return value of read is unusable.
-    len=stream.gcount();
-    update(buffer, len);
-  }
-
-}
-
-
-
-
-
-
-// CMD5 update for ifstreams.
-// Like update for files; see above.
-
-void CMD5::update(ifstream& stream){
-
-  unsigned char buffer[1024];
-  int len;
-
-  while (stream.good()){
-    stream.read(buffer, 1024); // note that return value of read is unusable.
-    len=stream.gcount();
-    update(buffer, len);
-  }
-
-}
-*/
-
-
-
-
-
 // CMD5 finalization. Ends an CMD5 message-digest operation, writing the
 // the message digest and zeroizing the context.
 
@@ -217,9 +161,6 @@ void CMD5::finalize (){
 
 }
 
-
-
-
 CMD5::CMD5(FILE *file){
 
   init();  // must be called be all constructors
@@ -227,103 +168,28 @@ CMD5::CMD5(FILE *file){
   finalize ();
 }
 
-
-
-
-/*CMD5::CMD5(istream& stream){
-
-  init();  // must called by all constructors
-  update (stream);
-  finalize();
-}
-
-
-
-CMD5::CMD5(ifstream& stream){
-
-  init();  // must called by all constructors
-  update (stream);
-  finalize();
-}
-
-*/
-
-const unsigned char *CMD5::raw_digest(){
-
-  uint1 *s = new uint1[16];
-
-  if (!finalized){
-    //cerr << "CMD5::raw_digest:  Can't get digest if you haven't "<<
-      //"finalized the digest!" <<endl;
-    return ( (const unsigned char*) "");
-  }
-
-  memcpy(s, digest, 16);
-  return s;
-}
-
-void CMD5::ResultU32( U32 & resA, U32 & resB, U32 & resC, U32 & resD )
+void CMD5::ResultU32( U32 & resA, U32 & resB, U32 & resC, U32 & resD ) const
 {
-	uint1 *s = new uint1[16];
-
-	if( false == finalized )
-	{
-		resA = 0;
-		resB = 0;
-	}
-	else
-	{
-		memcpy( (uint1 *) & resA, & digest[0], 4 );
-		memcpy( (uint1 *) & resB, & digest[4], 4 );
-		memcpy( (uint1 *) & resC, & digest[8], 4 );
-		memcpy( (uint1 *) & resD, & digest[12], 4 );
-	}
+    if( false == finalized )
+    {
+        resA = 0;
+        resB = 0;
+    }
+    else
+    {
+        memcpy( (uint1 *) & resA, & digest[0], 4 );
+        memcpy( (uint1 *) & resB, & digest[4], 4 );
+        memcpy( (uint1 *) & resC, & digest[8], 4 );
+        memcpy( (uint1 *) & resD, & digest[12], 4 );
+    }
 }
 
-CMd5Sum CMD5::Result( void )
+Md5Sum CMD5::Result() const
 {
-	CMd5Sum rval;
-	ResultU32( rval.muMD5[0], rval.muMD5[1], rval.muMD5[2], rval.muMD5[3] );
+	Md5Sum rval;
+  memcpy( rval.muMD5, digest, 16 );
 	return rval;
 }
-
-
-char *CMD5::hex_digest(){
-
-  int i;
-  char *s= new char[33];
-
-  if (!finalized){
-    //cerr << "CMD5::hex_digest:  Can't get digest if you haven't "<<
-      //"finalized the digest!" <<endl;
-    s[0] = 0;
-	return s;
-  }
-
-  for (i=0; i<16; i++)
-    sprintf(s+i*2, "%02x", digest[i]);
-
-  s[32]='\0';
-
-  return s;
-}
-
-
-
-
-
-/*ostream& operator<<(ostream &stream, CMD5 context){
-
-  stream << context.hex_digest();
-  return stream;
-}
-
-*/
-
-
-// PRIVATE METHODS:
-
-
 
 void CMD5::init(){
   finalized=0;  // we just started!
@@ -338,8 +204,6 @@ void CMD5::init(){
   state[2] = 0x98badcfe;
   state[3] = 0x10325476;
 }
-
-
 
 // Constants for CMD5Transform routine.
 // Although we could use C++ style constants, defines are actually better,
@@ -567,6 +431,17 @@ inline void CMD5::II(uint4& a, uint4 b, uint4 c, uint4 d, uint4 x,
 			     uint4 s, uint4 ac){
  a += I(b, c, d) + x + ac;
  a = rotate_left (a, s) +b;
+}
+
+
+
+std::string Md5Sum::hex_digest() const
+{
+    char s[33]; 
+    for( int i=0; i<16; i++)
+        sprintf(s+i*2, "%02x", muMD5[i]);
+    s[32]='\0';
+    return s;
 }
 
 #endif

@@ -49,6 +49,8 @@ class lev2:
 	prj_lib.SetSrcBase( "src" )
 	prj_lib.AddIncludePaths( "inc/" )
 	prj_lib.AddIncludePaths( "../ork.core/inc" )
+	prj_lib.AddIncludePaths( "../ork.tuio/src" )
+	prj_lib.AddIncludePaths( "../ork.tuio/src/oscpack" )
 	prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
 	prj_lib.AddIncludePaths( "/usr/include/qt4" )
 	prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
@@ -68,18 +70,19 @@ class lev2:
 	## IX libs
 	########################
 	else:
-		prj_lib.AddLibs( "GL QtCore QtGui " )
+		prj_lib.AddLibs( "GL QtCore QtGui" )
 	#	prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui OpenImageIO" )
 	########################
 	## Common libs
 	########################
-	#prj_lib.AddLibs( "IL ILU ILUT" )
+	prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util" )
 	#prj_lib.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
 	
 	if False:
 		prj_lib.AddLibs( " 3delight rihelper " )
 
 	prj_lib.AddLibs( "ork.core.%s"%suffix )
+	prj_lib.AddLibs( "ork.tuio.%s"%suffix )
 	prj_lib.Configure()
 	self.lev2_lib = prj_lib.SharedLibrary()
 
@@ -91,14 +94,15 @@ class lev2:
 	prj_test.AddIncludePaths( "../ork.core/inc" )
 	prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
 	prj_test.AddFolders( "test", "*.cpp" )
-	prj_test.AddLibs( "ork.core.%s"%suffix )
-	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
-	#prj_test.AddLibs( "ork.lev2.%s"%prj_test.SUFFIX )
-	prj_test.AddFrameworks("OpenGL QtCore QtGui" )
 	prj_test.AddProjectDep( prj_lib )
+	#prj_test.AddLibs( "ork.core.%s"%suffix )
+	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
+	prj_test.AddFrameworks("OpenGL QtCore QtGui" )
 	prj_test.Configure()
+
 	self.prg = prj_test.Program( )
 	Depends(self.prg,self.lev2_lib)
+
 
 #####################
 

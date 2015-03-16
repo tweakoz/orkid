@@ -9,7 +9,6 @@
 #include <pkg/ent/ReferenceArchetype.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/asset/FileAssetLoader.h>
-#include <ork/asset/FileAssetNamer.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/stream/FileInputStream.h>
@@ -42,10 +41,10 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ArchetypeAssetLoader::ArchetypeAssetLoader() 
+ArchetypeAssetLoader::ArchetypeAssetLoader()
+	:  FileAssetLoader( ArchetypeAsset::GetClassStatic() )
 {
-	AddFileExtension(".mox");
-	AddFileExtension(".mob");
+	AddLocation("data://archetypes",".mox");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -116,13 +115,12 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::Asset* pAsset, ConstString asset
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static ArchetypeAssetLoader loader;
-static asset::FileAssetNamer namer("archetypes/");
-
 void ArchetypeAsset::Describe()
 {
+	auto loader = new ArchetypeAssetLoader;
+
 	GetClassStatic()->AddLoader(loader);
-	GetClassStatic()->SetAssetNamer(&namer);
+	GetClassStatic()->SetAssetNamer("archetypes/");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

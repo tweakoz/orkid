@@ -129,6 +129,9 @@ public:
 	template <typename T> T* FindTypedObject( const PoolString& pstr );
 	template <typename T> const T* FindTypedObject( const PoolString& pstr ) const;
 
+	template <typename T> std::set<EntData*> FindEntitiesWithComponent() const;
+	template <typename T> std::set<EntData*> FindEntitiesOfArchetype() const;
+
 	//////////////////////////////////////////////////////////
 
 	void EnterEditState();
@@ -272,7 +275,6 @@ public:
 
 	///////////////////////////////////////////////////
 
-	void QueueActiveDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const;
 	void QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const;
 	void RenderDrawableBuffer(lev2::Renderer *renderer,const ork::ent::DrawableBuffer& dbuffer, const PoolString& LayerName ) const;
 
@@ -319,8 +321,6 @@ public:
 
 	typedef orklut<PoolString,const CCameraData*> CameraLut;
 	
-	const CameraLut& GetCameraLut()	const { return mCameraLut; }		// camera list
-
 	void AddLayer( const PoolString& name, Layer*player );
 	Layer* GetLayer( const PoolString& name );
 	const Layer* GetLayer( const PoolString& name ) const;

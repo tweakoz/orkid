@@ -418,7 +418,7 @@ class GfxEnv : public NoRttiSingleton< GfxEnv >
 	public:
 
 	GfxTarget* GetLoaderTarget() const { return gLoaderTarget; }
-	void SetLoaderTarget( GfxTarget *ptarget ) { gLoaderTarget=ptarget; }
+	void SetLoaderTarget( GfxTarget *ptarget );
 
 	recursive_mutex& GetGlobalLock() { return mGfxEnvMutex; }
 

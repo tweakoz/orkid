@@ -167,7 +167,7 @@ AudioMultiEffectPlayData::~AudioMultiEffectPlayData()
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInst::Play( AudioEffectComponentInst* aeci, int inote, int ivel, const ork::TransformNode3D* pnode )
+ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInst::Play( AudioEffectComponentInst* aeci, int inote, int ivel, const ork::TransformNode* pnode )
 {
 	ork::lev2::AudioIntrumentPlayParam param = GetParams();
 
@@ -175,7 +175,8 @@ ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInst::Play( AudioEffectC
 
 	if( param.mEnable3D )
 	{
-		param.mXf3d = pnode ? pnode : & aeci->GetEntity()->GetDagNode().GetTransformNode();
+		const auto& ent_xfnode = aeci->GetEntity()->GetDagNode().GetTransformNode();
+		param.mXf3d = pnode ? pnode : & ent_xfnode;
 	}
 	////////////////////////////////////
 	// check for note,velocity overrides
@@ -579,7 +580,8 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	///////////////////////////////////////////////////////////////
 
 	ork::ent::SceneInst *inst = pent->GetSceneInst();
-	mXform = & pent->GetDagNode().GetTransformNode();
+	const auto& ent_xfnode = pent->GetDagNode().GetTransformNode();
+	mXform = & ent_xfnode;
 }
 ///////////////////////////////////////////////////////////////////////////////
 AudioEffectComponentInst::~AudioEffectComponentInst()
@@ -601,7 +603,7 @@ void AudioEffectComponentInst::DoUpdate(ork::ent::SceneInst *inst)
 
 		const ork::ent::Entity * pent = GetEntity();
 
-		ork::CVector3 emitter_trans = mXform->GetTransform()->GetPosition();
+		ork::CVector3 emitter_trans = mXform->GetTransform().GetPosition();
 
 		const int kmaxpbs = 4;
 		int inumpbsfreed = 0;
@@ -658,7 +660,7 @@ void AudioEffectComponentInst::UpdateEmitter( const ork::CCameraData* camdat1, c
 
 		const float kmaxemitterdistsq = emitterctx.mMaxDist * emitterctx.mMaxDist;
 
-		ork::CVector3 emitter_trans = mXform->GetTransform()->GetPosition();
+		ork::CVector3 emitter_trans = mXform->GetTransform().GetPosition();
 		ork::CVector3 eye1 = camdat1 ? camdat1->GetEye() : emitter_trans;
 		ork::CVector3 eye2 = camdat2 ? camdat2->GetEye() : emitter_trans;
 
@@ -741,7 +743,7 @@ AudioMultiEffectPlayInst* AudioEffectComponentInst::GetPlayInst( ork::PoolString
 	return (it==mSoundMap.end()) ? 0 : it->second;
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::lev2::AudioInstrumentPlayback* AudioEffectComponentInst::PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode3D* pnode )
+ork::lev2::AudioInstrumentPlayback* AudioEffectComponentInst::PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode* pnode )
 {
 	ork::lev2::AudioInstrumentPlayback* rval = 0;
 	AudioMultiEffectPlayInst* playinst = GetPlayInst( soundname );
@@ -760,7 +762,7 @@ ork::lev2::AudioInstrumentPlayback* AudioEffectComponentInst::PlaySoundEx( ork::
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::lev2::AudioInstrumentPlayback* AudioEffectComponentInst::PlaySound( ork::PoolString soundname, const ork::TransformNode3D* pnode )
+ork::lev2::AudioInstrumentPlayback* AudioEffectComponentInst::PlaySound( ork::PoolString soundname, const ork::TransformNode* pnode )
 {
 	return PlaySoundEx( soundname, -1, -1, pnode );
 }

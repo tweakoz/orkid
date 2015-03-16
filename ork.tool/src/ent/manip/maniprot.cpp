@@ -226,12 +226,12 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 			{	
 				///////////////////////////////////////////
 				// calc normalvectors from base:origin to point on activeintersection plane (in world space)
-				const CVector3 & Origin = mBaseTransform.GetTransform()->GetPosition();
+				const CVector3 & Origin = mBaseTransform.GetTransform().GetPosition();
 				CVector3 D1 = (Origin-mActiveIntersection->mIntersectionPoint).Normal();
 				CVector3 D0 = (Origin-mActiveIntersection->mBaseIntersectionPoint).Normal();
 				///////////////////////////////////////////
 				// calc matrix to put worldspace vector into plane local space
-				CMatrix4 MatWldToObj = mBaseTransform.GetTransform()->GetMatrix(); //GetRotation();
+				CMatrix4 MatWldToObj = mBaseTransform.GetTransform().GetMatrix(); //GetRotation();
 				MatWldToObj.Inverse();
 				CVector4 bAxisAngle = mLocalRotationAxis; 
 				CQuaternion brq;
@@ -264,7 +264,7 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 				}
 				///////////////////
 				// accum rotation
-				CQuaternion oq = mBaseTransform.GetTransform()->GetRotation();
+				CQuaternion oq = mBaseTransform.GetTransform().GetRotation();
 				CQuaternion NewQ = RotQ.Multiply(oq);
 				///////////////////
 				// Rot Reset To Identity
@@ -273,8 +273,8 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 					NewQ.FromAxisAngle( CVector4( CReal(0.0f), CReal(1.0f), CReal(0.0f), CReal(0.0f) ) );
 				}
 				///////////////////
-				TransformNode3D mset = mManager.mCurTransform;
-				mset.GetTransform()->SetRotation( NewQ );
+				TransformNode mset = mManager.mCurTransform;
+				mset.GetTransform().SetRotation( NewQ );
 				mManager.ApplyTransform( mset );
 				///////////////////
 			}

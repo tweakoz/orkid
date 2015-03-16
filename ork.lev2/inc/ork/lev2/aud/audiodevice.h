@@ -72,7 +72,7 @@ struct AudioIntrumentPlayParam
 	AudioZonePlayback*	mUserZonePlaybacks[kmaxzonesperevent];
 	float				mfMaxDistance;
 	const MultiCurve1D*		mAttenCurve;
-	const ork::TransformNode3D*	mXf3d;
+	const ork::TransformNode*	mXf3d;
 
 	static AudioIntrumentPlayParam DefaultParams;
 
@@ -208,10 +208,10 @@ private:
 
 	DeclareFloatXfPlug( TimeScale );
 
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual dataflow::inplugbase* GetInput(int idx) { return &mPlugInpTimeScale; } 
 
-	virtual int GetNumOutputs() const { return 7; }
+	//virtual int GetNumOutputs() const { return 7; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	DeclareFloatOutPlug( Time );
@@ -260,10 +260,10 @@ private:
 	DeclareFloatXfPlug( LfoBias );
 	DeclareFloatXfPlug( LfoAmplitude );
 	MultiCurve1D		mLfoWaveform;
-	virtual int GetNumInputs() const { return 3; }
+	//virtual int GetNumInputs() const { return 3; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 	///////////////////////////////////////
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 	DeclareFloatOutPlug( Output );
 	///////////////////////////////////////
@@ -286,10 +286,10 @@ private:
 	avg_filter<60>		mFilter;	// replace with variable sample rate lowpass when available			
 	///////////////////////////////////////
 	DeclareFloatXfPlug( ControlInput );
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 	///////////////////////////////////////
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 	DeclareFloatOutPlug( Output );
 	///////////////////////////////////////
@@ -324,10 +324,10 @@ private:
 
 	EAUDOP2								meOp;
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	virtual void Compute( float dt ); // virtual
@@ -345,12 +345,12 @@ class AudioExtConnectorModule : public AudioModule
 
 	/////////////////////////////////////////////////////
 	// data currently only flows in from externals
-	virtual int GetNumInputs() const { return 0; }
+	//virtual int GetNumInputs() const { return 0; }
 	virtual dataflow::inplugbase* GetInput(int idx) { return 0; }
 	// data currently only flows in from externals
 	/////////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const;
+	int GetNumOutputs() const override;
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	virtual void Compute( float dt );
@@ -384,11 +384,11 @@ private:
 	DeclareFloatXfPlug( Cutoff );		// 
 	DeclareFloatXfPlug( Resonance );
 	DeclareFloatXfPlug( Pan );
-	virtual int GetNumInputs() const { return 5; }
+	//virtual int GetNumInputs() const { return 5; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 	/////////////////////////////////////////////////////
 	// data currently only flows in to sinks
-	virtual int GetNumOutputs() const { return 0; }
+	//virtual int GetNumOutputs() const { return 0; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return 0; }
 	// data currently only flows in to sinks
 	/////////////////////////////////////////////////////
@@ -541,7 +541,7 @@ public:
 
 	void ReInit( void );
 
-	void SetEmitterMatrix( const ork::TransformNode3D* mtx ) { mEmitterMatrix=mtx; }
+	void SetEmitterMatrix( const ork::TransformNode* mtx ) { mEmitterMatrix=mtx; }
 
 	AudioGraph*							GetGraph() const { return mpAudioGraph; }
 	void								SetGraph( AudioGraph* pgraph ) { mpAudioGraph=pgraph; }
@@ -555,7 +555,7 @@ public:
 	float GetDistanceAtten() const { return mfDistanceAtten; }
 	float GetMaxDist() const { return mfMaxDistance; }
 	const MultiCurve1D* GetAttenCurve() const { return mAttenCurve; }
-	const ork::TransformNode3D* GetEmitterMatrix() const { return mEmitterMatrix; }
+	const ork::TransformNode* GetEmitterMatrix() const { return mEmitterMatrix; }
 
 	const AudioProgram* GetProgram() const { return mpProgram; }
 
@@ -583,7 +583,7 @@ protected:
 	int							mibasepan;
 	//CVector3					mEmitterPos;
 	float						mfMaxDistance;
-	const ork::TransformNode3D*	mEmitterMatrix;
+	const ork::TransformNode*	mEmitterMatrix;
 	int							miSerialNumber;
 	bool						mbLoopFlag;
 	anyp						mUserData0;

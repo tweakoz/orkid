@@ -275,9 +275,14 @@ GedItemNode* ObjModel::Recurse( ork::Object* root_object, const char* pname, boo
 	//editor.object.ops
 	///////////////////////////////////////////////////
 	any16 obj_ops_anno = objclass->Description().GetClassAnnotation( "editor.object.ops" );
-	ConstString obj_ops = obj_ops_anno.IsSet() ? obj_ops_anno.Get<ConstString>() : "";
+	
+	bool is_const_string = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ConstString>();
+	bool is_op_map = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
+
+
+	//ConstString obj_ops = obj_ops_anno.IsSet() ? obj_ops_anno.Get<ConstString>() : "";
 	const char* usename = (pname!=0) ? pname : cur_obj->GetClass()->Name().c_str();
-	GedGroupNode* ObjContainerW = binline ? 0 : new GedGroupNode( *this, usename, 0, cur_obj );
+	GedGroupNode* ObjContainerW = binline ? 0 : new GedGroupNode( *this, usename, 0, cur_obj, true );
 	if( cur_obj == root_object )
 	{	rval = ObjContainerW;
 	}
@@ -285,7 +290,7 @@ GedItemNode* ObjModel::Recurse( ork::Object* root_object, const char* pname, boo
 	{	GetGedWidget()->AddChild( ObjContainerW );
 		GetGedWidget()->PushItemNode( ObjContainerW );
 	}
-	if( obj_ops.length() )
+	if( is_const_string || is_op_map )
 	{	OpsNode* popnode = new OpsNode( *this, "ops", 0, cur_obj );
 		GetGedWidget()->AddChild( popnode );			
 	}
@@ -601,9 +606,12 @@ GedItemNode* ObjModel::CreateNode( const std::string& Name, const reflect::IObje
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-void ObjModel::Attach( ork::Object* root_object, bool bclearstack, GedItemNode* rootw )
+void ObjModel::Attach( ork::Object* root_object, bool bclearstack, GedItemNode* top_root_item )
 {	this->mRootObject = root_object;
 	bool bnewobj = (mCurrentObject!=mRootObject);
+
+	auto ged_widget = GetGedWidget();
+
 	if( bclearstack )
 	{	while( false == mBrowseStack.empty() )
 		{	mBrowseStack.pop();
@@ -615,29 +623,39 @@ void ObjModel::Attach( ork::Object* root_object, bool bclearstack, GedItemNode* 
 		{	PushBrowseStack( mCurrentObject );
 		}
 	}
-	if( rootw )
-	{	GetGedWidget()->PushItemNode( rootw );
-		Recurse( root_object );
-		GetGedWidget()->PopItemNode(rootw);
-	}
-	else
-	{	if( GetGedWidget() )
-		{	GetGedWidget()->GetRootItem()->DestroyChildren();
-		}
-		if( root_object )
-		{	GetGedWidget()->PushItemNode( GetGedWidget()->GetRootItem() );
+
+	if( ged_widget )
+	{
+		if( top_root_item ) // partial tree (starting at top_root_item) ?
+		{	
+			ged_widget->PushItemNode( top_root_item );
+			
 			Recurse( root_object );
-			GetGedWidget()->PopItemNode( GetGedWidget()->GetRootItem() );
+			
+			ged_widget->PopItemNode(top_root_item);
+
 		}
-		Detach();
-	}
-	if( GetGedWidget() )
-	{	if( GetGedWidget()->GetViewport() )
-		{	if( bnewobj )
-			{	GetGedWidget()->GetViewport()->ResetScroll();
+		else // full tree
+		{	
+			ged_widget->GetRootItem()->DestroyChildren();
+
+			if( root_object )
+			{	
+				ged_widget->PushItemNode( ged_widget->GetRootItem() );
+				
+				Recurse( root_object );
+				
+				ged_widget->PopItemNode( ged_widget->GetRootItem() );
+
 			}
+			Detach();
 		}
-		GetGedWidget()->DoResize();
+		if( ged_widget->GetViewport() )
+		{	
+			if( bnewobj )
+				ged_widget->GetViewport()->ResetScroll();
+		}
+		ged_widget->DoResize();
 	}
 	// dont spam refresh, please
 	if( mbEnablePaint ) SigRepaint();

@@ -326,7 +326,7 @@ void CManipSingleTrans::HandleDrag(const ork::CVector2& pos)
 
 		if(pcam->mCameraData.GetFrustum().Contains(isect_wld))
 		{
-			mManager.mCurTransform.Translate(TransformNode3D::EMODE_ABSOLUTE, isect_wld);
+			mManager.mCurTransform.Translate(TransformNode::EMODE_ABSOLUTE, isect_wld);
 			mManager.ApplyTransform(mManager.mCurTransform);
 		}
 	}

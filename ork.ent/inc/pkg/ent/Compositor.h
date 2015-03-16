@@ -254,6 +254,33 @@ private:
 	lev2::BuiltinFrameTechniques*	mFTEK;
 };
 ///////////////////////////////////////////////////////////////////////////////
+class InsertCompositingNode : public CompositingNode
+{
+	RttiDeclareConcrete(InsertCompositingNode, CompositingNode);
+public:
+	InsertCompositingNode();
+	~InsertCompositingNode();
+private:
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+
+	void GetNode(ork::rtti::ICastable*& val) const;
+	void SetNode( ork::rtti::ICastable* const & val);
+	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
+	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
+
+	lev2::RtGroup* GetOutput() const override;
+
+	CompositingMaterial				mCompositingMaterial;
+	CompositingNode*				mNode;
+	lev2::RtGroup*					mOutput;
+	lev2::BuiltinFrameTechniques*	mFTEK;
+	ork::lev2::TextureAsset*		mReturnTexture;
+	ork::lev2::TextureAsset* 		mSendTexture;
+	ork::PoolString 				mDynTexPath;
+
+};
+///////////////////////////////////////////////////////////////////////////////
 enum EOp2CompositeMode
 {
 	Op2AsumB = 0,

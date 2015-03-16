@@ -322,6 +322,12 @@ inline void AnnotateClassForEditor( const char* Key, const any16& Val )
 #endif
 }
 
+struct OpMap
+{
+	typedef std::function<void(Object*)>	lambda_t;
+	std::map<std::string,lambda_t> 			mLambdaMap;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // other prop registration helpers
 ///////////////////////////////////////////////////////////////////////////////

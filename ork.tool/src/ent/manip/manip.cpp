@@ -331,8 +331,8 @@ void CManipManager::RebaseMatrices( void )
 {
 	if( mpCurrentInterface && mpCurrentObject )
 	{
-		TransformNode3D Mat = mpCurrentInterface->GetTransform(mpCurrentObject);
-		TransformNode3D MatT = mpCurrentInterface->GetTransform(mpCurrentObject);
+		TransformNode Mat = mpCurrentInterface->GetTransform(mpCurrentObject);
+		TransformNode MatT = mpCurrentInterface->GetTransform(mpCurrentObject);
 		mCurTransform	= Mat;
 		mOldTransform	= Mat;
 		CalcObjectScale();
@@ -567,13 +567,13 @@ void CManipManager::Queue(ork::lev2::Renderer* prend)
 		CallbackRenderable& rable = prend->QueueCallback();
 		rable.SetUserData0( ap );
 		rable.SetSortKey(0x7fffffff);
-		rable.SetCallback( ManipRenderCallback );
+		rable.SetRenderCallback( ManipRenderCallback );
 	}
 	
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::ApplyTransform( const TransformNode3D &SetMat )
+void CManipManager::ApplyTransform( const TransformNode &SetMat )
 {
 	mCurTransform = SetMat;
 

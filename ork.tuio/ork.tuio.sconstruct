@@ -1,0 +1,85 @@
+import os, glob, string
+import ork.build.utils as obu
+import ork.build.slnprj as sln
+import ork.build.common as cmn
+
+# set scons options ######################
+
+SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src', duplicate=0  )
+SetOption('num_jobs', obu.num_cores) 
+
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+
+##########################################
+
+class tuio:
+  def __init__(self):  	
+
+	BasicEnv = Environment( ENV=os.environ )
+	ARGS = cmn.BuildArgs
+	suffix = sln.BuildSuffix(ARGS)
+
+	##########################################
+
+	SRC_FOLDERS  = " . oscpack oscpack/ip oscpack/ip/posix oscpack/osc"
+
+	##########################################
+
+	#XFL = "core lev2 ent fcollada tool"
+	#ORKLIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
+
+	##########################################
+
+	prj = sln.Project(ARGS,BasicEnv,"ork.tuio")
+	prj.SetSrcBase( "src" )
+	prj.AddIncludePaths( "../ork.core/inc/" )
+	prj.AddIncludePaths( "../ork.lev2/inc/" )
+	prj.AddIncludePaths( "../ork.ent/inc/" )
+	prj.AddIncludePaths( "../ork.tool/inc/" )
+	prj.AddIncludePaths( "inc" )
+	prj.AddIncludePaths( "src" )
+	prj.AddIncludePaths( "src/oscpack" )
+	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
+	prj.AddDefines( "LINUX" )
+	#########################
+	## OSX libs
+	#########################
+	if prj.IsOsx:
+		print "osx"
+		#prj.AddFrameworks("OpenGL QtCore QtGui" )
+		#prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
+		#prj.AddFrameworks("Carbon Foundation ApplicationServices" )
+		#prj.AddFrameworks("AppKit QuartzComposer")
+	#########################
+	## IX libs
+	#########################
+	elif prj.IsIx:
+		LIBS = "GL QtCore QtGui xcb" # OpenImageIO OpenImageIO_Util"
+		#LIBS += " rihelper 3delight "
+		#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
+		prj.AddLibs( LIBS )
+	#########################
+	## common libs
+	#########################
+	#prj.AddLibs( ORKLIBS )
+	#prj.AddLibs( "ork.unittestpp.%s"%suffix )
+	#########################
+	prj.Configure()
+	self.tuio_lib = prj.SharedLibrary( )
+
+	##########################################
+
+##########################################
+
+a = tuio()
+ret = list()
+if False==is_prep:
+	ret += a.tuio_lib
+Return('ret')
+
+##########################################
+

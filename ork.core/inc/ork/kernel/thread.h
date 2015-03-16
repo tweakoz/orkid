@@ -6,81 +6,45 @@
 #pragma once
 
 #include <ork/kernel/any.h>
+#include <ork/kernel/atomic.h>
+#include <ork/orktypes.h>
+#include <string>
 
-#if 1 // defined(ORK_VS2012) // builtin mutex
 #define USE_STD_THREAD
 #include <thread>
-#elif defined(IX)
-#define USE_PTHREAD
-#include <pthread.h>
-#else
-#include <pthread/pthread.h>
-#endif
 
 namespace ork
 {
-	class Thread
-	{
-		static void* RunThread(void*data)
-		{
-			Thread* pthread = (Thread*) data;
-			pthread->run();
-			return 0;
-		}
-		
-	public:
-		
-		void RunSynchronous()
-		{
-			start();
-			join();
-		}
-		inline Thread()
-			: mUserData()
-			, mThreadH(0)
-		{
-			
-		}
+	void SetCurrentThreadName(const char* threadName);
 
-		inline void start()
-		{
-#if defined(USE_STD_THREAD)
-			mThreadH = new std::thread(&RunThread,(void*)this);
-#elif defined(USE_PTHREAD)
-			if (pthread_create(&mThreadH, NULL, & RunThread, (void*) this ) != 0)
-			{
-				OrkAssert(false);
-			}
-#endif	
-		}
+	struct Thread
+	{		
+		Thread(const std::string& thread_name = "");
+		virtual ~Thread() {}
 
-		inline bool join()
-		{
-#if defined(USE_STD_THREAD)
-			mThreadH->join();
-			return true;
-#elif defined(USE_PTHREAD)
-			void* pret = 0;
-			int iret = pthread_join(mThreadH, & pret);
-			return ( pret == ((void*) 0) );			
-#endif
-		}
-		virtual void run() = 0;
+		virtual void run() {}
+
+		void RunSynchronous();
+		void start();
+		void start( const ork::void_lambda_t& l );
+		bool join();
 
 		anyp& UserData() { return mUserData; }
-		
-		virtual ~Thread() {}
-		
+				
 	protected:
 		
-#if defined(USE_STD_THREAD)
-		std::thread* mThreadH;
-#elif defined(USE_PTHREAD)
-		pthread_t	mThreadH;
-#endif
-		anyp		mUserData;
-		
+		std::thread*       mThreadH;
+		std::string		   mThreadName;
+		anyp		       mUserData;
+		ork::atomic<int>   mState;
+		ork::void_lambda_t mLambda;
+		bool 			   mRunning;
+		static void* VirtualThreadImpl(void*data);
+   		static void* LambdaThreadImpl(void* pdat);
 		
 	};
 	
-	}
+
+
+
+} // namespace ork

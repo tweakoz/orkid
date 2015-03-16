@@ -104,7 +104,11 @@ void Octaves::compute( ProcTex& ptex )
 		pTARG->TXI()->ApplySamplingMode(inptex);
 
 		mOctMaterial.SetTexture( inptex );
-		mOctMaterial.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+
+		float sina = 0.0f;
+		float cosa = 1.0f;
+
+		mOctMaterial.SetUser0( CVector4(sina,cosa,0.0f,float(buffer.miW)) );
 		////////////////////////////////////
 		float ffrq = mPlugInpBaseFreq.GetValue();
 		float famp = mPlugInpBaseAmp.GetValue();
@@ -114,10 +118,12 @@ void Octaves::compute( ProcTex& ptex )
 		pTARG->BindMaterial( & mOctMaterial );
 		for( int i=0; i<miNumOctaves; i++ )
 		{
-			CMatrix4 mtxS;
-			CMatrix4 mtxT;
+			CMatrix4 mtxR, mtxS, mtxT;
+
 			mtxT.SetTranslation(offx,offy,0.0f);
 			mtxS.Scale( ffrq, ffrq, famp );
+			mtxR.SetRotateZ( 0.0f );
+			
 			mOctMaterial.SetAuxMatrix( mtxS*mtxT );
 			{
 				//printf( "DrawUnitTexQuad oct<%d>\n", i );
@@ -406,7 +412,7 @@ void Cells::compute( ProcTex& ptex )
 			stdmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 			stdmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 			stdmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-			stdmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+			stdmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
 			mOrthoBoxXYWH = CVector4( 0.0f, 0.0f, float(idimU), float(idimV) );
 		}

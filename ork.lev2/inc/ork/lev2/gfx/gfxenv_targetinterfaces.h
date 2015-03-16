@@ -55,10 +55,10 @@ class IManipInterface : public ork::Object
 
 	IManipInterface() {}
 
-	virtual const TransformNode3D &GetTransform(rtti::ICastable *pobj) = 0;
-	virtual void SetTransform(rtti::ICastable *pobj, const TransformNode3D &node) = 0;
-	virtual void Attach(rtti::ICastable *pobj) {}; /// optional - only needed if an object needs to know when it is going to be manipulated
-	virtual void Detach(rtti::ICastable *pobj) {}; /// optional - only needed if an object needs to know when it will stop being manipulated
+	virtual const TransformNode &GetTransform(rtti::ICastable* pobj) = 0;
+	virtual void SetTransform(rtti::ICastable* pobj, const TransformNode& node) = 0;
+	virtual void Attach(rtti::ICastable* pobj) {}; /// optional - only needed if an object needs to know when it is going to be manipulated
+	virtual void Detach(rtti::ICastable* pobj) {}; /// optional - only needed if an object needs to know when it will stop being manipulated
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -122,6 +122,7 @@ struct GetPixelContext
 	int			miMrtMask;
 	CColor4		mPickColors[kmaxitems];
 	EPixelUsage	mUsage[kmaxitems];
+	anyp 		mUserData;
 
 };
 
@@ -515,8 +516,9 @@ public:
 	//////////////////////////////////////////////
 	// Capture Interface
 
-	virtual void	Capture( GfxBuffer& inpbuf, const file::Path& pth ) {}
-	virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer ) {}
+	virtual void	Capture( const RtGroup& inpbuf, int irt, const file::Path& pth ) {}
+	//virtual void	Capture( GfxBuffer& inpbuf, const file::Path& pth ) {}
+	//virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer ) {}
 	virtual bool	CaptureToTexture( const CaptureBuffer& capbuf, Texture& tex ) { return false; }
 	virtual void	GetPixel( const CVector4 &rAt, GetPixelContext& ctx ) = 0;
 
@@ -591,7 +593,6 @@ public:
 	virtual bool LoadTexture( const AssetPath& fname, Texture *ptex ) = 0;
 	virtual void SaveTexture( const ork::AssetPath& fname, Texture *ptex ) = 0;
 	virtual void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai ) {}
-
 	virtual void ApplySamplingMode( Texture *ptex ) {}
 
 };

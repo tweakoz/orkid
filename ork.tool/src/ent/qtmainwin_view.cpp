@@ -43,7 +43,6 @@ QDockWidget * EditorMainWindow::NewCamView( bool bfloat )
 
 	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( nullptr );
 	lev2::GfxEnv::GetRef().RegisterWinContext(pgfxwin);
-	lev2::GfxEnv::GetRef().SetLoaderTarget( pgfxwin->GetContext() );
 
 	gpvp = new SceneEditorVP( "SceneViewport", mEditorBase, *this );
 	pgfxwin->mRootWidget = gpvp;
@@ -87,12 +86,20 @@ void EditorMainWindow::SceneObjPropEdit()
 {
 	mGedModelObj.Attach( 0 );
 
-	auto pnl = new ui::SplitPanel( "ged.panel", 48,24,256,384 );
+	int mainwin_w = width();
+	int mainwin_h = height();
+	int df_w = 384;
+	int df_h = 768;
+	int df_x = 0;
+	int df_y = 192;
+	
+	auto pnl = new ui::SplitPanel( "ged.panel", df_x,df_y,df_w,df_h );
 	auto pvp1 = new Outliner2View(mEditorBase);
 	auto pvp2 = new tool::ged::GedVP( "props.vp", mGedModelObj );
 	pnl->SetChild1(pvp1);
 	pnl->SetChild2(pvp2);
 	gpvp->AddChild(pnl);
+	pnl->Snap();
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	// 
@@ -126,18 +133,6 @@ void EditorMainWindow::NewOutliner2View()
 {
 }
 
-void EditorMainWindow::NewDataflowView()
-{
-	static int viewnum = 0;
-	std::string viewname = CreateFormattedString( "DataflowGraph:%d", viewnum+1 );
-	viewnum++;
-
-	auto pnl = new ui::Panel( "dataflow2.panel", 0,512,256,512 );
-	auto pvp = new ork::tool::GraphVP(mDataflowEditor,mGedModelObj,viewname);
-	pnl->SetChild(pvp);
-	gpvp->AddChild(pnl);
-}
-
 ///////////////////////////////////////////////////////////////////////////
 
 void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
@@ -157,28 +152,46 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 
 	ui::Widget* pnlw = nullptr;
 
+	int mainwin_w = width();
+	int mainwin_h = height();
+
 	if( is_dflow )
 	{
 
 		auto pvpdf = new ork::tool::GraphVP(mDataflowEditor,*pnewobjmodel,"yo");
+		
+		int df_w = mainwin_w/4;
+		int df_h = mainwin_h-256;
+		int df_x = mainwin_w-df_w;
+		int df_y = mainwin_h/2-(df_h/2);
 
-		auto pnl = new ui::SplitPanel( "ged.panel", 512,0,256,256 );
+		auto pnl = new ui::SplitPanel( "ged.panel", df_x,df_y,df_w,df_h );
 		pnl->SetChild1(pvpdf);
 		pnl->SetChild2(pvp);
 		pnl->EnableCloseButton();
 
 		gpvp->AddChild(pnl);
+
+		pnl->Snap();
 		pnlw = pnl;
 
 		mDataflowEditor.Attach( dflow_graph );
+
+		pvpdf->ReCenter();
 
 
 	}
 	else
 	{
-		auto pnl = new ui::Panel( "ged.panel", 512,0,256,256 );
+		int df_w = mainwin_w/3;
+		int df_h = mainwin_h/2;
+		int df_x = mainwin_w/2-(df_w/2);
+		int df_y = mainwin_h-df_h;
+
+		auto pnl = new ui::Panel( "ged.panel", df_x,df_y,df_w,df_h );
 		pnl->SetChild(pvp);
 		gpvp->AddChild(pnl);
+		pnl->Snap();
 		pnlw = pnl;
 	}
 

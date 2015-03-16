@@ -22,9 +22,9 @@ class AssetManager
 {
 public:
 	static AssetType* Create(const PieceString &asset_name);
-	static file::Path FindOnDisk(const PieceString &asset_name);
 	static AssetType* Find(const PieceString &asset_name);
 	static AssetType* Load(const PieceString &asset_name);
+	static AssetType* LoadUnManaged(const PieceString &asset_name);
 	static bool AutoLoad(int depth = -1);
 #if defined(ORKCONFIG_ASSET_UNLOAD)
 	static bool AutoUnLoad(int depth = -1);

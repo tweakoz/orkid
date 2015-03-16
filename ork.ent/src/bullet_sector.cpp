@@ -18,6 +18,7 @@
 
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/scene.h>
+#include <pkg/ent/scene.hpp>
 #include <pkg/ent/entity.hpp>
 
 #include <ork/reflect/RegisterProperty.h>
@@ -1206,7 +1207,7 @@ TrackInst::TrackInst(const TrackData &data, ork::ent::Entity *pent)
 {
 	AllocationLabel("TrackInst::TrackInst");
 	//Get the transform from the entity
-	ork::CMatrix4 trans = GetEntity()->GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
+	ork::CMatrix4 trans = GetEntity()->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 
 	//Get the scale from the Data
 	ork::CMatrix4 scale = ork::CMatrix4::Identity;

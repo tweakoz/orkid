@@ -71,6 +71,8 @@ dataflow::scheduler* GetGlobalDataFlowScheduler()
 		/////////////////////////////
 		/////////////////////////////
 		gDataFlowScheduler = new dataflow::scheduler();
+
+		#if 0 //DRAWTHREADS
 		dataflow::processor* proc0 = new dataflow::processor("proc_cpu0");
 		//dataflow::processor* proc1 = new dataflow::processor("proc_cpu1");
 		proc0->SetAffinity(1<<0);
@@ -100,6 +102,7 @@ dataflow::scheduler* GetGlobalDataFlowScheduler()
 			pprocthreadGPU->UserData().Set<dataflow::processor*>(proc_gpu);
 			pprocthreadGPU->start();
 		}
+		#endif
 		/////////////////////////////
 		/////////////////////////////
 	}

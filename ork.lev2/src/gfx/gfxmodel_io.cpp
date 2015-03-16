@@ -19,6 +19,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/application/application.h>
+#include <ork/kernel/string/string.h>
 
 #if defined(WII)
 #include <ork/mem/wii_mem.h>
@@ -184,7 +185,11 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 				HeaderStream->GetItem( ijointmatrix  );
 				HeaderStream->GetItem( iinvrestmatrix  );
 				const char* pjntname = chunkreader.GetString(ijointname);
-				mdl->mSkeleton.AddJoint( iskelindex , iparentindex, AddPooledString(pjntname) );
+
+				fxstring<256> jnamp(pjntname);
+				//jnamp.replace_in_place("f_idle_","");
+				//printf( "FIXUPJOINTNAME<%s:%s>\n", pjntname,jnamp.c_str());
+				mdl->mSkeleton.AddJoint( iskelindex , iparentindex, AddPooledString(jnamp.c_str()) );
 				ptstring.set(chunkreader.GetString(ijointmatrix));
 				mdl->mSkeleton.RefJointMatrix( iskelindex ) = CPropType<CMatrix4>::FromString(ptstring);
 				ptstring.set(chunkreader.GetString(iinvrestmatrix));
@@ -236,6 +241,8 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 
 			static const int kdefaulttranssortpass = 100;
 
+			printf( "MODEL USEMATCLASS<%s>\n", pmatclassname );
+
 			/////////////////////////////////////////////////////////////
 			// wii (basic) material
 			/////////////////////////////////////////////////////////////
@@ -247,6 +254,9 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 				HeaderStream->GetItem( ibastek );
 
 				const char* bastek = chunkreader.GetString(ibastek);
+
+				printf( "MODEL USETEK<%s>\n", bastek );
+				//assert(false);
 				GfxMaterialWiiBasic *pbasmat = new GfxMaterialWiiBasic( bastek );
 				pbasmat->Init( pTARG );
 				pmat = pbasmat;
@@ -617,13 +627,16 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 						HeaderStream->GetItem( ibindingname );
 
 						const char* jointname = chunkreader.GetString(ibindingname);
+						fxstring<256> jnamp(jointname);
+						//jnamp.replace_in_place("f_idle_","");
+						//printf( "FIXUPJOINTNAME<%s:%s>\n", jointname,jnamp.c_str());
 
-						PoolString JointNameIndex = FindPooledString( jointname );
+						PoolString JointNameIndex = FindPooledString( jnamp.c_str() );
 						orklut<PoolString,int>::const_iterator itfind = mdl->mSkeleton.mmJointNameMap.find( JointNameIndex );
 					
 						OrkAssert( itfind != mdl->mSkeleton.mmJointNameMap.end() );
 						int iskelindex = (*itfind).second;
-						Clus.mJoints[ ib ] = AddPooledString(jointname);
+						Clus.mJoints[ ib ] = AddPooledString(jnamp.c_str());
 						Clus.mJointSkelIndices[ib] = iskelindex;
 					}
 

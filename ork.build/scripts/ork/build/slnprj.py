@@ -35,7 +35,8 @@ __all__ =	[
 	"SetCompilerOptions", "SourceEnumerator", "Project"
 	]
 	
-optset = set()
+optset = set(["core","lev2", "bullet273", "ent", "tool", "tuio", "tout"])
+#optset = set()
 
 stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
 
@@ -240,8 +241,8 @@ class Project:
 		############################
 
 		if name in optset:
-			self.XCCFLG += '-O3 '
-			self.XCXXFLG += '-O3 '
+			self.XCCFLG += '-Ofast '
+			self.XCXXFLG += '-Ofast '
 		else:
 			self.XCCFLG += '-O0 '
 			self.XCXXFLG += '-O0 '
@@ -288,9 +289,9 @@ class Project:
 	def AddProjectDep(self,project,platform="any"):
 		if self.MatchPlatform(platform):
 			self.LibraryPaths += project.LibraryPaths
-			self.Libraries += project.Libraries
 			if project.IsLibrary:
 				self.Libraries.append(project.TargetName)
+			self.Libraries += project.Libraries
 
 	def AddDefines( self, defs, platform="any" ):
 		if self.MatchPlatform(platform):
@@ -336,7 +337,7 @@ class Project:
 		incpaths += list(Set(self.PostIncludePaths))
 		self.IncludePaths = incpaths
 
-		self.Libraries = list(Set(self.Libraries))
+		self.Libraries = list(self.Libraries)
 		self.Frameworks = list(Set(self.Frameworks))
  
 		self.SetCompilerOptions( self.XDEFS, self.XCCFLG, self.XCXXFLG, self.IncludePaths, self.LibraryPaths, self.XLINK, self.PLATFORM, self.BUILD )

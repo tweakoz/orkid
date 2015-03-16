@@ -14,6 +14,8 @@
 
 #include <ork/lev2/gfx/dbgfontman.h>
 
+#define USE_OIIO
+
 #if defined(USE_OIIO)
 
 #include <OpenImageIO/imageio.h>
@@ -138,12 +140,32 @@ void GlFrameBufferInterface::DoEndFrame( void )
 	// release all resources for this frame
 	///////////////////////////////////////////
 
-	glBindTexture( GL_TEXTURE_2D, 0 );
 	//glFinish();
 	
 	////////////////////////////////
-	if( mTargetGL.FBI()->GetRtGroup() )
+	auto rtg = mTargetGL.FBI()->GetRtGroup();
+	
+	if( rtg )
 	{
+		GlFboObject *FboObj = (GlFboObject *) rtg->GetInternalHandle();
+		int inumtargets = rtg->GetNumTargets();
+
+		for( int it=0; it<inumtargets; it++ )
+		{
+			auto b = rtg->GetMrt(it);
+
+			if( b && b->mComputeMips )
+			{
+				auto tex_obj = FboObj->mTEX[it];
+
+				printf( "GENMIPS texobj<%p>\n", (void*) tex_obj );
+
+				//glBindTexture( GL_TEXTURE_2D, tex_obj );
+				//glGenerateMipmap( GL_TEXTURE_2D );
+			}
+
+		}
+
 		//printf( "ENDFRAME<RtGroup>\n" );
 	}
 	else if( IsOffscreenTarget() )
@@ -164,6 +186,7 @@ void GlFrameBufferInterface::DoEndFrame( void )
 	PopScissor();
 	GL_ERRORCHECK();
 	////////////////////////////////
+	glBindTexture( GL_TEXTURE_2D, 0 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,6 +257,30 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 	
 	if( 0 == Base )
 	{
+		if( mCurrentRtGroup )
+		{
+			GlFboObject *FboObj = (GlFboObject *) mCurrentRtGroup->GetInternalHandle();
+			int inumtargets = mCurrentRtGroup->GetNumTargets();
+
+			for( int it=0; it<inumtargets; it++ )
+			{
+				auto b = mCurrentRtGroup->GetMrt(it);
+
+				if( FboObj && b && b->mComputeMips )
+				{
+					auto tex_obj = FboObj->mTEX[it];
+
+					//printf( "GENMIPS texobj<%p>\n", (void*) tex_obj );
+
+					//glBindTexture( GL_TEXTURE_2D, tex_obj );
+					//glGenerateMipmap( GL_TEXTURE_2D );
+				}
+
+			}
+
+		}
+
+
 		//printf( "SetRtg::disable rt\n" );
 
 		////////////////////////////////////////////////
@@ -547,20 +594,39 @@ void GlFrameBufferInterface::ForceFlush( void )
 	GL_ERRORCHECK();
 }
 
-void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, const file::Path& pth )
+void GlFrameBufferInterface::Capture( const RtGroup& rtg, int irt, const file::Path& pth )
 {
-	int iw = GetRtGroup() ? inpbuf.GetBufferW() : inpbuf.GetContextW();
-	int ih = GetRtGroup() ? inpbuf.GetBufferH() : inpbuf.GetContextH();
+	auto FboObj = (GlFboObject *) rtg.GetInternalHandle();
+
+	if( 	(nullptr == FboObj)
+		 || (irt>=rtg.GetNumTargets()) )
+		return;
+
+	auto tex_id = FboObj->mTEX[irt];
+
+	int iw = rtg.GetW();
+	int ih = rtg.GetH();
+	RtBuffer* rtb = rtg.GetMrt(irt);
+
 	printf( "pth<%s> BUFW<%d> BUF<%d>\n", pth.c_str(), iw, ih );
 
 	uint8_t* pu8 = (uint8_t*) malloc(iw*ih*4);
 
 	GL_ERRORCHECK();
-	glFlush();
+	//glFlush();
 	GL_ERRORCHECK();
-	glBindFramebuffer(GL_FRAMEBUFFER, 0 );
+	glBindTexture(GL_TEXTURE_2D, tex_id);
 	GL_ERRORCHECK();
-	glReadPixels( 0, 0, iw, ih, GL_RGBA, GL_UNSIGNED_BYTE, (void*) pu8 ); 
+	//glReadPixels( 0, 0, iw, ih, GL_RGBA, GL_UNSIGNED_BYTE, (void*) pu8 ); 
+#if defined(DARWIN)		
+	glGetTexImage(	GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*) pu8 );
+#else
+	glGetTexImage(	GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, (void*) pu8 );
+#endif
+
+	GL_ERRORCHECK();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0 );
 	GL_ERRORCHECK();
 
 	for( int ipix=0; ipix<(iw*ih); ipix++ )
@@ -571,15 +637,18 @@ void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, const file::Path& pth )
 		uint8_t c2 = pu8[ibyt+2];
 		uint8_t c3 = pu8[ibyt+3];
 		// c0 c1 c2
+
+#if defined(DARWIN)		
 		pu8[ibyt+0] = c0; // A
 		pu8[ibyt+1] = c1;
 		pu8[ibyt+2] = c2;
 		pu8[ibyt+3] = c3;
-		//pu8[ibyt+0] = c3; // A
-		//pu8[ibyt+1] = c2;
-		//pu8[ibyt+2] = c1;
-		//pu8[ibyt+3] = c0;
-
+#else
+		pu8[ibyt+0] = c2; 
+		pu8[ibyt+1] = c1;
+		pu8[ibyt+2] = c0;
+		pu8[ibyt+3] = c3; // A
+#endif
 	}
 
 #if defined(USE_OIIO)
@@ -596,10 +665,10 @@ void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, const file::Path& pth )
 #endif
 
 }
-void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer )
+/*void GlFrameBufferInterface::Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer )
 {
 
-}
+}*/
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::GetPixel( const CVector4 &rAt, GetPixelContext& ctx )

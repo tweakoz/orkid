@@ -88,7 +88,6 @@ public://
 	QDockWidget *  NewCamView( bool bfloat );
 
 	void NewOutliner2View();
-	void NewDataflowView();
 	
 	//QDockWidget * NewToolView( bool bfloat );
 	//QDockWidget * NewDataflowView( bool bfloat );

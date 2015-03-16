@@ -13,5 +13,3 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class ork::util::RingLink<ork::asset::AssetLoader>;
-//template class ork::util::RingLink<ork::asset::AssetLoader>::iterator;

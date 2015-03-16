@@ -97,6 +97,7 @@ int GedItemNode::CalcHeight(void)
 		}
 	}
 	micalch = ih;
+	//printf( "GedItemNode<%p> CalcHeight() <%d>\n", this, ih );
 	return ih;
 }
 //////////////////////////////////////////////////////////////////////////////
@@ -106,6 +107,8 @@ void GedItemNode::Layout(int ix, int iy, int iw, int ih)
 	miY = iy;
 	miW = iw;
 	miH = ih;
+
+	//printf( "GedItemNode<%p> ix<%d> iy<%d> iw<%d> ih<%d>\n", this, ix, iy, iw, ih );
 
 	bool bsidebyside = CanSideBySide();
 

@@ -17,12 +17,13 @@
 #include <ork/math/TransformNode.h>
 #include <ork/object/Object.h>
 #include <ork/rtti/Class.h>
-#include<ork/math/cvector4.h>
-#include<ork/math/plane.h>
+#include <ork/math/cvector4.h>
+#include <ork/math/plane.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/lev2renderer.h>
+#include <functional>
 
 namespace ork {
 	
@@ -99,9 +100,6 @@ public:
 	void SetObject( const ork::Object* o ) { mpObject = o; }
 	const ork::Object* GetObject() const { return mpObject; }
 	
-	//const TransformNode3D* GetTransformNode( void ) const { return mpTransform; }
-	//void SetTransformNode( const TransformNode3D* pnode ) { mpTransform=pnode; }
-
 	/// Renderables implement this function to set the sort key used when all Renderables are sorted together.
 	/// The default is 0 for all Renderables. If no Renderable overrides this, then the RenderableQueue is not
 	/// sorted and all Renderables are drawn in the order they are queued.
@@ -115,15 +113,18 @@ public:
 	void SetMatrix( const CMatrix4& mtx ) { mMatrix=mtx; }
 	const CMatrix4& GetMatrix() const { return mMatrix; }
 
-	void SetDrawableData( const anyp& ap ) { mDrwData=ap; }
-	const anyp& GetDrawableData() const { return mDrwData; }
+	void SetDrawableDataA( const anyp& ap ) { mDrwDataA=ap; }
+	const anyp& GetDrawableDataA() const { return mDrwDataA; }
+	void SetDrawableDataB( const anyp& ap ) { mDrwDataB=ap; }
+	const anyp& GetDrawableDataB() const { return mDrwDataB; }
 
 protected:
 
 	CMatrix4						mMatrix;
 	const ork::Object*				mpObject;
 	CColor4							mModColor;
-	anyp							mDrwData;
+	anyp							mDrwDataA;
+	anyp							mDrwDataB;
 
 };
 
@@ -274,7 +275,7 @@ class CallbackRenderable : public IRenderableDag
 {
 public:
 
-	typedef void (*cbtype)( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const CallbackRenderable* pren );
+	typedef std::function< void( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const CallbackRenderable* pren ) > cbtype_t;
 
 	CallbackRenderable(Renderer *renderer = NULL);
 	
@@ -287,8 +288,8 @@ public:
 	void SetUserData1( anyp pdata ) { mUserData1=pdata; }
 	const anyp& GetUserData1() const { return mUserData1; }
 
-	void SetCallback( cbtype cb ) { mCallback=cb; }
-	cbtype GetCallback() const { return mCallback; }
+	void SetRenderCallback( cbtype_t cb ) { mRenderCallback=cb; }
+	cbtype_t GetRenderCallback() const { return mRenderCallback; }
 
 private:
 
@@ -297,7 +298,7 @@ private:
 	int								mMaterialPassIndex;
 	anyp							mUserData0;	
 	anyp							mUserData1;	
-	cbtype							mCallback;
+	cbtype_t						mRenderCallback;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

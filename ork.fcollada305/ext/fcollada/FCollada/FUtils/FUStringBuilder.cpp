@@ -102,7 +102,9 @@ FCOLLADA_EXPORT void TrickLinker2()
 		fstring fs = FC("2");
 		FUSStringBuilder b1, b2(s), b3(s.c_str()), b4('c', 3), b5(333);
 		FUStringBuilder d1, d2(fs), d3(fs.c_str()), d4('c', 4), d5(333);
+		FUStringBuilderT<char> ch1;
 
+		ch1.clear();
 		b1.clear(); d1.clear(); b1.length(); d1.length();
 		b1.append(s); d1.append(fs);
 		b1.append('c'); d1.append((fchar) 'c');
@@ -129,9 +131,11 @@ FCOLLADA_EXPORT void TrickLinker2()
 
 	{
 		// Similarly for fm::stringT.
+		fm::stringT<char> ch1;
 		fm::string a, b(a), c("a"), d("ab", 1), e(3, 'C');
 		fstring r, s(r), t(FC("S")), u(FC("SSS"), 1), v(3, 'S');
 
+		ch1.append("TEST");
 		size_t x = a.length(), y = r.length();
 		a = c.substr(x, y); r = u.substr(x, y);
 		a.append("TEST"); r.append(FC("TEST"));
@@ -156,3 +160,5 @@ FCOLLADA_EXPORT void TrickLinker2()
 	extern void TrickLinkerFUStringConversion();
 	TrickLinkerFUStringConversion();
 }
+
+template class FUStringBuilderT<char>;

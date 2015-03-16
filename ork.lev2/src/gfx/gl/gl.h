@@ -52,6 +52,7 @@
 #else
 #define GL_ERRORCHECK() {}
 #endif
+#define GL_NF_ERRORCHECK() { GLenum iErr = GetGlError(); if( iErr!=GL_NO_ERROR ) printf("GLERROR FILE<%s> LINE<%d>\n", __FILE__, __LINE__ ); }
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -64,7 +65,7 @@ struct GlFboObject
 {
 	static const int kmaxrt = RtGroup::kmaxmrts;
 	GLuint mFBOMaster;
-	GLuint mCBO[kmaxrt];
+	//GLuint mCBO[kmaxrt];
 	GLuint mDSBO;
 	//IDirect3DSurface9 *mFBOREAD[kmaxrt];
 	GLuint mTEX[kmaxrt];
@@ -208,8 +209,8 @@ public:
 	//////////////////////////////////////////////
 	// Capture Interface
 
-	virtual void	Capture( GfxBuffer& inpbuf, const file::Path& pth );
-	virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer );
+	virtual void	Capture( const RtGroup& inpbuf, int irt, const file::Path& pth );
+	//virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer );
 	virtual bool	CaptureToTexture( const CaptureBuffer& capbuf, Texture& tex ) { return false; }
 	virtual void	GetPixel( const CVector4 &rAt, GetPixelContext& ctx );
 
@@ -324,14 +325,13 @@ public:
 
 	void VRamUpload( Texture *pTex ) override;		// Load Texture Data onto card
 	void VRamDeport( Texture *pTex ) override;		// Load Texture Data onto card
-
-	virtual void TexManInit( void ) override;
-
+	void TexManInit( void ) override;
 	bool DestroyTexture( Texture *ptex ) override;
 	bool LoadTexture( const AssetPath& fname, Texture *ptex ) override;
 	void SaveTexture( const ork::AssetPath& fname, Texture *ptex )  override;
 	void ApplySamplingMode( Texture *ptex ) override;
 	void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai )  override; 
+
 
 	void LoadDDSTextureMainThreadPart(const GlTexLoadReq& req);
 	bool LoadDDSTexture( const AssetPath& fname, Texture *ptex );

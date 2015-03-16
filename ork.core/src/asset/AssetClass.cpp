@@ -13,7 +13,7 @@
 #include <ork/asset/AssetSet.h>
 #include <ork/asset/AssetSetLevel.h>
 #include <ork/asset/AssetSetEntry.h>
-#include <ork/asset/AssetNamer.h>
+#include <ork/asset/FileAssetNamer.h>
 #include <ork/asset/VirtualAsset.h>
 #include <ork/kernel/string/ArrayString.h>
 
@@ -35,61 +35,31 @@ void AssetClass::Describe()
 
 AssetClass::AssetClass(const rtti::RTTIData &data)
 	: object::ObjectClass(data)
-	, mPlatformImplementation(this)
-	, mGenericImplementation(this)
 	, mAssetNamer(NULL)
 {
-	//CMemoryManager::Notification::Register();
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void AssetClass::OnPush()
+std::set<file::Path> AssetClass::EnumerateExisting() const
 {
-	if(this == mPlatformImplementation)
-		GetAssetSet().PushLevel(this);
-}
+	std::set<file::Path> rval;
 
-///////////////////////////////////////////////////////////////////////////////
-
-void AssetClass::OnPop()
-{
-	if(this == mPlatformImplementation)
-		GetAssetSet().PopLevel();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void AssetClass::OnPrintInfo()
-{
-	if(this != mGenericImplementation)
-		return;
-
-	orkprintf("Asset ------------ %s ------------\n", Name().c_str());
-
-	int thelevel = 0;
-
-	for(AssetSetLevel *level = GetAssetSet().GetTopLevel();
-		level != NULL;
-		level = level->Parent())
+	for( auto& l : mLoaders )
 	{
-		orkprintf("Level %d\n", thelevel++);
-		const asset::AssetSetLevel::SetType &set = level->GetSet();
-
-		for(asset::AssetSetLevel::SetType::const_iterator it = set.begin(); it != set.end(); it++)
+		auto s = l->EnumerateExisting();
+		for( auto i : s )
 		{
-			orkprintf("+- %s\n", (*it)->GetAsset()->GetName().c_str());
+			printf( "enumexist loader<%p> asset<%s>\n", l, i.c_str() );
+			rval.insert(i);
 		}
 	}
-
-	orkprintf("\n");
+	return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetClass::AddLoader(AssetLoader &loader)
+void AssetClass::AddLoader(AssetLoader* loader)
 {
-	loader.LinkBefore(&mLoaders);
+	mLoaders.insert(loader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,35 +68,26 @@ class Renamer
 {
 	ArrayString<128> mRenamed;
 public:
-	Renamer(AssetNamer *renamer, PieceString &name);
+	Renamer(FileAssetNamer* renamer, PieceString &name);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AssetNamer *AssetClass::GetAssetNamer() const
+FileAssetNamer *AssetClass::GetAssetNamer() const
 {
-	if(mAssetNamer)
-		return mAssetNamer;
-
-	if(mGenericImplementation->mAssetNamer)
-		return mGenericImplementation->mAssetNamer;
-
-	return NULL;
+	return mAssetNamer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 AssetLoader *AssetClass::FindLoader(PieceString name)
 {
-	if(mPlatformImplementation != this)
-		return mPlatformImplementation->FindLoader(name);
-
 	Renamer fix_name(GetAssetNamer(), name);
 
-	for(util::RingLink<AssetLoader>::iterator it = mLoaders.begin(); it != mLoaders.end(); ++it)
+	for( auto it : mLoaders )
 	{
 		if(it->CheckAsset(name))
-			return &*it;
+			return it;
 	}
 
 	return NULL;
@@ -136,9 +97,6 @@ AssetLoader *AssetClass::FindLoader(PieceString name)
 
 Asset *AssetClass::CreateUnmanagedAsset(PieceString name)
 {
-	if(mPlatformImplementation != this)
-		return mPlatformImplementation->CreateUnmanagedAsset(name);
-
 	Renamer fix_name(GetAssetNamer(), name);
 
 	Asset *asset = NULL;
@@ -164,9 +122,6 @@ Asset *AssetClass::CreateUnmanagedAsset(PieceString name)
 
 Asset *AssetClass::FindAsset(PieceString name)
 {
-	if(mPlatformImplementation != this)
-		return mPlatformImplementation->FindAsset(name);
-
 	Renamer fix_name(GetAssetNamer(), name);
 
 	PoolString name_string = FindPooledString(name);
@@ -178,13 +133,10 @@ Asset *AssetClass::FindAsset(PieceString name)
 
 Asset *AssetClass::DeclareAsset(PieceString name)
 {
-	if(mPlatformImplementation != this)
-		return mPlatformImplementation->DeclareAsset(name);
-
 	// Editor support that allows nulling out a previously set asset name.
 	if(name.empty())
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	if(Asset *asset = FindAsset(name))
@@ -194,40 +146,34 @@ Asset *AssetClass::DeclareAsset(PieceString name)
 	}
 
 	Asset *new_asset = CreateUnmanagedAsset(name);
-
-	mAssetSet.Register(new_asset->GetName(), new_asset, FindLoader(name));
+	auto loader = FindLoader(name);
+	mAssetSet.Register(new_asset->GetName(), new_asset, loader );
 
 	return new_asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AssetClass::SetPlatformImplementation(AssetClass *platform_implementation)
+Asset *AssetClass::LoadUnManagedAsset(PieceString name)
 {
-	OrkAssertI(mPlatformImplementation == this,
-		"PlatformImplementation already set!");
+	// Editor support that allows nulling out a previously set asset name.
+	if(name.empty())
+	{
+		return nullptr;
+	}
 
-	OrkAssertI(platform_implementation->mGenericImplementation == platform_implementation,
-		"PlatformImplementation's GenericImplmentation already set!");
+	Asset *new_asset = CreateUnmanagedAsset(name);
 
-	mPlatformImplementation = platform_implementation;
-	mPlatformImplementation->mGenericImplementation = this;
-}
+	auto loader = FindLoader(name);
 
-///////////////////////////////////////////////////////////////////////////////
-
-AssetClass *AssetClass::GenericImplementation() const
-{
-	return mGenericImplementation;
+	loader->LoadAsset( new_asset );
+	return new_asset;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 AssetSet &AssetClass::GetAssetSet()
 {
-	if(mPlatformImplementation != this)
-		return mPlatformImplementation->GetAssetSet();
-
 	return mAssetSet;
 }
 
@@ -238,9 +184,9 @@ bool AssetClass::AutoLoad(int depth)
 	return GetAssetSet().Load(depth);
 }
 
-void AssetClass::SetAssetNamer(AssetNamer *namer)
+void AssetClass::SetAssetNamer(const std::string& namer)
 {
-	mAssetNamer = namer;
+	mAssetNamer = new FileAssetNamer(namer.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -253,7 +199,7 @@ void AssetClass::AddTypeAlias(ConstString alias)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Renamer::Renamer(AssetNamer *renamer, PieceString &name)
+Renamer::Renamer(FileAssetNamer* renamer, PieceString &name)
 {
 	if(renamer)
 	{

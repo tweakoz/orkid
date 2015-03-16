@@ -42,7 +42,8 @@ public:
 
 	MpMcRingBuf(const MpMcRingBuf&oth);
 
-	void push(const T& data);
+	void push(const T& data,int quanta_usec=250);
+	void pop(T& data,int quanta_usec=250);
 	bool try_push(const T& data);
 	bool try_pop(T& data);
 
@@ -140,13 +141,26 @@ MpMcRingBuf<T,max_items>::~MpMcRingBuf()
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename T,size_t max_items>
-void MpMcRingBuf<T,max_items>::push(const T& item)
+void MpMcRingBuf<T,max_items>::push(const T& item,int quanta)
 {
 	bool bpushed = try_push(item);
 	while(false==bpushed)
 	{
-		usleep(250);
+		usleep(quanta);
 		bpushed = try_push(item);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+template<typename T,size_t max_items>
+void MpMcRingBuf<T,max_items>::pop(T& item,int quanta)
+{
+	bool popped = try_pop(item);
+	while(false==popped)
+	{
+		usleep(quanta);
+		popped = try_pop(item);
 	}
 }
 

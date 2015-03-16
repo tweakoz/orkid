@@ -8,6 +8,7 @@
 #pragma once
 
 #include <ork/kernel/kernel.h>
+#include <ork/kernel/thread.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -18,14 +19,24 @@ float get_sync_time();
 
 struct Timer
 {
-    float mStartTime;
-    float mEndTime;
+	Timer();
+	~Timer();
 
     void Start();
     void End();
     float InternalSecsSinceStart() const;
     float SecsSinceStart() const;
     float SpanInSecs() const;
+	void OnInterval( float interval, const void_lambda_t& oper );
+
+private:
+
+    float mStartTime;
+    float mEndTime;
+  	float mLambdaInterval;
+    void_lambda_t mOnInterval;
+    ork::Thread* mThread;
+    bool mKill;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

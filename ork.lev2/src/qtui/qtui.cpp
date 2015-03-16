@@ -18,6 +18,16 @@
 
 namespace ork {
 
+file::Path SaveFileRequester( const std::string& title, const std::string& ext )
+{
+	auto& gfxenv = lev2::GfxEnv::GetRef();
+	gfxenv.GetGlobalLock().Lock();
+	QString FileName = QFileDialog::getSaveFileName( 0, "Export ProcTexImage", 0, "PNG (*.png)");
+	file::Path::NameType fname = FileName.toAscii().data();
+	gfxenv.GetGlobalLock().UnLock();
+	return fname;
+}
+
 #if defined(IX)
 std::string GccDemangle( const std::string& inname )
 {
@@ -59,6 +69,11 @@ std::string MethodIdNameStrip(const char* name) // mainly used for QT signals an
 	return newname.c_str();
 }
 	
+std::string TypeIdName(const std::type_info*ti)
+{
+	return (ti!=nullptr) ? TypeIdNameStrip( ti->name() ) : "nil";
+}
+
 namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////

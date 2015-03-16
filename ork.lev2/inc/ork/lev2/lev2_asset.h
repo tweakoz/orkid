@@ -30,13 +30,16 @@ class TextureAsset : public ork::asset::Asset
 	RttiDeclareConcrete(TextureAsset,ork::asset::Asset);
 
 	static const char *GetAssetTypeNameStatic( void ) { return "lev2tex"; }
-	Texture	mData;
+
+	ork::atomic<Texture*> mData;
+
 public: //
 
-	/*virtual*/ ~TextureAsset();
+	TextureAsset();
+	~TextureAsset() override;
 
-	Texture* GetTexture() { return & mData; }
-
+	Texture* GetTexture() const { return mData; }
+	void SetTexture( Texture* pt );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,7 +52,7 @@ class XgmModelAsset : public ork::asset::Asset
 
 public: //
 
-	/*virtual*/ ~XgmModelAsset();
+	~XgmModelAsset() override;
 
 	XgmModel* GetModel() { return & mData; }
 	const XgmModel* GetModel() const { return & mData; }

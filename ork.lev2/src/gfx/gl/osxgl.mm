@@ -158,6 +158,17 @@ void OpenGlGfxTargetInit()
 	///////////////////////////////////////////////////////////
 	GfxEnv::SetTargetClass(GfxTargetGL::GetClassStatic());
 	//const ork::SFileDevContext& datactx = ork::CFileEnv::UrlBaseToContext( "data" );//, DataDirContext );
+
+	//static dispatch_once_t ginit_once;
+	//auto once_blk = ^ void (void)
+	{
+		GfxTargetGL::GLinit();
+		auto target = new GfxTargetGL;
+		auto poutbuf = new GfxBuffer(0,0,0,1280,720);
+		GfxEnv::GetRef().SetLoaderTarget(target);
+		target->InitializeContext(poutbuf);
+	}
+//	dispatch_once(&ginit_once, once_blk );
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -173,12 +184,6 @@ GfxTargetGL::GfxTargetGL()
 	, mMtxI( *this )
 	, mTargetDrawableSizeDirty(true)
 {
-	static dispatch_once_t ginit_once;
-	auto once_blk = ^ void (void)
-	{
-		GfxTargetGL::GLinit();
-	};
-	dispatch_once(&ginit_once, once_blk );
 	
 	FxInit();
 

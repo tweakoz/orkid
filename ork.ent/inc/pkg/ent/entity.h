@@ -89,7 +89,7 @@ class DagNode : public ork::Object
 
 protected:
 
-	TransformNode3D							mTransformNode3D;
+	TransformNode							mTransformNode3D;
 	DagRenderableContextData				mRenderableContextData;
 
 	static const int knumtimedmtx = 3;
@@ -98,10 +98,11 @@ protected:
 
 public:
 
-	DagNode( const ork::rtti::ICastable* powner=0 );
 
-	const TransformNode3D&					GetTransformNode() const { return mTransformNode3D; }
-	TransformNode3D&						GetTransformNode() { return mTransformNode3D; }
+
+	DagNode( const ork::rtti::ICastable* powner=0 );
+	const TransformNode&					GetTransformNode() const { return mTransformNode3D; }
+	TransformNode&							GetTransformNode() { return mTransformNode3D; }
 	const DagRenderableContextData&			GetRenderableContextData() const { return mRenderableContextData; }
 	DagRenderableContextData&				GetRenderableContextData() { return mRenderableContextData; }
 	const ork::rtti::ICastable*				GetOwner() const { return mpOwner; }
@@ -114,6 +115,9 @@ public:
 	void									StepTimedMatrices(float ftime);
 	void AddChild( DagNode* pchild );
 	void RemoveChild( DagNode* pchild );
+
+	void CopyTransformMatrixFrom( const DagNode& other );
+	void SetTransformMatrix( const CMatrix4& mtx );
 };
 
 
@@ -223,6 +227,9 @@ public:
 
 	const DagNode& GetDagNode() const { return mDagNode; }
 	DagNode& GetDagNode() { return mDagNode; }
+
+	CMatrix4 GetEffectiveMatrix() const; // get Entity matrix if scene is running, EntData matrix if scene is stopped
+	void SetDynMatrix( const CMatrix4& mtx ); // set this (Entity) matrix
 
 	void AddDrawable( const PoolString& layername, Drawable* pdrw );// { mDrawable.push_back(pdrw); }
 

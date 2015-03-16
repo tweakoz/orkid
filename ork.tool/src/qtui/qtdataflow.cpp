@@ -21,9 +21,7 @@
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>
-///////////////////////////////////////////////////////////////////////////////
-
-INSTANTIATE_TRANSPARENT_RTTI( ork::tool::DataFlowEditor, "DataFlowEditor" );
+#include <ork/kernel/opq.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,7 +30,7 @@ namespace  ork {
 uint32_t PickIdToVertexColor( uint32_t pid );
 namespace lev2 {
 template<> 
-void CPickBuffer<ork::tool::GraphVP>::Draw( void )
+void CPickBuffer<ork::tool::GraphVP>::Draw( lev2::GetPixelContext& ctx )
 {
     mPickIds.clear();
 
@@ -67,15 +65,6 @@ void CPickBuffer<ork::tool::GraphVP>::Draw( void )
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace tool {
-
-void DataFlowEditor::Describe()
-{
-	reflect::RegisterFunctor("SlotClear", &DataFlowEditor::SlotClear);
-}
-void DataFlowEditor::SlotClear()
-{
-	while( mGraphStack.empty() == false ) mGraphStack.pop();
-}
 
 DataFlowEditor* gdfloweditor = 0;
 
@@ -122,6 +111,29 @@ GraphVP::GraphVP( DataFlowEditor& dfed, tool::ged::ObjModel& objmdl, const std::
 
 	mObjectModel.EnablePaint();
 
+	auto ptimer = new Timer;
+
+
+	auto lamb_outer = [=]()
+	{
+		auto lamb_inner = [=]()
+		{
+			this->SetDirty();
+		};
+		Op(lamb_inner).QueueASync(MainThreadOpQ());
+	};
+
+	ptimer->OnInterval(0.3f,lamb_outer);
+
+	//object::Connect( & mObjectModel.GetSigRepaint(), & mWidget.GetSlotRepaint() );
+	//object::Connect( & mObjectModel.GetSigModelInvalidated(), & mDflowEditor.GetSlotModelInvalidated() );
+	
+	/*object::ConnectToLambda( & mObjectModel.GetSigModelInvalidated(),
+		LambdaSlot,
+		[=](Object* pobj)
+		{
+			assert(false);
+		});*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -394,7 +406,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 
 					if( is_pick )
 					{
-						printf( "dpick yo uobj<%p>\n", (void*) uobj );
+						printf( "dpick yo uobj<%u>\n", uobj );
 					}
 
 					//int ivbbase = vbuf.GetNum();
@@ -578,6 +590,7 @@ void GraphVP::ReCenter()
 		mGrid.SetCenter(ctr);
 		mGrid.SetZoom(fz);
 	}
+	SetDirty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -614,7 +627,6 @@ ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 		{	if( filtev.miKeyCode == 'a' )
 			{	
 				ReCenter();
-				SetDirty();
 			}
 		}
 		case ui::UIEV_MOVE:
@@ -691,12 +703,23 @@ ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 		case ui::UIEV_MOUSEWHEEL:
 		{
 			QWheelEvent* qem = (QWheelEvent*) qip;
-			int iscrollamt = bisshift ? 256 : 32;
 			int idelta = qem->delta();
-			const float kstep = 1.0f/100.0f;
-			float fdelta = (idelta>0) ? kstep : (idelta<0) ? -kstep : 0.0f;
-			float fz = mGrid.GetZoom() + fdelta;
-			if( fz < 0.1f ) fz = 0.1f;
+
+#if defined(_DARWIN)
+			const float kstep = 97.0f/100.0f;
+#else
+			const float kstep = 95.0f/100.0f;
+#endif
+
+			float fdelta = (idelta>0) 
+						 ? 1.0f/kstep
+						 : (idelta<0)
+						    ? kstep 
+						    : 0.0f;
+
+			float fz = mGrid.GetZoom() * fdelta;
+			if( fz < 0.03f ) fz = 0.03f;
+			if( fz > 10.0f ) fz = 10.0f;
 			mGrid.SetZoom(fz);
 			SetDirty();
 		}
@@ -710,8 +733,16 @@ DataFlowEditor::DataFlowEditor()
 	: mGraphVP(0)
 	, mpSelModule(0)
 	, mpProbeModule(0)
+	, ConstructAutoSlot(ModelInvalidated)
 {
 }
+
+void DataFlowEditor::Describe()
+{
+	reflect::RegisterFunctor("SlotClear", &DataFlowEditor::SlotClear);
+	RegisterAutoSlot( DataFlowEditor, ModelInvalidated );
+}
+
 void DataFlowEditor::Attach( ork::dataflow::graph_data* pgrf )
 {
 	while( mGraphStack.empty() == false ) mGraphStack.pop();
@@ -728,6 +759,14 @@ void DataFlowEditor::Pop()
 		mGraphStack.pop();
 	}
 }
+void DataFlowEditor::SlotClear()
+{
+	while( mGraphStack.empty() == false ) mGraphStack.pop();
+}
+void DataFlowEditor::SlotModelInvalidated()
+{
+	while( mGraphStack.empty() == false ) mGraphStack.pop();
+}
 ork::dataflow::graph_data* DataFlowEditor::GetTopGraph()
 {
 	return mGraphStack.empty() ? 0 : mGraphStack.top();
@@ -737,5 +776,6 @@ ork::dataflow::graph_data* DataFlowEditor::GetTopGraph()
 
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::dflowgraphedit,"dflowgraphedit");
+INSTANTIATE_TRANSPARENT_RTTI( ork::tool::DataFlowEditor, "DataFlowEditor" );
 
 

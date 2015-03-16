@@ -219,7 +219,7 @@ void CFontMan::AddFont( GfxTarget *pTARG, const FontDesc& fdesc )
 
 void CFontMan::DrawText( GfxTarget *pTARG, int iX, int iY, const char *pFmt, ... )
 {
-	static char TextBuffer[256];
+	char TextBuffer[1024];
 	va_list argp;
     va_start( argp, pFmt );
 	vsnprintf( TextBuffer, sizeof(TextBuffer), pFmt, argp );
@@ -314,7 +314,7 @@ inline void CFont::QueChar( GfxTarget *pTARG, VtxWriter<SVtxV12C4T16>& vw, int i
 	///////////////////////////////////////////////
 	float fiu = float(iu);
 	float fiv = float(iv);
-#if defined(_DARWIN) // REALLY GL
+#if defined(IX) // REALLY GL
 	float fcellbaseU = kfcellW*fiu;
 	float fcellbaseV = kfcellH*fiv;
 	float fuW = kfcharW;

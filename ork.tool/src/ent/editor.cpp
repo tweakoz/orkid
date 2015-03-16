@@ -476,7 +476,7 @@ void SceneEditorBase::EditorGroup()
 				{
 					DagNode& Node = pentdata ? pentdata->GetDagNode() : pgroup->GetDagNode();
 
-					CVector3 Pos = Node.GetTransformNode().GetTransform()->GetPosition();
+					CVector3 Pos = Node.GetTransformNode().GetTransform().GetPosition();
 
 					fmaxx = (fmaxx>Pos.GetX()) ? fmaxx : Pos.GetX();
 					fmaxy = (fmaxy>Pos.GetY()) ? fmaxy : Pos.GetY();
@@ -492,7 +492,7 @@ void SceneEditorBase::EditorGroup()
 
 			CVector3 center( (fmaxx+fminx)*0.5f, (fmaxy+fminy)*0.5f, (fmaxz+fminz)*0.5f );
 
-			pgroup->GetDagNode().GetTransformNode().GetTransform()->SetPosition( center );
+			pgroup->GetDagNode().GetTransformNode().GetTransform().SetPosition( center );
 
 			PoolString ps = mpScene->NewObjectName();
 			pgroup->SetName(ps);
@@ -674,7 +674,7 @@ void SceneEditorBase::EditorPlaceEntity()
 
 			if( pentdata )
 			{
-				pentdata->GetDagNode().GetTransformNode().GetTransform()->SetMatrix(mSpawnMatrix);
+				pentdata->GetDagNode().GetTransformNode().GetTransform().SetMatrix(mSpawnMatrix);
 
 			}
 		}
@@ -693,7 +693,7 @@ void SceneEditorBase::EditorLocateEntity(const CMatrix4 &matrix)
 			ork::Object *pobj = *selection.begin();
 			if(ent::EntData *entdata = rtti::autocast(pobj))
 			{
-				entdata->GetDagNode().GetTransformNode().GetTransform()->SetMatrix(matrix);
+				entdata->GetDagNode().GetTransformNode().GetTransform().SetMatrix(matrix);
 				SigSceneTopoChanged();
 			}
 		}
@@ -712,7 +712,7 @@ bool SceneEditorBase::EditorGetEntityLocation(CMatrix4 &matrix)
 			ork::Object *pobj = *selection.begin();
 			if(ent::EntData *entdata = rtti::autocast(pobj))
 			{
-				matrix = entdata->GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
+				matrix = entdata->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 				return true;
 			}
 		}
@@ -761,7 +761,7 @@ ent::EntData *SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype)
 
 		pentdata = new ent::EntData;
 		//pentdata->GetDagNode().GetTransformNode().GetTransform()->SetPosition(mCursor);
-		pentdata->GetDagNode().GetTransformNode().GetTransform()->SetMatrix(mSpawnMatrix);
+		pentdata->GetDagNode().GetTransformNode().GetTransform().SetMatrix(mSpawnMatrix);
 		pentdata->SetArchetype(parchetype);
 	
 		if(parchetype && ConstString(parchetype->GetName()).find("/arch/") != ConstString::npos)
@@ -835,7 +835,7 @@ ent::EntData *SceneEditorBase::EditorReplicateEntity()
 				if(ent::EntData *entdata = rtti::autocast(pobj))
 				{
 					archetype = entdata->GetArchetype();
-					rotation = entdata->GetDagNode().GetTransformNode().GetTransform()->GetRotation();
+					rotation = entdata->GetDagNode().GetTransformNode().GetTransform().GetRotation();
 					name = entdata->GetName().c_str();
 				}
 		}
@@ -846,8 +846,8 @@ ent::EntData *SceneEditorBase::EditorReplicateEntity()
 		
 		ork::CVector3 cursor_pos = mSpawnMatrix.GetTranslation();
 
-		pentdata->GetDagNode().GetTransformNode().GetTransform()->SetPosition(cursor_pos);
-		pentdata->GetDagNode().GetTransformNode().GetTransform()->SetRotation(rotation);
+		pentdata->GetDagNode().GetTransformNode().GetTransform().SetPosition(cursor_pos);
+		pentdata->GetDagNode().GetTransformNode().GetTransform().SetRotation(rotation);
 		pentdata->SetArchetype(archetype);
 	
 		if(name.empty())
@@ -1004,6 +1004,8 @@ void DynamicSignalArchetypeDeleted( ork::Object* pobj, ent::Archetype* parch )
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorDeleteObject(ork::Object* pobj)
 {
+	printf( "EditorDeleteObject pobj<%p>\n", pobj );
+
 	DeleteObjectReq R;
 	R.mObject = pobj;
 	QueueOpASync(R);
@@ -1017,13 +1019,20 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj)
 	////////////////////////////////////
 	if( nullptr == mpScene ) return;
 
-	auto lamb = [&]()
+	auto lamb = [=]()
 	{
 		SlotPreNewObject();
-		ork::ent::DrawableBuffer::ClearAndSync();
 
 		/////////////////////////////////////////
 		SceneObject* psobj = rtti::downcast<SceneObject*>( pobj );
+		
+		printf( "EDITORIMPLDELETE pobj<%p> psobj<%p>\n", pobj, psobj );
+
+		if( nullptr == psobj )
+			return;
+
+		ork::ent::DrawableBuffer::ClearAndSyncReaders();
+
 		OrkAssert( psobj );
 		mpScene->RemoveSceneObject( psobj );
 		/////////////////////////////////////////
@@ -1064,13 +1073,14 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj)
 		delete( psobj );
 		/////////////////////////////////////////
 		SigSceneTopoChanged();
+
 	};
 	Op(lamb).QueueASync(UpdateSerialOpQ());	
 }
 void SceneEditorBase::DisableUpdates()
 {
 	ork::AssertOnOpQ2( UpdateSerialOpQ() );
-	ork::ent::DrawableBuffer::ClearAndSync();
+	ork::ent::DrawableBuffer::ClearAndSyncReaders();
 	ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
 	SceneInstEvent disviewev( 0, SceneInstEvent::ESIEV_DISABLE_UPDATE);
 	bcaster.BroadcastNotifyOnChannel( & disviewev, SceneInst::EventChannel() );
@@ -1078,7 +1088,7 @@ void SceneEditorBase::DisableUpdates()
 void SceneEditorBase::EnableUpdates()
 {
 	ork::AssertOnOpQ2( UpdateSerialOpQ() );
-	ork::ent::DrawableBuffer::ClearAndSync();
+	ork::ent::DrawableBuffer::ClearAndSyncReaders();
 	ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
 	SceneInstEvent disviewev( 0, SceneInstEvent::ESIEV_ENABLE_UPDATE);
 	bcaster.BroadcastNotifyOnChannel( & disviewev, SceneInst::EventChannel() );
@@ -1086,7 +1096,7 @@ void SceneEditorBase::EnableUpdates()
 void SceneEditorBase::DisableViews()
 {
 	ork::AssertOnOpQ2( UpdateSerialOpQ() );
-	ork::ent::DrawableBuffer::BeginClearAndSync();
+	ork::ent::DrawableBuffer::ClearAndSyncReaders();
 	ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
 	SceneInstEvent disviewev( 0, SceneInstEvent::ESIEV_DISABLE_VIEW );
 	bcaster.BroadcastNotifyOnChannel( & disviewev, SceneInst::EventChannel() );
@@ -1094,7 +1104,7 @@ void SceneEditorBase::DisableViews()
 void SceneEditorBase::EnableViews()
 {
 	ork::AssertOnOpQ2( UpdateSerialOpQ() );
-	ork::ent::DrawableBuffer::EndClearAndSync();
+	ork::ent::DrawableBuffer::ClearAndSyncReaders();
 	ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
 	SceneInstEvent enaviewev( mpEditSceneInst, SceneInstEvent::ESIEV_ENABLE_VIEW );
 	bcaster.BroadcastNotifyOnChannel( & enaviewev, SceneInst::EventChannel() );
@@ -1111,7 +1121,7 @@ void SceneEditorBase::ImplEnterRunLocalState()
 	{
 		DisableViews();
 		tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
-		ork::ent::DrawableBuffer::ClearAndSync();
+		ork::ent::DrawableBuffer::ClearAndSyncReaders();
 		NewSceneInst();
 
 		if( mpEditSceneInst )
@@ -1135,7 +1145,7 @@ void SceneEditorBase::ImplEnterRunLocalState()
 
 			mpEditSceneInst->SetSceneInstMode( ent::ESCENEMODE_RUN );
 		}
-		ork::ent::DrawableBuffer::ClearAndSync();
+		ork::ent::DrawableBuffer::ClearAndSyncReaders();
 		tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
 		EnableViews();
 	};
@@ -1186,7 +1196,7 @@ void SceneEditorBase::ImplEnterEditState()
 		DisableViews();
 
 		tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
-		ork::ent::DrawableBuffer::ClearAndSync();
+		ork::ent::DrawableBuffer::ClearAndSyncReaders();
 		NewSceneInst();
 
 		if( mpEditSceneInst )
@@ -1203,7 +1213,7 @@ void SceneEditorBase::ImplEnterEditState()
 
 			mpEditSceneInst->SetSceneInstMode( ent::ESCENEMODE_EDIT );
 		}
-		ork::ent::DrawableBuffer::ClearAndSync();
+		ork::ent::DrawableBuffer::ClearAndSyncReaders();
 		tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
 
 		EnableViews();
@@ -1274,7 +1284,16 @@ Archetype* SceneEditorBase::NewArchetype( const std::string& classname )
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::SigSceneTopoChanged()
 {
-	ork::ent::DrawableBuffer::ClearAndSync();
+	auto lamb = [=]()
+	{
+		ork::ent::DrawableBuffer::ClearAndSyncReaders();
+	};
+
+	if( OpqTest::GetContext()->mOPQ == & UpdateSerialOpQ() )
+		lamb();
+	else
+		Op(lamb).QueueASync(UpdateSerialOpQ());
+
 	mSignalSceneTopoChanged(&SceneEditorBase::SigSceneTopoChanged);
 
 //	GetSigModelInvalidated

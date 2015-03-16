@@ -60,6 +60,7 @@ void ObserverCamControllerData::Describe()
 
 	ork::reflect::RegisterProperty( "Target", &ObserverCamControllerData::mTarget );
 	ork::reflect::RegisterProperty( "Eye", &ObserverCamControllerData::mEye );
+	ork::reflect::RegisterProperty( "EyeUp", &ObserverCamControllerData::mEyeUp );
 	ork::reflect::RegisterProperty( "EyeOffset", &ObserverCamControllerData::mEyeOffset );
 	ork::reflect::RegisterProperty( "TargetOffset", &ObserverCamControllerData::mTgtOffset );
 	ork::reflect::RegisterProperty( "Aperature", &ObserverCamControllerData::mfAperature );
@@ -145,27 +146,32 @@ void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
 	CVector3 cam_UP = CVector3(0.0f,1.0f,0.0f);
 	CVector3 cam_EYE = CVector3(0.0f,0.0f,0.0f);
 
+	CVector3 eye_up = mCD.GetEyeUp();
+
 	if( mpEye )
 	{
 		DagNode& dnodeEYE = mpEye->GetDagNode();
-		TransformNode3D& t3dEYE = dnodeEYE.GetTransformNode();
-		CMatrix4 mtxEYE = t3dEYE.GetTransform()->GetMatrix();
+		const TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
+		CMatrix4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
 		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).GetXYZ();
 		cam_UP = mtxEYE.GetYNormal();
+
+		if( eye_up.Mag() )
+			cam_UP = eye_up.Normal();
 	}
 	else
 	{
 		DagNode& dnodeEYE = GetEntity()->GetDagNode();
-		TransformNode3D& t3dEYE = dnodeEYE.GetTransformNode();
-		CMatrix4 mtxEYE = t3dEYE.GetTransform()->GetMatrix();
+		const TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
+		CMatrix4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
 		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).GetXYZ();
 	}
 
 	if( mpTarget )
 	{
 		DagNode& dnodeTGT = mpTarget->GetDagNode();
-		TransformNode3D& t3dTGT = dnodeTGT.GetTransformNode();
-		CMatrix4 mtxTGT = t3dTGT.GetTransform()->GetMatrix();
+		const TransformNode& t3dTGT = dnodeTGT.GetTransformNode();
+		CMatrix4 mtxTGT = t3dTGT.GetTransform().GetMatrix();
 		CVector3 cam_TGT = CVector4(mCD.GetTgtOffset()).Transform(mtxTGT).GetXYZ();
 
 		float fnear = mCD.GetNear();

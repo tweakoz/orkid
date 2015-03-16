@@ -32,17 +32,18 @@ void Surface::GetPixel( int ix, int iy, lev2::GetPixelContext& ctx )
 	int iH = GetH();
 	float fx = float(ix) / float(iW);
 	float fy = float(iy) / float(iH);
-	auto tgt = mpPickBuffer->GetContext();
-	auto fbi = tgt->FBI();
 	/////////////////////////////////////////////////////////////
 	if( mpPickBuffer )
-	{	ctx.mRtGroup = mpPickBuffer->mpPickRtGroup;
+	{
+		auto tgt = mpPickBuffer->GetContext();
+		auto fbi = tgt->FBI();
+		ctx.mRtGroup = mpPickBuffer->mpPickRtGroup;
 		ctx.mAsBuffer = mpPickBuffer;
 		/////////////////////////////////////////////////////////////
 		fbi->SetViewport( 0,0,iW,iH );
 		fbi->SetScissor( 0,0,iW,iH );
 		/////////////////////////////////////////////////////////////
-		mpPickBuffer->Draw();
+		mpPickBuffer->Draw(ctx);
 		/////////////////////////////////////////////////////////////
 		fbi->GetPixel( CVector4( fx, fy, 0.0f ), ctx );
 		/////////////////////////////////////////////////////////////

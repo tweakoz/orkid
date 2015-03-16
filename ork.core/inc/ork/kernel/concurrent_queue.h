@@ -26,9 +26,13 @@ struct MpMcBoundedQueue
     {
 
     }
-    void push(const T& item) // blocking
+    void push(const T& item, int quanta_usec=250) // blocking
     {
-        mImpl.push(item);
+        mImpl.push(item,quanta_usec);
+    }
+    void pop(T& item, int quanta_usec=250) // blocking
+    {
+        mImpl.pop(item,quanta_usec);
     }
     bool try_push(const T& item) // non-blocking
     {

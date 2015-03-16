@@ -24,6 +24,65 @@ namespace ork { namespace ent {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class ProcTexOutputBase : public ork::Object
+{
+	RttiDeclareAbstract( ProcTexOutputBase, ork::Object );
+public:
+	virtual void DoLinkEntity( SceneInst* psi, Entity *pent ) const = 0;
+};
+
+class ProcTexOutputQuad : public ProcTexOutputBase
+{
+	RttiDeclareConcrete( ProcTexOutputQuad, ProcTexOutputBase );
+	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+public:
+	ProcTexOutputQuad();
+	mutable lev2::GfxMaterial3DSolid* mMaterial;
+	float mScale;
+};
+
+class ProcTexOutputSkybox : public ProcTexOutputBase
+{
+	RttiDeclareConcrete( ProcTexOutputSkybox, ProcTexOutputBase );
+	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+public:
+	ProcTexOutputSkybox();
+	float mVerticalAdjust;
+	float mScale;
+	mutable lev2::GfxMaterial3DSolid* mMaterial;
+};
+
+class ProcTexOutputDynTex : public ProcTexOutputBase
+{
+	RttiDeclareConcrete( ProcTexOutputDynTex, ProcTexOutputBase );
+public:
+	ProcTexOutputDynTex();
+	~ProcTexOutputDynTex();
+	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+	ork::PoolString mDynTexPath;
+	mutable lev2::TextureAsset* mAsset;
+};
+
+class ProcTexOutputBake : public ProcTexOutputBase
+{
+	RttiDeclareConcrete( ProcTexOutputBake, ProcTexOutputBase );
+public:
+	ProcTexOutputBake();
+	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+	//int GetNumExportFrames() const { return mNumExportFrames; }
+	//bool IsBaking() const { return mPerformingBake; }
+	//void IncrementFrame() const;
+	//int GetFrameIndex() const { return mBakeFrameIndex; }
+	//const file::Path& GetWritePath() const { return mWritePath; }
+	ork::PoolString mDynTexPath;
+	int mNumExportFrames;
+	bool mPerformingBake;
+	int mBakeFrameIndex;
+	ork::PoolString mWritePath;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 class ProcTexControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( ProcTexControllerData, ent::ComponentData );
@@ -31,18 +90,31 @@ class ProcTexControllerData : public ent::ComponentData
 public:
 
 	ProcTexControllerData();
+	~ProcTexControllerData();
 
 	proctex::ProcTex& GetTemplate() const { return mTemplate; }
+
+	int GetBufferDim() const { return mBufferDim; }
+	float GetMaxFrameRate() const { return mMaxFrameRate; }
+
+	bool NeedsRefresh() const { return mNeedsRefresh; }
+	void DidRefresh() const { mNeedsRefresh=false; }
+
+	const ProcTexOutputBase* GetOutput() const { return mOutput; }
 
 private:
 
 	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
 
 	ork::Object* TemplateAccessor() { return & mTemplate; }
-
+	void OutputGetter(ork::rtti::ICastable*& val) const;
+	void OutputSetter(ork::rtti::ICastable* const & val);
 
 	mutable proctex::ProcTex mTemplate;
-
+	int mBufferDim;
+	float mMaxFrameRate;
+	mutable bool mNeedsRefresh;
+	ProcTexOutputBase* mOutput;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -9,66 +9,10 @@
 #include <ork/util/Context.hpp>
 #include <ork/kernel/debug.h>
 #include <ork/kernel/future.hpp>
-#if defined(ORK_LINUX)
-#include <sys/prctl.h>
-#endif
 
 //#define DEBUG_OPQ_CALLSTACK
 ///////////////////////////////////////////////////////////////////////
 template class ork::util::ContextTLS<ork::OpqTest>;
-
-#if defined(_WIN32)
-#include <windows.h>
-const DWORD MS_VC_EXCEPTION=0x406D1388;
-
-#pragma pack(push,8)
-typedef struct tagTHREADNAME_INFO
-{
-   DWORD dwType; // Must be 0x1000.
-   LPCSTR szName; // Pointer to name (in user addr space).
-   DWORD dwThreadID; // Thread ID (-1=caller thread).
-   DWORD dwFlags; // Reserved for future use, must be zero.
-} THREADNAME_INFO;
-#pragma pack(pop)
-
-void SetThreadName( DWORD dwThreadID, const char* threadName)
-{
-   THREADNAME_INFO info;
-   info.dwType = 0x1000;
-   info.szName = threadName;
-   info.dwThreadID = dwThreadID;
-   info.dwFlags = 0;
-
-   __try
-   {
-      RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info );
-   }
-   __except(EXCEPTION_EXECUTE_HANDLER)
-   {
-   }
-}
-namespace ork {
-void SetCurrentThreadName(const char* threadName)
-{
-	DWORD dwThreadID = (DWORD) GetCurrentThreadId();
-	SetThreadName( dwThreadID, threadName );
-}
-}
-#else
-namespace ork {
-void SetCurrentThreadName(const char* threadName)
-{
-	static const int  kMAX_NAME_LEN = 15;
-	char name[kMAX_NAME_LEN+1];
-	for( int i=0; i<kMAX_NAME_LEN; i++ ) name[i]=0;
-	strncpy(name,threadName,kMAX_NAME_LEN);
-	name[kMAX_NAME_LEN]=0;
-#if defined(ORK_LINUX)
-	prctl(PR_SET_NAME,(unsigned long)&name);
-#endif
-}
-}
-#endif
 ///////////////////////////////////////////////////////////////////////
 namespace ork {
 ////////////////////////////////////////////////////////////////////////////////

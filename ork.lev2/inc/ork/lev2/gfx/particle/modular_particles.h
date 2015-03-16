@@ -80,10 +80,10 @@ private:
 
 	DeclareFloatXfPlug( TimeScale );
 
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual dataflow::inplugbase* GetInput(int idx) { return &mPlugInpTimeScale; } 
 
-	virtual int GetNumOutputs() const { return 9; }
+	//virtual int GetNumOutputs() const { return 9; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	DeclareFloatOutPlug( RelTime );
@@ -134,12 +134,12 @@ class Constants : public Module
 	bool																mbPlugsDirty;
 	/////////////////////////////////////////////////////
 	// data currently only flows in from externals
-	int GetNumInputs() const { return 0; } // virtual
+	//int GetNumInputs() const override { return 0; } // virtual
 	dataflow::inplugbase* GetInput(int idx) { return 0; } // virtual
 	// data currently only flows in from externals
 	/////////////////////////////////////////////////////
 
-	int GetNumOutputs() const; // virtual
+	int GetNumOutputs() const override;
 	dataflow::outplugbase* GetOutput(int idx); // virtual
 
 	void Compute( float dt ) {} // virtual
@@ -166,12 +166,12 @@ class ExtConnector : public Module
 
 	/////////////////////////////////////////////////////
 	// data currently only flows in from externals
-	virtual int GetNumInputs() const { return 0; }
+	//virtual int GetNumInputs() const { return 0; }
 	virtual dataflow::inplugbase* GetInput(int idx) { return 0; }
 	// data currently only flows in from externals
 	/////////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const;
+	virtual int GetNumOutputs() const override;
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	virtual void Compute( float dt ) {}
@@ -218,10 +218,10 @@ class ParticlePool : public ParticleModule
 	
 
 	/////////////////////////////////////////////////
-	int GetNumInputs() const { return 2; }		// virtual
+	//int GetNumInputs() const { return 2; }		// virtual
 	dataflow::inplugbase* GetInput(int idx);	// virtual
 	/////////////////////////////////////////////////
-	virtual int GetNumOutputs() const { return 2; }
+	//virtual int GetNumOutputs() const { return 2; }
 	virtual ork::dataflow::outplugbase* GetOutput(int idx);
 	/////////////////////////////////////////////////
 	void Compute( float dt ); // virtual
@@ -279,7 +279,7 @@ class RingEmitter : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	int GetNumInputs() const { return 11; }		// virtual
+	//int GetNumInputs() const { return 11; }		// virtual
 	dataflow::inplugbase* GetInput(int idx);	// virtual
 
 	DeclarePoolInpPlug( Input )
@@ -298,7 +298,7 @@ class RingEmitter : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	int GetNumOutputs() const { return 1; }		// virtual
+	//int GetNumOutputs() const { return 1; }		// virtual
 	dataflow::outplugbase* GetOutput(int idx);	// virtual
 
 	DeclarePoolOutPlug( Output )
@@ -347,7 +347,7 @@ class NozzleEmitter : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	int GetNumInputs() const { return 8; }		// virtual
+	//int GetNumInputs() const { return 8; }		// virtual
 	dataflow::inplugbase* GetInput(int idx);	// virtual
 
 	DeclarePoolInpPlug( Input )
@@ -363,7 +363,7 @@ class NozzleEmitter : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	int GetNumOutputs() const { return 2; }		// virtual
+	//int GetNumOutputs() const { return 2; }		// virtual
 	dataflow::outplugbase* GetOutput(int idx);	// virtual
 
 	DeclarePoolOutPlug( Output )
@@ -412,7 +412,7 @@ class ReEmitter : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 5; }
+	//virtual int GetNumInputs() const { return 5; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 	DeclarePoolInpPlug( Input )
 	DeclareFloatXfPlug( SpawnProbability );
@@ -426,7 +426,7 @@ class ReEmitter : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	DeclarePoolOutPlug( Output )
@@ -453,7 +453,7 @@ class WindModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclarePoolInpPlug( Input )
@@ -463,7 +463,7 @@ class WindModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
@@ -487,7 +487,7 @@ class GravityModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 6; }
+	//virtual int GetNumInputs() const { return 6; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclarePoolInpPlug( Input )
@@ -502,7 +502,7 @@ class GravityModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
@@ -528,7 +528,7 @@ class PlanarColliderModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 8; }
+	//virtual int GetNumInputs() const { return 8; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclarePoolInpPlug( Input );
@@ -544,7 +544,7 @@ class PlanarColliderModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
@@ -577,7 +577,7 @@ class FloatOp2Module : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareFloatXfPlug( InputA )
@@ -587,7 +587,7 @@ class FloatOp2Module : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
 
 	DeclareFloatOutPlug( Output );
@@ -622,7 +622,7 @@ class Vec3Op2Module : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareVect3XfPlug( InputA )
@@ -632,7 +632,7 @@ class Vec3Op2Module : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx)
 	{
 		return & mPlugOutOutput;
@@ -659,7 +659,7 @@ class Vec3SplitModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareVect3XfPlug( Input );
@@ -668,7 +668,7 @@ class Vec3SplitModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 3; }
+	//virtual int GetNumOutputs() const { return 3; }
 	virtual dataflow::outplugbase* GetOutput(int idx)
 	{
 		switch( idx )
@@ -703,7 +703,7 @@ class DecayModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 2; }
+	//virtual int GetNumInputs() const { return 2; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclarePoolInpPlug( Input )
@@ -713,7 +713,7 @@ class DecayModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
@@ -737,7 +737,7 @@ class TurbulenceModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 4; }
+	//virtual int GetNumInputs() const { return 4; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareFloatXfPlug( AmountX );
@@ -751,7 +751,7 @@ class TurbulenceModule : public ParticleModule
 
 	DeclarePoolOutPlug( Output )
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
 
 	//////////////////////////////////////////////////
@@ -773,7 +773,7 @@ class VortexModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 4; }
+	//virtual int GetNumInputs() const { return 4; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareFloatXfPlug( Falloff );
@@ -787,7 +787,7 @@ class VortexModule : public ParticleModule
 
 	DeclarePoolOutPlug( Output )
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
 
 	//////////////////////////////////////////////////
@@ -811,7 +811,7 @@ protected:
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 1; }
+	//virtual int GetNumInputs() const { return 1; }
 	virtual dataflow::inplugbase* GetInput(int idx) { return & mPlugInpInput; }
 
 	DeclarePoolInpPlug( Input )
@@ -894,7 +894,7 @@ class SpriteRenderer : public RendererModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 14; }
+	//virtual int GetNumInputs() const { return 14; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareFloatXfPlug( Size );
@@ -916,7 +916,7 @@ class SpriteRenderer : public RendererModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 2; }
+	//virtual int GetNumOutputs() const { return 2; }
 	DeclareFloatOutPlug( UnitAge );
 	DeclareFloatOutPlug( PtcRandom );
 	virtual dataflow::outplugbase* GetOutput(int idx);
@@ -971,7 +971,7 @@ class StreakRenderer : public RendererModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 4; }
+	//virtual int GetNumInputs() const { return 4; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareFloatXfPlug( Length );
@@ -983,7 +983,7 @@ class StreakRenderer : public RendererModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	//////////////////////////////////////////////////
@@ -1019,7 +1019,7 @@ class ModelRenderer : public RendererModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumInputs() const { return 3; }
+	//virtual int GetNumInputs() const { return 3; }
 	virtual dataflow::inplugbase* GetInput(int idx);
 
 	DeclareFloatXfPlug( AnimScale );
@@ -1029,7 +1029,7 @@ class ModelRenderer : public RendererModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const { return 1; }
+	//virtual int GetNumOutputs() const { return 1; }
 	virtual dataflow::outplugbase* GetOutput(int idx);
 
 	DeclareFloatOutPlug( UnitAge );

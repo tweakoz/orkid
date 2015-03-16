@@ -31,16 +31,12 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ModelDrawable, "ModelDrawable");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CallbackDrawable, "CallbackDrawable");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CameraDrawable, "CameraDrawable");
 
-extern bool USE_THREADED_RENDERER;
-
 namespace ork { namespace ent {
 
 ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineRenderSynchro;
 ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineUpdateSynchro;
 
-concurrent_triple_buffer<DrawableBuffer> DrawableBuffer::gBuffers;
-
-bool DrawableBuffer::gbInsideClearAndSync = false;
+ork::atomic<bool> DrawableBuffer::gbInsideClearAndSync;
 
 Layer::Layer()
 {
@@ -51,6 +47,7 @@ Layer::Layer()
 
 void Drawable::Describe()
 {
+	DrawableBuffer::gbInsideClearAndSync = false;
 }
 
 void ModelDrawable::Describe()
@@ -110,17 +107,18 @@ DrawableBufLayer* DrawableBuffer::MergeLayer( const PoolString& layername )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DrawableBufItem& DrawableBufLayer::Queue()
+DrawableBufItem& DrawableBufLayer::Queue( const DrawQueueXfData& xfdata,
+										  const Drawable* d )
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	//mDrawBufItems.push_back(DrawableBufItem()); // replace std::vector with an array so we can amortize construction costs
 	miItemIndex++;
 	OrkAssert(miItemIndex<kmaxitems );
 	DrawableBufItem& item = mDrawBufItems[miItemIndex];
-	item.SetDrawable(0);
+	item.SetDrawable(d);
 	item.mUserData0 = 0;
 	item.mUserData1 = 0;
-	item.mMatrix = CMatrix4::Identity;
+	item.mXfData = xfdata;
 	item.miBufferIndex = miBufferIndex;
 	return item;
 }
@@ -145,65 +143,117 @@ DrawableBuffer::~DrawableBuffer()
 {
 }
 
-/////////////////////////////////////////////////////////////////////
-const DrawableBuffer* DrawableBuffer::LockReadBuffer(int lid)
+///////////////////////////////////////////////////////////////////////////////
+
+const CCameraData* DrawableBuffer::GetCameraData( int icam ) const
 {
-	const DrawableBuffer* rbuf = gBuffers.begin_pull();
-	//if( rbuf )
-	//	rbuf->mBufferMutex.Lock();
-	//printf( "rbuf<%p> beginpull\n", rbuf );
-	return rbuf;
+	int inumscenecameras = mCameraDataLUT.size();
+	//printf( "NumSceneCameras<%d>\n", inumscenecameras );
+	if( icam>=0 && inumscenecameras )
+	{
+		icam = icam%inumscenecameras;
+		auto& itCAM = mCameraDataLUT.GetItemAtIndex(icam);
+		const CCameraData* pdata = & itCAM.second;
+		const lev2::CCamera* pcam = pdata->GetLev2Camera();
+		//printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
+		return pdata;
+	}
+	return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const CCameraData* DrawableBuffer::GetCameraData( const PoolString& named ) const
+{
+	int inumscenecameras = mCameraDataLUT.size();
+	auto itCAM = mCameraDataLUT.find(named);
+	if( itCAM != mCameraDataLUT.end() )
+	{
+		const CCameraData* pdata = & itCAM->second;
+		return pdata;
+	}
+	return 0;
+}
+
+/////////////////////////////////////////////////////////////////////
+static concurrent_multi_buffer<DrawableBuffer,2> gBuffers;
+/////////////////////////////////////////////////////////////////////
+const DrawableBuffer* DrawableBuffer::BeginDbRead(int lid)
+{
+	return gBuffers.BeginRead();
 }
 /////////////////////
-void DrawableBuffer::UnLockReadBuffer(const DrawableBuffer*db)
+void DrawableBuffer::EndDbRead(const DrawableBuffer*db)
 {
-	//db->mBufferMutex.UnLock();
-	gBuffers.end_pull(db);
-	//printf( "rbuf<%p> endpull\n", db );
+	gBuffers.EndRead(db);
 }
 /////////////////////////////////////////////////////////////////////
 DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid)
-{	AssertOnOpQ2( UpdateSerialOpQ() );
-	DrawableBuffer* wbuf = gBuffers.begin_push();
-	//printf( "wbuf<%p> beginpush\n", wbuf );
-	//wbuf->mBufferMutex.Lock();
+{	
+	AssertOnOpQ2( UpdateSerialOpQ() );
+	DrawableBuffer* wbuf = gBuffers.BeginWrite();
 	return wbuf;
 }
 void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer*db)
-{	AssertOnOpQ2( UpdateSerialOpQ() );
-	//db->mBufferMutex.UnLock();
-	gBuffers.end_push(db);
-	//printf( "wbuf<%p> endpush\n", db );
+{	
+	AssertOnOpQ2( UpdateSerialOpQ() );
+	gBuffers.EndWrite(db);
 }
 /////////////////////////////////////////////////////////////////////
-void DrawableBuffer::BeginClearAndSync()
+// flush all renderer side data
+//  sync until flushed
+/////////////////////////////////////////////////////////////////////
+void DrawableBuffer::BeginClearAndSyncReaders()
 {
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	bool b = gbInsideClearAndSync.exchange(true);
+	OrkAssert(b==false);
+	printf( "DrawableBuffer::BeginClearAndSyncReaders()\n");
 	gBuffers.disable();
-	//////////////////////////////////////////////////////////
-	//ork::lev2::GfxEnv::GetRef().GetGlobalLock().Lock(); // InterThreadLock
-	//////////////////////////////////////////////////////////
-	gbInsideClearAndSync = true;
 }
 /////////////////////////////////////////////////////////////////////
-void DrawableBuffer::EndClearAndSync()
+void DrawableBuffer::EndClearAndSyncReaders()
 {
+	AssertOnOpQ2( UpdateSerialOpQ() );
+	bool b = gbInsideClearAndSync.exchange(false);
+	OrkAssert(b==true);
 	////////////////////
+	printf( "DrawableBuffer::EndClearAndSyncReaders()\n");
 	gBuffers.enable();
-	gbInsideClearAndSync = false;
-	//////////////////////////////////////////////////////////
-	//ork::lev2::GfxEnv::GetRef().GetGlobalLock().UnLock(); // InterThreadLock
-	//////////////////////////////////////////////////////////
 }
 /////////////////////////////////////////////////////////////////////
-void DrawableBuffer::ClearAndSync()
+void DrawableBuffer::BeginClearAndSyncWriters()
 {
 	//AssertOnOpQ2( UpdateSerialOpQ() );
-	BeginClearAndSync();
-	EndClearAndSync();
+	printf( "DrawableBuffer::BeginClearAndSyncWriters()\n");
+	gBuffers.disable();
+}
+/////////////////////////////////////////////////////////////////////
+void DrawableBuffer::EndClearAndSyncWriters()
+{
+	//AssertOnOpQ2( UpdateSerialOpQ() );
+	////////////////////
+	printf( "DrawableBuffer::EndClearAndSyncWriters()\n");
+	gBuffers.enable();
+}
+/////////////////////////////////////////////////////////////////////
+void DrawableBuffer::ClearAndSyncReaders()
+{
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	BeginClearAndSyncReaders();
+	EndClearAndSyncReaders();
+}
+/////////////////////////////////////////////////////////////////////
+void DrawableBuffer::ClearAndSyncWriters()
+{
+	BeginClearAndSyncWriters();
+	EndClearAndSyncWriters();
 }
 ///////////////////////////////////////////////////////////////////////////////
 CameraDrawable::CameraDrawable( Entity* pent, const CCameraData* camData )
-	: Drawable( pent )
+	: Drawable()
 	, mCameraData( camData )
 {
 }
@@ -228,23 +278,21 @@ void CameraDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::Renderer
 	
 }
 /////////////////////////////////////////////////////////////////////
-void CameraDrawable::QueueToBuffer(DrawableBufLayer&buffer) const
+void CameraDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
+									DrawableBufLayer&buffer) const
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	DrawableBufItem& item = buffer.Queue();
-	item.SetDrawable(this);
+	DrawableBufItem& item = buffer.Queue(xfdata,this);
 }
 ///////////////////////////////////////////////////////////////////////////////
-Drawable::Drawable(Entity* pent)
-	: mEntity(pent)
-	, mOwner( 0 )
-	, mData( 0 )
-
+Drawable::Drawable()
+	: mDataA( nullptr )
+	, mDataB( nullptr )
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	//printf( "Drawable<%p>::Drawable(Entity<%p>)\n", this, pent );
 	fflush(stdout);
-	OrkAssert(mEntity);
+	//OrkAssert(mEntity);
 }
 Drawable::~Drawable()
 {
@@ -253,25 +301,12 @@ Drawable::~Drawable()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const DagNode *Drawable::GetDagNode() const
-{	
-	//printf( "Drawable<%p>::GetDagNode() Entity<%p>\n", this, mEntity );
-	fflush(stdout);
-	OrkAssert(mEntity!=0);
-	if(ESCENEMODE_RUN == mEntity->GetSceneInst()->GetSceneInstMode())
-		return &mEntity->GetDagNode();
-	else
-		return &mEntity->GetEntData().GetDagNode();
-}
-
-///////////////////////////////////////////////////////////////////////////////
 ModelDrawable::ModelDrawable( Entity* pent )
-	: Drawable( pent )
+	: Drawable()
 	, mModelInst( NULL )
 	, mfScale( 1.0f )
 	, mRotate(0.0f,0.0f,0.0f)
 	, mOffset(0.0f,0.0f,0.0f)
-	, mOverrideXF(0)
 	, mpWorldPose( 0 )
 	, mbShowBoundingSphere(false)
 {
@@ -314,34 +349,27 @@ void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst)
 	}
 	anyp ap;
 	ap.Set( mpWorldPose );
-	SetData(ap);
+	SetUserDataA(ap);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelDrawable::QueueToBuffer(DrawableBufLayer&buffer) const
+void ModelDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
+									DrawableBufLayer&buffer) const
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	#if 1 //DRAWTHREADS
 	const lev2::XgmModel* Model = mModelInst->GetXgmModel();
 	bool IsSkinned = Model->IsSkinned();
-
-	const ork::TransformNode3D* xf = & GetDagNode()->GetTransformNode();
-
-	if( mOverrideXF ) xf = mOverrideXF;
 		
-	ork::CMatrix4 matw;
-	xf->GetMatrix(matw);
-
-	DrawableBufItem& item = buffer.Queue();
-
-	item.mMatrix = matw;
-	item.SetDrawable(this);
+	DrawableBufItem& item = buffer.Queue(xfdata,this);
 
 	//orkprintf( " ModelDrawable::QueueToBuffer() mdl<%p> IsSkinned<%d>\n", Model, int(IsSkinned) );
 
 	if( IsSkinned )
 	{
-		ork::lev2::XgmWorldPose* pworldpose = GetData().Get<ork::lev2::XgmWorldPose*>();
+		ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
 		if( pworldpose )
 		{
 			const ork::lev2::XgmSkeleton & Skeleton = Model->RefSkel();
@@ -361,12 +389,15 @@ void ModelDrawable::QueueToBuffer(DrawableBufLayer&buffer) const
 
 		}
 	}
+	#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer* renderer ) const
+void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
+									 lev2::Renderer* renderer ) const
 {
+	#if 1 //DRAWTHREADS
 	AssertOnOpQ2( MainThreadOpQ() );
 	const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
 	const lev2::XgmModel* Model = mModelInst->GetXgmModel();
@@ -380,9 +411,8 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer
 		camdat = camdat->GetVisibilityCamDat();
 	}
 	const Frustum& frus = bvisicd ? camdat->GetFrustum() : ccctx.mFrustum; //camdat->GetFrustum();
-	//if( mOverrideXF ) xf = mOverrideXF;
-	const ork::CMatrix4& matw = item.mMatrix;
-	//xf->GetMatrix(matw);
+
+	const ork::CMatrix4& matw = item.mXfData.mWorldMatrix;
 	
 	bool IsPickState = renderer->GetTarget()->FBI()->IsPickState();
 	bool IsSkinned = Model->IsSkinned();
@@ -404,7 +434,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer
 
 	//////////////////////////////////////////////////////////////////////
 
-	const ork::lev2::XgmWorldPose* pworldpose = GetData().Get<ork::lev2::XgmWorldPose*>();
+	const ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
 	
 	ork::CVector3 matw_trans;
 	ork::CQuaternion matw_rot;
@@ -610,16 +640,17 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer
 		}
 	}
 
+	#endif
 	//orkprintf( "numacc %d numrej %d\n", inumacc, inumrej );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 CallbackDrawable::CallbackDrawable( Entity *pent )
-	: Drawable( pent )
+	: Drawable()
 	, mSortKey( 4 )
-	, mCallback( 0 )
-	, mBufferCallback( 0 )
+	, mRenderCallback( 0 )
+	, mQueueToLayerCallback( 0 )
 	, mDataDestroyer( 0 )
 {
 }
@@ -631,42 +662,42 @@ CallbackDrawable::~CallbackDrawable()
 		mDataDestroyer->Destroy();
 	}
 	mDataDestroyer = 0;
-	mCallback = 0;
-}
-///////////////////////////////////////////////////////////////////////////////
-// 
-///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::QueueToRenderer( const DrawableBufItem& item, lev2::Renderer* renderer ) const
-{	lev2::CallbackRenderable& renderable = renderer->QueueCallback();
-	CMatrix4 mtxW;
-	GetDagNode()->GetTransformNode().GetMatrix(mtxW);
-	renderable.SetMatrix( item.mMatrix );
-	renderable.SetObject( GetOwner() );
-	renderable.SetCallback( mCallback ); 
-	renderable.SetSortKey( mSortKey );
-	renderable.SetDrawableData( GetData() );
-	renderable.SetUserData0( item.mUserData0 );
-	renderable.SetUserData1( item.mUserData1 );
-	renderable.SetModColor(renderer->GetTarget()->RefModColor());
-	//renderer
+	mQueueToLayerCallback = 0;
+	mRenderCallback = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Multithreaded Renderer DB 
 ///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::QueueToBuffer(DrawableBufLayer&buffer) const
+void CallbackDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
+										DrawableBufLayer&buffer) const
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	if( GetDagNode() )
+
+	DrawableBufItem& cdb = buffer.Queue(xfdata,this);
+	cdb.mUserData0 = GetUserDataA();
+	if( mQueueToLayerCallback )
 	{
-		DrawableBufItem& cdb = buffer.Queue();
-		GetDagNode()->GetTransformNode().GetMatrix(cdb.mMatrix);
-		cdb.SetDrawable(this);
-		cdb.mUserData0 = GetData();
-		if( mBufferCallback )
-		{
-			mBufferCallback(cdb);
-		}
+		mQueueToLayerCallback(cdb);
 	}
+}
+///////////////////////////////////////////////////////////////////////////////
+// 
+///////////////////////////////////////////////////////////////////////////////
+void CallbackDrawable::QueueToRenderer( const DrawableBufItem& item,
+										lev2::Renderer* renderer ) const
+{	
+	AssertOnOpQ2( MainThreadOpQ() );
+
+	lev2::CallbackRenderable& renderable = renderer->QueueCallback();
+	renderable.SetMatrix( item.mXfData.mWorldMatrix );
+	renderable.SetObject( GetOwner() );
+	renderable.SetRenderCallback( mRenderCallback ); 
+	renderable.SetSortKey( mSortKey );
+	renderable.SetDrawableDataA( GetUserDataA() );
+	renderable.SetDrawableDataB( GetUserDataB() );
+	renderable.SetUserData0( item.mUserData0 );
+	renderable.SetUserData1( item.mUserData1 );
+	renderable.SetModColor(renderer->GetTarget()->RefModColor());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

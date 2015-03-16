@@ -286,6 +286,11 @@ std::string GetGlErrorString( void );
 void OpenGlGfxTargetInit()
 {
 	GfxEnv::SetTargetClass(GfxTargetGL::GetClassStatic());
+	GfxTargetGL::GLinit();
+	auto target = new GfxTargetGL;
+	auto poutbuf = new GfxBuffer(0,0,0,1280,720);
+	GfxEnv::GetRef().SetLoaderTarget(target);
+	target->InitializeContext(poutbuf);
 }
 
 /////////////////////////////////////////////////////////////////////////

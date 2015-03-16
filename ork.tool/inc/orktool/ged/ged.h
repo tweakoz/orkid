@@ -241,7 +241,7 @@ public:
 		void clear();
 	};
 
-	GedSkin();
+	GedSkin(ork::lev2::GfxTarget* ptarg);
 
 	typedef enum
 	{
@@ -502,10 +502,18 @@ class GedGroupNode : public GedItemNode
 	bool	mbCollapsed;
 	void mouseDoubleClickEvent ( QMouseEvent * pEV );
 	ork::file::Path::NameType	mPersistID;
+
 public:
-	GedGroupNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
+	
+	GedGroupNode(	ObjModel& mdl, 
+					const char* name,
+					const reflect::IObjectProperty* prop,
+					ork::Object* obj,
+					bool is_obj_node=false );
+
 	void CheckVis();
 	bool DoDrawDefault() const { return false; } // virtual 
+	bool mIsObjNode;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedVP;
@@ -574,6 +582,7 @@ public:
 	GedVP* GetViewport() const { return mViewport; }
 	GedSkin* GetSkin();
 	void AddSkin( GedSkin* psk);
+	void SetDims( int iw, int ih );
 
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -593,6 +602,7 @@ public:
 	const GedObject* GetMouseOverNode() const { return mpMouseOverNode; }
 
 	static orkset<GedVP*> gAllViewports;
+	void SetDims( int iw, int ih );
 
 private:
 

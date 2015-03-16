@@ -218,7 +218,6 @@ SRasterState::SRasterState()
 	SetCullTest( ECULLTEST_PASS_FRONT );
 	SetZWriteMask( true );
 	SetRGBAWriteMask( true, true );
-	SetPolyOffset( false );
 	SetStencilMode( ESTENCILTEST_OFF, ESTENCILOP_KEEP, ESTENCILOP_KEEP, 0, 0 );
 	SetSortID( 0 );
 	SetTransparent( false );
@@ -251,11 +250,11 @@ DynamicVertexBuffer<SVtxV12N12B12T8C4>& GfxEnv::GetSharedDynamicVB2()
 
 GfxEnv::GfxEnv()
 	: NoRttiSingleton< GfxEnv >()
-	, mpMainWindow(0)
-	, mpUIMaterial( 0 )
-	, mp3DMaterial( 0 )
+	, mpMainWindow(nullptr)
+	, mpUIMaterial( nullptr )
+	, mp3DMaterial( nullptr )
 	, mGfxEnvMutex( "GfxEnvGlobalMutex" )
-	, gLoaderTarget( 0 )
+	, gLoaderTarget( nullptr )
 	, mVtxBufSharedVect( 2<<20, 0, EPRIM_TRIANGLES ) // SVtxV12C4T16==32bytes
 	, mVtxBufSharedVect2( 2<<20, 0, EPRIM_TRIANGLES ) // SvtxV12N12B12T8C4==48bytes
 {
@@ -274,14 +273,17 @@ GfxEnv::GfxEnv()
 void GfxEnv::RegisterWinContext( GfxWindow *pWin )
 {	
     orkprintf( "GfxEnv::RegisterWinContext\n" );
-	gLoaderTarget = pWin->GetContext();
+
+	//gfxenvlateinit();
+}
+
+void GfxEnv::SetLoaderTarget(GfxTarget* target)
+{
+	gLoaderTarget = target;
 
 	auto gfxenvlateinit = [=]()
 	{
-		gLoaderTarget->BeginFrame();
-		ork::lev2::CGfxPrimitives::Init( gLoaderTarget );
-
-		if( 0 != GetRef().mpUIMaterial )
+		if( nullptr != mpUIMaterial )
 		{
 			delete GetRef().mpUIMaterial;
 			delete GetRef().mp3DMaterial;
@@ -292,19 +294,22 @@ void GfxEnv::RegisterWinContext( GfxWindow *pWin )
 
 		mpUIMaterial->Init( gLoaderTarget );
 		mp3DMaterial->Init( gLoaderTarget );
+		ork::lev2::CGfxPrimitives::Init( gLoaderTarget );
+
+		gLoaderTarget->BeginFrame();
 		gLoaderTarget->EndFrame();
 
 	};
 	MainThreadOpQ().push(gfxenvlateinit);
-	//gfxenvlateinit();
-}
 
+}
 /////////////////////////////////////////////////////////////////////////
 
 GetPixelContext::GetPixelContext()
 	: mAsBuffer(nullptr)
 	, mRtGroup(nullptr)
 	, miMrtMask(0)
+	, mUserData(nullptr)
 {
 	for( int i=0; i<kmaxitems; i++ )
 	{

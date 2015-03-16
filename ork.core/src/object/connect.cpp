@@ -18,8 +18,10 @@
 
 #include <ork/object/ObjectClass.h>
 
+INSTANTIATE_TRANSPARENT_RTTI(ork::object::ISlot, "ISlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::Slot, "Slot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::AutoSlot, "AutoSlot");
+INSTANTIATE_TRANSPARENT_RTTI(ork::object::LambdaSlot, "LambdaSlot");
 INSTANTIATE_TRANSPARENT_RTTI(ork::object::Signal, "Signal");
 
 namespace ork { namespace reflect {
@@ -54,31 +56,54 @@ namespace ork { namespace object {
 
 //////////////////////////////////////////////////////////////////////
 
-void Slot::Describe()
+void ISlot::Describe()
 {
-	reflect::RegisterProperty("Object", &Slot::mObject);
-	reflect::RegisterProperty("SlotName", &Slot::mSlotName);
+	reflect::RegisterProperty("Object", &ISlot::mObject);
+	reflect::RegisterProperty("SlotName", &ISlot::mSlotName);
 }
-Slot::~Slot()
-{
-}
-Slot::Slot(Object* object, PoolString name) : mObject(object), mSlotName(name)
-{
-}
-Object* Slot::GetObject() const
+
+ISlot::ISlot( Object* object, PoolString name )
+	: mSlotName(name)
+	, mObject(object)
+{}
+
+Object* ISlot::GetObject() const
 {
 	return mObject;
 }
 
-const PoolString& Slot::GetSlotName() const
+void ISlot::SetObject( Object* pobj )
+{
+	mObject = pobj;
+}
+
+const PoolString& ISlot::GetSlotName() const
 {
 	return mSlotName;
 }
 
+//////////////////////////////////////////////////////////////////////
+
+void Slot::Describe()
+{
+}
+Slot::~Slot()
+{
+}
+Slot::Slot(Object* object, PoolString name) 
+	: ISlot(object,name)
+{
+}
+
+
 const reflect::IObjectFunctor* Slot::GetFunctor() const
 {
 	OrkAssert(mObject);
-	return rtti::downcast<object::ObjectClass*>(mObject->GetClass())->Description().FindFunctor(mSlotName);
+	object::ObjectClass* clazz = rtti::autocast(mObject->GetClass());
+	auto& desc = clazz->Description();
+	auto classname = clazz->Name();
+	auto f = desc.FindFunctor(mSlotName);
+	return f;
 }
 
 void Slot::Invoke(reflect::IInvokation* invokation) const
@@ -95,11 +120,10 @@ void AutoSlot::Describe()
 
 AutoSlot::~AutoSlot()
 {
-	for( orkset<Signal*>::const_iterator it=mConnectedSignals.begin(); it!=mConnectedSignals.end(); it++ )
-	{
-		Signal* psig = (*it);
+	auto copy_of_sigs = mConnectedSignals.AtomicCopy();
+
+	for( auto psig : copy_of_sigs  )
 		psig->RemoveSlot(this);
-	}
 }
 
 AutoSlot::AutoSlot(Object* object, const char* name) 
@@ -110,22 +134,83 @@ AutoSlot::AutoSlot(Object* object, const char* name)
 
 void AutoSlot::AddSignal( Signal* psig )
 {
-	orkset<Signal*>::iterator it = mConnectedSignals.find( psig );
+	bool found = false;
+	mConnectedSignals.AtomicOp( [&]( sig_set_t& ss )
+	{	for( auto the_sig : ss  )
+			found |= (the_sig==psig);
+		if( false == found )
+			ss.insert(psig);			
+	} );
+	OrkAssert(false==found);
+}
+
+void AutoSlot::RemoveSignal( Signal* psig )
+{
+	mConnectedSignals.AtomicOp( [&]( sig_set_t& ss )
+	{
+		orkset<Signal*>::iterator it = ss.find( psig );
+		if( it == ss.end() )
+		{
+			OrkAssert(false);
+		}
+		ss.erase(psig);
+	} );
+
+}
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+
+void LambdaSlot::Describe()
+{
+	//reflect::RegisterArrayProperty("Signals", &Signal::GetSlot, &Signal::GetSlotCount, &Signal::ResizeSlots);
+}
+
+LambdaSlot::LambdaSlot(Object* owner, const char* pname)
+	: ISlot( owner, ork::AddPooledString(pname) )
+{
+
+}
+
+LambdaSlot::~LambdaSlot()
+{
+	for( orkset<Signal*>::const_iterator it=mConnectedSignals.begin(); it!=mConnectedSignals.end(); it++ )
+	{
+		Signal* psig = (*it);
+		psig->RemoveSlot(this);
+	}
+}
+
+void LambdaSlot::Invoke(reflect::IInvokation* invokation) const
+{
+	OrkAssert(false);
+}
+const reflect::IObjectFunctor* LambdaSlot::GetFunctor() const
+{
+	OrkAssert(false);
+	return nullptr;
+}
+
+void LambdaSlot::AddSignal( Signal* psig )
+{
+	auto it = mConnectedSignals.find( psig );
 	if( it != mConnectedSignals.end() )
 	{
 		OrkAssert(false);
 	}
 	mConnectedSignals.insert( psig );
 }
-void AutoSlot::RemoveSignal( Signal* psig )
+void LambdaSlot::RemoveSignal( Signal* psig )
 {
-	orkset<Signal*>::iterator it = mConnectedSignals.find( psig );
+	auto it = mConnectedSignals.find( psig );
 	if( it == mConnectedSignals.end() )
 	{
 		OrkAssert(false);
 	}
 	mConnectedSignals.erase( psig );
 }
+
+//////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
 void Signal::Describe()
@@ -138,9 +223,10 @@ Signal::Signal()
 }
 Signal::~Signal()
 {
-	for( orkvector<Slot*>::const_iterator it=mSlots.begin(); it!=mSlots.end(); it++ )
+	auto slots = mSlots.AtomicCopy();
+
+	for( ISlot* pslot : slots  )
 	{
-		Slot* pslot = (*it);
 		pslot->RemoveSignal(this);
 		AutoSlot* pauto = ork::rtti::autocast(pslot);
 		if( pauto )
@@ -148,82 +234,105 @@ Signal::~Signal()
 			//ork::object::Disconnect( this, pauto );
 		}
 	}
+
+}
+
+bool Signal::HasSlot( Object* obj, PoolString nam ) const
+{
+	const auto& slots = mSlots.LockForRead();
+
+	for( ISlot* pslot : slots  )
+	{
+		if(		pslot->GetObject() == obj
+			&&	pslot->GetSlotName() == nam )
+		{
+			mSlots.UnLock();
+			return true;
+		}
+	}
+	mSlots.UnLock();
+	return false;
 }
 
 bool Signal::AddSlot(Object* object, PoolString name)
 {
-	for(orkvector<Slot*>::iterator it = mSlots.begin(); it != mSlots.end(); it++)
-	{
-		Slot* ptrslot = (*it);
-		if(ptrslot->GetObject() == object && ptrslot->GetSlotName() == name)
-		{
-			OrkAssert(false);
-			return false;
-		}
-	}
-	mSlots.push_back( new Slot(object, name) );
+	OrkAssert( false==HasSlot(object,name) );
+
+	auto& slots = mSlots.LockForWrite();
+	slots.push_back( new Slot(object, name) );
+	mSlots.UnLock();
+
 	return true;
 }
 //////////////////////////////////////////////////////////////////////
-bool Signal::AddSlot(Slot* ptrslot)
+bool Signal::AddSlot(ISlot* ptrslot)
 {
-	Object* pothobj = ptrslot->GetObject();
-	PoolString pothnam = ptrslot->GetSlotName();
+	Object* obj = ptrslot->GetObject();
+	PoolString nam = ptrslot->GetSlotName();
+	OrkAssert( false==HasSlot(obj,nam) );
 
-	for(orkvector<Slot*>::iterator it = mSlots.begin(); it != mSlots.end(); it++)
-	{
-		Slot* conslot = (*it);
-		if(conslot->GetObject() == pothobj && conslot->GetSlotName() == pothnam)
-		{
-			OrkAssert(false);
-			return false;
-		}
-	}
-	mSlots.push_back(ptrslot);
+	auto& slots = mSlots.LockForWrite();
+	slots.push_back(ptrslot);
+	mSlots.UnLock();
 	return true;
 }
 //////////////////////////////////////////////////////////////////////
 bool Signal::RemoveSlot(Object* object, PoolString name)
 {
-	for(orkvector<Slot*>::iterator it = mSlots.begin(); it != mSlots.end(); it++)
+	auto& locked_slots = mSlots.LockForWrite();
+	for( auto 	it=locked_slots.begin(); 
+				it!=locked_slots.end();
+				it++ )
 	{
-		Slot* conslot = (*it);
-		if(conslot->GetObject() == object && conslot->GetSlotName() == name)
+		auto conslot = *it;
+		if(conslot->GetObject() == object 
+			&& conslot->GetSlotName() == name)
 		{
-			mSlots.erase(it);
+			locked_slots.erase(it);
+			mSlots.UnLock();
 			return true;
 		}
 	}
+	mSlots.UnLock();
 	return false;
 }
-bool Signal::RemoveSlot(Slot* pslot)
+bool Signal::RemoveSlot(ISlot* pslot)
 {
-	for(orkvector<Slot*>::iterator it = mSlots.begin(); it != mSlots.end(); it++)
+	auto& locked_slots = mSlots.LockForWrite();
+	for( auto 	it=locked_slots.begin(); 
+				it!=locked_slots.end();
+				it++ )
 	{
-		Slot* conslot = (*it);
+		auto conslot = *it;
+
 		if(conslot == pslot)
 		{
-			mSlots.erase(it);
+			locked_slots.erase(it);
+			mSlots.UnLock();
 			return true;
 		}
 	}
+	mSlots.UnLock();
 	return false;
 }
 
 void Signal::Invoke(reflect::IInvokation* invokation) const
 {
-	for(orkvector<Slot*>::const_iterator it = mSlots.begin(); it != mSlots.end(); it++)
+	auto copy_of_slots = mSlots.AtomicCopy();
+
+	for(ISlot* conslot : copy_of_slots )
 	{
-		Slot* conslot = (*it);
 		conslot->Invoke(invokation);
 	}
 }
 
 reflect::IInvokation* Signal::CreateInvokation() const
 {
-	if(mSlots.size() > 0)
+	auto copy_of_slots = mSlots.AtomicCopy();
+
+	if(copy_of_slots.size() > 0)
 	{
-		Slot* pslot = *mSlots.begin();
+		ISlot* pslot = *copy_of_slots.begin();
 		const reflect::IObjectFunctor* functor = pslot->GetFunctor();
 		OrkAssertI(functor, "Slot does not have a functor of that name");
 		return functor->CreateInvokation();
@@ -233,19 +342,33 @@ reflect::IInvokation* Signal::CreateInvokation() const
 
 Object* Signal::GetSlot(size_t index)
 {
-	OrkAssert(index < mSlots.size());
-	return mSlots[index];
+	auto& locked_slots = mSlots.LockForRead();
+	auto num_slots = locked_slots.size();
+	bool in_range = (index < num_slots);
+	auto rval = in_range ? locked_slots[index] : nullptr;
+	mSlots.UnLock();
+	OrkAssert(in_range);
+	return rval;
 }
 
 size_t Signal::GetSlotCount() const
 {
-	return mSlots.size();
+	auto& locked_slots = mSlots.LockForRead();
+	auto num_slots = locked_slots.size();
+	mSlots.UnLock();
+	return num_slots;
 }
 
 void Signal::ResizeSlots(size_t sz)
 {
-	mSlots.resize(sz);
+	auto& locked_slots = mSlots.LockForWrite();
+	locked_slots.resize(sz);
+	mSlots.UnLock();
 }
+
+//////////////////////////////////////////////////////////////////////
+// connect methods
+//////////////////////////////////////////////////////////////////////
 
 bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot)
 {
@@ -265,9 +388,23 @@ bool Connect(Signal* psig, AutoSlot* pslot)
 	if(psig && pslot )
 	{
 		bool bsig = psig->AddSlot(pslot);
-		bool bslt = true; pslot->AddSignal(psig);
+		bool bslt = true;
+		static_cast<Slot*>(pslot)->AddSignal(psig);
 		return (bsig&bslt);
 	}
+	return false;
+}
+
+
+bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, const slot_lambda_t& slt )
+{
+	Signal *pSignal = pSender->FindSignal(signal);
+	if(pSignal)
+	{
+		assert(false);
+		//return pSignal->AddSlot(pReceiver, slot);
+	}
+
 	return false;
 }
 

@@ -22,14 +22,15 @@
 #include "componentfamily.h"
 #include "component.h"
 #include <ork/gfx/camera.h>
-#include <ork/util/triple_buffer.h>
+#include <ork/util/multi_buffer.h>
 #include <ork/kernel/concurrent_queue.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
 
-class CCameraData;
+typedef fixedlut<PoolString,CCameraData,16>	CameraLut;
+
 class Drawable;
 
 namespace lev2 { class XgmModel; class XgmModelAsset; }
@@ -41,19 +42,30 @@ namespace lev2 { class GfxMaterialFxEffectInstance; }
 
 namespace ent {
 
-struct Layer
+class SceneInst;
+class DrawableBuffer;
+
+///////////////////////////////////////////////////////////////////////////
+
+struct DrawQueueXfData
 {
-	PoolString	mLayerName;
-	
-	Layer();
-	
+	ork::CMatrix4 mWorldMatrix;
 };
+
+
+///////////////////////////////////////////////////////////////////////////
 
 class DrawableBufItem
 {
 public:
 
-	DrawableBufItem() : mpDrawable(0), miBufferIndex(0) {}
+	DrawableBufItem() 
+		: mpDrawable(0)
+		, miBufferIndex(0)
+	{
+
+	}
+
 	~DrawableBufItem()
 	{
 	}
@@ -61,11 +73,10 @@ public:
 	const Drawable* GetDrawable() const { return mpDrawable; }
 	void SetDrawable( const Drawable* pdrw )
 	{
-		//printf( "bi<%p> SetDrw<%p>\n", this, pdrw );
 		mpDrawable = pdrw; 
 	}
 
-	CMatrix4					mMatrix;
+	DrawQueueXfData				mXfData;
 	anyp						mUserData0;
 	anyp						mUserData1;
 	int							miBufferIndex;
@@ -74,10 +85,18 @@ private:
 
 	const Drawable*				mpDrawable;
 
+}; // ~100 bytes
+
+///////////////////////////////////////////////////////////////////////////
+
+struct Layer
+{
+	PoolString	mLayerName;
+	Layer();
 };
-class SceneInst;
-class DrawableBuffer;
-typedef ork::fixedlut<PoolString,ork::CCameraData,16>	CameraLut;
+
+///////////////////////////////////////////////////////////////////////////
+
 struct DrawableBufLayer
 {
 	static const int kmaxitems = 1024;
@@ -86,27 +105,10 @@ struct DrawableBufLayer
 	int							miBufferIndex;
 	bool HasData() const { return (miItemIndex!=-1); }
 	void Reset(const DrawableBuffer& dB);
-	DrawableBufItem& Queue();
+	DrawableBufItem& Queue(const DrawQueueXfData& xfdata,const Drawable*d);
 	
 	DrawableBufLayer();
-};
-///////////////////////////////////////////////////////////////////////////
-class SceneDrawLayerData
-{
-
-public:
-
-	SceneDrawLayerData();
-
-	void Queue( SceneInst* psi, DrawableBuffer* dbuf );
-	const CCameraData* GetCameraData( int icam ) const;
-	const CCameraData* GetCameraData( const PoolString& named ) const;
-
-private:
-	
-	CameraLut mCameraLut;
-
-};
+}; // ~ 100K
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -122,7 +124,7 @@ class DrawableBuffer
 {
 public:
 	static const int kmaxlayers = 8;
-	typedef ork::fixedlut<PoolString,DrawableBufLayer*,32>			LayerLut;
+	typedef ork::fixedlut<PoolString,DrawableBufLayer*,kmaxlayers>	LayerLut;
 
 	CameraLut										mCameraDataLUT;
 	DrawableBufLayer								mRawLayers[kmaxlayers];
@@ -130,11 +132,10 @@ public:
 	LayerLut										mLayerLut;
 	int												miBufferIndex;
 	int												miReadCount;
-	//mutable ork::recursive_mutex					mBufferMutex;
 	orkset<PoolString>								mLayers;
 	static ork::MpMcBoundedQueue<RenderSyncToken>	mOfflineRenderSynchro;	
 	static ork::MpMcBoundedQueue<RenderSyncToken>	mOfflineUpdateSynchro;	
-	SceneDrawLayerData								mSDLD;
+	static ork::atomic<bool> gbInsideClearAndSync;
 
 	void Reset();
 	DrawableBuffer(int ibidx);
@@ -142,24 +143,26 @@ public:
 
 	static const int kmaxbuffers = 6;
 
-	static const DrawableBuffer* LockReadBuffer(int lid);
+	static const DrawableBuffer* BeginDbRead(int lid);
+	static void EndDbRead(const DrawableBuffer*db);
+
 	static DrawableBuffer* LockWriteBuffer(int lid);
 	static void UnLockWriteBuffer(DrawableBuffer*db);
-	static void UnLockReadBuffer(const DrawableBuffer*db);
-	static void ClearAndSync();
-	static void BeginClearAndSync();
-	static void EndClearAndSync();
-	static bool InsideClearAndSync() { return gbInsideClearAndSync; }
 	
+	static void BeginClearAndSyncWriters();
+	static void EndClearAndSyncWriters();
+	
+	static void BeginClearAndSyncReaders();
+	static void EndClearAndSyncReaders();
+	static void ClearAndSyncReaders();
+	static void ClearAndSyncWriters();
+	
+	const CCameraData* GetCameraData( int icam ) const;
+	const CCameraData* GetCameraData( const PoolString& named ) const;
+
 	DrawableBufLayer* MergeLayer( const PoolString& layername );
 
-private:
-
-	static concurrent_triple_buffer<DrawableBuffer> gBuffers;
-
-	static bool										gbInsideClearAndSync;
-
-};
+}; // ~1MiB
 
 
 class Drawable : public ork::Object
@@ -168,33 +171,26 @@ class Drawable : public ork::Object
 
 public:
 
-	Drawable(Entity* pent);
+	Drawable();
 	virtual ~Drawable();
 
-	virtual void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* prenderer) const = 0;
-	virtual void QueueToBuffer(DrawableBufLayer&buffer) const = 0;
+	virtual void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* prenderer) const = 0; // 	AssertOnOpQ2( MainThreadOpQ() );
+	virtual void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer&buffer) const = 0;  // AssertOnOpQ2( UpdateSerialOpQ() );
 
 	const ork::Object* GetOwner() const { return mOwner; }
-
-	Entity* GetEntity() const { return mEntity; }
-	void SetEntity(Entity* pent)
-	{
-		printf( "Drawable<%p> SetEnt<%p>\n", this, pent );
-		mEntity = pent;
-	}
-	const DagNode *GetDagNode() const;
-
 	void SetOwner( const ork::Object* owner ) { mOwner=owner; }
 
-	void SetData( anyp data ) { mData = data; }
-	const anyp& GetData() const { return mData; }
+	void SetUserDataA( anyp data ) { mDataA = data; }
+	const anyp& GetUserDataA() const { return mDataA; }
+	void SetUserDataB( anyp data ) { mDataB = data; }
+	const anyp& GetUserDataB() const { return mDataB; }
 
 protected:
 
 	const ork::Object*			mOwner;
-	Entity*						mEntity;
 	Layer*						mpLayer;
-	anyp						mData;
+	anyp						mDataA;
+	anyp						mDataB;
 
 
 };
@@ -207,9 +203,9 @@ class CameraDrawable : public Drawable
 	RttiDeclareAbstract(CameraDrawable, Drawable);
 public:
 	CameraDrawable( Entity* pent, const CCameraData* camData);
-	/*virtual*/ void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const;
-	/*virtual*/ void QueueToBuffer(DrawableBufLayer&buffer) const;
 private:
+	void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const override;
+	void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer&buffer) const override;
 	const CCameraData* mCameraData;
 };
 
@@ -220,8 +216,6 @@ class ModelDrawable : public Drawable
 {
 	RttiDeclareConcrete(ModelDrawable, Drawable);
 public:
-	const ork::TransformNode3D*	mOverrideXF;
-	void SetOverrideXF( const ork::TransformNode3D* ovr ) { mOverrideXF=ovr; }
 
 	ModelDrawable(Entity *pent = NULL);
 	~ModelDrawable();
@@ -243,8 +237,11 @@ public:
 	void ShowBoundingSphere( bool bflg ) { mbShowBoundingSphere=bflg; }
 	
 private:
-	/*virtual*/ void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const;
-	/*virtual*/ void QueueToBuffer(DrawableBufLayer&buffer) const;
+	
+	void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const override;	
+	void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer&buffer) const override;
+	
+
 	lev2::XgmModelInst*	mModelInst;
 	lev2::XgmWorldPose*	mpWorldPose;
 	float				mfScale;
@@ -273,7 +270,7 @@ class CallbackDrawable : public Drawable
 {
 	RttiDeclareAbstract(CallbackDrawable, Drawable);
 
-	typedef void (*BufferCBType)(DrawableBufItem&cdb);
+	typedef void (*Q2LCBType)(DrawableBufItem&cdb);
 
 public:
 
@@ -281,17 +278,17 @@ public:
 	~CallbackDrawable();
 
 	void SetDataDestroyer( ICallbackDrawableDataDestroyer* pdestroyer ) { mDataDestroyer = pdestroyer; }
-	void SetCallback(lev2::CallbackRenderable::cbtype cb) { mCallback = cb; }
-	void SetBufferCallback(BufferCBType cb) { mBufferCallback = cb; }
+	void SetRenderCallback(lev2::CallbackRenderable::cbtype_t cb) { mRenderCallback = cb; }
+	void SetQueueToLayerCallback(Q2LCBType cb) { mQueueToLayerCallback = cb; }
 	U32 GetSortKey() const { return mSortKey; }
 	void SetSortKey( U32 uv ) { mSortKey=uv; }
 
 private:
-	/*virtual*/ void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const;
-	/*virtual*/ void QueueToBuffer(DrawableBufLayer&buffer) const;
+	void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const override;
+	void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer&buffer) const override;
 	ICallbackDrawableDataDestroyer*		mDataDestroyer;
-	lev2::CallbackRenderable::cbtype	mCallback;
-	BufferCBType						mBufferCallback;
+	lev2::CallbackRenderable::cbtype_t	mRenderCallback;
+	Q2LCBType							mQueueToLayerCallback;
 	U32 mSortKey;
 };
 

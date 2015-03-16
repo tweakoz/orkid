@@ -31,9 +31,18 @@ DeferredPickOperationContext::DeferredPickOperationContext()
 static Opq gPickOPQ(1,"PickOpQ");
 void OuterPickOp( DeferredPickOperationContext* pickctx )
 {
+	SceneEditorVP* viewport = pickctx->mViewport;
+
 	assert(pickctx->mViewport!=nullptr);
 	if( pickctx->mViewport==nullptr)
 		return;
+
+	const ent::SceneInst* psi = viewport->GetSceneInst();
+	const ent::SceneData* pscene = viewport->SceneEditor().mpScene;
+
+	if( nullptr == pscene ) return;
+	if( nullptr == psi ) return;
+	if( false == viewport->IsSceneDisplayEnabled() ) return;
 
 	auto outer_op = [=]()
 	{	
@@ -44,33 +53,59 @@ void OuterPickOp( DeferredPickOperationContext* pickctx )
 		gUpdateStatus.SetState(EUPD_STOP);
 		UpdateSerialOpQ().sync();
 		////////////
-		auto op_pick = [=]()
-		{	AssertOnOpQ2( MainThreadOpQ() );
-			pickctx->mState = 1;
-			SceneEditorVP* pVP = pickctx->mViewport;
-			assert(pVP!=nullptr);
-			lev2::GetPixelContext ctx;
-			ctx.miMrtMask = 3;
-			ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
-			ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
-			pVP->GetPixel( pickctx->miX, pickctx->miY, ctx );
-			pickctx->mpCastable = ctx.GetObject(pVP->GetPickBuffer(),0);
-			printf( "GOTOBJ<%p>\n", pickctx->mpCastable );
-			if( pickctx->mOnPick )
-			{	auto on_pick = [=]()
-				{ 	pickctx->mOnPick(pickctx);
-					pickctx->mState = 2;
+		static auto d_buf = new ork::ent::DrawableBuffer(4);
+		ork::lev2::RenderContextFrameData framedata; //
+
+		anyp db_var;
+		db_var.Set<const DrawableBuffer*>( d_buf );
+
+		framedata.SetUserProperty( "DB", db_var );
+
+		auto lamb = [&]()
+		{	
+			AssertOnOpQ2( UpdateSerialOpQ() );
+
+			//viewport->SceneEditorView().UpdateRefreshPolicy(framedata,psi);
+			d_buf->miBufferIndex = 0;
+			//psi->Update();
+			viewport->QueueSceneInstToDb(d_buf);
+			////////////
+			MainThreadOpQ().sync();
+			////////////
+			auto op_pick = [&]()
+			{	AssertOnOpQ2( MainThreadOpQ() );
+				pickctx->mState = 1;
+				lev2::GetPixelContext ctx;
+				ctx.miMrtMask = 3;
+				ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
+				ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
+				ctx.mUserData.Set<ork::lev2::RenderContextFrameData*>( & framedata );
+
+				viewport->GetPixel( pickctx->miX, pickctx->miY, ctx ); // HERE<<<<<<
+				pickctx->mpCastable = ctx.GetObject(viewport->GetPickBuffer(),0);
+				printf( "GOTOBJ<%p>\n", pickctx->mpCastable );
+				if( pickctx->mOnPick )
+				{	
+					auto on_pick = [=]()
+					{ 	pickctx->mOnPick(pickctx);
+						pickctx->mState = 2;
+						gUpdateStatus.SetState(EUPD_START);
+					};
+					Op(on_pick).QueueASync(UpdateSerialOpQ());
+				}
+				else
+				{	pickctx->mState = 3;
 					gUpdateStatus.SetState(EUPD_START);
-				};
-				Op(on_pick).QueueASync(UpdateSerialOpQ());
-			}
-			else
-			{	pickctx->mState = 3;
-				gUpdateStatus.SetState(EUPD_START);
-			}
-			//UpdateSerialOpQ().sync();
+				}
+				//UpdateSerialOpQ().sync();
+			};
+			Op(op_pick).QueueSync(MainThreadOpQ());
+
 		};
-		Op(op_pick).QueueASync(MainThreadOpQ());
+		Op(lamb).QueueSync(UpdateSerialOpQ()); // HERE<<<<<<
+
+		//delete d_buf;
+
 		////////////
 		// restart updates, and wait for mainthread to acknowledge
 		////////////
@@ -97,7 +132,7 @@ void SceneEditorVP::GetPixel( int ix, int iy, lev2::GetPixelContext& ctx )
 	/////////////////////////////////////////////////////////////
 	// force a pick refresh
 
-	mpPickBuffer->Draw();
+	mpPickBuffer->Draw(ctx);
 
 	/////////////////////////////////////////////////////////////
 	int iW = mpPickBuffer->GetContext()->GetW();
@@ -115,16 +150,22 @@ void SceneEditorVP::GetPixel( int ix, int iy, lev2::GetPixelContext& ctx )
 ///////////////////////////////////////////////////////////////////////////////
 
 template<>
-void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
+void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( lev2::GetPixelContext& ctx )
 {
 	AssertOnOpQ2( MainThreadOpQ() );
 
-	ent::SceneInst* psi = mpViewport->GetSceneInst();
+	const ent::SceneInst* psi = mpViewport->GetSceneInst();
 	ent::SceneData* pscene = mpViewport->mEditor.mpScene;
 
 	if( nullptr == pscene ) return;
 	if( nullptr == psi ) return;
 	if( false == mpViewport->mbSceneDisplayEnable ) return;
+
+
+	if( false == ctx.mUserData.IsA<ork::lev2::RenderContextFrameData*>() )
+		return;
+
+	auto frame_data = ctx.mUserData.Get<ork::lev2::RenderContextFrameData*>();
 
 	///////////////////////////////////////////////////////////////////////////
 
@@ -136,24 +177,23 @@ void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
 	mpViewport->PushFrameTechnique( & pktek );
 	GfxTarget *pTEXTARG = GetContext();
 	GfxTarget* pPARENTTARG = GetParent()->GetContext();
-	ork::lev2::RenderContextFrameData framedata; //
-	pTEXTARG->SetRenderContextFrameData( & framedata );
-	framedata.SetRenderingMode( ork::lev2::RenderContextFrameData::ERENDMODE_STANDARD );
-	framedata.SetTarget( pTEXTARG );
+	pTEXTARG->SetRenderContextFrameData( frame_data );
+	frame_data->SetRenderingMode( ork::lev2::RenderContextFrameData::ERENDMODE_STANDARD );
+	frame_data->SetTarget( pTEXTARG );
 	SRect tgt_rect( 0, 0, mpViewport->GetW(), mpViewport->GetH() );
-	framedata.SetDstRect( tgt_rect );
-	pTEXTARG->SetRenderContextFrameData( & framedata );
+	frame_data->SetDstRect( tgt_rect );
+	pTEXTARG->SetRenderContextFrameData( frame_data );
 	///////////////////////////////////////////////////////////////////////////
 	mpViewport->GetRenderer()->SetTarget( pTEXTARG );
-	framedata.SetLightManager(0);
+	frame_data->SetLightManager(nullptr);
 	///////////////////////////////////////////////////////////////////////////
 	// use source viewport's W/H for camera matrix computation
 	///////////////////////////////////////////////////////////////////////////
-	framedata.AddLayer( AddPooledLiteral("All") );
+	frame_data->AddLayer( AddPooledLiteral("All") );
 	///////////////////////////////////////////////////////////////////////////
 	anyp PassData;
 	PassData.Set<orkstack<ent::CompositingPassData>*>( & mpViewport->mCompositingGroupStack );
-	framedata.SetUserProperty( "nodes", PassData );
+	frame_data->SetUserProperty( "nodes", PassData );
 	ent::CompositingPassData compositor_node;
 	///////////////////////////////////////////////////////////////////////////
 	int itx0 = GetContextX();
@@ -166,10 +206,10 @@ void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
 	///////////////////////////////////////////////////////////////////////////
 	float fW = mpViewport->GetW();
 	float fH = mpViewport->GetH();
-	framedata.GetCameraCalcCtx().mfAspectRatio = fW/fH;
+	frame_data->GetCameraCalcCtx().mfAspectRatio = fW/fH;
 	///////////////////////////////////////////////////////////////////////////
 	lev2::UiViewportRenderTarget rt( mpViewport );
-	framedata.PushRenderTarget( & rt );
+	frame_data->PushRenderTarget( & rt );
 	BeginFrame();
 	{
 		SRect VPRect( itx0, ity0, itx1, ity1 );
@@ -185,23 +225,8 @@ void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw( void )
 		pTEXTARG->BindMaterial( GfxEnv::GetDefault3DMaterial() );
 		pTEXTARG->PushModColor( CColor4::Yellow() );
 		mpViewport->mCompositingGroupStack.push(compositor_node);
-		{	////////////////////////////////////////////////
-			// update on update q
-			////////////////////////////////////////////////
-			ork::ent::DrawableBuffer draw_buffer(4);
-			auto lamb = [&]()
-			{	mpViewport->mSceneView.UpdateRefreshPolicy(framedata,psi);
-				draw_buffer.miBufferIndex = 0;
-				psi->Update();
-				mpViewport->QueueSDLD(&draw_buffer);
-			};
-			Op(lamb).QueueSync(UpdateSerialOpQ());
-			////////////////////////////////////////////////
-			const ent::DrawableBuffer* DB = & draw_buffer;
-			framedata.SetUserProperty( "DB", anyp(DB) );
-			////////////////////////////////////////////////
-			mpViewport->RenderSDLD( framedata );
-			////////////////////////////////////////////////
+		{	
+			mpViewport->RenderQueuedScene( * frame_data );
 		}
 		mpViewport->mCompositingGroupStack.pop();
 		pTEXTARG->PopModColor();

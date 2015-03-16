@@ -92,9 +92,12 @@ void EditorMainWindow::QueueLoadScene( const std::string& filename )
 	{	MainThreadOpQ().push(
 		Op([=]()
 		{
+			printf( "Scene<%s> Loaded\n", filename.c_str() );
 			SetRecentSceneFile(filename.c_str(),SCENEFILE_DIR);
 			this->mCurrentFileName = QString(filename.c_str());
+			printf( "calling SlotUpdateAll\n" );
 			this->SlotUpdateAll();
+			printf( "called SlotUpdateAll\n" );
 		}));
 	};
 	///////////////////////////////////////////////

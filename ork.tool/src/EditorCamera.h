@@ -8,6 +8,7 @@
 #ifndef _ORK_ENT_EDITORCAMERA_H_
 #define _ORK_ENT_EDITORCAMERA_H_
 
+#include <pkg/ent/entity.h>
 #include <pkg/ent/component.h>
 #include <pkg/ent/componenttable.h>
 #include <ork/math/TransformNode.h>

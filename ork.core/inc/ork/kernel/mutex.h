@@ -52,6 +52,8 @@ namespace ork
 		}
 		int GetLockCount() const { return miLockCount; }
 		typedef std::unique_lock<std::recursive_mutex> recursive_scoped_lock;
+		const std::string GetName() const { return mName; }
+
 	private:
 		std::recursive_mutex	mTheMutex;
 		std::string mName;
@@ -106,6 +108,9 @@ namespace ork {
 
 template <typename T> class LockedResource
 {
+	typedef std::function<void(T&)> mutable_atomicop_t;
+	typedef std::function<void(const T&)> const_atomicop_t;
+
 	T												mResource;
 	mutable ork::recursive_mutex					mResourceMutex;
 
@@ -115,7 +120,7 @@ public:
 	{
 	}
 	LockedResource( const LockedResource& oth )
-		: mResourceMutex( oth.mResourceMutex.mname )
+		: mResourceMutex( oth.mResourceMutex.GetName().c_str() )
 	{
 	}
 	~LockedResource()
@@ -149,6 +154,24 @@ public:
 	int GetLockCount() const 
 	{
 		return mResourceMutex.GetLockCount();
+	}
+	T AtomicCopy() const
+	{
+		T rval = LockForRead();
+		UnLock();
+		return rval;
+	}
+	void AtomicOp( const mutable_atomicop_t& op )
+	{
+		LockForWrite();
+		op(mResource);		
+		UnLock();
+	}
+	void AtomicOp( const const_atomicop_t& op ) const
+	{
+		LockForRead();
+		op(mResource);		
+		UnLock();
 	}
 };
 

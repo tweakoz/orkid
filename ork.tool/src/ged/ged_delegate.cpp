@@ -364,99 +364,181 @@ OpsTask* IOpsDelegate::GetTask( ork::object::ObjectClass* pdelegclass, ork::Obje
 
 void OpsNode::DoDraw( lev2::GfxTarget* pTARG ) // virtual
 {
-	const int ops_size = 12*get_charw();
-
 	bool bispick = pTARG->FBI()->IsPickState();
+
+	int inumops = int(mOps.size());
+
+	const int ops_size = ((miW-inumops*3)/inumops);
+
 
 	GetSkin()->DrawOutlineBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE );
 	for( int i=0; i<int(mOps.size()); i++ )
-	{	int ix = miX+ops_ioff+(i*ops_size);
+	{	int ix = miX+ops_ioff+(i*ops_size+2);
 		
-		ork::object::ObjectClass* pclass = mOps[i].second;
 		ork::Object* ptarget = GetOrkObj();
 
-		OpsTask* ptask = IOpsDelegate::GetTask( pclass, ptarget );
+		bool is_iopsdeleg = mOps[i].second.IsA<ork::object::ObjectClass*>();
+		bool is_iopmaplambda = mOps[i].second.IsA<ork::reflect::OpMap::lambda_t>();
 
-		bool bactive = (ptask!=0);
+		if( is_iopmaplambda )
+		{
+			const auto& l = mOps[i].second.Get<ork::reflect::OpMap::lambda_t>();
+			
 
-		GedSkin::ESTYLE estyle = bactive 
+			if( bispick )
+				GetSkin()->DrawBgBox( this, ix, miY+2, (ops_size-ops_ioff), miH-4, GedSkin::ESTYLE_BACKGROUND_OPS );
+			else
+				GetSkin()->DrawBgBox( this, ix, miY+2, (ops_size-ops_ioff), miH-4, GedSkin::ESTYLE_DEFAULT_OUTLINE );
+				GetSkin()->DrawText( this, ix+6, miY+4, mOps[i].first.c_str() );
+
+		}
+		else if( is_iopsdeleg )
+		{
+			auto pclass = mOps[i].second.Get<ork::object::ObjectClass*>();
+
+			OpsTask* ptask = IOpsDelegate::GetTask( pclass, ptarget );
+
+			bool bactive = (ptask!=0);
+
+			GedSkin::ESTYLE estyle = bactive 
 									? GedSkin::ESTYLE_DEFAULT_OUTLINE
 									: GedSkin::ESTYLE_BACKGROUND_OPS ;
 
-		GetSkin()->DrawBgBox( this, ix, miY+2, (ops_size-ops_ioff), miH-4, estyle );
+			GetSkin()->DrawBgBox( this, ix, miY+2, (ops_size-ops_ioff), miH-4, estyle );
 
-		if( ptask )
-		{
-			static int ispinner = 0;
 
-			float fprogress = ptask->mpDelegate->GetProgress();
-			int inw = int ( float((ops_size-ops_ioff)-1) * fprogress );
-			GetSkin()->DrawBgBox( this, ix+1, miY+3, inw, miH-6, GedSkin::ESTYLE_BACKGROUND_2 );
-	
-			std::string Label = CreateFormattedString( "%s(%d)", mOps[i].first.c_str(), int(fprogress*100.0f) );
-			GetSkin()->DrawText( this, ix, miY+4, Label.c_str() );
+			if( ptask )
+			{
+				static int ispinner = 0;
 
-			float fspinner = float(ispinner)/100.0f;
-			float fxo = ork::sinf( fspinner )*float(miH/3);
-			float fyo = ork::cosf( fspinner )*float(miH/3);
+				float fprogress = ptask->mpDelegate->GetProgress();
+				int inw = int ( float((ops_size-ops_ioff)-1) * fprogress );
+				GetSkin()->DrawBgBox( this, ix+1, miY+3, inw, miH-6, GedSkin::ESTYLE_BACKGROUND_2 );
+		
+				std::string Label = CreateFormattedString( "%s(%d)", mOps[i].first.c_str(), int(fprogress*100.0f) );
+				GetSkin()->DrawText( this, ix, miY+4, Label.c_str() );
 
-			float fxc = ix+(ops_size-ops_ioff)-(miH/3);
-			float fyc = miY+(miH/2);
+				float fspinner = float(ispinner)/100.0f;
+				float fxo = ork::sinf( fspinner )*float(miH/3);
+				float fyo = ork::cosf( fspinner )*float(miH/3);
 
-			int ix0 = int(fxc-fxo);
-			int ix1 = int(fxc+fxo);
-			int iy0 = int(fyc-fyo);
-			int iy1 = int(fyc+fyo);
+				float fxc = ix+(ops_size-ops_ioff)-(miH/3);
+				float fyc = miY+(miH/2);
 
-			GetSkin()->DrawLine( this, ix0, iy0, ix1, iy1, GedSkin::ESTYLE_BACKGROUND_2 );
+				int ix0 = int(fxc-fxo);
+				int ix1 = int(fxc+fxo);
+				int iy0 = int(fyc-fyo);
+				int iy1 = int(fyc+fyo);
 
-			ispinner++;
-		}
-		else
-		{
-			GetSkin()->DrawText( this, ix+6, miY+4, mOps[i].first.c_str() );
+				GetSkin()->DrawLine( this, ix0, iy0, ix1, iy1, GedSkin::ESTYLE_BACKGROUND_2 );
+
+				ispinner++;
+			}
+			else
+			{
+				GetSkin()->DrawText( this, ix+6, miY+4, mOps[i].first.c_str() );
+			}
 		}
 
 	}
 }
 
-void OpsNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
+void OpsNode::mousePressEvent ( QMouseEvent * pEV )
 {
-	const int ops_size = 12*get_charw();
+	int inumops = int(mOps.size());
+	const int ops_size = ((miW-inumops*3)/inumops);
 
 	Qt::MouseButton button = pEV->button();
 	int ix = pEV->x() - this->miX;
 	int iy = pEV->y() - this->miY;
-	int index = (ix-ops_ioff)/ops_size;
-	orkprintf( "op<%s>\n", mOps[index].first.c_str() );
-	ork::object::ObjectClass *pclass = mOps[index].second;
-	if( pclass )
-	{		
+	
+	//int ix = miX+ops_ioff+(i*ops_size+2);
+
+	int index = (ix-ops_ioff)/(ops_size+2);
+
+	const auto& opnam = mOps[index].first;
+	const auto& oper = mOps[index].second;
+
+	orkprintf( "op<%s> typ<%s>\n", opnam.c_str(), TypeIdName(oper.GetTypeInfo()).c_str() );
+
+	if( oper.IsA<ork::object::ObjectClass *>() )
+	{
+		auto pclass = oper.Get<ork::object::ObjectClass *>();
+		if( pclass )
+		{		
+			mModel.SigRepaint();
+			IOpsDelegate::AddTask( pclass, GetOrkObj() );
+			//mModel.SigRepaint();
+		}
+	}
+	else if( oper.IsA<ork::reflect::OpMap::lambda_t>() )
+	{
+		const auto& l = oper.Get<ork::reflect::OpMap::lambda_t>();
+
+		printf( "Executing OpLambda on Obj<%p>\n", GetOrkObj() );
+		l(GetOrkObj());
+
 		mModel.SigRepaint();
-		IOpsDelegate::AddTask( pclass, GetOrkObj() );
-		//mModel.SigRepaint();
 	}
 }
 
 OpsNode::OpsNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj )
 	: GedItemNode( mdl, name, prop, obj)
-{	object::ObjectClass* objclass = rtti::downcast<object::ObjectClass*>( obj->GetClass() );
-	any16 obj_ops = objclass->Description().GetClassAnnotation( "editor.object.ops" );
-	orkvector<std::string> opstrings;
-	ConstString obj_ops_str = obj_ops.Get<ConstString>();
-	SplitString( obj_ops_str.c_str(), opstrings, " " );
-	for( int i=0; i<int(opstrings.size()); i++ )
-	{	const std::string opstr = opstrings[i];
-		orkvector<std::string> opbreak;
-		SplitString( opstr.c_str(), opbreak, ":" );
-		rtti::Class *the_class = rtti::Class::FindClass(opbreak[1].c_str());
-		if( the_class )
+{	
+	object::ObjectClass* objclass = rtti::downcast<object::ObjectClass*>( obj->GetClass() );
+
+	std::set<ork::reflect::OpMap*> opm_set;
+	std::set<ork::object::ObjectClass*> iop_set;
+
+	while( objclass != nullptr )
+	{
+		any16 obj_ops = objclass->Description().GetClassAnnotation( "editor.object.ops" );
+
+		if( obj_ops.IsA<ork::reflect::OpMap*>() )
 		{
-			OrkAssert( the_class->IsSubclassOf( IOpsDelegate::GetClassStatic() ) );
-			ork::object::ObjectClass* pclass = rtti::autocast(the_class);
-			mOps.push_back( std::pair<std::string,ork::object::ObjectClass*>(opbreak[0],pclass) );
+			auto opm = obj_ops.Get<ork::reflect::OpMap*>();
+
+			if( opm && (opm_set.end() == opm_set.find(opm)) )
+			{
+				opm_set.insert(opm);
+
+				for( const auto& item : opm->mLambdaMap )
+				{
+					mOps.push_back( std::pair<std::string,any64>(item.first,item.second) );
+				}
+			}
+
 		}
+		else if( obj_ops.IsA<ConstString>() )
+		{
+			orkvector<std::string> opstrings;
+			ConstString obj_ops_str = obj_ops.Get<ConstString>();
+			SplitString( obj_ops_str.c_str(), opstrings, " " );
+			for( int i=0; i<int(opstrings.size()); i++ )
+			{	const std::string opstr = opstrings[i];
+				orkvector<std::string> opbreak;
+				SplitString( opstr.c_str(), opbreak, ":" );
+				
+				rtti::Class *the_class = rtti::Class::FindClass(opbreak[1].c_str());
+				if( the_class )
+				{
+					OrkAssert( the_class->IsSubclassOf( IOpsDelegate::GetClassStatic() ) );
+					ork::object::ObjectClass* pclass = rtti::autocast(the_class);
+
+					if( pclass && (iop_set.end() == iop_set.find(pclass)) )
+					{
+						iop_set.insert(pclass);
+
+						mOps.push_back( std::pair<std::string,any64>(opbreak[0],pclass) );
+					}
+				}
+			}
+
+		}
+
+		objclass = rtti::downcast<object::ObjectClass*>(objclass->Parent());
 	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -485,6 +567,17 @@ void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 	int labx = miX+12;
 	if( labx<dbx2+3 ) labx = dbx2+3;
 
+	////////////////////////////////
+
+	int il = miX+miW-(idim*2);
+	int iw = idim-1;
+	int ih = idim-2;
+
+	int il2 = il+idim+1;
+	int iy2 = dby2-1;
+	int ihy = dby1+(ih/2);
+	int ihx = il+(iw/2);
+
 	GetSkin()->DrawBgBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1 );
 	GetSkin()->DrawText( this, labx, miY+2, mName.c_str() );
 	GetSkin()->DrawBgBox( this, miX, miY, miW, get_charh(), GedSkin::ESTYLE_BACKGROUND_GROUP_LABEL );
@@ -493,12 +586,12 @@ void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 	// draw stack depth indicator on top node
 	////////////////////////////////
 
-	if( (stack_depth-1) && (GetOrkObj()==mModel.BrowseStackTop()))
+	if( (stack_depth-1) && (GetOrkObj()==mModel.BrowseStackTop()) && mIsObjNode )
 	{
 		std::string arrs;
 		for( int i=0; i<(stack_depth-1); i++ )
 			arrs += "<";
-		GetSkin()->DrawText( this, miX+miW-8-((stack_depth-1)*get_charw()), miY+4, arrs.c_str() );
+		GetSkin()->DrawText( this, il-idim-((stack_depth-1)*get_charw()), miY+4, arrs.c_str() );
 
 	}
 
@@ -517,11 +610,32 @@ void GedGroupNode::DoDraw( lev2::GfxTarget* pTARG )
 			GetSkin()->DrawLine( this, dbx1, dby1+1, dbx2, dby1+1, GedSkin::ESTYLE_BUTTON_OUTLINE );
 		}
 	}
+
+	////////////////////////////////
+	// draw newged button
+	////////////////////////////////
+
+	if( GetOrkObj() && mIsObjNode )
+	{
+
+		//GetSkin()->DrawOutlineBox( this, il, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, il, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, il+idim-2, iy2, ihx, dby1, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, il, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawLine( this, il+idim-2, iy2, ihx, ihy, GedSkin::ESTYLE_BUTTON_OUTLINE );
+
+		GetSkin()->DrawOutlineBox( this, il2, dby1, iw, ih, GedSkin::ESTYLE_BUTTON_OUTLINE );
+		GetSkin()->DrawOutlineBox( this, il2+3, dby1+3, iw-6, ih-6, GedSkin::ESTYLE_BUTTON_OUTLINE );
+
+	}
+
+	////////////////////////////////
 }
 
-GedGroupNode::GedGroupNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj )
+GedGroupNode::GedGroupNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj, bool is_obj_node )
 	: GedItemNode( mdl, name, prop, obj )
-	, mbCollapsed( true )
+	, mbCollapsed( false==is_obj_node )
+	, mIsObjNode(is_obj_node)
 {
 
 	std::string fixname = name;
@@ -586,75 +700,90 @@ void GedGroupNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		int ix = pEV->x() - this->miX;
 		int iy = pEV->y() - this->miY;
 
-		if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
+		//////////////////////////////
+		// spawn/stack
+		//////////////////////////////
+
+		int ioff = koff;
+		int idim = get_charh();
+		int dby1 = miY+ioff;
+		int dby2 = dby1+idim;
+		int il = miW-(idim*2);
+		int iw = idim-1;
+		int ih = idim-2;
+
+		int il2 = il+idim+1;
+		int iy2 = dby2-1;
+		int ihy = dby1+(ih/2);
+		int ihx = il+(iw/2);
+
+		if( iy >= koff && iy <= kdim )
 		{
-			mbCollapsed = ! mbCollapsed;
-
-			///////////////////////////////////////////
-			PersistHashContext HashCtx;
-			PersistantMap* pmap = mModel.GetPersistMap( HashCtx );
-			///////////////////////////////////////////
-		
-			pmap->SetValue( mPersistID.c_str(), mbCollapsed ? "true" : "false" );
-
-			if( isCTRL ) // also do siblings
+			if( ix >= il && ix < il2 && mIsObjNode )
 			{
-				GedItemNode* par = GetParent();
-				if( par )
+				if( GetOrkObj() )
 				{
-					int inumc = par->GetNumItems();
-					for( int i=0; i<inumc; i++ )
+					ork::Object* top = mModel.BrowseStackTop();
+					if( top == GetOrkObj() )
 					{
-						GedItemNode* item = par->GetItem( i );
-						GedGroupNode* pgroup = rtti::autocast(item);
-						if( pgroup )
+						mModel.PopBrowseStack();
+						top = mModel.BrowseStackTop();
+						if( top )
 						{
-							pgroup->mbCollapsed = mbCollapsed;
-							pgroup->CheckVis();
-							pmap->SetValue( pgroup->mPersistID.c_str(), mbCollapsed ? "true" : "false" );
+							mModel.Attach(top,false);
+						}
+					}
+					else
+					{
+						mModel.PushBrowseStack(GetOrkObj());
+						mModel.Attach( GetOrkObj(), false );
+					}
+				}
+
+			}
+			else if( ix >= il2 && ix < il2+idim && mIsObjNode )
+			{
+				if( GetOrkObj() )
+				{
+					// spawn new window here	
+					mModel.SigSpawnNewGed( GetOrkObj() );
+				}
+			}
+			else if( ix >= koff && ix <= kdim ) // drop down
+			{
+				mbCollapsed = ! mbCollapsed;
+
+				///////////////////////////////////////////
+				PersistHashContext HashCtx;
+				PersistantMap* pmap = mModel.GetPersistMap( HashCtx );
+				///////////////////////////////////////////
+			
+				pmap->SetValue( mPersistID.c_str(), mbCollapsed ? "true" : "false" );
+
+				if( isCTRL ) // also do siblings
+				{
+					GedItemNode* par = GetParent();
+					if( par )
+					{
+						int inumc = par->GetNumItems();
+						for( int i=0; i<inumc; i++ )
+						{
+							GedItemNode* item = par->GetItem( i );
+							GedGroupNode* pgroup = rtti::autocast(item);
+							if( pgroup )
+							{
+								pgroup->mbCollapsed = mbCollapsed;
+								pgroup->CheckVis();
+								pmap->SetValue( pgroup->mPersistID.c_str(), mbCollapsed ? "true" : "false" );
+							}
 						}
 					}
 				}
-			}
 
-
-			CheckVis();
-			return;
-		}
-		///////////////////////////////////////////////////
-		else if( isCTRL )
-		{
-			if( GetOrkObj() )
-			{
-				// spawn new window here	
-				mModel.SigSpawnNewGed( GetOrkObj() );
+				CheckVis();
+				return;
 			}
 		}
-		///////////////////////////////////////////////////
-		else
-		{
-			if( GetOrkObj() )
-			{
-				ork::Object* top = mModel.BrowseStackTop();
-				if( top == GetOrkObj() )
-				{
-					mModel.PopBrowseStack();
-					top = mModel.BrowseStackTop();
-					if( top )
-					{
-						mModel.Attach(top,false);
-					}
-				}
-				else
-				{
-					mModel.PushBrowseStack(GetOrkObj());
-					mModel.Attach( GetOrkObj(), false );
-				}
-			}
-		}
-		///////////////////////////////////////////////////
-		// SPAWN a new GED
-		///////////////////////////////////////////////////
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -111,7 +111,7 @@ struct TexSetter
 		rval.mFormat = fmt;
 		rval.mBPP = 4;
 		rval.mNumC = 4;
-		printf( "fmt<%04x> typ<%04x>\n", fmt, typ );
+		//printf( "fmt<%04x> typ<%04x>\n", fmt, typ );
 		switch( fmt )
 		{
 			case GL_RGB:
@@ -175,7 +175,7 @@ struct TexSetter
 			GLint intfmt = 0;
 			printf( "fmt<%04x>\n", fmt );
 			int isiz2 = isize;
-			printf( "numC<%d> typ<%04x>\n", numC, typ );
+			//printf( "numC<%d> typ<%04x>\n", numC, typ );
 			switch( nfmt )
 			{
 				case GL_BGR:
@@ -206,7 +206,7 @@ struct TexSetter
 			OrkAssert(intfmt!=0);
 					
 
-			printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
+			//printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
 			GL_ERRORCHECK();
 
 			bool bUSEPBO = false;
@@ -237,7 +237,7 @@ struct TexSetter
 				map_flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
 				map_flags |= GL_MAP_UNSYNCHRONIZED_BIT;
 				void* pgfxmem = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER,0,isiz2,map_flags);
-				printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
+				//printf( "UPDATE IMAGE UNC imip<%d> iw<%d> ih<%d> isiz<%d> pbo<%d> mem<%p>\n", imip, iw, ih, isiz2, PBOOBJ, pgfxmem );
 				file.Read( pgfxmem, isiz2 );
 				glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 				GL_ERRORCHECK();
@@ -314,7 +314,7 @@ struct TexSetter
 
 			int isize = id*iw*ih*tc.mBPP;
 
-			printf( "UPDATE IMAGE 3dUNC imip<%d> iw<%d> ih<%d> id<%d> isiz<%d>\n", imip, iw, ih, id, isize );
+			//printf( "UPDATE IMAGE 3dUNC imip<%d> iw<%d> ih<%d> id<%d> isiz<%d>\n", imip, iw, ih, id, isize );
 			GL_ERRORCHECK();
 
 
@@ -485,7 +485,7 @@ struct TexSetter
 			int iBheight = (ih+3)/4;
 			int isize = id*(iBwidth*iBheight) * BPP;
 			//const u8* pimgdata = & dataBASE[irdptr];
-			printf( "READ3DT iw<%d> ih<%d> id<%d> isize<%d>\n", iw, ih, id, isize );
+			//printf( "READ3DT iw<%d> ih<%d> id<%d> isize<%d>\n", iw, ih, id, isize );
 			//irdptr+=isize;
 
 			if( isize )
@@ -568,9 +568,7 @@ VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
 	int iwidth = mpDDSHEADER->dwWidth;
 	int iheight = mpDDSHEADER->dwHeight;
 	int idepth = mpDDSHEADER->dwDepth;
-	//int ireadptr = sizeof( dxt::DDS_HEADER );
 	////////////////////////////////////////////////////////////////////
-	//printf( "  tex<%s> ptex<%p>\n", pth.c_str(), ptex );
 	printf( "  tex<%s> width<%d>\n", pth.c_str(), iwidth );
 	printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
 	printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );

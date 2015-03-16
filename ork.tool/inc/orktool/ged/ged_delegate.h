@@ -7,6 +7,7 @@
 
 #include <ork/reflect/IObjectMapPropertyType.h>
 #include <ork/kernel/core_interface.h>
+#include <ork/kernel/any.h>
 #include <orktool/toolcore/choiceman.h>
 
 namespace ork { namespace dataflow { class outplugbase; } }
@@ -371,9 +372,9 @@ protected:
 };
 class OpsNode : public GedItemNode
 {
-	void DoDraw( lev2::GfxTarget* pTARG ); // virtual
-	void mouseDoubleClickEvent ( QMouseEvent * pEV );
-	orkvector< std::pair< std::string,ork::object::ObjectClass*> > mOps;	
+	void DoDraw( lev2::GfxTarget* pTARG ) override;
+	void mousePressEvent ( QMouseEvent * pEV ) override;
+	orkvector< std::pair< std::string,any64> > mOps;	
 
 	//IOpsDelegate* mpCurrentDelegate;
 public:

@@ -231,10 +231,10 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 			pickctx->mHandler = this;
 			pickctx->mViewport = GetViewport();
 			pickctx->mOnPick = process_pick;
-			OuterPickOp(pickctx);		
+			//OuterPickOp(pickctx);		
 			///////////////////////////////////////////////////////////
 
-			ret.SetHandled(this);
+			//ret.SetHandled(this);
 		}
 		break;
 	}

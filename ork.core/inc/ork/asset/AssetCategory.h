@@ -23,6 +23,7 @@ public:
 	void AddTypeAlias(PoolString, AssetClass *);
 
 	Asset *FindAsset(PieceString type, PieceString name) const;
+	Asset *LoadUnManagedAsset(PieceString type, PieceString name) const;
 	Asset *DeclareAsset(PieceString type, PieceString name) const;
 	AssetClass *FindAssetClass(PieceString name) const;
 private:

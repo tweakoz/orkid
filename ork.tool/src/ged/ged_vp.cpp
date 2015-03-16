@@ -21,7 +21,7 @@ template class ork::lev2::CPickBuffer<ork::tool::ged::GedVP>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 template<> 
-void CPickBuffer<ork::tool::ged::GedVP>::Draw( void )
+void CPickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
 {	
     mPickIds.clear();
 
@@ -89,6 +89,7 @@ GedVP::~GedVP()
 		gAllViewports.erase( it );
 	}
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 void GedVP::DoInit( lev2::GfxTarget* pt )
 {
@@ -105,8 +106,11 @@ void GedVP::DoInit( lev2::GfxTarget* pt )
 ///////////////////////////////////////////////////////////////////////////////
 void GedVP::DoSurfaceResize()
 {
+	mWidget.SetDims( miW, miH );
+	
 	if( 0 == mpPickBuffer && (nullptr!=mpTarget) )
 	{
+
 	}
 	//TODO: mpPickBuffer->Resize()
 }
@@ -196,7 +200,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 			//GetPixel( ix, iy, ctx );
 			//ork::Object *pobj = ctx.GetObject(0);			
 
-			int iscrollamt = bisshift ? 256 : 32;
+			int iscrollamt = bisshift ? 32 : 8;
 
 			static avg_filter<3> gScrollFilter;
 
@@ -205,7 +209,8 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 			{
 				int irawdelta = qem->delta();
 
-				int idelta = gScrollFilter.compute(irawdelta);
+
+				int idelta = (2*gScrollFilter.compute(irawdelta)/9);
 
 				if( idelta > 0 )
 				{
@@ -334,6 +339,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 				}
 			}
 			mNeedsSurfaceRepaint=true;
+			break;
 		}
 		default:
 			break;

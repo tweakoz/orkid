@@ -23,6 +23,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ImgOp2,"proctex::ImgOp2");
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ImgOp3,"proctex::ImgOp3");
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Transform,"proctex::Transform");
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Texture,"proctex::Texture");
+INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::ShaderQuad,"proctex::ShaderQuad");
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Gradient,"proctex::Gradient");
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Curve1D,"proctex::Curve1D");
 INSTANTIATE_TRANSPARENT_RTTI(ork::proctex::Global,"proctex::Global");
@@ -343,7 +344,7 @@ void RotSolid::compute( ProcTex& ptex )
 			stdmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 			stdmat.mRasterState.SetBlending( ebm );
 			stdmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-			stdmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+			stdmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
 			mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
 		}
@@ -420,7 +421,7 @@ void ImgOp2::compute( ProcTex& ptex )
 		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 		gridmat.SetTexture( conplugA->GetValue().GetTexture(ptex) );
 		gridmat.SetTexture2( conplugB->GetValue().GetTexture(ptex) );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
 		UnitTexQuad( pTARG );
@@ -456,6 +457,10 @@ ImgOp3::ImgOp3()
 	, ConstructInpPlug( InputM,dataflow::EPR_UNIFORM,gNoCon )
 	, meOp( EIO3_LERP )
 	, meChanCtrl( EIO3_CH_RGB )
+	, mMtlLerp(nullptr)
+	, mMtlAddw(nullptr)
+	, mMtlSubw(nullptr)
+	, mMtlMul3(nullptr)
 {
 }
 void ImgOp3::compute( ProcTex& ptex )
@@ -467,41 +472,81 @@ void ImgOp3::compute( ProcTex& ptex )
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputB.GetExternalOutput());
 	const ImgOutPlug* conplugM = rtti::autocast(mPlugInpInputM.GetExternalOutput());
+
+	const ImgOutPlug* output_plug = & mPlugOutImgOut;
+
+	auto& plugbuf = output_plug->GetValue().GetBuffer(ptex);
+	const auto& conrtg = plugbuf.GetRtGroup(pTARG);
+	auto plug_name = output_plug->GetName();
+	auto con_mod = output_plug->GetModule();
+	auto mod_nam = con_mod->GetName();
+
+	//printf( "RENDERING ImgOp3<%p> output mod<%p:%s> buf<%p> plug<%p:%s> rtg<%p>\n", this, con_mod, mod_nam.c_str(), & plugbuf, output_plug, plug_name.c_str(), conrtg );
+
 	if(conplugA && conplugB && conplugM )
-	{	buffer.PtexBegin(pTARG,true,false);
-		
-		const char* pop = 0;
+	{	
+		if( nullptr == mMtlLerp )
+		{
+			mMtlLerp = new lev2::GfxMaterial3DSolid( pTARG, "orkshader://proctex", "imgop3_lerp" );
+			mMtlAddw = new lev2::GfxMaterial3DSolid( pTARG, "orkshader://proctex", "imgop3_addw" );
+			mMtlSubw = new lev2::GfxMaterial3DSolid( pTARG, "orkshader://proctex", "imgop3_subw" );
+			mMtlMul3 = new lev2::GfxMaterial3DSolid( pTARG, "orkshader://proctex", "imgop3_mul3" );
+
+			mMtlLerp->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
+			mMtlLerp->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+			mMtlLerp->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+			mMtlLerp->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+			mMtlLerp->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+
+			mMtlAddw->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
+			mMtlAddw->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+			mMtlAddw->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+			mMtlAddw->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+			mMtlAddw->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+
+			mMtlSubw->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
+			mMtlSubw->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+			mMtlSubw->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+			mMtlSubw->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+			mMtlSubw->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+
+			mMtlMul3->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
+			mMtlMul3->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+			mMtlMul3->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+			mMtlMul3->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+			mMtlMul3->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+		}
+
+		lev2::GfxMaterial3DSolid* cur_mtl = nullptr;
 		switch( meOp )
 		{
 			case EIO3_LERP:
-				pop = "imgop3_lerp";
+				cur_mtl = mMtlLerp;
 				break;
 			case EIO3_ADDW:
-				pop = "imgop3_addw";
+				cur_mtl = mMtlAddw;
 				break;
 			case EIO3_SUBW:
-				pop = "imgop3_subw";
+				cur_mtl = mMtlSubw;
 				break;
 			case EIO3_MUL3:
-				pop = "imgop3_mul3";
+				cur_mtl = mMtlMul3;
 				break;
 		}
-		lev2::GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", pop );
-		gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-		gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-		gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-		gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-		gridmat.SetTexture( conplugA->GetValue().GetTexture(ptex) );
-		gridmat.SetTexture2( conplugB->GetValue().GetTexture(ptex) );
-		gridmat.SetTexture3( conplugM->GetValue().GetTexture(ptex) );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
-		pTARG->BindMaterial( & gridmat );
+		cur_mtl->SetTexture( conplugA->GetValue().GetTexture(ptex) );
+		cur_mtl->SetTexture2( conplugB->GetValue().GetTexture(ptex) );
+		cur_mtl->SetTexture3( conplugM->GetValue().GetTexture(ptex) );
+		cur_mtl->SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+
 		////////////////////////////////////////////////////////////////
+		buffer.PtexBegin(pTARG,true,true);
+		pTARG->PushMaterial( cur_mtl );
 		UnitTexQuad( pTARG );
+		pTARG->PopMaterial();
 		buffer.PtexEnd(true);
+		////////////////////////////////////////////////////////////////
+		MarkClean();
 	}
-	MarkClean();
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -512,6 +557,7 @@ void Transform::Describe()
 	RegisterFloatXfPlug( Transform, ScaleY, -16.0f, 16.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( Transform, OffsetX, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( Transform, OffsetY, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( Transform, Rotate, -360.0f, 360.0f, ged::OutPlugChoiceDelegate );
 }
 ork::dataflow::inplugbase* Transform::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
@@ -521,6 +567,7 @@ ork::dataflow::inplugbase* Transform::GetInput(int idx)
 		case 2:	rval = & mPlugInpScaleY; break; 
 		case 3:	rval = & mPlugInpOffsetX; break; 
 		case 4:	rval = & mPlugInpOffsetY; break; 
+		case 5:	rval = & mPlugInpRotate; break; 
 	}
 	return rval;
 }
@@ -530,10 +577,13 @@ Transform::Transform()
 	, ConstructInpPlug( ScaleY,dataflow::EPR_UNIFORM,mfScaleY )
 	, ConstructInpPlug( OffsetX,dataflow::EPR_UNIFORM,mfOffsetX )
 	, ConstructInpPlug( OffsetY,dataflow::EPR_UNIFORM,mfOffsetY )
+	, ConstructInpPlug( Rotate,dataflow::EPR_UNIFORM,mfRotate )
 	, mfScaleX(1.0f)
 	, mfScaleY(1.0f)
 	, mfOffsetX(0.0f)
 	, mfOffsetY(0.0f)
+	, mfRotate(0.0f)
+	, mMaterial(nullptr)
 {
 }
 void Transform::compute( ProcTex& ptex )
@@ -544,22 +594,36 @@ void Transform::compute( ProcTex& ptex )
 	const ImgOutPlug* conplug = rtti::autocast(mPlugInpInput.GetExternalOutput());
 	if(conplug)
 	{	buffer.PtexBegin(pTARG,true,false);
-		
-		lev2::GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "transform" );
-		gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
-		gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-		gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-		gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-		CMatrix4 mtxS, mtxB;
-		mtxS.Scale( mPlugInpScaleX.GetValue(), mPlugInpScaleY.GetValue(), 1.0f );
-		mtxB.SetTranslation( mPlugInpOffsetX.GetValue(), mPlugInpOffsetY.GetValue(), 0.0f );
-		gridmat.SetTexture( conplug->GetValue().GetTexture(ptex) );
-		gridmat.SetAuxMatrix( mtxS*mtxB );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
-		pTARG->BindMaterial( & gridmat );
+
+		if( nullptr == mMaterial )
+		{
+			mMaterial = new lev2::GfxMaterial3DSolid( pTARG, "orkshader://proctex", "transform" );
+			mMaterial->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
+			mMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+			mMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+			mMaterial->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+			mMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+
+		}
 		////////////////////////////////////////////////////////////////
+		float rot = PI2*mPlugInpRotate.GetValue()/360.0f;
+		////////////////////////////////////////////////////////////////
+		CMatrix4 mtxR, mtxS, mtxT, mtxTO1, mtxTO2;
+		mtxS.Scale( mPlugInpScaleX.GetValue(), mPlugInpScaleY.GetValue(), 1.0f );
+		mtxTO1.SetTranslation( -0.5f,-0.5f, 0.0f );
+		mtxTO2.SetTranslation( +0.5f,+0.5f, 0.0f );
+		mtxT.SetTranslation( mPlugInpOffsetX.GetValue(), mPlugInpOffsetY.GetValue(), 0.0f );
+		mtxR.SetRotateZ( rot );
+		float sina = sinf(rot);
+		float cosa = cosf(rot);
+		////////////////////////////////////////////////////////////////
+		mMaterial->SetTexture( conplug->GetValue().GetTexture(ptex) );
+		mMaterial->SetAuxMatrix( (mtxTO1*(mtxR*mtxS)*mtxTO2)*mtxT );
+		mMaterial->SetUser0( CVector4(sina,cosa,0.0f,float(buffer.miW)) );
+		////////////////////////////////////////////////////////////////
+		pTARG->PushMaterial( mMaterial );
 		UnitTexQuad( pTARG );
+		pTARG->PopMaterial();
 		buffer.PtexEnd(true);
 	}
 	MarkClean();
@@ -592,7 +656,7 @@ void Texture::compute( ProcTex& ptex )
 	gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 	gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 	gridmat.SetTexture( GetTexture() );
-	gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+	gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 	pTARG->BindMaterial( & gridmat );
 	////////////////////////////////////////////////////////////////
 	float ftexw = GetTexture() ? GetTexture()->GetWidth() : 1.0f;
@@ -604,7 +668,7 @@ void Texture::compute( ProcTex& ptex )
 	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
 	//pTARG->PushModColor( CVector3::White() );
 	{	
-		RenderQuad( pTARG, -1,-1,1,1 );
+		RenderQuad( pTARG, -1,1,1,-1 );
 
 	}
 	//pTARG->PopModColor();
@@ -616,6 +680,130 @@ void Texture::compute( ProcTex& ptex )
 	//pTARG->PopModColor();
 	MarkClean();
 	buffer.PtexEnd(true);
+}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void ShaderQuad::Describe()
+{	
+	ork::reflect::RegisterProperty( "ShaderFile", & ShaderQuad::mShaderPath );
+	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.class", "ged.factory.filelist");
+	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filetype", "glfx");
+	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filebase", "orkshader://");
+
+	ork::reflect::RegisterProperty( "Texture0", & ShaderQuad::GetTextureAccessor, & ShaderQuad::SetTextureAccessor );
+	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>( "Texture0", "editor.class", "ged.factory.assetlist" );
+	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>( "Texture0", "editor.assettype", "lev2tex" );
+	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>( "Texture0", "editor.assetclass", "lev2tex");
+
+	RegisterObjInpPlug( ShaderQuad, ImgInput0 );
+	RegisterFloatXfPlug( ShaderQuad, User0X, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( ShaderQuad, User0Y, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( ShaderQuad, User0Z, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate );
+
+	////////////////////////////////////////
+	// ops map
+	////////////////////////////////////////
+
+	auto opm = new ork::reflect::OpMap;
+	opm->mLambdaMap["ReloadShader"] = [=]( Object* pobj )
+	{
+		ShaderQuad* as_shader = rtti::autocast(pobj);
+		if(as_shader)
+		{
+			if( as_shader->mShader )
+				delete as_shader->mShader;
+			as_shader->mShader = nullptr;
+
+		}
+	};
+
+	reflect::AnnotateClassForEditor< ShaderQuad >("editor.object.ops", opm );
+	
+	////////////////////////////////////////
+
+}
+ShaderQuad::ShaderQuad()
+	: mShader( nullptr )
+	, ConstructInpPlug( ImgInput0,dataflow::EPR_UNIFORM,gNoCon )
+	, ConstructInpPlug( User0X,dataflow::EPR_UNIFORM,mfUser0X )
+	, ConstructInpPlug( User0Y,dataflow::EPR_UNIFORM,mfUser0Y )
+	, ConstructInpPlug( User0Z,dataflow::EPR_UNIFORM,mfUser0Z )
+	, mfUser0X(0.0f)
+	, mfUser0Y(0.0f)
+	, mfUser0Z(0.0f)
+	, mpTexture(nullptr)
+{
+}
+ork::dataflow::inplugbase* ShaderQuad::GetInput(int idx)
+{	ork::dataflow::inplugbase* rval = 0;
+	switch( idx )
+	{	case 0:	rval = & mPlugInpUser0X; break; 
+		case 1:	rval = & mPlugInpUser0Y; break; 
+		case 2:	rval = & mPlugInpUser0Z; break; 
+		case 3:	rval = & mPlugInpImgInput0; break; 
+	}
+	return rval;
+}
+void ShaderQuad::compute( ProcTex& ptex )
+{
+	auto proc_ctx = ptex.GetPTC();
+	auto pTARG = ptex.GetTarget();
+	//printf( "RENDERING ShaderQuad<%p>\n", this );
+
+	if( nullptr == mShader )
+	{
+		mShader = new lev2::GfxMaterial3DSolid( pTARG, mShaderPath.c_str(), "shaderquad", true, true );
+		printf( "ShaderQuad<%p> loading shader<%s>\n", this, mShaderPath.c_str() );
+	}
+
+	if( mShader->IsUserFxOk() )
+	{
+		//float ftime = proc_ctx->mCurrentTime;
+
+		const ImgOutPlug* conplug = rtti::autocast(mPlugInpImgInput0.GetExternalOutput());
+
+		Buffer& buffer = GetWriteBuffer(ptex);
+
+		mShader->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
+		mShader->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+		mShader->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+		mShader->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+		mShader->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+		
+
+		if(conplug)
+		{	
+			auto& plugbuf = conplug->GetValue().GetBuffer(ptex);
+			const auto& conrtg = plugbuf.GetRtGroup(pTARG);
+			auto plug_name = conplug->GetName();
+			auto con_mod = conplug->GetModule();
+			auto mod_nam = con_mod->GetName();
+
+			printf( " ShaderQuad<%p> input con_mod<%p:%s> conplug<%p:%s> rtg<%p>\n", this, con_mod, mod_nam.c_str(), conplug, plug_name.c_str(), conrtg );
+
+			mShader->SetTexture( conplug->GetValue().GetTexture(ptex) );
+		}
+		else
+			mShader->SetTexture( GetTexture() );
+
+		mShader->SetUser0( CVector4(mPlugInpUser0X.GetValue(),mPlugInpUser0Y.GetValue(),mPlugInpUser0Z.GetValue(),float(buffer.miW)) );
+		////////////////////////////////////////////////////////////////
+		//float ftexw = GetTexture() ? GetTexture()->GetWidth() : 1.0f;
+		//pTARG->PushModColor( ork::CVector4( ftexw, ftexw, ftexw, ftexw ) );
+		////////////////////////////////////////////////////////////////
+		buffer.PtexBegin(pTARG,true,false);
+		pTARG->PushModColor( CVector3::White() );
+		{	
+			pTARG->PushMaterial( mShader );
+			UnitTexQuad( pTARG );
+			pTARG->PopMaterial();
+		}
+		pTARG->PopModColor();
+		buffer.PtexEnd(true);
+		////////////////////////////////////////////////////////////////
+		MarkClean();
+	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -649,6 +837,7 @@ SolidColor::SolidColor()
 	, mfg(1.0f)
 	, mfb(1.0f)
 	, mfa(1.0f)
+	, mMaterial(nullptr)
 {
 }
 void SolidColor::compute( ProcTex& ptex )
@@ -657,19 +846,23 @@ void SolidColor::compute( ProcTex& ptex )
 	auto pTARG = ptex.GetTarget();
 	Buffer& buffer = GetWriteBuffer(ptex);
 	buffer.PtexBegin(pTARG,true,false);
-	lev2::GfxMaterial3DSolid gridmat( pTARG );
-	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-	gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-	gridmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-	gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-	gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-	gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
-	pTARG->BindMaterial( & gridmat );
+
+	if( nullptr == mMaterial )
+	{
+		mMaterial = new lev2::GfxMaterial3DSolid( pTARG );
+		mMaterial->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
+		mMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+		mMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+		mMaterial->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+		mMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+		mMaterial->SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+	}
+
+	pTARG->BindMaterial( mMaterial );
 	////////////////////////////////////////////////////////////////
 	pTARG->PushModColor( ork::CVector4( mfr, mfg, mfb, mfa ) );
 	////////////////////////////////////////////////////////////////
-	CMatrix4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
-	pTARG->MTXI()->PushPMatrix( mtxortho );
+	pTARG->MTXI()->PushPMatrix( CMatrix4::Identity );
 	pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
 	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
 	{	
@@ -714,6 +907,7 @@ Gradient::Gradient()
 	, meRepeatMode( EGS_REPEAT )
 	, meGradientType( EGT_HORIZONTAL )
 	, mbAA(false)
+	, mMtl(nullptr)
 {
 }
 void Gradient::compute( ProcTex& ptex )
@@ -732,6 +926,21 @@ void Gradient::compute( ProcTex& ptex )
 			
 	CVector2 uv;
 	mVertexBuffer.Reset();
+
+	if( nullptr == mMtl )
+	{
+		mMtl = new lev2::GfxMaterial3DSolid( pTARG );
+
+		mMtl->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
+		mMtl->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
+		mMtl->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
+		mMtl->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
+		mMtl->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+		mMtl->mRasterState.SetShadeModel( ork::lev2::ESHADEMODEL_SMOOTH );
+
+	}
+
+	mMtl->SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 
 	/////////////////////////////////////////
 	// compute vertex count
@@ -909,38 +1118,31 @@ void Gradient::compute( ProcTex& ptex )
 	}
 	vw.UnLock(pTARG);
 	struct AA16RenderGrad : public AA16Render
-	{	virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
+	{	void DoRender( float left, float right, float top, float bot, Buffer& buf  ) override
 		{	CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
 			mPTX.GetTarget()->PushModColor( CVector3::White() );
-			mPTX.GetTarget()->PushMaterial( & mtl );
+			mPTX.GetTarget()->PushMaterial( mMtl );
 			mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 			mPTX.GetTarget()->GBI()->DrawPrimitive( mVertexBuffer, ork::lev2::EPRIM_TRIANGLES, 0, mVertexBuffer.GetNumVertices() );
 			mPTX.GetTarget()->MTXI()->PopPMatrix();
 			mPTX.GetTarget()->PopMaterial();
 			mPTX.GetTarget()->PopModColor(); 
 		}
-		lev2::GfxMaterial3DSolid mtl;
+		lev2::GfxMaterial3DSolid* mMtl;
 		ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& mVertexBuffer;
 		AA16RenderGrad(	ProcTex& ptex,
 						Buffer& bo,
-						ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb )
+						ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& vb,
+						lev2::GfxMaterial3DSolid* mtl )
 			: AA16Render( ptex, bo )
-			, mtl( ptex.GetTarget() )
+			, mMtl( mtl )
 			, mVertexBuffer(vb)
 		{
-			mtl.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
-			mtl.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
-			mtl.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
-			mtl.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
-			mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-			mtl.mRasterState.SetShadeModel( ork::lev2::ESHADEMODEL_SMOOTH );
-			mtl.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
-
 			mOrthoBoxXYWH = CVector4( 0.0f, 0.0f, 1.0f, 1.0f );
 		}
 	};
 
-	AA16RenderGrad renderer( ptex, buffer, mVertexBuffer );
+	AA16RenderGrad renderer( ptex, buffer, mVertexBuffer, mMtl );
 	renderer.Render( mbAA );
 
 	////////////////////////////////////////////////////////////////
@@ -983,7 +1185,7 @@ void Group::compute( ProcTex& ptex )
 		gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 		gridmat.SetTexture( ptexture );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(Buffer::kw)) );
+		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(computebuffer.miW)) );
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
 		float ftexw = ptexture ? ptexture->GetWidth() : 1.0f;

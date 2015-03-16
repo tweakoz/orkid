@@ -116,8 +116,8 @@ public:
 	//////////////////////   
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	//////////////////////   
-	void QueueSDLD(ent::DrawableBuffer*pDB);
-	void RenderSDLD( ork::lev2::RenderContextFrameData & ContextData );
+	void QueueSceneInstToDb(ent::DrawableBuffer*pDB);
+	void RenderQueuedScene( ork::lev2::RenderContextFrameData & ContextData );
 	//////////////////////   
 	//lev2::CPickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::CPickBuffer<SceneEditorVP>*)mpPickBuffer; }
 	void IncPickDirtyCount( int icount );
@@ -149,7 +149,7 @@ public:
 	void Init();
 	///////////////////////////////////////////////////
 
-	ent::SceneInst* GetSceneInst();
+	const ent::SceneInst* GetSceneInst();
 	SceneEditorBase& SceneEditor() { return mEditor; }
 	ork::ent::SceneEditorView& SceneEditorView() { return mSceneView; }
 	EditorMainWindow& MainWindow() const { return mMainWindow; }
@@ -162,6 +162,8 @@ public:
 	static void RegisterInitCallback( SceneEditorInitCb icb );
 
 	void NotInDrawSync() const { while(int(mRenderLock)) usleep(1000); }
+
+	bool IsSceneDisplayEnabled() const { return mbSceneDisplayEnable; }
 
 protected:
 

@@ -9,8 +9,8 @@
 
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
-
 #include <ork/reflect/RegisterProperty.h>
+#include <ork/kernel/mutex.h>
 
 namespace ork {
 
@@ -25,44 +25,76 @@ class Signal;
 
 namespace ork { namespace object {
 
+typedef std::function<void(Object*)> slot_lambda_t;
 
-class Slot : public Object
+struct ISlot : public Object
 {
-	RttiDeclareAbstract(Slot,Object);
+	RttiDeclareAbstract(ISlot,Object);
+
+public:
+
+	ISlot(Object* object = 0, PoolString name = AddPooledLiteral(""));
+
+	Object* GetObject() const;
+	void SetObject( Object* pobj );
+
+	const PoolString& GetSlotName() const;
+
+	void SetSlotName( const PoolString& sname ) { mSlotName=sname; }
+
+	virtual void AddSignal( Signal* psig ) {}
+	virtual void RemoveSignal( Signal* psig ) {}
+
+	virtual void Invoke(reflect::IInvokation* invokation) const = 0;
+	virtual const reflect::IObjectFunctor* GetFunctor() const = 0;
+
+	PoolString mSlotName;
+	Object* mObject;
+};
+
+struct Slot : public ISlot
+{
+	RttiDeclareAbstract(Slot,ISlot);
 
 public:
 
 	Slot( Object* object = 0, PoolString name = AddPooledLiteral(""));
 	~Slot();
 
-	Object* GetObject() const;
+	const reflect::IObjectFunctor* GetFunctor() const override;
+	void Invoke(reflect::IInvokation* invokation) const override;
 
-	const PoolString& GetSlotName() const;
-	const reflect::IObjectFunctor* GetFunctor() const;
-	void Invoke(reflect::IInvokation* invokation) const;
-
-	void SetSlotName( const PoolString& sname ) { mSlotName=sname; }
-	void SetObject( Object* pobj ) { mObject=pobj; }
-	virtual void RemoveSignal( Signal* psig ) {}
-
-protected:
-
-	Object* mObject;
-	PoolString mSlotName;
 
 };
 
-class AutoSlot : public Slot
+struct AutoSlot : public Slot
 {
+	typedef orkset<Signal*>	sig_set_t;
+
 	RttiDeclareAbstract(AutoSlot,Slot);
 public:
-	//AutoSlot(Object* object = 0, PoolString name = AddPooledLiteral(""));
 	AutoSlot(Object* object, const char* pname );
 	~AutoSlot();
-	void AddSignal( Signal* psig );
+private:
+	void RemoveSignal( Signal* psig ) override;
+	void AddSignal( Signal* psig ) override;
+	LockedResource<sig_set_t>	mConnectedSignals;
+};
+
+struct LambdaSlot : public ISlot
+{
+	typedef orkset<Signal*>	sig_set_t;
+
+	RttiDeclareAbstract(LambdaSlot,ISlot);
+	LambdaSlot( Object* owner, const char* pname );
+	~LambdaSlot();
 private:
 	orkset<Signal*>	mConnectedSignals;
-	void RemoveSignal( Signal* psig ); // virtual
+	void RemoveSignal( Signal* psig ) override; 
+	void AddSignal( Signal* psig ) override;
+
+	const reflect::IObjectFunctor* GetFunctor() const override;
+	void Invoke(reflect::IInvokation* invokation) const override;
 };
 
 #define EXPANDLIST01(MACRO)                      MACRO(01)
@@ -92,10 +124,12 @@ class Signal : public Object
 public:
 
 	bool AddSlot(Object* component, PoolString name);
-	bool AddSlot(Slot* pslot);
+	bool AddSlot(ISlot* pslot);
 
 	bool RemoveSlot(Object* component, PoolString name);
-	bool RemoveSlot(Slot* pslot);
+	bool RemoveSlot(ISlot* pslot);
+
+	bool HasSlot( Object* obj, PoolString nam ) const;
 
 	void Invoke(reflect::IInvokation* invokation) const;
 	
@@ -133,18 +167,21 @@ public:
 
 private:
 
+	typedef orkvector<ISlot*>	slot_set_t;
+
 	Object* GetSlot(size_t index);
 
 	size_t GetSlotCount() const;
 
 	void ResizeSlots(size_t sz);
 
-	orkvector<Slot*> mSlots;
+	LockedResource<slot_set_t> mSlots;
 
 };
 
 bool Connect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot);
 bool Connect(Signal* psig, AutoSlot* pslot);
+bool ConnectToLambda(Object* pSender, PoolString signal, Object* pReceiver, const slot_lambda_t& slt );
 
 bool Disconnect(Object* pSender, PoolString signal, Object* pReceiver, PoolString slot);
 bool Disconnect(Signal* psig, AutoSlot* pslot);

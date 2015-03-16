@@ -15,6 +15,7 @@
 #include <ork/file/path.h>
 //#include <ork/entity/ReferenceArchetype.h>
 #include <orktool/toolcore/builtinchoices.h>
+#include <ork/lev2/lev2_asset.h>
 
 namespace ork {
 namespace tool {
@@ -240,7 +241,7 @@ void CChoiceList::FindAssetChoices(const file::Path& sdir, const std::string& wi
 		file::Path OutPath( ObjPtrStr2.c_str() );
 		//OutPath.SetUrlBase( sdir.GetUrlBase().c_str() );
 		add( CAttrChoiceValue( OutPath.c_str(), OutPath.c_str() ) );
-		//orkprintf( "FOUND ASSERT<%s>\n", OutPath.c_str() );
+		//orkprintf( "FOUND ASSERT<%s>\n", the_file.c_str() );
 	}
 }
 
@@ -276,11 +277,18 @@ void CTextureChoices::EnumerateChoices( bool bforcenocache )
 {
 	clear();
 
-	FindAssetChoices( "data://", "*.vds" );
+	auto items = lev2::TextureAsset::GetClassStatic()->EnumerateExisting();
+
+	for( const auto& i : items )
+	{
+		add( CAttrChoiceValue( i.c_str(), i.c_str() ) );
+	}
+	/*FindAssetChoices( "data://", "*.vds" );
 	FindAssetChoices( "data://", "*.qtz" );
 	FindAssetChoices( "data://", "*.dds" );
+	FindAssetChoices( "data://", "*.png" );
 //	FindAssetChoices( "lev2://", "*.tga" );
-	FindAssetChoices( "lev2://", "*.dds" );
+	FindAssetChoices( "lev2://", "*.dds" );*/
 }
 
 ///////////////////////////////////////////////////////////////////////////

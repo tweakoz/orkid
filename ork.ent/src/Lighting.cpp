@@ -87,25 +87,23 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 	ork::lev2::SpotLightData* sptlight_data = ork::rtti::autocast(lightdata);
 	ork::lev2::AmbientLightData* amblight_data = ork::rtti::autocast(lightdata);
 
+	auto ent_xf = GetEntity()->GetEntData().GetDagNode().GetTransformNode().GetTransform().GetMatrix();
+
 	if( amblight_data )
 	{
-		const ork::CMatrix4& mtx = GetEntity()->GetEntData().GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
-		mLight = new ork::lev2::AmbientLight(mtx,amblight_data);
+		mLight = new ork::lev2::AmbientLight(ent_xf,amblight_data);
 	}
 	if( dirlight_data )
 	{
-		const ork::CMatrix4& mtx = GetEntity()->GetEntData().GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
-		mLight = new ork::lev2::DirectionalLight(mtx,dirlight_data);
+		mLight = new ork::lev2::DirectionalLight(ent_xf,dirlight_data);
 	}
 	if( pntlight_data )
 	{
-		const ork::CMatrix4& mtx = GetEntity()->GetEntData().GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
-		mLight = new ork::lev2::PointLight(mtx,pntlight_data);
+		mLight = new ork::lev2::PointLight(ent_xf,pntlight_data);
 	}
 	if( sptlight_data )
 	{
-		const ork::CMatrix4& mtx = GetEntity()->GetEntData().GetDagNode().GetTransformNode().GetTransform()->GetMatrix();
-		mLight = new ork::lev2::SpotLight(mtx,sptlight_data);
+		mLight = new ork::lev2::SpotLight(ent_xf,sptlight_data);
 	}
 
 	struct yo
@@ -125,8 +123,8 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 
 			const ork::lev2::Renderer *prenderer = rcid.GetRenderer();
 
-			const ork::TransformNode3D* xf = & pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
-			ork::CMatrix4 mtxw = xf->GetTransform()->GetMatrix();
+			const ork::TransformNode& xf = & pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
+			ork::CMatrix4 mtxw = xf.GetTransform()->GetMatrix();
 
 			if( false == targ->FBI()->IsPickState() )
 			{
@@ -163,7 +161,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 			ork::lev2::XgmModel* pmodel = (pyo->mpModel==0) ? 0 : pyo->mpModel->GetModel();
 			if( pmodel )
 			{
-				const ork::TransformNode3D* xf = & pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
+				const ork::TransformNode3D& xf = & pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
 				//const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
 				int inummeshes = pmodel->GetNumMeshes();
 				for( int imesh=0; imesh<inummeshes; imesh++ )
@@ -190,7 +188,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 													? ObjColor
 													: ModColor;
 
-							ork::CMatrix4 mtxw = xf->GetTransform()->GetMatrix();
+							ork::CMatrix4 mtxw = xf.GetTransform()->GetMatrix();
 							ork::lev2::RenderContextInstModelData MdlCtx;
 
 							MdlCtx.mMesh = & mesh;
@@ -239,6 +237,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 		}
 	};
 
+	#if 0 //DRAWTHREADS
 	yo* pyo = new yo;
 	pyo->mpEntity = pent;
 	pyo->mpLight = GetLight();
@@ -248,6 +247,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 	pdrw->SetCallback( yo::doit );
 	pdrw->SetOwner( & pent->GetEntData() );
 	pdrw->SetData( (const yo*) pyo );
+#endif
 
 	/////////////////////////////////////////////////
 
