@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os
+import os, string
 
 print "yo"
 
@@ -79,6 +79,9 @@ def install_name_lib( fw_name ):
 
 ###################################
 
+def expand_lib_path(name):
+	return "stage/bundle/OrkidTool.app/Contents/lib/lib%s.osx.release.so" % name
+
 if 1:
 	copy_framework( "QtCore" )
 	copy_framework( "QtGui" )
@@ -86,10 +89,10 @@ if 1:
 	install_name_lib("QtCore")
 	install_name_lib("QtGui")
 
-	install_name_exe( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
-	install_name_exe( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.lev2.osx.release.so" )
-	install_name_exe( "QtCore", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
-	install_name_exe( "QtGui", "stage/bundle/OrkidTool.app/Contents/lib/libork.tool.osx.release.so" )
+	for qtnam in string.split( "QtCore QtGui" ):
+		for item in string.split("ork.lev2 ork.tool tweakout"):
+			install_name_exe( qtnam, expand_lib_path(item))
+
 	install_name_exe( "QtCore", "stage/bundle/OrkidTool.app/Contents/Frameworks/QtGui.framework/Versions/4/QtGui" )
 
 os.system( "macdeployqt stage/bundle/OrkidTool.app -verbose=2 -dmg")
