@@ -22,6 +22,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/kernel/opq.h>
+#include <ork/math/basicfilters.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -703,19 +704,24 @@ ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 		case ui::UIEV_MOUSEWHEEL:
 		{
 			QWheelEvent* qem = (QWheelEvent*) qip;
-			int idelta = qem->delta();
 
-#if defined(_DARWIN)
-			const float kstep = 97.0f/100.0f;
-#else
+			static avg_filter<3> gScrollFilter;
+
+			int irawdelta = qem->delta();
+
+			int idelta = (2*gScrollFilter.compute(irawdelta)/9);
+
+			#if defined(_DARWIN)
+			const float kstep = bisshift ? (90.0f/100.0f) : (97.0f/100.0f); // trackpad
+			#else
 			const float kstep = 95.0f/100.0f;
-#endif
+			#endif
 
-			float fdelta = (idelta>0) 
-						 ? 1.0f/kstep
-						 : (idelta<0)
-						    ? kstep 
-						    : 0.0f;
+			float fdelta = 1.0f;
+			if( idelta > 0 )
+				fdelta = 1.0f/kstep;
+			else if( idelta < 0 )
+				fdelta = kstep;
 
 			float fz = mGrid.GetZoom() * fdelta;
 			if( fz < 0.03f ) fz = 0.03f;
