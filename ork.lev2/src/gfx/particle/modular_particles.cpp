@@ -88,6 +88,7 @@ static lev2::Texture* GetPtclModuleIcon( ork::dataflow::dgmodule* pmod )
 void Module::Describe()
 {
 	reflect::AnnotateClassForEditor<Module>( "dflowicon", & GetPtclModuleIcon );
+	reflect::AnnotateClassForEditor<Module>( "dflowshouldblend", true );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -127,7 +127,7 @@ vertex_shader vs_vtxtexcolor
 	: vface_bill
 {
 	gl_Position = position;
-	geo_clr = vtxcolor.bgra;
+	geo_clr = vtxcolor.rgba;
 	geo_uv0 = uv0;
 	geo_uv1 = uv1;
 }

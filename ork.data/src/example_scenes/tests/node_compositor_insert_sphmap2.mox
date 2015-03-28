@@ -56,7 +56,7 @@
                                                                                                                                             <property name='FbUvTexture'><backreference id='-1'/></property>
                                                                                                                                             <property name='FeedbackAmount'>0</property>
                                                                                                                                             <property name='FinalRezScale'>1</property>
-                                                                                                                                            <property name='FxRezScale'>1</property>
+                                                                                                                                            <property name='FxRezScale'>0.980303</property>
                                                                                                                                             <property name='PostFxFeedback'>false</property>
                                                                                                                                             <property name='Type'>"EFRAMEFX_GLOW"</property>
                                                                                                                                         </object>
@@ -118,10 +118,10 @@
                                                 <object type='EditorCamControllerData' id='15'>
                                                     <property name='Camera'>
                                                         <object type='CCamera_persp' id='16'>
-                                                            <property name='Center'>0.176524 -2.03127 -4.69191</property>
+                                                            <property name='Center'>-0.0163583 -2.08493 -4.45044</property>
                                                             <property name='Focus'>0 0 0</property>
-                                                            <property name='Loc'>13.9334</property>
-                                                            <property name='QuatC'>0.0408489 -0.723589 0.68092 -0.105724</property>
+                                                            <property name='Loc'>13.6774</property>
+                                                            <property name='QuatC'>-0.0125661 -0.737438 0.674349 -0.0368666</property>
                                                             <property name='Aperature'>40</property>
                                                             <property name='MaxFar'>10000</property>
                                                             <property name='MinNear'>0.1</property>
@@ -331,7 +331,7 @@
                                                                             </property>
                                                                             <property name='OffsetY'>
                                                                                 <object type='dflow/inplugxf<float,floatxf>' id='46'>
-                                                                                    <property name='value'>0.696122</property>
+                                                                                    <property name='value'>1</property>
                                                                                     <property name='xf'>
                                                                                         <object type='dflow/floatxf' id='47'>
                                                                                             <property name='Transforms'></property>
