@@ -309,7 +309,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	
 	mGridMaterial.mRasterState.SetDepthTest( lev2::EDEPTHTEST_OFF );
 	mGridMaterial.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
-	mGridMaterial.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF, 0.0f );
+//	mGridMaterial.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF, 0.0f );
 
 	////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////
@@ -438,6 +438,14 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 
 						lev2::Texture* picon = 0;
 
+						bool do_blend = false;
+
+						any16 shbanno = pmod->GetClass()->Description().GetClassAnnotation( "dflowshouldblend" );
+						if( shbanno.IsA<bool>() )
+						{
+							do_blend = shbanno.Get<bool>();
+						}
+
 						if( false == is_pick )
 						{
 							any16 iconcbanno = pmod->GetClass()->Description().GetClassAnnotation( "dflowicon" );
@@ -459,6 +467,10 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 														? lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR
 														: lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
 
+						do_blend &= (false==is_pick);
+
+						auto blend_mode = do_blend ? lev2::EBLENDING_ALPHA : lev2::EBLENDING_OFF;
+						mGridMaterial.mRasterState.SetBlending(blend_mode);
 						mGridMaterial.SetTexture( picon );
 
 						//printf( "imod<%d:%p> icon<%p> pos<%f %f>\n", imod, pmod, picon, pos.GetX(), pos.GetY() );

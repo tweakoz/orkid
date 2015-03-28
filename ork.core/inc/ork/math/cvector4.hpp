@@ -151,11 +151,11 @@ template <typename T> U32 TVector4<T>::GetVtxColorAsU32( void ) const
 	U32 a = U32(GetW()*T(255.0f));
 	
 
-#if defined(_DARWIN)||defined(IX)//GL
+//#if defined(_DARWIN)||defined(IX)//GL
 	return U32( (a<<24)|(b<<16)|(g<<8)|r );
-#else // WIN32/DX
-	return U32( (a<<24)|(r<<16)|(g<<8)|b );
-#endif
+//#else // WIN32/DX
+//	return U32( (a<<24)|(r<<16)|(g<<8)|b );
+//#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

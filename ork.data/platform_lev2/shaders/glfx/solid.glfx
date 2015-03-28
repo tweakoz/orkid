@@ -98,7 +98,7 @@ fragment_shader ps_uitext : iface_fmt
 fragment_shader ps_texcolor : iface_fmt
 {
 	vec4 texc = texture( ColorMap, frg_uv );
-	out_clr = vec4(texc.xyz,texc.r);
+	out_clr = vec4(texc.xyz,texc.w);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault

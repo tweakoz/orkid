@@ -40,7 +40,7 @@
                                                                     <item key='e'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::RingEmitterModule' id='7'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 -100</property>
                                                                                 <property name='DeathQID'>"dq"</property>
                                                                                 <property name='Direction'>
                                                                                     <object type='dflow/inplugxf<vect3,vect3xf>' id='8'>
@@ -156,7 +156,7 @@
                                                                     <item key='gl'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Global' id='30'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 0</property>
                                                                                 <property name='TimeScale'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='31'>
                                                                                         <property name='value'>1</property>
@@ -185,7 +185,7 @@
                                                                                 </property>
                                                                                 <property name='G'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='36'>
-                                                                                        <property name='value'>3.07229</property>
+                                                                                        <property name='value'>4.3131</property>
                                                                                         <property name='xf'>
                                                                                             <object type='dflow/floatxf' id='37'>
                                                                                                 <property name='Transforms'></property>
@@ -209,7 +209,7 @@
                                                                                 </property>
                                                                                 <property name='MinDistance'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='41'>
-                                                                                        <property name='value'>3</property>
+                                                                                        <property name='value'>46.6454</property>
                                                                                         <property name='xf'>
                                                                                             <object type='dflow/floatxf' id='42'>
                                                                                                 <property name='Transforms'></property>
@@ -237,7 +237,7 @@
                                                                     <item key='p'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Pool' id='46'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 -100</property>
                                                                                 <property name='MaxParticles'>10732</property>
                                                                                 <property name='Output'>
                                                                                     <object type='psys::pbufoutplug' id='47'>
@@ -271,7 +271,7 @@
                                                                     <item key='r'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::SpriteRenderer' id='52'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 100</property>
                                                                                 <property name='Input'>
                                                                                     <object type='psys::pbufinpplug' id='53'>
                                                                                     </object>
@@ -281,7 +281,7 @@
                                                                                 <property name='Alignment'>"EPIA_BILLBOARD"</property>
                                                                                 <property name='AnimFrame'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='54'>
-                                                                                        <property name='value'>0.943447</property>
+                                                                                        <property name='value'>0</property>
                                                                                         <property name='xf'>
                                                                                             <object type='dflow/floatxf' id='55'>
                                                                                                 <property name='Transforms'></property>
@@ -308,9 +308,10 @@
                                                                                             <object type='GradientV4' id='58'>
                                                                                                 <property name='points'>
                                                                                                     <item key='0'>0.996094 0.996094 0.996094 0.996094</item>
-                                                                                                    <item key='0.395184'>0.972656 0.972656 0.972656 0.996094</item>
-                                                                                                    <item key='0.504249'>0.808594 0.0546875 0.03125 0.996094</item>
-                                                                                                    <item key='1'>0 0 0 1</item>
+                                                                                                    <item key='0.0666667'>0.972656 0.972656 0.972656 0.996094</item>
+                                                                                                    <item key='0.443478'>0.878906 0.0664062 0.886719 0.996094</item>
+                                                                                                    <item key='0.55942'>0.808594 0.0546875 0.03125 0.996094</item>
+                                                                                                    <item key='1'>0.988281 0.996094 0 0.996094</item>
                                                                                                 </property>
                                                                                             </object>
                                                                                         </reference>
@@ -442,7 +443,7 @@
                                                                                 </property>
                                                                                 <property name='Size'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='81'>
-                                                                                        <property name='value'>0.943447</property>
+                                                                                        <property name='value'>0</property>
                                                                                         <property name='xf'>
                                                                                             <object type='dflow/floatxf' id='82'>
                                                                                                 <property name='Transforms'>
@@ -497,7 +498,7 @@
                                                                     <item key='t'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::TurbulenceModule' id='87'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 100</property>
                                                                                 <property name='AmountX'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='88'>
                                                                                         <property name='value'>0</property>
@@ -565,7 +566,7 @@
                                                                     <item key='e'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::ReEmitterModule' id='99'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 -100</property>
                                                                                 <property name='DeathQID'>"dq2"</property>
                                                                                 <property name='DirectionType'>"EMITDIR_VEL"</property>
                                                                                 <property name='DispersionAngle'>
@@ -643,7 +644,7 @@
                                                                     <item key='gl'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Global' id='114'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 0</property>
                                                                                 <property name='TimeScale'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='115'>
                                                                                         <property name='value'>1</property>
@@ -724,7 +725,7 @@
                                                                     <item key='p'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Pool' id='130'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 -100</property>
                                                                                 <property name='MaxParticles'>10732</property>
                                                                                 <property name='Output'>
                                                                                     <object type='psys::pbufoutplug' id='131'>
@@ -758,7 +759,7 @@
                                                                     <item key='r'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::StreakRenderer' id='136'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 100</property>
                                                                                 <property name='Input'>
                                                                                     <object type='psys::pbufinpplug' id='137'>
                                                                                     </object>
@@ -814,7 +815,7 @@
                                                                     <item key='t'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::TurbulenceModule' id='145'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 100</property>
                                                                                 <property name='AmountX'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='146'>
                                                                                         <property name='value'>0</property>
@@ -882,7 +883,7 @@
                                                                     <item key='e'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::ReEmitterModule' id='157'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 -100</property>
                                                                                 <property name='DeathQID'>""</property>
                                                                                 <property name='DirectionType'>"EMITDIR_VEL"</property>
                                                                                 <property name='DispersionAngle'>
@@ -960,7 +961,7 @@
                                                                     <item key='gl'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Global' id='172'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 0</property>
                                                                                 <property name='TimeScale'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='173'>
                                                                                         <property name='value'>1</property>
@@ -1041,7 +1042,7 @@
                                                                     <item key='p'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::Pool' id='188'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 -100</property>
                                                                                 <property name='MaxParticles'>13272</property>
                                                                                 <property name='Output'>
                                                                                     <object type='psys::pbufoutplug' id='189'>
@@ -1075,7 +1076,7 @@
                                                                     <item key='r'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::StreakRenderer' id='194'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>-100 100</property>
                                                                                 <property name='Input'>
                                                                                     <object type='psys::pbufinpplug' id='195'>
                                                                                     </object>
@@ -1087,7 +1088,7 @@
                                                                                             <item key='0'>0 0 0 0.996094</item>
                                                                                             <item key='0.131827'>0.734375 0.667969 0.707031 0.996094</item>
                                                                                             <item key='0.216573'>0.117188 0.402344 0.953125 0.996094</item>
-                                                                                            <item key='0.881356'>0.472656 0.0195312 0.0195312 0.996094</item>
+                                                                                            <item key='0.883657'>0.472656 0.0195312 0.0195312 0.996094</item>
                                                                                             <item key='1'>0 0 0 1</item>
                                                                                         </property>
                                                                                     </object>
@@ -1133,7 +1134,7 @@
                                                                     <item key='t'>
                                                                         <reference category='ObjectClass'>
                                                                             <object type='psys::TurbulenceModule' id='203'>
-                                                                                <property name='mgvpos'>0 0</property>
+                                                                                <property name='mgvpos'>0 100</property>
                                                                                 <property name='AmountX'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='204'>
                                                                                         <property name='value'>0</property>
@@ -1200,10 +1201,10 @@
                                     <object type='EditorCamControllerData' id='213'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='214'>
-                                                <property name='Center'>1.25492 -11.4638 0.507871</property>
+                                                <property name='Center'>-0.171928 -1.48135 0.114898</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>97.6352</property>
-                                                <property name='QuatC'>-0.0113969 0.273349 0.0150021 -0.961753</property>
+                                                <property name='Loc'>26.6436</property>
+                                                <property name='QuatC'>0.681855 0.188659 0.195014 -0.679333</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>

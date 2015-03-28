@@ -77,7 +77,7 @@ GLuint PboSet::Get()
 GLuint GlTextureInterface::GetPBO( int isize )
 {
 	PboSet* pbs = 0;
-	std::map<int,PboSet*>::iterator it=mPBOSets.find(isize);
+	auto it=mPBOSets.find(isize);
 	if( it==mPBOSets.end() )
 	{
 		pbs = new PboSet( isize );
@@ -874,7 +874,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, 4, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, 4, 
+			TexSetter::Set2D(	this, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, 
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 		GL_ERRORCHECK();
 	}
