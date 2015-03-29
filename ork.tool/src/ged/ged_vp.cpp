@@ -176,9 +176,22 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
 	ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
 
+	bool filt_kpush = (filtev.mAction=="keypush");
+
+	bool filt_leftbutton = filtev.mBut0;
+	bool filt_middlebutton = filtev.mBut1;
+	bool filt_rightbutton = filtev.mBut2;
+
 	QInputEvent* qip = (QInputEvent*) EV.mpBlindEventData;
 
 	bool bisshift = EV.mbSHIFT;
+
+	auto locEV = EV;
+	locEV.miX = ilocx;
+	locEV.miY = ilocy;
+
+	if( mpActiveNode )
+			mpActiveNode->OnUiEvent( locEV );
 
 	switch( filtev.miEventCode )
 	{
@@ -239,6 +252,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 				printf( "predelta<%d> miScrollY<%d>\n", idelta, miScrollY );
 
 			}
+
 			mNeedsSurfaceRepaint=true;
 			break;
 		}
@@ -256,6 +270,9 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 					if( pnode )
 					{	//pnode->mouseMoveEvent( & myme );
 						mpMouseOverNode = pnode;
+						
+						if( pnode != mpActiveNode )
+							pnode->OnUiEvent( locEV );
 					}
 				}
 			}
@@ -315,17 +332,24 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 				{
 					case ui::UIEV_PUSH:
 						mpActiveNode = pnode;
+						if( mpActiveNode )
+							mpActiveNode->OnUiEvent( locEV );
 						pnode->mousePressEvent( & myme );
 						break;
 					case ui::UIEV_RELEASE:
+						if( mpActiveNode )
+							mpActiveNode->OnUiEvent( locEV );
 						if( mpActiveNode ) mpActiveNode->mouseReleaseEvent( & myme );
 						mpActiveNode = 0;
 						break;
 					case ui::UIEV_DOUBLECLICK:
+						if( mpActiveNode )
+							mpActiveNode->OnUiEvent( locEV );
 						pnode->mouseDoubleClickEvent( & myme );
 						break;
 				}
 			}
+
 			mNeedsSurfaceRepaint=true;
 			break;
 		}

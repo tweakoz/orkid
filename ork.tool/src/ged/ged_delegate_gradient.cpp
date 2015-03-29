@@ -20,6 +20,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <QtGui/QColorDialog>
 #include <ork/kernel/orkpool.h>
+#include <ork/lev2/ui/event.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
@@ -44,93 +45,97 @@ public:
 	void SetGradientObject( ork::Gradient<ork::CVector4>* pgrad ) { mGradientObject=pgrad; }
 	void SetParent( GedItemNode* ppar ) { mParent=ppar; }
 
-	void mouseDoubleClickEvent ( QMouseEvent * event )
+	void OnUiEvent( const ork::ui::Event& ev ) final
 	{
-		if( mParent && mGradientObject )
+		const auto& filtev = ev.mFilteredEvent;
+
+		switch( filtev.miEventCode )
 		{
-			orklut<float,ork::CVector4> & data = mGradientObject->Data();
-
-			Qt::MouseButtons Buttons = event->buttons();
-
-			orklut<float,ork::CVector4>::iterator it = data.begin()+miPoint;
-			std::pair<float,ork::CVector4> pr = (*it);
-
-			if( Buttons.testFlag( Qt::LeftButton ) )
-			{
-				bool bok = false;
-				
-				CVector4 inp = it->second;
-
-				QRgb rgba = qRgba( inp.GetX()*255.0f, inp.GetY()*255.0f, inp.GetZ()*255.0f, inp.GetW()*255.0f );
-
-				rgba = QColorDialog::getRgba ( rgba, & bok, 0 );
-
-				if(bok)
+			case ui::UIEV_DRAG:
+			{	
+				if( mParent && mGradientObject )
 				{
-					data.RemoveItem( it );
-					int ir = qRed(rgba);
-					int ig = qGreen(rgba);
-					int ib = qBlue(rgba);
-					int ia = qAlpha(rgba);
-					CVector4 nc( float(ir)/256.0f, float(ig)/256.0f, float(ib)/256.0f, float(ia)/256.0f );
-					data.AddSorted( pr.first, nc );			
-				}
-			}
-			else if( Buttons.testFlag( Qt::RightButton ) )
-			{
-				if( it->first != 0.0f && it->first != 1.0f )
-				{
-					data.RemoveItem( it );
-				}
-			}
-		}
-	}
+					orklut<float,ork::CVector4> & data = mGradientObject->Data();
+					const int knumpoints = (int) data.size();
+					const int ksegs = knumpoints-1;
 
-	void mouseMoveEvent ( QMouseEvent * event )
-	{
-		if( mParent && mGradientObject )
-		{
-			orklut<float,ork::CVector4> & data = mGradientObject->Data();
-			const int knumpoints = (int) data.size();
-			const int ksegs = knumpoints-1;
-
-			if( miPoint>0 && miPoint<(knumpoints-1) )
-			{
-				Qt::MouseButtons Buttons = event->buttons();
-
-				if( Buttons.testFlag( Qt::LeftButton ) )
-				{
-					int mousepos = event->pos().x();
-					float fx = float((mousepos)-mParent->GetX())/float(mParent->width());
-
-					orklut<float,ork::CVector4>::iterator it = data.begin()+miPoint;
-					orklut<float,ork::CVector4>::iterator itp = it-1;
-					orklut<float,ork::CVector4>::iterator itn = it+1;
-
-					if( fx > 0.0f && fx < 1.0f )
+					if( miPoint>0 && miPoint<(knumpoints-1) )
 					{
-						const float kfbound = float(kpntsize)/mParent->width();
-						if(itp!=data.end())
-						{	if( fx < (itp->first+kfbound) )
-							{	fx = (itp->first+kfbound);
-							}
-						}
-						if(itn!=data.end())
-						{	if( fx > (itn->first-kfbound) )
-							{	fx = (itn->first-kfbound);
-							}
-						}
+						int mousepos = ev.miX-mParent->GetX();
+						float fx = float(mousepos)/float(mParent->width());
+
 						orklut<float,ork::CVector4>::iterator it = data.begin()+miPoint;
-						std::pair<float,ork::CVector4> pr = (*it);
-						data.RemoveItem( it );
-						data.AddSorted( fx, pr.second );			
+						orklut<float,ork::CVector4>::iterator itp = it-1;
+						orklut<float,ork::CVector4>::iterator itn = it+1;
+
+						if( fx > 0.0f && fx < 1.0f )
+						{
+							const float kfbound = float(kpntsize)/mParent->width();
+							if(itp!=data.end())
+							{	if( fx < (itp->first+kfbound) )
+								{	fx = (itp->first+kfbound);
+								}
+							}
+							if(itn!=data.end())
+							{	if( fx > (itn->first-kfbound) )
+								{	fx = (itn->first-kfbound);
+								}
+							}
+							orklut<float,ork::CVector4>::iterator it = data.begin()+miPoint;
+							std::pair<float,ork::CVector4> pr = (*it);
+							data.RemoveItem( it );
+							data.AddSorted( fx, pr.second );			
+						}
 					}
 				}
+				break;
+			}
+			case ui::UIEV_DOUBLECLICK:
+			{	if( mParent && mGradientObject )
+				{
+					orklut<float,ork::CVector4> & data = mGradientObject->Data();
+
+					bool is_left = filtev.mBut0;
+					bool is_right = filtev.mBut2;
+
+					orklut<float,ork::CVector4>::iterator it = data.begin()+miPoint;
+					std::pair<float,ork::CVector4> pr = (*it);
+
+						assert(false);
+					if( is_left )
+					{
+						
+						bool bok = false;
+						
+						CVector4 inp = it->second;
+
+						QRgb rgba = qRgba( inp.GetX()*255.0f, inp.GetY()*255.0f, inp.GetZ()*255.0f, inp.GetW()*255.0f );
+
+						rgba = QColorDialog::getRgba ( rgba, & bok, 0 );
+
+						if(bok)
+						{
+							data.RemoveItem( it );
+							int ir = qRed(rgba);
+							int ig = qGreen(rgba);
+							int ib = qBlue(rgba);
+							int ia = qAlpha(rgba);
+							CVector4 nc( float(ir)/256.0f, float(ig)/256.0f, float(ib)/256.0f, float(ia)/256.0f );
+							data.AddSorted( pr.first, nc );			
+						}
+					}
+					else if( is_right )
+					{
+						if( it->first != 0.0f && it->first != 1.0f )
+						{
+							data.RemoveItem( it );
+						}
+					}
+				}
+				break;
 			}
 		}
 	}
-
-
 };
 
 
@@ -148,21 +153,31 @@ class GedGradientEditSeg : public GedObject
 
 public:
 
-	void mouseDoubleClickEvent ( QMouseEvent * event )
+	void OnUiEvent( const ork::ui::Event& ev ) final
 	{
-		if( mParent && mGradientObject )
+		const auto& filtev = ev.mFilteredEvent;
+
+		switch( filtev.miEventCode )
 		{
-			orklut<float,ork::CVector4> & data = mGradientObject->Data();
-			bool bok = false;
+			case ui::UIEV_DOUBLECLICK:
+			{	
+				if( mParent && mGradientObject )
+				{
+					orklut<float,ork::CVector4> & data = mGradientObject->Data();
+					bool bok = false;
 
-			std::pair<float,ork::CVector4> pointa = data.GetItemAtIndex(miSeg);
-			std::pair<float,ork::CVector4> pointb = data.GetItemAtIndex(miSeg+1);
+					std::pair<float,ork::CVector4> pointa = data.GetItemAtIndex(miSeg);
+					std::pair<float,ork::CVector4> pointb = data.GetItemAtIndex(miSeg+1);
 
-			ork::CVector4 plerp = (pointa.second+pointb.second)*0.5f;
-			float filerp = (pointa.first+pointb.first)*0.5f;
+					ork::CVector4 plerp = (pointa.second+pointb.second)*0.5f;
+					float filerp = (pointa.first+pointb.first)*0.5f;
 
-			data.AddSorted( filerp, plerp );
+					data.AddSorted( filerp, plerp );
+				}
+				break;
+			}
 		}
+
 	}
 
 	void SetSeg( int idx ) { miSeg=idx; }

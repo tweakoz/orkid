@@ -898,7 +898,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 			if( isalt )
 			{
 				CVector4 Center = mvCenter;
-				CVector4 Delta = RotZ*zmoveamt*-EV.miMWY;
+				CVector4 Delta = RotZ*zmoveamt*EV.miMWY;
 
 				mvCenter += Delta;
 			}
@@ -917,7 +917,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 				if( mfLoc < kmin ) mfLoc = kmin;
 				if( mfLoc > kmax ) mfLoc = kmax;
 
-				float DeltaInMeters = float( EV.miMWY ) * CameraFactor * zmoveamt;
+				float DeltaInMeters = float( -EV.miMWY ) * CameraFactor * zmoveamt;
 
 				mfLoc += DeltaInMeters;
 
