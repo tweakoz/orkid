@@ -77,7 +77,7 @@ public:
 	///////////////////////////////////////////////////////
 	ParticleControllableData();
 	~ParticleControllableData();
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
+	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const override;
 	const ork::orklut<ork::PoolString,ParticleItemBase*>& GetItems() const { return mItems; }
 	ork::PoolString GetEntAttachment() const { return mEntAttachment; }
 	
@@ -117,17 +117,17 @@ public:
 
 private:
 
-	void DoUpdate(ork::ent::SceneInst *inst);									//virtual
-	bool DoNotify(const ork::event::Event *event);								//virtual
-	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world);		//virtual
-	bool DoLink(ork::ent::SceneInst *inst );	// virtual
-	const ParticleControllableData&									mData;
-	bool															mbEnable;
-	orkvector<NovaParticleSystem*>									mSystems;
-	float 															mPrevTime;
+	void DoUpdate(ork::ent::SceneInst *inst) override;
+	bool DoNotify(const ork::event::Event *event) override;
+	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world) override;
+	bool DoLink(ork::ent::SceneInst *inst ) override;
+	const ParticleControllableData&	mData;
+	bool							mbEnable;
+	orkvector<NovaParticleSystem*>	mSystems;
+	float 							mPrevTime;
 
-	ork::lev2::particle::Context									mParticleContext;
-	ork::ent::Entity*												mpAttachEntity;
+	ork::lev2::particle::Context	mParticleContext;
+	ork::ent::Entity*				mpAttachEntity;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -139,13 +139,13 @@ class ModParticleItem : public NovaParticleItemBase
 	mutable psys_graph								mTemplate;
 	mutable ork::lev2::particle::psys_graph_pool	mpgraphpool;
 
-	virtual NovaParticleSystem* CreateSystem( ork::ent::Entity* pent ) const ;
+	NovaParticleSystem* CreateSystem( ork::ent::Entity* pent ) const override;
 	ork::Object* GraphPoolAccessor() { return & mpgraphpool; }
 	ork::Object* TemplateAccessor() { return & mTemplate; }
 
-	bool DoNotify(const event::Event *event);
+	bool DoNotify(const event::Event *event) override;
 
-	bool PostDeserialize(reflect::IDeserializer &ideser);
+	bool PostDeserialize(reflect::IDeserializer &ideser) override;
 
 public:
 
@@ -167,8 +167,8 @@ public:
 	ModularSystem( const ModParticleItem& item );
 	~ModularSystem();
 
-	void DoReset(); // virtual
-	void DoUpdate(float fdt); // virtual
+	void DoReset() override; 
+	void DoUpdate(float fdt) override;
 	psys_graph* GraphInstance() { return mGraphInstance; }
 	int GetNumRenderers() const { return int(mRenderers.size()); }
 	RendererModule* GetRenderer(int idx) { return mRenderers[idx]; }
@@ -186,11 +186,11 @@ private:
 	orkvector<RendererModule*>			mRenderers;
 	ParticleControllableInst*			mParticleControllerInst;
 
-	virtual void DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent );
-	virtual void DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent );
+	void DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent ) override;
+	void DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent ) override;
 
 
-	bool DoNotify(const event::Event *event);
+	bool DoNotify(const event::Event *event) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,9 +202,9 @@ public:
 	ParticleArchetype();
 	
 private:
-	void DoCompose(ork::ent::ArchComposer& composer); // virtual
-	void DoStartEntity(ork::ent::SceneInst*, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const;
-	void DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity *pent) const; // virtual
+	void DoCompose(ork::ent::ArchComposer& composer) override; 
+	void DoStartEntity(ork::ent::SceneInst*, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const override;
+	void DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity *pent) const override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

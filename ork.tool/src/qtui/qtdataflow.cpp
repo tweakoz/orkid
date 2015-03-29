@@ -367,6 +367,8 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 				mGridMaterial.SetColorMode( is_pick ? lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR 
 													: lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );
 
+				mGridMaterial.mRasterState.SetBlending(lev2::EBLENDING_OFF);
+
 				tgt->BindMaterial( & mGridMaterial );
 
 				gbi->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, 6 );
@@ -397,6 +399,9 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 
 				if( pmod )
 				{
+					auto module_class = pmod->GetClass();
+					auto class_desc = module_class->Description();
+
 					const CVector2& pos = pmod->GetGVPos();
 
 					uint32_t pickID = mpPickBuffer->AssignPickId( pmod );
@@ -440,7 +445,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 
 						bool do_blend = false;
 
-						any16 shbanno = pmod->GetClass()->Description().GetClassAnnotation( "dflowshouldblend" );
+						any16 shbanno = class_desc.GetClassAnnotation( "dflowshouldblend" );
 						if( shbanno.IsA<bool>() )
 						{
 							do_blend = shbanno.Get<bool>();
@@ -448,7 +453,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev)
 
 						if( false == is_pick )
 						{
-							any16 iconcbanno = pmod->GetClass()->Description().GetClassAnnotation( "dflowicon" );
+							any16 iconcbanno = class_desc.GetClassAnnotation( "dflowicon" );
 
 							typedef lev2::Texture*(*icon_cb_t)( ork::dataflow::dgmodule* );
 
@@ -717,11 +722,7 @@ ui::HandlerResult GraphVP::DoOnUiEvent( const ui::Event& EV )
 		{
 			QWheelEvent* qem = (QWheelEvent*) qip;
 
-			static avg_filter<3> gScrollFilter;
-
-			int irawdelta = qem->delta();
-
-			int idelta = (2*gScrollFilter.compute(irawdelta)/9);
+			int idelta = qem->delta();
 
 			#if defined(_DARWIN)
 			const float kstep = bisshift ? (90.0f/100.0f) : (97.0f/100.0f); // trackpad

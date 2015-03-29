@@ -350,7 +350,6 @@ public:
 	virtual void mouseReleaseEvent ( QMouseEvent * pEV ) {}
 	virtual void mouseMoveEvent ( QMouseEvent * pEV ) {}
 	virtual void mouseDoubleClickEvent ( QMouseEvent * pEV ) {}
-	virtual void wheelEvent( QWheelEvent* pEV ) {}
 
 };
 

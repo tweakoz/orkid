@@ -157,7 +157,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	defaultconfig.AddHotKey( "camera_rotd", "num2" );
 	defaultconfig.AddHotKey( "camera_realign", "num0" );
 
-	defaultconfig.AddHotKey( "camera_in", "num7" );
+	defaultconfig.AddHotKey( "camera_in", "c" );
 	defaultconfig.AddHotKey( "camera_out", "num1" );
 	defaultconfig.AddHotKey( "camera_up", "num9" );
 	defaultconfig.AddHotKey( "camera_down", "num3" );

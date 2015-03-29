@@ -72,6 +72,13 @@ inline float floor( float finp )
 {	
 	return MathNS::floor( finp );
 }
+
+template <typename T> T inline clamp( T tin, T tmin, T tmax )
+{
+	return (tin<tmin) ? tmin 
+	                  : (tin>tmax) ? tmax
+								   : tin;
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 inline bool IsPowerOfTwo( int ival )

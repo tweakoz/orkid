@@ -18,6 +18,7 @@
 
 #include <QtGui/QMainWindow>
 #include <QtGui/QGesture>
+#include <ork/math/basicfilters.h>
 
 #if defined(_DARWIN)
 //#define USE_MTOUCH
@@ -582,16 +583,23 @@ void QCtxWidget::mouseReleaseEvent ( QMouseEvent * event )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void QCtxWidget::wheelEvent ( QWheelEvent * event )
+void QCtxWidget::wheelEvent ( QWheelEvent* qem )
 {
 	auto& uiev = UIEvent();
 	auto gfxwin = uiev.mpGfxWin;
 	auto vp = gfxwin ? gfxwin->GetRootWidget() : nullptr;
 
-	uiev.mpBlindEventData = (void*) event;
-	int idelta = event->delta();
+	uiev.mpBlindEventData = (void*) qem;
+	static avg_filter<3> gScrollFilter;
 
-	Qt::KeyboardModifiers modifiers = event->modifiers();
+	#if defined(_DARWIN) // trackpad gesture filter
+	int irawdelta = qem->delta();
+	int idelta = (2*gScrollFilter.compute(irawdelta)/9);
+	#else
+	int delta = qem->delta();
+	#endif
+
+	Qt::KeyboardModifiers modifiers = qem->modifiers();
 
 	uiev.mbALT = (modifiers&Qt::AltModifier);
 	uiev.mbCTRL = (modifiers&Qt::ControlModifier);
@@ -599,8 +607,9 @@ void QCtxWidget::wheelEvent ( QWheelEvent * event )
 	uiev.mbMETA = (modifiers&Qt::MetaModifier);
 
 	uiev.miEventCode = ork::ui::UIEV_MOUSEWHEEL;
+
 	uiev.miMWY = idelta;
-	if( vp )
+	if( vp && idelta!=0 )
 		vp->HandleUiEvent( uiev );
 
 	if( mpCtxBase ) mpCtxBase->SlotRepaint();
