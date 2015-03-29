@@ -20,6 +20,7 @@
 namespace ork {
 class Object;
 namespace lev2 { class CFont; }
+namespace ui { struct Event; }
 namespace tool {
 class CChoiceManager;
 template <typename T> class CPickBuffer;
@@ -351,6 +352,7 @@ public:
 	virtual void mouseMoveEvent ( QMouseEvent * pEV ) {}
 	virtual void mouseDoubleClickEvent ( QMouseEvent * pEV ) {}
 
+	virtual void OnUiEvent( const ork::ui::Event& ev ) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
