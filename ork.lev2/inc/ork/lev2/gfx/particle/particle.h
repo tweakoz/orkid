@@ -231,6 +231,9 @@ struct BasicParticle
 		, mLastVelocity(0.0f,0.0f,0.0f)
 		, mKey(0)
 	{
+		// todo - this prob should still be deterministic,
+		//  have the emitter assign the random val
+		
 		int irandom	=	(rand()&255)
 					|	(rand()&255)<<8;
 		mfRandom = float(irandom)/65536.0f;

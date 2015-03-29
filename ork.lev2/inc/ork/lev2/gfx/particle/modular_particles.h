@@ -560,6 +560,44 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class SphericalColliderModule : public ParticleModule
+{
+	RttiDeclareConcrete( SphericalColliderModule, ParticleModule );
+	
+	//////////////////////////////////////////////////
+	// inputs
+	//////////////////////////////////////////////////
+
+	//virtual int GetNumInputs() const { return 8; }
+	virtual dataflow::inplugbase* GetInput(int idx);
+
+	DeclarePoolInpPlug( Input );
+	DeclareFloatXfPlug( CenterX );
+	DeclareFloatXfPlug( CenterY );
+	DeclareFloatXfPlug( CenterZ );
+	DeclareFloatXfPlug( Radius );
+	DeclareFloatXfPlug( Absorbtion );
+
+	//////////////////////////////////////////////////
+	// outputs
+	//////////////////////////////////////////////////
+
+	//virtual int GetNumOutputs() const { return 1; }
+	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+
+	DeclarePoolOutPlug( Output )
+
+	//////////////////////////////////////////////////
+
+	void Compute( float dt ); // virtual 
+
+public:
+
+	SphericalColliderModule();	
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 enum EPSYS_FLOATOP
 {
 	EPSYS_FLOATOP_ADD = 0,
@@ -992,6 +1030,8 @@ class StreakRenderer : public RendererModule
 	ork::lev2::EBlending			meBlendMode;
 	GfxMaterial3DSolid*				mpMaterial;
 	ork::lev2::TextureAsset*		mTexture;
+	bool							mbSort;
+	ork::CVector4 					mAlphaMux;
 
 	ork::Object* GradientAccessor() { return & mGradient; }
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);

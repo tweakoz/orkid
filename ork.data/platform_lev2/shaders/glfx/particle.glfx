@@ -41,6 +41,7 @@ uniform_block ublock_geo
 uniform_block ublock_frg
 {
 	uniform vec4 modcolor;
+	uniform vec4 User0;
 	uniform sampler2D ColorMap;
 	uniform sampler3D VolumeMap;
 }
@@ -253,7 +254,7 @@ vertex_interface vface_streak
 vertex_shader vs_streak : vface_streak
 {
 	gl_Position = position;
-	geo_clr = vtxcolor.bgra;
+	geo_clr = vtxcolor.rgba;
 	geo_cnrm = normal;
 	geo_vel = binormal;
 	geo_lw = uv0;
@@ -328,7 +329,15 @@ fragment_shader ps_modtexclr : fface_psys
 {
 	vec4 texc = texture( ColorMap, frg_uv0.xy );
 	out_clr = texc*modcolor*frg_clr;
-	if( out_clr.a==0.0f ) discard;
+
+	float alp = out_clr.r*User0.r
+	          + out_clr.g*User0.g
+	          + out_clr.b*User0.b
+	          + out_clr.a*User0.a;
+
+	out_clr.a = alp;
+
+	if( alp==0.0f ) discard;
 }
 fragment_shader ps_volume : fface_psys
 {

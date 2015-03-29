@@ -608,7 +608,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 		case ui::UIEV_PUSH:
 		case ui::UIEV_RELEASE:
 		{
-			QMouseEvent* qem = (QMouseEvent*) qip;
+			int idelta = EV.miMWY;
 
 			GetPixel( ilocx, ilocy, ctx );
 			float fx = float(ilocx)/float(GetW());
@@ -634,7 +634,6 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 		}
 		case ui::UIEV_MOUSEWHEEL:
 		{
-			//QWheelEvent* qem = (QWheelEvent*) qip;
 			int idelta = EV.miMWY;
 			miScrollY += idelta;
 

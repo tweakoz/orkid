@@ -209,18 +209,23 @@ void PassThroughCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingCom
 	
 	ent::CompositingPassData node;
 	node.mbDrawSource = (pCG != 0);		
-	mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
-	anyp PassData;
-	PassData.Set<const char*>( "All" );
-	the_renderer.GetFrameData().SetUserProperty( "pass", PassData );
-	node.mpGroup = pCG;
-	node.mpFrameTek = mFTEK;
-	node.mpCameraName = (pCG!=0) ? & pCG->GetCameraName() : 0;
-	node.mpLayerName = (pCG!=0) ? & pCG->GetLayers() : 0;
-	cgSTACK.push(node);
-	mFTEK->Render( the_renderer );
-	cgSTACK.pop();
+	
+	if( mFTEK )
+	{
+		mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
+		anyp PassData;
+		PassData.Set<const char*>( "All" );
+		the_renderer.GetFrameData().SetUserProperty( "pass", PassData );
+		node.mpGroup = pCG;
+		node.mpFrameTek = mFTEK;
+		node.mpCameraName = (pCG!=0) ? & pCG->GetCameraName() : 0;
+		node.mpLayerName = (pCG!=0) ? & pCG->GetLayers() : 0;
+		cgSTACK.push(node);
+		mFTEK->Render( the_renderer );
+		cgSTACK.pop();
+	}
 }
+
 lev2::RtGroup* PassThroughCompositingNode::GetOutput() const
 {
 	lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;

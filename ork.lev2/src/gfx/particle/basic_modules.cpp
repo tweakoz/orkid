@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/reflect/enum_serializer.h>
-
+#include <ork/math/collision_test.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/kernel/orklut.hpp>
@@ -30,6 +30,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::ReEmitter, "psys::ReEmitterMod
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::WindModule, "psys::WindModule");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::GravityModule, "psys::GravityModule");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::PlanarColliderModule, "psys::PlanarColliderModule");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::SphericalColliderModule, "psys::SphericalColliderModule");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::DecayModule, "psys::DecayModule");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::TurbulenceModule, "psys::TurbulenceModule");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::VortexModule, "psys::VortexModule");
@@ -625,9 +626,8 @@ void ParticlePool::Compute( float fdt )
 	{	BasicParticle *ptc = mPoolOutput.mActiveParticles[ i ];
 		/////////////////////////////////
 		float fage = ptc->mfAge;
-		mOutDataUnitAge = (fage/ptc->mfLifeSpan);
-		mOutDataUnitAge = (mOutDataUnitAge<0.001f) ? 0.001f : mOutDataUnitAge;
-		mOutDataUnitAge = (mOutDataUnitAge>0.999f) ? 0.999f : mOutDataUnitAge;
+		float unit_age = (fage/ptc->mfLifeSpan);
+		mOutDataUnitAge = ork::clamp(unit_age,0.001f,0.999f);
 		
 		//printf( "ptcl<%d> age<%f> ls<%f> IsDead<%d> unitage<%f>\n", i, fage, ptc->mfLifeSpan, int(ptc->IsDead()), mOutDataUnitAge );
 		/////////////////////////////////
@@ -803,7 +803,7 @@ void RingEmitter::Emit( float fdt )
 	Pool<BasicParticle>& pool = *pb.mPool;
 	float scaler = mPlugInpEmissionRadius.GetValue();
 	float femitvel = mPlugInpEmissionVelocity.GetValue();
-	float lifespan = mPlugInpLifespan.GetValue();
+	float lifespan = ork::clamp(mPlugInpLifespan.GetValue(),0.01f,10.0f);
 	float emissionrate = mPlugInpEmissionRate.GetValue();
 	float fspr = mPlugInpEmitterSpinRate.GetValue()*PI2;
 	float offx = mPlugInpOffsetX.GetValue();
@@ -811,13 +811,10 @@ void RingEmitter::Emit( float fdt )
 	float offz = mPlugInpOffsetZ.GetValue();
 	float fadaptive = ((mfPhase2-mfPhase)/fdt);
 	if( fadaptive == 0.0f ) fadaptive=1.0f;
-	if( fadaptive < 0.1f ) fadaptive=0.1f;
-	if( fadaptive > 1.0f ) fadaptive=1.0f;
+	fadaptive = ork::clamp(fadaptive,0.1f,1.0f);
 	mEmitterCtx.mPool = pb.mPool;
 	mEmitterCtx.mfEmissionRate = emissionrate*fadaptive;
 	mEmitterCtx.mKey = (void*) this;
-	if( lifespan < 0.01f ) lifespan=0.01f;
-	if( lifespan > 10.0f ) lifespan=10.0f;
 	mEmitterCtx.mfLifespan = lifespan;
 	mEmitterCtx.mfDeltaTime = fdt;
 	mEmitterCtx.mfEmissionVelocity = femitvel;
@@ -961,13 +958,11 @@ void NozzleEmitter::Emit( float fdt )
 {	const psys_ptclbuf& pb = InpPlugName(Input).GetValue();
 	Pool<BasicParticle>& pool = *pb.mPool;
 	float femitvel = mPlugInpEmissionVelocity.GetValue();
-	float lifespan = mPlugInpLifespan.GetValue();
+	float lifespan = ork::clamp(mPlugInpLifespan.GetValue(),0.01f,10.0f);
 	float emissionrate = mPlugInpEmissionRate.GetValue();
 	mEmitterCtx.mPool = pb.mPool;
 	mEmitterCtx.mfEmissionRate = emissionrate;
 	mEmitterCtx.mKey = (void*) this;
-	if( lifespan < 0.01f ) lifespan=0.01f;
-	if( lifespan > 10.0f ) lifespan=10.0f;
 	mEmitterCtx.mfLifespan = lifespan;
 	mEmitterCtx.mfDeltaTime = fdt;
 	mEmitterCtx.mfEmissionVelocity = femitvel;
@@ -1311,6 +1306,13 @@ PlanarColliderModule::PlanarColliderModule()
 	, ConstructInpPlug( OriginY, dataflow::EPR_UNIFORM, mfOriginY )
 	, ConstructInpPlug( OriginZ, dataflow::EPR_UNIFORM, mfOriginZ )
 	, ConstructInpPlug( Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion )
+	, mfOriginX(0.0f)
+	, mfOriginY(0.0f)
+	, mfOriginZ(0.0f)
+	, mfNormalX(0.0f)
+	, mfNormalY(0.0f)
+	, mfNormalZ(0.0f)
+	, mfAbsorbtion(0.0f)
 {}
 ///////////////////////////////////////////////////////////////////////////////
 void PlanarColliderModule::Compute( float dt )
@@ -1383,6 +1385,110 @@ dataflow::inplugbase* PlanarColliderModule::GetInput(int idx)
 			break;
 	}
 	return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void SphericalColliderModule::Describe()
+{	RegisterObjInpPlug( SphericalColliderModule, Input );
+	RegisterObjOutPlug( SphericalColliderModule, Output );
+	RegisterFloatXfPlug( SphericalColliderModule, CenterX, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( SphericalColliderModule, CenterY, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( SphericalColliderModule, CenterZ, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( SphericalColliderModule, Radius, -1000.0f, 1000.0f, ged::OutPlugChoiceDelegate );
+	RegisterFloatXfPlug( SphericalColliderModule, Absorbtion, 0.0f, 1.0f, ged::OutPlugChoiceDelegate );
+
+	static const char* EdGrpStr =
+		        "grp://Main Input Absorbtion "
+		        "grp://Sphere CenterX CenterY CenterZ Radius";
+				
+	reflect::AnnotateClassForEditor<SphericalColliderModule>( "editor.prop.groups", EdGrpStr );
+}
+///////////////////////////////////////////////////////////////////////////////
+SphericalColliderModule::SphericalColliderModule()
+	: ConstructOutPlug( Output, dataflow::EPR_UNIFORM )
+	, ConstructInpPlug( Input, dataflow::EPR_UNIFORM, gNoCon )
+	, ConstructInpPlug( CenterX, dataflow::EPR_UNIFORM, mfCenterX )
+	, ConstructInpPlug( CenterY, dataflow::EPR_UNIFORM, mfCenterY )
+	, ConstructInpPlug( CenterZ, dataflow::EPR_UNIFORM, mfCenterZ )
+	, ConstructInpPlug( Radius, dataflow::EPR_UNIFORM, mfRadius )
+	, ConstructInpPlug( Absorbtion, dataflow::EPR_UNIFORM, mfAbsorbtion )
+	, mfRadius(1.0f)
+	, mfCenterX(0.0f)
+	, mfCenterY(0.0f)
+	, mfCenterZ(0.0f)
+	, mfAbsorbtion(0.0f)
+{}
+///////////////////////////////////////////////////////////////////////////////
+dataflow::inplugbase* SphericalColliderModule::GetInput(int idx)
+{	dataflow::inplugbase* rval = 0;
+	switch( idx )
+	{
+		case 0:	rval= & mPlugInpInput;			break;
+		case 1:	rval= & mPlugInpCenterX;		break;
+		case 2:	rval= & mPlugInpCenterY;		break;
+		case 3:	rval= & mPlugInpCenterZ;		break;
+		case 4:	rval= & mPlugInpRadius;			break;
+		case 5:	rval= & mPlugInpAbsorbtion;		break;
+		default:
+			OrkAssert(false);
+			break;
+	}
+	return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
+void SphericalColliderModule::Compute( float dt )
+{	const psys_ptclbuf& pb = mPlugInpInput.GetValue();
+	if( pb.mPool )
+	{	
+		//////////////////////////////////////////////////////////
+		Sphere the_sphere(fvec3(),1.0f);
+
+		the_sphere.mCenter.SetX(mPlugInpCenterX.GetValue());
+		the_sphere.mCenter.SetY(mPlugInpCenterY.GetValue());
+		the_sphere.mCenter.SetZ(mPlugInpCenterZ.GetValue());
+		the_sphere.mRadius = mPlugInpRadius.GetValue();
+		float retention = 1.0f-mPlugInpAbsorbtion.GetValue();
+		//////////////////////////////////////////////////////////
+		
+		auto m1 = 1000.0f;
+		auto m2 = 1.0f;
+
+		for( int i=0; i<pb.mPool->GetNumAlive(); i++ )
+		{	
+			auto particle = pb.mPool->GetActiveParticle(i);
+			const fvec3& cur_pos = particle->mPosition;
+			const fvec3& cur_vel = particle->mVelocity;
+			auto cur_dir = cur_vel.Normal();
+
+			auto nxt_pos = cur_pos+particle->mVelocity*dt;
+			float nxt_dist_to_center = (nxt_pos-the_sphere.mCenter).Mag();
+			float cur_dist_to_center = (cur_pos-the_sphere.mCenter).Mag();
+
+			bool cur_inside = cur_dist_to_center<the_sphere.mRadius;
+			bool nxt_inside = nxt_dist_to_center<the_sphere.mRadius;
+
+			if( (false==cur_inside) && nxt_inside )
+			{
+				auto sph2ptc_dir = (cur_pos-the_sphere.mCenter).Normal();
+				auto vel1 = fvec3(0);
+				auto x1 = fvec3(0); //sph2ptc_dir.Dot(vel1);
+				auto v1x = fvec3(0); //sph2ptc_dir*x1;
+				auto v1y = fvec3(0); //vel1-v1x;
+
+				auto ptc2sph_dir = sph2ptc_dir*-1.0f;
+				auto vel2 = cur_vel;
+				auto x2 = ptc2sph_dir.Dot(vel2);
+				auto v2x = ptc2sph_dir*x2;
+				auto v2y = vel2-v2x;
+
+
+				particle->mVelocity = (v1x*(2*m1)/(m1+m2)+v2x*(m2-m1)/(m1+m2)+v2y)*retention;
+			}
+
+		}
+	}
+	mOutDataOutput.mPool = pb.mPool;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

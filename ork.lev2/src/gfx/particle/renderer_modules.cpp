@@ -597,13 +597,15 @@ void StreakRenderer::Describe()
 	ork::reflect::RegisterProperty( "Gradient", & StreakRenderer::GradientAccessor );
 	ork::reflect::RegisterProperty("BlendMode", &StreakRenderer::meBlendMode);
 	ork::reflect::RegisterProperty( "Texture", & StreakRenderer::GetTextureAccessor, & StreakRenderer::SetTextureAccessor );
+	ork::reflect::RegisterProperty("DepthSort", & StreakRenderer::mbSort );
+	ork::reflect::RegisterProperty("AlphaMux", & StreakRenderer::mAlphaMux );
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("BlendMode", "editor.class", "ged.factory.enum" );
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.class", "ged.factory.assetlist" );
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.assettype", "lev2tex" );
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.assetclass", "lev2tex");
 	static const char* EdGrpStr =
-		        "grp://StreakRenderer Input Length Width BlendMode Gradient GradientIntensity Texture ";
+		        "grp://StreakRenderer Input DepthSort AlphaMux Length Width BlendMode Gradient GradientIntensity Texture ";
 	reflect::AnnotateClassForEditor<StreakRenderer>( "editor.prop.groups", EdGrpStr );
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -618,6 +620,7 @@ StreakRenderer::StreakRenderer()
 	, mfLength(1.0f)
 	, mfWidth(1.0f)
 	, mfGradientIntensity(1.0f)
+	, mbSort(false)
 {
 	ork::lev2::GfxTarget* targ = ork::lev2::GfxEnv::GetRef().GetLoaderTarget();
 	mpMaterial = new GfxMaterial3DSolid(targ, "orkshader://particle", "tstreakparticle");
@@ -660,8 +663,8 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 	//////////////////////////////////////////
 	ork::lev2::CVtxBuffer<ork::lev2::SVtxV12N12B12T8C4>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2(); 
 	float Scale = 1.0f;
-	ork::CMatrix4 MatScale;
-	MatScale.SetScale( Scale,Scale,Scale );
+	ork::CMatrix4 mtx_scale;
+	mtx_scale.SetScale( Scale,Scale,Scale );
 	///////////////////////////////////////////////////////////////
 	float fgi = mPlugInpGradientIntensity.GetValue();
 	///////////////////////////////////////////////////////////////
@@ -676,30 +679,67 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 		////////////////////////////////////////////////////////////////////////////
 		lev2::VtxWriter<SVtxV12N12B12T8C4> vw;
 		vw.Lock( targ, &vtxbuf, icnt );
-		{	////////////////////////////////////////////////
+		{	
+
+			////////////////////////////////////////////////
 			// uniform properties
 			////////////////////////////////////////////////	
 			const ork::lev2::particle::BasicParticle* __restrict ptclbase = buffer.mpParticles;
-			for( int i=0; i<icnt; i++ )
-			{	const ork::lev2::particle::BasicParticle* __restrict ptcl = ptclbase+i;
-				////////////////////////////////////////////////
-				// varying properties
-				////////////////////////////////////////////////
-				float fage = ptcl->mfAge;
-				mOutDataUnitAge = (fage/ptcl->mfLifeSpan);
-				mOutDataUnitAge = (mOutDataUnitAge<0.0f) ? 0.0f : mOutDataUnitAge;
-				mOutDataUnitAge = (mOutDataUnitAge>1.0f) ? 1.0f : mOutDataUnitAge;
-				//
-				float fwidth = mPlugInpWidth.GetValue();
-				float flength = mPlugInpLength.GetValue();
-				CVector4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
-				////////////////////////////////////////////////
-				vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
-															obj_nrmz,
-															ptcl->mVelocity,
-															ork::CVector2( fwidth, flength ),
-															color.GetVtxColorAsU32() ) );
-				////////////////////////////////////////////////
+
+			if( mbSort )
+			{
+				static ork::fixedlut<float,const ork::lev2::particle::BasicParticle*,20000> SortedParticles(EKEYPOLICY_MULTILUT);
+				SortedParticles.clear();
+				const CMatrix4& MVP = targ->MTXI()->RefMVPMatrix();
+				for( int i=0; i<icnt; i++ )
+				{	const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles+i;
+					{	CVector4 proj = ptcl->mPosition.Transform(MVP);
+						proj.PerspectiveDivide();
+						float fv = proj.GetZ();
+						SortedParticles.AddSorted( fv, ptcl );
+					}
+				}
+				for( int i=(icnt-1); i>=0; i-- )
+				{	const ork::lev2::particle::BasicParticle* __restrict ptcl = SortedParticles.GetItemAtIndex(i).second;
+					////////////////////////////////////////////////
+					// varying properties
+					////////////////////////////////////////////////
+					float fage = ptcl->mfAge;
+					mOutDataUnitAge = ork::clamp((fage/ptcl->mfLifeSpan),0.0f,1.0f);
+					//
+					float fwidth = mPlugInpWidth.GetValue();
+					float flength = mPlugInpLength.GetValue();
+					CVector4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
+					////////////////////////////////////////////////
+					vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
+																obj_nrmz,
+																ptcl->mVelocity,
+																ork::CVector2( fwidth, flength ),
+																color.GetVtxColorAsU32() ) );
+					////////////////////////////////////////////////
+				}
+			}
+			else
+			{
+				for( int i=0; i<icnt; i++ )
+				{	const ork::lev2::particle::BasicParticle* __restrict ptcl = ptclbase+i;
+					////////////////////////////////////////////////
+					// varying properties
+					////////////////////////////////////////////////
+					float fage = ptcl->mfAge;
+					mOutDataUnitAge = ork::clamp((fage/ptcl->mfLifeSpan),0.0f,1.0f);
+					//
+					float fwidth = mPlugInpWidth.GetValue();
+					float flength = mPlugInpLength.GetValue();
+					CVector4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
+					////////////////////////////////////////////////
+					vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
+																obj_nrmz,
+																ptcl->mVelocity,
+																ork::CVector2( fwidth, flength ),
+																color.GetVtxColorAsU32() ) );
+					////////////////////////////////////////////////
+				}
 			}
 		}	
 		vw.UnLock(targ);			
@@ -707,6 +747,7 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 		// setup particle material
 		//////////////////////////////////////////
 		targ->BindMaterial( mpMaterial );
+		mpMaterial->SetUser0(mAlphaMux);
 		mpMaterial->SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_USER );
 		mpMaterial->mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_GREATER, 0.0f );
 		mpMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_LEQUALS );
@@ -718,7 +759,7 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 		//////////////////////////////////////////
 		// Draw Particles 
 		//////////////////////////////////////////
-		targ->MTXI()->PushMMatrix(MatScale*mtx);
+		targ->MTXI()->PushMMatrix(mtx_scale*mtx);
 		targ->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_POINTS, icnt ); 
 		targ->MTXI()->PopMMatrix();
 		//////////////////////////////////////////

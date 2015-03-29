@@ -244,7 +244,9 @@ protected:
 
 };
 
-typedef TVector4<CReal> CVector4;
+typedef TVector4<float> CVector4; // this alias is deprecated! fvec4 is the new alias
+typedef TVector4<float> fvec4;
+typedef TVector4<double> dvec4;
 typedef CVector4 CColor4;
 
 ///////////////////////////////////////////////////////////////////////////////

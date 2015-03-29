@@ -509,6 +509,10 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 	static int ipushy = 0;
 	static f32 flerp = 0.0f;
     
+	CVector4 RotX = mCameraData.GetXNormal();
+	CVector4 RotY = mCameraData.GetYNormal();
+	CVector4 RotZ = mCameraData.GetZNormal();
+
     switch(filtev.miEventCode)
     {
 		case UIEV_PUSH:
@@ -632,12 +636,6 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 			//////////////////////////////////////////////////
 
 			CReal tmult = 1.0f;
-
-			//////////////////////////////////////////////////
-
-			CVector4 RotX = mCameraData.GetXNormal();
-			CVector4 RotY = mCameraData.GetYNormal();
-			CVector4 RotZ = mCameraData.GetZNormal();
 
 			//////////////////////////////////////////////////
 			if( mDoRotate )
@@ -893,18 +891,14 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
         }
         case UIEV_MOUSEWHEEL:
 		{
-			static avg_filter<3> gScrollFilter;
+			float zmoveamt = 0.3f;
+			if( isctrl ) zmoveamt*=0.2f;
+			else if( isshift ) zmoveamt*=5.0f;
 
-			int deltawheel = (2*gScrollFilter.compute(-EV.miMWY)/9);
-
-			LengthReal ZMoveAmount(0.3f, LengthUnit::Meters());
-			if( isctrl ) ZMoveAmount*=0.2f;
-			else if( isshift ) ZMoveAmount*=5.0f;
-
-			if( isright )
+			if( isalt )
 			{
 				CVector4 Center = mvCenter;
-				CVector4 Delta = (CamFocus - Center)*CReal(0.3f);
+				CVector4 Delta = RotZ*zmoveamt*-EV.miMWY;
 
 				mvCenter += Delta;
 			}
@@ -923,7 +917,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 				if( mfLoc < kmin ) mfLoc = kmin;
 				if( mfLoc > kmax ) mfLoc = kmax;
 
-				CReal DeltaInMeters = CReal( deltawheel ) * CameraFactor * ZMoveAmount.GetValue(LengthUnit::Meters());
+				float DeltaInMeters = float( EV.miMWY ) * CameraFactor * zmoveamt;
 
 				mfLoc += DeltaInMeters;
 

@@ -240,7 +240,9 @@ protected:
 
 };
 
-typedef TVector3<CReal> CVector3;
+typedef TVector3<float> CVector3;
+typedef TVector3<float> fvec3;
+typedef TVector3<double> dvec3;
 typedef CVector3 CColor3;
 
 ///////////////////////////////////////////////////////////////////////////////

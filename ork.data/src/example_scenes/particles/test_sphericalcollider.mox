@@ -1,0 +1,605 @@
+
+<reference category='ObjectClass'>
+    <object type='Ent3dSceneData' id='0'>
+        <property name='SceneObjects'>
+            <item key='PerformanceAnalyzer'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='1'>
+                        <property name='Name'>"PerformanceAnalyzer"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='2'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='PerformanceAnalyzerArchetype' id='3'>
+                                    <property name='Name'>"SceneObject3"</property>
+                                    <property name='Components'>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='PerfAnalyzerControllerData' id='4'>
+                                                    <property name='EnableDisplay'>true</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='SceneObject1'>
+                <reference category='SceneObjectClass'>
+                    <object type='ParticleArchetype' id='5'>
+                        <property name='Name'>"SceneObject1"</property>
+                        <property name='Components'>
+                            <item key='animate'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='DataflowRecieverComponentData' id='6'>
+                                        <property name='FloatRecievers'></property>
+                                        <property name='Vect3Recievers'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='particle'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ParticleControllableData' id='7'>
+                                        <property name='DefaultEnable'>true</property>
+                                        <property name='EntAttachment'>""</property>
+                                        <property name='Systems'>
+                                            <item key='a'>
+                                                <reference category='ObjectClass'>
+                                                    <object type='ModParticleItem' id='8'>
+                                                        <property name='Duration'>0</property>
+                                                        <property name='IsWorldSpace'>true</property>
+                                                        <property name='PreCharge'>0</property>
+                                                        <property name='SortValue'>0</property>
+                                                        <property name='StartTime'>0</property>
+                                                        <property name='GraphPool'>
+                                                            <object type='psys::GraphPool' id='9'>
+                                                                <property name='MaxInstances'>1</property>
+                                                            </object>
+                                                        </property>
+                                                        <property name='Template'>
+                                                            <object type='psys::Graph' id='10'>
+                                                                <property name='Modules'>
+                                                                    <item key='e'>
+                                                                        <reference category='ObjectClass'>
+                                                                            <object type='psys::RingEmitterModule' id='11'>
+                                                                                <property name='mgvpos'>100 -100</property>
+                                                                                <property name='DeathQID'>"dq"</property>
+                                                                                <property name='Direction'>
+                                                                                    <object type='dflow/inplugxf<vect3,vect3xf>' id='12'>
+                                                                                        <property name='value'>0 0 0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/vect3xf' id='13'>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='DirectionType'>"EMITDIR_USER"</property>
+                                                                                <property name='DispersionAngle'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='14'>
+                                                                                        <property name='value'>1</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='15'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='EmissionRadius'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='16'>
+                                                                                        <property name='value'>1</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='17'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='EmissionRate'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='18'>
+                                                                                        <property name='value'>800</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='19'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='EmissionVelocity'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='20'>
+                                                                                        <property name='value'>0.4</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='21'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='EmitterSpinRate'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='22'>
+                                                                                        <property name='value'>8.7</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='23'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Input'>
+                                                                                    <object type='psys::pbufinpplug' id='24'>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Lifespan'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='25'>
+                                                                                        <property name='value'>4</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='26'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='OffsetX'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='27'>
+                                                                                        <property name='value'>0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='28'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='OffsetY'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='29'>
+                                                                                        <property name='value'>32.5561</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='30'>
+                                                                                                <property name='Transforms'>
+                                                                                                    <item key='xf1'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='dflow/floatxfmsbcurve' id='31'>
+                                                                                                                <property name='ModScaleBias'>
+                                                                                                                    <object type='dflow/ModScaleBias' id='32'>
+                                                                                                                        <property name='bias'>0</property>
+                                                                                                                        <property name='mod'>1</property>
+                                                                                                                        <property name='scale'>1</property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='curve'>
+                                                                                                                    <object type='MultiCurve1D' id='33'>
+                                                                                                                        <property name='Curve'>
+                                                                                                                            <object type='Object' id='34'>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                        <property name='Segs' size='2'>
+                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                        </property>
+                                                                                                                        <property name='Verts'>
+                                                                                                                            <item key='0'>0</item>
+                                                                                                                            <item key='0.498442'>1</item>
+                                                                                                                            <item key='1'>0</item>
+                                                                                                                        </property>
+                                                                                                                        <property name='max'>-14</property>
+                                                                                                                        <property name='min'>-15</property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='docurve'>true</property>
+                                                                                                                <property name='domodscabia'>true</property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                </property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='OffsetZ'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='35'>
+                                                                                        <property name='value'>0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='36'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Output'>
+                                                                                    <object type='psys::pbufoutplug' id='37'>
+                                                                                    </object>
+                                                                                </property>
+                                                                            </object>
+                                                                        </reference>
+                                                                    </item>
+                                                                    <item key='gl'>
+                                                                        <reference category='ObjectClass'>
+                                                                            <object type='psys::Global' id='38'>
+                                                                                <property name='mgvpos'>-100 0</property>
+                                                                                <property name='TimeScale'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='39'>
+                                                                                        <property name='value'>1</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='40'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                            </object>
+                                                                        </reference>
+                                                                    </item>
+                                                                    <item key='gr'>
+                                                                        <reference category='ObjectClass'>
+                                                                            <object type='psys::GravityModule' id='41'>
+                                                                                <property name='mgvpos'>100 0</property>
+                                                                                <property name='Center'>
+                                                                                    <object type='dflow/inplugxf<vect3,vect3xf>' id='42'>
+                                                                                        <property name='value'>0 0 0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/vect3xf' id='43'>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='G'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='44'>
+                                                                                        <property name='value'>4</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='45'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Input'>
+                                                                                    <object type='psys::pbufinpplug' id='46'>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Mass'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='47'>
+                                                                                        <property name='value'>0.722891</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='48'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='MinDistance'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='49'>
+                                                                                        <property name='value'>46.6454</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='50'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='OthMass'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='51'>
+                                                                                        <property name='value'>0.210843</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='52'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Output'>
+                                                                                    <object type='psys::pbufoutplug' id='53'>
+                                                                                    </object>
+                                                                                </property>
+                                                                            </object>
+                                                                        </reference>
+                                                                    </item>
+                                                                    <item key='p'>
+                                                                        <reference category='ObjectClass'>
+                                                                            <object type='psys::Pool' id='54'>
+                                                                                <property name='mgvpos'>-100 -100</property>
+                                                                                <property name='MaxParticles'>9920</property>
+                                                                                <property name='Output'>
+                                                                                    <object type='psys::pbufoutplug' id='55'>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='PathInterval'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='56'>
+                                                                                        <property name='value'>0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='57'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='PathIntervalQID'>""</property>
+                                                                                <property name='PathProbability'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='58'>
+                                                                                        <property name='value'>0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='59'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='PathStochasticQID'>"a"</property>
+                                                                            </object>
+                                                                        </reference>
+                                                                    </item>
+                                                                    <item key='r'>
+                                                                        <reference category='ObjectClass'>
+                                                                            <object type='psys::StreakRenderer' id='60'>
+                                                                                <property name='mgvpos'>-100 100</property>
+                                                                                <property name='Input'>
+                                                                                    <object type='psys::pbufinpplug' id='61'>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='BlendMode'>"EBLENDING_ALPHA_ADDITIVE"</property>
+                                                                                <property name='Gradient'>
+                                                                                    <object type='GradientV4' id='62'>
+                                                                                        <property name='points'>
+                                                                                            <item key='0'>0 0 0 0.996094</item>
+                                                                                            <item key='0.066482'>0.996094 0.789062 0.0742188 0.996094</item>
+                                                                                            <item key='0.373961'>0.457031 0 0.0078125 0.996094</item>
+                                                                                            <item key='0.476454'>0.339844 0.0390625 0.398438 0.996094</item>
+                                                                                            <item key='0.905817'>0.0820312 0.0195312 0.195312 0.996094</item>
+                                                                                            <item key='0.939751'>0.0546875 0.351562 0.992188 0.996094</item>
+                                                                                            <item key='1'>0 0 0 1</item>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='GradientIntensity'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='63'>
+                                                                                        <property name='value'>1</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='64'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Length'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='65'>
+                                                                                        <property name='value'>0.05</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='66'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Texture'>
+                                                                                    <reference category='AssetClass'>
+                                                                                        "lev2tex" "data://effect_textures/knob1"
+                                                                                    </reference>
+                                                                                </property>
+                                                                                <property name='Width'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='67'>
+                                                                                        <property name='value'>0.07</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='68'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                            </object>
+                                                                        </reference>
+                                                                    </item>
+                                                                    <item key='sph1'>
+                                                                        <reference category='ObjectClass'>
+                                                                            <object type='psys::SphericalColliderModule' id='69'>
+                                                                                <property name='mgvpos'>100 100</property>
+                                                                                <property name='Absorbtion'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='70'>
+                                                                                        <property name='value'>0.440895</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='71'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='CenterX'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='72'>
+                                                                                        <property name='value'>0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='73'>
+                                                                                                <property name='Transforms'>
+                                                                                                    <item key='xf1'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='dflow/floatxfmsbcurve' id='74'>
+                                                                                                                <property name='ModScaleBias'>
+                                                                                                                    <object type='dflow/ModScaleBias' id='75'>
+                                                                                                                        <property name='bias'>0</property>
+                                                                                                                        <property name='mod'>1</property>
+                                                                                                                        <property name='scale'>1</property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='curve'>
+                                                                                                                    <object type='MultiCurve1D' id='76'>
+                                                                                                                        <property name='Curve'>
+                                                                                                                            <object type='Object' id='77'>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                        <property name='Segs' size='2'>
+                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                        </property>
+                                                                                                                        <property name='Verts'>
+                                                                                                                            <item key='0'>0</item>
+                                                                                                                            <item key='0.476636'>1</item>
+                                                                                                                            <item key='1'>0</item>
+                                                                                                                        </property>
+                                                                                                                        <property name='max'>1</property>
+                                                                                                                        <property name='min'>-1</property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='docurve'>true</property>
+                                                                                                                <property name='domodscabia'>true</property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                </property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='CenterY'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='78'>
+                                                                                        <property name='value'>0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='79'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='CenterZ'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='80'>
+                                                                                        <property name='value'>0</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='81'>
+                                                                                                <property name='Transforms'>
+                                                                                                    <item key='xf1'>
+                                                                                                        <reference category='ObjectClass'>
+                                                                                                            <object type='dflow/floatxfmsbcurve' id='82'>
+                                                                                                                <property name='ModScaleBias'>
+                                                                                                                    <object type='dflow/ModScaleBias' id='83'>
+                                                                                                                        <property name='bias'>0</property>
+                                                                                                                        <property name='mod'>1</property>
+                                                                                                                        <property name='scale'>1</property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='curve'>
+                                                                                                                    <object type='MultiCurve1D' id='84'>
+                                                                                                                        <property name='Curve'>
+                                                                                                                            <object type='Object' id='85'>
+                                                                                                                            </object>
+                                                                                                                        </property>
+                                                                                                                        <property name='Segs' size='2'>
+                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                            <item>"EMCST_LINEAR"</item>
+                                                                                                                        </property>
+                                                                                                                        <property name='Verts'>
+                                                                                                                            <item key='0'>1</item>
+                                                                                                                            <item key='0.392523'>0</item>
+                                                                                                                            <item key='1'>1</item>
+                                                                                                                        </property>
+                                                                                                                        <property name='max'>1</property>
+                                                                                                                        <property name='min'>-1</property>
+                                                                                                                    </object>
+                                                                                                                </property>
+                                                                                                                <property name='docurve'>true</property>
+                                                                                                                <property name='domodscabia'>true</property>
+                                                                                                            </object>
+                                                                                                        </reference>
+                                                                                                    </item>
+                                                                                                </property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Input'>
+                                                                                    <object type='psys::pbufinpplug' id='86'>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Output'>
+                                                                                    <object type='psys::pbufoutplug' id='87'>
+                                                                                    </object>
+                                                                                </property>
+                                                                                <property name='Radius'>
+                                                                                    <object type='dflow/inplugxf<float,floatxf>' id='88'>
+                                                                                        <property name='value'>1</property>
+                                                                                        <property name='xf'>
+                                                                                            <object type='dflow/floatxf' id='89'>
+                                                                                                <property name='Transforms'></property>
+                                                                                            </object>
+                                                                                        </property>
+                                                                                    </object>
+                                                                                </property>
+                                                                            </object>
+                                                                        </reference>
+                                                                    </item>
+                                                                </property>
+                                                                <property name='zzz_connections'>8 "e" "Input" "p" "Output" "e" "OffsetY" "gl" "Random" "e" "Direction" "gl" "RandomNormal" "gr" "Input" "e" "Output" "r" "Input" "sph1" "Output" "sph1" "Input" "gr" "Output" "sph1" "CenterX" "gl" "Time" "sph1" "CenterZ" "gl" "Time"</property>
+                                                            </object>
+                                                        </property>
+                                                    </object>
+                                                </reference>
+                                            </item>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='SceneObject2'>
+                <reference category='SceneObjectClass'>
+                    <object type='EditorCamArchetype' id='90'>
+                        <property name='Name'>"SceneObject2"</property>
+                        <property name='Components'>
+                            <item key='camera'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorCamControllerData' id='91'>
+                                        <property name='Camera'>
+                                            <object type='CCamera_persp' id='92'>
+                                                <property name='Center'>-2.10677 -0.595309 -1.5479</property>
+                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Loc'>39.5592</property>
+                                                <property name='QuatC'>0.822424 -0.172721 -0.451844 -0.299535</property>
+                                                <property name='Aperature'>40</property>
+                                                <property name='MaxFar'>10000</property>
+                                                <property name='MinNear'>0.1</property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='SceneObject3'><backreference id='3'/></item>
+            <item key='edcam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='93'>
+                        <property name='Name'>"edcam"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='94'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='90'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='psys'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='95'>
+                        <property name='Name'>"psys"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='96'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='5'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+        </property>
+    </object>
+</reference>

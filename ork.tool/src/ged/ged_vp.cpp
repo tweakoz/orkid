@@ -194,23 +194,11 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 		}
 		case ui::UIEV_MOUSEWHEEL:
 		{
-			QWheelEvent* qem = (QWheelEvent*) qip;
-
-
-			//GetPixel( ix, iy, ctx );
-			//ork::Object *pobj = ctx.GetObject(0);			
-
 			int iscrollamt = bisshift ? 32 : 8;
-
-			static avg_filter<3> gScrollFilter;
-
 
 			//if( pobj )
 			{
-				int irawdelta = qem->delta();
-
-
-				int idelta = (2*gScrollFilter.compute(irawdelta)/9);
+				int idelta = EV.miMWY;
 
 				if( idelta > 0 )
 				{
