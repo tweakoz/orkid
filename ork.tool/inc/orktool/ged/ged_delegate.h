@@ -18,9 +18,12 @@ class SliderBase
 public:
 
 	virtual void resize( int ix, int iy, int iw, int ih ) = 0;
-	virtual void mouseMoveEvent ( QMouseEvent * pEV ) = 0;
-	virtual void mouseReleaseEvent ( QMouseEvent * pEV ) = 0;
-	virtual void mouseDoubleClickEvent ( QMouseEvent * pEV ) =0;
+
+	void OnUiEvent( const ork::ui::Event& ev );
+	virtual void OnMouseMoved( const ork::ui::Event& ev ) = 0;
+	virtual void OnMouseReleased( const ork::ui::Event& ev ) = 0;
+	virtual void OnMouseDoubleClicked( const ork::ui::Event& ev ) = 0;
+
 
 	void SetLogMode( bool bv ) { mlogmode=bv; }
 	float GetIndicPos() const { return mfIndicPos; }
@@ -52,9 +55,9 @@ public:
 
 	Slider( T& ParentW, datatype min, datatype max, datatype def );
 
-	/*virtual*/ void mouseMoveEvent ( QMouseEvent * event );
-	/*virtual*/ void mouseReleaseEvent ( QMouseEvent * event ) ;
-	/*virtual*/ void mouseDoubleClickEvent ( QMouseEvent * event );
+	void OnMouseMoved( const ork::ui::Event& ev ) final;
+	void OnMouseReleased( const ork::ui::Event& ev ) final;
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
 
 	/*virtual*/ void resize(int ix, int iy, int iw, int ih);
 	void SetVal( datatype val );
@@ -87,8 +90,9 @@ public:
 	typedef bool datatype;
 	Setter		mSetter;
 	GedBoolNode(ObjModel &mdl, const char *name, const reflect::IObjectProperty *prop, ork::Object *obj);
-	/*virtual*/ void mouseReleaseEvent(QMouseEvent *pEV);
-	/*virtual*/ void mouseDoubleClickEvent(QMouseEvent *pEV);
+	void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
+	void OnMouseReleased(const ork::ui::Event& ev) final;
+
 	/*virtual*/ void DoDraw(lev2::GfxTarget *pTARG);
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,9 +101,11 @@ template <typename IODriver> class GedFloatNode : public GedItemNode
 public:
 	bool		mLogMode;
 	GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
-	/*virtual*/ void mouseMoveEvent( QMouseEvent * pEV );
-	/*virtual*/ void mouseDoubleClickEvent ( QMouseEvent * event );
-	/*virtual*/ void mouseReleaseEvent ( QMouseEvent * event );
+
+	void OnMouseMoved( const ork::ui::Event& ev ) final;
+	void OnMouseReleased( const ork::ui::Event& ev ) final;
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+
 	/*virtual*/ void DoDraw( lev2::GfxTarget* pTARG );
 	typedef float datatype;
 	void ReSync(); // virtual 
@@ -115,9 +121,11 @@ template <typename IODriver> class GedIntNode : public GedItemNode
 public:
 	bool		mLogMode;
 	GedIntNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
-	/*virtual*/ void mouseMoveEvent( QMouseEvent * pEV );
-	/*virtual*/ void mouseDoubleClickEvent ( QMouseEvent * event );
-	/*virtual*/ void mouseReleaseEvent ( QMouseEvent * event );
+
+	void OnMouseMoved( const ork::ui::Event& ev ) final;
+	void OnMouseReleased( const ork::ui::Event& ev ) final;
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+
 	/*virtual*/ void DoDraw( lev2::GfxTarget* pTARG );
 	typedef int datatype;
 	void ReSync(); // virtual
@@ -131,7 +139,9 @@ template <typename IODriver,typename T> class GedSimpleNode : public GedItemNode
 {
 public:
 	GedSimpleNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
-	/*virtual*/ void mouseDoubleClickEvent ( QMouseEvent * event );
+
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+
 	/*virtual*/ void DoDraw( lev2::GfxTarget* pTARG );
 	IODriver& RefIODriver() { return mIoDriver; }
 private:
@@ -145,7 +155,9 @@ class GedObjNode : public GedItemNode
 public:
 	GedObjNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 	void OnCreateObject();
-	void mouseDoubleClickEvent ( QMouseEvent * event ); // virtual
+
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+
 	void DoDraw( lev2::GfxTarget* pTARG ); // virtual
 private:
 	Setter		mSetter;
@@ -192,16 +204,18 @@ private:
 	bool								mbIsMultiMap;
 	bool								mbImpExp;
 
-	virtual void mouseDoubleClickEvent ( QMouseEvent * pEV );
+
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+
 	void CheckVis();
 	virtual void DoDraw( lev2::GfxTarget* pTARG );
 
-	void AddItem(QMouseEvent * pEV);
-	void RemoveItem(QMouseEvent * pEV);
-	void MoveItem(QMouseEvent * pEV);
-	void DuplicateItem(QMouseEvent * pEV);
-	void ImportItem(QMouseEvent * pEV);
-	void ExportItem(QMouseEvent * pEV);
+	void AddItem(const ork::ui::Event& ev);
+	void RemoveItem(const ork::ui::Event& ev);
+	void MoveItem(const ork::ui::Event& ev);
+	void DuplicateItem(const ork::ui::Event& ev);
+	void ImportItem(const ork::ui::Event& ev);
+	void ExportItem(const ork::ui::Event& ev);
 
 	bool DoDrawDefault() const { return false; } // virtual 
 };
@@ -292,7 +306,9 @@ public:
 private:
 
 	IODriver	mIoDriver;
-	/*virtual*/ void mouseDoubleClickEvent ( QMouseEvent * event );
+
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+
 	virtual bool DoDrawDefault() const { return false; }
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -311,7 +327,9 @@ public:
 private:
 
 	IODriver		mIoDriver;
-	/*virtual*/ void mouseDoubleClickEvent( QMouseEvent * event );
+
+	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+
 	virtual bool DoDrawDefault() const { return false; }
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -373,7 +391,7 @@ protected:
 class OpsNode : public GedItemNode
 {
 	void DoDraw( lev2::GfxTarget* pTARG ) override;
-	void mousePressEvent ( QMouseEvent * pEV ) override;
+	void OnMouseClicked( const ork::ui::Event& ev ) final;
 	orkvector< std::pair< std::string,any64> > mOps;	
 
 	//IOpsDelegate* mpCurrentDelegate;

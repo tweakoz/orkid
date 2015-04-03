@@ -217,7 +217,7 @@ void GedObjNode<Setter>::DoDraw( lev2::GfxTarget* pTARG )
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename Setter>
-void GedObjNode<Setter>::mouseDoubleClickEvent ( QMouseEvent * event )
+void GedObjNode<Setter>::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
 	if( mbInteractive )
 	{

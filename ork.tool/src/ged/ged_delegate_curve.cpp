@@ -39,15 +39,14 @@ public:
 	GedCurveEditPoint() : mCurveObject(0), mParent(0), miPoint(-1) {}
 	void SetCurveObject( MultiCurve1D* pgrad ) { mCurveObject=pgrad; }
 	void SetParent( GedItemNode* ppar ) { mParent=ppar; }
-	void mouseDoubleClickEvent ( QMouseEvent * event )
+	void OnMouseDoubleClicked(const ork::ui::Event& ev) final
 	{	if( mParent && mCurveObject )
 		{	orklut<float,float> & data = mCurveObject->GetVertices();
-			Qt::MouseButtons Buttons = event->buttons();
 			orklut<float,float>::iterator it = data.begin()+miPoint;
-			if( Buttons.testFlag( Qt::LeftButton ) )
+			if( ev.IsButton0DownF() )
 			{	bool bok = false;
 			}
-			else if( Buttons.testFlag( Qt::RightButton ) )
+			else if( ev.IsButton2DownF() )
 			{	if( it->first != 0.0f && it->first != 1.0f )
 				{	mCurveObject->MergeSegment(miPoint);
 					mParent->SigInvalidateProperty();
@@ -115,16 +114,15 @@ class GedCurveEditSeg : public GedObject
 
 public:
 
-	void mouseDoubleClickEvent ( QMouseEvent * event )
+	void OnMouseDoubleClicked(const ork::ui::Event& ev) final
 	{
 		if( mParent && mCurveObject )
 		{
-			Qt::MouseButtons Buttons = event->buttons();
-			if( Buttons.testFlag( Qt::LeftButton ) )
+			if( ev.IsButton0DownF() )
 			{	mCurveObject->SplitSegment(miSeg);
 				mParent->SigInvalidateProperty();
 			}
-			else if( Buttons.testFlag( Qt::RightButton ) )
+			else if(ev.IsButton2DownF())
 			{
 				QMenu *pMenu = new QMenu(0);
 				QAction *pchildmenu0 = pMenu->addAction( "Seg:Lin" );

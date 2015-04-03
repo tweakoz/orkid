@@ -60,9 +60,9 @@ class GedMapFactoryNode : public GedItemNode
 	GedMapIoDriver	mIoDriver;
 	any64			mKey;
 
-	virtual void mouseDoubleClickEvent ( QMouseEvent * pEV );
+	void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
 
-	virtual void DoDraw( lev2::GfxTarget* pTARG )
+	void DoDraw( lev2::GfxTarget* pTARG ) final
 	{
 		GetSkin()->DrawBgBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_DEFAULT_OUTLINE );
 		GetSkin()->DrawOutlineBox( this, miX, miY, miW, miH, GedSkin::ESTYLE_BACKGROUND_1 );

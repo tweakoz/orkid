@@ -199,12 +199,18 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 	switch( Ev.miEventCode )
 	{	
 		case ui::UIEV_KEY:
-		{	printf( "keydown<%d>\n", Ev.miKeyCode );
+		{	float kt = mKeyTimer.SecsSinceStart();
+			float dt = mDoubleTimer.SecsSinceStart();
+			float mt = mMoveTimer.SecsSinceStart();
 
-			bool bdouble 	= (mKeyTimer.SecsSinceStart()<0.8f)
-							& (mDoubleTimer.SecsSinceStart()>1.0f)
-							& (mMoveTimer.SecsSinceStart()>0.5f)
-							& (mLastKeyCode==Ev.miKeyCode);
+
+			bool bdouble 	= (kt<0.8f)
+							&& (dt>1.0f)
+							&& (mt>0.5f)
+							&& (mLastKeyCode==Ev.miKeyCode);
+
+			printf( "keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev.miKeyCode, kt, dt, mt );
+			
 
 			auto evc = bdouble ? ui::UIEV_DOUBLECLICK : ui::UIEV_PUSH;
 
@@ -212,9 +218,9 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 			switch( Ev.miKeyCode )
 			{	
 				case 'z': // synthetic left button
-					fev.miEventCode = mBut0Down ? 0 : evc;
+					fev.miEventCode = evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
-						{} //printf( "SYNTH DOUBLECLICK\n" );
+						{ printf( "SYNTH DOUBLECLICK\n" ); }
 					else
 					{
 						bdouble = false;

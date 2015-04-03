@@ -877,14 +877,14 @@ bool GedMapNode::IsKeyPresent( const KeyDecoName& pkey ) const
 	return bret;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::AddItem(QMouseEvent * pEV)
+void GedMapNode::AddItem(const ork::ui::Event& ev)
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
 
 	int ibasex = (kdim+4)*2+3;
 
-	QString qstr = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstr = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
 	std::string sstr = qstr.toAscii().data();
 	if( sstr.length() )
@@ -944,14 +944,14 @@ PropTypeString KeyDecoName::DecoratedName() const
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::RemoveItem(QMouseEvent * pEV)
+void GedMapNode::RemoveItem(const ork::ui::Event& ev)
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
 
 	int ibasex = (kdim+4)*3+3;
 
-	QString qstr = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstr = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
 	std::string sstr = qstr.toAscii().data();
 	if( sstr.length() )
@@ -968,17 +968,17 @@ void GedMapNode::RemoveItem(QMouseEvent * pEV)
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::DuplicateItem(QMouseEvent * pEV)
+void GedMapNode::DuplicateItem(const ork::ui::Event& ev)
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
 
 	int ibasex = (kdim+4)*3+3;
 
-	QString qstra = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstra = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 	
 	ork::msleep(100);
-	QString qstrb = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstrb = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
 	std::string sstra = qstra.toAscii().data();
 	std::string sstrb = qstrb.toAscii().data();
@@ -1007,17 +1007,17 @@ void GedMapNode::DuplicateItem(QMouseEvent * pEV)
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapNode::MoveItem(QMouseEvent * pEV)
+void GedMapNode::MoveItem(const ork::ui::Event& ev)
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
 
 	int ibasex = (kdim+4)*3+3;
 
-	QString qstra = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstra = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 	
 	ork::msleep(100);
-	QString qstrb = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstrb = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
 	std::string sstra = qstra.toAscii().data();
 	std::string sstrb = qstrb.toAscii().data();
@@ -1042,12 +1042,12 @@ void GedMapNode::MoveItem(QMouseEvent * pEV)
 		}
 	}
 }
-void GedMapNode::ImportItem(QMouseEvent * pEV)
+void GedMapNode::ImportItem(const ork::ui::Event& ev)
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
 	int ibasex = (kdim+4)*3+3;
-	QString qstra = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstra = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 	std::string sstra = qstra.toAscii().data();
 	if( sstra.length() )
 	{	KeyDecoName kdeca( sstra.c_str() );
@@ -1061,12 +1061,12 @@ void GedMapNode::ImportItem(QMouseEvent * pEV)
 		mModel.Attach(mModel.CurrentObject());
 	}
 }
-void GedMapNode::ExportItem(QMouseEvent * pEV)
+void GedMapNode::ExportItem(const ork::ui::Event& ev)
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
 	int ibasex = (kdim+4)*3+3;
-	QString qstra = GedInputDialog::getText ( pEV, this, 0, ibasex, 0, miW-ibasex-6, klabh );
+	QString qstra = GedInputDialog::getText ( ev.miX, ev.miY, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 	std::string sstra = qstra.toAscii().data();
 	if( sstra.length() )
 	{	KeyDecoName kdeca( sstra.c_str() );
@@ -1080,15 +1080,15 @@ void GedMapNode::ExportItem(QMouseEvent * pEV)
 }
 ///////////////////////////////////////////////////////////////////////////////
 static const int koff = 1;
-void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
+void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 {
 	const int klabh = get_charh();
 	const int kdim = klabh-2;
-	Qt::MouseButtons Buttons = pEV->buttons();
-	Qt::KeyboardModifiers modifiers = pEV->modifiers();
+	//Qt::MouseButtons Buttons = pEV->buttons();
+	//Qt::KeyboardModifiers modifiers = pEV->modifiers();
 
-	int ix = pEV->x() - this->miX;
-	int iy = pEV->y() - this->miY;
+	int ix = ev.miX - this->miX;
+	int iy = ev.miY - this->miY;
 
 	printf( "GedMapNode<%p> ilx<%d> ily<%d>\n", this, ix, iy );
 
@@ -1117,7 +1117,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
 		{
 			ObjModel& model = mModel; 
-			AddItem(pEV);
+			AddItem(ev);
 			//model.Attach(model.CurrentObject());
 			printf( "MAPADDITEM\n");
 			model.QueueUpdate();
@@ -1127,7 +1127,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
 		{
 			ObjModel& model = mModel; 
-			RemoveItem(pEV);
+			RemoveItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
@@ -1136,7 +1136,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // Move Item
 		{
 			ObjModel& model = mModel; 
-			MoveItem(pEV);
+			MoveItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
@@ -1145,7 +1145,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // Move Item
 		{
 			ObjModel& model = mModel; 
-			DuplicateItem(pEV);
+			DuplicateItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
@@ -1160,7 +1160,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
 		{
 			ObjModel& model = mModel; 
-			ImportItem(pEV);
+			ImportItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
@@ -1169,7 +1169,7 @@ void GedMapNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
 		if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
 		{
 			ObjModel& model = mModel; 
-			ExportItem(pEV);
+			ExportItem(ev);
 			//model.Attach(model.CurrentObject());
 			model.QueueUpdate();
 			return;
@@ -1485,7 +1485,7 @@ void GedMapIoDriver::GetValue( CVector3& flt ) const
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedMapFactoryNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
+void GedMapFactoryNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
 	orkset<object::ObjectClass*> Factories;
 	EnumerateFactories( GetOrkObj(), GetOrkProp(), Factories );

@@ -15,7 +15,7 @@ namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename IODriver>
-void GedAssetNode<IODriver>::mouseDoubleClickEvent( QMouseEvent * event )
+void GedAssetNode<IODriver>::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
 	ObjModel& model = mModel;
 	OnCreateObject();	
