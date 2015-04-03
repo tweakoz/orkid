@@ -443,14 +443,14 @@ void OpsNode::DoDraw( lev2::GfxTarget* pTARG ) // virtual
 	}
 }
 
-void OpsNode::mousePressEvent ( QMouseEvent * pEV )
+void OpsNode::OnMouseClicked(const ork::ui::Event& ev)
 {
 	int inumops = int(mOps.size());
 	const int ops_size = ((miW-inumops*3)/inumops);
 
-	Qt::MouseButton button = pEV->button();
-	int ix = pEV->x() - this->miX;
-	int iy = pEV->y() - this->miY;
+	//Qt::MouseButton button = pEV->button();
+	int ix = ev.miX - this->miX;
+	int iy = ev.miY - this->miY;
 	
 	//int ix = miX+ops_ioff+(i*ops_size+2);
 
@@ -683,22 +683,19 @@ GedGroupNode::GedGroupNode( ObjModel& mdl, const char* name, const reflect::IObj
 	CheckVis();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedGroupNode::mouseDoubleClickEvent ( QMouseEvent * pEV )
+void GedGroupNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
 	printf( "GedGroupNode<%p>::mouseDoubleClickEvent\n", this);
 	int inumitems = GetNumItems();
 
-	Qt::MouseButtons Buttons = pEV->buttons();
-	Qt::KeyboardModifiers modifiers = pEV->modifiers();
-
-	bool isCTRL = (modifiers&Qt::ControlModifier);
+	bool isCTRL = ev.mbCTRL;
 
 	const int kdim = get_charh();
 
 	if( inumitems )
 	{
-		int ix = pEV->x() - this->miX;
-		int iy = pEV->y() - this->miY;
+		int ix = ev.miX - this->miX;
+		int iy = ev.miY - this->miY;
 
 		//////////////////////////////
 		// spawn/stack
@@ -913,6 +910,24 @@ void GraphImportDelegate::Describe(){}
 void GraphExportDelegate::Describe(){}
 void ObjectImportDelegate::Describe(){}
 void ObjectExportDelegate::Describe(){}
+
+
+void SliderBase::OnUiEvent( const ork::ui::Event& ev )
+{
+	switch( ev.miEventCode )
+	{	
+		case ui::UIEV_MOVE:
+			OnMouseMoved(ev);
+			break;
+		case ui::UIEV_DOUBLECLICK:
+			OnMouseDoubleClicked(ev);
+			break;
+		case ui::UIEV_RELEASE:
+			OnMouseReleased(ev);
+			break;
+	}
+}
+
 } } }
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::tool::ged::GraphImportDelegate, "dflowgraphimport");

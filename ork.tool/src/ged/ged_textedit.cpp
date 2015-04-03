@@ -156,12 +156,10 @@ QString GedInputDialog::GetResult()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-QString GedInputDialog::getText( QMouseEvent* pev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih )
+QString GedInputDialog::getText( int imx, int imy, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih )
 {
 	int isx = QCursor::pos().x();
 	int isy = QCursor::pos().y();
-	int imx = pev->x();
-	int imy = pev->y();
 	
 	int ixb = (isx-imx);
 	int iyb = (isy-imy);

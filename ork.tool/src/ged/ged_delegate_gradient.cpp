@@ -91,7 +91,9 @@ public:
 				break;
 			}
 			case ui::UIEV_DOUBLECLICK:
-			{	if( mParent && mGradientObject )
+			{	
+
+				if( mParent && mGradientObject )
 				{
 					orklut<float,ork::CVector4> & data = mGradientObject->Data();
 
@@ -101,7 +103,6 @@ public:
 					orklut<float,ork::CVector4>::iterator it = data.begin()+miPoint;
 					std::pair<float,ork::CVector4> pr = (*it);
 
-						assert(false);
 					if( is_left )
 					{
 						
@@ -161,6 +162,7 @@ public:
 		{
 			case ui::UIEV_DOUBLECLICK:
 			{	
+				//printf( "GradSplit par<%p> go<%p>\n", mParent, mGradientObject );
 				if( mParent && mGradientObject )
 				{
 					orklut<float,ork::CVector4> & data = mGradientObject->Data();

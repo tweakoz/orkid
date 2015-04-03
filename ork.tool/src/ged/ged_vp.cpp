@@ -272,7 +272,9 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 						mpMouseOverNode = pnode;
 						
 						if( pnode != mpActiveNode )
-							pnode->OnUiEvent( locEV );
+						{	pnode->OnUiEvent( locEV );
+							pnode->OnMouseMoved( EV );
+						}
 					}
 				}
 			}
@@ -289,7 +291,8 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 			{	//GedItemNode *pnode = rtti::autocast(pobj);
 				//OrkAssert(pnode);
 				if( mpActiveNode )
-				{	mpActiveNode->mouseMoveEvent( & myme );
+				{	mpActiveNode->OnUiEvent( locEV );
+					mpActiveNode->OnMouseMoved( EV );
 					mNeedsSurfaceRepaint=true;
 				}
 				else
@@ -315,7 +318,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 
 			bool is_in_set = IsObjInSet(pobj);
 
-			orkprintf( "Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy );
+			//orkprintf( "Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy );
 
 			/////////////////////////////////////
 			// test object against known set
@@ -332,20 +335,23 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 				{
 					case ui::UIEV_PUSH:
 						mpActiveNode = pnode;
-						if( mpActiveNode )
-							mpActiveNode->OnUiEvent( locEV );
-						pnode->mousePressEvent( & myme );
+						if( pnode )
+						{	pnode->OnUiEvent( locEV );
+							pnode->OnMouseClicked( locEV );
+						}
 						break;
 					case ui::UIEV_RELEASE:
-						if( mpActiveNode )
-							mpActiveNode->OnUiEvent( locEV );
-						if( mpActiveNode ) mpActiveNode->mouseReleaseEvent( & myme );
+						if( pnode )
+						{	pnode->OnUiEvent( locEV );
+							pnode->OnMouseReleased( locEV );
+						}
 						mpActiveNode = 0;
 						break;
 					case ui::UIEV_DOUBLECLICK:
-						if( mpActiveNode )
-							mpActiveNode->OnUiEvent( locEV );
-						pnode->mouseDoubleClickEvent( & myme );
+						if( pnode )
+						{	pnode->OnUiEvent( locEV );
+							pnode->OnMouseDoubleClicked( locEV );
+						}
 						break;
 				}
 			}

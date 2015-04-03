@@ -139,7 +139,7 @@ void Slider<T>::SetVal( datatype val )
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 
-void Slider<T>::mouseReleaseEvent ( QMouseEvent * event ) 
+void Slider<T>::OnMouseReleased(const ork::ui::Event& ev) 
 {
 	SetVal(mval);
 	IoDriverBase& iod = mParent.RefIODriver();
@@ -149,7 +149,7 @@ void Slider<T>::mouseReleaseEvent ( QMouseEvent * event )
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 
-void Slider<T>::mouseDoubleClickEvent ( QMouseEvent * event ) 
+void Slider<T>::OnMouseDoubleClicked(const ork::ui::Event& ev) 
 {
 	std::string RangeStr = CreateFormattedString( "v:[%f..%f]", float(mmin), float(mmax) );
 	//QString qstr = QInputDialog::getText ( 0, "Set Value", RangeStr.c_str() );
@@ -169,7 +169,7 @@ void Slider<T>::mouseDoubleClickEvent ( QMouseEvent * event )
 	CPropType<datatype>::ToString( mval, ptsg );
 
 	//QString qstr = GedInputDialog::getText ( event, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, miLabelH );
-	QString qstr = GedInputDialog::getText ( event, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
+	QString qstr = GedInputDialog::getText ( ev.miX, ev.miY, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
 
 	std::string sstr = qstr.toAscii().data();
 	if( sstr.length() )
@@ -188,20 +188,16 @@ void Slider<T>::mouseDoubleClickEvent ( QMouseEvent * event )
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 
-void Slider<T>::mouseMoveEvent ( QMouseEvent * event )
+void Slider<T>::OnMouseMoved(const ork::ui::Event& ev)
 {
-	mbUpdateOnDrag = (event->modifiers()&Qt::ControlModifier)!=0;
+	mbUpdateOnDrag = ev.mbCTRL;
 
-	Qt::MouseButtons Buttons = event->buttons();
-
-	bool bleft = Buttons.testFlag( Qt::LeftButton );
-	bool bright = Buttons.testFlag( Qt::RightButton );
+	bool bleft = ev.IsButton0DownF();
+	bool bright = ev.IsButton2DownF();
 
 	if( bleft||bright )
 	{
-		
-	
-		int mousepos = event->pos().x();
+		int mousepos = ev.miX;
 		float fx = float((mousepos)-mfx)/mfw;
 		float fval = mlogmode ? LogToVal( fx ) : LinToVal( fx );
 		datatype dx = datatype(fval); 
@@ -274,14 +270,17 @@ void GedBoolNode<Setter>::DoDraw( lev2::GfxTarget* pTARG )
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename Setter>
-void GedBoolNode<Setter>::mouseReleaseEvent(QMouseEvent *pEV)
+void GedBoolNode<Setter>::OnMouseReleased(const ork::ui::Event& ev)
 {
+	int evx = ev.miX;
+	int evy = ev.miY;
+
 	const int SIZE = CHECKBOX_SIZE(miH);
 	const int X = CHECKBOX_X(miX, miW, SIZE);
 	const int Y = CHECKBOX_Y(miY);
 
-	if(pEV->pos().x() > X && pEV->pos().x() < X + SIZE
-		&& pEV->pos().y() > Y && pEV->pos().y() < Y + SIZE)
+	if(evx > X && evx < X + SIZE
+		&& evy > Y && evy < Y + SIZE)
 	{
 		bool value = false;
 		mSetter.GetValue(value);
@@ -293,7 +292,7 @@ void GedBoolNode<Setter>::mouseReleaseEvent(QMouseEvent *pEV)
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename Setter>
-void GedBoolNode<Setter>::mouseDoubleClickEvent(QMouseEvent *pEV)
+void GedBoolNode<Setter>::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
 	bool value = false;
 	mSetter.GetValue(value);
@@ -437,54 +436,54 @@ void GedIntNode<IODriver>::DoDraw( lev2::GfxTarget* pTARG )
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IODriver>
-void GedIntNode<IODriver>::mouseMoveEvent( QMouseEvent* pEV )
+void GedIntNode<IODriver>::OnMouseMoved(const ork::ui::Event& ev)
 {
-	slider->mouseMoveEvent(pEV);
+	slider->OnMouseMoved(ev);
 	mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IODriver>
-void GedIntNode<IODriver>::mouseDoubleClickEvent( QMouseEvent* pEV )
+void GedIntNode<IODriver>::OnMouseDoubleClicked(const ork::ui::Event& ev) 
 {
-	slider->mouseDoubleClickEvent(pEV);
+	slider->OnMouseDoubleClicked(ev);
 	mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IODriver>
-void GedIntNode<IODriver>::mouseReleaseEvent( QMouseEvent* pEV )
+void GedIntNode<IODriver>::OnMouseReleased(const ork::ui::Event& ev)
 {
-	slider->mouseReleaseEvent(pEV);
+	slider->OnMouseReleased(ev);
 	mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IoDriver>
-void GedFloatNode<IoDriver>::mouseMoveEvent( QMouseEvent* pEV )
+void GedFloatNode<IoDriver>::OnMouseMoved(const ork::ui::Event& ev) 
 {
-	slider->mouseMoveEvent(pEV);
+	slider->OnMouseMoved(ev);
 	mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IoDriver>
-void GedFloatNode<IoDriver>::mouseDoubleClickEvent( QMouseEvent* pEV )
+void GedFloatNode<IoDriver>::OnMouseDoubleClicked(const ork::ui::Event& ev) 
 {
-	slider->mouseDoubleClickEvent(pEV);
+	slider->OnMouseDoubleClicked(ev);
 	mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IoDriver>
-void GedFloatNode<IoDriver>::mouseReleaseEvent( QMouseEvent* pEV )
+void GedFloatNode<IoDriver>::OnMouseReleased(const ork::ui::Event& ev)
 {
-	slider->mouseReleaseEvent(pEV);
+	slider->OnMouseReleased(ev);
 	mModel.SigRepaint();
 }
 
@@ -500,7 +499,7 @@ GedSimpleNode<IODriver,T>::GedSimpleNode(ObjModel& mdl, const char* name, const 
 }
 ///////////////////////////////////////////////////////////////////////////////
 template<typename IODriver,typename T>
-void GedSimpleNode<IODriver,T>::mouseDoubleClickEvent ( QMouseEvent * pEV )
+void GedSimpleNode<IODriver,T>::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
 	T val;
 
@@ -548,7 +547,7 @@ void GedSimpleNode<IODriver,T>::mouseDoubleClickEvent ( QMouseEvent * pEV )
 	}
 	else
 	{	int ilabw = GetNameWidth()+16;
-		QString qstr = GedInputDialog::getText ( pEV, this, ptsg.c_str(), ilabw, 2, miW-ilabw, miH-3 );
+		QString qstr = GedInputDialog::getText ( ev.miX, ev.miY, this, ptsg.c_str(), ilabw, 2, miW-ilabw, miH-3 );
 		std::string sstr = qstr.toAscii().data();
 		if( sstr.length() )
 		{	PropTypeString pts( sstr.c_str() );

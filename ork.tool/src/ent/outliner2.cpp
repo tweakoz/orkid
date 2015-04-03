@@ -433,6 +433,10 @@ void Outliner2View::SetNameOfSelectedItem()
 	LocalToRoot(0,(ilastsel*kitemh())+miScrollY,irx,iry);
 
 	const std::vector<Outliner2Item>& items = mOutlinerModel.Items();
+
+	if( ilastsel>=items.size() )
+		return;
+
 	const Outliner2Item& item = items[ilastsel];
 
 	//int irootx = mParent->miX;

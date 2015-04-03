@@ -140,7 +140,7 @@ public:
 		mCurrentValue = meReader.GetCurrentValue();
 	}
 
-	void mouseDoubleClickEvent ( QMouseEvent * pEV )
+	void OnMouseDoubleClicked(const ork::ui::Event& ev) final
 	{
 		QMenu *pMenu = new QMenu(0);
 

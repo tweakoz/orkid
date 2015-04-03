@@ -363,24 +363,24 @@ public:
 		////////////////////////////////////////////////////
 		CheckVis();
 	}
-	void mouseMoveEvent( QMouseEvent* pEV )
-	{	mFloatSlider.mouseMoveEvent(pEV);
+	void OnMouseMoved(const ork::ui::Event& ev)
+	{	mFloatSlider.OnMouseMoved(ev);
 		mModel.SigRepaint();
 	}
-	void mouseReleaseEvent( QMouseEvent* pEV )
-	{	mFloatSlider.mouseReleaseEvent(pEV);
+	void OnMouseReleased(const ork::ui::Event& ev)
+	{	mFloatSlider.OnMouseReleased(ev);
 		mModel.SigRepaint();
 	}
-	void mouseDoubleClickEvent ( QMouseEvent * pEV )
+	void OnMouseDoubleClicked(const ork::ui::Event& ev)
 	{
 		const int klabh = get_charh();
 		const int kdim = klabh-2;
 	
-		Qt::MouseButton button = pEV->button();
-		Qt::KeyboardModifiers modifiers = pEV->modifiers();
-		int ix = pEV->x() - this->miX;
-		int iy = pEV->y() - this->miY;
-		bool isCTRL = (modifiers&Qt::ControlModifier);
+		//Qt::MouseButton button = pEV->button();
+		//Qt::KeyboardModifiers modifiers = pEV->modifiers();
+		int ix = ev.miX - this->miX;
+		int iy = ev.miY - this->miY;
+		bool isCTRL = ev.mbCTRL;
 		////////////////////////////////
 		// check collapsor
 		////////////////////////////////
@@ -508,7 +508,7 @@ public:
 		{	
 			if( false == pfloatplug->IsConnected() )
 			{
-				mFloatSlider.mouseDoubleClickEvent(pEV);
+				mFloatSlider.OnMouseDoubleClicked(ev);
 			}
 			mModel.SigRepaint();	
 		}

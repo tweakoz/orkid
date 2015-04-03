@@ -125,6 +125,10 @@ struct Event final // RawEvent
 	}
 	
 	void GetFromOS( void );
+
+	bool IsButton0DownF() const { return mbLeftButton||mFilteredEvent.mBut0; }
+	bool IsButton1DownF() const { return mbMiddleButton||mFilteredEvent.mBut1; }
+	bool IsButton2DownF() const { return mbRightButton||mFilteredEvent.mBut2; }
 		
 };
 

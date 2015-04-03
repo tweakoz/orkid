@@ -33,7 +33,7 @@ public:
 template<typename IODriver> void GedFileNode<IODriver>::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver>
-void GedFileNode<IODriver>::mouseDoubleClickEvent( QMouseEvent * event )
+void GedFileNode<IODriver>::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
 	OnCreateObject();	
 }

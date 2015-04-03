@@ -338,7 +338,10 @@ protected:
 	int									miD;
 	int									miDecoIndex;
 
-	GedObject() : miD(0), miDecoIndex(0) {}
+	GedObject() 
+		: miD(0)
+		, miDecoIndex(0)
+	{}
 
 public:
 
@@ -347,10 +350,10 @@ public:
 	int GetDecoIndex() const { return miDecoIndex; }
 	void SetDecoIndex(int idx ) { miDecoIndex=idx; }
 
-	virtual void mousePressEvent ( QMouseEvent * pEV ) {}
-	virtual void mouseReleaseEvent ( QMouseEvent * pEV ) {}
-	virtual void mouseMoveEvent ( QMouseEvent * pEV ) {}
-	virtual void mouseDoubleClickEvent ( QMouseEvent * pEV ) {}
+	virtual void OnMouseMoved(const ork::ui::Event& ev) {}
+	virtual void OnMouseClicked(const ork::ui::Event& ev) {}
+	virtual void OnMouseDoubleClicked(const ork::ui::Event& ev) {}
+	virtual void OnMouseReleased(const ork::ui::Event& ev) {}
 
 	virtual void OnUiEvent( const ork::ui::Event& ev ) {}
 };
@@ -404,9 +407,6 @@ public:
 	int GetY() const { return miY; }
 
 	void DestroyChildren();
-
-	//static GedSkin* GetSkin() { return giSkin ? gpSkin1 : gpSkin0; }
-	//static void IncrementSkin() { giSkin = (giSkin+1) % 2; }
 
 	///////////////////////////////////////////////////
 
@@ -498,10 +498,8 @@ public:
 class GedGroupNode : public GedItemNode
 {
 	virtual void DoDraw( lev2::GfxTarget* pTARG );
-	//virtual void Layout( int ix, int iy, int iw, int ih );
-	//virtual int CalcHeight(void);
 	bool	mbCollapsed;
-	void mouseDoubleClickEvent ( QMouseEvent * pEV );
+	void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
 	ork::file::Path::NameType	mPersistID;
 
 public:
@@ -651,7 +649,7 @@ class GedInputDialog : public QDialog
 
 public:
 
-	static QString getText( QMouseEvent* pev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
+	static QString getText( int mx, int my, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
 	bool WasChanged() const { return mbChanged; }
 
 };
