@@ -7,18 +7,13 @@
 
 #include <ork/pch.h>
 
+#if 0
+
 #include <pkg/ent3d/ScriptComponent.h>
 
-//#include <ork/application/application.h>
-
-//#include <ork/kernel/prop_container.h>
 #include <ork/kernel/orklut.hpp>
 
 #include <pkg/ent3d/entity.h>
-
-#include <pkg/ent3d/EnvironmentCollision.h>
-
-#include <pkg/ent3d/EnvironmentCollision.h>
 
 #define DEBUG_SCRIPT_COMPONENT_VERBOSE	0
 
@@ -320,3 +315,5 @@ ork::PoolString StartScript::GetName() const
 }
 
 } }  // ork::ent3d
+
+#endif
