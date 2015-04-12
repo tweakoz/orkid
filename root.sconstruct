@@ -16,11 +16,17 @@ print "root.TARGET<%s>" % TARGET
 
 #####################################################
 
+def refprj(str):
+	return SConscript('ork.%s/ork.%s.sconstruct'%(str,str))
+
+#####################################################
+
 utpp = SConscript('ork.unittestpp/ork.unittestpp.sconstruct')
 core = SConscript('ork.core/ork.core.sconstruct')
 fcol = SConscript('ork.fcollada305/ork.fcollada305.sconstruct')
 bull = SConscript('ork.bullet273/ork.bullet273.sconstruct')
 lev2 = SConscript('ork.lev2/ork.lev2.sconstruct')
+lua = refprj('lua')
 ent = SConscript('ork.ent/ork.ent.sconstruct')
 tool = SConscript('ork.tool/ork.tool.sconstruct')
 

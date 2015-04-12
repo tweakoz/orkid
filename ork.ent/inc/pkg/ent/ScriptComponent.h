@@ -5,14 +5,14 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _JELLY_SCRIPTCOMPONENT_H_
-#define _JELLY_SCRIPTCOMPONENT_H_
+#pragma once
 
-#include <ork/rtti/RTTI.h>
-
-#include <pkg/ent/entity.h>
-
-#include <pkg/script/Script.h>
+#include <pkg/ent/component.h>
+#include <pkg/ent/componenttable.h>
+#include <ork/math/TransformNode.h>
+#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/gfx/camera.h>
 
 namespace ork { namespace ent {
 
@@ -99,6 +99,5 @@ private:
 	ork::PoolString mName;
 };
 
-} // namespace jelly
+} // namespace ork/ent
 
-#endif // !_JELLY_SCRIPTCOMPONENT_H_

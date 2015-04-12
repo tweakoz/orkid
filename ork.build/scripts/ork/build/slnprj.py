@@ -163,6 +163,7 @@ class Project:
 		self.BaseEnv = Environment.Clone()
 		self.BaseEnv.Replace( CCCOMSTR = "\x1b[35m Compiling \x1b[33m $SOURCE \x1b[32m" ) #% (name,self.BUILD,self.PLATFORM) )
 		self.BaseEnv.Replace( CXXCOMSTR = self.BaseEnv['CCCOMSTR'])
+		self.BaseEnv.Replace( SHCCCOMSTR = self.BaseEnv['CCCOMSTR'])
 		self.BaseEnv.Replace( SHCXXCOMSTR = self.BaseEnv['CCCOMSTR'])
 		self.BaseEnv.Replace( ARCOMSTR = '\x1b[36m Archiving \x1b[37m $TARGET \x1b[32m' )
 		self.BaseEnv.Replace( LINKCOMSTR = '\x1b[36m Linking \x1b[37m $TARGET \x1b[32m' )
