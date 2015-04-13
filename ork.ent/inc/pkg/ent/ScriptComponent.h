@@ -40,7 +40,8 @@ class ScriptComponentInst : public ent::ComponentInst
 
 	const ScriptComponentData&		mCD;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
+	bool DoLink(ork::ent::SceneInst *psi) final;
 
 public:
 	const ScriptComponentData&	GetCD() const { return mCD; }
@@ -76,7 +77,9 @@ public:
 	~ScriptManagerComponentInst();
 
 	void DoUpdate(SceneInst *inst) final;
-	
+
+	anyp GetLuaManager() { return mLuaManager; }
+
 private:
 
 	anyp mLuaManager;
