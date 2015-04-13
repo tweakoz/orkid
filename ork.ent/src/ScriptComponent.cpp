@@ -91,10 +91,30 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 	}
 	return true;
 }
+void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
+{
+	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+
+	if( scm )
+	{
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+	}
+}
+
+bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
+{
+	return true;
+}
+void ScriptComponentInst::DoStop(SceneInst *psi)
+{
+
+}
+
 
 void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 {
-	
+	// NOP (scriptmanager will execute)
 }
 
 ///////////////////////////////////////////////////////////////////////////////

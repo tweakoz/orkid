@@ -493,6 +493,7 @@ void SceneInst::ComposeEntities()
 	// clear runtime containers
 	///////////////////////////////////
 
+	UnLinkEntities();
 	DecomposeEntities();
 	mEntities.clear();
 	mSceneComponents.clear();
@@ -564,9 +565,9 @@ void SceneInst::LinkEntities()
 	///////////////////////////////////
 
 	//orkprintf( "Link Entities..\n" );
-	for( orkmap<ork::PoolString, ork::ent::Entity*>::const_iterator it=mEntities.begin(); it!=mEntities.end(); it++ )
+	for( auto item : mEntities )
 	{
-		ork::ent::Entity* pent = it->second;
+		ork::ent::Entity* pent = item.second;
 		const ork::ent::EntData& edata = pent->GetEntData();
 
 		OrkAssert( pent );
@@ -574,6 +575,30 @@ void SceneInst::LinkEntities()
 		if( edata.GetArchetype() )
 		{
 			edata.GetArchetype()->LinkEntity( this, pent );
+		}
+	}
+	//orkprintf( "end si<%p> Link Entities..\n", this );
+}
+///////////////////////////////////////////////////////////////////////////
+void SceneInst::UnLinkEntities()
+{
+	//orkprintf( "beg si<%p> Link Entities..\n", this );
+	AssertOnOpQ2( UpdateSerialOpQ() );
+	///////////////////////////////////
+	// Link Entities
+	///////////////////////////////////
+
+	//orkprintf( "Link Entities..\n" );
+	for( auto item : mEntities )
+	{
+		ork::ent::Entity* pent = item.second;
+		const ork::ent::EntData& edata = pent->GetEntData();
+
+		OrkAssert( pent );
+
+		if( edata.GetArchetype() )
+		{
+			edata.GetArchetype()->UnLinkEntity( this, pent );
 		}
 	}
 	//orkprintf( "end si<%p> Link Entities..\n", this );

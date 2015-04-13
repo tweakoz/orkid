@@ -332,6 +332,7 @@ private:
 	void DecomposeEntities();
 	void ComposeEntities();
 	void LinkEntities();
+	void UnLinkEntities();
 	void StartEntities();
 	void StopEntities();
 

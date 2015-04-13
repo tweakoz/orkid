@@ -41,7 +41,10 @@ class ScriptComponentInst : public ent::ComponentInst
 	const ScriptComponentData&		mCD;
 
 	void DoUpdate(ent::SceneInst* sinst) final;
-	bool DoLink(ork::ent::SceneInst *psi) final;
+	bool DoLink(SceneInst *psi) final;
+	void DoUnLink(SceneInst *psi) final;
+	bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+	void DoStop(SceneInst *psi) final;
 
 public:
 	const ScriptComponentData&	GetCD() const { return mCD; }
