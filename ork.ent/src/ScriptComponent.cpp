@@ -68,6 +68,30 @@ ScriptComponentInst::ScriptComponentInst( const ScriptComponentData& data, ent::
 
 }
 
+bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
+{
+	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+
+	if( scm )
+	{
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+
+		auto ent = this->GetEntity();
+		auto name = ent->GetEntData().GetName().c_str();
+
+		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+
+		/////////////////////////
+		// TODO: link this script component into lua's execution list somehow
+		/////////////////////////
+
+
+
+	}
+	return true;
+}
+
 void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 {
 	
