@@ -15,57 +15,74 @@
 #include <ork/gfx/camera.h>
 
 namespace ork { namespace ent {
-
-typedef ork::rtti::RTTI<ScriptComponentFactory, ork::EntityComponentFactory> ScriptComponentFactoryBase;
     
-class ScriptComponentFactory : public ScriptComponentFactoryBase
+///////////////////////////////////////////////////////////////////////////////
+
+class ScriptComponentData : public ent::ComponentData
 {
-    DECLARE_TRANSPARENT_CASTABLE( ScriptComponentFactory, ScriptComponentFactoryBase );
-    
+	RttiDeclareConcrete( ScriptComponentData, ent::ComponentData );
+
 public:
-	//static void ClassInit();
-	//static void Describe();
-	ScriptComponentFactory();
 
-	const ork::orklut<ork::PoolString, ork::PoolString> &GetNamedScripts() const;
-	ork::orklut<ork::PoolString, ork::PoolString> &GetNamedScripts();
+	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
 
-	const orkvector<ork::PoolString> &GetStartupScriptNames() const;
-	orkvector<ork::PoolString> &GetStartupScriptNames();
+	ScriptComponentData();
 
-private:
-	virtual ork::EntityComponent* CreateComponent(ork::Entity* pent, const ork::PoolString& name) const;
+	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
 
-	ork::orklut<ork::PoolString, ork::PoolString> mNamedScripts;
-	orkvector<ork::PoolString> mStartupScriptNames;
 };
 
-class ScriptComponent : public ork::EntityComponent
+///////////////////////////////////////////////////////////////////////////////
+
+class ScriptComponentInst : public ent::ComponentInst
 {
-	DECLARE_TRANSPARENT_CASTABLE(ScriptComponent, ork::EntityComponent)
+	RttiDeclareAbstract( ScriptComponentInst, ent::ComponentInst );
+
+	const ScriptComponentData&		mCD;
+
+	virtual void DoUpdate(ent::SceneInst* sinst);
+
 public:
-	static void Describe();
+	const ScriptComponentData&	GetCD() const { return mCD; }
 
-	ScriptComponent(ork::Entity* entity, const ork::PoolString& name, const ScriptComponentFactory *factory);
-	/*virtual*/ ~ScriptComponent();
-
-	/*virtual*/ void DoResolveDependencies(ork::EntityComponentTable::ComponentLut& components);
-
-private:
-	/*virtual*/ void Update();
-	/*virtual*/ void Notify(const ork::EntityEvent* event);
-
-	void CompileScriptPlayer(ork::PoolString script);
-
-	void StartScripts(ork::PoolString name);
-	void StopScripts(ork::PoolString name);
-
-	const ScriptComponentFactory *mFactory;
-
-	ork::orklut<ork::PoolString, EventScript::Player> mScriptPlayers;
+	ScriptComponentInst( const ScriptComponentData& cd, ork::ent::Entity* pent );
 };
 
-class StartNamedScripts : public ork::EntityEvent
+///////////////////////////////////////////////////////////////////////////////
+
+class ScriptManagerComponentData : public ork::ent::SceneComponentData
+{
+	RttiDeclareConcrete(ScriptManagerComponentData, ork::ent::SceneComponentData);
+
+public:
+	///////////////////////////////////////////////////////
+	ScriptManagerComponentData();
+	ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const; // virtual 
+	///////////////////////////////////////////////////////
+
+private:
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class ScriptManagerComponentInst : public ork::ent::SceneComponentInst
+{
+	RttiDeclareAbstract(ScriptManagerComponentInst, ork::ent::ComponentInst);
+
+public:
+
+	ScriptManagerComponentInst( const ScriptManagerComponentData &data, ork::ent::SceneInst *pinst );
+	~ScriptManagerComponentInst();
+
+private:
+
+	anyp mLuaManager;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/*class StartNamedScripts : public ork::EntityEvent
 {
 	DECLARE_TRANSPARENT_CASTABLE(ScriptComponent, ork::EntityEvent)
 public:
@@ -97,7 +114,7 @@ public:
 private:
 
 	ork::PoolString mName;
-};
+};*/
 
-} // namespace ork/ent
+}} // namespace ork/ent
 

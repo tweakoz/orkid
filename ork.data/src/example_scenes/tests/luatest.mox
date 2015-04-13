@@ -1,0 +1,119 @@
+
+<reference category='ObjectClass'>
+    <object type='Ent3dSceneData' id='0'>
+        <property name='SceneObjects'>
+            <item key='EdCam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='1'>
+                        <property name='Name'>"EdCam"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='2'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'>
+                            <reference category='SceneObjectClass'>
+                                <object type='EditorCamArchetype' id='3'>
+                                    <property name='Name'>"SceneObject2"</property>
+                                    <property name='Components'>
+                                        <item key='camera'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='EditorCamControllerData' id='4'>
+                                                    <property name='Camera'>
+                                                        <object type='CCamera_persp' id='5'>
+                                                            <property name='Center'>0 0 0</property>
+                                                            <property name='Focus'>0 0 0</property>
+                                                            <property name='Loc'>8.70427</property>
+                                                            <property name='QuatC'>0 -1 0 0</property>
+                                                            <property name='Aperature'>40</property>
+                                                            <property name='MaxFar'>10000</property>
+                                                            <property name='MinNear'>0.1</property>
+                                                        </object>
+                                                    </property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                    </property>
+                                </object>
+                            </reference>
+                        </property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='SceneObject1'>
+                <reference category='SceneObjectClass'>
+                    <object type='SimpleCharacterArchetype' id='6'>
+                        <property name='Name'>"SceneObject1"</property>
+                        <property name='Components'>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ScriptComponentData' id='7'>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorPropMapData' id='8'>
+                                        <property name='Properties'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='animate'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleAnimatableData' id='9'>
+                                        <property name='AnimMaskMap'></property>
+                                        <property name='AnimSeqTableMap'></property>
+                                        <property name='AnimationMap'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='10'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='LayerFxMap'></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://environ/objects/misc/monkey"
+                                            </reference>
+                                        </property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>1</property>
+                                        <property name='ShowBoundingSphere'>false</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='11'>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='SceneObject2'><backreference id='3'/></item>
+            <item key='ScriptEnt'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='12'>
+                        <property name='Name'>"ScriptEnt"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='13'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='6'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+        </property>
+    </object>
+</reference>
