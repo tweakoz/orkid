@@ -86,7 +86,7 @@ void EnterRunMode()
 	});
 	dispatch_suspend( EditOnlyQueue() );
 #endif
-	printf( "EDITORQ ENTERING RUNMODE, EDITORQUEUE SUSPENDED\n" );
+	//printf( "EDITORQ ENTERING RUNMODE, EDITORQUEUE SUSPENDED\n" );
 }
 void LeaveRunMode()
 {
@@ -95,14 +95,14 @@ void LeaveRunMode()
 	if( gbQRUNMODE ) bRESUME=true;
 	gbQRUNMODE = false;
 	////////////////////////////////////////
-	printf( "EDITORQ LEAVING RUNMODE, STARTING EDITORQUEUE...\n" );
+	//printf( "EDITORQ LEAVING RUNMODE, STARTING EDITORQUEUE...\n" );
 #if defined(_DARWIN) // TODO: need to replace GCD on platforms other than DARWIN
 	if( bRESUME )
 		dispatch_resume( EditOnlyQueue() );
 	////////////////////////////////////////
 	dispatch_sync( EditOnlyQueue(), 
 	^{
-		printf( "EDITORQ LEAVING RUNMODE, EDITORQUEUE STARTED.\n" );
+		//printf( "EDITORQ LEAVING RUNMODE, EDITORQUEUE STARTED.\n" );
 	});
 #endif
 	////////////////////////////////////////

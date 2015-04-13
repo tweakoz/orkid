@@ -35,6 +35,7 @@
 #include <pkg/ent/Compositor.h>
 #include <pkg/ent/AudioAnalyzer.h>
 #include <pkg/ent/ModelComponent.h>
+#include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleCharacterArchetype.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/Lighting.h>
@@ -599,6 +600,9 @@ void Init()
 	SceneInst::GetClassStatic();
     
     //ork::ent::heightfield_rt_inst::GetClassStatic();
+
+	ork::ent::ScriptComponentData::GetClassStatic();
+	ork::ent::ScriptComponentInst::GetClassStatic();
 
 	ork::ent::CompositingManagerComponentData::GetClassStatic();
 	ork::ent::CompositingManagerComponentInst::GetClassStatic();

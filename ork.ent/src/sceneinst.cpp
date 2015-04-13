@@ -460,15 +460,13 @@ void SceneInst::DecomposeEntities()
 {
 	//printf( "SceneInst<%p> BEGIN DecomposeEntities()\n", this );
 	//printf( "/////////////////////////////////////\n");
-	std::string bt = get_backtrace();
-	printf( "%s", bt.c_str() );
+	//std::string bt = get_backtrace();
+	//printf( "%s", bt.c_str() );
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	for( orkmap<ork::PoolString,ork::ent::Entity*>::const_iterator	it = mEntities.begin();
-																	it != mEntities.end();
-																	it++ )
+	for( auto item : mEntities )
 	{
-		ork::PoolString name = (*it).first;
-		ork::ent::Entity* pent = (*it).second;
+		const ork::PoolString& name = item.first;
+		ork::ent::Entity* pent = item.second;
 
 		//ork::ent::Archetype* arch = pent->GetArchetype();
 
@@ -476,6 +474,14 @@ void SceneInst::DecomposeEntities()
 		delete pent;
 	}
 	mEntities.clear();
+
+
+	for( auto item : mSceneComponents )
+	{
+		auto comp = item.second;
+		delete comp;
+	}
+	mSceneComponents.clear();
 	//printf( "/////////////////////////////////////\n");
 	//printf( "SceneInst<%p> END DecomposeEntities()\n", this );
 }
