@@ -75,6 +75,8 @@ public:
 	ScriptManagerComponentInst( const ScriptManagerComponentData &data, ork::ent::SceneInst *pinst );
 	~ScriptManagerComponentInst();
 
+	void DoUpdate(SceneInst *inst) final;
+	
 private:
 
 	anyp mLuaManager;

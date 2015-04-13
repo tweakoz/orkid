@@ -88,6 +88,13 @@ struct LuaSystem
 	{
 		mLuaState = ::luaL_newstate(); // aka lua_open
 
+		luaopen_io(mLuaState);
+		luaopen_base(mLuaState);
+		luaopen_table(mLuaState);
+		luaopen_string(mLuaState);
+		luaopen_math(mLuaState);
+		//luaopen_loadlib(mLuaState);
+
 		printf( "create LuaState<%p>\n", mLuaState );
 	}
 	~LuaSystem()
@@ -114,6 +121,18 @@ ScriptManagerComponentInst::~ScriptManagerComponentInst()
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	delete asluasys;
+}
+
+void ScriptManagerComponentInst::DoUpdate(SceneInst *inst) // final
+{
+	auto asluasys = mLuaManager.Get<LuaSystem*>();
+	OrkAssert(asluasys);
+
+	FixedString<1024> exec_str;
+	exec_str.format("print(\"Hello world, from \",_VERSION,\"!\")");
+
+	int ret = luaL_dostring (asluasys->mLuaState, exec_str.c_str() );
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
