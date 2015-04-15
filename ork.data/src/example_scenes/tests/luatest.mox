@@ -115,6 +115,7 @@
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
                                     <object type='ScriptComponentData' id='14'>
+                                        <property name='ScriptFile'>"src://scripts/yo.lua"</property>
                                     </object>
                                 </reference>
                             </item>

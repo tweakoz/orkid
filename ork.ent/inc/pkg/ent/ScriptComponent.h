@@ -18,38 +18,39 @@ namespace ork { namespace ent {
     
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptComponentData : public ent::ComponentData
+struct ScriptComponentData : public ent::ComponentData
 {
-	RttiDeclareConcrete( ScriptComponentData, ent::ComponentData );
-
-public:
-
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
-
 	ScriptComponentData();
 
+	const file::Path& GetPath() const { return mScriptPath; }
+
+private:
+	RttiDeclareConcrete( ScriptComponentData, ent::ComponentData );
+	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
 	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
+
+	file::Path mScriptPath;
 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptComponentInst : public ent::ComponentInst
+struct ScriptComponentInst : public ent::ComponentInst
 {
+	ScriptComponentInst( const ScriptComponentData& cd, ork::ent::Entity* pent );
+	const ScriptComponentData&	GetCD() const { return mCD; }
+
+private:
+
 	RttiDeclareAbstract( ScriptComponentInst, ent::ComponentInst );
-
-	const ScriptComponentData&		mCD;
-
 	void DoUpdate(ent::SceneInst* sinst) final;
 	bool DoLink(SceneInst *psi) final;
 	void DoUnLink(SceneInst *psi) final;
 	bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
 	void DoStop(SceneInst *psi) final;
+	const ScriptComponentData&		mCD;
+	std::string mScriptText;
 
-public:
-	const ScriptComponentData&	GetCD() const { return mCD; }
-
-	ScriptComponentInst( const ScriptComponentData& cd, ork::ent::Entity* pent );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,6 +87,7 @@ public:
 private:
 
 	anyp mLuaManager;
+	std::string mScriptText;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

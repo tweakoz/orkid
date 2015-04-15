@@ -107,8 +107,8 @@ tokenlist Init(int argc, char **argv)
 		// Otherwise, assume we're in the root of miniork already
 		CSystem::SetGlobalStringVariable("lev2://", std::string("data/platform_lev2/"));
 		CSystem::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("data/") );
-		CSystem::SetGlobalStringVariable( "src://", CreateFormattedString("../../data/src/") );
-		CSystem::SetGlobalStringVariable( "temp://", CreateFormattedString("../../data/temp/") );
+		CSystem::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
+		CSystem::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
 	}
 
 	printf( "CPB\n");

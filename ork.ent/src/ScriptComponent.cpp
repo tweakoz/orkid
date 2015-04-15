@@ -39,6 +39,11 @@ struct LuaSystem
 void ScriptComponentData::Describe()
 {
 	ork::ent::RegisterFamily<ScriptComponentData>(ork::AddPooledLiteral("control"));
+
+	ork::reflect::RegisterProperty( "ScriptFile", & ScriptComponentData::mScriptPath );
+	ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.class", "ged.factory.filelist");
+	ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filetype", "lua");
+	ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filebase", "src://scripts/");
 }
 ScriptComponentData::ScriptComponentData()
 {
@@ -104,6 +109,40 @@ void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 
 bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 {
+	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+
+	if( scm )
+	{
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+
+		auto ent = this->GetEntity();
+		auto name = ent->GetEntData().GetName().c_str();
+		auto path = mCD.GetPath();
+		auto abspath = path.ToAbsolute();
+
+		printf( "STARTING SCRIPTCOMPONENT<%p> of ent<%s> pth<%s> into Lua exec list\n", this, name, abspath.c_str() );
+
+		if( abspath.DoesPathExist() )
+		{
+			CFile scriptfile(abspath,EFM_READ);
+			size_t filesize = 0;
+			scriptfile.GetLength(filesize);
+			char* scripttext = (char*) malloc(filesize+1);
+			scriptfile.Read(scripttext,filesize);
+			scripttext[filesize] = 0;
+			mScriptText = scripttext;
+			printf( "%s\n", scripttext);
+			free(scripttext);
+		}
+
+		/////////////////////////
+		// TODO: link this script component into lua's execution list somehow
+		/////////////////////////
+
+
+
+	}
 	return true;
 }
 void ScriptComponentInst::DoStop(SceneInst *psi)
@@ -163,6 +202,23 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 {
 	auto luasys = new LuaSystem(pinst);
 	mLuaManager.Set<LuaSystem*>(luasys);
+
+	auto path = file::Path("src://scripts/scene.lua");
+	auto abspath = path.ToAbsolute();
+
+	if( abspath.DoesPathExist() )
+	{
+		CFile scriptfile(abspath,EFM_READ);
+		size_t filesize = 0;
+		scriptfile.GetLength(filesize);
+		char* scripttext = (char*) malloc(filesize+1);
+		scriptfile.Read(scripttext,filesize);
+		scripttext[filesize] = 0;
+		mScriptText = scripttext;
+		printf( "%s\n", scripttext);
+		free(scripttext);
+	}
+
 }
 
 ScriptManagerComponentInst::~ScriptManagerComponentInst()
@@ -177,14 +233,14 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 
-	FixedString<1024> exec_str;
-	exec_str.format("print(\"Hello world, from \",_VERSION,\"!\")\n");
-	exec_str += "print(\"NumENT<\",NumEntities(),\">\")\n";
-	int ret = luaL_dostring (asluasys->mLuaState, exec_str.c_str() );
-	if( ret )
+	if( mScriptText.length() )
 	{
-		printf( "LUARET<%d>\n", ret );
-		printf("%s\n", lua_tostring(asluasys->mLuaState, -1));
+		int ret = luaL_dostring (asluasys->mLuaState, mScriptText.c_str() );
+		if( ret )
+		{
+			printf( "LUARET<%d>\n", ret );
+			printf("%s\n", lua_tostring(asluasys->mLuaState, -1));
+		}
 	}
 }
 
@@ -218,13 +274,7 @@ LuaSystem::LuaSystem(SceneInst*psi)
 	: mSceneInst(psi)
 {
 	mLuaState = ::luaL_newstate(); // aka lua_open
-
-	luaopen_io(mLuaState);
-	luaopen_base(mLuaState);
-	luaopen_table(mLuaState);
-	luaopen_string(mLuaState);
-	luaopen_math(mLuaState);
-	//luaopen_loadlib(mLuaState);
+	luaL_openlibs(mLuaState);
 
  	lua_register(mLuaState, "NumEntities", LuaNumEnties);
 
