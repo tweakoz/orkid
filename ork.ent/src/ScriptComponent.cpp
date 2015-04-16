@@ -199,6 +199,7 @@ void ScriptManagerComponentInst::Describe()
 
 ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerComponentData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::SceneComponentInst( &data, pinst )
+	, mScriptRef(LUA_NOREF)
 {
 	auto luasys = new LuaSystem(pinst);
 	mLuaManager.Set<LuaSystem*>(luasys);
@@ -217,6 +218,17 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 		mScriptText = scripttext;
 		printf( "%s\n", scripttext);
 		free(scripttext);
+
+
+		auto asluasys = mLuaManager.Get<LuaSystem*>();
+		OrkAssert(asluasys);
+
+		int ret = luaL_loadstring(asluasys->mLuaState,mScriptText.c_str());
+
+		mScriptRef = luaL_ref(asluasys->mLuaState, LUA_REGISTRYINDEX);
+		printf( "mScriptRef<%d>\n", mScriptRef );
+		lua_pop(asluasys->mLuaState, 1); // dont call, just reference
+
 	}
 
 }
@@ -233,9 +245,13 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 
-	if( mScriptText.length() )
+	if( mScriptRef!=LUA_NOREF )
 	{
-		int ret = luaL_dostring (asluasys->mLuaState, mScriptText.c_str() );
+		// bring up the previously parsed script
+		lua_rawgeti(asluasys->mLuaState, LUA_REGISTRYINDEX, mScriptRef);
+
+		// execute it
+		int ret = lua_pcall(asluasys->mLuaState,0,0,0);
 		if( ret )
 		{
 			printf( "LUARET<%d>\n", ret );

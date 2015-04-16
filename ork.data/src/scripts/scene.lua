@@ -6,4 +6,4 @@ end
 
 printf("Hello world, from %s yo.\n",_VERSION)
 printf( "NumEnt: %d",NumEntities() )
-printf( "orksys: %s",orksys )
+printf( "orksys: %s yo",orksys )
