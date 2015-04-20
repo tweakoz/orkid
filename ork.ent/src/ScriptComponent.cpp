@@ -21,7 +21,7 @@ extern "C" {
 #include "lauxlib.h"
 }
 
-#include <LuaIntf/LuaIntf.h>
+#include <luabind/luabind.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,8 +33,6 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentInst, "ScriptManag
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-
-using namespace LuaIntf;
 
 struct LuaSystem
 {
@@ -277,24 +275,67 @@ int luaopen_printf (lua_State* L) {
 
 */
 
-struct LuaScene
-{
-static int NumEnties(lua_State* L)
+static SceneInst* GetSceneInst(lua_State* L)
 {
 	lua_getglobal(L, "orksys");
 	auto udat = lua_touserdata(L,1);
 	lua_pop(L,1);
 	auto luasys = (LuaSystem*) udat;
 	auto psi = luasys->mSceneInst;
-	auto count = psi->Entities().size();	
-	//int argc = lua_gettop(L);
-	//printf("argc<%d>\n",argc);
-	//for ( int n=1; n<=argc; ++n )
-	//	printf( "arg<%d> '%s'\n", n, lua_tostring(L, n));
-	//printf( "psi<%p> NumEntities<%d>\n", psi, int(count) );
-	lua_pushnumber(L, int(count)); // return value
-	return 1; // number of return values
+	return psi;
 }
+
+
+class LuaScene
+{
+
+public:
+	LuaScene()
+	{
+		printf( "LuaScene::LuaScene()\n");
+	}
+	~LuaScene()
+	{
+		printf( "LuaScene::~LuaScene()\n");
+	}
+
+ 	int NumEntities(lua_State* L)
+	{
+		printf( "LuaScene::NumEntities(st:%p)\n", L);
+		auto psi = GetSceneInst(L);
+		auto count = psi->Entities().size();	
+		//int argc = lua_gettop(L);
+		//printf("argc<%d>\n",argc);
+		//for ( int n=1; n<=argc; ++n )
+		//	printf( "arg<%d> '%s'\n", n, lua_tostring(L, n));
+		//printf( "psi<%p> NumEntities<%d>\n", psi, int(count) );
+		lua_pushnumber(L, int(count)); // return value
+		return int(count); // number of return values
+	}
+
+	int GetEntities(lua_State* L)
+	{
+		auto psi = GetSceneInst(L);
+		/*LuaRef table = LuaRef::createTable(L);
+
+		const auto& ents = psi->Entities();	
+
+
+		for( const auto& item : ents )
+		{
+		    table[item.first.c_str()] = item.second;
+		    //int value = table.get<int>("value");
+
+		    //for (auto& e : table) {
+		    //    std::string key = e.key<std::string>();
+		    //    LuaRef value = e.value<LuaRef>();
+		    //    ...
+		   // }
+		}
+		LuaBinding(table);
+		table.pushToStack();*/
+        return 1;
+    }
 };
 
 LuaSystem::LuaSystem(SceneInst*psi)
@@ -308,11 +349,15 @@ LuaSystem::LuaSystem(SceneInst*psi)
 	lua_pushlightuserdata(mLuaState,(void*)this);
 	lua_setglobal(mLuaState, "orksys");
 
-	LuaBinding(mLuaState)
+	/*LuaBinding(mLuaState)
+		.beginModule("ork")
         .beginClass<LuaScene>("scene")	
-		.addStaticFunction("NumEntities", & LuaScene::NumEnties )
+		.addConstructor(LUA_ARGS())
+		.addFunction("NumEntities", & LuaScene::NumEntities )
+		.addFunction("GetEntities", & LuaScene::GetEntities )
 		.endClass()
-	;
+		.endModule()
+	;*/
 	
 	printf( "create LuaState<%p> psi<%p>\n", mLuaState, psi );
 
