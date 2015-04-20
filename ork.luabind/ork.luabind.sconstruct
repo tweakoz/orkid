@@ -3,11 +3,6 @@ import ork.build.utils as obu
 import ork.build.common as cmn
 import ork.build.slnprj as sln
 
-#ork_core_lib = Import('ork_core_lib')
-#print ork_core_lib
-#print dir(ork_core_lib)
-#prj_core_lib = ork_core_lib.project
-
 # set scons options ######################
 
 #SetOption('implicit_cache',1)
@@ -27,7 +22,7 @@ if is_install:
 
 # basics #################################
 
-class lua:
+class luabind:
   def __init__(self):
 	ARGS = cmn.BuildArgs
 	suffix = sln.BuildSuffix(ARGS)
@@ -36,32 +31,29 @@ class lua:
 		return
 
 	##########################################
-
 	SRC_FOLDERS  = "."
-
 	##########################################
-
-	prj_lib = sln.Project(ARGS,BasicEnv,"ork.lua")
+	prj_lib = sln.Project(ARGS,BasicEnv,"ork.luabind")
 	prj_lib.SetSrcBase( "src" )
 	prj_lib.AddIncludePaths( "inc/" )
+	prj_lib.AddIncludePaths( "../ork.lua/inc/" )
 	prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
 	#prj_lib.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
 	prj_lib.AddFolders( SRC_FOLDERS, "*.c" )
 	########################
-	## Common libs
-	########################
-	#prj_lib.AddLibs( "ork.core.%s"%suffix )
+	prj_lib.AddLibs( "ork.core.%s"%suffix )
+	prj_lib.AddLibs( "ork.lua.%s"%suffix )
 	prj_lib.Configure()
-	self.lua_lib = prj_lib.SharedLibrary()
+	self.luabind_lib = prj_lib.SharedLibrary()
 
 	##########################################
 
 
 #####################
 
-a = lua()
+a = luabind()
 ret = list()
 if False==is_prep:
-	ret += a.lua_lib
+	ret += a.luabind_lib
 Return('ret')

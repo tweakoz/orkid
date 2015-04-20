@@ -23,6 +23,13 @@ class result:
 
 #################################################################################
 
+search_extensions  = ".c .cpp .cc"
+search_extensions += ".h .hpp .inl"
+search_extensions += ".m .mm .qml"
+search_extensions += ".py .sconstruct"
+
+search_extension_list = string.split(search_extensions)
+
 def search_at_root(word, root):
  finder = find(word)
  results = list()
@@ -33,8 +40,9 @@ def search_at_root(word, root):
    ext = spl[1]
    not_obj = (spl[0].find("/obj/")==-1) and (spl[0].find("/pluginobj/")==-1)
    #print spl[0], fobj
+
    if not_obj:
-    if ext==".c" or ext==".cpp" or ext==".cc" or ext==".h" or ext==".hpp" or ext==".inl" or ext==".qml" or ext==".m" or ext==".mm" or ext==".py":
+    if ext in search_extension_list:
      for line_number, line in finder(path):
       line = line.replace("\n","")
       res = result(path,line_number,line)
@@ -43,7 +51,7 @@ def search_at_root(word, root):
 
 #################################################################################
 
-pathset =  "ork.build ork.core ork.lev2 ork.ent ork.tool ork.fcollada305 tweakout ork.lua"
+pathset =  "ork.build ork.core ork.lev2 ork.ent ork.tool ork.fcollada305 tweakout ork.lua ork.luabind"
 pathspl = string.split(pathset)
 
 #################################################################################

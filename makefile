@@ -11,7 +11,21 @@ env:
 	./ork.build/bin/ork.build.int_env.py
 
 get:
-	tozkit_deps_get.py all
+	scons -f root.sconstruct get --site-dir ./ork.build/site_scons
+
+boost:
+	scons -f root.sconstruct boost --site-dir ./ork.build/site_scons
+
+ilm:
+	scons -f root.sconstruct ilm --site-dir ./ork.build/site_scons
+
+oiio:
+	scons -f root.sconstruct oiio --site-dir ./ork.build/site_scons
+
+allext:
+	make boost
+	make ilm
+	make oiio
 
 toz:
 	make pristine
@@ -36,6 +50,7 @@ clean:
 	rm -rf stage/include/orktool
 	rm -rf stage/include/pkg
 	rm -rf stage/include/bullet
+	make prep
 
 assets:
 	./do_assets.py

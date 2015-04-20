@@ -5,5 +5,5 @@ function printf(...)
 end
 
 printf("Hello world, from %s yo.\n",_VERSION)
-printf( "NumEnt: %d",NumEntities() )
+printf( "NumEnt: %d",scene.NumEntities() )
 printf( "orksys: %s yo",orksys )

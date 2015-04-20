@@ -15,6 +15,8 @@ To build on Osx MountainLion (10.8)+
 * install qt4.8/osx from http://qt-project.org/downloads
 * clone it, cd into repo 
 * make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
+* make get (downloads required external dependencies)
+* make allext (builds all required external dependencies)
 * make prep (copy some deps to the stage folder)
 * make (to build orkid itself)
 * make bundle (to build an osx app bundle in <src_root>/stage/bundle/
@@ -25,9 +27,9 @@ To build on Ubuntu12.04 LTS x86/64
 ==================================
 * clone it, cd into repo 
 * make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
-* make get (to get dependencies, this can take a while)
-* make pristine (to clear out the dependency build folders)
-* make toz (to build dependencies, this can take a longer while, and will require you to press return when it gets to building alembic)
+* make get (downloads required external dependencies)
+* make allext (builds all required external dependencies)
+* make prep (copy some deps to the stage folder)
 * make (to build orkid itself)
 
 everything will be built/installed into the <repo_root>/stage folder.

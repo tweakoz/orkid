@@ -30,6 +30,8 @@ else:
 
 num_cores = multiprocessing.cpu_count()+1
 stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
+download_dir = "%s/downloads"%stage_dir
+extbuild_dir = "%s/ext_build"%stage_dir
 
 ###############################################################################
 
@@ -47,6 +49,25 @@ def IsWindows():
 
 def IsDarwin():
 	return SYSTEM.lower().find( "darwin" )!=-1
+
+###########################################
+
+def chdir_root_rel(s):
+	os.chdir("%s/../%s"%(stage_dir,s))
+
+###########################################
+
+def chdir_stage_rel(s):
+	ndir = "%s/%s"%(stage_dir,s)
+	print( "chdir <%s>" % ndir )
+	os.chdir(ndir)
+
+###########################################
+
+def chdir_extbuild_rel(s):
+	ndir = "%s/%s"%(extbuild_dir,s)
+	print( "chdir <%s>" % ndir )
+	os.chdir(ndir)
 
 ###########################################
 
