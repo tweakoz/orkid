@@ -13,18 +13,28 @@
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/ScriptComponent.h>
 
+///////////////////////////////////////////////////////////////////////////////
+
 extern "C" { 
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 }
 
+#include <LuaIntf/LuaIntf.h>
+
+///////////////////////////////////////////////////////////////////////////////
+
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentData, "ScriptComponentData" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentInst, "ScriptComponentInst" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentData, "ScriptManagerComponentData" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentInst, "ScriptManagerComponentInst" );
 
+///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
+///////////////////////////////////////////////////////////////////////////////
+
+using namespace LuaIntf;
 
 struct LuaSystem
 {
@@ -173,25 +183,6 @@ SceneComponentInst* ScriptManagerComponentData::CreateComponentInst(ork::ent::Sc
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int LuaNumEnties(lua_State* L)
-{
-	lua_getglobal(L, "orksys");
-	auto udat = lua_touserdata(L,1);
-	lua_pop(L,1);
-	auto luasys = (LuaSystem*) udat;
-	auto psi = luasys->mSceneInst;
-	auto count = psi->Entities().size();	
-	//int argc = lua_gettop(L);
-	//printf("argc<%d>\n",argc);
-	//for ( int n=1; n<=argc; ++n )
-	//	printf( "arg<%d> '%s'\n", n, lua_tostring(L, n));
-	//printf( "psi<%p> NumEntities<%d>\n", psi, int(count) );
-	lua_pushnumber(L, int(count)); // return value
-	return 1; // number of return values
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void ScriptManagerComponentInst::Describe()
 {
 }
@@ -286,18 +277,43 @@ int luaopen_printf (lua_State* L) {
 
 */
 
+struct LuaScene
+{
+static int NumEnties(lua_State* L)
+{
+	lua_getglobal(L, "orksys");
+	auto udat = lua_touserdata(L,1);
+	lua_pop(L,1);
+	auto luasys = (LuaSystem*) udat;
+	auto psi = luasys->mSceneInst;
+	auto count = psi->Entities().size();	
+	//int argc = lua_gettop(L);
+	//printf("argc<%d>\n",argc);
+	//for ( int n=1; n<=argc; ++n )
+	//	printf( "arg<%d> '%s'\n", n, lua_tostring(L, n));
+	//printf( "psi<%p> NumEntities<%d>\n", psi, int(count) );
+	lua_pushnumber(L, int(count)); // return value
+	return 1; // number of return values
+}
+};
+
 LuaSystem::LuaSystem(SceneInst*psi)
 	: mSceneInst(psi)
 {
 	mLuaState = ::luaL_newstate(); // aka lua_open
 	luaL_openlibs(mLuaState);
 
- 	lua_register(mLuaState, "NumEntities", LuaNumEnties);
+ 	//lua_register(mLuaState, "NumEntities", LuaNumEnties);
 
 	lua_pushlightuserdata(mLuaState,(void*)this);
 	lua_setglobal(mLuaState, "orksys");
 
-
+	LuaBinding(mLuaState)
+        .beginClass<LuaScene>("scene")	
+		.addStaticFunction("NumEntities", & LuaScene::NumEnties )
+		.endClass()
+	;
+	
 	printf( "create LuaState<%p> psi<%p>\n", mLuaState, psi );
 
 }

@@ -41,7 +41,7 @@ class ent:
         
         bullet_libs = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
 
-	XFL = "core lev2 lua"
+	XFL = "core lev2 lua luabind"
 	LIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
 	LIBS += "%s " % bullet_libs
 
@@ -52,6 +52,7 @@ class ent:
 	prj.AddIncludePaths( "../ork.core/inc/" )
 	prj.AddIncludePaths( "../ork.lev2/inc/" )
 	prj.AddIncludePaths( "../ork.lua/inc/" )
+	prj.AddIncludePaths( "../ork.luabind/inc/" )
 	prj.AddIncludePaths( "inc" )
 	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
 	prj.AddIncludePaths( "/usr/include/qt4" )
