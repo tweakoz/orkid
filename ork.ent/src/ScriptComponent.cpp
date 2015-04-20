@@ -231,6 +231,20 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 		printf( "mScriptRef<%d>\n", mScriptRef );
 		lua_pop(asluasys->mLuaState, 1); // dont call, just reference
 
+	if( mScriptRef!=LUA_NOREF )
+	{
+		// bring up the previously parsed script
+		lua_rawgeti(asluasys->mLuaState, LUA_REGISTRYINDEX, mScriptRef);
+
+		// execute it
+		int ret = lua_pcall(asluasys->mLuaState,0,0,0);
+		if( ret )
+		{
+			printf( "LUARET<%d>\n", ret );
+			printf("%s\n", lua_tostring(asluasys->mLuaState, -1));
+		}
+	}
+
 	}
 
 }
@@ -249,15 +263,13 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 
 	if( mScriptRef!=LUA_NOREF )
 	{
-		// bring up the previously parsed script
-		lua_rawgeti(asluasys->mLuaState, LUA_REGISTRYINDEX, mScriptRef);
-
-		// execute it
-		int ret = lua_pcall(asluasys->mLuaState,0,0,0);
-		if( ret )
+		try
 		{
-			printf( "LUARET<%d>\n", ret );
-			printf("%s\n", lua_tostring(asluasys->mLuaState, -1));
+			luabind::call_function<void>(asluasys->mLuaState,"OnUpdate");
+		}
+		catch(const luabind::error& caught)
+		{
+			printf( "OnUpdate returned error<%s>\n", caught.what() );
 		}
 	}
 }
