@@ -12,6 +12,7 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/ScriptComponent.h>
+#include <ork/kernel/any.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,6 +23,9 @@ extern "C" {
 }
 
 #include <luabind/luabind.hpp>
+#include <luabind/raw_policy.hpp>
+
+using namespace luabind;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -33,6 +37,15 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentInst, "ScriptManag
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
+
+struct LuaOpaque64
+{
+	any64 mValue;
+};
+struct LuaOpaque16
+{
+	any16 mValue;
+};
 
 struct LuaSystem
 {
@@ -249,116 +262,106 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 	}
 }
 
-/*
-static int l_printf (lua_State *L) {
-  lua_pushvalue(L, lua_upvalueindex(2));
-  lua_insert(L, 1);
-  lua_call(L, lua_gettop(L) - 1, 1);
-  lua_pushvalue(L, lua_upvalueindex(1));
-  lua_pushvalue(L, -2);
-  lua_call(L, 1, 0);
-  return 0;
-}
-
-int luaopen_printf (lua_State* L) {
-  lua_getglobal(L, "io");
-  lua_getglobal(L, "string");
-  lua_pushliteral(L, "write");
-  lua_gettable(L, -3);
-  lua_pushliteral(L, "format");
-  lua_gettable(L, -3);
-  lua_pushcclosure(L, l_printf, 2);
-  // With 5.1, I'd probably just return 1 at this point 
-  lua_setglobal(L, "printf");
-  return 0;
-}
-
-*/
+///////////////////////////////////////////////////////////////////////////////
 
 static SceneInst* GetSceneInst(lua_State* L)
 {
-	lua_getglobal(L, "orksys");
-	auto udat = lua_touserdata(L,1);
-	lua_pop(L,1);
-	auto luasys = (LuaSystem*) udat;
+	luabind::object globtab = globals(L)["luascene"];
+	auto luasys = object_cast<LuaSystem*>(globtab[1]);
 	auto psi = luasys->mSceneInst;
 	return psi;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 
 class LuaScene
 {
 
 public:
+	///////////////////////////////////////////////////////////
 	LuaScene()
 	{
 		printf( "LuaScene::LuaScene()\n");
 	}
+	///////////////////////////////////////////////////////////
 	~LuaScene()
 	{
 		printf( "LuaScene::~LuaScene()\n");
 	}
-
+	///////////////////////////////////////////////////////////
  	int NumEntities(lua_State* L)
 	{
-		printf( "LuaScene::NumEntities(st:%p)\n", L);
 		auto psi = GetSceneInst(L);
+		printf( "LuaScene::NumEntities(st:%p) psi<%p>\n", L, psi);
 		auto count = psi->Entities().size();	
 		//int argc = lua_gettop(L);
 		//printf("argc<%d>\n",argc);
 		//for ( int n=1; n<=argc; ++n )
 		//	printf( "arg<%d> '%s'\n", n, lua_tostring(L, n));
-		//printf( "psi<%p> NumEntities<%d>\n", psi, int(count) );
+		printf( "psi<%p> NumEntities<%d>\n", psi, int(count) );
 		lua_pushnumber(L, int(count)); // return value
-		return int(count); // number of return values
+		return int(1); // number of return values
 	}
-
-	int GetEntities(lua_State* L)
+	///////////////////////////////////////////////////////////
+	std::string GetArchetype(lua_State* L,luabind::object e)
 	{
-		auto psi = GetSceneInst(L);
-		/*LuaRef table = LuaRef::createTable(L);
-
+		auto as_opa = object_cast<LuaOpaque64>(e);
+		auto as_ent = as_opa.mValue.Get<Entity*>();
+		std::string rval = as_ent->GetEntData().GetArchetype()->GetName().c_str();
+		return rval;
+	}
+	///////////////////////////////////////////////////////////
+	luabind::object GetEntities(lua_State* L)
+	{	auto psi = GetSceneInst(L);
+		luabind::object enttab = luabind::newtable(L);
 		const auto& ents = psi->Entities();	
-
-
 		for( const auto& item : ents )
 		{
-		    table[item.first.c_str()] = item.second;
-		    //int value = table.get<int>("value");
-
-		    //for (auto& e : table) {
-		    //    std::string key = e.key<std::string>();
-		    //    LuaRef value = e.value<LuaRef>();
-		    //    ...
-		   // }
+			LuaOpaque64 o;
+			o.mValue = item.second;
+		    enttab[item.first.c_str()] = o;
 		}
-		LuaBinding(table);
-		table.pushToStack();*/
-        return 1;
+        return enttab;
     }
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 LuaSystem::LuaSystem(SceneInst*psi)
 	: mSceneInst(psi)
 {
 	mLuaState = ::luaL_newstate(); // aka lua_open
 	luaL_openlibs(mLuaState);
-
- 	//lua_register(mLuaState, "NumEntities", LuaNumEnties);
-
-	lua_pushlightuserdata(mLuaState,(void*)this);
-	lua_setglobal(mLuaState, "orksys");
-
-	/*LuaBinding(mLuaState)
-		.beginModule("ork")
-        .beginClass<LuaScene>("scene")	
-		.addConstructor(LUA_ARGS())
-		.addFunction("NumEntities", & LuaScene::NumEntities )
-		.addFunction("GetEntities", & LuaScene::GetEntities )
-		.endClass()
-		.endModule()
-	;*/
-	
+	luabind::open(mLuaState);
+	/////////////////////////////////////
+	module(mLuaState,"ork")
+    [
+		class_<LuaScene>("scene")
+			.def(constructor<>())
+			.def("NumEntities",	&LuaScene::NumEntities )
+			.def("GetEntities",	&LuaScene::GetEntities )
+			.def("GetArchetype", &LuaScene::GetArchetype )
+    ];
+	/////////////////////////////////////
+    module(mLuaState,"ork")
+    [
+		class_<LuaSystem>("LuaSystem")
+    ];
+	/////////////////////////////////////
+    module(mLuaState,"ork")
+    [
+		class_<LuaOpaque64>("Opaque64")
+    ];
+	/////////////////////////////////////
+    module(mLuaState,"ork")
+    [
+		class_<LuaOpaque16>("Opaque16")
+    ];
+	/////////////////////////////////////
+	luabind::object globtab = luabind::newtable(mLuaState);
+	globtab[1] = this;
+	globals(mLuaState)["luascene"] = globtab;
+	/////////////////////////////////////
 	printf( "create LuaState<%p> psi<%p>\n", mLuaState, psi );
 
 }
