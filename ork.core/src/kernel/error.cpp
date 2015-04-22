@@ -175,8 +175,8 @@ void OrkAssertFunction(const char *fmtstr, ...)
 	while(1){} // incase that worked
 #endif
 
-	char *pFUCKED = NULL;
-	*pFUCKED = NULL; 
+	char *pFUCKED = nullptr;
+	*pFUCKED = 0; 
 
 	std::exception a;
 	throw a;

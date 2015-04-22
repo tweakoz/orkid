@@ -25,6 +25,8 @@ extern "C" {
 #include <luabind/luabind.hpp>
 #include <luabind/raw_policy.hpp>
 
+#include <cxxabi.h>
+
 using namespace luabind;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,6 +47,18 @@ struct LuaOpaque64
 struct LuaOpaque16
 {
 	any16 mValue;
+	LuaOpaque16(){}
+	template <typename T> LuaOpaque16(const T& the_t)
+	{
+		mValue.Set<T>(the_t);
+	}
+	std::string GetType() const 
+	{
+		int status;
+		auto mangled = mValue.GetTypeName();
+		auto demangled = abi::__cxa_demangle( mangled, 0, 0, & status );
+		return demangled;
+	}
 };
 
 struct LuaSystem
@@ -54,6 +68,55 @@ struct LuaSystem
 	lua_State* mLuaState;
 	SceneInst* mSceneInst;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+static void LuaProtectedCallByRef(lua_State* L, int script_ref)
+{
+	if( script_ref!=LUA_NOREF )
+	{
+		// bring up the previously parsed script
+		lua_rawgeti(L, LUA_REGISTRYINDEX, script_ref);
+
+		// execute it
+		int ret = lua_pcall(L,0,0,0);
+		if( ret )
+		{
+			printf( "LUARET<%d>\n", ret );
+			printf("%s\n", lua_tostring(L, -1));
+		}
+	}	
+}
+
+static void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name)
+{
+	if( script_ref!=LUA_NOREF )
+	{
+		try
+		{
+			luabind::call_function<void>(L,name);
+		}
+		catch(const luabind::error& caught)
+		{
+			printf( "OnUpdate returned error<%s>\n", caught.what() );
+		}
+	}	
+}
+template <typename T> static void LuaProtectedCallByNameT(lua_State* L, int script_ref,const char* name, const T& the_t )
+{
+	if( script_ref!=LUA_NOREF )
+	{
+		try
+		{
+			luabind::object lobj(L,the_t);
+			luabind::call_function<void>(L,name,lobj);
+		}
+		catch(const luabind::error& caught)
+		{
+			printf( "OnUpdate returned error<%s>\n", caught.what() );
+		}
+	}	
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +131,7 @@ void ScriptComponentData::Describe()
 }
 ScriptComponentData::ScriptComponentData()
 {
-
+	printf( "ScriptComponentData::ScriptComponentData() this: %p\n", this );
 }
 
 ent::ComponentInst* ScriptComponentData::CreateComponent(ent::Entity* pent) const
@@ -89,7 +152,51 @@ void ScriptComponentInst::Describe()
 ScriptComponentInst::ScriptComponentInst( const ScriptComponentData& data, ent::Entity* pent )
 	: ork::ent::ComponentInst( & data, pent )
 	, mCD( data )
+	, mScriptRef(LUA_NOREF)
 {
+	auto psi = pent->GetSceneInst();
+
+	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+
+	if( scm )
+	{
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+
+		auto name = pent->GetEntData().GetName().c_str();
+		auto path = mCD.GetPath();
+		auto abspath = path.ToAbsolute();
+
+		printf( "STARTING SCRIPTCOMPONENT<%p> of ent<%s> pth<%s> into Lua exec list\n", this, name, abspath.c_str() );
+
+		if( abspath.DoesPathExist() )
+		{
+			CFile scriptfile(abspath,EFM_READ);
+			size_t filesize = 0;
+			scriptfile.GetLength(filesize);
+			char* scripttext = (char*) malloc(filesize+1);
+			scriptfile.Read(scripttext,filesize);
+			scripttext[filesize] = 0;
+			mScriptText = scripttext;
+			//printf( "%s\n", scripttext);
+			free(scripttext);
+
+			int ret = luaL_loadstring(asluasys->mLuaState,mScriptText.c_str());
+			mScriptRef = luaL_ref(asluasys->mLuaState, LUA_REGISTRYINDEX);
+			//printf( "mScriptRef<%d>\n", mScriptRef );
+			lua_pop(asluasys->mLuaState, 1); // dont call, just reference
+
+			LuaProtectedCallByRef( asluasys->mLuaState, mScriptRef );
+		}
+
+		/////////////////////////
+		// TODO: link this script component into lua's execution list somehow
+		/////////////////////////
+
+
+
+	}
+
 
 
 }
@@ -107,6 +214,8 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 		auto name = ent->GetEntData().GetName().c_str();
 
 		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+
+		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptRef,"OnEntityLink",ent);
 
 		/////////////////////////
 		// TODO: link this script component into lua's execution list somehow
@@ -130,40 +239,7 @@ void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 
 bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 {
-	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
 
-	if( scm )
-	{
-		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
-		OrkAssert(asluasys);
-
-		auto ent = this->GetEntity();
-		auto name = ent->GetEntData().GetName().c_str();
-		auto path = mCD.GetPath();
-		auto abspath = path.ToAbsolute();
-
-		printf( "STARTING SCRIPTCOMPONENT<%p> of ent<%s> pth<%s> into Lua exec list\n", this, name, abspath.c_str() );
-
-		if( abspath.DoesPathExist() )
-		{
-			CFile scriptfile(abspath,EFM_READ);
-			size_t filesize = 0;
-			scriptfile.GetLength(filesize);
-			char* scripttext = (char*) malloc(filesize+1);
-			scriptfile.Read(scripttext,filesize);
-			scripttext[filesize] = 0;
-			mScriptText = scripttext;
-			printf( "%s\n", scripttext);
-			free(scripttext);
-		}
-
-		/////////////////////////
-		// TODO: link this script component into lua's execution list somehow
-		/////////////////////////
-
-
-
-	}
 	return true;
 }
 void ScriptComponentInst::DoStop(SceneInst *psi)
@@ -198,13 +274,49 @@ void ScriptManagerComponentInst::Describe()
 {
 }
 
-
 ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerComponentData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::SceneComponentInst( &data, pinst )
 	, mScriptRef(LUA_NOREF)
 {
 	auto luasys = new LuaSystem(pinst);
 	mLuaManager.Set<LuaSystem*>(luasys);
+
+	///////////////////////////////////////////////
+
+	auto AppendPath = [&]( const char* pth )
+	{
+	    lua_getglobal( luasys->mLuaState, "package" );
+	    lua_getfield( luasys->mLuaState, -1, "path" );
+
+	    fxstring<256> lua_path;
+	    lua_path.format(	"%s;%s", 
+	    					lua_tostring( luasys->mLuaState, -1 ),
+	    					pth );
+
+	    lua_pop( luasys->mLuaState, 1 );
+	    lua_pushstring( luasys->mLuaState, lua_path.c_str() );
+	    lua_setfield( luasys->mLuaState, -2, "path" );
+	    lua_pop( luasys->mLuaState, 1 );
+	};
+
+	///////////////////////////////////////////////
+	// Set Lua Search Path
+	///////////////////////////////////////////////
+
+	auto scrpath = file::Path("src://scripts/");
+	auto absscrpath = scrpath.ToAbsolute();
+
+
+	if( absscrpath.DoesPathExist() )
+	{
+	    fxstring<256> lua_path;
+	    lua_path.format( "%s?.lua", absscrpath.c_str() );
+	    AppendPath( lua_path.c_str() );
+	}
+
+	///////////////////////////////////////////////
+	// find & init scene file
+	///////////////////////////////////////////////
 
 	auto path = file::Path("src://scripts/scene.lua");
 	auto abspath = path.ToAbsolute();
@@ -218,7 +330,7 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 		scriptfile.Read(scripttext,filesize);
 		scripttext[filesize] = 0;
 		mScriptText = scripttext;
-		printf( "%s\n", scripttext);
+		//printf( "%s\n", scripttext);
 		free(scripttext);
 
 
@@ -228,22 +340,11 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 		int ret = luaL_loadstring(asluasys->mLuaState,mScriptText.c_str());
 
 		mScriptRef = luaL_ref(asluasys->mLuaState, LUA_REGISTRYINDEX);
-		printf( "mScriptRef<%d>\n", mScriptRef );
+		//printf( "mScriptRef<%d>\n", mScriptRef );
 		lua_pop(asluasys->mLuaState, 1); // dont call, just reference
 
-	if( mScriptRef!=LUA_NOREF )
-	{
-		// bring up the previously parsed script
-		lua_rawgeti(asluasys->mLuaState, LUA_REGISTRYINDEX, mScriptRef);
 
-		// execute it
-		int ret = lua_pcall(asluasys->mLuaState,0,0,0);
-		if( ret )
-		{
-			printf( "LUARET<%d>\n", ret );
-			printf("%s\n", lua_tostring(asluasys->mLuaState, -1));
-		}
-	}
+		LuaProtectedCallByRef( asluasys->mLuaState, mScriptRef );
 
 	}
 
@@ -256,27 +357,55 @@ ScriptManagerComponentInst::~ScriptManagerComponentInst()
 	delete asluasys;
 }
 
-void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
+bool ScriptManagerComponentInst::DoLink(SceneInst* psi) // final
 {
+	printf( "ScriptManagerComponentInst::DoLink()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
+	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneLink");
 
-	if( mScriptRef!=LUA_NOREF )
-	{
-		try
-		{
-			luabind::call_function<void>(asluasys->mLuaState,"OnUpdate");
-		}
-		catch(const luabind::error& caught)
-		{
-			printf( "OnUpdate returned error<%s>\n", caught.what() );
-		}
-	}
+	return true;
+}
+void ScriptManagerComponentInst::DoUnLink(SceneInst* psi) // final
+{
+	printf( "ScriptManagerComponentInst::DoUnLink()\n" );
+	auto asluasys = mLuaManager.Get<LuaSystem*>();
+	OrkAssert(asluasys);
+	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUnLink");
+}
+void ScriptManagerComponentInst::DoStart(SceneInst *psi) // final
+{
+	printf( "ScriptManagerComponentInst::DoStart()\n" );
+	auto asluasys = mLuaManager.Get<LuaSystem*>();
+	OrkAssert(asluasys);
+	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
+}
+void ScriptManagerComponentInst::DoStop(SceneInst *inst) // final
+{
+	printf( "ScriptManagerComponentInst::DoStop()\n" );
+	auto asluasys = mLuaManager.Get<LuaSystem*>();
+	OrkAssert(asluasys);
+	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
+}
+
+void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
+{
+	/////////////
+	// call entity script components for 5 ms
+
+
+
+	/////////////
+
+
+	auto asluasys = mLuaManager.Get<LuaSystem*>();
+	OrkAssert(asluasys);
+	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUpdate");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static SceneInst* GetSceneInst(lua_State* L)
+SceneInst* GetSceneInst(lua_State* L)
 {
 	luabind::object globtab = globals(L)["luascene"];
 	auto luasys = object_cast<LuaSystem*>(globtab[1]);
@@ -284,58 +413,40 @@ static SceneInst* GetSceneInst(lua_State* L)
 	return psi;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-class LuaScene
+luabind::object GetScene(lua_State* L)
 {
+	auto psi = GetSceneInst(L);
+	return luabind::object(L,psi);
+}
 
-public:
-	///////////////////////////////////////////////////////////
-	LuaScene()
+luabind::object GetEntities(lua_State* L,luabind::object o)
+{
+	auto psi = object_cast<SceneInst*>(o);
+	luabind::object enttab = luabind::newtable(L);
+	const auto& ents = psi->Entities();	
+	for( const auto& item : ents )
 	{
-		printf( "LuaScene::LuaScene()\n");
+		//LuaOpaque16 o(item.second);
+		luabind::object o(L,item.second);
+	    enttab[item.first.c_str()] = o;
 	}
-	///////////////////////////////////////////////////////////
-	~LuaScene()
-	{
-		printf( "LuaScene::~LuaScene()\n");
-	}
-	///////////////////////////////////////////////////////////
- 	int NumEntities(lua_State* L)
-	{
-		auto psi = GetSceneInst(L);
-		printf( "LuaScene::NumEntities(st:%p) psi<%p>\n", L, psi);
-		auto count = psi->Entities().size();	
-		//int argc = lua_gettop(L);
-		//printf("argc<%d>\n",argc);
-		//for ( int n=1; n<=argc; ++n )
-		//	printf( "arg<%d> '%s'\n", n, lua_tostring(L, n));
-		printf( "psi<%p> NumEntities<%d>\n", psi, int(count) );
-		lua_pushnumber(L, int(count)); // return value
-		return int(1); // number of return values
-	}
-	///////////////////////////////////////////////////////////
-	std::string GetArchetype(lua_State* L,luabind::object e)
-	{
-		auto as_opa = object_cast<LuaOpaque64>(e);
-		auto as_ent = as_opa.mValue.Get<Entity*>();
-		std::string rval = as_ent->GetEntData().GetArchetype()->GetName().c_str();
-		return rval;
-	}
-	///////////////////////////////////////////////////////////
-	luabind::object GetEntities(lua_State* L)
-	{	auto psi = GetSceneInst(L);
-		luabind::object enttab = luabind::newtable(L);
-		const auto& ents = psi->Entities();	
-		for( const auto& item : ents )
-		{
-			LuaOpaque64 o;
-			o.mValue = item.second;
-		    enttab[item.first.c_str()] = o;
-		}
-        return enttab;
-    }
-};
+    return enttab;
+}
+
+luabind::object GetEntArchetype( lua_State* L, Entity* pent )
+{
+	const Archetype* a = pent ? pent->GetEntData().GetArchetype() : nullptr;
+	return luabind::object(L,a);
+
+}
+
+luabind::object GetArchetypeName( lua_State* L, luabind::object o )
+{
+	auto pa = object_cast<const Archetype*>(o);
+	const char* name =  pa ? pa->GetName().c_str() : "";
+	return luabind::object(L,std::string(name));
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -348,11 +459,25 @@ LuaSystem::LuaSystem(SceneInst*psi)
 	/////////////////////////////////////
 	module(mLuaState,"ork")
     [
-		class_<LuaScene>("scene")
-			.def(constructor<>())
-			.def("NumEntities",	&LuaScene::NumEntities )
-			.def("GetEntities",	&LuaScene::GetEntities )
-			.def("GetArchetype", &LuaScene::GetArchetype )
+    	def("getscene",&GetScene)
+    ];
+	/////////////////////////////////////
+	module(mLuaState,"ork")
+    [
+		class_<SceneInst>("scene")
+			.def("entities", &GetEntities )
+    ];
+	/////////////////////////////////////
+	module(mLuaState,"ork")
+    [
+		class_<Entity>("entity")
+			.def("archetype", &GetEntArchetype )
+    ];
+	/////////////////////////////////////
+	module(mLuaState,"ork")
+    [
+		class_<Archetype>("archetype")
+			.def("name",	&GetArchetypeName )
     ];
 	/////////////////////////////////////
     module(mLuaState,"ork")
@@ -368,6 +493,7 @@ LuaSystem::LuaSystem(SceneInst*psi)
     module(mLuaState,"ork")
     [
 		class_<LuaOpaque16>("Opaque16")
+			.def("type", &LuaOpaque16::GetType )
     ];
 	/////////////////////////////////////
 	luabind::object globtab = luabind::newtable(mLuaState);

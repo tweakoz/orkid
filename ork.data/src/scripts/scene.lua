@@ -1,20 +1,46 @@
-require("string")
+require("orklib")
 
-function printf(...)
-	print(string.format(...))
+local s = ork.getscene();
+
+printf("Hello world, from %s yo.",_VERSION)
+--printf( "Lua Initializing scene NumEnt<%d>",s:NumEntities() )
+
+-------------------------------------
+
+function OnSceneLink()
+	printf("OnSceneLink()")
+	ents = s:entities()
+	for k,e in pairs(ents) do
+		a = e:archetype()
+		an = a:name()
+		printf("e<%s> arch<%s>",k,an) 
+	end
 end
 
-local s = ork.scene();
+-------------------------------------
 
-printf("Hello world, from %s yo.\n",_VERSION)
-printf( "NumEnt: %d",s:NumEntities() )
+function OnSceneStart()
+	printf("OnSceneStart()")
+end
 
-function OnUpdate()
- ents = s:GetEntities()
- for k,e in pairs(ents) do
-	local a = s:GetArchetype(e)
-	printf("e<%s> arch<%s>",k,a) 
-    end
+-------------------------------------
+
+function OnSceneStop()
+	printf("OnSceneStop()")
+end
+
+-------------------------------------
+
+function OnSceneUnLink()
+	printf("OnSceneUnLink()")
+end
+
+-------------------------------------
+
+function OnSceneUpdate()
+
+	printf( "OnSceneUpdate")
+
  end
---printf( "GetEnt: %s", e )
---printf( "Ents: %s",s:GetEntities() )
+
+-------------------------------------

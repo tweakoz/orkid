@@ -524,6 +524,9 @@ Path Path::ToAbsoluteFolder( EPathType etype ) const
 	{
 		switch( etype )
 		{
+			case EPATHTYPE_NATIVE:
+			case EPATHTYPE_URL:
+				break;
 			case EPATHTYPE_DOS:
 			{
 				if( mMarkers.mDriveLen == 3 )
@@ -549,6 +552,11 @@ Path Path::ToAbsoluteFolder( EPathType etype ) const
 	{
 		switch( etype )
 		{
+			case EPATHTYPE_POSIX:
+			case EPATHTYPE_DOS:
+			case EPATHTYPE_NATIVE:
+			case EPATHTYPE_URL:
+				break;
 			case EPATHTYPE_NDS:
 			{
 				rval.mPathString.format( "" );

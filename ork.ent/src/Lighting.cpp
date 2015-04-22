@@ -261,6 +261,9 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 	{
 		switch( GetLight()->LightType() )
 		{
+			case ork::lev2::ELIGHTTYPE_SPOT:
+			case ork::lev2::ELIGHTTYPE_POINT:
+				break;
 			case ork::lev2::ELIGHTTYPE_DIRECTIONAL:
 			case ork::lev2::ELIGHTTYPE_AMBIENT:
 			{

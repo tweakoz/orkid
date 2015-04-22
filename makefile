@@ -11,6 +11,7 @@ env:
 	./ork.build/bin/ork.build.int_env.py
 
 get:
+	mkdir -p ./stage/downloads
 	scons -f root.sconstruct get --site-dir ./ork.build/site_scons
 
 boost:
@@ -22,7 +23,7 @@ ilm:
 oiio:
 	scons -f root.sconstruct oiio --site-dir ./ork.build/site_scons
 
-allext:
+ext:
 	make boost
 	make ilm
 	make oiio

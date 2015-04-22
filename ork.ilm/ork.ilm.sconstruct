@@ -13,8 +13,7 @@ STAGE_DIR = obu.stage_dir
 ###########################################
 
 ilmbase = "ilmbase-1.0.2"
-ilmbaseU = string.replace(ilmbase,".","_").upper()
-ilmbasemd5 = "637e19f3afe7394bacc0118d25e14c56"
+ilmbasemd5 = "26c133ee8ca48e1196fbfb3ffe292ab4"
 
 exrver,exrverU = "1.7.0","1_7_0"
 exrMD5 = "0081081d0354c633cefeab818180f089"
@@ -23,7 +22,7 @@ exrMD5 = "0081081d0354c633cefeab818180f089"
 if is_get:
 	ctx = obu.context( obu.download_dir )
 	ctx.wget( "https://github.com/openexr/openexr/tarball/OPENEXR_%s"%exrverU, "openexr-%s.tar.gz"%exrver,exrMD5 )
-	ctx.wget( "https://github.com/openexr/openexr/tarball/%s"%ilmbaseU, "%s.tar.gz"%ilmbase,ilmbasemd5 )
+	ctx.wget( "http://download.savannah.nongnu.org/releases/openexr/%s.tar.gz"%ilmbase, "%s.tar.gz"%ilmbase,ilmbasemd5 )
 
 ###########################################
 
@@ -35,11 +34,11 @@ if is_ilm:
 	os.system( "rm -rf %s" % ilm_build_dir )
 	os.system( "mkdir -p %s" % ilm_build_dir )
 	os.chdir(ilm_build_dir)
-	obu.untar("%s/%s.tar.gz"%(DL_DIR, ilmbase),True)
+	obu.untar("%s/%s.tar.gz"%(DL_DIR, ilmbase),False)
 	obu.untar("%s/openexr-%s.tar.gz"%(DL_DIR, exrver),True)
 
 	if 1:
-		os.chdir("%s/IlmBase"%ilm_build_dir)
+		os.chdir("%s/%s"%(ilm_build_dir,ilmbase))
 		os.system("./bootstrap")
 		os.system("./configure --prefix=%s"%STAGE_DIR)
 		os.system("make -j %s install" % obu.num_cores )

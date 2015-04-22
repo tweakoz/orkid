@@ -942,6 +942,10 @@ bool GfxMaterialFx::BeginPass( GfxTarget *pTarg, int iPass )
 			{
 				switch( ParamInst->GetRecord().meBindingScope )
 				{
+					case FxParamRec::ESCOPE_CONSTANT:
+					{
+						break;
+					}
 					case FxParamRec::ESCOPE_PERMATERIALINST:
 					{
 						

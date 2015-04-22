@@ -90,7 +90,7 @@ private:
 	/*virtual*/ bool DoNotify(const ork::event::Event *event) { return false; }
 	virtual void DoUpdate(SceneInst *inst) {}
 	virtual void DoStart(SceneInst *psi) {}
-	virtual void DoLink(SceneInst *psi) {}
+	virtual bool DoLink(SceneInst *psi) { return true; }
 	virtual void DoUnLink(SceneInst *psi) {}
 	virtual void DoStop(SceneInst *psi) {}
 
