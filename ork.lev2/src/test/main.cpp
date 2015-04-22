@@ -12,7 +12,7 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/lev2/gfx/gfxenv.h>
 
-namespace ork { namespace lev2 { void Init(); }}
+namespace ork { namespace lev2 { void Init(const std::string& gfxlayer); }}
 
 class TestApplication : public ork::Application
 {
@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 	TestApplication the_app;
     ApplicationStack::Push(&the_app);
 
-    ork::lev2::Init();
+    ork::lev2::Init("dummy");
 
 	ork::rtti::Class::InitializeClasses();
 	printf("yo\n" );

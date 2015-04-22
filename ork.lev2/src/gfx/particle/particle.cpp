@@ -195,6 +195,11 @@ void DirectedEmitter::EmitCB( EmitterCtx& ctx )
 				case EMITDIR_CROSS_Z:
 					dir = dir.Cross(CVector3::Blue());
 					break;
+				case EMITDIR_CONSTANT:
+				case EMITDIR_VEL:
+				case EMITDIR_TO_POINT:
+					break;
+
 			}
 			vbin = dir.Cross(CVector3::Green());
 			if( vbin.MagSquared() < .1f ) vbin = dir.Cross(CVector3::Red());

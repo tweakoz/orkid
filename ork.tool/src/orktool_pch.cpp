@@ -36,8 +36,7 @@ namespace ork {
 
 void LoadLocalization(const char langcode[2]);
 
-//namespace lev1 { void Init(); }	
-namespace lev2 { void Init(); }	
+namespace lev2 { void Init(const std::string& gfxlayer); }	
 	
 namespace tool {
 

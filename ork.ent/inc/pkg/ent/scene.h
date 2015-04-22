@@ -344,6 +344,8 @@ private:
 
 protected:
 
+	orkmap<PoolString, Archetype*>			mDynamicArchetypes;
+
 	orkmap<PoolString,Layer*>				mLayers;
 	orkmap<PoolString,Entity*>				mEntities;
 	EntitySet								mActiveEntities;

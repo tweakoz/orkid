@@ -49,6 +49,7 @@ if is_oiio:
 
 	os.chdir( "%s/oiio" % obu.download_dir )
 	obu.myexec( "git clean -fd")
+	obu.myexec( "git reset --hard")
 	obu.myexec( "git checkout RB-1.4")
 	obu.myexec( "cp -r %s/oiio %s" % (obu.download_dir, build_dir) )
 

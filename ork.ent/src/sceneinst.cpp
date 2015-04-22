@@ -320,8 +320,15 @@ void SceneInst::SetEntity( const ent::EntData* pentdata, ent::Entity* pent )
 	mEntities[pentdata->GetName()] = pent;
 }
 ///////////////////////////////////////////////////////////////////////////
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_RESET     "\x1b[30m"
 void SceneInst::EnterEditState()
 {
+	printf( "%s", ANSI_COLOR_RED );
+	printf( "////////////////////////\n");
+	printf( "SceneInst<%p> EnterEditState\n", this );
+	printf( "////////////////////////\n");
+	printf( "%s", ANSI_COLOR_RESET );
 	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
@@ -362,6 +369,12 @@ void SceneInst::EnterPauseState()
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::EnterRunState()
 {
+	printf( "%s", ANSI_COLOR_RED );
+	printf( "////////////////////////\n");
+	printf( "SceneInst<%p> EnterRunState\n", this );
+	printf( "////////////////////////\n");
+	printf( "%s", ANSI_COLOR_RESET );
+
 	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	EnterRunMode();
@@ -542,6 +555,7 @@ void SceneInst::ComposeEntities()
 			}
 			////////////////////////////////////////////////////////////////
 
+			printf( "Compose Entity<%p> arch<%p> layer<%s>\n", pent, arch, layer_name.c_str() );
 			if( arch )
 			{
 				arch->ComposeEntity( pent );
@@ -577,6 +591,12 @@ void SceneInst::LinkEntities()
 			edata.GetArchetype()->LinkEntity( this, pent );
 		}
 	}
+
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->Link(this);
+	}
 	//orkprintf( "end si<%p> Link Entities..\n", this );
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -584,6 +604,15 @@ void SceneInst::UnLinkEntities()
 {
 	//orkprintf( "beg si<%p> Link Entities..\n", this );
 	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	///////////////////////////////////
+
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->UnLink(this);
+	}
+
 	///////////////////////////////////
 	// Link Entities
 	///////////////////////////////////
@@ -607,6 +636,15 @@ void SceneInst::UnLinkEntities()
 void SceneInst::StartEntities()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	///////////////////////////////////
+
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->Start(this);
+	}
+
 	///////////////////////////////////
 	// Start Entities
 	///////////////////////////////////
@@ -645,6 +683,14 @@ void SceneInst::StopEntities()
 		{
 			edata.GetArchetype()->StopEntity( this, pent );
 		}
+	}
+
+	///////////////////////////////////
+
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->Stop(this);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////

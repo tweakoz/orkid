@@ -23,6 +23,7 @@ struct ScriptComponentData : public ent::ComponentData
 	ScriptComponentData();
 
 	const file::Path& GetPath() const { return mScriptPath; }
+	void SetPath(const file::Path& pth) { mScriptPath=pth; }
 
 private:
 	RttiDeclareConcrete( ScriptComponentData, ent::ComponentData );
@@ -50,6 +51,7 @@ private:
 	void DoStop(SceneInst *psi) final;
 	const ScriptComponentData&		mCD;
 	std::string mScriptText;
+	int mScriptRef;
 
 };
 
@@ -80,11 +82,15 @@ public:
 	ScriptManagerComponentInst( const ScriptManagerComponentData &data, ork::ent::SceneInst *pinst );
 	~ScriptManagerComponentInst();
 
-	void DoUpdate(SceneInst *inst) final;
-
 	anyp GetLuaManager() { return mLuaManager; }
 
 private:
+
+	bool DoLink(SceneInst *psi) final;
+	void DoUnLink(SceneInst *psi) final;
+	void DoUpdate(SceneInst *inst) final;
+	void DoStart(SceneInst *psi) final;
+	void DoStop(SceneInst *inst) final;
 
 	anyp mLuaManager;
 	std::string mScriptText;
