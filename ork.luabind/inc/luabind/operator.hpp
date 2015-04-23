@@ -82,7 +82,8 @@ struct call_operator
         static void execute(
             lua_State* L
           , typename detail::unwrap_parameter_type<T, Self>::type self
-          , detail::unwrap_parameter_type<T, Args>::type args...
+          , typename detail::unwrap_parameter_type<T, Args>::type args
+          ...
         )
         {
             using namespace detail;

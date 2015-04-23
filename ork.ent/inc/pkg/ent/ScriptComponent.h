@@ -31,7 +31,6 @@ private:
 	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
 
 	file::Path mScriptPath;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,6 +50,7 @@ private:
 	void DoStop(SceneInst *psi) final;
 	const ScriptComponentData&		mCD;
 	std::string mScriptText;
+	std::string mPrefix;
 	int mScriptRef;
 
 };

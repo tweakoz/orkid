@@ -3,6 +3,8 @@ require("ansicolors")
 
 print(ansicolors.reset)
 
+enttab = {}
+
 -----------------------------------------------------------
 
 function printf(...)

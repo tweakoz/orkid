@@ -1,5 +1,5 @@
 require("orklib")
-
+inspect = require("inspect")
 local s = ork.getscene();
 
 printf("Hello world, from %s yo.",_VERSION)
@@ -7,20 +7,26 @@ printf("Hello world, from %s yo.",_VERSION)
 
 -------------------------------------
 
+
+-------------------------------------
+
 function OnSceneLink()
 	printf("OnSceneLink()")
-	ents = s:entities()
-	for k,e in pairs(ents) do
-		a = e:archetype()
-		an = a:name()
-		printf("e<%s> arch<%s>",k,an) 
-	end
+	--ents = s:entities()
+	--for k,e in pairs(ents) do
+	--	a = e:archetype()
+	--	an = a:name()
+	--	printf("e<%s:%s>",k,tostring(e)) 
+	--	printf("a<%s>",tostring(a)) 
+	--end
 end
 
 -------------------------------------
 
 function OnSceneStart()
 	printf("OnSceneStart()")
+	--a = ork.vec3(0,1,2)
+	--print("%s",a)
 end
 
 -------------------------------------
@@ -39,7 +45,13 @@ end
 
 function OnSceneUpdate()
 
+	printf( "///////////////////////////")
 	printf( "OnSceneUpdate")
+	printf( "///////////////////////////")
+
+	for n,e in pairs(enttab) do
+		--yo.OnScriptUpdate(e)
+	end
 
  end
 
