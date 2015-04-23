@@ -90,13 +90,32 @@ TEST(ScriptCompTest)
 	{
 	    SceneData* scenedata = new SceneData;
 
-	    EntData *entdata1 = new EntData;
-	    entdata1->SetName("entity1");
-	    scenedata->AddSceneObject(entdata1);
 
 	    auto arch = new SimpleCharacterArchetype;
-	    entdata1->SetArchetype(arch);
 
+	    for( int i=0; i<2; i++ )
+	    {
+	    	ork::fxstring<256> ename;
+	    	ename.format("ent%d", i );
+	    	EntData *entdata1 = new EntData;
+		    entdata1->SetName(ename.c_str());
+		    scenedata->AddSceneObject(entdata1);
+	    	entdata1->SetArchetype(arch);
+
+	    	int ix = rand()%100;
+	    	int iy = rand()%100;
+	    	int iz = rand()%100;
+
+	    	auto fx = float(ix)*0.001f;
+	    	auto fy = float(iy)*0.001f;
+	    	auto fz = float(iz)*0.001f;
+
+			auto& dn = entdata1->GetDagNode();
+			auto& xn = dn.GetTransformNode();
+			auto& xf = xn.GetTransform();
+
+			xf.SetPosition(CVector3(fx,fy,fz));
+		}
 
 	    auto app = ApplicationStack::Top();
 	    SceneInst *sceneinst = new SceneInst(scenedata,app);
@@ -110,10 +129,10 @@ TEST(ScriptCompTest)
 		printf( "ScriptCompTest: starting up test scene\n");
 	    sceneinst->SetSceneInstMode(ESCENEMODE_RUN);
 
-	    for( int i=0; i<10; i++ )
+	    for( int i=0; i<30000; i++ )
 	    {
 			sceneinst->Update();
-			usleep(100);
+			usleep(10);
 	    }
 
 		printf( "ScriptCompTest: shutting down up test scene\n");

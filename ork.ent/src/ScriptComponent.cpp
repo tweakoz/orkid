@@ -22,6 +22,9 @@ extern "C" {
 #include "lauxlib.h"
 }
 
+#include <sstream>
+#include <iostream>
+
 #include <luabind/luabind.hpp>
 #include <luabind/raw_policy.hpp>
 
@@ -35,6 +38,18 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentData, "ScriptComponentDat
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentInst, "ScriptComponentInst" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentData, "ScriptManagerComponentData" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentInst, "ScriptManagerComponentInst" );
+
+std::stringstream& operator<<(std::stringstream& str, const ork::CVector3& v)
+{
+	ork::fxstring<256> fxs;
+	fxs.format("[%f,%f,%f]", v.GetX(), v.GetY(), v.GetZ() );
+	str<<fxs.c_str();
+	return str;	
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+#include <luabind/operator.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -95,6 +110,20 @@ static void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name
 		try
 		{
 			luabind::call_function<void>(L,name);
+		}
+		catch(const luabind::error& caught)
+		{
+			printf( "OnUpdate returned error<%s>\n", caught.what() );
+		}
+	}	
+}
+static void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o)
+{
+	if( script_ref!=LUA_NOREF )
+	{
+		try
+		{
+			luabind::call_function<void>(L,name,o);
 		}
 		catch(const luabind::error& caught)
 		{
@@ -171,6 +200,8 @@ ScriptComponentInst::ScriptComponentInst( const ScriptComponentData& data, ent::
 
 		if( abspath.DoesPathExist() )
 		{
+			mPrefix = path.GetName().c_str();
+
 			CFile scriptfile(abspath,EFM_READ);
 			size_t filesize = 0;
 			scriptfile.GetLength(filesize);
@@ -215,7 +246,9 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 
 		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
 
-		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptRef,"OnEntityLink",ent);
+		luabind::object o( asluasys->mLuaState, ent );
+
+		LuaProtectedCallByName(asluasys->mLuaState,mScriptRef,"OnEntityLink",o);
 
 		/////////////////////////
 		// TODO: link this script component into lua's execution list somehow
@@ -239,12 +272,52 @@ void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 
 bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 {
+	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
 
+	if( scm )
+	{
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+
+		auto ent = this->GetEntity();
+		auto name = ent->GetEntData().GetName().c_str();
+
+		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+
+		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptRef,"OnEntityStart",ent);
+
+		/////////////////////////
+		// TODO: link this script component into lua's execution list somehow
+		/////////////////////////
+
+
+
+	}
 	return true;
 }
 void ScriptComponentInst::DoStop(SceneInst *psi)
 {
+	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
 
+	if( scm )
+	{
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+
+		auto ent = this->GetEntity();
+		auto name = ent->GetEntData().GetName().c_str();
+
+		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+
+		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptRef,"OnEntityStop",ent);
+
+		/////////////////////////
+		// TODO: link this script component into lua's execution list somehow
+		/////////////////////////
+
+
+
+	}
 }
 
 
@@ -394,7 +467,6 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 	// call entity script components for 5 ms
 
 
-
 	/////////////
 
 
@@ -433,6 +505,7 @@ luabind::object GetEntities(lua_State* L,luabind::object o)
     return enttab;
 }
 
+
 luabind::object GetEntArchetype( lua_State* L, Entity* pent )
 {
 	const Archetype* a = pent ? pent->GetEntData().GetArchetype() : nullptr;
@@ -447,6 +520,116 @@ luabind::object GetArchetypeName( lua_State* L, luabind::object o )
 	return luabind::object(L,std::string(name));
 }
 
+luabind::object CreateVector3( lua_State* L, double x, double y, double z )
+{
+	auto v = new CVector3(float(x),float(y),float(z));
+	return luabind::object(L,v);
+}
+luabind::object GetVec3XZ( lua_State* L,  luabind::object o )
+{
+	auto v = object_cast<CVector3*>(o);
+	fxstring<256> fx;
+	fx.format("[%f,%f]", v->GetX(), v->GetZ() );
+	std::string rval = fx.c_str();
+	return luabind::object(L,rval);
+}
+luabind::object GetVec3X( lua_State* L,  luabind::object o )
+{
+	auto v = object_cast<CVector3*>(o);
+	return luabind::object(L,double(v->GetX()));
+}
+luabind::object GetVec3Y( lua_State* L,  luabind::object o )
+{
+	auto v = object_cast<CVector3*>(o);
+	return luabind::object(L,double(v->GetY()));
+}
+luabind::object GetVec3Z( lua_State* L,  luabind::object o )
+{
+	auto v = object_cast<CVector3*>(o);
+	return luabind::object(L,double(v->GetZ()));
+}
+void SetVec3XZ( lua_State* L,  luabind::object o, double x, double z )
+{
+	auto v = object_cast<CVector3*>(o);
+	v->SetX(float(x));
+	v->SetZ(float(z));
+}
+void SetVec3X( lua_State* L,  luabind::object o, double x )
+{
+	auto v = object_cast<CVector3*>(o);
+	v->SetX(float(x));
+}
+void SetVec3Y( lua_State* L,  luabind::object o, double y )
+{
+	auto v = object_cast<CVector3*>(o);
+	v->SetY(float(y));
+}
+void SetVec3Z( lua_State* L,  luabind::object o, double z )
+{
+	auto v = object_cast<CVector3*>(o);
+	v->SetZ(float(z));
+}
+luabind::object GetEntityName( lua_State* L, luabind::object o )
+{
+	auto e = object_cast<const Entity*>(o);
+	const char* ename = e ? e->GetEntData().GetName().c_str() : "";
+	return luabind::object(L,std::string(ename));
+}
+luabind::object GetEntityPos( lua_State* L, luabind::object o )
+{
+	auto pos = new CVector3;
+	auto ent = object_cast<Entity*>(o);
+	if( ent )
+	{
+		auto& dn = ent->GetDagNode();
+		auto& xn = dn.GetTransformNode();
+		auto& xf = xn.GetTransform();
+
+		*pos = xf.GetPosition();
+	}
+	return luabind::object(L,pos);
+}
+void SetEntityPos( lua_State* L, luabind::object e, luabind::object p )
+{
+	auto ent = object_cast<Entity*>(e);
+	auto pos = object_cast<CVector3*>(p);
+	if( ent && pos )
+	{
+		ent->GetDagNode().GetTransformNode().GetTransform().SetPosition(*pos);
+	}
+}
+std::string EntToString( const Entity* e )
+{
+	ork::fxstring<256> str;
+	const char* ename = e ? e->GetEntData().GetName().c_str() : "";
+	auto a = e ? e->GetEntData().GetArchetype() : nullptr;
+	const char* aname =  a ? a->GetName().c_str() : "";
+	str.format("(%s:%s)", ename, aname);
+	return str.c_str();
+}
+std::string ArchToString( const Archetype* a )
+{
+	ork::fxstring<256> rval;
+	if( a )
+	{
+		ork::fxstring<256> str;
+		auto aname = a->GetName().c_str();
+		auto cname = a->GetClass()->Name().c_str();
+		str.format( "(%s:%s)\n", aname, cname );
+		rval += str;
+
+		const auto& ct = a->GetComponentDataTable().GetComponents();
+		for( const auto& i : ct )
+		{
+			auto c = i.second;
+			auto f = i.first.c_str();
+			auto ctype = c->GetClass()->Name();
+			str.format( "	(%s:%s)\n", f, ctype );
+			rval += str;
+		}
+	}
+	return rval.c_str();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -459,41 +642,37 @@ LuaSystem::LuaSystem(SceneInst*psi)
 	/////////////////////////////////////
 	module(mLuaState,"ork")
     [
-    	def("getscene",&GetScene)
-    ];
-	/////////////////////////////////////
-	module(mLuaState,"ork")
-    [
-		class_<SceneInst>("scene")
-			.def("entities", &GetEntities )
-    ];
-	/////////////////////////////////////
-	module(mLuaState,"ork")
-    [
-		class_<Entity>("entity")
+    	def("getscene",&GetScene),
+
+		class_<SceneInst,SceneInst*>("scene")
+			.def("entities", &GetEntities ),
+
+		class_<Entity,Entity*>("entity")
 			.def("archetype", &GetEntArchetype )
-    ];
-	/////////////////////////////////////
-	module(mLuaState,"ork")
-    [
-		class_<Archetype>("archetype")
+			.def("name",	&GetEntityName )
+			.property("pos", &GetEntityPos, &SetEntityPos)
+			.def("__tostring",&EntToString),
+
+		class_<Archetype,Archetype*>("archetype")
 			.def("name",	&GetArchetypeName )
-    ];
-	/////////////////////////////////////
-    module(mLuaState,"ork")
-    [
-		class_<LuaSystem>("LuaSystem")
-    ];
-	/////////////////////////////////////
-    module(mLuaState,"ork")
-    [
-		class_<LuaOpaque64>("Opaque64")
-    ];
-	/////////////////////////////////////
-    module(mLuaState,"ork")
-    [
+			.def("__tostring",&ArchToString),
+
+		class_<LuaSystem,LuaSystem*>("LuaSystem"),
+
+		class_<LuaOpaque64>("Opaque64"),
+
 		class_<LuaOpaque16>("Opaque16")
-			.def("type", &LuaOpaque16::GetType )
+			.def("type", &LuaOpaque16::GetType ),
+
+		class_<CVector3,CVector3*>("Vector3")
+			.def(tostring(self))
+			.property("xz", &GetVec3XZ,&SetVec3XZ)
+			.property("x", &GetVec3X,&SetVec3X)
+			.property("y", &GetVec3Y,&SetVec3Y)
+			.property("z", &GetVec3Z,&SetVec3Z),
+
+		def("vec3",&CreateVector3)
+
     ];
 	/////////////////////////////////////
 	luabind::object globtab = luabind::newtable(mLuaState);
