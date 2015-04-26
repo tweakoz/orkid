@@ -322,13 +322,15 @@ void SceneInst::SetEntity( const ent::EntData* pentdata, ent::Entity* pent )
 ///////////////////////////////////////////////////////////////////////////
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_RESET     "\x1b[30m"
+#define ANSI_COLOR_GREEN     "\x1b[32m"
+
 void SceneInst::EnterEditState()
 {
 	printf( "%s", ANSI_COLOR_RED );
 	printf( "////////////////////////\n");
 	printf( "SceneInst<%p> EnterEditState\n", this );
 	printf( "////////////////////////\n");
-	printf( "%s", ANSI_COLOR_RESET );
+	printf( "%s", ANSI_COLOR_GREEN );
 	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
@@ -373,7 +375,7 @@ void SceneInst::EnterRunState()
 	printf( "////////////////////////\n");
 	printf( "SceneInst<%p> EnterRunState\n", this );
 	printf( "////////////////////////\n");
-	printf( "%s", ANSI_COLOR_RESET );
+	printf( "%s", ANSI_COLOR_GREEN );
 
 	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
@@ -555,7 +557,7 @@ void SceneInst::ComposeEntities()
 			}
 			////////////////////////////////////////////////////////////////
 
-			printf( "Compose Entity<%p> arch<%p> layer<%s>\n", pent, arch, layer_name.c_str() );
+			//printf( "Compose Entity<%p> arch<%p> layer<%s>\n", pent, arch, layer_name.c_str() );
 			if( arch )
 			{
 				arch->ComposeEntity( pent );
@@ -693,6 +695,7 @@ void SceneInst::StopEntities()
 		ci->Stop(this);
 	}
 }
+
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item) 
 { 
@@ -831,11 +834,32 @@ void SceneInst::ServiceActivateQueue()
 		const CMatrix4 &mtx = item.mMatrix;
 		OrkAssert(pent);
 
+		printf( "Activating Entity (Q) : ent<%p>\n", pent );
 		if(const Archetype *parch = pent->GetEntData().GetArchetype())
+		{
+			printf( "Activating Entity (QQ) : ent<%p> arch<%p>\n", pent, parch );
 			parch->StartEntity(this, mtx, pent);
+		}
+		printf( "Activating Entity (U) : %p\n", pent );
 
 		ActivateEntity(pent);
+		printf( "Activated Entity (Q) : %p\n", pent );
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+Entity* SceneInst::SpawnDynamicEntity( const ent::EntData* spawn_rec )
+{
+	printf( "SpawnDynamicEntity ed<%p>\n", spawn_rec );
+	auto newent = new Entity(*spawn_rec,this);
+	auto arch = spawn_rec->GetArchetype();
+	arch->ComposeEntity(newent);
+	arch->LinkEntity(this,newent);
+	EntityActivationQueueItem qi( CMatrix4::Identity, newent );
+	//this->QueueActivateEntity(qi);
+	mEntities[spawn_rec->GetName()]=newent;
+	return newent;
 }
 
 ///////////////////////////////////////////////////////////////////////////

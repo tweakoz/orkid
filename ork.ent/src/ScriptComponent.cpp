@@ -47,6 +47,18 @@ std::stringstream& operator<<(std::stringstream& str, const ork::CVector3& v)
 	return str;	
 }
 
+bool DoString(lua_State* L, const char* str)
+{
+	if (luaL_loadbuffer(L, str, std::strlen(str), str) || lua_pcall(L, 0, 0, 0))
+	{
+		const char* a = lua_tostring(L, -1);
+		std::cout << a << "\n";
+		lua_pop(L, 1);
+		return true;
+	}
+	return false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <luabind/operator.hpp>
@@ -113,7 +125,8 @@ static void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name
 		}
 		catch(const luabind::error& caught)
 		{
-			printf( "OnUpdate returned error<%s>\n", caught.what() );
+			assert(false);
+			//printf( "OnUpdate returned error<%s>\n", caught.what() );
 		}
 	}	
 }
@@ -196,7 +209,7 @@ ScriptComponentInst::ScriptComponentInst( const ScriptComponentData& data, ent::
 		auto path = mCD.GetPath();
 		auto abspath = path.ToAbsolute();
 
-		printf( "STARTING SCRIPTCOMPONENT<%p> of ent<%s> pth<%s> into Lua exec list\n", this, name, abspath.c_str() );
+		//printf( "STARTING SCRIPTCOMPONENT<%p> of ent<%s> pth<%s> into Lua exec list\n", this, name, abspath.c_str() );
 
 		if( abspath.DoesPathExist() )
 		{
@@ -212,12 +225,27 @@ ScriptComponentInst::ScriptComponentInst( const ScriptComponentData& data, ent::
 			//printf( "%s\n", scripttext);
 			free(scripttext);
 
-			int ret = luaL_loadstring(asluasys->mLuaState,mScriptText.c_str());
-			mScriptRef = luaL_ref(asluasys->mLuaState, LUA_REGISTRYINDEX);
-			//printf( "mScriptRef<%d>\n", mScriptRef );
-			lua_pop(asluasys->mLuaState, 1); // dont call, just reference
+			auto luast = asluasys->mLuaState;
 
-			LuaProtectedCallByRef( asluasys->mLuaState, mScriptRef );
+		    auto wrap_table =luabind::newtable(luast);
+		    wrap_table["x"]=0.0;
+		    wrap_table["y"]=6.0;
+
+		    //lua_getfenv(luast,-1);
+
+
+			luabind::globals(luast)["arch"] = wrap_table;
+			//wrap_table.push(luast);
+
+
+    		//assert(lua_setfenv(luast, -1) != 0);
+
+			int ret = luaL_loadstring(luast,mScriptText.c_str());
+			mScriptRef = luaL_ref(luast, LUA_REGISTRYINDEX);
+			//printf( "mScriptRef<%d>\n", mScriptRef );
+			//lua_pop(asluasys->mLuaState, 1); // dont call, just reference
+
+			LuaProtectedCallByRef( luast, mScriptRef );
 		}
 
 		/////////////////////////
@@ -244,7 +272,7 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 		auto ent = this->GetEntity();
 		auto name = ent->GetEntData().GetName().c_str();
 
-		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+		//printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
 
 		luabind::object o( asluasys->mLuaState, ent );
 
@@ -278,13 +306,32 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 	{
 		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
 		OrkAssert(asluasys);
+		auto L = asluasys->mLuaState;
 
 		auto ent = this->GetEntity();
 		auto name = ent->GetEntData().GetName().c_str();
 
-		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+		printf( "Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
 
-		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptRef,"OnEntityStart",ent);
+		//DoString( L, "printf(\"oeu: %s\",inspect(OnEntityUpdate))");
+		luabind::object osu_fn = luabind::globals(L)["OnEntityUpdate"];
+		assert(osu_fn.is_valid());
+		luabind::object osu_arg(L,ent);
+		auto wrap_table =luabind::newtable(L);
+	    wrap_table["fn"]=osu_fn;
+	    wrap_table["ent"]=osu_arg;
+
+		//luabind::call_function<void>(osu_fn,osu_arg);
+
+		//assert(false);
+
+		//fxstring<256> autoreg;
+		//autoreg.format("entity_exec_table[e:name()]= function() OnScriptUpdate(e) end")
+		//luaL_dostring(lua, "return 'derp'");
+		luabind::object exectab = luabind::globals(L)["entity_exec_table"];// = exec_table;
+		exectab[name]=wrap_table;
+
+		//LuaProtectedCallByNameT<Entity*>(L,mScriptRef,"OnEntityStart",ent);
 
 		/////////////////////////
 		// TODO: link this script component into lua's execution list somehow
@@ -303,11 +350,15 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 	{
 		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
 		OrkAssert(asluasys);
+		auto L = asluasys->mLuaState;
 
 		auto ent = this->GetEntity();
 		auto name = ent->GetEntData().GetName().c_str();
 
-		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+		//printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+
+		luabind::object exectab = luabind::globals(L)["entity_exec_table"];// = exec_table;
+		exectab[name]=luabind::nil;
 
 		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptRef,"OnEntityStop",ent);
 
@@ -323,6 +374,7 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 
 void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 {
+	//printf( "NOP\n");
 	// NOP (scriptmanager will execute)
 }
 
@@ -414,7 +466,7 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 
 		mScriptRef = luaL_ref(asluasys->mLuaState, LUA_REGISTRYINDEX);
 		//printf( "mScriptRef<%d>\n", mScriptRef );
-		lua_pop(asluasys->mLuaState, 1); // dont call, just reference
+		//lua_pop(asluasys->mLuaState, 1); // dont call, just reference
 
 
 		LuaProtectedCallByRef( asluasys->mLuaState, mScriptRef );
@@ -504,7 +556,30 @@ luabind::object GetEntities(lua_State* L,luabind::object o)
 	}
     return enttab;
 }
+luabind::object SpawnEntity(lua_State* L,luabind::object scene, luabind::object archname, luabind::object entname)
+{
+	auto psi = object_cast<SceneInst*>(scene);
 
+	const auto& scenedata = psi->GetData();
+	auto archnamestr = object_cast<std::string>(archname);
+	auto entnamestr = object_cast<std::string>(entname);
+	auto archso = scenedata.FindSceneObjectByName(AddPooledString(archnamestr.c_str()));
+
+	if( const Archetype* as_arch = rtti::autocast(archso) )
+	{
+		printf( "SPAWN<%s:%p> ename<%s>\n", archnamestr.c_str(), archso, entnamestr.c_str() );
+		EntData* spawner = new EntData;
+		spawner->SetName(AddPooledString(entnamestr.c_str()));
+		spawner->SetArchetype(as_arch);
+		auto newent = psi->SpawnDynamicEntity(spawner);
+		return luabind::object(L,newent);
+	}
+	else
+	{
+		printf( "SPAWN<%s:%p>\n", archnamestr.c_str(), archso );
+		return luabind::object(L,"");
+	}
+}
 
 luabind::object GetEntArchetype( lua_State* L, Entity* pent )
 {
@@ -645,7 +720,8 @@ LuaSystem::LuaSystem(SceneInst*psi)
     	def("getscene",&GetScene),
 
 		class_<SceneInst,SceneInst*>("scene")
-			.def("entities", &GetEntities ),
+			.def("entities", &GetEntities )
+			.def("spawn", &SpawnEntity),
 
 		class_<Entity,Entity*>("entity")
 			.def("archetype", &GetEntArchetype )
@@ -678,6 +754,9 @@ LuaSystem::LuaSystem(SceneInst*psi)
 	luabind::object globtab = luabind::newtable(mLuaState);
 	globtab[1] = this;
 	globals(mLuaState)["luascene"] = globtab;
+	/////////////////////////////////////
+	auto exec_table =luabind::newtable(mLuaState);
+	luabind::globals(mLuaState)["entity_exec_table"] = exec_table;
 	/////////////////////////////////////
 	printf( "create LuaState<%p> psi<%p>\n", mLuaState, psi );
 
