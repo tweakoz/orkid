@@ -160,7 +160,10 @@ SceneObject* SceneData::FindSceneObjectByName(const PoolString& name)
 ///////////////////////////////////////////////////////////////////////////////
 const SceneObject* SceneData::FindSceneObjectByName(const PoolString& name) const
 {	orkmap<PoolString, SceneObject*>::const_iterator it = mSceneObjects.find( name );
-	return (it==mSceneObjects.end()) ? 0 : it->second;
+	const SceneObject* o = (it==mSceneObjects.end()) ? 0 : it->second;
+
+	//printf( "FindSceneObject<%s:%p>\n", name.c_str(), o );
+	return o;
 }
 
 
@@ -194,6 +197,7 @@ void SceneData::AddSceneObject(SceneObject* object)
 	}
 	object->SetName(pooled_name);
 
+	//printf( "AddSceneObject<%s:%p>\n", object->GetName().c_str(), object );
 	mSceneObjects.insert( std::make_pair( object->GetName(), object ) );
 }
 ///////////////////////////////////////////////////////////////////////////////

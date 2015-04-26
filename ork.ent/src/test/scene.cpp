@@ -9,6 +9,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
+#include <pkg/ent/scene.hpp>
 #include <unittest++/UnitTest++.h>
 #include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleCharacterArchetype.h>
@@ -17,6 +18,8 @@ using namespace ork;
 using namespace ork::ent;
 
 ///////////////////////////////////////////////////////////////////////////////
+#define ANSI_COLOR_RESET     "\x1b[30m"
+#define ANSI_COLOR_GREEN     "\x1b[32m"
 
 TEST(SceneManip1)
 {
@@ -84,6 +87,29 @@ TEST(SceneManip1)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class ScriptOnlyArchetype : public Archetype
+{
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final
+	{
+		printf( "ScriptOnlyArchetype::DoStartEntity(%p)\n", pent );
+
+	}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
+
+public:
+
+	ScriptOnlyArchetype() {}
+
+};
+
+
+//////////////////////////////////////////////////////////
+
+void ScriptOnlyArchetype::DoCompose(ork::ent::ArchComposer& composer) 
+{
+	composer.Register<ork::ent::ScriptComponentData>();
+}
+
 TEST(ScriptCompTest)
 {
 	auto opl1 = []()
@@ -91,9 +117,13 @@ TEST(ScriptCompTest)
 	    SceneData* scenedata = new SceneData;
 
 
-	    auto arch = new SimpleCharacterArchetype;
 
-	    for( int i=0; i<2; i++ )
+
+	    auto arch = new ScriptOnlyArchetype;
+	    arch->SetName("SceneObject1");
+	    scenedata->AddSceneObject(arch);
+	    static const int knument = 1;
+	    for( int i=0; i<knument; i++ )
 	    {
 	    	ork::fxstring<256> ename;
 	    	ename.format("ent%d", i );
@@ -126,16 +156,25 @@ TEST(ScriptCompTest)
 	    OrkAssert(sc!=nullptr);
 	    sc->SetPath( "src://scripts/yo.lua");
 
-		printf( "ScriptCompTest: starting up test scene\n");
+		printf( "%s", ANSI_COLOR_GREEN );
+		//printf( "%s", ANSI_COLOR_RESET );
 	    sceneinst->SetSceneInstMode(ESCENEMODE_RUN);
 
-	    for( int i=0; i<30000; i++ )
+		printf( "ScriptCompTest: starting up test scene\n");
+	    ork::Timer tmr;
+	    tmr.Start();
+	    static const int knumframes = 100;
+	    for( int i=0; i<knumframes; i++ )
 	    {
 			sceneinst->Update();
-			usleep(10);
 	    }
+	    float ftime = tmr.SecsSinceStart();
 
 		printf( "ScriptCompTest: shutting down up test scene\n");
+		printf( "FPS<%f>\n", float(knumframes)/ftime);
+		printf( "LuaEntUpdatesPS<%f>\n", float(knumframes*knument)/ftime);
+		//printf( "%s", ANSI_COLOR_RESET );
+		printf( "%s", ANSI_COLOR_GREEN );
 		sceneinst->SetSceneInstMode(ESCENEMODE_EDIT);
 	    delete sceneinst;
 	    delete scenedata;

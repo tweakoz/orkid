@@ -1337,28 +1337,28 @@ bool Path::DoesPathExist() const
 {
     struct stat file_stat;
     int ist = stat( c_str(), & file_stat );
-    printf( "stat<%s> : %d\n", c_str(), ist );
+    //printf( "stat<%s> : %d\n", c_str(), ist );
     return (ist==0);
 }
 bool Path::IsFile() const
 {
     struct stat file_stat;
     int ist = stat( c_str(), & file_stat );
-    printf( "stat<%s> : %d\n", c_str(), ist );
+    //printf( "stat<%s> : %d\n", c_str(), ist );
     return (ist==0) ? bool(S_ISREG(file_stat.st_mode)) : false;
 }
 bool Path::IsFolder() const
 {
     struct stat file_stat;
     int ist = stat( c_str(), & file_stat );
-    printf( "stat<%s> : %d\n", c_str(), ist );
+    //printf( "stat<%s> : %d\n", c_str(), ist );
     return (ist==0) ? bool(S_ISREG(file_stat.st_mode)) : false;
 }
 bool Path::IsSymLink() const
 {
     struct stat file_stat;
     int ist = stat( c_str(), & file_stat );
-    printf( "stat<%s> : %d\n", c_str(), ist );
+    //printf( "stat<%s> : %d\n", c_str(), ist );
     return (ist==0) ? bool(S_ISREG(file_stat.st_mode)) : false;
 }
 

@@ -27,6 +27,12 @@ function OnSceneStart()
 	printf("OnSceneStart()")
 	--a = ork.vec3(0,1,2)
 	--print("%s",a)
+	for i=1, 100 do
+		ename = "dynaent"..i
+		s:spawn("SceneObject1",ename)
+		--printf( "i<%d>", i )
+	end
+
 end
 
 -------------------------------------
@@ -45,12 +51,12 @@ end
 
 function OnSceneUpdate()
 
-	printf( "///////////////////////////")
-	printf( "OnSceneUpdate")
-	printf( "///////////////////////////")
+	--printf( "///////////////////////////")
+	--printf( "OnSceneUpdate")
+	--printf( "///////////////////////////")
 
-	for n,e in pairs(enttab) do
-		--yo.OnScriptUpdate(e)
+	for n,exec_item in pairs(entity_exec_table) do
+		exec_item.fn(exec_item.ent)
 	end
 
  end

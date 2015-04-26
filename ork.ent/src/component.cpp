@@ -123,12 +123,13 @@ ConstString EditorPropMapData::GetProperty(const ConstString &key) const
 	return rval;
 }
 
-ComponentInst::ComponentInst( const ComponentData* data, Entity *entity )
+ComponentInst::ComponentInst( const ComponentData* data, Entity* pent )
 	: mComponentData(data)
-	, mEntity(entity)
+	, mEntity(pent)
 	, mbStarted(false)
 	, mbValid(false)
 {
+	printf( "ComponentInst::ComponentInst<%p> ent<%p>\n", this, pent );
 }
 
 void ComponentInst::Link(SceneInst *psi)
