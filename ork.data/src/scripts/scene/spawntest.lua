@@ -1,5 +1,5 @@
-require("orklib")
-inspect = require("inspect")
+require("std/orklib")
+inspect = require("std/inspect")
 local s = ork.getscene();
 
 printf("Hello world, from %s yo.",_VERSION)
@@ -9,7 +9,7 @@ printf("Hello world, from %s yo.",_VERSION)
 
 function OnSceneCompose()
 	printf("OnSceneCompose()")
-	for i=1, 2000 do
+	for i=1, 1000 do
 		ename = "dynaent"..i
 		s:spawn("SceneObject1",ename)
 		--printf( "i<%d>", i )

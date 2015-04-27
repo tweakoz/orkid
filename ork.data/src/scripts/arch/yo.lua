@@ -1,5 +1,5 @@
-require("orklib")
-require("inspect")
+require("std/orklib")
+require("std/inspect")
 
 function OnEntityLink(e)
 	--printf("OEL")

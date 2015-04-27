@@ -1,5 +1,5 @@
 require("string")
-require("ansicolors")
+require("std/ansicolors")
 
 print(ansicolors.reset)
 
