@@ -131,6 +131,27 @@ void Outliner2Model::UpdateModel()
 
 		mLastSelection = -1;
 
+		auto additem = [&](const char* name, ork::Object* obj, int indent)
+		{
+			Outliner2Item  o2i;
+
+			o2i.mName = name;
+			o2i.mObject = obj;
+			o2i.mIndent = indent;
+
+			bool is_sel = mSelected.find((ork::Object*)obj)!=mSelected.end();
+
+			if( is_sel )
+				mLastSelection = index;
+
+			o2i.mSelected = is_sel;
+			mItems.push_back(o2i);
+			index++;
+
+		};
+
+		additem( "SceneGlobal", scene_data, 0 );
+
 		for( const auto& item : objs )
 		{
 			const PoolString& name = item.first;
@@ -150,19 +171,7 @@ void Outliner2Model::UpdateModel()
 				if( as_ent )
 					decnam.format("(e) %s", item.first.c_str() );
 
-				Outliner2Item  o2i;
-
-				o2i.mName = decnam.c_str();
-				o2i.mObject = pobj;
-
-				bool is_sel = mSelected.find((ork::Object*)pobj)!=mSelected.end();
-
-				if( is_sel )
-					mLastSelection = index;
-
-				o2i.mSelected = is_sel;
-				mItems.push_back(o2i);
-				index++;
+				additem( decnam.c_str(), pobj, 0 );
 
 				if( as_arch && mShowComps )
 				{
@@ -170,21 +179,10 @@ void Outliner2Model::UpdateModel()
 					for( const auto& citem : comps )
 					{
 						auto c = citem.second;
-						is_sel = mSelected.find((ork::Object*)c)!=mSelected.end();
-						if( is_sel )
-							mLastSelection = index;
-
 						auto clazz = c->GetClass();
 						auto class_name = clazz->Name().c_str();
-						
 						decnam.format("(c) %s", class_name );
-						Outliner2Item  o2ic;
-						o2ic.mName = decnam.c_str();
-						o2ic.mObject = c;
-						o2ic.mSelected = is_sel;
-						o2ic.mIndent = 1;
-						mItems.push_back(o2ic);
-						index++;
+						additem( decnam.c_str(), c, 1 );
 					}
 
 				}

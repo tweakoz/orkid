@@ -31,7 +31,7 @@ extern "C" {
 
 using namespace luabind;
 
-static const bool kUSEEXECTABUPDATE = true;
+static const bool kUSEEXECTABUPDATE = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -434,22 +434,23 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 	// Set Lua Search Path
 	///////////////////////////////////////////////
 
-	auto scrpath = file::Path("src://scripts/");
-	auto absscrpath = scrpath.ToAbsolute();
+	auto searchpath = file::Path("src://scripts/");
+	auto abssrchpath = searchpath.ToAbsolute();
 
-
-	if( absscrpath.DoesPathExist() )
+	if( abssrchpath.DoesPathExist() )
 	{
 	    fxstring<256> lua_path;
-	    lua_path.format( "%s?.lua", absscrpath.c_str() );
+	    lua_path.format( "%s?.lua", abssrchpath.c_str() );
 	    AppendPath( lua_path.c_str() );
 	}
+
 
 	///////////////////////////////////////////////
 	// find & init scene file
 	///////////////////////////////////////////////
 
-	auto path = file::Path("src://scripts/scene.lua");
+	const auto& scenedata = pinst->GetData();
+	auto path = scenedata.GetScriptPath();
 	auto abspath = path.ToAbsolute();
 
 	if( abspath.DoesPathExist() )

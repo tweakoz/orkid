@@ -34,6 +34,8 @@
 
 template class ork::orklut<const ork::object::ObjectClass *, ork::ent::SceneComponentData *>;
 
+using namespace ork::reflect;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneData,"Ent3dSceneData");
@@ -126,9 +128,13 @@ void UpdateStatus::SetState(EUpdateState est)
 void SceneData::Describe()
 {
 	orkmap<PoolString, SceneObject*> ork::ent::SceneData::* item = & SceneData::mSceneObjects;
-	reflect::RegisterMapProperty( "SceneObjects", & SceneData::mSceneObjects );
+	RegisterMapProperty( "SceneObjects", & SceneData::mSceneObjects );
 	
-	reflect::AnnotateClassForEditor< SceneData >( "editor.class", ConstString("ged.factory.outliner") );
+	RegisterProperty( "ScriptFile", & SceneData::mScriptPath );
+	AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.class", "ged.factory.filelist");
+	AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filetype", "lua");
+	AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filebase", "src://scripts/");
+	AnnotateClassForEditor<SceneData>( "editor.object.props", ConstString("ScriptFile") );
 
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -115,7 +115,7 @@
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
                                     <object type='ScriptComponentData' id='14'>
-                                        <property name='ScriptFile'>"src://scripts/yo.lua"</property>
+                                        <property name='ScriptFile'>"src://scripts/arch/yo.lua"</property>
                                     </object>
                                 </reference>
                             </item>
@@ -147,5 +147,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>"src://scripts/scene/spawntest.lua"</property>
     </object>
 </reference>

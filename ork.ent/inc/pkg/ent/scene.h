@@ -19,6 +19,7 @@
 #include <ork/kernel/any.h>
 #include <ork/kernel/future.hpp>
 #include <ork/math/cmatrix4.h>
+#include <ork/file/path.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -149,6 +150,8 @@ public:
 
 	//////////////////////////////////////////////////////////
 
+	file::Path GetScriptPath() const { return mScriptPath; }
+
 private:
 
 	orkmap<PoolString, SceneObject*>		mSceneObjects;
@@ -157,6 +160,7 @@ private:
 	void OnSceneDataMode(ESceneDataMode emode);
 	void PrepareForEdit();
 	virtual bool PostDeserialize(reflect::IDeserializer &);
+	file::Path  							mScriptPath;
 
 };
 
