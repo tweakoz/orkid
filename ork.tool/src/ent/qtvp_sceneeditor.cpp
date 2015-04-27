@@ -306,7 +306,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 	the_renderer.GetFrameData().PushRenderTarget( & rt );
 	{
 		/////////////////////////////////
-		if( bFX )
+		if( bFX && pCMCI )
 		/////////////////////////////////
 		{	float frame_rate = pCMCI ? pCMCI->GetCurrentFrameRate() : 0.0f;
 			bool externally_fixed_rate = (frame_rate!=0.0f);
