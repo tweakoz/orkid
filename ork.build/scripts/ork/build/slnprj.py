@@ -35,8 +35,11 @@ __all__ =	[
 	"SetCompilerOptions", "SourceEnumerator", "Project"
 	]
 	
-optset = set(["core","lev2", "bullet273", "ent", "tool", "tuio", "tout"])
-#optset = set()
+optprj = ""
+optprj = "core lev2 bullet273 ent tool tuio tout lua luabind"
+optset = set()
+for item in string.split(optprj):
+	optset.add("ork.%s"%item)
 
 stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
 
@@ -242,8 +245,8 @@ class Project:
 		############################
 
 		if name in optset:
-			self.XCCFLG += '-Ofast '
-			self.XCXXFLG += '-Ofast '
+			self.XCCFLG += '-O2' #-Ofast '
+			self.XCXXFLG += '-O2' #'-Ofast '
 		else:
 			self.XCCFLG += '-O0 '
 			self.XCXXFLG += '-O0 '

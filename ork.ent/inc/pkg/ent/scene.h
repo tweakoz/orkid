@@ -331,6 +331,8 @@ public:
 
 	static const ork::PoolString& EventChannel();
 
+	size_t GetEntityUpdateCount() const { return mEntityUpdateCount; }
+
 private:
 
 	void DecomposeEntities();
@@ -339,6 +341,13 @@ private:
 	void UnLinkEntities();
 	void StartEntities();
 	void StopEntities();
+
+	void ComposeSceneComponents();
+	void DecomposeSceneComponents();
+	void StartSceneComponents();
+	void LinkSceneComponents();
+	void StopSceneComponents();
+	void UnLinkSceneComponents();
 
 	void EnterEditState();
 	void EnterPauseState();
@@ -365,6 +374,7 @@ protected:
 	float									mDeltaTimeAccum;
 	float									mfAvgDtAcc;
 	float									mfAvgDtCtr;
+	size_t 									mEntityUpdateCount;
 
 	CameraLut								mCameraLut;		// camera list
 	

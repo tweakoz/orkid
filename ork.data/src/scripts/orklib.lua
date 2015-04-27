@@ -24,3 +24,16 @@ end
 
 -----------------------------------------------------------
 
+function UpdateSceneEntities()
+
+	--printf( "///////////////////////////")
+	--printf( "OnSceneUpdate")
+	--printf( "///////////////////////////")
+
+	for n,exec_item in pairs(entity_exec_table) do
+		--printf( "osu ent<%s>", exec_item.ent:name())
+		--printf( "osu fn<%s>", tostring(exec_item.fn))		
+		exec_item.fn(exec_item.ent)
+	end
+
+ end
