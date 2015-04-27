@@ -395,10 +395,8 @@ bool CompositingComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
 	mpCMCI = psi->FindTypedSceneComponent<CompositingManagerComponentInst>();
 
-	ork::ent::CompositingManagerComponentInst* cmi = GetEntity()->GetSceneInst()->FindTypedSceneComponent<ent::CompositingManagerComponentInst>();
-
-	if(cmi)
-		cmi->AddCCI(this);
+	if(mpCMCI)
+		mpCMCI->AddCCI(this);
 		
 	mfTimeAccum=0.0f;
 	mfLastTime = 0.0f;
