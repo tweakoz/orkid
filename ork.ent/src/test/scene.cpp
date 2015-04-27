@@ -91,7 +91,7 @@ class ScriptOnlyArchetype : public Archetype
 {
 	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final
 	{
-		printf( "ScriptOnlyArchetype::DoStartEntity(%p)\n", pent );
+		//printf( "ScriptOnlyArchetype::DoStartEntity(%p)\n", pent );
 
 	}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
@@ -122,7 +122,7 @@ TEST(ScriptCompTest)
 	    auto arch = new ScriptOnlyArchetype;
 	    arch->SetName("SceneObject1");
 	    scenedata->AddSceneObject(arch);
-	    static const int knument = 1;
+	    static const int knument = 3;
 	    for( int i=0; i<knument; i++ )
 	    {
 	    	ork::fxstring<256> ename;
@@ -158,21 +158,23 @@ TEST(ScriptCompTest)
 
 		printf( "%s", ANSI_COLOR_GREEN );
 		//printf( "%s", ANSI_COLOR_RESET );
+		printf( "ScriptCompTest: starting up test scene\n");
 	    sceneinst->SetSceneInstMode(ESCENEMODE_RUN);
 
-		printf( "ScriptCompTest: starting up test scene\n");
 	    ork::Timer tmr;
 	    tmr.Start();
-	    static const int knumframes = 100;
+	    static const int knumframes = 2000;
 	    for( int i=0; i<knumframes; i++ )
 	    {
 			sceneinst->Update();
 	    }
 	    float ftime = tmr.SecsSinceStart();
+	    size_t numentupd = sceneinst->GetEntityUpdateCount();
 
 		printf( "ScriptCompTest: shutting down up test scene\n");
 		printf( "FPS<%f>\n", float(knumframes)/ftime);
-		printf( "LuaEntUpdatesPS<%f>\n", float(knumframes*knument)/ftime);
+		printf( "LuaEntUpdates<%zu>\n", numentupd );
+		printf( "LuaEntUpdatesPS<%f>\n", float(numentupd)/ftime );
 		//printf( "%s", ANSI_COLOR_RESET );
 		printf( "%s", ANSI_COLOR_GREEN );
 		sceneinst->SetSceneInstMode(ESCENEMODE_EDIT);

@@ -475,7 +475,7 @@ void Archetype::ComposeEntity( Entity* pent ) const
 
 void Archetype::DoComposeEntity( Entity *pent ) const
 {
-	printf( "Archetype::DoComposeEntity pent<%p>\n", pent );
+	//printf( "Archetype::DoComposeEntity pent<%p>\n", pent );
 	const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
 	for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
 	{	ent::ComponentData* pcompdata = it->second;
@@ -533,13 +533,13 @@ void Archetype::DoDeComposeEntity(Entity *pent) const
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::StartEntity(SceneInst *psi, const CMatrix4 &world, Entity *pent) const
 {
-	printf( "Archetype<%p>::StartEntity<%p>\n", this, pent );
+	//printf( "Archetype<%p>::StartEntity<%p>\n", this, pent );
 
 	StopEntity( psi, pent);
 
 	pent->GetDagNode().GetTransformNode().GetTransform().SetMatrix( world );
 
-	printf( "yo0\n" );
+	//printf( "yo0\n" );
 	if( GetClass() != ReferenceArchetype::GetClassStatic() )
 	{
 		const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
@@ -549,18 +549,18 @@ void Archetype::StartEntity(SceneInst *psi, const CMatrix4 &world, Entity *pent)
 			inst->Start(psi,world);
 		}
 	}
-	printf( "yo1\n" );
+	//printf( "yo1\n" );
 	DoStartEntity( psi, world, pent );
-	printf( "yo2\n" );
+	//printf( "yo2\n" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::StopEntity(SceneInst *psi, Entity *pent) const
 {
-	printf( "Archetype<%p>::StopEntity<%p:%s>::0\n", this, pent, pent->GetEntData().GetName().c_str() );
+	//printf( "Archetype<%p>::StopEntity<%p:%s>::0\n", this, pent, pent->GetEntData().GetName().c_str() );
 
 	if( GetClass() != ReferenceArchetype::GetClassStatic() )
 	{
-		printf( "Archetype<%p>::StopEntity<%p>::1\n", this, pent );
+		//printf( "Archetype<%p>::StopEntity<%p>::1\n", this, pent );
 
 		const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
 		for( ComponentTable::LutType::const_iterator it=lut.begin(); it!=lut.end(); it++ )
@@ -568,10 +568,10 @@ void Archetype::StopEntity(SceneInst *psi, Entity *pent) const
 			ComponentInst* inst = (*it).second;
 			inst->Stop(psi);
 		}
-		printf( "Archetype<%p>::StopEntity<%p>::2\n", this, pent );
+		//printf( "Archetype<%p>::StopEntity<%p>::2\n", this, pent );
 	}
 	DoStopEntity( psi, pent );
-	printf( "Archetype<%p>::StopEntity<%p:%s>::3\n", this, pent, pent->GetEntData().GetName().c_str() );
+	//printf( "Archetype<%p>::StopEntity<%p:%s>::3\n", this, pent, pent->GetEntData().GetName().c_str() );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::Compose(SceneComposer& scene_composer)

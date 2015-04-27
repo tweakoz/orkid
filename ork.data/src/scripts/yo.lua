@@ -10,16 +10,18 @@ function OnEntityLink(e)
 end
 
 function OnEntityStart(e)
-	printf( "Yo::%sOn,EntityStart(%s)", tostring(e))
+	--printf( "Yo::OnEntityStart()" )
+	--printf( "    ent(%s)", tostring(e))
 end
 
 function OnEntityStop(e)
 	--entity_exec_table[e:name()]=nil
-	printf( "Yo::OnEntityStop(%s)", tostring(e))
+	--printf( "Yo::OnEntityStop(%s)", tostring(e))
 end
 
 function OnEntityUpdate(e)
-	--printf( "	yo::OnScriptUpdate(%s)", e:name() )
+	--printf( "	yo::OnScriptUpdate()" )
+	--printf( "	e:name(%s)", e:name() )
 
 	local a = e:archetype()
 	local p = e.pos

@@ -129,7 +129,7 @@ ComponentInst::ComponentInst( const ComponentData* data, Entity* pent )
 	, mbStarted(false)
 	, mbValid(false)
 {
-	printf( "ComponentInst::ComponentInst<%p> ent<%p>\n", this, pent );
+	//printf( "ComponentInst::ComponentInst<%p> ent<%p>\n", this, pent );
 }
 
 void ComponentInst::Link(SceneInst *psi)
