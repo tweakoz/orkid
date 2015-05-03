@@ -7,9 +7,9 @@ function OnEntityLink(e)
 end
 
 function OnEntityStart(e)
-	--printf( "Yo::OnEntityStart()" )
+	--printf( "XY::OnEntityStart()" )
 	e.rx = 0
-	e.rz = 0
+	e.ry = 0
 	e.t = 0.0
 	e.rt = math.random(100)*0.01
 	e.i = 0
@@ -23,19 +23,19 @@ end
 function OnEntityUpdate(e,dt)
 	local p = e.pos
 	p.x = p.x+e.rx
-	p.z = p.z+e.rz
+	p.y = p.y+e.ry
 	e.pos = p
 	e.t = e.t + dt
 	if e.t>e.rt then
 		local is_odd = (e.i%2)==1
 		if is_odd then
 			e.rx = (math.random(100)-50)*0.01
-			e.rz = (math.random(100)-50)*0.01
+			e.ry = (math.random(100)-50)*0.01
 		else
 			local mx = 0.9+(math.random(100)*0.001)
-			local mz = 0.9+(math.random(100)*0.001)
+			local my = 0.9+(math.random(100)*0.001)
 			e.rx = -p.x*0.01*mx
-			e.rz = -p.z*0.01*mz
+			e.ry = -p.y*0.01*my
 		end
 		e.t = 0.0
 		e.i = e.i+1

@@ -146,7 +146,7 @@ luabind::object SpawnEntity(lua_State* L,luabind::object scene, luabind::object 
 	else
 	{
 		assert(false);
-		printf( "SPAWN<%s:%p>\n", archnamestr.c_str(), archso );
+		//printf( "SPAWN<%s:%p>\n", archnamestr.c_str(), archso );
 		return luabind::object(L,"");
 	}
 }

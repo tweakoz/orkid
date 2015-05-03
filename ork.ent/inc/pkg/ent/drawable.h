@@ -99,7 +99,7 @@ struct Layer
 
 struct DrawableBufLayer
 {
-	static const int kmaxitems = 1024;
+	static const int kmaxitems = 4096;
 	DrawableBufItem				mDrawBufItems[kmaxitems];
 	int							miItemIndex;
 	int							miBufferIndex;

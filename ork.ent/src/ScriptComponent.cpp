@@ -13,6 +13,7 @@
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/ScriptComponent.h>
 #include <ork/kernel/any.h>
+#include <ork/util/md5.h>
 
 #include <sstream>
 #include <iostream>
@@ -64,6 +65,11 @@ void ScriptComponentData::DoRegisterWithScene( ork::ent::SceneComposer& sc )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+ScriptObject::ScriptObject()
+	: mScriptRef(LUA_NOREF)
+{
+
+}
 void ScriptComponentInst::Describe()
 {
 }
@@ -71,64 +77,41 @@ void ScriptComponentInst::Describe()
 ScriptComponentInst::ScriptComponentInst( const ScriptComponentData& data, ent::Entity* pent )
 	: ork::ent::ComponentInst( & data, pent )
 	, mCD( data )
-	, mScriptRef(LUA_NOREF)
+	, mScriptObject(nullptr)
 {
-	auto path = mCD.GetPath();
-	auto abspath = path.ToAbsolute();
-
-	if( abspath.DoesPathExist() )
-	{
-		mPrefix = path.GetName().c_str();
-
-		CFile scriptfile(abspath,EFM_READ);
-		size_t filesize = 0;
-		scriptfile.GetLength(filesize);
-		char* scripttext = (char*) malloc(filesize+1);
-		scriptfile.Read(scripttext,filesize);
-		scripttext[filesize] = 0;
-		mScriptText = scripttext;
-		//printf( "%s\n", scripttext);
-		free(scripttext);
-	}
-
 }
 
 bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
+	auto path = mCD.GetPath();
 
 	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
 
-	if( scm && (mScriptText.length()>0) )
+	if( nullptr == scm )
+		return true;
+
+	auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+	OrkAssert(asluasys);
+	auto luast = asluasys->mLuaState;
+
+	if( scm )
 	{
-		auto ent = this->GetEntity();
-		auto name = ent->GetEntData().GetName().c_str();
+		mScriptObject = scm->FlyweightScriptObject( path );
 
-		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
-		OrkAssert(asluasys);
-		auto luast = asluasys->mLuaState;
+		if( mScriptObject )
+		{
+			auto ent = this->GetEntity();
 
-		int ret = luaL_loadstring(luast,mScriptText.c_str());
-		mScriptRef = luaL_ref(luast, LUA_REGISTRYINDEX);
+			//////////////////////////////////////////
 
-		assert(mScriptRef!=LUA_NOREF);
 
-		LuaProtectedCallByRef( luast, mScriptRef );
 
-	    auto wrap_table =luabind::newtable(luast);
-	    wrap_table["x"]=0.0;
-	    wrap_table["y"]=6.0;
-		luabind::globals(luast)["arch"] = wrap_table;
-		//wrap_table.push(luast);
+			luabind::object o( luast, ent );
+			LuaProtectedCallByName(luast,mScriptObject->mScriptRef,mScriptObject->mOnEntLink.c_str(),o);
 
-	    //lua_getfenv(luast,-1);
-		//assert(lua_setfenv(luast, -1) != 0);
-
-		printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
-
-		luabind::object o( luast, ent );
-		LuaProtectedCallByName(luast,mScriptRef,"OnEntityLink",o);
-
-		printf( "done LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+			//auto name = ent->GetEntData().GetName().c_str();
+			//printf( "done LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+		}
 	}
 	return true;
 }
@@ -147,7 +130,7 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 {
 	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
 
-	if( scm )
+	if( scm && mScriptObject )
 	{
 		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
 		OrkAssert(asluasys);
@@ -162,7 +145,7 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 		
 		if( kUSEEXECTABUPDATE )
 		{
-			luabind::object osu_fn = luabind::globals(L)["OnEntityUpdate"];
+			luabind::object osu_fn = luabind::globals(L)[mScriptObject->mOnEntUpdate.c_str()];
 			assert(osu_fn.is_valid());
 			assert(luabind::type(osu_fn)!=LUA_TNIL); // make sure fn was found!
 			luabind::object osu_ent(L,ent);
@@ -180,7 +163,7 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 			luabind::object exectab = luabind::globals(L)["entity_exec_table"];// = exec_table;
 			exectab[name]=wrap_table;
 
-			LuaProtectedCallByName(L,mScriptRef,"OnEntityStart",osu_ent);
+			LuaProtectedCallByName(L,mScriptObject->mScriptRef,mScriptObject->mOnEntStart.c_str(),osu_ent);
 
 		}
 		else
@@ -205,7 +188,7 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 {
 	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
 
-	if( scm )
+	if( scm && mScriptObject )
 	{
 		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
 		OrkAssert(asluasys);
@@ -219,7 +202,7 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 		luabind::object exectab = luabind::globals(L)["entity_exec_table"];// = exec_table;
 		exectab[name]=luabind::nil;
 
-		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptRef,"OnEntityStop",ent);
+		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptObject->mScriptRef,mScriptObject->mOnEntStop.c_str(),ent);
 
 	}
 }
@@ -232,14 +215,14 @@ void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 	{
 		auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
 
-		if( scm )
+		if( scm && mScriptObject )
 		{
 			auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
 			OrkAssert(asluasys);
 			auto L = asluasys->mLuaState;
 			auto ent = this->GetEntity();
 		
-				//DoString( L, "printf(\"oeu: %s\",inspect(OnEntityUpdate))");
+			//DoString( L, "printf(\"oeu: %s\",inspect(OnEntityUpdate))");
 			//luabind::object osu_fn = luabind::globals(L)["OnEntityUpdate"];
 			//assert(osu_fn.is_valid());
 			//assert(luabind::type(osu_fn)!=LUA_TNIL); // make sure fn was found!
@@ -282,6 +265,7 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 	: ork::ent::SceneComponentInst( &data, pinst )
 	, mScriptRef(LUA_NOREF)
 {
+	printf( "SCMI<%p>\n", this );
 	auto luasys = new LuaSystem(pinst);
 	mLuaManager.Set<LuaSystem*>(luasys);
 
@@ -359,6 +343,19 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 
 ScriptManagerComponentInst::~ScriptManagerComponentInst()
 {
+	//////////////////////////////
+	// delete flyweighted scriptobjects
+	//////////////////////////////
+
+	for( auto item : mScriptObjects )
+	{
+		auto so = item.second;
+		delete so;
+	}
+
+	//////////////////////////////
+	// delete lua context
+	//////////////////////////////
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	delete asluasys;
@@ -410,6 +407,102 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 		LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "UpdateSceneEntities",o);
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// FlyweightScriptObject - load every script file only once
+//  share across different entity instances
+///////////////////////////////////////////////////////////////////////////////
+
+ScriptObject* ScriptManagerComponentInst::FlyweightScriptObject( const ork::file::Path& pth )
+{
+	auto abspath = pth.ToAbsolute();
+	auto asluasys = GetLuaManager().Get<LuaSystem*>();
+	OrkAssert(asluasys);
+	auto luast = asluasys->mLuaState;
+
+	ScriptObject* rval = nullptr;
+
+	auto it = mScriptObjects.find(pth);
+	if( it == mScriptObjects.end() )
+	{
+		if( abspath.DoesPathExist() )
+		{
+			rval = new ScriptObject;
+
+			//////////////////////////////////////////
+			// load script text
+			//////////////////////////////////////////
+
+			CFile scriptfile(abspath,EFM_READ);
+			size_t filesize = 0;
+			scriptfile.GetLength(filesize);
+			char* scripttext = (char*) malloc(filesize+1);
+			scriptfile.Read(scripttext,filesize);
+			scripttext[filesize] = 0;
+			rval->mScriptText = scripttext;
+			//printf( "%s\n", scripttext);
+			free(scripttext);
+
+			//////////////////////////////////////////
+			// prefix global method names to scope them
+			//////////////////////////////////////////
+
+			int script_index = mScriptObjects.size();
+			script_funcname_t postfix;
+			postfix.format("_%04x", script_index);
+
+			rval->mOnEntLink.format("OnEntityLink%s",postfix.c_str());
+			rval->mOnEntStart.format("OnEntityStart%s",postfix.c_str());
+			rval->mOnEntStop.format("OnEntityStop%s",postfix.c_str());
+			rval->mOnEntUpdate.format("OnEntityUpdate%s",postfix.c_str());
+
+			auto repl = [&](script_funcname_t nam)
+			{
+				auto repn = nam+postfix;
+				rval->mScriptText.replace_in_place(nam.c_str(),repn.c_str());
+			};
+			repl("OnEntityLink");
+			repl("OnEntityStart");
+			repl("OnEntityStop");
+			repl("OnEntityUpdate");
+
+			//printf( "\n%s\n", rval->mScriptText.c_str() );
+
+			//////////////////////////////////////////
+			// load chunk into lua and reference it
+			//////////////////////////////////////////
+
+			int ret = luaL_loadstring(luast,rval->mScriptText.c_str());
+			rval->mScriptRef = luaL_ref(luast, LUA_REGISTRYINDEX);
+
+			assert(rval->mScriptRef!=LUA_NOREF);
+
+			LuaProtectedCallByRef( luast, rval->mScriptRef );
+
+		    //lua_getfenv(luast,-1);
+			//assert(lua_setfenv(luast, -1) != 0);
+
+			printf( "Script<%s> Loaded\n", abspath.c_str() );
+
+			//////////////////////////////////////////
+			// flyweight it
+			//////////////////////////////////////////
+
+			mScriptObjects[pth] = rval;
+
+		}
+
+
+	}
+	else
+	{
+		rval = it->second;
+
+	}
+
+	return rval;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
