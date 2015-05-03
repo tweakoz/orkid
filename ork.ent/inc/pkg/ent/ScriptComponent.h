@@ -34,6 +34,23 @@ private:
 	file::Path mScriptPath;
 };
 
+
+typedef ork::FixedString<65536> script_text_t;
+typedef ork::FixedString<256> script_funcname_t;
+
+struct ScriptObject
+{
+	ScriptObject();
+
+	script_text_t mScriptText;
+	std::string mMD5Digest;
+	script_funcname_t mOnEntLink;
+	script_funcname_t mOnEntStart;
+	script_funcname_t mOnEntStop;
+	script_funcname_t mOnEntUpdate;
+	int mScriptRef;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ScriptComponentInst : public ent::ComponentInst
@@ -51,8 +68,7 @@ private:
 	void DoStop(SceneInst *psi) final;
 	const ScriptComponentData&		mCD;
 	std::string mScriptText;
-	std::string mPrefix;
-	int mScriptRef;
+	ScriptObject* mScriptObject;
 
 	any<64> mLuaData;
 };
@@ -86,6 +102,8 @@ public:
 
 	anyp GetLuaManager() { return mLuaManager; }
 
+	ScriptObject* FlyweightScriptObject( const ork::file::Path& key );
+
 private:
 
 	bool DoLink(SceneInst *psi) final;
@@ -96,6 +114,7 @@ private:
 
 	anyp mLuaManager;
 	std::string mScriptText;
+	std::map<ork::file::Path,ScriptObject*> mScriptObjects;
 	int mScriptRef;
 };
 

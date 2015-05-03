@@ -898,7 +898,7 @@ Entity* SceneInst::SpawnDynamicEntity( const ent::EntData* spawn_rec )
 	arch->ComposeEntity(newent);
 	arch->LinkEntity(this,newent);
 	EntityActivationQueueItem qi( CMatrix4::Identity, newent );
-	//this->QueueActivateEntity(qi);
+	this->QueueActivateEntity(qi);
 	mEntities[spawn_rec->GetName()]=newent;
 	return newent;
 }

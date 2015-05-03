@@ -2,91 +2,63 @@
 <reference category='ObjectClass'>
     <object type='Ent3dSceneData' id='0'>
         <property name='SceneObjects'>
-            <item key='EdCam'>
+            <item key='/arch/edcam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='1'>
-                        <property name='Name'>"EdCam"</property>
-                        <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='2'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
-                            </object>
+                    <object type='EditorCamArchetype' id='1'>
+                        <property name='Name'>"/arch/edcam"</property>
+                        <property name='Components'>
+                            <item key='camera'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorCamControllerData' id='2'>
+                                        <property name='Camera'>
+                                            <object type='CCamera_persp' id='3'>
+                                                <property name='Center'>0.424011 0.30855 0.491973</property>
+                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Loc'>19.965</property>
+                                                <property name='QuatC'>-0.0135455 -0.994765 0.0869265 0.0520045</property>
+                                                <property name='Aperature'>40</property>
+                                                <property name='MaxFar'>10000</property>
+                                                <property name='MinNear'>0.1</property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
                         </property>
-                        <property name='Parent'>"scene"</property>
-                        <property name='Archetype'>
-                            <reference category='SceneObjectClass'>
-                                <object type='EditorCamArchetype' id='3'>
-                                    <property name='Name'>"SceneObject2"</property>
-                                    <property name='Components'>
-                                        <item key='camera'>
-                                            <reference category='ComponentDataClass'>
-                                                <object type='EditorCamControllerData' id='4'>
-                                                    <property name='Camera'>
-                                                        <object type='CCamera_persp' id='5'>
-                                                            <property name='Center'>0 0 0</property>
-                                                            <property name='Focus'>0 0 0</property>
-                                                            <property name='Loc'>2.10847</property>
-                                                            <property name='QuatC'>0.473832 -0.586411 -0.58861 -0.291791</property>
-                                                            <property name='Aperature'>40</property>
-                                                            <property name='MaxFar'>10000</property>
-                                                            <property name='MinNear'>0.1</property>
-                                                        </object>
-                                                    </property>
-                                                </object>
-                                            </reference>
-                                        </item>
-                                    </property>
-                                </object>
-                            </reference>
-                        </property>
-                        <property name='UserProperties'></property>
                     </object>
                 </reference>
             </item>
-            <item key='PerfAnalyzer'>
+            <item key='/arch/perfanal'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='6'>
-                        <property name='Name'>"PerfAnalyzer"</property>
-                        <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='7'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
-                            </object>
+                    <object type='PerformanceAnalyzerArchetype' id='4'>
+                        <property name='Name'>"/arch/perfanal"</property>
+                        <property name='Components'>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='PerfAnalyzerControllerData' id='5'>
+                                        <property name='EnableDisplay'>true</property>
+                                    </object>
+                                </reference>
+                            </item>
                         </property>
-                        <property name='Parent'>"scene"</property>
-                        <property name='Archetype'>
-                            <reference category='SceneObjectClass'>
-                                <object type='PerformanceAnalyzerArchetype' id='8'>
-                                    <property name='Name'>"SceneObject3"</property>
-                                    <property name='Components'>
-                                        <item key='control'>
-                                            <reference category='ComponentDataClass'>
-                                                <object type='PerfAnalyzerControllerData' id='9'>
-                                                    <property name='EnableDisplay'>true</property>
-                                                </object>
-                                            </reference>
-                                        </item>
-                                    </property>
-                                </object>
-                            </reference>
-                        </property>
-                        <property name='UserProperties'></property>
                     </object>
                 </reference>
             </item>
-            <item key='SceneObject1'>
+            <item key='/arch/xy'>
                 <reference category='SceneObjectClass'>
-                    <object type='SimpleCharacterArchetype' id='10'>
-                        <property name='Name'>"SceneObject1"</property>
+                    <object type='SimpleCharacterArchetype' id='6'>
+                        <property name='Name'>"/arch/xy"</property>
                         <property name='Components'>
                             <item key=''>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorPropMapData' id='11'>
+                                    <object type='EditorPropMapData' id='7'>
                                         <property name='Properties'></property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleAnimatableData' id='12'>
+                                    <object type='SimpleAnimatableData' id='8'>
                                         <property name='AnimMaskMap'></property>
                                         <property name='AnimSeqTableMap'></property>
                                         <property name='AnimationMap'></property>
@@ -95,33 +67,33 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='13'>
+                                    <object type='ModelComponentData' id='9'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
                                         <property name='Model'>
                                             <reference category='AssetClass'>
-                                                "xgmodel" "data://environ/objects/misc/monkey"
+                                                "xgmodel" "data://environ/objects/misc/torus"
                                             </reference>
                                         </property>
                                         <property name='Offset'>0 0 0</property>
-                                        <property name='Rotate'>0 0 0</property>
-                                        <property name='Scale'>1</property>
+                                        <property name='Rotate'>0 0 1</property>
+                                        <property name='Scale'>0.3</property>
                                         <property name='ShowBoundingSphere'>false</property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='14'>
-                                        <property name='ScriptFile'>"src://scripts/arch/yo.lua"</property>
+                                    <object type='ScriptComponentData' id='10'>
+                                        <property name='ScriptFile'>"src://scripts/arch/randposXY.lua"</property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='15'>
+                                    <object type='SimpleCharControllerData' id='11'>
                                     </object>
                                 </reference>
                             </item>
@@ -129,19 +101,161 @@
                     </object>
                 </reference>
             </item>
-            <item key='SceneObject2'><backreference id='3'/></item>
-            <item key='SceneObject3'><backreference id='8'/></item>
-            <item key='ScriptEnt'>
+            <item key='/arch/xz'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='16'>
-                        <property name='Name'>"ScriptEnt"</property>
+                    <object type='SimpleCharacterArchetype' id='12'>
+                        <property name='Name'>"/arch/xz"</property>
+                        <property name='Components'>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorPropMapData' id='13'>
+                                        <property name='Properties'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='animate'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleAnimatableData' id='14'>
+                                        <property name='AnimMaskMap'></property>
+                                        <property name='AnimSeqTableMap'></property>
+                                        <property name='AnimationMap'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='15'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='LayerFxMap'></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://environ/objects/misc/torus"
+                                            </reference>
+                                        </property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>0.5</property>
+                                        <property name='ShowBoundingSphere'>false</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ScriptComponentData' id='16'>
+                                        <property name='ScriptFile'>"src://scripts/arch/randposXZ.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='17'>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/arch/yz'>
+                <reference category='SceneObjectClass'>
+                    <object type='SimpleCharacterArchetype' id='18'>
+                        <property name='Name'>"/arch/yz"</property>
+                        <property name='Components'>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorPropMapData' id='19'>
+                                        <property name='Properties'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='animate'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleAnimatableData' id='20'>
+                                        <property name='AnimMaskMap'></property>
+                                        <property name='AnimSeqTableMap'></property>
+                                        <property name='AnimationMap'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='21'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='LayerFxMap'></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://environ/objects/misc/sph1"
+                                            </reference>
+                                        </property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>0.3</property>
+                                        <property name='ShowBoundingSphere'>false</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ScriptComponentData' id='22'>
+                                        <property name='ScriptFile'>"src://scripts/arch/randposYZ.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='23'>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='EdCam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='24'>
+                        <property name='Name'>"EdCam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='17'>
+                            <object type='Ent3dDagNode' id='25'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='10'/></property>
+                        <property name='Archetype'><backreference id='1'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='PerfAnalyzer'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='26'>
+                        <property name='Name'>"PerfAnalyzer"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='27'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='4'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='ScriptEnt'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='28'>
+                        <property name='Name'>"ScriptEnt"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='29'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='6'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
