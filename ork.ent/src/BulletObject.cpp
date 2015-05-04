@@ -166,6 +166,29 @@ BulletObjectControllerInst::~BulletObjectControllerInst()
 	if( mShapeInst )
 		delete mShapeInst;
 }
+void BulletObjectControllerInst::DoStop(SceneInst* psi)
+{
+	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
+	if( bullet_world )
+	{
+		if(auto wController
+				= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true))
+		{
+			const BulletWorldControllerData& world_data = wController->GetWorldData();
+			btVector3 grav = !world_data.GetGravity();
+
+			if(btDynamicsWorld *world = wController->GetDynamicsWorld())
+			{
+				if( mRigidBody )
+				{
+					world->removeRigidBody(mRigidBody);
+					delete mRigidBody;
+					mRigidBody = nullptr;
+				}
+			}
+		}
+	}
+}
 bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 {
 	auto this_ent = GetEntity();

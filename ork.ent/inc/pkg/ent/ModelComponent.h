@@ -114,8 +114,9 @@ protected:
 	orklut<PoolString,lev2::GfxMaterialFx*>					mFxMaterials;
 	ork::lev2::XgmModelInst*								mXgmModelInst;
 
-	void DoUpdate( ork::ent::SceneInst* psi ) override; 
-	bool DoNotify(const ork::event::Event *event) override;
+	void DoUpdate( ork::ent::SceneInst* psi ) final; 
+	bool DoNotify(const ork::event::Event *event) final;
+	void DoStop( ork::ent::SceneInst* psi ) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
