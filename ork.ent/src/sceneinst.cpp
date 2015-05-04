@@ -746,7 +746,7 @@ void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item)
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::QueueDeactivateEntity(Entity *pent) 
 { 
-	//DEBUG_PRINT( "QueueDeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
+	//printf( "QueueDeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
 	mEntityDeactivateQueue.push_back(pent); 
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -791,7 +791,7 @@ void SceneInst::ActivateEntity(ent::Entity* pent)
 void SceneInst::DeActivateEntity(ent::Entity* pent)
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	//DEBUG_PRINT( "DeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
+	//printf( "DeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
 
 	EntitySet::iterator listit = mActiveEntities.find(pent);
 
@@ -839,9 +839,9 @@ void SceneInst::DeActivateEntity(ent::Entity* pent)
 	}
 }
 
-bool SceneInst::IsEntityActive(Entity* pent)
+bool SceneInst::IsEntityActive(Entity* pent) const
 {
-	EntitySet::iterator listit = mActiveEntities.find( pent );
+	auto listit = mActiveEntities.find( pent );
 	return ( listit != mActiveEntities.end() );
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -951,6 +951,7 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 	for( const auto& it : mEntities )
 	{
 		const ork::ent::Entity* pent = it.second;
+
 		const Entity::LayerMap& entlayers = pent->GetLayers();
 		//const ork::TransformNode3D& node3d = pent->GetDagNode().GetTransformNode();
 
@@ -971,7 +972,7 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 				size_t inumdv = dv->size();
 				for(size_t i = 0; i < inumdv; i++ )
 				{	Drawable* pdrw = dv->operator[](i);
-					if( pdrw )
+					if( pdrw && pdrw->IsEnabled() )
 					{
 						//printf( "queue drw<%p>\n", pdrw );
 						pdrw->QueueToLayer(xfdata,*buflayer);

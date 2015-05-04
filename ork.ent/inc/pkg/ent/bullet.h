@@ -502,9 +502,10 @@ private:
 	orkmap<PoolString,BulletObjectForceControllerInst*>	mForceControllerInstMap;
 	BulletShapeBaseInst*								mShapeInst;
 
-	void DoUpdate(ork::ent::SceneInst* inst); // virtual
-	bool DoNotify(const ork::event::Event *event) { return false; } // virtual
-	bool DoLink(SceneInst *psi);
+	void DoUpdate(ork::ent::SceneInst* inst) final; 
+	bool DoNotify(const ork::event::Event *event) final { return false; }
+	bool DoLink(SceneInst *psi) final;
+	void DoStop(SceneInst *psi) final;
 
 };
 

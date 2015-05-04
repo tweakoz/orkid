@@ -83,6 +83,20 @@ void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabin
 		}
 	}	
 }
+void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o1,luabind::object o2)
+{
+	if( script_ref!=LUA_NOREF )
+	{
+		try
+		{
+			luabind::call_function<void>(L,name,o1,o2);
+		}
+		catch(const luabind::error& caught)
+		{
+			printf( "OnUpdate returned error<%s>\n", caught.what() );
+		}
+	}	
+}
 
 bool DoString(lua_State* L, const char* str)
 {
@@ -149,6 +163,13 @@ luabind::object SpawnEntity(lua_State* L,luabind::object scene, luabind::object 
 		//printf( "SPAWN<%s:%p>\n", archnamestr.c_str(), archso );
 		return luabind::object(L,"");
 	}
+}
+void DeSpawnEntity(lua_State* L,luabind::object scene, luabind::object ento)
+{
+	auto psi = object_cast<SceneInst*>(scene);
+	auto as_ent = object_cast<Entity*>(ento);
+	if( as_ent )
+		psi->QueueDeactivateEntity(as_ent);
 }
 
 luabind::object GetEntArchetype( lua_State* L, Entity* pent )
@@ -295,7 +316,8 @@ LuaSystem::LuaSystem(SceneInst*psi)
 
 		class_<SceneInst,SceneInst*>("scene")
 			.def("entities", &GetEntities )
-			.def("spawn", &SpawnEntity),
+			.def("spawn", &SpawnEntity)
+			.def("despawn", &DeSpawnEntity),
 
 		class_<Entity,Entity*>("entity")
 			.def("archetype", &GetEntArchetype )

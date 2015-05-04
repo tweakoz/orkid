@@ -6,20 +6,9 @@ printf("Hello world, from %s yo.",_VERSION)
 --printf( "Lua Initializing scene NumEnt<%d>",s:NumEntities() )
 
 -------------------------------------
-spawned = 0
-
-at_start = 0
 
 function OnSceneCompose()
 	printf("OnSceneCompose()")
-	if at_start==1 then
-	  for i=1, 500 do
-	  	s:spawn("/arch/xy","dynaentXY"..i)
-	  	s:spawn("/arch/xz","dynaentXZ"..i)
-	  	s:spawn("/arch/yz","dynaentYZ"..i)
-		--printf( "i<%d>", i )
-	  end
-	end
 end
 
 -------------------------------------
@@ -49,26 +38,29 @@ end
 
 -------------------------------------
 
-function OnSceneUpdate()
+spawned = 0
 
-	if at_start==1 then return end
+myents = {}
 
-	if spawned < 1000 then
+function OnSceneUpdate(dt,gt)
 
-		local r = math.random(100)
+	local r = math.random(100)
 
-		if r>95 then
-			s:spawn("/arch/xz","dynaentXZ"..spawned)
-		elseif r>90 then
-			s:spawn("/arch/xy","dynaentXY"..spawned)
-		elseif r>85 then
-			s:spawn("/arch/yz","dynaentYZ"..spawned)
-		end
-
+	if r>91 then
+		--printf( "SPAWN %d", spawned)
+		local ent = s:spawn("/arch/ball","dynaentXZ"..spawned)
+		myents[gt]=ent
 		spawned = spawned+1
-
 	end
-	--printf( "///////////////////////////")
+
+	for k,v in pairs(myents) do
+		local age = gt-k;
+		if age > 6.0 then
+			s:despawn(v);
+			myents[k]=nil
+		end
+	end
+
 	--printf( "OnSceneUpdate")
 	--printf( "///////////////////////////")
 

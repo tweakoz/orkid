@@ -288,6 +288,7 @@ void CameraDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
 Drawable::Drawable()
 	: mDataA( nullptr )
 	, mDataB( nullptr )
+	, mEnabled(true)
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	//printf( "Drawable<%p>::Drawable(Entity<%p>)\n", this, pent );

@@ -299,7 +299,7 @@ public:
 	void QueueActivateEntity(const EntityActivationQueueItem& item); 
 	void QueueDeactivateEntity(Entity *entity);
 
-	bool IsEntityActive(Entity* entity);
+	bool IsEntityActive(Entity* entity) const;
 
 	Application *GetApplication() { return mApplication; }
 	const Application *GetApplication() const { return mApplication; }

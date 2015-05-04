@@ -396,10 +396,14 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 {
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
-	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUpdate");
+	auto lstate = asluasys->mLuaState;
 
 	double dt = psi->GetDeltaTime();
 	double gt = psi->GetGameTime();
+	luabind::object ldt(lstate,dt);
+	luabind::object lgt(lstate,gt);
+
+	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUpdate", ldt,lgt);
 
 	if( kUSEEXECTABUPDATE )
 	{

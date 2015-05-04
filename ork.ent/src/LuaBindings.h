@@ -50,6 +50,7 @@ struct LuaSystem
 void LuaProtectedCallByRef(lua_State* L, int script_ref);
 void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name);
 void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o);
+void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o1,luabind::object o2);
 
 template <typename T> static void LuaProtectedCallByNameT(lua_State* L, int script_ref,const char* name, const T& the_t )
 {
