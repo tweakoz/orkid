@@ -49,7 +49,7 @@ end
 
 -------------------------------------
 
-function OnSceneUpdate()
+function OnSceneUpdate(dt,gt)
 
 	if at_start==1 then return end
 
