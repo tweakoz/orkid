@@ -17,6 +17,15 @@ toz:
 	make pristine
 	tozkit_deps_build.py all
 
+oexr:
+	tozkit_deps_build.py oexr
+
+oiio:
+	tozkit_deps_build.py oiio
+
+osl:
+	tozkit_deps_build.py osl
+
 bundle:
 	./ork.build/bin/ork.bundle.make.py
 
