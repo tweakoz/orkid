@@ -64,8 +64,9 @@ if ctx.opt_exts:
 	ctx.gitget( "https://github.com/imageworks/OpenColorIO.git", "ocio", "533f85e" )
 	ctx.gitget( "https://github.com/OpenImageIO/oiio.git", "oiio", "50e1b60de27faf39ba8c5f69b7397dcb1097a850" )
 	ctx.gitget( "https://github.com/PixarAnimationStudios/OpenSubdiv.git", "osub", "23c488b4cfb7f6a74ea4bfb882b069727cfb2d65" )
-	ctx.gitget( "https://github.com/imageworks/OpenShadingLanguage.git", "osl", "6d2dc34dc3d5a552a00a7fdd6c03e6f6565e68d9" )
-	
+	ctx.gitget( "https://github.com/imageworks/OpenShadingLanguage.git", "osl", "be53b0759098916dba310a02f441d59b842145e6" )	
+	ctx.gitget( "https://github.com/llvm-mirror/llvm", "llvm", "a4cf325e41fca33c7ce7deef39a7bcf25fb38266" )
+	ctx.gitget( "https://github.com/sambler/osl-shaders") "osl-shaders", "0" )
 
 	#ctx.svnget( "http://cortex-vfx.googlecode.com/svn/trunk", "cortex_vfx", tkc.CORTEX_REV )
 	#ctx.gitget( "https://github.com/danbethell/cortex-ocean.git" , "cortex_ocean", "ff20dba" )

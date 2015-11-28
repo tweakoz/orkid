@@ -1,0 +1,24 @@
+# SPI-specific settings
+
+#OSL_NAMESPACE ?= 'OSL_Arnold'
+#OPENIMAGEIO_NAMESPACE ?= 'OpenImageIO_Arnold'
+
+MY_CMAKE_FLAGS += -DEXTRA_OSLEXEC_LIBRARIES="/usr/lib/libcurses.dylib"
+MY_CMAKE_FLAGS += -DLLVM_CUSTOM=1
+
+ifeq (${platform}, macosx)
+    MY_CMAKE_FLAGS += \
+        -DBUILD_WITH_INSTALL_RPATH=1 \
+        -DCMAKE_INSTALL_NAME_DIR="${ORKDOTBUILD_STAGE_DIR}/lib" \
+        -DCMAKE_INSTALL_PREFIX="${ORKDOTBUILD_STAGE_DIR}"
+    ifeq (${COMPILER}, clang)
+	MY_CMAKE_FLAGS += \
+	    -DCMAKE_C_COMPILER=clang \
+	    -DCMAKE_CXX_COMPILER=clang++
+    endif
+    # All our Mac laptops seem to be at least SSE 4.2
+    #USE_SIMD = sse4.2
+    USE_SIMD = sse4.1
+endif
+
+$(info MY_CMAKE_FLAGS: $(MY_CMAKE_FLAGS))

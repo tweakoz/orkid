@@ -23,6 +23,9 @@ oexr:
 oiio:
 	tozkit_deps_build.py oiio
 
+llvm:
+	tozkit_deps_build.py llvm
+
 osl:
 	tozkit_deps_build.py osl
 

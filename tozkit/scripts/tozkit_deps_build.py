@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
-import os
-import string
-import sys
+import os, sys, glob, string
 import tozkit_common as tkc
 import ork.build.utils as obu
 
@@ -19,12 +17,16 @@ STAGE_DIR=os.environ["TOZ_STAGE"]
 DL_DIR = "%s/downloads"%STAGE_DIR
 EB_DIR = "%s/ext_build"%STAGE_DIR
 
+dlctx = obu.context(DL_DIR)
+
 ############################################
 
 print "ROOT_DIR<%s>" % ROOT_DIR
 print "STAGE_DIR<%s>" % STAGE_DIR
 print "DL_DIR<%s>" % DL_DIR
 print "EB_DIR<%s>" % EB_DIR
+
+os.system( "mkdir -p %s" % EB_DIR )
 
 ###############################################
 
@@ -40,7 +42,7 @@ class build_context:
 		self.opt_hdf5 = False
 		self.opt_loki = False
 		self.opt_blitz = False
-		self.opt_ilmbase = False
+		self.opt_boost = False
 		self.opt_openexr = False
 		self.opt_alembic = False
 		self.opt_cortex_vfx = False
@@ -48,38 +50,29 @@ class build_context:
 		self.opt_gaffer = False
 		self.opt_ocio = False
 		self.opt_oiio = False
+		self.opt_llvm = False
 		self.opt_osl = False
 		self.opt_clean = False
 		self.opt_qt5 = False
+		self.opt_fixipaths = False;
 		self.nargs = len(sys.argv)
 		if 1 == self.nargs:
-			print "usage: (all | hdf5 | loki | blitz | ilmbase | openexr | alembic | cortex | ocean | oiio | ocio | osl | qt5 ) [clean]"
+			print "usage: (all | hdf5 | loki | blitz | boost | oexr | alembic | cortex | ocean | oiio | ocio | llvm | osl | qt5 | fixipaths ) [clean]"
 		else:
 			for i in range(1,self.nargs,1):
 				arg = sys.argv[i]
 				if arg=="all":
-					self.opt_qt5 = True
-					self.opt_hdf5 = True
-					self.opt_loki = True
-					self.opt_blitz = True
-					self.opt_ilmbase = True
+					self.opt_boost = True
 					self.opt_openexr = True
-					self.opt_alembic = True
-					self.opt_cortex_vfx = True
-					self.opt_cortex_ocean = True
-					#self.opt_gaffer = True
-					#self.opt_ocio = True
 					self.opt_oiio = True
-					self.opt_osl = True
+					#self.opt_osl = True
 				elif arg=="hdf5":
 					self.opt_hdf5 = True
 				elif arg=="loki":
 					self.opt_loki = True
 				elif arg=="blitz":
 					self.opt_blitz = True
-				elif arg=="ilmbase":
-					self.opt_ilmbase = True
-				elif arg=="openexr":
+				elif arg=="oexr":
 					self.opt_openexr = True
 				elif arg=="alembic":
 					self.opt_alembic = True
@@ -89,12 +82,18 @@ class build_context:
 					self.opt_cortex_ocean = True
 				elif arg=="oiio":
 					self.opt_oiio = True
+				elif arg=="llvm":
+					self.opt_llvm = True
 				elif arg=="osl":
 					self.opt_osl = True
 				elif arg=="qt5":
 					self.opt_qt5 = True
 				elif arg=="clean":
 					self.opt_clean = True
+				elif arg=="boost":
+					self.opt_boost = True
+				elif arg=="fixipaths":
+					self.opt_fixipaths = True
 		print "opt_clean<%s>" % self.opt_clean
 
 ###############################################
@@ -103,8 +102,9 @@ class build_context:
 
 ctx = build_context()
 
+chrel("/")
+
 if ctx.opt_clean:
-	chrel("/")
 	myexec("rm -rf %s"%EB_DIR)
 	myexec("mkdir -p %s"%EB_DIR)
 	myexec("rm -rf %s/bin/*"%STAGE_DIR)
@@ -112,29 +112,28 @@ if ctx.opt_clean:
 	myexec("rm -rf %s/include/*"%STAGE_DIR)
 	#####################
 	chstgrel("ext_build")
-	untar( "%s/%s.tar.gz"%(DL_DIR,tkc.DELIGHT))
-	untar( "%s/%s.tar.bz2"%(DL_DIR,tkc.LOKI))
-	untar( "%s/%s.tar.bz2"%(DL_DIR,tkc.HDF5))
-	untar( "%s/%s.tar.gz"%(DL_DIR,tkc.BLITZ))
-	untar( "%s/%s.tar.gz"%(DL_DIR,tkc.ILMBASE),True)
-	untar( "%s/%s.tar.gz"%(DL_DIR,tkc.OPENEXR),True)
-	untar( "%s/%s.tar.gz"%(DL_DIR,tkc.QT5))
+	#untar( "%s/%s.tar.gz"%(DL_DIR,tkc.DELIGHT))
+	#untar( "%s/%s.tar.bz2"%(DL_DIR,tkc.LOKI))
+	#untar( "%s/%s.tar.bz2"%(DL_DIR,tkc.HDF5))
+	#untar( "%s/%s.tar.gz"%(DL_DIR,tkc.BLITZ))
+	#untar( "%s/%s.tar.gz"%(DL_DIR,tkc.QT5))
 	#####################
-	myexec( "rm -rf stage/3dl" )
-	myexec( "mv %s/%s-%s/3delight/%s %s/3dl"%(EB_DIR,tkc.DELIGHT,tkc.DELIGHTARCH,tkc.DELIGHTARCH,STAGE_DIR))
+	#myexec( "rm -rf stage/3dl" )
+	#myexec( "mv %s/%s-%s/3delight/%s %s/3dl"%(EB_DIR,tkc.DELIGHT,tkc.DELIGHTARCH,tkc.DELIGHTARCH,STAGE_DIR))
 	#####################
 	chstgrel("/")
-	untar( "%s/shaderlink.tar.bz2"%DL_DIR)
+	#untar( "%s/shaderlink.tar.bz2"%DL_DIR)
 	#####################
-	copydirs = "alembic cortex_vfx cortex_ocean ocio oiio osl"
+	#copydirs = "alembic cortex_vfx cortex_ocean ocio oiio osub oexr osl"
+	#copydirs = "ocio oiio osub oexr osl"
 	#####################
-	for item in string.split(copydirs," "):
-		myexec( "cp -r %s/%s %s/%s" % (DL_DIR,item,EB_DIR,item))
+	#for item in string.split(copydirs," "):
+		#myexec( "cp -r %s/%s %s/%s" % (DL_DIR,item,EB_DIR,item))
 	#####################
 	# apply patches
 	#####################
-	chrel("/")
-	myexec( "cp -r patches/* %s/ext_build/"%STAGE_DIR)
+	#chrel("/")
+	#myexec( "cp -r patches/* %s/ext_build/"%STAGE_DIR)
 	#####################
 
 if ctx.opt_hdf5:
@@ -204,11 +203,9 @@ if ctx.opt_openexr:
 	myexec("./bootstrap")
 	myexec("./configure --prefix=%s"%STAGE_DIR)
 	myexec("make -j %s install" %num_cores )
-	chrel("/")
-	myexec("ln -s %s/include/OpenEXR/ImathExc.h %s/include/OpenEXR/ImathFloatExc.h"%(STAGE_DIR,STAGE_DIR))
 
-if ctx.opt_openexr:
-	chstgrel("ext_build/OpenEXR")
+	# exr
+	chstgrel("ext_build/oexr/OpenEXR")
 	myexec("./bootstrap")
 	myexec("./configure --prefix=%s"%STAGE_DIR)
 	myexec("make -j %s install" %num_cores)
@@ -256,10 +253,57 @@ if ctx.opt_ocio:
 # OpenShadingLanguage
 #####################################################
 
+if ctx.opt_llvm:
+	chstgrel("/")
+	myexec("rm -rf %s/include/llvm*" % STAGE_DIR )
+	myexec("rm -rf %s/lib/libLLVM*" % STAGE_DIR )
+	myexec("rm -rf %s/bin/ll*" % STAGE_DIR )
+	myexec("rm -rf %s/share/llvm" % STAGE_DIR )
+	CLDIR = "%s/clang+llvm-3.5.2-x86_64-apple-darwin" % DL_DIR
+	myexec("cp -rf %s/bin/* %s/bin/" % (CLDIR,STAGE_DIR))
+	myexec("cp -rf %s/lib/* %s/lib/" % (CLDIR,STAGE_DIR))
+	myexec("cp -rf %s/include/* %s/include/" % (CLDIR,STAGE_DIR))
+	myexec("cp -rf %s/share/llvm %s/share/" % (CLDIR,STAGE_DIR))
+
+#if ctx.opt_llvm:
+#	chstgrel("/")
+#	myexec("rm -rf %s/include/llvm*" % STAGE_DIR )
+#	myexec("rm -rf %s/lib/libLLVM*" % STAGE_DIR )
+#	myexec("rm -rf %s/bin/ll*" % STAGE_DIR )
+#	chstgrel("ext_build/")
+#	myexec("mkdir -p llvm")
+#	chstgrel("ext_build/llvm")
+
+#	os.environ["CMAKE_INCLUDE_PATH"]="%s/include"%STAGE_DIR
+#	os.environ["CMAKE_LIBRARY_PATH"]="%s/lib"%STAGE_DIR
+#	cmakevars =  '-DLLVM_TARGETS_TO_BUILD="X86" ' #;AArch64;ARM;Mips;NVPTX"
+#	cmakevars += '-DCMAKE_INSTALL_PREFIX="%s"'%STAGE_DIR
+#	myexec('cmake %s %s/llvm/'%(cmakevars,DL_DIR))
+#	myexec("make -j %s install" %num_cores )
+
 if ctx.opt_osl:
+	chstgrel("ext_build/")
+	myexec("rm -rf osl")
+	myexec( "cp -r %s/osl %s/osl" % (DL_DIR,EB_DIR))
 	chstgrel("ext_build/osl")
-	myexec("make -j %s" %num_cores )
-	myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
+	os.environ["CMAKE_INCLUDE_PATH"]="%s/include"%STAGE_DIR
+	os.environ["CMAKE_LIBRARY_PATH"]="%s/lib"%STAGE_DIR
+	os.environ["CMAKE_OSX_SYSROOT"]="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk"
+	os.environ["EXTRA_OSLEXEC_LIBRARIES"]="curses"
+	os.environ["OPENIMAGEIO_LIBRARY"]="%s/lib/libOpenImageIO.dylib"%STAGE_DIR
+	#os.environ["BOOST_ROOT"]=
+	os.environ["OPENIMAGEIOHOME"] = STAGE_DIR
+	os.environ["USE_CPP11"]="1"
+	os.environ["LLVM_STATIC"]="1"
+	os.environ["BUILDSTATIC"]="1"
+	os.environ["LINKSTATIC"]="1"
+	os.environ["USE_LIBCPLUSPLUS"]="1"
+	os.environ["VERBOSE"]="1"
+	os.environ["OSL_SITE"] ="%s/patches/osl/oslsite_toz"%ROOT_DIR
+	#os.environ["LLVM_DIRECTORY"] = STAGE_DIR
+	#os.environ["LLVM_INCLUDES"="%s/include/llvm/"%STAGE_DIR
+	myexec("make" )
+	#myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
 
 
 
@@ -298,21 +342,7 @@ if ctx.opt_cortex_ocean:
 	myexec("make")
 	myexec("make install")
 
-if ctx.opt_oiio:
-	chstgrel("ext_build/oiio")
-	myexec("make -j %s"%num_cores)
-	myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
 
-if ctx.opt_ocio:
-	chstgrel("/")
-	myexec("mkdir -p ocio_build")
-	chrel("ocio_build")
-	myexec("cmake -DCMAKE_INSTALL_PREFIX=/projects/tweakoz/tozkit/stage -DOIIO_PATH=%s ../imageworks-OpenColorIO-533f85e/"%STAGE_DIR)
-
-if ctx.opt_osl:
-	chstgrel("ext_build/osl")
-	myexec("make -j %s" %num_cores )
-	myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
 
 if ctx.opt_gaffer:
 	chrel("/")
