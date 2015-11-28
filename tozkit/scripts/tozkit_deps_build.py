@@ -153,8 +153,54 @@ if ctx.opt_blitz:
 	myexec("./configure --with-tbb --with-boost --prefix=%s"%STAGE_DIR)
 	myexec("make -j %s install" %num_cores)
 
-if ctx.opt_ilmbase:
-	chstgrel("ext_build/IlmBase")
+#####################################################
+# Boost
+#####################################################
+
+if ctx.opt_boost:
+	#boostver = "1_55_0"
+	boostver = "1_59_0"
+	chstgrel("ext_build/")
+	myexec("rm -rf ./boost*" )
+	myexec("rm -rf %s/lib/libboost*"%STAGE_DIR)
+	myexec("rm -rf %s/include/boost*"%STAGE_DIR)
+	myexec( "tar xvfj %s/boost_%s.tar.bz2" % (DL_DIR,boostver) )
+	chstgrel("ext_build/boost_%s"%boostver)
+	myexec("./bootstrap.sh" )
+	myexec("./b2 clean" )
+	myexec( './b2 -j16 install toolset=clang cxxflags="-stdlib=libc++" linkflags="-stdlib=libc++" --prefix="%s" ' % STAGE_DIR )
+
+chstgrel("lib/")
+paths = glob.glob("libboost*.dylib")
+
+for p in paths:
+ if os.path.isfile(p):
+  obu.osx_dylib_setid(p)
+obu.osx_dylib_changeref("libboost_thread.dylib","libboost_system.dylib")
+obu.osx_dylib_changeref("libboost_filesystem.dylib","libboost_system.dylib")
+
+#####################################################
+# IlmBase and OpenEXR
+#####################################################
+
+if ctx.opt_openexr:
+	chstgrel("ext_build/")
+	myexec("rm -rf oexr")
+	myexec("rm -rf %s/lib/libIlm*"%STAGE_DIR)
+	myexec("rm -rf %s/lib/libIex*"%STAGE_DIR)
+	myexec("rm -rf %s/lib/libImath*"%STAGE_DIR)
+	myexec("rm -rf %s/lib/libHalf*"%STAGE_DIR)
+	myexec("rm -rf %s/lib/pkgconfig/OpenEXR.pc"%STAGE_DIR)
+	myexec("rm -rf %s/lib/pkgconfig/IlmBase.pc"%STAGE_DIR)
+	myexec("rm -rf %s/include/OpenEXR"%STAGE_DIR)
+	myexec( "cp -r %s/oexr %s/oexr" % (DL_DIR,EB_DIR))
+	#untar( "%s/%s.tar.gz"%(DL_DIR,tkc.OPENEXR),True)
+
+	os.environ["CC"]="clang"
+	os.environ["CXX"]="clang++ -std=c++11 -stdlib=libc++ -Dregister="
+
+	# ilmbase
+	chstgrel("ext_build/oexr/IlmBase")
 	myexec("./bootstrap")
 	myexec("./configure --prefix=%s"%STAGE_DIR)
 	myexec("make -j %s install" %num_cores )
@@ -166,6 +212,58 @@ if ctx.opt_openexr:
 	myexec("./bootstrap")
 	myexec("./configure --prefix=%s"%STAGE_DIR)
 	myexec("make -j %s install" %num_cores)
+
+#####################################################
+# OpenImageIO
+#####################################################
+
+if ctx.opt_oiio:
+	#ctx.gitget( "https://github.com/OpenImageIO/oiio.git", "oiio", "3800e097dd2be3af8027f387d58a92b2a75c5379" )
+	chstgrel("ext_build/")
+	myexec("rm -rf oiio")
+	myexec( "cp -r %s/oiio %s/oiio" % (DL_DIR,EB_DIR))
+	myexec( "cp -r %s/patches/oiio/* %s/oiio/" % (ROOT_DIR, EB_DIR) ) 
+	chstgrel("ext_build/oiio")
+	os.environ["CC"]="clang"
+	os.environ["CXX"]="clang++ -std=c++11 -stdlib=libc++ -Wno-unused-local-typedefs"
+	os.environ["CMAKE_INCLUDE_PATH"]="%s/include"%STAGE_DIR
+	os.environ["CMAKE_LIBRARY_PATH"]="%s/lib"%STAGE_DIR
+	#myexec('make -j %s VERBOSE=1 CXX_FLAGS="-std=c++11 -stdlib=libc++"'%num_cores)
+	myexec('make -j %s VERBOSE=1 '%num_cores)
+	if obu.IsDarwin():
+		oiionam = "libOpenImageIO.1.5.dylib"
+		oiiounam = "libOpenImageIO_Util.1.5.dylib"
+		myexec("install_name_tool -id @executable_path/../lib/%s ./dist/macosx/lib/%s" % (oiionam,oiionam) )
+		myexec("install_name_tool -id @executable_path/../lib/%s ./dist/macosx/lib/%s" % (oiiounam,oiiounam) )
+		myexec("rsync -ravE ./dist/macosx/* %s/" % STAGE_DIR)
+	else:
+		myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
+
+if ctx.opt_fixipaths:
+ print "yo"
+
+#####################################################
+# OpenColorIO
+#####################################################
+
+if ctx.opt_ocio:
+	chstgrel("/")
+	myexec("mkdir -p ocio_build")
+	chrel("ocio_build")
+	myexec("cmake -DCMAKE_INSTALL_PREFIX=/projects/tweakoz/tozkit/stage -DOIIO_PATH=%s ../imageworks-OpenColorIO-533f85e/"%STAGE_DIR)
+
+#####################################################
+# OpenShadingLanguage
+#####################################################
+
+if ctx.opt_osl:
+	chstgrel("ext_build/osl")
+	myexec("make -j %s" %num_cores )
+	myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
+
+
+
+#####################################################
 
 if ctx.opt_alembic:
 	if False==os.path.exists("%s/ext_build/alembic_build"%STAGE_DIR):

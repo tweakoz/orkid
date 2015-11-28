@@ -1050,7 +1050,7 @@ void GlTextureInterface::VRamUpload( Texture *ptex )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static auto addrlamb = [&](ETextureAddressMode inp) -> GLenum
+static auto addrlamb = [](ETextureAddressMode inp) -> GLenum
 {	switch( inp )
 	{
  		case ETEXADDR_CLAMP:
@@ -1065,7 +1065,7 @@ static auto addrlamb = [&](ETextureAddressMode inp) -> GLenum
 	}
 };
 //////////////////////////////////////////
-static auto magfiltlamb = [&](const TextureSamplingModeData& inp) -> GLenum
+static auto magfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum
 {	GLenum rval = GL_NEAREST;
 	switch( inp.GetFiltModeMag() )
 	{	case ETEXFILT_POINT:
@@ -1080,7 +1080,7 @@ static auto magfiltlamb = [&](const TextureSamplingModeData& inp) -> GLenum
 	return rval;
 };
 //////////////////////////////////////////
-static auto minfiltlamb = [&](const TextureSamplingModeData& inp) -> GLenum
+static auto minfiltlamb = [](const TextureSamplingModeData& inp) -> GLenum
 {	GLenum rval = GL_NEAREST;
 	switch( inp.GetFiltModeMip() )
 	{	case ETEXFILT_POINT:
