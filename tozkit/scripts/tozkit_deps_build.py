@@ -282,6 +282,8 @@ if ctx.opt_llvm:
 #	myexec("make -j %s install" %num_cores )
 
 if ctx.opt_osl:
+	chstgrel("/")
+	myexec("rm -rf shaders")
 	chstgrel("ext_build/")
 	myexec("rm -rf osl")
 	myexec( "cp -r %s/osl %s/osl" % (DL_DIR,EB_DIR))
@@ -303,6 +305,8 @@ if ctx.opt_osl:
 	#os.environ["LLVM_DIRECTORY"] = STAGE_DIR
 	#os.environ["LLVM_INCLUDES"="%s/include/llvm/"%STAGE_DIR
 	myexec("make" )
+	myexec("rm -rf %s/shaders" % STAGE_DIR )
+	myexec("cp -r %s/osl/src/shaders %s/shaders" % (EB_DIR,STAGE_DIR))
 	#myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
 
 
