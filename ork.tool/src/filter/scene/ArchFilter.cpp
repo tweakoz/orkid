@@ -34,7 +34,7 @@ public: //
 	ArchSandBoxExporter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		return ConvertArchetypeSbox2Arch(toklist);
 	}

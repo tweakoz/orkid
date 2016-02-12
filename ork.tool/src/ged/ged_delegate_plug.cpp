@@ -544,7 +544,7 @@ public:
 	GedItemNode* CreateItemNode(	ObjModel&mdl,
 									const ConstString& Name,
 									const reflect::IObjectProperty *prop,
-									Object* obj ) const
+									Object* obj ) const final
 	{
 		GedItemNode* PropContainerW = new GedPlugWidget( 
 			mdl, 
@@ -569,7 +569,7 @@ class OutPlugChoiceDelegate : public tool::ged::IPlugChoiceDelegate
 public:
 	OutPlugChoiceDelegate() : IPlugChoiceDelegate() , mpgraph(nullptr) {}
 private:
-	void EnumerateChoices( tool::ged::GedItemNode* pnode, OutPlugMapType& Choices ); // virtual 
+	void EnumerateChoices( tool::ged::GedItemNode* pnode, OutPlugMapType& Choices ) final; // virtual 
 	//ProcTex* mptex;
 	dataflow::graph_data* mpgraph;
 };
