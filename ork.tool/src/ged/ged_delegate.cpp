@@ -275,7 +275,7 @@ UserChoices::UserChoices( IUserChoiceDelegate& ucd , ork::Object* pobj, ork::Obj
 	: mucd( ucd )
 {
 	mucd.SetObject( pobj,puserobj );
-	EnumerateChoices();
+	this->EnumerateChoices(false);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -812,7 +812,7 @@ void GedGroupNode::CheckVis()
 class GraphImportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( GraphImportDelegate, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget )
+	void Execute( ork::Object* ptarget ) final
 	{
 		ork::dataflow::graph_inst* pgraph = rtti::autocast( ptarget );
 
@@ -840,7 +840,7 @@ class GraphImportDelegate : public IOpsDelegate
 class GraphExportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( GraphExportDelegate, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget )
+	void Execute( ork::Object* ptarget ) final
 	{
 		ork::dataflow::graph_inst* pgraph = rtti::autocast( ptarget );
 

@@ -688,6 +688,8 @@ void Op2CompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIn
 			case Op2Bsolo:
 				mCompositingMaterial.SetTechnique( "Bsolo" );
 				break;
+			case Op2AoverB:
+				break;
 		}
 
 		fbi->GetThisBuffer()->RenderMatOrthoQuad( vprect, quadrect, & mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, CVector4::White() );

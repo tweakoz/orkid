@@ -64,7 +64,7 @@ EnemySpawnerControllerData::EnemySpawnerControllerData()
 {
 }
 
-ent::ComponentInst* EnemySpawnerControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* EnemySpawnerControllerData::DoCreateComponent(ent::Entity* pent) const
 {
 	return OrkNew EnemySpawnerControllerInst( *this, pent );
 }
@@ -345,20 +345,14 @@ EnemySpawnerArchetype::EnemySpawnerArchetype()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EnemySpawnerArchetype::DoCompose()
+void EnemySpawnerArchetype::DoCompose(ent::ArchComposer& composer)
 {
-	EnemySpawnerControllerData* acd = GetTypedComponent<EnemySpawnerControllerData>();
-
-	if( 0 == acd )
-	{
-		acd = OrkNew EnemySpawnerControllerData;
-		mComponentDataTable.AddComponent( acd );
-	}
+	composer.Register<EnemySpawnerControllerData>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EnemySpawnerArchetype::DoLinkEntity( const ent::SceneInst* psi, ent::Entity *pent ) const
+void EnemySpawnerArchetype::DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) const
 {
 	EnemySpawnerControllerInst* sci = pent->GetTypedComponent<EnemySpawnerControllerInst>();
 	OrkAssert( sci );

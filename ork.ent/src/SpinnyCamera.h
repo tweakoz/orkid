@@ -28,8 +28,8 @@ class SequenceCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( SequenceCamArchetype, Archetype );
 
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final ;
 
 public:
 
@@ -80,8 +80,6 @@ class SequenceCamControllerData : public ent::ComponentData
 
 public:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
-
 	SequenceCamControllerData();
 	const orklut<PoolString,ork::Object*>& GetItemDatas() const { return mItemDatas; }
 	PoolString& GetCurrentItem() const { return mCurrentItem; }
@@ -91,7 +89,8 @@ private:
 	orklut<PoolString,ork::Object*>	mItemDatas;
 	mutable PoolString				mCurrentItem;
 
-	const char* GetShortSelector() const { return "sccd"; } // virtual
+	const char* GetShortSelector() const final { return "sccd"; } // virtual
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -104,14 +103,14 @@ public:
 
 	const SequenceCamControllerData&	GetCD() const { return mCD; }
 	SequenceCamControllerInst( const SequenceCamControllerData& cd, ork::ent::Entity* pent );
-	bool DoLink(SceneInst *psi);
-	bool DoStart(SceneInst *psi, const CMatrix4 &world);
-
-	virtual void DoUpdate(ent::SceneInst* sinst);
 
 private:
 
-	bool DoNotify(const ork::event::Event *event);//virtual
+	bool DoLink(SceneInst *psi) final;
+	bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+	void DoUpdate(ent::SceneInst* sinst) final;
+	bool DoNotify(const ork::event::Event *event) final;
+
 	orklut<PoolString,SeqCamItemInstBase*>	mItemInsts;
 	SeqCamItemInstBase*						mpActiveItem;
 	const SequenceCamControllerData&		mCD;
@@ -134,9 +133,9 @@ public:
 	float GetFar() const { return mfFar; }
 	float GetAper() const { return mfAper; }
 	
-	virtual SeqCamItemInstBase* CreateInst( ork::ent::Entity* pent ) const;
-
 private:
+
+	SeqCamItemInstBase* CreateInst( ork::ent::Entity* pent ) const final;
 
 	float									mfSpinRate;
 	float									mfElevation;
@@ -161,7 +160,7 @@ private:
 	const SpinnyCamControllerData&			mSCCD;
 	float									mfPhase;
 	
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,8 +179,6 @@ public:
 	float GetFar() const { return mfFar; }
 	float GetAper() const { return mfAper; }
 	
-	virtual SeqCamItemInstBase* CreateInst( ork::ent::Entity* pent ) const;
-
 	const ork::MultiCurve1D& GetRadiusCurve() const { return mRadiusCurve; }
 
 private:
@@ -195,6 +192,7 @@ private:
 	ork::MultiCurve1D						mRadiusCurve;
 
 	ork::Object* RadiusCurveAccessor() { return & mRadiusCurve; }
+	SeqCamItemInstBase* CreateInst( ork::ent::Entity* pent ) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -211,7 +209,7 @@ private:
 	const CurvyCamControllerData&			mCCCD;
 	float									mfPhase;
 	
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

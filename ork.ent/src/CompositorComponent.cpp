@@ -332,7 +332,7 @@ CompositingComponentData::CompositingComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::ComponentInst* CompositingComponentData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst* CompositingComponentData::DoCreateComponent(ork::ent::Entity *pent) const
 {
 	return new CompositingComponentInst( *this, pent );
 }

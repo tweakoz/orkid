@@ -23,8 +23,8 @@ public:
 	virtual size_t Count(const Object *) const = 0;
 	virtual bool Resize(Object *obj, size_t size) const = 0;
 private:
-    /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;
-    /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
+    bool Deserialize(IDeserializer &, Object *) const override;
+    bool Serialize(ISerializer &, const Object *) const override;
 protected:
 	IObjectArrayProperty() {}
 };

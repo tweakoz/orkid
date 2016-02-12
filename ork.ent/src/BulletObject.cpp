@@ -122,7 +122,7 @@ void BulletObjectControllerData::ShapeSetter( ork::rtti::ICastable* const & val)
 	mShapeData = ( (ptr==0) ? 0 : rtti::safe_downcast<BulletShapeBaseData*>(ptr) );
 }
 ///////////////////////////////////////////////////////////////////////////////
-ComponentInst* BulletObjectControllerData::CreateComponent(Entity *pent) const
+ComponentInst* BulletObjectControllerData::DoCreateComponent(Entity *pent) const
 {
 	BulletObjectControllerInst* pinst = new BulletObjectControllerInst( *this, pent );
 	return pinst;
@@ -482,7 +482,8 @@ public:
 	}
 	~TestForceControllerData() {}
 
-	BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const; // virtual
+	BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data,
+															   ork::ent::Entity* pent) const final; // virtual
 
 	float GetForce() const { return mForce; }
 	float GetTorque() const { return mTorque; }
@@ -568,10 +569,11 @@ public:
 
 	TestForceControllerInst( const TestForceControllerData& data );
 	~TestForceControllerInst();
-	void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci);
-	bool DoLink(SceneInst *psi);
 
 private:
+	void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
+	bool DoLink(SceneInst *psi) final;
+
 	MyPid							mPIDsteering;
 	MyPid							mPIDroll;
 	Entity*							mpTarget;
@@ -765,12 +767,13 @@ public:
 	}
 	~DirectionalForceData() {}
 
-	BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const; // virtual
-
 	float GetForce() const { return mForce; }
 	const CVector3& GetDirection() const { return mDirection; }
 
 private:
+
+	BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data,
+	                                                           ork::ent::Entity* pent) const final; // virtual
 
 	float					mForce;
 	CVector3				mDirection;
@@ -784,11 +787,11 @@ public:
 
 	DirectionalForceInst( const DirectionalForceData& data );
 	~DirectionalForceInst();
-	void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci);
-	bool DoLink(SceneInst *psi);
 
 private:
 	const DirectionalForceData&	mData;
+	void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
+	bool DoLink(SceneInst *psi) final;
 };
 
 void DirectionalForceData::Describe()

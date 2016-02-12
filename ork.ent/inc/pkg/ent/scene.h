@@ -156,7 +156,7 @@ private:
 	ESceneDataMode	meSceneDataMode;
 	void OnSceneDataMode(ESceneDataMode emode);
 	void PrepareForEdit();
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+	virtual bool PostDeserialize(reflect::IDeserializer &) override;
 
 };
 

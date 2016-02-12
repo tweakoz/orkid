@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _WIIDOM_ENEMYSPAWNER_H
-#define _WIIDOM_ENEMYSPAWNER_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 // The EnemySpawner is the entity which will spawn/despawn enemies,
@@ -38,9 +37,10 @@ class EnemySpawnerControllerData : public ent::ComponentData
 	float								mHeatDecay;
 	float								mMaxLinkDist;
 
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
+
 public:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
 
 	EnemySpawnerControllerData();
 	int GetDebug() const { return mDebug; }
@@ -166,9 +166,9 @@ class EnemySpawnerArchetype : public ork::ent::Archetype
 {
 	RttiDeclareAbstract( EnemySpawnerArchetype, ent::Archetype );
 		
-	/*virtual*/ void DoCompose();
-	/*virtual*/ void DoLinkEntity( const ent::SceneInst* psi, ent::Entity *pent ) const;
-	/*virtual*/ void DoStartEntity( const ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity *pent ) const {}
+	void DoCompose(ent::ArchComposer& arch_composer) final;
+	void DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) const final;
+	void DoStartEntity( ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity *pent ) const final {}
 
 public:
 
@@ -179,5 +179,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif

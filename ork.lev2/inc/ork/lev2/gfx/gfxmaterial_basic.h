@@ -29,7 +29,7 @@ public:
 
 	WiiMatrixBlockApplicator() : mMatrixBlockItem(0), mMaterial(0) {}
 	WiiMatrixBlockApplicator( MaterialInstItemMatrixBlock* mtxblockitem,	const GfxMaterialWiiBasic* pmat );
-	void ApplyToTarget( GfxTarget *pTARG ); // virtual
+	void ApplyToTarget( GfxTarget *pTARG ) final; // virtual
 
 	///////////////////////////////////////////////////////////////
 
@@ -50,7 +50,7 @@ public:
 
 	WiiMatrixApplicator() : mMatrixItem(0), mMaterial(0) {}
 	WiiMatrixApplicator( MaterialInstItemMatrix* mtxitem, const GfxMaterialWiiBasic* pmat );
-	void ApplyToTarget( GfxTarget *pTARG ); // virtual
+	void ApplyToTarget( GfxTarget *pTARG ) final; // virtual
 
 	///////////////////////////////////////////////////////////////
 
@@ -71,22 +71,22 @@ class GfxMaterialWiiBasic : public GfxMaterial //TRttiBase<GfxMaterialWiiBasic,G
 	GfxMaterialWiiBasic( const char* pbastek = "/modvtx" );
 	virtual ~GfxMaterialWiiBasic(){};
 
-	virtual void Init( GfxTarget *pTarg );										//virtual 
+	virtual void Init( GfxTarget *pTarg ) final;										//virtual 
 
-	int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );	//virtual 
-	void EndBlock( GfxTarget* pTARG );											//virtual 
-	void Update( void ) {}														//virtual 
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 );							//virtual 
-	void EndPass( GfxTarget* pTARG );											//virtual 
+	int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;	//virtual 
+	void EndBlock( GfxTarget* pTARG ) final;											//virtual 
+	void Update( void ) final {}														//virtual 
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;							//virtual 
+	void EndPass( GfxTarget* pTARG ) final;											//virtual 
 
 	float			mSpecularPower;
 	CVector4		mEmissiveColor;
 
 	const std::string & GetBasicTechName( void ) const { return mBasicTechName; }
 
-	void BindMaterialInstItem( MaterialInstItem* pitem ) const;					//virtual 
-	void UnBindMaterialInstItem( MaterialInstItem* pitem ) const;				//virtual 
-	void UpdateMVPMatrix( GfxTarget *pTARG );									//virtual 
+	void BindMaterialInstItem( MaterialInstItem* pitem ) const final;					//virtual 
+	void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;				//virtual 
+	void UpdateMVPMatrix( GfxTarget *pTARG ) final;									//virtual 
 																				
 protected:																		
 

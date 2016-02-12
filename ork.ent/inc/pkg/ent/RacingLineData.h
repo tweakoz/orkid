@@ -97,8 +97,8 @@ public:
 	const RacingLine *GetRacingLine(int index) const;
 private:
 
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
-	/*virtual*/ bool PostDeserialize(reflect::IDeserializer &);
+	ork::ent::ComponentInst *DoCreateComponent(ork::ent::Entity *pent) const final;
+	bool PostDeserialize(reflect::IDeserializer &) final;
 
 	~RacingLineData();
 
@@ -118,8 +118,8 @@ public:
 		ork::CVector3 &racingLineDir) const;
 private:
 
-	/*virtual*/ void DoUpdate(ork::ent::SceneInst *sinst);
-	/*virtual*/ bool DoLink(ork::ent::SceneInst *sinst);
+	void DoUpdate(ork::ent::SceneInst *sinst) final;
+	bool DoLink(ork::ent::SceneInst *sinst) final;
 
 	const RacingLineData &mData;
 

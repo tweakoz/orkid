@@ -141,7 +141,7 @@ psys_graph::psys_graph()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool psys_graph::Query(event::Event *event) const
+bool psys_graph::DoQuery(event::Event *event) const
 {
 	ork::ObjectFactoryFilter* pfilter = ork::rtti::autocast( event );
 	if( pfilter )

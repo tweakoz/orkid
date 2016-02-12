@@ -29,8 +29,8 @@ public:
 	virtual bool IsMultiMap(const Object* obj) const = 0;
 
 private:
-    /*virtual*/ bool Deserialize(IDeserializer &serializer, Object *obj) const = 0;
-    /*virtual*/ bool Serialize(ISerializer &serializer, const Object *obj) const = 0;
+    //bool Deserialize(IDeserializer &serializer, Object *obj) const = 0;
+    //bool Serialize(ISerializer &serializer, const Object *obj) const = 0;
 protected:
 
 	IObjectMapProperty() {}

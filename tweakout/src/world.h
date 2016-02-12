@@ -17,7 +17,7 @@ class WorldControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( WorldControllerData, ent::ComponentData );
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const override;
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
 
 public:
 
@@ -30,7 +30,7 @@ class WorldControllerInst : public ent::ComponentInst
 {
 	const WorldControllerData&			mPcd;
 
-	void DoUpdate(ent::SceneInst* sinst) override;
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 public:
 
@@ -44,9 +44,9 @@ class WorldArchetype : public ork::ent::Archetype
 {
 	RttiDeclareConcrete( WorldArchetype, ent::Archetype );
 
-	void DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) const override;
-	void DoCompose(ork::ent::ArchComposer& composer) override;
-	void DoStartEntity( ork::ent::SceneInst* psi, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const override;
+	void DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) const final;
+	void DoCompose(ork::ent::ArchComposer& composer) final;
+	void DoStartEntity( ork::ent::SceneInst* psi, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const final;
 
 public:
 

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_Lighting_H
-#define ORK_ENT_Lighting_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,13 +24,13 @@ class LightingManagerComponentData : public ork::ent::SceneComponentData
 public:
 	///////////////////////////////////////////////////////
 	LightingManagerComponentData();
-	ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const; // virtual 
 	///////////////////////////////////////////////////////
 
 	const ork::lev2::LightManagerData& Lmd() const { return mLmd; }
 
 private:
 
+	ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const final;
 	ork::Object* LmdAccessor() { return & mLmd; }
 
 	ork::lev2::LightManagerData	mLmd;
@@ -65,16 +64,17 @@ public:
 	///////////////////////////////////////////////////////
 	LightingComponentData();
 	~LightingComponentData();
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
 	///////////////////////////////////////////////////////
 	ork::lev2::LightData*	GetLightData() const { return mLightData; }
 	bool IsDynamic() const { return mbDynamic; }
 
 private:
 
+	ork::ent::ComponentInst *DoCreateComponent(ork::ent::Entity *pent) const final;
+	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
+
 	void LdGetter(ork::rtti::ICastable*& val) const { val=mLightData; }
 	void LdSetter(ork::rtti::ICastable* const & val) { mLightData=ork::rtti::downcast<ork::lev2::LightData*>(val); }
-	void DoRegisterWithScene( ork::ent::SceneComposer& sc );
 
 	ork::lev2::LightData*	mLightData;
 	bool					mbDynamic;
@@ -95,8 +95,8 @@ public:
 
 private:
 
-	virtual void DoUpdate(ork::ent::SceneInst *inst);
-	/*virtual*/ bool DoLink(ork::ent::SceneInst *psi);
+	void DoUpdate(ork::ent::SceneInst *inst) final;
+	bool DoLink(ork::ent::SceneInst *psi) final;
 
 	ork::lev2::Light*	mLight;
 	const LightingComponentData& mLightData;
@@ -111,12 +111,11 @@ class LightArchetype : public Archetype
 public:
 	LightArchetype();
 private:
-	void DoCompose(ArchComposer& composer); // virtual
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const {}
+	void DoCompose(ArchComposer& composer) final; // virtual
+	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 }}
 
-#endif

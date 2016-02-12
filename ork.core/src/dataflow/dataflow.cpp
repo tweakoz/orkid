@@ -300,12 +300,13 @@ void morphable::HandleMorphEvent(const morph_event* me)
 {
 	switch( me->meType )
 	{
-		case EMET_WRITE:
-			break;
 		case EMET_MORPH:
 			Morph1D( me );
 			break;
-			
+		case EMET_WRITE:
+		case EMET_END:
+		default:
+			break;			
 	}
 
 }

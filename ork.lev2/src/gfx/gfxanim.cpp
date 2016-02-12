@@ -777,7 +777,7 @@ public:
 
 	}
 
-	virtual void Set()
+	void Set() final
 	{
 		const XgmAnim& anim = * mAnimInst.GetAnim();
 

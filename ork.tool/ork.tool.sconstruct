@@ -69,6 +69,7 @@ class orktool:
 		prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
 		prj.AddFrameworks("Carbon Foundation ApplicationServices" )
 		prj.AddFrameworks("AppKit QuartzComposer")
+		prj.AddLibPaths("/usr/local/Cellar/llvm35/3.5.1/lib/llvm-3.5/lib")
 	#########################
 	## IX libs
 	#########################
@@ -83,6 +84,16 @@ class orktool:
 	prj.AddLibs( ORKLIBS )
 	prj.AddLibs( "libtweakout.%s"%suffix )
 	prj.AddLibs( "ork.unittestpp.%s"%suffix )
+	prj.AddLibs("boost_system-mt boost_filesystem-mt boost_regex-mt boost_thread-mt boost_wave-mt")
+	prj.AddLibs("Imath Iex IexMath IlmImf")
+	prj.AddLibs("z curses")
+	prj.AddLibs("OpenImageIO OpenImageIO_Util")
+	#########################
+	LLVMLIBS = "-lLLVMLTO -lLLVMObjCARCOpts -lLLVMLinker -lLLVMipo -lLLVMVectorize -lLLVMBitWriter -lLLVMIRReader -lLLVMAsmParser -lLLVMTableGen -lLLVMDebugInfo -lLLVMOption -lLLVMX86Disassembler -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMX86Desc -lLLVMX86Info -lLLVMX86AsmPrinter -lLLVMX86Utils -lLLVMJIT -lLLVMLineEditor -lLLVMMCAnalysis -lLLVMMCDisassembler -lLLVMInstrumentation -lLLVMInterpreter -lLLVMCodeGen -lLLVMScalarOpts -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMProfileData -lLLVMMCJIT -lLLVMTarget -lLLVMRuntimeDyld -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMExecutionEngine -lLLVMMC -lLLVMCore -lLLVMSupport"
+	LLVMLIBS = LLVMLIBS.replace("-l","")
+	prj.AddLibs(LLVMLIBS)
+	#########################
+	prj.AddLibs("oslexec oslcomp oslquery")
 	#########################
 	prj.Configure()
 	self.tool_lib = prj.SharedLibrary( )

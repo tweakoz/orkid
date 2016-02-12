@@ -45,7 +45,7 @@ FighterControllerData::FighterControllerData()
 {
 }
 
-ent::ComponentInst* FighterControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* FighterControllerData::DoCreateComponent(ent::Entity* pent) const
 {
 	return OrkNew FighterControllerInst( *this, pent );
 }

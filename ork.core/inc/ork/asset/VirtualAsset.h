@@ -17,7 +17,7 @@ public:
 
 	void SetType(PoolString category);
 
-	/*virtual*/ PoolString GetType() const;
+	PoolString GetType() const override;
 private:
 	PoolString mCategory;
 };

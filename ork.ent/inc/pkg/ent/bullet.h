@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef	ORK_ENT_BULLET_H
-#define ORK_ENT_BULLET_H
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -136,6 +135,7 @@ class BulletWorldControllerData : public ComponentData
 	float	mSimulationRate;
 	bool	mbDEBUG;
 	CVector3 mGravity;
+	ComponentInst *DoCreateComponent(Entity *pent) const override;
 
 public:
 
@@ -146,9 +146,6 @@ public:
 	float GetSimulationRate() const { return mSimulationRate; }
 	const CVector3& GetGravity() const { return mGravity; }
 	
-protected:
-	ComponentInst *CreateComponent(Entity *pent) const override;
-
 };
 
 class BulletWorldControllerInst;
@@ -191,8 +188,8 @@ class BulletWorldControllerInst : public ork::ent::ComponentInst
 	float									mfAvgDtCtr;
 
 
-	void DoUpdate(ork::ent::SceneInst* inst); // virtual
-	bool DoNotify(const ork::event::Event *event) { return false; } // virtual
+	void DoUpdate(ork::ent::SceneInst* inst) final; // virtual
+	bool DoNotify(const ork::event::Event *event) final { return false; } // virtual
 
 public:
 	BulletWorldControllerInst(const BulletWorldControllerData& data, ork::ent::Entity *entity);
@@ -449,6 +446,8 @@ class BulletObjectControllerData : public ComponentData
 {
 	RttiDeclareConcrete( BulletObjectControllerData, ComponentData );
 
+	ComponentInst *DoCreateComponent(Entity *pent) const override;
+
 public:
 
 	BulletObjectControllerData();
@@ -469,7 +468,6 @@ public:
 			
 protected:
 
-	ComponentInst *CreateComponent(Entity *pent) const override;
 	
 	const BulletShapeBaseData*				mShapeData;
 	ork::ObjectMap							mForceControllerDataMap;
@@ -502,9 +500,9 @@ private:
 	orkmap<PoolString,BulletObjectForceControllerInst*>	mForceControllerInstMap;
 	BulletShapeBaseInst*								mShapeInst;
 
-	void DoUpdate(ork::ent::SceneInst* inst); // virtual
-	bool DoNotify(const ork::event::Event *event) { return false; } // virtual
-	bool DoLink(SceneInst *psi);
+	void DoUpdate(ork::ent::SceneInst* inst) final; // virtual
+	bool DoNotify(const ork::event::Event *event) final { return false; } // virtual
+	bool DoLink(SceneInst *psi) final;
 
 };
 
@@ -527,5 +525,3 @@ ork::CMatrix3 btbasistoorkmtx3( const btMatrix3x3& mtx );
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif

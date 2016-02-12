@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_GFX_MATERIAL_H_
-#define _ORK_GFX_MATERIAL_H_
+#pragma once
 
 #include <ork/lev2/gfx/renderable.h>
 #include <ork/lev2/gfx/gfxenv_enum.h> // For ETextureDest
@@ -73,7 +72,7 @@ public:
 	void				SetMatrix( const CMatrix4& pmat ) { mMatrix=pmat; }
 	const CMatrix4&		GetMatrix() const { return mMatrix; }
 
-	virtual void Set() {}
+	virtual void Set() override {}
 
 };
 
@@ -96,7 +95,7 @@ public:
 	size_t				GetNumMatrices() const { return miNumMatrices; }
 	const CMatrix4*		GetMatrices() const { return mpMatrices; }
 
-	virtual void Set() {}
+	virtual void Set() final {}
 
 };
 
@@ -171,4 +170,3 @@ bool LoadMaterialMap( const ork::file::Path& pth, MaterialMap& mmap );
 
 } }
 
-#endif

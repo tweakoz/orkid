@@ -33,6 +33,8 @@
 #include <ork/kernel/thread.h>
 //bool ParseColladaMaterialBindings( FCDocument& daedoc, orkmap<std::string,std::string>& MatSemMap );
 
+using namespace ork::tool;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
@@ -1318,7 +1320,7 @@ bool DAEToDAE(const tokenlist& options)
 	MeshUtil::toolmesh daeMesh;
 	daeMesh.ReadFromDaeFile(inPath, daeReadOptions);
 
-	DaeWriteOpts out_opts;
+	ork::tool::DaeWriteOpts out_opts;
 	out_opts.meMaterialSetup = DaeWriteOpts::EMS_PRESERVEMATERIALS;
 	daeMesh.WriteToDaeFile( outPath, out_opts );
 

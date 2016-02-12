@@ -5,14 +5,16 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#pragma once
+
+#if defined(USE_FCOLLADA)
+
+#include <ork/pch.h>
 #include <orktool/filter/filter.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
-
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(USE_FCOLLADA)
 #include <FCollada.h>
 #include <FCDocument/FCDocument.h>
 #include <FCDocument/FCDMaterial.h>
@@ -35,12 +37,22 @@
 #include <FCDocument/FCDEffectTools.h>
 #include <FCDocument/FCDEffectParameterSampler.h>
 #include <FCDocument/FCDEffectParameterSurface.h>
+///////////////////////////////////////////////////////////////////////////////
+/*class FCDocument;
+class FCDGeometryMesh;
+class FCDEffect;
+class FCDEffectStandard;
+class FCDEffectProfileFX;
+class FCDAsset;
+class FMMatrix44;*/
 
+///////////////////////////////////////////////////////////////////////////////
+namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ColladaVertexFormat
 {
-	ork::lev2::EVtxStreamFormat	meVertexStreamFormat;
+	lev2::EVtxStreamFormat	meVertexStreamFormat;
 
 	int							miNumJoints;
 	int							miNumColors;
@@ -51,16 +63,16 @@ struct ColladaVertexFormat
 	int							miVertexSize;
 
 	ColladaVertexFormat();
-	void SetFormat( ork::lev2::EVtxStreamFormat efmt );
+	void SetFormat( lev2::EVtxStreamFormat efmt );
 };
 
 struct ColladaAvailVertexFormats
 {
-	typedef orkmap<ork::lev2::EVtxStreamFormat,ColladaVertexFormat> FormatMap;
+	typedef orkmap<lev2::EVtxStreamFormat,ColladaVertexFormat> FormatMap;
 
 	FormatMap	mFormats;
 
-	inline void Add( ork::lev2::EVtxStreamFormat efmt );
+	inline void Add( lev2::EVtxStreamFormat efmt );
 
 	const FormatMap& GetFormats() const { return mFormats; }
 };
@@ -175,7 +187,7 @@ typedef enum
 	UNITS_METER
 } EUnits;
 
-struct ColladaExportPolicy : public ork::util::Context<ColladaExportPolicy>
+struct ColladaExportPolicy : public util::Context<ColladaExportPolicy>
 {
 	ColladaSkinPolicy			mSkinPolicy;
 	ColladaNormalPolicy			mNormalPolicy;
@@ -222,8 +234,8 @@ struct DaeWriteOpts
 	};
 
 
-	ork::file::Path				mTextureBase;
-	EMaterialSetup				meMaterialSetup;
+	file::Path mTextureBase;
+	EMaterialSetup meMaterialSetup;
 	DaeWriteOpts() : meMaterialSetup(EMS_NOMATERIALS) {}
 };
 
@@ -236,14 +248,6 @@ struct DaeExtraNode
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-class FCDocument;
-class FCDGeometryMesh;
-class FCDEffectStandard;
-class FCDEffectProfileFX;
-class FCDAsset;
-
-namespace ork { namespace tool {
 	
 CMatrix4 FCDMatrixToCMatrix4( const FMMatrix44 & inmat );
 
@@ -285,7 +289,7 @@ struct SColladaMaterial
 	SColladaMaterialChannel				mNormalMapChannel;
 	SColladaMaterialChannel				mAmbientMapChannel;
 
-	ork::lev2::GfxMaterial*				mpOrkMaterial;
+	lev2::GfxMaterial*					mpOrkMaterial;
 	CVector4							mEmissiveColor;
 	CVector4							mTransparencyColor;
 	FCDEffect*							mFx;
@@ -308,7 +312,7 @@ struct SColladaVertexWeightingInfo
 {
 	static const int kmaxweights = 4;
 
-	ork::lev2::XgmSkelNode*		mpSkelNodes[kmaxweights];
+	lev2::XgmSkelNode*			mpSkelNodes[kmaxweights];
 	CReal						mWeighting[kmaxweights];
 	int							miNumWeights;
 
@@ -343,20 +347,20 @@ struct SColladaMeshConfigurationFlags
 
 struct XgmClusterTri
 {
-	ork::MeshUtil::vertex Vertex[3];
+	MeshUtil::vertex Vertex[3];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct SColladaMatGroup;
+class SColladaMatGroup;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class XgmClusterBuilder : public ork::Object
+class XgmClusterBuilder : public Object
 {	
-	RttiDeclareAbstract(XgmClusterBuilder,ork::Object);
+	RttiDeclareAbstract(XgmClusterBuilder,Object);
 public:
-	ork::MeshUtil::submesh			mSubMesh;
+	MeshUtil::submesh			mSubMesh;
 	lev2::VertexBufferBase*			mpVertexBuffer;
 	//////////////////////////////////////////////////
 	XgmClusterBuilder();
@@ -381,12 +385,12 @@ class XgmSkinnedClusterBuilder : public XgmClusterBuilder
 public:
 	const orkmap<std::string,int>& RefBoneRegMap() const { return mmBoneRegMap; }
 private:
-	bool AddTriangle( const XgmClusterTri& Triangle );
+	bool AddTriangle( const XgmClusterTri& Triangle ) final;
 	int FindNewBoneIndex( const std::string& BoneName );
 	void BuildVertexBuffer_V12N12T8I4W4();
 	void BuildVertexBuffer_V12N12B12T8I4W4();
 	void BuildVertexBuffer_V12N6I1T4();
-	void BuildVertexBuffer( const SColladaMatGroup& matgroup ); // virtual
+	void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final; // virtual
 
 	orkmap<std::string,int>			mmBoneRegMap;
 };
@@ -397,12 +401,12 @@ class XgmRigidClusterBuilder : public XgmClusterBuilder
 {
 	RttiDeclareAbstract(XgmRigidClusterBuilder,XgmClusterBuilder);
 	/////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle );
+	bool AddTriangle( const XgmClusterTri& Triangle ) final;
+	void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final; // virtual
 	void BuildVertexBuffer_V12N6C2T4();
 	void BuildVertexBuffer_V12N12B12T8C4();
 	void BuildVertexBuffer_V12N12T16C4();
 	void BuildVertexBuffer_V12N12B12T16();
-	void BuildVertexBuffer( const SColladaMatGroup& matgroup ); // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -435,12 +439,12 @@ public:
 	XgmClusterizerDiced();
 	virtual ~XgmClusterizerDiced();
 	///////////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg );
-	void Begin(); // virtual
-	void End(); // virtual
+	bool AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg ) final;
+	void Begin() final; // virtual
+	void End() final; // virtual
 	///////////////////////////////////////////////////////
 private:
-	ork::MeshUtil::submesh mPreDicedMesh;
+	MeshUtil::submesh mPreDicedMesh;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -452,7 +456,7 @@ public:
 	XgmClusterizerStd();
 	virtual ~XgmClusterizerStd();
 	///////////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg );
+	bool AddTriangle( const XgmClusterTri& Triangle, const SColladaMatGroup* cmg ) final;
 	///////////////////////////////////////////////////////
 private:
 };
@@ -474,11 +478,11 @@ public:
 	std::string									mShadingGroupName;
 	SColladaMeshConfigurationFlags				mMeshConfigurationFlags;
 	EMatClass									meMaterialClass;
-	ork::lev2::GfxMaterial*						mpOrkMaterial;
-	orkvector<ork::lev2::VertexConfig>			mVertexConfigData;
-	orkvector<ork::lev2::VertexConfig>			mAvailVertexConfigData;
+	lev2::GfxMaterial*							mpOrkMaterial;
+	orkvector<lev2::VertexConfig>				mVertexConfigData;
+	orkvector<lev2::VertexConfig>				mAvailVertexConfigData;
 	lev2::EVtxStreamFormat						meVtxFormat;
-	ork::file::Path								mLightMapPath;
+	file::Path									mLightMapPath;
 	bool										mbVertexLit;
 
 	///////////////////////////////////////////////////////////////////
@@ -590,8 +594,8 @@ public:
 	lev2::XgmModel 								mXgmModel;
 	orkmap<std::string,SColladaMaterial>		mMaterialMap;
 	MeshUtil::material_semanticmap_t			mMaterialSemanticBindingMap;
-	orkmap<std::string,ork::lev2::XgmSkelNode*>	mSkeleton;
-	ork::lev2::XgmSkelNode*						mSkeletonRoot;
+	orkmap<std::string,lev2::XgmSkelNode*>		mSkeleton;
+	lev2::XgmSkelNode*							mSkeletonRoot;
 	CVector3									mAABoundXYZ;
 	CVector3									mAABoundWHD;
 	CMatrix4									mBindShapeMatrix;
@@ -614,13 +618,13 @@ public:
 	void BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* ColMesh );
 	bool BuildXgmSkeleton();
 
-	bool ConvertTextures(const file::Path& outmdlpth, ork::tool::FilterOptMap& options );
+	bool ConvertTextures(const file::Path& outmdlpth, FilterOptMap& options );
 
 	const SColladaMaterial & GetMaterialFromShadingGroup( const std::string & ShadingGroupName ) const;
 
 	bool IsSkinned() const { return mSkeleton.size()>0; }
 
-	typedef orkvector<ork::CMatrix4> MatrixVector;
+	typedef orkvector<CMatrix4> MatrixVector;
 
 	void AddTexture( lev2::TextureAsset*ptex ) { mTextures.insert(ptex); }
 
@@ -640,9 +644,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ColladaAnimChannel : public ork::Object
+class ColladaAnimChannel : public Object
 {
-	RttiDeclareAbstract(ColladaAnimChannel,ork::Object);
+	RttiDeclareAbstract(ColladaAnimChannel,Object);
 
 	std::string ChannelName;
 
@@ -678,7 +682,7 @@ public:
 	{
 	}
 
-	int GetNumFrames() const { return int(mSampledFrames.size()); } // virtual
+	int GetNumFrames() const final { return int(mSampledFrames.size()); } // virtual
 
 	const CMatrix4& GetFrame( int idx ) const { return mSampledFrames[idx]; }
 };
@@ -715,7 +719,7 @@ public:
 	{
 	}
 
-	int GetNumFrames() const { return int(mSampledFrames.size()); } // virtual
+	int GetNumFrames() const final { return int(mSampledFrames.size()); } // virtual
 
 	void SetMaterialName( const char* pname ) { mMaterialName=pname; }
 	const std::string& GetMaterialName() const { return mMaterialName; }
@@ -735,7 +739,7 @@ template <typename T> class ColladaFxAnimChannel : public ColladaAnimChannel
 
 public:
 
-	ork::lev2::GfxMaterialFxParamArtist<T>*		mTargetParameter;
+	lev2::GfxMaterialFxParamArtist<T>*			mTargetParameter;
 	std::string									mTargetMaterialName;
 	std::string									mTargetPropertyName;
 
@@ -747,7 +751,7 @@ public:
 	{
 	}
 	const T& GetFrame( int idx ) const { return mSampledFrames[idx]; }
-	int GetNumFrames() const { return int(mSampledFrames.size()); } // virtual
+	int GetNumFrames() const final { return int(mSampledFrames.size()); } // virtual
 	void AddFrame( const T& val ) { mSampledFrames.push_back(val); }
 
 };
@@ -758,9 +762,9 @@ class CColladaAnim : public CColladaAsset
 {
 public:
 
-	typedef orkmap<std::string,ork::tool::ColladaAnimChannel*> ChannelsMap;
+	typedef orkmap<std::string,tool::ColladaAnimChannel*> ChannelsMap;
 
-	ork::lev2::XgmAnim	mXgmAnim;
+	lev2::XgmAnim	mXgmAnim;
 
 	float		mfSampleRate;
 	int			miNumFrames;
@@ -769,7 +773,7 @@ public:
 	///////////////////////////////////////////////////////////////////
 	MeshUtil::material_semanticmap_t						mShadingGroupMap;
 	orkmap<std::string,SColladaMaterial>					mMaterialMap;
-	orkmap<std::string,ork::lev2::GfxMaterialFxParamBase*>	mFxAnimatables;
+	orkmap<std::string,lev2::GfxMaterialFxParamBase*>		mFxAnimatables;
 	orkmap<std::string,ColladaUvAnimChannel*>				mUvAnimatables;
 
 	///////////////////////////////////////////////////////////////////
@@ -801,33 +805,33 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DAEXGMFilter : public CAssetFilterBase
+class DAEXGMFilter : public ::ork::tool::CAssetFilterBase
 {
-	RttiDeclareConcrete(DAEXGMFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAEXGMFilter,::ork::tool::CAssetFilterBase);
 	bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
 public: //
 	DAEXGMFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
-class DAEGGMFilter : public CAssetFilterBase
+class DAEGGMFilter : public ::ork::tool::CAssetFilterBase
 {
-	RttiDeclareConcrete(DAEGGMFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAEGGMFilter,::ork::tool::CAssetFilterBase);
 	bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
 public: //
 	DAEGGMFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
-class DAEXGAFilter : public CAssetFilterBase
+class DAEXGAFilter : public ::ork::tool::CAssetFilterBase
 {
-	RttiDeclareConcrete(DAEXGAFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAEXGAFilter,::ork::tool::CAssetFilterBase);
 public: //
 	DAEXGAFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} }
+} } // namesoace ork::tool
 
 ///////////////////////////////////////////////////////////////////////////////
 #endif // USE_FCOLLADA

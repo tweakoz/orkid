@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_DATAFLOW_H
-#define ORK_ENT_DATAFLOW_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,8 +24,6 @@ public:
 
 	DataflowRecieverComponentData();
 
-	virtual ComponentInst *CreateComponent(Entity *pent) const;
-
 	ork::orklut<ork::PoolString,float>& GetFloatValues() { return mFloatValues; }
 	const ork::orklut<ork::PoolString,float>& GetFloatValues() const { return mFloatValues; }
 	ork::orklut<ork::PoolString,CVector3>& GetVect3Values() { return mVect3Values; }
@@ -37,9 +34,10 @@ private:
 	ork::orklut<ork::PoolString,float>		mFloatValues;
 	ork::orklut<ork::PoolString,CVector3>	mVect3Values;
 
-	bool Notify(const event::Event *event); // virtual
+	bool DoNotify(const event::Event *event) final; 
+	virtual ComponentInst *DoCreateComponent(Entity *pent) const final;
 
-	const char* GetShortSelector() const { return "dfr"; } // virtual
+	const char* GetShortSelector() const  final { return "dfr"; } // virtual
 
 };
 
@@ -64,7 +62,6 @@ public:
 	dataflow::dyn_external&					RefExternal() { return mExternal; }
 	const dataflow::dyn_external&			RefExternal() const { return mExternal; }
 
-	bool Notify(const event::Event *event); // virtual
 
 private:
 
@@ -73,7 +70,8 @@ private:
 	orklut<PoolString,float>				mMutableFloatValues;
 	orklut<PoolString,CVector3>				mMutableVect3Values;
 
-	void DoUpdate( ork::ent::SceneInst* psi );
+	void DoUpdate( ork::ent::SceneInst* psi ) final;
+	bool DoNotify(const event::Event *event) final; // virtual
 
 };
 
@@ -81,4 +79,3 @@ private:
 
 }} // namespace ork { namespace ent {
 
-#endif

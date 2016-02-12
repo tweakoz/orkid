@@ -10,8 +10,9 @@
 //   if it is modified, and/or not in it's entirety, then I do not need the original license text....
 //
 
-#if defined(ORK_OSX) && ! defined(_PKG_ENT_AUDIOAnalysis_H)
-#define _PKG_ENT_AUDIOAnalysis_H
+#pragma once
+
+#if defined(ORK_OSX) 
 
 #include <CoreServices/CoreServices.h>
 #include <CoreMIDI/CoreMIDI.h>
@@ -155,11 +156,12 @@ class AudioAnalysisManagerComponentData : public ork::ent::SceneComponentData
 public:
 	///////////////////////////////////////////////////////
 	AudioAnalysisManagerComponentData();
-	ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const; // virtual 
 	///////////////////////////////////////////////////////
 	AudioDeviceList* GetAudioDeviceList() const { return mAudioDeviceList; }
 
 private:
+
+	ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const final; // virtual 
 
 	std::map<AudioDeviceID,std::string>	mDeviceNames;
 	std::string							mSelectedDevice;
@@ -196,14 +198,15 @@ class AudioAnalysisComponentData : public ork::ent::ComponentData
 public:
 	///////////////////////////////////////////////////////
 	AudioAnalysisComponentData();
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
 	///////////////////////////////////////////////////////
-	void DoRegisterWithScene( ork::ent::SceneComposer& sc );
 
 	int GetAudioInputDeviceID() const { return mAudioInputDeviceID; }
 
 private:
 	
+	ork::ent::ComponentInst *DoCreateComponent(ork::ent::Entity *pent) const final;
+	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
+
 	int				mAudioInputDeviceID;
 	
 };
@@ -237,10 +240,10 @@ public:
 private:
 	
 	const AudioAnalysisComponentData& mAnalysisData;
-	bool DoLink(ork::ent::SceneInst *psi);
-	void DoUnLink(SceneInst *psi);
-	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world);
-	void DoUpdate(SceneInst *inst);
+	bool DoLink(ork::ent::SceneInst *psi) final;
+	void DoUnLink(SceneInst *psi) final;
+	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world) final;
+	void DoUpdate(SceneInst *inst) final;
 
 	orkmap<int,float> mControlValues;
 	float	mfVelocity;
@@ -266,8 +269,8 @@ class AudioAnalysisArchetype : public Archetype
 public:
 	AudioAnalysisArchetype();
 private:
-	void DoCompose(ArchComposer& composer); // virtual
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const {}
+	void DoCompose(ArchComposer& composer) final; // virtual
+	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

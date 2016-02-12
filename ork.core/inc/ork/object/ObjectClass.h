@@ -29,7 +29,7 @@ public:
 	static void InitializeType() { ClassType::Describe(); }
 private:
 	reflect::Description mDescription;
-	/*virtual*/ void Initialize();
+	void Initialize() override;
 };
 
 } }

@@ -5,17 +5,14 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _GFX_GFXMATERIAL_FX_H_
-#define	_GFX_GFXMATERIAL_FX_H_
+#pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/kernel/prop.h>
 #include <ork/lev2/gfx/lev2renderer.h>
 
-namespace ork {
-
-namespace lev2 {
+namespace ork { namespace lev2 {
 
 class FxShader;
 struct FxShaderParam;
@@ -78,9 +75,9 @@ public:
 
 	virtual const T& GetValue( GfxTarget *pTARG ) const = 0;
 
-	virtual void Bind( FxShader* fxh, GfxTarget *pTARG );
+	void Bind( FxShader* fxh, GfxTarget *pTARG ) final;
 
-	virtual std::string GetValueString( void ) const;
+	std::string GetValueString( void ) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,7 +98,7 @@ public:
 	{
 	}
 
-	virtual const T& GetValue( GfxTarget *pTARG ) const
+	const T& GetValue( GfxTarget *pTARG ) const final
 	{
 		OrkAssert( (mFuncptrVoid!=0) || (mFuncptrParam!=0) );
 		return mFuncptrVoid ? mFuncptrVoid(pTARG) : mFuncptrParam(pTARG,this);
@@ -120,7 +117,7 @@ template <typename T> class GfxMaterialFxParamArtist : public GfxMaterialFxParam
 public:
 
 	GfxMaterialFxParamArtist(GfxMaterialFx *parent = NULL);
-	virtual const T& GetValue( GfxTarget *pTARG ) const { return mValue; }
+	const T& GetValue( GfxTarget *pTARG ) const final { return mValue; }
 
 	T mValue;
 };
@@ -155,13 +152,13 @@ class GfxMaterialFx : public GfxMaterial
 
 	GfxMaterialFx();
 	virtual ~GfxMaterialFx();
-	virtual void Update( void );
+	virtual void Update( void ) final;
 
 	static bool gEnableLightPreview;
 
 	////////////////////////////////////////////
 
-	virtual void Init( GfxTarget* pTARG );
+	void Init( GfxTarget* pTARG ) final;
 	void LoadEffect( const AssetPath& EffectAssetName );
 	void SetEffect( FxShader* pshader );
 	void SetTechnique( const std::string& TechniqueName );
@@ -174,13 +171,13 @@ class GfxMaterialFx : public GfxMaterial
 
 	////////////////////////////////////////////
 
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 );
-	virtual void EndPass( GfxTarget* pTARG );
-	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTARG );
-	virtual void UpdateMVPMatrix( GfxTarget *pTARG );
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+	void EndPass( GfxTarget* pTARG ) final;
+	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( GfxTarget* pTARG ) final;
+	void UpdateMVPMatrix( GfxTarget *pTARG ) final;
 
-	void SetMaterialProperty( const char* prop, const char* val ); // virtual
+	void SetMaterialProperty( const char* prop, const char* val ) final;
 
 	protected:
 
@@ -222,8 +219,8 @@ class GfxMaterialFx : public GfxMaterial
 	static CPerformanceItem*						gMatFxBeginPassPerfItem;
 	static CPerformanceItem*						gMatFxBeginBlockPerfItem;
 
-	virtual void BindMaterialInstItem( MaterialInstItem* pitem ) const;
-	virtual void UnBindMaterialInstItem( MaterialInstItem* pitem ) const;
+	virtual void BindMaterialInstItem( MaterialInstItem* pitem ) const final;
+	virtual void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;
 
 	static const int kMaxEngineParamFloats = RenderContextInstData::kMaxEngineParamFloats;
 
@@ -247,7 +244,7 @@ public:
 
 	FxMatrixBlockApplicator() : mMatrixBlockItem(0), mMaterial(0) {}
 	FxMatrixBlockApplicator( MaterialInstItemMatrixBlock* mtxblockitem,	const GfxMaterialFx* pmat );
-	void ApplyToTarget( GfxTarget *pTARG ); // virtual
+	void ApplyToTarget( GfxTarget *pTARG ) final; // virtual
 
 	///////////////////////////////////////////////////////////////
 
@@ -256,5 +253,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif

@@ -26,8 +26,8 @@ class TetherCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( TetherCamArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const override {}
-	void DoCompose(ork::ent::ArchComposer& composer) override;
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
 
@@ -52,9 +52,9 @@ class TetherCamControllerData : public ent::ComponentData
 	float		mfFar;
 	float 		mApproachSpeed;
 	
-public:
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const override;
+public:
 
 	TetherCamControllerData();
 	PoolString GetTarget() const { return mTarget; }
@@ -79,14 +79,14 @@ class TetherCamControllerInst : public ent::ComponentInst
 	Entity*									mpTarget;
 	CCameraData								mCameraData;
 	
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
+	bool DoLink(SceneInst *psi) final;
+	bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
 
 public:
 	const TetherCamControllerData&	GetCD() const { return mCD; }
 
 	TetherCamControllerInst( const TetherCamControllerData& cd, ork::ent::Entity* pent );
-	bool DoLink(SceneInst *psi) override;
-	bool DoStart(SceneInst *psi, const CMatrix4 &world) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

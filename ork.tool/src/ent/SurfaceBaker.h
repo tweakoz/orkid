@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _SURFACE_BAKER_H
-#define _SURFACE_BAKER_H
+#pragma once
 
 #include <QtCore/QThread>
 #include <orktool/qtui/qtprocessview.h>
@@ -33,7 +32,7 @@ class BakeOps : public tool::ged::IOpsDelegate
 	BakeOps() : mbFlip(false) {}
 	private:
 	RttiDeclareConcrete( BakeOps, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget );
+	void Execute( ork::Object* ptarget ) final;
 };
 
 class AtlasMapperOps : public tool::ged::IOpsDelegate
@@ -45,7 +44,7 @@ class AtlasMapperOps : public tool::ged::IOpsDelegate
 	AtlasMapperOps() : mbIMT(false) {}
 	private:
 	RttiDeclareConcrete( AtlasMapperOps, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget );
+	void Execute( ork::Object* ptarget ) final;
 };
 
 class ImtMapperOps : public tool::ged::IOpsDelegate
@@ -55,7 +54,7 @@ class ImtMapperOps : public tool::ged::IOpsDelegate
 	LightMapperArchetype*	mpARCH;
 	private:
 	RttiDeclareConcrete( ImtMapperOps, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget );
+	void Execute( ork::Object* ptarget ) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -294,8 +293,8 @@ public:
 	const orklut<PoolString,FarmNodeGroup*>& GetFarmNodeGroupMap() const { return mFarmNodeGroups; }
 
 private:
-	void DoCompose(ArchComposer& composer){}
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const {}
+	void DoCompose(ArchComposer& composer) final {}
+	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
 
 	orklut<PoolString,BakerSettings*>	mSettingsMap;
 	PoolString							mCurrentSetting;							
@@ -311,8 +310,8 @@ class BakersChoiceDelegate : public ork::IUserChoiceDelegate
 public:
 	BakersChoiceDelegate() : IUserChoiceDelegate() , mpARCH( 0 ) {} //, mUserData(0) {}
 private:
-	virtual void EnumerateChoices( orkmap<ork::PoolString,ValueType>& Choices );
-	void SetObject( ork::Object* pobj, Object* puserdata ) { mpARCH = ork::rtti::autocast( pobj ); }
+	void EnumerateChoices( orkmap<ork::PoolString,ValueType>& Choices ) final;
+	void SetObject( ork::Object* pobj, Object* puserdata ) final { mpARCH = ork::rtti::autocast( pobj ); }
 	LightMapperArchetype* mpARCH;
 };
 
@@ -323,8 +322,8 @@ class FarmGroupChoiceDelegate : public ork::IUserChoiceDelegate
 public:
 	FarmGroupChoiceDelegate() : IUserChoiceDelegate() , mpARCH( 0 ) {} //, mUserData(0) {}
 private:
-	virtual void EnumerateChoices( orkmap<ork::PoolString,ValueType>& Choices );
-	void SetObject( ork::Object* pobj, Object* puserdata ) { mpARCH = ork::rtti::autocast( pobj );	}
+	void EnumerateChoices( orkmap<ork::PoolString,ValueType>& Choices ) final;
+	void SetObject( ork::Object* pobj, Object* puserdata ) final { mpARCH = ork::rtti::autocast( pobj );	}
 	LightMapperArchetype* mpARCH;
 };
 
@@ -335,8 +334,8 @@ class JobSetChoiceDelegate : public ork::IUserChoiceDelegate
 public:
 	JobSetChoiceDelegate() : IUserChoiceDelegate() , mpSETTINGS( 0 ) {} 
 private:
-	virtual void EnumerateChoices( orkmap<ork::PoolString,ValueType>& Choices );
-	void SetObject( ork::Object* pobj, Object* puserdata ) { mpSETTINGS = ork::rtti::autocast( pobj );	}
+	void EnumerateChoices( orkmap<ork::PoolString,ValueType>& Choices ) final;
+	void SetObject( ork::Object* pobj, Object* puserdata ) final { mpSETTINGS = ork::rtti::autocast( pobj );	}
 	BakerSettings* mpSETTINGS;
 };
 
@@ -353,4 +352,3 @@ bool PerformBake(BakeOps* pOPS,const BakerSettings*settings,const FarmNodeGroup*
 
 }}
 ///////////////////////////////////////////////////////////////////////////////
-#endif

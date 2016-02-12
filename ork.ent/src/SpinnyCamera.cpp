@@ -79,7 +79,7 @@ SequenceCamControllerData::SequenceCamControllerData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* SequenceCamControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* SequenceCamControllerData::DoCreateComponent(ent::Entity* pent) const
 {
 	return new SequenceCamControllerInst( *this, pent );
 }

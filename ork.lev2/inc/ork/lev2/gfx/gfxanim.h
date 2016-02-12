@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_PLATFORMLVL2_GFX_GFXANIM
-#define _ORK_PLATFORMLVL2_GFX_GFXANIM
+#pragma once
 
 #include <ork/math/cmatrix4.h>
 #include <ork/math/box.h>
@@ -91,7 +90,7 @@ public:
 
 	void AddFrame( float v ) { mSampledFrames.push_back(v); }
 	float GetFrame(int index ) const { return mSampledFrames[index]; }
-	virtual int GetNumFrames() const { return int(mSampledFrames.size()); }
+	virtual int GetNumFrames() const  final{ return int(mSampledFrames.size()); }
 	void ReserveFrames( int iv ) { mSampledFrames.reserve(iv); }
 
 };
@@ -111,7 +110,7 @@ public:
 
 	void AddFrame( const CVector3& v ) { mSampledFrames.push_back(v); }
 	const CVector3& GetFrame(int index ) const { return mSampledFrames[index]; }
-	virtual int GetNumFrames() const { return int(mSampledFrames.size()); }
+	virtual int GetNumFrames() const  final{ return int(mSampledFrames.size()); }
 	void ReserveFrames( int iv ) { mSampledFrames.reserve(iv); }
 
 };
@@ -131,7 +130,7 @@ public:
 
 	void AddFrame( const CVector4& v ) { mSampledFrames.push_back(v); }
 	const CVector4& GetFrame(int index ) const { return mSampledFrames[index]; }
-	virtual int GetNumFrames() const { return int(mSampledFrames.size()); }
+	virtual int GetNumFrames() const  final { return int(mSampledFrames.size()); }
 	void ReserveFrames( int iv ) { mSampledFrames.reserve(iv); }
 
 };
@@ -184,7 +183,7 @@ public:
 
 	void AddFrame( const DecompMtx44& v );
 	const DecompMtx44& GetFrame( int index ) const;
-	virtual int GetNumFrames() const;
+	virtual int GetNumFrames() const final;
 	void ReserveFrames( int iv );
 };
 
@@ -208,7 +207,7 @@ public:
 
 	void AddFrame( const CMatrix4& v );
 	const CMatrix4& GetFrame( int index ) const;
-	virtual int GetNumFrames() const;
+	virtual int GetNumFrames() const final;
 	void ReserveFrames( int iv ); 
 };
 
@@ -568,5 +567,3 @@ public:
 };
 
 } }
-
-#endif // _ORK_PLATFORMLVL2_GFX_GFXANIM

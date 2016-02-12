@@ -30,6 +30,8 @@
 #define DRAW_TRIANGLES		(0)
 #define DRAW_TRACK			(0)
 
+using namespace ork::tool;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace MeshUtil {
 ///////////////////////////////////////////////////////////////////////////////
@@ -1189,7 +1191,7 @@ bool DAEToSECCollision(const tokenlist& options)
 	ent::bullet::TrackSaveData saveData;
 
 	//Read sectors from the DAE file and grab sector info as well as last resort collision data
-	DaeReadOpts sectorReadOptions;
+	ork::tool::DaeReadOpts sectorReadOptions;
 	sectorReadOptions.mReadLayers.insert("sectors");
 	MeshUtil::toolmesh sectorMesh;
 	sectorMesh.ReadFromDaeFile(inPath, sectorReadOptions);
@@ -1210,7 +1212,7 @@ bool DAEToSECCollision(const tokenlist& options)
 		    ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_POSITION
 		  | ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_COLOR0);
 		gravityPolicy.mTriangulation.SetPolicy( ColladaTriangulationPolicy::ECTP_TRIANGULATE );
-		DaeReadOpts gravityReadOptions;
+		ork::tool::DaeReadOpts gravityReadOptions;
 		gravityReadOptions.mReadLayers.insert("gravity");
 		gravityMesh.ReadFromDaeFile(inPath, gravityReadOptions);	
 		//std::string outp = std::string(inPath.GetName().c_str())+std::string("_grav");
@@ -1229,7 +1231,7 @@ bool DAEToSECCollision(const tokenlist& options)
 		killPolicy.mReadComponentsPolicy.mReadComponents = (ColladaReadComponentsPolicy::ReadComponents)(
 		    ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_POSITION);
 		killPolicy.mTriangulation.SetPolicy( ColladaTriangulationPolicy::ECTP_TRIANGULATE );
-		DaeReadOpts killReadOptions;
+		ork::tool::DaeReadOpts killReadOptions;
 		killReadOptions.mReadLayers.insert("kill");
 		killMesh.ReadFromDaeFile(inPath, killReadOptions);
 		//std::string outp = std::string(inPath.GetName().c_str())+std::string("_kill");
@@ -1300,7 +1302,7 @@ bool DAEToSECCollision(const tokenlist& options)
 		    ColladaReadComponentsPolicy::EPOLICY_READCOMPONENTS_POSITION);
 		collisionPolicy.mTriangulation.SetPolicy( ColladaTriangulationPolicy::ECTP_TRIANGULATE );
 
-		DaeReadOpts collisionReadOptions;
+		ork::tool::DaeReadOpts collisionReadOptions;
 		collisionReadOptions.mReadLayers.insert("collision");
 		MeshUtil::toolmesh collisionMesh;
 		collisionMesh.ReadFromDaeFile(inPath, collisionReadOptions);

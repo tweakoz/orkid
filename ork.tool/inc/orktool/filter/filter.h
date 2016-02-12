@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _UTIL_ASSETFILTER_H
-#define _UTIL_ASSETFILTER_H
+#pragma once 
 
 #include <ork/object/Object.h>
 #include <ork/kernel/core/kerneltypes.h>
@@ -121,11 +120,9 @@ class CAssetFilter
 
 };
 
-#define RegFilt( nam,cls ) AssetFilterMap.insert(pair<string,AssetConvCB>((string)nam,(AssetConvCB)cls::ConvertAsset));
-
 ///////////////////////////////////////////////////////////////////////////////
 
-} }
+} } // namespace ork { namespace tool {
 
-#endif
+#define RegFilt( nam,cls ) AssetFilterMap.insert(pair<string,AssetConvCB>((string)nam,(AssetConvCB)cls::ConvertAsset));
 

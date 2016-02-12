@@ -96,7 +96,6 @@ public:
 
 	IRenderableDag();
 
-	virtual void Render( const Renderer *renderer ) const = 0;
 	void SetObject( const ork::Object* o ) { mpObject = o; }
 	const ork::Object* GetObject() const { return mpObject; }
 	
@@ -105,7 +104,6 @@ public:
 	/// sorted and all Renderables are drawn in the order they are queued.
 	/// Typically, a Renderable will use the IRenderer::ComposeSortKey() function as a helper when composing
 	/// its sort key.
-	virtual U32 ComposeSortKey( const Renderer *renderer ) const { return 0; }
 	
 	inline const CColor4& GetModColor() const { return mModColor; }
 	inline void SetModColor(const CColor4& Color) { mModColor = Color; }
@@ -206,8 +204,8 @@ public:
 
 	CModelRenderable(Renderer *renderer = NULL);
 	
-	virtual void Render( const Renderer *renderer ) const;
-	virtual bool CanGroup( const IRenderable* oth ) const;
+	virtual void Render( const Renderer *renderer ) const final;
+	virtual bool CanGroup( const IRenderable* oth ) const final;
 
 	inline void SetMaterialIndex( int idx ) { mMaterialIndex=idx; }
 	inline void SetMaterialPassIndex( int idx ) { mMaterialPassIndex=idx; }
@@ -228,7 +226,7 @@ public:
 	inline const lev2::XgmCluster* GetCluster( void ) const { return mCluster; }
 	inline const lev2::XgmMesh* GetMesh( void ) const { return mMesh; }
 	
-	virtual U32 ComposeSortKey( const Renderer *renderer ) const { return mSortKey; }
+	virtual U32 ComposeSortKey( const Renderer *renderer ) const  final { return mSortKey; }
 	
 	void SetSortKey( U32 skey ) { mSortKey=skey; }
 

@@ -2,8 +2,7 @@
 // Orkid
 // Copyright 1996-2010, Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
-#ifndef _ORK_STREAM_IOUTPUTSTREAM_H_
-#define _ORK_STREAM_IOUTPUTSTREAM_H_
+#pragma once
 
 namespace ork { namespace stream {
 
@@ -16,5 +15,3 @@ public:
 };
 
 } }
-
-#endif

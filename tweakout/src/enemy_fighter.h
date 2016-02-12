@@ -28,9 +28,9 @@ class FighterControllerData : public ent::ComponentData
 {
 	RttiDeclareAbstract( FighterControllerData, ent::ComponentData );
 
-public:
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
+public:
 
 	FighterControllerData();
 };
@@ -41,8 +41,8 @@ struct FighterTarget : public ITarget
 {
 	CVector3	mDamageImpulse;
 	FighterControllerInst& mFCI;
-	/*virtual*/ void NotifyDamage(const CVector3& Impulse);
-	/*virtual*/ CVector3 GetPos();
+	void NotifyDamage(const CVector3& Impulse) final;
+	CVector3 GetPos() final;
 	FighterTarget( FighterControllerInst& fci ) : mFCI(fci) {}
 
 };
@@ -86,7 +86,7 @@ class FighterControllerInst : public ent::ComponentInst
 	CVector3 mPosition;
 	CVector3 ZNormal;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 	void CalcForces( float fddt );
 

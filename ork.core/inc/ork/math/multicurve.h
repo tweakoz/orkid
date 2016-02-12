@@ -81,8 +81,8 @@ public:
 
 
 private:
-	bool PostDeserialize(reflect::IDeserializer &);				// virtual
-	bool PreDeserialize( ork::reflect::IDeserializer& deser );	// virtual
+	bool PostDeserialize(reflect::IDeserializer &) override;				// virtual
+	bool PreDeserialize( ork::reflect::IDeserializer& deser ) override;	// virtual
 
 };
 

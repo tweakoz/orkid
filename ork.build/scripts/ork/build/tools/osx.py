@@ -64,9 +64,9 @@ def DefaultBuildEnv( env, prj ):
 	#if prj.IsLinux:
 	#	DEFS += "LINUX "
 	CCFLG = ' '
-	CXXFLG = ' '
+	CXXFLG = '-I/usr/local/include'
 	LIBS = "m pthread"
-	LIBPATH = ' /opt/local/lib '
+	LIBPATH = ' /usr/local/lib '
 	#if USE_DEBUG_CXX:
 	#	LIBPATH += ' /usr/lib/x86_64-linux-gnu/debug '
 	LINK = ''

@@ -57,7 +57,7 @@ public:
 	void SetMinMax( const CVector3& vmin, const CVector3& vmax );
 
 private:
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+	bool PostDeserialize(reflect::IDeserializer &) override;
 
 };
 

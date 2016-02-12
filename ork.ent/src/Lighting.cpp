@@ -61,7 +61,7 @@ LightingComponentData::~LightingComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::ComponentInst *LightingComponentData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *LightingComponentData::DoCreateComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew LightingComponentInst( *this, pent );
 }
@@ -282,6 +282,12 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 						lightmanager.mGlobalStationaryLights.AddLight(GetLight());
 					}
 				}
+				break;
+			}
+			case ork::lev2::ELIGHTTYPE_POINT:
+			case ork::lev2::ELIGHTTYPE_SPOT:
+			default:
+			{
 				break;
 			}
 		}								

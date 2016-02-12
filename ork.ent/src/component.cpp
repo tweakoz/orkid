@@ -61,6 +61,11 @@ PoolString ComponentData::GetFamily() const
 	return clazz->GetFamily();
 }
 
+ComponentInst* ComponentData::CreateComponent(Entity* pent) const
+{
+	return DoCreateComponent(pent);
+}
+
 void ComponentInst::Describe()
 {
 }

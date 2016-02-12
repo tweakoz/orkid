@@ -241,15 +241,6 @@ class CCamera_persp : public CCamera
 	bool mDoDolly;
 	bool mDoPan;
 
-	bool UIEventHandler( const ui::Event& EV ) override;
-	void draw( GfxTarget *pT ) override;
-
-	void RenderUpdate( void ); // virtual
-	void SetFromWorldSpaceMatrix(const CMatrix4 &matrix); // virtual
-	
-    CReal ViewLengthToWorldLength( const CVector4 &pos, CReal ViewLength ); // virtual
-	void GenerateDepthRay( const CVector2& pos2D, CVector3 &rayN, CVector3 &rayF,  const CMatrix4 &IMat ) const; // virtual
-
     void DrawBillBoardQuad( CVector4 &inpt, CReal size );
 	
 	void UpdateMatrices( void );
@@ -267,6 +258,17 @@ class CCamera_persp : public CCamera
     void DollyEnd();
 
     CCamera_persp();
+
+private:
+
+	bool UIEventHandler( const ui::Event& EV ) final;
+	void draw( GfxTarget *pT ) final;
+
+	void RenderUpdate( void ) final; // virtual
+	void SetFromWorldSpaceMatrix(const CMatrix4 &matrix) final; // virtual
+	
+    CReal ViewLengthToWorldLength( const CVector4 &pos, CReal ViewLength ) final; // virtual
+	void GenerateDepthRay( const CVector2& pos2D, CVector3 &rayN, CVector3 &rayF,  const CMatrix4 &IMat ) const final; // virtual
 
 };
 

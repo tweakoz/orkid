@@ -114,7 +114,7 @@ void toolmesh::ReadAuto( const file::Path& BasePath )
 
 	if( ext == "dae" )
 	{
-		DaeReadOpts opts;
+		tool::DaeReadOpts opts;
 		ReadFromDaeFile( BasePath, opts );
 	}
 	else
@@ -142,7 +142,7 @@ void toolmesh::WriteAuto( const file::Path& BasePath ) const
 
 	if( ext == "dae" )
 	{
-		DaeWriteOpts out_opts;
+		tool::DaeWriteOpts out_opts;
 		WriteToDaeFile( BasePath, out_opts );
 	}
 	else

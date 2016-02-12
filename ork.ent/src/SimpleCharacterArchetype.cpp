@@ -40,7 +40,7 @@ class SimpleCharControllerData : public ComponentData
 {
 	RttiDeclareConcrete(SimpleCharControllerData, ComponentData)
 
-	ComponentInst *CreateComponent(Entity *pent) const override;
+	ComponentInst *DoCreateComponent(Entity *pent) const final;
 
 public:
 
@@ -66,7 +66,7 @@ public:
 	{
 
 	}
-	bool DoNotify(const ork::event::Event *event) override
+	bool DoNotify(const ork::event::Event *event) final
 	{
 		if(const event::AnimFinishEvent* afe = ork::rtti::autocast(event))
 		{
@@ -78,7 +78,7 @@ public:
 
 		return true;
 	}
-	bool DoLink(ork::ent::SceneInst *psi) override
+	bool DoLink(ork::ent::SceneInst *psi) final
 	{
 		mAnima = GetEntity()->GetTypedComponent<ork::ent::SimpleAnimatableInst>();
 		if( nullptr == mAnima) return false;
@@ -101,7 +101,7 @@ void SimpleCharacterArchetype::Describe()
 {
 }
 
-ComponentInst* SimpleCharControllerData::CreateComponent(Entity *pent) const
+ComponentInst* SimpleCharControllerData::DoCreateComponent(Entity *pent) const
 {
 	return new SimpleCharControllerInst(*this,pent);
 }

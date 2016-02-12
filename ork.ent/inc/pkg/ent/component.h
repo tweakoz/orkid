@@ -87,7 +87,7 @@ protected:
 	SceneInst*					mpSceneInst;
 
 private:
-	/*virtual*/ bool DoNotify(const ork::event::Event *event) { return false; }
+	/*virtual*/ bool DoNotify(const ork::event::Event *event) override { return false; }
 	virtual void DoUpdate(SceneInst *inst) {}
 	virtual void DoStart(SceneInst *psi) {}
 	virtual void DoLink(SceneInst *psi) {}
@@ -106,7 +106,7 @@ class ComponentData : public Object
 public:
 	ComponentData();
 
-	virtual ComponentInst* CreateComponent(Entity* pent) const = 0;
+	ComponentInst* CreateComponent(Entity* pent) const;
 
 	PoolString GetFamily() const;
 
@@ -115,6 +115,8 @@ public:
 	virtual const char* GetShortSelector() const { return 0; }
 
 private:
+
+	virtual ComponentInst* DoCreateComponent(Entity* pent) const = 0;
 
 	virtual void DoRegisterWithScene( SceneComposer& sc ) {}
 };
@@ -147,7 +149,7 @@ protected:
 	ComponentInst( const ComponentData* data, Entity *entity );
 
 private:
-	/*virtual*/ bool DoNotify(const ork::event::Event *event) { return false; }
+	/*virtual*/ bool DoNotify(const ork::event::Event *event) override { return false; }
 	virtual void DoUpdate(SceneInst *inst) {}
 	virtual bool DoStart(SceneInst *psi, const CMatrix4 &world) { return true; }
 	virtual bool DoLink(SceneInst *psi) { return true; }
@@ -181,7 +183,7 @@ public:
 
 private:
 
-	/*virtual*/ ComponentInst* CreateComponent(Entity* pent) const { return new EditorPropMapInst(this,pent); }
+	ComponentInst* DoCreateComponent(Entity* pent) const final { return new EditorPropMapInst(this,pent); }
 
 	orklut<ConstString, ConstString> mProperties;
 };

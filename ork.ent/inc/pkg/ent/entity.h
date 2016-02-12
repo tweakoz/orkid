@@ -179,7 +179,7 @@ public:
 	EntData();
 	virtual ~EntData();
 
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+	virtual bool PostDeserialize(reflect::IDeserializer &) override;
 
 	const Archetype* GetArchetype() const { return mArchetype; }
 	void SetArchetype(const Archetype*parch);
@@ -255,7 +255,7 @@ public:
 
 private:
 
-	bool DoNotify(const ork::event::Event *event); // virtual
+	bool DoNotify(const ork::event::Event *event) override; // virtual
 
 	SceneInst *mSceneInst;
 
@@ -334,7 +334,7 @@ protected:
 
 private:
 
-	bool PostDeserialize(reflect::IDeserializer &); // virtual
+	bool PostDeserialize(reflect::IDeserializer &) override; // virtual
 	SceneData* mpSceneData;
 
 };

@@ -22,8 +22,8 @@ class  DirectObjectPropertyType : public IObjectPropertyType<T>
 public:
     DirectObjectPropertyType(T Object::*);
 
-    /*virtual*/ void Get(T &, const Object *) const;
-    /*virtual*/ void Set(const T &, Object *) const;
+    /*virtual*/ void Get(T &, const Object *) const override;
+    /*virtual*/ void Set(const T &, Object *) const override;
 
 };
 

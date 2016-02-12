@@ -219,7 +219,7 @@ protected:
 
 private:
 
-	void DoSetDirty( bool bv ); // virtual
+	void DoSetDirty( bool bv ) override; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -253,7 +253,7 @@ protected:
 
 private:
 
-	void DoSetDirty( bool bv ); // virtual
+	void DoSetDirty( bool bv ) override; // virtual
 
 	dataflow::node_hash		mOutputHash;
 	dgregister*				mpRegister;
@@ -294,7 +294,7 @@ public:
 		, mOutputData(def)
 	{
 	}
-	virtual int MaxFanOut() const { return MaxFanout<vartype>(); }
+	virtual int MaxFanOut() const  override { return MaxFanout<vartype>(); }
 	///////////////////////////////////////////////////////////////
 	void ConnectData( const vartype*pd ) { mOutputData=pd; }
 	///////////////////////////////////////////////////////////////
@@ -521,7 +521,7 @@ public:
 	{
 	}
 
-	float transform( float input ) const; // virtual
+	float transform( float input ) const override; // virtual
 
 private:
 
@@ -547,7 +547,7 @@ public:
 	{
 	}
 
-	float transform( float input ) const; // virtual
+	float transform( float input ) const override; // virtual
 
 private:
 
@@ -925,7 +925,7 @@ protected:
 
 	std::set<int>									mOutputRegisters;
 
-	bool DoNotify(const ork::event::Event *event); // virtual
+	bool DoNotify(const ork::event::Event *event) override;
 
 };
 

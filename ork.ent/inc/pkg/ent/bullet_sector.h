@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENT_BULLET_SECTOR_H
-#define _ORK_ENT_BULLET_SECTOR_H
+#pragma once
 
 #include <ork/math/plane.h>
 #include <ork/math/cvector3.h>
@@ -294,7 +293,7 @@ public:
 	float GetRespawnProgress(float actual_progress) const;
 private:
 	
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
+	ork::ent::ComponentInst *DoCreateComponent(ork::ent::Entity *pent) const final;
 
 	ork::file::Path				mSecMeshName;
 	float						mTrackScale;
@@ -320,7 +319,7 @@ public:
 	const Track& GetTrack() const { return mTrack; }
 
 protected:
-	/*virtual*/ bool DoLink(ork::ent::SceneInst *inst);
+	bool DoLink(ork::ent::SceneInst *inst) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -346,7 +345,7 @@ public:
 
 private:
 
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
+	ork::ent::ComponentInst *DoCreateComponent(ork::ent::Entity *pent) const final;
 
 };
 
@@ -387,9 +386,9 @@ public:
 	const ork::CVector3 &GetOldPos() const { return mOldpos; }
 private:
 
-	/*virtual*/ bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world);
-	/*virtual*/ bool DoLink(ork::ent::SceneInst *inst);
-	/*virtual*/ bool DoNotify(const ork::event::Event *event);
+	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world) final;
+	bool DoLink(ork::ent::SceneInst *inst) final;
+	bool DoNotify(const ork::event::Event *event) final;
 
 	const SectorTrackerData&		mData;
 	const Track*					mTrack;
@@ -412,9 +411,9 @@ class TrackArchetype : public ork::ent::Archetype
 
 private:
 
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
-	/*virtual*/ void DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const;
-	/*virtual*/ void DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const;
+	void DoCompose(ork::ent::ArchComposer& composer) final;
+	void DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const final;
+	void DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const final;
 
 };
 
@@ -422,4 +421,3 @@ private:
 }}}
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // _ORK_ENT_BULLET_SECTOR_H

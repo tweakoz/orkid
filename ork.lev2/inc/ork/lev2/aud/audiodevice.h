@@ -179,7 +179,7 @@ protected:
 class AudioSf2ZonePlayback : public AudioZonePlayback
 {
 	RttiDeclareAbstract(AudioSf2ZonePlayback,AudioZonePlayback);
-	void Update( float fdt ); // virtual
+	void Update( float fdt ) override; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -188,8 +188,8 @@ class AudioModule : public ork::dataflow::dgmodule
 {
 	RttiDeclareAbstract( AudioModule, ork::dataflow::dgmodule );
 	////////////////////////////////////////////////////////////
-	virtual void Compute( ork::dataflow::workunit* wu ) {}
-	virtual void CombineWork( const ork::dataflow::cluster* c ) {}
+	void Compute( ork::dataflow::workunit* wu ) override {}
+	void CombineWork( const ork::dataflow::cluster* c ) override {}
 	////////////////////////////////////////////////////////////
 protected:
 	AudioModule() {}
@@ -209,10 +209,12 @@ private:
 	DeclareFloatXfPlug( TimeScale );
 
 	//virtual int GetNumInputs() const { return 1; }
-	virtual dataflow::inplugbase* GetInput(int idx) { return &mPlugInpTimeScale; } 
+	dataflow::inplugbase* GetInput(int idx) override { return &mPlugInpTimeScale; } 
 
 	//virtual int GetNumOutputs() const { return 7; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) override;
+
+	void Compute( float dt ) override; // virtual
 
 	DeclareFloatOutPlug( Time );
 	DeclareFloatOutPlug( TimeDiv10 );
@@ -221,8 +223,6 @@ private:
 	DeclareFloatOutPlug( Noise );
 	DeclareFloatOutPlug( FastNoise );
 	DeclareFloatOutPlug( SlowNoise );
-
-	virtual void Compute( float dt ); // virtual
 
 	float	mfNoiseRat;
 	float	mfSlowNoiseRat;
@@ -261,14 +261,14 @@ private:
 	DeclareFloatXfPlug( LfoAmplitude );
 	MultiCurve1D		mLfoWaveform;
 	//virtual int GetNumInputs() const { return 3; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) override;
 	///////////////////////////////////////
 	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) override;
 	DeclareFloatOutPlug( Output );
 	///////////////////////////////////////
 
-	virtual void Compute( float dt ); // virtual
+	virtual void Compute( float dt ) override; // virtual
 
 };
 
@@ -287,14 +287,14 @@ private:
 	///////////////////////////////////////
 	DeclareFloatXfPlug( ControlInput );
 	//virtual int GetNumInputs() const { return 1; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) override;
 	///////////////////////////////////////
 	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) override;
 	DeclareFloatOutPlug( Output );
 	///////////////////////////////////////
 
-	virtual void Compute( float dt ); // virtual
+	void Compute( float dt ) override; // virtual
 
 };
 
@@ -325,12 +325,12 @@ private:
 	EAUDOP2								meOp;
 
 	//virtual int GetNumInputs() const { return 2; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) override;
 
 	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) override;
 
-	virtual void Compute( float dt ); // virtual
+	void Compute( float dt ) override; // virtual
 
 };
 
@@ -346,14 +346,13 @@ class AudioExtConnectorModule : public AudioModule
 	/////////////////////////////////////////////////////
 	// data currently only flows in from externals
 	//virtual int GetNumInputs() const { return 0; }
-	virtual dataflow::inplugbase* GetInput(int idx) { return 0; }
+	dataflow::inplugbase* GetInput(int idx) override { return 0; }
 	// data currently only flows in from externals
 	/////////////////////////////////////////////////////
 
 	int GetNumOutputs() const override;
-	virtual dataflow::outplugbase* GetOutput(int idx);
-
-	virtual void Compute( float dt );
+	dataflow::outplugbase* GetOutput(int idx) override;
+	void Compute( float dt ) override;
 
 
 public:
@@ -374,7 +373,7 @@ public:
 	AudioHwSinkModule();
 	void SetZonePB( AudioModularZonePlayback* pz ) { mZonePB=pz; }
 private:
-	virtual void Compute( float dt );	// virtual
+	void Compute( float dt ) override;	// virtual
 	AudioModularZonePlayback*	mZonePB;
 	//////////////////////////////////////////////////
 	// inputs
@@ -385,11 +384,11 @@ private:
 	DeclareFloatXfPlug( Resonance );
 	DeclareFloatXfPlug( Pan );
 	//virtual int GetNumInputs() const { return 5; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) override;
 	/////////////////////////////////////////////////////
 	// data currently only flows in to sinks
 	//virtual int GetNumOutputs() const { return 0; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return 0; }
+	dataflow::outplugbase* GetOutput(int idx) override { return 0; }
 	// data currently only flows in to sinks
 	/////////////////////////////////////////////////////
 	//////////////////////////////////////////////////
@@ -417,7 +416,7 @@ private:
 
 	friend class AudioGraphPool;
 
-	bool CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const;
+	bool CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const override;
 	ork::dataflow::dgregisterblock					mdflowregisters;
 	ork::dataflow::dgcontext						mdflowctx;
 
@@ -455,7 +454,7 @@ public:
 	void SetPitchOffset( float fpo ) { mfPitchOffset=fpo; }
 	void SetAmplitude( float famp ) { mfAmplitude=famp; }
 private:
-	void Update( float fdt ); // virtual 
+	void Update( float fdt ) override; // virtual 
 	float mfPitchOffset;
 	float mfAmplitude;
 };

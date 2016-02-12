@@ -43,7 +43,7 @@ MissileControllerData::MissileControllerData()
 	mpExplosionArchAsset = asset::AssetManager<ork::ent::ArchetypeAsset>::Load( "data://archetypes/particles/dust_cloud" );
 }
 
-ent::ComponentInst* MissileControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* MissileControllerData::DoCreateComponent(ent::Entity* pent) const
 {
 	return OrkNew MissileControllerInst( *this, pent );
 }

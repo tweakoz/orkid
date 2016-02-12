@@ -20,9 +20,10 @@ class PerfAnalyzerControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( PerfAnalyzerControllerData, ent::ComponentData );
 
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
+
 public:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
 
 	PerfAnalyzerControllerData();
 	
@@ -38,7 +39,7 @@ class PerfAnalyzerControllerInst : public ent::ComponentInst
 
 	const PerfAnalyzerControllerData&		mCD;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 public:
 
@@ -71,10 +72,10 @@ public:
 	PerformanceAnalyzerArchetype();
 
 private:
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
-	/*virtual*/ void DoLinkEntity(SceneInst* inst, Entity *pent) const;
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const;
-	/*virtual*/ void DoStopEntity(SceneInst* psi, Entity *pent) const;
+	void DoCompose(ork::ent::ArchComposer& composer) final;
+	void DoLinkEntity(SceneInst* inst, Entity *pent) const final;
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final;
+	void DoStopEntity(SceneInst* psi, Entity *pent) const final;
 
 };
 

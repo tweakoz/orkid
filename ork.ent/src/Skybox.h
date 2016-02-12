@@ -29,6 +29,7 @@ class SkyBoxControllerData : public ent::ComponentData
 
 	float mfSpinRate;
 
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
 	void GetModelAccessor(ork::rtti::ICastable *&model) const;
 	void SetModelAccessor(ork::rtti::ICastable *const &model);
 	lev2::XgmModelAsset*					mModelAsset;
@@ -38,7 +39,6 @@ public:
 
 	lev2::XgmModel* GetModel() const;
 	float GetScale() const { return mfScale; }
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
 
 	SkyBoxControllerData();
 	float GetSpinRate() const { return mfSpinRate; }
@@ -54,7 +54,7 @@ class SkyBoxControllerInst : public ent::ComponentInst
 	const SkyBoxControllerData&		mCD;
 	float							mPhase;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 public:
 	const SkyBoxControllerData&	GetCD() const { return mCD; }
@@ -69,9 +69,9 @@ class SkyBoxArchetype : public Archetype
 {
 	RttiDeclareConcrete( SkyBoxArchetype, Archetype );
 
-	/*virtual*/ void DoLinkEntity( SceneInst* psi, Entity *pent ) const;
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
+	void DoLinkEntity( SceneInst* psi, Entity *pent ) const final;
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 	//void					SetSkyTexture( ork::rtti::ICastable* const & l2tex);
 	//void					GetSkyTexture( ork::rtti::ICastable* & l2tex) const;

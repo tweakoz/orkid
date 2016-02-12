@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_NOVA_ENT_PARTICLECONTROLLABLE_H
-#define ORK_NOVA_ENT_PARTICLECONTROLLABLE_H
+#pragma once
 ///////////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/entity.h>
 #include <ork/lev2/gfx/particle/particle.h>
@@ -77,7 +76,6 @@ public:
 	///////////////////////////////////////////////////////
 	ParticleControllableData();
 	~ParticleControllableData();
-	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const override;
 	const ork::orklut<ork::PoolString,ParticleItemBase*>& GetItems() const { return mItems; }
 	ork::PoolString GetEntAttachment() const { return mEntAttachment; }
 	
@@ -85,11 +83,13 @@ public:
 	void SetDefaultEnable(bool enable) { mDefaultEnable = enable; }
 private:
 
+	ork::ent::ComponentInst *DoCreateComponent(ork::ent::Entity *pent) const override;
+
 	ork::orklut<ork::PoolString, ParticleItemBase*>	mItems;
 	bool mDefaultEnable;
 	ork::PoolString mEntAttachment;
 
-	const char* GetShortSelector() const { return "psys"; } // virtual
+	const char* GetShortSelector() const final { return "psys"; } // virtual
 
 };
 
@@ -167,12 +167,9 @@ public:
 	ModularSystem( const ModParticleItem& item );
 	~ModularSystem();
 
-	void DoReset() override; 
-	void DoUpdate(float fdt) override;
 	psys_graph* GraphInstance() { return mGraphInstance; }
 	int GetNumRenderers() const { return int(mRenderers.size()); }
 	RendererModule* GetRenderer(int idx) { return mRenderers[idx]; }
-	void SetEmitterEnable( bool bv );
 	
 	ork::lev2::particle::Context* GetParticleContext() 
 	{
@@ -186,6 +183,9 @@ private:
 	orkvector<RendererModule*>			mRenderers;
 	ParticleControllableInst*			mParticleControllerInst;
 
+	void DoReset() override; 
+	void DoUpdate(float fdt) override;
+	void SetEmitterEnable( bool bv ) final;
 	void DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent ) override;
 	void DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent ) override;
 
@@ -212,6 +212,4 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 } } // namespace prodigy::ent
-///////////////////////////////////////////////////////////////////////////////
-#endif // ORK_NOVA_ENT_PARTICLECONTROLLABLE_H
 ///////////////////////////////////////////////////////////////////////////////

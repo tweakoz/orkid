@@ -93,7 +93,7 @@ TetherCamControllerData::TetherCamControllerData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* TetherCamControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* TetherCamControllerData::DoCreateComponent(ent::Entity* pent) const
 {
 	return new TetherCamControllerInst( *this, pent );
 }

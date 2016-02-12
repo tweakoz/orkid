@@ -241,6 +241,8 @@ float SceneInst::ComputeDeltaTime()
 			mLastGameTime = mGameTime;
 			mGameTime += mDeltaTime;
 		}
+		default:
+			break;
 	}
 
 //	printf( "mGameTime<%f>\n", mGameTime );
@@ -437,6 +439,8 @@ void SceneInst::OnSceneInstMode( ESceneInstMode emode )
 		case ESCENEMODE_RUN: // leaving runstate
 			//SetCameraData( ork::AddPooledLiteral("game1"), 0 );
 			break;
+		default:
+			break;
 	}
 	
 	switch( emode )
@@ -450,6 +454,8 @@ void SceneInst::OnSceneInstMode( ESceneInstMode emode )
 			break;
 		case ESCENEMODE_PAUSE:
 			EnterPauseState();
+			break;
+		default:
 			break;
 	}
 	this->meSceneInstMode = emode;

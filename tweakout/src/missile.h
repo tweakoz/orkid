@@ -28,9 +28,10 @@ class MissileControllerData : public ent::ComponentData
 {
 	RttiDeclareAbstract( MissileControllerData, ent::ComponentData );
 
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
+
 public:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
 	ork::ent::ArchetypeAsset* GetExplosionArchetype() const { return mpExplosionArchAsset; }
 
 	MissileControllerData();
@@ -85,7 +86,7 @@ class MissileControllerInst : public ent::ComponentInst
 	CVector3 mPosition;
 	CVector3 ZNormal;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 	void CalcForces( float fddt );
 

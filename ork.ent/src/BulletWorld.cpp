@@ -71,7 +71,7 @@ void BulletWorldControllerData::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ComponentInst *BulletWorldControllerData::CreateComponent(Entity *pent) const
+ComponentInst *BulletWorldControllerData::DoCreateComponent(Entity *pent) const
 {
 	AllocationLabel("BulletWorldControllerData::CreateComponent");
 

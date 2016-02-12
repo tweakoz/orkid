@@ -92,15 +92,15 @@ class GlTextureInterface;
 
 class GlImiInterface : public ImmInterface
 {
-	virtual void DrawLine( const CVector4 &From, const CVector4 &To );
-	virtual void DrawPoint( F32 fx, F32 fy, F32 fz );
-	virtual void DrawPrim( const CVector4 *Points, int inumpoints, EPrimitiveType eType );
-	virtual void DoBeginFrame() {}
-	virtual void DoEndFrame() {}
+	void DoBeginFrame() final {}
+	void DoEndFrame() final {}
 
 public:
 
 	GlImiInterface( GfxTargetGL& target );
+	void DrawLine( const CVector4 &From, const CVector4 &To );
+	void DrawPoint( F32 fx, F32 fy, F32 fz );
+	void DrawPrim( const CVector4 *Points, int inumpoints, EPrimitiveType eType );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -109,12 +109,12 @@ class GlRasterStateInterface : public RasterStateInterface
 {
 	void BindRasterState( const SRasterState &rState, bool bForce ) override;
 
-	void SetZWriteMask( bool bv ) override;
-	void SetRGBAWriteMask( bool rgb, bool a ) override;
-	void SetBlending( EBlending eVal ) override;
-	void SetDepthTest( EDepthTest eVal ) override;
-	void SetCullTest( ECullTest eVal ) override;
-	void SetScissorTest( EScissorTest eVal ) override;
+	void SetZWriteMask( bool bv ) final;
+	void SetRGBAWriteMask( bool rgb, bool a ) final;
+	void SetBlending( EBlending eVal ) final;
+	void SetDepthTest( EDepthTest eVal ) final;
+	void SetCullTest( ECullTest eVal ) final;
+	void SetScissorTest( EScissorTest eVal ) final;
 
 };
 
@@ -122,8 +122,8 @@ class GlRasterStateInterface : public RasterStateInterface
 
 class GlMatrixStackInterface : public MatrixStackInterface
 {
-	CMatrix4 Ortho( float left, float right, float top, float bottom, float fnear, float ffar ); // virtual
-	CMatrix4 Frustum( float left, float right, float top, float bottom, float zn, float zf ); // virtual
+	CMatrix4 Ortho( float left, float right, float top, float bottom, float fnear, float ffar ) final; // virtual
+	CMatrix4 Frustum( float left, float right, float top, float bottom, float zn, float zf ) final; // virtual
 
 public:
 
@@ -145,40 +145,32 @@ private:
 
 	void* LockVB( VertexBufferBase& VBuf, int ivbase, int icount ) final;
 	void UnLockVB( VertexBufferBase& VBuf ) final;
-
 	const void* LockVB( const VertexBufferBase& VBuf, int ivbase=0, int icount=0 ) final;
 	void UnLockVB( const VertexBufferBase& VBuf ) final;
-
-	void ReleaseVB( VertexBufferBase& VBuf ) final;
-
-	//
-	
+	void ReleaseVB( VertexBufferBase& VBuf ) final;	
 	void*LockIB ( IndexBufferBase& VBuf, int ivbase, int icount ) final;
 	void UnLockIB ( IndexBufferBase& VBuf ) final;
-
 	const void* LockIB ( const IndexBufferBase& VBuf, int ibase=0, int icount=0 ) final;
 	void UnLockIB ( const IndexBufferBase& VBuf ) final;
-
 	void ReleaseIB( IndexBufferBase& VBuf ) final;
 
-	//
-
-	bool BindStreamSources( const VertexBufferBase& VBuf, const IndexBufferBase& IBuf );
-	bool BindVertexStreamSource( const VertexBufferBase& VBuf );
-	void BindVertexDeclaration( EVtxStreamFormat efmt );
+	// DrawPrim Interface
 
 	void DrawPrimitive( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
 	void DrawIndexedPrimitive( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
 	void DrawPrimitiveEML( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
 	void DrawIndexedPrimitiveEML( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
-	
+
+	void DoBeginFrame() final { mLastComponentMask=0; }
+	void DoEndFrame() final {}
+
 	GfxTargetGL& mTargetGL;
 
 	uint32_t mLastComponentMask;
 
-	void DoBeginFrame() final { mLastComponentMask=0; }
-	//virtual void DoEndFrame() {}
-
+	bool BindStreamSources( const VertexBufferBase& VBuf, const IndexBufferBase& IBuf );
+	bool BindVertexStreamSource( const VertexBufferBase& VBuf );
+	void BindVertexDeclaration( EVtxStreamFormat efmt );
 
 };
 
@@ -191,34 +183,34 @@ public:
 	GlFrameBufferInterface( GfxTargetGL& mTarget );
 	~GlFrameBufferInterface();
 
-	virtual void	SetRtGroup( RtGroup* Base );
+	void SetRtGroup( RtGroup* Base ) final;
 	void SetAsRenderTarget();
 
 	void InitializeContext( GfxBuffer* pBuf );
 
 	///////////////////////////////////////////////////////
 
-	virtual void	Clear( const CColor4 &rCol, float fdepth );
+	void	Clear( const CColor4 &rCol, float fdepth ) final;
 
-	virtual void	SetViewport( int iX, int iY, int iW, int iH );
-	virtual void	SetScissor( int iX, int iY, int iW, int iH );
+	void	SetViewport( int iX, int iY, int iW, int iH ) final;
+	void	SetScissor( int iX, int iY, int iW, int iH ) final;
 
-	virtual void	PushScissor( const SRect &rScissorRect );
-	virtual SRect&	PopScissor( void );
+	void	PushScissor( const SRect &rScissorRect ) final;
+	SRect&	PopScissor( void ) final;
 
 	//////////////////////////////////////////////
 	// Capture Interface
 
-	virtual void	Capture( const RtGroup& inpbuf, int irt, const file::Path& pth );
-	//virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer );
-	virtual bool	CaptureToTexture( const CaptureBuffer& capbuf, Texture& tex ) { return false; }
-	virtual void	GetPixel( const CVector4 &rAt, GetPixelContext& ctx );
+	void	Capture( const RtGroup& inpbuf, int irt, const file::Path& pth ) final;
+	//void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer );
+	bool	CaptureToTexture( const CaptureBuffer& capbuf, Texture& tex ) final { return false; }
+	void	GetPixel( const CVector4 &rAt, GetPixelContext& ctx ) final;
 
 	//////////////////////////////////////////////
 
-	virtual void	ForceFlush( void );
-	virtual void	DoBeginFrame( void );
-	virtual void	DoEndFrame( void );
+	void	ForceFlush( void ) final;
+	void	DoBeginFrame( void ) final;
+	void	DoEndFrame( void ) final;
 
 	//////////////////////////////////////////////
 
@@ -369,10 +361,9 @@ class GfxTargetGL : public GfxTarget
 
 	///////////////////////////////////////////////////////////////////////
 	
-	virtual void SetSize( int ix, int iy, int iw, int ih );
-
-	virtual void DoBeginFrame( void ) {}
-	virtual void DoEndFrame( void ) {}
+	void SetSize( int ix, int iy, int iw, int ih ) final;
+	void DoBeginFrame( void ) final {}
+	void DoEndFrame( void ) final {}
 
 	///////////////////////////////////////////////////////////////////////
 	// Shader Interface
@@ -385,13 +376,13 @@ class GfxTargetGL : public GfxTarget
 	//////////////////////////////////////////////
 	// Interfaces
 
-	virtual FxInterface*				FXI() { return & mFxI; }
-	virtual ImmInterface*				IMI() { return & mImI; }
-	virtual RasterStateInterface*		RSI() { return & mRsI; }
-	virtual MatrixStackInterface*		MTXI() { return & mMtxI; }
-	virtual GeometryBufferInterface*	GBI() { return & mGbI; }
-	virtual FrameBufferInterface*		FBI() { return & mFbI; }
-	virtual TextureInterface*			TXI() { return & mTxI; }
+	FxInterface*				FXI() final { return & mFxI; }
+	ImmInterface*				IMI() final { return & mImI; }
+	RasterStateInterface*		RSI() final { return & mRsI; }
+	MatrixStackInterface*		MTXI() final { return & mMtxI; }
+	GeometryBufferInterface*	GBI() final { return & mGbI; }
+	FrameBufferInterface*		FBI() final { return & mFbI; }
+	TextureInterface*			TXI() final { return & mTxI; }
 
 	///////////////////////////////////////////////////////////////////////
 
@@ -400,14 +391,13 @@ class GfxTargetGL : public GfxTarget
 	//////////////////////////////////////////////
 	// GfxTarget Concrete Interface
 
-	virtual void InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase );	// make a window
-	virtual void InitializeContext( GfxBuffer *pBuf );	// make a pbuffer
+	void InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase ) final;	// make a window
+	void InitializeContext( GfxBuffer *pBuf ) final;	// make a pbuffer
+	void TakeThreadOwnership() final; // virtual 
+	bool SetDisplayMode(DisplayMode *mode) final; 
 
 	//////////////////////////////////////////////
 
-	void MakeCurrentContext( void );
-
-	void TakeThreadOwnership(); // virtual 
 
 	//////////////////////////////////////////////
 
@@ -416,14 +406,13 @@ class GfxTargetGL : public GfxTarget
 
 	//////////////////////////////////////////////
 
+	void MakeCurrentContext( void );
 	void AttachGLContext( CTXBASE *pCTFL );
 	void SwapGLContext( CTXBASE *pCTFL );
 
 	int GetNumTexUnits( void ) const { return gNumTexUnits; }
 
 	GlFrameBufferInterface&	GLFBI() { return mFbI; }
-
-	bool SetDisplayMode(DisplayMode *mode); // virtual
 
 protected:
 
@@ -478,8 +467,8 @@ protected:
 	GlFrameBufferInterface		mFbI;
 	GlTextureInterface			mTxI;
 	bool 						mTargetDrawableSizeDirty;
-	void* DoBeginLoad(); // virtual
-	void DoEndLoad(void*ploadtok); // virtual
+	void* DoBeginLoad() final; // virtual
+	void DoEndLoad(void*ploadtok) final; // virtual
 
 };
 

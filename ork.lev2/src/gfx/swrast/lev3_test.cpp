@@ -50,7 +50,8 @@ public:
         for( int iw=0; iw<512; iw++ )
             for( int ih=0; ih<512; ih++ )
             {
-                pu32[idx++] = idx;
+                int ii = idx++;
+                pu32[ii] = ii;
             
             }
         tex->SetDirty(true);

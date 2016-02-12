@@ -187,16 +187,16 @@ public:
 	CTQT( GfxWindow* pwin, QWidget* parent=0 );
 	~CTQT();
 
-	/*virtual*/ void Show();
-	/*virtual*/ void Hide();
+	void Show() final;
+	void Hide() final;
+	void SetRefreshRate( int ihz ) final;
+	void SetRefreshPolicy( ERefreshPolicy epolicy ) final;
+	void SlotRepaint() final;  
 
-	virtual void SetRefreshRate( int ihz );
-	virtual void SetRefreshPolicy( ERefreshPolicy epolicy );
+	void Resize(int X, int Y, int W, int H);
 	void SetParent( QWidget* pw );
 	void SetAlwaysRun( bool brun ) {  mbAlwaysRun=brun; }
 	void* winId() const { return (void*)mpQtWidget->winId(); }
-	virtual void Resize(int X, int Y, int W, int H);
-	void SlotRepaint(); // virtual 
 	QCtxWidget* GetQWidget() const { return mpQtWidget; }
 	QWidget* GetParent() const { return mParent; }
 
@@ -216,12 +216,12 @@ class CQtGfxWindow : public ork::lev2::GfxWindow
 	CQtGfxWindow( ui::Widget* root_widget );
 	~CQtGfxWindow();
 
-	virtual void Draw( void );
-	//virtual void Show( void );
-	virtual void GotFocus( void );
-	virtual void LostFocus( void );
-	virtual void Hide( void ) {	}
-	/*virtual*/ void OnShow();
+	void Draw( void );
+	//void Hide( void ) {	}
+
+	void GotFocus( void ) final;
+	void LostFocus( void ) final;
+	void OnShow() final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -462,9 +462,9 @@ public:
 protected:\
 friend class lev2::MocImp<Sub, Base>;\
 static lev2::MocImp<Sub, Base> Moc;\
-void *qt_metacast(const char *_clname) { return Moc.qt_metacast(this,_clname); }\
-const QMetaObject *metaObject() const { return Moc.metaObject(); }\
-int qt_metacall( QMetaObject::Call _c, int _id, void **_a ) { return Moc.qt_metacall(this,_c,_id,_a); }\
+void *qt_metacast(const char *_clname) override { return Moc.qt_metacast(this,_clname); }\
+const QMetaObject *metaObject() const override { return Moc.metaObject(); }\
+int qt_metacall( QMetaObject::Call _c, int _id, void **_a ) override { return Moc.qt_metacall(this,_c,_id,_a); }\
 public:\
 static QMetaObject	staticMetaObject;\
 static void MocInit();

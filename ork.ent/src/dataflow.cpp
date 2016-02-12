@@ -25,7 +25,7 @@ namespace ork { namespace ent {
 
 static bool gbusepreview = false;
 
-bool DataflowRecieverComponentData::Notify(const event::Event *event)
+bool DataflowRecieverComponentData::DoNotify(const event::Event *event)
 {	if( const ObjectGedVisitEvent* pev = rtti::autocast( event ) )
 	{	gbusepreview = true;
 		return true;
@@ -49,7 +49,7 @@ DataflowRecieverComponentData::DataflowRecieverComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ComponentInst *DataflowRecieverComponentData::CreateComponent(Entity *pent) const
+ComponentInst *DataflowRecieverComponentData::DoCreateComponent(Entity *pent) const
 {
 	return OrkNew DataflowRecieverComponentInst( *this, pent );
 }
@@ -131,7 +131,7 @@ void DataflowRecieverComponentInst::BindExternalValue( PoolString name, const CV
 	}
 }
 
-bool DataflowRecieverComponentInst::Notify(const event::Event *event)
+bool DataflowRecieverComponentInst::DoNotify(const event::Event *event)
 {
 	if( const PerfControlEvent* pce = rtti::autocast(event) )
 	{

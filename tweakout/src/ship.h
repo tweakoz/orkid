@@ -32,7 +32,7 @@ class ShipControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( ShipControllerData, ent::ComponentData );
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const override;
+	ent::ComponentInst* DoCreateComponent(ent::Entity* pent) const final;
 
 	float	mForwardForce;
 	float	mSteeringRatio;
@@ -70,8 +70,8 @@ struct ShipTarget : public ITarget
 	ShipControllerInst& mSCI;
 	CVector3			mDamageImpulse;
 
-	/*virtual*/ void NotifyDamage(const CVector3& Impulse);
-	/*virtual*/ CVector3 GetPos();
+	void NotifyDamage(const CVector3& Impulse) final;
+	CVector3 GetPos() final;
 
 	ShipTarget( ShipControllerInst& sci ) : mSCI(sci) {}
 };
@@ -92,8 +92,8 @@ class ShipControllerInst : public ent::ComponentInst
 
 	ShipTarget						mThisTarget;
 
-	void DoUpdate(ent::SceneInst* sinst) override;
-	bool DoLink(ent::SceneInst* psi) override;
+	void DoUpdate(ent::SceneInst* sinst) final;
+	bool DoLink(ent::SceneInst* psi) final;
 
 	bool DoUpdate_Flip( const ork::lev2::InputState& inpstate, float fdt );
 
@@ -125,8 +125,8 @@ class ShipArchetype : public ork::ent::Archetype
 {
 	RttiDeclareConcrete( ShipArchetype, ent::Archetype );
 		
-	void DoCompose(ork::ent::ArchComposer& composer) override;
-	void DoStartEntity( ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity *pent ) const override;
+	void DoCompose(ork::ent::ArchComposer& composer) final;
+	void DoStartEntity( ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity *pent ) const final;
 
 public:
 

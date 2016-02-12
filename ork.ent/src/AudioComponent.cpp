@@ -521,7 +521,7 @@ AudioEffectComponentData::~AudioEffectComponentData()
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::ComponentInst *AudioEffectComponentData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *AudioEffectComponentData::DoCreateComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew AudioEffectComponentInst( *this, pent );
 }

@@ -15,6 +15,16 @@
 
 #include "EditorCamera.h"
 
+#define NDEBUG
+#define _GNU_SOURCE 
+#define __STDC_CONSTANT_MACROS 
+#define __STDC_FORMAT_MACROS 
+#define __STDC_LIMIT_MACROS 
+
+#include <OSL/oslconfig.h>
+#include <OSL/oslversion.h>
+#include <OSL/oslexec.h>
+
 #if 0 //defined(_DARWIN) 
 #define USE_PYTHON
 #endif
@@ -23,6 +33,59 @@
 #include <Python.h>
 #include <dispatch/dispatch.h>
 #endif
+
+//#define TEST_OSL
+
+#if defined(TEST_OSL)
+OSL_NAMESPACE_ENTER
+
+class SimpleRenderer : public OSL::RendererServices
+{
+public:
+    // Just use 4x4 matrix for transformations
+    typedef OSL::Matrix44 Transformation;
+
+    SimpleRenderer () {}
+    ~SimpleRenderer () { }
+
+    int supports (string_view feature) const final { return 0; }
+
+    bool get_matrix (ShaderGlobals *sg, Matrix44 &result,
+                     TransformationPtr xform,
+                     float time) final  { return false; }
+    bool get_matrix (ShaderGlobals *sg, Matrix44 &result,
+                     ustring from, float time) final  { return false; }
+    bool get_matrix (ShaderGlobals *sg, Matrix44 &result,
+                     TransformationPtr xform) final  { return false; }
+    bool get_matrix (ShaderGlobals *sg, Matrix44 &result,
+                     ustring from) final  { return false; }
+
+
+    bool get_inverse_matrix (ShaderGlobals *sg, Matrix44 &result,
+                                     ustring to, float time) final  { return false; }
+
+    bool get_array_attribute (ShaderGlobals *sg, bool derivatives, 
+                                      ustring object, TypeDesc type, ustring name,
+                                      int index, void *val ) final  { return false; }
+    bool get_attribute (ShaderGlobals *sg, bool derivatives, ustring object,
+                                TypeDesc type, ustring name, void *val) final  { return false; }
+    bool get_userdata (bool derivatives, ustring name, TypeDesc type, 
+                               ShaderGlobals *sg, void *val) final  { return false; }
+    bool has_userdata (ustring name, TypeDesc type, ShaderGlobals *sg) { return false; }
+};
+
+OSL_NAMESPACE_EXIT
+
+using namespace OSL;
+static OSL::ErrorHandler errhandler;
+static OSL::SimpleRenderer rend;  // RendererServices
+
+void InitOSL()
+{
+    auto shadingsys = new OSL::ShadingSystem (&rend, NULL, &errhandler);
+}
+
+#endif // defined(TEST_OSL)
 
 //#include <boost/python.hpp>
 
@@ -76,6 +139,7 @@ void LinkMe()
 	ent::EditorCamControllerData::GetClassStatic();
 	ent::EditorCamControllerInst::GetClassStatic();
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -237,6 +301,9 @@ tokenlist Init(int argc, char **argv)
 
     printf( "CPX\n");
 
+#if defined(TEST_OSL)
+	InitOSL();
+#endif
 	return toklist;
 
 }

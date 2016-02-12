@@ -144,7 +144,7 @@ public:
 	void DrawGrid( lev2::RenderContextFrameData& fdata );
 	void Draw3dContent( lev2::RenderContextFrameData& FrameData );
 	void DrawHUD( lev2::RenderContextFrameData& FrameData );
-	void DoDraw( ui::DrawEvent& drwev ); //virtual
+	void DoDraw( ui::DrawEvent& drwev ) final; //virtual
 	void DrawSpinner(lev2::RenderContextFrameData & FrameData);
 	void Init();
 	///////////////////////////////////////////////////

@@ -35,8 +35,8 @@ public:
     virtual void Get(T &value, const Object *obj) const = 0;
     virtual void Set(const T &value, Object *obj) const = 0;
 private:
-    /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;
-    /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
+    bool Deserialize(IDeserializer &, Object *) const override;
+    bool Serialize(ISerializer &, const Object *) const override;
 protected:
 	IObjectPropertyType() {}
 

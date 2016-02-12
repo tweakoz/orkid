@@ -19,7 +19,7 @@
 
 #if defined(USE_FCOLLADA)
 
-template class ork::util::Context<ColladaExportPolicy>;
+template class ork::util::Context<ork::tool::ColladaExportPolicy>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@ public: //
 	DAENAVFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		return MeshUtil::DAEToNAVCollision( toklist );
 	}
@@ -61,7 +61,7 @@ public: //
 	DAESECFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		return MeshUtil::DAEToSECCollision( toklist );
 	}
@@ -78,15 +78,13 @@ public: //
 	DAEDAEFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		return MeshUtil::DAEToDAE( toklist );
 	}
 };
 void DAEDAEFilter::Describe() {}
 
-} // namespace tool
-} // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,9 +165,6 @@ void ColladaAvailVertexFormats::Add( ork::lev2::EVtxStreamFormat efmt )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
-namespace ork {
-namespace tool {
 
 void RegisterColladaFilters()
 {

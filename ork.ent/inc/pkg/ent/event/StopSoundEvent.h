@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_EVENT_STOPAUDIOEFFECT_H
-#define ORK_ENT_EVENT_STOPAUDIOEFFECT_H
+#pragma once
 
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
@@ -31,7 +30,7 @@ private:
 
 	ork::PoolString		mSoundName;
 
-	virtual Object *Clone() const
+	Object *Clone() const final
 	{
 		return new StopSoundEvent(mSoundName);
 	}
@@ -41,4 +40,3 @@ private:
 
 } } } // ork::ent::event
 
-#endif // ORK_ENT_EVENT_STOPAUDIOEFFECT_H

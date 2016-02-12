@@ -64,7 +64,7 @@ class HotKeyConfiguration : public ork::Object
 	orklut<PoolString,ork::Object*>	mHotKeys;
 	orkset<boost::Crc64>			mHotKeysUsed;
 
-	bool PostDeserialize(reflect::IDeserializer &); // virtual 
+	bool PostDeserialize(reflect::IDeserializer &) override; // virtual 
 
 public:
 
@@ -110,8 +110,8 @@ public:
 	void Save();
 	void Load();
 
-	bool PreDeserialize(reflect::IDeserializer &); // virtual 
-	bool PostDeserialize(reflect::IDeserializer &); // virtual 
+	bool PreDeserialize(reflect::IDeserializer &) override; // virtual 
+	bool PostDeserialize(reflect::IDeserializer &) override; // virtual 
 
 	static bool IsDepressed(PoolString action);
 	static bool IsDepressed(const char* action);

@@ -275,7 +275,7 @@ ProcTexControllerInst::ProcTexControllerInst( const ProcTexControllerData& data,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* ProcTexControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* ProcTexControllerData::DoCreateComponent(ent::Entity* pent) const
 {
 	return OrkNew ProcTexControllerInst( *this, pent );
 }

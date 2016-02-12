@@ -53,7 +53,7 @@ public:
         MainThreadOpQ().push(lamb);
     }
     ~FnBallComponentData() {}
-    ComponentInst* CreateComponent(Entity *pent) const override;
+    ComponentInst* DoCreateComponent(Entity *pent) const final;
     ///////////////////////////////////////////////////////
 
     GfxMaterial3DSolid* mpMaterial;
@@ -80,8 +80,8 @@ public:
 
 private:
 
-    void DoUpdate(SceneInst *inst) override {}
-    bool DoLink(SceneInst *psi) override { return true; }
+    void DoUpdate(SceneInst *inst) final {}
+    bool DoLink(SceneInst *psi) final { return true; }
 
     const FnBallComponentData& mFnbData;
 };
@@ -107,9 +107,9 @@ public:
     float mTessLevel;
     float mDisplacement;
 private:
-    void DoCompose(ArchComposer& composer) override;
-    void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const override {}
-    void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+    void DoCompose(ArchComposer& composer) final;
+    void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
+    void DoLinkEntity( SceneInst* psi, Entity *pent ) const final;
 
 };
 
@@ -282,7 +282,7 @@ void FnBallArchetypeTouch()
 ///////////////////////////////////////////////////////////////////////////////
 
 
-ork::ent::ComponentInst* FnBallComponentData::CreateComponent( ork::ent::Entity *pent ) const
+ork::ent::ComponentInst* FnBallComponentData::DoCreateComponent( ork::ent::Entity *pent ) const
 {
     return new FnBallComponentInst(*this,pent);
 }

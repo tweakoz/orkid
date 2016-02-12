@@ -79,7 +79,7 @@ public:
 	}
 
 	static RTTICategory *GetClassStatic() { return &sClass; }
-	/*virtual*/ RTTICategory *GetClass() const { return GetClassStatic(); }
+	RTTICategory *GetClass() const override { return GetClassStatic(); }
 
 	static void Describe(); // overridden by users of RTTI.
 	static ConstString DesignNameStatic(); // implemented (or overridden) by users of RTTI, as needed by policy.
@@ -108,7 +108,7 @@ public:
 	typedef Category RTTICategory;
 
 	static RTTICategory *GetClassStatic() { return &sClass; }
-	/*virtual*/ RTTICategory *GetClass() const { return GetClassStatic(); }
+	RTTICategory *GetClass() const override { return GetClassStatic(); }
 	static RTTIData ClassRTTI()	{ return RTTIData(BaseType::GetClassStatic(), NULL); }
 private:
 	static RTTICategory sClass;
@@ -248,7 +248,7 @@ private:
 		static ::ork::ConstString DesignNameStatic(); \
 		static void Describe(); \
 		static RTTIImplementation::RTTICategory *GetClassStatic(); \
-		virtual RTTIImplementation::RTTICategory *GetClass() const; \
+		RTTIImplementation::RTTICategory *GetClass() const override; \
 	private: \
 		static RTTIImplementation::RTTICategory sClass;
 
@@ -258,7 +258,7 @@ private:
 		static ::ork::ConstString DesignNameStatic(); \
 		static void Describe(); \
 		static typename RTTIImplementation::RTTICategory *GetClassStatic(); \
-		virtual typename RTTIImplementation::RTTICategory *GetClass() const; \
+		typename RTTIImplementation::RTTICategory *GetClass() const override; \
 	private: \
 		static typename RTTIImplementation::RTTICategory sClass;
 
@@ -268,7 +268,7 @@ private:
 	public: \
 		typedef RTTIImplementation RTTIType; \
 		static RTTIImplementation::RTTICategory *GetClassStatic(); \
-		virtual RTTIImplementation::RTTICategory *GetClass() const; \
+		RTTIImplementation::RTTICategory *GetClass() const override; \
 	private: \
 		static RTTIImplementation::RTTICategory sClass;
 
@@ -276,7 +276,7 @@ private:
 	public: \
 		typedef typename RTTIImplementation RTTIType; \
 		static typename RTTIImplementation::RTTICategory *GetClassStatic(); \
-		virtual typename RTTIImplementation::RTTICategory *GetClass() const; \
+		typename RTTIImplementation::RTTICategory *GetClass() const override; \
 	private: \
 		static typename RTTIImplementation::RTTICategory sClass;
 

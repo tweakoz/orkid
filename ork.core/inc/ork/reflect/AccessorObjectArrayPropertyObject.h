@@ -22,15 +22,15 @@ public:
 		void (Object::*resizer)(size_t) = 0
 		);
 private:
-    /*virtual*/ Object *AccessObject(Object *, size_t) const;
-    /*virtual*/ const Object *AccessObject(const Object *, size_t) const;
-    /*virtual*/ size_t Count(const Object *) const;
-	/*virtual*/ bool Resize(Object *obj, size_t size) const;
+    /*virtual*/ Object *AccessObject(Object *, size_t) const override;
+    /*virtual*/ const Object *AccessObject(const Object *, size_t) const override;
+    /*virtual*/ size_t Count(const Object *) const override;
+	/*virtual*/ bool Resize(Object *obj, size_t size) const override;
 
-    /*virtual*/ bool DeserializeItem(IDeserializer &, Object *, size_t) const;
-    /*virtual*/ bool SerializeItem(ISerializer &, const Object *, size_t) const;
-    /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;
-    /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
+    /*virtual*/ bool DeserializeItem(IDeserializer &, Object *, size_t) const override;
+    /*virtual*/ bool SerializeItem(ISerializer &, const Object *, size_t) const override;
+    /*virtual*/ bool Deserialize(IDeserializer &, Object *) const override;
+    /*virtual*/ bool Serialize(ISerializer &, const Object *) const override;
 
     Object *(Object::*mAccessor)(size_t);
     size_t (Object::*mCounter)() const;

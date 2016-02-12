@@ -47,8 +47,8 @@ if ctx.opt_apts:
 
 if ctx.opt_exts:
 	#ctx.wget( "http://www.3delight.com/downloads/free/%s-Linux-x86_64.tar.gz"%tkc.DELIGHT, "%s.tar.gz"%tkc.DELIGHT, "57c7983e20e322dfe87003ec000d8bbd" )
-	#ctx.wget( "http://iweb.dl.sourceforge.net/project/blitz/blitz/Blitz++\ 0.10/%s.tar.gz"%tkc.BLITZ,"%s.tar.gz"%tkc.BLITZ,"66268b92bda923735f2e3afc87dcb58a")
-	#ctx.wget( "http://www.hdfgroup.org/ftp/HDF5/releases/%s/src/%s.tar.bz2"%(tkc.HDF5,tkc.HDF5), "%s.tar.bz2"%tkc.HDF5,"33e105583417eff1c57fff910a53cd6f")
+	ctx.wget( "http://iweb.dl.sourceforge.net/project/blitz/blitz/Blitz++\ 0.10/%s.tar.gz"%tkc.BLITZ,"%s.tar.gz"%tkc.BLITZ,"66268b92bda923735f2e3afc87dcb58a")
+	ctx.wget( "http://www.hdfgroup.org/ftp/HDF5/releases/%s/src/%s.tar.bz2"%(tkc.HDF5,tkc.HDF5), "%s.tar.bz2"%tkc.HDF5,"33e105583417eff1c57fff910a53cd6f")
 	#ctx.wget( "https://github.com/openexr/openexr/tarball/OPENEXR_1_7_0", "openexr-1.7.0.tar.gz","0081081d0354c633cefeab818180f089" )
 	#ctx.wget( "https://github.com/openexr/openexr/tarball/ILMBASE_1_0_2", "ilmbase-1.0.2.tar.gz","637e19f3afe7394bacc0118d25e14c56" )
 	#ctx.wget( "https://github.com/downloads/openexr/openexr/pyilmbase-1.0.0-v1.7.tar.gz", "pyilmbase-1.0.0-v1.7.tar.gz","a733fe614862206bdef82d624770caa8" )
@@ -66,7 +66,7 @@ if ctx.opt_exts:
 	ctx.gitget( "https://github.com/PixarAnimationStudios/OpenSubdiv.git", "osub", "23c488b4cfb7f6a74ea4bfb882b069727cfb2d65" )
 	ctx.gitget( "https://github.com/imageworks/OpenShadingLanguage.git", "osl", "be53b0759098916dba310a02f441d59b842145e6" )	
 	ctx.gitget( "https://github.com/llvm-mirror/llvm", "llvm", "a4cf325e41fca33c7ce7deef39a7bcf25fb38266" )
-	ctx.gitget( "https://github.com/sambler/osl-shaders") "osl-shaders", "0" )
+	#ctx.gitget( "https://github.com/sambler/osl-shaders") "osl-shaders", "0" )
 
 	#ctx.svnget( "http://cortex-vfx.googlecode.com/svn/trunk", "cortex_vfx", tkc.CORTEX_REV )
 	#ctx.gitget( "https://github.com/danbethell/cortex-ocean.git" , "cortex_ocean", "ff20dba" )

@@ -23,8 +23,8 @@ class  IObjectMapPropertyType : public IObjectMapProperty
 
 public:
 	typedef bool (*ItemSerializeFunction)(BidirectionalSerializer &, KeyType &, ValueType &);
-    /*virtual*/ bool DeserializeItem(IDeserializer *value, IDeserializer &key, int, Object *) const;
-    /*virtual*/ bool SerializeItem(ISerializer &value, IDeserializer &key, int, const Object *) const;
+    bool DeserializeItem(IDeserializer *value, IDeserializer &key, int, Object *) const override;
+    bool SerializeItem(ISerializer &value, IDeserializer &key, int, const Object *) const override;
 
 protected:
 	virtual bool GetKey(const Object *, int idx, KeyType &) const = 0;
@@ -44,8 +44,8 @@ protected:
 private:
 	static bool DoDeserialize(BidirectionalSerializer &, KeyType &, ValueType &);
 	static bool DoSerialize(BidirectionalSerializer &, KeyType &, ValueType &);
-    /*virtual*/ bool Deserialize(IDeserializer &, Object *) const;
-    /*virtual*/ bool Serialize(ISerializer &, const Object *) const;
+    bool Deserialize(IDeserializer &, Object *) const override;
+    bool Serialize(ISerializer &, const Object *) const override;
 	//virtual void DelItem( Object *, const PropTypeString& keystring, int imultiindex ) const;
 	//virtual void AddItem( Object *, const PropTypeString& keystring, const PropTypeString& valstring ) const;
 	//virtual void SetItem( Object *, const PropTypeString& keystring, int imultiindex, const PropTypeString& valstring ) const;

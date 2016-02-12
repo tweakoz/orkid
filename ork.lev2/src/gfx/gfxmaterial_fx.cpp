@@ -965,6 +965,8 @@ bool GfxMaterialFx::BeginPass( GfxTarget *pTarg, int iPass )
 					{	ParamInst->Bind( mEffectInstance.mpEffect, pTarg );
 						break;
 					}
+					default:
+						break;
 				}
 			}
 		}

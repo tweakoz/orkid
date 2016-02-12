@@ -319,7 +319,7 @@ PerfControllerComponentData::~PerfControllerComponentData()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-ent::ComponentInst* PerfControllerComponentData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* PerfControllerComponentData::DoCreateComponent(ent::Entity* pent) const
 {
 	return new PerfControllerComponentInst( *this, pent );
 }

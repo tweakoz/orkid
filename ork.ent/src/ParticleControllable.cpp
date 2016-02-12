@@ -70,7 +70,7 @@ ParticleControllableData::~ParticleControllableData()
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::ComponentInst *ParticleControllableData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *ParticleControllableData::DoCreateComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew ParticleControllableInst(*this, pent);
 }

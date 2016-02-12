@@ -24,8 +24,8 @@ public:
 	GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure=false,bool unmanaged=false );
 	
 	virtual ~GfxMaterial3DSolid() {};
-	virtual void Update( void ) {}
-	virtual void Init( GfxTarget *pTarg );
+	virtual void Update( void ) final {}
+	virtual void Init( GfxTarget *pTarg ) final;
 
 	void SetVolumeTexture( Texture* ptex ) { mVolumeTexture=ptex; }
 	void SetTexture( Texture* ptex ) { mCurrentTexture=ptex; }
@@ -71,14 +71,14 @@ public:
 	void SetNoiseFreq( const CVector4& color ) { mNoiseFreq=color; }
 	void SetNoiseShift( const CVector4& color ) { mNoiseShift=color; }
 	
-	void SetMaterialProperty( const char* prop, const char* val ); // virtual
+	void SetMaterialProperty( const char* prop, const char* val ) final; // virtual
 
 	////////////////////////////////////////////
 
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 );
-	virtual void EndPass( GfxTarget* pTARG );
-	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTARG );
+	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+	virtual void EndPass( GfxTarget* pTARG ) final;
+	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+	virtual void EndBlock( GfxTarget* pTARG ) final;
 
 	void SetAuxMatrix( const CMatrix4& mtx ) { mMatAux=mtx; }
 

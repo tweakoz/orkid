@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENT_MODELCOMPONENT_H_
-#define _ORK_ENT_MODELCOMPONENT_H_
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -61,7 +60,6 @@ public:
 	const CVector3& GetOffset() const { return mOffset; }
 	void SetRotate( const CVector3& r) { mRotate=r; }
 
-	virtual ComponentInst *CreateComponent(Entity *pent) const;
 
 	const orklut<PoolString,lev2::FxShaderAsset*>& GetLayerFXMap() const { return mLayerFx; }
 
@@ -72,6 +70,8 @@ public:
 	bool IsBlenderZup() const { return mBlenderZup; }
 
 private:
+
+	ComponentInst *DoCreateComponent(Entity *pent) const final;
 
 	void GetModelAccessor(ork::rtti::ICastable *&model) const;
 	void SetModelAccessor(ork::rtti::ICastable *const &model);
@@ -114,8 +114,8 @@ protected:
 	orklut<PoolString,lev2::GfxMaterialFx*>					mFxMaterials;
 	ork::lev2::XgmModelInst*								mXgmModelInst;
 
-	void DoUpdate( ork::ent::SceneInst* psi ) override; 
-	bool DoNotify(const ork::event::Event *event) override;
+	void DoUpdate( ork::ent::SceneInst* psi ) final; 
+	bool DoNotify(const ork::event::Event *event) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,5 +138,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 }}
-
-#endif

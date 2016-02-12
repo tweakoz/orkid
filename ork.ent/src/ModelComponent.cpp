@@ -105,7 +105,7 @@ ModelComponentData::ModelComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ComponentInst *ModelComponentData::CreateComponent(Entity *pent) const
+ComponentInst *ModelComponentData::DoCreateComponent(Entity *pent) const
 {
 	ComponentInst* pinst = OrkNew ModelComponentInst( *this, pent );
 	return pinst;

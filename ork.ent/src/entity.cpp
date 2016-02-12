@@ -69,12 +69,12 @@ public:
 
 	SceneDagObjectManipInterface() {}
 
-	virtual const TransformNode& GetTransform(rtti::ICastable *pobj)
+	const TransformNode& GetTransform(rtti::ICastable *pobj) final
 	{
 		SceneDagObject *pdago = rtti::autocast(pobj);
 		return pdago->GetDagNode().GetTransformNode();
 	}
-	virtual void SetTransform(rtti::ICastable *pobj, const TransformNode& node)
+	void SetTransform(rtti::ICastable *pobj, const TransformNode& node) final
 	{
 		SceneDagObject *pdago = rtti::autocast(pobj);
 		pdago->GetDagNode().GetTransformNode() = node;

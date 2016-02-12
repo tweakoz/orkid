@@ -88,7 +88,7 @@ ObserverCamControllerData::ObserverCamControllerData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* ObserverCamControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* ObserverCamControllerData::DoCreateComponent(ent::Entity* pent) const
 {
 	return new ObserverCamControllerInst( *this, pent );
 }

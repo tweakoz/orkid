@@ -206,10 +206,10 @@ private:
 
 
 	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+	bool DoDrawDefault() const final { return false; } // virtual 
+	void DoDraw( lev2::GfxTarget* pTARG ) final;
 
 	void CheckVis();
-	virtual void DoDraw( lev2::GfxTarget* pTARG );
-
 	void AddItem(const ork::ui::Event& ev);
 	void RemoveItem(const ork::ui::Event& ev);
 	void MoveItem(const ork::ui::Event& ev);
@@ -217,7 +217,6 @@ private:
 	void ImportItem(const ork::ui::Event& ev);
 	void ExportItem(const ork::ui::Event& ev);
 
-	bool DoDrawDefault() const { return false; } // virtual 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -226,18 +225,18 @@ class GedFactoryEnum : public GedFactory
 {
 	RttiDeclareConcrete(GedFactoryEnum,GedFactory);
 public:
-		virtual GedItemNode* CreateItemNode(	ObjModel&mdl,
-												const ConstString& Name,
-												const reflect::IObjectProperty *prop,
-												Object* obj) const;
+		GedItemNode* CreateItemNode(	ObjModel&mdl,
+										const ConstString& Name,
+										const reflect::IObjectProperty *prop,
+										Object* obj) const final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactory_PlugFloat : public GedFactory
 {
 	RttiDeclareConcrete(GedFactory_PlugFloat,GedFactory);
 public:
-	GedItemNode* CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const;
-	virtual void Recurse(ObjModel& mdl, const reflect::IObjectProperty *prop,ork::Object*pobj) const;
+	GedItemNode* CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const final;
+	void Recurse(ObjModel& mdl, const reflect::IObjectProperty *prop,ork::Object*pobj) const final;
 	GedFactory_PlugFloat();
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -248,7 +247,7 @@ public:
 	GedItemNode* CreateItemNode(	ObjModel&mdl,
 									const ConstString& Name,
 									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
+									Object* obj ) const final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryGradient : public GedFactory
@@ -258,7 +257,7 @@ public:
 	GedItemNode* CreateItemNode(	ObjModel&mdl,
 									const ConstString& Name,
 									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
+									Object* obj ) const final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryCurve : public GedFactory
@@ -268,7 +267,7 @@ public:
 	GedItemNode* CreateItemNode(	ObjModel&mdl,
 									const ConstString& Name,
 									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
+									Object* obj ) const final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryAssetList : public GedFactory
@@ -278,7 +277,7 @@ public:
 	GedItemNode* CreateItemNode(	ObjModel&mdl,
 										const ConstString& Name,
 										const reflect::IObjectProperty *prop,
-										Object* obj ) const;
+										Object* obj ) const final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryFileList : public GedFactory
@@ -288,7 +287,7 @@ public:
 	GedItemNode* CreateItemNode(	ObjModel&mdl,
 									const ConstString& Name,
 									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
+									Object* obj ) const final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> 
@@ -300,7 +299,6 @@ public:
 	GedAssetNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 	void OnCreateObject();
 	void SetLabel();
-	void DoDraw( lev2::GfxTarget* pTARG ); // virtual
 	IODriver& RefIODriver() { return mIoDriver; }
 
 private:
@@ -308,8 +306,8 @@ private:
 	IODriver	mIoDriver;
 
 	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
-
-	virtual bool DoDrawDefault() const { return false; }
+	void DoDraw( lev2::GfxTarget* pTARG ) final; // virtual
+	bool DoDrawDefault() const final { return false; }
 };
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> 
@@ -321,16 +319,15 @@ public:
 	GedFileNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 	void OnCreateObject();
 	void SetLabel();
-	void DoDraw( lev2::GfxTarget* pTARG ); // virtual
 	IODriver& RefIODriver() { return mIoDriver; }
 
 private:
 
 	IODriver		mIoDriver;
 
+	void DoDraw( lev2::GfxTarget* pTARG ) final; // virtual
 	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
-
-	virtual bool DoDrawDefault() const { return false; }
+	bool DoDrawDefault() const final { return false; }
 };
 ///////////////////////////////////////////////////////////////////////////////
 class UserChoices : public tool::CChoiceList
@@ -340,7 +337,7 @@ class UserChoices : public tool::CChoiceList
 
 public:
 
-	virtual void EnumerateChoices( bool bforcenocache=false );
+	void EnumerateChoices( bool bforcenocache ) final;
 	UserChoices( IUserChoiceDelegate& ucd , ork::Object* pobj, ork::Object* puserobj );
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -397,17 +394,17 @@ class OpsNode : public GedItemNode
 	//IOpsDelegate* mpCurrentDelegate;
 public:
 	OpsNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
-	virtual bool DoDrawDefault() const { return false; }
+	bool DoDrawDefault() const final { return false; }
 };
 class ObjectImportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( ObjectImportDelegate, tool::ged::IOpsDelegate );
-	void Execute( ork::Object* ptarget ); // virtual
+	void Execute( ork::Object* ptarget ) final; // virtual
 };
 class ObjectExportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( ObjectExportDelegate, tool::ged::IOpsDelegate );
-	void Execute( ork::Object* ptarget ); // virtual
+	void Execute( ork::Object* ptarget ) final; // virtual
 };
 ///////////////////////////////////////////////////////////////////////////////
 void EnumerateFactories( const ork::Object* pdestobj, const reflect::IObjectProperty* prop,  orkset<object::ObjectClass*>& FactoryClassVect );
@@ -416,4 +413,5 @@ object::ObjectClass* FactoryMenu( orkset<object::ObjectClass*>& FactoryClasses )
 bool DeserializeInPlace(reflect::IDeserializer &deserializer, rtti::ICastable *value);
 QMenu *CreateFactoryMenu( const orkset<object::ObjectClass*>& FactoryClassVect );
 
-} } }
+} } } // namespace ork { namespace tool { namespace ged {
+

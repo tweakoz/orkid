@@ -158,7 +158,7 @@ void GlFrameBufferInterface::DoEndFrame( void )
 			{
 				auto tex_obj = FboObj->mTEX[it];
 
-				printf( "GENMIPS texobj<%p>\n", (void*) tex_obj );
+				printf( "GENMIPS texobj<%d>\n", (int) tex_obj );
 
 				//glBindTexture( GL_TEXTURE_2D, tex_obj );
 				//glGenerateMipmap( GL_TEXTURE_2D );
