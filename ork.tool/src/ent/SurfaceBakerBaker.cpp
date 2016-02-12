@@ -141,7 +141,7 @@ notok:
 
 	}
 	///////////////////////////////////////////////////////////////////////////////
-	bool event ( QEvent * e )
+	bool event ( QEvent * e ) final
 	{
 		bool rval = false;
 		if( e->type() == BakeEvent::gevtype )

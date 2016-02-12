@@ -72,7 +72,7 @@ DataFlowEditor* gdfloweditor = 0;
 class dflowgraphedit : public tool::ged::IOpsDelegate
 {
 	RttiDeclareConcrete( dflowgraphedit, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget )
+	void Execute( ork::Object* ptarget ) final
 	{
 		ork::dataflow::graph_inst* pgrf = rtti::autocast(ptarget);
 		if( gdfloweditor && pgrf)

@@ -48,6 +48,7 @@ clean:
 	rm -rf stage/include/orktool
 	rm -rf stage/include/pkg
 	rm -rf stage/include/bullet
+	scons -f root.sconstruct prep --site-dir ./ork.build/site_scons
 
 assets:
 	./do_assets.py
