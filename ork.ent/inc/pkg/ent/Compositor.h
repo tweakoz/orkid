@@ -221,8 +221,8 @@ public:
 	PassThroughCompositingNode();
 	~PassThroughCompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
 
 	void GetGroup(ork::rtti::ICastable*& val) const;
 	void SetGroup( ork::rtti::ICastable* const & val);
@@ -240,8 +240,8 @@ public:
 	SeriesCompositingNode();
 	~SeriesCompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
 
 	void GetNode(ork::rtti::ICastable*& val) const;
 	void SetNode( ork::rtti::ICastable* const & val);
@@ -261,8 +261,8 @@ public:
 	InsertCompositingNode();
 	~InsertCompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
 
 	void GetNode(ork::rtti::ICastable*& val) const;
 	void SetNode( ork::rtti::ICastable* const & val);
@@ -298,8 +298,8 @@ public:
 	Op2CompositingNode();
 	~Op2CompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ); // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
 	void GetNodeA(ork::rtti::ICastable*& val) const;
 	void SetNodeA( ork::rtti::ICastable* const & val);
 	void GetNodeB(ork::rtti::ICastable*& val) const;
@@ -327,9 +327,9 @@ public:
 
 private:
 
-	void Init( lev2::GfxTarget* pTARG, int w, int h ); // virtual
-	void Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI); // virtual
-	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx ); // virtual
+	void Init( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
+	void Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
+	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx ) override; // virtual
 	//
 	void GetRoot(ork::rtti::ICastable*& val) const;
 	void SetRoot( ork::rtti::ICastable* const & val);
@@ -563,7 +563,7 @@ private:
 	EOutputResMult mOutputResMult;
 	EOutputTimeStep mOutputFrameRate;
 
-	const char* GetShortSelector() const { return "com"; } // virtual
+	const char* GetShortSelector() const override { return "com"; } // virtual
 
 };
 

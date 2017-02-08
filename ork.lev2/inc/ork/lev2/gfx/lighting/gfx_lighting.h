@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_GFXLIGHTING_H
-#define _ORK_LEV2_GFXLIGHTING_H
+#pragma once
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <ork/math/plane.h>
@@ -142,12 +141,12 @@ class  PointLight : public Light
 
 public:
 	
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum );
-	/*virtual*/ void ImmRender( Renderer& renderer );
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius );
-	/*virtual*/ bool AffectsAABox( const AABox& aab );
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir );
-	/*virtual*/ ELightType LightType() const { return ELIGHTTYPE_POINT; }
+	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
+	/*virtual*/ void ImmRender( Renderer& renderer ) override;
+	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override;
+	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
+	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
+	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_POINT; }
 
 	float GetRadius() const { return mPld->GetRadius(); }
 	float GetFalloff() const { return mPld->GetFalloff(); }
@@ -176,12 +175,12 @@ class  DirectionalLight : public Light
 
 public:
 
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum );
-	/*virtual*/ void ImmRender( Renderer& renderer ) {}
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) { return true; }
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) { return true; }
-	/*virtual*/ bool AffectsAABox( const AABox& aab ) { return true; }
-	/*virtual*/ ELightType LightType() const { return ELIGHTTYPE_DIRECTIONAL; }
+	/*virtual*/ bool IsInFrustum( const Frustum& frustum )override;
+	/*virtual*/ void ImmRender( Renderer& renderer ) override {}
+	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override { return true; }
+	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
+	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
+	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_DIRECTIONAL; }
 
 	DirectionalLight( const CMatrix4& mtx, const DirectionalLightData* dld=0 );
 };
@@ -214,12 +213,12 @@ class  AmbientLight : public Light
 
 public:
 
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum );
-	/*virtual*/ void ImmRender( Renderer& renderer ) {}
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) { return true; }
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) { return true; }
-	/*virtual*/ bool AffectsAABox( const AABox& aab ) { return true; }
-	/*virtual*/ ELightType LightType() const { return ELIGHTTYPE_AMBIENT; }
+	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
+	/*virtual*/ void ImmRender( Renderer& renderer ) override {}
+	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override { return true; }
+	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
+	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
+	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_AMBIENT; }
 	float GetAmbientShade() const { return mAld->GetAmbientShade(); }
 	const CVector3& GetHeadlightDir() const { return mAld->GetHeadlightDir(); }
 
@@ -265,12 +264,12 @@ public:
 	lev2::TextureAsset*	mTexture;
 
 
-	/*virtual*/ bool IsInFrustum( const Frustum& frustum );
-	/*virtual*/ void ImmRender( Renderer& renderer );
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius );
-	/*virtual*/ bool AffectsAABox( const AABox& aab );
-	/*virtual*/ bool AffectsCircleXZ( const Circle& cir );
-	/*virtual*/ ELightType LightType() const { return ELIGHTTYPE_SPOT; }
+	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
+	/*virtual*/ void ImmRender( Renderer& renderer ) override;
+	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override;
+	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
+	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
+	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_SPOT; }
 
 	void Set( const CVector3& pos, const CVector3& target, const CVector3& up, CReal fovy );
 
@@ -480,7 +479,3 @@ however some lights are dynamically created, destroyed and moved
 
 
 }}
-
-///////////////////////////////////////////////////////////////////////////////
-#endif
-///////////////////////////////////////////////////////////////////////////////
