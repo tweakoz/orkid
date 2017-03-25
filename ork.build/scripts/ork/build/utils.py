@@ -20,7 +20,7 @@ import hashlib
 from ork.build.manifest import *
 from ork.build.pathtools import *
 import common
-deco = common.deco
+deco = common.deco()
 
 if subprocess.mswindows:
     from win32file import ReadFile, WriteFile
@@ -69,7 +69,7 @@ def chdir_extbuild_rel(s):
 ###########################################
 
 def set_env(key,val):
-	print "Setting var<%s> to<%s>" % (deco("key",key),deco("val",val))
+	print "Setting var<%s> to<%s>" % (deco.key(key),deco.val(val))
 	os.environ[key]	= val
 
 ###########################################
@@ -79,7 +79,7 @@ def prepend_env(key,val):
 		set_env(key,val)
 	else:
 		os.environ[key]	= val + ":" + os.environ[key]
-		print "Setting var<%s> to<%s>" % (deco("key",key),deco("val",os.environ[key]))
+		print "Setting var<%s> to<%s>" % (deco.key(key),deco.val(os.environ[key]))
 
 ###########################################
 
@@ -88,7 +88,7 @@ def append_env(key,val):
 		set_env(key,val)
 	else:
 		os.environ[key]	= os.environ[key]+":"+val 
-		print "Setting var<%s> to<%s>" % (deco("key",key),deco("val",os.environ[key]))
+		print "Setting var<%s> to<%s>" % (deco.key(key),deco.val(os.environ[key]))
 
  #########################
 
@@ -140,7 +140,7 @@ def check_for_project(path):
 	#print "checking for project at<%s>" % path
 	if os.path.exists(prj_manifest):
 		#print "/////////////////////////////////////////"
-		print "// Projects Found !! <%s>" % deco("path",path)
+		print "// Projects Found !! <%s>" % deco.path(path)
 		#print "/////////////////////////////////////////"
 		###############
 		prj = manifests.add_project(path)

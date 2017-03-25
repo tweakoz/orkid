@@ -2,8 +2,8 @@
 
 import os, sys, shutil, platform, argparse
 import ansi.color.fx as afx
-from ansi.color import fg, bg
-from ansi.color.rgb import rgb256
+#from ansi.color import fg, bg
+#from ansi.color.rgb import rgb256
 
 as_main = (__name__ == '__main__')
 
@@ -39,12 +39,12 @@ if os.path.exists(stg_dir):
 
 import ork.build.utils as obt
 import ork.build.common
-deco = ork.build.common.deco
+deco = ork.build.common.deco()
 
 ###########################################
 
 def set_env(key,val):
-    print "Setting var<" + deco("key",key)+"> to <" + deco("val",val) + ">"
+    print "Setting var<" + deco.key(key)+"> to <" + deco.val(val) + ">"
     os.environ[key]	= val
 
 def prepend_env(key,val):
@@ -52,7 +52,7 @@ def prepend_env(key,val):
 		set_env(key,val)
 	else:
 		os.environ[key]	= val + ":" + os.environ[key]
-		print "Setting var<" + deco("key",key) + "> to<" + deco("val",os.environ[key]) + ">"
+		print "Setting var<" + deco.key(key) + "> to<" + deco.val(os.environ[key]) + ">"
 
 ###########################################
 
@@ -67,8 +67,8 @@ prepend_env("SITE_SCONS","%s/site_scons/site_tools/"%root_dir)
 
 ###########################################
 
-print deco("inf", "ROOTDIR<%s>" % root_dir)
-print deco("inf","ORKDOTBUILD_STAGE_DIR<%s>" % stg_dir)
+print deco.inf("ROOTDIR<%s>" % root_dir)
+print deco.inf("ORKDOTBUILD_STAGE_DIR<%s>" % stg_dir)
 obt.check_for_projects(par3_dir)
 print
 
@@ -78,18 +78,17 @@ IsCommandSet = hasattr(args,"cmd") and args.cmd
 
 if as_main:
     BASHRC = 'parse_git_branch() { git branch 2> /dev/null | grep "*" | sed -e "s/*//";}; '
-    PROMPT = fg.red(' ORK ')
-    PROMPT += rgb256(0xff, 0x80, 0x00)+"\w"
-    PROMPT += rgb256(0xff, 0x00, 0xff)+"$(parse_git_branch) "
-    PROMPT += fg.white("> ")
-    PROMPT += afx.reset("")
+    PROMPT = "\["+deco.red(' ORK ')+"\]"
+    PROMPT += "\["+deco.yellow("\w")+"\]"
+    PROMPT += "\["+deco.orange("$(parse_git_branch) ")+"\]"
+    PROMPT += "\["+deco.white("> ")+"\]"
     BASHRC += "export PS1='%s';" % PROMPT
     BASHRC += "alias ls='ls -G';"
     bashrc = os.path.expandvars('$ORKDOTBUILD_STAGE_DIR/.bashrc')
     f = open(bashrc, 'w')
     f.write(BASHRC)
     f.close()
-    print deco("inf","System is <"+os.name+">")
+    print deco.inf("System is <"+os.name+">")
     if IsWin:
         if IsCommandSet:
             print "cmd: %s" % args.cmd
