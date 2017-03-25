@@ -24,4 +24,9 @@ AnimationPriority::AnimationPriority(ork::PieceString name, int priority) : mNam
 {
 }
 
+Object* AnimationPriority::Clone() const // final
+{
+    return new AnimationPriority(mName,mPriority);
+}
+
 } } } // namespace ork::ent::event

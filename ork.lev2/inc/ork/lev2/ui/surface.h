@@ -48,7 +48,7 @@ protected:
 	bool 								mNeedsSurfaceRepaint;
 	lev2::PickBufferBase*				mpPickBuffer;
 
-	void DoDraw(DrawEvent& drwev);
+	void DoDraw(DrawEvent& drwev) override;
 	virtual void DoRePaintSurface(DrawEvent& drwev) {}
 
 };

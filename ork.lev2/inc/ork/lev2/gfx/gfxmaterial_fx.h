@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _GFX_GFXMATERIAL_FX_H_
-#define	_GFX_GFXMATERIAL_FX_H_
+#pragma once 
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/shadman.h>
@@ -154,14 +153,12 @@ class GfxMaterialFx : public GfxMaterial
 	public:
 
 	GfxMaterialFx();
-	virtual ~GfxMaterialFx();
-	virtual void Update( void );
+	~GfxMaterialFx() final;
 
 	static bool gEnableLightPreview;
 
 	////////////////////////////////////////////
 
-	virtual void Init( GfxTarget* pTARG );
 	void LoadEffect( const AssetPath& EffectAssetName );
 	void SetEffect( FxShader* pshader );
 	void SetTechnique( const std::string& TechniqueName );
@@ -174,15 +171,20 @@ class GfxMaterialFx : public GfxMaterial
 
 	////////////////////////////////////////////
 
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 );
-	virtual void EndPass( GfxTarget* pTARG );
-	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTARG );
-	virtual void UpdateMVPMatrix( GfxTarget *pTARG );
+    void Init( GfxTarget* pTARG ) final;
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+	void EndPass( GfxTarget* pTARG ) final;
+	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( GfxTarget* pTARG ) final;
+	void UpdateMVPMatrix( GfxTarget *pTARG ) final;
 
-	void SetMaterialProperty( const char* prop, const char* val ); // virtual
+	void SetMaterialProperty( const char* prop, const char* val ) final;
 
 	protected:
+
+    void Update( void ) final;
+    void BindMaterialInstItem( MaterialInstItem* pitem ) const final;
+    void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;
 
 	///////////////////////////////////////////
 	// Lighting
@@ -222,9 +224,6 @@ class GfxMaterialFx : public GfxMaterial
 	static CPerformanceItem*						gMatFxBeginPassPerfItem;
 	static CPerformanceItem*						gMatFxBeginBlockPerfItem;
 
-	virtual void BindMaterialInstItem( MaterialInstItem* pitem ) const;
-	virtual void UnBindMaterialInstItem( MaterialInstItem* pitem ) const;
-
 	static const int kMaxEngineParamFloats = RenderContextInstData::kMaxEngineParamFloats;
 
 	float											mEngineParamFloats[kMaxEngineParamFloats];
@@ -247,14 +246,15 @@ public:
 
 	FxMatrixBlockApplicator() : mMatrixBlockItem(0), mMaterial(0) {}
 	FxMatrixBlockApplicator( MaterialInstItemMatrixBlock* mtxblockitem,	const GfxMaterialFx* pmat );
-	void ApplyToTarget( GfxTarget *pTARG ); // virtual
 
-	///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////
+
+private:
+	void ApplyToTarget( GfxTarget *pTARG ) final; 
+
 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_RACINGLINEDATA_H
-#define ORK_ENT_RACINGLINEDATA_H
+#pragma once 
 
 #include <pkg/ent/entity.h>
 
@@ -73,13 +72,13 @@ class RacingLine : public ork::Object
 	RttiDeclareConcrete(RacingLine, ork::Object)
 public:
 	RacingLine() : mTime(-1.0f) {}
+    ~RacingLine() final;
 
 	float GetTime() const { return mTime; }
 	void SetTime(float time) { mTime = time; }
 
 	const orklut<float, RacingLineSample *> &GetRacingLineSamples() const { return mRacingLineSamples; }
 	orklut<float, RacingLineSample *> &GetRacingLineSamples() { return mRacingLineSamples; }
-	~RacingLine();
 protected:
 	float mTime;
 
@@ -97,8 +96,8 @@ public:
 	const RacingLine *GetRacingLine(int index) const;
 private:
 
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
-	/*virtual*/ bool PostDeserialize(reflect::IDeserializer &);
+	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+	bool PostDeserialize(reflect::IDeserializer &) final;
 
 	~RacingLineData();
 
@@ -118,8 +117,8 @@ public:
 		ork::CVector3 &racingLineDir) const;
 private:
 
-	/*virtual*/ void DoUpdate(ork::ent::SceneInst *sinst);
-	/*virtual*/ bool DoLink(ork::ent::SceneInst *sinst);
+	void DoUpdate(ork::ent::SceneInst *sinst) final;
+	bool DoLink(ork::ent::SceneInst *sinst) final;
 
 	const RacingLineData &mData;
 
@@ -130,4 +129,3 @@ private:
 
 } } }
 
-#endif // ORK_ENT_RACINGLINEDATA_H

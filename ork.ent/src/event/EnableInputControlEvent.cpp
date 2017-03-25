@@ -34,4 +34,9 @@ bool EnableInputControlEvent::IsEnable() const
 	return mEnable;
 }
 
+Object* EnableInputControlEvent::Clone() const // final
+{
+    return new EnableInputControlEvent(mEnable);
+}
+
 } } } // namespace prodigy::ent::event

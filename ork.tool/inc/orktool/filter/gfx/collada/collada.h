@@ -381,12 +381,13 @@ class XgmSkinnedClusterBuilder : public XgmClusterBuilder
 public:
 	const orkmap<std::string,int>& RefBoneRegMap() const { return mmBoneRegMap; }
 private:
-	bool AddTriangle( const XgmClusterTri& Triangle );
+	bool AddTriangle( const XgmClusterTri& Triangle ) final;
+    void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final; // virtual
+
 	int FindNewBoneIndex( const std::string& BoneName );
 	void BuildVertexBuffer_V12N12T8I4W4();
 	void BuildVertexBuffer_V12N12B12T8I4W4();
 	void BuildVertexBuffer_V12N6I1T4();
-	void BuildVertexBuffer( const SColladaMatGroup& matgroup ); // virtual
 
 	orkmap<std::string,int>			mmBoneRegMap;
 };
@@ -397,12 +398,13 @@ class XgmRigidClusterBuilder : public XgmClusterBuilder
 {
 	RttiDeclareAbstract(XgmRigidClusterBuilder,XgmClusterBuilder);
 	/////////////////////////////////////////////////
-	bool AddTriangle( const XgmClusterTri& Triangle );
+	bool AddTriangle( const XgmClusterTri& Triangle ) final;
+    void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final; 
+
 	void BuildVertexBuffer_V12N6C2T4();
 	void BuildVertexBuffer_V12N12B12T8C4();
 	void BuildVertexBuffer_V12N12T16C4();
 	void BuildVertexBuffer_V12N12B12T16();
-	void BuildVertexBuffer( const SColladaMatGroup& matgroup ); // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -678,7 +680,7 @@ public:
 	{
 	}
 
-	int GetNumFrames() const { return int(mSampledFrames.size()); } // virtual
+	int GetNumFrames() const final { return int(mSampledFrames.size()); } // virtual
 
 	const CMatrix4& GetFrame( int idx ) const { return mSampledFrames[idx]; }
 };
@@ -715,7 +717,7 @@ public:
 	{
 	}
 
-	int GetNumFrames() const { return int(mSampledFrames.size()); } // virtual
+	int GetNumFrames() const final { return int(mSampledFrames.size()); } 
 
 	void SetMaterialName( const char* pname ) { mMaterialName=pname; }
 	const std::string& GetMaterialName() const { return mMaterialName; }
@@ -807,7 +809,7 @@ class DAEXGMFilter : public CAssetFilterBase
 	bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
 public: //
 	DAEXGMFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 class DAEGGMFilter : public CAssetFilterBase
 {
@@ -815,14 +817,14 @@ class DAEGGMFilter : public CAssetFilterBase
 	bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
 public: //
 	DAEGGMFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 class DAEXGAFilter : public CAssetFilterBase
 {
 	RttiDeclareConcrete(DAEXGAFilter,CAssetFilterBase);
 public: //
 	DAEXGAFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -4,7 +4,6 @@ import ork.build.slnprj as sln
 import sys
 
 AddOption('--build', default='stage')
-#SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 #VariantDir( 'obj', 'src' )
 SetOption('num_jobs', obu.num_cores) 
@@ -12,22 +11,36 @@ sln.optset.add("ork.core")
 BasicEnv = Environment( ENV=os.environ )
 
 TARGET = COMMAND_LINE_TARGETS
-print "root.TARGET<%s>" % TARGET
 
 #####################################################
 
-utpp = SConscript('ork.unittestpp/ork.unittestpp.sconstruct')
-core = SConscript('ork.core/ork.core.sconstruct')
-fcol = SConscript('ork.fcollada305/ork.fcollada305.sconstruct')
-bull = SConscript('ork.bullet273/ork.bullet273.sconstruct')
-lev2 = SConscript('ork.lev2/ork.lev2.sconstruct')
-ent = SConscript('ork.ent/ork.ent.sconstruct')
-tool = SConscript('ork.tool/ork.tool.sconstruct')
+def refprj(str):
+	return SConscript('%s/%s.sconstruct'%(str,str))
 
 #####################################################
 
+utpp = refprj('ork.unittestpp')
+core = refprj('ork.core')
+fcol = refprj('ork.fcollada305')
+bull = refprj('ork.bullet273')
+lev2 = refprj('ork.lev2')
+lua = refprj('ork.lua')
+luabind = refprj('ork.luabind')
+ent = refprj('ork.ent')
+tool = refprj('ork.tool')
+boost = refprj('ork.boost')
+ilm = refprj('ork.ilm')
+oiio = refprj('ork.oiio')
+tuio = refprj('ork.tuio')
+tout = refprj('tweakout')
+#####################################################
+
+boost = BasicEnv.Alias('boost')
+get = BasicEnv.Alias('get')
 prep = BasicEnv.Alias('prep')
 fast = BasicEnv.Alias('fast',tool)
+ilm = BasicEnv.Alias('ilm')
+oiio = BasicEnv.Alias('oiio')
 
 #####################################################
 
@@ -45,11 +58,20 @@ def DeclDep( itemlist, deplist ):
 DeclDep( core, utpp )
 DeclDep( lev2, core )
 DeclDep( lev2, utpp )
+DeclDep( lev2, tuio )
+DeclDep( lua, core )
+DeclDep( luabind, lua )
 DeclDep( ent, core )
 DeclDep( ent, bull )
 DeclDep( ent, lev2 )
 DeclDep( ent, utpp )
+DeclDep( ent, lua )
+DeclDep( ent, luabind )
+DeclDep( tout, ent )
 DeclDep( tool, core )
 DeclDep( tool, lev2 )
+DeclDep( tool, tuio )
 DeclDep( tool, ent )
 DeclDep( tool, utpp )
+DeclDep( tool, tout )
+

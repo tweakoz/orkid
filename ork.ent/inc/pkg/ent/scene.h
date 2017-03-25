@@ -19,6 +19,7 @@
 #include <ork/kernel/any.h>
 #include <ork/kernel/future.hpp>
 #include <ork/math/cmatrix4.h>
+#include <ork/file/path.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -149,6 +150,8 @@ public:
 
 	//////////////////////////////////////////////////////////
 
+	file::Path GetScriptPath() const { return mScriptPath; }
+
 private:
 
 	orkmap<PoolString, SceneObject*>		mSceneObjects;
@@ -156,7 +159,8 @@ private:
 	ESceneDataMode	meSceneDataMode;
 	void OnSceneDataMode(ESceneDataMode emode);
 	void PrepareForEdit();
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+	bool PostDeserialize(reflect::IDeserializer &) final;
+	file::Path  							mScriptPath;
 
 };
 
@@ -295,13 +299,17 @@ public:
 	void QueueActivateEntity(const EntityActivationQueueItem& item); 
 	void QueueDeactivateEntity(Entity *entity);
 
-	bool IsEntityActive(Entity* entity);
+	bool IsEntityActive(Entity* entity) const;
 
 	Application *GetApplication() { return mApplication; }
 	const Application *GetApplication() const { return mApplication; }
 
 	void ActivateEntity(ent::Entity* pent);
 	void DeActivateEntity(ent::Entity* pent);
+
+	//////////////////////////////////////////////////////////
+
+	Entity* SpawnDynamicEntity( const ent::EntData* spawn_rec );
 
 	//////////////////////////////////////////////////////////
 	// previously virtual interface
@@ -327,13 +335,23 @@ public:
 
 	static const ork::PoolString& EventChannel();
 
+	size_t GetEntityUpdateCount() const { return mEntityUpdateCount; }
+
 private:
 
 	void DecomposeEntities();
 	void ComposeEntities();
 	void LinkEntities();
+	void UnLinkEntities();
 	void StartEntities();
 	void StopEntities();
+
+	void ComposeSceneComponents();
+	void DecomposeSceneComponents();
+	void StartSceneComponents();
+	void LinkSceneComponents();
+	void StopSceneComponents();
+	void UnLinkSceneComponents();
 
 	void EnterEditState();
 	void EnterPauseState();
@@ -342,6 +360,8 @@ private:
 	//////////////////////////////////////////////////////////
 
 protected:
+
+	orkmap<PoolString, Archetype*>			mDynamicArchetypes;
 
 	orkmap<PoolString,Layer*>				mLayers;
 	orkmap<PoolString,Entity*>				mEntities;
@@ -358,6 +378,7 @@ protected:
 	float									mDeltaTimeAccum;
 	float									mfAvgDtAcc;
 	float									mfAvgDtCtr;
+	size_t 									mEntityUpdateCount;
 
 	CameraLut								mCameraLut;		// camera list
 	

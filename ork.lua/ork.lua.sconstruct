@@ -1,0 +1,67 @@
+import os, glob, string
+import ork.build.utils as obu
+import ork.build.common as cmn
+import ork.build.slnprj as sln
+
+#ork_core_lib = Import('ork_core_lib')
+#print ork_core_lib
+#print dir(ork_core_lib)
+#prj_core_lib = ork_core_lib.project
+
+# set scons options ######################
+
+#SetOption('implicit_cache',1)
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src', duplicate=0  )
+SetOption('num_jobs', obu.num_cores) 
+BasicEnv = Environment( ENV=os.environ )
+
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+is_install = (TARGET=="install")
+#
+
+if is_install:
+	obu.install_headers("inc/ork")
+
+# basics #################################
+
+class lua:
+  def __init__(self):
+	ARGS = cmn.BuildArgs
+	suffix = sln.BuildSuffix(ARGS)
+
+	if is_prep:
+		return
+
+	##########################################
+
+	SRC_FOLDERS  = "."
+
+	##########################################
+
+	prj_lib = sln.Project(ARGS,BasicEnv,"ork.lua")
+	prj_lib.SetSrcBase( "src" )
+	prj_lib.AddIncludePaths( "inc/" )
+	prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
+	#prj_lib.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
+	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
+	prj_lib.AddFolders( SRC_FOLDERS, "*.c" )
+	########################
+	## Common libs
+	########################
+	#prj_lib.AddLibs( "ork.core.%s"%suffix )
+	prj_lib.Configure()
+	self.lua_lib = prj_lib.SharedLibrary()
+
+	##########################################
+
+
+#####################
+
+a = lua()
+ret = list()
+if False==is_prep:
+	ret += a.lua_lib
+Return('ret')

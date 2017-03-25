@@ -99,7 +99,7 @@ struct Layer
 
 struct DrawableBufLayer
 {
-	static const int kmaxitems = 1024;
+	static const int kmaxitems = 4096;
 	DrawableBufItem				mDrawBufItems[kmaxitems];
 	int							miItemIndex;
 	int							miBufferIndex;
@@ -184,6 +184,9 @@ public:
 	const anyp& GetUserDataA() const { return mDataA; }
 	void SetUserDataB( anyp data ) { mDataB = data; }
 	const anyp& GetUserDataB() const { return mDataB; }
+	bool IsEnabled() const { return mEnabled; }
+	void Enable() { mEnabled=true; }
+	void Disable() { mEnabled=false; }
 
 protected:
 
@@ -191,7 +194,7 @@ protected:
 	Layer*						mpLayer;
 	anyp						mDataA;
 	anyp						mDataB;
-
+	bool 						mEnabled;
 
 };
 

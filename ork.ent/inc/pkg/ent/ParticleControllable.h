@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_NOVA_ENT_PARTICLECONTROLLABLE_H
-#define ORK_NOVA_ENT_PARTICLECONTROLLABLE_H
+#pragma once
 ///////////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/entity.h>
 #include <ork/lev2/gfx/particle/particle.h>
@@ -89,7 +88,7 @@ private:
 	bool mDefaultEnable;
 	ork::PoolString mEntAttachment;
 
-	const char* GetShortSelector() const { return "psys"; } // virtual
+	const char* GetShortSelector() const final { return "psys"; } 
 
 };
 
@@ -172,7 +171,6 @@ public:
 	psys_graph* GraphInstance() { return mGraphInstance; }
 	int GetNumRenderers() const { return int(mRenderers.size()); }
 	RendererModule* GetRenderer(int idx) { return mRenderers[idx]; }
-	void SetEmitterEnable( bool bv );
 	
 	ork::lev2::particle::Context* GetParticleContext() 
 	{
@@ -182,15 +180,15 @@ public:
 
 private:
 
+    void SetEmitterEnable( bool bv ) final;
+    void DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent ) final;
+    void DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent ) final;
+    bool DoNotify(const event::Event *event) final;
+
 	psys_graph*							mGraphInstance;
 	orkvector<RendererModule*>			mRenderers;
 	ParticleControllableInst*			mParticleControllerInst;
 
-	void DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent ) override;
-	void DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent ) override;
-
-
-	bool DoNotify(const event::Event *event) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -212,6 +210,4 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 } } // namespace prodigy::ent
-///////////////////////////////////////////////////////////////////////////////
-#endif // ORK_NOVA_ENT_PARTICLECONTROLLABLE_H
 ///////////////////////////////////////////////////////////////////////////////

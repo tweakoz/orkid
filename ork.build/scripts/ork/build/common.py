@@ -15,6 +15,10 @@ import os
 import shutil
 import fnmatch
 import platform
+import ansi.color.fx as afx
+from ansi.color import fg, bg
+from ansi.color.rgb import rgb256
+
 SYSTEM = platform.system()
 ###############################################################################
 IsOsx = (SYSTEM=="Darwin")
@@ -30,17 +34,12 @@ BuildArgs["PLATFORM"] = TargetPlatform
 BuildArgs["BUILD"] = "release"
 
 ###############################################################################
-#if IsIx!=True:
-#	import win32pipe
-#	import win32api
-#	import win32process
-###############################################################################
 # Python Module Export Declaration
 
 __all__ =	[
 			"builddir_replace","globber", "DumpBuildEnv", "SetCompilerOptions",
 			"SourceEnumerator", "RunUnitTest", "Project", "orkpath", "posixpath",
-			"msplit", "recursive_glob"
+			"msplit", "recursive_glob", "deco"
 			]
 
 __version__ = "1.0"
@@ -53,18 +52,10 @@ curpyname = sys.argv[0]
 
 pydir = os.path.dirname(__file__)
 
-#locopath = os.path.normpath( "%s/localopts.py"%pydir )
-#if os.path.exists( locopath ) == False:
-#	print "%s not found, creating from template... (feel free to edit it)" % locopath
-#	shutil.copy( locotpath, locopath )
-#	import localopts
-#	localopts.dump()
-
 ###############################################################################
 
 def builddir_replace( filelist, searchkey, replacekey ):
 	a = [s.replace(searchkey,replacekey) for s in filelist]
-	#print a
 	return a
 
 ###############################################################################
@@ -78,11 +69,9 @@ def replace( file, searchkey, replacekey ):
 ###############################################################################
 
 def recursive_glob_get_dirs(path):
-	#print "recursive_glob_get_dirs path<%s>" % (path)
 	d=[]
 	try:
 		ld = os.listdir(path)
-		#print "ld<%s>" % ld
 		for i in ld:
 			if os.path.isdir(path+i):
 				d.append(os.path.basename(i))
@@ -92,21 +81,16 @@ def recursive_glob_get_dirs(path):
 ###############################################################################
 
 def recursive_glob(path,pattern):
-	#print "recursive_glob path<%s> pattern<%s>" % (path,pattern)
 	l=[]
-#	if path[-1]!='\\':
-#		path=path+'\\'
 	if path[-1]!='/':
 		path=path+'/'
 	for i in recursive_glob_get_dirs(path):
-		#print path+i
 		l=l+recursive_glob(path+i,pattern)
 	try:
 		dirlist = os.listdir(path)
 		for i in dirlist:
 			ii=i
 			i=path+i
-			#print i
 			if os.path.isfile(i):
 				if fnmatch.fnmatch(ii,pattern):
 					l.append(i)
@@ -127,18 +111,15 @@ def globber( folderbase, wildcard, subdirlist, excludelist=[] ):
 		str_glob += wildcard
 		these_globs = glob.glob( str_glob )
 		globs += these_globs
-		#print "globbing %s" % ( str_glob )
 	for s in globs:
 		incfil = int(1)
 		for t in excludelist:
 			regex = re.compile( t )
 			matchobj = re.search( t, s )
 			if( matchobj ):
-				#print "excluding " + s + " : (matches " + t + " )"
 				incfil = int(0)
 		if incfil == 1:
 			filtered_globs += [ posixpath(s) ]
-	#print filtered_globs
 	return filtered_globs
 
 ###############################################################################
@@ -174,14 +155,10 @@ def rmtree( pathglob ):
 def msplit( str, sep=" " ):
 	ret = []
 	if sep in str:
-		#print "sep<%s>" % str
 		list = string.split(str,sep) # sep.split(str)
-		#print "list<%s>" % list
 		for item in list:
-			#print "item<%s>" % item
 			ret.append(item)
 	else:
-		#print "nosep<%s>" % str
 		ret.append(str)
 	return ret
 
@@ -211,3 +188,21 @@ def cygpath(output_type, str):
 
 def posixpath(path):
 	return '/'.join(os.path.normpath(path).split(os.sep))
+
+###############################################################################
+
+def deco(color,string):
+    if color=="inf":
+        return rgb256(128,128,255)+(string)+afx.reset("")
+    elif color=="key":
+        return rgb256(255,255,0)+string+afx.reset("")
+    elif color=="val":
+        return fg.white(string)+afx.reset("")
+    elif color=="path":
+        return rgb256(255,192,64)+(string)+afx.reset("")
+    elif color=="warn":
+        return fg.yellow(string)+afx.reset("")
+    elif color=="err":
+        return fg.red(string)+afx.reset("")
+    else:
+        return string                

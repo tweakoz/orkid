@@ -79,14 +79,14 @@ class TetherCamControllerInst : public ent::ComponentInst
 	Entity*									mpTarget;
 	CCameraData								mCameraData;
 	
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
+    bool DoLink(SceneInst *psi) final;
+    bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
 
 public:
 	const TetherCamControllerData&	GetCD() const { return mCD; }
 
 	TetherCamControllerInst( const TetherCamControllerData& cd, ork::ent::Entity* pent );
-	bool DoLink(SceneInst *psi) override;
-	bool DoStart(SceneInst *psi, const CMatrix4 &world) override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

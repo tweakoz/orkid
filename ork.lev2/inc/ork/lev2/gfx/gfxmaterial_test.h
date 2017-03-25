@@ -22,11 +22,8 @@ public:
 	static void ClassInit();
 	GfxMaterial3DSolid(GfxTarget* pTARG=0);
 	GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure=false,bool unmanaged=false );
+    ~GfxMaterial3DSolid() final {};
 	
-	virtual ~GfxMaterial3DSolid() {};
-	virtual void Update( void ) {}
-	virtual void Init( GfxTarget *pTarg );
-
 	void SetVolumeTexture( Texture* ptex ) { mVolumeTexture=ptex; }
 	void SetTexture( Texture* ptex ) { mCurrentTexture=ptex; }
 	void SetTexture2( Texture* ptex ) { mCurrentTexture2=ptex; }
@@ -70,19 +67,21 @@ public:
 	void SetNoiseAmp( const CVector4& color ) { mNoiseAmp=color; }
 	void SetNoiseFreq( const CVector4& color ) { mNoiseFreq=color; }
 	void SetNoiseShift( const CVector4& color ) { mNoiseShift=color; }
-	
-	void SetMaterialProperty( const char* prop, const char* val ); // virtual
 
 	////////////////////////////////////////////
 
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 );
-	virtual void EndPass( GfxTarget* pTARG );
-	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTARG );
-
 	void SetAuxMatrix( const CMatrix4& mtx ) { mMatAux=mtx; }
 
+    bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+    void EndPass( GfxTarget* pTARG ) final;
+    int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+    void EndBlock( GfxTarget* pTARG ) final;
+    void Init( GfxTarget *pTarg ) final;
+
 	protected:
+
+    void Update( void ) final {}
+    void SetMaterialProperty( const char* prop, const char* val ) final;
 		
 	EColorMode		meColorMode;
 	CVector4		mNoiseAmp;

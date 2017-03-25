@@ -122,6 +122,7 @@ SceneInst::SceneInst( const SceneData* sdata, Application *application )
 	, mDeltaTimeAccum(0.0f)
 	, mfAvgDtAcc(0.0f)
 	, mfAvgDtCtr(0.0f)
+	, mEntityUpdateCount(0)
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	OrkAssertI(mApplication, "SceneInst must be constructed with a non-NULL Application!");
@@ -224,6 +225,10 @@ float SceneInst::ComputeDeltaTime()
 
 	switch( this->GetSceneInstMode() )
 	{
+        case ork::ent::ESCENEMODE_ATTACHED:
+        case ork::ent::ESCENEMODE_EDIT:
+        case ork::ent::ESCENEMODE_SINGLESTEP:
+            break;
 		case ork::ent::ESCENEMODE_PAUSE:
 		{
 			mDeltaTime = 0.0f;
@@ -320,8 +325,17 @@ void SceneInst::SetEntity( const ent::EntData* pentdata, ent::Entity* pent )
 	mEntities[pentdata->GetName()] = pent;
 }
 ///////////////////////////////////////////////////////////////////////////
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_RESET     "\x1b[30m"
+#define ANSI_COLOR_GREEN     "\x1b[32m"
+
 void SceneInst::EnterEditState()
 {
+	printf( "%s", ANSI_COLOR_RED );
+	printf( "////////////////////////\n");
+	printf( "SceneInst<%p> EnterEditState\n", this );
+	printf( "////////////////////////\n");
+	printf( "%s", ANSI_COLOR_GREEN );
 	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
@@ -329,14 +343,18 @@ void SceneInst::EnterEditState()
 
 	ork::event::Broadcaster::GetRef().BroadcastNotifyOnChannel( & bindev, EventChannel() );
 
+
 	LeaveRunMode();
 	ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
 	StopEntities();
 	mActiveEntityComponents.clear();
 	mActiveEntities.clear();
 	mEntityDeactivateQueue.clear();
-	ComposeEntities();
 
+	//StartSceneComponents();
+
+	ComposeEntities();
+	//LinkSceneComponents();
 	LinkEntities();
 
 	ServiceDeactivateQueue();// HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION WHILE LINKING
@@ -362,6 +380,12 @@ void SceneInst::EnterPauseState()
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::EnterRunState()
 {
+	printf( "%s", ANSI_COLOR_RED );
+	printf( "////////////////////////\n");
+	printf( "SceneInst<%p> EnterRunState\n", this );
+	printf( "////////////////////////\n");
+	printf( "%s", ANSI_COLOR_GREEN );
+
 	DrawableBuffer::BeginClearAndSyncReaders();
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	EnterRunMode();
@@ -382,19 +406,18 @@ void SceneInst::EnterRunState()
 	AllocationLabel label268("SceneInst::EnterRunState::268");
 
 	ComposeEntities();
+	ComposeSceneComponents();
 
-	for( orkmap<ork::PoolString,ork::ent::Entity*>::const_iterator
-															it = mEntities.begin();
-															it != mEntities.end();
-															it++ )
+	for( const auto& item : mEntities )
 	{
-		ork::ent::Entity* pent = (*it).second;
+		auto pent = item.second;
 		ActivateEntity( pent );
 	}
 
 	AllocationLabel label281("SceneInst::EnterRunState::281");
 
 	LinkEntities();
+	LinkSceneComponents();
 
 	// HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION WHILE LINKING
 	ServiceDeactivateQueue();
@@ -402,6 +425,7 @@ void SceneInst::EnterRunState()
 	AllocationLabel label288("SceneInst::EnterRunState:288");
 
 	StartEntities();
+	StartSceneComponents();
 
 	mStartTime = float(CSystem::GetRef().GetLoResTime());
 	mGameTime = 0.0f;
@@ -434,6 +458,11 @@ void SceneInst::OnSceneInstMode( ESceneInstMode emode )
 
 	switch( meSceneInstMode )
 	{
+        case ork::ent::ESCENEMODE_ATTACHED:
+        case ork::ent::ESCENEMODE_EDIT:
+        case ork::ent::ESCENEMODE_SINGLESTEP:
+        case ork::ent::ESCENEMODE_PAUSE:
+            break;
 		case ESCENEMODE_RUN: // leaving runstate
 			//SetCameraData( ork::AddPooledLiteral("game1"), 0 );
 			break;
@@ -451,6 +480,8 @@ void SceneInst::OnSceneInstMode( ESceneInstMode emode )
 		case ESCENEMODE_PAUSE:
 			EnterPauseState();
 			break;
+        case ork::ent::ESCENEMODE_ATTACHED:
+            break;
 	}
 	this->meSceneInstMode = emode;
 }
@@ -460,15 +491,13 @@ void SceneInst::DecomposeEntities()
 {
 	//printf( "SceneInst<%p> BEGIN DecomposeEntities()\n", this );
 	//printf( "/////////////////////////////////////\n");
-	std::string bt = get_backtrace();
-	printf( "%s", bt.c_str() );
+	//std::string bt = get_backtrace();
+	//printf( "%s", bt.c_str() );
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	for( orkmap<ork::PoolString,ork::ent::Entity*>::const_iterator	it = mEntities.begin();
-																	it != mEntities.end();
-																	it++ )
+	for( auto item : mEntities )
 	{
-		ork::PoolString name = (*it).first;
-		ork::ent::Entity* pent = (*it).second;
+		const ork::PoolString& name = item.first;
+		ork::ent::Entity* pent = item.second;
 
 		//ork::ent::Archetype* arch = pent->GetArchetype();
 
@@ -476,6 +505,7 @@ void SceneInst::DecomposeEntities()
 		delete pent;
 	}
 	mEntities.clear();
+
 	//printf( "/////////////////////////////////////\n");
 	//printf( "SceneInst<%p> END DecomposeEntities()\n", this );
 }
@@ -487,22 +517,10 @@ void SceneInst::ComposeEntities()
 	// clear runtime containers
 	///////////////////////////////////
 
+	UnLinkEntities();
 	DecomposeEntities();
 	mEntities.clear();
-	mSceneComponents.clear();
 	mCameraLut.clear();
-
-	///////////////////////////////////
-	// SceneComponents
-	///////////////////////////////////
-
-	const SceneData::SceneComponentLut& SceneCompLut = mSceneData->GetSceneComponents();
-
-	for( SceneData::SceneComponentLut::const_iterator it=SceneCompLut.begin(); it!=SceneCompLut.end(); it++ )
-	{
-		const SceneComponentData* pscd = it->second;
-		AddSceneComponent( pscd->CreateComponentInst( this ) );
-	}
 
 	///////////////////////////////////
 	// Compose Entities
@@ -535,6 +553,7 @@ void SceneInst::ComposeEntities()
 			}
 			////////////////////////////////////////////////////////////////
 
+			//printf( "Compose Entity<%p> arch<%p> layer<%s>\n", pent, arch, layer_name.c_str() );
 			if( arch )
 			{
 				arch->ComposeEntity( pent );
@@ -558,9 +577,9 @@ void SceneInst::LinkEntities()
 	///////////////////////////////////
 
 	//orkprintf( "Link Entities..\n" );
-	for( orkmap<ork::PoolString, ork::ent::Entity*>::const_iterator it=mEntities.begin(); it!=mEntities.end(); it++ )
+	for( auto item : mEntities )
 	{
-		ork::ent::Entity* pent = it->second;
+		ork::ent::Entity* pent = item.second;
 		const ork::ent::EntData& edata = pent->GetEntData();
 
 		OrkAssert( pent );
@@ -570,12 +589,124 @@ void SceneInst::LinkEntities()
 			edata.GetArchetype()->LinkEntity( this, pent );
 		}
 	}
+
 	//orkprintf( "end si<%p> Link Entities..\n", this );
 }
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::UnLinkEntities()
+{
+	//orkprintf( "beg si<%p> Link Entities..\n", this );
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	///////////////////////////////////
+	// Link Entities
+	///////////////////////////////////
+
+	//orkprintf( "Link Entities..\n" );
+	for( auto item : mEntities )
+	{
+		ork::ent::Entity* pent = item.second;
+		const ork::ent::EntData& edata = pent->GetEntData();
+
+		OrkAssert( pent );
+
+		if( edata.GetArchetype() )
+		{
+			edata.GetArchetype()->UnLinkEntity( this, pent );
+		}
+	}
+	//orkprintf( "end si<%p> Link Entities..\n", this );
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::ComposeSceneComponents()
+{
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	///////////////////////////////////
+	// SceneComponents
+	///////////////////////////////////
+
+	const SceneData::SceneComponentLut& SceneCompLut = mSceneData->GetSceneComponents();
+
+	for( SceneData::SceneComponentLut::const_iterator it=SceneCompLut.begin(); it!=SceneCompLut.end(); it++ )
+	{
+		const SceneComponentData* pscd = it->second;
+		AddSceneComponent( pscd->CreateComponentInst( this ) );
+	}
+
+}
+
+void SceneInst::DecomposeSceneComponents()
+{
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	for( auto item : mSceneComponents )
+	{
+		auto comp = item.second;
+		delete comp;
+	}
+	mSceneComponents.clear();
+
+}
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::LinkSceneComponents()
+{
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->Link(this);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::UnLinkSceneComponents()
+{
+	AssertOnOpQ2( UpdateSerialOpQ() );
+
+	///////////////////////////////////
+
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->UnLink(this);
+	}
+	
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::StartSceneComponents()
+{
+	AssertOnOpQ2( UpdateSerialOpQ() );
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->Start(this);
+	}
+}
+///////////////////////////////////////////////////////////////////////////
+void SceneInst::StopSceneComponents()
+{
+	AssertOnOpQ2( UpdateSerialOpQ() );
+	for( auto it : mSceneComponents )
+	{
+		SceneComponentInst* ci = it.second;
+		ci->Stop(this);
+	}
+	mSceneComponents.clear();
+}
+
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::StartEntities()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
+
 	///////////////////////////////////
 	// Start Entities
 	///////////////////////////////////
@@ -616,6 +747,7 @@ void SceneInst::StopEntities()
 		}
 	}
 }
+
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item) 
 { 
@@ -625,7 +757,7 @@ void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item)
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::QueueDeactivateEntity(Entity *pent) 
 { 
-	//DEBUG_PRINT( "QueueDeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
+	//printf( "QueueDeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
 	mEntityDeactivateQueue.push_back(pent); 
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -670,7 +802,7 @@ void SceneInst::ActivateEntity(ent::Entity* pent)
 void SceneInst::DeActivateEntity(ent::Entity* pent)
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	//DEBUG_PRINT( "DeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
+	//printf( "DeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
 
 	EntitySet::iterator listit = mActiveEntities.find(pent);
 
@@ -718,9 +850,9 @@ void SceneInst::DeActivateEntity(ent::Entity* pent)
 	}
 }
 
-bool SceneInst::IsEntityActive(Entity* pent)
+bool SceneInst::IsEntityActive(Entity* pent) const
 {
-	EntitySet::iterator listit = mActiveEntities.find( pent );
+	auto listit = mActiveEntities.find( pent );
 	return ( listit != mActiveEntities.end() );
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -754,11 +886,32 @@ void SceneInst::ServiceActivateQueue()
 		const CMatrix4 &mtx = item.mMatrix;
 		OrkAssert(pent);
 
+		//printf( "Activating Entity (Q) : ent<%p>\n", pent );
 		if(const Archetype *parch = pent->GetEntData().GetArchetype())
+		{
+			//printf( "Activating Entity (QQ) : ent<%p> arch<%p>\n", pent, parch );
 			parch->StartEntity(this, mtx, pent);
+		}
+		//printf( "Activating Entity (U) : %p\n", pent );
 
 		ActivateEntity(pent);
+		//printf( "Activated Entity (Q) : %p\n", pent );
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+Entity* SceneInst::SpawnDynamicEntity( const ent::EntData* spawn_rec )
+{
+	//printf( "SpawnDynamicEntity ed<%p>\n", spawn_rec );
+	auto newent = new Entity(*spawn_rec,this);
+	auto arch = spawn_rec->GetArchetype();
+	arch->ComposeEntity(newent);
+	arch->LinkEntity(this,newent);
+	EntityActivationQueueItem qi( CMatrix4::Identity, newent );
+	this->QueueActivateEntity(qi);
+	mEntities[spawn_rec->GetName()]=newent;
+	return newent;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -809,6 +962,7 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 	for( const auto& it : mEntities )
 	{
 		const ork::ent::Entity* pent = it.second;
+
 		const Entity::LayerMap& entlayers = pent->GetLayers();
 		//const ork::TransformNode3D& node3d = pent->GetDagNode().GetTransformNode();
 
@@ -829,7 +983,7 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 				size_t inumdv = dv->size();
 				for(size_t i = 0; i < inumdv; i++ )
 				{	Drawable* pdrw = dv->operator[](i);
-					if( pdrw )
+					if( pdrw && pdrw->IsEnabled() )
 					{
 						//printf( "queue drw<%p>\n", pdrw );
 						pdrw->QueueToLayer(xfdata,*buflayer);
@@ -1120,6 +1274,8 @@ void SceneInst::Update()
 
 					ServiceDeactivateQueue();
 					ServiceActivateQueue();
+
+					mEntityUpdateCount += mActiveEntities.size();
 
 				}
 

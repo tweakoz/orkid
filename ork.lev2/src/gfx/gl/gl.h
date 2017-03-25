@@ -369,10 +369,9 @@ class GfxTargetGL : public GfxTarget
 
 	///////////////////////////////////////////////////////////////////////
 	
-	virtual void SetSize( int ix, int iy, int iw, int ih );
-
-	virtual void DoBeginFrame( void ) {}
-	virtual void DoEndFrame( void ) {}
+	void SetSize( int ix, int iy, int iw, int ih ) final;
+	void DoBeginFrame( void ) final {}
+	void DoEndFrame( void ) final {}
 
 	///////////////////////////////////////////////////////////////////////
 	// Shader Interface
@@ -385,29 +384,24 @@ class GfxTargetGL : public GfxTarget
 	//////////////////////////////////////////////
 	// Interfaces
 
-	virtual FxInterface*				FXI() { return & mFxI; }
-	virtual ImmInterface*				IMI() { return & mImI; }
-	virtual RasterStateInterface*		RSI() { return & mRsI; }
-	virtual MatrixStackInterface*		MTXI() { return & mMtxI; }
-	virtual GeometryBufferInterface*	GBI() { return & mGbI; }
-	virtual FrameBufferInterface*		FBI() { return & mFbI; }
-	virtual TextureInterface*			TXI() { return & mTxI; }
+	FxInterface*				FXI() final { return & mFxI; }
+	ImmInterface*				IMI() final { return & mImI; }
+	RasterStateInterface*		RSI() final { return & mRsI; }
+	MatrixStackInterface*		MTXI() final { return & mMtxI; }
+	GeometryBufferInterface*	GBI() final { return & mGbI; }
+	FrameBufferInterface*		FBI() final { return & mFbI; }
+	TextureInterface*			TXI() final { return & mTxI; }
+
+    ///////////////////////////////////////////////////////////////////////
+
 
 	///////////////////////////////////////////////////////////////////////
 
 	~GfxTargetGL();
 
 	//////////////////////////////////////////////
-	// GfxTarget Concrete Interface
-
-	virtual void InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase );	// make a window
-	virtual void InitializeContext( GfxBuffer *pBuf );	// make a pbuffer
-
-	//////////////////////////////////////////////
 
 	void MakeCurrentContext( void );
-
-	void TakeThreadOwnership(); // virtual 
 
 	//////////////////////////////////////////////
 
@@ -423,9 +417,15 @@ class GfxTargetGL : public GfxTarget
 
 	GlFrameBufferInterface&	GLFBI() { return mFbI; }
 
-	bool SetDisplayMode(DisplayMode *mode); // virtual
+    void InitializeContext( GfxBuffer *pBuf ) final ;   // make a pbuffer
 
 protected:
+
+    void TakeThreadOwnership() final ;  
+    bool SetDisplayMode(DisplayMode *mode) final;
+    void InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase ) final ;    // make a window
+    void* DoBeginLoad() final; 
+    void DoEndLoad(void*ploadtok) final; // virtual
 
 	//////////////////////////////////////////////
 	#if defined(_LINUX) || defined( _OSX )
@@ -478,8 +478,6 @@ protected:
 	GlFrameBufferInterface		mFbI;
 	GlTextureInterface			mTxI;
 	bool 						mTargetDrawableSizeDirty;
-	void* DoBeginLoad(); // virtual
-	void DoEndLoad(void*ploadtok); // virtual
 
 };
 

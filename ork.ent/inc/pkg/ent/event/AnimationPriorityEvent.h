@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_EVENT_ANIMATIONPRIORITY_H
-#define ORK_ENT_EVENT_ANIMATIONPRIORITY_H
+#pragma once
 
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
@@ -37,13 +36,9 @@ private:
 	ork::PoolString mName;
 	int mPriority;
 
-	virtual Object *Clone() const
-	{
-		return new AnimationPriority(mName,mPriority);
-	}
+	Object *Clone() const final;
 
 };
 
 } } } // ork::ent::event
 
-#endif // ORK_ENT_EVENT_ANIMATIONPRIORITY_H

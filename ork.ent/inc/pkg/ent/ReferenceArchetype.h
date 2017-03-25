@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef	ORK_REFERENCEARCHETYPE_H
-#define ORK_REFERENCEARCHETYPE_H
+#pragma once 
 
 #include <ork/rtti/RTTI.h>
 
@@ -23,7 +22,7 @@ class ArchetypeAsset : public asset::Asset
 public:
 
 	ArchetypeAsset();
-	/*virtual*/ ~ArchetypeAsset();
+	~ArchetypeAsset() final;
 
 	Archetype* GetArchetype() const { return mArchetype; }
 	void SetArchetype(Archetype* archetype) { mArchetype = archetype; }
@@ -46,17 +45,16 @@ public:
 	void SetAsset(ArchetypeAsset* passet) { mArchetypeAsset = passet; }
 
 private:
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
-	/*virtual*/ void DoComposeEntity( Entity *pent ) const;
-	/*virtual*/ void DoLinkEntity(SceneInst* inst, Entity *pent) const;
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const;
-	/*virtual*/ void DoStopEntity(SceneInst* psi, Entity *pent) const;
-	/*virtual*/ void DoComposePooledEntities(SceneInst *inst);
-	/*virtual*/ void DoLinkPooledEntities(SceneInst *inst);
+	void DoCompose(ork::ent::ArchComposer& composer) final;
+	void DoComposeEntity( Entity *pent ) const final ;
+	void DoLinkEntity(SceneInst* inst, Entity *pent) const final;
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final;
+	void DoStopEntity(SceneInst* psi, Entity *pent) const final;
+
+	void DoComposePooledEntities(SceneInst *inst);
+	void DoLinkPooledEntities(SceneInst *inst);
 
 	ArchetypeAsset* mArchetypeAsset;
 };
 
 } }
-
-#endif // ORK_REFERENCEARCHETYPE_H

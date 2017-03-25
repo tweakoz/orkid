@@ -225,6 +225,7 @@ struct GLVtxBufHandle
 		if( false == bSTATIC ) switch( gDynVboPath )
 		{
 			case EVB_BUFFER_SUBDATA:
+            case EVB_APPLE_FLUSH_RANGE:
 				break;
 			case EVB_MAP_BUFFER_RANGE:
 			{	
@@ -325,6 +326,8 @@ void* GlGeometryBufferInterface::LockVB( VertexBufferBase & VBuf, int ibase, int
 
 			switch( gDynVboPath )
 			{
+                case EVB_APPLE_FLUSH_RANGE:
+                    break;
 				case EVB_MAP_BUFFER_RANGE:
 					//rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT ); // MAP_UNSYNCHRONIZED_BIT?
 					rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_FLUSH_EXPLICIT_BIT|GL_MAP_UNSYNCHRONIZED_BIT); // MAP_UNSYNCHRONIZED_BIT?
@@ -442,6 +445,8 @@ void GlGeometryBufferInterface::UnLockVB( VertexBufferBase& VBuf )
 
 		switch( gDynVboPath )
 		{
+            case EVB_APPLE_FLUSH_RANGE:
+                break;
 			case EVB_MAP_BUFFER_RANGE:
 				GL_ERRORCHECK();
 				glFlushMappedBufferRange(GL_ARRAY_BUFFER, (GLintptr)0, countbytes);

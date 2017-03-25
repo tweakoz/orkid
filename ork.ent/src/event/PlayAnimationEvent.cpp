@@ -94,4 +94,9 @@ bool PlayAnimationEvent::IsLoop() const
 	return mLoop;
 }
 
+Object* PlayAnimationEvent::Clone() const // final
+{
+    return new PlayAnimationEvent(mMaskName,mName,mPriority,mSpeed,mInterpDuration,mLoop);
+}
+
 } } } // namespace ork::ent::event

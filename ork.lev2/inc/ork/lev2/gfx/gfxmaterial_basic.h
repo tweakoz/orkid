@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#if ! defined( _GFX_GFXMATERIAL_BASIC_H )
-#define	_GFX_GFXMATERIAL_BASIC_H
+#pragma once 
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 
@@ -29,7 +28,9 @@ public:
 
 	WiiMatrixBlockApplicator() : mMatrixBlockItem(0), mMaterial(0) {}
 	WiiMatrixBlockApplicator( MaterialInstItemMatrixBlock* mtxblockitem,	const GfxMaterialWiiBasic* pmat );
-	void ApplyToTarget( GfxTarget *pTARG ); // virtual
+
+private:
+	void ApplyToTarget( GfxTarget *pTARG ) final;
 
 	///////////////////////////////////////////////////////////////
 
@@ -50,9 +51,10 @@ public:
 
 	WiiMatrixApplicator() : mMatrixItem(0), mMaterial(0) {}
 	WiiMatrixApplicator( MaterialInstItemMatrix* mtxitem, const GfxMaterialWiiBasic* pmat );
-	void ApplyToTarget( GfxTarget *pTARG ); // virtual
 
 	///////////////////////////////////////////////////////////////
+private:
+    void ApplyToTarget( GfxTarget *pTARG ) final;
 
 };
 
@@ -69,25 +71,23 @@ class GfxMaterialWiiBasic : public GfxMaterial //TRttiBase<GfxMaterialWiiBasic,G
 	static void StaticInit();
 
 	GfxMaterialWiiBasic( const char* pbastek = "/modvtx" );
-	virtual ~GfxMaterialWiiBasic(){};
+	~GfxMaterialWiiBasic() final {};
 
-	virtual void Init( GfxTarget *pTarg );										//virtual 
+	void Init( GfxTarget *pTarg ) final;
+	int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( GfxTarget* pTARG ) final;
+	void Update( void ) final {}
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;						
+	void EndPass( GfxTarget* pTARG ) final;										
+	void BindMaterialInstItem( MaterialInstItem* pitem ) const final;				
+	void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;			
+	void UpdateMVPMatrix( GfxTarget *pTARG ) final ;								
 
-	int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );	//virtual 
-	void EndBlock( GfxTarget* pTARG );											//virtual 
-	void Update( void ) {}														//virtual 
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 );							//virtual 
-	void EndPass( GfxTarget* pTARG );											//virtual 
+    const std::string & GetBasicTechName( void ) const { return mBasicTechName; }
 
-	float			mSpecularPower;
-	CVector4		mEmissiveColor;
-
-	const std::string & GetBasicTechName( void ) const { return mBasicTechName; }
-
-	void BindMaterialInstItem( MaterialInstItem* pitem ) const;					//virtual 
-	void UnBindMaterialInstItem( MaterialInstItem* pitem ) const;				//virtual 
-	void UpdateMVPMatrix( GfxTarget *pTARG );									//virtual 
-																				
+    float           mSpecularPower;
+    CVector4        mEmissiveColor;
+							
 protected:																		
 
 	const std::string	mBasicTechName;
@@ -151,4 +151,3 @@ private:
 
 } }
 
-#endif

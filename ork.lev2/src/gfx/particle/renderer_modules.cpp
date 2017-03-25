@@ -597,9 +597,11 @@ void StreakRenderer::Describe()
 	ork::reflect::RegisterProperty( "Gradient", & StreakRenderer::GradientAccessor );
 	ork::reflect::RegisterProperty("BlendMode", &StreakRenderer::meBlendMode);
 	ork::reflect::RegisterProperty( "Texture", & StreakRenderer::GetTextureAccessor, & StreakRenderer::SetTextureAccessor );
+
 	ork::reflect::RegisterProperty("DepthSort", & StreakRenderer::mbSort );
 	ork::reflect::RegisterProperty("AlphaMux", & StreakRenderer::mAlphaMux );
-	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
+	//ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Gradient", "editor.class", "ged.factory.gradient" );
+
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("BlendMode", "editor.class", "ged.factory.enum" );
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.class", "ged.factory.assetlist" );
 	ork::reflect::AnnotatePropertyForEditor<StreakRenderer>("Texture", "editor.assettype", "lev2tex" );

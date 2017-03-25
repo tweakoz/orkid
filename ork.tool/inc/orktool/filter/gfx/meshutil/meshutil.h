@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _GFX_UTIL_MESHUTIL_H
-#define _GFX_UTIL_MESHUTIL_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -16,14 +15,12 @@
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
 #include <ork/math/box.h>
-//#include "../tristripper/tri_stripper.h"
 #include <algorithm>
 #include <ork/kernel/Array.h>
 
 #include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
-//#include <hash_map>
 #include <unordered_map>
 
 struct DaeReadOpts;
@@ -659,28 +656,28 @@ class OBJ_OBJ_Filter : public ork::tool::CAssetFilterBase
 	RttiDeclareConcrete(OBJ_OBJ_Filter,ork::tool::CAssetFilterBase);
 public: //
 	OBJ_OBJ_Filter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 class D3DX_OBJ_Filter : public ork::tool::CAssetFilterBase
 {
 	RttiDeclareConcrete(D3DX_OBJ_Filter,ork::tool::CAssetFilterBase);
 public: //
 	D3DX_OBJ_Filter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 class XGM_OBJ_Filter : public ork::tool::CAssetFilterBase
 {
 	RttiDeclareConcrete(XGM_OBJ_Filter,ork::tool::CAssetFilterBase);
 public: //
 	XGM_OBJ_Filter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 class OBJ_XGM_Filter : public ork::tool::CAssetFilterBase
 {
 	RttiDeclareConcrete(OBJ_XGM_Filter,ork::tool::CAssetFilterBase);
 public: //
 	OBJ_XGM_Filter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -690,8 +687,8 @@ class AmbientLight : public Light
 	RttiDeclareConcrete(AmbientLight, Light);
 public:
 	AmbientLight(){}
-	virtual bool AffectsSphere( const CVector3& center, float radius ) const { return true; }
-	virtual bool AffectsAABox( const AABox& aab ) const { return true; }
+	bool AffectsSphere( const CVector3& center, float radius ) const final { return true; }
+	bool AffectsAABox( const AABox& aab ) const final { return true; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -705,8 +702,8 @@ public:
 
 	DirLight() {}
 
-	virtual bool AffectsSphere( const CVector3& center, float radius ) const { return true; }
-	virtual bool AffectsAABox( const AABox& aab ) const { return true; }
+	bool AffectsSphere( const CVector3& center, float radius ) const final { return true; }
+	bool AffectsAABox( const AABox& aab ) const final { return true; }
 
 };
 
@@ -722,8 +719,8 @@ public:
 
 	PointLight() : mFalloff(1.0f), mRadius(0.0f) {}
 
-	virtual bool AffectsSphere( const CVector3& center, float radius ) const;
-	virtual bool AffectsAABox( const AABox& aab ) const;
+	bool AffectsSphere( const CVector3& center, float radius ) const final ;
+	bool AffectsAABox( const AABox& aab ) const final ;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -781,8 +778,8 @@ struct UvAtlasContext
 bool UvAtlasSubMesh( const UvAtlasContext& Ctx );
 bool UvAtlasSubMesh2( const UvAtlasContext& Ctx );
 void GenerateUVAtlas( const tokenlist& options );
-
 #endif
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -790,4 +787,3 @@ void GenerateUVAtlas( const tokenlist& options );
 } } // namespace MeshUtil
 
 
-#endif

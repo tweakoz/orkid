@@ -244,11 +244,11 @@ class CCamera_persp : public CCamera
 	bool UIEventHandler( const ui::Event& EV ) override;
 	void draw( GfxTarget *pT ) override;
 
-	void RenderUpdate( void ); // virtual
-	void SetFromWorldSpaceMatrix(const CMatrix4 &matrix); // virtual
+	void RenderUpdate( void ) final; 
+	void SetFromWorldSpaceMatrix(const CMatrix4 &matrix) final; 
 	
-    CReal ViewLengthToWorldLength( const CVector4 &pos, CReal ViewLength ); // virtual
-	void GenerateDepthRay( const CVector2& pos2D, CVector3 &rayN, CVector3 &rayF,  const CMatrix4 &IMat ) const; // virtual
+    CReal ViewLengthToWorldLength( const CVector4 &pos, CReal ViewLength ) final; 
+	void GenerateDepthRay( const CVector2& pos2D, CVector3 &rayN, CVector3 &rayF,  const CMatrix4 &IMat ) const final;
 
     void DrawBillBoardQuad( CVector4 &inpt, CReal size );
 	

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef	ORK_ENT_COMPONENT_H
-#define ORK_ENT_COMPONENT_H
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -87,10 +86,12 @@ protected:
 	SceneInst*					mpSceneInst;
 
 private:
-	/*virtual*/ bool DoNotify(const ork::event::Event *event) { return false; }
-	virtual void DoUpdate(SceneInst *inst) {}
+	
+    bool DoNotify(const ork::event::Event *event) override { return false; }
+	
+    virtual void DoUpdate(SceneInst *inst) {}
 	virtual void DoStart(SceneInst *psi) {}
-	virtual void DoLink(SceneInst *psi) {}
+	virtual bool DoLink(SceneInst *psi) { return true; }
 	virtual void DoUnLink(SceneInst *psi) {}
 	virtual void DoStop(SceneInst *psi) {}
 
@@ -147,8 +148,10 @@ protected:
 	ComponentInst( const ComponentData* data, Entity *entity );
 
 private:
-	/*virtual*/ bool DoNotify(const ork::event::Event *event) { return false; }
-	virtual void DoUpdate(SceneInst *inst) {}
+    
+    bool DoNotify(const ork::event::Event *event) override { return false; }
+	
+    virtual void DoUpdate(SceneInst *inst) {}
 	virtual bool DoStart(SceneInst *psi, const CMatrix4 &world) { return true; }
 	virtual bool DoLink(SceneInst *psi) { return true; }
 	virtual void DoUnLink(SceneInst *psi) {}
@@ -181,7 +184,7 @@ public:
 
 private:
 
-	/*virtual*/ ComponentInst* CreateComponent(Entity* pent) const { return new EditorPropMapInst(this,pent); }
+	ComponentInst* CreateComponent(Entity* pent) const final { return new EditorPropMapInst(this,pent); }
 
 	orklut<ConstString, ConstString> mProperties;
 };
@@ -190,5 +193,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-
-#endif // ORK_ENT_COMPONENT_H

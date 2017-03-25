@@ -12,6 +12,7 @@ from sets import Set
 
 import ork.build.utils as utils
 import ork.build.common as common
+deco = common.deco
 
 HostIsOsx = common.IsOsx
 HostIsIx = common.IsIx
@@ -35,8 +36,11 @@ __all__ =	[
 	"SetCompilerOptions", "SourceEnumerator", "Project"
 	]
 	
-optset = set(["core","lev2", "bullet273", "ent", "tool", "tuio", "tout"])
-#optset = set()
+optprj = ""
+optprj = "core lev2 bullet273 ent tool tuio tout lua luabind"
+optset = set()
+for item in string.split(optprj):
+	optset.add("ork.%s"%item)
 
 stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
 
@@ -65,22 +69,13 @@ class SourceEnumerator:
 	def AddFoldersExc(self,folders, excludes, pattern):
 		srclist = string.split(folders)
 		exclist = string.split(excludes)
-		sourcefiles = common.globber( self.basefolder, pattern, srclist , exclist)
-		#if "" in sourcefiles:
-		#	print folders
-		#	print pattern
-		#	print excludes
-			
+		sourcefiles = common.globber( self.basefolder, pattern, srclist , exclist)			
 		self.sourceobjs  += common.builddir_replace( sourcefiles, self.basefolder, self.BUILD_DIR )
 
 	def AddFolders(self,folders, pattern):
 		srclist = string.split(folders)
 		exclist = string.split('')
 		sourcefiles = common.globber( self.basefolder, pattern, srclist , exclist)
-		#if "" in sourcefiles:
-		#	print "yo1" , folders
-		#	print "yo1" , pattern
-		#	print "yo1" , excludes
 		self.sourceobjs  += common.builddir_replace( sourcefiles, self.basefolder, self.BUILD_DIR )
 
 	def AddFoldersNoRep(self,folders, pattern):
@@ -125,7 +120,8 @@ def CommandPrinter(s, target, src, env):
     """s is the original command line, target and src are lists of target
     and source nodes respectively, and env is the environment."""
     #print( "yo" )
-    print( "building target<%s>" % join([str(x) for x in target]) )
+    tgt = deco("path",join([str(x) for x in target]) )
+    print( "building target<%s>" % tgt )
 
 
 ###############################################################################
@@ -163,6 +159,7 @@ class Project:
 		self.BaseEnv = Environment.Clone()
 		self.BaseEnv.Replace( CCCOMSTR = "\x1b[35m Compiling \x1b[33m $SOURCE \x1b[32m" ) #% (name,self.BUILD,self.PLATFORM) )
 		self.BaseEnv.Replace( CXXCOMSTR = self.BaseEnv['CCCOMSTR'])
+		self.BaseEnv.Replace( SHCCCOMSTR = self.BaseEnv['CCCOMSTR'])
 		self.BaseEnv.Replace( SHCXXCOMSTR = self.BaseEnv['CCCOMSTR'])
 		self.BaseEnv.Replace( ARCOMSTR = '\x1b[36m Archiving \x1b[37m $TARGET \x1b[32m' )
 		self.BaseEnv.Replace( LINKCOMSTR = '\x1b[36m Linking \x1b[37m $TARGET \x1b[32m' )
@@ -241,8 +238,8 @@ class Project:
 		############################
 
 		if name in optset:
-			self.XCCFLG += '-Ofast '
-			self.XCXXFLG += '-Ofast '
+			self.XCCFLG += '-O2' #-Ofast '
+			self.XCXXFLG += '-O2' #'-Ofast '
 		else:
 			self.XCCFLG += '-O0 '
 			self.XCXXFLG += '-O0 '

@@ -305,6 +305,8 @@ void morphable::HandleMorphEvent(const morph_event* me)
 		case EMET_MORPH:
 			Morph1D( me );
 			break;
+		case EMET_END:
+			break;
 			
 	}
 

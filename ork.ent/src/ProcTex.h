@@ -104,7 +104,7 @@ public:
 
 private:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
+	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
 
 	ork::Object* TemplateAccessor() { return & mTemplate; }
 	void OutputGetter(ork::rtti::ICastable*& val) const;
@@ -125,7 +125,7 @@ class ProcTexControllerInst : public ent::ComponentInst
 
 	const ProcTexControllerData&		mCD;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 public:
 	const ProcTexControllerData&	GetCD() const { return mCD; }
@@ -142,9 +142,9 @@ class ProcTexArchetype : public Archetype
 {
 	RttiDeclareConcrete( ProcTexArchetype, Archetype );
 
-	/*virtual*/ void DoLinkEntity( SceneInst* psi, Entity *pent ) const;
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
+	void DoLinkEntity( SceneInst* psi, Entity *pent ) const final;
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
 

@@ -1,0 +1,3 @@
+<project name="ork.boost">
+  <depends_on project="ork.build"/>
+</project>

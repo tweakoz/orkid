@@ -31,6 +31,7 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='ModelComponentData' id='4'>
                                         <property name='AlwaysVisible'>true</property>
+                                        <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
                                         <property name='Model'>
@@ -83,6 +84,7 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='ModelComponentData' id='8'>
                                         <property name='AlwaysVisible'>true</property>
+                                        <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
                                         <property name='Model'>
@@ -139,6 +141,7 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='ModelComponentData' id='13'>
                                         <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
                                         <property name='Model'>
@@ -191,6 +194,7 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='ModelComponentData' id='17'>
                                         <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
                                         <property name='Model'>
@@ -217,7 +221,7 @@
                             <item key='physics'>
                                 <reference category='ComponentDataClass'>
                                     <object type='BulletWorldControllerData' id='19'>
-                                        <property name='Debug'>true</property>
+                                        <property name='Debug'>false</property>
                                         <property name='Gravity'>0 -3 0</property>
                                         <property name='SimulationRate'>120</property>
                                         <property name='TimeScale'>1</property>
@@ -498,7 +502,7 @@
                         <property name='Name'>"ground_plane"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='51'>
-                                <property name='TransformNode'>-0.999999 -0.000784071 0 0 0.000784071 -0.999999 0 0 0 0 1 0 0 0 0 1</property>
+                                <property name='TransformNode'>-0.999999 -0.000784071 0 0 0.000784071 -0.999999 0 0 0 0 0.999999 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -538,5 +542,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>

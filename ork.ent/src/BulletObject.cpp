@@ -166,6 +166,29 @@ BulletObjectControllerInst::~BulletObjectControllerInst()
 	if( mShapeInst )
 		delete mShapeInst;
 }
+void BulletObjectControllerInst::DoStop(SceneInst* psi)
+{
+	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
+	if( bullet_world )
+	{
+		if(auto wController
+				= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true))
+		{
+			const BulletWorldControllerData& world_data = wController->GetWorldData();
+			btVector3 grav = !world_data.GetGravity();
+
+			if(btDynamicsWorld *world = wController->GetDynamicsWorld())
+			{
+				if( mRigidBody )
+				{
+					world->removeRigidBody(mRigidBody);
+					delete mRigidBody;
+					mRigidBody = nullptr;
+				}
+			}
+		}
+	}
+}
 bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 {
 	auto this_ent = GetEntity();
@@ -482,8 +505,6 @@ public:
 	}
 	~TestForceControllerData() {}
 
-	BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const; // virtual
-
 	float GetForce() const { return mForce; }
 	float GetTorque() const { return mTorque; }
 	const CVector3& GetOrigin() const { return mOrigin; }
@@ -494,6 +515,8 @@ public:
 	float GetErrorPower() const { return mfErrPower; } 
 
 private:
+
+    BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const final; 
 
 	float					mForce;
 	float					mTorque;
@@ -763,14 +786,14 @@ public:
 		, mDirection(0.0f,0.0f,0.0f)
 	{
 	}
-	~DirectionalForceData() {}
-
-	BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const; // virtual
 
 	float GetForce() const { return mForce; }
 	const CVector3& GetDirection() const { return mDirection; }
 
 private:
+
+    ~DirectionalForceData() final {}
+    BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const final;
 
 	float					mForce;
 	CVector3				mDirection;

@@ -34,6 +34,8 @@
 
 template class ork::orklut<const ork::object::ObjectClass *, ork::ent::SceneComponentData *>;
 
+using namespace ork::reflect;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneData,"Ent3dSceneData");
@@ -86,7 +88,7 @@ void EnterRunMode()
 	});
 	dispatch_suspend( EditOnlyQueue() );
 #endif
-	printf( "EDITORQ ENTERING RUNMODE, EDITORQUEUE SUSPENDED\n" );
+	//printf( "EDITORQ ENTERING RUNMODE, EDITORQUEUE SUSPENDED\n" );
 }
 void LeaveRunMode()
 {
@@ -95,14 +97,14 @@ void LeaveRunMode()
 	if( gbQRUNMODE ) bRESUME=true;
 	gbQRUNMODE = false;
 	////////////////////////////////////////
-	printf( "EDITORQ LEAVING RUNMODE, STARTING EDITORQUEUE...\n" );
+	//printf( "EDITORQ LEAVING RUNMODE, STARTING EDITORQUEUE...\n" );
 #if defined(_DARWIN) // TODO: need to replace GCD on platforms other than DARWIN
 	if( bRESUME )
 		dispatch_resume( EditOnlyQueue() );
 	////////////////////////////////////////
 	dispatch_sync( EditOnlyQueue(), 
 	^{
-		printf( "EDITORQ LEAVING RUNMODE, EDITORQUEUE STARTED.\n" );
+		//printf( "EDITORQ LEAVING RUNMODE, EDITORQUEUE STARTED.\n" );
 	});
 #endif
 	////////////////////////////////////////
@@ -126,9 +128,13 @@ void UpdateStatus::SetState(EUpdateState est)
 void SceneData::Describe()
 {
 	orkmap<PoolString, SceneObject*> ork::ent::SceneData::* item = & SceneData::mSceneObjects;
-	reflect::RegisterMapProperty( "SceneObjects", & SceneData::mSceneObjects );
+	RegisterMapProperty( "SceneObjects", & SceneData::mSceneObjects );
 	
-	reflect::AnnotateClassForEditor< SceneData >( "editor.class", ConstString("ged.factory.outliner") );
+	RegisterProperty( "ScriptFile", & SceneData::mScriptPath );
+	AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.class", "ged.factory.filelist");
+	AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filetype", "lua");
+	AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filebase", "src://scripts/");
+	AnnotateClassForEditor<SceneData>( "editor.object.props", ConstString("ScriptFile") );
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,7 +166,10 @@ SceneObject* SceneData::FindSceneObjectByName(const PoolString& name)
 ///////////////////////////////////////////////////////////////////////////////
 const SceneObject* SceneData::FindSceneObjectByName(const PoolString& name) const
 {	orkmap<PoolString, SceneObject*>::const_iterator it = mSceneObjects.find( name );
-	return (it==mSceneObjects.end()) ? 0 : it->second;
+	const SceneObject* o = (it==mSceneObjects.end()) ? 0 : it->second;
+
+	//printf( "FindSceneObject<%s:%p>\n", name.c_str(), o );
+	return o;
 }
 
 
@@ -194,6 +203,7 @@ void SceneData::AddSceneObject(SceneObject* object)
 	}
 	object->SetName(pooled_name);
 
+	//printf( "AddSceneObject<%s:%p>\n", object->GetName().c_str(), object );
 	mSceneObjects.insert( std::make_pair( object->GetName(), object ) );
 }
 ///////////////////////////////////////////////////////////////////////////////

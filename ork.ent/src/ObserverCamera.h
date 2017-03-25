@@ -26,8 +26,8 @@ class ObserverCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( ObserverCamArchetype, Archetype );
 
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
 
@@ -52,7 +52,7 @@ class ObserverCamControllerData : public ent::ComponentData
 	
 public:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
+	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
 
 	ObserverCamControllerData();
 	PoolString GetTarget() const { return mTarget; }
@@ -77,14 +77,14 @@ class ObserverCamControllerInst : public ent::ComponentInst
 	Entity*									mpTarget;
 	CCameraData								mCameraData;
 	
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
+    bool DoLink(SceneInst *psi) final;
+    bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
 
 public:
 	const ObserverCamControllerData&	GetCD() const { return mCD; }
 
 	ObserverCamControllerInst( const ObserverCamControllerData& cd, ork::ent::Entity* pent );
-	bool DoLink(SceneInst *psi);
-	bool DoStart(SceneInst *psi, const CMatrix4 &world);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

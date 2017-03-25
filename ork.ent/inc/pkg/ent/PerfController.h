@@ -13,8 +13,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_PERFCONTROLLER_H
-#define ORK_ENT_PERFCONTROLLER_H
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,8 +73,6 @@ class PerfControllerComponentData : public ork::ent::ComponentData
 public:
 	///////////////////////////////////////////////////////
 	PerfControllerComponentData();
-	~PerfControllerComponentData();
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
 	const orklut<PoolString,ork::Object*>& GetPrograms() const { return mPrograms; }
 	const PoolString& GetCurrentProgram() const { return mCurrentProgram; }
 	void AddProgram( PoolString name, PerfProgramData* program );
@@ -84,6 +81,9 @@ public:
 	void MorphEvent(const ork::dataflow::morph_event* me);
 	
 private:
+
+    ~PerfControllerComponentData() final;
+    ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
 
 	orklut<PoolString,ork::Object*> mPrograms;
 	PoolString						mCurrentProgram;
@@ -123,8 +123,8 @@ public:
 	
 private:
 
-	virtual void DoUpdate(ork::ent::SceneInst *inst);
-	bool DoLink(ork::ent::SceneInst *psi); // virtual
+	virtual void DoUpdate(ork::ent::SceneInst *inst) final;
+	bool DoLink(ork::ent::SceneInst *psi) final; // virtual
 
 	const PerfControllerComponentData&	mPCCD;
 	PoolString							mCurrentProgram;
@@ -139,8 +139,8 @@ class PerfControllerArchetype : public Archetype
 public:
 	PerfControllerArchetype();
 private:
-	void DoCompose(ArchComposer& composer); // virtual
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const {}
+	void DoCompose(ArchComposer& composer) final; // virtual
+	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -197,4 +197,3 @@ private:
 
 }}
 
-#endif

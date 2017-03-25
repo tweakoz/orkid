@@ -51,10 +51,7 @@ private:
 	float mInterpDuration;
 	bool mLoop;
 
-	virtual Object *Clone() const
-	{
-		return new PlayAnimationEvent(mMaskName,mName,mPriority,mSpeed,mInterpDuration,mLoop);
-	}
+	Object *Clone() const final;
 
 };
 

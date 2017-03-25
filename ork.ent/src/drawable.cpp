@@ -209,7 +209,7 @@ void DrawableBuffer::BeginClearAndSyncReaders()
 
 	bool b = gbInsideClearAndSync.exchange(true);
 	OrkAssert(b==false);
-	printf( "DrawableBuffer::BeginClearAndSyncReaders()\n");
+	//printf( "DrawableBuffer::BeginClearAndSyncReaders()\n");
 	gBuffers.disable();
 }
 /////////////////////////////////////////////////////////////////////
@@ -219,14 +219,14 @@ void DrawableBuffer::EndClearAndSyncReaders()
 	bool b = gbInsideClearAndSync.exchange(false);
 	OrkAssert(b==true);
 	////////////////////
-	printf( "DrawableBuffer::EndClearAndSyncReaders()\n");
+	//printf( "DrawableBuffer::EndClearAndSyncReaders()\n");
 	gBuffers.enable();
 }
 /////////////////////////////////////////////////////////////////////
 void DrawableBuffer::BeginClearAndSyncWriters()
 {
 	//AssertOnOpQ2( UpdateSerialOpQ() );
-	printf( "DrawableBuffer::BeginClearAndSyncWriters()\n");
+	//printf( "DrawableBuffer::BeginClearAndSyncWriters()\n");
 	gBuffers.disable();
 }
 /////////////////////////////////////////////////////////////////////
@@ -234,7 +234,7 @@ void DrawableBuffer::EndClearAndSyncWriters()
 {
 	//AssertOnOpQ2( UpdateSerialOpQ() );
 	////////////////////
-	printf( "DrawableBuffer::EndClearAndSyncWriters()\n");
+	//printf( "DrawableBuffer::EndClearAndSyncWriters()\n");
 	gBuffers.enable();
 }
 /////////////////////////////////////////////////////////////////////
@@ -288,6 +288,7 @@ void CameraDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
 Drawable::Drawable()
 	: mDataA( nullptr )
 	, mDataB( nullptr )
+	, mEnabled(true)
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	//printf( "Drawable<%p>::Drawable(Entity<%p>)\n", this, pent );

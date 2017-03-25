@@ -19,6 +19,8 @@ import xml.etree.ElementTree as xml
 import hashlib
 from ork.build.manifest import *
 from ork.build.pathtools import *
+import common
+deco = common.deco
 
 if subprocess.mswindows:
     from win32file import ReadFile, WriteFile
@@ -30,15 +32,12 @@ else:
 
 num_cores = multiprocessing.cpu_count()+1
 stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
+download_dir = "%s/downloads"%stage_dir
+extbuild_dir = "%s/ext_build"%stage_dir
 
 ###############################################################################
 
-#MARK: yo
-
 SYSTEM = platform.system()
-
-def IsCygwin():
-	return SYSTEM.lower().find( "cygwin" )!=-1
 
 def IsWindows():
 	iswin = SYSTEM.lower().find( "windows" )!=-1
@@ -50,8 +49,27 @@ def IsDarwin():
 
 ###########################################
 
+def chdir_root_rel(s):
+	os.chdir("%s/../%s"%(stage_dir,s))
+
+###########################################
+
+def chdir_stage_rel(s):
+	ndir = "%s/%s"%(stage_dir,s)
+	print( "chdir <%s>" % ndir )
+	os.chdir(ndir)
+
+###########################################
+
+def chdir_extbuild_rel(s):
+	ndir = "%s/%s"%(extbuild_dir,s)
+	print( "chdir <%s>" % ndir )
+	os.chdir(ndir)
+
+###########################################
+
 def set_env(key,val):
-	print "Setting var<%s> to<%s>" % (key,val)
+	print "Setting var<%s> to<%s>" % (deco("key",key),deco("val",val))
 	os.environ[key]	= val
 
 ###########################################
@@ -61,7 +79,7 @@ def prepend_env(key,val):
 		set_env(key,val)
 	else:
 		os.environ[key]	= val + ":" + os.environ[key]
-		print "Setting var<%s> to<%s>" % (key,os.environ[key])
+		print "Setting var<%s> to<%s>" % (deco("key",key),deco("val",os.environ[key]))
 
 ###########################################
 
@@ -70,7 +88,7 @@ def append_env(key,val):
 		set_env(key,val)
 	else:
 		os.environ[key]	= os.environ[key]+":"+val 
-		print "Setting var<%s> to<%s>" % (key,os.environ[key])
+		print "Setting var<%s> to<%s>" % (deco("key",key),deco("val",os.environ[key]))
 
  #########################
 
@@ -119,11 +137,11 @@ def check_for_project(path):
 	rval = None
 	prj_manifest = "%s/ork.build.manifest"%path
 	prj_scripts = os.path.abspath("%s/scripts"%path)
-	print "checking for project at<%s>" % path
+	#print "checking for project at<%s>" % path
 	if os.path.exists(prj_manifest):
-		print "/////////////////////////////////////////"
-		print "// Projects Found !! <%s>" % path
-		print "/////////////////////////////////////////"
+		#print "/////////////////////////////////////////"
+		print "// Projects Found !! <%s>" % deco("path",path)
+		#print "/////////////////////////////////////////"
 		###############
 		prj = manifests.add_project(path)
 		manifest_tree = xml.parse(prj_manifest)
@@ -134,7 +152,7 @@ def check_for_project(path):
 		for a in rootElement.findall('depends_on'):
 			#print dir(a)
 			depends = a.attrib["project"]
-			print "project<%s> depends<%s>" % (path,depends)
+			#print "project<%s> depends<%s>" % (path,depends)
 
 			manifests.depends(path,depends)
 		###############
@@ -168,11 +186,11 @@ def check_for_projects(base):
 						PRJ_LIBDIRS += prj.libdir
 					if hasattr(prj,"autoexecs"):
 						for a in prj.autoexecs:
-							print "execute autoexec<%s>" % a
+							#print "execute autoexec<%s>" % a
 							setenv_scrs.append(a)
 	#append_env("PRJ_LIBDIRS",PRJ_LIBDIRS)
 	for i in setenv_scrs:
-		print "exec child setenv <%s>" % i
+		#print "exec child setenv <%s>" % i
 		execfile(i)
 	#print "PRJ_LIBDIRS<%s>" % PRJ_LIBDIRS
 ############################

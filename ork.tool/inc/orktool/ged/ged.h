@@ -10,7 +10,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/object/AutoConnector.h>
 #include <ork/kernel/string/ArrayString.h>
-//#include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/orkpool.h>

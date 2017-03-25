@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#if ! defined( _GFX_GFXMATERIAL_UI_H )
-#define	_GFX_GFXMATERIAL_UI_H
+#pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 
@@ -23,16 +22,16 @@ class GfxMaterialUI : public GfxMaterial
 	public:
 
 	GfxMaterialUI(GfxTarget *pTarg=0);
-	virtual ~GfxMaterialUI();
+	~GfxMaterialUI() final;
 
-	virtual void Update( void ) {}
+	void Update( void ) final {}
 
-	virtual void Init( GfxTarget *pTarg );
+	void Init( GfxTarget *pTarg ) final;
 
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 );
-	virtual void EndPass( GfxTarget* pTARG );
-	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTARG );
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+	void EndPass( GfxTarget* pTARG ) final;
+	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( GfxTarget* pTARG ) final;
 
 	void SetUIColorMode( EUIColorMode emod ) { meUIColorMode = emod; }
 	EUIColorMode GetUIColorMode( void ) { return meUIColorMode; }
@@ -81,13 +80,13 @@ class GfxMaterialUIText : public GfxMaterial
 
 	GfxMaterialUIText(GfxTarget *pTarg=0);
 	
-	virtual void Update( void ) {}
-	virtual void Init( GfxTarget *pTarg );
+	void Update( void ) final {}
+	void Init( GfxTarget *pTarg ) final;
 
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 );
-	virtual void EndPass( GfxTarget* pTARG );
-	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTARG );
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+	void EndPass( GfxTarget* pTARG ) final;
+	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( GfxTarget* pTARG ) final;
 
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -116,13 +115,13 @@ class GfxMaterialUITextured : public GfxMaterial
 	
 	static void ClassInit();
 	GfxMaterialUITextured( GfxTarget *pTarg = 0, const std::string & Technique="uitextured" );
-	virtual void Init( GfxTarget *pTarg, const std::string & Technique );
-	virtual void Init( GfxTarget *pTarg );
-	virtual void Update( void ) {}
-	virtual bool BeginPass( GfxTarget* pTARG, int iPass=0 );
-	virtual void EndPass( GfxTarget* pTARG );
-	virtual int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTARG );
+	void Init( GfxTarget *pTarg ) final;
+    void Init( GfxTarget *pTarg, const std::string & Technique );
+	void Update( void ) final {}
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+	void EndPass( GfxTarget* pTARG ) final;
+	int BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
+	void EndBlock( GfxTarget* pTARG ) final;
 	
 	void EffectInit( void );
 
@@ -146,4 +145,3 @@ class GfxMaterialUITextured : public GfxMaterial
 
 } }
 
-#endif
