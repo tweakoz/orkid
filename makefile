@@ -8,7 +8,7 @@ prep:
 	scons -f root.sconstruct prep --site-dir ./ork.build/site_scons
 
 env:
-	./ork.build/bin/ork.build.int_env.py
+	./ork.build/bin/ork.build.init_env.py
 
 get:
 	mkdir -p ./stage/downloads

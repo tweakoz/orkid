@@ -2,7 +2,7 @@
 
 import os, string
 
-print "yo"
+#print "yo"
 
 bundle_name = "OrkidTool.app"
 

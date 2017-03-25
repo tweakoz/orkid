@@ -1,4 +1,6 @@
-import os, sys
+import os, sys, common
+
+deco = common.deco
 
 ###############################################################################
 
@@ -20,7 +22,7 @@ class ManifestsContainer:
 		if found==None:
 			found = self.manifests[name]=Manifest(name)
 		else:
-			print "ERROR: project<%s> already found" % name
+			print deco("err","ERROR:") + deco("path", " project<%s> already found" % name )
 		return found
 
 	def depends(self,name,depname):
@@ -28,7 +30,7 @@ class ManifestsContainer:
 		dep = self.manifests.get(depname)
 		if (prj!=None) and (dep!=None):
 			prj.add_dep(dep)
-		else:
-			print "ERROR: prj<%s> or dep<%s> not found" % (name,depname)
+		#else:
+		#	print deco("err","ERROR:") +deco("path","prj<%s>"%name) + " or " + deco( "path", "dep<%s>"%depname)
 
 manifests = ManifestsContainer()
