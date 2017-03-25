@@ -329,6 +329,7 @@ void* BootQtThreadImpl(void* arg_opaq )
 	ent::EditorMainWindow MainWin(0, AppClassName, *gpQtApplication );
 	ent::gEditorMainWindow = &MainWin;
 	MainWin.showMaximized();
+    MainWin.raise();  // for MacOS
 
 	gpQtApplication->mpMainWindow = & MainWin;
 

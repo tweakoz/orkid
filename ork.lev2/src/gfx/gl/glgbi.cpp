@@ -540,7 +540,7 @@ struct vtx_config
 									mType,
 									mNormalize,
 									istride,
-									(void*) mOffset );	
+									(void*) (uint64_t) mOffset );	
 			rval = 1<<mAttr->mLocation;
 		}
 		else

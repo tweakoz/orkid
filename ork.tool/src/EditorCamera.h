@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENT_EDITORCAMERA_H_
-#define _ORK_ENT_EDITORCAMERA_H_
+#pragma once
 
 #include <pkg/ent/entity.h>
 #include <pkg/ent/component.h>
@@ -28,8 +27,8 @@ class EditorCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( EditorCamArchetype, Archetype );
 
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
 
@@ -45,9 +44,10 @@ class EditorCamControllerData : public ent::ComponentData
 
 	lev2::CCamera_persp*					mPerspCam;
 
+    ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+
 public:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
 
 	EditorCamControllerData();
 	const lev2::CCamera* GetCamera() const { return mPerspCam; }
@@ -63,14 +63,14 @@ class EditorCamControllerInst : public ent::ComponentInst
 
 	const EditorCamControllerData&			mCD;
 	
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
+    bool DoLink(SceneInst *psi) final;
+    bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
 
 public:
 	const EditorCamControllerData&	GetCD() const { return mCD; }
 
 	EditorCamControllerInst( const EditorCamControllerData& cd, ork::ent::Entity* pent );
-	bool DoLink(SceneInst *psi);
-	bool DoStart(SceneInst *psi, const CMatrix4 &world);
 
 };
 
@@ -78,4 +78,3 @@ public:
 
 } }
 
-#endif

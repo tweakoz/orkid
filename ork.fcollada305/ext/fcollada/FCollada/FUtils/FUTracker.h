@@ -119,7 +119,6 @@ public:
 	FUTrackedPtr(ObjectClass* _ptr = NULL) : ptr(_ptr)
 	{
 		if (ptr != NULL) FUTracker::TrackObject((FUTrackable*) ptr);
-		ptr = ptr;
 	}
 
 	/** Destructor.
