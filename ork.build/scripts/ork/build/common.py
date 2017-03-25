@@ -18,8 +18,8 @@ SYSTEM = platform.system()
 ###############################################################################
 IsOsx = (SYSTEM=="Darwin")
 IsIx = (SYSTEM=="Linux") or IsOsx
-print "IsIx<%s>" % IsIx
-print "IsOsx<%s>" % IsOsx
+#print "IsIx<%s>" % IsIx
+#print "IsOsx<%s>" % IsOsx
 TargetPlatform = "ix"
 if IsOsx:
   TargetPlatform = "osx"

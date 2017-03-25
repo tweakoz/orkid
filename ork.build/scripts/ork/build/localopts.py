@@ -10,9 +10,7 @@
 # feel free to edit localopts.py, but NOT localopts.py.template
 ###############################################################################
 
-import os
-import imp
-import ConfigParser
+import os, imp, ConfigParser
 
 def IsWindows():
 	return os.name == "nt"
@@ -45,9 +43,9 @@ def ConfigFileName():
 ConfigData = ConfigParser.ConfigParser()
 
 if os.path.isfile( ConfigFileName() ):
-	print "LOCALOPTS: Found %s" % ConfigFileName()
+	#print "LOCALOPTS: Found %s" % ConfigFileName()
 	ConfigData.read( ConfigFileName() )
-	print ConfigData
+	#print ConfigData
 else:
 	print "LOCALOPTS: Cannot find %s : using default options" % ConfigFileName()
 	sdkroot = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
@@ -60,17 +58,17 @@ else:
 	ConfigData.write(cfgfile)
 	cfgfile.close()
 
-print ConfigData.sections()
+#print ConfigData.sections()
 
 ################################################################
 
 def GetEnv( sect, varname ):
-	print "/////////////////////"
-	print "sect<%s> varname<%s>" % (sect,varname)
+	#print "/////////////////////"
+	#print "sect<%s> varname<%s>" % (sect,varname)
 	ret = ""
 	if ConfigData.has_option( sect, varname ):
 		ret = ConfigData.get( sect, varname )
-	print ret
+	#print ret
 	if os.path.isdir(ret):
 		if IsWindows():
 			ret = win32api.GetShortPathName(ret)
@@ -78,7 +76,7 @@ def GetEnv( sect, varname ):
 			ret = ret
 	#if False==os.path.isdir(ret):
 	#	print "<localopts.py> Warning: path<%s> <ret %s> does not exist" % (varname,ret) 
-	print "/////////////////////"
+	#print "/////////////////////"
 	return os.path.normpath(ret)
 
 ################################################################

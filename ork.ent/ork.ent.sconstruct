@@ -35,7 +35,7 @@ class ent:
 	SRC_FOLDERS  = ". event "
 
 	suffix = sln.BuildSuffix(ARGS)
-        print suffix
+        #print suffix
         XFL  = "bullet-2.73-math bullet-2.73-collision "
         XFL += "bullet-2.73-dynamics bullet-2.73-extras "
         

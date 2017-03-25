@@ -64,7 +64,7 @@ class orktool:
 	## OSX libs
 	#########################
 	if prj.IsOsx:
-		print "osx"
+		#print "osx"
 		prj.AddFrameworks("OpenGL QtCore QtGui" )
 		prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
 		prj.AddFrameworks("Carbon Foundation ApplicationServices" )

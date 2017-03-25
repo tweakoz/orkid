@@ -4,6 +4,9 @@ all:
 j1:
 	scons -f root.sconstruct --jobs=1 --site-dir ./ork.build/site_scons
 
+dbg:
+	scons -f root.sconstruct debug --site-dir ./ork.build/site_scons
+
 fast:
 	scons -f root.sconstruct fast --site-dir ./ork.build/site_scons
 

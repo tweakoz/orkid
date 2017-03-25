@@ -22,9 +22,9 @@ namespace ork { namespace ent {
 class MainWinDefaultModule : public tool::EditorModule
 {
 	DeclareMoc( MainWinDefaultModule, EditorModule );
-	/*virtual*/ void OnAction( const char* pact );
-	/*virtual*/ void Activate( QMenuBar* qmb );
-	/*virtual*/ void DeActivate( QMenuBar* qmb );
+	void OnAction( const char* pact ) final;
+	void Activate( QMenuBar* qmb ) final;
+	void DeActivate( QMenuBar* qmb ) final;
 
 	EditorMainWindow& mEditWin;
 

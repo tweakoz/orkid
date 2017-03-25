@@ -12,18 +12,15 @@ SetOption('num_jobs', obu.num_cores)
 sln.optset.add("ork.upp")
 BasicEnv = Environment( ENV=os.environ )
 
-#
 TARGET = string.join(COMMAND_LINE_TARGETS)
 is_prep = (TARGET=="prep")
 is_fast = (TARGET=="fast")
-#
 
 skip_utpp = (is_prep or is_fast)
 
 if is_prep:
 	obu.install_files("src/*.h","include/unittest++")
 	obu.install_files("src/Posix/*.h","include/unittest++/Posix")
-#obu.install_headers("ext/inc/*")
 
 # basics #################################
 
@@ -35,13 +32,9 @@ class upp:
 
 	ARGS = cmn.BuildArgs
 	##########################################
-
 	SRC_FOLDERS  = " . Posix "
-
 	LIBS = ''
-	
 	##########################################
-
 	prj_lib = sln.Project(ARGS,BasicEnv,"ork.unittestpp")
 	prj_lib.SetSrcBase( "src" )
 	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
@@ -49,27 +42,11 @@ class upp:
 	prj_lib.Configure()
 	self.lib = prj_lib.SharedLibrary( )
 
-	##########################################
-
-	#prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")
-	#prj_test.SetSrcBase( "src" )
-	#prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
-	#prj_test.AddLibPaths( "./lib" )
-	#prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
-	#prj_test.AddFolders( "test", "*.cpp" )
-	##prj_test.AddLibs( LIBS + " unittest++" )
-	#prj_test.AddProjectDep( prj_core_lib )
-	#prj_test.Configure()
-	#self.test_prg = prj_test.Program( )
-	#Depends( self.test_prg, self.core_lib )
-
 ###########################
 
 a = upp()
 ret = list()
 if False==skip_utpp:
 	ret += a.lib
-#ork_upp_lib = a.lib
 Return("ret")
-#Export('prj_core_lib')
 

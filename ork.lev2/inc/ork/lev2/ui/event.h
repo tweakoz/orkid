@@ -51,6 +51,8 @@ struct Event final // RawEvent
 	int miEventCode;
 	int miX;
 	int miY;
+    int miRawX;
+    int miRawY;
 	int miLastX;
 	int miLastY;
 	int miMWY;

@@ -20,11 +20,7 @@ class SliderBase
 public:
 
 	virtual void resize( int ix, int iy, int iw, int ih ) = 0;
-
-	void OnUiEvent( const ork::ui::Event& ev );
-	virtual void OnMouseMoved( const ork::ui::Event& ev ) = 0;
-	virtual void OnMouseReleased( const ork::ui::Event& ev ) = 0;
-	virtual void OnMouseDoubleClicked( const ork::ui::Event& ev ) = 0;
+	virtual void OnUiEvent( const ork::ui::Event& ev ) = 0;
 
 
 	void SetLogMode( bool bv ) { mlogmode=bv; }
@@ -57,11 +53,9 @@ public:
 
 	Slider( T& ParentW, datatype min, datatype max, datatype def );
 
-	void OnMouseMoved( const ork::ui::Event& ev ) final;
-	void OnMouseReleased( const ork::ui::Event& ev ) final;
-	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+    void OnUiEvent( const ork::ui::Event& ev ) final;
 
-	/*virtual*/ void resize(int ix, int iy, int iw, int ih);
+	void resize(int ix, int iy, int iw, int ih) final;
 	void SetVal( datatype val );
 	void Refresh();
 
@@ -95,7 +89,7 @@ public:
 	void OnMouseDoubleClicked(const ork::ui::Event& ev) final;
 	void OnMouseReleased(const ork::ui::Event& ev) final;
 
-	/*virtual*/ void DoDraw(lev2::GfxTarget *pTARG);
+	void DoDraw(lev2::GfxTarget *pTARG) final;
 };
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> class GedFloatNode : public GedItemNode
@@ -104,12 +98,10 @@ public:
 	bool		mLogMode;
 	GedFloatNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 
-	void OnMouseMoved( const ork::ui::Event& ev ) final;
-	void OnMouseReleased( const ork::ui::Event& ev ) final;
-	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
-
-	/*virtual*/ void DoDraw( lev2::GfxTarget* pTARG );
-	typedef float datatype;
+    void OnUiEvent( const ork::ui::Event& ev ) final;
+    void DoDraw( lev2::GfxTarget* pTARG ) final;
+	
+    typedef float datatype;
 	void ReSync(); // virtual 
 	Slider<GedFloatNode>* GetSlider() { return slider; }
 	IODriver& RefIODriver() { return mIoDriver; }
@@ -124,11 +116,9 @@ public:
 	bool		mLogMode;
 	GedIntNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 
-	void OnMouseMoved( const ork::ui::Event& ev ) final;
-	void OnMouseReleased( const ork::ui::Event& ev ) final;
-	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+    void OnUiEvent( const ork::ui::Event& ev ) final;
 
-	/*virtual*/ void DoDraw( lev2::GfxTarget* pTARG );
+	void DoDraw( lev2::GfxTarget* pTARG ) final;
 	typedef int datatype;
 	void ReSync(); // virtual
 	IODriver& RefIODriver() { return mIoDriver; }
@@ -142,7 +132,7 @@ template <typename IODriver,typename T> class GedSimpleNode : public GedItemNode
 public:
 	GedSimpleNode(ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
 
-	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
+	void OnUiEvent( const ork::ui::Event& ev ) final;
 
 	/*virtual*/ void DoDraw( lev2::GfxTarget* pTARG );
 	IODriver& RefIODriver() { return mIoDriver; }

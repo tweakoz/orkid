@@ -54,7 +54,6 @@ class tweakout:
 	## OSX libs
 	#########################
 	if prj.IsOsx:
-		print "osx"
 		prj.AddFrameworks("OpenGL QtCore QtGui" )
 		prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
 		prj.AddFrameworks("Carbon Foundation ApplicationServices" )
@@ -64,15 +63,12 @@ class tweakout:
 	#########################
 	elif prj.IsIx:
 		LIBS = "GL QtCore QtGui xcb OpenImageIO OpenImageIO_Util"
-		#LIBS += " rihelper 3delight "
-		#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 		prj.AddLibs( LIBS )
 	#########################
 	## common libs
 	#########################
 	prj.AddLibs( ORKLIBS )
 	prj.AddLibs( "OpenImageIO OpenImageIO_Util" )
-	#prj.AddLibs( "ork.unittestpp.%s"%suffix )
 	#########################
 	prj.Configure()
 	self.tweakout_lib = prj.SharedLibrary( )

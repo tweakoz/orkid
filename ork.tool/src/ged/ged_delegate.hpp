@@ -139,87 +139,92 @@ void Slider<T>::SetVal( datatype val )
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> 
-void Slider<T>::OnMouseReleased(const ork::ui::Event& ev) 
+void Slider<T>::OnUiEvent( const ork::ui::Event& ev ) // final 
 {
+    const auto& filtev = ev.mFilteredEvent;
+
+    switch( filtev.miEventCode )
+    {
+        case ui::UIEV_PUSH:
+        {
+            break;
+        }
+        case ui::UIEV_DRAG:
+        {
+            mbUpdateOnDrag = ev.mbCTRL;
+
+            bool bleft = ev.IsButton0DownF();
+            bool bright = ev.IsButton2DownF();
+
+            if( bleft||bright )
+            {
+                printf( "evx<%f> mfx<%f>\n", (float)ev.miX, mfx );
+                int mousepos = ev.miX;
+
+                float fx = float(mousepos-mfx)/mfw;
+                float fval = mlogmode ? LogToVal( fx ) : LinToVal( fx );
+                datatype dx = datatype(fval); 
+                
+                if( bright )
+                {
+                    dx = datatype( float(mval)*0.9f+float(dx)*0.1f );
+                }
+                
+                mval = dx;
+                if( mval<mmin ) mval = mmin;
+                if( mval>mmax ) mval = mmax;
+                CPropType<datatype>::ToString( mval,mValStr );
+                Refresh();
+
+                if( mbUpdateOnDrag )
+                {
+                    SetVal(mval);
+                    IoDriverBase& iod = mParent.RefIODriver();
+                    mParent.SigInvalidateProperty();
+                }
+            }
+                break;   
+        }
+        case ui::UIEV_DOUBLECLICK:
+        {
+            std::string RangeStr = CreateFormattedString( "v:[%f..%f]", float(mmin), float(mmax) );
+            //QString qstr = QInputDialog::getText ( 0, "Set Value", RangeStr.c_str() );
+
+            int ilabw = mParent.GetNameWidth()+16;
+            
+            int iwidth = mParent.width()-ilabw;
+            if( iwidth<64 ) iwidth=64;
+            
+            int iheight = mParent.height()-3;
+            if( iheight<12 ) iheight=12;
+            
+            //T val = GetVal();
+
+            auto qpos = QCursor::pos();
+            int qx = qpos.x();
+            int qy = qpos.y();
+
+            //mIoDriver.GetValue(val);
+            PropTypeString ptsg;
+            CPropType<datatype>::ToString( mval, ptsg );
+
+            QString qstr = GedInputDialog::getText ( ev, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
+
+            std::string sstr = qstr.toAscii().data();
+            if( sstr.length() )
+            {
+                PropTypeString pts( sstr.c_str() );
+                datatype val = CPropType<datatype>::FromString( pts );
+                if( val<mmin ) val = mmin;
+                if( val>mmax ) val = mmax;
+                mval = val;
+            }
+            break;   
+        }
+    }
 	SetVal(mval);
 	IoDriverBase& iod = mParent.RefIODriver();
 	mParent.SigInvalidateProperty();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> 
-void Slider<T>::OnMouseDoubleClicked(const ork::ui::Event& ev) 
-{
-	std::string RangeStr = CreateFormattedString( "v:[%f..%f]", float(mmin), float(mmax) );
-	//QString qstr = QInputDialog::getText ( 0, "Set Value", RangeStr.c_str() );
-
-	int ilabw = mParent.GetNameWidth()+16;
-	
-	int iwidth = mParent.width()-ilabw;
-	if( iwidth<64 ) iwidth=64;
-	
-	int iheight = mParent.height()-3;
-	if( iheight<12 ) iheight=12;
-	
-	//T val = GetVal();
-
-	//mIoDriver.GetValue(val);
-	PropTypeString ptsg;
-	CPropType<datatype>::ToString( mval, ptsg );
-
-	//QString qstr = GedInputDialog::getText ( event, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, miLabelH );
-	QString qstr = GedInputDialog::getText ( ev.miX, ev.miY, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
-
-	std::string sstr = qstr.toAscii().data();
-	if( sstr.length() )
-	{
-		PropTypeString pts( sstr.c_str() );
-		datatype val = CPropType<datatype>::FromString( pts );
-		if( val<mmin ) val = mmin;
-		if( val>mmax ) val = mmax;
-		mval = val;
-		SetVal(mval);
-		IoDriverBase& iod = mParent.RefIODriver();
-		mParent.SigInvalidateProperty();
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template <typename T> 
-void Slider<T>::OnMouseMoved(const ork::ui::Event& ev)
-{
-	mbUpdateOnDrag = ev.mbCTRL;
-
-	bool bleft = ev.IsButton0DownF();
-	bool bright = ev.IsButton2DownF();
-
-	if( bleft||bright )
-	{
-		int mousepos = ev.miX;
-		float fx = float((mousepos)-mfx)/mfw;
-		float fval = mlogmode ? LogToVal( fx ) : LinToVal( fx );
-		datatype dx = datatype(fval); 
-		
-		if( bright )
-		{
-			dx = datatype( float(mval)*0.9f+float(dx)*0.1f );
-		}
-		
-		mval = dx;
-		if( mval<mmin ) mval = mmin;
-		if( mval>mmax ) mval = mmax;
-		CPropType<datatype>::ToString( mval,mValStr );
-		Refresh();
-
-		if( mbUpdateOnDrag )
-		{
-			SetVal(mval);
-			IoDriverBase& iod = mParent.RefIODriver();
-			mParent.SigInvalidateProperty();
-		}
-	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -436,55 +441,17 @@ void GedIntNode<IODriver>::DoDraw( lev2::GfxTarget* pTARG )
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IODriver>
-void GedIntNode<IODriver>::OnMouseMoved(const ork::ui::Event& ev)
-{
-	slider->OnMouseMoved(ev);
+void GedIntNode<IODriver>::OnUiEvent(const ork::ui::Event& ev)
+{	slider->OnUiEvent(ev);
 	mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename IODriver>
-void GedIntNode<IODriver>::OnMouseDoubleClicked(const ork::ui::Event& ev) 
-{
-	slider->OnMouseDoubleClicked(ev);
-	mModel.SigRepaint();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template<typename IODriver>
-void GedIntNode<IODriver>::OnMouseReleased(const ork::ui::Event& ev)
-{
-	slider->OnMouseReleased(ev);
-	mModel.SigRepaint();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template<typename IoDriver>
-void GedFloatNode<IoDriver>::OnMouseMoved(const ork::ui::Event& ev) 
-{
-	slider->OnMouseMoved(ev);
-	mModel.SigRepaint();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template<typename IoDriver>
-void GedFloatNode<IoDriver>::OnMouseDoubleClicked(const ork::ui::Event& ev) 
-{
-	slider->OnMouseDoubleClicked(ev);
-	mModel.SigRepaint();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-template<typename IoDriver>
-void GedFloatNode<IoDriver>::OnMouseReleased(const ork::ui::Event& ev)
-{
-	slider->OnMouseReleased(ev);
-	mModel.SigRepaint();
+void GedFloatNode<IODriver>::OnUiEvent(const ork::ui::Event& ev)
+{   slider->OnUiEvent(ev);
+    mModel.SigRepaint();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -499,62 +466,72 @@ GedSimpleNode<IODriver,T>::GedSimpleNode(ObjModel& mdl, const char* name, const 
 }
 ///////////////////////////////////////////////////////////////////////////////
 template<typename IODriver,typename T>
-void GedSimpleNode<IODriver,T>::OnMouseDoubleClicked(const ork::ui::Event& ev)
-{
-	T val;
+void GedSimpleNode<IODriver,T>::OnUiEvent(const ork::ui::Event& ev)
+{   
+    const auto& filtev = ev.mFilteredEvent;
 
-	mIoDriver.GetValue(val);
-	PropTypeString ptsg;
-	CPropType<T>::ToString( val, ptsg );
+    switch( filtev.miEventCode )
+    {
+        case ui::UIEV_DOUBLECLICK:
+        {   
 
-	ConstString anno_ucdclass = GetOrkProp()->GetAnnotation( "ged.userchoice.delegate" );
+        	T val;
 
-	if( anno_ucdclass.length() )
-	{
-		ork::Object* pobj = GetOrkObj();
-	
-		rtti::Class *the_class = rtti::Class::FindClass(anno_ucdclass);
-		if( the_class )
-		{	ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
-			ork::rtti::ICastable* ucdo = the_class->CreateObject();
-			IUserChoiceDelegate* ucd = rtti::autocast(ucdo);
-			if( ucd )
-			{	UserChoices uchc( *ucd, pobj, this );
-				QMenu* qm = uchc.CreateMenu();
-				QAction* pact = qm->exec(QCursor::pos());
-				if( pact )
-				{
-					QVariant UserData = pact->data();
-					QString UserName = UserData.toString();
-					std::string pname = UserName.toAscii().data();
-					
-					const CAttrChoiceValue *Chc = uchc.FindFromLongName(pname);
+        	mIoDriver.GetValue(val);
+        	PropTypeString ptsg;
+        	CPropType<T>::ToString( val, ptsg );
 
-					if( Chc )
-					{
-						if( Chc->GetCustomData().IsA<T>() )
-						{
-							const T& value = Chc->GetCustomData().Get<T>();
-						}
-						std::string valuestr = Chc->EvaluateValue();
-						PropTypeString pts( valuestr.c_str() );
-						val = CPropType<T>::FromString( pts );
-						mIoDriver.SetValue(val);
-					}
-				}
-			}
-		}
-	}
-	else
-	{	int ilabw = GetNameWidth()+16;
-		QString qstr = GedInputDialog::getText ( ev.miX, ev.miY, this, ptsg.c_str(), ilabw, 2, miW-ilabw, miH-3 );
-		std::string sstr = qstr.toAscii().data();
-		if( sstr.length() )
-		{	PropTypeString pts( sstr.c_str() );
-			val = CPropType<T>::FromString( pts );
-			mIoDriver.SetValue(val);
-		}
-	}
+        	ConstString anno_ucdclass = GetOrkProp()->GetAnnotation( "ged.userchoice.delegate" );
+
+        	if( anno_ucdclass.length() )
+        	{
+        		ork::Object* pobj = GetOrkObj();
+        	
+        		rtti::Class *the_class = rtti::Class::FindClass(anno_ucdclass);
+        		if( the_class )
+        		{	ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
+        			ork::rtti::ICastable* ucdo = the_class->CreateObject();
+        			IUserChoiceDelegate* ucd = rtti::autocast(ucdo);
+        			if( ucd )
+        			{	UserChoices uchc( *ucd, pobj, this );
+        				QMenu* qm = uchc.CreateMenu();
+        				QAction* pact = qm->exec(QCursor::pos());
+        				if( pact )
+        				{
+        					QVariant UserData = pact->data();
+        					QString UserName = UserData.toString();
+        					std::string pname = UserName.toAscii().data();
+        					
+        					const CAttrChoiceValue *Chc = uchc.FindFromLongName(pname);
+
+        					if( Chc )
+        					{
+        						if( Chc->GetCustomData().IsA<T>() )
+        						{
+        							const T& value = Chc->GetCustomData().Get<T>();
+        						}
+        						std::string valuestr = Chc->EvaluateValue();
+        						PropTypeString pts( valuestr.c_str() );
+        						val = CPropType<T>::FromString( pts );
+        						mIoDriver.SetValue(val);
+        					}
+        				}
+        			}
+        		}
+        	}
+        	else
+        	{	int ilabw = GetNameWidth()+16;
+        		QString qstr = GedInputDialog::getText ( ev, this, ptsg.c_str(), ilabw, 2, miW-ilabw, miH-3 );
+        		std::string sstr = qstr.toAscii().data();
+        		if( sstr.length() )
+        		{	PropTypeString pts( sstr.c_str() );
+        			val = CPropType<T>::FromString( pts );
+        			mIoDriver.SetValue(val);
+        		}
+        	}
+        }
+        break;
+    }
 	SigInvalidateProperty();
 }
 ///////////////////////////////////////////////////////////////////////////////

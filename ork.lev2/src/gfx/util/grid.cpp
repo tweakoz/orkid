@@ -213,6 +213,7 @@ Grid2d::Grid2d()
 	: mVisGridBase( 0.3f )
 	, mVisGridDiv( 10.0f )
 	, mVisGridHiliteDiv( 100.0f )
+    , mVisGridSize(10)
 	, mCenter(0.0f,0.0f)
 	, mExtent(100.0f)
 	, mZoom(1.0f)
@@ -307,7 +308,7 @@ void Grid2d::ReCalc( int iw, int ih )
 	mVisGridSize = fiLOG/mVisGridDiv;
 
 	if( mVisGridSize<10.0f ) mVisGridSize=10.0f;
-
+    if( mVisGridSize>100.0f ) mVisGridSize=100.0f;
 
 	//if( mVisGridSize<CReal(0.5f) ) mVisGridSize = CReal(0.5f);
 	//if( mVisGridSize>CReal(8.0f) ) mVisGridSize = CReal(8.0f);
@@ -390,37 +391,42 @@ void Grid2d::Render( GfxTarget* pTARG, int iw, int ih )
 		for( float fx=x1; fx<=x2; fx+=mVisGridSize ) inumx++;
 		for( float fy=y1; fy<=y2; fy+=mVisGridSize ) inumy++;
 
-		lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-		vw.Lock( pTARG, &VB, (inumx+inumy)*2 );
+        int count = (inumx+inumy)*2;
 
-		CVector2 uv0(0.0f,0.0f);
-		for( float fx=x1; fx<=x2; fx+=mVisGridSize )
-		{
-			bool bORIGIN = (fx==0.0f);
-			bool bhi = std::fmod( CFloat::Abs(fx), mVisGridHiliteDiv ) <CFloat::Epsilon();
+        if( count )
+        {
+    		lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
+    		vw.Lock( pTARG, &VB, (inumx+inumy)*2 );
 
-			auto color = bORIGIN ? CColor4::Green() : (bhi ? HiliGridColor : BaseGridColor);
-			u32 ucolor = color.GetVtxColorAsU32();
-			ork::lev2::SVtxV12C4T16 v0( CVector3(fx,y1,0.0f), uv0, ucolor );
-			ork::lev2::SVtxV12C4T16 v1( CVector3(fx,y2,0.0f), uv0, ucolor );
-			vw.AddVertex(v0);
-			vw.AddVertex(v1);
-		}
-		for( float fy=y1; fy<=y2; fy+=mVisGridSize )
-		{
-			bool bORIGIN = (fy==0.0f);
-			bool bhi = std::fmod( CFloat::Abs(fy),mVisGridHiliteDiv ) < CFloat::Epsilon();
+    		CVector2 uv0(0.0f,0.0f);
+    		for( float fx=x1; fx<=x2; fx+=mVisGridSize )
+    		{
+    			bool bORIGIN = (fx==0.0f);
+    			bool bhi = std::fmod( CFloat::Abs(fx), mVisGridHiliteDiv ) <CFloat::Epsilon();
 
-			auto color = bORIGIN ? CColor4::Red() : (bhi ? HiliGridColor : BaseGridColor);
-			u32 ucolor = color.GetVtxColorAsU32();
-			ork::lev2::SVtxV12C4T16 v0( CVector3(x1,fy,0.0f), uv0, ucolor );
-			ork::lev2::SVtxV12C4T16 v1( CVector3(x2,fy,0.0f), uv0, ucolor );
-			vw.AddVertex(v0);
-			vw.AddVertex(v1);
+    			auto color = bORIGIN ? CColor4::Green() : (bhi ? HiliGridColor : BaseGridColor);
+    			u32 ucolor = color.GetVtxColorAsU32();
+    			ork::lev2::SVtxV12C4T16 v0( CVector3(fx,y1,0.0f), uv0, ucolor );
+    			ork::lev2::SVtxV12C4T16 v1( CVector3(fx,y2,0.0f), uv0, ucolor );
+    			vw.AddVertex(v0);
+    			vw.AddVertex(v1);
+    		}
+    		for( float fy=y1; fy<=y2; fy+=mVisGridSize )
+    		{
+    			bool bORIGIN = (fy==0.0f);
+    			bool bhi = std::fmod( CFloat::Abs(fy),mVisGridHiliteDiv ) < CFloat::Epsilon();
 
-		}
-		vw.UnLock(pTARG);
-		pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_LINES );
+    			auto color = bORIGIN ? CColor4::Red() : (bhi ? HiliGridColor : BaseGridColor);
+    			u32 ucolor = color.GetVtxColorAsU32();
+    			ork::lev2::SVtxV12C4T16 v0( CVector3(x1,fy,0.0f), uv0, ucolor );
+    			ork::lev2::SVtxV12C4T16 v1( CVector3(x2,fy,0.0f), uv0, ucolor );
+    			vw.AddVertex(v0);
+    			vw.AddVertex(v1);
+
+    		}
+    		vw.UnLock(pTARG);
+    		pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_LINES );
+        }
 		pTARG->PopMaterial();
 	}
 	mtxi->PopPMatrix();

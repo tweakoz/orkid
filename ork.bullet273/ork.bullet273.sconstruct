@@ -17,14 +17,14 @@ SetOption('num_jobs', obu.num_cores)
 
 TARGET = string.join(COMMAND_LINE_TARGETS)
 
-print "bull.TARGET<%s>" % TARGET
+#print "bull.TARGET<%s>" % TARGET
 
 is_prep = (TARGET=="prep")
 is_fast = (TARGET=="fast")
 
 skip_bullet = (is_prep or is_fast)
 
-print "bullet is_prep<%d>" % is_prep
+#print "bullet is_prep<%d>" % is_prep
 
 # basics #################################
 
@@ -81,7 +81,7 @@ class bullet:
 		math_lib_name = sln.xflibnams("ork.%%s.%s "%suffix,"%s-math"%BulletVer)
 		coll_lib_name = sln.xflibnams("ork.%%s.%s "%suffix,"%s-collision"%BulletVer)
 		##########################################
-		print "BulletDir<%s>" % BulletDir
+		#print "BulletDir<%s>" % BulletDir
 		prj_extras.SetSrcBase( "ext/%s/Extras"%BulletVer )
 		prj_extras.AddIncludePaths( BulletDir )
 		prj_extras.AddIncludePaths( "ext/%s/Extras/ConvexDecomposition"%BulletVer )

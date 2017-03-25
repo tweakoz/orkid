@@ -226,7 +226,7 @@ private:
 
 	void OnTimer();
 	void ActivateJob();
-	void run(); // virtual
+	void run() final; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////

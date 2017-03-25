@@ -46,23 +46,6 @@ class tuio:
 	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
 	prj.AddDefines( "LINUX" )
 	#########################
-	## OSX libs
-	#########################
-	if prj.IsOsx:
-		print "osx"
-		#prj.AddFrameworks("OpenGL QtCore QtGui" )
-		#prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
-		#prj.AddFrameworks("Carbon Foundation ApplicationServices" )
-		#prj.AddFrameworks("AppKit QuartzComposer")
-	#########################
-	## IX libs
-	#########################
-	elif prj.IsIx:
-		LIBS = "GL QtCore QtGui xcb" # OpenImageIO OpenImageIO_Util"
-		#LIBS += " rihelper 3delight "
-		#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
-		prj.AddLibs( LIBS )
-	#########################
 	## common libs
 	#########################
 	#prj.AddLibs( ORKLIBS )
