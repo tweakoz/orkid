@@ -188,7 +188,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 
 	auto locEV = EV;
 	locEV.miX = ilocx;
-	locEV.miY = ilocy;
+	locEV.miY = ilocy-miScrollY;
 
 	if( mpActiveNode )
 			mpActiveNode->OnUiEvent( locEV );
@@ -318,7 +318,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 
 			bool is_in_set = IsObjInSet(pobj);
 
-			//orkprintf( "Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy );
+			orkprintf( "Object<%p> is_in_set<%d> ilocx<%d> ilocy<%d> fx<%f> fy<%f>\n", pobj, int(is_in_set), ilocx, ilocy, fx, fy );
 
 			/////////////////////////////////////
 			// test object against known set

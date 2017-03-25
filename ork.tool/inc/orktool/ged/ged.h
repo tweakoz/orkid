@@ -624,8 +624,8 @@ class GedTextEdit : public QLineEdit
 public:
 
 	GedTextEdit( QWidget* parent );
-	void focusOutEvent( QFocusEvent* pev ); // virtual
-	void keyPressEvent ( QKeyEvent * pev ); // virtual
+	void focusOutEvent( QFocusEvent* pev ) final; // virtual
+	void keyPressEvent ( QKeyEvent * pev ) final; // virtual
 	void SigEditFinished();
 	void SigCanceled();
 	void SetText( const char* ptext );

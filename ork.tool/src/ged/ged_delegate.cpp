@@ -685,17 +685,18 @@ GedGroupNode::GedGroupNode( ObjModel& mdl, const char* name, const reflect::IObj
 ///////////////////////////////////////////////////////////////////////////////
 void GedGroupNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 {
-	printf( "GedGroupNode<%p>::mouseDoubleClickEvent\n", this);
 	int inumitems = GetNumItems();
 
 	bool isCTRL = ev.mbCTRL;
 
 	const int kdim = get_charh();
 
+    printf( "GedGroupNode<%p>::mouseDoubleClickEvent inumitems<%d>\n", this, inumitems );
+
 	if( inumitems )
 	{
 		int ix = ev.miX - this->miX;
-		int iy = ev.miY - this->miY;
+		int iy = (ev.miY - this->miY);
 
 		//////////////////////////////
 		// spawn/stack
@@ -714,6 +715,7 @@ void GedGroupNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 		int ihy = dby1+(ih/2);
 		int ihx = il+(iw/2);
 
+        printf( "ev->miY<%d> gnode->miY<%d> iy<%d> KOFF<%d> KDIM<%d>\n", ev.miY, this->miY, iy, koff, kdim );
 		if( iy >= koff && iy <= kdim )
 		{
 			if( ix >= il && ix < il2 && mIsObjNode )
@@ -812,7 +814,7 @@ void GedGroupNode::CheckVis()
 class GraphImportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( GraphImportDelegate, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget )
+	void Execute( ork::Object* ptarget ) final
 	{
 		ork::dataflow::graph_inst* pgraph = rtti::autocast( ptarget );
 
@@ -840,7 +842,7 @@ class GraphImportDelegate : public IOpsDelegate
 class GraphExportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( GraphExportDelegate, tool::ged::IOpsDelegate );
-	virtual void Execute( ork::Object* ptarget )
+	void Execute( ork::Object* ptarget ) final
 	{
 		ork::dataflow::graph_inst* pgraph = rtti::autocast( ptarget );
 

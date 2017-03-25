@@ -902,7 +902,7 @@ void Gradient::Describe()
 }
 Gradient::Gradient()
 	: mpTexture( 0 )
-	, mVertexBuffer( 131072, 0, ork::lev2::EPRIM_TRIANGLES )
+	, mVertexBuffer( 1<<20, 0, ork::lev2::EPRIM_TRIANGLES )
 	, miRepeat( 1 )
 	, meRepeatMode( EGS_REPEAT )
 	, meGradientType( EGT_HORIZONTAL )
