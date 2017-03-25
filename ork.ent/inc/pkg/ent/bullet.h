@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef	ORK_ENT_BULLET_H
-#define ORK_ENT_BULLET_H
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -191,8 +190,8 @@ class BulletWorldControllerInst : public ork::ent::ComponentInst
 	float									mfAvgDtCtr;
 
 
-	void DoUpdate(ork::ent::SceneInst* inst); // virtual
-	bool DoNotify(const ork::event::Event *event) { return false; } // virtual
+	void DoUpdate(ork::ent::SceneInst* inst) final; 
+	bool DoNotify(const ork::event::Event *event) final { return false; } 
 
 public:
 	BulletWorldControllerInst(const BulletWorldControllerData& data, ork::ent::Entity *entity);
@@ -502,9 +501,10 @@ private:
 	orkmap<PoolString,BulletObjectForceControllerInst*>	mForceControllerInstMap;
 	BulletShapeBaseInst*								mShapeInst;
 
-	void DoUpdate(ork::ent::SceneInst* inst); // virtual
-	bool DoNotify(const ork::event::Event *event) { return false; } // virtual
-	bool DoLink(SceneInst *psi);
+	void DoUpdate(ork::ent::SceneInst* inst) final; 
+	bool DoNotify(const ork::event::Event *event) final { return false; }
+	bool DoLink(SceneInst *psi) final;
+	void DoStop(SceneInst *psi) final;
 
 };
 
@@ -527,5 +527,3 @@ ork::CMatrix3 btbasistoorkmtx3( const btMatrix3x3& mtx );
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-
-#endif

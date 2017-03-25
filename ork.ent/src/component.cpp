@@ -38,6 +38,22 @@ void SceneComponentData::Describe()
 void SceneComponentInst::Describe()
 {
 }
+void SceneComponentInst::Link( SceneInst* psi )
+{
+	DoLink(psi);
+}
+void SceneComponentInst::UnLink( SceneInst* psi )
+{
+	DoUnLink(psi);
+}
+void SceneComponentInst::Start( SceneInst* psi )
+{
+	DoStart(psi);
+}
+void SceneComponentInst::Stop( SceneInst* psi )
+{
+	DoStop(psi);
+}
 void SceneComponentInst::Update( SceneInst* psi )
 {
 	DoUpdate( psi );
@@ -107,12 +123,13 @@ ConstString EditorPropMapData::GetProperty(const ConstString &key) const
 	return rval;
 }
 
-ComponentInst::ComponentInst( const ComponentData* data, Entity *entity )
+ComponentInst::ComponentInst( const ComponentData* data, Entity* pent )
 	: mComponentData(data)
-	, mEntity(entity)
+	, mEntity(pent)
 	, mbStarted(false)
 	, mbValid(false)
 {
+	//printf( "ComponentInst::ComponentInst<%p> ent<%p>\n", this, pent );
 }
 
 void ComponentInst::Link(SceneInst *psi)

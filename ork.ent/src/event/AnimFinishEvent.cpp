@@ -32,5 +32,9 @@ ork::PoolString AnimFinishEvent::GetName() const
 {
 	return mName;
 }
+Object* AnimFinishEvent::Clone() const //final
+{
+    return new AnimFinishEvent(mName);
+}
 
 } } } // namespace ork::ent::event

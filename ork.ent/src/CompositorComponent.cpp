@@ -355,6 +355,24 @@ void CompositingComponentInst::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+CompositingComponentInst::CompositingComponentInst( const CompositingComponentData& data, ork::ent::Entity *pent )
+	: ork::ent::ComponentInst( &data, pent )
+	, mCompositingData(data)
+	, mpCMCI(0)
+	, miActiveSceneItem(0)
+	, mfTimeAccum(0.0f)
+{
+	SceneInst* psi = pent->GetSceneInst();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+CompositingComponentInst::~CompositingComponentInst()
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 const CompositingGroup* CompositingComponentInst::GetGroup(const PoolString& grpname) const
 {
 	const CompositingGroup* rval = 0;
@@ -375,9 +393,10 @@ const CompositingGroup* CompositingComponentInst::GetGroup(const PoolString& grp
 
 bool CompositingComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
-	ork::ent::CompositingManagerComponentInst* cmi = GetEntity()->GetSceneInst()->FindTypedSceneComponent<ent::CompositingManagerComponentInst>();
-	OrkAssert(cmi!=0);
-	cmi->AddCCI(this);
+	mpCMCI = psi->FindTypedSceneComponent<CompositingManagerComponentInst>();
+
+	if(mpCMCI)
+		mpCMCI->AddCCI(this);
 		
 	mfTimeAccum=0.0f;
 	mfLastTime = 0.0f;
@@ -408,29 +427,12 @@ void CompositingComponentInst::DoUpdate(SceneInst *inst)
 		miActiveSceneItem++;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-CompositingComponentInst::CompositingComponentInst( const CompositingComponentData& data, ork::ent::Entity *pent )
-	: ork::ent::ComponentInst( &data, pent )
-	, mCompositingData(data)
-	, mpCMCI(0)
-	, miActiveSceneItem(0)
-	, mfTimeAccum(0.0f)
-{
-	SceneInst* psi = pent->GetSceneInst();
-	mpCMCI = psi->FindTypedSceneComponent<CompositingManagerComponentInst>();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-CompositingComponentInst::~CompositingComponentInst()
-{
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const CompositingContext& CompositingComponentInst::GetCCtx() const
 {
+	assert(mpCMCI!=nullptr);
 	const CompositingManagerComponentData& CMCD = mpCMCI->GetCMCD();
 	return CMCD.GetCompositingContext();
 }

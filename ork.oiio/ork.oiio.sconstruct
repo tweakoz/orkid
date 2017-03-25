@@ -1,0 +1,73 @@
+import os, glob, string
+import ork.build.utils as obu
+import ork.build.common as cmn
+import ork.build.slnprj as sln
+
+###########################################
+
+STAGE_DIR = obu.stage_dir
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_get = (TARGET=="get")
+is_oiio = (TARGET=="oiio")
+
+###########################################
+#boost_ver = "1.58.0"
+#boost_uver = string.replace(boost_ver,".","_")
+#boost_md5 = "5a5d5614d9a07672e1ab2a250b5defc5"
+#boost_fname = "boost_%s.tar.gz"%boost_uver
+###########################################
+
+if is_get:
+	ctx = obu.context( obu.download_dir )
+	ctx.gitget( "https://github.com/OpenImageIO/oiio.git", "oiio", "2b8a9c7" )
+
+###########################################
+
+def set_env(k,v):
+	os.environ[k] = v
+
+###########################################
+
+if is_oiio:
+
+	print "Building OpenImageIO!"
+
+	build_dir = "%s/oiio" % obu.extbuild_dir
+
+	set_env("CXXFLAGS","-I%s/include"%STAGE_DIR)
+	set_env("CMAKE_INSTALL_PREFIX",STAGE_DIR)
+
+	set_env("ILMBASE_HOME",STAGE_DIR)
+	set_env("OPENEXR_HOME",STAGE_DIR)
+
+	set_env("ILMBASE_INCLUDE_DIR","%s/include"%STAGE_DIR)
+	set_env("OPENEXR_INCLUDE_DIR","%s/include"%STAGE_DIR)
+	set_env("OPENIMAGEIOHOME",STAGE_DIR)
+	set_env("MAKEFLAGS","-j %s"%obu.num_cores)
+
+	os.system( "rm -rf %s/include/OpenImageIO" % STAGE_DIR )
+
+	os.chdir( "%s/oiio" % obu.download_dir )
+	obu.myexec( "git clean -fd")
+	obu.myexec( "git reset --hard")
+	obu.myexec( "git checkout RB-1.4")
+	obu.myexec( "cp -r %s/oiio %s" % (obu.download_dir, build_dir) )
+
+	obu.myexec( "rm -rf %s" % build_dir )
+	obu.myexec( "cp -r %s/oiio %s" % (obu.download_dir, build_dir) )
+	os.chdir( build_dir )
+	obu.myexec("make -j %s USE_OPENGL=0 USE_QT=0"%obu.num_cores)
+	obu.myexec("rsync -ravE ./dist/linux64/* %s/" % STAGE_DIR)
+	obu.myexec("rsync -ravE ./dist/macosx/* %s/" % STAGE_DIR)
+	#os.system( "mkdir -p %s" % build_dir )
+	#os.chdir( boost_build_dir )
+	#obu.untar("%s/%s"%(obu.download_dir, boost_fname))
+	#os.chdir( "%s/boost_%s" % (boost_build_dir,boost_uver)) 
+	#os.system("./bootstrap.sh --prefix=%s" % obu.stage_dir)
+	#os.system("./b2 -j %d install" % obu.num_cores )
+	print "OpenImageIO build complete.."
+
+###########################################
+
+
+

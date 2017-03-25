@@ -9,8 +9,7 @@
 // Grpahics Environment (Driver/HAL)
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENTITY_RENDERABLE_H
-#define _ORK_ENTITY_RENDERABLE_H
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -96,17 +95,9 @@ public:
 
 	IRenderableDag();
 
-	virtual void Render( const Renderer *renderer ) const = 0;
 	void SetObject( const ork::Object* o ) { mpObject = o; }
 	const ork::Object* GetObject() const { return mpObject; }
-	
-	/// Renderables implement this function to set the sort key used when all Renderables are sorted together.
-	/// The default is 0 for all Renderables. If no Renderable overrides this, then the RenderableQueue is not
-	/// sorted and all Renderables are drawn in the order they are queued.
-	/// Typically, a Renderable will use the IRenderer::ComposeSortKey() function as a helper when composing
-	/// its sort key.
-	virtual U32 ComposeSortKey( const Renderer *renderer ) const { return 0; }
-	
+		
 	inline const CColor4& GetModColor() const { return mModColor; }
 	inline void SetModColor(const CColor4& Color) { mModColor = Color; }
 
@@ -152,9 +143,8 @@ public: //
 	const CColor4 &		GetColor( void ) const { return mColor; }
 
 
-	virtual void		Render( const Renderer *renderer ) const;
-	virtual U32			ComposeSortKey( const Renderer *renderer ) const;
-
+	void Render( const Renderer *renderer ) const final;
+	U32	ComposeSortKey( const Renderer *renderer ) const final;
 
 private:
 
@@ -185,8 +175,8 @@ public: //
 	const GfxMaterial*	GetMaterial( void ) const { return mpMaterial; } 
 
 
-	virtual void		Render( const Renderer *renderer ) const;
-	virtual U32 ComposeSortKey( const Renderer *renderer ) const;
+	void Render( const Renderer *renderer ) const final;
+	U32 ComposeSortKey( const Renderer *renderer ) const final;
 
 
 private:
@@ -206,9 +196,6 @@ public:
 
 	CModelRenderable(Renderer *renderer = NULL);
 	
-	virtual void Render( const Renderer *renderer ) const;
-	virtual bool CanGroup( const IRenderable* oth ) const;
-
 	inline void SetMaterialIndex( int idx ) { mMaterialIndex=idx; }
 	inline void SetMaterialPassIndex( int idx ) { mMaterialPassIndex=idx; }
 	inline void SetModelInst(const lev2::XgmModelInst* modelInst) { mModelInst = modelInst; }
@@ -227,9 +214,7 @@ public:
 	inline const lev2::XgmSubMesh* GetSubMesh( void ) const { return mSubMesh; }
 	inline const lev2::XgmCluster* GetCluster( void ) const { return mCluster; }
 	inline const lev2::XgmMesh* GetMesh( void ) const { return mMesh; }
-	
-	virtual U32 ComposeSortKey( const Renderer *renderer ) const { return mSortKey; }
-	
+		
 	void SetSortKey( U32 skey ) { mSortKey=skey; }
 
 	void AddLight( Light* plight ) { mLightMask.AddLight(plight); }
@@ -250,6 +235,10 @@ public:
 	const ork::lev2::XgmWorldPose* GetWorldPose() const { return mWorldPose; }
 
 private:
+
+    U32 ComposeSortKey( const Renderer *renderer ) const final { return mSortKey; }
+    void Render( const Renderer *renderer ) const final;
+    bool CanGroup( const IRenderable* oth ) const final;
 
 	float mEngineParamFloats[kMaxEngineParamFloats];
 
@@ -279,8 +268,6 @@ public:
 
 	CallbackRenderable(Renderer *renderer = NULL);
 	
-	virtual void Render( const Renderer *renderer ) const;
-	virtual U32 ComposeSortKey( const Renderer *renderer ) const { return mSortKey; }	
 	void SetSortKey( U32 skey ) { mSortKey=skey; }
 
 	void SetUserData0( anyp pdata ) { mUserData0=pdata; }
@@ -292,6 +279,9 @@ public:
 	cbtype_t GetRenderCallback() const { return mRenderCallback; }
 
 private:
+
+    void Render( const Renderer *renderer ) const final;
+    U32 ComposeSortKey( const Renderer *renderer ) const final { return mSortKey; }   
 
 	U32								mSortKey;
 	int								mMaterialIndex;
@@ -315,20 +305,20 @@ public:
 	{
 	}
 	
-	/*virtual*/ void	Render( const Renderer *renderer ) const;
-
 	const Frustum&		GetFrustum() const { return mFrustum; }
 	const CColor4&		GetColor() const { return mColor; }
 
 	void				SetFrustum( const Frustum& frus ) { mFrustum = frus; }
 	void				SetColor( const CColor4& clr ) { mColor = clr; }
 
-	/*virtual*/ U32		ComposeSortKey( const Renderer *renderer ) const { return kLastRenderableSortKey; }
 
 	bool				IsObjSpace() const { return mObjSpace; }
 	void				SetObjSpace( bool bv ) { mObjSpace=bv; }
 
 private:
+
+    U32     ComposeSortKey( const Renderer *renderer ) const final { return kLastRenderableSortKey; }
+    void    Render( const Renderer *renderer ) const final;
 
 	Frustum			mFrustum;
 	CColor4			mColor;
@@ -356,12 +346,10 @@ public: //
 	const CVector3 &	GetPosition() const { return mPosition; }
 	float				GetRadius() const { return mRadius; }
 
-
-	virtual void		Render( const Renderer *renderer ) const;
-	virtual U32			ComposeSortKey( const Renderer *renderer ) const { return 0; }
-
-
 private:
+
+    void        Render( const Renderer *renderer ) const final;
+    U32         ComposeSortKey( const Renderer *renderer ) const final { return 0; }
 
 	CColor4					mColor;
 	CVector3				mPosition;
@@ -369,29 +357,6 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/* //e TODO get rid of me and make me callback
-class CManipRenderable : public IRenderable 
-{
-public:
-
-	CManipRenderable(CManipManager* mgr=0) 
-		: mManager(mgr)
-	{
-	}
-
-	void SetManipManager( CManipManager* mgr ) { mManager=mgr; }
-
-	virtual U32 ComposeSortKey( const Renderer *renderer ) const { return kManipRenderableSortKey; }
-	virtual void Render( const Renderer *renderer ) const;
-
-
-private:
-
-	CManipManager* mManager;
-};
-*/
-///////////////////////////////////////////////////////////////////////////////
 
 }}
 
-#endif

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_AudioComponent_H
-#define ORK_ENT_AudioComponent_H
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -99,7 +98,8 @@ class AudioMultiEffectPlayDataItemFixed : public AudioMultiEffectPlayDataItemBas
 public:
 	AudioMultiEffectPlayDataItemFixed();
 private:
-	AudioMultiEffectPlayInstItemBase* CreateInst() const ; // virtual
+	AudioMultiEffectPlayInstItemBase* CreateInst() const final;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -113,10 +113,10 @@ public:
 	ork::Object* TemplateAccessor() { return & mControlGraph; }
 	int GetNumVoices() const { return miNumVoices; }
 private:
-	bool DoNotify(const ork::event::Event *event);
+	bool DoNotify(const ork::event::Event *event) final;
 	ork::lev2::AudioGraph			mControlGraph;
 	int								miNumVoices;
-	AudioMultiEffectPlayInstItemBase* CreateInst() const ; // virtual
+	AudioMultiEffectPlayInstItemBase* CreateInst() const final ;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,9 +145,9 @@ public:
 	AudioMultiEffectPlayInstItemFixed(const AudioMultiEffectPlayDataItemFixed& itemdata);
 private:
 	const AudioMultiEffectPlayDataItemFixed&	mItemData;
-	ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param); // virtual
-	void DoStop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb); // virtual
-	void Stop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb); 
+	ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param) final;
+    void DoStop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb) final;
+	//void Stop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb); 
 };
 
 class AudioMultiEffectPlayInstItemModular : public AudioMultiEffectPlayInstItemBase
@@ -157,8 +157,8 @@ public:
 private:
 	const AudioMultiEffectPlayDataItemModular&	mItemData;
 	ork::lev2::AudioGraphPool					mGraphPool;
-	ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param); // virtual
-	void DoStop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb); // virtual
+	ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param) final;
+	void DoStop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -239,7 +239,6 @@ public:
 	///////////////////////////////////////////////////////
 	AudioEffectComponentData();
 	~AudioEffectComponentData();
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
 	///////////////////////////////////////////////////////
 
 	AudioEffectPlayDataBase* GetPlayData(ork::PoolString ps) const;
@@ -253,7 +252,8 @@ private:
 	ork::orklut<ork::PoolString,AudioEffectPlayDataBase*>	mSoundMap;
 	ork::PoolString											mMutexGroups;
 
-	void DoRegisterWithScene( ork::ent::SceneComposer& sc );
+	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
+    ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -300,14 +300,14 @@ private:
 	const ork::TransformNode*											mXform;
 	orkvector<EmitterCtx>												mEmitters;
 
-	void DoUpdate(ork::ent::SceneInst *inst);
+	void DoUpdate(ork::ent::SceneInst *inst) final;
 	ork::lev2::AudioInstrumentPlayback* PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode* pnode );
 	
-	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world); // virtual
-	bool DoLink( ork::ent::SceneInst *psi );
-	void DoStop(ork::ent::SceneInst *psi); // virtual
+	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final; 
+	bool DoLink( ork::ent::SceneInst *psi ) final;
+	void DoStop(ork::ent::SceneInst *psi) final;
 
-	bool DoNotify(const ork::event::Event *pev); // virtual
+	bool DoNotify(const ork::event::Event *pev) final;
 
 	void AddSound( const ork::PoolString& ps, AudioMultiEffectPlayInst* pib  );
 
@@ -328,7 +328,7 @@ public:
 
 	AudioStreamComponentData();
 
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
+	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
 
 	const StreamMap& GetStreamMap() const { return mStreamMap; }
 	StreamMap& GetStreamMap() { return mStreamMap; }
@@ -390,7 +390,7 @@ public:
 	const AudioStreamComponentData& GetData() const { return mData; }
 	void Stop( ork::PoolString streamname );
 private:
-	void DoUpdate(ork::ent::SceneInst *inst);
+	void DoUpdate(ork::ent::SceneInst *inst) final;
 	const AudioStreamComponentData& mData;
 
 
@@ -401,8 +401,8 @@ private:
 
 	ork::orklut<ork::PoolString, AudioStreamInstItem> mItems;
 
-	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world); // virtual
-	void DoStop(ork::ent::SceneInst *psi); // virtual
+	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final;
+    void DoStop(ork::ent::SceneInst *psi) final; 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -415,7 +415,6 @@ class AudioManagerComponentData : public ork::ent::SceneComponentData
 public:
 	///////////////////////////////////////////////////////
 	AudioManagerComponentData();
-	ork::ent::SceneComponentInst* CreateComponentInst( ork::ent::SceneInst *pinst ) const; // virtual 
 	///////////////////////////////////////////////////////
 	const ork::lev2::AudioReverbProperties&	GetReverbProperties() const { return mReverbProperties; }
 
@@ -425,6 +424,8 @@ public:
 	float GetDistAttenPower() const { return mfDistAttenPower; }
 
 private:
+
+    ork::ent::SceneComponentInst* CreateComponentInst( ork::ent::SceneInst *pinst ) const final; 
 
 	ork::Object*					ReverbAccessor() { return & mReverbProperties; }
 
@@ -445,15 +446,15 @@ class AudioManagerComponentInst : public ork::ent::SceneComponentInst
 public:
 
 	AudioManagerComponentInst( const AudioManagerComponentData& ascd, ork::ent::SceneInst *pinst );
-	~AudioManagerComponentInst();
 
 	void AddEmitter( AudioEffectComponentInst* mEmitter ) { mEmitters.push_back(mEmitter); }
 
 	const AudioManagerComponentData& GetAmcd() const { return mAmcd; }
 
 private:
-	void DoUpdate(ork::ent::SceneInst *inst);
-	void DoStop(ork::ent::SceneInst *psi);
+    ~AudioManagerComponentInst() final;
+	void DoUpdate(ork::ent::SceneInst *inst) final;
+	void DoStop(ork::ent::SceneInst *psi) final;
 
 	orkvector<AudioEffectComponentInst*>	mEmitters;
 	const AudioManagerComponentData& mAmcd;
@@ -465,4 +466,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////
-#endif

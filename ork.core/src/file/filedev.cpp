@@ -488,6 +488,8 @@ EFileErrCode CFileDev::OpenFile( CFile &rFile )
 	{
 		switch( ork::CFileEnv::GetLinFileMode()  )
 		{
+            case ork::ELFM_NONE:
+                break;
 			case ork::ELFM_READ:
 			{
 				OrkAssert(rFile.Reading());

@@ -5,8 +5,9 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#if defined(ORK_OSX) && ! defined(_ORK_ENT_QUARTZCOMPOSERTEST_H_)
-#define _ORK_ENT_QUARTZCOMPOSERTEST_H_
+#pragma once 
+
+#if defined(ORK_OSX) 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -40,9 +41,8 @@ class QuartzComposerData : public ComponentData
 public:
 
 	QuartzComposerData();
-	//~QuartzComposerData();
 	
-	virtual ComponentInst *CreateComponent(Entity *pent) const;
+	ComponentInst *CreateComponent(Entity *pent) const final;
 	
 	const ork::file::Path& GetCompositionPath() const { return mCompositionPath; }
 	float GetStartTime() const { return mfStartTime; }
@@ -69,9 +69,9 @@ public:
 	QuartzComposerInst(const QuartzComposerData &data, Entity *pent);
 	~QuartzComposerInst();
 
-	void DoUpdate( ork::ent::SceneInst* psi );		// virtual 
-	bool DoLink(ork::ent::SceneInst *psi);			// virtual
-	bool DoNotify(const ork::event::Event *event);	// virtual
+	void DoUpdate( ork::ent::SceneInst* psi ) final;		// virtual 
+	bool DoLink(ork::ent::SceneInst *psi) final;			// virtual
+	bool DoNotify(const ork::event::Event *event) final;	// virtual
 	
 	const QuartzComposerData& mCD;
 	
@@ -94,8 +94,8 @@ class QuartzComposerArchetype : public Archetype
 {
 	RttiDeclareConcrete( QuartzComposerArchetype, Archetype );
 
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
 

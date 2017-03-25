@@ -26,6 +26,10 @@ StopSoundEvent::StopSoundEvent(ork::PieceString name)
 	: mSoundName(ork::AddPooledString(name))
 {
 }
+Object* StopSoundEvent::Clone() const // final
+{
+    return new StopSoundEvent(mSoundName);
+}
 ///////////////////////////////////////////////////////////////////////////////
 } } } // namespace ork::ent::event
 ///////////////////////////////////////////////////////////////////////////////

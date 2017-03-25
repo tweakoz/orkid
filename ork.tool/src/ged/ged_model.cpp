@@ -271,6 +271,8 @@ GedItemNode* ObjModel::Recurse( ork::Object* root_object, const char* pname, boo
 		cur_obj->Notify( & gev );
 	}
 	object::ObjectClass* objclass = rtti::downcast<object::ObjectClass*>( cur_obj->GetClass() );
+
+
 	///////////////////////////////////////////////////
 	//editor.object.ops
 	///////////////////////////////////////////////////
@@ -429,11 +431,15 @@ struct yo
 };
 void ObjModel::EnumerateNodes( sortnode& in_node, object::ObjectClass* the_class )
 {	
+	///////////////////////////////////////////////////
+
+	object::ObjectClass* walk_class = the_class;
+
 	orkvector<object::ObjectClass*> ClassVect;
-	while( the_class != ork::Object::GetClassStatic() )
+	while( walk_class != ork::Object::GetClassStatic() )
 	{	
-		ClassVect.push_back( the_class );
-		the_class = rtti::downcast<ork::object::ObjectClass*>( the_class->Parent() );
+		ClassVect.push_back( walk_class );
+		walk_class = rtti::downcast<ork::object::ObjectClass*>( walk_class->Parent() );
 	}
 	int inumclasses = int(ClassVect.size());
 	for( int ic=(inumclasses-1); ic>=0; ic-- ) 
@@ -504,10 +510,44 @@ void ObjModel::EnumerateNodes( sortnode& in_node, object::ObjectClass* the_class
 			/////////////////////////////////////////////////
 		}
 		else for( ork::reflect::Description::PropertyMapType::iterator it=propmap.begin(); it!=propmap.end(); it++ )
-		{	const ConstString& Name = (*it).first;
-			ork::reflect::IObjectProperty *prop = (*it).second;
-			if( prop )
-			{	in_node.PropVect.push_back( std::make_pair( Name.c_str(), prop ) );
+		{	
+			///////////////////////////////////////////////////
+			//editor.object.props
+			///////////////////////////////////////////////////
+			
+			std::set<std::string> allowed_props;
+			any16 obj_props_anno = the_class->Description().GetClassAnnotation( "editor.object.props" );
+			if( obj_props_anno.IsSet() && obj_props_anno.IsA<ConstString>() )
+			{
+				ConstString propnameset = obj_props_anno.Get<ConstString>();
+				if( propnameset.length() )
+				{
+					std::string instr(propnameset.c_str());
+					auto pvect = ork::SplitString(instr,' ');
+					for( const auto& item : pvect )
+						allowed_props.insert(item);
+				}
+			}
+
+			///////////////////////////////////////////////////
+
+			bool prop_ok = true;
+
+			const ConstString& Name = (*it).first;
+
+			if( allowed_props.size() )
+			{
+
+				std::string namstr(Name.c_str());
+				prop_ok = allowed_props.find(namstr)!=allowed_props.end();
+			}
+
+			if( prop_ok )
+			{
+				ork::reflect::IObjectProperty *prop = (*it).second;
+				if( prop )
+				{	in_node.PropVect.push_back( std::make_pair( Name.c_str(), prop ) );
+				}
 			}
 		}
 	}

@@ -5,6 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <ork/reflect/IObjectMapPropertyType.h>
 #include <ork/kernel/core_interface.h>
 #include <ork/kernel/any.h>
@@ -208,7 +210,7 @@ private:
 	void OnMouseDoubleClicked( const ork::ui::Event& ev ) final;
 
 	void CheckVis();
-	virtual void DoDraw( lev2::GfxTarget* pTARG );
+	void DoDraw( lev2::GfxTarget* pTARG ) final;
 
 	void AddItem(const ork::ui::Event& ev);
 	void RemoveItem(const ork::ui::Event& ev);
@@ -217,7 +219,7 @@ private:
 	void ImportItem(const ork::ui::Event& ev);
 	void ExportItem(const ork::ui::Event& ev);
 
-	bool DoDrawDefault() const { return false; } // virtual 
+	bool DoDrawDefault() const final { return false; }  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,70 +227,70 @@ private:
 class GedFactoryEnum : public GedFactory
 {
 	RttiDeclareConcrete(GedFactoryEnum,GedFactory);
+    GedItemNode* CreateItemNode(    ObjModel&mdl,
+                                    const ConstString& Name,
+                                    const reflect::IObjectProperty *prop,
+                                    Object* obj) const final;
 public:
-		virtual GedItemNode* CreateItemNode(	ObjModel&mdl,
-												const ConstString& Name,
-												const reflect::IObjectProperty *prop,
-												Object* obj) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactory_PlugFloat : public GedFactory
 {
 	RttiDeclareConcrete(GedFactory_PlugFloat,GedFactory);
+    GedItemNode* CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const final;
+    void Recurse(ObjModel& mdl, const reflect::IObjectProperty *prop,ork::Object*pobj) const final;
 public:
-	GedItemNode* CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const;
-	virtual void Recurse(ObjModel& mdl, const reflect::IObjectProperty *prop,ork::Object*pobj) const;
 	GedFactory_PlugFloat();
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryOutliner : public GedFactory
 {
 	RttiDeclareConcrete(GedFactoryOutliner,GedFactory);
+    GedItemNode* CreateItemNode(    ObjModel&mdl,
+                                    const ConstString& Name,
+                                    const reflect::IObjectProperty *prop,
+                                    Object* obj ) const final;
 public:
-	GedItemNode* CreateItemNode(	ObjModel&mdl,
-									const ConstString& Name,
-									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryGradient : public GedFactory
 {
 	RttiDeclareConcrete(GedFactoryGradient,GedFactory);
+    GedItemNode* CreateItemNode(    ObjModel&mdl,
+                                    const ConstString& Name,
+                                    const reflect::IObjectProperty *prop,
+                                    Object* obj ) const final;
 public:
-	GedItemNode* CreateItemNode(	ObjModel&mdl,
-									const ConstString& Name,
-									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryCurve : public GedFactory
 {
 	RttiDeclareConcrete(GedFactoryCurve,GedFactory);
+    GedItemNode* CreateItemNode(    ObjModel&mdl,
+                                    const ConstString& Name,
+                                    const reflect::IObjectProperty *prop,
+                                    Object* obj ) const final;
 public:
-	GedItemNode* CreateItemNode(	ObjModel&mdl,
-									const ConstString& Name,
-									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryAssetList : public GedFactory
 {
 	RttiDeclareConcrete(GedFactoryAssetList,GedFactory);
+    GedItemNode* CreateItemNode(    ObjModel&mdl,
+                                        const ConstString& Name,
+                                        const reflect::IObjectProperty *prop,
+                                        Object* obj ) const final;
 public:
-	GedItemNode* CreateItemNode(	ObjModel&mdl,
-										const ConstString& Name,
-										const reflect::IObjectProperty *prop,
-										Object* obj ) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class GedFactoryFileList : public GedFactory
 {
 	RttiDeclareConcrete(GedFactoryFileList,GedFactory);
+    GedItemNode* CreateItemNode(    ObjModel&mdl,
+                                    const ConstString& Name,
+                                    const reflect::IObjectProperty *prop,
+                                    Object* obj ) const final;
 public:
-	GedItemNode* CreateItemNode(	ObjModel&mdl,
-									const ConstString& Name,
-									const reflect::IObjectProperty *prop,
-									Object* obj ) const;
 };
 ///////////////////////////////////////////////////////////////////////////////
 template <typename IODriver> 
@@ -394,20 +396,19 @@ class OpsNode : public GedItemNode
 	void OnMouseClicked( const ork::ui::Event& ev ) final;
 	orkvector< std::pair< std::string,any64> > mOps;	
 
-	//IOpsDelegate* mpCurrentDelegate;
+    virtual bool DoDrawDefault() const final { return false; }
 public:
 	OpsNode( ObjModel& mdl, const char* name, const reflect::IObjectProperty* prop, ork::Object* obj );
-	virtual bool DoDrawDefault() const { return false; }
 };
 class ObjectImportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( ObjectImportDelegate, tool::ged::IOpsDelegate );
-	void Execute( ork::Object* ptarget ); // virtual
+	void Execute( ork::Object* ptarget ) final; 
 };
 class ObjectExportDelegate : public IOpsDelegate
 {
 	RttiDeclareConcrete( ObjectExportDelegate, tool::ged::IOpsDelegate );
-	void Execute( ork::Object* ptarget ); // virtual
+	void Execute( ork::Object* ptarget ) final; 
 };
 ///////////////////////////////////////////////////////////////////////////////
 void EnumerateFactories( const ork::Object* pdestobj, const reflect::IObjectProperty* prop,  orkset<object::ObjectClass*>& FactoryClassVect );

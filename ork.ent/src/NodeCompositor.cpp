@@ -679,6 +679,9 @@ void Op2CompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIn
 			case Op2AdivB:
 				mCompositingMaterial.SetTechnique( "Op2AdivB" );
 				break;
+			case Op2AoverB:
+				mCompositingMaterial.SetTechnique( "AoverBplusC" );
+				break;
 			case Op2BoverA:
 				mCompositingMaterial.SetTechnique( "BoverAplusC" );
 				break;

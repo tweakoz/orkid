@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _3D_MANIP_H
-#define _3D_MANIP_H
+#pragma once
 
 #include <ork/kernel/core/singleton.h>
 #include <ork/lev2/gfx/renderer.h>
@@ -89,8 +88,7 @@ public:
 
     CManipTrans(CManipManager& mgr);
 
-	virtual void Draw( GfxTarget *pTARG ) const = 0;
-	bool UIEventHandler( const ui::Event& EV );
+	bool UIEventHandler( const ui::Event& EV ) final;
 
 protected:
 
@@ -107,12 +105,12 @@ public:
 
 	CManipSingleTrans(CManipManager& mgr);
 
-	virtual void Draw(GfxTarget* pTARG) const;
 	virtual void DrawAxis(GfxTarget* pTARG) const;
 
 protected:
 
-	virtual void HandleDrag(const ork::CVector2& pos);
+    void Draw(GfxTarget* pTARG) const final;
+	void HandleDrag(const ork::CVector2& pos) final;
 
 	virtual ork::CVector3 GetNormal() const = 0;
 
@@ -127,14 +125,14 @@ public:
 
 	CManipDualTrans(CManipManager& mgr);
 
-	virtual void Draw(GfxTarget* pTARG ) const;
+	void Draw(GfxTarget* pTARG ) const final;
 
 protected:
 
 	virtual void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
 		ork::CVector4& v2, ork::CVector4& v3) const = 0;
 
-	virtual void HandleDrag(const ork::CVector2& pos);
+	void HandleDrag(const ork::CVector2& pos) final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -149,7 +147,7 @@ public:
 
 protected:
 
-	virtual ork::CVector3 GetNormal() const { return ork::CVector3::UnitX(); };
+	virtual ork::CVector3 GetNormal() const final { return ork::CVector3::UnitX(); };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,7 +162,7 @@ public:
 
 protected:
 
-	virtual ork::CVector3 GetNormal() const { return ork::CVector3::UnitY(); };
+	virtual ork::CVector3 GetNormal() const final { return ork::CVector3::UnitY(); };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -179,7 +177,7 @@ public:
 
 protected:
 
-	virtual ork::CVector3 GetNormal() const { return ork::CVector3::UnitZ(); };
+	virtual ork::CVector3 GetNormal() const final { return ork::CVector3::UnitZ(); };
 };
 
 class CManipTXY : public CManipDualTrans
@@ -192,8 +190,8 @@ public:
 
 protected:
 
-	virtual void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
-		ork::CVector4& v2, ork::CVector4& v3) const;
+	void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
+		ork::CVector4& v2, ork::CVector4& v3) const final;
 };
 
 class CManipTXZ : public CManipDualTrans
@@ -206,8 +204,8 @@ public:
 
 protected:
 
-	virtual void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
-		ork::CVector4& v2, ork::CVector4& v3) const;
+	void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
+		ork::CVector4& v2, ork::CVector4& v3) const final;
 };
 
 class CManipTYZ : public CManipDualTrans
@@ -220,8 +218,8 @@ public:
 
 protected:
 
-	virtual void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
-		ork::CVector4& v2, ork::CVector4& v3) const;
+	void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
+		ork::CVector4& v2, ork::CVector4& v3) const final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,8 +232,8 @@ public: //
 
     CManipRot( CManipManager& mgr, const CVector4 &LocRotMat );
 
-	virtual void Draw( GfxTarget *pTARG ) const;
-	virtual bool UIEventHandler( const ui::Event& EV );
+	void Draw( GfxTarget *pTARG ) const final;
+	bool UIEventHandler( const ui::Event& EV ) final;
 
 	virtual F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const = 0;
 
@@ -256,7 +254,7 @@ public: //
 
     CManipRX(CManipManager& mgr);
 
-	virtual F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const;
+	F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const final;
 
 };
 
@@ -270,7 +268,7 @@ public: //
 
     CManipRY(CManipManager& mgr);
 
-	virtual F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const;
+	F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const final;
 
 };
 
@@ -284,7 +282,7 @@ class CManipRZ : public CManipRot
 
     CManipRZ(CManipManager& mgr);
 
-	virtual F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const;
+	F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const final;
 
 };
 
@@ -304,15 +302,15 @@ class GfxMaterialManip : public GfxMaterial
 	public:
 
 	GfxMaterialManip(GfxTarget*,CManipManager&mgr);
-	virtual ~GfxMaterialManip(){};
-	virtual void Init( GfxTarget *pTarg );
+	~GfxMaterialManip() final {};
+	void Init( GfxTarget *pTarg ) final;
 
-	virtual int  BeginBlock( GfxTarget* pTarg,const RenderContextInstData &MatCtx );
-	virtual void EndBlock( GfxTarget* pTarg );
-	virtual void Update( void ) {}
-	virtual bool BeginPass( GfxTarget* pTarg,int iPass=0 );
-	virtual void EndPass( GfxTarget* pTarg );
-	virtual void UpdateMVPMatrix( GfxTarget *pTARG );
+	int  BeginBlock( GfxTarget* pTarg,const RenderContextInstData &MatCtx ) final;
+	void EndBlock( GfxTarget* pTarg ) final;
+	void Update( void ) final {}
+	bool BeginPass( GfxTarget* pTarg,int iPass=0 ) final;
+	void EndPass( GfxTarget* pTarg ) final;
+	void UpdateMVPMatrix( GfxTarget *pTARG ) final;
 
 	protected:
 
@@ -503,4 +501,3 @@ private:
 
 } }
 
-#endif

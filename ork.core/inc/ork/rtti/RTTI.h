@@ -108,7 +108,7 @@ public:
 	typedef Category RTTICategory;
 
 	static RTTICategory *GetClassStatic() { return &sClass; }
-	/*virtual*/ RTTICategory *GetClass() const { return GetClassStatic(); }
+	RTTICategory *GetClass() const override { return GetClassStatic(); }
 	static RTTIData ClassRTTI()	{ return RTTIData(BaseType::GetClassStatic(), NULL); }
 private:
 	static RTTICategory sClass;
@@ -248,7 +248,7 @@ private:
 		static ::ork::ConstString DesignNameStatic(); \
 		static void Describe(); \
 		static RTTIImplementation::RTTICategory *GetClassStatic(); \
-		virtual RTTIImplementation::RTTICategory *GetClass() const; \
+		RTTIImplementation::RTTICategory *GetClass() const override; \
 	private: \
 		static RTTIImplementation::RTTICategory sClass;
 

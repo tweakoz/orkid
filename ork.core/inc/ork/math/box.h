@@ -5,9 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
 
-
-#ifndef _ORK_MATH_BOX_H
-#define _ORK_MATH_BOX_H
+#pragma once 
 
 #include <ork/math/plane.h>
 #include <ork/object/Object.h>
@@ -57,7 +55,7 @@ public:
 	void SetMinMax( const CVector3& vmin, const CVector3& vmax );
 
 private:
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+	bool PostDeserialize(reflect::IDeserializer &) final;
 
 };
 
@@ -65,4 +63,3 @@ private:
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif

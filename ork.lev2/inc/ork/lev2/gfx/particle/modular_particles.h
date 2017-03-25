@@ -55,14 +55,14 @@ class Module : public ork::dataflow::dgmodule
 {
 	RttiDeclareAbstract( Module, ork::dataflow::dgmodule );
 	////////////////////////////////////////////////////////////
-	virtual void Compute( ork::dataflow::workunit* wu ) {}
-	virtual void CombineWork( const ork::dataflow::cluster* c ) {}
 	////////////////////////////////////////////////////////////
 protected:
 	Module();
 	virtual void DoLink() {}
 	ork::lev2::particle::Context* mpParticleContext;
 	Module*	mpTemplateModule;
+    virtual void Compute( ork::dataflow::workunit* wu ) final {}
+    virtual void CombineWork( const ork::dataflow::cluster* c ) final {}
 public:
 	void Link(ork::lev2::particle::Context* pctx);
 	virtual void Compute( float dt ) = 0; // virtual
@@ -80,12 +80,6 @@ private:
 
 	DeclareFloatXfPlug( TimeScale );
 
-	//virtual int GetNumInputs() const { return 1; }
-	virtual dataflow::inplugbase* GetInput(int idx) { return &mPlugInpTimeScale; } 
-
-	//virtual int GetNumOutputs() const { return 9; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
-
 	DeclareFloatOutPlug( RelTime );
 	DeclareFloatOutPlug( Time );
 	DeclareFloatOutPlug( TimeDiv10 );
@@ -96,8 +90,10 @@ private:
 	DeclareFloatOutPlug( SlowNoise );
 	DeclareVect3OutPlug( RandomNormal );
 
-	virtual void Compute( float dt ); // virtual
-	virtual void OnStart();
+    dataflow::inplugbase* GetInput(int idx) final { return &mPlugInpTimeScale; } 
+    dataflow::outplugbase* GetOutput(int idx) final;
+	void Compute( float dt ) final; 
+	void OnStart() final;
 
 	float		mfNoiseRat;
 	float		mfSlowNoiseRat;
@@ -134,20 +130,19 @@ class Constants : public Module
 	bool																mbPlugsDirty;
 	/////////////////////////////////////////////////////
 	// data currently only flows in from externals
-	//int GetNumInputs() const override { return 0; } // virtual
-	dataflow::inplugbase* GetInput(int idx) { return 0; } // virtual
+	dataflow::inplugbase* GetInput(int idx) final { return 0; } // virtual
 	// data currently only flows in from externals
 	/////////////////////////////////////////////////////
 
-	int GetNumOutputs() const override;
-	dataflow::outplugbase* GetOutput(int idx); // virtual
+	int GetNumOutputs() const final;
+	dataflow::outplugbase* GetOutput(int idx) final; // virtual
 
-	void Compute( float dt ) {} // virtual
+	void Compute( float dt ) final {} // virtual
 
-	void OnTopologyUpdate(void); // virtual
+	void OnTopologyUpdate(void) final; // virtual
 
-	bool DoNotify(const ork::event::Event *event); // virtual
-	bool PostDeserialize(reflect::IDeserializer &); // virtual
+	bool DoNotify(const ork::event::Event *event) final; // virtual
+	bool PostDeserialize(reflect::IDeserializer &) final; // virtual
 
 public:
 
@@ -166,15 +161,14 @@ class ExtConnector : public Module
 
 	/////////////////////////////////////////////////////
 	// data currently only flows in from externals
-	//virtual int GetNumInputs() const { return 0; }
-	virtual dataflow::inplugbase* GetInput(int idx) { return 0; }
+	dataflow::inplugbase* GetInput(int idx) final { return 0; }
 	// data currently only flows in from externals
 	/////////////////////////////////////////////////////
 
-	virtual int GetNumOutputs() const override;
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	int GetNumOutputs() const final;
+	dataflow::outplugbase* GetOutput(int idx) final;
 
-	virtual void Compute( float dt ) {}
+	void Compute( float dt ) final {}
 
 
 public:
@@ -216,17 +210,14 @@ class ParticlePool : public ParticleModule
 	PoolString									mPathIntervalQueueID;
 	Char4										mPathIntervalQueueID4;
 	
-
 	/////////////////////////////////////////////////
-	//int GetNumInputs() const { return 2; }		// virtual
-	dataflow::inplugbase* GetInput(int idx);	// virtual
+	dataflow::inplugbase* GetInput(int idx) final;	
+    /////////////////////////////////////////////////
+	ork::dataflow::outplugbase* GetOutput(int idx) final;
 	/////////////////////////////////////////////////
-	//virtual int GetNumOutputs() const { return 2; }
-	virtual ork::dataflow::outplugbase* GetOutput(int idx);
-	/////////////////////////////////////////////////
-	void Compute( float dt ); // virtual
-	void Reset(); // virtual
-	void DoLink(); // virtual
+	void Compute( float dt ) final;
+	void Reset() final;
+	void DoLink() final;
 
 public:
 	ParticlePool();
@@ -279,8 +270,7 @@ class RingEmitter : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//int GetNumInputs() const { return 11; }		// virtual
-	dataflow::inplugbase* GetInput(int idx);	// virtual
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclarePoolInpPlug( Input )
 	DeclareFloatXfPlug( Lifespan );
@@ -298,19 +288,18 @@ class RingEmitter : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//int GetNumOutputs() const { return 1; }		// virtual
-	dataflow::outplugbase* GetOutput(int idx);	// virtual
+	dataflow::outplugbase* GetOutput(int idx) final;
 
 	DeclarePoolOutPlug( Output )
 
 	//////////////////////////////////////////////////
 
-	void DoLink(); // virtual
-	void Compute( float dt );			// virtual
+	void DoLink() final; 
+	void Compute( float dt ) final;
 
 	void Emit( float fdt );
 	void Reap( float fdt );
-	void Reset(); // virtual
+	void Reset() final;
 
 public:
 	RingEmitter();
@@ -347,8 +336,7 @@ class NozzleEmitter : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//int GetNumInputs() const { return 8; }		// virtual
-	dataflow::inplugbase* GetInput(int idx);	// virtual
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclarePoolInpPlug( Input )
 	DeclareFloatXfPlug( Lifespan );
@@ -363,19 +351,18 @@ class NozzleEmitter : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//int GetNumOutputs() const { return 2; }		// virtual
-	dataflow::outplugbase* GetOutput(int idx);	// virtual
+	dataflow::outplugbase* GetOutput(int idx) final;
 
 	DeclarePoolOutPlug( Output )
 	DeclarePoolOutPlug( TheDead )
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt );					// virtual
+	void Compute( float dt ) final;
 
 	void Emit( float fdt );
 	void Reap( float fdt );
-	void Reset(); // virtual
+	void Reset() final;
 
 public:
 	NozzleEmitter();
@@ -412,8 +399,8 @@ class ReEmitter : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 5; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
+
 	DeclarePoolInpPlug( Input )
 	DeclareFloatXfPlug( SpawnProbability );
 	DeclareFloatXfPlug( SpawnMultiplier );
@@ -426,15 +413,14 @@ class ReEmitter : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) final;
 
 	DeclarePoolOutPlug( Output )
 
 	//////////////////////////////////////////////////
 
-	void DoLink(); // virtual
-	void Compute( float dt ); // virtual
+	void DoLink() final;
+    void Compute( float dt ) final; 
 
 	void Emit( float fdt );
 	void Reap( float fdt );
@@ -453,8 +439,7 @@ class WindModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 2; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclarePoolInpPlug( Input )
 	DeclareFloatXfPlug( Force );
@@ -463,14 +448,13 @@ class WindModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final;
 
 public:
 
@@ -487,8 +471,7 @@ class GravityModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 6; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclarePoolInpPlug( Input )
 	DeclareFloatXfPlug( Mass );
@@ -502,14 +485,13 @@ class GravityModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final;
 
 public:
 
@@ -528,8 +510,7 @@ class PlanarColliderModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 8; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclarePoolInpPlug( Input );
 	DeclareFloatXfPlug( NormalX );
@@ -544,14 +525,13 @@ class PlanarColliderModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final;
 
 public:
 
@@ -568,8 +548,7 @@ class SphericalColliderModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 8; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclarePoolInpPlug( Input );
 	DeclareFloatXfPlug( CenterX );
@@ -582,14 +561,13 @@ class SphericalColliderModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final; 
 
 public:
 
@@ -615,8 +593,7 @@ class FloatOp2Module : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 2; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareFloatXfPlug( InputA )
 	DeclareFloatXfPlug( InputB );
@@ -625,14 +602,13 @@ class FloatOp2Module : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	DeclareFloatOutPlug( Output );
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final;
 
 public:
 
@@ -660,8 +636,7 @@ class Vec3Op2Module : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 2; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareVect3XfPlug( InputA )
 	DeclareVect3XfPlug( InputB );
@@ -670,8 +645,7 @@ class Vec3Op2Module : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx)
+	dataflow::outplugbase* GetOutput(int idx) final
 	{
 		return & mPlugOutOutput;
 	}
@@ -680,7 +654,7 @@ class Vec3Op2Module : public ParticleModule
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final;
 
 public:
 
@@ -697,8 +671,7 @@ class Vec3SplitModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 1; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareVect3XfPlug( Input );
 
@@ -706,8 +679,7 @@ class Vec3SplitModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 3; }
-	virtual dataflow::outplugbase* GetOutput(int idx)
+	dataflow::outplugbase* GetOutput(int idx) final
 	{
 		switch( idx )
 		{
@@ -724,7 +696,7 @@ class Vec3SplitModule : public ParticleModule
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final;
 
 public:
 
@@ -741,8 +713,7 @@ class DecayModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 2; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclarePoolInpPlug( Input )
 	DeclareFloatXfPlug( Decay );
@@ -751,14 +722,13 @@ class DecayModule : public ParticleModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	DeclarePoolOutPlug( Output )
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final; 
 
 public:
 
@@ -775,8 +745,7 @@ class TurbulenceModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 4; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareFloatXfPlug( AmountX );
 	DeclareFloatXfPlug( AmountY );
@@ -789,12 +758,11 @@ class TurbulenceModule : public ParticleModule
 
 	DeclarePoolOutPlug( Output )
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final; 
 
 public:
 
@@ -811,8 +779,7 @@ class VortexModule : public ParticleModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 4; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareFloatXfPlug( Falloff );
 	DeclareFloatXfPlug( VortexStrength );
@@ -825,12 +792,11 @@ class VortexModule : public ParticleModule
 
 	DeclarePoolOutPlug( Output )
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx) { return & mPlugOutOutput; }
+	dataflow::outplugbase* GetOutput(int idx) final { return & mPlugOutOutput; }
 
 	//////////////////////////////////////////////////
 
-	void Compute( float dt ); // virtual 
+	void Compute( float dt ) final;   
 
 public:
 
@@ -849,8 +815,7 @@ protected:
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 1; }
-	virtual dataflow::inplugbase* GetInput(int idx) { return & mPlugInpInput; }
+	dataflow::inplugbase* GetInput(int idx) override { return & mPlugInpInput; }
 
 	DeclarePoolInpPlug( Input )
 
@@ -862,7 +827,8 @@ public:
 
 	virtual void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) = 0;
 
-	const Pool<BasicParticle>* GetPool(); //pool = *mPlugInpInput.GetValue().mPool;
+	const Pool<BasicParticle>* GetPool();
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -893,12 +859,12 @@ public:
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
 	ork::lev2::Texture* GetTexture() const;
-	virtual void Update( float ftexframe );
 	
 private:
 
+    void Update( float ftexframe ) final;
 	ork::lev2::TextureAsset*		mTexture;
-	lev2::GfxMaterial* Bind( lev2::GfxTarget* pT ); // virtual	
+	lev2::GfxMaterial* Bind( lev2::GfxTarget* pT ) final; 	
 	
 };
 
@@ -913,13 +879,14 @@ public:
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
 	ork::lev2::Texture* GetTexture() const;
-	virtual void Update( float ftexframe );
 	
 private:
 
+    void Update( float ftexframe ) final;
+
 	ork::lev2::TextureAsset*		mTexture;
-	lev2::GfxMaterial* Bind( lev2::GfxTarget* pT ); // virtual	
-	
+	lev2::GfxMaterial* Bind( lev2::GfxTarget* pT ) final;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -932,8 +899,7 @@ class SpriteRenderer : public RendererModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 14; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareFloatXfPlug( Size );
 	DeclareFloatXfPlug( Rot );
@@ -954,10 +920,9 @@ class SpriteRenderer : public RendererModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 2; }
 	DeclareFloatOutPlug( UnitAge );
 	DeclareFloatOutPlug( PtcRandom );
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) final;
 
 	//////////////////////////////////////////////////
 
@@ -988,10 +953,10 @@ class SpriteRenderer : public RendererModule
 	bool							mbSort;
 	int								miImageFrame;
 
-	void Compute( float dt );
-	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ); // virtual
-	virtual void DoLink();
-	bool DoNotify(const ork::event::Event *event);
+	void Compute( float dt ) final;
+	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
+	void DoLink() final;
+	bool DoNotify(const ork::event::Event *event) final;
 
 
 public:
@@ -1009,8 +974,7 @@ class StreakRenderer : public RendererModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 4; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareFloatXfPlug( Length );
 	DeclareFloatXfPlug( Width );
@@ -1021,8 +985,7 @@ class StreakRenderer : public RendererModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) final;
 
 	//////////////////////////////////////////////////
 
@@ -1037,8 +1000,8 @@ class StreakRenderer : public RendererModule
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
 
-	void Compute( float dt ){} // virtual 
-	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ); // virtual
+	void Compute( float dt ) final {} 
+	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
 
 	ork::lev2::Texture* GetTexture() const;
 
@@ -1059,8 +1022,7 @@ class ModelRenderer : public RendererModule
 	// inputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumInputs() const { return 3; }
-	virtual dataflow::inplugbase* GetInput(int idx);
+	dataflow::inplugbase* GetInput(int idx) final;
 
 	DeclareFloatXfPlug( AnimScale );
 	DeclareFloatXfPlug( AnimRot );
@@ -1069,8 +1031,7 @@ class ModelRenderer : public RendererModule
 	// outputs
 	//////////////////////////////////////////////////
 
-	//virtual int GetNumOutputs() const { return 1; }
-	virtual dataflow::outplugbase* GetOutput(int idx);
+	dataflow::outplugbase* GetOutput(int idx) final;
 
 	DeclareFloatOutPlug( UnitAge );
 
@@ -1084,8 +1045,8 @@ class ModelRenderer : public RendererModule
 	void SetModelAccessor( ork::rtti::ICastable* const & tex);
 	void GetModelAccessor( ork::rtti::ICastable* & tex) const;
 
-	void Compute( float dt ){} // virtual 
-	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ); // virtual
+	void Compute( float dt ) final {}  
+	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final;
 
 	ork::lev2::XgmModel* GetModel() const;
 
@@ -1106,7 +1067,7 @@ class psys_graph : public ork::dataflow::graph_inst
 
 	RttiDeclareAbstract(psys_graph,ork::dataflow::graph_inst);
 
-	bool CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const;
+	bool CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const final;
 	ork::dataflow::dgregisterblock					mdflowregisters;
 	ork::dataflow::dgcontext						mdflowctx;
 	bool											mbEmitEnable;

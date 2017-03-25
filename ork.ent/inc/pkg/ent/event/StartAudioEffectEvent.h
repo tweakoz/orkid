@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_EVENT_STARTAUDIOEFFECT_H
-#define ORK_ENT_EVENT_STARTAUDIOEFFECT_H
+#pragma once
 
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
@@ -31,10 +30,7 @@ private:
 
 	ork::PoolString		mSoundName;
 
-	virtual Object *Clone() const
-	{
-		return new PlaySoundEvent(mSoundName);
-	}
+	Object *Clone() const final;
 };
 
 /*class PlaySoundEventEx : public ork::rtti::RTTI<PlaySoundEvent, ork::event::Event>
@@ -59,5 +55,3 @@ private:
 };*/
 
 } } } // ork::ent::event
-
-#endif // ORK_ENT_EVENT_PLAYANIMATION_H

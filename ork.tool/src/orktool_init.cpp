@@ -42,7 +42,7 @@ namespace ent
 
 namespace tweakout { void Init(); }
 
-namespace lev2 { void Init(); }
+namespace lev2 { void Init(const std::string& gfxlayer); }
 
 namespace tool {
 
@@ -107,8 +107,8 @@ tokenlist Init(int argc, char **argv)
 		// Otherwise, assume we're in the root of miniork already
 		CSystem::SetGlobalStringVariable("lev2://", std::string("data/platform_lev2/"));
 		CSystem::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("data/") );
-		CSystem::SetGlobalStringVariable( "src://", CreateFormattedString("../../data/src/") );
-		CSystem::SetGlobalStringVariable( "temp://", CreateFormattedString("../../data/temp/") );
+		CSystem::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
+		CSystem::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
 	}
 
 	printf( "CPB\n");
@@ -227,7 +227,7 @@ tokenlist Init(int argc, char **argv)
 	CFileEnv::RegisterUrlBase( "data://", DataDirContext );
 	CFileEnv::RegisterUrlBase( "lev2://", MiniorkDirContext );
 
-	ork::lev2::Init();
+	ork::lev2::Init("");
 
 #if defined(USE_PYTHON)
 	InitPython();

@@ -20,6 +20,7 @@
 #include <pkg/ent/drawable.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/SimpleAnimatable.h>
+#include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleCharacterArchetype.h>
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/event/MeshEvent.h>
@@ -117,6 +118,7 @@ void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<EditorPropMapData>();
 	composer.Register<ork::ent::ModelComponentData>();
 	composer.Register<ork::ent::SimpleAnimatableData>();
+	composer.Register<ork::ent::ScriptComponentData>();
 	composer.Register<SimpleCharControllerData>();
 	//pedpropmapdata->SetProperty( "visual.lighting.reciever.scope", "static" );
 }

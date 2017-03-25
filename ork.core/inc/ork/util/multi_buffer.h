@@ -81,7 +81,7 @@ public:
 	/////////////////////////////	
 	void disable()
 	{
-		printf( "MULTIBUF DISABLE\n" );
+		//printf( "MULTIBUF DISABLE\n" );
 		int icount = 0;
 		while(icount<knumitems)
 		{
@@ -105,7 +105,7 @@ public:
 	/////////////////////////////	
 	void enable()
 	{
-		printf( "MULTIBUF ENABLE\n" );
+		//printf( "MULTIBUF ENABLE\n" );
 		T* item = nullptr;
 		int icount = 0;
 		while(icount<knumitems)
@@ -115,14 +115,14 @@ public:
 			if( mDisabledItems.try_pop(item) )
 			{
 				int iw = mWritesOut.fetch_add(1);
-				printf( "MULTIBUF ENABLE(a) iw<%d>\n", iw );
+				//printf( "MULTIBUF ENABLE(a) iw<%d>\n", iw );
 				mWriteItems.push(item);
 				icount++;
 			}
 			else if( mWriteItems.try_pop(item) )
 			{
 				int iw = mWritesOut.fetch_add(1);
-				printf( "MULTIBUF ENABLE(b) iw<%d>\n", iw );
+				//printf( "MULTIBUF ENABLE(b) iw<%d>\n", iw );
 				mWriteItems.push(item);
 				icount++;
 			}

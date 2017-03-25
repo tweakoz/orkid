@@ -177,9 +177,9 @@ class EntData : public SceneDagObject
 public:
 
 	EntData();
-	virtual ~EntData();
+	~EntData() final;
 
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+	bool PostDeserialize(reflect::IDeserializer &) final;
 
 	const Archetype* GetArchetype() const { return mArchetype; }
 	void SetArchetype(const Archetype*parch);
@@ -255,7 +255,7 @@ public:
 
 private:
 
-	bool DoNotify(const ork::event::Event *event); // virtual
+	bool DoNotify(const ork::event::Event *event) final; 
 
 	SceneInst *mSceneInst;
 
@@ -334,8 +334,9 @@ protected:
 
 private:
 
-	bool PostDeserialize(reflect::IDeserializer &); // virtual
-	SceneData* mpSceneData;
+	bool PostDeserialize(reflect::IDeserializer &) override;
+
+    SceneData* mpSceneData;
 
 };
 

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENT_MODELCOMPONENT_H_
-#define _ORK_ENT_MODELCOMPONENT_H_
+#pragma once 
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -61,8 +60,6 @@ public:
 	const CVector3& GetOffset() const { return mOffset; }
 	void SetRotate( const CVector3& r) { mRotate=r; }
 
-	virtual ComponentInst *CreateComponent(Entity *pent) const;
-
 	const orklut<PoolString,lev2::FxShaderAsset*>& GetLayerFXMap() const { return mLayerFx; }
 
 	bool ShowBoundingSphere() const { return mbShowBoundingSphere; }
@@ -70,6 +67,8 @@ public:
 	bool IsCopyDag() const { return mbCopyDag; }
 	
 	bool IsBlenderZup() const { return mBlenderZup; }
+
+    ComponentInst *CreateComponent(Entity *pent) const final;
 
 private:
 
@@ -114,29 +113,11 @@ protected:
 	orklut<PoolString,lev2::GfxMaterialFx*>					mFxMaterials;
 	ork::lev2::XgmModelInst*								mXgmModelInst;
 
-	void DoUpdate( ork::ent::SceneInst* psi ) override; 
-	bool DoNotify(const ork::event::Event *event) override;
+	void DoUpdate( ork::ent::SceneInst* psi ) final; 
+	bool DoNotify(const ork::event::Event *event) final;
+	void DoStop( ork::ent::SceneInst* psi ) final;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-#if 0
-
-class ModelArchetype : public Archetype
-{
-	RttiDeclareConcrete( ModelArchetype, Archetype );
-
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
-
-public:
-
-	ModelArchetype();
-
-};
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 }}
-
-#endif

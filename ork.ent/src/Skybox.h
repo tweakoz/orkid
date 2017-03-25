@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_ENT_SKYBOXARCH_H_
-#define _ORK_ENT_SKYBOXARCH_H_
+#pragma once
 
 #include <pkg/ent/component.h>
 #include <pkg/ent/componenttable.h>
@@ -38,7 +37,7 @@ public:
 
 	lev2::XgmModel* GetModel() const;
 	float GetScale() const { return mfScale; }
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
+	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
 
 	SkyBoxControllerData();
 	float GetSpinRate() const { return mfSpinRate; }
@@ -54,7 +53,7 @@ class SkyBoxControllerInst : public ent::ComponentInst
 	const SkyBoxControllerData&		mCD;
 	float							mPhase;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 public:
 	const SkyBoxControllerData&	GetCD() const { return mCD; }
@@ -69,25 +68,14 @@ class SkyBoxArchetype : public Archetype
 {
 	RttiDeclareConcrete( SkyBoxArchetype, Archetype );
 
-	/*virtual*/ void DoLinkEntity( SceneInst* psi, Entity *pent ) const;
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const {}
-	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
+	void DoLinkEntity( SceneInst* psi, Entity *pent ) const final;
+	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoCompose(ork::ent::ArchComposer& composer) final;
 
-	//void					SetSkyTexture( ork::rtti::ICastable* const & l2tex);
-	//void					GetSkyTexture( ork::rtti::ICastable* & l2tex) const;
-
-	//lev2::TextureAsset *	mSkyTexture;
-	//ork::lev2::EBlending	meBlendMode;
-	//float					mfSpinRate;
 
 public:
 
-	//lev2::Texture*			SkyTexture() const { return (mSkyTexture==0) ? 0 : mSkyTexture->GetTexture(); }
-	//ork::lev2::EBlending	GetBlendMode() const { return meBlendMode; }
-
 	SkyBoxArchetype();
-	//mutable lev2::GfxMaterial3DSolid* matsky;;
-	//mutable lev2::GfxMaterial3DSolid* matpick;
 
 };
 
@@ -95,4 +83,3 @@ public:
 
 } }
 
-#endif

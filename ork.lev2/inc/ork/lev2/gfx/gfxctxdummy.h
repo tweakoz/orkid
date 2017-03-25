@@ -174,25 +174,22 @@ class GfxTargetDummy : public GfxTarget
 	public:
 
 	GfxTargetDummy();
-	~GfxTargetDummy();
+	~GfxTargetDummy() final;
 
 	///////////////////////////////////////////////////////////////////////
 	// VtxBuf Interface
 
-	//const void* VtxBuf_ReadLock( const VertexBufferBase& VBuf ) const;
-	//void VtxBuf_ReadUnLock( const VertexBufferBase& VBuf ) const;
-
-	/*virtual*/ bool SetDisplayMode(DisplayMode *mode);
+    bool SetDisplayMode(DisplayMode *mode) final;
 
 	//////////////////////////////////////////////
 	// FX Interface
 
-	virtual FxInterface* FXI() { return & mFxI; }
-	virtual RasterStateInterface* RSI() { return & mRsI; }
-	virtual MatrixStackInterface* MTXI() { return & mMtxI; }
-	virtual GeometryBufferInterface* GBI() { return & mGbI; }
-	virtual TextureInterface* TXI() { return & mTxI; }
-	virtual FrameBufferInterface* FBI() { return & mFbI; }
+	FxInterface* FXI() final { return & mFxI; }
+	RasterStateInterface* RSI() final { return & mRsI; }
+	MatrixStackInterface* MTXI() final { return & mMtxI; }
+	GeometryBufferInterface* GBI() final { return & mGbI; }
+	TextureInterface* TXI() final { return & mTxI; }
+	FrameBufferInterface* FBI() final { return & mFbI; }
 
 	//////////////////////////////////////////////
 
@@ -201,15 +198,15 @@ private:
 	//////////////////////////////////////////////
 	// CGfxHWContext Concrete Interface
 
-	virtual void DoBeginFrame( void ) {}
-	virtual void DoEndFrame( void ) {}
-	virtual void InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase );	// make a window
-	virtual void InitializeContext( GfxBuffer *pBuf );	// make a pbuffer
-	virtual void resize( int iX, int iY, int iW, int iH ) {}
+	void DoBeginFrame( void ) final {}
+	void DoEndFrame( void ) final {}
+	void InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase ) final ;	// make a window
+	void InitializeContext( GfxBuffer *pBuf ) final ;	// make a pbuffer
+	void resize( int iX, int iY, int iW, int iH ) {}
 
 	///////////////////////////////////////////////////////////////////////
 
-	virtual void SetSize( int ix, int iy, int iw, int ih );
+	void SetSize( int ix, int iy, int iw, int ih ) final;
 
 	private:
 

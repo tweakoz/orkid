@@ -5,67 +5,123 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _JELLY_SCRIPTCOMPONENT_H_
-#define _JELLY_SCRIPTCOMPONENT_H_
+#pragma once
 
-#include <ork/rtti/RTTI.h>
+#include <pkg/ent/component.h>
+#include <pkg/ent/componenttable.h>
+#include <ork/math/TransformNode.h>
+#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/lev2_asset.h>
+#include <ork/gfx/camera.h>
 
-#include <pkg/ent/entity.h>
-
-#include <pkg/script/Script.h>
 
 namespace ork { namespace ent {
-
-typedef ork::rtti::RTTI<ScriptComponentFactory, ork::EntityComponentFactory> ScriptComponentFactoryBase;
     
-class ScriptComponentFactory : public ScriptComponentFactoryBase
+///////////////////////////////////////////////////////////////////////////////
+
+struct ScriptComponentData : public ent::ComponentData
 {
-    DECLARE_TRANSPARENT_CASTABLE( ScriptComponentFactory, ScriptComponentFactoryBase );
-    
-public:
-	//static void ClassInit();
-	//static void Describe();
-	ScriptComponentFactory();
+	ScriptComponentData();
 
-	const ork::orklut<ork::PoolString, ork::PoolString> &GetNamedScripts() const;
-	ork::orklut<ork::PoolString, ork::PoolString> &GetNamedScripts();
-
-	const orkvector<ork::PoolString> &GetStartupScriptNames() const;
-	orkvector<ork::PoolString> &GetStartupScriptNames();
+	const file::Path& GetPath() const { return mScriptPath; }
+	void SetPath(const file::Path& pth) { mScriptPath=pth; }
 
 private:
-	virtual ork::EntityComponent* CreateComponent(ork::Entity* pent, const ork::PoolString& name) const;
+	RttiDeclareConcrete( ScriptComponentData, ent::ComponentData );
+	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
 
-	ork::orklut<ork::PoolString, ork::PoolString> mNamedScripts;
-	orkvector<ork::PoolString> mStartupScriptNames;
+	file::Path mScriptPath;
 };
 
-class ScriptComponent : public ork::EntityComponent
+
+typedef ork::FixedString<65536> script_text_t;
+typedef ork::FixedString<256> script_funcname_t;
+
+struct ScriptObject
 {
-	DECLARE_TRANSPARENT_CASTABLE(ScriptComponent, ork::EntityComponent)
-public:
-	static void Describe();
+	ScriptObject();
 
-	ScriptComponent(ork::Entity* entity, const ork::PoolString& name, const ScriptComponentFactory *factory);
-	/*virtual*/ ~ScriptComponent();
+	script_text_t mScriptText;
+	std::string mMD5Digest;
+	script_funcname_t mOnEntLink;
+	script_funcname_t mOnEntStart;
+	script_funcname_t mOnEntStop;
+	script_funcname_t mOnEntUpdate;
+	int mScriptRef;
+};
 
-	/*virtual*/ void DoResolveDependencies(ork::EntityComponentTable::ComponentLut& components);
+///////////////////////////////////////////////////////////////////////////////
+
+struct ScriptComponentInst : public ent::ComponentInst
+{
+	ScriptComponentInst( const ScriptComponentData& cd, ork::ent::Entity* pent );
+	const ScriptComponentData&	GetCD() const { return mCD; }
 
 private:
-	/*virtual*/ void Update();
-	/*virtual*/ void Notify(const ork::EntityEvent* event);
 
-	void CompileScriptPlayer(ork::PoolString script);
+	RttiDeclareAbstract( ScriptComponentInst, ent::ComponentInst );
+	void DoUpdate(ent::SceneInst* sinst) final;
+	bool DoLink(SceneInst *psi) final;
+	void DoUnLink(SceneInst *psi) final;
+	bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+	void DoStop(SceneInst *psi) final;
+	const ScriptComponentData&		mCD;
+	std::string mScriptText;
+	ScriptObject* mScriptObject;
 
-	void StartScripts(ork::PoolString name);
-	void StopScripts(ork::PoolString name);
-
-	const ScriptComponentFactory *mFactory;
-
-	ork::orklut<ork::PoolString, EventScript::Player> mScriptPlayers;
+	any<64> mLuaData;
 };
 
-class StartNamedScripts : public ork::EntityEvent
+///////////////////////////////////////////////////////////////////////////////
+
+class ScriptManagerComponentData : public ork::ent::SceneComponentData
+{
+	RttiDeclareConcrete(ScriptManagerComponentData, ork::ent::SceneComponentData);
+
+public:
+	///////////////////////////////////////////////////////
+	ScriptManagerComponentData();
+	///////////////////////////////////////////////////////
+
+private:
+    ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const final;
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class ScriptManagerComponentInst : public ork::ent::SceneComponentInst
+{
+	RttiDeclareAbstract(ScriptManagerComponentInst, ork::ent::ComponentInst);
+
+public:
+
+	ScriptManagerComponentInst( const ScriptManagerComponentData &data, ork::ent::SceneInst *pinst );
+
+	anyp GetLuaManager() { return mLuaManager; }
+
+	ScriptObject* FlyweightScriptObject( const ork::file::Path& key );
+
+private:
+
+    ~ScriptManagerComponentInst() final;
+
+	bool DoLink(SceneInst *psi) final;
+	void DoUnLink(SceneInst *psi) final;
+	void DoUpdate(SceneInst *inst) final;
+	void DoStart(SceneInst *psi) final;
+	void DoStop(SceneInst *inst) final;
+
+	anyp mLuaManager;
+	std::string mScriptText;
+	std::map<ork::file::Path,ScriptObject*> mScriptObjects;
+	int mScriptRef;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+/*class StartNamedScripts : public ork::EntityEvent
 {
 	DECLARE_TRANSPARENT_CASTABLE(ScriptComponent, ork::EntityEvent)
 public:
@@ -97,8 +153,7 @@ public:
 private:
 
 	ork::PoolString mName;
-};
+};*/
 
-} // namespace jelly
+}} // namespace ork/ent
 
-#endif // !_JELLY_SCRIPTCOMPONENT_H_

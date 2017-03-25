@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef ORK_ENT_SIMPLEANIMATABLE_H
-#define ORK_ENT_SIMPLEANIMATABLE_H
+#pragma once
 
 #include <ork/lev2/gfx/gfxanim.h>
 
@@ -47,7 +46,6 @@ public:
 	ork::lev2::XgmAnim* GetAnim( ork::lev2::XgmAnimAsset *passet ) { return (passet==0) ? 0 : passet->GetAnim(); }
 
 	SimpleAnimatableData();
-	~SimpleAnimatableData();
 
 	const AnimationMap &GetAnimationMap() const { return mAnimationMap; }
 	AnimationMap &GetAnimationMap() { return mAnimationMap; }
@@ -62,7 +60,8 @@ public:
 
 private:
 
-	virtual ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const;
+    ~SimpleAnimatableData() final;
+	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
 
 	AnimationMap mAnimationMap;
 	AnimSeqTableMap mAnimSeqTableMap;
@@ -177,11 +176,10 @@ private:
 	/// Helper routine for incrementing the anim frame, applying optional loop, and notifying the entity of AnimSeq and AnimFinish events
 	static bool AnimDataUpdate(AnimData &data, float delta, ork::lev2::XgmModelInst *modelInst, ork::ent::Entity *entity = NULL);
 
-	/*virtual*/ void DoUpdate(ork::ent::SceneInst *inst);
-	/*virtual*/ bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world);
-	/*virtual*/ bool DoLink(ork::ent::SceneInst *psi);
-
-	/*virtual*/ bool DoNotify(const ork::event::Event *event);
+	void DoUpdate(ork::ent::SceneInst *inst) final;
+	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final;
+	bool DoLink(ork::ent::SceneInst *psi) final; 
+	bool DoNotify(const ork::event::Event *event) final;
 
 	BodyPartMap mBodyPartMap;
 	ork::lev2::XgmModelInst *mModelInst;
@@ -193,4 +191,3 @@ private:
 
 } } // namespace ork::ent
 
-#endif // ORK_ENT_SIMPLEANIMATABLE_H

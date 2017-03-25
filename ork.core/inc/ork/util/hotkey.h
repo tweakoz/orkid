@@ -5,9 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 //////////////////////////////////////////////////////////////// 
 
-
-#ifndef _ORK_UTIL_HOTKEY_H
-#define _ORK_UTIL_HOTKEY_H
+#pragma once
 
 #include <ork/pch.h>
 #include <ork/object/Object.h>
@@ -64,7 +62,7 @@ class HotKeyConfiguration : public ork::Object
 	orklut<PoolString,ork::Object*>	mHotKeys;
 	orkset<boost::Crc64>			mHotKeysUsed;
 
-	bool PostDeserialize(reflect::IDeserializer &); // virtual 
+	bool PostDeserialize(reflect::IDeserializer &) final; 
 
 public:
 
@@ -92,6 +90,9 @@ class HotKeyManager : public ork::Object
 
 	HotKeyManager();
 
+    bool PreDeserialize(reflect::IDeserializer &) final;  
+    bool PostDeserialize(reflect::IDeserializer &) final; 
+
 public:
 
 	static HotKeyManager gHotKeyManager;
@@ -110,9 +111,6 @@ public:
 	void Save();
 	void Load();
 
-	bool PreDeserialize(reflect::IDeserializer &); // virtual 
-	bool PostDeserialize(reflect::IDeserializer &); // virtual 
-
 	static bool IsDepressed(PoolString action);
 	static bool IsDepressed(const char* action);
 	static bool IsDepressed(const HotKey& action);
@@ -124,5 +122,3 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 }
-
-#endif

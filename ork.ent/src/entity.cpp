@@ -35,6 +35,7 @@
 #include <pkg/ent/Compositor.h>
 #include <pkg/ent/AudioAnalyzer.h>
 #include <pkg/ent/ModelComponent.h>
+#include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleCharacterArchetype.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/Lighting.h>
@@ -69,12 +70,12 @@ public:
 
 	SceneDagObjectManipInterface() {}
 
-	virtual const TransformNode& GetTransform(rtti::ICastable *pobj)
+	const TransformNode& GetTransform(rtti::ICastable *pobj) final
 	{
 		SceneDagObject *pdago = rtti::autocast(pobj);
 		return pdago->GetDagNode().GetTransformNode();
 	}
-	virtual void SetTransform(rtti::ICastable *pobj, const TransformNode& node)
+	void SetTransform(rtti::ICastable *pobj, const TransformNode& node) final
 	{
 		SceneDagObject *pdago = rtti::autocast(pobj);
 		pdago->GetDagNode().GetTransformNode() = node;
@@ -468,11 +469,13 @@ bool Archetype::PostDeserialize(reflect::IDeserializer &)
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::ComposeEntity( Entity* pent ) const
 {
-	DoComposeEntity( pent );
+	if( pent )
+		DoComposeEntity( pent );
 }
 
 void Archetype::DoComposeEntity( Entity *pent ) const
 {
+	//printf( "Archetype::DoComposeEntity pent<%p>\n", pent );
 	const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
 	for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
 	{	ent::ComponentData* pcompdata = it->second;
@@ -530,10 +533,13 @@ void Archetype::DoDeComposeEntity(Entity *pent) const
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::StartEntity(SceneInst *psi, const CMatrix4 &world, Entity *pent) const
 {
+	//printf( "Archetype<%p>::StartEntity<%p>\n", this, pent );
+
 	StopEntity( psi, pent);
 
 	pent->GetDagNode().GetTransformNode().GetTransform().SetMatrix( world );
 
+	//printf( "yo0\n" );
 	if( GetClass() != ReferenceArchetype::GetClassStatic() )
 	{
 		const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
@@ -543,22 +549,29 @@ void Archetype::StartEntity(SceneInst *psi, const CMatrix4 &world, Entity *pent)
 			inst->Start(psi,world);
 		}
 	}
+	//printf( "yo1\n" );
 	DoStartEntity( psi, world, pent );
-
+	//printf( "yo2\n" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::StopEntity(SceneInst *psi, Entity *pent) const
 {
+	//printf( "Archetype<%p>::StopEntity<%p:%s>::0\n", this, pent, pent->GetEntData().GetName().c_str() );
+
 	if( GetClass() != ReferenceArchetype::GetClassStatic() )
 	{
+		//printf( "Archetype<%p>::StopEntity<%p>::1\n", this, pent );
+
 		const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
 		for( ComponentTable::LutType::const_iterator it=lut.begin(); it!=lut.end(); it++ )
 		{
 			ComponentInst* inst = (*it).second;
 			inst->Stop(psi);
 		}
+		//printf( "Archetype<%p>::StopEntity<%p>::2\n", this, pent );
 	}
 	DoStopEntity( psi, pent );
+	//printf( "Archetype<%p>::StopEntity<%p:%s>::3\n", this, pent, pent->GetEntData().GetName().c_str() );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::Compose(SceneComposer& scene_composer)
@@ -599,6 +612,9 @@ void Init()
 	SceneInst::GetClassStatic();
     
     //ork::ent::heightfield_rt_inst::GetClassStatic();
+
+	ork::ent::ScriptComponentData::GetClassStatic();
+	ork::ent::ScriptComponentInst::GetClassStatic();
 
 	ork::ent::CompositingManagerComponentData::GetClassStatic();
 	ork::ent::CompositingManagerComponentInst::GetClassStatic();

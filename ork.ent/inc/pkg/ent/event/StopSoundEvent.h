@@ -31,10 +31,7 @@ private:
 
 	ork::PoolString		mSoundName;
 
-	virtual Object *Clone() const
-	{
-		return new StopSoundEvent(mSoundName);
-	}
+	Object *Clone() const final;
 
 };
 

@@ -49,7 +49,7 @@ void PreferOpenGL()
 	gbPREFEROPENGL=true;
 }
 
-void Init()
+void Init(const std::string& gfxlayer)
 {
 	AllocationLabel label("ork::lev2::Init");
 
@@ -123,19 +123,22 @@ void Init()
 
 	DummyGfxTargetInit();
 
-#if defined(WII) || defined(WIIEMU)
-	WiiGfxTargetInit();
-#endif
-#if defined(ORK_CONFIG_OPENGL)
-	OpenGlGfxTargetInit();
-#endif
-#if defined(ORK_CONFIG_DIRECT3D)
-	if( false == gbPREFEROPENGL )
+	if( gfxlayer != "dummy" )
 	{
-		Direct3dGfxTargetInit();
+		#if defined(WII) || defined(WIIEMU)
+		WiiGfxTargetInit();
+		#endif
+		#if defined(ORK_CONFIG_OPENGL)
+		OpenGlGfxTargetInit();
+		#endif
+		#if defined(ORK_CONFIG_DIRECT3D)
+		if( false == gbPREFEROPENGL )
+		{
+			Direct3dGfxTargetInit();
+		}
+		#endif
 	}
-#endif
-
+	
 	//////////////////////////////////////////
 }
 
