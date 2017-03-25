@@ -6,18 +6,13 @@
 # see http://www.gnu.org/licenses/gpl-2.0.html
 ###############################################################################
 
-import glob
-import re
-import string
-import commands
-import sys
-import os
-import shutil
-import fnmatch
-import platform
+import glob, re, string, commands, sys, os
+import shutil, fnmatch, platform
 import ansi.color.fx as afx
 from ansi.color import fg, bg
 from ansi.color.rgb import rgb256
+
+is_tty = sys.stdout.isatty()
 
 SYSTEM = platform.system()
 ###############################################################################
@@ -191,18 +186,26 @@ def posixpath(path):
 
 ###############################################################################
 
-def deco(color,string):
-    if color=="inf":
+class deco:
+    def magenta(self,string):
+        return rgb256(255,0,255)+(string)+afx.reset("")
+    def white(self,string):
+        return rgb256(255,255,255)+(string)+afx.reset("")
+    def orange(self,string):
+        return rgb256(255,128,0)+(string)+afx.reset("")
+    def yellow(self,string):
+        return rgb256(255,255,0)+(string)+afx.reset("")
+    def red(self,string):
+        return rgb256(255,0,0)+(string)+afx.reset("")
+    def inf(self,string):
         return rgb256(128,128,255)+(string)+afx.reset("")
-    elif color=="key":
+    def key(self,string):
         return rgb256(255,255,0)+string+afx.reset("")
-    elif color=="val":
+    def val(self,string):
         return fg.white(string)+afx.reset("")
-    elif color=="path":
+    def path(self,string):
         return rgb256(255,192,64)+(string)+afx.reset("")
-    elif color=="warn":
+    def warn(self,string):
         return fg.yellow(string)+afx.reset("")
-    elif color=="err":
-        return fg.red(string)+afx.reset("")
-    else:
-        return string                
+    def err(self,string):
+        return fg.red(string)+zafx.reset("")
