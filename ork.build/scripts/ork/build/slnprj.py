@@ -12,6 +12,7 @@ from sets import Set
 
 import ork.build.utils as utils
 import ork.build.common as common
+deco = common.deco
 
 HostIsOsx = common.IsOsx
 HostIsIx = common.IsIx
@@ -68,22 +69,13 @@ class SourceEnumerator:
 	def AddFoldersExc(self,folders, excludes, pattern):
 		srclist = string.split(folders)
 		exclist = string.split(excludes)
-		sourcefiles = common.globber( self.basefolder, pattern, srclist , exclist)
-		#if "" in sourcefiles:
-		#	print folders
-		#	print pattern
-		#	print excludes
-			
+		sourcefiles = common.globber( self.basefolder, pattern, srclist , exclist)			
 		self.sourceobjs  += common.builddir_replace( sourcefiles, self.basefolder, self.BUILD_DIR )
 
 	def AddFolders(self,folders, pattern):
 		srclist = string.split(folders)
 		exclist = string.split('')
 		sourcefiles = common.globber( self.basefolder, pattern, srclist , exclist)
-		#if "" in sourcefiles:
-		#	print "yo1" , folders
-		#	print "yo1" , pattern
-		#	print "yo1" , excludes
 		self.sourceobjs  += common.builddir_replace( sourcefiles, self.basefolder, self.BUILD_DIR )
 
 	def AddFoldersNoRep(self,folders, pattern):
@@ -128,7 +120,8 @@ def CommandPrinter(s, target, src, env):
     """s is the original command line, target and src are lists of target
     and source nodes respectively, and env is the environment."""
     #print( "yo" )
-    print( "building target<%s>" % join([str(x) for x in target]) )
+    tgt = deco("path",join([str(x) for x in target]) )
+    print( "building target<%s>" % tgt )
 
 
 ###############################################################################

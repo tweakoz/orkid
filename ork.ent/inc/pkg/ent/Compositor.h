@@ -593,17 +593,13 @@ public:
 	const CompositingSceneItem* GetCompositingItem(int isceneidx,int itemidx) const;
 	
 	const CompositingGroup* GetGroup(const PoolString& grpname) const;
-
-//	const CompositingGroup* GetActiveGroupA() const;
-//	const CompositingGroup* GetActiveGroupB() const;
-//	const CompositingGroup* GetActiveGroupC() const;
 	
 private:
 	
 	const CompositingComponentData& mCompositingData;
-	bool DoLink(ork::ent::SceneInst *psi);
-	void DoUnLink(SceneInst *psi);
-	void DoUpdate(SceneInst *inst);
+	bool DoLink(ork::ent::SceneInst *psi) final;
+	void DoUnLink(SceneInst *psi) final;
+	void DoUpdate(SceneInst *inst) final;
 
 	float	mfTimeAccum;
 	float	mfLastTime;
