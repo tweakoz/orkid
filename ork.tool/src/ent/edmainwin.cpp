@@ -548,8 +548,8 @@ public:
 	EntArchDeRef() {}
 	~EntArchDeRef() {}	
 
-	void Execute( ork::Object* ptarget ) // virtual
-	{	SetProgress(0.0f);
+	void Execute( ork::Object* ptarget ) final
+    {	SetProgress(0.0f);
 		ent::EntData* pentdata = rtti::autocast( ptarget );
 		if( 0 != pentdata )
 		{	const ent::Archetype* parch = pentdata->GetArchetype();
@@ -612,7 +612,7 @@ public:
 		}
 	}
 
-	void Execute( ork::Object* ptarget ) // virtual
+	void Execute( ork::Object* ptarget ) final // virtual
 	{	SetProgress(0.0f);
 		ent::EntData* pentdata = rtti::autocast( ptarget );
 		if( 0 != pentdata )
@@ -680,8 +680,8 @@ public:
 	EntArchSplit() {}
 	~EntArchSplit() {}	
 
-	void Execute( ork::Object* ptarget ) // virtual
-	{
+	void Execute( ork::Object* ptarget ) final
+    {
 		SetProgress(0.0f);
 		tool::ged::IOpsDelegate::RemoveTask( EntArchSplit::GetClassStatic(), ptarget );
 	}

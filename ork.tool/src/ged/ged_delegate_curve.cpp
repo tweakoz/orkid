@@ -54,48 +54,57 @@ public:
 			}
 		}
 	}
-	void mouseMoveEvent ( QMouseEvent * event )
-	{	if( mParent && mCurveObject )
-		{	orklut<float,float> & data = mCurveObject->GetVertices();
-			const int knumpoints = (int) data.size();
-			const int ksegs = knumpoints-1;
-			if( miPoint>=0 && miPoint<knumpoints )
-			{	Qt::MouseButtons Buttons = event->buttons();
-				if( Buttons.testFlag( Qt::LeftButton ) )
-				{	int mouseposX = event->pos().x();
-					int mouseposY = event->pos().y();
-					float fx = float((mouseposX)-mParent->GetX())/float(mParent->width());
-					float fy = 1.0f-float((mouseposY)-mParent->GetY())/float(kh);
-					if( miPoint==0 ) fx=0.0f;
-					if( miPoint==(knumpoints-1) ) fx=1.0f;
-					if( fy<0.0f ) fy=0.0f;
-					if( fy>1.0f ) fy=1.0f;
+    void OnUiEvent( const ork::ui::Event& ev ) final
+    {
+        const auto& filtev = ev.mFilteredEvent;
 
-					orklut<float,float>::iterator it = data.begin()+miPoint;
+        switch( filtev.miEventCode )
+        {
+            case ui::UIEV_DRAG:
+            {   
+        		if( mParent && mCurveObject )
+        		{	orklut<float,float> & data = mCurveObject->GetVertices();
+        			const int knumpoints = (int) data.size();
+        			const int ksegs = knumpoints-1;
+        			if( miPoint>=0 && miPoint<knumpoints )
+        			{	
+                        int mouseposX = ev.miX-mParent->GetX();
+                        int mouseposY = ev.miY-mParent->GetY();
+    					float fx = float(mouseposX)/float(mParent->width());
+    					float fy = 1.0f-float(mouseposY)/float(kh);
+    					if( miPoint==0 ) fx=0.0f;
+    					if( miPoint==(knumpoints-1) ) fx=1.0f;
+    					if( fy<0.0f ) fy=0.0f;
+    					if( fy>1.0f ) fy=1.0f;
 
-					if( miPoint != 0 && miPoint != (knumpoints-1) )
-					{
-						orklut<float,float>::iterator itp = it-1;
-						orklut<float,float>::iterator itn = it+1;
-						const float kfbound = float(kpntsize)/mParent->width();
-						if(itp!=data.end())
-						{	if( fx < (itp->first+kfbound) )
-							{	fx = (itp->first+kfbound);
-							}
-						}
-						if(itn!=data.end())
-						{	if( fx > (itn->first-kfbound) )
-							{	fx = (itn->first-kfbound);
-							}
-						}
+    					orklut<float,float>::iterator it = data.begin()+miPoint;
 
-					}
-					data.RemoveItem( it );
-					data.AddSorted( fx, fy );
-					mParent->SigInvalidateProperty();
-				}
-			}
-		}
+    					if( miPoint != 0 && miPoint != (knumpoints-1) )
+    					{
+    						orklut<float,float>::iterator itp = it-1;
+    						orklut<float,float>::iterator itn = it+1;
+    						const float kfbound = float(kpntsize)/mParent->width();
+    						if(itp!=data.end())
+    						{	if( fx < (itp->first+kfbound) )
+    							{	fx = (itp->first+kfbound);
+    							}
+    						}
+    						if(itn!=data.end())
+    						{	if( fx > (itn->first-kfbound) )
+    							{	fx = (itn->first-kfbound);
+    							}
+    						}
+    					}
+    					data.RemoveItem( it );
+    					data.AddSorted( fx, fy );
+    					mParent->SigInvalidateProperty();
+        			}
+        		}
+                break;
+            }
+            default:
+                break;
+        }
 	}
 };
 

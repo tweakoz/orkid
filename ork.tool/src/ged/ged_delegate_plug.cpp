@@ -88,7 +88,7 @@ private:
 	ork::file::Path::NameType						mPersistID;
 
 
-	void ReSync() // virtual
+	void ReSync() final
 	{
 		float fval = -1.0f;
 		mIoDriver.GetValue( fval );
@@ -96,7 +96,7 @@ private:
 		mFloatSlider.SetVal( fval );
 	}
 
-	void DoDraw( lev2::GfxTarget* pTARG ) // virtual
+	void DoDraw( lev2::GfxTarget* pTARG ) final
 	{
 		const int klabh = get_charh();
 		const int kdim = klabh-2;
@@ -363,163 +363,171 @@ public:
 		////////////////////////////////////////////////////
 		CheckVis();
 	}
-	void OnMouseMoved(const ork::ui::Event& ev)
-	{	mFloatSlider.OnMouseMoved(ev);
-		mModel.SigRepaint();
-	}
-	void OnMouseReleased(const ork::ui::Event& ev)
-	{	mFloatSlider.OnMouseReleased(ev);
-		mModel.SigRepaint();
+	void OnUiEvent(const ork::ui::Event& ev) final
+	{	
+        switch( ev.miEventCode )
+        {   
+            case ui::UIEV_DOUBLECLICK:
+            {
+                const int klabh = get_charh();
+                const int kdim = klabh-2;
+            
+                int ix = ev.miX;
+                int iy = ev.miY;
+                bool isCTRL = ev.mbCTRL;
+                ////////////////////////////////
+                // check collapsor
+                ////////////////////////////////
+                if( mbCollapsor )
+                {   if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
+                    {   mbSingle = ! mbSingle;
+                        ///////////////////////////////////////////
+                        PersistHashContext HashCtx;
+                        HashCtx.mObject = GetOrkObj();
+                        HashCtx.mProperty = GetOrkProp();
+                        PersistantMap* pmap = mModel.GetPersistMap( HashCtx );
+                        ///////////////////////////////////////////
+                        pmap->SetValue( mPersistID.c_str(), mbSingle ? "true" : "false" );
+                        ///////////////////////////////////////////
+                        if( isCTRL ) // also do siblings
+                        {
+                            GedItemNode* par = GetParent();
+                            if( par )
+                            {
+                                int inumc = par->GetNumItems();
+                                for( int i=0; i<inumc; i++ )
+                                {
+                                    GedItemNode* item = par->GetItem( i );
+                                    GedPlugWidget* pgroup = rtti::autocast(item);
+                                    if( pgroup )
+                                    {
+                                        if( pgroup->mbCollapsor )
+                                        {
+                                            pgroup->mbSingle = mbSingle;
+                                            pgroup->CheckVis();
+                                            pmap->SetValue( pgroup->mPersistID.c_str(), mbSingle ? "true" : "false" );
+                                            //pmap->SetValue( pgroup->mPersistID.c_str(), mbCollapsed ? "true" : "false" );
+                                        }
+                                    }
+                                    
+                                }
+                            }
+                        }
+                        ///////////////////////////////////////////
+                        CheckVis();
+                        return;
+                    }
+                    ix -= (kdim+4);
+                }
+                ////////////////////////////////
+                ////////////////////////////////
+                ////////////////////////////////
+                dataflow::inplug<float>* pfloatplug = rtti::autocast(mInputPlug);
+                dataflow::inplug<CVector3>* pvect3plug = rtti::autocast(mInputPlug);
+                ////////////////////////////////
+                // check connector
+                ////////////////////////////////
+                bool bdrop = ((0==pfloatplug) && (0==pvect3plug));
+                if( ((ix >= koff) && (ix <= kdim) && (iy >= koff) && (iy <= kdim)) || bdrop ) // drop down
+                {   ConstString anno_ucdclass = GetOrkProp()->GetAnnotation( "ged.plug.delegate" );
+                    if( anno_ucdclass.length() )
+                    {   ork::Object* pobj = GetOrkObj();
+                        rtti::Class *the_class = rtti::Class::FindClass(anno_ucdclass);
+                        if( the_class )
+                        {   ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
+                            ork::rtti::ICastable* ucdo = the_class->CreateObject();
+                            IPlugChoiceDelegate* ucd = rtti::autocast(ucdo);
+                            if( ucd )
+                            {   IPlugChoiceDelegate::OutPlugMapType choices;
+                                ucd->EnumerateChoices( this, choices );
+                                ///////////////////////////////////////////////////////////////////////////////
+                                class PlugChoices : public tool::CChoiceList
+                                {
+                                public:
+                                    const IPlugChoiceDelegate::OutPlugMapType& choices;
+                                    virtual void EnumerateChoices( bool bforcenocache=false )
+                                    {   typedef IPlugChoiceDelegate::OutPlugMapType::const_iterator iter_t;
+                                        for( iter_t it=choices.begin(); it!=choices.end(); it++ )
+                                        {   const std::string& name = it->first;
+                                            CAttrChoiceValue myval( name, name );
+                                            myval.SetCustomData( it->second );
+                                            add( myval );
+                                        }
+                                    }
+                                    PlugChoices( const IPlugChoiceDelegate::OutPlugMapType& chc ) 
+                                        : choices(chc)
+                                    {   EnumerateChoices();
+                                        CAttrChoiceValue none( "none", "none" );
+                                        add( none );
+                                    }
+                                };
+                                ///////////////////////////////////////////////////////////////////////////////
+                                PlugChoices uchc( choices );
+                                QMenu* qm = uchc.CreateMenu();
+                                ///////////////////////////////////////////
+                                QAction* pact = qm->exec(QCursor::pos());
+                                if( pact )
+                                {   QVariant UserData = pact->data();
+                                    QString UserName = UserData.toString();
+                                    QVariant chcvalprop = pact->property( "chcval" );
+                                    const CAttrChoiceValue* chcval  = chcvalprop.isValid()
+                                                                    ? (const CAttrChoiceValue*)chcvalprop.value<void*>()
+                                                                    : (const CAttrChoiceValue*)0;
+                                    if( chcval )
+                                    {   if( mInputPlug )
+                                        {   const any64& customdata = chcval->GetCustomData();
+                                            if( customdata.IsA<ork::dataflow::outplugbase*>() )
+                                            {   ork::dataflow::outplugbase* outplug = 
+                                                    customdata.Get<ork::dataflow::outplugbase*>();
+
+                                                dataflow::dgmodule* pmod = rtti::autocast(mInputPlug->GetModule());
+                                                if( pmod )
+                                                {
+                                                    mInputPlug->SafeConnect(*pmod->GetParent(),outplug);
+                                                }
+                                            }
+                                            else
+                                            {   mInputPlug->Disconnect();
+                                            }
+                                        }
+                                    }
+                                }
+                                ///////////////////////////////////////////
+                            }
+                        }
+                    }
+                    return;
+                }
+                else if( pfloatplug )
+                {   
+                    if( false == pfloatplug->IsConnected() )
+                    {
+                        mFloatSlider.OnUiEvent(ev);
+                    }
+                    mModel.SigRepaint();    
+                }
+                else if( pvect3plug )
+                {   
+                    if( false == pvect3plug->IsConnected() )
+                    {
+                        //mFloatSlider.mouseDoubleClickEvent(pEV);
+                    }
+                    mModel.SigRepaint();    
+                }
+                break;
+            }
+            case ui::UIEV_DRAG:
+            case ui::UIEV_MOVE:
+            case ui::UIEV_RELEASE:
+                mFloatSlider.OnUiEvent(ev);
+                mModel.SigRepaint();
+                break;
+        }
+
 	}
 	void OnMouseDoubleClicked(const ork::ui::Event& ev)
 	{
-		const int klabh = get_charh();
-		const int kdim = klabh-2;
-	
-		//Qt::MouseButton button = pEV->button();
-		//Qt::KeyboardModifiers modifiers = pEV->modifiers();
-		int ix = ev.miX - this->miX;
-		int iy = ev.miY - this->miY;
-		bool isCTRL = ev.mbCTRL;
-		////////////////////////////////
-		// check collapsor
-		////////////////////////////////
-		if( mbCollapsor )
-		{	if( ix >= koff && ix <= kdim && iy >= koff && iy <= kdim ) // drop down
-			{	mbSingle = ! mbSingle;
-				///////////////////////////////////////////
-				PersistHashContext HashCtx;
-				HashCtx.mObject = GetOrkObj();
-				HashCtx.mProperty = GetOrkProp();
-				PersistantMap* pmap = mModel.GetPersistMap( HashCtx );
-				///////////////////////////////////////////
-				pmap->SetValue( mPersistID.c_str(), mbSingle ? "true" : "false" );
-				///////////////////////////////////////////
-				if( isCTRL ) // also do siblings
-				{
-					GedItemNode* par = GetParent();
-					if( par )
-					{
-						int inumc = par->GetNumItems();
-						for( int i=0; i<inumc; i++ )
-						{
-							GedItemNode* item = par->GetItem( i );
-							GedPlugWidget* pgroup = rtti::autocast(item);
-							if( pgroup )
-							{
-								if( pgroup->mbCollapsor )
-								{
-									pgroup->mbSingle = mbSingle;
-									pgroup->CheckVis();
-									pmap->SetValue( pgroup->mPersistID.c_str(), mbSingle ? "true" : "false" );
-									//pmap->SetValue( pgroup->mPersistID.c_str(), mbCollapsed ? "true" : "false" );
-								}
-							}
-							
-						}
-					}
-				}
-				///////////////////////////////////////////
-				CheckVis();
-				return;
-			}
-			ix -= (kdim+4);
-		}
-		////////////////////////////////
-		////////////////////////////////
-		////////////////////////////////
-		dataflow::inplug<float>* pfloatplug = rtti::autocast(mInputPlug);
-		dataflow::inplug<CVector3>* pvect3plug = rtti::autocast(mInputPlug);
-		////////////////////////////////
-		// check connector
-		////////////////////////////////
-		bool bdrop = ((0==pfloatplug) && (0==pvect3plug));
-        if( ((ix >= koff) && (ix <= kdim) && (iy >= koff) && (iy <= kdim)) || bdrop ) // drop down
-		{	ConstString anno_ucdclass = GetOrkProp()->GetAnnotation( "ged.plug.delegate" );
-			if( anno_ucdclass.length() )
-			{	ork::Object* pobj = GetOrkObj();
-				rtti::Class *the_class = rtti::Class::FindClass(anno_ucdclass);
-				if( the_class )
-				{	ork::object::ObjectClass* pucdclass = rtti::autocast(the_class);
-					ork::rtti::ICastable* ucdo = the_class->CreateObject();
-					IPlugChoiceDelegate* ucd = rtti::autocast(ucdo);
-					if( ucd )
-					{	IPlugChoiceDelegate::OutPlugMapType choices;
-						ucd->EnumerateChoices( this, choices );
-						///////////////////////////////////////////////////////////////////////////////
-						class PlugChoices : public tool::CChoiceList
-						{
-						public:
-							const IPlugChoiceDelegate::OutPlugMapType& choices;
-							virtual void EnumerateChoices( bool bforcenocache=false )
-							{	typedef IPlugChoiceDelegate::OutPlugMapType::const_iterator iter_t;
-								for( iter_t it=choices.begin(); it!=choices.end(); it++ )
-								{	const std::string& name = it->first;
-									CAttrChoiceValue myval( name, name );
-									myval.SetCustomData( it->second );
-									add( myval );
-								}
-							}
-							PlugChoices( const IPlugChoiceDelegate::OutPlugMapType& chc ) 
-								: choices(chc)
-							{	EnumerateChoices();
-								CAttrChoiceValue none( "none", "none" );
-								add( none );
-							}
-						};
-						///////////////////////////////////////////////////////////////////////////////
-						PlugChoices uchc( choices );
-						QMenu* qm = uchc.CreateMenu();
-						///////////////////////////////////////////
-						QAction* pact = qm->exec(QCursor::pos());
-						if( pact )
-						{	QVariant UserData = pact->data();
-							QString UserName = UserData.toString();
-							QVariant chcvalprop = pact->property( "chcval" );
-							const CAttrChoiceValue* chcval	= chcvalprop.isValid()
-															? (const CAttrChoiceValue*)chcvalprop.value<void*>()
-															: (const CAttrChoiceValue*)0;
-							if( chcval )
-							{	if( mInputPlug )
-								{	const any64& customdata = chcval->GetCustomData();
-									if( customdata.IsA<ork::dataflow::outplugbase*>() )
-									{	ork::dataflow::outplugbase* outplug = 
-											customdata.Get<ork::dataflow::outplugbase*>();
 
-										dataflow::dgmodule* pmod = rtti::autocast(mInputPlug->GetModule());
-										if( pmod )
-										{
-											mInputPlug->SafeConnect(*pmod->GetParent(),outplug);
-										}
-									}
-									else
-									{	mInputPlug->Disconnect();
-									}
-								}
-							}
-						}
-						///////////////////////////////////////////
-					}
-				}
-			}
-			return;
-		}
-		else if( pfloatplug )
-		{	
-			if( false == pfloatplug->IsConnected() )
-			{
-				mFloatSlider.OnMouseDoubleClicked(ev);
-			}
-			mModel.SigRepaint();	
-		}
-		else if( pvect3plug )
-		{	
-			if( false == pvect3plug->IsConnected() )
-			{
-				//mFloatSlider.mouseDoubleClickEvent(pEV);
-			}
-			mModel.SigRepaint();	
-		}
 	}
 	void CheckVis()
 	{	int inumitems = GetNumItems();
@@ -544,7 +552,7 @@ public:
 	GedItemNode* CreateItemNode(	ObjModel&mdl,
 									const ConstString& Name,
 									const reflect::IObjectProperty *prop,
-									Object* obj ) const
+									Object* obj ) const final
 	{
 		GedItemNode* PropContainerW = new GedPlugWidget( 
 			mdl, 
@@ -569,9 +577,9 @@ class OutPlugChoiceDelegate : public tool::ged::IPlugChoiceDelegate
 public:
 	OutPlugChoiceDelegate() : IPlugChoiceDelegate() , mpgraph(nullptr) {}
 private:
-	void EnumerateChoices( tool::ged::GedItemNode* pnode, OutPlugMapType& Choices ); // virtual 
-	//ProcTex* mptex;
-	dataflow::graph_data* mpgraph;
+	void EnumerateChoices( tool::ged::GedItemNode* pnode, OutPlugMapType& Choices ) final;
+
+    dataflow::graph_data* mpgraph;
 };
 
 void OutPlugChoiceDelegate::Describe(){}

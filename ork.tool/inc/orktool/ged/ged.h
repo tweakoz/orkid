@@ -349,12 +349,13 @@ public:
 	int GetDecoIndex() const { return miDecoIndex; }
 	void SetDecoIndex(int idx ) { miDecoIndex=idx; }
 
+    virtual void OnMouseDragged(const ork::ui::Event& ev) {}
 	virtual void OnMouseMoved(const ork::ui::Event& ev) {}
 	virtual void OnMouseClicked(const ork::ui::Event& ev) {}
 	virtual void OnMouseDoubleClicked(const ork::ui::Event& ev) {}
 	virtual void OnMouseReleased(const ork::ui::Event& ev) {}
 
-	virtual void OnUiEvent( const ork::ui::Event& ev ) {}
+	virtual void OnUiEvent( const ork::ui::Event& ev );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -395,7 +396,7 @@ public:
 
 	///////////////////////////////////////////////////
 
-	/*virtual*/	~GedItemNode();
+	~GedItemNode() override;
 
 	void SetVisible( bool bv ) { mbVisible=bv; }
 	bool IsVisible() const { return mbVisible; }
@@ -648,7 +649,7 @@ class GedInputDialog : public QDialog
 
 public:
 
-	static QString getText( int mx, int my, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
+	static QString getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
 	bool WasChanged() const { return mbChanged; }
 
 };

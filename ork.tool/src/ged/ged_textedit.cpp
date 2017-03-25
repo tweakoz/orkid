@@ -156,13 +156,13 @@ QString GedInputDialog::GetResult()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-QString GedInputDialog::getText( int imx, int imy, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih )
+QString GedInputDialog::getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih )
 {
 	int isx = QCursor::pos().x();
 	int isy = QCursor::pos().y();
 	
-	int ixb = (isx-imx);
-	int iyb = (isy-imy);
+	int ixb = (isx-ev.miRawX);
+	int iyb = (isy-ev.miRawY);
 
 	int ixa = ixb+pnode->GetX()+ix;
 	int iya = iyb+pnode->GetY()+iy;

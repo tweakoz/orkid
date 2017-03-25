@@ -427,7 +427,7 @@ void Widget::LocalToRoot(int lx, int ly, int& rx, int& ry) const
 	ry = ly;
 
 	const Widget* w = this;
-	while( w->GetParent() )
+	while( w ) //->GetParent() )
 	{
 		rx += w->miX;
 		ry += w->miY;
@@ -442,7 +442,7 @@ void Widget::RootToLocal(int rx, int ry, int& lx, int& ly) const
 	ly = ry;
 
 	const Widget* w = this;
-	while( w->GetParent() )
+	while( w ) //->GetParent() )
 	{
 		lx -= w->miX;
 		ly -= w->miY;

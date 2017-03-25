@@ -56,14 +56,14 @@ def chdir_root_rel(s):
 
 def chdir_stage_rel(s):
 	ndir = "%s/%s"%(stage_dir,s)
-	print( "chdir <%s>" % ndir )
+	#print( "chdir <%s>" % ndir )
 	os.chdir(ndir)
 
 ###########################################
 
 def chdir_extbuild_rel(s):
 	ndir = "%s/%s"%(extbuild_dir,s)
-	print( "chdir <%s>" % ndir )
+	#print( "chdir <%s>" % ndir )
 	os.chdir(ndir)
 
 ###########################################
@@ -93,11 +93,11 @@ def append_env(key,val):
  #########################
 
 def install_headers(dir):
-	print "Installing headers from <%s> to <%s/include/>" % (dir,stage_dir)
+	print "Installing headers from <%s> to <%s/include/>" % (deco.path(dir),deco.path(stage_dir))
 	os.system( "cp -rf %s %s/include/" % (dir,stage_dir) )
 
 def install_files(pth,dst):
-	print "Installing files from <%s> to <%s/%s/>" % (pth,stage_dir,dst)
+	print "Installing files from <%s> to <%s/%s/>" % (deco.path(pth),deco.path(stage_dir),deco.path(dst))
 	os.system( "mkdir -p %s/%s" % (stage_dir,dst) )
 	os.system( "cp -rf %s %s/%s" % (pth,stage_dir,dst) )
 

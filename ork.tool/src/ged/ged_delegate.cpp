@@ -695,8 +695,8 @@ void GedGroupNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 
 	if( inumitems )
 	{
-		int ix = ev.miX - this->miX;
-		int iy = (ev.miY - this->miY);
+		int ix = ev.miX; 
+        int iy = (ev.miY);
 
 		//////////////////////////////
 		// spawn/stack
@@ -715,7 +715,7 @@ void GedGroupNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 		int ihy = dby1+(ih/2);
 		int ihx = il+(iw/2);
 
-        printf( "ev->miY<%d> gnode->miY<%d> iy<%d> KOFF<%d> KDIM<%d>\n", ev.miY, this->miY, iy, koff, kdim );
+        printf( "iy<%d> KOFF<%d> KDIM<%d>\n", iy, koff, kdim );
 		if( iy >= koff && iy <= kdim )
 		{
 			if( ix >= il && ix < il2 && mIsObjNode )
@@ -914,10 +914,13 @@ void ObjectImportDelegate::Describe(){}
 void ObjectExportDelegate::Describe(){}
 
 
-void SliderBase::OnUiEvent( const ork::ui::Event& ev )
+void GedObject::OnUiEvent( const ork::ui::Event& ev )
 {
 	switch( ev.miEventCode )
 	{	
+        case ui::UIEV_DRAG:
+            OnMouseDragged(ev);
+            break;
 		case ui::UIEV_MOVE:
 			OnMouseMoved(ev);
 			break;

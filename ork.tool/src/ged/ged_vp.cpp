@@ -37,7 +37,7 @@ void CPickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
 	int isurfh = mpViewport->GetH();
 	if( irtgw!=isurfw || irtgh!=isurfh )
 	{
-		printf( "resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
+		//printf( "resize ged pickbuf rtgroup<%d %d>\n", isurfw, isurfh);
 		this->SetBufferWidth(isurfw);
 		this->SetBufferHeight(isurfh);
 		tgt->SetSize(0,0,isurfw,isurfh);
@@ -88,6 +88,9 @@ GedVP::~GedVP()
 	{
 		gAllViewports.erase( it );
 	}
+
+    if( mpPickBuffer )
+        delete mpPickBuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,7 +146,7 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	{
 		fbi->Clear( GetClearColorRef(), 1.0f );
 	
-		const ork::rtti::ICastable* pobj = mModel.CurrentObject();
+		auto pobj = mModel.CurrentObject();
 		if( pobj )
 		{
 			GedWidget* pw = mModel.GetGedWidget();
@@ -165,7 +168,6 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 
 	const auto& filtev = EV.mFilteredEvent;
 
-	//ork::tool::ged::ObjModel::FlushAllQueues();
 	int ix = EV.miX;
 	int iy = EV.miY;
 	int ilocx, ilocy;
@@ -182,16 +184,19 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 	bool filt_middlebutton = filtev.mBut1;
 	bool filt_rightbutton = filtev.mBut2;
 
-	QInputEvent* qip = (QInputEvent*) EV.mpBlindEventData;
+	auto qip = (QInputEvent*) EV.mpBlindEventData;
 
 	bool bisshift = EV.mbSHIFT;
 
 	auto locEV = EV;
+
 	locEV.miX = ilocx;
 	locEV.miY = ilocy-miScrollY;
+    locEV.miRawX = locEV.miX;
+    locEV.miRawY = locEV.miY;
 
 	if( mpActiveNode )
-			mpActiveNode->OnUiEvent( locEV );
+		mpActiveNode->OnUiEvent( locEV );
 
 	switch( filtev.miEventCode )
 	{
@@ -258,9 +263,6 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 		}
 		case ui::UIEV_MOVE:
 		{	QMouseEvent* qem = (QMouseEvent*) qip;
-			QPoint mypos(ilocx,ilocy-miScrollY);
-			mypos.setY( mypos.y() - miScrollY );
-			QMouseEvent myme( qem->type(), mypos, qem->button(), qem->buttons(), qem->modifiers() );
 			static int gctr = 0;
 			if( 0 == gctr%4 ) 
 			{	GetPixel( ilocx, ilocy, ctx );
@@ -272,9 +274,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 						mpMouseOverNode = pnode;
 						
 						if( pnode != mpActiveNode )
-						{	pnode->OnUiEvent( locEV );
-							pnode->OnMouseMoved( EV );
-						}
+						  pnode->OnUiEvent( locEV );
 					}
 				}
 			}
@@ -282,24 +282,19 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 			break;
 		}
 		case ui::UIEV_DRAG:
-		{	QMouseEvent* qem = (QMouseEvent*) qip;
-			QPoint mypos(ilocx,ilocy-miScrollY);
-			QMouseEvent myme( qem->type(), mypos, qem->button(), qem->buttons(), qem->modifiers() );
-			//GetPixel( ix, iy, ctx );
-			//ork::Object *pobj = ctx.GetObject(0);
-			//if( pobj )
-			{	//GedItemNode *pnode = rtti::autocast(pobj);
-				//OrkAssert(pnode);
-				if( mpActiveNode )
-				{	mpActiveNode->OnUiEvent( locEV );
-					mpActiveNode->OnMouseMoved( EV );
-					mNeedsSurfaceRepaint=true;
-				}
-				else
-				{
-					//pnode->mouseMoveEvent( & myme );
-				}
-				break;
+		{	if( mpActiveNode )
+			{	
+                if( GedItemNode* as_inode = ork::rtti::autocast(mpActiveNode) )
+                {
+                    locEV.miX -= as_inode->GetX();
+                    locEV.miY -= as_inode->GetY();
+                }
+                mpActiveNode->OnUiEvent( locEV );
+				mNeedsSurfaceRepaint=true;
+			}
+			else
+			{
+				//pnode->mouseMoveEvent( & myme );
 			}
 			break;
 		}
@@ -325,33 +320,29 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 			if( false == is_in_set ) pobj = 0;
 			/////////////////////////////////////
 
-			if( pobj )
 			if(GedObject *pnode = ork::rtti::autocast(pobj))
 			{
-				QPoint mypos(ilocx,ilocy-miScrollY);
-				QMouseEvent myme( qem->type(), mypos, qem->button(), qem->buttons(), qem->modifiers() );
+                if( GedItemNode* as_inode = ork::rtti::autocast(pobj) )
+                {
+                    locEV.miX -= as_inode->GetX();
+                    locEV.miY -= as_inode->GetY();
+                }
 
 				switch( filtev.miEventCode )
 				{
 					case ui::UIEV_PUSH:
 						mpActiveNode = pnode;
 						if( pnode )
-						{	pnode->OnUiEvent( locEV );
-							pnode->OnMouseClicked( locEV );
-						}
+						  pnode->OnUiEvent( locEV );
 						break;
 					case ui::UIEV_RELEASE:
 						if( pnode )
-						{	pnode->OnUiEvent( locEV );
-							pnode->OnMouseReleased( locEV );
-						}
+						  pnode->OnUiEvent( locEV );
 						mpActiveNode = 0;
 						break;
 					case ui::UIEV_DOUBLECLICK:
 						if( pnode )
-						{	pnode->OnUiEvent( locEV );
-							pnode->OnMouseDoubleClicked( locEV );
-						}
+						  pnode->OnUiEvent( locEV );
 						break;
 				}
 			}

@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ENT3D_EDMAINWIN_H 
-#define _ENT3D_EDMAINWIN_H 
+#pragma once 
 
 #include <pkg/ent/editor/editor.h>
 #include <orktool/ged/ged.h>
@@ -79,7 +78,7 @@ public://
 
 	void SigNewObject( ork::Object* pobj );
 
-	bool event(QEvent *qevent); /*virtual*/
+	bool event(QEvent *qevent) final; /*virtual*/
 
 	void QueueLoadScene( const std::string& filename );
 
@@ -171,4 +170,3 @@ inline void EditorMainWindow::NewDataflowViewFloating()
 } // ent
 } // ork
 ///////////////////////////////////////////////////////////////////////////
-#endif

@@ -6,17 +6,15 @@
 # see http://www.gnu.org/licenses/gpl-2.0.html
 ###############################################################################
 
-import glob
-import re
-import string
-import os
-import sys
+import glob, re, string, os, sys
 import ork.build.slnprj
 import ork.build.localopts as localopts
+import ork.build.common as common
+deco = common.deco()
 
 from SCons.Script.SConscript import SConsEnvironment
 
-print "Using Osx Build Env"
+print deco.inf("Using Osx Build Env")
 
 ###############################################################################
 # Python Module Export Declaration
@@ -32,8 +30,8 @@ OsxSdkRoot = localopts.OSXSDKROOT()
 AqsisDir = localopts.AQSISDIR()
 Arch = localopts.ARCH()
 
-print "OSX: using arch<%s>" % Arch
-print "OSX: using xcode<%s>" % XcodeDir
+print deco.inf("OSX: using arch<%s>" % Arch)
+print deco.inf("OSX: using xcode<%s>" % XcodeDir)
 
 
 USE_DEBUG_CXX = False

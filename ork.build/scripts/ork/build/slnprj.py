@@ -237,9 +237,9 @@ class Project:
 
 		############################
 
-		if name in optset:
-			self.XCCFLG += '-O2' #-Ofast '
-			self.XCXXFLG += '-O2' #'-Ofast '
+		if True: #name in optset:
+			self.XCCFLG += '-O3' #-Ofast '
+			self.XCXXFLG += '-O3' #'-Ofast '
 		else:
 			self.XCCFLG += '-O0 '
 			self.XCXXFLG += '-O0 '
