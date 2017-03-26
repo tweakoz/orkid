@@ -10,7 +10,6 @@ Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
 
-#
 TARGET = string.join(COMMAND_LINE_TARGETS)
 is_prep = (TARGET=="prep")
 
@@ -18,23 +17,11 @@ is_prep = (TARGET=="prep")
 
 class tuio:
   def __init__(self):  	
-
 	BasicEnv = Environment( ENV=os.environ )
-	ARGS = cmn.BuildArgs
-	suffix = sln.BuildSuffix(ARGS)
-
 	##########################################
-
 	SRC_FOLDERS  = " . oscpack oscpack/ip oscpack/ip/posix oscpack/osc"
-
 	##########################################
-
-	#XFL = "core lev2 ent fcollada tool"
-	#ORKLIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
-
-	##########################################
-
-	prj = sln.Project(ARGS,BasicEnv,"ork.tuio")
+	prj = sln.Project(BasicEnv,"ork.tuio")
 	prj.SetSrcBase( "src" )
 	prj.AddIncludePaths( "../ork.core/inc/" )
 	prj.AddIncludePaths( "../ork.lev2/inc/" )
@@ -46,15 +33,8 @@ class tuio:
 	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
 	prj.AddDefines( "LINUX" )
 	#########################
-	## common libs
-	#########################
-	#prj.AddLibs( ORKLIBS )
-	#prj.AddLibs( "ork.unittestpp.%s"%suffix )
-	#########################
 	prj.Configure()
 	self.tuio_lib = prj.SharedLibrary( )
-
-	##########################################
 
 ##########################################
 

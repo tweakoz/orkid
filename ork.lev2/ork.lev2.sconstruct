@@ -3,14 +3,8 @@ import ork.build.utils as obu
 import ork.build.common as cmn
 import ork.build.slnprj as sln
 
-#ork_core_lib = Import('ork_core_lib')
-#print ork_core_lib
-#print dir(ork_core_lib)
-#prj_core_lib = ork_core_lib.project
-
 # set scons options ######################
 
-#SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
@@ -23,91 +17,84 @@ is_install = (TARGET=="install")
 #
 
 if is_install:
-	obu.install_headers("inc/ork")
+  obu.install_headers("inc/ork")
 
 # basics #################################
 
 class lev2:
   def __init__(self):
-	ARGS = cmn.BuildArgs
-	suffix = sln.BuildSuffix(ARGS)
 
-	if is_prep:
-		return
+    if is_prep:
+      return
 
-	##########################################
+    ##########################################
 
-	SRC_FOLDERS  = ". aud aud/null input "
-	SRC_FOLDERS += "gfx gfx/camera gfx/gl gfx/gl/cgfx gfx/gl/glfx "
-	SRC_FOLDERS += "gfx/renderer gfx/swrast "
-	SRC_FOLDERS += "gfx/lighting gfx/particle gfx/rib "
-	SRC_FOLDERS += "gfx/proctex gfx/util qtui ui "
+    SRC_FOLDERS  = ". aud aud/null input "
+    SRC_FOLDERS += "gfx gfx/camera gfx/gl gfx/gl/cgfx gfx/gl/glfx "
+    SRC_FOLDERS += "gfx/renderer gfx/swrast "
+    SRC_FOLDERS += "gfx/lighting gfx/particle gfx/rib "
+    SRC_FOLDERS += "gfx/proctex gfx/util qtui ui "
 
-	##########################################
+    ##########################################
 
-	prj_lib = sln.Project(ARGS,BasicEnv,"ork.lev2")
-	prj_lib.SetSrcBase( "src" )
-	prj_lib.AddIncludePaths( "inc/" )
-	prj_lib.AddIncludePaths( "../ork.core/inc" )
-	prj_lib.AddIncludePaths( "../ork.tuio/src" )
-	prj_lib.AddIncludePaths( "../ork.tuio/src/oscpack" )
-	prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
-	prj_lib.AddIncludePaths( "/usr/include/qt4" )
-	prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
-	#prj_lib.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
-	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
-	#########################
-	## OSX libs
-	#########################
-	if prj_lib.IsOsx:
-		prj_lib.AddFolders( SRC_FOLDERS, "*.mm" )
-		prj_lib.AddFrameworks("OpenGL QtCore QtGui" )
-		prj_lib.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
-		prj_lib.AddFrameworks("Carbon Foundation ApplicationServices" )
-		prj_lib.AddFrameworks("AppKit QuartzComposer")
-        	# MultitouchSupport
-	########################
-	## IX libs
-	########################
-	else:
-		prj_lib.AddLibs( "GL QtCore QtGui" )
-	#	prj_lib.AddLibs( "GL Cg CgGL QtCore QtGui OpenImageIO" )
-	########################
-	## Common libs
-	########################
-	prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util" )
-	#prj_lib.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
-	
-	if False:
-		prj_lib.AddLibs( " 3delight rihelper " )
+    prj_lib = sln.Project(BasicEnv,"ork.lev2")
+    prj_lib.SetSrcBase( "src" )
+    prj_lib.AddIncludePaths( "inc/" )
+    prj_lib.AddIncludePaths( "../ork.core/inc" )
+    prj_lib.AddIncludePaths( "../ork.tuio/src" )
+    prj_lib.AddIncludePaths( "../ork.tuio/src/oscpack" )
+    prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
+    prj_lib.AddIncludePaths( "/usr/include/qt4" )
+    prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
+    prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
+    #########################
+    ## OSX libs
+    #########################
+    if prj_lib.IsOsx:
+      prj_lib.AddFolders( SRC_FOLDERS, "*.mm" )
+      prj_lib.AddFrameworks("OpenGL QtCore QtGui" )
+      prj_lib.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
+      prj_lib.AddFrameworks("Carbon Foundation ApplicationServices" )
+      prj_lib.AddFrameworks("AppKit QuartzComposer")
+            # MultitouchSupport
+    ########################
+    ## IX libs
+    ########################
+    else:
+      prj_lib.AddLibs( "GL QtCore QtGui" )
+    ########################
+    ## Common libs
+    ########################
+    prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util" )
+    
+    if False:
+      prj_lib.AddLibs( " 3delight rihelper " )
 
-	prj_lib.AddLibs( "ork.core.%s"%suffix )
-	prj_lib.AddLibs( "ork.tuio.%s"%suffix )
-	prj_lib.Configure()
-	self.lev2_lib = prj_lib.SharedLibrary()
+    prj_lib.AddLibsWithSuffix( "ork.core ork.tuio" )
+    prj_lib.Configure()
+    self.lev2_lib = prj_lib.SharedLibrary()
 
-	##########################################
+    ##########################################
 
-	prj_test = sln.Project(ARGS,BasicEnv,"ork.lev2.test")
-	prj_test.SetSrcBase( "src" )
-	prj_test.AddIncludePaths( "inc/" )
-	prj_test.AddIncludePaths( "../ork.core/inc" )
-	prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
-	prj_test.AddFolders( "test", "*.cpp" )
-	prj_test.AddProjectDep( prj_lib )
-	#prj_test.AddLibs( "ork.core.%s"%suffix )
-	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
-	prj_test.AddFrameworks("OpenGL QtCore QtGui" )
-	prj_test.Configure()
+    prj_test = sln.Project(BasicEnv,"ork.lev2.test")
+    prj_test.SetSrcBase( "src" )
+    prj_test.AddIncludePaths( "inc/" )
+    prj_test.AddIncludePaths( "../ork.core/inc" )
+    prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
+    prj_test.AddFolders( "test", "*.cpp" )
+    prj_test.AddProjectDep( prj_lib )
+    prj_test.AddLibsWithSuffix( "ork.unittestpp" )
+    if prj_test.IsOsx:
+      prj_test.AddFrameworks("OpenGL QtCore QtGui" )
+    prj_test.Configure()
 
-	self.prg = prj_test.Program( )
-	Depends(self.prg,self.lev2_lib)
-
+    self.prg = prj_test.Program( )
+    Depends(self.prg,self.lev2_lib)
 
 #####################
 
 a = lev2()
 ret = list()
 if False==is_prep:
-	ret += a.lev2_lib
+  ret += a.lev2_lib
 Return('ret')

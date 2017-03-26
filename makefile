@@ -1,33 +1,35 @@
+SITEDIR = --site-dir ./ork.build/site_scons
+SCONSFILE = -f root.sconstruct
 all:
-	scons -f root.sconstruct --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) $(SITEDIR)
 
 j1:
-	scons -f root.sconstruct --jobs=1 --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) --jobs=1 $(SITEDIR)
 
-dbg:
-	scons -f root.sconstruct debug --site-dir ./ork.build/site_scons
+debug:
+	scons $(SCONSFILE) debug=1 $(SITEDIR)
 
 fast:
-	scons -f root.sconstruct fast --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) fast $(SITEDIR)
 
 prep:
-	scons -f root.sconstruct prep --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) prep $(SITEDIR)
 
 env:
 	./ork.build/bin/ork.build.init_env.py
 
 get:
 	mkdir -p ./stage/downloads
-	scons -f root.sconstruct get --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) get $(SITEDIR)
 
 boost:
-	scons -f root.sconstruct boost --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) boost $(SITEDIR)
 
 ilm:
-	scons -f root.sconstruct ilm --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) ilm $(SITEDIR)
 
 oiio:
-	scons -f root.sconstruct oiio --site-dir ./ork.build/site_scons
+	scons $(SCONSFILE) oiio $(SITEDIR)
 
 ext:
 	make boost
@@ -52,7 +54,7 @@ pristine:
 	tozkit_deps_build.py clean
 
 clean:
-	scons -c -f root.sconstruct --site-dir ./ork.build/site_scons
+	scons -c $(SCONSFILE) $(SITEDIR)
 	rm -rf stage/include/ork
 	rm -rf stage/include/orktool
 	rm -rf stage/include/pkg
@@ -63,4 +65,4 @@ assets:
 	./do_assets.py
 	
 install:
-	scons -f root.sconstruct install
+	scons $(SCONSFILE) install

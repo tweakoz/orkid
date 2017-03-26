@@ -17,79 +17,70 @@ is_install = (TARGET=="install")
 #
 
 if is_install:
-	obu.install_headers("inc/pkg")
+  obu.install_headers("inc/pkg")
 
 # basics #################################
 
 class ent:
 
   def __init__(self):
-	BasicEnv = Environment( ENV=os.environ )
-	ARGS = cmn.BuildArgs
+    BasicEnv = Environment( ENV=os.environ )
 
-	if is_prep:
-		return
+    if is_prep:
+      return
 
-	##########################################
+    ##########################################
 
-	SRC_FOLDERS  = ". event "
+    SRC_FOLDERS  = ". event "
 
-	suffix = sln.BuildSuffix(ARGS)
-        #print suffix
-        XFL  = "bullet-2.73-math bullet-2.73-collision "
-        XFL += "bullet-2.73-dynamics bullet-2.73-extras "
-        
-        bullet_libs = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
+    XFL  = "bullet-2.73-math bullet-2.73-collision "
+    XFL += "bullet-2.73-dynamics bullet-2.73-extras "
+    XFL += "core lev2 lua luabind "        
 
-	XFL = "core lev2 lua luabind"
-	LIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
-	LIBS += "%s " % bullet_libs
+    LIBS = sln.xflibnams("ork.%s ",XFL)
 
-	##########################################
+    ##########################################
 
-	prj = sln.Project(ARGS,BasicEnv,"ork.ent")
-	prj.SetSrcBase( "src" )
-	prj.AddIncludePaths( "../ork.core/inc/" )
-	prj.AddIncludePaths( "../ork.lev2/inc/" )
-	prj.AddIncludePaths( "../ork.lua/inc/" )
-	prj.AddIncludePaths( "../ork.luabind/inc/" )
-	prj.AddIncludePaths( "inc" )
-	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
-	prj.AddIncludePaths( "/usr/include/qt4" )
-	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
-	prj.AddLibPaths( "%s/lib"%sln.stage_dir )
-	#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
-	prj.AddLibs( LIBS )
-	prj.AddLibs( "OpenImageIO OpenImageIO_Util" )
-	#prj.AddLibs( ' boost_system-mt boost_filesystem-mt boost_thread-mt' )
-	#prj.AddLibs( "ork.tool.osx.release" )
-	prj.Configure()
-	self.ent_lib = prj.SharedLibrary( )
-	##########################################
+    prj = sln.Project(BasicEnv,"ork.ent")
+    prj.SetSrcBase( "src" )
+    prj.AddIncludePaths( "../ork.core/inc/" )
+    prj.AddIncludePaths( "../ork.lev2/inc/" )
+    prj.AddIncludePaths( "../ork.lua/inc/" )
+    prj.AddIncludePaths( "../ork.luabind/inc/" )
+    prj.AddIncludePaths( "inc" )
+    prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
+    prj.AddIncludePaths( "/usr/include/qt4" )
+    prj.AddFolders( SRC_FOLDERS, "*.cpp" )
+    prj.AddLibPaths( "%s/lib"%sln.stage_dir )
+    prj.AddLibsWithSuffix( LIBS )
+    prj.AddLibs( "OpenImageIO OpenImageIO_Util" )
 
-	prj_test = sln.Project(ARGS,BasicEnv,"ork.ent.test")
-	prj_test.SetSrcBase( "src" )
-	prj_test.AddIncludePaths( "inc" )
-	prj_test.AddIncludePaths( "../ork.core/inc/" )
-	prj_test.AddIncludePaths( "../ork.lev2/inc/" )
-	prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
-	#prj_test.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
-	prj_test.AddFolders( "test", "*.cpp" )
-	prj_test.AddLibs( LIBS )
-	prj_test.AddLibs( "ork.ent.%s"%suffix )
-	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
-	prj_test.AddProjectDep( prj )
-	prj_test.Configure()
-	self.test_prg = prj_test.Program( )
-	Depends( self.test_prg, self.ent_lib )
+    prj.Configure()
+    self.ent_lib = prj.SharedLibrary( )
+
+    ##########################################
+
+    prj_test = sln.Project(BasicEnv,"ork.ent.test")
+    prj_test.SetSrcBase( "src" )
+    prj_test.AddIncludePaths( "inc" )
+    prj_test.AddIncludePaths( "../ork.core/inc/" )
+    prj_test.AddIncludePaths( "../ork.lev2/inc/" )
+    prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
+    prj_test.AddFolders( "test", "*.cpp" )
+    prj_test.AddLibsWithSuffix( LIBS )
+    prj_test.AddLibsWithSuffix( "ork.ent ork.unittestpp" )
+    prj_test.AddProjectDep( prj )
+    prj_test.Configure()
+    self.test_prg = prj_test.Program( )
+    Depends( self.test_prg, self.ent_lib )
 
 ##########################################
 
 a = ent()
 ret = list()
 if False==is_prep:
-	ret += a.ent_lib
-	ret += a.test_prg
+  ret += a.ent_lib
+  ret += a.test_prg
 Return('ret')
 
 ##########################################

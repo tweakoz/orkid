@@ -20,35 +20,29 @@ class tweakout:
   def __init__(self):  	
 
 	BasicEnv = Environment( ENV=os.environ )
-	ARGS = cmn.BuildArgs
-	suffix = sln.BuildSuffix(ARGS)
 
 	##########################################
 
-	SRC_FOLDERS  = " . "
+	ORKLIBS = sln.xflibnams("ork.%s ", "core lev2 ent fcollada " +
+                                       "bullet-2.73-math bullet-2.73-collision " +
+                                       "bullet-2.73-dynamics bullet-2.73-extras " )
 
 	##########################################
 
-	XFL = "core lev2 ent fcollada "
-	XFL += "bullet-2.73-math bullet-2.73-collision "
-	XFL += "bullet-2.73-dynamics bullet-2.73-extras "
-	ORKLIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
-
-	##########################################
-
-	prj = sln.Project(ARGS,BasicEnv,"tweakout")
+	prj = sln.Project(BasicEnv,"tweakout")
 	prj.SetSrcBase( "src" )
-	prj.AddIncludePaths( "../ork.core/inc/" )
-	prj.AddIncludePaths( "../ork.lev2/inc/" )
-	prj.AddIncludePaths( "../ork.ent/inc/" )
-	prj.AddIncludePaths( "../ork.tool/inc/" )
-	prj.AddIncludePaths( "inc" )
-	prj.AddIncludePaths( "src" )
+
+	prj.AddIncludePaths( "../ork.core/inc/ " +
+	                     "../ork.lev2/inc/ " + 
+	                     "../ork.ent/inc/ " +
+ 	                     "../ork.tool/inc/ " +
+	                     "inc src" )
+
 	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
 	prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
 	prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
 	prj.AddIncludePaths( "/usr/include/qt4" )
-	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
+	prj.AddFolders( " . ", "*.cpp" )
 	prj.AddDefines( "LINUX" )
 	#########################
 	## OSX libs
@@ -67,7 +61,7 @@ class tweakout:
 	#########################
 	## common libs
 	#########################
-	prj.AddLibs( ORKLIBS )
+	prj.AddLibsWithSuffix( ORKLIBS )
 	prj.AddLibs( "OpenImageIO OpenImageIO_Util" )
 	#########################
 	prj.Configure()

@@ -1,17 +1,17 @@
-import os, glob, string
+import os, glob, string, sys
 import ork.build.utils as obu
 import ork.build.slnprj as sln
-import sys
 
 AddOption('--build', default='stage')
 Decider('MD5-timestamp')
 #VariantDir( 'obj', 'src' )
 SetOption('num_jobs', obu.num_cores) 
-sln.optset.add("ork.core")
+
+os.environ["build_debug"] = str(ARGUMENTS.get('debug', 0))
+
 BasicEnv = Environment( ENV=os.environ )
 
 TARGET = COMMAND_LINE_TARGETS
-
 #####################################################
 
 def refprj(str):
@@ -68,6 +68,7 @@ DeclDep( ent, utpp )
 DeclDep( ent, lua )
 DeclDep( ent, luabind )
 DeclDep( tout, ent )
+DeclDep( tout, fcol )
 DeclDep( tool, core )
 DeclDep( tool, lev2 )
 DeclDep( tool, tuio )

@@ -20,7 +20,7 @@ is_fast = (TARGET=="fast")
 #
 
 if is_prep:
-	obu.install_headers("ext/fcollada")
+  obu.install_headers("ext/fcollada")
 
 skip_fcollada = (is_prep or is_fast)
 
@@ -29,44 +29,31 @@ skip_fcollada = (is_prep or is_fast)
 class collada:
   def __init__(self):
 
-  	if skip_fcollada:
-  		return
+    if skip_fcollada:
+      return
 
-	ARGS = cmn.BuildArgs
+  ##########################################
 
+    BasicEnv = Environment( ENV=os.environ )
 
-
-	BasicEnv = Environment( ENV=os.environ )
-
-	##########################################
-
-	ColladaDir = "ext/fcollada"
-
-	##########################################
-
-	prj = sln.Project(ARGS,BasicEnv,"ork.fcollada")
-	prj.SetSrcBase( "ext/fcollada" )
-	prj.AddIncludePaths( "ext/fcollada/FCollada" )
-	prj.AddIncludePaths( "ext/fcollada/FCollada/LibXML/include/" )
-	prj.AddFolders( ". FCollada/LibXML", "*.c" )
-	prj.AddFolders( "FCollada FCollada/FCDocument", "*.cpp" )
-	prj.AddFolders( "FCollada/FMath FCollada/FUtils", "*.cpp" )
-	prj.AddFolders( "FCollada/Output FColladaPlugins/FArchiveXML", "*.cpp" )
-	#prj.AddDefines( "NDEBUG LINUX" )
-	prj.AddDefines( "_DEBUG LINUX" )
-	prj.Configure()
-	self.coll_lib = prj.SharedLibrary( )
-
-	##########################################
-
-	#os.system( "mkdir -p %s/include/fcollada" % obu.stage_dir )
-	#os.system( "cp -r ext/fcollada/* %s/include/fcollada/" % (obu.stage_dir) )
+    prj = sln.Project(BasicEnv,"ork.fcollada")
+    prj.SetSrcBase( "ext/fcollada" )
+    prj.AddIncludePaths( "ext/fcollada/FCollada" )
+    prj.AddIncludePaths( "ext/fcollada/FCollada/LibXML/include/" )
+    prj.AddFolders( ". FCollada/LibXML", "*.c" )
+    prj.AddFolders( "FCollada FCollada/FCDocument", "*.cpp" )
+    prj.AddFolders( "FCollada/FMath FCollada/FUtils", "*.cpp" )
+    prj.AddFolders( "FCollada/Output FColladaPlugins/FArchiveXML", "*.cpp" )
+    #prj.AddDefines( "NDEBUG LINUX" )
+    prj.AddDefines( "LINUX" )
+    prj.Configure()
+    self.coll_lib = prj.SharedLibrary( )
 
 ################################
 
 a = collada()
 ret = list()
 if False==skip_fcollada:
-	ret += a.coll_lib
+  ret += a.coll_lib
 Return('ret')
 

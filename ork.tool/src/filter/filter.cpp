@@ -58,7 +58,7 @@ public: //
 	VolTexAssembleFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		VolTexAssemble( toklist );
 		return true;
@@ -75,7 +75,7 @@ public: //
 	QtzComposerToPngFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		QtzComposerToPng( toklist );
 		return true;
@@ -97,7 +97,7 @@ public: //
 	TGADDSFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		return Tga2DdsFilterDriver( toklist );
 	}
@@ -113,7 +113,7 @@ public: //
 	UvAtlasFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		MeshUtil::GenerateUVAtlas( toklist );
 		return true;
@@ -129,7 +129,7 @@ public: //
 	Tex2VtxBakeFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		MeshUtil::TexToVtx( toklist );
 		return true;
@@ -148,7 +148,7 @@ public: //
 	fg3dFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		MeshUtil::PartitionMesh_FixedGrid3d_Driver( toklist );
 		return true;
@@ -166,7 +166,7 @@ public: //
 	WAVMKRFilter(  )
 	{
 	}
-	virtual bool ConvertAsset( const tokenlist& toklist )
+	bool ConvertAsset( const tokenlist& toklist ) final
 	{
 		return ork::tool::WavToMkr( toklist );
 	}
