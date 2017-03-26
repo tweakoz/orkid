@@ -26,8 +26,6 @@ if is_install:
 
 class core:
   def __init__(self):
-	ARGS = cmn.BuildArgs
-	suffix = sln.BuildSuffix(ARGS)
 	##########################################
 
 	SRC_FOLDERS  = "application asset dataflow "
@@ -37,15 +35,12 @@ class core:
 	SRC_FOLDERS += "reflect reflect/serialize "
 	SRC_FOLDERS += "util util/dependency ."
 
-	LIBS = ' '#boost_system-mt boost_filesystem-mt boost_thread-mt'
-
 	##########################################
 
 	if False==is_prep:
-		prj_core_lib = sln.Project(ARGS,BasicEnv,"ork.core")
+		prj_core_lib = sln.Project(BasicEnv,"ork.core")
 		prj_core_lib.SetSrcBase( "src" )
 		prj_core_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
-		prj_core_lib.AddLibs( LIBS )
 		prj_core_lib.AddFrameworks("Foundation")
 		prj_core_lib.AddIncludePaths( "inc/" )
 		prj_core_lib.Configure()
@@ -53,18 +48,16 @@ class core:
 
 		##########################################
 
-		prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")
+		prj_test = sln.Project(BasicEnv,"ork.core.test")
 		prj_test.SetSrcBase( "src" )
 		prj_test.AddFolders( "test", "*.cpp" )
-		prj_test.AddLibs( LIBS )
-		prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
+		prj_test.AddLibsWithSuffix( "ork.unittestpp" )
 		prj_test.AddProjectDep( prj_core_lib )
 		prj_test.AddIncludePaths( "inc/" )
 		prj_test.Configure()
 		self.test_prg = prj_test.Program( )
 		prj_test.AddProjectDep( prj_core_lib )
 		Depends(self.test_prg,self.core_lib)
-		#prj_test.AddProjectDep( upp_lib )
 
 ##########################
 

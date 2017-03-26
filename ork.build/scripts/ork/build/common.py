@@ -12,33 +12,33 @@ import ansi.color.fx as afx
 from ansi.color import fg, bg
 from ansi.color.rgb import rgb256
 
-is_tty = sys.stdout.isatty()
-
-SYSTEM = platform.system()
 ###############################################################################
+# Python Module Export Declaration
+
+__all__ =   [
+            "builddir_replace","globber", "DumpBuildEnv", "SetCompilerOptions",
+            "SourceEnumerator", "RunUnitTest", "Project", "orkpath", "posixpath",
+            "msplit", "recursive_glob", "deco"
+            ]
+
+__version__ = "1.0"
+
+###############################################################################
+is_tty = sys.stdout.isatty()
+SYSTEM = platform.system()
 IsOsx = (SYSTEM=="Darwin")
 IsIx = (SYSTEM=="Linux") or IsOsx
-#print "IsIx<%s>" % IsIx
-#print "IsOsx<%s>" % IsOsx
 TargetPlatform = "ix"
 if IsOsx:
   TargetPlatform = "osx"
 ###############################################################################
-BuildArgs = dict()
-BuildArgs["PLATFORM"] = TargetPlatform
-BuildArgs["BUILD"] = "release"
-
-###############################################################################
-# Python Module Export Declaration
-
-__all__ =	[
-			"builddir_replace","globber", "DumpBuildEnv", "SetCompilerOptions",
-			"SourceEnumerator", "RunUnitTest", "Project", "orkpath", "posixpath",
-			"msplit", "recursive_glob", "deco"
-			]
-
-__version__ = "1.0"
-
+def BuildArgs():
+    rval = dict()
+    rval["PLATFORM"] = TargetPlatform
+    rval["BUILD"] = "release"
+    if "build_debug" in os.environ and (os.environ["build_debug"]=="1"):
+        rval["BUILD"] = "debug"
+    return rval
 ###############################################################################
 # INIT local options
 ###############################################################################
@@ -172,15 +172,6 @@ def orkpath(posix_path):
 	
 ###############################################################################
 
-def cygpath(output_type, str):
-	if sys.platform == 'cygwin':
-		if str[-1] == '\\': str = str[:-1]
-		fin, fout = os.popen4('cygpath -%s "%s"' % (output_type, str))
-		str = fout.read().rstrip()
-	return str
-
-###############################################################################
-
 def posixpath(path):
 	return '/'.join(os.path.normpath(path).split(os.sep))
 
@@ -204,7 +195,7 @@ class deco:
     def val(self,string):
         return fg.white(string)+afx.reset("")
     def path(self,string):
-        return rgb256(255,192,64)+(string)+afx.reset("")
+        return rgb256(255,255,128)+(string)+afx.reset("")
     def warn(self,string):
         return fg.yellow(string)+afx.reset("")
     def err(self,string):

@@ -17,105 +17,99 @@ is_install = (TARGET=="install")
 #
 
 if is_install:
-	obu.install_headers("inc/orktool")
-	obu.install_headers("inc/pkg")
+  obu.install_headers("inc/orktool")
+  obu.install_headers("inc/pkg")
 
 ##########################################
 
 class orktool:
-  def __init__(self):  	
+  def __init__(self):   
 
-	if is_prep:
-		return
+    if is_prep:
+      return
 
-	BasicEnv = Environment( ENV=os.environ )
-	ARGS = cmn.BuildArgs
-	suffix = sln.BuildSuffix(ARGS)
+    BasicEnv = Environment( ENV=os.environ )
 
-	##########################################
+    ##########################################
 
-	SRC_FOLDERS  = " . manip qtui toolcore ged "
-	SRC_FOLDERS += " filter filter/scene filter/aud "
-	SRC_FOLDERS += " filter/gfx filter/gfx/nvtt filter/gfx/texture "
-	SRC_FOLDERS += " filter/gfx/tristripper filter/gfx/collada "
-	SRC_FOLDERS += " filter/gfx/meshutil ent ent/manip"
+    SRC_FOLDERS  = " . manip qtui toolcore ged "
+    SRC_FOLDERS += " filter filter/scene filter/aud "
+    SRC_FOLDERS += " filter/gfx filter/gfx/nvtt filter/gfx/texture "
+    SRC_FOLDERS += " filter/gfx/tristripper filter/gfx/collada "
+    SRC_FOLDERS += " filter/gfx/meshutil ent ent/manip"
 
-	##########################################
+    ORKLIBS = sln.xflibnams("ork.%s ","core lev2 ent fcollada" )
 
-	XFL = "core lev2 ent fcollada"
-	ORKLIBS = sln.xflibnams("ork.%%s.%s "%suffix,XFL)
+    ##########################################
 
-	##########################################
+    prj = sln.Project(BasicEnv,"ork.tool")
+    prj.SetSrcBase( "src" )
+    prj.AddIncludePaths( "../ork.core/inc/" )
+    prj.AddIncludePaths( "../ork.lev2/inc/" )
+    prj.AddIncludePaths( "../ork.ent/inc/" )
+    prj.AddIncludePaths( "inc" )
+    prj.AddIncludePaths( "src" )
+    prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
+    prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
+    prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
+    prj.AddIncludePaths( "/usr/include/qt4" )
+    prj.AddFolders( SRC_FOLDERS, "*.cpp" )
+    prj.AddDefines( "LINUX" )
+    #########################
+    ## OSX libs
+    #########################
+    if prj.IsOsx:
+      #print "osx"
+      prj.AddFrameworks("OpenGL QtCore QtGui" )
+      prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
+      prj.AddFrameworks("Carbon Foundation ApplicationServices" )
+      prj.AddFrameworks("AppKit QuartzComposer")
+    #########################
+    ## IX libs
+    #########################
+    elif prj.IsIx:
+      LIBS = "GL QtCore QtGui xcb OpenImageIO OpenImageIO_Util"
+      #LIBS += " rihelper 3delight "
+      #prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
+      prj.AddLibs( LIBS )
+    #########################
+    ## common libs
+    #########################
+    prj.AddLibsWithSuffix( ORKLIBS )
+    prj.AddLibsWithSuffix( "libtweakout" )
+    prj.AddLibsWithSuffix( "ork.unittestpp" )
+    #########################
+    prj.Configure()
+    self.tool_lib = prj.SharedLibrary( )
 
-	prj = sln.Project(ARGS,BasicEnv,"ork.tool")
-	prj.SetSrcBase( "src" )
-	prj.AddIncludePaths( "../ork.core/inc/" )
-	prj.AddIncludePaths( "../ork.lev2/inc/" )
-	prj.AddIncludePaths( "../ork.ent/inc/" )
-	prj.AddIncludePaths( "inc" )
-	prj.AddIncludePaths( "src" )
-	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
-	prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
-	prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
-	prj.AddIncludePaths( "/usr/include/qt4" )
-	prj.AddFolders( SRC_FOLDERS, "*.cpp" )
-	prj.AddDefines( "LINUX" )
-	#########################
-	## OSX libs
-	#########################
-	if prj.IsOsx:
-		#print "osx"
-		prj.AddFrameworks("OpenGL QtCore QtGui" )
-		prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
-		prj.AddFrameworks("Carbon Foundation ApplicationServices" )
-		prj.AddFrameworks("AppKit QuartzComposer")
-	#########################
-	## IX libs
-	#########################
-	elif prj.IsIx:
-		LIBS = "GL QtCore QtGui xcb OpenImageIO OpenImageIO_Util"
-		#LIBS += " rihelper 3delight "
-		#prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
-		prj.AddLibs( LIBS )
-	#########################
-	## common libs
-	#########################
-	prj.AddLibs( ORKLIBS )
-	prj.AddLibs( "libtweakout.%s"%suffix )
-	prj.AddLibs( "ork.unittestpp.%s"%suffix )
-	#########################
-	prj.Configure()
-	self.tool_lib = prj.SharedLibrary( )
+    ##########################################
 
-	##########################################
+    #print bullet_libs
 
-	#print bullet_libs
-
-	prj_test = sln.Project(ARGS,BasicEnv,"ork.tool.test")
-	prj_test.SetSrcBase( "src" )
-	prj_test.AddIncludePaths( "../ork.core/inc/" )
-	prj_test.AddIncludePaths( "../ork.lev2/inc/" )
-	prj_test.AddIncludePaths( "../ork.ent/inc/" )
-	prj_test.AddIncludePaths( "inc" )
-	prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
-	prj_test.AddIncludePaths( "/usr/include/qt4" )
-	prj_test.AddIncludePaths( "%s/include/bullet/src"%sln.stage_dir )
-	prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
-	#prj_test.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
-	prj_test.AddFolders( "test", "*.cpp" )
-	prj_test.AddLibs( "ork.unittestpp.%s"%suffix )
-	prj_test.AddLibs( ORKLIBS )
-	prj_test.AddProjectDep( prj )
-	prj_test.Configure()
-	self.test_prg = prj_test.Program()
-	Depends( self.test_prg, self.tool_lib )
+    prj_test = sln.Project(BasicEnv,"ork.tool.test")
+    prj_test.SetSrcBase( "src" )
+    prj_test.AddIncludePaths( "../ork.core/inc/" )
+    prj_test.AddIncludePaths( "../ork.lev2/inc/" )
+    prj_test.AddIncludePaths( "../ork.ent/inc/" )
+    prj_test.AddIncludePaths( "inc" )
+    prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
+    prj_test.AddIncludePaths( "/usr/include/qt4" )
+    prj_test.AddIncludePaths( "%s/include/bullet/src"%sln.stage_dir )
+    prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
+    prj_test.AddFolders( "test", "*.cpp" )
+    prj_test.AddLibsWithSuffix( "ork.unittestpp" )
+    prj_test.AddLibsWithSuffix( ORKLIBS )
+    prj_test.AddProjectDep( prj )
+    prj_test.Configure()
+    self.test_prg = prj_test.Program()
+    Depends( self.test_prg, self.tool_lib )
 
 ##########################################
 
 a = orktool()
 ret = list()
 if False==is_prep:
-	ret += a.tool_lib
+  ret += a.tool_lib
 Return('ret')
 
 ##########################################

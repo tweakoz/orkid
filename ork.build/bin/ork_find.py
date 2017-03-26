@@ -1,7 +1,5 @@
 #!/usr/bin/python
-import os
-import sys
-import string
+import os, sys, string
 
 #################################################################################
 
@@ -23,10 +21,10 @@ class result:
 
 #################################################################################
 
-search_extensions  = ".c .cpp .cc"
-search_extensions += ".h .hpp .inl"
-search_extensions += ".m .mm .qml"
-search_extensions += ".py .sconstruct"
+search_extensions  = ".c .cpp .cc "
+search_extensions += ".h .hpp .inl "
+search_extensions += ".m .mm .qml "
+search_extensions += ".py .sconstruct "
 
 search_extension_list = string.split(search_extensions)
 
@@ -36,13 +34,15 @@ def search_at_root(word, root):
  for root, dirs, files in os.walk(root):
   for f in files:
    path = os.path.join(root, f)
+   #print path
    spl = os.path.splitext(path)
    ext = spl[1]
    not_obj = (spl[0].find("/obj/")==-1) and (spl[0].find("/pluginobj/")==-1)
    #print spl[0], fobj
 
    if not_obj:
-    if ext in search_extension_list:
+    is_in_list = ext in search_extension_list
+    if is_in_list:
      for line_number, line in finder(path):
       line = line.replace("\n","")
       res = result(path,line_number,line)

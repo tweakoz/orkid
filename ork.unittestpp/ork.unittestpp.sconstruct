@@ -30,12 +30,11 @@ class upp:
 	if skip_utpp:
 		return
 
-	ARGS = cmn.BuildArgs
 	##########################################
 	SRC_FOLDERS  = " . Posix "
 	LIBS = ''
 	##########################################
-	prj_lib = sln.Project(ARGS,BasicEnv,"ork.unittestpp")
+	prj_lib = sln.Project(BasicEnv,"ork.unittestpp")
 	prj_lib.SetSrcBase( "src" )
 	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
 	prj_lib.AddLibs( LIBS )

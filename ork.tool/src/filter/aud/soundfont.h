@@ -5,9 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#if ! defined( _SOUNDFONT_H )
-# define _SOUNDFONT_H
-           
+#pragma once
+
 #define _USE_SOUNDFONT
 #if defined(_USE_SOUNDFONT)
 
@@ -664,7 +663,7 @@ class SF2XABFilter : public CAssetFilterBase
 	RttiDeclareConcrete(SF2XABFilter,CAssetFilterBase);
 public: //
 	SF2XABFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -674,7 +673,7 @@ class SF2GABFilter : public CAssetFilterBase
 	RttiDeclareConcrete(SF2GABFilter,CAssetFilterBase);
 public: //
 	SF2GABFilter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
+	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -682,4 +681,3 @@ public: //
 } }
 
 #endif // _USE_SOUNDFONT
-#endif

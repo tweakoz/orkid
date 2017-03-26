@@ -283,7 +283,7 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 	pmem[ifilelen] = 0;
 	std::string InObjText( pmem );
 	InObjText += "\n\0";
-	delete pmem;
+	delete[] pmem;
 	
 	char pred('\n');
 	InObjText.erase(std::remove_if(InObjText.begin(), InObjText.end(), dos2unix_Pred(pred)), InObjText.end());

@@ -24,8 +24,6 @@ if is_install:
 
 class luabind:
   def __init__(self):
-	ARGS = cmn.BuildArgs
-	suffix = sln.BuildSuffix(ARGS)
 
 	if is_prep:
 		return
@@ -33,17 +31,15 @@ class luabind:
 	##########################################
 	SRC_FOLDERS  = "."
 	##########################################
-	prj_lib = sln.Project(ARGS,BasicEnv,"ork.luabind")
+	prj_lib = sln.Project(BasicEnv,"ork.luabind")
 	prj_lib.SetSrcBase( "src" )
 	prj_lib.AddIncludePaths( "inc/" )
 	prj_lib.AddIncludePaths( "../ork.lua/inc/" )
 	prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
-	#prj_lib.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
 	prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
 	prj_lib.AddFolders( SRC_FOLDERS, "*.c" )
 	########################
-	prj_lib.AddLibs( "ork.core.%s"%suffix )
-	prj_lib.AddLibs( "ork.lua.%s"%suffix )
+	prj_lib.AddLibsWithSuffix( "ork.core ork.lua" )
 	prj_lib.Configure()
 	self.luabind_lib = prj_lib.SharedLibrary()
 
