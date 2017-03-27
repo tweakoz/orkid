@@ -423,6 +423,7 @@ XgmLocalPose::XgmLocalPose( const XgmSkeleton& Skeleton )
 
 void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 {
+    printf( "BindAnimInst pose<%p>\n", this );
 	if( AnimInst.GetAnim() )
 	{
 		float fweight = AnimInst.GetWeight();
@@ -439,7 +440,9 @@ void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 
 			int iskelindex = mSkeleton.GetJointIndex(JointName);
 
-			printf( "spose jname<%s> iskelindex<%d>\n", JointName.c_str(), iskelindex );
+            int inumjinmap = mSkeleton.mmJointNameMap.size();
+
+			printf( "spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap );
 
 			if(-1 != iskelindex)
 			{
@@ -1232,6 +1235,14 @@ int XgmSkeleton::GetJointIndex(const ork::PoolString &Named) const
 {
 	orklut<PoolString,int>::const_iterator it = mmJointNameMap.find( Named );
 	int index = (it==mmJointNameMap.end()) ? -1 : it->second;
+    if( index == -1 )
+    {
+        printf( "find joint<%s> in map\n", Named.c_str() );
+        for( auto it:mmJointNameMap)
+        {
+            printf( "in map key<%s>\n", it.first.c_str());
+        }
+    }
 	return index;
 }
 

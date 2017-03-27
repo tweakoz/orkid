@@ -24,7 +24,7 @@ class result:
 search_extensions  = ".c .cpp .cc "
 search_extensions += ".h .hpp .inl "
 search_extensions += ".m .mm .qml "
-search_extensions += ".py .sconstruct "
+search_extensions += ".py .sconstruct .dae"
 
 search_extension_list = string.split(search_extensions)
 
@@ -51,7 +51,7 @@ def search_at_root(word, root):
 
 #################################################################################
 
-pathset =  "ork.build ork.core ork.lev2 ork.ent ork.tool ork.fcollada305 tweakout ork.lua ork.luabind"
+pathset =  "ork.build ork.core ork.lev2 ork.ent ork.tool ork.fcollada305 tweakout ork.lua ork.luabind ork.data"
 pathspl = string.split(pathset)
 
 #################################################################################

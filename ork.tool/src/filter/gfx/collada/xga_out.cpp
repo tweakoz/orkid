@@ -233,6 +233,7 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 		int ichnname = chunkwriter.GetStringIndex( ChannelName.c_str() );
 		int iusgname = chunkwriter.GetStringIndex( ChannelUsage.c_str() );
 		
+        printf( "XGAOUT channelname<%s>\n", ChannelName.c_str() );
 		HeaderStream->AddItem( ichnclas );
 		HeaderStream->AddItem( iobjname );
 		HeaderStream->AddItem( ichnname );
