@@ -122,10 +122,10 @@
                                     <object type='EditorCamControllerData' id='13'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='14'>
-                                                <property name='Center'>1.01458 -3.18799 9.66058</property>
+                                                <property name='Center'>-1.99455 7.86466 0.370671</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>107.383</property>
-                                                <property name='QuatC'>-0.107485 0.738036 -0.177973 -0.642021</property>
+                                                <property name='Loc'>82.6989</property>
+                                                <property name='QuatC'>-0.0408169 0.755683 -0.0570266 -0.651261</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>

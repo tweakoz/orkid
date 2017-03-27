@@ -97,6 +97,10 @@ CompositingManagerComponentInst::CompositingManagerComponentInst( const Composit
 {
 }
 
+CompositingManagerComponentInst::~CompositingManagerComponentInst()
+{
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ent::CompositingComponentInst* CompositingManagerComponentInst::GetCompositingComponentInst( int icidx ) const
@@ -116,6 +120,15 @@ ent::CompositingComponentInst* CompositingManagerComponentInst::GetCompositingCo
 void CompositingManagerComponentInst::AddCCI( CompositingComponentInst* cci )
 {
 	mCCIs.push_back(cci);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompositingManagerComponentInst::RemoveCCI( CompositingComponentInst* cci )
+{
+    mCCIs.erase(std::remove_if(mCCIs.begin(), 
+                               mCCIs.end(),
+                               [&cci](CompositingComponentInst* x){return (x==cci);}));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -362,6 +375,8 @@ CompositingComponentInst::CompositingComponentInst( const CompositingComponentDa
 	, miActiveSceneItem(0)
 	, mfTimeAccum(0.0f)
 {
+    assert(&data!=nullptr);
+
 	SceneInst* psi = pent->GetSceneInst();
 }
 
@@ -409,6 +424,8 @@ bool CompositingComponentInst::DoLink(ork::ent::SceneInst *psi)
 
 void CompositingComponentInst::DoUnLink(SceneInst *psi)
 {
+    if(mpCMCI)
+        mpCMCI->RemoveCCI(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

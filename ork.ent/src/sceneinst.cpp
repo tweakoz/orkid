@@ -143,6 +143,7 @@ SceneInst::SceneInst( const SceneData* sdata, Application *application )
 ///////////////////////////////////////////////////////////////////////////////
 SceneInst::~SceneInst()
 {
+    printf( "deleting sceneinst <%p>\n", this );
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	DrawableBuffer::BeginClearAndSyncReaders();
 	for( orkmap<PoolString,Entity*>::iterator it=mEntities.begin(); it!=mEntities.end(); it++ )
@@ -160,6 +161,7 @@ SceneInst::~SceneInst()
 
 		if( pSCI )
 		{
+            printf( "deleting SceneComponentInst <%p>\n", pSCI );
 			delete pSCI;
 		}
 	}

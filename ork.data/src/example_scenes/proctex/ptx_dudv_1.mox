@@ -18,8 +18,8 @@
                                                         <property name='Elevation'>0</property>
                                                         <property name='Far'>100</property>
                                                         <property name='Near'>1</property>
-                                                        <property name='Radius'>15</property>
-                                                        <property name='SpinRate'>1</property>
+                                                        <property name='Radius'>3</property>
+                                                        <property name='SpinRate'>0</property>
                                                     </object>
                                                 </reference>
                                             </item>
@@ -40,23 +40,32 @@
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
                                     <object type='ProcTexControllerData' id='5'>
+                                        <property name='BufferDim'>256</property>
+                                        <property name='FrameRate'>0</property>
+                                        <property name='Output'>
+                                            <reference category='ObjectClass'>
+                                                <object type='ProcTexOutputQuad' id='6'>
+                                                    <property name='Scale'>1</property>
+                                                </object>
+                                            </reference>
+                                        </property>
                                         <property name='Template'>
-                                            <object type='proctex' id='6'>
+                                            <object type='proctex' id='7'>
                                                 <property name='Modules'>
                                                     <item key='addgr'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::ImgOp2' id='7'>
+                                                            <object type='proctex::ImgOp2' id='8'>
                                                                 <property name='mgvpos'>120 -130</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='8'>
+                                                                    <object type='proctex::OutImgPlug' id='9'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='InputA'>
-                                                                    <object type='proctex::InImgPlug' id='9'>
+                                                                    <object type='proctex::InImgPlug' id='10'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='InputB'>
-                                                                    <object type='proctex::InImgPlug' id='10'>
+                                                                    <object type='proctex::InImgPlug' id='11'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Op'>"EIO2_ADD"</property>
@@ -65,17 +74,17 @@
                                                     </item>
                                                     <item key='g'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Global' id='11'>
+                                                            <object type='proctex::Global' id='12'>
                                                                 <property name='mgvpos'>-160 -130</property>
                                                             </object>
                                                         </reference>
                                                     </item>
                                                     <item key='grX'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Gradient' id='12'>
+                                                            <object type='proctex::Gradient' id='13'>
                                                                 <property name='mgvpos'>120 -200</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='13'>
+                                                                    <object type='proctex::OutImgPlug' id='14'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
@@ -83,7 +92,7 @@
                                                                 <property name='RepeatMode'>"EGS_REPEAT"</property>
                                                                 <property name='Type'>"EGT_HORIZONTAL"</property>
                                                                 <property name='gradient'>
-                                                                    <object type='GradientV4' id='14'>
+                                                                    <object type='GradientV4' id='15'>
                                                                         <property name='points'>
                                                                             <item key='0'>0 0 0 1</item>
                                                                             <item key='1'>0.996094 0.0117188 0 0.996094</item>
@@ -95,10 +104,10 @@
                                                     </item>
                                                     <item key='grY'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Gradient' id='15'>
+                                                            <object type='proctex::Gradient' id='16'>
                                                                 <property name='mgvpos'>200 -130</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='16'>
+                                                                    <object type='proctex::OutImgPlug' id='17'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
@@ -106,7 +115,7 @@
                                                                 <property name='RepeatMode'>"EGS_REPEAT"</property>
                                                                 <property name='Type'>"EGT_VERTICAL"</property>
                                                                 <property name='gradient'>
-                                                                    <object type='GradientV4' id='17'>
+                                                                    <object type='GradientV4' id='18'>
                                                                         <property name='points'>
                                                                             <item key='0'>0 0.996094 0.0976562 0.996094</item>
                                                                             <item key='0.464684'>0.0214844 0.498047 0 0.998047</item>
@@ -119,21 +128,22 @@
                                                     </item>
                                                     <item key='k'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Gradient' id='18'>
+                                                            <object type='proctex::Gradient' id='19'>
                                                                 <property name='mgvpos'>10 -200</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='19'>
+                                                                    <object type='proctex::OutImgPlug' id='20'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
-                                                                <property name='Repeat'>12</property>
+                                                                <property name='Repeat'>8</property>
                                                                 <property name='RepeatMode'>"EGS_PINGPONG"</property>
-                                                                <property name='Type'>"EGT_RADIAL"</property>
+                                                                <property name='Type'>"EGT_CONICAL"</property>
                                                                 <property name='gradient'>
-                                                                    <object type='GradientV4' id='20'>
+                                                                    <object type='GradientV4' id='21'>
                                                                         <property name='points'>
                                                                             <item key='0'>0 0 0 1</item>
-                                                                            <item key='1'>0.996094 0.996094 0.996094 0.996094</item>
+                                                                            <item key='0.229236'>0.126953 0.126953 0.126953 0.998047</item>
+                                                                            <item key='1'>0.253906 0.253906 0.253906 0.996094</item>
                                                                         </property>
                                                                     </object>
                                                                 </property>
@@ -142,23 +152,23 @@
                                                     </item>
                                                     <item key='op3'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::ImgOp3' id='21'>
+                                                            <object type='proctex::ImgOp3' id='22'>
                                                                 <property name='mgvpos'>10 -130</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='22'>
+                                                                    <object type='proctex::OutImgPlug' id='23'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ChanCtrl'>"EIO3_CH_RGB"</property>
                                                                 <property name='InputA'>
-                                                                    <object type='proctex::InImgPlug' id='23'>
-                                                                    </object>
-                                                                </property>
-                                                                <property name='InputB'>
                                                                     <object type='proctex::InImgPlug' id='24'>
                                                                     </object>
                                                                 </property>
-                                                                <property name='InputM'>
+                                                                <property name='InputB'>
                                                                     <object type='proctex::InImgPlug' id='25'>
+                                                                    </object>
+                                                                </property>
+                                                                <property name='InputM'>
+                                                                    <object type='proctex::InImgPlug' id='26'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Op'>"EIO3_LERP"</property>
@@ -167,15 +177,15 @@
                                                     </item>
                                                     <item key='t'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Texture' id='26'>
+                                                            <object type='proctex::Texture' id='27'>
                                                                 <property name='mgvpos'>-80 -200</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='27'>
+                                                                    <object type='proctex::OutImgPlug' id='28'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Input'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://effect_textures/noise1"
+                                                                        "lev2tex" "lev2://textures/skymap_sunset1"
                                                                     </reference>
                                                                 </property>
                                                             </object>
@@ -183,15 +193,15 @@
                                                     </item>
                                                     <item key='t2'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Texture' id='28'>
+                                                            <object type='proctex::Texture' id='29'>
                                                                 <property name='mgvpos'>120 -50</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='29'>
+                                                                    <object type='proctex::OutImgPlug' id='30'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Input'>
                                                                     <reference category='AssetClass'>
-                                                                        "lev2tex" "data://particle_textures/mask_crack1"
+                                                                        "lev2tex" "data://particle_textures/skull1"
                                                                     </reference>
                                                                 </property>
                                                             </object>
@@ -199,19 +209,19 @@
                                                     </item>
                                                     <item key='uvmap'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::UvMap' id='30'>
+                                                            <object type='proctex::UvMap' id='31'>
                                                                 <property name='mgvpos'>10 -50</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='31'>
+                                                                    <object type='proctex::OutImgPlug' id='32'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
                                                                 <property name='InputA'>
-                                                                    <object type='proctex::InImgPlug' id='32'>
+                                                                    <object type='proctex::InImgPlug' id='33'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='InputB'>
-                                                                    <object type='proctex::InImgPlug' id='33'>
+                                                                    <object type='proctex::InImgPlug' id='34'>
                                                                     </object>
                                                                 </property>
                                                             </object>
@@ -219,46 +229,46 @@
                                                     </item>
                                                     <item key='xf1'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Transform' id='34'>
+                                                            <object type='proctex::Transform' id='35'>
                                                                 <property name='mgvpos'>-80 -130</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='35'>
+                                                                    <object type='proctex::OutImgPlug' id='36'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Input'>
-                                                                    <object type='proctex::InImgPlug' id='36'>
+                                                                    <object type='proctex::InImgPlug' id='37'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='OffsetX'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='37'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='38'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='38'>
+                                                                            <object type='dflow/floatxf' id='39'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='OffsetY'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='39'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='40'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='40'>
+                                                                            <object type='dflow/floatxf' id='41'>
                                                                                 <property name='Transforms'>
                                                                                     <item key='xf1'>
                                                                                         <reference category='ObjectClass'>
-                                                                                            <object type='dflow/floatxfmsbcurve' id='41'>
+                                                                                            <object type='dflow/floatxfmsbcurve' id='42'>
                                                                                                 <property name='ModScaleBias'>
-                                                                                                    <object type='dflow/ModScaleBias' id='42'>
+                                                                                                    <object type='dflow/ModScaleBias' id='43'>
                                                                                                         <property name='bias'>0</property>
                                                                                                         <property name='mod'>1</property>
                                                                                                         <property name='scale'>1</property>
                                                                                                     </object>
                                                                                                 </property>
                                                                                                 <property name='curve'>
-                                                                                                    <object type='MultiCurve1D' id='43'>
+                                                                                                    <object type='MultiCurve1D' id='44'>
                                                                                                         <property name='Curve'>
-                                                                                                            <object type='Object' id='44'>
+                                                                                                            <object type='Object' id='45'>
                                                                                                             </object>
                                                                                                         </property>
                                                                                                         <property name='Segs' size='1'>
@@ -282,21 +292,31 @@
                                                                         </property>
                                                                     </object>
                                                                 </property>
+                                                                <property name='Rotate'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='46'>
+                                                                        <property name='value'>0</property>
+                                                                        <property name='xf'>
+                                                                            <object type='dflow/floatxf' id='47'>
+                                                                                <property name='Transforms'></property>
+                                                                            </object>
+                                                                        </property>
+                                                                    </object>
+                                                                </property>
                                                                 <property name='ScaleX'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='45'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='48'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='46'>
+                                                                            <object type='dflow/floatxf' id='49'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ScaleY'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='47'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='50'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='48'>
+                                                                            <object type='dflow/floatxf' id='51'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -318,29 +338,29 @@
             </item>
             <item key='SceneObject3'>
                 <reference category='SceneObjectClass'>
-                    <object type='CompositorArchetype' id='49'>
+                    <object type='CompositorArchetype' id='52'>
                         <property name='Name'>"SceneObject3"</property>
                         <property name='Components'>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='CompositingComponent' id='50'>
+                                    <object type='CompositingComponent' id='53'>
                                         <property name='ActiveItem'>"i1"</property>
                                         <property name='ActiveScene'>"s1"</property>
                                         <property name='Enable'>true</property>
                                         <property name='Groups'>
                                             <item key='a'>
                                                 <reference category='ObjectClass'>
-                                                    <object type='CompositingGroup' id='51'>
+                                                    <object type='CompositingGroup' id='54'>
                                                         <property name='Camera'>"scam"</property>
                                                         <property name='Effect'>
-                                                            <object type='CompositingGroupEffect' id='52'>
+                                                            <object type='CompositingGroupEffect' id='55'>
                                                                 <property name='Amount'>1</property>
                                                                 <property name='FbUvTexture'><backreference id='-1'/></property>
                                                                 <property name='FeedbackAmount'>0</property>
                                                                 <property name='FinalRezScale'>0.5</property>
                                                                 <property name='FxRezScale'>0.5</property>
                                                                 <property name='PostFxFeedback'>false</property>
-                                                                <property name='Type'>"EFRAMEFX_GHOSTLY"</property>
+                                                                <property name='Type'>"EFRAMEFX_COMIC"</property>
                                                             </object>
                                                         </property>
                                                         <property name='Layers'>"All"</property>
@@ -349,10 +369,10 @@
                                             </item>
                                             <item key='b'>
                                                 <reference category='ObjectClass'>
-                                                    <object type='CompositingGroup' id='53'>
+                                                    <object type='CompositingGroup' id='56'>
                                                         <property name='Camera'>"scam"</property>
                                                         <property name='Effect'>
-                                                            <object type='CompositingGroupEffect' id='54'>
+                                                            <object type='CompositingGroupEffect' id='57'>
                                                                 <property name='Amount'>0.994536</property>
                                                                 <property name='FbUvTexture'><backreference id='-1'/></property>
                                                                 <property name='FeedbackAmount'>0</property>
@@ -374,14 +394,14 @@
                                         <property name='Scenes'>
                                             <item key='s1'>
                                                 <reference category='ObjectClass'>
-                                                    <object type='CompositingScene' id='55'>
+                                                    <object type='CompositingScene' id='58'>
                                                         <property name='Items'>
                                                             <item key='i1'>
                                                                 <reference category='ObjectClass'>
-                                                                    <object type='CompositingSceneItem' id='56'>
+                                                                    <object type='CompositingSceneItem' id='59'>
                                                                         <property name='Technique'>
                                                                             <reference category='ObjectClass'>
-                                                                                <object type='Fx3CompositingTechnique' id='57'>
+                                                                                <object type='Fx3CompositingTechnique' id='60'>
                                                                                     <property name='GroupA'>"a"</property>
                                                                                     <property name='GroupB'>"b"</property>
                                                                                     <property name='GroupC'>"a"</property>
@@ -409,25 +429,25 @@
             </item>
             <item key='comp'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='58'>
+                    <object type='Ent3dEntData' id='61'>
                         <property name='Name'>"comp"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='59'>
+                            <object type='Ent3dDagNode' id='62'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='49'/></property>
+                        <property name='Archetype'><backreference id='52'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
             </item>
             <item key='ptex'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='60'>
+                    <object type='Ent3dEntData' id='63'>
                         <property name='Name'>"ptex"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='61'>
+                            <object type='Ent3dDagNode' id='64'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -439,10 +459,10 @@
             </item>
             <item key='scam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='62'>
+                    <object type='Ent3dEntData' id='65'>
                         <property name='Name'>"scam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='63'>
+                            <object type='Ent3dDagNode' id='66'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -453,5 +473,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>
