@@ -10,25 +10,35 @@
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
                                     <object type='ProcTexControllerData' id='2'>
+                                        <property name='BufferDim'>1024</property>
+                                        <property name='FrameRate'>0</property>
+                                        <property name='Output'>
+                                            <reference category='ObjectClass'>
+                                                <object type='ProcTexOutputSkybox' id='3'>
+                                                    <property name='Scale'>10</property>
+                                                    <property name='VerticalAdjust'>0</property>
+                                                </object>
+                                            </reference>
+                                        </property>
                                         <property name='Template'>
-                                            <object type='proctex' id='3'>
+                                            <object type='proctex' id='4'>
                                                 <property name='Modules'>
                                                     <item key='a'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Cells' id='4'>
+                                                            <object type='proctex::Cells' id='5'>
                                                                 <property name='mgvpos'>50 -60</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='5'>
+                                                                    <object type='proctex::OutImgPlug' id='6'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='AntiAlias'>false</property>
                                                                 <property name='DimU'>2</property>
                                                                 <property name='DimV'>2</property>
                                                                 <property name='Dispersion'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='6'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='7'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='7'>
+                                                                            <object type='dflow/floatxf' id='8'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -38,25 +48,25 @@
                                                                 <property name='SeedA'>337</property>
                                                                 <property name='SeedB'>260</property>
                                                                 <property name='SeedLerp'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='8'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='9'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='9'>
+                                                                            <object type='dflow/floatxf' id='10'>
                                                                                 <property name='Transforms'>
                                                                                     <item key='xf'>
                                                                                         <reference category='ObjectClass'>
-                                                                                            <object type='dflow/floatxfmsbcurve' id='10'>
+                                                                                            <object type='dflow/floatxfmsbcurve' id='11'>
                                                                                                 <property name='ModScaleBias'>
-                                                                                                    <object type='dflow/ModScaleBias' id='11'>
+                                                                                                    <object type='dflow/ModScaleBias' id='12'>
                                                                                                         <property name='bias'>0</property>
                                                                                                         <property name='mod'>1</property>
                                                                                                         <property name='scale'>1</property>
                                                                                                     </object>
                                                                                                 </property>
                                                                                                 <property name='curve'>
-                                                                                                    <object type='MultiCurve1D' id='12'>
+                                                                                                    <object type='MultiCurve1D' id='13'>
                                                                                                         <property name='Curve'>
-                                                                                                            <object type='Object' id='13'>
+                                                                                                            <object type='Object' id='14'>
                                                                                                             </object>
                                                                                                         </property>
                                                                                                         <property name='Segs' size='2'>
@@ -84,10 +94,10 @@
                                                                 </property>
                                                                 <property name='Smoothing'>0</property>
                                                                 <property name='SmoothingRadius'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='14'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='15'>
                                                                         <property name='value'>0.371336</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='15'>
+                                                                            <object type='dflow/floatxf' id='16'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -98,99 +108,99 @@
                                                     </item>
                                                     <item key='g'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Global' id='16'>
+                                                            <object type='proctex::Global' id='17'>
                                                                 <property name='mgvpos'>-60 -60</property>
                                                             </object>
                                                         </reference>
                                                     </item>
                                                     <item key='x'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Octaves' id='17'>
+                                                            <object type='proctex::Octaves' id='18'>
                                                                 <property name='mgvpos'>50 50</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='18'>
+                                                                    <object type='proctex::OutImgPlug' id='19'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseAmp'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='19'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='20'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='20'>
+                                                                            <object type='dflow/floatxf' id='21'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseFreq'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='21'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='22'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='22'>
+                                                                            <object type='dflow/floatxf' id='23'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseOffsetX'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='23'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='24'>
                                                                         <property name='value'>0</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='24'>
+                                                                            <object type='dflow/floatxf' id='25'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='BaseOffsetY'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='25'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='26'>
                                                                         <property name='value'>0</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='26'>
+                                                                            <object type='dflow/floatxf' id='27'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Input'>
-                                                                    <object type='proctex::InImgPlug' id='27'>
+                                                                    <object type='proctex::InImgPlug' id='28'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='NumOctaves'>4</property>
                                                                 <property name='ScalAmp'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='28'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='29'>
                                                                         <property name='value'>0.5</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='29'>
+                                                                            <object type='dflow/floatxf' id='30'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ScalFreq'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='30'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='31'>
                                                                         <property name='value'>2</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='31'>
+                                                                            <object type='dflow/floatxf' id='32'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ScalOffsetX'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='32'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='33'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='33'>
+                                                                            <object type='dflow/floatxf' id='34'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='ScalOffsetY'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='34'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='35'>
                                                                         <property name='value'>1</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='35'>
+                                                                            <object type='dflow/floatxf' id='36'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -201,42 +211,42 @@
                                                     </item>
                                                     <item key='z'>
                                                         <reference category='ObjectClass'>
-                                                            <object type='proctex::Kaled' id='36'>
+                                                            <object type='proctex::Kaled' id='37'>
                                                                 <property name='mgvpos'>-60 50</property>
                                                                 <property name='ImgOut'>
-                                                                    <object type='proctex::OutImgPlug' id='37'>
+                                                                    <object type='proctex::OutImgPlug' id='38'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Input'>
-                                                                    <object type='proctex::InImgPlug' id='38'>
+                                                                    <object type='proctex::InImgPlug' id='39'>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Mode'>"EKM_4SQU"</property>
                                                                 <property name='OffsetX'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='39'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='40'>
                                                                         <property name='value'>0.5</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='40'>
+                                                                            <object type='dflow/floatxf' id='41'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='OffsetY'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='41'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='42'>
                                                                         <property name='value'>0.5</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='42'>
+                                                                            <object type='dflow/floatxf' id='43'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
                                                                     </object>
                                                                 </property>
                                                                 <property name='Size'>
-                                                                    <object type='dflow/inplugxf<float,floatxf>' id='43'>
+                                                                    <object type='dflow/inplugxf<float,floatxf>' id='44'>
                                                                         <property name='value'>0.5</property>
                                                                         <property name='xf'>
-                                                                            <object type='dflow/floatxf' id='44'>
+                                                                            <object type='dflow/floatxf' id='45'>
                                                                                 <property name='Transforms'></property>
                                                                             </object>
                                                                         </property>
@@ -258,18 +268,18 @@
             </item>
             <item key='SceneObject2'>
                 <reference category='SceneObjectClass'>
-                    <object type='EditorCamArchetype' id='45'>
+                    <object type='EditorCamArchetype' id='46'>
                         <property name='Name'>"SceneObject2"</property>
                         <property name='Components'>
                             <item key='camera'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorCamControllerData' id='46'>
+                                    <object type='EditorCamControllerData' id='47'>
                                         <property name='Camera'>
-                                            <object type='CCamera_persp' id='47'>
-                                                <property name='Center'>0 0 0</property>
+                                            <object type='CCamera_persp' id='48'>
+                                                <property name='Center'>0.0697833 -0.0635843 -0.00783496</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>13.2477</property>
-                                                <property name='QuatC'>-0.0204712 -0.997728 -0.0641722 -0.00132786</property>
+                                                <property name='Loc'>491.607</property>
+                                                <property name='QuatC'>-0.0138788 -0.759214 -0.650394 0.019748</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -284,25 +294,25 @@
             </item>
             <item key='edcam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='48'>
+                    <object type='Ent3dEntData' id='49'>
                         <property name='Name'>"edcam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='49'>
+                            <object type='Ent3dDagNode' id='50'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='45'/></property>
+                        <property name='Archetype'><backreference id='46'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
             </item>
             <item key='proctex'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='50'>
+                    <object type='Ent3dEntData' id='51'>
                         <property name='Name'>"proctex"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='51'>
+                            <object type='Ent3dDagNode' id='52'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -313,5 +323,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>

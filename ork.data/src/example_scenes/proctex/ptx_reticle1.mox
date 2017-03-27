@@ -36,7 +36,7 @@
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
                                     <object type='ProcTexControllerData' id='5'>
-                                        <property name='BufferDim'>4096</property>
+                                        <property name='BufferDim'>1024</property>
                                         <property name='FrameRate'>29.6552</property>
                                         <property name='Output'>
                                             <reference category='ObjectClass'>
@@ -621,5 +621,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>

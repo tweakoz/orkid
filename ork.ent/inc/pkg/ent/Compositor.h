@@ -410,6 +410,7 @@ class CompositingManagerComponentInst : public ork::ent::SceneComponentInst
 	RttiDeclareAbstract(CompositingManagerComponentInst, ork::ent::ComponentInst);
 public:
 	CompositingManagerComponentInst( const CompositingManagerComponentData &data, ork::ent::SceneInst *pinst );
+    ~CompositingManagerComponentInst();
 
 	CompositingComponentInst* GetCompositingComponentInst( int icidx ) const;
 	
@@ -419,6 +420,7 @@ public:
 	const CompositingManagerComponentData& GetCMCD() const { return	mCMCD; }
 	
 	void AddCCI( CompositingComponentInst* cci );
+    void RemoveCCI( CompositingComponentInst* cci );
 
 	bool IsEnabled() const;
 

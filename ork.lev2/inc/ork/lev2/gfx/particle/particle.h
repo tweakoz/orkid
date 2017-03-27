@@ -216,6 +216,7 @@ struct BasicParticle
 	float			mfAge;
 	float			mfLifeSpan;
 	void*			mKey;
+    uint32_t        mColliderStates;
 
 	bool IsDead( void )
 	{
@@ -230,6 +231,7 @@ struct BasicParticle
 		, mVelocity(0.0f,0.0f,0.0f)
 		, mLastVelocity(0.0f,0.0f,0.0f)
 		, mKey(0)
+        , mColliderStates(0)
 	{
 		// todo - this prob should still be deterministic,
 		//  have the emitter assign the random val

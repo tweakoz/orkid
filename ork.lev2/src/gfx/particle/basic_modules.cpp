@@ -1336,33 +1336,25 @@ void PlanarColliderModule::Compute( float dt )
 		//////////////////////////////////////////////////////////
 		
 		for( int i=0; i<pb.mPool->GetNumAlive(); i++ )
-		{	BasicParticle *particle = pb.mPool->GetActiveParticle(i);
-			const CVector3& PosM2 = particle->mLastPosition;
-			const CVector3& PosM1 = particle->mPosition;
-			float fdM1 = CollisionPlane.GetPointDistance( PosM1 );
-			float fdM2 = CollisionPlane.GetPointDistance( PosM2 );
-			bool bM1 = (fdM1>=0.0f);
-			bool bM2 = (fdM2>=0.0f);
-			bool bCollide = false;
-			if( (miDiodeDirection>0) && bM1 && (!bM2) ) // crossed the plane
-			{
-				bCollide=true;
-			}
-			else if( (miDiodeDirection<0) && (!bM1) && bM2 ) // crossed the plane
-			{
-				bCollide=true;
-			}
-			else if( (miDiodeDirection==0) && (bM1!=bM2) ) // crossed the plane
-			{
-				bCollide=true;
-			}
-			if( bCollide )
-			{
-				CVector3 oldvelN = particle->mVelocity.Normal();
-				float oldvelMag = particle->mVelocity.Mag();
-				CVector3 newvelN = oldvelN.Reflect(PlaneN).Normal();
-				particle->mVelocity = newvelN*(oldvelMag*retention);
-			}
+		{	auto particle = pb.mPool->GetActiveParticle(i);
+            const fvec3& cur_pos = particle->mPosition;
+            const fvec3& cur_vel = particle->mVelocity;
+
+            auto nxt_pos = cur_pos+cur_vel*dt;
+
+			float pntdist = CollisionPlane.GetPointDistance( nxt_pos );
+
+            bool cur_inside = particle->mColliderStates&1;
+            bool nxt_inside = pntdist<0;
+
+            if( (false==cur_inside) && nxt_inside )
+            {
+                particle->mVelocity = cur_vel.Reflect(PlaneN)*retention;
+            }
+            if(nxt_inside)
+                particle->mColliderStates |= 1;
+            else
+                particle->mColliderStates &= ~1;
 		}
 	}
 	mOutDataOutput.mPool = pb.mPool;
@@ -1454,6 +1446,9 @@ void SphericalColliderModule::Compute( float dt )
 		auto m1 = 1000.0f;
 		auto m2 = 1.0f;
 
+        float sphereradsquared = the_sphere.mRadius*the_sphere.mRadius;
+        auto& sphereCenter = the_sphere.mCenter;
+
 		for( int i=0; i<pb.mPool->GetNumAlive(); i++ )
 		{	
 			auto particle = pb.mPool->GetActiveParticle(i);
@@ -1461,30 +1456,21 @@ void SphericalColliderModule::Compute( float dt )
 			const fvec3& cur_vel = particle->mVelocity;
 			auto cur_dir = cur_vel.Normal();
 
-			auto nxt_pos = cur_pos+particle->mVelocity*dt;
-			float nxt_dist_to_center = (nxt_pos-the_sphere.mCenter).Mag();
-			float cur_dist_to_center = (cur_pos-the_sphere.mCenter).Mag();
+			auto nxt_pos = cur_pos+cur_vel*dt;
+			float ndcsquared = (nxt_pos-the_sphere.mCenter).MagSquared();
 
-			bool cur_inside = cur_dist_to_center<the_sphere.mRadius;
-			bool nxt_inside = nxt_dist_to_center<the_sphere.mRadius;
+            bool cur_inside = particle->mColliderStates&1;
+			bool nxt_inside = ndcsquared<=sphereradsquared;
 
 			if( (false==cur_inside) && nxt_inside )
 			{
-				auto sph2ptc_dir = (cur_pos-the_sphere.mCenter).Normal();
-				auto vel1 = fvec3(0);
-				auto x1 = fvec3(0); //sph2ptc_dir.Dot(vel1);
-				auto v1x = fvec3(0); //sph2ptc_dir*x1;
-				auto v1y = fvec3(0); //vel1-v1x;
-
-				auto ptc2sph_dir = sph2ptc_dir*-1.0f;
-				auto vel2 = cur_vel;
-				auto x2 = ptc2sph_dir.Dot(vel2);
-				auto v2x = ptc2sph_dir*x2;
-				auto v2y = vel2-v2x;
-
-
-				particle->mVelocity = (v1x*(2*m1)/(m1+m2)+v2x*(m2-m1)/(m1+m2)+v2y)*retention;
+				auto N = (cur_pos-sphereCenter).Normal();
+				particle->mVelocity = cur_vel.Reflect(N)*retention;
 			}
+            if(nxt_inside)
+                particle->mColliderStates |= 1;
+            else
+                particle->mColliderStates &= ~1;
 
 		}
 	}

@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='3'>
-                                                <property name='Center'>-8.1053 -1.72972 11.7387</property>
+                                                <property name='Center'>-2.05266 -0.705111 6.67462</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>35.5638</property>
-                                                <property name='QuatC'>-0.420829 0.315847 0.405172 -0.747697</property>
+                                                <property name='Loc'>36.3257</property>
+                                                <property name='QuatC'>-0.658192 0.387274 0.341919 -0.547698</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -291,7 +291,7 @@
                                                                                 <property name='DepthSort'>true</property>
                                                                                 <property name='GradientIntensity'>
                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='50'>
-                                                                                        <property name='value'>0.3</property>
+                                                                                        <property name='value'>0.4</property>
                                                                                         <property name='xf'>
                                                                                             <object type='dflow/floatxf' id='51'>
                                                                                                 <property name='Transforms'></property>
@@ -304,7 +304,10 @@
                                                                                         <reference category='ObjectClass'>
                                                                                             <object type='GradientV4' id='52'>
                                                                                                 <property name='points'>
-                                                                                                    <item key='0'>0.996094 0.996094 0.996094 0.996094</item>
+                                                                                                    <item key='0'>0 0 0 0.996094</item>
+                                                                                                    <item key='0.25'>0.171875 0.1875 0.457031 0.996094</item>
+                                                                                                    <item key='0.5'>0.320312 0.320312 0.320312 0.996094</item>
+                                                                                                    <item key='0.75'>0.457031 0.152344 0.0859375 0.996094</item>
                                                                                                     <item key='1'>0 0 0 1</item>
                                                                                                 </property>
                                                                                             </object>
@@ -518,5 +521,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>

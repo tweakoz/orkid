@@ -15,7 +15,7 @@
                                                 <property name='Center'>0.0141765 0.0199477 -0.106418</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>3.45314</property>
-                                                <property name='QuatC'>-0.387504 -0.318033 -0.224471 0.835655</property>
+                                                <property name='QuatC'>-0.65208 -0.272341 -0.275165 0.651857</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>56291.8</property>
                                                 <property name='MinNear'>0.1</property>
@@ -36,7 +36,7 @@
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
                                     <object type='ProcTexControllerData' id='5'>
-                                        <property name='BufferDim'>1024</property>
+                                        <property name='BufferDim'>512</property>
                                         <property name='FrameRate'>60</property>
                                         <property name='Output'>
                                             <reference category='ObjectClass'>
@@ -174,7 +174,7 @@
                                                                 </property>
                                                                 <property name='BaseOffsetY'>
                                                                     <object type='dflow/inplugxf<float,floatxf>' id='28'>
-                                                                        <property name='value'>0.368967</property>
+                                                                        <property name='value'>0.0696594</property>
                                                                         <property name='xf'>
                                                                             <object type='dflow/floatxf' id='29'>
                                                                                 <property name='Transforms'>
@@ -396,7 +396,7 @@
                                                                 </property>
                                                                 <property name='Rotate'>
                                                                     <object type='dflow/inplugxf<float,floatxf>' id='66'>
-                                                                        <property name='value'>3.68967</property>
+                                                                        <property name='value'>0.696594</property>
                                                                         <property name='xf'>
                                                                             <object type='dflow/floatxf' id='67'>
                                                                                 <property name='Transforms'>
@@ -502,5 +502,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>
