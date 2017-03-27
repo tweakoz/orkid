@@ -29,6 +29,8 @@
 #include <miniork_tool/filter/gfx/collada/collada.h>
 #endif
 
+const bool kfidle_hack = false; // perhaps a bad export from maya...
+
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
@@ -187,8 +189,11 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 				const char* pjntname = chunkreader.GetString(ijointname);
 
 				fxstring<256> jnamp(pjntname);
-				//jnamp.replace_in_place("f_idle_","");
-				//printf( "FIXUPJOINTNAME<%s:%s>\n", pjntname,jnamp.c_str());
+                if( kfidle_hack )
+                {
+    				jnamp.replace_in_place("f_idle_","");
+    				printf( "FIXUPJOINTNAME<%s:%s>\n", pjntname,jnamp.c_str());
+                }
 				mdl->mSkeleton.AddJoint( iskelindex , iparentindex, AddPooledString(jnamp.c_str()) );
 				ptstring.set(chunkreader.GetString(ijointmatrix));
 				mdl->mSkeleton.RefJointMatrix( iskelindex ) = CPropType<CMatrix4>::FromString(ptstring);
@@ -213,6 +218,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 		{
 			mdl->mSkeleton.miRootNode = (inumbones>0) ? mdl->mSkeleton.GetFlattenedBone(0).miParent : -1;
 		}
+        mdl->mSkeleton.dump();
 		///////////////////////////////////
 		HeaderStream->GetItem( mdl->mBoundingCenter );
 		HeaderStream->GetItem( mdl->mAABoundXYZ );
@@ -568,7 +574,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 								auto& v = pv[iv];
 								auto& p = v.mPosition;
 
-								printf( " iv<%d> pos<%f %f %f> bi<%08x> bw<%08x>\n", iv, p.GetX(), p.GetY(), p.GetZ(), v.mBoneIndices, v.mBoneWeights );
+								//printf( " iv<%d> pos<%f %f %f> bi<%08x> bw<%08x>\n", iv, p.GetX(), p.GetY(), p.GetZ(), v.mBoneIndices, v.mBoneWeights );
 
 							}
 						}
@@ -628,9 +634,11 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 
 						const char* jointname = chunkreader.GetString(ibindingname);
 						fxstring<256> jnamp(jointname);
-						//jnamp.replace_in_place("f_idle_","");
-						//printf( "FIXUPJOINTNAME<%s:%s>\n", jointname,jnamp.c_str());
-
+                        if( kfidle_hack )
+                        {
+    						jnamp.replace_in_place("f_idle_","");
+	       					printf( "FIXUPJOINTNAME<%s:%s>\n", jointname,jnamp.c_str());
+                        }
 						PoolString JointNameIndex = FindPooledString( jnamp.c_str() );
 						orklut<PoolString,int>::const_iterator itfind = mdl->mSkeleton.mmJointNameMap.find( JointNameIndex );
 					

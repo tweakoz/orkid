@@ -139,10 +139,11 @@ void MiniorkMainWindow::SetReadOnly(bool value)
 void MiniorkMainWindow::FunctorAction()
 {
 	QAction *action = (QAction *)sender();
-	reflect::IFunctor *functor = (reflect::IFunctor *)action->data().toUInt();
-	reflect::IInvokation *invokation = functor->CreateInvokation();
-	functor->invoke(invokation);
-	delete invokation;
+    assert(false); //fix me (uint cant be cast to pointer! too small)
+	//auto functor = (reflect::IFunctor *) action->data().toUInt();
+	//reflect::IInvokation *invokation = functor->CreateInvokation();
+	//functor->invoke(invokation);
+	//delete invokation;
 }
 
 ///////////////////////////////////////////////////////////////////////////

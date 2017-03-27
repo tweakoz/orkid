@@ -12,9 +12,9 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='3'>
-                                                <property name='Center'>-0.00716043 0.0682125 0</property>
+                                                <property name='Center'>-0.0826797 0.000909077 0</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>3.40986</property>
+                                                <property name='Loc'>2.8334</property>
                                                 <property name='QuatC'>0 -1 0 0</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
@@ -678,5 +678,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>

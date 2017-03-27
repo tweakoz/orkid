@@ -46,7 +46,7 @@ public:
 	void SetState(int state);
 	virtual void OnEnter(int state) {}
 	virtual void OnExit(int state) {}
-	void DoDraw(ui::DrawEvent& drwev) {}
+	void DoDraw(ui::DrawEvent& drwev) final {}
 
 	void SetToolName(const std::string& nam ) { mToolName=nam; }
 	const std::string& GetToolName() const { return mToolName; }
