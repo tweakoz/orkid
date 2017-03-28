@@ -114,6 +114,18 @@ fragment_shader ps_texvtxcolor : iface_fdefault
 	out_clr = vec4(texc.xyz*frg_clr.xyz,texc.r);
 }
 ///////////////////////////////////////////////////////////////
+fragment_shader ps_distortedfeedback : iface_fdefault
+{
+    vec4 texc = texture( ColorMap, frg_uv );
+    out_clr = vec4(texc.xyz*frg_clr.xyz,texc.r);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_feedbackatten : iface_fdefault
+{
+    vec4 texc = texture( ColorMap, frg_uv );
+    out_clr = vec4(0,0,0,frg_clr.w);
+}
+///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault
 {
 	out_clr = frg_clr;
@@ -157,6 +169,22 @@ technique texcolor {
 		state_block=sb_default;
 	}
 }
+technique distortedfeedback {
+    fxconfig=fxcfg_default;
+    pass p0
+    {   vertex_shader=vs_vtxcolor;
+        fragment_shader=ps_distortedfeedback;
+        state_block=sb_default;
+    }
+}
+technique feedbackatten {
+    fxconfig=fxcfg_default;
+    pass p0
+    {   vertex_shader=vs_vtxcolor;
+        fragment_shader=ps_feedbackatten;
+        state_block=sb_default;
+    }
+}
 technique texvtxcolor {
 	fxconfig=fxcfg_default;
 	pass p0
@@ -171,5 +199,4 @@ technique knob {}
 technique texmodcolor {}
 technique textexmodcolor {}
 technique texmodcolorFB {}
-technique distortedfeedback {}
 ///////////////////////////////////////////////////////////////

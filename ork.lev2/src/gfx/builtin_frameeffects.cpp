@@ -187,19 +187,17 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 	mFrameEffectBlurY.PostInit			( pTARG, "orkshader://framefx", "frameeffect_glow_blury" );
 	mFrameEffectStandard.PostInit		( pTARG, "orkshader://framefx", "frameeffect_standard" );
 	mFBoutMaterial.PostInit				( pTARG, "orkshader://framefx", "frameeffect_fbout" );
-	//mFBinMaterial.PostInit				( pTARG, "orkshader://framefx", "frameeffect_fbin" );
 	mFrameEffectRadialBlur.PostInit		( pTARG, "orkshader://framefx", "frameeffect_radialblur" );
 	mFrameEffectComic.PostInit			( pTARG, "orkshader://framefx", "frameeffect_comic" );
 	mFrameEffectGlowJoin.PostInit		( pTARG, "orkshader://framefx", "frameeffect_glow_join" );
 	mFrameEffectGhostJoin.PostInit		( pTARG, "orkshader://framefx", "frameeffect_ghost_join" );
 	mFrameEffectDofJoin.PostInit		( pTARG, "orkshader://framefx", "frameeffect_dof_join" );
 	mFrameEffectAfterLifeJoin.PostInit	( pTARG, "orkshader://framefx", "frameeffect_afterlife_join" );
-	//mFrameEffectPainterly.PostInit		( pTARG, mpHDRRtGroup, "fxshader://framefx", "frameeffect_painterly" );
 
 	mFrameEffectDbgDepth.PostInit		( pTARG, "orkshader://framefx", "frameeffect_debugdepth" );
 	mFrameEffectDbgNormals.PostInit		( pTARG, "orkshader://framefx", "frameeffect_debugnormals" );
 
-	mUtilMaterial.SetUserFx( "orkshader://solid", "texmodcolorFB" );
+	mUtilMaterial.SetUserFx( "orkshader://solid", "feedbackatten" );
 	mUtilMaterial.Init( pTARG );
 
     mFBinMaterial.SetUserFx( "orkshader://solid", "distortedfeedback" );
@@ -549,6 +547,8 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 	{
 		/////////////////////////////////////////////////
 		// Render Scene into Mrt
+        /////////////////////////////////////////////////
+
 		if( 1 )
 		{
 			RtGroup* rtgroupFBW = GetNextWriteRtGroup();
@@ -600,19 +600,25 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 						Texture* ptex = rtgroupFBR->GetMrt(0)->GetTexture();
 						if( ptex )
 						{
-							static const float kMAXW = 1.0f;// - 1.0f/rtgroupFBW->GetW();
-							static const float kMAXH = 1.0f; // - 1.0f/10.0f;a
+							static const float kMAXW = 1;// - 1.0f/rtgroupFBW->GetW();
+							static const float kMAXH = 1; // - 1.0f/10.0f;a
 							CMatrix4 mtx;
 							//mtx.SetScale(2.0f,2.0f,2.0f);
 							CVector4 fboutclr(ffback,ffback,ffback,1.0f);
 							pTARG->PushModColor( fboutclr );
 							mFBinMaterial.SetAuxMatrix( mtx );
 							mFBinMaterial.SetTexture( ptex );
-							mFBinMaterial.SetTexture2( mpRadialMap );
-							mFBinMaterial.SetTexture3( mpFbUvMap );
+							//mFBinMaterial.SetTexture2( mpRadialMap );
+							mFBinMaterial.SetTexture2( mpFbUvMap );
 							mFBinMaterial.SetColorMode( GfxMaterial3DSolid::EMODE_USER );
 							mFBinMaterial.mRasterState.SetBlending( EBLENDING_ADDITIVE );
-							pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad( vprect, quadrect, & mFBinMaterial, 0.0f, 0.0f, kMAXW, kMAXH, 0, fboutclr );
+                            auto thisbuf = pTARG->FBI()->GetThisBuffer();
+							thisbuf->RenderMatOrthoQuad( vprect,
+                                                         quadrect,
+                                                         & mFBinMaterial,
+                                                         0.0f, 0.0f,
+                                                         kMAXW, kMAXH,
+                                                         0, fboutclr );
 							pTARG->PopModColor();
 						}
 					}
@@ -644,11 +650,11 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 
 			PostProcess( FrameData );	// Join Buffers -> mpMrtFinal
 
-			if( mbPostFxFb )
+			if( mbPostFxFb ) // post fx feedback ?
 				SetReadRtGroup( mpMrtFinal );
 
-			//dumpfname = CreateFormattedString( "dump_fr_%d_POST.tga", gdumpidx );
-			//WriteRtgTex( dumpfname.c_str(), pTARG, GetCurrentRtGroup(), 0 );
+			//auto dumpfname = CreateFormattedString( "dump_fr_%d_POST.tga", gdumpidx );
+			//WriteRtgTex( dumpfname.c_str(), pTARG, GetReadRtGroup(), 0 );
 
 			/////////////////////////////////////////////////
 			// Feedback (Current::MRT0->Previous::Mrt0)
@@ -662,8 +668,10 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 				int igH = rtgroupFBOUT->GetH();
 				//int igW = rtgroupFBOUT->GetW()-1;
 				//int igH = rtgroupFBOUT->GetH()-1;
-				static const float kMAXW = 1.0f;// - 1.0f/float(igW);
-				static const float kMAXH = 1.0f;// - 1.0f/float(igH);
+				static const float kMAXW = 1; //igW;// - 1.0f/float(igW);
+				static const float kMAXH = 1; //igH;// - 1.0f/float(igH);
+
+
 				mFBoutMaterial.BindRtGroups( rtgroupFBINP, 0 );
 				mFBoutMaterial.mRasterState.SetBlending( EBLENDING_OFF );
 				pTARG->FBI()->PushRtGroup( rtgroupFBOUT );
@@ -672,7 +680,14 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 					SRect vprect(0,0,igW,igH);
 					SRect quadrect(0,igH,igW,0);
 					CVector4 clr( 1.0f, 1.0f, 1.0f, 1.0f );
-					pTARG->FBI()->GetThisBuffer()->RenderMatOrthoQuad( vprect, quadrect, & mFBoutMaterial, 0.0f, 0.0f, kMAXW, kMAXH, 0, clr );
+                    auto thisbuf = pTARG->FBI()->GetThisBuffer();
+					thisbuf->RenderMatOrthoQuad( vprect,
+                                                 quadrect,
+                                                 & mFBoutMaterial,
+                                                 0.0f, 0.0f,
+                                                 kMAXW, kMAXH,
+                                                 0,
+                                                 clr );
 				}
 				
 				pTARG->GBI()->EndFrame( );
@@ -717,7 +732,11 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		pTARG->FBI()->PushRtGroup( mpMrtAux0 );	
 		pTARG->GBI()->BeginFrame();
 		pTARG->FXI()->BeginFrame();
-		RenderMatOrthoQuad( pTARG, MTXI0, SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE), SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE), & mFrameEffectBlurX );
+		RenderMatOrthoQuad( pTARG, 
+                            MTXI0,
+                            SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE),
+                            SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE),
+                            & mFrameEffectBlurX );
 		pTARG->GBI()->EndFrame();
 		pTARG->FBI()->PopRtGroup();	
 		//
@@ -735,7 +754,11 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		pTARG->FBI()->PushRtGroup( mpMrtAux1 );	
 		pTARG->GBI()->BeginFrame();
 		pTARG->FXI()->BeginFrame();
-		RenderMatOrthoQuad( pTARG, MTXI1, SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE), SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE), & mFrameEffectBlurY );
+		RenderMatOrthoQuad( pTARG,
+                            MTXI1,
+                            SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE),
+                            SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE),
+                            & mFrameEffectBlurY );
 		pTARG->GBI()->EndFrame();
 		pTARG->FBI()->PopRtGroup();	
 	}
