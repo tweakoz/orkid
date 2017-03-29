@@ -2,8 +2,6 @@
 
 import os, sys, shutil, platform, argparse
 import ansi.color.fx as afx
-#from ansi.color import fg, bg
-#from ansi.color.rgb import rgb256
 
 as_main = (__name__ == '__main__')
 
@@ -64,6 +62,12 @@ prepend_env("PATH","%s/bin"%stg_dir)
 prepend_env("DYLD_LIBRARY_PATH","%s/lib"%stg_dir)
 prepend_env("LD_LIBRARY_PATH","%s/lib"%stg_dir)
 prepend_env("SITE_SCONS","%s/site_scons/site_tools/"%root_dir)
+
+import ork.build.localopts as localopts
+
+set_env("QT5DIR",localopts.QT5DIR())
+prepend_env("PATH",localopts.QT5DIR()+"/bin")
+
 
 ###########################################
 

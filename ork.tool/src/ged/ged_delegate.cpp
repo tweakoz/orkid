@@ -22,6 +22,8 @@
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/kernel/fixedlut.hpp>
 #include <ork/kernel/Array.hpp>
+#include <QMenu>
+
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::ged::GedFactory,"GedFactory");
@@ -822,7 +824,7 @@ class GraphImportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getOpenFileName( 0, "Import Dataflow Graph", 0, "DataflowGraph (*.dfg)");
-			file::Path::NameType fname = FileName.toAscii().data();
+			file::Path::NameType fname = FileName.toStdString().c_str();
 			if( fname.length() )
 			{
 				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
@@ -850,7 +852,7 @@ class GraphExportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getSaveFileName( 0, "Export Dataflow Graph", 0, "DataflowGraph (*.dfg)");
-			file::Path::NameType fname = FileName.toAscii().data();
+			file::Path::NameType fname = FileName.toStdString().c_str();
 			if( fname.length() )
 			{
 				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
@@ -871,7 +873,7 @@ class GraphExportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getOpenFileName( 0, "Import Object (Be careful!)", 0, "Orkid Object (*.mox)");
-			file::Path::NameType fname = FileName.toAscii().data();
+			file::Path::NameType fname = FileName.toStdString().c_str();
 			if( fname.length() )
 			{
 				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
@@ -895,7 +897,7 @@ class GraphExportDelegate : public IOpsDelegate
 		{
 			lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 			QString FileName = QFileDialog::getSaveFileName( 0, "Export Object ", 0, "Orkid Object (*.mox)");
-			file::Path::NameType fname = FileName.toAscii().data();
+			file::Path::NameType fname = FileName.toStdString().c_str();
 			if( fname.length() )
 			{
 				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";

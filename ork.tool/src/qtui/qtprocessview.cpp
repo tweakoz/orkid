@@ -15,19 +15,6 @@ namespace ork { namespace tool {
 
 extern OrkQtApp* gpQtApplication;
 
-void ProcessView::MocInit( void )
-{
-	ProcessView::Moc.AddSlot0( "updateError()", & ProcessView::updateError );
-	ProcessView::Moc.AddSlot0( "updateText()", & ProcessView::updateText );
-	ProcessView::Moc.AddSlot0( "OnStart()", & ProcessView::OnStart );
-	ProcessView::Moc.AddSlot1( "updateExit(int)", & ProcessView::updateExit );
-	ProcessView::Moc.AddSlot1( "AppendString(QString)", & ProcessView::AppendString );
-	ProcessView::Moc.AddSlot1( "OnError(QProcess::ProcessError)", & ProcessView::OnError );
-	ProcessView::Moc.AddSlot1( "OnState(QProcess::ProcessState)", & ProcessView::OnState );
-}
-
-ImplementMoc( ProcessView, QObject );
-
 ProcessView::ProcessView(const char* title, QMainWindow* mainwin)
 	: mTextEdit(0)
 	, mTitle(title)

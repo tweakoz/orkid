@@ -116,6 +116,7 @@ fragment_shader ps_texvtxcolor : iface_fdefault
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_distortedfeedback : iface_fdefault
 {
+    //vec2 uvl = texture( ColorMap2, frg_uv ).xy;
     vec4 texc = texture( ColorMap, frg_uv );
     out_clr = vec4(texc.xyz*frg_clr.xyz,texc.r);
 }

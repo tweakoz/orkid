@@ -26,6 +26,8 @@
 
 #include <orktool/toolcore/dataflow.h>
 #include <ork/reflect/Command.h>
+#include <QMenu>
+#include <QAction>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
@@ -273,9 +275,7 @@ void GedObjNode<Setter>::OnCreateObject()
 		if( pact )
 		{
 			QVariant UserData = pact->data();
-			QString UserName = UserData.toString();
-			QByteArray qb = UserName.toAscii();
-			std::string pname = qb.data();
+			std::string pname = UserData.toString().toStdString();
 
 			const CAttrChoiceValue *Chc = chclist->FindFromLongName(pname);
 
@@ -322,8 +322,7 @@ void GedObjNode<Setter>::OnCreateObject()
 			if( pact )
 			{
 				QVariant UserData = pact->data();
-				QString UserName = UserData.toString();
-				std::string sname = UserName.toAscii().data();
+				std::string sname = UserData.toString().toStdString();
 				const char* pname = sname.c_str();
 				rtti::Class* pclass = rtti::Class::FindClass(pname); 
 				ork::object::ObjectClass* poclass = rtti::autocast(pclass);

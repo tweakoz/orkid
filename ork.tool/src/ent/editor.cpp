@@ -36,7 +36,7 @@
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/application/application.h>
-#include <QtGui/QFileDialog>
+#include <QtWidgets/QFileDialog>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/future.hpp>
 
@@ -545,7 +545,7 @@ void SceneEditorBase::EditorArchExport()
 						mutstr += ConstString(absolutepath.c_str()).substr(pcpos + 4);
 
 						QString FileName = QFileDialog::getSaveFileName(0, "Save Archetype File", absassetname.c_str(), "OrkArchetypeFile (*.mox *.mob)");
-						file::Path::NameType fname = FileName.toAscii().data();
+						file::Path::NameType fname = FileName.toStdString().c_str();
 						if(fname.length())
 						{
 							if(CFileEnv::filespec_to_extension(fname).length() == 0) fname += ".mox";
@@ -575,7 +575,7 @@ void SceneEditorBase::EditorArchImport()
 		mutstr += ConstString(absolutepath.c_str()).substr(pcpos + 4);
 
 		QString FileName = QFileDialog::getOpenFileName(NULL, "Load OrkArchetypeFile", absassetname.c_str(), "OrkArchetypeFile (*.mox *.mob)");
-		std::string fname = FileName.toAscii().data();
+		std::string fname = FileName.toStdString().c_str();
 		if(fname.length())
 		{
 			stream::FileInputStream istream(fname.c_str());
@@ -623,7 +623,7 @@ void SceneEditorBase::EditorArchMakeReferenced()
 						mutstr += ConstString(absolutepath.c_str()).substr(pcpos + 4);
 
 						QString FileName = QFileDialog::getSaveFileName(0, "Save Archetype File", absassetname.c_str(), "OrkArchetypeFile (*.mox *.mob)");
-						file::Path::NameType fname = FileName.toAscii().data();
+						file::Path::NameType fname = FileName.toStdString().c_str();
 						if(fname.length())
 						{
 							if(CFileEnv::filespec_to_extension(fname).length() == 0) fname += ".mox";

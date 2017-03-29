@@ -5,11 +5,12 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <QtGui/QInputDialog>
-//#include <QtGui/ButtonState>
+#include <QtWidgets/QInputDialog>
 #include <orktool/ged/ged_io.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/kernel/core_interface.h>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QAction>
 
 namespace ork { namespace tool { namespace ged {
 
@@ -210,7 +211,7 @@ void Slider<T>::OnUiEvent( const ork::ui::Event& ev ) // final
 
             QString qstr = GedInputDialog::getText ( ev, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
 
-            std::string sstr = qstr.toAscii().data();
+            std::string sstr = qstr.toStdString();
             if( sstr.length() )
             {
                 PropTypeString pts( sstr.c_str() );
@@ -500,7 +501,7 @@ void GedSimpleNode<IODriver,T>::OnUiEvent(const ork::ui::Event& ev)
         				{
         					QVariant UserData = pact->data();
         					QString UserName = UserData.toString();
-        					std::string pname = UserName.toAscii().data();
+        					std::string pname = UserName.toStdString();
         					
         					const CAttrChoiceValue *Chc = uchc.FindFromLongName(pname);
 
@@ -522,7 +523,7 @@ void GedSimpleNode<IODriver,T>::OnUiEvent(const ork::ui::Event& ev)
         	else
         	{	int ilabw = GetNameWidth()+16;
         		QString qstr = GedInputDialog::getText ( ev, this, ptsg.c_str(), ilabw, 2, miW-ilabw, miH-3 );
-        		std::string sstr = qstr.toAscii().data();
+        		std::string sstr = qstr.toStdString();
         		if( sstr.length() )
         		{	PropTypeString pts( sstr.c_str() );
         			val = CPropType<T>::FromString( pts );

@@ -33,7 +33,7 @@
 
 #include <orktool/toolcore/dataflow.h>
 #include <ork/reflect/Command.h>
-#include <QtGui/QInputDialog>
+#include <QtWidgets/QInputDialog>
 #include <ork/asset/Asset.h>
 
 #include "ged_delegate_map.h"
@@ -563,7 +563,7 @@ void MapItemWriteSerializer::Duplicate( const KeyDecoName& kdeco, const char* pn
 void MapItemWriteSerializer::Import( const KeyDecoName& kdeco, const char* pname )
 {
 	QString FileName = QFileDialog::getOpenFileName( 0, "Import Map Item from mit File", 0, "MapItemFile (*.mit)");
-	std::string fname = FileName.toAscii().data();
+	std::string fname = FileName.toStdString();
 	if( fname.length() )
 	{
 		ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
@@ -594,7 +594,7 @@ void MapItemWriteSerializer::Import( const KeyDecoName& kdeco, const char* pname
 void MapItemWriteSerializer::Export( const KeyDecoName& kdeco, const char* pname )
 {
 	QString FileName = QFileDialog::getSaveFileName( 0, "Export MapItem to File", 0, "MapItem (*.mit)");
-	file::Path::NameType fname = FileName.toAscii().data();
+	file::Path::NameType fname = FileName.toStdString().c_str();
 	if( fname.length() )
 	{
 		//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
@@ -886,7 +886,7 @@ void GedMapNode::AddItem(const ork::ui::Event& ev)
 
 	QString qstr = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstr = qstr.toAscii().data();
+	std::string sstr = qstr.toStdString();
 	if( sstr.length() )
 	{
 		KeyDecoName kdeca( sstr.c_str() );
@@ -953,7 +953,7 @@ void GedMapNode::RemoveItem(const ork::ui::Event& ev)
 
 	QString qstr = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstr = qstr.toAscii().data();
+	std::string sstr = qstr.toStdString();
 	if( sstr.length() )
 	{
 		KeyDecoName kdec( sstr.c_str() );
@@ -980,8 +980,8 @@ void GedMapNode::DuplicateItem(const ork::ui::Event& ev)
 	ork::msleep(100);
 	QString qstrb = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstra = qstra.toAscii().data();
-	std::string sstrb = qstrb.toAscii().data();
+    std::string sstra = qstra.toStdString();
+    std::string sstrb = qstrb.toStdString();
 
 	if( sstra.length() && sstrb.length() && sstra!=sstrb )
 	{
@@ -1019,8 +1019,8 @@ void GedMapNode::MoveItem(const ork::ui::Event& ev)
 	ork::msleep(100);
 	QString qstrb = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
 
-	std::string sstra = qstra.toAscii().data();
-	std::string sstrb = qstrb.toAscii().data();
+	std::string sstra = qstra.toStdString();
+	std::string sstrb = qstrb.toStdString();
 
 	if( sstra.length() && sstrb.length() )
 	{
@@ -1048,7 +1048,7 @@ void GedMapNode::ImportItem(const ork::ui::Event& ev)
 	const int kdim = klabh-2;
 	int ibasex = (kdim+4)*3+3;
 	QString qstra = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
-	std::string sstra = qstra.toAscii().data();
+	std::string sstra = qstra.toStdString();
 	if( sstra.length() )
 	{	KeyDecoName kdeca( sstra.c_str() );
 		if( IsKeyPresent( kdeca ) )
@@ -1067,7 +1067,7 @@ void GedMapNode::ExportItem(const ork::ui::Event& ev)
 	const int kdim = klabh-2;
 	int ibasex = (kdim+4)*3+3;
 	QString qstra = GedInputDialog::getText ( ev, this, 0, ibasex, 0, miW-ibasex-6, klabh );
-	std::string sstra = qstra.toAscii().data();
+	std::string sstra = qstra.toStdString();
 	if( sstra.length() )
 	{	KeyDecoName kdeca( sstra.c_str() );
 		if( IsKeyPresent( kdeca ) )
@@ -1202,10 +1202,7 @@ void GedMapNode::OnMouseDoubleClicked (const ork::ui::Event& ev)
 	if( pact )
 	{
 		QVariant UserData = pact->data();
-		QString UserName = UserData.toString();
-		QByteArray qb; qb=UserName.toAscii();
-		const char* pn = qb.data();
-		std::string pname(pn);
+		std::string pname = UserData.toString().toStdString();
 		int index = 0;
 		sscanf( pname.c_str(), "%d", & index );
 		mItemIndex = index;
@@ -1506,8 +1503,7 @@ void GedMapFactoryNode::OnMouseDoubleClicked(const ork::ui::Event& ev)
 	if( pact )
 	{
 		QVariant UserData = pact->data();
-		QString UserName = UserData.toString();
-		std::string sname = UserName.toAscii().data();
+		std::string sname = UserData.toString().toStdString();
 		const char* pname = sname.c_str();
 		rtti::Class* pclass = rtti::Class::FindClass(pname); 
 		ork::object::ObjectClass* poclass = rtti::autocast(pclass);

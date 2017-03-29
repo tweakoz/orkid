@@ -28,7 +28,6 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 class LightingModule : public tool::EditorModule
 {
-	DeclareMoc( LightingModule, EditorModule );
 	void OnAction( const char* pact ) final;
 	void Activate( QMenuBar* qmb ) final;
 	void DeActivate( QMenuBar* qmb ) final;
@@ -41,8 +40,6 @@ public:
 	{
 	}
 };
-///////////////////////////////////////////////////////////////////////////////
-ImplementMoc( LightingModule, tool::EditorModule );
 ///////////////////////////////////////////////////////////////////////////////
 void LightingModule::Activate( QMenuBar* qmb )
 {
@@ -61,10 +58,6 @@ void LightingModule::DeActivate( QMenuBar* qmb )
 void LightingModule::OnAction( const char* pact )
 {
 	if( 0 == strcmp( "/Lighting/Test", pact ) )	{ orkprintf("yo\n"); }
-}
-///////////////////////////////////////////////////////////////////////////////
-void LightingModule::MocInit()
-{
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::LightingSetLightPos()

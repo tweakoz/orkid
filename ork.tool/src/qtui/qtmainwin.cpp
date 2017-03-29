@@ -19,9 +19,6 @@ extern bool gbheadlight;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
-///////////////////////////////////////////////////////////////////////////////
-ImplementMoc( MiniorkMainWindow, QMainWindow );
-ImplementMoc( EditorModule, QObject );
 ///////////////////////////////////////////////////////////////////////////
 #ifndef MINIORK_REPOS
 #define MINIORK_REPOS		"UNKNOWN MINIORK REPOS"
@@ -46,7 +43,7 @@ QQedRefreshEvent::QQedRefreshEvent()
 {
 }
 //////////////////////////////////////////////////////////////////////////////
-MiniorkMainWindow::MiniorkMainWindow(QWidget* parent, Qt::WFlags flags) 
+MiniorkMainWindow::MiniorkMainWindow(QWidget* parent, Qt::WindowFlags flags) 
 	: QMainWindow(parent, flags)
 	, mEditorModuleMgr( menuBar() )
 	, mReadOnly(false)
@@ -241,11 +238,6 @@ void MiniorkMainWindow::UpdateTitle()
 
 	//setWindowTitle(title);
 }
-//////////////////////////////////////////////////////////////////////////////
-void MiniorkMainWindow::MocInit()
-{
-	Moc.AddSlot0( "FunctorAction()", & MiniorkMainWindow::FunctorAction );
-}
 ///////////////////////////////////////////////////////////////////////////////
 void EditorModuleMgr::AddModule( std::string name, EditorModule*mod )
 {
@@ -303,7 +295,7 @@ void EditorModule::AddAction(  const char* pname,QKeySequence ks)
 				if( end )
 				{
 					QAction* pact = pcurmenu->addAction( nm.c_str() );
-					if(ks) pact->setShortcut(ks);
+					//if(ks) pact->setShortcut(ks);
 					pact->setData( QVariant( tr(pthstr.c_str()) ) );
 					connect(pact, SIGNAL(triggered()), this, SLOT(ActionSlot()));
 				}
@@ -336,11 +328,6 @@ EditorModule::EditorModule()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void EditorModule::MocInit()
-{
-	Moc.AddSlot0( "ActionSlot()", & EditorModule::ActionSlot );
-}
-///////////////////////////////////////////////////////////////////////////////
 void EditorModule::ActionSlot()
 {
 	QObject* psender = sender();
@@ -352,8 +339,8 @@ void EditorModule::ActionSlot()
 		QString text = pact->text();
 		QString datatext = data.toString();
 		//std::string std_text = text.toAscii().data();
-		QByteArray qb = datatext.toAscii();
-		const char* pt = qb.data();
+		auto qb = datatext.toStdString();
+		const char* pt = qb.c_str();
 		OnAction( pt );
 	}
 }

@@ -14,7 +14,7 @@
 
 #include <orktool/toolcore/FunctionManager.h>
 
-#include <QtGui/QMessageBox>
+#include <QtWidgets/QMessageBox>
 
 #include <sys/resource.h>
 

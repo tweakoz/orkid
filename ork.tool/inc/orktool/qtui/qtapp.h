@@ -5,23 +5,31 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_TOOL_QTAPP_H 
-#define _ORK_TOOL_QTAPP_H
+#pragma once
+
+#include <QtWidgets/QMainWindow>
+#include <QtCore/QTimer>
 
 namespace ork { namespace tool {
 
 class OrkQtApp : public QApplication
-{	DeclareMoc(OrkQtApp,QApplication);
+{	
+    Q_OBJECT
+
 public:
 	///////////////////////////////////
 	OrkQtApp( int& argc, char** argv );
-	void OnTimer();
 	///////////////////////////////////
+
+public slots:
+    void OnTimer();
+
+    ///////////////////////////////////
+
 	QTimer				mIdleTimer;
 	QMainWindow*		mpMainWindow;
+
 
 };
 
 }}
-
-#endif

@@ -9,7 +9,7 @@
 #include <ork/application/application.h>
 #include <orktool/qtui/qtmainwin.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <QtGui/QMessageBox>
+#include <QtWidgets/QMessageBox>
 #include <QtCore/QSettings>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ void EditorMainWindow::OpenSceneFile()
 	gUpdateStatus.SetState(EUPD_STOP);
 	QString FileName = QFileDialog::getOpenFileName(NULL, "Load OrkidScene File", oldnam, "OrkSceneFile (*.mox *.mob)");
 	gUpdateStatus.SetState(EUPD_START);
-	std::string fname = FileName.toAscii().data();
+	std::string fname = FileName.toStdString().c_str();
 	PerfMarkerPopState();
 	this->activateWindow();
 
@@ -117,10 +117,10 @@ void EditorMainWindow::SaveSceneFile()
 
 	QString FileName = QFileDialog::getSaveFileName( 0, "Save OrkidScene File", mCurrentFileName, "OrkSceneFile (*.mox *.mob)");
 	this->activateWindow();
-	file::Path::NameType fname = FileName.toAscii().data();
+	file::Path::NameType fname = FileName.toStdString().c_str();
 	if( fname.length() )
 	{
-		SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
+		SetRecentSceneFile(FileName.toStdString().c_str(),SCENEFILE_DIR);
 		if( CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";
 		if( mEditorBase.mpScene )
 		{
@@ -176,7 +176,7 @@ void EditorMainWindow::SaveSelected()
 			{
 				QString FileName = QFileDialog::getSaveFileName(0, "Export Archetype", GetRecentSceneFile(EXPORT_DIR).c_str(), "OrkSceneFile (*.mox)");
 
-				file::Path::NameType fname = FileName.toAscii().data();
+				file::Path::NameType fname = FileName.toStdString().c_str();
 				if(fname.length())
 				{
 					file::Path::NameType ext = CFileEnv::filespec_to_extension(fname);
@@ -186,7 +186,7 @@ void EditorMainWindow::SaveSelected()
 						fname += ".mox";
 					}
 
-					SetRecentSceneFile(FileName.toAscii().data(),EXPORT_DIR);
+					SetRecentSceneFile(FileName.toStdString().c_str(),EXPORT_DIR);
 
 
 					stream::FileOutputStream ostream(fname.c_str());
@@ -206,10 +206,10 @@ void EditorMainWindow::MergeFile()
 	tool::GetGlobalDataFlowScheduler()->GraphSet().LockForRead();
 	{
 		QString FileName = QFileDialog::getOpenFileName(0, "Import Archetype", GetRecentSceneFile(EXPORT_DIR).c_str(), "OrkMergeFile (*.mox *.arch)");
-		std::string fname = FileName.toAscii().data();
+		std::string fname = FileName.toStdString();
 		if(fname.length())
 		{
-			SetRecentSceneFile(FileName.toAscii().data(),EXPORT_DIR);
+			SetRecentSceneFile(FileName.toStdString().c_str(),EXPORT_DIR);
 
 			stream::FileInputStream istream(fname.c_str());
 			reflect::serialize::XMLDeserializer dser(istream);
@@ -243,8 +243,8 @@ ConstString GetRecentSceneFile(int dialog_id)
 	settings.beginGroup("RecentFiles");
 
 	sprintf(dialog_id_str,"%d",dialog_id);
-	QByteArray bytes = settings.value(dialog_id_str, "").toString().toAscii();
-	return AddPooledString(bytes.data());
+	auto stdstr = settings.value(dialog_id_str, "").toString().toStdString();
+	return AddPooledString(stdstr.c_str());
 }
 
 void SetRecentSceneFile(ConstString file,int dialog_id)

@@ -19,67 +19,23 @@ extern int QtTest( int argc, char **argv );
 #define register 
 
 ///////////////////////////////////////////////////////////////////////////////
+#include <QtWidgets/QApplication>
 #include <QtCore/QMetaObject>
 #include <QtCore/qmetatype.h>
 #include <QtCore/qdatastream.h>
 #include <QtCore/QMetaMethod>
 #include <QtCore/QSize>
 #include <QtCore/QTimer>
-#include <QtGui/qapplication.h>
-#include <QtGui/qpushbutton.h>
-#include <QtGui/qfont.h>
-#include <QtGui/qmainwindow.h>
-#include <QtGui/qmenu.h>
-#include <QtGui/qmenubar.h>
-#include <QtGui/qdockwidget.h>
-#include <QtGui/qlistwidget.h>
-#include <QtGui/qtoolbar.h>
-#include <QtGui/qgroupbox.h>
 #include <QtGui/QResizeEvent>
 #include <QtGui/QShowEvent>
 #include <QtGui/QPaintEvent>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QPainter>
-#include <QtGui/QStyleFactory>
-#include <QtGui/QCheckBox>
-#include <QtGui/QWidget>
-#include <QtGui/qshortcut.h>
-#include <QtGui/QSplashScreen>
-#include <QtGui/QInputDialog>
-
-#if defined( IX )
-#include <QtGui/QTreeView>
-#include <QtGui/QListView>
-#include <QtGui/QDirModel>
-#include <Qt3Support/Q3HBox>
-#include <QtCore/QAbstractItemModel>
-#include <QtGui/QStandardItemModel>
-#include <QtGui/QItemDelegate>
-#include <QtGui/QItemEditorFactory>
-#include <QtGui/QFileDialog>
-#include <QtGui/QSpinBox>
-#include <QtGui/QComboBox>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QTextEdit>
-#include <QtGui/QLineEdit>
-#else
-#include <QtGui/QTreeView.h>
-#include <QtGui/QListView.h>
-#include <QtGui/QDirModel.h>
-//#include <Qt/Q3HBox.h>
-#include <QtCore/QAbstractItemModel.h>
-#include <QtGui/QStandardItemModel.h>
-#include <QtGui/QItemDelegate.h>
-#include <QtGui/QItemEditorFactory.h>
-#include <QtGui/QFileDialog.h>
-#include <QtGui/QSpinBox.h>
-#include <QtGui/QComboBox.h>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QTextEdit.h>
-#include <QtGui/QTextBrowser.h>
-#include <QtGui/QLabel.h>
-#include <QtGui/QLineEdit.h>
-#endif
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QWidget>
+#include <QtWidgets/QSplashScreen>
+#include <QtWidgets/QInputDialog>
+#include <QtWidgets/QFileDialog>
 
 #undef register 
 
@@ -321,7 +277,7 @@ public: //
 	virtual       QMetaObject *GetThisMeta( void ) = 0;
 
 };
-
+/*
 template<typename T, typename P> class CQNoMoc : public CQNoMocBase
 {
 public:
@@ -454,7 +410,7 @@ public:
 	void Emit( Subclass*pobj, const char *pname );
 	int GetSlotIndex( const char *pname );
 	int GetSignalIndex( const char *pname );
-};
+};*/
 
 //template<typename x, typename y> CQNoMoc<x,y> MocImp< x, y >::Moc;
 

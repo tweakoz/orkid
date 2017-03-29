@@ -16,6 +16,7 @@
 #include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/split_panel.h>
 #include "outliner2.h"
+#include <QtWidgets/QDockWidget>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -319,7 +320,7 @@ QDockWidget *EditorMainWindow::NewToolView( bool bfloat )
 ///////////////////////////////////////////////////////////////////////////
 
 void EditorMainWindow::NewDirView()
-{
+{/*
 	static int viewnum = 0;
 	std::string viewname = CreateFormattedString( "Dir:%d", viewnum+1 );
 	viewnum++;
@@ -339,7 +340,7 @@ void EditorMainWindow::NewDirView()
 	gfxdock->setMinimumSize( 100, 100 );
 	addDockWidget(Qt::LeftDockWidgetArea, gfxdock);
 
-	gfxdock->show();
+	gfxdock->show();*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////

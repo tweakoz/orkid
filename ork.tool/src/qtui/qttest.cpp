@@ -17,7 +17,8 @@
 #include <ork/lev2/input/input.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 
-#include <QtGui/QStyle>
+#include <QtWidgets/QStyle>
+#include <QtWidgets/QStyleFactory>
 
 // This include is relative to src/miniork which is temporarily added an a include search path.
 // We'll need to come up with a long-term solution eventually.
@@ -149,15 +150,6 @@ void OrkQtApp::OnTimer()
 	OpqTest opqtest(&MainThreadOpQ());
 	while(MainThreadOpQ().Process());
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void OrkQtApp::MocInit( void )
-{
-	OrkQtApp::Moc.AddSlot0( "OnTimer()", & OrkQtApp::OnTimer );
-}
-
-ImplementMoc( OrkQtApp, QApplication );
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -309,13 +301,13 @@ void* BootQtThreadImpl(void* arg_opaq )
 	gpQtApplication = new OrkQtApp( args->argc, args->argv );
 
 #if defined(IX)
-	QStyle *MainStyle = new OrkStyle("Macintosh");
+	//QStyle *MainStyle = new OrkStyle("Macintosh");
 
 #else
-	QStyle *MainStyle = QStyleFactory::create( "WindowsXP" );
+	//QStyle *MainStyle = QStyleFactory::create( "WindowsXP" );
 #endif
 
-	OrkAssert( MainStyle!=0 );
+	//OrkAssert( MainStyle!=0 );
 	
 //	QPalette palette = MainStyle->standardPalette();
 //	gpQtApplication->setPalette( palette );
