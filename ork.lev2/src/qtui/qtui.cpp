@@ -23,7 +23,7 @@ file::Path SaveFileRequester( const std::string& title, const std::string& ext )
 	auto& gfxenv = lev2::GfxEnv::GetRef();
 	gfxenv.GetGlobalLock().Lock();
 	QString FileName = QFileDialog::getSaveFileName( 0, "Export ProcTexImage", 0, "PNG (*.png)");
-	file::Path::NameType fname = FileName.toAscii().data();
+	file::Path::NameType fname = FileName.toStdString().c_str();
 	gfxenv.GetGlobalLock().UnLock();
 	return fname;
 }
@@ -163,7 +163,7 @@ void CQNoMocBase::Link()
 		for( int i=0; i<imethods; i++ )
 		{
 			QMetaMethod method = walkmeta->method( i ); 
-			const char* sig = method.signature(); 
+			//const char* sig = method.signature(); 
 			//orkprintf( "walkmeta root<%s> walk<%s> methid<%d> method<%s>\n", RootClassName, WalkClassName, i, sig );
 		}
 		walkmeta = walkmeta->superClass();
@@ -288,7 +288,7 @@ void CQNoMocBase::Compile( void )
 	//////////////////////
 
 	staticMetaObject = GetThisMeta();
-	staticMetaObject->d.stringdata = string_block_data;
+	staticMetaObject->d.stringdata = (const QArrayData *) string_block_data;
 	staticMetaObject->d.data = & mMocUInt[ 0 ];
 	staticMetaObject->d.extradata = 0;
 

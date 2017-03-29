@@ -18,7 +18,7 @@
 #include "ged_delegate.hpp"
 #include <ork/math/gradient.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <QtGui/QColorDialog>
+#include <QtWidgets/QColorDialog>
 #include <ork/kernel/orkpool.h>
 #include <ork/lev2/ui/event.h>
 

@@ -37,10 +37,6 @@ class EditorMainWindow 	: public tool::MiniorkMainWindow
 
 	//////////////////////////////////////////////////////////
 
-	DeclareMoc( EditorMainWindow, tool::MiniorkMainWindow );
-
-	//////////////////////////////////////////////////////////
-
 	void AddBuiltInActions();
 
 	//////////////////////////////////////////////////////////
@@ -52,15 +48,13 @@ public://
 	typedef void(EditorMainWindow::*IntMethodType)(int);
 	QString							mCurrentFileName;
 	QWidget*						mpCTQTMain;
-	QDirModel*						mDirModel;
 	tool::ged::ObjModel				mGedModelObj;
-//	tool::ged::ObjModel				mApplicationModelObj;
 	tool::DataFlowEditor			mDataflowEditor;
 
 	QTimer							mQtTimer;
 
-	QTreeView*						mpEntityView;
-	QTreeView*						mpArchView;
+	//QTreeView*						mpEntityView;
+	//QTreeView*						mpArchView;
 	QSplashScreen*					mpSplashScreen;
 	orkvector<std::string>			mScripts;
 	QApplication&					mQtApplication;

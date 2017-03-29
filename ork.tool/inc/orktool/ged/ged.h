@@ -620,37 +620,36 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 class GedTextEdit : public QLineEdit
 {
-	DeclareMoc( GedTextEdit, QLineEdit );
+    Q_OBJECT
 
 public:
 
 	GedTextEdit( QWidget* parent );
 	void focusOutEvent( QFocusEvent* pev ) final; // virtual
 	void keyPressEvent ( QKeyEvent * pev ) final; // virtual
-	void SigEditFinished();
-	void SigCanceled();
 	void SetText( const char* ptext );
+
+signals:
+    void editFinished();
+    void canceled();
 
 };
 class GedInputDialog : public QDialog
 {
-	DeclareMoc( GedInputDialog, QDialog );
-
-	GedTextEdit	mTextEdit;
-	QString		mResult;
-	bool		mbChanged;
-
-	GedInputDialog();
-	void done( );
-	void canceled( );
-	void SlotTextChanged(QString str);
-	QString GetResult();
-	void clear() { mTextEdit.clear(); }
 
 public:
 
 	static QString getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
 	bool WasChanged() const { return mbChanged; }
+    GedInputDialog();
+    void done( );
+    void canceled( );
+    void SlotTextChanged(QString str);
+    QString GetResult();
+    void clear() { mTextEdit.clear(); }
+    GedTextEdit mTextEdit;
+    QString     mResult;
+    bool        mbChanged;
 
 };
 ///////////////////////////////////////////////////////////////////////////////

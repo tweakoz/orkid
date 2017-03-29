@@ -14,7 +14,7 @@
 namespace ork {
 std::string MethodIdNameStrip( const char * name );
 namespace lev2 {
-
+/*
 template< typename T, typename S > 
 struct MocMethodVoid : public MocFunctorBase
 {
@@ -206,7 +206,7 @@ int MocImp<Subclass,Baseclass>::GetSlotIndex( const char *pname )
 {
 	int isigidx = mMoc.GetThisMeta()->indexOfSlot(pname); 
 	return isigidx;
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////////////////
 

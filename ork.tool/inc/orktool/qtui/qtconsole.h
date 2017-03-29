@@ -90,7 +90,6 @@ private:
 
 /*class QtConsoleWindow : public QWidget
 {
-	DeclareMoc(QtConsoleWindow,QWidget);
 
 	QTextEdit*		mpConsoleOutputTextEdit;
 	QLineEdit *		mpConsoleInputTextEdit;

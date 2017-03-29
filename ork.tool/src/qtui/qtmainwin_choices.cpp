@@ -17,6 +17,8 @@
 #include <orktool/toolcore/builtinchoices.h>
 #include <ork/lev2/lev2_asset.h>
 
+#include <QMenu>
+
 namespace ork {
 namespace tool {
 

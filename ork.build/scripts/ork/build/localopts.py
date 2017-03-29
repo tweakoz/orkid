@@ -19,7 +19,7 @@ if IsWindows():
 	import win32api
 
 ################################################################
-__all__ = [ "XCODEDIR", "OSXSDKROOT", "AQSISDIR", "ARCH", "ConfigFileName", "ConfigData", "dump" ]
+__all__ = [ "XCODEDIR", "OSXSDKROOT", "QT5DIR", "AQSISDIR", "ARCH", "ConfigFileName", "ConfigData", "dump" ]
 ################################################################
 
 ################################################################
@@ -47,16 +47,17 @@ if os.path.isfile( ConfigFileName() ):
 	ConfigData.read( ConfigFileName() )
 	#print ConfigData
 else:
-	print "LOCALOPTS: Cannot find %s : using default options" % ConfigFileName()
-	sdkroot = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
-	ConfigData.add_section( "PATHS" )
-	ConfigData.set( "PATHS", "XCODEDIR", GetDefault("XCODEDIR", "/Applications/Xcode.app") )
-	ConfigData.set( "PATHS", "OSXSDKROOT", GetDefault("OSXSDKROOT", sdkroot) )
-	ConfigData.add_section( "CONFIG" )
-	ConfigData.set( "CONFIG", "ARCH", GetDefault("ARCH", "x86_64") )
-	cfgfile = open(ConfigFileName(),'w')
-	ConfigData.write(cfgfile)
-	cfgfile.close()
+    print "LOCALOPTS: Cannot find %s : using default options" % ConfigFileName()
+    sdkroot = "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk"
+    ConfigData.add_section( "PATHS" )
+    ConfigData.set( "PATHS", "XCODEDIR", GetDefault("XCODEDIR", "/Applications/Xcode.app"))
+    ConfigData.set( "PATHS", "QT5DIR", GetDefault("QT5DIR", "/usr/local/opt/qt5"))
+    ConfigData.set( "PATHS", "OSXSDKROOT", GetDefault("OSXSDKROOT", sdkroot))
+    ConfigData.add_section( "CONFIG" )
+    ConfigData.set( "CONFIG", "ARCH", GetDefault("ARCH", "x86_64") )
+    cfgfile = open(ConfigFileName(),'w')
+    ConfigData.write(cfgfile)
+    cfgfile.close()
 
 #print ConfigData.sections()
 
@@ -83,6 +84,8 @@ def GetEnv( sect, varname ):
 
 def XCODEDIR(): # qt base dir
         return GetEnv( "PATHS", "XCODEDIR" )
+def QT5DIR(): # qt base dir
+        return GetEnv( "PATHS", "QT5DIR" )
 def OSXSDKROOT(): # qt base dir
         return GetEnv( "PATHS", "OSXSDKROOT" )
 def AQSISDIR():

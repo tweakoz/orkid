@@ -458,7 +458,7 @@ void Outliner2View::SetNameOfSelectedItem()
 	if( 0 == iv && dialog.WasChanged() )
 	{
 		auto result = dialog.GetResult();
-		const char* rescstr = result.toAscii().constData();
+		const char* rescstr = result.toStdString().c_str();
 
 		auto& ed = mOutlinerModel.Editor();
 		auto& sm = ed.SelectionManager();

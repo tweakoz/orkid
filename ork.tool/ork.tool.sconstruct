@@ -28,8 +28,13 @@ class orktool:
     if is_prep:
       return
 
-    BasicEnv = Environment( ENV=os.environ )
+    BasicEnv = Environment( ENV=os.environ, tools=['default','qt5'] )
+    BasicEnv["ENV"]['PKG_CONFIG_PATH'] = '/usr/local/opt/qt5/lib/pkgconfig/'
+    BasicEnv['QT5_AUTOSCAN_STRATEGY'] = 1
+    os.environ['PKG_CONFIG_PATH'] = '$QT5DIR/lib/pkgconfig'
 
+    BasicEnv.EnableQt5Modules(string.split('QtGui QtCore QtWidgets'))
+    
     ##########################################
 
     SRC_FOLDERS  = " . manip qtui toolcore ged "
@@ -52,7 +57,6 @@ class orktool:
     prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
     prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
     prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
-    prj.AddIncludePaths( "/usr/include/qt4" )
     prj.AddFolders( SRC_FOLDERS, "*.cpp" )
     prj.AddDefines( "LINUX" )
     #########################
@@ -60,7 +64,7 @@ class orktool:
     #########################
     if prj.IsOsx:
       #print "osx"
-      prj.AddFrameworks("OpenGL QtCore QtGui" )
+      prj.AddFrameworks("OpenGL QtCore QtGui QtWidgets" )
       prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
       prj.AddFrameworks("Carbon Foundation ApplicationServices" )
       prj.AddFrameworks("AppKit QuartzComposer")
@@ -93,7 +97,6 @@ class orktool:
     prj_test.AddIncludePaths( "../ork.ent/inc/" )
     prj_test.AddIncludePaths( "inc" )
     prj_test.AddIncludePaths( "%s/include"%sln.stage_dir )
-    prj_test.AddIncludePaths( "/usr/include/qt4" )
     prj_test.AddIncludePaths( "%s/include/bullet/src"%sln.stage_dir )
     prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
     prj_test.AddFolders( "test", "*.cpp" )

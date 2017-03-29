@@ -17,64 +17,66 @@ is_prep = (TARGET=="prep")
 ##########################################
 
 class tweakout:
-  def __init__(self):  	
+  def __init__(self):   
 
-	BasicEnv = Environment( ENV=os.environ )
+   BasicEnv = Environment( ENV=os.environ,tools=['default','qt5'] )
+   BasicEnv["ENV"]['PKG_CONFIG_PATH'] = '/usr/local/opt/qt5/lib/pkgconfig/'
+   BasicEnv.EnableQt5Modules(string.split('QtGui QtCore QtWidgets'))
 
-	##########################################
+   ##########################################
 
-	ORKLIBS = sln.xflibnams("ork.%s ", "core lev2 ent fcollada " +
+   ORKLIBS = sln.xflibnams("ork.%s ", "core lev2 ent fcollada " +
                                        "bullet-2.73-math bullet-2.73-collision " +
                                        "bullet-2.73-dynamics bullet-2.73-extras " )
 
-	##########################################
+   ##########################################
 
-	prj = sln.Project(BasicEnv,"tweakout")
-	prj.SetSrcBase( "src" )
+   prj = sln.Project(BasicEnv,"tweakout")
+   prj.SetSrcBase( "src" )
 
-	prj.AddIncludePaths( "../ork.core/inc/ " +
-	                     "../ork.lev2/inc/ " + 
-	                     "../ork.ent/inc/ " +
- 	                     "../ork.tool/inc/ " +
-	                     "inc src" )
+   prj.AddIncludePaths( "../ork.core/inc/ " +
+                        "../ork.lev2/inc/ " + 
+                        "../ork.ent/inc/ " +
+                        "../ork.tool/inc/ " +
+                        "inc src" )
 
-	prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
-	prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
-	prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
-	prj.AddIncludePaths( "/usr/include/qt4" )
-	prj.AddFolders( " . ", "*.cpp" )
-	prj.AddDefines( "LINUX" )
-	#########################
-	## OSX libs
-	#########################
-	if prj.IsOsx:
-		prj.AddFrameworks("OpenGL QtCore QtGui" )
-		prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
-		prj.AddFrameworks("Carbon Foundation ApplicationServices" )
-		prj.AddFrameworks("AppKit QuartzComposer")
-	#########################
-	## IX libs
-	#########################
-	elif prj.IsIx:
-		LIBS = "GL QtCore QtGui xcb OpenImageIO OpenImageIO_Util"
-		prj.AddLibs( LIBS )
-	#########################
-	## common libs
-	#########################
-	prj.AddLibsWithSuffix( ORKLIBS )
-	prj.AddLibs( "OpenImageIO OpenImageIO_Util" )
-	#########################
-	prj.Configure()
-	self.tweakout_lib = prj.SharedLibrary( )
+   prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
+   prj.AddIncludePaths( "%s/include/fcollada/FCollada"%sln.stage_dir )
+   prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
+   prj.AddIncludePaths( "/usr/include/qt4" )
+   prj.AddFolders( " . ", "*.cpp" )
+   prj.AddDefines( "LINUX" )
+   #########################
+   ## OSX libs
+   #########################
+   if prj.IsOsx:
+      prj.AddFrameworks("OpenGL QtCore QtGui QtWidgets" )
+      prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
+      prj.AddFrameworks("Carbon Foundation ApplicationServices" )
+      prj.AddFrameworks("AppKit QuartzComposer")
+   #########################
+   ## IX libs
+   #########################
+   elif prj.IsIx:
+      LIBS = "GL QtCore QtGui xcb OpenImageIO OpenImageIO_Util"
+      prj.AddLibs( LIBS )
+   #########################
+   ## common libs
+   #########################
+   prj.AddLibsWithSuffix( ORKLIBS )
+   prj.AddLibs( "OpenImageIO OpenImageIO_Util" )
+   #########################
+   prj.Configure()
+   self.tweakout_lib = prj.SharedLibrary( )
 
-	##########################################
+   ##########################################
 
 ##########################################
 
 a = tweakout()
 ret = list()
 if False==is_prep:
-	ret += a.tweakout_lib
+   ret += a.tweakout_lib
 Return('ret')
 
 ##########################################

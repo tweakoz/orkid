@@ -8,7 +8,9 @@ import ork.build.slnprj as sln
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
-BasicEnv = Environment( ENV=os.environ )
+BasicEnv = Environment( ENV=os.environ, tools=['default','qt5'] )
+BasicEnv["ENV"]['PKG_CONFIG_PATH'] = '/usr/local/opt/qt5/lib/pkgconfig/'
+BasicEnv.EnableQt5Modules(string.split('QtGui QtCore QtWidgets'))
 
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
@@ -44,7 +46,6 @@ class lev2:
     prj_lib.AddIncludePaths( "../ork.tuio/src" )
     prj_lib.AddIncludePaths( "../ork.tuio/src/oscpack" )
     prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
-    prj_lib.AddIncludePaths( "/usr/include/qt4" )
     prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
     prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
     #########################
@@ -52,7 +53,7 @@ class lev2:
     #########################
     if prj_lib.IsOsx:
       prj_lib.AddFolders( SRC_FOLDERS, "*.mm" )
-      prj_lib.AddFrameworks("OpenGL QtCore QtGui" )
+      prj_lib.AddFrameworks("OpenGL QtCore QtGui QtWidgets" )
       prj_lib.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
       prj_lib.AddFrameworks("Carbon Foundation ApplicationServices" )
       prj_lib.AddFrameworks("AppKit QuartzComposer")

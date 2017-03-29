@@ -62,7 +62,6 @@ int main(int argc, char** argv, char** argp)
 	TestApplication the_app;
     ApplicationStack::Push(&the_app);
 
-	ork::lev2::CQNoMocBase::MocInitAll();
     ork::rtti::Class::InitializeClasses();
 	ork::lev2::GfxTargetCreationParams CreationParams;
 	CreationParams.miNumSharedVerts = 64<<10;

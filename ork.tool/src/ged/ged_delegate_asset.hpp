@@ -5,10 +5,12 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <QtGui/QInputDialog>
 #include <orktool/ged/ged_io.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/asset/Asset.h>
+#include <QtWidgets/QInputDialog>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QAction>
 
 namespace ork { namespace tool { namespace ged {
 
@@ -74,7 +76,7 @@ void GedAssetNode<IODriver>::OnCreateObject()
 		{
 			QVariant UserData = pact->data();
 			QString UserName = UserData.toString();
-			std::string pname = UserName.toAscii().data();
+			std::string pname = UserName.toStdString();
 
 			file::Path apath( pname.c_str() );
 			

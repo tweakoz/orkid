@@ -201,7 +201,6 @@ class BakeProcessor;
 
 class BakeJobThread : public QThread 
 {
-	DeclareMoc(BakeJobThread,QThread);
 public:
 	BakeJobThread(BakeContext*bc,UiFarmNode*fn);
 	BakeContext*	GetBakeContext() const { return bkctx; }

@@ -16,8 +16,8 @@
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/ui/viewport.h>
 
-#include <QtGui/QMainWindow>
-#include <QtGui/QGesture>
+#include <QtWidgets/QMainWindow>
+#include <QtWidgets/QGesture>
 #include <ork/math/basicfilters.h>
 
 #if defined(_DARWIN)

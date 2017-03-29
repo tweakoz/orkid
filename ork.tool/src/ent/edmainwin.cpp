@@ -29,6 +29,8 @@
 #include <QtCore/QSettings>
 #include <ork/kernel/opq.h>
 #include <ork/application/application.h>
+#include <QtWidgets/QDockWidget>
+#include <QtWidgets/QInputDialog>
 
 #if defined(ORK_OSX)
 extern bool gPythonEnabled;
@@ -61,8 +63,6 @@ void RegisterMainWinDefaultModule( EditorMainWindow& emw );
 void RegisterLightingModule( EditorMainWindow& emw );
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-ImplementMoc( EditorMainWindow, tool::MiniorkMainWindow );
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::Describe()
 {	///////////////////////////////////////////////////////////
@@ -224,11 +224,6 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 
 	OrkAssert(bconOK);
 
-	/////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////
-	mDirModel = new QDirModel;
-	//////////////////////////////////////////////////////
-
 	////////////////////////////////////
 	
 	auto genviewblk = [=]()
@@ -245,7 +240,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 		////////////////////////////////////
 		//tabifyDockWidget( pdw2, pdw3 );
 		//tabifyDockWidget( pdw4, pdw2 );
-		setCentralWidget( pdw0 );
+		setCentralWidget( pdw0->widget() );
 	};
 	//MainThreadOpQ().push(genviewblk);
 	genviewblk();
@@ -326,24 +321,6 @@ void EditorMainWindow::SlotOnTimer()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::MocInit( void )
-{
-	///////////////////////////////////////
-	Moc.AddSlot0( "NewEntity()", & EditorMainWindow::NewEntity );
-	Moc.AddSlot0( "NewEntities()", & EditorMainWindow::NewEntities );
-	Moc.AddSlot0( "Group()", & EditorMainWindow::Group );
-	Moc.AddSlot0( "Dupe()", & EditorMainWindow::Dupe );
-	Moc.AddSlot0( "RefreshModels()", & EditorMainWindow::RefreshModels );
-	Moc.AddSlot0( "RefreshTextures()", & EditorMainWindow::RefreshTextures );
-	Moc.AddSlot0( "RefreshAnims()", & EditorMainWindow::RefreshAnims );
-	Moc.AddSlot0( "RefreshHFSMs()", & EditorMainWindow::RefreshHFSMs );
-	///////////////////////////////////////
-	Moc.AddSlot0( "SlotOnTimer()", & EditorMainWindow::SlotOnTimer );
-}
-///////////////////////////////////////////////////////////////////////////
 bool EditorMainWindow::event(QEvent *qevent)
 {
 	switch( qevent->type() )
@@ -420,13 +397,13 @@ void EditorMainWindow::NewEntity()
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::NewEntities()
 {	bool ok;
-	int i = QInputDialog::getInteger(this, tr("New Entities..."), tr("Entity Count:"), 1, 1, 0x7FFFFFFF, 1, &ok);
+	/*int i = QInputDialog::getInteger(this, tr("New Entities..."), tr("Entity Count:"), 1, 1, 0x7FFFFFFF, 1, &ok);
 	if(ok)
 	{	auto lamb = [=]()
 		{	this->mEditorBase.EditorNewEntities(i);
 		};
 		UpdateSerialOpQ().push_sync(Op(lamb));
-	}
+	}*/
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::Group()

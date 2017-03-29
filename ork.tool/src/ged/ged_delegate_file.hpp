@@ -5,6 +5,10 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#pragma once 
+
+#include <QMenu>
+
 namespace ork { namespace tool { 
 void FindAssetChoices(const file::Path& sdir, CChoiceList* choice_list, const std::string& wildcard);
 }}
@@ -113,8 +117,7 @@ void GedFileNode<IODriver>::OnCreateObject()
 		if( pact )
 		{
 			QVariant UserData = pact->data();
-			QString UserName = UserData.toString();
-			std::string pname = UserName.toAscii().data();
+			std::string pname = UserData.toString().toStdString();
 
 			file::Path apath( pname.c_str() );
 
