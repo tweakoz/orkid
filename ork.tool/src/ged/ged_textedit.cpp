@@ -77,11 +77,11 @@ GedInputDialog::GedInputDialog()
 	, mbChanged( false )
 	, mResult("")
 {
-	bool bOK = connect(&mTextEdit, SIGNAL(textChanged(QString)), this, SLOT(SlotTextChanged(QString)));
+	bool bOK = connect(&mTextEdit, SIGNAL(textChanged(QString)), this, SLOT(textChanged(QString)));
 	OrkAssert(bOK);
-	bOK = connect(&mTextEdit, SIGNAL(SigEditFinished()), this, SLOT(done()));
+	bOK = connect(&mTextEdit, SIGNAL(editFinished()), this, SLOT(done()));
 	OrkAssert(bOK);
-	bOK = connect(&mTextEdit, SIGNAL(SigCanceled()), this, SLOT(canceled()));
+	bOK = connect(&mTextEdit, SIGNAL(canceled()), this, SLOT(canceled()));
 	OrkAssert(bOK);
 //	mTextEdit.setTabChangesFocus( true );
 }
@@ -104,7 +104,7 @@ void GedInputDialog::canceled( )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedInputDialog::SlotTextChanged( QString newtext )
+void GedInputDialog::textChanged( QString newtext )
 {
 	mResult = mTextEdit.text();
 	mbChanged = true;

@@ -157,7 +157,6 @@ class Project:
     self.SUFFIX = BuildSuffix(ARGUMENTS)
     self.BUILD_DIR = '%s/%s.%s/' % (obj_dir,self.BUILDNAME,name)
     self.OutputName = '%s.%s' % (name,self.BUILDNAME)
-    print "\nBUILDDIR<%s>\n"%self.BUILD_DIR
     ##################################
     self.BaseEnv = Environment.Clone()
     self.BaseEnv.Replace( QT5_MOCCOMSTR = deco.magenta("Moccing ")+deco.path("$SOURCE") )
@@ -171,13 +170,11 @@ class Project:
       #self.BaseEnv['PRINT_CMD_LINE_FUNC'] = CommandPrinter
     ##################################
     # QT crap
-    self.BaseEnv['QT5_DEBUG'] = 1
+
+    self.BaseEnv['QT5_DEBUG'] = 0
     QT5DIR = os.path.expandvars('$QT5DIR')
-    print QT5DIR
     self.BaseEnv["QT5DIR"] = QT5DIR
     self.BaseEnv["ENV"]['PKG_CONFIG_PATH'] = QT5DIR+'/lib/pkgconfig'
-    #/lib/pkgconfig/
-
 
     ##################################
     self.CustomDefines = []

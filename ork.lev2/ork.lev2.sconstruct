@@ -84,8 +84,7 @@ class lev2:
     prj_test.AddFolders( "test", "*.cpp" )
     prj_test.AddProjectDep( prj_lib )
     prj_test.AddLibsWithSuffix( "ork.unittestpp" )
-    if prj_test.IsOsx:
-      prj_test.AddFrameworks("OpenGL QtCore QtGui" )
+    prj_test.AddQt5Modules("QtGui QtCore QtWidgets")
     prj_test.Configure()
 
     self.prg = prj_test.Program( )

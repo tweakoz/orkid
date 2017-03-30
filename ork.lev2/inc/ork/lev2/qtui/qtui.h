@@ -19,23 +19,23 @@ extern int QtTest( int argc, char **argv );
 #define register 
 
 ///////////////////////////////////////////////////////////////////////////////
-#include <QtWidgets/QApplication>
-#include <QtCore/QMetaObject>
-#include <QtCore/qmetatype.h>
-#include <QtCore/qdatastream.h>
-#include <QtCore/QMetaMethod>
-#include <QtCore/QSize>
-#include <QtCore/QTimer>
-#include <QtGui/QResizeEvent>
-#include <QtGui/QShowEvent>
-#include <QtGui/QPaintEvent>
-#include <QtGui/QMouseEvent>
-#include <QtGui/QPainter>
-#include <QtWidgets/QCheckBox>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QSplashScreen>
-#include <QtWidgets/QInputDialog>
-#include <QtWidgets/QFileDialog>
+//#include <QtCore/qmetatype.h>
+//#include <QtCore/qdatastream.h>
+#include <QApplication>
+#include <QMetaObject>
+#include <QMetaMethod>
+#include <QSize>
+#include <QTimer>
+#include <QResizeEvent>
+#include <QShowEvent>
+#include <QPaintEvent>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QCheckBox>
+#include <QWidget>
+#include <QSplashScreen>
+#include <QInputDialog>
+#include <QFileDialog>
 
 #undef register 
 
