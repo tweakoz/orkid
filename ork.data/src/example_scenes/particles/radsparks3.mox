@@ -14,8 +14,8 @@
                                             <object type='CCamera_persp' id='3'>
                                                 <property name='Center'>1.84644e-13 -9.43853e-14 1.05636e-13</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>292.696</property>
-                                                <property name='QuatC'>-0.742684 0.118301 -0.614991 0.237158</property>
+                                                <property name='Loc'>39.9097</property>
+                                                <property name='QuatC'>0.502717 0.448976 0.338965 0.656378</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -302,7 +302,9 @@
                                                                                     <object type='psys::pbufinpplug' id='56'>
                                                                                     </object>
                                                                                 </property>
+                                                                                <property name='AlphaMux'>0 0 0 1</property>
                                                                                 <property name='BlendMode'>"EBLENDING_ADDITIVE"</property>
+                                                                                <property name='DepthSort'>false</property>
                                                                                 <property name='Gradient'>
                                                                                     <object type='GradientV4' id='57'>
                                                                                         <property name='points'>
@@ -409,10 +411,10 @@
                                                                         "lev2tex" "data://effect_textures/panel2_knob_center_nmap"
                                                                     </reference>
                                                                 </property>
-                                                                <property name='FeedbackAmount'>0.969697</property>
-                                                                <property name='FinalRezScale'>0.743182</property>
-                                                                <property name='FxRezScale'>0.445455</property>
-                                                                <property name='PostFxFeedback'>true</property>
+                                                                <property name='FeedbackAmount'>0.564748</property>
+                                                                <property name='FinalRezScale'>0.102158</property>
+                                                                <property name='FxRezScale'>1</property>
+                                                                <property name='PostFxFeedback'>false</property>
                                                                 <property name='Type'>"EFRAMEFX_GHOSTLY"</property>
                                                             </object>
                                                         </property>
@@ -423,16 +425,16 @@
                                             <item key='c'>
                                                 <reference category='ObjectClass'>
                                                     <object type='CompositingGroup' id='70'>
-                                                        <property name='Camera'>""</property>
+                                                        <property name='Camera'>"ecam"</property>
                                                         <property name='Effect'>
                                                             <object type='CompositingGroupEffect' id='71'>
-                                                                <property name='Amount'>0.606522</property>
+                                                                <property name='Amount'>0.870504</property>
                                                                 <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                                <property name='FeedbackAmount'>0.895652</property>
+                                                                <property name='FeedbackAmount'>0.938849</property>
                                                                 <property name='FinalRezScale'>0.845272</property>
                                                                 <property name='FxRezScale'>0.841033</property>
                                                                 <property name='PostFxFeedback'>false</property>
-                                                                <property name='Type'>"EFRAMEFX_GLOW"</property>
+                                                                <property name='Type'>"EFRAMEFX_GHOSTLY"</property>
                                                             </object>
                                                         </property>
                                                         <property name='Layers'>"All"</property>
@@ -440,6 +442,10 @@
                                                 </reference>
                                             </item>
                                         </property>
+                                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
+                                        <property name='OutputFrames'>false</property>
+                                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
+                                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
                                         <property name='Scenes'>
                                             <item key='s1'>
                                                 <reference category='ObjectClass'>
@@ -454,10 +460,10 @@
                                                                                     <property name='GroupA'>"a"</property>
                                                                                     <property name='GroupB'>"b"</property>
                                                                                     <property name='GroupC'>"c"</property>
-                                                                                    <property name='LevelA'>8.53211</property>
-                                                                                    <property name='LevelB'>7.84404</property>
-                                                                                    <property name='LevelC'>1.83486</property>
-                                                                                    <property name='Mode'>"AlerpBwithC"</property>
+                                                                                    <property name='LevelA'>-7.6378</property>
+                                                                                    <property name='LevelB'>0.393701</property>
+                                                                                    <property name='LevelC'>2.3622</property>
+                                                                                    <property name='Mode'>"AplusBplusC"</property>
                                                                                 </object>
                                                                             </reference>
                                                                         </property>
@@ -522,5 +528,6 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>
