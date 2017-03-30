@@ -32,7 +32,7 @@
                                                                         <object type='CompositingGroupEffect' id='6'>
                                                                             <property name='Amount'>0.958661</property>
                                                                             <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                                            <property name='FeedbackAmount'>0</property>
+                                                                            <property name='FeedbackAmount'>0.589928</property>
                                                                             <property name='FinalRezScale'>1</property>
                                                                             <property name='FxRezScale'>0.115207</property>
                                                                             <property name='PostFxFeedback'>false</property>
@@ -51,7 +51,7 @@
                                                                         <object type='CompositingGroupEffect' id='8'>
                                                                             <property name='Amount'>0.956835</property>
                                                                             <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                                            <property name='FeedbackAmount'>0</property>
+                                                                            <property name='FeedbackAmount'>0.841727</property>
                                                                             <property name='FinalRezScale'>0.5</property>
                                                                             <property name='FxRezScale'>1</property>
                                                                             <property name='PostFxFeedback'>false</property>
@@ -1076,7 +1076,9 @@
                                                                                     <object type='psys::pbufinpplug' id='179'>
                                                                                     </object>
                                                                                 </property>
+                                                                                <property name='AlphaMux'>0 0 0 1</property>
                                                                                 <property name='BlendMode'>"EBLENDING_ADDITIVE"</property>
+                                                                                <property name='DepthSort'>false</property>
                                                                                 <property name='Gradient'>
                                                                                     <object type='GradientV4' id='180'>
                                                                                         <property name='points'>
@@ -1463,7 +1465,9 @@
                                                                                     <object type='psys::pbufinpplug' id='245'>
                                                                                     </object>
                                                                                 </property>
+                                                                                <property name='AlphaMux'>0 0 0 1</property>
                                                                                 <property name='BlendMode'>"EBLENDING_SUBTRACTIVE"</property>
+                                                                                <property name='DepthSort'>false</property>
                                                                                 <property name='Gradient'>
                                                                                     <object type='GradientV4' id='246'>
                                                                                         <property name='points'>
@@ -1583,10 +1587,10 @@
                                     <object type='EditorCamControllerData' id='263'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='264'>
-                                                <property name='Center'>-0.39997 1.61772 5.54606</property>
+                                                <property name='Center'>-0.474919 1.71015 1.42624</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>103.502</property>
-                                                <property name='QuatC'>0.00568298 -0.997173 -0.0316947 -0.0683722</property>
+                                                <property name='Loc'>109.327</property>
+                                                <property name='QuatC'>-0.0513306 -0.958306 -0.0111336 -0.280992</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
