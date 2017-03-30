@@ -295,7 +295,8 @@ void EditorModule::AddAction(  const char* pname,QKeySequence ks)
 				if( end )
 				{
 					QAction* pact = pcurmenu->addAction( nm.c_str() );
-					//if(ks) pact->setShortcut(ks);
+					if(false==ks.isEmpty()) 
+                        pact->setShortcut(ks);
 					pact->setData( QVariant( tr(pthstr.c_str()) ) );
 					connect(pact, SIGNAL(triggered()), this, SLOT(ActionSlot()));
 				}

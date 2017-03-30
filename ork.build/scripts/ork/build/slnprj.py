@@ -157,9 +157,10 @@ class Project:
     self.SUFFIX = BuildSuffix(ARGUMENTS)
     self.BUILD_DIR = '%s/%s.%s/' % (obj_dir,self.BUILDNAME,name)
     self.OutputName = '%s.%s' % (name,self.BUILDNAME)
-    #print "\nBUILDDIR<%s>\n"%self.BUILD_DIR
+    print "\nBUILDDIR<%s>\n"%self.BUILD_DIR
     ##################################
     self.BaseEnv = Environment.Clone()
+    self.BaseEnv.Replace( QT5_MOCCOMSTR = deco.magenta("Moccing ")+deco.path("$SOURCE") )
     self.BaseEnv.Replace( CCCOMSTR = deco.magenta("Compiling ")+deco.path("$SOURCE") )
     self.BaseEnv.Replace( CXXCOMSTR = self.BaseEnv['CCCOMSTR'])
     self.BaseEnv.Replace( SHCCCOMSTR = self.BaseEnv['CCCOMSTR'])
@@ -168,6 +169,16 @@ class Project:
     self.BaseEnv.Replace( LINKCOMSTR = deco.magenta("Linking ")+deco.path("$TARGET") )
     self.BaseEnv.Replace( SHLINKCOMSTR = deco.magenta("Dylinking ")+deco.path("$TARGET") )
       #self.BaseEnv['PRINT_CMD_LINE_FUNC'] = CommandPrinter
+    ##################################
+    # QT crap
+    self.BaseEnv['QT5_DEBUG'] = 1
+    QT5DIR = os.path.expandvars('$QT5DIR')
+    print QT5DIR
+    self.BaseEnv["QT5DIR"] = QT5DIR
+    self.BaseEnv["ENV"]['PKG_CONFIG_PATH'] = QT5DIR+'/lib/pkgconfig'
+    #/lib/pkgconfig/
+
+
     ##################################
     self.CustomDefines = []
     ##################################
@@ -184,6 +195,7 @@ class Project:
     ##############
     self.PreIncludePaths = list(string.split("%s/include"%stage_dir))
     self.IncludePaths = list()
+    self.IncludePathsQt = list()
     self.PostIncludePaths = list()
     ##############
     self.PreLibraryPaths = string.split("%s/lib"%stage_dir)
@@ -195,6 +207,7 @@ class Project:
     # self.LibraryPaths += string.split(os.environ["PRJ_LIBDIRS"])      
 
     self.Libraries = list()
+    self.ExplicitMocs = list()
     self.Frameworks = list()
     self.sourcebase = ''
     self.IsLibrary = False
@@ -266,6 +279,10 @@ class Project:
     if self.MatchPlatform(platform):
       self.enumerator.AddFolders(folders,pattern)
 
+  def AddIncludePathsQt(self,paths,platform="any"):
+    if self.MatchPlatform(platform):
+      self.IncludePathsQt += string.split(paths)
+
   def AddIncludePaths(self,paths,platform="any"):
     if self.MatchPlatform(platform):
       self.IncludePaths += string.split(paths)
@@ -305,6 +322,11 @@ class Project:
 
   ############################################
 
+  def AddQt5Modules(self,mods):
+      self.BaseEnv.EnableQt5Modules(string.split(mods))
+
+  ############################################
+
   def SetSrcBase(self,base):
     self.basefolder = os.path.normpath(base)+"/"
     self.BaseEnv.Append( CPPPATH=[self.basefolder] )
@@ -340,6 +362,7 @@ class Project:
 
     incpaths = list(Set(self.PreIncludePaths))
     incpaths += list(Set(self.IncludePaths))
+    incpaths += list(Set(self.IncludePathsQt))
     incpaths += list(Set(self.PostIncludePaths))
     self.IncludePaths = incpaths
 
@@ -348,7 +371,7 @@ class Project:
  
     self.SetCompilerOptions( self.XDEFS, self.XCCFLG, self.XCXXFLG, self.IncludePaths, self.LibraryPaths, self.XLINK, self.PLATFORM, self.BUILD )
     self.CompileEnv = self.BaseEnv.Clone()
-
+    self.CompileEnv["BUILD_DIR"] = self.BUILD_DIR
     if self.LogConfig:
       print "///////////////////////////////////////////////////////"
       print "Project: OutputName<%s>" % self.OutputName
@@ -441,7 +464,16 @@ class Project:
     libname = '#stage/lib/%s.so'%self.OutputName
     self.TargetName = self.OutputName
     self.CompileEnv.Append( SHLINKFLAGS = string.split("-install_name @executable_path/../lib/lib%s.so" % self.OutputName) )
-    lib = self.CompileEnv.SharedLibrary( libname, self.GetSources() )
+
+    self.MocResults = list()
+
+    for item in self.IncludePathsQt:
+        mocsources=common.recursive_glob(item,"*.h")
+        for sss in mocsources: 
+           print sss
+           self.MocResults += self.CompileEnv.Moc5( sss )
+
+    lib = self.CompileEnv.SharedLibrary( libname, self.GetSources() + self.ExplicitMocs  )
     env = self.CompileEnv
     #env.Alias('install', env.Install(lib_dir, lib))
     return lib

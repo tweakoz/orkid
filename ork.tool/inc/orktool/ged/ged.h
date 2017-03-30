@@ -15,6 +15,9 @@
 #include <ork/kernel/orkpool.h>
 #include <ork/kernel/any.h>
 #include <ork/lev2/ui/viewport.h>
+#include <QtWidgets/QLineEdit>
+#include <QtWidgets/QDialog>
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 class Object;
@@ -636,7 +639,7 @@ signals:
 };
 class GedInputDialog : public QDialog
 {
-
+    Q_OBJECT
 public:
 
 	static QString getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
@@ -644,12 +647,13 @@ public:
     GedInputDialog();
     void done( );
     void canceled( );
-    void SlotTextChanged(QString str);
     QString GetResult();
     void clear() { mTextEdit.clear(); }
     GedTextEdit mTextEdit;
     QString     mResult;
     bool        mbChanged;
+public slots:
+    void SlotTextChanged(QString str);
 
 };
 ///////////////////////////////////////////////////////////////////////////////

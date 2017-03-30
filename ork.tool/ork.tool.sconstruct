@@ -8,6 +8,7 @@ import ork.build.common as cmn
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
+VariantDir( 'obji', 'inc', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
 
 #
@@ -29,11 +30,6 @@ class orktool:
       return
 
     BasicEnv = Environment( ENV=os.environ, tools=['default','qt5'] )
-    BasicEnv["ENV"]['PKG_CONFIG_PATH'] = '/usr/local/opt/qt5/lib/pkgconfig/'
-    BasicEnv['QT5_AUTOSCAN_STRATEGY'] = 1
-    os.environ['PKG_CONFIG_PATH'] = '$QT5DIR/lib/pkgconfig'
-
-    BasicEnv.EnableQt5Modules(string.split('QtGui QtCore QtWidgets'))
     
     ##########################################
 
@@ -59,6 +55,12 @@ class orktool:
     prj.AddIncludePaths( "%s/include/fcollada/FCollada/LibXML/include"%sln.stage_dir )
     prj.AddFolders( SRC_FOLDERS, "*.cpp" )
     prj.AddDefines( "LINUX" )
+    prj.AddQt5Modules("QtGui QtCore QtWidgets")
+
+    for item in cmn.recursive_glob("inc","*.h"):
+        print item
+        prj.ExplicitMocs += BasicEnv.ExplicitMoc5("mocs/%s.moc"%item, item )
+
     #########################
     ## OSX libs
     #########################
@@ -106,6 +108,12 @@ class orktool:
     prj_test.Configure()
     self.test_prg = prj_test.Program()
     Depends( self.test_prg, self.tool_lib )
+
+    bundle = prj_test.CompileEnv.Command( target = "testoutput",
+      source = self.test_prg,
+      action = "ork.bundle.make.py" )
+
+    Depends( bundle, self.test_prg )
 
 ##########################################
 

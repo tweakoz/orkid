@@ -24,6 +24,8 @@
 	<string>1.0</string>
 	<key>CSResourcesFileMapped</key>
 	<false/>
+    <key>NSHighResolutionCapable</key>
+    <false/>
 </dict>
 </plist>
 

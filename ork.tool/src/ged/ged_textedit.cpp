@@ -29,9 +29,6 @@ GedTextEdit::GedTextEdit( QWidget* parent )
 
 }
 
-void GedTextEdit::editFinished() {}
-void GedTextEdit::canceled() {}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void GedTextEdit::focusOutEvent( QFocusEvent* pev ) // virtual
