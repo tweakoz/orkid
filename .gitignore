@@ -9,6 +9,7 @@ hotkeys.ork
 *.cst
 *.swatch*
 *.moc
+mocs
 .mayaSwatches/*
 ork.build.ini
 workspace.mel

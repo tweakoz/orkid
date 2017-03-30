@@ -58,8 +58,7 @@ class orktool:
     prj.AddQt5Modules("QtGui QtCore QtWidgets")
 
     for item in cmn.recursive_glob("inc","*.h"):
-        print item
-        prj.ExplicitMocs += BasicEnv.ExplicitMoc5("mocs/%s.moc"%item, item )
+        prj.ExplicitMocs += BasicEnv.ExplicitMoc5("mocs/%s.moc.cpp"%item, item )
 
     #########################
     ## OSX libs
@@ -105,6 +104,7 @@ class orktool:
     prj_test.AddLibsWithSuffix( "ork.unittestpp" )
     prj_test.AddLibsWithSuffix( ORKLIBS )
     prj_test.AddProjectDep( prj )
+    prj_test.AddQt5Modules("QtGui QtCore QtWidgets")
     prj_test.Configure()
     self.test_prg = prj_test.Program()
     Depends( self.test_prg, self.tool_lib )

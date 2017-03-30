@@ -645,15 +645,15 @@ public:
 	static QString getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
 	bool WasChanged() const { return mbChanged; }
     GedInputDialog();
-    void done( );
-    void canceled( );
     QString GetResult();
     void clear() { mTextEdit.clear(); }
     GedTextEdit mTextEdit;
     QString     mResult;
     bool        mbChanged;
 public slots:
-    void SlotTextChanged(QString str);
+    void done( );
+    void canceled( );
+    void textChanged(QString str);
 
 };
 ///////////////////////////////////////////////////////////////////////////////
