@@ -10,8 +10,10 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <ork/kernel/slashnode.h>
+#include <ork/reflect/Functor.h>
 #include <QMenuBar>
 #include <QMainWindow>
+#include <QEvent>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -30,6 +32,8 @@ namespace tool {
 
 class EditorModule : public QObject
 {	
+    Q_OBJECT
+
 protected:
 
 	SlashTree						mSlashHier;
@@ -45,6 +49,8 @@ public:
 	virtual void Activate( QMenuBar* qmb ) {}
 	virtual void DeActivate( QMenuBar* qmb ) {}
 	virtual void OnAction( const char* pact ) {}
+
+public slots:
 	void ActionSlot();
 };
 

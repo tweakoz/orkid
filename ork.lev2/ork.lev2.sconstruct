@@ -9,8 +9,6 @@ Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
 SetOption('num_jobs', obu.num_cores) 
 BasicEnv = Environment( ENV=os.environ, tools=['default','qt5'] )
-BasicEnv["ENV"]['PKG_CONFIG_PATH'] = '/usr/local/opt/qt5/lib/pkgconfig/'
-BasicEnv.EnableQt5Modules(string.split('QtGui QtCore QtWidgets'))
 
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
@@ -48,6 +46,7 @@ class lev2:
     prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
     prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
     prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
+    prj_lib.AddQt5Modules("QtGui QtCore QtWidgets")
     #########################
     ## OSX libs
     #########################

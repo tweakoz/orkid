@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QMainWindow>
 #include <QtCore/QTimer>
 
@@ -25,6 +26,7 @@ public slots:
     void OnTimer();
 
     ///////////////////////////////////
+public:
 
 	QTimer				mIdleTimer;
 	QMainWindow*		mpMainWindow;

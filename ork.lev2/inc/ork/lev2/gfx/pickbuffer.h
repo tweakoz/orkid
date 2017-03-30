@@ -7,7 +7,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/kernel/mutex.h>
-#include <ork/lev2/gfx/gfxenv_targetinterfaces.h>
+#include <ork/lev2/gfx/gfxenv.h>
 #include <ork/event/Event.h>
 #include <ork/object/AutoConnector.h>
 

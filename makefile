@@ -2,7 +2,7 @@ SITEDIR = --site-dir ./ork.build/site_scons
 SCONSFILE = -f root.sconstruct
 all:
 	scons $(SCONSFILE) $(SITEDIR)
-
+	
 j1:
 	scons $(SCONSFILE) --jobs=1 $(SITEDIR)
 
@@ -40,8 +40,8 @@ toz:
 	make pristine
 	tozkit_deps_build.py all
 
-bundle:
-	./ork.build/bin/ork.bundle.make.py
+deploy:
+	./ork.build/bin/ork.bundle.make.py -deploy
 
 .PHONY: docs
 

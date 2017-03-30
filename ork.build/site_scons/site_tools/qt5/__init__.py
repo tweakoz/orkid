@@ -114,266 +114,6 @@ def find_file(filename, paths, node_factory):
             return node
     return None
 
-class _Automoc:
-    """
-    Callable class, which works as an emitter for Programs, SharedLibraries and
-    StaticLibraries.
-    """
-
-    def __init__(self, objBuilderName):
-        self.objBuilderName = objBuilderName
-        # some regular expressions:
-        # Q_OBJECT detection
-        self.qo_search = re.compile(r'[^A-Za-z0-9]Q_OBJECT[^A-Za-z0-9]')
-        # cxx and c comment 'eater'
-        self.ccomment = re.compile(r'/\*(.*?)\*/',re.S)
-        self.cxxcomment = re.compile(r'//.*$',re.M)
-        # we also allow Q_OBJECT in a literal string
-        self.literal_qobject = re.compile(r'"[^\n]*Q_OBJECT[^\n]*"')
-        
-    def create_automoc_options(self, env):
-        """
-        Create a dictionary with variables related to Automocing,
-        based on the current environment.
-        Is executed once in the __call__ routine.  
-        """
-        moc_options = {'auto_scan' : True,
-                       'auto_scan_strategy' : 0,
-                       'gobble_comments' : 0,
-                       'debug' : 0,
-                       'auto_cpppath' : True,
-                       'cpppaths' : []}
-        try:
-            if int(env.subst('$QT5_AUTOSCAN')) == 0:
-                moc_options['auto_scan'] = False
-        except ValueError:
-            pass
-        try:
-            moc_options['auto_scan_strategy'] = int(env.subst('$QT5_AUTOSCAN_STRATEGY'))
-        except ValueError:
-            pass
-        try:
-            moc_options['gobble_comments'] = int(env.subst('$QT5_GOBBLECOMMENTS'))
-        except ValueError:
-            pass
-        try:
-            moc_options['debug'] = int(env.subst('$QT5_DEBUG'))
-        except ValueError:
-            pass
-        try:
-            if int(env.subst('$QT5_AUTOMOC_SCANCPPPATH')) == 0:
-                moc_options['auto_cpppath'] = False
-        except ValueError:
-            pass
-        if moc_options['auto_cpppath']:
-            paths = env.get('QT5_AUTOMOC_CPPPATH', [])
-            if not paths:
-                paths = env.get('CPPPATH', [])
-            moc_options['cpppaths'].extend(paths)
-        
-        return moc_options
-
-    def __automoc_strategy_simple(self, env, moc_options, 
-                                  cpp, cpp_contents, out_sources):
-        """
-        Default Automoc strategy (Q_OBJECT driven): detect a header file
-        (alongside the current cpp/cxx) that contains a Q_OBJECT
-        macro...and MOC it.
-        If a Q_OBJECT macro is also found in the cpp/cxx itself,
-        it gets MOCed too.
-        """
-        
-        h=None
-        for h_ext in header_extensions:
-            # try to find the header file in the corresponding source
-            # directory
-            hname = self.splitext(cpp.name)[0] + h_ext
-            h = find_file(hname, [cpp.get_dir()]+moc_options['cpppaths'], env.File)
-            if h:
-                if moc_options['debug']:
-                    print "scons: qt5: Scanning '%s' (header of '%s')" % (str(h), str(cpp))
-                h_contents = h.get_contents()
-                if moc_options['gobble_comments']:
-                    h_contents = self.ccomment.sub('', h_contents)
-                    h_contents = self.cxxcomment.sub('', h_contents)
-                h_contents = self.literal_qobject.sub('""', h_contents)
-                break
-        if not h and moc_options['debug']:
-            print "scons: qt5: no header for '%s'." % (str(cpp))
-        if h and self.qo_search.search(h_contents):
-            # h file with the Q_OBJECT macro found -> add moc_cpp
-            moc_cpp = env.Moc5(h)
-            if moc_options['debug']:
-                print "scons: qt5: found Q_OBJECT macro in '%s', moc'ing to '%s'" % (str(h), str(moc_cpp))
-            
-            # Now, check whether the corresponding CPP file
-            # includes the moc'ed output directly...
-            inc_moc_cpp = r'^\s*#\s*include\s+"%s"' % str(moc_cpp[0])
-            if cpp and re.search(inc_moc_cpp, cpp_contents, re.M):
-                if moc_options['debug']:
-                    print "scons: qt5: CXX file '%s' directly includes the moc'ed output '%s', no compiling required" % (str(cpp), str(moc_cpp))
-                env.Depends(cpp, moc_cpp)
-            else:
-                moc_o = self.objBuilder(moc_cpp)
-                if moc_options['debug']:
-                    print "scons: qt5: compiling '%s' to '%s'" % (str(cpp), str(moc_o))
-                out_sources.extend(moc_o)
-        if cpp and self.qo_search.search(cpp_contents):
-            # cpp file with Q_OBJECT macro found -> add moc
-            # (to be included in cpp)
-            moc = env.Moc5(cpp)
-            env.Ignore(moc, moc)
-            if moc_options['debug']:
-                print "scons: qt5: found Q_OBJECT macro in '%s', moc'ing to '%s'" % (str(cpp), str(moc))
-
-    def __automoc_strategy_include_driven(self, env, moc_options,
-                                          cpp, cpp_contents, out_sources):
-        """
-        Automoc strategy #1 (include driven): searches for "include"
-        statements of MOCed files in the current cpp/cxx file.
-        This strategy tries to add support for the compilation
-        of the qtsolutions...
-        """
-        if self.splitext(str(cpp))[1] in cxx_suffixes:
-            added = False
-            h_moc = "%s%s%s" % (env.subst('$QT5_XMOCHPREFIX'),
-                                self.splitext(cpp.name)[0],
-                                env.subst('$QT5_XMOCHSUFFIX'))
-            cxx_moc = "%s%s%s" % (env.subst('$QT5_XMOCCXXPREFIX'),
-                                  self.splitext(cpp.name)[0],
-                                  env.subst('$QT5_XMOCCXXSUFFIX'))
-            inc_h_moc = r'#include\s+"%s"' % h_moc
-            inc_cxx_moc = r'#include\s+"%s"' % cxx_moc
-            
-            # Search for special includes in qtsolutions style
-            if cpp and re.search(inc_h_moc, cpp_contents):
-                # cpp file with #include directive for a MOCed header found -> add moc
-                
-                # Try to find header file                    
-                h=None
-                hname=""
-                for h_ext in header_extensions:
-                    # Try to find the header file in the
-                    # corresponding source directory
-                    hname = self.splitext(cpp.name)[0] + h_ext
-                    h = find_file(hname, [cpp.get_dir()]+moc_options['cpppaths'], env.File)
-                    if h:
-                        if moc_options['debug']:
-                            print "scons: qt5: Scanning '%s' (header of '%s')" % (str(h), str(cpp))
-                        h_contents = h.get_contents()
-                        if moc_options['gobble_comments']:
-                            h_contents = self.ccomment.sub('', h_contents)
-                            h_contents = self.cxxcomment.sub('', h_contents)
-                        h_contents = self.literal_qobject.sub('""', h_contents)
-                        break
-                if not h and moc_options['debug']:
-                    print "scons: qt5: no header for '%s'." % (str(cpp))
-                if h and self.qo_search.search(h_contents):
-                    # h file with the Q_OBJECT macro found -> add moc_cpp
-                    moc_cpp = env.XMoc5(h)
-                    env.Ignore(moc_cpp, moc_cpp)
-                    added = True
-                    # Removing file from list of sources, because it is not to be
-                    # compiled but simply included by the cpp/cxx file.
-                    for idx, s in enumerate(out_sources):
-                        if hasattr(s, "sources") and len(s.sources) > 0:
-                            if str(s.sources[0]) == h_moc:
-                                out_sources.pop(idx)
-                                break
-                    if moc_options['debug']:
-                        print "scons: qt5: found Q_OBJECT macro in '%s', moc'ing to '%s'" % (str(h), str(h_moc))
-                else:
-                    if moc_options['debug']:
-                        print "scons: qt5: found no Q_OBJECT macro in '%s', but a moc'ed version '%s' gets included in '%s'" % (str(h), inc_h_moc, cpp.name)
-
-            if cpp and re.search(inc_cxx_moc, cpp_contents):
-                # cpp file with #include directive for a MOCed cxx file found -> add moc
-                if self.qo_search.search(cpp_contents):
-                    moc = env.XMoc5(target=cxx_moc, source=cpp)
-                    env.Ignore(moc, moc)
-                    added = True
-                    if moc_options['debug']:
-                        print "scons: qt5: found Q_OBJECT macro in '%s', moc'ing to '%s'" % (str(cpp), str(moc))
-                else:
-                    if moc_options['debug']:
-                        print "scons: qt5: found no Q_OBJECT macro in '%s', although a moc'ed version '%s' of itself gets included" % (cpp.name, inc_cxx_moc)
-
-            if not added:
-                # Fallback to default Automoc strategy (Q_OBJECT driven)
-               self.__automoc_strategy_simple(env, moc_options, cpp,
-                                              cpp_contents, out_sources)
-        
-    def __call__(self, target, source, env):
-        """
-        Smart autoscan function. Gets the list of objects for the Program
-        or Lib. Adds objects and builders for the special qt5 files.
-        """
-        moc_options = self.create_automoc_options(env)
-        
-        # some shortcuts used in the scanner
-        self.splitext = SCons.Util.splitext
-        self.objBuilder = getattr(env, self.objBuilderName)
-
-        # The following is kind of hacky to get builders working properly (FIXME)
-        objBuilderEnv = self.objBuilder.env
-        self.objBuilder.env = env
-        mocBuilderEnv = env.Moc5.env
-        env.Moc5.env = env
-        xMocBuilderEnv = env.XMoc5.env
-        env.XMoc5.env = env
-        
-        # make a deep copy for the result; MocH objects will be appended
-        out_sources = source[:]
-
-        for obj in source:
-            if not moc_options['auto_scan']:
-                break
-            if isinstance(obj,basestring):  # big kludge!
-                print "scons: qt5: '%s' MAYBE USING AN OLD SCONS VERSION AND NOT CONVERTED TO 'File'. Discarded." % str(obj)
-                continue
-            if not obj.has_builder():
-                # binary obj file provided
-                if moc_options['debug']:
-                    print "scons: qt5: '%s' seems to be a binary. Discarded." % str(obj)
-                continue
-            cpp = obj.sources[0]
-            if not self.splitext(str(cpp))[1] in cxx_suffixes:
-                if moc_options['debug']:
-                    print "scons: qt5: '%s' is no cxx file. Discarded." % str(cpp) 
-                # c or fortran source
-                continue
-            try:
-                cpp_contents = cpp.get_contents()
-                if moc_options['gobble_comments']:
-                    cpp_contents = self.ccomment.sub('', cpp_contents)
-                    cpp_contents = self.cxxcomment.sub('', cpp_contents)
-                cpp_contents = self.literal_qobject.sub('""', cpp_contents)
-            except: continue # may be an still not generated source
-            
-            if moc_options['auto_scan_strategy'] == 0:
-                # Default Automoc strategy (Q_OBJECT driven)
-                self.__automoc_strategy_simple(env, moc_options,
-                                               cpp, cpp_contents, out_sources)
-            else:
-                # Automoc strategy #1 (include driven)
-                self.__automoc_strategy_include_driven(env, moc_options,
-                                                       cpp, cpp_contents, out_sources)
-
-        # restore the original env attributes (FIXME)
-        self.objBuilder.env = objBuilderEnv
-        env.Moc5.env = mocBuilderEnv
-        env.XMoc5.env = xMocBuilderEnv
-
-        # We return the set of source entries as sorted sequence, else
-        # the order might accidentally change from one build to another
-        # and trigger unwanted rebuilds. For proper sorting, a key function
-        # has to be specified...FS.Entry (and Base nodes in general) do not
-        # provide a __cmp__, for performance reasons. 
-        return (target, sorted(set(out_sources), key=lambda entry : str(entry)))
-
-AutomocShared = _Automoc('SharedObject')
-AutomocStatic = _Automoc('StaticObject')
-
 def _detect(env):
     """Not really safe, but fast method to detect the Qt5 library"""
     try: return env['QT5DIR']
@@ -723,13 +463,9 @@ def generate(env):
         QT5_LUPDATE = locateQt5Command(env,'lupdate', env['QT5DIR']),
         QT5_LRELEASE = locateQt5Command(env,'lrelease', env['QT5DIR']),
 
-        QT5_AUTOSCAN = 1, # Should the qt5 tool try to figure out, which sources are to be moc'ed?
-        QT5_AUTOSCAN_STRATEGY = 0, # While scanning for files to moc, should we search for includes in qtsolutions style?
         QT5_GOBBLECOMMENTS = 0, # If set to 1, comments are removed before scanning cxx/h files.
         QT5_CPPDEFINES_PASSTOMOC = 1, # If set to 1, all CPPDEFINES get passed to the moc executable.
         QT5_CLEAN_TS = 0, # If set to 1, translation files (.ts) get cleaned on 'scons -c'
-        QT5_AUTOMOC_SCANCPPPATH = 1, # If set to 1, the CPPPATHs (or QT5_AUTOMOC_CPPPATH) get scanned for moc'able files
-        QT5_AUTOMOC_CPPPATH = [], # Alternative paths that get scanned for moc files
 
         # Some Qt5 specific flags. I don't expect someone wants to
         # manipulate those ...
@@ -798,8 +534,15 @@ def generate(env):
         )
     env['BUILDERS']['Uic5'] = uic5builder
 
+
+    def repathMocs(target, source, env):
+        for each in target:
+            print each.get_abspath()
+        print source, env
+        assert(False)
+
     # Metaobject builder
-    mocBld = Builder(action={}, prefix={}, suffix={})
+    mocBld = Builder(action={}, prefix={}, suffix={}, emitter=repathMocs )
     for h in header_extensions:
         act = SCons.Action.CommandGeneratorAction(__moc_generator_from_h, {'cmdstr':'$QT5_MOCCOMSTR'})    
         mocBld.add_action(h, act)
@@ -833,16 +576,6 @@ def generate(env):
     qrc_act = SCons.Action.CommandGeneratorAction(__qrc_generator, {'cmdstr':'$QT5_QRCCOMSTR'})
     cxxfile_builder.add_action('$QT5_QRCSUFFIX', qrc_act)    
     cxxfile_builder.add_emitter('$QT5_QRCSUFFIX', __qrc_emitter)    
-
-    # We use the emitters of Program / StaticLibrary / SharedLibrary
-    # to scan for moc'able files
-    # We can't refer to the builders directly, we have to fetch them
-    # as Environment attributes because that sets them up to be called
-    # correctly later by our emitter.
-    env.AppendUnique(PROGEMITTER =[AutomocStatic],
-                     SHLIBEMITTER=[AutomocShared],
-                     LIBEMITTER  =[AutomocStatic],
-                    )
 
     # TODO: Does dbusxml2cpp need an adapter
     try:

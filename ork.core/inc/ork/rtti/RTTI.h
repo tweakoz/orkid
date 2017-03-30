@@ -22,7 +22,7 @@ template<typename ClassType>
 class  DefaultPolicy
 {
 public:
-	static ICastable *Factory()	{ return OrkNew ClassType(); }
+	static ICastable *Factory()	{ return new ClassType(); }
 
 	static void Initialize()
 	{
