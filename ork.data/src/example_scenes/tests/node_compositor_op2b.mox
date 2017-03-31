@@ -236,10 +236,10 @@
                                                 <object type='EditorCamControllerData' id='28'>
                                                     <property name='Camera'>
                                                         <object type='CCamera_persp' id='29'>
-                                                            <property name='Center'>10.607 61.3945 -7.27637</property>
+                                                            <property name='Center'>-713.215 877.188 1042.29</property>
                                                             <property name='Focus'>0 0 0</property>
-                                                            <property name='Loc'>86.459</property>
-                                                            <property name='QuatC'>-0.0903752 0.948942 -0.227714 -0.198912</property>
+                                                            <property name='Loc'>10437.3</property>
+                                                            <property name='QuatC'>-0.0089505 0.816413 0.57558 -0.0466596</property>
                                                             <property name='Aperature'>40</property>
                                                             <property name='MaxFar'>10000</property>
                                                             <property name='MinNear'>0.1</property>
@@ -286,7 +286,7 @@
                                                     <property name='AnimationMap'>
                                                         <item key='start'>
                                                             <reference category='AssetClass'>
-                                                                "xganim" "data:///actors/frogman/frogman2"
+                                                                "xganim" "data:///actors/4limb/sprawl"
                                                             </reference>
                                                         </item>
                                                     </property>
@@ -296,12 +296,13 @@
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
                                                 <object type='ModelComponentData' id='35'>
-                                                    <property name='AlwaysVisible'>false</property>
+                                                    <property name='AlwaysVisible'>true</property>
+                                                    <property name='BlenderZup'>false</property>
                                                     <property name='EditorDagDebug'>false</property>
                                                     <property name='LayerFxMap'></property>
                                                     <property name='Model'>
                                                         <reference category='AssetClass'>
-                                                            "xgmodel" "data://actors/frogman/frogman"
+                                                            "xgmodel" "data://actors/4limb/4limb"
                                                         </reference>
                                                     </property>
                                                     <property name='Offset'>0 0 0</property>
@@ -313,7 +314,14 @@
                                         </item>
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='SimpleCharControllerData' id='36'>
+                                                <object type='ScriptComponentData' id='36'>
+                                                    <property name='ScriptFile'>""</property>
+                                                </object>
+                                            </reference>
+                                        </item>
+                                        <item key='control'>
+                                            <reference category='ComponentDataClass'>
+                                                <object type='SimpleCharControllerData' id='37'>
                                                 </object>
                                             </reference>
                                         </item>
@@ -327,20 +335,21 @@
             </item>
             <item key='SceneObject1'>
                 <reference category='SceneObjectClass'>
-                    <object type='ModelArchetype' id='37'>
+                    <object type='ModelArchetype' id='38'>
                         <property name='Name'>"SceneObject1"</property>
                         <property name='Components'>
                             <item key=''>
                                 <reference category='ComponentDataClass'>
-                                    <object type='EditorPropMapData' id='38'>
+                                    <object type='EditorPropMapData' id='39'>
                                         <property name='Properties'></property>
                                     </object>
                                 </reference>
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='39'>
+                                    <object type='ModelComponentData' id='40'>
                                         <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
                                         <property name='Model'>
@@ -363,5 +372,6 @@
             <item key='SceneObject3'><backreference id='32'/></item>
             <item key='SceneObject4'><backreference id='3'/></item>
         </property>
+        <property name='ScriptFile'>""</property>
     </object>
 </reference>
