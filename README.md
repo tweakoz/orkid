@@ -15,14 +15,14 @@ Some Features Include:
 * Integrated Bullet Physics Engine.
 * HlslFx/CgFx/GlslFx shader based renderer.
 * Fixed Function and Node based compositing engine with offline rendering mode (dumps to image files on disk).
-* QT4.8/OpenGL based UI
+* QT5/OpenGL based UI
 * Many more...
 
-![Particles](http://www.tweakoz.com/portfolio/sshot_psys.jpg)
+![Particles](http://tweakoz.com/resources/images/th_sshot_psys.jpg)
 
-![ProceduralTextures](http://www.tweakoz.com/portfolio/sshot_proctex.jpg)
+![ProceduralTextures](http://tweakoz.com/resources/images/th_sshot_proctex.jpg)
 
-![TerrainGen](http://www.tweakoz.com/portfolio/terrain03.jpg)
+![TerrainGen](http://tweakoz.com/resources/images/th_terrain03.jpg)
 
 for other examples of content, go [here](http://www.youtube.com/user/tweakoz) and [here](http://tweakoz.com/portfolio/p2d.mp4)
 
