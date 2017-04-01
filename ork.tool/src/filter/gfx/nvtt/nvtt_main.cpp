@@ -82,6 +82,8 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 	file::Path inpath( tex_in.c_str() );
 	file::Path outpath( tex_out.c_str() );
 
+    printf( "nvtt: converting <%s> to <%s>\n", tex_in.c_str(), tex_out.c_str() );
+
 	if( strcmp( inpath.GetExtension().c_str(), "dds" ) == 0 )
 	{
 		const char* frompath = inpath.ToAbsolute().c_str();
@@ -101,7 +103,7 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 	nv::Image image;
 	if (!image.load(InNvPath.str()))
 	{
-		orkerrorlog("ERROR: The file '%s' is not a supported image type.\n", InNvPath.str());
+		printf("ERROR: The file '%s' is not a supported image type.\n", InNvPath.str());
 		return false;
 	}
 
@@ -227,6 +229,7 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 
 	nvtt::Compressor compressor; //  compress(inputOptions, outputOptions, compressionOptions);
 
+    printf( "compressing.....\n");
 	compressor.process( inputOptions, CompressionOptions, OutputOptions );
 	
 	//ilSetInteger(IL_DXTC_FORMAT, IL_DXT5);
