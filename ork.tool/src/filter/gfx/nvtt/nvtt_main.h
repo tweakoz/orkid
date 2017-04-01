@@ -13,30 +13,19 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <nvtt/nvtt.h>
+#include <nvcore/Debug.h>
+#include <nvimage/Image.h>
+#include <nvimage/ImageIO.h>
+#include <nvimage/BlockDXT.h>
+#include <nvimage/ColorBlock.h>
+#include <nvcore/Ptr.h>
+#include <nvcore/Debug.h>
 #include <nvcore/StrLib.h>
 #include <nvcore/StdStream.h>
-
-#include <nvimage/Image.h>
-#include <nvimage/DirectDrawSurface.h>
-#include <nvimage/nvtt/nvtt.h>
-
-#include <nvmath/Color.h>
-
-#if 1 && defined( _DEBUG )
-#pragma comment( lib, "nvttd" )
-#pragma comment( lib, "squishd" )
-#pragma comment( lib, "nvmathd" )
-#pragma comment( lib, "nvcored" )
-#pragma comment( lib, "nvimaged" )
-#else
-#pragma comment( lib, "nvtt" )
-#pragma comment( lib, "squish" )
-#pragma comment( lib, "nvmath" )
-#pragma comment( lib, "nvcore" )
-#pragma comment( lib, "nvimage" )
-#endif
-//#pragma comment( lib, "libpng" )
-//#pragma comment( lib, "jpeg" )
+#include <nvcore/TextWriter.h>
+#include <nvcore/FileSystem.h>
+#include <nvcore/Timer.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -66,7 +55,7 @@ struct MyAssertHandler : public nv::AssertHandler {
 	}
 	
 	// Handler method, note that func might be NULL!
-	virtual int assert( const char *exp, const char *file, int line, const char *func ) {
+	int assertion( const char *exp, const char *file, int line, const char *func, const char *msg, va_list arg ) final {
 		fprintf(stderr, "Assertion failed: %s\nIn %s:%d\n", exp, file, line);
 		nv::debug::dumpInfo();
 		exit(1);
