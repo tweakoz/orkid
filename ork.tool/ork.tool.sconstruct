@@ -80,9 +80,11 @@ class orktool:
     #########################
     ## common libs
     #########################
+    prj.AddLibPaths("/usr/local/lib/static") # because nvtt is a PITA
     prj.AddLibsWithSuffix( ORKLIBS )
     prj.AddLibsWithSuffix( "libtweakout" )
     prj.AddLibsWithSuffix( "ork.unittestpp" )
+    prj.AddLibs( "nvtt nvimage nvcore nvmath nvthread bc7 squish bc6h" )
     #########################
     prj.Configure()
     self.tool_lib = prj.SharedLibrary( )
