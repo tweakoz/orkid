@@ -7,8 +7,10 @@ import os,sys, string, math
 from PyQt5.QtCore import QSize, Qt, QProcess
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QComboBox, QCheckBox
 from PyQt5.QtWidgets import QLineEdit, QTextEdit, QPushButton, QFileDialog, QStyle, QStyleFactory
-from PyQt5.QtWidgets import QMainWindow, QDockWidget
+from PyQt5.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit
 from PyQt5.QtGui import QPalette, QPixmap
+
+import orkassasshl as hilite
 
 scriptdir = os.path.dirname(os.path.realpath(__file__))
 os.system('syslog -s -l error "%s"' % scriptdir)
@@ -65,11 +67,12 @@ class View(Edit):
 
 #############################################################################
 
-class AssetWindow(QWidget):
+class AssetWidget(QWidget):
 
    ##########################################
-    def __init__(self):
-     super(AssetWindow, self).__init__()
+    def __init__(self,mainwin):
+     super(AssetWidget, self).__init__()
+     self.mainwin = mainwin
      mainLayout = QVBoxLayout()
 
      viewBase = View("<BASE>",basedir)
@@ -148,26 +151,48 @@ class AssetWindow(QWidget):
       orkbin = "./stage/bundle/OrkidTool.app/Contents/MacOS/ork.tool.test.osx.release"
       cmd = orkbin + " -filter dae:xgm -in " + srcpath + " -out " + dstpath
       
-      self.stdout = ""
-      self.stderr = ""
-      def onSubProcStdout():
-         bytes = self.process.readAllStandardOutput()
-         self.stdout += str(bytes)
-         print(self.stdout)
-      def onSubProcStderr():
-         bytes = self.process.readAllStandardError()
-         self.stderr += str(bytes)
-         print(self.stderr)
-      def finished(text):
-         print( "process done...\n")
 
-      self.process = QProcess()
-      self.process.readyReadStandardError.connect(onSubProcStderr)
-      self.process.readyReadStandardOutput.connect(onSubProcStdout);
-      self.process.finished.connect(finished);
-      
+      class SubProc:
+         def __init__(self,mainwin):
 
-      self.process.start(cmd)
+            te = QPlainTextEdit()
+            hilighter = hilite.Highlighter(te.document())
+
+            qd = QDockWidget("Dae:Xgm")
+            qd.setWidget(te)
+            qd.setMinimumSize(480,240)
+            qd.setFeatures(QDockWidget.DockWidgetMovable|QDockWidget.DockWidgetVerticalTitleBar|QDockWidget.DockWidgetFloatable)
+            qd.setAllowedAreas(Qt.LeftDockWidgetArea)
+            qdss = "QWidget{background-color: rgb(64,64,128); color: rgb(160,160,192);}"
+            qdss += "QDockWidget::title {background-color: rgb(32,32,48); color: rgb(255,0,0);}"
+            qd.setStyleSheet(qdss)
+            mainwin.addDockWidget(Qt.LeftDockWidgetArea,qd)
+            if mainwin.prevDockWidget!=None:
+               mainwin.tabifyDockWidget(mainwin.prevDockWidget,qd)
+            mainwin.prevDockWidget = qd
+            self.stdout = ""
+            self.stderr = ""
+            def onSubProcStdout():
+               bytes = self.process.readAllStandardOutput()
+               self.stdout += str(bytes, encoding='ascii')
+               te.setPlainText(self.stdout+self.stderr)
+            def onSubProcStderr():
+               bytes = self.process.readAllStandardError()
+               self.stderr += str(bytes, encoding='ascii')
+               te.setPlainText(self.stdout+self.stderr)
+            def finished(text):
+               print( "process done...\n")
+
+            self.process = QProcess()
+            self.process.readyReadStandardError.connect(onSubProcStderr)
+            self.process.readyReadStandardOutput.connect(onSubProcStdout);
+            self.process.finished.connect(finished);
+            
+
+            self.process.start(cmd)
+
+      sp = SubProc(self.mainwin)
+
       #...
       #void MainWindow::updateError()
       #{
@@ -185,20 +210,40 @@ class AssetWindow(QWidget):
 
 #############################################################################
 
+class AssetWindow(QMainWindow):
+  def __init__(self):
+    super(AssetWindow, self).__init__()
+    self.prevDockWidget = None
+    aw = AssetWidget(self)
+    qd = QDockWidget()
+    qd.setWidget(aw)
+    self.setCentralWidget(qd)
+    self.setMinimumSize(480,360)
+    self.setMaximumSize(1920,1080)
+    self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.ForceTabbedDocks);
+
+
+#############################################################################
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    aw = AssetWindow()
-    if False:
-      mainwin = QMainWindow()
-      qd = QDockWidget()
-      qd.setWidget()
-      mainwin.setCentralWidget(qd)
-    else:
-      mainwin = aw
-    mainwin.resize(640,180)
+
+    mainwin = AssetWindow()
+
+    mainwin.resize(960,360)
     mainwin.setWindowTitle("Orkid Asset Assistant \N{COPYRIGHT SIGN} 2017 - TweakoZ")
-    #bgimg = 'background-image: url("file://%s/platform_lev2/editor/OrkAssistantBackdrop.png")' % datadir
-    #print(bgimg)
-    app.setStyleSheet("QWidget {background-color: rgb(64,64,96); color: rgb(255,255,255);}")
+    
+    appss = "QWidget {background-color: rgb(64,64,96); color: rgb(255,255,255);}"
+    appss += "QTabWidget::pane { border-top: 2px solid #303030;}"
+    appss += """QTabBar::tab {
+    background: rgb(0,0,0);
+    color: rgb(255,255,255);
+    }"""
+    appss += """QTabBar::tab:selected, QTabBar::tab:hover {
+    background: rgb(64,0,0);
+    color: rgb(255,255,128);
+    }"""
+
+    app.setStyleSheet(appss)
     mainwin.show()
     sys.exit(app.exec_())
