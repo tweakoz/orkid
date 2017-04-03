@@ -140,6 +140,24 @@ vertex_shader vs_wnormalsk
 }
 
 ///////////////////////////////////////////////////////////////
+vertex_shader vs_sk 
+    : iface_skinned
+    : skin_tools
+{
+    vec3 obj_pos = position.xyz;
+    vec3 skn_pos = SkinPosition( boneindices, boneweights, position.xyz );
+    gl_Position = WVPMatrix*vec4(skn_pos,1.0);
+    vec3 sknorm = SkinNormal(boneindices, boneweights, normal.xyz);
+    vec3 wnorm = normalize(WRotMatrix*sknorm);
+    // todo lights from scene
+    float dif = dot(wnorm,vec3(0,0,1));
+    float amb = 0.3;
+    float tot = 1.0; //dif+amb;
+    frg_clr = vec4(tot,tot,tot,1);
+    frg_uv0 = uv0;
+}
+
+///////////////////////////////////////////////////////////////
 
 fragment_shader ps_modtex : iface_fmt
 {
@@ -207,7 +225,7 @@ technique tek_wnormal_skinned
 technique tek_lamberttex_skinned
 {	fxconfig=fxcfg_default;
 	pass p0
-	{	vertex_shader=vs_vtxcolor;
+	{	vertex_shader=vs_sk;
 		fragment_shader=ps_modtex;
 		state_block=sb_default;
 	}
