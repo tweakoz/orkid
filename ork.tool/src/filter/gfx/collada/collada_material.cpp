@@ -643,7 +643,7 @@ bool CColladaModel::ConvertTextures(const file::Path& outmdlpth, ork::tool::Filt
 
 		file::Path OutPath = outmdlpth;
 		OutPath.SetFile( path.GetName().c_str() );
-		OutPath.SetExtension( path.GetExtension().c_str() );
+		OutPath.SetExtension( "dds" );
 		options.GetOption( "-in" )->SetValue( InPath.c_str() );
 		options.GetOption( "-out" )->SetValue( OutPath.c_str() );
 
@@ -658,14 +658,14 @@ bool CColladaModel::ConvertTextures(const file::Path& outmdlpth, ork::tool::Filt
 		}
 		else
 		{	// convert via NVTT ?
-			if(ColladaExportPolicy::GetContext() && ColladaExportPolicy::GetContext()->mDDSInputOnly)
+			/*if(ColladaExportPolicy::GetContext() && ColladaExportPolicy::GetContext()->mDDSInputOnly)
 			{
 				orkerrorlog("ERROR: <%s> Only DDS files should be referenced from DAE (and hence Maya) models! (%s)\n", InPath.c_str(), mFileName.c_str());
 
 				return false;
 			}
-			OrkAssert(false);
-			//rv &= NvttCompress( options );
+			OrkAssert(false);*/
+			rv &= NvttCompress( options );
 		}
 	}
 
