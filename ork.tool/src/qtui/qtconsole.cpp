@@ -32,7 +32,7 @@ namespace ork {
 namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 vp_cons::vp_cons( const std::string & name )
-	: ui::Viewport( name, 0, 0, 0, 0, CColor3::Black(), 0.0f )
+	: ui::Viewport( name, 0, 0, 0, 0, CColor3::Red(), 0.0f )
 	, mCTQT(nullptr)
 {
 }
@@ -68,7 +68,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
 	if( (nullptr == mCTQT) || (nullptr == mCTQT->GetTarget()) ) return;
 
 #if defined(_DARWIN)
-	if( 0 == g_orig_stdout ) return;
+	//if( 0 == g_orig_stdout ) return;
 #endif
 
 	lev2::GfxTarget* pTARG = mCTQT->GetTarget();
@@ -98,7 +98,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
 		mBaseMaterial.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
 
 		u32 ucolor1 = 0xff000000;
-		u32 ucolor2 = 0xff200020;
+		u32 ucolor2 = 0xff600060;
 		
 		v0 = lev2::SVtxV12C4T16( CVector3(0.0f,0.0f,0.0f), uv0, ucolor1 );
 		v1 = lev2::SVtxV12C4T16( CVector3(float(IW),0.0f,0.0f), uv1, ucolor1 );

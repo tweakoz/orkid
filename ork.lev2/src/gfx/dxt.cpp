@@ -209,11 +209,11 @@ DDSFile::DDSFile( const ork::file::Path& pth )
 	}
 	//else if( dxt::IsBGR565( ddsh->ddspf ) ) meFormat = EFMT_BGR565;
 	////////////////////////////////////////////////////////////////////		
-	printf( "  tex<%s> width<%d>\n", pth.c_str(), miWidth );
-	printf( "  tex<%s> height<%d>\n", pth.c_str(), miHeight );
-	printf( "  tex<%s> depth<%d>\n", pth.c_str(), miDepth );
-	printf( "  tex<%s> format<%d>\n", pth.c_str(), int(meFormat) );
-	printf( "  tex<%s> blocksize<%d>\n", pth.c_str(), mLoadInfo.blockBytes );
+	//printf( "  tex<%s> width<%d>\n", pth.c_str(), miWidth );
+	//printf( "  tex<%s> height<%d>\n", pth.c_str(), miHeight );
+	//printf( "  tex<%s> depth<%d>\n", pth.c_str(), miDepth );
+	//printf( "  tex<%s> format<%d>\n", pth.c_str(), int(meFormat) );
+	//printf( "  tex<%s> blocksize<%d>\n", pth.c_str(), mLoadInfo.blockBytes );
 	////////////////////////////////////////////////////////////////////		
 	fil.Close();
 }

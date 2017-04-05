@@ -104,7 +104,7 @@ public:
 	bool LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 	{
 		ork::file::Path pth(filename.c_str());
-		printf( "Loading Texture url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str() );
+		//printf( "Loading Texture url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str() );
 		
 		//GfxEnv::GetRef().GetGlobalLock().Lock();
 		{

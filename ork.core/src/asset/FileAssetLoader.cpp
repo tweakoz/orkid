@@ -36,11 +36,11 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting()
 		auto files = CFileEnv::filespec_search( wild.c_str(), dir );
 		int inumfiles = (int) files.size();
 
-		orkprintf( "FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n",
-					this,
-					dir.c_str(),
-					wild.c_str(),
-					inumfiles );
+		//orkprintf( "FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n",
+		//			this,
+		//			dir.c_str(),
+		//			wild.c_str(),
+		//			inumfiles );
 
 		file::Path::NameType searchdir( dir.ToAbsolute().c_str() );
 		searchdir.replace_in_place("\\","/");
@@ -107,10 +107,10 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 		}
 	}
 
-    orkprintf( "FindAsset<%s> has_valid_extension<%d>\n",
-     ork::Application::AddPooledString(name).c_str(),
-     int(has_valid_extension)
-     );
+    //orkprintf( "FindAsset<%s> has_valid_extension<%d>\n",
+     //ork::Application::AddPooledString(name).c_str(),
+     //int(has_valid_extension)
+     //);
 
 	//////////////////////////////////////////
 	// check Munged Paths first (Munged path is a path run thru 1 or more path converters)
@@ -137,14 +137,14 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 		if( bret )
 		{
 			MungedPaths.push_back(MungedPath);
-    orkprintf( "MungedPaths<%s>\n", MungedPath.c_str() );
+    //orkprintf( "MungedPaths<%s>\n", MungedPath.c_str() );
 		}
 	}
 	//////////////////////////////////////
 	// original path has lower priority
 	MungedPaths.push_back( pathobjnoq );
 	//////////////////////////////////////
-    orkprintf( "MungedPaths<%s>\n", pathobjnoq.c_str() );
+    //orkprintf( "MungedPaths<%s>\n", pathobjnoq.c_str() );
 
 	//////////////////////
 	// path is munged
@@ -170,7 +170,7 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 			{
 				MungedPath.SetExtension( l.mExt.c_str() );
 
-				printf( "munged_ext<%s>\n", MungedPath.c_str() );
+				//printf( "munged_ext<%s>\n", MungedPath.c_str() );
 
 				if(CFileEnv::DoesFileExist(MungedPath))
 				{

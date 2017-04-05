@@ -237,11 +237,6 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 
 ///////////////////////////////////////////////////////////////////////////
 
-#if 0
-
-
-///////////////////////////////////////////////////////////////////////////
-
 QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
 {
 	static int viewnum = 0;
@@ -250,7 +245,7 @@ QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
 	std::string viewname = CreateFormattedString( "PythonConsole:%d", viewnum );
 	QDockWidget*gfxdock = new QDockWidget(tr(viewname.c_str()), this);
 	gfxdock->setFloating( bfloat );
-	gfxdock->setAllowedAreas(Qt::BottomDockWidgetArea);
+	gfxdock->setAllowedAreas(Qt::RightDockWidgetArea);
 	gfxdock->setAutoFillBackground(false); 
 	gfxdock->setObjectName(viewname.c_str());
 	//mGedModelObj.Attach( 0 );
@@ -259,9 +254,9 @@ QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
 	lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
 	QWidget* pqw = pctqt->GetQWidget();
 	gfxdock->setWidget( pqw );
-	gfxdock->setMinimumSize( 64, 64 );
-	gfxdock->resize( 288, 800 );
-	addDockWidget(Qt::BottomDockWidgetArea, gfxdock);
+	gfxdock->setMinimumSize( 480, 256 );
+	gfxdock->resize( 480, 800 );
+	addDockWidget(Qt::RightDockWidgetArea, gfxdock);
 	pctqt->Show();
 	pctqt->GetQWidget()->Enable();
 	pvp->BindCTQT( pctqt );
@@ -290,7 +285,7 @@ QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
 
 	return gfxdock;
 }
-
+#if 0
 ///////////////////////////////////////////////////////////////////////////
 
 QDockWidget *EditorMainWindow::NewToolView( bool bfloat )

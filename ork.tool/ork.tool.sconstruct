@@ -48,6 +48,7 @@ class orktool:
     prj.AddIncludePaths( "../ork.core/inc/" )
     prj.AddIncludePaths( "../ork.lev2/inc/" )
     prj.AddIncludePaths( "../ork.ent/inc/" )
+    prj.AddIncludePaths( "/usr/include/python2.7" )
     prj.AddIncludePaths( "inc" )
     prj.AddIncludePaths( "src" )
     prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
@@ -81,10 +82,12 @@ class orktool:
     ## common libs
     #########################
     prj.AddLibPaths("/usr/local/lib/static") # because nvtt is a PITA
+    #prj.AddLibPaths( "/usr/include/python2.7" )
     prj.AddLibsWithSuffix( ORKLIBS )
     prj.AddLibsWithSuffix( "libtweakout" )
     prj.AddLibsWithSuffix( "ork.unittestpp" )
     prj.AddLibs( "nvtt nvimage nvcore nvmath nvthread bc7 squish bc6h" )
+    prj.AddLibs( "python2.7 boost_python-mt" )
     #########################
     prj.Configure()
     self.tool_lib = prj.SharedLibrary( )

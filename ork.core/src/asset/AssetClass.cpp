@@ -48,7 +48,7 @@ std::set<file::Path> AssetClass::EnumerateExisting() const
 		auto s = l->EnumerateExisting();
 		for( auto i : s )
 		{
-			printf( "enumexist loader<%p> asset<%s>\n", l, i.c_str() );
+			//printf( "enumexist loader<%p> asset<%s>\n", l, i.c_str() );
 			rval.insert(i);
 		}
 	}

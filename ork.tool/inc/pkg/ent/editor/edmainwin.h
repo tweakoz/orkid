@@ -84,7 +84,7 @@ public://
 	
 	//QDockWidget * NewToolView( bool bfloat );
 	//QDockWidget * NewDataflowView( bool bfloat );
-	//QDockWidget * NewPyConView( bool bfloat );
+	QDockWidget * NewPyConView( bool bfloat );
 	
 	/////////////////////////////////////////////////
 	// this Ged is special it is the "master" ged, it cannot be closed

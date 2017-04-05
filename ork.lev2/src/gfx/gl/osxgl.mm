@@ -262,9 +262,9 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	//plato->mOpQ.push(initvblk);
 	initvblk();
 
-	printf( "osxgl:1\n");
+	//printf( "osxgl:1\n");
 	[plato->mNSOpenGLContext makeCurrentContext];
-	printf( "osxgl:2\n");
+	//printf( "osxgl:2\n");
 
 	//////////////////////////////////////////////
 
@@ -279,7 +279,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 
 
 
-	printf( "osxgl:3\n");
+	//printf( "osxgl:3\n");
 
 	GLint vsyncparams[] = 
 	{
@@ -287,7 +287,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	};
 
 	[plato->mNSOpenGLContext setValues:&vsyncparams[0] forParameter:NSOpenGLCPSwapInterval];
-	printf( "osxgl:4\n");
+	//printf( "osxgl:4\n");
 
 	mFbI.SetThisBuffer( pWin );
 
@@ -297,7 +297,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	{
 		if( plato->mbNSOpenGlView) 
 		{
-			printf( "MCC PATH A\n" );
+			//printf( "MCC PATH A\n" );
 			[plato->mNSOpenGLContext makeCurrentContext];
 			return;
 		}
@@ -331,7 +331,7 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 		[plato->mNSOpenGLContext makeCurrentContext];
 		if( plato->mTarget->mTargetDrawableSizeDirty )
 		{
-			printf( "MCC PATH G\n" );
+			//printf( "MCC PATH G\n" );
 			[plato->mNSOpenGLContext update];
 			plato->mTarget->mTargetDrawableSizeDirty = false;
 		}
