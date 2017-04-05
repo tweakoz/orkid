@@ -173,7 +173,7 @@ struct TexSetter
 			/////////////////////////////////////////////////
 					
 			GLint intfmt = 0;
-			printf( "fmt<%04x>\n", fmt );
+			//printf( "fmt<%04x>\n", fmt );
 			int isiz2 = isize;
 			//printf( "numC<%d> typ<%04x>\n", numC, typ );
 			switch( nfmt )
@@ -569,9 +569,9 @@ VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
 	int iheight = mpDDSHEADER->dwHeight;
 	int idepth = mpDDSHEADER->dwDepth;
 	////////////////////////////////////////////////////////////////////
-	printf( "  tex<%s> width<%d>\n", pth.c_str(), iwidth );
-	printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
-	printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );
+	//printf( "  tex<%s> width<%d>\n", pth.c_str(), iwidth );
+	//printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
+	//printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );
 	bool bVOLUMETEX = (idepth>1);
     
     int iBwidth = (iwidth+3)/4;
@@ -645,7 +645,7 @@ void* VdsTextureAnimation::ReadFromFrameCache( int iframe, int isize )
         void* pcachedest = mFrameBuffers[ icacheentry ];
         mpFile->Read( pcachedest, miFrameBaseSize );
         mFrameCache[iframe] = icacheentry;
-        printf( "cachemiss vds<%s> iframe<%d> entry<%d>\n", mPath.c_str(), iframe, icacheentry );
+        //printf( "cachemiss vds<%s> iframe<%d> entry<%d>\n", mPath.c_str(), iframe, icacheentry );
     }
     void* pcachedest = mFrameBuffers[ icacheentry ];
     return pcachedest;
@@ -868,8 +868,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	{
 		const dxt::DdsLoadInfo & li = dxt::loadInfoBGRA8;
 		int size = idepth*iwidth*iheight*4;
-		printf( "  tex<%s> BGRA8\n", TextureFile.msFileName.c_str() );
-		printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
+		//printf( "  tex<%s> BGRA8\n", TextureFile.msFileName.c_str() );
+		//printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
 		if( bVOLUMETEX )
 			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
@@ -881,8 +881,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	else if( dxt::IsBGR8( ddsh->ddspf ) )
 	{
 		int size = idepth*iwidth*iheight*3;
-		printf( "  tex<%s> BGR8\n", TextureFile.msFileName.c_str() );
-		printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
+		//printf( "  tex<%s> BGR8\n", TextureFile.msFileName.c_str() );
+		//printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
 		//printf( "  tex<%s> BGR8\n", infname.c_str() );
 		if( bVOLUMETEX )
 			TexSetter::Set3D(	this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 
@@ -985,7 +985,8 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 	int idepth = ddsh->dwDepth;
 	//int ireadptr = sizeof( dxt::DDS_HEADER );
 	////////////////////////////////////////////////////////////////////
-	printf( "  tex<%s> ptex<%p>\n", infname.c_str(), ptex );
+	/*
+    printf( "  tex<%s> ptex<%p>\n", infname.c_str(), ptex );
 	printf( "  tex<%s> width<%d>\n", infname.c_str(), iwidth );
 	printf( "  tex<%s> height<%d>\n", infname.c_str(), iheight );
 	printf( "  tex<%s> depth<%d>\n", infname.c_str(), idepth );
@@ -996,6 +997,7 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 	printf( "  tex<%s> rmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwRBitMask) );
 	printf( "  tex<%s> gmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwGBitMask) );
 	printf( "  tex<%s> bmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwBBitMask) );
+    */
 	///////////////////////////////////////////////
 	GLTextureObject* pTEXOBJ = new GLTextureObject;
 	ptex->SetTexIH( (void*) pTEXOBJ );

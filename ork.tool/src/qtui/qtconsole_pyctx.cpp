@@ -4,19 +4,19 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
+#include <python.h>
 
 #include <stdio.h>
 
-/*#include <orktool/qtui/qtui_tool.h>
+#include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
 #include <dispatch/dispatch.h>
 ///////////////////////////////////////////////////////////////////////////////
-//#include <python.h>
 #include <boost/python.hpp>
 #include <boost/python/str.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtconsole.h>
-#include <QtGui/QScrollBar>
+#include <QtWidgets/QScrollBar>
 #include <ork/lev2/qtui/qtui.hpp>
 #include <ork/util/stl_ext.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,14 +26,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include <termios.h>*/
+#include <termios.h>
 ///////////////////////////////////////////////////////////////////////////////
 char slave_out_name[256];
 char slave_err_name[256];
 char slave_inp_name[256];
-bool gPythonEnabled = false;
+bool gPythonEnabled = true;
 FILE* g_orig_stdout = nullptr;
-#if 0
+#if 1
 ///////////////////////////////////////////////////////////////////////////////
 static int fd_pty_out_master = -1;
 static int fd_pty_err_master = -1;
@@ -59,8 +59,10 @@ dispatch_queue_t PYQ();
 char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 {
 	char* pdata = PyOS_StdioReadline( sys_stdin, sys_stdout, prompt );
-	std::string proc_line = pdata;
-	OrkSTXFindAndReplace<std::string>( proc_line, "\r", "" );
+    assert(false);
+    printf( "prompt<%s> pdata<%s>\n", prompt, pdata );
+    ork::fxstring<256> proc_line(pdata);
+	proc_line.replace_in_place("\r", "");
 	int ilen = proc_line.length();
 	char* pret = (char*) PyMem_MALLOC(ilen+1);
 	strncpy( pret, proc_line.c_str(), ilen );
@@ -158,11 +160,11 @@ void Py::Call(const std::string& cmdstr)
 Py::Py()
 {
 	Py_NoSiteFlag = 1;
-	//Py_VerboseFlag = 2;
+	Py_VerboseFlag = 2;
 	
-	char* pypth = getenv ( "PYTHONPATH" );
-	std::string npath = CreateFormattedString( "%s:/projects/tweakoz/lsynth_git/bin/lib/python2.7/", pypth ); 
-	setenv( "PYTHONPATH", npath.c_str(), 1 );
+	//char* pypth = getenv ( "PYTHONPATH" );
+	//std::string npath = CreateFormattedString( "%s:/projects/tweakoz/lsynth_git/bin/lib/python2.7/", pypth ); 
+	//setenv( "PYTHONPATH", npath.c_str(), 1 );
 	PyOS_ReadlineFunctionPointer=orkpy_readline;
     orkpy_cf.cf_flags = 0;
 	Py_InitializeEx(0);

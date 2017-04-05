@@ -55,7 +55,6 @@ void PyNewEntity(const std::string& name,const std::string& archname="")
 		_archname = name;
 	}
 
-
 	if( nullptr == parch ) parch = GenArch( "ecam", "/arch/editcam", "EditorCamArchetype" );
 
 	Future new_ent;

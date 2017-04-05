@@ -15,9 +15,7 @@
 
 #include "EditorCamera.h"
 
-#if 0 //defined(_DARWIN) 
 #define USE_PYTHON
-#endif
 
 #if defined(USE_PYTHON)
 #include <Python.h>

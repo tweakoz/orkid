@@ -231,11 +231,10 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 		QDockWidget *pdw0 = NewCamView(false);
 		SceneObjPropEdit();		
 
-		#if 0 //defined(ORK_OSX)
 		if( gPythonEnabled )
 		{	QDockWidget *pdw3 = NewPyConView(false);
 		}
-		#endif
+
 		//QDockWidget *pdw3 = NewDataflowView(false);
 		////////////////////////////////////
 		//tabifyDockWidget( pdw2, pdw3 );

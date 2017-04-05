@@ -522,12 +522,12 @@ struct vtx_config
 			const auto& it = pfxpass->mVtxAttributesBySemantic.find(mSemantic);
 			if(it!=pfxpass->mVtxAttributesBySemantic.end())
 			{
-				printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> found!\n", pfxpass, mSemantic.c_str(), istride );
+				//printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> found!\n", pfxpass, mSemantic.c_str(), istride );
 				mAttr = it->second;
 			}
 			else
 			{
-				printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> NOT found!\n", pfxpass, mSemantic.c_str(), istride );
+				//printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> NOT found!\n", pfxpass, mSemantic.c_str(), istride );
 				//assert(false);
 			}
 			mPass = pfxpass;
