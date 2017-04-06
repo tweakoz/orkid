@@ -44,6 +44,7 @@ void MainWinDefaultModule::Activate( QMenuBar* qmb )
 	AddAction( "/Scene/ExportArchetype" );
 	AddAction( "/Scene/ImportArchetype" );
 
+	AddAction( "/View/PyCon" );
 	//AddAction( "/View/Outliner" );
 	//AddAction( "/View/Outliner2" );
 	//AddAction( "/View/DataflowEditor" );
@@ -88,7 +89,7 @@ void MainWinDefaultModule::OnAction( const char* pact )
 	///////////////////////////////////////////////////////
 //	else if( 0 == strcmp( "/View/Outliner",pact) )				{	mEditWin.NewOutlinerView(false); }
 //	else if( 0 == strcmp( "/View/Outliner2",pact) )				{	mEditWin.NewOutliner2View(false); }
-//	else if( 0 == strcmp( "/View/PyCon",pact) )					{	mEditWin.NewPyConView(false); }
+	else if( 0 == strcmp( "/View/PyCon",pact) )					{	mEditWin.NewPyConView(true); }
 //	else if( 0 == strcmp( "/View/DataflowEditor",pact) )		{	mEditWin.NewDataflowView(); }
 //	else if( 0 == strcmp( "/View/ToolEditor",pact) )			{	mEditWin.NewToolView(false); }
 	else if( 0 == strcmp( "/View/SaveLayout",pact) )			{	mEditWin.SaveLayout(); }
