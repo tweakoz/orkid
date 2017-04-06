@@ -232,7 +232,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 		SceneObjPropEdit();		
 
 		if( gPythonEnabled )
-		{	QDockWidget *pdw3 = NewPyConView(false);
+		{	//QDockWidget *pdw3 = NewPyConView(false);
 		}
 
 		//QDockWidget *pdw3 = NewDataflowView(false);
