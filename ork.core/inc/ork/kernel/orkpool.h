@@ -333,6 +333,7 @@ public:
 	}
 
 	const fixedvector<pointer,ksize>& used() const { return m_used; }
+    fixedvector<pointer,ksize>& used() { return m_used; }
 	
 	value_type& direct_access( size_t idx ) { return m_data[idx]; }
 	const value_type& direct_access( size_t idx ) const { return m_data[idx]; }

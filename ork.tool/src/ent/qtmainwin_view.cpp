@@ -239,50 +239,39 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 
 QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
 {
+
 	static int viewnum = 0;
 	viewnum++;
+	auto area = Qt::BottomDockWidgetArea;
 
-	std::string viewname = CreateFormattedString( "PythonConsole:%d", viewnum );
+	std::string viewname = CreateFormattedString( "OrkidPythonConsole:%d", viewnum );
 	QDockWidget*gfxdock = new QDockWidget(tr(viewname.c_str()), this);
 	gfxdock->setFloating( bfloat );
-	gfxdock->setAllowedAreas(Qt::RightDockWidgetArea);
+	gfxdock->setAllowedAreas(area);
 	gfxdock->setAutoFillBackground(false); 
 	gfxdock->setObjectName(viewname.c_str());
 	//mGedModelObj.Attach( 0 );
-	tool::vp_cons* pvp = new tool::vp_cons( viewname );
-	lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( pvp );
-	lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
-	QWidget* pqw = pctqt->GetQWidget();
-	gfxdock->setWidget( pqw );
-	gfxdock->setMinimumSize( 480, 256 );
-	gfxdock->resize( 480, 800 );
-	addDockWidget(Qt::RightDockWidgetArea, gfxdock);
-	pctqt->Show();
-	pctqt->GetQWidget()->Enable();
-	pvp->BindCTQT( pctqt );
 
-
-/*	std::string viewname = CreateFormattedString( "PythonConsole:%d", viewnum+1 );
-	viewnum++;
-
-	ork::tool::QtConsoleWindow* owin = new ork::tool::QtConsoleWindow(bfloat,0);
-
-	QDockWidget*gfxdock = new QDockWidget(tr(viewname.c_str()), this);
-	gfxdock->setFloating( bfloat );
-	gfxdock->setAllowedAreas(Qt::BottomDockWidgetArea ); //| Qt::RightDockWidgetArea);
-	//gfxdock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-	gfxdock->setAutoFillBackground(false); 
-	gfxdock->setObjectName(viewname.c_str());
-
-	gfxdock->setWidget( owin->GroupBox() );
-	
-	gfxdock->setMinimumSize( 256, 100 );
-	addDockWidget(Qt::LeftDockWidgetArea, gfxdock);
-
-	gfxdock->show();
-
-	*/
-
+    if( 1 )
+    {
+    	auto pvp = new tool::vp_cons( viewname );
+    	auto pgfxwin = new lev2::CQtGfxWindow( pvp );
+    	auto pctqt = new lev2::CTQT( pgfxwin, gfxdock );
+    	auto pqw = pctqt->GetQWidget();
+    	gfxdock->setWidget( pqw );
+    	pctqt->Show();
+    	pctqt->GetQWidget()->Enable();
+    	pvp->BindCTQT( pctqt );
+    }
+    else
+    {
+    	auto owin = new ork::tool::QtConsoleWindow(bfloat,0);
+    	gfxdock->setWidget( owin->GroupBox() );
+    }
+    addDockWidget(area, gfxdock);
+    gfxdock->setMinimumSize( 480, 256 );
+    gfxdock->resize( 480, 800 );
+    gfxdock->show();
 	return gfxdock;
 }
 #if 0

@@ -28,9 +28,6 @@
 #include <fcntl.h>
 #include <termios.h>
 ///////////////////////////////////////////////////////////////////////////////
-char slave_out_name[256];
-char slave_err_name[256];
-char slave_inp_name[256];
 bool gPythonEnabled = true;
 FILE* g_orig_stdout = nullptr;
 #if 1
@@ -58,8 +55,8 @@ dispatch_queue_t PYQ();
 ///////////////////////////////////////////////////////////////////////////////
 char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 {
+    printf( "prompt<%s>\n", prompt );
 	char* pdata = PyOS_StdioReadline( sys_stdin, sys_stdout, prompt );
-    assert(false);
     printf( "prompt<%s> pdata<%s>\n", prompt, pdata );
     ork::fxstring<256> proc_line(pdata);
 	proc_line.replace_in_place("\r", "");
@@ -70,29 +67,6 @@ char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 	PyMem_FREE(pdata);
 	return pret;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-/*int orkpy_redirect_interactiveloopflags(FILE *fp, const char *filename, PyCompilerFlags *flags)
-{
-    int ret;
-    PyCompilerFlags local_flags;
-
-    if (flags == NULL) {
-        flags = &local_flags;
-        local_flags.cf_flags = 0;
-    }
-    while(1)
-	{
-		ret = PyRun_InteractiveOneFlags(fp, filename, flags);
-        PRINT_TOTAL_REFS();
-        if (ret == E_EOF)
-            return 0;
-    }
-}*/
-//sts = PyRun_AnyFileExFlags(
-//                    fp,
-//                    filename == NULL ? "<stdin>" : filename,
-//                    filename != NULL, &cf) != 0;
 ///////////////////////////////////////////////////////////////////////////////
 void echo_off(int ifil)
 {
@@ -124,21 +98,14 @@ dispatch_queue_t PYQ()
 ///////////////////////////////////////////////////////////////////////////////
 using namespace boost::python;
 namespace bpy = boost::python;
-namespace std
-{
-ostream& operator<<(ostream& ostr,const ::ork::CVector3& vec3)
-{
-	ostr<<"("<<vec3.GetX()<<","<<vec3.GetY()<<","<<vec3.GetZ()<<")";
-	return ostr;
-}
-}
+
 namespace ork {
 namespace tool {
 
-///////////////////////////////////////////////////////////////////////////////
-void PyNewScene();
-void PyNewRefArch(const std::string& name);
-void PyNewEntity(const std::string& name,const std::string& archname="");
+char slave_out_name[256];
+char slave_err_name[256];
+char slave_inp_name[256];
+
 ///////////////////////////////////////////////////////////////////////////////
 Py& Py::Ctx()
 {
@@ -176,35 +143,6 @@ Py::~Py()
 {
 	Py_Finalize();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-class ed 
-{
-public:
-	std::string whatup()
-	{
-		return std::string( "whatup yourself" );
-	}
-	std::string damn()
-	{
-		return std::string( "hot damn" );
-	}
-	void newscene()
-	{
-		PyNewScene();
-	}
-	void newentity(const std::string&entname,const std::string&archname="no_arch")
-	{
-		PyNewEntity(entname,archname);
-	}
-	void newrefarch(const std::string&name)
-	{
-		PyNewRefArch(name);
-	}
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 void orkpy_initst2()
@@ -317,54 +255,7 @@ void orkpy_initpty()
 	Py::Ctx().Call("print 'Welcome to the machine.'" );
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void orkpy_initork()
-{
-	////////////////////////
-	// ork::CVector3
-	////////////////////////
-
-	bpy::object main_module((bpy::handle<>(bpy::borrowed(PyImport_AddModule("__main__")))));
-	bpy::object main_namespace = main_module.attr("__dict__");
-
-	main_namespace["vec3"] = bpy::class_<CVector3>("vec3")
-							.add_property("x", &CVector3::GetX, &CVector3::SetX)
-							.add_property("y", &CVector3::GetY, &CVector3::SetY)
-							.add_property("z", &CVector3::GetZ, &CVector3::SetZ)
-							.def("dot",&CVector3::Dot) // __add__
-							.def("cross",&CVector3::Cross) // __add__
-							.def("mag",&CVector3::Mag) // __add__
-							.def("magsquared",&CVector3::MagSquared) // __add__
-							.def("lerp",&CVector3::Lerp) // __add__
-							.def("serp",&CVector3::Serp) // __add__
-							.def("reflect",&CVector3::Reflect) // __add__
-							.def("saturate",&CVector3::Saturate) // __add__
-							.def("normal",&CVector3::Normal) // __add__
-							.def("normalize",&CVector3::Normalize) // __add__
-							.def("rotx",&CVector3::RotateX) // __add__
-							.def("roty",&CVector3::RotateY) // __add__
-							.def("rotz",&CVector3::RotateZ) // __add__
-							.def(self + self) // __add__
-							.def(self - self) // __sub__
-							.def(self * self) // __scalar mul__
-							.def(self_ns::str(self)); 
-							
-	////////////////////////
-	// scene editor
-	////////////////////////
-
-	main_namespace["editor"] = bpy::class_<ed>("editor")
-							.def("whatup",&ed::whatup)  	
-							.def("damn",&ed::damn)  	
-							.def("newscene",&ed::newscene)  	
-							.def("newentity",&ed::newentity)
-							.def("newrefarch",&ed::newrefarch)
-							.def("ns",&ed::newscene)  	
-							.def("ne",&ed::newentity)
-							.def("nra",&ed::newrefarch);
-
-}
+void orkpy_initork();
 								
 ///////////////////////////////////////////////////////////////////////////////
 void orkpy_runiter()
@@ -381,7 +272,7 @@ void InitPython()
 	auto Pyblock = ^ void()
 	{
 		usleep(1500000);
-		char* strbuf = "/projects/tweakoz/lsynth_git/bin/osx_tool";
+		char* strbuf = "TheMachine";
 		Py_SetProgramName(strbuf);
 		Py::Ctx();
 

@@ -17,8 +17,10 @@
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/ui/viewport.h>
-//#include <Qt3Support/q3textedit.h>
-//#include <Qt3Support/Q3PopupMenu>
+#include <ork/lev2/qtui/qtui.h>
+#include <QtWidgets/QTextEdit>
+#include <QtWidgets/QGroupBox>
+#include <QtWidgets/QDockWidget>
 
 class QTextStream;
 class QSocketNotifier;
@@ -70,36 +72,47 @@ public:
 
 	void AppendOutput( const std::string & outputline );
 
+	static const int kmaxlines = 256;
+	typedef fixed_pool<ConsoleLine,kmaxlines> LinePool;
+
 private:
-	virtual ui::HandlerResult DoOnUiEvent( ui::Event *pEV );
+
+	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) final;
 	void DoDraw(ui::DrawEvent& drwev); // virtual
 	lev2::CTQT*							mCTQT;
 	ork::lev2::GfxMaterial3DSolid		mBaseMaterial;
-#if defined(IX)
-	void Register();
-	//static const int kmaxlines = 256;
-	//typedef fixed_pool<ConsoleLine,kmaxlines> LinePool;
-	//LinePool	mLinePool;
-#endif
 
-	//std::list<ConsoleLine*> mLineList;
-	std::vector<std::string> mLines;
+	void Register();
+	LinePool	mLinePool;
+	LinePool	mHistPool;
+	int mHistIndex;
+	float mPhase0, mPhase1, mPhase2;
+
+	std::list<ConsoleLine*> mLineList;
+	std::list<ConsoleLine*> mHistList;
+	std::string mInputLine;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*class QtConsoleWindow : public QWidget
-{
+class QtConsoleWindow : public QWidget
+{   
+    Q_OBJECT
 
 	QTextEdit*		mpConsoleOutputTextEdit;
 	QLineEdit *		mpConsoleInputTextEdit;
-	//QDockWidget *	mpDockWidget;
+	QDockWidget *	mpDockWidget;
 	QGroupBox*		mpGROUPBOX;
 	
 	std::string		mOutputText;
 	bool			mbEcho;
 	static QtConsoleWindow *gpWindow;
 
+    static const int kmaxlines = 256;
+    typedef fixed_pool<ConsoleLine,kmaxlines> LinePool;
+    LinePool  mLinePool;
+    std::list<ConsoleLine*> mLineList;
 
 public:
 
@@ -108,14 +121,17 @@ public:
 	QtConsoleWindow( bool bfloat, QWidget *pparent );
 	~QtConsoleWindow();
 
-	//QDockWidget *GetDockWidget( void );
+	QDockWidget *GetDockWidget( void );
 	QGroupBox*	GroupBox() const { return mpGROUPBOX; }
+    void AppendOutput( const std::string & outputline );
+    void Register();
 
+
+public slots:
 
 	void InputDone( void );
 	void EchoToggle( void );
 
-	static QtConsoleWindow *GetCurrentOutputConsole( void );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,6 +139,9 @@ public:
 inline QDockWidget *QtConsoleWindow::GetDockWidget( void )
 {
 	return mpDockWidget;
-}*/
+}
 
+extern char slave_out_name[256];
+extern char slave_err_name[256];
+extern char slave_inp_name[256];
 } }	// namespace ork::tool
