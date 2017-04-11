@@ -270,7 +270,7 @@ QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
     }
     addDockWidget(area, gfxdock);
     gfxdock->setMinimumSize( 480, 256 );
-    gfxdock->resize( 480, 800 );
+    gfxdock->resize( 480, 240 );
     gfxdock->show();
 	return gfxdock;
 }

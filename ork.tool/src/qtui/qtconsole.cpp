@@ -105,45 +105,39 @@ ConsoleLine* AllocLine(vp_cons::LinePool& pool,std::list<ConsoleLine*>& list)
 
     return cline;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 void vp_cons::AppendOutput( const std::string & data )
 {
     std::vector<std::string> strsa;
     boost::split(strsa, data, boost::is_any_of("\n"));
-    /*
+
+    lev2::GfxTarget* pTARG = mCTQT->GetTarget();    
+    int IW = pTARG->GetW();
+    int wrap = IW/10;
+
     std::vector<std::string> strsb;
-    for( const auto& line : strsa  )
+    for( auto& line : strsa  )
     {
-        const int length = line.length();
-        int s=0, e=0, x=0;
-        std::vector<std::string> wrapped;
-        while(x<80 and e<length)
+        while(line.length()>=wrap)
         {
-            if(line[x]=='\n')
-            {
-                auto snip = line.substr(s,e);
-                wrapped.push_back(snip);
-                x = 0;
-                s = e;
-                e++;
-            }
-
-            e++, x++;
+            auto subs = line.substr(0,wrap);
+            printf("line<%s>\n", line.c_str());
+            printf("subs<%s>\n", subs.c_str());
+            strsb.push_back(subs);
+            line = line.substr(wrap,line.length());   
         }
-        for( const auto& wl : wrapped  )
-        {
-            strsb.push_back(wl);
-        }
-
-    }*/
+        if( line.length() )
+            strsb.push_back(line);
+    }
 
     /////////////////////////////////
 
-    int inumstrs = strsa.size();
+    int inumstrs = strsb.size();
         
     for( int i=0; i<inumstrs; i++ )
     {
-        std::string line = strsa[i];
+        std::string line = strsb[i];
         std::string::size_type pos = line.find("\n");
         if(std::string::npos == pos)
         {
