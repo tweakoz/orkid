@@ -119,14 +119,27 @@ void orkpy_initork()
                                 return fxs.c_str();
                             });
                             
+    main_namespace["object"] = 
+        py::class_<ork::Object>(mm,"ork::Object")
+        .def("clazz",[](ork::Object*o)->std::string{
+            auto clazz = rtti::downcast<object::ObjectClass*>( o->GetClass() );
+            auto name = clazz->Name();
+            return name.c_str();
+        });
+
     main_namespace["scene"] = 
         py::class_<ent::SceneData>(mm,"Scene")
-        .def("objects",[](ent::SceneData*sd)->std::list<std::string>{
+        .def("objects",[](ent::SceneData*sd)->std::list<std::pair<std::string,ork::Object*>>{
 
-            std::list<std::string> rval;
+            std::list<std::pair<std::string,ork::Object*>> rval;
             auto& objs = sd->GetSceneObjects();
             for(const auto& item : objs )
-                rval.push_back(item.first.c_str());
+            {
+                auto name = item.first.c_str();
+                auto obj = (ork::Object*) item.second;
+                auto p = std::pair<std::string,ork::Object*>(name,obj);
+                rval.push_back(p);
+            }
 
             return rval;
 
