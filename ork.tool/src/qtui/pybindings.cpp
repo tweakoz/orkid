@@ -1,8 +1,10 @@
 #include <python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
+#include <pybind11/stl.h>
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/fixedstring.hpp>
+#include <pkg/ent/scene.h>
 #include <ostream>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,7 +29,8 @@ namespace std
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
-void PyNewScene();
+ent::SceneData* PyNewScene();
+ent::SceneData* PyGetScene();
 void PyNewRefArch(const std::string& name);
 void PyNewArch(const std::string& classname,const std::string& name);
 void PyNewEntity(const std::string& name,const std::string& archname="");
@@ -36,18 +39,10 @@ void PyNewEntity(const std::string& name,const std::string& archname="");
 class ed 
 {
 public:
-    std::string whatup()
-    {
-        return std::string( "whatup yourself" );
-    }
-    std::string damn()
-    {
-        return std::string( "hot damn" );
-    }
-    void newscene()
-    {
-        PyNewScene();
-    }
+    std::string whatup() { return std::string( "whatup yourself" ); }
+    std::string damn() { return std::string( "hot damn" ); }
+    ent::SceneData* getscene() { return PyGetScene(); }
+    ent::SceneData* newscene() { return PyNewScene(); }
     void newentity(const std::string&entname,const std::string&archname="no_arch")
     {
         PyNewEntity(entname,archname);
@@ -124,6 +119,19 @@ void orkpy_initork()
                                 return fxs.c_str();
                             });
                             
+    main_namespace["scene"] = 
+        py::class_<ent::SceneData>(mm,"Scene")
+        .def("objects",[](ent::SceneData*sd)->std::list<std::string>{
+
+            std::list<std::string> rval;
+            auto& objs = sd->GetSceneObjects();
+            for(const auto& item : objs )
+                rval.push_back(item.first.c_str());
+
+            return rval;
+
+        });
+
     ////////////////////////
     // scene editor
     ////////////////////////
@@ -136,6 +144,7 @@ void orkpy_initork()
                             .def("newentity",&ed::newentity)
                             .def("newrefarch",&ed::newrefarch)
                             .def("newarch",&ed::newarch)
+                            .def("s",&ed::getscene)    
                             .def("ns",&ed::newscene)    
                             .def("ne",&ed::newentity)
                             .def("na",&ed::newarch)
