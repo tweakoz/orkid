@@ -1310,6 +1310,7 @@ Archetype* SceneEditorBase::ImplNewArchetype( const std::string& classname, cons
 	auto lamb = [&]()
 	{
 
+		SlotPreNewObject();
 		std::string name = CreateFormattedString( "/arch/%s", classname.c_str() );
 		ork::rtti::Class* pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
 		printf( "NewArchetype classname<%s> class<%p> aname<%s>\n", classname.c_str(), pclass, name.c_str() );
