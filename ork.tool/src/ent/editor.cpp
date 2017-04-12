@@ -292,6 +292,14 @@ void SceneEditorBase::RunLoop()
 				Op(enable_op).QueueSync(updQ);
 				R.SetEntity(pent);
 			}
+			else if( event.IsA<NewArchReq>() )
+			{
+				auto& R = event.Get<NewArchReq>();
+				Op(disable_op).QueueSync(updQ);
+				auto parch = ImplNewArchetype(R.mClassName,R.mName);
+				Op(enable_op).QueueSync(updQ);
+				R.SetArchetype(parch);
+			}
 			else if( event.IsA<DeleteObjectReq>() )
 			{
 				const auto& R = event.Get<DeleteObjectReq>();
@@ -1303,14 +1311,13 @@ Archetype* SceneEditorBase::ImplNewArchetype( const std::string& classname, cons
 	{
 
 		std::string name = CreateFormattedString( "/arch/%s", classname.c_str() );
-		ork::rtti::Class* pclass = ork::rtti::Class::FindClass(classname.c_str());
+		ork::rtti::Class* pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
 		printf( "NewArchetype classname<%s> class<%p> aname<%s>\n", classname.c_str(), pclass, name.c_str() );
 		if( pclass )
 		{
 			rarch = rtti::autocast( pclass->CreateObject() );
 			rarch->SetName(name.c_str());
 			SlotNewObject(rarch);
-			mpScene->AddSceneObject( rarch );
 		}
 	};
 	Op(lamb).QueueSync(UpdateSerialOpQ());

@@ -45,6 +45,7 @@ public:
 	virtual void Initialize();
 
 	static Class *FindClass(const ConstString &name);
+    static Class *FindClassNoCase(const ConstString &name);
 
 	static ConstString DesignNameStatic();
 	static Category *GetClassStatic();
