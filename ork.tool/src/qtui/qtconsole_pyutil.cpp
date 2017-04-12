@@ -76,4 +76,14 @@ void PyNewRefArch(const std::string& name)
 	}
 }
 /////////////////////////////////////////////////////////////
+void PyNewArch(const std::string& name)
+{
+	e::Archetype* parch = rtti::autocast(get_editor().FindSceneObject(name.c_str()));
+	if( 0 == parch )
+	{
+		parch = get_editor().NewArchetype(name);
+
+	}
+}
+/////////////////////////////////////////////////////////////
 }}
