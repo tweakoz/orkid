@@ -128,10 +128,10 @@ template <typename T> TVector3<T>::TVector3()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector3<T>::TVector3( T x, T y, T z)
-	: x(x)
-	, y(y)
-	, z(z)
+template <typename T> TVector3<T>::TVector3( T _x, T _y, T _z)
+	: x(_x)
+	, y(_y)
+	, z(_z)
 {
 }
 
@@ -384,18 +384,18 @@ template <typename T> TVector4<T> TVector3<T>::Transform( const TMatrix4<T> &mat
 	T	tx,ty,tz,tw;
 
 	T *mp = (T *) matrix.elements;
-	T x = x;
-	T y = y;
-	T z = z;
-	T w = T(1.0f);
+	T _x = x;
+	T _y = y;
+	T _z = z;
+	T _w = T(1.0f);
 
 #if 0 //defined WII
 	tx = __fmadds(x,vec.x,__fmadds(y,vec.y,__fmadds(z,vec.z,0.0f)));
 #else
-	tx = x*mp[0] + y*mp[4] + z*mp[8] + w*mp[12];
-	ty = x*mp[1] + y*mp[5] + z*mp[9] + w*mp[13];
-	tz = x*mp[2] + y*mp[6] + z*mp[10] + w*mp[14];
-	tw = x*mp[3] + y*mp[7] + z*mp[11] + w*mp[15];
+	tx = _x*mp[0] + _y*mp[4] + _z*mp[8] + _w*mp[12];
+	ty = _x*mp[1] + _y*mp[5] + _z*mp[9] + _w*mp[13];
+	tz = _x*mp[2] + _y*mp[6] + _z*mp[10] + _w*mp[14];
+	tw = _x*mp[3] + _y*mp[7] + _z*mp[11] + _w*mp[15];
 #endif
 
 	return TVector4<T>( tx, ty, tz, tw );
@@ -409,13 +409,13 @@ template <typename T> TVector3<T> TVector3<T>::Transform( const TMatrix3<T> &mat
 	T	tx,ty,tz;
 
 	T *mp = (T *) matrix.elements;
-	T x = x;
-	T y = y;
-	T z = z;
+	T _x = x;
+	T _y = y;
+	T _z = z;
 
-	tx = x*mp[0] + y*mp[3] + z*mp[6];
-	ty = x*mp[1] + y*mp[4] + z*mp[7];
-	tz = x*mp[2] + y*mp[5] + z*mp[8];
+	tx = _x*mp[0] + _y*mp[3] + _z*mp[6];
+	ty = _x*mp[1] + _y*mp[4] + _z*mp[7];
+	tz = _x*mp[2] + _y*mp[5] + _z*mp[8];
 
 	return TVector3<T>( tx, ty, tz );
 }
@@ -426,13 +426,13 @@ template <typename T> TVector3<T> TVector3<T>::Transform3x3( const TMatrix4<T> &
 {
 	T	tx,ty,tz;
 	T *mp = (T *) matrix.elements;
-	T x = x;
-	T y = y;
-	T z = z;
+	T _x = x;
+	T _y = y;
+	T _z = z;
 
-	tx = x*mp[0] + y*mp[4] + z*mp[8];
-	ty = x*mp[1] + y*mp[5] + z*mp[9];
-	tz = x*mp[2] + y*mp[6] + z*mp[10];
+	tx = _x*mp[0] + _y*mp[4] + _z*mp[8];
+	ty = _x*mp[1] + _y*mp[5] + _z*mp[9];
+	tz = _x*mp[2] + _y*mp[6] + _z*mp[10];
 
 	return TVector3<T>( tx, ty, tz );
 }
