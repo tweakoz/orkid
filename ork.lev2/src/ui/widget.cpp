@@ -209,7 +209,7 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 							&& (mt>0.5f)
 							&& (mLastKeyCode==Ev.miKeyCode);
 
-			printf( "keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev.miKeyCode, kt, dt, mt );
+			//printf( "keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev.miKeyCode, kt, dt, mt );
 			
 
 			auto evc = bdouble ? ui::UIEV_DOUBLECLICK : ui::UIEV_PUSH;

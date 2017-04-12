@@ -29,7 +29,7 @@ namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 void PyNewScene();
 void PyNewRefArch(const std::string& name);
-void PyNewArch(const std::string& name);
+void PyNewArch(const std::string& classname,const std::string& name);
 void PyNewEntity(const std::string& name,const std::string& archname="");
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -56,9 +56,9 @@ public:
     {
         PyNewRefArch(name);
     }
-    void newarch(const std::string&name)
+    void newarch(const std::string&classname,const std::string&name)
     {
-        PyNewArch(name);
+        PyNewArch(classname,name);
     }
 };
 

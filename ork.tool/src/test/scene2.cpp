@@ -44,11 +44,11 @@ TEST(SceneTortureTest)
 		switch(i%2)
 		{
 			case 0:
-				parch = the_editor.NewArchetype("ModelArchetype");
+				parch = the_editor.EditorNewArchetype("ModelArchetype","blah");
 				fstr.format("ModelArchetype_%d", int(i));
 				break;
 			case 1:
-				parch = the_editor.NewArchetype("BulletObjectArchetype");
+				parch = the_editor.EditorNewArchetype("BulletObjectArchetype","blah");
 				fstr.format("BulletObjectArchetype_%d", int(i));
 				break;
 		}

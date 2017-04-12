@@ -42,7 +42,7 @@ void PyNewEntity(const std::string& name,const std::string& archname="")
 		e::SceneObject* fso = get_editor().FindSceneObject(_archname.c_str());
 		bool bMATCH = (_archname == alias) && (nullptr==fso);
 		printf( "bmatch<%d> archname<%s> fso<%p>\n", int(bMATCH), _archname.c_str(), fso );
-		e::Archetype* rarch = bMATCH ? get_editor().NewArchetype(classname) : nullptr;
+		e::Archetype* rarch = bMATCH ? get_editor().EditorNewArchetype(classname,"arch") : nullptr;
 		if( rarch )
 		{
 			get_editor().EditorRenameSceneObject( rarch, aname.c_str() );
@@ -76,12 +76,12 @@ void PyNewRefArch(const std::string& name)
 	}
 }
 /////////////////////////////////////////////////////////////
-void PyNewArch(const std::string& name)
+void PyNewArch(const std::string& classname,const std::string& name)
 {
 	e::Archetype* parch = rtti::autocast(get_editor().FindSceneObject(name.c_str()));
 	if( 0 == parch )
 	{
-		parch = get_editor().NewArchetype(name);
+		parch = get_editor().EditorNewArchetype(classname,name);
 
 	}
 }
