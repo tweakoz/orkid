@@ -122,8 +122,8 @@ void vp_cons::AppendOutput( const std::string & data )
         while(line.length()>=wrap)
         {
             auto subs = line.substr(0,wrap);
-            printf("line<%s>\n", line.c_str());
-            printf("subs<%s>\n", subs.c_str());
+            //printf("line<%s>\n", line.c_str());
+            //printf("subs<%s>\n", subs.c_str());
             strsb.push_back(subs);
             line = line.substr(wrap,line.length());   
         }
@@ -226,7 +226,7 @@ ui::HandlerResult vp_cons::DoOnUiEvent( const ui::Event& EV )
 		case ui::UIEV_KEY:
 		{
             int mikeyc = filtev.miKeyCode;
-            printf( "%c\n", (char) mikeyc );
+            //printf( "%c\n", (char) mikeyc );
             switch(mikeyc)
             {
                 case 13: // enter
@@ -273,7 +273,7 @@ ui::HandlerResult vp_cons::DoOnUiEvent( const ui::Event& EV )
                         char buf[2] = { char(mikeyc), char(0) };
 
                         mInputLine += buf;
-                        printf( "mInputLine<%s>\n", mInputLine.c_str() );
+                        //printf( "mInputLine<%s>\n", mInputLine.c_str() );
                     }
                 }
     			break;

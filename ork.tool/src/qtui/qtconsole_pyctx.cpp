@@ -52,9 +52,9 @@ dispatch_queue_t PYQ();
 ///////////////////////////////////////////////////////////////////////////////
 char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 {
-    printf( "prompt<%s>\n", prompt );
+    //printf( "prompt<%s>\n", prompt );
 	char* pdata = PyOS_StdioReadline( sys_stdin, sys_stdout, prompt );
-    printf( "prompt<%s> pdata<%s>\n", prompt, pdata );
+    //printf( "prompt<%s> pdata<%s>\n", prompt, pdata );
     ork::fxstring<256> proc_line(pdata);
 	proc_line.replace_in_place("\r", "");
 	int ilen = proc_line.length();

@@ -107,6 +107,20 @@ void NewEntityReq::SetEntity(EntData*pent)
 
 ///////////////////////////////////////////////////////////////////////////
 
+Archetype* NewArchReq::GetArchetype()
+{
+	AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+	return mResult.GetResult().Get<Archetype*>();
+}
+
+void NewArchReq::SetArchetype(Archetype*parch)
+{
+	AssertOnOpQ(gImplSerQ); 
+	mResult.Signal<Archetype*>(parch);
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 SceneEditorBase::SceneEditorBase()
 	: mbInit(true)
 	, mApplication(0)
@@ -729,6 +743,16 @@ ent::EntData* SceneEditorBase::EditorNewEntity(const ent::Archetype* parchetype)
 	return new_ent.GetResult().Get<EntData*>();
 }
 ///////////////////////////////////////////////////////////////////////////
+ent::Archetype* SceneEditorBase::EditorNewArchetype(const std::string& classname, const std::string& name)
+{
+	Future new_arch;
+	NewArchReq nar(new_arch);
+	nar.mClassName = classname;
+	nar.mName = name;
+	QueueOpASync(nar);
+	return new_arch.GetResult().Get<Archetype*>();
+}
+///////////////////////////////////////////////////////////////////////////
 ent::EntData *SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype)
 {
 	////////////////////////////////////
@@ -1266,18 +1290,30 @@ ReferenceArchetype* SceneEditorBase::NewReferenceArchetype( const std::string& a
 	}
 	return rarch;
 }
-Archetype* SceneEditorBase::NewArchetype( const std::string& classname )
+Archetype* SceneEditorBase::ImplNewArchetype( const std::string& classname, const std::string& name )
 {
+	////////////////////////////////////
+	// to prevent deadlock
+	ork::AssertOnOpQ2( gImplSerQ );
+	////////////////////////////////////
+
+	if( nullptr == mpScene ) return nullptr;
 	Archetype* rarch = nullptr;
-	std::string name = CreateFormattedString( "/arch/%s", classname.c_str() );
-	ork::rtti::Class* pclass = ork::rtti::Class::FindClass(classname.c_str());
-	printf( "NewArchetype classname<%s> class<%p> aname<%s>\n", classname.c_str(), pclass, name.c_str() );
-	if( pclass )
+	auto lamb = [&]()
 	{
-		rarch = rtti::autocast( pclass->CreateObject() );
-		rarch->SetName(name.c_str());
-		SlotNewObject(rarch);
-	}
+
+		std::string name = CreateFormattedString( "/arch/%s", classname.c_str() );
+		ork::rtti::Class* pclass = ork::rtti::Class::FindClass(classname.c_str());
+		printf( "NewArchetype classname<%s> class<%p> aname<%s>\n", classname.c_str(), pclass, name.c_str() );
+		if( pclass )
+		{
+			rarch = rtti::autocast( pclass->CreateObject() );
+			rarch->SetName(name.c_str());
+			SlotNewObject(rarch);
+			mpScene->AddSceneObject( rarch );
+		}
+	};
+	Op(lamb).QueueSync(UpdateSerialOpQ());
 	return rarch;
 }
 

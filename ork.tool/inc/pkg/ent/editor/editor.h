@@ -130,7 +130,8 @@ public:
 	///////////////////////////////////////////////
 	
 	ReferenceArchetype* NewReferenceArchetype( const std::string& archassetname );
-	Archetype* NewArchetype( const std::string& classname );
+	//Archetype* NewArchetype( const std::string& classname );
+	Archetype* EditorNewArchetype(const std::string& classname, const std::string& name);
 
 	///////////////////////////////////////////////
 
@@ -183,7 +184,8 @@ private:
 
 	void ImplNewScene();
 	void ImplDeleteObject(ork::Object* pobj);
-	ent::EntData* ImplNewEntity(const ent::Archetype* parchetype = NULL);
+	EntData* ImplNewEntity(const ent::Archetype* parchetype = NULL);
+	Archetype* ImplNewArchetype(const std::string& classname, const std::string& name);
 	void ImplLoadScene( std::string filename );
 	void ImplEnterRunLocalState();
 	void ImplEnterPauseState();
@@ -218,6 +220,18 @@ struct NewEntityReq
 	const ent::Archetype* mArchetype;
 	EntData* GetEntity();
 	void SetEntity(EntData*pent);
+private:
+
+	Future& mResult;
+	static Future gnilfut;
+};
+struct NewArchReq
+{
+	NewArchReq(Future&f=gnilfut) : mResult(f) {}
+	std::string mClassName;
+	std::string mName;
+	Archetype* GetArchetype();
+	void SetArchetype(Archetype*parch);
 private:
 
 	Future& mResult;
