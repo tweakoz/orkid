@@ -18,9 +18,9 @@ template <typename T> ork::TVector2<T>::TVector2()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> ork::TVector2<T>::TVector2( T x, T y)
-	: x(x)
-	, y(y)
+template <typename T> ork::TVector2<T>::TVector2( T _x, T _y)
+	: x(_x)
+	, y(_y)
 {
 }
 
