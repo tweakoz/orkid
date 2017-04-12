@@ -182,7 +182,8 @@ private:
 	// impl functions must be serialized on the runloop
 	////////////////////////////
 
-	void ImplNewScene();
+	SceneData* ImplNewScene();
+	SceneData* ImplGetScene();
 	void ImplDeleteObject(ork::Object* pobj);
 	EntData* ImplNewEntity(const ent::Archetype* parchetype = NULL);
 	Archetype* ImplNewArchetype(const std::string& classname, const std::string& name);
@@ -247,6 +248,19 @@ private:
 };
 struct NewSceneReq
 {
+	NewSceneReq(Future&f=gnilfut) : mResult(f) {}
+	SceneData* GetScene();
+	void SetScene(SceneData*parch);
+	Future& mResult;
+	static Future gnilfut;
+};
+struct GetSceneReq
+{
+	GetSceneReq(Future&f=gnilfut) : mResult(f) {}
+	SceneData* GetScene();
+	void SetScene(SceneData*parch);
+	Future& mResult;
+	static Future gnilfut;
 };
 struct RunLocalReq
 {

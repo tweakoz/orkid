@@ -23,10 +23,22 @@ static e::SceneEditorBase& get_editor()
 	return pwin->mEditorBase;
 }
 /////////////////////////////////////////////////////////////
-void PyNewScene()
+ent::SceneData* PyNewScene()
 {
-	ent::NewSceneReq nsr;
-	get_editor().QueueOpSync(nsr);
+	Future new_scene;
+	ent::NewSceneReq nsr(new_scene);
+	get_editor().QueueOpASync(nsr);
+	auto scene = new_scene.GetResult().Get<ent::SceneData*>();
+	return scene;
+}
+/////////////////////////////////////////////////////////////
+ent::SceneData* PyGetScene()
+{
+	Future get_scene;
+	ent::GetSceneReq gsr(get_scene);
+	get_editor().QueueOpASync(gsr);
+	auto scene = get_scene.GetResult().Get<ent::SceneData*>();
+	return scene;
 }
 /////////////////////////////////////////////////////////////
 void PyNewEntity(const std::string& name,const std::string& archname="")

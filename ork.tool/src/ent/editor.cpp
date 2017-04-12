@@ -47,6 +47,8 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////
 
 Future NewEntityReq::gnilfut;
+Future NewSceneReq::gnilfut;
+Future GetSceneReq::gnilfut;
 
 static Opq gImplSerQ(0,"eddummyopq");
 
@@ -117,6 +119,34 @@ void NewArchReq::SetArchetype(Archetype*parch)
 {
 	AssertOnOpQ(gImplSerQ); 
 	mResult.Signal<Archetype*>(parch);
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+SceneData* NewSceneReq::GetScene()
+{
+	AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+	return mResult.GetResult().Get<SceneData*>();
+}
+
+void NewSceneReq::SetScene(SceneData*sd)
+{
+	AssertOnOpQ(gImplSerQ); 
+	mResult.Signal<SceneData*>(sd);
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+SceneData* GetSceneReq::GetScene()
+{
+	AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+	return mResult.GetResult().Get<SceneData*>();
+}
+
+void GetSceneReq::SetScene(SceneData*sd)
+{
+	AssertOnOpQ(gImplSerQ); 
+	mResult.Signal<SceneData*>(sd);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -265,10 +295,19 @@ void SceneEditorBase::RunLoop()
 			}
 			else if( event.IsA<NewSceneReq>() )
 			{
-				const auto& R = event.Get<NewSceneReq>();
+				auto& R = event.Get<NewSceneReq>();
 				Op(disable_op).QueueSync(updQ);
-				ImplNewScene();
+				auto s = ImplNewScene();
 				Op(enable_op).QueueSync(updQ);
+				R.SetScene(s);
+			}
+			else if( event.IsA<GetSceneReq>() )
+			{
+				auto& R = event.Get<GetSceneReq>();
+				Op(disable_op).QueueSync(updQ);
+				auto s = ImplGetScene();
+				Op(enable_op).QueueSync(updQ);
+				R.SetScene(s);
 			}
 			else if( event.IsA<RunLocalReq>() )
 			{
@@ -370,13 +409,27 @@ void SceneEditorBase::NewSceneInst()
 	}
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneEditorBase::ImplNewScene()
+SceneData* SceneEditorBase::ImplGetScene()
 {	
 	////////////////////////////////////
 	// to prevent deadlock
 	ork::AssertOnOpQ2( gImplSerQ );
 	////////////////////////////////////
-
+	SceneData* rval = nullptr;
+	auto get_scene_op = [&]()
+	{
+		rval = mpScene;
+	};
+	Op(get_scene_op).QueueSync(UpdateSerialOpQ());
+	return mpScene;
+}
+///////////////////////////////////////////////////////////////////////////
+SceneData* SceneEditorBase::ImplNewScene()
+{	
+	////////////////////////////////////
+	// to prevent deadlock
+	ork::AssertOnOpQ2( gImplSerQ );
+	////////////////////////////////////
 	auto new_scene_op = [&]()
 	{
 
@@ -400,7 +453,7 @@ void SceneEditorBase::ImplNewScene()
 		SigSceneTopoChanged();
 	};
 	Op(new_scene_op).QueueSync(UpdateSerialOpQ());
-
+	return mpScene;
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplLoadScene( std::string fname )
