@@ -167,6 +167,18 @@ Class *Class::FindClass(const ConstString &name)
 	return OrkSTXFindValFromKey(mClassMap, FindPooledString(name.c_str()), NULL);
 }
 
+Class *Class::FindClassNoCase(const ConstString &name)
+{
+	std::string nocasename = name.c_str();
+	std::transform(nocasename.begin(), nocasename.end(), nocasename.begin(), ::tolower);
+	for( const auto& it : mClassMap )
+	{
+		if( 0 == strcasecmp(it.first.c_str(),nocasename.c_str() ) )
+			return it.second;
+	}
+    return nullptr;
+}
+
 rtti::ICastable *Class::CreateObject() const
 {
 	return (*mFactory)();
