@@ -38,7 +38,7 @@ template <typename T> class  TVector3
 public:
 
 	TVector3();
-	explicit TVector3( T x, T y, T z);												// constructor from 3 floats
+	explicit TVector3( T _x, T _y, T _z);												// constructor from 3 floats
 	TVector3( const TVector3 &vec);											// constructor from a vector
 	TVector3( const TVector4<T> &vec);
 	TVector3( const TVector2<T> &vec);
@@ -66,14 +66,14 @@ public:
 	void				Lerp( const TVector3 &from, const TVector3 &to, T par );
 	void				Serp( const TVector3 & PA, const TVector3 & PB, const TVector3 & PC, const TVector3 & PD, T Par );
 
-	T					GetX(void) const { return (m_x); }
-	T					GetY(void) const { return (m_y); }
-	T					GetZ(void) const { return (m_z); }
+	T					GetX(void) const { return (x); }
+	T					GetY(void) const { return (y); }
+	T					GetZ(void) const { return (z); }
 
-	void			 	Set(T x,T y,T z) { m_x = x; m_y = y; m_z = z;}
-	void			 	SetX(T x) { m_x = x; }
-	void				SetY(T y) { m_y = y; }
-	void				SetZ(T z) { m_z = z; }
+	void			 	Set(T _x,T _y,T _z) { x = _x; y = _y; z = _z;}
+	void			 	SetX(T _x) { x = _x; }
+	void				SetY(T _y) { y = _y; }
+	void				SetZ(T _z) { z = _z; }
 
 	TVector2<T>			GetXY( void ) const { return TVector2<T>(*this); }
 
@@ -96,102 +96,102 @@ public:
 
 	inline T &operator[]( U32 i )
 	{
-		T *v = & m_x;
+		T *v = & x;
 		OrkAssert( i<3 );
 		return v[i];
 	}
 
 	inline const T &operator[]( U32 i ) const
 	{
-		const T *v = & m_x;
+		const T *v = & x;
 		OrkAssert( i<3 );
 		return v[i];
 	}
 
 	inline TVector3 operator-() const
 	{
-		return TVector3( -m_x, -m_y, -m_z );
+		return TVector3( -x, -y, -z );
 	}
 
 	inline TVector3 operator+( const TVector3 &b ) const
 	{
-		return TVector3( (m_x+b.m_x), (m_y+b.m_y), (m_z+b.m_z) );
+		return TVector3( (x+b.x), (y+b.y), (z+b.z) );
 	}
 
 	inline TVector3 operator*( const TVector3 &b ) const
 	{
-		return TVector3( (m_x*b.m_x), (m_y*b.m_y), (m_z*b.m_z) );
+		return TVector3( (x*b.x), (y*b.y), (z*b.z) );
 	}
 
 	inline TVector3 operator*( T scalar ) const
 	{
-		return TVector3( (m_x*scalar), (m_y*scalar), (m_z*scalar) );
+		return TVector3( (x*scalar), (y*scalar), (z*scalar) );
 	}
 
 	inline TVector3 operator-( const TVector3 &b ) const
 	{
-		return TVector3( (m_x-b.m_x), (m_y-b.m_y), (m_z-b.m_z) );
+		return TVector3( (x-b.x), (y-b.y), (z-b.z) );
 	}
 
 	inline TVector3 operator/( const TVector3 &b ) const
 	{
-		return TVector3( (m_x/b.m_x), (m_y/b.m_y), (m_z/b.m_z) );
+		return TVector3( (x/b.x), (y/b.y), (z/b.z) );
 	}
 
 	inline TVector3 operator/( T scalar ) const
 	{
-		return TVector3( (m_x/scalar), (m_y/scalar), (m_z/scalar) );
+		return TVector3( (x/scalar), (y/scalar), (z/scalar) );
 	}
 
 	inline void operator+=( const TVector3 & b )
 	{
-		m_x+=b.m_x;
-		m_y+=b.m_y;
-		m_z+=b.m_z;
+		x+=b.x;
+		y+=b.y;
+		z+=b.z;
 	}
 
 	inline void operator-=( const TVector3 & b )
 	{
-		m_x-=b.m_x;
-		m_y-=b.m_y;
-		m_z-=b.m_z;
+		x-=b.x;
+		y-=b.y;
+		z-=b.z;
 	}
 
 	inline void operator*=( T scalar )
 	{
-		m_x*=scalar;
-		m_y*=scalar;
-		m_z*=scalar;
+		x*=scalar;
+		y*=scalar;
+		z*=scalar;
 	}
 
 	inline void operator*=( const TVector3 & b )
 	{
-		m_x*=b.m_x;
-		m_y*=b.m_y;
-		m_z*=b.m_z;
+		x*=b.x;
+		y*=b.y;
+		z*=b.z;
 	}
 
 	inline void operator/=( const TVector3 &b )
 	{
-		m_x/=b.m_x;
-		m_y/=b.m_y;
-		m_z/=b.m_z;
+		x/=b.x;
+		y/=b.y;
+		z/=b.z;
 	}
 
 	inline void operator/=( T scalar )
 	{
-		m_x/=scalar;
-		m_y/=scalar;
-		m_z/=scalar;
+		x/=scalar;
+		y/=scalar;
+		z/=scalar;
 	}
 
 	inline bool operator==( const TVector3 &b ) const
 	{
-		return ( m_x == b.m_x && m_y == b.m_y && m_z == b.m_z );
+		return ( x == b.x && y == b.y && z == b.z );
 	}
 	inline bool operator!=( const TVector3 &b ) const
 	{
-		return ( m_x != b.m_x || m_y != b.m_y || m_z != b.m_z );
+		return ( x != b.x || y != b.y || z != b.z );
 	}
 
 	void SetHSV( T h, T s, T v );
@@ -222,7 +222,7 @@ public:
 	static const TVector3 & Cyan( void );
 	static const TVector3 & Yellow( void );
 
-	T *GetArray( void ) const { return const_cast<T*>( & m_x ); }
+	T *GetArray( void ) const { return const_cast<T*>( & x ); }
 
 	template <typename U>
 	static TVector3 FromTVector3(TVector3<U> vec)
@@ -232,11 +232,9 @@ public:
 						T::FromFX(vec.GetZ().FXCast()));
 	}
 
-protected:
-
-	T					m_x; // x component of this vector
-	T					m_y; // y component of this vector
-	T					m_z; // z component of this vector
+	T					x; // x component of this vector
+	T					y; // y component of this vector
+	T					z; // z component of this vector
 
 };
 

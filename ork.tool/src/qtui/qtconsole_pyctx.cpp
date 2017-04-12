@@ -12,9 +12,6 @@
 #include <ork/kernel/prop.h>
 #include <dispatch/dispatch.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <boost/python.hpp>
-#include <boost/python/str.hpp>
-///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtconsole.h>
 #include <QtWidgets/QScrollBar>
 #include <ork/lev2/qtui/qtui.hpp>
@@ -96,8 +93,6 @@ dispatch_queue_t PYQ()
 	return gQ;
 }
 ///////////////////////////////////////////////////////////////////////////////
-using namespace boost::python;
-namespace bpy = boost::python;
 
 namespace ork {
 namespace tool {

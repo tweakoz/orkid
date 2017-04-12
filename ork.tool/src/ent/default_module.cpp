@@ -44,7 +44,7 @@ void MainWinDefaultModule::Activate( QMenuBar* qmb )
 	AddAction( "/Scene/ExportArchetype" );
 	AddAction( "/Scene/ImportArchetype" );
 
-	AddAction( "/View/PyCon" );
+	AddAction( "/View/PyCon",QKeySequence(tr("Ctrl+P"))  );
 	//AddAction( "/View/Outliner" );
 	//AddAction( "/View/Outliner2" );
 	//AddAction( "/View/DataflowEditor" );

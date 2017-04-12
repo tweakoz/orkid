@@ -53,103 +53,103 @@ public:
 	void				Lerp( const TVector2 &from, const TVector2 &to, T par );
 	void				Serp( const TVector2 & PA, const TVector2 & PB, const TVector2 & PC, const TVector2 & PD, T Par );
 
-	T					GetX(void) const { return (m_x); }
-	T					GetY(void) const { return (m_y); }
+	T					GetX(void) const { return (x); }
+	T					GetY(void) const { return (y); }
 
-	void			 	Set(T x, T y) { m_x = x; m_y = y;}
-	void			 	SetX(T x) { m_x = x; }
-	void				SetY(T y) { m_y = y; }
+	void			 	Set(T _x, T _y) { x = _x; y = _y;}
+	void			 	SetX(T _x) { x = _x; }
+	void				SetY(T _y) { y = _y; }
 
 	static	TVector2	Zero(void) { return TVector2(T(0), T(0)); }
 
 	inline T &operator[]( U32 i )
 	{
-		T *v = & m_x;
+		T *v = & x;
 		OrkAssert( i<2 );
 		return v[i];
 	}
 
 	inline TVector2 operator-() const
 	{
-		return TVector2( -m_x, -m_y );
+		return TVector2( -x, -y );
 	}
 
 	inline TVector2 operator+( const TVector2 &b ) const
 	{
-		return TVector2( (m_x+b.m_x), (m_y+b.m_y) );
+		return TVector2( (x+b.x), (y+b.y) );
 	}
 
 	inline TVector2 operator*( const TVector2 &b ) const
 	{
-		return TVector2( (m_x*b.m_x), (m_y*b.m_y) );
+		return TVector2( (x*b.x), (y*b.y) );
 	}
 
 	inline TVector2 operator*( T scalar ) const
 	{
-		return TVector2( (m_x*scalar), (m_y*scalar) );
+		return TVector2( (x*scalar), (y*scalar) );
 	}
 
 	inline TVector2 operator-( const TVector2 &b ) const
 	{
-		return TVector2( (m_x-b.m_x), (m_y-b.m_y) );
+		return TVector2( (x-b.x), (y-b.y) );
 	}
 
 	inline TVector2 operator/( const TVector2 &b ) const
 	{
-		return TVector2( (m_x/b.m_x), (m_y/b.m_y) );
+		return TVector2( (x/b.x), (y/b.y) );
 	}
 
 	inline TVector2 operator/( T scalar ) const
 	{
-		return TVector2( (m_x/scalar), (m_y/scalar) );
+		return TVector2( (x/scalar), (y/scalar) );
 	}
 
 	inline void operator+=( const TVector2 & b )
 	{
-		m_x+=b.m_x;
-		m_y+=b.m_y;
+		x+=b.x;
+		y+=b.y;
 	}
 
 	inline void operator-=( const TVector2 & b )
 	{
-		m_x-=b.m_x;
-		m_y-=b.m_y;
+		x-=b.x;
+		y-=b.y;
 	}
 
 	inline void operator*=( T scalar )
 	{
-		m_x*=scalar;
-		m_y*=scalar;
+		x*=scalar;
+		y*=scalar;
 	}
 
 	inline void operator*=( const TVector2 & b )
 	{
-		m_x*=b.m_x;
-		m_y*=b.m_y;
+		x*=b.x;
+		y*=b.y;
 	}
 
 	inline void operator/=( const TVector2 &b )
 	{
-		m_x/=b.m_x;
-		m_y/=b.m_y;
+		x/=b.x;
+		y/=b.y;
 	}
 
 	inline void operator/=( T scalar )
 	{
-		m_x/=scalar;
-		m_y/=scalar;
+		x/=scalar;
+		y/=scalar;
 	}
 
 	inline bool operator==( const TVector2 &b ) const
 	{
-		return ( m_x == b.m_x && m_y == b.m_y );
+		return ( x == b.x && y == b.y );
 	}
 	inline bool operator!=( const TVector2 &b ) const
 	{
-		return ( m_x != b.m_x || m_y != b.m_y );
+		return ( x != b.x || y != b.y );
 	}
 
-	T *GetArray( void ) const { return const_cast<T*>( & m_x ); }
+	T *GetArray( void ) const { return const_cast<T*>( & x ); }
 
 	/*template <typename U>
 	static TVector2 FromTVector2(TVector2<U> vec)
@@ -158,10 +158,8 @@ public:
 						T::FromFX(vec.GetY().FXCast()));
 	}*/
 
-protected:
-
-	T					m_x; // x component of this vector
-	T					m_y; // y component of this vector
+	T					x; // x component of this vector
+	T					y; // y component of this vector
 
 };
 
