@@ -442,7 +442,7 @@ void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 
             int inumjinmap = mSkeleton.mmJointNameMap.size();
 
-			printf( "spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap );
+			//printf( "spose jname<%s> iskelindex<%d> inumjinmap<%d>\n", JointName.c_str(), iskelindex, inumjinmap );
 
 			if(-1 != iskelindex)
 			{
@@ -453,7 +453,7 @@ void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 
 
 					bool found = itanim == Channels.end();
-					printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );
+					//printf( "spose jname<%s> found<%d>\n", JointName.c_str(), int(found) );
 
 					if(itanim == Channels.end())
 					{
@@ -476,8 +476,8 @@ void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 		//int iframe = int(frame);
 		int ichidx = 0;
 
-		for( int is=0; is<mSkeleton.GetNumJoints(); is++ )
-			printf( "skel bone<%d:%s>\n", is, mSkeleton.GetJointName(is).c_str() );
+		//for( int is=0; is<mSkeleton.GetNumJoints(); is++ )
+		//	printf( "skel bone<%d:%s>\n", is, mSkeleton.GetJointName(is).c_str() );
 
 		for(ork::lev2::XgmAnim::JointChannelsMap::const_iterator it = Channels.begin(); it != Channels.end(); it++)
 		{
@@ -485,7 +485,7 @@ void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 			const ork::lev2::XgmDecompAnimChannel* __restrict MtxChannelData = it->second;
 			int iskelindex = mSkeleton.GetJointIndex(ChannelName);
 
-			printf( "bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex );
+			//printf( "bind channel<%s> skidx<%d>\n", ChannelName.c_str(), iskelindex );
 
 			if(-1 != iskelindex)
 			{
@@ -1237,10 +1237,10 @@ int XgmSkeleton::GetJointIndex(const ork::PoolString &Named) const
 	int index = (it==mmJointNameMap.end()) ? -1 : it->second;
     if( index == -1 )
     {
-        printf( "find joint<%s> in map\n", Named.c_str() );
+        //printf( "find joint<%s> in map\n", Named.c_str() );
         for( auto it:mmJointNameMap)
         {
-            printf( "in map key<%s>\n", it.first.c_str());
+            //printf( "in map key<%s>\n", it.first.c_str());
         }
     }
 	return index;

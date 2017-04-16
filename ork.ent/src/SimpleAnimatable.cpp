@@ -178,10 +178,10 @@ static void SetJointsFromExpression(orkset<int> &joints, const ork::lev2::XgmSke
 				joints.insert(skeleton.GetJointIndex(exprStr));
 		}
 	}
-	for( auto& j : joints )
-	{
-		printf( "enabled joint<%d>\n", j );
-	}
+	//for( auto& j : joints )
+	//{
+	//	printf( "enabled joint<%d>\n", j );
+	//}
 	//assert(false);
 }
 

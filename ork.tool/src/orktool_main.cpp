@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <orktool/orktool_pch.h>
+#include <orktool/qtui/qtui_tool.h>
 #include <orktool/toolcore/selection.h>
 #include <orktool/toolcore/choiceman.h>
 #include <ork/file/file.h>
@@ -15,6 +16,7 @@
 #include <orktool/toolcore/FunctionManager.h>
 
 #include <QtWidgets/QMessageBox>
+#include <QtCore/QSettings>
 
 #include <sys/resource.h>
 
@@ -40,17 +42,49 @@ namespace lev2 { void Init(const std::string& gfxlayer); }
 	
 namespace tool {
 
+static std::string gexecdir = "";
+static std::string gdatadir = "";
+const std::string& getExecutableDir()
+{
+    return gexecdir;
+}
+const std::string& getDataDir()
+{
+    return gdatadir;
+}
+void setDataDir(const std::string& dir)
+{
+    gdatadir = dir;
+    QSettings settings("TweakoZ", "OrkidTool");
+    settings.beginGroup("App");
+    settings.setValue("datadir", qs(dir));
+    settings.endGroup();
+}
 
 int Main_Filter( tokenlist toklist );
 int Main_FilterTree( tokenlist toklist );
 
-void MySetToolDataFolder()
+static void ToolStartupDataFolder()
 {
 	//////////////////////////////////////////
 	// Register data:// urlbase
 	static SFileDevContext WorkingDirContext;
 	WorkingDirContext.SetFilesystemBaseEnable( true );
 	WorkingDirContext.SetFilesystemBaseRel( "data/" );
+
+    QSettings settings("TweakoZ", "OrkidTool");
+    settings.beginGroup("App");
+    if( settings.contains("datadir") )
+    {
+        auto existdir = settings.value("datadir").toString();
+        gdatadir = existdir.toStdString();
+        WorkingDirContext.SetFilesystemBaseAbs( gdatadir.c_str() );
+        printf( "DATADIR from QSETTINGS<%s>\n", gdatadir.c_str() );
+    }
+    settings.endGroup();
+
+
+
 	CFileEnv::RegisterUrlBase( "data://", WorkingDirContext );
 	//////////////////////////////////////////
 }
@@ -83,11 +117,21 @@ int main(int& argc, char **argv)
 	    printf("l2:%s\n", l2.c_str());
 	    printf("r2:%s\n", r2.c_str());
 
+        gexecdir = l.c_str();
+
 	    if( r2 == ork::file::Path::NameType("MacOS") ) // we are in a bundle
 		    chdir(l2.c_str());
 	}
 	else
     	printf("buffer too small; need size %u\n", size);
+
+    QSettings settings("TweakoZ", "OrkidTool");
+    settings.beginGroup("App");
+    if( settings.contains("datadir")==false )
+    {   
+        settings.setValue("datadir", qs(gexecdir+"../"));
+    }
+    settings.endGroup();
 
 #endif
 	int iret = 0;
@@ -103,7 +147,7 @@ int main(int& argc, char **argv)
 		
 		if( toklist.empty() || toklist.front() == std::string("-edit") )
 		{
-			MySetToolDataFolder();
+			ToolStartupDataFolder();
 			//////////////////////////////////////////
 			#if defined( ORK_CONFIG_QT )
 			ork::tool::QtTest( argc, argv, false, false );
@@ -144,7 +188,7 @@ int main(int& argc, char **argv)
 		}
 		else if(toklist.front() == std::string("-game"))
 		{
-			MySetToolDataFolder();
+			ToolStartupDataFolder();
 			#if defined( ORK_CONFIG_QT )
 			CSystem::SetGlobalIntVariable( "ViewCollisionSpheres", 1 );
 			ork::tool::QtTest( argc, argv, true, true );
@@ -152,7 +196,7 @@ int main(int& argc, char **argv)
 		}
 		else if(toklist.front() == std::string("-gametest"))
 		{
-			MySetToolDataFolder();
+			ToolStartupDataFolder();
 			#if defined( ORK_CONFIG_QT )
 			CSystem::SetGlobalIntVariable( "ViewCollisionSpheres", 1 );
 			ork::tool::QtTest( argc, argv, true, false );
@@ -160,7 +204,7 @@ int main(int& argc, char **argv)
 		}
 		else
 		{
-			MySetToolDataFolder();
+			ToolStartupDataFolder();
 			ork::tool::QtTest( argc, argv, false, false );
 		}
 	}

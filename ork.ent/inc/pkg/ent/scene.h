@@ -272,6 +272,8 @@ public:
 	
 	void SetDeltaTime(float speeduptime)  { mDeltaTime = speeduptime; }
 
+    float random(float mmin, float mmax);
+    
 	///////////////////////////////////////////////////
 
 	void SetCameraData(const PoolString& name, const CCameraData*camdat);

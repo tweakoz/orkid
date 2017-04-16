@@ -19,6 +19,7 @@
 #include <cxxabi.h>
 
 #include "LuaBindings.h"
+#include "LuaIntf/LuaIntf.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -30,12 +31,14 @@ std::stringstream& operator<<(std::stringstream& str, const ork::CVector3& v)
 	return str;	
 }
 
-#include <luabind/operator.hpp>
+//#include <luabind/operator.hpp>
+
+using namespace LuaIntf;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 void LuaProtectedCallByRef(lua_State* L, int script_ref)
 {
 	if( script_ref!=LUA_NOREF )
@@ -97,7 +100,7 @@ void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabin
 		}
 	}	
 }
-
+*/
 bool DoString(lua_State* L, const char* str)
 {
 	if (luaL_loadbuffer(L, str, std::strlen(str), str) || lua_pcall(L, 0, 0, 0))
@@ -111,7 +114,7 @@ bool DoString(lua_State* L, const char* str)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
+/*
 SceneInst* GetSceneInst(lua_State* L)
 {
 	luabind::object globtab = globals(L)["luascene"];
@@ -239,11 +242,15 @@ void SetVec3Z( lua_State* L,  luabind::object o, double z )
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
-luabind::object GetEntityName( lua_State* L, luabind::object o )
+int GetEntityName( lua_State* L )
 {
-	auto e = object_cast<const Entity*>(o);
+    void* vpe = lua_touserdata(L,-1);
+
+    auto e = (const Entity*) vpe;
+
 	const char* ename = e ? e->GetEntData().GetName().c_str() : "";
-	return luabind::object(L,std::string(ename));
+	lua_pushstring(L,ename);
+    return 1;
 }
 luabind::object GetEntityPos( lua_State* L, luabind::object o )
 {
@@ -300,7 +307,7 @@ std::string ArchToString( const Archetype* a )
 	}
 	return rval.c_str();
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////
 
 LuaSystem::LuaSystem(SceneInst*psi)
@@ -308,9 +315,28 @@ LuaSystem::LuaSystem(SceneInst*psi)
 {
 	mLuaState = ::luaL_newstate(); // aka lua_open
 	luaL_openlibs(mLuaState);
-	luabind::open(mLuaState);
+	//luabind::open(mLuaState);
+    auto L = mLuaState;
+
+    lua_newtable(L);
+    lua_setglobal(L, "ork");
+
+    auto setGlobTabFn = [L](const char* tbl, const char* fnnam, lua_CFunction cf ){
+        lua_getglobal(L,tbl);
+        lua_pushstring(L,fnnam);
+        lua_pushcfunction(L,cf);
+        lua_settable(L,-3);
+
+    };
+    //setGlobTabFn("ork","getEntityName",&GetEntityName);
+
+    //LuaBinding(L)
+    //    .beginModule("ork")
+    //    .endModule();
+
 	/////////////////////////////////////
-	module(mLuaState,"ork")
+	#if 0
+    module(mLuaState,"ork")
     [
     	def("getscene",&GetScene),
 
@@ -337,7 +363,7 @@ LuaSystem::LuaSystem(SceneInst*psi)
 		class_<LuaOpaque16>("Opaque16")
 			.def("type", &LuaOpaque16::GetType ),
 
-		class_<CVector3,CVector3*>("Vector3")
+		class_<CVector3,CVector3*>("vec3")
 			.def(tostring(self))
 			.property("xz", &GetVec3XZ,&SetVec3XZ)
 			.property("x", &GetVec3X,&SetVec3X)
@@ -349,18 +375,20 @@ LuaSystem::LuaSystem(SceneInst*psi)
 			.property("x", &GetVec4X,&SetVec4X)
 			.property("y", &GetVec4Y,&SetVec4Y)
 			.property("z", &GetVec4Z,&SetVec4Z),
-			.property("w", &GetVec4Z,&SetVec4Z),*/
+			.property("w", &GetVec4Z,&SetVec4Z),
+            */
 
 		def("vec3",&CreateVector3)
 
     ];
+    #endif
 	/////////////////////////////////////
-	luabind::object globtab = luabind::newtable(mLuaState);
-	globtab[1] = this;
-	globals(mLuaState)["luascene"] = globtab;
+	//luabind::object globtab = luabind::newtable(mLuaState);
+	//globtab[1] = this;
+	//globals(mLuaState)["luascene"] = globtab;
 	/////////////////////////////////////
-	auto exec_table =luabind::newtable(mLuaState);
-	luabind::globals(mLuaState)["entity_exec_table"] = exec_table;
+	//auto exec_table =luabind::newtable(mLuaState);
+	//luabind::globals(mLuaState)["entity_exec_table"] = exec_table;
 	/////////////////////////////////////
 	printf( "create LuaState<%p> psi<%p>\n", mLuaState, psi );
 

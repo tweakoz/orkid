@@ -62,6 +62,30 @@ template <int tsize,typename T> struct static_variant_copier_t
 
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename T> struct attempt_cast
+{
+    attempt_cast(T* d) : _data(d) {}
+    operator bool() const  { return (nullptr!=_data); }
+    T& value() const
+    {   OrkAssert(_data!=nullptr);
+        return *_data;
+    }
+    T* _data;
+};
+
+template <typename T> struct attempt_cast_const
+{
+    attempt_cast_const(const T* d) : _data(d) {}
+    operator bool() const  { return (nullptr!=_data); }
+    const T& value() const
+    {   OrkAssert(_data!=nullptr);
+        return *_data;
+    }
+    const T* _data;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 template <int tsize> class static_variant
 {
 public:
@@ -185,6 +209,39 @@ public:
 		const T* pval = (const T*) & mbuffer[0];
 		return *pval;
 	}
+    //////////////////////////////////////////////////////////////
+    // make a T and return by reference
+    //////////////////////////////////////////////////////////////
+    template <typename T, typename... A> T& Make(A&&... args)
+    {
+        static_assert(sizeof(T)<=ksize, "static_variant size violation");
+        Destroy();
+        T* pval = (T*) & mbuffer[0];
+        new (pval) T(std::forward<A>(args)...); 
+        mtinfo = & typeid( T );
+        AssignDestroyer<T>();
+        AssignCopier<T>();
+        assert( typeid(T) == *mtinfo );
+        return *pval;
+    }
+    //////////////////////////////////////////////////////////////
+    // 
+    //////////////////////////////////////////////////////////////
+    template <typename T> attempt_cast<T> TryAs()
+    {   
+        static_assert(sizeof(T)<=ksize, "static_variant size violation");
+        bool type_ok = ( typeid(T) == *mtinfo );
+        return attempt_cast<T>((T*) (type_ok ? & mbuffer[0] : nullptr));
+    }
+    //////////////////////////////////////////////////////////////
+    // 
+    //////////////////////////////////////////////////////////////
+    template <typename T> attempt_cast_const<T> TryAs() const
+    {   
+        static_assert(sizeof(T)<=ksize, "static_variant size violation");
+        bool type_ok = ( typeid(T) == *mtinfo );
+        return attempt_cast_const<T>((const T*) (type_ok ? & mbuffer[0] : nullptr)) ;
+    }
 	//////////////////////////////////////////////////////////////
 	// return true if the variant is capable of containing an object of type T
 	//////////////////////////////////////////////////////////////

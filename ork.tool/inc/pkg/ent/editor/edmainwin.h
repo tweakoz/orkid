@@ -101,6 +101,7 @@ public://
 	void NewCamViewFloating();
 	void NewToolViewFloating();
 	void NewDataflowViewFloating();
+    void NewAssetAssist();
 
 	///////////////////////////////////////////////////////////////////////////
 

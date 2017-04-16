@@ -184,6 +184,14 @@ CompositingManagerComponentInst* SceneInst::GetCMCI()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+float SceneInst::random(float mmin, float mmax)
+{
+    float r = float(rand()&0xffff)/65536.0f;
+    return mmin+(r*(mmax-mmin));
+}
+
+///////////////////////////////////////////////////////////////////////////////
 float SceneInst::ComputeDeltaTime()
 {
 	auto cmci = GetCMCI();

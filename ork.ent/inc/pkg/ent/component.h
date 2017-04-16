@@ -147,6 +147,8 @@ protected:
 
 	ComponentInst( const ComponentData* data, Entity *entity );
 
+    Entity*                 mEntity;
+
 private:
     
     bool DoNotify(const ork::event::Event *event) override { return false; }
@@ -158,7 +160,6 @@ private:
 	virtual void DoStop(SceneInst *psi) {}
 
 	const ComponentData*	mComponentData;
-	Entity*					mEntity;
 	bool					mbStarted;
 	bool					mbValid;
 };

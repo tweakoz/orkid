@@ -17,12 +17,21 @@
 #include <ork/lev2/ui/split_panel.h>
 #include "outliner2.h"
 #include <QtWidgets/QDockWidget>
+#include <QtCore/QProcess>
 
+#include <string>
+
+using namespace std;
+
+namespace ork { namespace tool {
+    const std::string& getExecutableDir();
+}}
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 static SceneEditorVP* gpvp = 0;
+
 
 QDockWidget * EditorMainWindow::NewCamView( bool bfloat )
 {
@@ -236,6 +245,17 @@ void EditorMainWindow::SlotSpawnNewGed( ork::Object* pobj )
 }
 
 ///////////////////////////////////////////////////////////////////////////
+
+void EditorMainWindow::NewAssetAssist()
+{
+    auto p = new QProcess();
+    auto edir = tool::getExecutableDir();
+    auto bdir = tool::getDataDir();
+    printf("bdir<%s>\n", bdir.c_str());
+    p->setProgram(qs(edir+"/ork.assetassistant.py"));
+    p->setWorkingDirectory(qs(bdir));
+    p->start();
+}
 
 QDockWidget *EditorMainWindow::NewPyConView(bool bfloat)
 {

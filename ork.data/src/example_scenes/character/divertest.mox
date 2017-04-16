@@ -1,0 +1,371 @@
+
+<reference category='ObjectClass'>
+    <object type='Ent3dSceneData' id='0'>
+        <property name='SceneObjects'>
+            <item key='/arch/comp'>
+                <reference category='SceneObjectClass'>
+                    <object type='CompositorArchetype' id='1'>
+                        <property name='Name'>"/arch/comp"</property>
+                        <property name='Components'>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='CompositingComponent' id='2'>
+                                        <property name='ActiveItem'>"i1"</property>
+                                        <property name='ActiveScene'>"s1"</property>
+                                        <property name='Enable'>false</property>
+                                        <property name='Groups'>
+                                            <item key='a'>
+                                                <reference category='ObjectClass'>
+                                                    <object type='CompositingGroup' id='3'>
+                                                        <property name='Camera'>"edcam"</property>
+                                                        <property name='Effect'>
+                                                            <object type='CompositingGroupEffect' id='4'>
+                                                                <property name='Amount'>1</property>
+                                                                <property name='FbUvTexture'><backreference id='-1'/></property>
+                                                                <property name='FeedbackAmount'>0</property>
+                                                                <property name='FinalRezScale'>1</property>
+                                                                <property name='FxRezScale'>1</property>
+                                                                <property name='PostFxFeedback'>false</property>
+                                                                <property name='Type'>"EFRAMEFX_GHOSTLY"</property>
+                                                            </object>
+                                                        </property>
+                                                        <property name='Layers'>"All"</property>
+                                                    </object>
+                                                </reference>
+                                            </item>
+                                            <item key='b'>
+                                                <reference category='ObjectClass'>
+                                                    <object type='CompositingGroup' id='5'>
+                                                        <property name='Camera'>"edcam"</property>
+                                                        <property name='Effect'>
+                                                            <object type='CompositingGroupEffect' id='6'>
+                                                                <property name='Amount'>0.970968</property>
+                                                                <property name='FbUvTexture'><backreference id='-1'/></property>
+                                                                <property name='FeedbackAmount'>0.864516</property>
+                                                                <property name='FinalRezScale'>1</property>
+                                                                <property name='FxRezScale'>1</property>
+                                                                <property name='PostFxFeedback'>false</property>
+                                                                <property name='Type'>"EFRAMEFX_COMIC"</property>
+                                                            </object>
+                                                        </property>
+                                                        <property name='Layers'>"All"</property>
+                                                    </object>
+                                                </reference>
+                                            </item>
+                                        </property>
+                                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
+                                        <property name='OutputFrames'>false</property>
+                                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
+                                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
+                                        <property name='Scenes'>
+                                            <item key='s1'>
+                                                <reference category='ObjectClass'>
+                                                    <object type='CompositingScene' id='7'>
+                                                        <property name='Items'>
+                                                            <item key='i1'>
+                                                                <reference category='ObjectClass'>
+                                                                    <object type='CompositingSceneItem' id='8'>
+                                                                        <property name='Technique'>
+                                                                            <reference category='ObjectClass'>
+                                                                                <object type='Fx3CompositingTechnique' id='9'>
+                                                                                    <property name='GroupA'>"a"</property>
+                                                                                    <property name='GroupB'>"b"</property>
+                                                                                    <property name='GroupC'>"a"</property>
+                                                                                    <property name='LevelA'>1</property>
+                                                                                    <property name='LevelB'>0.909091</property>
+                                                                                    <property name='LevelC'>1</property>
+                                                                                    <property name='Mode'>"AplusBplusC"</property>
+                                                                                </object>
+                                                                            </reference>
+                                                                        </property>
+                                                                    </object>
+                                                                </reference>
+                                                            </item>
+                                                        </property>
+                                                    </object>
+                                                </reference>
+                                            </item>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/arch/diver'>
+                <reference category='SceneObjectClass'>
+                    <object type='SimpleCharacterArchetype' id='10'>
+                        <property name='Name'>"/arch/diver"</property>
+                        <property name='Components'>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorPropMapData' id='11'>
+                                        <property name='Properties'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='animate'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleAnimatableData' id='12'>
+                                        <property name='AnimMaskMap'></property>
+                                        <property name='AnimSeqTableMap'></property>
+                                        <property name='AnimationMap'>
+                                            <item key='idle'>
+                                                <reference category='AssetClass'>
+                                                    "xganim" "data:///actors/diver/diver_idle"
+                                                </reference>
+                                            </item>
+                                            <item key='jump'>
+                                                <reference category='AssetClass'>
+                                                    "xganim" "data:///actors/diver/diver_jump"
+                                                </reference>
+                                            </item>
+                                            <item key='run'>
+                                                <reference category='AssetClass'>
+                                                    "xganim" "data:///actors/diver/diver_run"
+                                                </reference>
+                                            </item>
+                                            <item key='start'>
+                                                <reference category='AssetClass'>
+                                                    "xganim" "data:///actors/diver/diver_idle"
+                                                </reference>
+                                            </item>
+                                            <item key='walk'>
+                                                <reference category='AssetClass'>
+                                                    "xganim" "data:///actors/diver/diver_walk"
+                                                </reference>
+                                            </item>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='13'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='LayerFxMap'></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://actors/diver/ref/diver2017"
+                                            </reference>
+                                        </property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>1</property>
+                                        <property name='ShowBoundingSphere'>false</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ScriptComponentData' id='14'>
+                                        <property name='ScriptFile'>"src://scripts/arch/diver.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='15'>
+                                        <property name='RunSpeed'>350</property>
+                                        <property name='SpeedLerpRate'>10</property>
+                                        <property name='WalkSpeed'>135</property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/arch/edcam'>
+                <reference category='SceneObjectClass'>
+                    <object type='EditorCamArchetype' id='16'>
+                        <property name='Name'>"/arch/edcam"</property>
+                        <property name='Components'>
+                            <item key='camera'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorCamControllerData' id='17'>
+                                        <property name='Camera'>
+                                            <object type='CCamera_persp' id='18'>
+                                                <property name='Center'>44.0107 126.957 321.881</property>
+                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Loc'>4500.19</property>
+                                                <property name='QuatC'>-0.0248135 0.931502 -0.144434 -0.332928</property>
+                                                <property name='Aperature'>40</property>
+                                                <property name='MaxFar'>10000</property>
+                                                <property name='MinNear'>0.1</property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/arch/grid'>
+                <reference category='SceneObjectClass'>
+                    <object type='GridArchetype' id='19'>
+                        <property name='Name'>"/arch/grid"</property>
+                        <property name='Components'>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='GridControllerData' id='20'>
+                                        <property name='Scale'>1</property>
+                                        <property name='SpinRate'>0</property>
+                                        <property name='Texture'>
+                                            <reference category='AssetClass'>
+                                                "lev2tex" "lev2://textures/gridcell_blue"
+                                            </reference>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/arch/tethercam'>
+                <reference category='SceneObjectClass'>
+                    <object type='TetherCamArchetype' id='21'>
+                        <property name='Name'>"/arch/tethercam"</property>
+                        <property name='Components'>
+                            <item key='camera'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='TetherCamControllerData' id='22'>
+                                        <property name='Aperature'>25</property>
+                                        <property name='ApproachSpeed'>0.2</property>
+                                        <property name='EyeOffset'>0 400 -25</property>
+                                        <property name='EyeUp'>0 1 0</property>
+                                        <property name='Far'>5000</property>
+                                        <property name='Near'>1</property>
+                                        <property name='Target'>"diver"</property>
+                                        <property name='TargetOffset'>0 200 0</property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='/ent/followcam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='23'>
+                        <property name='Name'>"/ent/followcam"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='24'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='21'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='SceneObject2'>
+                <reference category='SceneObjectClass'>
+                    <object type='ModelArchetype' id='25'>
+                        <property name='Name'>"SceneObject2"</property>
+                        <property name='Components'>
+                            <item key=''>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorPropMapData' id='26'>
+                                        <property name='Properties'></property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='27'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='LayerFxMap'></property>
+                                        <property name='Model'>
+                                            <reference category='AssetClass'>
+                                                "xgmodel" "data://actors/diver/ref/diver2017"
+                                            </reference>
+                                        </property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>1</property>
+                                        <property name='ShowBoundingSphere'>false</property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='comp'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='28'>
+                        <property name='Name'>"comp"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='29'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='1'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='diver'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='30'>
+                        <property name='Name'>"diver"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='31'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='10'/></property>
+                        <property name='UserProperties'>
+                            <item key='Layer'>"All"</item>
+                            <item key='Layers'>"A"</item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='edcam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='32'>
+                        <property name='Name'>"edcam"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='33'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='16'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='grid'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='34'>
+                        <property name='Name'>"grid"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='35'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='19'/></property>
+                        <property name='UserProperties'>
+                            <item key='Layers'>"B"</item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+        </property>
+        <property name='ScriptFile'>""</property>
+    </object>
+</reference>

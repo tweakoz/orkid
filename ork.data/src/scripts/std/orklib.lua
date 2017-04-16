@@ -26,9 +26,9 @@ end
 
 function UpdateSceneEntities(dt)
 
-	--printf( "///////////////////////////")
-	--printf( "OnSceneUpdate")
-	--printf( "///////////////////////////")
+	printf( "///////////////////////////")
+	printf( "OnSceneUpdate")
+	printf( "///////////////////////////")
 
 	for n,exec_item in pairs(entity_exec_table) do
 		--printf( "osu ent<%s>", exec_item.ent:name())

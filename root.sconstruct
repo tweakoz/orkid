@@ -22,6 +22,7 @@ def refprj(str):
 utpp = refprj('ork.unittestpp')
 core = refprj('ork.core')
 fcol = refprj('ork.fcollada305')
+fcol = refprj('ork.colladamaya')
 bull = refprj('ork.bullet273')
 lev2 = refprj('ork.lev2')
 lua = refprj('ork.lua')

@@ -8,6 +8,7 @@ deploy = False
 bundle_name = "OrkidTool.app"
 
 stage_dir = os.environ["ORKDOTBUILD_STAGE_DIR"]
+odb_dir = os.environ["ORKDOTBUILD_ROOT"]
 bundle_dir = "%s/bundle" % stage_dir
 root_dir = "%s/../" % stage_dir
 tool_dir = "%s/ork.tool" % root_dir
@@ -42,9 +43,9 @@ cmd_cp = "ln -s %s/data %s" % (root_dir,cont_dir)
 #print "cmd_cp<%s>" % cmd_cp
 os.system(cmd_cp)
 
-cmd_cp = "cp -R %s/bin/ork.tool.test.osx.release %s/MacOS" % (stage_dir,cont_dir)
-#print "cmd_cp<%s>" % cmd_cp
-os.system(cmd_cp)
+os.system("cp %s/bin/ork.tool.test.osx.release %s/MacOS/" % (stage_dir,cont_dir))
+os.system("cp %s/bin/ork.assetassistant.py %s/MacOS/" % (odb_dir,cont_dir))
+os.system("cp %s/bin/orkassasshl.py %s/MacOS/" % (odb_dir,cont_dir))
 
 os.system( "rm %s/*.cst" % cont_dir )
 os.system( "rm %s/*.ork" % cont_dir )

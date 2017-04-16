@@ -240,6 +240,9 @@ struct TRay3
     }
 };
 
+typedef TRay3<float> fray3;
+typedef TRay3<double> dray3;
+
 ///////////////////////////////////////////////////////////////////////////////
 // temporary till all code done being refactored
 

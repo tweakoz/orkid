@@ -43,6 +43,7 @@
 #include "SpinnyCamera.h"
 #include "Skybox.h"
 #include "ProcTex.h"
+#include "GridComponent.h"
 #include "PerformanceAnalyzer.h"
 #include "QuartzComposerTest.h"
 #include <pkg/ent/PerfController.h>
@@ -610,6 +611,7 @@ void Init()
 	SceneObject::GetClassStatic();
 	SceneData::GetClassStatic();
 	SceneInst::GetClassStatic();
+    GridControllerData::GetClassStatic();
     
     //ork::ent::heightfield_rt_inst::GetClassStatic();
 

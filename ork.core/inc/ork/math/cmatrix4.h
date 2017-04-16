@@ -196,6 +196,7 @@ template <typename T> class  TMatrix4
 };
 
 typedef TMatrix4<CReal> CMatrix4;
+typedef TMatrix4<CReal> fmtx4;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -31,7 +31,7 @@ class ent:
 
     ##########################################
 
-    SRC_FOLDERS  = ". event "
+    SRC_FOLDERS  = ". event LuaIntf "
 
     XFL  = "bullet-2.73-math bullet-2.73-collision "
     XFL += "bullet-2.73-dynamics bullet-2.73-extras "
