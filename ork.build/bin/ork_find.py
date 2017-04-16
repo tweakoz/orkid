@@ -24,7 +24,7 @@ class result:
 search_extensions  = ".c .cpp .cc "
 search_extensions += ".h .hpp .inl "
 search_extensions += ".m .mm .qml "
-search_extensions += ".py .sconstruct .dae"
+search_extensions += ".py .sconstruct .dae .lua"
 
 search_extension_list = string.split(search_extensions)
 

@@ -19,11 +19,7 @@
 #include <iostream>
 #include <cxxabi.h>
 
-#include "LuaBindings.h"
-
 ///////////////////////////////////////////////////////////////////////////////
-
-//using namespace luabind;
 
 static const bool kUSEEXECTABUPDATE = false;
 
@@ -102,21 +98,14 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 		{
 			auto ent = this->GetEntity();
 
-            lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntLink);
-            assert(lua_type(L,-1)==LUA_TFUNCTION);
-            lua_pushlightuserdata(L,(void*)ent);
-            
+            LuaState lua = L;
+            mEntTable = LuaRef::createTable(L);
+            mEntTable["ent"] = ent;
 
-            int ret=lua_pcall(L,1,0,0);
-            if( ret )
-            {
-                printf( "LUARET<%d>\n", ret );
-                printf("%s\n", lua_tostring(L, -1));
-                assert(false);
-            }
-			//////////////////////////////////////////
-            //auto name = ent->GetEntData().GetName().c_str();
-            //printf( "done LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+            lua.getRef(mScriptObject->mOnEntLink);
+            assert(lua.isFunction(-1));
+            lua.push(mEntTable);
+            lua.ppcall(1,0,0);
 		}
 	}
 	return true;
@@ -147,16 +136,11 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 
 		printf( "Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
 
-        lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntStart);
-        assert(lua_type(L,-1)==LUA_TFUNCTION);
-        lua_pushlightuserdata(L,(void*)ent);
-        int ret=lua_pcall(L,1,0,0);
-        if( ret )
-        {
-            printf( "LUARET<%d>\n", ret );
-            printf("%s\n", lua_tostring(L, -1));
-            assert(false);
-        }
+        LuaState lua = L;
+        lua.getRef(mScriptObject->mOnEntStart);
+        assert(lua.isFunction(-1));
+        lua.push(mEntTable);
+        lua.ppcall(1,0,0);
 	}
 	return true;
 }
@@ -173,16 +157,12 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 		auto ent = this->GetEntity();
 		auto name = ent->GetEntData().GetName().c_str();
 
-        lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntStop);
-        assert(lua_type(L,-1)==LUA_TFUNCTION);
-        lua_pushlightuserdata(L,(void*)ent);
-        int ret=lua_pcall(L,1,0,0);
-        if( ret )
-        {
-            printf( "LUARET<%d>\n", ret );
-            printf("%s\n", lua_tostring(L, -1));
-            assert(false);
-        }
+        LuaState lua = L;
+        lua.getRef(mScriptObject->mOnEntStop);
+        assert(lua.isFunction(-1));
+        lua.push(mEntTable);
+        lua.ppcall(1,0,0);
+
         //////////////////////////////////////////
 
 		//printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
@@ -206,17 +186,14 @@ void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 			auto ent = this->GetEntity();
             double dt = psi->GetDeltaTime();
             double gt = psi->GetGameTime();
-            lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntUpdate);
-            assert(lua_type(L,-1)==LUA_TFUNCTION);
-            lua_pushlightuserdata(L,(void*)ent);
-            lua_pushnumber(L,dt);
-            int ret=lua_pcall(L,2,0,0);
-            if( ret )
-            {
-                printf( "LUARET<%d>\n", ret );
-                printf("%s\n", lua_tostring(L, -1));
-                assert(false);
-            }
+
+
+            LuaState lua = L;
+            lua.getRef(mScriptObject->mOnEntUpdate);
+            assert(lua.isFunction(-1));
+            lua.push(mEntTable);
+            lua.push(dt);
+            lua.ppcall(2,0,0);
 		}
 	}
 	// NOP (scriptmanager will execute)
@@ -441,7 +418,11 @@ ScriptObject* ScriptManagerComponentInst::FlyweightScriptObject( const ork::file
 			// load chunk into lua and reference it
 			//////////////////////////////////////////
 
-			int ret = luaL_loadstring(luast,rval->mScriptText.c_str());
+			//int ret = luaL_loadstring(luast,rval->mScriptText.c_str());
+            auto script_text = rval->mScriptText.c_str();
+            auto script_len = rval->mScriptText.length();
+            int ret = luaL_loadbuffer(luast,script_text,script_len,pth.c_str());
+
 			rval->mScriptRef = luaL_ref(luast, LUA_REGISTRYINDEX);
 
 			assert(rval->mScriptRef!=LUA_NOREF);

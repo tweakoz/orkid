@@ -6,11 +6,8 @@ extern "C" {
 #include "lauxlib.h"
 }
 
-
+#include <cxxabi.h>
 #include "LuaIntf/LuaIntf.h"
-//#include <luabind/luabind.hpp>
-//#include <luabind/raw_policy.hpp>
-//using namespace luabind;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -45,36 +42,10 @@ struct LuaSystem
 	SceneInst* mSceneInst;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-//void LuaProtectedCallByRef(lua_State* L, int script_ref);
-//void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name);
-//void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o);
-//void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o1,luabind::object o2);
-
-/*
-template <typename T> static void LuaProtectedCallByNameT(lua_State* L, int script_ref,const char* name, const T& the_t )
-{
-	if( script_ref!=LUA_NOREF )
-	{
-		try
-		{
-			luabind::object lobj(L,the_t);
-			luabind::call_function<void>(L,name,lobj);
-		}
-		catch(const luabind::error& caught)
-		{
-			printf( "OnUpdate returned error<%s>\n", caught.what() );
-		}
-	}	
-}*/
-
 bool DoString(lua_State* L, const char* str);
 
 struct SCILuaData
 {
-	//luabind::object mFN;
-	//luabind::object mARG;
 };
 
 }} // namespace ork { namespace ent {

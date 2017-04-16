@@ -184,6 +184,12 @@ void Entity::Describe()
 	reflect::RegisterFunctor("GetComponentByClassName", &Entity::GetComponentByClassName);
 }
 ///////////////////////////////////////////////////////////////////////////////
+const char* Entity::name() const
+{
+    const char* ename = GetEntData().GetName().c_str();
+    return ename;    
+}
+///////////////////////////////////////////////////////////////////////////////
 ComponentInst *Entity::GetComponentByClass(rtti::Class *clazz)
 {
 	const ComponentTable::LutType &lut = mComponentTable.GetComponents();

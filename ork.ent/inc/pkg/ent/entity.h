@@ -253,6 +253,8 @@ public:
 
 	SceneInst *GetSceneInst() const { return mSceneInst; }
 
+    const char* name() const;
+
 private:
 
 	bool DoNotify(const ork::event::Event *event) final; 
