@@ -108,6 +108,14 @@ void CCameraData::ProjectDepthRay( const CVector2& v2d, CVector3& vdir, CVector3
 	vdir=(far_lerp-near_lerp).Normal();
 	vori=near_lerp;
 }
+
+void CCameraData::ProjectDepthRay( const CVector2& v2d, fray3& ray_out ) const
+{
+    fvec3 dir, ori;
+    ProjectDepthRay(v2d,dir,ori);
+    ray_out = fray3(ori,dir);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void CCameraData::GetPixelLengthVectors( const CVector3& Pos, const CVector2& vp, CVector3& OutX, CVector3& OutY ) const

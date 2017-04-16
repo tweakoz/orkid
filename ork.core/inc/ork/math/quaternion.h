@@ -109,6 +109,7 @@ template <typename T> class  TQuaternion
 };
 
 typedef TQuaternion<CReal> CQuaternion;
+typedef TQuaternion<CReal> fquat;
 
 ///////////////////////////////////////////////////////////////////////////////
 

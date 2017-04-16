@@ -48,10 +48,14 @@ void EditorMainWindow::OpenSceneFile()
 	PerfMarkerPushState();
 	PerfMarkerDisable();
 
-	std::string oldpth;// = GetRecentSceneFile(SCENEFILE_DIR);
-	const char* oldnam = oldpth.c_str();
+    auto orkdatapath = tool::getDataDir();
+#if defined(__APPLE__)
+    orkdatapath += "/appleplease.txt";
+#endif
+	auto datapath = qs(orkdatapath);
+    printf( "LOADSCNE from<%s>\n", datapath.toStdString().c_str() );
 	gUpdateStatus.SetState(EUPD_STOP);
-	QString FileName = QFileDialog::getOpenFileName(NULL, "Load OrkidScene File", oldnam, "OrkSceneFile (*.mox *.mob)");
+	QString FileName = QFileDialog::getOpenFileName(NULL, "Load OrkidScene File", datapath, "OrkSceneFile (*.mox *.mob)");
 	gUpdateStatus.SetState(EUPD_START);
 	std::string fname = FileName.toStdString().c_str();
 	PerfMarkerPopState();

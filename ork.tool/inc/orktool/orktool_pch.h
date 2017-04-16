@@ -24,6 +24,10 @@
 
 namespace ork {
 namespace tool {
+const std::string& getDataDir();
+const std::string& getExecutableDir();
+void setDataDir(const std::string& dir);
+
 int Main_Filter( tokenlist toklist );
 int Main_FilterTree( tokenlist toklist );
 int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode );

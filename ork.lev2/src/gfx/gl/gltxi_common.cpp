@@ -148,17 +148,20 @@ struct TexSetter
 		return rval;
 	}
 
-	static void Set2D(GlTextureInterface* txi, GLuint numC, GLuint fmt, GLuint typ, GLuint tgt, int BPP, int inummips, int& iw, int& ih, CFile& file ) //, int& irdptr, const u8* dataBASE )
+	static void Set2D(GlTextureInterface* txi, Texture* tex, GLuint numC, GLuint fmt, GLuint typ, GLuint tgt, int BPP, int inummips, int& iw, int& ih, CFile& file ) //, int& irdptr, const u8* dataBASE )
 	{	
 		size_t ifilelen = 0;
 		EFileErrCode eFileErr = file.GetLength( ifilelen );
 	
 		//const u8* pimgdata = & dataBASE[irdptr];
 		int isize = iw*ih*BPP;
+		tex->mMaxMip = 0;
+
 		for( int imip=0; imip<inummips; imip++ )
 		{			
 			if( iw<4 ) continue;
 			if( ih<4 ) continue;
+			tex->mMaxMip = imip;
 
 			GLuint nfmt = fmt;
 
@@ -206,7 +209,7 @@ struct TexSetter
 			OrkAssert(intfmt!=0);
 					
 
-			//printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
+			printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
 			GL_ERRORCHECK();
 
 			bool bUSEPBO = false;
@@ -569,10 +572,12 @@ VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
 	int iheight = mpDDSHEADER->dwHeight;
 	int idepth = mpDDSHEADER->dwDepth;
 	////////////////////////////////////////////////////////////////////
-	//printf( "  tex<%s> width<%d>\n", pth.c_str(), iwidth );
-	//printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
-	//printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );
-	bool bVOLUMETEX = (idepth>1);
+	printf( "  tex<%s> width<%d>\n", pth.c_str(), iwidth );
+	printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
+	printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );
+	printf( "  tex<%s> NumMips<%d>\n", pth.c_str(), NumMips );
+    
+    bool bVOLUMETEX = (idepth>1);
     
     int iBwidth = (iwidth+3)/4;
     int iBheight = (iheight+3)/4;
@@ -831,8 +836,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	glBindTexture( TARGET, pTEXOBJ->mObject );
 	GL_ERRORCHECK();
 	
+	auto infname = TextureFile.msFileName;
+
 	//printf( "  tex<%s> ORKTEXOBJECT<%p>\n", TextureFile.msFileName.c_str(), pTEXOBJ );
-	this->ApplySamplingMode(ptex);
 
 	//printf( "  tex<%s> GLTEXOBJECT<%d>\n", infname.c_str(), int(pTEXOBJ->mObject) );
 	////////////////////////////////////////////////////////////////////
@@ -849,7 +855,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 			TexSetter::Set3D(	this, GL_RED, GL_UNSIGNED_BYTE, TARGET, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); //ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, 
+			TexSetter::Set2D(	this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, 
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 	}
 	else if( dxt::IsBGR5A1( ddsh->ddspf ) )
@@ -861,21 +867,33 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, 
+			TexSetter::Set2D(	this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, 
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 	}
 	else if( dxt::IsBGRA8( ddsh->ddspf ) )
 	{
 		const dxt::DdsLoadInfo & li = dxt::loadInfoBGRA8;
 		int size = idepth*iwidth*iheight*4;
-		//printf( "  tex<%s> BGRA8\n", TextureFile.msFileName.c_str() );
+		printf( "  tex<%s> BGRA8\n", TextureFile.msFileName.c_str() );
 		//printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
 		if( bVOLUMETEX )
 			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, 
+		{
+			TexSetter::Set2D(	this, ptex, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, 
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
+		
+			if( NumMips > 3 )
+			{
+				ptex->TexSamplingMode().PresetTrilinearWrap();
+				//assert(false);
+			}
+
+		}
+
+
+
 		GL_ERRORCHECK();
 	}
 	else if( dxt::IsBGR8( ddsh->ddspf ) )
@@ -888,7 +906,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 			TexSetter::Set3D(	this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, 
+			TexSetter::Set2D(	this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, 
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 		GL_ERRORCHECK();
 	}
@@ -899,8 +917,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	{
 		const dxt::DdsLoadInfo & li = dxt::loadInfoDXT5;
 		int size = (iBwidth*iBheight) * li.blockBytes;
-		//printf( "  tex<%s> DXT5\n", infname.c_str() );
-		//printf( "  tex<%s> size<%d>\n", infname.c_str(), size );		
+		printf( "  tex<%s> DXT5\n", infname.c_str() );
+		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );		
 		if( bVOLUMETEX )
 			TexSetter::Set3DC(	this, kRGBA_DXT5, TARGET, li.blockBytes, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
@@ -917,8 +935,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	{
 		const dxt::DdsLoadInfo & li = dxt::loadInfoDXT3;
 		int size = (iBwidth*iBheight) * li.blockBytes;
-		//printf( "  tex<%s> DXT3\n", infname.c_str() );
-		//printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
+		printf( "  tex<%s> DXT3\n", infname.c_str() );
+		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
 		
 		if( bVOLUMETEX )
 			TexSetter::Set3DC(	this, kRGBA_DXT3, TARGET, li.blockBytes, 
@@ -934,8 +952,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	{
 		const dxt::DdsLoadInfo & li = dxt::loadInfoDXT1;
 		int size = (iBwidth*iBheight) * li.blockBytes;
-		//printf( "  tex<%s> DXT1\n", infname.c_str() );
-		//printf( "  tex<%s> size<%d>\n", infname.c_str(), size );		
+		printf( "  tex<%s> DXT1\n", infname.c_str() );
+		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );		
 		if( bVOLUMETEX )
 			TexSetter::Set3DC(	this, kRGBA_DXT1, TARGET, li.blockBytes, 
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
@@ -950,6 +968,8 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	{
 		OrkAssert(false);
 	}
+
+	this->ApplySamplingMode(ptex);
 
 	ptex->SetDirty( false );
 	glBindTexture( TARGET, 0 );
@@ -985,19 +1005,22 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 	int idepth = ddsh->dwDepth;
 	//int ireadptr = sizeof( dxt::DDS_HEADER );
 	////////////////////////////////////////////////////////////////////
-	/*
-    printf( "  tex<%s> ptex<%p>\n", infname.c_str(), ptex );
-	printf( "  tex<%s> width<%d>\n", infname.c_str(), iwidth );
-	printf( "  tex<%s> height<%d>\n", infname.c_str(), iheight );
-	printf( "  tex<%s> depth<%d>\n", infname.c_str(), idepth );
-	printf( "  tex<%s> nummips<%d>\n", infname.c_str(), NumMips );
-	printf( "  tex<%s> flgs<%x>\n", infname.c_str(), int(ddsh->dwFlags) );
-	printf( "  tex<%s> 4cc<%x>\n", infname.c_str(), int(ddsh->ddspf.dwFourCC) );
-	printf( "  tex<%s> bitcnt<%d>\n", infname.c_str(), int(ddsh->ddspf.dwRGBBitCount) );
-	printf( "  tex<%s> rmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwRBitMask) );
-	printf( "  tex<%s> gmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwGBitMask) );
-	printf( "  tex<%s> bmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwBBitMask) );
-    */
+
+    if( 1 )
+    {
+        printf( "  tex<%s> ptex<%p>\n", infname.c_str(), ptex );
+    	printf( "  tex<%s> width<%d>\n", infname.c_str(), iwidth );
+    	printf( "  tex<%s> height<%d>\n", infname.c_str(), iheight );
+    	printf( "  tex<%s> depth<%d>\n", infname.c_str(), idepth );
+    	printf( "  tex<%s> nummips<%d>\n", infname.c_str(), NumMips );
+    	printf( "  tex<%s> flgs<%x>\n", infname.c_str(), int(ddsh->dwFlags) );
+    	printf( "  tex<%s> 4cc<%x>\n", infname.c_str(), int(ddsh->ddspf.dwFourCC) );
+    	printf( "  tex<%s> bitcnt<%d>\n", infname.c_str(), int(ddsh->ddspf.dwRGBBitCount) );
+    	printf( "  tex<%s> rmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwRBitMask) );
+    	printf( "  tex<%s> gmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwGBitMask) );
+    	printf( "  tex<%s> bmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwBBitMask) );
+    }
+    
 	///////////////////////////////////////////////
 	GLTextureObject* pTEXOBJ = new GLTextureObject;
 	ptex->SetTexIH( (void*) pTEXOBJ );
@@ -1011,7 +1034,6 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 	void_lambda_t lamb = [=]()
 	{
 		this->LoadDDSTextureMainThreadPart( load_req );
-		//ptex->TexSamplingMode().PresetTrilinearWrap();
 	};
 	//MainThreadOpQ().push(lamb,get_backtrace());
 	MainThreadOpQ().push(lamb);
@@ -1121,6 +1143,24 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 
 		//assert(pTEXOBJ->mTarget == GL_TEXTURE_2D );
 
+	auto minfilt = minfiltlamb(texmode);
+
+	int inummips =  0;
+	if(minfilt==GL_LINEAR_MIPMAP_LINEAR)
+	{
+		inummips =  ptex->mMaxMip;
+		if(inummips<3)
+		{
+			inummips = 0;
+			minfilt =  GL_LINEAR;
+		}
+
+		printf( "linmiplin inummips<%d>\n", inummips );
+
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+
+
+	}
 
 		GLenum tgt = (pTEXOBJ->mTarget!=GL_NONE) ? pTEXOBJ->mTarget : GL_TEXTURE_2D;
 
@@ -1129,9 +1169,9 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 		GL_ERRORCHECK();
 		glTexParameterf(tgt, GL_TEXTURE_MAG_FILTER, magfiltlamb(texmode));
 		GL_ERRORCHECK();
-		glTexParameterf(tgt, GL_TEXTURE_MIN_FILTER, minfiltlamb(texmode));
+		glTexParameterf(tgt, GL_TEXTURE_MIN_FILTER, minfilt);
 		GL_ERRORCHECK();
-		glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
 		GL_ERRORCHECK();
 		glTexParameterf(tgt, GL_TEXTURE_WRAP_S, addrlamb(texmode.GetAddrModeU()));
 		GL_ERRORCHECK();

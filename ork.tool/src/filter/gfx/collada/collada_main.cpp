@@ -78,7 +78,7 @@ CColladaAsset::EAssetType CColladaAsset::GetAssetType( const AssetPath & fname )
 	printf( "AnimEq2<%p>\n", AnimEq2 );
 	printf( "GeomLib<%p>\n", GeomLib );
 
-	if( (nullptr==GeomLib) && (AnimEq1 || AnimEq2) )
+	if( /*(nullptr==GeomLib)  &&*/ (AnimEq1 || AnimEq2) )
 	{
 		etype = CColladaAsset::ECOLLADA_ANIM;
 	}

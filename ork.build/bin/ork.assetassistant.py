@@ -4,7 +4,7 @@
 
 import os,sys, string, math
 
-from PyQt5.QtCore import QSize, Qt, QProcess
+from PyQt5.QtCore import QSize, Qt, QProcess, QSettings
 from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QComboBox, QCheckBox
 from PyQt5.QtWidgets import QLineEdit, QTextEdit, QPushButton, QFileDialog, QStyle, QStyleFactory
 from PyQt5.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit
@@ -15,10 +15,14 @@ import orkassasshl as hilite
 scriptdir = os.path.dirname(os.path.realpath(__file__))
 os.system('syslog -s -l error "%s"' % scriptdir)
 
-basedir = os.path.abspath(scriptdir+"/../..")
-datadir = basedir+"/data"
-srcdir = datadir+"/src"
-dstdir = datadir+"/pc"
+settings = QSettings("TweakoZ", "OrkidTool");
+settings.beginGroup("App");
+datadir = os.path.abspath(settings.value("datadir"))
+settings.endGroup();
+
+basedir = os.path.normpath(datadir+"/..")
+srcdir = os.path.abspath(datadir+"/src")
+dstdir = os.path.abspath(datadir+"/pc")
 
 #############################################################################
 def bgcolor(r,g,b):
@@ -124,7 +128,7 @@ class AssetWidget(QWidget):
     def selectInput(self):
      options = QFileDialog.Options()
      options |= QFileDialog.DontUseNativeDialog
-     src = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()",srcdir,"Collada Files (*.dae)", options=options )
+     src = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()",srcdir,"Colladas(*.dae);;Images(*.png *.tga)", options=options )
      src = src[0]
      src = src.replace(srcdir,"<SRC>")
      self.srced.onChangedExternally(src)
@@ -133,10 +137,21 @@ class AssetWidget(QWidget):
      dstldir, dstrdir = os.path.split(dstdir)
      print (dstdir, dstfile)
      print (dstldir, dstrdir)
-     if dstrdir=="ref":
+     extension = os.path.splitext(src)[1]
+     print(extension)
+     if extension==".dae":
+       if (src.find("/ref/")!=-1):
+         dst = dst.replace("/ref/","/")
+         self.assettypeview.onChangedExternally("Dae(Mesh)")
+         dst = dst.replace(".dae",".xgm")
+       elif (src.find("/anims/")!=-1):
+         dst = dst.replace("/anims/","/")
+         self.assettypeview.onChangedExternally("Dae(Anim)")
+         dst = dst.replace(".dae",".xga")
+     if extension==".png":
         dst = dst.replace("/ref/","/")
-        self.assettypeview.onChangedExternally("Dae(Mesh)")
-     dst = dst.replace(".dae",".xgm")
+        dst = dst.replace(".png",".dds")
+        self.assettypeview.onChangedExternally("Tex(PNG)")
      self.dsted.onChangedExternally(dst)
 
    ##########################################
@@ -144,12 +159,23 @@ class AssetWidget(QWidget):
     def goPushed(self):
       srcfile = self.srced.value
       srcpath = srcfile.replace("<SRC>","./data/src")
+      extension = os.path.splitext(srcpath)[1]
       dstfile = self.dsted.value
       dstpath = dstfile.replace("<DST>","./data/pc")
       print(srcpath,dstpath)
       os.chdir(basedir)
       orkbin = "./stage/bundle/OrkidTool.app/Contents/MacOS/ork.tool.test.osx.release"
-      cmd = orkbin + " -filter dae:xgm -in " + srcpath + " -out " + dstpath
+
+      if extension == ".dae":
+        if self.assettypeview.value == "Dae(Mesh)":
+          orkfilt = "dae:xgm"
+        elif self.assettypeview.value == "Dae(Anim)":
+          orkfilt = "dae:xga"
+      elif extension == ".png":
+          orkfilt = "tga:dds"
+
+      if orkfilt!=None:
+          cmd = orkbin + (" -filter %s -in " % orkfilt) + srcpath + " -out " + dstpath
       
 
       class SubProc:

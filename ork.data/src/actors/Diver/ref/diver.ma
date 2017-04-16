@@ -13,7 +13,6 @@ fileInfo "product" "Maya 2013";
 fileInfo "version" "2013 x64";
 fileInfo "cutIdentifier" "201202220220-825135";
 fileInfo "osv" "Mac OS X 10.7.5";
-fileInfo "license" "student";
 createNode transform -s -n "persp";
 	setAttr ".t" -type "double3" 104.24194361625618 65.739490401164403 50.932493378662734 ;
 	setAttr ".r" -type "double3" -4.2000000000159154 -2817.1999999996556 -8.6976840552712319e-16 ;

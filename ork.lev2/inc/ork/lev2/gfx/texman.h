@@ -185,6 +185,8 @@ public:
 
 	//////////////////////////////////////////////////////
 
+	int mMaxMip;
+
 	Texture()
 		: meTexDest(ETEXDEST_END)
 		, meTexType(ETEXTYPE_END)
@@ -204,6 +206,7 @@ public:
 		, miTotalUniqueColors( 0 )
 		, mpData(0)
 		, mpTexAnim(0)
+		, mMaxMip(0)
 	{}
 
 	~Texture();

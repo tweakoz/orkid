@@ -23,9 +23,9 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using namespace luabind;
+//using namespace luabind;
 
-static const bool kUSEEXECTABUPDATE = true;
+static const bool kUSEEXECTABUPDATE = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -92,7 +92,7 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 
 	auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
 	OrkAssert(asluasys);
-	auto luast = asluasys->mLuaState;
+	auto L = asluasys->mLuaState;
 
 	if( scm )
 	{
@@ -102,15 +102,21 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 		{
 			auto ent = this->GetEntity();
 
+            lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntLink);
+            assert(lua_type(L,-1)==LUA_TFUNCTION);
+            lua_pushlightuserdata(L,(void*)ent);
+            
+
+            int ret=lua_pcall(L,1,0,0);
+            if( ret )
+            {
+                printf( "LUARET<%d>\n", ret );
+                printf("%s\n", lua_tostring(L, -1));
+                assert(false);
+            }
 			//////////////////////////////////////////
-
-
-
-			luabind::object o( luast, ent );
-			LuaProtectedCallByName(luast,mScriptObject->mScriptRef,mScriptObject->mOnEntLink.c_str(),o);
-
-			//auto name = ent->GetEntData().GetName().c_str();
-			//printf( "done LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
+            //auto name = ent->GetEntData().GetName().c_str();
+            //printf( "done LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
 		}
 	}
 	return true;
@@ -139,48 +145,18 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 		auto ent = this->GetEntity();
 		auto name = ent->GetEntData().GetName().c_str();
 
-		//printf( "Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
+		printf( "Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
 
-		//DoString( L, "printf(\"oeu: %s\",inspect(OnEntityUpdate))");
-		
-		if( kUSEEXECTABUPDATE )
-		{
-			luabind::object osu_fn = luabind::globals(L)[mScriptObject->mOnEntUpdate.c_str()];
-			assert(osu_fn.is_valid());
-			assert(luabind::type(osu_fn)!=LUA_TNIL); // make sure fn was found!
-			luabind::object osu_ent(L,ent);
-			auto wrap_table =luabind::newtable(L);
-		    wrap_table["fn"]=osu_fn;
-		    wrap_table["ent"]=osu_ent;
-
-			//luabind::call_function<void>(osu_fn,osu_arg);
-
-			//assert(false);
-
-			//fxstring<256> autoreg;
-			//autoreg.format("entity_exec_table[e:name()]= function() OnScriptUpdate(e) end")
-			//luaL_dostring(lua, "return 'derp'");
-			luabind::object exectab = luabind::globals(L)["entity_exec_table"];// = exec_table;
-			exectab[name]=wrap_table;
-
-			LuaProtectedCallByName(L,mScriptObject->mScriptRef,mScriptObject->mOnEntStart.c_str(),osu_ent);
-
-		}
-		else
-		{
-			SCILuaData luadat;
-
-			//luabind::object mOSUfn, mOSUarg;
-
-			luadat.mFN = luabind::globals(L)["OnEntityUpdate"];
-			assert(luadat.mFN.is_valid());
-			assert(luabind::type(luadat.mFN)!=LUA_TNIL); // make sure fn was found!
-			luadat.mARG = luabind::object(L,ent);
-
-			mLuaData.Set<SCILuaData>(luadat);
-		}
-
-
+        lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntStart);
+        assert(lua_type(L,-1)==LUA_TFUNCTION);
+        lua_pushlightuserdata(L,(void*)ent);
+        int ret=lua_pcall(L,1,0,0);
+        if( ret )
+        {
+            printf( "LUARET<%d>\n", ret );
+            printf("%s\n", lua_tostring(L, -1));
+            assert(false);
+        }
 	}
 	return true;
 }
@@ -197,12 +173,19 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 		auto ent = this->GetEntity();
 		auto name = ent->GetEntData().GetName().c_str();
 
+        lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntStop);
+        assert(lua_type(L,-1)==LUA_TFUNCTION);
+        lua_pushlightuserdata(L,(void*)ent);
+        int ret=lua_pcall(L,1,0,0);
+        if( ret )
+        {
+            printf( "LUARET<%d>\n", ret );
+            printf("%s\n", lua_tostring(L, -1));
+            assert(false);
+        }
+        //////////////////////////////////////////
+
 		//printf( "LINKING SCRIPTCOMPONENT<%p> of ent<%s> into Lua exec list\n", this, name );
-
-		luabind::object exectab = luabind::globals(L)["entity_exec_table"];// = exec_table;
-		exectab[name]=luabind::nil;
-
-		LuaProtectedCallByNameT<Entity*>(asluasys->mLuaState,mScriptObject->mScriptRef,mScriptObject->mOnEntStop.c_str(),ent);
 
 	}
 }
@@ -221,22 +204,21 @@ void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 			OrkAssert(asluasys);
 			auto L = asluasys->mLuaState;
 			auto ent = this->GetEntity();
-		
-			//DoString( L, "printf(\"oeu: %s\",inspect(OnEntityUpdate))");
-			//luabind::object osu_fn = luabind::globals(L)["OnEntityUpdate"];
-			//assert(osu_fn.is_valid());
-			//assert(luabind::type(osu_fn)!=LUA_TNIL); // make sure fn was found!
-			//luabind::object osu_arg(L,ent);
-
-			auto& as_luadata = mLuaData.Get<SCILuaData>();
-			auto& fn = as_luadata.mFN;
-			auto& arg = as_luadata.mARG;
-			luabind::call_function<void>(fn,arg);
-
-
+            double dt = psi->GetDeltaTime();
+            double gt = psi->GetGameTime();
+            lua_rawgeti(L,LUA_REGISTRYINDEX,mScriptObject->mOnEntUpdate);
+            assert(lua_type(L,-1)==LUA_TFUNCTION);
+            lua_pushlightuserdata(L,(void*)ent);
+            lua_pushnumber(L,dt);
+            int ret=lua_pcall(L,2,0,0);
+            if( ret )
+            {
+                printf( "LUARET<%d>\n", ret );
+                printf("%s\n", lua_tostring(L, -1));
+                assert(false);
+            }
 		}
 	}
-	//printf( "NOP\n");
 	// NOP (scriptmanager will execute)
 }
 
@@ -333,9 +315,9 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 		//lua_pop(asluasys->mLuaState, 1); // dont call, just reference
 
 
-		LuaProtectedCallByRef( asluasys->mLuaState, mScriptRef );
+		//LuaProtectedCallByRef( asluasys->mLuaState, mScriptRef );
 
-		LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneCompose");
+		//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneCompose");
 
 	}
 
@@ -366,7 +348,7 @@ bool ScriptManagerComponentInst::DoLink(SceneInst* psi) // final
 	//printf( "ScriptManagerComponentInst::DoLink()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
-	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneLink");
+	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneLink");
 
 	return true;
 }
@@ -375,21 +357,21 @@ void ScriptManagerComponentInst::DoUnLink(SceneInst* psi) // final
 	printf( "ScriptManagerComponentInst::DoUnLink()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
-	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUnLink");
+	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUnLink");
 }
 void ScriptManagerComponentInst::DoStart(SceneInst *psi) // final
 {
 	//printf( "ScriptManagerComponentInst::DoStart()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
-	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
+	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
 }
 void ScriptManagerComponentInst::DoStop(SceneInst *inst) // final
 {
 	//printf( "ScriptManagerComponentInst::DoStop()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
-	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
+	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
 }
 
 void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
@@ -400,15 +382,13 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 
 	double dt = psi->GetDeltaTime();
 	double gt = psi->GetGameTime();
-	luabind::object ldt(lstate,dt);
-	luabind::object lgt(lstate,gt);
 
-	LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUpdate", ldt,lgt);
+	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUpdate", ldt,lgt);
 
 	if( kUSEEXECTABUPDATE )
 	{
-		luabind::object o(asluasys->mLuaState, dt );
-		LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "UpdateSceneEntities",o);
+		//luabind::object o(asluasys->mLuaState, dt );
+		//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "UpdateSceneEntities",ldt);
 	}
 }
 
@@ -455,21 +435,6 @@ ScriptObject* ScriptManagerComponentInst::FlyweightScriptObject( const ork::file
 			script_funcname_t postfix;
 			postfix.format("_%04x", script_index);
 
-			rval->mOnEntLink.format("OnEntityLink%s",postfix.c_str());
-			rval->mOnEntStart.format("OnEntityStart%s",postfix.c_str());
-			rval->mOnEntStop.format("OnEntityStop%s",postfix.c_str());
-			rval->mOnEntUpdate.format("OnEntityUpdate%s",postfix.c_str());
-
-			auto repl = [&](script_funcname_t nam)
-			{
-				auto repn = nam+postfix;
-				rval->mScriptText.replace_in_place(nam.c_str(),repn.c_str());
-			};
-			repl("OnEntityLink");
-			repl("OnEntityStart");
-			repl("OnEntityStop");
-			repl("OnEntityUpdate");
-
 			//printf( "\n%s\n", rval->mScriptText.c_str() );
 
 			//////////////////////////////////////////
@@ -480,8 +445,33 @@ ScriptObject* ScriptManagerComponentInst::FlyweightScriptObject( const ork::file
 			rval->mScriptRef = luaL_ref(luast, LUA_REGISTRYINDEX);
 
 			assert(rval->mScriptRef!=LUA_NOREF);
+            lua_rawgeti(luast, LUA_REGISTRYINDEX, rval->mScriptRef);
+            // execute it
+            ret = lua_pcall(luast,0,1,0);
+            if( ret )
+            {
+                printf( "LUAERRCODE<%d>\n", ret );
+                printf("LUAERR<%s>\n", lua_tostring(luast, -1));
+                assert(false);
+            }
+            rval->mModTabRef = luaL_ref(luast, LUA_REGISTRYINDEX);
 
-			LuaProtectedCallByRef( luast, rval->mScriptRef );
+            auto getMethodRef = [luast,rval](const char* methodname)->int { 
+                lua_rawgeti(luast,LUA_REGISTRYINDEX,rval->mModTabRef);
+                lua_pushstring(luast,methodname);
+                lua_gettable(luast,-2);
+                assert(lua_type(luast,-1)==LUA_TFUNCTION);
+                int rval = luaL_ref(luast,LUA_REGISTRYINDEX);
+                return rval;
+            };
+
+            rval->mOnEntLink = getMethodRef("OnEntityLink");
+            rval->mOnEntStart = getMethodRef("OnEntityStart");
+            rval->mOnEntStop = getMethodRef("OnEntityStop");
+            rval->mOnEntUpdate = getMethodRef("OnEntityUpdate");
+
+
+			//LuaProtectedCallByRef( luast, rval->mScriptRef );
 
 		    //lua_getfenv(luast,-1);
 			//assert(lua_setfenv(luast, -1) != 0);

@@ -44,10 +44,11 @@ struct ScriptObject
 
 	script_text_t mScriptText;
 	std::string mMD5Digest;
-	script_funcname_t mOnEntLink;
-	script_funcname_t mOnEntStart;
-	script_funcname_t mOnEntStop;
-	script_funcname_t mOnEntUpdate;
+	int mOnEntLink;
+	int mOnEntStart;
+	int mOnEntStop;
+	int mOnEntUpdate;
+    int mModTabRef;
 	int mScriptRef;
 };
 
