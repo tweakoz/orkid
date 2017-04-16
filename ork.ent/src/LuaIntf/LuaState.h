@@ -640,6 +640,20 @@ public:
 #if LUA_VERSION_NUM == 501
     int pcall(int num_args, int num_results, int err_func_idx) const
         { return lua_pcall(L, num_args, num_results, err_func_idx); }
+
+    int ppcall(int num_args, int num_results, int err_func_idx) const{
+
+        int iret = pcall(num_args,num_results,err_func_idx);
+
+        if( iret )
+        {
+            printf( "LUARET<%d>\n", iret );
+            printf("%s\n", lua_tostring(L, -1));
+            assert(false);
+        }
+        return iret;
+    }
+
 #elif LUA_VERSION_NUM == 502
     int pcall(int num_args, int num_results, int err_func_idx, int ctx = 0, lua_CFunction k = nullptr) const
         { return lua_pcallk(L, num_args, num_results, err_func_idx, ctx, k); }

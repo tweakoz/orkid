@@ -13,6 +13,9 @@
 #include <ork/lev2/gfx/renderer.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/gfx/camera.h>
+#include "LuaBindings.h"
+
+using namespace LuaIntf;
 
 
 namespace ork { namespace ent {
@@ -72,6 +75,7 @@ private:
 	ScriptObject* mScriptObject;
 
 	any<64> mLuaData;
+    LuaRef mEntTable;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

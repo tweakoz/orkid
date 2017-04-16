@@ -218,7 +218,8 @@ template <typename T> void TMatrix4<T>::GEMSInverse( const TMatrix4<T> &in )
 
     if(CFloat::Abs(det) < T(SMALL_NUMBER))
 	{
-		OrkAssert( 0 );		//fl_fatalerror( "Non-singular matrix, no inverse!\n" );
+        printf( "Non-singular matrix, no inverse!\n" );
+        return;
     }
 
     // scale the adjoint matrix to get the inverse

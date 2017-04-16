@@ -31,6 +31,8 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/gfx/camera.h>
+#include "LuaBindings.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SimpleCharacterArchetype, "SimpleCharacterArchetype" );
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,7 +40,18 @@ using namespace ork::reflect;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-
+struct MyStrings{
+    const PoolString kIdle = AddPooledLiteral("idle");
+    const PoolString kWalk = AddPooledLiteral("walk");
+    const PoolString kRun = AddPooledLiteral("run");
+    const PoolString kState = AddPooledLiteral("state");
+    const PoolString kSetDir =AddPooledLiteral("setDir");
+};
+static MyStrings& STR(){
+    static MyStrings ms;
+    return ms;
+}
+///////////////////////////////////////////////////////////////////////////////
 class SimpleCharControllerData : public ComponentData
 {
 	RttiDeclareConcrete(SimpleCharControllerData, ComponentData)
@@ -54,14 +67,15 @@ public:
 
 void SimpleCharControllerData::Describe()
 {
-	ent::RegisterFamily<SimpleCharControllerData>(ork::AddPooledLiteral("control"));	
+	ent::RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));	
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mWalkSpeed, "WalkSpeed", "0", "250" );
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mRunSpeed, "RunSpeed", "0", "500" );
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mSpeedLerpRate, "SpeedLerpRate", "0.1", "100" );
 }
+
 class SimpleCharControllerInst : public ComponentInst
 {
-	//RttiDeclareAbstract(SimpleCharControllerInst, ComponentInst)
+	RttiDeclareAbstract(SimpleCharControllerInst, ComponentInst)
 
 public:
 
@@ -70,12 +84,9 @@ public:
 	SimpleCharControllerInst(const SimpleCharControllerData& data, Entity* pent)
 		: ComponentInst(&data,pent)
         , mCCDATA(data)
-        , kIdle(AddPooledLiteral("idle"))
-        , kWalk(AddPooledLiteral("walk"))
-        , kRun(AddPooledLiteral("run"))
 	{
-        mTimer = 1.0f;
-        mState = kIdle;
+        //mTimer = 1.0f;
+        mState = STR().kIdle;
         mCurrentSpeed = 0.0f;
 	}
 	~SimpleCharControllerInst()
@@ -88,12 +99,6 @@ public:
     void DoUpdate(SceneInst* psi) final
     {
         float dt = psi->GetDeltaTime();
-        if( mTimer <= 0.0f )
-        {
-            mTimer = psi->random(2,5);
-            float dir = psi->random(-PI,PI);
-            mDesiredDirection.FromAxisAngle(fvec4(0,1,0,dir));
-        }
 
         mCurrentDirection = fquat::Lerp(mCurrentDirection,mDesiredDirection,dt*3);
         auto m3 = mCurrentDirection.ToMatrix3();
@@ -111,41 +116,48 @@ public:
 
         mEntity->SetDynMatrix(mtx);
 
-        mTimer -= dt;
 
 
     }
 
     ///////////////////////////////////////////////////////////////////////////
 
-	bool DoNotify(const ork::event::Event *event) final
+	bool DoNotify(const ork::event::Event* event) final
 	{
-		if(const event::AnimFinishEvent* afe = ork::rtti::autocast(event))
+        if(const ork::event::VEvent* vev = ork::rtti::autocast(event))
+        {   const auto& LR = vev->mData.Get<LuaRef>();
+            if(vev->mCode==STR().kState)
+            {   auto state = LR.get<std::string>("id");
+                mState = AddPooledString(state.c_str());
+                printf( "charcon got state change request id<%s>\n", state.c_str() );              
+            }
+            if(vev->mCode==STR().kSetDir)
+            {   float dir = LR.toValue<float>();
+                mDesiredDirection.FromAxisAngle(fvec4(0,1,0,dir));
+                printf( "charcon got direction change request dir<%f>\n", dir );              
+            }
+        }
+		else if(const event::AnimFinishEvent* afe = ork::rtti::autocast(event))
 		{
-            if( mState==kIdle)
+            if( mState==STR().kIdle)
             {
-                mAnima->PlayAnimation(kIdle);
-                mState = kWalk;
+                mAnima->PlayAnimation(STR().kIdle);
                 mDesiredSpeed = 0.0;
-
             }
-            else if( mState==kWalk)
+            else if( mState==STR().kWalk)
             {
-                mAnima->PlayAnimation(kWalk);
+                mAnima->PlayAnimation(STR().kWalk);
                 mDesiredSpeed = mCCDATA.mWalkSpeed;
-                mState = kRun;
-
             }
-            else if( mState==kRun)
+            else if( mState==STR().kRun)
             {
-                mAnima->PlayAnimation(kRun);
+                mAnima->PlayAnimation(STR().kRun);
                 mDesiredSpeed = mCCDATA.mRunSpeed;
-                mState = kIdle;
-
             }
             else
             {
-                mState = kIdle;
+                mAnima->PlayAnimation(mState);
+                mDesiredSpeed = 0.0;
             }
 		}
 
@@ -164,11 +176,11 @@ public:
 		{
 			mAnimSet.insert(item.first);
 		}
-        if(mAnimSet.find(kIdle)==mAnimSet.end())
+        if(mAnimSet.find(STR().kIdle)==mAnimSet.end())
             return false;
-        if(mAnimSet.find(kWalk)==mAnimSet.end())
+        if(mAnimSet.find(STR().kWalk)==mAnimSet.end())
             return false;
-        if(mAnimSet.find(kRun)==mAnimSet.end())
+        if(mAnimSet.find(STR().kRun)==mAnimSet.end())
             return false;
 
 		return true;
@@ -180,9 +192,6 @@ public:
 	SimpleAnimatableInst* mAnima;
 	std::set<PoolString> mAnimSet;
     PoolString mCurState;
-    const PoolString kIdle;
-    const PoolString kWalk;
-    const PoolString kRun;
     fvec2 mVelocity;
     PoolString mState;
     fvec2 mPosition;
@@ -190,8 +199,11 @@ public:
     float mDesiredSpeed;
     fquat mCurrentDirection;
     fquat mDesiredDirection;
-    float mTimer;
 };
+
+void SimpleCharControllerInst::Describe()
+{
+}
 
 
 void SimpleCharacterArchetype::Describe()
@@ -222,3 +234,4 @@ void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 }} // namespace ork { namespace ent {
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SimpleCharControllerData, "SimpleCharControllerData" );
+INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SimpleCharControllerInst, "SimpleCharController" );

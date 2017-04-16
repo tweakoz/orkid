@@ -13,6 +13,7 @@
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/ScriptComponent.h>
 #include <ork/kernel/any.h>
+#include <ork/math/cvector3.h>
 
 #include <sstream>
 #include <iostream>
@@ -31,76 +32,18 @@ std::stringstream& operator<<(std::stringstream& str, const ork::CVector3& v)
 	return str;	
 }
 
-//#include <luabind/operator.hpp>
+namespace LuaIntf
+{
+    LUA_USING_LIST_TYPE(std::vector)
+    LUA_USING_MAP_TYPE(std::map)
+}
 
 using namespace LuaIntf;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-/*
-void LuaProtectedCallByRef(lua_State* L, int script_ref)
-{
-	if( script_ref!=LUA_NOREF )
-	{
-		// bring up the previously parsed script
-		lua_rawgeti(L, LUA_REGISTRYINDEX, script_ref);
 
-		// execute it
-		int ret = lua_pcall(L,0,0,0);
-		if( ret )
-		{
-			printf( "LUARET<%d>\n", ret );
-			printf("%s\n", lua_tostring(L, -1));
-			lua_pop(L, 1);
-		}
-	}	
-}
-
-void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name)
-{
-	if( script_ref!=LUA_NOREF )
-	{
-		try
-		{
-			luabind::call_function<void>(L,name);
-		}
-		catch(const luabind::error& caught)
-		{
-			assert(false);
-			//printf( "OnUpdate returned error<%s>\n", caught.what() );
-		}
-	}	
-}
-void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o)
-{
-	if( script_ref!=LUA_NOREF )
-	{
-		try
-		{
-			luabind::call_function<void>(L,name,o);
-		}
-		catch(const luabind::error& caught)
-		{
-			printf( "OnUpdate returned error<%s>\n", caught.what() );
-		}
-	}	
-}
-void LuaProtectedCallByName(lua_State* L, int script_ref,const char* name,luabind::object o1,luabind::object o2)
-{
-	if( script_ref!=LUA_NOREF )
-	{
-		try
-		{
-			luabind::call_function<void>(L,name,o1,o2);
-		}
-		catch(const luabind::error& caught)
-		{
-			printf( "OnUpdate returned error<%s>\n", caught.what() );
-		}
-	}	
-}
-*/
 bool DoString(lua_State* L, const char* str)
 {
 	if (luaL_loadbuffer(L, str, std::strlen(str), str) || lua_pcall(L, 0, 0, 0))
@@ -204,111 +147,7 @@ luabind::object GetVec3XZ( lua_State* L,  luabind::object o )
 }
 /////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
-luabind::object GetVec3X( lua_State* L,  luabind::object o )
-{
-	auto v = object_cast<CVector3*>(o);
-	return luabind::object(L,double(v->GetX()));
-}
-luabind::object GetVec3Y( lua_State* L,  luabind::object o )
-{
-	auto v = object_cast<CVector3*>(o);
-	return luabind::object(L,double(v->GetY()));
-}
-luabind::object GetVec3Z( lua_State* L,  luabind::object o )
-{
-	auto v = object_cast<CVector3*>(o);
-	return luabind::object(L,double(v->GetZ()));
-}
-void SetVec3XZ( lua_State* L,  luabind::object o, double x, double z )
-{
-	auto v = object_cast<CVector3*>(o);
-	v->SetX(float(x));
-	v->SetZ(float(z));
-}
-void SetVec3X( lua_State* L,  luabind::object o, double x )
-{
-	auto v = object_cast<CVector3*>(o);
-	v->SetX(float(x));
-}
-void SetVec3Y( lua_State* L,  luabind::object o, double y )
-{
-	auto v = object_cast<CVector3*>(o);
-	v->SetY(float(y));
-}
-void SetVec3Z( lua_State* L,  luabind::object o, double z )
-{
-	auto v = object_cast<CVector3*>(o);
-	v->SetZ(float(z));
-}
-/////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
-int GetEntityName( lua_State* L )
-{
-    void* vpe = lua_touserdata(L,-1);
-
-    auto e = (const Entity*) vpe;
-
-	const char* ename = e ? e->GetEntData().GetName().c_str() : "";
-	lua_pushstring(L,ename);
-    return 1;
-}
-luabind::object GetEntityPos( lua_State* L, luabind::object o )
-{
-	auto pos = new CVector3;
-	auto ent = object_cast<Entity*>(o);
-	if( ent )
-	{
-		auto& dn = ent->GetDagNode();
-		auto& xn = dn.GetTransformNode();
-		auto& xf = xn.GetTransform();
-
-		*pos = xf.GetPosition();
-	}
-	return luabind::object(L,pos);
-}
-void SetEntityPos( lua_State* L, luabind::object e, luabind::object p )
-{
-	auto ent = object_cast<Entity*>(e);
-	auto pos = object_cast<CVector3*>(p);
-	if( ent && pos )
-	{
-		ent->GetDagNode().GetTransformNode().GetTransform().SetPosition(*pos);
-	}
-}
-std::string EntToString( const Entity* e )
-{
-	ork::fxstring<256> str;
-	const char* ename = e ? e->GetEntData().GetName().c_str() : "";
-	auto a = e ? e->GetEntData().GetArchetype() : nullptr;
-	const char* aname =  a ? a->GetName().c_str() : "";
-	str.format("(%s:%s)", ename, aname);
-	return str.c_str();
-}
-std::string ArchToString( const Archetype* a )
-{
-	ork::fxstring<256> rval;
-	if( a )
-	{
-		ork::fxstring<256> str;
-		auto aname = a->GetName().c_str();
-		auto cname = a->GetClass()->Name().c_str();
-		str.format( "(%s:%s)\n", aname, cname );
-		rval += str;
-
-		const auto& ct = a->GetComponentDataTable().GetComponents();
-		for( const auto& i : ct )
-		{
-			auto c = i.second;
-			auto f = i.first.c_str();
-			auto ctype = c->GetClass()->Name();
-			str.format( "	(%s:%s)\n", f, ctype );
-			rval += str;
-		}
-	}
-	return rval.c_str();
-}
 */
-///////////////////////////////////////////////////////////////////////////////
 
 LuaSystem::LuaSystem(SceneInst*psi)
 	: mSceneInst(psi)
@@ -330,9 +169,84 @@ LuaSystem::LuaSystem(SceneInst*psi)
     };
     //setGlobTabFn("ork","getEntityName",&GetEntityName);
 
-    //LuaBinding(L)
-    //    .beginModule("ork")
-    //    .endModule();
+    LuaBinding(L)
+        .beginModule("ork")
+        ////////////////////////////////////////
+        .beginClass<fvec3>("vec3")
+            //.def(tostring(self))
+            //.property("xz", &CVector3,&SetVec3XZ)
+            .addProperty("x", &fvec3::GetX,&fvec3::SetX)
+            .addProperty("y", &fvec3::GetY,&fvec3::SetY)
+            .addProperty("z", &fvec3::GetZ,&fvec3::SetZ)
+            .addMetaFunction("__tostring",[](const fvec3*v)->std::string{
+                fxstring<64> fxs; fxs.format("vec3(%g,%g,%g)",v->x,v->y,v->z);
+                return fxs.c_str(); 
+            })
+        .endClass()
+        ////////////////////////////////////////
+        .beginClass<ComponentInst>("component")
+            .addProperty("type", [](const ComponentInst*c)->std::string{
+                auto clazz = c->GetClass();
+                auto cn = clazz->Name();
+                return cn.c_str();
+            })
+            .addProperty("family", [](const ComponentInst*c)->std::string{
+                auto ps = c->GetFamily();
+                return ps.c_str();
+            })
+            .addFunction("sendEvent",[](ComponentInst*ci,const char* evcode, LuaRef evdata){
+                auto clazz = ci->GetClass();
+                auto cn = clazz->Name();
+                /*printf( "sendEvent ci<%s> code<%s> ... \n", cn.c_str(), evcode);
+                for (auto& e : evdata) {
+                        const auto&key = e.key<std::string>();
+                        printf( " key<%s>\n", key.c_str() );
+                        //LuaRef value = e.value<LuaRef>();
+                        //...
+                }*/
+                event::VEvent vev;
+                vev.mCode = AddPooledString(evcode);
+                vev.mData.Set<LuaRef>(evdata);
+                ci->Notify(&vev);
+            })
+            .addMetaFunction("__tostring",[](const ComponentInst*c)->std::string{
+                auto clazz = c->GetClass();
+                auto cn = clazz->Name();
+                return cn.c_str();
+            })
+        .endClass()
+        ////////////////////////////////////////
+        .beginClass<Entity>("entity")
+            .addPropertyReadOnly("name", &Entity::name )
+            .addPropertyReadOnly("pos",[](Entity*pent)->fvec3{
+                fvec3 pos = pent->GetEntityPosition();
+                return pos;
+            })
+            .addPropertyReadOnly("components", [](const Entity* e)->std::map<std::string,ComponentInst*>
+            {
+                std::map<std::string,ComponentInst*> rval;
+                for( auto item : e->GetComponents().GetComponents() )
+                {
+                    auto c = item.second;
+                    auto clazz = c->GetClass();
+                    auto cn = clazz->Name();
+                    rval[cn.c_str()] = c;
+                }
+                printf( "ent<%p> components size<%zu>\n", e, rval.size() );
+                return rval;
+            })
+            .addMetaFunction("__tostring",[](const Entity*e)->std::string{
+                ork::fxstring<256> str;
+                const char* ename = e ? e->GetEntData().GetName().c_str() : "";
+                auto a = e ? e->GetEntData().GetArchetype() : nullptr;
+                const char* aname =  a ? a->GetName().c_str() : "";
+                str.format("(ent<%s> arch<%s>)", ename, aname);
+                return str.c_str();
+            })
+
+        .endClass()
+        ////////////////////////////////////////
+        .endModule();
 
 	/////////////////////////////////////
 	#if 0

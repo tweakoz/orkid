@@ -1,79 +1,57 @@
 require("std/orklib")
-require("std/inspect")
-
+inspect = require("std/inspect")
+-------------------------------------------------------------------------------
 local Diver = {}
-
-function Diver.OnEntityLink(e)
+-------------------------------------------------------------------------------
+function Diver:OnEntityLink()
     printf( "DIVER::OnEntityLink()" )
-    --scene = ork.getscene()
-    --local a = e:archetype()
+    self.timer = 1.0
+    local c = self.ent.components
+    self.charcon = c["SimpleCharController"]
+    printf( "charcon: %s", tostring(self.charcon) );
 end
-
-function Diver.OnEntityStart(e)
+-------------------------------------------------------------------------------
+function Diver:OnEntityStart()
     printf( "DIVER::OnEntityStart()" )
-    --self.timer = 1.0
-    --e.rx = 0
-    --e.ry = 0
-    --e.t = 0.0
-    --e.rt = math.random(100)*0.01
-    --e.i = 0
+    self.timer = 1.0
+    self.charcon:sendEvent("state",{
+        id = "idle"
+    })
+    self.statetable = {
+        [1] = "idle",
+        [2] = "walk",
+        [3] = "run",
+        [4] = "attack1",
+        [5] = "attack2",
+        [6] = "attack3",
+    }
 end
-
---local StateBeginTable = {
---    1 = Diver.BeginIdle,
---    2 = Diver.BeginWalk,
---    3 = Diver.BeginRun,
---}
-
-function Diver.OnEntityStop(e)
+-------------------------------------------------------------------------------
+function Diver:OnEntityStop()
     --entity_exec_table[e:name()]=nil
     --printf( "Yo::OnEntityStop(%s)", tostring(e))
 end
-
-function Diver.BeginIdle(e)
-    assert(false)
-end
-function Diver.BeginWalk(e)
-    assert(false)
-end
-function Diver.BeginRun(e)
-    assert(false)
-end
-
-function Diver.OnEntityUpdate(e,dt)
-    printf( "DIVER::OnEntityUpdate()" )
-    --printf( "entname<%s>",self:name() )
-
-    --self.timer -= dt 
-    --if self.timer<0 then
-    --    self.timer = math.random(2,5)
-    
-    --    stnum = math.random(1,3)
-
-     --   self:StateBeginTable[stnum]()
-
-   -- end
-
-    --[[local p = e.pos
-    p.x = p.x+e.rx
-    p.y = p.y+e.ry
-    e.pos = p
-    printf("p<%g,%g,%g>\n",p.x,py,p.z)
-    e.t = e.t + dt
-    if e.t>e.rt then
-        local is_odd = (e.i%2)==1
-        if is_odd then
-            e.rx = (math.random(100)-50)*0.01
-            e.ry = (math.random(100)-50)*0.01
-        else
-            local mx = 0.9+(math.random(100)*0.001)
-            local my = 0.9+(math.random(100)*0.001)
-            e.rx = -p.x*0.01*mx
-            e.ry = -p.y*0.01*my
+-------------------------------------------------------------------------------
+function Diver:OnEntityUpdate(dt)
+    --printf( "DIVER::OnEntityUpdate()" )
+    --printf( "entname<%s> dt<%g>",self.ent.name,dt )
+    --printf( "ent<%s> pos<%s>",tostring(self.ent),tostring(self.ent.pos) )
+    self.timer = self.timer-dt 
+    if self.timer<0 then
+        self.timer = math.random(1,3)
+        local stnum = math.random(1,6)
+        local statename = self.statetable[stnum]
+        if statename ~= nil then
+            self.charcon:sendEvent("state",{
+                id = statename
+            })
         end
-        e.t = 0.0
-        e.i = e.i+1
-    end==--]]
-end
 
+        dir = math.random(-180,180)
+        self.charcon:sendEvent("setDir",dir*math.pi/180)
+
+    end
+
+end
+-------------------------------------------------------------------------------
 return Diver

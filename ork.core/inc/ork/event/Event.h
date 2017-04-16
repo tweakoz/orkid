@@ -6,6 +6,7 @@
 
 #include <ork/rtti/RTTI.h>
 #include <ork/object/Object.h>
+#include <ork/kernel/svariant.h>
 
 namespace ork { namespace event {
     
@@ -16,6 +17,14 @@ class Event : public Object
 public:
 };
 
+class VEvent : public Event 
+{
+    RttiDeclareConcrete( VEvent, Event );
+public:
+    
+    PoolString mCode;
+    svar64_t mData;
+};
 
 } } // ork::event
 
