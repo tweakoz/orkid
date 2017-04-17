@@ -154,7 +154,7 @@ vertex_shader vs_sk
     float amb = 0.3;
     float tot = 1.0; //dif+amb;
     frg_clr = vec4(tot,tot,tot,1);
-    frg_uv0 = uv0;
+    frg_uv0 = uv0*vec2(1,-1);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -162,7 +162,7 @@ vertex_shader vs_sk
 fragment_shader ps_modtex : iface_fmt
 {
 	vec4 texc = texture( DiffuseMap, frg_uv0*vec2(1,-1) );
-	out_clr = texc*modcolor*frg_clr;
+	out_clr = vec4(texc.xyz,1)*modcolor*frg_clr;
 	if( out_clr.a==0.0f ) discard;
 }
 ///////////////////////////////////////////////////////////////

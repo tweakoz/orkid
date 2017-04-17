@@ -15,12 +15,6 @@
 
 #include "EditorCamera.h"
 
-#define USE_PYTHON
-
-#if defined(USE_PYTHON)
-#include <Python.h>
-#include <dispatch/dispatch.h>
-#endif
 
 //#include <boost/python.hpp>
 
@@ -44,9 +38,6 @@ namespace lev2 { void Init(const std::string& gfxlayer); }
 
 namespace tool {
 
-#if defined(USE_PYTHON)
-void InitPython();
-#endif
 
 namespace ged
 {
@@ -227,9 +218,6 @@ tokenlist Init(int argc, char **argv)
 
 	ork::lev2::Init("");
 
-#if defined(USE_PYTHON)
-	InitPython();
-#endif
 
 //	xmlInitParser(); // must init libxml in main thread
 

@@ -289,14 +289,14 @@ struct SColladaMaterial
 	CVector4							mEmissiveColor;
 	CVector4							mTransparencyColor;
 	FCDEffect*							mFx;
-	FCDEffectProfileFX*					mFxProfile;
+	FCDMaterial*					    mFxProfile;
 	FCDEffectStandard*					mStdProfile;
 	FCDEffectStandard::TransparencyMode	mTransparencyMode;
 	orkmap<std::string,std::string>		mAnnotations;
-	
+
 	SColladaMaterial();
 
-	void ParseFxMaterial( FCDEffectProfileFX *FxProf );
+	void ParseFxMaterial( FCDMaterial* FxProf );
 	void ParseStdMaterial( FCDEffectStandard *StdProf );
 	void ParseMaterial( FCDocument* doc, const std::string & ShadingGroupName, const std::string& MaterialName );
 

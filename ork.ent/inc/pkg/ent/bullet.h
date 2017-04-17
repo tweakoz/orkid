@@ -458,6 +458,7 @@ public:
 	float GetAngularDamping() const { return mfAngularDamping; }
 	float GetLinearDamping() const { return mfLinearDamping; }
 	bool GetAllowSleeping() const { return mbAllowSleeping; }
+    bool GetKinematic() const { return mbKinematic; }
 	
 	const ork::ObjectMap GetForceControllerData() const { return mForceControllerDataMap; }
 	const BulletShapeBaseData* GetShapeData() const;
@@ -478,6 +479,7 @@ protected:
 	float									mfAngularDamping;
 	float									mfLinearDamping;
 	bool									mbAllowSleeping;
+    bool                                    mbKinematic;
 
 };
 

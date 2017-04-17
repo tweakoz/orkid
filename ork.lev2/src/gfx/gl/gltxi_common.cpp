@@ -209,7 +209,7 @@ struct TexSetter
 			OrkAssert(intfmt!=0);
 					
 
-			printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
+			//printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
 			GL_ERRORCHECK();
 
 			bool bUSEPBO = false;
@@ -572,10 +572,10 @@ VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
 	int iheight = mpDDSHEADER->dwHeight;
 	int idepth = mpDDSHEADER->dwDepth;
 	////////////////////////////////////////////////////////////////////
-	printf( "  tex<%s> width<%d>\n", pth.c_str(), iwidth );
-	printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
-	printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );
-	printf( "  tex<%s> NumMips<%d>\n", pth.c_str(), NumMips );
+	//printf( "  tex<%s> width<%d>\n", pth.c_str(), iwidth );
+	//printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
+	//printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );
+	//printf( "  tex<%s> NumMips<%d>\n", pth.c_str(), NumMips );
     
     bool bVOLUMETEX = (idepth>1);
     
@@ -1006,7 +1006,7 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 	//int ireadptr = sizeof( dxt::DDS_HEADER );
 	////////////////////////////////////////////////////////////////////
 
-    if( 1 )
+    if( 0 )
     {
         printf( "  tex<%s> ptex<%p>\n", infname.c_str(), ptex );
     	printf( "  tex<%s> width<%d>\n", infname.c_str(), iwidth );

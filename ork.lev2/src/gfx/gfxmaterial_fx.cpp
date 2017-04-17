@@ -241,6 +241,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 	std::string FxDesc = GetParamValue( "description" );
 	std::string TekName = GetParamValue( "technique" );
 	
+    printf( "FxDesc<%s>\n", FxDesc.c_str() );
 	mMainTechniqueName = TekName;
 
 	//////////////////////////////////////////
@@ -258,7 +259,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 
 	///////////////////////////
 	///////////////////////////
-	//orkprintf( "Loading FxShader<%s>\n", FxName.c_str() );
+	orkprintf( "Loading FxShader<%s> tech<%s>\n", FxName.c_str(), TekName.c_str() );
 	LoadEffect( AssetPath(FxName.c_str() ) );
 	///////////////////////////
 	///////////////////////////
@@ -285,7 +286,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			{
 				const FxShaderParam* Param = (*itp).second;
 				ParamInst->GetRecord().mParameterHandle = Param;
-				//orkprintf( "FxShader: ModelFXParameterInstance to FX shader [material %s] [ParamInstName %s] BOUND !\n", GetName().c_str(), ParamName.c_str() );
+				printf( "FxShader: ModelFXParameterInstance to FX shader [material %s] [ParamInstName %s] BOUND !\n", GetName().c_str(), ParamName.c_str() );
 			}
 
 			orkprintf( "<FX> ArtistParam %s plath %08x\n", ParamName.c_str(), ParamInst->GetRecord().mParameterHandle );
@@ -1405,6 +1406,8 @@ void GfxMaterialFx::UnBindMaterialInstItem( MaterialInstItem* pitem ) const
 
 void GfxMaterialFx::SetMaterialProperty( const char* prop, const char* val ) // virtual
 {
+    printf( "GfxMaterialFx::SetMaterialProperty() prop<%s> val<%s>\n", prop, val );
+
 	if( 0 == strcmp(prop,"shader") )
 	{
 		//printf( "LOADING<%s>\n", val );

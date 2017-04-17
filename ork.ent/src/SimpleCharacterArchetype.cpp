@@ -15,6 +15,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/math/quaternion.h>
 ///////////////////////////////////////////////////////////////////////////////
+#include <pkg/ent/bullet.h>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
@@ -228,6 +229,7 @@ void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<ork::ent::SimpleAnimatableData>();
 	composer.Register<ork::ent::ScriptComponentData>();
 	composer.Register<SimpleCharControllerData>();
+    composer.Register<BulletObjectControllerData>();
 	//pedpropmapdata->SetProperty( "visual.lighting.reciever.scope", "static" );
 }
 

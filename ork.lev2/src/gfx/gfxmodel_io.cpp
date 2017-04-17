@@ -218,7 +218,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 		{
 			mdl->mSkeleton.miRootNode = (inumbones>0) ? mdl->mSkeleton.GetFlattenedBone(0).miParent : -1;
 		}
-        mdl->mSkeleton.dump();
+        //mdl->mSkeleton.dump();
 		///////////////////////////////////
 		HeaderStream->GetItem( mdl->mBoundingCenter );
 		HeaderStream->GetItem( mdl->mAABoundXYZ );
@@ -817,7 +817,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 		istring = chunkwriter.GetStringIndex(classname.c_str());
 		HeaderStream->AddItem( istring  );
 
-		//orkprintf( "Material Name<%s> Class<%s>\n", pmat->GetName().c_str(), classname.c_str() );
+		printf( "Material Name<%s> Class<%s>\n", pmat->GetName().c_str(), classname.c_str() );
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		// basic materials (fixed, simple materials
 		/////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -58,20 +58,6 @@ bool DoString(lua_State* L, const char* str)
 
 ///////////////////////////////////////////////////////////////////////////////
 /*
-SceneInst* GetSceneInst(lua_State* L)
-{
-	luabind::object globtab = globals(L)["luascene"];
-	auto luasys = object_cast<LuaSystem*>(globtab[1]);
-	auto psi = luasys->mSceneInst;
-	return psi;
-}
-
-luabind::object GetScene(lua_State* L)
-{
-	auto psi = GetSceneInst(L);
-	return luabind::object(L,psi);
-}
-
 luabind::object GetEntities(lua_State* L,luabind::object o)
 {
 	auto psi = object_cast<SceneInst*>(o);
@@ -173,6 +159,7 @@ LuaSystem::LuaSystem(SceneInst*psi)
         .beginModule("ork")
         ////////////////////////////////////////
         .beginClass<fvec3>("vec3")
+            .addConstructor(LUA_ARGS(float,float,float))
             //.def(tostring(self))
             //.property("xz", &CVector3,&SetVec3XZ)
             .addProperty("x", &fvec3::GetX,&fvec3::SetX)
@@ -181,6 +168,9 @@ LuaSystem::LuaSystem(SceneInst*psi)
             .addMetaFunction("__tostring",[](const fvec3*v)->std::string{
                 fxstring<64> fxs; fxs.format("vec3(%g,%g,%g)",v->x,v->y,v->z);
                 return fxs.c_str(); 
+            })
+            .addMetaFunction("__add",[](const fvec3*a,const fvec3*b)->fvec3{
+                return (*a)+(*b); 
             })
         .endClass()
         ////////////////////////////////////////
@@ -245,6 +235,44 @@ LuaSystem::LuaSystem(SceneInst*psi)
             })
 
         .endClass()
+        ////////////////////////////////////////
+        .beginClass<SceneInst>("scene")
+            .addFunction("spawn",[](SceneInst* psi, const char* arch, const char* entname, LuaRef spdata)->Entity*{
+
+                const auto& scenedata = psi->GetData();
+                auto archnamestr = std::string(arch);
+                auto entnamestr = std::string(entname);
+                auto archso = scenedata.FindSceneObjectByName(AddPooledString(archnamestr.c_str()));
+
+                auto position = spdata.get<fvec3>("pos");
+
+                printf( "SPAWN<%s:%p> ename<%s>\n", archnamestr.c_str(), archso, entnamestr.c_str() );
+
+                if( const Archetype* as_arch = rtti::autocast(archso) )
+                {
+                    EntData* spawner = new EntData;
+                    spawner->SetName(AddPooledString(entnamestr.c_str()));
+                    spawner->SetArchetype(as_arch);
+                    auto mtx = fmtx4();
+                    mtx.ComposeMatrix( position, fquat(), 1.0f );
+                    spawner->GetDagNode().SetTransformMatrix(mtx);
+                    auto newent = psi->SpawnDynamicEntity(spawner);
+                    return newent;
+                }
+                else
+                {
+                    assert(false);
+                    //printf( "SPAWN<%s:%p>\n", archnamestr.c_str(), archso );
+                    return nullptr;
+                }
+                return nullptr;
+
+            })
+        .endClass()
+        ////////////////////////////////////////
+        .addFunction("scene",[=]()->SceneInst*{
+            return psi;
+        })
         ////////////////////////////////////////
         .endModule();
 

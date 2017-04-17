@@ -309,6 +309,7 @@ namespace FUDaeProfileType
 {
 	Type FromString(const char* value)
 	{
+        printf( "FUDaeProfileType<%s>\n", value );
 		if (IsEquivalent(value, DAE_FX_PROFILE_COMMON_ELEMENT)) return COMMON;
 		else if (IsEquivalent(value, DAE_FX_PROFILE_CG_ELEMENT)) return CG;
 		else if (IsEquivalent(value, DAE_FX_PROFILE_HLSL_ELEMENT)) return HLSL;
