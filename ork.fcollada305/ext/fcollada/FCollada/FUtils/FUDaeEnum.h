@@ -345,7 +345,6 @@ namespace FUDaeProfileType
 		GLSL, /**< The GLSL profile for OpenGL. */
 		GLES, /**< The GLES profile for OpenGL ES. */
 		COMMON, /**< The common profile which encapsulates the standard lighting equations: Lambert, Phong, Blinn. */
-
 		UNKNOWN /**< Not a valid profile type. */
 	};
 

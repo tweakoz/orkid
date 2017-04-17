@@ -391,7 +391,7 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 
 		//orkprintf( "omat1\n" );
 		lev2::GfxMaterialFx* pfx = rtti::autocast( pmaterial->mpOrkMaterial );
-		FCDEffectProfileFX* pcfx = pmaterial->mFxProfile;
+		auto pcfx = pmaterial->mFxProfile;
 
 		if( 0 == pfx )
 		{
@@ -414,7 +414,7 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 			DaeMat->SetDaeId( CreateFormattedString( "%s", omatname.c_str() ).c_str() );
 			DaeMat->SetEffect( DaeEfx );
 		
-			size_t numtek = pcfx->GetTechniqueCount();
+			/*size_t numtek = pcfx->GetTechniqueCount();
 			for( size_t t=0; t<numtek; t++ )
 			{
 				FCDEffectTechnique* ptemptek = pcfx->GetTechnique(t);
@@ -428,123 +428,127 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 
 
 				}
-			}
+			}*/
 
 			const lev2::GfxMaterialFxEffectInstance& fxi = pfx->GetEffectInstance();
 			const orklut<std::string,lev2::GfxMaterialFxParamBase*>& params = fxi.mParameterInstances;
-			int inumparams = pcfx->GetEffectParameterCount();
+			
+            if( pcfx )
+            {
+                int inumparams = pcfx->GetEffectParameterCount();
 
-			for( int ip=0; ip<inumparams; ip++ )
-			{
-				const FCDEffectParameter* Param = pcfx->GetEffectParameter(ip);
-				FCDEffectParameter::Type ParamType = Param->GetType();
-				const fm::string & ParamSemantic = Param->GetSemantic();
-				const fm::string & ParamReference = Param->GetReference();
-				std::string parameter_name( ParamReference.c_str() );
+    			for( int ip=0; ip<inumparams; ip++ )
+    			{
+    				const FCDEffectParameter* Param = pcfx->GetEffectParameter(ip);
+    				FCDEffectParameter::Type ParamType = Param->GetType();
+    				const fm::string & ParamSemantic = Param->GetSemantic();
+    				const fm::string & ParamReference = Param->GetReference();
+    				std::string parameter_name( ParamReference.c_str() );
 
-				///////////////////////////////////////////////////////////////////////
-				// Remove Leading material name in the reference name
-				std::string stripped_parameter_name = parameter_name;
-				std::string::size_type itst = stripped_parameter_name.find( omatname );
-				if( itst != std::string::npos )
-				{
-					int iparlen = parameter_name.length();
-					int imatlen = omatname.length();
-					stripped_parameter_name = stripped_parameter_name.substr( itst+imatlen+1, (iparlen-(1+imatlen)) );
-				}
-				///////////////////////////////////////////////////////////////////////
-				lev2::GfxMaterialFxParamBase* l2parambase = 0;
-				orklut<std::string,lev2::GfxMaterialFxParamBase*>::const_iterator itp = params.find(stripped_parameter_name);
-				if( itp!=params.end() )
-				{
-					l2parambase = itp->second;
-				}
-				///////////////////////////////////////////////////////////////////////
-				// Skip parameters with the word "engine" in them
-				if(parameter_name.find("engine") != std::string::npos)
-					continue;
-				///////////////////////////////////////////////////////////////////////
-				int inumanno = Param->GetAnnotationCount();
-				for(int ia = 0; ia < inumanno; ++ia)
-				{	const FCDEffectParameterAnnotation* Anno = Param->GetAnnotation(ia);
-					const fm::string& AnnoName = Anno->name;
-					const fm::string& AnnoVal = Anno->value;
-				}
+    				///////////////////////////////////////////////////////////////////////
+    				// Remove Leading material name in the reference name
+    				std::string stripped_parameter_name = parameter_name;
+    				std::string::size_type itst = stripped_parameter_name.find( omatname );
+    				if( itst != std::string::npos )
+    				{
+    					int iparlen = parameter_name.length();
+    					int imatlen = omatname.length();
+    					stripped_parameter_name = stripped_parameter_name.substr( itst+imatlen+1, (iparlen-(1+imatlen)) );
+    				}
+    				///////////////////////////////////////////////////////////////////////
+    				lev2::GfxMaterialFxParamBase* l2parambase = 0;
+    				orklut<std::string,lev2::GfxMaterialFxParamBase*>::const_iterator itp = params.find(stripped_parameter_name);
+    				if( itp!=params.end() )
+    				{
+    					l2parambase = itp->second;
+    				}
+    				///////////////////////////////////////////////////////////////////////
+    				// Skip parameters with the word "engine" in them
+    				if(parameter_name.find("engine") != std::string::npos)
+    					continue;
+    				///////////////////////////////////////////////////////////////////////
+    				int inumanno = Param->GetAnnotationCount();
+    				for(int ia = 0; ia < inumanno; ++ia)
+    				{	const FCDEffectParameterAnnotation* Anno = Param->GetAnnotation(ia);
+    					const fm::string& AnnoName = Anno->name;
+    					const fm::string& AnnoVal = Anno->value;
+    				}
 
-				switch( ParamType )
-				{
-					case FCDEffectParameter::FLOAT:		{	CloneParam<FCDEffectParameterFloat>(pfx2,Param);break;	}
-					case FCDEffectParameter::FLOAT2:	{	CloneParam<FCDEffectParameterFloat2>(pfx2,Param);break;	}
-					case FCDEffectParameter::FLOAT3:	{	CloneParam<FCDEffectParameterFloat3>(pfx2,Param);break;	}
-					case FCDEffectParameter::VECTOR:	{	CloneParam<FCDEffectParameterVector>(pfx2,Param);break;	}
-					case FCDEffectParameter::BOOLEAN:	{	/*CloneParam<FCDEffectParameterBool(pfx2,Param);*/break;	}
-					case FCDEffectParameter::INTEGER:	{	CloneParam<FCDEffectParameterInt>(pfx2,Param);break;	}
-					case FCDEffectParameter::MATRIX:	{	CloneParam<FCDEffectParameterMatrix>(pfx2,Param);break;	}
-					case FCDEffectParameter::STRING:	{	CloneParam<FCDEffectParameterString>(pfx2,Param);break;	}
-					case FCDEffectParameter::SAMPLER:
-					{	lev2::GfxMaterialFxParamArtist<ork::lev2::Texture*>* l2texparam = rtti::autocast(l2parambase); 
-						if( l2texparam )
-						{	const std::string& init_string = l2texparam->GetInitString();
-							const orklut<std::string,std::string>& l2annos = l2texparam->RefAnnotations();
-							///////////////////////////////////////////////
-							std::string CgFxParamName = ParamReference.c_str();
-							std::string::size_type icolon = CgFxParamName.find( ":" );
-							if( icolon != std::string::npos )
-							{
-								int ilen = CgFxParamName.length();
-								CgFxParamName = CgFxParamName.substr( icolon+1, (ilen-icolon)-1 );
-							}
-							///////////////////////////////////////////////
-							FCDEffectParameterSampler *ParamSampler = (FCDEffectParameterSampler*) Param;
-							FCDEffectParameterSampler::SamplerType SamplerType = ParamSampler->GetSamplerType();
-							FCDEffectParameterSurface * Surface = ParamSampler->GetSurface();
-							FCDImageLibrary* ImgLib = daedoc.GetImageLibrary();
-							FCDImage* pimg = ImgLib->AddEntity();
-							pimg->SetFilename( fm::string(init_string.c_str()) );
-							FCDEffectParameterSampler* NewSampler = (FCDEffectParameterSampler*) pfx2->AddEffectParameter(FCDEffectParameter::SAMPLER);
-							FCDEffectParameterSurface* NewSurface = (FCDEffectParameterSurface*) pfx2->AddEffectParameter(FCDEffectParameter::SURFACE);
-							NewSurface->AddImage( pimg );
-							NewSampler->SetReference( ParamReference );
-							NewSampler->SetSurface( NewSurface );
-							orklut<std::string,std::string>::const_iterator itst = l2annos.find("sampler_type");
-							if( itst!=l2annos.end() )
-							{	if(itst->second=="1d")   NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLER1D);
-								if(itst->second=="2d")   NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLER2D);
-								if(itst->second=="3d")   NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLER3D);
-								if(itst->second=="cube") NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLERCUBE);
-							}
-							itst = l2annos.find("image_ent_name");
-							if( itst!=l2annos.end() )
-							{	pimg->SetName(itst->second.c_str());
-								pimg->SetDaeId(itst->second.c_str());
-								FCDEffectParameterSurfaceInitFrom* surfinit = new FCDEffectParameterSurfaceInitFrom;
-								//fm::string slicestr = fm::string(itst->second.c_str());
-								surfinit->mip.push_back(fm::string("0"));
-								surfinit->slice.push_back(fm::string("0"));
-								NewSurface->SetInitMethod(surfinit);
-							}
-							itst = l2annos.find("surface_ref_name");
-							if( itst!=l2annos.end() )
-							{	NewSurface->SetReference(itst->second.c_str());
-							}
-							//NewParam->SetValue( porig->GetValue() );
-							//if( porig->IsGenerator() ) NewParam->SetGenerator(  );
-							//if( porig->IsModifier() ) NewParam->SetModifier(  );
-							//if( porig->IsAnimator() ) NewParam->SetAnimator(  );
-							//if( porig->IsReferencer() ) NewParam->SetReferencer(  );
-							//if( porig->IsConstant() ) NewParam->SetConstant(  );
-							FCDImage *pimage = Surface->GetImage();
-							const fstring & ImageName = pimage->GetFilename();
-							const char * ImageFileName = ImageName.c_str();
-							ork::lev2::GfxMaterialFxParamArtist<lev2::Texture*> *paramf = new ork::lev2::GfxMaterialFxParamArtist<lev2::Texture*>;
-							//param=paramf;
-							//param->GetRecord().meParameterType = EPROPTYPE_SAMPLER;
-							paramf->SetInitString( std::string(ImageFileName) );
-						}
-						break;
-					}
-				}
-			}
+    				switch( ParamType )
+    				{
+    					case FCDEffectParameter::FLOAT:		{	CloneParam<FCDEffectParameterFloat>(pfx2,Param);break;	}
+    					case FCDEffectParameter::FLOAT2:	{	CloneParam<FCDEffectParameterFloat2>(pfx2,Param);break;	}
+    					case FCDEffectParameter::FLOAT3:	{	CloneParam<FCDEffectParameterFloat3>(pfx2,Param);break;	}
+    					case FCDEffectParameter::VECTOR:	{	CloneParam<FCDEffectParameterVector>(pfx2,Param);break;	}
+    					case FCDEffectParameter::BOOLEAN:	{	/*CloneParam<FCDEffectParameterBool(pfx2,Param);*/break;	}
+    					case FCDEffectParameter::INTEGER:	{	CloneParam<FCDEffectParameterInt>(pfx2,Param);break;	}
+    					case FCDEffectParameter::MATRIX:	{	CloneParam<FCDEffectParameterMatrix>(pfx2,Param);break;	}
+    					case FCDEffectParameter::STRING:	{	CloneParam<FCDEffectParameterString>(pfx2,Param);break;	}
+    					case FCDEffectParameter::SAMPLER:
+    					{	lev2::GfxMaterialFxParamArtist<ork::lev2::Texture*>* l2texparam = rtti::autocast(l2parambase); 
+    						if( l2texparam )
+    						{	const std::string& init_string = l2texparam->GetInitString();
+    							const orklut<std::string,std::string>& l2annos = l2texparam->RefAnnotations();
+    							///////////////////////////////////////////////
+    							std::string CgFxParamName = ParamReference.c_str();
+    							std::string::size_type icolon = CgFxParamName.find( ":" );
+    							if( icolon != std::string::npos )
+    							{
+    								int ilen = CgFxParamName.length();
+    								CgFxParamName = CgFxParamName.substr( icolon+1, (ilen-icolon)-1 );
+    							}
+    							///////////////////////////////////////////////
+    							FCDEffectParameterSampler *ParamSampler = (FCDEffectParameterSampler*) Param;
+    							FCDEffectParameterSampler::SamplerType SamplerType = ParamSampler->GetSamplerType();
+    							FCDEffectParameterSurface * Surface = ParamSampler->GetSurface();
+    							FCDImageLibrary* ImgLib = daedoc.GetImageLibrary();
+    							FCDImage* pimg = ImgLib->AddEntity();
+    							pimg->SetFilename( fm::string(init_string.c_str()) );
+    							FCDEffectParameterSampler* NewSampler = (FCDEffectParameterSampler*) pfx2->AddEffectParameter(FCDEffectParameter::SAMPLER);
+    							FCDEffectParameterSurface* NewSurface = (FCDEffectParameterSurface*) pfx2->AddEffectParameter(FCDEffectParameter::SURFACE);
+    							NewSurface->AddImage( pimg );
+    							NewSampler->SetReference( ParamReference );
+    							NewSampler->SetSurface( NewSurface );
+    							orklut<std::string,std::string>::const_iterator itst = l2annos.find("sampler_type");
+    							if( itst!=l2annos.end() )
+    							{	if(itst->second=="1d")   NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLER1D);
+    								if(itst->second=="2d")   NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLER2D);
+    								if(itst->second=="3d")   NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLER3D);
+    								if(itst->second=="cube") NewSampler->SetSamplerType(FCDEffectParameterSampler::SAMPLERCUBE);
+    							}
+    							itst = l2annos.find("image_ent_name");
+    							if( itst!=l2annos.end() )
+    							{	pimg->SetName(itst->second.c_str());
+    								pimg->SetDaeId(itst->second.c_str());
+    								FCDEffectParameterSurfaceInitFrom* surfinit = new FCDEffectParameterSurfaceInitFrom;
+    								//fm::string slicestr = fm::string(itst->second.c_str());
+    								surfinit->mip.push_back(fm::string("0"));
+    								surfinit->slice.push_back(fm::string("0"));
+    								NewSurface->SetInitMethod(surfinit);
+    							}
+    							itst = l2annos.find("surface_ref_name");
+    							if( itst!=l2annos.end() )
+    							{	NewSurface->SetReference(itst->second.c_str());
+    							}
+    							//NewParam->SetValue( porig->GetValue() );
+    							//if( porig->IsGenerator() ) NewParam->SetGenerator(  );
+    							//if( porig->IsModifier() ) NewParam->SetModifier(  );
+    							//if( porig->IsAnimator() ) NewParam->SetAnimator(  );
+    							//if( porig->IsReferencer() ) NewParam->SetReferencer(  );
+    							//if( porig->IsConstant() ) NewParam->SetConstant(  );
+    							FCDImage *pimage = Surface->GetImage();
+    							const fstring & ImageName = pimage->GetFilename();
+    							const char * ImageFileName = ImageName.c_str();
+    							ork::lev2::GfxMaterialFxParamArtist<lev2::Texture*> *paramf = new ork::lev2::GfxMaterialFxParamArtist<lev2::Texture*>;
+    							//param=paramf;
+    							//param->GetRecord().meParameterType = EPROPTYPE_SAMPLER;
+    							paramf->SetInitString( std::string(ImageFileName) );
+    						}
+    						break;
+    					}
+    				}
+    			}
+            }
 			//orkprintf( "omat5\n" );
 		}
 	}

@@ -218,7 +218,7 @@ void SColladaMaterial::ParseStdMaterial( FCDEffectStandard *StdProf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SColladaMaterial::ParseFxMaterial( FCDEffectProfileFX *FxProf )
+void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 {
 	int inumparams = FxProf->GetEffectParameterCount();
 
@@ -557,13 +557,42 @@ void SColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & Shadi
 			mFx = Effect;
 			FCDEffectStandard *StdProf = static_cast<FCDEffectStandard*>( Effect->FindProfile( FUDaeProfileType::COMMON ) );
 			FCDEffectProfileFX *FxProf = static_cast<FCDEffectProfileFX*>( Effect->FindProfile( FUDaeProfileType::CG ) );
+            auto extra = Effect->GetExtra();
+            printf( "extra<%p>\n", extra );
 
-			if( FxProf )
-			{
-				ParseFxMaterial( FxProf );
-				mFxProfile = (FCDEffectProfileFX*) FxProf->Clone(0);
-			}
-			if( StdProf )
+            bool do_fxmtl = false;
+
+            if( FxProf )
+            {
+                do_fxmtl = true;
+            }
+			else if( extra )
+            {
+                auto exx = extra->FindType("import");
+                printf( "exx<%p>\n", exx );
+                if( exx )
+                {
+                    auto tek = exx->GetTechnique(0);
+                    printf( "tek<%p>\n", tek );
+                    if( tek )
+                    {
+                        auto profile = tek->GetProfile();
+                        printf( "profile<%s>\n", profile );
+                        if( 0==strcmp(profile,"NVIDIA_FXCOMPOSER") )
+                        {
+                            do_fxmtl = true;
+                        }
+                    }
+                }
+            }
+
+
+            if( do_fxmtl )
+            {
+                ParseFxMaterial( material );
+                mFxProfile = (FCDMaterial*) material->Clone(0);
+            }
+			else if( StdProf )
 			{
 				ParseStdMaterial( StdProf );
 				mStdProfile = StdProf;
@@ -601,7 +630,6 @@ void SColladaMatGroup::Parse( const SColladaMaterial& colmat )
 
 SColladaMaterial::SColladaMaterial()
 	: mpOrkMaterial( 0 )
-	, mFxProfile( 0 )
 	, mStdProfile( 0 )
 {
 

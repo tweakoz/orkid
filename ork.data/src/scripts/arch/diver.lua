@@ -2,6 +2,7 @@ require("std/orklib")
 inspect = require("std/inspect")
 -------------------------------------------------------------------------------
 local Diver = {}
+local scene = ork.scene()
 -------------------------------------------------------------------------------
 function Diver:OnEntityLink()
     printf( "DIVER::OnEntityLink()" )
@@ -25,11 +26,37 @@ function Diver:OnEntityStart()
         [5] = "attack2",
         [6] = "attack3",
     }
+    self.spawned = 0
+    self.balls = {}
+
 end
 -------------------------------------------------------------------------------
 function Diver:OnEntityStop()
     --entity_exec_table[e:name()]=nil
     --printf( "Yo::OnEntityStop(%s)", tostring(e))
+end
+-------------------------------------------------------------------------------
+function Diver.SpawnBallz(self)
+    local r = math.random(100)
+
+    if r>1 then
+        --printf( "SPAWN %d", spawned)
+        local entname = "dynaentXZ"..self.spawned
+        local ent = scene:spawn("/arch/ball",entname,{
+            pos = self.ent.pos+ork.vec3(0,30,0)
+        })
+        
+        self.balls[ent]=ent
+        self.spawned = self.spawned+1
+    end
+
+    for k,v in pairs(self.balls) do
+        --local age = gt-k;
+        --if age > 6.0 then
+            --scene:despawn(v);
+            self.balls[k]=nil
+        --end
+    end
 end
 -------------------------------------------------------------------------------
 function Diver:OnEntityUpdate(dt)
@@ -46,10 +73,11 @@ function Diver:OnEntityUpdate(dt)
                 id = statename
             })
         end
-
+        --------------
         dir = math.random(-180,180)
         self.charcon:sendEvent("setDir",dir*math.pi/180)
-
+        --------------
+        Diver.SpawnBallz(self)
     end
 
 end

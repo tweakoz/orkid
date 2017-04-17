@@ -78,6 +78,7 @@ BulletObjectControllerData::BulletObjectControllerData()
 	, mfAngularDamping(0.5f)
 	, mShapeData(0)
 	, mbAllowSleeping(true)
+    , mbKinematic(false)
 {
 }
 BulletObjectControllerData::~BulletObjectControllerData()
@@ -98,6 +99,7 @@ void BulletObjectControllerData::Describe()
 	reflect::RegisterFloatMinMaxProp( &BulletObjectControllerData::mfAngularDamping, "AngularDamping", "0.0", "1.0" );
 
 	reflect::RegisterProperty("AllowSleeping", &BulletObjectControllerData::mbAllowSleeping);
+    reflect::RegisterProperty("IsKinematic", &BulletObjectControllerData::mbKinematic);
 
 	reflect::RegisterMapProperty( "ForceControllers", & BulletObjectControllerData::mForceControllerDataMap );
 	reflect::AnnotatePropertyForEditor< BulletObjectControllerData >("ForceControllers", "editor.factorylistbase", "BulletObjectForceControllerData" );
@@ -228,8 +230,12 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 						btTransform btTrans = ! mtx;
 						mRigidBody = wController->AddLocalRigidBody(shape_create_data.mEntity,mBOCD.GetMass(),btTrans,pshape);
 						mRigidBody->setGravity(grav);
-						
 						bool ballowsleep = mBOCD.GetAllowSleeping();
+                        if(mBOCD.GetKinematic())
+                        {
+                            mRigidBody->setCollisionFlags( btCollisionObject::CF_KINEMATIC_OBJECT );
+                            ballowsleep = false;
+                        }                       
 						mRigidBody->setActivationState(ballowsleep?WANTS_DEACTIVATION:DISABLE_DEACTIVATION);
 						mRigidBody->activate();
 						//orkprintf( "mRigidBody<%p>\n", mRigidBody );
@@ -267,13 +273,24 @@ void BulletObjectControllerInst::DoUpdate(ork::ent::SceneInst* inst)
 		// copy motion state to entity transform
 		//////////////////////////////////////////////////
 
-		const btMotionState* motionState = mRigidBody->getMotionState();
-		btTransform xf;
-		motionState->getWorldTransform(xf);
-		CMatrix4 xfW = ! xf;
 		DagNode& dnode = GetEntity()->GetDagNode();
 		TransformNode& t3d = dnode.GetTransformNode();
-		t3d.GetTransform().SetMatrix( xfW );
+
+        btTransform xf;
+        if(mBOCD.GetKinematic())
+        {
+            btMotionState* motionState = mRigidBody->getMotionState();
+            auto ork_mtx = t3d.GetTransform().GetMatrix();
+            xf = ! ork_mtx;
+            motionState->setWorldTransform(xf);
+        }
+        else
+        {
+            const btMotionState* motionState = mRigidBody->getMotionState();
+            motionState->getWorldTransform(xf);
+            CMatrix4 xfW = ! xf;
+            t3d.GetTransform().SetMatrix( xfW );
+        }
 
 		//////////////////////////////////////////////////
 		// update dynamic rigid body params

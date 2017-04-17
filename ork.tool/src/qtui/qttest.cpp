@@ -33,7 +33,15 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/thread.h>
 
-//#include <dispatch/dispatch.h>
+#define USE_PYTHON
+
+#if defined(USE_PYTHON)
+#include <Python.h>
+#include <dispatch/dispatch.h>
+namespace ork { namespace tool {
+void InitPython();
+}} //namespace ork { namespace tool {
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -351,6 +359,10 @@ void* BootQtThreadImpl(void* arg_opaq )
 }
 int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode )
 {
+#if defined(USE_PYTHON)
+    InitPython();
+#endif
+
     InputArgs args(argc,argv);
     //BootQtThreadImpl((void*)& args);
     BootQtThreadImpl( & args );
