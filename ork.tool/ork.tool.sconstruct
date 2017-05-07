@@ -114,17 +114,22 @@ class orktool:
     self.test_prg = prj_test.Program()
     Depends( self.test_prg, self.tool_lib )
 
-    bundle = prj_test.CompileEnv.Command( target = "testoutput",
+    bundle = prj_test.CompileEnv.Command( 
+      target = "%s/bundle/OrkidTool.app" % sln.stage_dir,
       source = self.test_prg,
       action = "ork.bundle.make.py" )
 
     Depends( bundle, self.test_prg )
+
+    self.bundle = bundle
 
 ##########################################
 
 a = orktool()
 ret = list()
 if False==is_prep:
+  ret += a.bundle
+  ret += a.test_prg
   ret += a.tool_lib
 Return('ret')
 
