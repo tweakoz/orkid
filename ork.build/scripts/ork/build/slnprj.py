@@ -144,6 +144,7 @@ class Project:
     self.arguments = ARGUMENTS
     self.suffix = BuildSuffix(ARGUMENTS)
 
+    self.additionalfiles = list()
     self.PrjDir=os.getcwd()
     self.LogConfig = False
     self.PLATFORM = ARGUMENTS['PLATFORM']
@@ -157,6 +158,7 @@ class Project:
     self.SUFFIX = BuildSuffix(ARGUMENTS)
     self.BUILD_DIR = '%s/%s.%s/' % (obj_dir,self.BUILDNAME,name)
     self.OutputName = '%s.%s' % (name,self.BUILDNAME)
+    self.BaseName = name
     ##################################
     self.BaseEnv = Environment.Clone()
     self.BaseEnv.Replace( QT5_MOCCOMSTR = deco.magenta("Moccing ")+deco.path("$SOURCE") )
@@ -260,6 +262,7 @@ class Project:
   ############################################
 
   def MatchPlatform(self,platform):
+    
     if (platform=='any'):
       return True
     else:
@@ -321,6 +324,14 @@ class Project:
 
   def AddQt5Modules(self,mods):
       self.BaseEnv.EnableQt5Modules(string.split(mods))
+
+  ############################################
+
+  def AddExtraFiles(self,files):
+    if type(files) == list:
+      self.additionalfiles += files
+    elif type(files) == str:
+      self.additionalfiles += string.split(files)
 
   ############################################
 
@@ -406,6 +417,10 @@ class Project:
       print "///////////////////////////////////////////////////////"
       print
 
+    self.MayaPlugEnv = self.CompileEnv.Clone()
+    self.MayaPlugEnv.Replace(SHLIBPREFIX = '' )
+    self.MayaPlugEnv.Replace(SHLIBSUFFIX = '.bundle')
+
   ############################################
 
   def SetCompilerOptions( self, XDEFS, XCCFLAGS, XCXXFLAGS, INCPATHS, XLIBPATH, XLINK, PLATFORM, BUILD ):
@@ -433,6 +448,7 @@ class Project:
     lib = self.CompileEnv.LoadableModule(libname, self.GetSources() )
     the_list += lib
 
+
     self.CompileEnv.Append( LINKFLAGS = string.split("-rpath ./" ) )
 
     basenam = "#stage/plugin/%s"%os.path.basename(dest)
@@ -452,6 +468,15 @@ class Project:
       bun = lib
 
     return the_list
+
+  ############################################
+
+  def MayaPlugin(self,libname):
+    self.IsLibrary = True
+    self.TargetName = self.OutputName
+    lib = self.MayaPlugEnv.SharedLibrary( libname, self.GetSources() )
+    #env = MayaPlugEnv
+    return lib
 
   ############################################
 

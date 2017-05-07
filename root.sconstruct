@@ -19,10 +19,13 @@ def refprj(str):
 
 #####################################################
 
+have_maya = obu.HaveMaya()
+
+#####################################################
+
 utpp = refprj('ork.unittestpp')
 core = refprj('ork.core')
 fcol = refprj('ork.fcollada305')
-#fcol = refprj('ork.colladamaya')
 bull = refprj('ork.bullet273')
 lev2 = refprj('ork.lev2')
 lua = refprj('ork.lua')
@@ -33,6 +36,9 @@ ilm = refprj('ork.ilm')
 oiio = refprj('ork.oiio')
 tuio = refprj('ork.tuio')
 tout = refprj('tweakout')
+if have_maya:
+    mayax = refprj('ork.mayax')
+
 #####################################################
 
 boost = BasicEnv.Alias('boost')
@@ -56,21 +62,27 @@ def DeclDep( itemlist, deplist ):
 				Depends( item, it2 )
 
 DeclDep( core, utpp )
+
 DeclDep( lev2, core )
 DeclDep( lev2, utpp )
 DeclDep( lev2, tuio )
-DeclDep( lua, core )
-DeclDep( ent, core )
+
 DeclDep( ent, bull )
 DeclDep( ent, lev2 )
 DeclDep( ent, utpp )
 DeclDep( ent, lua )
+
 DeclDep( tout, ent )
 DeclDep( tout, fcol )
+
 DeclDep( tool, core )
 DeclDep( tool, lev2 )
 DeclDep( tool, tuio )
 DeclDep( tool, ent )
 DeclDep( tool, utpp )
 DeclDep( tool, tout )
+
+if have_maya:
+    DeclDep( mayax, core )
+
 
