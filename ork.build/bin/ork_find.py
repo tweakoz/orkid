@@ -20,12 +20,12 @@ if __name__ == "__main__":
     print("usage: word [module]")
     sys.exit(1)
   #########################
-  pathlist = search.search_pathlist
+  modulelist = search.search_modulelist
   if len(sys.argv) == 3:
-    pathlist = search.makePathList(sys.argv[2])
+    modulelist = search.makeModuleList(sys.argv[2])
   #########################
   wsdir = os.environ["ORKDOTBUILD_WORKSPACE_DIR"]
   os.chdir(wsdir)
   find_word = sys.argv[1]
   print("searching for word<%s>" % find_word)
-  search.visit(find_word,visitor(),pathlist)
+  search.visit(find_word,visitor(),modulelist)
