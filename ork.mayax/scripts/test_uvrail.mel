@@ -1,0 +1,22 @@
+//print "Loading uvtest file";
+
+//file -f -options "v=0;"  -ignoreVersion  -typ "mayaBinary" -o "/projects/tweakoz_githubork.github/data/src/uvtest.mb"
+
+print("selecting faces and edge\n");
+
+select -r pPlane1.f[0] ;
+select -tgl pPlane1.f[1] ;
+select -tgl pPlane1.f[2] ;
+select -tgl pPlane1.f[3] ;
+select -tgl pPlane1.f[4] ;
+select -tgl pPlane1.f[5] ;
+select -tgl pPlane1.f[6] ;
+select -tgl pPlane1.f[7] ;
+select -tgl pPlane1.f[8] ;
+select -tgl pPlane1.f[9] ;
+select -tgl pPlane1.e[0] ;
+
+print("performing rail operation\n");
+
+UvRailUnitized;
+
