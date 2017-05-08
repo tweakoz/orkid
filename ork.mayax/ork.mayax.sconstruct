@@ -1,0 +1,91 @@
+import os, string
+import ork.build.utils as obu
+import ork.build.slnprj as sln
+import ork.build.localopts as localopts
+from ork.build.pathtools import path, SconsSymLink
+
+file_dir = str(Dir('.'))
+thisdir = path(file_dir)
+
+# set scons options ######################
+
+Decider('MD5-timestamp')
+VariantDir( 'obj', 'src', duplicate=0  )
+SetOption('num_jobs', obu.num_cores) 
+BasicEnv = Environment( ENV=os.environ, tools=['default'] )
+
+#
+TARGET = string.join(COMMAND_LINE_TARGETS)
+is_prep = (TARGET=="prep")
+#
+
+MAYAINC_DIR = os.environ["MAYAINC_DIR"]
+MAYALIB_DIR = os.environ["MAYALIB_DIR"]
+ORKWS_DIR = path(os.environ["ORKDOTBUILD_WORKSPACE_DIR"])
+STAGE_DIR = path(sln.stage_dir)
+
+# basics #################################
+
+class mayax:
+  def __init__(self):
+
+    if is_prep:
+      return
+
+    ##########################################
+
+    SRC_FOLDERS  = ". "
+
+    ##########################################
+    plugname = "ork_mayax"
+    prj_lib = sln.Project(BasicEnv,plugname)
+    prj_lib.SetSrcBase( "src" )
+    prj_lib.AddIncludePaths( "../ork.core/inc" )
+    prj_lib.AddIncludePaths( MAYAINC_DIR )
+    prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
+    prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
+    prj_lib.AddLibPaths( MAYALIB_DIR )
+    prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
+
+    mayamodulename = "OrkUtils"
+
+    scriptcontents = (thisdir/"scripts").rglob()
+
+    #########################
+    # split libs
+    #########################
+
+    if prj_lib.IsOsx: # OSX libs
+      prj_lib.AddDefines("OSMac_ OSMacOSX_","osx")
+      prj_lib.AddFolders( SRC_FOLDERS, "*.mm" )
+    else: # IX libs
+      prj_lib.AddLibs( "GL QtCore QtGui" )
+
+    ########################
+    # Common libs
+    ########################
+
+    prj_lib.AddLibs( "OpenMaya Foundation OpenMayaUI OpenMayaRender" )
+    
+    prj_lib.Configure()
+    mayamodules_path = STAGE_DIR/"mayamodules/"
+    modpath = mayamodules_path/mayamodulename
+    libname = modpath/"plug-ins"/plugname
+    self.mayax_lib = prj_lib.MayaPlugin(str(libname))
+    mayaenv = prj_lib.MayaPlugEnv
+
+    scripts_src = thisdir/"scripts"
+    scripts_dst = ORKWS_DIR/modpath/"scripts"
+    mayaenv.Command(str(scripts_dst), str(scripts_src), SconsSymLink )
+
+    module_src = str(scripts_src/"OrkUtils.module")
+    module_dst = str(ORKWS_DIR/mayamodules_path/"OrkUtils.module")
+    mayaenv.Command(str(module_dst), str(module_src), SconsSymLink )
+
+##########################################
+
+a = mayax()
+ret = list()
+if False==is_prep:
+  ret += a.mayax_lib
+Return('ret')

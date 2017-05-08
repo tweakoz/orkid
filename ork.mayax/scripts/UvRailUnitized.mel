@@ -1,0 +1,17 @@
+
+global proc UvRailUnitized( )
+{
+    // verify that ork_mayax plugin was loaded
+ 
+    if (!`pluginInfo -q -loaded "ork_mayax.bundle"`)
+      error "The plug-in \"ork_mayax.bundle\" is required to be loaded!";
+
+    // save selection
+
+    string $selshapes[]=`ls -sl -o`;
+    string $curuvset[]=`polyUVSet -q -currentUVSet $selshapes[0]`;
+
+    _OrkUvRailUnitized;  // doit
+    delete -ch $selshapes[0]; // cleanup
+
+}
