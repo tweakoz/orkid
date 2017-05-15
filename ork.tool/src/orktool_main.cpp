@@ -33,6 +33,8 @@ extern char errorbuffer[];
 
 ///////////////////////////////////////////////////////////////////////////////
 
+int SingularityMain(int argc, const char** argv);
+
 namespace ork {
 
 
@@ -162,6 +164,10 @@ int main(int& argc, char **argv)
 			orkprintf( "miniork_tool -filter list                                   : list registered asset filters (eg miniork_tool -filter sf2:pxv test.sf2 yo.pxv)\n" );
 			orkprintf( "miniork_tool -filter <filtername> source dest               : filter a single asset\n" );
 			orkprintf( "miniork_tool -filtertree <filtername> sourcebase destbase   : filter a tree of assets\n" );
+		}
+		else if(toklist.front() == "-singul")
+		{
+			iret = SingularityMain(argc,(const char**)argv);
 		}
 		else if(toklist.front() == std::string("-unittest"))
 		{

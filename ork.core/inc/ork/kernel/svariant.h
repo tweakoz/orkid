@@ -34,6 +34,7 @@
 #include <new>
 
 #include <ork/kernel/atomic.h>
+#include <ork/orkstd.h>
 
 namespace ork {
 

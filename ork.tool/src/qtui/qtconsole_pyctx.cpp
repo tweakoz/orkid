@@ -124,9 +124,6 @@ Py::Py()
 	Py_NoSiteFlag = 1;
 	Py_VerboseFlag = 2;
 	
-	//char* pypth = getenv ( "PYTHONPATH" );
-	//std::string npath = CreateFormattedString( "%s:/projects/tweakoz/lsynth_git/bin/lib/python2.7/", pypth ); 
-	//setenv( "PYTHONPATH", npath.c_str(), 1 );
 	PyOS_ReadlineFunctionPointer=orkpy_readline;
     orkpy_cf.cf_flags = 0;
 	Py_InitializeEx(0);

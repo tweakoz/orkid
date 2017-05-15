@@ -6,38 +6,46 @@
 //////////////////////////////////////////////////////////////// 
 
 
-#ifndef _AUDIOMATH_H
-#define _AUDIOMATH_H
+#pragma once 
+
+#include <ork/orktypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork{
 ///////////////////////////////////////////////////////////////////////////////
 
-class CAudioMath
-{
-	public: //
+namespace audiomath {
 
-	static float log_base( float base, float inp );
-	static float pow_base( float base, float inp );
-	static float linear_time_to_timecent( float time );
-	static float timecent_to_linear_time( float timecent );
-	static float decibel_to_linear_amp_ratio( float decibel );
-	static float linear_amp_ratio_to_decibel( float linear );
-	static float centibel_to_linear_amp_ratio( float centibel );
-	static float linear_amp_ratio_to_centibel( float linear );
-	static float linear_freq_ratio_to_cents( float freq_ratio );
-	static float cents_to_linear_freq_ratio( float cents );
+	float log_base( float base, float inp );
+	float pow_base( float base, float inp );
+	float linear_time_to_timecent( float time );
+	float timecent_to_linear_time( float timecent );
+	float decibel_to_linear_amp_ratio( float decibel );
+	float linear_amp_ratio_to_decibel( float linear );
+	float centibel_to_linear_amp_ratio( float centibel );
+	float linear_amp_ratio_to_centibel( float linear );
+	float linear_freq_ratio_to_cents( float freq_ratio );
+	float cents_to_linear_freq_ratio( float cents );
 
-	static S32 round_to_nearest( float in );
+	S32 round_to_nearest( float in );
 
-	static float midi_note_to_frequency( float midinote );
-	static float frequency_to_midi_note( float frequency );
+	float midi_note_to_frequency( float midinote );
+	float frequency_to_midi_note( float frequency );
 
-	static float clip_float( float in, float minn, float maxx );
-};
+	float clip_float( float in, float minn, float maxx );
+
+	float softsat(float x, float a);
+	float smoothstep(float edge0, float edge1, float x);
+
+	float slopeDBPerSample(float dbpsec,float samplerate);
+
+	float lerp( float from,
+	            float to,
+	            float index );
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif

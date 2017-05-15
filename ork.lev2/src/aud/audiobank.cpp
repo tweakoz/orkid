@@ -21,6 +21,8 @@
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::AudioBank, "lev2::audiobank" );
 
+using namespace ork::audiomath;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -330,7 +332,7 @@ AudioInstrumentPlayback * AudioDevice::PlaySound(	AudioProgram* Program,
 								int itunecents = izone.GetTuneCents();
 								int isemidelta = itunesemis+(inote-irootkey);
 								float fcents = float(isemidelta*100.0f)+float(itunecents);
-								float fratio = ork::CAudioMath::cents_to_linear_freq_ratio(fcents);
+								float fratio = cents_to_linear_freq_ratio(fcents);
 								float fnewrate = fbaserate*fratio;
 								ZonePB->SetPBSampleRate( fnewrate );
 								ZonePB->SetSample(psamp);

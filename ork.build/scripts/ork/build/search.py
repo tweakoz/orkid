@@ -3,7 +3,7 @@ import shutil, fnmatch, platform
 
 search_moduleset =  """ork.build ork.core ork.lev2 ork.ent
                        ork.tool ork.fcollada305 tweakout 
-                       ork.lua ork.luabind ork.data 
+                       ork.lua ork.luabind ork.math ork.data 
                        ork.mayax """
 
 search_extensions  = """.c .cpp .cc .mel
