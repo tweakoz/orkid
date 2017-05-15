@@ -18,7 +18,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::tool::SF2XABFilter,"SF2XABFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::SF2GABFilter,"SF2GABFilter");
 
 ////////////////////////////////////////////////////////////////////////////////
-	
+using namespace ork::audiomath;
+
 namespace ork { namespace tool
 {
 
@@ -240,27 +241,27 @@ void CSF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
 		////////////////////////////////////////////////////
 		case ESF2GEN_BASE_FILTER_CUTOFF: 
 		{	
-			float frqratio = ork::CAudioMath::cents_to_linear_freq_ratio(float(GenVal));
+			float frqratio = cents_to_linear_freq_ratio(float(GenVal));
 			float freq = kfrqbase*frqratio;
 			SetFilterCutoff(freq);
 			break;
 		}
 		case ESF2GEN_BASE_FILTER_Q: 
 		{	
-			//float flevel = ork::CAudioMath::centibel_to_linear_amp_ratio(float(GenVal));
+			//float flevel = centibel_to_linear_amp_ratio(float(GenVal));
 			SetFilterQ( float(GenVal) );
 			break;
 		}
 		////////////////////////////////////////////////////
 		case ESF2GEN_MODLFO_DELAY: 
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetModLfoDelay(ftime);
 			break;
 		}
 		case ESF2GEN_MODLFO_FREQ: 
 		{	
-			float frqratio = ork::CAudioMath::cents_to_linear_freq_ratio(float(GenVal));
+			float frqratio = cents_to_linear_freq_ratio(float(GenVal));
 			float freq = kfrqbase*frqratio;
 			SetModLfoFrequency(freq);
 			break;
@@ -286,13 +287,13 @@ void CSF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
 		////////////////////////////////////////////////////
 		case ESF2GEN_VIBLFO_DELAY: 
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetVibLfoDelay(ftime);
 			break;
 		}
 		case ESF2GEN_VIBLFO_FREQ: 
 		{	
-			float frqratio = ork::CAudioMath::cents_to_linear_freq_ratio(float(GenVal));
+			float frqratio = cents_to_linear_freq_ratio(float(GenVal));
 			float freq = kfrqbase*frqratio;
 			SetVibLfoFrequency(freq);
 			break;
@@ -306,37 +307,37 @@ void CSF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
 		////////////////////////////////////////////////////
 		case ESF2GEN_AMPENV_DELAY: // (timecents)
 		{
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvDelay(ftime);
 			break;
 		}
 		case ESF2GEN_AMPENV_ATTACK: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvAttack(ftime);
 			break;
 		}
 		case ESF2GEN_AMPENV_HOLD: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvHold(ftime);
 			break;
 		}
 		case ESF2GEN_AMPENV_DECAY: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvDecay(ftime);
 			break;
 		}
 		case ESF2GEN_AMPENV_SUSTAIN: // (centibels)
 		{
-			float flevel = ork::CAudioMath::centibel_to_linear_amp_ratio(-float(GenVal));
+			float flevel = centibel_to_linear_amp_ratio(-float(GenVal));
 			SetAmpEnvSustain(flevel);
 			break;
 		}
 		case ESF2GEN_AMPENV_RELEASE: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvRelease(ftime);
 			break;
 		}
@@ -355,25 +356,25 @@ void CSF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
 		////////////////////////////////////////////////////
 		case ESF2GEN_MODENV_DELAY: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvDelay(ftime);
 			break;
 		}
 		case ESF2GEN_MODENV_ATTACK: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvAttack(ftime);
 			break;
 		}
 		case ESF2GEN_MODENV_HOLD: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvHold(ftime);
 			break;
 		}
 		case ESF2GEN_MODENV_DECAY: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvDecay(ftime);
 			break;
 		}
@@ -385,7 +386,7 @@ void CSF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
 		}
 		case ESF2GEN_MODENV_RELEASE: // (timecents)
 		{	
-			float ftime = ork::CAudioMath::timecent_to_linear_time(GenVal);
+			float ftime = timecent_to_linear_time(GenVal);
 			SetAmpEnvRelease(ftime);
 			break;
 		}

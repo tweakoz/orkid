@@ -495,7 +495,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 					float favgareaperpoly = fsurface_area/fnumpolys;
 					int inumtexels = baking_group->GetResolution()*baking_group->GetResolution();
 					float ftexperpoly = float(inumtexels)/fnumpolys;
-					float flog = CAudioMath::log_base( 2.0f, ftexperpoly );
+					float flog = log_base( 2.0f, ftexperpoly );
 					orkprintf( "PreDice<%s> TotalArea<%f> NumPolys<%f> AvgAreaPerPoly<%f> ftexperpoly<%f> log2<%f>\n",
 								bgroupname.c_str(),
 								fsurface_area,

@@ -41,6 +41,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AudioHwSinkModule, "lev2::aud::AudioHwSi
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AudioKRateFilterModule, "lev2::aud::AudioKRateFilterModule");
 
+using namespace ork::audiomath;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -386,7 +388,7 @@ void AudioModularZonePlayback::Update( float fDT )
 						+ int(mfPitchOffset*100.0f);
 	int isemidelta = itunesemis+(mibasekey-irootkey); //-itunesemis; //+(mibasekey-irootkey);
 	float fcents = float(isemidelta*100.0f)+float(itunecents);
-	float fratio = ork::CAudioMath::cents_to_linear_freq_ratio(fcents);
+	float fratio = cents_to_linear_freq_ratio(fcents);
 	float fnewrate = fbaserate*fratio;
 	SetPBSampleRate( fnewrate );
 
@@ -401,8 +403,8 @@ void AudioModularZonePlayback::Update( float fDT )
 	float atten_velocity = float(127-ivel)*kvelsc;
 
 	float atten_centibel	= pizone->GetAttenCentibels();
-	float atten_linear		= CAudioMath::decibel_to_linear_amp_ratio( -atten_centibel*0.1f );
-	float atten_linear_vel	= CAudioMath::decibel_to_linear_amp_ratio( -atten_velocity );
+	float atten_linear		= decibel_to_linear_amp_ratio( -atten_centibel*0.1f );
+	float atten_linear_vel	= decibel_to_linear_amp_ratio( -atten_velocity );
 	float atten_modlin		= mfAmplitude;
 	izc.mfLinearAmplitude = atten_linear*atten_modlin*atten_linear_vel;
 
@@ -603,7 +605,7 @@ AudioInstrumentPlayback * AudioDevice::PlaySound(	AudioProgram* Program,
 								int itunecents = izone.GetTuneCents();
 								int isemidelta = itunesemis+(inote-irootkey);
 								float fcents = float(isemidelta*100.0f)+float(itunecents);
-								float fratio = ork::CAudioMath::cents_to_linear_freq_ratio(fcents);
+								float fratio = cents_to_linear_freq_ratio(fcents);
 								float fnewrate = fbaserate*fratio;
 								ZonePB->SetPBSampleRate( fnewrate );
 								ZonePB->SetSample(psamp);

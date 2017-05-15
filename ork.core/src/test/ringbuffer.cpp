@@ -123,7 +123,7 @@ TEST(OrkMpMcRingBuf)
 	printf( "ORK MPMC CONQ TEST\n");
 	printf("//////////////////////////////////////\n" );
 
-	//auto the_yo = new yo<ork::mpmc_bounded_queue<svar1024_t,16<<10>>;
+	//auto the_yo = new yo<ork::MpMcBoundedQueue<svar1024_t,16<<10>>;
 	auto the_yo = new yo<ork::MpMcRingBuf<svar4096_t,16<<10>>;
 	the_yo->RunTest();
 	delete the_yo;

@@ -15,6 +15,8 @@
 #include <ork/lev2/gfx/util/grid.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 
+using namespace ork::audiomath;
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,8 +107,8 @@ void Grid3d::Calc( const CCameraData& camdat )
 	float fHEIGHT = fBOTTOM-fTOP;
 	float fASPECT = fHEIGHT/fWIDTH;
 
-	float fLOG = float(CAudioMath::log_base( mVisGridDiv, DistToPlane*mVisGridBase ));
-	float fiLOG = float(CAudioMath::pow_base( mVisGridDiv, float(CFloat::Floor(fLOG)) ));
+	float fLOG = float(log_base( mVisGridDiv, DistToPlane*mVisGridBase ));
+	float fiLOG = float(pow_base( mVisGridDiv, float(CFloat::Floor(fLOG)) ));
 	mVisGridSize = fiLOG/mVisGridDiv;
 
 	if( mVisGridSize<10.0f ) mVisGridSize=10.0f;
@@ -303,8 +305,8 @@ void Grid2d::ReCalc( int iw, int ih )
 	float fWIDTH = fRIGHT-fLEFT;
 	float fHEIGHT = fBOTTOM-fTOP;
 
-	float fLOG = CAudioMath::log_base( mVisGridDiv, fnext*mVisGridBase );
-	float fiLOG = CAudioMath::pow_base( mVisGridDiv, CFloat::Floor(fLOG) );
+	float fLOG = log_base( mVisGridDiv, fnext*mVisGridBase );
+	float fiLOG = pow_base( mVisGridDiv, CFloat::Floor(fLOG) );
 	mVisGridSize = fiLOG/mVisGridDiv;
 
 	if( mVisGridSize<10.0f ) mVisGridSize=10.0f;

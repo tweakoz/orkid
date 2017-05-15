@@ -38,6 +38,8 @@
 
 bool gb_audio_filter = false;
 
+using namespace ork::audiomath;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::AudioReverbProperties, "lev2::AudioReverbProperties" );
@@ -350,7 +352,7 @@ void AudioSf2ZonePlayback::Update( float fdt )
 	int itunecents = pizone->GetTuneCents() + int(fsinVIB*vib2pitch_cents) + int(fsinMOD*mod2pitch_cents);
 	int isemidelta = (mibasekey-irootkey)+itunesemis; //-itunesemis; //+(mibasekey-irootkey);
 	float fcents = float(isemidelta*100.0f)+float(itunecents);
-	float fratio = ork::CAudioMath::cents_to_linear_freq_ratio(fcents);
+	float fratio = cents_to_linear_freq_ratio(fcents);
 	float fnewrate = fbaserate*fratio;
 	SetPBSampleRate( fnewrate );
 
@@ -360,7 +362,7 @@ void AudioSf2ZonePlayback::Update( float fdt )
 
 	float fcbase = pizone->GetFilterCutoff();
 	float fcmod_cents = pizone->GetModLfoToCutoff()*fsinMOD;
-	float fc = fcbase * ork::CAudioMath::cents_to_linear_freq_ratio(fcmod_cents);
+	float fc = fcbase * cents_to_linear_freq_ratio(fcmod_cents);
 	float fq = (pizone->GetFilterQ()/960.0f);
 
 	float fsq = ork::powf( fq, 2.0f );
@@ -384,9 +386,9 @@ void AudioSf2ZonePlayback::Update( float fdt )
 	float atten_velocity = float(127-ivel)*kvelsc;
 
 	float atten_centibel	= pizone->GetAttenCentibels();
-	float atten_linear		= CAudioMath::decibel_to_linear_amp_ratio( -atten_centibel*0.1f );
-	float atten_modlin		= CAudioMath::decibel_to_linear_amp_ratio( fsinMOD * pizone->GetModLfoToAmp()*0.1f );
-	float atten_linear_vel	= CAudioMath::decibel_to_linear_amp_ratio( -atten_velocity );
+	float atten_linear		= decibel_to_linear_amp_ratio( -atten_centibel*0.1f );
+	float atten_modlin		= decibel_to_linear_amp_ratio( fsinMOD * pizone->GetModLfoToAmp()*0.1f );
+	float atten_linear_vel	= decibel_to_linear_amp_ratio( -atten_velocity );
 	izc.mfLinearAmplitude = atten_linear*atten_modlin*atten_linear_vel;
 
 	izc.mfPan = pizone->GetPan()*0.005f; // limit pan spread to 50% for better spatialization while still allowing for stereo offset
