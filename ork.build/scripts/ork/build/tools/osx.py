@@ -81,7 +81,6 @@ def DefaultBuildEnv( env, prj ):
     env.Replace( CPPDEFINES = string.split(DEFS) )
     env.Replace( CCFLAGS = string.split(CCFLG) )
     env.Replace( CXXFLAGS = string.split(CXXFLG) )
-#   env.Replace( CPPPATH  = [ ' /opt/local/include' ] )
     env.Replace( LINKFLAGS=string.split(LINK) )
     env.Replace( LIBS=string.split(LIBS) )
     env.Replace( LIBPATH=string.split(LIBPATH) )

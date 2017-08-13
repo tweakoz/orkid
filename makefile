@@ -36,6 +36,8 @@ ext:
 	make ilm
 	make oiio
 
+osxdeps:
+	brew install pybind11 qt5 libdrawtext audiofile  glfw3 rapidjson homebrew/science/openimageio 
 toz:
 	make pristine
 	tozkit_deps_build.py all
