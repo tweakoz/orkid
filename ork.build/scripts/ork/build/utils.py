@@ -51,9 +51,12 @@ def IsDarwin():
 ###########################################
 
 def HaveMaya():
-  mdir = path(os.environ["MAYA_DIR"])
-  return mdir.exists()
-  
+  if "MAYA_DIR" in os.environ:
+    mdir = path(os.environ["MAYA_DIR"])
+    return mdir.exists()
+  else:
+    return False
+    
 ###########################################
 
 def chdir_root_rel(s):

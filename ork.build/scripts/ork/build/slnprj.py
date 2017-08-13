@@ -37,7 +37,7 @@ __all__ = [
   ]
   
 optprj = ""
-optprj = "core lev2 bullet273 ent tool tuio tout lua luabind"
+optprj = "core lev2 bullet273 ent tool tuio tout lua"
 optset = set()
 for item in string.split(optprj):
   optset.add("ork.%s"%item)

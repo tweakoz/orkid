@@ -65,7 +65,7 @@ class lev2:
     ########################
     ## Common libs
     ########################
-    prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util glfw3 portaudio drawtext" )
+    prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util glfw.3 portaudio drawtext" )
     
     if False:
       prj_lib.AddLibs( " 3delight rihelper " )

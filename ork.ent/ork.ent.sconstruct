@@ -35,7 +35,7 @@ class ent:
 
     XFL  = "bullet-2.73-math bullet-2.73-collision "
     XFL += "bullet-2.73-dynamics bullet-2.73-extras "
-    XFL += "core lev2 lua luabind "        
+    XFL += "core lev2 lua  "        
 
     LIBS = sln.xflibnams("ork.%s ",XFL)
 
@@ -46,10 +46,8 @@ class ent:
     prj.AddIncludePaths( "../ork.core/inc/" )
     prj.AddIncludePaths( "../ork.lev2/inc/" )
     prj.AddIncludePaths( "../ork.lua/inc/" )
-    prj.AddIncludePaths( "../ork.luabind/inc/" )
     prj.AddIncludePaths( "inc" )
     prj.AddIncludePaths( "%s/include/bullet"%sln.stage_dir )
-    prj.AddIncludePaths( "/usr/include/qt4" )
     prj.AddFolders( SRC_FOLDERS, "*.cpp" )
     prj.AddLibPaths( "%s/lib"%sln.stage_dir )
     prj.AddLibsWithSuffix( LIBS )
