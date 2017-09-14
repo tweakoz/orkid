@@ -10,9 +10,9 @@ is_get = (TARGET=="get")
 is_boost = (TARGET=="boost")
 
 ###########################################
-boost_ver = "1.58.0"
+boost_ver = "1.65.1"
 boost_uver = string.replace(boost_ver,".","_")
-boost_md5 = "5a5d5614d9a07672e1ab2a250b5defc5"
+boost_md5 = "ee64fd29a3fe42232c6ac3c419e523cf"
 boost_fname = "boost_%s.tar.gz"%boost_uver
 ###########################################
 
@@ -33,7 +33,7 @@ if is_boost:
 	obu.untar("%s/%s"%(obu.download_dir, boost_fname))
 	os.chdir( "%s/boost_%s" % (boost_build_dir,boost_uver)) 
 	os.system("./bootstrap.sh --prefix=%s" % obu.stage_dir)
-	os.system("./b2 -j %d install" % obu.num_cores )
+	os.system('./b2 -j %d toolset=clang cxxflags="-stdlib=libc++" linkflags="-stdlib=libc++" install' % obu.num_cores )
 	print "Boost build complete.."
 
 ###########################################

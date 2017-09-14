@@ -2,6 +2,7 @@ import os, glob, string
 import ork.build.utils as obu
 import ork.build.common as cmn
 import ork.build.slnprj as sln
+from ork.build.pathtools import path
 
 ###########################################
 
@@ -12,45 +13,55 @@ DL_DIR = obu.download_dir
 STAGE_DIR = obu.stage_dir
 ###########################################
 
-ilmbase = "ilmbase-1.0.2"
-ilmbasemd5 = "26c133ee8ca48e1196fbfb3ffe292ab4"
+def set_env(k,v):
+    os.environ[k] = v
 
-exrver,exrverU = "1.7.0","1_7_0"
-exrMD5 = "0081081d0354c633cefeab818180f089"
+###########################################
 
+githash = "e98d25b30138634be20d925d7fe6d109311b2a06"
 
 if is_get:
-	ctx = obu.context( obu.download_dir )
-	ctx.wget( "https://github.com/openexr/openexr/tarball/OPENEXR_%s"%exrverU, "openexr-%s.tar.gz"%exrver,exrMD5 )
-	ctx.wget( "http://download.savannah.nongnu.org/releases/openexr/%s.tar.gz"%ilmbase, "%s.tar.gz"%ilmbase,ilmbasemd5 )
+    ctx = obu.context( obu.download_dir )
+    ctx.gitget( "https://github.com/openexr/openexr", "openexr", githash )
 
 ###########################################
 
 if is_ilm:
-	print "Building ILM!"
-	ilm_build_dir = "%s/ilm" % obu.extbuild_dir
-	os.system( "rm -rf %s/include/OpenEXR" % STAGE_DIR )
-	os.system( "rm -rf %s/bin/exr*" % STAGE_DIR )
-	os.system( "rm -rf %s" % ilm_build_dir )
-	os.system( "mkdir -p %s" % ilm_build_dir )
-	os.chdir(ilm_build_dir)
-	obu.untar("%s/%s.tar.gz"%(DL_DIR, ilmbase),False)
-	obu.untar("%s/openexr-%s.tar.gz"%(DL_DIR, exrver),True)
+    print "Building ILM!"
+    EXRBASE = path(obu.extbuild_dir)/"openexr"
+    os.system( "rm -rf %s/include/OpenEXR" % STAGE_DIR )
+    os.system( "rm -rf %s/bin/exr*" % STAGE_DIR )
 
-	if 1:
-		os.chdir("%s/%s"%(ilm_build_dir,ilmbase))
-		os.system("./bootstrap")
-		os.system("./configure --prefix=%s"%STAGE_DIR)
-		os.system("make -j %s install" % obu.num_cores )
-		os.system("ln -s %s/include/OpenEXR/ImathExc.h %s/include/OpenEXR/ImathFloatExc.h"%(STAGE_DIR,STAGE_DIR))
+    EXRBASE.rmtree()
+    obu.myexec( "cp -r %s/openexr %s" % (obu.download_dir, EXRBASE) )
 
-	if 1:
-		os.chdir("%s/OpenEXR"%ilm_build_dir)
-		os.system("./bootstrap")
-		os.system("./configure --prefix=%s"%STAGE_DIR)
-		os.system("make -j %s install" % obu.num_cores )
+    if True: # IlmBase
+        ILMBASE = EXRBASE/"IlmBase"
+        ILMBUILDDIR = ILMBASE/".stage"
 
-	print "ILM build complete.."
+        args =  " -DCMAKE_INSTALL_PREFIX="+STAGE_DIR
+        args += " -DCMAKE_C_COMPILER=clang"
+        args += " -DCMAKE_CXX_COMPILER=clang++"
+
+        ILMBUILDDIR.mkdir(clean=True)
+        ILMBUILDDIR.chdir()
+        os.system("cmake %s ../" % args )
+        os.system("make -j %d install" % obu.num_cores)
+
+    if True: # OpenExr
+        OEXBASE = EXRBASE/"OpenExr"
+        OEXBUILDDIR = ILMBASE/".stage"
+
+        args = "-DCMAKE_INSTALL_PREFIX="+STAGE_DIR
+        set_env("CMAKE_C_COMPILER","clang")
+        set_env("CMAKE_CXX_COMPILER","clang++")
+
+        OEXBUILDDIR.mkdir(clean=True)
+        OEXBUILDDIR.chdir()
+        os.system("cmake %s ../" % args )
+        os.system("make -j %d install" % obu.num_cores)
+
+    print "ILM build complete.."
 
 ###########################################
 
