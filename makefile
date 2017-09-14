@@ -32,6 +32,7 @@ oiio:
 	scons $(SCONSFILE) oiio $(SITEDIR)
 
 ext:
+	make pristine
 	make boost
 	make ilm
 	make oiio
@@ -53,7 +54,7 @@ docs: .
 
 pristine:
 	rm -rf stage/ext_build
-	tozkit_deps_build.py clean
+	#tozkit_deps_build.py clean
 
 clean:
 	scons -c $(SCONSFILE) $(SITEDIR)

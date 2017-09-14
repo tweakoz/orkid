@@ -1,5 +1,6 @@
 import os, sys
 import fnmatch
+import shutil
 
 ###############################################################################
 
@@ -90,6 +91,21 @@ class path:
 
   def rglob(self):
     return recursive_glob(str(self))
+
+  def chdir(self):
+    return os.chdir(str(self))
+
+  def rmdir(self):
+    return os.chdir(str(self))
+
+  def rmtree(self):
+    if self.exists():
+        shutil.rmtree(str(self))
+
+  def mkdir(self,clean=False):
+    if clean and self.exists():
+        self.rmtree()
+    os.mkdir(str(self))
 
   def __str__(self):
     #print ( "PATHSTR<%s>\n" % self.string_rep )
