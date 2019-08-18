@@ -26,37 +26,32 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioSystem, "AudioSystem");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-void AudioSystemData::Describe()
-{
-//	ork::ent::RegisterFamily<AudioSystemData>(ork::AddPooledLiteral("audio"));
-
-	ork::reflect::RegisterProperty("Reverb", &AudioSystemData::ReverbAccessor);
-
+void AudioSystemData::Describe(){
+	using namespace ork::reflect;
+	RegisterProperty("Reverb", &AudioSystemData::ReverbAccessor);
 	/////////////////////////////////////////////////////////////////
 	// distance attenuation parameters
 	/////////////////////////////////////////////////////////////////
+	RegisterProperty("DistanceScale", &AudioSystemData::mfDistScale);
+	RegisterProperty("DistanceMin", &AudioSystemData::mfDistMin);
+	RegisterProperty("DistanceMax", &AudioSystemData::mfDistMax);
+	RegisterProperty("DistanceAttenPower", &AudioSystemData::mfDistAttenPower);
 
-	ork::reflect::RegisterProperty("DistanceScale", &AudioSystemData::mfDistScale);
-	ork::reflect::RegisterProperty("DistanceMin", &AudioSystemData::mfDistMin);
-	ork::reflect::RegisterProperty("DistanceMax", &AudioSystemData::mfDistMax);
-	ork::reflect::RegisterProperty("DistanceAttenPower", &AudioSystemData::mfDistAttenPower);
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.min", "0.001" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.max", "100.0" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceScale", "editor.range.log", "true" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.min", "0.001" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.max", "100.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.log", "true" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.min", "0.1" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.max", "10000.0" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceMin", "editor.range.log", "true" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMin", "editor.range.min", "0.1" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMin", "editor.range.max", "10000.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMin", "editor.range.log", "true" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.min", "0.1" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.max", "10000.0" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceMax", "editor.range.log", "true" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMax", "editor.range.min", "0.1" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMax", "editor.range.max", "10000.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMax", "editor.range.log", "true" );
-
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceAttenPower", "editor.range.min", "0.5" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceAttenPower", "editor.range.max", "2.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceAttenPower", "editor.range.log", "true" );
-
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.min", "0.5" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.max", "2.0" );
+	AnnotatePropertyForEditor<AudioSystemData>("DistanceAttenPower", "editor.range.log", "true" );
 }
 ///////////////////////////////////////////////////////////////////////////////
 const float g_allsoundmod = 0.8f;
@@ -64,34 +59,28 @@ AudioSystemData::AudioSystemData()
 	: mfDistMin(0.1f) // m
 	, mfDistMax(10.0f) // m
 	, mfDistScale( 0.003f )
-	, mfDistAttenPower(0.0f)
-{
+	, mfDistAttenPower(0.0f){
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::System *AudioSystemData::createSystem(ork::ent::SceneInst *pinst) const
-{
+ork::ent::System *AudioSystemData::createSystem(ork::ent::SceneInst *pinst) const{
 	return new AudioSystem( *this, pinst );
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioSystem::Describe()
-{
-}
+void AudioSystem::Describe(){}
 ///////////////////////////////////////////////////////////////////////////////
 AudioSystem::AudioSystem( const AudioSystemData& ascd, ork::ent::SceneInst* psi )
 	: System( & ascd, psi )
-	, mAmcd( ascd )
-{
+	, mAmcd( ascd ){
 	ork::lev2::AudioDevice::GetDevice()->SetReverbProperties( ascd.GetReverbProperties() );
 
 
 }
-AudioSystem::~AudioSystem()
-{
+///////////////////////////////////////////////////////////////////////////////
+AudioSystem::~AudioSystem(){
 	ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioSystem::DoUpdate(ork::ent::SceneInst* inst)
-{
+void AudioSystem::DoUpdate(ork::ent::SceneInst* inst){
 	auto pdev = ork::lev2::AudioDevice::GetDevice();
 
 	auto camdat1 = inst->GetCameraData(ork::AddPooledLiteral("game1"));
@@ -126,10 +115,9 @@ void AudioSystem::DoUpdate(ork::ent::SceneInst* inst)
 
 	pdev->Update( inst->GetDeltaTime() );
 
-	//////////////////////////////////////////////////////////////////////////////////
 }
-void AudioSystem::DoStop(ork::ent::SceneInst *psi)
-{
+////////////////////////////////////////////////////////////////////////////////
+void AudioSystem::DoStop(ork::ent::SceneInst *psi){
 	ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
 }
 ///////////////////////////////////////////////////////////////////////////////
