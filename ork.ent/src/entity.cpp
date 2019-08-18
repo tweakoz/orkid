@@ -624,7 +624,7 @@ void Init()
 	ork::ent::ScriptComponentData::GetClassStatic();
 	ork::ent::ScriptComponentInst::GetClassStatic();
 
-	ork::ent::CompositingManagerComponentData::GetClassStatic();
+	ork::ent::CompositingSystemData::GetClassStatic();
 	ork::ent::CompositingManagerComponentInst::GetClassStatic();
 	ork::ent::CompositingComponentData::GetClassStatic();
 	ork::ent::CompositingComponentInst::GetClassStatic();

@@ -20,47 +20,47 @@
 #include <ork/reflect/enum_serializer.h>
 #include <ork/application/application.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioManagerComponentData, "AudioManagerComponentData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioSystemData, "AudioSystemData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioManagerComponentInst, "AudioManagerComponentInst");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-void AudioManagerComponentData::Describe()
+void AudioSystemData::Describe()
 {
-//	ork::ent::RegisterFamily<AudioManagerComponentData>(ork::AddPooledLiteral("audio"));
+//	ork::ent::RegisterFamily<AudioSystemData>(ork::AddPooledLiteral("audio"));
 
-	ork::reflect::RegisterProperty("Reverb", &AudioManagerComponentData::ReverbAccessor);
+	ork::reflect::RegisterProperty("Reverb", &AudioSystemData::ReverbAccessor);
 
 	/////////////////////////////////////////////////////////////////
 	// distance attenuation parameters
 	/////////////////////////////////////////////////////////////////
 
-	ork::reflect::RegisterProperty("DistanceScale", &AudioManagerComponentData::mfDistScale);
-	ork::reflect::RegisterProperty("DistanceMin", &AudioManagerComponentData::mfDistMin);
-	ork::reflect::RegisterProperty("DistanceMax", &AudioManagerComponentData::mfDistMax);
-	ork::reflect::RegisterProperty("DistanceAttenPower", &AudioManagerComponentData::mfDistAttenPower);
+	ork::reflect::RegisterProperty("DistanceScale", &AudioSystemData::mfDistScale);
+	ork::reflect::RegisterProperty("DistanceMin", &AudioSystemData::mfDistMin);
+	ork::reflect::RegisterProperty("DistanceMax", &AudioSystemData::mfDistMax);
+	ork::reflect::RegisterProperty("DistanceAttenPower", &AudioSystemData::mfDistAttenPower);
 	
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceScale", "editor.range.min", "0.001" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceScale", "editor.range.max", "100.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceScale", "editor.range.log", "true" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.min", "0.001" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.max", "100.0" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.log", "true" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceMin", "editor.range.min", "0.1" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceMin", "editor.range.max", "10000.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceMin", "editor.range.log", "true" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMin", "editor.range.min", "0.1" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMin", "editor.range.max", "10000.0" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMin", "editor.range.log", "true" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceMax", "editor.range.min", "0.1" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceMax", "editor.range.max", "10000.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceMax", "editor.range.log", "true" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMax", "editor.range.min", "0.1" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMax", "editor.range.max", "10000.0" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceMax", "editor.range.log", "true" );
 
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceAttenPower", "editor.range.min", "0.5" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceAttenPower", "editor.range.max", "2.0" );
-	ork::reflect::AnnotatePropertyForEditor< AudioManagerComponentData >("DistanceAttenPower", "editor.range.log", "true" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceAttenPower", "editor.range.min", "0.5" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceAttenPower", "editor.range.max", "2.0" );
+	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceAttenPower", "editor.range.log", "true" );
 
 }
 ///////////////////////////////////////////////////////////////////////////////
 const float g_allsoundmod = 0.8f;
-AudioManagerComponentData::AudioManagerComponentData()
+AudioSystemData::AudioSystemData()
 	: mfDistMin(0.1f) // m
 	, mfDistMax(10.0f) // m
 	, mfDistScale( 0.003f )
@@ -68,7 +68,7 @@ AudioManagerComponentData::AudioManagerComponentData()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::System *AudioManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System *AudioSystemData::CreateComponentInst(ork::ent::SceneInst *pinst) const
 {
 	return new AudioManagerComponentInst( *this, pinst );
 }
@@ -77,7 +77,7 @@ void AudioManagerComponentInst::Describe()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-AudioManagerComponentInst::AudioManagerComponentInst( const AudioManagerComponentData& ascd, ork::ent::SceneInst* psi )
+AudioManagerComponentInst::AudioManagerComponentInst( const AudioSystemData& ascd, ork::ent::SceneInst* psi )
 	: System( & ascd, psi )
 	, mAmcd( ascd )
 {

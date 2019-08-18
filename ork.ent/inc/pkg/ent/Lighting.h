@@ -17,13 +17,13 @@
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightingManagerComponentData : public ork::ent::SystemData
+class LightingSystemData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(LightingManagerComponentData, ork::ent::SystemData);
+	RttiDeclareConcrete(LightingSystemData, ork::ent::SystemData);
 
 public:
 	///////////////////////////////////////////////////////
-	LightingManagerComponentData();
+	LightingSystemData();
 	///////////////////////////////////////////////////////
 
 	const ork::lev2::LightManagerData& Lmd() const { return mLmd; }
@@ -45,7 +45,7 @@ class LightingManagerComponentInst : public ork::ent::System
 
 public:
 
-	LightingManagerComponentInst( const LightingManagerComponentData &data, ork::ent::SceneInst *pinst );
+	LightingManagerComponentInst( const LightingSystemData &data, ork::ent::SceneInst *pinst );
 
 	ork::lev2::LightManager& GetLightManager() { return mLightManager; }
 

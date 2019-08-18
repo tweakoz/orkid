@@ -64,20 +64,20 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingManagerComponentData::Describe()
+void CompositingSystemData::Describe()
 {
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingManagerComponentData::CompositingManagerComponentData()
+CompositingSystemData::CompositingSystemData()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* CompositingManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System* CompositingSystemData::CreateComponentInst(ork::ent::SceneInst *pinst) const
 {
 	return new CompositingManagerComponentInst( *this, pinst );
 }
@@ -91,7 +91,7 @@ void CompositingManagerComponentInst::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingManagerComponentInst::CompositingManagerComponentInst( const CompositingManagerComponentData& data, ork::ent::SceneInst *pinst )
+CompositingManagerComponentInst::CompositingManagerComponentInst( const CompositingSystemData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::System( &data, pinst )
 	, mCMCD(data)
 {
@@ -354,7 +354,7 @@ ork::ent::ComponentInst* CompositingComponentData::CreateComponent(ork::ent::Ent
 
 void CompositingComponentData::DoRegisterWithScene( ork::ent::SceneComposer& sc )
 {
-	sc.Register<ork::ent::CompositingManagerComponentData>();
+	sc.Register<ork::ent::CompositingSystemData>();
 	//sc.Register<ork::ent::FullscreenEffectComponentData>();
 }
 
@@ -450,7 +450,7 @@ void CompositingComponentInst::DoUpdate(SceneInst *inst)
 const CompositingContext& CompositingComponentInst::GetCCtx() const
 {
 	assert(mpCMCI!=nullptr);
-	const CompositingManagerComponentData& CMCD = mpCMCI->GetCMCD();
+	const CompositingSystemData& CMCD = mpCMCI->GetCMCD();
 	return CMCD.GetCompositingContext();
 }
 
@@ -458,7 +458,7 @@ const CompositingContext& CompositingComponentInst::GetCCtx() const
 
 CompositingContext& CompositingComponentInst::GetCCtx()
 {
-	const CompositingManagerComponentData& CMCD = mpCMCI->GetCMCD();
+	const CompositingSystemData& CMCD = mpCMCI->GetCMCD();
 	return CMCD.GetCompositingContext();
 }
 
