@@ -66,6 +66,8 @@ class orktool:
     for item in cmn.recursive_glob("inc","*.h"):
         prj.ExplicitMocs += BasicEnv.ExplicitMoc5("mocs/%s.moc.cpp"%item, item )
 
+    prj.AddLibs( "python2.7" )
+
     #########################
     ## OSX libs
     #########################
@@ -75,14 +77,16 @@ class orktool:
       prj.AddFrameworks("Carbon Foundation ApplicationServices" )
       prj.AddFrameworks("AppKit QuartzComposer")
       prj.AddFrameworks("OpenGL QtCore QtGui QtWidgets" )
+      prj.AddLibs( "boost_python27-mt" )
     #########################
     ## IX libs
     #########################
     elif prj.IsIx:
-      LIBS = "GL QtCore QtGui xcb OpenImageIO OpenImageIO_Util"
+      LIBS = "GL xcb OpenImageIO OpenImageIO_Util "
       #LIBS += " rihelper 3delight "
       #prj.AddLibPaths( "%s/3dl/lib"%sln.stage_dir )
       prj.AddLibs( LIBS )
+      prj.AddLibs( "boost_python27" )
     #########################
     ## common libs
     #########################
@@ -92,7 +96,6 @@ class orktool:
     prj.AddLibsWithSuffix( "libtweakout" )
     prj.AddLibsWithSuffix( "ork.unittestpp" )
     #prj.AddLibs( "nvtt nvimage nvcore nvmath nvthread bc7 squish bc6h" )
-    prj.AddLibs( "python2.7 boost_python27-mt" )
     #########################
     prj.mocfiles["inc/orktool/ged/ged.h"]='obj/ged/moc_ged_textedit.cpp'
     prj.mocfiles["inc/orktool/qtui/qtapp.h"]='obj/qtui/moc_qtapp.cpp'

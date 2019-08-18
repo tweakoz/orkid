@@ -7,11 +7,8 @@
 
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
-#if defined(_DARWIN)
-#include <dispatch/dispatch.h>
-#include <unistd.h>
 extern FILE* g_orig_stdout;
-#endif
+#include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <iostream>
@@ -27,6 +24,7 @@ extern FILE* g_orig_stdout;
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/qtui/qtui.hpp>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/kernel/opq.h>
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <string>
@@ -41,18 +39,6 @@ static int fd_tty_inp_slave = -1;
 ///////////////////////////////////////////////////////////////////////////////
 static void getPythonOutput();
 ///////////////////////////////////////////////////////////////////////////////
-static dispatch_queue_t CONQ()
-{   
-    static dispatch_queue_t gQ=0;
-    static dispatch_once_t ginit_once;
-    auto once_blk = ^ void (void)
-    {
-        gQ = dispatch_get_main_queue(); //_create( "com.tweakoz.pyq", NULL );
-    };
-    dispatch_once(&ginit_once, once_blk );
-    return gQ;
-}
-///////////////////////////////////////////////////////////////////////////////
 vp_cons::vp_cons( const std::string & name )
     : ui::Viewport( name, 0, 0, 0, 0, CColor3::Red(), 0.0f )
     , mCTQT(nullptr)
@@ -65,9 +51,8 @@ static vp_cons* gPCON = nullptr;
 void vp_cons::Register()
 {
     gPCON = this;
-    
-    auto handler_blk = ^ void (void)
-    {
+
+    MainThreadOpQ().push([&]() {
         const char* inpname = slave_inp_name;
         const char* outname = slave_out_name;
         const char* errname = slave_err_name;
@@ -83,9 +68,7 @@ void vp_cons::Register()
         usleep(1<<18);
 
         getPythonOutput();
-    };
-    dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/2 );
-    dispatch_after( at, CONQ(), handler_blk );
+    });
 }
 ///////////////////////////////////////////////////////////////////////////////
 ConsoleLine* AllocLine(vp_cons::LinePool& pool,std::list<ConsoleLine*>& list)
@@ -112,7 +95,7 @@ void vp_cons::AppendOutput( const std::string & data )
     std::vector<std::string> strsa;
     boost::split(strsa, data, boost::is_any_of("\n"));
 
-    lev2::GfxTarget* pTARG = mCTQT->GetTarget();    
+    lev2::GfxTarget* pTARG = mCTQT->GetTarget();
     int IW = pTARG->GetW();
     int wrap = IW/10;
 
@@ -125,7 +108,7 @@ void vp_cons::AppendOutput( const std::string & data )
             //printf("line<%s>\n", line.c_str());
             //printf("subs<%s>\n", subs.c_str());
             strsb.push_back(subs);
-            line = line.substr(wrap,line.length());   
+            line = line.substr(wrap,line.length());
         }
         if( line.length() )
             strsb.push_back(line);
@@ -134,7 +117,7 @@ void vp_cons::AppendOutput( const std::string & data )
     /////////////////////////////////
 
     int inumstrs = strsb.size();
-        
+
     for( int i=0; i<inumstrs; i++ )
     {
         std::string line = strsb[i];
@@ -185,14 +168,9 @@ static void getPythonOutput()
 
     /////////////////////
 
-    auto repeat_blk = ^ void (void)
-    {
+    MainThreadOpQ().push([&]() {
         getPythonOutput();
-    };
-    
-    
-    dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/10 );
-    dispatch_after( at, CONQ(), repeat_blk );
+    });
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -201,7 +179,7 @@ void ork::tool::vp_cons::BindCTQT(ork::lev2::CTQT* pctqt)
 	mCTQT = pctqt;
 	mBaseMaterial.Init( mCTQT->GetTarget() );
 	Register();
-	
+
 	mCTQT->SetRefreshPolicy( ork::lev2::CTXBASE::EREFRESH_FIXEDFPS );
 	mCTQT->SetRefreshRate(8);
 }
@@ -222,7 +200,7 @@ ui::HandlerResult vp_cons::DoOnUiEvent( const ui::Event& EV )
     };
 
 	switch( EV.miEventCode )
-	{	
+	{
 		case ui::UIEV_KEY:
 		{
             int mikeyc = filtev.miKeyCode;
@@ -255,12 +233,12 @@ ui::HandlerResult vp_cons::DoOnUiEvent( const ui::Event& EV )
                 {   mHistIndex++;
                     advancehist();
                     break;
-                }   
+                }
                 case 16777237: // cursor dn
                 {   mHistIndex--;
                     advancehist();
                     break;
-                }   
+                }
 
                 case 16777248: // shift (NOP)
                 case 16777250: // ctrl
@@ -286,18 +264,18 @@ ui::HandlerResult vp_cons::DoOnUiEvent( const ui::Event& EV )
 void vp_cons::DoDraw(ui::DrawEvent& drwev)
 {
 	typedef lev2::SVtxV12C4T16 basevtx_t;
-	
+
 	if( (nullptr == mCTQT) || (nullptr == mCTQT->GetTarget()) ) return;
 
-#if defined(_DARWIN)
+#if defined(__APPLE__)
 	//if( 0 == g_orig_stdout ) return;
 #endif
 
 	lev2::GfxTarget* pTARG = mCTQT->GetTarget();
-	
+
 	int IW = pTARG->GetW();
 	int IH = pTARG->GetH();
-	
+
 	pTARG->FBI()->SetAutoClear(true);
 	pTARG->FBI()->SetClearColor(CColor4(1.0f,0.0f,0.1f,0.0f));
 	BeginFrame(pTARG);
@@ -313,7 +291,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
 		float faspect = float(pTARG->GetW())/float(pTARG->GetH());
 		pTARG->BindMaterial( & mBaseMaterial );
 		mBaseMaterial.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
-		
+
         auto drawquad = [pTARG,&vbuf]( u32 ucolor1,
                             u32 ucolor2,
                             float x0, float y0,
@@ -324,7 +302,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
             CVector2 uv1(1.0f,0.0f);
             CVector2 uv2(1.0f,1.0f);
             CVector2 uv3(0.0f,1.0f);
-            
+
             auto v0 = lev2::SVtxV12C4T16( CVector3(x0,y0,0.0f), uv0, ucolor1 );
     		auto v1 = lev2::SVtxV12C4T16( CVector3(x1,y0,0.0f), uv1, ucolor1 );
     		auto v2 = lev2::SVtxV12C4T16( CVector3(x1,y1,0.0f), uv2, ucolor2 );
@@ -336,7 +314,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
     			vw.AddVertex( v0 );
     			vw.AddVertex( v1 );
     			vw.AddVertex( v2 );
-    			
+
     			vw.AddVertex( v0 );
     			vw.AddVertex( v2 );
     			vw.AddVertex( v3 );
@@ -345,7 +323,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
 
     		pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, 6 );
         };
-        
+
         drawquad(0xff200020,0xff400030,
                  0,0,
                  IW,IH);
@@ -353,7 +331,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
 		/////////////////////////
 		// TEXT
 		/////////////////////////
-	
+
 		//const int inumlines = mLines.size();
 		int inumlines_max_visible = 24; //IH/16;
 		/////////////////////////

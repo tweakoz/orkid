@@ -4,26 +4,31 @@
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
-#include <python.h>
+#include <Python.h>
 
 #include <stdio.h>
 
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
-#include <dispatch/dispatch.h>
+#include <ork/kernel/opq.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtconsole.h>
 #include <QtWidgets/QScrollBar>
 #include <ork/lev2/qtui/qtui.hpp>
 #include <ork/util/stl_ext.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <errno.h>
-#include <util.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <errno.h>
+///////////////////////////////////////////////////////////////////////////////
+#if defined(__APPLE__)
+#include <util.h>
+#else
+#include <pty.h>
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 bool gPythonEnabled = true;
 FILE* g_orig_stdout = nullptr;
@@ -47,7 +52,6 @@ extern "C" char *(*PyOS_ReadlineFunctionPointer)(FILE *sys_stdin, FILE *sys_stdo
 extern "C" int PyRun_InteractiveOneFlags(FILE *fp, const char *filename, PyCompilerFlags *flags);
 extern "C" int(*_orkpy_redirect_interactiveloopflags)(FILE *fp, const char *filename, PyCompilerFlags *flags);
 static PyCompilerFlags orkpy_cf;
-dispatch_queue_t PYQ();
 
 ///////////////////////////////////////////////////////////////////////////////
 char *orkpy_readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
@@ -81,22 +85,9 @@ void echo_on(int ifil)
     return;
 }
 ///////////////////////////////////////////////////////////////////////////////
-dispatch_queue_t PYQ()
-{	
-	static dispatch_queue_t gQ=0;
-	static dispatch_once_t ginit_once;
-	auto once_blk = ^ void (void)
-	{
-		gQ = dispatch_queue_create( "com.tweakoz.pyq", NULL );
-	};
-	dispatch_once(&ginit_once, once_blk );
-	return gQ;
-}
-///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
 namespace tool {
-
 char slave_out_name[256];
 char slave_err_name[256];
 char slave_inp_name[256];
@@ -104,15 +95,8 @@ char slave_inp_name[256];
 ///////////////////////////////////////////////////////////////////////////////
 Py& Py::Ctx()
 {
-	static Py* gPY = nullptr;
-	
-	static dispatch_once_t ginit_once;
-	auto once_blk = ^ void (void)
-	{
-		gPY = new Py;
-	};
-	dispatch_once(&ginit_once, once_blk );
-	return *gPY;
+	static Py gPY;
+	return gPY;
 }
 void Py::Call(const std::string& cmdstr)
 {
@@ -123,7 +107,7 @@ Py::Py()
 {
 	Py_NoSiteFlag = 1;
 	Py_VerboseFlag = 2;
-	
+
 	PyOS_ReadlineFunctionPointer=orkpy_readline;
     orkpy_cf.cf_flags = 0;
 	Py_InitializeEx(0);
@@ -161,7 +145,7 @@ void orkpy_initpty()
 	fp_pty_err_master = fdopen( fd_pty_err_master, "w" );
 	fp_pty_out_master = fdopen( fd_pty_out_master, "w" );
 	fp_pty_inp_master = fdopen( fd_pty_inp_master, "r" );
-	
+
 	setvbuf(fp_pty_out_master, (char*)NULL, _IOFBF, 0); // disable buffering
 	setvbuf(fp_pty_err_master, (char*)NULL, _IOFBF, 0); // disable buffering
 
@@ -185,7 +169,7 @@ void orkpy_initpty()
 
 	echo_off(fd_pty_out_master);
 	echo_off(fd_pty_err_master);
-	
+
 	int flags;
 	if ((flags = fcntl(fd_pty_out_master, F_GETFL, 0)) == -1)
 		flags = 0;
@@ -221,18 +205,18 @@ void orkpy_initpty()
 	Py::Ctx().Call("print 'inp<%s>' % str(sys.pty_inp_master)\n");
 	Py::Ctx().Call("print 'out<%s>' % str(sys.pty_out_master)\n");
 	Py::Ctx().Call("print 'err<%s>' % str(sys.pty_err_master)\n");
-	
+
 	//PyObject* v = PySys_GetObject("pty_err_master");
 	//int ifd_stderr = PyObject_AsFileDescriptor(v);
-	
+
 	Py::Ctx().Call("print 'is_tty<inp> : %s' % str(os.isatty(fd_inp_master))\n" );
 	Py::Ctx().Call("print 'is_tty<out> : %s' % str(os.isatty(fd_out_master))\n" );
 	Py::Ctx().Call("print 'is_tty<err> : %s' % str(os.isatty(fd_err_master))\n" );
-	
+
 	Py::Ctx().Call("sys.stdin = sys.pty_inp_master\n");
 	Py::Ctx().Call("sys.stdout = sys.pty_out_master\n");
 	Py::Ctx().Call("sys.stderr = sys.pty_err_master\n");
-	
+
 	g_orig_stdout = stdout;
 
 	stdin = fp_pty_inp_master;
@@ -248,21 +232,23 @@ void orkpy_initpty()
 }
 
 void orkpy_initork();
-								
+
 ///////////////////////////////////////////////////////////////////////////////
 void orkpy_runiter()
 {
 	fflush(fp_pty_out_master);
 	fflush(fp_pty_err_master);
 	int ret = PyRun_InteractiveOneFlags(stdin, "<stdin>", & orkpy_cf );
-	dispatch_async(PYQ(),^{orkpy_runiter();});
+	MainThreadOpQ().push([&]() {
+		orkpy_runiter();
+	});
 }
 ///////////////////////////////////////////////////////////////////////////////
 void InitPython()
 {
 	gPythonEnabled = true;
-	auto Pyblock = ^ void()
-	{
+
+	MainThreadOpQ().push([&]() {
 		usleep(1500000);
 		char* strbuf = "TheMachine";
 		Py_SetProgramName(strbuf);
@@ -270,15 +256,12 @@ void InitPython()
 
 		PyGILState_STATE gstate = PyGILState_Ensure();
 		PyGILState_Release(gstate);
+		MainThreadOpQ().push([&]() {orkpy_initst2();});
+		MainThreadOpQ().push([&]() {orkpy_initpty();});
+		MainThreadOpQ().push([&]() {orkpy_initork();});
+		MainThreadOpQ().push([&]() {orkpy_runiter();});
 
-		dispatch_async(PYQ(),^{orkpy_initst2();});
-		dispatch_async(PYQ(),^{orkpy_initpty();});
-		dispatch_async(PYQ(),^{orkpy_initork();});
-		dispatch_async(PYQ(),^{orkpy_runiter();});
-
-	};
-	
-	dispatch_async(PYQ(),Pyblock);
+	});
 }
 ///////////////////////////////////////////////////////////////////////////////
 } } // namespace ork::tool

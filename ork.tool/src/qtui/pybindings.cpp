@@ -1,4 +1,4 @@
-#include <python.h>
+#include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
@@ -36,7 +36,7 @@ void PyNewArch(const std::string& classname,const std::string& name);
 void PyNewEntity(const std::string& name,const std::string& archname="");
 ///////////////////////////////////////////////////////////////////////////////
 
-class ed 
+class ed
 {
 public:
     std::string whatup() { return std::string( "whatup yourself" ); }
@@ -89,7 +89,7 @@ void orkpy_initork()
                                 fxstring<64> fxs; fxs.format("vec2(%g,%g)",v.x,v.y);
                                 return fxs.c_str();
                             });
-                            //.def(self_ns::str(self)); 
+                            //.def(self_ns::str(self));
 
     main_namespace["vec3"] = py::class_<CVector3>(mm,"vec3")
                             .def(py::init<>())
@@ -118,8 +118,8 @@ void orkpy_initork()
                                 fxstring<64> fxs; fxs.format("vec3(%g,%g,%g)",v.x,v.y,v.z);
                                 return fxs.c_str();
                             });
-                            
-    main_namespace["object"] = 
+
+    main_namespace["object"] =
         py::class_<ork::Object>(mm,"ork::Object")
         .def("clazz",[](ork::Object*o)->std::string{
             auto clazz = rtti::downcast<object::ObjectClass*>( o->GetClass() );
@@ -127,7 +127,7 @@ void orkpy_initork()
             return name.c_str();
         });
 
-    main_namespace["scene"] = 
+    main_namespace["scene"] =
         py::class_<ent::SceneData>(mm,"Scene")
         .def("objects",[](ent::SceneData*sd)->std::list<std::pair<std::string,ork::Object*>>{
 
@@ -151,14 +151,14 @@ void orkpy_initork()
 
     main_namespace["editor"] = py::class_<ed>(mm,"editor")
                             .def(py::init<>())
-                            .def("whatup",&ed::whatup)      
-                            .def("damn",&ed::damn)      
-                            .def("newscene",&ed::newscene)      
+                            .def("whatup",&ed::whatup)
+                            .def("damn",&ed::damn)
+                            .def("newscene",&ed::newscene)
                             .def("newentity",&ed::newentity)
                             .def("newrefarch",&ed::newrefarch)
                             .def("newarch",&ed::newarch)
-                            .def("s",&ed::getscene)    
-                            .def("ns",&ed::newscene)    
+                            .def("s",&ed::getscene)
+                            .def("ns",&ed::newscene)
                             .def("ne",&ed::newentity)
                             .def("na",&ed::newarch)
                             .def("nra",&ed::newrefarch);
