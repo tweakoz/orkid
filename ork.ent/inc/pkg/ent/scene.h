@@ -102,7 +102,7 @@ class SceneData : public ork::Object
 
 public:
 
-	typedef orklut<const ork::object::ObjectClass*,SystemData*> SceneComponentLut;
+	typedef orklut<const ork::object::ObjectClass*,SystemData*> SystemLut;
 
 	SceneData();
 	~SceneData(); /*virtual*/
@@ -142,11 +142,11 @@ public:
 	//////////////////////////////////////////////////////////
 
 	template <typename T >
-	T* GetTypedSceneComponent() const;
+	T* GetTypedSystem() const;
 
-	const SceneComponentLut& GetSceneComponents() const { return mSceneComponents; }
+	const SystemLut& GetSystems() const { return mSystems; }
 	void AddSystem( SystemData* pcomp );
-	void ClearSceneComponents();
+	void ClearSystems();
 
 	//////////////////////////////////////////////////////////
 
@@ -155,7 +155,7 @@ public:
 private:
 
 	orkmap<PoolString, SceneObject*>		mSceneObjects;
-	SceneComponentLut						mSceneComponents;
+	SystemLut						mSystems;
 	ESceneDataMode	meSceneDataMode;
 	void OnSceneDataMode(ESceneDataMode emode);
 	void PrepareForEdit();
@@ -236,7 +236,7 @@ class SceneInst : public ork::Object
 public:
 
 	typedef orkmap<PoolString, orklist<ComponentInst*> > ActiveComponentType;
-	typedef orklut<const ork::object::ObjectClass*,System*> SceneComponentLut;
+	typedef orklut<const ork::object::ObjectClass*,System*> SystemLut;
 	typedef orklist<ComponentInst*> ComponentList;
 	typedef orkset<Entity*> EntitySet;
 
@@ -324,7 +324,7 @@ public:
 	//////////////////////////////////////////////////////////
 
 	void AddSystem( System* pcomp );
-	void ClearSceneComponents();
+	void ClearSystems();
 
 	template <typename T >
 	T* FindSystem() const;
@@ -348,12 +348,12 @@ private:
 	void StartEntities();
 	void StopEntities();
 
-	void ComposeSceneComponents();
-	void DecomposeSceneComponents();
-	void StartSceneComponents();
-	void LinkSceneComponents();
-	void StopSceneComponents();
-	void UnLinkSceneComponents();
+	void ComposeSystems();
+	void DecomposeSystems();
+	void StartSystems();
+	void LinkSystems();
+	void StopSystems();
+	void UnLinkSystems();
 
 	void EnterEditState();
 	void EnterPauseState();
@@ -376,7 +376,7 @@ protected:
 	float									mStartTime;			// UpTime when game started
 	float									mLastGameTime;
 	ComponentList							mEmptyList;
-	SceneComponentLut						mSceneComponents;
+	SystemLut						mSystems;
 	float									mDeltaTimeAccum;
 	float									mfAvgDtAcc;
 	float									mfAvgDtCtr;

@@ -155,7 +155,7 @@ SceneInst::~SceneInst()
 			delete pent;
 		}
 	}
-	for( SceneComponentLut::iterator it=mSceneComponents.begin(); it!=mSceneComponents.end(); it++ )
+	for( SystemLut::iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
 	{
 		System* pSCI = it->second;
 
@@ -361,10 +361,10 @@ void SceneInst::EnterEditState()
 	mActiveEntities.clear();
 	mEntityDeactivateQueue.clear();
 
-	//StartSceneComponents();
+	//StartSystems();
 
 	ComposeEntities();
-	//LinkSceneComponents();
+	//LinkSystems();
 	LinkEntities();
 
 	ServiceDeactivateQueue();// HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION WHILE LINKING
@@ -416,7 +416,7 @@ void SceneInst::EnterRunState()
 	AllocationLabel label268("SceneInst::EnterRunState::268");
 
 	ComposeEntities();
-	ComposeSceneComponents();
+	ComposeSystems();
 
 	for( const auto& item : mEntities )
 	{
@@ -427,7 +427,7 @@ void SceneInst::EnterRunState()
 	AllocationLabel label281("SceneInst::EnterRunState::281");
 
 	LinkEntities();
-	LinkSceneComponents();
+	LinkSystems();
 
 	// HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION WHILE LINKING
 	ServiceDeactivateQueue();
@@ -435,7 +435,7 @@ void SceneInst::EnterRunState()
 	AllocationLabel label288("SceneInst::EnterRunState:288");
 
 	StartEntities();
-	StartSceneComponents();
+	StartSystems();
 
 	mStartTime = float(CSystem::GetRef().GetLoResTime());
 	mGameTime = 0.0f;
@@ -632,17 +632,17 @@ void SceneInst::UnLinkEntities()
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::ComposeSceneComponents()
+void SceneInst::ComposeSystems()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
 	///////////////////////////////////
-	// SceneComponents
+	// Systems
 	///////////////////////////////////
 
-	const SceneData::SceneComponentLut& SceneCompLut = mSceneData->GetSceneComponents();
+	const SceneData::SystemLut& SceneCompLut = mSceneData->GetSystems();
 
-	for( SceneData::SceneComponentLut::const_iterator it=SceneCompLut.begin(); it!=SceneCompLut.end(); it++ )
+	for( SceneData::SystemLut::const_iterator it=SceneCompLut.begin(); it!=SceneCompLut.end(); it++ )
 	{
 		const SystemData* pscd = it->second;
 		AddSystem( pscd->createSystem( this ) );
@@ -650,23 +650,23 @@ void SceneInst::ComposeSceneComponents()
 
 }
 
-void SceneInst::DecomposeSceneComponents()
+void SceneInst::DecomposeSystems()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
-	for( auto item : mSceneComponents )
+	for( auto item : mSystems )
 	{
 		auto comp = item.second;
 		delete comp;
 	}
-	mSceneComponents.clear();
+	mSystems.clear();
 
 }
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::LinkSceneComponents()
+void SceneInst::LinkSystems()
 {
-	for( auto it : mSceneComponents )
+	for( auto it : mSystems )
 	{
 		System* ci = it.second;
 		ci->Link(this);
@@ -675,13 +675,13 @@ void SceneInst::LinkSceneComponents()
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::UnLinkSceneComponents()
+void SceneInst::UnLinkSystems()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
 	///////////////////////////////////
 
-	for( auto it : mSceneComponents )
+	for( auto it : mSystems )
 	{
 		System* ci = it.second;
 		ci->UnLink(this);
@@ -691,25 +691,25 @@ void SceneInst::UnLinkSceneComponents()
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::StartSceneComponents()
+void SceneInst::StartSystems()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	for( auto it : mSceneComponents )
+	for( auto it : mSystems )
 	{
 		System* ci = it.second;
 		ci->Start(this);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::StopSceneComponents()
+void SceneInst::StopSystems()
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
-	for( auto it : mSceneComponents )
+	for( auto it : mSystems )
 	{
 		System* ci = it.second;
 		ci->Stop(this);
 	}
-	mSceneComponents.clear();
+	mSystems.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1296,10 +1296,10 @@ void SceneInst::Update()
 
 			UpdateEntityComponents(GetActiveComponents(sCameraFamily));
 
-			size_t inumsc = mSceneComponents.size();
+			size_t inumsc = mSystems.size();
 			for( size_t isc=0; isc<inumsc; isc++ )
 			{
-				System* pinst = mSceneComponents.GetItemAtIndex(isc).second;
+				System* pinst = mSystems.GetItemAtIndex(isc).second;
 				pinst->Update( this );
 			}
 
@@ -1317,12 +1317,12 @@ void SceneInst::Update()
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::AddSystem( System* pcomp )
 {
-	OrkAssert( mSceneComponents.find( pcomp->GetClass() ) == mSceneComponents.end() );
-	mSceneComponents.AddSorted( pcomp->GetClass(), pcomp );
+	OrkAssert( mSystems.find( pcomp->GetClass() ) == mSystems.end() );
+	mSystems.AddSorted( pcomp->GetClass(), pcomp );
 }
-void SceneInst::ClearSceneComponents()
+void SceneInst::ClearSystems()
 {
-	mSceneComponents.clear();
+	mSystems.clear();
 }
 ///////////////////////////////////////////////////////////////////////////////
 }}

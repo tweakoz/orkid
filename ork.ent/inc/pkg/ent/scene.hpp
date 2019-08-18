@@ -71,11 +71,11 @@ template <typename T> const T* SceneData::FindTypedObject( const PoolString& pst
 	return pret;
 }
 template <typename T >
-T* SceneData::GetTypedSceneComponent() const
+T* SceneData::GetTypedSystem() const
 {
 	const ork::object::ObjectClass* pclass = T::GetClassStatic();
-	SceneComponentLut::const_iterator it = mSceneComponents.find( pclass );
-	return (it==mSceneComponents.end()) ? 0 : rtti::autocast(it->second);
+	SystemLut::const_iterator it = mSystems.find( pclass );
+	return (it==mSystems.end()) ? 0 : rtti::autocast(it->second);
 }
 
 
@@ -114,8 +114,8 @@ template <typename T >
 T* SceneInst::FindSystem() const
 {
 	const ork::object::ObjectClass* pclass = T::GetClassStatic();
-	SceneComponentLut::const_iterator it = mSceneComponents.find( pclass );
-	return (it==mSceneComponents.end()) ? 0 : rtti::autocast(it->second);
+	SystemLut::const_iterator it = mSystems.find( pclass );
+	return (it==mSystems.end()) ? 0 : rtti::autocast(it->second);
 }
 
 ///////////////////////////////////////////////////

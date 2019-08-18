@@ -151,7 +151,7 @@ SceneData::~SceneData()
 		delete pobj;
 	}
 
-	for( SceneComponentLut::const_iterator it=mSceneComponents.begin(); it!=mSceneComponents.end(); it++ )
+	for( SystemLut::const_iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
 	{
 		SystemData* pobj = it->second;
 		delete pobj;
@@ -433,21 +433,21 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &)
 ///////////////////////////////////////////////////////////////////////////////
 void SceneData::AddSystem( SystemData* pcomp )
 {
-	OrkAssert( mSceneComponents.find( pcomp->GetClass() ) == mSceneComponents.end() );
-	mSceneComponents.AddSorted( pcomp->GetClass(), pcomp );
+	OrkAssert( mSystems.find( pcomp->GetClass() ) == mSystems.end() );
+	mSystems.AddSorted( pcomp->GetClass(), pcomp );
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneData::ClearSceneComponents()
+void SceneData::ClearSystems()
 {
-	mSceneComponents.clear();
+	mSystems.clear();
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::SceneComposer(SceneData* psd)
 	: mComponents( ork::EKEYPOLICY_LUT )
 	, mpSceneData(psd)
 {
-	const SceneData::SceneComponentLut& scomps = psd->GetSceneComponents();
-	for( SceneData::SceneComponentLut::const_iterator it=scomps.begin(); it!=scomps.end(); it++ )
+	const SceneData::SystemLut& scomps = psd->GetSystems();
+	for( SceneData::SystemLut::const_iterator it=scomps.begin(); it!=scomps.end(); it++ )
 	{
 		mComponents.AddSorted( it->first, it->second );
 	}
@@ -455,7 +455,7 @@ SceneComposer::SceneComposer(SceneData* psd)
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::~SceneComposer()
 {
-	mpSceneData->ClearSceneComponents();
+	mpSceneData->ClearSystems();
 	for( orklut<const ork::object::ObjectClass*,SystemData*>::const_iterator it=mComponents.begin(); it!=mComponents.end(); it++ )
 	{	const ork::object::ObjectClass* pclass = it->first;
 		SystemData* psc = ork::rtti::autocast(it->second);
