@@ -369,7 +369,7 @@ public:
 	///////////////////////////////////////////////////////
 	CompositingContext& GetCompositingContext() const { return  mContext; }
 private:
-    ork::ent::System* CreateComponentInst(ork::ent::SceneInst *pinst) const final; 
+    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final; 
 	mutable CompositingContext mContext;
 };
 

@@ -209,7 +209,7 @@ ScriptManagerComponentData::ScriptManagerComponentData()
 
 }
 
-System* ScriptManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+System* ScriptManagerComponentData::createSystem(ork::ent::SceneInst *pinst) const
 {
 	return new ScriptManagerComponentInst( *this, pinst );
 }

@@ -329,7 +329,7 @@ LightingSystemData::LightingSystemData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* LightingSystemData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System* LightingSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
 	return new LightingManagerComponentInst( *this, pinst );
 }

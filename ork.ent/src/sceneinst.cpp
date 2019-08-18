@@ -645,7 +645,7 @@ void SceneInst::ComposeSceneComponents()
 	for( SceneData::SceneComponentLut::const_iterator it=SceneCompLut.begin(); it!=SceneCompLut.end(); it++ )
 	{
 		const SystemData* pscd = it->second;
-		AddSceneComponent( pscd->CreateComponentInst( this ) );
+		AddSceneComponent( pscd->createSystem( this ) );
 	}
 
 }

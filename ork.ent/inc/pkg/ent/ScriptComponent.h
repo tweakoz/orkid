@@ -90,7 +90,7 @@ public:
 	///////////////////////////////////////////////////////
 
 private:
-    ork::ent::System* CreateComponentInst(ork::ent::SceneInst *pinst) const final;
+    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
 
 };
 
