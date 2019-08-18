@@ -22,7 +22,7 @@ class ComponentInst;
 class Entity;
 class SceneInst;
 class ComponentDataTable;
-class SceneComponentInst;
+class System;
 class SceneComposer;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,16 +51,16 @@ void RegisterFamily(PoolString family)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SceneComponentData : public Object
+class SystemData : public Object
 {
-	RttiDeclareAbstract( SceneComponentData, Object );
+	RttiDeclareAbstract( SystemData, Object );
 public:
 
-	virtual SceneComponentInst* CreateComponentInst( ork::ent::SceneInst *pinst ) const = 0;
+	virtual System* CreateComponentInst( ork::ent::SceneInst *pinst ) const = 0;
 
 protected:
 
-	SceneComponentData(  ) {}
+	SystemData(  ) {}
 
 private:
 
@@ -68,9 +68,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SceneComponentInst : public Object
+class System : public Object
 {
-	RttiDeclareAbstract( SceneComponentInst, Object );
+	RttiDeclareAbstract( System, Object );
 public:
 
 	void Update(SceneInst *inst);
@@ -81,7 +81,7 @@ public:
 
 protected:
 
-	SceneComponentInst( const SceneComponentData* scd, SceneInst *pinst ) : mComponentData(scd), mpSceneInst(pinst), mbStarted(false) {}
+	System( const SystemData* scd, SceneInst *pinst ) : mComponentData(scd), mpSceneInst(pinst), mbStarted(false) {}
 
 	SceneInst*					mpSceneInst;
 
@@ -95,7 +95,7 @@ private:
 	virtual void DoUnLink(SceneInst *psi) {}
 	virtual void DoStop(SceneInst *psi) {}
 
-	const SceneComponentData*	mComponentData;
+	const SystemData*	mComponentData;
 	bool						mbStarted;
 };
 

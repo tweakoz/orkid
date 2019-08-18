@@ -80,9 +80,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptManagerComponentData : public ork::ent::SceneComponentData
+class ScriptManagerComponentData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(ScriptManagerComponentData, ork::ent::SceneComponentData);
+	RttiDeclareConcrete(ScriptManagerComponentData, ork::ent::SystemData);
 
 public:
 	///////////////////////////////////////////////////////
@@ -90,13 +90,13 @@ public:
 	///////////////////////////////////////////////////////
 
 private:
-    ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const final;
+    ork::ent::System* CreateComponentInst(ork::ent::SceneInst *pinst) const final;
 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptManagerComponentInst : public ork::ent::SceneComponentInst
+class ScriptManagerComponentInst : public ork::ent::System
 {
 	RttiDeclareAbstract(ScriptManagerComponentInst, ork::ent::ComponentInst);
 

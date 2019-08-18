@@ -84,8 +84,8 @@ T* SceneData::GetTypedSceneComponent() const
 template <typename T> T* SceneComposer::Register()
 {
 	ork::object::ObjectClass* pclass = T::GetClassStatic();
-	orklut<const object::ObjectClass*,SceneComponentData*>::iterator it = mComponents.find(pclass);
-	SceneComponentData* pobj = (it==mComponents.end()) ? 0 : it->second;
+	orklut<const object::ObjectClass*,SystemData*>::iterator it = mComponents.find(pclass);
+	SystemData* pobj = (it==mComponents.end()) ? 0 : it->second;
 	if( 0 == pobj )
 	{
 		pobj = rtti::autocast( pclass->CreateObject() );

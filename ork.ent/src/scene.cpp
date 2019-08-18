@@ -32,7 +32,7 @@
 #include <ork/math/basicfilters.h>
 #include <ork/kernel/opq.h>
 
-template class ork::orklut<const ork::object::ObjectClass *, ork::ent::SceneComponentData *>;
+template class ork::orklut<const ork::object::ObjectClass *, ork::ent::SystemData *>;
 
 using namespace ork::reflect;
 
@@ -153,7 +153,7 @@ SceneData::~SceneData()
 
 	for( SceneComponentLut::const_iterator it=mSceneComponents.begin(); it!=mSceneComponents.end(); it++ )
 	{
-		SceneComponentData* pobj = it->second;
+		SystemData* pobj = it->second;
 		delete pobj;
 	}
 	
@@ -431,7 +431,7 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &)
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneData::AddSceneComponent( SceneComponentData* pcomp )
+void SceneData::AddSceneComponent( SystemData* pcomp )
 {
 	OrkAssert( mSceneComponents.find( pcomp->GetClass() ) == mSceneComponents.end() );
 	mSceneComponents.AddSorted( pcomp->GetClass(), pcomp );
@@ -456,12 +456,12 @@ SceneComposer::SceneComposer(SceneData* psd)
 SceneComposer::~SceneComposer()
 {
 	mpSceneData->ClearSceneComponents();
-	for( orklut<const ork::object::ObjectClass*,SceneComponentData*>::const_iterator it=mComponents.begin(); it!=mComponents.end(); it++ )
+	for( orklut<const ork::object::ObjectClass*,SystemData*>::const_iterator it=mComponents.begin(); it!=mComponents.end(); it++ )
 	{	const ork::object::ObjectClass* pclass = it->first;
-		SceneComponentData* psc = ork::rtti::autocast(it->second);
+		SystemData* psc = ork::rtti::autocast(it->second);
 		if( 0 == psc )
 		{
-			OrkAssert( pclass->IsSubclassOf( SceneComponentData::GetClassStatic() ) );
+			OrkAssert( pclass->IsSubclassOf( SystemData::GetClassStatic() ) );
 			psc = ork::rtti::autocast(pclass->CreateObject());
 		}
 		mpSceneData->AddSceneComponent(psc);

@@ -360,16 +360,16 @@ struct CompositingContext
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingManagerComponentData : public ork::ent::SceneComponentData
+class CompositingManagerComponentData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(CompositingManagerComponentData, ork::ent::SceneComponentData);
+	RttiDeclareConcrete(CompositingManagerComponentData, ork::ent::SystemData);
 public:
 	///////////////////////////////////////////////////////
 	CompositingManagerComponentData();
 	///////////////////////////////////////////////////////
 	CompositingContext& GetCompositingContext() const { return  mContext; }
 private:
-    ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const final; 
+    ork::ent::System* CreateComponentInst(ork::ent::SceneInst *pinst) const final; 
 	mutable CompositingContext mContext;
 };
 
@@ -405,7 +405,7 @@ struct CMCIdrawdata
 
 ///////////////////////////////////////////////////////////////////////////
 
-class CompositingManagerComponentInst : public ork::ent::SceneComponentInst
+class CompositingManagerComponentInst : public ork::ent::System
 {
 	RttiDeclareAbstract(CompositingManagerComponentInst, ork::ent::ComponentInst);
 public:

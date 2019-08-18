@@ -69,7 +69,7 @@ AudioAnalysisManagerComponentData::AudioAnalysisManagerComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::SceneComponentInst* AudioAnalysisManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System* AudioAnalysisManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
 {
 	return new AudioAnalysisManagerComponentInst( *this, pinst );
 }
@@ -84,7 +84,7 @@ void AudioAnalysisManagerComponentInst::Describe()
 ///////////////////////////////////////////////////////////////////////////////
 
 AudioAnalysisManagerComponentInst::AudioAnalysisManagerComponentInst( const AudioAnalysisManagerComponentData& data, ork::ent::SceneInst *pinst )
-	: ork::ent::SceneComponentInst( &data, pinst )
+	: ork::ent::System( &data, pinst )
 	, mAAMCD(data)
 {
 	AudioDeviceList* alist = data.GetAudioDeviceList();

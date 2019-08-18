@@ -209,7 +209,7 @@ ScriptManagerComponentData::ScriptManagerComponentData()
 
 }
 
-SceneComponentInst* ScriptManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+System* ScriptManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
 {
 	return new ScriptManagerComponentInst( *this, pinst );
 }
@@ -221,7 +221,7 @@ void ScriptManagerComponentInst::Describe()
 }
 
 ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerComponentData& data, ork::ent::SceneInst *pinst )
-	: ork::ent::SceneComponentInst( &data, pinst )
+	: ork::ent::System( &data, pinst )
 	, mScriptRef(LUA_NOREF)
 {
 	printf( "SCMI<%p>\n", this );

@@ -68,7 +68,7 @@ AudioManagerComponentData::AudioManagerComponentData()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::SceneComponentInst *AudioManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System *AudioManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
 {
 	return new AudioManagerComponentInst( *this, pinst );
 }
@@ -78,7 +78,7 @@ void AudioManagerComponentInst::Describe()
 }
 ///////////////////////////////////////////////////////////////////////////////
 AudioManagerComponentInst::AudioManagerComponentInst( const AudioManagerComponentData& ascd, ork::ent::SceneInst* psi )
-	: SceneComponentInst( & ascd, psi )
+	: System( & ascd, psi )
 	, mAmcd( ascd )
 {
 	ork::lev2::AudioDevice::GetDevice()->SetReverbProperties( ascd.GetReverbProperties() );

@@ -408,9 +408,9 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioManagerComponentData : public ork::ent::SceneComponentData
+class AudioManagerComponentData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(AudioManagerComponentData, ork::ent::SceneComponentData);
+	RttiDeclareConcrete(AudioManagerComponentData, ork::ent::SystemData);
 
 public:
 	///////////////////////////////////////////////////////
@@ -425,7 +425,7 @@ public:
 
 private:
 
-    ork::ent::SceneComponentInst* CreateComponentInst( ork::ent::SceneInst *pinst ) const final; 
+    ork::ent::System* CreateComponentInst( ork::ent::SceneInst *pinst ) const final; 
 
 	ork::Object*					ReverbAccessor() { return & mReverbProperties; }
 
@@ -439,9 +439,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioManagerComponentInst : public ork::ent::SceneComponentInst
+class AudioManagerComponentInst : public ork::ent::System
 {
-	RttiDeclareAbstract(AudioManagerComponentInst, ork::ent::SceneComponentInst);
+	RttiDeclareAbstract(AudioManagerComponentInst, ork::ent::System);
 
 public:
 

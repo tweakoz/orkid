@@ -77,7 +77,7 @@ CompositingManagerComponentData::CompositingManagerComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::SceneComponentInst* CompositingManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System* CompositingManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
 {
 	return new CompositingManagerComponentInst( *this, pinst );
 }
@@ -92,7 +92,7 @@ void CompositingManagerComponentInst::Describe()
 ///////////////////////////////////////////////////////////////////////////////
 
 CompositingManagerComponentInst::CompositingManagerComponentInst( const CompositingManagerComponentData& data, ork::ent::SceneInst *pinst )
-	: ork::ent::SceneComponentInst( &data, pinst )
+	: ork::ent::System( &data, pinst )
 	, mCMCD(data)
 {
 }

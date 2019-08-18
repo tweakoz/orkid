@@ -62,7 +62,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneInstEvent,"SceneInstEvent");
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class ork::orklut<const ork::object::ObjectClass *, ork::ent::SceneComponentInst *>;
+template class ork::orklut<const ork::object::ObjectClass *, ork::ent::System *>;
 
 namespace ork { namespace ent {
 
@@ -157,11 +157,11 @@ SceneInst::~SceneInst()
 	}
 	for( SceneComponentLut::iterator it=mSceneComponents.begin(); it!=mSceneComponents.end(); it++ )
 	{
-		SceneComponentInst* pSCI = it->second;
+		System* pSCI = it->second;
 
 		if( pSCI )
 		{
-            printf( "deleting SceneComponentInst <%p>\n", pSCI );
+            printf( "deleting System <%p>\n", pSCI );
 			delete pSCI;
 		}
 	}
@@ -644,7 +644,7 @@ void SceneInst::ComposeSceneComponents()
 
 	for( SceneData::SceneComponentLut::const_iterator it=SceneCompLut.begin(); it!=SceneCompLut.end(); it++ )
 	{
-		const SceneComponentData* pscd = it->second;
+		const SystemData* pscd = it->second;
 		AddSceneComponent( pscd->CreateComponentInst( this ) );
 	}
 
@@ -668,7 +668,7 @@ void SceneInst::LinkSceneComponents()
 {
 	for( auto it : mSceneComponents )
 	{
-		SceneComponentInst* ci = it.second;
+		System* ci = it.second;
 		ci->Link(this);
 	}
 }
@@ -683,7 +683,7 @@ void SceneInst::UnLinkSceneComponents()
 
 	for( auto it : mSceneComponents )
 	{
-		SceneComponentInst* ci = it.second;
+		System* ci = it.second;
 		ci->UnLink(this);
 	}
 
@@ -696,7 +696,7 @@ void SceneInst::StartSceneComponents()
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	for( auto it : mSceneComponents )
 	{
-		SceneComponentInst* ci = it.second;
+		System* ci = it.second;
 		ci->Start(this);
 	}
 }
@@ -706,7 +706,7 @@ void SceneInst::StopSceneComponents()
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	for( auto it : mSceneComponents )
 	{
-		SceneComponentInst* ci = it.second;
+		System* ci = it.second;
 		ci->Stop(this);
 	}
 	mSceneComponents.clear();
@@ -1299,7 +1299,7 @@ void SceneInst::Update()
 			size_t inumsc = mSceneComponents.size();
 			for( size_t isc=0; isc<inumsc; isc++ )
 			{
-				SceneComponentInst* pinst = mSceneComponents.GetItemAtIndex(isc).second;
+				System* pinst = mSceneComponents.GetItemAtIndex(isc).second;
 				pinst->Update( this );
 			}
 
@@ -1315,7 +1315,7 @@ void SceneInst::Update()
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::AddSceneComponent( SceneComponentInst* pcomp )
+void SceneInst::AddSceneComponent( System* pcomp )
 {
 	OrkAssert( mSceneComponents.find( pcomp->GetClass() ) == mSceneComponents.end() );
 	mSceneComponents.AddSorted( pcomp->GetClass(), pcomp );
