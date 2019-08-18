@@ -40,7 +40,7 @@ void AudioSystemData::Describe()
 	ork::reflect::RegisterProperty("DistanceMin", &AudioSystemData::mfDistMin);
 	ork::reflect::RegisterProperty("DistanceMax", &AudioSystemData::mfDistMax);
 	ork::reflect::RegisterProperty("DistanceAttenPower", &AudioSystemData::mfDistAttenPower);
-	
+
 	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.min", "0.001" );
 	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.max", "100.0" );
 	ork::reflect::AnnotatePropertyForEditor< AudioSystemData >("DistanceScale", "editor.range.log", "true" );
@@ -90,37 +90,32 @@ AudioSystem::~AudioSystem()
 	ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioSystem::DoUpdate(ork::ent::SceneInst *inst)
+void AudioSystem::DoUpdate(ork::ent::SceneInst* inst)
 {
-	ork::lev2::AudioDevice* pdev = ork::lev2::AudioDevice::GetDevice();
+	auto pdev = ork::lev2::AudioDevice::GetDevice();
 
-	const ork::CCameraData* camdat1 = inst->GetCameraData(ork::AddPooledLiteral("game1"));
-	const ork::CCameraData* camdat2 = inst->GetCameraData(ork::AddPooledLiteral("game2"));
+	auto camdat1 = inst->GetCameraData(ork::AddPooledLiteral("game1"));
+	auto camdat2 = inst->GetCameraData(ork::AddPooledLiteral("game2"));
 
-	for( orkvector<AudioEffectComponentInst*>::const_iterator it=mEmitters.begin(); it!=mEmitters.end(); it++ )
-	{
-		AudioEffectComponentInst* aeci = (*it);
-		aeci->UpdateEmitter( camdat1, camdat2 );
-	}
-	if( camdat1 )
-	{
-		ork::CVector3 ListenerPos = camdat1->GetEye();
-		ork::CVector3 ListenerUp = -camdat1->GetYNormal();
-		ork::CVector3 ListenerFw = camdat1->GetZNormal();
+	for( auto emitter : mEmitters )
+		emitter->UpdateEmitter( camdat1, camdat2 );
+
+	if( camdat1 ){
+		auto ListenerPos = camdat1->GetEye();
+		auto ListenerUp = -camdat1->GetYNormal();
+		auto ListenerFw = camdat1->GetZNormal();
 		pdev->SetListener1( ListenerPos, ListenerUp, ListenerFw );
 	}
-	if( camdat2 )
-	{
-		ork::CVector3 ListenerPos = camdat2->GetEye();
-		ork::CVector3 ListenerUp = -camdat2->GetYNormal();
-		ork::CVector3 ListenerFw = camdat2->GetZNormal();
+	if( camdat2 ){
+		auto ListenerPos = camdat2->GetEye();
+		auto ListenerUp = -camdat2->GetYNormal();
+		auto ListenerFw = camdat2->GetZNormal();
 		pdev->SetListener2( ListenerPos, ListenerUp, ListenerFw );
 	}
-	else if( camdat1 )
-	{
-		ork::CVector3 ListenerPos = camdat1->GetEye();
-		ork::CVector3 ListenerUp = -camdat1->GetYNormal();
-		ork::CVector3 ListenerFw = camdat1->GetZNormal();
+	else if( camdat1 ){
+		auto ListenerPos = camdat1->GetEye();
+		auto ListenerUp = -camdat1->GetYNormal();
+		auto ListenerFw = camdat1->GetZNormal();
 		pdev->SetListener2( ListenerPos, ListenerUp, ListenerFw );
 	}
 
