@@ -36,7 +36,7 @@ std::string GccDemangle( const std::string& inname )
 	return std::string(pmangle);
 }
 #endif
-	
+
 std::string TypeIdNameStrip(const char* name)
 {
 	std::string strippedName(name);
@@ -51,7 +51,7 @@ std::string TypeIdNameStrip(const char* name)
 	{
 		strippedName.swap(strippedName.erase(classPosition, classLength));
 	}
-	
+
 	return strippedName;
 }
 std::string MethodIdNameStrip(const char* name) // mainly used for QT signals and slots
@@ -68,7 +68,7 @@ std::string MethodIdNameStrip(const char* name) // mainly used for QT signals an
 	newname.replace_in_place("__thiscall ","");
 	return newname.c_str();
 }
-	
+
 std::string TypeIdName(const std::type_info*ti)
 {
 	return (ti!=nullptr) ? TypeIdNameStrip( ti->name() ) : "nil";
@@ -77,7 +77,7 @@ std::string TypeIdName(const std::type_info*ti)
 namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
-
+#if 0
 CQNoMocBase*& CQNoMocBase::GetPreMainMocBaseIter()
 {
 	static CQNoMocBase* gpPreMainMocBaseIter = 0;
@@ -102,7 +102,7 @@ void CQNoMocBase::MocInit()
 	}
 }
 
-void CQNoMocBase::MocInitAll()	
+void CQNoMocBase::MocInitAll()
 {
 	//////////////////////
 	// MocInit nodes
@@ -131,14 +131,14 @@ void CQNoMocBase::MocInitAll()
 	{
 		CQNoMocBase* piter = GetPreMainMocBaseIter();
 		while( piter )
-		{	
+		{
 			piter->Link();
 			piter = piter->GetPreviousMocBase();
 		}
 	}
 
 }
-	
+
 ///////////////////////////////////////////////////////////////////////////////
 void CQNoMocBase::Link()
 {
@@ -162,12 +162,12 @@ void CQNoMocBase::Link()
 		int imethods = walkmeta->methodCount();
 		for( int i=0; i<imethods; i++ )
 		{
-			QMetaMethod method = walkmeta->method( i ); 
-			//const char* sig = method.signature(); 
+			QMetaMethod method = walkmeta->method( i );
+			//const char* sig = method.signature();
 			//orkprintf( "walkmeta root<%s> walk<%s> methid<%d> method<%s>\n", RootClassName, WalkClassName, i, sig );
 		}
 		walkmeta = walkmeta->superClass();
-	}		
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -238,11 +238,11 @@ void CQNoMocBase::Compile( void )
 		U32 uflags = AccessProtected | MethodSignal;
 
 		mMocUInt.push_back( uflags );
-		
+
 	//orkprintf( "moc [signal %s]\n", signame.c_str() );
 	//orkprintf( "moc [signame %08x] [sig %d] [params %d] [typ %d] [uflags %08x]\n", isigname, inilstring, iparams, inilstring, uflags );
 
-		
+
 	}
 
 	///////////////////////////////////////
@@ -265,10 +265,10 @@ void CQNoMocBase::Compile( void )
 		U32 uflags = AccessPublic | MethodSlot;
 
 		mMocUInt.push_back( uflags );
-		
+
 		//orkprintf( "moc [slot %s]\n", slotname.c_str() );
 		//orkprintf( "moc [slotname %08x] [sig %d] [params %d] [typ %d] [flags %08x]\n", islotname, inilstring, iparams, inilstring, uflags );
-		
+
 	}
 
 	///////////////////////////////////////
@@ -294,8 +294,9 @@ void CQNoMocBase::Compile( void )
 
 	//////////////////////
 }
+#endif // #if 0
 
-}
-}
+
+}} // namespace ork { namespace lev2 {
 
 #endif

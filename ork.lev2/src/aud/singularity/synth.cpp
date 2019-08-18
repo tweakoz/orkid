@@ -1,10 +1,10 @@
-#include <audiofile.h>
+//#include <audiofile.h>
 #include <string>
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
 #include <GLFW/glfw3.h>
-#include "drawtext.h"
+//#include "drawtext.h"
 
 #include "krzdata.h"
 #include "synth.h"
@@ -81,7 +81,7 @@ void programInst::keyOn( int note, const programData* pd )
 	{
 		_syn._hudLayer = _layers[0];
 	}
-	else 
+	else
 		_syn._hudLayer = nullptr;
 
     if( _syn._hudLayer )
@@ -236,7 +236,7 @@ void synth::deactivateVoices()
 		int inumv = _activeVoices.size();
 
 		printf( "syn freeLayer<%p> curnumvoices<%d>\n", l, inumv );
-		
+
 		it = _freeVoices.find(l);
 		assert(it == _freeVoices.end() );
 		_freeVoices.insert(l);
@@ -367,8 +367,8 @@ void synth::compute(int inumframes,const void* inputBuffer)
 
     for( int i=0; i<inumframes; i++ )
     {
-        lb[i] = clip_float(lb[i]*0.1f,-1,1); 
-        rb[i] = clip_float(rb[i]*0.1f,-1,1); 
+        lb[i] = clip_float(lb[i]*0.1f,-1,1);
+        rb[i] = clip_float(rb[i]*0.1f,-1,1);
     }
 }
 
@@ -377,6 +377,3 @@ void synth::resetFenables()
 	for( int i=0; i<5; i++ )
 		_fblockEnable[i] = true;
 }
-
-
-

@@ -108,11 +108,10 @@ struct synth
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string formatString( const char* formatstring, ... );
-void SplitString(const std::string& s, char delim, std::vector<std::string>& tokens);
-std::vector<std::string> SplitString(const std::string& instr, char delim);
+//std::string formatString( const char* formatstring, ... );
+//void SplitString(const std::string& s, char delim, std::vector<std::string>& tokens);
+//std::vector<std::string> SplitString(const std::string& instr, char delim);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void drawtext( const std::string& str, float x, float y, float scale, float r, float g, float b );
-
+//void drawtext( const std::string& str, float x, float y, float scale, float r, float g, float b );

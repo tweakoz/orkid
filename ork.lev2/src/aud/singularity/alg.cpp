@@ -38,7 +38,8 @@ Alg::~Alg()
 
 DspBlock* Alg::lastBlock() const
 {
-    DspBlock* r = nullptr;
+    return nullptr; //
+/*    DspBlock* r = nullptr;
     for( int i=0; i<kmaxdspblocksperlayer; i++ )
         if( _block[i] )
         {
@@ -46,7 +47,7 @@ DspBlock* Alg::lastBlock() const
             if( ena )
                 r = _block[i];
         }
-    return r;
+    return r;*/ // fix _the_synth
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,7 +57,7 @@ void Alg::keyOn(DspKeyOnInfo& koi)
     auto l = koi._layer;
     assert(l!=nullptr);
 
-    const auto ld = l->_layerData;    
+    const auto ld = l->_layerData;
 
     for( int i=0; i<kmaxdspblocksperlayer; i++ )
     {
@@ -67,7 +68,7 @@ void Alg::keyOn(DspKeyOnInfo& koi)
 
             if( i==0 ) // pitch block ?
             {
-                _block[i]->_iomask._outputMask = 3;    
+                _block[i]->_iomask._outputMask = 3;
 
             }
         }
@@ -120,9 +121,9 @@ void Alg::compute(outputBuffer& obuf)
     {
         auto b = _block[i];
         if( b )
-        {   
-            bool ena = the_synth->_fblockEnable[i];
-
+        {
+            bool ena = false; //the_synth->_fblockEnable[i];
+            assert(false) ;;// fix _the_synth
             if( ena )
             {
                 b->compute(*_blockBuf);
@@ -176,7 +177,7 @@ void Alg::keyOff()
     for( int i=0; i<kmaxdspblocksperlayer; i++ )
     {
         auto b = _block[i];
-        if( b ) 
+        if( b )
             b->doKeyOff();
     }
 }
@@ -348,5 +349,3 @@ DspBlock* createDspBlock( const DspBlockData& dbd )
 
     return rval;
 }
-
-

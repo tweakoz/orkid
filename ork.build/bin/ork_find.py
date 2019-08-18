@@ -11,7 +11,7 @@ class visitor:
     print "// path : %s" % pth
     print "/////////"
   def onItem(self,item):
-    print "%-*s : line %-*d : %s" % (40, item.path, 5, item.lineno, item.text) 
+    print "%-*s : line %-*d : %s" % (40, item.path, 5, item.lineno, item.text)
 #################################################################################
 
 if __name__ == "__main__":

@@ -104,7 +104,7 @@ public:
 
 	ent::SceneData*					mpScene;
 
-	
+
 	SceneInst* GetActiveSceneInst() const;
 	SceneInst* GetEditSceneInst() const;
 	SceneInst* GetExecSceneInst() const;
@@ -128,7 +128,7 @@ public:
 	const SceneObject* FindSceneObject( const char* pname ) const;
 
 	///////////////////////////////////////////////
-	
+
 	ReferenceArchetype* NewReferenceArchetype( const std::string& archassetname );
 	//Archetype* NewArchetype( const std::string& classname );
 	Archetype* EditorNewArchetype(const std::string& classname, const std::string& name);
@@ -154,7 +154,7 @@ public:
 	void RegisterChoices();
 
 	///////////////////////////////////////////////
-	
+
 	void ClearSelection();
 	void ToggleSelection( ork::Object* pobj );
 	void AddObjectToSelection( ork::Object* pobj );
@@ -194,7 +194,7 @@ private:
 
 	void RunLoop();
 
-	int 							mRunStatus; 							
+	int 							mRunStatus;
 
 	tool::SelectManager				mSelectionManager;
 	lev2::CManipManager				mManipManager;
@@ -205,7 +205,7 @@ private:
 
 	SceneInst*						mpExecSceneInst;
 	SceneInst*						mpEditSceneInst;
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -217,18 +217,17 @@ struct DeleteObjectReq
 };
 struct NewEntityReq
 {
-	NewEntityReq(Future&f=gnilfut) : mArchetype(nullptr), mResult(f) {}
+	NewEntityReq(Future&f=Future::gnilfut) : mArchetype(nullptr), mResult(f) {}
 	const ent::Archetype* mArchetype;
 	EntData* GetEntity();
 	void SetEntity(EntData*pent);
 private:
 
 	Future& mResult;
-	static Future gnilfut;
 };
 struct NewArchReq
 {
-	NewArchReq(Future&f=gnilfut) : mResult(f) {}
+	NewArchReq(Future&f=Future::gnilfut) : mResult(f) {}
 	std::string mClassName;
 	std::string mName;
 	Archetype* GetArchetype();
@@ -236,7 +235,6 @@ struct NewArchReq
 private:
 
 	Future& mResult;
-	static Future gnilfut;
 };
 struct LoadSceneReq
 {
@@ -248,19 +246,17 @@ private:
 };
 struct NewSceneReq
 {
-	NewSceneReq(Future&f=gnilfut) : mResult(f) {}
+	NewSceneReq(Future&f=Future::gnilfut) : mResult(f) {}
 	SceneData* GetScene();
 	void SetScene(SceneData*parch);
 	Future& mResult;
-	static Future gnilfut;
 };
 struct GetSceneReq
 {
-	GetSceneReq(Future&f=gnilfut) : mResult(f) {}
+	GetSceneReq(Future&f=Future::gnilfut) : mResult(f) {}
 	SceneData* GetScene();
 	void SetScene(SceneData*parch);
 	Future& mResult;
-	static Future gnilfut;
 };
 struct RunLocalReq
 {
@@ -271,6 +267,4 @@ struct StopLocalReq
 
 ///////////////////////////////////////////////////////////////////////////////
 
-}
-
-}
+}} // namespace ork { namespace ent {

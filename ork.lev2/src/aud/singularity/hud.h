@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include <math.h>
 #include <GLFW/glfw3.h>
-#include "drawtext.h"
+
+//#include "drawtext.h"
 
 #include "krzdata.h"
 #include "synth.h"

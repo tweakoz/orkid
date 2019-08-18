@@ -6,9 +6,20 @@
 ////////////////////////////////////////////////////////////////
 
 #include <orktool/orktool_pch.h>
+#include <orktool/filter/filter.h>
+
+namespace ork { namespace tool {
+///////////////////////////////////////////////////////////////////////////////
+
+#if 1
+bool NvttCompress( const ork::tool::FilterOptMap& options ){
+    assert(false);
+    return false;
+}
+
+#else
 
 #include "nvtt_main.h"
-#include <orktool/filter/filter.h>
 
 /*
 The only precision issue (regarding S3TC on GC) has to do with the accuracy
@@ -18,9 +29,6 @@ This gives a 4% error vs. the spec, or specifically:
 
 
 
-///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace tool {
-///////////////////////////////////////////////////////////////////////////////
 bool NvttCompress( const ork::tool::FilterOptMap& options ) ;
 
 bool Tga2DdsFilterDriver( const tokenlist& toklist )
@@ -33,7 +41,7 @@ bool Tga2DdsFilterDriver( const tokenlist& toklist )
 	OptionsMap.SetOptions( toklist );
 
 	return NvttCompress( OptionsMap );
-	
+
 }
 
 
@@ -72,7 +80,7 @@ static void setColorMap(nvtt::InputOptions & inputOptions)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap ) 
+bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 {
 	MyAssertHandler assertHandler;
 	MyMessageHandler messageHandler;
@@ -91,7 +99,7 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 
 		orkprintf( "Copy from<%s> to<%s>\n", frompath, topath );
 		//bool ret = CopyFile( frompath, topath, FALSE );
-		return false; //bool(ret);		
+		return false; //bool(ret);
 	}
 
 	nv::Path InNvPath( inpath.ToAbsolute().c_str() );
@@ -113,7 +121,7 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 
 	bool bwii = ( 0 == strcmp( platform_str.c_str(), "wii" ) );
 	bool bxb360 = ( 0 == strcmp( platform_str.c_str(), "xb360" ) );
-	
+
 	bool bnomips = OptionsMap.HasOption( "-nomips" );
 
 	//////////////////////////////////
@@ -231,12 +239,13 @@ bool NvttCompress( const ork::tool::FilterOptMap& OptionsMap )
 
     printf( "compressing.....\n");
 	compressor.process( inputOptions, CompressionOptions, OutputOptions );
-	
+
 	//ilSetInteger(IL_DXTC_FORMAT, IL_DXT5);
 
 	return true;
 }
 
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 }}

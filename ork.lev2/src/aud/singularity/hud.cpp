@@ -3,6 +3,7 @@
 #include "dspblocks.h"
 
 using namespace ork;
+#if 0
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -637,8 +638,8 @@ void synth::onDrawHudPage3(float width, float height)
             };
 
             static const int kmaxcolors = 4;
-            fvec3 colors[kmaxcolors] = 
-            {   
+            fvec3 colors[kmaxcolors] =
+            {
               fvec3(.7,.7,1),
               fvec3(1,1,1),
               fvec3(1,.7,.7),
@@ -672,7 +673,7 @@ void synth::onDrawHudPage3(float width, float height)
         yb += blockh;
         ytb += blockh;
     }
-    
+
     yb = 90;
     PushOrtho(width,height);
 
@@ -712,3 +713,4 @@ void synth::onDrawHudPage3(float width, float height)
         drawtext( HKF._miscText, panx,yb+160, fontscale, 1,1,1 );
     }
 }
+#endif

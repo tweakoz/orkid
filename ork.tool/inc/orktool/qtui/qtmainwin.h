@@ -5,10 +5,11 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////
 
+#include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/slashnode.h>
 #include <ork/reflect/Functor.h>
 #include <QMenuBar>
@@ -31,7 +32,7 @@ namespace tool {
 ///////////////////////////////////////////////////////////////////////////
 
 class EditorModule : public QObject
-{	
+{
     Q_OBJECT
 
 protected:
@@ -56,7 +57,7 @@ public slots:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class EditorModuleMgr	
+class EditorModuleMgr
 {
 	QMenuBar*							mMenuBar;
 	orkmap<std::string,EditorModule*>	mModules;
@@ -143,4 +144,3 @@ public:
 } // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////
-

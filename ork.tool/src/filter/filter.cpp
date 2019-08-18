@@ -24,7 +24,7 @@
 #include <ork/reflect/Functor.h>
 #include <ork/rtti/downcast.h>
 
-namespace ork { namespace MeshUtil 
+namespace ork { namespace MeshUtil
 {
 #if defined(_USE_D3DX)
 	void TexToVtx( const tokenlist& options );
@@ -88,7 +88,7 @@ void QtzComposerToPngFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool Tga2DdsFilterDriver( const tokenlist& toklist );
+/*bool Tga2DdsFilterDriver( const tokenlist& toklist );
 
 class TGADDSFilter : public CAssetFilterBase
 {
@@ -101,7 +101,7 @@ public: //
 	}
 };
 void TGADDSFilter::Describe() {}
-
+*/
 
 #if defined(_USE_D3DX)
 class UvAtlasFilter : public CAssetFilterBase
@@ -190,9 +190,9 @@ static void RegisterFilters()
 		#if defined(USE_FCOLLADA)
 		ork::tool::RegisterColladaFilters();
 		#endif
-		///////////////////////////////////////////////////		
+		///////////////////////////////////////////////////
 		ork::tool::RegisterArchFilters();
-		///////////////////////////////////////////////////		
+		///////////////////////////////////////////////////
 		#if defined(_USE_D3DX)
 		CAssetFilter::RegisterFilter("x:obj", MeshUtil::D3DX_OBJ_Filter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("xgm:x", MeshUtil::XGM_D3DX_Filter::DesignNameStatic().c_str());
@@ -204,7 +204,7 @@ static void RegisterFilters()
 		CAssetFilter::RegisterFilter("xgm:obj", MeshUtil::XGM_OBJ_Filter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
+		//CAssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
 		/////////////////////////
 		#if defined(ORK_OSXX)
@@ -256,7 +256,7 @@ bool CAssetFilter::ConvertFile( const char* Filter, const tokenlist& toklist )
 		CAssetFilterBase *pfilter = rtti::safe_downcast<CAssetFilterBase*>( pclass->CreateObject() );
 
 		OrkAssert( pfilter != 0 );
-	
+
 		rval = pfilter->ConvertAsset( toklist );
 
 		delete( pfilter );
@@ -277,7 +277,7 @@ bool CAssetFilter::ConvertTree( const char* Filter, const std::string &InTree, c
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CAssetFilter::ListFilters()
-{	
+{
 	int idx = 0;
 	orkmessageh( "///////////////////////////////////////\n" );
 	orkmessageh( "// Orkid Filter List\n" );
@@ -297,13 +297,13 @@ bool CAssetFilter::ListFilters()
 
 class CNullAppWindow : public ork::lev2::GfxWindow
 {	public: //
-	
-	CNullAppWindow( int iX, int iY, int iW, int iH ) 
+
+	CNullAppWindow( int iX, int iY, int iW, int iH )
 		: ork::lev2::GfxWindow( iX, iY, iW, iH )
 	{
 		CreateContext();
 	}
-	
+
 	virtual void Draw( void ) {}
 //	virtual void Show( void ) {};
 //	virtual void Hide( void ) {};
@@ -312,7 +312,7 @@ class CNullAppWindow : public ork::lev2::GfxWindow
 ///////////////////////////////////////////////////////////////////////////////
 
 int Main_Filter( tokenlist toklist )
-{	
+{
 	RegisterFilters();
 
 	CFileEnv::SetFilesystemBase( "./" );
@@ -322,7 +322,7 @@ int Main_Filter( tokenlist toklist )
 
 	static SFileDevContext FxShaderFileContext;
 	file::Path::NameType fxshaderbase = ork::file::GetStartupDirectory()+"data/src/shaders/dummy";
-	file::Path fxshaderpath( fxshaderbase.c_str() ); 
+	file::Path fxshaderpath( fxshaderbase.c_str() );
 	FxShaderFileContext.SetFilesystemBaseAbs( fxshaderpath.c_str() );
 	FxShaderFileContext.SetPrependFilesystemBase( true );
 
@@ -345,7 +345,7 @@ int Main_Filter( tokenlist toklist )
 	tokenlist::iterator it = toklist.begin();
 	it++;
 	const std::string & ftype = *it++;
-	
+
 	if( blist || (ftype == (std::string) "list") )
 	{
 		CAssetFilter::ListFilters();
@@ -364,14 +364,14 @@ int Main_Filter( tokenlist toklist )
 			return bret ? 0 : -1;
 		}
 	}
-	
+
 	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 int Main_FilterTree( tokenlist toklist )
-{	
+{
 	RegisterFilters();
 
 	CFileEnv::SetFilesystemBase( "./" );
@@ -409,7 +409,7 @@ int Main_FilterTree( tokenlist toklist )
 
 	orkmessageh( "Converting Directory Tree [%s]\n", treename.c_str() );
 	CAssetFilter::ConvertTree( ftype.c_str(), treename, outdest );
-	
+
 	return 0;
 }
 
@@ -572,7 +572,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::tool::Tex2VtxBakeFilter,"Tex2VtxBakeFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::CAssetFilterBase,"CAssetFilterBase");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::fg3dFilter,"fg3dFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::WAVMKRFilter,"WAVMKRFilter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::TGADDSFilter,"TGADDSFilter");
+//INSTANTIATE_TRANSPARENT_RTTI(ork::tool::TGADDSFilter,"TGADDSFilter");
 
 #if defined(ORK_OSXX)
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::VolTexAssembleFilter,"VolTexAssembleFilter");

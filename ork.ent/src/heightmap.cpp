@@ -288,7 +288,7 @@ bool sheightmap::Load( const ork::file::Path& pth )
 
 	if( bexists )
 	{
-		ImageInput* oiio_img = ImageInput::create(abs_path.c_str());
+		auto oiio_img = ImageInput::create(abs_path.c_str());
 		if (! oiio_img)
 			return false;
 		ImageSpec spec;
@@ -302,7 +302,7 @@ bool sheightmap::Load( const ork::file::Path& pth )
 
 		bool read_ok = oiio_img->read_image (TypeDesc::UINT16, pu16);
 		oiio_img->close ();
-		delete oiio_img;
+
 		
 		OrkAssert( read_ok );
 

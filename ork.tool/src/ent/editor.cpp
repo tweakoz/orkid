@@ -40,15 +40,12 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/future.hpp>
 
+
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SceneEditorBase, "SceneEditorBase" );
 
 ///////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////
-
-Future NewEntityReq::gnilfut;
-Future NewSceneReq::gnilfut;
-Future GetSceneReq::gnilfut;
 
 static Opq gImplSerQ(0,"eddummyopq");
 
@@ -103,7 +100,7 @@ EntData* NewEntityReq::GetEntity()
 
 void NewEntityReq::SetEntity(EntData*pent)
 {
-	AssertOnOpQ(gImplSerQ); 
+	AssertOnOpQ(gImplSerQ);
 	mResult.Signal<EntData*>(pent);
 }
 
@@ -117,7 +114,7 @@ Archetype* NewArchReq::GetArchetype()
 
 void NewArchReq::SetArchetype(Archetype*parch)
 {
-	AssertOnOpQ(gImplSerQ); 
+	AssertOnOpQ(gImplSerQ);
 	mResult.Signal<Archetype*>(parch);
 }
 
@@ -131,7 +128,7 @@ SceneData* NewSceneReq::GetScene()
 
 void NewSceneReq::SetScene(SceneData*sd)
 {
-	AssertOnOpQ(gImplSerQ); 
+	AssertOnOpQ(gImplSerQ);
 	mResult.Signal<SceneData*>(sd);
 }
 
@@ -145,7 +142,7 @@ SceneData* GetSceneReq::GetScene()
 
 void GetSceneReq::SetScene(SceneData*sd)
 {
-	AssertOnOpQ(gImplSerQ); 
+	AssertOnOpQ(gImplSerQ);
 	mResult.Signal<SceneData*>(sd);
 }
 
@@ -189,7 +186,7 @@ SceneEditorBase::SceneEditorBase()
 
 	object::Connect(	& this->GetSigObjectDeleted(),
 						& mManipManager.GetSlotObjectDeleted() );
-	
+
 	object::Connect(	& mSelectionManager.GetSigObjectSelected(),
 						& mManipManager.GetSlotObjectSelected() );
 
@@ -243,7 +240,7 @@ void SceneEditorBase::QueueOpASync( const var_t& op )
 	mSerialQ.push(op);
 }
 void SceneEditorBase::QueueOpSync( const var_t& op )
-{ 
+{
 	QueueOpASync(op);
 	QueueSync();
 }
@@ -290,7 +287,7 @@ void SceneEditorBase::RunLoop()
 				tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
 				if( R.GetOnLoaded().IsA<void_lambda_t>() )
 				{
-					R.GetOnLoaded().Get<void_lambda_t>()();	
+					R.GetOnLoaded().Get<void_lambda_t>()();
 				}
 			}
 			else if( event.IsA<NewSceneReq>() )
@@ -400,7 +397,7 @@ void SceneEditorBase::NewSceneInst()
 	{
 		mpEditSceneInst = new SceneInst( mpScene, ApplicationStack::Top() );
 
-		bool bconOK = object::Connect(	this, AddPooledLiteral("SigSceneTopoChanged"), 
+		bool bconOK = object::Connect(	this, AddPooledLiteral("SigSceneTopoChanged"),
 										mpEditSceneInst, AddPooledLiteral("SlotSceneTopoChanged"));
 		OrkAssert( bconOK );
 
@@ -410,7 +407,7 @@ void SceneEditorBase::NewSceneInst()
 }
 ///////////////////////////////////////////////////////////////////////////
 SceneData* SceneEditorBase::ImplGetScene()
-{	
+{
 	////////////////////////////////////
 	// to prevent deadlock
 	ork::AssertOnOpQ2( gImplSerQ );
@@ -425,7 +422,7 @@ SceneData* SceneEditorBase::ImplGetScene()
 }
 ///////////////////////////////////////////////////////////////////////////
 SceneData* SceneEditorBase::ImplNewScene()
-{	
+{
 	////////////////////////////////////
 	// to prevent deadlock
 	ork::AssertOnOpQ2( gImplSerQ );
@@ -435,7 +432,7 @@ SceneData* SceneEditorBase::ImplNewScene()
 
 		auto& dfset = tool::GetGlobalDataFlowScheduler()->GraphSet();
 		dfset.LockForWrite().clear();
-		
+
 		mSelectionManager.ClearSelection();
 		ent::SceneData* poldscene = mpScene;
 		mpScene = new ent::SceneData;
@@ -473,13 +470,13 @@ void SceneEditorBase::ImplLoadScene( std::string fname )
 		this->mSelectionManager.ClearSelection();
 		ent::SceneData* poldscene = this->mpScene;
 		this->mpScene = 0;
-		////////////////////////////////////	
+		////////////////////////////////////
 		auto load_op = [=]()
 		{	stream::FileInputStream istream(fname.c_str());
 			reflect::serialize::XMLDeserializer iser(istream);
 			rtti::ICastable* pcastable = nullptr;
 			bool bloadOK = iser.Deserialize( pcastable );
-			////////////////////////////////////	
+			////////////////////////////////////
 			auto post_load_op = [=]()
 			{	if( bloadOK )
 				{	ent::SceneData* pscene = rtti::autocast( pcastable );
@@ -498,7 +495,7 @@ void SceneEditorBase::ImplLoadScene( std::string fname )
 						delete poldscene;
 					}
 				}
-				else 
+				else
 					mpScene = poldscene;
 
 				lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
@@ -516,7 +513,7 @@ void SceneEditorBase::ImplLoadScene( std::string fname )
 		Op(load_op).QueueASync(MainThreadOpQ());
 	};
 	Op(pre_load_op).QueueASync(UpdateSerialOpQ());
-	////////////////////////////////////		
+	////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorDupe()
@@ -529,7 +526,7 @@ void SceneEditorBase::EditorGroup()
 	if( mpScene )
 	{
 		const orkset<Object*> & SelSet = mSelectionManager.GetActiveSelection();
-	
+
 		if( SelSet.size() )
 		{
 			const CReal kmax = CFloat::TypeMax();
@@ -543,10 +540,10 @@ void SceneEditorBase::EditorGroup()
 			for( orkset<Object*>::const_iterator it=SelSet.begin(); it!=SelSet.end(); it++ )
 			{
 				SceneObject* pso = rtti::downcast<SceneObject*>( (*it) );
-				
+
 				EntData* pentdata = rtti::downcast< EntData* >( pso );
 				SceneGroup* pgroup = rtti::downcast< SceneGroup* >( pso );
-					
+
 				if(pentdata||pgroup)
 				{
 					DagNode& Node = pentdata ? pentdata->GetDagNode() : pgroup->GetDagNode();
@@ -591,7 +588,7 @@ void SceneEditorBase::EditorGroup()
 		}
 
 	}
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorArchExport()
@@ -836,7 +833,7 @@ ent::EntData *SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype)
 			{
 				ork::Object *pobj = *selection.begin();
 				EntData* pentdata = rtti::autocast(pobj);
-				bool is_ent = (pentdata!=nullptr); 
+				bool is_ent = (pentdata!=nullptr);
 				parchetype = is_ent ? pentdata->GetArchetype()
 									: rtti::autocast(pobj);
 			}
@@ -848,7 +845,7 @@ ent::EntData *SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype)
 		//pentdata->GetDagNode().GetTransformNode().GetTransform()->SetPosition(mCursor);
 		pentdata->GetDagNode().GetTransformNode().GetTransform().SetMatrix(mSpawnMatrix);
 		pentdata->SetArchetype(parchetype);
-	
+
 		if(parchetype && ConstString(parchetype->GetName()).find("/arch/") != ConstString::npos)
 		{
 			PieceString name = PieceString(parchetype->GetName()).substr(6);
@@ -928,13 +925,13 @@ ent::EntData *SceneEditorBase::EditorReplicateEntity()
 		SlotPreNewObject();
 
 		pentdata = new ent::EntData;
-		
+
 		ork::CVector3 cursor_pos = mSpawnMatrix.GetTranslation();
 
 		pentdata->GetDagNode().GetTransformNode().GetTransform().SetPosition(cursor_pos);
 		pentdata->GetDagNode().GetTransformNode().GetTransform().SetRotation(rotation);
 		pentdata->SetArchetype(archetype);
-	
+
 		if(name.empty())
 			pentdata->SetName( ork::AddPooledLiteral( ent::EntData::GetClassStatic()->GetPreferredName() ) );
 		else
@@ -967,7 +964,7 @@ ent::EntData *SceneEditorBase::EditorReplicateEntity()
 ///////////////////////////////////////////////////////////////////////////
 
 bool QueryArchetypeReferenced( ork::Object* pobj, const ent::Archetype* parch )
-{	
+{
 	bool brval = false;
 
 	/////////////////////////////
@@ -1060,9 +1057,9 @@ ork::CColor4 SceneEditorBase::GetModColor( const ork::Object* pobj ) const
 ///////////////////////////////////////////////////////////////////////////
 
 void DynamicSignalArchetypeDeleted( ork::Object* pobj, ent::Archetype* parch )
-{	
+{
 	/////////////////////////////
-	
+
 	FixedString<32> ArchSource;
 	ArchSource.format( "%08x", parch );
 
@@ -1097,7 +1094,7 @@ void SceneEditorBase::EditorDeleteObject(ork::Object* pobj)
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplDeleteObject(ork::Object* pobj)
-{	
+{
 	////////////////////////////////////
 	// to prevent deadlock
 	ork::AssertOnOpQ2( gImplSerQ );
@@ -1110,7 +1107,7 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj)
 
 		/////////////////////////////////////////
 		SceneObject* psobj = rtti::downcast<SceneObject*>( pobj );
-		
+
 		printf( "EDITORIMPLDELETE pobj<%p> psobj<%p>\n", pobj, psobj );
 
 		if( nullptr == psobj )
@@ -1160,7 +1157,7 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj)
 		SigSceneTopoChanged();
 
 	};
-	Op(lamb).QueueASync(UpdateSerialOpQ());	
+	Op(lamb).QueueASync(UpdateSerialOpQ());
 }
 void SceneEditorBase::DisableUpdates()
 {
@@ -1266,7 +1263,7 @@ void SceneEditorBase::ImplEnterPauseState()
 			mpEditSceneInst->SetSceneInstMode( ent::ESCENEMODE_PAUSE );
 		}
 	};
-	Op(lamb).QueueSync(UpdateSerialOpQ());	
+	Op(lamb).QueueSync(UpdateSerialOpQ());
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterEditState()
@@ -1303,7 +1300,7 @@ void SceneEditorBase::ImplEnterEditState()
 
 		EnableViews();
 	};
-	Op(lamb).QueueSync(UpdateSerialOpQ());	
+	Op(lamb).QueueSync(UpdateSerialOpQ());
 }
 ///////////////////////////////////////////////////////////////////////////
 SceneObject* SceneEditorBase::FindSceneObject( const char* pname )
@@ -1329,8 +1326,8 @@ ReferenceArchetype* SceneEditorBase::NewReferenceArchetype( const std::string& a
 
 	std::string str2 = CreateFormattedString( "data://archetypes/%s", archassetname.c_str() );
 	std::string ExtRefName = CreateFormattedString( "/arch/ref/%s", archassetname.c_str() );
-	
-	
+
+
 	ork::Object*pobj = asset::AssetManager<ArchetypeAsset>::Create(str2.c_str());
 	asset::AssetManager<ArchetypeAsset>::AutoLoad();
 
@@ -1422,7 +1419,7 @@ void SceneEditorBase::AddObjectToSelection( ork::Object* pobj )
 
 	/////////////////////////////////////////////////
 	object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
-	
+
 	any16 anno = pclass->Description().GetClassAnnotation( "editor.3dxfable" );
 
 	if( anno.IsSet() && anno.Get<bool>() )
@@ -1443,7 +1440,7 @@ void SceneEditorBase::AddObjectToSelection( ork::Object* pobj )
 
 			if( pdata )
 			{
-				
+
 			}
 		}
 	}
@@ -1471,7 +1468,7 @@ void SceneEditorBase::SlotNewObject( ork::Object* pobj )
 	if( mpScene )
 	{
 		SceneObject* pso = rtti::autocast(pobj);
-		
+
 		ent::Archetype* parch = 0;
 
 		if( pso )

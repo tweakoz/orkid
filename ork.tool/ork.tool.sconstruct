@@ -8,8 +8,7 @@ import ork.build.common as cmn
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
-VariantDir( 'obji', 'inc', duplicate=0  )
-SetOption('num_jobs', obu.num_cores) 
+SetOption('num_jobs', obu.num_cores)
 
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
@@ -24,13 +23,19 @@ if is_install:
 ##########################################
 
 class orktool:
-  def __init__(self):   
+  def __init__(self):
 
     if is_prep:
       return
 
     BasicEnv = Environment( ENV=os.environ, tools=['default','qt5'] )
-    
+    BasicEnv["ENV"]['PKG_CONFIG_PATH'] = '/usr/local/opt/qt5/lib/pkgconfig/'
+    BasicEnv['QT5_AUTOSCAN'] = 1
+    #BasicEnv['QT5_AUTOSCAN_STRATEGY'] = 1
+    os.environ['PKG_CONFIG_PATH'] = '$QT5DIR/lib/pkgconfig'
+
+    BasicEnv.EnableQt5Modules(string.split('QtGui QtCore QtWidgets'))
+
     ##########################################
 
     SRC_FOLDERS  = " . manip qtui toolcore ged "
@@ -66,10 +71,10 @@ class orktool:
     #########################
     if prj.IsOsx:
       #print "osx"
-      prj.AddFrameworks("OpenGL QtCore QtGui QtWidgets" )
       prj.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
       prj.AddFrameworks("Carbon Foundation ApplicationServices" )
       prj.AddFrameworks("AppKit QuartzComposer")
+      prj.AddFrameworks("OpenGL QtCore QtGui QtWidgets" )
     #########################
     ## IX libs
     #########################
@@ -86,9 +91,13 @@ class orktool:
     prj.AddLibsWithSuffix( ORKLIBS )
     prj.AddLibsWithSuffix( "libtweakout" )
     prj.AddLibsWithSuffix( "ork.unittestpp" )
-    prj.AddLibs( "nvtt nvimage nvcore nvmath nvthread bc7 squish bc6h" )
-    prj.AddLibs( "python2.7 boost_python-mt" )
+    #prj.AddLibs( "nvtt nvimage nvcore nvmath nvthread bc7 squish bc6h" )
+    prj.AddLibs( "python2.7 boost_python27-mt" )
     #########################
+    prj.mocfiles["inc/orktool/ged/ged.h"]='obj/ged/moc_ged_textedit.cpp'
+    prj.mocfiles["inc/orktool/qtui/qtapp.h"]='obj/qtui/moc_qtapp.cpp'
+    prj.mocfiles["inc/orktool/qtui/qtmainwin.h"]='obj/qtui/moc_qtmainwin.cpp'
+    prj.mocfiles["inc/orktool/qtui/qtconsole.h"]='obj/qtui/moc_qtconsole.cpp'
     prj.Configure()
     self.tool_lib = prj.SharedLibrary( )
 
@@ -114,7 +123,7 @@ class orktool:
     self.test_prg = prj_test.Program()
     Depends( self.test_prg, self.tool_lib )
 
-    bundle = prj_test.CompileEnv.Command( 
+    bundle = prj_test.CompileEnv.Command(
       target = "%s/bundle/OrkidTool.app" % sln.stage_dir,
       source = self.test_prg,
       action = "ork.bundle.make.py" )
@@ -134,4 +143,3 @@ if False==is_prep:
 Return('ret')
 
 ##########################################
-

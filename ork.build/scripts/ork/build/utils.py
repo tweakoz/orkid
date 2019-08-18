@@ -56,7 +56,7 @@ def HaveMaya():
     return mdir.exists()
   else:
     return False
-    
+
 ###########################################
 
 def chdir_root_rel(s):
@@ -97,7 +97,7 @@ def append_env(key,val):
     if False==(key in os.environ):
         set_env(key,val)
     else:
-        os.environ[key] = os.environ[key]+":"+val 
+        os.environ[key] = os.environ[key]+":"+val
         print "Setting var<%s> to<%s>" % (deco.key(key),deco.val(os.environ[key]))
 
  #########################
@@ -262,7 +262,7 @@ class context:
         actmd5 = False
         if os.path.exists(out_path):
             actmd5 = self.md5_of_file(out_path)
-        if actmd5!=desmd5:  
+        if actmd5!=desmd5:
             cmd = "wget %s -O %s" % (url,out_path)
             os.system(cmd)
             actmd5 = self.md5_of_file(out_path)
@@ -300,6 +300,6 @@ class context:
         exists = os.path.exists(dir)
         if False==exists:
             os.system( "hg clone %s %s" % (url,dir) )
-        os.chdir(dir)   
+        os.chdir(dir)
         os.system("hg update %s" % rev)
     ############################

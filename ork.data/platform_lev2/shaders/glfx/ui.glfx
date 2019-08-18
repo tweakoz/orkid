@@ -84,7 +84,7 @@ fragment_shader ps_uitext : iface_fmt
 	float texv = texture( ColorMap, frg_uv ).r;
 	if( texv==0.0f ) discard;
 	out_clr = vec4(ModColor.xyz,texv);
-	
+
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitextured : iface_fmt

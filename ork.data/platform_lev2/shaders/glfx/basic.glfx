@@ -34,7 +34,7 @@ uniform_block ub_vtx
 	uniform vec3 EmissiveColor;
 
 	uniform vec3 WCamLoc;
-	uniform float SpecularPower;	
+	uniform float SpecularPower;
 }
 
 vertex_interface iface_rigid
@@ -74,7 +74,7 @@ fragment_interface iface_fdefault
 uniform_block ub_frg
 {
 	uniform vec4 modcolor;
-	uniform sampler2D DiffuseMap;	
+	uniform sampler2D DiffuseMap;
 }
 
 fragment_interface iface_fmt
@@ -126,7 +126,7 @@ vertex_shader vs_wnormal : iface_rigid
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_wnormalsk 
+vertex_shader vs_wnormalsk
 	: iface_skinned
 	: skin_tools
 {
@@ -140,7 +140,7 @@ vertex_shader vs_wnormalsk
 }
 
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_sk 
+vertex_shader vs_sk
     : iface_skinned
     : skin_tools
 {

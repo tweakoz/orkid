@@ -4,6 +4,7 @@
 #include "synth.h"
 #include "fmosc.h"
 #include "alg_oscil.h"
+#include <ork/kernel/string/string.h>
 
 typedef std::function<void(DspBuffer& dspbuf)> fm4alg_t;
 
@@ -48,7 +49,7 @@ struct fm4vcpriv
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -78,7 +79,7 @@ struct fm4vcpriv
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -102,14 +103,14 @@ struct fm4vcpriv
         /////////////////////////////////////////////////
         _alg[2] = [this](DspBuffer& dspbuf)
         {
-            //   2  
+            //   2
             //   1  (3)
             //     0
             int inumframes = dspbuf._numframes;
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -133,14 +134,14 @@ struct fm4vcpriv
         /////////////////////////////////////////////////
         _alg[3] = [this](DspBuffer& dspbuf)
         {
-            //    (3) 
+            //    (3)
             //   1 2
             //    0
             int inumframes = dspbuf._numframes;
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -164,13 +165,13 @@ struct fm4vcpriv
         /////////////////////////////////////////////////
         _alg[4] = [this](DspBuffer& dspbuf)
         {
-            // 1 (3)  
+            // 1 (3)
             // 0  2
             int inumframes = dspbuf._numframes;
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -203,7 +204,7 @@ struct fm4vcpriv
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -233,7 +234,7 @@ struct fm4vcpriv
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -263,7 +264,7 @@ struct fm4vcpriv
             float* U = dspbuf.channel(0);
 
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 updateControllers();
                 computeOpParms();
                 float l3 = _fmosc[3]._prevOutput;
@@ -290,7 +291,7 @@ struct fm4vcpriv
    float FBL()
    {
         float fbl = float(_data._feedback)/7.0f;
-        return fbl;    
+        return fbl;
    }
    //////////////////////////////////////////////////////////////
    void updateControllers()
@@ -317,7 +318,7 @@ struct fm4vcpriv
         bool fixed = opd._fixedFrqMode;
 
         if( fixed )
-        {   
+        {
             return opd._frqFixed;
         }
         else
@@ -360,8 +361,8 @@ struct fm4vcpriv
         if(0)for( int i=0; i<4; i++ )
         {
             const auto& opd = _data._ops[i];
-            HUDTEXT += formatString("op<%d> olev<%d> wav<%d>\n", i, opd._outLevel, opd._waveform );
-            HUDTEXT += formatString("       LS<%d> RS<%d>\n", i, opd._levScaling, opd._ratScaling );
+            HUDTEXT += ork::FormatString("op<%d> olev<%d> wav<%d>\n", i, opd._outLevel, opd._waveform );
+            HUDTEXT += ork::FormatString("       LS<%d> RS<%d>\n", i, opd._levScaling, opd._ratScaling );
         }
     }
     void keyOff()
@@ -423,9 +424,9 @@ void fm4syn::keyOn(const DspKeyOnInfo& koi)
     priv->_curalg = priv->_alg[_data._alg];
     priv->_data = *progd;
 
-    l->_HKF._miscText = formatString("FM4 alg<%d> fbl<%d> MIDC<%d>\n", _data._alg, _data._feedback, _data._middleC );
+    l->_HKF._miscText = ork::FormatString("FM4 alg<%d> fbl<%d> MIDC<%d>\n", _data._alg, _data._feedback, _data._middleC );
     l->_HKF._useFm4 = true;
-    
+
     priv->keyOn(l);
 
 }

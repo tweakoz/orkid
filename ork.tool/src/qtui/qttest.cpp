@@ -50,7 +50,7 @@ namespace ork {
 
 static const std::string ReadMangledName(const char *&input, orkvector<std::string> &names, std::string &subresult) {
     const char *q = input;
-    
+
     if(*input == 'S') {
         int nameref;
         input++;
@@ -143,6 +143,7 @@ OrkQtApp::OrkQtApp( int& argc, char** argv )
 	: QApplication( argc, argv )
 	, mpMainWindow(0)
 {
+
 	bool bcon = mIdleTimer.connect( & mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
 
 	mIdleTimer.setInterval(5);
@@ -241,7 +242,7 @@ public:
 		return style->standardIcon( standardIcon, option, widget );
 	}
 	////////////////////////////////
-	QPixmap standardPixmap(StandardPixmap standardPixmap, const QStyleOption* opt, const QWidget* widget ) const 
+	QPixmap standardPixmap(StandardPixmap standardPixmap, const QStyleOption* opt, const QWidget* widget ) const
 	{
 		return style->standardPixmap( standardPixmap, opt, widget );
 	}
@@ -261,7 +262,7 @@ public:
 
 int OrkStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget *widget) const
 {
-	
+
 	switch( metric )
 	{
 		case PM_SmallIconSize:
@@ -276,7 +277,7 @@ int OrkStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const 
 			return ProxyStyle::pixelMetric(metric, option, widget);
 	}
 }
-	
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -306,6 +307,8 @@ void* BootQtThreadImpl(void* arg_opaq )
 ///////////////////////////////////////////////////////////////////////////////
 #if defined( ORK_CONFIG_QT )
 ///////////////////////////////////////////////////////////////////////////////
+    QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+
 	gpQtApplication = new OrkQtApp( args->argc, args->argv );
 
 #if defined(IX)
@@ -316,11 +319,11 @@ void* BootQtThreadImpl(void* arg_opaq )
 #endif
 
 	//OrkAssert( MainStyle!=0 );
-	
+
 //	QPalette palette = MainStyle->standardPalette();
 //	gpQtApplication->setPalette( palette );
 //	gpQtApplication->setStyle( MainStyle );
-	
+
 	std::string AppClassName = CSystem::GetGlobalStringVariable( "ProjectApplicationClassName" );
 
 	ork::lev2::CInputManager::GetRef();
@@ -336,7 +339,7 @@ void* BootQtThreadImpl(void* arg_opaq )
     file::Path fname;
 
     for( int i=0; i<args->argc; i++ )
-        if( 0 == strcmp(args->argv[i],"-edit") && (i<args->argc-1) ) 
+        if( 0 == strcmp(args->argv[i],"-edit") && (i<args->argc-1) )
             fname = args->argv[++i];
 
     if( fname.IsFile() )
@@ -355,7 +358,7 @@ void* BootQtThreadImpl(void* arg_opaq )
 	///////////////////////////////////////////////////////////////////////////////
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-	return 0;	
+	return 0;
 }
 int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode )
 {
@@ -382,4 +385,3 @@ void OrkGlobalEnableMousePointer()
 {
     //QApplication::restoreOverrideCursor();
 }
-

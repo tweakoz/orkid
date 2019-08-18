@@ -6,6 +6,7 @@
 using namespace rapidjson;
 
 extern std::string kbasepath;// = "/usr/local/share/singularity";
+#include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct KrzAlgCfg
@@ -122,7 +123,7 @@ s16* getK2V3InternalSoundBlock();
 sample* VastObjectsDB::parseSample( const Value& jsonobj, const multisample* parent )
 {
 	auto sout = new sample;
-	sout->_sampleBlock = getK2V3InternalSoundBlock();
+	sout->_sampleBlock = nullptr; //getK2V3InternalSoundBlock();
 	sout->_name = jsonobj["subSampleName"].GetString();
 	sout->_subid = jsonobj["subSampleIndex"].GetInt();
 	sout->_rootKey = jsonobj["rootKey"].GetInt();
@@ -139,12 +140,12 @@ sample* VastObjectsDB::parseSample( const Value& jsonobj, const multisample* par
 	bool isloop = jsonobj["isLooped"].GetBool();
 
 	if( pbmode == "Normal" )
-		sout->_loopMode = isloop 
-	                    ? eLoopMode::FWD 
+		sout->_loopMode = isloop
+	                    ? eLoopMode::FWD
 	                    : eLoopMode::NONE;
 	else if( pbmode == "Reverse" )
-		sout->_loopMode = isloop 
-	                    ? eLoopMode::FWD 
+		sout->_loopMode = isloop
+	                    ? eLoopMode::FWD
 	                    : eLoopMode::NONE;
 	else
 	{
@@ -168,7 +169,7 @@ sample* VastObjectsDB::parseSample( const Value& jsonobj, const multisample* par
 	sout->_natenv.resize(numsegs);
 
 	for( SizeType i = 0; i<numsegs; i++) // Uses SizeType instead of size_t
-	{	
+	{
 		auto& dest = sout->_natenv[i];
 		dest._slope = jsonneslopes[i].GetFloat();
 		dest._time = jsonnetimes[i].GetFloat();
@@ -181,7 +182,7 @@ sample* VastObjectsDB::parseSample( const Value& jsonobj, const multisample* par
 
 	int parid = parent->_objid;
 
-	auto fname = formatString("samples/%03d_%s_%d.aiff",parid,parent->_name.c_str(), sout->_subid );
+	auto fname = ork::FormatString("samples/%03d_%s_%d.aiff",parid,parent->_name.c_str(), sout->_subid );
 
 	//printf( "fname<%s>\n", fname.c_str() );
 
@@ -204,7 +205,7 @@ multisample* VastObjectsDB::parseMultiSample( const Value& jsonobj )
 	assert(jsonsamps.IsArray());
 
 	for( SizeType i = 0; i < jsonsamps.Size(); i++) // Uses SizeType instead of size_t
-	{	
+	{
 		auto s = parseSample(jsonsamps[i],msout);
 		msout->_samples[s->_subid] = s;
 	}
@@ -280,7 +281,7 @@ void VastObjectsDB::parseFBlock( const Value& fseg, DspParamData& fblk )
 	if( fseg.HasMember("PARAM_SCHEME") )
 	{
 		fblk._paramScheme = fseg["PARAM_SCHEME"].GetString();
-	
+
 		printf( "fblock pscheme<%s>\n", fblk._paramScheme.c_str() );
 	}
 
@@ -305,7 +306,7 @@ void VastObjectsDB::parseFBlock( const Value& fseg, DspParamData& fblk )
 				break;
 			}
 			case kStringType: // FRQ ?
-			{	auto toks = SplitString(v.GetString(), ' ');
+			{	auto toks = ork::SplitString(v.GetString(), ' ');
 				auto snote = toks[0];
 				auto soct = toks[1];
 				int inote = NoteFromString(snote);
@@ -483,7 +484,7 @@ layerData* VastObjectsDB::parseLayer( const Value& jsonobj, programData* pd )
 	auto it = _tempkeymaps.find(kmid);
 	if( it == _tempkeymaps.end() )
 	{
-		it = _keymaps.find(kmid);		
+		it = _keymaps.find(kmid);
 		assert(it!=_keymaps.end());
 	}
 
@@ -591,7 +592,7 @@ layerData* VastObjectsDB::parseLayer( const Value& jsonobj, programData* pd )
 	}
 	//////////////////////////////////////////////////////
 	if( jsonobj.HasMember("LFO1") )
-	{	
+	{
 		const auto& lfo1seg = jsonobj["LFO1"];
 		if( lfo1seg.IsObject() )
 			CB1->_cdata[2] = (const LfoData*) parseLfo(lfo1seg, "LFO1");
@@ -631,7 +632,7 @@ layerData* VastObjectsDB::parseLayer( const Value& jsonobj, programData* pd )
 	assert(rval->_algData._algID<=31);
 	const KrzAlgCfg ACFG = getAlgConfig(rval->_algData._algID);
 
-	auto blkname = [](int bid) -> const char* 
+	auto blkname = [](int bid) -> const char*
 	{
 		switch(bid)
 		{
@@ -673,7 +674,7 @@ layerData* VastObjectsDB::parseLayer( const Value& jsonobj, programData* pd )
 				return nullptr;
 
 			dspblock->_numParams = paramcount;
-	
+
 			switch( paramcount )
 			{
 				case 0:
@@ -742,7 +743,7 @@ layerData* VastObjectsDB::parseLayer( const Value& jsonobj, programData* pd )
 		{
 			auto blk = rval->_dspBlocks[i];
 			if( blk )
-				printf( "dspblk<%d:%p:%s>\n", i, blk, blk->_dspBlock.c_str() );		
+				printf( "dspblk<%d:%p:%s>\n", i, blk, blk->_dspBlock.c_str() );
 		}
 		//assert(false);
 	}
@@ -764,7 +765,7 @@ void VastObjectsDB::parseAlg( const rapidjson::Value& JO, AlgData& algd )
 {
 	const auto& calvin = JO["CALVIN"];
 	algd._algID = calvin["ALG"].GetInt();
-	algd._name = formatString("ALG%d", algd._algID);
+	algd._name = ork::FormatString("ALG%d", algd._algID);
 
 	const auto& amap = KrzAlgMap();
 
@@ -806,7 +807,7 @@ programData* VastObjectsDB::parseProgram( const Value& jsonobj )
 	assert(jsonlays.IsArray());
 
 	for( SizeType i = 0; i < jsonlays.Size(); i++) // Uses SizeType instead of size_t
-	{	
+	{
 		auto l = parseLayer(jsonlays[i],pdata);
 	}
 

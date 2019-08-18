@@ -5,7 +5,7 @@
 #include <math.h>
 #include <sstream>
 #include <GLFW/glfw3.h>
-#include "drawtext.h"
+//#include "drawtext.h"
 
 #include <FLAC++/decoder.h>
 
@@ -13,6 +13,7 @@
 #include "synth.h"
 #include "krzobjects.h"
 
+#if 0
 ///////////////////////////////////////////////////////////////////////////////
 
 static const int kdefaultprogID = 198;
@@ -59,10 +60,10 @@ static int patestCallback(	const void *inputBuffer,
     float *out = (float*)outputBuffer;
     unsigned int i;
     (void) inputBuffer; /* Prevent unused variable warning. */
-    
+
     the_synth->compute(framesPerBuffer,inputBuffer);
     const auto& obuf = the_synth->_obuf;
-    
+
     for( i=0; i<framesPerBuffer; i++ )
     {
         *out++ = obuf._leftBuffer[i];
@@ -83,9 +84,9 @@ void startupAudio()
 
     /* Open an audio I/O stream. */
     err = Pa_OpenDefaultStream( &pa_stream,
-                                1,          // no input channels 
-                                2,          // stereo output 
-                                paFloat32,  // 32 bit floating point output 
+                                1,          // no input channels
+                                2,          // stereo output
+                                paFloat32,  // 32 bit floating point output
                                 the_synth->_sampleRate,
                                 256,        /* frames per buffer, i.e. the number
                                                    of sample frames that PortAudio will
@@ -94,10 +95,10 @@ void startupAudio()
                                                    paFramesPerBufferUnspecified, which
                                                    tells PortAudio to pick the best,
                                                    possibly changing, buffer size.*/
-                                patestCallback, // this is your callback function 
+                                patestCallback, // this is your callback function
                                 nullptr ); //This is a pointer that will be passed to
                                          //         your callback
-    
+
     assert(err==paNoError);
 
     err = Pa_StartStream( pa_stream );
@@ -171,7 +172,7 @@ bool loadprog(int pid)
       sd_CZtest->loadBank(kbasepath+"/cz101/cz5000/cz1org64/CZ1ORGB3.SYX","orgb3");
       sd_CZtest->loadBank(kbasepath+"/cz101/cz5000/cz1org64/CZ1ORGB4.SYX","orgb4");
     */
-    }  
+    }
     //////////////////////////////
     // fm4 (tx81z)
     //////////////////////////////
@@ -191,7 +192,7 @@ bool loadprog(int pid)
       {
           auto bankname = formatString("/tx81z/TX81Z%02dN.SYX", i);
           sd_FM4test->loadBank(kbasepath+bankname);
-      }    
+      }
       _gBankSet.push_back(sd_FM4test);
     }
 
@@ -265,7 +266,7 @@ bool loadprog(int pid)
     auto sd_vkeys = new Sf2TestSynthData("Vintage Instruments.sf2",the_synth, "vintkeys");
     */
 
-    
+
     /*
     _gBankSet.push_back(sd_prot2);
     _gBankSet.push_back(sd_prot3);
@@ -329,40 +330,40 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             case 'C':
               note = 4;
               break;
-            case 'V':        
+            case 'V':
               note = 5;
               break;
-            case 'G':        
+            case 'G':
               note = 6;
               break;
-            case 'B':        
+            case 'B':
               note = 7;
               break;
-            case 'H':        
+            case 'H':
               note = 8;
               break;
-            case 'N':        
+            case 'N':
               note = 9;
               break;
-            case 'J':        
+            case 'J':
               note = 10;
               break;
-            case 'M':        
+            case 'M':
               note = 11;
               break;
-            case ',':        
+            case ',':
               note = 12;
               break;
-            case 'L':        
+            case 'L':
               note = 13;
               break;
-            case '.':        
+            case '.':
               note = 14;
               break;
-            case ';':        
+            case ';':
               note = 15;
               break;
-            case '/':        
+            case '/':
               note = 16;
               break;
             default:
@@ -376,7 +377,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
             if( is_down )
             {
                 the_synth->addEvent( 0.0f ,[=]()
-                {   
+                {
                     auto it = playingNotesMap.find(note);
                     if( it == playingNotesMap.end() )
                     {
@@ -445,7 +446,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
           if( (octave+1) < 8 )
             octave++;
           break;
-        case 344: // rshift 
+        case 344: // rshift
           if( ! down ) break;
           _gBankIndex++;
           loadprog(programID);
@@ -474,13 +475,13 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         {
           if( ! down ) break;
 
-          int nl = curProg 
+          int nl = curProg
                   ? curProg->_layerDatas.size()
                   : 0;
 
           the_synth->_soloLayer++;
 
-          if( the_synth->_soloLayer >= nl ) 
+          if( the_synth->_soloLayer >= nl )
               the_synth->_soloLayer = -1;
 
 
@@ -524,17 +525,17 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
           the_synth->_bypassDSP = ! the_synth->_bypassDSP;
           break;
         case ' ':
-          if( down or up ) 
+          if( down or up )
             the_synth->_doModWheel = down; //! the_synth->_doModWheel;
-          break;        
+          break;
         case 257: // spc
-          if( down or up ) 
+          if( down or up )
             the_synth->_doPressure = down; //! the_synth->_doPressure;
-          break;        
+          break;
         case 340: // enter
-          if( down  ) 
+          if( down  )
             the_synth->_doInput = ! the_synth->_doInput; //! the_synth->_doModWheel;
-          break;        
+          break;
         case 'Q':
           if( ! down ) break;
           the_synth->_hudpage = 0;
@@ -568,7 +569,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
               if( r && r->_sample )
               {
                 auto s = (sample*) r->_sample;
-                s->_pitchAdjust = inc 
+                s->_pitchAdjust = inc
                                 ? s->_pitchAdjust+5
                                 : s->_pitchAdjust-5;
 
@@ -595,7 +596,7 @@ void drawtext( const std::string& str, float x, float y, float scale, float r, f
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    glLoadIdentity();    
+    glLoadIdentity();
     glTranslatef(x,y, 0);
     glScalef(scale,-scale,1);
 
@@ -649,7 +650,7 @@ void runUI()
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0,width,0,height,0,1);
-        
+
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
@@ -699,7 +700,7 @@ void runUI()
 
         ///////////////////////////////
 
-        glLoadIdentity();    
+        glLoadIdentity();
         glColor4f(1,1,0,1);
         the_synth->onDrawHud(width,height);
 
@@ -762,3 +763,4 @@ std::vector<std::string> SplitString(const std::string& instr, char delim)
     SplitString(instr, delim, tokens);
     return tokens;
 }
+#endif
