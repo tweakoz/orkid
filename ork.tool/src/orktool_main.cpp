@@ -102,7 +102,7 @@ int main(int& argc, char **argv)
 	//el = setrlimit( RLIMIT_STACK, & newlimit );
 
 
-#if defined(ORK_OSX)
+#if defined(__APPLE__)
 	char path[1024];
 	uint32_t size = sizeof(path);
 	if (_NSGetExecutablePath(path, &size) == 0)
@@ -127,15 +127,30 @@ int main(int& argc, char **argv)
 	else
     	printf("buffer too small; need size %u\n", size);
 
-    QSettings settings("TweakoZ", "OrkidTool");
-    settings.beginGroup("App");
-    if( settings.contains("datadir")==false )
-    {
-        settings.setValue("datadir", qs(gexecdir+"../"));
-    }
-    settings.endGroup();
+      QSettings settings("TweakoZ", "OrkidTool");
+      settings.beginGroup("App");
+      if( settings.contains("datadir")==false )
+      {
+          settings.setValue("datadir", qs(gexecdir+"../"));
+      }
+      settings.endGroup();
+
+#else
+  gexecdir = getenv("ORKDOTBUILD_WORKSPACE_DIR");
+
+  QSettings settings("TweakoZ", "OrkidTool");
+  settings.beginGroup("App");
+  if( settings.contains("datadir")==false )
+  {
+      settings.setValue("datadir", qs(gexecdir+"/data"));
+  }
+  settings.endGroup();
 
 #endif
+
+
+
+
 	int iret = 0;
 
 	try
