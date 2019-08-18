@@ -360,12 +360,12 @@ struct CompositingContext
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingManagerComponentData : public ork::ent::SystemData
+class CompositingSystemData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(CompositingManagerComponentData, ork::ent::SystemData);
+	RttiDeclareConcrete(CompositingSystemData, ork::ent::SystemData);
 public:
 	///////////////////////////////////////////////////////
-	CompositingManagerComponentData();
+	CompositingSystemData();
 	///////////////////////////////////////////////////////
 	CompositingContext& GetCompositingContext() const { return  mContext; }
 private:
@@ -409,7 +409,7 @@ class CompositingManagerComponentInst : public ork::ent::System
 {
 	RttiDeclareAbstract(CompositingManagerComponentInst, ork::ent::ComponentInst);
 public:
-	CompositingManagerComponentInst( const CompositingManagerComponentData &data, ork::ent::SceneInst *pinst );
+	CompositingManagerComponentInst( const CompositingSystemData &data, ork::ent::SceneInst *pinst );
     ~CompositingManagerComponentInst();
 
 	CompositingComponentInst* GetCompositingComponentInst( int icidx ) const;
@@ -417,7 +417,7 @@ public:
 	void Draw(CMCIdrawdata& drawdata);
 	void ComposeToScreen( lev2::GfxTarget* pT );
 	
-	const CompositingManagerComponentData& GetCMCD() const { return	mCMCD; }
+	const CompositingSystemData& GetCMCD() const { return	mCMCD; }
 	
 	void AddCCI( CompositingComponentInst* cci );
     void RemoveCCI( CompositingComponentInst* cci );
@@ -430,7 +430,7 @@ public:
 private:
 
 	orkvector<CompositingComponentInst*>	mCCIs;
-	const CompositingManagerComponentData&	mCMCD;
+	const CompositingSystemData&	mCMCD;
 	//DrawableBufferLock						mDbLock;
 };
 

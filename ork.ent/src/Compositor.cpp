@@ -32,7 +32,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSceneItem, "CompositingSceneIt
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingGroupEffect, "CompositingGroupEffect");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingTechnique, "CompositingTechnique");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingManagerComponentData, "CompositingManager");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSystemData, "CompositingManager");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingManagerComponentInst, "CompositingManagerInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositorArchetype, "CompositorArchetype");
 

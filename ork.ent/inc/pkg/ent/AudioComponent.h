@@ -408,13 +408,13 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioManagerComponentData : public ork::ent::SystemData
+class AudioSystemData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(AudioManagerComponentData, ork::ent::SystemData);
+	RttiDeclareConcrete(AudioSystemData, ork::ent::SystemData);
 
 public:
 	///////////////////////////////////////////////////////
-	AudioManagerComponentData();
+	AudioSystemData();
 	///////////////////////////////////////////////////////
 	const ork::lev2::AudioReverbProperties&	GetReverbProperties() const { return mReverbProperties; }
 
@@ -445,11 +445,11 @@ class AudioManagerComponentInst : public ork::ent::System
 
 public:
 
-	AudioManagerComponentInst( const AudioManagerComponentData& ascd, ork::ent::SceneInst *pinst );
+	AudioManagerComponentInst( const AudioSystemData& ascd, ork::ent::SceneInst *pinst );
 
 	void AddEmitter( AudioEffectComponentInst* mEmitter ) { mEmitters.push_back(mEmitter); }
 
-	const AudioManagerComponentData& GetAmcd() const { return mAmcd; }
+	const AudioSystemData& GetAmcd() const { return mAmcd; }
 
 private:
     ~AudioManagerComponentInst() final;
@@ -457,7 +457,7 @@ private:
 	void DoStop(ork::ent::SceneInst *psi) final;
 
 	orkvector<AudioEffectComponentInst*>	mEmitters;
-	const AudioManagerComponentData& mAmcd;
+	const AudioSystemData& mAmcd;
 
 };
 

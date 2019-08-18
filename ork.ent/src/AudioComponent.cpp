@@ -503,7 +503,7 @@ void AudioEffectComponentData::Describe()
 }
 void AudioEffectComponentData::DoRegisterWithScene( ork::ent::SceneComposer& sc )
 {
-	sc.Register<AudioManagerComponentData>();
+	sc.Register<AudioSystemData>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 AudioEffectComponentData::AudioEffectComponentData()
