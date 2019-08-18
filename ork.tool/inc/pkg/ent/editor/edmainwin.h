@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 #include <pkg/ent/editor/editor.h>
 #include <orktool/ged/ged.h>
@@ -78,14 +78,14 @@ public://
 
 	///////////////////////////////////////////////////////////////////////////
 
-	QDockWidget *  NewCamView( bool bfloat );
+	QWidget*  NewCamView( bool bfloat );
 
 	void NewOutliner2View();
-	
+
 	//QDockWidget * NewToolView( bool bfloat );
 	//QDockWidget * NewDataflowView( bool bfloat );
 	QDockWidget * NewPyConView( bool bfloat );
-	
+
 	/////////////////////////////////////////////////
 	// this Ged is special it is the "master" ged, it cannot be closed
 	// and has some permanent connections to:
@@ -134,7 +134,7 @@ public://
 	void StopLocal();
 	void SaveLayout();
 	void LoadLayout();
-	
+
 	///////////////////////////////////////////////////////////////////////////
 
 	EditorMainWindow(QWidget *parent, const std::string& applicationClassName, QApplication & App);

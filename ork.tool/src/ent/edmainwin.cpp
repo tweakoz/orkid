@@ -42,15 +42,11 @@ using namespace ork::lev2;
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::EditorMainWindow, "EditorMainWindow" );
 namespace ork { namespace ent {
 
-SceneInst* GetEditorSceneInst()
-{
+SceneInst* GetEditorSceneInst(){
 	return gEditorMainWindow->mEditorBase.GetEditSceneInst();
 }
-void SceneTopoChanged()
-{
+void SceneTopoChanged(){
 	gEditorMainWindow->SlotUpdateAll();
-
-	//GetModel().SigModelInvalidated();
 }
 
 EditorMainWindow *gEditorMainWindow;
@@ -63,8 +59,8 @@ void RegisterLightingModule( EditorMainWindow& emw );
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::Describe()
-{	///////////////////////////////////////////////////////////
+void EditorMainWindow::Describe(){
+	///////////////////////////////////////////////////////////
 	RegisterAutoSignal( EditorMainWindow, NewObject );
 	///////////////////////////////////////////////////////////
 	RegisterAutoSlot( EditorMainWindow, UpdateAll );
@@ -78,17 +74,11 @@ void EditorMainWindow::Describe()
 	///////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::SlotSceneInstInvalidated( ork::Object* pSI )
-{
-
-}
+void EditorMainWindow::SlotSceneInstInvalidated( ork::Object* pSI ){}
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::SlotObjectSelected( ork::Object* pobj )
-{
+void EditorMainWindow::SlotObjectSelected( ork::Object* pobj ){
 	EntData* pdata = rtti::autocast(pobj);
-
-	if( pdata )
-	{
+	if( pdata ){
 		CMatrix4 mtx;
 		mtx = pdata->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 		mEditorBase.SetSpawnMatrix( mtx );
@@ -97,28 +87,20 @@ void EditorMainWindow::SlotObjectSelected( ork::Object* pobj )
 	mGedModelObj.Attach( pobj );
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::SlotPostNewObject( ork::Object* pobj )
-{
+void EditorMainWindow::SlotPostNewObject( ork::Object* pobj ){
 	ent::Archetype* parch = rtti::autocast(pobj);
-
-	if( parch )
-	{
+	if( parch ){
 		mGedModelObj.Attach(pobj);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::SlotObjectDeSelected( ork::Object* pobj )
-{
-
+void EditorMainWindow::SlotObjectDeSelected( ork::Object* pobj ){
 }
-void EditorMainWindow::SlotClearSelection()
-{
+void EditorMainWindow::SlotClearSelection(){
 	mGedModelObj.Attach(NULL);
 }
-void EditorMainWindow::SigNewObject( ork::Object* pOBJ )
-{
+void EditorMainWindow::SigNewObject( ork::Object* pOBJ ){
 	mSignalNewObject(&EditorMainWindow::SigNewObject,pOBJ);
-
 }
 ///////////////////////////////////////////////////////////////////////////
 EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicationClassName, QApplication & App)
@@ -132,9 +114,9 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	, ConstructAutoSlot(SpawnNewGed)
 	, ConstructAutoSlot(ClearSelection)
 	, ConstructAutoSlot(PostNewObject)
-	, ConstructAutoSlot(SceneInstInvalidated)
-{
-    setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+	, ConstructAutoSlot(SceneInstInvalidated){
+
+  setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 
 	SetupSignalsAndSlots();
 
@@ -197,8 +179,6 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	mGedModelObj.SetChoiceManager( & mEditorBase.mChoiceMan );
 
 	/////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////
-
 
 	object::Connect(	& this->GetSigNewObject(),
 						& mEditorBase.GetSlotNewObject() );
@@ -227,22 +207,19 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 
 	////////////////////////////////////
 
-	auto genviewblk = [=]()
-	{
-		QDockWidget *pdw0 = NewCamView(false);
+	auto genviewblk = [=](){
+		auto camwin = NewCamView(false);
 		SceneObjPropEdit();
-
-		if( gPythonEnabled )
-		{	//QDockWidget *pdw3 = NewPyConView(false);
+		if( gPythonEnabled ){
+			//QDockWidget *pdw3 = NewPyConView(false);
 		}
-
 		//QDockWidget *pdw3 = NewDataflowView(false);
 		////////////////////////////////////
 		//tabifyDockWidget( pdw2, pdw3 );
 		//tabifyDockWidget( pdw4, pdw2 );
-		setCentralWidget( pdw0->widget() );
+		setCentralWidget( camwin );
 	};
-	//MainThreadOpQ().push(genviewblk);
+
 	genviewblk();
 	////////////////////////////////////
 
@@ -252,24 +229,6 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
 
 	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-
-	//while( (CSystem::GetRef().GetSystemRelTime()-SplashTimeBase) < 2.5 )
-	//{
-	//	Sleep(10);
-	//}
-
-    //mpSplashScreen->finish(this);
-    //delete mpSplashScreen;
-
-	//connect( & mQtTimer, SIGNAL(timeout()), this, SLOT(SlotOnTimer()));
-	//mQtTimer.setInterval(50);
-	//mQtTimer.start();
 
 	CreateFunctionMenus();
 
@@ -288,26 +247,16 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 
 	////////////////////////////////////////////////
 
-//	mApplicationModelObj.EnablePaint();
-
 	mGedModelObj.EnablePaint();
 
 	LoadLayout();
 
 	this->activateWindow();
 
-/*	auto lamb = [=]()
-	{
-		this->SlotSpawnNewGed( ork::Application::GetContext() );
-	};
-	MainThreadOpQ().push(Op(lamb));
-*/
 }
 
-EditorMainWindow::~EditorMainWindow()
-{
+EditorMainWindow::~EditorMainWindow(){
 	ork::tool::ged::PersistMapContainer& container = mGedModelObj.GetPersistMapContainer();
-
 	ork::file::Path collapse_filename( "collapse_state.cst" );
 	stream::FileOutputStream ostream(collapse_filename.c_str());
 	reflect::serialize::XMLSerializer oser(ostream);
@@ -316,188 +265,129 @@ EditorMainWindow::~EditorMainWindow()
 
 ///////////////////////////////////////////////////////////////////////////
 
-void EditorMainWindow::SlotOnTimer()
-{
-}
+void EditorMainWindow::SlotOnTimer(){}
 
 ///////////////////////////////////////////////////////////////////////////
-bool EditorMainWindow::event(QEvent *qevent)
-{
-	switch( qevent->type() )
-	{
+bool EditorMainWindow::event(QEvent *qevent){
+	switch( qevent->type() ){
 		case ork::tool::QQedRefreshEvent::gevtype:
-
-			// NASA - we must refresh Application window here to reload ProdigyApplication object data
-			// into window
-//			mApplicationModelObj.Attach(NULL);
-//			mApplicationModelObj.Attach(Application::GetContext());
-
-			//mQedModelTool.ProcessQueue();
-			//mQedModelObj.ProcessQueue();
 			return true;
 			break;
 		default:
 			break;
 	}
-
 	return MiniorkMainWindow::event(qevent);
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::SlotUpdateAll()
-{
-	if( mEditorBase.mpScene )
-	{
-		//mEditorBase.GetEditSceneInst()->GetData().AutoLoadAssets();
-		//mEditorBase.GetEditSceneInst()->ComposeEntities();
-
+void EditorMainWindow::SlotUpdateAll(){
+	if( mEditorBase.mpScene ){
 		tool::QQedRefreshEvent* prev = new tool::QQedRefreshEvent;
 		mQtApplication.postEvent( this, prev ); //, Qt::LowEventPriority );
 	}
-
-	//if( mQedModelObj.CurrentObject() )
-	//{
-	//	mQedModelObj.QueueObject( mQedModelObj.CurrentObject() );
-	//}
-
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::ArchExport()
-{	auto lamb = [=]()
-	{	this->mEditorBase.EditorArchExport();
+void EditorMainWindow::ArchExport(){
+	auto lamb = [=](){
+		this->mEditorBase.EditorArchExport();
 	};
 	UpdateSerialOpQ().push_sync(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::ArchImport()
-{	auto lamb = [=]()
-	{	this->mEditorBase.EditorArchImport();
+void EditorMainWindow::ArchImport(){
+	auto lamb = [=](){
+		this->mEditorBase.EditorArchImport();
 	};
 	UpdateSerialOpQ().push_sync(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::ArchMakeReferenced()
-{	auto lamb = [=]()
-	{	this->mEditorBase.EditorArchMakeReferenced();
+void EditorMainWindow::ArchMakeReferenced(){
+	auto lamb = [=](){
+		this->mEditorBase.EditorArchMakeReferenced();
 	};
 	UpdateSerialOpQ().push_sync(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::ArchMakeLocal()
-{	auto lamb = [=]()
-	{	this->mEditorBase.EditorArchMakeLocal();
+void EditorMainWindow::ArchMakeLocal(){
+	auto lamb = [=](){
+		this->mEditorBase.EditorArchMakeLocal();
 	};
 	UpdateSerialOpQ().push_sync(Op(lamb));
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::NewEntity()
-{
+void EditorMainWindow::NewEntity(){
 	NewEntityReq ner;
 	mEditorBase.QueueOpASync(ner);
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::NewEntities()
-{	bool ok;
-	/*int i = QInputDialog::getInteger(this, tr("New Entities..."), tr("Entity Count:"), 1, 1, 0x7FFFFFFF, 1, &ok);
-	if(ok)
-	{	auto lamb = [=]()
-		{	this->mEditorBase.EditorNewEntities(i);
-		};
-		UpdateSerialOpQ().push_sync(Op(lamb));
-	}*/
+void EditorMainWindow::NewEntities(){
+	bool ok;
+	int i = QInputDialog::getInt(this,
+		                           tr("New Entities..."),
+															 tr("Entity Count:"),
+															 1, // value
+															 1, // min
+															 1024, // max
+															 1, // step
+															 &ok);
+	if(ok){
+		UpdateSerialOpQ().push_sync(Op([=](){
+			this->mEditorBase.EditorNewEntities(i);
+		}));
+	}
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::Group()
-{
+void EditorMainWindow::Group(){
 	mEditorBase.EditorGroup();
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::Dupe()
-{
+void EditorMainWindow::Dupe(){
 	mEditorBase.EditorDupe();
 }
 ///////////////////////////////////////////////////////////////////////////
 
-void EditorMainWindow::AddBuiltInActions()
-{
-	/////////////////////////////////////
+void EditorMainWindow::AddBuiltInActions(){
 	if( 1 ) RegisterMainWinDefaultModule( *this );
 	if( 0 ) RegisterLightingModule( *this );
-	/////////////////////////////////////
-
-	//QDockWidget*gfxdock = new QDockWidget(tr("Application"), this);
-	//gfxdock->setFloating( false );
-	//gfxdock->setAllowedAreas(Qt::AllDockWidgetAreas );
-	//gfxdock->setAttribute( Qt::WA_DeleteOnClose );
-	//gfxdock->setFeatures( QDockWidget::AllDockWidgetFeatures );
-	//gfxdock->setAutoFillBackground(false);
-
-	//mApplicationModelObj.Attach(NULL);
-
-	//tool::ged::GedVP* pvp = new tool::ged::GedVP( "Application", mApplicationModelObj );
-	//lev2::CQtGfxWindow* pgfxwin = new lev2::CQtGfxWindow( pvp );
-	//lev2::CTQT* pctqt = new lev2::CTQT( pgfxwin, gfxdock );
-
-	//pvp->GetGedWidget().BindCTQT( pctqt );
-
-	//QWidget* pqw = pctqt->GetQWidget();
-
-	//gfxdock->setWidget( pqw );
-
-	//gfxdock->setMinimumSize( 256, 128 );
-	//gfxdock->resize( 256, 256 );
-	//addDockWidget(Qt::LeftDockWidgetArea, gfxdock);
-
-	//pctqt->Show();
-	//pctqt->GetQWidget()->Enable();
-
 	ork::msleep(100);
-	//pvp->SetTarget( pctqt->mpTarget );
-
-//	mApplicationModelObj.Attach(Application::GetContext());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void EditorMainWindow::SaveLayout()
-{
-	QSettings settings("TweakoZ", "MiniorkEditor");
-
+void EditorMainWindow::SaveLayout() {
+		QSettings settings("TweakoZ", "MiniorkEditor");
     settings.beginGroup("mainWindow");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("state", saveState());
     settings.endGroup();
-
-}
-void EditorMainWindow::LoadLayout()
-{
-	QSettings settings("TweakoZ", "MiniorkEditor");
-
-    settings.beginGroup("mainWindow");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("state").toByteArray());
-    settings.endGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
+
+void EditorMainWindow::LoadLayout(){
+		QSettings settings("TweakoZ", "MiniorkEditor");
+		settings.beginGroup("mainWindow");
+		restoreGeometry(settings.value("geometry").toByteArray());
+		restoreState(settings.value("state").toByteArray());
+		settings.endGroup();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static void ReplaceArchetype(	ent::SceneData* pscene,
-								const ent::Archetype* old_arch,
-								ent::Archetype* new_arch
-							)
-{
+															const ent::Archetype* old_arch,
+															ent::Archetype* new_arch ){
+
 	orkmap<PoolString,ent::EntData*> EntDatas;
 	orkmap<PoolString, SceneObject*> scene_objects = pscene->GetSceneObjects();
-	for( orkmap<PoolString, SceneObject*>::const_iterator it=scene_objects.begin(); it!=scene_objects.end(); it++ )
-	{	ent::SceneObject* pso = it->second;
+	for( auto it=scene_objects.begin();
+	          it!=scene_objects.end();
+						it++ ){
+		ent::SceneObject* pso = it->second;
 		ent::EntData* ped = rtti::autocast( pso );
-		if( ped )
-		{
-			if( ped->GetArchetype() == old_arch )
-			{
+		if( ped ){
+			if( ped->GetArchetype() == old_arch ){
 				EntDatas.insert(std::pair<PoolString,ent::EntData*>(it->first,ped));
 			}
 		}
@@ -507,8 +397,8 @@ static void ReplaceArchetype(	ent::SceneData* pscene,
 	gEditorMainWindow->mEditorBase.EditorDeleteObject( pnonconst );
 	pscene->AddSceneObject( new_arch );
 	/////////////////////////////////////////////////////////////
-	for( orkmap<PoolString, ent::EntData*>::const_iterator it=EntDatas.begin(); it!=EntDatas.end(); it++ )
-	{	ent::EntData* ped = it->second;
+	for( orkmap<PoolString, ent::EntData*>::const_iterator it=EntDatas.begin(); it!=EntDatas.end(); it++ ){
+		ent::EntData* ped = it->second;
 		ped->SetArchetype( new_arch );
 	}
 	/////////////////////////////////////////////////////////////
@@ -517,29 +407,27 @@ static void ReplaceArchetype(	ent::SceneData* pscene,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class EntArchDeRef : public ork::tool::ged::IOpsDelegate
-{
-	RttiDeclareConcrete( EntArchDeRef, ork::tool::ged::IOpsDelegate );
-public:
+struct EntArchDeRef : public ork::tool::ged::IOpsDelegate{
+	RttiDeclareConcretePublic( EntArchDeRef, ork::tool::ged::IOpsDelegate );
 
 	EntArchDeRef() {}
 	~EntArchDeRef() {}
 
-	void Execute( ork::Object* ptarget ) final
-    {	SetProgress(0.0f);
+	void Execute( ork::Object* ptarget ) final{
+    SetProgress(0.0f);
 		ent::EntData* pentdata = rtti::autocast( ptarget );
-		if( 0 != pentdata )
-		{	const ent::Archetype* parch = pentdata->GetArchetype();
-			if( 0 != parch )
-			{	const ent::ReferenceArchetype* prefarch = rtti::autocast( parch );
-				if( 0 != prefarch )
-				{	ent::SceneData* pscene = parch->GetSceneData();
-					if( 0 != pscene )
-					{	ArchetypeAsset* passet = prefarch->GetAsset();
-						if( 0 != passet )
-						{	ent::Archetype* pderefarch = passet->GetArchetype();
-							if( 0 != pderefarch )
-							{	ReplaceArchetype( pscene, parch, pderefarch );
+		if( 0 != pentdata ){
+			const ent::Archetype* parch = pentdata->GetArchetype();
+			if( 0 != parch ){
+				const ent::ReferenceArchetype* prefarch = rtti::autocast( parch );
+				if( 0 != prefarch ){
+					ent::SceneData* pscene = parch->GetSceneData();
+					if( 0 != pscene ){
+						ArchetypeAsset* passet = prefarch->GetAsset();
+						if( 0 != passet ){
+							ent::Archetype* pderefarch = passet->GetArchetype();
+							if( 0 != pderefarch ){
+								ReplaceArchetype( pscene, parch, pderefarch );
 								/////////////////////////////////////////////////////////////
 								SetProgress(1.0f);
 								gEditorMainWindow->mEditorBase.SelectionManager().AddObjectToSelection(pderefarch);
@@ -557,28 +445,22 @@ void EntArchDeRef::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class EntArchReRef : public ork::tool::ged::IOpsDelegate
-{
-	RttiDeclareConcrete( EntArchReRef, ork::tool::ged::IOpsDelegate );
-public:
-
+struct EntArchReRef : public ork::tool::ged::IOpsDelegate {
+	RttiDeclareConcretePublic( EntArchReRef, ork::tool::ged::IOpsDelegate );
 	EntArchReRef() {}
 	~EntArchReRef() {}
 
-
-	template <typename T> void find_and_replace( T& source, const T& find, const T& replace )
-	{
+	template <typename T> void find_and_replace( T& source,
+		                                           const T& find,
+																							 const T& replace ){
 		size_t j = 0;
 		size_t idiff = replace.length()-find.length();
-		for (;(j = source.find( find, j )) != T::npos;)
-		{
-			if( idiff>0 )
-			{
+		for (;(j = source.find( find, j )) != T::npos;){
+			if( idiff>0 ){
 				size_t isourcelen = source.length();
 				source.resize( isourcelen+idiff );
 				size_t inslen = isourcelen-j;
-				for( size_t i=(inslen-1); i<inslen; i-- )
-				{
+				for( size_t i=(inslen-1); i<inslen; i-- ){
 					size_t isrc = (j+i);
 					size_t idst = (isrc+idiff);
 					source[idst] = source[isrc];
@@ -589,17 +471,16 @@ public:
 		}
 	}
 
-	void Execute( ork::Object* ptarget ) final // virtual
-	{	SetProgress(0.0f);
+	void Execute( ork::Object* ptarget ) final {
+		SetProgress(0.0f);
 		ent::EntData* pentdata = rtti::autocast( ptarget );
-		if( 0 != pentdata )
-		{	const ent::Archetype* parch = pentdata->GetArchetype();
-			if( 0 != parch )
-			{	const ent::ReferenceArchetype* prefarch = rtti::autocast( parch );
-				if( 0 != prefarch )
-				{	ent::SceneData* pscene = parch->GetSceneData();
-					if( 0 != pscene )
-					{
+		if( 0 != pentdata ){
+			const ent::Archetype* parch = pentdata->GetArchetype();
+			if( 0 != parch ){
+				const ent::ReferenceArchetype* prefarch = rtti::autocast( parch );
+				if( 0 != prefarch ){
+					ent::SceneData* pscene = parch->GetSceneData();
+					if( 0 != pscene ){
 						const PoolString OriginalName = parch->GetName();
 						/////////////////////////////////////////////////////////////////////
 						ArrayString<512> assetname;
@@ -649,16 +530,13 @@ void EntArchReRef::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class EntArchSplit : public ork::tool::ged::IOpsDelegate
-{
-	RttiDeclareConcrete( EntArchSplit, ork::tool::ged::IOpsDelegate );
-public:
+struct EntArchSplit : public ork::tool::ged::IOpsDelegate{
+	RttiDeclareConcretePublic( EntArchSplit, ork::tool::ged::IOpsDelegate );
 
 	EntArchSplit() {}
-	~EntArchSplit() {}
+	~EntArchSplit() final {}
 
-	void Execute( ork::Object* ptarget ) final
-    {
+	void Execute( ork::Object* ptarget ) final{
 		SetProgress(0.0f);
 		tool::ged::IOpsDelegate::RemoveTask( EntArchSplit::GetClassStatic(), ptarget );
 	}

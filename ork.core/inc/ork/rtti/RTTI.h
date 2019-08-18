@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -47,7 +47,7 @@ template<typename ClassType>
 class  NamePolicy
 {
 public:
-	static void Initialize() 
+	static void Initialize()
 	{
 		ClassType::GetClassStatic()->SetName(ClassType::DesignNameStatic());
 	}
@@ -132,6 +132,11 @@ private:
 #define RttiDeclareConcrete(ClassType, BaseType) \
 	DECLARE_TRANSPARENT_RTTI_INTERNAL__(ClassType, RTTI_2_ARG__(::ork::rtti::RTTI<ClassType, BaseType>))
 ////////////////
+#define RttiDeclareConcretePublic(ClassType, BaseType) \
+	DECLARE_TRANSPARENT_RTTI_INTERNAL__(ClassType, RTTI_2_ARG__(::ork::rtti::RTTI<ClassType, BaseType>))\
+	public:\
+
+////////////////
 #define RttiDeclareAbstractWithCategory(ClassType,BaseType,CategoryType) \
     DECLARE_TRANSPARENT_RTTI_INTERNAL__(ClassType, RTTI_4_ARG__(::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::AbstractPolicy, CategoryType>))
 ////////////////
@@ -176,12 +181,12 @@ private:
 			*out = rtti::safe_downcast<ObjectType *>(result); \
 		} \
 	} }	}
-	
+
 	// force link of an predeclared class type
 	// protos
 	template<typename ClassType> Class *Link();
 	Class *ForceLink(Class *);
-	 
+
 	#define INSTANTIATE_LINK_FUNCTION(ClassName) \
 		namespace ork { namespace rtti { \
 			template<> \
@@ -304,4 +309,3 @@ private:
 // {
 //    reflect::RegisterProperty(...);
 // }
-

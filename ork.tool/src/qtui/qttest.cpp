@@ -33,7 +33,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/kernel/thread.h>
 
-#define USE_PYTHON
+//#define USE_PYTHON
 
 #if defined(USE_PYTHON)
 #include <Python.h>
@@ -142,6 +142,12 @@ OrkQtApp::OrkQtApp( int& argc, char** argv )
 	: QApplication( argc, argv )
 	, mpMainWindow(0)
 {
+
+  QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());
+  setOrganizationDomain("tweakoz.com");
+  setApplicationDisplayName("OrkidTool");
+  setApplicationName("OrkidTool");
+  //setStyle("fusion");
 
 	bool bcon = mIdleTimer.connect( & mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
 
@@ -294,7 +300,7 @@ struct InputArgs
 
 OrkQtApp* gpQtApplication = nullptr;
 
-void* BootQtThreadImpl(void* arg_opaq )
+int BootQtThreadImpl(void* arg_opaq )
 {
 	InputArgs *args = (InputArgs*) arg_opaq;
 
@@ -306,12 +312,13 @@ void* BootQtThreadImpl(void* arg_opaq )
 ///////////////////////////////////////////////////////////////////////////////
 #if defined( ORK_CONFIG_QT )
 ///////////////////////////////////////////////////////////////////////////////
-    QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
+
+  QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 
 	gpQtApplication = new OrkQtApp( args->argc, args->argv );
 
 #if defined(IX)
-	//QStyle *MainStyle = new OrkStyle("Macintosh");
+	//QStyle *MainStyle = QStyleFactory::create( "WindowsXP" );
 
 #else
 	//QStyle *MainStyle = QStyleFactory::create( "WindowsXP" );
@@ -321,7 +328,7 @@ void* BootQtThreadImpl(void* arg_opaq )
 
 //	QPalette palette = MainStyle->standardPalette();
 //	gpQtApplication->setPalette( palette );
-//	gpQtApplication->setStyle( MainStyle );
+	//gpQtApplication->setStyle( MainStyle );
 
 	std::string AppClassName = CSystem::GetGlobalStringVariable( "ProjectApplicationClassName" );
 
@@ -367,7 +374,8 @@ int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode )
 
     InputArgs args(argc,argv);
     //BootQtThreadImpl((void*)& args);
-    BootQtThreadImpl( & args );
+    return BootQtThreadImpl( & args );
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
