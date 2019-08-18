@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 // Some code in here from Apple's Core Audio Play Thru sample.
 //   But according to the sample code's license,
@@ -36,7 +36,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentData, "AudioAnalysi
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentInst, "AudioAnalysisComponentInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisArchetype, "AudioAnalysisArchetype");
 
-template  ork::ent::AudioAnalysisManagerComponentInst* ork::ent::SceneInst::FindTypedSceneComponent() const;
+template  ork::ent::AudioAnalysisManagerComponentInst* ork::ent::SceneInst::FindSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -63,7 +63,7 @@ AudioAnalysisManagerComponentData::AudioAnalysisManagerComponentData()
 		mDeviceNames[id] = i->mName;
         printf( "DEVICE<%d:%s>\n", int(id), i->mName );
 	}
-	
+
 	mAudioDeviceList = pdl;
 }
 
@@ -156,18 +156,18 @@ void AudioAnalysisComponentInst::Describe()
 
 bool AudioAnalysisComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
-	ork::ent::AudioAnalysisManagerComponentInst* cmi = GetEntity()->GetSceneInst()->FindTypedSceneComponent<ent::AudioAnalysisManagerComponentInst>();
+	auto cmi = psi->FindSystem<ent::AudioAnalysisManagerComponentInst>();
 	OrkAssert(cmi!=0);
 	cmi->AddAACI(this);
-	
+
 	for( int i=0; i<128; i++ )
 	{
 		mControlValues[i] = 1.0f;
 	}
-	
+
 	mfTimeAccum=0.0f;
 	mfLastTime = 0.0f;
-	
+
 	return true;
 }
 
@@ -192,7 +192,7 @@ bool AudioAnalysisComponentInst::DoStart(ork::ent::SceneInst *inst, const ork::C
 void AudioAnalysisComponentInst::DoUpdate(SceneInst *inst)
 {
 	float fDT = inst->GetDeltaTime();
-	
+
 	mfLastTime = mfTimeAccum;
 	mfTimeAccum += fDT;
 }
@@ -213,27 +213,27 @@ AudioAnalysisComponentInst::AudioAnalysisComponentInst( const AudioAnalysisCompo
 {
 	StartMidi();
 	SceneInst* psi = pent->GetSceneInst();
-	mpAAMCI = psi->FindTypedSceneComponent<AudioAnalysisManagerComponentInst>();
+	mpAAMCI = psi->FindSystem<ent::AudioAnalysisManagerComponentInst>();
 	const AudioAnalysisManagerComponentData& AAMCD = mpAAMCI->GetAAMCD();
-	
+
 
 	int iaudiodeviceID = data.GetAudioInputDeviceID();
 	AudioDeviceList* pDeviceList = AAMCD.GetAudioDeviceList();
-	
+
 	AudioDeviceList::DeviceList& dlist = pDeviceList->GetList();
-	
+
 	bool bFOUND = false;
-	
+
 	for( AudioDeviceList::DeviceList::const_iterator it=dlist.begin(); it!=dlist.end(); it++ )
 	{
 		const AudioDeviceList::Device& device = (*it);
-		
+
 		if( device.mID == iaudiodeviceID )
 		{
 			printf( "AUDIODEVICE<%d:%s> FOUND!\n", int(device.mID), & device.mName[0] );
 			bFOUND = true;
 		}
-	}	
+	}
 	if( bFOUND )
 		mCoreAudioHost = new CAPlayThroughHost( iaudiodeviceID, this );
 }
@@ -267,7 +267,7 @@ void AudioAnalysisArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<ork::ent::AudioAnalysisComponentData>();
 }
-  
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void AudioAnalysisComponentInst::SendMidiPacket(const MIDIPacketList* pktlist)
@@ -301,9 +301,9 @@ void AudioAnalysisComponentInst::MidiReadProc(const MIDIPacketList *pktlist, voi
 		///////////////////////////////////////
 		// route message
 		///////////////////////////////////////
-		
+
 		Byte ControlByte = packet->data[0];
-		
+
 		switch( ControlByte )
 		{
 			case 0x90: // note on TRIGGER
@@ -371,7 +371,7 @@ void EnumerateMidiDevices()
 		CFStringGetCString(pname, name, sizeof(name), 0);
 		CFStringGetCString(pmanuf, manuf, sizeof(manuf), 0);
 		CFStringGetCString(pmodel, model, sizeof(model), 0);
-		
+
 		printf( "MidiDevice<%d> Name<%s>\n", i, name );
 		CFRelease(pname);
 		CFRelease(pmanuf);
@@ -436,8 +436,8 @@ float AudioAnalysisComponentInst::GetController( int icontroller ) const
 	orkmap<int,float>::const_iterator it=mControlValues.find(icontroller);
 	if( it!=mControlValues.end() )
 		return it->second;
-	
-	return 1.0f;	
+
+	return 1.0f;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -471,14 +471,14 @@ AudioDeviceList::~AudioDeviceList()
 void AudioDeviceList::BuildList()
 {
 	mDevices.clear();
-	
+
 	UInt32 propsize;
-	
+
 	verify_noerr(AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDevices, &propsize, NULL));
-	int nDevices = propsize / sizeof(AudioDeviceID);	
+	int nDevices = propsize / sizeof(AudioDeviceID);
 	AudioDeviceID *devids = new AudioDeviceID[nDevices];
 	verify_noerr(AudioHardwareGetProperty(kAudioHardwarePropertyDevices, &propsize, devids));
-	
+
 	for (int i = 0; i < nDevices; ++i)
 	{
 		AudioDevice dev(devids[i], mInputs);
@@ -500,7 +500,7 @@ void AudioDevice::Init(AudioDeviceID devid, bool isInput)
 {
 	mID = devid;
 	mIsInput = isInput;
-	if (mID == kAudioDeviceUnknown) 
+	if (mID == kAudioDeviceUnknown)
 		return;
 	UInt32 propsize;
 	propsize = sizeof(UInt32);
@@ -529,7 +529,7 @@ int AudioDevice::CountChannels()
 	OSStatus err;
 	UInt32 propSize;
 	int result = 0;
-	
+
 	err = AudioDeviceGetPropertyInfo(mID, 0, mIsInput, kAudioDevicePropertyStreamConfiguration, &propSize, NULL);
 	if (err) return 0;
 

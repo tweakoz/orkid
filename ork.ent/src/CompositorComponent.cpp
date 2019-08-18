@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -126,7 +126,7 @@ void CompositingManagerComponentInst::AddCCI( CompositingComponentInst* cci )
 
 void CompositingManagerComponentInst::RemoveCCI( CompositingComponentInst* cci )
 {
-    mCCIs.erase(std::remove_if(mCCIs.begin(), 
+    mCCIs.erase(std::remove_if(mCCIs.begin(),
                                mCCIs.end(),
                                [&cci](CompositingComponentInst* x){return (x==cci);}));
 }
@@ -150,7 +150,7 @@ const CompositingSceneItem* CompositingComponentInst::GetCompositingItem(int isc
 		{
 			ork::Object* pOBJ = it->second;
 			if( pOBJ )
-				pscene = rtti::autocast(pOBJ);		
+				pscene = rtti::autocast(pOBJ);
 		}
 	}
 	if( pscene && itemidx>= 0 )
@@ -161,9 +161,9 @@ const CompositingSceneItem* CompositingComponentInst::GetCompositingItem(int isc
 		{
 			ork::Object* pOBJ = it->second;
 			if( pOBJ )
-				rval = rtti::autocast(pOBJ);		
+				rval = rtti::autocast(pOBJ);
 		}
-	}	
+	}
 	return rval;
 }
 
@@ -186,7 +186,7 @@ EOutputTimeStep CompositingManagerComponentInst::GetCurrentFrameRateEnum() const
 	{
 		time_step = cci->GetCompositingData().OutputFrameRate();
 	}
-	return time_step;	
+	return time_step;
 }
 float CompositingManagerComponentInst::GetCurrentFrameRate() const
 {
@@ -238,15 +238,15 @@ void CompositingManagerComponentInst::Draw( CMCIdrawdata& drawdata )
 	lev2::GfxTarget* pTARG = framedata.GetTarget();
 	orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
 	ent::CompositingManagerComponentInst* pCMCI = this;
-	
+
 	SRect tgtrect = SRect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 
 	anyp PassData;
 	PassData.Set<orkstack<ent::CompositingPassData>*>( & cgSTACK );
 	the_renderer.GetFrameData().SetUserProperty( "nodes", PassData );
-	
+
 	/////////////////////////////////////////////////////////////////////////////////
-	
+
 	ESceneInstMode emode = mpSceneInst->GetSceneInstMode();
 
 	/////////////////////////////////
@@ -263,12 +263,12 @@ void CompositingManagerComponentInst::Draw( CMCIdrawdata& drawdata )
 		/////////////////////////////////
 
 		CompositingComponentInst* pCCI = GetCompositingComponentInst(0);
-		
+
 		if( pCCI )
 		{
 			CompositingContext& CTX = pCCI->GetCCtx();
 			CTX.Draw(pTARG,drawdata,pCCI);
-		}	
+		}
 		DrawableBuffer::EndDbRead(DB);//mDbLock.Aquire(7);
 	}
 
@@ -408,15 +408,15 @@ const CompositingGroup* CompositingComponentInst::GetGroup(const PoolString& grp
 
 bool CompositingComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
-	mpCMCI = psi->FindTypedSceneComponent<CompositingManagerComponentInst>();
+	mpCMCI = psi->FindSystem<CompositingManagerComponentInst>();
 
 	if(mpCMCI)
 		mpCMCI->AddCCI(this);
-		
+
 	mfTimeAccum=0.0f;
 	mfLastTime = 0.0f;
 	miActiveSceneItem = 0;
-	
+
 	return true;
 }
 
@@ -433,7 +433,7 @@ void CompositingComponentInst::DoUnLink(SceneInst *psi)
 void CompositingComponentInst::DoUpdate(SceneInst *inst)
 {
 	float fDT = inst->GetDeltaTime();
-	
+
 	mfLastTime = mfTimeAccum;
 	mfTimeAccum += fDT;
 
@@ -483,7 +483,7 @@ bool CompositingComponentInst::DoNotify(const ork::event::Event *event)
 		{	mCompositingData.GetActiveItem() = v;
 			printf( "Apply Value<%s> to CompositingComponentInst<%p>.ActiveItem\n", v.c_str(), this );
 		}
-		
+
 		return true;
 
 	}
@@ -491,24 +491,24 @@ bool CompositingComponentInst::DoNotify(const ork::event::Event *event)
 	{
 		const PoolString& ActiveScene = mCompositingData.GetActiveScene();
 		const PoolString& ActiveItem = mCompositingData.GetActiveItem();
-		
+
 		psse->PushNode( "ActiveScene" );
-		{	
+		{
 			ent::PerfSnapShotEvent::str_type NodeName = psse->GenNodeName();
 			PerfProgramTarget* target = new PerfProgramTarget( NodeName.c_str(), ActiveScene.c_str() );
 			psse->GetProgram()->AddTarget( NodeName.c_str(), target );
 		}
 		psse->PopNode();
-		
+
 		psse->PushNode( "ActiveItem" );
-		{	
+		{
 			ent::PerfSnapShotEvent::str_type NodeName = psse->GenNodeName();
 			PerfProgramTarget* target = new PerfProgramTarget( NodeName.c_str(), ActiveItem.c_str() );
 			psse->GetProgram()->AddTarget( NodeName.c_str(), target );
 		}
 		psse->PopNode();
-		
-	
+
+
 	}
 	return false;
 }
@@ -531,7 +531,7 @@ void CompositorArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<ork::ent::CompositingComponentData>();
 }
-  
+
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////

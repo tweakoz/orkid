@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -36,7 +36,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingManagerComponentData, "Composi
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingManagerComponentInst, "CompositingManagerInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositorArchetype, "CompositorArchetype");
 
-template  ork::ent::CompositingManagerComponentInst* ork::ent::SceneInst::FindTypedSceneComponent() const;
+template  ork::ent::CompositingManagerComponentInst* ork::ent::SceneInst::FindSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -47,7 +47,7 @@ namespace ork { namespace ent {
 //////////////////////////////////////////////////////////////////////////////
 void CompositingTechnique::Describe()
 {
-}	
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ void CompositingGroupEffect::GetTextureAccessor( ork::rtti::ICastable* & tex) co
 {	tex = mTexture;
 }
 
-ork::lev2::Texture*	CompositingGroupEffect::GetFbUvMap() const 
+ork::lev2::Texture*	CompositingGroupEffect::GetFbUvMap() const
 {
     return (mTexture==0) ? 0 : mTexture->GetTexture();
 }

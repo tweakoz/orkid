@@ -168,7 +168,7 @@ struct GlSlFxParser
 		{
 			const token* vt_tok = v.GetToken(i);
 
-			printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
+			//printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
 
 			if( vt_tok->text == "import" )
 			{
@@ -1126,7 +1126,7 @@ struct GlSlFxParser
 		while( itokidx<tokens.size() )
 		{
 			const token& tok = tokens[itokidx];
-			printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1, tok.icol+1, tok.text.c_str() );
+			//printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1, tok.icol+1, tok.text.c_str() );
 
 			if( tok.text == "\n" )
 			{

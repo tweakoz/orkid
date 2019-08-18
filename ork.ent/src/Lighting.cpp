@@ -29,7 +29,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightArchetype, "LightArchetype");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingManagerComponentData, "LightingManagerSceneComponentData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingManagerComponentInst, "LightingManagerSceneComponentInst");
 
-template  ork::ent::LightingManagerComponentInst* ork::ent::SceneInst::FindTypedSceneComponent() const;
+template  ork::ent::LightingManagerComponentInst* ork::ent::SceneInst::FindSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -139,7 +139,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 			ork::CColor4 ObjColor;
 			ObjColor.SetRGBAU32( reinterpret_cast<U32>( pren->GetObject() ) );
 
-			ork::CColor4 color = targ->FBI()->IsPickState() 
+			ork::CColor4 color = targ->FBI()->IsPickState()
 									? ObjColor
 									: ModColor*ppntlight->GetColor();
 
@@ -176,7 +176,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 							const ork::lev2::XgmCluster& cluster = submesh.RefCluster(ic);
 
 							ork::CColor4 ModColor = pren->GetModColor();
-	
+
 							if( pyo->mpLight )
 							{
 								ModColor *= pyo->mpLight->GetColor();
@@ -184,7 +184,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 							ork::CColor4 ObjColor;
 							ObjColor.SetRGBAU32( reinterpret_cast<U32>( pren->GetObject() ) );
 
-							ork::CColor4 color = targ->FBI()->IsPickState() 
+							ork::CColor4 color = targ->FBI()->IsPickState()
 													? ObjColor
 													: ModColor;
 
@@ -213,7 +213,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 							const ork::lev2::CallbackRenderable* pren )
 		{
 			const yo* pyo = pren->GetUserData0().Get<const yo*>();
-			
+
 			if( pyo->mpLight )
 			{
 				ork::lev2::PointLight* ppntlight = rtti::autocast(pyo->mpLight);
@@ -269,12 +269,11 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 			{
 				bool bisdyn = mLightData.IsDynamic();
 				GetLight()->mbIsDynamic = bisdyn;
-				ork::ent::LightingManagerComponentInst* lmi = psi->FindTypedSceneComponent<ent::LightingManagerComponentInst>();
 
-				if( lmi )
-				{
+				if( auto lmi = psi->FindSystem<ent::LightingManagerComponentInst>() ) {
+
 					ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
-					
+
 					if( bisdyn )
 					{
 						//orkprintf( "AddLight<%d:%08x>\n", lightmanager.mGlobalMovingLights.mPrioritizedLights.size(), GetLight() );
@@ -287,7 +286,7 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 				}
 				break;
 			}
-		}								
+		}
 	}
 
 	return true;
@@ -295,10 +294,8 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 
 LightingComponentInst::~LightingComponentInst()
 {
-	ork::ent::LightingManagerComponentInst* lmi = GetEntity()->GetSceneInst()->FindTypedSceneComponent<ent::LightingManagerComponentInst>();
+	if( auto lmi = GetEntity()->GetSceneInst()->FindSystem<ent::LightingManagerComponentInst>() ) {
 
-	if( lmi )
-	{
 		ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
 
 		ork::lev2::LightContainer& global_container = lightmanager.mGlobalMovingLights;
@@ -379,4 +376,3 @@ void LightingComponentData::DoRegisterWithScene( ork::ent::SceneComposer& sc )
 ///////////////////////////////////////////////////////////////////////////////
 template const ork::ent::LightingComponentData* ork::ent::EntData::GetTypedComponent<ork::ent::LightingComponentData>() const;
 template ork::ent::LightingComponentInst* ork::ent::Entity::GetTypedComponent<ork::ent::LightingComponentInst>(bool);
-

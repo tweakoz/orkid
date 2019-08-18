@@ -70,7 +70,7 @@ template <typename T> const T* SceneData::FindTypedObject( const PoolString& pst
 	T* pret = (cd==0) ? 0 : rtti::safe_downcast<T*>( cd );
 	return pret;
 }
-template <typename T > 
+template <typename T >
 T* SceneData::GetTypedSceneComponent() const
 {
 	const ork::object::ObjectClass* pclass = T::GetClassStatic();
@@ -110,8 +110,8 @@ template <typename T> T* SceneInst::FindTypedEntityComponent( const PoolString& 
 	printf( "FINDENT<%s:%p> comp<%p>\n", entname.c_str(), pent, pret );
 	return pret;
 }
-template <typename T > 
-T* SceneInst::FindTypedSceneComponent() const
+template <typename T >
+T* SceneInst::FindSystem() const
 {
 	const ork::object::ObjectClass* pclass = T::GetClassStatic();
 	SceneComponentLut::const_iterator it = mSceneComponents.find( pclass );

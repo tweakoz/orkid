@@ -315,7 +315,7 @@ ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInst::DoPlay( AudioEffec
 	}
 	return 0;
 }
-void AudioMultiEffectPlayInst::DoStop(AudioEffectComponentInst* aeci,ork::lev2::AudioInstrumentPlayback*pb) 
+void AudioMultiEffectPlayInst::DoStop(AudioEffectComponentInst* aeci,ork::lev2::AudioInstrumentPlayback*pb)
 {
 	AudioMultiEffectPlayInstItemBase* pitem = pb->GetUserData0().Get<AudioMultiEffectPlayInstItemBase*>();
 
@@ -380,7 +380,7 @@ AudioMultiEffectPlayInstItemFixed::AudioMultiEffectPlayInstItemFixed(const Audio
 }
 ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInstItemFixed::DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param)
 {
-	ork::lev2::AudioInstrumentPlayback* sound_playback = 
+	ork::lev2::AudioInstrumentPlayback* sound_playback =
 		ork::lev2::AudioDevice::GetDevice()->PlaySound( param.mProgram, param );
 	return sound_playback;
 }
@@ -432,12 +432,12 @@ void AudioMultiEffectPlayInstItemModular::DoStop(AudioEffectComponentInst* aeci,
 }
 ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInstItemModular::DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param)
 {
-	ork::lev2::AudioGraph* graph = gbusetemplate 
-									?	(ork::lev2::AudioGraph*) & mItemData.GetTemplate() 
+	ork::lev2::AudioGraph* graph = gbusetemplate
+									?	(ork::lev2::AudioGraph*) & mItemData.GetTemplate()
 									:	mGraphPool.Allocate();
 
 	if( graph )
-	{	
+	{
 		ork::dataflow::dyn_external* dgmod = 0;
 
 		ork::ent::DataflowRecieverComponentInst* dflowreciever = aeci->GetDflowReciver();
@@ -513,7 +513,7 @@ AudioEffectComponentData::~AudioEffectComponentData()
 {
 	for( ork::orklut<ork::PoolString,AudioEffectPlayDataBase*>::const_iterator
 			it=mSoundMap.begin();
-			it!=mSoundMap.end(); 
+			it!=mSoundMap.end();
 			it++ )
 	{
 		delete it->second;
@@ -554,7 +554,7 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	, mAmci( 0 )
 	, mDflowRecv( 0 )
 {
-	mAmci = pent->GetSceneInst()->FindTypedSceneComponent<AudioManagerComponentInst>();
+	mAmci = pent->GetSceneInst()->FindSystem<AudioManagerComponentInst>();
 	///////////////////////////////////////////////////////////
 
 	const ork::orklut<ork::PoolString,ork::lev2::AudioBank*>& bmap = mData.GetBankMap();
@@ -698,7 +698,7 @@ void AudioEffectComponentInst::UpdateEmitter( const ork::CCameraData* camdat1, c
 
 				emitterctx.mEmitter->GetParams().mAttenCurve = atten_curve;
 				emitterctx.mEmitter->GetParams().mfMaxDistance = emitterctx.mMaxDist;
-	
+
 				emitterctx.mEmitterPB = emitterctx.mEmitter->Play( this, -1, -1, 0 );
 				if( emitterctx.mEmitterPB )
 				{
