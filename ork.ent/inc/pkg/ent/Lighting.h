@@ -17,9 +17,9 @@
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightingManagerComponentData : public ork::ent::SceneComponentData
+class LightingManagerComponentData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(LightingManagerComponentData, ork::ent::SceneComponentData);
+	RttiDeclareConcrete(LightingManagerComponentData, ork::ent::SystemData);
 
 public:
 	///////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ public:
 
 private:
 
-    ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const final;  
+    ork::ent::System* CreateComponentInst(ork::ent::SceneInst *pinst) const final;  
 	ork::Object* LmdAccessor() { return & mLmd; }
 
 	ork::lev2::LightManagerData	mLmd;
@@ -39,7 +39,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightingManagerComponentInst : public ork::ent::SceneComponentInst
+class LightingManagerComponentInst : public ork::ent::System
 {
 	RttiDeclareAbstract(LightingManagerComponentInst, ork::ent::ComponentInst);
 

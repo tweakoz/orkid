@@ -21,8 +21,8 @@
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ComponentDataClass, "ComponentDataClass")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ComponentData, "ComponentData")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ComponentInst, "ComponentInst")
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneComponentData, "SceneComponentData")
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneComponentInst, "SceneComponentInst")
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SystemData, "SystemData")
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::System, "System")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorPropMapData, "EditorPropMapData")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorPropMapInst, "EditorPropMapInst")
 
@@ -32,29 +32,29 @@ template class ork::reflect::DirectObjectVectorPropertyType< orkvector<ork::Pool
 
 namespace ork { namespace ent {
 
-void SceneComponentData::Describe()
+void SystemData::Describe()
 {
 }
-void SceneComponentInst::Describe()
+void System::Describe()
 {
 }
-void SceneComponentInst::Link( SceneInst* psi )
+void System::Link( SceneInst* psi )
 {
 	DoLink(psi);
 }
-void SceneComponentInst::UnLink( SceneInst* psi )
+void System::UnLink( SceneInst* psi )
 {
 	DoUnLink(psi);
 }
-void SceneComponentInst::Start( SceneInst* psi )
+void System::Start( SceneInst* psi )
 {
 	DoStart(psi);
 }
-void SceneComponentInst::Stop( SceneInst* psi )
+void System::Stop( SceneInst* psi )
 {
 	DoStop(psi);
 }
-void SceneComponentInst::Update( SceneInst* psi )
+void System::Update( SceneInst* psi )
 {
 	DoUpdate( psi );
 }

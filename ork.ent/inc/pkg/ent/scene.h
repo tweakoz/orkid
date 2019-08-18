@@ -65,8 +65,8 @@ class DagNode;
 class SceneObject;
 class Entity;
 class ComponentInst;
-class SceneComponentData;
-class SceneComponentInst;
+class SystemData;
+class System;
 class Drawable;
 class DrawableBuffer;
 class Layer;
@@ -102,7 +102,7 @@ class SceneData : public ork::Object
 
 public:
 
-	typedef orklut<const ork::object::ObjectClass*,SceneComponentData*> SceneComponentLut;
+	typedef orklut<const ork::object::ObjectClass*,SystemData*> SceneComponentLut;
 
 	SceneData();
 	~SceneData(); /*virtual*/
@@ -145,7 +145,7 @@ public:
 	T* GetTypedSceneComponent() const;
 
 	const SceneComponentLut& GetSceneComponents() const { return mSceneComponents; }
-	void AddSceneComponent( SceneComponentData* pcomp );
+	void AddSceneComponent( SystemData* pcomp );
 	void ClearSceneComponents();
 
 	//////////////////////////////////////////////////////////
@@ -168,7 +168,7 @@ private:
 
 struct SceneComposer
 {
-	orklut<const object::ObjectClass*,SceneComponentData*>	mComponents;
+	orklut<const object::ObjectClass*,SystemData*>	mComponents;
 	SceneData* mpSceneData;
 
 	template <typename T> T* Register();
@@ -236,7 +236,7 @@ class SceneInst : public ork::Object
 public:
 
 	typedef orkmap<PoolString, orklist<ComponentInst*> > ActiveComponentType;
-	typedef orklut<const ork::object::ObjectClass*,SceneComponentInst*> SceneComponentLut;
+	typedef orklut<const ork::object::ObjectClass*,System*> SceneComponentLut;
 	typedef orklist<ComponentInst*> ComponentList;
 	typedef orkset<Entity*> EntitySet;
 
@@ -323,7 +323,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	void AddSceneComponent( SceneComponentInst* pcomp );
+	void AddSceneComponent( System* pcomp );
 	void ClearSceneComponents();
 
 	template <typename T >

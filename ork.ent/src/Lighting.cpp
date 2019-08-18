@@ -26,8 +26,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingComponentData, "LightingComponent
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingComponentInst, "LightingComponentInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightArchetype, "LightArchetype");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingManagerComponentData, "LightingManagerSceneComponentData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingManagerComponentInst, "LightingManagerSceneComponentInst");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingManagerComponentData, "LightingManagerSystemData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingManagerComponentInst, "LightingManagerSystem");
 
 template  ork::ent::LightingManagerComponentInst* ork::ent::SceneInst::FindSystem() const;
 
@@ -329,7 +329,7 @@ LightingManagerComponentData::LightingManagerComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::SceneComponentInst* LightingManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System* LightingManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
 {
 	return new LightingManagerComponentInst( *this, pinst );
 }
@@ -344,7 +344,7 @@ void LightingManagerComponentInst::Describe()
 ///////////////////////////////////////////////////////////////////////////////
 
 LightingManagerComponentInst::LightingManagerComponentInst( const LightingManagerComponentData& data, ork::ent::SceneInst *pinst )
-	: ork::ent::SceneComponentInst( &data, pinst )
+	: ork::ent::System( &data, pinst )
 	, mLightManager(data.Lmd())
 {
 }

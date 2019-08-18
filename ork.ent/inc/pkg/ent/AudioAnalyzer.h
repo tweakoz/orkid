@@ -150,9 +150,9 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioAnalysisManagerComponentData : public ork::ent::SceneComponentData
+class AudioAnalysisManagerComponentData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(AudioAnalysisManagerComponentData, ork::ent::SceneComponentData);
+	RttiDeclareConcrete(AudioAnalysisManagerComponentData, ork::ent::SystemData);
 public:
 	///////////////////////////////////////////////////////
 	AudioAnalysisManagerComponentData();
@@ -161,7 +161,7 @@ public:
 
 private:
 
-    ork::ent::SceneComponentInst* CreateComponentInst(ork::ent::SceneInst *pinst) const final; 
+    ork::ent::System* CreateComponentInst(ork::ent::SceneInst *pinst) const final; 
 	std::map<AudioDeviceID,std::string>	mDeviceNames;
 	std::string							mSelectedDevice;
 	AudioDeviceList*					mAudioDeviceList;
@@ -170,7 +170,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class AudioAnalysisManagerComponentInst : public ork::ent::SceneComponentInst
+class AudioAnalysisManagerComponentInst : public ork::ent::System
 {
 	RttiDeclareAbstract(AudioAnalysisManagerComponentInst, ork::ent::ComponentInst);
 public:
