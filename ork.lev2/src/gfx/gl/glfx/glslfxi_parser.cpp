@@ -23,7 +23,7 @@
 namespace ork { namespace lev2 {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-static const std::map<std::string,int> gattrsorter = 
+static const std::map<std::string,int> gattrsorter =
 {
 	{"POSITION",0},
 	{"NORMAL",1},
@@ -137,9 +137,9 @@ struct GlSlFxParser
 	GlslFxScanner& scanner;
 	const AssetPath mPath;
 	GlslFxContainer* mpContainer;
-	
+
 	///////////////////////////////////////////////////////////
-	GlSlFxParser( const AssetPath& pth, GlslFxScanner& s ) 
+	GlSlFxParser( const AssetPath& pth, GlslFxScanner& s )
 		: mPath(pth)
 		, scanner(s)
 		, mpContainer(nullptr)
@@ -168,7 +168,7 @@ struct GlSlFxParser
 		{
 			const token* vt_tok = v.GetToken(i);
 
-			//printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
+			printf( "vt_tok<%s>\n", vt_tok->text.c_str() );
 
 			if( vt_tok->text == "import" )
 			{
@@ -178,7 +178,7 @@ struct GlSlFxParser
 
 				i +=3;
 			}
-			else 
+			else
 				i++;
 		}
 
@@ -294,7 +294,7 @@ struct GlSlFxParser
 	}
 	///////////////////////////////////////////////////////////
 	GlslFxStreamInterface* ParseFxInterface(GLenum iftype)
-	{	
+	{
 		GlslFxScanViewRegex r("(\n)",true);
 		GlslFxScannerView v( scanner, r );
 		v.ScanBlock(itokidx);
@@ -334,7 +334,7 @@ struct GlSlFxParser
 				psi->Inherit(*it_vi->second);
 			}
 			else if( is_geo )
-			{	
+			{
 				auto it_fig = mpContainer->mGeometryInterfaces.find(ptok->text);
 				auto it_fiv = mpContainer->mVertexInterfaces.find(ptok->text);
 				auto it_fie = mpContainer->mTessEvalInterfaces.find(ptok->text);
@@ -343,8 +343,8 @@ struct GlSlFxParser
 				bool is_tee = (it_fie!=mpContainer->mTessEvalInterfaces.end());
 				assert(is_geo||is_vtx||is_tee);
 
-				auto par = is_geo 
-				         ? it_fig->second 
+				auto par = is_geo
+				         ? it_fig->second
 					     : is_vtx
 					     ? it_fiv->second
 					     : is_tee
@@ -353,18 +353,18 @@ struct GlSlFxParser
 
 				assert( par != nullptr );
 
-				//printf( "iface<%s> inherit<%s:%p>\n", 
+				//printf( "iface<%s> inherit<%s:%p>\n",
 				//	psi->mName.c_str(),
 				//	ptok->text.c_str(), par );
 
 				psi->Inherit(*par);
-			}			
+			}
 			else
-			{	
+			{
 				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
 				assert(it_fi!=mpContainer->mFragmentInterfaces.end());
 				psi->Inherit(*it_fi->second);
-			}			
+			}
 		}
 
 		////////////////////////
@@ -377,7 +377,7 @@ struct GlSlFxParser
 			const token* vt_tok = v.GetToken(i);
 			const token* dt_tok = v.GetToken(i+1);
 			const token* nam_tok = v.GetToken(i+2);
-			
+
 			//printf( "  ParseFxInterface Tok<%s>\n", vt_tok->text.c_str() );
 
 			if( vt_tok->text == "layout" )
@@ -440,7 +440,7 @@ struct GlSlFxParser
 				if( v.GetToken(i+3)->text==":" )
 				{
 					pattr->mSemantic = v.GetToken(i+4)->text;
-					//printf( "SEMANTIC<%s>\n", pattr->mSemantic.c_str() );	
+					//printf( "SEMANTIC<%s>\n", pattr->mSemantic.c_str() );
 					i += 6;
 				}
 				else if( v.GetToken(i+3)->text==";" )
@@ -542,7 +542,7 @@ struct GlSlFxParser
 		size_t inumdecos = v.GetNumBlockDecorators();
 
 		assert(inumdecos<2);
-		
+
 		for( size_t ideco=0; ideco<inumdecos; ideco++ )
 		{
 			auto ptok = v.GetBlockDecorator(ideco);
@@ -711,7 +711,7 @@ struct GlSlFxParser
 				auto it_te = mpContainer->mTessEvalInterfaces.find(ptok->text);
 				auto it_gi = mpContainer->mGeometryInterfaces.find(ptok->text);
 				auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
-					
+
 				if( it_lib != mpContainer->mLibBlocks.end() )
 				{
 					auto plibblock = it_lib->second;
@@ -724,22 +724,22 @@ struct GlSlFxParser
 					pshader->mpInterface = iface;
 					//printf( "VINF <%s>\n", ptok->text.c_str() );
 				}
-				else if( btsc && ( it_tc != mpContainer->mTessCtrlInterfaces.end() ) ) 
+				else if( btsc && ( it_tc != mpContainer->mTessCtrlInterfaces.end() ) )
 				{	iface = mpContainer->GetTessCtrlInterface( ptok->text );
 					pshader->mpInterface = iface;
 					//printf( "TCINF <%s>\n", ptok->text.c_str() );
 				}
-				else if( btse && ( it_te != mpContainer->mTessEvalInterfaces.end() ) ) 
+				else if( btse && ( it_te != mpContainer->mTessEvalInterfaces.end() ) )
 				{	iface = mpContainer->GetTessEvalInterface( ptok->text );
 					pshader->mpInterface = iface;
 					//printf( "TEINF <%s>\n", ptok->text.c_str() );
 				}
-				else if( bgeo && ( it_gi != mpContainer->mGeometryInterfaces.end() ) ) 
+				else if( bgeo && ( it_gi != mpContainer->mGeometryInterfaces.end() ) )
 				{	iface = mpContainer->GetGeometryInterface( ptok->text );
 					pshader->mpInterface = iface;
 					//printf( "GINF <%s>\n", ptok->text.c_str() );
 				}
-				else if( bfrg && ( it_fi != mpContainer->mFragmentInterfaces.end() ) ) 
+				else if( bfrg && ( it_fi != mpContainer->mFragmentInterfaces.end() ) )
 				{	iface = mpContainer->GetFragmentInterface( ptok->text );
 					pshader->mpInterface = iface;
 					//printf( "FINF <%s>\n", ptok->text.c_str() );
@@ -904,7 +904,7 @@ struct GlSlFxParser
 			code_inject(lib_view);
 
 			shaderbody += "///////////////////////////////////////////////////////////////////\n";
-		}	
+		}
 		///////////////////////////////////
 		prline();
 		shaderbody += "void " + shadername + "()\n{";
@@ -998,9 +998,9 @@ struct GlSlFxParser
 			else if( vt_tok->text == "pass" )
 			{
 				//printf( "parsing pass at i<%d>\n", i );
-				// i is in view space, we need the globspace index to 
+				// i is in view space, we need the globspace index to
 				//  start the pass parse
-				int globspac_passtoki = v.GetTokenIndex(i); 
+				int globspac_passtoki = v.GetTokenIndex(i);
 				i = ParseFxPass(globspac_passtoki,ptek);
 			}
 			else if( vt_tok->text == "\n" )
@@ -1037,7 +1037,7 @@ struct GlSlFxParser
 		{
 			const token* vt_tok = v.GetToken(i);
 			//printf( "  ParseFxPass Tok<%s>\n", vt_tok->text.c_str() );
-			
+
 			if( vt_tok->text == "vertex_shader" )
 			{
 				std::string vsnam = v.GetToken(i+2)->text;
@@ -1115,19 +1115,19 @@ struct GlSlFxParser
 	GlslFxContainer* Parse( const std::string& fxname)
 	{
 		const std::vector<token>& tokens = scanner.tokens;
-		
+
 		//printf( "NumTokens<%d>\n", int(tokens.size()) );
-		
+
 		mpContainer = new GlslFxContainer( fxname.c_str() );
 		bool bOK = true;
-		
+
 		itokidx = 0;
 
 		while( itokidx<tokens.size() )
 		{
 			const token& tok = tokens[itokidx];
-			//printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1, tok.icol+1, tok.text.c_str() );
-			
+			printf( "token<%d> iline<%d> col<%d> text<%s>\n", itokidx, tok.iline+1, tok.icol+1, tok.text.c_str() );
+
 			if( tok.text == "\n" )
 			{
 				itokidx++;
@@ -1228,37 +1228,37 @@ struct GlSlFxParser
  std::string::const_iterator end = fx_string.end();
  boost::match_results<std::string::const_iterator> what;
  boost::match_flag_type flags = boost::match_default;
- 
+
  while( boost::regex_search( start, end, what, re_container, flags ) )
  {
- // what[0] contains the whole string 
- // what[5] contains the class name. 
- // what[6] contains the template specialisation if any. 
- // add class name and position to map: 
+ // what[0] contains the whole string
+ // what[5] contains the class name.
+ // what[6] contains the template specialisation if any.
+ // add class name and position to map:
  //m[std::string(what[5].first, what[5].second)
  //  + std::string(what[6].first, what[6].second)]
  //= what[5].first - file.begin();
- 
+
  const char* match_start = fx_string.c_str()+(what[1].first-fx_string.begin());
  const char* match_end = fx_string.c_str()+(what[1].second-fx_string.begin());
- 
+
  printf( "what5<%s> end<%s>\n", what[1].str().c_str(), match_end );
  // update search position:
  start = what[0].second;
- // update flags: 
+ // update flags:
  flags |= boost::match_prev_avail;
  flags |= boost::match_not_bob;
- 
+
  }
  //	printf( "nummatch<%d>\n", int(res.size()) );
- 
+
  //	boost::sregex_iterator it(fx_string.begin(), fx_string.end(), re_identifier );
  //  boost::sregex_iterator end;
- 
+
  //for (; it != end; ++it)
  //{
  //  printf( "match<%s>\n", it->str().c_str() );
- // v.push_back(it->str()); or something similar     
+ // v.push_back(it->str()); or something similar
  //}*/
 
 GlslFxLibBlock::GlslFxLibBlock( const GlslFxScanner& s )
@@ -1290,7 +1290,7 @@ GlslFxContainer* LoadFxFromFile( const AssetPath& pth )
 	return pcont;
 }
 
-	
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 }}
 /////////////////////////////////////////////////////////////////////////////////////////////////

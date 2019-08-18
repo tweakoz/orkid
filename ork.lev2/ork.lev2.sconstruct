@@ -7,7 +7,7 @@ import ork.build.slnprj as sln
 
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
-SetOption('num_jobs', obu.num_cores) 
+SetOption('num_jobs', obu.num_cores)
 BasicEnv = Environment( ENV=os.environ, tools=['default','qt5'] )
 
 #
@@ -65,8 +65,8 @@ class lev2:
     ########################
     ## Common libs
     ########################
-    prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util glfw.3 portaudio drawtext" )
-    
+    prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util glfw.3 portaudio" )
+
     if False:
       prj_lib.AddLibs( " 3delight rihelper " )
 

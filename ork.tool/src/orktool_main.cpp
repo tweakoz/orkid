@@ -40,8 +40,8 @@ namespace ork {
 
 void LoadLocalization(const char langcode[2]);
 
-namespace lev2 { void Init(const std::string& gfxlayer); }	
-	
+namespace lev2 { void Init(const std::string& gfxlayer); }
+
 namespace tool {
 
 static std::string gexecdir = "";
@@ -92,11 +92,11 @@ static void ToolStartupDataFolder()
 }
 
 int main(int& argc, char **argv)
-{	
+{
 	struct rlimit oldlimit, newlimit;
 
 	int el = getrlimit( RLIMIT_STACK, & oldlimit );
-		
+
 	printf( "stack cur<%p> max<%p<\n", (void*) oldlimit.rlim_cur, oldlimit.rlim_max );
 
 	//el = setrlimit( RLIMIT_STACK, & newlimit );
@@ -130,7 +130,7 @@ int main(int& argc, char **argv)
     QSettings settings("TweakoZ", "OrkidTool");
     settings.beginGroup("App");
     if( settings.contains("datadir")==false )
-    {   
+    {
         settings.setValue("datadir", qs(gexecdir+"../"));
     }
     settings.endGroup();
@@ -146,7 +146,7 @@ int main(int& argc, char **argv)
 		tokenlist toklist = ork::tool::Init(argc, argv);
 
 		//////////////////////////////////////////
-		
+
 		if( toklist.empty() || toklist.front() == std::string("-edit") )
 		{
 			ToolStartupDataFolder();
@@ -167,7 +167,7 @@ int main(int& argc, char **argv)
 		}
 		else if(toklist.front() == "-singul")
 		{
-			iret = SingularityMain(argc,(const char**)argv);
+			iret = 0; //SingularityMain(argc,(const char**)argv);
 		}
 		else if(toklist.front() == std::string("-unittest"))
 		{

@@ -89,7 +89,7 @@ def recursive_glob(path,pattern):
                     l.append(i)
     except:
         pass
-    
+
     return l
 
 ###############################################################################
@@ -167,7 +167,7 @@ def RunUnitTest(env,target,source):
 
 def orkpath(posix_path):
   return os.sep.join(posix_path.split('/'))
-    
+
 ###############################################################################
 
 def posixpath(path):
@@ -176,7 +176,7 @@ def posixpath(path):
 ###############################################################################
 
 class deco:
-  
+
   ###############################
   def __init__(self,bash=False):
     self.bash = bash
@@ -221,5 +221,3 @@ class deco:
   def err(self,string):
     return self.red(string)+self.reset()
   ###############################
-
-

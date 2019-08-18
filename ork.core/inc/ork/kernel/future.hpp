@@ -32,6 +32,7 @@ struct Future
     var_t                   mCallback;
     //mutable std::condition_variable mWaitCV;
 
+    static Future gnilfut;
 };
 
 template <typename T>

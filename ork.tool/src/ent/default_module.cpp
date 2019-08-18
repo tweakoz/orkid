@@ -39,14 +39,14 @@ void MainWinDefaultModule::Activate( QMenuBar* qmb )
 {
 	mMenuBar = qmb;
 
-	AddAction( "/Scene/NewScene"  ,QKeySequence(tr("Ctrl+N")) );
-	AddAction( "/Scene/OpenScene" ,QKeySequence(tr(HotKeyManager::GetAcceleratorCode("open").c_str())));
-	AddAction( "/Scene/SaveScene" ,QKeySequence(tr(HotKeyManager::GetAcceleratorCode("save").c_str())));
+	AddAction( "/Scene/NewScene"  ,QKeySequence(Qt::CTRL + Qt::Key_N) );
+	AddAction( "/Scene/OpenScene" ,QKeySequence(Qt::CTRL + Qt::Key_O));
+	AddAction( "/Scene/SaveScene" ,QKeySequence(Qt::CTRL + Qt::Key_S));
 	AddAction( "/Scene/ExportArchetype" );
 	AddAction( "/Scene/ImportArchetype" );
 
-	AddAction( "/View/PyCon",QKeySequence(tr("Ctrl+P"))  );
-    AddAction( "/View/AssetAssist",QKeySequence(tr("Ctrl+A"))  );
+	AddAction( "/View/PyCon",QKeySequence(Qt::CTRL + Qt::Key_P));
+    AddAction( "/View/AssetAssist",QKeySequence(Qt::CTRL + Qt::Key_A)  );
 	//AddAction( "/View/Outliner" );
 	//AddAction( "/View/Outliner2" );
 	//AddAction( "/View/DataflowEditor" );
@@ -55,10 +55,10 @@ void MainWinDefaultModule::Activate( QMenuBar* qmb )
 	AddAction( "/View/SaveLayout" );
 	AddAction( "/View/LoadLayout" );
 
-	AddAction( "/Game/Local/Run", QKeySequence(tr("Ctrl+.")) );
+	AddAction( "/Game/Local/Run", QKeySequence(Qt::CTRL + Qt::Key_Period) );
 	AddAction( "/Game/Local/Stop", QKeySequence(tr("Ctrl+,")) );
 
-	AddAction( "/Entity/New Entity" ,QKeySequence(tr("Ctrl+E")) );
+	AddAction( "/Entity/New Entity" ,QKeySequence(Qt::CTRL + Qt::Key_Comma) );
 	AddAction( "/Entity/New Entities..." ,QKeySequence(tr("Ctrl+Shift+E")) );
 	AddAction( "/Entity/Group" );
 
@@ -92,8 +92,8 @@ void MainWinDefaultModule::OnAction( const char* pact )
 	///////////////////////////////////////////////////////
 //	else if( 0 == strcmp( "/View/Outliner",pact) )				{	mEditWin.NewOutlinerView(false); }
 //	else if( 0 == strcmp( "/View/Outliner2",pact) )				{	mEditWin.NewOutliner2View(false); }
-	else if( 0 == strcmp( "/View/PyCon",pact) )					{	mEditWin.NewPyConView(true); }
-    else if( 0 == strcmp( "/View/AssetAssist",pact) )           {   mEditWin.NewAssetAssist(); }
+//	else if( 0 == strcmp( "/View/PyCon",pact) )					{	mEditWin.NewPyConView(true); }
+//    else if( 0 == strcmp( "/View/AssetAssist",pact) )           {   mEditWin.NewAssetAssist(); }
 //	else if( 0 == strcmp( "/View/DataflowEditor",pact) )		{	mEditWin.NewDataflowView(); }
 //	else if( 0 == strcmp( "/View/ToolEditor",pact) )			{	mEditWin.NewToolView(false); }
 	else if( 0 == strcmp( "/View/SaveLayout",pact) )			{	mEditWin.SaveLayout(); }
@@ -121,9 +121,9 @@ void MainWinDefaultModule::OnAction( const char* pact )
 	}
     else if( 0 == strcmp( "/Project/SetProjectFolder", pact ) )  {
 
-        auto current = qs(tool::getDataDir());
-        QString newdir = QFileDialog::getExistingDirectory(NULL, "Select Project Root", current, QFileDialog::ShowDirsOnly );
-        tool::setDataDir(newdir.toStdString());
+        //auto current = qs(tool::getDataDir());
+        //QString newdir = QFileDialog::getExistingDirectory(NULL, "Select Project Root", current, QFileDialog::ShowDirsOnly );
+        //tool::setDataDir(newdir.toStdString());
     }
 
 }

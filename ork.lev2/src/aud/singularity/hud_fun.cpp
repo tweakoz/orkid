@@ -1,4 +1,5 @@
 #include "hud.h"
+#if 0
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -116,3 +117,4 @@ void DrawFun(const ItemDrawReq& EDR)
 
     R.PopOrtho();
 }
+#endif

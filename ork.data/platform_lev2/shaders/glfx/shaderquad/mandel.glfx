@@ -20,7 +20,7 @@ uniform_block ub_vtx
 
 	uniform vec4        modcolor;
 	uniform float       Time;
-	
+
 }
 vertex_interface iface_vdefault
 	: ub_vtx
@@ -39,7 +39,7 @@ uniform_block ub_frg
 	uniform vec4 ModColor;
 	uniform sampler2D ColorMap;
 	uniform sampler2D ColorMap2;
-	uniform sampler2D ColorMap3;	
+	uniform sampler2D ColorMap3;
 	uniform vec4   		User0; // buffersize
 	uniform float       Time;
 }
@@ -102,7 +102,7 @@ libblock shq_tools
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_shq1 
+vertex_shader vs_shq1
 	: iface_vdefault
 {
 	gl_Position = MatMVP*position;
@@ -124,8 +124,7 @@ technique shaderquad
 	{	vertex_shader=vs_shq1;
 		fragment_shader=ps_shq1;
 		state_block=sb_m1;
-	}	
+	}
 }
 
 ///////////////////////////////////////////////////////////////
-

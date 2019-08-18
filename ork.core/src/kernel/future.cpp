@@ -2,6 +2,8 @@
 
 namespace ork {
 
+Future Future::gnilfut;
+
 Future::Future()
 {
     mState.store(0);

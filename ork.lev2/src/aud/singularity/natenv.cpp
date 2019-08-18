@@ -1,4 +1,4 @@
-#include <audiofile.h>
+//#include <audiofile.h>
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -138,7 +138,7 @@ float NatEnv::compute()
             {
                 if( _curseg+2 < _numseg )
                     initSeg(_curseg+1);
-                else // 
+                else //
                 {
                     //doslope = false;
                     //printf( "decay.. dbps<%f>\n",_slopePerSecond);

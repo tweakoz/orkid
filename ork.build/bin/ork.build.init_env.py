@@ -62,7 +62,7 @@ def append_env(key,val):
   if False==(key in os.environ):
     set_env(key,val)
   else:
-    os.environ[key] = os.environ[key] + ":" + val 
+    os.environ[key] = os.environ[key] + ":" + val
     print "append var<" + deco.key(key) + "> to<" + deco.val(os.environ[key]) + ">"
 
 ###########################################
@@ -151,4 +151,3 @@ if as_main:
     else:
       shell = os.environ["SHELL"] # get previous shell
       os.system("%s --init-file '%s'" %(shell,bashrc)) # call shell with new vars (just "exit" to exit)
-

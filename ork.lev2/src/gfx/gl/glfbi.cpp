@@ -653,14 +653,13 @@ void GlFrameBufferInterface::Capture( const RtGroup& rtg, int irt, const file::P
 	}
 
 #if defined(USE_OIIO)
-	ImageOutput *out = ImageOutput::create (pth.c_str());
+	auto out = ImageOutput::create (pth.c_str());
 	if (! out)
 		return;
 	ImageSpec spec (iw, ih, 4, TypeDesc::UINT8);
 	out->open (pth.c_str(), spec);
 	out->write_image( TypeDesc::UINT8, pu8);
 	out->close();
-	delete out;
 
 	free((void*)pu8);
 #endif

@@ -43,7 +43,7 @@ QQedRefreshEvent::QQedRefreshEvent()
 {
 }
 //////////////////////////////////////////////////////////////////////////////
-MiniorkMainWindow::MiniorkMainWindow(QWidget* parent, Qt::WindowFlags flags) 
+MiniorkMainWindow::MiniorkMainWindow(QWidget* parent, Qt::WindowFlags flags)
 	: QMainWindow(parent, flags)
 	, mEditorModuleMgr( menuBar() )
 	, mReadOnly(false)
@@ -259,7 +259,10 @@ void EditorModule::AddAction( QMenu* pmenu, const char* pname)
 {
 	QAction * action = new QAction(tr(pname), this);
 	pmenu->addAction( action );
-	connect(action, SIGNAL(triggered()), this, SLOT(ActionSlot()));
+    printf( "action<%s:%p>\n", pname, pmenu );
+    assert(false);
+    QObject::connect(action,&QAction::triggered,
+                     this,&EditorModule::ActionSlot);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EditorModule::AddAction( const char* pname )
@@ -281,7 +284,7 @@ void EditorModule::AddAction(  const char* pname,QKeySequence ks)
 	{
 		bool end = ((i+1)==inumnodes);
 		const SlashNode *node = path[i];
-	
+
 		if( node != mSlashHier.GetRoot() )
 		{
 			SlashNode * nonconst = const_cast<SlashNode *>( node );
@@ -295,22 +298,23 @@ void EditorModule::AddAction(  const char* pname,QKeySequence ks)
 				if( end )
 				{
 					QAction* pact = pcurmenu->addAction( nm.c_str() );
-					if(false==ks.isEmpty()) 
+					if(false==ks.isEmpty())
                         pact->setShortcut(ks);
 					pact->setData( QVariant( tr(pthstr.c_str()) ) );
-					connect(pact, SIGNAL(triggered()), this, SLOT(ActionSlot()));
+                    QObject::connect(pact,&QAction::triggered,
+                                     this,&EditorModule::ActionSlot);
 				}
 				else
 				{
 					if( 0 == pcurmenu )
-					{	
-						pcurmenu = (0==pdata) 
+					{
+						pcurmenu = (0==pdata)
 								 ? mMenuBar->addMenu( nm.c_str() )
 								 : (QMenu*) pdata;
 					}
 					else
 					{
-						pcurmenu = (0==pdata) 
+						pcurmenu = (0==pdata)
 								 ? pcurmenu->addMenu( nm.c_str() )
 								 : (QMenu*) pdata;
 					}
@@ -333,10 +337,10 @@ void EditorModule::ActionSlot()
 {
 	QObject* psender = sender();
 	QAction *pact = qobject_cast<QAction *>( psender );
-	
+
 	if( pact )
 	{
-		QVariant data = pact->data();	
+		QVariant data = pact->data();
 		QString text = pact->text();
 		QString datatext = data.toString();
 		//std::string std_text = text.toAscii().data();

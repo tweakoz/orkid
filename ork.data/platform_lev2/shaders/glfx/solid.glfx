@@ -3,8 +3,7 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default
 {
-	glsl_version = "150";
-	import "skintools.i";
+	glsl_version = "330";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -27,7 +26,7 @@ uniform_block ublock_frg
 	uniform vec4 modcolor;
 	uniform sampler2D ColorMap;
 	uniform sampler2D ColorMap2;
-	uniform sampler2D ColorMap3;	
+	uniform sampler2D ColorMap3;
 }
 
 vertex_interface iface_vdefault
@@ -147,7 +146,7 @@ fxconfig=fxcfg_default;
 	{	vertex_shader=vs_vtxcolor;
 		fragment_shader=ps_fragclr;
 		state_block=sb_default;
-	}	
+	}
 }
 technique vtxmodcolor {
 	fxconfig=fxcfg_default;
@@ -163,7 +162,7 @@ fxconfig=fxcfg_default;
 	{	vertex_shader=vs_vtxcolor;
 		fragment_shader=ps_modclr;
 		state_block=sb_default;
-	}	
+	}
 }
 technique texcolor {
 	fxconfig=fxcfg_default;

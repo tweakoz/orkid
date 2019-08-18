@@ -44,12 +44,12 @@ TEST(SceneTortureTest)
 		switch(i%2)
 		{
 			case 0:
-				parch = the_editor.EditorNewArchetype("ModelArchetype","blah");
-				fstr.format("ModelArchetype_%d", int(i));
+				//parch = the_editor.EditorNewArchetype("ModelArchetype","blah");
+				//fstr.format("ModelArchetype_%d", int(i));
 				break;
 			case 1:
-				parch = the_editor.EditorNewArchetype("BulletObjectArchetype","blah");
-				fstr.format("BulletObjectArchetype_%d", int(i));
+				//parch = the_editor.EditorNewArchetype("BulletObjectArchetype","blah");
+				//fstr.format("BulletObjectArchetype_%d", int(i));
 				break;
 		}
 		assert(parch!=nullptr);
@@ -130,7 +130,7 @@ TEST(SceneTortureTest)
 			case 1:
 			case 2:
 			case 3:
-			{	
+			{
 				if( SelSet.size() )
 				{	Editor.EditorDupe();
 				}
@@ -167,7 +167,7 @@ TEST(SceneTortureTest)
 			Entity *pent = cobject_downcast<Entity>( pobj );
 
 			//SceneGroup *group = cobject_downcast<SceneGroup>( pobj );
-			
+
 			////////////////////////////////////////////////////////////
 			// if its an entity, randomly rename it
 			////////////////////////////////////////////////////////////
@@ -203,7 +203,7 @@ TEST(SceneTortureTest)
 			////////////////////////////////////////////////////////////
 			// move it whatever it is
 			////////////////////////////////////////////////////////////
-			
+
 			ork::lev2::CManipManager::GetRef().AttachObject( pobj );
 			ork::TransformNode3D xfnode;
 			CReal fx(CReal(rand()%65535)/CReal(65536.0f));
@@ -239,13 +239,13 @@ TEST(SceneTortureTest)
 				SceneObject * pobj = it->second;
 				penttodelete = cobject_downcast<Entity>(pobj);
 			}
-			
+
 			ork::tool::SelectManager::GetRef().ClearSelection();
 			ork::tool::SelectManager::GetRef().AddObjectToSelection( penttodelete );
 
 			Editor.EditorDelete();
 		}
-		
+
 	}
 	pscene->CleanUp();
 
@@ -264,7 +264,7 @@ TEST(SceneTortureTest)
 	///////////////////////////////////////////////////////////////////
 	// cache scene data for later comparison
 	///////////////////////////////////////////////////////////////////
-	
+
 	orkvector<std::string> ArchetypeNameVect;
 	orkvector<std::string> ArchetypeClassVect;
 	orkvector<std::string> EntityArchetypeVect;
@@ -294,7 +294,7 @@ TEST(SceneTortureTest)
 			EntityArchetype *parch = safe_cobject_downcast<EntityArchetype>( pobj );
 			ArchetypeNameVect.push_back( parch->GetName() );
 			ArchetypeClassVect.push_back( parch->GetClass()->GetName() );
-		}	
+		}
 	}
 
 	///////////////////////////////////////////////////////////////////
@@ -340,13 +340,13 @@ TEST(SceneTortureTest)
 		else if( pobj->GetClass()->IsSubclassOf( EntityArchetype::GetClassStatic() ) )
 		{
 			EntityArchetype *parch = safe_cobject_downcast<EntityArchetype>( pobj );
-			
+
 			CHECK( parch->GetName() == ArchetypeNameVect[ iarchidx ] );
 			CHECK( parch->GetClass()->GetName() == ArchetypeClassVect[ iarchidx ] );
 			iarchidx++;
-		}	
+		}
 	}
-		
+
 	///////////////////////////////////////////////////////////////////
 
 	Editor.EditorNewScene(CTestScene::GetClassNameStatic());

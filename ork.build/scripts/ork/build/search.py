@@ -2,13 +2,13 @@ import glob, re, string, commands, sys, os
 import shutil, fnmatch, platform
 
 search_moduleset =  """ork.build ork.core ork.lev2 ork.ent
-                       ork.tool ork.fcollada305 tweakout 
-                       ork.lua ork.luabind ork.math ork.data 
+                       ork.tool ork.fcollada305 tweakout
+                       ork.lua ork.luabind ork.math ork.data
                        ork.mayax """
 
 search_extensions  = """.c .cpp .cc .mel
-                        .h .hpp .inl 
-                        .m .mm .qml 
+                        .h .hpp .inl
+                        .m .mm .qml
                         .py .sconstruct .dae .lua """
 
 #################################################################################
@@ -49,7 +49,7 @@ def search_at_root(word, root):
       line = line.replace("\n","")
       res = result(path,line_number,line)
       results.append(res)
- return results 
+ return results
 
 
 #################################################################################

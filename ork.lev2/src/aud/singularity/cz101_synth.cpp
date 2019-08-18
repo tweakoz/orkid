@@ -10,12 +10,13 @@
 #include "fmosc.h"
 #include "synth.h"
 #include "alg_oscil.h"
+#include <ork/kernel/string/string.h>
 
 using namespace ork;
 
 struct czpriv
 {
-    czpriv() 
+    czpriv()
         : _newnote(false)
     {}
     void keyOn(layer* l,const CzProgData& prgdat)
@@ -73,7 +74,7 @@ struct czpriv
         if(_data._lineSel<2 )
         {
             for( int i=0; i<inumframes; i++ )
-            {   
+            {
                 float s0 = _osc[0].compute(f1,mi);
                 U[i] = s0;
             }
@@ -85,7 +86,7 @@ struct czpriv
             {
                 case 0:
                     for( int i=0; i<inumframes; i++ )
-                    {   
+                    {
                         float s0 = _osc[0].compute(f1,mi);
                         float s1 = _osc[1].compute(f2,mi);
                         U[i] = s0+s1;
@@ -93,7 +94,7 @@ struct czpriv
                     break;
                 case 4:
                     for( int i=0; i<inumframes; i++ )
-                    {   
+                    {
                         float s0 = _osc[0].compute(f1,mi);
                         float s1 = _osc[1].compute(f2,mi);
                         U[i] = s0*s1;
@@ -101,7 +102,7 @@ struct czpriv
                     break;
                 case 3:
                     for( int i=0; i<inumframes; i++ )
-                    {   
+                    {
                         float r = (rand()&0xffff)/65536.0f;
                         float s0 = _osc[0].compute(f1,mi);
                         float s1 = _osc[1].compute(f2,mi);
@@ -143,9 +144,9 @@ void czsyn::keyOn(const DspKeyOnInfo& koi)
 
     _data = *progd;
 
-    l->_HKF._miscText = formatString("CZ\n" );
+    l->_HKF._miscText = FormatString("CZ\n" );
     l->_HKF._useFm4 = false;
-    
+
     _pimpl.Get<czpriv*>()->keyOn(l,*progd);
 
 }

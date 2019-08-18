@@ -8,7 +8,7 @@ import ork.build.slnprj as sln
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
-SetOption('num_jobs', obu.num_cores) 
+SetOption('num_jobs', obu.num_cores)
 
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
@@ -35,7 +35,7 @@ class ent:
 
     XFL  = "bullet-2.73-math bullet-2.73-collision "
     XFL += "bullet-2.73-dynamics bullet-2.73-extras "
-    XFL += "core lev2 lua  "        
+    XFL += "core lev2 lua  "
 
     LIBS = sln.xflibnams("ork.%s ",XFL)
 
@@ -63,6 +63,7 @@ class ent:
     prj_test.AddIncludePaths( "inc" )
     prj_test.AddIncludePaths( "../ork.core/inc/" )
     prj_test.AddIncludePaths( "../ork.lev2/inc/" )
+    prj_test.AddIncludePaths( "../ork.lua/inc/" )
     prj_test.AddLibPaths( "%s/lib"%sln.stage_dir )
     prj_test.AddFolders( "test", "*.cpp" )
     prj_test.AddLibsWithSuffix( LIBS )
@@ -82,5 +83,3 @@ if False==is_prep:
 Return('ret')
 
 ##########################################
-
-

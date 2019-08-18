@@ -38,9 +38,9 @@ def recursive_patglob(path,pattern):
           l.append(i)
   except:
       pass
-  
+
   return l
-    
+
 ###############################################################################
 
 def recursive_glob(path):
@@ -61,7 +61,7 @@ def recursive_glob(path):
         #print "Matched %s" % (i)
         l.append(i)
   except:
-    pass  
+    pass
 
   return l
 

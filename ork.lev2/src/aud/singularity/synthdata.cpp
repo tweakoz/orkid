@@ -1,4 +1,4 @@
-#include <audiofile.h>
+//#include <audiofile.h>
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -7,6 +7,7 @@
 #include "krzdata.h"
 #include "synth.h"
 #include "krzobjects.h"
+#include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 std::string kbasepath = "/usr/local/share/singularity";
@@ -27,9 +28,9 @@ float SynthData::seqTime(float dur)
 layerData::layerData()
 {
 	_pchBlock = nullptr;
-	
+
 	for( int i=0; i<kmaxdspblocksperlayer; i++ )
-		_dspBlocks[i] = nullptr; 
+		_dspBlocks[i] = nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,10 +107,10 @@ const programData* KrzKmTestData::getProgram(int kmID) const
 			auto lyr = rval->newLayer();
 			lyr->_keymap = km;
 			//lyr->_useNatEnv = false;
-			rval->_name = formatString("%s", km->_name.c_str());
+			rval->_name = ork::FormatString("%s", km->_name.c_str());
 		}
 		else
-			rval->_name = formatString("\?\?\?\?");
+			rval->_name = ork::FormatString("\?\?\?\?");
 
 	}
 	return rval;
@@ -120,7 +121,7 @@ const programData* KrzKmTestData::getProgram(int kmID) const
 KrzTestData::KrzTestData(synth* syn)
 	: SynthData(syn)
 {
-	genTestPrograms();	
+	genTestPrograms();
 }
 
 const programData* KrzTestData::getProgram(int progid) const
@@ -331,6 +332,3 @@ void KrzTestData::genTestPrograms()
 		F3._coarse = -96.0;
 	}*/
 }
-
-
-

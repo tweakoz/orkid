@@ -1,4 +1,4 @@
-#include <audiofile.h>
+//#include <audiofile.h>
 #include <string>
 #include <assert.h>
 #include <unistd.h>
@@ -65,7 +65,7 @@ void sample::load(const std::string& fname)
 
 	int numloopids = afGetLoopIDs(af_file, AF_DEFAULT_INST, NULL);
 	printf( "numloopids<%d>\n", numloopids );
-	
+
 	auto loopids = new int[numloopids];
 	afGetLoopIDs(af_file, AF_DEFAULT_INST, loopids);
 	for (int i=0; i<numloopids; i++)
@@ -179,7 +179,7 @@ void sampleOsc::keyOn(const DspKeyOnInfo& koi)
 	_loopMode = _sample->_loopMode;
 
     switch( _loopMode )
-    { 
+    {
         case eLoopMode::BIDIR:
             _pbFunc = &sampleOsc::playLoopBid;
             break;
@@ -333,7 +333,7 @@ void sampleOsc::findRegion(const DspKeyOnInfo& koi)
         _sampleRoot = sample->_rootKey;
         _keydiff = note-_sampleRoot;
         ///////////////////////////////////////
-        
+
         _kmcents = kmfinalcents+region->_tuning;
         _pchcents = pchfinalcents;
 
@@ -447,12 +447,12 @@ void sampleOsc::compute(int inumfr)
 
 
 		_playbackRate = _sample->_sampleRate*_curratio;
-		
+
 		_pbincrem = (_dt*_playbackRate*65536.0f);
 
 		/////////////////////////////
 
-		float sampleval = _pbFunc 
+		float sampleval = _pbFunc
                         ? (this->*_pbFunc)()
                         : 0.0f;
 
@@ -482,7 +482,7 @@ float sampleOsc::playNoLoop()
 	if( iiA > (_blk_end>>16) )
 		iiA = (_blk_end>>16);
 
-	int64_t iiB = iiA+1; 
+	int64_t iiB = iiA+1;
 	if( iiB > (_blk_end>>16) )
 		iiB = (_blk_end>>16);
 
@@ -503,7 +503,7 @@ float sampleOsc::playNoLoop()
 ///////////////////////////////////////////////////////////////////////////////
 
 float sampleOsc::playLoopFwd()
-{	
+{
 	_pbindexNext = _pbindex + _pbincrem;
 
 	bool did_loop = false;
@@ -527,7 +527,7 @@ float sampleOsc::playLoopFwd()
 
 	int64_t iiA = (_pbindex>>16);
 
-	int64_t iiB = iiA+1; 
+	int64_t iiB = iiA+1;
 	if( iiB > (_blk_loopend>>16) )
 		iiB = (_blk_loopstart>>16);
 
@@ -550,10 +550,10 @@ float sampleOsc::playLoopFwd()
 
     ///////////////
     // cubic
-    //int64_t iiC = iiB+1; 
+    //int64_t iiC = iiB+1;
     //if( iiC > (_blk_loopend>>16) )
     //    iiC = (_blk_loopstart>>16);
-    //int64_t iiD = iiC+1; 
+    //int64_t iiD = iiC+1;
     //if( iiD > (_blk_loopend>>16) )
     //    iiD = (_blk_loopstart>>16);
     //float sampC = float(sblk[iiC] );
