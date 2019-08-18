@@ -68,7 +68,7 @@ AudioSystemData::AudioSystemData()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::System *AudioSystemData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System *AudioSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
 	return new AudioManagerComponentInst( *this, pinst );
 }

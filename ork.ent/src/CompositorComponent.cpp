@@ -77,7 +77,7 @@ CompositingSystemData::CompositingSystemData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* CompositingSystemData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System* CompositingSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
 	return new CompositingManagerComponentInst( *this, pinst );
 }

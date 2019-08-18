@@ -69,7 +69,7 @@ AudioAnalysisManagerComponentData::AudioAnalysisManagerComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* AudioAnalysisManagerComponentData::CreateComponentInst(ork::ent::SceneInst *pinst) const
+ork::ent::System* AudioAnalysisManagerComponentData::createSystem(ork::ent::SceneInst *pinst) const
 {
 	return new AudioAnalysisManagerComponentInst( *this, pinst );
 }

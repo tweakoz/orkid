@@ -56,7 +56,7 @@ class SystemData : public Object
 	RttiDeclareAbstract( SystemData, Object );
 public:
 
-	virtual System* CreateComponentInst( ork::ent::SceneInst *pinst ) const = 0;
+	virtual System* createSystem( ork::ent::SceneInst *pinst ) const = 0;
 
 protected:
 
