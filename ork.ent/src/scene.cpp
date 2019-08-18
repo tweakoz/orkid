@@ -431,7 +431,7 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &)
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneData::AddSceneComponent( SystemData* pcomp )
+void SceneData::AddSystem( SystemData* pcomp )
 {
 	OrkAssert( mSceneComponents.find( pcomp->GetClass() ) == mSceneComponents.end() );
 	mSceneComponents.AddSorted( pcomp->GetClass(), pcomp );
@@ -464,7 +464,7 @@ SceneComposer::~SceneComposer()
 			OrkAssert( pclass->IsSubclassOf( SystemData::GetClassStatic() ) );
 			psc = ork::rtti::autocast(pclass->CreateObject());
 		}
-		mpSceneData->AddSceneComponent(psc);
+		mpSceneData->AddSystem(psc);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////

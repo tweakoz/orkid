@@ -21,7 +21,7 @@
 #include <ork/application/application.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioSystemData, "AudioSystemData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioManagerComponentInst, "AudioManagerComponentInst");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioSystem, "AudioSystem");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -70,14 +70,14 @@ AudioSystemData::AudioSystemData()
 ///////////////////////////////////////////////////////////////////////////////
 ork::ent::System *AudioSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
-	return new AudioManagerComponentInst( *this, pinst );
+	return new AudioSystem( *this, pinst );
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioManagerComponentInst::Describe()
+void AudioSystem::Describe()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-AudioManagerComponentInst::AudioManagerComponentInst( const AudioSystemData& ascd, ork::ent::SceneInst* psi )
+AudioSystem::AudioSystem( const AudioSystemData& ascd, ork::ent::SceneInst* psi )
 	: System( & ascd, psi )
 	, mAmcd( ascd )
 {
@@ -85,12 +85,12 @@ AudioManagerComponentInst::AudioManagerComponentInst( const AudioSystemData& asc
 
 
 }
-AudioManagerComponentInst::~AudioManagerComponentInst()
+AudioSystem::~AudioSystem()
 {
 	ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioManagerComponentInst::DoUpdate(ork::ent::SceneInst *inst)
+void AudioSystem::DoUpdate(ork::ent::SceneInst *inst)
 {
 	ork::lev2::AudioDevice* pdev = ork::lev2::AudioDevice::GetDevice();
 
@@ -133,7 +133,7 @@ void AudioManagerComponentInst::DoUpdate(ork::ent::SceneInst *inst)
 
 	//////////////////////////////////////////////////////////////////////////////////
 }
-void AudioManagerComponentInst::DoStop(ork::ent::SceneInst *psi)
+void AudioSystem::DoStop(ork::ent::SceneInst *psi)
 {
 	ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
 }

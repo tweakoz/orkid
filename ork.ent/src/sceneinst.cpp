@@ -645,7 +645,7 @@ void SceneInst::ComposeSceneComponents()
 	for( SceneData::SceneComponentLut::const_iterator it=SceneCompLut.begin(); it!=SceneCompLut.end(); it++ )
 	{
 		const SystemData* pscd = it->second;
-		AddSceneComponent( pscd->createSystem( this ) );
+		AddSystem( pscd->createSystem( this ) );
 	}
 
 }
@@ -1315,7 +1315,7 @@ void SceneInst::Update()
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::AddSceneComponent( System* pcomp )
+void SceneInst::AddSystem( System* pcomp )
 {
 	OrkAssert( mSceneComponents.find( pcomp->GetClass() ) == mSceneComponents.end() );
 	mSceneComponents.AddSorted( pcomp->GetClass(), pcomp );

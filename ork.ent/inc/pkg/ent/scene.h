@@ -145,7 +145,7 @@ public:
 	T* GetTypedSceneComponent() const;
 
 	const SceneComponentLut& GetSceneComponents() const { return mSceneComponents; }
-	void AddSceneComponent( SystemData* pcomp );
+	void AddSystem( SystemData* pcomp );
 	void ClearSceneComponents();
 
 	//////////////////////////////////////////////////////////
@@ -323,7 +323,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	void AddSceneComponent( System* pcomp );
+	void AddSystem( System* pcomp );
 	void ClearSceneComponents();
 
 	template <typename T >
