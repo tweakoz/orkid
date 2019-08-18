@@ -2,7 +2,7 @@
 	Copyright (C) 2005-2007 Feeling Software Inc.
 	Portions of the code are:
 	Copyright (C) 2005-2007 Sony Computer Entertainment America
-	
+
 	MIT License: http://www.opensource.org/licenses/mit-license.php
 */
 /*
@@ -57,7 +57,7 @@ public:
 		@param count The number of times to repeat the given character. */
 	FUStringBuilderT(Char ch, size_t count);
 
-	/** Creates a new builder with an empty buffer. 
+	/** Creates a new builder with an empty buffer.
 		@see reserve
 		@param reserved The number of character slots to reserve within the empty buffer. */
 	FUStringBuilderT(size_t reserved);
@@ -65,7 +65,7 @@ public:
 	/** Creates a new builder with an empty buffer. */
 	FUStringBuilderT();
 
-	/** Deletes the builder. Its buffer will be cleared. 
+	/** Deletes the builder. Its buffer will be cleared.
 		Any pointers to its data will be dangling. */
 	~FUStringBuilderT();
 
@@ -92,7 +92,7 @@ public:
 	inline bool empty() const { return size == 0; }
 
 	void append(bool b);
-	
+
 	/** Appends a character to the content of the builder.
 		@param c A character. May not be the 'zero' value. */
 	void append(Char c);
@@ -136,7 +136,7 @@ public:
 	inline void append(_W64 unsigned int i) { append((uint32) i); } /**< See above. */
 #else
 	//inline void append(unsigned int i) { append((uint32) i); } /**< See above. */
-#endif 
+#endif
 
 	/** Appends the floating-point value, after converting it to a string,
 		to the content of the builder. If the floating-point value is the special token
@@ -224,9 +224,6 @@ private:
 typedef FUStringBuilderT<fchar> FUStringBuilder; /**< A Unicode string builder. */
 typedef FUStringBuilderT<char> FUSStringBuilder;  /**< A 8-bit string builder. */
 
-#if defined(__APPLE__)
 #include "FUtils/FUStringBuilder.hpp"
-#endif // __APPLE__
 
 #endif // _FCU_STRING_BUILDER_
-
