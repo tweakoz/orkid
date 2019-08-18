@@ -258,7 +258,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioManagerComponentInst;
+class AudioSystem;
 
 struct EmitterCtx
 {
@@ -293,7 +293,7 @@ private:
 	AudioMultiEffectPlayInst* GetPlayInst(ork::PoolString ps) const;
 
 	const AudioEffectComponentData&										mData;
-	AudioManagerComponentInst*											mAmci;
+	AudioSystem*											mAmci;
 	ork::orklut<ork::PoolString,AudioMultiEffectPlayInst*>				mSoundMap;
 	orkvector<ork::lev2::AudioInstrumentPlayback*>						mPlaybacks;
 	ork::ent::DataflowRecieverComponentInst*							mDflowRecv;
@@ -439,20 +439,20 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class AudioManagerComponentInst : public ork::ent::System
+class AudioSystem : public ork::ent::System
 {
-	RttiDeclareAbstract(AudioManagerComponentInst, ork::ent::System);
+	RttiDeclareAbstract(AudioSystem, ork::ent::System);
 
 public:
 
-	AudioManagerComponentInst( const AudioSystemData& ascd, ork::ent::SceneInst *pinst );
+	AudioSystem( const AudioSystemData& ascd, ork::ent::SceneInst *pinst );
 
 	void AddEmitter( AudioEffectComponentInst* mEmitter ) { mEmitters.push_back(mEmitter); }
 
 	const AudioSystemData& GetAmcd() const { return mAmcd; }
 
 private:
-    ~AudioManagerComponentInst() final;
+    ~AudioSystem() final;
 	void DoUpdate(ork::ent::SceneInst *inst) final;
 	void DoStop(ork::ent::SceneInst *psi) final;
 

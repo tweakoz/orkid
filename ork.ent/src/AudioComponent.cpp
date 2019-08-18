@@ -554,7 +554,7 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	, mAmci( 0 )
 	, mDflowRecv( 0 )
 {
-	mAmci = pent->GetSceneInst()->FindSystem<AudioManagerComponentInst>();
+	mAmci = pent->GetSceneInst()->FindSystem<AudioSystem>();
 	///////////////////////////////////////////////////////////
 
 	const ork::orklut<ork::PoolString,ork::lev2::AudioBank*>& bmap = mData.GetBankMap();
