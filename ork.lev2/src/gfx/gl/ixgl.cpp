@@ -11,11 +11,11 @@
 #include "gl.h"
 
 
-#if defined( ORK_CONFIG_OPENGL ) && defined( LINUX ) 
+#if defined( ORK_CONFIG_OPENGL ) && defined( LINUX )
 
 #include <ork/lev2/qtui/qtui.h>
 #include <QtCore/QMetaObject>
-#include <QtGui/QX11Info>
+#include <QtX11Extras/QX11Info>
 #include <GL/glx.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
@@ -37,12 +37,12 @@ struct GlIxPlatformObject
 	static GLXFBConfig* gFbConfigs;
 	static XVisualInfo* gVisInfo;
 	static Display* gDisplay;
-	
+
 	GLXContext			mGlxContext;
 	Display*			mDisplay;
 	int 				mXWindowId;
 	bool				mbInit;
-	
+
 	GlIxPlatformObject()
 		: mbInit(true)
 		, mGlxContext(nullptr)
@@ -158,7 +158,7 @@ void check_debug_log()
     GLenum severities[count];
     GLsizei lengths[count];
     GLchar messageLog[bufsize];
-    
+
     auto retVal = glGetDebugMessageLogARB( count, bufsize, sources, types,
                                            ids, severities, lengths, messageLog);
     if(retVal > 0)
@@ -184,7 +184,7 @@ void GfxTargetGL::GLinit()
 	}
 
 	orkprintf( "INITOPENGL\n" );
-	
+
 	GLXFBConfig fb_config;
 	//XInitThreads();
 	Display* x_dpy = XOpenDisplay(0);
@@ -234,7 +234,7 @@ void GfxTargetGL::GLinit()
     //  is available
 
     GLXContext old_school = glXCreateContext(x_dpy, GlIxPlatformObject::gVisInfo, nullptr, GL_TRUE);
-    
+
     GLXCCA =  (glXcca_proc_t) glXGetProcAddress((const GLubyte*)"glXCreateContextAttribsARB");
 
     GLPPI = (PFNGLPATCHPARAMETERIPROC) glXGetProcAddress((const GLubyte*)"glPatchParameteri");
@@ -249,7 +249,7 @@ void GfxTargetGL::GLinit()
         printf( "glXCreateContextAttribsARB entry point not found. Aborting.\n");
         assert(false);
     }
-    
+
 
 
     ///////////////////////////////////////////////////////////////
@@ -295,7 +295,7 @@ void OpenGlGfxTargetInit()
 
 /////////////////////////////////////////////////////////////////////////
 
-GfxTargetGL::GfxTargetGL() 
+GfxTargetGL::GfxTargetGL()
 	: GfxTarget()
 	, mFxI( *this )
 	, mImI( *this )
@@ -328,9 +328,8 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	///////////////////////
 	CTQT* pctqt = (CTQT*) pctxbase;
 	QCtxWidget* pctxW = pctqt->GetQWidget();
-	const QX11Info& x11info = pctxW->x11Info();
-	Display* x_dpy = x11info.display();
-	int x_screen = x11info.screen();
+	Display* x_dpy = QX11Info::display();
+	int x_screen = QX11Info::appScreen();
 	//auto pvis = (XVisualInfo*) x11info.visual();
 	XVisualInfo* vinfo = GlIxPlatformObject::gVisInfo;
 	///////////////////////
@@ -392,9 +391,9 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 	pBuf->SetTexture(pTexture);
 
 //	MakeCurrentContext();
-  		
+
 	//////////////////////////////////////////////
-	
+
 	//mFbI.InitializeContext( pBuf );
 	//////////////////////////////////////////////
 
@@ -406,7 +405,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 void GfxTargetGL::MakeCurrentContext( void )
 {
 	GlIxPlatformObject* plato = (GlIxPlatformObject*) mPlatformHandle;
-	OrkAssert(plato);	
+	OrkAssert(plato);
 	if( plato )
 	{
 		bool bOK = glXMakeCurrent(plato->mDisplay,plato->mXWindowId,plato->mGlxContext);
@@ -419,7 +418,7 @@ void GfxTargetGL::MakeCurrentContext( void )
 void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 {
 	GlIxPlatformObject* plato = (GlIxPlatformObject*) mPlatformHandle;
-	OrkAssert(plato);	
+	OrkAssert(plato);
 	if( plato && (plato->mXWindowId>0) )
 	{
 		glXMakeCurrent(plato->mDisplay,plato->mXWindowId,plato->mGlxContext);

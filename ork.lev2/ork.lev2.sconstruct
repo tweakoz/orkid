@@ -46,7 +46,7 @@ class lev2:
     prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
     prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
     prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
-    prj_lib.AddQt5Modules("QtGui QtCore QtWidgets")
+    prj_lib.AddQt5Modules("QtGui QtCore QtWidgets QtX11Extras")
     #########################
     ## OSX libs
     #########################
@@ -56,16 +56,17 @@ class lev2:
       prj_lib.AddFrameworks("CoreMIDI CoreAudio AudioUnit AudioToolbox" )
       prj_lib.AddFrameworks("Carbon Foundation ApplicationServices" )
       prj_lib.AddFrameworks("AppKit QuartzComposer")
+      prj_lib.AddLibs("glfw.3")
             # MultitouchSupport
     ########################
     ## IX libs
     ########################
     else:
-      prj_lib.AddLibs( "GL QtCore QtGui" )
+      prj_lib.AddLibs( "GL" )
     ########################
     ## Common libs
     ########################
-    prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util glfw.3 portaudio" )
+    prj_lib.AddLibs( "OpenImageIO OpenImageIO_Util portaudio" )
 
     if False:
       prj_lib.AddLibs( " 3delight rihelper " )
@@ -84,7 +85,7 @@ class lev2:
     prj_test.AddFolders( "test", "*.cpp" )
     prj_test.AddProjectDep( prj_lib )
     prj_test.AddLibsWithSuffix( "ork.unittestpp" )
-    prj_test.AddQt5Modules("QtGui QtCore QtWidgets")
+    prj_test.AddQt5Modules("QtGui QtCore QtWidgets QtX11Extras")
     prj_test.Configure()
 
     self.prg = prj_test.Program( )

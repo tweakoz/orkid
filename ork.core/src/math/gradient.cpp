@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -17,6 +17,7 @@
 #include <ork/reflect/DirectObjectPropertyType.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <math.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -50,7 +51,7 @@ template <typename T> void Gradient<T>::AddDataPoint( float flerp, const T& data
 }
 
 template <typename T> T Gradient<T>::Sample( float fu )
-{	
+{
 	if( fu < 0.0f ) return T();
 	if( fu > 1.0f ) return T();
 	if( isnan(fu) ) return T();
@@ -130,7 +131,7 @@ INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(GradientD2V4,"GradientD2V4");
 
 template class ork::orklut<float,ork::CVector4>;
 //template class ork::orklut<float, ork::orklut<float,ork::CVector4> >;
-template class ork::GradLut<ork::CVector4>; 
+template class ork::GradLut<ork::CVector4>;
 //template class ork::GradLut< ork::GradLut<ork::CVector4> >; //ork::orklut<float,ork::CVector4>;
 template class ork::Gradient<ork::CVector4>;
 template class ork::GradientD2<ork::CVector4>;

@@ -7,13 +7,14 @@
 #include <GLFW/glfw3.h>
 //#include "drawtext.h"
 
+#if 0
+
 #include <FLAC++/decoder.h>
 
 #include "krzdata.h"
 #include "synth.h"
 #include "krzobjects.h"
 
-#if 0
 ///////////////////////////////////////////////////////////////////////////////
 
 static const int kdefaultprogID = 198;

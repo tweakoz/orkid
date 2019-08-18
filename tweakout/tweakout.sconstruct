@@ -8,7 +8,7 @@ import ork.build.common as cmn
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0  )
-SetOption('num_jobs', obu.num_cores) 
+SetOption('num_jobs', obu.num_cores)
 
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
@@ -17,7 +17,7 @@ is_prep = (TARGET=="prep")
 ##########################################
 
 class tweakout:
-  def __init__(self):   
+  def __init__(self):
 
    BasicEnv = Environment( ENV=os.environ,tools=['default','qt5'] )
    BasicEnv["ENV"]['PKG_CONFIG_PATH'] = '/usr/local/opt/qt5/lib/pkgconfig/'
@@ -35,7 +35,7 @@ class tweakout:
    prj.SetSrcBase( "src" )
 
    prj.AddIncludePaths( "../ork.core/inc/ " +
-                        "../ork.lev2/inc/ " + 
+                        "../ork.lev2/inc/ " +
                         "../ork.ent/inc/ " +
                         "../ork.tool/inc/ " +
                         "inc src" )
@@ -46,6 +46,7 @@ class tweakout:
    prj.AddIncludePaths( "/usr/include/qt4" )
    prj.AddFolders( " . ", "*.cpp" )
    prj.AddDefines( "LINUX" )
+   prj.AddQt5Modules("QtGui QtCore QtWidgets")
    #########################
    ## OSX libs
    #########################
@@ -58,7 +59,7 @@ class tweakout:
    ## IX libs
    #########################
    elif prj.IsIx:
-      LIBS = "GL QtCore QtGui xcb OpenImageIO OpenImageIO_Util"
+      LIBS = "GL xcb OpenImageIO OpenImageIO_Util"
       prj.AddLibs( LIBS )
    #########################
    ## common libs
@@ -80,4 +81,3 @@ if False==is_prep:
 Return('ret')
 
 ##########################################
-

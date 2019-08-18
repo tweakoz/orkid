@@ -60,10 +60,10 @@ struct GlVtxBufMapData
 
 	GlVtxBufMapData(vtxbufmapdata_q_t&oq,int potsize)
 		: mParentQ(oq)
-		, mPotSize(potsize) 
+		, mPotSize(potsize)
 		, mCurSize(0)
 	{
-		mpData = malloc(potsize);		
+		mpData = malloc(potsize);
 	}
 	~GlVtxBufMapData()
 	{
@@ -136,7 +136,7 @@ struct GLIdxBufHandle
 struct GLVaoHandle
 {
 	GLuint mVAO;
-	
+
 	const GLIdxBufHandle* mIBO;
 	bool mInited;
 
@@ -155,7 +155,7 @@ struct GLVtxBufHandle
 
 	std::map<size_t,GLVaoHandle*> mVaoMap;
 
-	GLVtxBufHandle() 
+	GLVtxBufHandle()
 		: mVBO(0)
 		, mBufSize(0)
 		, miLockBase(0)
@@ -199,7 +199,7 @@ struct GLVtxBufHandle
 		mVBO = 0;
 		glGenBuffers( 1, (GLuint*) & mVBO );
 		//printf( "CreateVBO:: genvbo<%d>\n", int(mVBO));
-		
+
 
 		//hPB = GLuint(ubh);
 		//pnonconst->SetPBHandle( (void*)hPB );
@@ -208,27 +208,29 @@ struct GLVtxBufHandle
 		int iVBlen = VBuf.GetVtxSize()*VBuf.GetMax();
 
 		//orkprintf( "CreateVBO<%p> len<%d> ID<%d>\n", & VBuf, iVBlen, int(mVBO) );
-		
+
 		bool bSTATIC = VBuf.IsStatic();
-		
+
 		static void* gzerobuf = calloc( 128<<20, 1 );
 		//glBufferData( GL_ARRAY_BUFFER, iVBlen, bSTATIC ? gzerobuf : 0, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
 		glBufferData( GL_ARRAY_BUFFER, iVBlen, gzerobuf, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
 		GL_ERRORCHECK();
-		
+
 		//////////////////////////////////////////////
 		// we always update dynamic VBOs sequentially
 		//  we also dont want to pay the cost of copying any data
 		//  so we will use a VBO map range extension
 		//  either GL_ARB_map_buffer_range or GL_APPLE_flush_buffer_range
-		 
+
 		if( false == bSTATIC ) switch( gDynVboPath )
 		{
+			#if defined(__APPLE__)
 			case EVB_BUFFER_SUBDATA:
             case EVB_APPLE_FLUSH_RANGE:
 				break;
+			#endif
 			case EVB_MAP_BUFFER_RANGE:
-			{	
+			{
 				break;
 			}
 		}
@@ -326,8 +328,10 @@ void* GlGeometryBufferInterface::LockVB( VertexBufferBase & VBuf, int ibase, int
 
 			switch( gDynVboPath )
 			{
+				#if defined(__APPLE__)
                 case EVB_APPLE_FLUSH_RANGE:
                     break;
+#endif
 				case EVB_MAP_BUFFER_RANGE:
 					//rVal = glMapBuffer( GL_ARRAY_BUFFER, GL_WRITE_ONLY|GL_MAP_UNSYNCHRONIZED_BIT|GL_MAP_FLUSH_EXPLICIT_BIT ); // MAP_UNSYNCHRONIZED_BIT?
 					rVal = glMapBufferRange( GL_ARRAY_BUFFER, ibasebytes, isizebytes, GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT|GL_MAP_FLUSH_EXPLICIT_BIT|GL_MAP_UNSYNCHRONIZED_BIT); // MAP_UNSYNCHRONIZED_BIT?
@@ -370,7 +374,7 @@ const void* GlGeometryBufferInterface::LockVB( const VertexBufferBase & VBuf, in
 	GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
 
 	OrkAssert( hBuf != 0 );
-	
+
 	int iMax = VBuf.GetMax();
 
 	if( icount == 0 )
@@ -404,7 +408,7 @@ const void* GlGeometryBufferInterface::LockVB( const VertexBufferBase & VBuf, in
 		hBuf->miLockBase = ibase;
 		hBuf->miLockCount = icount;
 	}
-	
+
 	GL_ERRORCHECK();
 
 	//////////////////////////////////////////////////////////
@@ -419,9 +423,9 @@ const void* GlGeometryBufferInterface::LockVB( const VertexBufferBase & VBuf, in
 void GlGeometryBufferInterface::UnLockVB( VertexBufferBase& VBuf )
 {
 	OrkAssert( VBuf.IsLocked() );
-	
+
 	GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-		
+
 	if( VBuf.IsStatic() )
 	{
 		GL_ERRORCHECK();
@@ -429,24 +433,26 @@ void GlGeometryBufferInterface::UnLockVB( VertexBufferBase& VBuf )
 		glBindBuffer( GL_ARRAY_BUFFER, hBuf->mVBO );
 		glUnmapBuffer( GL_ARRAY_BUFFER );
 		glBindBuffer( GL_ARRAY_BUFFER, 0 );
-		
+
 		VBuf.Unlock();
 	}
 	else
-	{		
+	{
 		int basebytes = VBuf.GetVtxSize()*hBuf->miLockBase;
 		int countbytes = VBuf.GetVtxSize()*hBuf->miLockCount;
-		
+
 		//printf( "UNLOCK VB<%p> base<%d> count<%d>\n", & VBuf, basebytes, countbytes );
-		
+
 		GL_ERRORCHECK();
 		glBindBuffer( GL_ARRAY_BUFFER, hBuf->mVBO );
 		GL_ERRORCHECK();
 
 		switch( gDynVboPath )
 		{
+			#if defined(__APPLE__)
             case EVB_APPLE_FLUSH_RANGE:
                 break;
+#endif
 			case EVB_MAP_BUFFER_RANGE:
 				GL_ERRORCHECK();
 				glFlushMappedBufferRange(GL_ARRAY_BUFFER, (GLintptr)0, countbytes);
@@ -494,7 +500,7 @@ void GlGeometryBufferInterface::UnLockVB( const VertexBufferBase& VBuf )
 void GlGeometryBufferInterface::ReleaseVB( VertexBufferBase& VBuf )
 {
 	GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
-	
+
 	if( hBuf )
 	{
 		GL_ERRORCHECK();
@@ -533,14 +539,14 @@ struct vtx_config
 			mPass = pfxpass;
 		}
 		if( mAttr )
-		{	
+		{
 			//printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
-			glVertexAttribPointer(	mAttr->mLocation, 
+			glVertexAttribPointer(	mAttr->mLocation,
 									mNumComponents,
 									mType,
 									mNormalize,
 									istride,
-									(void*) (uint64_t) mOffset );	
+									(void*) (uint64_t) mOffset );
 			rval = 1<<mAttr->mLocation;
 		}
 		else
@@ -596,8 +602,8 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 		{	break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12T8I4W4:
-		{	
-			static vtx_config cfgs[] = 
+		{
+			static vtx_config cfgs[] =
 			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
 				{"NORMAL",		3,	GL_FLOAT,			true,	12,		0,0},
 				{"TEXCOORD0",	2,	GL_FLOAT,			false,	24,		0,0},
@@ -617,7 +623,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 		}
 		case EVTXSTREAMFMT_V12N12B12T8C4:
 		{
-			static vtx_config cfgs[] = 
+			static vtx_config cfgs[] =
 			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
 				{"NORMAL",		3,	GL_FLOAT,			false,	12,		0,0},
 				{"BINORMAL",	3,	GL_FLOAT,			false,	24,		0,0},
@@ -630,8 +636,8 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 			break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12T16C4:
-		{	
-			static vtx_config cfgs[] = 
+		{
+			static vtx_config cfgs[] =
 			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
 				{"NORMAL",		3,	GL_FLOAT,			true,	12,		0,0},
 				{"TEXCOORD0",	2,	GL_FLOAT,			false,	24,		0,0},
@@ -645,7 +651,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 		}
 		case EVTXSTREAMFMT_V12C4T16:
 		{
-			static vtx_config cfgs[] = 
+			static vtx_config cfgs[] =
 			{	{"POSITION",	3,	GL_FLOAT,			false,	0,		0,0},
 				{"COLOR0",		4,	GL_UNSIGNED_BYTE,	true,	12,		0,0},
 				{"TEXCOORD0",	2,	GL_FLOAT,			false,	16,		0,0},
@@ -717,7 +723,7 @@ bool GlGeometryBufferInterface::BindVertexStreamSource( const VertexBufferBase& 
 		GL_ERRORCHECK();
 		//////////////////////////////////////////////
 		rval = EnableVtxBufComponents(VBuf,evb_priv);
-		//////////////////////////////////////////////	
+		//////////////////////////////////////////////
 		hBuf->mbSetupSource = true;
 	}
 	return rval;
@@ -767,7 +773,7 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 		//////////////////////////////////////////////
 		rval = EnableVtxBufComponents(VBuf,evb_priv);
 		GL_ERRORCHECK();
-		//////////////////////////////////////////////	
+		//////////////////////////////////////////////
 		assert(ph->mIBO!=0);
 		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ph->mIBO );
 		vao_container->mIBO = ph;
@@ -781,7 +787,7 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 	}
 
 	//#error assign idxbuf to VAO here
-	//////////////////////////////////////////////	
+	//////////////////////////////////////////////
 	hBuf->mbSetupSource = true;
 	return rval;
 }
@@ -806,7 +812,7 @@ void GlGeometryBufferInterface::DrawPrimitive( const VertexBufferBase& VBuf, EPr
 				static bool lbwire = false;
 
 				if( EPRIM_NONE == eTyp )
-				{	
+				{
 					eTyp = VBuf.GetPrimType();
 				}
 
@@ -816,7 +822,7 @@ void GlGeometryBufferInterface::DrawPrimitive( const VertexBufferBase& VBuf, EPr
 			}
 
 		}
-		
+
 		mTargetGL.GetCurMaterial()->EndBlock(&mTargetGL);
 
 	}
@@ -845,7 +851,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitive( const VertexBufferBase& VB
 				static bool lbwire = false;
 
 				if( EPRIM_NONE == eType )
-				{	
+				{
 					eType = VBuf.GetPrimType();
 				}
 
@@ -855,7 +861,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitive( const VertexBufferBase& VB
 			}
 
 		}
-		
+
 		mTargetGL.GetCurMaterial()->EndBlock(&mTargetGL);
 
 	}
@@ -929,7 +935,7 @@ void GlGeometryBufferInterface::DrawPrimitiveEML( const VertexBufferBase& VBuf, 
 /*			case EPRIM_POINTSPRITES:
 				GL_ERRORCHECK();
 				glPointSize( mTargetGL.GetCurMaterial()->mfParticleSize );
-											
+
 				glEnable( GL_POINT_SPRITE_ARB );
 				glDrawArrays( GL_POINTS, 0, iNum );
 				glDisable( GL_POINT_SPRITE_ARB );
@@ -956,7 +962,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 	GL_ERRORCHECK();
 	////////////////////////////////////////////////////////////////////
 
-	BindStreamSources( VBuf, IdxBuf );	
+	BindStreamSources( VBuf, IdxBuf );
 
 	int iNum = IdxBuf.GetNumIndices();
 
@@ -1005,7 +1011,7 @@ void GlGeometryBufferInterface::DrawIndexedPrimitiveEML( const VertexBufferBase&
 				//GL_ERRORCHECK();
 				//glPointSize( mTargetGL.GetCurMaterial()->mfParticleSize );
 	//GL_ERRORCHECK();
-											
+
 				//glEnable( GL_POINT_SPRITE_ARB );
 //	GL_ERRORCHECK();
 //				glDrawElements( GL_POINTS, iNum, GL_UNSIGNED_SHORT, pindices );

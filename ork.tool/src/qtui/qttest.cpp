@@ -37,7 +37,6 @@
 
 #if defined(USE_PYTHON)
 #include <Python.h>
-#include <dispatch/dispatch.h>
 namespace ork { namespace tool {
 void InitPython();
 }} //namespace ork { namespace tool {
@@ -177,7 +176,7 @@ public:
 		for( auto item = keys.begin(); item!=keys.end(); item++ )
 		{
 			QString val = *item;
-			const char* as_str = val.toAscii().constData();
+			const char* as_str = val.toUtf8().constData();
 			printf( "stylefact<%s>\n", as_str );
 		}
 	 	style = QStyleFactory::create("Oxygen");

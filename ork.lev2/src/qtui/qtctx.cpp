@@ -597,7 +597,7 @@ void QCtxWidget::wheelEvent ( QWheelEvent* qem )
 	int irawdelta = qem->delta();
 	int idelta = (2*gScrollFilter.compute(irawdelta)/9);
 	#else
-	int delta = qem->delta();
+	int idelta = qem->delta();
 	#endif
 
 	Qt::KeyboardModifiers modifiers = qem->modifiers();

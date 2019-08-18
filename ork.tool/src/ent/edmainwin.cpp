@@ -32,9 +32,7 @@
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QInputDialog>
 
-#if defined(ORK_OSX)
 extern bool gPythonEnabled;
-#endif
 
 
 ///////////////////////////////////////////////////////////////////////////////

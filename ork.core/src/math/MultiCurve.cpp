@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -13,6 +13,7 @@
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectVectorPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
+#include <math.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MultiCurve1D,"MultiCurve1D");
 

@@ -8,8 +8,8 @@
 #include <orktool/qtui/qtui_tool.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/Array.hpp>
+#include <ork/kernel/opq.h>
 #if 1
-#include <dispatch/dispatch.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtconsole.h>
 #include <QtWidgets/QScrollBar>
@@ -17,8 +17,6 @@
 #include <ork/lev2/qtui/qtui.hpp>
 #include <fcntl.h>
 #include <boost/algorithm/string.hpp>
-///////////////////////////////////////////////////////////////////////////////
-dispatch_queue_t PYQ();
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 namespace tool {
@@ -28,25 +26,12 @@ static int fd_tty_inp_slave = -1;
 ///////////////////////////////////////////////////////////////////////////////
 static void console_handler();
 ///////////////////////////////////////////////////////////////////////////////
-static dispatch_queue_t CONQ()
-{   
-    static dispatch_queue_t gQ=0;
-    static dispatch_once_t ginit_once;
-    auto once_blk = ^ void (void)
-    {
-        gQ = dispatch_get_main_queue(); //_create( "com.tweakoz.pyq", NULL );
-    };
-    dispatch_once(&ginit_once, once_blk );
-    return gQ;
-}
-///////////////////////////////////////////////////////////////////////////////
 static QtConsoleWindow* gPCON = nullptr;
 void QtConsoleWindow::Register()
 {
     gPCON = this;
-    
-    auto handler_blk = ^ void (void)
-    {
+
+    MainThreadOpQ().push([&]() {
         //const char* inpname = slave_inp_name;
         const char* outname = slave_out_name;
         const char* errname = slave_err_name;
@@ -62,9 +47,7 @@ void QtConsoleWindow::Register()
         usleep(1<<18);
 
         console_handler();
-    };
-    dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/2 );
-    dispatch_after( at, CONQ(), handler_blk );
+    });
 }
 ///////////////////////////////////////////////////////////////////////////////
 void QtConsoleWindow::AppendOutput( const std::string & data )
@@ -92,7 +75,7 @@ void QtConsoleWindow::AppendOutput( const std::string & data )
     boost::split(strs, data, boost::is_any_of("\n"));
 
     int inumstrs = strs.size();
-        
+
     for( int i=0; i<inumstrs; i++ )
     {
         std::string line = strs[i];
@@ -162,24 +145,18 @@ void console_handler()
             }
             break;
     }*/
-    
+
     //PyGILState_STATE gstate = PyGILState_Ensure();
     //int iret = PyRun_InteractiveOne(fp_pty_master,"???");
     //PyGILState_Release(gstate);
     //fprintf( fp_pty_master, ">>>" );
     //fflush( fp_pty_master );
-    
+
     /////////////////////
 
-    auto repeat_blk = ^ void (void)
-    {
+    MainThreadOpQ().push([&]() {
         console_handler();
-    };
-    
-    
-    dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC/10 );
-    dispatch_after( at, CONQ(), repeat_blk );
-
+    });
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -205,14 +182,14 @@ QtConsoleWindow::QtConsoleWindow( bool bfloat, QWidget *pparent )
 	QPalette p=mpConsoleOutputTextEdit->palette();
     p.setColor(QPalette::Active, QPalette::Base , QColor(0,0,128,255) );
     p.setColor(QPalette::Active, QPalette::Text , QColor(0,255,0,255) );
-    mpConsoleOutputTextEdit->setPalette(p);	
+    mpConsoleOutputTextEdit->setPalette(p);
 	mpConsoleOutputTextEdit->setBackgroundRole ( QPalette::Dark );
 	mpConsoleOutputTextEdit->setForegroundRole ( QPalette::BrightText );
 	mpConsoleOutputTextEdit->setAutoFillBackground(true);
 	QFont* consolefont = new QFont("Inconsolata",16);
 
 	mpConsoleOutputTextEdit->setCurrentFont( *consolefont );
-	
+
     p.setColor(QPalette::Active, QPalette::Base , QColor(128,0,0,255) );
     p.setColor(QPalette::Active, QPalette::Text , QColor(255,255,0,255) );
 	mpConsoleInputTextEdit->setPalette(p);
@@ -228,7 +205,7 @@ QtConsoleWindow::QtConsoleWindow( bool bfloat, QWidget *pparent )
 	//QCheckBox *but = new QCheckBox("echo");
 	//playoutH->addWidget( but );
 	//playoutH->addWidget( mpConsoleInputTextEdit );
-	
+
 	pwH->resize( 156, 16 );
 	mpGROUPBOX->resize( 156, 32 );
 
@@ -270,11 +247,9 @@ void QtConsoleWindow::InputDone( void )
 	//printf( "INPUT<%s>\n", sstr.c_str() );
 	if( sstr.length() )
 	{
-		auto Pyblock = ^ void()
-		{
-			Py::Ctx().Call(sstr);
-		};
-		dispatch_async(PYQ(),Pyblock);
+    MainThreadOpQ().push([&]() {
+			  Py::Ctx().Call(sstr);
+		});
 	}
 	mpConsoleInputTextEdit->clear();
 	//Py::Ctx().Call("print dir(sys)");

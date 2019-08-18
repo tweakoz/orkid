@@ -217,7 +217,7 @@ def __moc_generator_from_h(source, target, env, for_signature):
             pass_defines = True
     except ValueError:
         pass
-    
+
     if pass_defines:
         return '$QT5_MOC $QT5_MOCDEFINES $QT5_MOCFROMHFLAGS $QT5_MOCINCFLAGS -o $TARGET $SOURCE'
     else:
@@ -230,7 +230,7 @@ def __moc_generator_from_cxx(source, target, env, for_signature):
             pass_defines = True
     except ValueError:
         pass
-    
+
     if pass_defines:
         return ['$QT5_MOC $QT5_MOCDEFINES $QT5_MOCFROMCXXFLAGS $QT5_MOCINCFLAGS -o $TARGET $SOURCE',
                 SCons.Action.Action(checkMocIncluded,None)]
@@ -245,7 +245,7 @@ def __mocx_generator_from_h(source, target, env, for_signature):
             pass_defines = True
     except ValueError:
         pass
-    
+
     if pass_defines:
         return '$QT5_MOC $QT5_MOCDEFINES $QT5_MOCFROMHFLAGS $QT5_MOCINCFLAGS -o $TARGET $SOURCE'
     else:
@@ -258,7 +258,7 @@ def __mocx_generator_from_cxx(source, target, env, for_signature):
             pass_defines = True
     except ValueError:
         pass
-    
+
     if pass_defines:
         return ['$QT5_MOC $QT5_MOCDEFINES $QT5_MOCFROMCXXFLAGS $QT5_MOCINCFLAGS -o $TARGET $SOURCE',
                 SCons.Action.Action(checkMocIncluded,None)]
@@ -273,7 +273,7 @@ def __qrc_generator(source, target, env, for_signature):
             name_defined = True
     except ValueError:
         pass
-    
+
     if name_defined:
         return '$QT5_RCC $QT5_QRCFLAGS $SOURCE -o $TARGET'
     else:
@@ -292,7 +292,7 @@ def __qrc_generator(source, target, env, for_signature):
 #
 # Builders
 #
-__ts_builder = SCons.Builder.Builder(        
+__ts_builder = SCons.Builder.Builder(
         action = SCons.Action.Action('$QT5_LUPDATECOM','$QT5_LUPDATECOMSTR'),
         suffix = '.ts',
         source_factory = SCons.Node.FS.Entry)
@@ -336,7 +336,7 @@ def Ts5(env, target, source=None, *args, **kw):
             clean_ts = True
     except ValueError:
         pass
-    
+
     result = []
     for t in target:
         obj = __ts_builder.__call__(env, t, source, **kw)
@@ -346,7 +346,7 @@ def Ts5(env, target, source=None, *args, **kw):
         # Always make our target "precious", such that it is not deleted
         # prior to a rebuild
         env.Precious(obj)
-        # Add to resulting target list        
+        # Add to resulting target list
         result.extend(obj)
 
     return result
@@ -363,7 +363,7 @@ def Qm5(env, target, source=None, *args, **kw):
     if not SCons.Util.is_List(source):
         source = [source]
 
-    result = []    
+    result = []
     for t in target:
         result.extend(__qm_builder.__call__(env, t, source, **kw))
 
@@ -432,7 +432,7 @@ def generate(env):
         '.exe',
     ]
     command_suffixes = ['-qt5', '5', '']
-        
+
     def locateQt5Command(env, command, qtdir) :
         triedPaths = []
         for suffix in suffixes :
@@ -498,14 +498,14 @@ def generate(env):
         QT5_UICCOM = '$QT5_UIC $QT5_UICFLAGS -o $TARGET $SOURCE',
         QT5_LUPDATECOM = '$QT5_LUPDATE $QT5_LUPDATEFLAGS $SOURCES -ts $TARGET',
         QT5_LRELEASECOM = '$QT5_LRELEASE $QT5_LRELEASEFLAGS -qm $TARGET $SOURCES',
-        
+
         # Specialized variables for the Extended Automoc support
         # (Strategy #1 for qtsolutions)
         QT5_XMOCHPREFIX = 'moc_',
         QT5_XMOCHSUFFIX = '.cpp',
         QT5_XMOCCXXPREFIX = '',
         QT5_XMOCCXXSUFFIX = '.moc',
-                
+
         )
 
     try:
@@ -544,18 +544,18 @@ def generate(env):
     # Metaobject builder
     mocBld = Builder(action={}, prefix={}, suffix={}, emitter=repathMocs )
     for h in header_extensions:
-        act = SCons.Action.CommandGeneratorAction(__moc_generator_from_h, {'cmdstr':'$QT5_MOCCOMSTR'})    
+        act = SCons.Action.CommandGeneratorAction(__moc_generator_from_h, {'cmdstr':'$QT5_MOCCOMSTR'})
         mocBld.add_action(h, act)
         mocBld.prefix[h] = '$QT5_MOCHPREFIX'
         mocBld.suffix[h] = '$QT5_MOCHSUFFIX'
     for cxx in cxx_suffixes:
-        act = SCons.Action.CommandGeneratorAction(__moc_generator_from_cxx, {'cmdstr':'$QT5_MOCCOMSTR'})    
+        act = SCons.Action.CommandGeneratorAction(__moc_generator_from_cxx, {'cmdstr':'$QT5_MOCCOMSTR'})
         mocBld.add_action(cxx, act)
         mocBld.prefix[cxx] = '$QT5_MOCCXXPREFIX'
         mocBld.suffix[cxx] = '$QT5_MOCCXXSUFFIX'
     env['BUILDERS']['Moc5'] = mocBld
 
-    # Metaobject builder for the extended auto scan feature 
+    # Metaobject builder for the extended auto scan feature
     # (Strategy #1 for qtsolutions)
     xMocBld = Builder(action={}, prefix={}, suffix={})
     for h in header_extensions:
@@ -564,18 +564,18 @@ def generate(env):
         xMocBld.prefix[h] = '$QT5_XMOCHPREFIX'
         xMocBld.suffix[h] = '$QT5_XMOCHSUFFIX'
     for cxx in cxx_suffixes:
-        act = SCons.Action.CommandGeneratorAction(__mocx_generator_from_cxx, {'cmdstr':'$QT5_MOCCOMSTR'})    
+        act = SCons.Action.CommandGeneratorAction(__mocx_generator_from_cxx, {'cmdstr':'$QT5_MOCCOMSTR'})
         xMocBld.add_action(cxx, act)
         xMocBld.prefix[cxx] = '$QT5_XMOCCXXPREFIX'
         xMocBld.suffix[cxx] = '$QT5_XMOCCXXSUFFIX'
     env['BUILDERS']['XMoc5'] = xMocBld
 
     # Add the Qrc5 action to the CXX file builder (registers the
-    # *.qrc extension with the Environment)     
+    # *.qrc extension with the Environment)
     cfile_builder, cxxfile_builder = SCons.Tool.createCFileBuilders(env)
     qrc_act = SCons.Action.CommandGeneratorAction(__qrc_generator, {'cmdstr':'$QT5_QRCCOMSTR'})
-    cxxfile_builder.add_action('$QT5_QRCSUFFIX', qrc_act)    
-    cxxfile_builder.add_emitter('$QT5_QRCSUFFIX', __qrc_emitter)    
+    cxxfile_builder.add_action('$QT5_QRCSUFFIX', qrc_act)
+    cxxfile_builder.add_emitter('$QT5_QRCSUFFIX', __qrc_emitter)
 
     # TODO: Does dbusxml2cpp need an adapter
     try:
@@ -626,7 +626,8 @@ def enable_modules(self, modules, debug=False, crosscompiling=False) :
         # Other
         'QtCLucene',
         'QtConcurrent',
-        'QtV8'
+        'QtV8',
+        "QtX11Extras"
         ]
     pclessModules = [
     ]
@@ -701,7 +702,7 @@ def enable_modules(self, modules, debug=False, crosscompiling=False) :
             self["QT5_MOCCPPPATH"] = self["CPPPATH"]
         self.AppendUnique(LIBPATH=[os.path.join('$QT5DIR','lib')])
         return
-        
+
     """
     if sys.platform=="darwin" :
         # TODO: Test debug version on Mac
@@ -732,6 +733,6 @@ def enable_modules(self, modules, debug=False, crosscompiling=False) :
 #    env.AppendUnique(FRAMEWORKPATH=[os.path.join(env['QT5DIR'],'lib')])
 #    env.AppendUnique(FRAMEWORKS=['QtCore','QtGui','QtOpenGL', 'AGL'])
     """
-        
+
 def exists(env):
     return _detect(env)
