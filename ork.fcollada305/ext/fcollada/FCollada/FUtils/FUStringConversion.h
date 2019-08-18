@@ -2,7 +2,7 @@
 	Copyright (C) 2005-2007 Feeling Software Inc.
 	Portions of the code are:
 	Copyright (C) 2005-2007 Sony Computer Entertainment America
-	
+
 	MIT License: http://www.opensource.org/licenses/mit-license.php
 */
 /*
@@ -33,7 +33,7 @@ class FUDateTime;
 	fm::strings into common data types: integers, booleans, floating-point values,
 	vectors, matrices, date-time, etc. and dynamically-sized array of these types.
 
-	This class can also convert common data types into an 8-bit or a Unicode string and 
+	This class can also convert common data types into an 8-bit or a Unicode string and
 	it contains conversion functions to convert string between 8-bit and Unicode.
 
 	All the functions which return string objects are returning static string objects
@@ -371,7 +371,7 @@ public:
 	/** Split the target string into its pointer and its qualifier(s)
 		Used by the animation system to split to find the animation targets */
 	static void SplitTarget(const fm::string& target, fm::string& pointer, fm::string& qualifier);
-	
+
 	/** Parses the input string for a qualifier for the animation system.
 		Basically extracts a number from either [XX] or (XX)
 		@param string The input string to parse the number from
@@ -388,8 +388,6 @@ public:
 	static FCOLLADA_EXPORT size_t CountValues(const CH* sz);
 };
 
-#ifdef __APPLE__
 #include "FUtils/FUStringConversion.hpp"
-#endif // __APPLE__
 
 #endif // _FCU_STRING_CONVERSION_

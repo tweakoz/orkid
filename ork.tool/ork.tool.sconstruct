@@ -103,6 +103,7 @@ class orktool:
     prj.mocfiles["inc/orktool/qtui/qtconsole.h"]='obj/qtui/moc_qtconsole.cpp'
     prj.Configure()
     self.tool_lib = prj.SharedLibrary( )
+    self.prj = prj
 
     ##########################################
 
@@ -126,23 +127,25 @@ class orktool:
     self.test_prg = prj_test.Program()
     Depends( self.test_prg, self.tool_lib )
 
-    bundle = prj_test.CompileEnv.Command(
-      target = "%s/bundle/OrkidTool.app" % sln.stage_dir,
-      source = self.test_prg,
-      action = "ork.bundle.make.py" )
+    if prj.IsOsx:
+        bundle = prj_test.CompileEnv.Command(
+            target = "%s/bundle/OrkidTool.app" % sln.stage_dir,
+            source = self.test_prg,
+            action = "ork.bundle.make.py" )
 
-    Depends( bundle, self.test_prg )
+        Depends( bundle, self.test_prg )
 
-    self.bundle = bundle
+        self.bundle = bundle
 
 ##########################################
 
 a = orktool()
 ret = list()
 if False==is_prep:
-  ret += a.bundle
   ret += a.test_prg
   ret += a.tool_lib
+  if a.prj.IsOsx:
+      ret += a.bundle
 Return('ret')
 
 ##########################################

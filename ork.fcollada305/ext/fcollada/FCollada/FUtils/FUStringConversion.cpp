@@ -2,7 +2,7 @@
 	Copyright (C) 2005-2007 Feeling Software Inc.
 	Portions of the code are:
 	Copyright (C) 2005-2007 Sony Computer Entertainment America
-	
+
 	MIT License: http://www.opensource.org/licenses/mit-license.php
 */
 /*
@@ -14,7 +14,7 @@
 
 #include "StdAfx.h"
 #include "FUStringConversion.h"
-#ifndef __APPLE__
+#if 0
 #include "FUStringConversion.hpp"
 #endif // __APPLE__
 
@@ -94,7 +94,7 @@ fstring FUStringConversion::ToFString(const FMMatrix44& m)
 fstring FUStringConversion::ToFString(const FUDateTime& dateTime)
 {
 	fchar sz[21];
-	fsnprintf(sz, 21, FC("%04u-%02u-%02uT%02u:%02u:%02uZ"), (unsigned int) dateTime.GetYear(), (unsigned int) dateTime.GetMonth(), (unsigned int) dateTime.GetDay(), (unsigned int) dateTime.GetHour(), (unsigned int) dateTime.GetMinutes(), (unsigned int) dateTime.GetSeconds());	
+	fsnprintf(sz, 21, FC("%04u-%02u-%02uT%02u:%02u:%02uZ"), (unsigned int) dateTime.GetYear(), (unsigned int) dateTime.GetMonth(), (unsigned int) dateTime.GetDay(), (unsigned int) dateTime.GetHour(), (unsigned int) dateTime.GetMinutes(), (unsigned int) dateTime.GetSeconds());
 	sz[20] = 0;
 	return fstring(sz);
 }
@@ -261,13 +261,14 @@ fm::string operator+(const fm::string& sz1, int32 i)
 }
 
 // Called by TrickLinker2 in FUStringBuilder.cpp
-extern void TrickLinkerFUStringConversion(void)
+void TrickLinkerFUStringConversion(void)
 {
 
 	// Exercise the template functions in order to force the linker to generate and expose the methods.
 	FUSStringBuilder sbuilder;
 	FUStringBuilder fbuilder;
 	const char* c = emptyCharString;
+	char const* cc = emptyCharString;
 	const fchar* fc = emptyFCharString;
 	float f = FUStringConversion::ToFloat(&c);
 	f = FUStringConversion::ToFloat(&fc);
@@ -282,6 +283,8 @@ extern void TrickLinkerFUStringConversion(void)
 
 	i32 = FUStringConversion::ToInt32<char>((char const**)&c);
 
+	FUStringConversion::ToInt32<char>(&c);
+	FUStringConversion::ToInt32<char>((char const**)&cc);
 
 	FMMatrix44 m44;
 	FUStringConversion::ToMatrix(&c, m44);
