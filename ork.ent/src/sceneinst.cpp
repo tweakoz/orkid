@@ -126,7 +126,7 @@ SceneInst::SceneInst( const SceneData* sdata, Application *application )
 {
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	OrkAssertI(mApplication, "SceneInst must be constructed with a non-NULL Application!");
-	
+
 	Layer* player = new Layer;
 	AddLayer( AddPooledLiteral("Default"), player );
 
@@ -179,7 +179,7 @@ SceneInst::~SceneInst()
 
 CompositingManagerComponentInst* SceneInst::GetCMCI()
 {
-	auto cmci = FindTypedSceneComponent<CompositingManagerComponentInst>();
+	auto cmci = FindSystem<CompositingManagerComponentInst>();
 	return cmci;
 }
 
@@ -200,7 +200,7 @@ float SceneInst::ComputeDeltaTime()
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	float systime = float(CSystem::GetRef().GetLoResTime());
 	float fdelta = (frame_rate!=0.0f)
-					? (1.0f/frame_rate) 
+					? (1.0f/frame_rate)
 					: (systime - mUpTime);
 
 	static float fbasetime = systime;
@@ -250,7 +250,7 @@ float SceneInst::ComputeDeltaTime()
 			///////////////////////////////
 			// update clock
 			///////////////////////////////
-			
+
 			mDeltaTime = (mPrevDeltaTime + fdelta)/2;
 			mPrevDeltaTime = fdelta;
 			mLastGameTime = mGameTime;
@@ -259,7 +259,7 @@ float SceneInst::ComputeDeltaTime()
 	}
 
 //	printf( "mGameTime<%f>\n", mGameTime );
-	
+
 	return fdelta;
 
 }
@@ -288,7 +288,7 @@ void SceneInst::SetCameraData(const PoolString& name, const CCameraData*camdat)
 	}
 
 	lev2::CCamera* pcam = (camdat!=0) ? camdat->GetLev2Camera() : 0;
-	
+
 	//orkprintf( "SceneInst::SetCameraData() name<%s> camdat<%p> l2cam<%p>\n", name.c_str(), camdat, pcam );
 }
 
@@ -300,7 +300,7 @@ const CCameraData* SceneInst::GetCameraData(const PoolString& name ) const
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::SlotSceneTopoChanged()
-{	
+{
 	auto topo_op = [=]()
 	{
 		this->GetData().AutoLoadAssets();
@@ -463,7 +463,7 @@ void SceneInst::EnterRunState()
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::OnSceneInstMode( ESceneInstMode emode )
-{	
+{
 	AssertOnOpQ2( UpdateSerialOpQ() );
 
 	switch( meSceneInstMode )
@@ -477,7 +477,7 @@ void SceneInst::OnSceneInstMode( ESceneInstMode emode )
 			//SetCameraData( ork::AddPooledLiteral("game1"), 0 );
 			break;
 	}
-	
+
 	switch( emode )
 	{	case ESCENEMODE_EDIT:
 			EnterEditState();
@@ -548,7 +548,7 @@ void SceneInst::ComposeEntities()
 			ork::ent::Entity* pent = new ork::ent::Entity( *pentdata, this );
 
 			PoolString actualLayerName = AddPooledLiteral("Default");
-	
+
 			ConstString layer_name = pentdata->GetUserProperty("DrawLayer");
 			if( strlen( layer_name.c_str() ) != 0 )
 			{
@@ -572,8 +572,8 @@ void SceneInst::ComposeEntities()
 			mEntities[pentdata->GetName()] = pent;
 		}
 	}
-	
-	GetData().AutoLoadAssets();	
+
+	GetData().AutoLoadAssets();
 
 	//orkprintf( "end si<%p> Compose Entities..\n", this );
 }
@@ -686,7 +686,7 @@ void SceneInst::UnLinkSceneComponents()
 		SceneComponentInst* ci = it.second;
 		ci->UnLink(this);
 	}
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -759,16 +759,16 @@ void SceneInst::StopEntities()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item) 
-{ 
+void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item)
+{
 	//DEBUG_PRINT( "QueueActivateEntity<%p:%s>\n",  item.mpEntity, item.mpEntity->GetEntData().GetName().c_str() );
-	mEntityActivateQueue.push_back(item); 
+	mEntityActivateQueue.push_back(item);
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::QueueDeactivateEntity(Entity *pent) 
-{ 
+void SceneInst::QueueDeactivateEntity(Entity *pent)
+{
 	//printf( "QueueDeActivateEntity<%p:%s>\n",  pent, pent->GetEntData().GetName().c_str() );
-	mEntityDeactivateQueue.push_back(pent); 
+	mEntityDeactivateQueue.push_back(pent);
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::ActivateEntity(ent::Entity* pent)
@@ -980,7 +980,7 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 
 		DrawQueueXfData xfdata;
 		xfdata.mWorldMatrix = pent->GetEffectiveMatrix();
-		
+
 		//node3d.GetMatrix(xfdata.mWorldMatrix);
 
 		for( Entity::LayerMap::const_iterator itL=entlayers.begin(); itL!=entlayers.end(); itL++ )
@@ -1017,18 +1017,18 @@ void SceneInst::RenderDrawableBuffer(lev2::Renderer *renderer, const ork::ent::D
 	// push temporary mutable framedata
 	/////////////////////////////////
 	pTARG->SetRenderContextFrameData(&framedata);
-	{	
+	{
 		if( framedata.GetCameraData() )
 		{
 			bool DoAll = (0==strcmp(LayerName.c_str(),"All"));
-		
+
 			for( const auto& layer_item : dbuffer.mLayerLut )
 			{
 				const PoolString& TestLayerName = layer_item.first;
 				const DrawableBufLayer* player = layer_item.second;
 
 				bool Match = (LayerName==TestLayerName);
-				
+
 				if( DoAll || (Match && pfdata->HasLayer( TestLayerName ) ) )
 				{
 					for( int id=0; id<=player->miItemIndex; id++ )
@@ -1169,7 +1169,7 @@ struct MyTimer
 	int		miCounter;
 	std::string	mName;
 
-	MyTimer( const char* name) 
+	MyTimer( const char* name)
 		: mfTimeStart(0.0f)
 		, mfTimeEnd(0.0f)
 		, mfTimeAcc(0.0f)
@@ -1236,7 +1236,7 @@ void SceneInst::Update()
 				mDeltaTimeAccum = fdelta;
 				step = fdelta; //(1.0f/120.0f); // ideally should be (1.0f/vsync rate) / some integer
 			}
-			else 
+			else
 			{
 				mDeltaTimeAccum += fdelta;
 				step = 1.0f/60.0f; //(1.0f/120.0f); // ideally should be (1.0f/vsync rate) / some integer
@@ -1247,10 +1247,10 @@ void SceneInst::Update()
 			// stepSimulation. Go figure.
 			// Nasa - I just verified again that we are still not framerate independent if we take out our
 			// own accumulator. 1-30-09.
-			
+
 			mDeltaTimeAccum = fdelta;
 			step = fdelta;
-						
+
 			while(mDeltaTimeAccum >= step)
 			{
 				mDeltaTimeAccum -= step;

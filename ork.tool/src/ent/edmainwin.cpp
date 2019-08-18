@@ -31,33 +31,27 @@
 #include <ork/application/application.h>
 #include <QtWidgets/QDockWidget>
 #include <QtWidgets/QInputDialog>
-
+///////////////////////////////////////////////////////////////////////////////
 extern bool gPythonEnabled;
-
-
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::EditorMainWindow, "EditorMainWindow" );
+///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
-
+///////////////////////////////////////////////////////////////////////////////
 SceneInst* GetEditorSceneInst(){
 	return gEditorMainWindow->mEditorBase.GetEditSceneInst();
 }
+///////////////////////////////////////////////////////////////////////////////
 void SceneTopoChanged(){
 	gEditorMainWindow->SlotUpdateAll();
 }
-
+///////////////////////////////////////////////////////////////////////////////
 EditorMainWindow *gEditorMainWindow;
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 void RegisterMainWinDefaultModule( EditorMainWindow& emw );
 void RegisterLightingModule( EditorMainWindow& emw );
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::Describe(){
 	///////////////////////////////////////////////////////////
@@ -103,6 +97,16 @@ void EditorMainWindow::SigNewObject( ork::Object* pOBJ ){
 	mSignalNewObject(&EditorMainWindow::SigNewObject,pOBJ);
 }
 ///////////////////////////////////////////////////////////////////////////
+void EditorMainWindow::ToggleFullscreen(){
+	_fullscreen = ! _fullscreen;
+ 	isFullScreen() ? showNormal() : showFullScreen();
+}
+///////////////////////////////////////////////////////////////////////////
+void EditorMainWindow::Exit(){
+	// todo - better cleanup method
+	exit(0);
+}
+///////////////////////////////////////////////////////////////////////////
 EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicationClassName, QApplication & App)
 	: MiniorkMainWindow( parent )
 	, mpSplashScreen(0)
@@ -116,7 +120,8 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	, ConstructAutoSlot(PostNewObject)
 	, ConstructAutoSlot(SceneInstInvalidated){
 
-  setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+	_fullscreen = false;
+	//setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 
 	SetupSignalsAndSlots();
 
@@ -407,11 +412,11 @@ static void ReplaceArchetype(	ent::SceneData* pscene,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EntArchDeRef : public ork::tool::ged::IOpsDelegate{
+struct EntArchDeRef final : public ork::tool::ged::IOpsDelegate{
 	RttiDeclareConcretePublic( EntArchDeRef, ork::tool::ged::IOpsDelegate );
 
 	EntArchDeRef() {}
-	~EntArchDeRef() {}
+	~EntArchDeRef() final {}
 
 	void Execute( ork::Object* ptarget ) final{
     SetProgress(0.0f);
@@ -437,7 +442,8 @@ struct EntArchDeRef : public ork::tool::ged::IOpsDelegate{
 				}
 			}
 		}
-		tool::ged::IOpsDelegate::RemoveTask( EntArchDeRef::GetClassStatic(), ptarget );
+		tool::ged::IOpsDelegate::RemoveTask( EntArchDeRef::GetClassStatic(),
+		                                     ptarget );
 	}
 };
 
@@ -445,10 +451,10 @@ void EntArchDeRef::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EntArchReRef : public ork::tool::ged::IOpsDelegate {
+struct EntArchReRef final : public ork::tool::ged::IOpsDelegate {
 	RttiDeclareConcretePublic( EntArchReRef, ork::tool::ged::IOpsDelegate );
 	EntArchReRef() {}
-	~EntArchReRef() {}
+	~EntArchReRef() final {}
 
 	template <typename T> void find_and_replace( T& source,
 		                                           const T& find,
@@ -521,7 +527,8 @@ struct EntArchReRef : public ork::tool::ged::IOpsDelegate {
 				}
 			}
 		}
-		tool::ged::IOpsDelegate::RemoveTask( EntArchReRef::GetClassStatic(), ptarget );
+		tool::ged::IOpsDelegate::RemoveTask( EntArchReRef::GetClassStatic(),
+		                                     ptarget );
 		/////////////////////////////////////////////////////////////
 	}
 };
@@ -530,7 +537,7 @@ void EntArchReRef::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct EntArchSplit : public ork::tool::ged::IOpsDelegate{
+struct EntArchSplit final : public ork::tool::ged::IOpsDelegate{
 	RttiDeclareConcretePublic( EntArchSplit, ork::tool::ged::IOpsDelegate );
 
 	EntArchSplit() {}
@@ -538,7 +545,8 @@ struct EntArchSplit : public ork::tool::ged::IOpsDelegate{
 
 	void Execute( ork::Object* ptarget ) final{
 		SetProgress(0.0f);
-		tool::ged::IOpsDelegate::RemoveTask( EntArchSplit::GetClassStatic(), ptarget );
+		tool::ged::IOpsDelegate::RemoveTask( EntArchSplit::GetClassStatic(),
+		                                     ptarget );
 	}
 };
 

@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -141,7 +141,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	template <typename T > 
+	template <typename T >
 	T* GetTypedSceneComponent() const;
 
 	const SceneComponentLut& GetSceneComponents() const { return mSceneComponents; }
@@ -177,7 +177,7 @@ struct SceneComposer
 
 	SceneComposer(SceneData* psd);
 	~SceneComposer();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,11 +269,11 @@ public:
 	float GetGameTime() const { return mGameTime; }
 	float GetDeltaTime() const { return mDeltaTime; }
 	float GetUpDeltaTime() const { return mUpDeltaTime; }
-	
+
 	void SetDeltaTime(float speeduptime)  { mDeltaTime = speeduptime; }
 
     float random(float mmin, float mmax);
-    
+
 	///////////////////////////////////////////////////
 
 	void SetCameraData(const PoolString& name, const CCameraData*camdat);
@@ -298,7 +298,7 @@ public:
 
 	void UpdateActiveComponents(ork::PoolString family );
 
-	void QueueActivateEntity(const EntityActivationQueueItem& item); 
+	void QueueActivateEntity(const EntityActivationQueueItem& item);
 	void QueueDeactivateEntity(Entity *entity);
 
 	bool IsEntityActive(Entity* entity) const;
@@ -326,11 +326,11 @@ public:
 	void AddSceneComponent( SceneComponentInst* pcomp );
 	void ClearSceneComponents();
 
-	template <typename T > 
-	T* FindTypedSceneComponent() const;
+	template <typename T >
+	T* FindSystem() const;
 
 	typedef orklut<PoolString,const CCameraData*> CameraLut;
-	
+
 	void AddLayer( const PoolString& name, Layer*player );
 	Layer* GetLayer( const PoolString& name );
 	const Layer* GetLayer( const PoolString& name ) const;
@@ -383,7 +383,7 @@ protected:
 	size_t 									mEntityUpdateCount;
 
 	CameraLut								mCameraLut;		// camera list
-	
+
 	//////////////////////////////////////////////////////////
 	ActiveComponentType						mActiveEntityComponents;
 	orkvector<EntityActivationQueueItem>	mEntityActivateQueue;

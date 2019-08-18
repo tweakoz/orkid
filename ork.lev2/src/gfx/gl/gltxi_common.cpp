@@ -54,7 +54,7 @@ PboSet::PboSet( int isize )
 	GL_ERRORCHECK();
 	glGenBuffers(knumpbos, mPBOS);
 	GL_ERRORCHECK();
-	
+
 	for( int i=0; i<knumpbos; i++ )
 	{
 		glBindBuffer( GL_PIXEL_UNPACK_BUFFER, mPBOS[i] );
@@ -149,16 +149,16 @@ struct TexSetter
 	}
 
 	static void Set2D(GlTextureInterface* txi, Texture* tex, GLuint numC, GLuint fmt, GLuint typ, GLuint tgt, int BPP, int inummips, int& iw, int& ih, CFile& file ) //, int& irdptr, const u8* dataBASE )
-	{	
+	{
 		size_t ifilelen = 0;
 		EFileErrCode eFileErr = file.GetLength( ifilelen );
-	
+
 		//const u8* pimgdata = & dataBASE[irdptr];
 		int isize = iw*ih*BPP;
 		tex->mMaxMip = 0;
 
 		for( int imip=0; imip<inummips; imip++ )
-		{			
+		{
 			if( iw<4 ) continue;
 			if( ih<4 ) continue;
 			tex->mMaxMip = imip;
@@ -174,7 +174,7 @@ struct TexSetter
 			//  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
 			//  this decouples allocation from writing, allowing you to overwrite more efficiently
 			/////////////////////////////////////////////////
-					
+
 			GLint intfmt = 0;
 			//printf( "fmt<%04x>\n", fmt );
 			int isiz2 = isize;
@@ -207,7 +207,7 @@ struct TexSetter
 					break;
 			}
 			OrkAssert(intfmt!=0);
-					
+
 
 			//printf( "tgt<%04x> imip<%d> intfmt<%04x> w<%d> h<%d> isiz2<%d> fmt<%04x> typ<%04x>\n", tgt, imip, intfmt, iw,ih,isiz2,nfmt,typ);
 			GL_ERRORCHECK();
@@ -225,13 +225,13 @@ struct TexSetter
 								typ,
 								0 );
 				GL_ERRORCHECK();
-								
+
 				/////////////////////////////
 				// imgdata->PBO
 				/////////////////////////////
 
 				const GLuint PBOOBJ = txi->GetPBO( isiz2 );
-				
+
 				glBindBuffer( GL_PIXEL_UNPACK_BUFFER, PBOOBJ );
 				GL_ERRORCHECK();
 
@@ -334,7 +334,7 @@ struct TexSetter
 								0 );
 
 				const GLuint PBOOBJ = txi->GetPBO( isize );
-				
+
 				glBindBuffer( GL_PIXEL_UNPACK_BUFFER, PBOOBJ );
 				void* pgfxmem = glMapBuffer( GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY );
 				file.Read( pgfxmem, isize );
@@ -343,7 +343,7 @@ struct TexSetter
 				////////////////////////
 				// PBO->texture
 				////////////////////////
-				
+
 				glTexSubImage3D(	tgt,
 									imip,
 									0,0,0,
@@ -391,8 +391,8 @@ struct TexSetter
 			int isize = (iBwidth*iBheight) * BPP;
 			//const u8* pimgdata = & dataBASE[irdptr];
 			//irdptr+=isize;
-			
-			
+
+
 			/////////////////////////////////////////////////
 			// allocate space for image
  			// see http://www.opengl.org/discussion_boards/ubbthreads.php?ubb=showflat&Board=3&Number=159972
@@ -402,8 +402,8 @@ struct TexSetter
 			//  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
 			//  this decouples allocation from writing, allowing you to overwrite more efficiently
 			/////////////////////////////////////////////////
-			
-			bool hasalpha = (fmt==kRGBA_DXT5)||(fmt==kRGBA_DXT3); 
+
+			bool hasalpha = (fmt==kRGBA_DXT5)||(fmt==kRGBA_DXT3);
 			GLenum extfmt = hasalpha ? GL_RGBA : GL_RGB;
 
 			bool bUSEPBO = false;
@@ -434,7 +434,7 @@ struct TexSetter
 				GL_ERRORCHECK();
 				glTexImage2D( tgt, imip, fmt, iw, ih, 0, extfmt, GL_UNSIGNED_BYTE, NULL );
 				GL_ERRORCHECK();
-				
+
 				/////////////////////////////
 				// imgdata->PBO
 				/////////////////////////////
@@ -442,7 +442,7 @@ struct TexSetter
 				//printf( "UPDATE IMAGE  S3TC\n" );
 
 				const GLuint PBOOBJ = txi->GetPBO( isize );
-				
+
 				glBindBuffer( GL_PIXEL_UNPACK_BUFFER, PBOOBJ );
 				GL_ERRORCHECK();
 				void* pgfxmem = glMapBuffer( GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY );
@@ -455,7 +455,7 @@ struct TexSetter
 				////////////////////////
 				// PBO->texture
 				////////////////////////
-				
+
 
 				glCompressedTexSubImage2D(	tgt,
 											imip,
@@ -483,7 +483,7 @@ struct TexSetter
 	}
 	static void Set3DC(GlTextureInterface* txi, GLuint fmt, GLuint tgt, int BPP, int inummips, int& iw, int& ih, int& id, CFile& file ) //, int& irdptr, const u8* dataBASE )
 	{	for( int imip=0; imip<inummips; imip++ )
-		{	
+		{
 			int iBwidth = (iw+3)/4;
 			int iBheight = (ih+3)/4;
 			int isize = id*(iBwidth*iBheight) * BPP;
@@ -540,7 +540,7 @@ void GlTextureInterface::UpdateAnimatedTexture( Texture *ptex, TextureAnimationI
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-    
+
 VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
 {
     mPath = pth.c_str();
@@ -566,7 +566,7 @@ VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
 	miW = mpDDSHEADER->dwWidth;
 	miH = mpDDSHEADER->dwHeight;
 	miNumFrames = (mpDDSHEADER->dwDepth>1) ? mpDDSHEADER->dwDepth : 1;
-	////////////////////////////////////////////////////////////////////		
+	////////////////////////////////////////////////////////////////////
 	int NumMips = (mpDDSHEADER->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? mpDDSHEADER->dwMipMapCount : 1;
 	int iwidth = mpDDSHEADER->dwWidth;
 	int iheight = mpDDSHEADER->dwHeight;
@@ -576,13 +576,13 @@ VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
 	//printf( "  tex<%s> height<%d>\n", pth.c_str(), iheight );
 	//printf( "  tex<%s> depth<%d>\n", pth.c_str(), idepth );
 	//printf( "  tex<%s> NumMips<%d>\n", pth.c_str(), NumMips );
-    
+
     bool bVOLUMETEX = (idepth>1);
-    
+
     int iBwidth = (iwidth+3)/4;
     int iBheight = (iheight+3)/4;
     miFrameBaseSize = 0;
-    
+
 	if( dxt::IsBGRA8( mpDDSHEADER->ddspf ) )
 	{
 		const dxt::DdsLoadInfo & li = dxt::loadInfoBGRA8;
@@ -662,15 +662,15 @@ void VdsTextureAnimation::UpdateTexture( TextureInterface* txi, lev2::Texture* p
     GlTextureInterface* pgltxi = (GlTextureInterface*) txi;
     float ftime = pinst->GetCurrentTime();
     float fps = 30.0f;
-    
+
     int iframe = int(ftime*fps)%miNumFrames;
     int iseekpos = miFrameBaseOffset+(iframe*miFrameBaseSize);
     mpFile->SeekFromStart( iseekpos );
-    
+
     //printf( "VdsTextureAnimation::UpdateTexture(ptex<%p> time<%f> seekpos<%d> readsiz<%d> fillen<%d> iframe<%d>)\n", ptex, pinst->GetCurrentTime(),iseekpos,miFrameBaseSize, miFileLength, iframe );
 
     void* pdata = ReadFromFrameCache( iframe, miFrameBaseSize );
-    
+
     if( dxt::IsBGRA8( mpDDSHEADER->ddspf ) )
 	{
         /////////////////////////////////////////////////
@@ -682,27 +682,27 @@ void VdsTextureAnimation::UpdateTexture( TextureInterface* txi, lev2::Texture* p
         //  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
         //  this decouples allocation from writing, allowing you to overwrite more efficiently
         /////////////////////////////////////////////////
-        
+
         glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
-        
+
         /////////////////////////////
         // imgdata->PBO
         /////////////////////////////
-        
+
        // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
-        
+
         const GLuint PBOOBJ = pgltxi->GetPBO( miFrameBaseSize );
-        
+
         glBindBuffer( GL_PIXEL_UNPACK_BUFFER, PBOOBJ );
         void* pgfxmem = glMapBuffer( GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY );
        // mpFile->Read( pgfxmem, miFrameBaseSize );
         memcpy( pgfxmem, pdata, miFrameBaseSize );
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-        
+
         ////////////////////////
         // PBO->texture
         ////////////////////////
-        
+
         glTexSubImage2D(	GL_TEXTURE_2D,
                             0,
                             0, 0,
@@ -710,11 +710,11 @@ void VdsTextureAnimation::UpdateTexture( TextureInterface* txi, lev2::Texture* p
                             GL_RGBA,
                             GL_UNSIGNED_BYTE,
                             0 );
-        
+
         ////////////////////////
         // unbind the PBO
         ////////////////////////
-        
+
         glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
     }
     if( dxt::IsDXT5( mpDDSHEADER->ddspf ) )
@@ -728,35 +728,35 @@ void VdsTextureAnimation::UpdateTexture( TextureInterface* txi, lev2::Texture* p
         //  then use the glCompressedTexSubImage2D to overwrite the data in the pre allocated space
         //  this decouples allocation from writing, allowing you to overwrite more efficiently
         /////////////////////////////////////////////////
-        
+
         glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
-                
+
         /////////////////////////////
         // imgdata->PBO
         /////////////////////////////
-        
+
         // printf( "UPDATE IMAGE UNC iw<%d> ih<%d> to<%d>\n", miW, miH, int(pTEXOBJ->mObject) );
-        
+
         const GLuint PBOOBJ = pgltxi->GetPBO( miFrameBaseSize );
-        
+
         glBindBuffer( GL_PIXEL_UNPACK_BUFFER, PBOOBJ );
         void* pgfxmem = glMapBuffer( GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY );
 //        mpFile->Read( pgfxmem, miFrameBaseSize );
         memcpy( pgfxmem, pdata, miFrameBaseSize );
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-        
+
         ////////////////////////
         // PBO->texture
         ////////////////////////
-        
+
         glCompressedTexSubImage2D( GL_TEXTURE_2D, 0, 0,0, miW, miH, kRGBA_DXT5, miFrameBaseSize, 0 );
-        
+
         ////////////////////////
         // unbind the PBO
         ////////////////////////
-        
+
         glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
-    }    
+    }
 }
 float VdsTextureAnimation::GetLengthOfTime() const
 {
@@ -774,9 +774,9 @@ bool GlTextureInterface::LoadVDSTexture( const AssetPath& infname, Texture *ptex
 	ptex->SetWidth( vta->miW );
 	ptex->SetHeight( vta->miH );
 	ptex->SetDepth( 1 );
-    
+
 	glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
-    
+
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_BASE_LEVEL,0);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAX_LEVEL,0);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -792,10 +792,10 @@ bool GlTextureInterface::LoadVDSTexture( const AssetPath& infname, Texture *ptex
     {   // allocate compressed
         glTexImage2D( GL_TEXTURE_2D, 0, kRGBA_DXT5, vta->miW, vta->miH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
     }
-    
+
     return true;
 }
-    
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
@@ -806,7 +806,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	Texture* ptex = req.ptex;
 	GLTextureObject* pTEXOBJ = req.pTEXOBJ;
 	CFile& TextureFile = *req.pTEXFILE;
-	
+
 	int NumMips = (ddsh->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
 	int iwidth = ddsh->dwWidth;
 	int iheight = ddsh->dwHeight;
@@ -815,7 +815,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	int iBheight = (iheight+3)/4;
 
 	bool bVOLUMETEX = (idepth>1);
-	
+
 	GLuint TARGET = GL_TEXTURE_2D;
 	if( bVOLUMETEX )
 	{
@@ -824,7 +824,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	pTEXOBJ->mTarget = TARGET;
 
 	//////////////////
-	
+
 	GL_ERRORCHECK();
 
 	//GLuint sampler_obj = 0;
@@ -835,27 +835,27 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	glGenTextures( 1, & pTEXOBJ->mObject );
 	glBindTexture( TARGET, pTEXOBJ->mObject );
 	GL_ERRORCHECK();
-	
+
 	auto infname = TextureFile.msFileName;
 
 	//printf( "  tex<%s> ORKTEXOBJECT<%p>\n", TextureFile.msFileName.c_str(), pTEXOBJ );
 
 	//printf( "  tex<%s> GLTEXOBJECT<%d>\n", infname.c_str(), int(pTEXOBJ->mObject) );
 	////////////////////////////////////////////////////////////////////
-	// 
+	//
 	////////////////////////////////////////////////////////////////////
-	
+
 	glTexParameteri(TARGET,GL_TEXTURE_BASE_LEVEL,0);
 	glTexParameteri(TARGET,GL_TEXTURE_MAX_LEVEL,NumMips-1);
-	
+
 	if( dxt::IsLUM( ddsh->ddspf ) )
 	{
 		//printf( "  tex<%s> LUM\n", infname.c_str() );
 		if( bVOLUMETEX )
-			TexSetter::Set3D(	this, GL_RED, GL_UNSIGNED_BYTE, TARGET, 
+			TexSetter::Set3D(	this, GL_RED, GL_UNSIGNED_BYTE, TARGET,
 								NumMips, iwidth, iheight, idepth, TextureFile ); //ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1, 
+			TexSetter::Set2D(	this, ptex, 1, GL_RED, GL_UNSIGNED_BYTE, TARGET, 1,
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 	}
 	else if( dxt::IsBGR5A1( ddsh->ddspf ) )
@@ -864,10 +864,10 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 		//printf( "  tex<%s> BGR5A1\n", infname.c_str() );
 		//printf( "  tex<%s> size<%d>\n", infname.c_str(), 2 );
 		if( bVOLUMETEX )
-			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 
+			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET,
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2, 
+			TexSetter::Set2D(	this, ptex, 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, TARGET, 2,
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 	}
 	else if( dxt::IsBGRA8( ddsh->ddspf ) )
@@ -877,13 +877,13 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 		printf( "  tex<%s> BGRA8\n", TextureFile.msFileName.c_str() );
 		//printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
 		if( bVOLUMETEX )
-			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET, 
+			TexSetter::Set3D(	this, GL_RGBA, GL_UNSIGNED_BYTE, TARGET,
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
 		{
-			TexSetter::Set2D(	this, ptex, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4, 
+			TexSetter::Set2D(	this, ptex, 4, GL_BGRA, GL_UNSIGNED_BYTE, TARGET, 4,
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
-		
+
 			if( NumMips > 3 )
 			{
 				ptex->TexSamplingMode().PresetTrilinearWrap();
@@ -903,10 +903,10 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 		//printf( "  tex<%s> size<%d>\n", TextureFile.msFileName.c_str(), size );
 		//printf( "  tex<%s> BGR8\n", infname.c_str() );
 		if( bVOLUMETEX )
-			TexSetter::Set3D(	this, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 
+			TexSetter::Set3D(	this, GL_BGR, GL_UNSIGNED_BYTE, TARGET,
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2D(	this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3, 
+			TexSetter::Set2D(	this, ptex, 3, GL_BGR, GL_UNSIGNED_BYTE, TARGET, 3,
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 		GL_ERRORCHECK();
 	}
@@ -918,12 +918,12 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 		const dxt::DdsLoadInfo & li = dxt::loadInfoDXT5;
 		int size = (iBwidth*iBheight) * li.blockBytes;
 		printf( "  tex<%s> DXT5\n", infname.c_str() );
-		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );		
+		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
 		if( bVOLUMETEX )
-			TexSetter::Set3DC(	this, kRGBA_DXT5, TARGET, li.blockBytes, 
+			TexSetter::Set3DC(	this, kRGBA_DXT5, TARGET, li.blockBytes,
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2DC(	this, kRGBA_DXT5, TARGET, li.blockBytes, 
+			TexSetter::Set2DC(	this, kRGBA_DXT5, TARGET, li.blockBytes,
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 		GL_ERRORCHECK();
 		//////////////////////////////////////
@@ -937,12 +937,12 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 		int size = (iBwidth*iBheight) * li.blockBytes;
 		printf( "  tex<%s> DXT3\n", infname.c_str() );
 		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
-		
+
 		if( bVOLUMETEX )
-			TexSetter::Set3DC(	this, kRGBA_DXT3, TARGET, li.blockBytes, 
+			TexSetter::Set3DC(	this, kRGBA_DXT3, TARGET, li.blockBytes,
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2DC(	this, kRGBA_DXT3, TARGET, li.blockBytes, 
+			TexSetter::Set2DC(	this, kRGBA_DXT3, TARGET, li.blockBytes,
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 	}
 	//////////////////////////////////////////////////////////
@@ -953,12 +953,12 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 		const dxt::DdsLoadInfo & li = dxt::loadInfoDXT1;
 		int size = (iBwidth*iBheight) * li.blockBytes;
 		printf( "  tex<%s> DXT1\n", infname.c_str() );
-		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );		
+		printf( "  tex<%s> size<%d>\n", infname.c_str(), size );
 		if( bVOLUMETEX )
-			TexSetter::Set3DC(	this, kRGBA_DXT1, TARGET, li.blockBytes, 
+			TexSetter::Set3DC(	this, kRGBA_DXT1, TARGET, li.blockBytes,
 								NumMips, iwidth, iheight, idepth, TextureFile ); // ireadptr, pdata );
 		else
-			TexSetter::Set2DC(	this, kRGBA_DXT1, TARGET, li.blockBytes, 
+			TexSetter::Set2DC(	this, kRGBA_DXT1, TARGET, li.blockBytes,
 								NumMips, iwidth, iheight, TextureFile ); // ireadptr, pdata );
 	}
 	//////////////////////////////////////////////////////////
@@ -998,7 +998,7 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 	ptex->SetWidth( ddsh->dwWidth );
 	ptex->SetHeight( ddsh->dwHeight );
 	ptex->SetDepth( (ddsh->dwDepth>1) ? ddsh->dwDepth : 1 );
-	////////////////////////////////////////////////////////////////////		
+	////////////////////////////////////////////////////////////////////
 	int NumMips = (ddsh->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
 	int iwidth = ddsh->dwWidth;
 	int iheight = ddsh->dwHeight;
@@ -1020,11 +1020,11 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
     	printf( "  tex<%s> gmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwGBitMask) );
     	printf( "  tex<%s> bmask<0x%x>\n", infname.c_str(), int(ddsh->ddspf.dwBBitMask) );
     }
-    
+
 	///////////////////////////////////////////////
 	GLTextureObject* pTEXOBJ = new GLTextureObject;
 	ptex->SetTexIH( (void*) pTEXOBJ );
-		
+
 	///////////////////////////////////////////////
 	GlTexLoadReq load_req;
 	load_req.ptex = ptex;
@@ -1155,7 +1155,7 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 			minfilt =  GL_LINEAR;
 		}
 
-		printf( "linmiplin inummips<%d>\n", inummips );
+		//printf( "linmiplin inummips<%d>\n", inummips );
 
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
 

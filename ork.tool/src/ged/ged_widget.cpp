@@ -54,7 +54,7 @@ GedWidget::GedWidget( ObjModel& mdl )
 {
 	SetupSignalsAndSlots();
 
-	mdl.SetGedWidget(this);	
+	mdl.SetGedWidget(this);
 	mRootItem = new GedRootNode( mdl, "Root", 0, 0 );
 	PushItemNode( mRootItem );
 
@@ -66,7 +66,7 @@ GedWidget::GedWidget( ObjModel& mdl )
 		AddSkin(pskin);
 	}
 
-	
+
 	/*object::Connect(	& this->GetSigRepaint(),
 						& mCTQT->GetSlotRepaint() );*/
 }
@@ -122,19 +122,19 @@ void GedWidget::PropertyInvalidated( ork::Object* pobj, const reflect::IObjectPr
 
 void GedWidget::SlotRepaint( )
 {
-	printf( "GedWidget::SlotRepaint\n" );
+	//printf( "GedWidget::SlotRepaint\n" );
 	GetViewport()->MarkSurfaceDirty();
 }
 
 void GedWidget::SlotModelInvalidated( )
 {
-	printf( "GedWidget::SlotModelInvalidated\n" );
+	//printf( "GedWidget::SlotModelInvalidated\n" );
 	GetViewport()->MarkSurfaceDirty();
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-U64 GedWidget::GetStackHash() const 
+U64 GedWidget::GetStackHash() const
 {
 	return mStackHash;
 }
@@ -179,7 +179,7 @@ void GedWidget::ComputeStackHash()
 
 void GedWidget::OnSelectionChanged()
 {
-	orkprintf( "SelectionChanged\n" );
+	//orkprintf( "SelectionChanged\n" );
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -209,7 +209,7 @@ void GedWidget::PopItemNode(GedItemNode*qw)
 //////////////////////////////////////////////////////////////////////////////
 
 void GedWidget::AddChild(GedItemNode*pw)
-{	
+{
 	//printf( "GedWidget<%p> AddChild<%p>\n", this, pw );
 
 	GedItemNode* TopItem = (mItemStack.size()>0) ? mItemStack.front() : 0;
@@ -270,7 +270,7 @@ void GedWidget::Draw( lev2::GfxTarget* pTARG, int iw, int ih, int iscrolly )
 	{
 		orkstack<GedItemNode*> NodeStack;
 		NodeStack.push( root );
-		
+
 		while( false == NodeStack.empty() )
 		{
 			GedItemNode* item = NodeStack.top();

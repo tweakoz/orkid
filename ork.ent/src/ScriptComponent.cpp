@@ -81,7 +81,7 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
 	auto path = mCD.GetPath();
 
-	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
 
 	if( nullptr == scm )
 		return true;
@@ -112,7 +112,7 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 }
 void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 {
-	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
 
 	if( scm )
 	{
@@ -123,7 +123,7 @@ void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 
 bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 {
-	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
 
 	if( scm && mScriptObject )
 	{
@@ -146,7 +146,7 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 }
 void ScriptComponentInst::DoStop(SceneInst *psi)
 {
-	auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
 
 	if( scm && mScriptObject )
 	{
@@ -176,7 +176,7 @@ void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 
 	if( false == kUSEEXECTABUPDATE )
 	{
-		auto scm = psi->FindTypedSceneComponent<ScriptManagerComponentInst>();
+		auto scm = psi->FindSystem<ScriptManagerComponentInst>();
 
 		if( scm && mScriptObject )
 		{
@@ -236,7 +236,7 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 	    lua_getfield( luasys->mLuaState, -1, "path" );
 
 	    fxstring<256> lua_path;
-	    lua_path.format(	"%s;%s", 
+	    lua_path.format(	"%s;%s",
 	    					lua_tostring( luasys->mLuaState, -1 ),
 	    					pth );
 
@@ -437,7 +437,7 @@ ScriptObject* ScriptManagerComponentInst::FlyweightScriptObject( const ork::file
             }
             rval->mModTabRef = luaL_ref(luast, LUA_REGISTRYINDEX);
 
-            auto getMethodRef = [luast,rval](const char* methodname)->int { 
+            auto getMethodRef = [luast,rval](const char* methodname)->int {
                 lua_rawgeti(luast,LUA_REGISTRYINDEX,rval->mModTabRef);
                 lua_pushstring(luast,methodname);
                 lua_gettable(luast,-2);
@@ -482,4 +482,3 @@ ScriptObject* ScriptManagerComponentInst::FlyweightScriptObject( const ork::file
 ///////////////////////////////////////////////////////////////////////////////
 
 } }  // ork::ent3d
-

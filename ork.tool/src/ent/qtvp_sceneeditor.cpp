@@ -174,7 +174,7 @@ void SceneEditorVP::Init()
 	RegisterToolHandler( "2ManipRot", new ManipRotHandler( mEditor ) );
 	//RegisterToolHandler( "3Collision", new PaintCollisionHandler( this, mEditor ) );
 	//RegisterToolHandler( "4Bsp", new BspToolHandler( this, mEditor ) );
-	
+
 	mpDefaultHandler = mToolHandlers[ "0Default" ];
 	BindToolHandler( "0Default" );
 
@@ -241,7 +241,7 @@ SceneEditorView::SceneEditorView(SceneEditorVP*vp)
 
 void SceneEditorVP::DoInit( ork::lev2::GfxTarget* pTARG )
 {
-	mpPickBuffer = new lev2::CPickBuffer<SceneEditorVP>(	pTARG->FBI()->GetThisBuffer(), 
+	mpPickBuffer = new lev2::CPickBuffer<SceneEditorVP>(	pTARG->FBI()->GetThisBuffer(),
 															this,
 															0, 0, 1024, 1024,
 															lev2::PickBufferBase::EPICK_FACE_VTX
@@ -251,7 +251,7 @@ void SceneEditorVP::DoInit( ork::lev2::GfxTarget* pTARG )
 	mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
 	int iw = pTARG->GetW();
 	int ih = pTARG->GetH();
-	
+
 	pTARG->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
 
 	orkprintf( "PickBuffer<%p>\n", mpPickBuffer );
@@ -277,11 +277,11 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 	the_renderer.GetFrameData().SetDstRect( tgtrect );
 	mRenderer->SetTarget( mpTarget );
 	the_renderer.GetFrameData().SetTarget( mpTarget );
-		
+
 	/////////////////////////////////////////////////////////////////////////////////
 
 	mRenderLock = 1;
-	
+
 	bool bFX = false;
 	auto pCMCI = GetCMCI();
 	if( GetSceneInst() )
@@ -300,7 +300,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 	}
 
 	mRenderLock = 0;
-	
+
 	/////////////////////////////////////////////////////////////////////////////////
 
 	the_renderer.GetFrameData().PushRenderTarget( & rt );
@@ -316,7 +316,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 			/////////////////////////////
 			bool have_token = false;
 			if( externally_fixed_rate )
-			{	
+			{
 				Timer totim;
 				totim.Start();
 				while(false==have_token && (totim.SecsSinceStart()<2.0f))
@@ -352,7 +352,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 					auto poutbuf = new GfxBuffer(0,0,0,1280,720);
 					mpTarget->InitializeContext(poutbuf);
 					auto rtg = new RtGroup(mpTarget,1280,720);
-					auto mrt = new RtBuffer(	
+					auto mrt = new RtBuffer(
 						rtg,
 						lev2::ETGTTYPE_MRT0,
 						lev2::EBUFFMT_RGBA32,
@@ -371,13 +371,13 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 					mpTarget->FBI()->SetScissor( 0,0, itw, ith );
 					mpTarget->BeginFrame();
 					mpTarget->FBI()->PushRtGroup(rtg);
-					{	
+					{
 						pCMCI->ComposeToScreen( mpTarget );
 						////////////////////////////////////////
 						// write to disk
 						////////////////////////////////////////
 						file::Path::NameType fnamesyn;
-						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);			
+						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);
 						//mpTarget->FBI()->Capture( *poutbuf, file::Path(fnamesyn.c_str()) );
 						////////////////////////////////////////
 					}
@@ -402,7 +402,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 						////////////////////////////////////////
 						auto buf = mpTarget->FBI()->GetThisBuffer();
 						file::Path::NameType fnamesyn;
-						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);			
+						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);
 						//mpTarget->FBI()->Capture( *buf, file::Path(fnamesyn.c_str()) );
 						////////////////////////////////////////
 				}
@@ -410,7 +410,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				////////////////////////////////////////
 				// return the token
 				////////////////////////////////////////
-				
+
 				DrawableBuffer::mOfflineUpdateSynchro.push(syntok);
 
 			}
@@ -420,7 +420,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				mRenderer->SetTarget( mpTarget );
 				the_renderer.GetFrameData().SetDstRect( tgtrect );
 				mpTarget->FBI()->SetAutoClear(true);
-				
+
 				mpTarget->FBI()->SetViewport( 0,0, mpTarget->GetW(), mpTarget->GetH() );
 				mpTarget->FBI()->SetScissor( 0,0, mpTarget->GetW(), mpTarget->GetH() );
 				mpTarget->BeginFrame();
@@ -428,16 +428,16 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				/////////////////////////////////////////////////////////////////////
 				// HUD
 				/////////////////////////////////////////////////////////////////////
-				
+
 				if( gtoggle_hud )
 				{
 					DrawHUD(the_renderer.GetFrameData());
 					DrawChildren(drwev);
 				}
 
-				/////////////////////////////////////////////////////////////////////				
+				/////////////////////////////////////////////////////////////////////
 				mpTarget->EndFrame();// the_renderer );
-			}		
+			}
 			the_renderer.GetFrameData().PopRenderTarget();
 		}
 		/////////////////////////////////
@@ -449,10 +449,10 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 			mRenderLock = 1;
 
 			the_renderer.GetFrameData().SetUserProperty("DB",anyp(DB) );
-			
+
 			if( DB )
 			{
-	
+
 				anyp PassData;
 				PassData.Set<orkstack<ent::CompositingPassData>*>( & mCompositingGroupStack );
 				the_renderer.GetFrameData().SetUserProperty( "nodes", PassData );
@@ -481,7 +481,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				}
 				mpTarget->EndFrame();// the_renderer );
 				the_renderer.GetFrameData().PopRenderTarget();
-			
+
 				DrawableBuffer::EndDbRead(DB);
 			}
 
@@ -490,7 +490,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 		}
 	}
 	the_renderer.GetFrameData().PopRenderTarget();
-	
+
 	the_renderer.GetFrameData().SetDstRect( tgtrect );
 }
 
@@ -527,7 +527,7 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	if( false == mbSceneDisplayEnable ) return;
 
 	lev2::GfxTarget* pTARG = FrameData.GetTarget();
-	///////////////////////////////////////////////////////////////////////////	
+	///////////////////////////////////////////////////////////////////////////
 	mFramePerfItem.Enter();
 	///////////////////////////////////////////////////////////////////////////
 	lev2::IRenderTarget* pIT = FrameData.GetRenderTarget();
@@ -549,7 +549,7 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	orkstack<ent::CompositingPassData>* cstack = 0;
 	cstack = PassData.Get<orkstack<ent::CompositingPassData>*>();
 	OrkAssert(cstack!=0);
-	
+
 	CompositingPassData node = cstack->top();
 	const ent::CompositingGroup* pCG = node.mpGroup;
 	lev2::BuiltinFrameTechniques* pFTEK = node.mpFrameTek;
@@ -559,7 +559,7 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	float fFbAmt =0.0f;
 	float fFinResMult = 0.5f;
 	float fFxResMult = 0.5f;
-    lev2::Texture* pFbUvMap = 0; 
+    lev2::Texture* pFbUvMap = 0;
 	bool bpostfxfb = false;
 	if( pFTEK )
 	{
@@ -613,12 +613,12 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 		FrameData.AddLayer(AddPooledLiteral("O"));
 		FrameData.AddLayer(AddPooledLiteral("P"));
 		FrameData.AddLayer(AddPooledLiteral("Q"));
-		
+
 		const ent::SceneInst* psi = GetSceneInst();
 		mSceneView.UpdateRefreshPolicy(FrameData,psi);
-	
-		Clear(); 
-		if( node.mbDrawSource ) 
+
+		Clear();
+		if( node.mbDrawSource )
 			RenderQueuedScene( FrameData );
 	};
 	pTARG->FBI()->PopScissor();
@@ -677,7 +677,7 @@ const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp)
 			int idx = igrp%inumgroups;
 			ork::Object* pOBJ = Groups.GetItemAtIndex(idx).second;
 			if( pOBJ )
-				pCG = rtti::autocast(pOBJ);		
+				pCG = rtti::autocast(pOBJ);
 		}
 	}
 	return pCG;
@@ -721,7 +721,7 @@ GL_ERRORCHECK();
 	OrkAssert(cstack!=0);
 
 	CompositingPassData NODE = cstack->top();
-	
+
 	ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
 	const PoolString* pCAMNAME = NODE.mpCameraName;
 	const PoolString* pLAYERSN = NODE.mpLayerName;
@@ -740,7 +740,7 @@ GL_ERRORCHECK();
 	const CCameraData* pcamdata = DB->GetCameraData(miCameraIndex);
 	const CCameraData* pcullcamdata = DB->GetCameraData(miCullCameraIndex);
 	//FrameData.GetTarget()->FBI()->ForceFlush();
-	
+
 	if( nullptr == pcamdata )
 		return;
 
@@ -788,7 +788,7 @@ GL_ERRORCHECK();
 		mActiveCamera->RenderUpdate();
 	}
 	ManipManager().SetActiveCamera(mActiveCamera);
-	
+
 	//printf( "RENDER0...\n" );
 	if( 0 == pcamdata ) return;
 GL_ERRORCHECK();
@@ -818,10 +818,10 @@ GL_ERRORCHECK();
 	/////////////////////////////////////////////////////////////////////////////
 	// Main Renderer
 	//printf( "RENDER...\n" );
-	{	
+	{
 		static lev2::SRasterState defstate;
 		FrameData.GetTarget()->RSI()->BindRasterState( defstate, true );
-		
+
 		FrameData.GetTarget()->MTXI()->PushPMatrix( PMTX );
 		FrameData.GetTarget()->MTXI()->PushVMatrix( VMTX );
 		FrameData.GetTarget()->MTXI()->PushMMatrix( CMatrix4::Identity );
@@ -888,7 +888,7 @@ GL_ERRORCHECK();
 void SceneEditorView::UpdateRefreshPolicy( lev2::RenderContextFrameData& FrameData, const SceneInst* sinst )
 {
 	if( 0 == sinst ) return;
-	
+
 	//ork::tool::ged::ObjModel::FlushAllQueues();
 	///////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////
@@ -969,10 +969,10 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 				u32 ucolor = 0xffffffff;
 				ork::CVector2 uvZ( 0.0f,0.0f );
 				float fZ = 0.0f;
-				
+
 				lev2::SVtxV12C4T16 v0( CVector3(float(ibaseX-int(fx*ilen)),float(ibaseY-int(fy*ilen)), fZ), uvZ, ucolor );
 				lev2::SVtxV12C4T16 v1( CVector3(float(ibaseX+int(fx*ilen)),float(ibaseY+int(fy*ilen)), fZ), uvZ, ucolor );
-				
+
 				vw.AddVertex( v0 );
 				vw.AddVertex( v1 );
 			}
@@ -1007,7 +1007,7 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 				//pTARG->IMI()->DrawLine( ibaseX-int(fx*ilen),ibaseY-int(fy*ilen), ibaseX+int(fx*ilen),ibaseY+int(fy*ilen) );
 				lev2::SVtxV12C4T16 v0( CVector3(float(ibaseX-int(fx*ilen)),float(ibaseY-int(fy*ilen)), fZ), uvZ, ucolor );
 				lev2::SVtxV12C4T16 v1( CVector3(float(ibaseX+int(fx*ilen)),float(ibaseY+int(fy*ilen)), fZ), uvZ, ucolor );
-				
+
 				vw.AddVertex( v0 );
 				vw.AddVertex( v1 );
 			}
@@ -1025,7 +1025,7 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 		{
 			//pTARG->IMI()->QueFlush( false );
 			ent::ESceneInstMode emode = mEditor.GetActiveSceneInst()->GetSceneInstMode();
-	
+
 			Texture *ptex	= (emode == ent::ESCENEMODE_RUN )
 							? pplaytex
 							: ppaustex;
@@ -1073,12 +1073,12 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 					ork::CVector3 vv1( x1,y0,fZ );
 					ork::CVector3 vv2( x1,y1,fZ );
 					ork::CVector3 vv3( x0,y1,fZ );
-					
+
 					lev2::SVtxV12C4T16 v0( vv0, uv0, ucolor );
 					lev2::SVtxV12C4T16 v1( vv1, uv1, ucolor );
 					lev2::SVtxV12C4T16 v2( vv2, uv2, ucolor );
 					lev2::SVtxV12C4T16 v3( vv3, uv3, ucolor );
-					
+
 					vw.AddVertex( v0 );
 					vw.AddVertex( v1 );
 					vw.AddVertex( v2 );
@@ -1114,7 +1114,7 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 			bool bhilite = (phandler == mpCurrentHandler);
 			phandler->DrawToolIcon( pTARG, ix, iy, bhilite );
 			iy += 36;
-		}	
+		}
 		/////////////////////////////////////////////////
 		/////////////////////////////////////////////////
 		//CPerformanceTracker::GetRef().Draw(pTARG);
@@ -1190,7 +1190,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
 				//printf( "OUTERmanip rscale<%f>\n", rscale );
 
 				static float fRSCALE = 1.0f;
-				
+
 				if( fdata.IsPickMode() )
 				{
 					ManipManager().SetViewScale( fRSCALE );
@@ -1222,33 +1222,26 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::SetupLighting( lev2::HeadLightManager& hlmgr, lev2::RenderContextFrameData& FrameData )
-{	///////////////////////////////////////////////////////////
+void SceneEditorVP::SetupLighting( lev2::HeadLightManager& hlmgr, lev2::RenderContextFrameData& FrameData ){
+	///////////////////////////////////////////////////////////
 	// setup headlight
 	///////////////////////////////////////////////////////////
 	FrameData.SetLightManager(&hlmgr.mHeadLightManager);
 	///////////////////////////////////////////////////////////
 	// override with lightmanager in scene if one exists
 	///////////////////////////////////////////////////////////
-	if( mEditor.mpScene )
-	{	if( mEditor.GetActiveSceneInst() )
-		{	
-			ork::ent::LightingManagerComponentInst* lmi = mEditor.GetActiveSceneInst()->FindTypedSceneComponent<ent::LightingManagerComponentInst>();
-
-			if( lmi )
-			{
+	if( mEditor.mpScene ){
+		if( mEditor.GetActiveSceneInst() ){
+			if( auto lmi = mEditor.GetActiveSceneInst()->FindSystem<ent::LightingManagerComponentInst>() ){
 				ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
-			
 				const CCameraData* cdata = FrameData.GetCameraData();
 				lightmanager.EnumerateInFrustum( cdata->GetFrustum() );
-				if( lightmanager.mLightsInFrustum.size() )
-				{
+				if( lightmanager.mLightsInFrustum.size() ){
 					FrameData.SetLightManager( & lightmanager );
 				}
 			}
 		}
 	}
-	///////////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1263,9 +1256,9 @@ void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData & FrameData)
 	GfxMaterialUI matui( FrameData.GetTarget() );
 	FrameData.GetTarget()->BindMaterial( & matui );
 	FrameData.GetTarget()->PushModColor( bhasfocus ? ork::CColor4::Red() : ork::CColor4::Black() );
-	FrameData.GetTarget()->MTXI()->PushPMatrix( mtxP ); 
-	FrameData.GetTarget()->MTXI()->PushVMatrix( ork::CMatrix4::Identity ); 
-	FrameData.GetTarget()->MTXI()->PushMMatrix( ork::CMatrix4::Identity ); 
+	FrameData.GetTarget()->MTXI()->PushPMatrix( mtxP );
+	FrameData.GetTarget()->MTXI()->PushVMatrix( ork::CMatrix4::Identity );
+	FrameData.GetTarget()->MTXI()->PushMMatrix( ork::CMatrix4::Identity );
 	{
 		DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 
@@ -1313,4 +1306,3 @@ void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData & FrameData)
 } // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////
-

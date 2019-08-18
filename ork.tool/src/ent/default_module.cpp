@@ -44,21 +44,18 @@ void MainWinDefaultModule::Activate( QMenuBar* qmb )
 	AddAction( "/Scene/SaveScene" ,QKeySequence(Qt::CTRL + Qt::Key_S));
 	AddAction( "/Scene/ExportArchetype" );
 	AddAction( "/Scene/ImportArchetype" );
+	AddAction( "/Scene/Exit" ,QKeySequence(Qt::CTRL + Qt::Key_Q) );
 
+	AddAction( "/View/ToggleFullscreen",QKeySequence(Qt::CTRL + Qt::Key_F));
 	AddAction( "/View/PyCon",QKeySequence(Qt::CTRL + Qt::Key_P));
-    AddAction( "/View/AssetAssist",QKeySequence(Qt::CTRL + Qt::Key_A)  );
-	//AddAction( "/View/Outliner" );
-	//AddAction( "/View/Outliner2" );
-	//AddAction( "/View/DataflowEditor" );
-	//AddAction( "/View/ToolEditor" );
-	//AddAction( "/View/PropEditor" );
+  AddAction( "/View/AssetAssist",QKeySequence(Qt::CTRL + Qt::Key_A)  );
 	AddAction( "/View/SaveLayout" );
 	AddAction( "/View/LoadLayout" );
 
 	AddAction( "/Game/Local/Run", QKeySequence(Qt::CTRL + Qt::Key_Period) );
-	AddAction( "/Game/Local/Stop", QKeySequence(tr("Ctrl+,")) );
+	AddAction( "/Game/Local/Stop", QKeySequence(Qt::CTRL + Qt::Key_Comma) );
 
-	AddAction( "/Entity/New Entity" ,QKeySequence(Qt::CTRL + Qt::Key_Comma) );
+	AddAction( "/Entity/New Entity" ,QKeySequence(Qt::CTRL + Qt::Key_E) );
 	AddAction( "/Entity/New Entities..." ,QKeySequence(tr("Ctrl+Shift+E")) );
 	AddAction( "/Entity/Group" );
 
@@ -89,6 +86,7 @@ void MainWinDefaultModule::OnAction( const char* pact )
 	else if( 0 == strcmp( "/Scene/OpenScene", pact ) )			{	mEditWin.OpenSceneFile();	}
 	else if( 0 == strcmp( "/Scene/ExportArchetype", pact))		{	mEditWin.SaveSelected();	}
 	else if( 0 == strcmp( "/Scene/ImportArchetype", pact ) )	{	mEditWin.MergeFile();		}
+	else if( 0 == strcmp( "/Scene/Exit", pact ) )	{	mEditWin.Exit();		}
 	///////////////////////////////////////////////////////
 //	else if( 0 == strcmp( "/View/Outliner",pact) )				{	mEditWin.NewOutlinerView(false); }
 //	else if( 0 == strcmp( "/View/Outliner2",pact) )				{	mEditWin.NewOutliner2View(false); }
@@ -98,6 +96,7 @@ void MainWinDefaultModule::OnAction( const char* pact )
 //	else if( 0 == strcmp( "/View/ToolEditor",pact) )			{	mEditWin.NewToolView(false); }
 	else if( 0 == strcmp( "/View/SaveLayout",pact) )			{	mEditWin.SaveLayout(); }
 	else if( 0 == strcmp( "/View/LoadLayout",pact) )			{	mEditWin.LoadLayout(); }
+	else if( 0 == strcmp( "/View/ToggleFullscreen",pact) )			{	mEditWin.ToggleFullscreen(); }
 	///////////////////////////////////////////////////////
 	else if( 0 == strcmp( "/Game/Local/Run",pact) )				{	mEditWin.RunLocal(); }
 	else if( 0 == strcmp( "/Game/Local/Stop",pact) )			{	mEditWin.StopLocal(); }

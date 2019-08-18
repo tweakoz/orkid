@@ -105,6 +105,8 @@ public://
 
 	///////////////////////////////////////////////////////////////////////////
 
+	void Exit();
+	void ToggleFullscreen();
 	void NewDirView();
 	void LightingHeadLightMode();
 	void LightingSceneMode();
@@ -139,6 +141,8 @@ public://
 
 	EditorMainWindow(QWidget *parent, const std::string& applicationClassName, QApplication & App);
 	~EditorMainWindow();
+
+	bool _fullscreen;
 };
 
 extern ent::EditorMainWindow *gEditorMainWindow;
