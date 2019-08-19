@@ -632,29 +632,31 @@ public:
 	GedTextEdit( QWidget* parent );
 	void focusOutEvent( QFocusEvent* pev ) final; // virtual
 	void keyPressEvent ( QKeyEvent * pev ) final; // virtual
-	void SetText( const char* ptext );
+	void _setText( const char* ptext );
 
 signals:
     void editFinished();
     void canceled();
 
 };
-class GedInputDialog : public QDialog
-{
+
+class GedInputDialog : public QDialog {
     Q_OBJECT
 public:
+		GedInputDialog();
 
-	static QString getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
-	bool WasChanged() const { return mbChanged; }
-    GedInputDialog();
-    QString GetResult();
+		static QString getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih );
+		bool wasChanged() const { return mbChanged; }
+    QString getResult();
     void clear() { mTextEdit.clear(); }
     GedTextEdit mTextEdit;
     QString     mResult;
     bool        mbChanged;
+
 public slots:
-    void done( );
+
     void canceled( );
+		void accepted( );
     void textChanged(QString str);
 
 };

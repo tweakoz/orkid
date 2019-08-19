@@ -21,47 +21,38 @@ namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 
 GedTextEdit::GedTextEdit( QWidget* parent )
-	: QLineEdit( parent )
-{
+	: QLineEdit( parent ){
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedTextEdit::focusOutEvent( QFocusEvent* pev ) // virtual
-{
+void GedTextEdit::focusOutEvent( QFocusEvent* pev ) {
 	emit canceled();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedTextEdit::keyPressEvent ( QKeyEvent * pev )
-{
-	switch( pev->key() )
-	{
+void GedTextEdit::keyPressEvent ( QKeyEvent * pev ) {
+	switch( pev->key() ) {
 		case Qt::Key_Enter:
-		case Qt::Key_Return:
-		{
+		case Qt::Key_Return: {
 			emit editFinished();
 			break;
 		}
-		case Qt::Key_Tab:
-		{
+		case Qt::Key_Tab: {
 			emit canceled();
 			break;
 		}
-		default:
-		{
+		default: {
 			QLineEdit::keyPressEvent( pev );
 			break;
 		}
 	}
 }
 
-void GedTextEdit::SetText( const char* ptext )
-{
-	if( ptext )
-	{
+void GedTextEdit::_setText( const char* ptext ){
+	if( ptext ){
 		setText( QString(ptext) );
 	}
 }
@@ -72,11 +63,10 @@ GedInputDialog::GedInputDialog()
 	: QDialog(0, Qt::Dialog|Qt::FramelessWindowHint )
 	, mTextEdit( this )
 	, mbChanged( false )
-	, mResult("")
-{
+	, mResult("") {
 	bool bOK = connect(&mTextEdit, SIGNAL(textChanged(QString)), this, SLOT(textChanged(QString)));
 	OrkAssert(bOK);
-	bOK = connect(&mTextEdit, SIGNAL(editFinished()), this, SLOT(done()));
+	bOK = connect(&mTextEdit, SIGNAL(editFinished()), this, SLOT(accepted()));
 	OrkAssert(bOK);
 	bOK = connect(&mTextEdit, SIGNAL(canceled()), this, SLOT(canceled()));
 	OrkAssert(bOK);
@@ -85,39 +75,35 @@ GedInputDialog::GedInputDialog()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedInputDialog::done( )
-{
-	QDialog::done(0);
+void GedInputDialog::accepted( ) {
+	QDialog::done( QDialog::Accepted );
 	mbChanged = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedInputDialog::canceled( )
-{
-	QDialog::done(-1);
+void GedInputDialog::canceled( ) {
+	QDialog::done( QDialog::Rejected );
 	mbChanged = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedInputDialog::textChanged( QString newtext )
-{
+void GedInputDialog::textChanged( QString newtext ) {
 	mResult = mTextEdit.text();
+	printf("mResult<%s>\n", mResult.toStdString().c_str() );
 	mbChanged = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-QString GedInputDialog::GetResult()
-{
+QString GedInputDialog::getResult() {
 	return mResult;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-QString GedInputDialog::getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih )
-{
+QString GedInputDialog::getText( const ork::ui::Event& ev, GedItemNode* pnode, const char* defstr, int ix, int iy, int iw, int ih ) {
 	int isx = QCursor::pos().x();
 	int isy = QCursor::pos().y();
 
@@ -135,18 +121,15 @@ QString GedInputDialog::getText( const ork::ui::Event& ev, GedItemNode* pnode, c
 	dialog.mTextEdit.setGeometry( 0, 0, iw, ih );
 
 	if( defstr )
-	{
-		dialog.mTextEdit.SetText( defstr );
-	}
+		dialog.mTextEdit._setText( defstr );
 
 	int iv = dialog.exec();
 
 	QString res("");
 
 	if( 0 == iv )
-	{
-		res = dialog.GetResult();
-	}
+		res = dialog.getResult();
+
 	return res;
 }
 
