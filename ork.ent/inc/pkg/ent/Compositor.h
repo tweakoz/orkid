@@ -221,12 +221,12 @@ public:
 	PassThroughCompositingNode();
 	~PassThroughCompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
 
 	void GetGroup(ork::rtti::ICastable*& val) const;
 	void SetGroup( ork::rtti::ICastable* const & val);
-	lev2::RtGroup* GetOutput() const override;
+	lev2::RtGroup* GetOutput() const final;
 
 	CompositingMaterial				mCompositingMaterial;
 	CompositingGroup*				mGroup;
@@ -240,10 +240,10 @@ public:
 	VrCompositingNode();
 	~VrCompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
 
-	lev2::RtGroup* GetOutput() const override;
+	lev2::RtGroup* GetOutput() const final;
 
 	svar256_t _impl;
 };
@@ -255,13 +255,13 @@ public:
 	SeriesCompositingNode();
 	~SeriesCompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
 
 	void GetNode(ork::rtti::ICastable*& val) const;
 	void SetNode( ork::rtti::ICastable* const & val);
 
-	lev2::RtGroup* GetOutput() const override;
+	lev2::RtGroup* GetOutput() const final;
 
 	CompositingMaterial				mCompositingMaterial;
 	CompositingNode*				mNode;
@@ -276,15 +276,15 @@ public:
 	InsertCompositingNode();
 	~InsertCompositingNode();
 private:
-	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
 
 	void GetNode(ork::rtti::ICastable*& val) const;
 	void SetNode( ork::rtti::ICastable* const & val);
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
 
-	lev2::RtGroup* GetOutput() const override;
+	lev2::RtGroup* GetOutput() const final;
 
 	CompositingMaterial				mCompositingMaterial;
 	CompositingNode*				mNode;
