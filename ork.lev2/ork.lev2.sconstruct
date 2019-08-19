@@ -46,7 +46,7 @@ class lev2:
     prj_lib.AddIncludePaths( "%s/include"%sln.stage_dir )
     prj_lib.AddLibPaths( "%s/lib"%sln.stage_dir )
     prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
-    prj_lib.AddQt5Modules("QtGui QtCore QtWidgets QtX11Extras")
+    prj_lib.AddQt5Modules("QtGui QtCore QtWidgets")
     #########################
     ## OSX libs
     #########################
@@ -63,6 +63,7 @@ class lev2:
     ########################
     else:
       prj_lib.AddLibs( "GL" )
+      prj_lib.AddQt5Modules("QtX11Extras")
     ########################
     ## Common libs
     ########################
@@ -85,7 +86,9 @@ class lev2:
     prj_test.AddFolders( "test", "*.cpp" )
     prj_test.AddProjectDep( prj_lib )
     prj_test.AddLibsWithSuffix( "ork.unittestpp" )
-    prj_test.AddQt5Modules("QtGui QtCore QtWidgets QtX11Extras")
+    prj_test.AddQt5Modules("QtGui QtCore QtWidgets")
+    if False==prj_lib.IsOsx:
+        prj_test.AddQt5Modules("QtX11Extras")
     prj_test.Configure()
 
     self.prg = prj_test.Program( )

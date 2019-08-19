@@ -136,16 +136,16 @@ void RigidBody::Close()
 		const float rz = r.GetZ();
 		const CVector3 li = pm.mMOI;
 
-		ixx += li.GetX() + pm.mMass*(ry*ry+rz*rz); 
-		iyy += li.GetY() + pm.mMass*(rx*rx+rz*rz); 
-		izz += li.GetZ() + pm.mMass*(rx*rx+ry*ry); 
+		ixx += li.GetX() + pm.mMass*(ry*ry+rz*rz);
+		iyy += li.GetY() + pm.mMass*(rx*rx+rz*rz);
+		izz += li.GetZ() + pm.mMass*(rx*rx+ry*ry);
 
-		ixy += pm.mMass*(rx*ry); 
-		ixz += pm.mMass*(rx*rz); 
-		iyz += pm.mMass*(ry*rz); 
+		ixy += pm.mMass*(rx*ry);
+		ixz += pm.mMass*(rx*rz);
+		iyz += pm.mMass*(ry*rz);
 	}
 
-	mIniInertiaTensor = CMatrix4::Identity;
+	mIniInertiaTensor = fmtx4::Identity;
 
 	mIniInertiaTensor.setelemGL( 0,0, +ixx );
 	mIniInertiaTensor.setelemGL( 0,1, -ixy );
@@ -207,9 +207,9 @@ void RigidBody::ApplyImpulse( const CVector3& Impulse, const CVector3& loc )
 	///////////////////////////////
 	const CVector3 rad = (ObjLoc-mCenterOfMass);	// Meters
 	CVector3 Moment = rad.Cross(ObjImpulse);		// NewtonMeters
-	mAngImpulse += Moment;	
+	mAngImpulse += Moment;
 	mLinImpulse += Impulse;
-	
+
 	///////////////////////////////
 }
 
@@ -277,7 +277,7 @@ void RigidBody::IntegrateImpulses( float fdt )
 	mAngImpulse = CVector3(0.0f,0.0f,0.0f);
 
 	//////////////////////////////////////////////////////////////////
-	// update velocity 
+	// update velocity
 	//////////////////////////////////////////////////////////////////
 
 	mPrevVelocity = mVelocity;
@@ -285,9 +285,9 @@ void RigidBody::IntegrateImpulses( float fdt )
 	CVector3 amw = mAngularMomentum.Transform3x3( mCurrentMatrix );
 	mAngularVelocity = amw.Transform( mCurInertiaTensorInv );
 	mVelocity = mLinearMomentum*(1.0f/mTotalMass);
-	
+
 	//////////////////////////////////////////////////////////////////
-	// update position / orientation 
+	// update position / orientation
 	//////////////////////////////////////////////////////////////////
 
 	CVector3 av_axis = mAngularVelocity.Normal();
@@ -383,12 +383,12 @@ float RigidBody::SingleBodyImpulse(	const CVector3& cn, // collision normal (wor
 {
 	const float felas = rb1.mElasticity;
 	////////////////////////////////////////////////
-	CVector3 r = (cp - rb1.ComW()); 
-	CVector3 pv = rb1.PointVelocityW(cp); 
-	CVector3 v = pv-(cn*0.5f); 
+	CVector3 r = (cp - rb1.ComW());
+	CVector3 pv = rb1.PointVelocityW(cp);
+	CVector3 v = pv-(cn*0.5f);
 	////////////////////////////////////////////////
 	float v_dot_cn				= v.Dot( cn );
-	float ImpulseNumerator		= -v_dot_cn * (1.0f + felas); 
+	float ImpulseNumerator		= -v_dot_cn * (1.0f + felas);
 	////////////////////////////////////////////////
 	float		ndnm				= (1.0f/rb1mass)
 									* cn.Dot(cn);
@@ -414,15 +414,15 @@ float RigidBody::DualBodyImpulse(	const CVector3& cn,
 {
 	const float felas = (rb1.mElasticity+rb2.mElasticity)*0.5f;
 	////////////////////////////////////////////////
-	CVector3 r1 = (cp - rb1.ComW()); 
-	CVector3 r2 = (cp - rb2.ComW()); 
-	CVector3 pv1 = rb1.PointVelocityW(cp); 
-	CVector3 pv2 = rb2.PointVelocityW(cp); 
+	CVector3 r1 = (cp - rb1.ComW());
+	CVector3 r2 = (cp - rb2.ComW());
+	CVector3 pv1 = rb1.PointVelocityW(cp);
+	CVector3 pv2 = rb2.PointVelocityW(cp);
 	CVector3 pv = pv1-pv2;
-	CVector3 v = pv-(cn*0.5f); 
+	CVector3 v = pv-(cn*0.5f);
 	////////////////////////////////////////////////
 	float v_dot_cn					= v.Dot( cn );
-	float ImpulseNumerator			= -v_dot_cn * (1.0f + felas); 
+	float ImpulseNumerator			= -v_dot_cn * (1.0f + felas);
 	////////////////////////////////////////////////
 	float		ndnm				= ((1.0f/rb1mass)+(1.0f/rb2mass))
 									* cn.Dot(cn);
@@ -541,7 +541,7 @@ void RigidBody_Draw( lev2::GfxTarget* targ, const CMatrix4& matw, const RigidBod
 
 	if( bdebug )
 	{
-		targ->MTXI()->PushMMatrix( CMatrix4::Identity );
+		targ->MTXI()->PushMMatrix( fmtx4::Identity );
 		{
 			for( int i=0; i<int(rbody.mPoints.size()); i++ )
 			{
@@ -578,7 +578,7 @@ void RigidBody_Draw( lev2::GfxTarget* targ, const CMatrix4& matw, const RigidBod
 					//targ->ImmDrawLine( a, b );
 				}
 				targ->PopModColor();
-								
+
 #if defined( _DEBUG_FORCES )
 				////////////////////////////////////////////////
 				// Draw Point Forces
@@ -602,7 +602,7 @@ void RigidBody_Draw( lev2::GfxTarget* targ, const CMatrix4& matw, const RigidBod
 			////////////////////////////////////////////////
 			// Draw Angular Velocity
 			////////////////////////////////////////////////
-				
+
 			targ->PushModColor( CVector3::Magenta() );
 			{
 				CVector3 a2 =rbody.mCenterOfMass;
@@ -610,7 +610,7 @@ void RigidBody_Draw( lev2::GfxTarget* targ, const CMatrix4& matw, const RigidBod
 				//targ->ImmDrawLine( a2, b );
 			}
 			targ->PopModColor();
-		
+
 		}
 		targ->MTXI()->PopMMatrix();
 	}

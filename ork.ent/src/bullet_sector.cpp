@@ -77,7 +77,7 @@ struct CollisionLoadAllocator
 		return pmem;
 	}
 	void done(const char* chunkName, void* data)
-	{ 
+	{
 #if defined(WII)
 #else
 		char* pchdata = (char*) data;
@@ -277,11 +277,11 @@ static bool SaveSectors(chunkfile::OutputStream* sectorStream, const SectorData 
 	for (int vertIdx = 0; vertIdx < (int)saveData.mSectorVerts.size(); vertIdx++)
 	{
 		sectorStream->AddItem(saveData.mSectorVerts[vertIdx].mPos);
-		
+
 		if (dbgOut)
 		{
 			SECTOR_DEBUG_OUT("SectorVert %d : %.1f, %.1f, %.1f\n",
-				vertIdx, 
+				vertIdx,
 				saveData.mSectorVerts[vertIdx].mPos.GetX(),
 				saveData.mSectorVerts[vertIdx].mPos.GetY(),
 				saveData.mSectorVerts[vertIdx].mPos.GetZ());
@@ -300,7 +300,7 @@ static bool SaveSectors(chunkfile::OutputStream* sectorStream, const SectorData 
 		for (int portalIdx = 0; portalIdx < Sector::kmaxportals; ++portalIdx)
 		{
 			const SectorPortal& portal = sector.mPortals[portalIdx];
-			
+
 			for(int i=0 ; i<NUM_PORTAL_CORNERS ; i++)
 				sectorStream->AddItem(portal.mCornerVerts[i]);
 			sectorStream->AddItem(portal.mPlane);
@@ -323,7 +323,7 @@ static bool SaveSectors(chunkfile::OutputStream* sectorStream, const SectorData 
 				sector.mMidlineTriStart, sector.mMidlineTriStart+sector.mMidlineTriCount*3);
 			for(int portalIdx = 0 ; portalIdx < sector.NumPortals() ; portalIdx++) {
 			const SectorPortal& portal = sector.mPortals[portalIdx];
-				SECTOR_DEBUG_OUT("  Portal %d: @%.3f [%d,%d,%d,%d] -> %d\n", 
+				SECTOR_DEBUG_OUT("  Portal %d: @%.3f [%d,%d,%d,%d] -> %d\n",
 					portalIdx,
 					portal.mTrackProgress,
 					portal.mCornerVerts[0], portal.mCornerVerts[1], portal.mCornerVerts[2], portal.mCornerVerts[3],
@@ -353,8 +353,8 @@ static bool SaveSectors(chunkfile::OutputStream* sectorStream, const SectorData 
 		sectorStream->AddItem(saveData.mMidlineVerts[vertIdx].mTubeGrav);
 		sectorStream->AddItem(saveData.mMidlineVerts[vertIdx].mTotalGrav);
 		sectorStream->AddItem(saveData.mMidlineVerts[vertIdx].mVelocityFollow);
-		SECTOR_DEBUG_OUT("  [%d] = <%f,%f,%f> tube:%f grav:%f, velfol:%f\n", 
-			vertIdx, 
+		SECTOR_DEBUG_OUT("  [%d] = <%f,%f,%f> tube:%f grav:%f, velfol:%f\n",
+			vertIdx,
 			saveData.mMidlineVerts[vertIdx].mPos.GetX(),
 			saveData.mMidlineVerts[vertIdx].mPos.GetY(),
 			saveData.mMidlineVerts[vertIdx].mPos.GetZ(),
@@ -368,8 +368,8 @@ static bool SaveSectors(chunkfile::OutputStream* sectorStream, const SectorData 
 	for (int vertIdx = 0; vertIdx < (int)saveData.mKillVerts.size(); vertIdx++)
 	{
 		sectorStream->AddItem(saveData.mKillVerts[vertIdx]);
-		SECTOR_DEBUG_OUT("  [%d] = <%f,%f,%f> \n", 
-			vertIdx, 
+		SECTOR_DEBUG_OUT("  [%d] = <%f,%f,%f> \n",
+			vertIdx,
 			saveData.mKillVerts[vertIdx].GetX(),
 			saveData.mKillVerts[vertIdx].GetY(),
 			saveData.mKillVerts[vertIdx].GetZ());
@@ -383,9 +383,9 @@ static bool SaveSectors(chunkfile::OutputStream* sectorStream, const SectorData 
 		sectorStream->AddItem(saveData.mKillTris[triIdx*3+0]);
 		sectorStream->AddItem(saveData.mKillTris[triIdx*3+1]);
 		sectorStream->AddItem(saveData.mKillTris[triIdx*3+2]);
-		SECTOR_DEBUG_OUT("  [%d] = %d : %d : %d\n", triIdx, 
-			saveData.mKillTris[triIdx*3+0], 
-			saveData.mKillTris[triIdx*3+1], 
+		SECTOR_DEBUG_OUT("  [%d] = %d : %d : %d\n", triIdx,
+			saveData.mKillTris[triIdx*3+0],
+			saveData.mKillTris[triIdx*3+1],
 			saveData.mKillTris[triIdx*3+2]);
 	}
 	sectorStream->AddItem((int)'done');
@@ -442,7 +442,7 @@ static bool LoadSectors(chunkfile::InputStream* sectorStream, SectorData &saveDa
 		sectorStream->GetItem(sector.mMidlineTriCount);
 		sectorStream->GetItem(sector.mKillTriStart);
 		sectorStream->GetItem(sector.mKillTriCount);
-		
+
 		// recalculate basis vectors
 		lensum += sector.ContributeBasis(saveData);
 	}
@@ -472,7 +472,7 @@ static bool LoadSectors(chunkfile::InputStream* sectorStream, SectorData &saveDa
 		sectorStream->GetItem(saveData.mMidlineVerts[vertIdx].mVelocityFollow);
 	}
 
-	
+
 	sectorStream->GetItem(numVerts);
 	saveData.mKillVerts.resize(numVerts);
 	for (int vertIdx = 0; vertIdx < (int)saveData.mKillVerts.size(); vertIdx++)
@@ -646,9 +646,9 @@ void Sector::GetRelativePositionOfPoint(const SectorData &data, const ork::CVect
 	tl.Lerp(tl, data.mSectorVerts[mPortals[portal1].mCornerVerts[PORTAL_CORNER_TL]].mPos, z);
 	tr.Lerp(tr, data.mSectorVerts[mPortals[portal1].mCornerVerts[PORTAL_CORNER_TR]].mPos, z);
 	br.Lerp(br, data.mSectorVerts[mPortals[portal1].mCornerVerts[PORTAL_CORNER_BR]].mPos, z);
-	
+
 	CVector3 dz = ((tr-tl)+(br-bl)).Cross((tl-bl)+(tr-br));
-	
+
 	{
 		CVector3 n1 = dz.Cross(br-bl).Normal();
 		CVector3 n2 = dz.Cross(tl-tr).Normal();
@@ -957,7 +957,7 @@ void Sector::GetBasis(const SectorData& data, const ork::CVector3& position, CVe
 	b.Lerp(data.mSectorVerts[mPortals[0].mCornerVerts[PORTAL_CORNER_TL]].mZ,
 		data.mSectorVerts[mPortals[0].mCornerVerts[PORTAL_CORNER_TR]].mZ, 1-x);
 	dirZ.Lerp(a, b, y);
-	
+
 	int farportal = 1;
 	if (IsSplit()) {
 		if (mSplitPlane.IsPointBehind(position)) {
@@ -1009,7 +1009,7 @@ bool Sector::GetMidline(const SectorData& data, const ork::CVector3& position, M
 		const MidlineVert &va = data.mMidlineVerts[data.mMidlineTris[mMidlineTriStart+i*3+0]];
 		const MidlineVert &vb = data.mMidlineVerts[data.mMidlineTris[mMidlineTriStart+i*3+1]];
 		const MidlineVert &vc = data.mMidlineVerts[data.mMidlineTris[mMidlineTriStart+i*3+2]];
-		
+
 		ork::CVector3 v0 = vb.mPos-va.mPos;
 		ork::CVector3 v1 = vc.mPos-va.mPos;
 		ork::CVector3 vp = position-va.mPos;
@@ -1024,7 +1024,7 @@ bool Sector::GetMidline(const SectorData& data, const ork::CVector3& position, M
 
 		float db = (dot00*dot1p-dot01*dot0p )*denom;
 		float dc = (dot11*dot0p-dot01*dot1p )*denom;
-		
+
 		if (db + dc > 1) {
 			ork::CVector3 v = vc.mPos-vb.mPos;
 			float x = v.Dot(position-vb.mPos)/v.Dot(v);
@@ -1112,21 +1112,21 @@ CVector3 Track::GetSectorEntry(int currSector) const {
 void Track::GetBasis(unsigned int currSector, const ork::CVector3& pos, CVector3& dirX, CVector3& dirY, CVector3& dirZ) const
 {
 	const ork::ent::bullet::Sector& sector = mSectorData.mSectors[currSector];
-	
+
 	sector.GetBasis(mSectorData, pos, dirX, dirY, dirZ);
 }
 
 bool Track::GetMidline(unsigned int currSector, const ork::CVector3& pos, MidlineVert &midline) const
 {
 	const ork::ent::bullet::Sector& sector = mSectorData.mSectors[currSector];
-	
+
 	return sector.GetMidline(mSectorData, pos, midline);
 }
 
 bool Track::CrossedKill(unsigned int currSector, const ork::CVector3& oldpos, const ork::CVector3& newpos) const
 {
 	const ork::ent::bullet::Sector& sector = mSectorData.mSectors[currSector];
-	
+
 	return sector.CrossedKill(mSectorData, oldpos, newpos);
 }
 
@@ -1210,7 +1210,7 @@ TrackInst::TrackInst(const TrackData &data, ork::ent::Entity *pent)
 	ork::CMatrix4 trans = GetEntity()->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 
 	//Get the scale from the Data
-	ork::CMatrix4 scale = ork::CMatrix4::Identity;
+	ork::CMatrix4 scale = fmtx4::Identity;
 	float fscale = mData.GetTrackScale();
 	scale.SetScale( fscale );
 	trans = scale * trans;
@@ -1448,4 +1448,3 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackData, "TrackData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackInst, "TrackInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::bullet::TrackArchetype, "TrackArchetype");
 template class ork::chunkfile::Reader<ork::ent::bullet::CollisionLoadAllocator>;
-

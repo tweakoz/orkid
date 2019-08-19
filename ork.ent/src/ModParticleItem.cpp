@@ -51,7 +51,7 @@ void ModularSystem::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ModParticleItem::ModParticleItem() 
+ModParticleItem::ModParticleItem()
 {
 }
 
@@ -87,8 +87,8 @@ struct ModItemBufferDataDB
 class ModItemBufferData
 {
 public:
-	
-	ModItemBufferData() 
+
+	ModItemBufferData()
 		: mpEntity(0)
 		, mpRendererModule(0)
 		, mpDrawable(0)
@@ -109,7 +109,7 @@ public:
 	{
 		if( idx > ork::ent::DrawableBuffer::kmaxbuffers )
 			idx = ork::ent::DrawableBuffer::kmaxbuffers;
-			
+
 		return mDB[idx];
 	}
 	const ModItemBufferDataDB& GetDB( size_t idx ) const
@@ -119,7 +119,7 @@ public:
 
 		return mDB[idx];
 	}
-	
+
 private:
 
 	ork::Array<ModItemBufferDataDB>	mDB;
@@ -147,16 +147,16 @@ struct ModItemRenderData
 		mEntity = 0;
 	}
 	static void QueueToLayerCallback(ork::ent::DrawableBufItem&cdb)
-	{	
+	{
 		AssertOnOpQ2( UpdateSerialOpQ() );
 
 		ModItemRenderData* pmird = cdb.mUserData0.Get<ModItemRenderData*>();
-		
+
 		if( 0 == pmird->mpItem )
 		{
 			return;
 		}
-		
+
 		ModItemBufferData& mibd = pmird->mMIBD;
 		const ork::ent::Entity* pent = mibd.mpEntity;
 
@@ -170,7 +170,7 @@ struct ModItemRenderData
 
 			db.mfStartTime = pmird->mpItem->GetStartTime();
 
-			db.mMatrix = CMatrix4::Identity;
+			db.mMatrix = fmtx4::Identity;
 			if( false == pmird->mpItem->IsWorldSpace() )
 			{
 				pent->GetDagNode().GetMatrix(db.mMatrix);
@@ -189,7 +189,7 @@ struct ModItemRenderData
 	static void QueueToRendererCallback( ork::lev2::RenderContextInstData& rcid,
 										 ork::lev2::GfxTarget* targ,
 										 const ork::lev2::CallbackRenderable* pren )
-	{	
+	{
 		AssertOnOpQ2( MainThreadOpQ() );
 
 		//////////////////////////////////////////
@@ -206,7 +206,7 @@ struct ModItemRenderData
 			const ModParticleItem& Item = *pdata->mpItem;
 			ModularSystem& System = *pdata->mpSystem;
 			//////////////////////////////////////////
-			if( db.mfTimeElapsed<db.mfStartTime ) return;				
+			if( db.mfTimeElapsed<db.mfStartTime ) return;
 			//////////////////////////////////////////
 			RendererModule*	Renderer = pdata->mpRenderer;
 			Renderer->Render(db.mMatrix,rcid,db.mParticleBuffer,targ);
@@ -236,7 +236,7 @@ ModularSystem::ModularSystem( const ModParticleItem& item )
 	: NovaParticleSystem(item)
 	, mItem( item )
 	, mGraphInstance( 0 )
-{	
+{
 	mElapsed = 0.0f;
 }
 
@@ -253,7 +253,7 @@ ModularSystem::~ModularSystem()
 	{
 		mItem.GetGraphPool().Free(mGraphInstance);
 	}
-}	
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -268,7 +268,7 @@ void ModularSystem::SetEmitterEnable( bool bv )
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModularSystem::DoUpdate(float fdt)
-{	
+{
 	ork::lev2::particle::Context* pctx =  GetParticleContext();
 
 	if( mGraphInstance )
@@ -294,14 +294,14 @@ bool ModularSystem::DoNotify(const event::Event *event)
 			psse->PushNode( module_name.c_str() ); // push psys name
 			static_cast<ork::Object*>(pmodule)->Notify(psse);
 			psse->PopNode();
-		
+
 		}
 		psse->PopNode();
 	}
 	else if( const ork::ent::PerfControlEvent* pce = rtti::autocast(event) )
 	{
 		PoolString k = AddPooledString(pce->mTarget.c_str());
-		
+
 		ent::PerfControlEvent pce2 = *pce;
 		std::string KeyName = pce2.mTarget.c_str();
 		std::string SystemName = pce2.PopTargetNode();
@@ -312,12 +312,12 @@ bool ModularSystem::DoNotify(const event::Event *event)
 		if( 0 == strcmp(SystemName.c_str(),mName.c_str()) )
 		{
 			psys_graph& template_graph = mItem.GetTemplate();
-			
+
 			dataflow::dgmodule* pmodule = template_graph.GetChild( AddPooledString(ModuleName.c_str()) );
 			printf( " Module<%s:%p>\n", ModuleName.c_str(), pmodule );
 			static_cast<ork::Object*>(pmodule)->Notify(&pce2);
 		}
-		
+
 	}
     return true;
 }
@@ -360,9 +360,9 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 	mParticleControllerInst = pent->GetTypedComponent<ork::psys::ParticleControllableInst>();
 	OrkAssert(mParticleControllerInst!=0);
 	////////////////////////////////////////
-	
+
 	mGraphInstance = gbusetemplate
-						? & mItem.GetTemplate() 
+						? & mItem.GetTemplate()
 						: mItem.GetGraphPool().Allocate();
 	orkprintf( "ModularSystem::DoLinkSystem this<%p>\n", this );
 	orkprintf( "    GI<%p>\n", mGraphInstance );
@@ -373,7 +373,7 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 		if( mGraphInstance->IsComplete() )
 		{	size_t inummods = mGraphInstance->Modules().size();
 			for( size_t im=0; im<inummods; im++ )
-			{	
+			{
 				std::pair<PoolString,ork::Object*> pr = mGraphInstance->Modules().GetItemAtIndex( im );
 				Module* pmod = rtti::autocast(pr.second);
 				if( nullptr == pmod )
@@ -390,9 +390,9 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 				std::pair<PoolString,ork::Object*> pr2 = mItem.GetTemplate().Modules().GetItemAtIndex( im );
 				Module* pmod_template = rtti::autocast(pr2.second);
 				pmod->SetTemplateModule(pmod_template);
-			
+
 			}
-			
+
 		}
 
 		float fsort = mItem.GetSortValue();
@@ -401,7 +401,7 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 		int inumrenderers = GetNumRenderers();
 		for( int ir=0; ir<inumrenderers; ir++ )
 		{	RendererModule* renderer = GetRenderer(ir);
-			
+
 
 			#if 1 //DRAWTHREADS
 			ork::ent::CallbackDrawable* pdrw = new ork::ent::CallbackDrawable( pent );
@@ -432,7 +432,7 @@ void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pe
 
 			///////////////////////////////////////////////////////////
 			//ModItemBufferData* srec = new ModItemBufferData;
-			
+
 			mird->mMIBD.mpDrawable = pdrw;
 
 			anyp ap;

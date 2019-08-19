@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #ifndef _ORK_UTIL_CONTEXT_HPP_
@@ -25,12 +25,18 @@ namespace ork { namespace util {
 
 template <typename T> orkstack<T> GlobalStack<T>::gStack;
 
+
 ////////////////////////////////////////////////////////////////////////////
+
+template <typename T> T& GlobalStack<T>::Top() { return gStack.top(); }
+template <typename T> void GlobalStack<T>::Push( T v ) { gStack.push(v); }
+template <typename T> void GlobalStack<T>::Pop() { gStack.pop(); }
+
 ////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-T *Context<T>::GetContext() 
-{ 
+T *Context<T>::GetContext()
+{
 	if(NULL != sCurrentContext)
 	{
 		return sCurrentContext;
@@ -44,8 +50,8 @@ T *Context<T>::GetContext()
 ///////////////////////////////////////////////////////////
 
 template<typename T>
-Context<T>::Context() 
-	: mPreviousContext(sCurrentContext) 
+Context<T>::Context()
+	: mPreviousContext(sCurrentContext)
 {
 	sCurrentContext = static_cast<T *>(this);
 }
@@ -97,8 +103,8 @@ static tmap_t* get_thr_tmap()
 ///////////////////////////////////////////////////////////
 
 template<typename T>
-T* ContextTLS<T>::GetContext() 
-{ 
+T* ContextTLS<T>::GetContext()
+{
 	////////////////////
 	#if defined(USE_MACH_TLS_HACK)
 	////////////////////
@@ -133,8 +139,8 @@ T* ContextTLS<T>::GetContext()
 ///////////////////////////////////////////////////////////
 
 template<typename T>
-ContextTLS<T>::ContextTLS() 
-	: mPreviousContext(nullptr) 
+ContextTLS<T>::ContextTLS()
+	: mPreviousContext(nullptr)
 {
 	////////////////////
 	#if defined(USE_MACH_TLS_HACK)
@@ -145,7 +151,7 @@ ContextTLS<T>::ContextTLS()
     {
     	std::stack<T*> def;
     	ptmap->operator[](&typeid(T)).Set<std::stack<T*>>(def);
-	    it = ptmap->find(&typeid(T));	
+	    it = ptmap->find(&typeid(T));
     }
     assert(it!=ptmap->end());
     std::stack<T*>& stk = it->second.Get<std::stack<T*>>();
