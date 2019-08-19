@@ -71,8 +71,40 @@ struct VrFrameTechnique final : public FrameTechniqueBase
       RenderContextFrameData&	FrameData = renderer.GetFrameData();
     	GfxTarget *pTARG = FrameData.GetTarget();
     	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
-    	FrameData.SetDstRect( tgt_rect );
-  		renderer.Render();
+
+        // draw left ////////////////////////////////////////
+
+        RtGroupRenderTarget rtL(_rtg_left);
+
+        pTARG->FBI()->SetAutoClear(true);
+        pTARG->SetRenderContextFrameData( & FrameData );
+        FrameData.SetDstRect( tgt_rect );
+        FrameData.PushRenderTarget(&rtL);
+        pTARG->FBI()->PushRtGroup( _rtg_left );
+        pTARG->BeginFrame();
+            FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
+            renderer.Render();
+        pTARG->EndFrame();
+        pTARG->FBI()->PopRtGroup();
+        FrameData.PopRenderTarget();
+        pTARG->SetRenderContextFrameData( 0 );
+
+        // draw right ///////////////////////////////////////
+
+        RtGroupRenderTarget rtR(_rtg_right);
+        pTARG->FBI()->SetAutoClear(true);
+        pTARG->SetRenderContextFrameData( & FrameData );
+        FrameData.SetDstRect( tgt_rect );
+        FrameData.PushRenderTarget(&rtR);
+        pTARG->FBI()->PushRtGroup( _rtg_right );
+        pTARG->BeginFrame();
+            FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
+            renderer.Render();
+        pTARG->EndFrame();
+        pTARG->FBI()->PopRtGroup();
+        FrameData.PopRenderTarget();
+        pTARG->SetRenderContextFrameData( 0 );
+
     }
 
     RtGroup* _rtg_left;

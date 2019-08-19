@@ -560,24 +560,24 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 		float fFbAmt = 0.0f;
 		float fFinResMult = 0.5f;
 		float fFxResMult = 0.5f;
-	  lev2::Texture* pFbUvMap = nullptr;
+	    lev2::Texture* pFbUvMap = nullptr;
 		bool bpostfxfb = false;
 
 		if( node.mpGroup ){
-				const CompositingGroupEffect&	effect = node.mpGroup->GetEffect();
-				EffectName = effect.GetEffectName();
-				fFxAmt = effect.GetEffectAmount();
-				fFbAmt = effect.GetFeedbackAmount();
-	      pFbUvMap = effect.GetFbUvMap();
-				bpostfxfb = effect.IsPostFxFeedback();
-				fFinResMult = effect.GetFinalRezScale();
-				fFxResMult = effect.GetFxRezScale();
+  		  const CompositingGroupEffect&	effect = node.mpGroup->GetEffect();
+		  EffectName = effect.GetEffectName();
+		  fFxAmt = effect.GetEffectAmount();
+		  fFbAmt = effect.GetFeedbackAmount();
+		  pFbUvMap = effect.GetFbUvMap();
+		  bpostfxfb = effect.IsPostFxFeedback();
+		  fFinResMult = effect.GetFinalRezScale();
+		  fFxResMult = effect.GetFxRezScale();
 		}
 
 		////////////////////////////////////////
 
 		pFTEK->SetEffect( EffectName, fFxAmt, fFbAmt );
-    pFTEK->SetFbUvMap( pFbUvMap );
+	    pFTEK->SetFbUvMap( pFbUvMap );
 		pFTEK->SetPostFxFb( bpostfxfb );
 
 		////////////////////////////////////////
