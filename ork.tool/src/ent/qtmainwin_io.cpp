@@ -59,7 +59,8 @@ void EditorMainWindow::OpenSceneFile() {
   openfiledialog->setDirectory(datapath);
   openfiledialog->setNameFilter(tr("OrkSceneFile (*.mox *.mob)"));
   openfiledialog->setViewMode(QFileDialog::Detail);
-  	openfiledialog->setOption(QFileDialog::DontUseNativeDialog, true);
+
+  //openfiledialog->setOption(QFileDialog::DontUseNativeDialog, true);
   openfiledialog->setOption(QFileDialog::DontConfirmOverwrite, false);
 
   openfiledialog->setOption(QFileDialog::HideNameFilterDetails, false);
