@@ -40,7 +40,7 @@ GlFrameBufferInterface::~GlFrameBufferInterface()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::SetAsRenderTarget( void ) 
+void GlFrameBufferInterface::SetAsRenderTarget( void )
 {
 	GL_ERRORCHECK();
 	mTargetGL.MakeCurrentContext();
@@ -95,7 +95,7 @@ void GlFrameBufferInterface::DoBeginFrame( void )
 		GL_ERRORCHECK();
 		SetAsRenderTarget();
 		GL_ERRORCHECK();
-		
+
 		glDepthRange( 0.0, 1.0f );
 		SRect extents( mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
 		//printf( "WINtarg begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
@@ -121,7 +121,7 @@ void GlFrameBufferInterface::DoBeginFrame( void )
 			GL_ERRORCHECK();
 		}
 	}
-		
+
 	/////////////////////////////////////////////////
 	// Set Initial Rendering States
 				GL_ERRORCHECK();
@@ -142,10 +142,10 @@ void GlFrameBufferInterface::DoEndFrame( void )
 	///////////////////////////////////////////
 
 	//glFinish();
-	
+
 	////////////////////////////////
 	auto rtg = mTargetGL.FBI()->GetRtGroup();
-	
+
 	if( rtg )
 	{
 		GlFboObject *FboObj = (GlFboObject *) rtg->GetInternalHandle();
@@ -253,9 +253,9 @@ void GlFrameBufferInterface::InitializeContext( GfxBuffer* pBuf )
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
-{	
+{
 	mTargetGL.MakeCurrentContext();
-	
+
 	if( 0 == Base )
 	{
 		if( mCurrentRtGroup )
@@ -293,7 +293,7 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 		mCurrentRtGroup = 0;
 		return;
 	}
-	
+
 	//////////////////////////////////////////////////
 	// lazy create mrt's
 	//////////////////////////////////////////////////
@@ -320,7 +320,7 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 			//sampletype = D3DMULTISAMPLE_NONE;
 			break;
 	}
-	
+
 	GL_ERRORCHECK();
 
 	if( 0 == FboObj )
@@ -353,6 +353,9 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 			ptex->SetWidth( iw );
 			ptex->SetHeight( ih );
 			ptex->SetTexIH( (void*) ptexOBJ );
+
+			ptex->setProperty<GLuint>("gltexobj",FboObj->mTEX[it]);
+
 			ptex->SetTexClass( ork::lev2::Texture::ETEXCLASS_RENDERTARGET );
 			mTargetGL.TXI()->ApplySamplingMode(ptex);
 			pB->SetTexture(ptex);
@@ -375,9 +378,9 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 		GL_ERRORCHECK();
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, iw, ih );
 		GL_ERRORCHECK();
-		
+
 		//glRenderbufferStorageMultisampleEXT( GL_RENDERBUFFER_EXT, 1, GL_DEPTH_COMPONENT24, iw, ih );
-		
+
 		//////
 		// attach it to the FBO
 		//////
@@ -397,11 +400,11 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 
 			switch( pB->GetBufferFormat() )
 			{
-				case EBUFFMT_RGBA32: 
+				case EBUFFMT_RGBA32:
 					glinternalformat = GL_RGBA8;
 					gltype = GL_UNSIGNED_BYTE;
 					break;
-				case EBUFFMT_RGBA64: 
+				case EBUFFMT_RGBA64:
 					glinternalformat = GL_RGBA16F;
 					gltype = GL_HALF_FLOAT;
 					break;
@@ -443,10 +446,10 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 	// enable mrts
 	//////////////////////////////////////////////////
 
-	GLenum buffers[] = {	GL_COLOR_ATTACHMENT0, 
+	GLenum buffers[] = {	GL_COLOR_ATTACHMENT0,
 							GL_COLOR_ATTACHMENT1,
 							GL_COLOR_ATTACHMENT2,
-							GL_COLOR_ATTACHMENT3 
+							GL_COLOR_ATTACHMENT3
 					   };
 
 	//printf( "SetRtg::BindFBO<%d> numattachments<%d>\n", int(FboObj->mFBOMaster), inumtargets );
@@ -461,9 +464,9 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 
 	static const SRasterState defstate;
 	mTarget.RSI()->BindRasterState( defstate, true );
-	
+
 	mCurrentRtGroup = Base;
-	
+
 	if( GetAutoClear() )
 	{
 		glClearColor( mcClearColor.GetX(), mcClearColor.GetY(), mcClearColor.GetZ(), mcClearColor.GetW() );
@@ -489,7 +492,7 @@ void GlFrameBufferInterface::PushScissor( const SRect &rScissorRect )
 	OldRect.miY2 = miCurScissorY+miCurScissorH;
 	OldRect.miW = miCurScissorW;
 	OldRect.miH = miCurScissorH;
-	
+
 	maScissorStack[miScissorStackIndex] = OldRect;
 
 	SetScissor( rScissorRect.miX, rScissorRect.miY, rScissorRect.miW, rScissorRect.miH );
@@ -618,8 +621,8 @@ void GlFrameBufferInterface::Capture( const RtGroup& rtg, int irt, const file::P
 	GL_ERRORCHECK();
 	glBindTexture(GL_TEXTURE_2D, tex_id);
 	GL_ERRORCHECK();
-	//glReadPixels( 0, 0, iw, ih, GL_RGBA, GL_UNSIGNED_BYTE, (void*) pu8 ); 
-#if defined(DARWIN)		
+	//glReadPixels( 0, 0, iw, ih, GL_RGBA, GL_UNSIGNED_BYTE, (void*) pu8 );
+#if defined(DARWIN)
 	glGetTexImage(	GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*) pu8 );
 #else
 	glGetTexImage(	GL_TEXTURE_2D, 0, GL_BGRA, GL_UNSIGNED_BYTE, (void*) pu8 );
@@ -639,13 +642,13 @@ void GlFrameBufferInterface::Capture( const RtGroup& rtg, int irt, const file::P
 		uint8_t c3 = pu8[ibyt+3];
 		// c0 c1 c2
 
-#if defined(DARWIN)		
+#if defined(DARWIN)
 		pu8[ibyt+0] = c0; // A
 		pu8[ibyt+1] = c1;
 		pu8[ibyt+2] = c2;
 		pu8[ibyt+3] = c3;
 #else
-		pu8[ibyt+0] = c2; 
+		pu8[ibyt+0] = c2;
 		pu8[ibyt+1] = c1;
 		pu8[ibyt+2] = c0;
 		pu8[ibyt+3] = c3; // A
@@ -674,14 +677,14 @@ void GlFrameBufferInterface::Capture( const RtGroup& rtg, int irt, const file::P
 void GlFrameBufferInterface::GetPixel( const CVector4 &rAt, GetPixelContext& ctx )
 {
     CColor4 Color( 0.0f,0.0f,0.0f,0.0f );
-  
+
 	int sx = int((rAt.GetX()) * CReal(mTarget.GetW()));
 	int sy = int((1.0f-rAt.GetY()) * CReal(mTarget.GetH()));
 
 	bool bInBounds = ( (sx<mTarget.GetW()) && (sy<mTarget.GetH()) && (sx>0) && (sy>0) );
 
 	//printf( "InBounds<%d> sx<%d> sy<%d>\n", int(bInBounds), sx, sy );
-	
+
 	if( IsOffscreenTarget() && bInBounds )
 	{
 		if( ctx.mRtGroup )
@@ -695,7 +698,7 @@ void GlFrameBufferInterface::GetPixel( const CVector4 &rAt, GetPixelContext& ctx
 				GL_ERRORCHECK();
 
 				//printf( "GetPix BindFBO<%d>\n", FboObj->mFBOMaster );
-				
+
 				if( FboObj->mFBOMaster )
 				{
 
@@ -711,7 +714,7 @@ void GlFrameBufferInterface::GetPixel( const CVector4 &rAt, GetPixelContext& ctx
 					for( int MrtIndex=0; MrtIndex<4; MrtIndex++ )
 					{
 						int MrtTest = 1<<MrtIndex;
-						
+
 						ctx.mPickColors[MrtIndex] = CColor4(0.0f,0.0f,0.0f,0.0f);
 
 						if( MrtTest&MrtMask )
@@ -732,13 +735,13 @@ void GlFrameBufferInterface::GetPixel( const CVector4 &rAt, GetPixelContext& ctx
 							{
 								int inumpix = miCurVPW*miCurVPH;
 
-								glReadPixels( 0, 0, miCurVPW, miCurVPH, GL_RGBA, GL_FLOAT, (void*) rgba ); 
+								glReadPixels( 0, 0, miCurVPW, miCurVPH, GL_RGBA, GL_FLOAT, (void*) rgba );
 							}*/
 
 
 							F32 rgba[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-						
-							glReadPixels( sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*) rgba ); 
+
+							glReadPixels( sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*) rgba );
 							GL_ERRORCHECK();
 							//CVector4 rv = CVector4( rgba[0], rgba[1], rgba[2], rgba[3] );
 							CVector4 rv = CVector4( rgba[0], rgba[1], rgba[2], rgba[3] );

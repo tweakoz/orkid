@@ -44,7 +44,7 @@ public:
 	BasicFrameTechnique(  );
 
 	virtual void Render( ork::lev2::FrameRenderer & ContextData );
-	
+
 	bool mbDoBeginEndFrame;
 };
 
@@ -62,7 +62,7 @@ public:
 class BuiltinFrameEffectMaterial : public GfxMaterial
 {
 	public:
- 
+
 	BuiltinFrameEffectMaterial();
 	void Init( GfxTarget* pTarg );
 	void PostInit( GfxTarget* pTarg , const char *FxFile, const char* TekName );
@@ -128,7 +128,7 @@ class BuiltinFrameTechniques : public FrameTechniqueBase
 	std::string						mEffectName;
 	TexBuffer*						mpAuxBuffer0;
 	TexBuffer*						mpAuxBuffer1;
-	BuiltinFrameEffectMaterial		mFrameEffectNZPAC; //[n3 z1] [p3 amb1] [c3] 
+	BuiltinFrameEffectMaterial		mFrameEffectNZPAC; //[n3 z1] [p3 amb1] [c3]
 	BuiltinFrameEffectMaterial		mFrameEffectRadialBlur;
 	BuiltinFrameEffectMaterial		mFrameEffectBlurX;
 	BuiltinFrameEffectMaterial		mFrameEffectBlurY;
@@ -173,7 +173,7 @@ public:
 	int							miFxH;
 	float						mfSourceAmplitude;
 	mutable int					miRtGroupIndex;
-	
+
 	RtGroup*					mOutputRt;
 
 	void DoInit( GfxTarget* ptgt );
@@ -189,14 +189,13 @@ public:
 
 class ShadowFrameTechnique : public FrameTechniqueBase
 {
-	RtGroup*				mpRtGroup;
-	TexBuffer*				mpShadowBuffer;
+	RtGroup* _pRtGroup;
+	TexBuffer* _pShadowBuffer;
 
 public:
 
 	ShadowFrameTechnique( GfxWindow* Parent, ui::Viewport* pvp, int iW, int iH );
-	virtual void Render( FrameRenderer & ContextData );
+	void Render( FrameRenderer & ContextData ) final;
 };
 
 }} // namespace ork::lev2
-

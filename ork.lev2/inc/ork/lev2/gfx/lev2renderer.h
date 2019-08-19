@@ -54,7 +54,7 @@ public:
 	const Renderer*				GetRenderer( void ) const { return mpActiveRenderer; }
 	const IRenderableDag*		GetDagRenderable( void ) const { return mpDagRenderable; }
 	const XgmMaterialStateInst*	GetMaterialInst() const { return mMaterialInst; }
-	
+
 	void SetEngineParamFloat(int idx, float fv);
 	float GetEngineParamFloat(int idx) const;
 
@@ -72,7 +72,7 @@ public:
 	void    SetVertexLit( bool bv ) { mbVertexLit=bv; }
 	void	ForceNoZWrite( bool bv ) { mbForzeNoZWrite=bv; }
 	bool	IsForceNoZWrite() const { return mbForzeNoZWrite; }
-	
+
 	void SetRenderGroupState( RenderGroupState rgs ) { mRenderGroupState = rgs; }
 	RenderGroupState GetRenderGroupState() const { return mRenderGroupState; }
 
@@ -122,9 +122,9 @@ private:
 class IRenderTarget
 {
 public:
-	
+
 	IRenderTarget();
-	
+
 	virtual int GetW() = 0;
 	virtual int GetH() = 0;
 	virtual void BeginFrame(FrameRenderer&frenderer) = 0;
@@ -136,9 +136,9 @@ class RtGroupRenderTarget : public IRenderTarget
 public:
 
 	RtGroupRenderTarget( RtGroup* prtgroup );
-	
+
 	private:
-	
+
 	RtGroup* mpRtGroup;
 
 	int GetW();
@@ -152,9 +152,9 @@ class UiViewportRenderTarget : public IRenderTarget
 public:
 
 	UiViewportRenderTarget( ui::Viewport* pVP );
-	
+
 	private:
-	
+
 	ui::Viewport* mpViewport;
 
 	int GetW();
@@ -168,9 +168,9 @@ class UiSurfaceRenderTarget : public IRenderTarget
 public:
 
 	UiSurfaceRenderTarget( ui::Surface* pVP );
-	
+
 	private:
-	
+
 	ui::Surface* mSurface;
 
 	int GetW();
@@ -210,7 +210,7 @@ public:
 	GfxBuffer*			GetShadowBuffer( void ) const { return mpShadowBuffer; }
 	const SRect&		GetDstRect( ) const { return mDstRect; }
 	const SRect&		GetMrtRect( ) const { return mMrtRect; }
-	
+
 	void SetRenderingMode( ERenderingMode emode ) { meMode=emode; }
 	void SetShadowBuffer( GfxBuffer* ShadowBuffer ) { mpShadowBuffer=ShadowBuffer; }
 	void SetCameraData( const CCameraData* data ) { mCameraData=data; }
@@ -224,7 +224,7 @@ public:
 
 	CameraCalcContext& GetCameraCalcCtx() { return mCameraCalcCtx; }
 	const CameraCalcContext& GetCameraCalcCtx() const { return mCameraCalcCtx; }
-	
+
 	void ClearLayers();
 	void AddLayer( const PoolString& layername );
 	bool HasLayer( const PoolString& layername ) const;
@@ -238,7 +238,7 @@ public:
 
 	void SetUserProperty( const char* prop, anyp data );
 	anyp GetUserProperty( const char* prop );
-	
+
 private:
 
 	orkstack<IRenderTarget*>	mRenderTargetStack;
@@ -274,6 +274,7 @@ class FrameTechniqueBase
 public:
 
 	FrameTechniqueBase( int iW, int iH );
+	virtual ~FrameTechniqueBase(){}
 	
 	virtual void Render( FrameRenderer& ContextData ) = 0;
 	virtual RtGroup* GetFinalRenderTarget() const { return mpMrtFinal; }

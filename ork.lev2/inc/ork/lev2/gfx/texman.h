@@ -84,7 +84,7 @@ struct TextureSamplingModeData
 class TextureAnimationInst;
 class Texture;
 class TextureInterface;
-    
+
 
 class TextureAnimationBase
 {
@@ -93,7 +93,7 @@ public:
 	virtual void UpdateTexture( TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim ) = 0;
 	virtual float GetLengthOfTime( void ) const = 0;
 	virtual ~TextureAnimationBase() {}
-	
+
 private:
 
 };
@@ -216,12 +216,16 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	void SetProperty( const std::string & texname, const std::string &value ); // { mTextureProperties.AddSorted(texname,value); }
+	template <typename T> void setProperty( const std::string & texname, T value ){
+		_textureProperties[ texname ].Set<T>(value);
+	}
 
-	const std::string & GetProperty( const std::string & texname ) const
+	template <typename T> T getProperty( const std::string & propname ) const
 	{
-		orkmap<std::string,std::string>::const_iterator it=mTextureProperties.find( texname );
-		return (it==mTextureProperties.end()) ? gstring_noval : (*it).second;
+		auto it =_textureProperties.find( propname );
+		return (it==_textureProperties.end())
+		          ? T()
+						  : it->second.Get<T>();
 	}
 
 	//////////////////////////////////////////////////////////
@@ -264,7 +268,7 @@ public:
 	void*							mpData;
 	TextureAnimationBase*			mpTexAnim;
 
-	orkmap<std::string,std::string>	mTextureProperties;
+	orkmap<std::string,svar64_t>	_textureProperties;
 
     TextureSamplingModeData			mTexSampleMode;
 

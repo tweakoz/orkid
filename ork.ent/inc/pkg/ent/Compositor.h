@@ -233,7 +233,6 @@ private:
 	lev2::BuiltinFrameTechniques*	mFTEK;
 };
 ///////////////////////////////////////////////////////////////////////////////
-# if ! defined(__APPLE__)
 class VrCompositingNode : public CompositingNode
 {
 	RttiDeclareConcrete(VrCompositingNode, CompositingNode);
@@ -244,16 +243,10 @@ private:
 	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
 	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
 
-	void GetGroup(ork::rtti::ICastable*& val) const;
-	void SetGroup( ork::rtti::ICastable* const & val);
 	lev2::RtGroup* GetOutput() const override;
 
-	CompositingMaterial				mCompositingMaterial;
-	CompositingGroup*				mGroup;
-	lev2::BuiltinFrameTechniques*	mFTEK;
 	svar256_t _impl;
 };
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 class SeriesCompositingNode : public CompositingNode
 {
@@ -400,7 +393,7 @@ private:
 struct CompositingPassData
 {
 	const CompositingGroup*			mpGroup;
-	lev2::BuiltinFrameTechniques*	mpFrameTek;
+	lev2::FrameTechniqueBase*	mpFrameTek;
 	bool							mbDrawSource;
 	const PoolString*				mpCameraName;
 	const PoolString*				mpLayerName;

@@ -72,7 +72,7 @@ struct ModelLoadAllocator
 		{
 
 			delete[] pch;
-		}			
+		}
 		else if( 0 == strcmp( pchkname, "modeldata" ) )
 		{
 #if defined(WII)
@@ -92,7 +92,7 @@ struct ModelLoadAllocator
 // => when loading old xgm files
 //     and seeing EVTXSTREAMFMT_V12N12B12T8C4 or higher , subtract one
 // we will add a xgm version string to the format
-//  and attempt to make the PropTypeString for enums more robust 
+//  and attempt to make the PropTypeString for enums more robust
 ////////////////////////////////////////////////////////////
 
 EVtxStreamFormat GetVersion0VertexStreamFormat( const char* fmtstr )
@@ -101,23 +101,23 @@ EVtxStreamFormat GetVersion0VertexStreamFormat( const char* fmtstr )
 	static orkmap<std::string,EVtxStreamFormat> formatmap;
 	if( gbINIT )
 	{
-		formatmap["EVTXSTREAMFMT_V16"]=EVTXSTREAMFMT_V16;				// 0		
+		formatmap["EVTXSTREAMFMT_V16"]=EVTXSTREAMFMT_V16;				// 0
 		formatmap["EVTXSTREAMFMT_V4T4"]=EVTXSTREAMFMT_V4T4;				// 1
 		formatmap["EVTXSTREAMFMT_V4C4"]=EVTXSTREAMFMT_V4C4;				// 2
 		formatmap["EVTXSTREAMFMT_V4T4C4"]=EVTXSTREAMFMT_V4T4C4;			// 3
 		formatmap["EVTXSTREAMFMT_V12C4T16"]=EVTXSTREAMFMT_V12C4T16;		// 4
-		
+
 		formatmap["EVTXSTREAMFMT_V12N6I1T4"]=EVTXSTREAMFMT_V12N6I1T4;		// 5
 		formatmap["EVTXSTREAMFMT_V12N6C2T4"]=EVTXSTREAMFMT_V12N6C2T4;
-		
+
 		formatmap["EVTXSTREAMFMT_V16T16C16"]=EVTXSTREAMFMT_V16T16C16;		// 7
-		formatmap["EVTXSTREAMFMT_V12I4N12T8"]=EVTXSTREAMFMT_V12I4N12T8;	
-		formatmap["EVTXSTREAMFMT_V12C4N6I2T8"]=EVTXSTREAMFMT_V12C4N6I2T8;	
-		formatmap["EVTXSTREAMFMT_V6I2C4N3T2"]=EVTXSTREAMFMT_V6I2C4N3T2;   
+		formatmap["EVTXSTREAMFMT_V12I4N12T8"]=EVTXSTREAMFMT_V12I4N12T8;
+		formatmap["EVTXSTREAMFMT_V12C4N6I2T8"]=EVTXSTREAMFMT_V12C4N6I2T8;
+		formatmap["EVTXSTREAMFMT_V6I2C4N3T2"]=EVTXSTREAMFMT_V6I2C4N3T2;
 		formatmap["EVTXSTREAMFMT_V12I4N6W4T4"]=EVTXSTREAMFMT_V12I4N6W4T4;		// 11
 
 		formatmap["EVTXSTREAMFMT_V12N12T8I4W4"]=EVTXSTREAMFMT_V12N12T8I4W4;		// 12
-		formatmap["EVTXSTREAMFMT_V12N12B12T8"]=EVTXSTREAMFMT_V12N12B12T8;	
+		formatmap["EVTXSTREAMFMT_V12N12B12T8"]=EVTXSTREAMFMT_V12N12B12T8;
 		formatmap["EVTXSTREAMFMT_V12N12T16C4"]=EVTXSTREAMFMT_V12N12B12T8;		// uhoh ! << this was missing
 		formatmap["EVTXSTREAMFMT_V12N12B12T8C4"]=EVTXSTREAMFMT_V12N12T16C4;		// 15
 		formatmap["EVTXSTREAMFMT_V12N12B12T16"]=EVTXSTREAMFMT_V12N12B12T8C4;
@@ -137,12 +137,12 @@ EVtxStreamFormat GetVersion0VertexStreamFormat( const char* fmtstr )
 ////////////////////////////////////////////////////////////
 
 
-bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )	
+bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 {
 	GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
 
 	bool rval = true;
-	
+
 	int XGMVERSIONCODE = 0;
 	static const int kVERSIONTAG = 0x01234567;
 	/////////////////////////////////////////////////////////////
@@ -204,7 +204,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 		///////////////////////////////////
 		// write out flattened bones
 		///////////////////////////////////
-		int inumbones = 0; 
+		int inumbones = 0;
 		HeaderStream->GetItem( inumbones );
 		for( int ib=0; ib<inumbones; ib++ )
 		{	int iib = 0;
@@ -253,7 +253,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 			// wii (basic) material
 			/////////////////////////////////////////////////////////////
 			if( pmatclass == GfxMaterialWiiBasic::GetClassStatic() )
-			{		
+			{
 				int ibastek = -1;
 				int iblendmode = -1;
 
@@ -271,7 +271,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 				const char* blendmodestring = chunkreader.GetString(iblendmode);
 				lev2::EBlending eblend = CPropType<lev2::EBlending>::FromString( blendmodestring );
 				lev2::RenderQueueSortingData& rqdata = pbasmat->GetRenderQueueSortingData();
-				
+
 				if( (eblend!=lev2::EBLENDING_OFF) )
 				{	rqdata.miSortingPass = kdefaulttranssortpass;
 					pbasmat->mRasterState.SetAlphaTest( EALPHATEST_GREATER, 0.0f );
@@ -354,7 +354,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 							break;
 						}
 						case EPROPTYPE_S32:
-						{	
+						{
 							////////////////////////////////////////////////////////
 							// read artist supplied renderqueue sorting key
 							////////////////////////////////////////////////////////
@@ -377,7 +377,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 						}
 						case EPROPTYPE_SAMPLER:
 						{	GfxMaterialFxParamArtist<lev2::Texture*> *paramf = new GfxMaterialFxParamArtist<lev2::Texture*>;
-							
+
 							AssetPath texname ( paramval );
 							const char* ptexnam = texname.c_str();
 							printf( "texname<%s>\n", ptexnam );
@@ -386,10 +386,10 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 							{
 								ork::lev2::TextureAsset* ptexa = asset::AssetManager<TextureAsset>::Create(texname.c_str());
 								ptex = ptexa ? ptexa->GetTexture() : 0;
-#if defined(_DEBUG)				
+#if defined(_DEBUG)
 								if( ptex )
 								{
-									ptex->SetProperty( "filename", texname.c_str() );
+									ptex->setProperty<std::string>( "filename", texname.c_str() );
 								}
 #endif
 							}
@@ -413,22 +413,22 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					{
 						param->GetRecord().mParameterName = paramname;
 						pmatfx->AddParameter( param );
-					}							
+					}
 				}
 				//pmat->Init( pTARG );
 			}
-			else // material class not supported in XGM 
+			else // material class not supported in XGM
 			{
 				OrkAssert(false);
 			}
-			
+
 			mdl->AddMaterial( pmat );
 
 			for( int idest=int(ETEXDEST_AMBIENT); idest!=int(ETEXDEST_END); idest++ )
 			{	int itexdest = -1;
 				HeaderStream->GetItem( itexdest );
 				const char* texdest = chunkreader.GetString(itexdest);
-				ETextureDest TexDest = CPropType<ETextureDest>::FromString( texdest ); 
+				ETextureDest TexDest = CPropType<ETextureDest>::FromString( texdest );
 				TextureContext & TexCtx = pmat->GetTexture( TexDest );
 				int itexname;
 				HeaderStream->GetItem( itexname );
@@ -439,7 +439,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					//orkprintf( "Loadtexture<%s>\n", texname.c_str());
 					texname.SetUrlBase( Filename.GetUrlBase().c_str() );
 					texname.SetFolder( Filename.GetFolder(ork::file::Path::EPATHTYPE_NATIVE).c_str() );
-				
+
 					ptex = asset::AssetManager<TextureAsset>::Create(texname.c_str())->GetTexture();
 				}
 				pmat->SetTexture( TexDest, ptex );
@@ -504,7 +504,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					if( CFileEnv::DoesFileExist( submesh->mLightMapPath ) )
 					{
 						ork::lev2::TextureAsset* plmtexa = asset::AssetManager<TextureAsset>::Create(submesh->mLightMapPath.c_str());
-						submesh->mLightMap = (plmtexa==0) ? 0 : plmtexa->GetTexture();	
+						submesh->mLightMap = (plmtexa==0) ? 0 : plmtexa->GetTexture();
 					}
 				}
 				//////////////////////////////
@@ -546,7 +546,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					Clus.mBoundingSphere = Sphere( boxmin, boxmax );
 					////////////////////////////////////////////////////////////////////////
 					const char* vbfmt = chunkreader.GetString(ivbformat);
-					EVtxStreamFormat efmt = CPropType<EVtxStreamFormat>::FromString( vbfmt );	
+					EVtxStreamFormat efmt = CPropType<EVtxStreamFormat>::FromString( vbfmt );
 					//printf( "XGMLOAD vbfmt<%s> efmt<%d>\n", vbfmt, int(efmt) );
 					////////////////////////////////////////////////////////////////////////
 					// fix a bug in old files
@@ -641,7 +641,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
                         }
 						PoolString JointNameIndex = FindPooledString( jnamp.c_str() );
 						orklut<PoolString,int>::const_iterator itfind = mdl->mSkeleton.mmJointNameMap.find( JointNameIndex );
-					
+
 						OrkAssert( itfind != mdl->mSkeleton.mmJointNameMap.end() );
 						int iskelindex = (*itfind).second;
 						Clus.mJoints[ ib ] = AddPooledString(jnamp.c_str());
@@ -664,11 +664,11 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 	//rval->mSkeleton.dump();
 	//mdl->dump();
 	OrkHeapCheck();
-	return rval;	
+	return rval;
 }
 
 #else
-XgmModel* XgmModel::Load(const std::string& Filename)	
+XgmModel* XgmModel::Load(const std::string& Filename)
 {
 	if(ork::tool::CColladaModel* colladaModel = ork::tool::CColladaModel::Load(Filename))
 	{
@@ -676,7 +676,7 @@ XgmModel* XgmModel::Load(const std::string& Filename)
 		colladaModel->mXgmModel.msModelName = Filename;
 		return &colladaModel->mXgmModel;
 	}
-	
+
 	return NULL;
 }
 #endif
@@ -685,11 +685,11 @@ XgmModel* XgmModel::Load(const std::string& Filename)
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )	
+bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 {
 	printf( "Writing Xgm<%p> to path<%s>\n", mdl, Filename.c_str() );
 	EndianContext* pendianctx = 0;
-	
+
 	bool bwii = (0!=strstr(Filename.c_str(),"wii"));
 	bool bxb360 = (0!=strstr(Filename.c_str(),"xb360"));
 
@@ -712,16 +712,16 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 	int32_t iVERSIONTAG = 0x01234567;
 	int32_t iVERSION = 1;
 	HeaderStream->AddItem( iVERSIONTAG );
-	HeaderStream->AddItem( iVERSION );	
+	HeaderStream->AddItem( iVERSION );
 	printf( "WriteXgm<%s> VERSION<%d>\n", Filename.c_str(), iVERSION );
 	///////////////////////////////////
-	// write out Joints 
+	// write out Joints
 
 	const lev2::XgmSkeleton& skel = mdl->RefSkel();
 
 	int32_t inumjoints = skel.GetNumJoints();
 
-	
+
 
 	HeaderStream->AddItem( inumjoints );
 
@@ -734,7 +734,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 		int32_t JointParentIndex = skel.GetJointParent(ib);
 		const CMatrix4 & InvRestMatrix = skel.RefInverseBindMatrix(ib);
 		const CMatrix4 & JointMatrix = skel.RefJointMatrix(ib);
-		
+
 		HeaderStream->AddItem( ib  );
 		HeaderStream->AddItem( JointParentIndex  );
 		istring = chunkwriter.GetStringIndex(JointName.c_str());
@@ -837,15 +837,15 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 			HeaderStream->AddItem( istring  );
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
-		// solid material 
+		// solid material
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		else if( pmat->GetClass()->IsSubclassOf( lev2::GfxMaterial3DSolid::GetClassStatic() ) )
 		{
 			const lev2::GfxMaterial3DSolid *pbasmat = rtti::safe_downcast<const lev2::GfxMaterial3DSolid*>( pmat );
 
-			int32_t imode = int(pbasmat->GetColorMode());	
+			int32_t imode = int(pbasmat->GetColorMode());
 			const CVector4& clr = pbasmat->GetColor();
-			
+
 			HeaderStream->AddItem( imode  );
 
 			HeaderStream->AddItem( clr );
@@ -919,7 +919,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 						printf( "SaveXGM paramtype<%d> paramname<%s> valstr<%s>\n", int(etype), paramname.c_str(), valstr.c_str() );
 
 					}
-					
+
 					HeaderStream->AddItem( int32_t(etype) );
 					istring = chunkwriter.GetStringIndex(paramname.c_str());
 					HeaderStream->AddItem( istring );
@@ -929,7 +929,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 
 
 			}
-				
+
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 		// material class not supported for XGM
@@ -948,13 +948,13 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 			const lev2::TextureContext & TexCtx = pmat->GetTexture( edest );
 
 			PropTypeString tstr;
-			CPropType<lev2::ETextureDest>::ToString( edest, tstr ); 
+			CPropType<lev2::ETextureDest>::ToString( edest, tstr );
 			std::string TexDest = tstr.c_str();
-			
+
 			std::string TexName = "None";
 			if( TexCtx.mpTexture )
 			{
-				const std::string & tname = TexCtx.mpTexture->GetProperty( "abspath" ) ;
+				auto tname = TexCtx.mpTexture->getProperty<std::string>( "abspath" ) ;
 				ork::AssetPath pth( tname.c_str() );
 				pth.SetExtension("");
 				pth.SetUrlBase("");
@@ -1042,10 +1042,10 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 				const AABox& clus_box = Clus.mBoundingBox;
 
 				if( VB->GetNumVertices() == 0 ) continue;
-				
+
 				int32_t inumpg = Clus.GetNumPrimGroups();
 				int32_t inumjb = (int) Clus.GetNumJointBindings();
-				
+
 
 				PropTypeString tstr;
 				CPropType<lev2::EVtxStreamFormat>::ToString( VB->GetStreamFormat(), tstr );
@@ -1080,10 +1080,10 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 				DummyTarget.GBI()->UnLockVB( *VB );
 
 				for( int32_t ipg=0; ipg<inumpg; ipg++ )
-				{	
+				{
 					const lev2::XgmPrimGroup & PG = Clus.RefPrimGroup( ipg );
 
-					CPropType<lev2::EPrimitiveType>::ToString( PG.GetPrimType(), tstr );	
+					CPropType<lev2::EPrimitiveType>::ToString( PG.GetPrimType(), tstr );
 					std::string PrimType = tstr.c_str();
 
 					int32_t inumidx = PG.GetNumIndices();
@@ -1108,9 +1108,9 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 						}
 						OrkAssert(iv<VB->GetNumVertices());
 
-						//swapbytes_dynamic<U16>( pidx[ii] ); 
+						//swapbytes_dynamic<U16>( pidx[ii] );
 					}
-					DummyTarget.GBI()->UnLockIB( *PG.GetIndexBuffer() ); 
+					DummyTarget.GBI()->UnLockIB( *PG.GetIndexBuffer() );
 					//////////////////////////////////////////////////
 
 					ModelDataStream->Write( (const unsigned char *) pidx, inumidx*sizeof(U16) );
@@ -1140,7 +1140,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 		delete pendianctx;
 	}
 
-	return true;	
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1150,4 +1150,3 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 }}
 
 template class ork::chunkfile::Reader<ork::lev2::ModelLoadAllocator>;
-

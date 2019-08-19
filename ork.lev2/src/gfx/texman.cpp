@@ -44,13 +44,6 @@ void Texture::RegisterLoaders( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Texture::SetProperty( const std::string & texname, const std::string &value )
-{
-	mTextureProperties[ texname ] = value;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 Texture *Texture::LoadUnManaged( const AssetPath& fname )
 {
 	Texture* ptex = new Texture;
@@ -141,5 +134,5 @@ void Texture::SetTexel( const CColor4 & color, const CVector2 & ST )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} 
+}
 }

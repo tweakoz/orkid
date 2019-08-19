@@ -5,8 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-# if ! defined(__APPLE__)
-
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/scene.h>
@@ -15,71 +13,130 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/drawable.h>
 #include <pkg/ent/Compositor.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/glheaders.h> // todo abstract somehow ?
+
+# if ! defined(__APPLE__)
 #include <openvr/openvr.h>
+#define ENABLE_VR
+#endif
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::VrCompositingNode, "VrCompositingNode");
+
+using namespace ork::lev2;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::Describe()
-{
-	ork::reflect::RegisterProperty( "Group",
-									& VrCompositingNode::GetGroup,
-									& VrCompositingNode::SetGroup );
-	ork::reflect::AnnotatePropertyForEditor<VrCompositingNode>("Group", "editor.factorylistbase", "CompositingGroup" );
+void VrCompositingNode::Describe(){}
+///////////////////////////////////////////////////////////////////////////
 
-}
+constexpr int WIDTH = 1024;
+constexpr int HEIGHT = 1024;
+constexpr int NUMSAMPLES = 4;
+
+struct VrFrameTechnique final : public FrameTechniqueBase
+{
+    VrFrameTechnique()
+      : FrameTechniqueBase(WIDTH,HEIGHT)
+      , _rtg_left(nullptr)
+      , _rtg_right(nullptr)
+    {
+
+    }
+
+
+    void DoInit( GfxTarget* pTARG ) final {
+        if(nullptr==_rtg_left){
+            _rtg_left = new RtGroup( pTARG, WIDTH, HEIGHT, NUMSAMPLES );
+            _rtg_right = new RtGroup( pTARG, WIDTH, HEIGHT, NUMSAMPLES );
+
+            auto lbuf = new RtBuffer( _rtg_left,
+                                      lev2::ETGTTYPE_MRT0,
+                                      lev2::EBUFFMT_RGBA32,
+                                      WIDTH, HEIGHT );
+            auto rbuf = new RtBuffer( _rtg_right,
+                                      lev2::ETGTTYPE_MRT0,
+                                      lev2::EBUFFMT_RGBA32,
+                                      WIDTH, HEIGHT );
+
+            _rtg_left->SetMrt( 0, lbuf );
+            _rtg_right->SetMrt( 0, rbuf );
+
+            _effect.PostInit( pTARG, "orkshader://framefx", "frameeffect_standard" );
+
+        }
+    }
+    void Render( FrameRenderer& renderer ) final {
+      RenderContextFrameData&	FrameData = renderer.GetFrameData();
+    	GfxTarget *pTARG = FrameData.GetTarget();
+    	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
+    	FrameData.SetDstRect( tgt_rect );
+  		renderer.Render();
+    }
+
+    RtGroup* _rtg_left;
+    RtGroup*	_rtg_right;
+    BuiltinFrameEffectMaterial _effect;
+
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 struct VRSYSTEMIMPL {
+  ///////////////////////////////////////
   VRSYSTEMIMPL()
-    : _hmd(nullptr){
+    : _frametek(nullptr)
+    , _camname(AddPooledString("Camera"))
+    , _layers(AddPooledString("All")) {
 
-    vr::EVRInitError error = vr::VRInitError_None;
-    _hmd = vr::VR_Init( &error, vr::VRApplication_Scene );
-    assert(error==vr::VRInitError_None);
-
+    #if defined(ENABLE_VR)
+      vr::EVRInitError error = vr::VRInitError_None;
+      _hmd = vr::VR_Init( &error, vr::VRApplication_Scene );
+      assert(error==vr::VRInitError_None);
+    #endif
 
   }
+  ///////////////////////////////////////
   ~VRSYSTEMIMPL(){
-    if( _hmd ){
-      vr::VR_Shutdown();
-    }
+
+    # if defined(ENABLE_VR)
+      if( _hmd )
+        vr::VR_Shutdown();
+    #endif
+
+    if( _frametek ) delete _frametek;
   }
-  vr::IVRSystem* _hmd;
+  ///////////////////////////////////////
+  void init(lev2::GfxTarget* pTARG){
+    _material.Init( pTARG );
+
+    _frametek = new VrFrameTechnique();
+    _frametek->Init( pTARG );
+  }
+  ///////////////////////////////////////
+  PoolString _camname, _layers;
+  CompositingMaterial _material;
+	VrFrameTechnique*	_frametek;
+  # if defined(ENABLE_VR)
+    vr::IVRSystem* _hmd;
+  #endif
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode()
-	: mFTEK(nullptr)
-	, mGroup(nullptr)
 {
   _impl = std::make_shared<VRSYSTEMIMPL>();
 }
 ///////////////////////////////////////////////////////////////////////////////
-VrCompositingNode::~VrCompositingNode()
-{
-	if( mFTEK ) delete mFTEK;
-}
-///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::GetGroup(ork::rtti::ICastable*& val) const
-{
-	CompositingGroup* nonconst = const_cast< CompositingGroup* >( mGroup );
-	val = nonconst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::SetGroup( ork::rtti::ICastable* const & val)
-{
-	ork::rtti::ICastable* ptr = val;
-	mGroup = ( (ptr==0) ? 0 : rtti::safe_downcast<CompositingGroup*>(ptr) );
+VrCompositingNode::~VrCompositingNode(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // virtual
 {
-	if( nullptr == mFTEK )
-	{
-		mCompositingMaterial.Init( pTARG );
+  auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
 
-		mFTEK = new lev2::BuiltinFrameTechniques( iW,iH );
-		mFTEK->Init( pTARG );
+	if( nullptr == vrimpl->_frametek )
+	{
+    vrimpl->init(pTARG);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,6 +147,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
     //////////////////////////////////////////////
     // process OpenVR events
     //////////////////////////////////////////////
+    # if defined(ENABLE_VR)
 
     vr::VREvent_t event;
   	while( vrimpl->_hmd->PollNextEvent( &event, sizeof( event ) ) )
@@ -104,6 +162,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
              break;
 	     }
   	}
+    #endif
 
     //////////////////////////////////////////////
     //vr::VRActiveActionSet_t actionSet = { 0 };
@@ -111,35 +170,77 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 	  //vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
     //////////////////////////////////////////////
 
-  	const ent::CompositingGroup* pCG = mGroup;
+  	//const ent::CompositingGroup* pCG = _group;
   	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
   	lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
   	orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
 
   	ent::CompositingPassData node;
-  	node.mbDrawSource = (pCG != 0);
+  	node.mbDrawSource = true;
 
-  	if( mFTEK ) {
-    		mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
+  	if(vrimpl->_frametek ) {
+
+        /////////////////////////////////////////////////////////////////////////////
+        // main view
+        /////////////////////////////////////////////////////////////////////////////
+
     		anyp PassData;
     		PassData.Set<const char*>( "All" );
     		the_renderer.GetFrameData().SetUserProperty( "pass", PassData );
-    		node.mpGroup = pCG;
-    		node.mpFrameTek = mFTEK;
-    		node.mpCameraName = (pCG!=0) ? & pCG->GetCameraName() : 0;
-    		node.mpLayerName = (pCG!=0) ? & pCG->GetLayers() : 0;
+    		//node.mpGroup = pCG;
+    		node.mpFrameTek = vrimpl->_frametek;
+    		node.mpCameraName = & vrimpl->_camname;
+    		node.mpLayerName = & vrimpl->_layers;
     		cgSTACK.push(node);
-    		mFTEK->Render( the_renderer );
+    		vrimpl->_frametek->Render( the_renderer );
     		cgSTACK.pop();
+
+        /////////////////////////////////////////////////////////////////////////////
+        // VR compositor
+        /////////////////////////////////////////////////////////////////////////////
+
+        auto bufferL = vrimpl->_frametek->_rtg_left->GetMrt(0);
+        assert(bufferL!=nullptr);
+        auto bufferR = vrimpl->_frametek->_rtg_right->GetMrt(0);
+        assert(bufferR!=nullptr);
+
+        auto ptexL = bufferL->GetTexture();
+        auto ptexR = bufferR->GetTexture();
+        if( ptexL && ptexR ){
+
+            auto texobjL = ptexL->getProperty<GLuint>("gltexobj");
+            auto texobjR = ptexR->getProperty<GLuint>("gltexobj");
+
+            printf( "vrcomposite texl<%p:%u>\n", ptexL, texobjL );
+            printf( "vrcomposite texl<%p:%u>\n", ptexR, texobjR );
+            # if defined(ENABLE_VR)
+
+            vr::Texture_t leftEyeTexture = {
+                (void*)(uintptr_t)texobjL,
+                vr::TextureType_OpenGL,
+                vr::ColorSpace_Gamma
+            };
+            vr::Texture_t rightEyeTexture = {
+                (void*)(uintptr_t)bufferR,
+                vr::TextureType_OpenGL,
+                vr::ColorSpace_Gamma
+            };
+
+            GLuint erl = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
+            //assert(erl==GL_NO_ERROR);
+            GLuint err = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
+            //assert(err==GL_NO_ERROR);
+            #endif
+
+        }
+        /////////////////////////////////////////////////////////////////////////////
+
   	}
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::RtGroup* VrCompositingNode::GetOutput() const
 {
-	lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;
-	return pRT;
+	return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} //namespace ork { namespace ent {
-
-#endif // not apple

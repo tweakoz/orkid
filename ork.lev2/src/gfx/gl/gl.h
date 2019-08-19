@@ -11,30 +11,8 @@
 
 #pragma once
 
-/////////////////////////////
-#if defined( _WIN32 )
-/////////////////////////////
-  #define GLEW_STATIC
-  #include <GLEW/glew.h>
-  //#include <GLEW/glu.h>
-  #include <GLEW/wglew.h>
-/////////////////////////////
-#elif defined( ORK_OSX )
-/////////////////////////////
-  #include <ork/kernel/objc.h>
-    #define GL3_PROTOTYPES 1
-    #include <OpenGL/gl3.h>
-    #include <OpenGL/glext.h>
-/////////////////////////////
-#elif defined( IX )
-/////////////////////////////
-  	#define GL_GLEXT_PROTOTYPES
-    #include "glcorearb.h"
-    #include <GL/glu.h>
-/////////////////////////////
-#endif
-/////////////////////////////
-
+///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/glheaders.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include "glfx/glslfxi.h"
 #define GlFxInterfaceType GlslFxInterface
@@ -133,7 +111,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class GlGeometryBufferInterface: public GeometryBufferInterface
-{	
+{
 
 public:
 
@@ -152,7 +130,7 @@ private:
 	void ReleaseVB( VertexBufferBase& VBuf ) final;
 
 	//
-	
+
 	void*LockIB ( IndexBufferBase& VBuf, int ivbase, int icount ) final;
 	void UnLockIB ( IndexBufferBase& VBuf ) final;
 
@@ -171,7 +149,7 @@ private:
 	void DrawIndexedPrimitive( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
 	void DrawPrimitiveEML( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
 	void DrawIndexedPrimitiveEML( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 ) final;
-	
+
 	GfxTargetGL& mTargetGL;
 
 	uint32_t mLastComponentMask;
@@ -246,12 +224,12 @@ class VdsTextureAnimation : public TextureAnimationBase
 {
 public:
     VdsTextureAnimation(const AssetPath& pth);
-    ~VdsTextureAnimation();  // virtual 
-    void UpdateTexture( TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim ); // virtual 
-    float GetLengthOfTime( void ) const; // virtual 
+    ~VdsTextureAnimation();  // virtual
+    void UpdateTexture( TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim ); // virtual
+    float GetLengthOfTime( void ) const; // virtual
 
     void* ReadFromFrameCache( int iframe, int isize );
-    
+
     int miW, miH;
     int miNumFrames;
     CFile* mpFile;
@@ -260,7 +238,7 @@ public:
     int miFrameBaseSize;
     int miFrameBaseOffset;
     int miFileLength;
-    
+
     std::map<int,int> mFrameCache;
     static const int kframecachesize = 60;
     void* mFrameBuffers[kframecachesize];
@@ -273,9 +251,9 @@ class QuartzComposerTextureAnimation : public TextureAnimationBase
 {
 public:
 	QuartzComposerTextureAnimation(Objc::Object qcr);
-	void UpdateTexture( TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim ); // virtual 
-	float GetLengthOfTime( void ) const; // virtual 
-	~QuartzComposerTextureAnimation();  // virtual 
+	void UpdateTexture( TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim ); // virtual
+	float GetLengthOfTime( void ) const; // virtual
+	~QuartzComposerTextureAnimation();  // virtual
 private:
 //	float			mfQtzTime;
 	Objc::Object	mQCRenderer;
@@ -291,15 +269,15 @@ struct GLTextureObject
 	GLenum			mTarget;
 
 	GLTextureObject() : mObject(0), mFbo(0), mDbo(0), mTarget(GL_NONE) {} //, mfQtzTime(0.0f) {}
-	
+
 //	void UpdateQtzFBO();
-	
+
 };
 
 class PboSet
 {
 public:
-	
+
 	PboSet( int isize );
 	~PboSet();
 	GLuint Get();
@@ -330,18 +308,18 @@ public:
 	bool LoadTexture( const AssetPath& fname, Texture *ptex ) override;
 	void SaveTexture( const ork::AssetPath& fname, Texture *ptex )  override;
 	void ApplySamplingMode( Texture *ptex ) override;
-	void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai )  override; 
+	void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai )  override;
 
 
 	void LoadDDSTextureMainThreadPart(const GlTexLoadReq& req);
 	bool LoadDDSTexture( const AssetPath& fname, Texture *ptex );
 	bool LoadVDSTexture( const AssetPath& fname, Texture *ptex );
 	bool LoadQTZTexture( const AssetPath& fname, Texture *ptex );
-	
+
 	GLuint GetPBO( int isize );
-	
+
 	GlTextureInterface( GfxTargetGL& tgt );
-	
+
 private:
 
 	std::map<int,PboSet*> mPBOSets;
@@ -368,7 +346,7 @@ class GfxTargetGL : public GfxTarget
 	void FxInit();
 
 	///////////////////////////////////////////////////////////////////////
-	
+
 	void SetSize( int ix, int iy, int iw, int ih ) final;
 	void DoBeginFrame( void ) final {}
 	void DoEndFrame( void ) final {}
@@ -421,10 +399,10 @@ class GfxTargetGL : public GfxTarget
 
 protected:
 
-    void TakeThreadOwnership() final ;  
+    void TakeThreadOwnership() final ;
     bool SetDisplayMode(DisplayMode *mode) final;
     void InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase ) final ;    // make a window
-    void* DoBeginLoad() final; 
+    void* DoBeginLoad() final;
     void DoEndLoad(void*ploadtok) final; // virtual
 
 	//////////////////////////////////////////////
@@ -459,7 +437,7 @@ protected:
 	std::string							mVtxProgString_NoXFormC;
 	static bool							gbUseVBO;
 	static bool							gbUseIBO;
-	
+
 	static GLenum						geFBOSupport;
 	static const GLenum					kNoFBOSupport = 0;
 	static const GLuint					kNullFBO = 0xffffffff;
