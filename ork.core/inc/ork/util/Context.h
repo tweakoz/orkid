@@ -3,18 +3,18 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
-#ifndef _ORK_UTIL_CONTEXT_H_
-#define _ORK_UTIL_CONTEXT_H_
+#pragma once
 
 #include <ork/orkconfig.h>
+#include <stack>
 
 namespace ork { namespace util {
 
 /// Contexts are used for passing data across the stack, rather than through it.
-/// 
+///
 /// Any instance of a class which subclasses Context becomes globally accessable
 /// through its static GetContext() method. (Think local scope, as opposed to lexical scope)
 ///
@@ -28,10 +28,11 @@ template <typename T>
 class GlobalStack
 {
     public:
-    static orkstack<T> gStack;
-    static T& Top() { return gStack.top(); }
-    static void Push( T v ) { gStack.push(v); }
-    static void Pop() { gStack.pop(); }
+    static std::stack<T> gStack;
+    static T& Top();
+    static void Push( T v );
+    static void Pop();
+
 };
 
 template<typename T>
@@ -67,5 +68,3 @@ private:
 };
 
 } } // namespace ork::util
-
-#endif

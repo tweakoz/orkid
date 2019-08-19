@@ -169,7 +169,7 @@ bool CCamera::CheckMotion()
 
 	return mbInMotion;
 }
-	
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void CCamera::CommonPostSetup( void )
@@ -213,7 +213,7 @@ CReal CCamera::ViewLengthToWorldLength( const CVector4 &pos, CReal ViewLength )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CManipHandler::CManipHandler() //const CCamera& pcam) 
+CManipHandler::CManipHandler() //const CCamera& pcam)
 	: Origin( CReal(0.0f), CReal(0.0f), CReal(0.0f) )
 //	, mParentCamera(pcam)
 {
@@ -223,11 +223,11 @@ void CManipHandler::Init( const ork::CVector2& posubp, const CMatrix4 & RCurIMVP
 {
 	IMVPMat = RCurIMVPMat;
 	Quat = RCurQuat;
-	
+
 	///////////////////////////////////////
 
 	mFrustum.Set( RCurIMVPMat );
- 
+
 	CamXNormal = mFrustum.mXNormal;
 	CamYNormal = mFrustum.mYNormal;
 	CamZNormal = mFrustum.mZNormal;
@@ -236,7 +236,7 @@ void CManipHandler::Init( const ork::CVector2& posubp, const CMatrix4 & RCurIMVP
 
 	IntersectXZ( posubp, XZIntersectBase, XZAngleBase );
 	IntersectYZ( posubp, YZIntersectBase, YZAngleBase );
-	IntersectXY( posubp, XYIntersectBase, XYAngleBase );    
+	IntersectXY( posubp, XYIntersectBase, XYAngleBase );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,7 @@ bool CManipHandler::IntersectXZ( const ork::CVector2& posubp, CVector3 &Intersec
 {
 	CVector3 RayZNormal;
 	GenerateIntersectionRays( posubp, RayZNormal, RayNear );
-	YNormal = CMatrix4::Identity.GetYNormal();
+	YNormal = fmtx4::Identity.GetYNormal();
 	XZPlane.CalcFromNormalAndOrigin( YNormal, Origin );
 	float isect_dist;
 	Ray3 ray;
@@ -330,7 +330,7 @@ typedef float depthreal;
 inline float DepthSqrt( float in ) { return sqrtf(in); }
 #endif
 
-void CManipHandler::GenerateIntersectionRays( const ork::CVector2& posubp, CVector3& RayZNormal, CVector3& RayNear )  
+void CManipHandler::GenerateIntersectionRays( const ork::CVector2& posubp, CVector3& RayZNormal, CVector3& RayNear )
 {
 	CVector3 RayFar;
 	///////////////////////////////////////////
