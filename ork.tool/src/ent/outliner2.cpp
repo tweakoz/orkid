@@ -115,7 +115,7 @@ void Outliner2Model::UpdateModel()
 	printf( "Outliner2Model<%p>::SlotSceneTopoChanged\n", this );
 
 	mItems.clear();
-	
+
 	auto scene_data = mEditor.GetSceneData();
 
 	if( scene_data )
@@ -223,7 +223,7 @@ void Outliner2Model::SlotObjectDeSelected( ork::Object* pobj )
 		mSelected.erase(it);
 	}
 	UpdateModel();
-}	
+}
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2Model::SlotClearSelection()
 {
@@ -267,7 +267,7 @@ void Outliner2View::SlotObjectSelected( ork::Object* pobj )
 void Outliner2View::SlotObjectDeSelected( ork::Object* pobj )
 {
 
-}	
+}
 
 void Outliner2View::SlotModelChanged()
 {
@@ -283,7 +283,7 @@ void Outliner2View::DoInit( lev2::GfxTarget* pt )
 {
 	auto par = pt->FBI()->GetThisBuffer();
 	mpPickBuffer = new lev2::CPickBuffer<Outliner2View>(
-		par, 
+		par,
 		this,
 		0, 0, miW, miH,
 		lev2::PickBufferBase::EPICK_FACE_VTX );
@@ -315,7 +315,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 	SceneEditorBase& ed = mOutlinerModel.Editor();
 	auto scene_data = ed.GetSceneData();
 	bool has_foc = HasMouseFocus();
-	bool is_pick = fbi->IsPickState(); 
+	bool is_pick = fbi->IsPickState();
 
 	//////////////////////////////////////////////////
 	// Compute Scoll Transform
@@ -332,7 +332,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 
 	{
 		fbi->Clear( CVector4::Blue(), 1.0f );
-	
+
 		rsi->BindRasterState( defstate );
 		fxi->InvalidateStateBlock();
 
@@ -405,7 +405,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 				{	const std::string& name = item.mName;
 					auto pobj = item.mObject;
 					int indent = item.mIndent;
-			        
+
 					lev2::CFontMan::DrawText( tgt, (indent+1)*16, iy, name.c_str() );
 			        iy += kitemh();
 					alt = ! alt;
@@ -449,25 +449,17 @@ void Outliner2View::SetNameOfSelectedItem()
 	dialog.setGeometry( g.GetX(), g.GetY(), miW, kitemh() );
 	dialog.clear();
 	dialog.mTextEdit.setGeometry( 0, 0, miW, kitemh() );
-	dialog.mTextEdit.SetText( item.mName.c_str() );
+	dialog.mTextEdit._setText( item.mName.c_str() );
 
-	int iv = dialog.exec();
-
-	QString res("");
-
-	if( 0 == iv && dialog.WasChanged() )
-	{
-		auto result = dialog.GetResult();
+	if( 0 == dialog.exec() && dialog.wasChanged() ){
+		auto result = dialog.getResult();
 		const char* rescstr = result.toStdString().c_str();
-
 		auto& ed = mOutlinerModel.Editor();
 		auto& sm = ed.SelectionManager();
-
-
+		printf( "rescstr<%s>\n", rescstr );
 		ed.EditorRenameSceneObject((ent::SceneObject*)item.mObject,rescstr);
 		sm.ClearSelection();
 		sm.AddObjectToSelection((ork::Object*)item.mObject);
-
 	}
 
 }
@@ -501,10 +493,10 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 		{
 			int ikeyc = filtev.miKeyCode;
 			printf( "ikeyc<%d>\n", ikeyc );
-			
+
 			switch( ikeyc )
 			{
-				case 'a': 
+				case 'a':
 				{
 					if( false==mOutlinerModel.AreArchsEnabled() )
 						mOutlinerModel.ToggleArchs();
@@ -523,7 +515,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					SetDirty();
 					break;
 				}
-				case 'e': 
+				case 'e':
 				{
 					mOutlinerModel.ToggleEnts();
 					break;
@@ -576,10 +568,10 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 
 					break;
 				}
-				case '\n': 
-				{	
+				case '\n':
+				{
 					SetNameOfSelectedItem();
-					break; 
+					break;
 				}
 				case 16777219: // delete
 				{
@@ -663,9 +655,9 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 template class ork::lev2::CPickBuffer<ork::ent::Outliner2View>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-template<> 
+template<>
 void CPickBuffer<ork::ent::Outliner2View>::Draw( lev2::GetPixelContext& ctx )
-{	
+{
     mPickIds.clear();
 
     auto tgt = GetContext();
