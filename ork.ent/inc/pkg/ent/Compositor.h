@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -113,7 +113,7 @@ public:
 	const lev2::FxShaderTechnique*	hTekCsolo;
 
 	const lev2::FxShaderTechnique*	hTekCurrent;
-	
+
 	const lev2::FxShaderParam*		hMapA;
 	const lev2::FxShaderParam*		hMapB;
 	const lev2::FxShaderParam*		hLevelA;
@@ -179,7 +179,7 @@ public:
 	float							mfLevelB;
 	float							mfLevelC;
 	CompositingMaterial				mCompositingMaterial;
-	
+
 private:
 
 	void Init( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
@@ -209,7 +209,7 @@ class CompositingBuffer : public ork::Object
 	int							miWidth;
 	int							miHeight;
 	ork::lev2::EBufferFormat	meBufferFormat;
-	
+
 	CompositingBuffer();
 	~CompositingBuffer();
 };
@@ -232,6 +232,28 @@ private:
 	CompositingGroup*				mGroup;
 	lev2::BuiltinFrameTechniques*	mFTEK;
 };
+///////////////////////////////////////////////////////////////////////////////
+# if ! defined(__APPLE__)
+class VrCompositingNode : public CompositingNode
+{
+	RttiDeclareConcrete(VrCompositingNode, CompositingNode);
+public:
+	VrCompositingNode();
+	~VrCompositingNode();
+private:
+	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
+	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
+
+	void GetGroup(ork::rtti::ICastable*& val) const;
+	void SetGroup( ork::rtti::ICastable* const & val);
+	lev2::RtGroup* GetOutput() const override;
+
+	CompositingMaterial				mCompositingMaterial;
+	CompositingGroup*				mGroup;
+	lev2::BuiltinFrameTechniques*	mFTEK;
+	svar256_t _impl;
+};
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 class SeriesCompositingNode : public CompositingNode
 {
@@ -338,7 +360,7 @@ private:
 	CompositingNode*		mpRootNode;
 	CompositingMaterial		mCompositingMaterial;
 
-	
+
 };
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -348,7 +370,7 @@ struct CompositingContext
 	int									miHeight;
 	lev2::GfxMaterial3DSolid			mUtilMaterial;
 	CompositingTechnique*				mCTEK;
-	
+
 	CompositingContext();
 	~CompositingContext();
 	void Init( lev2::GfxTarget* pTARG );
@@ -369,7 +391,7 @@ public:
 	///////////////////////////////////////////////////////
 	CompositingContext& GetCompositingContext() const { return  mContext; }
 private:
-    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final; 
+    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
 	mutable CompositingContext mContext;
 };
 
@@ -382,8 +404,8 @@ struct CompositingPassData
 	bool							mbDrawSource;
 	const PoolString*				mpCameraName;
 	const PoolString*				mpLayerName;
-	
-	CompositingPassData() 
+
+	CompositingPassData()
 		: mpGroup(0)
 		, mpFrameTek(0)
 		, mbDrawSource(true)
@@ -399,7 +421,7 @@ struct CMCIdrawdata
 {
 	lev2::FrameRenderer&		mFrameRenderer;
 	orkstack<CompositingPassData>	mCompositingGroupStack;
-		
+
 	CMCIdrawdata( lev2::FrameRenderer& renderer ) : mFrameRenderer(renderer) {}
 };
 
@@ -413,12 +435,12 @@ public:
     ~CompositingManagerComponentInst();
 
 	CompositingComponentInst* GetCompositingComponentInst( int icidx ) const;
-	
+
 	void Draw(CMCIdrawdata& drawdata);
 	void ComposeToScreen( lev2::GfxTarget* pT );
-	
+
 	const CompositingSystemData& GetCMCD() const { return	mCMCD; }
-	
+
 	void AddCCI( CompositingComponentInst* cci );
     void RemoveCCI( CompositingComponentInst* cci );
 
@@ -520,7 +542,7 @@ public:
 	CompositingScene();
 
 	const orklut<PoolString,ork::Object*>& GetItems() const { return mItems; }
-	
+
 private:
 
 	orklut<PoolString,ork::Object*> mItems;
@@ -573,7 +595,7 @@ private:
 struct CompositingMorphable : public dataflow::morphable
 {
 	void WriteMorphTarget( dataflow::MorphKey name, float flerpval ); // virtual
-	void RecallMorphTarget( dataflow::MorphKey name ); // virtual 
+	void RecallMorphTarget( dataflow::MorphKey name ); // virtual
 	void Morph1D( const dataflow::morph_event* pevent ); // virtual
 };
 
@@ -587,18 +609,18 @@ public:
 
 	CompositingComponentInst( const CompositingComponentData &data, ork::ent::Entity *pent );
 	~CompositingComponentInst();
-	
+
 	const CompositingComponentData& GetCompositingData() const { return mCompositingData; }
 
 	const CompositingContext& GetCCtx() const;
 	CompositingContext& GetCCtx();
 
 	const CompositingSceneItem* GetCompositingItem(int isceneidx,int itemidx) const;
-	
+
 	const CompositingGroup* GetGroup(const PoolString& grpname) const;
-	
+
 private:
-	
+
 	const CompositingComponentData& mCompositingData;
 	bool DoLink(ork::ent::SceneInst *psi) final;
 	void DoUnLink(SceneInst *psi) final;
@@ -606,13 +628,13 @@ private:
 
 	float	mfTimeAccum;
 	float	mfLastTime;
-	
+
 	CompositingManagerComponentInst*	mpCMCI;
 	CompositingMorphable				mMorphable;
 
 	int miActiveSceneItem;
 	bool DoNotify(const ork::event::Event *event) final;
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

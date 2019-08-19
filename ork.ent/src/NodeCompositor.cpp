@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
@@ -85,7 +85,7 @@ void NodeCompositingTechnique::Init( lev2::GfxTarget* pTARG, int w, int h )
 	if( mpRootNode )
 	{
 		mpRootNode->Init(pTARG,w,h);
-		mCompositingMaterial.Init( pTARG );		
+		mCompositingMaterial.Init( pTARG );
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -119,7 +119,7 @@ void NodeCompositingTechnique::CompositeToScreen( ork::lev2::GfxTarget* pT, Comp
 			mCompositingMaterial.SetLevelB( CVector4(0.0f,0.0f,0.0f,0.0f) );
 			mCompositingMaterial.SetLevelC( CVector4(0.0f,0.0f,0.0f,0.0f) );
 			mCompositingMaterial.SetTechnique( "Asolo" );
-			buf->RenderMatOrthoQuad(	vprect, quadrect, 
+			buf->RenderMatOrthoQuad(	vprect, quadrect,
 										& mCompositingMaterial,
 										0.0f, 0.0f, 1.0f, 1.0f,
 										0, CVector4::White() );
@@ -206,10 +206,10 @@ void PassThroughCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingCom
 	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
 	lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
 	orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
-	
+
 	ent::CompositingPassData node;
-	node.mbDrawSource = (pCG != 0);		
-	
+	node.mbDrawSource = (pCG != 0);
+
 	if( mFTEK )
 	{
 		mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
@@ -300,14 +300,14 @@ void SeriesCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponen
 	auto gbi = target->GBI();
 	int iw = target->GetW();
 	int ih = target->GetH();
-	
+
 	if( mNode )
 		mNode->Render(drawdata,pCCI);
 
 	SRect vprect(0,0,iw-1,ih-1);
 	SRect quadrect(0,ih-1,iw-1,0);
 	if( mOutput && mNode )
-	{	
+	{
 		fbi->SetAutoClear(false);
 		fbi->PushRtGroup( mOutput );
 		gbi->BeginFrame( );
@@ -316,16 +316,16 @@ void SeriesCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponen
 
 		mCompositingMaterial.SetTextureA( ptex );
 		mCompositingMaterial.SetTechnique( "Asolo" );
-		
+
 		fbi->GetThisBuffer()->RenderMatOrthoQuad( vprect, quadrect, & mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, CVector4::White() );
 
 		gbi->EndFrame( );
 		fbi->PopRtGroup();
 	}
 
-	
+
 	/*ent::CompositingPassData node;
-	node.mbDrawSource = (pCG != 0);		
+	node.mbDrawSource = (pCG != 0);
 	mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
 	anyp PassData;
 	PassData.Set<const char*>( "All" );
@@ -402,7 +402,7 @@ void InsertCompositingNode::Describe()
 			{
 				std::string pstr("nodins://");
 				pstr += item->mDynTexPath.c_str();
-				
+
 				printf( "LOADDYNPTEX pstr<%s> anam<%s>\n", pstr.c_str(), asset_name );
 				if( pstr==asset_name )
 				{
@@ -487,14 +487,14 @@ void InsertCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponen
 	auto gbi = target->GBI();
 	int iw = target->GetW();
 	int ih = target->GetH();
-	
+
 	if( mNode )
 		mNode->Render(drawdata,pCCI);
 
 	SRect vprect(0,0,iw-1,ih-1);
 	SRect quadrect(0,ih-1,iw-1,0);
 	if( mOutput && mNode )
-	{	
+	{
 		lev2::Texture* send_texture = mNode->GetOutput()->GetMrt(0)->GetTexture();
 
 		/////////////////////////////////////////////
@@ -515,16 +515,16 @@ void InsertCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponen
 
 		mCompositingMaterial.SetTextureA( ptex );
 		mCompositingMaterial.SetTechnique( "Asolo" );
-		
+
 		fbi->GetThisBuffer()->RenderMatOrthoQuad( vprect, quadrect, & mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, CVector4::White() );
 
 		gbi->EndFrame( );
 		fbi->PopRtGroup();
 	}
 
-	
+
 	/*ent::CompositingPassData node;
-	node.mbDrawSource = (pCG != 0);		
+	node.mbDrawSource = (pCG != 0);
 	mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
 	anyp PassData;
 	PassData.Set<const char*>( "All" );
@@ -657,7 +657,7 @@ void Op2CompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIn
 	SRect vprect(0,0,iw-1,ih-1);
 	SRect quadrect(0,ih-1,iw-1,0);
 	if( mOutput && mSubA && mSubB )
-	{	
+	{
 		lev2::Texture* ptexa = mSubA->GetOutput()->GetMrt(0)->GetTexture();
 		lev2::Texture* ptexb = mSubB->GetOutput()->GetMrt(0)->GetTexture();
 		mCompositingMaterial.SetTextureA( ptexa );

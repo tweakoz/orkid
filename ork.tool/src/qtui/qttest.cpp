@@ -302,6 +302,11 @@ OrkQtApp* gpQtApplication = nullptr;
 
 int BootQtThreadImpl(void* arg_opaq )
 {
+
+  #if ! defined(__APPLE__)
+    setenv("QT_QPA_PLATFORMTHEME","gtk2",1); // qt5 file dialog crashes otherwise...
+  #endif
+
 	InputArgs *args = (InputArgs*) arg_opaq;
 
 	Opq& mainthreadopq = ork::MainThreadOpQ();

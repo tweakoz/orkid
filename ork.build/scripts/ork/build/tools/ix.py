@@ -36,12 +36,14 @@ def DefaultBuildEnv( env, prj ):
 		DEFS += "LINUX ORK_LINUX"
 	CCFLG = ' '
 	CXXFLG = ' '
-	LIBS = "m rt pthread "
+	LIBS = "m rt pthread openvr_api"
 	LIBPATH = ' . '
 	if USE_DEBUG_CXX:
 		LIBPATH += ' /usr/lib/x86_64-linux-gnu/debug '
 	else:
 		LIBPATH += ' /usr/lib/x86_64-linux-gnu '
+
+	LIBPATH += " /usr/local/lib "
 
 	LINK = ''
 	##
@@ -54,7 +56,7 @@ def DefaultBuildEnv( env, prj ):
 	env.Replace( CPPDEFINES = string.split(DEFS) )
 	env.Replace( CCFLAGS = string.split(CCFLG) )
 	env.Replace( CXXFLAGS = string.split(CXXFLG) )
-	env.Replace( CPPPATH  = [ '.' ] )
+	env.Replace( CPPPATH  = [ '.', "/usr/local/include" ] )
 	env.Replace( LINKFLAGS=string.split(LINK) )
 	env.Replace( LIBS=string.split(LIBS) )
 	env.Replace( LIBPATH=string.split(LIBPATH) )

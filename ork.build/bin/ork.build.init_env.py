@@ -80,6 +80,7 @@ import ork.build.localopts as localopts
 
 set_env("QT5DIR",localopts.QT5DIR())
 prepend_env("PATH",localopts.QT5DIR()+"/bin")
+append_env("LD_LIBRARY_PATH","/usr/local/lib")
 
 
 ###########################################
