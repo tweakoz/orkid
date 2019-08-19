@@ -275,8 +275,8 @@ public:
 
 	FrameTechniqueBase( int iW, int iH );
 	virtual ~FrameTechniqueBase(){}
-	
-	virtual void Render( FrameRenderer& ContextData ) = 0;
+
+	virtual void Render( FrameRenderer& ContextData ) {}
 	virtual RtGroup* GetFinalRenderTarget() const { return mpMrtFinal; }
 	void Init(GfxTarget* targ);
 

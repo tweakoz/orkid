@@ -118,9 +118,9 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 	}
 	bool bcamhandled = false;
 
-	if( mActiveCamera )
+	if( _editorCamera )
 	{
-		bcamhandled = mActiveCamera->UIEventHandler( EV );
+		bcamhandled = _editorCamera->UIEventHandler( EV );
 		if( bcamhandled )
 		{	ret.SetHandled(this);
 			return ret;
@@ -154,9 +154,9 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 					{
 						// move editor camera to selected locator
 						CMatrix4 matrix;
-						if(mEditor.EditorGetEntityLocation(matrix) && mActiveCamera )
+						if(mEditor.EditorGetEntityLocation(matrix) && _editorCamera )
 						{
-							mActiveCamera->SetFromWorldSpaceMatrix(matrix);
+							_editorCamera->SetFromWorldSpaceMatrix(matrix);
 						}
 					}
 					break;
@@ -286,9 +286,9 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 
 							auto pos = mtx.GetTranslation();
 
-							if( mActiveCamera )
+							if( _editorCamera )
 							{
-								CCamera_persp* as_persp = rtti::autocast(mActiveCamera);
+								CCamera_persp* as_persp = rtti::autocast(_editorCamera);
 								
 								if( as_persp )
 								{

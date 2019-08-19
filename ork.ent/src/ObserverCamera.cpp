@@ -114,7 +114,7 @@ ObserverCamControllerInst::ObserverCamControllerInst(const ObserverCamController
 	mCameraData.Persp( 0.1f, 1.0f, 45.0f );
 	mCameraData.Lookat( CVector3(0.0f,0.0f,0.0f), CVector3(0.0f,0.0f,1.0f), CVector3(0.0f,1.0f,0.0f) );
 
-	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, & mCameraData, mCameraData.GetLev2Camera() );
+	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, & mCameraData, mCameraData.getEditorCamera() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

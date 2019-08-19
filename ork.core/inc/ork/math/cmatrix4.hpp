@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <cmath>
@@ -53,7 +53,7 @@ template <typename T> void TMatrix4<T>::SetToIdentity(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::dump( STRING name )
+template <typename T> void TMatrix4<T>::dump( const char* name ) const
 {
 	orkprintf( "Matrix %p %s\n{	", this, name  );
 
@@ -335,7 +335,7 @@ template <typename T> void TMatrix4<T>::FromQuaternion(TQuaternion<T> quat)
 ///////////////////////////////////////////////////////////////////////////////
 // sm - billboard matrix from object/view position
 
-template <typename T> void TMatrix4<T>::CreateBillboard(TVector3<T> objectPos, 
+template <typename T> void TMatrix4<T>::CreateBillboard(TVector3<T> objectPos,
 	TVector3<T> viewPos, TVector3<T> upVec)
 {
 	TVector3<T> dir;
@@ -352,7 +352,7 @@ template <typename T> void TMatrix4<T>::CreateBillboard(TVector3<T> objectPos,
 	cross = upVec;
 	cross = cross.Cross(dir);
 	cross.Normalize();
-	
+
 	res = dir;
 	res = res.Cross(cross);
 
@@ -430,12 +430,12 @@ template <typename T> TMatrix4<T> TMatrix4<T>::MatrixMult( const TMatrix4<T> &ma
 							+ (elements[0][1] * mat1.elements[1][2])
 							+ (elements[0][2] * mat1.elements[2][2])
 							+ (elements[0][3] * mat1.elements[3][2]);
-							
+
 	result.elements[0][3]	= (elements[0][0] * mat1.elements[0][3])
 							+ (elements[0][1] * mat1.elements[1][3])
 							+ (elements[0][2] * mat1.elements[2][3])
 							+ (elements[0][3] * mat1.elements[3][3]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -453,7 +453,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::MatrixMult( const TMatrix4<T> &ma
 							+ (elements[1][1] * mat1.elements[1][2])
 							+ (elements[1][2] * mat1.elements[2][2])
 							+ (elements[1][3] * mat1.elements[3][2]);
-							
+
 	result.elements[1][3]	= (elements[1][0] * mat1.elements[0][3])
 							+ (elements[1][1] * mat1.elements[1][3])
 							+ (elements[1][2] * mat1.elements[2][3])
@@ -475,7 +475,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::MatrixMult( const TMatrix4<T> &ma
 							+ (elements[2][1] * mat1.elements[1][2])
 							+ (elements[2][2] * mat1.elements[2][2])
 							+ (elements[2][3] * mat1.elements[3][2]);
-							
+
 	result.elements[2][3]	= (elements[2][0] * mat1.elements[0][3])
 							+ (elements[2][1] * mat1.elements[1][3])
 							+ (elements[2][2] * mat1.elements[2][3])
@@ -498,14 +498,14 @@ template <typename T> TMatrix4<T> TMatrix4<T>::MatrixMult( const TMatrix4<T> &ma
 							+ (elements[3][1] * mat1.elements[1][2])
 							+ (elements[3][2] * mat1.elements[2][2])
 							+ (elements[3][3] * mat1.elements[3][2]);
-							
+
 	result.elements[3][3]	= (elements[3][0] * mat1.elements[0][3])
 							+ (elements[3][1] * mat1.elements[1][3])
 							+ (elements[3][2] * mat1.elements[2][3])
 							+ (elements[3][3] * mat1.elements[3][3]);
 
 	////////////////////////////////////////////////////////////////
-	
+
 	return( result );
 }
 
@@ -546,7 +546,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43( const TMatrix4<T> &mat1
 	result.elements[0][2]	= (elements[0][0] * mat1.elements[0][2])
 							+ (elements[0][1] * mat1.elements[1][2])
 							+ (elements[0][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -561,7 +561,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43( const TMatrix4<T> &mat1
 	result.elements[1][2]	= (elements[1][0] * mat1.elements[0][2])
 							+ (elements[1][1] * mat1.elements[1][2])
 							+ (elements[1][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -576,7 +576,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43( const TMatrix4<T> &mat1
 	result.elements[2][2]	= (elements[2][0] * mat1.elements[0][2])
 							+ (elements[2][1] * mat1.elements[1][2])
 							+ (elements[2][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -594,9 +594,9 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43( const TMatrix4<T> &mat1
 							+ (elements[3][1] * mat1.elements[1][2])
 							+ (elements[3][2] * mat1.elements[2][2])
 							+ mat1.elements[3][2];
-							
+
 	////////////////////////////////////////////////////////////////
-	
+
 	return( result );
 }
 
@@ -620,7 +620,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43Transpose( const TMatrix4
 	result.elements[2][0]	= (elements[0][0] * mat1.elements[0][2])
 							+ (elements[0][1] * mat1.elements[1][2])
 							+ (elements[0][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -635,7 +635,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43Transpose( const TMatrix4
 	result.elements[2][1]	= (elements[1][0] * mat1.elements[0][2])
 							+ (elements[1][1] * mat1.elements[1][2])
 							+ (elements[1][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -650,7 +650,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43Transpose( const TMatrix4
 	result.elements[2][2]	= (elements[2][0] * mat1.elements[0][2])
 							+ (elements[2][1] * mat1.elements[1][2])
 							+ (elements[2][2] * mat1.elements[2][2]);
-							
+
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
 
@@ -668,9 +668,9 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43Transpose( const TMatrix4
 							+ (elements[3][1] * mat1.elements[1][2])
 							+ (elements[3][2] * mat1.elements[2][2])
 							+ mat1.elements[3][2];
-							
+
 	////////////////////////////////////////////////////////////////
-	
+
 	return( result );
 }
 
@@ -772,7 +772,7 @@ template <typename T> void TMatrix4<T>::Lerp( const TMatrix4<T> &from, const TMa
 
 					if( dQ.Magnitude() > T(0.0f) )
 						dQ.Negate();
-	
+
 	TQuaternion<T>	newQrot = dQ;
 
 	#endif
@@ -939,7 +939,7 @@ template <typename T> void TMatrix4<T>::Frustum( T left, T right, T top, T botto
 	SetElemYX( 1,1, CReal(2.0f*zn)/height );
 	SetElemYX( 2,2, CReal(zf)/depth );
 	SetElemYX( 3,3, CReal(0.0f) );
-	
+
 	SetElemYX( 2,3, CReal(zn*zf)/CReal(zn-zf) );
 	SetElemYX( 3,2, CReal(1.0f) );
 
@@ -1069,7 +1069,7 @@ template <typename T> void TMatrix4<T>::Inverse( void )
 	}
 
 	////////////
-	
+
 	////////////
 	// The right column vector of the matrix should always be [ 0 0 0 1 ]
 	// In most cases. . . you don't need this column at all because it'll
@@ -1084,19 +1084,19 @@ template <typename T> void TMatrix4<T>::Inverse( void )
 	T Tx = GetElemYX( 0, 3 );
 	T Ty = GetElemYX( 1, 3 );
 	T Tz = GetElemYX( 2, 3 );
-	
+
 	////////////
 
 	////////////
 	// Rrp = -(Tm * Rm) to get the translation part of the inverse
-	
+
 	T NTx = -( GetElemYX(0,0) * Tx + GetElemYX(1,0) * Ty + GetElemYX(2,0) * Tz );
 	T NTy = -( GetElemYX(0,1) * Tx + GetElemYX(1,1) * Ty + GetElemYX(2,1) * Tz );
 	T NTz = -( GetElemYX(0,2) * Tx + GetElemYX(1,2) * Ty + GetElemYX(2,2) * Tz );
 	result.SetElemYX( 0, 3, NTx );
 	result.SetElemYX( 1, 3, NTy );
 	result.SetElemYX( 2, 3, NTz );
-	
+
 	////////////
 
 	*this = result;
@@ -1121,7 +1121,7 @@ template <typename T> void TMatrix4<T>::InverseTranspose( void )
 	}
 
 	////////////
-	
+
 	////////////
 	// The right column vector of the matrix should always be [ 0 0 0 1 ]
 	// In most cases. . . you don't need this column at all because it'll
@@ -1136,19 +1136,19 @@ template <typename T> void TMatrix4<T>::InverseTranspose( void )
 	T Tx = GetElemYX( 0, 3 );
 	T Ty = GetElemYX( 1, 3 );
 	T Tz = GetElemYX( 2, 3 );
-	
+
 	////////////
 
 	////////////
 	// Rrp = -(Tm * Rm) to get the translation part of the inverse
-	
+
 	T NTx = -( GetElemYX(0,0) * Tx + GetElemYX(1,0) * Ty + GetElemYX(2,0) * Tz );
 	T NTy = -( GetElemYX(0,1) * Tx + GetElemYX(1,1) * Ty + GetElemYX(2,1) * Tz );
 	T NTz = -( GetElemYX(0,2) * Tx + GetElemYX(1,2) * Ty + GetElemYX(2,2) * Tz );
 	result.SetElemXY( 0, 3, NTx );
 	result.SetElemXY( 1, 3, NTy );
 	result.SetElemXY( 2, 3, NTz );
-	
+
 	////////////
 
 	*this = result;
@@ -1161,7 +1161,7 @@ template <typename T> void TMatrix4<T>::InverseTranspose( void )
 template <typename T> void TMatrix4<T>::Normalize( void )
 {
 	TMatrix4<T> result;
-	
+
 	T Xx = GetElemXY( 0,0 );
 	T Xy = GetElemXY( 0,1 );
 	T Xz = GetElemXY( 0,2 );
@@ -1179,11 +1179,11 @@ template <typename T> void TMatrix4<T>::Normalize( void )
 	Xx *= Xi;
 	Xy *= Xi;
 	Xz *= Xi;
-	
+
 	Yx *= Yi;
 	Yy *= Yi;
 	Yz *= Yi;
-	
+
 	Zx *= Zi;
 	Zy *= Zi;
 	Zz *= Zi;

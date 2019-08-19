@@ -154,7 +154,7 @@ const CCameraData* DrawableBuffer::GetCameraData( int icam ) const
 		icam = icam%inumscenecameras;
 		auto& itCAM = mCameraDataLUT.GetItemAtIndex(icam);
 		const CCameraData* pdata = & itCAM.second;
-		const lev2::CCamera* pcam = pdata->GetLev2Camera();
+		const lev2::CCamera* pcam = pdata->getEditorCamera();
 		//printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
 		return pdata;
 	}
@@ -189,13 +189,13 @@ void DrawableBuffer::EndDbRead(const DrawableBuffer*db)
 }
 /////////////////////////////////////////////////////////////////////
 DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid)
-{	
+{
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	DrawableBuffer* wbuf = gBuffers.BeginWrite();
 	return wbuf;
 }
 void DrawableBuffer::UnLockWriteBuffer(DrawableBuffer*db)
-{	
+{
 	AssertOnOpQ2( UpdateSerialOpQ() );
 	gBuffers.EndWrite(db);
 }
@@ -266,16 +266,16 @@ void CameraDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::Renderer
 	if( 0 == mCameraData ) return;
 	lev2::FrustumRenderable& frusrend = renderer->QueueFrustum();
 	frusrend.SetColor( ork::CColor4::White() );
-	
+
 	CameraCalcContext cctx;
 	int iw = fdata->GetTarget()->GetW();
 	int ih = fdata->GetTarget()->GetH();
 	float faspect = float(iw)/float(ih);
 	mCameraData->CalcCameraMatrices(cctx,faspect);
-	
+
 	frusrend.SetFrustum( cctx.mFrustum );
 	frusrend.SetObjSpace( false );
-	
+
 }
 /////////////////////////////////////////////////////////////////////
 void CameraDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
@@ -363,7 +363,7 @@ void ModelDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
 	#if 1 //DRAWTHREADS
 	const lev2::XgmModel* Model = mModelInst->GetXgmModel();
 	bool IsSkinned = Model->IsSkinned();
-		
+
 	DrawableBufItem& item = buffer.Queue(xfdata,this);
 
 	//orkprintf( " ModelDrawable::QueueToBuffer() mdl<%p> IsSkinned<%d>\n", Model, int(IsSkinned) );
@@ -402,7 +402,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 	AssertOnOpQ2( MainThreadOpQ() );
 	const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
 	const lev2::XgmModel* Model = mModelInst->GetXgmModel();
-	const CCameraData* camdat = fdata->GetCameraData(); 
+	const CCameraData* camdat = fdata->GetCameraData();
 	OrkAssert(camdat!=0);
 
 	const CameraCalcContext& ccctx = fdata->GetCameraCalcCtx();
@@ -414,7 +414,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 	const Frustum& frus = bvisicd ? camdat->GetFrustum() : ccctx.mFrustum; //camdat->GetFrustum();
 
 	const ork::CMatrix4& matw = item.mXfData.mWorldMatrix;
-	
+
 	bool IsPickState = renderer->GetTarget()->FBI()->IsPickState();
 	bool IsSkinned = Model->IsSkinned();
 	//OrkAssert( renderer->GetTarget()->FBI()->IsPickState() == false );
@@ -436,7 +436,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 	//////////////////////////////////////////////////////////////////////
 
 	const ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
-	
+
 	ork::CVector3 matw_trans;
 	ork::CQuaternion matw_rot;
 	float matw_scale;
@@ -454,7 +454,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 		sphrend.SetPosition( ctr );
 		sphrend.SetRadius( frad*mfScale );
 	}
-		
+
 	//////////////////////////////////////////////////////////////////////
 	// generate coarse light mask
 
@@ -485,12 +485,12 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 
 	int inumacc = 0;
 	int inumrej = 0;
-	
+
 	int inummeshes = Model->GetNumMeshes();
 	for( int imesh=0; imesh<inummeshes; imesh++ )
 	{
 		const lev2::XgmMesh& mesh = * Model->GetMesh(imesh);
-		
+
 		//if( 0 == strcmp(mesh.GetMeshName().c_str(),"fg_2_1_3_ground_SG_ground_GeoDaeId") )
 		//{
 		//	orkprintf( "yo\n" );
@@ -539,18 +539,18 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 								&&	(fdf>kdist);
 						if( false == btest )
 						{
-							
+
 						}
 					}
 					else
 					{
 						const Sphere& bsph = cluster.mBoundingSphere;
-						
+
 						float clussphrad = bsph.mRadius*matw_scale*mfScale;
 						CVector3 clussphctr = ((bsph.mCenter+mOffset)*mfScale).Transform(matw);
 						Sphere sph2( clussphctr, clussphrad );
 
-						btest = CollisionTester::FrustumSphereTest( frus, sph2 );
+						btest =true; // CollisionTester::FrustumSphereTest( frus, sph2 );
 
 						////////////////////////////////////////////////
 						// per cluster light assignment
@@ -565,7 +565,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 							if( false==IsPickState && mbShowBoundingSphere )
 							{
 								bool binside = frus.Contains(clussphctr);
-							
+
 								lev2::SphereRenderable& sphrend = renderer->QueueSphere();
 								sphrend.SetColor( binside ? ork::CColor4::Green()*0.3f : ork::CColor4::Green() );
 								sphrend.SetPosition( clussphctr );
@@ -667,7 +667,7 @@ CallbackDrawable::~CallbackDrawable()
 	mRenderCallback = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-// Multithreaded Renderer DB 
+// Multithreaded Renderer DB
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
 										DrawableBufLayer&buffer) const
@@ -682,17 +682,17 @@ void CallbackDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-// 
+//
 ///////////////////////////////////////////////////////////////////////////////
 void CallbackDrawable::QueueToRenderer( const DrawableBufItem& item,
 										lev2::Renderer* renderer ) const
-{	
+{
 	AssertOnOpQ2( MainThreadOpQ() );
 
 	lev2::CallbackRenderable& renderable = renderer->QueueCallback();
 	renderable.SetMatrix( item.mXfData.mWorldMatrix );
 	renderable.SetObject( GetOwner() );
-	renderable.SetRenderCallback( mRenderCallback ); 
+	renderable.SetRenderCallback( mRenderCallback );
 	renderable.SetSortKey( mSortKey );
 	renderable.SetDrawableDataA( GetUserDataA() );
 	renderable.SetDrawableDataB( GetUserDataB() );

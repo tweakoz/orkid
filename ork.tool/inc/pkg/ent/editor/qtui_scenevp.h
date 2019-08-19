@@ -113,25 +113,25 @@ public:
 	SceneEditorVP( const std::string & name, SceneEditorBase & Editor, EditorMainWindow &MainWin );
 	~SceneEditorVP();
 
-	//////////////////////   
+	//////////////////////
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
-	//////////////////////   
+	//////////////////////
 	void QueueSceneInstToDb(ent::DrawableBuffer*pDB);
 	void RenderQueuedScene( ork::lev2::RenderContextFrameData & ContextData );
-	//////////////////////   
+	//////////////////////
 	//lev2::CPickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::CPickBuffer<SceneEditorVP>*)mpPickBuffer; }
 	void IncPickDirtyCount( int icount );
 	void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
 	ork::Object* GetObject( lev2::GetPixelContext& ctx, int ichan );
-	//////////////////////   
+	//////////////////////
 	ent::CompositingManagerComponentInst* GetCMCI();
 	const ent::CompositingGroup* GetCompositingGroup(int igrp);
 	ent::CompositingComponentInst* GetCompositingComponentInst( int icidx );
-	//////////////////////   
+	//////////////////////
 	void BindToolHandler( SceneEditorVPToolHandler*handler );
 	void BindToolHandler( const std::string& ToolName );
 	void RegisterToolHandler( const std::string& ToolName, SceneEditorVPToolHandler*handler );
-	//////////////////////   
+	//////////////////////
 	void SetHeadLightMode( bool bv ) { mbHeadLight=bv; }
 	void SaveCubeMap();
 	void SetCursor( const CVector3& c ) { mCursor=c; }
@@ -154,7 +154,7 @@ public:
 	EditorMainWindow& MainWindow() const { return mMainWindow; }
 	ork::lev2::Renderer* GetRenderer() const { return mRenderer; }
 	lev2::CManipManager& ManipManager() { return mEditor.ManipManager(); }
-	const lev2::CCamera* GetActiveCamera() const { return mActiveCamera; }
+	const lev2::CCamera* GetActiveCamera() const { return _editorCamera; }
 
 	///////////////////////////////////////////////////
 
@@ -186,7 +186,7 @@ protected:
 	int												mGridMode;
 	ork::ent::SceneEditorView						mSceneView;
 	lev2::Renderer*									mRenderer;
-	lev2::CCamera*									mActiveCamera;
+	lev2::CCamera*									_editorCamera;
 	CVector3										mCursor;
 	CPerformanceItem								mFramePerfItem;
 	int												miCameraIndex;

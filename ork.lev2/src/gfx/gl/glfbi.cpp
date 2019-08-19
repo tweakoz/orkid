@@ -422,6 +422,8 @@ void GlFrameBufferInterface::SetRtGroup( RtGroup* Base )
 			glBindTexture(GL_TEXTURE_2D, FboObj->mTEX[it] );
 			GL_ERRORCHECK();
 			glTexImage2D(GL_TEXTURE_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, NULL);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 			GL_ERRORCHECK();
 
 			//printf( "SetRtg::gentex<%d> w<%d> h<%d>\n", int(FboObj->mTEX[it]), iw,ih );

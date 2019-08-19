@@ -392,11 +392,12 @@ private:
 
 struct CompositingPassData
 {
-	const CompositingGroup*			mpGroup;
+	const CompositingGroup*		mpGroup;
 	lev2::FrameTechniqueBase*	mpFrameTek;
-	bool							mbDrawSource;
-	const PoolString*				mpCameraName;
-	const PoolString*				mpLayerName;
+	bool											mbDrawSource;
+	const PoolString*				  mpCameraName;
+	const PoolString*				  mpLayerName;
+	ork::svarp_t							_impl;
 
 	CompositingPassData()
 		: mpGroup(0)
@@ -405,6 +406,7 @@ struct CompositingPassData
 		, mpCameraName(0)
 		, mpLayerName(0)
 	{
+		_impl.Set<void*>(nullptr);
 	}
 };
 

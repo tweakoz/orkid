@@ -120,7 +120,7 @@ SceneEditorVP::SceneEditorVP( const std::string& name, SceneEditorBase& the_ed, 
 	, mGridMode( 0 )
 	, mRenderer( new ork::tool::Renderer(the_ed) )
 	, mSceneView( this )
-	, mActiveCamera( 0 )
+	, _editorCamera( 0 )
 	, mFramePerfItem( "SceneEditorVP::Draw()" )
 	, miCullCameraIndex(-1)
 	, miCameraIndex(0)
@@ -725,15 +725,13 @@ GL_ERRORCHECK();
 	CompositingPassData NODE = cstack->top();
 
 	ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
-	const PoolString* pCAMNAME = NODE.mpCameraName;
-	const PoolString* pLAYERSN = NODE.mpLayerName;
 
 	///////////////////////////////////////////////////////////////////////////
 	// camera setup
 	///////////////////////////////////////////////////////////////////////////
 
 	CCameraData TempCamData, TempCullCamData;
-	mActiveCamera = 0;
+	_editorCamera = 0;
 
 	anyp pvdb = FrameData.GetUserProperty("DB");
 	const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
@@ -746,141 +744,133 @@ GL_ERRORCHECK();
 	if( nullptr == pcamdata )
 		return;
 
-	if( pcamdata )
-	{
-		mActiveCamera = pcamdata->GetLev2Camera();
+	/////////////////////////////////////////
+	// Culling camera ? (for debug)
+	/////////////////////////////////////////
+
+	if( pcullcamdata ){
+			TempCullCamData = *pcullcamdata;
+			TempCullCamData.BindGfxTarget(FrameData.GetTarget());
+			TempCullCamData.CalcCameraData(FrameData.GetCameraCalcCtx());
+			TempCamData.SetVisibilityCamDat(&TempCullCamData);
 	}
 
-	if( pCAMNAME )
-	{
-		const CCameraData* pcamdataNAMED = DB->GetCameraData(*pCAMNAME);
+	/////////////////////////////////////////
+	// try named CCameraData from NODE
+	/////////////////////////////////////////
+
+	if( NODE.mpCameraName ){
+		const CCameraData* pcamdataNAMED = DB->GetCameraData(*NODE.mpCameraName);
 		if( pcamdataNAMED )
-			pcamdata = pcamdataNAMED;
-		//printf( "Using CameraName<%s> CamData<%p>\n", pCAMNAME->c_str(), pcamdataNAMED );
+				pcamdata = pcamdataNAMED;
 	}
-	GL_ERRORCHECK();
-	//FrameData.GetTarget()->FBI()->ForceFlush();
-	if( pcullcamdata )
-	{
-		TempCullCamData = *pcullcamdata;
-		//FrameData.GetTarget()->FBI()->ForceFlush();
-		TempCullCamData.BindGfxTarget(FrameData.GetTarget());
-		//FrameData.GetTarget()->FBI()->ForceFlush();
-		TempCullCamData.CalcCameraData(FrameData.GetCameraCalcCtx());
-		//FrameData.GetTarget()->FBI()->ForceFlush();
-		TempCamData.SetVisibilityCamDat(&TempCullCamData);
-	}
-	GL_ERRORCHECK();
-	//FrameData.GetTarget()->FBI()->ForceFlush();
-	if( pcamdata )
-	{
-		TempCamData = *pcamdata;
-		//FrameData.GetTarget()->FBI()->ForceFlush();
-		TempCamData.BindGfxTarget(FrameData.GetTarget());
-	GL_ERRORCHECK();
-		//FrameData.GetTarget()->FBI()->ForceFlush();
-		TempCamData.CalcCameraData(FrameData.GetCameraCalcCtx());
-	}
-	GL_ERRORCHECK();
-	//FrameData.GetTarget()->FBI()->ForceFlush();
-	FrameData.SetCameraData( & TempCamData );
-	if( mActiveCamera )
-	{
-		mActiveCamera->AttachViewport(this);
-		mActiveCamera->RenderUpdate();
-	}
-	ManipManager().SetActiveCamera(mActiveCamera);
 
-	//printf( "RENDER0...\n" );
+	/////////////////////////////////////////
+	// try direct CCameraData from NODE
+	/////////////////////////////////////////
+
+	if( auto from_node = NODE._impl.TryAs<const CCameraData*>() ){
+		pcamdata = from_node.value();
+		//printf( "from node\n");
+	}
+
+	/////////////////////////////////////////
+	// generate temporary CamData from input
+	//  bind to FrameData target
+	/////////////////////////////////////////
+
+	if( pcamdata ){
+			TempCamData = *pcamdata;
+			TempCamData.BindGfxTarget(FrameData.GetTarget());
+			TempCamData.CalcCameraData(FrameData.GetCameraCalcCtx());
+	}
+	FrameData.SetCameraData( & TempCamData );
+
+	/////////////////////////////////////////
+	// editor camera renderupdate
+	/////////////////////////////////////////
+	if( pcamdata )
+			_editorCamera = pcamdata->getEditorCamera();
+	if( _editorCamera ){
+		_editorCamera->AttachViewport(this);
+		_editorCamera->RenderUpdate();
+	}
+	ManipManager().SetActiveCamera(_editorCamera);
+	/////////////////////////////////////////
+
 	if( 0 == pcamdata ) return;
-GL_ERRORCHECK();
-	//FrameData.GetTarget()->FBI()->ForceFlush();
-	///////////////////////////////////////////////////////////////////////////
-	// dbuffer -> rendererqueue
-	///////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////
-	//OrkAssert( pcameraLUT!=0 );
-	///////////////////////////////////////////////////////////////////////////
+
 	///////////////////////////////////////////////////////////////////////////
 	lev2::HeadLightManager hlmgr( FrameData );
 	SetupLighting( hlmgr, FrameData );
-GL_ERRORCHECK();
 	///////////////////////////////////////////////////////////////////////////
-	FrameData.GetTarget()->FBI()->GetThisBuffer()->SetDirty( false );
-	//FrameData.GetTarget()->FBI()->ForceFlush();
+	auto gfxtarg = FrameData.GetTarget();
+	auto MTXI = gfxtarg->MTXI();
+	auto FBI = gfxtarg->FBI();
 	///////////////////////////////////////////////////////////////////////////
-	FrameData.GetTarget()->BindMaterial( lev2::GfxEnv::GetDefault3DMaterial() );
-	CMatrix4 IdentityMatrix;
-GL_ERRORCHECK();
-
+	FBI->GetThisBuffer()->SetDirty( false );
+	///////////////////////////////////////////////////////////////////////////
+	gfxtarg->BindMaterial( lev2::GfxEnv::GetDefault3DMaterial() );
+	GL_ERRORCHECK();
 	/////////////////////////////////////////////////////////////////////////////
 	const CMatrix4& PMTX = FrameData.GetCameraCalcCtx().mPMatrix;
 	const CMatrix4& VMTX = FrameData.GetCameraCalcCtx().mVMatrix;
 	/////////////////////////////////////////////////////////////////////////////
 	// Main Renderer
-	//printf( "RENDER...\n" );
 	{
 		static lev2::SRasterState defstate;
-		FrameData.GetTarget()->RSI()->BindRasterState( defstate, true );
+		gfxtarg->RSI()->BindRasterState( defstate, true );
 
-		FrameData.GetTarget()->MTXI()->PushPMatrix( PMTX );
-		FrameData.GetTarget()->MTXI()->PushVMatrix( VMTX );
-		FrameData.GetTarget()->MTXI()->PushMMatrix( CMatrix4::Identity );
+		//VMTX.dump("VMTX");
+
+		MTXI->PushPMatrix( PMTX );
+		MTXI->PushVMatrix( VMTX );
+		MTXI->PushMMatrix( CMatrix4::Identity );
 		{	/////////////////////////////////////////
 			// manip
 			/////////////////////////////////////////
-			if( mEditor.mpScene ) DrawManip( FrameData, FrameData.GetTarget() );
+			if( mEditor.mpScene ) DrawManip( FrameData, gfxtarg );
 			/////////////////////////////////////////
 			// grid
 			/////////////////////////////////////////
 			if( false == IsPickState ) DrawGrid( FrameData );
-
 			/////////////////////////////////////////
 			// RenderQueue
 			/////////////////////////////////////////
 			std::vector<PoolString> LayerNames;
-			if( pLAYERSN )
-			{
-				const char* playersstr = pLAYERSN->c_str();
-				if( playersstr )
-				{
+			if( NODE.mpLayerName ){
+				const char* playersstr = NODE.mpLayerName->c_str();
+				if( playersstr ){
 					char temp_buf[256];
 					strncpy(&temp_buf[0],playersstr,sizeof(temp_buf));
 					char *tok = strtok( &temp_buf[0], "," );
-
-					while( tok != 0 )
-					{
-						//orkprintf( "LAYER %s\n", tok );
+					while( tok != 0 ){
 						LayerNames.push_back( AddPooledString(tok) );
 						tok = strtok( 0, "," );
 					}
 				}
-				//LayerName = *pLAYERSN;
 			}
-			else
-			{
+			else{
 				LayerNames.push_back( AddPooledLiteral( "All" ) );
 			}
 			//printf( "USING LAYERNAME<%s>\n", LayerName.c_str() );
 			//const DrawableBuffer& DB = DrawableBuffer::GetLockedReadBuffer(0);
-			for( std::vector<PoolString>::const_iterator itl=LayerNames.begin(); itl!=LayerNames.end(); itl++ )
-			{
-				const PoolString& layer_name = *itl;
-				GetSceneInst()->RenderDrawableBuffer(GetRenderer(),*DB,layer_name);
-			}
-			GetRenderer()->DrawQueuedRenderables();
+			auto psi = GetSceneInst();
+			auto rend = GetRenderer();
+			for( const PoolString& layer_name : LayerNames )
+					psi->RenderDrawableBuffer(rend,*DB,layer_name);
+			rend->DrawQueuedRenderables();
 			/////////////////////////////////////////
 		}
-		FrameData.GetTarget()->MTXI()->PopPMatrix(); // back to ortho
-		FrameData.GetTarget()->MTXI()->PopVMatrix(); // back to ortho
-		FrameData.GetTarget()->MTXI()->PopMMatrix(); // back to ortho
+		MTXI->PopPMatrix(); // back to ortho
+		MTXI->PopVMatrix(); // back to ortho
+		MTXI->PopMMatrix(); // back to ortho
 		/////////////////////////////////////////
 		// draw Spinner
 		/////////////////////////////////////////
 		if( false == IsPickState ) DrawSpinner( FrameData );
 	}
-	if( forgepickstate ) FrameData.GetTarget()->FBI()->EnterPickState(mpPickBuffer);
+	if( forgepickstate ) FBI->EnterPickState(mpPickBuffer);
 	//FrameData.GetTarget()->SetRenderContextFrameData( 0 );
 	FrameData.SetLightManager(0);
 }
@@ -1129,9 +1119,9 @@ void SceneEditorVP::DrawHUD( lev2::RenderContextFrameData& FrameData )
 	pTARG->MTXI()->PopVMatrix(); // back to ortho
 	pTARG->MTXI()->PopMMatrix(); // back to ortho
 
-	if( mActiveCamera )
+	if( _editorCamera )
 	{
-		mActiveCamera->draw( pTARG );
+		_editorCamera->draw( pTARG );
 	}
 }
 
