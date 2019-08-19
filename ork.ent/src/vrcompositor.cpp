@@ -240,7 +240,10 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 ///////////////////////////////////////////////////////////////////////////////
 lev2::RtGroup* VrCompositingNode::GetOutput() const
 {
-	return nullptr;
+  auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+  if(vrimpl->_frametek )
+    return vrimpl->_frametek->_rtg_left;
+  else return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} //namespace ork { namespace ent {

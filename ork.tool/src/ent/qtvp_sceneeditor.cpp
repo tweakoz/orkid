@@ -551,30 +551,33 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	OrkAssert(cstack!=0);
 
 	CompositingPassData node = cstack->top();
-	const ent::CompositingGroup* pCG = node.mpGroup;
 	auto pFTEK = dynamic_cast<lev2::BuiltinFrameTechniques*>(node.mpFrameTek);
 	///////////////////////////////////////////////////////////////////////////
-	const char* EffectName = "none";
-	float fFxAmt =0.0f;
-	float fFbAmt =0.0f;
-	float fFinResMult = 0.5f;
-	float fFxResMult = 0.5f;
-    lev2::Texture* pFbUvMap = 0;
-	bool bpostfxfb = false;
-	if( pFTEK )
-	{
-		if( pCG )
-		{	const CompositingGroupEffect&	effect = pCG->GetEffect();
-			EffectName = effect.GetEffectName();
-			fFxAmt = effect.GetEffectAmount();
-			fFbAmt = effect.GetFeedbackAmount();
-            pFbUvMap = effect.GetFbUvMap();
-			bpostfxfb = effect.IsPostFxFeedback();
-			fFinResMult = effect.GetFinalRezScale();
-			fFxResMult = effect.GetFxRezScale();
+	////////////////////////////////////////
+	if( pFTEK ) {
+		const char* EffectName = "none";
+		float fFxAmt = 0.0f;
+		float fFbAmt = 0.0f;
+		float fFinResMult = 0.5f;
+		float fFxResMult = 0.5f;
+	  lev2::Texture* pFbUvMap = nullptr;
+		bool bpostfxfb = false;
+
+		if( node.mpGroup ){
+				const CompositingGroupEffect&	effect = node.mpGroup->GetEffect();
+				EffectName = effect.GetEffectName();
+				fFxAmt = effect.GetEffectAmount();
+				fFbAmt = effect.GetFeedbackAmount();
+	      pFbUvMap = effect.GetFbUvMap();
+				bpostfxfb = effect.IsPostFxFeedback();
+				fFinResMult = effect.GetFinalRezScale();
+				fFxResMult = effect.GetFxRezScale();
 		}
+
+		////////////////////////////////////////
+
 		pFTEK->SetEffect( EffectName, fFxAmt, fFbAmt );
-        pFTEK->SetFbUvMap( pFbUvMap );
+    pFTEK->SetFbUvMap( pFbUvMap );
 		pFTEK->SetPostFxFb( bpostfxfb );
 
 		////////////////////////////////////////
@@ -594,32 +597,33 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	SRect VPRect( 0, 0, pIT->GetW(), pIT->GetH() );
 	pTARG->FBI()->PushViewport( VPRect );
 	pTARG->FBI()->PushScissor( VPRect );
-	{	mRenderer->SetTarget( pTARG );
-		FrameData.AddLayer(AddPooledLiteral("Default"));
-		FrameData.AddLayer(AddPooledLiteral("A"));
-		FrameData.AddLayer(AddPooledLiteral("B"));
-		FrameData.AddLayer(AddPooledLiteral("C"));
-		FrameData.AddLayer(AddPooledLiteral("D"));
-		FrameData.AddLayer(AddPooledLiteral("E"));
-		FrameData.AddLayer(AddPooledLiteral("F"));
-		FrameData.AddLayer(AddPooledLiteral("G"));
-		FrameData.AddLayer(AddPooledLiteral("H"));
-		FrameData.AddLayer(AddPooledLiteral("I"));
-		FrameData.AddLayer(AddPooledLiteral("J"));
-		FrameData.AddLayer(AddPooledLiteral("K"));
-		FrameData.AddLayer(AddPooledLiteral("L"));
-		FrameData.AddLayer(AddPooledLiteral("M"));
-		FrameData.AddLayer(AddPooledLiteral("N"));
-		FrameData.AddLayer(AddPooledLiteral("O"));
-		FrameData.AddLayer(AddPooledLiteral("P"));
-		FrameData.AddLayer(AddPooledLiteral("Q"));
+	{
+			mRenderer->SetTarget( pTARG );
+			FrameData.AddLayer(AddPooledLiteral("Default"));
+			FrameData.AddLayer(AddPooledLiteral("A"));
+			FrameData.AddLayer(AddPooledLiteral("B"));
+			FrameData.AddLayer(AddPooledLiteral("C"));
+			FrameData.AddLayer(AddPooledLiteral("D"));
+			FrameData.AddLayer(AddPooledLiteral("E"));
+			FrameData.AddLayer(AddPooledLiteral("F"));
+			FrameData.AddLayer(AddPooledLiteral("G"));
+			FrameData.AddLayer(AddPooledLiteral("H"));
+			FrameData.AddLayer(AddPooledLiteral("I"));
+			FrameData.AddLayer(AddPooledLiteral("J"));
+			FrameData.AddLayer(AddPooledLiteral("K"));
+			FrameData.AddLayer(AddPooledLiteral("L"));
+			FrameData.AddLayer(AddPooledLiteral("M"));
+			FrameData.AddLayer(AddPooledLiteral("N"));
+			FrameData.AddLayer(AddPooledLiteral("O"));
+			FrameData.AddLayer(AddPooledLiteral("P"));
+			FrameData.AddLayer(AddPooledLiteral("Q"));
 
-		const ent::SceneInst* psi = GetSceneInst();
-		mSceneView.UpdateRefreshPolicy(FrameData,psi);
+			const ent::SceneInst* psi = GetSceneInst();
+			mSceneView.UpdateRefreshPolicy(FrameData,psi);
 
-		Clear();
-		if( node.mbDrawSource )
-			RenderQueuedScene( FrameData );
+			Clear();
+			if( node.mbDrawSource )
+				RenderQueuedScene( FrameData );
 	};
 	pTARG->FBI()->PopScissor();
 	pTARG->FBI()->PopViewport();
@@ -655,8 +659,7 @@ ent::CompositingComponentInst* SceneEditorVP::GetCompositingComponentInst( int i
 	ent::CompositingComponentInst* rval = 0;
 	ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
 	if( pCMCI )
-	{	rval = pCMCI->GetCompositingComponentInst(icidx);
-	}
+		rval = pCMCI->GetCompositingComponentInst(icidx);
 	return rval;
 }
 
@@ -667,8 +670,7 @@ const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp)
 	ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
 	const ent::CompositingComponentInst* pCCI = GetCompositingComponentInst(igrp);
 	const CompositingGroup* pCG = 0;
-	if( pCCI )
-	{
+	if( pCCI ){
 		const CompositingComponentData& CCD = pCCI->GetCompositingData();
 		const orklut<PoolString,ork::Object*>& Groups = CCD.GetGroups();
 		int inumgroups = Groups.size();
