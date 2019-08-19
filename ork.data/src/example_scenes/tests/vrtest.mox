@@ -121,7 +121,25 @@
                                                                                     <property name='RootNode'>
                                                                                         <reference category='ObjectClass'>
                                                                                             <object type='VrCompositingNode' id='16'>
-                                                                                                <property name='Group'><backreference id='-1'/></property>
+                                                                                                <property name='Group'>
+                                                                                                    <reference category='ObjectClass'>
+                                                                                                        <object type='CompositingGroup' id='17'>
+                                                                                                            <property name='Camera'>"Camera"</property>
+                                                                                                            <property name='Effect'>
+                                                                                                                <object type='CompositingGroupEffect' id='18'>
+                                                                                                                    <property name='Amount'>0</property>
+                                                                                                                    <property name='FbUvTexture'><backreference id='-1'/></property>
+                                                                                                                    <property name='FeedbackAmount'>0</property>
+                                                                                                                    <property name='FinalRezScale'>0.5</property>
+                                                                                                                    <property name='FxRezScale'>0.5</property>
+                                                                                                                    <property name='PostFxFeedback'>false</property>
+                                                                                                                    <property name='Type'>"EFRAMEFX_STANDARD"</property>
+                                                                                                                </object>
+                                                                                                            </property>
+                                                                                                            <property name='Layers'>"All"</property>
+                                                                                                        </object>
+                                                                                                    </reference>
+                                                                                                </property>
                                                                                             </object>
                                                                                         </reference>
                                                                                     </property>
@@ -147,10 +165,10 @@
             <item key='arch_mesh'><backreference id='8'/></item>
             <item key='compositor'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='17'>
+                    <object type='Ent3dEntData' id='19'>
                         <property name='Name'>"compositor"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='18'>
+                            <object type='Ent3dDagNode' id='20'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>

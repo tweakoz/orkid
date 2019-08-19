@@ -84,7 +84,7 @@ bool CColladaModel::BuildXgmSkeleton( void )
 	// flatten the skeleton
 	/////////////////////////////////////
 
-	XgmSkel.miRootNode = mSkeletonRoot ? mSkeletonRoot->miSkelIndex : -1; 
+	XgmSkel.miRootNode = mSkeletonRoot ? mSkeletonRoot->miSkelIndex : -1;
 
 	if( mSkeletonRoot )
 	{
@@ -141,7 +141,7 @@ struct TexSetter
 			else
 			{
 				std::string mdir = model_directory;
-		
+
 				if( mdir.find( "data/pc/" ) == 0 )
 				{
 					mdir = CreateFormattedString( "data/src/%s", mdir.substr( 8, mdir.length()-8 ).c_str() );
@@ -168,7 +168,7 @@ struct TexSetter
                         printf( "loaded texture<%s>\n", PathToTexture.c_str() );
 						ptex->SetTexClass( ork::lev2::Texture::ETEXCLASS_STATIC );
 						pl2tex->SetName( ork::AddPooledString(PathToTexture.c_str()) );
-						ptex->SetProperty( "abspath", PathToTexture.c_str() );
+						ptex->setProperty<std::string>( "abspath", PathToTexture.c_str() );
 						htexture = 	pl2tex;
 						mTextureMap[ PathToTexture ] = pl2tex;
 					}
@@ -231,7 +231,7 @@ void ConfigureFxMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup
 
 			if( ptexture )
 			{
-				ptexture->GetTexture()->SetProperty( "usage", param->GetRecord().mParameterName );
+				ptexture->GetTexture()->setProperty<std::string>( "usage", param->GetRecord().mParameterName );
 				ColModel->AddTexture( ptexture );
 				paramf->mValue = ptexture->GetTexture();
 			}
@@ -275,22 +275,22 @@ void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGrou
 
 	if( DiffuseTex )
 	{
-		DiffuseTex->GetTexture()->SetProperty( "usage", "diffusemap" );
+		DiffuseTex->GetTexture()->setProperty<std::string>( "usage", "diffusemap" );
 		ColModel->AddTexture( DiffuseTex );
 	}
 	if( NormalTex )
 	{
-		NormalTex->GetTexture()->SetProperty( "usage", "normalmap" );
+		NormalTex->GetTexture()->setProperty<std::string>( "usage", "normalmap" );
 		ColModel->AddTexture( NormalTex );
 	}
 	if( SpecularTex )
 	{
-		SpecularTex->GetTexture()->SetProperty( "usage", "specularmap" );
+		SpecularTex->GetTexture()->setProperty<std::string>( "usage", "specularmap" );
 		ColModel->AddTexture( SpecularTex );
 	}
 	if( AmbientTex )
 	{
-		AmbientTex->GetTexture()->SetProperty( "usage", "ambientmap" );
+		AmbientTex->GetTexture()->setProperty<std::string>( "usage", "ambientmap" );
 		ColModel->AddTexture( AmbientTex );
 	}
 
@@ -396,7 +396,7 @@ void CColladaModel::BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* 
 
 	for( int imat=0; imat<inumclusset; imat++ )
 	{
-		lev2::XgmSubMesh & XgmClusSet = * new lev2::XgmSubMesh; 
+		lev2::XgmSubMesh & XgmClusSet = * new lev2::XgmSubMesh;
 		XgmMesh.AddSubMesh( & XgmClusSet );
 
 		SColladaMatGroup *ColMatGroup = clustersets[ imat ];
@@ -425,7 +425,7 @@ void CColladaModel::BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* 
 		///////////////////////////////////////////////
 
 		int inumclus = ColMatGroup->GetClusterizer()->GetNumClusters();
-		
+
 		XgmClusSet.miNumClusters = inumclus;
 
 		XgmClusSet.mpClusters = new lev2::XgmCluster[ inumclus ];
@@ -494,11 +494,11 @@ bool CColladaModel::BuildXgmTriStripModel( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 void SColladaMatGroup::ComputeVtxStreamFormat()
-{	
+{
 	ork::lev2::GfxMaterialFx* MatFx = 0;
 
 	if( mpOrkMaterial )
-	{	
+	{
 		MatFx = rtti::downcast<ork::lev2::GfxMaterialFx*>( mpOrkMaterial );
 	}
 
@@ -512,7 +512,7 @@ void SColladaMatGroup::ComputeVtxStreamFormat()
 	//////////////////////////////////////////
 	// get vertex configuration data
 	//////////////////////////////////////////
-	
+
 	int imin_jnt = mMeshConfigurationFlags.mbSkinned ? 1 : 0;
 	int	imin_clr = 0;
 	int	imin_tex = 0;
@@ -520,7 +520,7 @@ void SColladaMatGroup::ComputeVtxStreamFormat()
 	int	imin_bin = 0;
 	int	imin_tan = 0;
 
-	if( MatFx ) // fx material 
+	if( MatFx ) // fx material
 	{	const orkvector<ork::lev2::VertexConfig>& VertexConfigDataMtl = MatFx->RefVertexConfig();
 		int inumvtxcfgmaterial = VertexConfigDataMtl.size();
 		for( int iv=0; iv<inumvtxcfgmaterial; iv++ )
@@ -564,11 +564,11 @@ void SColladaMatGroup::ComputeVtxStreamFormat()
 		bool bok = (bok_jnt&bok_clr&bok_tex&bok_nrm&bok_bin);
 
 		/////////////////////////////////
-		
+
 		int iscore = bok	?	// build weighted score (lower score is better)
 								format.miVertexSize
 							:	kbad_score;
-		
+
 		/////////////////////////////////
 
 		if( iscore<inv_score )
@@ -602,11 +602,11 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer( const SColladaMatGroup& matgro
 	switch( matgroup.GetVtxStreamFormat() )
 	{
 		case lev2::EVTXSTREAMFMT_V12N12T8I4W4: // PC skinned format
-		{	BuildVertexBuffer_V12N12T8I4W4();	
+		{	BuildVertexBuffer_V12N12T8I4W4();
 			break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12B12T8I4W4: // PC binormal skinned format
-		{	BuildVertexBuffer_V12N12B12T8I4W4();	
+		{	BuildVertexBuffer_V12N12B12T8I4W4();
 			break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N6I1T4: // WII skinned format
@@ -631,16 +631,16 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8I4W4> vwriter;
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices ); 
+	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
 
 	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	ork::lev2::SVtxV12N12B12T8I4W4 OutVtx; 
+	{	ork::lev2::SVtxV12N12B12T8I4W4 OutVtx;
 		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
 		OutVtx.mPosition = InVtx.mPos*kVertexScale;
 		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
 		OutVtx.mNormal = InVtx.mNrm;
 		OutVtx.mBiNormal = InVtx.mUV[0].mMapBiNormal;
-		
+
 		const std::string& jn0 = InVtx.mJointNames[0];
 		const std::string& jn1 = InVtx.mJointNames[1];
 		const std::string& jn2 = InVtx.mJointNames[2];
@@ -657,7 +657,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 		index3 = (index3==-1) ? 0 : index3;
 
 		OutVtx.mBoneIndices = (index0) | (index1<<8) | (index2<<16) | (index3<<24);
-		
+
 		CVector4 vw;
 		vw.SetX(InVtx.mJointWeights[3]);
 		vw.SetY(InVtx.mJointWeights[2]);
@@ -678,19 +678,19 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 	const CReal kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
-	
+
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12T8I4W4> vwriter;
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices ); 
+	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
 	for( int iv=0; iv<NumVertexIndices; iv++ )
-	{	
+	{
 		ork::lev2::SVtxV12N12T8I4W4 OutVtx;
 		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
 		OutVtx.mPosition = InVtx.mPos*kVertexScale;
 		OutVtx.mUV0 = InVtx.mUV[0].mMapTexCoord * UVScale;
 		OutVtx.mNormal = InVtx.mNrm;
-		
+
 		const std::string& jn0 = InVtx.mJointNames[0];
 		const std::string& jn1 = InVtx.mJointNames[1];
 		const std::string& jn2 = InVtx.mJointNames[2];
@@ -707,7 +707,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 		index3 = (index3==-1) ? 0 : index3;
 
 		OutVtx.mBoneIndices = (index0) | (index1<<8) | (index2<<16) | (index3<<24);
-		
+
 		CVector4 vw;
 		vw.SetX(InVtx.mJointWeights[3]);
 		vw.SetY(InVtx.mJointWeights[2]);
@@ -722,7 +722,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 }
 
 void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinned
-{	
+{
 	const CReal kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
@@ -787,7 +787,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer( const SColladaMatGroup& matgroup
 	switch( matgroup.GetVtxStreamFormat() )
 	{
 		case lev2::EVTXSTREAMFMT_V12N6C2T4: // basic wii environmen
-		{	BuildVertexBuffer_V12N6C2T4();	
+		{	BuildVertexBuffer_V12N6C2T4();
 			break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12B12T8C4: // basic pc environment
@@ -817,7 +817,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environm
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N6C2T4> vwriter;
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N6C2T4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices ); 
+	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
 	for( int iv=0; iv<NumVertexIndices; iv++ )
 	{	ork::lev2::SVtxV12N6C2T4 OutVtx;
 		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
@@ -836,7 +836,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environm
 		int ir = int(InVtx.mCol[0].GetY()*255.0f);
 		int ig = int(InVtx.mCol[0].GetZ()*255.0f);
 		int ib = int(InVtx.mCol[0].GetW()*255.0f);
-		
+
 		OutVtx.mColor = U16(((ir>>3)<<11)|((ig>>2)<<5)|((ib>>3)<<0));
 		vwriter.AddVertex(OutVtx);
 	}
@@ -852,7 +852,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc envir
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8C4> vwriter;
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8C4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices ); 
+	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
 	for( int iv=0; iv<NumVertexIndices; iv++ )
 	{	ork::lev2::SVtxV12N12B12T8C4 OutVtx;
 		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
@@ -874,7 +874,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environ
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12T16C4> vwriter;
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12T16C4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices ); 
+	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
 	for( int iv=0; iv<NumVertexIndices; iv++ )
 	{	ork::lev2::SVtxV12N12T16C4 OutVtx;
 		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
@@ -897,7 +897,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc enviro
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T16> vwriter;
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T16>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
-	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices ); 
+	vwriter.Lock( &DummyTarget, mpVertexBuffer, NumVertexIndices );
 	for( int iv=0; iv<NumVertexIndices; iv++ )
 	{	ork::lev2::SVtxV12N12B12T16 OutVtx;
 		const MeshUtil::vertex & InVtx = mSubMesh.RefVertexPool().GetVertex(iv);
@@ -986,7 +986,7 @@ static void BuildXgmClusterPrimGroups( lev2::XgmCluster & XgmCluster, const std:
 					OrkAssert(index<imaxvtx);
 					pidx[ii] = U16(index);
 				}
-			}	
+			}
 			DummyTarget.GBI()->UnLockIB( *pidxbuf );
 
 			/////////////////////////////////
@@ -1048,7 +1048,7 @@ void SColladaMatGroup::BuildTriStripXgmCluster( lev2::XgmCluster & XgmCluster, c
 
 	std::vector<unsigned int> TriangleIndices;
 	std::vector<int> ToolMeshTriangles;
-	
+
 	XgmClusterBuilder->mSubMesh.FindNSidedPolys( ToolMeshTriangles, 3 );
 
 	int inumtriangles = int( ToolMeshTriangles.size() );

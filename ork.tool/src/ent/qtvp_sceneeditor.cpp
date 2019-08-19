@@ -552,7 +552,7 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 
 	CompositingPassData node = cstack->top();
 	const ent::CompositingGroup* pCG = node.mpGroup;
-	lev2::BuiltinFrameTechniques* pFTEK = node.mpFrameTek;
+	auto pFTEK = dynamic_cast<lev2::BuiltinFrameTechniques*>(node.mpFrameTek);
 	///////////////////////////////////////////////////////////////////////////
 	const char* EffectName = "none";
 	float fFxAmt =0.0f;
