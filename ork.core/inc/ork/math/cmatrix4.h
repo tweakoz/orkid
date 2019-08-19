@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #ifndef __MATRIX_H__
@@ -49,7 +49,7 @@ template <typename T> class  TMatrix4
 	////////////////
 
 	TMatrix4(void)
-	{	
+	{
 		SetToIdentity();
 	}
 
@@ -127,7 +127,7 @@ template <typename T> class  TMatrix4
 
 	////////////////
 
-	void dump( STRING name );
+	void dump( const char* name ) const ;
 
 	inline bool operator==( const TMatrix4<T> &b ) const
 	{
@@ -186,7 +186,7 @@ template <typename T> class  TMatrix4
 
 	static bool UnProject( const TMatrix4<T> &rIMVP, const TVector3<T>& ClipCoord, TVector3<T> &rVObj );
     static bool UnProject( const TVector4<T> &rVWin, const TMatrix4<T> &rIMVP, const SRect &rVP, TVector3<T> &rVObj );
-    
+
     static const TMatrix4<T> Identity;
 
     T *GetArray( void ) const { return (T*) & elements[0][0]; }

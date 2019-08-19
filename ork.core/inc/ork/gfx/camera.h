@@ -29,8 +29,8 @@ public:
 	CMatrix4	mVMatrix;
 	CMatrix4	mPMatrix;
 	Frustum		mFrustum;
-	
-	CameraCalcContext() 
+
+	CameraCalcContext()
 		: mfAspectRatio(1.0f)
 	{
 	}
@@ -50,13 +50,13 @@ public:
 	////////////////////////////////////////////////////////////////////
 	// Get vectors whos length equals one pixel
 	//  given a worldpos (hopefully within the camera's frustum)
-	//  given viewport dimensions in 
+	//  given viewport dimensions in
 	void GetPixelLengthVectors( const CVector3& Pos, const CVector2& vp, CVector3& OutX, CVector3& OutY ) const;
 	////////////////////////////////////////////////////////////////////
 
 	////////////////////////////////////////////////////////////////////
 	// generate direction vector/origin (from 2d normalized screen coordinate)
-	
+
 	void ProjectDepthRay( const CVector2& v2d, CVector3& vdir, CVector3& vori ) const;
     void ProjectDepthRay( const CVector2& v2d, fray3& ray_out ) const;
 
@@ -97,11 +97,12 @@ public:
 	void PerspH( float fnear, float ffar, float faperh );
 	void Lookat( const CVector3& eye, const CVector3& tgt, const CVector3& up );
 	void SetView( const ork::CMatrix4 &view);
+	void setCustomProjection( const ork::CMatrix4& proj);
 
 	void SetVisibilityCamDat( const CCameraData* pvcd ) { mpVisibilityCamDat=pvcd; }
 	const CCameraData* GetVisibilityCamDat() const { return mpVisibilityCamDat; }
 
-	lev2::CCamera* GetLev2Camera() const { return mpLev2Camera; }
+	lev2::CCamera* getEditorCamera() const { return mpLev2Camera; }
 	void SetLev2Camera(lev2::CCamera*pcam); // { mpLev2Camera=pcam; }
 
 private:
@@ -109,7 +110,8 @@ private:
 	const CCameraData* mpVisibilityCamDat;
 	lev2::CCamera	*mpLev2Camera;
 
-	bool mMatViewSet;
+	bool _explicitViewMatrix;
+	bool _explicitProjectionMatrix;
 
 	Frustum		mFrustum;
 

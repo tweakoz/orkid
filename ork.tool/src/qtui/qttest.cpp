@@ -147,7 +147,6 @@ OrkQtApp::OrkQtApp( int& argc, char** argv )
   setOrganizationDomain("tweakoz.com");
   setApplicationDisplayName("OrkidTool");
   setApplicationName("OrkidTool");
-  //setStyle("fusion");
 
 	bool bcon = mIdleTimer.connect( & mIdleTimer, SIGNAL(timeout()), this, SLOT(OnTimer()));
 
@@ -166,126 +165,6 @@ void OrkQtApp::OnTimer()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-class ProxyStyle : public QStyle
-{
-public:
-
-#if defined(_DARWIN)
-	ProxyStyle(const QString &baseStyle) { style = QStyleFactory::create("Macintosh"); }
-#elif defined(IX)
-	ProxyStyle(const QString &baseStyle)
-	{
-		QStringList keys = QStyleFactory::keys();
-		for( auto item = keys.begin(); item!=keys.end(); item++ )
-		{
-			QString val = *item;
-			const char* as_str = val.toUtf8().constData();
-			printf( "stylefact<%s>\n", as_str );
-		}
-	 	style = QStyleFactory::create("Oxygen");
-	 }
-#endif
-	////////////////////////////////
-	void polish(QWidget *w) { style->polish(w); }
-	////////////////////////////////
-	void unpolish(QWidget *w) { style->unpolish(w); }
-	////////////////////////////////
-	int pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget *widget) const
-	{
-		return style->pixelMetric(metric, option, widget);
-	}
-	////////////////////////////////
-	void drawPrimitive ( PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget ) const
-	{
-		style->drawPrimitive( element, option, painter, widget );
-	}
-	////////////////////////////////
-	QSize sizeFromContents ( ContentsType type, const QStyleOption* option, const QSize& contentsSize, const QWidget* widget  ) const
-	{
-		return style->sizeFromContents( type, option, contentsSize, widget );
-	}
-	////////////////////////////////
-	QPixmap generatedIconPixmap ( QIcon::Mode iconMode, const QPixmap& pixmap, const QStyleOption* option ) const
-	{
-		return style->generatedIconPixmap( iconMode, pixmap, option );
-	}
-	////////////////////////////////
-	SubControl hitTestComplexControl ( ComplexControl control, const QStyleOptionComplex* option, const QPoint& position, const QWidget* widget ) const
-	{
-		return style->hitTestComplexControl( control, option, position, widget );
-	}
-	////////////////////////////////
-	int styleHint ( StyleHint hint, const QStyleOption* option, const QWidget* widget, QStyleHintReturn* returnData ) const
-	{
-		return style->styleHint( hint, option, widget, returnData );
-	}
-	////////////////////////////////
-	QRect subControlRect ( ComplexControl control, const QStyleOptionComplex* option, SubControl subControl, const QWidget* widget ) const
-	{
-		return style->subControlRect( control, option, subControl, widget );
-	}
-	////////////////////////////////
-	QRect subElementRect ( SubElement element, const QStyleOption* option, const QWidget* widget ) const
-	{
-		return style->subElementRect( element, option, widget );
-	}
-	////////////////////////////////
-	void 	drawComplexControl ( ComplexControl control, const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget ) const
-	{
-		style->drawComplexControl( control, option, painter, widget );
-	}
-	void 	drawControl ( ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget ) const
-	{
-		style->drawControl( element, option, painter, widget );
-	}
-	////////////////////////////////
-	QIcon 	standardIcon ( StandardPixmap standardIcon, const QStyleOption* option, const QWidget* widget ) const
-	{
-		return style->standardIcon( standardIcon, option, widget );
-	}
-	////////////////////////////////
-	QPixmap standardPixmap(StandardPixmap standardPixmap, const QStyleOption* opt, const QWidget* widget ) const
-	{
-		return style->standardPixmap( standardPixmap, opt, widget );
-	}
-	////////////////////////////////
-
-private:
-	QStyle *style;
-};
-
-class OrkStyle : public ProxyStyle
-{
-public:
-	OrkStyle(const QString &baseStyle) : ProxyStyle(baseStyle) {}
-
-	int pixelMetric(PixelMetric metric,const QStyleOption* option, const QWidget *widget) const;
-};
-
-int OrkStyle::pixelMetric(PixelMetric metric, const QStyleOption* option, const QWidget *widget) const
-{
-
-	switch( metric )
-	{
-		case PM_SmallIconSize:
-			return 32;
-		case PM_SplitterWidth:
-			return 6;
-		case PM_SizeGripSize:
-			return 8;
-		case PM_DockWidgetSeparatorExtent:
-			return 6;
-		default:
-			return ProxyStyle::pixelMetric(metric, option, widget);
-	}
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
 struct InputArgs
 {
@@ -302,7 +181,6 @@ OrkQtApp* gpQtApplication = nullptr;
 
 int BootQtThreadImpl(void* arg_opaq )
 {
-
   #if ! defined(__APPLE__)
     setenv("QT_QPA_PLATFORMTHEME","gtk2",1); // qt5 file dialog crashes otherwise...
   #endif
@@ -314,26 +192,9 @@ int BootQtThreadImpl(void* arg_opaq )
 
 	int iret = 0;
 
-///////////////////////////////////////////////////////////////////////////////
-#if defined( ORK_CONFIG_QT )
-///////////////////////////////////////////////////////////////////////////////
-
   QApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 
 	gpQtApplication = new OrkQtApp( args->argc, args->argv );
-
-#if defined(IX)
-	//QStyle *MainStyle = QStyleFactory::create( "WindowsXP" );
-
-#else
-	//QStyle *MainStyle = QStyleFactory::create( "WindowsXP" );
-#endif
-
-	//OrkAssert( MainStyle!=0 );
-
-//	QPalette palette = MainStyle->standardPalette();
-//	gpQtApplication->setPalette( palette );
-	//gpQtApplication->setStyle( MainStyle );
 
 	std::string AppClassName = CSystem::GetGlobalStringVariable( "ProjectApplicationClassName" );
 
@@ -364,36 +225,27 @@ int BootQtThreadImpl(void* arg_opaq )
 
 	delete gpQtApplication;
 
-    gpQtApplication = nullptr;
+  gpQtApplication = nullptr;
 
-	///////////////////////////////////////////////////////////////////////////////
-#endif
-///////////////////////////////////////////////////////////////////////////////
 	return 0;
 }
-int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode )
-{
-#if defined(USE_PYTHON)
+////////////////////////////////////////////////////////////////////////////////
+int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode ){
+    #if defined(USE_PYTHON)
     InitPython();
-#endif
-
+    #endif
     InputArgs args(argc,argv);
-    //BootQtThreadImpl((void*)& args);
     return BootQtThreadImpl( & args );
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace tool
-} // namespace ork
+}} // // namespace ork { namespace tool
 
-void OrkGlobalDisableMousePointer()
-{
+void OrkGlobalDisableMousePointer(){
     //QApplication::setOverrideCursor( QCursor( Qt::BlankCursor ) );
 }
-void OrkGlobalEnableMousePointer()
-{
+void OrkGlobalEnableMousePointer(){
     //QApplication::restoreOverrideCursor();
 }

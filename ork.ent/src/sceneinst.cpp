@@ -287,7 +287,7 @@ void SceneInst::SetCameraData(const PoolString& name, const CCameraData*camdat)
 		}
 	}
 
-	lev2::CCamera* pcam = (camdat!=0) ? camdat->GetLev2Camera() : 0;
+	lev2::CCamera* pcam = (camdat!=0) ? camdat->getEditorCamera() : 0;
 
 	//orkprintf( "SceneInst::SetCameraData() name<%s> camdat<%p> l2cam<%p>\n", name.c_str(), camdat, pcam );
 }
@@ -937,7 +937,7 @@ static void CopyCameraData( const SceneInst::CameraLut& srclut, CameraLut& dstlu
 	{
 		const PoolString& CameraName = itCAM->first;
 		const CCameraData* pcameradata = itCAM->second;
-		const lev2::CCamera* pcam = pcameradata ? pcameradata->GetLev2Camera() : 0;
+		const lev2::CCamera* pcam = pcameradata ? pcameradata->getEditorCamera() : 0;
 		//printf( "CopyCameraData Idx<%d> CamName<%s> pcamdata<%p> pcam<%p>\n", idx, CameraName.c_str(), pcameradata, pcam );
 		if( pcameradata )
 		{

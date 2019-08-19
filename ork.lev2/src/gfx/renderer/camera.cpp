@@ -42,11 +42,12 @@ CCameraData::CCameraData()
 	, mEye( 0.0f, 0.0f, 0.0f )
 	, mTarget( 0.0f, 0.0f, 1.0f )
 	, mUp( 0.0f, 1.0f, 0.0f )
-	, mMatViewSet(false)
 	, mpVisibilityCamDat(0)
 	, mfOverrideWidth(0.0f)
 	, mfOverrideHeight(0.0f)
 	, mpLev2Camera(0)
+	, _explicitProjectionMatrix(false)
+	, _explicitViewMatrix(false)
 {
 
 }
@@ -84,14 +85,24 @@ void CCameraData::Lookat( const CVector3& eye, const CVector3& tgt, const CVecto
 	mTarget = tgt;
 	mUp = up;
 
-	mMatViewSet = false;
+	_explicitViewMatrix = false;
 }
 
 void CCameraData::SetView( const ork::CMatrix4 &view)
 {
 	mMatView = view;
+	//view.dump("setview");
+	_explicitViewMatrix = true;
+}
 
-	mMatViewSet = true;
+void CCameraData::setCustomProjection( const ork::CMatrix4& proj){
+	//proj.dump("setproj");
+	mMatProj = proj;
+	_explicitProjectionMatrix = true;
+	mfAspect = 1.0f;
+	mNear = .1f;
+	mFar = 1000.f;
+	mAper = 60;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -157,7 +168,7 @@ void CCameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) cons
 	//float faspect = mfAspect;
 	float fnear = mNear;
 	float ffar = mFar;
-	///////////////////////////////////////////////////	
+	///////////////////////////////////////////////////
 	if( faper<1.0f ) faper = 1.0f;
 	if( fnear<0.1f ) fnear = 0.1f;
 	if( ffar<0.5f ) ffar = 0.5f;
@@ -169,7 +180,7 @@ void CCameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) cons
 	{
 		target = mEye + CVector3::Blue();
 	}
-	///////////////////////////////////////////////////			
+	///////////////////////////////////////////////////
 	ctx.mPMatrix.Perspective( faper, faspect, fnear, ffar );
 	ctx.mVMatrix.LookAt( mEye, mTarget, mUp );
 	///////////////////////////////////////////////////
@@ -181,12 +192,12 @@ void CCameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) cons
 
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 {
-	mMatViewSet = false;
-	
+
 	//orkprintf( "ccd camEYE <%f %f %f>\n", mEye.GetX(), mEye.GetY(), mEye.GetZ() );
 	//orkprintf( "ccd camTGT <%f %f %f>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetZ() );
 
@@ -200,7 +211,7 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 	//////////////////////////////////////////////
 
 	float fhdaspect = 1.0f;
-	
+
 	if( Is16x9() )
 	{
 		if( mpGfxTarget != 0 )
@@ -218,13 +229,12 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 	// like when the wii renders at 640x448 on a 16x9 screen
 	//////////////////////////////////////////////
 
-	if(!mMatViewSet)
+	if(!_explicitViewMatrix)
 		mMatView = CMatrix4::Identity;
-	mMatProj = CMatrix4::Identity;
 	if( mpGfxTarget != 0 )
 	{
 		//mpGfxTarget->FBI()->ForceFlush();
-		if(!mMatViewSet)
+		if(!_explicitViewMatrix)
 		{
 			//float fmag0 = mEye.MagSquared();
 			//float fmag1 = mTarget.MagSquared();
@@ -233,15 +243,19 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 			{
 				mTarget = mEye + CVector3::Blue();
 			}
-			
+
 			mMatView = mpGfxTarget->MTXI()->LookAt( mEye, mTarget, mUp );
 		}
 		//mpGfxTarget->FBI()->ForceFlush();
-			
-		if( mpGfxTarget->GetRenderContextFrameData() )
-		{			
+
+
+		if( _explicitProjectionMatrix ){
+
+		}
+		else if( mpGfxTarget->GetRenderContextFrameData() )
+		{
 			mfAspect = fhdaspect*calcctx.mfAspectRatio;
-			
+
 			if (mHorizAper != 0)
 				mAper = mHorizAper/calcctx.mfAspectRatio;
 
@@ -252,12 +266,15 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 			mMatProj = mpGfxTarget->MTXI()->Persp( mAper, mfAspect, mNear, mFar );
 
 		}
+		else{
+			mMatProj = CMatrix4::Identity;
+		}
 	//	mpGfxTarget->FBI()->ForceFlush();
 	}
-	
+
 	calcctx.mVMatrix = mMatView;
 	calcctx.mPMatrix = mMatProj;
-	
+
 	///////////////////////////////
 
 	mVPMatrix = mMatView*mMatProj;
@@ -277,12 +294,12 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 	{
 		//mpGfxTarget->FBI()->ForceFlush();
 		matgp_proj.Perspective( mAper, mfAspect, mNear, mFar );
-		
-		if(mMatViewSet)
+
+		if(_explicitViewMatrix)
 			matgp_view = mMatView;
 		else
 			matgp_view.LookAt( mEye, mTarget, mUp );
-		
+
 		CMatrix4 matgp_vp = matgp_view*matgp_proj;
 		matgp_ivp.GEMSInverse(matgp_vp);
 		matgp_iv.GEMSInverse(matgp_view);
@@ -290,7 +307,7 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 		//mpGfxTarget->FBI()->ForceFlush();
 	}
 
-	mMatViewSet = true;
+	//mMatViewSet = true;
 
 	///////////////////////////////
     // generate frustum (useful for many things, like billboarding, clipping, LOD, etc.. )
