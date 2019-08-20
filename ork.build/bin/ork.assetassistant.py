@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 # Copyright 2017 - Michael T. Mayers
 # Licensed under the GPLV3 - see https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QLabel, QWid
 from PyQt5.QtWidgets import QLineEdit, QTextEdit, QPushButton, QFileDialog, QStyle, QStyleFactory
 from PyQt5.QtWidgets import QMainWindow, QDockWidget, QPlainTextEdit
 from PyQt5.QtGui import QPalette, QPixmap
-
+from pathlib import Path
 import orkassasshl as hilite
 
 scriptdir = os.path.dirname(os.path.realpath(__file__))
@@ -17,12 +17,14 @@ os.system('syslog -s -l error "%s"' % scriptdir)
 
 settings = QSettings("TweakoZ", "OrkidTool");
 settings.beginGroup("App");
-datadir = os.path.abspath(settings.value("datadir"))
 settings.endGroup();
 
-basedir = os.path.normpath(datadir+"/..")
-srcdir = os.path.abspath(datadir+"/src")
-dstdir = os.path.abspath(datadir+"/pc")
+basedir = Path(os.getenv("ORKDOTBUILD_WORKSPACE_DIR"))
+datadir = basedir/"ork.data"
+srcdir = str(datadir/"src")
+dstdir = str(datadir/"pc")
+datadir = str(datadir)
+basedir = str(basedir)
 
 #############################################################################
 def bgcolor(r,g,b):
@@ -176,7 +178,7 @@ class AssetWidget(QWidget):
 
       if orkfilt!=None:
           cmd = orkbin + (" -filter %s -in " % orkfilt) + srcpath + " -out " + dstpath
-      
+
 
       class SubProc:
          def __init__(self,mainwin):
@@ -213,7 +215,7 @@ class AssetWidget(QWidget):
             self.process.readyReadStandardError.connect(onSubProcStderr)
             self.process.readyReadStandardOutput.connect(onSubProcStdout);
             self.process.finished.connect(finished);
-            
+
 
             self.process.start(cmd)
 
@@ -258,7 +260,7 @@ if __name__ == '__main__':
 
     mainwin.resize(960,360)
     mainwin.setWindowTitle("Orkid Asset Assistant \N{COPYRIGHT SIGN} 2017 - TweakoZ")
-    
+
     appss = "QWidget {background-color: rgb(64,64,96); color: rgb(255,255,255);}"
     appss += "QTabWidget::pane { border-top: 2px solid #303030;}"
     appss += """QTabBar::tab {
