@@ -16,7 +16,7 @@ namespace ork { namespace MeshUtil {
 void submesh::Triangulate( submesh *poutmesh ) const
 {
 	int inump = GetNumPolys();
-	
+
 	for( int ip=0; ip<inump; ip++ )
 	{
 		const poly & ply = mMergedPolys[ ip ];
@@ -92,7 +92,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 		VPos[2] = mvpool.VertexPool[ ici[2] ].mPos;
 		P0.CalcPlaneFromTriangle( VPos[0], VPos[1], VPos[2] );
 		//CVector4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
-		
+
 		CReal fArea012 = CVector4::CalcTriArea( VPos[0],VPos[1],VPos[2], P0.GetNormal() );
 
 		/*if( 0 != _isnan( fArea012 ) )
@@ -102,7 +102,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 
 		/////////////////////////
 		// get other triangles connected to this via any of its edges
-		
+
 		orkset<int> ConnectedPolySet;
 		orkset<int> ConnectedPolySetA;
 		orkset<int> ConnectedPolySetB;
@@ -117,7 +117,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 
 		/////////////////////////////////////////////////////////////////////////////
 		// for each connected poly, test if it matches our quad critera
-		
+
 		for( orkset<int>::iterator it=ConnectedPolySet.begin(); it!=ConnectedPolySet.end(); it++ )
 		{
 			int iotherpoly = *it;
@@ -182,46 +182,29 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 
 							int imc = 0;
 
-							for( orkset<int>::iterator it=TestForQuadIdxSet.begin(); it!=TestForQuadIdxSet.end(); it++ )
-							{
-								static int idx;
+							for( int idx : TestForQuadIdxSet ){
 
-								struct testmap : std::binary_function<std::pair<int,int>, IndexTestContext * , bool>
-								{
-									static bool testmatch( const std::pair<int,int> & pr )
-									{
-										bool bmatch = (pr.first == idx);
-										return bmatch;
-									}
+								int matches = (int) std::count_if( TestForQuadIdxMap.begin(),
+                                                                   TestForQuadIdxMap.end(),
+                                                                   [=](const std::pair<int,int> & pr){
+                                                                       return (pr.first == idx);
+                                                                   });
 
-									bool operator ()( std::pair<int,int> pr, IndexTestContext * itctx ) const
-									{
-										bool bmatch = (pr.first == itctx->itest);
-
-										if( bmatch )
-										{
-											int iset = itctx->iset;
-											itctx->PairedIndices[iset].insert( pr.second );
-											itctx->PairedIndicesCombined.insert( pr.second );
-										}
-										return bmatch;
-									}
-								};
-
-								idx = *it;
-
-								int imatch = (int) std::count_if( TestForQuadIdxMap.begin(), TestForQuadIdxMap.end(), testmap::testmatch );
-
-								if( 2 == imatch )
-								{
+								if( 2 == matches ){
 									OrkAssert( imc<2 );
 									itestctx.iset = imc++;
 									itestctx.itest = idx;
-									int icnt = (int) std::count_if( TestForQuadIdxMap.begin(), TestForQuadIdxMap.end(), bind2nd( testmap(), & itestctx ) );
+									for( auto item : TestForQuadIdxMap ){
+										if( item.first == itestctx.itest ){
+											itestctx.PairedIndices[itestctx.iset].insert( item.second );
+											itestctx.PairedIndicesCombined.insert( item.second );
+										}
+
+                                    }
 								}
 
 							}
-	
+
 							////////////////////////////////////////////
 							// find corner edges (unshared)
 
@@ -232,7 +215,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 									itestctx.CornerIndices.insert( ii );
 								}
 							}
-						
+
 							////////////////////////////////////////////
 							// test if the quad is rectangular, if so add it
 
@@ -298,7 +281,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 			}
 
 		}	// for( set<int>::iterator it=ConnectedPolySet.begin(); it!=ConnectedPolySet.end(); it++ )
-						
+
 		if( false == basquad )
 		{
 			poutmesh->MergePoly( MeshUtil::poly( ici[0], ici[1], ici[2] ) );

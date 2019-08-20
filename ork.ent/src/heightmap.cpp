@@ -17,7 +17,7 @@ namespace ork { namespace ent {
  sheightmap sheightmap::gdefhm(3,3);
 
 ///////////////////////////////////////////////////////////////////////////////
-sheightmap::sheightmap( int isx, int isz ) 
+sheightmap::sheightmap( int isx, int isz )
 	: miGridSizeX(0)
 	, miGridSizeZ(0)
 	, mHeightData()
@@ -107,7 +107,7 @@ CVector3 sheightmap::ComputeNormal( int ix1, int iz1 ) const
 
 	int ix0 = (ix1-1); if( ix0<0 ) ix0=0;
 	int iz0 = (iz1-1); if( iz0<0 ) iz0=0;
-	
+
 	int ix2 = (ix1+1); if( ix2>(isx-1) ) ix2=isx-1;
 	int iz2 = (iz1+1); if( iz2>(isz-1) ) iz2=isz-1;
 
@@ -179,17 +179,17 @@ bool sheightmap::CalcClosestAddress( const CVector3& to, float& outx, float& out
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 sheightmap::Min() const 
+CVector3 sheightmap::Min() const
 {
 	CVector3 ret( mfWorldSizeX*-0.5f, mMin, mfWorldSizeZ*-0.5f );
 	return ret;
 }
-CVector3 sheightmap::Max() const 
+CVector3 sheightmap::Max() const
 {
 	CVector3 ret( mfWorldSizeX*0.5f, mMax, mfWorldSizeZ*0.5f );
 	return ret;
 }
-CVector3 sheightmap::Range() const 
+CVector3 sheightmap::Range() const
 {
 	CVector3 ret( mfWorldSizeX, mRange, mfWorldSizeZ );
 	return ret;
@@ -246,7 +246,7 @@ void sheightmap::ReadSurface(  bool bfilter, const CVector3& xyz, CVector3& pos,
 				terp_xyz[is] = XYZ( iterX+isx, iterZ+isz );
 				terp_nrm[is] = ComputeNormal( iterX+isx, iterZ+isz );
 			}
-			
+
 			float flerpx = fiterX-float(iterX);
 			float flerpz = fiterZ-float(iterZ);
 
@@ -268,7 +268,7 @@ void sheightmap::ReadSurface(  bool bfilter, const CVector3& xyz, CVector3& pos,
 			//int iZ = int( float(iterZ)+0.5f );
 			pos = XYZ(iterX,iterZ);
 
-			//printf( "ReadSurfacenofilt to_x<%f> to_z<%f> iterX<%d> iterZ<%d> pos<%f %f %f> bOK<%d>\n", 
+			//printf( "ReadSurfacenofilt to_x<%f> to_z<%f> iterX<%d> iterZ<%d> pos<%f %f %f> bOK<%d>\n",
 			//xyz.GetX(), xyz.GetZ(),
 			//iterX, iterZ,
 			//pos.GetX(), pos.GetY(), pos.GetZ(),
@@ -286,6 +286,8 @@ bool sheightmap::Load( const ork::file::Path& pth )
 
 	bool bexists = CFileEnv::DoesFileExist( abs_path );
 
+    uint16_t hfmin = 0xffff;
+    uint16_t hfmax = 0x0;
 	if( bexists )
 	{
 		auto oiio_img = ImageInput::create(abs_path.c_str());
@@ -303,7 +305,7 @@ bool sheightmap::Load( const ork::file::Path& pth )
 		bool read_ok = oiio_img->read_image (TypeDesc::UINT16, pu16);
 		oiio_img->close ();
 
-		
+
 		OrkAssert( read_ok );
 
 		int inumpix = (xres*yres);
@@ -330,7 +332,7 @@ bool sheightmap::Load( const ork::file::Path& pth )
 		this->SetGridSize( xres, yres );
 
 		this->GetLock().Lock();
-	
+
 		{
 			for( int iz=0; iz<yres; iz++ )
 			{
@@ -339,22 +341,25 @@ bool sheightmap::Load( const ork::file::Path& pth )
 					int iaddr = (iz*xres)+ix;
 
 					U16 upix = (pu16[iaddr]-umin);
+
+                    if( upix<hfmin ) hfmin=upix;
+                    if( upix>hfmax ) hfmax=upix;
 					ork::swapbytes_dynamic<U16>( upix );
 
 					float fh = (float(upix)/float(urange))-0.5f;
 
-					//printf( "FH<%f>\n", fh );
 					this->SetHeight( ix, iz, fh );
 				}
 			}
 		}
 		this->GetLock().UnLock();
 	}
+    printf( "hfmin<%d> hfmax<%d>\n", int(hfmin), int(hfmax) );
 
 	return bexists;
 }
 
-static 
+static
 CVector4 GetGradientColor( float fin, const orkmap<float,CVector4>& gmap )
 {
 	CVector4 rval = CColor4::White();
@@ -385,7 +390,7 @@ CVector4 GetGradientColor( float fin, const orkmap<float,CVector4>& gmap )
 
 				rval.Lerp( itl->second, itu->second, flerp );
 			}
-			
+
 		}
 	}
 	return rval;
@@ -396,7 +401,7 @@ CVector4 GradientSet::Lerp( float fu, float fv ) const
 	CVector3 lo = GetGradientColor( fu, *mGradientLo );
 	CVector3 hi = GetGradientColor( fu, *mGradientHi );
 	CVector3 result;
-	result.Lerp( lo, hi, fv ); 
+	result.Lerp( lo, hi, fv );
 	return result;
 }
 ///////////////////////////////////////////////////////////////////////////////

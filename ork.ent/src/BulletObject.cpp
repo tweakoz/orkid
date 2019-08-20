@@ -28,9 +28,7 @@
 
 #include<ork/math/PIDController.h>
 
-#if defined(_DARWIN)
-#include <dispatch/dispatch.h>
-#endif
+#include <ork/kernel/opq.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -100,7 +98,7 @@ void BulletObjectControllerData::Describe()
 	reflect::RegisterFloatMinMaxProp( &BulletObjectControllerData::mfAngularDamping, "AngularDamping", "0.0", "1.0" );
 
 	reflect::RegisterProperty("AllowSleeping", &BulletObjectControllerData::mbAllowSleeping);
-  reflect::RegisterProperty("IsKinematic", &BulletObjectControllerData::mbKinematic);
+    reflect::RegisterProperty("IsKinematic", &BulletObjectControllerData::mbKinematic);
 	reflect::RegisterProperty("Disable", &BulletObjectControllerData::_disablePhysics);
 
 	reflect::RegisterMapProperty( "ForceControllers", & BulletObjectControllerData::mForceControllerDataMap );
@@ -210,7 +208,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 	if( bullet_world )
 	{
 		if(auto wController
-				= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true))
+				= bullet_world->GetTypedComponent<BulletWorldControllerInst>(true))
 		{
 			const BulletWorldControllerData& world_data = wController->GetWorldData();
 			btVector3 grav = !world_data.GetGravity();
@@ -318,18 +316,12 @@ void BulletObjectControllerInst::DoUpdate(ork::ent::SceneInst* inst)
 		// apply forces
 		//////////////////////////////////////////////////
 
-		for( orkmap<PoolString,BulletObjectForceControllerInst*>::const_iterator
-				it=mForceControllerInstMap.begin();
-				it!=mForceControllerInstMap.end();
-				it++ )
-		{
-			BulletObjectForceControllerInst* forcecontroller = it->second;
-
+		for( auto item : mForceControllerInstMap ){
+			auto forcecontroller = item.second;
 			if( forcecontroller )
-			{
 				forcecontroller->UpdateForces(inst,this);
-			}
 		}
+
 		//////////////////////////////////////////////////
 		//printf( "newpos<%f %f %f>\n", pos.GetX(), pos.GetY(), pos.GetZ() );
 	}
@@ -347,14 +339,14 @@ BulletShapeBaseData::BulletShapeBaseData()
 BulletShapeBaseData::~BulletShapeBaseData()
 {
 }
+
 BulletShapeBaseInst* BulletShapeBaseData::CreateShape(const ShapeCreateData& data) const
 {
 	BulletShapeBaseInst* rval = nullptr;
 
-	if( mShapeFactory )
+	if( mShapeFactory._createShape )
 	{
-
-		rval = mShapeFactory(data);
+		rval = mShapeFactory._createShape(data);
 
 		if( rval && rval->mCollisionShape )
 		{
@@ -377,20 +369,12 @@ BulletShapeBaseInst* BulletShapeBaseData::CreateShape(const ShapeCreateData& dat
 
 bool BulletShapeBaseData::DoNotify(const event::Event *event)
 {
-	/*if( const ObjectGedEditEvent* pgev = rtti::autocast(event) )
+	if( const ObjectGedEditEvent* pgev = rtti::autocast(event) )
 	{
-
-#if defined(_DARWIN) // TODO fixme (serialize on editorqueue)
-		dispatch_async( EditOnlyQueue(),
-		^{
-#endif
-			if( mCollisionShape ) delete mCollisionShape;
-			mCollisionShape = 0;
-			printf( "BulletShapeBaseData::Notify() :: DIRTY\n" );
-#if defined(_DARWIN)
-		});
-#endif
-	}*/
+        UpdateSerialOpQ().push(Op([this](){
+            mShapeFactory._invalidate(this);
+		}));
+	}
 
 	return true;
 }
@@ -407,7 +391,7 @@ BulletShapeCapsuleData::BulletShapeCapsuleData()
 	: mfRadius(0.10f)
 	, mfExtent(1.0f)
 {
-	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
+	mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
 		auto rval = new BulletShapeBaseInst;
 		rval->mCollisionShape = new btCapsuleShapeZ( this->mfRadius, this->mfExtent );
@@ -423,7 +407,7 @@ void BulletShapePlaneData::Describe()
 
 BulletShapePlaneData::BulletShapePlaneData()
 {
-	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
+	mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
 		auto rval = new BulletShapeBaseInst;
 		rval->mCollisionShape = new btStaticPlaneShape(  ! CVector3::Green(), 0.0f );
@@ -441,7 +425,7 @@ void BulletShapeSphereData::Describe()
 BulletShapeSphereData::BulletShapeSphereData()
 	: mfRadius(1.0f)
 {
-	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
+	mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
 		auto rval = new BulletShapeBaseInst;
 		rval->mCollisionShape = new btSphereShape(  this->mfRadius );
@@ -465,7 +449,7 @@ BulletShapeModelData::BulletShapeModelData()
 	: mModelAsset(0)
 	, mfScale( 1.0f )
 {
-	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
+	mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
 		auto rval = new BulletShapeBaseInst;
 		if( mModelAsset )
