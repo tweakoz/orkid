@@ -79,8 +79,6 @@ struct VrFrameTechnique final : public FrameTechniqueBase
 
     void DoInit( GfxTarget* pTARG ) final {
         if(nullptr==_rtg_left){
-            printf( "miW<%d> miH<%d>\n", miW, miH );
-            //assert(false);
             _rtg_left = new RtGroup( pTARG, miW, miH, NUMSAMPLES );
             _rtg_right = new RtGroup( pTARG, miW, miH, NUMSAMPLES );
 
@@ -106,19 +104,13 @@ struct VrFrameTechnique final : public FrameTechniqueBase
                          CCameraData* rcam ) {
       RenderContextFrameData&	FrameData = renderer.GetFrameData();
     	GfxTarget *pTARG = FrameData.GetTarget();
-    	SRect tgt_rect( 0, 0, miW, miH );
+
+      SRect tgt_rect( 0, 0, miW, miH );
+
       _CPD.mbDrawSource = true;
       _CPD.mpFrameTek = this;
       _CPD.mpCameraName = nullptr;
       _CPD.mpLayerName = nullptr; // default == "All"
-
-
-      auto testV = pTARG->MTXI()->LookAt(fvec3(0,0,-1), // eye
-                                          fvec3(0,0,0), // tgt
-                                           fvec3(0,1,0)); // up
-
-
-      //testV.dump("testV");
 
       pTARG->FBI()->SetAutoClear(false);
       // clear will occur via _CPD
@@ -357,14 +349,9 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
         auto ptexR = bufferR->GetTexture();
         if( ptexL && ptexR ){
 
-          glFlush();
-          glFinish();
-
             auto texobjL = ptexL->getProperty<GLuint>("gltexobj");
             auto texobjR = ptexR->getProperty<GLuint>("gltexobj");
 
-            //printf( "vrcomposite texl<%p:%u>\n", ptexL, texobjL );
-            //printf( "vrcomposite texl<%p:%u>\n", ptexR, texobjR );
             # if defined(ENABLE_VR)
 
             vr::Texture_t leftEyeTexture = {
@@ -378,10 +365,35 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
                 vr::ColorSpace_Gamma
             };
 
+            //////////////////////////////////////////////////
+            // odd that you need to set the viewport
+            //  before submitting to the vr compositor,
+            //  since the texture contains the size of itself...
+            //////////////////////////////////////////////////
+
+            SRect VPRect( 0, 0, vrimpl->_width, vrimpl->_height );
+            auto targ = framedata.GetTarget();
+          	targ->FBI()->PushViewport( VPRect );
+          	targ->FBI()->PushScissor( VPRect );
+
+            //////////////////////////////////////////////////
+            // submit to openvr compositor
+            //////////////////////////////////////////////////
+
             GLuint erl = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
             //assert(erl==GL_NO_ERROR);
             GLuint err = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
             //assert(err==GL_NO_ERROR);
+
+            //////////////////////////////////////////////////
+            // undo above PushVp/Scissor
+            //////////////////////////////////////////////////
+
+            targ->FBI()->PopViewport( );
+          	targ->FBI()->PopScissor( );
+
+            //////////////////////////////////////////////////
+
             #endif
 
 
@@ -433,13 +445,8 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
     	}
       if ( vrimpl->_trackedPoses[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid ){
     		vrimpl->_posemap["hmd"].GEMSInverse(vrimpl->_poseMatrices[vr::k_unTrackedDeviceIndex_Hmd]);
-        //vrimpl->_posemap["hmd"]=(vrimpl->_poseMatrices[vr::k_unTrackedDeviceIndex_Hmd]);
     	}
-
-
       //printf( "pose_classes<%s>\n", pose_classes.c_str() );
-
-
     }
 
     #endif // ENABLE_VR
