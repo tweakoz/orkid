@@ -541,6 +541,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 						{
 
 						}
+						btest =true; // todo fix culler
 					}
 					else
 					{

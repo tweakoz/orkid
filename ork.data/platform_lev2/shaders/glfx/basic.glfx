@@ -225,8 +225,8 @@ technique tek_wnormal_skinned
 technique tek_lamberttex_skinned
 {	fxconfig=fxcfg_default;
 	pass p0
-	{	vertex_shader=vs_sk;
-		fragment_shader=ps_modtex;
+	{	vertex_shader=vs_wnormalsk;
+		fragment_shader=ps_fragclr;
 		state_block=sb_default;
 	}
 }

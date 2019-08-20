@@ -28,6 +28,7 @@ function Diver:OnEntityStart()
     }
     self.spawned = 0
     self.balls = {}
+    self.phase = 0
 
 end
 -------------------------------------------------------------------------------
@@ -45,7 +46,7 @@ function Diver.SpawnBallz(self)
         local ent = scene:spawn("/arch/ball",entname,{
             pos = self.ent.pos+ork.vec3(0,30,0)
         })
-        
+
         self.balls[ent]=ent
         self.spawned = self.spawned+1
     end
@@ -63,7 +64,13 @@ function Diver:OnEntityUpdate(dt)
     --printf( "DIVER::OnEntityUpdate()" )
     --printf( "entname<%s> dt<%g>",self.ent.name,dt )
     --printf( "ent<%s> pos<%s>",tostring(self.ent),tostring(self.ent.pos) )
-    self.timer = self.timer-dt 
+    self.timer = self.timer-dt
+
+    self.phase = self.phase+dt*0.1
+    px = math.sin(self.phase)*3.0
+    pz = math.cos(self.phase)*-3.0
+    self.charcon:sendEvent("setPos",ork.vec3(px,0,pz))
+
     if self.timer<0 then
         self.timer = math.random(1,3)
         local stnum = math.random(1,6)

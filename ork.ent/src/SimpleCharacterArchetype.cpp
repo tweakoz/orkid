@@ -47,6 +47,7 @@ struct MyStrings{
     const PoolString kRun = AddPooledLiteral("run");
     const PoolString kState = AddPooledLiteral("state");
     const PoolString kSetDir =AddPooledLiteral("setDir");
+    const PoolString kSetPos =AddPooledLiteral("setPos");
 };
 static MyStrings& STR(){
     static MyStrings ms;
@@ -68,7 +69,7 @@ public:
 
 void SimpleCharControllerData::Describe()
 {
-	ent::RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));	
+	ent::RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mWalkSpeed, "WalkSpeed", "0", "250" );
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mRunSpeed, "RunSpeed", "0", "500" );
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mSpeedLerpRate, "SpeedLerpRate", "0.1", "100" );
@@ -108,12 +109,13 @@ public:
         float splerp = dt*mCCDATA.mSpeedLerpRate;
         mCurrentSpeed = (mDesiredSpeed*splerp)+(mCurrentSpeed*(1.0f-splerp));
 
-        mVelocity = fvec2(vv.x,vv.z)*mCurrentSpeed;
+        //mVelocity = 0.0f; //fvec2(vv.x,vv.z)*mCurrentSpeed;
 
-        mPosition += mVelocity*dt;
-        auto pos = fvec3(mPosition.x,0.0f,mPosition.y);
+        auto vel3d = fvec3(mVelocity.x,0.0f,mVelocity.y);
+
+        mPosition += vel3d*dt;
         fmtx4 mtx;
-        mtx.ComposeMatrix( pos, mCurrentDirection, 1.0f );
+        mtx.ComposeMatrix( mPosition, mCurrentDirection, 1.0f );
 
         mEntity->SetDynMatrix(mtx);
 
@@ -130,12 +132,17 @@ public:
             if(vev->mCode==STR().kState)
             {   auto state = LR.get<std::string>("id");
                 mState = AddPooledString(state.c_str());
-                printf( "charcon got state change request id<%s>\n", state.c_str() );              
+                printf( "charcon got state change request id<%s>\n", state.c_str() );
             }
             if(vev->mCode==STR().kSetDir)
             {   float dir = LR.toValue<float>();
                 mDesiredDirection.FromAxisAngle(fvec4(0,1,0,dir));
-                printf( "charcon got direction change request dir<%f>\n", dir );              
+                printf( "charcon got direction change request dir<%f>\n", dir );
+            }
+            if(vev->mCode==STR().kSetPos)
+            {   auto pos = LR.toValue<fvec3>();
+                mPosition = pos;
+                printf( "charcon got position change request pos<%f %f %f>\n", pos.x, pos.y, pos.z );
             }
         }
 		else if(const event::AnimFinishEvent* afe = ork::rtti::autocast(event))
@@ -195,7 +202,7 @@ public:
     PoolString mCurState;
     fvec2 mVelocity;
     PoolString mState;
-    fvec2 mPosition;
+    fvec3 mPosition;
     float mCurrentSpeed;
     float mDesiredSpeed;
     fquat mCurrentDirection;
@@ -222,7 +229,7 @@ SimpleCharacterArchetype::SimpleCharacterArchetype()
 {
 }
 
-void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer) 
+void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<EditorPropMapData>();
 	composer.Register<ork::ent::ModelComponentData>();

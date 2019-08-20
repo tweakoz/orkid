@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -144,7 +144,7 @@ public:
 	bool IsDebug() const { return mbDEBUG; }
 	float GetSimulationRate() const { return mSimulationRate; }
 	const CVector3& GetGravity() const { return mGravity; }
-	
+
 protected:
 	ComponentInst *CreateComponent(Entity *pent) const override;
 
@@ -165,7 +165,7 @@ struct BulletDebugDrawDBData
 	BulletWorldControllerInst*		mpBWCI;
 
 	BulletDebugDrawDBRec			mDBRecs[ork::ent::DrawableBuffer::kmaxbuffers];
-	PhysicsDebugger*				mpDebugger;	
+	PhysicsDebugger*				mpDebugger;
 
 	BulletDebugDrawDBData( BulletWorldControllerInst* psi, ork::ent::Entity* pent );
 	~BulletDebugDrawDBData();
@@ -190,8 +190,8 @@ class BulletWorldControllerInst : public ork::ent::ComponentInst
 	float									mfAvgDtCtr;
 
 
-	void DoUpdate(ork::ent::SceneInst* inst) final; 
-	bool DoNotify(const ork::event::Event *event) final { return false; } 
+	void DoUpdate(ork::ent::SceneInst* inst) final;
+	bool DoNotify(const ork::event::Event *event) final { return false; }
 
 public:
 	BulletWorldControllerInst(const BulletWorldControllerData& data, ork::ent::Entity *entity);
@@ -327,7 +327,7 @@ protected:
 	shape_factory_t mShapeFactory;
 
 	bool DoNotify(const event::Event *event) override;
-	
+
 };
 
 struct BulletShapeBaseInst
@@ -350,7 +350,7 @@ class BulletShapeCapsuleData : public BulletShapeBaseData
 public:
 
 	BulletShapeCapsuleData();
-	
+
 private:
 
 	float					mfRadius;
@@ -379,7 +379,7 @@ class BulletShapeSphereData : public BulletShapeBaseData
 public:
 
 	BulletShapeSphereData();
-	
+
 private:
 
 	float					mfRadius;
@@ -400,7 +400,7 @@ public:
 	void SetModelAccessor( ork::rtti::ICastable* const & mdl);
 	void GetModelAccessor( ork::rtti::ICastable* & mdl) const;
 	float GetScale() const { return mfScale; }
-	
+
 private:
 
 	lev2::XgmModelAsset*	mModelAsset;
@@ -421,12 +421,12 @@ public:
 
 	void SetHeightMapName( file::Path const & lmap );
 	void GetHeightMapName( file::Path & lmap ) const;
-	
+
 	const file::Path& HeightMapPath() const { return mHeightMapName; }
 	float WorldHeight() const { return mWorldHeight; }
 	float WorldSize() const { return mWorldSize; }
 	const CVector3& GetVisualOffset() const { return mVisualOffset; }
-	
+
 	ork::lev2::TextureAsset* GetSphereMap() const { return mSphereLightMap; }
 
 private:
@@ -459,18 +459,20 @@ public:
 	float GetLinearDamping() const { return mfLinearDamping; }
 	bool GetAllowSleeping() const { return mbAllowSleeping; }
     bool GetKinematic() const { return mbKinematic; }
-	
+
 	const ork::ObjectMap GetForceControllerData() const { return mForceControllerDataMap; }
 	const BulletShapeBaseData* GetShapeData() const;
 	void SetShapeData(BulletShapeBaseData*pdata) { mShapeData=pdata; }
-	
+
 	void ShapeGetter(ork::rtti::ICastable*& val) const;
 	void ShapeSetter(ork::rtti::ICastable* const & val);
-			
+
 protected:
 
+	friend class BulletObjectControllerInst;
+
 	ComponentInst *CreateComponent(Entity *pent) const override;
-	
+
 	const BulletShapeBaseData*				mShapeData;
 	ork::ObjectMap							mForceControllerDataMap;
 	float									mfRestitution;
@@ -480,6 +482,7 @@ protected:
 	float									mfLinearDamping;
 	bool									mbAllowSleeping;
     bool                                    mbKinematic;
+		bool _disablePhysics;
 
 };
 
@@ -490,7 +493,7 @@ class BulletObjectControllerInst : public ork::ent::ComponentInst
 public:
 	BulletObjectControllerInst(const BulletObjectControllerData& data, ork::ent::Entity *entity);
 	~BulletObjectControllerInst();
-	
+
 	btRigidBody* GetRigidBody() { return mRigidBody; }
 	const BulletObjectControllerData& GetData() const { return mBOCD; }
 
@@ -503,7 +506,7 @@ private:
 	orkmap<PoolString,BulletObjectForceControllerInst*>	mForceControllerInstMap;
 	BulletShapeBaseInst*								mShapeInst;
 
-	void DoUpdate(ork::ent::SceneInst* inst) final; 
+	void DoUpdate(ork::ent::SceneInst* inst) final;
 	bool DoNotify(const ork::event::Event *event) final { return false; }
 	bool DoLink(SceneInst *psi) final;
 	void DoStop(SceneInst *psi) final;

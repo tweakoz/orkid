@@ -78,7 +78,8 @@ BulletObjectControllerData::BulletObjectControllerData()
 	, mfAngularDamping(0.5f)
 	, mShapeData(0)
 	, mbAllowSleeping(true)
-    , mbKinematic(false)
+  , mbKinematic(false)
+	, _disablePhysics(false)
 {
 }
 BulletObjectControllerData::~BulletObjectControllerData()
@@ -99,7 +100,8 @@ void BulletObjectControllerData::Describe()
 	reflect::RegisterFloatMinMaxProp( &BulletObjectControllerData::mfAngularDamping, "AngularDamping", "0.0", "1.0" );
 
 	reflect::RegisterProperty("AllowSleeping", &BulletObjectControllerData::mbAllowSleeping);
-    reflect::RegisterProperty("IsKinematic", &BulletObjectControllerData::mbKinematic);
+  reflect::RegisterProperty("IsKinematic", &BulletObjectControllerData::mbKinematic);
+	reflect::RegisterProperty("Disable", &BulletObjectControllerData::_disablePhysics);
 
 	reflect::RegisterMapProperty( "ForceControllers", & BulletObjectControllerData::mForceControllerDataMap );
 	reflect::AnnotatePropertyForEditor< BulletObjectControllerData >("ForceControllers", "editor.factorylistbase", "BulletObjectForceControllerData" );
@@ -133,7 +135,7 @@ const BulletShapeBaseData* BulletObjectControllerData::GetShapeData() const
 {
 	const BulletShapeBaseData* rval = mShapeData;
 	return rval;
-	
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -147,6 +149,9 @@ BulletObjectControllerInst::BulletObjectControllerInst(const BulletObjectControl
 	, mRigidBody(0)
 	, mShapeInst(nullptr)
 {
+	if( mBOCD._disablePhysics )
+		return;
+
 	const orkmap<PoolString,ork::Object*> forcecontrollers = data.GetForceControllerData();
 
 	for( orkmap<PoolString,ork::Object*>::const_iterator	it=forcecontrollers.begin();
@@ -162,7 +167,7 @@ BulletObjectControllerInst::BulletObjectControllerInst(const BulletObjectControl
 			mForceControllerInstMap[forcename]=force;
 		}
 	}
-}				
+}
 BulletObjectControllerInst::~BulletObjectControllerInst()
 {
 	if( mShapeInst )
@@ -170,6 +175,9 @@ BulletObjectControllerInst::~BulletObjectControllerInst()
 }
 void BulletObjectControllerInst::DoStop(SceneInst* psi)
 {
+	if( mBOCD._disablePhysics )
+		return;
+
 	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
 	if( bullet_world )
 	{
@@ -193,8 +201,11 @@ void BulletObjectControllerInst::DoStop(SceneInst* psi)
 }
 bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 {
+	if( mBOCD._disablePhysics )
+		return true;
+
 	auto this_ent = GetEntity();
-	
+
 	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
 	if( bullet_world )
 	{
@@ -207,7 +218,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 			if(btDynamicsWorld *world = wController->GetDynamicsWorld())
 			{
 				const BulletShapeBaseData* shapedata = mBOCD.GetShapeData();
-				
+
 				//printf( "SHAPEDATA<%p>\n", shapedata );
 				if( shapedata )
 				{
@@ -221,7 +232,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 					btCollisionShape* pshape = mShapeInst->mCollisionShape;
 
 					if( pshape )
-					{	
+					{
 						////////////////////////////////
 						const DagNode& dnode = shape_create_data.mEntity->GetEntData().GetDagNode();
 						const TransformNode& t3d = dnode.GetTransformNode();
@@ -235,7 +246,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
                         {
                             mRigidBody->setCollisionFlags( btCollisionObject::CF_KINEMATIC_OBJECT );
                             ballowsleep = false;
-                        }                       
+                        }
 						mRigidBody->setActivationState(ballowsleep?WANTS_DEACTIVATION:DISABLE_DEACTIVATION);
 						mRigidBody->activate();
 						//orkprintf( "mRigidBody<%p>\n", mRigidBody );
@@ -244,7 +255,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 
 
 
-				for( orkmap<PoolString,BulletObjectForceControllerInst*>::const_iterator	
+				for( orkmap<PoolString,BulletObjectForceControllerInst*>::const_iterator
 						it=mForceControllerInstMap.begin();
 						it!=mForceControllerInstMap.end();
 						it++ )
@@ -267,6 +278,9 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 
 void BulletObjectControllerInst::DoUpdate(ork::ent::SceneInst* inst)
 {
+	if( mBOCD._disablePhysics )
+		return;
+
 	if( mRigidBody )
 	{
 		//////////////////////////////////////////////////
@@ -304,13 +318,13 @@ void BulletObjectControllerInst::DoUpdate(ork::ent::SceneInst* inst)
 		// apply forces
 		//////////////////////////////////////////////////
 
-		for( orkmap<PoolString,BulletObjectForceControllerInst*>::const_iterator	
+		for( orkmap<PoolString,BulletObjectForceControllerInst*>::const_iterator
 				it=mForceControllerInstMap.begin();
 				it!=mForceControllerInstMap.end();
 				it++ )
 		{
 			BulletObjectForceControllerInst* forcecontroller = it->second;
-	
+
 			if( forcecontroller )
 			{
 				forcecontroller->UpdateForces(inst,this);
@@ -349,7 +363,7 @@ BulletShapeBaseInst* BulletShapeBaseData::CreateShape(const ShapeCreateData& dat
 
 			btVector3 bbmin;
 			btVector3 bbmax;
-			
+
 			rval->mCollisionShape->getAabb( ident, bbmin, bbmax );
 			rval->mBoundingBox.SetMinMax( ! bbmin, ! bbmax );
 		}
@@ -367,7 +381,7 @@ bool BulletShapeBaseData::DoNotify(const event::Event *event)
 	{
 
 #if defined(_DARWIN) // TODO fixme (serialize on editorqueue)
-		dispatch_async( EditOnlyQueue(), 
+		dispatch_async( EditOnlyQueue(),
 		^{
 #endif
 			if( mCollisionShape ) delete mCollisionShape;
@@ -389,7 +403,7 @@ void BulletShapeCapsuleData::Describe()
 	reflect::RegisterFloatMinMaxProp( &BulletShapeCapsuleData::mfRadius, "Radius", "0.1", "1000.0" );
 }
 
-BulletShapeCapsuleData::BulletShapeCapsuleData() 
+BulletShapeCapsuleData::BulletShapeCapsuleData()
 	: mfRadius(0.10f)
 	, mfExtent(1.0f)
 {
@@ -407,7 +421,7 @@ void BulletShapePlaneData::Describe()
 {
 }
 
-BulletShapePlaneData::BulletShapePlaneData() 
+BulletShapePlaneData::BulletShapePlaneData()
 {
 	mShapeFactory = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
@@ -462,7 +476,7 @@ BulletShapeModelData::BulletShapeModelData()
 		else
 			rval->mCollisionShape = new btSphereShape(this->mfScale);
 		return rval;
-	};	
+	};
 }
 
 BulletShapeModelData::~BulletShapeModelData()
@@ -529,11 +543,11 @@ public:
 	float GetIFACTOR() const { return mIFACTOR; }
 	float GetDFACTOR() const { return mDFACTOR; }
 	PoolString GetTarget() const { return mTarget; }
-	float GetErrorPower() const { return mfErrPower; } 
+	float GetErrorPower() const { return mfErrPower; }
 
 private:
 
-    BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const final; 
+    BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* pent) const final;
 
 	float					mForce;
 	float					mTorque;
@@ -664,7 +678,7 @@ void TestForceControllerInst::UpdateForces( ork::ent::SceneInst* inst,
 	const BulletObjectControllerData& BOCD = boci->GetData();
 	btRigidBody* rbody = boci->GetRigidBody();
 	const btMotionState* motionState = rbody->getMotionState();
-	
+
 	float FORCE = mTestData.GetForce();
 	CVector3 ORIGIN = mTestData.GetOrigin();
 	mPIDsteering.Configure( mTestData.GetPFACTOR(), mTestData.GetIFACTOR(), mTestData.GetDFACTOR() );
@@ -680,7 +694,7 @@ void TestForceControllerInst::UpdateForces( ork::ent::SceneInst* inst,
 		ORIGIN = mtx.GetTranslation();
 	}
 
-		//printf( "target<%f %f %f\n", 
+		//printf( "target<%f %f %f\n",
 		//	ORIGIN.GetX(), ORIGIN.GetY(), ORIGIN.GetZ() );
 
 	/////////////////////////////
@@ -718,15 +732,15 @@ void TestForceControllerInst::UpdateForces( ork::ent::SceneInst* inst,
 		CVector3 Y_reference = Z_torque_vec.Cross(dir_to_origin);
 		/////////////////////////////
 		// the Z_torque_ref_plane is the plane
-		// 
+		//
 		CPlane Z_torque_ref_plane;
-		Z_torque_ref_plane.CalcFromNormalAndOrigin( Z_torque_vec, pos ); 
+		Z_torque_ref_plane.CalcFromNormalAndOrigin( Z_torque_vec, pos );
 		float ztrpD = Z_torque_ref_plane.GetPointDistance(ORIGIN);
 		/////////////////////////////
 		// Absolute Error
 		float Y_fDOT = ynormal.Dot(Z_torque_vec); // 1 when we are heading to it, -1 when heading away
 		float Y_ferrABS = fabs((1.0f-Y_fDOT)*0.5f);
-		
+
 		if( Y_ferrABS>0.001f )
 		{
 			Y_ferrABS = powf( Y_ferrABS, mTestData.GetErrorPower() );
@@ -748,7 +762,7 @@ void TestForceControllerInst::UpdateForces( ork::ent::SceneInst* inst,
 		if( Y_famt < -kfmaxT ) Y_famt = -kfmaxT;
 		rbody->applyTorque( ! (znormal*Y_famt) );
 		/////////////////////////////
-		
+
 	}
 
 	///////////////////////////////
@@ -760,7 +774,7 @@ void TestForceControllerInst::UpdateForces( ork::ent::SceneInst* inst,
 		// Absolute Error
 		float Z_fDOT = znormal.Dot(dir_to_origin); // 1 when we are heading to it, -1 when heading away
 		float Z_ferrABS = fabs((1.0f-Z_fDOT)*0.5f);
-		
+
 		if( Z_ferrABS>0.001f )
 		{
 			Z_ferrABS = powf( Z_ferrABS, mTestData.GetErrorPower() );
@@ -868,7 +882,7 @@ void DirectionalForceInst::UpdateForces(ork::ent::SceneInst* inst, BulletObjectC
 	const BulletObjectControllerData& BOCD = boci->GetData();
 	btRigidBody* rbody = boci->GetRigidBody();
 	const btMotionState* motionState = rbody->getMotionState();
-	
+
 	float FORCE = mData.GetForce();
 	CVector3 DIRECTION = mData.GetDirection();
 
