@@ -17,6 +17,7 @@
 #include <QtCore/QMetaObject>
 #include <QtX11Extras/QX11Info>
 #include <GL/glx.h>
+#include <QtGui/5.12.2/QtGui/qpa/qplatformnativeinterface.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
 
@@ -319,6 +320,28 @@ GfxTargetGL::~GfxTargetGL()
 
 /////////////////////////////////////////////////////////////////////////
 
+
+static QWindow* windowForWidget(const QWidget* widget)
+{
+    QWindow* window = widget->windowHandle();
+    if (window)
+        return window;
+    auto nativeParent = widget->nativeParentWidget();
+    if (nativeParent)
+        return nativeParent->windowHandle();
+    return 0;
+}
+
+Window getHandleForWidget(const QWidget* widget)
+{
+    auto window = windowForWidget(widget);
+    if (window)
+    {
+        auto PNI = QGuiApplication::platformNativeInterface();
+        return (Window)(PNI->nativeResourceForWindow(QByteArrayLiteral("handle"), window));
+    }
+    return 0;
+}
 void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 {
 	///////////////////////
@@ -327,9 +350,11 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	mPlatformHandle = (void*) plato;
 	///////////////////////
 	CTQT* pctqt = (CTQT*) pctxbase;
-	QCtxWidget* pctxW = pctqt->GetQWidget();
+	auto pctxW = pctqt->GetQWidget();
 	Display* x_dpy = QX11Info::display();
 	int x_screen = QX11Info::appScreen();
+	int x_window = getHandleForWidget(pctxW);
+
 	//auto pvis = (XVisualInfo*) x11info.visual();
 	XVisualInfo* vinfo = GlIxPlatformObject::gVisInfo;
 	///////////////////////
@@ -343,6 +368,22 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 	printf( "ctx<%p>\n", plato->mGlxContext );
 
 	MakeCurrentContext();
+
+	PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
+  PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA;
+  PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI;
+
+	glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress( (const GLubyte*)"glXSwapIntervalEXT");
+  if (glXSwapIntervalEXT != NULL)
+    glXSwapIntervalEXT(x_dpy, x_window, 0);
+	else
+	  glXSwapIntervalMESA = (PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddress( (const GLubyte*)"glXSwapIntervalMESA");
+	  if ( glXSwapIntervalMESA != NULL )
+	     glXSwapIntervalMESA(0);
+	  else
+	     glXSwapIntervalSGI = (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddress( (const GLubyte*)"glXSwapIntervalSGI");
+	     if ( glXSwapIntervalSGI != NULL )
+	        glXSwapIntervalSGI(0);
 
 	mFbI.SetThisBuffer( pWin );
 	mFbI.SetOffscreenTarget( false );

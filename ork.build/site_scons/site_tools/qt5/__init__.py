@@ -627,7 +627,7 @@ def enable_modules(self, modules, debug=False, crosscompiling=False) :
         'QtCLucene',
         'QtConcurrent',
         'QtV8',
-        "QtX11Extras"
+        "QtX11Extras",
         ]
     pclessModules = [
     ]

@@ -398,6 +398,7 @@ struct CompositingPassData
 	const PoolString*				  mpCameraName;
 	const PoolString*				  mpLayerName;
 	ork::svarp_t							_impl;
+	ork::fvec4                _clearColor;
 
 	CompositingPassData()
 		: mpGroup(0)

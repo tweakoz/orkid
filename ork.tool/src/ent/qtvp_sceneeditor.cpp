@@ -337,8 +337,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 			the_renderer.GetFrameData().PushRenderTarget( & rt );
 			if( externally_fixed_rate && have_token )
 			{
-				bool use_offscreen_buffer = false;
-
 				////////////////////////////////////////
 				// setup destination buffer as offscreen buffer
 				//  (for write to disk)
@@ -347,65 +345,23 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				int itw = mpTarget->GetW();
 				int ith = mpTarget->GetH();
 
-				if( use_offscreen_buffer )
-				{
-					auto poutbuf = new GfxBuffer(0,0,0,1280,720);
-					mpTarget->InitializeContext(poutbuf);
-					auto rtg = new RtGroup(mpTarget,1280,720);
-					auto mrt = new RtBuffer(
-						rtg,
-						lev2::ETGTTYPE_MRT0,
-						lev2::EBUFFMT_RGBA32,
-						1280,720 );
-					//mpTarget->InitializeContext(mrt);
-
-					rtg->SetMrt( 0, mrt );
-
-					const SRect tgtrect2 = SRect( 0, 0, 1280, 720 );
-
-					the_renderer.GetFrameData().SetTarget( mpTarget );
-					mRenderer->SetTarget( mpTarget );
-					the_renderer.GetFrameData().SetDstRect( tgtrect2 );
-					mpTarget->FBI()->SetAutoClear(true);
-					mpTarget->FBI()->SetViewport( 0,0, itw, ith );
-					mpTarget->FBI()->SetScissor( 0,0, itw, ith );
-					mpTarget->BeginFrame();
-					mpTarget->FBI()->PushRtGroup(rtg);
-					{
-						pCMCI->ComposeToScreen( mpTarget );
-						////////////////////////////////////////
-						// write to disk
-						////////////////////////////////////////
-						file::Path::NameType fnamesyn;
-						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);
-						//mpTarget->FBI()->Capture( *poutbuf, file::Path(fnamesyn.c_str()) );
-						////////////////////////////////////////
-					}
-					mpTarget->FBI()->PopRtGroup();
-					mpTarget->EndFrame();// the_renderer );
-				}
+				the_renderer.GetFrameData().SetTarget( mpTarget );
+				mRenderer->SetTarget( mpTarget );
+				the_renderer.GetFrameData().SetDstRect( tgtrect );
+				mpTarget->FBI()->SetAutoClear(true);
+				//mpTarget->FBI()->SetViewport( 0,0, itw, ith );
+				//mpTarget->FBI()->SetScissor( 0,0, itw, ith );
+				mpTarget->BeginFrame();
+				pCMCI->ComposeToScreen( mpTarget );
+				mpTarget->EndFrame();// the_renderer );
 				////////////////////////////////////////
-				// setup destination buffer as onscreen buffer
+				// write to disk
 				////////////////////////////////////////
-				else
-				{	the_renderer.GetFrameData().SetTarget( mpTarget );
-					mRenderer->SetTarget( mpTarget );
-					the_renderer.GetFrameData().SetDstRect( tgtrect );
-					mpTarget->FBI()->SetAutoClear(true);
-					//mpTarget->FBI()->SetViewport( 0,0, itw, ith );
-					//mpTarget->FBI()->SetScissor( 0,0, itw, ith );
-					mpTarget->BeginFrame();
-						pCMCI->ComposeToScreen( mpTarget );
-					mpTarget->EndFrame();// the_renderer );
-						////////////////////////////////////////
-						// write to disk
-						////////////////////////////////////////
-						auto buf = mpTarget->FBI()->GetThisBuffer();
-						file::Path::NameType fnamesyn;
-						fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);
-						//mpTarget->FBI()->Capture( *buf, file::Path(fnamesyn.c_str()) );
-						////////////////////////////////////////
-				}
+				auto buf = mpTarget->FBI()->GetThisBuffer();
+				file::Path::NameType fnamesyn;
+				fnamesyn.format("outputframes/frame%04d.tga",syntok.mFrameIndex);
+				//mpTarget->FBI()->Capture( *buf, file::Path(fnamesyn.c_str()) );
+				////////////////////////////////////////
 
 				////////////////////////////////////////
 				// return the token
@@ -564,7 +520,7 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 		bool bpostfxfb = false;
 
 		if( node.mpGroup ){
-  		  const CompositingGroupEffect&	effect = node.mpGroup->GetEffect();
+  		const CompositingGroupEffect&	effect = node.mpGroup->GetEffect();
 		  EffectName = effect.GetEffectName();
 		  fFxAmt = effect.GetEffectAmount();
 		  fFbAmt = effect.GetFeedbackAmount();
@@ -621,7 +577,9 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 			const ent::SceneInst* psi = GetSceneInst();
 			mSceneView.UpdateRefreshPolicy(FrameData,psi);
 
-			Clear();
+			this->GetClearColorRef() = node._clearColor.GetXYZ();
+
+			this->Clear();
 			if( node.mbDrawSource )
 				RenderQueuedScene( FrameData );
 	};
