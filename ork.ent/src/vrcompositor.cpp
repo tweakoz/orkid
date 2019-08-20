@@ -79,6 +79,8 @@ struct VrFrameTechnique final : public FrameTechniqueBase
 
     void DoInit( GfxTarget* pTARG ) final {
         if(nullptr==_rtg_left){
+            printf( "miW<%d> miH<%d>\n", miW, miH );
+            //assert(false);
             _rtg_left = new RtGroup( pTARG, miW, miH, NUMSAMPLES );
             _rtg_right = new RtGroup( pTARG, miW, miH, NUMSAMPLES );
 
@@ -116,18 +118,19 @@ struct VrFrameTechnique final : public FrameTechniqueBase
                                            fvec3(0,1,0)); // up
 
 
-      testV.dump("testV");
+      //testV.dump("testV");
+
+      pTARG->FBI()->SetAutoClear(false);
+      // clear will occur via _CPD
+      // draw left ////////////////////////////////////////
+
+      lcam->BindGfxTarget(pTARG);
+      FrameData.SetCameraData(lcam);
+      _CPD._impl.Set<const CCameraData*>(lcam);
+      _CPD._clearColor = fvec4(0,0,.1,1);
+
+      RtGroupRenderTarget rtL(_rtg_left);
       drawdata.mCompositingGroupStack.push(_CPD);{
-
-          // draw left ////////////////////////////////////////
-
-          lcam->BindGfxTarget(pTARG);
-          FrameData.SetCameraData(lcam);
-          _CPD._impl.Set<const CCameraData*>(lcam);
-
-          RtGroupRenderTarget rtL(_rtg_left);
-
-          pTARG->FBI()->SetAutoClear(true);
           pTARG->SetRenderContextFrameData( & FrameData );
           FrameData.SetDstRect( tgt_rect );
           FrameData.PushRenderTarget(&rtL);
@@ -139,15 +142,18 @@ struct VrFrameTechnique final : public FrameTechniqueBase
           pTARG->FBI()->PopRtGroup();
           FrameData.PopRenderTarget();
           pTARG->SetRenderContextFrameData( nullptr );
+          drawdata.mCompositingGroupStack.pop();
+      }
 
-          // draw right ///////////////////////////////////////
+      // draw right ///////////////////////////////////////
 
-          rcam->BindGfxTarget(pTARG);
-          _CPD._impl.Set<const CCameraData*>(rcam);
-          FrameData.SetCameraData(rcam);
+      rcam->BindGfxTarget(pTARG);
+      FrameData.SetCameraData(rcam);
+      _CPD._impl.Set<const CCameraData*>(rcam);
+      _CPD._clearColor = fvec4(0,0,.1,1);
 
+      drawdata.mCompositingGroupStack.push(_CPD);{
           RtGroupRenderTarget rtR(_rtg_right);
-          pTARG->FBI()->SetAutoClear(true);
           pTARG->SetRenderContextFrameData( & FrameData );
           FrameData.SetDstRect( tgt_rect );
           FrameData.PushRenderTarget(&rtR);
@@ -159,9 +165,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
           pTARG->FBI()->PopRtGroup();
           FrameData.PopRenderTarget();
           pTARG->SetRenderContextFrameData( nullptr );
-
-      }
-      drawdata.mCompositingGroupStack.pop();
+        }
 
     }
 
@@ -239,9 +243,9 @@ struct VRSYSTEMIMPL {
       //fmtx4 lmv = eyeL*hmd;
       //fmtx4 rmv = eyeR*hmd;
 
-      hmd.dump("hmd");
-      lmv.dump("lmv");
-      rmv.dump("rmv");
+      //hmd.dump("hmd");
+      //lmv.dump("lmv");
+      //rmv.dump("rmv");
 
       _leftcamera.SetView(lmv);
       _leftcamera.setCustomProjection(_posemap["projl"]);
@@ -313,7 +317,6 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
              break;
 	     }
   	}
-    #endif
 
     //////////////////////////////////////////////
     vr::VRActionSetHandle_t actset_demo = vr::k_ulInvalidActionSetHandle;
@@ -321,6 +324,9 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 	  actionSet.ulActionSet = actset_demo;
 	  vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
     //////////////////////////////////////////////
+
+    #endif
+
 
   	//const ent::CompositingGroup* pCG = _group;
   	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
@@ -431,7 +437,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
     	}
 
 
-      printf( "pose_classes<%s>\n", pose_classes.c_str() );
+      //printf( "pose_classes<%s>\n", pose_classes.c_str() );
 
 
     }

@@ -254,7 +254,7 @@ class Project:
 
     ############################
 
-    if True: #os.environ["build_debug"]=="1": #name in optset:
+    if os.environ["build_debug"]=="1": #name in optset:
       self.XCCFLG += '-O0 '
       self.XCXXFLG += '-O0 '
     else:
