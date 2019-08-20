@@ -9,7 +9,10 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <pkg/ent/scene.h>
+#include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
+#include <pkg/ent/entity.hpp>
 #include <ork/dataflow/dataflow.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,7 +41,7 @@ private:
 
 	bool DoNotify(const event::Event *event) final;
 
-	const char* GetShortSelector() const final { return "dfr"; } 
+	const char* GetShortSelector() const final { return "dfr"; }
 
 };
 

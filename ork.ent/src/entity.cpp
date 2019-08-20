@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <pkg/ent/AudioComponent.h>
 
 #include <ork/application/application.h>
 #include <pkg/ent/entity.h>
@@ -187,7 +188,7 @@ void Entity::Describe()
 const char* Entity::name() const
 {
     const char* ename = GetEntData().GetName().c_str();
-    return ename;    
+    return ename;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ComponentInst *Entity::GetComponentByClass(rtti::Class *clazz)
@@ -261,7 +262,7 @@ Entity::~Entity()
 	for( LayerMap::const_iterator itL=mLayerMap.begin(); itL!=mLayerMap.end(); itL++ )
 	{
 		DrawableVector* pldrawables = itL->second;
-		
+
 		for( DrawableVector::const_iterator it=pldrawables->begin(); it!=pldrawables->end(); it++ )
 		{
 			Drawable* pdrw = *it;
@@ -294,7 +295,7 @@ bool Entity::DoNotify(const ork::event::Event *event)
 		for( LayerMap::const_iterator itL=mLayerMap.begin(); itL!=mLayerMap.end(); itL++ )
 		{
 			DrawableVector* pldrawables = itL->second;
-			
+
 			for(ork::ent::Entity::DrawableVector::iterator it = pldrawables->begin(); it != pldrawables->end(); it++)
 				result = static_cast<ork::Object*>(*it)->Notify(drawable_event->GetEvent()) || result;
 		}
@@ -320,7 +321,7 @@ bool Entity::DoNotify(const ork::event::Event *event)
 	{
 //		const FixedString<256>& tgt = pce->mTarget;
 //		const FixedString<32>& val = pce->mValue;
-		
+
 		PerfControlEvent pce2 = *pce;
 		std::string ComponentName = pce2.PopTargetNode();
 		std::string KeyName = pce2.mTarget.c_str();
@@ -351,7 +352,7 @@ bool Entity::DoNotify(const ork::event::Event *event)
 			result = static_cast<ork::Object*>(inst)->Notify(event) || result;
 		}
 	}
-	
+
     return result;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -370,7 +371,7 @@ void Entity::AddDrawable( const PoolString& layername, Drawable* pdrw )
 	bool bDEFAULT = (0==strcmp(layername.c_str(),"Default"));
 
 	PoolString actualLayerName = layername;
-	
+
 	if( bDEFAULT )
 	{
 		const ent::EntData& ED = GetEntData();
@@ -378,28 +379,28 @@ void Entity::AddDrawable( const PoolString& layername, Drawable* pdrw )
 		if( strlen( layer.c_str() ) != 0 )
 		{
 			actualLayerName = AddPooledString(layer.c_str());
-		} 
+		}
 	}
 
 	SceneInst* psi = GetSceneInst();
 	OrkAssert(psi);
 	Layer* player = psi->GetLayer( actualLayerName );
-	
+
 	DrawableVector* pldrawables = GetDrawables(actualLayerName);
-	
+
 	if( 0 == pldrawables )
 	{
 		pldrawables = new DrawableVector;
 		mLayerMap.AddSorted( actualLayerName, pldrawables );
 	}
-	
+
 	pldrawables->push_back(pdrw);
 }
 
 Entity::DrawableVector* Entity::GetDrawables( const PoolString& layer )
 {
 	DrawableVector* pldrawables = 0;
-	
+
 	LayerMap::const_iterator itL=mLayerMap.find(layer);
 	if( itL != mLayerMap.end() )
 	{
@@ -410,7 +411,7 @@ Entity::DrawableVector* Entity::GetDrawables( const PoolString& layer )
 const Entity::DrawableVector* Entity::GetDrawables( const PoolString& layer ) const
 {
 	const DrawableVector* pldrawables = 0;
-	
+
 	LayerMap::const_iterator itL=mLayerMap.find(layer);
 	if( itL != mLayerMap.end() )
 	{
@@ -429,7 +430,7 @@ void ArchComposer::Register( ork::ent::ComponentData* pdata )
 	}
 }
 
-ArchComposer::ArchComposer(ork::ent::Archetype* parch,SceneComposer& scene_composer) 
+ArchComposer::ArchComposer(ork::ent::Archetype* parch,SceneComposer& scene_composer)
 	: mpArchetype(parch)
 	, mComponents( ork::EKEYPOLICY_MULTILUT )
 	, mSceneComposer(scene_composer)
@@ -462,7 +463,7 @@ void Archetype::Describe()
 }
 ///////////////////////////////////////////////////////////////////////////////
 Archetype::Archetype()
-	: mComponentDatas( EKEYPOLICY_MULTILUT ) 
+	: mComponentDatas( EKEYPOLICY_MULTILUT )
 	, mComponentDataTable( mComponentDatas )
 	, mpSceneData(0)
 {
@@ -582,7 +583,7 @@ void Archetype::StopEntity(SceneInst *psi, Entity *pent) const
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::Compose(SceneComposer& scene_composer)
-{	
+{
 	mpSceneData = scene_composer.GetSceneData();
 
 	ork::ent::ArchComposer arch_composer(this,scene_composer);
@@ -618,7 +619,7 @@ void Init()
 	SceneData::GetClassStatic();
 	SceneInst::GetClassStatic();
     GridControllerData::GetClassStatic();
-    
+
     //ork::ent::heightfield_rt_inst::GetClassStatic();
 
 	ork::ent::ScriptComponentData::GetClassStatic();
