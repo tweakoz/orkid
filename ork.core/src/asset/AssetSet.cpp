@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -69,7 +69,7 @@ void AssetSet::Register(PoolString name, Asset *asset, AssetLoader *loader)
 
 	std::pair<AssetSetEntry *, bool> result = FindAssetEntryInternal(mTopLevel, name);
 	AssetSetEntry *entry = result.first;
-	
+
 	if(entry == NULL)
 	{
 		OrkAssert(asset != NULL);
@@ -113,31 +113,21 @@ AssetLoader *AssetSet::FindLoader(PoolString name)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct AssetEntryCompare : public std::binary_function<PoolString, const AssetSetEntry *, bool>
-{
-public:
-	bool operator()(PoolString name, const AssetSetEntry *entry) const
-	{
-		return name == entry->GetAsset()->GetName();
-	}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 std::pair<AssetSetEntry *, bool> FindAssetEntryInternal(AssetSetLevel *top_level, PoolString name)
 {
-	for(AssetSetLevel *level = top_level; level != NULL; level = level->Parent())
-	{
-		AssetSetLevel::SetType::iterator it 
-			= std::find_if(
-				level->GetSet().begin(), 
-				level->GetSet().end(), 
-				std::bind1st(AssetEntryCompare(), name));
+	for( AssetSetLevel *level=top_level;
+                        level != nullptr;
+                        level = level->Parent()){
+        auto levset = level->GetSet();
+		auto it = std::find_if(
+ 			 levset.begin(),
+			 levset.end(),
+			 [name](const AssetSetEntry *entry) -> bool {
+                 return name == entry->GetAsset()->GetName();
+             });
 
-		if(it != level->GetSet().end())
-		{
+		if(it != levset.end())
 			return std::make_pair(*it, level == top_level);
-		}
 	}
 
 	return std::make_pair(static_cast<AssetSetEntry *>(NULL), false);
@@ -156,7 +146,7 @@ bool AssetSet::Load(int depth)
 		{
 			AssetSetEntry *entry = level->GetSet()[i];
 			if(false == entry->IsLoaded())
-			{	
+			{
 				if(entry->Load(mTopLevel))
 				{
 					load_count++;
@@ -199,7 +189,7 @@ bool AssetSet::UnLoad(int depth)
 void AssetSet::PushLevel(AssetClass *type)
 {
 	Apply(mTopLevel, BuildExecutor(&AssetSetEntry::OnPush, mTopLevel));
-	
+
 	mTopLevel = new AssetSetLevel(mTopLevel);
 }
 

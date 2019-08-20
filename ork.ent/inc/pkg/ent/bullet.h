@@ -309,7 +309,24 @@ struct ShapeCreateData
 	BulletObjectControllerInst* mObject;
 };
 
-typedef std::function<BulletShapeBaseInst*(const ShapeCreateData& data)> shape_factory_t;
+struct ShapeFactory {
+
+    typedef std::function<BulletShapeBaseInst*(const ShapeCreateData& data)> creator_t;
+    typedef std::function<void(BulletShapeBaseData*)> invalidator_t;
+
+    ShapeFactory(creator_t c=nullptr,invalidator_t i=[](BulletShapeBaseData*){})
+        : _createShape(c)
+        , _invalidate(i)
+        , _impl(nullptr){
+
+    }
+
+    creator_t _createShape;
+    invalidator_t _invalidate;
+    svarp_t _impl;
+};
+
+typedef ShapeFactory shape_factory_t;
 
 class BulletShapeBaseData : public ork::Object
 {
@@ -332,13 +349,20 @@ protected:
 
 struct BulletShapeBaseInst
 {
-	BulletShapeBaseInst() : mCollisionShape(nullptr) {}
+	BulletShapeBaseInst(const BulletShapeBaseData*data=nullptr)
+        : _shapeData(data)
+        , mCollisionShape(nullptr)
+        , _impl(nullptr) {
+    }
 
 	const AABox& GetBoundingBox() const { return mBoundingBox; }
 	btCollisionShape* GetBulletShape() const { return mCollisionShape; }
 
+    const BulletShapeBaseData* _shapeData;
 	btCollisionShape*		mCollisionShape;
 	AABox					mBoundingBox;
+    CallbackDrawable*       _drawable = nullptr;
+    svar16_t                _impl;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -433,6 +457,8 @@ private:
 
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
+
+    bool PostDeserialize(reflect::IDeserializer &) final;
 
 	file::Path							mHeightMapName;
 	float								mWorldHeight;

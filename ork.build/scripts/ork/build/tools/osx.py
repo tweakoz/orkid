@@ -51,7 +51,7 @@ class ClangToolChain:
     prj.XCCFLG += "-idirafter /usr/include "
     prj.XCCFLG += "-idirafter /usr/local/include "
     prj.XCCFLG += '-fno-common -fno-strict-aliasing -g -Wno-switch-enum -Wno-deprecated-declarations '
-    prj.XCXXFLG += '-std=c++11 -stdlib=libc++ ' + prj.XCCFLG
+    prj.XCXXFLG += '-std=c++17 -stdlib=libc++ -Wno-register ' + prj.XCCFLG
     prj.XCXXFLG += '-F%s/Contents/Resources/include -F/Library/Frameworks ' % AqsisDir
     prj.XLINK = '-stdlib=libc++ -v -g -F/Library/Frameworks -arch %s '%Arch
     prj.XLINK += '-F/System/Library/Frameworks/Quartz.framework/Frameworks '
@@ -71,20 +71,20 @@ def DefaultBuildEnv( env, prj ):
     #   LIBPATH += ' /usr/lib/x86_64-linux-gnu/debug '
     LINK = ''
     ##
-    
+
     ##########################
     #toolchain = MacPortsToolChain(env,prj)
     toolchain = ClangToolChain(env,prj)
     #toolchain = HpcToolChain(env,prj)
     ##########################
-    
+
     env.Replace( CPPDEFINES = string.split(DEFS) )
     env.Replace( CCFLAGS = string.split(CCFLG) )
     env.Replace( CXXFLAGS = string.split(CXXFLG) )
     env.Replace( LINKFLAGS=string.split(LINK) )
     env.Replace( LIBS=string.split(LIBS) )
     env.Replace( LIBPATH=string.split(LIBPATH) )
-    env.Replace( RANLIB = 'ranlib' )    
+    env.Replace( RANLIB = 'ranlib' )
     env.Append( FRAMEWORKS = [ 'QtGui', 'QtCore', 'OpenGL', 'CoreMIDI', 'CoreAudio', 'AudioUnit', 'AudioToolbox' ] )
     env.Append( FRAMEWORKS = [ 'Carbon', 'Foundation', 'QuartzComposer' ] )
     env.Append( FRAMEWORKS = [ 'ApplicationServices', 'AppKit', "Python" ] )
@@ -97,4 +97,3 @@ def DefaultBuildEnv( env, prj ):
     env.Tool('osxbundle')
 
     #prj.PostIncludePaths += string.split('/opt/local/include')
-
