@@ -32,6 +32,7 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::Describe(){}
 
+#if defined(ENABLE_VR)
 
 fmtx4 steam34tofmtx4( const vr::HmdMatrix34_t &matPose )
 {
@@ -64,7 +65,7 @@ std::string trackedDeviceString( vr::TrackedDeviceIndex_t unDevice,
 	delete [] pchBuffer;
 	return sResult;
 }
-
+#endif
 ///////////////////////////////////////////////////////////////////////////
 
 struct ControllerState {
@@ -304,12 +305,12 @@ struct VRSYSTEMIMPL {
   std::map<std::string,fmtx4> _posemap;
   CCameraData _leftcamera;
   CCameraData _rightcamera;
+  std::map<int,ControllerState> _controllers;
   # if defined(ENABLE_VR)
     vr::IVRSystem* _hmd;
     vr::TrackedDevicePose_t _trackedPoses[ vr::k_unMaxTrackedDeviceCount ];
     fmtx4 _poseMatrices[ vr::k_unMaxTrackedDeviceCount ];
     std::string _devclass[ vr::k_unMaxTrackedDeviceCount ];
-    std::map<int,ControllerState> _controllers;
   #endif
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -323,10 +324,12 @@ VrCompositingNode::~VrCompositingNode(){
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // virtual
 {
+    # if defined(ENABLE_VR)
 	bool ovr_compositor_ok = (bool) vr::VRCompositor();
-  assert(ovr_compositor_ok);
+    assert(ovr_compositor_ok);
+    #endif
 
-  auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+    auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
 
 	if( nullptr == vrimpl->_frametek )
 	{
