@@ -385,7 +385,7 @@
                                                     <property name='HeightMap'>"data://testhmap.png"</property>
                                                     <property name='SphericalLightMap'>
                                                         <reference category='AssetClass'>
-                                                            "lev2tex" "data://effect_textures/knob2"
+                                                            "lev2tex" "data://effect_textures/NoiseKern"
                                                         </reference>
                                                     </property>
                                                     <property name='VisualOffset'>0 0 0</property>
