@@ -132,17 +132,17 @@ public:
             if(vev->mCode==STR().kState)
             {   auto state = LR.get<std::string>("id");
                 mState = AddPooledString(state.c_str());
-                printf( "charcon got state change request id<%s>\n", state.c_str() );
+                //printf( "charcon got state change request id<%s>\n", state.c_str() );
             }
             if(vev->mCode==STR().kSetDir)
             {   float dir = LR.toValue<float>();
                 mDesiredDirection.FromAxisAngle(fvec4(0,1,0,dir));
-                printf( "charcon got direction change request dir<%f>\n", dir );
+                //printf( "charcon got direction change request dir<%f>\n", dir );
             }
             if(vev->mCode==STR().kSetPos)
             {   auto pos = LR.toValue<fvec3>();
                 mPosition = pos;
-                printf( "charcon got position change request pos<%f %f %f>\n", pos.x, pos.y, pos.z );
+                //printf( "charcon got position change request pos<%f %f %f>\n", pos.x, pos.y, pos.z );
             }
         }
 		else if(const event::AnimFinishEvent* afe = ork::rtti::autocast(event))

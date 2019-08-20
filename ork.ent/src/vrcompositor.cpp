@@ -15,6 +15,8 @@
 #include <pkg/ent/Compositor.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/glheaders.h> // todo abstract somehow ?
+#include <ork/lev2/gfx/gfxprimitives.h>
+
 
 # if ! defined(__APPLE__)
 #include <openvr/openvr.h>
@@ -65,7 +67,15 @@ std::string trackedDeviceString( vr::TrackedDeviceIndex_t unDevice,
 
 ///////////////////////////////////////////////////////////////////////////
 
-constexpr int NUMSAMPLES = 4;
+struct ControllerState {
+  fmtx4 _matrix;
+  bool _button1down = false;
+  bool _button2down = false;
+};
+
+///////////////////////////////////////////////////////////////////////////
+
+constexpr int NUMSAMPLES = 16;
 
 struct VrFrameTechnique final : public FrameTechniqueBase
 {
@@ -101,7 +111,8 @@ struct VrFrameTechnique final : public FrameTechniqueBase
     void renderBothEyes( FrameRenderer& renderer,
                          CMCIdrawdata& drawdata,
                          CCameraData* lcam,
-                         CCameraData* rcam ) {
+                         CCameraData* rcam,
+                         const std::map<int,ControllerState>& controllers ) {
       RenderContextFrameData&	FrameData = renderer.GetFrameData();
     	GfxTarget *pTARG = FrameData.GetTarget();
 
@@ -111,6 +122,46 @@ struct VrFrameTechnique final : public FrameTechniqueBase
       _CPD.mpFrameTek = this;
       _CPD.mpCameraName = nullptr;
       _CPD.mpLayerName = nullptr; // default == "All"
+
+      //////////////////////////////////////////////////////
+      // render all controller poses
+      //////////////////////////////////////////////////////
+
+      auto renderposes = [&](CCameraData* camdat){
+
+        fmtx4 rx;
+        fmtx4 ry;
+        fmtx4 rz;
+        rx.SetRotateX(-PI*0.5);
+        ry.SetRotateY(PI*0.5);
+        rz.SetRotateZ(PI*0.5);
+
+        for( auto item : controllers ){
+
+          auto c = item.second;
+
+          fmtx4 scalemtx;
+          scalemtx.SetScale(c._button1down ? 0.1 : 0.05 );
+
+          pTARG->MTXI()->PushMMatrix( scalemtx*rx*ry*rz*c._matrix );
+          pTARG->MTXI()->PushVMatrix( camdat->GetVMatrix() );
+          pTARG->MTXI()->PushPMatrix( camdat->GetPMatrix() );
+          pTARG->PushModColor( CVector4::White() );
+          {
+            if( c._button2down )
+              ork::lev2::CGfxPrimitives::GetRef().RenderBox( pTARG );
+            else
+              ork::lev2::CGfxPrimitives::GetRef().RenderAxis( pTARG );
+          }
+          pTARG->PopModColor();
+          pTARG->MTXI()->PopPMatrix();
+          pTARG->MTXI()->PopVMatrix();
+          pTARG->MTXI()->PopMMatrix();
+
+        }
+      };
+
+      //////////////////////////////////////////////////////
 
       pTARG->FBI()->SetAutoClear(false);
       // clear will occur via _CPD
@@ -130,6 +181,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
           pTARG->BeginFrame();
               FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
               renderer.Render();
+              renderposes(lcam);
           pTARG->EndFrame();
           pTARG->FBI()->PopRtGroup();
           FrameData.PopRenderTarget();
@@ -153,6 +205,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
           pTARG->BeginFrame();
               FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
               renderer.Render();
+              renderposes(rcam);
           pTARG->EndFrame();
           pTARG->FBI()->PopRtGroup();
           FrameData.PopRenderTarget();
@@ -232,12 +285,6 @@ struct VRSYSTEMIMPL {
 
       fmtx4 lmv = hmd*eyeL;
       fmtx4 rmv = hmd*eyeR;
-      //fmtx4 lmv = eyeL*hmd;
-      //fmtx4 rmv = eyeR*hmd;
-
-      //hmd.dump("hmd");
-      //lmv.dump("lmv");
-      //rmv.dump("rmv");
 
       _leftcamera.SetView(lmv);
       _leftcamera.setCustomProjection(_posemap["projl"]);
@@ -246,7 +293,8 @@ struct VRSYSTEMIMPL {
       _frametek->renderBothEyes(renderer,
                                 drawdata,
                                 &_leftcamera,
-                                &_rightcamera);
+                                &_rightcamera,
+                                _controllers );
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;
@@ -261,6 +309,7 @@ struct VRSYSTEMIMPL {
     vr::TrackedDevicePose_t _trackedPoses[ vr::k_unMaxTrackedDeviceCount ];
     fmtx4 _poseMatrices[ vr::k_unMaxTrackedDeviceCount ];
     std::string _devclass[ vr::k_unMaxTrackedDeviceCount ];
+    std::map<int,ControllerState> _controllers;
   #endif
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -299,12 +348,48 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
     vr::VREvent_t event;
   	while( vrimpl->_hmd->PollNextEvent( &event, sizeof( event ) ) )
   	{
+       auto data = event.data;
+       auto ctrl = data.controller;
+       int button = ctrl.button;
+
 	     switch( event.eventType ) {
 	        case vr::VREvent_TrackedDeviceDeactivated:
 			       printf( "Device %u detached.\n", event.trackedDeviceIndex );
 		         break;
 	        case vr::VREvent_TrackedDeviceUpdated:
 		         break;
+         case vr::VREvent_ButtonPress:{
+             printf( "button<%d> pressed\n", button);
+             auto& c = vrimpl->_controllers[event.trackedDeviceIndex];
+             switch(button){
+               case 1:
+                c._button1down = true;
+                break;
+               case 2:
+                c._button2down = true;
+                break;
+             }
+   		       break;
+         }
+         case vr::VREvent_ButtonUnpress:{
+             printf( "button<%d> released\n", button);
+             auto& c = vrimpl->_controllers[event.trackedDeviceIndex];
+             switch(button){
+               case 1:
+                c._button1down = false;
+                break;
+               case 2:
+                c._button2down = false;
+                break;
+             }
+   		       break;
+         }
+         case vr::VREvent_ButtonTouch:
+             printf( "button<%d> touched\n", button);
+   		       break;
+         case vr::VREvent_ButtonUntouch:
+             printf( "button<%d> untouched\n", button);
+   		       break;
           default:
              break;
 	     }
@@ -411,17 +496,23 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 
     	int validposecount = 0;
     	std::string pose_classes = "";
+
     	for ( int dev_index = 0;
                 dev_index<vr::k_unMaxTrackedDeviceCount;
                 dev_index++ ) {
     		if ( vrimpl->_trackedPoses[dev_index].bPoseIsValid ){
     			validposecount++;
     			auto orkmtx = steam34tofmtx4( vrimpl->_trackedPoses[dev_index].mDeviceToAbsoluteTracking );
+          fmtx4 inverse;
+          fmtx4 transpose = orkmtx;
+          transpose.Transpose();
+          inverse.GEMSInverse(orkmtx);
           vrimpl->_poseMatrices[dev_index] = orkmtx;
     			//if (vrimpl->_devclass[dev_index]==0){
     				switch (hmd->GetTrackedDeviceClass(dev_index)){
         				case vr::TrackedDeviceClass_Controller:
                     vrimpl->_devclass[dev_index] = 'C';
+                    vrimpl->_controllers[dev_index]._matrix = orkmtx;
                     break;
         				case vr::TrackedDeviceClass_HMD:
                     vrimpl->_devclass[dev_index] = 'H';
@@ -446,6 +537,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
       if ( vrimpl->_trackedPoses[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid ){
     		vrimpl->_posemap["hmd"].GEMSInverse(vrimpl->_poseMatrices[vr::k_unTrackedDeviceIndex_Hmd]);
     	}
+
       //printf( "pose_classes<%s>\n", pose_classes.c_str() );
     }
 
