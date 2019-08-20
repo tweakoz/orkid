@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
+#include <pkg/ent/AudioComponent.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -237,6 +238,7 @@ void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<ork::ent::ScriptComponentData>();
 	composer.Register<SimpleCharControllerData>();
     composer.Register<BulletObjectControllerData>();
+    composer.Register<AudioEffectComponentData>();
 	//pedpropmapdata->SetProperty( "visual.lighting.reciever.scope", "static" );
 }
 

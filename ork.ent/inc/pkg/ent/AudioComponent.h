@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +35,7 @@ class AudioEffectPlayDataBase : public ork::Object
 public:
 
 	void									SetAECD( const AudioEffectComponentData* aecd ) { mData=aecd; }
-	const AudioEffectComponentData*			GetData() const { return mData; }	
+	const AudioEffectComponentData*			GetData() const { return mData; }
 	int										GetMutexPriority() const { return miMutexPriority; }
 	const ork::PoolString&					GetMutexGroup() const { return mMutexGroup; }
 	const ork::PoolString&					GetSubMixGroup() const { return mSubMixGroup; }
@@ -51,7 +51,7 @@ private:
 
 	ork::Object* AttenCurveAccessor() { return & mAttenuationCurve; }
 
-	const AudioEffectComponentData*		mData;	
+	const AudioEffectComponentData*		mData;
 	ork::PoolString						mMutexGroup;
 	ork::PoolString						mSubMixGroup;
 	int									miMutexPriority;
@@ -72,7 +72,7 @@ public:
 
 	AudioMultiEffectPlayDataItemBase();
 
-	const ork::PoolString&			GetBankName() const { return mBankName; } 
+	const ork::PoolString&			GetBankName() const { return mBankName; }
 	const ork::PoolString&			GetProgramName() const { return mProgramName; }
 	int								GetNote() const { return miNote; }
 	int								GetVelocity() const { return miVelocity; }
@@ -130,8 +130,8 @@ public:
 	{
 	}
 	virtual ~AudioMultiEffectPlayInstItemBase() {}
-	ork::lev2::AudioInstrumentPlayback* Play(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param); 
-	void Stop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb); 
+	ork::lev2::AudioInstrumentPlayback* Play(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param);
+	void Stop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb);
 	const AudioMultiEffectPlayDataItemBase& GetData() const { return mItemBaseData; }
 private:
 	virtual ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param) = 0;
@@ -147,7 +147,7 @@ private:
 	const AudioMultiEffectPlayDataItemFixed&	mItemData;
 	ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param) final;
     void DoStop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb) final;
-	//void Stop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb); 
+	//void Stop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb);
 };
 
 class AudioMultiEffectPlayInstItemModular : public AudioMultiEffectPlayInstItemBase
@@ -214,7 +214,7 @@ public:
 	virtual ork::lev2::AudioInstrumentPlayback* DoPlay( AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param );
 	void Stop(AudioEffectComponentInst* aeci,ork::lev2::AudioInstrumentPlayback*pb);
 	virtual void DoStop(AudioEffectComponentInst* aeci,ork::lev2::AudioInstrumentPlayback*pb);
-	
+
 	const ork::orklut< ork::PoolString, AudioMultiEffectPlayInstItemBase* >&	GetSubSoundMap() const { return mSubSoundMap; }
 
 private:
@@ -302,8 +302,8 @@ private:
 
 	void DoUpdate(ork::ent::SceneInst *inst) final;
 	ork::lev2::AudioInstrumentPlayback* PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode* pnode );
-	
-	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final; 
+
+	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final;
 	bool DoLink( ork::ent::SceneInst *psi ) final;
 	void DoStop(ork::ent::SceneInst *psi) final;
 
@@ -361,7 +361,7 @@ struct AudioStreamLerpableParam
 };
 
 struct AudioStreamInstItem
-{	
+{
 	ork::lev2::AudioStreamPlayback*	mPlayback;
 	ork::lev2::AudioStream*			mStream;
 	EAudioStreamXfadeType			meCrossFadeType;
@@ -402,7 +402,7 @@ private:
 	ork::orklut<ork::PoolString, AudioStreamInstItem> mItems;
 
 	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final;
-    void DoStop(ork::ent::SceneInst *psi) final; 
+    void DoStop(ork::ent::SceneInst *psi) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -425,7 +425,7 @@ public:
 
 private:
 
-    ork::ent::System* createSystem( ork::ent::SceneInst *pinst ) const final; 
+    ork::ent::System* createSystem( ork::ent::SceneInst *pinst ) const final;
 
 	ork::Object*					ReverbAccessor() { return & mReverbProperties; }
 
