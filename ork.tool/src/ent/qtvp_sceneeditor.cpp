@@ -306,9 +306,11 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 	the_renderer.GetFrameData().PushRenderTarget( & rt );
 	{
 		/////////////////////////////////
-		if( bFX && pCMCI )
+		// Compositor ?
 		/////////////////////////////////
-		{	float frame_rate = pCMCI ? pCMCI->GetCurrentFrameRate() : 0.0f;
+
+		if( bFX && pCMCI ) {
+			float frame_rate = pCMCI ? pCMCI->GetCurrentFrameRate() : 0.0f;
 			bool externally_fixed_rate = (frame_rate!=0.0f);
 			const ent::SceneInst* psi = this->GetSceneInst();
 
@@ -349,8 +351,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				mRenderer->SetTarget( mpTarget );
 				the_renderer.GetFrameData().SetDstRect( tgtrect );
 				mpTarget->FBI()->SetAutoClear(true);
-				//mpTarget->FBI()->SetViewport( 0,0, itw, ith );
-				//mpTarget->FBI()->SetScissor( 0,0, itw, ith );
 				mpTarget->BeginFrame();
 				pCMCI->ComposeToScreen( mpTarget );
 				mpTarget->EndFrame();// the_renderer );
@@ -397,7 +397,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 			the_renderer.GetFrameData().PopRenderTarget();
 		}
 		/////////////////////////////////
-		else
+		else // No Compositor
 		/////////////////////////////////
 		{
 			const ent::DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7);//mDbLock.Aquire(7);
@@ -422,8 +422,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				mpTarget->BeginFrame();
 				{
 					CompositingPassData node;
-					node.mpGroup = 0;
-					node.mpFrameTek = 0;//mpBasicFrameTek;
+					node.mpGroup = nullptr;
+					node.mpFrameTek = nullptr;
 					mCompositingGroupStack.push(node);
 					mpBasicFrameTek->mbDoBeginEndFrame = false;
 					mpBasicFrameTek->Render( the_renderer );
@@ -551,6 +551,7 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 	}
 	///////////////////////////////////////////////////////////////////////////
 	SRect VPRect( 0, 0, pIT->GetW(), pIT->GetH() );
+
 	pTARG->FBI()->PushViewport( VPRect );
 	pTARG->FBI()->PushScissor( VPRect );
 	{
