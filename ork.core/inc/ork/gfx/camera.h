@@ -77,8 +77,8 @@ public:
 	float GetAspect() const { return mfAspect; }
 	float GetTimeStamp() const { return mfTimeStamp; }
 
-	//const CMatrix4& GetPMatrix() const { return mMatProj; }
-	//const CMatrix4& GetVMatrix() const { return mMatView; }
+	const CMatrix4& GetPMatrix() const { return mMatProj; }
+	const CMatrix4& GetVMatrix() const { return mMatView; }
 	const CMatrix4& GetIVPMatrix() const { return mIVPMatrix; }
 	const CMatrix4& GetIVMatrix() const { return mIVMatrix; }
 	const CMatrix4& GetVPMatrix() const { return mVPMatrix; }
