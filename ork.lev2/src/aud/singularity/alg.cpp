@@ -109,7 +109,7 @@ void Alg::intoOutBuf(outputBuffer& obuf, const DspBuffer& dspbuf,int inumo)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Alg::compute(outputBuffer& obuf)
+void Alg::compute(synth& syn,outputBuffer& obuf)
 {
     intoDspBuf(obuf,*_blockBuf);
 
@@ -122,8 +122,7 @@ void Alg::compute(outputBuffer& obuf)
         auto b = _block[i];
         if( b )
         {
-            bool ena = false; //the_synth->_fblockEnable[i];
-            assert(false) ;;// fix _the_synth
+            bool ena = syn._fblockEnable[i];
             if( ena )
             {
                 b->compute(*_blockBuf);

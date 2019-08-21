@@ -120,6 +120,17 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+class AudioMultiEffectPlayDataItemSingularity : public AudioMultiEffectPlayDataItemBase
+{
+	RttiDeclareConcrete(AudioMultiEffectPlayDataItemSingularity, AudioMultiEffectPlayDataItemBase);
+public:
+	AudioMultiEffectPlayDataItemSingularity();
+private:
+	AudioMultiEffectPlayInstItemBase* CreateInst() const final;
+
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class AudioMultiEffectPlayInstItemBase
@@ -157,6 +168,16 @@ public:
 private:
 	const AudioMultiEffectPlayDataItemModular&	mItemData;
 	ork::lev2::AudioGraphPool					mGraphPool;
+	ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param) final;
+	void DoStop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb) final;
+};
+
+class AudioMultiEffectPlayInstItemSingularity : public AudioMultiEffectPlayInstItemBase
+{
+public:
+	AudioMultiEffectPlayInstItemSingularity( const AudioMultiEffectPlayDataItemSingularity& itemdata );
+private:
+	const AudioMultiEffectPlayDataItemSingularity&	mItemData;
 	ork::lev2::AudioInstrumentPlayback* DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param) final;
 	void DoStop(AudioEffectComponentInst* aeci, ork::lev2::AudioInstrumentPlayback*pb) final;
 };

@@ -11,15 +11,15 @@ struct DspKeyOnInfo;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct Alg final 
-{   
+struct Alg final
+{
     Alg(const AlgData& algd);
     virtual ~Alg();
-    
+
     void keyOn(DspKeyOnInfo& koi);
     void keyOff();
 
-    void compute(outputBuffer& obuf);
+    void compute(synth& syn,outputBuffer& obuf);
 
     virtual void doKeyOn(DspKeyOnInfo& koi);
     void intoDspBuf(const outputBuffer& obuf, DspBuffer& dspbuf);
@@ -35,4 +35,3 @@ struct Alg final
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-

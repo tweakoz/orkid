@@ -23,18 +23,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "null/audiodevice_null.h"
-#if defined(WII)
-#include "wii/audiodevice_wii.h"
-#define NativeDevice AudioDeviceWII
-#elif defined(USE_FMOD)
-#include "fmod/audiodevice_fmod.h"
-#define NativeDevice AudioDeviceFMOD
-#elif defined(_USE_XA2)
-#include "xa2/audiodevice_xa2.h"
-#define NativeDevice AudioDeviceXa2
-#else
-#define NativeDevice AudioDeviceNULL
-#endif
+#include "portaudio/audiodevice_pa.h"
+#define NativeDevice AudioDevicePa
 
 bool gb_audio_filter = false;
 
@@ -78,7 +68,7 @@ AudioDevice *AudioDevice::GetDevice( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioIntrumentPlayParam::AudioIntrumentPlayParam() 
+AudioIntrumentPlayParam::AudioIntrumentPlayParam()
 	: miNote(-1)
 	, miVelocity(-1)
 	, mPan(0.0f)
@@ -126,7 +116,7 @@ void AudioDevice::StopAllVoices( void )
 	PlaybackPool& pool = mPlaybackHandles.LockForWrite();
 	{
 		const PlaybackPool::pointervect_type& used = pool.used();
-		
+
 		size_t inumused = used.size();
 		for( size_t i=0; i<inumused; i++ )
 		{
@@ -181,12 +171,12 @@ float AudioDevice::GetSubMix( const SubMixString& submixname ) const
 	{
 		it = mSubMixer.find("none");
 	}
-	
+
 	if ( it != mSubMixer.end() )
 	{
 		fmix = it->second;
 	}
-	
+
 	return fmix;
 }
 
@@ -195,7 +185,7 @@ float AudioDevice::GetSubMix( const SubMixString& submixname ) const
 void AudioDevice::ReInitDevice( void )
 {
 	StopAllVoices();
- 
+
 	PlaybackPool& pool = mPlaybackHandles.LockForWrite();
 	const PlaybackPool::pointervect_type& used = pool.used();
 
@@ -249,7 +239,7 @@ void AudioInstrumentPlayback::ReInit()
 	for( int ich=0; ich<kmaxzonesperevent; ich++ )
 	{
 		AudioZonePlayback* zone = GetZonePlayback( ich );
-		if( zone ) 
+		if( zone )
 		{
 			mZonePlaybacks[ich] = 0;
 			//zone->SetChannel(-1);
@@ -321,7 +311,7 @@ void AudioSf2ZonePlayback::Update( float fdt )
 	AudioSample* psamp = GetSample();
 	AudioInstrumentZone* pizone = GetZone();
 	//const AudioIntrumentPlayParam& pbparam = GetPlaybackParam();
-	
+
 	if( 0 == pizone ) return;
 
 	///////////////////////////////////////////////////
@@ -414,12 +404,12 @@ AudioInstrumentPlayback* AudioDevice::GetFreePlayback( void )
 ///////////////////////////////////////////////////////////////////////////////
 
 AudioReverbProperties::AudioReverbProperties()
-	: mfDecayTime( 1.49f )	// = 3.0f;			// 0.1 , 20.0 , 1.49 
-	, mfReflections( -2602.0f )	// = 0;			// // -10000, 1000 , -2602  
-	, mfReverbDelay( 0.011f )		// = 0.1;			// 0.0 , 0.1 , 0.011 
+	: mfDecayTime( 1.49f )	// = 3.0f;			// 0.1 , 20.0 , 1.49
+	, mfReflections( -2602.0f )	// = 0;			// // -10000, 1000 , -2602
+	, mfReverbDelay( 0.011f )		// = 0.1;			// 0.0 , 0.1 , 0.011
 	, mfModulationDepth( 0.0f )	// = 1.0f;	// 0.0 , 1.0 , 0.0
-	, mfEnvDiffusion( 1.0f )		// = 1.0f;		// 0.0 , 1.0 , 1.0 
-	, mfRoom( -1000.0f )			// = -500;				// -10000, 0 , -1000 
+	, mfEnvDiffusion( 1.0f )		// = 1.0f;		// 0.0 , 1.0 , 1.0
+	, mfRoom( -1000.0f )			// = -500;				// -10000, 0 , -1000
 {
 
 }
@@ -502,7 +492,7 @@ void AudioInstrumentZoneContext::SetLpfReson( float kfco, float krez )
 	float km2 = kag-kbs;
 
 	float kden = std::sqrt(km1*km1+km2*km2);
-	
+
 	mfa1 = -2.0f*krez*cos_kfcon;
 	mfa2 = krez*krez;
 	mfb2 = 0.0f;

@@ -29,7 +29,7 @@ class lev2:
 
     ##########################################
 
-    SRC_FOLDERS  = ". aud aud/null aud/singularity input "
+    SRC_FOLDERS  = ". aud aud/null aud/singularity aud/portaudio input "
     SRC_FOLDERS += "gfx gfx/camera gfx/gl gfx/gl/cgfx gfx/gl/glfx "
     SRC_FOLDERS += "gfx/renderer gfx/swrast "
     SRC_FOLDERS += "gfx/lighting gfx/particle gfx/rib "
