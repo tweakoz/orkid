@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -74,10 +74,10 @@ class System : public Object
 public:
 
 	void Update(SceneInst *inst);
-	void Start(SceneInst *psi); 
-	void Link(SceneInst* psi); 
-	void UnLink(SceneInst* psi); 
-	void Stop(SceneInst *psi); 
+	void Start(SceneInst *psi);
+	void Link(SceneInst* psi);
+	void UnLink(SceneInst* psi);
+	void Stop(SceneInst *psi);
 
 protected:
 
@@ -86,9 +86,9 @@ protected:
 	SceneInst*					mpSceneInst;
 
 private:
-	
+
     bool DoNotify(const ork::event::Event *event) override { return false; }
-	
+
     virtual void DoUpdate(SceneInst *inst) {}
 	virtual void DoStart(SceneInst *psi) {}
 	virtual bool DoLink(SceneInst *psi) { return true; }
@@ -130,15 +130,16 @@ public:
 	void SetEntity(Entity *entity) { mEntity = entity; }
 	Entity *GetEntity() { return mEntity; }
 	const Entity *GetEntity() const { return mEntity; }
+	SceneInst *sceneInst() const;
 	//Shortcut to make debugging printfs easier
 	const char* GetEntityName() const;
 
 	PoolString GetFamily() const;
 
 	void Update(SceneInst *inst);
-	void Start(SceneInst *psi, const CMatrix4 &world); 
-	void Link(SceneInst* psi); 
-	void UnLink(SceneInst* psi); 
+	void Start(SceneInst *psi, const CMatrix4 &world);
+	void Link(SceneInst* psi);
+	void UnLink(SceneInst* psi);
 	void Stop(SceneInst *psi); // { DoStop(psi); }
 
 	const char* GetShortSelector() const { return (mComponentData!=0) ? mComponentData->GetShortSelector() : 0; }
@@ -150,9 +151,9 @@ protected:
     Entity*                 mEntity;
 
 private:
-    
+
     bool DoNotify(const ork::event::Event *event) override { return false; }
-	
+
     virtual void DoUpdate(SceneInst *inst) {}
 	virtual bool DoStart(SceneInst *psi, const CMatrix4 &world) { return true; }
 	virtual bool DoLink(SceneInst *psi) { return true; }

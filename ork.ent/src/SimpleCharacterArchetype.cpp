@@ -70,7 +70,7 @@ public:
 
 void SimpleCharControllerData::Describe()
 {
-	ent::RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));
+	  ent::RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mWalkSpeed, "WalkSpeed", "0", "250" );
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mRunSpeed, "RunSpeed", "0", "500" );
     RegisterFloatMinMaxProp(& SimpleCharControllerData::mSpeedLerpRate, "SpeedLerpRate", "0.1", "100" );

@@ -40,11 +40,11 @@ end
 function Diver.SpawnBallz(self)
     local r = math.random(100)
 
-    if r>1 then
+    if r>2 then
         --printf( "SPAWN %d", spawned)
         local entname = "dynaentXZ"..self.spawned
         local ent = scene:spawn("/arch/ball",entname,{
-            pos = self.ent.pos+ork.vec3(0,30,0)
+            pos = self.ent.pos+ork.vec3(0,150,0)
         })
 
         self.balls[ent]=ent

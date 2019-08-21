@@ -1371,7 +1371,7 @@
                                             <object type='CCamera_persp' id='234'>
                                                 <property name='Center'>-0.474919 1.71015 1.42624</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>165.341</property>
+                                                <property name='Loc'>178.108</property>
                                                 <property name='QuatC'>-0.0513306 -0.958306 -0.0111336 -0.280992</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
@@ -1566,32 +1566,32 @@
                     </object>
                 </reference>
             </item>
-            <item key='edcam'>
+            <item key='psys'>
                 <reference category='SceneObjectClass'>
                     <object type='Ent3dEntData' id='262'>
-                        <property name='Name'>"edcam"</property>
+                        <property name='Name'>"psys"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='263'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='232'/></property>
+                        <property name='Archetype'><backreference id='13'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
             </item>
-            <item key='psys'>
+            <item key='vrcam'>
                 <reference category='SceneObjectClass'>
                     <object type='Ent3dEntData' id='264'>
-                        <property name='Name'>"psys"</property>
+                        <property name='Name'>"vrcam"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='265'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='13'/></property>
+                        <property name='Archetype'><backreference id='232'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
