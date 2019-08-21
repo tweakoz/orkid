@@ -75,7 +75,7 @@ void AsrInst::initSeg(int iseg)
     }
     _framesrem = segtime* getSampleRate(); // / 48000.0f;
 
-    printf( "AsrInst<%p> _data<%p> initSeg<%d> segtime<%f> dstlevl<%f> _curval<%f>\n", this, _data, iseg, segtime, dstlevl, _curval );
+    //printf( "AsrInst<%p> _data<%p> initSeg<%d> segtime<%f> dstlevl<%f> _curval<%f>\n", this, _data, iseg, segtime, dstlevl, _curval );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ void AsrInst::compute(int inumfr) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 void AsrInst::keyOn(const KeyOnInfo& KOI) // final
-{   
+{
     auto ld = KOI._layerData;
 
     const auto& EC = ld->_envCtrlData;
@@ -171,7 +171,7 @@ RateLevelEnvData::RateLevelEnvData()
     , _bipolar(false)
     , _envType(RlEnvType::ERLTYPE_DEFAULT)
 {
-    
+
 }
 
 ControllerInst* RateLevelEnvData::instantiate(synth& syn) const // final
@@ -224,7 +224,7 @@ void RateLevelEnvInst::initSeg(int iseg)
     }
 
     if( segtime == 0.0f )
-    {   
+    {
         switch( _envType )
         {
             case RlEnvType::ERLTYPE_KRZAMPENV:
@@ -247,27 +247,29 @@ void RateLevelEnvInst::initSeg(int iseg)
                     // if their times are not 0
                 //    printf( "segt0 iseg<%d>\n", iseg );
                 //}
-                break;            
+                break;
         }
 
     }
     else
-    {   
+    {
         _dstval = curseg._level;
         float deltlev = (_dstval-_curval);
         float slope = (deltlev/segtime);
         _curslope_persamp = slope/getSampleRate();
     }
     _framesrem = segtime* getSampleRate(); // / 48000.0f;
-    printf( "env<%s> iseg<%d> segt<%f> curv<%f> dest<%f>\n", _data->_name.c_str(), iseg, segtime, _curval, _dstval );
+    //assert(false);
+    //printf( "env<%s> iseg<%d> segt<%f> curv<%f> dest<%f>\n", _data->_name.c_str(), iseg, segtime, _curval, _dstval );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void RateLevelEnvInst::compute(int inumfr) // final
 {
+    //printf( "RateLevelEnvInst<%p> inumfr<%d>\n", this, inumfr );
     auto L = [this]() -> float {
-        
+
         if( nullptr == _data )
             return 0.0f;
 
@@ -315,12 +317,13 @@ void RateLevelEnvInst::compute(int inumfr) // final
         float rval = sign*clip_float(powf(_filtval,2.0f),-1.0f,1.0f);
 
         float dbatten = linear_amp_ratio_to_decibel(rval);
-        
+
         done = (_curseg==6)&&(dbatten<-96.0f);
         if( done && _ampenv )
         {
             _layer->release();
             _data = nullptr;
+            printf( "ENV RELEASING LAYER<%p>\n", _layer);
         }
         return rval;
     };
@@ -333,7 +336,7 @@ void RateLevelEnvInst::compute(int inumfr) // final
 ///////////////////////////////////////////////////////////////////////////////
 
 void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI)
-{   
+{
     _layer = KOI._layer;
 
     auto ld = KOI._layerData;
@@ -342,7 +345,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI)
     const auto& EC = ld->_envCtrlData;
     const auto& DKT = EC._decKeyTrack;
     const auto& RKT = EC._relKeyTrack;
-    //printf( "ikey<%d> DKT<%f>\n", ikey, DKT );
+    printf( "ikey<%d> DKT<%f>\n", ikey, DKT );
 
     float fkl = -1.0f+float(ikey)/63.5f;
 
@@ -369,7 +372,7 @@ void RateLevelEnvInst::keyOn(const KeyOnInfo& KOI)
     _curval = 0.0f;
     _dstval = 0.0f;
     _released = false;
-    
+
     if(_data)
     {
         if( _ampenv )
@@ -389,5 +392,3 @@ void RateLevelEnvInst::keyOff()
     if( _data && false == _ignoreRelease )
         initSeg(4);
 }
-
-
