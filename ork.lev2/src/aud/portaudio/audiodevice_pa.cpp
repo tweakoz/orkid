@@ -29,7 +29,7 @@ extern std::string kbasepath;
 
 template class ork::orklut<ork::Char8,float>;
 
-static const int kdefaultprogID = 191;
+static const int kdefaultprogID = 189; // Northern Winds
 //static const int kdefaultprogID = 21;
 static int programID = 0;
 static int octave = 4;
@@ -72,6 +72,7 @@ namespace ork::lev2 {
                                	PaStreamCallbackFlags statusFlags,
                                	void *userData )
     {
+        //printf( "patestCallback<%p>\n", outputBuffer );
         /* Cast data passed through stream to our structure. */
         float *out = (float*)outputBuffer;
         unsigned int i;
@@ -150,8 +151,13 @@ namespace ork::lev2 {
 
     void startupAudio()
     {
+        assert(the_synth==nullptr);
+
         float SR = getSampleRate();
+
+
         the_synth = new synth(SR);
+        the_synth->_masterGain = 2.0f;
 
         printf( "SingularitySynth<%p> SR<%g>\n", the_synth, SR);
         loadPrograms();

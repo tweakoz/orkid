@@ -338,7 +338,8 @@ void layer::compute(outputBuffer& obuf)
         // oscope
         /////////////////
 
-        if( this == _syn._hudLayer )
+
+        if( false and this == _syn._hudLayer )
         {
             _HAF._oscopebuffer.resize(inumframes);
 
