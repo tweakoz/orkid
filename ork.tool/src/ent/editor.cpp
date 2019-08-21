@@ -47,6 +47,11 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SceneEditorBase, "SceneEditorBase" );
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////
 
+NewEntityReq::shared_t NewEntityReq::makeShared(Future&f) {
+    return std::make_shared<NewEntityReq>(f);
+}
+
+
 static Opq gImplSerQ(0,"eddummyopq");
 
 static ork::PoolString gEdChanName;
@@ -290,21 +295,21 @@ void SceneEditorBase::RunLoop()
 					R.GetOnLoaded().Get<void_lambda_t>()();
 				}
 			}
-			else if( event.IsA<NewSceneReq>() )
+			else if( event.IsA<NewSceneReq::shared_t>() )
 			{
-				auto& R = event.Get<NewSceneReq>();
+				auto req = event.Get<NewSceneReq::shared_t>();
 				Op(disable_op).QueueSync(updQ);
 				auto s = ImplNewScene();
 				Op(enable_op).QueueSync(updQ);
-				R.SetScene(s);
+				req->SetScene(s);
 			}
-			else if( event.IsA<GetSceneReq>() )
+			else if( event.IsA<GetSceneReq::shared_t>() )
 			{
-				auto& R = event.Get<GetSceneReq>();
+				auto req = event.Get<GetSceneReq::shared_t>();
 				Op(disable_op).QueueSync(updQ);
 				auto s = ImplGetScene();
 				Op(enable_op).QueueSync(updQ);
-				R.SetScene(s);
+				req->SetScene(s);
 			}
 			else if( event.IsA<RunLocalReq>() )
 			{
@@ -320,13 +325,13 @@ void SceneEditorBase::RunLoop()
 				ImplEnterEditState();
 				Op(enable_op).QueueSync(updQ);
 			}
-			else if( event.IsA<NewEntityReq>() )
+			else if( event.IsA<NewEntityReq::shared_t>() )
 			{
-				auto& R = event.Get<NewEntityReq>();
+				auto req = event.Get<NewEntityReq::shared_t>();
 				Op(disable_op).QueueSync(updQ);
-				EntData* pent = ImplNewEntity(R.mArchetype);
+				EntData* pent = ImplNewEntity(req->mArchetype);
 				Op(enable_op).QueueSync(updQ);
-				R.SetEntity(pent);
+				req->SetEntity(pent);
 			}
 			else if( event.IsA<NewArchReq>() )
 			{
@@ -795,8 +800,8 @@ bool SceneEditorBase::EditorGetEntityLocation(CMatrix4 &matrix)
 ent::EntData* SceneEditorBase::EditorNewEntity(const ent::Archetype* parchetype)
 {
 	Future new_ent;
-	NewEntityReq ner(new_ent);
-	ner.mArchetype = parchetype;
+	auto ner = NewEntityReq::makeShared(new_ent);
+	ner->mArchetype = parchetype;
 	QueueOpASync(ner);
 	return new_ent.GetResult().Get<EntData*>();
 }
@@ -804,9 +809,9 @@ ent::EntData* SceneEditorBase::EditorNewEntity(const ent::Archetype* parchetype)
 ent::Archetype* SceneEditorBase::EditorNewArchetype(const std::string& classname, const std::string& name)
 {
 	Future new_arch;
-	NewArchReq nar(new_arch);
-	nar.mClassName = classname;
-	nar.mName = name;
+	auto nar = NewArchReq::makeShared(new_arch);
+	nar->mClassName = classname;
+	nar->mName = name;
 	QueueOpASync(nar);
 	return new_arch.GetResult().Get<Archetype*>();
 }

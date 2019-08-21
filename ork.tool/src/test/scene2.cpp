@@ -4,9 +4,6 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/editor/editor.h>
-//#include <ork/kernel/core_interface.h>
-//#include <ork/platform_lev2/gfx/gfxenv.h>
-//#include <ork/platform_lev2/manip/manip.h>
 #include <unittest++/UnitTest++.h>
 
 using namespace ork;
@@ -27,7 +24,7 @@ TEST(SceneTortureTest)
 
 	{
 		Future new_ent;
-		NewEntityReq ner(new_ent);
+		auto ner = std::make_shared<NewEntityReq>(new_ent);
 		the_editor.QueueOpASync(ner);
 		auto pent = new_ent.GetResult().Get<EntData*>();
 	}
@@ -78,8 +75,8 @@ TEST(SceneTortureTest)
 		Archetype* parch = parchs[iarch];
 		{
 			Future new_ent;
-			NewEntityReq ner(new_ent);
-			ner.mArchetype = parch;
+            auto ner = std::make_shared<NewEntityReq>(new_ent);
+			ner->mArchetype = parch;
 			the_editor.QueueOpASync(ner);
 			auto pent = new_ent.GetResult().Get<EntData*>();
 			fstr.format("Ent_%d", int(i));

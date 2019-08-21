@@ -25,26 +25,24 @@ static e::SceneEditorBase& get_editor()
 /////////////////////////////////////////////////////////////
 ent::SceneData* PyNewScene()
 {
-	Future new_scene;
-	ent::NewSceneReq nsr(new_scene);
-	get_editor().QueueOpASync(nsr);
-	auto scene = new_scene.GetResult().Get<ent::SceneData*>();
+	Future newscnfut;
+	get_editor().QueueOpASync(ent::NewSceneReq::makeShared(newscnfut));
+	auto scene = newscnfut.GetResult().Get<ent::SceneData*>();
 	return scene;
 }
 /////////////////////////////////////////////////////////////
 ent::SceneData* PyGetScene()
 {
-	Future get_scene;
-	ent::GetSceneReq gsr(get_scene);
-	get_editor().QueueOpASync(gsr);
-	auto scene = get_scene.GetResult().Get<ent::SceneData*>();
+	Future getscnfut;
+	get_editor().QueueOpASync(ent::GetSceneReq::makeShared(getscnfut));
+	auto scene = getscnfut.GetResult().Get<ent::SceneData*>();
 	return scene;
 }
 /////////////////////////////////////////////////////////////
 void PyNewEntity(const std::string& name,const std::string& archname="")
 {
 	std::string _archname = archname;
-	
+
 	e::Archetype* parch = (_archname!="") ? rtti::autocast(get_editor().FindSceneObject(_archname.c_str())) : nullptr;
 	//////////////////////
 	// attempt to make an appropriate archetype
@@ -70,8 +68,8 @@ void PyNewEntity(const std::string& name,const std::string& archname="")
 	if( nullptr == parch ) parch = GenArch( "ecam", "/arch/editcam", "EditorCamArchetype" );
 
 	Future new_ent;
-	e::NewEntityReq ner(new_ent);
-	ner.mArchetype = parch;
+	auto ner = e::NewEntityReq::makeShared(new_ent);
+	ner->mArchetype = parch;
 	get_editor().QueueOpASync(ner);
 	auto pent = new_ent.GetResult().Get<e::EntData*>();
 
