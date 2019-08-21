@@ -172,5 +172,7 @@ const char* ComponentInst::GetEntityName() const
 	return mEntity->GetEntData().GetName().c_str();
 }
 
+SceneInst* ComponentInst::sceneInst() const { return mEntity->GetSceneInst(); }
+
 
 } }

@@ -64,7 +64,7 @@ def DefaultBuildEnv( env, prj ):
 	CxFLG = '-fPIE -fno-common -fno-strict-aliasing -g -Wno-switch-enum '
 	CxFLG += '-Imkspecs/linux-g++-64 -D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB '
 	prj.XCCFLG += CxFLG
-	prj.XCXXFLG += CxFLG + " --std=c++17 -fexceptions "
+	prj.XCXXFLG += CxFLG + " --std=c++17 -fexceptions -Wno-register "
 
 	prj.CompilerType = 'gcc'
 

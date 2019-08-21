@@ -13,7 +13,7 @@ from pathlib import Path
 import orkassasshl as hilite
 
 scriptdir = os.path.dirname(os.path.realpath(__file__))
-os.system('syslog -s -l error "%s"' % scriptdir)
+#os.system('syslog -s -l error "%s"' % scriptdir)
 
 settings = QSettings("TweakoZ", "OrkidTool");
 settings.beginGroup("App");
@@ -92,8 +92,8 @@ class AssetWidget(QWidget):
 
      sbutton = QPushButton()
      style = QStyleFactory.create("Macintosh")
-     icon = style.standardIcon(QStyle.SP_FileIcon)
-     sbutton.setIcon(icon)
+     #icon = style.standardIcon(QStyle.SP_FileIcon)
+     #sbutton.setIcon(icon)
      #sbutton.setStyleSheet("background-color: rgb(0, 0, 64); border-radius: 2; ")
      sbutton.pressed.connect(self.selectInput)
 

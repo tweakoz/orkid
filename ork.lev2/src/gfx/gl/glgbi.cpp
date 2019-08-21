@@ -211,9 +211,11 @@ struct GLVtxBufHandle
 
 		bool bSTATIC = VBuf.IsStatic();
 
-		static void* gzerobuf = calloc( 128<<20, 1 );
+		void* gzerobuf = calloc( iVBlen, 1 );
 		//glBufferData( GL_ARRAY_BUFFER, iVBlen, bSTATIC ? gzerobuf : 0, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
 		glBufferData( GL_ARRAY_BUFFER, iVBlen, gzerobuf, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
+		free(gzerobuf);
+		
 		GL_ERRORCHECK();
 
 		//////////////////////////////////////////////

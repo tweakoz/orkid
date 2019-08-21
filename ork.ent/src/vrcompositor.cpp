@@ -242,8 +242,8 @@ struct VRSYSTEMIMPL {
     	auto str_display = trackedDeviceString( vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SerialNumber_String );
       printf( "str_driver<%s>\n", str_driver.c_str() );
       printf( "str_driver<%s>\n", str_display.c_str() );
-      auto proj_mtx_l = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Left, .1, 1000.0f ));
-      auto proj_mtx_r = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Right, .1, 1000.0f ));
+      auto proj_mtx_l = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Left, .1, 10000.0f ));
+      auto proj_mtx_r = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Right, .1, 10000.0f ));
       auto eyep_mtx_l = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Left ));
       auto eyep_mtx_r = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Right ));
 
@@ -278,14 +278,14 @@ struct VRSYSTEMIMPL {
 
   }
   ///////////////////////////////////////
-  void _myrender( FrameRenderer& renderer, CMCIdrawdata& drawdata ) {
+  void _myrender( FrameRenderer& renderer, CMCIdrawdata& drawdata, fmtx4 rootmatrix ) {
 
       fmtx4 hmd = _posemap["hmd"];
       fmtx4 eyeL = _posemap["eyel"];
       fmtx4 eyeR = _posemap["eyer"];
 
-      fmtx4 lmv = hmd*eyeL;
-      fmtx4 rmv = hmd*eyeR;
+      fmtx4 lmv = rootmatrix*hmd*eyeL;
+      fmtx4 rmv = rootmatrix*hmd*eyeR;
 
       _leftcamera.SetView(lmv);
       _leftcamera.setCustomProjection(_posemap["projl"]);
@@ -342,6 +342,24 @@ void VrCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // virt
 void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) // virtual
 {
     auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+    static PoolString vrcamname = AddPooledString("vrcam");
+
+    //////////////////////////////////////////////
+    // find vr camera
+    //////////////////////////////////////////////
+
+    auto psi = pCCI->sceneInst();
+    auto vrcam = psi->GetCameraData(vrcamname);
+
+    fmtx4 rootmatrix;
+
+    if( vrcam != nullptr ){
+      auto eye = vrcam->GetEye();
+      auto tgt = vrcam->GetTarget();
+      auto up = vrcam->GetUp();
+      rootmatrix.LookAt(eye,tgt,up);
+    }
+
 
     //////////////////////////////////////////////
     // process OpenVR events
@@ -422,7 +440,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
     		anyp PassData;
     		PassData.Set<const char*>( "All" );
     		the_renderer.GetFrameData().SetUserProperty( "pass", PassData );
-    		vrimpl->_myrender( the_renderer, drawdata );
+    		vrimpl->_myrender( the_renderer, drawdata, rootmatrix );
 
         /////////////////////////////////////////////////////////////////////////////
         // VR compositor
