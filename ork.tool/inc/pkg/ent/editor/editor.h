@@ -217,21 +217,28 @@ struct DeleteObjectReq
 };
 struct NewEntityReq
 {
+    typedef std::shared_ptr<NewEntityReq> shared_t;
+
 	NewEntityReq(Future&f=Future::gnilfut) : mArchetype(nullptr), mResult(f) {}
 	const ent::Archetype* mArchetype;
 	EntData* GetEntity();
 	void SetEntity(EntData*pent);
+
+    static shared_t makeShared(Future&f=Future::gnilfut);
+
 private:
 
 	Future& mResult;
 };
 struct NewArchReq
 {
+    typedef std::shared_ptr<NewArchReq> shared_t;
 	NewArchReq(Future&f=Future::gnilfut) : mResult(f) {}
 	std::string mClassName;
 	std::string mName;
 	Archetype* GetArchetype();
 	void SetArchetype(Archetype*parch);
+    static inline shared_t makeShared(Future&f=Future::gnilfut) { return std::make_shared<NewArchReq>(f); }
 private:
 
 	Future& mResult;
@@ -246,17 +253,22 @@ private:
 };
 struct NewSceneReq
 {
+    typedef std::shared_ptr<NewSceneReq> shared_t;
 	NewSceneReq(Future&f=Future::gnilfut) : mResult(f) {}
 	SceneData* GetScene();
 	void SetScene(SceneData*parch);
 	Future& mResult;
+    static inline shared_t makeShared(Future&f=Future::gnilfut) { return std::make_shared<NewSceneReq>(f); }
 };
+
 struct GetSceneReq
 {
+    typedef std::shared_ptr<GetSceneReq> shared_t;
 	GetSceneReq(Future&f=Future::gnilfut) : mResult(f) {}
 	SceneData* GetScene();
 	void SetScene(SceneData*parch);
 	Future& mResult;
+    static inline shared_t makeShared(Future&f=Future::gnilfut) { return std::make_shared<GetSceneReq>(f); }
 };
 struct RunLocalReq
 {

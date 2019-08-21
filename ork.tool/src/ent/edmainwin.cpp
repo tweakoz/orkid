@@ -320,8 +320,7 @@ void EditorMainWindow::ArchMakeLocal(){
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::NewEntity(){
-	NewEntityReq ner;
-	mEditorBase.QueueOpASync(ner);
+	mEditorBase.QueueOpASync(NewEntityReq::makeShared());
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::NewEntities(){

@@ -5,7 +5,10 @@ namespace ork {
 Future Future::gnilfut;
 
 Future::Future()
-{
+    : mID(0)
+    , mResult(nullptr)
+    , mCallback(nullptr){
+
     mState.store(0);
 }
 

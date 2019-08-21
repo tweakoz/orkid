@@ -140,7 +140,7 @@ void RegisterMainWinDefaultModule( EditorMainWindow& emw )
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::NewScene()
 {
-	mEditorBase.QueueOpASync(NewSceneReq());
+	mEditorBase.QueueOpASync(NewSceneReq::makeShared());
 	SetSceneFile(QString("UNTITLED"));
 }
 ///////////////////////////////////////////////////////////////////////////
