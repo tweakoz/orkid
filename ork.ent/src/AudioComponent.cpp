@@ -37,6 +37,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioMultiEffectPlayData, "AudioMultiEffe
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioMultiEffectPlayDataItemBase, "AudioMultiEffectPlayDataItemBase");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioMultiEffectPlayDataItemFixed, "AudioMultiEffectPlayDataItemFixed");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioMultiEffectPlayDataItemModular, "AudioMultiEffectPlayDataItemModular");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioMultiEffectPlayDataItemSingularity, "AudioMultiEffectPlayDataItemSingularity");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioMultiEffectPlayInst, "AudioMultiEffectPlayInst");
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -390,6 +391,30 @@ void AudioMultiEffectPlayInstItemFixed::DoStop(AudioEffectComponentInst* aeci,or
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+void AudioMultiEffectPlayDataItemSingularity::Describe()
+{
+}
+AudioMultiEffectPlayDataItemSingularity::AudioMultiEffectPlayDataItemSingularity()
+{
+}
+AudioMultiEffectPlayInstItemBase* AudioMultiEffectPlayDataItemSingularity::CreateInst() const
+{
+	return new AudioMultiEffectPlayInstItemSingularity( *this );
+}
+AudioMultiEffectPlayInstItemSingularity::AudioMultiEffectPlayInstItemSingularity(const AudioMultiEffectPlayDataItemSingularity& itemdata)
+	: AudioMultiEffectPlayInstItemBase(itemdata)
+	, mItemData(itemdata)
+{
+}
+void AudioMultiEffectPlayInstItemSingularity::DoStop(AudioEffectComponentInst* aeci,ork::lev2::AudioInstrumentPlayback*pb)
+{
+}
+ork::lev2::AudioInstrumentPlayback* AudioMultiEffectPlayInstItemSingularity::DoPlay(AudioEffectComponentInst* aeci, ork::lev2::AudioIntrumentPlayParam& param)
+{
+    return nullptr;
+}
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 void AudioMultiEffectPlayDataItemModular::Describe()
 {
 	ork::reflect::RegisterProperty( "ControlGraph", & AudioMultiEffectPlayDataItemModular::TemplateAccessor );
@@ -405,7 +430,6 @@ AudioMultiEffectPlayInstItemBase* AudioMultiEffectPlayDataItemModular::CreateIns
 {
 	return new AudioMultiEffectPlayInstItemModular( *this );
 }
-///////////////////////////////////////////////////////////////////////////////
 AudioMultiEffectPlayInstItemModular::AudioMultiEffectPlayInstItemModular(const AudioMultiEffectPlayDataItemModular& itemdata)
 	: AudioMultiEffectPlayInstItemBase(itemdata)
 	, mItemData(itemdata)

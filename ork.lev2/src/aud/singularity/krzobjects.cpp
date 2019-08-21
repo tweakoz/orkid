@@ -123,7 +123,7 @@ s16* getK2V3InternalSoundBlock();
 sample* VastObjectsDB::parseSample( const Value& jsonobj, const multisample* parent )
 {
 	auto sout = new sample;
-	sout->_sampleBlock = nullptr; //getK2V3InternalSoundBlock();
+	sout->_sampleBlock = getK2V3InternalSoundBlock();
 	sout->_name = jsonobj["subSampleName"].GetString();
 	sout->_subid = jsonobj["subSampleIndex"].GetInt();
 	sout->_rootKey = jsonobj["rootKey"].GetInt();
@@ -821,6 +821,7 @@ void VastObjectsDB::loadJson( const std::string& fname, int ibaseid )
 	auto realfname = kbasepath+std::string("/kurzweil/")+fname+".json";
 	printf( "fname<%s>\n", realfname.c_str());
 	FILE* fin = fopen(realfname.c_str(),"rt");
+    assert(fin!=nullptr);
 	fseek(fin,0,SEEK_END);
 	int size = ftell(fin);
 	printf( "filesize<%d>\n", size );

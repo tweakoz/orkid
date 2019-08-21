@@ -10,7 +10,7 @@
 #include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string kbasepath = "/usr/local/share/singularity";
+std::string kbasepath = "/opt/singularity/data";
 ///////////////////////////////////////////////////////////////////////////////
 
 using namespace ork::sf2;
@@ -238,7 +238,6 @@ SynthData::SynthData(synth* syn)
 
 void KrzTestData::genTestPrograms()
 {
-	/*
 	auto t1 = new programData;
 	t1->_role = "PrgTest";
 	_testPrograms.push_back(t1);
@@ -307,28 +306,28 @@ void KrzTestData::genTestPrograms()
 
 	if( 0 )
 	{
-		auto& F1 = l1->_fBlock[1];
-		F1._dspBlock = "2PARAM SHAPER";
-		F1._paramScheme = "EVN";
-		F1._blockIndex = 0;
-		F1._units = "dB";
-		F1._coarse = -60.0;
+		auto F1 = l1->_dspBlocks[1];
+		F1->_dspBlock = "2PARAM SHAPER";
+		F1->_blockIndex = 0;
+		F1->_paramd[0]._coarse = -60.0;
+        F1->_paramd[0]._paramScheme = "EVN";
+        F1->_paramd[0]._units = "dB";
 	}
 	else if( 0 )
 	{
-		auto& F2 = l1->_fBlock[2];
-		F2._blockIndex = 0;
-		F2._dspBlock = "SHAPER";
-		F2._paramScheme = "AMT";
-		F2._units = "x";
-		F2._coarse = 0.1;
+		auto F2 = l1->_dspBlocks[2];
+		F2->_blockIndex = 0;
+		F2->_dspBlock = "SHAPER";
+		F2->_paramd[0]._coarse = 0.1;
+        F2->_paramd[0]._paramScheme = "AMT";
+        F2->_paramd[0]._units = "x";
 	}
 	if( 0 )
 	{
-		auto& F3 = l1->_fBlock[3];
-		F3._paramScheme = "ODD";
-		F3._blockIndex = 1;
-		F3._units = "dB";
-		F3._coarse = -96.0;
-	}*/
+		auto F3 = l1->_dspBlocks[3];
+		F3->_blockIndex = 1;
+		F3->_paramd[0]._coarse = -96.0;
+        F3->_paramd[0]._paramScheme = "ODD";
+        F3->_paramd[0]._units = "dB";
+	}
 }

@@ -51,7 +51,7 @@ void layer::release()
     if( (--_keepalive) == 0 )
     {
         //printf( "LAYER<%p> DONE\n", this );
-        _syn.freeLayer(this);        
+        _syn.freeLayer(this);
     }
     assert(_keepalive>=0);
     //printf( "layer<%p> release cnt<%d>\n", this, _keepalive );
@@ -88,7 +88,7 @@ void layer::compute(outputBuffer& obuf)
     for( int i=0; i<kmaxctrlblocks; i++ )
     {
         if( _ctrlBlock[i] )
-            _ctrlBlock[i]->compute(inumframes);    
+            _ctrlBlock[i]->compute(inumframes);
     }
 
     ///////////////////////////////////
@@ -149,7 +149,7 @@ void layer::compute(outputBuffer& obuf)
                     _HAF._items.push_back(lfof);
                 }
                 else if( auto fun = dynamic_cast<FunInst*>(cinst)  )
-                {   funframe funfr; 
+                {   funframe funfr;
                     funfr._index = funcount++;
                     funfr._data = fun->_data;
                     funfr._value = fun->_curval;
@@ -215,9 +215,9 @@ void layer::compute(outputBuffer& obuf)
     {
         bool bypassDSP = _syn._bypassDSP;
         DspBlock* lastblock = _alg->lastBlock();
-        bool doBlockStereo = bypassDSP 
-                           ? false 
-                           : lastblock ? (lastblock->numOutputs()==2) 
+        bool doBlockStereo = bypassDSP
+                           ? false
+                           : lastblock ? (lastblock->numOutputs()==2)
                                        : false;
 
         float synsr = _syn._sampleRate;
@@ -299,7 +299,7 @@ void layer::compute(outputBuffer& obuf)
         ///////////////////////////////////
 
         if( false==bypassDSP )
-            _alg->compute(_layerObuf);
+            _alg->compute(_syn,_layerObuf);
 
         ///////////////////////////////////
         // amp / out
@@ -319,7 +319,7 @@ void layer::compute(outputBuffer& obuf)
             for( int i=0; i<inumframes; i++ )
             {
                 float tgain = _layerGain*_masterGain;
-                float inp = lyroutl[i]; 
+                float inp = lyroutl[i];
                 outl[i] += inp*tgain*0.5f;
                 outr[i] += inp*tgain*0.5f;
             }
@@ -331,7 +331,7 @@ void layer::compute(outputBuffer& obuf)
                 float tgain = _layerGain*_masterGain;
                 outl[i] += lyroutl[i]*tgain;
                 outr[i] += lyroutl[i]*tgain;
-            }            
+            }
         }
 
         /////////////////
@@ -391,7 +391,7 @@ controller_t layer::getController(const std::string& srcn) const
         auto cinst = it->second;
         printf( "getcon<%s> -> %p\n", srcn.c_str(), cinst );
         return [cinst]()
-        {   
+        {
             return cinst->_curval;
         };
     }
@@ -420,7 +420,7 @@ controller_t layer::getController(const std::string& srcn) const
     else if( srcn == "MWheel" )
     {    auto state = new float(0);
         return [this,state]()
-        {   
+        {
             float v = _syn._doModWheel;
             (*state) = (*state)*0.99+v*0.01;
             return (*state);
@@ -432,7 +432,7 @@ controller_t layer::getController(const std::string& srcn) const
         };
     else if( srcn == "MIDI(49)" )
         return [this]()
-        {   
+        {
             float lt = this->_layerTime;
             float s = sinf(lt*pi2*8.0f);
             s = (s>=0.0f) ? 1.0f : 0.0f;
@@ -440,25 +440,25 @@ controller_t layer::getController(const std::string& srcn) const
         };
     else if( srcn == "RandV1" )
         return [this]()
-        {   
+        {
             float lt = -1.0f+float(rand()&0xffff)/32768.0f;
             return lt;
         };
     else if( srcn == "AttVel" )
         return [this]()
-        {   
+        {
             float atkvel = float(this->_curvel)/128.0f;
             return atkvel;
         };
     else if( srcn == "VTRIG1" )
         return [this]()
-        {   
+        {
             float atkvel = float(this->_curvel>64);
             return atkvel;
         };
     else if( srcn == "VTRIG2" )
         return [this]()
-        {   
+        {
             float atkvel = float(this->_curvel>96);
             return atkvel;
         };
@@ -476,7 +476,7 @@ controller_t layer::getController(const std::string& srcn) const
     }
 
     return [](){return 0.0f;};
-  
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -487,7 +487,7 @@ controller_t layer::getSRC1(const BlockModulationData& mods)
     float src1depth = mods._src1Depth;
 
     auto it = [=]()->float
-    {   
+    {
         float out = src1()*src1depth;
         //printf( "src1out<%f>\n", out );
         return out;
@@ -503,9 +503,9 @@ controller_t layer::getSRC2(const BlockModulationData& mods)
     auto depthcon = this->getController(mods._src2DepthCtrl);
     float mindepth = mods._src2MinDepth;
     float maxdepth = mods._src2MaxDepth;
-   
+
     auto it = [=]()->float
-    {   
+    {
         float dc = clip_float(depthcon(),0,1);
         float depth = lerp(mindepth,maxdepth,dc);
         float out = src2()*depth;
@@ -520,7 +520,7 @@ controller_t layer::getSRC2(const BlockModulationData& mods)
 void layer::keyOn( int note, int vel, const layerData* ld )
 {
     std::lock_guard<std::mutex> lock(_mutex);
- 
+
     reset();
 
     assert(ld!=nullptr);
@@ -601,7 +601,7 @@ void layer::keyOff()
 {
     _lyrPhase = 1;
     this->release();
-    
+
     ///////////////////////////////////////
 
     for( int i=0; i<kmaxctrlblocks; i++ )

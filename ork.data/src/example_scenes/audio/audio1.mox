@@ -41,7 +41,7 @@
                                                     </property>
                                                     <property name='MutexGroups'>""</property>
                                                     <property name='SoundMap'>
-                                                        <item key='s1'>
+                                                        <item key='start'>
                                                             <reference category='ObjectClass'>
                                                                 <object type='AudioMultiEffectPlayData' id='7'>
                                                                     <property name='AttenCurve'>
@@ -69,78 +69,13 @@
                                                                     <property name='Enable3D'>true</property>
                                                                     <property name='SelectMode'>"EMS_RANDOM"</property>
                                                                     <property name='SubSounds'>
-                                                                        <item key='s1'>
+                                                                        <item key='sub1'>
                                                                             <reference category='ObjectClass'>
-                                                                                <object type='AudioMultiEffectPlayDataItemModular' id='10'>
+                                                                                <object type='AudioMultiEffectPlayDataItemSingularity' id='10'>
                                                                                     <property name='BankName'>""</property>
                                                                                     <property name='Note'>60</property>
                                                                                     <property name='ProgramName'>""</property>
                                                                                     <property name='Velocity'>127</property>
-                                                                                    <property name='ControlGraph'>
-                                                                                        <object type='lev2::aud::AudioGraph' id='11'>
-                                                                                            <property name='Modules'>
-                                                                                                <item key='a'>
-                                                                                                    <reference category='ObjectClass'>
-                                                                                                        <object type='lev2::aud::AudioHwSinkModule' id='12'>
-                                                                                                            <property name='mgvpos'>0 0</property>
-                                                                                                            <property name='Amplitude'>
-                                                                                                                <object type='dflow/inplugxf<float,floatxf>' id='13'>
-                                                                                                                    <property name='value'>0</property>
-                                                                                                                    <property name='xf'>
-                                                                                                                        <object type='dflow/floatxf' id='14'>
-                                                                                                                            <property name='Transforms'></property>
-                                                                                                                        </object>
-                                                                                                                    </property>
-                                                                                                                </object>
-                                                                                                            </property>
-                                                                                                            <property name='Cutoff'>
-                                                                                                                <object type='dflow/inplugxf<float,floatxf>' id='15'>
-                                                                                                                    <property name='value'>0</property>
-                                                                                                                    <property name='xf'>
-                                                                                                                        <object type='dflow/floatxf' id='16'>
-                                                                                                                            <property name='Transforms'></property>
-                                                                                                                        </object>
-                                                                                                                    </property>
-                                                                                                                </object>
-                                                                                                            </property>
-                                                                                                            <property name='Pan'>
-                                                                                                                <object type='dflow/inplugxf<float,floatxf>' id='17'>
-                                                                                                                    <property name='value'>0</property>
-                                                                                                                    <property name='xf'>
-                                                                                                                        <object type='dflow/floatxf' id='18'>
-                                                                                                                            <property name='Transforms'></property>
-                                                                                                                        </object>
-                                                                                                                    </property>
-                                                                                                                </object>
-                                                                                                            </property>
-                                                                                                            <property name='Pitch'>
-                                                                                                                <object type='dflow/inplugxf<float,floatxf>' id='19'>
-                                                                                                                    <property name='value'>0</property>
-                                                                                                                    <property name='xf'>
-                                                                                                                        <object type='dflow/floatxf' id='20'>
-                                                                                                                            <property name='Transforms'></property>
-                                                                                                                        </object>
-                                                                                                                    </property>
-                                                                                                                </object>
-                                                                                                            </property>
-                                                                                                            <property name='Resonance'>
-                                                                                                                <object type='dflow/inplugxf<float,floatxf>' id='21'>
-                                                                                                                    <property name='value'>0</property>
-                                                                                                                    <property name='xf'>
-                                                                                                                        <object type='dflow/floatxf' id='22'>
-                                                                                                                            <property name='Transforms'></property>
-                                                                                                                        </object>
-                                                                                                                    </property>
-                                                                                                                </object>
-                                                                                                            </property>
-                                                                                                        </object>
-                                                                                                    </reference>
-                                                                                                </item>
-                                                                                            </property>
-                                                                                            <property name='zzz_connections'>0</property>
-                                                                                        </object>
-                                                                                    </property>
-                                                                                    <property name='NumVoices'>1</property>
                                                                                 </object>
                                                                             </reference>
                                                                         </item>
@@ -154,7 +89,7 @@
                                         </item>
                                         <item key='bullet'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='BulletObjectControllerData' id='23'>
+                                                <object type='BulletObjectControllerData' id='11'>
                                                     <property name='AllowSleeping'>true</property>
                                                     <property name='AngularDamping'>0.5</property>
                                                     <property name='Disable'>false</property>
@@ -170,7 +105,7 @@
                                         </item>
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='SimpleCharControllerData' id='24'>
+                                                <object type='SimpleCharControllerData' id='12'>
                                                     <property name='RunSpeed'>50</property>
                                                     <property name='SpeedLerpRate'>1</property>
                                                     <property name='WalkSpeed'>30</property>
@@ -179,7 +114,7 @@
                                         </item>
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='ModelComponentData' id='25'>
+                                                <object type='ModelComponentData' id='13'>
                                                     <property name='AlwaysVisible'>false</property>
                                                     <property name='BlenderZup'>false</property>
                                                     <property name='EditorDagDebug'>false</property>
@@ -194,7 +129,7 @@
                                         </item>
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
-                                                <object type='ScriptComponentData' id='26'>
+                                                <object type='ScriptComponentData' id='14'>
                                                     <property name='ScriptFile'>""</property>
                                                 </object>
                                             </reference>

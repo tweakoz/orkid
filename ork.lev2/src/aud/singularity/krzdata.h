@@ -10,9 +10,9 @@
 //   specifies inputs and output configuration of a zpm module
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IoMask 
+struct IoMask
 {
-    IoMask(int i=1, int o=1) 
+    IoMask(int i=1, int o=1)
         : _inputMask(i)
         , _outputMask(o)
     {}
@@ -26,7 +26,7 @@ struct IoMask
 
 struct AlgConfig
 {
-    IoMask _ioMasks[kmaxdspblocksperlayer];    
+    IoMask _ioMasks[kmaxdspblocksperlayer];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -236,11 +236,11 @@ struct KmpBlockData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspParamData 
+struct DspParamData
 {
     void initEvaluators();
     //
-    
+
     std::string _paramScheme;
     std::string _name;
     std::string _units;
@@ -256,14 +256,13 @@ struct DspParamData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct DspBlockData 
+struct DspBlockData
 {
     ork::svarp_t getExtData(const std::string& name) const;
     void initEvaluators();
     //
-    
+
     std::string _dspBlock;
-    //std::string _name;
 
     int _numParams = 0;
     float _inputPad = 1.0f;
@@ -421,4 +420,3 @@ struct KrzKmTestData : public SynthData
     const programData* getProgram(int progID) const final;
     std::map<int,programData*> _testKmPrograms;
 };
-

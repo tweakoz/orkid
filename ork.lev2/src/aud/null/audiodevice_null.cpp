@@ -16,7 +16,7 @@
 #include <ork/kernel/Array.hpp>
 #include <ork/application/application.h>
 
-namespace ork { 
+namespace ork {
 
 template class orklut<Char8,float>;
 
@@ -86,7 +86,6 @@ void AudioDeviceNULL::SetPauseState(bool bpause)
 {
 	return;
 }
-///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -178,7 +177,7 @@ bool AudioDeviceNULL::DoLoadStream( AudioStream* streamhandle, ConstString fname
 ///////////////////////////////////////////////////////////////////////////////
 
 AudioStreamPlayback* AudioDeviceNULL::DoPlayStream( AudioStream* streamhandle )
-{	
+{
 	AudioStreamPlayback* pb = mHandles.allocate();
 	NullPlayHandle* phandle = (NullPlayHandle*) pb->mpPlatformHandle;
 

@@ -537,6 +537,7 @@ float sampleOsc::playLoopFwd()
 	///////////////
     // linear
 	auto sblk = _sample->_sampleBlock;
+    assert(sblk!=nullptr);
 	float sampA = float(sblk[iiA] );
 	float sampB = float(sblk[iiB] );
 	float samp = (sampB*fract+sampA*invfr)*kinv32k;
