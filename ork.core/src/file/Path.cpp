@@ -105,6 +105,19 @@ Path::Path(const char* pathName)
 	Set(pathName);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+Path::Path(const std::string pathName)
+	: Path(pathName.c_str()){
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+Path::Path(const std::vector<std::string>& pathVect){
+	auto j = JoinString(pathVect,"/");
+	j = j.substr(0, j.size()-1); // remove trailing /
+	Set(j.c_str());
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -590,7 +603,7 @@ Path Path::ToAbsoluteFolder( EPathType etype ) const
 		default:
 		{
 			rval.ComputeMarkers('/');
-			break;	
+			break;
 		}
 	}
 	//orkprintf( "Path<%s> AbsoluteFolder<%s>\n", c_str(), rval.c_str() );
@@ -1129,31 +1142,31 @@ void Path::DeCompose(	ork::file::Path::SmallNameType &url,
 		drive.SetChar( 0, 0 );
 	}
 	if( HasFolder() )
-	{	
+	{
 		//strncpy( folder.c_str(), c_str()+mMarkers.GetFolderBase(), mMarkers.GetFolderLength() );
 		//folder.c_str()[ mMarkers.GetFolderLength() ] = 0;
 		folder.set( c_str()+mMarkers.GetFolderBase(), mMarkers.GetFolderLength() );
 		folder.SetChar( mMarkers.GetFolderLength(), 0 );
 	}
 	else
-	{	
+	{
 		//folder.c_str()[0] = 0;
 		folder.SetChar( 0, 0 );
 	}
 	if( HasFile() )
-	{	
+	{
 		//strncpy( file.c_str(), c_str()+mMarkers.GetFileNameBase(), mMarkers.GetFileNameLength() );
 		//file.c_str()[ mMarkers.GetFileNameLength() ] = 0;
 		file.set( c_str()+mMarkers.GetFileNameBase(), mMarkers.GetFileNameLength() );
 		file.SetChar( mMarkers.GetFileNameLength(), 0 );
 	}
 	else
-	{	
+	{
 		//file.c_str()[0] = 0;
 		file.SetChar( 0, 0 );
 	}
 	if( HasExtension() )
-	{	
+	{
 		//strncpy( ext.c_str(), c_str()+mMarkers.GetExtensionBase(), mMarkers.GetExtensionLength() );
 		//ext.c_str()[ mMarkers.GetExtensionBase() ] = 0;
 		int ibase = mMarkers.GetExtensionBase();
@@ -1161,19 +1174,19 @@ void Path::DeCompose(	ork::file::Path::SmallNameType &url,
 		ext.SetChar( mMarkers.GetExtensionLength(), 0 );
 	}
 	else
-	{	
+	{
 		ext.SetChar( 0, 0 );
 		//ext.c_str()[0] = 0;
 	}
 	if( HasQueryString() )
-	{	
+	{
 		//strncpy( query.c_str(), c_str()+mMarkers.GetQueryStringBase(), mMarkers.GetQueryStringLength() );
 		//query.c_str()[ mMarkers.GetQueryStringLength() ] = 0;
 		query.set( c_str()+mMarkers.GetQueryStringBase(), mMarkers.GetQueryStringLength() );
 		query.SetChar( mMarkers.GetQueryStringLength(), 0 );
 	}
 	else
-	{	
+	{
 		query.SetChar( 0, 0 );
 		//query.c_str()[0] = 0;
 	}

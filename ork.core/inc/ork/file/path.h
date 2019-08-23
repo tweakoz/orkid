@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -88,7 +88,7 @@ class Path
 		EPATHTYPE_DOS,
 		EPATHTYPE_POSIX,
 		EPATHTYPE_NDS,
-		
+
 		EPATHTYPE_URL,
 		EPATHTYPE_ASSET=EPATHTYPE_URL,
 	};
@@ -96,8 +96,11 @@ class Path
 	Path();
 	Path(const PieceString &pathName);
 	Path(const char* pathName);
+	Path(const std::string pathName);
 	Path(const NameType& pathName);
 	Path(const ork::PoolString& pathName);
+	Path(const std::vector<std::string>& pathVect);
+
 
 	~Path();
 
@@ -123,7 +126,7 @@ class Path
 	void SetExtension(const char* ext);
 	void SetUrlBase(const char* UrlBase);
 	void SetDrive(const char* UrlBase);
-	
+
 	void Set(const char* pathName);
 
 	bool IsAbsolute() const;
@@ -143,7 +146,7 @@ class Path
 						NameType& file,
 						SmallNameType& ext,
 						NameType& query );
-	
+
 	void Compose(	const SmallNameType& url,
 					const SmallNameType& drive,
 					const NameType& folder,

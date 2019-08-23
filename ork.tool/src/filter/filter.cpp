@@ -88,7 +88,7 @@ void QtzComposerToPngFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-/*bool Tga2DdsFilterDriver( const tokenlist& toklist );
+bool Tga2DdsFilterDriver( const tokenlist& toklist );
 
 class TGADDSFilter : public CAssetFilterBase
 {
@@ -101,7 +101,6 @@ public: //
 	}
 };
 void TGADDSFilter::Describe() {}
-*/
 
 #if defined(_USE_D3DX)
 class UvAtlasFilter : public CAssetFilterBase
@@ -204,7 +203,7 @@ static void RegisterFilters()
 		CAssetFilter::RegisterFilter("xgm:obj", MeshUtil::XGM_OBJ_Filter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
-		//CAssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
+		CAssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
 		/////////////////////////
 		#if defined(ORK_OSXX)
@@ -572,7 +571,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::tool::Tex2VtxBakeFilter,"Tex2VtxBakeFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::CAssetFilterBase,"CAssetFilterBase");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::fg3dFilter,"fg3dFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::WAVMKRFilter,"WAVMKRFilter");
-//INSTANTIATE_TRANSPARENT_RTTI(ork::tool::TGADDSFilter,"TGADDSFilter");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::TGADDSFilter,"TGADDSFilter");
 
 #if defined(ORK_OSXX)
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::VolTexAssembleFilter,"VolTexAssembleFilter");

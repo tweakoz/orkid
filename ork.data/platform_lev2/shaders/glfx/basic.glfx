@@ -152,9 +152,9 @@ vertex_shader vs_sk
     // todo lights from scene
     float dif = dot(wnorm,vec3(0,0,1));
     float amb = 0.3;
-    float tot = 1.0; //dif+amb;
+    float tot = dif+amb;
     frg_clr = vec4(tot,tot,tot,1);
-    frg_uv0 = uv0*vec2(1,-1);
+    frg_uv0 = uv0;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -225,8 +225,8 @@ technique tek_wnormal_skinned
 technique tek_lamberttex_skinned
 {	fxconfig=fxcfg_default;
 	pass p0
-	{	vertex_shader=vs_wnormalsk;
-		fragment_shader=ps_fragclr;
+	{	vertex_shader=vs_sk;
+		fragment_shader=ps_modtex;
 		state_block=sb_default;
 	}
 }
