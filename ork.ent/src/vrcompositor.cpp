@@ -229,28 +229,32 @@ struct VRSYSTEMIMPL {
     : _frametek(nullptr)
     , _camname(AddPooledString("Camera"))
     , _layers(AddPooledString("All"))
+    , _active(false)
     , _width(1024)
     , _height(1024) {
 
     #if defined(ENABLE_VR)
       vr::EVRInitError error = vr::VRInitError_None;
       _hmd = vr::VR_Init( &error, vr::VRApplication_Scene );
-      assert(error==vr::VRInitError_None);
-      _hmd->GetRecommendedRenderTargetSize( &_width, &_height );
-      printf( "RECOMMENDED WH<%d %d>\n", _width, _height );
-      auto str_driver = trackedDeviceString( vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String );
-    	auto str_display = trackedDeviceString( vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SerialNumber_String );
-      printf( "str_driver<%s>\n", str_driver.c_str() );
-      printf( "str_driver<%s>\n", str_display.c_str() );
-      auto proj_mtx_l = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Left, .1, 10000.0f ));
-      auto proj_mtx_r = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Right, .1, 10000.0f ));
-      auto eyep_mtx_l = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Left ));
-      auto eyep_mtx_r = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Right ));
+      _active = (error==vr::VRInitError_None);
 
-      _posemap["projl"] = proj_mtx_l;
-      _posemap["projr"] = proj_mtx_r;
-      _posemap["eyel"].GEMSInverse(eyep_mtx_l);
-      _posemap["eyer"].GEMSInverse(eyep_mtx_r);
+      if( _active ){
+          _hmd->GetRecommendedRenderTargetSize( &_width, &_height );
+          printf( "RECOMMENDED WH<%d %d>\n", _width, _height );
+          auto str_driver = trackedDeviceString( vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String );
+        	auto str_display = trackedDeviceString( vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SerialNumber_String );
+          printf( "str_driver<%s>\n", str_driver.c_str() );
+          printf( "str_driver<%s>\n", str_display.c_str() );
+          auto proj_mtx_l = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Left, .1, 10000.0f ));
+          auto proj_mtx_r = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Right, .1, 10000.0f ));
+          auto eyep_mtx_l = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Left ));
+          auto eyep_mtx_r = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Right ));
+
+          _posemap["projl"] = proj_mtx_l;
+          _posemap["projr"] = proj_mtx_r;
+          _posemap["eyel"].GEMSInverse(eyep_mtx_l);
+          _posemap["eyer"].GEMSInverse(eyep_mtx_r);
+    }
     #endif
     _leftcamera.SetWidth(_width);
     _leftcamera.SetHeight(_height);
@@ -306,6 +310,7 @@ struct VRSYSTEMIMPL {
   CCameraData _leftcamera;
   CCameraData _rightcamera;
   std::map<int,ControllerState> _controllers;
+  bool _active;
   # if defined(ENABLE_VR)
     vr::IVRSystem* _hmd;
     vr::TrackedDevicePose_t _trackedPoses[ vr::k_unMaxTrackedDeviceCount ];
@@ -324,12 +329,15 @@ VrCompositingNode::~VrCompositingNode(){
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // virtual
 {
+    auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+
     # if defined(ENABLE_VR)
-	bool ovr_compositor_ok = (bool) vr::VRCompositor();
-    assert(ovr_compositor_ok);
+    if( vrimpl->_active ){
+      bool ovr_compositor_ok = (bool) vr::VRCompositor();
+      assert(ovr_compositor_ok);
+    }
     #endif
 
-    auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
 
 	if( nullptr == vrimpl->_frametek )
 	{
@@ -367,7 +375,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
     # if defined(ENABLE_VR)
 
     vr::VREvent_t event;
-  	while( vrimpl->_hmd->PollNextEvent( &event, sizeof( event ) ) )
+  	while( vrimpl->_active and vrimpl->_hmd->PollNextEvent( &event, sizeof( event ) ) )
   	{
        auto data = event.data;
        auto ctrl = data.controller;
@@ -417,10 +425,12 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
   	}
 
     //////////////////////////////////////////////
-    vr::VRActionSetHandle_t actset_demo = vr::k_ulInvalidActionSetHandle;
-    vr::VRActiveActionSet_t actionSet = { 0 };
-	  actionSet.ulActionSet = actset_demo;
-	  vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
+    if( vrimpl->_active ){
+        vr::VRActionSetHandle_t actset_demo = vr::k_ulInvalidActionSetHandle;
+        vr::VRActiveActionSet_t actionSet = { 0 };
+    	  actionSet.ulActionSet = actset_demo;
+    	  vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
+    }
     //////////////////////////////////////////////
 
     #endif
@@ -460,43 +470,47 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 
             # if defined(ENABLE_VR)
 
-            vr::Texture_t leftEyeTexture = {
-                (void*)(uintptr_t)texobjL,
-                vr::TextureType_OpenGL,
-                vr::ColorSpace_Gamma
-            };
-            vr::Texture_t rightEyeTexture = {
-                (void*)(uintptr_t)texobjR,
-                vr::TextureType_OpenGL,
-                vr::ColorSpace_Gamma
-            };
+            if( vrimpl->_active ){
 
-            //////////////////////////////////////////////////
-            // odd that you need to set the viewport
-            //  before submitting to the vr compositor,
-            //  since the texture contains the size of itself...
-            //////////////////////////////////////////////////
+                vr::Texture_t leftEyeTexture = {
+                    (void*)(uintptr_t)texobjL,
+                    vr::TextureType_OpenGL,
+                    vr::ColorSpace_Gamma
+                };
+                vr::Texture_t rightEyeTexture = {
+                    (void*)(uintptr_t)texobjR,
+                    vr::TextureType_OpenGL,
+                    vr::ColorSpace_Gamma
+                };
 
-            SRect VPRect( 0, 0, vrimpl->_width, vrimpl->_height );
-            auto targ = framedata.GetTarget();
-          	targ->FBI()->PushViewport( VPRect );
-          	targ->FBI()->PushScissor( VPRect );
+                //////////////////////////////////////////////////
+                // odd that you need to set the viewport
+                //  before submitting to the vr compositor,
+                //  since the texture contains the size of itself...
+                //////////////////////////////////////////////////
 
-            //////////////////////////////////////////////////
-            // submit to openvr compositor
-            //////////////////////////////////////////////////
+                SRect VPRect( 0, 0, vrimpl->_width, vrimpl->_height );
+                auto targ = framedata.GetTarget();
+              	targ->FBI()->PushViewport( VPRect );
+              	targ->FBI()->PushScissor( VPRect );
 
-            GLuint erl = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
-            //assert(erl==GL_NO_ERROR);
-            GLuint err = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
-            //assert(err==GL_NO_ERROR);
+                //////////////////////////////////////////////////
+                // submit to openvr compositor
+                //////////////////////////////////////////////////
 
-            //////////////////////////////////////////////////
-            // undo above PushVp/Scissor
-            //////////////////////////////////////////////////
+                GLuint erl = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture );
+                //assert(erl==GL_NO_ERROR);
+                GLuint err = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture );
+                //assert(err==GL_NO_ERROR);
 
-            targ->FBI()->PopViewport( );
-          	targ->FBI()->PopScissor( );
+                //////////////////////////////////////////////////
+                // undo above PushVp/Scissor
+                //////////////////////////////////////////////////
+
+                targ->FBI()->PopViewport( );
+              	targ->FBI()->PopScissor( );
+
+            }
 
             //////////////////////////////////////////////////
 
@@ -511,7 +525,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 
     auto hmd = vrimpl->_hmd;
 
-    if( hmd->IsInputAvailable() ){
+    if( vrimpl->_active and hmd->IsInputAvailable() ){
 
       vr::VRCompositor()->WaitGetPoses( vrimpl->_trackedPoses, vr::k_unMaxTrackedDeviceCount, NULL, 0 );
 
