@@ -53,6 +53,18 @@ SFileDevContext::SFileDevContext( const SFileDevContext& oth )
 {
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+static file::Path::NameType BaseDir(){
+	file::Path::NameType startupdir = file::GetStartupDirectory();
+
+	if( getenv("ORKDOTBUILD_WORKSPACE_DIR")!=nullptr )
+		startupdir = file::Path::NameType(getenv("ORKDOTBUILD_WORKSPACE_DIR"))+file::Path::NameType("/");
+
+		return startupdir;
+
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void SFileDevContext::SetFilesystemBaseAbs( file::Path::NameType base )
@@ -61,10 +73,10 @@ void SFileDevContext::SetFilesystemBaseAbs( file::Path::NameType base )
 
 	bool baseisabs = pbase.IsAbsolute();
 
-	const ork::file::Path::NameType startupdir = file::GetStartupDirectory();
-	
-	file::Path::NameType nbase = baseisabs	? file::Path::NameType(base) 
-											: startupdir+file::Path::NameType(base); 
+	auto startupdir = BaseDir();
+
+	file::Path::NameType nbase = baseisabs	? file::Path::NameType(base)
+											: startupdir+file::Path::NameType(base);
 
 	msFilesystemBaseAbs= nbase.c_str();
 
@@ -76,7 +88,7 @@ void SFileDevContext::SetFilesystemBaseAbs( file::Path::NameType base )
 	{
 		msFilesystemBaseRel = nbase;
 	}
-	
+
 	//printf( "SetFilesystemBaseAbs<%s> : abs<%s> rel<%s> baseisabs<%d>\n", base.c_str(), msFilesystemBaseAbs.c_str(), msFilesystemBaseRel.c_str(), int(baseisabs) );
 }
 
@@ -84,7 +96,7 @@ void SFileDevContext::SetFilesystemBaseAbs( file::Path::NameType base )
 
 void SFileDevContext::SetFilesystemBaseRel( file::Path::NameType base )
 {
-	const file::Path::NameType& startupdir = file::GetStartupDirectory();
+	auto startupdir = BaseDir();
 	file::Path::NameType nbase = startupdir+base; //(base.c_str=="./") ? startupdir : base;
 	msFilesystemBaseAbs = nbase.c_str();
 	msFilesystemBaseRel = nbase.c_str();
@@ -113,9 +125,9 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 
 		file::Path::SmallNameType::size_type colonslsl = UrlName.find_first_of( "://" );
 		file::Path::SmallNameType UrlBase = UrlName.substr( 0, colonslsl );
-		
 
-		mTocString = ork::CreateFormattedString( 
+
+		mTocString = ork::CreateFormattedString(
 			"static void AddToToc_%s( orkmap<ork::file::Path::NameType,int>& the_map, const char* name, int isize )\n"
 			"{	the_map.insert( std::make_pair<ork::file::Path::NameType,int>( name, isize ) );\n"
 			"}\n", UrlBase.c_str() );
@@ -130,7 +142,7 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 
 			if( ch == '\\' ) ch = '/';
 			else if( ch>='A' && ch<='Z' ) ch = (ch-'A')+'a';
-			
+
 			SearchDirPosix.SetChar( (int) i, ch );
 		}
 		////////////////////////////////////////
@@ -139,7 +151,7 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 		{
 			file::Path::NameType tname;
 			tname.replace( it->c_str(), SearchDirPosix.c_str(), "" );
-			
+
 			size_t ilen = tname.length();
 			for( size_t i=0; i<ilen; i++ )
 			{
@@ -147,7 +159,7 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 
 				if( ch == '\\' ) ch = '/';
 				else if( ch>='A' && ch<='Z' ) ch = (ch-'A')+'a';
-				
+
 				tname.SetChar( (int) i, ch );
 			}
 
@@ -173,7 +185,7 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 				char ch = AbsPath.c_str()[i];
 
 				if( ch == '/' ) ch = '\\';
-				
+
 				AbsPath.SetChar( i, ch );
 			}
 			/////////////////////////////////
@@ -192,7 +204,7 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 				tname2.replace( tname.c_str(), searchdirpsx.c_str(), "" );
 				tname = tname2;
 			}
-			
+
 			/////////////////////////////////
 
 			mTOC.insert(std::make_pair(tname,ifilesize));
@@ -208,7 +220,7 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 	#endif
 
 		std::string TocFileName = ork::CreateFormattedString( "e:\\%s_%s.toc", platbase.c_str(), UrlBase.c_str() );
-		
+
 		FILE *fout = fopen( TocFileName.c_str(), "wt" );
 		fwrite( mTocString.c_str(), mTocString.length(), 1, fout );
 		fclose(fout);
@@ -231,7 +243,7 @@ void QueueBuffer::Queue( const void* pwhere, size_t isize )
 	{
 		memcpy( mData+miwriteidx, pu8, isize );
 	}
-	else 
+	else
 	{
 		size_t icnt = (kmaxbuffersize-miwriteidx);
 		memcpy( mData+miwriteidx, pu8, icnt );
@@ -246,7 +258,7 @@ void QueueBuffer::Queue( const void* pwhere, size_t isize )
 void QueueBuffer::Read( void* pwhere, size_t isize )
 {
 	const size_t ksize = isize;
-	
+
 	size_t inumq = GetNumBytesQueued();
 
 	//orkprintf( "QueueBuffer::Read()  this<%08x> size<%d> mireadidx<%d> inumq<%d>\n", this, isize, mireadidx, inumq );
@@ -281,7 +293,7 @@ void QueueBuffer::Flush()
 	minumqueued = 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
-size_t QueueBuffer::GetNumBytesQueued() const 
+size_t QueueBuffer::GetNumBytesQueued() const
 {
 	return minumqueued;
 }
@@ -341,7 +353,7 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 
 	size_t ilefttoread = iSize;
 	size_t ireadctr = 0;
-	
+
 	EFileErrCode ecode = EFEC_FILE_OK;
 
 	//orkprintf( "Read<%d> Phys<%d> User<%d>\n", iSize, rFile.GetPhysicalPos(), rFile.GetUserPos() );
@@ -380,7 +392,7 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 						ethiscode = DoRead(rFile,(void*)mReadBuffer,iroundupcount,iactualread);
 						OrkAssert( iactualread < READBUFFERSIZE );
 						///////////////////////////////////////
-						rFile.mFifo.Queue( mReadBuffer,iactualread ); 
+						rFile.mFifo.Queue( mReadBuffer,iactualread );
 						OrkAssert(ethiscode==EFEC_FILE_OK);
 						///////////////////////////////////////
 					}
@@ -396,7 +408,7 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 						OrkAssert(ethiscode==EFEC_FILE_OK);
 						///////////////////////////////////////
 						size_t inumvalid = iactualread-ioff;
-						rFile.mFifo.Queue( mReadBuffer+ioff,inumvalid ); 
+						rFile.mFifo.Queue( mReadBuffer+ioff,inumvalid );
 						///////////////////////////////////////
 					}
 				}
@@ -405,7 +417,7 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 					ethiscode = DoRead(rFile,(void*)mReadBuffer,iroundupcount,iactualread);
 					OrkAssert( iactualread < READBUFFERSIZE );
 					///////////////////////////////////////
-					rFile.mFifo.Queue( mReadBuffer,iroundupcount ); 
+					rFile.mFifo.Queue( mReadBuffer,iroundupcount );
 					OrkAssert(ethiscode==EFEC_FILE_OK);
 					///////////////////////////////////////
 				}
@@ -459,7 +471,7 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 	///////////////////////////////////////////
 
 	return ecode;
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -534,7 +546,7 @@ EFileErrCode CFileDev::OpenFile( CFile &rFile )
 				pLinFile->Write( fxstr.c_str(), isize );
 				////////////////////////////////////////
 				break;
-				
+
 			}
 		}
 	}

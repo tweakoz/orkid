@@ -3,31 +3,17 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
 
-#if defined(WIN32) && ! defined( _XBOX )
-#include <shlobj.h> // For BROWSEINFO
-#endif
 #include <ork/file/fileenv.h>
 #include <ork/kernel/slashnode.h>
 #include <ork/orkstd.h> // For OrkAssert
 
-#if defined(NITRO)
-# include <ork/file/filenitro.h>
-#elif defined(WII)
-# include <ork/file/filedevwii.h>
 # include <ork/file/filestd.h>
-#elif defined(_PSP)
-# include <ork/file/filedevpsp.h>
-#else
-# include <ork/file/filestd.h>
-#endif
-#if defined(IX)
 # include <unistd.h>
-#endif
 
 namespace ork
 {
@@ -38,13 +24,8 @@ namespace file {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-file::Path::NameType GetStartupDirectory()
-{
-#if defined(_XBOX)
-	return GetCurDir()+file::Path::NameType("\\");
-#else
+file::Path::NameType GetStartupDirectory(){
 	return GetCurDir()+file::Path::NameType("/");
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,25 +40,11 @@ EFileErrCode SetCurDir( const file::Path::NameType & inspec )
 file::Path::NameType GetCurDir() // the curdir of the process, not the CFileDevice
 {
 	file::Path::NameType outspec;
-#if defined(_XBOX)
-	outspec = "d:\\";
-#elif defined( WIN32 )
-	char dirbuf[256];
-	dirbuf[0] = 0;
-	DWORD len = ::GetCurrentDirectory(256, dirbuf);
-	outspec = file::Path::NameType(dirbuf);
-#elif defined(WII) || defined(NITRO)
-	return file::Path::NameType("");
-#elif defined(IX)
 	char cwdbuf[4096];
 	const char* cwdr = getcwd(cwdbuf, sizeof(cwdbuf));
 	OrkAssert(cwdr!=0);
 	//printf( "cwdbuf<%s>\n", cwdbuf );
 	outspec = cwdr;
-#else
-	// Not implemented for this platform!
-	OrkAssert(false);
-#endif
 	//printf( "aa\n");
 	file::Path mypath( outspec.c_str() );
 	//printf( "ab\n");
@@ -94,15 +61,7 @@ file::Path::NameType GetCurDir() // the curdir of the process, not the CFileDevi
 
 CFileEnv::CFileEnv() : NoRttiSingleton<CFileEnv>(), mpDefaultDevice(NULL)
 {
-#if defined(NITRO)
-	CFileDev* fileEnvironment = new CFileDevNitro;
-#elif defined(WII)
-	CFileDev* fileEnvironment = new CFileDevWII;
-#elif defined(_PSP)
-	CFileDev* fileEnvironment = new CFileDevPSP;
-#else
 	CFileDev* fileEnvironment = new CFileDevStd;
-#endif
 	SetDefaultDevice(fileEnvironment);
 }
 
@@ -152,7 +111,7 @@ const SFileDevContext & CFileEnv::UrlBaseToContext( const file::Path::SmallNameT
 	strip_name.replace( UrlName.c_str(), "://", "" );
 
 	orkmap<ork::file::Path::SmallNameType, SFileDevContext>::const_iterator it=Map.find(strip_name);
-	
+
 	if( it!=Map.end() )
 	{
 		return it->second;
@@ -197,14 +156,14 @@ file::Path::NameType CFileEnv::UrlNameToPath( const file::Path::NameType& UrlNam
 				file::Path::SmallNameType urlp = urlbase.c_str();
 
 				if( OrkSTXIsInMap( GetRef().mUrlRegistryMap, urlp ) )
-				{				
+				{
 					file::Path::NameType::size_type ipathbase = find_url_colon+3;
 					path = UrlName.substr(ipathbase, UrlName.size() - ipathbase).c_str();
 				}
 			}
 		}
 	}
-	
+
 	if( path.length()==0 )
 	{
 		path = UrlName;
@@ -287,7 +246,7 @@ file::Path::NameType CFileEnv::StripUrlFromPath(const file::Path::NameType& urlN
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-	
+
 bool CFileEnv::DoesFileExist(  const file::Path& filespec )
 {
 	return CFileEnv::GetRef().GetDeviceForUrl(filespec)->DoesFileExist(filespec);
@@ -327,14 +286,14 @@ bool CFileEnv::GetPrependFilesystemBase(void)
 bool CFileEnv::filespec_isdos( const file::Path::NameType & inspec )
 {
 	bool rval = true;
-	
+
 	file::Path::NameType::size_type len = inspec.size();
-	
+
 	if( inspec[1] == ':' )
 	{
 		return true;
 	}
-	
+
 	// Windows-style network paths
 	if( (inspec[0] == '\\') && (inspec[1] == '\\') )
 	{
@@ -342,11 +301,11 @@ bool CFileEnv::filespec_isdos( const file::Path::NameType & inspec )
 	}
 
 	for(file::Path::NameType::size_type i = 0; i < len; ++i)
-	{	
+	{
 		const char tch = inspec[i];
-		
+
 		if( !IsCharDos(tch) )
-		{	
+		{
 			rval = false;
 			break;
 		}
@@ -363,13 +322,13 @@ bool CFileEnv::filespec_isunix( const file::Path::NameType & inspec )
 	bool rval = true;
 
 	file::Path::NameType::size_type len = inspec.size();
-	
+
 	for(file::Path::NameType::size_type i = 0; i < len; ++i)
-	{	
+	{
 		const char tch = inspec[i];
-		
+
 		if( !IsCharUnix(tch) )
-		{	
+		{
 			rval = false;
 			break;
 		}
@@ -387,13 +346,12 @@ file::Path::NameType CFileEnv::filespec_to_extension( const file::Path::NameType
 	//OrkAssert( i1stDot==iLstDot );
 	file::Path::NameType::size_type iOldLength = inspec.length();
 	file::Path::NameType::size_type iNewLength = (iOldLength-iLstDot)-1;
-	file::Path::NameType outstr = inspec.substr(iLstDot+1,iNewLength);
+	file::Path::NameType outstr = "";
 
-	if( (i1stDot == file::Path::NameType::npos) && (i1stDot == file::Path::NameType::npos) )
-	{
-		outstr = "";
-	}
-	//transform( outstr.begin(), outstr.end(), outstr.begin(), lower() );
+
+	if( i1stDot != file::Path::NameType::npos )
+		outstr = inspec.substr(iLstDot+1,iNewLength);
+
 	return outstr;
 }
 
@@ -439,7 +397,7 @@ orkvector< file::Path::NameType > CFileEnv::filespec_separate_terms( const file:
 	bool bDone = false;
 	file::Path::NameType::size_type Nidx;
 	while( (idx < ilen) && (!bDone) )
-	{	
+	{
 		Nidx = _instr.cue_to_char( '/', int(idx)+1 );
 		bool bAnotherSlash = (Nidx!=-1);
 		len = Nidx - idx;
@@ -482,7 +440,7 @@ file::Path::NameType CFileEnv::FilespecToContainingDirectory(const file::Path::N
 	{
 		file::Path::NameType tmp =  UrlStrippedPath.substr(0,idx);
 		rval = tmp;
-		
+
 	}
 
 	//rval=TruncateAtFirstCharFromSet(UrlStrippedPath, "/");
@@ -511,7 +469,7 @@ file::Path::NameType CFileEnv::TruncateAtFirstCharFromSet(const file::Path::Name
 		char buffer[2] = { setOfChars.c_str()[0], 0 };
 
 		file::Path::NameType::size_type indexOfLastSeparator = stringToTruncate.find_last_of(& buffer[0] );
-		
+
 		if(indexOfLastSeparator > ilchar)
 		{
 			ilchar = indexOfLastSeparator;
@@ -531,85 +489,16 @@ file::Path::NameType CFileEnv::TruncateAtFirstCharFromSet(const file::Path::Name
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(WIN32) && ! defined(_XBOX)
-
-std::string getdirectory( const std::string & title, const std::string & initial )
-{
-	char * rval;
-
-	char textbuffer[1024];
-	char filebuffer[1024];   // usually 1024 will do
-
-	BROWSEINFO binfo;
-
-	//binfo.hwndOwner = fl_xid( win );
-	binfo.hwndOwner = NULL;
-	binfo.pidlRoot = NULL;
-	binfo.pszDisplayName = filebuffer;
-	binfo.lpszTitle = title.c_str();
-	binfo.ulFlags = BIF_NEWDIALOGSTYLE | BIF_RETURNONLYFSDIRS;
-	binfo.lpfn = NULL;
-	binfo.lParam = NULL;
-	binfo.iImage = 0;
-
-	LPITEMIDLIST itlist = SHBrowseForFolder( & binfo );
-	SHGetPathFromIDList( itlist, (char *) textbuffer );
-	sprintf( filebuffer, "%s\\", textbuffer );
-
-	size_t slen = strlen( filebuffer );
-	OrkAssert( slen<sizeof(filebuffer) );
-	for( size_t i=0; i<slen; i++ )
-	{
-		if( filebuffer[i] == '\\' )
-			filebuffer[i] = '/';
-
-	}
-
-	rval = filebuffer;
-
-	return rval;
-}
-
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 void CFileEnv::BeginLinFile( const file::Path& lfn, ELINFILEMODE emode )
 {
 	if( emode==ELFM_WRITE )
 	{
-#if defined(_XBOX)
-		std::string lfile1 = std::string("e:\\")+std::string(lfn.c_str());
-#else
 		std::string lfile1 = std::string(lfn.c_str());
-#endif
 		GetRef().mpLinFile = new CFile( lfile1.c_str(), ork::EFM_WRITE );
 		GetRef().meLinFileMode = emode;
 	}
 	else if( emode==ELFM_READ )
 	{
-#if defined(_XBOX)
-		std::string lfile1 = std::string("d:\\data\\")+std::string(lfn.c_str());
-		std::string lfile2 = std::string("d:\\")+std::string(lfn.c_str());
-
-		if( ork::CFileEnv::DoesFileExist(lfile1.c_str()) )
-		{
-			//OutputDebugString( "OpeningLinFile!!!\n" );
-			GetRef().mpLinFile = new CFile( lfile1.c_str(), ork::EFM_READ );
-			GetRef().meLinFileMode = emode;
-		}
-		else if( ork::CFileEnv::DoesFileExist(lfile2.c_str()) )
-		{
-			//OutputDebugString( "OpeningLinFile!!!\n" );
-			GetRef().mpLinFile = new CFile( lfile2.c_str(), ork::EFM_READ );
-			GetRef().meLinFileMode = emode;
-		}
-		else
-		{
-			//OutputDebugString( "NoLinFile Found!!!\n" );
-		}
-#else
 		std::string lfile3 = std::string("data/")+std::string(lfn.c_str());
 		if( ork::CFileEnv::DoesFileExist(lfile3.c_str()) )
 		{
@@ -617,8 +506,6 @@ void CFileEnv::BeginLinFile( const file::Path& lfn, ELINFILEMODE emode )
 			GetRef().mpLinFile = new CFile( lfile3.c_str(), ork::EFM_READ );
 			GetRef().meLinFileMode = emode;
 		}
-#endif		
-
 	}
 }
 

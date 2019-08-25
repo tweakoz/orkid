@@ -126,16 +126,32 @@ struct TexSetter
 			file::Path::NameType texname = MatChanIn.mTextureName.c_str();
 			file::Path::NameType texext = CFileEnv::filespec_to_extension(MatChanIn.mTextureName.c_str());
 
-			int it = int(texname.find("src\\"));
-			if( it == int(file::Path::NameType::npos) )
-			{
-				it = int(texname.find("src/"));
+			texname.replace_in_place("\\","/");
+
+			printf( "model_directory<%s>\n", model_directory.c_str() );
+			printf( "texname1<%s>\n", texname.c_str() );
+
+
+
+			auto it_slash = texname.find("/");
+			auto it_src_slash = texname.find("src/");
+			const auto NPOS = file::Path::NameType::npos;
+
+			printf( "texname2<%s>\n", texname.c_str() );
+			printf( "it_slash<%zx>\n", it_slash );
+			printf( "it_src_slash<%zx>\n", it_src_slash );
+
+			///////////////////////////////////////////////////////////////
+			// find data/src or data\\src in texture path
+			///////////////////////////////////////////////////////////////
+
+			if( NPOS == it_slash ){
+				ActualFileName = texname.c_str();
 			}
-			if( it != int(file::Path::NameType::npos) )
+			else if( NPOS != it_src_slash )
 			{
-				it+=4;
-				texname = texname.substr( it, texname.length()-it );
-				texname.replace_in_place("\\","/");
+				it_src_slash+=4;
+				texname = texname.substr( it_src_slash, texname.length()-it_src_slash );
 				ActualFileName = CreateFormattedString("data/src/%s", texname.c_str() );
 			}
 			else
@@ -149,23 +165,22 @@ struct TexSetter
 				ActualFileName = CreateFormattedString("%s/%s", mdir.c_str(), texname.c_str() );
 			}
 
+			///////////////////////////////////////////////////////////////
+			// if texture exists, assign it..
+			///////////////////////////////////////////////////////////////
+
 			file::Path PathToTexture( ActualFileName.c_str() );
 
-			orkmap<file::Path, ork::lev2::TextureAsset* >::const_iterator itt = mTextureMap.find( PathToTexture );
+			auto itt = mTextureMap.find( PathToTexture );
 
-			if( mTextureMap.end() == itt )
-			{
-				if( CFileEnv::DoesFileExist( PathToTexture ) )
-				{
+			if( mTextureMap.end() == itt ){
+				if( CFileEnv::DoesFileExist( PathToTexture ) ){
 					lev2::GfxTargetDummy DummyTarget;
 					ork::lev2::TextureAsset *pl2tex = new ork::lev2::TextureAsset;
 					ork::lev2::Texture* ptex = pl2tex->GetTexture();
-					//
 					bool bOK = DummyTarget.TXI()->LoadTexture( PathToTexture, ptex );
-
-					if( bOK )
-					{
-                        printf( "loaded texture<%s>\n", PathToTexture.c_str() );
+					if( bOK ){
+            printf( "loaded texture<%s>\n", PathToTexture.c_str() );
 						ptex->SetTexClass( ork::lev2::Texture::ETEXCLASS_STATIC );
 						pl2tex->SetName( ork::AddPooledString(PathToTexture.c_str()) );
 						ptex->setProperty<std::string>( "abspath", PathToTexture.c_str() );

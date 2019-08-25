@@ -76,7 +76,7 @@ struct ColladaSkinPolicy
 	};
 
 	Weighting	mWeighting;
-	ColladaSkinPolicy( Weighting epcy=EPOLICY_MATRIXPALETTESKIN_W1 ) : mWeighting(epcy) {} 
+	ColladaSkinPolicy( Weighting epcy=EPOLICY_MATRIXPALETTESKIN_W1 ) : mWeighting(epcy) {}
 
 };
 struct ColladaNormalPolicy
@@ -89,7 +89,7 @@ struct ColladaNormalPolicy
 
 	ENormalPolicy meNormalPolicy;
 
-	ColladaNormalPolicy( ENormalPolicy epcy=ENP_ALLOW_SPLIT_NORMALS ) : meNormalPolicy(epcy) {} 
+	ColladaNormalPolicy( ENormalPolicy epcy=ENP_ALLOW_SPLIT_NORMALS ) : meNormalPolicy(epcy) {}
 };
 struct ColladaPrimGroupPolicy
 {
@@ -100,7 +100,7 @@ struct ColladaPrimGroupPolicy
 	};
 
 	MaxIndices	mMaxIndices;
-	ColladaPrimGroupPolicy( MaxIndices epcy=EPOLICY_MAXINDICES_NONE ) : mMaxIndices(epcy) {} 
+	ColladaPrimGroupPolicy( MaxIndices epcy=EPOLICY_MAXINDICES_NONE ) : mMaxIndices(epcy) {}
 };
 
 struct ColladaReadComponentsPolicy
@@ -120,7 +120,7 @@ struct ColladaReadComponentsPolicy
 	};
 
 	ReadComponents mReadComponents;
-	ColladaReadComponentsPolicy(ReadComponents readcomp = EPOLICY_READCOMPONENTS_ALL ) : mReadComponents(readcomp) {} 
+	ColladaReadComponentsPolicy(ReadComponents readcomp = EPOLICY_READCOMPONENTS_ALL ) : mReadComponents(readcomp) {}
 };
 
 struct ColladaTriangulationPolicy
@@ -133,7 +133,7 @@ public:
 	};
 
 
-	ColladaTriangulationPolicy(EPolicy epcy = ECTP_DONT_TRIANGULATE ) : mePolicy(epcy) {} 
+	ColladaTriangulationPolicy(EPolicy epcy = ECTP_DONT_TRIANGULATE ) : mePolicy(epcy) {}
 
 	EPolicy GetPolicy() const { return mePolicy; }
 	void SetPolicy( EPolicy epcy ) { mePolicy = epcy; }
@@ -157,7 +157,7 @@ public:
 		ECTP_DICE,
 	};
 
-	ColladaDicingPolicy(EPolicy epcy = ECTP_DONT_DICE ) : mePolicy(epcy) {} 
+	ColladaDicingPolicy(EPolicy epcy = ECTP_DONT_DICE ) : mePolicy(epcy) {}
 
 	EPolicy GetPolicy() const { return mePolicy; }
 	void SetPolicy( EPolicy epcy ) { mePolicy = epcy; }
@@ -204,7 +204,7 @@ struct DaeReadOpts
 	bool					mbMergeMeshShGrpName;
 	int						miNumThreads;
 	bool					mbEmptyLayers;
-	DaeReadOpts() 
+	DaeReadOpts()
 		: mbMergeMeshShGrpName(false)
 		, mbEmptyLayers(false)
 		, miNumThreads(1) {}
@@ -244,7 +244,7 @@ class FCDEffectProfileFX;
 class FCDAsset;
 
 namespace ork { namespace tool {
-	
+
 CMatrix4 FCDMatrixToCMatrix4( const FMMatrix44 & inmat );
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -322,7 +322,7 @@ struct SColladaVertexWeightingInfo
 			mWeighting[i] = CReal(0.0f);
 		}
 	}
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -353,7 +353,7 @@ struct SColladaMatGroup;
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmClusterBuilder : public ork::Object
-{	
+{
 	RttiDeclareAbstract(XgmClusterBuilder,ork::Object);
 public:
 	ork::MeshUtil::submesh			mSubMesh;
@@ -399,7 +399,7 @@ class XgmRigidClusterBuilder : public XgmClusterBuilder
 	RttiDeclareAbstract(XgmRigidClusterBuilder,XgmClusterBuilder);
 	/////////////////////////////////////////////////
 	bool AddTriangle( const XgmClusterTri& Triangle ) final;
-    void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final; 
+    void BuildVertexBuffer( const SColladaMatGroup& matgroup ) final;
 
 	void BuildVertexBuffer_V12N6C2T4();
 	void BuildVertexBuffer_V12N12B12T8C4();
@@ -472,7 +472,7 @@ public:
 	};
 
 	void Parse( const SColladaMaterial& colladamat );
-	
+
 	std::string									mShadingGroupName;
 	SColladaMeshConfigurationFlags				mMeshConfigurationFlags;
 	EMatClass									meMaterialClass;
@@ -611,7 +611,7 @@ public:
 
 	bool ParseMaterialBindings();
 	bool ParseControllers( );
-	
+
 	bool BuildXgmTriStripModel();
 	void BuildXgmTriStripMesh( lev2::XgmMesh& XgmMesh, SColladaMesh* ColMesh );
 	bool BuildXgmSkeleton();
@@ -717,7 +717,7 @@ public:
 	{
 	}
 
-	int GetNumFrames() const final { return int(mSampledFrames.size()); } 
+	int GetNumFrames() const final { return int(mSampledFrames.size()); }
 
 	void SetMaterialName( const char* pname ) { mMaterialName=pname; }
 	const std::string& GetMaterialName() const { return mMaterialName; }
@@ -809,14 +809,6 @@ class DAEXGMFilter : public CAssetFilterBase
 	bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
 public: //
 	DAEXGMFilter(  );
-	bool ConvertAsset( const tokenlist& toklist ) final;
-};
-class DAEGGMFilter : public CAssetFilterBase
-{
-	RttiDeclareConcrete(DAEGGMFilter,CAssetFilterBase);
-	bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
-public: //
-	DAEGGMFilter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 class DAEXGAFilter : public CAssetFilterBase

@@ -23,9 +23,9 @@
 //using namespace boost::python;
 
 namespace ork {
-	
+
 namespace ent
-{ 
+{
 	class LightMapperArchetype;
 	class EntArchDeRef;
 	class EntArchReRef;
@@ -105,8 +105,16 @@ tokenlist Init(int argc, char **argv)
 	// Register data:// urlbase
 
 	static SFileDevContext WorkingDirContext;
-	CSystem::SetGlobalStringVariable("data://", ork::file::GetStartupDirectory().c_str());
-	
+
+	auto base_dir = ork::file::GetStartupDirectory();
+
+	if( getenv("ORKDOTBUILD_WORKSPACE_DIR")!=nullptr )
+		base_dir = getenv("ORKDOTBUILD_WORKSPACE_DIR");
+
+	CSystem::SetGlobalStringVariable("data://", base_dir.c_str());
+
+	printf( "base_dir<%s>\n", base_dir.c_str() );
+
 	printf( "CPB2\n");
 	//////////////////////////////////////////
 	// Register lev2:// data urlbase
@@ -119,6 +127,7 @@ tokenlist Init(int argc, char **argv)
 	CFileEnv::RegisterUrlBase( "lev2://", LocPlatformLevel2FileContext );
 
 	printf( "CPB3\n");
+
 	//////////////////////////////////////////
 	// Register src:// data urlbase
 
@@ -151,7 +160,7 @@ tokenlist Init(int argc, char **argv)
 	//////////////////////////////////////////
 
 	static SFileDevContext DataDirContext;
-	
+
 	DataDirContext.SetFilesystemBaseAbs( "data/pc" );
 	DataDirContext.SetPrependFilesystemBase( true );
 

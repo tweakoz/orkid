@@ -204,6 +204,7 @@ static void RegisterFilters()
 		CAssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
+		CAssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
 		CAssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
 		/////////////////////////
 		#if defined(ORK_OSXX)

@@ -234,7 +234,6 @@ void CColladaAnim::ParseTextures()
 				if( ptex )
 				{
 					const FCDExtra *TexExtra = ptex->GetExtra();
-					const FCDETechnique* TexMayaTek = TexExtra->GetDefaultType()->FindTechnique("MAYA");
 
 					const FCDEffectParameterSampler* Sampler = ptex->GetSampler();
 					const fm::string & refname = Sampler->GetReference();
@@ -242,31 +241,39 @@ void CColladaAnim::ParseTextures()
 
 					const char * prefname = srefname.c_str();
 
-					const FCDENode *Place2dNode = TexMayaTek->FindChildNode( "MayaNodeName" );
+					////////////////////////////////////////////////////////////////////
+					// check for uv animation
+					////////////////////////////////////////////////////////////////////
 
-					const fchar *Place2dNodeName = Place2dNode ? Place2dNode->GetContent() : ""; 
+					const FCDETechnique* TexMayaTek = TexExtra->GetDefaultType()->FindTechnique("MAYA");
+					if( TexMayaTek != nullptr ){
 
-					std::string Place2dNodeNameStr( Place2dNodeName );
+							const FCDENode *Place2dNode = TexMayaTek->FindChildNode( "MayaNodeName" );
 
-					////////////////////////////////////////////////////////////
-					// strip ref name
+							const fchar *Place2dNodeName = Place2dNode ? Place2dNode->GetContent() : "";
 
-					const fchar* colon = std::strstr(Place2dNodeName, ":" );
+							std::string Place2dNodeNameStr( Place2dNodeName );
 
-					if( colon )
-					{
-						Place2dNodeNameStr = colon+1;
-					}
+							////////////////////////////////////////////////////////////
+							// strip ref name
 
-					////////////////////////////////////////////////////////////
+							const fchar* colon = std::strstr(Place2dNodeName, ":" );
 
-					mat.mDiffuseMapChannel.mPlacementNodeName = Place2dNodeNameStr;
+							if( colon )
+							{
+								Place2dNodeNameStr = colon+1;
+							}
 
-					ColladaUvAnimChannel* pchannel = new ColladaUvAnimChannel( Place2dNodeNameStr );
+							////////////////////////////////////////////////////////////
 
-					mUvAnimatables.insert( std::make_pair(Place2dNodeNameStr,pchannel) );
+							mat.mDiffuseMapChannel.mPlacementNodeName = Place2dNodeNameStr;
 
-					pchannel->SetMaterialName( mat.mMaterialName.c_str() );
+							ColladaUvAnimChannel* pchannel = new ColladaUvAnimChannel( Place2dNodeNameStr );
+
+							mUvAnimatables.insert( std::make_pair(Place2dNodeNameStr,pchannel) );
+
+							pchannel->SetMaterialName( mat.mMaterialName.c_str() );
+						}
 				}
 			}
 		}
@@ -369,7 +376,7 @@ void ParseJoints( FCDocument* document, orkset<std::string>& jointset )
 		{
 			const FCDSceneNode *pnode = NodeStack.top();
 			NodeStack.pop();
-			
+
 			bool bjoint = pnode->GetJointFlag();
 
 			if( bjoint )
@@ -378,11 +385,11 @@ void ParseJoints( FCDocument* document, orkset<std::string>& jointset )
 				std::string NodeSid = pnode->GetSubId().c_str();
 				jointset.insert(  NodeName );
 			}
-						
-			int inumchildren = int(pnode->GetChildrenCount());		
-			
+
+			int inumchildren = int(pnode->GetChildrenCount());
+
 			for( int i=0; i<inumchildren; i++ )
-			{	
+			{
 				const FCDSceneNode *pchild = pnode->GetChild(i);
 				FCDEntity::Type typ = pchild->GetType();
 				NodeStack.push(pchild);
@@ -426,7 +433,7 @@ bool CColladaAnim::Parse( void )
 	int inument( AnimLib->GetEntityCount() );
 
 	printf( "CColladaAnim::Parse() inument<%d>\n", inument );
-	
+
 	std::map<std::string,FCDAnimationChannel*> ValidMatrixAnimSet;
 	std::map<std::string,FCDAnimationChannel*> ValidUvAnimSet;
 	std::map<std::string,FCDAnimationChannel*> ValidFxAnimSet;
@@ -461,7 +468,7 @@ bool CColladaAnim::Parse( void )
 			AnimName = AnimName.substr(0,itstrmtx);
 			for( int icha=0; icha<num_chans; icha++ )
 			{
-				auto chan = Anim->GetChannel(icha);				
+				auto chan = Anim->GetChannel(icha);
 				size_t numcrv = chan->GetCurveCount();// const { return curves.size(); }
 
 				printf( "  AnimName<%s> Chan<%d><%p> numcurves<%d>\n", AnimName.c_str(), icha, chan, numcrv );
@@ -478,7 +485,7 @@ bool CColladaAnim::Parse( void )
 			printf( "  Child<%d> Name<%s> numchans<%d>\n", ich, ChildName.c_str(), num_cchans  );
 			for( int icha=0; icha<num_cchans; icha++ )
 			{
-				auto chan = chld->GetChannel(icha);				
+				auto chan = chld->GetChannel(icha);
 				size_t numcrv = chan->GetCurveCount();// const { return curves.size(); }
 
 				printf( "  Chan<%d><%p> numcurves<%d>\n", icha, chan, numcrv );
@@ -524,14 +531,14 @@ bool CColladaAnim::Parse( void )
 			FCDAnimationCurve *InputCurve = InputChannel->GetCurve(0);
 			int inumkeys = InputCurve->GetKeyCount();
 			float ffirstkey = InputCurve->GetKey(0)->input;
-			float flastkey = InputCurve->GetKey( inumkeys-1 )->input; 
+			float flastkey = InputCurve->GetKey( inumkeys-1 )->input;
 			int iframe = 0;
 			for( float fi=ffirstkey; fi<=flastkey; fi+=kfsampleincrement, iframe++ )
 			{
 				float KeyFrame = InputCurve->Evaluate( fi );
 				pchan->SetData( iframe, AnimRCompName, KeyFrame );
 			}
-			
+
 		}
 
 		////////////////////////////////////////////////
@@ -558,7 +565,7 @@ bool CColladaAnim::Parse( void )
 					mAnimationChannels[ AnimName ] = OutputAnimChannel;
 					int inumkeys = InputCurve->GetKeyCount();
 					float ffirstkey = InputCurve->GetKey(0)->input;
-					float flastkey = InputCurve->GetKey( inumkeys-1 )->input; 
+					float flastkey = InputCurve->GetKey( inumkeys-1 )->input;
 					int iframe = 0;
 					for( float fi=ffirstkey; fi<=flastkey; fi+=kfsampleincrement, iframe++ )
 					{
@@ -578,7 +585,7 @@ bool CColladaAnim::Parse( void )
 					FCDAnimationCurve *Curve0 = InputChannel->GetCurve(0);
 					int inumkeys = Curve0->GetKeyCount();
 					float ffirstkey = Curve0->GetKey(0)->input;
-					float flastkey = Curve0->GetKey( inumkeys-1 )->input; 
+					float flastkey = Curve0->GetKey( inumkeys-1 )->input;
 					int iframe = 0;
 					FCDAnimationCurve *CurveX = InputChannel->GetCurve(0);
 					FCDAnimationCurve *CurveY = InputChannel->GetCurve(1);
@@ -623,7 +630,7 @@ bool CColladaAnim::Parse( void )
 			FCDAnimationCurve *Curve = Channel->GetCurve(icu);
 			int inumkeys = Curve->GetKeyCount();
 			float ffirstkey = Curve->GetKey(0)->input;
-			float flastkey = Curve->GetKey( inumkeys-1 )->input; 
+			float flastkey = Curve->GetKey( inumkeys-1 )->input;
 
 			if( ffirstkey<fevallo )
 				fevallo = ffirstkey;
@@ -662,7 +669,7 @@ bool CColladaAnim::Parse( void )
 			FCDAnimationCurve *Curve = Channel->GetCurve(icu);
 			int inumkeys = Curve->GetKeyCount();
 			float ffirstkey = Curve->GetKey(0)->input;
-			float flastkey = Curve->GetKey( inumkeys-1 )->input; 
+			float flastkey = Curve->GetKey( inumkeys-1 )->input;
 			float KeyFrame = 0.0f;
 			int iframe = 0;
 			for( float fi=fevallo; fi<=fevalhi; fi+=kfsampleincrement )
@@ -696,7 +703,7 @@ bool CColladaAnim::Parse( void )
 
 			if( knumframesref != inumframes )
 			{
-				orkerrorlog( "ERROR: ColladaAnim[%s] not all anim channels have the same number of frames!\n", this->mFileName.c_str() );				
+				orkerrorlog( "ERROR: ColladaAnim[%s] not all anim channels have the same number of frames!\n", this->mFileName.c_str() );
 				return false;
 			}
 		}
