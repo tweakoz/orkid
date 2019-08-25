@@ -24,7 +24,7 @@ template class ork::util::Context<ColladaExportPolicy>;
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork { namespace MeshUtil 
+namespace ork { namespace MeshUtil
 {
 	bool DAEToNAVCollision( const tokenlist& options );
 	bool DAEToSECCollision( const tokenlist& options );
@@ -175,7 +175,6 @@ void RegisterColladaFilters()
 {
 	CAssetFilter::RegisterFilter("dae:xga", DAEXGAFilter::DesignNameStatic().c_str());
 	CAssetFilter::RegisterFilter("dae:xgm", DAEXGMFilter::DesignNameStatic().c_str());
-	//CAssetFilter::RegisterFilter("dae:ggm", DAEGGMFilter::DesignNameStatic().c_str());
 	CAssetFilter::RegisterFilter("dae:nav", DAENAVFilter::DesignNameStatic().c_str());
 	CAssetFilter::RegisterFilter("dae:dae", DAEDAEFilter::DesignNameStatic().c_str());
 	CAssetFilter::RegisterFilter("dae:sec", DAESECFilter::DesignNameStatic().c_str());
@@ -189,97 +188,86 @@ DAEXGAFilter::DAEXGAFilter( )
 DAEXGMFilter::DAEXGMFilter( )
 {
 }
-DAEGGMFilter::DAEGGMFilter( )
-{
-}
 void DAEXGAFilter::Describe()
 {
 }
 void DAEXGMFilter::Describe()
 {
 }
-void DAEGGMFilter::Describe()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool SaveGGM( const AssetPath& Filename, const lev2::XgmModel *mdl );
-
 bool DAEXGMFilter::ConvertAsset( const tokenlist& toklist )
 {
-	ork::tool::FilterOptMap options;
-	options.SetDefault( "-dice" ,"false" );
-	options.SetDefault( "-dicedim" ,"128.0f" );
-	options.SetDefault( "-in" ,"yo" );
-	options.SetDefault( "-out" ,"yo" );
-	options.SetOptions( toklist );
+       ork::tool::FilterOptMap options;
+       options.SetDefault( "-dice" ,"false" );
+       options.SetDefault( "-dicedim" ,"128.0f" );
+       options.SetDefault( "-in" ,"yo" );
+       options.SetDefault( "-out" ,"yo" );
+       options.SetOptions( toklist );
 
-	const std::string inf = options.GetOption( "-in" )->GetValue();
-	const std::string outf = options.GetOption( "-out" )->GetValue();
+       const std::string inf = options.GetOption( "-in" )->GetValue();
+       const std::string outf = options.GetOption( "-out" )->GetValue();
 
-	bool bDICE = options.GetOption( "-dice" )->GetValue()=="true";
-	bool brval = false;
-	
-	CSystem::SetGlobalStringVariable( "StripJoinPolicy", "true" );
+       bool bDICE = options.GetOption( "-dice" )->GetValue()=="true";
+       bool brval = false;
 
-	///////////////////////////////////////////////////
-	// swap endian on xb360 assets
-	///////////////////////////////////////////////////
-	ork::EndianContext* pctx = 0;
-	if( outf.find( "xb360") != std::string::npos )
-	{
-		pctx = new ork::EndianContext;
-		pctx->mendian = ork::EENDIAN_BIG;
-	}
-	///////////////////////////////////////////////////
-	// swap endian on xb360 assets
-	///////////////////////////////////////////////////
+       CSystem::SetGlobalStringVariable( "StripJoinPolicy", "true" );
 
-	ColladaExportPolicy policy;
-	policy.mDDSInputOnly = true; // TODO
-	policy.mUnits = UNITS_METER;
-	policy.mSkinPolicy.mWeighting = ColladaSkinPolicy::EPOLICY_MATRIXPALETTESKIN_W4;
-	policy.miNumBonesPerCluster = 32;
-	policy.mColladaInpName = inf;
-	policy.mColladaOutName = outf;
-	policy.mDicingPolicy.SetPolicy( bDICE ? ColladaDicingPolicy::ECTP_DICE : ColladaDicingPolicy::ECTP_DONT_DICE );
-	policy.mTriangulation.SetPolicy( ColladaTriangulationPolicy::ECTP_TRIANGULATE );
+       ///////////////////////////////////////////////////
+       // swap endian on xb360 assets
+       ///////////////////////////////////////////////////
+       ork::EndianContext* pctx = 0;
+       if( outf.find( "xb360") != std::string::npos )
+       {
+               pctx = new ork::EndianContext;
+               pctx->mendian = ork::EENDIAN_BIG;
+       }
+       ///////////////////////////////////////////////////
+       // swap endian on xb360 assets
+       ///////////////////////////////////////////////////
 
-	////////////////////////////////////////////////////////////////
-	// PC vertex formats supported
-	policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T8I4W4 );		// PC basic skinned
-	policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 );	// PC 1 tanspace skinned
-	policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8C4 );	// PC 1 tanspace unskinned
-	policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T16 );		// PC 1 tanspace, 2UV unskinned
-	policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T16C4 );		// PC 2UV 1 color unskinned
-	////////////////////////////////////////////////////////////////
+       ColladaExportPolicy policy;
+       policy.mDDSInputOnly = true; // TODO
+       policy.mUnits = UNITS_METER;
+       policy.mSkinPolicy.mWeighting = ColladaSkinPolicy::EPOLICY_MATRIXPALETTESKIN_W4;
+       policy.miNumBonesPerCluster = 32;
+       policy.mColladaInpName = inf;
+       policy.mColladaOutName = outf;
+       policy.mDicingPolicy.SetPolicy( bDICE ? ColladaDicingPolicy::ECTP_DICE : ColladaDicingPolicy::ECTP_DONT_DICE );
+       policy.mTriangulation.SetPolicy( ColladaTriangulationPolicy::ECTP_TRIANGULATE );
 
-	CColladaModel *colmdl = CColladaModel::Load( inf.c_str() );
+       ////////////////////////////////////////////////////////////////
+       // PC vertex formats supported
+       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T8I4W4 );         // PC basic skinned
+       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8I4W4 );      // PC 1 tanspace skinned
+       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T8C4 );        // PC 1 tanspace unskinned
+       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12B12T16 );         // PC 1 tanspace, 2UV unskinned
+       policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N12T16C4 );          // PC 2UV 1 color unskinned
+       ////////////////////////////////////////////////////////////////
 
-	if( colmdl )
-	{
-		file::Path OutPath(outf.c_str());
-		brval = ConvertTextures(colmdl,OutPath);
+       CColladaModel *colmdl = CColladaModel::Load( inf.c_str() );
 
-		bool saveres = ork::lev2::SaveXGM( OutPath, & colmdl->mXgmModel );
-		if(!saveres)
-			orkerrorlog("ERROR: <xgmconvert> failed to save model<%s>\n", OutPath.c_str());
-		brval &= saveres;
-	}
+       if( colmdl )
+       {
+               file::Path OutPath(outf.c_str());
+               brval = ConvertTextures(colmdl,OutPath);
 
-	///////////////////////////////////////////////////
-	// swap endian on xb360 assets
-	///////////////////////////////////////////////////
-	if( pctx )
-	{
-		delete pctx;
-	}
-	///////////////////////////////////////////////////
-	// swap endian on xb360 assets
-	///////////////////////////////////////////////////
+               bool saveres = ork::lev2::SaveXGM( OutPath, & colmdl->mXgmModel );
+               if(!saveres)
+                       orkerrorlog("ERROR: <xgmconvert> failed to save model<%s>\n", OutPath.c_str());
+               brval &= saveres;
+       }
 
-	return (colmdl != 0 || !brval); // any error
+       ///////////////////////////////////////////////////
+       // swap endian on xb360 assets
+       ///////////////////////////////////////////////////
+       if( pctx )
+       {
+               delete pctx;
+       }
+       ///////////////////////////////////////////////////
+       // swap endian on xb360 assets
+       ///////////////////////////////////////////////////
+
+       return (colmdl != 0 || !brval); // any error
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -294,72 +282,11 @@ bool DAEXGMFilter::ConvertTextures( CColladaModel* mdl, const file::Path& outmdl
 	return mdl->ConvertTextures(outmdlpth, options );
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-bool DAEGGMFilter::ConvertAsset( const tokenlist& toklist )
-{
-	ork::EndianContext pctx;
-	pctx.mendian = ork::EENDIAN_BIG;
-
-	ork::tool::FilterOptMap options;
-	options.SetDefault( "-dice" ,"false" );
-	options.SetDefault( "-dicedim" ,"128.0f" );
-	options.SetDefault( "-in" ,"yo" );
-	options.SetDefault( "-out" ,"yo" );
-	options.SetOptions( toklist );
-
-	const std::string inf = options.GetOption( "-in" )->GetValue();
-	const std::string outf = options.GetOption( "-out" )->GetValue();
-	bool bDICE = options.GetOption( "-dice" )->GetValue()=="true";
-
-	bool brval = false;
-	
-	CSystem::SetGlobalStringVariable( "StripJoinPolicy", "true" );
-
-	ColladaExportPolicy policy;
-	policy.mSkinPolicy.mWeighting = ColladaSkinPolicy::EPOLICY_MATRIXPALETTESKIN_W1;
-	policy.mPrimGroupPolicy.mMaxIndices = ColladaPrimGroupPolicy::EPOLICY_MAXINDICES_WII;
-	policy.miNumBonesPerCluster = 8;
-	policy.mColladaInpName = inf;
-	policy.mColladaOutName = outf;
-	policy.mTriangulation.SetPolicy( ColladaTriangulationPolicy::ECTP_TRIANGULATE );
-	policy.mDicingPolicy.SetPolicy( bDICE ? ColladaDicingPolicy::ECTP_DICE : ColladaDicingPolicy::ECTP_DONT_DICE );
-	////////////////////////////////////////////////////////////////
-	// WII vertex formats supported
-	policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N6I1T4 ); // WII basic skinned
-	policy.mAvailableVertexFormats.Add( lev2::EVTXSTREAMFMT_V12N6C2T4 ); // WII basic unskinned
-	////////////////////////////////////////////////////////////////
-
-	CColladaModel *colmdl = CColladaModel::Load( inf.c_str() );
-
-	if( colmdl )
-	{
-		file::Path OutPath(outf.c_str());
-		brval = ConvertTextures(colmdl,OutPath);
-		brval &= SaveGGM( OutPath, & colmdl->mXgmModel );
-	}
-
-	return (colmdl!=0);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool DAEGGMFilter::ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth )
-{
-	ork::tool::FilterOptMap options;
-	options.SetDefault( "-flipy" ,"true" );
-	options.SetDefault( "-platform", "wii" );
-	options.SetDefault( "-in", "yo" );
-	options.SetDefault( "-out", "yo" );
-	return mdl->ConvertTextures(outmdlpth, options );
-}
-
 }
 }
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAEXGMFilter,"DAEXGMFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAEXGAFilter,"DAEXGAFilter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAEGGMFilter,"DAEGGMFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAENAVFilter,"DAENAVFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAESECFilter,"DAESECFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::DAEDAEFilter,"DAEDAEFilter");
