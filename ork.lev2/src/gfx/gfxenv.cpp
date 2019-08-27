@@ -76,38 +76,38 @@ using namespace ork::lev2; //too many things to add ork::lev2:: in front of in t
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-static const std::string VertexFormatStrings[EVTXSTREAMFMT_END+2] = 
+static const std::string VertexFormatStrings[EVTXSTREAMFMT_END+2] =
 {
-	"EVTXSTREAMFMT_V16",		
-	"EVTXSTREAMFMT_V4T4",		
-	"EVTXSTREAMFMT_V4C4",		
-	"EVTXSTREAMFMT_V4T4C4",		
-	"EVTXSTREAMFMT_V12C4T16",		
-	
+	"EVTXSTREAMFMT_V16",
+	"EVTXSTREAMFMT_V4T4",
+	"EVTXSTREAMFMT_V4C4",
+	"EVTXSTREAMFMT_V4T4C4",
+	"EVTXSTREAMFMT_V12C4T16",
+
 	"EVTXSTREAMFMT_V12N6I1T4" ,
 	"EVTXSTREAMFMT_V12N6C2T4" ,
-	
-	"EVTXSTREAMFMT_V16T16C16",	
-	"EVTXSTREAMFMT_V12I4N12T8",	
-	"EVTXSTREAMFMT_V12C4N6I2T8",	
-	"EVTXSTREAMFMT_V6I2C4N3T2",   
+
+	"EVTXSTREAMFMT_V16T16C16",
+	"EVTXSTREAMFMT_V12I4N12T8",
+	"EVTXSTREAMFMT_V12C4N6I2T8",
+	"EVTXSTREAMFMT_V6I2C4N3T2",
 	"EVTXSTREAMFMT_V12I4N6W4T4",
 
-	"EVTXSTREAMFMT_V12N12T8I4W4",	
-	"EVTXSTREAMFMT_V12N12B12T8",	
-	"EVTXSTREAMFMT_V12N12T16C4", 
+	"EVTXSTREAMFMT_V12N12T8I4W4",
+	"EVTXSTREAMFMT_V12N12B12T8",
+	"EVTXSTREAMFMT_V12N12T16C4",
 	"EVTXSTREAMFMT_V12N12B12T8C4",
 	"EVTXSTREAMFMT_V12N12B12T16",
 	"EVTXSTREAMFMT_V12N12B12T8I4W4",
 
 	"EVTXSTREAMFMT_MODELERRIGID",
 
-	"EVTXSTREAMFMT_XP_VCNT",	
+	"EVTXSTREAMFMT_XP_VCNT",
 	"EVTXSTREAMFMT_XP_VCNTI",
 	"EVTXSTREAMFMT_END",
 	""
 };
-static const std::string PrimTypeStrings[EPRIM_END+2] = 
+static const std::string PrimTypeStrings[EPRIM_END+2] =
 {
 	"EPRIM_NONE",
 	"EPRIM_POINTS",
@@ -124,15 +124,15 @@ static const std::string PrimTypeStrings[EPRIM_END+2] =
 	"EPRIM_END",
 	""
 };
-static const std::string BlendingStrings[EBLENDING_END+2] = 
+static const std::string BlendingStrings[EBLENDING_END+2] =
 {
 	"EBLENDING_OFF",
-	"EBLENDING_ALPHA",				
-	"EBLENDING_DSTALPHA",			
-	"EBLENDING_ADDITIVE",			
-	"EBLENDING_ALPHA_ADDITIVE",		
-	"EBLENDING_SUBTRACTIVE",			
-	"EBLENDING_ALPHA_SUBTRACTIVE",	
+	"EBLENDING_ALPHA",
+	"EBLENDING_DSTALPHA",
+	"EBLENDING_ADDITIVE",
+	"EBLENDING_ALPHA_ADDITIVE",
+	"EBLENDING_SUBTRACTIVE",
+	"EBLENDING_ALPHA_SUBTRACTIVE",
 	"EBLENDING_MODULATE"
 };
 
@@ -163,30 +163,30 @@ template<> EBlending CPropType<EBlending>::FromString(const PropTypeString& Stri
 }
 ///////////////////////////////////////////////////////////////////////////////
 template<> void CPropType<EVtxStreamFormat>::ToString( const EVtxStreamFormat & e, PropTypeString& tstr )
-{	
+{
 	tstr.set( VertexFormatStrings[ int(e) ].c_str() );
 }
 template<> void CPropType<EPrimitiveType>::ToString( const EPrimitiveType & e, PropTypeString& tstr )
-{	
+{
 	tstr.set( PrimTypeStrings[ int(e) ].c_str() );
 }
 template<> void CPropType<EBlending>::ToString( const EBlending & e, PropTypeString& tstr )
-{	
+{
 	tstr.set( BlendingStrings[ int(e) ].c_str() );
 }
 ///////////////////////////////////////////////////////////////////////////////
 template<> void CPropType<EVtxStreamFormat>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
-{	
+{
 	NumStrings = EVTXSTREAMFMT_END+1;
 	ValueStrings = VertexFormatStrings;
 }
 template<> void CPropType<EPrimitiveType>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
-{	
+{
 	NumStrings = EPRIM_END+1;
 	ValueStrings = PrimTypeStrings;
 }
 template<> void CPropType<EBlending>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
-{	
+{
 	NumStrings = EBLENDING_END+1;
 	ValueStrings = BlendingStrings;
 }
@@ -255,23 +255,23 @@ GfxEnv::GfxEnv()
 	, mp3DMaterial( nullptr )
 	, mGfxEnvMutex( "GfxEnvGlobalMutex" )
 	, gLoaderTarget( nullptr )
-	, mVtxBufSharedVect( 2<<20, 0, EPRIM_TRIANGLES ) // SVtxV12C4T16==32bytes
-	, mVtxBufSharedVect2( 2<<20, 0, EPRIM_TRIANGLES ) // SvtxV12N12B12T8C4==48bytes
+	, mVtxBufSharedVect( 256<<10, 0, EPRIM_TRIANGLES ) // SVtxV12C4T16==32bytes
+	, mVtxBufSharedVect2(256<<10, 0, EPRIM_TRIANGLES ) // SvtxV12N12B12T8C4==48bytes
 {
 	mVtxBufSharedVect.SetRingLock(true);
 	mVtxBufSharedVect2.SetRingLock(true);
 	GfxTargetCreationParams params;
-	params.miNumSharedVerts = 64<<10;
+	params.miNumSharedVerts = 8<<10;
 
 	PushCreationParams( params );
 	Texture::RegisterLoaders();
 
-}													   
+}
 
 /////////////////////////////////////////////////////////////////////////
 
 void GfxEnv::RegisterWinContext( GfxWindow *pWin )
-{	
+{
     orkprintf( "GfxEnv::RegisterWinContext\n" );
 
 	//gfxenvlateinit();
@@ -323,7 +323,7 @@ GetPixelContext::GetPixelContext()
 ork::rtti::ICastable *GetPixelContext::GetObject( PickBufferBase*pb, int ichan ) const
 {
 	if(nullptr==pb) return nullptr;
-	
+
 	uint32_t pid = (uint32_t) (uint64_t) GetPointer(ichan);
 	void *uobj = pb->GetObjectFromPickId(pid);
 	if( 0 != uobj )
@@ -349,7 +349,7 @@ void* GetPixelContext::GetPointer( int ichan ) const
 	if( a<0 ) a=0;
 
 	U32 uobj = ( (r<<24)|(g<<16)|(b<<8)|a );
-	
+
 	//CVector4 PickRGBA; PickRGBA.SetRGBAU32( TestObj );
 	//U32 uobj = PickRGBA.GetRGBAU32();
 	if( 0 != uobj )
@@ -453,4 +453,3 @@ void CaptureBuffer::CopyData( const void* pfrom, int isize )
 	OrkAssert( isize == icapsize );
 	memcpy( mpData, pfrom, isize );
 }
-

@@ -104,9 +104,6 @@ public:
 	bool LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 	{
 		ork::file::Path pth(filename.c_str());
-		//printf( "Loading Texture url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str() );
-		
-		//GfxEnv::GetRef().GetGlobalLock().Lock();
 		{
 			TextureAsset* ptex = rtti::safe_downcast<TextureAsset*>(pAsset);
 
@@ -117,15 +114,12 @@ public:
 			bool bOK = GfxEnv::GetRef().GetLoaderTarget()->TXI()->LoadTexture( pAsset->GetName(), ptex->GetTexture() );
 			OrkAssert( bOK );
 		}
-		//GfxEnv::GetRef().GetGlobalLock().UnLock();
 		return true;
-	} 
+	}
 
 	void DestroyAsset(asset::Asset *pAsset)
 	{
 		TextureAsset* ptex = rtti::safe_downcast<TextureAsset*>(pAsset);
-		GfxEnv::GetRef().GetLoaderTarget()->TXI()->VRamDeport(ptex->GetTexture());
-	//	delete ptex;
 	}
 };
 
@@ -152,8 +146,6 @@ void TextureAsset::Describe()
 void TextureAsset::SetTexture( Texture* pt )
 {
 	auto prev = mData.exchange( pt );
-	//if( prev != pt && prev != nullptr )
-	//	delete prev;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -172,14 +164,9 @@ public:
 
 	bool LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 	{
-		//lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-		{
-			XgmAnimAsset* panim = rtti::safe_downcast<XgmAnimAsset*>(pAsset);
-
-			bool bOK = XgmAnim::LoadUnManaged( panim->GetAnim(), filename.c_str() );
-			OrkAssert( bOK );
-		}
-		//lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
+		XgmAnimAsset* panim = rtti::safe_downcast<XgmAnimAsset*>(pAsset);
+		bool bOK = XgmAnim::LoadUnManaged( panim->GetAnim(), filename.c_str() );
+		OrkAssert( bOK );
 		return true;
 	}
 
@@ -218,8 +205,6 @@ public:
 	/*virtual*/ void DestroyAsset(asset::Asset *pAsset)
 	{
 		FxShaderAsset* compasset = rtti::safe_downcast<FxShaderAsset*>(pAsset);
-		//delete compasset->GetComponent();
-		//compasset->SetComponent(NULL);
 	}
 };
 
@@ -230,21 +215,13 @@ FxShaderLoader::FxShaderLoader()
 	// hmm, this wants to be target dependant, hence dynamically switchable
 	/////////////////////
 
-#if defined(_IOS) || defined(IX)
 	AddLocation("orkshader://",".glfx");		// for glsl targets
 	AddLocation("orkshader://",".fxml");	// for the dummy target
-#else
-	AddLocation("orkshader://",".glfx");		// for gl and dx targets
-	AddLocation("orkshader://",".fx");		// for gl and dx targets
-	AddLocation("orkshader://",".fxml");		// for the dummy target
-#endif
 
 }
 
 bool FxShaderLoader::LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 {
-	//lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
-	{	
 		ork::file::Path pth(filename.c_str());
 		printf( "Loading Effect url<%s> abs<%s>\n", filename.c_str(), pth.ToAbsolute().c_str() );
 		FxShaderAsset* pshader = rtti::safe_downcast<FxShaderAsset*>(pAsset);
@@ -252,8 +229,6 @@ bool FxShaderLoader::LoadFileAsset(asset::Asset *pAsset, ConstString filename)
 		OrkAssert( bOK );
 		if(bOK)
 			pshader->GetFxShader()->SetName(filename.c_str());
-	}
-	//lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 	return true;
 }
 
@@ -261,7 +236,7 @@ void FxShaderAsset::Describe()
 {
 	auto loader = new FxShaderLoader;
 	printf( "Registering FxShaderAsset\n" );
-	
+
 	GetClassStatic()->AddLoader(loader);
 	GetClassStatic()->SetAssetNamer("orkshader://");
 	GetClassStatic()->AddTypeAlias(ork::AddPooledLiteral("fxshader"));

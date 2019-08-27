@@ -43,7 +43,7 @@ public:
 	void SetHandle(void* ph) const {mhIndexBuf=ph;}
 
 	virtual int GetIndexSize() const = 0;
-	virtual bool IsStatic() const = 0;	
+	virtual bool IsStatic() const = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,7 +63,7 @@ template <typename T> class StaticIndexBuffer : public IdxBuffer<T>
 public:
 	StaticIndexBuffer( int inumidx=0, const T *src = 0 );
 	~StaticIndexBuffer();
-	/*virtual*/ bool IsStatic() const { return true; }	
+	/*virtual*/ bool IsStatic() const { return true; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ template <typename T> class DynamicIndexBuffer : public IdxBuffer<T>
 public:
 	DynamicIndexBuffer( int inumidx=0 );
 	~DynamicIndexBuffer();
-	/*virtual*/ bool IsStatic() const { return false; }	
+	/*virtual*/ bool IsStatic() const { return false; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,7 +118,7 @@ class VertexBufferBase
 	}
 	void SetRingLock( bool v ) { mbRingLock=v; }
 	bool GetRingLock( ) const { return mbRingLock; }
-	
+
 	///////////////////////////////////////////////////////////////
 
 	static VertexBufferBase* CreateVertexBuffer( EVtxStreamFormat eformat, int inumverts, bool bstatic );
@@ -140,7 +140,7 @@ protected:
 	mutable bool			mbLocked;
 	bool					mbInited;
 	bool					mbRingLock;
-	
+
 private:
 	void SetLock( bool bLock ) const
 	{
@@ -161,7 +161,7 @@ template< typename T > class CVtxBuffer : public VertexBufferBase
 		VertexBufferBase( iMax, iFlush, sizeof(T), eType, T::meFormat )
 	{
 	}
-	
+
 	virtual void EndianSwap()
 	{
 		T* tbase = (T*) mpVertices;
@@ -191,7 +191,7 @@ struct VtxWriterBase
 	int					miWriteMax;
 	char*				mpBase;
 	VertexBufferBase*	mpVB;
-	
+
 	VtxWriterBase()
 		: mpVB(0)
 		, miWriteCounter(0)
@@ -200,7 +200,7 @@ struct VtxWriterBase
 		, miWriteBase(0)
 	{
 	}
-	
+
 	void Lock( GfxTarget* pT, VertexBufferBase* mpVB, int icount=0 );
 	void UnLock( GfxTarget* pT, u32 UnLockFlags=EULFLG_NONE );
 };
@@ -234,6 +234,7 @@ public:
 	StaticVertexBuffer( int iMax, int iFlush, EPrimitiveType eType )
 		: CVtxBuffer<T>( iMax, iFlush, eType )
 	{
+		printf( "StaticVertexBuffer max<%d> len<%zu>\n", iMax, iMax*sizeof(T) );
 	}
 
 
@@ -250,6 +251,7 @@ public:
 	DynamicVertexBuffer( int iMax, int iFlush, EPrimitiveType eType )
 		: CVtxBuffer<T>( iMax, iFlush, eType )
 	{
+		printf( "DynamicVertexBuffer max<%d> len<%zu>\n", iMax, iMax*sizeof(T) );
 	}
 };
 
@@ -266,7 +268,7 @@ struct SVtxV12N6I1T4
 
 	SVtxV12N6I1T4() : mX(0.0f), mY(0.0f), mZ(0.0f), mNX(0), mNY(0), mNZ(0), mBone(0), mPad(0), mU(0), mV(0) {}
 
-	SVtxV12N6I1T4( F32 X, F32 Y, F32 Z, S16 NX, S16 NY, S16 NZ, int ibone, S16 U, S16 V ) 
+	SVtxV12N6I1T4( F32 X, F32 Y, F32 Z, S16 NX, S16 NY, S16 NZ, int ibone, S16 U, S16 V )
 		: mX( X )
 		, mY( Y )
 		, mZ( Z )
@@ -306,7 +308,7 @@ struct SVtxV12N6C2T4 // WII rigid format
 
 	SVtxV12N6C2T4() : mX(0.0f), mY(0.0f), mZ(0.0f), mNX(0), mNY(0), mNZ(0), mColor(0), mU(0), mV(0) {}
 
-	SVtxV12N6C2T4( F32 X, F32 Y, F32 Z, S16 NX, S16 NY, S16 NZ, U16 color, S16 U, S16 V ) 
+	SVtxV12N6C2T4( F32 X, F32 Y, F32 Z, S16 NX, S16 NY, S16 NZ, U16 color, S16 U, S16 V )
 		: mX( X )
 		, mY( Y )
 		, mZ( Z )
@@ -413,7 +415,7 @@ struct SVtxV12N12B12T8C4
 		swapbytes_dynamic( mPosition[0] );
 		swapbytes_dynamic( mPosition[1] );
 		swapbytes_dynamic( mPosition[2] );
-	
+
 		swapbytes_dynamic( mNormal[0] );
 		swapbytes_dynamic( mNormal[1] );
 		swapbytes_dynamic( mNormal[2] );
@@ -461,7 +463,7 @@ struct SVtxV12N12B12T16
 		swapbytes_dynamic( mPosition[0] );
 		swapbytes_dynamic( mPosition[1] );
 		swapbytes_dynamic( mPosition[2] );
-	
+
 		swapbytes_dynamic( mNormal[0] );
 		swapbytes_dynamic( mNormal[1] );
 		swapbytes_dynamic( mNormal[2] );
@@ -490,7 +492,7 @@ struct SVtxV12N12T16C4
     CVector2 mUV0;
 	CVector2 mUV1;
     U32		 mColor;
-	
+
 	SVtxV12N12T16C4(	const CVector3 & pos = CVector3(),
 						const CVector3 & nrm = CVector3(),
 						const CVector2 & uv0=CVector2(),
@@ -510,7 +512,7 @@ struct SVtxV12N12T16C4
 		swapbytes_dynamic( mPosition[0] );
 		swapbytes_dynamic( mPosition[1] );
 		swapbytes_dynamic( mPosition[2] );
-	
+
 		swapbytes_dynamic( mNormal[0] );
 		swapbytes_dynamic( mNormal[1] );
 		swapbytes_dynamic( mNormal[2] );
@@ -556,7 +558,7 @@ struct SVtxV12N12T8I4W4
 		swapbytes_dynamic( mPosition[0] );
 		swapbytes_dynamic( mPosition[1] );
 		swapbytes_dynamic( mPosition[2] );
-	
+
 		swapbytes_dynamic( mNormal[0] );
 		swapbytes_dynamic( mNormal[1] );
 		swapbytes_dynamic( mNormal[2] );
@@ -599,12 +601,12 @@ struct SVtxV12N12B12T8I4W4
 	{
 	}
 
-	void EndianSwap() 
+	void EndianSwap()
 	{
 		swapbytes_dynamic( mPosition[0] );
 		swapbytes_dynamic( mPosition[1] );
 		swapbytes_dynamic( mPosition[2] );
-	
+
 		swapbytes_dynamic( mNormal[0] );
 		swapbytes_dynamic( mNormal[1] );
 		swapbytes_dynamic( mNormal[2] );
@@ -618,7 +620,7 @@ struct SVtxV12N12B12T8I4W4
 
 		swapbytes_dynamic( mUV0[0] );
 		swapbytes_dynamic( mUV0[1] );
-	
+
 	}
 
 	const static EVtxStreamFormat meFormat = EVTXSTREAMFMT_V12N12B12T8I4W4;
