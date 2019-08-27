@@ -266,7 +266,7 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 	///////////////////////////////////////////////
 
 	const auto& scenedata = pinst->GetData();
-	auto path = scenedata.GetScriptPath();
+	auto path = scenedata._sceneScriptPath;
 	auto abspath = path.ToAbsolute();
 
 	if( abspath.DoesPathExist() )

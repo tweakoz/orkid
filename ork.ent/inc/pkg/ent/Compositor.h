@@ -9,6 +9,7 @@
 
 #include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/dataflow/dataflow.h>
+#include <pkg/ent/scene.h>
 
 namespace ork { namespace ent {
 

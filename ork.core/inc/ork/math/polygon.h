@@ -65,7 +65,7 @@ public:
 	static void ClassInit();
 
 	const comp& MergeComponent( const comp & c );
-	inline int GetNumComponents( void ) const { return int(mComponentSet.size()); }
+	inline int GetNu_components( void ) const { return int(mComponentSet.size()); }
 	inline const comp& GetComponent( int index ) const { return *(mComponentIndexVect[index]); }
 };
 
@@ -143,9 +143,9 @@ public:
 	const poly<vtx>& MergePoly( const poly<vtx>& p );
 	const edge<vtx>& MergeEdge( const edge<vtx>& e );
 
-	inline int GetNumPolys( void ) const { return mPolys.GetNumComponents(); }
-	inline int GetNumEdges( void ) const { return mEdges.GetNumComponents(); }
-	inline int GetNumVertices( void ) const { return mVertices.GetNumComponents(); }
+	inline int GetNumPolys( void ) const { return mPolys.GetNu_components(); }
+	inline int GetNumEdges( void ) const { return mEdges.GetNu_components(); }
+	inline int GetNumVertices( void ) const { return mVertices.GetNu_components(); }
 
 	inline const vtx& GetVertex( int idx ) const { return mVertices.GetComponent(idx); }
 	inline const poly<vtx>& GetPoly( int idx ) const { return mPolys.GetComponent(idx); }

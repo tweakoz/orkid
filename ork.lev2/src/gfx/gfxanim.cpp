@@ -229,7 +229,7 @@ void XgmBlendPoseInfo::AddPose(const DecompMtx44 &mat, CReal weight, EXFORM_COMP
 
 	AnimMat[miNumAnims] = mat;
 	AnimWeight[miNumAnims] = weight;
-	AnimComponents[miNumAnims] = components;
+	Ani_components[miNumAnims] = components;
 
 	miNumAnims++;
 }
@@ -327,12 +327,12 @@ void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
 			{
 				DecompMtx44 c = AnimMat[0];
 				mPoseCallback->PostBlendPreConcat(c);
-				c.Compose(outmatrix, AnimComponents[0]);
+				c.Compose(outmatrix, Ani_components[0]);
 			}
 			else
 			{
 				const DecompMtx44& c = AnimMat[0];
-				c.Compose(outmatrix, AnimComponents[0]);
+				c.Compose(outmatrix, Ani_components[0]);
 			}
 		}
 		break;
@@ -347,8 +347,8 @@ void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
 			const DecompMtx44 &b = AnimMat[1];
 			DecompMtx44 c;
 
-			const EXFORM_COMPONENT& acomp = AnimComponents[0];
-			const EXFORM_COMPONENT& bcomp = AnimComponents[0];
+			const EXFORM_COMPONENT& acomp = Ani_components[0];
+			const EXFORM_COMPONENT& bcomp = Ani_components[0];
 
 			// TODO: Callback for decomposed, pre-concatenated, pre-blended joint info
 

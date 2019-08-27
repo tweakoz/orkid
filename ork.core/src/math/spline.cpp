@@ -23,7 +23,7 @@ SplineV2::SplineV2( const CVector2& data )
 
 float SplineV2::GetComponent(int idx) const
 {
-	OrkAssert(idx<NumComponents);
+	OrkAssert(idx<Nu_components);
 	float rval = 0.0f;
 	switch( idx )
 	{
@@ -38,7 +38,7 @@ float SplineV2::GetComponent(int idx) const
 }
 void SplineV2::SetComponent(int idx, float fv)
 {
-	OrkAssert(idx<NumComponents);
+	OrkAssert(idx<Nu_components);
 	switch( idx )
 	{
 		case 0:
@@ -60,7 +60,7 @@ SplineV3::SplineV3( const CVector3& data )
 
 float SplineV3::GetComponent(int idx) const
 {
-	OrkAssert(idx<NumComponents);
+	OrkAssert(idx<Nu_components);
 	float rval = 0.0f;
 	switch( idx )
 	{
@@ -78,7 +78,7 @@ float SplineV3::GetComponent(int idx) const
 }
 void SplineV3::SetComponent(int idx, float fv)
 {
-	OrkAssert(idx<NumComponents);
+	OrkAssert(idx<Nu_components);
 	switch( idx )
 	{
 		case 0:
@@ -103,7 +103,7 @@ SplineV4::SplineV4( const CVector4& data )
 
 float SplineV4::GetComponent(int idx) const
 {
-	OrkAssert(idx<NumComponents);
+	OrkAssert(idx<Nu_components);
 	float rval = 0.0f;
 	switch( idx )
 	{
@@ -124,7 +124,7 @@ float SplineV4::GetComponent(int idx) const
 }
 void SplineV4::SetComponent(int idx, float fv)
 {
-	OrkAssert(idx<NumComponents);
+	OrkAssert(idx<Nu_components);
 	switch( idx )
 	{
 		case 0:

@@ -42,7 +42,7 @@ public:
 	void Clear();
 
 private:
-	 LutType& mComponents;
+	 LutType& _components;
 };
 
 class ComponentTable 
@@ -69,7 +69,7 @@ public:
 	ComponentBoundsConst GetComponentsByFamily(PoolString family) const;
 
 private:
-	 LutType& mComponents;
+	 LutType& _components;
 };
 
 } } // namespace ork::ent
