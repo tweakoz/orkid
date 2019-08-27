@@ -21,7 +21,7 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 ComponentTable::ComponentTable(LutType&comps)
-	: mComponents(comps)
+	: _components(comps)
 {
 
 }
@@ -32,39 +32,39 @@ ComponentTable::~ComponentTable()
 void ComponentTable::AddComponent(ComponentInst* component)
 {
 	//orkprintf("ComponentTable::AddComponent(%s)\n", component->GetFamily().c_str());
-	mComponents.AddSorted(component->GetFamily(), component);
+	_components.AddSorted(component->GetFamily(), component);
 
 }
 
 void ComponentTable::RemoveComponent(ComponentInst* component)
 {
-	LutType::iterator it = mComponents.find(component->GetFamily());
-	mComponents.RemoveItem(it);
+	LutType::iterator it = _components.find(component->GetFamily());
+	_components.RemoveItem(it);
 
 }
 
 const ComponentTable::LutType& ComponentTable::GetComponents() const
 {
-	return mComponents;
+	return _components;
 }
 
 ComponentTable::LutType& ComponentTable::GetComponents()
 {
-	return mComponents;
+	return _components;
 }
 
 ComponentTable::ComponentBounds ComponentTable::GetComponentsByFamily(PoolString family)
 {
-	return std::make_pair(mComponents.LowerBound(family), mComponents.UpperBound(family));
+	return std::make_pair(_components.LowerBound(family), _components.UpperBound(family));
 }
 
 ComponentTable::ComponentBoundsConst ComponentTable::GetComponentsByFamily(PoolString family) const
 {
-	return std::make_pair(mComponents.LowerBound(family), mComponents.UpperBound(family));
+	return std::make_pair(_components.LowerBound(family), _components.UpperBound(family));
 }
 
 ComponentDataTable::ComponentDataTable(LutType&comps)
-	: mComponents(comps)
+	: _components(comps)
 {
 }
 ComponentDataTable::~ComponentDataTable()
@@ -73,39 +73,39 @@ ComponentDataTable::~ComponentDataTable()
 
 void ComponentDataTable::AddComponent(ComponentData* component)
 {
-	mComponents.AddSorted(component->GetFamily(), component);
+	_components.AddSorted(component->GetFamily(), component);
 }
 
 void ComponentDataTable::Clear()
 {
-	mComponents.clear();
+	_components.clear();
 }
 
 void ComponentDataTable::RemoveComponent(ComponentData* component)
 {
-	LutType::iterator it = mComponents.find(component->GetFamily());
-	mComponents.RemoveItem(it);
+	LutType::iterator it = _components.find(component->GetFamily());
+	_components.RemoveItem(it);
 
 }
 
 const ComponentDataTable::LutType& ComponentDataTable::GetComponents() const
 {
-	return mComponents;
+	return _components;
 }
 
 ComponentDataTable::LutType& ComponentDataTable::GetComponents()
 {
-	return mComponents;
+	return _components;
 }
 
 ComponentDataTable::ComponentBounds ComponentDataTable::GetComponentsByFamily(PoolString family)
 {
-	return std::make_pair(mComponents.LowerBound(family), mComponents.UpperBound(family));
+	return std::make_pair(_components.LowerBound(family), _components.UpperBound(family));
 }
 
 ComponentDataTable::ComponentBoundsConst ComponentDataTable::GetComponentsByFamily(PoolString family) const
 {
-	return std::make_pair(mComponents.LowerBound(family), mComponents.UpperBound(family));
+	return std::make_pair(_components.LowerBound(family), _components.UpperBound(family));
 }
 
 } }

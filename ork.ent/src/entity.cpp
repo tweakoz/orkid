@@ -217,11 +217,11 @@ void Entity::EntDataGetter( ork::rtti::ICastable* & ptr ) const
 }
 ///////////////////////////////////////////////////////////////////////////////
 Entity::Entity( const EntData& edata, SceneInst *inst )
-	: mComponents(EKEYPOLICY_MULTILUT)
+	: _components(EKEYPOLICY_MULTILUT)
 	, mEntData( edata )
 	, mDagNode( edata.GetDagNode() )
 	//, mDrawable( 0 )
-	, mComponentTable( mComponents )
+	, mComponentTable( _components )
 	, mSceneInst(inst)
 {
 	//mDrawable.reserve(4);
@@ -269,7 +269,7 @@ Entity::~Entity()
 			delete pdrw;
 		}
 	}
-	for( ComponentTable::LutType::const_iterator it=mComponents.begin(); it!=mComponents.end(); it++ )
+	for( ComponentTable::LutType::const_iterator it=_components.begin(); it!=_components.end(); it++ )
 	{
 		ComponentInst* pinst = it->second;
 		delete pinst;
@@ -426,20 +426,20 @@ void ArchComposer::Register( ork::ent::ComponentData* pdata )
 	if( pdata )
 	{
 		ork::object::ObjectClass* pclass = pdata->GetClass();
-		mComponents.AddSorted( pclass,pdata );
+		_components.AddSorted( pclass,pdata );
 	}
 }
 
 ArchComposer::ArchComposer(ork::ent::Archetype* parch,SceneComposer& scene_composer)
 	: mpArchetype(parch)
-	, mComponents( ork::EKEYPOLICY_MULTILUT )
+	, _components( ork::EKEYPOLICY_MULTILUT )
 	, mSceneComposer(scene_composer)
 {
 }
 
 ArchComposer::~ArchComposer()
 {	mpArchetype->GetComponentDataTable().Clear();
-	for( ork::orklut<ork::object::ObjectClass*,ork::Object*>::const_iterator it=mComponents.begin(); it!=mComponents.end(); it++ )
+	for( ork::orklut<ork::object::ObjectClass*,ork::Object*>::const_iterator it=_components.begin(); it!=_components.end(); it++ )
 	{	ork::object::ObjectClass* pclass = it->first;
 		ork::ent::ComponentData* pdata = ork::rtti::autocast(it->second);
 		if( 0 == pdata )

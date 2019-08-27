@@ -416,7 +416,7 @@ private:
 
 	DecompMtx44						AnimMat[kmaxblendanims];
 	CReal							AnimWeight[kmaxblendanims];
-	EXFORM_COMPONENT				AnimComponents[kmaxblendanims];
+	EXFORM_COMPONENT				Ani_components[kmaxblendanims];
 
 	PoseCallback *mPoseCallback;
 };

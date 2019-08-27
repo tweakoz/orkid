@@ -515,7 +515,7 @@ void GlGeometryBufferInterface::ReleaseVB( VertexBufferBase& VBuf )
 struct vtx_config
 {
 	const std::string 		mSemantic;
-	const int         		mNumComponents;
+	const int         		mNu_components;
 	const GLenum      		mType;
 	const bool        		mNormalize;
 	const int         		mOffset;
@@ -542,9 +542,9 @@ struct vtx_config
 		}
 		if( mAttr )
 		{
-			//printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNumComponents, mOffset );
+			//printf( "gbi::bind_attr istride<%d> loc<%d> numc<%d> offs<%d>\n", istride, mAttr->mLocation, mNu_components, mOffset );
 			glVertexAttribPointer(	mAttr->mLocation,
-									mNumComponents,
+									mNu_components,
 									mType,
 									mNormalize,
 									istride,

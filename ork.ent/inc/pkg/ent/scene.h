@@ -102,12 +102,12 @@ class SceneData : public ork::Object
 
 public:
 
-	typedef orklut<const ork::object::ObjectClass*,SystemData*> SystemLut;
+	typedef orklut<const ork::object::ObjectClass*,SystemData*> SystemDataLut;
 
 	SceneData();
 	~SceneData(); /*virtual*/
 
-	ESceneDataMode GetSceneDataMode() const { return meSceneDataMode; }
+	ESceneDataMode GetSceneDataMode() const { return _sceneDataMode; }
 
 	void AutoLoadAssets() const;
 
@@ -120,8 +120,8 @@ public:
 	void AddSceneObject(SceneObject* object);
 	void RemoveSceneObject(SceneObject* object);
 	bool RenameSceneObject(SceneObject* pobj, const char* pname );
-	const orkmap<PoolString, SceneObject*> & GetSceneObjects() const { return mSceneObjects; }
-	orkmap<PoolString, SceneObject*> & GetSceneObjects() { return mSceneObjects; }
+	const orkmap<PoolString, SceneObject*> & GetSceneObjects() const { return _sceneObjects; }
+	orkmap<PoolString, SceneObject*> & GetSceneObjects() { return _sceneObjects; }
 
 	bool IsSceneObjectPresent(SceneObject*) const;
 
@@ -142,25 +142,22 @@ public:
 	//////////////////////////////////////////////////////////
 
 	template <typename T >
-	T* GetTypedSystem() const;
+	T* getTypedSystem() const;
 
-	const SystemLut& GetSystems() const { return mSystems; }
-	void AddSystem( SystemData* pcomp );
-	void ClearSystems();
+	const SystemDataLut& getSystemDatas() const { return _systemDatas; }
+	void addSystem( SystemData* pcomp );
+	void clearSystems();
 
-	//////////////////////////////////////////////////////////
-
-	file::Path GetScriptPath() const { return mScriptPath; }
-
-private:
-
-	orkmap<PoolString, SceneObject*>		mSceneObjects;
-	SystemLut						mSystems;
-	ESceneDataMode	meSceneDataMode;
 	void OnSceneDataMode(ESceneDataMode emode);
 	void PrepareForEdit();
 	bool PostDeserialize(reflect::IDeserializer &) final;
-	file::Path  							mScriptPath;
+
+	//////////////////////////////////////////////////////////
+
+	orkmap<PoolString, SceneObject*>		_sceneObjects;
+	SystemDataLut												_systemDatas;
+	ESceneDataMode											_sceneDataMode;
+	file::Path  												_sceneScriptPath;
 
 };
 
@@ -168,7 +165,7 @@ private:
 
 struct SceneComposer
 {
-	orklut<const object::ObjectClass*,SystemData*>	mComponents;
+	orklut<const object::ObjectClass*,SystemData*>	_components;
 	SceneData* mpSceneData;
 
 	template <typename T> T* Register();
@@ -323,8 +320,8 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	void AddSystem( System* pcomp );
-	void ClearSystems();
+	void addSystem( System* pcomp );
+	void clearSystems();
 
 	template <typename T >
 	T* FindSystem() const;
@@ -376,7 +373,7 @@ protected:
 	float									mStartTime;			// UpTime when game started
 	float									mLastGameTime;
 	ComponentList							mEmptyList;
-	SystemLut						mSystems;
+	SystemLut						_systems;
 	float									mDeltaTimeAccum;
 	float									mfAvgDtAcc;
 	float									mfAvgDtCtr;

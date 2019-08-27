@@ -22,7 +22,7 @@ namespace ork
 
 struct SplineV2 
 {
-	static const int NumComponents = 2;
+	static const int Nu_components = 2;
 
 	SplineV2( const CVector2& pos );
 	SplineV2() {}
@@ -35,7 +35,7 @@ struct SplineV2
 
 struct SplineV3 
 {
-	static const int NumComponents = 3;
+	static const int Nu_components = 3;
 
 	SplineV3( const CVector3& pos );
 	SplineV3() {}
@@ -48,7 +48,7 @@ struct SplineV3
 
 struct SplineV4 
 {
-	static const int NumComponents = 4;
+	static const int Nu_components = 4;
 
 	SplineV4( const CVector4& pos );
 	SplineV4() {}
@@ -66,7 +66,7 @@ class CatmullRomSpline
 {
 	public:
 
-	static const int knumcomponents = T::NumComponents;
+	static const int knumcomponents = T::Nu_components;
 
 	orkvector< T >			mSeqVertices;
 	bool					mbClosed;

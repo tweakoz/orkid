@@ -122,7 +122,7 @@ private:
 	bool DoLink(ork::ent::SceneInst *inst ) override;
 	const ParticleControllableData&	mData;
 	bool							mbEnable;
-	orkvector<NovaParticleSystem*>	mSystems;
+	orkvector<NovaParticleSystem*>	_systems;
 	float 							mPrevTime;
 
 	ork::lev2::particle::Context	mParticleContext;

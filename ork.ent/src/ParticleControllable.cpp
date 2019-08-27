@@ -103,7 +103,7 @@ ParticleControllableInst::ParticleControllableInst(const ParticleControllableDat
 			
 			if( psys )
 			{
-				mSystems.push_back( psys );
+				_systems.push_back( psys );
 			}
 
 		}
@@ -119,10 +119,10 @@ ParticleControllableInst::ParticleControllableInst(const ParticleControllableDat
 }
 ParticleControllableInst::~ParticleControllableInst()
 {
-	int inumsys = int(mSystems.size());
+	int inumsys = int(_systems.size());
 	for( int i=0; i<inumsys; i++ )
 	{
-		NovaParticleSystem* psys = mSystems[i];
+		NovaParticleSystem* psys = _systems[i];
 		delete psys;
 	}
 }
@@ -135,7 +135,7 @@ bool ParticleControllableInst::DoStart(ork::ent::SceneInst *inst, const ork::CMa
 
 	//orkprintf( "start psys<%p> at pos<%f %f %f>\n", this, pos.GetX(), pos.GetY(), pos.GetZ() );
 	Reset();
-	for( orkvector<NovaParticleSystem*>::const_iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
+	for( orkvector<NovaParticleSystem*>::const_iterator it=_systems.begin(); it!=_systems.end(); it++ )
 	{
 		NovaParticleSystem* psys = (*it);
 
@@ -170,7 +170,7 @@ bool ParticleControllableInst::DoLink( ork::ent::SceneInst *psi )
 
 	////////////////////////////////
 
-	for( orkvector<NovaParticleSystem*>::const_iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
+	for( orkvector<NovaParticleSystem*>::const_iterator it=_systems.begin(); it!=_systems.end(); it++ )
 	{
 		NovaParticleSystem* psys = (*it);
 
@@ -205,7 +205,7 @@ void ParticleControllableInst::DoUpdate(ork::ent::SceneInst *inst)
 
 		mParticleContext.BeginFrame(fcurtime);
 
-		for( orkvector<NovaParticleSystem*>::const_iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
+		for( orkvector<NovaParticleSystem*>::const_iterator it=_systems.begin(); it!=_systems.end(); it++ )
 		{
 			NovaParticleSystem* psys = (*it);
 			
@@ -222,7 +222,7 @@ bool ParticleControllableInst::DoNotify(const ork::event::Event *event)
 		PoolString k = AddPooledString(pce->mTarget.c_str());
 
 		ork::ent::PerfControlEvent pce2 = *pce;
-		for( orkvector<NovaParticleSystem*>::const_iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
+		for( orkvector<NovaParticleSystem*>::const_iterator it=_systems.begin(); it!=_systems.end(); it++ )
 		{
 			NovaParticleSystem* psys = (*it);
 			psys->Notify( pce );
@@ -232,7 +232,7 @@ bool ParticleControllableInst::DoNotify(const ork::event::Event *event)
 	}
 	if( const ork::ent::PerfSnapShotEvent* psse = rtti::autocast(event) )
 	{
-		for( orkvector<NovaParticleSystem*>::const_iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
+		for( orkvector<NovaParticleSystem*>::const_iterator it=_systems.begin(); it!=_systems.end(); it++ )
 		{
 			NovaParticleSystem* psys = (*it);
 			psys->Notify( psse );
@@ -256,7 +256,7 @@ bool ParticleControllableInst::DoNotify(const ork::event::Event *event)
 ///////////////////////////////////////////////////////////////////////////////
 void ParticleControllableInst::Reset()
 {
-	for( orkvector<NovaParticleSystem*>::const_iterator it=mSystems.begin(); it!=mSystems.end(); it++ )
+	for( orkvector<NovaParticleSystem*>::const_iterator it=_systems.begin(); it!=_systems.end(); it++ )
 	{
 		NovaParticleSystem* system = (*it);
 		system->Reset();

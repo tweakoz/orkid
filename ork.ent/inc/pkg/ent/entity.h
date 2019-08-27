@@ -264,7 +264,7 @@ private:
 	const EntData&							mEntData;
 	mutable bool							mComposed;
 	ComponentTable							mComponentTable;
-	ComponentTable::LutType					mComponents;
+	ComponentTable::LutType					_components;
 	//DrawableVector							mDrawable; //e Will this go away?  Could go into a component query at activate
 	LayerMap								mLayerMap;
 	DagNode									mDagNode;
@@ -277,7 +277,7 @@ class SceneComposer;
 
 struct ArchComposer
 {
-	ork::orklut<ork::object::ObjectClass*,ork::Object*>		mComponents;
+	ork::orklut<ork::object::ObjectClass*,ork::Object*>		_components;
 	ork::ent::Archetype*									mpArchetype;
 	SceneComposer&											mSceneComposer;
 

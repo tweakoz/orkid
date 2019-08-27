@@ -88,7 +88,7 @@ template <typename T> T* ArchComposer::Register()
 	{
 		pobj = rtti::autocast( pclass->CreateObject() );
 	}
-	mComponents.AddSorted( pclass,pobj );
+	_components.AddSorted( pclass,pobj );
 	T* rval = rtti::autocast( pobj );
 	if( rval )
 	{
