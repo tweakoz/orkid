@@ -20,9 +20,9 @@
 template class ork::lev2::CPickBuffer<ork::tool::ged::GedVP>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-template<> 
+template<>
 void CPickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
-{	
+{
     mPickIds.clear();
 
     auto tgt = GetContext();
@@ -52,7 +52,7 @@ void CPickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
 }
 }}
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace tool { 
+namespace ork { namespace tool {
 
 ///////////////////////////////////////////////////////////////////////////////
 uint32_t ged::GedVP::AssignPickId(GedObject*pobj)
@@ -68,7 +68,7 @@ GedVP::GedVP( const std::string & name, ObjModel& model )
 	: ui::Surface( name, 0, 0, 0, 0, CColor3::Black(), 0.0f )
 	, mModel( model )
 	, mWidget( model )
-	, mpActiveNode( 0 )
+	, mpActiveNode( nullptr )
 	, miScrollY( 0 )
 	, mpMouseOverNode(0)
 {
@@ -97,7 +97,7 @@ GedVP::~GedVP()
 void GedVP::DoInit( lev2::GfxTarget* pt )
 {
 	auto par = pt->FBI()->GetThisBuffer();
-	mpPickBuffer = new lev2::CPickBuffer<GedVP>( par, 
+	mpPickBuffer = new lev2::CPickBuffer<GedVP>( par,
 												 this,
 												 0, 0, miW, miH,
 												 lev2::PickBufferBase::EPICK_FACE_VTX );
@@ -110,7 +110,7 @@ void GedVP::DoInit( lev2::GfxTarget* pt )
 void GedVP::DoSurfaceResize()
 {
 	mWidget.SetDims( miW, miH );
-	
+
 	if( 0 == mpPickBuffer && (nullptr!=mpTarget) )
 	{
 
@@ -129,7 +129,7 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	auto tgt = drwev.GetTarget();
 	auto mtxi = tgt->MTXI();
 	auto fbi = tgt->FBI();
-	//bool bispick = GetFrameData().IsPickMode(); 
+	//bool bispick = GetFrameData().IsPickMode();
 
 	//////////////////////////////////////////////////
 	// Compute Scoll Transform
@@ -145,7 +145,7 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	mtxi->PushMMatrix( matSCROLL );
 	{
 		fbi->Clear( GetClearColorRef(), 1.0f );
-	
+
 		auto pobj = mModel.CurrentObject();
 		if( pobj )
 		{
@@ -229,7 +229,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 					////////////////////////////////////
 					// iwh = 500
 					// irh = 200
-					// ism = 300 // 0 
+					// ism = 300 // 0
 					////////////////////////////////////
 
 					////////////////////////////////////
@@ -252,7 +252,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 					{
 						miScrollY = iscrollmin;
 					}
-					
+
 				}
 				printf( "predelta<%d> miScrollY<%d>\n", idelta, miScrollY );
 
@@ -264,7 +264,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 		case ui::UIEV_MOVE:
 		{	QMouseEvent* qem = (QMouseEvent*) qip;
 			static int gctr = 0;
-			if( 0 == gctr%4 ) 
+			if( 0 == gctr%4 )
 			{	GetPixel( ilocx, ilocy, ctx );
 				rtti::ICastable *pobj = ctx.GetObject(mpPickBuffer,0);
 				if( 0 ) //TODO pobj )
@@ -272,7 +272,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 					if( pnode )
 					{	//pnode->mouseMoveEvent( & myme );
 						mpMouseOverNode = pnode;
-						
+
 						if( pnode != mpActiveNode )
 						  pnode->OnUiEvent( locEV );
 					}
@@ -283,7 +283,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 		}
 		case ui::UIEV_DRAG:
 		{	if( mpActiveNode )
-			{	
+			{
                 if( GedItemNode* as_inode = ork::rtti::autocast(mpActiveNode) )
                 {
                     locEV.miX -= as_inode->GetX();
