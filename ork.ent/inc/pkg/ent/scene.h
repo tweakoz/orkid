@@ -127,7 +127,7 @@ public:
 	//////////////////////////////////////////////////////////
 
 	template <typename T >
-	T* getTypedSystem() const;
+	T* getTypedSystemData() const;
 
 	const SystemDataLut& getSystemDatas() const { return _systemDatas; }
 	void addSystemData( SystemData* pcomp );
@@ -150,7 +150,6 @@ public:
 
 struct SceneComposer
 {
-	orklut<const object::ObjectClass*,SystemData*>	_components;
 	SceneData* mpSceneData;
 
 	template <typename T> T* Register();
@@ -328,8 +327,8 @@ private:
 	void StartEntities();
 	void StopEntities();
 
-	void ComposeSystems();
-	void DecomposeSystems();
+	void composeSystems();
+	void decomposeSystems();
 	void StartSystems();
 	void LinkSystems();
 	void StopSystems();

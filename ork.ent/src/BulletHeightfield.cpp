@@ -99,7 +99,7 @@ BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
   const float kworldsizeZ = kworldsizeX * aspect;
 
   auto world_controller = data.mWorld;
-  const BulletWorldControllerData &world_data =
+  const BulletSystemData &world_data =
       world_controller->GetWorldData();
 
   btVector3 grav = !world_data.GetGravity();

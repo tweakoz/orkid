@@ -35,7 +35,7 @@ static const bool USE_GIMPACT = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletWorldControllerData, "BulletWorldControllerData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletSystemData, "BulletSystemData");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -50,33 +50,42 @@ static PoolString sBulletFamily;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletWorldControllerData::Describe()
+void BulletSystemData::Describe()
 {
-	ork::reflect::RegisterProperty("SimulationRate", &BulletWorldControllerData::mSimulationRate);
-	ork::reflect::AnnotatePropertyForEditor< BulletWorldControllerData >("SimulationRate", "editor.range.min", "60.0f");
-	ork::reflect::AnnotatePropertyForEditor< BulletWorldControllerData >("SimulationRate", "editor.range.max", "2400.0f");
+	ork::reflect::RegisterProperty("SimulationRate", &BulletSystemData::mSimulationRate);
+	ork::reflect::AnnotatePropertyForEditor< BulletSystemData >("SimulationRate", "editor.range.min", "60.0f");
+	ork::reflect::AnnotatePropertyForEditor< BulletSystemData >("SimulationRate", "editor.range.max", "2400.0f");
 
-	ork::reflect::RegisterProperty("TimeScale", &BulletWorldControllerData::mfTimeScale);
-	ork::reflect::AnnotatePropertyForEditor< BulletWorldControllerData >("TimeScale", "editor.range.min", "0.0f");
-	ork::reflect::AnnotatePropertyForEditor< BulletWorldControllerData >("TimeScale", "editor.range.max", "50.0f");
+	ork::reflect::RegisterProperty("TimeScale", &BulletSystemData::mfTimeScale);
+	ork::reflect::AnnotatePropertyForEditor< BulletSystemData >("TimeScale", "editor.range.min", "0.0f");
+	ork::reflect::AnnotatePropertyForEditor< BulletSystemData >("TimeScale", "editor.range.max", "50.0f");
 
-	ork::reflect::RegisterProperty("Gravity", &BulletWorldControllerData::mGravity);
+	ork::reflect::RegisterProperty("Gravity", &BulletSystemData::mGravity);
 
-	ork::reflect::RegisterProperty("Debug", &BulletWorldControllerData::mbDEBUG);
+	ork::reflect::RegisterProperty("Debug", &BulletSystemData::mbDEBUG);
 
 	sBulletFamily = ork::AddPooledLiteral("bullet");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-System* BulletWorldControllerData::createSystem(ork::ent::SceneInst *pinst) const
+BulletSystemData::BulletSystemData()
+		: mfTimeScale(1.0f)
+		, mbDEBUG(false)
+		, mSimulationRate(120.0f) {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+System* BulletSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
 	return OrkNew BulletSystem(*this, pinst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BulletSystem::BulletSystem(const BulletWorldControllerData& data,ork::ent::SceneInst* psi)
+BulletSystem::BulletSystem(const BulletSystemData& data,ork::ent::SceneInst* psi)
 	: System( &data, psi )
 	, mDynamicsWorld(0)
 	, mBtConfig( 0 )

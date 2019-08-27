@@ -87,6 +87,11 @@ BulletObjectControllerData::~BulletObjectControllerData()
 //		delete mCollisionShape;
 }
 
+void BulletObjectControllerData::DoRegisterWithScene( ork::ent::SceneComposer& sc )
+{
+	sc.Register<BulletSystemData>();
+}
+
 void BulletObjectControllerData::Describe()
 {
 	//	reflect::RegisterProperty( "Model", & BulletObjectControllerData::GetModelAccessor, & BulletObjectControllerData::SetModelAccessor );
@@ -176,7 +181,7 @@ void BulletObjectControllerInst::DoStop(SceneInst* psi)
 		return;
 
 	if( auto bulletsys = psi->findSystem<BulletSystem>() ){
-			const BulletWorldControllerData& world_data = bulletsys->GetWorldData();
+			const BulletSystemData& world_data = bulletsys->GetWorldData();
 			btVector3 grav = !world_data.GetGravity();
 			if(btDynamicsWorld *world = bulletsys->GetDynamicsWorld()){
 				if( mRigidBody ){
@@ -195,7 +200,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 	auto this_ent = GetEntity();
 
 	if( auto bulletsys = psi->findSystem<BulletSystem>() ){
-			const BulletWorldControllerData& world_data = bulletsys->GetWorldData();
+			const BulletSystemData& world_data = bulletsys->GetWorldData();
 			btVector3 grav = !world_data.GetGravity();
 
 			if(btDynamicsWorld *world = bulletsys->GetDynamicsWorld()){
