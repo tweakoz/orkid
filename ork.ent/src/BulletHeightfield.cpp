@@ -162,7 +162,7 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 	const float kworldsizeX = _heightmap.GetWorldSizeX();
 	const float kworldsizeZ = _heightmap.GetWorldSizeZ();
 
-	//const float fsize = kfw;
+	const int terrain_ngrids = iglX*iglZ;
 
 	auto bbctr = (_aabbmin+_aabbmax)*0.5f;
 	auto bbdim = (_aabbmax-_aabbmin);
@@ -176,107 +176,223 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 	AABox aab;
 	aab.BeginGrow();
 
-	const int terrain_ngrids = iglX*iglZ;
+	enum PatchType {
+		PT_A = 0,
+		PT_BT,
+		PT_BB,
+		PT_BL,
+		PT_BR,
+		PT_C,
+	};
 
-	if( terrain_ngrids >= 1024 )
-	{
-		//const int knumqua = kblksizeX*kblksizeZ;
-		//const int knumtri = knumqua<<1;
+	struct Patch {
+			PatchType _type;
+			int _lod;
+			int _x, _z;
+	};
 
-		int inumcol = iglX-1;
-		int inumrow = iglZ-1;
-		int inumpointsperrow = 2+inumcol*2+2; // 2 degenerates and 2 to start
-		int inumvertstotal = inumpointsperrow*inumrow;
+	std::vector<Patch> _patches;
 
-		////////////////////////////////////////////
-		// find/create vertexbuffers
-		////////////////////////////////////////////
+	////////////////////////////////////////////
 
-		TerVtxBuffersType* vertexbuffers = 0;
-
-		auto itv = vtxbufmap.find(terrain_ngrids);
-
-		if( itv == vtxbufmap.end() ) // init index buffer for this terrain size
-		{
-			vertexbuffers = OrkNew TerVtxBuffersType;
-			vtxbufmap[ terrain_ngrids ] = vertexbuffers;
-
-
-			auto vbuf = new lev2::StaticVertexBuffer<lev2::SVtxV12C4T16>( inumvertstotal, 0, lev2::EPRIM_POINTS );
-			vertexbuffers->push_back( vbuf );
+	auto patch_row = [&](PatchType t, int lod, int x1, int x2, int z ){
+		int step = 1<<lod;
+		for( int x=x1; x<x2; x+=step ){
+				Patch p;
+				p._type = t;
+				p._x = x;
+				p._z = z;
+				p._lod = lod;
+				_patches.push_back(p);
 		}
-		else
-		{
-			vertexbuffers = itv->second;
+	};
+
+	////////////////////////////////////////////
+
+	auto patch_column = [&](PatchType t, int lod, int x, int z1, int z2 ){
+		int step = 1<<lod;
+		for( int z=z1; z<z2; z+=step ){
+				Patch p;
+				p._type = t;
+				p._x = x;
+				p._z = z;
+				p._lod = lod;
+				_patches.push_back(p);
 		}
+	};
 
-		//mDisplayLists.resize( vertexbuffers->size() );
+	////////////////////////////////////////////
 
-		////////////////////////////////////////////
-		// compute vertexbuffers
-		////////////////////////////////////////////
+	auto patch_block = [&](PatchType t, int lod,
+													int x1, int z1,
+													int x2, int z2){
+		if( x1==x2 ) x2++;
+		if( z1==z2 ) z2++;
 
-		auto vbuf = (*vertexbuffers)[ 0 ];
-		vbuf->Reset();
-		lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vwriter;
-		vwriter.Lock( ptarg, vbuf, inumvertstotal );
+		int step = 1<<lod;
 
-		auto l_submit = [&]( const fvec3& xyz, const fvec3& nrm, float fu, float fv )
-		{
-			auto vo = _hfd.GetVisualOffset();
-			lev2::SVtxV12C4T16 vtx;
-			vtx.miX = (vo+xyz).GetX();
-			vtx.miY = (vo+xyz).GetY();
-			vtx.miZ = (vo+xyz).GetZ();
-
-			float fu2 = 0.5f+(nrm.GetX()*0.5);
-    		float fv2 = 0.5f+(nrm.GetY()*0.5);
-
-			vtx.muColor = (fvec3(0.25f,0.25f,0.25f)+nrm*0.25f).GetVtxColorAsU32();
-
-			vtx.mfU = fu2;//+(1.0f/4096.0f);
-			vtx.mfV = fv2;//+(1.0f/4096.0f);
-			vwriter.AddVertex( vtx );
-		};
-
-		for( int irow=0; irow<inumrow; irow++ )
-		{
-			int iza = irow;
-			int izb = irow+1;
-
-			float fva = float(irow)/float(inumrow);
-			float fvb = float(irow+1)/float(inumrow);
-
-			for( int icol=0; icol<inumcol; icol++ )
-			{
-				int ixa = icol;
-				int ixb = icol+1;
-
-				float fua = float(icol)/float(inumcol);
-				float fub = float(icol+1)/float(inumcol);
-
-				auto xyz_xaza = _heightmap.XYZ(ixa,iza);
-				auto xyz_xazb = _heightmap.XYZ(ixa,izb);
-
-				aab.Grow( xyz_xaza );
-				aab.Grow( xyz_xazb );
-
-				auto nrm_xaza = _heightmap.ComputeNormal(ixa,iza);
-				auto nrm_xazb = _heightmap.ComputeNormal(ixa,izb);
-
-				if( icol==0 ) // leading degen
-					l_submit( xyz_xazb, nrm_xazb, fua, fvb );
-
-				l_submit( xyz_xazb, nrm_xazb, fua, fvb );
-				l_submit( xyz_xaza, nrm_xaza, fua, fva );
-
-				if( icol==(inumcol-1) ) // trailing degen
-					l_submit( xyz_xaza, nrm_xaza, fua, fva );
-
+		for( int x=x1; x<x2; x+=step ){
+			for( int z=z1; z<z2; z+=step ){
+				Patch p;
+				p._type = t;
+				p._x = x;
+				p._z = z;
+				p._lod = lod;
+				_patches.push_back(p);
 			}
 		}
-		vwriter.UnLock(ptarg);
+	};
+
+	////////////////////////////////////////////
+
+	auto single_patch = [&](PatchType t, int lod, int x,int z){
+			Patch p;
+			p._type = t;
+			p._x = x;
+			p._z = z;
+			p._lod = lod;
+			_patches.push_back(p);
+	};
+
+	////////////////////////////////////////////
+
+	struct Iter {
+		int _lod;
+		int _acount;
+		int _astart;
+		int _dim;
+	};
+
+	std::vector<Iter> iters;
+	iters.push_back(Iter{0, 1,-1,1});
+	iters.push_back(Iter{1, 3,-4,2});
+	iters.push_back(Iter{2, 5,-10,4});
+
+	for( auto iter : iters ){
+			int lod = iter._lod;
+			int sectdim = iter._dim;
+			int sectdimp1 = sectdim+1;
+			int a_start = iter._astart;
+			int a_end = iter._astart+iter._acount;
+			int a_z = iter._astart;
+
+			patch_row(   PT_A,  lod, a_start,a_end,a_start ); // top a
+			patch_column(PT_A,  lod, a_start,a_end,a_start ); // right a
+			patch_row(PT_A,  lod, a_start+1,a_end,a_end ); // bottom a
+			patch_column(PT_A,  lod, a_start+1,a_end, a_start ); // left a
+
+			patch_row(PT_BT, lod, -sectdim,sectdim,-sectdimp1);
+			patch_column(PT_BR, lod, +sectdim,-sectdim,+sectdim);
+			patch_row(PT_BB, lod, -sectdim,sectdim,+sectdimp1);
+			patch_column(PT_BL, lod, -sectdim,-sectdim,+sectdim);
+			single_patch(PT_C,  lod, -sectdim,-sectdim);
+			single_patch(PT_C,  lod, +sectdim,-sectdim);
+			single_patch(PT_C,  lod, +sectdim,+sectdim);
+			single_patch(PT_C,  lod, -sectdim,+sectdim);
+
 	}
+
+	size_t triangle_count = 0;
+
+	for( auto p : _patches ){
+
+		printf( "p<%d %d> t<%d>\n", p._x, p._z, p._type );
+		switch(p._type){
+			case PT_A: //
+				triangle_count += 8;
+				break;
+			case PT_BT:
+			case PT_BL:
+			case PT_BB:
+			case PT_BR:
+				triangle_count += 5;
+				break;
+			case PT_C:
+				triangle_count += 4;
+				break;
+		}
+	}
+
+	size_t vertex_count = _patches.size()*6;
+
+	printf( "triangle_count<%zu>\n", triangle_count );
+	printf( "vertex_count<%zu>\n", vertex_count );
+
+	////////////////////////////////////////////
+	// find/create vertexbuffers
+	////////////////////////////////////////////
+
+	TerVtxBuffersType* vertexbuffers = 0;
+
+	auto itv = vtxbufmap.find(terrain_ngrids);
+
+	if( itv == vtxbufmap.end() ) // init index buffer for this terrain size
+	{
+		vertexbuffers = OrkNew TerVtxBuffersType;
+		vtxbufmap[ terrain_ngrids ] = vertexbuffers;
+
+
+		auto vbuf = new lev2::StaticVertexBuffer<lev2::SVtxV12C4T16>( vertex_count, 0, lev2::EPRIM_POINTS );
+		vertexbuffers->push_back( vbuf );
+	}
+	else
+	{
+		vertexbuffers = itv->second;
+	}
+
+	auto vbuf = (*vertexbuffers)[ 0 ];
+	vbuf->Reset();
+	////////////////////////////////////////////
+	lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vwriter;
+	vwriter.Lock( ptarg, vbuf, vertex_count );
+	////////////////////////////////////////////
+	triangle_count = 0;
+	for( auto p : _patches ){
+		int x = p._x;
+		int z = p._z;
+		int lod = p._lod;
+		int step = 1<<lod;
+
+		//fvec3 p0(x,0,z);
+		//fvec3 p1(x+step,0,z);
+		//fvec3 p2(x+step,0,z+step);
+		//fvec3 p3(x,0,z+step);
+		fvec3 p0(x,0,z);
+		fvec3 p1(x+step,0,z);
+		fvec3 p2(x+step,0,z+step);
+		fvec3 p3(x,0,z+step);
+
+		auto v0 = lev2::SVtxV12C4T16(p0,fvec2(),0xffffffff);
+		auto v1 = lev2::SVtxV12C4T16(p1,fvec2(),0xff00ffff);
+		auto v2 = lev2::SVtxV12C4T16(p2,fvec2(),0xffff00ff);
+		auto v3 = lev2::SVtxV12C4T16(p3,fvec2(),0xff0000ff);
+
+		vwriter.AddVertex( v0 );
+		vwriter.AddVertex( v1 );
+		vwriter.AddVertex( v2 );
+		//vwriter.AddVertex( v0 );
+		//vwriter.AddVertex( v2 );
+		//vwriter.AddVertex( v3 );
+
+		switch(p._type){
+			case PT_A: //
+				triangle_count += 8;
+				break;
+			case PT_BT:
+			case PT_BL:
+			case PT_BB:
+			case PT_BR:
+				triangle_count += 5;
+				break;
+			case PT_C:
+				triangle_count += 4;
+				break;
+		}
+	}
+	////////////////////////////////////////////
+	vwriter.UnLock(ptarg);
+	////////////////////////////////////////////
+
 	aab.EndGrow();
 	auto geomin = aab.Min();
 	auto geomax = aab.Max();
@@ -284,17 +400,15 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 	printf( "geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ() );
 	printf( "geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ() );
 	printf( "geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ() );
-	//mGeomDirty = false;
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 void FastRender(	const lev2::RenderContextInstData& rcidata,
-					hfield_geometry* htri )
-{
+					hfield_geometry* htri ) {
+
 	const lev2::Renderer* renderer = rcidata.GetRenderer();
 	const ent::Entity* pent = htri->_entity;
-	//const DagNode& dagn = pent->GetEntData().GetDagNode();
-	//const auto& xf = dagn.GetTransformNode().GetTransform();
 	const auto& hfd = htri->_hfd;
 	auto sphmap = hfd.GetSphereMap();
 
@@ -312,32 +426,25 @@ void FastRender(	const lev2::RenderContextInstData& rcidata,
 	htri->init_visgeom(ptarg);
 	//////////////////////////
 
-
 	ptarg->MTXI()->PushPMatrix(PMTX);
 	ptarg->MTXI()->PushVMatrix(VMTX);
-	ptarg->MTXI()->PushMMatrix(MMTX);
-	{
+	ptarg->MTXI()->PushMMatrix(MMTX);{
 		const int iglX = htri->_heightmap.GetGridSizeX();
 		const int iglZ = htri->_heightmap.GetGridSizeZ();
 
 		const int terrain_ngrids = iglX*iglZ;
 
-		if( terrain_ngrids>=1024 )
-		{
+		if( terrain_ngrids>=1024 ){
 			const auto& vb_map = htri->vtxbufmap;
 			const auto& itv = vb_map.find( terrain_ngrids );
 
-			if( (itv!=vb_map.end() ) )
-			{
-				//auto indexbuffer = iti->second;
+			if( (itv!=vb_map.end() ) ){
 				auto vbsptr = itv->second;
 				auto& vertexbuffers = *vbsptr;
 
 				///////////////////////////////////////////////////////////////////
 				// render
 				///////////////////////////////////////////////////////////////////
-
-				//auto tex2 = htrc.GetColorTexture2();
 
 				lev2::Texture* ColorTex = nullptr;
 				if( sphmap && sphmap->GetTexture() )
@@ -347,9 +454,8 @@ void FastRender(	const lev2::RenderContextInstData& rcidata,
 							  ? lev2::GfxMaterial3DSolid::EMODE_TEXVERTEX_COLOR
 							  : lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR;
 
-				htri->mTerrainMtl->SetColorMode( bpick ?
-                                                 lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR
-                                                 : std_mode );
+				htri->mTerrainMtl->SetColorMode( bpick ? lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR
+                                               : std_mode );
 
 				htri->mTerrainMtl->SetTexture( ColorTex );
 
@@ -358,26 +464,20 @@ void FastRender(	const lev2::RenderContextInstData& rcidata,
 
 				CColor4 color = CColor4::White();
 
-                if( bpick ){
-                    auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
-                    color = pickbuf->AssignPickId((Object*)&pent->GetEntData());
-                }
-                else if( false ) { //is_sel ){
-                	color = CColor4::Red();
-                }
+        if( bpick ){
+            auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
+            color = pickbuf->AssignPickId((Object*)&pent->GetEntData());
+        }
+        else if( false ) { //is_sel ){
+        	color = CColor4::Red();
+        }
 
-				ptarg->PushModColor( color );
-
-				{
+				ptarg->PushModColor( color ); {
 					int inumvb = vertexbuffers.size();
-
 					int inumpasses = htri->mTerrainMtl->BeginBlock(ptarg,rcidata);
 					bool bDRAW = htri->mTerrainMtl->BeginPass( ptarg,0 );
-					if( bDRAW )
-					{
-						printf( "inumvb<%d>\n", inumvb );
-						for( int ivb=0; ivb<inumvb; ivb++ )
-						{
+					if( bDRAW ){
+						for( int ivb=0; ivb<inumvb; ivb++ ){
 							auto vertex_buf = vertexbuffers[ivb];
 							ptarg->GBI()->DrawPrimitiveEML( *vertex_buf, lev2::EPRIM_TRIANGLESTRIP );
 						}
