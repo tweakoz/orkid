@@ -29,6 +29,7 @@
 #include<ork/math/PIDController.h>
 
 #include <ork/kernel/opq.h>
+#include <pkg/ent/scene.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -88,8 +89,6 @@ BulletObjectControllerData::~BulletObjectControllerData()
 
 void BulletObjectControllerData::Describe()
 {
-	ork::ent::RegisterFamily<BulletObjectControllerData>(ork::AddPooledLiteral("bullet"));
-
 	//	reflect::RegisterProperty( "Model", & BulletObjectControllerData::GetModelAccessor, & BulletObjectControllerData::SetModelAccessor );
 	reflect::RegisterFloatMinMaxProp( &BulletObjectControllerData::mfRestitution, "Restitution", "0.0", "1.0" );
 	reflect::RegisterFloatMinMaxProp( &BulletObjectControllerData::mfFriction, "Friction", "0.0", "1.0" );
@@ -176,25 +175,16 @@ void BulletObjectControllerInst::DoStop(SceneInst* psi)
 	if( mBOCD._disablePhysics )
 		return;
 
-	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
-	if( bullet_world )
-	{
-		if(auto wController
-				= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true))
-		{
-			const BulletWorldControllerData& world_data = wController->GetWorldData();
+	if( auto bulletsys = psi->findSystem<BulletSystem>() ){
+			const BulletWorldControllerData& world_data = bulletsys->GetWorldData();
 			btVector3 grav = !world_data.GetGravity();
-
-			if(btDynamicsWorld *world = wController->GetDynamicsWorld())
-			{
-				if( mRigidBody )
-				{
+			if(btDynamicsWorld *world = bulletsys->GetDynamicsWorld()){
+				if( mRigidBody ){
 					world->removeRigidBody(mRigidBody);
 					delete mRigidBody;
 					mRigidBody = nullptr;
 				}
 			}
-		}
 	}
 }
 bool BulletObjectControllerInst::DoLink(SceneInst* psi)
@@ -204,40 +194,32 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 
 	auto this_ent = GetEntity();
 
-	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
-	if( bullet_world )
-	{
-		if(auto wController
-				= bullet_world->GetTypedComponent<BulletWorldControllerInst>(true))
-		{
-			const BulletWorldControllerData& world_data = wController->GetWorldData();
+	if( auto bulletsys = psi->findSystem<BulletSystem>() ){
+			const BulletWorldControllerData& world_data = bulletsys->GetWorldData();
 			btVector3 grav = !world_data.GetGravity();
 
-			if(btDynamicsWorld *world = wController->GetDynamicsWorld())
-			{
+			if(btDynamicsWorld *world = bulletsys->GetDynamicsWorld()){
 				const BulletShapeBaseData* shapedata = mBOCD.GetShapeData();
 
 				//printf( "SHAPEDATA<%p>\n", shapedata );
-				if( shapedata )
-				{
+				if( shapedata ){
 					ShapeCreateData shape_create_data;
 					shape_create_data.mEntity = GetEntity();
-					shape_create_data.mWorld = wController;
+					shape_create_data.mWorld = bulletsys;
 					shape_create_data.mObject = this;
 
 					mShapeInst = shapedata->CreateShape(shape_create_data);
 
 					btCollisionShape* pshape = mShapeInst->mCollisionShape;
 
-					if( pshape )
-					{
+					if( pshape ){
 						////////////////////////////////
 						const DagNode& dnode = shape_create_data.mEntity->GetEntData().GetDagNode();
 						const TransformNode& t3d = dnode.GetTransformNode();
 						CMatrix4 mtx = t3d.GetTransform().GetMatrix();
 						////////////////////////////////
 						btTransform btTrans = ! mtx;
-						mRigidBody = wController->AddLocalRigidBody(shape_create_data.mEntity,mBOCD.GetMass(),btTrans,pshape);
+						mRigidBody = bulletsys->AddLocalRigidBody(shape_create_data.mEntity,mBOCD.GetMass(),btTrans,pshape);
 						mRigidBody->setGravity(grav);
 						bool ballowsleep = mBOCD.GetAllowSleeping();
                         if(mBOCD.GetKinematic())
@@ -256,12 +238,10 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 				for( orkmap<PoolString,BulletObjectForceControllerInst*>::const_iterator
 						it=mForceControllerInstMap.begin();
 						it!=mForceControllerInstMap.end();
-						it++ )
-				{
+						it++ ){
 					BulletObjectForceControllerInst* forcecontroller = it->second;
 					//printf( "forcecontroller<%p>\n", forcecontroller );
-					if( forcecontroller )
-					{
+					if( forcecontroller ){
 						forcecontroller->DoLink(psi);
 					}
 				}
@@ -269,8 +249,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 
 
 			}
-		}
-	}
+	} // if( auto bulletsys = psi->findSystem<BulletSystem>() ){
 	return true;
 }
 

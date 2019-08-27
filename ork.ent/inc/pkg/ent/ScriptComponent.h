@@ -19,7 +19,7 @@ using namespace LuaIntf;
 
 
 namespace ork { namespace ent {
-    
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ScriptComponentData : public ent::ComponentData
@@ -96,13 +96,14 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptManagerComponentInst : public ork::ent::System
-{
-	RttiDeclareAbstract(ScriptManagerComponentInst, ork::ent::ComponentInst);
+class ScriptSystem : public ork::ent::System {
 
 public:
 
-	ScriptManagerComponentInst( const ScriptManagerComponentData &data, ork::ent::SceneInst *pinst );
+  static constexpr systemkey_t SystemType = "ScriptSystem";
+	systemkey_t systemTypeDynamic() final { return SystemType; }
+
+	ScriptSystem( const ScriptManagerComponentData &data, ork::ent::SceneInst *pinst );
 
 	anyp GetLuaManager() { return mLuaManager; }
 
@@ -110,7 +111,7 @@ public:
 
 private:
 
-    ~ScriptManagerComponentInst() final;
+  ~ScriptSystem() final;
 
 	bool DoLink(SceneInst *psi) final;
 	void DoUnLink(SceneInst *psi) final;
@@ -142,7 +143,7 @@ private:
 
 	ork::PoolString mName;
 };
-    
+
 class StartScript : public ork::EntityEvent
 {
 	DECLARE_TRANSPARENT_CASTABLE(StartScript, ork::EntityEvent)
@@ -161,4 +162,3 @@ private:
 };*/
 
 }} // namespace ork/ent
-

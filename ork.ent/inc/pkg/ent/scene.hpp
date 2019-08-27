@@ -5,8 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_GFX_SCENE_HPP_
-#define _ORK_GFX_SCENE_HPP_
+#pragma once
 
 #include <ork/application/application.h>
 #include <ork/kernel/orklut.hpp>
@@ -110,13 +109,17 @@ T *SceneInst::FindTypedEntityComponent(const PoolString &entname) const {
   printf("FINDENT<%s:%p> comp<%p>\n", entname.c_str(), pent, pret);
   return pret;
 }
-template <typename T> T *SceneInst::FindSystem() const {
-  const ork::object::ObjectClass *pclass = T::GetClassStatic();
-  SystemLut::const_iterator it = _systems.find(pclass);
-  return (it == _systems.end()) ? 0 : rtti::autocast(it->second);
+
+///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> T *SceneInst::findSystem() const {
+  systemkey_t pclass = T::SystemType;
+  auto it = _systems.find(pclass);
+  return (it == _systems.end()) ? nullptr : dynamic_cast<T*>(it->second);
 }
 
-///////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 T *SceneInst::FindTypedEntityComponent(const char *entname) const {
   return FindTypedEntityComponent<T>(AddPooledString(entname));
@@ -126,5 +129,3 @@ T *SceneInst::FindTypedEntityComponent(const char *entname) const {
 
 } // namespace ent
 } // namespace ork
-
-#endif // !_ORK_GFX_SCENE_H_

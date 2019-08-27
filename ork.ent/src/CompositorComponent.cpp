@@ -79,31 +79,25 @@ CompositingSystemData::CompositingSystemData()
 
 ork::ent::System* CompositingSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
-	return new CompositingManagerComponentInst( *this, pinst );
+	return new CompositingSystem( *this, pinst );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingManagerComponentInst::Describe()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-CompositingManagerComponentInst::CompositingManagerComponentInst( const CompositingSystemData& data, ork::ent::SceneInst *pinst )
+CompositingSystem::CompositingSystem( const CompositingSystemData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::System( &data, pinst )
 	, mCMCD(data)
 {
 }
 
-CompositingManagerComponentInst::~CompositingManagerComponentInst()
+CompositingSystem::~CompositingSystem()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::CompositingComponentInst* CompositingManagerComponentInst::GetCompositingComponentInst( int icidx ) const
+ent::CompositingComponentInst* CompositingSystem::GetCompositingComponentInst( int icidx ) const
 {
 	ent::CompositingComponentInst* rval = 0;
 	int inumsc = mCCIs.size();
@@ -117,14 +111,14 @@ ent::CompositingComponentInst* CompositingManagerComponentInst::GetCompositingCo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingManagerComponentInst::AddCCI( CompositingComponentInst* cci )
+void CompositingSystem::AddCCI( CompositingComponentInst* cci )
 {
 	mCCIs.push_back(cci);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingManagerComponentInst::RemoveCCI( CompositingComponentInst* cci )
+void CompositingSystem::RemoveCCI( CompositingComponentInst* cci )
 {
     mCCIs.erase(std::remove_if(mCCIs.begin(),
                                mCCIs.end(),
@@ -169,7 +163,7 @@ const CompositingSceneItem* CompositingComponentInst::GetCompositingItem(int isc
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CompositingManagerComponentInst::IsEnabled() const
+bool CompositingSystem::IsEnabled() const
 {	bool brval = false;
 	CompositingComponentInst* pCCI = GetCompositingComponentInst(0);
 	if( pCCI )
@@ -178,7 +172,7 @@ bool CompositingManagerComponentInst::IsEnabled() const
 	}
 	return brval;
 }
-EOutputTimeStep CompositingManagerComponentInst::GetCurrentFrameRateEnum() const
+EOutputTimeStep CompositingSystem::GetCurrentFrameRateEnum() const
 {
 	EOutputTimeStep time_step = EOutputTimeStep_RealTime;
 	auto cci = IsEnabled() ? GetCompositingComponentInst(0) : nullptr;
@@ -188,7 +182,7 @@ EOutputTimeStep CompositingManagerComponentInst::GetCurrentFrameRateEnum() const
 	}
 	return time_step;
 }
-float CompositingManagerComponentInst::GetCurrentFrameRate() const
+float CompositingSystem::GetCurrentFrameRate() const
 {
 	EOutputTimeStep time_step = GetCurrentFrameRateEnum();
 	float framerate = 0.0f;
@@ -231,13 +225,13 @@ float CompositingManagerComponentInst::GetCurrentFrameRate() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingManagerComponentInst::Draw( CMCIdrawdata& drawdata )
+void CompositingSystem::Draw( CMCIdrawdata& drawdata )
 {
 	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
 	lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
 	lev2::GfxTarget* pTARG = framedata.GetTarget();
 	orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
-	ent::CompositingManagerComponentInst* pCMCI = this;
+	ent::CompositingSystem* pCMCI = this;
 
 	SRect tgtrect = SRect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 
@@ -276,7 +270,7 @@ void CompositingManagerComponentInst::Draw( CMCIdrawdata& drawdata )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingManagerComponentInst::ComposeToScreen( lev2::GfxTarget* pT )
+void CompositingSystem::ComposeToScreen( lev2::GfxTarget* pT )
 {
 	CompositingContext& cctx = mCMCD.GetCompositingContext();
 	CompositingComponentInst* pCCI = GetCompositingComponentInst(0);
@@ -300,8 +294,6 @@ void CompositingManagerComponentInst::ComposeToScreen( lev2::GfxTarget* pT )
 void CompositingComponentData::Describe()
 {
 	using namespace ork::reflect;
-
-	ork::ent::RegisterFamily<CompositingComponentData>(ork::AddPooledLiteral("control"));
 
 	RegisterProperty("Enable", &CompositingComponentData::mbEnable );
 	RegisterProperty("OutputFrames", &CompositingComponentData::mbOutputFrames );
@@ -408,7 +400,7 @@ const CompositingGroup* CompositingComponentInst::GetGroup(const PoolString& grp
 
 bool CompositingComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
-	mpCMCI = psi->FindSystem<CompositingManagerComponentInst>();
+	mpCMCI = psi->findSystem<CompositingSystem>();
 
 	if(mpCMCI)
 		mpCMCI->AddCCI(this);

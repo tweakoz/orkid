@@ -31,7 +31,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::PerfProgramTarget, "PerfProgramTarget" )
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::PerfControlEvent, "PerfControlEvent" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::PerfSnapShotEvent, "PerfSnapShotEvent" );
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { 
+namespace ork {
 namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 extern SceneInst* GetEditorSceneInst();
@@ -81,8 +81,6 @@ void PerfProgramData::Clear()
 ///////////////////////////////////////////////////////////////////////////////
 void PerfControllerComponentData::Describe()
 {
-	ork::ent::RegisterFamily<PerfControllerComponentData>(ork::AddPooledLiteral("control"));
-
 	ork::reflect::RegisterProperty( "CurrentProgram", & PerfControllerComponentData::mCurrentProgram );
 	ork::reflect::RegisterProperty( "AutoTargets", & PerfControllerComponentData::mAutoTargets );
 
@@ -191,7 +189,7 @@ void PerfControllerComponentData::AdvanceProgram()
 	{
 		mCurrentProgram = it->first;
 	}
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PerfControllerComponentData::WriteProgram()
@@ -200,17 +198,17 @@ void PerfControllerComponentData::WriteProgram()
 
 	if( 0 == mAutoTargets.c_str() )
 		return;
-		
+
 	orklut<PoolString,ork::Object*>::iterator itPRG=mPrograms.find(mCurrentProgram);
 	if( itPRG==mPrograms.end() )
 		return;
 	if( 0 == itPRG->second )
 		return;
-		
-	PerfProgramData* program = new PerfProgramData; 
+
+	PerfProgramData* program = new PerfProgramData;
 	//rtti::autocast(it->second);
 	//program->Clear();
-	
+
 	////////////////////////////////////////////////////////
 
 	orkvector<std::string> AutoTargets;
@@ -218,25 +216,25 @@ void PerfControllerComponentData::WriteProgram()
 	ork::SplitString( mAutoTargets.c_str(), AutoTargets, " " );
 
 	int inumtargets = int(AutoTargets.size());
-	
+
 #if defined(ORK_OSXX)
 	for( int it=0; it<inumtargets; it++ )
 	{
 		PerfSnapShotEvent psse;
 		psse.SetProgram( program );
-		
+
 		const std::string& EntityName = AutoTargets[it];
 
 		PoolString psobjname = AddPooledString( EntityName.c_str() );
-		
+
 		ent::SceneInst* psi = GetEditorSceneInst();
-		
+
 		printf( "SCENEINST<%p> EntityName<%s>\n", psi, EntityName.c_str() );
-		
+
 		if( psi )
 		{
 			ent::Entity* pent = psi->FindEntity( psobjname );
-			
+
 			if( pent )
 			{
 				psse.PushNode( EntityName.c_str() );
@@ -250,7 +248,7 @@ void PerfControllerComponentData::WriteProgram()
 	SceneTopoChanged();
 #endif
 	////////////////////////////////////////////////////////
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void PerfControllerComponentData::AddProgram( PoolString name, PerfProgramData* program )
@@ -259,7 +257,7 @@ void PerfControllerComponentData::AddProgram( PoolString name, PerfProgramData* 
 
 	if( 0 == mAutoTargets.c_str() )
 		return;
-		
+
 	////////////////////////////////////////////////////////
 
 	orkvector<std::string> AutoTargets;
@@ -268,25 +266,25 @@ void PerfControllerComponentData::AddProgram( PoolString name, PerfProgramData* 
 	ork::SplitString( mAutoTargets.c_str(), AutoTargets, " " );
 
 	int inumtargets = int(AutoTargets.size());
-	
+
 #if defined(ORK_OSXX)
 	for( int it=0; it<inumtargets; it++ )
 	{
 		PerfSnapShotEvent psse;
 		psse.SetProgram( program );
-		
+
 		const std::string& EntityName = AutoTargets[it];
 
 		PoolString psobjname = AddPooledString( EntityName.c_str() );
-		
+
 		ent::SceneInst* psi = GetEditorSceneInst();
-		
+
 		printf( "SCENEINST<%p> EntityName<%s>\n", psi, EntityName.c_str() );
-		
+
 		if( psi )
 		{
 			ent::Entity* pent = psi->FindEntity( psobjname );
-			
+
 			if( pent )
 			{
 				psse.PushNode( EntityName.c_str() );
@@ -298,7 +296,7 @@ void PerfControllerComponentData::AddProgram( PoolString name, PerfProgramData* 
 	SceneTopoChanged();
 #endif
 	////////////////////////////////////////////////////////
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 PerfControllerComponentData::PerfControllerComponentData()
@@ -343,21 +341,21 @@ PerfControllerComponentInst::~PerfControllerComponentInst()
 void PerfControllerComponentInst::ChangeProgram( ent::SceneInst* psi, const PoolString& progname )
 {
 	// apply all data change entries to thier cooresponding entity components
-	
+
 	const orklut<PoolString,ork::Object*>& progs = mPCCD.GetPrograms();
 	orklut<PoolString,ork::Object*>::const_iterator it=progs.find(mPCCD.GetCurrentProgram());
 	if( it!=progs.end() )
 	{
 		if( it->second )
-		{	
+		{
 			PerfProgramData* ppd = rtti::autocast(it->second);
 
 			if( ppd )
 			{
 				const orklut<PoolString,ork::Object*>& tgts = ppd->GetTargets();
-				
+
 				mCurrentProgram = mPCCD.GetCurrentProgram();
-				
+
 				for( orklut<PoolString,ork::Object*>::const_iterator it_tgt=tgts.begin(); it_tgt!=tgts.end(); it_tgt++ )
 				{
 					if( it_tgt->second )
@@ -366,7 +364,7 @@ void PerfControllerComponentInst::ChangeProgram( ent::SceneInst* psi, const Pool
 						PerfControlEvent pce;
 						std::string tgtname = ptgt->GetTargetName().c_str();
 						std::string tgtval = ptgt->GetValue().c_str();
-													
+
 						pce.mTarget.set( tgtname.c_str() );
 						pce.mValue.set( tgtval.c_str() );
 
@@ -375,7 +373,7 @@ void PerfControllerComponentInst::ChangeProgram( ent::SceneInst* psi, const Pool
 
 						PoolString psobjname = AddPooledString( EntityName.c_str() );
 						ent::Entity* pent = psi->FindEntity( psobjname );
-						
+
 						printf( "ApplyProgramTarget<%s> Entity<%s> Key<%s> Val<%s>\n", tgtname.c_str(), EntityName.c_str(), KeyName.c_str(), tgtval.c_str() );
 
 						if( pent )
@@ -386,7 +384,7 @@ void PerfControllerComponentInst::ChangeProgram( ent::SceneInst* psi, const Pool
 				}
 
 			}
-		}	
+		}
 	}
 	mCurrentProgram = progname;
 }
@@ -397,7 +395,7 @@ void PerfControllerComponentInst::DoUpdate(ent::SceneInst* psi)
 	{
 		ChangeProgram( psi, mPCCD.GetCurrentProgram() );
 	}
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool PerfControllerComponentInst::DoLink( ork::ent::SceneInst* psi )
@@ -442,7 +440,7 @@ PerfSnapShotEvent::PerfSnapShotEvent()
 PerfSnapShotEvent::str_type PerfSnapShotEvent::GenNodeName() const
 {
 	str_type rval;
-	
+
 	for( size_t in=0; in<mNodeStack.size(); in++ )
 	{
 		const str_type& node = mNodeStack[in];
@@ -450,7 +448,7 @@ PerfSnapShotEvent::str_type PerfSnapShotEvent::GenNodeName() const
 		if( in<(mNodeStack.size()-1) )
 			rval += ".";
 	}
-	
+
 	return rval;
 }
 void PerfSnapShotEvent::AddTarget( const char* tgtval ) const
@@ -467,7 +465,7 @@ void PerfSnapShotEvent::PushNode( str_type str ) const
 ///////////////////////////////////////////////////////////////////////////////
 void PerfSnapShotEvent::PopNode() const
 {
-	mNodeStack.pop_back(); 
+	mNodeStack.pop_back();
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -504,7 +502,7 @@ PerfProgramTarget::PerfProgramTarget(const char* tname, const char* tval)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { 
+namespace ork {
 namespace tool {
 #if defined(ORK_OSXX)
 dispatch_queue_t EditSafeQueue();
@@ -623,4 +621,3 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::tool::perfctrladv,"perfctrladv");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::perfctrlwri,"perfctrlwri");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::perfctrlwrimorph,"perfctrlwrimorph");
 #endif
-

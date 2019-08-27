@@ -394,12 +394,12 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &) {
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneData::addSystem(SystemData *pcomp) {
+void SceneData::addSystemData(SystemData *pcomp) {
   OrkAssert(_systemDatas.find(pcomp->GetClass()) == _systemDatas.end());
   _systemDatas.AddSorted(pcomp->GetClass(), pcomp);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneData::clearSystems() { _systemDatas.clear(); }
+void SceneData::clearSystemDatas() { _systemDatas.clear(); }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::SceneComposer(SceneData *psd)
     : _components(ork::EKEYPOLICY_LUT), mpSceneData(psd) {
@@ -410,7 +410,7 @@ SceneComposer::SceneComposer(SceneData *psd)
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::~SceneComposer() {
-  mpSceneData->clearSystems();
+  mpSceneData->clearSystemDatas();
   for (orklut<const ork::object::ObjectClass *, SystemData *>::const_iterator
            it = _components.begin();
        it != _components.end(); it++) {
@@ -420,7 +420,7 @@ SceneComposer::~SceneComposer() {
       OrkAssert(pclass->IsSubclassOf(SystemData::GetClassStatic()));
       psc = ork::rtti::autocast(pclass->CreateObject());
     }
-    mpSceneData->addSystem(psc);
+    mpSceneData->addSystemData(psc);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

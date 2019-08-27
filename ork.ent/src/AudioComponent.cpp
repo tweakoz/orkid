@@ -512,8 +512,6 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 void AudioEffectComponentData::Describe()
 {
-	ork::ent::RegisterFamily<AudioEffectComponentData>(ork::AddPooledLiteral("audio"));
-
 	ork::reflect::RegisterProperty("MutexGroups", & AudioEffectComponentData::mMutexGroups);
 	ork::reflect::RegisterMapProperty("SoundMap", &AudioEffectComponentData::mSoundMap);
 	ork::reflect::RegisterMapProperty("BankMap", & AudioEffectComponentData::mBankMap);
@@ -578,7 +576,7 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	, mAmci( 0 )
 	, mDflowRecv( 0 )
 {
-	mAmci = pent->GetSceneInst()->FindSystem<AudioSystem>();
+	mAmci = pent->GetSceneInst()->findSystem<AudioSystem>();
 	///////////////////////////////////////////////////////////
 
 	const ork::orklut<ork::PoolString,ork::lev2::AudioBank*>& bmap = mData.GetBankMap();

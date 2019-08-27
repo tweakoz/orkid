@@ -35,7 +35,6 @@ bool DataflowRecieverComponentData::DoNotify(const event::Event *event)
 
 void DataflowRecieverComponentData::Describe()
 {
-	ork::ent::RegisterFamily<DataflowRecieverComponentData>(ork::AddPooledLiteral("animate"));
 	ork::reflect::RegisterMapProperty("FloatRecievers", & DataflowRecieverComponentData::mFloatValues );
 	ork::reflect::RegisterMapProperty("Vect3Recievers", & DataflowRecieverComponentData::mVect3Values );
 }
@@ -44,7 +43,7 @@ void DataflowRecieverComponentData::Describe()
 
 DataflowRecieverComponentData::DataflowRecieverComponentData()
 {
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -72,7 +71,7 @@ DataflowRecieverComponentInst::DataflowRecieverComponentInst(const DataflowRecie
 	orklut<PoolString,ork::dataflow::dyn_external::FloatBinding>& float_bindings = mExternal.GetFloatBindings();
 	float_bindings.clear();
 	mMutableFloatValues = invals_float;
-	for( orklut<PoolString,float>::const_iterator 
+	for( orklut<PoolString,float>::const_iterator
 			it=invals_float.begin();
 			it!=invals_float.end();
 			it++ )
@@ -89,7 +88,7 @@ DataflowRecieverComponentInst::DataflowRecieverComponentInst(const DataflowRecie
 	vect3_bindings.clear();
 	mMutableVect3Values = invals_vect3;
 
-	for( orklut<PoolString,CVector3>::const_iterator 
+	for( orklut<PoolString,CVector3>::const_iterator
 			it=invals_vect3.begin();
 			it!=invals_vect3.end();
 			it++ )
@@ -137,10 +136,10 @@ bool DataflowRecieverComponentInst::DoNotify(const event::Event *event)
 	{
 //		const FixedString<256>& tgt = pce->mTarget;
 //		const FixedString<32>& val = pce->mValue;
-		
+
 		printf( "DataflowRecieverComponentInst<%p> PerfControlEvent<%p> key<%s>\n", this, pce, pce->mTarget.c_str() );
 		PoolString k = AddPooledString(pce->mTarget.c_str());
-		
+
 			//orklut<PoolString,float>				mMutableFloatValues;
 		orklut<PoolString,float>& invals_float = const_cast< DataflowRecieverComponentData& >(mData).GetFloatValues();
 		//orklut<PoolString,float>::iterator it=mMutableFloatValues.find(k);

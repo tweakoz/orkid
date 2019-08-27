@@ -424,12 +424,15 @@ struct CMCIdrawdata
 
 ///////////////////////////////////////////////////////////////////////////
 
-class CompositingManagerComponentInst : public ork::ent::System
+class CompositingSystem : public ork::ent::System
 {
-	RttiDeclareAbstract(CompositingManagerComponentInst, ork::ent::ComponentInst);
 public:
-	CompositingManagerComponentInst( const CompositingSystemData &data, ork::ent::SceneInst *pinst );
-    ~CompositingManagerComponentInst();
+
+	static constexpr systemkey_t SystemType = "CompositingSystem";
+	systemkey_t systemTypeDynamic() final { return SystemType; }
+
+	CompositingSystem( const CompositingSystemData &data, ork::ent::SceneInst *pinst );
+    ~CompositingSystem();
 
 	CompositingComponentInst* GetCompositingComponentInst( int icidx ) const;
 
@@ -626,7 +629,7 @@ private:
 	float	mfTimeAccum;
 	float	mfLastTime;
 
-	CompositingManagerComponentInst*	mpCMCI;
+	CompositingSystem*	mpCMCI;
 	CompositingMorphable				mMorphable;
 
 	int miActiveSceneItem;

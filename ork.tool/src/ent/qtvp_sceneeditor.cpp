@@ -41,6 +41,7 @@
 #include <ork/kernel/future.hpp>
 
 #include <pkg/ent/Lighting.h>
+#include <pkg/ent/scene.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -467,7 +468,7 @@ void SceneEditorVP::FrameRenderer::Render()
 
 ///////////////////////////////////////////////////////////////////////////
 
-ent::CompositingManagerComponentInst* SceneEditorVP::GetCMCI()
+ent::CompositingSystem* SceneEditorVP::GetCMCI()
 {	auto psi = mEditor.GetActiveSceneInst();
 	return (psi!=nullptr) ? psi->GetCMCI() : nullptr;
 }
@@ -616,7 +617,7 @@ void SceneEditorVP::QueueSceneInstToDb(ent::DrawableBuffer*pDB) // Queue SceneDr
 ent::CompositingComponentInst* SceneEditorVP::GetCompositingComponentInst( int icidx )
 {
 	ent::CompositingComponentInst* rval = 0;
-	ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
+	ent::CompositingSystem* pCMCI = GetCMCI();
 	if( pCMCI )
 		rval = pCMCI->GetCompositingComponentInst(icidx);
 	return rval;
@@ -626,7 +627,7 @@ ent::CompositingComponentInst* SceneEditorVP::GetCompositingComponentInst( int i
 
 const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp)
 {
-	ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
+	ent::CompositingSystem* pCMCI = GetCMCI();
 	const ent::CompositingComponentInst* pCCI = GetCompositingComponentInst(igrp);
 	const CompositingGroup* pCG = 0;
 	if( pCCI ){
@@ -683,7 +684,7 @@ GL_ERRORCHECK();
 
 	CompositingPassData NODE = cstack->top();
 
-	ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
+	ent::CompositingSystem* pCMCI = GetCMCI();
 
 	///////////////////////////////////////////////////////////////////////////
 	// camera setup
@@ -1183,7 +1184,7 @@ void SceneEditorVP::SetupLighting( lev2::HeadLightManager& hlmgr, lev2::RenderCo
 	///////////////////////////////////////////////////////////
 	if( mEditor.mpScene ){
 		if( mEditor.GetActiveSceneInst() ){
-			if( auto lmi = mEditor.GetActiveSceneInst()->FindSystem<ent::LightingManagerComponentInst>() ){
+			if( auto lmi = mEditor.GetActiveSceneInst()->findSystem<ent::LightingSystem>() ){
 				ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
 				const CCameraData* cdata = FrameData.GetCameraData();
 				lightmanager.EnumerateInFrustum( cdata->GetFrustum() );

@@ -33,10 +33,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingGroupEffect, "CompositingGroup
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingTechnique, "CompositingTechnique");
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSystemData, "CompositingManager");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingManagerComponentInst, "CompositingManagerInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositorArchetype, "CompositorArchetype");
-
-template  ork::ent::CompositingManagerComponentInst* ork::ent::SceneInst::FindSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {

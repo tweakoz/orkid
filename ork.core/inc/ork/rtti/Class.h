@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -48,7 +48,7 @@ public:
     static Class *FindClassNoCase(const ConstString &name);
 
 	static ConstString DesignNameStatic();
-	static Category *GetClassStatic();
+	static Category* category();
 	/*virtual*/ Class *GetClass() const;
 
 	template<typename ClassType>
@@ -71,7 +71,7 @@ private:
     Class *mChildClass;
     Class *mNextSiblingClass;
     Class *mPrevSiblingClass;
-    
+
 	PoolString mClassName;
 	rtti::ICastable *(*mFactory)();
 	Class *mNextClass;

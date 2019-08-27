@@ -42,7 +42,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::wiidom::ShipControllerData, "Tweakout/ShipCon
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::ent;
 
-namespace ork { 
+namespace ork {
 namespace ent { void RigidBody_Draw( lev2::GfxTarget* targ, const CMatrix4& matw, const RigidBody& rbody, bool bdebug ); }
 namespace wiidom {
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,17 +59,14 @@ bool ShipControllerInst::DoLink(ent::SceneInst* psi)
 	this->SetWCI( psi->FindTypedEntityComponent<WorldControllerInst>("/ent/world") );
 
 	auto this_ent = GetEntity();
-	
-	auto bullet_world = psi->FindEntity(ork::AddPooledLiteral("bullet_world"));
-	if( bullet_world )
-	{
-		if(auto wController
-				= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true))
-		{
-			const auto& world_data = wController->GetWorldData();
+
+
+	if( auto bulletsys = psi->findSystem<ork::ent::BulletSystem>() ){
+
+			const auto& world_data = bulletsys->GetWorldData();
 			btVector3 grav = !world_data.GetGravity();
 
-			if(btDynamicsWorld *world = wController->GetDynamicsWorld())
+			if(btDynamicsWorld *world = bulletsys->GetDynamicsWorld())
 			{
 				const float pmass = 20000.0f;
 				const float prad = 3.0f;
@@ -93,7 +90,7 @@ bool ShipControllerInst::DoLink(ent::SceneInst* psi)
 				sphere_poss[7] = btVector3( 0.0f, cele, -frad*1.41f );
 				sphere_poss[8] = btVector3( 0.0f, -0.3f, 0.0f );
 				sphere_poss[9] = btVector3( 0.0f, 9.0f, 0.0f );
-				
+
 				#if 0
 				p0.mMass = pmass;	p1.mMass = pmass;	p2.mMass = pmass;	p3.mMass = pmass;
 				p4.mMass = pmass;	p5.mMass = pmass;	p6.mMass = pmass;	p7.mMass = pmass;
@@ -127,7 +124,7 @@ bool ShipControllerInst::DoLink(ent::SceneInst* psi)
 				auto ship_shape = new btCylinderShape (btVector3(frad,prad,frad));
 				float total_mass = pmass*float(knumspheres);
 
-				mRigidBody = wController->AddLocalRigidBody(this_ent,10.0f,!mtx,ship_shape);
+				mRigidBody = bulletsys->AddLocalRigidBody(this_ent,10.0f,!mtx,ship_shape);
 				mRigidBody->setGravity(grav);
 				mRigidBody->setActivationState(WANTS_DEACTIVATION);
 				mRigidBody->activate();
@@ -136,7 +133,6 @@ bool ShipControllerInst::DoLink(ent::SceneInst* psi)
 				mRigidBody->setFriction(0.5f);
 				mRigidBody->setDamping( 0.5f,0.5f );
 
-			}
 		}
 	}
 
@@ -152,7 +148,7 @@ ShipControllerInst::ShipControllerInst( const ShipControllerData& pcd, ent::Enti
 	, mThisTarget(*this)
 	, mRigidBody(nullptr)
 {
-	
+
 	//////////////////////////////////////////////////////////////
 	// init the entities drawable to this callback
 	//////////////////////////////////////////////////////////////
@@ -166,7 +162,7 @@ ShipControllerInst::ShipControllerInst( const ShipControllerData& pcd, ent::Enti
 			auto user_data0 = pren->GetUserData0();
 			const Entity* pent = user_data0.Get<const Entity*>();
 			const ShipControllerInst* sci = pent->GetTypedComponent<ShipControllerInst>();
-			
+
 			if( 0 == sci )
 			{
 				sci = pent->GetTypedComponent<ShipControllerInst>();
@@ -233,13 +229,13 @@ bool ShipControllerInst::Collision(float fddt)
 		mRigidBody.mPoints[ip].mImpulse = CVector3( 0.0f,0.0f,0.0f);
 		mRigidBody.mPoints[ip].msimp = 0.0f;
 
-		if( mWCI->CollisionCheck( wp, NextPos, CollisionPoint, GroundCollideNormal, fat ) ) 
+		if( mWCI->CollisionCheck( wp, NextPos, CollisionPoint, GroundCollideNormal, fat ) )
 		/////////////////////////////////
 		{	// collision response
 			//////////////////////////////////////////
 			// calulate impulse
 			//////////////////////////////////////////
-			float impulse = ent::RigidBody::SingleBodyImpulse( 
+			float impulse = ent::RigidBody::SingleBodyImpulse(
 					GroundCollideNormal,
 					CollisionPoint,
 					mRigidBody,
@@ -277,8 +273,8 @@ bool ShipControllerInst::DoUpdate_Flip( const ork::lev2::InputState& inpstate, f
 
 	ork::CQuaternion ident = ork::CQuaternion();
 	if( inpstate.IsDown( lev2::ETRIG_RAW_JOY0_RDIG_UP ) )
-	{	
-#if 0		
+	{
+#if 0
 		mRigidBody.mOrientation = ork::CQuaternion::Lerp( mRigidBody.mOrientation, ident, fdt*2.0f );
 		mRigidBody.mPosition += ork::CVector3(0.0f,fdt*3.0f,0.0f);
 		mRigidBody.mVelocity = 0.0f;
@@ -297,7 +293,7 @@ bool ShipControllerInst::DoUpdate_Flip( const ork::lev2::InputState& inpstate, f
 ///////////////////////////////////////////////////////////////////////////////
 
 void ShipControllerInst::DoUpdate(SceneInst* sinst)
-{	
+{
 	float fddt = sinst->GetDeltaTime();
 
 	DagNode* shipdn = & GetEntity()->GetDagNode();
@@ -343,11 +339,11 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	////////////////////////////////////
 	// get input
 	////////////////////////////////////
-	
+
 	bool bspacetriggeredgedown = inpstate.IsDownEdge( ' ' );
-	bool bspacetriggeredgeup = inpstate.IsUpEdge( ' ' );	
+	bool bspacetriggeredgeup = inpstate.IsUpEdge( ' ' );
 	bool bwiiAedgedown = inpstate.IsDownEdge( lev2::ETRIG_RAW_JOY0_RDIG_DOWN );
-	bool bwiiAedgeup = inpstate.IsUpEdge( lev2::ETRIG_RAW_JOY0_RDIG_DOWN );	
+	bool bwiiAedgeup = inpstate.IsUpEdge( lev2::ETRIG_RAW_JOY0_RDIG_DOWN );
 	float fwiimotionx = inpstate.GetPressure( lev2::ETRIG_RAW_JOY0_MOTION_X );
 	float fwiimotiony = inpstate.GetPressure( lev2::ETRIG_RAW_JOY0_MOTION_Y );
 	float fwiimotionz = inpstate.GetPressure( lev2::ETRIG_RAW_JOY0_MOTION_Z );
@@ -396,17 +392,17 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	auto ship_xnorm = mtx_ent.GetXNormal();
 	auto ship_ynorm = mtx_ent.GetYNormal();
 	auto ship_znorm = mtx_ent.GetZNormal();
-	
-		//printf( "ship<%f %f %f\n", 
+
+		//printf( "ship<%f %f %f\n",
 		//	ship_center.GetX(), ship_center.GetY(), ship_center.GetZ() );
-	
+
 	//////////////////////////////////////////////////////////
-	
+
 	if( lanay>0.01f )
 	{	//mRigidBody->applyCentralForce( !(ship_ynorm*lanay*1e2) );
 		auto f = CVector3(0.0f,lanay*3e3,0.0f);
 
-		//printf( "force<%f %f %f\n", 
+		//printf( "force<%f %f %f\n",
 		//	f.GetX(), f.GetY(), f.GetZ() );
 
 		mRigidBody->applyCentralForce( ! f );
@@ -416,7 +412,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	{	//mRigidBody->applyCentralForce( !(ship_ynorm*lanay*1e2) );
 		auto f = ship_ynorm*ranay*-2.4e5;
 
-		//printf( "force<%f %f %f\n", 
+		//printf( "force<%f %f %f\n",
 		//	f.GetX(), f.GetY(), f.GetZ() );
 
 		mRigidBody->applyTorque( ! f );
@@ -439,13 +435,13 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	CVector3 stab_axis = (CVector3(0.0f,1.0f,0.0f).Cross(ship_ynorm)).Normal();
 	float stab_amt = 1.0f-(CVector3(0.0f,1.0f,0.0f).Dot(ship_ynorm));
 
-	/*printf( "stab<%f %f %f> amt<%f>\n", 
+	/*printf( "stab<%f %f %f> amt<%f>\n",
 			stab_axis.GetX(), stab_axis.GetY(), stab_axis.GetZ(), stab_amt );
 
 	if( ship_xnorm.Dot(CVector3(1.0f,0.0f,0.0f)) > 0.5f )
 		mRigidBody->applyTorque( !(stab_axis*stab_amt*-3e4) );
 	*/
-	
+
 	//////////////////////////////////////////////////////////
 
 
@@ -457,12 +453,12 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	float total_mass = point_mass*float(inump);
 	//const CMatrix4& cmat = mRigidBody.mCurrentMatrix;
 	//const CVector3 CurrentPos = cmat.GetTranslation();
-	//const CVector3 wctr = mRigidBody.ComW(); 
+	//const CVector3 wctr = mRigidBody.ComW();
 	//////////////////////
 	// accum forces
 	//////////////////////
 	//mRigidBody.BeginForces();
-	{	
+	{
 		////////////////////////////////////////////////
 		////////////////////////////////////////////////
 		////////////////////////////////////////////////
@@ -477,10 +473,10 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 			///////////////////////////////////////////////
 			// per point
 			///////////////////////////////////////////////
-			
+
 			//CVector3 ctrW = mRigidBody.PntW(kcenterpoint);
 			for( int ip=0; ip<inump; ip++ )
-			{	
+			{
 				float fphi = PI2*float(ip)/float(inump);
 				float fphi_sin = sinf(fphi);
 				float fphi_cos = cosf(fphi);
@@ -491,19 +487,19 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 				////////////////////////////////////////////////
 				// ship vertical thrusters
 				////////////////////////////////////////////////
-				
+
 				//printf( "lanay<%f>\n", lanay );
 				if( lanay>0.01f )
-				{	
+				{
 					//if( ip != kcenterpoint ) // spinner
 					{
 						CVector3 center_to_edge_dir = (point_pos-ship_center).Normal();
 						CVector3 vsp = ship_ynorm.Cross(center_to_edge_dir);
 						CVector3 tf = ship_ynorm*point_mass*5000.0f*(lanay);
-					
+
 						/*printf( "apply force<%f %f %f> pos<%f %f %f> p<%d>\n",
-								tf.GetX(), tf.GetY(), tf.GetZ(), 
-								point_pos.GetX(), point_pos.GetY(), point_pos.GetZ(), 
+								tf.GetX(), tf.GetY(), tf.GetZ(),
+								point_pos.GetX(), point_pos.GetY(), point_pos.GetZ(),
 								ip );*/
 
 						//mRigidBody->applyForce( !tf, !point_pos );
@@ -523,7 +519,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 				// ship lateral thrusters
 				////////////////////////////////////////////////
 				if( ranay>0.01f )
-				{	
+				{
 					const CMatrix4& mz = cmat;
 					CVector3 vdir, vup, vsid;
 					////////////////////////////////////////////
@@ -579,7 +575,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 					////////////////////////////////////////////
 				}
 				///////////////////////////////////////////////
-				// friction 
+				// friction
 				///////////////////////////////////////////////
 				float fric = bcol ? mPcd.GetGroundFriction() : mPcd.GetAirFriction();
 				CVector3 vel = mRigidBody.PointVelocityW(p);
@@ -671,9 +667,9 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 		for( int i=0; i<inumf; i++ )
 		{
 			FighterControllerInst* fsi = Fighters[i];
-			
+
 			const CVector3& fsipos = fsi->RigidBody().mPosition;
-			
+
 			//////////////////////////////////////////
 			// first is it in range ?
 			//////////////////////////////////////////
@@ -709,12 +705,12 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 
 					}
 
-					
+
 					if( false == bobsc )
 					{
 						CVector3 proj = MyPos + (MyDir*fsidist);
 						float distfr = (fsipos-proj).MagSquared();
-						
+
 						if( distfr < fmind )
 						{
 							fmind = distfr;
@@ -732,7 +728,7 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 			}
 		}
 
-		if( NumCandidates )			
+		if( NumCandidates )
 		{
 			int irand = rand()%NumCandidates;
 			tfsi = Candidates[irand];
@@ -844,8 +840,8 @@ ShipControllerData::ShipControllerData()
 	, mSteeringRatio(0.35f)
 	, mGravity(9.8f)
 	, mDebug( 0 )
-	, mGroundFriction(0.0013f) 
-	, mAirFriction(0.00013f) 
+	, mGroundFriction(0.0013f)
+	, mAirFriction(0.00013f)
 	, mSteeringAngle( PI2*0.7f )
 	, mfFlipForce( 1000.0f )
 {

@@ -21,7 +21,6 @@
 #include <ork/application/application.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioSystemData, "AudioSystemData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioSystem, "AudioSystem");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -65,8 +64,6 @@ AudioSystemData::AudioSystemData()
 ork::ent::System *AudioSystemData::createSystem(ork::ent::SceneInst *pinst) const{
 	return new AudioSystem( *this, pinst );
 }
-///////////////////////////////////////////////////////////////////////////////
-void AudioSystem::Describe(){}
 ///////////////////////////////////////////////////////////////////////////////
 AudioSystem::AudioSystem( const AudioSystemData& ascd, ork::ent::SceneInst* psi )
 	: System( & ascd, psi )

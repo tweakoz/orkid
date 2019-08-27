@@ -53,8 +53,6 @@ static ork::PoolString sAsteriskString;
 
 void SimpleAnimatableData::Describe()
 {
-	ork::ent::RegisterFamily<SimpleAnimatableData>(ork::AddPooledLiteral("animate"));
-
 	ork::reflect::RegisterMapProperty("AnimationMap", &SimpleAnimatableData::mAnimationMap);
 	ork::reflect::AnnotatePropertyForEditor<SimpleAnimatableData>("AnimationMap", "editor.assettype", "xganim");
 	ork::reflect::AnnotatePropertyForEditor<SimpleAnimatableData>("AnimationMap", "editor.assetclass", "xganim");
@@ -228,7 +226,7 @@ bool SimpleAnimatableInst::DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4
 bool SimpleAnimatableInst::DoLink(ork::ent::SceneInst *psi)
 {
 	auto modelcinst = GetEntity()->GetTypedComponent<ork::ent::ModelComponentInst>();
-	
+
 	if( nullptr == modelcinst) return false;
 
 	auto& mdraw = modelcinst->GetModelDrawable();
@@ -245,7 +243,7 @@ bool SimpleAnimatableInst::DoLink(ork::ent::SceneInst *psi)
 			{
 				const auto& nam = it.first;
 				const auto& expr = it.second;
-				auto& joint_set = mBodyPartMap.find(nam)->second->mCachedJoints; 
+				auto& joint_set = mBodyPartMap.find(nam)->second->mCachedJoints;
 
 				SetJointsFromExpression(joint_set, skel, &mData, expr);
 			}

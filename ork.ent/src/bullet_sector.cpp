@@ -1148,8 +1148,6 @@ void SectorRange::Describe()
 
 void TrackData::Describe()
 {
-	ork::ent::RegisterFamily<SectorTrackerData>(ork::AddPooledLiteral("control"));
-
 	ork::reflect::RegisterProperty("SecMesh", &TrackData::mSecMeshName);
 	ork::reflect::AnnotatePropertyForEditor<TrackData>("SecMesh", "editor.class", "ged.factory.filelist");
 	ork::reflect::AnnotatePropertyForEditor<TrackData>("SecMesh", "editor.filetype", "sec");
@@ -1223,39 +1221,35 @@ TrackInst::~TrackInst()
 {
 }
 
-bool TrackInst::DoLink(ork::ent::SceneInst *inst)
+bool TrackInst::DoLink(ork::ent::SceneInst* psi)
 {
-	if(ork::ent::Entity *bullet_world = inst->FindEntity(ork::AddPooledLiteral("bullet_world")))
+	auto* bulletsys = psi->findSystem<ork::ent::BulletSystem>();
+	if( 0 == bulletsys ) return false;
+
+	if(btDynamicsWorld* world = bulletsys->GetDynamicsWorld())
 	{
-		if(ork::ent::BulletWorldControllerInst *world_controller
-				= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true))
+		if(ork::ent::bullet::TrackInst* trackInst = GetEntity()->GetTypedComponent<ork::ent::bullet::TrackInst>())
 		{
-			if(btDynamicsWorld *world = world_controller->GetDynamicsWorld())
+			// Add the track data to the bullet world
+			if(trackInst->GetTrack().GetTrackShape())
 			{
-				if(ork::ent::bullet::TrackInst* trackInst = GetEntity()->GetTypedComponent<ork::ent::bullet::TrackInst>())
-				{
-					// Add the track data to the bullet world
-					if(trackInst->GetTrack().GetTrackShape())
-					{
-						btScalar mass(0.0);
-						btVector3 localInertia(0, 0, 0);
+				btScalar mass(0.0);
+				btVector3 localInertia(0, 0, 0);
 
-						btTransform btTrans = !ork::CMatrix4::Identity;
+				btTransform btTrans = !ork::CMatrix4::Identity;
 
-						btDefaultMotionState* motionState = new btDefaultMotionState(btTrans);
-						btRigidBody::btRigidBodyConstructionInfo bodyInfo(mass, motionState, trackInst->GetTrack().GetTrackShape(), localInertia);
-						btRigidBody* body = new btRigidBody(bodyInfo);
-						body->setRestitution(1.0f);
-						body->setFriction(1.0f);
-						body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
-						body->setUserPointer(GetEntity());
+				btDefaultMotionState* motionState = new btDefaultMotionState(btTrans);
+				btRigidBody::btRigidBodyConstructionInfo bodyInfo(mass, motionState, trackInst->GetTrack().GetTrackShape(), localInertia);
+				btRigidBody* body = new btRigidBody(bodyInfo);
+				body->setRestitution(1.0f);
+				body->setFriction(1.0f);
+				body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+				body->setUserPointer(GetEntity());
 
-						world->addRigidBody(body);
-					}
-				}
-				world->setGravity(btVector3(0, 0, 0));
+				world->addRigidBody(body);
 			}
 		}
+		world->setGravity(btVector3(0, 0, 0));
 	}
 	return true;
 }
@@ -1266,7 +1260,6 @@ bool TrackInst::DoLink(ork::ent::SceneInst *inst)
 
 void SectorTrackerData::Describe()
 {
-	ork::ent::RegisterFamily<SectorTrackerData>(ork::AddPooledLiteral("control"));
 }
 
 SectorTrackerData::SectorTrackerData()

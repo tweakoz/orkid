@@ -35,6 +35,7 @@
 #include <ork/lev2/input/input.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/math/basicfilters.h>
+#include <pkg/ent/scene.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -163,8 +164,8 @@ SceneInst::~SceneInst() {
 }
 ///////////////////////////////////////////////////////////////////////////
 
-CompositingManagerComponentInst *SceneInst::GetCMCI() {
-  auto cmci = FindSystem<CompositingManagerComponentInst>();
+CompositingSystem *SceneInst::GetCMCI() {
+  auto cmci = findSystem<CompositingSystem>();
   return cmci;
 }
 
@@ -590,7 +591,8 @@ void SceneInst::ComposeSystems() {
 
   for (auto it : mSceneData->getSystemDatas()) {
     const SystemData *pscd = it.second;
-    addSystem(pscd->createSystem(this));
+    auto sys = pscd->createSystem(this);
+    addSystem(sys->systemTypeDynamic(), sys);
   }
 }
 
@@ -1216,10 +1218,9 @@ void SceneInst::Update() {
   ictr++;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::addSystem(System *pcomp) {
-  OrkAssert(_systems.find(pcomp->GetClass()) == _systems.end());
-  _systems.AddSorted(pcomp->GetClass(), pcomp);
+void SceneInst::addSystem(systemkey_t key, System* system) {
+  assert(_systems.find(key) == _systems.end());
+  _systems.AddSorted(key, system);
 }
-void SceneInst::clearSystems() { _systems.clear(); }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent

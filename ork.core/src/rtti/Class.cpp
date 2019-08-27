@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -52,19 +52,10 @@ void Class::Initialize()
 
 void Class::InitializeClasses()
 {
-	//CSystem::Log(CSystem::LOG_SEVERITY_INFO, "System", "InitializeClasses");
-
-	//for(Class *clazz = sLastClass; clazz != NULL; clazz = clazz->mNextClass)
-	//{
-	//	orkprintf( "InitClass class<%08x>\n", clazz );
-	//}
-	for(Class *clazz = sLastClass; clazz != NULL; clazz = clazz->mNextClass)
-	{
-		//orkprintf( "InitClass class<%08x> next<%08x>\n", clazz, clazz->mNextClass );
+	for(Class* clazz = sLastClass; clazz != nullptr; clazz = clazz->mNextClass){
 		clazz->Initialize();
-		//orkprintf( "InitClass class<%08x><%s>\n", clazz, clazz->Name().c_str() );
+		orkprintf( "InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass );
 	}
-
 	sLastClass = NULL;
 }
 
@@ -220,12 +211,11 @@ void Class::CreateClassAlias( ConstString name , Class *pclass )
 Class *Class::sLastClass = NULL;
 Class::ClassMapType Class::mClassMap;
 
-static Category sClassClass(RTTI<Class, ICastable, NamePolicy, Category>::ClassRTTI());
+Category *Class::category() {
+	static Category s_category(RTTI<Class, ICastable, NamePolicy, Category>::ClassRTTI());
+	return &s_category;
+}
 
-
-
-
-Category *Class::GetClassStatic() { return &sClassClass; }
 Class *Class::GetClass() const { return Class::GetClassStatic(); }
 ConstString Class::DesignNameStatic() { return "Class"; }
 } }

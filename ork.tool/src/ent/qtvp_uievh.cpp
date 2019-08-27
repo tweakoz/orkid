@@ -258,7 +258,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 				}
 				case ' ':
 				{
-					ent::CompositingManagerComponentInst* pCMCI = GetCMCI();
+					ent::CompositingSystem* pCMCI = GetCMCI();
 					const ent::CompositingComponentInst* pCCI = GetCompositingComponentInst(0);
 					const CompositingGroup* pCG = 0;
 					if( pCCI )

@@ -48,7 +48,7 @@ void PhysicsDebugger::UnLock()
 	mMutex.UnLock();
 }
 
-BulletDebugDrawDBData::BulletDebugDrawDBData(BulletWorldControllerInst* psi, ork::ent::Entity* pent )
+BulletDebugDrawDBData::BulletDebugDrawDBData(BulletSystem* psi, ork::ent::Entity* pent )
 	: mpEntity( pent )
 	, mpBWCI( psi )
 	, mpDebugger(0)
@@ -70,7 +70,7 @@ void BulletDebugQueueToLayerCallback(ork::ent::DrawableBufItem&cdb)
 
 	if( pdata->mpDebugger->IsDebugEnabled() )
 	{
-		BulletWorldControllerInst* pinst = pdata->mpBWCI;
+		BulletSystem* pinst = pdata->mpBWCI;
 
 		BulletDebugDrawDBRec* prec = pdata->mDBRecs+cdb.miBufferIndex;
 		cdb.mUserData1.Set( prec );
@@ -107,7 +107,7 @@ void BulletDebugRenderCallback(	ork::lev2::RenderContextInstData& rcid,
 		{
 			//////////////////////////////////////////
 			const ork::ent::Entity* pent = pyo->mpEntity;
-			const BulletWorldControllerInst* pbwci = pyo->mpBWCI;
+			const BulletSystem* pbwci = pyo->mpBWCI;
 			if( 0 == pbwci ) return;
 			//////////////////////////////////////////
 			const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();

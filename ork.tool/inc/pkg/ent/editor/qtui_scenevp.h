@@ -57,7 +57,7 @@ class CompositingComponentInst;
 class SceneEditorVP;
 class EditorSceneInst;
 class EditorMainWindow;
-class CompositingManagerComponentInst;
+class CompositingSystem;
 ///////////////////////////////////////////////////////////////////////////////
 typedef void (*SceneEditorInitCb)( ork::ent::SceneEditorVP& vped );
 
@@ -124,7 +124,7 @@ public:
 	void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
 	ork::Object* GetObject( lev2::GetPixelContext& ctx, int ichan );
 	//////////////////////
-	ent::CompositingManagerComponentInst* GetCMCI();
+	ent::CompositingSystem* GetCMCI();
 	const ent::CompositingGroup* GetCompositingGroup(int igrp);
 	ent::CompositingComponentInst* GetCompositingComponentInst( int icidx );
 	//////////////////////

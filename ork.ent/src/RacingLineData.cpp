@@ -63,7 +63,6 @@ void RacingLineSample::Describe()
 void RacingLineData::Describe()
 {
 	// so we can draw racing lines, let's get an update
-	ork::ent::RegisterFamily<RacingLineData>(ork::AddPooledLiteral("control"));
 
 	ork::reflect::RegisterMapProperty("RacingLines", &RacingLineData::mRacingLines);
 	reflect::AnnotatePropertyForEditor<RacingLineData>("RacingLines", "editor.map.policy.const", "true");
@@ -204,21 +203,18 @@ bool RacingLineData::PostDeserialize(reflect::IDeserializer &)
 	return true;
 }
 
-bool RacingLineInst::DoLink(ork::ent::SceneInst *sinst)
+bool RacingLineInst::DoLink(ork::ent::SceneInst* psi)
 {
-	ork::ent::Entity *trackEntity = sinst->FindEntityLoose(sTrackString);
+	ork::ent::Entity *trackEntity = psi->FindEntityLoose(sTrackString);
 	if( 0 == trackEntity ) return false;
 	ork::ent::bullet::TrackInst* trackInst = trackEntity->GetTypedComponent<ork::ent::bullet::TrackInst>(true);
 	if( 0 == trackInst ) return false;
 	mTrack = &trackInst->GetTrack();
 
-	ork::ent::Entity *bullet_world = sinst->FindEntityLoose(sBulletWorldString);
-	if( 0 == bullet_world ) return false;
-	ork::ent::BulletWorldControllerInst *world_controller
-		= bullet_world->GetTypedComponent<ork::ent::BulletWorldControllerInst>(true);
-	if( 0 == world_controller ) return false;
+	auto* bulletsys = psi->findSystem<ork::ent::BulletSystem>();
+	if( 0 == bulletsys ) return false;
 
-	mPhysicsDebugger = &world_controller->Debugger();
+	mPhysicsDebugger = &bulletsys->Debugger();
 	if( 0 == mPhysicsDebugger ) return false;
 
 	return true;

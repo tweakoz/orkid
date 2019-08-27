@@ -30,7 +30,6 @@ namespace ork { namespace ent {
 
 void PerfAnalyzerControllerData::Describe()
 {
-	ork::ent::RegisterFamily<PerfAnalyzerControllerData>(ork::AddPooledLiteral("control"));
 	reflect::RegisterProperty("EnableDisplay", &PerfAnalyzerControllerData::mbEnable);
 }
 PerfAnalyzerControllerData::PerfAnalyzerControllerData()
@@ -66,7 +65,7 @@ PerfAnalyzerControllerInst::PerfAnalyzerControllerInst(const PerfAnalyzerControl
 void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
 {
 	bool bpopped = true;
-	
+
 	while( bpopped )
 	{
 		PerfItem2 pi;
@@ -95,10 +94,10 @@ void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
 			}
 		}
 	}
-	
+
 	favgupdate = 0.0f;
 	favgdraw = 0.0f;
-	
+
 	int inumup = 0;
 	for( int i=1; i<kmaxsamples; i++ )
 	{
@@ -108,7 +107,7 @@ void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
 		{	favgupdate += (fb2-fb1);
 			inumup++;
 		}
-	}	
+	}
 	int inumds = 0;
 	for( int i=1; i<kmaxsamples; i++ )
 	{
@@ -118,10 +117,10 @@ void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
 		{	favgdraw += (fb2-fb1);
 			inumds++;
 		}
-	}	
+	}
 	favgupdate /= float(inumup);
 	favgdraw /= float(inumds);
-	
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,7 +137,7 @@ void PerformanceAnalyzerArchetype::Describe()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PerformanceAnalyzerArchetype::PerformanceAnalyzerArchetype() 
+PerformanceAnalyzerArchetype::PerformanceAnalyzerArchetype()
 {
 }
 
@@ -167,14 +166,14 @@ void PerformanceAnalyzerArchetype::DoStartEntity(SceneInst* inst, const CMatrix4
 	{
 		const PerfAnalyzerControllerData&	cd = ssci->GetCD();
 		if( cd.mbEnable )
-		{	
+		{
 			PerfMarkerEnable();
 		}
 		else
 		{
 			PerfMarkerDisable();
 		}
-	}	
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -186,7 +185,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 		const PerformanceAnalyzerArchetype* parch;
 		Entity *pent;
 		SceneInst* psi;
-		
+
 		static void doit( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren )
 		{
 			const yo* pyo = pren->GetDrawableDataA().Get<const yo*>();
@@ -198,7 +197,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 			const PerfAnalyzerControllerData&	cd = ssci->GetCD();
 			ork::lev2::GfxTarget* pTARG = rcid.GetRenderer()->GetTarget();
 			bool IsPickState = pTARG->FBI()->IsPickState();
-			
+
 			if( cd.mbEnable )
 			{
 
