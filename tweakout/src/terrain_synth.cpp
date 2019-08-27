@@ -46,16 +46,16 @@ TerrainSynth::TerrainSynth( ent::GradientSet& gset, int igl, float fwsize )
 	mhf_graph.AddChild( AddPooledString("target"), & mhf_target ); 
 
 	#if 0
-	dataflow::inplug<sheightmap>* target_input = 0;
-	dataflow::inplug<sheightmap>* erode1_input = 0;
+	dataflow::inplug<HeightMap>* target_input = 0;
+	dataflow::inplug<HeightMap>* erode1_input = 0;
 
-	const dataflow::outplug<sheightmap>* perlin_output = 0;
-	const dataflow::outplug<sheightmap>* erode1_output = 0;
+	const dataflow::outplug<HeightMap>* perlin_output = 0;
+	const dataflow::outplug<HeightMap>* erode1_output = 0;
 
-	mhf_target.GetTypedInput<sheightmap>(0,target_input);
-	mhf_erode1.GetTypedInput<sheightmap>(0,erode1_input);
-	mhf_perlin.GetTypedOutput<sheightmap>(0,perlin_output);
-	mhf_erode1.GetTypedOutput<sheightmap>(0,erode1_output);
+	mhf_target.GetTypedInput<HeightMap>(0,target_input);
+	mhf_erode1.GetTypedInput<HeightMap>(0,erode1_input);
+	mhf_perlin.GetTypedOutput<HeightMap>(0,perlin_output);
+	mhf_erode1.GetTypedOutput<HeightMap>(0,erode1_output);
 	
 	erode1_input->Connect( perlin_output );
 	target_input->Connect( erode1_output );

@@ -14,8 +14,8 @@
 namespace ork { namespace terrain {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef dataflow::inplug<ent::sheightmap> HeightMapInPlugType;
-typedef dataflow::outplug<ent::sheightmap> HeightMapOutPlugType;
+typedef dataflow::inplug<ent::HeightMap> HeightMapInPlugType;
+typedef dataflow::outplug<ent::HeightMap> HeightMapOutPlugType;
 
 typedef dataflow::inplug<ent::cv2_map2d>		V2Map2dInPlugType;
 typedef dataflow::outplug<ent::cv2_map2d>	V2Map2dOutPlugType;
@@ -35,12 +35,12 @@ void GpGpuTask	(	const CVector4& ClearColor,
 				);
 ///////////////////////////////////////////////////////////////////////////////
 
-struct sheightmap_datablock
+struct HeightMap_datablock
 {
-	ent::sheightmap	mHeightMap;
+	ent::HeightMap	mHeightMap;
 	int miX1, miX2, miZ1, miZ2;
-	sheightmap_datablock();
-	void Copy( const sheightmap_datablock& oth );
+	HeightMap_datablock();
+	void Copy( const HeightMap_datablock& oth );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ public:
 
 class hmap_perlin_module : public dataflow::dgmodule
 {
-	struct datablock : public sheightmap_datablock
+	struct datablock : public HeightMap_datablock
 	{
 		int			minumoct;
 		float		mfampsca;
@@ -96,8 +96,8 @@ class hmap_perlin_module : public dataflow::dgmodule
 public:
 
 	////////////////////////////////////////////
-	ent::sheightmap& HeightMapData() { return mDefDataBlock.mHeightMap; }
-	const ent::sheightmap& HeightMapData() const { return mDefDataBlock.mHeightMap; }
+	ent::HeightMap& HeightMapData() { return mDefDataBlock.mHeightMap; }
+	const ent::HeightMap& HeightMapData() const { return mDefDataBlock.mHeightMap; }
 	////////////////////////////////////////////
 	HeightMapOutPlugType& OutputPlug() { return mOutputPlug; }
 	////////////////////////////////////////////
@@ -146,7 +146,7 @@ class hmap_911_module : public dataflow::dgmodule
 {
 	////////////////////////////
 
-	struct datablock : public sheightmap_datablock
+	struct datablock : public HeightMap_datablock
 	{
 		int			mitriangles;
 		datablock();
@@ -177,8 +177,8 @@ public:
 	/*virtual*/ void CombineWork( const dataflow::cluster* clus );
 	/*virtual*/ void ReleaseWorkUnit( dataflow::workunit* wu );
 	////////////////////////////////////////////
-	ent::sheightmap& HeightMapData() { return mDefDataBlock.mHeightMap; }
-	const ent::sheightmap& HeightMapData() const { return mDefDataBlock.mHeightMap; }
+	ent::HeightMap& HeightMapData() { return mDefDataBlock.mHeightMap; }
+	const ent::HeightMap& HeightMapData() const { return mDefDataBlock.mHeightMap; }
 	////////////////////////////////////////////
 	HeightMapOutPlugType& OutputPlug() { return mOutputPlug; }
 	////////////////////////////////////////////
@@ -200,7 +200,7 @@ struct TerrainChunk
 
 class hmap_hfield_module : public dataflow::dgmodule
 {
-	sheightmap_datablock	mDefDataBlock;
+	HeightMap_datablock	mDefDataBlock;
 	
 	mutex							mVisMutex;
 
@@ -254,7 +254,7 @@ public:
 	const CVector3& Normal(int ix,int iz) const;
 	////////////////////////////////////////////////
 	/*virtual*/ void CombineWork( const dataflow::cluster* clus );
-	const ent::sheightmap& HeightMapData() const { return mDefDataBlock.mHeightMap; }
+	const ent::HeightMap& HeightMapData() const { return mDefDataBlock.mHeightMap; }
 	////////////////////////////////////////////////
 	CVector3 XYZ( int iX, int iZ ) const;
 	CVector3 ComputeNormal(int ix1,int iz1) const;
@@ -286,7 +286,7 @@ public:
 
 class hmap_terrace_module : public dataflow::dgmodule
 {
-	ent::sheightmap				mOutputData;
+	ent::HeightMap				mOutputData;
 	HeightMapInPlugType		mInput;
 	HeightMapOutPlugType	mOutput;
 
@@ -308,11 +308,11 @@ public:
 
 class hmap_erode1_module : public dataflow::dgmodule
 {
-	struct datablock : public sheightmap_datablock
+	struct datablock : public HeightMap_datablock
 	{
-		ent::sheightmap				mElevationData;
-		ent::sheightmap				mUphillAreaData;
-		ent::sheightmap				mBasinData;
+		ent::HeightMap				mElevationData;
+		ent::HeightMap				mUphillAreaData;
+		ent::HeightMap				mBasinData;
 
 		datablock();
 		void Copy( const datablock& oth );
@@ -324,9 +324,9 @@ class hmap_erode1_module : public dataflow::dgmodule
 	HeightMapOutPlugType	mOutputBasinAccum;
 	datablock				mDefDataBlock;
 
-	ent::sheightmap				mElevationData;
-	ent::sheightmap				mUphillAreaData;
-	ent::sheightmap				mBasinData;
+	ent::HeightMap				mElevationData;
+	ent::HeightMap				mUphillAreaData;
+	ent::HeightMap				mBasinData;
 
 	int						miEnable;
 	int						miNumErosionCycles;

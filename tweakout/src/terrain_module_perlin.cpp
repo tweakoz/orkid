@@ -41,7 +41,7 @@ const dataflow::outplugbase* hmap_perlin_module::GetOutput(int idx) const
 }
 ///////////////////////////////////////////////////////////////////////////////
 hmap_perlin_module::datablock::datablock()
-	: sheightmap_datablock()
+	: HeightMap_datablock()
 	, minumoct(1)
 	, mfampsca(0.5f)
 	, mfampbas(1.0f)
@@ -54,7 +54,7 @@ hmap_perlin_module::datablock::datablock()
 }
 void hmap_perlin_module::datablock::Copy( const datablock& oth )
 {
-	this->sheightmap_datablock::Copy(oth);
+	this->HeightMap_datablock::Copy(oth);
 
 	minumoct = oth.minumoct;
 	mfampsca = oth.mfampsca;
@@ -82,7 +82,7 @@ void hmap_perlin_module::ComputeCPU(dataflow::workunit* wu) const
 {
 	#if 0
 	datablock* hcw = (datablock*) wu->GetContextData();
-	sheightmap& hm = hcw->mHeightMap;
+	HeightMap& hm = hcw->mHeightMap;
 
 	int ix1 = hcw->miX1;
 	int iz1 = hcw->miZ1;
@@ -255,7 +255,7 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 {
 	#if 0
 	datablock* hcw = (datablock*) wu->GetContextData();
-	sheightmap& hm = hcw->mHeightMap;
+	HeightMap& hm = hcw->mHeightMap;
 
 	const int kWUW = hcw->miX2;
 	const int kWUH = hcw->miZ2;
@@ -644,7 +644,7 @@ void hmap_perlin_module::CombineWork( const dataflow::cluster* clus )
 ///////////////////////////////////////////////////////////////////////////////
 void hmap_perlin_module::ReleaseWorkUnit( dataflow::workunit* wu )
 {
-	//sheightmap_datablock* hcw = (sheightmap_datablock*) wu->GetContextData();
+	//HeightMap_datablock* hcw = (HeightMap_datablock*) wu->GetContextData();
 	//OrkDelete hcw;
 	//dgmodule::ReleaseWorkUnit( wu );
 }
