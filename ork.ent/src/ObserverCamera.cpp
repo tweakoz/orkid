@@ -35,7 +35,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ObserverCamControllerInst, "ObserverCamCo
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObserverCamArchetype::DoCompose(ork::ent::ArchComposer& composer) 
+void ObserverCamArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<ork::ent::ObserverCamControllerData>();
 }
@@ -56,8 +56,6 @@ ObserverCamArchetype::ObserverCamArchetype()
 
 void ObserverCamControllerData::Describe()
 {
-	ork::ent::RegisterFamily<ObserverCamControllerData>(ork::AddPooledLiteral("camera"));
-
 	ork::reflect::RegisterProperty( "Target", &ObserverCamControllerData::mTarget );
 	ork::reflect::RegisterProperty( "Eye", &ObserverCamControllerData::mEye );
 	ork::reflect::RegisterProperty( "EyeUp", &ObserverCamControllerData::mEyeUp );
@@ -110,7 +108,7 @@ ObserverCamControllerInst::ObserverCamControllerInst(const ObserverCamController
 	CameraDrawable* pcamd = new CameraDrawable(pent,&mCameraData); // deleted when entity deleted
 	//pent->AddDrawable(AddPooledLiteral("Default"),pcamd);
 	pcamd->SetOwner(pent);
-	
+
 	mCameraData.Persp( 0.1f, 1.0f, 45.0f );
 	mCameraData.Lookat( CVector3(0.0f,0.0f,0.0f), CVector3(0.0f,0.0f,1.0f), CVector3(0.0f,1.0f,0.0f) );
 
@@ -127,15 +125,15 @@ bool ObserverCamControllerInst::DoLink(SceneInst *psi)
 }
 
 bool ObserverCamControllerInst::DoStart(SceneInst *psi, const CMatrix4 &world)
-{	
+{
 	if( GetEntity() )
 	{
 		const ent::EntData& ED = GetEntity()->GetEntData();
 		PoolString name = ED.GetName();
 		std::string Name = CreateFormattedString( "%s", name.c_str() );
  		psi->SetCameraData( AddPooledString(Name.c_str()), & mCameraData );
-		
-		
+
+
 	}
 	return true;
 }
@@ -177,16 +175,16 @@ void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
 		float fnear = mCD.GetNear();
 		float ffar = mCD.GetFar();
 		float faper = mCD.GetAperature();
-		
+
 		CVector3 N = (cam_TGT-cam_EYE).Normal();
-		
+
 		mCameraData.Persp( fnear, ffar, faper );
 		mCameraData.Lookat( cam_EYE, cam_TGT, cam_UP );
-		
+
 		//orkprintf( "ocam eye<%f %f %f>\n", cam_EYE.GetX(), cam_EYE.GetY(), cam_EYE.GetZ() );
 		//orkprintf( "ocam tgt<%f %f %f>\n", cam_TGT.GetX(), cam_TGT.GetY(), cam_TGT.GetZ() );
 		//orkprintf( "ocam dir<%f %f %f>\n", N.GetX(), N.GetY(), N.GetZ() );
-		
+
 		//psi->SetCameraData( AddPooledLiteral("game1"), & mCameraData );
 	}
 }

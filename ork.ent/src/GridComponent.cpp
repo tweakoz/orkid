@@ -61,7 +61,7 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
         }
         const GridArchetype* parch;
         Entity *pent;
-        lev2::GfxMaterial3DSolid*  mGridMaterial; 
+        lev2::GfxMaterial3DSolid*  mGridMaterial;
 
         static void RenderCallback( ork::lev2::RenderContextInstData& rcid,
                                     ork::lev2::GfxTarget* targ,
@@ -85,7 +85,7 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 
             bool IsPickState = targ->FBI()->IsPickState();
             float fphase = ssci->GetPhase();
-            
+
             const auto& RCFD = targ->GetRenderContextFrameData();
             const auto& CCC = RCFD->GetCameraCalcCtx();
             const auto CAMDAT = RCFD->GetCameraData();
@@ -118,7 +118,7 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
                 //printf("topr<%g %g %g>\n", topr.x, topr.y, topr.z );
                 //printf("botr<%g %g %g>\n", botr.x, botr.y, botr.z );
                 //printf("botl<%g %g %g>\n", botl.x, botl.y, botl.z );
- 
+
                 fvec2 uv0(topl.x,topl.z);
                 fvec2 uv1(topr.x,topr.z);
                 fvec2 uv2(botr.x,botr.z);
@@ -132,11 +132,11 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
                 auto& VB = lev2::GfxEnv::GetSharedDynamicVB();
                 lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
                 vw.Lock( targ, &VB, 6 );
-        
+
                 vw.AddVertex( v0 );
                 vw.AddVertex( v1 );
                 vw.AddVertex( v2 );
-                
+
                 vw.AddVertex( v0 );
                 vw.AddVertex( v2 );
                 vw.AddVertex( v3 );
@@ -193,7 +193,7 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
     ap.Set<const yo*>( pyo );
     pdrw->SetUserDataA( ap );
 #endif
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -207,8 +207,6 @@ void GridArchetype::DoCompose(ork::ent::ArchComposer& composer)
 
 void GridControllerData::Describe()
 {
-    ork::ent::RegisterFamily<GridControllerData>(ork::AddPooledLiteral("control"));
-
     reflect::RegisterProperty( "SpinRate", & GridControllerData::mfSpinRate );
 
     reflect::AnnotatePropertyForEditor<GridControllerData>( "SpinRate", "editor.range.min", "-6.28" );

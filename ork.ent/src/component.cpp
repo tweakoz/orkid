@@ -21,8 +21,6 @@
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ComponentDataClass, "ComponentDataClass")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ComponentData, "ComponentData")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ComponentInst, "ComponentInst")
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SystemData, "SystemData")
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::System, "System")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorPropMapData, "EditorPropMapData")
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorPropMapInst, "EditorPropMapInst")
 
@@ -32,32 +30,6 @@ template class ork::reflect::DirectObjectVectorPropertyType< orkvector<ork::Pool
 
 namespace ork { namespace ent {
 
-void SystemData::Describe()
-{
-}
-void System::Describe()
-{
-}
-void System::Link( SceneInst* psi )
-{
-	DoLink(psi);
-}
-void System::UnLink( SceneInst* psi )
-{
-	DoUnLink(psi);
-}
-void System::Start( SceneInst* psi )
-{
-	DoStart(psi);
-}
-void System::Stop( SceneInst* psi )
-{
-	DoStop(psi);
-}
-void System::Update( SceneInst* psi )
-{
-	DoUpdate( psi );
-}
 ComponentDataClass::ComponentDataClass(const rtti::RTTIData &data) : object::ObjectClass(data)
 {
 }
@@ -101,7 +73,6 @@ void EditorPropMapInst::Describe()
 }
 void EditorPropMapData::Describe()
 {
-	RegisterFamily<EditorPropMapData>(ork::AddPooledLiteral("")); // no update
 	ork::reflect::RegisterMapProperty( "Properties", & EditorPropMapData::mProperties );
 }
 

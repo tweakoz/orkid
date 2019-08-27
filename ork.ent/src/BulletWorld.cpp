@@ -35,9 +35,7 @@ static const bool USE_GIMPACT = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletWorldArchetype, "BulletWorldArchetype");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletWorldControllerData, "BulletWorldControllerData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletWorldControllerInst, "BulletWorldControllerInst");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -50,10 +48,10 @@ void BulletDebugRenderCallback(	ork::lev2::RenderContextInstData& rcid,
 
 static PoolString sBulletFamily;
 
+///////////////////////////////////////////////////////////////////////////////
+
 void BulletWorldControllerData::Describe()
 {
-	ork::ent::RegisterFamily<BulletWorldControllerData>(ork::AddPooledLiteral("physics"));
-
 	ork::reflect::RegisterProperty("SimulationRate", &BulletWorldControllerData::mSimulationRate);
 	ork::reflect::AnnotatePropertyForEditor< BulletWorldControllerData >("SimulationRate", "editor.range.min", "60.0f");
 	ork::reflect::AnnotatePropertyForEditor< BulletWorldControllerData >("SimulationRate", "editor.range.max", "2400.0f");
@@ -71,59 +69,15 @@ void BulletWorldControllerData::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ComponentInst *BulletWorldControllerData::CreateComponent(Entity *pent) const
+System* BulletWorldControllerData::createSystem(ork::ent::SceneInst *pinst) const
 {
-	AllocationLabel("BulletWorldControllerData::CreateComponent");
-
-	return OrkNew BulletWorldControllerInst(*this, pent);
+	return OrkNew BulletSystem(*this, pinst);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletWorldArchetype::Describe()
-{
-	ork::ArrayString<64> arrstr;
-	ork::MutableString mutstr(arrstr);
-	mutstr.format("/arch/bullet_world");
-	GetClassStatic()->SetPreferredName(arrstr);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void BulletWorldArchetype::DoCompose(ork::ent::ArchComposer& composer)
-{
-	composer.Register<BulletWorldControllerData>();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void BulletWorldArchetype::DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *entity) const
-{
-	AllocationLabel("BulletWorldArchetype::DoLinkEntity");
-	if(BulletWorldControllerInst *bullet = entity->GetTypedComponent<BulletWorldControllerInst>(true))
-		bullet->LinkPhysics(inst, entity);
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void BulletWorldArchetype::DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const
-{
-	//if(BulletWorldControllerInst *bullet = pent->GetTypedComponent<BulletWorldControllerInst>(true))
-	//	bullet->StartPhysics(inst, pent);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void BulletWorldControllerInst::Describe()
-{
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-BulletWorldControllerInst::BulletWorldControllerInst(const BulletWorldControllerData& data, ork::ent::Entity *entity)
-	: ComponentInst( &data, entity )
+BulletSystem::BulletSystem(const BulletWorldControllerData& data,ork::ent::SceneInst* psi)
+	: System( &data, psi )
 	, mDynamicsWorld(0)
 	, mBtConfig( 0 )
 	, mBroadPhase(0)
@@ -135,13 +89,13 @@ BulletWorldControllerInst::BulletWorldControllerInst(const BulletWorldController
 	, mfAvgDtAcc(0.0f)
 	, mfAvgDtCtr(0.0f)
 {
-	AllocationLabel("BulletWorldControllerInst::BulletWorldControllerInst");
+	AllocationLabel("BulletSystem::BulletSystem");
 	InitWorld();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BulletWorldControllerInst::~BulletWorldControllerInst()
+BulletSystem::~BulletSystem()
 {
 	if( mDynamicsWorld ) delete mDynamicsWorld;
 	if( mSolver ) delete mSolver;
@@ -155,11 +109,11 @@ BulletWorldControllerInst::~BulletWorldControllerInst()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void BulletWorldControllerInstInternalTickCallback(btDynamicsWorld *world, btScalar timeStep)
+static void BulletSystemInternalTickCallback(btDynamicsWorld *world, btScalar timeStep)
 {
-	//printf( "BulletWorldControllerInstInternalTickCallback( ) timeStep<%f>\n", timeStep );
+	//printf( "BulletSystemInternalTickCallback( ) timeStep<%f>\n", timeStep );
 	OrkAssert(world);
-	
+
 	btDiscreteDynamicsWorld* dynaworld = (btDiscreteDynamicsWorld*) world;
 
 	ork::ent::SceneInst *sinst = reinterpret_cast<ork::ent::SceneInst *>(world->getWorldUserInfo());
@@ -176,12 +130,12 @@ static void BulletWorldControllerInstInternalTickCallback(btDynamicsWorld *world
 	sinst->SetDeltaTime(timeStep);
 		sinst->UpdateActiveComponents(sBulletFamily);
 	sinst->SetDeltaTime(previous_dt);
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btRigidBody* BulletWorldControllerInst::AddLocalRigidBody(ork::ent::Entity* pent
+btRigidBody* BulletSystem::AddLocalRigidBody(ork::ent::Entity* pent
 														  , btScalar mass, const btTransform& startTransform
 														  , btCollisionShape* shape)
 {
@@ -216,7 +170,7 @@ btRigidBody* BulletWorldControllerInst::AddLocalRigidBody(ork::ent::Entity* pent
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletWorldControllerInst::InitWorld()
+void BulletSystem::InitWorld()
 {
 	btDefaultCollisionConstructionInfo cinfo;
 	cinfo.m_stackAlloc = 0;
@@ -251,7 +205,7 @@ void BulletWorldControllerInst::InitWorld()
 
 	mDynamicsWorld = new btDiscreteDynamicsWorld(mDispatcher, mBroadPhase, mSolver, mBtConfig);
 	mDynamicsWorld->getSolverInfo().m_solverMode &= ~SOLVER_RANDMIZE_ORDER;
-	
+
 	mDynamicsWorld->setGravity( ! mBWCBD.GetGravity() );
 	orkprintf( "mDynamicsWorld<%p>\n", mDynamicsWorld );
 
@@ -259,11 +213,11 @@ void BulletWorldControllerInst::InitWorld()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletWorldControllerInst::LinkPhysics(ork::ent::SceneInst *inst, ork::ent::Entity *pent)
+void BulletSystem::LinkPhysics(ork::ent::SceneInst *inst, ork::ent::Entity *pent)
 {
 	printf( "LINKING physics\n" );
-	
-	mDynamicsWorld->setInternalTickCallback(BulletWorldControllerInstInternalTickCallback, inst);
+
+	mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, inst);
 
 	#if 1 //DRAWTHREADS
 	ork::ent::CallbackDrawable* pdrw = new ork::ent::CallbackDrawable( pent );
@@ -284,12 +238,12 @@ void BulletWorldControllerInst::LinkPhysics(ork::ent::SceneInst *inst, ork::ent:
 	btVector3 grav = !mBWCBD.GetGravity();
 	mDynamicsWorld->setGravity(grav);
 	#endif
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletWorldControllerInst::DoUpdate(ork::ent::SceneInst* inst)
+void BulletSystem::DoUpdate(ork::ent::SceneInst* inst)
 {
 	if(mDynamicsWorld)
 	{
@@ -308,7 +262,7 @@ void BulletWorldControllerInst::DoUpdate(ork::ent::SceneInst* inst)
 
 		if(mMaxSubSteps > 0)
 		{
-			
+
 			int a = mDynamicsWorld->stepSimulation(fdts, mMaxSubSteps, ffts);
 			int b = mMaxSubSteps;
 			int m = std::min(a,b);// ? a : b; // ork::min()

@@ -27,9 +27,6 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingComponentInst, "LightingComponent
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightArchetype, "LightArchetype");
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingSystemData, "LightingManagerSystemData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingManagerComponentInst, "LightingManagerSystem");
-
-template  ork::ent::LightingManagerComponentInst* ork::ent::SceneInst::FindSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -39,7 +36,6 @@ namespace ork { namespace ent {
 
 void LightingComponentData::Describe()
 {
-	ork::ent::RegisterFamily<LightingComponentData>(ork::AddPooledLiteral("lighting"));
 	ork::reflect::RegisterProperty("LightData", &LightingComponentData::LdGetter, &LightingComponentData::LdSetter );
 	ork::reflect::RegisterProperty("Dynamic", &LightingComponentData::mbDynamic );
 	ork::reflect::AnnotatePropertyForEditor< LightingComponentData >("LightData", "editor.factorylistbase", "LightData" );
@@ -270,7 +266,7 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 				bool bisdyn = mLightData.IsDynamic();
 				GetLight()->mbIsDynamic = bisdyn;
 
-				if( auto lmi = psi->FindSystem<ent::LightingManagerComponentInst>() ) {
+				if( auto lmi = psi->findSystem<ent::LightingSystem>() ) {
 
 					ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
 
@@ -294,7 +290,7 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 
 LightingComponentInst::~LightingComponentInst()
 {
-	if( auto lmi = GetEntity()->GetSceneInst()->FindSystem<ent::LightingManagerComponentInst>() ) {
+	if( auto lmi = GetEntity()->GetSceneInst()->findSystem<ent::LightingSystem>() ) {
 
 		ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
 
@@ -331,19 +327,13 @@ LightingSystemData::LightingSystemData()
 
 ork::ent::System* LightingSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
-	return new LightingManagerComponentInst( *this, pinst );
+	return new LightingSystem( *this, pinst );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightingManagerComponentInst::Describe()
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-LightingManagerComponentInst::LightingManagerComponentInst( const LightingSystemData& data, ork::ent::SceneInst *pinst )
+LightingSystem::LightingSystem( const LightingSystemData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::System( &data, pinst )
 	, mLightManager(data.Lmd())
 {

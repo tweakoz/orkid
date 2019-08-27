@@ -46,7 +46,6 @@ void AudioStreamComponentInst::DoStop(ork::ent::SceneInst *psi)
 ///////////////////////////////////////////////////////////////////////////////
 void AudioStreamComponentData::Describe()
 {
-	ork::ent::RegisterFamily<AudioStreamComponentData>(ork::AddPooledLiteral("audio"));
 	ork::reflect::RegisterMapProperty( "StreamMap", & AudioStreamComponentData::mStreamMap );
 	ork::reflect::AnnotatePropertyForEditor<AudioStreamComponentData>("StreamMap", "editor.assettype", "lev2::audiostream");
 	ork::reflect::AnnotatePropertyForEditor<AudioStreamComponentData>("StreamMap", "editor.assetclass", "lev2::audiostream");
@@ -156,7 +155,7 @@ void AudioStreamComponentInst::DoUpdate(ork::ent::SceneInst *inst)
 								const float fcountour_begin = 0.2f;
 								const float fcountour_end = 0.8f;
 								float ferpin = 0.0f;
-								
+
 								if( ferp < fcountour_begin ) ferpin = 0.0f;
 								else if( ferp > fcountour_end ) ferpin = 1.0f;
 								else ferpin = (ferp-fcountour_begin)/(fcountour_end-fcountour_begin);
@@ -184,7 +183,7 @@ void AudioStreamComponentInst::DoUpdate(ork::ent::SceneInst *inst)
 					ork::lev2::AudioDevice::GetDevice()->SetStreamVolume( item.mPlayback, fvol );
 					break;
 			}
-			
+
 		}
 		/////////////////////////////////////////////////////////////////////////////
 	}

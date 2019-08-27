@@ -33,6 +33,7 @@ using namespace ork::tool;
 namespace ork { namespace tool { tokenlist Init(int argc, char **argv); }}
 namespace ork { namespace tool { int main(int& argc, char **argv); }}
 namespace ork { namespace lev2 { void Init(); }}
+namespace ork { namespace ent { void Init(); }}
 
 class TestApplication : public ork::Application
 {
@@ -62,7 +63,10 @@ int main(int argc, char** argv, char** argp)
 	TestApplication the_app;
     ApplicationStack::Push(&the_app);
 
+		//ork::lev2::Init();
     ork::rtti::Class::InitializeClasses();
+		ork::ent::Init();
+
 	ork::lev2::GfxTargetCreationParams CreationParams;
 	CreationParams.miNumSharedVerts = 4<<10;
 	ork::lev2::GfxEnv::GetRef().PushCreationParams(CreationParams);

@@ -30,7 +30,7 @@ public:
 
 private:
 
-    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;  
+    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
 	ork::Object* LmdAccessor() { return & mLmd; }
 
 	ork::lev2::LightManagerData	mLmd;
@@ -39,13 +39,13 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class LightingManagerComponentInst : public ork::ent::System
+class LightingSystem : public ork::ent::System
 {
-	RttiDeclareAbstract(LightingManagerComponentInst, ork::ent::ComponentInst);
-
 public:
+	static constexpr systemkey_t SystemType = "LightingSystem";
+	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-	LightingManagerComponentInst( const LightingSystemData &data, ork::ent::SceneInst *pinst );
+	LightingSystem( const LightingSystemData &data, ork::ent::SceneInst *pinst );
 
 	ork::lev2::LightManager& GetLightManager() { return mLightManager; }
 
@@ -117,4 +117,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 }}
-

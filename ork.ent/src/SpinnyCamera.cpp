@@ -43,7 +43,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::CurvyCamControllerData, "CurvyCamControl
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void SequenceCamArchetype::DoCompose(ork::ent::ArchComposer& composer) 
+void SequenceCamArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<ork::ent::SequenceCamControllerData>();
 }
@@ -64,8 +64,6 @@ SequenceCamArchetype::SequenceCamArchetype()
 
 void SequenceCamControllerData::Describe()
 {
-	ork::ent::RegisterFamily<SequenceCamControllerData>(ork::AddPooledLiteral("camera"));
-
 	ork::reflect::RegisterMapProperty( "CamItems", & SequenceCamControllerData::mItemDatas );
 	ork::reflect::AnnotatePropertyForEditor< SequenceCamControllerData >("CamItems", "editor.factorylistbase", "SeqCamItemDataBase" );
 	ork::reflect::AnnotatePropertyForEditor< SequenceCamControllerData >("CamItems", "editor.map.policy.impexp", "true" );
@@ -127,7 +125,7 @@ bool SequenceCamControllerInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 			{
 				SeqCamItemDataBase* pdata = rtti::autocast(it->second);
 				SeqCamItemInstBase* item = pdata->CreateInst( GetEntity() );
-				
+
 				mItemInsts.AddSorted( it->first, item );
 				mpActiveItem = item;
 			}
@@ -145,7 +143,7 @@ void SequenceCamControllerInst::DoUpdate( SceneInst* psi )
 {
 	const PoolString& ps = mCD.GetCurrentItem();
 	orklut<PoolString,SeqCamItemInstBase*>::const_iterator it=mItemInsts.find(ps);
-	
+
 	if( it!=mItemInsts.end() )
 	{
 		mpActiveItem = it->second;
@@ -166,7 +164,7 @@ bool SequenceCamControllerInst::DoNotify(const ork::event::Event *event)
 	if( const ork::ent::PerfControlEvent* pce = rtti::autocast(event) )
 	{
 		const char* keyname = pce->mTarget.c_str();
-		
+
 		printf( "SequenceCamControllerInst<%p> PerfControlEvent<%p> key<%s>\n", this, pce, keyname );
 
 		if( 0 == strcmp(keyname,"CurrentItem") )
@@ -179,19 +177,19 @@ bool SequenceCamControllerInst::DoNotify(const ork::event::Event *event)
 	else if( const ork::ent::PerfSnapShotEvent* psse = rtti::autocast(event) )
 	{
 		const PoolString& CurrentItem = mCD.GetCurrentItem();
-		
+
 		psse->PushNode( "CurrentItem" );
-		{	
+		{
 			ent::PerfSnapShotEvent::str_type NodeName = psse->GenNodeName();
 			PerfProgramTarget* target = new PerfProgramTarget( NodeName.c_str(), CurrentItem.c_str() );
 			psse->GetProgram()->AddTarget( NodeName.c_str(), target );
 		}
 		psse->PopNode();
-				
+
 		return true;
 	}
 	return false;
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -268,9 +266,9 @@ SpinnyCamControllerInst::SpinnyCamControllerInst(const SpinnyCamControllerData& 
 void SpinnyCamControllerInst::DoUpdate(ent::SceneInst* psi)
 {
 	mfPhase += mSCCD.GetSpinRate()*psi->GetDeltaTime();
-		
+
 	mCameraData.Persp( mSCCD.GetNear(), mSCCD.GetFar(), mSCCD.GetAper() );
-	
+
 	float famp = mSCCD.GetRadius();
 	float fx = sinf(mfPhase)*famp;
 	float fy = -cosf(mfPhase)*famp;
@@ -343,9 +341,9 @@ CurvyCamControllerInst::CurvyCamControllerInst(const CurvyCamControllerData& cd,
 void CurvyCamControllerInst::DoUpdate(ent::SceneInst* psi)
 {
 	mfPhase += mCCCD.GetAngle()*psi->GetDeltaTime();
-		
+
 	mCameraData.Persp( mCCCD.GetNear(), mCCCD.GetFar(), mCCCD.GetAper() );
-	
+
 	float famp = mCCCD.GetRadius();
 	float fx = sinf(mfPhase)*famp;
 	float fy = -cosf(mfPhase)*famp;

@@ -28,7 +28,6 @@ static const bool kUSEEXECTABUPDATE = false;
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentData, "ScriptComponentData" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentInst, "ScriptComponentInst" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentData, "ScriptManagerComponentData" );
-INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentInst, "ScriptManagerComponentInst" );
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,8 +37,6 @@ namespace ork { namespace ent {
 
 void ScriptComponentData::Describe()
 {
-	ork::ent::RegisterFamily<ScriptComponentData>(ork::AddPooledLiteral("control"));
-
 	ork::reflect::RegisterProperty( "ScriptFile", & ScriptComponentData::mScriptPath );
 	ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.class", "ged.factory.filelist");
 	ork::reflect::AnnotatePropertyForEditor<ScriptComponentData>("ScriptFile", "editor.filetype", "lua");
@@ -81,7 +78,7 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
 	auto path = mCD.GetPath();
 
-	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
+	auto scm = psi->findSystem<ScriptSystem>();
 
 	if( nullptr == scm )
 		return true;
@@ -112,7 +109,7 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 }
 void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 {
-	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
+	auto scm = psi->findSystem<ScriptSystem>();
 
 	if( scm )
 	{
@@ -123,7 +120,7 @@ void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 
 bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 {
-	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
+	auto scm = psi->findSystem<ScriptSystem>();
 
 	if( scm && mScriptObject )
 	{
@@ -146,7 +143,7 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 }
 void ScriptComponentInst::DoStop(SceneInst *psi)
 {
-	auto scm = psi->FindSystem<ScriptManagerComponentInst>();
+	auto scm = psi->findSystem<ScriptSystem>();
 
 	if( scm && mScriptObject )
 	{
@@ -176,7 +173,7 @@ void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 
 	if( false == kUSEEXECTABUPDATE )
 	{
-		auto scm = psi->FindSystem<ScriptManagerComponentInst>();
+		auto scm = psi->findSystem<ScriptSystem>();
 
 		if( scm && mScriptObject )
 		{
@@ -211,16 +208,12 @@ ScriptManagerComponentData::ScriptManagerComponentData()
 
 System* ScriptManagerComponentData::createSystem(ork::ent::SceneInst *pinst) const
 {
-	return new ScriptManagerComponentInst( *this, pinst );
+	return new ScriptSystem( *this, pinst );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ScriptManagerComponentInst::Describe()
-{
-}
-
-ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerComponentData& data, ork::ent::SceneInst *pinst )
+ScriptSystem::ScriptSystem( const ScriptManagerComponentData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::System( &data, pinst )
 	, mScriptRef(LUA_NOREF)
 {
@@ -300,7 +293,7 @@ ScriptManagerComponentInst::ScriptManagerComponentInst( const ScriptManagerCompo
 
 }
 
-ScriptManagerComponentInst::~ScriptManagerComponentInst()
+ScriptSystem::~ScriptSystem()
 {
 	//////////////////////////////
 	// delete flyweighted scriptobjects
@@ -320,38 +313,38 @@ ScriptManagerComponentInst::~ScriptManagerComponentInst()
 	delete asluasys;
 }
 
-bool ScriptManagerComponentInst::DoLink(SceneInst* psi) // final
+bool ScriptSystem::DoLink(SceneInst* psi) // final
 {
-	//printf( "ScriptManagerComponentInst::DoLink()\n" );
+	//printf( "ScriptSystem::DoLink()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneLink");
 
 	return true;
 }
-void ScriptManagerComponentInst::DoUnLink(SceneInst* psi) // final
+void ScriptSystem::DoUnLink(SceneInst* psi) // final
 {
-	printf( "ScriptManagerComponentInst::DoUnLink()\n" );
+	printf( "ScriptSystem::DoUnLink()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUnLink");
 }
-void ScriptManagerComponentInst::DoStart(SceneInst *psi) // final
+void ScriptSystem::DoStart(SceneInst *psi) // final
 {
-	//printf( "ScriptManagerComponentInst::DoStart()\n" );
+	//printf( "ScriptSystem::DoStart()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
 }
-void ScriptManagerComponentInst::DoStop(SceneInst *inst) // final
+void ScriptSystem::DoStop(SceneInst *inst) // final
 {
-	//printf( "ScriptManagerComponentInst::DoStop()\n" );
+	//printf( "ScriptSystem::DoStop()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
 }
 
-void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
+void ScriptSystem::DoUpdate(SceneInst* psi) // final
 {
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
@@ -374,7 +367,7 @@ void ScriptManagerComponentInst::DoUpdate(SceneInst* psi) // final
 //  share across different entity instances
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptObject* ScriptManagerComponentInst::FlyweightScriptObject( const ork::file::Path& pth )
+ScriptObject* ScriptSystem::FlyweightScriptObject( const ork::file::Path& pth )
 {
 	auto abspath = pth.ToAbsolute();
 	auto asluasys = GetLuaManager().Get<LuaSystem*>();

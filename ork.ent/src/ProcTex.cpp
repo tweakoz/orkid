@@ -60,112 +60,6 @@ ProcTexArchetype::ProcTexArchetype()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if 0
-ork::lev2::Texture* gptxx = nullptr;
-
-struct ProcTexRenderData
-{
-	const ProcTexArchetype* parch;
-	Entity *pent;
-	mutable float mPrevTime;
-	mutable lev2::GfxMaterial3DSolid* mtl;
-
-	ProcTexRenderData() 
-		: parch(nullptr)
-		, pent(nullptr)
-		, mPrevTime(-1.0f)
-		, mtl(nullptr)
-	{}
-
-	///////////////////////////////////////////////////////////////////////////////
-
-	static void doit(	lev2::RenderContextInstData& rcid,
-						lev2::GfxTarget* targ,
-						const lev2::CallbackRenderable* pren )
-	{
-		bool IsPickState = rcid.GetRenderer()->GetTarget()->FBI()->IsPickState();
-		if( IsPickState ) return;
-
-		auto pyo = pren->GetUserData0().Get<const ProcTexRenderData*>();
-
-		if( 0 == pyo->mtl )
-			pyo->mtl = new lev2::GfxMaterial3DSolid(targ);
-
-		const ProcTexArchetype* parch = pyo->parch;
-		auto pent = pyo->pent;
-		auto psi = pent->GetSceneInst();
-		ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
-		const ProcTexControllerData&	cd = ssci->GetCD();
-
-		#if 0
-		bool is_baking = cd.IsBaking();
-
-		float fcurtime = psi->GetGameTime();
-
-		if( is_baking )
-		{
-			fcurtime = float(cd.GetFrameIndex())/60.0f;
-		}
-
-		proctex::ProcTex& templ = cd.GetTemplate();
-		
-		bool auto_refresh = cd.GetMaxFrameRate()>0.0f;
-
-		auto md5 = templ.CalcMd5().hex_digest();
-
-		printf( "ptex MD5<%s>\n", md5.c_str() );
-
-
-		bool do_refresh = auto_refresh 
-						? std::abs(pyo->mPrevTime-fcurtime)>(1.0f / cd.GetMaxFrameRate())
-						: cd.NeedsRefresh();
-
-		if( do_refresh || is_baking )
-		{
-
-			ssci->mContext.SetBufferDim( cd.GetBufferDim() );
-			ssci->mContext.mTarget = targ;
-			ssci->mContext.mdflowctx.Clear();
-			ssci->mContext.mCurrentTime = fcurtime;
-			
-			ssci->mContext.mWriteFrames = is_baking;
-			ssci->mContext.mWritePath = cd.GetWritePath();
-
-			templ.compute(ssci->mContext);
-
-			if( is_baking )
-			{
-				ssci->mContext.mWriteFrameIndex = cd.GetFrameIndex();
-				cd.IncrementFrame();
-			}
-
-			//printf( "fcurtime <%f>\n", fcurtime );
-			pyo->mPrevTime = fcurtime;
-
-			cd.DidRefresh();
-		}
-
-		ork::lev2::Texture* ptx = templ.ResultTexture();
-		gptxx = ptx;
-
-		pyo->mtl->SetTexture(ptx);
-		pyo->mtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR);
-		targ->PushMaterial( pyo->mtl );
-
-		//if( cd.IsSkybox() )
-		//	pyo->RenderSkybox( rcid, targ, pren, ptx, cd );
-		//else
-		//	pyo->RenderQuad( rcid, targ, pren, ptx, cd );
-
-		targ->PopMaterial();
-		#endif
-	}
-};
-
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-
 void ProcTexArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 {
 	ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
@@ -209,7 +103,6 @@ void ProcTexControllerData::Describe()
 
 
 	ork::reflect::RegisterProperty("Template", &ProcTexControllerData::TemplateAccessor);
-	ork::ent::RegisterFamily<ProcTexControllerData>(ork::AddPooledLiteral("animate"));
 
 	ork::reflect::RegisterProperty( "BufferDim", & ProcTexControllerData::mBufferDim );
 	ork::reflect::AnnotatePropertyForEditor< ProcTexControllerData >( "BufferDim", "editor.range.min", "16" );
@@ -345,7 +238,7 @@ void ProcTexOutputQuad::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 		ssci->mContext.mWriteFrames = false;
 		ssci->mContext.mWritePath = "";//cd.GetWritePath();
 		templ.compute(ssci->mContext);
-		cd.DidRefresh();	
+		cd.DidRefresh();
 		mtl->SetTexture(templ.ResultTexture());
 		targ->PushMaterial( mtl );
 
@@ -369,12 +262,12 @@ void ProcTexOutputQuad::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 			ork::CVector3 vv1( x1,y0,fZ );
 			ork::CVector3 vv2( x1,y1,fZ );
 			ork::CVector3 vv3( x0,y1,fZ );
-			
+
 			lev2::SVtxV12C4T16 v0( vv0, uv0, ucolor );
 			lev2::SVtxV12C4T16 v1( vv1, uv1, ucolor );
 			lev2::SVtxV12C4T16 v2( vv2, uv2, ucolor );
 			lev2::SVtxV12C4T16 v3( vv3, uv3, ucolor );
-			
+
 			vw.AddVertex( v0 );
 			vw.AddVertex( v1 );
 			vw.AddVertex( v2 );
@@ -537,7 +430,7 @@ void ProcTexOutputDynTex::Describe()
 			{
 				std::string pstr("ptex://");
 				pstr += item->mDynTexPath.c_str();
-				
+
 				printf( "LOADDYNPTEX pstr<%s> anam<%s>\n", pstr.c_str(), asset_name );
 				if( pstr==asset_name )
 				{
@@ -660,13 +553,13 @@ ProcTexOutputBake::ProcTexOutputBake()
 
 }
 #if 0
-void ProcTexControllerData::IncrementFrame() const 
+void ProcTexControllerData::IncrementFrame() const
 {
 	mBakeFrameIndex++;
 	printf( "ProcTexControllerData::IncrementFrame() mBakeFrameIndex<%d>\n", mBakeFrameIndex );
 	if( mBakeFrameIndex>=mNumExportFrames )
 	{
-		printf( "bake done nframes<%d>\n", mNumExportFrames );	
+		printf( "bake done nframes<%d>\n", mNumExportFrames );
 		mPerformingBake = false;
 	}
 }
@@ -681,4 +574,3 @@ void ProcTexOutputBake::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 }}
-

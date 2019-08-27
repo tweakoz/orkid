@@ -59,7 +59,7 @@ class BulletObjectControllerData;
 class BulletShapeBaseInst;
 class BulletShapeBaseData;
 class BulletObjectControllerData;
-class BulletWorldControllerInst;
+class BulletSystem;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,6 +69,8 @@ btTransform orkmtx4tobtmtx4(const ork::CMatrix4 &mtx);
 btMatrix3x3 orkmtx3tobtbasis(const ork::CMatrix3 &mtx);
 ork::CMatrix4 btmtx4toorkmtx4(const btTransform &mtx);
 ork::CMatrix3 btbasistoorkmtx3(const btMatrix3x3 &mtx);
+
+///////////////////////////////////////////////////////////////////////////////
 
 inline const btVector3 &operator<<=(btVector3 &lhs, const ork::CVector3 &v3) {
   lhs = orkv3tobtv3(v3);
@@ -90,6 +92,8 @@ inline btMatrix3x3 operator!(const ork::CMatrix3 &mtx) {
 inline ork::CMatrix3 operator!(const btMatrix3x3 &mtx) {
   return btbasistoorkmtx3(mtx);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct PhysicsDebuggerLine {
   CVector3 mFrom;
@@ -158,8 +162,10 @@ private:
   //////////////////////////
 };
 
-class BulletWorldControllerData : public ComponentData {
-  RttiDeclareConcrete(BulletWorldControllerData, ComponentData);
+///////////////////////////////////////////////////////////////////////////////
+
+class BulletWorldControllerData : public SystemData {
+  RttiDeclareConcrete(BulletWorldControllerData, SystemData);
 
   float mfTimeScale;
   float mSimulationRate;
@@ -176,30 +182,29 @@ public:
   const CVector3 &GetGravity() const { return mGravity; }
 
 protected:
-  ComponentInst *CreateComponent(Entity *pent) const override;
+  System* createSystem(SceneInst* psi) const final;
 };
 
 struct BulletDebugDrawDBRec {
   const ork::ent::Entity *mpEntity;
-  BulletWorldControllerInst *mpBWCI;
+  BulletSystem *mpBWCI;
   orkvector<PhysicsDebuggerLine> mLines1;
   orkvector<PhysicsDebuggerLine> mLines2;
 };
 struct BulletDebugDrawDBData {
   ork::ent::Entity *mpEntity;
-  BulletWorldControllerInst *mpBWCI;
+  BulletSystem *mpBWCI;
 
   BulletDebugDrawDBRec mDBRecs[ork::ent::DrawableBuffer::kmaxbuffers];
   PhysicsDebugger *mpDebugger;
 
-  BulletDebugDrawDBData(BulletWorldControllerInst *psi, ork::ent::Entity *pent);
+  BulletDebugDrawDBData(BulletSystem *psi, ork::ent::Entity *pent);
   ~BulletDebugDrawDBData();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class BulletWorldControllerInst : public ork::ent::ComponentInst {
-  RttiDeclareAbstract(BulletWorldControllerInst, ork::ent::ComponentInst);
+class BulletSystem : public ork::ent::System {
 
   btDiscreteDynamicsWorld *mDynamicsWorld;
   btDefaultCollisionConfiguration *mBtConfig;
@@ -214,12 +219,15 @@ class BulletWorldControllerInst : public ork::ent::ComponentInst {
   float mfAvgDtCtr;
 
   void DoUpdate(ork::ent::SceneInst *inst) final;
-  bool DoNotify(const ork::event::Event *event) final { return false; }
 
 public:
-  BulletWorldControllerInst(const BulletWorldControllerData &data,
-                            ork::ent::Entity *entity);
-  ~BulletWorldControllerInst();
+
+	static constexpr systemkey_t SystemType = "BulletSystem";
+	systemkey_t systemTypeDynamic() final { return SystemType; }
+
+  BulletSystem(const BulletWorldControllerData &data,
+                            ork::ent::SceneInst* psi);
+  ~BulletSystem();
 
   btRigidBody *AddLocalRigidBody(ork::ent::Entity *pent, btScalar mass,
                                  const btTransform &startTransform,
@@ -255,18 +263,6 @@ public:
 protected:
   ork::ent::Entity *mEntity;
   btTransform mTransform;
-};
-
-// Class: BulletWorldArchetype
-// Use for the "bullet_world" entities.
-class BulletWorldArchetype : public ork::ent::Archetype {
-  RttiDeclareConcrete(BulletWorldArchetype, ork::ent::Archetype);
-
-  void DoCompose(ork::ent::ArchComposer &composer) override;
-  void DoLinkEntity(ork::ent::SceneInst *psi,
-                    ork::ent::Entity *pent) const override;
-  void DoStartEntity(ork::ent::SceneInst *psi, const ork::CMatrix4 &world,
-                     ork::ent::Entity *pent) const override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -315,7 +311,7 @@ private:
 
 struct ShapeCreateData {
   Entity *mEntity;
-  BulletWorldControllerInst *mWorld;
+  BulletSystem *mWorld;
   BulletObjectControllerInst *mObject;
 };
 

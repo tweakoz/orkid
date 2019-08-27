@@ -29,7 +29,6 @@
 
 #include <ork/rtti/Class.h>
 #include <ork/kernel/orklut.hpp>
-#include <pkg/ent/ParticleControllable.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -40,14 +39,20 @@
 #include <pkg/ent/SimpleCharacterArchetype.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/Lighting.h>
+#include <pkg/ent/PerfController.h>
+#include <pkg/ent/SimpleAnimatable.h>
+#include <pkg/ent/SimpleCharacterArchetype.h>
+#include <pkg/ent/ParticleControllable.h>
+
 #include "ObserverCamera.h"
+#include "TetherCamera.h"
 #include "SpinnyCamera.h"
 #include "Skybox.h"
 #include "ProcTex.h"
 #include "GridComponent.h"
 #include "PerformanceAnalyzer.h"
 #include "QuartzComposerTest.h"
-#include <pkg/ent/PerfController.h>
+#include "SimpleCharacterArchetype.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +65,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EntData,"Ent3dEntData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::Entity,"Ent3dEntity");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace ent {
+namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined( ORK_CONFIG_EDITORBUILD )
@@ -604,13 +609,14 @@ void FnBallArchetypeTouch();
 void Init()
 {
 	Archetype::GetClassStatic();
-	ork::ent::ModelArchetype::GetClassStatic();
+	ModelArchetype::GetClassStatic();
 	SkyBoxArchetype::GetClassStatic();
 	ProcTexArchetype::GetClassStatic();
 	ObserverCamArchetype::GetClassStatic();
 	SequenceCamArchetype::GetClassStatic();
-	BulletWorldArchetype::GetClassStatic();
 	BulletObjectArchetype::GetClassStatic();
+	auto bwcd = BulletWorldControllerData::GetClassStatic();
+	printf( "BWCD<%p>\n", bwcd );
 	PerfControllerArchetype::GetClassStatic();
 	PerformanceAnalyzerArchetype::GetClassStatic();
 	SimpleCharacterArchetype::GetClassStatic();
@@ -620,18 +626,17 @@ void Init()
 	SceneInst::GetClassStatic();
     GridControllerData::GetClassStatic();
 
-    //ork::ent::heightfield_rt_inst::GetClassStatic();
+    //heightfield_rt_inst::GetClassStatic();
 
-	ork::ent::ScriptComponentData::GetClassStatic();
-	ork::ent::ScriptComponentInst::GetClassStatic();
+	ScriptComponentData::GetClassStatic();
+	ScriptComponentInst::GetClassStatic();
 
-	ork::ent::CompositingSystemData::GetClassStatic();
-	ork::ent::CompositingManagerComponentInst::GetClassStatic();
-	ork::ent::CompositingComponentData::GetClassStatic();
-	ork::ent::CompositingComponentInst::GetClassStatic();
-	ork::ent::CompositingNode::GetClassStatic();
-	ork::ent::NodeCompositingTechnique::GetClassStatic();
-	ork::ent::Fx3CompositingTechnique::GetClassStatic();
+	CompositingSystemData::GetClassStatic();
+	CompositingComponentData::GetClassStatic();
+	CompositingComponentInst::GetClassStatic();
+	CompositingNode::GetClassStatic();
+	NodeCompositingTechnique::GetClassStatic();
+	Fx3CompositingTechnique::GetClassStatic();
 
 	ork::psys::ParticleControllableData::GetClassStatic();
 	ork::psys::ParticleControllableInst::GetClassStatic();
@@ -647,18 +652,54 @@ void Init()
 #endif
 
 #if defined(ORK_OSXX)
-	ork::ent::AudioAnalysisManagerComponentData::GetClassStatic();
-	ork::ent::AudioAnalysisManagerComponentInst::GetClassStatic();
-	ork::ent::AudioAnalysisComponentData::GetClassStatic();
-	ork::ent::AudioAnalysisComponentInst::GetClassStatic();
+	AudioAnalysisManagerComponentData::GetClassStatic();
+	AudioAnalysisManagerComponentInst::GetClassStatic();
+	AudioAnalysisComponentData::GetClassStatic();
+	AudioAnalysisComponentInst::GetClassStatic();
 	AudioAnalysisArchetype::GetClassStatic();
 	QuartzComposerArchetype::GetClassStatic();
 #endif
 
 	FnBallArchetypeTouch();
+
+
+	// TODO - auto register ?
+
+	RegisterFamily<EditorPropMapData>(ork::AddPooledLiteral("")); // no update
+
+	RegisterFamily<SimpleAnimatableData>(ork::AddPooledLiteral("animate"));
+	RegisterFamily<ProcTexControllerData>(ork::AddPooledLiteral("animate"));
+	RegisterFamily<DataflowRecieverComponentData>(ork::AddPooledLiteral("animate"));
+
+	RegisterFamily<AudioEffectComponentData>(ork::AddPooledLiteral("audio"));
+	RegisterFamily<AudioStreamComponentData>(ork::AddPooledLiteral("audio"));
+
+	RegisterFamily<BulletObjectControllerData>(ork::AddPooledLiteral("bullet"));
+
+	RegisterFamily<ObserverCamControllerData>(ork::AddPooledLiteral("camera"));
+	RegisterFamily<SequenceCamControllerData>(ork::AddPooledLiteral("camera"));
+	RegisterFamily<TetherCamControllerData>(ork::AddPooledLiteral("camera"));
+
+	RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));
+	RegisterFamily<ScriptComponentData>(ork::AddPooledLiteral("control"));
+	RegisterFamily<CompositingComponentData>(ork::AddPooledLiteral("control"));
+	RegisterFamily<PerfControllerComponentData>(ork::AddPooledLiteral("control"));
+	//RegisterFamily<AudioAnalysisComponentData>(ork::AddPooledLiteral("control"));
+	RegisterFamily<GridControllerData>(ork::AddPooledLiteral("control"));
+	RegisterFamily<SkyBoxControllerData>(ork::AddPooledLiteral("control"));
+	RegisterFamily<PerfAnalyzerControllerData>(ork::AddPooledLiteral("control"));
+	RegisterFamily<ModelComponentData>(ork::AddPooledLiteral("control"));
+	//RegisterFamily<SectorTrackerData>(ork::AddPooledLiteral("control"));
+	//RegisterFamily<RacingLineData>(ork::AddPooledLiteral("control"));
+
+	RegisterFamily<LightingComponentData>(ork::AddPooledLiteral("lighting"));
+
+	RegisterFamily<psys::ParticleControllableData>(ork::AddPooledLiteral("particle"));
+
+	RegisterFamily<BulletWorldControllerData>(ork::AddPooledLiteral("physics"));
 }
 ///////////////////////////////////////////////////////////////////////////////
-}}
+} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////
 #if defined( ORK_CONFIG_EDITORBUILD )
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneDagObjectManipInterface,"SceneDagObjectManipInterface");

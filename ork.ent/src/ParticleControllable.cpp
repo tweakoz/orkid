@@ -39,7 +39,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::psys::ParticleArchetype, "ParticleArchetype");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace psys {
 ///////////////////////////////////////////////////////////////////////////////
-	
+
 void NovaParticleSystem::Describe() {}
 void NovaParticleItemBase::Describe() {}
 
@@ -47,8 +47,6 @@ void NovaParticleItemBase::Describe() {}
 
 void ParticleControllableData::Describe()
 {
-	ork::ent::RegisterFamily<ParticleControllableData>(ork::AddPooledLiteral("particle"));
-
 	ork::reflect::RegisterMapProperty( "Systems", & ParticleControllableData::mItems );
 	ork::reflect::AnnotatePropertyForEditor< ParticleControllableData >("Systems", "editor.factorylistbase", "Lev2ParticleItemBase" );
 	ork::reflect::AnnotatePropertyForEditor< ParticleControllableData >("Systems", "editor.map.policy.impexp", "true" );
@@ -100,7 +98,7 @@ ParticleControllableInst::ParticleControllableInst(const ParticleControllableDat
 		{
 			NovaParticleSystem* psys = pitembase->CreateSystem( pent );
 			psys->SetName( name );
-			
+
 			if( psys )
 			{
 				_systems.push_back( psys );
@@ -163,7 +161,7 @@ bool ParticleControllableInst::DoLink( ork::ent::SceneInst *psi )
 	ConstString att = ED.GetUserProperty("ParentAttachment");
 	PoolString attps(AddPooledString(att.c_str()));
 	ent::Entity* pna = psi->FindEntity(attps);
-	if( pna ) 
+	if( pna )
 		mpAttachEntity = pna;
 
 	mParticleContext.mfCurrentTime = 0.0f;
@@ -208,7 +206,7 @@ void ParticleControllableInst::DoUpdate(ork::ent::SceneInst *inst)
 		for( orkvector<NovaParticleSystem*>::const_iterator it=_systems.begin(); it!=_systems.end(); it++ )
 		{
 			NovaParticleSystem* psys = (*it);
-			
+
 			psys->Update(deltime);
 		}
 	}

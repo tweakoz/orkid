@@ -20,6 +20,7 @@
 #include <ork/kernel/future.hpp>
 #include <ork/math/cmatrix4.h>
 #include <ork/file/path.h>
+#include "types.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -55,22 +56,6 @@ struct UpdateStatus
 };
 
 extern UpdateStatus gUpdateStatus;
-
-///////////////////////////////////////////////////////////////////////////////
-
-class Scene;
-class EntData;
-class Archetype;
-class DagNode;
-class SceneObject;
-class Entity;
-class ComponentInst;
-class SystemData;
-class System;
-class Drawable;
-class DrawableBuffer;
-class Layer;
-class CompositingManagerComponentInst;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -145,8 +130,8 @@ public:
 	T* getTypedSystem() const;
 
 	const SystemDataLut& getSystemDatas() const { return _systemDatas; }
-	void addSystem( SystemData* pcomp );
-	void clearSystems();
+	void addSystemData( SystemData* pcomp );
+	void clearSystemDatas();
 
 	void OnSceneDataMode(ESceneDataMode emode);
 	void PrepareForEdit();
@@ -181,8 +166,6 @@ struct SceneComposer
 /// SceneInst is all the work data associated with running a scene
 /// this might be subclassed
 ///////////////////////////////////////////////////////////////////////////////
-
-class SceneInst;
 
 class SceneInstEvent : public ork::event::Event
 {
@@ -233,7 +216,7 @@ class SceneInst : public ork::Object
 public:
 
 	typedef orkmap<PoolString, orklist<ComponentInst*> > ActiveComponentType;
-	typedef orklut<const ork::object::ObjectClass*,System*> SystemLut;
+	typedef orklut<systemkey_t,System*> SystemLut;
 	typedef orklist<ComponentInst*> ComponentList;
 	typedef orkset<Entity*> EntitySet;
 
@@ -283,7 +266,7 @@ public:
 
 	///////////////////////////////////////////////////
 
-	CompositingManagerComponentInst* GetCMCI();
+	CompositingSystem* GetCMCI();
 
 	///////////////////////////////////////////////////
 
@@ -320,11 +303,11 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	void addSystem( System* pcomp );
+	void addSystem( systemkey_t key, System* pcomp );
 	void clearSystems();
 
 	template <typename T >
-	T* FindSystem() const;
+	T* findSystem() const;
 
 	typedef orklut<PoolString,const CCameraData*> CameraLut;
 

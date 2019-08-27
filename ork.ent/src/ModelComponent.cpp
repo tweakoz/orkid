@@ -33,27 +33,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ModelComponentInst, "ModelComponentInst")
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-/*void ModelArchetype::Describe()
-{
-}
-ModelArchetype::ModelArchetype()
-{
-}
-
-void ModelArchetype::DoCompose(ork::ent::ArchComposer& composer) 
-{
-	composer.Register<EditorPropMapData>();
-	composer.Register<ork::ent::ModelComponentData>();
-	//pedpropmapdata->SetProperty( "visual.lighting.reciever.scope", "static" );
-}*/
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 void ModelComponentData::Describe()
 {
-	ork::ent::RegisterFamily<ModelComponentData>(ork::AddPooledLiteral("control"));
-
 	ork::reflect::RegisterProperty("Offset", &ModelComponentData::mOffset);
 	ork::reflect::RegisterProperty("Rotate", &ModelComponentData::mRotate);
 
@@ -160,7 +141,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData &data, Entity *p
 	}
 
 	const orklut<PoolString,lev2::FxShaderAsset*>& lfxmap = mData.GetLayerFXMap();
-	 			
+
 	for( orklut<PoolString,lev2::FxShaderAsset*>::const_iterator it=lfxmap.begin(); it!=lfxmap.end(); it++ )
 	{
 		lev2::FxShaderAsset* passet = it->second;

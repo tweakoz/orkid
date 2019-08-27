@@ -36,7 +36,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentData, "AudioAnalysi
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentInst, "AudioAnalysisComponentInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisArchetype, "AudioAnalysisArchetype");
 
-template  ork::ent::AudioAnalysisManagerComponentInst* ork::ent::SceneInst::FindSystem() const;
+template  ork::ent::AudioAnalysisManagerComponentInst* ork::ent::SceneInst::findSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -116,8 +116,6 @@ void AudioAnalysisManagerComponentInst::AddAACI( AudioAnalysisComponentInst* cci
 
 void AudioAnalysisComponentData::Describe()
 {
-	ork::ent::RegisterFamily<AudioAnalysisComponentData>(ork::AddPooledLiteral("control"));
-
 	ork::reflect::RegisterProperty("AudioInputDeviceID", &AudioAnalysisComponentData::mAudioInputDeviceID);
 	reflect::AnnotatePropertyForEditor< AudioAnalysisComponentData >("AudioInputDeviceID", "editor.range.min", "1" );
 	reflect::AnnotatePropertyForEditor< AudioAnalysisComponentData >("AudioInputDeviceID", "editor.range.max", "1000" );
@@ -156,7 +154,7 @@ void AudioAnalysisComponentInst::Describe()
 
 bool AudioAnalysisComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
-	auto cmi = psi->FindSystem<ent::AudioAnalysisManagerComponentInst>();
+	auto cmi = psi->findSystem<ent::AudioAnalysisManagerComponentInst>();
 	OrkAssert(cmi!=0);
 	cmi->AddAACI(this);
 
@@ -213,7 +211,7 @@ AudioAnalysisComponentInst::AudioAnalysisComponentInst( const AudioAnalysisCompo
 {
 	StartMidi();
 	SceneInst* psi = pent->GetSceneInst();
-	mpAAMCI = psi->FindSystem<ent::AudioAnalysisManagerComponentInst>();
+	mpAAMCI = psi->findSystem<ent::AudioAnalysisManagerComponentInst>();
 	const AudioAnalysisManagerComponentData& AAMCD = mpAAMCI->GetAAMCD();
 
 

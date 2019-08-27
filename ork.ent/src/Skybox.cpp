@@ -61,7 +61,7 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 			const SkyBoxControllerData&	cd = ssci->GetCD();
 			bool IsPickState = rcid.GetRenderer()->GetTarget()->FBI()->IsPickState();
 			float fphase = ssci->GetPhase();
-			
+
 			if( cd.GetModel() )
 			{
 				ork::lev2::XgmModelInst minst( cd.GetModel() );
@@ -103,7 +103,7 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 				///////////////////////////////////////////////////////////
 				// setup headlight (default lighting)
 				///////////////////////////////////////////////////////////
-				
+
 				float fscale = cd.GetScale();
 				CVector3 pos = FrameData.GetCameraData()->GetEye();
 				CMatrix4 mtxSPIN;
@@ -111,9 +111,9 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 				CMatrix4 mtxSKY;
 				mtxSKY.SetScale( fscale );
 				mtxSKY.SetTranslation( pos );
-				
+
 				mtxSKY = mtxSPIN*mtxSKY;
-				
+
 				MatCtx.ForceNoZWrite( true );
 
 			//	printf( "DrawSkyBox pos<%f %f %f>\n", pos.GetX(), pos.GetY(), pos.GetX() );
@@ -143,7 +143,7 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 
 							//printf( "DrawSkyBox clus<%d>\n", ic );
 
-							cd.GetModel()->RenderRigid(	color, 
+							cd.GetModel()->RenderRigid(	color,
 														mtxSKY,
 														targ,
 														MatCtx,
@@ -175,7 +175,7 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 	ap.Set<const yo*>( pyo );
 	pdrw->SetData( ap );
 #endif
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -189,8 +189,6 @@ void SkyBoxArchetype::DoCompose(ork::ent::ArchComposer& composer)
 
 void SkyBoxControllerData::Describe()
 {
-	ork::ent::RegisterFamily<SkyBoxControllerData>(ork::AddPooledLiteral("control"));
-
 	reflect::RegisterProperty( "SpinRate", & SkyBoxControllerData::mfSpinRate );
 
 	reflect::AnnotatePropertyForEditor<SkyBoxControllerData>( "SpinRate", "editor.range.min", "-6.28" );
