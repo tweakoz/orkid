@@ -236,7 +236,6 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 
 			vtx.mfU = fu2;//+(1.0f/4096.0f);
 			vtx.mfV = fv2;//+(1.0f/4096.0f);
-			//printf( "addvertex<%f %f %f>\n", vtx.miX, vtx.miY, vtx.miZ );
 			vwriter.AddVertex( vtx );
 		};
 
@@ -266,24 +265,13 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 				auto nrm_xazb = _heightmap.ComputeNormal(ixa,izb);
 
 				if( icol==0 ) // leading degen
-				{
 					l_submit( xyz_xazb, nrm_xazb, fua, fvb );
-				}
 
 				l_submit( xyz_xazb, nrm_xazb, fua, fvb );
 				l_submit( xyz_xaza, nrm_xaza, fua, fva );
 
 				if( icol==(inumcol-1) ) // trailing degen
-				{
-					//auto xyz_xbza = _heightmap.XYZ(ixb,iza);
-					//auto xyz_xbzb = _heightmap.XYZ(ixb,izb);
-					//aab.Grow( xyz_xbza );
-					//aab.Grow( xyz_xbzb );
-					//auto nrm_xbza = (vnq+_heightmap.ComputeNormal(ixb,iza)*0.25f).GetVtxColorAsU32();
-					//auto nrm_xbzb = (vnq+_heightmap.ComputeNormal(ixb,izb)*0.25f).GetVtxColorAsU32();
-
 					l_submit( xyz_xaza, nrm_xaza, fua, fva );
-				}
 
 			}
 		}
@@ -387,13 +375,10 @@ void FastRender(	const lev2::RenderContextInstData& rcidata,
 					bool bDRAW = htri->mTerrainMtl->BeginPass( ptarg,0 );
 					if( bDRAW )
 					{
+						printf( "inumvb<%d>\n", inumvb );
 						for( int ivb=0; ivb<inumvb; ivb++ )
 						{
 							auto vertex_buf = vertexbuffers[ivb];
-
-							//const lev2::DisplayList& dlist = DisplayLists[ivb];
-							//ptarg->DisplayListDrawEML( dlist );
-							//ptarg->GBI()->DrawIndexedPrimitiveEML( *vertex_buf, *indexbuffer, lev2::EPRIM_TRIANGLES );
 							ptarg->GBI()->DrawPrimitiveEML( *vertex_buf, lev2::EPRIM_TRIANGLESTRIP );
 						}
 						htri->mTerrainMtl->EndPass( ptarg );

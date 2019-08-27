@@ -46,7 +46,7 @@ public:
 	virtual void BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 * MatArray, int iCount ) {}
 	virtual void BindParamU32( FxShader* hfx, const FxShaderParam* hpar, U32 uval ) {}
 	virtual void BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, const Texture *pTex ) {}
-		
+
 	virtual bool LoadFxShader( const AssetPath& pth, FxShader *ptex );
 
 	DummyFxInterface() {}
@@ -79,7 +79,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class DuGeometryBufferInterface: public GeometryBufferInterface
-{	
+{
 	///////////////////////////////////////////////////////////////////////
 	// VtxBuf Interface
 
@@ -107,7 +107,7 @@ class DuGeometryBufferInterface: public GeometryBufferInterface
 	virtual void DrawIndexedPrimitive( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 );
 	virtual void DrawPrimitiveEML( const VertexBufferBase& VBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 );
 	virtual void DrawIndexedPrimitiveEML( const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType=EPRIM_NONE, int ivbase = 0, int ivcount = 0 );
-	
+
 	//////////////////////////////////////////////
 
 public:
@@ -148,13 +148,10 @@ class DuTextureInterface : public TextureInterface
 {
 public:
 
-	virtual void VRamUpload( Texture *pTex ) {}		// Load Texture Data onto card
-	virtual void VRamDeport( Texture *pTex ) {}		// Load Texture Data onto card
-
 	virtual void TexManInit( void ) {}
 
 	virtual bool DestroyTexture( Texture *ptex ) { return false; }
-	virtual bool LoadTexture( const AssetPath& fname, Texture *ptex ); 
+	virtual bool LoadTexture( const AssetPath& fname, Texture *ptex );
 	virtual void SaveTexture( const ork::AssetPath& fname, Texture *ptex ) {}
 };
 

@@ -9,7 +9,7 @@
 // Graphics Environment (Driver/HAL)
 ///////////////////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -542,7 +542,7 @@ public:
 					}
 
     PickBufferBase* GetCurrentPickBuffer() const { return mpPickBuffer; }
-    
+
 	//////////////////////////////////////////////
 
 protected:
@@ -583,9 +583,6 @@ protected:
 class TextureInterface
 {
 public:
-
-	virtual void VRamUpload( Texture *pTex ) = 0;		// Load Texture Data onto card
-	virtual void VRamDeport( Texture *pTex ) = 0;		// Unload Texture Data from card
 
 	virtual void TexManInit( void ) = 0;
 

@@ -1050,30 +1050,6 @@ void GlTextureInterface::SaveTexture( const ork::AssetPath& fname, Texture *ptex
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlTextureInterface::VRamDeport( Texture *pTex)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void GlTextureInterface::VRamUpload( Texture *ptex )
-{
-	GLTextureObject* pTEXOBJ = (GLTextureObject*) ptex->GetTexIH();
-    if( pTEXOBJ )
-    {
-        glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
-        glTexSubImage2D(	GL_TEXTURE_2D,
-                            0,
-                            0, 0,
-                            ptex->GetWidth(), ptex->GetHeight(),
-                            GL_RGBA,
-                            GL_UNSIGNED_BYTE,
-                            ptex->GetTexData() );
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 static auto addrlamb = [](ETextureAddressMode inp) -> GLenum
 {	switch( inp )
 	{
@@ -1155,7 +1131,7 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 			minfilt =  GL_LINEAR;
 		}
 
-		//printf( "linmiplin inummips<%d>\n", inummips );
+		printf( "linmiplin inummips<%d>\n", inummips );
 
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
 

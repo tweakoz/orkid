@@ -15,7 +15,6 @@
 #include <ork/lev2/gfx/glheaders.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include "glfx/glslfxi.h"
-#define GlFxInterfaceType GlslFxInterface
 /////////////////////////////
 
 #include <ork/lev2/gfx/texman.h>
@@ -25,7 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 
-#if 1 //defined( _DEBUG )
+#if 0 //defined( _DEBUG )
 #define GL_ERRORCHECK() { GLenum iErr = GetGlError(); OrkAssert( iErr==GL_NO_ERROR ); }
 #else
 #define GL_ERRORCHECK() {}
@@ -43,24 +42,12 @@ struct GlFboObject
 {
 	static const int kmaxrt = RtGroup::kmaxmrts;
 	GLuint mFBOMaster;
-	//GLuint mCBO[kmaxrt];
 	GLuint mDSBO;
-	//IDirect3DSurface9 *mFBOREAD[kmaxrt];
 	GLuint mTEX[kmaxrt];
 	GlFboObject();
 };
 
 int GetGlError( void );
-
-enum EOpenGLRenderPath
-{
-	EGLRPATH_ARBVP = 0,		// Arb Vertex Program, Standard GL1.3 Fragment processing
-	EGLRPATH_ARBVP_ARBTE,	// Arb Vertex Program, TexEnvCombine/TexEnvAdd
-	EGLRPATH_ARBVP_NVRC,	// Arb Vertex Program, NVidia Register Combiners (GF2/GF3/GF4)
-	EGLRPATH_ARBVP_NV20,	// Arb Vertex Program, NVidia Register Combiners (GF3/GF4)
-	EGLRPATH_ARBVP_ARBFP,	// Arb Vertex Program, Arb Fragment Programe (GFFX/R300)
-	EGLRPATH_CGFX,			// CgFX Profile
-};
 
 //////////////////////////////////////////////////////////////////////
 
@@ -188,7 +175,6 @@ public:
 	// Capture Interface
 
 	virtual void	Capture( const RtGroup& inpbuf, int irt, const file::Path& pth );
-	//virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer );
 	virtual bool	CaptureToTexture( const CaptureBuffer& capbuf, Texture& tex ) { return false; }
 	virtual void	GetPixel( const CVector4 &rAt, GetPixelContext& ctx );
 
@@ -246,21 +232,6 @@ private:
     void UpdateFBO(GLTextureObject&glto,float ftime);
 };
 
-#if defined(_DARWIN)
-class QuartzComposerTextureAnimation : public TextureAnimationBase
-{
-public:
-	QuartzComposerTextureAnimation(Objc::Object qcr);
-	void UpdateTexture( TextureInterface* txi, Texture* ptex, TextureAnimationInst* ptexanim ); // virtual
-	float GetLengthOfTime( void ) const; // virtual
-	~QuartzComposerTextureAnimation();  // virtual
-private:
-//	float			mfQtzTime;
-	Objc::Object	mQCRenderer;
-	void UpdateQtzFBO(GLTextureObject&glto,float ftime);
-};
-#endif
-
 struct GLTextureObject
 {
 	GLuint			mObject;
@@ -269,8 +240,6 @@ struct GLTextureObject
 	GLenum			mTarget;
 
 	GLTextureObject() : mObject(0), mFbo(0), mDbo(0), mTarget(GL_NONE) {} //, mfQtzTime(0.0f) {}
-
-//	void UpdateQtzFBO();
 
 };
 
@@ -301,8 +270,6 @@ class GlTextureInterface : public TextureInterface
 {
 public:
 
-	void VRamUpload( Texture *pTex ) override;		// Load Texture Data onto card
-	void VRamDeport( Texture *pTex ) override;		// Load Texture Data onto card
 	void TexManInit( void ) override;
 	bool DestroyTexture( Texture *ptex ) override;
 	bool LoadTexture( const AssetPath& fname, Texture *ptex ) override;
@@ -351,12 +318,6 @@ class GfxTargetGL : public GfxTarget
 	void DoBeginFrame( void ) final {}
 	void DoEndFrame( void ) final {}
 
-	///////////////////////////////////////////////////////////////////////
-	// Shader Interface
-
-	static void SetRenderPath( EOpenGLRenderPath ePath ) { geRenderPath = ePath; }
-	static EOpenGLRenderPath GetRenderPath( void ) { return geRenderPath; }
-
 	public:
 
 	//////////////////////////////////////////////
@@ -369,9 +330,6 @@ class GfxTargetGL : public GfxTarget
 	GeometryBufferInterface*	GBI() final { return & mGbI; }
 	FrameBufferInterface*		FBI() final { return & mFbI; }
 	TextureInterface*			TXI() final { return & mTxI; }
-
-    ///////////////////////////////////////////////////////////////////////
-
 
 	///////////////////////////////////////////////////////////////////////
 
@@ -391,11 +349,9 @@ class GfxTargetGL : public GfxTarget
 	void AttachGLContext( CTXBASE *pCTFL );
 	void SwapGLContext( CTXBASE *pCTFL );
 
-	int GetNumTexUnits( void ) const { return gNumTexUnits; }
-
 	GlFrameBufferInterface&	GLFBI() { return mFbI; }
 
-    void InitializeContext( GfxBuffer *pBuf ) final ;   // make a pbuffer
+  void InitializeContext( GfxBuffer *pBuf ) final ;   // make a pbuffer
 
 protected:
 
@@ -405,10 +361,6 @@ protected:
     void* DoBeginLoad() final;
     void DoEndLoad(void*ploadtok) final; // virtual
 
-	//////////////////////////////////////////////
-	#if defined(_LINUX) || defined( _OSX )
-	//////////////////////////////////////////////
-
 		void*			mhHWND;
 		void*			mGLXContext;
 		GfxTargetGL*	mpParentTarget;
@@ -416,8 +368,6 @@ protected:
 		std::stack< void* >		mDCStack;
 		std::stack< void* >		mGLRCStack;
 
-	//////////////////////////////////////////////
-	#endif
 	//////////////////////////////////////////////
 
 	static ork::MpMcBoundedQueue<void*> mLoadTokens;
@@ -432,30 +382,17 @@ protected:
 
 	static orkvector< std::string >		gGLExtensions;
 	static orkset< std::string >		gGLExtensionSet;
-	static U32							gNumTexUnits;
-	static EOpenGLRenderPath			geRenderPath;
-	std::string							mVtxProgString_NoXFormC;
-	static bool							gbUseVBO;
-	static bool							gbUseIBO;
-
-	static GLenum						geFBOSupport;
-	static const GLenum					kNoFBOSupport = 0;
-	static const GLuint					kNullFBO = 0xffffffff;
-
-
-	static const int					kmaxtexobjects = 1024;
-	static GLuint						mTextureObjects[kmaxtexobjects];
 
 	///////////////////////////////////////////////////////////////////////////
 
-	GlImiInterface				mImI;
-	GlFxInterfaceType			mFxI;
+	GlImiInterface				    mImI;
+	GlslFxInterface			      mFxI;
 	GlRasterStateInterface		mRsI;
 	GlMatrixStackInterface		mMtxI;
 	GlGeometryBufferInterface	mGbI;
 	GlFrameBufferInterface		mFbI;
-	GlTextureInterface			mTxI;
-	bool 						mTargetDrawableSizeDirty;
+	GlTextureInterface			  mTxI;
+	bool 					 	          mTargetDrawableSizeDirty;
 
 };
 
