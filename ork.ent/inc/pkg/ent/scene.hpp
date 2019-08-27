@@ -73,22 +73,28 @@ const T *SceneData::FindTypedObject(const PoolString &pstr) const {
   T *pret = (cd == 0) ? 0 : rtti::safe_downcast<T *>(cd);
   return pret;
 }
-template <typename T> T *SceneData::getTypedSystem() const {
-  const ork::object::ObjectClass *pclass = T::GetClassStatic();
-  auto it = _systemDatas.find(pclass);
-  return (it == _systemDatas.end()) ? 0 : rtti::autocast(it->second);
+template <typename T> T *SceneData::getTypedSystemData() const {
+  auto systemdataclass = T::GetClassStatic();
+  auto it = _systemDatas.find(systemdataclass);
+  if( it == _systemDatas.end() ){
+    // CREATE IT !
+    auto sdat = new T;
+    _systemDatas[systemdataclass] = sdat;
+  }
+  else {
+    return rtti::autocast(it->second);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T *SceneComposer::Register() {
   ork::object::ObjectClass *pclass = T::GetClassStatic();
-  orklut<const object::ObjectClass *, SystemData *>::iterator it =
-      _components.find(pclass);
-  SystemData *pobj = (it == _components.end()) ? 0 : it->second;
-  if (0 == pobj) {
+  auto it = mpSceneData->_systemDatas.find(pclass);
+  SystemData *pobj = (it == mpSceneData->_systemDatas.end()) ? 0 : it->second;
+  if(nullptr == pobj) {
     pobj = rtti::autocast(pclass->CreateObject());
-    _components.AddSorted(pclass, pobj);
+    mpSceneData->_systemDatas.AddSorted(pclass, pobj);
   }
   T *rval = rtti::autocast(pobj);
   return rval;

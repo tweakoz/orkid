@@ -379,7 +379,7 @@ void SceneInst::EnterRunState() {
   AllocationLabel label268("SceneInst::EnterRunState::268");
 
   ComposeEntities();
-  ComposeSystems();
+  composeSystems();
 
   for (const auto &item : mEntities) {
     auto pent = item.second;
@@ -582,7 +582,7 @@ void SceneInst::UnLinkEntities() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::ComposeSystems() {
+void SceneInst::composeSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
 
   ///////////////////////////////////
@@ -598,7 +598,7 @@ void SceneInst::ComposeSystems() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::DecomposeSystems() {
+void SceneInst::decomposeSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
 
   for (auto item : _systems) {

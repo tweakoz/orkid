@@ -164,8 +164,8 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class BulletWorldControllerData : public SystemData {
-  RttiDeclareConcrete(BulletWorldControllerData, SystemData);
+class BulletSystemData : public SystemData {
+  RttiDeclareConcrete(BulletSystemData, SystemData);
 
   float mfTimeScale;
   float mSimulationRate;
@@ -173,8 +173,7 @@ class BulletWorldControllerData : public SystemData {
   CVector3 mGravity;
 
 public:
-  BulletWorldControllerData()
-      : mfTimeScale(1.0f), mbDEBUG(false), mSimulationRate(120.0f) {}
+  BulletSystemData();
 
   float GetTimeScale() const { return mfTimeScale; }
   bool IsDebug() const { return mbDEBUG; }
@@ -211,7 +210,7 @@ class BulletSystem : public ork::ent::System {
   btBroadphaseInterface *mBroadPhase;
   btCollisionDispatcher *mDispatcher;
   btSequentialImpulseConstraintSolver *mSolver;
-  const BulletWorldControllerData &mBWCBD;
+  const BulletSystemData &mBWCBD;
   PhysicsDebugger mDebugger;
   int mMaxSubSteps;
   int mNumSubStepsTaken;
@@ -225,7 +224,7 @@ public:
 	static constexpr systemkey_t SystemType = "BulletSystem";
 	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-  BulletSystem(const BulletWorldControllerData &data,
+  BulletSystem(const BulletSystemData &data,
                             ork::ent::SceneInst* psi);
   ~BulletSystem();
 
@@ -247,7 +246,7 @@ public:
 
   int GetNumSubStepsTaken() const { return mNumSubStepsTaken; }
 
-  const BulletWorldControllerData &GetWorldData() const { return mBWCBD; }
+  const BulletSystemData &GetWorldData() const { return mBWCBD; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -474,7 +473,8 @@ public:
 protected:
   friend class BulletObjectControllerInst;
 
-  ComponentInst *CreateComponent(Entity *pent) const override;
+  ComponentInst *CreateComponent(Entity *pent) const final;
+	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
 
   const BulletShapeBaseData *mShapeData;
   ork::ObjectMap mForceControllerDataMap;

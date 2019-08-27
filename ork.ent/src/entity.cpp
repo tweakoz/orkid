@@ -615,7 +615,7 @@ void Init()
 	ObserverCamArchetype::GetClassStatic();
 	SequenceCamArchetype::GetClassStatic();
 	BulletObjectArchetype::GetClassStatic();
-	auto bwcd = BulletWorldControllerData::GetClassStatic();
+	auto bwcd = BulletSystemData::GetClassStatic();
 	printf( "BWCD<%p>\n", bwcd );
 	PerfControllerArchetype::GetClassStatic();
 	PerformanceAnalyzerArchetype::GetClassStatic();
@@ -696,7 +696,7 @@ void Init()
 
 	RegisterFamily<psys::ParticleControllableData>(ork::AddPooledLiteral("particle"));
 
-	RegisterFamily<BulletWorldControllerData>(ork::AddPooledLiteral("physics"));
+	RegisterFamily<BulletSystemData>(ork::AddPooledLiteral("physics"));
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent

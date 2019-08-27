@@ -402,26 +402,22 @@ void SceneData::addSystemData(SystemData *pcomp) {
 void SceneData::clearSystemDatas() { _systemDatas.clear(); }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::SceneComposer(SceneData *psd)
-    : _components(ork::EKEYPOLICY_LUT), mpSceneData(psd) {
-  const auto &scomps = psd->getSystemDatas();
-  for (auto it : scomps) {
-    _components.AddSorted(it.first, it.second);
-  }
+    : mpSceneData(psd) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::~SceneComposer() {
-  mpSceneData->clearSystemDatas();
-  for (orklut<const ork::object::ObjectClass *, SystemData *>::const_iterator
-           it = _components.begin();
-       it != _components.end(); it++) {
+  //mpSceneData->clearSystemDatas();
+  /*for (orklut<const ork::object::ObjectClass *, SystemData *>::const_iterator
+           it = _systemDatas.begin();
+       it != _systemDatas.end(); it++) {
     const ork::object::ObjectClass *pclass = it->first;
     SystemData *psc = ork::rtti::autocast(it->second);
-    if (0 == psc) {
+    if (nullptr == psc) {
       OrkAssert(pclass->IsSubclassOf(SystemData::GetClassStatic()));
       psc = ork::rtti::autocast(pclass->CreateObject());
     }
     mpSceneData->addSystemData(psc);
-  }
+  }*/
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ent
