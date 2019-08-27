@@ -145,7 +145,7 @@ namespace ork::lev2 {
             } );
         };
 
-        note_on(48);
+        //note_on(48);
     }
 
     void startupAudio()

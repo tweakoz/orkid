@@ -224,8 +224,8 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 	////////////////////////////////////////////
 
 	auto patch_block = [&](PatchType t, int lod,
-													int x1, int z1,
-													int x2, int z2){
+										int x1, int z1,
+										int x2, int z2){
 		if( x1==x2 ) x2++;
 		if( z1==z2 ) z2++;
 
@@ -257,38 +257,59 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 	////////////////////////////////////////////
 
 	struct Iter {
-		int _lod;
-		int _acount;
-		int _astart;
-		int _dim;
+		int _lod = -1;
+		int _acount = 0;
 	};
 
 	std::vector<Iter> iters;
-	iters.push_back(Iter{0, 1,-1,1});
-	iters.push_back(Iter{1, 3,-4,2});
-	iters.push_back(Iter{2, 5,-10,4});
+	iters.push_back(Iter{0, 8}); // -8 .. 0
+	iters.push_back(Iter{1, 2}); // -12 .. -8
+
+    int iprevouter = 0;
 
 	for( auto iter : iters ){
-			int lod = iter._lod;
-			int sectdim = iter._dim;
-			int sectdimp1 = sectdim+1;
-			int a_start = iter._astart;
-			int a_end = iter._astart+iter._acount;
-			int a_z = iter._astart;
 
-			patch_row(   PT_A,  lod, a_start,a_end,a_start ); // top a
-			patch_column(PT_A,  lod, a_start,a_end,a_start ); // right a
-			patch_row(PT_A,  lod, a_start+1,a_end,a_end ); // bottom a
-			patch_column(PT_A,  lod, a_start+1,a_end, a_start ); // left a
+		int lod = iter._lod;
+        int step = 1<<lod;
 
-			patch_row(PT_BT, lod, -sectdim,sectdim,-sectdimp1);
-			patch_column(PT_BR, lod, +sectdim,-sectdim,+sectdim);
-			patch_row(PT_BB, lod, -sectdim,sectdim,+sectdimp1);
-			patch_column(PT_BL, lod, -sectdim,-sectdim,+sectdim);
-			single_patch(PT_C,  lod, -sectdim,-sectdim);
-			single_patch(PT_C,  lod, +sectdim,-sectdim);
-			single_patch(PT_C,  lod, +sectdim,+sectdim);
-			single_patch(PT_C,  lod, -sectdim,+sectdim);
+        int newouter = iprevouter + iter._acount*step;
+        int newouterd2 = newouter/2;
+
+		int sectdim = step;
+		int sectdimp1 = sectdim+step;
+		int a_start = -(iter._acount<<lod)/2;
+		int a_end = a_start+(iter._acount-1)*step;
+		int a_z = a_start;
+
+        patch_block( PT_A,  lod, // TOP Left Quadrant
+                     -newouterd2+step,-newouterd2+step,
+                     -iprevouter,-iprevouter);
+
+        patch_block( PT_A,  lod, // TOP Right Quadrant
+                  -iprevouter,-newouterd2+step,
+                  +newouterd2,-iprevouter);
+
+        patch_block( PT_A,  lod, // Bottom Left Quadrant
+                -newouterd2+step,-iprevouter,
+                -iprevouter,+newouterd2);
+
+        patch_block( PT_A,  lod, // Bottom Right Quadrant
+                  -iprevouter,-iprevouter,
+                  +newouterd2,+newouterd2);
+
+        int bx0 = -newouterd2;
+        int bx1 = newouterd2-step;
+		patch_row(PT_BT, lod, bx0+step,bx1,-newouterd2);
+		patch_row(PT_BB, lod, bx0+step,bx1,+newouterd2-step);
+		patch_column(PT_BL, lod, -newouterd2,bx0,bx1);
+        patch_column(PT_BR, lod, +newouterd2-step,bx0,bx1);
+
+		single_patch(PT_C,  lod, bx0,bx0);
+		single_patch(PT_C,  lod, bx1,bx0);
+		single_patch(PT_C,  lod, bx1,bx1);
+		single_patch(PT_C,  lod, bx0,bx1);
+
+        iprevouter = newouter;
 
 	}
 
@@ -353,41 +374,55 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 		int lod = p._lod;
 		int step = 1<<lod;
 
-		//fvec3 p0(x,0,z);
-		//fvec3 p1(x+step,0,z);
-		//fvec3 p2(x+step,0,z+step);
-		//fvec3 p3(x,0,z+step);
 		fvec3 p0(x,0,z);
 		fvec3 p1(x+step,0,z);
 		fvec3 p2(x+step,0,z+step);
 		fvec3 p3(x,0,z+step);
 
-		auto v0 = lev2::SVtxV12C4T16(p0,fvec2(),0xffffffff);
-		auto v1 = lev2::SVtxV12C4T16(p1,fvec2(),0xff00ffff);
-		auto v2 = lev2::SVtxV12C4T16(p2,fvec2(),0xffff00ff);
-		auto v3 = lev2::SVtxV12C4T16(p3,fvec2(),0xff0000ff);
+        uint32_t c0 = 0xff000000;
+        uint32_t c1 = 0xff0000ff;
+        uint32_t c2 = 0xff00ffff;
+        uint32_t c3 = 0xff00ff00;
 
-		vwriter.AddVertex( v0 );
-		vwriter.AddVertex( v1 );
-		vwriter.AddVertex( v2 );
-		//vwriter.AddVertex( v0 );
-		//vwriter.AddVertex( v2 );
-		//vwriter.AddVertex( v3 );
-
-		switch(p._type){
+        switch(p._type){
 			case PT_A: //
 				triangle_count += 8;
 				break;
 			case PT_BT:
-			case PT_BL:
-			case PT_BB:
+            case PT_BB:
+                c1 = 0xffc000c0;
+                c2 = 0xff800080;
+                c3 = 0xff400040;
+                triangle_count += 5;
+                break;
+            case PT_BL:
 			case PT_BR:
-				triangle_count += 5;
+                c1 = 0xffc00000;
+                c2 = 0xff800000;
+                c3 = 0xff000000;
+                triangle_count += 5;
+                break;
 				break;
 			case PT_C:
+                c1 = 0xff808080;
+                c2 = 0xffc0c0c0;
+                c3 = 0xff404040;
 				triangle_count += 4;
 				break;
 		}
+
+		auto v0 = lev2::SVtxV12C4T16(p0,fvec2(),c0);
+		auto v1 = lev2::SVtxV12C4T16(p1,fvec2(),c1);
+		auto v2 = lev2::SVtxV12C4T16(p2,fvec2(),c2);
+		auto v3 = lev2::SVtxV12C4T16(p3,fvec2(),c3);
+
+		vwriter.AddVertex( v0 );
+		vwriter.AddVertex( v1 );
+		vwriter.AddVertex( v2 );
+		vwriter.AddVertex( v0 );
+		vwriter.AddVertex( v2 );
+		vwriter.AddVertex( v3 );
+
 	}
 	////////////////////////////////////////////
 	vwriter.UnLock(ptarg);
@@ -479,7 +514,7 @@ void FastRender(	const lev2::RenderContextInstData& rcidata,
 					if( bDRAW ){
 						for( int ivb=0; ivb<inumvb; ivb++ ){
 							auto vertex_buf = vertexbuffers[ivb];
-							ptarg->GBI()->DrawPrimitiveEML( *vertex_buf, lev2::EPRIM_TRIANGLESTRIP );
+							ptarg->GBI()->DrawPrimitiveEML( *vertex_buf, lev2::EPRIM_TRIANGLES );
 						}
 						htri->mTerrainMtl->EndPass( ptarg );
 						htri->mTerrainMtl->EndBlock( ptarg );
