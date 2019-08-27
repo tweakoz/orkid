@@ -69,16 +69,16 @@ hmap_erode1_module::datablock::datablock()
 }
 void hmap_erode1_module::datablock::Copy( const datablock& oth )
 {
-	sheightmap_datablock::Copy( oth );
+	HeightMap_datablock::Copy( oth );
 }
 ///////////////////////////////////////////////////////////////////////////////
 hmap_erode1_module::hmap_erode1_module()
-	//: mInput( this, sheightmap::gdefhm )
+	//: mInput( this, HeightMap::gdefhm )
 	//, mOutputElevation( this, & mElevationData )
 	//, mOutputUphillArea( this, & mUphillAreaData )
 	//, mOutputBasinAccum( this, & mBasinData )
 
-	: mInput( this, dataflow::EPR_UNIFORM, ent::sheightmap::gdefhm, "Input" )
+	: mInput( this, dataflow::EPR_UNIFORM, ent::HeightMap::gdefhm, "Input" )
 	, mOutputElevation(this,dataflow::EPR_UNIFORM, &mElevationData, "Elevation" )
 	, mOutputUphillArea(this,dataflow::EPR_UNIFORM, &mUphillAreaData, "UphillAreaData" )
 	, mOutputBasinAccum(this,dataflow::EPR_UNIFORM, &mBasinData, "BasinData" )
@@ -102,10 +102,10 @@ void hmap_erode1_module::Compute(dataflow::workunit* wu)
 {
 	#if 0
 	datablock* hcw = (datablock*) wu->GetContextData();
-	sheightmap& hm = hcw->mHeightMap;
+	HeightMap& hm = hcw->mHeightMap;
 
 	// alloc output hmap
-	const sheightmap& inhmap = mInput.GetValue();
+	const HeightMap& inhmap = mInput.GetValue();
 	int inpsize = inhmap.GetGridSize();
 	float fwsize = inhmap.GetWorldSize();
 	OrkAssert( inpsize>=32 );

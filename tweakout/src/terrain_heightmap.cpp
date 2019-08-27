@@ -15,18 +15,18 @@
 
 #if 0
 ///////////////////////////////////////////////////////////////////////////////
-//INSTANTIATE_TRANSPARENT_RTTI( ork::dataflow::plug<ork::MeshUtil::sheightmap>,"plug<sheightmap>" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( ork::dataflow::inplug<ork::ent::sheightmap>,"inplug<sheightmap>" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( ork::dataflow::outplug<ork::ent::sheightmap>,"outplug<sheightmap>" );
+//INSTANTIATE_TRANSPARENT_RTTI( ork::dataflow::plug<ork::MeshUtil::HeightMap>,"plug<HeightMap>" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( ork::dataflow::inplug<ork::ent::HeightMap>,"inplug<HeightMap>" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( ork::dataflow::outplug<ork::ent::HeightMap>,"outplug<HeightMap>" );
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace dataflow {
 template<>
-ork::EPropType inplug<ork::terrain::sheightmap>::GetDataType() const
+ork::EPropType inplug<ork::terrain::HeightMap>::GetDataType() const
 {
 	return ork::EPROPTYPE_OBJECTREFERENCE;
 }
 template<>
-ork::EPropType outplug<ork::terrain::sheightmap>::GetDataType() const
+ork::EPropType outplug<ork::terrain::HeightMap>::GetDataType() const
 {
 	return ork::EPROPTYPE_OBJECTREFERENCE;
 }
@@ -62,12 +62,12 @@ ork::EPropType outplug<ork::terrain::cv4_map2d>::GetDataType() const
 	return ork::EPROPTYPE_END;
 }
 //#endif
-template<> void inplug<ork::ent::sheightmap>::Describe() {}
-template<> void outplug<ork::ent::sheightmap>::Describe() {}
+template<> void inplug<ork::ent::HeightMap>::Describe() {}
+template<> void outplug<ork::ent::HeightMap>::Describe() {}
 }} // namespace ork::dataflow
 
 ///////////////////////////////////////////////////////////////////////////////
-//void ork::dataflow::plug<ork::MeshUtil::sheightmap>::Describe() {}
+//void ork::dataflow::plug<ork::MeshUtil::HeightMap>::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace terrain {

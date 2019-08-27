@@ -23,13 +23,13 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace dataflow {
-template<> int MaxFanout<ork::ent::sheightmap>() { return 1; }
+template<> int MaxFanout<ork::ent::HeightMap>() { return 1; }
 }}
 namespace ork { namespace terrain {
 
-void ComputeNormalsGpu(hmap_hfield_module& mod, sheightmap_datablock& db, orkvector<CVector3>& outputnormals );
-void ComputeColorsGpu(sheightmap_datablock& db);
-void ComputeColorsGpu(sheightmap_datablock& db, const orkvector<CVector3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex );
+void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvector<CVector3>& outputnormals );
+void ComputeColorsGpu(HeightMap_datablock& db);
+void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex );
 lev2::CaptureBuffer& HeightMapGPGPUCaptureBuffer()
 {
 	static lev2::CaptureBuffer capbuf;
@@ -137,11 +137,11 @@ void heightfield_compute_buffer::OutputToTexture( lev2::Texture* ptex )
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-sheightmap_datablock::sheightmap_datablock()
+HeightMap_datablock::HeightMap_datablock()
 	: mHeightMap(1)
 {
 }
-void sheightmap_datablock::Copy( const sheightmap_datablock& oth )
+void HeightMap_datablock::Copy( const HeightMap_datablock& oth )
 {
 	mHeightMap.SetGridSize( oth.mHeightMap.GetGridSize() );
 	mHeightMap.SetWorldSize( oth.mHeightMap.GetWorldSize() );
@@ -202,8 +202,8 @@ void hmap_hfield_module::Compute(dataflow::workunit* wu)
 {
 	#if 0
 	if( mInputPlug.IsConnected() )
-	{	sheightmap_datablock* hcw = (sheightmap_datablock*) wu->GetContextData();
-		const sheightmap& hmin = mInputPlug.GetValue();
+	{	HeightMap_datablock* hcw = (HeightMap_datablock*) wu->GetContextData();
+		const HeightMap& hmin = mInputPlug.GetValue();
 		int iw = hmin.GetGridSize();
 		hcw->mHeightMap.SetGridSize( iw );
 		hcw->mHeightMap.SetWorldSize( hmin.GetWorldSize() );
@@ -226,9 +226,9 @@ void hmap_hfield_module::DoDivideWork( const dataflow::scheduler& sch, dataflow:
 	int inumcpu_processors = sch.GetNumProcessors( dataflow::scheduler::CpuAffinity );
 	int inumgpu_processors = sch.GetNumProcessors( dataflow::scheduler::GpuAffinity );
 	if( mInputPlug.IsConnected() )
-	{	const sheightmap& hmin = mInputPlug.GetValue();
+	{	const HeightMap& hmin = mInputPlug.GetValue();
 		int isiz = hmin.GetGridSize();
-		sheightmap_datablock* hcw = OrkNew sheightmap_datablock;
+		HeightMap_datablock* hcw = OrkNew HeightMap_datablock;
 		hcw->mHeightMap.SetGridSize( isiz );
 		hcw->mHeightMap.SetWorldSize( hmin.GetWorldSize() );
 		hcw->miX1 = 0;
@@ -254,7 +254,7 @@ void hmap_hfield_module::CombineWork( const dataflow::cluster* clus )
 	{	dataflow::workunit* wu = wuvect[i];
 		if( wu->GetModule() == this )
 		{	int wuidx = wu->GetModuleWuIndex();
-			sheightmap_datablock* hcw = (sheightmap_datablock*) wu->GetContextData();
+			HeightMap_datablock* hcw = (HeightMap_datablock*) wu->GetContextData();
 			if( 0 == wuidx ) // set my size from this
 			{	SetSize(hcw->mHeightMap.GetGridSize());
 				mDefDataBlock.mHeightMap.SetWorldSize( hcw->mHeightMap.GetWorldSize() );
@@ -339,10 +339,10 @@ U32& hmap_hfield_module::Color(int ix, int iz)
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ComputeNormalsGpu(hmap_hfield_module& mod, sheightmap_datablock& db, orkvector<CVector3>& outputnormals )
+void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvector<CVector3>& outputnormals )
 {	
 	#if 0
-	sheightmap& hm = db.mHeightMap;
+	HeightMap& hm = db.mHeightMap;
 	int isize = hm.GetGridSize();
 	outputnormals.resize( isize*isize );
 	//////////////////////////////////////////////////////////
@@ -396,7 +396,7 @@ static heightfield_compute_buffer& GetComputeRead()
 {
 	return HeightMapGPGPUComputeBuffer((gindex+1)&1);
 }
-void ComputeColorsGpu(sheightmap_datablock& db, const orkvector<CVector3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex )
+void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex )
 {
 	#if 0
 	int isize = db.mHeightMap.GetGridSize();
