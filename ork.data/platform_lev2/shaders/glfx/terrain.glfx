@@ -1,0 +1,79 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default
+{
+	glsl_version = "330";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_block ublock_vtx
+{
+	uniform mat4        MatMVP;
+    uniform mat4        MatMV;
+	uniform mat4        MatM;
+	uniform mat4        MatV;
+	uniform mat4        MatP;
+	uniform mat4        MatAux;
+	uniform vec4        modcolor;
+	uniform float       Time;
+}
+uniform_block ublock_frg
+{
+	uniform vec4 modcolor;
+	uniform sampler2D ColorMap;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault
+	: ublock_vtx
+{
+	//
+	in vec4 position : POSITION;
+	in vec4 vtxcolor : COLOR0;
+	in vec2 uv0 : TEXCOORD0;
+	//
+	out vec4 frg_clr;
+	out vec2 frg_uv;
+}
+fragment_interface iface_fdefault
+	: ublock_frg
+{
+	in vec4 frg_clr;
+	in vec2 frg_uv;
+	//
+	out vec4 out_clr;
+}
+///////////////////////////////////////////////////////////////
+// shaders
+///////////////////////////////////////////////////////////////
+vertex_shader vs_terrain1 : iface_vdefault
+{
+    vec4 inpos = position;
+    inpos.y = sin(inpos.x+Time)+cos(inpos.z+Time);
+
+	gl_Position = MatMVP*inpos;
+	frg_clr = vtxcolor;
+	frg_uv = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_terrain1 : iface_fdefault
+{
+	out_clr = modcolor*frg_clr;
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default
+{
+	inherits default;
+}
+///////////////////////////////////////////////////////////////
+technique terrain1 {
+	fxconfig=fxcfg_default;
+	pass p0
+	{	vertex_shader=vs_terrain1;
+		fragment_shader=ps_terrain1;
+		state_block=sb_default;
+	}
+}

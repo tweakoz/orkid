@@ -149,8 +149,8 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 	auto sphmap = _hfd.GetSphereMap();
 	auto sphmaptex = (sphmap!=nullptr) ? sphmap->GetTexture() : nullptr;
 
-	mTerrainMtl = new lev2::GfxMaterial3DSolid( ptarg );
-	mTerrainMtl->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
+	mTerrainMtl = new lev2::GfxMaterial3DSolid( ptarg, "orkshader://terrain", "terrain1" );
+	mTerrainMtl->SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 
 	orkprintf( "ComputingGeometry\n" );
 
@@ -494,12 +494,9 @@ void FastRender(	const lev2::RenderContextInstData& rcidata,
 				if( sphmap && sphmap->GetTexture() )
 					ColorTex = sphmap->GetTexture();
 
-				auto std_mode = (ColorTex!=nullptr)
-							  ? lev2::GfxMaterial3DSolid::EMODE_TEXVERTEX_COLOR
-							  : lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR;
+				auto std_mode = lev2::GfxMaterial3DSolid::EMODE_USER;
 
-				htri->mTerrainMtl->SetColorMode( bpick ? lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR
-                                               : std_mode );
+				htri->mTerrainMtl->SetColorMode( std_mode );
 
 				htri->mTerrainMtl->SetTexture( ColorTex );
 
