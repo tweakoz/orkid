@@ -262,18 +262,20 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 	};
 
 	std::vector<Iter> iters;
-	iters.push_back(Iter{0, 8}); // -8 .. 0
-	iters.push_back(Iter{1, 2}); // -12 .. -8
+    for( int i=0; i<8; i++ )
+	   iters.push_back(Iter{i, 64});
 
-    int iprevouter = 0;
+    int iprevouterd2 = 0;
 
 	for( auto iter : iters ){
+
+        assert(iter._acount>=4); // at least one inner
+        assert((iter._acount&1)==0); // must also be even
 
 		int lod = iter._lod;
         int step = 1<<lod;
 
-        int newouter = iprevouter + iter._acount*step;
-        int newouterd2 = newouter/2;
+        int newouterd2 = iprevouterd2 + (iter._acount*step/2);
 
 		int sectdim = step;
 		int sectdimp1 = sectdim+step;
@@ -281,21 +283,28 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 		int a_end = a_start+(iter._acount-1)*step;
 		int a_z = a_start;
 
-        patch_block( PT_A,  lod, // TOP Left Quadrant
-                     -newouterd2+step,-newouterd2+step,
-                     -iprevouter,-iprevouter);
+        if( 0 == lod ) {
+            patch_block( PT_A,  lod, // Full Sector
+                         -newouterd2+step,-newouterd2+step,
+                         +newouterd2,+newouterd2);
+        }
+        else {
+            patch_block( PT_A,  lod, // Top Sector
+             -newouterd2+step,-newouterd2+step,
+             +newouterd2,-iprevouterd2);
 
-        patch_block( PT_A,  lod, // TOP Right Quadrant
-                  -iprevouter,-newouterd2+step,
-                  +newouterd2,-iprevouter);
+             patch_block( PT_A,  lod, // Left Sector
+              -newouterd2+step,-iprevouterd2,
+              -iprevouterd2,+iprevouterd2);
 
-        patch_block( PT_A,  lod, // Bottom Left Quadrant
-                -newouterd2+step,-iprevouter,
-                -iprevouter,+newouterd2);
+              patch_block( PT_A,  lod, // Right Sector
+               iprevouterd2,-iprevouterd2,
+               newouterd2,+iprevouterd2);
 
-        patch_block( PT_A,  lod, // Bottom Right Quadrant
-                  -iprevouter,-iprevouter,
-                  +newouterd2,+newouterd2);
+             patch_block( PT_A,  lod, // Bottom Sector
+              -newouterd2+step,iprevouterd2,
+              +newouterd2,newouterd2);
+        }
 
         int bx0 = -newouterd2;
         int bx1 = newouterd2-step;
@@ -309,7 +318,7 @@ void hfield_geometry::init_visgeom(lev2::GfxTarget* ptarg)
 		single_patch(PT_C,  lod, bx1,bx1);
 		single_patch(PT_C,  lod, bx0,bx1);
 
-        iprevouter = newouter;
+        iprevouterd2 = newouterd2;
 
 	}
 
