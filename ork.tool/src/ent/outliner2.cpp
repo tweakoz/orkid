@@ -573,7 +573,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					SetNameOfSelectedItem();
 					break;
 				}
-				case 16777219: // delete
+				case Qt::Key_Delete: // delete
 				{
 					int ilastsel = mOutlinerModel.GetLastSelection();
 					if( ilastsel>=0 )
@@ -588,10 +588,10 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					}
 					break;
 				}
-				case 16777235: // cursup
+				case Qt::Key_Up: // cursup
 					mOutlinerModel.DecSel();
 					break;
-				case 16777237: // cursdn
+				case Qt::Key_Down: // cursdn
 					mOutlinerModel.IncSel();
 					break;
 				default:
