@@ -245,8 +245,8 @@ struct VRSYSTEMIMPL {
         	auto str_display = trackedDeviceString( vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_SerialNumber_String );
           printf( "str_driver<%s>\n", str_driver.c_str() );
           printf( "str_driver<%s>\n", str_display.c_str() );
-          auto proj_mtx_l = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Left, .1, 10000.0f ));
-          auto proj_mtx_r = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Right, .1, 10000.0f ));
+          auto proj_mtx_l = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Left, .1, 50000.0f ));
+          auto proj_mtx_r = steam44tofmtx4(_hmd->GetProjectionMatrix( vr::Eye_Right, .1, 50000.0f ));
           auto eyep_mtx_l = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Left ));
           auto eyep_mtx_r = steam34tofmtx4(_hmd->GetEyeToHeadTransform( vr::Eye_Right ));
 

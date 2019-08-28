@@ -176,31 +176,20 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 
   fvec2 origin(0,0);
 
+  auto heightdata = (float*) _heightmap.GetHeightData();
+
   for( int z=0; z<iglZ; z++ ){
     int zz = z-(iglZ>>1);
     float fzz = float(zz)/float(iglZ>>1); // -1 .. 1
     for( int x=0; x<iglX; x++ ){
       int xx = x-(iglX>>1);
-      float fxx = float(xx)/float(iglZ>>1); // -1 .. 1
-
+      float fxx = float(xx)/float(iglX>>1); // -1 .. 1
       fvec2 pos2d(fxx,fzz);
-
       float d = (pos2d-origin).Mag();
       float dpow = powf(d,3);
-
-      if( abs(xx) < 10 and abs(zz) < 10 ){
-        printf( "zz<%d> fzz<%g> xx<%d> fxx<%g> d<%g> dpow<%g>\n", zz, fzz, xx, fxx, d, dpow );
-
-      }
-
-
-      float h = _heightmap.GetHeight(x,z);
       size_t index = z*iglX+x;
-
-
-
-      int val = rand()&0xff;
-      pfloattex[index]=float(val)*dpow/25.0f;
+      float h = heightdata[index];
+      pfloattex[index]=float(h);
     }
 
   }
@@ -430,6 +419,12 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     fvec3 p2(x + step, 0, z + step);
     fvec3 p3(x, 0, z + step);
 
+    aab.Grow(p0);
+    aab.Grow(p1);
+    aab.Grow(p2);
+    aab.Grow(p3);
+
+
     uint32_t c0 = 0xff000000;
     uint32_t c1 = 0xff0000ff;
     uint32_t c2 = 0xff00ffff;
@@ -482,6 +477,11 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   auto geomin = aab.Min();
   auto geomax = aab.Max();
   auto geosiz = aab.GetSize();
+
+  _aabbmin = geomin;
+  _aabbmax = geomax;
+
+
   printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
   printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
   printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
@@ -535,11 +535,24 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         if (sphmap && sphmap->GetTexture())
           ColorTex = sphmap->GetTexture();
 
-        htri->mTerrainMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-        htri->mTerrainMtl->SetTexture(ColorTex);
-        htri->mTerrainMtl->SetTexture2(htri->_heightmapTexture);
+        auto material = htri->mTerrainMtl;
 
-        ptarg->PushMaterial(htri->mTerrainMtl);
+        material->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
+        material->SetTexture(ColorTex);
+        material->SetTexture2(htri->_heightmapTexture);
+
+        material->SetUser0(htri->_aabbmin);
+        material->SetUser1(htri->_aabbmax);
+        material->SetUser2(htri->_aabbmax-htri->_aabbmin);
+
+        // min = -3
+        // max = 5
+        // max-min = 8
+        // -3 - min = 0
+        // 5 - min = 8
+
+
+        ptarg->PushMaterial(material);
         int ivbidx = 0;
 
         CColor4 color = CColor4::White();
