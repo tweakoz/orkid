@@ -38,9 +38,9 @@ function Diver:OnEntityStop()
 end
 -------------------------------------------------------------------------------
 function Diver.SpawnBallz(self)
-    local r = math.random(100)
+    local r = math.random(1000)
 
-    if r>2 then
+    if r<2 then
         --printf( "SPAWN %d", spawned)
         local entname = "dynaentXZ"..self.spawned
         local ent = scene:spawn("/arch/ball",entname,{

@@ -1166,7 +1166,7 @@ void GlTextureInterface::initTextureFromData( Texture *ptex, bool autogenmips ) 
 	ptex->SetTexIH( (void*) pTEXOBJ );
 	glGenTextures( 1, & pTEXOBJ->mObject );
 	glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
-	
+
 	glTexImage2D( GL_TEXTURE_2D,
 	              0,
 							GL_R32F,
@@ -1182,8 +1182,8 @@ void GlTextureInterface::initTextureFromData( Texture *ptex, bool autogenmips ) 
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	//glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 
 
 	glBindTexture( GL_TEXTURE_2D, 0 );
