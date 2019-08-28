@@ -6,7 +6,7 @@ import ork.build.search as search
 class visitor:
   def __init__(self,find,repl):
     self.by_file = dict()
-    self.find = find 
+    self.find = find
     self.repl = repl
   def __del__(self):
     self.process()
@@ -36,7 +36,7 @@ class visitor:
             print line.replace("\n","")
         with open(filename,"w") as file:
           file.writelines(lines)
-      #print "%-*s : line %-*d : %s" % (40, item.path, 5, item.lineno, item.text) 
+      #print "%-*s : line %-*d : %s" % (40, item.path, 5, item.lineno, item.text)
       #pass
     pass
 #################################################################################
