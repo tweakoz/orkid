@@ -652,8 +652,8 @@ void Init()
 #endif
 
 #if defined(ORK_OSXX)
-	AudioAnalysisManagerComponentData::GetClassStatic();
-	AudioAnalysisManagerComponentInst::GetClassStatic();
+	AudioAnalysisSystemData::GetClassStatic();
+	AudioAnalysisSystem::GetClassStatic();
 	AudioAnalysisComponentData::GetClassStatic();
 	AudioAnalysisComponentInst::GetClassStatic();
 	AudioAnalysisArchetype::GetClassStatic();
