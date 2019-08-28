@@ -154,6 +154,8 @@ BulletObjectControllerInst::BulletObjectControllerInst(const BulletObjectControl
 	if( mBOCD._disablePhysics )
 		return;
 
+	pent->GetSceneInst()->findSystem<BulletSystem>();
+
 	const orkmap<PoolString,ork::Object*> forcecontrollers = data.GetForceControllerData();
 
 	for( orkmap<PoolString,ork::Object*>::const_iterator	it=forcecontrollers.begin();
@@ -206,7 +208,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 			if(btDynamicsWorld *world = bulletsys->GetDynamicsWorld()){
 				const BulletShapeBaseData* shapedata = mBOCD.GetShapeData();
 
-				//printf( "SHAPEDATA<%p>\n", shapedata );
+				printf( "SHAPEDATA<%p>\n", shapedata );
 				if( shapedata ){
 					ShapeCreateData shape_create_data;
 					shape_create_data.mEntity = GetEntity();
