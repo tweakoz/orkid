@@ -529,6 +529,8 @@ bool GlTextureInterface::LoadTexture( const AssetPath& infname, Texture *ptex )
 		return false;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void GlTextureInterface::UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai )
 {
     //printf( "GlTextureInterface::UpdateAnimatedTexture( ptex<%p> tai<%p> )\n", ptex, tai );
@@ -1156,6 +1158,37 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+void GlTextureInterface::initTextureFromData( Texture *ptex, bool autogenmips ) {
+
+	GLTextureObject* pTEXOBJ = new GLTextureObject;
+	ptex->SetTexIH( (void*) pTEXOBJ );
+	glGenTextures( 1, & pTEXOBJ->mObject );
+	glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
+	
+	glTexImage2D( GL_TEXTURE_2D,
+	              0,
+							GL_R32F,
+							ptex->GetWidth(),
+							ptex->GetHeight(),
+							0,
+							 GL_RED,
+							  GL_FLOAT,
+								ptex->GetTexData()
+						);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	//glTexParameterf(tgt, GL_TEXTURE_MAX_LEVEL, inummips);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+
+
+	glBindTexture( GL_TEXTURE_2D, 0 );
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

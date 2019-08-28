@@ -271,12 +271,6 @@ class GlTextureInterface : public TextureInterface
 public:
 
 	void TexManInit( void ) override;
-	bool DestroyTexture( Texture *ptex ) override;
-	bool LoadTexture( const AssetPath& fname, Texture *ptex ) override;
-	void SaveTexture( const ork::AssetPath& fname, Texture *ptex )  override;
-	void ApplySamplingMode( Texture *ptex ) override;
-	void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai )  override;
-
 
 	void LoadDDSTextureMainThreadPart(const GlTexLoadReq& req);
 	bool LoadDDSTexture( const AssetPath& fname, Texture *ptex );
@@ -288,6 +282,14 @@ public:
 	GlTextureInterface( GfxTargetGL& tgt );
 
 private:
+
+	bool DestroyTexture( Texture *ptex ) final;
+	bool LoadTexture( const AssetPath& fname, Texture *ptex ) final;
+	void SaveTexture( const ork::AssetPath& fname, Texture *ptex )  final;
+	void ApplySamplingMode( Texture *ptex ) final;
+	void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai )  final;
+	void initTextureFromData( Texture *ptex, bool autogenmips ) final;
+
 
 	std::map<int,PboSet*> mPBOSets;
 	GfxTargetGL& mTargetGL;

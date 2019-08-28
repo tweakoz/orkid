@@ -123,7 +123,7 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, co
 	mRasterState.SetCullTest( ECULLTEST_OFF );
 
 	miNumPasses = 1;
-	
+
 	if( pTARG )
 	{
 		Init(pTARG);
@@ -176,7 +176,7 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget *pTarg)
 	}
 	if( mUserTekName.length() )
 	{
-		hTekUser = pTarg->FXI()->GetTechnique( hModFX, mUserTekName.c_str() );		
+		hTekUser = pTarg->FXI()->GetTechnique( hModFX, mUserTekName.c_str() );
 
 	}
 	if( meColorMode != EMODE_USER )
@@ -211,7 +211,7 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget *pTarg)
 	hParamUser3 = pTarg->FXI()->GetParameterH( hModFX, "User3" );
 
 	hParamTime = pTarg->FXI()->GetParameterH( hModFX, "Time" );
-	
+
 	hParamNoiseAmp = pTarg->FXI()->GetParameterH( hModFX, "NoiseAmp" );
 	hParamNoiseFreq = pTarg->FXI()->GetParameterH( hModFX, "NoiseFreq" );
 	hParamNoiseShift = pTarg->FXI()->GetParameterH( hModFX, "NoiseShift" );
@@ -278,7 +278,7 @@ static bool gbskip = false;
 bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 {
 	if( gbskip ) return false;
-	
+
 	const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
 	const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
 	const CCameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
@@ -303,7 +303,7 @@ bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 	{
 		pTarg->FXI()->BindParamMatrix( hModFX, hMatV, pTarg->MTXI()->RefVMatrix() );
 	}
-	
+
 	if( pTarg->FBI()->IsPickState() )
 	{
 		pTarg->FXI()->BindParamVect4( hModFX, hParamModColor, pTarg->RefModColor() );
@@ -319,7 +319,7 @@ bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 			pTarg->FXI()->BindParamVect4( hModFX, hParamModColor, pTarg->RefModColor() );
 		}
 	}
-	
+
 	if( hParamNoiseAmp )
 	{
 		pTarg->FXI()->BindParamVect4( hModFX, hParamNoiseAmp, mNoiseAmp );
@@ -332,7 +332,7 @@ bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 	{
 		pTarg->FXI()->BindParamVect4( hModFX, hParamNoiseShift, mNoiseShift );
 	}
-	
+
 	if( hParamTime )
 	{
 		float reltime = std::fmod( CSystem::GetRef().GetLoResRelTime(), 300.0f );
@@ -370,15 +370,16 @@ bool GfxMaterial3DSolid::BeginPass( GfxTarget *pTarg, int iPass )
 	}
 	if( mCurrentTexture2 && hColorMap2 )
 	{
+		//printf( "Binding texmap2<%p> to param<%p>\n", mCurrentTexture2, hColorMap2 );
 		pTarg->FXI()->BindParamCTex ( hModFX, hColorMap2, mCurrentTexture2 );
 	}
 
-	if( mCurrentTexture3 && hColorMap3 ) 
+	if( mCurrentTexture3 && hColorMap3 )
 	{
 		pTarg->FXI()->BindParamCTex ( hModFX, hColorMap3, mCurrentTexture3 );
 	}
 
-	if( mCurrentTexture4 && hColorMap4 ) 
+	if( mCurrentTexture4 && hColorMap4 )
 	{
 		pTarg->FXI()->BindParamCTex ( hModFX, hColorMap4, mCurrentTexture4 );
 	}
@@ -437,15 +438,15 @@ void GfxMaterial3DSolid::SetMaterialProperty( const char* prop, const char* val 
 					}
 				}
 			};
-			char hexd0 = val[1]; 
-			char hexd1 = val[2]; 
-			char hexd2 = val[3]; 
-			char hexd3 = val[4]; 
-			char hexd4 = val[5]; 
-			char hexd5 = val[6]; 
-			char hexd6 = val[7]; 
-			char hexd7 = val[8]; 
-			
+			char hexd0 = val[1];
+			char hexd1 = val[2];
+			char hexd2 = val[3];
+			char hexd3 = val[4];
+			char hexd4 = val[5];
+			char hexd5 = val[6];
+			char hexd6 = val[7];
+			char hexd7 = val[8];
+
 			u32 ucolor = 0;
 			ucolor |= hexchar2int::doit(hexd7)<<0;
 			ucolor |= hexchar2int::doit(hexd6)<<4;
@@ -456,7 +457,7 @@ void GfxMaterial3DSolid::SetMaterialProperty( const char* prop, const char* val 
 			ucolor |= hexchar2int::doit(hexd1)<<24;
 			ucolor |= hexchar2int::doit(hexd0)<<28;
 			printf( "color<0x%08x>\n", ucolor );
-			
+
 			Color = CVector4(ucolor);
 			printf( "color<%f %f %f %f>\n", Color.GetX(), Color.GetY(), Color.GetZ(), Color.GetW() );
 		}

@@ -347,7 +347,7 @@ const FxShaderTechnique* GlslFxInterface::GetTechnique( FxShader* hfx, const std
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	OrkAssert( container != 0 );
 	/////////////////////////////////////////////////////////////
-	
+
 	const auto& tekmap =  hfx->GetTechniques();
 	const auto& it = tekmap.find( name );
 	const FxShaderTechnique* htek = (it!=tekmap.end()) ? it->second : 0;
@@ -378,7 +378,7 @@ bool GlslFxShader::Compile()
 {
 	GL_NF_ERRORCHECK();
 	mShaderObjectId = glCreateShader( mShaderType );
-	
+
 	std::string shadertext = "";
 
 	shadertext += mShaderText;
@@ -470,7 +470,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 		l_compile( pteeshader );
 		l_compile( pgeoshader );
 		l_compile( pfrgshader );
-			
+
 
 		if( container->mShaderCompileFailed )
 			return false;
@@ -488,7 +488,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 
 			glAttachShader( prgo, pvtxshader->mShaderObjectId );
 			GL_ERRORCHECK();
-			
+
 			if( ptecshader && ptecshader->IsCompiled() )
 			{
 				glAttachShader( prgo, ptecshader->mShaderObjectId );
@@ -516,7 +516,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 
 			GlslFxStreamInterface* vtx_iface = pvtxshader->mpInterface;
 			GlslFxStreamInterface* frg_iface = pfrgshader->mpInterface;
-			
+
 			/*printf( "//////////////////////////////////\n");
 
 			printf( "Linking pass<%p> {\n", ppass );
@@ -582,7 +582,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 					}
 				}
 			}*/
-				
+
 			//////////////////////////
 
 			GL_ERRORCHECK();
@@ -649,7 +649,7 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 				GLint unisiz = 0;
 				GLenum unityp = GL_ZERO;
 				std::string str_name;
-				
+
 				{
 					GLchar nambuf[256];
 					glGetActiveUniform( prgo, i, sizeof(nambuf), & namlen, & unisiz, & unityp, nambuf );
@@ -753,7 +753,7 @@ void GlslFxInterface::BindParamInt( FxShader* hfx, const FxShaderParam* hpar, co
 			const char* pnam = puni->mName.c_str();
 			GLenum etyp = puni->meType;
 			OrkAssert( etyp == 	GL_INT );
-	
+
 			GL_ERRORCHECK();
 			glUniform1i( iloc, iv );
 			GL_ERRORCHECK();
@@ -781,7 +781,7 @@ void GlslFxInterface::BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, 
 			const char* pnam = puni->mName.c_str();
 			GLenum etyp = puni->meType;
 			OrkAssert( etyp == 	GL_FLOAT_VEC2 );
-	
+
 			GL_ERRORCHECK();
 			glUniform2fv( iloc, 1, Vec.GetArray() );
 			GL_ERRORCHECK();
@@ -803,7 +803,7 @@ void GlslFxInterface::BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, 
 			const char* pnam = puni->mName.c_str();
 			GLenum etyp = puni->meType;
 			OrkAssert( etyp == 	GL_FLOAT_VEC3 );
-	
+
 			GL_ERRORCHECK();
 			glUniform3fv( iloc, 1, Vec.GetArray() );
 			GL_ERRORCHECK();
@@ -825,7 +825,7 @@ void GlslFxInterface::BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, 
 			const char* pnam = puni->mName.c_str();
 			GLenum etyp = puni->meType;
 			OrkAssert( etyp == 	GL_FLOAT_VEC4 );
-	
+
 			GL_ERRORCHECK();
 			glUniform4fv( iloc, 1, Vec.GetArray() );
 			GL_ERRORCHECK();
@@ -864,7 +864,7 @@ void GlslFxInterface::BindParamFloat( FxShader* hfx, const FxShaderParam* hpar, 
 			const char* pnam = puni->mName.c_str();
 			GLenum etyp = puni->meType;
 			OrkAssert( etyp == 	GL_FLOAT );
-	
+
 			GL_ERRORCHECK();
 			glUniform1f( iloc, fA );
 			GL_ERRORCHECK();
@@ -1044,25 +1044,26 @@ void GlslFxInterface::BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, c
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
 	const GlslFxUniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+	//printf( "Bind1 Tex<%p> par<%s> pinst<%p>\n", pTex,hpar->mParameterName.c_str(), pinst );
 	if( pinst )
 	{
 		int iloc = pinst->mLocation;
 
 		const char* teknam = container->mActiveTechnique->mName.c_str();
 
-		//printf( "BindTex<%s> iloc<%d> teknam<%s>\n", hpar->mParameterName.c_str(), iloc, teknam );
+		//printf( "Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n", pTex,hpar->mParameterName.c_str(), iloc, teknam );
 		if( iloc>=0 )
 		{
 			const char* psem = puni->mSemantic.c_str();
 			const char* pnam = puni->mName.c_str();
 			GLenum etyp = puni->meType;
 			//OrkAssert( etyp == GL_FLOAT_MAT4 );
-			
+
 			if( pTex!=0 )
 			{
 				const GLTextureObject* pTEXOBJ = (GLTextureObject*) pTex->GetTexIH();
 				GLuint texID = pTEXOBJ ? pTEXOBJ->mObject : 0;
-				
+				//printf( "Bind3 tex<%p> texobj<%d>\n", pTex, texID );
 				int itexunit = pinst->mSubItemIndex;
 
 				GLenum textgt = pinst->mPrivData.Get<GLenum>();
@@ -1081,7 +1082,7 @@ void GlslFxInterface::BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, c
 		}
 	}
 /*
-	if( 0 == hpar ) return; 
+	if( 0 == hpar ) return;
 	CgFxContainer* container = static_cast<CgFxContainer*>( hfx->GetInternalHandle() );
 	CGeffect cgeffect = container->mCgEffect;
 	CGparameter cgparam = reinterpret_cast<CGparameter>(hpar->GetPlatformHandle());

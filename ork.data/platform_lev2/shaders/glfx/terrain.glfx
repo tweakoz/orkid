@@ -18,6 +18,7 @@ uniform_block ublock_vtx
 	uniform mat4        MatAux;
 	uniform vec4        modcolor;
 	uniform float       Time;
+	uniform sampler2D ColorMap2; // technically a heightmap
 }
 uniform_block ublock_frg
 {
@@ -50,10 +51,12 @@ fragment_interface iface_fdefault
 vertex_shader vs_terrain1 : iface_vdefault
 {
     vec4 inpos = position;
-    inpos.y = sin(inpos.x+Time)+cos(inpos.z+Time);
+		vec2 inpuv = inpos.xz*0.0001f;
+		vec4 texc = texture( ColorMap2, inpuv  );
+		inpos.y = texc.r;
 
 	gl_Position = MatMVP*inpos;
-	frg_clr = vtxcolor;
+	frg_clr = vec4(inpuv,0,1);
 	frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////

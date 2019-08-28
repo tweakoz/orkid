@@ -591,6 +591,7 @@ public:
 	virtual void SaveTexture( const ork::AssetPath& fname, Texture *ptex ) = 0;
 	virtual void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai ) {}
 	virtual void ApplySamplingMode( Texture *ptex ) {}
+	virtual void initTextureFromData( Texture *ptex, bool autogenmips ) {}
 
 };
 
