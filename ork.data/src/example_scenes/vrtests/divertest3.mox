@@ -246,9 +246,9 @@
                                     <object type='EditorCamControllerData' id='21'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='22'>
-                                                <property name='Center'>-6136.66 2958.87 -7707.71</property>
+                                                <property name='Center'>0 0 0</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>7447.48</property>
+                                                <property name='Loc'>1000</property>
                                                 <property name='QuatC'>0.237361 0.344216 -0.089799 0.90418</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
@@ -304,7 +304,7 @@
                                         <property name='Shape'>
                                             <reference category='ObjectClass'>
                                                 <object type='BulletShapeHeightfieldData' id='27'>
-                                                    <property name='HeightMap'>"data://terrain/testhmap2_1024.png"</property>
+                                                    <property name='HeightMap'>"data://terrain/testhmap2_2048.png"</property>
                                                     <property name='SphericalLightMap'>
                                                         <reference category='AssetClass'>
                                                             "lev2tex" "data://effect_textures/NoiseKern"
