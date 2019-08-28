@@ -87,7 +87,7 @@ class SceneData : public ork::Object
 
 public:
 
-	typedef orklut<const ork::object::ObjectClass*,SystemData*> SystemDataLut;
+	typedef orkmap<PoolString,SystemData*> SystemDataLut;
 
 	SceneData();
 	~SceneData(); /*virtual*/
@@ -131,7 +131,6 @@ public:
 
 	const SystemDataLut& getSystemDatas() const { return _systemDatas; }
 	void addSystemData( SystemData* pcomp );
-	void clearSystemDatas();
 
 	void OnSceneDataMode(ESceneDataMode emode);
 	void PrepareForEdit();

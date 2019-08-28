@@ -122,6 +122,7 @@ void SceneData::Describe() {
   orkmap<PoolString, SceneObject *> ork::ent::SceneData::*item =
       &SceneData::_sceneObjects;
   RegisterMapProperty("SceneObjects", &SceneData::_sceneObjects);
+  RegisterMapProperty("SystemData", &SceneData::_systemDatas);
 
   RegisterProperty("ScriptFile", &SceneData::_sceneScriptPath);
   AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.class",
@@ -395,18 +396,16 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneData::addSystemData(SystemData *pcomp) {
-  OrkAssert(_systemDatas.find(pcomp->GetClass()) == _systemDatas.end());
-  _systemDatas.AddSorted(pcomp->GetClass(), pcomp);
+  auto classname = pcomp->GetClass()->Name();
+  OrkAssert(_systemDatas.find(classname) == _systemDatas.end());
+  _systemDatas[classname]=pcomp;
 }
-///////////////////////////////////////////////////////////////////////////////
-void SceneData::clearSystemDatas() { _systemDatas.clear(); }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::SceneComposer(SceneData *psd)
     : mpSceneData(psd) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::~SceneComposer() {
-  //mpSceneData->clearSystemDatas();
   /*for (orklut<const ork::object::ObjectClass *, SystemData *>::const_iterator
            it = _systemDatas.begin();
        it != _systemDatas.end(); it++) {
