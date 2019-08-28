@@ -384,12 +384,26 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 		CVector4 c1(0.7f,0.7f,0.8f);
 		CVector4 c2(0.8f,0.8f,0.8f);
 		CVector4 c3(0.8f,0.0f,0.0f);
+		CVector4 col_sysdat(0.8f,0.0f,0.0f);
+		CVector4 col_sysdat_alt(0.8f,0.0f,0.0f);
+		CVector4 col_entity(0.8f,0.0f,0.0f);
+		CVector4 col_entity_alt(0.8f,0.0f,0.0f);
+		CVector4 col_archet(0.8f,0.0f,0.0f);
+		CVector4 col_archet_alt(0.8f,0.0f,0.0f);
+		CVector4 col_sceneglobal(0.8f,0.0f,0.0f);
 
 		if( mDark )
 		{
 			c1 = CVector4( 0.3f,0.3f,0.4f );
 			c2 = CVector4( 0.2f,0.2f,0.3f );
 			c3 = CVector4( 0.5f,0.0f,0.0f );
+			col_sysdat = CVector4( 0.3f,0.3f,0.6f );
+			col_sysdat_alt = CVector4( 0.2f,0.2f,0.5f );
+			col_entity = CVector4( 0.2f,0.4f,0.2f );
+			col_entity_alt = CVector4( 0.1f,0.3f,0.1f );
+			col_archet = CVector4( 0.4f,0.2f,0.4f );
+			col_archet_alt = CVector4( 0.3f,0.1f,0.3f );
+			col_sceneglobal = CVector4( 0.4f,0.3f,0.2f );
 		}
 
 		const int kheaderH = miScrollY;
@@ -406,13 +420,21 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 			for( const auto& item : items )
 			{	const std::string& name = item.mName;
 				auto pobj = item.mObject;
-		        uint32_t pickID = mpPickBuffer->AssignPickId(pobj);
+				uint32_t pickID = mpPickBuffer->AssignPickId(pobj);
 				uint32_t uobj = PickIdToVertexColor( pickID );
 				CVector4 pick_color(pickID);
 				bool is_sel = item.mSelected;
 
 				if( is_pick )
 					tgt->PushModColor( pick_color );
+				else if( dynamic_cast<SceneData*>(pobj) )
+					tgt->PushModColor( is_sel ? c3 : col_sceneglobal );
+				else if( dynamic_cast<EntData*>(pobj) )
+					tgt->PushModColor( is_sel ? c3 : (alt ? col_entity : col_entity_alt) );
+				else if( dynamic_cast<Archetype*>(pobj) )
+					tgt->PushModColor( is_sel ? c3 : (alt ? col_archet : col_archet_alt) );
+				else if( dynamic_cast<SystemData*>(pobj) )
+					tgt->PushModColor( is_sel ? c3 : (alt ? col_sysdat : col_sysdat_alt) );
 				else
 					tgt->PushModColor( is_sel ? c3 : (alt ? c1 : c2) );
 
