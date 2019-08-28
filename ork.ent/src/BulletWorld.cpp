@@ -224,11 +224,8 @@ void BulletSystem::InitWorld()
 
 void BulletSystem::LinkPhysics(ork::ent::SceneInst *inst, ork::ent::Entity *pent)
 {
-	printf( "LINKING physics\n" );
-
 	mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, inst);
 
-	#if 1 //DRAWTHREADS
 	ork::ent::CallbackDrawable* pdrw = new ork::ent::CallbackDrawable( pent );
 	pdrw->SetOwner(  & pent->GetEntData() );
 	pdrw->SetSortKey(0x7fffffff);
@@ -246,7 +243,6 @@ void BulletSystem::LinkPhysics(ork::ent::SceneInst *inst, ork::ent::Entity *pent
 
 	btVector3 grav = !mBWCBD.GetGravity();
 	mDynamicsWorld->setGravity(grav);
-	#endif
 
 }
 

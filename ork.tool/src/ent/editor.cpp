@@ -15,10 +15,6 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/drawable.h>
 ///////////////////////////////////////////////////////////////////////////
-#if defined(WIN32)
-#include <windows.h>
-#endif
-///////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/entity.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <pkg/ent/editor/editor.h>
@@ -389,25 +385,20 @@ void SceneEditorBase::EditorRefreshTextures()
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::NewSceneInst()
 {
-	if( mpEditSceneInst )
-	{
+	if( mpEditSceneInst ){
 		bool BOK = object::Disconnect(	this, AddPooledLiteral("SigSceneTopoChanged"),
 										mpEditSceneInst, AddPooledLiteral("SlotSceneTopoChanged"));
-		OrkAssert( BOK );
+		assert( BOK );
 		SceneInst* psi2del = mpEditSceneInst;
-		mpEditSceneInst = 0;
+		mpEditSceneInst = nullptr;
 		delete psi2del;
 	}
-	if( mpScene )
-	{
+	if( mpScene ){
 		mpEditSceneInst = new SceneInst( mpScene, ApplicationStack::Top() );
-
 		bool bconOK = object::Connect(	this, AddPooledLiteral("SigSceneTopoChanged"),
 										mpEditSceneInst, AddPooledLiteral("SlotSceneTopoChanged"));
-		OrkAssert( bconOK );
-
+		assert( bconOK );
 		mpEditSceneInst->SetSceneInstMode(ESCENEMODE_EDIT);
-
 	}
 }
 ///////////////////////////////////////////////////////////////////////////

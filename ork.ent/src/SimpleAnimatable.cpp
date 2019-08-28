@@ -271,7 +271,7 @@ void SimpleAnimatableInst::PlayAnimation(ork::PoolString name, float speed, floa
 		return;
 	}
 
-	printf( "Playing Animation<%s>\n", name.c_str() );
+	//printf( "Playing Animation<%s>\n", name.c_str() );
 
 	for(BodyPartMap::iterator itmask = mBodyPartMap.begin(); itmask != mBodyPartMap.end(); itmask++)
 		PlayAnimationOnMask(itmask, itanim, 0, speed, interp_duration, loop);

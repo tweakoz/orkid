@@ -209,7 +209,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 			if(btDynamicsWorld *world = bulletsys->GetDynamicsWorld()){
 				const BulletShapeBaseData* shapedata = mBOCD.GetShapeData();
 
-				printf( "SHAPEDATA<%p>\n", shapedata );
+				//printf( "SHAPEDATA<%p>\n", shapedata );
 				if( shapedata ){
 					ShapeCreateData shape_create_data;
 					shape_create_data.mEntity = GetEntity();
