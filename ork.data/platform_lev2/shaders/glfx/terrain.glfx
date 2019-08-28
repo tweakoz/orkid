@@ -89,8 +89,9 @@ vertex_shader vs_terrain1
 		//////////////////////////////////////////////////////
 
 		gl_Position = MatMVP*vec4(p0,1);
-        float n = noise(p0.xz*0.01+vec2(Time*1,0))*0.3f;
-	  frg_clr = vec4(n,n,n,1);
+        float n = noise(p0.xyz*0.01+vec3(Time*1,0,0))*0.3f;
+        vec3 c = mix(vec3(0,.2,.3),vec3(0,.3,.1),n);
+	  frg_clr = vec4(c,1);
 	  frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////
