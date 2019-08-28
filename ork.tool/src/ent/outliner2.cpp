@@ -52,6 +52,7 @@ Outliner2Model::Outliner2Model(SceneEditorBase&ed,Outliner2View&v)
 	, mShowArchs(true)
 	, mShowEnts(true)
 	, mShowComps(true)
+	, mShowSystems(true)
 {
 	SetupSignalsAndSlots();
 }
@@ -109,6 +110,16 @@ void Outliner2Model::ToggleComps()
 	mShowComps=!mShowComps;
 	UpdateModel();
 }
+void Outliner2Model::ToggleSystems()
+{
+	mShowSystems=!mShowSystems;
+	UpdateModel();
+}
+void Outliner2Model::ToggleGlobals()
+{
+	mShowGlobals=!mShowGlobals;
+	UpdateModel();
+}
 
 void Outliner2Model::UpdateModel()
 {
@@ -120,16 +131,15 @@ void Outliner2Model::UpdateModel()
 
 	if( scene_data )
 	{
-		orkmap<PoolString, SceneObject*>& objs = scene_data->GetSceneObjects();
-		size_t numobjs = objs.size();
-
 		int iy = 0;
-
 		bool alt = false;
-
 		int index = 0;
-
 		mLastSelection = -1;
+
+		///////////////////////////////////////////////
+		// add single item
+		///////////////////////////////////////////////
+
 
 		auto additem = [&](const char* name, ork::Object* obj, int indent)
 		{
@@ -150,10 +160,19 @@ void Outliner2Model::UpdateModel()
 
 		};
 
-		additem( "SceneGlobal", scene_data, 0 );
+		///////////////////////////////////////////////
 
-		for( const auto& item : objs )
-		{
+		if( mShowGlobals )
+			additem( "SceneGlobal", scene_data, 0 );
+
+		///////////////////////////////////////////////
+		// sceneobjects
+		///////////////////////////////////////////////
+		orkmap<PoolString, SceneObject*>& objs = scene_data->GetSceneObjects();
+		size_t numobjs = objs.size();
+
+		for( const auto& item : objs ){
+
 			const PoolString& name = item.first;
 			SceneObject* pobj = item.second;
 
@@ -173,21 +192,43 @@ void Outliner2Model::UpdateModel()
 
 				additem( decnam.c_str(), pobj, 0 );
 
-				if( as_arch && mShowComps )
-				{
+				//////////////////////////////////////
+				// if its an archetype
+				//  descend into the archetypes components
+				//////////////////////////////////////
+
+				if( as_arch && mShowComps ){
+
 					const auto& comps = as_arch->GetComponentDataTable().GetComponents();
-					for( const auto& citem : comps )
-					{
+					for( const auto& citem : comps ){
 						auto c = citem.second;
 						auto clazz = c->GetClass();
 						auto class_name = clazz->Name().c_str();
 						decnam.format("(c) %s", class_name );
 						additem( decnam.c_str(), c, 1 );
 					}
-
 				}
+
+				//////////////////////////////////////
+
 			}
 		}
+
+		///////////////////////////////////////////////
+		// systemdatas
+		///////////////////////////////////////////////
+
+		if( mShowSystems )
+		for( auto item : scene_data->getSystemDatas() ){
+			const PoolString& name = item.first;
+			SystemData* sysdat = item.second;
+			assert(sysdat!=nullptr);
+			FixedString<256> decnam;
+			decnam.format("(s) %s", name.c_str() );
+			additem( decnam.c_str(), sysdat, 0 );
+		}
+
+		///////////////////////////////////////////////
 	}
 
 	mVP.SetDirty();
@@ -494,10 +535,8 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 			int ikeyc = filtev.miKeyCode;
 			printf( "ikeyc<%d>\n", ikeyc );
 
-			switch( ikeyc )
-			{
-				case 'a':
-				{
+			switch( ikeyc ){
+				case 'a':{
 					if( false==mOutlinerModel.AreArchsEnabled() )
 						mOutlinerModel.ToggleArchs();
 					else if( mOutlinerModel.AreArchsEnabled() && false==mOutlinerModel.AreCompsEnabled() )
@@ -509,19 +548,16 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					}
 					break;
 				}
-				case '!':
-				{
+				case '!':{
 					mDark = !mDark;
 					SetDirty();
 					break;
 				}
-				case 'e':
-				{
+				case 'e':{
 					mOutlinerModel.ToggleEnts();
 					break;
 				}
-				case 'f':
-				{
+				case 'f':{
 					CVector3 new_target;
 
 					auto scene = ed.GetSceneData();
@@ -568,13 +604,19 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 
 					break;
 				}
-				case '\n':
-				{
+				case 'g':{
+					mOutlinerModel.ToggleGlobals();
+					break;
+				}
+				case 's':{
+					mOutlinerModel.ToggleSystems();
+					break;
+				}
+				case '\n':{
 					SetNameOfSelectedItem();
 					break;
 				}
-				case Qt::Key_Delete: // delete
-				{
+				case Qt::Key_Delete:{ // delete
 					int ilastsel = mOutlinerModel.GetLastSelection();
 					if( ilastsel>=0 )
 					{
@@ -600,8 +642,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 			break;
 		}
 		case ui::UIEV_PUSH:
-		case ui::UIEV_RELEASE:
-		{
+		case ui::UIEV_RELEASE:{
 			int idelta = EV.miMWY;
 
 			GetPixel( ilocx, ilocy, ctx );
@@ -621,13 +662,11 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 			}
 			break;
 		}
-		case ui::UIEV_DOUBLECLICK:
-		{
+		case ui::UIEV_DOUBLECLICK:{
 			SetNameOfSelectedItem();
 			break;
 		}
-		case ui::UIEV_MOUSEWHEEL:
-		{
+		case ui::UIEV_MOUSEWHEEL:{
 			int idelta = EV.miMWY;
 			miScrollY += idelta;
 

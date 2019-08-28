@@ -75,11 +75,11 @@ const T *SceneData::FindTypedObject(const PoolString &pstr) const {
 }
 template <typename T> T *SceneData::getTypedSystemData() const {
   auto systemdataclass = T::GetClassStatic();
-  auto it = _systemDatas.find(systemdataclass);
+  auto it = _systemDatas.find(systemdataclass->Name());
   if( it == _systemDatas.end() ){
     // CREATE IT !
     auto sdat = new T;
-    _systemDatas[systemdataclass] = sdat;
+    _systemDatas[systemdataclass->Name()] = sdat;
   }
   else {
     return rtti::autocast(it->second);
@@ -90,11 +90,11 @@ template <typename T> T *SceneData::getTypedSystemData() const {
 
 template <typename T> T *SceneComposer::Register() {
   ork::object::ObjectClass *pclass = T::GetClassStatic();
-  auto it = mpSceneData->_systemDatas.find(pclass);
+  auto it = mpSceneData->_systemDatas.find(pclass->Name());
   SystemData *pobj = (it == mpSceneData->_systemDatas.end()) ? 0 : it->second;
   if(nullptr == pobj) {
     pobj = rtti::autocast(pclass->CreateObject());
-    mpSceneData->_systemDatas.AddSorted(pclass, pobj);
+    mpSceneData->_systemDatas[pclass->Name()]=pobj;
   }
   T *rval = rtti::autocast(pobj);
   return rval;

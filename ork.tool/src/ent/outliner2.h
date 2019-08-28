@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once  
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtui_tool.h>
@@ -50,9 +50,13 @@ public:
 	void ToggleEnts();
 	void ToggleArchs();
 	void ToggleComps();
+	void ToggleSystems();
+	void ToggleGlobals();
 	bool AreEntsEnabled() const { return mShowEnts; }
 	bool AreArchsEnabled() const { return mShowArchs; }
 	bool AreCompsEnabled() const { return mShowComps; }
+	bool AreSystemsEnabled() const { return mShowSystems; }
+	bool AreGlobalsEnabled() const { return mShowGlobals; }
 	////////////////////////////////////////////////////////////////////
 	void SigModelChanged();
 	void SlotSceneTopoChanged();
@@ -81,6 +85,8 @@ private:
 	bool mShowEnts;
 	bool mShowArchs;
 	bool mShowComps;
+	bool mShowSystems;
+	bool mShowGlobals;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct Outliner2View : public ui::Surface
@@ -100,12 +106,12 @@ struct Outliner2View : public ui::Surface
 private:
 
 	int kitemh() const;
-	
+
 	void DoRePaintSurface(ui::DrawEvent& drwev) override;
 	void DoInit( lev2::GfxTarget* pt ) override;
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	void SetNameOfSelectedItem();
-	
+
 	bool mBlockUser;
 	bool mInSlotFromSelectionManager;
 	ork::lev2::CFont* mFont;
