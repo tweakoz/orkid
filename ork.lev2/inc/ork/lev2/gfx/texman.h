@@ -129,6 +129,11 @@ public:
 
 	//////////////////////////////////////////////////////
 
+	Texture();
+	~Texture();
+
+	//////////////////////////////////////////////////////
+
 	int	GetWidth( void ) const { return miWidth; }
 	int	GetHeight( void ) const { return miHeight; }
 	int	GetDepth( void ) const { return miDepth; }
@@ -185,32 +190,6 @@ public:
 
 	//////////////////////////////////////////////////////
 
-	int mMaxMip;
-
-	Texture()
-		: meTexDest(ETEXDEST_END)
-		, meTexType(ETEXTYPE_END)
-		, meTexClass(ETEXCLASS_END)
-		, meTexFormat(EBUFFMT_END)
-		, miWidth(0)
-		, miHeight(0)
-		, miDepth(0)
-		, muvW(0)
-		, muvH(0)
-		, miBPP(0)
-		, mpImageData(0)
-		, mFlags(0)
-		, mInternalHandle(0)
-		, mbDirty(true)
-		, miMaxMipUniqueColors( 0 )
-		, miTotalUniqueColors( 0 )
-		, mpData(0)
-		, mpTexAnim(0)
-		, mMaxMip(0)
-	{}
-
-	~Texture();
-
 	static Texture *LoadUnManaged( const AssetPath& fname );
 	static Texture *CreateBlank( int iw, int ih, EBufferFormat efmt );
 
@@ -241,6 +220,8 @@ public:
 
 	static void RegisterLoaders( void );
 
+	int 							mMaxMip;
+
 	private:
 
 	Md5Sum							mMd5Sum;	// for dirty checking (mipgen/palettegen)
@@ -248,10 +229,10 @@ public:
 	int								miTotalUniqueColors;
 	int								miMaxMipUniqueColors;
 
-	ETextureDest					meTexDest;
-	ETextureType					meTexType;
-	ETexClass						meTexClass;
-	EBufferFormat					meTexFormat;
+	ETextureDest			meTexDest;
+	ETextureType			meTexType;
+	ETexClass					meTexClass;
+	EBufferFormat			meTexFormat;
 
 	int								miWidth, miHeight, miDepth;
 	int								miNumMipMaps;
@@ -262,15 +243,14 @@ public:
 
 	U32								mFlags;
 
-	mutable void*					mInternalHandle;
+	mutable void*			mInternalHandle;
 
-	mutable bool					mbDirty;
+	mutable bool			mbDirty;
 	void*							mpData;
+
 	TextureAnimationBase*			mpTexAnim;
-
 	orkmap<std::string,svar64_t>	_textureProperties;
-
-    TextureSamplingModeData			mTexSampleMode;
+  TextureSamplingModeData			mTexSampleMode;
 
 };
 

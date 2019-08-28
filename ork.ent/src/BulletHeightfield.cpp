@@ -34,17 +34,20 @@ namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BulletHeightfieldImpl {
-  int mGridSize;
-  lev2::GfxMaterial3DSolid *mTerrainMtl;
+  int mGridSize = 0;
+  bool _loadok = false;
+  bool _initViz = true;
+  Entity* _entity = nullptr;
+  lev2::GfxMaterial3DSolid* mTerrainMtl = nullptr;
+  lev2::Texture* _heightmapTexture = nullptr;
+  btHeightfieldTerrainShape* _terrainShape = nullptr;
+
+  fvec3 _aabbmin;
+  fvec3 _aabbmax;
+
   orkmap<int, TerVtxBuffersType *> vtxbufmap;
   HeightMap _heightmap;
   const BulletShapeHeightfieldData &_hfd;
-  fvec3 _aabbmin;
-  fvec3 _aabbmax;
-  btHeightfieldTerrainShape *_terrainShape;
-  Entity *_entity;
-  bool _loadok = false;
-  bool _initViz = true;
   msgrouter::subscriber_t _subscriber;
 
   BulletHeightfieldImpl(const BulletShapeHeightfieldData &data);
@@ -57,8 +60,8 @@ struct BulletHeightfieldImpl {
 
 BulletHeightfieldImpl::BulletHeightfieldImpl(
     const BulletShapeHeightfieldData &data)
-    : _hfd(data), _heightmap(0, 0), _terrainShape(nullptr), _entity(nullptr),
-      mTerrainMtl(nullptr) {
+    : _hfd(data)
+    , _heightmap(0, 0){
   _subscriber =
       msgrouter::channel("bshdchanged")->subscribe([=](msgrouter::content_t c) {
         // auto bshd = c.Get<BulletShapeHeightfieldData*>();
@@ -150,6 +153,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
       new lev2::GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain1");
   mTerrainMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
 
+
   orkprintf("ComputingGeometry\n");
 
   vtxbufmap.clear();
@@ -161,6 +165,49 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   const float kworldsizeZ = _heightmap.GetWorldSizeZ();
 
   const int terrain_ngrids = iglX * iglZ;
+
+  ////////////////////////////////////////////////////////////////
+  // create and fill in gpu texture
+  ////////////////////////////////////////////////////////////////
+
+  _heightmapTexture = lev2::Texture::CreateBlank(iglX,iglZ,lev2::EBUFFMT_F32);
+  auto pfloattex = (float*) _heightmapTexture->GetTexData();
+  assert(pfloattex!=nullptr);
+
+  fvec2 origin(0,0);
+
+  for( int z=0; z<iglZ; z++ ){
+    int zz = z-(iglZ>>1);
+    float fzz = float(zz)/float(iglZ>>1); // -1 .. 1
+    for( int x=0; x<iglX; x++ ){
+      int xx = x-(iglX>>1);
+      float fxx = float(xx)/float(iglZ>>1); // -1 .. 1
+
+      fvec2 pos2d(fxx,fzz);
+
+      float d = (pos2d-origin).Mag();
+      float dpow = powf(d,3);
+
+      if( abs(xx) < 10 and abs(zz) < 10 ){
+        printf( "zz<%d> fzz<%g> xx<%d> fxx<%g> d<%g> dpow<%g>\n", zz, fzz, xx, fxx, d, dpow );
+
+      }
+
+
+      float h = _heightmap.GetHeight(x,z);
+      size_t index = z*iglX+x;
+
+
+
+      int val = rand()&0xff;
+      pfloattex[index]=float(val)*dpow/25.0f;
+    }
+
+  }
+
+  ptarg->TXI()->initTextureFromData(_heightmapTexture,true);
+
+  ////////////////////////////////////////////////////////////////
 
   auto bbctr = (_aabbmin + _aabbmax) * 0.5f;
   auto bbdim = (_aabbmax - _aabbmin);
@@ -323,7 +370,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 
   for (auto p : _patches) {
 
-    printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
+    //printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
     switch (p._type) {
     case PT_A: //
       triangle_count += 8;
@@ -488,11 +535,9 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         if (sphmap && sphmap->GetTexture())
           ColorTex = sphmap->GetTexture();
 
-        auto std_mode = lev2::GfxMaterial3DSolid::EMODE_USER;
-
-        htri->mTerrainMtl->SetColorMode(std_mode);
-
+        htri->mTerrainMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
         htri->mTerrainMtl->SetTexture(ColorTex);
+        htri->mTerrainMtl->SetTexture2(htri->_heightmapTexture);
 
         ptarg->PushMaterial(htri->mTerrainMtl);
         int ivbidx = 0;

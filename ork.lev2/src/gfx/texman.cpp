@@ -26,6 +26,9 @@ void TextureSamplingModeData::PresetPointAndClamp()
 	mTexFiltModeMag = ETEXFILT_POINT;
 	mTexFiltModeMip = ETEXFILT_POINT;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void TextureSamplingModeData::PresetTrilinearWrap()
 {
 	mTexAddrModeU = ETEXADDR_WRAP;
@@ -74,9 +77,35 @@ Texture *Texture::CreateBlank( int iw, int ih, EBufferFormat efmt )
 			pTex->SetTexData( new U8[ iw*ih*16 ] );
 			memset( pTex->GetTexData(), 0, iw*ih*16 );
 			break;
+		default:
+			assert(false);
 	}
 	return pTex;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+Texture::Texture()
+	: mMaxMip(0)
+	, meTexDest(ETEXDEST_END)
+	, meTexType(ETEXTYPE_END)
+	, meTexClass(ETEXCLASS_END)
+	, meTexFormat(EBUFFMT_END)
+	, miWidth(0)
+	, miHeight(0)
+	, miDepth(0)
+	, muvW(0)
+	, muvH(0)
+	, miBPP(0)
+	, mFlags(0)
+	, mbDirty(true)
+	, miMaxMipUniqueColors( 0 )
+	, miTotalUniqueColors( 0 )
+	, mpData(nullptr)
+	, mpTexAnim(nullptr)
+	, mInternalHandle(nullptr)
+	, mpImageData(nullptr)
+{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -112,6 +141,8 @@ void Texture::Clear( const CColor4 & color )
 	}
 	SetDirty(true);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void Texture::SetTexel( const CColor4 & color, const CVector2 & ST )
 {
