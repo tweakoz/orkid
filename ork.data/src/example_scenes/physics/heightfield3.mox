@@ -308,7 +308,7 @@
                                                 <property name='Center'>365.205 103.959 426.971</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>986.524</property>
-                                                <property name='QuatC'>-0.0126001 0.926588 -0.0270699 -0.375318</property>
+                                                <property name='QuatC'>-0.0428902 0.929194 -0.0985994 -0.354063</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -607,7 +607,7 @@
                 <reference category='SystemDataClass'>
                     <object type='BulletSystemData' id='57'>
                         <property name='Debug'>true</property>
-                        <property name='Gravity'>0 -9 0</property>
+                        <property name='Gravity'>0 -900 0</property>
                         <property name='SimulationRate'>120</property>
                         <property name='TimeScale'>1</property>
                     </object>

@@ -199,9 +199,10 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 	if( mBOCD._disablePhysics )
 		return true;
 
-	auto this_ent = GetEntity();
-
 	if( auto bulletsys = psi->findSystem<BulletSystem>() ){
+
+			auto this_ent = GetEntity();
+
 			const BulletSystemData& world_data = bulletsys->GetWorldData();
 			btVector3 grav = !world_data.GetGravity();
 
@@ -253,7 +254,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 					}
 				}
 
-
+				bulletsys->LinkPhysics(psi, this_ent);
 
 			}
 	} // if( auto bulletsys = psi->findSystem<BulletSystem>() ){
