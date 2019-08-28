@@ -54,7 +54,7 @@ fragment_interface iface_fdefault
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_terrain1
 	: iface_vdefault
-	: misc_tools
+	: lib_mmnoise
 {
 		float SCALE = 0.3;
 
@@ -86,51 +86,11 @@ vertex_shader vs_terrain1
 		p0.x *= SCALE;
 		p0.z *= SCALE;
 
-		////////////////////////////////////////////
-		// pA
-		////////////////////////////////////////////
-
-		float inUA = (pA.x-User0.x)/User2.x;
-		float inVA = (pA.z-User0.z)/User2.z;
-		vec2 uvcA = vec2(inUA,inVA);
-		vec2 texuv1A = vec2(inUA,inVA);
-		vec2 texuv2A = vec2(inVA,inUA);
-		texuv1A = (texuv1A*SCALE)+vec2(0,Time*0.01);
-		texuv2A = (texuv2A*SCALE*0.7)+vec2(0,Time*0.007);
-		vec4 texc1A = texture( ColorMap2, texuv1A  );
-		vec4 texc2A = texture( ColorMap2, texuv2A  );
-		pA.y = (texc1A.r+texc2A.r)*500.0;
-		pA.x *= SCALE;
-		pA.z *= SCALE;
-
-		////////////////////////////////////////////
-		// p0
-		////////////////////////////////////////////
-
-		float inUB = (pB.x-User0.x)/User2.x;
-		float inVB = (pB.z-User0.z)/User2.z;
-		vec2 uvcB = vec2(inUB,inVB);
-		vec2 texuv1B = vec2(inUB,inVB);
-		vec2 texuv2B = vec2(inVB,inUB);
-		texuv1B = (texuv1B*SCALE)+vec2(0,Time*0.01);
-		texuv2B = (texuv2B*SCALE*0.7)+vec2(0,Time*0.007);
-		vec4 texc1B = texture( ColorMap2, texuv1B );
-		vec4 texc2B = texture( ColorMap2, texuv2B  );
-		pB.y = (texc1B.r+texc2B.r)*500.0;
-		pB.x *= SCALE;
-		pB.z *= SCALE;
-
-		////////////////////////////////////////////////////
-
-		vec3 p00 = p0 + normal * p0.y;
-		pA += normal * pA.y;
-		pB += normal * pB.y;
-		vec3 N = normalize(cross(pB - p00, pA - p00));
-
 		//////////////////////////////////////////////////////
 
 		gl_Position = MatMVP*vec4(p0,1);
-	  frg_clr = vec4(mod(p0.x,1),mod(p0.z,1),0,1);
+        float n = noise(p0.xz*0.01+vec2(Time*1,0))*0.3f;
+	  frg_clr = vec4(n,n,n,1);
 	  frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////
@@ -144,6 +104,9 @@ fragment_shader ps_terrain1 : iface_fdefault
 state_block sb_default
 {
 	inherits default;
+    BlendMode = ADDITIVE;
+    DepthTest=OFF;
+
 }
 ///////////////////////////////////////////////////////////////
 technique terrain1 {
