@@ -597,6 +597,7 @@ void BulletShapeHeightfieldData::GetTextureAccessor(
 BulletShapeHeightfieldData::BulletShapeHeightfieldData()
     : mHeightMapName("none"), mWorldHeight(1000.0f), mWorldSize(1000.0f),
       mSphereLightMap(nullptr) {
+
   mShapeFactory._createShape =
       [=](const ShapeCreateData &data) -> BulletShapeBaseInst * {
     auto rval = new BulletShapeBaseInst(this);

@@ -22,7 +22,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::XgmVect4AnimChannel,"XgmVect4AnimChanne
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::XgmMatrixAnimChannel,"XgmMatrixAnimChannel");
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::XgmDecompAnimChannel,"XgmDecompAnimChannel");
 
-namespace ork { 
+namespace ork {
 namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -423,16 +423,14 @@ XgmLocalPose::XgmLocalPose( const XgmSkeleton& Skeleton )
 
 void XgmLocalPose::BindAnimInst( XgmAnimInst& AnimInst )
 {
-    printf( "BindAnimInst pose<%p>\n", this );
-	if( AnimInst.GetAnim() )
-	{
+	if( AnimInst.GetAnim() ){
 		float fweight = AnimInst.GetWeight();
 
 		const XgmAnim& anim = * AnimInst.GetAnim();
 		const ork::lev2::XgmAnim::JointChannelsMap & Channels = anim.RefJointChannels();
 
 		const orklut<PoolString, DecompMtx44>& StaticPose = anim.GetStaticPose();
-		
+
 		int ipidx = 0;
 		for(orklut<PoolString, DecompMtx44>::const_iterator it = StaticPose.begin(); it != StaticPose.end(); it++)
 		{

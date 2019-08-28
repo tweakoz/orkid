@@ -111,6 +111,8 @@ SceneInst::SceneInst(const SceneData *sdata, Application *application)
       mPrevDeltaTime(0.0f), mLastGameTime(0.0f), mStartTime(0.0f),
       mUpDeltaTime(0.0f), mGameTime(0.0f), mDeltaTimeAccum(0.0f),
       mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f), mEntityUpdateCount(0) {
+  printf("new sceneinst <%p>\n", this);
+
   AssertOnOpQ2(UpdateSerialOpQ());
   OrkAssertI(mApplication,
              "SceneInst must be constructed with a non-NULL Application!");
@@ -325,11 +327,14 @@ void SceneInst::EnterEditState() {
   mActiveEntities.clear();
   mEntityDeactivateQueue.clear();
 
-  // StartSystems();
-
+  UnLinkEntities();
+  DecomposeEntities();
+  UnLinkSystems();
+  decomposeSystems();
   ComposeEntities();
-  // LinkSystems();
+  composeSystems();
   LinkEntities();
+  LinkSystems();
 
   ServiceDeactivateQueue(); // HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION
                             // WHILE LINKING
@@ -378,6 +383,10 @@ void SceneInst::EnterRunState() {
 
   AllocationLabel label268("SceneInst::EnterRunState::268");
 
+  UnLinkEntities();
+  DecomposeEntities();
+  UnLinkSystems();
+  decomposeSystems();
   ComposeEntities();
   composeSystems();
 
@@ -441,9 +450,13 @@ void SceneInst::OnSceneInstMode(ESceneInstMode emode) {
 
   switch (emode) {
   case ESCENEMODE_EDIT:
-    EnterEditState();
+    assert(meSceneInstMode!=ESCENEMODE_RUN);
+    if( meSceneInstMode != ESCENEMODE_EDIT ){
+      EnterEditState();
+    }
     break;
   case ESCENEMODE_RUN:
+    assert(meSceneInstMode!=ESCENEMODE_RUN);
     EnterRunState();
     break;
   case ESCENEMODE_SINGLESTEP:
@@ -485,8 +498,6 @@ void SceneInst::ComposeEntities() {
   // clear runtime containers
   ///////////////////////////////////
 
-  UnLinkEntities();
-  DecomposeEntities();
   mEntities.clear();
   mCameraLut.clear();
 
@@ -584,6 +595,7 @@ void SceneInst::UnLinkEntities() {
 
 void SceneInst::composeSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
+
 
   ///////////////////////////////////
   // Systems

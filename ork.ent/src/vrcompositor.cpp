@@ -255,6 +255,9 @@ struct VRSYSTEMIMPL {
           _posemap["eyel"].GEMSInverse(eyep_mtx_l);
           _posemap["eyer"].GEMSInverse(eyep_mtx_r);
     }
+    else {
+        printf( "VR NOT INITIALIZED for some reason...\n");
+    }
     #endif
     _leftcamera.SetWidth(_width);
     _leftcamera.SetHeight(_height);
