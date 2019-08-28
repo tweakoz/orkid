@@ -224,7 +224,6 @@ void BulletSystem::InitWorld()
 
 void BulletSystem::LinkPhysics(ork::ent::SceneInst *inst, ork::ent::Entity *pent)
 {
-	assert(false);
 	printf( "LINKING physics\n" );
 
 	mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, inst);
