@@ -308,7 +308,7 @@
                                                 <property name='Center'>365.205 103.959 426.971</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>986.524</property>
-                                                <property name='QuatC'>-0.0428902 0.929194 -0.0985994 -0.354063</property>
+                                                <property name='QuatC'>-0.0541671 0.928194 -0.127414 -0.34585</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -485,27 +485,12 @@
                     </object>
                 </reference>
             </item>
-            <item key='bullet_world'>
-                <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='43'>
-                        <property name='Name'>"bullet_world"</property>
-                        <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='44'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
-                            </object>
-                        </property>
-                        <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='-1'/></property>
-                        <property name='UserProperties'></property>
-                    </object>
-                </reference>
-            </item>
             <item key='comp'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='45'>
+                    <object type='Ent3dEntData' id='43'>
                         <property name='Name'>"comp"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='46'>
+                            <object type='Ent3dDagNode' id='44'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -517,10 +502,10 @@
             </item>
             <item key='deadent'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='47'>
+                    <object type='Ent3dEntData' id='45'>
                         <property name='Name'>"deadent"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='48'>
+                            <object type='Ent3dDagNode' id='46'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -532,10 +517,10 @@
             </item>
             <item key='diver'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='49'>
+                    <object type='Ent3dEntData' id='47'>
                         <property name='Name'>"diver"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='50'>
+                            <object type='Ent3dDagNode' id='48'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 92.709 0 1</property>
                             </object>
                         </property>
@@ -550,10 +535,10 @@
             </item>
             <item key='edcam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='51'>
+                    <object type='Ent3dEntData' id='49'>
                         <property name='Name'>"edcam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='52'>
+                            <object type='Ent3dDagNode' id='50'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -565,10 +550,10 @@
             </item>
             <item key='grid'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='53'>
+                    <object type='Ent3dEntData' id='51'>
                         <property name='Name'>"grid"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='54'>
+                            <object type='Ent3dDagNode' id='52'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -585,13 +570,13 @@
         <property name='SystemData'>
             <item key='AudioSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='AudioSystemData' id='55'>
+                    <object type='AudioSystemData' id='53'>
                         <property name='DistanceAttenPower'>0.5</property>
                         <property name='DistanceMax'>10</property>
                         <property name='DistanceMin'>0.1</property>
                         <property name='DistanceScale'>0.003</property>
                         <property name='Reverb'>
-                            <object type='lev2::AudioReverbProperties' id='56'>
+                            <object type='lev2::AudioReverbProperties' id='54'>
                                 <property name='DecayTime'>1.49</property>
                                 <property name='EnvDiffusion'>1</property>
                                 <property name='ModulationDepth'>0</property>
@@ -605,7 +590,7 @@
             </item>
             <item key='BulletSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='BulletSystemData' id='57'>
+                    <object type='BulletSystemData' id='55'>
                         <property name='Debug'>true</property>
                         <property name='Gravity'>0 -900 0</property>
                         <property name='SimulationRate'>120</property>
@@ -615,13 +600,13 @@
             </item>
             <item key='CompositingManager'>
                 <reference category='SystemDataClass'>
-                    <object type='CompositingManager' id='58'>
+                    <object type='CompositingManager' id='56'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptManagerComponentData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptManagerComponentData' id='59'>
+                    <object type='ScriptManagerComponentData' id='57'>
                     </object>
                 </reference>
             </item>
