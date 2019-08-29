@@ -363,11 +363,11 @@ struct VRSYSTEMIMPL {
       if( curthumbL and false==_prevthumbL){
 
 
-        fquat q; q.FromAxisAngle(fvec4(0,1,0,-PI/8.0));
+        fquat q; q.FromAxisAngle(fvec4(0,1,0,-PI/12.0));
         _headingmatrix = _headingmatrix*q.ToMatrix();
       }
       else if(curthumbR and false==_prevthumbR ){
-        fquat q; q.FromAxisAngle(fvec4(0,1,0,PI/8.0));
+        fquat q; q.FromAxisAngle(fvec4(0,1,0,PI/12.0));
         _headingmatrix = _headingmatrix*q.ToMatrix();
       }
       _prevthumbL =curthumbL;
