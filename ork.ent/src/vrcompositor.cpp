@@ -72,6 +72,8 @@ struct ControllerState {
   fmtx4 _matrix;
   bool _button1down = false;
   bool _button2down = false;
+  bool _buttonThumbdown = false;
+  bool _triggerDown = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -291,8 +293,89 @@ struct VRSYSTEMIMPL {
       fmtx4 eyeL = _posemap["eyel"];
       fmtx4 eyeR = _posemap["eyer"];
 
-      fmtx4 lmv = rootmatrix*hmd*eyeL;
-      fmtx4 rmv = rootmatrix*hmd*eyeR;
+      float xlaterate = 5.0;///80.0;
+
+      fvec3 hmdpos;
+      fquat hmdrot;
+      float hmdscl;
+
+      hmd.DecomposeMatrix(hmdpos,hmdrot,hmdscl);
+
+      auto rotmtx = hmdrot.ToMatrix();
+      rotmtx = _headingmatrix*rotmtx;
+      rotmtx.Transpose();
+      //rotmtx.dump("rotmtx");
+
+      fmtx4 xlate;
+      ///////////////////////////////////////////////////////////
+      // up down
+      ///////////////////////////////////////////////////////////
+      if(_controllers[kLEFTCONTROLLERDEV]._button1down ){
+        xlate.SetTranslation(0,xlaterate,0);
+        auto trans = (xlate*rotmtx).GetTranslation();
+        printf( "trans<%g %g %g>\n", trans.x, trans.y, trans.z );
+        xlate.SetTranslation(trans);
+        _offsetmatrix = _offsetmatrix*xlate;
+      }
+      if(_controllers[kLEFTCONTROLLERDEV]._button2down ){
+        xlate.SetTranslation(0,-xlaterate,0);
+        auto trans = (xlate*rotmtx).GetTranslation();
+        printf( "trans<%g %g %g>\n", trans.x, trans.y, trans.z );
+        xlate.SetTranslation(trans);
+        _offsetmatrix = _offsetmatrix*xlate;
+      }
+      ///////////////////////////////////////////////////////////
+      // fwd back
+      ///////////////////////////////////////////////////////////
+      if(_controllers[kRIGHTCONTROLLERDEV]._button1down ){
+        xlate.SetTranslation(0,0,xlaterate);
+        auto trans = (xlate*rotmtx).GetTranslation();
+        xlate.SetTranslation(trans);
+        _offsetmatrix = _offsetmatrix*xlate;
+      }
+      if(_controllers[kRIGHTCONTROLLERDEV]._button2down ){
+        xlate.SetTranslation(0,0,-xlaterate);
+        auto trans = (xlate*rotmtx).GetTranslation();
+        xlate.SetTranslation(trans);
+        _offsetmatrix = _offsetmatrix*xlate;
+      }
+      ///////////////////////////////////////////////////////////
+      // strafe left,right
+      ///////////////////////////////////////////////////////////
+      if(_controllers[kLEFTCONTROLLERDEV]._triggerDown ){
+        xlate.SetTranslation(xlaterate,0,0);
+        auto trans = (xlate*rotmtx).GetTranslation();
+        xlate.SetTranslation(trans);
+        _offsetmatrix = _offsetmatrix*xlate;
+      }
+      else if(_controllers[kRIGHTCONTROLLERDEV]._triggerDown ){
+        xlate.SetTranslation(-xlaterate,0,0);
+        auto trans = (xlate*rotmtx).GetTranslation();
+        xlate.SetTranslation(trans);
+        _offsetmatrix = _offsetmatrix*xlate;
+      }
+      ///////////////////////////////////////////////////////////
+      // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
+      ///////////////////////////////////////////////////////////
+      bool curthumbL = _controllers[kLEFTCONTROLLERDEV]._buttonThumbdown;
+      bool curthumbR = _controllers[kRIGHTCONTROLLERDEV]._buttonThumbdown;
+
+      if( curthumbL and false==_prevthumbL){
+
+
+        fquat q; q.FromAxisAngle(fvec4(0,1,0,-PI/12.0));
+        _headingmatrix = _headingmatrix*q.ToMatrix();
+      }
+      else if(curthumbR and false==_prevthumbR ){
+        fquat q; q.FromAxisAngle(fvec4(0,1,0,PI/12.0));
+        _headingmatrix = _headingmatrix*q.ToMatrix();
+      }
+      _prevthumbL =curthumbL;
+      _prevthumbR =curthumbR;
+      ///////////////////////////////////////////////////////////
+
+      fmtx4 lmv = _offsetmatrix*_headingmatrix*hmd*eyeL;
+      fmtx4 rmv = _offsetmatrix*_headingmatrix*hmd*eyeR;
 
       _leftcamera.SetView(lmv);
       _leftcamera.setCustomProjection(_posemap["projl"]);
@@ -314,11 +397,18 @@ struct VRSYSTEMIMPL {
   CCameraData _rightcamera;
   std::map<int,ControllerState> _controllers;
   bool _active;
+  fmtx4 _offsetmatrix;
+  fmtx4 _headingmatrix;
+  bool _prevthumbL = false;
+  bool _prevthumbR = false;
   # if defined(ENABLE_VR)
     vr::IVRSystem* _hmd;
     vr::TrackedDevicePose_t _trackedPoses[ vr::k_unMaxTrackedDeviceCount ];
     fmtx4 _poseMatrices[ vr::k_unMaxTrackedDeviceCount ];
     std::string _devclass[ vr::k_unMaxTrackedDeviceCount ];
+    std::set<vr::TrackedDeviceIndex_t> _controllerindexset;
+    const int kRIGHTCONTROLLERDEV = 4;
+    const int kLEFTCONTROLLERDEV = 5;
   #endif
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -391,8 +481,9 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 	        case vr::VREvent_TrackedDeviceUpdated:
 		         break;
          case vr::VREvent_ButtonPress:{
-             printf( "button<%d> pressed\n", button);
+             printf( "dev<%d> button<%d> pressed\n", int(event.trackedDeviceIndex), button);
              auto& c = vrimpl->_controllers[event.trackedDeviceIndex];
+             vrimpl->_controllerindexset.insert(event.trackedDeviceIndex);
              switch(button){
                case 1:
                 c._button1down = true;
@@ -400,12 +491,19 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
                case 2:
                 c._button2down = true;
                 break;
+                case 32:
+                   c._buttonThumbdown = true;
+                   break;
+               case 33:
+                  c._triggerDown = true;
+                  break;
              }
    		       break;
          }
          case vr::VREvent_ButtonUnpress:{
              printf( "button<%d> released\n", button);
              auto& c = vrimpl->_controllers[event.trackedDeviceIndex];
+             vrimpl->_controllerindexset.insert(event.trackedDeviceIndex);
              switch(button){
                case 1:
                 c._button1down = false;
@@ -413,16 +511,31 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
                case 2:
                 c._button2down = false;
                 break;
+              case 32:
+                 c._buttonThumbdown = false;
+                 break;
+             case 33:
+                c._triggerDown = false;
+                break;
+
+
              }
    		       break;
          }
          case vr::VREvent_ButtonTouch:
              printf( "button<%d> touched\n", button);
+             vrimpl->_controllerindexset.insert(event.trackedDeviceIndex);
    		       break;
          case vr::VREvent_ButtonUntouch:
              printf( "button<%d> untouched\n", button);
+             vrimpl->_controllerindexset.insert(event.trackedDeviceIndex);
    		       break;
+         case vr::VREvent_DualAnalog_Move:{
+          auto dualana = data.dualAnalog;
+          printf( "dualanalog<%d> untouched\n", dualana.x, dualana.y, int(dualana.which) );
+        }
           default:
+          printf( "unknown event<%d>\n", int(event.eventType));
              break;
 	     }
   	}
@@ -432,7 +545,21 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
         vr::VRActionSetHandle_t actset_demo = vr::k_ulInvalidActionSetHandle;
         vr::VRActiveActionSet_t actionSet = { 0 };
     	  actionSet.ulActionSet = actset_demo;
-    	  vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
+    	  //vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
+
+        /*for( auto controllerindex : vrimpl->_controllerindexset ){
+          vr::VRControllerState_t controllerstate;
+          if( vrimpl->_hmd->GetControllerState(controllerindex,&controllerstate, 1) ){
+            for( int axis=0; axis<5; axis++ ){
+            auto js = controllerstate.rAxis[axis];
+            printf( "joystick<%d> axis<%d: %f %f>\n", controllerindex, axis, js.x, js.y );
+          }
+        }
+
+      }*/
+
+
+
     }
     //////////////////////////////////////////////
 

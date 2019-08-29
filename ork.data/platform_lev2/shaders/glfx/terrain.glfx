@@ -56,44 +56,49 @@ vertex_shader vs_terrain1
 	: iface_vdefault
 	: lib_mmnoise
 {
-		float SCALE = 0.3;
+	float SCALE = 0.3;
 
-		////////////////////////////////////////////
+	////////////////////////////////////////////
 
-    vec3 inpos = position.xyz;
-		vec3 normal = vec3(0.0, 1.0, 0.0);
-		float delta = 0.0001;
-		vec3 dA = delta * normalize(cross(normal.yzx, normal));
-		vec3 dB = delta * normalize(cross(dA, normal));
-		vec3 p0 = inpos;
-		vec3 pA = inpos + dA;
-		vec3 pB = inpos + dB;
+	vec3 inpos = position.xyz;
+	vec3 normal = vec3(0.0, 1.0, 0.0);
+	float delta = 0.0001;
+	vec3 dA = delta * normalize(cross(normal.yzx, normal));
+	vec3 dB = delta * normalize(cross(dA, normal));
+	vec3 p0 = inpos;
+	vec3 pA = inpos + dA;
+	vec3 pB = inpos + dB;
 
-		////////////////////////////////////////////
-		// p0
-		////////////////////////////////////////////
+	////////////////////////////////////////////
+	// p0
+	////////////////////////////////////////////
 
-		float inU0 = (p0.x-User0.x)/User2.x;
-		float inV0 = (p0.z-User0.z)/User2.z;
-		vec2 uvc0 = vec2(inU0,inV0);
-		vec2 texuv10 = vec2(inU0,inV0);
-		vec2 texuv20 = vec2(inV0,inU0);
-		texuv10 = (texuv10*SCALE)+vec2(0,Time*0.01);
-		texuv20 = (texuv20*SCALE*0.7)+vec2(0,Time*0.007);
-		vec4 texc10 = texture( ColorMap2, texuv10  );
-		vec4 texc20 = texture( ColorMap2, texuv20  );
-		p0.y = (texc10.r+texc20.r)*500.0;
-		p0.x *= SCALE;
-		p0.z *= SCALE;
+	float inU0 = (p0.x-User0.x)/User1.x;
+	float inV0 = (p0.z-User0.z)/User1.z;
+	inU0 += User2.x;
+	inV0 += User2.z;
+	vec2 uvc0 = vec2(inU0,inV0);
+	vec2 texuv10 = vec2(inU0,inV0);
+	vec2 texuv20 = vec2(inV0,inU0);
+	texuv10 = (texuv10*SCALE)+vec2(0,Time*0.01);
+	texuv20 = (texuv20*SCALE*0.7)+vec2(0,Time*0.007);
+	vec4 texc10 = texture( ColorMap2, texuv10  );
+	vec4 texc20 = texture( ColorMap2, texuv20  );
+	p0.y = (texc10.r+texc20.r)*500.0;
+	p0.x *= SCALE;
+	p0.z *= SCALE;
 
-		//////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////
 
-		gl_Position = MatMVP*vec4(p0,1);
-        float n = noise(p0.xyz*0.01+vec3(Time*1,0,0))*0.3f;
-        vec3 c = mix(vec3(0,.2,.3),vec3(0,.3,.1),n);
-	  frg_clr = vec4(c,1);
+	gl_Position = MatMVP*vec4(p0,1);
+			float n = noise(p0.xyz*0.01+vec3(Time*1,0,0))*0.3f;
+			vec3 c = mix(vec3(0,.2,.3),vec3(0,.3,.1),n);
+	frg_clr = vec4(c,1);
+
 	  frg_uv = uv0;
 }
+
+
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_terrain1 : iface_fdefault
 {

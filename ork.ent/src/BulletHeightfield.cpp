@@ -299,8 +299,16 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   };
 
   std::vector<Iter> iters;
-  for (int i = 0; i < 8; i++)
-    iters.push_back(Iter{i, 64});
+
+    iters.push_back(Iter{0, 256});
+    iters.push_back(Iter{1, 192});
+    iters.push_back(Iter{2, 160});
+    iters.push_back(Iter{3, 128});
+    iters.push_back(Iter{4, 96});
+    iters.push_back(Iter{5, 64});
+    iters.push_back(Iter{6, 64});
+    iters.push_back(Iter{7, 32});
+
 
   int iprevouterd2 = 0;
 
@@ -513,17 +521,28 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
 
   const CMatrix4 &PMTX = framedata->GetCameraCalcCtx().mPMatrix;
   const CMatrix4 &VMTX = framedata->GetCameraCalcCtx().mVMatrix;
-  const auto MMTX = pent->GetEffectiveMatrix();
+  auto MMTX = pent->GetEffectiveMatrix();
 
   bool bpick = ptarg->FBI()->IsPickState();
 
   //////////////////////////
   htri->init_visgeom(ptarg);
   //////////////////////////
+  fmtx4 vit;
+  vit.GEMSInverse(VMTX);
+  CVector3 pos = vit.GetTranslation();
+  pos.y = 0;
+  CMatrix4 follow;
+  follow.SetTranslation( pos );
+
+
+
+
+  //////////////////////////
 
   ptarg->MTXI()->PushPMatrix(PMTX);
   ptarg->MTXI()->PushVMatrix(VMTX);
-  ptarg->MTXI()->PushMMatrix(MMTX);
+  ptarg->MTXI()->PushMMatrix(follow);
   {
     const int iglX = htri->_heightmap.GetGridSizeX();
     const int iglZ = htri->_heightmap.GetGridSizeZ();
@@ -552,9 +571,10 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         material->SetTexture(ColorTex);
         material->SetTexture2(htri->_heightmapTexture);
 
+        auto range = htri->_aabbmax-htri->_aabbmin;
         material->SetUser0(htri->_aabbmin);
-        material->SetUser1(htri->_aabbmax);
-        material->SetUser2(htri->_aabbmax-htri->_aabbmin);
+        material->SetUser1(range);
+        material->SetUser2(fvec4(pos.x/range.x,0,pos.z/range.z));
 
         // min = -3
         // max = 5
