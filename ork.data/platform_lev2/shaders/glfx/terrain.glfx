@@ -4,6 +4,7 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "330";
+    import "skintools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -51,29 +52,77 @@ fragment_interface iface_fdefault
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_terrain1 : iface_vdefault
-{
+vertex_shader vs_terrain1
+    : iface_vdefault
+    : lib_terrain
+{   /////////////////////////////////
+    // constants
+    /////////////////////////////////
+    const float metersPerTexel = 1;
+    const float HFDIM = 2048;
+    const float INVHFDIM = 1.0/HFDIM;
+    const float hfHeightScale = 50; // ? heightfield_readMultiplyFirst
+    const float hfHeightBias = 0; // ..
+    /////////////////////////////////
+    // testuv
+    /////////////////////////////////
     vec4 inpos = position;
-		float inU = (inpos.x-User0.x)/User1.x;
-		float inV = (inpos.z-User0.z)/User1.z;
-		inU += User2.x;
-		inV += User2.z;
-
-		vec2 texuv = vec2(inU,inV);
-
-		float SCALE = 2;
-
-		texuv = (texuv*SCALE);
-
-		vec4 texc = texture( ColorMap2, texuv  );
-		inpos.y = texc.r*2400.0+100;
-		inpos.x *= SCALE;
-		inpos.z *= SCALE;
- 	  gl_Position = MatMVP*inpos;
-		vec2 uvc = vec2(mod(inU*100,1),mod(inV*100,1));
-	  frg_clr = vec4(uvc,0,1);
-		//frg_clr = vtxcolor;
-	  frg_uv = uv0;
+    float inU = (inpos.x-User0.x)/User1.x;
+	float inV = (inpos.z-User0.z)/User1.z;
+	//inU += User2.x;
+	//inV += User2.z;
+    vec2 rawuv = vec2(mod(inU,1),mod(inV,1));
+    vec4 surfacecolor = vec4(rawuv,0,1);
+    /////////////////////////////////
+    float vtxlod = inpos.y;
+    float mippedmetersPerTexel = metersPerTexel*exp2(vtxlod);
+    /////////////////////////////////
+    // compute snapped object/worldspace
+    /////////////////////////////////
+    vec3 campos = MatMV[3].xyz;
+    vec2 o2w = quantize(campos.xz,mippedmetersPerTexel);
+    vec3 wpos = vec3( inpos.x * mippedmetersPerTexel + o2w.x,
+                      0,
+                      inpos.z * mippedmetersPerTexel + o2w.y);
+    vec3 opos = wpos - campos;
+    /////////////////////////////////
+    // uvgen
+    /////////////////////////////////
+    float size = max(0.5, max2(abs(opos.xz * 2.0 * INVHFDIM)));
+    float llod = max(log2(size) - 0.75, 0.0);
+    float lowMIP = floor(llod);
+    float highMIP = lowMIP + 1.0;
+    float mipFract = llod - lowMIP;
+    float htexoffsetHi = exp2(lowMIP);
+    float htexoffsetLo = htexoffsetHi * 0.5;
+    vec2 uvLoMip = (wpos.xz / metersPerTexel + htexoffsetLo) * INVHFDIM;
+    vec2 uvHiMip = (wpos.xz / metersPerTexel + htexoffsetHi) * INVHFDIM;
+    surfacecolor.x = mod(abs(uvLoMip.x),1);
+    surfacecolor.y = mod(abs(uvLoMip.y),1);
+    /////////////////////////////////
+    // sample height
+    /////////////////////////////////
+    float heightSampleLoMip = textureLod(ColorMap2, uvLoMip, lowMIP).r;
+    float heightSampleHiMip = textureLod(ColorMap2, uvHiMip, highMIP).r;
+    float h = mix(heightSampleLoMip,heightSampleHiMip,mipFract);
+    wpos.y = (h*hfHeightScale)+hfHeightBias;
+    ///////////////////////////
+    // final computation
+    ///////////////////////////
+    //inpos.x = opos.x;
+    //inpos.z = opos.z;
+    vec2 texuv = vec2(inU,inV);
+	texuv = (texuv*metersPerTexel);
+	inpos.y = wpos.y;
+    inpos.x *= metersPerTexel;
+	inpos.z *= metersPerTexel;
+    ///////////////////////////
+    // apply to GL
+    ///////////////////////////
+    gl_Position = MatMVP*inpos;
+    frg_clr = surfacecolor;
+    //frg_clr = vtxcolor;
+    frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_terrain1 : iface_fdefault

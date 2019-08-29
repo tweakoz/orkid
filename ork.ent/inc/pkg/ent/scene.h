@@ -354,7 +354,7 @@ protected:
 	float									mStartTime;			// UpTime when game started
 	float									mLastGameTime;
 	ComponentList							mEmptyList;
-	SystemLut						_systems;
+	LockedResource<SystemLut>        		_systems;
 	float									mDeltaTimeAccum;
 	float									mfAvgDtAcc;
 	float									mfAvgDtCtr;

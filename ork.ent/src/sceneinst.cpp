@@ -144,14 +144,15 @@ SceneInst::~SceneInst() {
       delete pent;
     }
   }
-  for (SystemLut::iterator it = _systems.begin(); it != _systems.end(); it++) {
-    System *pSCI = it->second;
-
-    if (pSCI) {
-      printf("deleting System <%p>\n", pSCI);
-      delete pSCI;
-    }
-  }
+  _systems.atomicOp([&](const SystemLut& syslut){
+      for (auto it : syslut) {
+        System* sys = it.second;
+        if (sys) {
+          printf("deleting System <%p>\n", sys);
+          delete sys;
+        }
+      }
+  });
   DrawableBuffer::EndClearAndSyncReaders();
 
   ////////////////////////////
@@ -613,19 +614,27 @@ void SceneInst::composeSystems() {
 void SceneInst::decomposeSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
 
-  for (auto item : _systems) {
-    auto comp = item.second;
-    delete comp;
-  }
-  _systems.clear();
+  // todo this atomic will go away when we
+  //  complete opq refactor
+  _systems.atomicOp([&](SystemLut& syslut){
+      for (auto item : syslut) {
+        auto comp = item.second;
+        delete comp;
+      }
+      syslut.clear();
+  });
 }
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneInst::LinkSystems() {
-  for (auto it : _systems) {
-    System *ci = it.second;
-    ci->Link(this);
-  }
+    // todo this atomic will go away when we
+    //  complete opq refactor
+    _systems.atomicOp([&](const SystemLut& syslut){
+      for (auto it : syslut) {
+        System *ci = it.second;
+        ci->Link(this);
+      }
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -635,29 +644,41 @@ void SceneInst::UnLinkSystems() {
 
   ///////////////////////////////////
 
-  for (auto it : _systems) {
-    System *ci = it.second;
-    ci->UnLink(this);
-  }
+  // todo this atomic will go away when we
+  //  complete opq refactor
+  _systems.atomicOp([&](const SystemLut& syslut){
+      for (auto it : syslut) {
+        System *ci = it.second;
+        ci->UnLink(this);
+      }
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneInst::StartSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
-  for (auto it : _systems) {
-    System *ci = it.second;
-    ci->Start(this);
-  }
+  // todo this atomic will go away when we
+  //  complete opq refactor
+  _systems.atomicOp([&](const SystemLut& syslut){
+      for (auto it : syslut) {
+        System *ci = it.second;
+        ci->Start(this);
+      }
+  });
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::StopSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
-  for (auto it : _systems) {
-    System *ci = it.second;
-    ci->Stop(this);
-  }
-  _systems.clear();
+  // todo this atomic will go away when we
+  //  complete opq refactor
+  _systems.atomicOp([&](SystemLut& syslut){
+      for (auto it : syslut) {
+        System *ci = it.second;
+        ci->Stop(this);
+      }
+      syslut.clear();
+  });
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1213,12 +1234,15 @@ void SceneInst::Update() {
 
     UpdateEntityComponents(GetActiveComponents(sCameraFamily));
 
-    size_t inumsc = _systems.size();
-    for (size_t isc = 0; isc < inumsc; isc++) {
-      System *pinst = _systems.GetItemAtIndex(isc).second;
-      pinst->Update(this);
-    }
-
+    // todo this atomic will go away when we
+    //  complete opq refactor
+    _systems.atomicOp([&](SystemLut& syslut){
+        size_t inumsc = syslut.size();
+        for (size_t isc = 0; isc < inumsc; isc++) {
+          System *pinst = syslut.GetItemAtIndex(isc).second;
+          pinst->Update(this);
+        }
+    });
     ork::PerfMarkerPush("ork.sceneinst.update.end");
 
     ///////////////////////////////
@@ -1231,8 +1255,12 @@ void SceneInst::Update() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::addSystem(systemkey_t key, System* system) {
-  assert(_systems.find(key) == _systems.end());
-  _systems.AddSorted(key, system);
+    // todo this atomic will go away when we
+    //  complete opq refactor
+    _systems.atomicOp([&](SystemLut& syslut){
+        assert(syslut.find(key) == syslut.end());
+        syslut.AddSorted(key, system);
+    });
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent

@@ -151,10 +151,10 @@ void GetSceneReq::SetScene(SceneData*sd)
 
 SceneEditorBase::SceneEditorBase()
 	: mbInit(true)
-	, mApplication(0)
-	, mpScene( 0 )
-	, mpEditSceneInst( 0 )
-	, mpExecSceneInst( 0 )
+	, mApplication(nullptr)
+	, mpScene( nullptr )
+	, mpEditSceneInst( nullptr )
+	, mpExecSceneInst( nullptr )
 	, mpMdlChoices( new tool::CModelChoices )
 	, mpAnmChoices( new tool::CAnimChoices )
 	, mpAudStreamChoices( new tool::AudioStreamChoices )
@@ -1242,7 +1242,9 @@ SceneInst* SceneEditorBase::GetExecSceneInst() const
 ///////////////////////////////////////////////////////////////////////////
 SceneInst* SceneEditorBase::GetActiveSceneInst() const
 {
-	return (mpExecSceneInst!=0) ? mpExecSceneInst : mpEditSceneInst;
+	return (mpExecSceneInst!=nullptr)
+           ? mpExecSceneInst
+           : mpEditSceneInst;
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterPauseState()

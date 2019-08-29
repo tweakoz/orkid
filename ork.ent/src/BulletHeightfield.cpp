@@ -424,10 +424,10 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     int lod = p._lod;
     int step = 1 << lod;
 
-    fvec3 p0(x, 0, z);
-    fvec3 p1(x + step, 0, z);
-    fvec3 p2(x + step, 0, z + step);
-    fvec3 p3(x, 0, z + step);
+    fvec3 p0(x, lod, z);
+    fvec3 p1(x + step, lod, z);
+    fvec3 p2(x + step, lod, z + step);
+    fvec3 p3(x, lod, z + step);
 
     aab.Grow(p0);
     aab.Grow(p1);
@@ -457,6 +457,12 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
       c0 = 0xff808080;
       break;
     }
+
+    p0.y = lod;
+    p1.y = lod;
+    p2.y = lod;
+    p3.y = lod;
+
 
     auto v0 = lev2::SVtxV12C4T16(p0, fvec2(), c0);
     auto v1 = lev2::SVtxV12C4T16(p1, fvec2(), c0);
@@ -528,12 +534,12 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
   //////////////////////////
   htri->init_visgeom(ptarg);
   //////////////////////////
-  fmtx4 vit;
-  vit.GEMSInverse(VMTX);
-  CVector3 pos = vit.GetTranslation();
-  pos.y = 0;
+  fmtx4 inv_view;
+  inv_view.GEMSInverse(VMTX);
+  CVector3 campos = inv_view.GetTranslation();
+  campos.y = 0;
   CMatrix4 follow;
-  follow.SetTranslation( pos );
+  follow.SetTranslation( campos );
 
 
 
@@ -574,7 +580,7 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         auto range = htri->_aabbmax-htri->_aabbmin;
         material->SetUser0(htri->_aabbmin);
         material->SetUser1(range);
-        material->SetUser2(fvec4(pos.x/range.x,0,pos.z/range.z));
+        material->SetUser2(fvec4(campos.x/range.x,0,campos.z/range.z));
 
         // min = -3
         // max = 5

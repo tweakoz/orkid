@@ -376,7 +376,7 @@ void InsertCompositingNode::Describe()
 	nodins_loader->mEnumFn = [=]()
 	{
 		std::set<file::Path> rval;
-		ginstexset.AtomicOp( [&](instex_set_t& dset )
+		ginstexset.atomicOp( [&](instex_set_t& dset )
 		{
 			for( auto item : dset )
 			{
@@ -396,7 +396,7 @@ void InsertCompositingNode::Describe()
 	{
 		auto asset_name = asset->GetName().c_str();
 		lev2::TextureAsset* as_tex = rtti::autocast(asset);
-		ginstexset.AtomicOp( [&](instex_set_t& dset )
+		ginstexset.atomicOp( [&](instex_set_t& dset )
 		{
 			for( auto item : dset )
 			{
@@ -424,14 +424,14 @@ InsertCompositingNode::InsertCompositingNode()
 	, mReturnTexture(nullptr)
 	, mSendTexture(nullptr)
 {
-	ginstexset.AtomicOp( [&](instex_set_t& dset )
+	ginstexset.atomicOp( [&](instex_set_t& dset )
 	{
 		dset.insert(this);
 	});
 }
 InsertCompositingNode::~InsertCompositingNode()
 {
-	ginstexset.AtomicOp( [&](instex_set_t& dset )
+	ginstexset.atomicOp( [&](instex_set_t& dset )
 	{
 		auto it = dset.find(this);
 		dset.erase(it);

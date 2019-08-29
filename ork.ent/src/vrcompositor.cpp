@@ -310,6 +310,7 @@ struct VRSYSTEMIMPL {
       ///////////////////////////////////////////////////////////
       // up down
       ///////////////////////////////////////////////////////////
+      # if defined(ENABLE_VR)
       if(_controllers[kLEFTCONTROLLERDEV]._button1down ){
         xlate.SetTranslation(0,xlaterate,0);
         auto trans = (xlate*rotmtx).GetTranslation();
@@ -372,6 +373,7 @@ struct VRSYSTEMIMPL {
       }
       _prevthumbL =curthumbL;
       _prevthumbR =curthumbR;
+      #endif
       ///////////////////////////////////////////////////////////
 
       fmtx4 lmv = _offsetmatrix*_headingmatrix*hmd*eyeL;
