@@ -14,7 +14,7 @@ subscriber_t channel_impl::subscribe(msghandler_t h){
 
     subscriber_t rv = std::make_shared<subscriber>(this,h);
 
-    _subscribers.AtomicOp([=](subscriber_set_t& sst){
+    _subscribers.atomicOp([=](subscriber_set_t& sst){
         sst.insert(rv.get());
     });
 
@@ -22,12 +22,12 @@ subscriber_t channel_impl::subscribe(msghandler_t h){
 
 }
 void channel_impl::unsubscribe(subscriber* s){
-    _subscribers.AtomicOp([=](subscriber_set_t& sst){
+    _subscribers.atomicOp([=](subscriber_set_t& sst){
         sst.erase(s);
     });
 }
 void channel_impl::post(content_t content){
-    _subscribers.AtomicOp([&](subscriber_set_t& sst){
+    _subscribers.atomicOp([&](subscriber_set_t& sst){
         for( auto item : sst ){
             item->_handler(content);
         }
@@ -42,7 +42,7 @@ channel_impl* channel(std::string key){
 
     channel_impl* rval = nullptr;
 
-    _channelmap.AtomicOp([&](channelmap_t& cmap){
+    _channelmap.atomicOp([&](channelmap_t& cmap){
         auto it = cmap.find(key);
         if( it == cmap.end() ){
             rval = new channel_impl;

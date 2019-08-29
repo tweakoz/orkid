@@ -135,7 +135,7 @@ AutoSlot::AutoSlot(Object* object, const char* name)
 void AutoSlot::AddSignal( Signal* psig )
 {
 	bool found = false;
-	mConnectedSignals.AtomicOp( [&]( sig_set_t& ss )
+	mConnectedSignals.atomicOp( [&]( sig_set_t& ss )
 	{	for( auto the_sig : ss  )
 			found |= (the_sig==psig);
 		if( false == found )
@@ -146,7 +146,7 @@ void AutoSlot::AddSignal( Signal* psig )
 
 void AutoSlot::RemoveSignal( Signal* psig )
 {
-	mConnectedSignals.AtomicOp( [&]( sig_set_t& ss )
+	mConnectedSignals.atomicOp( [&]( sig_set_t& ss )
 	{
 		orkset<Signal*>::iterator it = ss.find( psig );
 		if( it == ss.end() )

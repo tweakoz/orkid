@@ -23,7 +23,7 @@ libblock skin_tools
 		     WeightedVertex += 	((BoneMatrices[idcss.z]*Pos4)*wghts.z).xyz;
 		     WeightedVertex +=	((BoneMatrices[idcss.y]*Pos4)*wghts.y).xyz;
 		     WeightedVertex +=	((BoneMatrices[idcss.x]*Pos4)*wghts.x).xyz;
-	 
+
 		return WeightedVertex;
 	}
 	vec3 SkinNormal( vec4 idcs, vec4 wghts, vec3 InNrm )
@@ -39,4 +39,13 @@ libblock skin_tools
 		return normalize(WeightedNormal);
 	}
 
+}
+
+libblock lib_terrain {
+    vec2 quantize(vec2 inp, float quantum) {
+        return round(inp*(1.0/quantum))*quantum;
+    }
+    float max2(vec2 inp){
+        return (inp.x>inp.y) ? inp.x : inp.y;
+    }
 }

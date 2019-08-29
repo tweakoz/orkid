@@ -119,9 +119,15 @@ T *SceneInst::FindTypedEntityComponent(const PoolString &entname) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T *SceneInst::findSystem() const {
+  T* rval = nullptr;
   systemkey_t pclass = T::SystemType;
-  auto it = _systems.find(pclass);
-  return (it == _systems.end()) ? nullptr : dynamic_cast<T*>(it->second);
+  _systems.atomicOp([&](const SystemLut& syslut){
+      auto it = syslut.find(pclass);
+      bool found = (it != syslut.end());
+      if( found )
+        rval = dynamic_cast<T*>(it->second);
+  });
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

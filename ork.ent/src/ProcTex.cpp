@@ -404,7 +404,7 @@ void ProcTexOutputDynTex::Describe()
 	ptex_loader->mEnumFn = [=]()
 	{
 		std::set<file::Path> rval;
-		gdyntexset.AtomicOp( [&](dyntex_set_t& dset )
+		gdyntexset.atomicOp( [&](dyntex_set_t& dset )
 		{
 			for( auto item : dset )
 			{
@@ -424,7 +424,7 @@ void ProcTexOutputDynTex::Describe()
 	{
 		auto asset_name = asset->GetName().c_str();
 		lev2::TextureAsset* as_tex = rtti::autocast(asset);
-		gdyntexset.AtomicOp( [&](dyntex_set_t& dset )
+		gdyntexset.atomicOp( [&](dyntex_set_t& dset )
 		{
 			for( auto item : dset )
 			{
@@ -448,7 +448,7 @@ void ProcTexOutputDynTex::Describe()
 ProcTexOutputDynTex::ProcTexOutputDynTex()
 	: mAsset(nullptr)
 {
-	gdyntexset.AtomicOp( [&](dyntex_set_t& dset )
+	gdyntexset.atomicOp( [&](dyntex_set_t& dset )
 	{
 		dset.insert(this);
 	});
@@ -458,7 +458,7 @@ ProcTexOutputDynTex::~ProcTexOutputDynTex()
 	if( mAsset )
 		mAsset->SetTexture( new lev2::Texture );
 
-	gdyntexset.AtomicOp( [&](dyntex_set_t& dset )
+	gdyntexset.atomicOp( [&](dyntex_set_t& dset )
 	{
 		auto it = dset.find(this);
 		dset.erase(it);

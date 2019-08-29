@@ -161,13 +161,13 @@ public:
 		UnLock();
 		return rval;
 	}
-	void AtomicOp( const mutable_atomicop_t& op )
+	void atomicOp( const mutable_atomicop_t& op )
 	{
 		LockForWrite();
 		op(mResource);		
 		UnLock();
 	}
-	void AtomicOp( const const_atomicop_t& op ) const
+	void atomicOp( const const_atomicop_t& op ) const
 	{
 		LockForRead();
 		op(mResource);		
