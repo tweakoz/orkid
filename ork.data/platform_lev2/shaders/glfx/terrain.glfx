@@ -56,21 +56,21 @@ vertex_shader vs_terrain1 : iface_vdefault
     vec4 inpos = position;
 		float inU = (inpos.x-User0.x)/User2.x;
 		float inV = (inpos.z-User0.z)/User2.z;
-		vec2 uvc = vec2(inU,inV);
+		//vec2 uvc = vec2(inU,inV);
 		vec2 texuv = vec2(inU,inV);
 
-		float SCALE = 0.3;
+		float SCALE = 1;
 
-		texuv = (texuv*SCALE)+vec2(0,Time*0.01);
+		texuv = (texuv*SCALE);
 
 		vec4 texc = texture( ColorMap2, texuv  );
-		inpos.y = texc.r*1000.0;
+		inpos.y = texc.r*3000.0+100;
 		inpos.x *= SCALE;
 		inpos.z *= SCALE;
  	  gl_Position = MatMVP*inpos;
-		//vec2 uvc = vec2(mod(inU*100,1),mod(inV*100,1));
-	  //frg_clr = vec4(uvc,mod(inpos.x*.1,1),1);
-		frg_clr = vtxcolor;
+		vec2 uvc = vec2(mod(inU*100,1),mod(inV*100,1));
+	  frg_clr = vec4(uvc,mod(inpos.x*.1,1),1);
+		//frg_clr = vtxcolor;
 	  frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////
