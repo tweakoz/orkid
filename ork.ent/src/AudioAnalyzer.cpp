@@ -30,13 +30,13 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisManagerComponentData, "AudioAnalysisManagerComponentData");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisManagerComponentInst, "AudioAnalysisManagerComponentInst");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisSystemData, "AudioAnalysisSystemData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisSystem, "AudioAnalysisSystem");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentData, "AudioAnalysisComponentData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentInst, "AudioAnalysisComponentInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisArchetype, "AudioAnalysisArchetype");
 
-template  ork::ent::AudioAnalysisManagerComponentInst* ork::ent::SceneInst::findSystem() const;
+template  ork::ent::AudioAnalysisSystem* ork::ent::SceneInst::findSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -45,15 +45,15 @@ namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioAnalysisManagerComponentData::Describe()
+void AudioAnalysisSystemData::Describe()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioAnalysisManagerComponentData::AudioAnalysisManagerComponentData()
+AudioAnalysisSystemData::AudioAnalysisSystemData()
 {
-	printf( "AudioAnalysisManagerComponentData::AudioAnalysisManagerComponentData()\n" );
+	printf( "AudioAnalysisSystemData::AudioAnalysisSystemData()\n" );
 	AudioDeviceList* pdl = new AudioDeviceList(true);
 	AudioDeviceList::DeviceList &thelist = pdl->GetList();
 	int index = 0;
@@ -69,21 +69,21 @@ AudioAnalysisManagerComponentData::AudioAnalysisManagerComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* AudioAnalysisManagerComponentData::createSystem(ork::ent::SceneInst *pinst) const
+ork::ent::System* AudioAnalysisSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
-	return new AudioAnalysisManagerComponentInst( *this, pinst );
+	return new AudioAnalysisSystem( *this, pinst );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioAnalysisManagerComponentInst::Describe()
+void AudioAnalysisSystem::Describe()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioAnalysisManagerComponentInst::AudioAnalysisManagerComponentInst( const AudioAnalysisManagerComponentData& data, ork::ent::SceneInst *pinst )
+AudioAnalysisSystem::AudioAnalysisSystem( const AudioAnalysisSystemData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::System( &data, pinst )
 	, mAAMCD(data)
 {
@@ -92,7 +92,7 @@ AudioAnalysisManagerComponentInst::AudioAnalysisManagerComponentInst( const Audi
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::AudioAnalysisComponentInst* AudioAnalysisManagerComponentInst::GetAudioAnalysisComponentInst( int icidx ) const
+ent::AudioAnalysisComponentInst* AudioAnalysisSystem::GetAudioAnalysisComponentInst( int icidx ) const
 {
 	ent::AudioAnalysisComponentInst* rval = 0;
 	int inumsc = mAACIs.size();
@@ -106,7 +106,7 @@ ent::AudioAnalysisComponentInst* AudioAnalysisManagerComponentInst::GetAudioAnal
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioAnalysisManagerComponentInst::AddAACI( AudioAnalysisComponentInst* cci )
+void AudioAnalysisSystem::AddAACI( AudioAnalysisComponentInst* cci )
 {
 	mAACIs.push_back(cci);
 }
@@ -139,7 +139,7 @@ ork::ent::ComponentInst* AudioAnalysisComponentData::CreateComponent(ork::ent::E
 
 void AudioAnalysisComponentData::DoRegisterWithScene( ork::ent::SceneComposer& sc )
 {
-	sc.Register<ork::ent::AudioAnalysisManagerComponentData>();
+	sc.Register<ork::ent::AudioAnalysisSystemData>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ void AudioAnalysisComponentInst::Describe()
 
 bool AudioAnalysisComponentInst::DoLink(ork::ent::SceneInst *psi)
 {
-	auto cmi = psi->findSystem<ent::AudioAnalysisManagerComponentInst>();
+	auto cmi = psi->findSystem<ent::AudioAnalysisSystem>();
 	OrkAssert(cmi!=0);
 	cmi->AddAACI(this);
 
@@ -211,8 +211,8 @@ AudioAnalysisComponentInst::AudioAnalysisComponentInst( const AudioAnalysisCompo
 {
 	StartMidi();
 	SceneInst* psi = pent->GetSceneInst();
-	mpAAMCI = psi->findSystem<ent::AudioAnalysisManagerComponentInst>();
-	const AudioAnalysisManagerComponentData& AAMCD = mpAAMCI->GetAAMCD();
+	mpAAMCI = psi->findSystem<ent::AudioAnalysisSystem>();
+	const AudioAnalysisSystemData& AAMCD = mpAAMCI->GetAAMCD();
 
 
 	int iaudiodeviceID = data.GetAudioInputDeviceID();
