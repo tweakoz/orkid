@@ -300,7 +300,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 
   std::vector<Iter> iters;
   for (int i = 0; i < 8; i++)
-    iters.push_back(Iter{i, 64});
+    iters.push_back(Iter{i, 128});
 
   int iprevouterd2 = 0;
 
@@ -322,22 +322,24 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 
     if (0 == lod) {
       patch_block(PT_A, lod, // Full Sector
-                  -newouterd2 + step, -newouterd2 + step, +newouterd2,
-                  +newouterd2);
+                  -newouterd2+step, -newouterd2 + step,
+                  +newouterd2-step, +newouterd2 - step);
     } else {
       patch_block(PT_A, lod, // Top Sector
-                  -newouterd2 + step, -newouterd2 + step, +newouterd2,
-                  -iprevouterd2);
+                  -newouterd2 + step, -newouterd2 + step,
+                  +newouterd2-step, -iprevouterd2);
 
       patch_block(PT_A, lod, // Left Sector
-                  -newouterd2 + step, -iprevouterd2, -iprevouterd2,
-                  +iprevouterd2);
+                  -newouterd2 + step, -iprevouterd2,
+                  -iprevouterd2, +iprevouterd2);
 
       patch_block(PT_A, lod, // Right Sector
-                  iprevouterd2, -iprevouterd2, newouterd2, +iprevouterd2);
+                  iprevouterd2, -iprevouterd2,
+                  newouterd2-step, +iprevouterd2);
 
       patch_block(PT_A, lod, // Bottom Sector
-                  -newouterd2 + step, iprevouterd2, +newouterd2, newouterd2);
+                  -newouterd2 + step, iprevouterd2,
+                  +newouterd2-step, newouterd2-step);
     }
 
     int bx0 = -newouterd2;
@@ -424,7 +426,6 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     aab.Grow(p2);
     aab.Grow(p3);
 
-
     uint32_t c0 = 0xff000000;
     uint32_t c1 = 0xff0000ff;
     uint32_t c2 = 0xff00ffff;
@@ -433,35 +434,45 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     switch (p._type) {
     case PT_A: //
       triangle_count += 8;
+      c0 = 0xff0000ff;
       break;
     case PT_BT:
     case PT_BB:
-      c1 = 0xffc000c0;
-      c2 = 0xff800080;
-      c3 = 0xff400040;
-      triangle_count += 5;
+      c0 = 0xff800080;
       break;
     case PT_BL:
     case PT_BR:
-      c1 = 0xffc00000;
-      c2 = 0xff800000;
-      c3 = 0xff000000;
-      triangle_count += 5;
+      c0 = 0xff00ff00;
       break;
       break;
     case PT_C:
-      c1 = 0xff808080;
-      c2 = 0xffc0c0c0;
-      c3 = 0xff404040;
-      triangle_count += 4;
+      c0 = 0xff808080;
       break;
     }
 
     auto v0 = lev2::SVtxV12C4T16(p0, fvec2(), c0);
-    auto v1 = lev2::SVtxV12C4T16(p1, fvec2(), c1);
-    auto v2 = lev2::SVtxV12C4T16(p2, fvec2(), c2);
-    auto v3 = lev2::SVtxV12C4T16(p3, fvec2(), c3);
+    auto v1 = lev2::SVtxV12C4T16(p1, fvec2(), c0);
+    auto v2 = lev2::SVtxV12C4T16(p2, fvec2(), c0);
+    auto v3 = lev2::SVtxV12C4T16(p3, fvec2(), c0);
+    auto vc = lev2::SVtxV12C4T16((p0+p1+p2+p3)*0.25, fvec2(), c0);
 
+    switch (p._type) {
+    case PT_A: //
+      triangle_count += 2;
+      break;
+    case PT_BT:
+    case PT_BB:
+      triangle_count += 5;
+      break;
+    case PT_BR:
+      triangle_count += 5;
+      break;
+      case PT_BL:
+      break;
+    case PT_C:
+      triangle_count += 4;
+      break;
+    }
     vwriter.AddVertex(v0);
     vwriter.AddVertex(v1);
     vwriter.AddVertex(v2);

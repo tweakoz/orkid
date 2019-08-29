@@ -69,7 +69,8 @@ vertex_shader vs_terrain1 : iface_vdefault
 		inpos.z *= SCALE;
  	  gl_Position = MatMVP*inpos;
 		//vec2 uvc = vec2(mod(inU*100,1),mod(inV*100,1));
-	  frg_clr = vec4(uvc,mod(inpos.x*.1,1),1);
+	  //frg_clr = vec4(uvc,mod(inpos.x*.1,1),1);
+		frg_clr = vtxcolor;
 	  frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////
