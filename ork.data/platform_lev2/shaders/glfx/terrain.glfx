@@ -4,7 +4,7 @@
 fxconfig fxcfg_default
 {
 	glsl_version = "330";
-    import "skintools.i";
+    import "misctools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -58,11 +58,11 @@ vertex_shader vs_terrain1
 {   /////////////////////////////////
     // constants
     /////////////////////////////////
-    const float metersPerTexel = 1;
+    const float metersPerTexel = 2;
 		const float texelsPerMeter = 1.0 / metersPerTexel;
     const float HFDIM = 2048;
     const float INVHFDIM = 1.0/HFDIM;
-    const float hfHeightScale = 750;
+    const float hfHeightScale = 1500;
     const float hfHeightBias = 0;
 		//float invBaseGridTexelDim = (0.1*metersPerTexel / 4.0)+(1/129.0); // inverse of num texels of base lod
 		float invBaseGridTexelDim = User2.x; // inverse of num texels of base lod
@@ -110,25 +110,41 @@ vertex_shader vs_terrain1
 		// final computation
 		/////////////////////////////////
     wpos.y = (h*hfHeightScale)+hfHeightBias;
-		if (max(abs(uvLoMip.x - 0.5), abs(uvLoMip.y - 0.5)) > 0.5){
-      //wpos.y = -100; // Fold down edges
-			//surfaceColor.z = 0.3; //mod(uvLoMip.y,1);//*pow(h,0.25);
-		}
-		surfaceColor.x = mod(uvLoMip.x*100,1);//*pow(h,0.25);
-    surfaceColor.y = mod(uvLoMip.y*100,1);//*pow(h,0.25);
-		//surfaceColor.x = mod(abs(size),1);
-		//surfaceColor.y = lowMIP/8.0;
+		//float lmipvisualize = (1.0+lowMIP)/6.0;
     ///////////////////////////
     // apply to GL
     ///////////////////////////
     gl_Position = MatMVP*vec4(wpos,1);
-    frg_clr = surfaceColor;
-    frg_uv = uv0;
+    //frg_clr = vec4(lmipvisualize,lmipvisualize,lmipvisualize,1);
+		frg_clr = vec4(wpos,1);
+    frg_uv = uvLoMip*100.0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_terrain1 : iface_fdefault
+fragment_shader ps_terrain1
+	: iface_fdefault
+	: lib_mmnoise
 {
-	out_clr = modcolor*frg_clr;
+	//vec3 nrml = normalize( cross(dFdx(frg_clr.xyz), dFdy(frg_clr.xyz)) );
+	// derivatives are slow...
+	float u = mod(frg_uv.x,1);
+	float v = mod(frg_uv.y,1);
+	//float nmag = 1;
+	//float nmagmul = 0.5;
+	float noiz1 = noise(frg_clr.xyz);
+	//nmag*=nmagmul ;
+	//float noiz2 = noise(frg_clr.xyz*3.9)*nmag;
+	//nmag*=nmagmul ;
+	//float noiz3 = noise(frg_clr.xyz*24.9)*nmag;
+	//nmag*=nmagmul ;
+	//float noiz4 = noise(frg_clr.xyz*64.9)*nmag;
+	//float noiz = (noiz+noiz2);
+	vec3 a = vec3(0.1,0.1,0.1);
+	vec3 b = vec3(0.3,0.3,0.3);
+	vec3 c = mix(a,b,noiz1);
+	     c += vec3(u,v,0)*0.05;
+	//float l = (1.0+dot(nrml,vec3(0,1,0)))*0.5;
+	out_clr = vec4(c,1);
+	//out_clr = frg_clr;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks

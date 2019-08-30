@@ -40,12 +40,3 @@ libblock skin_tools
 	}
 
 }
-
-libblock lib_terrain {
-    vec2 quantize(vec2 inp, float quantum) {
-        return round(inp*(1.0/quantum))*quantum;
-    }
-    float max2(vec2 inp){
-        return (inp.x>inp.y) ? inp.x : inp.y;
-    }
-}
