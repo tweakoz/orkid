@@ -300,14 +300,12 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 
   std::vector<Iter> iters;
 
-    iters.push_back(Iter{0, 256});
-    iters.push_back(Iter{1, 192});
-    iters.push_back(Iter{2, 160});
-    iters.push_back(Iter{3, 128});
-    iters.push_back(Iter{4, 96});
-    iters.push_back(Iter{5, 64});
-    iters.push_back(Iter{6, 64});
-    iters.push_back(Iter{7, 32});
+  iters.push_back(Iter{0, 256});
+  iters.push_back(Iter{1, 128});
+  iters.push_back(Iter{2, 128});
+  iters.push_back(Iter{3, 128});
+  iters.push_back(Iter{4, 128});
+  iters.push_back(Iter{5, 128});
 
 
   int iprevouterd2 = 0;
@@ -395,6 +393,8 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   // find/create vertexbuffers
   ////////////////////////////////////////////
 
+  typedef lev2::SVtxV12C4T16 vertex_type;
+
   TerVtxBuffersType *vertexbuffers = 0;
 
   auto itv = vtxbufmap.find(terrain_ngrids);
@@ -404,7 +404,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     vertexbuffers = OrkNew TerVtxBuffersType;
     vtxbufmap[terrain_ngrids] = vertexbuffers;
 
-    auto vbuf = new lev2::StaticVertexBuffer<lev2::SVtxV12C4T16>(
+    auto vbuf = new lev2::StaticVertexBuffer<vertex_type>(
         vertex_count, 0, lev2::EPRIM_POINTS);
     vertexbuffers->push_back(vbuf);
   } else {
@@ -414,7 +414,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   auto vbuf = (*vertexbuffers)[0];
   vbuf->Reset();
   ////////////////////////////////////////////
-  lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vwriter;
+  lev2::VtxWriter<vertex_type> vwriter;
   vwriter.Lock(ptarg, vbuf, vertex_count);
   ////////////////////////////////////////////
   triangle_count = 0;
@@ -464,15 +464,21 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     p3.y = lod;
 
 
-    auto v0 = lev2::SVtxV12C4T16(p0, fvec2(), c0);
-    auto v1 = lev2::SVtxV12C4T16(p1, fvec2(), c0);
-    auto v2 = lev2::SVtxV12C4T16(p2, fvec2(), c0);
-    auto v3 = lev2::SVtxV12C4T16(p3, fvec2(), c0);
-    auto vc = lev2::SVtxV12C4T16((p0+p1+p2+p3)*0.25, fvec2(), c0);
+    auto v0 = vertex_type(p0, fvec2(), c0);
+    auto v1 = vertex_type(p1, fvec2(), c0);
+    auto v2 = vertex_type(p2, fvec2(), c0);
+    auto v3 = vertex_type(p3, fvec2(), c0);
+    auto vc = vertex_type((p0+p1+p2+p3)*0.25, fvec2(), c0);
 
     switch (p._type) {
     case PT_A: //
       triangle_count += 2;
+      vwriter.AddVertex(v0);
+      vwriter.AddVertex(v1);
+      vwriter.AddVertex(v2);
+      vwriter.AddVertex(v0);
+      vwriter.AddVertex(v2);
+      vwriter.AddVertex(v3);
       break;
     case PT_BT:
     case PT_BB:
@@ -487,12 +493,6 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
       triangle_count += 4;
       break;
     }
-    vwriter.AddVertex(v0);
-    vwriter.AddVertex(v1);
-    vwriter.AddVertex(v2);
-    vwriter.AddVertex(v0);
-    vwriter.AddVertex(v2);
-    vwriter.AddVertex(v3);
   }
   ////////////////////////////////////////////
   vwriter.UnLock(ptarg);
@@ -525,8 +525,8 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
 
   auto framedata = ptarg->GetRenderContextFrameData();
 
-  const CMatrix4 &PMTX = framedata->GetCameraCalcCtx().mPMatrix;
-  const CMatrix4 &VMTX = framedata->GetCameraCalcCtx().mVMatrix;
+  const fmtx4& PMTX = framedata->GetCameraCalcCtx().mPMatrix;
+  const fmtx4& VMTX = framedata->GetCameraCalcCtx().mVMatrix;
   auto MMTX = pent->GetEffectiveMatrix();
 
   bool bpick = ptarg->FBI()->IsPickState();
@@ -536,16 +536,11 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
   //////////////////////////
   fmtx4 inv_view;
   inv_view.GEMSInverse(VMTX);
-  CVector3 campos = inv_view.GetTranslation();
+  fvec3 campos = inv_view.GetTranslation();
   campos.y = 0;
-  CMatrix4 follow;
-  follow.SetTranslation( campos );
-
-
-
-
+  fmtx4 follow;
+  //follow.SetTranslation( campos );
   //////////////////////////
-
   ptarg->MTXI()->PushPMatrix(PMTX);
   ptarg->MTXI()->PushVMatrix(VMTX);
   ptarg->MTXI()->PushMMatrix(follow);
@@ -580,14 +575,7 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         auto range = htri->_aabbmax-htri->_aabbmin;
         material->SetUser0(htri->_aabbmin);
         material->SetUser1(range);
-        material->SetUser2(fvec4(campos.x/range.x,0,campos.z/range.z));
-
-        // min = -3
-        // max = 5
-        // max-min = 8
-        // -3 - min = 0
-        // 5 - min = 8
-
+        material->SetUser2(fvec4(hfd.WorldHeight(),0,0,0));
 
         ptarg->PushMaterial(material);
         int ivbidx = 0;
@@ -659,9 +647,9 @@ void BulletShapeHeightfieldData::Describe() {
       "HeightMap", "editor.filetype", "png");
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldHeight", "editor.range.min", "1.0f");
+      "WorldHeight", "editor.range.min", "0.0");
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldHeight", "editor.range.max", "20000.0");
+      "WorldHeight", "editor.range.max", "0.25");
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
       "WorldSize", "editor.range.min", "1.0f");

@@ -33,7 +33,7 @@ void CCamera::Describe()
 
 CCamera::CCamera()
 	: CamFocus(0.0f,0.0f,0.0f)
-	, mfLoc( 2400.0f )
+	, mfLoc( 3.0f )
 	, mvCenter(0.0f,0.0,0.0f)
 	, QuatC( 0.0f, -1.0f, 0.0f, 0.0f )
 	, locscale( 1.0f )

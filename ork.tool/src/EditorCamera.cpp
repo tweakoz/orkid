@@ -37,7 +37,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::EditorCamControllerInst, "EditorCamContro
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void EditorCamArchetype::DoCompose(ork::ent::ArchComposer& composer) 
+void EditorCamArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<ork::ent::EditorCamControllerData>();
 }
@@ -73,8 +73,8 @@ void EditorCamControllerData::Describe()
 EditorCamControllerData::EditorCamControllerData()
 {
 	mPerspCam = new lev2::CCamera_persp;
-	
-	mPerspCam->mfLoc = 100.0f;
+
+	mPerspCam->mfLoc = 1.0f;
 
 	mPerspCam->SetName( "persp" );
 }
@@ -103,11 +103,11 @@ EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& 
 	CameraDrawable* pcamd = new CameraDrawable(pent,& pcam->GetCameraData()); // deleted when entity deleted
 	//pent->AddDrawable(AddPooledLiteral("Debug"),pcamd);
 	pcamd->SetOwner(pent);
-	
+
 //	CameraDrawable* pcamd = new CameraDrawable(pent,&mCameraData); // deleted when entity deleted
 //	pent->AddDrawable(pcamd);
 //	pcamd->SetOwner(pent);
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
