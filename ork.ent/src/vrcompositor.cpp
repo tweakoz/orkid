@@ -78,7 +78,7 @@ struct ControllerState {
 
 ///////////////////////////////////////////////////////////////////////////
 
-constexpr int NUMSAMPLES = 16;
+constexpr int NUMSAMPLES = 4;
 
 struct VrFrameTechnique final : public FrameTechniqueBase
 {
@@ -293,7 +293,7 @@ struct VRSYSTEMIMPL {
       fmtx4 eyeL = _posemap["eyel"];
       fmtx4 eyeR = _posemap["eyer"];
 
-      float xlaterate = 10.0/90.0;
+      float xlaterate = 12.0/80.0;
 
       fvec3 hmdpos;
       fquat hmdrot;
@@ -409,8 +409,8 @@ struct VRSYSTEMIMPL {
     fmtx4 _poseMatrices[ vr::k_unMaxTrackedDeviceCount ];
     std::string _devclass[ vr::k_unMaxTrackedDeviceCount ];
     std::set<vr::TrackedDeviceIndex_t> _controllerindexset;
-    const int kRIGHTCONTROLLERDEV = 2;
-    const int kLEFTCONTROLLERDEV = 3;
+    const int kRIGHTCONTROLLERDEV = 4;
+    const int kLEFTCONTROLLERDEV = 5;
   #endif
 };
 ///////////////////////////////////////////////////////////////////////////////

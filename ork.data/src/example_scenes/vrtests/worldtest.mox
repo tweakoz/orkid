@@ -199,16 +199,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='17'>
-                                        <property name='RunSpeed'>350</property>
-                                        <property name='SpeedLerpRate'>10</property>
-                                        <property name='WalkSpeed'>135</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='18'>
+                                    <object type='ModelComponentData' id='17'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -227,8 +218,17 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='19'>
+                                    <object type='ScriptComponentData' id='18'>
                                         <property name='ScriptFile'>"src://scripts/arch/diver.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='19'>
+                                        <property name='RunSpeed'>350</property>
+                                        <property name='SpeedLerpRate'>10</property>
+                                        <property name='WalkSpeed'>135</property>
                                     </object>
                                 </reference>
                             </item>
@@ -246,10 +246,10 @@
                                     <object type='EditorCamControllerData' id='21'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='22'>
-                                                <property name='Center'>-1651.75 -470.694 -409.312</property>
+                                                <property name='Center'>-1652.55 -472.525 -408.533</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>43.0586</property>
-                                                <property name='QuatC'>-0.0826697 0.218572 -0.0698563 0.970046</property>
+                                                <property name='QuatC'>0.0251685 -0.0243261 -0.0219604 0.999396</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -394,7 +394,7 @@
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
                                                 <object type='PerfAnalyzerControllerData' id='36'>
-                                                    <property name='EnableDisplay'>true</property>
+                                                    <property name='EnableDisplay'>false</property>
                                                 </object>
                                             </reference>
                                         </item>
@@ -476,7 +476,7 @@
                             <item key='animate'>
                                 <reference category='ComponentDataClass'>
                                     <object type='ProcTexControllerData' id='44'>
-                                        <property name='BufferDim'>256</property>
+                                        <property name='BufferDim'>512</property>
                                         <property name='FrameRate'>1</property>
                                         <property name='Output'>
                                             <reference category='ObjectClass'>
@@ -648,9 +648,9 @@
                                                                 <property name='gradient'>
                                                                     <object type='GradientV4' id='76'>
                                                                         <property name='points'>
-                                                                            <item key='0'>0.695312 0.832031 0.992188 0.996094</item>
-                                                                            <item key='0.827815'>0.824219 0.931641 0.974609 0.996094</item>
-                                                                            <item key='1'>0.652344 0.867188 0.953125 0.996094</item>
+                                                                            <item key='0'>0.539062 0.539062 0.683594 0.972656</item>
+                                                                            <item key='0.37457'>0.59375 0.617188 0.742188 0.992188</item>
+                                                                            <item key='1'>0.539062 0.539062 0.683594 0.992188</item>
                                                                         </property>
                                                                     </object>
                                                                 </property>
