@@ -1133,7 +1133,7 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 			minfilt =  GL_LINEAR;
 		}
 
-		printf( "linmiplin inummips<%d>\n", inummips );
+		//printf( "linmiplin inummips<%d>\n", inummips );
 
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
 
@@ -1169,14 +1169,14 @@ void GlTextureInterface::initTextureFromData( Texture *ptex, bool autogenmips ) 
 
 	glTexImage2D( GL_TEXTURE_2D,
 	              0,
-							GL_R32F,
-							ptex->GetWidth(),
-							ptex->GetHeight(),
-							0,
-							 GL_RED,
-							  GL_FLOAT,
-								ptex->GetTexData()
-						);
+                  GL_RGBA32F,
+                  ptex->GetWidth(),
+                  ptex->GetHeight(),
+                  0,
+                  GL_RGBA,
+                  GL_FLOAT,
+                  ptex->GetTexData()
+				);
 
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
