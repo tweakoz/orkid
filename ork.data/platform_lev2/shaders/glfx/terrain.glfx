@@ -59,69 +59,70 @@ vertex_shader vs_terrain1
     // constants
     /////////////////////////////////
     const float metersPerTexel = 1;
+		const float texelsPerMeter = 1.0 / metersPerTexel;
     const float HFDIM = 2048;
     const float INVHFDIM = 1.0/HFDIM;
-    const float hfHeightScale = 50; // ? heightfield_readMultiplyFirst
-    const float hfHeightBias = 0; // ..
+    const float hfHeightScale = 750;
+    const float hfHeightBias = 0;
+		//float invBaseGridTexelDim = (0.1*metersPerTexel / 4.0)+(1/129.0); // inverse of num texels of base lod
+		float invBaseGridTexelDim = User2.x; // inverse of num texels of base lod
     /////////////////////////////////
     // testuv
     /////////////////////////////////
-    vec4 inpos = position;
-    float inU = (inpos.x-User0.x)/User1.x;
-	float inV = (inpos.z-User0.z)/User1.z;
-	//inU += User2.x;
-	//inV += User2.z;
-    vec2 rawuv = vec2(mod(inU,1),mod(inV,1));
-    vec4 surfacecolor = vec4(rawuv,0,1);
+    vec4 surfaceColor = vec4(0,0,.1,1);
     /////////////////////////////////
-    float vtxlod = inpos.y;
-    float mippedmetersPerTexel = metersPerTexel*exp2(vtxlod);
+		// mipcalc
+		/////////////////////////////////
+    float vtxlod = position.y;
+    float mippedMetersPerTexel = metersPerTexel*exp2(vtxlod);
+		float invMippedMetersPerTexel = 1.0f/mippedMetersPerTexel;
     /////////////////////////////////
     // compute snapped object/worldspace
     /////////////////////////////////
-    vec3 campos = MatMV[3].xyz;
-    vec2 o2w = quantize(campos.xz,mippedmetersPerTexel);
-    vec3 wpos = vec3( inpos.x * mippedmetersPerTexel + o2w.x,
-                      0,
-                      inpos.z * mippedmetersPerTexel + o2w.y);
-    vec3 opos = wpos - campos;
+    vec3 campos = inverse(MatMV)[3].xyz;
+    vec2 o2w = quantize(campos.xz,mippedMetersPerTexel);
+		float w_x = position.x * metersPerTexel + o2w.x;
+		float w_z = position.z * metersPerTexel + o2w.y;
+    vec3 wpos = vec3( w_x, 0, w_z );
+    vec3 opos = (wpos - campos);
     /////////////////////////////////
     // uvgen
     /////////////////////////////////
-    float size = max(0.5, max2(abs(opos.xz * 2.0 * INVHFDIM)));
+    float size = max(0.5, max2(abs(opos.xz * 2.0 * invBaseGridTexelDim)));
     float llod = max(log2(size) - 0.75, 0.0);
     float lowMIP = floor(llod);
     float highMIP = lowMIP + 1.0;
-    float mipFract = llod - lowMIP;
     float htexoffsetHi = exp2(lowMIP);
     float htexoffsetLo = htexoffsetHi * 0.5;
-    vec2 uvLoMip = (wpos.xz / metersPerTexel + htexoffsetLo) * INVHFDIM;
-    vec2 uvHiMip = (wpos.xz / metersPerTexel + htexoffsetHi) * INVHFDIM;
-    surfacecolor.x = mod(abs(uvLoMip.x),1);
-    surfacecolor.y = mod(abs(uvLoMip.y),1);
+    vec2 uvLoMip = (wpos.xz * texelsPerMeter + htexoffsetLo) * INVHFDIM;
+    vec2 uvHiMip = (wpos.xz * texelsPerMeter + htexoffsetHi) * INVHFDIM;
+
+		uvLoMip = (uvLoMip+vec2(1,1))*0.5;
+		uvHiMip = (uvHiMip+vec2(1,1))*0.5;
     /////////////////////////////////
     // sample height
     /////////////////////////////////
     float heightSampleLoMip = textureLod(ColorMap2, uvLoMip, lowMIP).r;
     float heightSampleHiMip = textureLod(ColorMap2, uvHiMip, highMIP).r;
-    float h = mix(heightSampleLoMip,heightSampleHiMip,mipFract);
+		float lerpIndex = llod - lowMIP;
+    float h = mix(heightSampleLoMip,heightSampleHiMip,lerpIndex);
+		/////////////////////////////////
+		// final computation
+		/////////////////////////////////
     wpos.y = (h*hfHeightScale)+hfHeightBias;
-    ///////////////////////////
-    // final computation
-    ///////////////////////////
-    //inpos.x = opos.x;
-    //inpos.z = opos.z;
-    vec2 texuv = vec2(inU,inV);
-	texuv = (texuv*metersPerTexel);
-	inpos.y = wpos.y;
-    inpos.x *= metersPerTexel;
-	inpos.z *= metersPerTexel;
+		if (max(abs(uvLoMip.x - 0.5), abs(uvLoMip.y - 0.5)) > 0.5){
+      //wpos.y = -100; // Fold down edges
+			//surfaceColor.z = 0.3; //mod(uvLoMip.y,1);//*pow(h,0.25);
+		}
+		surfaceColor.x = mod(uvLoMip.x*100,1);//*pow(h,0.25);
+    surfaceColor.y = mod(uvLoMip.y*100,1);//*pow(h,0.25);
+		//surfaceColor.x = mod(abs(size),1);
+		//surfaceColor.y = lowMIP/8.0;
     ///////////////////////////
     // apply to GL
     ///////////////////////////
-    gl_Position = MatMVP*inpos;
-    frg_clr = surfacecolor;
-    //frg_clr = vtxcolor;
+    gl_Position = MatMVP*vec4(wpos,1);
+    frg_clr = surfaceColor;
     frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////

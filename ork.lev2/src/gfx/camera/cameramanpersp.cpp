@@ -56,7 +56,7 @@ void CCamera_persp::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CCamera_persp::CCamera_persp() 
+CCamera_persp::CCamera_persp()
 	: CCamera()
 	, aper(40.0f)
 	, far_max(10000.0f)
@@ -76,7 +76,7 @@ CCamera_persp::CCamera_persp()
 {
 	//InitInstance(CCamera_persp::GetClassStatic());
 	mCameraData.Persp( 1.0f,1000.0f,70.0f );
-	mCameraData.Lookat( CVector3(0.0f,0.0f,0.0f),CVector3(0.0f,0.0f,1.0f),CVector3(0.0f,1.0f,0.0f) );
+	mCameraData.Lookat( fvec3(0.0f,0.0f,0.0f),fvec3(0.0f,0.0f,1.0f),fvec3(0.0f,1.0f,0.0f) );
 	//mCameraData.SetFar( 1000.0f );
 	type_name = "Perspective";
     instance_name = "Default";
@@ -118,19 +118,19 @@ CCamera_persp::CCamera_persp()
 ///////////////////////////////////////////////////////////////////////////////
 
 void CCamera_persp::draw( GfxTarget *pT )
-{		
-	extern CVector4 TRayN;
-	extern CVector4 TRayF;
-	
+{
+	extern fvec4 TRayN;
+	extern fvec4 TRayF;
+
 	CMatrix4 MatP, MatV, MatT;
 
 
-	CReal CurVelMag = MeasuredCameraVelocity.Mag();
+	float CurVelMag = MeasuredCameraVelocity.Mag();
 
 	//////////////////////////////////////
 	pT->MTXI()->PushUIMatrix();
 	{
-		
+
 		pT->PushModColor( CColor4::Black() );
 		ork::lev2::CFontMan::PushFont("i14");
 		CFontMan::BeginTextBlock( pT );
@@ -186,14 +186,14 @@ void CCamera_persp::draw( GfxTarget *pT )
 		LengthReal luy( mvCenter.GetY(), LengthUnit::Meters() );
 		LengthReal luz( mvCenter.GetZ(), LengthUnit::Meters() );
 
-		CVector3 vt;
+		fvec3 vt;
 		vt.SetX( lux.GetValue(LengthUnit::GetProjectUnits()) );
 		vt.SetY( luy.GetValue(LengthUnit::GetProjectUnits()) );
 		vt.SetZ( luz.GetValue(LengthUnit::GetProjectUnits()) );
 
 		MatT.SetTranslation( vt );
-		CReal Scale = mfLoc/30.0f;
-		MatT.Scale( CVector4( Scale,Scale,Scale ) );
+		float Scale = mfLoc/30.0f;
+		MatT.Scale( fvec4( Scale,Scale,Scale ) );
 		pT->MTXI()->PushMMatrix( MatT );
 		{
 			CGfxPrimitives::GetRef().RenderTriCircle( pT );
@@ -201,29 +201,29 @@ void CCamera_persp::draw( GfxTarget *pT )
 
 			//pT->IMI()->QueFlush();
 			pT->PushModColor( CColor4::Red() );
-			//pT->IMI()->DrawLine( CVector4( CReal(0.0f), CReal(0.0f), CReal(0.0f) ), CVector4( CReal(10.0f), CReal(0.0f), CReal(0.0f) ) );
+			//pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(0.0f) ), fvec4( float(10.0f), float(0.0f), float(0.0f) ) );
 			//pT->IMI()->QueFlush();
 			pT->PopModColor();
 			pT->PushModColor( CColor4::Green() );
-			//pT->IMI()->DrawLine( CVector4( CReal(0.0f), CReal(0.0f), CReal(0.0f) ), CVector4( CReal(0.0f), CReal(10.0f), CReal(0.0f) ) );
+			//pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(0.0f) ), fvec4( float(0.0f), float(10.0f), float(0.0f) ) );
 			//pT->IMI()->QueFlush();
 			pT->PopModColor();
 			pT->PushModColor( CColor4::Blue() );
-			//pT->IMI()->DrawLine( CVector4( CReal(0.0f), CReal(0.0f), CReal(0.0f) ), CVector4( CReal(0.0f), CReal(0.0f), CReal(10.0f) ) );
+			//pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(0.0f) ), fvec4( float(0.0f), float(0.0f), float(10.0f) ) );
 			//pT->IMI()->QueFlush();
 			pT->PopModColor();
 
 			//pT->IMI()->QueFlush();
-			pT->PushModColor( CColor4::Red()*CReal(0.5f) );
-			//pT->IMI()->DrawLine( CVector4( CReal(-10.0f), CReal(0.0f), CReal(0.0f) ), CVector4( CReal(0.0f), CReal(0.0f), CReal(0.0f) ) );
+			pT->PushModColor( CColor4::Red()*float(0.5f) );
+			//pT->IMI()->DrawLine( fvec4( float(-10.0f), float(0.0f), float(0.0f) ), fvec4( float(0.0f), float(0.0f), float(0.0f) ) );
 			//pT->IMI()->QueFlush();
 			pT->PopModColor();
-			pT->PushModColor( CColor4::Green()*CReal(0.5f) );
-			//pT->IMI()->DrawLine( CVector4( CReal(0.0f), CReal(-10.0f), CReal(0.0f) ), CVector4( CReal(0.0f), CReal(0.0f), CReal(0.0f) ) );
+			pT->PushModColor( CColor4::Green()*float(0.5f) );
+			//pT->IMI()->DrawLine( fvec4( float(0.0f), float(-10.0f), float(0.0f) ), fvec4( float(0.0f), float(0.0f), float(0.0f) ) );
 			//pT->IMI()->QueFlush();
 			pT->PopModColor();
-			pT->PushModColor( CColor4::Blue()*CReal(0.5f) );
-			//pT->IMI()->DrawLine( CVector4( CReal(0.0f), CReal(0.0f), CReal(-10.0f) ), CVector4( CReal(0.0f), CReal(0.0f), CReal(0.0f) ) );
+			pT->PushModColor( CColor4::Blue()*float(0.5f) );
+			//pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(-10.0f) ), fvec4( float(0.0f), float(0.0f), float(0.0f) ) );
 			//pT->IMI()->QueFlush();
 			pT->PopModColor();
 
@@ -249,7 +249,7 @@ void CCamera_persp::draw( GfxTarget *pT )
 	}
 	//pT->MTXI()->PopVMatrix();
 	//pT->MTXI()->PopPMatrix();
-}		
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -273,10 +273,10 @@ void CCamera_persp::PanUpdate( const CamEvTrackData& ed )
     int esy = ed.icurY;
     int ipushx = ed.ipushX;
     int ipushy = ed.ipushY;
-    
-    CVector2 VP( CReal(mpViewport->GetW()), CReal(mpViewport->GetH()) );
 
-    CVector3 outx, outy;
+    CVector2 VP( float(mpViewport->GetW()), float(mpViewport->GetH()) );
+
+    fvec3 outx, outy;
 
     mCameraData.GetPixelLengthVectors( mvCenter, VP, outx, outy );
 
@@ -301,7 +301,7 @@ void CCamera_persp::PanEnd()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static CVector4 vPushNZ, vPushNX, vPushNY;
+static fvec4 vPushNZ, vPushNX, vPushNY;
 
 void CCamera_persp::RotBegin( const CamEvTrackData& ed )
 {   printf( "BeginRot\n");
@@ -319,9 +319,9 @@ void CCamera_persp::RotUpdate( const CamEvTrackData& ed )
 {
 	static int gupdatec = 0;
     printf( "RotUpdate<%d>\n", gupdatec++ );
-    CVector4 RotX = mCameraData.GetXNormal();
-    CVector4 RotY = mCameraData.GetYNormal();
-    CVector4 RotZ = mCameraData.GetZNormal();
+    fvec4 RotX = mCameraData.GetXNormal();
+    fvec4 RotY = mCameraData.GetYNormal();
+    fvec4 RotZ = mCameraData.GetZNormal();
 
     assert(mDoRotate);
 
@@ -329,10 +329,10 @@ void CCamera_persp::RotUpdate( const CamEvTrackData& ed )
     int esy = ed.icurY;
     int ipushx = ed.ipushX;
     int ipushy = ed.ipushY;
-    
-    CVector2 VP( CReal(mpViewport->GetW()), CReal(mpViewport->GetH()) );
 
-    CVector3 outx, outy;
+    CVector2 VP( float(mpViewport->GetW()), float(mpViewport->GetH()) );
+
+    fvec3 outx, outy;
 
     mCameraData.GetPixelLengthVectors( mvCenter, VP, outx, outy );
 
@@ -343,9 +343,9 @@ void CCamera_persp::RotUpdate( const CamEvTrackData& ed )
     fdx *= 0.5f;
     fdy *= 0.5f;
 
-    CReal frotamt = 0.005f;
+    float frotamt = 0.005f;
 
-    if( mfWorldSizeAtLocator < CReal(0.5f) )
+    if( mfWorldSizeAtLocator < float(0.5f) )
         frotamt = 0.001f;
 
     fdx *= frotamt;
@@ -364,18 +364,18 @@ void CCamera_persp::RotUpdate( const CamEvTrackData& ed )
             float fesx = float( esx );
             float fesy = float( esy );
 
-            CReal fx0 = (fipx-fvpx) - fvpwd2; 
-            CReal fy0 = (fipy-fvpy) - fvphd2; 
-            CReal fx1 = (fesx-fvpx) - fvpwd2; 
-            CReal fy1 = (fesy-fvpy) - fvphd2; 
-            CVector4 v0( fx0, fy0, 0.0f );
-            CVector4 v1( fx1, fy1, 0.0f );
+            float fx0 = (fipx-fvpx) - fvpwd2;
+            float fy0 = (fipy-fvpy) - fvphd2;
+            float fx1 = (fesx-fvpx) - fvpwd2;
+            float fy1 = (fesy-fvpy) - fvphd2;
+            fvec4 v0( fx0, fy0, 0.0f );
+            fvec4 v1( fx1, fy1, 0.0f );
             v0.Normalize();
             v1.Normalize();
-            CReal ang0 = rect2pol_ang( v0.GetX(), v0.GetY() );
-            CReal ang1 = rect2pol_ang( v1.GetX(), v1.GetY() );
-            CReal dangle = (ang1-ang0);
-            CQuaternion QuatZ;
+            float ang0 = rect2pol_ang( v0.GetX(), v0.GetY() );
+            float ang1 = rect2pol_ang( v1.GetX(), v1.GetY() );
+            float dangle = (ang1-ang0);
+            fquat QuatZ;
             vPushNZ.SetW( dangle );
             QuatZ.FromAxisAngle( vPushNZ );
             QuatC = QuatZ.Multiply( ManipHandler.Quat );
@@ -386,12 +386,12 @@ void CCamera_persp::RotUpdate( const CamEvTrackData& ed )
         {
 
             RotY.SetW( -fdx );
-            CQuaternion QuatY;
+            fquat QuatY;
             QuatY.FromAxisAngle( RotY );
             QuatC = QuatY.Multiply( QuatC );
 
             RotX.SetW( fdy );
-            CQuaternion QuatX;
+            fquat QuatX;
             QuatX.FromAxisAngle( RotX );
             QuatC = QuatX.Multiply( QuatC );
 
@@ -428,11 +428,11 @@ void CCamera_persp::DollyUpdate( const CamEvTrackData& ed )
     int esy = ed.icurY;
     int ipushx = ed.ipushX;
     int ipushy = ed.ipushY;
-    
-    assert( mDoDolly );
-    CVector2 VP( CReal(mpViewport->GetW()), CReal(mpViewport->GetH()) );
 
-    CVector3 outx, outy;
+    assert( mDoDolly );
+    CVector2 VP( float(mpViewport->GetW()), float(mpViewport->GetH()) );
+
+    fvec3 outx, outy;
 
     float fux = float(esx)/float(mpViewport->GetW());
 
@@ -441,28 +441,28 @@ void CCamera_persp::DollyUpdate( const CamEvTrackData& ed )
     float fvl = ViewLengthToWorldLength( mvCenter, 1.0f );
     float fdx = float(esx-ipushx);
     float fdy = float(esy-ipushy);
-    
-    float fdolly = (outx.Mag()*-fdy*3.0f*powf(fux,1.5f));
-    
-    CVector4 RotX = mCameraData.GetXNormal();
-    CVector4 RotY = mCameraData.GetYNormal();
-    CVector4 RotZ = mCameraData.GetZNormal();
 
-    CVector4 MoveVec = RotZ*fdolly;
+    float fdolly = (outx.Mag()*-fdy*3.0f*powf(fux,1.5f));
+
+    fvec4 RotX = mCameraData.GetXNormal();
+    fvec4 RotY = mCameraData.GetYNormal();
+    fvec4 RotZ = mCameraData.GetZNormal();
+
+    fvec4 MoveVec = RotZ*fdolly;
 
     if( mpViewport->IsHotKeyDepressed( "camera_y" ) )
         MoveVec = RotY*fdolly;
     else if( mpViewport->IsHotKeyDepressed( "camera_x" ) )
         MoveVec = RotX*fdolly;
-    
+
     mvCenter += MoveVec;
-    
+
 #if defined(ORK_CONFIG_EDITORBUILD)
    // QCursor::setPos(pmousepos);
 #endif
-    
 
-    
+
+
 }
 void CCamera_persp::DollyEnd()
 {   printf( "EndDolly\n");
@@ -477,7 +477,7 @@ void CCamera_persp::DollyEnd()
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CCamera_persp::UIEventHandler( const ui::Event& EV )
-{	
+{
 	const ui::EventCooked& filtev = EV.mFilteredEvent;
 
     ui::Viewport *pVP = GetViewport();
@@ -488,9 +488,9 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 	float fuy = filtev.mUnitY;
 	float fpux = (fux*2.0f)-1.0f;
 	float fpuy = (fuy*2.0f)-1.0f;
-	
+
 	CVector2 pos2D( fpux, fpuy );
-		
+
 	int state = 0;
 	bool isctrl = filtev.mCTRL;
 	bool isalt = filtev.mALT;
@@ -508,17 +508,17 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 	static int ipushx = 0;
 	static int ipushy = 0;
 	static f32 flerp = 0.0f;
-    
-	CVector4 RotX = mCameraData.GetXNormal();
-	CVector4 RotY = mCameraData.GetYNormal();
-	CVector4 RotZ = mCameraData.GetZNormal();
+
+	fvec4 RotX = mCameraData.GetXNormal();
+	fvec4 RotY = mCameraData.GetYNormal();
+	fvec4 RotZ = mCameraData.GetZNormal();
 
     switch(filtev.miEventCode)
     {
 		case UIEV_PUSH:
         {
 			if( pVP == 0 ) break;
-			
+
 			float fx = float(esx)/float(pVP->GetW())-0.5f;
 			float fy = float(esy)/float(pVP->GetH())-0.5f;
 			float frad = ork::sqrtf( (fx*fx) + (fy*fy) );
@@ -527,8 +527,8 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 
 			CommonPostSetup();
 
-            CVector3 vrn, vrf;
-			
+            fvec3 vrn, vrf;
+
 			GenerateDepthRay( pos2D, vrn, vrf, mCameraData.GetIVPMatrix() );
 
             if( isleft || isright )
@@ -536,7 +536,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 				////////////////////////////////////////////////////////
 				// calculate planes with world rotation, but current view target as origin
 
-				CVector4 Origin = mvCenter;
+				fvec4 Origin = mvCenter;
 				ManipHandler.Init( pos2D, mCameraData.GetIVPMatrix(), QuatC );
 
 			}
@@ -546,7 +546,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 			beginy = esy;
 			ipushx = esx;
 			ipushy = esy;
-            
+
 
 			leftbutton = filtev.mBut0;
 			middlebutton = filtev.mBut1;
@@ -575,7 +575,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 	            mEvTrackData.ipushY = ipushy;
 	            PanBegin(mEvTrackData);
             }
-            
+
 			break;
         }
 		case UIEV_RELEASE:
@@ -615,27 +615,27 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
         {
 			//////////////////////////////////////////////////
 			// intersect ray with worlds XZ/XY/YZ planes
-			
+
 			ManipHandler.Intersect( pos2D );
 
-			CReal dx = CReal(esx-beginx);
-			CReal dy = CReal(esy-beginy);
+			float dx = float(esx-beginx);
+			float dy = float(esy-beginy);
 
 			// input  1 . 10 . 100
 			// output .1  10 . 1000
 
-			CReal flogdx = log10( fabs( float(dx) ) );
-			CReal flogdy = log10( fabs( float(dy) ) );
+			float flogdx = log10( fabs( float(dx) ) );
+			float flogdy = log10( fabs( float(dy) ) );
 
-			flogdx = (flogdx * CReal(1.5f))-CReal(0.5f);
-			flogdy = (flogdy * CReal(1.5f))-CReal(0.5f);
+			flogdx = (flogdx * float(1.5f))-float(0.5f);
+			flogdy = (flogdy * float(1.5f))-float(0.5f);
 
-			dx = float(CFloat::Pow( CReal(10.0f), flogdx )) * ((dx<CReal(0.0f)) ? CReal(-1.0f) : CReal(1.0f));
-			dy = float(CFloat::Pow( CReal(10.0f), flogdy )) * ((dy<CReal(0.0f)) ? CReal(-1.0f) : CReal(1.0f));
+			dx = float(CFloat::Pow( float(10.0f), flogdx )) * ((dx<float(0.0f)) ? float(-1.0f) : float(1.0f));
+			dy = float(CFloat::Pow( float(10.0f), flogdy )) * ((dy<float(0.0f)) ? float(-1.0f) : float(1.0f));
 
 			//////////////////////////////////////////////////
 
-			CReal tmult = 1.0f;
+			float tmult = 1.0f;
 
 			//////////////////////////////////////////////////
 			if( mDoRotate )
@@ -643,9 +643,9 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 				dx *= 0.5f;
 				dy *= 0.5f;
 
-				CReal frotamt = 0.005f;
+				float frotamt = 0.005f;
 
-				if( mfWorldSizeAtLocator < CReal(0.5f) )
+				if( mfWorldSizeAtLocator < float(0.5f) )
 					frotamt = 0.001f;
 
 				dx *= frotamt;
@@ -664,18 +664,18 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 						float fesx = float( esx );
 						float fesy = float( esy );
 
-						CReal fx0 = (fipx-fvpx) - fvpwd2; 
-						CReal fy0 = (fipy-fvpy) - fvphd2; 
-						CReal fx1 = (fesx-fvpx) - fvpwd2; 
-						CReal fy1 = (fesy-fvpy) - fvphd2; 
-						CVector4 v0( fx0, fy0, 0.0f );
-						CVector4 v1( fx1, fy1, 0.0f );
+						float fx0 = (fipx-fvpx) - fvpwd2;
+						float fy0 = (fipy-fvpy) - fvphd2;
+						float fx1 = (fesx-fvpx) - fvpwd2;
+						float fy1 = (fesy-fvpy) - fvphd2;
+						fvec4 v0( fx0, fy0, 0.0f );
+						fvec4 v1( fx1, fy1, 0.0f );
 						v0.Normalize();
 						v1.Normalize();
-						CReal ang0 = rect2pol_ang( v0.GetX(), v0.GetY() );
-						CReal ang1 = rect2pol_ang( v1.GetX(), v1.GetY() );
-						CReal dangle = (ang1-ang0);
-						CQuaternion QuatZ;
+						float ang0 = rect2pol_ang( v0.GetX(), v0.GetY() );
+						float ang1 = rect2pol_ang( v1.GetX(), v1.GetY() );
+						float dangle = (ang1-ang0);
+						fquat QuatZ;
 						vPushNZ.SetW( dangle );
 						QuatZ.FromAxisAngle( vPushNZ );
 						QuatC = QuatZ.Multiply( ManipHandler.Quat );
@@ -686,35 +686,35 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 					{
 
 						RotY.SetW( -dx );
-						CQuaternion QuatY;
+						fquat QuatY;
 						QuatY.FromAxisAngle( RotY );
 						QuatC = QuatY.Multiply( QuatC );
 
 						RotX.SetW( dy );
-						CQuaternion QuatX;
+						fquat QuatX;
 						QuatX.FromAxisAngle( RotX );
 						QuatC = QuatX.Multiply( QuatC );
 
 						break;
 					}
 				}
-				
+
 				beginx = esx;
 				beginy = esy;
 
 			}
 			else if( mDoDolly )
 			{
-				CVector2 VP( CReal(mpViewport->GetW()), CReal(mpViewport->GetH()) );
- 
-				CVector3 outx, outy;
+				CVector2 VP( float(mpViewport->GetW()), float(mpViewport->GetH()) );
+
+				fvec3 outx, outy;
 
 				mCameraData.GetPixelLengthVectors( mvCenter, VP, outx, outy );
 
 				float fvl = ViewLengthToWorldLength( mvCenter, 1.0f );
 				float fdx = float(esx-beginx);
 				float fdy = float(esy-beginy);
-				
+
 				float fdolly = (outx.Mag()*fdx);
 
 				if( isshift )
@@ -725,14 +725,14 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 				{	fdolly *= 0.3f;
 					fdolly *= 0.3f;
 				}
-				
-				CVector4 MoveVec = RotZ*fdolly;
+
+				fvec4 MoveVec = RotZ*fdolly;
 
 				if( pVP->IsHotKeyDepressed( "camera_y" ) )
 					MoveVec = RotY*fdolly;
 				else if( pVP->IsHotKeyDepressed( "camera_x" ) )
 					MoveVec = RotX*fdolly;
-         		
+
 				mvCenter += MoveVec;
 
 				beginx = esx;
@@ -753,7 +753,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
             static bool gbInMtRot = false;
             struct PointProc
             {
-                static CVector2 unitPos( const ui::MultiTouchPoint& pnt, 
+                static CVector2 unitPos( const ui::MultiTouchPoint& pnt,
                 						 ui::Viewport* pVP )
                 {
                     CVector2 rval;
@@ -762,14 +762,14 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
                     return rval;
                 }
             };
-        
+
             const ui::MultiTouchPoint* mp[3];
             CVector2 upos[3];
             if( EV.miNumMultiTouchPoints )
             {
                 int inumpushed = 0;
                 int inumdown = 0;
-                
+
                 int inumtopgate = 0;
                 int inumbotgate = 0;
                 int inummot = 0;
@@ -777,7 +777,7 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
                 bool bmotpushed = false;
                 bool bmotreleased = false;
                 bool bmotdown = false;
-                
+
                 for( int i=0; i<EV.miNumMultiTouchPoints; i++ )
                 {
                     mp[i] = & EV.mMultiTouchPoints[i];
@@ -786,12 +786,12 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
                     bool btopgate = (upos[i].GetX()<0.2f) && (upos[i].GetY()<0.4f);
                     bool bbotgate = (upos[i].GetX()<0.2f) && (upos[i].GetY()>=0.4f);
                     bool bismot   = (upos[i].GetX()>=0.2f);
-                    
+
                     inumtopgate += int(btopgate);
                     inumbotgate += int(bbotgate);
 
                     inummot += int(bismot);
-                    
+
                     inumpushed += int(mp[i]->mState==MultiTouchPoint::PS_PUSHED);
                     inumdown += int(mp[i]->mState==MultiTouchPoint::PS_DOWN);
 
@@ -806,9 +806,9 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 
                 int iX = (imotidx>=0) ? int(mp[imotidx]->mfCurrX) : 0;
                 int iY = (imotidx>=0) ? int(mp[imotidx]->mfCurrY) : 0;
-                
+
                 //printf( "nmp<%d> int<%d> inb<%d> imi<%d> ix<%d> iy<%d>\n", EV.miNumMultiTouchPoints, inumtopgate, inumbotgate, imotidx, iX, iY );
-                
+
                 ////////////////////////
                 // pan
                 ////////////////////////
@@ -891,26 +891,26 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
         }
         case UIEV_MOUSEWHEEL:
 		{
-			float zmoveamt = 0.3f;
+			float zmoveamt = 0.003f;
 			if( isctrl ) zmoveamt*=0.2f;
 			else if( isshift ) zmoveamt*=5.0f;
 
 			if( isalt )
 			{
-				CVector4 Center = mvCenter;
-				CVector4 Delta = RotZ*zmoveamt*EV.miMWY;
+				fvec4 Center = mvCenter;
+				fvec4 Delta = RotZ*zmoveamt*EV.miMWY;
 
 				mvCenter += Delta;
 			}
 			else
 			{
-				CVector2 VP( CReal(pVP->GetW()), CReal(pVP->GetH()) );
-				CVector3 Pos = mvCenter;
-				CVector3 UpVector;
-				CVector3 RightVector;
+				CVector2 VP( float(pVP->GetW()), float(pVP->GetH()) );
+				fvec3 Pos = mvCenter;
+				fvec3 UpVector;
+				fvec3 RightVector;
 				mCameraData.GetPixelLengthVectors( Pos, VP, UpVector, RightVector );
-				CReal CameraFactor = RightVector.Mag()*CReal(20.0f); // 20 pixels of movement
-				
+				float CameraFactor = RightVector.Mag()*float(20.0f); // 20 pixels of movement
+
 				const float kmin = 0.1f;
 				const float kmax = 20000.0f;
 
@@ -940,21 +940,21 @@ bool CCamera_persp::UIEventHandler( const ui::Event& EV )
 
 void CCamera_persp::SetFromWorldSpaceMatrix(const CMatrix4 &matrix)
 {
-	ork::CVector3 xnormal = matrix.GetXNormal();
-	ork::CVector3 ynormal = matrix.GetYNormal();
-	ork::CVector3 znormal = matrix.GetZNormal();
+	ork::fvec3 xnormal = matrix.GetXNormal();
+	ork::fvec3 ynormal = matrix.GetYNormal();
+	ork::fvec3 znormal = matrix.GetZNormal();
 
 	CMatrix4 matrot, imatrot;
 	matrot.NormalVectorsIn( xnormal, ynormal, znormal );
 	imatrot.GEMSInverse(matrot);
 
-	CQuaternion quat; quat.FromMatrix( imatrot );
+	fquat quat; quat.FromMatrix( imatrot );
 
-	CVector3 pos = matrix.GetTranslation();
+	fvec3 pos = matrix.GetTranslation();
 
 	printf( "SetQuatc:1\n" );
 	QuatC = quat;
-	mvCenter = pos + CVector3(0.0f, 0.0f, mfLoc).Transform3x3(matrot) ;
+	mvCenter = pos + fvec3(0.0f, 0.0f, mfLoc).Transform3x3(matrot) ;
 
 	UpdateMatrices();
 }
@@ -990,8 +990,8 @@ void CCamera_persp::RenderUpdate( void )
 	LastMeasuredCameraVelocity = MeasuredCameraVelocity;
 	MeasuredCameraVelocity = (CamLoc-PrevCamLoc);
 
-	CReal CurVelMag = MeasuredCameraVelocity.Mag();
-	CReal LastVelMag = LastMeasuredCameraVelocity.Mag();
+	float CurVelMag = MeasuredCameraVelocity.Mag();
+	float LastVelMag = LastMeasuredCameraVelocity.Mag();
 
 	CVector2 VP;
 	if( pVP )
@@ -999,11 +999,11 @@ void CCamera_persp::RenderUpdate( void )
 		VP.SetX( (float) pVP->GetW() );
 		VP.SetY( (float) pVP->GetH() );
 	}
-	CVector3 Pos = mvCenter;
-	CVector3 UpVector;
-	CVector3 RightVector;
+	fvec3 Pos = mvCenter;
+	fvec3 UpVector;
+	fvec3 RightVector;
 	mCameraData.GetPixelLengthVectors( Pos, VP, UpVector, RightVector );
-	CReal CameraMotionThresh = RightVector.Mag()/CReal(1000.0f);
+	float CameraMotionThresh = RightVector.Mag()/float(1000.0f);
 
 	static ork::lev2::CTXBASE::ERefreshPolicy glastpolicy = CTXBASE::EREFRESH_WHENDIRTY;
 	if( mbInMotion )
@@ -1036,18 +1036,18 @@ void CCamera_persp::RenderUpdate( void )
 
 	GfxTarget *pT = pVP->GetTarget();
 
-	CVector4 CamZ( CamFocusZNormal*-mfLoc );
+	fvec4 CamZ( CamFocusZNormal*-mfLoc );
 
-	mfWorldSizeAtLocator = ViewLengthToWorldLength( mvCenter, CReal(1.0f) );
+	mfWorldSizeAtLocator = ViewLengthToWorldLength( mvCenter, float(1.0f) );
 
 	static F32 fRotZ = 0.0f;
 
 	fRotZ *= 0.96f;
 
-	CVector4 RotZ( 0.0f, 1.0f, 0.0f, 1.0f ); 
+	fvec4 RotZ( 0.0f, 1.0f, 0.0f, 1.0f );
 	RotZ = mCameraData.GetZNormal();
 	RotZ.SetW( fRotZ );
-	CQuaternion QuatZ;
+	fquat QuatZ;
 	QuatZ.FromAxisAngle( RotZ );
 	QuatC = QuatZ.Multiply( QuatC );
 
@@ -1055,25 +1055,25 @@ void CCamera_persp::RenderUpdate( void )
 
 	if( pVP && pVP->IsHotKeyDepressed( mHK_RotL ) )
 	{
-		CQuaternion QuatY = VerticalRot( -0.02f ); 
+		fquat QuatY = VerticalRot( -0.02f );
 		QuatC = QuatY.Multiply( QuatC );
 	}
 	else if( pVP && pVP->IsHotKeyDepressed( mHK_RotR ) )
 	{
-		CQuaternion QuatY = VerticalRot( 0.02f ); 
+		fquat QuatY = VerticalRot( 0.02f );
 		QuatC = QuatY.Multiply( QuatC );
 	}
 	else if( pVP && pVP->IsHotKeyDepressed( mHK_RotD ) )
 	{
-		CVector4 RotY = mCameraData.GetXNormal(); RotY.SetW( 0.01f );
-		CQuaternion QuatY;
+		fvec4 RotY = mCameraData.GetXNormal(); RotY.SetW( 0.01f );
+		fquat QuatY;
 		QuatY.FromAxisAngle( RotY );
 		QuatC = QuatY.Multiply( QuatC );
 	}
 	else if( pVP && pVP->IsHotKeyDepressed( mHK_RotU ) )
 	{
-		CVector4 RotY = mCameraData.GetXNormal(); RotY.SetW( -0.01f );
-		CQuaternion QuatY;
+		fvec4 RotY = mCameraData.GetXNormal(); RotY.SetW( -0.01f );
+		fquat QuatY;
 		QuatY.FromAxisAngle( RotY );
 		QuatC = QuatY.Multiply( QuatC );
 	}
@@ -1095,8 +1095,8 @@ void CCamera_persp::RenderUpdate( void )
 
 	else if( pVP && pVP->IsHotKeyDepressed( mHK_Origin) )
 	{
-		CVector4 Center = mvCenter*CReal(-1.0f);
-		CVector4 Delta = Center*CReal(0.9f);
+		fvec4 Center = mvCenter*float(-1.0f);
+		fvec4 Delta = Center*float(0.9f);
 
 		mvCenter += Delta;
 	}
@@ -1104,25 +1104,25 @@ void CCamera_persp::RenderUpdate( void )
 	//////////////////////////////////////////
 	// re align camera
 
-	
+
 	if( pVP && pVP->IsHotKeyDepressed( mHK_ReAlign ) )
 	{
-		f32 fApproachSpeed = 0.92f; // not reall approach speed, the closer to zero the faster 
+		f32 fApproachSpeed = 0.92f; // not reall approach speed, the closer to zero the faster
 
-		CVector4 AxisAngleA = QuatC.ToAxisAngle();
-		
+		fvec4 AxisAngleA = QuatC.ToAxisAngle();
+
 		f32 fangle = AxisAngleA.GetW();
 
 		if( fangle > 0.5f )
 		{
 			f32 fangle2 = 1.0f - fangle;
-			
+
 			fangle2 *= fApproachSpeed;
 			fangle2 = 1.0f - fangle2;
 
 			if( fangle2 > 0.999f )
 				fangle2 = 0.0f;
-			
+
 			AxisAngleA.SetW( fangle2 );
 			QuatC.FromAxisAngle( AxisAngleA );
 		}
@@ -1138,13 +1138,13 @@ void CCamera_persp::RenderUpdate( void )
 	//////////////////////////////////////////
 
 	if( pVP && pVP->IsHotKeyDepressed( mHK_In ) )
-	{	
-		mfLoc = mfLoc * CReal(0.99f);
+	{
+		mfLoc = mfLoc * float(0.999f);
 	}
 
 	else if( pVP && pVP->IsHotKeyDepressed( mHK_Out ) )
-	{	
-		mfLoc = mfLoc + 5.0f;
+	{
+		mfLoc = mfLoc + 0.001f;
 	}
 
 	//////////////////////////////////////////
@@ -1154,49 +1154,49 @@ void CCamera_persp::RenderUpdate( void )
 
 	//////////////////////////////////////////
 
-	CVector4 MoveNrmX, MoveNrmZ;
+	fvec4 MoveNrmX, MoveNrmZ;
 
 	static f32 LastTimeStep = CSystem::GetRef().GetLoResTime();
 	       f32 ThisTimeStep = CSystem::GetRef().GetLoResTime();
 
-	CReal timestep = CReal(ThisTimeStep-LastTimeStep);
+	float timestep = float(ThisTimeStep-LastTimeStep);
 	LastTimeStep = ThisTimeStep;
 
-	static const CReal MetersPerTick( 3.0f/20.0f );
-	CReal fmovescale = timestep*MetersPerTick;
-	
+	static const float MetersPerTick( 1.0f/100.0f );
+	float fmovescale = timestep*MetersPerTick;
+
 	if( isctrl )
 		fmovescale *= 0.3f;
 	else if( isshift )
 		fmovescale *= 3.0f;
 
-	CReal fmovscalXZ = fmovescale*mfLoc;
-	
+	float fmovscalXZ = fmovescale*mfLoc;
+
 	////////////////////////////////////////
 
-	static CVector4 Velocity;
+	static fvec4 Velocity;
 
-	Velocity = Velocity * CReal(0.85f);
+	Velocity = Velocity * float(0.85f);
 
 	if( pVP && pVP->IsHotKeyDepressed( mHK_MovD ) )
 	{
 		// log( 10 ) = 1 log( 100 ) = 2
 
 		//loc += logf( loc ) * 0.03f;
-		Velocity -= CVector4(0.0f,1.0f,0.0f)*fmovscalXZ;
+		Velocity -= fvec4(0.0f,1.0f,0.0f)*fmovscalXZ;
 	}
 	if( pVP && pVP->IsHotKeyDepressed( mHK_MovU ) )
-	{	
+	{
 		//loc -= logf( loc ) * 0.03f;
-	
-		//if( loc < CReal(0.0f) ) 
-		//	loc = CReal(0.0f);
-		Velocity += CVector4(0.0f,1.0f,0.0f)*fmovscalXZ;
+
+		//if( loc < float(0.0f) )
+		//	loc = float(0.0f);
+		Velocity += fvec4(0.0f,1.0f,0.0f)*fmovscalXZ;
 
 	}
 	if( pVP && pVP->IsHotKeyDepressed( mHK_MovR ) && iscapsorshift )
 	{
-		CVector4 Direction = mCameraData.GetXNormal();
+		fvec4 Direction = mCameraData.GetXNormal();
 		if( IsYVertical() )
 		{
 			Direction.SetY( 0.0f );
@@ -1213,7 +1213,7 @@ void CCamera_persp::RenderUpdate( void )
 	}
 	if( pVP && pVP->IsHotKeyDepressed( mHK_MovL ) && iscapsorshift )
 	{
-		CVector4 Direction = mCameraData.GetXNormal();
+		fvec4 Direction = mCameraData.GetXNormal();
 		if( IsYVertical() )
 		{
 			Direction.SetY( 0.0f );
@@ -1230,7 +1230,7 @@ void CCamera_persp::RenderUpdate( void )
 	}
 	if( pVP && pVP->IsHotKeyDepressed( mHK_MovF ) && iscapsorshift )
 	{
-		CVector4 Direction = mCameraData.GetZNormal();
+		fvec4 Direction = mCameraData.GetZNormal();
 		if( IsYVertical() )
 		{
 			Direction.SetY( 0.0f );
@@ -1247,7 +1247,7 @@ void CCamera_persp::RenderUpdate( void )
 	}
 	if( pVP && pVP->IsHotKeyDepressed( mHK_MovB ) && iscapsorshift )
 	{
-		CVector4 Direction = mCameraData.GetZNormal();
+		fvec4 Direction = mCameraData.GetZNormal();
 		if( IsYVertical() )
 		{
 			Direction.SetY( 0.0f );
@@ -1262,7 +1262,7 @@ void CCamera_persp::RenderUpdate( void )
 		}
 		Velocity += Direction*(-fmovscalXZ);
 	}
-	
+
 	mvCenter += Velocity;
 
 	//////////////////////////////////////
@@ -1280,11 +1280,11 @@ void CCamera_persp::RenderUpdate( void )
 
 void CCamera_persp::UpdateMatrices( void )
 {
-	if( mfLoc < 0.1f ) mfLoc=0.1f;
+	if( mfLoc < 0.001f ) mfLoc=0.001f;
 
 	///////////////////////////////////////////////////////////////
 	// setup dynamic near / far	(this increases depth buffer effective resolution based on context)
-	
+
 	//	loc			log10	near		far			ratio
 
 	//	0.01		-2		0.001		1.0			1000.0
@@ -1296,55 +1296,33 @@ void CCamera_persp::UpdateMatrices( void )
 	//	10000.0		4		1000.0		1000000.0	1000.0
 	//	100000.0	5		10000.0		10000000.0	1000.0
 
-	CReal flog10 = log10( mfLoc );
-	CReal flerpidx = (flog10+CReal(1.0f))/CReal(6.0f);
-	CReal finvlerpidx = CReal(1.0f) - flerpidx;
+	float flog10 = log10( mfLoc );
+	float flerpidx = (flog10+float(1.0f))/float(6.0f);
+	float finvlerpidx = float(1.0f) - flerpidx;
 
-	CReal neardiv = (CReal(0.5f)*finvlerpidx)+(CReal(100.0f)*flerpidx);
-	CReal farmul = (CReal(500.0f)*finvlerpidx)+(CReal(0.5f)*flerpidx);
+	float neardiv = (float(0.5f)*finvlerpidx)+(float(100.0f)*flerpidx);
+	float farmul = (float(500.0f)*finvlerpidx)+(float(0.5f)*flerpidx);
 
 	float fnear = mfLoc / neardiv;
 	float ffar = mfLoc * farmul;
 
 	if( fnear < near_min )	fnear = near_min;
 	if( ffar > far_max )	ffar = far_max;
-	
-	///////////////////////////////////////////////////////////////
-
-	CReal DeUnitizedNear = LengthReal(fnear,LengthUnit::Meters()).GetValue(LengthUnit::GetProjectUnits());
-	CReal DeUnitizedFar = LengthReal(ffar,LengthUnit::Meters()).GetValue(LengthUnit::GetProjectUnits());
-	CReal DeUnitizedLoc = mfLoc;
-
-	CVector3 vtrans = mvCenter*CReal(-1.0f);
-	CReal DeUnitizedTX = LengthReal(vtrans.GetX(),LengthUnit::Meters()).GetValue(LengthUnit::GetProjectUnits());
-	CReal DeUnitizedTY = LengthReal(vtrans.GetY(),LengthUnit::Meters()).GetValue(LengthUnit::GetProjectUnits());
-	CReal DeUnitizedTZ = LengthReal(vtrans.GetZ(),LengthUnit::Meters()).GetValue(LengthUnit::GetProjectUnits());
 
 	///////////////////////////////////////////////////////////////
-
-	//mCameraData.SetNear( DeUnitizedNear );
-	//mCameraData.SetFar( DeUnitizedFar );
-	//mCameraData.SetAperature( aper );
 
 	mRot = QuatC.ToMatrix();
-	mTrans.SetTranslation( CVector3(DeUnitizedTX,DeUnitizedTY,DeUnitizedTZ) );
+	mTrans.SetTranslation( mvCenter*float(-1.0f) );
 
 	CMatrix4 matxf = (mTrans*mRot);
 	CMatrix4 matixf; matxf.GEMSInverse(matxf);
 
-	CVector3 veye = CVector3( 0.0f, 0.0f, -DeUnitizedLoc ).Transform(matxf);
-	CVector3 vtarget = CVector3( 0.0f, 0.0f, 0.0f ).Transform(matxf);
-	CVector3 vup = CVector4( 0.0f, 1.0f, 0.0f, 0.0f ).Transform(matxf).GetXYZ();
+	fvec3 veye = fvec3( 0.0f, 0.0f, -mfLoc ).Transform(matxf);
+	fvec3 vtarget = fvec3( 0.0f, 0.0f, 0.0f ).Transform(matxf);
+	fvec3 vup = fvec4( 0.0f, 1.0f, 0.0f, 0.0f ).Transform(matxf).GetXYZ();
 
-	//mCameraData.SetEye( veye );
-	//mCameraData.SetTarget( vtarget );
-	//mCameraData.SetUp( vup );
-	mCameraData.Persp( DeUnitizedNear, DeUnitizedFar, aper );
+	mCameraData.Persp( fnear, ffar, aper );
 	mCameraData.Lookat( veye, vtarget, vup );
-
-	//printf( "VEYE<%f %f %f>\n", veye.GetX(), veye.GetY(), veye.GetZ() );
-	//printf( "VTGT<%f %f %f>\n", vtarget.GetX(), vtarget.GetY(), vtarget.GetZ() );
-	//printf( "V_UP<%f %f %f>\n", vup.GetX(), vup.GetY(), vup.GetZ() );
 
 	///////////////////////////////////////////////////////////////
 	CameraCalcContext ctx;
@@ -1356,22 +1334,22 @@ void CCamera_persp::UpdateMatrices( void )
 ///////////////////////////////////////////////////////////////////////////////
 // this will return 1.0f id pos is directly at the near plane, should increase linearly furthur back
 
-CReal CCamera_persp::ViewLengthToWorldLength( const CVector4 &pos, CReal ViewLength )
+float CCamera_persp::ViewLengthToWorldLength( const fvec4 &pos, float ViewLength )
 {
-    CReal rval = 1.0f;
+    float rval = 1.0f;
 
-    CReal distATnear = (mCameraData.GetFrustum().mNearCorners[1] - mCameraData.GetFrustum().mNearCorners[0]).Mag();
-    CReal distATfar = (mCameraData.GetFrustum().mFarCorners[1] - mCameraData.GetFrustum().mFarCorners[0]).Mag();
-    CReal depthscaler = distATfar/distATnear;
+    float distATnear = (mCameraData.GetFrustum().mNearCorners[1] - mCameraData.GetFrustum().mNearCorners[0]).Mag();
+    float distATfar = (mCameraData.GetFrustum().mFarCorners[1] - mCameraData.GetFrustum().mFarCorners[0]).Mag();
+    float depthscaler = distATfar/distATnear;
 
     // get pos as a lerp from near to far
-    CReal depthN = mCameraData.GetFrustum().mNearPlane.GetPointDistance( pos );
-    CReal depthF = mCameraData.GetFrustum().mFarPlane.GetPointDistance( pos );
-    CReal depthRange = (camrayF-camrayN).Mag();
-    if( (depthN>=CReal(0.0f)) && (depthF>=CReal(0.0f)) ) // better be between near and far planes
+    float depthN = mCameraData.GetFrustum().mNearPlane.GetPointDistance( pos );
+    float depthF = mCameraData.GetFrustum().mFarPlane.GetPointDistance( pos );
+    float depthRange = (camrayF-camrayN).Mag();
+    if( (depthN>=float(0.0f)) && (depthF>=float(0.0f)) ) // better be between near and far planes
     {
-        CReal lerpV = depthN/depthRange;
-        CReal ilerpV = CReal(1.0f)-lerpV;
+        float lerpV = depthN/depthRange;
+        float ilerpV = float(1.0f)-lerpV;
 
         rval = ((ilerpV) + (lerpV*depthscaler));
         //orkprintf( "lerpV %f dan %f daf %f dscaler %f rval %f\n", lerpV, distATnear, distATfar, depthscaler, rval );
@@ -1383,16 +1361,16 @@ CReal CCamera_persp::ViewLengthToWorldLength( const CVector4 &pos, CReal ViewLen
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::GenerateDepthRay( const CVector2& pos2D, CVector3 &rayN, CVector3 &rayF,  const CMatrix4 &IMat ) const 
+void CCamera_persp::GenerateDepthRay( const CVector2& pos2D, fvec3 &rayN, fvec3 &rayF,  const CMatrix4 &IMat ) const
 {
 	float fx = pos2D.GetX();
 	float fy = pos2D.GetY();
 	//////////////////////////////////////////
-	CVector4 vWinN( fx,fy, 0.0f );
-	CVector4 vWinF( fx,fy, 1.0f );
+	fvec4 vWinN( fx,fy, 0.0f );
+	fvec4 vWinF( fx,fy, 1.0f );
 	CMatrix4::UnProject( mCameraData.GetIVPMatrix(), vWinN, rayN );
 	CMatrix4::UnProject( mCameraData.GetIVPMatrix(), vWinF, rayF );
-	//////////////////////////////////////////	
+	//////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
