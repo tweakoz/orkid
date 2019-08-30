@@ -39,13 +39,17 @@ vertex_interface iface_vdefault
 	in vec2 uv0 : TEXCOORD0;
 	//
 	out vec4 frg_clr;
-	out vec2 frg_uv;
+	out vec4 frg_uv;
+    out vec3 frg_nrm;
+    out vec3 frg_wpos;
 }
 fragment_interface iface_fdefault
 	: ublock_frg
 {
 	in vec4 frg_clr;
-	in vec2 frg_uv;
+	in vec4 frg_uv;
+    in vec3 frg_nrm;
+    in vec3 frg_wpos;
 	//
 	out vec4 out_clr;
 }
@@ -59,30 +63,30 @@ vertex_shader vs_terrain1
     // constants
     /////////////////////////////////
     const float metersPerTexel = 2;
-		const float texelsPerMeter = 1.0 / metersPerTexel;
+	const float texelsPerMeter = 1.0 / metersPerTexel;
     const float HFDIM = 2048;
     const float INVHFDIM = 1.0/HFDIM;
     const float hfHeightScale = 1500;
     const float hfHeightBias = 0;
-		//float invBaseGridTexelDim = (0.1*metersPerTexel / 4.0)+(1/129.0); // inverse of num texels of base lod
-		float invBaseGridTexelDim = User2.x; // inverse of num texels of base lod
+	//float invBaseGridTexelDim = (0.1*metersPerTexel / 4.0)+(1/129.0); // inverse of num texels of base lod
+	float invBaseGridTexelDim = User2.x; // inverse of num texels of base lod
     /////////////////////////////////
     // testuv
     /////////////////////////////////
     vec4 surfaceColor = vec4(0,0,.1,1);
     /////////////////////////////////
-		// mipcalc
-		/////////////////////////////////
+	// mipcalc
+	/////////////////////////////////
     float vtxlod = position.y;
     float mippedMetersPerTexel = metersPerTexel*exp2(vtxlod);
-		float invMippedMetersPerTexel = 1.0f/mippedMetersPerTexel;
+	float invMippedMetersPerTexel = 1.0f/mippedMetersPerTexel;
     /////////////////////////////////
     // compute snapped object/worldspace
     /////////////////////////////////
     vec3 campos = inverse(MatMV)[3].xyz;
     vec2 o2w = quantize(campos.xz,mippedMetersPerTexel);
-		float w_x = position.x * metersPerTexel + o2w.x;
-		float w_z = position.z * metersPerTexel + o2w.y;
+	float w_x = position.x * metersPerTexel + o2w.x;
+	float w_z = position.z * metersPerTexel + o2w.y;
     vec3 wpos = vec3( w_x, 0, w_z );
     vec3 opos = (wpos - campos);
     /////////////////////////////////
@@ -96,54 +100,63 @@ vertex_shader vs_terrain1
     float htexoffsetLo = htexoffsetHi * 0.5;
     vec2 uvLoMip = (wpos.xz * texelsPerMeter + htexoffsetLo) * INVHFDIM;
     vec2 uvHiMip = (wpos.xz * texelsPerMeter + htexoffsetHi) * INVHFDIM;
-
-		uvLoMip = (uvLoMip+vec2(1,1))*0.5;
-		uvHiMip = (uvHiMip+vec2(1,1))*0.5;
+	uvLoMip = (uvLoMip+vec2(1,1))*0.5;
+	uvHiMip = (uvHiMip+vec2(1,1))*0.5;
     /////////////////////////////////
     // sample height
     /////////////////////////////////
-    float heightSampleLoMip = textureLod(ColorMap2, uvLoMip, lowMIP).r;
+    vec4 sampleLoMip = textureLod(ColorMap2, uvLoMip, lowMIP);
+    float heightSampleLoMip = sampleLoMip.r;
     float heightSampleHiMip = textureLod(ColorMap2, uvHiMip, highMIP).r;
-		float lerpIndex = llod - lowMIP;
+	float lerpIndex = llod - lowMIP;
     float h = mix(heightSampleLoMip,heightSampleHiMip,lerpIndex);
-		/////////////////////////////////
-		// final computation
-		/////////////////////////////////
+	/////////////////////////////////
+	// final computation
+	/////////////////////////////////
     wpos.y = (h*hfHeightScale)+hfHeightBias;
-		//float lmipvisualize = (1.0+lowMIP)/6.0;
+	//float lmipvisualize = (1.0+lowMIP)/6.0;
     ///////////////////////////
     // apply to GL
     ///////////////////////////
     gl_Position = MatMVP*vec4(wpos,1);
     //frg_clr = vec4(lmipvisualize,lmipvisualize,lmipvisualize,1);
-		frg_clr = vec4(wpos,1);
-    frg_uv = uvLoMip*100.0;
+
+    vec3 normal = normalize(sampleLoMip.yzw);
+    frg_wpos = wpos;
+	frg_clr = vec4(wpos,normal.x);
+    frg_uv = vec4(uvLoMip*100.0,normal.yz);
+    frg_nrm = normal;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_terrain1
 	: iface_fdefault
 	: lib_mmnoise
 {
-	//vec3 nrml = normalize( cross(dFdx(frg_clr.xyz), dFdy(frg_clr.xyz)) );
-	// derivatives are slow...
-	float u = mod(frg_uv.x,1);
+	vec3 nrml = normalize( frg_nrm );
+    float u = mod(frg_uv.x,1);
 	float v = mod(frg_uv.y,1);
-	//float nmag = 1;
-	//float nmagmul = 0.5;
-	float noiz1 = noise(frg_clr.xyz);
-	//nmag*=nmagmul ;
-	//float noiz2 = noise(frg_clr.xyz*3.9)*nmag;
-	//nmag*=nmagmul ;
-	//float noiz3 = noise(frg_clr.xyz*24.9)*nmag;
-	//nmag*=nmagmul ;
-	//float noiz4 = noise(frg_clr.xyz*64.9)*nmag;
-	//float noiz = (noiz+noiz2);
-	vec3 a = vec3(0.1,0.1,0.1);
-	vec3 b = vec3(0.3,0.3,0.3);
-	vec3 c = mix(a,b,noiz1);
-	     c += vec3(u,v,0)*0.05;
-	//float l = (1.0+dot(nrml,vec3(0,1,0)))*0.5;
-	out_clr = vec4(c,1);
+	float noiz1 = 0.5+noise(frg_clr.xyz)*0.25;
+	float noiz2 = noise(frg_clr.xyz*31.9)*0.1;
+	vec3 a = vec3(0.3,0.3,0.3);
+	vec3 b = vec3(0.9,0.9,0.9);
+	vec3 c = mix(a,b,noiz1+noiz2);
+	  //   c += vec3(u,v,0)*0.1;
+
+    vec3 c_snow = mix( vec3(1, 1, 1), vec3(.75, 0.75, 0.78), step(0.9, nrml.y) )*0.5;
+    // base rock formation colors
+	vec3 c_strata = mix( vec3(0.2, 0.2, 0.4), vec3(0.3, 0.6, 0.7), step(0.9, nrml.y) );
+	float n = 0.5*(snoise(frg_wpos.xy*vec2(0.20, 1.5))+1.0);
+	c_strata = mix( vec3(0.4, 0.5, 0.6), c_strata, n*smoothstep(0.0, 0.7, nrml.y) );
+
+    vec3 c_strata2 = mix( vec3(0.2, 0.2, 0.4), vec3(0.3, 0.6, 0.7), step(0.9, nrml.y) );
+	float n2 = 0.5*(snoise(frg_wpos.xy*vec2(2, 15))+1.0);
+	c_strata2 = mix( vec3(0.4, 0.5, 0.6), c_strata2, n2*smoothstep(0.0, 0.6, nrml.y) );
+
+    vec3 la = vec3(0.2,0.2,0.3);
+    vec3 lb = vec3(0.5,0.5,0.4);
+    vec3 lightcol = mix(la,lb,dot(nrml,vec3(0,1,0)));
+	out_clr = vec4(c_snow+c_strata+c_strata2*0.2-c*0.5,1);
+    //out_clr = vec4(c_strata2,1);
 	//out_clr = frg_clr;
 }
 ///////////////////////////////////////////////////////////////

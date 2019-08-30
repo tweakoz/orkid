@@ -170,7 +170,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   // create and fill in gpu texture
   ////////////////////////////////////////////////////////////////
 
-  _heightmapTexture = lev2::Texture::CreateBlank(iglX,iglZ,lev2::EBUFFMT_F32);
+  _heightmapTexture = lev2::Texture::CreateBlank(iglX,iglZ,lev2::EBUFFMT_RGBA128);
   auto pfloattex = (float*) _heightmapTexture->GetTexData();
   assert(pfloattex!=nullptr);
 
@@ -178,18 +178,49 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 
   auto heightdata = (float*) _heightmap.GetHeightData();
 
-  for( int z=0; z<iglZ; z++ ){
-    int zz = z-(iglZ>>1);
+  for( size_t z=0; z<iglZ; z++ ){
+    size_t zz = z-(iglZ>>1);
     float fzz = float(zz)/float(iglZ>>1); // -1 .. 1
-    for( int x=0; x<iglX; x++ ){
-      int xx = x-(iglX>>1);
-      float fxx = float(xx)/float(iglX>>1); // -1 .. 1
+    for( size_t x=0; x<iglX; x++ ){
+      size_t xx = x-(iglX>>1);
+      float fxx = float(xx)/float(iglX>>1);
       fvec2 pos2d(fxx,fzz);
       float d = (pos2d-origin).Mag();
       float dpow = powf(d,3);
       size_t index = z*iglX+x;
       float h = heightdata[index];
-      pfloattex[index]=float(h);
+      size_t pixelbase = index*4;
+      pfloattex[pixelbase+0]=float(h);
+      ///////////////////
+      // compute normal
+      ///////////////////
+      if(x>0 and z>0){
+          size_t xxm1 = x-1;
+          float fxxm1 = float(xxm1);
+          size_t zzm1 = z-1;
+          float fzzm1 = float(zzm1);
+          size_t index_dxm1 = (z*iglX)+xxm1;
+          size_t index_dzm1 = (zzm1*iglX)+x;
+          float hd0 = heightdata[index]*1500;
+          float hdx = heightdata[index_dxm1]*1500;
+          float hdz = heightdata[index_dzm1]*1500;
+          float fzz = float(zz);
+          fvec3 pos3d(x*2,hd0,z*2);
+          fvec3 pos3d_dx(xxm1*2,hdx,z*2);
+          fvec3 pos3d_dz(x*2,hdz,zzm1*2);
+
+          fvec3 e01 = (pos3d_dx-pos3d).Normal();
+          fvec3 e02 = (pos3d_dz-pos3d).Normal();
+          auto n = e02.Cross(e01).Normal();
+          pfloattex[pixelbase+1]=float(n.x);//r x
+          pfloattex[pixelbase+2]=float(n.y);//g y
+          pfloattex[pixelbase+3]=float(n.z);//b z
+
+      }
+
+
+
+
     }
 
   }
@@ -463,12 +494,12 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     p2.y = lod;
     p3.y = lod;
 
-
     auto v0 = vertex_type(p0, fvec2(), c0);
     auto v1 = vertex_type(p1, fvec2(), c0);
     auto v2 = vertex_type(p2, fvec2(), c0);
     auto v3 = vertex_type(p3, fvec2(), c0);
     auto vc = vertex_type((p0+p1+p2+p3)*0.25, fvec2(), c0);
+
 
     switch (p._type) {
     case PT_A: //

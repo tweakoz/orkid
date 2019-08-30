@@ -53,6 +53,16 @@ float noise(vec3 x) {
                    mix( hash(n + dot(step, vec3(0, 1, 1))), hash(n + dot(step, vec3(1, 1, 1))), u.x), u.y), u.z);
 }
 
+float snoise( vec2 p ) {
+	vec2 f = fract(p);
+	p = floor(p);
+	float v = p.x+p.y*1000.0;
+	vec4 r = vec4(v, v+1.0, v+1000.0, v+1001.0);
+	r = fract(100000.0*sin(r*.001));
+	f = f*f*(3.0-2.0*f);
+	return 2.0*(mix(mix(r.x, r.y, f.x), mix(r.z, r.w, f.x), f.y))-1.0;
+}
+
 } // libblock lib_mmnoise {
 
 libblock lib_terrain {
