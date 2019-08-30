@@ -607,7 +607,7 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         material->SetUser0(htri->_aabbmin);
         material->SetUser1(range);
         material->SetUser2(fvec4(hfd.WorldHeight(),0,0,0));
-
+        material->mRasterState.SetCullTest( lev2::ECULLTEST_PASS_BACK );
         ptarg->PushMaterial(material);
         int ivbidx = 0;
 
