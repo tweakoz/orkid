@@ -361,7 +361,7 @@ protected:
 	size_t 									mEntityUpdateCount;
 
 	CameraLut								mCameraLut;		// camera list
-
+	CompositingSystem*    _cachedComSys;
 	//////////////////////////////////////////////////////////
 	ActiveComponentType						mActiveEntityComponents;
 	orkvector<EntityActivationQueueItem>	mEntityActivateQueue;

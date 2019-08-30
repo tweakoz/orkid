@@ -110,7 +110,8 @@ SceneInst::SceneInst(const SceneData *sdata, Application *application)
       mApplication(application), mUpTime(0.0f), mDeltaTime(0.0f),
       mPrevDeltaTime(0.0f), mLastGameTime(0.0f), mStartTime(0.0f),
       mUpDeltaTime(0.0f), mGameTime(0.0f), mDeltaTimeAccum(0.0f),
-      mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f), mEntityUpdateCount(0) {
+      mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f), mEntityUpdateCount(0),
+      _cachedComSys(nullptr) {
   printf("new sceneinst <%p>\n", this);
 
   AssertOnOpQ2(UpdateSerialOpQ());
@@ -167,9 +168,11 @@ SceneInst::~SceneInst() {
 }
 ///////////////////////////////////////////////////////////////////////////
 
-CompositingSystem *SceneInst::GetCMCI() {
-  auto cmci = findSystem<CompositingSystem>();
-  return cmci;
+CompositingSystem* SceneInst::GetCMCI() {
+  if( nullptr == _cachedComSys ){
+      _cachedComSys = findSystem<CompositingSystem>();
+  }
+  return _cachedComSys;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -622,7 +625,9 @@ void SceneInst::decomposeSystems() {
         delete comp;
       }
       syslut.clear();
+      _cachedComSys = nullptr;
   });
+
 }
 ///////////////////////////////////////////////////////////////////////////
 

@@ -300,12 +300,12 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 
   std::vector<Iter> iters;
 
-  iters.push_back(Iter{0, 256});
-  iters.push_back(Iter{1, 128});
-  iters.push_back(Iter{2, 128});
-  iters.push_back(Iter{3, 128});
-  iters.push_back(Iter{4, 128});
-  iters.push_back(Iter{5, 128});
+  iters.push_back(Iter{0, 256});  // 256*2 = 512m
+  iters.push_back(Iter{1, 128});  // 128*4 = 512m   tot(1024m)
+  iters.push_back(Iter{2, 128});  // 128*8 = 1024m  tot(2048)
+  iters.push_back(Iter{3, 128});  // 128*16 = 2048m tot(4096m) - 2.56mi
+  //iters.push_back(Iter{4, 128});
+  //iters.push_back(Iter{5, 128});
 
 
   int iprevouterd2 = 0;
