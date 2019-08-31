@@ -9,7 +9,7 @@
 #include <ork/kernel/opq.h>
 
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/input/input.h>
+//
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>

@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/renderer.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/gfx/camera.h>
-#include <ork/lev2/input/input.h>
+//
 #include <ork/lev2/gfx/texman.h>
 #include <ork/kernel/prop.h>
 ///////////////////////////////////////////////////////////////////////////////
