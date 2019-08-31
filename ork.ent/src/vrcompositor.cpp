@@ -16,7 +16,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/glheaders.h> // todo abstract somehow ?
 #include <ork/lev2/gfx/gfxprimitives.h>
-
+#include <ork/kernel/msgrouter.inl>
 
 # if ! defined(__APPLE__)
 #include <openvr/openvr.h>
@@ -352,16 +352,19 @@ struct VRSYSTEMIMPL {
       // strafe left,right
       ///////////////////////////////////////////////////////////
       if(_controllers[_leftControllerDeviceIndex]._triggerDown ){
-        xlate.SetTranslation(xlaterate,0,0);
-        auto trans = (xlate*rotmtx).GetTranslation();
-        xlate.SetTranslation(trans);
-        _offsetmatrix = _offsetmatrix*xlate;
+
+        msgrouter::channel("eggytest")->post(_offsetmatrix*_headingmatrix);
+        //xlate.SetTranslation(xlaterate,0,0);
+        //auto trans = (xlate*rotmtx).GetTranslation();
+        //xlate.SetTranslation(trans);
+        //_offsetmatrix = _offsetmatrix*xlate;
       }
       else if(_controllers[_rightControllerDeviceIndex]._triggerDown ){
-        xlate.SetTranslation(-xlaterate,0,0);
-        auto trans = (xlate*rotmtx).GetTranslation();
-        xlate.SetTranslation(trans);
-        _offsetmatrix = _offsetmatrix*xlate;
+        msgrouter::channel("eggytest")->post(_offsetmatrix*_headingmatrix);
+        //xlate.SetTranslation(-xlaterate,0,0);
+        //auto trans = (xlate*rotmtx).GetTranslation();
+        //xlate.SetTranslation(trans);
+        //_offsetmatrix = _offsetmatrix*xlate;
       }
     } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
       ///////////////////////////////////////////////////////////
