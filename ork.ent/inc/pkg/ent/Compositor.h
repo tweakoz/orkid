@@ -13,11 +13,13 @@
 
 namespace ork { namespace ent {
 
-class CompositingComponentInst;
 class CompositingGroup;
 class CompositingSceneItem;
-struct CMCIdrawdata;
+struct CompositorSystemDrawData;
 struct CompositingContext;
+struct CompositingSystem;
+struct CompositingSystemData;
+struct CompositingMorphable;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -64,6 +66,32 @@ enum ECOMPOSITEBlend
 	Asolo,
 	Bsolo,
 	Csolo,
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class CompositingScene : public ork::Object
+{
+	RttiDeclareConcrete(CompositingScene, ork::Object);
+
+public:
+	CompositingScene();
+
+	const orklut<PoolString,ork::Object*>& GetItems() const { return mItems; }
+
+private:
+
+	orklut<PoolString,ork::Object*> mItems;
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CompositingMorphable : public dataflow::morphable
+{
+	void WriteMorphTarget( dataflow::MorphKey name, float flerpval ); // virtual
+	void RecallMorphTarget( dataflow::MorphKey name ); // virtual
+	void Morph1D( const dataflow::morph_event* pevent ); // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,8 +164,8 @@ class CompositingTechnique : public ork::Object
 	RttiDeclareAbstract(CompositingTechnique, ork::Object);
 public:
 	virtual void Init( lev2::GfxTarget* pTARG, int w, int h ) = 0;
-	virtual void Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) = 0;
-	virtual void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx ) = 0;
+	virtual void Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) = 0;
+	virtual void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx ) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,8 +212,8 @@ public:
 private:
 
 	void Init( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
-	void Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
-	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx ) final; // virtual
+	void Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
+	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx ) final; // virtual
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -196,12 +224,12 @@ public:
 	CompositingNode();
 	~CompositingNode();
 	void Init( lev2::GfxTarget* pTARG, int w, int h );
-	void Render(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI);
+	void Render(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI);
 	virtual lev2::RtGroup* GetOutput() const { return nullptr; }
 
 private:
 	virtual void DoInit( lev2::GfxTarget* pTARG, int w, int h ) = 0;
-	virtual void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) = 0;
+	virtual void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) = 0;
 
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,7 +251,7 @@ public:
 	~PassThroughCompositingNode();
 private:
 	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
+	void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
 	void GetGroup(ork::rtti::ICastable*& val) const;
 	void SetGroup( ork::rtti::ICastable* const & val);
@@ -242,7 +270,7 @@ public:
 	~VrCompositingNode();
 private:
 	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
+	void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
 	lev2::RtGroup* GetOutput() const final;
 
@@ -257,7 +285,7 @@ public:
 	~SeriesCompositingNode();
 private:
 	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
+	void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
 	void GetNode(ork::rtti::ICastable*& val) const;
 	void SetNode( ork::rtti::ICastable* const & val);
@@ -278,7 +306,7 @@ public:
 	~InsertCompositingNode();
 private:
 	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) final; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) final; // virtual
+	void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
 	void GetNode(ork::rtti::ICastable*& val) const;
 	void SetNode( ork::rtti::ICastable* const & val);
@@ -315,7 +343,7 @@ public:
 	~Op2CompositingNode();
 private:
 	void DoInit( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
-	void DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
+	void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) override; // virtual
 	void GetNodeA(ork::rtti::ICastable*& val) const;
 	void SetNodeA( ork::rtti::ICastable* const & val);
 	void GetNodeB(ork::rtti::ICastable*& val) const;
@@ -344,8 +372,8 @@ public:
 private:
 
 	void Init( lev2::GfxTarget* pTARG, int w, int h ) override; // virtual
-	void Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) override; // virtual
-	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx ) override; // virtual
+	void Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) override; // virtual
+	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx ) override; // virtual
 	//
 	void GetRoot(ork::rtti::ICastable*& val) const;
 	void SetRoot( ork::rtti::ICastable* const & val);
@@ -368,25 +396,10 @@ struct CompositingContext
 	CompositingContext();
 	~CompositingContext();
 	void Init( lev2::GfxTarget* pTARG );
-	void Draw( lev2::GfxTarget* pTARG, CMCIdrawdata& drawdata, CompositingComponentInst* pCCI );
-	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI );
+	void Draw( lev2::GfxTarget* pTARG, CompositorSystemDrawData& drawdata, CompositingSystem* pCCI );
+	void CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingSystem* pCCI );
 	void Resize( int iW, int iH );
 	void SetTechnique(CompositingTechnique*ptek) { mCTEK=ptek; }
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class CompositingSystemData : public ork::ent::SystemData
-{
-	RttiDeclareConcrete(CompositingSystemData, ork::ent::SystemData);
-public:
-	///////////////////////////////////////////////////////
-	CompositingSystemData();
-	///////////////////////////////////////////////////////
-	CompositingContext& GetCompositingContext() const { return  mContext; }
-private:
-    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
-	mutable CompositingContext mContext;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -414,12 +427,52 @@ struct CompositingPassData
 
 ///////////////////////////////////////////////////////////////////////////
 
-struct CMCIdrawdata
+struct CompositorSystemDrawData
 {
 	lev2::FrameRenderer&		mFrameRenderer;
 	orkstack<CompositingPassData>	mCompositingGroupStack;
 
-	CMCIdrawdata( lev2::FrameRenderer& renderer ) : mFrameRenderer(renderer) {}
+	CompositorSystemDrawData( lev2::FrameRenderer& renderer ) : mFrameRenderer(renderer) {}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+class CompositingSystemData : public ork::ent::SystemData
+{
+	RttiDeclareConcrete(CompositingSystemData, ork::ent::SystemData);
+public:
+	///////////////////////////////////////////////////////
+	CompositingSystemData();
+	///////////////////////////////////////////////////////
+
+    const orklut<PoolString,ork::Object*>& GetGroups() const { return mCompositingGroups; }
+	const orklut<PoolString,ork::Object*>& GetScenes() const { return mScenes; }
+
+    PoolString& GetActiveScene() const { return mActiveScene; }
+	PoolString& GetActiveItem() const { return mActiveItem; }
+
+    bool IsEnabled() const { return mbEnable&&mToggle; }
+	bool IsOutputFramesEnabled() const { return mbOutputFrames; }
+	EOutputTimeStep OutputFrameRate() const { return mOutputFrameRate; }
+
+    void Toggle() const { mToggle=!mToggle; }
+
+private:
+
+	orklut<PoolString,ork::Object*> mCompositingGroups;
+	orklut<PoolString,ork::Object*> mScenes;
+	mutable PoolString mActiveScene;
+	mutable PoolString mActiveItem;
+	mutable bool mToggle;
+	bool mbEnable;
+	bool mbOutputFrames;
+	EOutputRes mOutputBaseResolution;
+	EOutputResMult mOutputResMult;
+	EOutputTimeStep mOutputFrameRate;
+
+    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
+
+
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -431,29 +484,42 @@ public:
 	static constexpr systemkey_t SystemType = "CompositingSystem";
 	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-	CompositingSystem( const CompositingSystemData &data, ork::ent::SceneInst *pinst );
+	CompositingSystem( const CompositingSystemData& data, ork::ent::SceneInst* pinst );
     ~CompositingSystem();
 
-	CompositingComponentInst* GetCompositingComponentInst( int icidx ) const;
+	void Draw(CompositorSystemDrawData& drawdata);
+	void composeToScreen( lev2::GfxTarget* pT );
 
-	void Draw(CMCIdrawdata& drawdata);
-	void ComposeToScreen( lev2::GfxTarget* pT );
-
-	const CompositingSystemData& GetCMCD() const { return	mCMCD; }
-
-	void AddCCI( CompositingComponentInst* cci );
-    void RemoveCCI( CompositingComponentInst* cci );
+	const CompositingSystemData& systemData() const { return	_compositingData; }
 
 	bool IsEnabled() const;
 
 	EOutputTimeStep GetCurrentFrameRateEnum() const;
 	float GetCurrentFrameRate() const;
 
+    const CompositingContext& GetCCtx() const;
+	CompositingContext& GetCCtx();
+
+	const CompositingSceneItem* compositingItem(int isceneidx,int itemidx) const;
+
+	const CompositingGroup* GetGroup(const PoolString& grpname) const;
+
 private:
 
-	orkvector<CompositingComponentInst*>	mCCIs;
-	const CompositingSystemData&	mCMCD;
-	//DrawableBufferLock						mDbLock;
+	const CompositingSystemData&	_compositingData;
+
+	//bool DoLink(ork::ent::SceneInst* psi) final;
+	//void DoUnLink(SceneInst* psi) final;
+	void DoUpdate(SceneInst* psi) final;
+
+	float	mfTimeAccum;
+	float	mfLastTime;
+
+	CompositingMorphable				_morphable;
+
+	int miActiveSceneItem;
+    CompositingContext _compcontext;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -530,124 +596,6 @@ private:
 
 	CompositingTechnique*	mpTechnique;
 
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class CompositingScene : public ork::Object
-{
-	RttiDeclareConcrete(CompositingScene, ork::Object);
-
-public:
-	CompositingScene();
-
-	const orklut<PoolString,ork::Object*>& GetItems() const { return mItems; }
-
-private:
-
-	orklut<PoolString,ork::Object*> mItems;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class CompositingComponentData : public ork::ent::ComponentData
-{
-	RttiDeclareConcrete(CompositingComponentData, ork::ent::ComponentData);
-
-public:
-	///////////////////////////////////////////////////////
-	CompositingComponentData();
-	///////////////////////////////////////////////////////
-
-	const orklut<PoolString,ork::Object*>& GetGroups() const { return mCompositingGroups; }
-	const orklut<PoolString,ork::Object*>& GetScenes() const { return mScenes; }
-
-	PoolString& GetActiveScene() const { return mActiveScene; }
-	PoolString& GetActiveItem() const { return mActiveItem; }
-
-	bool IsEnabled() const { return mbEnable&&mToggle; }
-	bool IsOutputFramesEnabled() const { return mbOutputFrames; }
-	EOutputTimeStep OutputFrameRate() const { return mOutputFrameRate; }
-
-	void Toggle() const { mToggle=!mToggle; }
-
-private:
-
-    void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
-    ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
-
-	orklut<PoolString,ork::Object*> mCompositingGroups;
-	orklut<PoolString,ork::Object*> mScenes;
-	mutable PoolString mActiveScene;
-	mutable PoolString mActiveItem;
-	mutable bool mToggle;
-	bool mbEnable;
-	bool mbOutputFrames;
-	EOutputRes mOutputBaseResolution;
-	EOutputResMult mOutputResMult;
-	EOutputTimeStep mOutputFrameRate;
-
-	const char* GetShortSelector() const final { return "com"; } // virtual
-
-};
-
-struct CompositingMorphable : public dataflow::morphable
-{
-	void WriteMorphTarget( dataflow::MorphKey name, float flerpval ); // virtual
-	void RecallMorphTarget( dataflow::MorphKey name ); // virtual
-	void Morph1D( const dataflow::morph_event* pevent ); // virtual
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class CompositingComponentInst : public ork::ent::ComponentInst
-{
-	RttiDeclareAbstract(CompositingComponentInst, ork::ent::ComponentInst);
-
-public:
-
-	CompositingComponentInst( const CompositingComponentData &data, ork::ent::Entity *pent );
-	~CompositingComponentInst();
-
-	const CompositingComponentData& GetCompositingData() const { return mCompositingData; }
-
-	const CompositingContext& GetCCtx() const;
-	CompositingContext& GetCCtx();
-
-	const CompositingSceneItem* GetCompositingItem(int isceneidx,int itemidx) const;
-
-	const CompositingGroup* GetGroup(const PoolString& grpname) const;
-
-private:
-
-	const CompositingComponentData& mCompositingData;
-	bool DoLink(ork::ent::SceneInst *psi) final;
-	void DoUnLink(SceneInst *psi) final;
-	void DoUpdate(SceneInst *inst) final;
-
-	float	mfTimeAccum;
-	float	mfLastTime;
-
-	CompositingSystem*	mpCMCI;
-	CompositingMorphable				mMorphable;
-
-	int miActiveSceneItem;
-	bool DoNotify(const ork::event::Event *event) final;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class CompositorArchetype : public Archetype
-{
-	RttiDeclareConcrete(CompositorArchetype, Archetype);
-public:
-	CompositorArchetype();
-private:
-	void DoCompose(ArchComposer& composer) final; // virtual
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
-	//void DoRegisterWithScene( ork::ent::SceneComposer& sc );
 };
 
 ///////////////////////////////////////////////////////////////////////////////

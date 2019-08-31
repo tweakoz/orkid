@@ -10,6 +10,7 @@
 #include <ork/event/EventListener.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/string.h>
+#include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/aud/audiobank.h>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -277,6 +278,7 @@ const CCameraData *SceneInst::GetCameraData(const PoolString &name) const {
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::SlotSceneTopoChanged() {
   auto topo_op = [=]() {
+    msgrouter::channel("SceneInst")->post(std::string("SceneInstInvalidated"));
     this->GetData().AutoLoadAssets();
     this->EnterEditState();
   };

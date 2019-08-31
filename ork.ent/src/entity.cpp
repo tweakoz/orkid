@@ -632,8 +632,6 @@ void Init()
 	ScriptComponentInst::GetClassStatic();
 
 	CompositingSystemData::GetClassStatic();
-	CompositingComponentData::GetClassStatic();
-	CompositingComponentInst::GetClassStatic();
 	CompositingNode::GetClassStatic();
 	NodeCompositingTechnique::GetClassStatic();
 	Fx3CompositingTechnique::GetClassStatic();
@@ -682,7 +680,7 @@ void Init()
 
 	RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));
 	RegisterFamily<ScriptComponentData>(ork::AddPooledLiteral("control"));
-	RegisterFamily<CompositingComponentData>(ork::AddPooledLiteral("control"));
+	RegisterFamily<CompositingSystemData>(ork::AddPooledLiteral("control"));
 	RegisterFamily<PerfControllerComponentData>(ork::AddPooledLiteral("control"));
 	//RegisterFamily<AudioAnalysisComponentData>(ork::AddPooledLiteral("control"));
 	RegisterFamily<GridControllerData>(ork::AddPooledLiteral("control"));

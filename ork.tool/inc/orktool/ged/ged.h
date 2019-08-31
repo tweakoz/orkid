@@ -16,6 +16,7 @@
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/orkpool.h>
 #include <ork/kernel/any.h>
+#include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/ui/viewport.h>
 #include <QtWidgets/QLineEdit>
 #include <QtWidgets/QDialog>
@@ -620,6 +621,8 @@ private:
 	GedObject*						mpActiveNode;
 	int								miScrollY;
 	const GedObject*				mpMouseOverNode;
+    ork::msgrouter::subscriber_t    _sceneinst_subscriber;
+
 
 };
 ///////////////////////////////////////////////////////////////////////////////
