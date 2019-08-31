@@ -71,7 +71,7 @@ vertex_shader vs_terrain1
     const float hfHeightScale = 1500;
     const float hfHeightBias = 0;
     //float invBaseGridTexelDim = (0.1*metersPerTexel / 4.0)+(1/129.0); // inverse of num texels of base lod
-    float invBaseGridTexelDim = User2.x; // inverse of num texels of base lod
+    float invBaseGridTexelDim = 0.013; // inverse of num texels of base lod
     /////////////////////////////////
     // testuv
     /////////////////////////////////

@@ -570,7 +570,7 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
   fvec3 campos = inv_view.GetTranslation();
   campos.y = 0;
   fmtx4 follow;
-  //follow.SetTranslation( campos );
+  follow.SetTranslation( hfd.GetVisualOffset() );
   //////////////////////////
   ptarg->MTXI()->PushPMatrix(PMTX);
   ptarg->MTXI()->PushVMatrix(VMTX);
@@ -678,9 +678,9 @@ void BulletShapeHeightfieldData::Describe() {
       "HeightMap", "editor.filetype", "png");
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldHeight", "editor.range.min", "0.0");
+      "WorldHeight", "editor.range.min", "0");
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldHeight", "editor.range.max", "0.25");
+      "WorldHeight", "editor.range.max", "10000");
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
       "WorldSize", "editor.range.min", "1.0f");
