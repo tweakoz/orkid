@@ -1,1 +1,0 @@
-*.{png,dds,xgm,blend,ma,mb,psd,tga,tif,dae,gltf,glb} filter=lfs diff=lfs merge=lfs -text
