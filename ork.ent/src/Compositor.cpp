@@ -31,10 +31,6 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingScene, "CompositingScene");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSceneItem, "CompositingSceneItem");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingGroupEffect, "CompositingGroupEffect");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingTechnique, "CompositingTechnique");
-
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSystemData, "CompositingManager");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositorArchetype, "CompositorArchetype");
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,7 +78,7 @@ void CompositingContext::Resize( int iW, int iH )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::Draw( lev2::GfxTarget* pTARG, CMCIdrawdata& drawdata, CompositingComponentInst* pCCI )
+void CompositingContext::Draw( lev2::GfxTarget* pTARG, CompositorSystemDrawData& drawdata, CompositingSystem* pCCI )
 {
 	Init(pTARG); // fixme lazy init
 	if( mCTEK )
@@ -93,7 +89,7 @@ void CompositingContext::Draw( lev2::GfxTarget* pTARG, CMCIdrawdata& drawdata, C
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI )
+void CompositingContext::CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingSystem* pCCI )
 {
 	Init(pT);
 	if( mCTEK )
@@ -274,5 +270,3 @@ void CompositingSceneItem::SetTech( ork::rtti::ICastable* const & val)
 	mpTechnique = ( (ptr==0) ? 0 : rtti::safe_downcast<CompositingTechnique*>(ptr) );
 }
 }}
-//template const ork::ent::CompositingComponentData* ork::ent::EntData::GetTypedComponent<ork::ent::CompositingComponentData>() const;
-//template ork::ent::CompositingComponentInst* ork::ent::Entity::GetTypedComponent<ork::ent::CompositingComponentInst>(bool);

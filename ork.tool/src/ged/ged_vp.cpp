@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/math/basicfilters.h>
-
+#include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
 template class ork::lev2::CPickBuffer<ork::tool::ged::GedVP>;
 ///////////////////////////////////////////////////////////////////////////////
@@ -78,6 +78,10 @@ GedVP::GedVP( const std::string & name, ObjModel& model )
 
 	object::Connect( & model.GetSigRepaint(), & mWidget.GetSlotRepaint() );
 	object::Connect( & model.GetSigModelInvalidated(), & mWidget.GetSlotModelInvalidated() );
+
+    _sceneinst_subscriber = msgrouter::channel("SceneInst")->subscribe([=](msgrouter::content_t c){
+        mpActiveNode=nullptr;
+    });
 
 }
 GedVP::~GedVP()

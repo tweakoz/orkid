@@ -331,7 +331,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 			// render it
 			/////////////////////////////
 
-			ent::CMCIdrawdata compositorDrawData( the_renderer );
+			ent::CompositorSystemDrawData compositorDrawData( the_renderer );
 			pCMCI->Draw( compositorDrawData );
 
 			////////////////////////////////////////////
@@ -353,7 +353,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				the_renderer.GetFrameData().SetDstRect( tgtrect );
 				mpTarget->FBI()->SetAutoClear(true);
 				mpTarget->BeginFrame();
-				pCMCI->ComposeToScreen( mpTarget );
+				pCMCI->composeToScreen( mpTarget );
 				mpTarget->EndFrame();// the_renderer );
 				////////////////////////////////////////
 				// write to disk
@@ -381,7 +381,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev)
 				mpTarget->FBI()->SetViewport( 0,0, mpTarget->GetW(), mpTarget->GetH() );
 				mpTarget->FBI()->SetScissor( 0,0, mpTarget->GetW(), mpTarget->GetH() );
 				mpTarget->BeginFrame();
-				pCMCI->ComposeToScreen( mpTarget );
+				pCMCI->composeToScreen( mpTarget );
 				/////////////////////////////////////////////////////////////////////
 				// HUD
 				/////////////////////////////////////////////////////////////////////
@@ -614,28 +614,13 @@ void SceneEditorVP::QueueSceneInstToDb(ent::DrawableBuffer*pDB) // Queue SceneDr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::CompositingComponentInst* SceneEditorVP::GetCompositingComponentInst( int icidx )
-{
-	ent::CompositingComponentInst* rval = 0;
-	ent::CompositingSystem* pCMCI = GetCMCI();
-	if( pCMCI )
-		rval = pCMCI->GetCompositingComponentInst(icidx);
-	return rval;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp)
-{
-	ent::CompositingSystem* pCMCI = GetCMCI();
-	const ent::CompositingComponentInst* pCCI = GetCompositingComponentInst(igrp);
+const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp) {
 	const CompositingGroup* pCG = 0;
-	if( pCCI ){
-		const CompositingComponentData& CCD = pCCI->GetCompositingData();
-		const orklut<PoolString,ork::Object*>& Groups = CCD.GetGroups();
+	if( ent::CompositingSystem* pCMCI = GetCMCI() ){
+		const CompositingSystemData& CCD = pCMCI->systemData();
+		auto& Groups = CCD.GetGroups();
 		int inumgroups = Groups.size();
-		if( inumgroups && igrp>= 0 )
-		{
+		if( inumgroups && igrp>= 0 ){
 			int idx = igrp%inumgroups;
 			ork::Object* pOBJ = Groups.GetItemAtIndex(idx).second;
 			if( pOBJ )

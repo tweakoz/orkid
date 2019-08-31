@@ -103,15 +103,15 @@ void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH )
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI)
+void Fx3CompositingTechnique::Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI)
 {
 	const ent::CompositingGroup* pCGA = pCCI->GetGroup(mGroupA);
 	const ent::CompositingGroup* pCGB = pCCI->GetGroup(mGroupB);
 	const ent::CompositingGroup* pCGC = pCCI->GetGroup(mGroupC);
-	
+
 	struct yo
 	{
-		static void rend_lyr_2_comp_group(	CMCIdrawdata& drawdata,
+		static void rend_lyr_2_comp_group(	CompositorSystemDrawData& drawdata,
 											const ent::CompositingGroup* pCG,
 											lev2::BuiltinFrameTechniques* pFT,
 											const char* LayerName )
@@ -119,9 +119,9 @@ void Fx3CompositingTechnique::Draw(CMCIdrawdata& drawdata, CompositingComponentI
 			lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
 			lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
 			orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
-		
+
 			ent::CompositingPassData node;
-			node.mbDrawSource = (pCG != 0);		
+			node.mbDrawSource = (pCG != 0);
 			pFT->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
 			anyp PassData;
 			PassData.Set<const char*>( LayerName );
@@ -152,7 +152,7 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(	lev2::GfxTarget* pT,
 														lev2::RtGroup* psrcgroupB,
 														lev2::RtGroup* psrcgroupC,
 														float levA, float levB, float levC )
-{	
+{
 
 	static const float kMAXW = 1.0f;
 	static const float kMAXH = 1.0f;
@@ -173,7 +173,7 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(	lev2::GfxTarget* pT,
 	auto out_buf = this_buf;
 #endif
 
-	
+
 	if( psrcgroupA )
 	{
 		lev2::Texture* ptexA = (psrcgroupA!=0) ? psrcgroupA->GetMrt(0)->GetTexture() : 0;
@@ -186,7 +186,7 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(	lev2::GfxTarget* pT,
 		mCompositingMaterial.SetLevelA( CVector4(levA,levA,levA,levA) );
 		mCompositingMaterial.SetLevelB( CVector4(levB,levB,levB,levB) );
 		mCompositingMaterial.SetLevelC( CVector4(levC,levC,levC,levC) );
-			
+
 		switch( eblend )
 		{
 			case BoverAplusC:
@@ -211,14 +211,16 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(	lev2::GfxTarget* pT,
 				mCompositingMaterial.SetTechnique( "AplusBplusC" );
 				break;
 		}
-		
+
 
 		out_buf->RenderMatOrthoQuad( vprect, quadrect, & mCompositingMaterial, 0.0f, 0.0f, kMAXW, kMAXH, 0, CVector4::White() );
 
 	}
-}	
+}
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx )
+void Fx3CompositingTechnique::CompositeToScreen( ork::lev2::GfxTarget* pT,
+                                                 CompositingSystem* pCCI,
+                                                 CompositingContext& cctx )
 {
 	/////////////////////////////////////////////////////////////////////
 	int iCSitem = 0;
@@ -234,7 +236,7 @@ void Fx3CompositingTechnique::CompositeToScreen( ork::lev2::GfxTarget* pT, Compo
 	const ent::CompositingSceneItem* pCSI = 0;
 	if( pCCI )
 	{
-		pCSI = pCCI->GetCompositingItem(0,iCSitem);
+		pCSI = pCCI->compositingItem(0,iCSitem);
 	}
 	/////////////////////////////////////////////////////////////////////
 	if( pCSI )
