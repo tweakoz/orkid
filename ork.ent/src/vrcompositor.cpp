@@ -142,11 +142,16 @@ struct VrFrameTechnique final : public FrameTechniqueBase
         for( auto item : controllers ){
 
           auto c = item.second;
+          fmtx4 ivomatrix; ivomatrix.GEMSInverse(_viewOffsetMatrix);
 
           fmtx4 scalemtx;
-          scalemtx.SetScale(c._button1down ? 0.1 : 0.05 );
+          scalemtx.SetScale(c._button1down ? 0.05 : 0.025 );
 
-          pTARG->MTXI()->PushMMatrix( scalemtx*rx*ry*rz*c._matrix );
+          fmtx4 controller_worldspace = (c._matrix*ivomatrix);
+
+          fmtx4 mmtx = (scalemtx*rx*ry*rz*controller_worldspace);
+
+          pTARG->MTXI()->PushMMatrix( mmtx );
           pTARG->MTXI()->PushVMatrix( camdat->GetVMatrix() );
           pTARG->MTXI()->PushPMatrix( camdat->GetPMatrix() );
           pTARG->PushModColor( CVector4::White() );
@@ -221,6 +226,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
     RtGroup*	_rtg_right;
     BuiltinFrameEffectMaterial _effect;
     ent::CompositingPassData _CPD;
+    fmtx4 _viewOffsetMatrix;
 
 };
 
@@ -311,14 +317,16 @@ struct VRSYSTEMIMPL {
       // up down
       ///////////////////////////////////////////////////////////
       # if defined(ENABLE_VR)
-      if(_controllers[kLEFTCONTROLLERDEV]._button1down ){
+      if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
+
+      if(_controllers[_leftControllerDeviceIndex]._button1down ){
         xlate.SetTranslation(0,xlaterate,0);
         auto trans = (xlate*rotmtx).GetTranslation();
         printf( "trans<%g %g %g>\n", trans.x, trans.y, trans.z );
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix*xlate;
       }
-      if(_controllers[kLEFTCONTROLLERDEV]._button2down ){
+      if(_controllers[_leftControllerDeviceIndex]._button2down ){
         xlate.SetTranslation(0,-xlaterate,0);
         auto trans = (xlate*rotmtx).GetTranslation();
         printf( "trans<%g %g %g>\n", trans.x, trans.y, trans.z );
@@ -328,13 +336,13 @@ struct VRSYSTEMIMPL {
       ///////////////////////////////////////////////////////////
       // fwd back
       ///////////////////////////////////////////////////////////
-      if(_controllers[kRIGHTCONTROLLERDEV]._button1down ){
+      if(_controllers[_rightControllerDeviceIndex]._button1down ){
         xlate.SetTranslation(0,0,xlaterate);
         auto trans = (xlate*rotmtx).GetTranslation();
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix*xlate;
       }
-      if(_controllers[kRIGHTCONTROLLERDEV]._button2down ){
+      if(_controllers[_rightControllerDeviceIndex]._button2down ){
         xlate.SetTranslation(0,0,-xlaterate);
         auto trans = (xlate*rotmtx).GetTranslation();
         xlate.SetTranslation(trans);
@@ -343,23 +351,24 @@ struct VRSYSTEMIMPL {
       ///////////////////////////////////////////////////////////
       // strafe left,right
       ///////////////////////////////////////////////////////////
-      if(_controllers[kLEFTCONTROLLERDEV]._triggerDown ){
+      if(_controllers[_leftControllerDeviceIndex]._triggerDown ){
         xlate.SetTranslation(xlaterate,0,0);
         auto trans = (xlate*rotmtx).GetTranslation();
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix*xlate;
       }
-      else if(_controllers[kRIGHTCONTROLLERDEV]._triggerDown ){
+      else if(_controllers[_rightControllerDeviceIndex]._triggerDown ){
         xlate.SetTranslation(-xlaterate,0,0);
         auto trans = (xlate*rotmtx).GetTranslation();
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix*xlate;
       }
+    } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
       ///////////////////////////////////////////////////////////
       // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
       ///////////////////////////////////////////////////////////
-      bool curthumbL = _controllers[kLEFTCONTROLLERDEV]._buttonThumbdown;
-      bool curthumbR = _controllers[kRIGHTCONTROLLERDEV]._buttonThumbdown;
+      bool curthumbL = _controllers[_leftControllerDeviceIndex]._buttonThumbdown;
+      bool curthumbR = _controllers[_rightControllerDeviceIndex]._buttonThumbdown;
 
       if( curthumbL and false==_prevthumbL){
 
@@ -375,6 +384,10 @@ struct VRSYSTEMIMPL {
       _prevthumbR =curthumbR;
       #endif
       ///////////////////////////////////////////////////////////
+
+      _hmdMatrix = hmd;
+
+      _frametek->_viewOffsetMatrix = _offsetmatrix*_headingmatrix;
 
       fmtx4 lmv = _offsetmatrix*_headingmatrix*hmd*eyeL;
       fmtx4 rmv = _offsetmatrix*_headingmatrix*hmd*eyeR;
@@ -401,6 +414,7 @@ struct VRSYSTEMIMPL {
   bool _active;
   fmtx4 _offsetmatrix;
   fmtx4 _headingmatrix;
+  fmtx4 _hmdMatrix;
   bool _prevthumbL = false;
   bool _prevthumbR = false;
   # if defined(ENABLE_VR)
@@ -409,8 +423,8 @@ struct VRSYSTEMIMPL {
     fmtx4 _poseMatrices[ vr::k_unMaxTrackedDeviceCount ];
     std::string _devclass[ vr::k_unMaxTrackedDeviceCount ];
     std::set<vr::TrackedDeviceIndex_t> _controllerindexset;
-    const int kRIGHTCONTROLLERDEV = 4;
-    const int kLEFTCONTROLLERDEV = 5;
+    int _rightControllerDeviceIndex = -1;
+    int _leftControllerDeviceIndex = -1;
   #endif
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -668,6 +682,27 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
                 dev_index<vr::k_unMaxTrackedDeviceCount;
                 dev_index++ ) {
     		if ( vrimpl->_trackedPoses[dev_index].bPoseIsValid ){
+
+          ///////////////////////////////////////////////////////
+          // discover left and right controller device indices
+          ///////////////////////////////////////////////////////
+
+          vr::TrackedPropertyError tpe;
+          int32_t role = vr::VRSystem()->GetInt32TrackedDeviceProperty( dev_index,
+                                                                        vr::ETrackedDeviceProperty::Prop_ControllerRoleHint_Int32,
+                                                                       &tpe);
+
+          switch(role){
+            case vr::ETrackedControllerRole::TrackedControllerRole_LeftHand:
+              vrimpl->_leftControllerDeviceIndex = dev_index;
+              break;
+            case vr::ETrackedControllerRole::TrackedControllerRole_RightHand:
+            vrimpl->_rightControllerDeviceIndex = dev_index;
+              break;
+          }
+
+          ///////////////////////////////////////////////////////
+
     			validposecount++;
     			auto orkmtx = steam34tofmtx4( vrimpl->_trackedPoses[dev_index].mDeviceToAbsoluteTracking );
           fmtx4 inverse;

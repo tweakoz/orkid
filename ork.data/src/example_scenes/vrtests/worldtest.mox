@@ -311,8 +311,8 @@
                                                         </reference>
                                                     </property>
                                                     <property name='VisualOffset'>0 0 0</property>
-                                                    <property name='WorldHeight'>0.013</property>
-                                                    <property name='WorldSize'>1600</property>
+                                                    <property name='WorldHeight'>1500</property>
+                                                    <property name='WorldSize'>8192</property>
                                                 </object>
                                             </reference>
                                         </property>
