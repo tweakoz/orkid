@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "SimpleCharacterArchetype.h"
-
+#include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SimpleCharacterArchetype, "SimpleCharacterArchetype" );
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,6 +49,12 @@ public:
         //mTimer = 1.0f;
         mState = STR().kIdle;
         mCurrentSpeed = 0.0f;
+
+        _subscriber = msgrouter::channel("eggytest")->subscribe([this](msgrouter::content_t c) {
+          this->_spq.try_push(c.Get<fmtx4>());
+        });
+
+
 	}
 	~SimpleCharControllerInst()
 	{
@@ -79,9 +85,30 @@ public:
         mEntity->SetDynMatrix(mtx);
 
 
+        fmtx4 popped;
+        if( _spq.try_pop(popped) and _spawntimer.SecsSinceStart()>3.0f ){
+          _spawntimer.Start();
+          static int eid = 0;
+          auto archnamestr = std::string("/arch/ball");
+          auto entnamestr = FormatString("/ent/yo/%d", eid++ );
+          const auto& scenedata = psi->GetData();
+          auto archso = scenedata.FindSceneObjectByName(AddPooledString(archnamestr.c_str()));
+          auto position = popped.GetTranslation();
+          printf( "spawning at <%g %g %g>\n",position.x,position.y,position.z );
+          if( const Archetype* as_arch = rtti::autocast(archso) ){
+                EntData* spawner = new EntData;
+              spawner->SetName(AddPooledString(entnamestr.c_str()));
+              spawner->SetArchetype(as_arch);
+              spawner->GetDagNode().SetTransformMatrix(popped);
+              auto newent = psi->SpawnDynamicEntity(spawner);
+            }
+          }
 
     }
 
+    msgrouter::subscriber_t _subscriber;
+    ork::MpMcBoundedQueue<fmtx4,2> _spq;
+    Timer _spawntimer;
     ///////////////////////////////////////////////////////////////////////////
 
 	bool DoNotify(const ork::event::Event* event) final
@@ -135,6 +162,7 @@ public:
 
 	bool DoLink(ork::ent::SceneInst *psi) final
 	{
+    _spawntimer.Start();
 		mAnima = GetEntity()->GetTypedComponent<ork::ent::SimpleAnimatableInst>();
 		if( nullptr == mAnima) return false;
 		const auto& sad = mAnima->GetData();
