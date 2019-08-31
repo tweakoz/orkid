@@ -10,7 +10,7 @@
 #include <ork/kernel/opq.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/ctxbase.h>
-#include <ork/lev2/input/input.h>
+//
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/qtui/qtui.h>
@@ -482,8 +482,6 @@ void QCtxWidget::MouseEventCommon( QMouseEvent * event )
 	auto& uiev = UIEvent();
 
 	uiev.mpBlindEventData = (void*) event;
-
-	CInputManager::GetRef().Poll();
 
 	Qt::MouseButtons Buttons = event->buttons();
 	Qt::KeyboardModifiers modifiers = event->modifiers();

@@ -22,7 +22,7 @@
 #include <ork/math/box.h>
 #include <ork/gfx/camera.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/input/input.h>
+#if 0
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 ///////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@
 #include "enemy_spawner.h"
 #include <pkg/ent/bullet.h>
 #include <ork/math/basicfilters.h>
-#include <ork/lev2/input/input.h>
+//
 #include <BulletCollision/CollisionShapes/btMultiSphereShape.h>
 #include <pkg/ent/ParticleControllable.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,7 +48,6 @@ namespace wiidom {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-
 
 static const int kcenterpoint = 8;
 
@@ -294,6 +293,7 @@ bool ShipControllerInst::DoUpdate_Flip( const ork::lev2::InputState& inpstate, f
 
 void ShipControllerInst::DoUpdate(SceneInst* sinst)
 {
+    /*
 	float fddt = sinst->GetDeltaTime();
 
 	DagNode* shipdn = & GetEntity()->GetDagNode();
@@ -440,7 +440,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 
 	if( ship_xnorm.Dot(CVector3(1.0f,0.0f,0.0f)) > 0.5f )
 		mRigidBody->applyTorque( !(stab_axis*stab_amt*-3e4) );
-	*/
+	#endif
 
 	//////////////////////////////////////////////////////////
 
@@ -497,10 +497,10 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 						CVector3 vsp = ship_ynorm.Cross(center_to_edge_dir);
 						CVector3 tf = ship_ynorm*point_mass*5000.0f*(lanay);
 
-						/*printf( "apply force<%f %f %f> pos<%f %f %f> p<%d>\n",
+						printf( "apply force<%f %f %f> pos<%f %f %f> p<%d>\n",
 								tf.GetX(), tf.GetY(), tf.GetZ(),
 								point_pos.GetX(), point_pos.GetY(), point_pos.GetZ(),
-								ip );*/
+								ip );
 
 						//mRigidBody->applyForce( !tf, !point_pos );
 					}
@@ -561,14 +561,6 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 						else
 						{
 							float fconst = ranay*3.0f; //(khmax-fheight)/khmax;
-							/*if( fconst<0.0f )
-							{
-								fconst = 0.0f;
-							}
-							if( fconst>1.0f )
-							{
-								fconst = 1.0f;
-							}*/
 							mRigidBody.ApplyForce( fdir*tmass*fconst, p );
 						}
 					}
@@ -634,7 +626,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 
 
 	///////////////////////////////////////////////////////
-
+*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -858,3 +850,4 @@ ent::ComponentInst* ShipControllerData::CreateComponent(Entity* pent) const
 ///////////////////////////////////////////////////////////////////////////////
 } }
 ///////////////////////////////////////////////////////////////////////////////
+#endif

@@ -32,7 +32,7 @@
 
 #include <ork/kernel/debug.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/lev2/input/input.h>
+//
 #include <ork/lev2/lev2_asset.h>
 #include <ork/math/basicfilters.h>
 #include <pkg/ent/scene.hpp>
@@ -1153,7 +1153,6 @@ void SceneInst::Update() {
 
   switch (this->GetSceneInstMode()) {
   case ork::ent::ESCENEMODE_PAUSE: {
-    ork::lev2::CInputManager::Poll();
     if (mApplication)
       mApplication->PreUpdate();
     if (mApplication)
@@ -1199,8 +1198,6 @@ void SceneInst::Update() {
       mDeltaTimeAccum -= step;
 
       SetDeltaTime(step);
-
-      ork::lev2::CInputManager::Poll();
 
       bool update = true;
       if (mApplication)

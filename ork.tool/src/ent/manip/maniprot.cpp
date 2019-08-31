@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <orktool/manip/manip.h>
-#include <ork/lev2/input/input.h>
+//
 #include <ork/math/misc_math.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/ui/event.h>
