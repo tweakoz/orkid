@@ -3,3 +3,5 @@
 *.tga filter=lfs diff=lfs merge=lfs -text
 *.dae filter=lfs diff=lfs merge=lfs -text
 *.hiplc filter=lfs diff=lfs merge=lfs -text
+*.xga filter=lfs diff=lfs merge=lfs -text
+*.xgm filter=lfs diff=lfs merge=lfs -text
