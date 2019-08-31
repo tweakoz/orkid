@@ -119,8 +119,7 @@ UpdateStatus gUpdateStatus;
 void UpdateStatus::SetState(EUpdateState est) { meStatus = est; }
 
 void SceneData::Describe() {
-  orkmap<PoolString, SceneObject *> ork::ent::SceneData::*item =
-      &SceneData::_sceneObjects;
+
   RegisterMapProperty("SceneObjects", &SceneData::_sceneObjects);
   RegisterMapProperty("SystemData", &SceneData::_systemDatas);
 
