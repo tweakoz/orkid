@@ -121,6 +121,20 @@ void NewArchReq::SetArchetype(Archetype*parch)
 
 ///////////////////////////////////////////////////////////////////////////
 
+SystemData* NewSystemReq::system()
+{
+	AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
+	return mResult.GetResult().Get<SystemData*>();
+}
+
+void NewSystemReq::setSystem(SystemData*parch)
+{
+	AssertOnOpQ(gImplSerQ);
+	mResult.Signal<SystemData*>(parch);
+}
+
+///////////////////////////////////////////////////////////////////////////
+
 SceneData* NewSceneReq::GetScene()
 {
 	AssertNotOnOpQ(MainThreadOpQ()); // prevent deadlock
@@ -336,6 +350,14 @@ void SceneEditorBase::RunLoop()
 				auto parch = ImplNewArchetype(R.mClassName,R.mName);
 				Op(enable_op).QueueSync(updQ);
 				R.SetArchetype(parch);
+			}
+            else if( event.IsA<NewSystemReq>() )
+			{
+				auto& R = event.Get<NewSystemReq>();
+				Op(disable_op).QueueSync(updQ);
+				auto system = ImplNewSystem(R.mClassName);
+				Op(enable_op).QueueSync(updQ);
+				R.setSystem(system);
 			}
 			else if( event.IsA<DeleteObjectReq>() )
 			{
@@ -805,6 +827,14 @@ ent::Archetype* SceneEditorBase::EditorNewArchetype(const std::string& classname
 	nar->mName = name;
 	QueueOpASync(nar);
 	return new_arch.GetResult().Get<Archetype*>();
+}
+///////////////////////////////////////////////////////////////////////////
+SystemData* SceneEditorBase::EditorNewSystem(const std::string& classname) {
+    Future new_sys;
+	auto nar = NewSystemReq::makeShared(new_sys);
+	nar->mClassName = classname;
+	QueueOpASync(nar);
+	return new_sys.GetResult().Get<SystemData*>();
 }
 ///////////////////////////////////////////////////////////////////////////
 ent::EntData *SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype)
@@ -1372,7 +1402,25 @@ Archetype* SceneEditorBase::ImplNewArchetype( const std::string& classname, cons
 	Op(lamb).QueueSync(UpdateSerialOpQ());
 	return rarch;
 }
-
+SystemData* SceneEditorBase::ImplNewSystem( const std::string& classname )
+{   ////////////////////////////////////
+	// to prevent deadlock
+	ork::AssertOnOpQ2( gImplSerQ );
+	////////////////////////////////////
+	if( nullptr == mpScene ) return nullptr;
+	SystemData* system = nullptr;
+	auto lamb = [&](){
+		SlotPreNewObject();
+		ork::rtti::Class* pclass = ork::rtti::Class::FindClassNoCase(classname.c_str());
+		printf( "NewSystem classname<%s> class<%p>\n", classname.c_str(), pclass );
+		if( pclass ){
+			system = rtti::autocast( pclass->CreateObject() );
+			SlotNewObject(system);
+		}
+	};
+	Op(lamb).QueueSync(UpdateSerialOpQ());
+	return system;
+}
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::SigSceneTopoChanged()
 {
