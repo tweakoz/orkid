@@ -13,6 +13,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/aud/audiobank.h>
 #include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer.h>
@@ -1104,6 +1105,7 @@ void SceneInst::Update() {
 
   switch (this->GetSceneInstMode()) {
     case ork::ent::ESCENEMODE_PAUSE: {
+      ork::lev2::InputManager::Poll();
       if (mApplication)
         mApplication->PreUpdate();
       if (mApplication)
@@ -1147,6 +1149,8 @@ void SceneInst::Update() {
 
       while (mDeltaTimeAccum >= step) {
         mDeltaTimeAccum -= step;
+
+        ork::lev2::InputManager::Poll();
 
         SetDeltaTime(step);
 

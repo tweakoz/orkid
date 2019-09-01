@@ -14,6 +14,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/aud/audiodevice.h>
+#include <ork/lev2/input/inputdevice.h>
 //
 #include <ork/lev2/gfx/dbgfontman.h>
 
@@ -199,6 +200,7 @@ int BootQtThreadImpl(void* arg_opaq )
 	std::string AppClassName = CSystem::GetGlobalStringVariable( "ProjectApplicationClassName" );
 
 	ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
+    ork::lev2::InputManager::Poll();
 
 	ent::EditorMainWindow MainWin(0, AppClassName, *gpQtApplication );
 	ent::gEditorMainWindow = &MainWin;
