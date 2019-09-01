@@ -148,11 +148,12 @@ class DuTextureInterface : public TextureInterface
 {
 public:
 
-	virtual void TexManInit( void ) {}
+	void TexManInit( void ) final {}
 
-	virtual bool DestroyTexture( Texture *ptex ) { return false; }
-	virtual bool LoadTexture( const AssetPath& fname, Texture *ptex );
-	virtual void SaveTexture( const ork::AssetPath& fname, Texture *ptex ) {}
+	bool DestroyTexture( Texture *ptex ) final { return false; }
+	bool LoadTexture( const AssetPath& fname, Texture *ptex ) final ;
+	void SaveTexture( const ork::AssetPath& fname, Texture *ptex ) final {}
+    void generateMipMaps(Texture *ptex) final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

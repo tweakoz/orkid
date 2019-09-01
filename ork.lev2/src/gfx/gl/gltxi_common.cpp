@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/dxt.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/file/file.h>
+#include <ork/math/misc_math.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/debug.h>
 
@@ -1156,6 +1157,19 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 		glTexParameterf(tgt, GL_TEXTURE_WRAP_T, addrlamb(texmode.GetAddrModeV()));
 		GL_ERRORCHECK();
 	}
+}
+
+void GlTextureInterface::generateMipMaps(Texture *ptex) {
+
+    auto plattex = (GLTextureObject*) ptex->GetTexIH();
+    glBindTexture( GL_TEXTURE_2D, plattex->mObject );
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    int w =ptex->GetWidth();
+    int l = HighestPowerOfTwo(w);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, l);
+    glBindTexture( GL_TEXTURE_2D, 0 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

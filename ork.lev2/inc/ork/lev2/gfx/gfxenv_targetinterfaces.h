@@ -592,7 +592,7 @@ public:
 	virtual void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai ) {}
 	virtual void ApplySamplingMode( Texture *ptex ) {}
 	virtual void initTextureFromData( Texture *ptex, bool autogenmips ) {}
-
+    virtual void generateMipMaps(Texture *ptex) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

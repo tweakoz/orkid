@@ -40,12 +40,12 @@ void MatrixStackInterface::PushUIMatrix()
 	float fw = pfdata ? float(pfdata->GetDstRect().miW) : (F32) mTarget.FBI()->GetVPW();
 	float fh = pfdata ? float(pfdata->GetDstRect().miH) : (F32) mTarget.FBI()->GetVPH();
 
-	//float fw = (F32) mTarget.FBI()->GetVPW(); 
+	//float fw = (F32) mTarget.FBI()->GetVPW();
 	//float fh = (F32) mTarget.FBI()->GetVPH();
 	ork::CMatrix4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, fw, 0.0f, fh, 0.0f, 1.0f );
-	PushPMatrix( mtxMVP ); 
-	PushVMatrix( ork::CMatrix4::Identity ); 
-	PushMMatrix( ork::CMatrix4::Identity ); 
+	PushPMatrix( mtxMVP );
+	PushVMatrix( ork::CMatrix4::Identity );
+	PushMMatrix( ork::CMatrix4::Identity );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,18 +53,18 @@ void MatrixStackInterface::PushUIMatrix()
 void MatrixStackInterface::PushUIMatrix(int iw, int ih)
 {
 	ork::CMatrix4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, float(iw), 0.0f, float(ih), 0.0f, 1.0f );
-	PushPMatrix( mtxMVP ); 
-	PushVMatrix( ork::CMatrix4::Identity ); 
-	PushMMatrix( ork::CMatrix4::Identity ); 
+	PushPMatrix( mtxMVP );
+	PushVMatrix( ork::CMatrix4::Identity );
+	PushMMatrix( ork::CMatrix4::Identity );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void MatrixStackInterface::PopUIMatrix()
 {
-	PopPMatrix( ); 
-	PopVMatrix( ); 
-	PopMMatrix( ); 
+	PopPMatrix( );
+	PopVMatrix( );
+	PopMMatrix( );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,7 +148,7 @@ void MatrixStackInterface::SetMMatrix( const CMatrix4 &rMat )
 {
 	OrkAssert( miMatrixStackIndexM>=0 );
 	OrkAssert( miMatrixStackIndexM<kiMatrixStackMax );
-	maMatrixStackM[ miMatrixStackIndexM ] = rMat;	
+	maMatrixStackM[ miMatrixStackIndexM ] = rMat;
 	OnMMatrixDirty();
 }
 
@@ -157,19 +157,19 @@ void MatrixStackInterface::SetMMatrix( const CMatrix4 &rMat )
 const CMatrix4 &MatrixStackInterface::RefMMatrix( void ) const
 {	OrkAssert( miMatrixStackIndexM>=0 );
 	OrkAssert( miMatrixStackIndexM<kiMatrixStackMax );
-	return maMatrixStackM[ miMatrixStackIndexM ];		
+	return maMatrixStackM[ miMatrixStackIndexM ];
 }
 
 ///////////////////////////////////////////////////////
 
 const CMatrix3 &MatrixStackInterface::RefR3Matrix( void ) const
-{	return mmR3Matrix;		
+{	return mmR3Matrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const CMatrix4 &MatrixStackInterface::RefR4Matrix( void ) const
-{	return mmR4Matrix;		
+{	return mmR4Matrix;
 }
 
 ///////////////////////////////////////////////////////
@@ -193,25 +193,25 @@ void MatrixStackInterface::PopVMatrix( void )
 const CMatrix4 &MatrixStackInterface::RefVMatrix( void ) const
 {	OrkAssert( miMatrixStackIndexV>=0 );
 	OrkAssert( miMatrixStackIndexV<kiMatrixStackMax );
-	return maMatrixStackV[ miMatrixStackIndexV ];		
+	return maMatrixStackV[ miMatrixStackIndexV ];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const CMatrix4 &MatrixStackInterface::RefVITMatrix( void ) const
-{	return mMatrixVIT;		
+{	return mMatrixVIT;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const CMatrix4 &MatrixStackInterface::RefVITIYMatrix( void ) const
-{	return mMatrixVITIY;		
+{	return mMatrixVITIY;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const CMatrix4 &MatrixStackInterface::RefVITGMatrix( void ) const
-{	return mMatrixVITG;		
+{	return mMatrixVITG;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -223,7 +223,7 @@ const CMatrix4 &MatrixStackInterface::RefMVMatrix( void ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 const CMatrix4 &MatrixStackInterface::RefMVPMatrix( void ) const
-{	
+{
 	return mmMVPMatrix;
 }
 
@@ -236,7 +236,7 @@ const CMatrix4 &MatrixStackInterface::RefVPMatrix( void ) const
 ///////////////////////////////////////////////////////
 
 void MatrixStackInterface::PushPMatrix( const CMatrix4 &rMat )
-{	
+{
 	if( miMatrixStackIndexP==5 )
 	{
 		//orkprintf( "yo\n" );
@@ -258,7 +258,7 @@ void MatrixStackInterface::PopPMatrix( void )
 ///////////////////////////////////////////////////////////////////////////////
 
 const CMatrix4& MatrixStackInterface::RefPMatrix( void ) const
-{	return maMatrixStackP[ miMatrixStackIndexP ];		
+{	return maMatrixStackP[ miMatrixStackIndexP ];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -280,7 +280,10 @@ CMatrix4 MatrixStackInterface::Persp( float fovy, float aspect, float fnear, flo
 	mtx.dump("GL");
 #else
 	OrkAssert( fnear>= 0.0f );
-	OrkAssert( ffar>fnear );
+
+    if( ffar<=fnear ){
+        ffar = fnear+1;
+    }
 
 	float xmin, xmax, ymin, ymax;
 	ymax = fnear * CFloat::Tan( fovy*DTOR*0.5f );
@@ -292,7 +295,7 @@ CMatrix4 MatrixStackInterface::Persp( float fovy, float aspect, float fnear, flo
 
 	//mtx.Transpose();
 	//mtx.dump("ORK");
-#endif	
+#endif
 	return mtx;
 }
 
@@ -378,7 +381,7 @@ CMatrix4 MatrixStackInterface::LookAt( const CVector3& eye, const CVector3& tgt,
 	//rval.dump("ORK");
 
 #endif
-	
+
 	return rval;
 }
 

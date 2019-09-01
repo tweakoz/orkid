@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -39,20 +39,17 @@ AssetClass::AssetClass(const rtti::RTTIData &data)
 {
 }
 
-std::set<file::Path> AssetClass::EnumerateExisting() const
-{
-	std::set<file::Path> rval;
+std::set<file::Path> AssetClass::EnumerateExisting() const {
+  std::set<file::Path> rval;
 
-	for( auto& l : mLoaders )
-	{
-		auto s = l->EnumerateExisting();
-		for( auto i : s )
-		{
-			//printf( "enumexist loader<%p> asset<%s>\n", l, i.c_str() );
-			rval.insert(i);
-		}
-	}
-	return rval;
+  for (auto& l : mLoaders) {
+    auto s = l->EnumerateExisting();
+    for (auto i : s) {
+       printf( "enumexist loader<%p> asset<%s>\n", l, i.c_str() );
+      rval.insert(i);
+    }
+  }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -211,4 +208,3 @@ Renamer::Renamer(FileAssetNamer* renamer, PieceString &name)
 ///////////////////////////////////////////////////////////////////////////////
 } }
 ///////////////////////////////////////////////////////////////////////////////
-
