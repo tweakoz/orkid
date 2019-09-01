@@ -5,6 +5,8 @@
 #include "sf2.h"
 #include <ork/kernel/svariant.h>
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 // IoMask:
 //   specifies inputs and output configuration of a zpm module
@@ -370,7 +372,7 @@ struct Sf2TestSynthData : public SynthData
 {
     Sf2TestSynthData(const std::string& syxpath, synth* syn, const std::string& bankname="sf2");
     ~Sf2TestSynthData();
-    ork::sf2::SoundFont* _sfont;
+    sf2::SoundFont* _sfont;
     const programData* getProgram(int progID) const final;
 };
 
@@ -420,3 +422,5 @@ struct KrzKmTestData : public SynthData
     const programData* getProgram(int progID) const final;
     std::map<int,programData*> _testKmPrograms;
 };
+
+} // namespace ork::audio::singularity {

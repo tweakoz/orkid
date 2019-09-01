@@ -4,6 +4,7 @@
 #include "alg_eq.h"
 #include "konoff.h"
 
+namespace ork::audio::singularity {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -68,3 +69,5 @@ const std::map<int,AlgConfig>& KrzAlgMap()
     }
     return algmap;
 }
+
+} // namespace ork::audio::singularity {

@@ -6,6 +6,8 @@
 
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -31,8 +33,8 @@ float shaper(float inp, float adj)
 
 	//float absinp = fabs(inp);
 	//float inpsqu = inp*inp;
-	//float N = inp * (absinp + adj); 
-	//float D = (inpsqu+(adj-1.0f)*absinp+1.0f); 
+	//float N = inp * (absinp + adj);
+	//float D = (inpsqu+(adj-1.0f)*absinp+1.0f);
 	//float rval = N/D;
 	//printf( "adj<%g> N<%g> D<%g> rv<%g>\n", adj, N, D, rval );
 	return sinf(index*pi2); ///adj;
@@ -50,7 +52,4 @@ float wrap(float inp, float adj)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
-
-
-
+} // namespace ork::audio::singularity {

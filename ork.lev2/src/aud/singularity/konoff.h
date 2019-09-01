@@ -2,6 +2,8 @@
 
 #include <ork/kernel/svariant.h>
 
+namespace ork::audio::singularity {
+
 struct DspBlock;
 struct layerData;
 struct layer;
@@ -23,3 +25,5 @@ struct DspKeyOnInfo : public KeyOnInfo
 {
     DspBlock* _prv = nullptr;
 };
+
+} // namespace ork::audio::singularity {

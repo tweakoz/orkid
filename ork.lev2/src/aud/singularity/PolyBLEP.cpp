@@ -29,6 +29,8 @@ Permission has been granted to release this port under the WDL/IPlug license:
 #include <cmath>
 #include <cstdint>
 
+namespace ork::audio::singularity {
+
 const double TWO_PI = 2 * M_PI;
 
 template<typename T>
@@ -397,3 +399,5 @@ double PolyBLEP::ramp() const {
 
     return amplitude * y;
 }
+
+} // namespace ork::audio::singularity {

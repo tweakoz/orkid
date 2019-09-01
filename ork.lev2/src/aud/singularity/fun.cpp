@@ -5,6 +5,8 @@
 
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ControllerInst* FunData::instantiate(synth& syn) const // final
@@ -34,7 +36,7 @@ void FunInst::compute(int inumfr) // final
 
 struct Lowpass
 {
-    Lowpass() 
+    Lowpass()
         :a(0.99f)
         ,b(1.f - a)
         ,z(0)
@@ -54,8 +56,8 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
     if(nullptr==_data)
         return;
 
-    _a = l->getController(_data->_a);   
-    _b = l->getController(_data->_b);   
+    _a = l->getController(_data->_a);
+    _b = l->getController(_data->_b);
     _op = []()->float{return 0.0f;};
 
     const auto& op = _data->_op;
@@ -66,31 +68,31 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
             float a = this->_a();
             float b = this->_b();
             return (a+b);
-        };  
+        };
     else if( op=="a-b" )
         _op = [=]()->float{
             float a = this->_a();
             float b = this->_b();
             return (a-b);
-        };  
+        };
     else if( op=="a*b" )
         _op = [=]()->float{
             float a = this->_a();
             float b = this->_b();
             return (a*b);
-        };  
+        };
     else if( op=="(a+b)/2" )
         _op = [=]()->float{
             float a = this->_a();
             float b = this->_b();
             return (a+b)*0.5f;
-        };  
+        };
     else if( op=="a/2+b" )
         _op = [=]()->float{
             float a = this->_a();
             float b = this->_b();
             return (a*0.5f)+b;
-        };  
+        };
     else if( op=="Quantize B To A" )
         _op = [=]()->float{
             float a = fabs(this->_a());
@@ -106,7 +108,7 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
             float bb = float(ib)/float(inumsteps);
 
             return clip_float(bb,-1,1);///inva;
-        };  
+        };
     else if( op=="lowpass(f=a,b)" )
     {
         auto lowpass = new Lowpass;
@@ -190,3 +192,5 @@ void FunInst::keyOn(const KeyOnInfo& KOI) // final
 void FunInst::keyOff() // final
 {
 }
+
+} // namespace ork::audio::singularity {

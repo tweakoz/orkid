@@ -3,6 +3,8 @@
 #include "filters.h"
 #include "alg_eq.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 DspBuffer::DspBuffer()
@@ -39,7 +41,7 @@ float* DspBuffer::channel(int ich)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DspBlock::DspBlock(const DspBlockData& dbd) 
+DspBlock::DspBlock(const DspBlockData& dbd)
     : _dbd(dbd)
     , _baseIndex(dbd._blockIndex)
     , _numParams(dbd._numParams)
@@ -155,3 +157,5 @@ int DspBlock::numInputs() const
 {
     return _iomask.numInputs();
 }
+
+} // namespace ork::audio::singularity {

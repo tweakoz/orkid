@@ -3,6 +3,8 @@
 #include "krzdata.h"
 //#include "modulation.h"
 
+namespace ork::audio::singularity {
+
 struct outputBuffer;
 struct layer;
 struct DspBlock;
@@ -35,3 +37,5 @@ struct Alg final
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+} //namespace ork::audio::singularity {

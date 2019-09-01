@@ -4,6 +4,8 @@
 #include "dspblocks.h"
 #include "shelveeq.h"
 
+namespace ork::audio::singularity {
+
 struct PARABASS : public DspBlock
 {
     PARABASS( const DspBlockData& dbd );
@@ -47,3 +49,4 @@ struct PARAMETRIC_EQ : public DspBlock
     void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 
+} //namespace ork::audio::singularity {

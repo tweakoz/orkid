@@ -11,8 +11,8 @@
 using namespace ork::audiomath;
 
 ////////////////////////////////////////////////////////////////////////////////
-    
-namespace ork { namespace sf2 {
+
+namespace ork::audio::singularity::sf2 {
 
 CSF2Sample::CSF2Sample( Ssfontsample* smp )
     : start( smp ? smp->dwStart : 0 )
@@ -28,14 +28,14 @@ CSF2Sample::CSF2Sample( Ssfontsample* smp )
     char namebuf[21];
 
     for( U32 i=0; i<20; i++ )
-        namebuf[i] = smp 
-                   ? smp->achSampleName[i] 
+        namebuf[i] = smp
+                   ? smp->achSampleName[i]
                    : 0;
-        
+
     namebuf[20] = 0;
 
     name = (std::string) namebuf;
 }
 
 
-} }
+} // namespace ork::audio::singularity::sf2 {

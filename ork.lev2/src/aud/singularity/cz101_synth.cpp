@@ -14,6 +14,8 @@
 
 using namespace ork;
 
+namespace ork::audio::singularity {
+
 struct czpriv
 {
     czpriv()
@@ -154,3 +156,5 @@ void czsyn::keyOff()
 {
     _pimpl.Get<czpriv*>()->keyOff();
 }
+
+} // namespace ork::audio::singularity {

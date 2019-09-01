@@ -5,6 +5,8 @@
 
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 LfoData::LfoData()
@@ -16,7 +18,7 @@ LfoData::LfoData()
 
 }
 
-ControllerInst* LfoData::instantiate(synth& syn) const 
+ControllerInst* LfoData::instantiate(synth& syn) const
 {
     auto r = new LfoInst( syn, this );
     return r;
@@ -81,14 +83,14 @@ void LfoInst::keyOn(const KeyOnInfo& KOI) // final
     };
     else if( _data->_shape == "Square" )
         _mapper = [](float inp)->float{
-            float squ = sinf(inp*pi2) >= 0.0f 
+            float squ = sinf(inp*pi2) >= 0.0f
                       ? +1.0f
                       : -1.0f;
             return squ;
     };
     else if( _data->_shape == "+Square" )
         _mapper = [](float inp)->float{
-            float squ = sinf(inp*pi2) >= 0.0f 
+            float squ = sinf(inp*pi2) >= 0.0f
                       ? +1.0f
                       : 0.0f;
             return squ;
@@ -121,8 +123,8 @@ void LfoInst::keyOn(const KeyOnInfo& KOI) // final
                 0.666666f, //cents_to_linear_freq_ratio(900),
                 1.0f,
                 0.0f,
-                0.333333f //cents_to_linear_freq_ratio(300), 
-            };  
+                0.333333f //cents_to_linear_freq_ratio(300),
+            };
             int x = int(inp*4.0f)&3;
             return table[x];
 
@@ -153,15 +155,15 @@ void LfoInst::keyOff() // final
 void LfoInst::compute(int inumfr) // final
 {
     if(nullptr==_data)
-    {   
+    {
         _curval = 0.0f;
     }
     else
     {
        float dt = float(inumfr)/_syn._sampleRate;
-      
+
        _currate = lerp(_data->_minRate,_data->_maxRate,_rateLerp);
-        
+
         //printf( "lforate<%f>\n", rate );
         _phaseInc = dt*_currate;
         _phase += _phaseInc;
@@ -169,3 +171,4 @@ void LfoInst::compute(int inumfr) // final
     }
 }
 
+} // namespace ork::audio::singularity {

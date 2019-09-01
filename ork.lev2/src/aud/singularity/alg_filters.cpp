@@ -2,6 +2,8 @@
 #include <assert.h>
 #include "alg_filters.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 BANDPASS_FILT::BANDPASS_FILT( const DspBlockData& dbd )
@@ -16,8 +18,8 @@ void BANDPASS_FILT::compute(DspBuffer& dspbuf) //final
     float* ubuf = dspbuf.channel(0);
 
     float fc = _param[0].eval();
-    float wid = _param[1].eval();        
-    
+    float wid = _param[1].eval();
+
     //printf( "fc<%f> wid<%f>\n", fc, wid );
     _filter.SetWithBWoct(EM_BPF,fc,wid);
     _biquad.SetBpfWithBWoct(fc,wid,-12.0f);
@@ -56,7 +58,7 @@ void BAND2::compute(DspBuffer& dspbuf) //final
     float* ubuf = dspbuf.channel(0);
 
     float fc = _param[0].eval();
-    
+
     _fval[0] = fc;
 
     _filter.SetWithBWoct(EM_BPF,fc,2.2f);
@@ -92,7 +94,7 @@ void NOTCH_FILT::compute(DspBuffer& dspbuf) //final
     float wid = _param[1].eval();
     _fval[0] = fc;
     _fval[1] = wid;
-    
+
     _filter.SetWithBWoct(EM_NOTCH,fc,wid);
 
     if(1)for( int i=0; i<inumframes; i++ )
@@ -426,7 +428,7 @@ void LOPASS::compute(DspBuffer& dspbuf) //final
     _fval[0] = fc;
     _lpf.set(fc);
 
-    float* inpbuf = getInpBuf1(dspbuf); 
+    float* inpbuf = getInpBuf1(dspbuf);
 
     if(1)for( int i=0; i<inumframes; i++ )
     {
@@ -481,7 +483,7 @@ void HIPASS::compute(DspBuffer& dspbuf) //final
     float fc = _param[0].eval();
     _hpf.set(fc);
 
-    float* inpbuf = getInpBuf1(dspbuf); 
+    float* inpbuf = getInpBuf1(dspbuf);
 
     if(1)for( int i=0; i<inumframes; i++ )
     {
@@ -585,7 +587,7 @@ void ALPASS::compute(DspBuffer& dspbuf) // final
     _filter.Set(fc);
     _fval[0] = fc;
 
-    float* inpbuf = getInpBuf1(dspbuf); 
+    float* inpbuf = getInpBuf1(dspbuf);
 
     if(1)for( int i=0; i<inumframes; i++ )
     {
@@ -596,3 +598,5 @@ void ALPASS::compute(DspBuffer& dspbuf) // final
 void ALPASS::doKeyOn(const DspKeyOnInfo& koi) // final
 {   _filter.Clear();
 }
+
+} // namespace ork::audio::singularity {

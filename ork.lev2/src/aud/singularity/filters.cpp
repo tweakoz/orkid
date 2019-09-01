@@ -2,6 +2,8 @@
 #include <assert.h>
 #include "filters.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static const float OSR = 96000.0f;
@@ -151,8 +153,8 @@ float TrapAllpass::Tick(float input){
 BiQuad::BiQuad()
     : _xm1(0.0f), _xm2(0.0f)
     , _ym1(0.0f), _ym2(0.0f)
-    , _mfa1(0.0f), _mfa2(0.0f)        
-    , _mfb0(0.0f), _mfb1(0.0f), _mfb2(0.0f) 
+    , _mfa1(0.0f), _mfa2(0.0f)
+    , _mfb0(0.0f), _mfb1(0.0f), _mfb2(0.0f)
 {
 }
 
@@ -164,7 +166,7 @@ void BiQuad::Clear()
     _ym2 = 0.0f;
 }
 float BiQuad::compute( float input )
-{   
+{
     //input = clip_float(input,-1,1);
 
     float outputp = (_mfb0*input)
@@ -203,21 +205,21 @@ float BiQuad::compute( float input )
 }
 
 float BiQuad::compute2( float input )
-{   
+{
 
-    float output = ( (_mfb0 * input) + 
-                     (_mfb1*_xm1) + 
-                     (_mfb2*_xm2) - 
-                     (_mfa1*_ym1) - 
+    float output = ( (_mfb0 * input) +
+                     (_mfb1*_xm1) +
+                     (_mfb2*_xm2) -
+                     (_mfa1*_ym1) -
                      (_mfa2*_ym2) )
 
                   /_mfa0;
-    
+
     _xm2 = _xm1;
     _xm1 = input;
     _ym2 = _ym1;
     _ym1 = output;
-  
+
     return output;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -226,7 +228,7 @@ void BiQuad::SetLpfReson( float kfco, float krez )
 {
     krez = clip_float(krez,0.01f,0.95f);
     kfco = clip_float(kfco,30.1f,16000.0f);
-    
+
     float w0 = kfco*PI2ISR;
     float w02 = (2.0f*w0);
 
@@ -252,7 +254,7 @@ void BiQuad::SetLpfReson( float kfco, float krez )
     float km2 = kag-kbs;
 
     float kden = std::sqrt(km1*km1+km2*km2);
-    
+
     // YSIDE COEF
     _mfa1 = -2.0f*krez*cosW0;
     _mfa2 = krez*krez;
@@ -265,7 +267,7 @@ void BiQuad::SetLpfReson( float kfco, float krez )
 }
 
 void BiQuad::SetBpfMeth2( float kfco )
-{ 
+{
     //H(S) = (S/Q)/(S^2 + S/Q + 1)
     float Q=8.5f;
     float W = tan(pi*kfco*ISR);
@@ -395,7 +397,7 @@ void BiQuad::SetLpfWithPeakGain(float kfco, float peakGain)
     //a0 = K * K * norm;
     //a1 = 2 * a0;
     //a2 = a0;
-    
+
     //b1 = 2 * (K * K - 1) * norm;
     //b2 = (1 - K / Q + K * K) * norm;
 
@@ -476,7 +478,7 @@ void ParaOne::Set(float f, float w, float g)
     float arc=f*pi2*ISR;///(srate*0.5);
     float gain = powf(2.0f,g/6.0f);
     _a = (sinf(arc)*w) * ((gain < 1.0f) ? 1.0f : 0.25f);
-    float tmp=1.0f/(1.0f+_a);  
+    float tmp=1.0f/(1.0f+_a);
 
     _c0 = tmp*_a*(gain-1.0f);
     _c1 = tmp*2.0f*cosf(arc);
@@ -487,12 +489,12 @@ void ParaOne::Set(float f, float w, float g)
 
 float ParaOne::compute(float inp)
 {
-    float tmp = _c0*(inp-_del2) 
-              + _c1 * _li1 
+    float tmp = _c0*(inp-_del2)
+              + _c1 * _li1
               + _c2 * _li2;
 
     _del2 = _del1;
-    _del1 = inp; 
+    _del1 = inp;
     _li2 = _li1;
     _li1 = tmp;
     inp += _li1;
@@ -596,12 +598,12 @@ void BiQuad::SetHighShelf( float kfco, float peakGain )
     float KdQ = K/Q;
     float norm = 1.0f/(1.0f+KdQ+KK);
 
-    //a0 = 1 - alpha 
-    //a1 = -2*cos(w0) 
-    //a2 = 1 + alpha 
-    //b0 = a2 
-    //b1 = a1 
-    //b2 = a0 
+    //a0 = 1 - alpha
+    //a1 = -2*cos(w0)
+    //a2 = 1 + alpha
+    //b0 = a2
+    //b1 = a1
+    //b2 = a0
 
     //printf( "V<%f> K<%f> Q<%f>\n", V, K, Q );
     biq._mfb0 = KdQ*norm;
@@ -612,18 +614,18 @@ void BiQuad::SetHighShelf( float kfco, float peakGain )
     biq._mfa2 = (1.0f+KK-KdQ)*norm;
 }*/
 
-#if 0 
+#if 0
 
-w0 = 2*pi*f0/Fs 
-alpha = sin(w0)/(2*Q) 
+w0 = 2*pi*f0/Fs
+alpha = sin(w0)/(2*Q)
 
 ALLPASS
-a0 = 1 - alpha 
-a1 = -2*cos(w0) 
-a2 = 1 + alpha 
-b0 = a2 
-b1 = a1 
-b2 = a0 
+a0 = 1 - alpha
+a1 = -2*cos(w0)
+a2 = 1 + alpha
+b0 = a2
+b1 = a1
+b2 = a0
 
 BPF
 a0 =   alpha
@@ -643,7 +645,7 @@ b2 =   1 - alpha
 
 function calcBiquad(type, Fc, Fs, Q, peakGain) {
     var a0,a1,a2,b1,b2,norm;
-    
+
     var V = Math.pow(10, Math.abs(peakGain) / 20);
     var K = Math.tan(Math.PI * Fc / Fs);
     switch (type) {
@@ -655,7 +657,7 @@ function calcBiquad(type, Fc, Fs, Q, peakGain) {
             b1 = 2 * (K * K - 1) * norm;
             b2 = (1 - K / Q + K * K) * norm;
             break;
-        
+
         case "highpass":
             norm = 1 / (1 + K / Q + K * K);
             a0 = 1 * norm;
@@ -664,7 +666,7 @@ function calcBiquad(type, Fc, Fs, Q, peakGain) {
             b1 = 2 * (K * K - 1) * norm;
             b2 = (1 - K / Q + K * K) * norm;
             break;
-        
+
         case "bandpass":
             norm = 1 / (1 + K / Q + K * K);
             a0 = K / Q * norm;
@@ -673,7 +675,7 @@ function calcBiquad(type, Fc, Fs, Q, peakGain) {
             b1 = 2 * (K * K - 1) * norm;
             b2 = (1 - K / Q + K * K) * norm;
             break;
-        
+
         case "notch":
             norm = 1 / (1 + K / Q + K * K);
             a0 = (1 + K * K) * norm;
@@ -682,7 +684,7 @@ function calcBiquad(type, Fc, Fs, Q, peakGain) {
             b1 = a1;
             b2 = (1 - K / Q + K * K) * norm;
             break;
-        
+
         case "peak":
             if (peakGain >= 0) {    // boost
                 norm = 1 / (1 + 1/Q * K + K * K);
@@ -760,7 +762,7 @@ void OnePoleLoPass::set(float cutoff)
 }
 float OnePoleLoPass::compute(float input)
 {
-    lp_outl = 2.0f*input*lp_a0 
+    lp_outl = 2.0f*input*lp_a0
             + lp_outl*lp_b1;
     return lp_outl;
 }
@@ -782,8 +784,10 @@ void OnePoleHiPass::set(float cutoff)
 }
 float OnePoleHiPass::compute(float input)
 {
-    lp_outl = 2.0f*input*lp_a0 
+    lp_outl = 2.0f*input*lp_a0
             + lp_outl*lp_b1;
 
     return (input-lp_outl);
 }
+
+} // namespace ork::audio::singularity {

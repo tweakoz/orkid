@@ -6,7 +6,10 @@
 #include "alg_oscil.h"
 #include <ork/kernel/string/string.h>
 
+namespace ork::audio::singularity {
+
 typedef std::function<void(DspBuffer& dspbuf)> fm4alg_t;
+
 
 struct fm4vcpriv
 {
@@ -435,3 +438,5 @@ void fm4syn::keyOff()
     auto priv = _pimpl.Get<fm4vcpriv*>();
     priv->keyOff();
 }
+
+} // namespace ork::audio::singularity {

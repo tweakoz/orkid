@@ -2,6 +2,8 @@
 
 #include <vector>
 
+namespace ork::audio::singularity {
+
 struct Wavetable
 {
     Wavetable(int isize=0);
@@ -14,3 +16,5 @@ struct Wavetable
 };
 
 const Wavetable* builtinWaveTable(const std::string& name);
+
+} // namespace ork::audio::singularity {

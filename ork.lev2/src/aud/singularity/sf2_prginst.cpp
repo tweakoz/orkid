@@ -10,8 +10,8 @@
 
 using namespace ork::audiomath;
 
-////////////////////////////////////////////////////////////////////////////////    
-namespace ork { namespace sf2 {
+////////////////////////////////////////////////////////////////////////////////
+namespace ork::audio::singularity::sf2 {
 ////////////////////////////////////////////////////////////////////////////////
 
 InstrumentZone::InstrumentZone()
@@ -26,7 +26,7 @@ InstrumentZone::InstrumentZone()
     , is_zone_used( true )
     , strip_order( 0 )
     , ipan( 0 )
-{   
+{
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ void InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
         }
         ////////////////////////////////////////////////////
         case ESF2GEN_BASE_ATTENUATION: //   initial Attenuation (centibels)
-        {   
+        {
             float fatten = (float(GenVal)/2.6f);
             atten = (short(fatten));
             break;
@@ -83,69 +83,69 @@ void InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
             break;
         }
         ////////////////////////////////////////////////////
-        case ESF2GEN_BASE_FILTER_CUTOFF: 
-        {   
+        case ESF2GEN_BASE_FILTER_CUTOFF:
+        {
             float frqratio = cents_to_linear_freq_ratio(float(GenVal));
             float freq = kfrqbase*frqratio;
             filterBaseCutoff = (freq);
             break;
         }
-        case ESF2GEN_BASE_FILTER_Q: 
-        {   
+        case ESF2GEN_BASE_FILTER_Q:
+        {
             //float flevel = centibel_to_linear_amp_ratio(float(GenVal));
             filterBaseQ = ( float(GenVal) );
             break;
         }
         ////////////////////////////////////////////////////
-        case ESF2GEN_MODLFO_DELAY: 
-        {   
+        case ESF2GEN_MODLFO_DELAY:
+        {
             float ftime = timecent_to_linear_time(GenVal);
             modLfoDelay = (ftime);
             break;
         }
-        case ESF2GEN_MODLFO_FREQ: 
-        {   
+        case ESF2GEN_MODLFO_FREQ:
+        {
             float frqratio = cents_to_linear_freq_ratio(float(GenVal));
             float freq = kfrqbase*frqratio;
             modLfoFreq = (freq);
             break;
         }
-        case ESF2GEN_MODLFO_TO_PITCH: 
-        {   
+        case ESF2GEN_MODLFO_TO_PITCH:
+        {
             float fval = float(GenVal);
-            modLfoToPitch = (fval);                 
+            modLfoToPitch = (fval);
             break;
         }
-        case ESF2GEN_MODLFO_TO_FC: 
-        {   
+        case ESF2GEN_MODLFO_TO_FC:
+        {
             float fval = float(GenVal);
-            modLfoToCutoff = (fval);                    
+            modLfoToCutoff = (fval);
             break;
         }
-        case ESF2GEN_MODLFO_TO_AMP: 
-        {   
+        case ESF2GEN_MODLFO_TO_AMP:
+        {
             float fval = float(GenVal);
-            modLfoToAmp = (fval);                   
+            modLfoToAmp = (fval);
             break;
         }
         ////////////////////////////////////////////////////
-        case ESF2GEN_VIBLFO_DELAY: 
-        {   
+        case ESF2GEN_VIBLFO_DELAY:
+        {
             float ftime = timecent_to_linear_time(GenVal);
             vibLfoDelay = (ftime);
             break;
         }
-        case ESF2GEN_VIBLFO_FREQ: 
-        {   
+        case ESF2GEN_VIBLFO_FREQ:
+        {
             float frqratio = cents_to_linear_freq_ratio(float(GenVal));
             float freq = kfrqbase*frqratio;
             vibLfoFreq = (freq);
             break;
         }
-        case ESF2GEN_VIBLFO_TO_PITCH: 
-        {   
+        case ESF2GEN_VIBLFO_TO_PITCH:
+        {
             float fval = float(GenVal);
-            vibLfoToPitch =(fval);                  
+            vibLfoToPitch =(fval);
             break;
         }
         ////////////////////////////////////////////////////
@@ -156,19 +156,19 @@ void InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
             break;
         }
         case ESF2GEN_AMPENV_ATTACK: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             ampEnvAttack = (ftime);
             break;
         }
         case ESF2GEN_AMPENV_HOLD: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             ampEnvHold = (ftime);
             break;
         }
         case ESF2GEN_AMPENV_DECAY: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             ampEnvDecay = (ftime);
             break;
@@ -180,44 +180,44 @@ void InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
             break;
         }
         case ESF2GEN_AMPENV_RELEASE: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             ampEnvRelease = (ftime);
             break;
         }
-        case ESF2GEN_AMPENV_KEYNUMTOHOLD: 
-        {   
+        case ESF2GEN_AMPENV_KEYNUMTOHOLD:
+        {
             float fval = float(GenVal);
-            ampEnvKeyTrackHold = (fval);                    
+            ampEnvKeyTrackHold = (fval);
             break;
         }
-        case ESF2GEN_AMPENV_KEYNUMTODECAY: 
-        {   
+        case ESF2GEN_AMPENV_KEYNUMTODECAY:
+        {
             float fval = float(GenVal);
-            ampEnvKeyTrackDecay = (fval);                   
+            ampEnvKeyTrackDecay = (fval);
             break;
         }
         ////////////////////////////////////////////////////
         case ESF2GEN_MODENV_DELAY: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             modEnvDelay = (ftime);
             break;
         }
         case ESF2GEN_MODENV_ATTACK: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             modEnvAttack = (ftime);
             break;
         }
         case ESF2GEN_MODENV_HOLD: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             modEnvHold = (ftime);
             break;
         }
         case ESF2GEN_MODENV_DECAY: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             modEnvDecay = (ftime);
             break;
@@ -229,25 +229,25 @@ void InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
             break;
         }
         case ESF2GEN_MODENV_RELEASE: // (timecents)
-        {   
+        {
             float ftime = timecent_to_linear_time(GenVal);
             modEnvRelease = (ftime);
             break;
         }
-        case ESF2GEN_MODENV_KEYNUMTOHOLD: 
-        {   
+        case ESF2GEN_MODENV_KEYNUMTOHOLD:
+        {
             float fval = float(GenVal);
-            modEnvKeyTrackHold = (fval);                    
+            modEnvKeyTrackHold = (fval);
             break;
         }
-        case ESF2GEN_MODENV_KEYNUMTODECAY: 
-        {   
+        case ESF2GEN_MODENV_KEYNUMTODECAY:
+        {
             float fval = float(GenVal);
-            modEnvKeyTrackDecay = (fval);                   
+            modEnvKeyTrackDecay = (fval);
             break;
         }
         ////////////////////////////////////////////////////
-        case ESF2GEN_MUTEX_GROUP: 
+        case ESF2GEN_MUTEX_GROUP:
         {   mutexgroup = ( GenVal );
             break;
         }
@@ -274,10 +274,10 @@ void SoundFont::ProcessInstruments( void )
 
     for( int j=1; j<=numizones; j++ )
     {   int i = j-1;
-        
+
         InstrumentZone *izone = mPXMInstrumentZones[i];
         //InstrumentZone *izone2 = mPXMInstrumentZones[j];
-        
+
         int iBASEGEN = izone->base_generator;
         int iLASTGEN = ( j<=(numizones-1) ) ? mPXMInstrumentZones[j]->base_generator : numigen;
 
@@ -285,15 +285,15 @@ void SoundFont::ProcessInstruments( void )
 
         izone->index = i;
         izone->sampleID = 0xffff;
-                
+
         int isize = (int) mPXMInstrumentGen.size();
 
         for( int g=0; g<izone->num_generators; g++ )
-        {   
+        {
             int iGenINDEX = iBASEGEN + g;
-            
+
             SSoundFontGenerator *igen = mPXMInstrumentGen[iGenINDEX];
-            
+
             ESF2Generators egen = ESF2Generators(igen->muGeneratorID);
 
             std::map<ESF2Generators,S16>::const_iterator it=izone->mGenerators.find(egen);
@@ -335,25 +335,25 @@ void SoundFont::ProcessInstruments( void )
         }
 
         for( auto it : izone->mGenerators )
-        {   
+        {
             ESF2Generators egen = it.first;
             S16 GenVal = it.second;
             izone->ApplyGenerator( egen, GenVal );
         }
     }
-    
+
     //////////////////////////////////////////////////
     // setup Instruments
 
     for( int j=1; j<=numinst; j++ )
-    {   
+    {
         int i=j-1;
-                
+
         CSF2Instrument *inst = mPXMInstruments[i];
-        
+
         int iz1 = (int) inst->izone_base;
         int iz2 = (j<=(numinst-1)) ? (int) mPXMInstruments[j]->izone_base : (numizones);
-        
+
         inst->num_izones = (iz2-iz1);
 
         /////////////////////////////////////////////////////////
@@ -398,7 +398,7 @@ void SoundFont::ProcessInstruments( void )
 
                         if( itf==pZ->mGenerators.end() )
                         {
-                            pZ->ApplyGenerator( egen, GenVal ); 
+                            pZ->ApplyGenerator( egen, GenVal );
                             pZ->mGenerators.insert( std::make_pair( egen, GenVal ) );
                         }
                     }
@@ -454,13 +454,13 @@ void SoundFont::ProcessPresets( void )
     //printf( "post_process_pzones()\n" );
 
     ////////////////////////
-    
+
     for( int j=1; j<=inumprez; j++ )
-    {   
+    {
         int i = j-1;
-        
+
         CSF2ProgramZone *pre = mPXMProgramZones[i];
-        
+
         int pg1 = pre->base_generator;
         int pg2 = ( j<=inumprez-1 ) ? mPXMProgramZones[j]->base_generator : inumpgen;
 
@@ -471,10 +471,10 @@ void SoundFont::ProcessPresets( void )
         //printf( "// pzone %d numpregens %d genbase %d pg1 %d pg2 %d\n", i, pre->num_generators, pre->base_generator, pg1, pg2 );
 
         for( int g=0; g<pre->num_generators; g++ )
-        {   
+        {
             int gnum = g+pre->base_generator;
             SSoundFontGenerator *pgen = mPXMPresetGen[gnum];
-            
+
             if( pgen->muGeneratorID == 41 ) // instrument
             {
                 pre->instrumentID = pgen->miGeneratorValue;
@@ -488,7 +488,7 @@ void SoundFont::ProcessPresets( void )
             {
                 pre->vel_max = (pgen->miGeneratorValue&0xff00)>>8;
                 pre->vel_min = (pgen->miGeneratorValue&0x00ff);
-                
+
                 if( (pre->vel_min == 0) && (pre->vel_max == 0) ) // 00 .. 00 really means 00 .. 7f ?
                 {
                     pre->vel_max = 0x7f;
@@ -501,12 +501,12 @@ void SoundFont::ProcessPresets( void )
             }
         }
 
-        //printf( "pzone: %d instrument %d keymin: %d keymax: %d\n", i, pre->instrumentID, pre->key_min, pre->key_max ); 
+        //printf( "pzone: %d instrument %d keymin: %d keymax: %d\n", i, pre->instrumentID, pre->key_min, pre->key_max );
     }
     ////////////////////////
 
     //printf( "post_process_presets()\n" );
-            
+
     for( int j=1; j<=inumpresets; j++ )
     {
         int i=j-1;
@@ -516,16 +516,16 @@ void SoundFont::ProcessPresets( void )
         U32 pr2 = ( j<=inumpresets-1 ) ? mPXMPrograms[j]->pbag_base : numprebags;
 
         preset->num_pbags = (pr2-pr1);
-                
+
         //printf( "//////////////////////////\n" );
         //printf( "// program: %03d <%s> pbag_base %d num_pbags %d pr1 %d pr2 %d mapped %d\n", i, preset->GetName().c_str(), preset->pbag_base, preset->num_pbags, pr1, pr2, preset->mapped_preset );
-        
+
 //      CSF2Program *mapped = mPXMPrograms[ preset->mapped_preset ];
 
         for( int ipbag=0; ipbag<preset->num_pbags; ipbag++ )
-        {   
+        {
             int zoneidx = preset->pbag_base + ipbag;
-            
+
             CSF2ProgramZone *pzone = mPXMProgramZones[zoneidx];
 
             if( pzone->instrumentID>=0 )
@@ -541,4 +541,4 @@ void SoundFont::ProcessPresets( void )
 
 
 ////////////////////////////////////////////////////////////////////////////////
-}} //namespace ork { namespace sf2 {
+} //namespace ork { namespace sf2 {

@@ -1,5 +1,6 @@
-#ifndef POLY_BLEP_H_INCLUDED
-#define POLY_BLEP_H_INCLUDED
+#pragma once
+
+namespace ork::audio::singularity {
 
 /*
 PolyBLEP Waveform generator ported from the Jesusonic code by Tale
@@ -107,5 +108,4 @@ protected:
     double ramp() const;
 };
 
-
-#endif
+} // namespace ork::audio::singularity {

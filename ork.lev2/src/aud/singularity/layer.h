@@ -6,6 +6,8 @@
 #include "envelope.h"
 #include "konoff.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static const int koscopelength = 4096;
@@ -26,7 +28,7 @@ struct funframe
     const FunData* _data = nullptr;
 };
 struct op4frame
-{   
+{
     float _envout = 0.0f;
     int _envph = 0;
     float _mi = 0.0f;
@@ -59,7 +61,7 @@ struct hudkframe
     const kmregion* _kmregion = nullptr;
     Alg* _alg = nullptr;
     bool _useFm4 = false;
-    
+
     std::string _miscText;
 
 };
@@ -86,7 +88,7 @@ struct layer
     void release();
     bool isDone() const { return _keepalive<=0; }
     bool isHudLayer() const;
-    
+
     std::mutex _mutex;
 
     synth& _syn;
@@ -115,7 +117,7 @@ struct layer
 
     std::map<std::string,ControllerInst*> _controlMap;
     Alg* _alg;
-    
+
     outputBuffer _layerObuf;
 
     hudkframe _HKF;
@@ -129,3 +131,5 @@ private:
     int _keepalive;
 
 };
+
+} // namespace ork::audio::singularity {

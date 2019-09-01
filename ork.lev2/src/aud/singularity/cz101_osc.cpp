@@ -13,6 +13,8 @@
 
 using namespace ork;
 
+namespace ork::audio::singularity {
+
 CzOsc::CzOsc()
 {
 
@@ -39,7 +41,7 @@ float CzOsc::compute(float frq, float mi)
 {
     if(nullptr==_waveformA)
         return 0.0f;
-    
+
     static const Wavetable* sincw = builtinWaveTable("isincw8pi");
     int wtsize = sincw->_wavedata.size();
     //const float* sblkA = _waveformA->_wavedata.data();
@@ -57,7 +59,7 @@ float CzOsc::compute(float frq, float mi)
     float invfr = 1.0f-fract;
 
     int64_t iiA = (this_phase>>16)%wtsize;
-    int64_t iiB = (iiA+1)%wtsize; 
+    int64_t iiB = (iiA+1)%wtsize;
 
     float fwph = float(iiA)/float(wtsize);
     fwph += (fract)/float(wtsize);
@@ -105,21 +107,21 @@ float CzOsc::compute(float frq, float mi)
         case 3: // pulsine
             angle += distort_squ*mi;
             break;
-        case 4: // 
+        case 4: //
             angle += distort_res*mi;
             window = saw_window;
             break;
-        case 5: // 
+        case 5: //
             //window = fabs(sinf(base_angle*pi2));
             window = saw_window;
             //window = sincw->sampleLerp(angle);
             angle += distort_res*mi;
             break;
-        case 6: // 
+        case 6: //
             angle += distort_res*mi;
             window = saw_window;
             break;
-        case 7: // 
+        case 7: //
             angle += distort_res*mi;
             window = saw_window;
             break;
@@ -129,7 +131,7 @@ float CzOsc::compute(float frq, float mi)
 
     //distort_squ *= powf(base_angle-0.5f,0.5);
 
-    //float distort_squ = lerp( - base_angle, 
+    //float distort_squ = lerp( - base_angle,
     //                          0.5f - base_angle,
     //                          smoothstep(0.2,0.8,powf(base_angle,1)) )* 0.75f;
 
@@ -166,3 +168,5 @@ void CzOsc::setWave(int iwA, int iwB)
     _waveformA = czwave[iwA%8];
     _waveformB = czwave[iwB%8];
 }
+
+} // namespace ork::audio::singularity {

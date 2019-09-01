@@ -6,12 +6,15 @@
 ////////////////////////////////////////////////////////////////
 
 #pragma once
-           
+
 #include <ork/file/riff.h>
 
-struct VastObjectsDB;
+namespace ork::audio::singularity {
+    struct VastObjectsDB;
+}
 
-namespace ork { namespace sf2 {
+namespace ork::audio::singularity::sf2 {
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -72,14 +75,14 @@ enum ESF2Generators
 	ESF2GEN_SAMPLE_ID = 53,
 	ESF2GEN_SAMPLE_LOOPMODE = 54,		// 0==no loop, 1==continuous loop, 2==no loop, 3==gated loop
 
-	ESF2GEN_TUNE_SCALE = 56,			// (cents/key) MIDI keynum -> pitch mod 
+	ESF2GEN_TUNE_SCALE = 56,			// (cents/key) MIDI keynum -> pitch mod
 
-	ESF2GEN_MUTEX_GROUP = 57,			// mutual exclusion group ID (instrument only) 
+	ESF2GEN_MUTEX_GROUP = 57,			// mutual exclusion group ID (instrument only)
 
 	ESF2GEN_OVERRIDEROOTKEY = 58,
 };
-	
-	
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct Ssfontpreset
@@ -106,7 +109,7 @@ struct Ssfontpreset
 		}
 	}
 
-	std::string GetName( void ) const { 
+	std::string GetName( void ) const {
 		char name[21];
 		for( int i=0; i<20; i++ )
 			name[i] = achPresetName[i];
@@ -133,7 +136,7 @@ struct Ssfontinst
 		}
 	}
 
-	std::string GetName( void ) const { 
+	std::string GetName( void ) const {
 		char name[21];
 		for( int i=0; i<20; i++ )
 			name[i] = achInstName[i];
@@ -196,9 +199,9 @@ struct CSF2Sample
 {
 	CSF2Sample( Ssfontsample * smp = nullptr );
 
-	std::string name;	
+	std::string name;
 
-	
+
 	int start;			// 24
 	int end;
 	int loopstart;
@@ -211,16 +214,16 @@ struct CSF2Sample
 	int sampletype;		// 46
 
 	/////////////
-	
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct InstrumentZone 
+struct InstrumentZone
 {
 	int num_generators;
 	int base_generator;
-	
+
 	int sampleID;
 	int presetnum;
 	int _loopModeOverride;
@@ -297,7 +300,7 @@ struct InstrumentZone
 ////////////////////////////////////////////////////////////////////////////////
 
 struct CSF2Instrument
-{	
+{
 	CSF2Instrument()
 		: izone_base(0)
 		, num_izones(0)
@@ -305,7 +308,7 @@ struct CSF2Instrument
 	{
 
 	}
-	
+
 	size_t GetIndex( void ) const { return miIndex; }
 	void SetIndex( size_t idx ) { miIndex = idx; }
 	const std::string & GetName( void ) const { return mName; }
@@ -321,7 +324,7 @@ struct CSF2Instrument
 	const InstrumentZone* GetIZoneFromVelKey( int ikey, int ivel ) const
 	{
 		const InstrumentZone* prval = 0;
-		
+
 		size_t inumiz = mIZones.size();
 
 		for( size_t iz=0; iz<inumiz; iz++ )
@@ -363,7 +366,7 @@ class CSF2ProgramZone
 	int base_generator;
 	int *generator_ids;
 	int *generator_values;
-	
+
 	int key_min;
 	int key_max;
 	int vel_min;
@@ -381,7 +384,7 @@ class CSF2ProgramZone
 		, vel_min( 0 )
 		, vel_max( 127 )
 		, instrumentID( -1 )
-	{	
+	{
 	}
 
 };
@@ -391,7 +394,7 @@ class CSF2ProgramZone
 class CSF2Program
 {
 	public: //
-		
+
 	std::string		mName;
 
 	int preset;			// 22
@@ -541,7 +544,4 @@ struct SoundFont
 
 ////////////////////////////////////////////////////////////////////////////////
 
-
-////////////////////////////////////////////////////////////////////////////////
-
-} } 
+}

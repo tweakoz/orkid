@@ -7,6 +7,8 @@
 #include "krzdata.h"
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 // Natural envelopes
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,3 +177,5 @@ float NatEnv::compute()
     //assert(false);
     return _curamp;
 }
+
+} // namespace ork::audio::singularity {

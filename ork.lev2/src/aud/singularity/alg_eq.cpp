@@ -2,6 +2,8 @@
 #include <assert.h>
 #include "alg_eq.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 PARABASS::PARABASS( const DspBlockData& dbd )
@@ -182,7 +184,7 @@ void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) //final
     float* ubuf = dspbuf.channel(0);
 
     float fc = _param[0].eval();
-    float wid = clip_float(_param[1].eval(),0.2,8);        
+    float wid = clip_float(_param[1].eval(),0.2,8);
     float gain = _param[2].eval();
     float pad = _dbd._inputPad;
 
@@ -206,7 +208,7 @@ void PARAMETRIC_EQ::compute(DspBuffer& dspbuf) //final
         _smoothG = gain;// kf2*_smoothG + kf1*gain;
 
         _peq1.Set(_smoothFC,_smoothW,_smoothG);
-    
+
         float inp = ubuf[i]*pad;
         //float outp = _biquad.compute2(inp);
         float outp = _peq1.compute(inp);
@@ -225,3 +227,5 @@ void PARAMETRIC_EQ::doKeyOn(const DspKeyOnInfo& koi) // final
     _smoothW = 0.0f;
     _smoothG = 0.0f;
 }
+
+} // namespace ork::audio::singularity {

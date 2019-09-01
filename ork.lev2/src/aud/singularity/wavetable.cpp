@@ -2,6 +2,8 @@
 #include "wavetable.h"
 #include <map>
 
+namespace ork::audio::singularity {
+
 static std::map<std::string,Wavetable*> _wavemap;
 static const int ksize = 4096;
 static const int ksizem64k = ksize<<16;
@@ -33,7 +35,7 @@ float Wavetable::sampleLerp(float fi) const
     float fract = float(phaseA&0xffff)*kinv64k;
     float invfr = 1.0f-fract;
     int64_t iiA = (phaseA>>16)&(ksize-1);
-    int64_t iiB = (iiA+1)&(ksize-1); 
+    int64_t iiB = (iiA+1)&(ksize-1);
     float sampA = float(_wavedata[iiA] );
     float sampB = float(_wavedata[iiB] );
     float rval = (sampB*fract+sampA*invfr);
@@ -235,7 +237,7 @@ void initWavetablesTX81Z()
                     out_float=0.0f;
                     break;
             }
-        }    
+        }
         _wavemap["tx81z.8"]=wave;
     }
 }
@@ -348,7 +350,7 @@ void initWavetablesCZ101()
             wave->_wavedata[i]=1.0f-fph*2.0f;
             float fph2 = fph*9.0f;
             wave->_wavedata[i]*=cosf(fph2*pi2);
-        }    
+        }
         _wavemap["cz1.8"]=wave;
     }
 }
@@ -433,3 +435,4 @@ const Wavetable* builtinWaveTable(const std::string& name)
     ///////////////////////////////////
 }
 
+} // namespace ork::audio::singularity {

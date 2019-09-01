@@ -10,10 +10,11 @@
 #include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string kbasepath = "/opt/singularity/data";
-///////////////////////////////////////////////////////////////////////////////
 
-using namespace ork::sf2;
+using namespace ork::audio::singularity::sf2;
+namespace ork::audio::singularity {
+
+std::string kbasepath = "/opt/singularity/data";
 
 float SynthData::seqTime(float dur)
 {
@@ -331,3 +332,5 @@ void KrzTestData::genTestPrograms()
         F3->_paramd[0]._units = "dB";
 	}
 }
+
+} // namespace ork::audio::singularity {

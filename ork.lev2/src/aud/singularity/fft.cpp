@@ -41,6 +41,7 @@
   #include <vector>
 #endif
 
+namespace ork::audio::singularity {
 
 namespace audiofft
 {
@@ -1016,3 +1017,5 @@ namespace audiofft
   }
 
 } // End of namespace
+
+} // namespace ork::audio::singularity {
