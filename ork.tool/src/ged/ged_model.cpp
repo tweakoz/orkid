@@ -370,12 +370,12 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
     object::ObjectClass* pclass = ClassVect[ic];
     ork::reflect::Description::PropertyMapType& propmap = pclass->Description().Properties();
     auto eg_anno = pclass->Description().GetClassAnnotation("editor.prop.groups");
-    auto as_conststr = eg_anno.TryAs<ConstString>();
-    ConstString eg = "";
+    auto as_conststr = eg_anno.TryAs<const char*>();
+    const char* eg = "";
     if( as_conststr )
         eg = as_conststr.value();
-    if (eg.length()) {
-      FixedString<1024> str_rep = eg.c_str();
+    if (strlen(eg)) {
+      FixedString<1024> str_rep = eg;
       str_rep.replace_in_place("//", "// ");
       tokenlist src_toklist = CreateTokenList(str_rep.c_str(), " ");
       /////////////////////////////////////////////////
