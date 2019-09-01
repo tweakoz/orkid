@@ -142,7 +142,7 @@ class EcicVertexTransformInterface : public ork::ITransformInterface
 
 			CVector4 xlate( pent->GetPosition().GetX(), pent->GetPosition().GetY(), CReal(0.0f) );
 
-			transform.Translate( TransformNode3D::EMODE_ABSOLUTE, xlate.Transform(MatW).GetXYZ() );
+			transform.Translate( TransformNode3D::EMODE_ABSOLUTE, xlate.Transform(MatW).xyz() );
 		}				
 		return transform;
 	}
@@ -159,7 +159,7 @@ class EcicVertexTransformInterface : public ork::ITransformInterface
 			CVector4 xlate = pMat.GetWorldTransform()->GetMatrix().GetTranslation();
 			xlate = xlate.Transform(MatIW);
 
-			pent->SetPosition( xlate.GetXYZ().GetXY() );
+			pent->SetPosition( xlate.xyz().GetXY() );
 		}
 	}
 	static IInterface::Context * GetInterface( void )

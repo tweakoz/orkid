@@ -169,9 +169,9 @@ template <typename T> class  TMatrix4
 	void SetRow( int irow, const TVector4<T>& v );
 	void SetColumn( int icol, const TVector4<T>& v );
 
-	TVector3<T> GetXNormal( void ) const { return GetColumn(0).GetXYZ(); }
-	TVector3<T> GetYNormal( void ) const { return GetColumn(1).GetXYZ(); }
-	TVector3<T> GetZNormal( void ) const { return GetColumn(2).GetXYZ(); }
+	TVector3<T> GetXNormal( void ) const { return GetColumn(0).xyz(); }
+	TVector3<T> GetYNormal( void ) const { return GetColumn(1).xyz(); }
+	TVector3<T> GetZNormal( void ) const { return GetColumn(2).xyz(); }
 
 	void NormalVectorsIn( const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv );
 	void NormalVectorsOut( TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv ) const;

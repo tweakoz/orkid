@@ -201,7 +201,7 @@ void RigidBody::ApplyImpulse( const CVector3& Impulse, const CVector3& loc )
 	///////////////////////////////
 
 	CVector3 ObjImpulse = Impulse.Transform3x3( mCurrentInvMatrix );
-	CVector3 ObjLoc = CVector4( loc, 1.0f ).Transform( mCurrentInvMatrix ).GetXYZ();
+	CVector3 ObjLoc = CVector4( loc, 1.0f ).Transform( mCurrentInvMatrix ).xyz();
 	float ObjDist = ObjLoc.Mag();
 
 	///////////////////////////////
@@ -355,14 +355,14 @@ void RigidBody::ComputeOrientation( float fdt )
 
 CVector3 RigidBody::ComW() const
 {
-   return CVector4( mCenterOfMass, 1.0f ).Transform( mCurrentMatrix ).GetXYZ();
+   return CVector4( mCenterOfMass, 1.0f ).Transform( mCurrentMatrix ).xyz();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 CVector3 RigidBody::PntW(int idx) const
 {
-   return CVector4( mPoints[idx].mPosition, 1.0f ).Transform( mCurrentMatrix ).GetXYZ();
+   return CVector4( mPoints[idx].mPosition, 1.0f ).Transform( mCurrentMatrix ).xyz();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

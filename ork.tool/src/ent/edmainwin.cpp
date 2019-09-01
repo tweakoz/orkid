@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 ///////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/editor/edmainwin.h>
-#include <pkg/ent/editor/qtui_scenevp.h>
+#include "qtui_scenevp.h"
 #include <ork/util/hotkey.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/stream/FileInputStream.h>

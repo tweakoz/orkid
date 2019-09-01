@@ -151,7 +151,7 @@ void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
 		DagNode& dnodeEYE = mpEye->GetDagNode();
 		const TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
 		CMatrix4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
-		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).GetXYZ();
+		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).xyz();
 		cam_UP = mtxEYE.GetYNormal();
 
 		if( eye_up.Mag() )
@@ -162,7 +162,7 @@ void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
 		DagNode& dnodeEYE = GetEntity()->GetDagNode();
 		const TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
 		CMatrix4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
-		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).GetXYZ();
+		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).xyz();
 	}
 
 	if( mpTarget )
@@ -170,7 +170,7 @@ void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
 		DagNode& dnodeTGT = mpTarget->GetDagNode();
 		const TransformNode& t3dTGT = dnodeTGT.GetTransformNode();
 		CMatrix4 mtxTGT = t3dTGT.GetTransform().GetMatrix();
-		CVector3 cam_TGT = CVector4(mCD.GetTgtOffset()).Transform(mtxTGT).GetXYZ();
+		CVector3 cam_TGT = CVector4(mCD.GetTgtOffset()).Transform(mtxTGT).xyz();
 
 		float fnear = mCD.GetNear();
 		float ffar = mCD.GetFar();

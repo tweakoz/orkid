@@ -377,7 +377,7 @@ void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvect
 		{	int index = MyCaptureBuffer.CalcDataIndex( iX, iZ );
 			int index_n = (iZ*isize)+iX;
 			const CVector4& v = VecBuffer[ index ];
-			outputnormals[index_n] = v.GetXYZ();
+			outputnormals[index_n] = v.xyz();
 		}
 	}
 	//////////////////////////////////////////////////////////
@@ -582,7 +582,7 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 			{	int index_n = (iZ*isize)+iX;
 				int index = ReadBuffer->MyCaptureBuffer.CalcDataIndex( iX, iZ );
 				const CVector4& v = VecBuffer[ index ];
-				outputcolors[index_n] = (v.GetXYZ()*1.0/float(knumpasses)).GetRGBAU32();
+				outputcolors[index_n] = (v.xyz()*1.0/float(knumpasses)).GetRGBAU32();
 			}
 		}
 		//////////////////////////////////////////////////////////////////////

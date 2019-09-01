@@ -388,8 +388,8 @@ void CManipDualTrans::HandleDrag(const ork::CVector2& pos)
 	ork::CVector3 efar = pVP->UnProject(ork::CVector3(end.GetX(), end.GetY(), 1),
 		proj, view, ork::CMatrix4::Identity);
 
-	ork::Ray3 sray(snear.Transform(tform).GetXYZ(), (sfar - snear).Transform(tform).GetXYZ().Normal());
-	ork::Ray3 eray(enear.Transform(tform).GetXYZ(), (efar - enear).Transform(tform).GetXYZ().Normal());
+	ork::Ray3 sray(snear.Transform(tform).xyz(), (sfar - snear).Transform(tform).xyz().Normal());
+	ork::Ray3 eray(enear.Transform(tform).xyz(), (efar - enear).Transform(tform).xyz().Normal());
 
 	ork::CVector3 norm;
 	if(GetClass() == CManipTXY::GetClassStatic())

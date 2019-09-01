@@ -5,15 +5,15 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
-#include <orktool/qtui/uitoolhandler.h>
-#include <pkg/ent/editor/qtui_scenevp.h>
+#include "uitoolhandler.h"
+#include "qtui_scenevp.h"
 #include <ork/kernel/opq.h>
 #include <ork/kernel/atomic.h>
 
 namespace ork { namespace ent {
-	
+
 class SceneEditorVP;
 class SceneEditorVPOverlay;
 class TestVP;
@@ -61,6 +61,8 @@ struct DeferredPickOperationContext
 	SceneEditorVP*				mViewport;
 	on_pick_lambda_t 			mOnPick;
 	ork::atomic<int>			mState;
+  lev2::GetPixelContext _pixelctx;
+
 };
 
 struct TestVPDefaultHandler : public SceneEditorVPToolHandler
@@ -86,7 +88,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ManipRotHandler : public ManipHandler
-{	
+{
 	ManipRotHandler( SceneEditorBase& editor );
 private:
 	void DoAttach(SceneEditorVP* ) override;
@@ -97,7 +99,7 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ManipTransHandler : public ManipHandler
-{	
+{
 	ManipTransHandler( SceneEditorBase& editor );
 private:
 	void DoAttach(SceneEditorVP* ) override;
@@ -106,4 +108,3 @@ private:
 
 }
 }
-

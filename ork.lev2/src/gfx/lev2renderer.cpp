@@ -96,7 +96,7 @@ void Renderer::RenderFrustum( const FrustumRenderable & FrusRen ) const
 		CColor4 AlphaYellow( 1.0f, 1.0f, 0.0f, 0.3f );
 		if( false == objspace ) mpTarget->MTXI()->PushMMatrix( CMatrix4::Identity );
 		{
-			mpTarget->PushModColor( CVector4( FrusRen.GetColor().GetXYZ(), 1.0f ) );
+			mpTarget->PushModColor( CVector4( FrusRen.GetColor().xyz(), 1.0f ) );
 			mpTarget->BindMaterial( & StdMaterial );
 			for( int i=0; i<4; i++ )
 			{
@@ -120,8 +120,8 @@ void Renderer::RenderFrustum( const FrustumRenderable & FrusRen ) const
 			}
 			mpTarget->PopModColor();
 			CColor4 AlphaYellow2( 1.0f, 1.0f, 0.0f, 0.1f );
-			mpTarget->PushModColor( CVector4( AlphaYellow2.GetXYZ(), 0.3f ) );
-			//mpTarget->PushModColor( CVector4( FrusRen.GetColor().GetXYZ(), 0.3f ) );
+			mpTarget->PushModColor( CVector4( AlphaYellow2.xyz(), 0.3f ) );
+			//mpTarget->PushModColor( CVector4( FrusRen.GetColor().xyz(), 0.3f ) );
 			{
 				const CVector3 * vn = FrusRen.GetFrustum()->mNearCorners;
 				const CVector3 * vf = FrusRen.GetFrustum()->mFarCorners;
@@ -201,7 +201,7 @@ void Renderer::RenderSphere( const SphereRenderable & SphereRen ) const
 		M.SetTranslation( pos );
 
 		mpTarget->MTXI()->PushMMatrix( M );
-		mpTarget->PushModColor( CVector4( SphereRen.GetColor().GetXYZ(), 0.3f ) );
+		mpTarget->PushModColor( CVector4( SphereRen.GetColor().xyz(), 0.3f ) );
 		mpTarget->BindMaterial( & StdMaterial );
 		{
 			CGfxPrimitives::GetRef().RenderTriCircle( mpTarget );

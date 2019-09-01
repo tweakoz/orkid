@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #if defined(_WIN32) && ! defined(_XBOX)
@@ -17,10 +17,10 @@ namespace ork {
 template <typename T> TVector4<T> TVector4<T>::Saturate( void ) const
 {
 	TVector4<T> rval = *this;
-	rval.m_x = (rval.m_x>1.0f) ? 1.0f : (rval.m_x<0.0f) ? 0.0f : rval.m_x;
-	rval.m_y = (rval.m_y>1.0f) ? 1.0f : (rval.m_y<0.0f) ? 0.0f : rval.m_y;
-	rval.m_z = (rval.m_z>1.0f) ? 1.0f : (rval.m_z<0.0f) ? 0.0f : rval.m_z;
-	rval.m_w = (rval.m_w>1.0f) ? 1.0f : (rval.m_w<0.0f) ? 0.0f : rval.m_w;
+	rval.x = (rval.x>1.0f) ? 1.0f : (rval.x<0.0f) ? 0.0f : rval.x;
+	rval.y = (rval.y>1.0f) ? 1.0f : (rval.y<0.0f) ? 0.0f : rval.y;
+	rval.z = (rval.z>1.0f) ? 1.0f : (rval.z<0.0f) ? 0.0f : rval.z;
+	rval.w = (rval.w>1.0f) ? 1.0f : (rval.w<0.0f) ? 0.0f : rval.w;
 	return rval;
 }
 
@@ -115,41 +115,41 @@ template <typename T> const TVector4<T> & TVector4<T>::Yellow( void )
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> TVector4<T>::TVector4()
-	: m_x(T(0.0f))
-	, m_y(T(0.0f))
-	, m_z(T(0.0f))
-	, m_w(T(1.0f))
+	: x(T(0.0f))
+	, y(T(0.0f))
+	, z(T(0.0f))
+	, w(T(1.0f))
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector4<T>::TVector4( T x, T y, T z, T w)
-	: m_x(x)
-	, m_y(y)
-	, m_z(z)
-	, m_w(w)
+template <typename T> TVector4<T>::TVector4( T _x, T _y, T _z, T _w)
+	: x(_x)
+	, y(_y)
+	, z(_z)
+	, w(_w)
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> TVector4<T>::TVector4( const TVector3<T> & in, T w )
-	: m_x(in.GetX())
-	, m_y(in.GetY())
-	, m_z(in.GetZ())
-	, m_w(w)
+	: x(in.x)
+	, y(in.y)
+	, z(in.z)
+	, w(w)
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 TVector4<T>::GetVtxColorAsU32( void ) const
-{	U32 r = U32(GetX()*T(255.0f));
-	U32 g = U32(GetY()*T(255.0f));
-	U32 b = U32(GetZ()*T(255.0f));
-	U32 a = U32(GetW()*T(255.0f));
-	
+{	U32 r = U32(x*T(255.0f));
+	U32 g = U32(y*T(255.0f));
+	U32 b = U32(z*T(255.0f));
+	U32 a = U32(w*T(255.0f));
+
 
 //#if defined(_DARWIN)||defined(IX)//GL
 	return U32( (a<<24)|(b<<16)|(g<<8)|r );
@@ -161,33 +161,33 @@ template <typename T> U32 TVector4<T>::GetVtxColorAsU32( void ) const
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 TVector4<T>::GetABGRU32( void ) const
-{	U32 r = U32(GetX()*T(255.0f));
-	U32 g = U32(GetY()*T(255.0f));
-	U32 b = U32(GetZ()*T(255.0f));
-	U32 a = U32(GetW()*T(255.0f));
-	
+{	U32 r = U32(x*T(255.0f));
+	U32 g = U32(y*T(255.0f));
+	U32 b = U32(z*T(255.0f));
+	U32 a = U32(w*T(255.0f));
+
 	return U32( (a<<24)|(b<<16)|(g<<8)|r );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 TVector4<T>::GetARGBU32( void ) const
-{	U32 r = U32(GetX()*T(255.0f));
-	U32 g = U32(GetY()*T(255.0f));
-	U32 b = U32(GetZ()*T(255.0f));
-	U32 a = U32(GetW()*T(255.0f));
-	
+{	U32 r = U32(x*T(255.0f));
+	U32 g = U32(y*T(255.0f));
+	U32 b = U32(z*T(255.0f));
+	U32 a = U32(w*T(255.0f));
+
 	return U32( (a<<24)|(r<<16)|(g<<8)|b );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 TVector4<T>::GetRGBAU32( void ) const 
-{	
-	S32 r = U32(GetX()*T(255.0f));
-	S32 g = U32(GetY()*T(255.0f));
-	S32 b = U32(GetZ()*T(255.0f));
-	S32 a = U32(GetW()*T(255.0f));
+template <typename T> U32 TVector4<T>::GetRGBAU32( void ) const
+{
+	S32 r = U32(x*T(255.0f));
+	S32 g = U32(y*T(255.0f));
+	S32 b = U32(z*T(255.0f));
+	S32 a = U32(w*T(255.0f));
 
 	if( r<0 ) r=0;
 	if( g<0 ) g=0;
@@ -204,22 +204,22 @@ template <typename T> U32 TVector4<T>::GetRGBAU32( void ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> U32 TVector4<T>::GetBGRAU32( void ) const
-{	U32 r = U32(GetX()*T(255.0f));
-	U32 g = U32(GetY()*T(255.0f));
-	U32 b = U32(GetZ()*T(255.0f));
-	U32 a = U32(GetW()*T(255.0f));
-	
+{	U32 r = U32(x*T(255.0f));
+	U32 g = U32(y*T(255.0f));
+	U32 b = U32(z*T(255.0f));
+	U32 a = U32(w*T(255.0f));
+
 	return U32( (b<<24)|(g<<16)|(r<<8)|a );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U16 TVector4<T>::GetRGBU16( void ) const 
+template <typename T> U16 TVector4<T>::GetRGBU16( void ) const
 {
-	U32 r = U32(GetX() * T(31.0f));
-	U32 g = U32(GetY() * T(31.0f));
-	U32 b = U32(GetZ() * T(31.0f));
-								
+	U32 r = U32(x * T(31.0f));
+	U32 g = U32(y * T(31.0f));
+	U32 b = U32(z * T(31.0f));
+
 	U16 rval = U16((b<<10)|(g<<5)|r);
 
 	return rval;
@@ -227,8 +227,8 @@ template <typename T> U16 TVector4<T>::GetRGBU16( void ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector4<T>::SetRGBAU32( U32 uval ) 
-{	
+template <typename T> void TVector4<T>::SetRGBAU32( U32 uval )
+{
 	U32 r = (uval>>24)&0xff;
 	U32 g = (uval>>16)&0xff;
 	U32 b = (uval>>8)&0xff;
@@ -244,8 +244,8 @@ template <typename T> void TVector4<T>::SetRGBAU32( U32 uval )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector4<T>::SetBGRAU32( U32 uval ) 
-{	
+template <typename T> void TVector4<T>::SetBGRAU32( U32 uval )
+{
 	U32 b = (uval>>24)&0xff;
 	U32 g = (uval>>16)&0xff;
 	U32 r = (uval>>8)&0xff;
@@ -261,8 +261,8 @@ template <typename T> void TVector4<T>::SetBGRAU32( U32 uval )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector4<T>::SetARGBU32( U32 uval ) 
-{	
+template <typename T> void TVector4<T>::SetARGBU32( U32 uval )
+{
 	U32 a = (uval>>24)&0xff;
 	U32 r = (uval>>16)&0xff;
 	U32 g = (uval>>8)&0xff;
@@ -278,8 +278,8 @@ template <typename T> void TVector4<T>::SetARGBU32( U32 uval )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector4<T>::SetABGRU32( U32 uval ) 
-{	
+template <typename T> void TVector4<T>::SetABGRU32( U32 uval )
+{
 	U32 a = (uval>>24)&0xff;
 	U32 b = (uval>>16)&0xff;
 	U32 g = (uval>>8)&0xff;
@@ -303,7 +303,7 @@ template <typename T> void TVector4<T>::SetHSV( T h, T s, T v )
 
 	if ( s == 0.0f )
 	{
-		// Grayscale 
+		// Grayscale
 		SetX(v);
 		SetY(v);
 		SetZ(v);
@@ -362,37 +362,37 @@ template <typename T> void TVector4<T>::SetHSV( T h, T s, T v )
 
 template <typename T> void TVector4<T>::PerspectiveDivide( void )
 {
-	T iw = T(1.0f) / m_w;
-	m_x *= iw;
-	m_y *= iw;
-	m_z *= iw;
-	m_w = T(1.0f);
+	T iw = T(1.0f) / w;
+	x *= iw;
+	y *= iw;
+	z *= iw;
+	w = T(1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> TVector4<T>::TVector4( const TVector4<T> &vec)
 {
-	m_x = vec.m_x;
-	m_y = vec.m_y;
-	m_z = vec.m_z;
-	m_w = vec.m_w;
+	x = vec.x;
+	y = vec.y;
+	z = vec.z;
+	w = vec.w;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T TVector4<T>::Dot( const TVector4<T> &vec) const
 {
-	return ( (m_x * vec.m_x) + (m_y * vec.m_y) + (m_z * vec.m_z) );
+	return ( (x * vec.x) + (y * vec.y) + (z * vec.z) );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> TVector4<T> TVector4<T>::Cross( const TVector4<T> &vec) const // c = this X vec
 {
-	T vx = ((m_y * vec.GetZ()) - (m_z * vec.GetY()));
-	T vy = ((m_z * vec.GetX()) - (m_x * vec.GetZ()));
-	T vz = ((m_x * vec.GetY()) - (m_y * vec.GetX()));
+	T vx = ((y * vec.z) - (z * vec.y));
+	T vy = ((z * vec.x) - (x * vec.z));
+	T vz = ((x * vec.y) - (y * vec.x));
 
 	return ( TVector4<T>( vx, vy, vz ) );
 }
@@ -403,10 +403,10 @@ template <typename T> void TVector4<T>::Normalize(void)
 {
 	T	distance = (T) 1.0f / Mag() ;
 
-	m_x *= distance;
-	m_y *= distance;
-	m_z *= distance;
-	
+	x *= distance;
+	y *= distance;
+	z *= distance;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -416,21 +416,21 @@ template <typename T> TVector4<T> TVector4<T>::Normal() const
 	T fmag = Mag();
 	fmag = (fmag==(T)0.0f) ? (T)0.00001f : fmag;
 	T	s = (T) 1.0f / fmag;
-	return TVector4<T>(m_x * s, m_y * s, m_z * s, m_w);
+	return TVector4<T>(x * s, y * s, z * s, w);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T TVector4<T>::Mag(void) const
 {
-	return Sqrt(m_x * m_x + m_y * m_y + m_z * m_z);
+	return Sqrt(x * x + y * y + z * z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> T TVector4<T>::MagSquared(void) const
 {
-	T mag = (m_x * m_x + m_y * m_y + m_z * m_z);
+	T mag = (x * x + y * y + z * z);
 	return mag;
 }
 
@@ -441,15 +441,15 @@ template <typename T> TVector4<T> TVector4<T>::Transform( const TMatrix4<T> &mat
 	T	tx,ty,tz,tw;
 
 	T *mp = (T *) matrix.elements;
-	T x = m_x;
-	T y = m_y;
-	T z = m_z;
-	T w = m_w;
+	T _x = x;
+	T _y = y;
+	T _z = z;
+	T _w = w;
 
-	tx = x*mp[0] + y*mp[4] + z*mp[8] + w*mp[12];
-	ty = x*mp[1] + y*mp[5] + z*mp[9] + w*mp[13];
-	tz = x*mp[2] + y*mp[6] + z*mp[10] + w*mp[14];
-	tw = x*mp[3] + y*mp[7] + z*mp[11] + w*mp[15];
+	tx = _x*mp[0] + _y*mp[4] + _z*mp[8] + _w*mp[12];
+	ty = _x*mp[1] + _y*mp[5] + _z*mp[9] + _w*mp[13];
+	tz = _x*mp[2] + _y*mp[6] + _z*mp[10] + _w*mp[14];
+	tw = _x*mp[3] + _y*mp[7] + _z*mp[11] + _w*mp[15];
 
 	return( TVector4<T>( tx,ty,tz, tw ) );
 }
@@ -468,32 +468,32 @@ template <typename T> void TVector4<T>::Serp( const TVector4<T> & PA, const TVec
 
 template <typename T> void TVector4<T>::RotateX(T rad)
 {
-	T	oldY = m_y;
-	T	oldZ = m_z;
-	m_y = (oldY * Cos(rad) - oldZ * Sin(rad));
-	m_z = (oldY * Sin(rad) + oldZ * Cos(rad));
+	T	oldY = y;
+	T	oldZ = z;
+	y = (oldY * Cos(rad) - oldZ * Sin(rad));
+	z = (oldY * Sin(rad) + oldZ * Cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void TVector4<T>::RotateY(T rad)
 {
-	T	oldX = m_x;
-	T	oldZ = m_z;
+	T	oldX = x;
+	T	oldZ = z;
 
-	m_x = (oldX * Cos(rad) - oldZ * Sin(rad));
-	m_z = (oldX * Sin(rad) + oldZ * Cos(rad));
+	x = (oldX * Cos(rad) - oldZ * Sin(rad));
+	z = (oldX * Sin(rad) + oldZ * Cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void TVector4<T>::RotateZ(T rad)
 {
-	T	oldX = m_x;
-	T	oldY = m_y;
+	T	oldX = x;
+	T	oldY = y;
 
-	m_x = (oldX * Cos(rad) - oldY * Sin(rad));
-	m_y = (oldX * Sin(rad) + oldY * Cos(rad));
+	x = (oldX * Cos(rad) - oldY * Sin(rad));
+	y = (oldX * Sin(rad) + oldY * Cos(rad));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -503,10 +503,10 @@ template <typename T> void TVector4<T>::Lerp( const TVector4<T> &from, const TVe
 	if( par < T(0.0f) ) par = T(0.0f);
 	if( par > T(1.0f) ) par = T(1.0f);
 	T ipar = T(1.0f) - par;
-	m_x = (from.m_x*ipar) + (to.m_x*par);
-	m_y = (from.m_y*ipar) + (to.m_y*par);
-	m_z = (from.m_z*ipar) + (to.m_z*par);
-	m_w = (from.m_w*ipar) + (to.m_w*par);
+	x = (from.x*ipar) + (to.x*par);
+	y = (from.y*ipar) + (to.y*par);
+	z = (from.z*ipar) + (to.z*par);
+	w = (from.w*ipar) + (to.w*par);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -514,9 +514,9 @@ template <typename T> void TVector4<T>::Lerp( const TVector4<T> &from, const TVe
 template <typename T> T TVector4<T>::CalcTriArea( const TVector4<T> &V0, const TVector4<T> &V1, const TVector4<T> &V2, const TVector4<T> & N )
 {
 	// select largest abs coordinate to ignore for projection
-	T ax = Abs( N.GetX() );
-	T ay = Abs( N.GetY() );
-	T az = Abs( N.GetZ() );
+	T ax = Abs( N.x );
+	T ay = Abs( N.y );
+	T az = Abs( N.z );
 
 	int coord = (ax>ay) ? ((ax>az) ? 1 : 3) : ((ay>az) ? 2 : 3);
 
@@ -543,13 +543,13 @@ template <typename T> T TVector4<T>::CalcTriArea( const TVector4<T> &V0, const T
 		switch (coord)
 		{
 			case 1:
-				area += (Ary[ii].GetY() * (Ary[jj].GetZ() - Ary[kk].GetZ()));
+				area += (Ary[ii].y * (Ary[jj].z - Ary[kk].z));
 				continue;
 			case 2:
-				area += (Ary[ii].GetX() * (Ary[jj].GetZ() - Ary[kk].GetZ()));
+				area += (Ary[ii].x * (Ary[jj].z - Ary[kk].z));
 				continue;
 			case 3:
-				area += (Ary[ii].GetX() * (Ary[jj].GetY() - Ary[kk].GetY()));
+				area += (Ary[ii].x * (Ary[jj].y - Ary[kk].y));
 				continue;
 		}
 	}

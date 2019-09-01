@@ -43,7 +43,7 @@ ork::CVector3 FragmentCompositorZBuffer::Composite(const ork::CVector3&clrcolor)
 {
 	////////////////////////////////////////////////////////////
 	ork::CVector3 rgb = clrcolor;
-	if(mpOpaqueFragment!=0) rgb = mpOpaqueFragment->mRGBA.GetXYZ();
+	if(mpOpaqueFragment!=0) rgb = mpOpaqueFragment->mRGBA.xyz();
 	////////////////////////////////////////////////////////////
 	//rgb.Saturate();
 	return rgb;
@@ -208,7 +208,7 @@ ork::CVector3 FragmentCompositorREYES::Composite(const ork::CVector3&clrcolor)
 				ork::CVector4 shcol = plastvolumeshader->ShadeVolume( lpos, wpos );
 				float falpha = shcol.GetW();
 				ork::CVector3 res;
-				res.Lerp( rgb, shcol.GetXYZ(), falpha );
+				res.Lerp( rgb, shcol.xyz(), falpha );
 				rgb = res;			
 				}
 			}
@@ -216,7 +216,7 @@ ork::CVector3 FragmentCompositorREYES::Composite(const ork::CVector3&clrcolor)
 		////////////////////////////////////
 
 		ork::CVector3 res;
-		res.Lerp( rgb, fragrgba.GetXYZ(), fragrgba.GetW() );
+		res.Lerp( rgb, fragrgba.xyz(), fragrgba.GetW() );
 		rgb = res;
 	}
 //	OrkAssert(VolumeShaderStack.size()==1);

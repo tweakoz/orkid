@@ -1181,7 +1181,7 @@ void CCamera_persp::UpdateMatrices(void) {
 
   fvec3 veye = fvec3(0.0f, 0.0f, -mfLoc).Transform(matxf);
   fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).Transform(matxf);
-  fvec3 vup = fvec4(0.0f, 1.0f, 0.0f, 0.0f).Transform(matxf).GetXYZ();
+  fvec3 vup = fvec4(0.0f, 1.0f, 0.0f, 0.0f).Transform(matxf).xyz();
 
   mCameraData.Persp(fnear, ffar, aper);
   mCameraData.Lookat(veye, vtarget, vup);

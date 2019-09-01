@@ -417,9 +417,6 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 
 	bool IsPickState = renderer->GetTarget()->FBI()->IsPickState();
 	bool IsSkinned = Model->IsSkinned();
-	//OrkAssert( renderer->GetTarget()->FBI()->IsPickState() == false );
-
-	//orkprintf( " ModelDrawable::QueueToRenderer() mdl<%p> \n", Model );
 
 	ork::CVector3 center_plus_offset = mOffset + Model->GetBoundingCenter();
 

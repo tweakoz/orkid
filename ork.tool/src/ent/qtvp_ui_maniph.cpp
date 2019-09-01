@@ -20,15 +20,15 @@
 
 #include <orktool/toolcore/dataflow.h>
 
-#include <pkg/ent/editor/qtui_scenevp.h>
-#include <pkg/ent/editor/qtvp_uievh.h>
+#include "qtui_scenevp.h"
+#include "qtvp_uievh.h"
 #include <pkg/ent/editor/edmainwin.h>
 #include <QtGui/qclipboard.h>
 #include <QtCore/QSettings>
 #include <pkg/ent/scene.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
 
-#include <orktool/qtui/uitoolhandler.hpp>
+#include "uitoolhandler.inl"
 
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////

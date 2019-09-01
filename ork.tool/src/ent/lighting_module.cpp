@@ -10,7 +10,7 @@
 #include <orktool/qtui/qtmainwin.h>
 ///////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/editor/edmainwin.h>
-#include <pkg/ent/editor/qtui_scenevp.h>
+#include "qtui_scenevp.h"
 extern bool gbheadlight;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
