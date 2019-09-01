@@ -3,6 +3,8 @@
 import os,string
 from ork.build.common import TargetPlatform
 
+os.chdir(os.environ["ORKDOTBUILD_WORKSPACE_DIR"])
+
 tool = "ork.tool.test."+TargetPlatform+".release"
 print(tool)
 
@@ -45,7 +47,7 @@ def do_anims( anm_str ):
 #######################################
 
 #objects = "mtn1"
-actors = "4limb rijid frogman"
+actors = "4limb rijid frogman iceblob"
 
 anims = dict()
 anims["4limb"] = "sprawl"
