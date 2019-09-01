@@ -89,7 +89,7 @@ void NodeCompositingTechnique::Init( lev2::GfxTarget* pTARG, int w, int h )
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::Draw(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI)
+void NodeCompositingTechnique::Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI)
 {
 	if( mpRootNode )
 	{
@@ -97,7 +97,7 @@ void NodeCompositingTechnique::Draw(CMCIdrawdata& drawdata, CompositingComponent
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingComponentInst* pCCI, CompositingContext& cctx )
+void NodeCompositingTechnique::CompositeToScreen( ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx )
 {
 	if( mpRootNode )
 	{
@@ -150,7 +150,7 @@ void CompositingNode::Init( lev2::GfxTarget* pTARG, int w, int h )
 {
 	DoInit(pTARG,w,h);
 }
-void CompositingNode::Render(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI)
+void CompositingNode::Render(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI)
 {
 	DoRender(drawdata,pCCI);
 }
@@ -200,7 +200,7 @@ void PassThroughCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH 
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PassThroughCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) // virtual
+void PassThroughCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) // virtual
 {
 	const ent::CompositingGroup* pCG = mGroup;
 	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
@@ -289,7 +289,7 @@ void SeriesCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // 
 			mNode->Init( pTARG, iW, iH );
 	}
 }
-void SeriesCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) // virtual
+void SeriesCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) // virtual
 {
 	//const ent::CompositingGroup* pCG = mGroup;
 	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
@@ -476,7 +476,7 @@ void InsertCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // 
 			mNode->Init( pTARG, iW, iH );
 	}
 }
-void InsertCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) // virtual
+void InsertCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) // virtual
 {
 	//const ent::CompositingGroup* pCG = mGroup;
 	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
@@ -629,7 +629,7 @@ void Op2CompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // vir
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Op2CompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) // virtual
+void Op2CompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) // virtual
 {
 	auto& the_renderer = drawdata.mFrameRenderer;
 	auto& framedata = the_renderer.GetFrameData();

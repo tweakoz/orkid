@@ -26,7 +26,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingComponentData, "LightingComponent
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingComponentInst, "LightingComponentInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightArchetype, "LightArchetype");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingSystemData, "LightingManagerSystemData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::LightingSystemData, "LightingSystemSystemData");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {

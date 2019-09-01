@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -37,6 +37,7 @@ public:
 	typedef orklut<ConstString, IObjectFunctor *> FunctorMapType;
 	typedef orklut<ConstString, object::Signal Object:: *> SignalMapType;
 	typedef orklut<ConstString, object::AutoSlot Object:: *> AutoSlotMapType;
+    typedef ork::svar64_t anno_t;
 
 	Description();
 
@@ -50,8 +51,8 @@ public:
 	void AnnotateProperty( const ConstString &propname, const ConstString &key, const ConstString &val );
 	ConstString	GetPropertyAnnotation( const ConstString &propname, const ConstString& key ) const;
 
-	void AnnotateClass( const ConstString &key, const svar16_t& val );
-	const any16& GetClassAnnotation( const ConstString& key ) const;
+	void AnnotateClass( const ConstString &key, const anno_t& val );
+	const anno_t& GetClassAnnotation( const ConstString& key ) const;
 
 	PropertyMapType &Properties();
 	const PropertyMapType &Properties() const;
@@ -76,7 +77,7 @@ private:
 	SignalMapType		mSignals;
 	AutoSlotMapType		mAutoSlots;
 
-	orklut<ConstString,any16> mClassAnnotations;
+	orklut<ConstString,anno_t> mClassAnnotations;
 
 };
 

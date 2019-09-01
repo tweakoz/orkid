@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -23,7 +23,7 @@ typedef ork::svar32_t any32;
 typedef ork::svar64_t any64;
 typedef ork::svar96_t any96;
 typedef ork::svar128_t any128;
-typedef ork::svar160_t any160;
+typedef ork::svar160_t auto0;
 typedef ork::svar192_t any192;
 typedef ork::svar256_t any256;
 

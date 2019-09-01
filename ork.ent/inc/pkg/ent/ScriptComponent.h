@@ -80,13 +80,13 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class ScriptManagerComponentData : public ork::ent::SystemData
+class ScriptSystemData : public ork::ent::SystemData
 {
-	RttiDeclareConcrete(ScriptManagerComponentData, ork::ent::SystemData);
+	RttiDeclareConcrete(ScriptSystemData, ork::ent::SystemData);
 
 public:
 	///////////////////////////////////////////////////////
-	ScriptManagerComponentData();
+	ScriptSystemData();
 	///////////////////////////////////////////////////////
 
 private:
@@ -103,7 +103,7 @@ public:
   static constexpr systemkey_t SystemType = "ScriptSystem";
 	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-	ScriptSystem( const ScriptManagerComponentData &data, ork::ent::SceneInst *pinst );
+	ScriptSystem( const ScriptSystemData &data, ork::ent::SceneInst *pinst );
 
 	anyp GetLuaManager() { return mLuaManager; }
 
