@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -36,88 +36,58 @@ namespace ork {
 /// guarantee the uniqueness of the strings.
 ///
 
-class PoolString
-{
+class PoolString {
 public:
-	/// Constructs an empty pool string.
-	PoolString();
+  /// Constructs an empty pool string.
+  PoolString();
 
-	/// @return a chararcter pointer to the data.
-	const char *data() const;
-	/// @return a chararcter pointer to NUL terminated data.
-	const char *c_str() const;
+  /// @return a chararcter pointer to the data.
+  const char* data() const;
+  /// @return a chararcter pointer to NUL terminated data.
+  const char* c_str() const;
 
-	/// Casts this string to a PieceString
-	operator PieceString() const;
-	/// Casts this string to a ConstString
-	operator ConstString() const;
+  /// Casts this string to a PieceString
+  operator PieceString() const;
+  /// Casts this string to a ConstString
+  operator ConstString() const;
 
-	bool operator ==(const PoolString &) const;
-	bool operator <=(const PoolString &) const;
-	bool operator >=(const PoolString &) const;
-	bool operator < (const PoolString &) const;
-	bool operator > (const PoolString &) const;
-	bool operator !=(const PoolString &) const;
+  bool operator==(const PoolString&) const;
+  bool operator<=(const PoolString&) const;
+  bool operator>=(const PoolString&) const;
+  bool operator<(const PoolString&) const;
+  bool operator>(const PoolString&) const;
+  bool operator!=(const PoolString&) const;
 
-	/// @returns false if the string is not set.
-	operator bool() const;
+  /// @returns false if the string is not set.
+  operator bool() const;
 
-	/// @returns true if the string is not set, or is the empty string.
-	bool empty() const;
+  /// @returns true if the string is not set, or is the empty string.
+  bool empty() const;
 
 private:
-	friend class StringPool;
+  friend class StringPool;
 
-	/// Constructs a pool string from a character pointer, used by StringPool.
-	PoolString(const char *string);
+  /// Constructs a pool string from a character pointer, used by StringPool.
+  PoolString(const char* string);
 
-	int compare(const PoolString &) const;
+  int compare(const PoolString&) const;
 
-	/// The character pointer to the string data
-	const char *mpString;
+  /// The character pointer to the string data
+  const char* mpString;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline
-PoolString::PoolString()
-	: mpString(NULL)
-{}
+inline PoolString::PoolString() : mpString(NULL) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline
-const char *PoolString::data() const
-{
-	return mpString;
-}
+inline const char* PoolString::data() const { return mpString; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline
-const char *PoolString::c_str() const
-{
-	return mpString;
-}
+inline const char* PoolString::c_str() const { return mpString; }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#ifndef ORK_CONFIG_EDITORBUILD
-inline
-bool PoolString::operator ==(const PoolString &other) const
-{
-	return mpString == other.mpString;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-inline
-bool PoolString::operator < (const PoolString &other) const
-{
-	return mpString < other.mpString;
-}
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-}
+} // namespace ork
 ///////////////////////////////////////////////////////////////////////////////

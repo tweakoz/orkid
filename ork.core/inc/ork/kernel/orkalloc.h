@@ -3,14 +3,14 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
 #include <ork/orktypes.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork{
+namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -19,76 +19,57 @@ namespace ork{
  * This allocator is zone aware. By default, the memory allocated from is the current zone (-1).
  * Otherwise, it will be the specified Zone.
  */
-template <typename T>
-class allocator
-{
+template <typename T> class allocator {
 public:
+  // type definitions
+  typedef T value_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
 
-	// type definitions
-	typedef T        value_type;
-	typedef T*       pointer;
-	typedef const T* const_pointer;
-	typedef T&       reference;
-	typedef const T& const_reference;
-	typedef std::size_t size_type;
-	typedef std::ptrdiff_t difference_type;
+  // rebind allocator to type U
+  template <class U> struct rebind { typedef allocator<U> other; };
 
-	// rebind allocator to type U
-	template <class U>
-	struct rebind {
-		typedef allocator<U> other;
-	};
+  // return address of values
+  pointer address(reference value) const { return &value; }
+  const_pointer address(const_reference value) const { return &value; }
 
-	// return address of values
-	pointer address(reference value) const {
-		return &value;
-	}
-	const_pointer address(const_reference value) const {
-		return &value;
-	}
+  /* constructors and destructor
+   * - nothing to do because the allocator has no state
+   */
+  allocator() /*throw()*/ {}
 
-	/* constructors and destructor
-	* - nothing to do because the allocator has no state
-	*/
-	allocator() /*throw()*/ {}
+  allocator(const allocator&) /*throw()*/ {}
 
-	allocator(const allocator&) /*throw()*/ {}
+  template <class U> allocator(const allocator<U>&) /*throw()*/ {}
 
-	template <class U>
-	allocator(const allocator<U>&) /*throw()*/ {}
+  ~allocator() /*throw()*/ {}
 
-	~allocator() /*throw()*/ {}
+  // return maximum number of elements that can be allocated
+  size_type max_size() const /*throw()*/ { return 0x7FFFFFFFUL / sizeof(value_type); }
 
-	// return maximum number of elements that can be allocated
-	size_type max_size() const /*throw()*/ {
-		return 0x7FFFFFFFUL / sizeof(value_type);
-	}
+  // allocate but don't initialize num elements of type T
+  pointer allocate(size_type num, const void* = 0) {
+    return static_cast<pointer>(static_cast<void*>(new char[num * sizeof(value_type)]));
+  }
 
-	// allocate but don't initialize num elements of type T
-	pointer allocate(size_type num, const void* = 0) {
-		return static_cast<pointer>(static_cast<void *>(new char[num*sizeof(value_type)]));
-	}
+  // initialize elements of allocated storage p with value value
+  void construct(pointer p, const_reference value) {
+    // initialize memory with placement new
+    new (p) value_type(value);
+  }
 
-	// initialize elements of allocated storage p with value value
-	void construct(pointer p, const_reference value)
-	{
-		// initialize memory with placement new
-		new(p) value_type(value);
-	}
+  // destroy elements of initialized storage p
+  void destroy(pointer p) {
+    // destroy objects by calling their destructor
+    p->~value_type();
+  }
 
-	// destroy elements of initialized storage p
-	void destroy(pointer p)
-	{
-		// destroy objects by calling their destructor
-		p->~value_type();
-	}
-
-	// deallocate storage p of deleted elements
-	void deallocate(pointer p, size_type num)
-	{
-		delete[] static_cast<char*>(static_cast<void*>(p));
-	}
-
+  // deallocate storage p of deleted elements
+  void deallocate(pointer p, size_type num) { delete[] static_cast<char*>(static_cast<void*>(p)); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,151 +99,112 @@ public:
  *   Class* pClass = ...;
  *   gmClassesByName[strClassName] = pClass;
  */
-template <typename T>
-class allocator_alloc_only
-{
+template <typename T> class allocator_alloc_only {
 public:
+  // type definitions
+  typedef T value_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
 
-	// type definitions
-	typedef T        value_type;
-	typedef T*       pointer;
-	typedef const T* const_pointer;
-	typedef T&       reference;
-	typedef const T& const_reference;
-	typedef std::size_t    size_type;
-	typedef std::ptrdiff_t difference_type;
+  // rebind allocator to type U
+  template <class U> struct rebind { typedef allocator_alloc_only<U> other; };
 
-	// rebind allocator to type U
-	template <class U>
-	struct rebind {
-		typedef allocator_alloc_only<U> other;
-	};
+  // return address of values
+  pointer address(reference value) const { return &value; }
+  const_pointer address(const_reference value) const { return &value; }
 
-	// return address of values
-	pointer address(reference value) const {
-		return &value;
-	}
-	const_pointer address(const_reference value) const {
-		return &value;
-	}
+  /* constructors and destructor
+   * - nothing to do because the allocator has no state
+   */
+  allocator_alloc_only() /*throw()*/ {}
 
-	/* constructors and destructor
-	* - nothing to do because the allocator has no state
-	*/
-	allocator_alloc_only() /*throw()*/ {}
+  allocator_alloc_only(const allocator_alloc_only&) /*throw()*/ {}
 
-	allocator_alloc_only(const allocator_alloc_only&) /*throw()*/ {}
+  template <class U> allocator_alloc_only(const allocator_alloc_only<U>&) /*throw()*/ {}
 
-	template <class U>
-	allocator_alloc_only(const allocator_alloc_only<U>&) /*throw()*/ {}
+  ~allocator_alloc_only() /*throw()*/ {}
 
-	~allocator_alloc_only() /*throw()*/ {}
+  // return maximum number of elements that can be allocated
+  size_type max_size() const /*throw()*/ { return 0x7FFFFFFFUL / sizeof(value_type); }
 
-	// return maximum number of elements that can be allocated
-	size_type max_size() const /*throw()*/ {
-		return 0x7FFFFFFFUL / sizeof(value_type);
-	}
+  // allocate but don't initialize num elements of type T
+  pointer allocate(size_type num, const void* = 0) {
+    return static_cast<pointer>(static_cast<void*>(new char[num * sizeof(value_type)]));
+  }
 
-	// allocate but don't initialize num elements of type T
-	pointer allocate(size_type num, const void* = 0) {
-#if !defined( ORK_CONFIG_EDITORBUILD )
-		return static_cast<pointer>(static_cast<void *>(new char[num*sizeof(value_type)]));
-#else
-		return static_cast<pointer>(static_cast<void *>(new char[num*sizeof(value_type)]));
-#endif
-	}
+  // initialize elements of allocated storage p with value value
+  void construct(pointer p, const_reference value) {
+    // initialize memory with placement new
+    new (p) value_type(value);
+  }
 
-	// initialize elements of allocated storage p with value value
-	void construct(pointer p, const_reference value) {
-		// initialize memory with placement new
-		new(p) value_type(value);
-	}
+  // destroy elements of initialized storage p
+  void destroy(pointer p) {
+    // destroy objects by calling their destructor
+    p->~value_type();
+  }
 
-	// destroy elements of initialized storage p
-	void destroy(pointer p) {
-		// destroy objects by calling their destructor
-		p->~value_type();
-	}
-
-	// deallocate storage p of deleted elements
-	void deallocate(pointer p, size_type num) {
-#if !defined( ORK_CONFIG_EDITORBUILD )
-		OrkAssertNotImplI("allocator_alloc_only deallocate! see a programmer!");
-#else
-		delete[] static_cast<char*>(static_cast<void*>(p));
-#endif
-	}
-
+  // deallocate storage p of deleted elements
+  void deallocate(pointer p, size_type num) { delete[] static_cast<char*>(static_cast<void*>(p)); }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-class allocator_stack
-{
+template <typename T> class allocator_stack {
 public:
+  // type definitions
+  typedef T value_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
 
-	// type definitions
-	typedef T        value_type;
-	typedef T*       pointer;
-	typedef const T* const_pointer;
-	typedef T&       reference;
-	typedef const T& const_reference;
-	typedef std::size_t    size_type;
-	typedef std::ptrdiff_t difference_type;
+  // rebind allocator to type U
+  template <class U> struct rebind { typedef allocator_stack<U> other; };
 
-	// rebind allocator to type U
-	template <class U>
-	struct rebind {
-		typedef allocator_stack<U> other;
-	};
+  // return address of values
+  pointer address(reference value) const { return &value; }
+  const_pointer address(const_reference value) const { return &value; }
 
-	// return address of values
-	pointer address(reference value) const {
-		return &value;
-	}
-	const_pointer address(const_reference value) const {
-		return &value;
-	}
+  /* constructors and destructor
+   * - nothing to do because the allocator has no state
+   */
+  allocator_stack() /*throw()*/ {}
 
-	/* constructors and destructor
-	* - nothing to do because the allocator has no state
-	*/
-	allocator_stack() /*throw()*/ {}
+  allocator_stack(const allocator_stack&) /*throw()*/ {}
 
-	allocator_stack(const allocator_stack&) /*throw()*/ {}
+  template <class U> allocator_stack(const allocator_stack<U>&) /*throw()*/ {}
 
-	template <class U>
-	allocator_stack(const allocator_stack<U>&) /*throw()*/ {}
+  ~allocator_stack() /*throw()*/ {}
 
-	~allocator_stack() /*throw()*/ {}
+  // return maximum number of elements that can be allocated
+  size_type max_size() const /*throw()*/ { return 0x7FFFFFFFUL / sizeof(value_type); }
 
-	// return maximum number of elements that can be allocated
-	size_type max_size() const /*throw()*/ {
-		return 0x7FFFFFFFUL / sizeof(value_type);
-	}
+  // allocate but don't initialize num elements of type T
+  pointer allocate(size_type num, const void* = 0) {
+    return static_cast<pointer>(static_cast<void*>(new char[num * sizeof(value_type)]));
+  }
 
-	// allocate but don't initialize num elements of type T
-	pointer allocate(size_type num, const void* = 0) {
-		return static_cast<pointer>(static_cast<void *>(new char[num*sizeof(value_type)]));
-	}
+  // initialize elements of allocated storage p with value value
+  void construct(pointer p, const_reference value) {
+    // initialize memory with placement new
+    new (p) value_type(value);
+  }
 
-	// initialize elements of allocated storage p with value value
-	void construct(pointer p, const_reference value) {
-		// initialize memory with placement new
-		new(p) value_type(value);
-	}
+  // destroy elements of initialized storage p
+  void destroy(pointer p) {
+    // destroy objects by calling their destructor
+    p->~value_type();
+  }
 
-	// destroy elements of initialized storage p
-	void destroy(pointer p) {
-		// destroy objects by calling their destructor
-		p->~value_type();
-	}
-
-	// deallocate storage p of deleted elements
-	void deallocate(pointer p, size_type num) {
-	}
-
+  // deallocate storage p of deleted elements
+  void deallocate(pointer p, size_type num) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
