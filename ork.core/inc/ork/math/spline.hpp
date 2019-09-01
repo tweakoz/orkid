@@ -3,8 +3,10 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
+#pragma once
+#include "spline.h"
 
 //////////////////////////////////////////////////////////
 namespace ork {
@@ -32,7 +34,7 @@ bool MapU(	float fu, const float fmax, const typename orkmap<float,T>& themap,
 		flower = -1.0f;
 		fupper = -1.0f;
 		frange = 0.0f;
-	}	
+	}
 	else
 	{
 		typename orkmap<float,T>::const_iterator itl = itu;
@@ -48,8 +50,8 @@ bool MapU(	float fu, const float fmax, const typename orkmap<float,T>& themap,
 			brv = true;
 		}
 	}
-	
-	//orkprintf( "MapU<%f> flower<%f> fupper<%f> flerp<%f> indexl<%d>\n", fu, flower, fupper, flerp, indexl );  
+
+	//orkprintf( "MapU<%f> flower<%f> fupper<%f> flerp<%f> indexl<%d>\n", fu, flower, fupper, flerp, indexl );
 
 	return brv;
 }
@@ -57,7 +59,7 @@ bool MapU(	float fu, const float fmax, const typename orkmap<float,T>& themap,
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-bool VecU(	float fu, const float fmax, 
+bool VecU(	float fu, const float fmax,
 			const typename orkvector<T>& themap,
 			float& flower, float& fupper, float& frange,
 			float& flerp, int& indexl )
@@ -74,8 +76,8 @@ bool VecU(	float fu, const float fmax,
 	frange = fupper - flower;
 	flerp = (fu-flower)/frange;
 	brv = true;
-	
-	//orkprintf( "VecU<%f> flower<%f> fupper<%f> flerp<%f> indexl<%d>\n", fu, flower, fupper, flerp, indexl );  
+
+	//orkprintf( "VecU<%f> flower<%f> fupper<%f> flerp<%f> indexl<%d>\n", fu, flower, fupper, flerp, indexl );
 
 	return brv;
 }
@@ -132,7 +134,7 @@ void CatmullRomSpline<T>::GenBases(int pt) const
 
 	static T t0, t1, t2, t3;
 	float c[4];
-	
+
 	GetCV( GetCVIndex(pt-1), t0 );
 	GetCV( GetCVIndex(pt+0), t1 );
 	GetCV( GetCVIndex(pt+1), t2 );
@@ -156,12 +158,12 @@ void CatmullRomSpline<T>::GenBases(int pt) const
 		c[2] = (-cv0) + (cv2);
 		c[3] = 2.0f * cv1;
 
-		
+
 		mBases[BaseIndex(pt, i)].SetCoefs(c);
 
 		mBasesDeriv[BaseIndex(pt, i)] = mBases[BaseIndex(pt, i)].Differentiate();
 	}
-	
+
 }
 
 //////////////////////////////////////////////////////////
