@@ -3,6 +3,8 @@
 #include "filters.h"
 #include "alg_amp.h"
 
+namespace ork::audio::singularity {
+
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
 
@@ -16,10 +18,10 @@ struct panLR
 panLR panBlend(float inp)
 {
     panLR rval;
-    rval.lmix = (inp>0) 
+    rval.lmix = (inp>0)
                ? lerp(0.5,0,inp)
                : lerp(0.5,1,-inp);
-    rval.rmix = (inp>0) 
+    rval.rmix = (inp>0)
                ? lerp(0.5,1,inp)
                : lerp(0.5,0,-inp);
     return rval;
@@ -50,9 +52,9 @@ void AMP::compute(DspBuffer& dspbuf) //final
     auto l_lrmix = panBlend(_lpan);
 
     //printf( "amp numinp<%d>\n", numInputs() );
-    if(numInputs()==1) 
-    {   
-        float* inpbuf = getInpBuf1(dspbuf); 
+    if(numInputs()==1)
+    {
+        float* inpbuf = getInpBuf1(dspbuf);
         float SingleLinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
         for( int i=0; i<inumframes; i++ )
@@ -166,7 +168,7 @@ void XAMP::compute(DspBuffer& dspbuf) //final
     float LinG = decibel_to_linear_amp_ratio(LD->_channelGains[0]);
 
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         _filt = 0.999*_filt + 0.001*gain;
         float linG = decibel_to_linear_amp_ratio(_filt);
         float inU = ubuf[i]*_dbd._inputPad;
@@ -199,7 +201,7 @@ void GAIN::compute(DspBuffer& dspbuf) //final
     float linG = decibel_to_linear_amp_ratio(gain);
 
     int inumframes = dspbuf._numframes;
-    float* inpbuf = getInpBuf1(dspbuf); 
+    float* inpbuf = getInpBuf1(dspbuf);
 
     if(1) for( int i=0; i<inumframes; i++ )
     {   float inp = inpbuf[i]*_dbd._inputPad;
@@ -222,10 +224,10 @@ void XFADE::compute(DspBuffer& dspbuf) //final
     _fval[0] = index;
 
     float mix = index*0.01f;
-    float lmix = (mix>0) 
+    float lmix = (mix>0)
                ? lerp(0.5,0,mix)
                : lerp(0.5,1,-mix);
-    float umix = (mix>0) 
+    float umix = (mix>0)
                ? lerp(0.5,1,mix)
                : lerp(0.5,0,-mix);
 
@@ -235,7 +237,7 @@ void XFADE::compute(DspBuffer& dspbuf) //final
 
     //printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
     if(1) for( int i=0; i<inumframes; i++ )
-    {        
+    {
         float inputU = ubuf[i]*_dbd._inputPad;
         float inputL = lbuf[i]*_dbd._inputPad;
         _plmix = _plmix*0.995f+lmix*0.005f;
@@ -270,7 +272,7 @@ void XGAIN::compute(DspBuffer& dspbuf) //final
     float* lbuf = dspbuf.channel(1);
 
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         _filt = 0.999*_filt + 0.001*gain;
         float linG = decibel_to_linear_amp_ratio(_filt);
         float inU = ubuf[i]*_dbd._inputPad;
@@ -313,7 +315,7 @@ void AMPU_AMPL::compute(DspBuffer& dspbuf) //final
     float UpperLinG = decibel_to_linear_amp_ratio(layd->_channelGains[1]);
 
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         _filtU = 0.999*_filtU + 0.001*gainU;
         _filtL = 0.999*_filtL + 0.001*gainL;
         float linGU = decibel_to_linear_amp_ratio(_filtU);
@@ -367,7 +369,7 @@ void BAL_AMP::compute(DspBuffer& dspbuf) //final
 }
 void BAL_AMP::doKeyOn(const DspKeyOnInfo& koi) //final
 {
-    
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -383,10 +385,10 @@ void PANNER::compute(DspBuffer& dspbuf) //final
     float* lbuf = dspbuf.channel(1);
     float pos = _param[0].eval();
     float pan = pos*0.01f;
-    float lmix = (pan>0) 
+    float lmix = (pan>0)
                ? lerp(0.5,0,pan)
                : lerp(0.5,1,-pan);
-    float rmix = (pan>0) 
+    float rmix = (pan>0)
                ? lerp(0.5,1,pan)
                : lerp(0.5,0,-pan);
 
@@ -416,7 +418,7 @@ void PANNER::doKeyOn(const DspKeyOnInfo& koi) //final
 BANGAMP::BANGAMP( const DspBlockData& dbd )
     : DspBlock(dbd)
 {
-    
+
 }
 
 void BANGAMP::compute(DspBuffer& dspbuf) //final
@@ -433,7 +435,7 @@ void BANGAMP::compute(DspBuffer& dspbuf) //final
 
     //printf( "frq<%f> _phaseInc<%lld>\n", frq, _phaseInc );
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         _smooth = 0.999*_smooth + 0.001*gain;
         float linG = decibel_to_linear_amp_ratio(_smooth);
         float inU = ubuf[i]*_dbd._inputPad;
@@ -451,4 +453,4 @@ void BANGAMP::doKeyOn(const DspKeyOnInfo& koi) //final
 {   _smooth = 0.0f;
 }
 
-
+} // namespace ork::audio::singularity {

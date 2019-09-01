@@ -8,6 +8,8 @@
 #include <complex>
 #include "krztypes.h"
 
+namespace ork::audio::singularity {
+
 static const float SR = getSampleRate();
 static const float ISR = 1.0f/SR;
 static const float PI2ISR = pi2*ISR;
@@ -113,3 +115,5 @@ struct OnePoleHiPass
     float lp_b1, lp_a0;
     float lp_outl;
 };
+
+} // namespace ork::audio::singularity {

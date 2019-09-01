@@ -3,6 +3,8 @@
 #include "alg.h"
 #include "controller.h"
 
+namespace ork::audio::singularity {
+
 struct KeyOnInfo;
 struct AsrData;
 struct RateLevelEnvData;
@@ -77,3 +79,5 @@ struct RateLevelEnvInst : public ControllerInst
 
     float _USERAMPENV[1024];
 };
+
+} //namespace ork::audio::singularity {

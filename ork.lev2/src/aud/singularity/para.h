@@ -1,3 +1,5 @@
+namespace ork::audio::singularity {
+
 class Fil4Paramsect
 {
 	public:
@@ -88,3 +90,4 @@ class Fil4Paramsect
 	float  _z1, _z2;
 };
 
+} // namespace ork::audio::singularity {

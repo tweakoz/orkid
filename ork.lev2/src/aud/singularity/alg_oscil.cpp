@@ -5,6 +5,8 @@
 #include "cz101.h"
 #include "alg_oscil.h"
 
+namespace ork::audio::singularity {
+
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
 
@@ -181,7 +183,7 @@ SWPLUSSHP::SWPLUSSHP( const DspBlockData& dbd )
     : DspBlock(dbd)
     , _pblep(48000,PolyBLEP::RAMP)
 {
-    _pblep.setAmplitude(1.0f);            
+    _pblep.setAmplitude(1.0f);
 }
 
 void SWPLUSSHP::compute(DspBuffer& dspbuf) //final
@@ -220,7 +222,7 @@ SHAPEMODOSC::SHAPEMODOSC( const DspBlockData& dbd )
     : DspBlock(dbd)
     , _pblep(48000,PolyBLEP::SINE)
 {
-   _pblep.setAmplitude(1.0f);            
+   _pblep.setAmplitude(1.0f);
 }
 
 void SHAPEMODOSC::compute(DspBuffer& dspbuf) //final
@@ -247,26 +249,26 @@ void SHAPEMODOSC::compute(DspBuffer& dspbuf) //final
     const float kc2 = 1.0f/32;
 
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         float inU = ubuf[i]*pad;
         float inL = lbuf[i]*pad;
         float inp = (inU)*depg;
 
-        //First, the SINE value is multiplied by 
-        // the sample input value, then multiplied 
-        // by a constant—any samples exceeding full scale 
+        //First, the SINE value is multiplied by
+        // the sample input value, then multiplied
+        // by a constant—any samples exceeding full scale
         // will wrap around.
 
         float sine = _pblep.getAndInc();
         float xxx = wrap(inp*sine*kc1,1.0);
 
-        //The result is added to the wrapped product 
+        //The result is added to the wrapped product
         // of the SINE value times a constant.
 
         float yyy = xxx + wrap(sine*kc2,1.0);
 
-        //The entire resulting waveform is then passed 
-        // through the SHAPER, whose Adjust value is 
+        //The entire resulting waveform is then passed
+        // through the SHAPER, whose Adjust value is
         // set by the level of the sample input.
 
         float swplusshp = shaper(yyy,inp);
@@ -287,7 +289,7 @@ PLUSSHAPEMODOSC::PLUSSHAPEMODOSC( const DspBlockData& dbd )
     : DspBlock(dbd)
     , _pblep(48000,PolyBLEP::SINE)
 {
-   _pblep.setAmplitude(0.25f);            
+   _pblep.setAmplitude(0.25f);
 }
 
 void PLUSSHAPEMODOSC::compute(DspBuffer& dspbuf) //final
@@ -314,26 +316,26 @@ void PLUSSHAPEMODOSC::compute(DspBuffer& dspbuf) //final
     const float kc2 = 1.0f/32;
 
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         float inU = ubuf[i]*pad;
         float inL = lbuf[i]*pad;
         float inp = (inU+inL)*depg;
 
-        //First, the SINE value is multiplied by 
-        // the sample input value, then multiplied 
-        // by a constant—any samples exceeding full scale 
+        //First, the SINE value is multiplied by
+        // the sample input value, then multiplied
+        // by a constant—any samples exceeding full scale
         // will wrap around.
 
         float sine = _pblep.getAndInc();
         float xxx = wrap(inp*sine*kc1,1.0);
 
-        //The result is added to the wrapped product 
+        //The result is added to the wrapped product
         // of the SINE value times a constant.
 
         float yyy = xxx + wrap(sine*kc2,1.0);
 
-        //The entire resulting waveform is then passed 
-        // through the SHAPER, whose Adjust value is 
+        //The entire resulting waveform is then passed
+        // through the SHAPER, whose Adjust value is
         // set by the level of the sample input.
 
         float swplusshp = shaper(yyy,inp);
@@ -348,9 +350,9 @@ void PLUSSHAPEMODOSC::compute(DspBuffer& dspbuf) //final
 
         + SHAPE MOD OSC
 
-         + SHAPE MOD OSC is similar to x SHAPE MOD OSC, 
-         except that it adds its two input signals and uses 
-         that sum as its input. 
+         + SHAPE MOD OSC is similar to x SHAPE MOD OSC,
+         except that it adds its two input signals and uses
+         that sum as its input.
 */
     }
 
@@ -387,7 +389,7 @@ void SYNCM::compute(DspBuffer& dspbuf) //final
 
 
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         ubuf[i] = _phase;
         _phase = fmod(_phase+_phaseInc,1.0f);
     }
@@ -404,8 +406,8 @@ SYNCS::SYNCS( const DspBlockData& dbd )
     : DspBlock(dbd)
     , _pblep(48000,PolyBLEP::RAMP)
 {
-    _pblep.setAmplitude(1.0f);   
-    _prvmaster = 0.0f;         
+    _pblep.setAmplitude(1.0f);
+    _prvmaster = 0.0f;
 }
 
 void SYNCS::compute(DspBuffer& dspbuf) //final
@@ -428,7 +430,7 @@ void SYNCS::compute(DspBuffer& dspbuf) //final
     if(1) for( int i=0; i<inumframes; i++ )
     {   float input = ubuf[i];
 
-        bool do_sync = ( input < _prvmaster);            
+        bool do_sync = ( input < _prvmaster);
         _prvmaster = input;
 
         if( do_sync )
@@ -449,7 +451,7 @@ PWM::PWM( const DspBlockData& dbd )
     : DspBlock(dbd)
     , _pblep(48000,PolyBLEP::SINE)
 {
-   _pblep.setAmplitude(1.0f);   
+   _pblep.setAmplitude(1.0f);
 }
 
 void PWM::compute(DspBuffer& dspbuf) //final
@@ -498,7 +500,7 @@ void SAMPLEPB::compute(DspBuffer& dspbuf) // final
     _spOsc.compute(inumframes);
 
     for( int i=0; i<inumframes; i++ )
-    {   
+    {
         float outp = _spOsc._OUTPUT[i];
         lbuf[i] = outp;
         ubuf[i] = outp;
@@ -519,7 +521,7 @@ void SAMPLEPB::doKeyOff() // final
 FM4::FM4( const DspBlockData& dbd )
     : DspBlock(dbd)
 {
-    _fm4 = new fm4syn;  
+    _fm4 = new fm4syn;
 }
 void FM4::compute(DspBuffer& dspbuf) // final
 {
@@ -549,7 +551,7 @@ void FM4::doKeyOff() // final
 CZX::CZX( const DspBlockData& dbd )
     : DspBlock(dbd)
 {
-    _cz = new czsyn;  
+    _cz = new czsyn;
 }
 void CZX::compute(DspBuffer& dspbuf) // final
 {
@@ -600,3 +602,4 @@ void NOISE::doKeyOn(const DspKeyOnInfo& koi) // final
 void NOISE::doKeyOff() // final
 {
 }
+} // namespace ork::audio::singularity {

@@ -8,6 +8,8 @@
 #include "alg_amp.h"
 #include "konoff.h"
 
+namespace ork::audio::singularity {
+
 DspBlock* createDspBlock( const DspBlockData& dbd );
 
 extern synth* the_synth;
@@ -348,3 +350,5 @@ DspBlock* createDspBlock( const DspBlockData& dbd )
 
     return rval;
 }
+
+} // namespace ork::audio::singularity {

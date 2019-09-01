@@ -7,6 +7,8 @@
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/svariant.h>
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct programInst
@@ -106,12 +108,4 @@ struct synth
     float _oscopebuffer[koscopelength];
 };
 
-///////////////////////////////////////////////////////////////////////////////
-
-//std::string formatString( const char* formatstring, ... );
-//void SplitString(const std::string& s, char delim, std::vector<std::string>& tokens);
-//std::vector<std::string> SplitString(const std::string& instr, char delim);
-
-///////////////////////////////////////////////////////////////////////////////
-
-//void drawtext( const std::string& str, float x, float y, float scale, float r, float g, float b );
+} // namespace ork::audio::singularity {

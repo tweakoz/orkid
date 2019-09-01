@@ -25,7 +25,7 @@
 #include "../singularity/synth.h"
 #include "../singularity/krzobjects.h"
 
-extern std::string kbasepath;
+using namespace ork::audio::singularity;
 
 template class ork::orklut<ork::Char8,float>;
 
@@ -40,6 +40,8 @@ std::map<int,programInst*> playingNotesMap;
 std::vector<SynthData*> _gBankSet;
 int _gBankIndex = 0;
 
+namespace ork::audio::singularity{
+extern std::string kbasepath;
 s16* getK2V3InternalSoundBlock()
 {
     static s16* gdata = nullptr;
@@ -54,6 +56,7 @@ s16* getK2V3InternalSoundBlock()
       }
     return gdata;
 }
+} // namespace ork::audio::singularity{
 
 namespace ork::lev2 {
 

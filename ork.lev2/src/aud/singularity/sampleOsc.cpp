@@ -7,6 +7,8 @@
 #include "krzdata.h"
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 sample::sample()
@@ -642,3 +644,5 @@ float sampleOsc::playLoopBid()
 
 	return samp;*/
 }
+
+} // namespace ork::audio::singularity {

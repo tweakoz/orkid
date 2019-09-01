@@ -1,5 +1,7 @@
 #pragma once
 
+namespace ork::audio::singularity {
+
 struct ShelveEq
 {
     void init();
@@ -20,3 +22,5 @@ struct HiShelveEq : public ShelveEq
     void set( float cf, float peakg );
     float compute(float inp);
 };
+
+}

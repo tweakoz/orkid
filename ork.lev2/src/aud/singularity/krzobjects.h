@@ -4,6 +4,8 @@
 
 using namespace rapidjson;
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VastObjectsDB
@@ -25,7 +27,7 @@ struct VastObjectsDB
     programData* parseProgram( const rapidjson::Value& JO );
     multisample* parseMultiSample( const rapidjson::Value& JO );
     sample* parseSample( const rapidjson::Value& JO, const multisample* parent );
-    
+
     void parseAlg( const rapidjson::Value& JO, AlgData& algd );
     void parseKmpBlock( const Value& JO, KmpBlockData& kmblk );
     void parseFBlock( const Value& JO, DspParamData& fb );
@@ -41,3 +43,5 @@ struct VastObjectsDB
     std::map<int,keymap*> _tempkeymaps;
     std::map<int,multisample*> _tempmultisamples;
 };
+
+}

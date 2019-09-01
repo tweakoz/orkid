@@ -13,8 +13,8 @@
 using namespace ork::audiomath;
 
 ////////////////////////////////////////////////////////////////////////////////
-    
-namespace ork { namespace sf2 {
+
+namespace ork::audio::singularity::sf2 {
 
 //SF2Sample<11:piano060v125> opitch<60> sta<9674166> end<10272671> isblklen<59189498>
 //_sample<piano060v125>
@@ -93,8 +93,8 @@ void SoundFont::genZpmDB()
 
         int isblklen = _sampleDataNumSamples;
         if(false)//i==147)
-        printf( "SF2Sample<%d:%s> sr<%d> opitch<%d> pcorr<%d> sta<%d> end<%d> lpst<%d> lpend<%d> isblklen<%d>\n", 
-                i, 
+        printf( "SF2Sample<%d:%s> sr<%d> opitch<%d> pcorr<%d> sta<%d> end<%d> lpst<%d> lpend<%d> isblklen<%d>\n",
+                i,
                 s->name.c_str(),
                 s->samplerate,
                 s->originalpitch,
@@ -156,7 +156,7 @@ void SoundFont::genZpmDB()
         kmr->_hikey = kmax;
         kmr->_lovel = 0;
         kmr->_hivel = 127;
-        kmr->_tuning = -(srootOV-zpm_s->_rootKey-12)*100; 
+        kmr->_tuning = -(srootOV-zpm_s->_rootKey-12)*100;
         kmr->_volAdj = 1.0f;
         kmr->_linGain = 1.0f;
         kmr->_multiSample = zpm_ms;
@@ -177,7 +177,7 @@ void SoundFont::genZpmDB()
             released. At this point, the next time the loop end point is
             reached, the sound continues through the loop end point and
             plays until the end point is reached, at which time audio is
-            terminated.     */ 
+            terminated.     */
 
 
         switch( zone._loopModeOverride )
@@ -257,4 +257,4 @@ void SoundFont::genZpmDB()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-}} //namespace ork { namespace sf2 {
+} // namespace ork::audio::singularity::sf2 {

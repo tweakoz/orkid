@@ -2,6 +2,8 @@
 
 #include "dspblocks.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 // nonlinear blocks
 ///////////////////////////////////////////////////////////////////////////////
@@ -33,3 +35,5 @@ struct DIST : public DspBlock
     DIST( const DspBlockData& dbd );
     void compute(DspBuffer& dspbuf) final;
 };
+
+} //namespace ork::audio::singularity {

@@ -2,6 +2,7 @@
 
 #include "dspblocks.h"
 
+namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 // amp blocks
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,3 +83,5 @@ struct PANNER : public DspBlock
     void doKeyOn(const DspKeyOnInfo& koi) final;
     float _plmix, _prmix; // for smoothing
 };
+
+} //namespace ork::audio::singularity {

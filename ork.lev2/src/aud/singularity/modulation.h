@@ -1,5 +1,7 @@
 #pragma once
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FPARAM;
@@ -36,3 +38,4 @@ struct FPARAM
     evalit_t _evaluator;
 };
 
+} //namespace ork::audio::singularity {

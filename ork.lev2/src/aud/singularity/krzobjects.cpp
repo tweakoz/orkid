@@ -2,11 +2,13 @@
 #include "krzdata.h"
 #include "synth.h"
 #include "krzobjects.h"
+#include <ork/kernel/string/string.h>
 
 using namespace rapidjson;
 
+namespace ork::audio::singularity {
+
 extern std::string kbasepath;// = "/usr/local/share/singularity";
-#include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 struct KrzAlgCfg
@@ -958,3 +960,5 @@ const keymap* VastObjectsDB::findKeymap(int kmID) const
 		kd = it->second;
 	return kd;
 }
+
+} // namespace ork::audio::singularity {

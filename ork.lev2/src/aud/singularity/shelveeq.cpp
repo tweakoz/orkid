@@ -12,6 +12,8 @@ slider5:0<-24,24,0.01>Gain (dB)
 slider6:0<-24,24,0.05>Output (dB)
 */
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////
 
 void ShelveEq::init()
@@ -28,13 +30,13 @@ void LoShelveEq::set(float cf, float peakg)
     float sa = tanf(pi*(cf-0.25));
     float asq = sa*sa;
     float A = powf(10,(peakg/20.0));
-    
-    float F = ((peakg < 6.0) && (peakg > -6.0)) 
+
+    float F = ((peakg < 6.0) && (peakg > -6.0))
             ? sqrt(A)
-            : (A > 1.0) 
+            : (A > 1.0)
                 ? A/sqrt(2.0)
                 : A*sqrt(2.0);
-    
+
     float F2 = F*F;
     float tmp = A*A - F2;
 
@@ -73,7 +75,7 @@ void LoShelveEq::set(float cf, float peakg)
     b1 *= recipb0;
     b2 *= recipb0;
 
-    a0 = a0;  
+    a0 = a0;
     a1 = a1;
     a2 = a2;
     b1 = -b1;
@@ -92,8 +94,8 @@ void HiShelveEq::set(float cf, float peakg )
     float A = powf(10,(boost/20.0));
     float F = ((boost < 6.0) && (boost > -6.0))
             ? sqrt(A)
-            : (A > 1.0) 
-              ? A/sqrt(2.0) 
+            : (A > 1.0)
+              ? A/sqrt(2.0)
               : A*sqrt(2.0);
 
     float F2 = F*F;
@@ -131,11 +133,11 @@ void HiShelveEq::set(float cf, float peakg )
     a2 *= recipb0;
     b1 *= recipb0;
     b2 *= recipb0;
-      
+
     float gain = powf(10.0f,(boost/20.0));
     a0 = a0/gain;
-    a1 = a1/gain; 
-    a2 = a2/gain; 
+    a1 = a1/gain;
+    a2 = a2/gain;
     b1 = -b1;
     b2 = -b2;
 
@@ -146,11 +148,11 @@ void HiShelveEq::set(float cf, float peakg )
 float LoShelveEq::compute(float inp)
 {
     float xl = inp;
-     
-    yl = a0*xl 
-          + a1*x1l 
-          + a2*x2l 
-          + b1*y1l 
+
+    yl = a0*xl
+          + a1*x1l
+          + a2*x2l
+          + b1*y1l
           + b2*y2l;
     x2l = x1l;
     x1l = xl;
@@ -165,11 +167,11 @@ float LoShelveEq::compute(float inp)
 float HiShelveEq::compute(float inp)
 {
     float xl = inp;
-     
-    yl = a0*xl 
-          + a1*x1l 
-          + a2*x2l 
-          + b1*y1l 
+
+    yl = a0*xl
+          + a1*x1l
+          + a2*x2l
+          + b1*y1l
           + b2*y2l;
     x2l = x1l;
     x1l = xl;
@@ -179,4 +181,4 @@ float HiShelveEq::compute(float inp)
     return yl;
 }
 
-
+} // namespace ork::audio::singularity {

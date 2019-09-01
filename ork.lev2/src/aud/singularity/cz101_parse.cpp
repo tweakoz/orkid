@@ -9,6 +9,8 @@
 
 using namespace ork;
 
+namespace ork::audio::singularity {
+
 void parse_cz101(CzData* outd, const std::string& path,const std::string& bnkname)
 {
     ork::CFile syxfile(path.c_str(),ork::EFM_READ);
@@ -17,7 +19,7 @@ void parse_cz101(CzData* outd, const std::string& path,const std::string& bnknam
     syxfile.Load((void**)(&data),size);
 
     printf( "cz101 syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
-    
+
     auto zpmDB = outd->_zpmDB;
     int programcount = 0;
     int prgbase = 0;
@@ -111,7 +113,7 @@ void parse_cz101(CzData* outd, const std::string& path,const std::string& bnknam
         int byteindex = 0x0e; // OSC START
 
         for( int o=0; o<2; o++ )
-        {        
+        {
             auto& OSC = czdata->_oscData[o];
 
 
@@ -230,7 +232,7 @@ void parse_cz101(CzData* outd, const std::string& path,const std::string& bnknam
         AE->_segments.push_back({0,0}); // rel2
         AE->_segments.push_back({0,0}); // rel3
         ld->_kmpBlock._keymap = outd->_zpmKM;
-        
+
         /*auto& F0 = ld->_dspBlocks[0];
         auto& F1 = ld->_dspBlocks[1];
         auto& F4 = ld->_dspBlocks[4];
@@ -319,3 +321,4 @@ const programData* CzData::getProgram(int progID) const // final
     auto ObjDB = this->_zpmDB;
     return ObjDB->findProgram(progID);
 }
+} // namespace ork::audio::singularity {

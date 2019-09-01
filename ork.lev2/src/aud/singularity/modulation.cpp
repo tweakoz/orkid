@@ -7,6 +7,8 @@
 #include "krzdata.h"
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 FPARAM::FPARAM()
@@ -24,7 +26,7 @@ void FPARAM::reset()
 void FPARAM::keyOn( int ikey, int ivel )
 {
     _keyOff = float(ikey-_kstartNote);
-    _unitVel = float(ivel)/127.0f; 
+    _unitVel = float(ivel)/127.0f;
 
     if( false == _kstartBipolar )
     {
@@ -82,14 +84,14 @@ void GenPCH(DspParamData& fblk)
                        + kt
                        + vt;
         //float ratio = cents_to_linear_freq_ratio(totcents);
-        //printf( "rat<%f>\n", ratio); 
+        //printf( "rat<%f>\n", ratio);
         /*
-        printf( "cec._coarse<%f>\n", cec._coarse); 
-        printf( "cec._fine<%f>\n", cec._fine); 
-        printf( "c1<%f>\n", cec._C1()); 
-        printf( "c2<%f>\n", cec._C2()); 
-        printf( "vt<%f>\n", vt); 
-        printf( "totcents<%f>\n", totcents); 
+        printf( "cec._coarse<%f>\n", cec._coarse);
+        printf( "cec._fine<%f>\n", cec._fine);
+        printf( "c1<%f>\n", cec._C1());
+        printf( "c2<%f>\n", cec._C2());
+        printf( "vt<%f>\n", vt);
+        printf( "totcents<%f>\n", totcents);
         */
         return totcents;
     };
@@ -149,7 +151,7 @@ void GenAMP(DspParamData& fblk)
 
         //printf( "vt<%f> kt<%f> x<%f>\n", vt, kt, x );
         return x;
-    };  
+    };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -186,3 +188,5 @@ void DspBlockData::initEvaluators()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+} // namespace ork::audio::singularity {

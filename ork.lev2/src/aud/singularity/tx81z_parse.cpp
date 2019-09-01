@@ -8,6 +8,7 @@
 #include "tx81z.h"
 
 using namespace ork;
+namespace ork::audio::singularity {
 
 static const float openv_attacktimes[32] = {
      0,.01,.013,.015,
@@ -57,8 +58,8 @@ static const float opfrq_ratios[64] = {
     19.03,19.78,20.41,20.76,21.20,21.98,
     22.49,23.55,24.22,25.95 };
 
-static const int op_mitltab[20] = { 
-    127, 122, 118, 114, 110, 
+static const int op_mitltab[20] = {
+    127, 122, 118, 114, 110,
     107, 104, 102, 100,  98,
     96,  94,  92,  90,  88,
     86,  85,  84,  82,  81, };
@@ -73,7 +74,7 @@ void parse_tx81z(Tx81zData* outd, const std::string& path)
     syxfile.Load((void**)(&data),size);
 
     printf( "tx81z syxfile<%s> loaded size<%d>\n", path.c_str(), int(size));
-    
+
     auto zpmDB = outd->_zpmDB;
     int programcount = 0;
     int prgbase = 0;
@@ -201,7 +202,7 @@ void parse_tx81z(Tx81zData* outd, const std::string& path)
         bool MO = data[index_vb+48]&0x08; // mono mode ?
         bool SU = data[index_vb+48]&0x04;
         bool PO = data[index_vb+48]&0x02; // porto mode ?
-        bool PM = data[index_vb+48]&0x01; 
+        bool PM = data[index_vb+48]&0x01;
 
         fm4pd->_mono = MO;
         fm4pd->_portMode = PO;
@@ -219,7 +220,7 @@ void parse_tx81z(Tx81zData* outd, const std::string& path)
         for( int j=0; j<4; j++ )
         {
             int index = index_vb+j*10;
-            
+
             const int kop[] = {3,1,2,0};
             int op = kop[j];
             auto& opd = fm4pd->_ops[op];
@@ -242,11 +243,11 @@ void parse_tx81z(Tx81zData* outd, const std::string& path)
             opd._detune = (data[index+9]&7); // detune ? -3..3
 
 
-            int _EFF = data[index_vb+73+2*j]&0x3f; 
+            int _EFF = data[index_vb+73+2*j]&0x3f;
             opd._egShift = (_EFF&0x30)>>4; // eg shift (off,48,24,12)
             opd._fixedFrqMode = (_EFF&0x08)>>3; // fixed mode ? bool
             opd._fixedRange = (_EFF&0x7); // fixed range: 255,510,1k,2k,4k,8k,16k,32k
-                                    // fixed step:  1,  2,  4, 8, 16,32,64, 128 
+                                    // fixed step:  1,  2,  4, 8, 16,32,64, 128
             int _OWF = data[index_vb+74+2*j];//&0x7f;
             opd._waveform = (_OWF&0x70)>>4; // waveform 0..7
             opd._fineFrq = (_OWF&7); // fine frequency 0..15
@@ -318,7 +319,7 @@ void parse_tx81z(Tx81zData* outd, const std::string& path)
             AE->_segments.push_back({relestime,0}); // rel1
             AE->_segments.push_back({0,0}); // rel2
             AE->_segments.push_back({0,0}); // rel3
-        
+
             //printf( "OP<%d>\n", op );
             //printf( "    AR<%d> D1R<%d> D2R<%d> RR<%d> D1L<%d>\n", AR,D1R,D2R,RR,D1L);
             //printf( "    AME<%d> EBS<%d> KVS<%d>\n", AME,EBS,KVS);
@@ -356,3 +357,5 @@ const programData* Tx81zData::getProgram(int progID) const // final
     auto ObjDB = this->_zpmDB;
     return ObjDB->findProgram(progID);
 }
+
+} // namespace ork::audio::singularity {

@@ -9,6 +9,8 @@
 #include <ork/kernel/svariant.h>
 #include "alg.h"
 
+namespace ork::audio::singularity {
+
 struct outputBuffer;
 struct DspBlock;
 
@@ -35,7 +37,7 @@ struct DspBlock
 {
     DspBlock(const DspBlockData& dbd);
     virtual ~DspBlock() {}
-    
+
     void keyOn(const DspKeyOnInfo& koi);
     void keyOff(layer*l);
 
@@ -62,12 +64,6 @@ struct DspBlock
     FPARAM _param[kmaxparmperblock];
 
     IoMask _iomask;
-};  
+};
 
-
-
-
-
-
-
-
+} //namespace ork::audio::singularity {

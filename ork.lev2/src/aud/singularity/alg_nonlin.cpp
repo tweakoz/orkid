@@ -3,6 +3,8 @@
 #include "filters.h"
 #include "alg_nonlin.h"
 
+namespace ork::audio::singularity {
+
 float shaper(float inp, float adj);
 float wrap(float inp, float adj);
 
@@ -21,7 +23,7 @@ void SHAPER::compute(DspBuffer& dspbuf) //final
     float amt = _param[0].eval();//,0.01f,100.0f);
     _fval[0] = amt;
 
-    float* inpbuf = getInpBuf1(dspbuf); 
+    float* inpbuf = getInpBuf1(dspbuf);
 
     //float la = decibel_to_linear_amp_ratio(amt);
     if(1) for( int i=0; i<inumframes; i++ )
@@ -98,7 +100,7 @@ void TWOPARAM_SHAPER::compute(DspBuffer& dspbuf) //final
         float index = clip_float(le*6,-12,12); //clip_float(powf(le,4),-12.0f,12.0f);
        // index *= index;
         float e = sinf(index*pi2); ///adj;
-        
+
 
         index = clip_float(lo*6,-12.0f,12.0f);
         float o = sinf(index*pi2); ///adj;
@@ -120,11 +122,11 @@ WRAP::WRAP( const DspBlockData& dbd )
 void WRAP::compute(DspBuffer& dspbuf) //final
 {
     int inumframes = dspbuf._numframes;
-    float* inpbuf = getInpBuf1(dspbuf); 
+    float* inpbuf = getInpBuf1(dspbuf);
     float rpoint = _param[0].eval();//,-100,100.0f);
     _fval[0] = rpoint;
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         output1(dspbuf,i, wrap(inpbuf[i],rpoint) );
     }
 }
@@ -141,15 +143,17 @@ void DIST::compute(DspBuffer& dspbuf) //final
 {
     float pad = _dbd._inputPad;
     int inumframes = dspbuf._numframes;
-    float* inpbuf = getInpBuf1(dspbuf); 
+    float* inpbuf = getInpBuf1(dspbuf);
     float adj = _param[0].eval();
     _fval[0] = adj;
     float ratio = decibel_to_linear_amp_ratio(adj+30.0)*pad;
 
     if(1) for( int i=0; i<inumframes; i++ )
-    {   
+    {
         float v = inpbuf[i]*ratio;
         v = softsat(v,1);
         output1(dspbuf,i, v );
     }
 }
+
+} // namespace ork::audio::singularity {

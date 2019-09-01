@@ -2,6 +2,8 @@
 #include "krzdata.h"
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 layerData* programData::newLayer()
@@ -47,3 +49,5 @@ kmregion* keymap::getRegion(int note, int vel) const
 
 	return nullptr;
 }
+
+} // namespace ork::audio::singularity {

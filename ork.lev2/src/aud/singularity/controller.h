@@ -3,6 +3,8 @@
 #include "alg.h"
 #include "konoff.h"
 
+namespace ork::audio::singularity {
+
 struct LfoData;
 struct FunData;
 
@@ -67,3 +69,5 @@ struct FunInst : public ControllerInst
     controller_t _b;
     controller_t _op;
 };
+
+} //namespace ork::audio::singularity {

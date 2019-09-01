@@ -7,6 +7,8 @@
 #include "synth.h"
 #include "dspblocks.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 layer::layer(synth& syn)
@@ -646,3 +648,6 @@ void layer::reset()
     //delete _alg;
     //_alg = nullptr;
 }
+
+} // namespace ork::audio::singularity {
+    

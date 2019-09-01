@@ -5,6 +5,8 @@
 #include "tx81z.h"
 #include <stdint.h>
 
+namespace ork::audio::singularity {
+
 struct DspKeyOnInfo;
 struct layer;
 struct Wavetable;
@@ -35,3 +37,5 @@ struct FmOsc
 
     const Wavetable* _waveform;
 };
+
+} //namespace ork::audio::singularity {

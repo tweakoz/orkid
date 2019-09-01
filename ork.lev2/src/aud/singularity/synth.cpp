@@ -10,6 +10,7 @@
 #include "synth.h"
 #include "krzobjects.h"
 
+namespace ork::audio::singularity {
 ///////////////////////////////////////////////////////////////////////////////
 
 programInst::programInst(synth& syn)
@@ -377,3 +378,5 @@ void synth::resetFenables()
 	for( int i=0; i<5; i++ )
 		_fblockEnable[i] = true;
 }
+
+} // namespace ork::audio::singularity {

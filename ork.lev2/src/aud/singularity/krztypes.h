@@ -16,6 +16,8 @@
 #include <ork/orktypes.h>
 #include <ork/math/audiomath.h>
 
+namespace ork::audio::singularity {
+
 using namespace ork::audiomath;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,3 +61,5 @@ struct outputBuffer
     int _maxframes;
     int _numframes;
 };
+
+}

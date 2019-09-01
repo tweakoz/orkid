@@ -3,6 +3,8 @@
 #include "dspblocks.h"
 #include "wavetable.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////
 
 FmOsc::FmOsc()
@@ -70,7 +72,7 @@ float FmOsc::compute(float frq, float mi)
     float invfr = 1.0f-fract;
 
     int64_t iiA = (this_phase>>16)%wtsize;
-    int64_t iiB = (iiA+1)%wtsize; 
+    int64_t iiB = (iiA+1)%wtsize;
 
     float sampA = float(sblk[iiA] );
     float sampB = float(sblk[iiB] );
@@ -117,3 +119,5 @@ const float _kreltab[16] = {
     0.07,0.08,0.09,0.1,
     0.2,0.3,0.4,.5,
 };
+
+} // namespace ork::audio::singularity {

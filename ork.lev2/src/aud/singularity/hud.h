@@ -13,6 +13,8 @@
 #include "synth.h"
 #include "fft.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef ork::svar1024_t svar_t;
@@ -97,3 +99,5 @@ void DrawBorder(int X1, int Y1, int X2, int Y2, int color=0);
 ///////////////////////////////////////////////////////////////////////////////
 
 static const float fontscale = 0.40;
+
+} // namespace ork::audio::singularity {

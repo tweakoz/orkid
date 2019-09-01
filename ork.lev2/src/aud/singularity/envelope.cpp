@@ -6,6 +6,8 @@
 #include "krzdata.h"
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 // 7-seg rate/level envelopes
 ///////////////////////////////////////////////////////////////////////////////
@@ -392,3 +394,5 @@ void RateLevelEnvInst::keyOff()
     if( _data && false == _ignoreRelease )
         initSeg(4);
 }
+
+} // namespace ork::audio::singularity {

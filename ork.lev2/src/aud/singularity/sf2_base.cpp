@@ -9,8 +9,8 @@
 #include <ork/kernel/string/string.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-	
-namespace ork { namespace sf2 {
+
+namespace ork::audio::singularity::sf2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -81,7 +81,7 @@ void SoundFont::AddProgram( Ssfontpreset *preset )
 	cpre->pbag_base = preset->wPresetBagNdx;
 	cpre->preset = preset->wPreset;
 	cpre->mapped_preset = cpre->preset;
-	
+
 	cpre->SetName( preset->GetName() );
 
 	//printf( "pbase: %d preset %d mapped %d name %s\n", cpre->pbag_base, cpre->preset, cpre->mapped_preset, cpre->GetName().c_str() );
@@ -96,7 +96,7 @@ void SoundFont::AddSample( Ssfontsample *sample )
 {
 	CSF2Sample *pxsample = new CSF2Sample( sample );
 	mPXMSamples.push_back( pxsample );
-}	
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -143,4 +143,4 @@ void SoundFont::AddProgramZone( Ssfontprebag *pbg )
 	mPXMProgramZones.push_back( pxmp );
 }
 
-} }
+} // namespace ork::audio::singularity::sf2 {

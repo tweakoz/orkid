@@ -1,6 +1,8 @@
 #pragma once
 #include <ork/kernel/svariant.h>
 
+namespace ork::audio::singularity {
+
 struct Fm4OpData
 {
     int _atkRate = 0; // 0..31
@@ -62,3 +64,5 @@ struct fm4syn
     ork::svarp_t _pimpl;
     float _opAmp[4];
 };
+
+} //namespace ork::audio::singularity {

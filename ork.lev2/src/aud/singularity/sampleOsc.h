@@ -1,5 +1,7 @@
 #pragma once
 
+namespace ork::audio::singularity {
+
 struct KeyOnInfo;
 struct DspKeyOnInfo;
 
@@ -62,17 +64,17 @@ struct sampleOsc
     int64_t _blk_loopstart;
     int64_t _blk_loopend;
     int64_t _blk_end;
-    
+
     static constexpr float kinv64k = 1.0f/65536.0f;
     static constexpr float kinv32k = 1.0f/32768.0f;
 
     const sample* _sample;
-    
+
     int _sampselnote;
     int _sampleRoot;
 
     float _playbackRate;
-    
+
     int64_t _pbindex;
     int64_t _pbindexNext;
 
@@ -111,3 +113,4 @@ struct sampleOsc
 
 };
 
+} // namespace ork::audio::singularity {

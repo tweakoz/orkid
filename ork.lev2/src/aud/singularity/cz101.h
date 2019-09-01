@@ -1,6 +1,8 @@
 #pragma once
 #include <ork/kernel/svariant.h>
 
+namespace ork::audio::singularity {
+
 struct CzData;
 struct Wavetable;
 struct DspKeyOnInfo;
@@ -85,3 +87,5 @@ struct czsyn
     CzProgData _data;
     ork::svarp_t _pimpl;
 };
+
+} //namespace ork::audio::singularity {

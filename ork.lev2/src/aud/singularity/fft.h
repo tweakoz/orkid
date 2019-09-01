@@ -20,9 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // ==================================================================================
 
-#ifndef _AUDIOFFT_H
-#define _AUDIOFFT_H
-
+#pragma once
 
 /**
 * AudioFFT provides real-to-complex/complex-to-real FFT routines.
@@ -91,6 +89,7 @@
 #include <cstddef>
 #include <memory>
 
+namespace ork::audio::singularity {
 
 namespace audiofft
 {
@@ -174,4 +173,4 @@ namespace audiofft
 
 } // End of namespace
 
-#endif // Header guard
+}

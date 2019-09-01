@@ -2,6 +2,8 @@
 
 #include "dspblocks.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 // filter blocks
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,7 +108,7 @@ struct HIPASS : public DspBlock
     void doKeyOn(const DspKeyOnInfo& koi) final;
 };
 struct ALPASS : public DspBlock
-{   
+{
     ALPASS( const DspBlockData& dbd );
     TrapAllpass _filter;
     void compute(DspBuffer& dspbuf) final;
@@ -129,3 +131,5 @@ struct HIFREQ_STIMULATOR : public DspBlock
     void compute(DspBuffer& dspbuf) final;
     void doKeyOn(const DspKeyOnInfo& koi) final;
 };
+
+} //namespace ork::audio::singularity {

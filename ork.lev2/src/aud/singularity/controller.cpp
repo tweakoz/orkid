@@ -7,6 +7,8 @@
 #include "krzdata.h"
 #include "synth.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void ControlBlockInst::keyOn(const KeyOnInfo& KOI, const controlBlockData* CBD)
@@ -52,4 +54,4 @@ ControllerInst::ControllerInst(synth& syn)
 
 }
 
-
+} // namespace ork::audio::singularity {

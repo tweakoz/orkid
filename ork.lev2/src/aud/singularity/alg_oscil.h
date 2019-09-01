@@ -2,6 +2,8 @@
 
 #include "dspblocks.h"
 
+namespace ork::audio::singularity {
+
 ///////////////////////////////////////////////////////////////////////////////
 // oscils
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,3 +130,5 @@ struct NOISE : public DspBlock
     void doKeyOn(const DspKeyOnInfo& koi) final;
     void doKeyOff() final;
 };
+
+} //namespace ork::audio::singularity {
