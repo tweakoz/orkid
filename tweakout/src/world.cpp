@@ -115,7 +115,7 @@ WorldControllerInst::WorldControllerInst( const WorldControllerData& pcd, ent::E
 
 void WorldControllerInst::DoUpdate(ent::SceneInst* sinst)
 {
-	//ork::lev2::CInputManager::GetRef().Poll();
+	//ork::lev2::InputManager::GetRef().Poll();
 }
 /*
 void WorldControllerInst::SetHEI( const ent::heightfield_rt_inst* hei )
