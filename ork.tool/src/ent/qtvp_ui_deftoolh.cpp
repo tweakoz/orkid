@@ -77,7 +77,7 @@ void TestVPDefaultHandler::HandlePickOperation( DeferredPickOperationContext* pp
 			object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
 			//rtti::Class* pclass = pobj->GetClass();
 			orkprintf( "Object<%08x> Class<%s>\n", pobj, pclass->Name().c_str() );
-			any16 anno = pclass->Description().GetClassAnnotation( "editor.3dpickable" );
+			auto anno = pclass->Description().GetClassAnnotation( "editor.3dpickable" );
 			//if( anno == "true" )
 			{	editor.ManipManager().AttachObject( pobj );
 				if( pickctx->is_ctrl )

@@ -35,6 +35,7 @@
 template class ork::orklut<const ork::object::ObjectClass *,
                            ork::ent::SystemData *>;
 
+using namespace std::literals;
 using namespace ork::reflect;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,7 +122,17 @@ void UpdateStatus::SetState(EUpdateState est) { meStatus = est; }
 void SceneData::Describe() {
 
   RegisterMapProperty("SceneObjects", &SceneData::_sceneObjects);
-  RegisterMapProperty("SystemData", &SceneData::_systemDatas);
+
+  auto p = RegisterMapProperty("SystemData", &SceneData::_systemDatas);
+  /////////////////////
+  // temporary
+  //  (we want a custom solution)
+  /////////////////////
+  AnnotatePropertyForEditor<SceneData>("SystemData", "editor.factorylistbase",
+                                       "SystemData");
+  /////////////////////
+
+
 
   RegisterProperty("ScriptFile", &SceneData::_sceneScriptPath);
   AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.class",
@@ -129,8 +140,8 @@ void SceneData::Describe() {
   AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filetype", "lua");
   AnnotatePropertyForEditor<SceneData>("ScriptFile", "editor.filebase",
                                        "src://scripts/");
-  AnnotateClassForEditor<SceneData>("editor.object.props",
-                                    ConstString("ScriptFile"));
+
+  AnnotateClassForEditor<SceneData>("editor.object.props", "ScriptFile SystemData"s);
 }
 ///////////////////////////////////////////////////////////////////////////////
 SceneData::SceneData() : _sceneDataMode(ESCENEDATAMODE_NEW) {}
@@ -280,7 +291,7 @@ void SceneData::OnSceneDataMode(ESceneDataMode emode) {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct MatchNullSceneObject //: public std::unary_function<
-                            //std::pair<PoolString, SceneObject* >, bool >
+                            // std::pair<PoolString, SceneObject* >, bool >
 {
   bool operator()(const orkmap<PoolString, SceneObject *>::value_type &item) {
     return item.second == 0;
@@ -394,15 +405,15 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &) {
   // clean up dead systems
   //////////////////////////////////////////
   std::set<PoolString> keys_to_delete;
-  for (auto it : _systemDatas ) {
+  for (auto it : _systemDatas) {
     const SystemData *pscd = it.second;
-    if(pscd==nullptr){
+    if (pscd == nullptr) {
       keys_to_delete.insert(it.first);
     }
   }
-  for( auto item : keys_to_delete ){
+  for (auto item : keys_to_delete) {
     auto ite = _systemDatas.find(item);
-    assert(ite!=_systemDatas.end());
+    assert(ite != _systemDatas.end());
     _systemDatas.erase(ite);
   }
   //////////////////////////////////////////
@@ -413,12 +424,10 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &) {
 void SceneData::addSystemData(SystemData *pcomp) {
   auto classname = pcomp->GetClass()->Name();
   OrkAssert(_systemDatas.find(classname) == _systemDatas.end());
-  _systemDatas[classname]=pcomp;
+  _systemDatas[classname] = pcomp;
 }
 ///////////////////////////////////////////////////////////////////////////////
-SceneComposer::SceneComposer(SceneData *psd)
-    : mpSceneData(psd) {
-}
+SceneComposer::SceneComposer(SceneData *psd) : mpSceneData(psd) {}
 ///////////////////////////////////////////////////////////////////////////////
 SceneComposer::~SceneComposer() {
   /*for (orklut<const ork::object::ObjectClass *, SystemData *>::const_iterator
