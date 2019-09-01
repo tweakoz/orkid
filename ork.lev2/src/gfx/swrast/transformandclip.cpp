@@ -319,8 +319,8 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 			hd0.PerspectiveDivide();
 			hd1.PerspectiveDivide();
 			hd2.PerspectiveDivide();
-			ork::CVector3 d0 = (hd1.GetXYZ()-hd0.GetXYZ());
-			ork::CVector3 d1 = (hd2.GetXYZ()-hd1.GetXYZ());
+			ork::CVector3 d0 = (hd1.xyz()-hd0.xyz());
+			ork::CVector3 d1 = (hd2.xyz()-hd1.xyz());
 
 			ork::CVector3 dX = d0.Cross(d1);
 

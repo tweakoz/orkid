@@ -66,10 +66,85 @@ float snoise( vec2 p ) {
 } // libblock lib_mmnoise {
 
 libblock lib_terrain {
+
+    struct TerOut {
+      vec3 wpos;
+      vec3 wnrm;
+      float wdepth;
+      vec2 uv_lowmip;
+    };
+
     vec2 quantize(vec2 inp, float quantum) {
         return round(inp*(1.0/quantum))*quantum;
     }
     float max2(vec2 inp){
         return (inp.x>inp.y) ? inp.x : inp.y;
     }
+
+    TerOut computeTerrain(vec3 campos){
+      TerOut rval;
+
+      /////////////////////////////////
+      // constants
+      /////////////////////////////////
+      const float metersPerTexel = 2;
+      const float texelsPerMeter = 1.0 / metersPerTexel;
+      const float HFDIM = 2048;
+      const float INVHFDIM = 1.0 / HFDIM;
+      const float hfHeightScale = 1500;
+      const float hfHeightBias = 0;
+      // float invBaseGridTexelDim = (0.1*metersPerTexel / 4.0)+(1/129.0); // inverse of num texels of base lod
+      float invBaseGridTexelDim = 0.013; // inverse of num texels of base lod
+      /////////////////////////////////
+      // testuv
+      /////////////////////////////////
+      vec4 surfaceColor = vec4(0, 0, .1, 1);
+      /////////////////////////////////
+      // mipcalc
+      /////////////////////////////////
+      float vtxlod = position.y;
+      float mippedMetersPerTexel = metersPerTexel * exp2(vtxlod);
+      float invMippedMetersPerTexel = 1.0f / mippedMetersPerTexel;
+      /////////////////////////////////
+      // compute snapped object/worldspace
+      /////////////////////////////////
+      vec2 o2w = quantize(campos.xz, mippedMetersPerTexel);
+      float w_x = position.x * metersPerTexel + o2w.x;
+      float w_z = position.z * metersPerTexel + o2w.y;
+      vec3 wpos = vec3(w_x, 0, w_z);
+      vec3 opos = (wpos - campos);
+      /////////////////////////////////
+      // uvgen
+      /////////////////////////////////
+      float size = max(0.5, max2(abs(opos.xz * 2.0 * invBaseGridTexelDim)));
+      float llod = max(log2(size) - 0.75, 0.0);
+      float lowMIP = floor(llod);
+      float highMIP = lowMIP + 1.0;
+      float htexoffsetHi = exp2(lowMIP);
+      float htexoffsetLo = htexoffsetHi * 0.5;
+      rval.uv_lowmip = (wpos.xz * texelsPerMeter + htexoffsetLo) * INVHFDIM;
+      vec2 uvHiMip = (wpos.xz * texelsPerMeter + htexoffsetHi) * INVHFDIM;
+      rval.uv_lowmip = (rval.uv_lowmip + vec2(1, 1)) * 0.5;
+      uvHiMip = (uvHiMip + vec2(1, 1)) * 0.5;
+      /////////////////////////////////
+      // sample height
+      /////////////////////////////////
+      vec4 sampleLoMip = textureLod(ColorMap2, rval.uv_lowmip, lowMIP);
+      float heightSampleLoMip = sampleLoMip.r;
+      float heightSampleHiMip = textureLod(ColorMap2, uvHiMip, highMIP).r;
+      float lerpIndex = llod - lowMIP;
+      float h = mix(heightSampleLoMip, heightSampleHiMip, lerpIndex);
+      /////////////////////////////////
+      // final computation
+      /////////////////////////////////
+      wpos.y = (h * hfHeightScale) + hfHeightBias;
+
+      rval.wpos = wpos;
+      rval.wnrm = normalize(sampleLoMip.yzw);
+      rval.wdepth = distance(wpos, campos);
+
+      return rval;
+    }
+
+
 }

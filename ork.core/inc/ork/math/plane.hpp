@@ -36,7 +36,7 @@ template<typename T> TPlane<T>::TPlane()
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename T> TPlane<T>::TPlane( const TVector4<T> &vec )
-	: n( vec.GetXYZ() )
+	: n( vec.xyz() )
 	, d( vec.GetW() )
 {
 }
@@ -401,7 +401,7 @@ template< typename T> void TPlane<T>::EndianSwap()
 template< typename T> void TPlane<T>::SimpleTransform(const TMatrix4<T>& transform)
 {
 	TVector3<T> point(n * -d);
-	point = point.Transform(transform).GetXYZ();
+	point = point.Transform(transform).xyz();
 	n = n.Transform3x3(transform);
 	n.Normalize();
 	d = -n.Dot(point);

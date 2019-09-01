@@ -154,7 +154,7 @@ public:
 	EditorMainWindow& MainWindow() const { return mMainWindow; }
 	ork::lev2::Renderer* GetRenderer() const { return mRenderer; }
 	lev2::CManipManager& ManipManager() { return mEditor.ManipManager(); }
-	const lev2::CCamera* GetActiveCamera() const { return _editorCamera; }
+	lev2::CCamera* GetActiveCamera() const { return _editorCamera; }
 
 	///////////////////////////////////////////////////
 

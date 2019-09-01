@@ -5,14 +5,15 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#if 0
+
 #include <orktool/qtui/qtui_tool.h>
-#include <pkg/ent/editor/qtui_scenevp.h>
-#include <pkg/ent/editor/qtvp_uievh.h>
+#include "qtui_scenevp.h"
+#include "qtvp_uievh.h"
 #include "terrain_synth.h"
 #include <ork/event/Event.h>
 #include <ork/lev2/ui/event.h>
 
-#if 0
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace terrain {
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,7 +49,7 @@ class heightfield_ed_component : public ent::ComponentData
 
 	void ItersPerCycleGetter(int &a) const;
 	void ItersPerCycleSetter(const int &a);
-	
+
 	void SmoothingRateGetter(float &a) const;
 	void SmoothingRateSetter(const float &a);
 
@@ -98,7 +99,7 @@ class heightfield_ed_component : public ent::ComponentData
 	////////////////////////////////////////////
 
 public:
-	
+
 	void SetColorTex( lev2::Texture* ptex )
 	{
 		//mColorTex=ptex;
@@ -136,7 +137,7 @@ class heightfield_ed_inst : public ent::ComponentInst
 	const heightfield_ed_component& mHEC;
 
 public:
-	
+
 	heightfield_ed_inst( const heightfield_ed_component& hec, ent::Entity* pent );
 
 	const heightfield_ed_component& GetHEC() const { return mHEC; }
@@ -166,7 +167,7 @@ class GpuBrushBuffer : public lev2::GfxBuffer
 	void Draw( const TerBrushEvent& muev );
 
 public:
-	
+
 	static const int kx = 0;
 	static const int ky = 0;
 	static const int kw = 4096;
@@ -175,7 +176,7 @@ public:
 	GpuBrushBuffer()
 		: lev2::GfxBuffer(
 			0,
-			kx, ky,	kw, kh, 
+			kx, ky,	kw, kh,
 			lev2::EBUFFMT_RGBA32,
 			lev2::ETGTTYPE_EXTBUFFER,
 			"GpuBrushBuffer" )
@@ -230,8 +231,8 @@ class GradPaintTool : public ZBrushTool
 {
 	RttiDeclareAbstract(GradPaintTool,ZBrushTool);
 	float									mHeightLerp;
-	orkmap<float,CVector4>					mGradientLo;					
-	orkmap<float,CVector4>					mGradientHi;					
+	orkmap<float,CVector4>					mGradientLo;
+	orkmap<float,CVector4>					mGradientHi;
 	void OnEvent( const TerBrushEvent& ev );
 public:
 	GradPaintTool();
@@ -300,7 +301,7 @@ public:
 	float GetFilter() const { return mFilter; }
 	float GetAlphaBase() const { return mAlphaBase; }
 	float GetRepeat() const { return mRepeat; }
-	NoisePaint3DTool() 
+	NoisePaint3DTool()
 		: mRepeat(1.0f)
 		, mNoise1Texture(0)
 		, mNoise2Texture(0)
@@ -329,7 +330,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class ZBrushHandler : public ent::SceneEditorVPToolHandler
-{	
+{
 	RttiDeclareAbstract(ZBrushHandler,ent::SceneEditorVPToolHandler);
 
 	orkmap<std::string,ZBrushTool*>	mTools;

@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <orktool/toolcore/selection.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <pkg/ent/editor/qtui_scenevp.h>
+#include "qtui_scenevp.h"
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/texman.h>
@@ -240,7 +240,7 @@ void SceneEditorVP::SaveCubeMap()
 	CPickBuffer<SceneEditorVP>* pb = mpPickBuffer;
 	lev2::GfxTarget* pTEXTARG = mpPickBuffer->GetContext();
 
-	const CVector3 Locator = mPerspCam->CamFocus.GetXYZ();
+	const CVector3 Locator = mPerspCam->CamFocus.xyz();
 
 
 	float ffar = 1000.0f;

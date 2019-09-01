@@ -31,8 +31,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <pkg/ent/editor/qtui_scenevp.h>
-#include <pkg/ent/editor/qtvp_uievh.h>
+#include "qtui_scenevp.h"
+#include "qtvp_uievh.h"
 #include <pkg/ent/editor/edmainwin.h>
 #include <pkg/ent/Compositor.h>
 
@@ -579,7 +579,7 @@ void SceneEditorVP::Draw3dContent( lev2::RenderContextFrameData& FrameData )
 			const ent::SceneInst* psi = GetSceneInst();
 			mSceneView.UpdateRefreshPolicy(FrameData,psi);
 
-			this->GetClearColorRef() = node._clearColor.GetXYZ();
+			this->GetClearColorRef() = node._clearColor.xyz();
 
 			this->Clear();
 			if( node.mbDrawSource )

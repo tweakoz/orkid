@@ -11,7 +11,7 @@
 #include <orktool/toolcore/dataflow.h>
 #include <orktool/qtui/qtdataflow.h>
 
-#include <pkg/ent/editor/qtui_scenevp.h>
+#include "qtui_scenevp.h"
 #include <pkg/ent/editor/edmainwin.h>
 #include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/split_panel.h>

@@ -242,7 +242,7 @@ CVector3 CManip::IntersectWithPlanes(const ork::CVector2& posubp)
 	mIntersection[EPLANE_YZ].mIntersectionPoint = rayN+rayOutYZ;
 	mIntersection[EPLANE_XY].mIntersectionPoint = rayN+rayOutXY;
 	/////////////////////////////
-	rval = rayDir.GetXYZ();
+	rval = rayDir.xyz();
 	return rval;
 }
 

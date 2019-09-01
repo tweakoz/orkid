@@ -142,7 +142,7 @@ void GridGraph::SetGridNode( const GridAddr& addr, GridNode*node )
 
 GridAddr GridGraph::GetGridAddress( const CVector3& v )
 {
-	CVector3 vxf = v.Transform( mMtxWorldToGrid ).GetXYZ();
+	CVector3 vxf = v.Transform( mMtxWorldToGrid ).xyz();
 
 	GridAddr ret;
 	ret.ix = int(vxf.GetX());
@@ -254,9 +254,9 @@ void GridGraph::EndPreMerge()
 	MatT.SetTranslation( -vmin );
 	mMtxWorldToGrid = MatT*MatS;
 
-	CVector3 vtest_min = vmin.Transform( mMtxWorldToGrid ).GetXYZ();
-	CVector3 vtest_max = vmax.Transform( mMtxWorldToGrid ).GetXYZ();
-	CVector3 vtest_ctr = vctr.Transform( mMtxWorldToGrid ).GetXYZ();
+	CVector3 vtest_min = vmin.Transform( mMtxWorldToGrid ).xyz();
+	CVector3 vtest_max = vmax.Transform( mMtxWorldToGrid ).xyz();
+	CVector3 vtest_ctr = vctr.Transform( mMtxWorldToGrid ).xyz();
 
 	///////////////////////////////////////////////
 

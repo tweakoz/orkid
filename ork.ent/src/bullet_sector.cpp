@@ -221,7 +221,7 @@ public:
 	void Transform(const ork::CMatrix4& transform)
 	{
 		for (int vertIdx = 0;  vertIdx < mNumVerts; ++vertIdx)
-			mVerts[vertIdx] = mVerts[vertIdx].Transform(transform).GetXYZ();
+			mVerts[vertIdx] = mVerts[vertIdx].Transform(transform).xyz();
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -699,20 +699,20 @@ void Sector::Transform(const CMatrix4& transform)
 /*	for (int i = 0; i < NUM_FACES; ++i)
 	{
 		mPlanes[i].SimpleTransform(transform);
-		mPlaneCenters[i] = mPlaneCenters[i].Transform(transform).GetXYZ();
+		mPlaneCenters[i] = mPlaneCenters[i].Transform(transform).xyz();
 	}
 
 	mDirX = mDirX.Transform3x3(transform).Normal();
 	mDirY = mDirY.Transform3x3(transform).Normal();
 	mDirZ = mDirZ.Transform3x3(transform).Normal();
-	mCenter = mCenter.Transform(transform).GetXYZ();
+	mCenter = mCenter.Transform(transform).xyz();
 
 	mUBasis += mOrigin;
 	mVBasis += mOrigin;
 
-	mUBasis = mUBasis.Transform(transform).GetXYZ();
-	mVBasis = mVBasis.Transform(transform).GetXYZ();
-	mOrigin = mOrigin.Transform(transform).GetXYZ();
+	mUBasis = mUBasis.Transform(transform).xyz();
+	mVBasis = mVBasis.Transform(transform).xyz();
+	mOrigin = mOrigin.Transform(transform).xyz();
 
 	mUBasis -= mOrigin;
 	mVBasis -= mOrigin;
