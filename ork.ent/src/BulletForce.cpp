@@ -30,6 +30,7 @@
 
 #include <ork/kernel/opq.h>
 #include <pkg/ent/scene.hpp>
+#include <ork/math/misc_math.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletObjectForceControllerData, "BulletObjectForceControllerData");
 
@@ -189,6 +190,7 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
   CVector3 znormal = xfW.GetZNormal();
   CVector3 xnormal = xfW.GetXNormal();
   CVector3 ynormal = xfW.GetYNormal();
+  CVector3 dir_to_origin = (ORIGIN - pos).Normal();
   /////////////////////////////
 
   auto shape_inst = boci->GetShapeInst();
@@ -197,13 +199,12 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
   CVector3 ctr = (bbox.Min() + bbox.Max()) * 0.5f;
   CVector3 ctr_bak(ctr.GetX(), ctr.GetY(), bbox.Max().GetZ());
   CVector3 force_pos = pos; // - ctr_bak;
-  CVector3 force_dir = znormal;
+  CVector3 force_dir = dir_to_origin;
   CVector3 force_amt = force_dir * FORCE;
   // rbody->applyForce( ! force_amt, ! force_pos );
   rbody->applyCentralForce(!force_amt);
   /////////////////////////////
   // Get Direction to Target
-  CVector3 dir_to_origin = (ORIGIN - pos).Normal();
 
   /////////////////////////////
   // Get Torque Axis
@@ -240,11 +241,9 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
     float Y_ferr = Y_ferrABS * Y_fsign;
     /////////////////////////////
     float Y_famt = mPIDroll.Update(Y_ferr, 1.0f);
-    float kfmaxT = mTestData.mTorque * 0.1f;
-    if (Y_famt > kfmaxT)
-      Y_famt = kfmaxT;
-    if (Y_famt < -kfmaxT)
-      Y_famt = -kfmaxT;
+    float kfmaxT = clamp(mTestData.mTorque * 0.1f,
+                         -kfmaxT,
+                         +kfmaxT);
     rbody->applyTorque(!(znormal * Y_famt));
     /////////////////////////////
   }
