@@ -342,7 +342,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 					case ui::UIEV_RELEASE:
 						if( pnode )
 						  pnode->OnUiEvent( locEV );
-						mpActiveNode = 0;
+						mpActiveNode = nullptr;
 						break;
 					case ui::UIEV_DOUBLECLICK:
 						if( pnode )

@@ -289,6 +289,7 @@ private:
 	void ApplySamplingMode( Texture *ptex ) final;
 	void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai )  final;
 	void initTextureFromData( Texture *ptex, bool autogenmips ) final;
+    void generateMipMaps(Texture *ptex) final;
 
 
 	std::map<int,PboSet*> mPBOSets;

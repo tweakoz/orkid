@@ -94,11 +94,11 @@ public:
 		, mpAsset( 0 )
 		, mIoDriver( iodriver )
 	{
-	}	
+	}
 	/////////////////////////////////////////////////////
 	void SetAsset( ork::asset::Asset*passet )
 	{
-		mIoDriver.GetModel().SigPreNewObject();
+		//mIoDriver.GetModel().SigPreNewObject();
 		mpAsset = passet;
 		reflect::serialize::LayerDeserializer::Deserialize(mIoDriver.GetProp(),mIoDriver.GetObject());
 		mIoDriver.GetModel().SigModelInvalidated();
@@ -128,12 +128,12 @@ void GedAssetObjIoDriver::GetValue( const ork::Object* & rp ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GedFactoryAssetList::Describe() {}		
+void GedFactoryAssetList::Describe() {}
 
 GedItemNode* GedFactoryAssetList::CreateItemNode(ObjModel&mdl,const ConstString& Name,const reflect::IObjectProperty *prop,Object* obj) const
 {
-	GedAssetNode<GedAssetObjIoDriver>* itemnode = new GedAssetNode<GedAssetObjIoDriver>( 
-		mdl, 
+	GedAssetNode<GedAssetObjIoDriver>* itemnode = new GedAssetNode<GedAssetObjIoDriver>(
+		mdl,
 		Name.c_str(),
 		prop,
 		obj
