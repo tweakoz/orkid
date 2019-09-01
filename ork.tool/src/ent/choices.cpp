@@ -36,14 +36,14 @@
 
 namespace ork { namespace ent {
 
-	
+
 class ObjectFactory : public ork::Object
 {
 	RttiDeclareConcrete(ObjectFactory,ork::Object)
 public:
 	ObjectFactory(rtti::Class* pclass = NULL);
 	const rtti::Class* GetFactoryClass() const { return mpClass; }
-	
+
 private:
 	rtti::Class* mpClass;
 };
@@ -75,7 +75,7 @@ void BuildFactoryList(rtti::Class* root, orkvector<ObjectFactory*>& factories)
 	if(root->HasFactory())
 	{
 		object::ObjectClass* pobjclass = rtti::autocast(root);
-		any16 instanno = pobjclass->Description().GetClassAnnotation( "editor.instantiable" );
+		auto instanno = pobjclass->Description().GetClassAnnotation( "editor.instantiable" );
 
 		bool bok2add = instanno.IsA<bool>() ? instanno.Get<bool>() : true;
 
@@ -114,8 +114,7 @@ private:
 
 	SceneEditorBase& mSceneEditor;
 
-	virtual std::string ComputeValue( const std::string & ValueStr ) const 
-	{
+	virtual std::string ComputeValue( const std::string & ValueStr ) const{
 		Archetype *parch = 0;
 		PropTypeString tstr( ValueStr.c_str() );
 		Object* ValueObj = CPropType<Object*>::FromString( tstr );
@@ -156,7 +155,7 @@ private:
 			const object::ObjectClass *parchclass = rtti::autocast(pfact->GetFactoryClass());
 			parch = rtti::autocast(parchclass->CreateObject());
 			//parch->Compose();
-			
+
 			//std::string DefName = parch->DefaultUserName();
 			//parch->SetName( parch->GetScene()->TryObjectName(DefName).c_str() );
 			//parch->Default();
@@ -168,6 +167,11 @@ private:
 		return std::string(tstr.c_str());
 	}
 };
+
+ArchetypeChoices::ArchetypeChoices(SceneEditorBase& SceneEditor)
+	: mSceneEditor( SceneEditor )
+{
+}
 
 void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 {
@@ -213,7 +217,7 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 		{
 			const ObjectFactory* pfact = Factories.GetFactory( ifact );
 			const object::ObjectClass* pclass = rtti::autocast(pfact->GetFactoryClass());
-	
+
 			std::string ObjPtrStr = CreateFormattedString( "%p", pfact );
 
 			tool::CAttrChoiceValue ChoiceVal( std::string("/New/")+pfact->GetFactoryClass()->Name().c_str(), ObjPtrStr );
@@ -234,16 +238,16 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 
 		ork::file::Path searchabs = searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS);
 		ork::file::Path::NameType searchbase( searchabs.c_str() );
-	
+
 		for(size_t ifile = 0; ifile < inumfiles; ++ifile)
 		{
 			ork::file::Path objPath(files[ifile].c_str());
-			
+
 			ork::file::Path objBase = objPath.StripBasePath(searchbase).GetFolder(ork::file::Path::EPATHTYPE_POSIX);
 
 			const char* pfolder = objBase.c_str();
-			const char* pname = objPath.GetName().c_str(); 
-		
+			const char* pname = objPath.GetName().c_str();
+
 			file::Path::NameType ObjPtrStr = file::Path::NameType(pfolder) + file::Path::NameType(pname);
 
 			file::Path::NameType ChoiceStr = file::Path::NameType("/New/Reference/")+ObjPtrStr;
@@ -259,16 +263,103 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 	}
 }
 
-ArchetypeChoices::ArchetypeChoices(SceneEditorBase& SceneEditor)
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+class SystemDataChoiceFunctor : public ork::tool::ChoiceFunctor
+{
+public:
+
+	SystemDataChoiceFunctor(SceneEditorBase& SceneEditor) : mSceneEditor(SceneEditor) {}
+private:
+
+	SceneEditorBase& mSceneEditor;
+
+	virtual std::string ComputeValue( const std::string & ValueStr ) const{
+		SystemData *sdat = 0;
+		PropTypeString tstr( ValueStr.c_str() );
+		Object* ValueObj = CPropType<Object*>::FromString( tstr );
+
+		orkprintf( "ValueStr %s\n", ValueStr.c_str() );
+		orkprintf( "ValueObj %p\n", ValueObj );
+
+		if( ValueObj->GetClass()->IsSubclassOf( SystemData::GetClassStatic() ) ) {
+			sdat = rtti::autocast(ValueObj);
+		}
+		CPropType<Object*>::ToString( sdat,tstr);
+		return std::string(tstr.c_str());
+	}
+};
+
+SystemDataChoices::SystemDataChoices(SceneEditorBase& SceneEditor)
 	: mSceneEditor( SceneEditor )
 {
 }
 
-//void ArchetypeChoices::SetScene( SceneData* pscene )
-//{
-	//mpscene=pscene;
-	//EnumerateChoices();
-//}
+void SystemDataChoices::EnumerateChoices( bool bforcenocache )
+{
+	static SystemDataChoiceFunctor Functor(mSceneEditor);
+	static const ObjectFactoryList<SystemData> Factories;
+
+	if( mSceneEditor.mpScene )
+	{
+		clear();
+
+		//////////////////////////////////////////////////////////////////////////
+
+		int inumfact = Factories.GetNumFactories();
+
+		for( int ifact=0; ifact<inumfact; ifact++ )
+		{
+			const ObjectFactory* pfact = Factories.GetFactory( ifact );
+			const object::ObjectClass* pclass = rtti::autocast(pfact->GetFactoryClass());
+
+			std::string ObjPtrStr = CreateFormattedString( "%p", pfact );
+
+			tool::CAttrChoiceValue ChoiceVal( std::string("/New/")+pfact->GetFactoryClass()->Name().c_str(), ObjPtrStr );
+			ChoiceVal.SetFunctor( & Functor );
+
+			add( ChoiceVal );
+
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////
+		// enumerate external archetype files
+
+		ork::file::Path searchdir("data://archetypes/");
+		file::Path::NameType wildcard = "*.mox";
+		orkvector<file::Path::NameType> files = CFileEnv::filespec_search( wildcard, searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS) );
+		size_t inumfiles = files.size();
+
+		ork::file::Path searchabs = searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS);
+		ork::file::Path::NameType searchbase( searchabs.c_str() );
+
+		for(size_t ifile = 0; ifile < inumfiles; ++ifile)
+		{
+			ork::file::Path objPath(files[ifile].c_str());
+
+			ork::file::Path objBase = objPath.StripBasePath(searchbase).GetFolder(ork::file::Path::EPATHTYPE_POSIX);
+
+			const char* pfolder = objBase.c_str();
+			const char* pname = objPath.GetName().c_str();
+
+			file::Path::NameType ObjPtrStr = file::Path::NameType(pfolder) + file::Path::NameType(pname);
+
+			file::Path::NameType ChoiceStr = file::Path::NameType("/New/Reference/")+ObjPtrStr;
+
+			tool::CAttrChoiceValue ChoiceVal( ChoiceStr.c_str(), ChoiceStr.c_str() );
+			ChoiceVal.SetFunctor( & Functor );
+			ChoiceVal.AddKeyword( "userarchetype=true" );
+			add( ChoiceVal );
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////////
+	}
+}
+
 
 }}
 

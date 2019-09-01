@@ -13,6 +13,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/drawable.h>
 #include <pkg/ent/Compositor.h>
+#include <pkg/ent/input.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/glheaders.h> // todo abstract somehow ?
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -112,7 +113,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
         }
     }
     void renderBothEyes( FrameRenderer& renderer,
-                         CMCIdrawdata& drawdata,
+                         CompositorSystemDrawData& drawdata,
                          CCameraData* lcam,
                          CCameraData* rcam,
                          const std::map<int,ControllerState>& controllers ) {
@@ -293,7 +294,7 @@ struct VRSYSTEMIMPL {
 
   }
   ///////////////////////////////////////
-  void _myrender( FrameRenderer& renderer, CMCIdrawdata& drawdata, fmtx4 rootmatrix ) {
+  void _myrender( FrameRenderer& renderer, CompositorSystemDrawData& drawdata, fmtx4 rootmatrix ) {
 
       fmtx4 hmd = _posemap["hmd"];
       fmtx4 eyeL = _posemap["eyel"];
@@ -420,6 +421,7 @@ struct VRSYSTEMIMPL {
   fmtx4 _hmdMatrix;
   bool _prevthumbL = false;
   bool _prevthumbR = false;
+  InputSystem* _inputsys = nullptr;
   # if defined(ENABLE_VR)
     vr::IVRSystem* _hmd;
     vr::TrackedDevicePose_t _trackedPoses[ vr::k_unMaxTrackedDeviceCount ];
@@ -459,7 +461,7 @@ void VrCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // virt
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentInst* pCCI) // virtual
+void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) // virtual
 {
     auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
     static PoolString vrcamname = AddPooledString("vrcam");
@@ -467,7 +469,7 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
     //////////////////////////////////////////////
     // find vr camera
     //////////////////////////////////////////////
-
+    /*
     auto psi = pCCI->sceneInst();
     auto vrcam = psi->GetCameraData(vrcamname);
 
@@ -565,20 +567,6 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
         vr::VRActiveActionSet_t actionSet = { 0 };
     	  actionSet.ulActionSet = actset_demo;
     	  //vr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
-
-        /*for( auto controllerindex : vrimpl->_controllerindexset ){
-          vr::VRControllerState_t controllerstate;
-          if( vrimpl->_hmd->GetControllerState(controllerindex,&controllerstate, 1) ){
-            for( int axis=0; axis<5; axis++ ){
-            auto js = controllerstate.rAxis[axis];
-            printf( "joystick<%d> axis<%d: %f %f>\n", controllerindex, axis, js.x, js.y );
-          }
-        }
-
-      }*/
-
-
-
     }
     //////////////////////////////////////////////
 
@@ -745,8 +733,9 @@ void VrCompositingNode::DoRender(CMCIdrawdata& drawdata, CompositingComponentIns
 
       //printf( "pose_classes<%s>\n", pose_classes.c_str() );
     }
-
     #endif // ENABLE_VR
+    */
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::RtGroup* VrCompositingNode::GetOutput() const

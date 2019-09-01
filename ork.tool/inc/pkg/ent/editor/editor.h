@@ -43,6 +43,19 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
+class SystemDataChoices : public ork::tool::CChoiceList
+{
+	SceneEditorBase& mSceneEditor;
+
+public:
+
+	virtual void EnumerateChoices( bool bforcenocache=false );
+
+	SystemDataChoices(SceneEditorBase& SceneEditor);
+};
+
+///////////////////////////////////////////////////////////////////////////
+
 class RefArchetypeChoices : public ork::tool::CChoiceList
 {
 public:
@@ -130,9 +143,9 @@ public:
 	///////////////////////////////////////////////
 
 	ReferenceArchetype* NewReferenceArchetype( const std::string& archassetname );
-	//Archetype* NewArchetype( const std::string& classname );
 	Archetype* EditorNewArchetype(const std::string& classname, const std::string& name);
-
+    SystemData* EditorNewSystem(const std::string& classname);
+    
 	///////////////////////////////////////////////
 
 	void EditorLocateEntity(const CMatrix4 &matrix);
@@ -187,6 +200,7 @@ private:
 	void ImplDeleteObject(ork::Object* pobj);
 	EntData* ImplNewEntity(const ent::Archetype* parchetype = NULL);
 	Archetype* ImplNewArchetype(const std::string& classname, const std::string& name);
+    SystemData* ImplNewSystem(const std::string& classname);
 	void ImplLoadScene( std::string filename );
 	void ImplEnterRunLocalState();
 	void ImplEnterPauseState();
@@ -239,6 +253,18 @@ struct NewArchReq
 	Archetype* GetArchetype();
 	void SetArchetype(Archetype*parch);
     static inline shared_t makeShared(Future&f=Future::gnilfut) { return std::make_shared<NewArchReq>(f); }
+private:
+
+	Future& mResult;
+};
+struct NewSystemReq
+{
+    typedef std::shared_ptr<NewSystemReq> shared_t;
+	NewSystemReq(Future&f=Future::gnilfut) : mResult(f) {}
+	std::string mClassName;
+	SystemData* system();
+	void setSystem(SystemData*sys);
+    static inline shared_t makeShared(Future&f=Future::gnilfut) { return std::make_shared<NewSystemReq>(f); }
 private:
 
 	Future& mResult;

@@ -222,10 +222,11 @@ void Outliner2Model::UpdateModel()
 		for( auto item : scene_data->getSystemDatas() ){
 			const PoolString& name = item.first;
 			SystemData* sysdat = item.second;
-			assert(sysdat!=nullptr);
-			FixedString<256> decnam;
-			decnam.format("(s) %s", name.c_str() );
-			additem( decnam.c_str(), sysdat, 0 );
+			if( sysdat != nullptr ){
+				FixedString<256> decnam;
+				decnam.format("(s) %s", name.c_str() );
+				additem( decnam.c_str(), sysdat, 0 );
+			}
 		}
 
 		///////////////////////////////////////////////

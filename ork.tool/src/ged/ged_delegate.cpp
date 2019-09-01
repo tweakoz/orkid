@@ -143,7 +143,7 @@ void EnumerateFactories( const ork::Object* pdestobj, const reflect::IObjectProp
 					// check if class marked uninstantiable by editor
 					//////////////////////////////////////////////
 
-					any16 instanno = pclass->Description().GetClassAnnotation( "editor.instantiable" );
+					auto instanno = pclass->Description().GetClassAnnotation( "editor.instantiable" );
 
 					bool bok2add = instanno.IsA<bool>() ? instanno.Get<bool>() : true;
 
@@ -193,7 +193,7 @@ void EnumerateFactories( object::ObjectClass* pobjclass, orkset<object::ObjectCl
 			// check if class marked uninstantiable by editor
 			//////////////////////////////////////////////
 
-			any16 instanno = pclass->Description().GetClassAnnotation( "editor.instantiable" );
+			auto instanno = pclass->Description().GetClassAnnotation( "editor.instantiable" );
 
 			bool bok2add = instanno.IsA<bool>() ? instanno.Get<bool>() : true;
 
@@ -494,7 +494,7 @@ OpsNode::OpsNode( ObjModel& mdl, const char* name, const reflect::IObjectPropert
 
 	while( objclass != nullptr )
 	{
-		any16 obj_ops = objclass->Description().GetClassAnnotation( "editor.object.ops" );
+		auto obj_ops = objclass->Description().GetClassAnnotation( "editor.object.ops" );
 
 		if( obj_ops.IsA<ork::reflect::OpMap*>() )
 		{

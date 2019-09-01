@@ -58,13 +58,9 @@ TEST(SceneManip1)
 
 				auto opl3 = [=,&counter]()
 				{
-				    sceneinst->SetSceneInstMode(ESCENEMODE_EDIT);
-				    //printf( "sceneinst<%p>\n", sceneinst);
-				    //printf( "scenedata<%p>\n", scenedata);
 				    delete sceneinst;
 				    delete scenedata;
 					counter --;
-				    //printf( "DONE counter<%d>\n", int(counter));
 				};
 				UpdateSerialOpQ().push(Op(opl3));
 			};
@@ -105,7 +101,7 @@ public:
 
 //////////////////////////////////////////////////////////
 
-void ScriptOnlyArchetype::DoCompose(ork::ent::ArchComposer& composer) 
+void ScriptOnlyArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	composer.Register<ork::ent::ScriptComponentData>();
 }
@@ -177,7 +173,6 @@ TEST(ScriptCompTest)
 		printf( "LuaEntUpdatesPS<%f>\n", float(numentupd)/ftime );
 		//printf( "%s", ANSI_COLOR_RESET );
 		printf( "%s", ANSI_COLOR_GREEN );
-		sceneinst->SetSceneInstMode(ESCENEMODE_EDIT);
 	    delete sceneinst;
 	    delete scenedata;
 
@@ -188,4 +183,3 @@ TEST(ScriptCompTest)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-

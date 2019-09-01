@@ -27,7 +27,7 @@ static const bool kUSEEXECTABUPDATE = false;
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentData, "ScriptComponentData" );
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptComponentInst, "ScriptComponentInst" );
-INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptManagerComponentData, "ScriptManagerComponentData" );
+INSTANTIATE_TRANSPARENT_RTTI( ork::ent::ScriptSystemData, "ScriptSystemData" );
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ ent::ComponentInst* ScriptComponentData::CreateComponent(ent::Entity* pent) cons
 }
 void ScriptComponentData::DoRegisterWithScene( ork::ent::SceneComposer& sc )
 {
-	sc.Register<ork::ent::ScriptManagerComponentData>();
+	sc.Register<ork::ent::ScriptSystemData>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -198,22 +198,22 @@ void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ScriptManagerComponentData::Describe()
+void ScriptSystemData::Describe()
 {
 }
-ScriptManagerComponentData::ScriptManagerComponentData()
+ScriptSystemData::ScriptSystemData()
 {
 
 }
 
-System* ScriptManagerComponentData::createSystem(ork::ent::SceneInst *pinst) const
+System* ScriptSystemData::createSystem(ork::ent::SceneInst *pinst) const
 {
 	return new ScriptSystem( *this, pinst );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptSystem::ScriptSystem( const ScriptManagerComponentData& data, ork::ent::SceneInst *pinst )
+ScriptSystem::ScriptSystem( const ScriptSystemData& data, ork::ent::SceneInst *pinst )
 	: ork::ent::System( &data, pinst )
 	, mScriptRef(LUA_NOREF)
 {

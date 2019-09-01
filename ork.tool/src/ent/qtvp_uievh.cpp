@@ -257,16 +257,8 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 					break;
 				}
 				case ' ':
-				{
-					ent::CompositingSystem* pCMCI = GetCMCI();
-					const ent::CompositingComponentInst* pCCI = GetCompositingComponentInst(0);
-					const CompositingGroup* pCG = 0;
-					if( pCCI )
-					{
-						const CompositingComponentData& CCD = pCCI->GetCompositingData();
-
-						CCD.Toggle();
-					}
+				{   const auto& CDATA = GetCMCI()->systemData();
+					CDATA.Toggle();
 					break;
 				}
 				case 'f': // focus on selected entity
@@ -289,7 +281,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent( const ui::Event& EV )
 							if( _editorCamera )
 							{
 								CCamera_persp* as_persp = rtti::autocast(_editorCamera);
-								
+
 								if( as_persp )
 								{
 									as_persp->mvCenter = pos;
@@ -355,13 +347,13 @@ static CMatrix4 mtx_spawn;
 void SceneEditorVPToolHandler::SetSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy )
 {
 	const CVector4& TestNrmD = ctx.mPickColors[1];
-	
+
 	/*const CCameraData& camdat = GetViewport()->GetCamera()->mCameraData;
 	CVector3 vdir, vori;
 	camdat.ProjectDepthRay( CVector2( fx, fy ), vdir, vori );
 	float l = TestNrmD.GetZ();
 	float il = 1.0-l;
-	
+
 	//float fd = (TestNrmD.GetZ()-camdat.GetNear() / camdat.GetFar());
 	float fd = (il*camdat.GetNear())+(l*camdat.GetFar());
 	CVector3 SpawnYNormal( TestNrmD.GetX(), TestNrmD.GetY(), TestNrmD.GetW() );

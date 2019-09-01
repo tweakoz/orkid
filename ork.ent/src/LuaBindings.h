@@ -1,6 +1,6 @@
 #pragma once
 
-extern "C" { 
+extern "C" {
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -25,7 +25,7 @@ struct LuaOpaque16
 	{
 		mValue.Set<T>(the_t);
 	}
-	std::string GetType() const 
+	std::string GetType() const
 	{
 		int status;
 		auto mangled = mValue.GetTypeName();

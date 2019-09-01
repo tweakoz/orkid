@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -17,7 +17,7 @@
 namespace ork {
 namespace reflect {
 
-Description::Description() 
+Description::Description()
 	: mParentDescription(NULL)
 {
 }
@@ -155,9 +155,9 @@ ConstString	Description::GetPropertyAnnotation( const ConstString &propname, con
 	return "";
 }
 
-void Description::AnnotateClass( const ConstString &key, const any16& val )
+void Description::AnnotateClass( const ConstString &key, const Description::anno_t& val )
 {
-	orklut<ConstString,any16>::const_iterator it = mClassAnnotations.find(key);
+	orklut<ConstString,anno_t>::const_iterator it = mClassAnnotations.find(key);
 	if(it == mClassAnnotations.end())
 	{
 		mClassAnnotations.AddSorted( key, val );
@@ -168,16 +168,16 @@ void Description::AnnotateClass( const ConstString &key, const any16& val )
 	}
 }
 
-const any16& Description::GetClassAnnotation( const ConstString& key ) const
+const Description::anno_t& Description::GetClassAnnotation( const ConstString& key ) const
 {	for(const Description *description = this; description != NULL; description = description->mParentDescription)
-	{	orklut<ConstString,any16>::const_iterator it = description->mClassAnnotations.find(key);
+	{	orklut<ConstString,anno_t>::const_iterator it = description->mClassAnnotations.find(key);
 		if(it != description->mClassAnnotations.end())
 		{
 			return (*it).second;
 		}
 	}
-	static const any16 a16;
-	return a16;
+	static const anno_t empty_anno(nullptr);
+	return empty_anno;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,12 +194,12 @@ bool Description::SerializeProperties(ISerializer &serializer, const Object *obj
 	}
 
 	const PropertyMapType &map = Properties();
-	
+
 	for(PropertyMapType::const_iterator it = map.begin(); it != map.end(); ++it)
 	{
 		ConstString name = (*it).first;
 		IObjectProperty *prop = (*it).second;
-		
+
 		Command command(Command::EPROPERTY, name);
 
 		serializer.BeginCommand(command);
