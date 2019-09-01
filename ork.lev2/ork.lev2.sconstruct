@@ -13,11 +13,6 @@ BasicEnv = Environment( ENV=os.environ, tools=['default','qt5'] )
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
 is_prep = (TARGET=="prep")
-is_install = (TARGET=="install")
-#
-
-if is_install:
-  obu.install_headers("inc/ork")
 
 # basics #################################
 

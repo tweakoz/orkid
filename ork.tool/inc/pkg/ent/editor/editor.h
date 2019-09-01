@@ -145,7 +145,7 @@ public:
 	ReferenceArchetype* NewReferenceArchetype( const std::string& archassetname );
 	Archetype* EditorNewArchetype(const std::string& classname, const std::string& name);
     SystemData* EditorNewSystem(const std::string& classname);
-
+    
 	///////////////////////////////////////////////
 
 	void EditorLocateEntity(const CMatrix4 &matrix);

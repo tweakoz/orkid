@@ -8,19 +8,14 @@ import ork.build.slnprj as sln
 SetOption('implicit_cache',1)
 Decider('MD5-timestamp')
 VariantDir( 'obj', 'src', duplicate=0 )
-SetOption('num_jobs', obu.num_cores) 
+SetOption('num_jobs', obu.num_cores)
 sln.optset.add("ork.core")
 BasicEnv = Environment( ENV=os.environ )
 
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
 is_prep = (TARGET=="prep")
-is_install = (TARGET=="install")
 #
-
-if is_install:
-	obu.install_headers("inc/ork")
-	obu.install_headers("ext/inc/*")
 
 # basics #################################
 
@@ -67,4 +62,3 @@ if False == is_prep:
 	ret += a.core_lib
 	ret += a.test_prg
 Return('ret')
-
