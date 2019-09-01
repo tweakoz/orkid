@@ -121,7 +121,7 @@ template <typename ClassType, typename MemberType>
 static inline AccessorObjectArrayPropertyType<MemberType>&
 RegisterArrayProperty(const char* name, void (ClassType::*getter)(MemberType&, size_t) const,
                       void (ClassType::*setter)(const MemberType&, size_t), size_t (ClassType::*counter)() const,
-                      void (ClassType::*resizer)(size_t newsize) = 0,
+                      void (ClassType::*resizer)(size_t newsize) = nullptr,
                       Description& description = ClassType::GetClassStatic()->Description()) {
   auto prop = new AccessorObjectArrayPropertyType<MemberType>(static_cast<void (Object::*)(MemberType&, size_t) const>(getter),
                                                               static_cast<void (Object::*)(const MemberType&, size_t)>(setter),
@@ -136,7 +136,7 @@ RegisterArrayProperty(const char* name, void (ClassType::*getter)(MemberType&, s
 template <typename ClassType>
 static inline AccessorObjectArrayPropertyObject&
 RegisterArrayProperty(const char* name, Object* (ClassType::*accessor)(size_t), size_t (ClassType::*counter)() const,
-                      void (ClassType::*resizer)(size_t newsize) = 0,
+                      void (ClassType::*resizer)(size_t newsize) = nullptr,
                       Description& description = ClassType::GetClassStatic()->Description()) {
   auto prop = new AccessorObjectArrayPropertyObject(static_cast<Object* (Object::*)(size_t)>(accessor),
                                                     static_cast<size_t (Object::*)() const>(counter),
@@ -151,7 +151,7 @@ template <typename ClassType>
 static inline AccessorObjectArrayPropertyVariant&
 RegisterArrayProperty(const char* name, bool (ClassType::*serialize_item)(ISerializer&, size_t) const,
                       bool (ClassType::*deserialize_item)(IDeserializer&, size_t), size_t (ClassType::*count)() const,
-                      bool (ClassType::*resize)(size_t) = 0,
+                      bool (ClassType::*resize)(size_t) = nullptr,
                       Description& description = ClassType::GetClassStatic()->Description()) {
   AccessorObjectArrayPropertyVariant* prop = new AccessorObjectArrayPropertyVariant(
       static_cast<bool (Object::*)(ISerializer&, size_t) const>(serialize_item),
@@ -239,16 +239,12 @@ template <typename ClassType> inline void AnnotateProperty(const char* PropName,
   description.AnnotateProperty(PropName, Key, Val);
 }
 template <typename ClassType> inline void AnnotatePropertyForEditor(const char* PropName, const char* Key, const char* Val) {
-#if defined(ORK_CONFIG_EDITORBUILD)
   Description& description = ClassType::GetClassStatic()->Description();
   description.AnnotateProperty(PropName, Key, Val);
-#endif
 }
 template <typename ClassType> inline void AnnotateClassForEditor(const char* Key, const any16& Val) {
-#if defined(ORK_CONFIG_EDITORBUILD)
   Description& description = ClassType::GetClassStatic()->Description();
   description.AnnotateClass(Key, Val);
-#endif
 }
 
 struct OpMap {

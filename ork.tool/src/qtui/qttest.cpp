@@ -241,10 +241,3 @@ int QtTest( int& argc, char **argv, bool bgamemode, bool bmenumode ){
 ///////////////////////////////////////////////////////////////////////////////
 
 }} // // namespace ork { namespace tool
-
-void OrkGlobalDisableMousePointer(){
-    //QApplication::setOverrideCursor( QCursor( Qt::BlankCursor ) );
-}
-void OrkGlobalEnableMousePointer(){
-    //QApplication::restoreOverrideCursor();
-}
