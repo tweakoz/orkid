@@ -17,12 +17,12 @@
                                             <item key='attract'>
                                                 <reference category='ObjectClass'>
                                                     <object type='TestForceControllerData' id='3'>
-                                                        <property name='DFactor'>-0.292517</property>
-                                                        <property name='ErrPower'>41.1623</property>
+                                                        <property name='DFactor'>0</property>
+                                                        <property name='ErrPower'>1</property>
                                                         <property name='Force'>4</property>
-                                                        <property name='IFactor'>0.734694</property>
+                                                        <property name='IFactor'>0</property>
                                                         <property name='Origin'>0 0 0</property>
-                                                        <property name='PFactor'>0.646258</property>
+                                                        <property name='PFactor'>1</property>
                                                         <property name='Target'>"bulsph1"</property>
                                                         <property name='Torque'>0</property>
                                                     </object>
@@ -296,10 +296,10 @@
                                     <object type='EditorCamControllerData' id='24'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='25'>
-                                                <property name='Center'>0.242955 0.598577 0.200618</property>
+                                                <property name='Center'>-0.129903 1.71583 1.32856</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>13.687</property>
-                                                <property name='QuatC'>-0.242369 0.344783 -0.118504 -0.899155</property>
+                                                <property name='Loc'>16.9114</property>
+                                                <property name='QuatC'>-0.0261462 0.592938 -0.0466038 -0.803576</property>
                                                 <property name='Aperature'>60</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -371,7 +371,7 @@
                         <property name='Name'>"bulsph1"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='33'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 5 0.1 1</property>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 -0.294693 5 0.374843 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -386,7 +386,7 @@
                         <property name='Name'>"bulsph2"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='35'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0.03 10 0 1</property>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 -4.45185 10 3.62722 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
@@ -401,7 +401,7 @@
                         <property name='Name'>"bulsph3"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='37'>
-                                <property name='TransformNode'>0.761908 -0.647685 0 0 0.647685 0.761908 0 0 0 0 1 0 0 1.44677 0 1</property>
+                                <property name='TransformNode'>0.761908 -0.647685 0 0 0.647685 0.761908 0 0 0 0 1 0 4.63611 3.836 -2.98561 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
