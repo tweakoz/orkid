@@ -13,12 +13,6 @@ SetOption('num_jobs', obu.num_cores)
 #
 TARGET = string.join(COMMAND_LINE_TARGETS)
 is_prep = (TARGET=="prep")
-is_install = (TARGET=="install")
-#
-
-if is_install:
-  obu.install_headers("inc/orktool")
-  obu.install_headers("inc/pkg")
 
 ##########################################
 
