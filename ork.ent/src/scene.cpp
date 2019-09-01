@@ -390,6 +390,22 @@ void SceneData::EnterInitState() { OnSceneDataMode(ESCENEDATAMODE_INIT); }
 void SceneData::EnterRunState() { OnSceneDataMode(ESCENEDATAMODE_RUN); }
 ///////////////////////////////////////////////////////////////////////////////
 bool SceneData::PostDeserialize(reflect::IDeserializer &) {
+  //////////////////////////////////////////
+  // clean up dead systems
+  //////////////////////////////////////////
+  std::set<PoolString> keys_to_delete;
+  for (auto it : _systemDatas ) {
+    const SystemData *pscd = it.second;
+    if(pscd==nullptr){
+      keys_to_delete.insert(it.first);
+    }
+  }
+  for( auto item : keys_to_delete ){
+    auto ite = _systemDatas.find(item);
+    assert(ite!=_systemDatas.end());
+    _systemDatas.erase(ite);
+  }
+  //////////////////////////////////////////
   EnterEditState();
   return true;
 }

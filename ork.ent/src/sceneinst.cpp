@@ -601,16 +601,16 @@ void SceneInst::UnLinkEntities() {
 
 void SceneInst::composeSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
-
-
   ///////////////////////////////////
   // Systems
   ///////////////////////////////////
 
   for (auto it : mSceneData->getSystemDatas()) {
     const SystemData *pscd = it.second;
-    auto sys = pscd->createSystem(this);
-    addSystem(sys->systemTypeDynamic(), sys);
+    if(pscd!=nullptr){
+      auto sys = pscd->createSystem(this);
+      addSystem(sys->systemTypeDynamic(), sys);
+    }
   }
 }
 
