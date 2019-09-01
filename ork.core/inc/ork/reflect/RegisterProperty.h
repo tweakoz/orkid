@@ -242,7 +242,7 @@ template <typename ClassType> inline void AnnotatePropertyForEditor(const char* 
   Description& description = ClassType::GetClassStatic()->Description();
   description.AnnotateProperty(PropName, Key, Val);
 }
-template <typename ClassType> inline void AnnotateClassForEditor(const char* Key, const any16& Val) {
+template <typename ClassType> inline void AnnotateClassForEditor(const char* Key, const Description::anno_t& Val) {
   Description& description = ClassType::GetClassStatic()->Description();
   description.AnnotateClass(Key, Val);
 }

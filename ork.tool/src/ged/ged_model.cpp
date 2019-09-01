@@ -24,6 +24,7 @@
 
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <pkg/ent/scene.h>
 
 #include <ork/util/crc.h>
 
@@ -213,7 +214,7 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
   ///////////////////////////////////////////////////
   // editor.object.ops
   ///////////////////////////////////////////////////
-  any16 obj_ops_anno = objclass->Description().GetClassAnnotation("editor.object.ops");
+  auto obj_ops_anno = objclass->Description().GetClassAnnotation("editor.object.ops");
 
   bool is_const_string = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ConstString>();
   bool is_op_map = obj_ops_anno.IsSet() && obj_ops_anno.IsA<ork::reflect::OpMap*>();
@@ -236,9 +237,9 @@ GedItemNode* ObjModel::Recurse(ork::Object* root_object, const char* pname, bool
   // editor.class
   ///////////////////////////////////////////////////
 
-  any16 ClassEditorAnno = objclass->Description().GetClassAnnotation("editor.class");
-  if (ClassEditorAnno.IsSet()) {
-    ConstString anno_edclass = ClassEditorAnno.Get<ConstString>();
+  auto ClassEditorAnno = objclass->Description().GetClassAnnotation("editor.class");
+  if (auto as_conststr = ClassEditorAnno.TryAs<ConstString>()) {
+    ConstString anno_edclass = as_conststr.value();
     if (anno_edclass.length()) {
       rtti::Class* AnnoEditorClass = rtti::Class::FindClass(anno_edclass);
       if (AnnoEditorClass) {
@@ -368,8 +369,11 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
   for (int ic = (inumclasses - 1); ic >= 0; ic--) {
     object::ObjectClass* pclass = ClassVect[ic];
     ork::reflect::Description::PropertyMapType& propmap = pclass->Description().Properties();
-    any16 eg_anno = pclass->Description().GetClassAnnotation("editor.prop.groups");
-    ConstString eg = eg_anno.IsSet() ? eg_anno.Get<const char*>() : "";
+    auto eg_anno = pclass->Description().GetClassAnnotation("editor.prop.groups");
+    auto as_conststr = eg_anno.TryAs<ConstString>();
+    ConstString eg = "";
+    if( as_conststr )
+        eg = as_conststr.value();
     if (eg.length()) {
       FixedString<1024> str_rep = eg.c_str();
       str_rep.replace_in_place("//", "// ");
@@ -430,34 +434,29 @@ void ObjModel::EnumerateNodes(sortnode& in_node, object::ObjectClass* the_class)
       }
       /////////////////////////////////////////////////
     } else
-      for (ork::reflect::Description::PropertyMapType::iterator it = propmap.begin(); it != propmap.end(); it++) {
+      for (auto it : propmap ) {
         ///////////////////////////////////////////////////
         // editor.object.props
         ///////////////////////////////////////////////////
         std::set<std::string> allowed_props;
-        any16 obj_props_anno = the_class->Description().GetClassAnnotation("editor.object.props");
-        if (obj_props_anno.IsSet() && obj_props_anno.IsA<ConstString>()) {
-          ConstString propnameset = obj_props_anno.Get<ConstString>();
+        auto obj_props_anno = the_class->Description().GetClassAnnotation("editor.object.props");
+        if ( auto as_str = obj_props_anno.TryAs<std::string>() ) {
+          auto propnameset = as_str.value();
           if (propnameset.length()) {
-            std::string instr(propnameset.c_str());
-            auto pvect = ork::SplitString(instr, ' ');
+            auto pvect = ork::SplitString(propnameset, ' ');
             for (const auto& item : pvect)
               allowed_props.insert(item);
           }
         }
-
         ///////////////////////////////////////////////////
-
         bool prop_ok = true;
-
-        const ConstString& Name = (*it).first;
-
+        const ConstString& Name = it.first;
         if (allowed_props.size()) {
           std::string namstr(Name.c_str());
           prop_ok = allowed_props.find(namstr) != allowed_props.end();
         }
         if (prop_ok) {
-          ork::reflect::IObjectProperty* prop = (*it).second;
+          ork::reflect::IObjectProperty* prop = it.second;
           if (prop) {
             in_node.PropVect.push_back(std::make_pair(Name.c_str(), prop));
           }
@@ -533,6 +532,12 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
       return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);
   }
   /////////////////////////////////////////////////////////////////////////
+  else if (const reflect::DirectObjectMapPropertyType<ent::SceneData::SystemDataLut>* MapProp = rtti::autocast(prop)) {
+    auto mapprop = rtti::downcast<const reflect::DirectObjectMapPropertyType<ent::SceneData::SystemDataLut>*>(prop);
+    if (mapprop)
+      return new GedMapNode(*this, Name.c_str(), mapprop, pobject);
+  }
+  /////////////////////////////////////////////////////////////////////////
   else if (const reflect::DirectObjectPropertyType<ork::Object*>* dobjprop = rtti::autocast(prop)) {
     ork::Object* psubobj = 0;
     dobjprop->Get(psubobj, pobject);
@@ -550,7 +555,7 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
   else
     return new GedLabelNode(*this, Name.c_str(), prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  return 0;
+  return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////////

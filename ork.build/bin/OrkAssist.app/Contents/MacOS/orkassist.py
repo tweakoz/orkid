@@ -1,1 +1,0 @@
-../../../ork.assetassistant.py

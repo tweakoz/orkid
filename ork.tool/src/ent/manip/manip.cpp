@@ -181,7 +181,7 @@ CManip::CManip( CManipManager& mgr )
 ////////////////////////////////////////////////////////////////////////////////
 
 bool CManip::CheckIntersect( void ) const
-{	
+{
 	bool bisect = (mActiveIntersection==nullptr)?false:mActiveIntersection->mbHasItersected;
 	//printf( "manip<%p> ai<%p> CheckIntersect<%d>\n", this, mActiveIntersection, int(bisect) );
 
@@ -218,7 +218,7 @@ void CManip::CalcPlanes()
 CVector3 CManip::IntersectWithPlanes(const ork::CVector2& posubp)
 {
 	CVector3 rval;
-	
+
 	const CCamera* cam = mManager.GetActiveCamera();
 	CMatrix4 CurMatrix;
 	mBaseTransform.GetMatrix(CurMatrix);
@@ -292,19 +292,19 @@ void CManip::SelectBestPlane(const ork::CVector2& posubp)
 
 		if( mManager.mpCurrentManip->GetClass() == CManipTX::GetClassStatic() )
 		{
-			mActiveIntersection = (adotxy>adotxz) 
+			mActiveIntersection = (adotxy>adotxz)
 								? & mIntersection[EPLANE_XZ]
 								: & mIntersection[EPLANE_XY];
 		}
 		else if( mManager.mpCurrentManip->GetClass() == CManipTY::GetClassStatic() )
 		{
-			mActiveIntersection = (adotxy>adotyz) 
+			mActiveIntersection = (adotxy>adotyz)
 								? & mIntersection[EPLANE_XY]
 								: & mIntersection[EPLANE_YZ];
 		}
 		else if( mManager.mpCurrentManip->GetClass() == CManipTZ::GetClassStatic() )
 		{
-			mActiveIntersection = (adotxz>adotyz) 
+			mActiveIntersection = (adotxz>adotyz)
 								? & mIntersection[EPLANE_XZ]
 								: & mIntersection[EPLANE_YZ];
 		}
@@ -354,14 +354,15 @@ void CManipManager::AttachObject( ork::Object *pobj )
 		mpCurrentInterface = 0;
 	}
 
-	any16 anno = pclass->Description().GetClassAnnotation( "editor.3dxfinterface" );
+	auto anno = pclass->Description().GetClassAnnotation( "editor.3dxfinterface" );
 
 	if( anno.IsSet() )
 	{
 		ConstString classname = anno.Get<ConstString>();
-		const rtti::Class *pifclass = rtti::autocast(rtti::Class::FindClass(classname));
+                const rtti::Class *pifclass =
+                    rtti::autocast(rtti::Class::FindClass(classname));
 
-		if( pifclass )
+                if( pifclass )
 		{
 			mpCurrentInterface = rtti::autocast(pifclass->CreateObject());
 			mpCurrentObject = pobj;
@@ -486,10 +487,10 @@ void CManipManager::Setup( ork::lev2::Renderer* prend )
 ///////////////////////////////////////////////////////////////////////////////
 
 void CManipManager::DrawManip(CManip* pmanip, GfxTarget* pTARG )
-{	
+{
 	if(!pmanip)
 		return;
-    
+
     lev2::PickBufferBase* pickBuf = pTARG->FBI()->GetCurrentPickBuffer();
 	U32 pickID = pickBuf ? pickBuf->AssignPickId((ork::Object*)pmanip) : 0;
 	CColor4 col = pmanip->GetColor();
@@ -569,7 +570,7 @@ void CManipManager::Queue(ork::lev2::Renderer* prend)
 		rable.SetSortKey(0x7fffffff);
 		rable.SetRenderCallback( ManipRenderCallback );
 	}
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 

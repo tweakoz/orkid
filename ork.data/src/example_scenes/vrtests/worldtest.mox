@@ -148,7 +148,16 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='11'>
+                                    <object type='SimpleCharControllerData' id='11'>
+                                        <property name='RunSpeed'>350</property>
+                                        <property name='SpeedLerpRate'>10</property>
+                                        <property name='WalkSpeed'>135</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='12'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -167,17 +176,8 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='12'>
+                                    <object type='ScriptComponentData' id='13'>
                                         <property name='ScriptFile'>"src://scripts/arch/diver.lua"</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='13'>
-                                        <property name='RunSpeed'>350</property>
-                                        <property name='SpeedLerpRate'>10</property>
-                                        <property name='WalkSpeed'>135</property>
                                     </object>
                                 </reference>
                             </item>
@@ -748,9 +748,51 @@
                     </object>
                 </reference>
             </item>
+            <item key='CompositingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='CompositingSystemData' id='88'>
+                        <property name='ActiveItem'>"i1"</property>
+                        <property name='ActiveScene'>"s1"</property>
+                        <property name='Enable'>true</property>
+                        <property name='Groups'></property>
+                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
+                        <property name='OutputFrames'>false</property>
+                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
+                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
+                        <property name='Scenes'>
+                            <item key='s1'>
+                                <reference category='ObjectClass'>
+                                    <object type='CompositingScene' id='89'>
+                                        <property name='Items'>
+                                            <item key='i1'>
+                                                <reference category='ObjectClass'>
+                                                    <object type='CompositingSceneItem' id='90'>
+                                                        <property name='Technique'>
+                                                            <reference category='ObjectClass'>
+                                                                <object type='NodeCompositingTechnique' id='91'>
+                                                                    <property name='RootNode'>
+                                                                        <reference category='ObjectClass'>
+                                                                            <object type='VrCompositingNode' id='92'>
+                                                                            </object>
+                                                                        </reference>
+                                                                    </property>
+                                                                </object>
+                                                            </reference>
+                                                        </property>
+                                                    </object>
+                                                </reference>
+                                            </item>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='88'>
+                    <object type='ScriptSystemData' id='93'>
                     </object>
                 </reference>
             </item>
