@@ -17,7 +17,6 @@
 #endif
 
 namespace ork::lev2 {
-
 ///////////////////////////////////////////////////////////////////////////////
 
 RawInputKey InputMap::MapInput(const MappedInputKey& inkey) const {
@@ -95,11 +94,19 @@ void InputState::SetPressure(RawInputKey ch, S8 uVal) {
   TriggerState[index] = newstate;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 S8 InputState::GetPressureRaw(int ch) const { return (PressureValues[ch]); }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputState::SetPressureRaw(int ch, S8 uVal) { PressureValues[ch] = uVal; }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void InputState::BeginCycle() {}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputState::Clear(int index) {
   OrkAssert(index < KMAX_TRIGGERS);
@@ -112,6 +119,8 @@ void InputState::Clear(int index) {
     }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputState::EndCycle() {
   for (int index = 0; index < KMAX_TRIGGERS; index++) {
@@ -140,7 +149,11 @@ void InputState::EndCycle() {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 InputManager::InputManager() : NoRttiSingleton<InputManager>() { CreateInputDevices(); }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputManager::Poll(void) {
   size_t inumdevices = GetRef().mvpInputDevices.size();
@@ -150,15 +163,21 @@ void InputManager::Poll(void) {
   }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void InputManager::ClearAll() {
   for (size_t i = 0; i < GetRef().mvpInputDevices.size(); i++)
     GetRef().mvpInputDevices[i]->RefInputState().Clear(-1);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void InputManager::SetRumble(bool mode) {
   for (size_t i = 0; i < GetRef().mvpInputDevices.size(); i++)
     GetRef().mvpInputDevices[i]->SetMasterRumbleEnabled(mode);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 const InputDevice* InputManager::GetInputDevice(unsigned int id) const {
   int inumdevs = GetRef().mvpInputDevices.size();
@@ -167,12 +186,16 @@ const InputDevice* InputManager::GetInputDevice(unsigned int id) const {
   return mvpInputDevices[id % inumdevs];
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 InputDevice* InputManager::GetInputDevice(unsigned int id) {
   int inumdevs = GetRef().mvpInputDevices.size();
   if (0 == inumdevs)
     return nullptr;
   return mvpInputDevices[id % inumdevs];
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputManager::CreateInputDevices() {
 #if defined(IX)
@@ -183,24 +206,36 @@ void InputManager::CreateInputDevices() {
 #endif
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void InputDevice::Activate() {
   if (mConnectionStatus == CONN_STATUS_CONNECTED || mConnectionStatus == CONN_STATUS_INSERTED)
     mConnectionStatus = CONN_STATUS_ACTIVE;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputDevice::Deactivate() {
   if (mConnectionStatus == CONN_STATUS_ACTIVE)
     mConnectionStatus = CONN_STATUS_CONNECTED;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool InputDevice::IsDisconnected() const { return !IsConnected(); }
+
+///////////////////////////////////////////////////////////////////////////////
 
 bool InputDevice::IsConnected() const {
   return mConnectionStatus == CONN_STATUS_ACTIVE || mConnectionStatus == CONN_STATUS_CONNECTED ||
          mConnectionStatus == CONN_STATUS_INSERTED;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool InputDevice::IsActive() const { return mConnectionStatus == CONN_STATUS_ACTIVE; }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputDevice::Connect() {
   if (IsDisconnected())
@@ -209,6 +244,8 @@ void InputDevice::Connect() {
     mConnectionStatus = CONN_STATUS_CONNECTED;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void InputDevice::Disconnect() {
   if (IsConnected())
     mConnectionStatus = CONN_STATUS_REMOVED;
@@ -216,12 +253,19 @@ void InputDevice::Disconnect() {
     mConnectionStatus = CONN_STATUS_DISCONNECTED;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void InputDevice::SetInputMap(EMappedTriggerNames inch, ERawTriggerNames outch) {
   InputState::RefGlobalInputMap().Set(inch, outch);
 }
 
-// e TWEAK you need to do this RUNBLE STUB functions any device can do what they want here
+///////////////////////////////////////////////////////////////////////////////
+
 void InputDevice::RumbleClear() {}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void InputDevice::RumbleTrigger(int amounmt) {}
 
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

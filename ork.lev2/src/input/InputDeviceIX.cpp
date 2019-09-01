@@ -10,13 +10,10 @@
 
 #include "InputDeviceIX.h"
 
-#define USE_TUIO
-
-#if defined(USE_TUIO)
 #include "TuioClient.h"
 #include "TuioListener.h"
 #include <functional>
-#endif
+using namespace TUIO;
 
 #if defined(_IOS)
 #elif defined(IX)
@@ -28,13 +25,14 @@
 #define XK_MISCELLANY
 #include <X11/keysymdef.h>
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
-
-#if defined(USE_TUIO)
-
-using namespace TUIO;
+///////////////////////////////////////////////////////////////////////////////
 
 typedef std::function<void(TuioCursor*)> on_tuio_cur_t;
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct TuioInputReader : public TuioListener {
 
@@ -67,8 +65,6 @@ struct TuioInputReader : public TuioListener {
   }
 };
 
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 static float lanay = 0.0f;
@@ -87,8 +83,6 @@ InputDeviceIX::InputDeviceIX() : InputDevice() {
   OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_UP, (int) ETRIG_RAW_KEY_UP );
   OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_RIGHT, (int) ETRIG_RAW_KEY_RIGHT );
   OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_DOWN, (int) ETRIG_RAW_KEY_DOWN );*/
-
-#if defined(USE_TUIO)
 
   OrkSTXMapInsert(mInputMap, ETRIG_RAW_JOY0_LANA_YAXIS, (int)ETRIG_RAW_JOY0_LANA_YAXIS);
   OrkSTXMapInsert(mInputMap, ETRIG_RAW_JOY0_RANA_YAXIS, (int)ETRIG_RAW_JOY0_RANA_YAXIS);
@@ -153,7 +147,6 @@ InputDeviceIX::InputDeviceIX() : InputDevice() {
     client.connect(true);
   });
 
-#endif
 }
 
 InputDeviceIX::~InputDeviceIX() {}
@@ -161,6 +154,8 @@ InputDeviceIX::~InputDeviceIX() {}
 ///////////////////////////////////////////////////////////////////////////////
 
 void InputDeviceIX::Input_Init(void) { return; }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void InputDeviceIX::Input_Poll() {
   // printf( "POLL IXID\n");
@@ -186,6 +181,9 @@ void InputDeviceIX::Input_Poll() {
   return;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 void InputDeviceIX::Input_Configure() { return; }
 
+///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
