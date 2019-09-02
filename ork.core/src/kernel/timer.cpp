@@ -573,7 +573,7 @@ f64 OldSchool::GetHiResTime( void )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-CPerformanceItem::CPerformanceItem( std::string nam )
+PerformanceItem::PerformanceItem( std::string nam )
 	: mName(nam)
 	, miAvgCycle( 0 )
 	, miStartCycle( 0 )
@@ -589,7 +589,7 @@ CPerformanceItem::CPerformanceItem( std::string nam )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CPerformanceItem::AddItem( CPerformanceItem& Item )
+void PerformanceItem::AddItem( PerformanceItem& Item )
 {
 	OrkSTXMapInsert( mChildrenMap, Item.mName, & Item );
 	mChildrenList.push_back( & Item );
@@ -597,18 +597,18 @@ void CPerformanceItem::AddItem( CPerformanceItem& Item )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-s64 CPerformanceItem::Calculate( void )
+s64 PerformanceItem::Calculate( void )
 {
 	miChildAvgCycle = 0;
 
 	if(mChildrenList.size() > 0)
 	{
-		for( orklist< CPerformanceItem* >::iterator it=mChildrenList.begin(); it!=mChildrenList.end(); it++ )
+		for( orklist< PerformanceItem* >::iterator it=mChildrenList.begin(); it!=mChildrenList.end(); it++ )
 			(*it)->Calculate();
 
 		miChildAvgCycle = 0;
 
-		for( orklist< CPerformanceItem* >::iterator it=mChildrenList.begin(); it!=mChildrenList.end(); it++ )
+		for( orklist< PerformanceItem* >::iterator it=mChildrenList.begin(); it!=mChildrenList.end(); it++ )
 			miChildAvgCycle += (*it)->miAccumCycle;
 	}
 
@@ -633,7 +633,7 @@ s64 CPerformanceItem::Calculate( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CPerformanceItem::Enter()
+void PerformanceItem::Enter()
 {
 	//miStartCycle = OldSchool::GetClockCycle();
 	f64 ftime = OldSchool::GetRef().GetLoResTime();
@@ -643,7 +643,7 @@ void CPerformanceItem::Enter()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CPerformanceItem::Exit()
+void PerformanceItem::Exit()
 {
 	//miStartCycle = OldSchool::GetClockCycle();
 	f64 ftime = OldSchool::GetRef().GetLoResTime();
@@ -654,16 +654,16 @@ void CPerformanceItem::Exit()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CPerformanceTracker::CPerformanceTracker()
-	: NoRttiSingleton<CPerformanceTracker>()
+PerformanceTracker::PerformanceTracker()
+	: NoRttiSingleton<PerformanceTracker>()
 {
-	mRoots[EPS_UPDTHREAD] = new CPerformanceItem( "update_root" );
-	mRoots[EPS_GFXTHREAD] = new CPerformanceItem( "render_root" );
+	mRoots[EPS_UPDTHREAD] = new PerformanceItem( "update_root" );
+	mRoots[EPS_GFXTHREAD] = new PerformanceItem( "render_root" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-s64 CPerformanceTracker::Calculate( void )
+s64 PerformanceTracker::Calculate( void )
 {
 	GetRef().mRoots[EPS_UPDTHREAD]->Exit();
 	GetRef().mRoots[EPS_GFXTHREAD]->Exit();
@@ -676,7 +676,7 @@ s64 CPerformanceTracker::Calculate( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CPerformanceTracker::AddItem( eperfset eset, CPerformanceItem& Item )
+void PerformanceTracker::AddItem( eperfset eset, PerformanceItem& Item )
 {
 	if( Item.GetName() != (std::string) "root" )
 		GetRef().mRoots[eset]->AddItem( Item );
@@ -684,23 +684,23 @@ void CPerformanceTracker::AddItem( eperfset eset, CPerformanceItem& Item )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-orklist<CPerformanceItem*>* CPerformanceTracker::GetItemList( eperfset eset )
+orklist<PerformanceItem*>* PerformanceTracker::GetItemList( eperfset eset )
 {
 	return GetRef().mRoots[eset]->GetChildrenList();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CPerformanceTracker::TextDump( void )
+void PerformanceTracker::TextDump( void )
 {
-	CPerformanceTracker::Calculate();
+	PerformanceTracker::Calculate();
 
-	/*orklist<CPerformanceItem*>* PerfItemList = CPerformanceTracker::GetItemList();
-	s64 PerfTotal = CPerformanceTracker::GetRef().mpRoot->miAvgCycle;
+	/*orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
+	s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;
 
-	for( orklist<CPerformanceItem*>::iterator it=PerfItemList->begin(); it!=PerfItemList->end(); it++ )
+	for( orklist<PerformanceItem*>::iterator it=PerfItemList->begin(); it!=PerfItemList->end(); it++ )
 	{
-		CPerformanceItem* pItem = *it;
+		PerformanceItem* pItem = *it;
 		std::string name = pItem->GetName();
 
 		orkprintf( "%s\n", (char*)CreateFormattedString( "%s [%d microsec]", (char*)name.c_str(), pItem->miAvgCycle).c_str() );

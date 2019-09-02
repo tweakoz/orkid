@@ -188,7 +188,7 @@ protected:
 	lev2::Renderer*									mRenderer;
 	lev2::Camera*									_editorCamera;
 	fvec3										mCursor;
-	CPerformanceItem								mFramePerfItem;
+	PerformanceItem								mFramePerfItem;
 	int												miCameraIndex;
 	int												miCullCameraIndex;
 	int												mCompositorSceneIndex;

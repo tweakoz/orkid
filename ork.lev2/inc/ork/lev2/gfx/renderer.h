@@ -28,7 +28,7 @@
 namespace ork {
 
 class IZoneManager;
-class CPerformanceItem;
+class PerformanceItem;
 class CameraData;
 
 namespace lev2 {
@@ -89,7 +89,7 @@ public:
 	const Object *GetCurrentQueuedObject() const { return mpCurrentQueueObject; }
 	const Object *GetCurrentObject() const { return mpCurrentObject; }
 
-	inline void SetPerformanceItem(CPerformanceItem* perfitem) { mPerformanceItem = perfitem; }
+	inline void SetPerformanceItem(PerformanceItem* perfitem) { mPerformanceItem = perfitem; }
 
 	void PushPickID(const Object *pObject);
 	void PopPickID();
@@ -110,7 +110,7 @@ protected:
 	RenderQueue					mRenderQueue;
 	//const ork::CameraData*		mpCameraData;
 
-	CPerformanceItem* mPerformanceItem;
+	PerformanceItem* mPerformanceItem;
 
 	Renderer( GfxTarget* pTARG );
 };
