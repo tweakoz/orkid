@@ -10,7 +10,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/lev2/gfx/gfxenv_targetinterfaces.h>
+#include <ork/lev2/gfx/targetinterfaces.h>
 
 namespace ork { namespace lev2 {
 

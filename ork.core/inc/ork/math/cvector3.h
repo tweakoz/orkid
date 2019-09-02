@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #ifndef __VECTOR_3D_H__
@@ -49,7 +49,7 @@ public:
 	void				RotateY(T rad);
 	void				RotateZ(T rad);
 
-	TVector3			Saturate() const; 
+	TVector3			Saturate() const;
 
 	T					Dot( const TVector3 &vec) const;					// dot product of two vectors
 	TVector3			Cross( const TVector3 &vec) const;					// cross product of two vectors
@@ -208,6 +208,9 @@ public:
 	void SetBGRAU32( U32 uval );
 	void SetARGBU32( U32 uval );
 	void SetABGRU32( U32 uval );
+
+	uint64_t GetRGBAU64( void ) const;
+  void SetRGBAU64( uint64_t v );
 
 	static const TVector3 & Black( void );
 	static const TVector3 & DarkGrey( void );

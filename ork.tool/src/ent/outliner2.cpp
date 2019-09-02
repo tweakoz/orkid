@@ -23,13 +23,13 @@
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::Outliner2Model, "Outliner2Model" );
 
-namespace ork {
-uint32_t PickIdToVertexColor( uint32_t pid );
-}
+using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
+
+typedef SVtxV16T16C16 vtx_t;
 
 void Outliner2Model::Describe()
 {
@@ -353,7 +353,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 	auto rsi = tgt->RSI();
 	auto& primi = lev2::CGfxPrimitives::GetRef();
 	auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
-	lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
+	lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
 	SceneEditorBase& ed = mOutlinerModel.Editor();
 	auto scene_data = ed.GetSceneData();
 	bool has_foc = HasMouseFocus();
@@ -373,7 +373,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 	fbi->PushViewport( SRect( 0,0,miW,miH) );
 
 	{
-		fbi->Clear( CVector4::Blue(), 1.0f );
+		fbi->Clear( fvec4::Blue(), 1.0f );
 
 		rsi->BindRasterState( defstate );
 		fxi->InvalidateStateBlock();
@@ -382,29 +382,29 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 
 		mContentH = items.size()*kitemh();
 
-		CVector4 c1(0.7f,0.7f,0.8f);
-		CVector4 c2(0.8f,0.8f,0.8f);
-		CVector4 c3(0.8f,0.0f,0.0f);
-		CVector4 col_sysdat(0.8f,0.0f,0.0f);
-		CVector4 col_sysdat_alt(0.8f,0.0f,0.0f);
-		CVector4 col_entity(0.8f,0.0f,0.0f);
-		CVector4 col_entity_alt(0.8f,0.0f,0.0f);
-		CVector4 col_archet(0.8f,0.0f,0.0f);
-		CVector4 col_archet_alt(0.8f,0.0f,0.0f);
-		CVector4 col_sceneglobal(0.8f,0.0f,0.0f);
+		fvec4 c1(0.7f,0.7f,0.8f);
+		fvec4 c2(0.8f,0.8f,0.8f);
+		fvec4 c3(0.8f,0.0f,0.0f);
+		fvec4 col_sysdat(0.8f,0.0f,0.0f);
+		fvec4 col_sysdat_alt(0.8f,0.0f,0.0f);
+		fvec4 col_entity(0.8f,0.0f,0.0f);
+		fvec4 col_entity_alt(0.8f,0.0f,0.0f);
+		fvec4 col_archet(0.8f,0.0f,0.0f);
+		fvec4 col_archet_alt(0.8f,0.0f,0.0f);
+		fvec4 col_sceneglobal(0.8f,0.0f,0.0f);
 
 		if( mDark )
 		{
-			c1 = CVector4( 0.3f,0.3f,0.4f );
-			c2 = CVector4( 0.2f,0.2f,0.3f );
-			c3 = CVector4( 0.5f,0.0f,0.0f );
-			col_sysdat = CVector4( 0.3f,0.3f,0.6f );
-			col_sysdat_alt = CVector4( 0.2f,0.2f,0.5f );
-			col_entity = CVector4( 0.2f,0.4f,0.2f );
-			col_entity_alt = CVector4( 0.1f,0.3f,0.1f );
-			col_archet = CVector4( 0.4f,0.2f,0.4f );
-			col_archet_alt = CVector4( 0.3f,0.1f,0.3f );
-			col_sceneglobal = CVector4( 0.4f,0.3f,0.2f );
+			c1 = fvec4( 0.3f,0.3f,0.4f );
+			c2 = fvec4( 0.2f,0.2f,0.3f );
+			c3 = fvec4( 0.5f,0.0f,0.0f );
+			col_sysdat = fvec4( 0.3f,0.3f,0.6f );
+			col_sysdat_alt = fvec4( 0.2f,0.2f,0.5f );
+			col_entity = fvec4( 0.2f,0.4f,0.2f );
+			col_entity_alt = fvec4( 0.1f,0.3f,0.1f );
+			col_archet = fvec4( 0.4f,0.2f,0.4f );
+			col_archet_alt = fvec4( 0.3f,0.1f,0.3f );
+			col_sceneglobal = fvec4( 0.4f,0.3f,0.2f );
 		}
 
 		const int kheaderH = miScrollY;
@@ -421,9 +421,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 			for( const auto& item : items )
 			{	const std::string& name = item.mName;
 				auto pobj = item.mObject;
-				uint32_t pickID = mpPickBuffer->AssignPickId(pobj);
-				uint32_t uobj = PickIdToVertexColor( pickID );
-				CVector4 pick_color(pickID);
+				fvec4 pick_color; pick_color.SetRGBAU64(mpPickBuffer->AssignPickId(pobj));
 				bool is_sel = item.mSelected;
 
 				if( is_pick )
@@ -439,7 +437,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 				else
 					tgt->PushModColor( is_sel ? c3 : (alt ? c1 : c2) );
 
-				primi.RenderQuadAtZ(
+				primi.RenderQuadAtZV16T16C16(
 					tgt,
 					0, miW, 		// x0, x1
 					iy, iy+kitemh(), 	// y0, y1
@@ -544,7 +542,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 
 	lev2::GetPixelContext ctx;
 	ctx.miMrtMask = (1<<0) | (1<<1); // ObjectID and ObjectUVD
-	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
+	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR64;
 	ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
 
 	QInputEvent* qip = (QInputEvent*) EV.mpBlindEventData;

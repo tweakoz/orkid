@@ -3,16 +3,13 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
 #include <ork/kernel/Array.h>
-#include <ork/kernel/orkvector.h>
-//#include <ork/kernel/prop_basic.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
-//#include <ork/kernel/prop_container.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -53,7 +50,7 @@ Array<T>& Array<T>::operator=(const Array<T>& rhs)
 	mArray.clear();
 	mArray.resize(rhs.size());
 	for(u32 i = 0; i < size(); ++i)
-		mArray[i] = rhs[i];	
+		mArray[i] = rhs[i];
 
 	return *this;
 }
@@ -120,7 +117,7 @@ fixedvector<T,kmax>& fixedvector<T,kmax>::operator=(const fixedvector<T,kmax>& r
 	//mArray.clear();
 	//mArray.resize(rhs.size());
 	for(u32 i = 0; i < size(); ++i)
-		mArray[i] = rhs[i];	
+		mArray[i] = rhs[i];
 
 	return *this;
 }
@@ -171,7 +168,7 @@ void fixedvector<T,kmax>::pop_back()
 	OrkAssert( misize>0 );
 	misize--;
 }
-	
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename T, int kmax>
@@ -334,7 +331,7 @@ T* fixedvector<T,kmax>::iterator::operator ->() const
 	size_t isize = mpfixedary->size();
 	OrkAssert( this->mindex >= 0 );
 	OrkAssert( this->mindex < iter_type(isize) );
-	typename fixedvector<T,kmax>::value_type* p0 = 
+	typename fixedvector<T,kmax>::value_type* p0 =
 		(this->mdirection>0) ? &(*mpfixedary)[this->mindex] : &(*mpfixedary)[(isize-1)-this->mindex];
 	return p0;
 }
@@ -558,8 +555,8 @@ const T* fixedvector<T,kmax>::const_iterator::operator ->() const
 	OrkAssert( this->mindex >= 0 );
 	OrkAssert( this->mindex < isize );
 
-	const T* p0 = (this->mdirection>0) 
-				? & mpfixedary->operator[](this->mindex) 
+	const T* p0 = (this->mdirection>0)
+				? & mpfixedary->operator[](this->mindex)
 				: & mpfixedary->operator[]((isize-1)-this->mindex);
 
 	return p0;

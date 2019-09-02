@@ -17,7 +17,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/gfx/gfxmaterial_basic.h>
-#include <ork/lev2/gfx/gfxenv_targetinterfaces.h>
+#include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/dataflow/dataflow.h>
 ///////////////////////////////////////////////////////////////////////////////

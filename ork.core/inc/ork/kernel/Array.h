@@ -3,12 +3,13 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
 #include <ork/kernel/orkvector.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -72,7 +73,7 @@ public:
 	struct iterator : public iterator_base
 	{
 		typedef intptr_t iter_type;
-		static const iter_type npos = -1; 
+		static const iter_type npos = -1;
 
 		fixedvector*	mpfixedary;
 		iterator( intptr_t idx=npos, int idir=0, fixedvector* pfm=0);
@@ -96,7 +97,7 @@ public:
 	struct const_iterator : public iterator_base
 	{
 		typedef intptr_t iter_type;
-		static const iter_type npos = -1; 
+		static const iter_type npos = -1;
 
 		const fixedvector*	mpfixedary;
 		const_iterator( intptr_t idx=npos, int idir=0, const fixedvector* pfm=0);
@@ -155,4 +156,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
-

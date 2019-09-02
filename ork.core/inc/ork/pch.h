@@ -3,17 +3,13 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
 #include <ork/orkconfig.h>
 #include <ork/orkstd.h>
 #include <ork/orktypes.h>
-
-#if defined( _WIN32 )
-# include <ork/orkwin32.h>
-#endif
 
 #if defined( _OSX )
 # include <Carbon/Carbon.h>
@@ -29,8 +25,3 @@
 #include <ork/util/stl_ext.h>
 
 #endif
-
-#if defined( _PS2 )
-# include <ork/orkps2.h>
-#endif
-

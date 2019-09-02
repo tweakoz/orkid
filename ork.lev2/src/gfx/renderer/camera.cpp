@@ -79,7 +79,7 @@ void CCameraData::PerspH(float fnear, float ffar, float faperh)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::Lookat( const CVector3& eye, const CVector3& tgt, const CVector3& up )
+void CCameraData::Lookat( const fvec3& eye, const fvec3& tgt, const fvec3& up )
 {
 	mEye = eye;
 	mTarget = tgt;
@@ -107,15 +107,15 @@ void CCameraData::setCustomProjection( const ork::CMatrix4& proj){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::ProjectDepthRay( const CVector2& v2d, CVector3& vdir, CVector3& vori ) const
+void CCameraData::ProjectDepthRay( const CVector2& v2d, fvec3& vdir, fvec3& vori ) const
 {
 	const Frustum& camfrus = mFrustum;
-	CVector3 near_xt_lerp; near_xt_lerp.Lerp( camfrus.mNearCorners[0], camfrus.mNearCorners[1], v2d.GetX() );
-	CVector3 near_xb_lerp; near_xb_lerp.Lerp( camfrus.mNearCorners[3], camfrus.mNearCorners[2], v2d.GetX() );
-	CVector3 near_lerp; near_lerp.Lerp( near_xt_lerp, near_xb_lerp, v2d.GetY() );
-	CVector3 far_xt_lerp; far_xt_lerp.Lerp( camfrus.mFarCorners[0], camfrus.mFarCorners[1], v2d.GetX() );
-	CVector3 far_xb_lerp; far_xb_lerp.Lerp( camfrus.mFarCorners[3], camfrus.mFarCorners[2], v2d.GetX() );
-	CVector3 far_lerp; far_lerp.Lerp( far_xt_lerp, far_xb_lerp, v2d.GetY() );
+	fvec3 near_xt_lerp; near_xt_lerp.Lerp( camfrus.mNearCorners[0], camfrus.mNearCorners[1], v2d.GetX() );
+	fvec3 near_xb_lerp; near_xb_lerp.Lerp( camfrus.mNearCorners[3], camfrus.mNearCorners[2], v2d.GetX() );
+	fvec3 near_lerp; near_lerp.Lerp( near_xt_lerp, near_xb_lerp, v2d.GetY() );
+	fvec3 far_xt_lerp; far_xt_lerp.Lerp( camfrus.mFarCorners[0], camfrus.mFarCorners[1], v2d.GetX() );
+	fvec3 far_xb_lerp; far_xb_lerp.Lerp( camfrus.mFarCorners[3], camfrus.mFarCorners[2], v2d.GetX() );
+	fvec3 far_lerp; far_lerp.Lerp( far_xt_lerp, far_xb_lerp, v2d.GetY() );
 	vdir=(far_lerp-near_lerp).Normal();
 	vori=near_lerp;
 }
@@ -129,27 +129,27 @@ void CCameraData::ProjectDepthRay( const CVector2& v2d, fray3& ray_out ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::GetPixelLengthVectors( const CVector3& Pos, const CVector2& vp, CVector3& OutX, CVector3& OutY ) const
+void CCameraData::GetPixelLengthVectors( const fvec3& Pos, const CVector2& vp, fvec3& OutX, fvec3& OutY ) const
 {
 	/////////////////////////////////////////////////////////////////
 	int ivpw = int(vp.GetX());
 	int ivph = int(vp.GetY());
 	/////////////////////////////////////////////////////////////////
-	CVector4 va = Pos;
-	CVector4 va_xf = va.Transform(mVPMatrix);
+	fvec4 va = Pos;
+	fvec4 va_xf = va.Transform(mVPMatrix);
 	va_xf.PerspectiveDivide();
-	va_xf = va_xf*CVector4(vp.GetX(),vp.GetY(),0.0f);
+	va_xf = va_xf*fvec4(vp.GetX(),vp.GetY(),0.0f);
 	/////////////////////////////////////////////////////////////////
-	CVector4 vdx = Pos+mCamXNormal;
-	CVector4 vdx_xf = vdx.Transform(mVPMatrix);
+	fvec4 vdx = Pos+mCamXNormal;
+	fvec4 vdx_xf = vdx.Transform(mVPMatrix);
 	vdx_xf.PerspectiveDivide();
-	vdx_xf = vdx_xf*CVector4(vp.GetX(),vp.GetY(),0.0f);
+	vdx_xf = vdx_xf*fvec4(vp.GetX(),vp.GetY(),0.0f);
 	float MagX = (vdx_xf-va_xf).Mag(); // magnitude in pixels of mBillboardRight
 	/////////////////////////////////////////////////////////////////
-	CVector4 vdy = Pos+mCamYNormal;
-	CVector4 vdy_xf = vdy.Transform(mVPMatrix);
+	fvec4 vdy = Pos+mCamYNormal;
+	fvec4 vdy_xf = vdy.Transform(mVPMatrix);
 	vdy_xf.PerspectiveDivide();
-	vdy_xf = vdy_xf*CVector4(vp.GetX(),vp.GetY(),0.0f);
+	vdy_xf = vdy_xf*fvec4(vp.GetX(),vp.GetY(),0.0f);
 	float MagY = (vdy_xf-va_xf).Mag(); // magnitude in pixels of mBillboardUp
 	/////////////////////////////////////////////////////////////////
 	OutX = mCamXNormal*(2.0f/MagX);
@@ -173,12 +173,12 @@ void CCameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) cons
 	if( fnear<0.1f ) fnear = 0.1f;
 	if( ffar<0.5f ) ffar = 0.5f;
 	///////////////////////////////////////////////////
-	CVector3 target = mTarget;
+	fvec3 target = mTarget;
 	///////////////////////////////////////////////////
 	float fmag2 = (target-mEye).MagSquared();
 	if( fmag2 < 0.01f )
 	{
-		target = mEye + CVector3::Blue();
+		target = mEye + fvec3::Blue();
 	}
 	///////////////////////////////////////////////////
 	ctx.mPMatrix.Perspective( faper, faspect, fnear, ffar );
@@ -241,7 +241,7 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 			float fmag2 = (mTarget-mEye).MagSquared();
 			if( fmag2 < 0.01f )
 			{
-				mTarget = mEye + CVector3::Blue();
+				mTarget = mEye + fvec3::Blue();
 			}
 
 			mMatView = mpGfxTarget->MTXI()->LookAt( mEye, mTarget, mUp );

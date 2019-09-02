@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -19,23 +19,10 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-uint32_t PickIdToVertexColor( uint32_t pid )
-{
-	ork::CColor4 pickclr = ork::CColor4(pid);
-
-	S32 a = U32(pickclr.GetX()*256.0f);
-	S32 b = U32(pickclr.GetY()*256.0f);
-	S32 g = U32(pickclr.GetZ()*256.0f);
-	S32 r = U32(pickclr.GetW()*256.0f);
-
-	if( r<0 ) r=0;
-	if( g<0 ) g=0;
-	if( b<0 ) b=0;
-	if( a<0 ) a=0;
-
-	uint32_t uobj = ( (r<<24)|(g<<16)|(b<<8)|a );
-
-	return uobj;
+fvec4 PickIdToVertexColor( uint64_t pid ){
+	fvec4 out; out.SetRGBAU64(pid);
+	printf( "PickIdToVertexColor uint64_t<0x%zx> fvec4<%g %g %g %g>\n", pid, out.x, out.y, out.z, out.w );
+	return out;
 }
 
 /*template<> void reflect::Serialize( const CFloat*in, CFloat*out, reflect::BidirectionalSerializer& bidi )

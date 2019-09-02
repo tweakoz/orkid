@@ -226,13 +226,13 @@ public:
 	struct GedPrim
 	{
 		DrawCB						mDrawCB;
-		GedObject*					mpNode;
-		int							ix1, iy1, ix2, iy2;
-		U32							ucolor;
+		GedObject*				mpNode;
+		int								ix1, iy1, ix2, iy2;
+		fvec4 						_ucolor;
 		ork::lev2::EPrimitiveType	meType;
 		int							miSortKey;
 
-		GedPrim() : mDrawCB(0), mpNode(0), ix1(0), ix2(0), iy1(0), iy2(0), ucolor(0), miSortKey(0), meType(ork::lev2::EPRIM_END) {}
+		GedPrim() : mDrawCB(0), mpNode(0), ix1(0), ix2(0), iy1(0), iy2(0), _ucolor(0), miSortKey(0), meType(ork::lev2::EPRIM_END) {}
 	};
 
 	struct PrimContainer
@@ -597,7 +597,7 @@ public:
 
 	friend class lev2::CPickBuffer<GedVP>;
 
-    uint32_t AssignPickId(GedObject*pobj);
+  fvec4 AssignPickId(GedObject*pobj);
 	GedWidget& GetGedWidget() { return mWidget; }
 	GedVP( const std::string & name, ObjModel& model );
 	~GedVP();

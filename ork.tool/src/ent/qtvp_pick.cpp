@@ -65,7 +65,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
         pickctx->mState = 1;
         auto& pixel_ctx = pickctx->_pixelctx;
         pixel_ctx.miMrtMask = 3;
-        pixel_ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
+        pixel_ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR64;
         pixel_ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
         pixel_ctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&framedata);
 

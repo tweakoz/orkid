@@ -55,8 +55,9 @@ void CPickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
 namespace ork { namespace tool {
 
 ///////////////////////////////////////////////////////////////////////////////
-uint32_t ged::GedVP::AssignPickId(GedObject*pobj)
-{   return mpPickBuffer->AssignPickId(pobj);
+fvec4 ged::GedVP::AssignPickId(GedObject*pobj)
+{   fvec4 out; out.SetRGBAU64(mpPickBuffer->AssignPickId(pobj));
+    return out;
 }
 ///////////////////////////////////////////////////////////////////////////////
 namespace ged {
@@ -179,7 +180,7 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 
 	lev2::GetPixelContext ctx;
 	ctx.miMrtMask = (1<<0) | (1<<1); // ObjectID and ObjectUVD
-	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR32;
+	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR64;
 	ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
 
 	bool filt_kpush = (filtev.mAction=="keypush");
