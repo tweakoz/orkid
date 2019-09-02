@@ -239,7 +239,7 @@ template <typename T> void Matrix33<T>::Scale( T xscl, T yscl, T zscl )
 ///////////////////////////////////////////////////////////////////////////////
 
 // sm - rotation matrix from quaternion
-template <typename T> void Matrix33<T>::FromQuaternion(TQuaternion<T> quat)
+template <typename T> void Matrix33<T>::FromQuaternion(Quaternion<T> quat)
 {
 	T xx = quat.GetX() * quat.GetX();
 	T yy = quat.GetY() * quat.GetY();
@@ -409,7 +409,7 @@ template <typename T> void Matrix33<T>::SetScale( const Matrix33<T> &from ) // a
 template <typename T> void Matrix33<T>::Lerp( const Matrix33<T> &from, const Matrix33<T> &to, T par ) // par 0.0f .. 1.0f
 {
 	Matrix33<T> FromR, ToR, CORR, matR;
-	TQuaternion<T> FromQ, ToQ, Qidn, Qrot;
+	Quaternion<T> FromQ, ToQ, Qidn, Qrot;
 
 	//////////////////
 
@@ -423,7 +423,7 @@ template <typename T> void Matrix33<T>::Lerp( const Matrix33<T> &from, const Mat
 
 	Qrot.FromMatrix3( CORR );
 
-	TQuaternion<T>	dQ = Qrot;
+	Quaternion<T>	dQ = Qrot;
 					dQ.Sub( Qidn );
 					dQ.Scale( par );
 					dQ.Add( Qidn );
@@ -431,7 +431,7 @@ template <typename T> void Matrix33<T>::Lerp( const Matrix33<T> &from, const Mat
 					if( dQ.Magnitude() > T(0.0f) )
 						dQ.Negate();
 	
-	TQuaternion<T>	newQrot = dQ;
+	Quaternion<T>	newQrot = dQ;
 
 	matR = newQrot.ToMatrix3();
 	
@@ -444,7 +444,7 @@ template <typename T> void Matrix33<T>::Lerp( const Matrix33<T> &from, const Mat
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Matrix33<T>::DecomposeMatrix( TQuaternion<T>& qrot, T& Scale ) const
+void Matrix33<T>::DecomposeMatrix( Quaternion<T>& qrot, T& Scale ) const
 {
 	Matrix33<T> rot = *this;
 
@@ -467,7 +467,7 @@ void Matrix33<T>::DecomposeMatrix( TQuaternion<T>& qrot, T& Scale ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void Matrix33<T>::ComposeMatrix( const TQuaternion<T>& qrot, const T& Scale )
+void Matrix33<T>::ComposeMatrix( const Quaternion<T>& qrot, const T& Scale )
 {
 	*this = qrot.ToMatrix3();
 	for( int i=0; i<3; i++ )

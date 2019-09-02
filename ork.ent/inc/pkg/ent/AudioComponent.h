@@ -15,7 +15,7 @@
 #include <ork/lev2/aud/audiodevice.h>
 #include <pkg/ent/dataflow.h>
 
-namespace ork { class CCameraData; }
+namespace ork { class CameraData; }
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
@@ -297,7 +297,7 @@ public:
 	~AudioEffectComponentInst();
 
 	const AudioEffectComponentData& GetData() const { return mData; }
-	void UpdateEmitter( const ork::CCameraData* camdat1, const ork::CCameraData* camdat2 );
+	void UpdateEmitter( const ork::CameraData* camdat1, const ork::CameraData* camdat2 );
 
 	ork::lev2::AudioInstrumentPlayback* PlaySound( ork::PoolString soundname, const ork::TransformNode* pnode = nullptr );
 	void StopSound( ork::PoolString soundname );

@@ -26,7 +26,7 @@ namespace ork { namespace lev2 { void Init(const std::string& gfxlayer); }}
 namespace ork { namespace ent { void Init(); }}
 
 class TestApplication : public ork::Application
-{ 
+{
 	RttiDeclareConcrete(TestApplication, ork::Application );
 };
 
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 	CFileEnv::RegisterUrlBase( "src://", SrcPlatformLevel2FileContext );
 
 	static SFileDevContext WorkingDirContext;
-	CSystem::SetGlobalStringVariable("data://", ork::file::GetStartupDirectory().c_str());
+	OldSchool::SetGlobalStringVariable("data://", ork::file::GetStartupDirectory().c_str());
 
 	static SFileDevContext TempPlatformLevel2FileContext;
 	TempPlatformLevel2FileContext.SetFilesystemBaseAbs( "data/temp/" );
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
 	});
 	/////////////////////////////////////////////
 	while(false==testdone)
-	{	
+	{
 		OpqTest opqtest(&MainThreadOpQ());
 		MainThreadOpQ().Process();
 	}

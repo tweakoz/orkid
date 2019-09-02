@@ -26,7 +26,7 @@
 
 namespace ork {
 
-class CCameraData;
+class CameraData;
 class Application;
 
 namespace lev2 { class XgmModel; }
@@ -254,8 +254,8 @@ public:
 
 	///////////////////////////////////////////////////
 
-	void SetCameraData(const PoolString& name, const CCameraData*camdat);
-	const CCameraData* GetCameraData(const PoolString& name ) const;
+	void SetCameraData(const PoolString& name, const CameraData*camdat);
+	const CameraData* GetCameraData(const PoolString& name ) const;
 
 	///////////////////////////////////////////////////
 
@@ -307,7 +307,7 @@ public:
 	template <typename T >
 	T* findSystem() const;
 
-	typedef orklut<PoolString,const CCameraData*> CameraLut;
+	typedef orklut<PoolString,const CameraData*> CameraLut;
 
 	void AddLayer( const PoolString& name, Layer*player );
 	Layer* GetLayer( const PoolString& name );

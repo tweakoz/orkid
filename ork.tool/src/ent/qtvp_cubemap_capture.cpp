@@ -236,7 +236,7 @@ static void RenderFace( lev2::GfxTarget* pTARG, const fcolor4 & clr, lev2::Textu
 #if 0
 void SceneEditorVP::SaveCubeMap()
 {
-	const lev2::CCamera_persp* persp = mPerspCam;
+	const lev2::EzUiCam* persp = mPerspCam;
 	CPickBuffer<SceneEditorVP>* pb = mpPickBuffer;
 	lev2::GfxTarget* pTEXTARG = mpPickBuffer->GetContext();
 
@@ -250,7 +250,7 @@ void SceneEditorVP::SaveCubeMap()
 	///////////////////////////////////////
 	// setup 6 cardinal facing cameras that cover the whole sphere
 
-	CCameraData CardinalCameras[6]; // top bottom front back left right
+	CameraData CardinalCameras[6]; // top bottom front back left right
 
 	ork::fmtx4 ProjMat = pTEXTARG->MTXI()->Persp( fang, 1.0f, fnear, ffar );
 

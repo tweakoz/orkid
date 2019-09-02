@@ -20,27 +20,27 @@ namespace ork { namespace lev2 {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CManipRot::CManipRot( CManipManager& mgr, const fvec4 & LocRotMat )
-	: CManip(mgr)
+ManipRot::ManipRot( ManipManager& mgr, const fvec4 & LocRotMat )
+	: Manip(mgr)
 	, mLocalRotationAxis( LocRotMat )
 {
 }
 
-CManipRX::CManipRX( CManipManager& mgr )
-	: CManipRot(mgr,fvec4( 1.0f, 0.0f, 0.0f) )
+ManipRX::ManipRX( ManipManager& mgr )
+	: ManipRot(mgr,fvec4( 1.0f, 0.0f, 0.0f) )
 {
 	mmRotModel.SetRotateZ( CFloat::Pi() / float(2.0f) );
 	mColor = fcolor4::Red();
 }
 
-CManipRY::CManipRY( CManipManager& mgr )
-	: CManipRot(mgr,fvec4( 0.0f, 1.0f, 0.0f))
+ManipRY::ManipRY( ManipManager& mgr )
+	: ManipRot(mgr,fvec4( 0.0f, 1.0f, 0.0f))
 {
 	mColor = fcolor4::Green();
 }
 
-CManipRZ::CManipRZ(CManipManager& mgr)
-	: CManipRot(mgr,fvec4( 0.0f, 0.0f, 1.0f))
+ManipRZ::ManipRZ(ManipManager& mgr)
+	: ManipRot(mgr,fvec4( 0.0f, 0.0f, 1.0f))
 {
 	mmRotModel.SetRotateX( CFloat::Pi() / float(2.0f) );
 	mColor = fcolor4::Blue();
@@ -48,19 +48,19 @@ CManipRZ::CManipRZ(CManipManager& mgr)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-F32 CManipRX::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
+F32 ManipRX::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
 {
 	F32 angle2 = rect2pol_ang( inv_isect.GetY(), inv_isect.GetZ() );
 	F32 angle1 = rect2pol_ang( inv_lisect.GetY(), inv_lisect.GetZ() );
 	return angle1-angle2;
 }
-F32 CManipRY::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
+F32 ManipRY::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
 {
 	F32 angle1 = rect2pol_ang( inv_isect.GetX(), inv_isect.GetZ() );
 	F32 angle2 = rect2pol_ang( inv_lisect.GetX(), inv_lisect.GetZ() );
 	return angle1-angle2;
 }
-F32 CManipRZ::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
+F32 ManipRZ::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
 {
 	F32 angle2 = rect2pol_ang( inv_isect.GetX(), inv_isect.GetY() );
 	F32 angle1 = rect2pol_ang( inv_lisect.GetX(), inv_lisect.GetY() );
@@ -69,7 +69,7 @@ F32 CManipRZ::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipRot::Draw( GfxTarget *pTARG ) const
+void ManipRot::Draw( GfxTarget *pTARG ) const
 {	
 	fmtx4 Mat;
 	fmtx4 VisMat;
@@ -77,7 +77,7 @@ void CManipRot::Draw( GfxTarget *pTARG ) const
 	fmtx4 MatS;
 	fmtx4 MatR; 
 	fvec3 pos;
-	CQuaternion rot;
+	fquat rot;
 	float scale;
 
 	mManager.mCurTransform.GetMatrix(Mat);
@@ -88,15 +88,15 @@ void CManipRot::Draw( GfxTarget *pTARG ) const
 	bool bdrawok = true;
 	fvec4 v_dir;
 	const float vizthresh(0.15f);
-	if( GetClass() == CManipRX::GetClassStatic() )
+	if( GetClass() == ManipRX::GetClassStatic() )
 	{
 		v_dir = fvec4( 1.0f, 0.0f, 0.0f, 0.0f );
 	}
-	else if( GetClass() == CManipRY::GetClassStatic() )
+	else if( GetClass() == ManipRY::GetClassStatic() )
 	{
 		v_dir = fvec4( 0.0f, 1.0f, 0.0f, 0.0f );
 	}
-	else if( GetClass() == CManipRZ::GetClassStatic() )
+	else if( GetClass() == ManipRZ::GetClassStatic() )
 	{
 		v_dir = fvec4( 0.0f, 0.0f, 1.0f, 0.0f );
 	}
@@ -183,19 +183,19 @@ float SnapReal( float Input, float SnapVal )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CManipRot::UIEventHandler( const ui::Event& EV )
+bool ManipRot::UIEventHandler( const ui::Event& EV )
 {	
 	int ex = EV.miX;
 	int ey = EV.miY;
 	
 	fvec2 posubp = EV.GetUnitCoordBP();
 
-	CCamera *pcam = mManager.getActiveCamera();
+	Camera *pcam = mManager.getActiveCamera();
 	
 	bool brval = false;
 			
-	bool isshift = false; //CSystem::IsKeyDepressed(VK_SHIFT );
-	bool isctrl = false; //CSystem::IsKeyDepressed(VK_CONTROL );
+	bool isshift = false; //OldSchool::IsKeyDepressed(VK_SHIFT );
+	bool isctrl = false; //OldSchool::IsKeyDepressed(VK_CONTROL );
 	
 	switch( EV.miEventCode )
 	{
@@ -234,7 +234,7 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 				fmtx4 MatWldToObj = mBaseTransform.GetTransform().GetMatrix(); //GetRotation();
 				MatWldToObj.Inverse();
 				fvec4 bAxisAngle = mLocalRotationAxis; 
-				CQuaternion brq;
+				fquat brq;
 				brq.FromAxisAngle(bAxisAngle);
 				fmtx4 MatObjToPln = brq.ToMatrix();
 				MatObjToPln.Inverse();
@@ -250,7 +250,7 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 				//orkprintf( "D0I <%f %f %f>\n", float(D0I.GetX()), float(D0I.GetY()), float(D0I.GetZ()) );
 				//orkprintf( "D1I <%f %f %f>\n", float(D1I.GetX()), float(D1I.GetY()), float(D1I.GetZ()) );
 				AxisAngle.SetW( CalcAngle(D0I,D1I) );
-				CQuaternion RotQ;
+				fquat RotQ;
 				RotQ.FromAxisAngle( AxisAngle );
 				///////////////////
 				// Rot Snap
@@ -264,8 +264,8 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 				}
 				///////////////////
 				// accum rotation
-				CQuaternion oq = mBaseTransform.GetTransform().GetRotation();
-				CQuaternion NewQ = RotQ.Multiply(oq);
+				fquat oq = mBaseTransform.GetTransform().GetRotation();
+				fquat NewQ = RotQ.Multiply(oq);
 				///////////////////
 				// Rot Reset To Identity
 				if( isctrl && isshift )

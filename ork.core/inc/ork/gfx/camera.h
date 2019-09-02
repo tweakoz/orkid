@@ -17,7 +17,7 @@ namespace ork {
 
 namespace lev2 {
 class GfxTarget;
-class CCamera;
+class Camera;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -38,11 +38,11 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CCameraData
+class CameraData
 {
 public:
 
-	CCameraData(); // : mAper(17.0f), mNear(100.0f), mFar(750.0f), mfWidth(1.0f), mfHeight(1.0f), mfAspect(1.0f), mpGfxTarget( 0 ) {}
+	CameraData(); // : mAper(17.0f), mNear(100.0f), mFar(750.0f), mfWidth(1.0f), mfHeight(1.0f), mfAspect(1.0f), mpGfxTarget( 0 ) {}
 
 	void CalcCameraData(CameraCalcContext& ctx);
 	void CalcCameraMatrices(CameraCalcContext& ctx, float faspect=1.0f) const;
@@ -99,16 +99,16 @@ public:
 	void SetView( const ork::fmtx4 &view);
 	void setCustomProjection( const ork::fmtx4& proj);
 
-	void SetVisibilityCamDat( const CCameraData* pvcd ) { mpVisibilityCamDat=pvcd; }
-	const CCameraData* GetVisibilityCamDat() const { return mpVisibilityCamDat; }
+	void SetVisibilityCamDat( const CameraData* pvcd ) { mpVisibilityCamDat=pvcd; }
+	const CameraData* GetVisibilityCamDat() const { return mpVisibilityCamDat; }
 
-	lev2::CCamera* getEditorCamera() const { return mpLev2Camera; }
-	void SetLev2Camera(lev2::CCamera*pcam); // { mpLev2Camera=pcam; }
+	lev2::Camera* getEditorCamera() const { return mpLev2Camera; }
+	void SetLev2Camera(lev2::Camera*pcam); // { mpLev2Camera=pcam; }
 
 private:
 
-	const CCameraData* mpVisibilityCamDat;
-	lev2::CCamera	*mpLev2Camera;
+	const CameraData* mpVisibilityCamDat;
+	lev2::Camera	*mpLev2Camera;
 
 	bool _explicitViewMatrix;
 	bool _explicitProjectionMatrix;

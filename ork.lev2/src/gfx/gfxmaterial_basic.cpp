@@ -283,7 +283,7 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-  const CCameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
+  const CameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
 
   bool bforcenoz = rdata->IsForceNoZWrite();
 
@@ -369,7 +369,7 @@ int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstDat
   mRenderContexInstData = &MatCtx;
 
   const ork::lev2::RenderContextFrameData* framedata = pTarg->GetRenderContextFrameData();
-  const ork::CCameraData* cdata = framedata->GetCameraData();
+  const ork::CameraData* cdata = framedata->GetCameraData();
 
   mScreenZDir = cdata->GetZNormal();
 

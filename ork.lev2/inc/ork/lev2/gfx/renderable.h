@@ -27,7 +27,7 @@
 namespace ork {
 	
 struct Frustum;
-class CCameraData;
+class CameraData;
 class CPlacedGlyph;
 class CTextDrawable;
 
@@ -41,11 +41,11 @@ class XgmModelInst;
 class CAnim;
 class Renderer;
 class GfxMaterial;
-class CManip;
+class Manip;
 class RenderContextInstData;
 class GfxTarget;
 class GfxMaterial;
-class CManipManager;
+class ManipManager;
 class XgmWorldPose;
 
 ///////////////////////////////////////////////////////////////////////////////

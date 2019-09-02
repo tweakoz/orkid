@@ -78,26 +78,26 @@ tokenlist Init(int argc, char **argv)
 	if(CFileEnv::GetRef().DoesDirectoryExist("../ext/miniork"))
 	{
 		// Try the relative path from your project directory "data" folder
-		CSystem::SetGlobalStringVariable( "lev2://", CreateFormattedString("../ext/miniork/data/platform_lev2/") );
-		CSystem::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("../ext/miniork/data/") );
-		CSystem::SetGlobalStringVariable( "src://", CreateFormattedString("../data/src/") );
-		CSystem::SetGlobalStringVariable( "temp://", CreateFormattedString("../data/temp/") );
+		OldSchool::SetGlobalStringVariable( "lev2://", CreateFormattedString("../ext/miniork/data/platform_lev2/") );
+		OldSchool::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("../ext/miniork/data/") );
+		OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("../data/src/") );
+		OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("../data/temp/") );
 	}
 	else if(CFileEnv::GetRef().DoesDirectoryExist("ext/miniork"))
 	{
 
-		CSystem::SetGlobalStringVariable( "lev2://", CreateFormattedString("ext/miniork/data/platform_lev2/") );
-		CSystem::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("ext/miniork/data/") );
-		CSystem::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
-		CSystem::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
+		OldSchool::SetGlobalStringVariable( "lev2://", CreateFormattedString("ext/miniork/data/platform_lev2/") );
+		OldSchool::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("ext/miniork/data/") );
+		OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
+		OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
 	}
 	else
 	{
 		// Otherwise, assume we're in the root of miniork already
-		CSystem::SetGlobalStringVariable("lev2://", std::string("data/platform_lev2/"));
-		CSystem::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("data/") );
-		CSystem::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
-		CSystem::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
+		OldSchool::SetGlobalStringVariable("lev2://", std::string("data/platform_lev2/"));
+		OldSchool::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("data/") );
+		OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
+		OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
 	}
 
 	printf( "CPB\n");
@@ -111,7 +111,7 @@ tokenlist Init(int argc, char **argv)
 	if( getenv("ORKDOTBUILD_WORKSPACE_DIR")!=nullptr )
 		base_dir = getenv("ORKDOTBUILD_WORKSPACE_DIR");
 
-	CSystem::SetGlobalStringVariable("data://", base_dir.c_str());
+	OldSchool::SetGlobalStringVariable("data://", base_dir.c_str());
 
 	printf( "base_dir<%s>\n", base_dir.c_str() );
 
@@ -121,7 +121,7 @@ tokenlist Init(int argc, char **argv)
 	tokenlist toklist;
 
 	static SFileDevContext LocPlatformLevel2FileContext;
-	LocPlatformLevel2FileContext.SetFilesystemBaseAbs( CSystem::GetGlobalStringVariable( "lev2://" ).c_str() );
+	LocPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "lev2://" ).c_str() );
 	LocPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
 	CFileEnv::RegisterUrlBase( "lev2://", LocPlatformLevel2FileContext );
@@ -132,7 +132,7 @@ tokenlist Init(int argc, char **argv)
 	// Register src:// data urlbase
 
 	static SFileDevContext SrcPlatformLevel2FileContext;
-	SrcPlatformLevel2FileContext.SetFilesystemBaseAbs( CSystem::GetGlobalStringVariable( "src://" ).c_str() );
+	SrcPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "src://" ).c_str() );
 	SrcPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
 	CFileEnv::RegisterUrlBase( "src://", SrcPlatformLevel2FileContext );
@@ -143,7 +143,7 @@ tokenlist Init(int argc, char **argv)
 	// Register temp:// data urlbase
 
 	static SFileDevContext TempPlatformLevel2FileContext;
-	TempPlatformLevel2FileContext.SetFilesystemBaseAbs( CSystem::GetGlobalStringVariable( "temp://" ).c_str() );
+	TempPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "temp://" ).c_str() );
 	TempPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
 	CFileEnv::RegisterUrlBase( "temp://", TempPlatformLevel2FileContext );
@@ -152,7 +152,7 @@ tokenlist Init(int argc, char **argv)
 	// Register miniork:// data urlbase
 
 	static SFileDevContext LocPlatformMorkDataFileContext;
-	LocPlatformMorkDataFileContext.SetFilesystemBaseAbs( CSystem::GetGlobalStringVariable( "miniorkdata://" ).c_str() );
+	LocPlatformMorkDataFileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "miniorkdata://" ).c_str() );
 	LocPlatformMorkDataFileContext.SetPrependFilesystemBase( true );
 
 	CFileEnv::RegisterUrlBase( "miniorkdata://", LocPlatformMorkDataFileContext );
@@ -165,7 +165,7 @@ tokenlist Init(int argc, char **argv)
 	DataDirContext.SetPrependFilesystemBase( true );
 
 	static SFileDevContext MiniorkDirContext;
-	MiniorkDirContext.SetFilesystemBaseAbs( CSystem::GetGlobalStringVariable( "lev2://" ).c_str() );
+	MiniorkDirContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "lev2://" ).c_str() );
 	MiniorkDirContext.SetPrependFilesystemBase( true );
 
 	printf( "CPM\n");
@@ -185,7 +185,7 @@ tokenlist Init(int argc, char **argv)
 
 			if( TheDir )
 			{
-				CSystem::SetGlobalStringVariable( "data://", dirname.c_str() );
+				OldSchool::SetGlobalStringVariable( "data://", dirname.c_str() );
 				CFileEnv::GetRef().CloseDir( TheDir );
 				DataDirContext.SetFilesystemBaseAbs( dirname );
 			}
@@ -206,7 +206,7 @@ tokenlist Init(int argc, char **argv)
 
 			if( TheDir )
 			{
-				CSystem::SetGlobalStringVariable( "lev2://", dirname.c_str() );
+				OldSchool::SetGlobalStringVariable( "lev2://", dirname.c_str() );
 				CFileEnv::GetRef().CloseDir( TheDir );
 				MiniorkDirContext.SetFilesystemBaseAbs( dirname );
 			}

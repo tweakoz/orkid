@@ -30,7 +30,7 @@ namespace ork {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CCameraData::CCameraData()
+CameraData::CameraData()
 	: mAper(17.0f)
 	, mHorizAper(0.0f)
 	, mNear(100.0f)
@@ -52,15 +52,15 @@ CCameraData::CCameraData()
 
 }
 
-void CCameraData::SetLev2Camera(lev2::CCamera*pcam)
+void CameraData::SetLev2Camera(lev2::Camera*pcam)
 {
-	//printf( "CCameraData::SetLev2Camera() this<%p> pcam<%p>\n", this, pcam );
+	//printf( "CameraData::SetLev2Camera() this<%p> pcam<%p>\n", this, pcam );
 	mpLev2Camera=pcam;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::Persp(float fnear, float ffar, float faper)
+void CameraData::Persp(float fnear, float ffar, float faper)
 {
 	mAper = faper;
 	mHorizAper = 0;
@@ -70,7 +70,7 @@ void CCameraData::Persp(float fnear, float ffar, float faper)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::PerspH(float fnear, float ffar, float faperh)
+void CameraData::PerspH(float fnear, float ffar, float faperh)
 {
 	mHorizAper = faperh;
 	mNear = fnear;
@@ -79,7 +79,7 @@ void CCameraData::PerspH(float fnear, float ffar, float faperh)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::Lookat( const fvec3& eye, const fvec3& tgt, const fvec3& up )
+void CameraData::Lookat( const fvec3& eye, const fvec3& tgt, const fvec3& up )
 {
 	mEye = eye;
 	mTarget = tgt;
@@ -88,14 +88,14 @@ void CCameraData::Lookat( const fvec3& eye, const fvec3& tgt, const fvec3& up )
 	_explicitViewMatrix = false;
 }
 
-void CCameraData::SetView( const ork::fmtx4 &view)
+void CameraData::SetView( const ork::fmtx4 &view)
 {
 	mMatView = view;
 	//view.dump("setview");
 	_explicitViewMatrix = true;
 }
 
-void CCameraData::setCustomProjection( const ork::fmtx4& proj){
+void CameraData::setCustomProjection( const ork::fmtx4& proj){
 	//proj.dump("setproj");
 	mMatProj = proj;
 	_explicitProjectionMatrix = true;
@@ -107,7 +107,7 @@ void CCameraData::setCustomProjection( const ork::fmtx4& proj){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::projectDepthRay( const fvec2& v2d, fvec3& vdir, fvec3& vori ) const
+void CameraData::projectDepthRay( const fvec2& v2d, fvec3& vdir, fvec3& vori ) const
 {
 	const Frustum& camfrus = mFrustum;
 	fvec3 near_xt_lerp; near_xt_lerp.Lerp( camfrus.mNearCorners[0], camfrus.mNearCorners[1], v2d.GetX() );
@@ -120,7 +120,7 @@ void CCameraData::projectDepthRay( const fvec2& v2d, fvec3& vdir, fvec3& vori ) 
 	vori=near_lerp;
 }
 
-void CCameraData::projectDepthRay( const fvec2& v2d, fray3& ray_out ) const
+void CameraData::projectDepthRay( const fvec2& v2d, fray3& ray_out ) const
 {
     fvec3 dir, ori;
     projectDepthRay(v2d,dir,ori);
@@ -129,7 +129,7 @@ void CCameraData::projectDepthRay( const fvec2& v2d, fray3& ray_out ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::GetPixelLengthVectors( const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY ) const
+void CameraData::GetPixelLengthVectors( const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY ) const
 {
 	/////////////////////////////////////////////////////////////////
 	int ivpw = int(vp.GetX());
@@ -159,7 +159,7 @@ void CCameraData::GetPixelLengthVectors( const fvec3& Pos, const fvec2& vp, fvec
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) const
+void CameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) const
 {
 	///////////////////////////////
 	// gameplay calculation
@@ -195,7 +195,7 @@ void CCameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) cons
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
+void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 {
 
 	//orkprintf( "ccd camEYE <%f %f %f>\n", mEye.GetX(), mEye.GetY(), mEye.GetZ() );

@@ -532,7 +532,7 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<fvec3>& normals ,
 			fvec3 veye = vdir*2000.0f;
 
 			////////////
-			ork::CCameraData cdata;
+			ork::CameraData cdata;
 			cdata.BindGfxTarget( ShadowBuffer.GetContext() );
 			cdata.Lookat( veye, ork::fvec3::Black(), vup, 1.0f, 3000.0f, 70.0f );
 			cdata.CalcCameraData();

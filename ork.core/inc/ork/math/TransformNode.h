@@ -24,16 +24,16 @@ namespace ork {
 struct Transform3DMatrix 
 {
 	typedef fvec3		PosType;
-	typedef CQuaternion	RotType;
+	typedef fquat	RotType;
 	typedef float			ScaType;
 	typedef fmtx4&		MatType;
 
 	void SetMatrix( const fmtx4& );
 	const fmtx4& GetMatrix() const;
 	fvec3		GetPosition() const;
-	CQuaternion 	GetRotation() const;
+	fquat 	GetRotation() const;
 	float			GetScale() const;
-	void			SetRotation( const CQuaternion& q );
+	void			SetRotation( const fquat& q );
 	void			SetScale( const float scale);
 	void			SetPosition( const fvec3& pos );
 

@@ -619,7 +619,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				struct gettime
 				{	static const float& doit( GfxTarget *pTARG )
 					{	static float reltime;
-						reltime = std::fmod( float( CSystem::GetRef().GetLoResRelTime() ), 300.0f );
+						reltime = std::fmod( float( OldSchool::GetRef().GetLoResRelTime() ), 300.0f );
 						return reltime;
 					}
 				};
@@ -634,7 +634,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				struct gettime
 				{	static const float& doit( GfxTarget *pTARG )
 					{	static float reltime;
-						reltime = float( CSystem::GetRef().GetLoResRelTime() );
+						reltime = float( OldSchool::GetRef().GetLoResRelTime() );
 						return reltime;
 					}
 				};
@@ -673,7 +673,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				{	static const fvec3& doit( GfxTarget *pTARG )
 					{
 						static fvec3 vout; //GfxEnv::GetRef().GetCurrentContext();
-						//CCamera *pcam = 0; //pTarg->GetCurrentCamera();
+						//Camera *pcam = 0; //pTarg->GetCurrentCamera();
 						return vout; //pcam->mCameraData.mCamZNormal;
 					}
 				};
@@ -1084,7 +1084,7 @@ int GfxMaterialFx::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &Ma
 		//////////////////////////////
 
 		const ork::lev2::RenderContextFrameData* framedata = pTarg->GetRenderContextFrameData();
-		const ork::CCameraData* cdata = framedata->GetCameraData();
+		const ork::CameraData* cdata = framedata->GetCameraData();
 
 		mScreenZDir = cdata->GetZNormal();
 

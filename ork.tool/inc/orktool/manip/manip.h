@@ -19,7 +19,7 @@
 namespace ork { namespace lev2
 {
 
-class CManipManager;
+class ManipManager;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -44,9 +44,9 @@ enum EPlaneRec
 };
 
 
-class CManip : public ork::Object
+class Manip : public ork::Object
 {
-	DECLARE_TRANSPARENT_CUSTOM_POLICY_RTTI(CManip, ork::Object, ork::rtti::AbstractPolicy)
+	DECLARE_TRANSPARENT_CUSTOM_POLICY_RTTI(Manip, ork::Object, ork::rtti::AbstractPolicy)
 
 public:
 
@@ -60,9 +60,9 @@ public:
 	fplane3					mPlaneYZ;
 	fplane3					mPlaneXY;
 
-	CManipManager&			mManager;
+	ManipManager&			mManager;
 
-	CManip( CManipManager& mgr );
+	Manip( ManipManager& mgr );
 
 	virtual void Draw( GfxTarget *pTARG ) const = 0;
 	virtual bool UIEventHandler( const ui::Event& EV ) = 0;
@@ -80,13 +80,13 @@ protected:
 	fcolor4		mColor;
 };
 
-class CManipTrans : public CManip
+class ManipTrans : public Manip
 {
-	RttiDeclareAbstract(CManipTrans,CManip);
+	RttiDeclareAbstract(ManipTrans,Manip);
 
 public:
 
-    CManipTrans(CManipManager& mgr);
+    ManipTrans(ManipManager& mgr);
 
 	bool UIEventHandler( const ui::Event& EV ) final;
 
@@ -97,13 +97,13 @@ protected:
 	virtual void HandleDrag(const ork::fvec2& pos);
 };
 
-class CManipSingleTrans : public CManipTrans
+class ManipSingleTrans : public ManipTrans
 {
-	RttiDeclareAbstract(CManipSingleTrans, CManipTrans);
+	RttiDeclareAbstract(ManipSingleTrans, ManipTrans);
 
 public:
 
-	CManipSingleTrans(CManipManager& mgr);
+	ManipSingleTrans(ManipManager& mgr);
 
 	virtual void DrawAxis(GfxTarget* pTARG) const;
 
@@ -117,13 +117,13 @@ protected:
 	fmtx4			mmRotModel;
 };
 
-class CManipDualTrans : public CManipTrans
+class ManipDualTrans : public ManipTrans
 {
-	RttiDeclareAbstract(CManipDualTrans, CManipTrans);
+	RttiDeclareAbstract(ManipDualTrans, ManipTrans);
 
 public:
 
-	CManipDualTrans(CManipManager& mgr);
+	ManipDualTrans(ManipManager& mgr);
 
 	void Draw(GfxTarget* pTARG ) const final;
 
@@ -137,13 +137,13 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipTX : public CManipSingleTrans
+class ManipTX : public ManipSingleTrans
 {
-	RttiDeclareAbstract(CManipTX, CManipSingleTrans);
+	RttiDeclareAbstract(ManipTX, ManipSingleTrans);
 
 public:
 
-    CManipTX(CManipManager& mgr);
+    ManipTX(ManipManager& mgr);
 
 protected:
 
@@ -152,13 +152,13 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipTY : public CManipSingleTrans
+class ManipTY : public ManipSingleTrans
 {
-	RttiDeclareAbstract(CManipTY, CManipSingleTrans);
+	RttiDeclareAbstract(ManipTY, ManipSingleTrans);
 
 public:
 
-    CManipTY(CManipManager& mgr);
+    ManipTY(ManipManager& mgr);
 
 protected:
 
@@ -167,26 +167,26 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipTZ : public CManipSingleTrans
+class ManipTZ : public ManipSingleTrans
 {
-	RttiDeclareAbstract(CManipTZ, CManipSingleTrans);
+	RttiDeclareAbstract(ManipTZ, ManipSingleTrans);
 
 public:
 
-    CManipTZ(CManipManager& mgr);
+    ManipTZ(ManipManager& mgr);
 
 protected:
 
 	virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitZ(); };
 };
 
-class CManipTXY : public CManipDualTrans
+class ManipTXY : public ManipDualTrans
 {
-	RttiDeclareAbstract(CManipTXY, CManipDualTrans);
+	RttiDeclareAbstract(ManipTXY, ManipDualTrans);
 
 public:
 
-	CManipTXY(CManipManager& mgr);
+	ManipTXY(ManipManager& mgr);
 
 protected:
 
@@ -194,13 +194,13 @@ protected:
 		ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
-class CManipTXZ : public CManipDualTrans
+class ManipTXZ : public ManipDualTrans
 {
-	RttiDeclareAbstract(CManipTXZ, CManipDualTrans);
+	RttiDeclareAbstract(ManipTXZ, ManipDualTrans);
 
 public:
 
-	CManipTXZ(CManipManager& mgr);
+	ManipTXZ(ManipManager& mgr);
 
 protected:
 
@@ -208,13 +208,13 @@ protected:
 		ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
-class CManipTYZ : public CManipDualTrans
+class ManipTYZ : public ManipDualTrans
 {
-	RttiDeclareAbstract(CManipTYZ, CManipDualTrans);
+	RttiDeclareAbstract(ManipTYZ, ManipDualTrans);
 
 public:
 
-	CManipTYZ(CManipManager& mgr);
+	ManipTYZ(ManipManager& mgr);
 
 protected:
 
@@ -224,13 +224,13 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipRot : public CManip
+class ManipRot : public Manip
 {
-	RttiDeclareAbstract(CManipRot, CManip);
+	RttiDeclareAbstract(ManipRot, Manip);
 
 public: //
 
-    CManipRot( CManipManager& mgr, const fvec4 &LocRotMat );
+    ManipRot( ManipManager& mgr, const fvec4 &LocRotMat );
 
 	void Draw( GfxTarget *pTARG ) const final;
 	bool UIEventHandler( const ui::Event& EV ) final;
@@ -246,13 +246,13 @@ public: //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipRX : public CManipRot
+class ManipRX : public ManipRot
 {
-	RttiDeclareAbstract(CManipRX,CManipRot);
+	RttiDeclareAbstract(ManipRX,ManipRot);
 
 public: //
 
-    CManipRX(CManipManager& mgr);
+    ManipRX(ManipManager& mgr);
 
 	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
 
@@ -260,13 +260,13 @@ public: //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipRY : public CManipRot
+class ManipRY : public ManipRot
 {
-	RttiDeclareAbstract(CManipRY,CManipRot);
+	RttiDeclareAbstract(ManipRY,ManipRot);
 
 public: //
 
-    CManipRY(CManipManager& mgr);
+    ManipRY(ManipManager& mgr);
 
 	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
 
@@ -274,13 +274,13 @@ public: //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipRZ : public CManipRot
+class ManipRZ : public ManipRot
 {
-	RttiDeclareAbstract(CManipRZ,CManipRot);
+	RttiDeclareAbstract(ManipRZ,ManipRot);
 
 	public: //
 
-    CManipRZ(CManipManager& mgr);
+    ManipRZ(ManipManager& mgr);
 
 	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
 
@@ -297,11 +297,11 @@ enum EManipEnable
 
 class GfxMaterialManip : public GfxMaterial
 {
-	CManipManager& mManager;
+	ManipManager& mManager;
 
 	public:
 
-	GfxMaterialManip(GfxTarget*,CManipManager&mgr);
+	GfxMaterialManip(GfxTarget*,ManipManager&mgr);
 	~GfxMaterialManip() final {};
 	void Init( GfxTarget *pTarg ) final;
 
@@ -333,9 +333,9 @@ class GfxMaterialManip : public GfxMaterial
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CManipManager : public ork::AutoConnector
+class ManipManager : public ork::AutoConnector
 {
-	RttiDeclareAbstract(CManipManager,ork::AutoConnector);
+	RttiDeclareAbstract(ManipManager,ork::AutoConnector);
 
 	////////////////////////////////////////////////////////////
 	DeclarePublicAutoSlot( ObjectDeSelected );
@@ -353,20 +353,20 @@ public:
 	void SlotClearSelection();
 	////////////////////////////////////////////////////////////
 
-	friend class CManipRX;
-	friend class CManipRY;
-	friend class CManipRZ;
-	friend class CManipTX;
-	friend class CManipTY;
-	friend class CManipTZ;
-	friend class CManipTXY;
-	friend class CManipTXZ;
-	friend class CManipTYZ;
-	friend class CManip;
-	friend class CManipRot;
-	friend class CManipTrans;
-	friend class CManipSingleTrans;
-	friend class CManipDualTrans;
+	friend class ManipRX;
+	friend class ManipRY;
+	friend class ManipRZ;
+	friend class ManipTX;
+	friend class ManipTY;
+	friend class ManipTZ;
+	friend class ManipTXY;
+	friend class ManipTXZ;
+	friend class ManipTYZ;
+	friend class Manip;
+	friend class ManipRot;
+	friend class ManipTrans;
+	friend class ManipSingleTrans;
+	friend class ManipDualTrans;
 
 	//////////////////////////////////
 
@@ -389,7 +389,7 @@ public:
 
 	//////////////////////////////////
 
-	CManipManager();
+	ManipManager();
 	static void ClassInit();
 	void ManipObjects( void ) { mbDoComponents = false; }
 	void ManipComponents( void ) { mbDoComponents = true; }
@@ -409,11 +409,11 @@ public:
 	void Setup( Renderer* prend );
 	void Queue( Renderer* prend );
 
-	void DrawManip(CManip* manip, GfxTarget* pTARG);
+	void DrawManip(Manip* manip, GfxTarget* pTARG);
 	void DrawCurrentManipSet(GfxTarget* pTARG);
 
-	void SetHover(CManip* manip) { mpHoverManip = manip; }
-	CManip* GetHover() { return mpHoverManip; }
+	void SetHover(Manip* manip) { mpHoverManip = manip; }
+	Manip* GetHover() { return mpHoverManip; }
 
 	void SetDualAxis(bool dual) { mDualAxis = dual; }
 	bool IsDualAxis() { return mDualAxis; }
@@ -421,13 +421,13 @@ public:
 	void ApplyTransform( const TransformNode &SetMat );
 	const TransformNode& GetCurTransform() { return mCurTransform; }
 
-	void EnableManip( CManip *pOBJ );
+	void EnableManip( Manip *pOBJ );
 	void DisableManip( void );
 
 	bool UIEventHandler( const ui::Event& EV );
 
-	CCamera*			getActiveCamera( void ) const { return mpActiveCamera; }
-	void				SetActiveCamera( CCamera*pCam ) { mpActiveCamera=pCam; }
+	Camera*			getActiveCamera( void ) const { return mpActiveCamera; }
+	void				SetActiveCamera( Camera*pCam ) { mpActiveCamera=pCam; }
 
 	f32					GetManipScale( void  )  const { return mfManipScale; }
 
@@ -443,7 +443,7 @@ public:
 	Grid3d&				Grid() { return mGrid; }
 
 	void				SetViewScale( float fvs ) { mfViewScale=fvs; }
-	float				CalcViewScale( float fW, float fH, const CCameraData *camdat ) const;
+	float				CalcViewScale( float fW, float fH, const CameraData *camdat ) const;
 		
 	void				SetDrawMode(int imode) { miDrawMode=imode; }
 	int					GetDrawMode() const { return miDrawMode; }
@@ -458,24 +458,24 @@ private:
 	TransformNode		mParentTransform;
 
 	GfxMaterialManip*	mpManipMaterial;
-	CManip*				mpTXManip;
-	CManip*				mpTYManip;
-	CManip*				mpTZManip;
-	CManip*				mpTXYManip;
-	CManip*				mpTXZManip;
-	CManip*				mpTYZManip;
-	CManip*				mpRXManip;
-	CManip*				mpRYManip;
-	CManip*				mpRZManip;
-	CManip*				mpCurrentManip;
-	CManip*				mpHoverManip;
+	Manip*				mpTXManip;
+	Manip*				mpTYManip;
+	Manip*				mpTZManip;
+	Manip*				mpTXYManip;
+	Manip*				mpTXZManip;
+	Manip*				mpTYZManip;
+	Manip*				mpRXManip;
+	Manip*				mpRYManip;
+	Manip*				mpRZManip;
+	Manip*				mpCurrentManip;
+	Manip*				mpHoverManip;
 	EManipMode			meManipMode;
 	EManipEnable		meManipEnable;
 	float				mfViewScale;
 	int					miDrawMode;
 
-	CManipHandler		mManipHandler;
-	CCamera*			mpActiveCamera;
+	ManipHandler		mManipHandler;
+	Camera*			mpActiveCamera;
 
 	fvec4			mPickCenter;
 	fvec4			mPickAccum;

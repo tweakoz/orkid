@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -11,7 +11,6 @@
 #include <ork/math/cvector2.hpp>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
-#include <ork/math/tnumber.h>
 #include <ork/reflect/Serialize.h>
 #include <ork/reflect/BidirectionalSerializer.h>
 

@@ -26,7 +26,7 @@
 
 #include <QtGui/QCursor>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CCamera_persp, "CCamera_persp");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::EzUiCam, "EzUiCam");
 
 using namespace ork::ui;
 
@@ -37,27 +37,30 @@ void OrkGlobalEnableMousePointer();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::Describe() {
-  ork::reflect::RegisterProperty("Aperature", &CCamera_persp::aper);
-  ork::reflect::AnnotatePropertyForEditor<CCamera_persp>("Aperature", "editor.range.min", "0.0f");
-  ork::reflect::AnnotatePropertyForEditor<CCamera_persp>("Aperature", "editor.range.max", "90.0f");
+void EzUiCam::Describe() {
+  ork::reflect::RegisterProperty("Aperature", &EzUiCam::aper);
+  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.min", "0.0f");
+  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("Aperature", "editor.range.max", "90.0f");
 
-  ork::reflect::RegisterProperty("MaxFar", &CCamera_persp::far_max);
-  ork::reflect::AnnotatePropertyForEditor<CCamera_persp>("MaxFar", "editor.range.min", "1.0f");
-  ork::reflect::AnnotatePropertyForEditor<CCamera_persp>("MaxFar", "editor.range.max", "100000.0f");
+  ork::reflect::RegisterProperty("MaxFar", &EzUiCam::far_max);
+  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.min", "1.0f");
+  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MaxFar", "editor.range.max", "100000.0f");
 
-  ork::reflect::RegisterProperty("MinNear", &CCamera_persp::near_min);
-  ork::reflect::AnnotatePropertyForEditor<CCamera_persp>("MinNear", "editor.range.min", "0.1f");
-  ork::reflect::AnnotatePropertyForEditor<CCamera_persp>("MinNear", "editor.range.max", "10000.0f");
+  ork::reflect::RegisterProperty("MinNear", &EzUiCam::near_min);
+  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.min", "0.1f");
+  ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
+
+  // temporary until old mox files converted
+  ork::rtti::Class::CreateClassAlias("Camera_persp",GetClassStatic());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CCamera_persp::CCamera_persp()
-    : CCamera(), aper(40.0f), far_max(10000.0f), near_min(0.1f), tx(0.0f), ty(0.0f), tz(0.0f), player_rx(0.0f), player_ry(0.0f),
+EzUiCam::EzUiCam()
+    : Camera(), aper(40.0f), far_max(10000.0f), near_min(0.1f), tx(0.0f), ty(0.0f), tz(0.0f), player_rx(0.0f), player_ry(0.0f),
       player_rz(0.0f), move_vel(0.0f), mMoveVelocity(0.0f, 0.0f, 0.0f), meRotMode(EROT_SCREENXY), mDoDolly(false), mDoRotate(false),
       mDoPan(false) {
-  // InitInstance(CCamera_persp::GetClassStatic());
+  // InitInstance(EzUiCam::GetClassStatic());
   mCameraData.Persp(1.0f, 1000.0f, 70.0f);
   mCameraData.Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
   // mCameraData.SetFar( 1000.0f );
@@ -100,7 +103,7 @@ CCamera_persp::CCamera_persp()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::draw(GfxTarget* pT) {
+void EzUiCam::draw(GfxTarget* pT) {
   extern fvec4 TRayN;
   extern fvec4 TRayF;
 
@@ -145,7 +148,7 @@ void CCamera_persp::draw(GfxTarget* pT) {
   pT->MTXI()->PopUIMatrix();
   ///////////////////////////////////////////////////////////////
   // printf( "CAMHUD\n" );
-  CCameraData camdat = mCameraData;
+  CameraData camdat = mCameraData;
   camdat.BindGfxTarget(pT);
   camdat.SetVisibilityCamDat(0);
   CameraCalcContext ctx;
@@ -182,7 +185,7 @@ static QPoint pmousepos;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::PanBegin(const CamEvTrackData& ed) {
+void EzUiCam::PanBegin(const CamEvTrackData& ed) {
   printf("BeginPan\n");
   pmousepos = QCursor::pos();
   // OrkGlobalDisableMousePointer();
@@ -191,7 +194,7 @@ void CCamera_persp::PanBegin(const CamEvTrackData& ed) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::PanUpdate(const CamEvTrackData& ed) {
+void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
   assert(mDoPan);
 
   int esx = ed.icurX;
@@ -216,7 +219,7 @@ void CCamera_persp::PanUpdate(const CamEvTrackData& ed) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::PanEnd() {
+void EzUiCam::PanEnd() {
   printf("EndPan\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
@@ -227,7 +230,7 @@ void CCamera_persp::PanEnd() {
 
 static fvec4 vPushNZ, vPushNX, vPushNY;
 
-void CCamera_persp::RotBegin(const CamEvTrackData& ed) {
+void EzUiCam::RotBegin(const CamEvTrackData& ed) {
   printf("BeginRot\n");
   vPushNX = mCameraData.GetXNormal();
   vPushNY = mCameraData.GetYNormal();
@@ -236,7 +239,7 @@ void CCamera_persp::RotBegin(const CamEvTrackData& ed) {
   // OrkGlobalDisableMousePointer();
   mDoRotate = true;
 }
-void CCamera_persp::RotUpdate(const CamEvTrackData& ed) {
+void EzUiCam::RotUpdate(const CamEvTrackData& ed) {
   static int gupdatec = 0;
   printf("RotUpdate<%d>\n", gupdatec++);
   fvec4 RotX = mCameraData.GetXNormal();
@@ -317,7 +320,7 @@ void CCamera_persp::RotUpdate(const CamEvTrackData& ed) {
   }
   // QCursor::setPos(pmousepos);
 }
-void CCamera_persp::RotEnd() {
+void EzUiCam::RotEnd() {
   printf("EndRot\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
@@ -326,13 +329,13 @@ void CCamera_persp::RotEnd() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::DollyBegin(const CamEvTrackData& ed) {
+void EzUiCam::DollyBegin(const CamEvTrackData& ed) {
   printf("BeginDolly\n");
   pmousepos = QCursor::pos();
   // OrkGlobalDisableMousePointer();
   mDoDolly = true;
 }
-void CCamera_persp::DollyUpdate(const CamEvTrackData& ed) {
+void EzUiCam::DollyUpdate(const CamEvTrackData& ed) {
   int esx = ed.icurX;
   int esy = ed.icurY;
   int ipushx = ed.ipushX;
@@ -368,7 +371,7 @@ void CCamera_persp::DollyUpdate(const CamEvTrackData& ed) {
 
   // QCursor::setPos(pmousepos);
 }
-void CCamera_persp::DollyEnd() {
+void EzUiCam::DollyEnd() {
   printf("EndDolly\n");
   // QCursor::setPos(pmousepos);
   // OrkGlobalEnableMousePointer();
@@ -377,7 +380,7 @@ void CCamera_persp::DollyEnd() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
+bool EzUiCam::UIEventHandler(const ui::Event& EV) {
   const ui::EventCooked& filtev = EV.mFilteredEvent;
 
   ui::Viewport* pVP = GetViewport();
@@ -790,7 +793,7 @@ bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
+void EzUiCam::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
   ork::fvec3 xnormal = matrix.GetXNormal();
   ork::fvec3 ynormal = matrix.GetYNormal();
   ork::fvec3 znormal = matrix.GetZNormal();
@@ -813,7 +816,7 @@ void CCamera_persp::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::RenderUpdate(void) {
+void EzUiCam::RenderUpdate(void) {
   OrkAssert(GetViewport());
   //////////////////////////////////////
   //////////////////////////////////////
@@ -987,8 +990,8 @@ void CCamera_persp::RenderUpdate(void) {
 
   fvec4 MoveNrmX, MoveNrmZ;
 
-  static f32 LastTimeStep = CSystem::GetRef().GetLoResTime();
-  f32 ThisTimeStep = CSystem::GetRef().GetLoResTime();
+  static f32 LastTimeStep = OldSchool::GetRef().GetLoResTime();
+  f32 ThisTimeStep = OldSchool::GetRef().GetLoResTime();
 
   float timestep = float(ThisTimeStep - LastTimeStep);
   LastTimeStep = ThisTimeStep;
@@ -1081,7 +1084,7 @@ void CCamera_persp::RenderUpdate(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::updateMatrices(void) {
+void EzUiCam::updateMatrices(void) {
   if (mfLoc < 0.001f)
     mfLoc = 0.001f;
 
@@ -1140,7 +1143,7 @@ void CCamera_persp::updateMatrices(void) {
 ///////////////////////////////////////////////////////////////////////////////
 // this will return 1.0f id pos is directly at the near plane, should increase linearly furthur back
 
-float CCamera_persp::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
+float EzUiCam::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
   float rval = 1.0f;
 
   float distATnear = (mCameraData.GetFrustum().mNearCorners[1] - mCameraData.GetFrustum().mNearCorners[0]).Mag();
@@ -1163,7 +1166,7 @@ float CCamera_persp::ViewLengthToWorldLength(const fvec4& pos, float ViewLength)
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const fmtx4& IMat) const {
+void EzUiCam::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const fmtx4& IMat) const {
   float fx = pos2D.GetX();
   float fy = pos2D.GetY();
   //////////////////////////////////////////

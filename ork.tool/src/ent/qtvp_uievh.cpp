@@ -251,7 +251,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
               auto pos = mtx.GetTranslation();
 
               if (_editorCamera) {
-                CCamera_persp* as_persp = rtti::autocast(_editorCamera);
+                EzUiCam* as_persp = rtti::autocast(_editorCamera);
 
                 if (as_persp) {
                   as_persp->mvCenter = pos;
@@ -338,7 +338,7 @@ void SceneEditorVPToolHandler::setSpawnLoc(const lev2::GetPixelContext& ctx, flo
 
     orkprintf("spawncursor <%f,%f,%f>\n", spawnloc.x, spawnloc.y, spawnloc.z);
 
-    if (CCamera_persp* as_persp = rtti::autocast(cam)) {
+    if (EzUiCam* as_persp = rtti::autocast(cam)) {
       as_persp->mvCenter = spawnloc;
       as_persp->updateMatrices();
     }

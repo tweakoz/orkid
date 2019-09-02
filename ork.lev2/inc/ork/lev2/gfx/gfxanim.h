@@ -161,7 +161,7 @@ enum EXFORM_COMPONENT
 
 struct DecompMtx44
 {
-	CQuaternion mRot;
+	fquat mRot;
 	fvec3	mTrans;
 	float		mScale;
 

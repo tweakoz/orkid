@@ -63,11 +63,11 @@ public:
 	const SeqCamItemDataBase&	GetCD() const { return mCD; }
 
 	SeqCamItemInstBase( const SeqCamItemDataBase& cd );
-	const CCameraData& GetCameraData() const { return mCameraData; }
+	const CameraData& GetCameraData() const { return mCameraData; }
 
 protected:
 	const SeqCamItemDataBase&				mCD;
-	CCameraData								mCameraData;
+	CameraData								mCameraData;
 
 };
 
@@ -112,7 +112,7 @@ private:
 	orklut<PoolString,SeqCamItemInstBase*>	mItemInsts;
 	SeqCamItemInstBase*						mpActiveItem;
 	const SequenceCamControllerData&		mCD;
-	CCameraData								mCameraData;
+	CameraData								mCameraData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

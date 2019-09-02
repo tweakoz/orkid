@@ -1169,7 +1169,7 @@ bool Engine::Render( const AABox& bbox, const std::string& OutputName )
 	orkvector<RenderingJobCtx*>	JobCtxVect;
 #if 0
 	orkvector<pthread_t>		ThreadVect;
-	f64 ftimeA = CSystem::GetRef().GetSystemRelTime(  );
+	f64 ftimeA = OldSchool::GetRef().GetSystemRelTime(  );
 	for( int ic=0; ic<inumcores; ic++ )
 	{
 		RenderingJobCtx* ctx = new RenderingJobCtx;
@@ -1197,7 +1197,7 @@ bool Engine::Render( const AABox& bbox, const std::string& OutputName )
 		RenderingJobCtx* ctx = *it;
 		inumrays += ctx->miNumRays;
 	}
-	f64 ftimeB = CSystem::GetRef().GetSystemRelTime(  );
+	f64 ftimeB = OldSchool::GetRef().GetSystemRelTime(  );
 	f64 ftime = ftimeB-ftimeA;
 	float frayspersec = float(inumrays)/ftime;
 	orkprintf( "Rays<%d> Time<%f? RaysPerSec<%f>\n", inumrays, ftime,  frayspersec );
@@ -1304,7 +1304,7 @@ bool Engine::Bake( const AABox& bbox, const std::string& OutputName )
 	/////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////
-	//f64 ftimeA = CSystem::GetRef().GetSystemRelTime(  );
+	//f64 ftimeA = OldSchool::GetRef().GetSystemRelTime(  );
 	{
 		int inumcores = GetNumCores();
 		orkvector<BakingJobCtx*>	JobCtxVect;
@@ -1340,7 +1340,7 @@ bool Engine::Bake( const AABox& bbox, const std::string& OutputName )
 		//}		
 		#endif
 	}
-	//f64 ftimeB = CSystem::GetRef().GetSystemRelTime(  );
+	//f64 ftimeB = OldSchool::GetRef().GetSystemRelTime(  );
 	f64 ftime = 1.0; //ftimeB-ftimeA;
 	int inrays = int(giNumRays);
 

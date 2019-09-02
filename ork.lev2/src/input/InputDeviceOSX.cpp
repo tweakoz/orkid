@@ -86,14 +86,14 @@ void InputDeviceOSX::Input_poll()
 	}
 
 
-	bool bLANAL = CSystem::IsKeyDepressed( 'g', 0 );
-	bool bLANAR = CSystem::IsKeyDepressed( 'h', 0 );
-	bool bLANAU = CSystem::IsKeyDepressed( 'y', 0 );
-	bool bLANAD = CSystem::IsKeyDepressed( 'b', 0 );
-	bool bRDIGL = CSystem::IsKeyDepressed( ETRIG_RAW_KEY_LEFT, 0 );
-	bool bRDIGR = CSystem::IsKeyDepressed( ETRIG_RAW_KEY_RIGHT, 0 );
-	bool bRDIGU = CSystem::IsKeyDepressed( ETRIG_RAW_KEY_UP, 0 );
-	bool bRDIGD = CSystem::IsKeyDepressed( ETRIG_RAW_KEY_DOWN, 0 );
+	bool bLANAL = OldSchool::IsKeyDepressed( 'g', 0 );
+	bool bLANAR = OldSchool::IsKeyDepressed( 'h', 0 );
+	bool bLANAU = OldSchool::IsKeyDepressed( 'y', 0 );
+	bool bLANAD = OldSchool::IsKeyDepressed( 'b', 0 );
+	bool bRDIGL = OldSchool::IsKeyDepressed( ETRIG_RAW_KEY_LEFT, 0 );
+	bool bRDIGR = OldSchool::IsKeyDepressed( ETRIG_RAW_KEY_RIGHT, 0 );
+	bool bRDIGU = OldSchool::IsKeyDepressed( ETRIG_RAW_KEY_UP, 0 );
+	bool bRDIGD = OldSchool::IsKeyDepressed( ETRIG_RAW_KEY_DOWN, 0 );
 
 	//orkprintf( "rdig %d %d %d %d\n", bRDIGU, bRDIGD, bRDIGL, bRDIGR );
 	int ilanax = bLANAL ? -127 : bLANAR ? 127 : 0;
@@ -109,13 +109,13 @@ void InputDeviceOSX::Input_poll()
 		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_RDIG_DOWN, bRDIGD ? 127 : 0 );
 		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_RDIG_RIGHT, bRDIGR ? 127 : 0 );
 
-//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_L1, CSystem::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
-//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_R1, CSystem::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
-///		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_L2, CSystem::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
-//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_R2, CSystem::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
+//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_L1, OldSchool::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
+//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_R1, OldSchool::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
+///		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_L2, OldSchool::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
+//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_R2, OldSchool::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
 
-//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_SELECT, CSystem::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
-//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_START, CSystem::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
+//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_SELECT, OldSchool::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
+//		InputManager::GetRef().SetTrigger(ETRIG_RAW_JOY0_START, OldSchool::IsKeyDepressed( 'g', 0 ) ? 127 : 0 );
 */
 
    return ;

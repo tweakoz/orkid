@@ -29,7 +29,7 @@
 
 namespace ork {
 
-typedef fixedlut<PoolString,CCameraData,16>	CameraLut;
+typedef fixedlut<PoolString,CameraData,16>	CameraLut;
 
 class Drawable;
 
@@ -157,8 +157,8 @@ public:
 	static void ClearAndSyncReaders();
 	static void ClearAndSyncWriters();
 	
-	const CCameraData* GetCameraData( int icam ) const;
-	const CCameraData* GetCameraData( const PoolString& named ) const;
+	const CameraData* GetCameraData( int icam ) const;
+	const CameraData* GetCameraData( const PoolString& named ) const;
 
 	DrawableBufLayer* MergeLayer( const PoolString& layername );
 
@@ -205,11 +205,11 @@ class CameraDrawable : public Drawable
 {
 	RttiDeclareAbstract(CameraDrawable, Drawable);
 public:
-	CameraDrawable( Entity* pent, const CCameraData* camData);
+	CameraDrawable( Entity* pent, const CameraData* camData);
 private:
 	void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const override;
 	void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer&buffer) const override;
-	const CCameraData* mCameraData;
+	const CameraData* mCameraData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

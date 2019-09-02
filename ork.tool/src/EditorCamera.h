@@ -42,7 +42,7 @@ class EditorCamControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( EditorCamControllerData, ent::ComponentData );
 
-	lev2::CCamera_persp*					mPerspCam;
+	lev2::EzUiCam*					mPerspCam;
 
     ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
@@ -50,7 +50,7 @@ public:
 
 
 	EditorCamControllerData();
-	const lev2::CCamera* GetCamera() const { return mPerspCam; }
+	const lev2::Camera* GetCamera() const { return mPerspCam; }
 	ork::Object* CameraAccessor() { return mPerspCam; }
 
 };

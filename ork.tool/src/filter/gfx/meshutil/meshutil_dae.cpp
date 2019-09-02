@@ -782,7 +782,7 @@ struct DaeReadJobThread : public ork::Thread
 ///////////////////////////////////////////////////////////////////////////////
 void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 {
-	float ftimeA = float(CSystem::GetRef().GetLoResTime());
+	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 	size_t imatnumfaces = mpMatGroup->GetFaceCount();
 	int inumvtxcolors = mVtxColorSources.size();
 	int inumtex = mUvSources.size();
@@ -894,7 +894,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 			}
 		}
 	}
-	float ftimeB = float(CSystem::GetRef().GetLoResTime());
+	float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<ReadFromDaeFile::DaeReadThread>> Thread<%d> ShGrp<%s> Mesh<%s> NumFaces<%d> Seconds<%f>\n", ithreadidx, ShadingGroupName.c_str(), MeshDaeID.c_str(), imatnumfaces, ftime );
 }
@@ -902,7 +902,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 
 void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopts )
 {
-	float ftimeA = float(CSystem::GetRef().GetLoResTime());
+	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 	FCollada::Initialize();
 
@@ -1062,14 +1062,14 @@ void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopt
 		}
 	}
 
-	float ftimeB = float(CSystem::GetRef().GetLoResTime());
+	float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<ReadFromDaeFile::Stage1 %f seconds>>\n", ftime );
 
 	///////////////////////////////////////////////////
 
 	DaeReadQueue Q;
-	ftimeA = float(CSystem::GetRef().GetLoResTime());
+	ftimeA = float(OldSchool::GetRef().GetLoResTime());
 	for( orkset<FCDGeometryMesh*>::const_iterator it=MeshSet.begin(); it!=MeshSet.end(); it++ )
 	{
 
@@ -1283,7 +1283,7 @@ void toolmesh::ReadFromDaeFile( const file::Path& BasePath, DaeReadOpts& readopt
 	}
 	/////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////
-	ftimeB = float(CSystem::GetRef().GetLoResTime());
+	ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<ReadFromDaeFile::Stage2 %f seconds>>\n", ftime );
 	FCollada::Release();

@@ -81,7 +81,7 @@ AudioGlobalModule::AudioGlobalModule()
 }
 void AudioGlobalModule::Compute(float fdt)
 {
-	float ftime = ork::CSystem::GetRef().GetLoResTime()*mPlugInpTimeScale.GetValue();
+	float ftime = ork::OldSchool::GetRef().GetLoResTime()*mPlugInpTimeScale.GetValue();
 	mOutDataTime = ftime;
 	mOutDataTimeDiv10 = ftime*0.1f;
 	mOutDataTimeDiv100 = ftime*0.01f;

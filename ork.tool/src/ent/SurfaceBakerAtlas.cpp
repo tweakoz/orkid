@@ -255,7 +255,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 		opts.mExcludeLayers.insert( "collision" );
 		opts.mExcludeLayers.insert( "ref_collision" );
 		opts.mbMergeMeshShGrpName = true;
-		opts.miNumThreads = ork::CSystem::GetNumCores();
+		opts.miNumThreads = ork::OldSchool::GetNumCores();
 		opts.mbEmptyLayers = true;
 //		InpMesh.ReadFromDaeFile( daepath, opts );
 		pOPS->SetProgress( 0.02f );
@@ -335,7 +335,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 		/////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////
 
-		//OutputMesh.MergeToolMeshThreaded(InpMesh,ork::CSystem::GetNumCores());
+		//OutputMesh.MergeToolMeshThreaded(InpMesh,ork::OldSchool::GetNumCores());
 		int inumpgs = material_pgmap.size();
 		int ipg = 0;
 			OutputMesh.Dump( "OutputMesh::MergeToolMesh(InpMesh)" );
@@ -576,7 +576,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 				/////////////////////////////////////////////////////////
 				// start threads
 				/////////////////////////////////////////////////////////
-				int inumcores = ork::CSystem::GetNumCores();
+				int inumcores = ork::OldSchool::GetNumCores();
 				orkvector<pthread_t>	ThreadVect;
 				for( int ic=0; ic<inumcores; ic++ )
 				{
@@ -611,7 +611,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 		///////////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////////
 		//orkset<std::string>	ExludeWhenMerging;
-		OutputMesh.MergeToolMeshThreadedExcluding(InpMesh,ork::CSystem::GetNumCores(),ExludeWhenMerging);
+		OutputMesh.MergeToolMeshThreadedExcluding(InpMesh,ork::OldSchool::GetNumCores(),ExludeWhenMerging);
 
 		///////////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////////
@@ -853,7 +853,7 @@ void WriteAtlasedDae( const MeshUtil::toolmesh& tmesh, const file::Path& OutputP
 	/////////////////////////////////////////////////////////
 	// start threads
 	/////////////////////////////////////////////////////////
-	int inumcores = 1; //ork::CSystem::GetNumCores();
+	int inumcores = 1; //ork::OldSchool::GetNumCores();
 	orkvector<pthread_t>	ThreadVect;
 	for( int ic=0; ic<inumcores; ic++ )
 	{

@@ -609,7 +609,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 
 						if( comp )
 						{
-							auto cam = (lev2::CCamera_persp*) comp->GetCamera();
+							auto cam = (lev2::EzUiCam*) comp->GetCamera();
 							//auto eye = cam->GetEye();
 							//auto tgt = cam->GetTarget();
 							//auto dir = (tgt-eye).Normal();

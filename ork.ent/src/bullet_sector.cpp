@@ -1378,9 +1378,9 @@ bool SectorTrackerInst::UpdatePos(const ork::fvec3 &newpos, ork::fvec3 &newvel)
 
 	if(mMidlineVert.mVelocityFollow > 0)
 	{
-		ork::CQuaternion rot;
+		ork::fquat rot;
 		rot.ShortestRotationArc(oldBasisY, mBasisY);
-		rot.Lerp(CQuaternion(), rot, mMidlineVert.mVelocityFollow);
+		rot.Lerp(fquat(), rot, mMidlineVert.mVelocityFollow);
 		newvel = newvel.Transform(rot.ToMatrix3());
 	}
 

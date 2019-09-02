@@ -21,58 +21,58 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManip, "CManip");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Manip, "Manip");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipTrans, "CManipTrans");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipSingleTrans, "CManipSingleTrans");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipDualTrans, "CManipDualTrans");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipRot, "CManipRot");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipTrans, "ManipTrans");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipSingleTrans, "ManipSingleTrans");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipDualTrans, "ManipDualTrans");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipRot, "ManipRot");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipTX, "CManipTX");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipTY, "CManipTY");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipTZ, "CManipTZ");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipTXY, "CManipTXY");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipTXZ, "CManipTXZ");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipTYZ, "CManipTYZ");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipTX, "ManipTX");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipTY, "ManipTY");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipTZ, "ManipTZ");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipTXY, "ManipTXY");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipTXZ, "ManipTXZ");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipTYZ, "ManipTYZ");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipRX, "CManipRX");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipRY, "CManipRY");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipRZ, "CManipRZ");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipRX, "ManipRX");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipRY, "ManipRY");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipRZ, "ManipRZ");
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CManipManager, "CManipManager");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ManipManager, "ManipManager");
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManip::Describe() {}
+void Manip::Describe() {}
 
-void CManipTrans::Describe() {}
-void CManipSingleTrans::Describe() {}
-void CManipDualTrans::Describe() {}
-void CManipRot::Describe() {}
+void ManipTrans::Describe() {}
+void ManipSingleTrans::Describe() {}
+void ManipDualTrans::Describe() {}
+void ManipRot::Describe() {}
 
-void CManipTX::Describe() {}
-void CManipTY::Describe() {}
-void CManipTZ::Describe() {}
-void CManipTXY::Describe() {}
-void CManipTXZ::Describe() {}
-void CManipTYZ::Describe() {}
+void ManipTX::Describe() {}
+void ManipTY::Describe() {}
+void ManipTZ::Describe() {}
+void ManipTXY::Describe() {}
+void ManipTXZ::Describe() {}
+void ManipTYZ::Describe() {}
 
-void CManipRX::Describe() {}
-void CManipRY::Describe() {}
-void CManipRZ::Describe() {}
+void ManipRX::Describe() {}
+void ManipRY::Describe() {}
+void ManipRZ::Describe() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::Describe() {
-  RegisterAutoSlot(CManipManager, ObjectDeleted);
-  RegisterAutoSlot(CManipManager, ObjectSelected);
-  RegisterAutoSlot(CManipManager, ObjectDeSelected);
-  RegisterAutoSlot(CManipManager, ClearSelection);
+void ManipManager::Describe() {
+  RegisterAutoSlot(ManipManager, ObjectDeleted);
+  RegisterAutoSlot(ManipManager, ObjectSelected);
+  RegisterAutoSlot(ManipManager, ObjectDeSelected);
+  RegisterAutoSlot(ManipManager, ClearSelection);
 }
 
-CManipManager::CManipManager()
+ManipManager::ManipManager()
     : mpTXManip(0), mpTYManip(0), mpTZManip(0), mpTXYManip(0), mpTXZManip(0), mpTYZManip(0), mpRXManip(0), mpRYManip(0),
       mpRZManip(0), mpCurrentManip(0), mpHoverManip(0), meManipMode(EMANIPMODE_WORLD_TRANS), meManipEnable(EMANIPMODE_OFF),
       mbDoComponents(false), mfManipScale(1.0f), mfBaseManipSize(100.0f), mpCurrentInterface(0), mpCurrentObject(0),
@@ -84,18 +84,18 @@ CManipManager::CManipManager()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::SlotObjectDeleted(ork::Object* pOBJ) {
+void ManipManager::SlotObjectDeleted(ork::Object* pOBJ) {
   if (mpCurrentObject == pOBJ) {
     DetachObject();
   }
 }
-void CManipManager::SlotObjectSelected(ork::Object* pOBJ) {}
-void CManipManager::SlotObjectDeSelected(ork::Object* pOBJ) {}
-void CManipManager::SlotClearSelection() {}
+void ManipManager::SlotObjectSelected(ork::Object* pOBJ) {}
+void ManipManager::SlotObjectDeSelected(ork::Object* pOBJ) {}
+void ManipManager::SlotClearSelection() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CManipManager::UIEventHandler(const ui::Event& EV) {
+bool ManipManager::UIEventHandler(const ui::Event& EV) {
   bool rval = false;
 
   switch (EV.miEventCode) {
@@ -108,7 +108,7 @@ bool CManipManager::UIEventHandler(const ui::Event& EV) {
     } break;
   }
 
-  // printf( "CManipManager::UIEventHandler mpCurrentManip<%p>\n", mpCurrentManip );
+  // printf( "ManipManager::UIEventHandler mpCurrentManip<%p>\n", mpCurrentManip );
 
   if (mpCurrentManip)
     rval = mpCurrentManip->UIEventHandler(EV);
@@ -128,11 +128,11 @@ fvec4 IntersectionRecord::GetLocalSpaceDelta(const fmtx4& InvLocalMatrix) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CManip::CManip(CManipManager& mgr) : mManager(mgr), mActiveIntersection(0), mColor() {}
+Manip::Manip(ManipManager& mgr) : mManager(mgr), mActiveIntersection(0), mColor() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CManip::CheckIntersect(void) const {
+bool Manip::CheckIntersect(void) const {
   bool bisect = (mActiveIntersection == nullptr) ? false : mActiveIntersection->mbHasItersected;
   // printf( "manip<%p> ai<%p> CheckIntersect<%d>\n", this, mActiveIntersection, int(bisect) );
 
@@ -141,7 +141,7 @@ bool CManip::CheckIntersect(void) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManip::CalcPlanes() {
+void Manip::CalcPlanes() {
   fmtx4 CurMatrix;
   mBaseTransform.GetMatrix(CurMatrix);
   fvec4 origin = CurMatrix.GetTranslation();
@@ -149,7 +149,7 @@ void CManip::CalcPlanes() {
   fvec4 normalY = CurMatrix.GetYNormal();
   fvec4 normalZ = CurMatrix.GetZNormal();
   /////////////////////////////
-  if (mManager.mbWorldTrans && (CManipManager::EMANIPMODE_WORLD_TRANS == mManager.GetManipMode())) {
+  if (mManager.mbWorldTrans && (ManipManager::EMANIPMODE_WORLD_TRANS == mManager.GetManipMode())) {
     normalX = fvec4(1.0f, 0.0f, 0.0f);
     normalY = fvec4(0.0f, 1.0f, 0.0f);
     normalZ = fvec4(0.0f, 0.0f, 1.0f);
@@ -162,10 +162,10 @@ void CManip::CalcPlanes() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-fvec3 CManip::IntersectWithPlanes(const ork::fvec2& posubp) {
+fvec3 Manip::IntersectWithPlanes(const ork::fvec2& posubp) {
   fvec3 rval;
 
-  const CCamera* cam = mManager.getActiveCamera();
+  const Camera* cam = mManager.getActiveCamera();
   fmtx4 CurMatrix;
   mBaseTransform.GetMatrix(CurMatrix);
   /////////////////////////////
@@ -194,8 +194,8 @@ fvec3 CManip::IntersectWithPlanes(const ork::fvec2& posubp) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManip::SelectBestPlane(const ork::fvec2& posubp) {
-  bool brotmode = (mManager.GetManipMode() == CManipManager::EMANIPMODE_LOCAL_ROTATE);
+void Manip::SelectBestPlane(const ork::fvec2& posubp) {
+  bool brotmode = (mManager.GetManipMode() == ManipManager::EMANIPMODE_LOCAL_ROTATE);
 
   CalcPlanes();
   fvec3 RayDir = IntersectWithPlanes(posubp);
@@ -210,11 +210,11 @@ void CManip::SelectBestPlane(const ork::fvec2& posubp) {
   // rot manips use explicit planes
   /////////////////////////////
   if (brotmode) {
-    if (mManager.mpCurrentManip->GetClass() == CManipRX::GetClassStatic()) {
+    if (mManager.mpCurrentManip->GetClass() == ManipRX::GetClassStatic()) {
       mActiveIntersection = &mIntersection[EPLANE_YZ];
-    } else if (mManager.mpCurrentManip->GetClass() == CManipRY::GetClassStatic()) {
+    } else if (mManager.mpCurrentManip->GetClass() == ManipRY::GetClassStatic()) {
       mActiveIntersection = &mIntersection[EPLANE_XZ];
-    } else if (mManager.mpCurrentManip->GetClass() == CManipRZ::GetClassStatic()) {
+    } else if (mManager.mpCurrentManip->GetClass() == ManipRZ::GetClassStatic()) {
       mActiveIntersection = &mIntersection[EPLANE_XY];
     }
   } else {
@@ -227,11 +227,11 @@ void CManip::SelectBestPlane(const ork::fvec2& posubp) {
 
     // printf( "mManager.mpCurrentManip<%p>\n", mManager.mpCurrentManip );
 
-    if (mManager.mpCurrentManip->GetClass() == CManipTX::GetClassStatic()) {
+    if (mManager.mpCurrentManip->GetClass() == ManipTX::GetClassStatic()) {
       mActiveIntersection = (adotxy > adotxz) ? &mIntersection[EPLANE_XZ] : &mIntersection[EPLANE_XY];
-    } else if (mManager.mpCurrentManip->GetClass() == CManipTY::GetClassStatic()) {
+    } else if (mManager.mpCurrentManip->GetClass() == ManipTY::GetClassStatic()) {
       mActiveIntersection = (adotxy > adotyz) ? &mIntersection[EPLANE_XY] : &mIntersection[EPLANE_YZ];
-    } else if (mManager.mpCurrentManip->GetClass() == CManipTZ::GetClassStatic()) {
+    } else if (mManager.mpCurrentManip->GetClass() == ManipTZ::GetClassStatic()) {
       mActiveIntersection = (adotxz > adotyz) ? &mIntersection[EPLANE_XZ] : &mIntersection[EPLANE_YZ];
     }
   }
@@ -248,7 +248,7 @@ void CManip::SelectBestPlane(const ork::fvec2& posubp) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::RebaseMatrices(void) {
+void ManipManager::RebaseMatrices(void) {
   if (mpCurrentInterface && mpCurrentObject) {
     TransformNode Mat = mpCurrentInterface->GetTransform(mpCurrentObject);
     TransformNode MatT = mpCurrentInterface->GetTransform(mpCurrentObject);
@@ -260,7 +260,7 @@ void CManipManager::RebaseMatrices(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::AttachObject(ork::Object* pobj) {
+void ManipManager::AttachObject(ork::Object* pobj) {
   object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
   // CClass *pClass = pOBJ->GetClass();
 
@@ -288,7 +288,7 @@ void CManipManager::AttachObject(ork::Object* pobj) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::DetachObject() {
+void ManipManager::DetachObject() {
   mpCurrentInterface = 0;
   mpCurrentObject = 0;
   meManipEnable = EMANIPMODE_OFF;
@@ -296,9 +296,9 @@ void CManipManager::DetachObject() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::CalcObjectScale(void) {
+void ManipManager::CalcObjectScale(void) {
   fvec3 pos;
-  CQuaternion rot;
+  fquat rot;
   float scale;
   fmtx4 ScaleMat;
   mCurTransform.GetMatrix(ScaleMat);
@@ -310,7 +310,7 @@ void CManipManager::CalcObjectScale(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::ReleaseObject(void) {
+void ManipManager::ReleaseObject(void) {
 	static bool bPushIgnore = false;
   if (bPushIgnore) {
     bPushIgnore = false;
@@ -323,7 +323,7 @@ void CManipManager::ReleaseObject(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float CManipManager::CalcViewScale(float fW, float fH, const CCameraData* camdat) const {
+float ManipManager::CalcViewScale(float fW, float fH, const CameraData* camdat) const {
   fmtx4 MatW;
   mCurTransform.GetMatrix(MatW);
 
@@ -348,11 +348,11 @@ float CManipManager::CalcViewScale(float fW, float fH, const CCameraData* camdat
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::Setup(ork::lev2::Renderer* prend) {
+void ManipManager::Setup(ork::lev2::Renderer* prend) {
   GfxTarget* pTARG = prend->GetTarget();
 
   if (mpCurrentInterface) {
-    bool isshift = false; // CSystem::IsKeyDepressed(VK_SHIFT);
+    bool isshift = false; // OldSchool::IsKeyDepressed(VK_SHIFT);
     if (isshift) {
       mCurTransform = mpCurrentInterface->GetTransform(mpCurrentObject);
     }
@@ -375,29 +375,29 @@ void CManipManager::Setup(ork::lev2::Renderer* prend) {
     mpManipMaterial->mRasterState.SetDepthTest(EDEPTHTEST_OFF);
 
     if (mpTXManip == 0)
-      mpTXManip = new CManipTX(*this);
+      mpTXManip = new ManipTX(*this);
     if (mpTYManip == 0)
-      mpTYManip = new CManipTY(*this);
+      mpTYManip = new ManipTY(*this);
     if (mpTZManip == 0)
-      mpTZManip = new CManipTZ(*this);
+      mpTZManip = new ManipTZ(*this);
     if (mpTXYManip == 0)
-      mpTXYManip = new CManipTXY(*this);
+      mpTXYManip = new ManipTXY(*this);
     if (mpTXZManip == 0)
-      mpTXZManip = new CManipTXZ(*this);
+      mpTXZManip = new ManipTXZ(*this);
     if (mpTYZManip == 0)
-      mpTYZManip = new CManipTYZ(*this);
+      mpTYZManip = new ManipTYZ(*this);
     if (mpRXManip == 0)
-      mpRXManip = new CManipRX(*this);
+      mpRXManip = new ManipRX(*this);
     if (mpRYManip == 0)
-      mpRYManip = new CManipRY(*this);
+      mpRYManip = new ManipRY(*this);
     if (mpRZManip == 0)
-      mpRZManip = new CManipRZ(*this);
+      mpRZManip = new ManipRZ(*this);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::DrawManip(CManip* pmanip, GfxTarget* pTARG) {
+void ManipManager::DrawManip(Manip* pmanip, GfxTarget* pTARG) {
   if (!pmanip)
     return;
 
@@ -426,7 +426,7 @@ void CManipManager::DrawManip(CManip* pmanip, GfxTarget* pTARG) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::DrawCurrentManipSet(GfxTarget* pTARG) {
+void ManipManager::DrawCurrentManipSet(GfxTarget* pTARG) {
   switch (meManipMode) {
     case EMANIPMODE_WORLD_TRANS: {
       if (mDualAxis) {
@@ -453,15 +453,15 @@ void CManipManager::DrawCurrentManipSet(GfxTarget* pTARG) {
 
 static void ManipRenderCallback(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* targ,
                                 const ork::lev2::CallbackRenderable* pren) {
-  CManipManager* pmanipman = pren->GetUserData0().Get<CManipManager*>();
+  ManipManager* pmanipman = pren->GetUserData0().Get<ManipManager*>();
   pmanipman->SetDrawMode(0);
   pmanipman->DrawCurrentManipSet(targ);
 }
 
-void CManipManager::Queue(ork::lev2::Renderer* prend) {
+void ManipManager::Queue(ork::lev2::Renderer* prend) {
   if (mpCurrentInterface && mpCurrentObject) {
     anyp ap;
-    ap.Set<CManipManager*>(this);
+    ap.Set<ManipManager*>(this);
 
     CallbackRenderable& rable = prend->QueueCallback();
     rable.SetUserData0(ap);
@@ -471,7 +471,7 @@ void CManipManager::Queue(ork::lev2::Renderer* prend) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::ApplyTransform(const TransformNode& SetMat) {
+void ManipManager::ApplyTransform(const TransformNode& SetMat) {
   mCurTransform = SetMat;
 
   if ((0 != mpCurrentInterface) && (0 != mpCurrentObject)) {
@@ -481,7 +481,7 @@ void CManipManager::ApplyTransform(const TransformNode& SetMat) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipManager::DisableManip(void) {
+void ManipManager::DisableManip(void) {
   if (EMANIPMODE_ON == meManipEnable)
     ReleaseObject();
 
@@ -490,7 +490,7 @@ void CManipManager::DisableManip(void) {
   meManipEnable = EMANIPMODE_OFF;
 }
 
-void CManipManager::EnableManip(CManip* pObj) {
+void ManipManager::EnableManip(Manip* pObj) {
   orkprintf("Enable Manip\n");
   mpCurrentManip = pObj;
   meManipEnable = EMANIPMODE_ON;

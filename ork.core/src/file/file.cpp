@@ -124,7 +124,7 @@ bool CFile::IsOpen() const
 
 EFileErrCode CFile::Open()
 {
-	float ftime = ork::CSystem::GetRef().GetLoResRelTime();
+	float ftime = ork::OldSchool::GetRef().GetLoResRelTime();
 
 //	std::string filename = ork::CreateFormattedString(
 //		"Time<%f> Opening<%s>\n", ftime, this->msFileName.c_str() );

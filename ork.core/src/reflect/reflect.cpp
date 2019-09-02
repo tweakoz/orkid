@@ -176,7 +176,7 @@ template class AccessorObjectMapPropertyObject<int>;
 template class AccessorObjectMapPropertyType<int, char>;
 template class AccessorObjectMapPropertyType<int, ICastablePointer>;
 template class DirectObjectPropertyType<fmtx4>;
-template class DirectObjectPropertyType< TQuaternion<float> >;
+template class DirectObjectPropertyType< Quaternion<float> >;
 
 template class DirectObjectMapPropertyType<orkmap< float, fvec4> >;
 //template class DirectObjectPropertyType<orkvector<fvec2> >;

@@ -445,6 +445,6 @@ SceneComposer::~SceneComposer() {
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ent
 
-template class orklut<PoolString, const CCameraData *>;
+template class orklut<PoolString, const CameraData *>;
 
 } // namespace ork

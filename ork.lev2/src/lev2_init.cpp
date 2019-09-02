@@ -281,7 +281,7 @@ void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 			if(PerfTotal)
 				fpercent = f64(fvalue) / f64(PerfTotal);
 
-			f64 ftime = fvalue/CSystem::GetRef().mfClockRate;
+			f64 ftime = fvalue/OldSchool::GetRef().mfClockRate;
 			int ix = iSX+4;
 
 			int fps = int(1.0f/ftime);

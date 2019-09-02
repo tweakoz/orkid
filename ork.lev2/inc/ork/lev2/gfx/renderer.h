@@ -29,7 +29,7 @@ namespace ork {
 
 class IZoneManager;
 class CPerformanceItem;
-class CCameraData;
+class CameraData;
 
 namespace lev2 {
 
@@ -99,8 +99,8 @@ public:
 
 	void FakeDraw() { ResetQueue(); }
 
-	//void BindCameraData( const ork::CCameraData* pc ) { mpCameraData=pc; }
-	//const ork::CCameraData* GetCameraData() const { return mpCameraData; }
+	//void BindCameraData( const ork::CameraData* pc ) { mpCameraData=pc; }
+	//const ork::CameraData* GetCameraData() const { return mpCameraData; }
 
 protected:
 	void						ResetQueue( void );
@@ -108,7 +108,7 @@ protected:
 	const Object*				mpCurrentObject;
 	const Object*				mpCurrentQueueObject;
 	RenderQueue					mRenderQueue;
-	//const ork::CCameraData*		mpCameraData;
+	//const ork::CameraData*		mpCameraData;
 
 	CPerformanceItem* mPerformanceItem;
 

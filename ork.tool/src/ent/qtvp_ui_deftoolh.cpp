@@ -110,7 +110,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
   float fy = float(iy) / float(GetViewport()->GetH());
 
   bool AreAnyMoveKeysDown =
-      CSystem::IsKeyDepressed('W') | CSystem::IsKeyDepressed('A') | CSystem::IsKeyDepressed('S') | CSystem::IsKeyDepressed('D');
+      OldSchool::IsKeyDepressed('W') | OldSchool::IsKeyDepressed('A') | OldSchool::IsKeyDepressed('S') | OldSchool::IsKeyDepressed('D');
 
   switch (EV.miEventCode) {
     case ui::UIEV_SHOW: {

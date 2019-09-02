@@ -11,11 +11,11 @@
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/gfxenv.h>
 
-namespace ork { class CCameraData; }
+namespace ork { class CameraData; }
 namespace ork { namespace lev2 {
 
 class Renderer;
-class CCamera;
+class Camera;
 class Texture;
 struct LightingGroup;
 class LightManager;
@@ -202,8 +202,8 @@ public:
 	RenderContextFrameData();
 
 	GfxTarget*			GetTarget( void ) const { return mpTarget; }
-	const CCameraData*	GetCameraData() const { return mCameraData; }
-	const CCameraData*	GetPickCameraData() const { return mPickCameraData; }
+	const CameraData*	GetCameraData() const { return mCameraData; }
+	const CameraData*	GetPickCameraData() const { return mPickCameraData; }
 	LightManager*		GetLightManager() const { return mLightManager; }
 
 	ERenderingMode		GetRenderingMode( void ) const { return meMode; }
@@ -213,8 +213,8 @@ public:
 
 	void SetRenderingMode( ERenderingMode emode ) { meMode=emode; }
 	void SetShadowBuffer( GfxBuffer* ShadowBuffer ) { mpShadowBuffer=ShadowBuffer; }
-	void SetCameraData( const CCameraData* data ) { mCameraData=data; }
-	void SetPickCameraData( const CCameraData* data ) { mPickCameraData=data; }
+	void SetCameraData( const CameraData* data ) { mCameraData=data; }
+	void SetPickCameraData( const CameraData* data ) { mPickCameraData=data; }
 	void SetLightManager( LightManager* lmgr ) { mLightManager=lmgr; }
 	void SetTarget( GfxTarget* ptarg );
 	void SetDstRect( const SRect& rect ) { mDstRect=rect; }
@@ -247,8 +247,8 @@ private:
 	ERenderingMode		meMode;
 	GfxBuffer*			mpShadowBuffer;
 	GfxTarget*			mpTarget;
-	const CCameraData*	mCameraData;
-	const CCameraData*	mPickCameraData;
+	const CameraData*	mCameraData;
+	const CameraData*	mPickCameraData;
 	CameraCalcContext	mCameraCalcCtx;
 	SRect				mDstRect;
 	SRect				mMrtRect;

@@ -151,7 +151,7 @@ float get_sync_time()
 ////////////////////////////////
 #elif defined(ORK_VS2012)
 ////////////////////////////////
-	return CSystem::GetRef().GetLoResTime();
+	return OldSchool::GetRef().GetLoResTime();
 ////////////////////////////////
 #else
 ////////////////////////////////
@@ -245,7 +245,7 @@ void msleep( int millisec )
 	mtx.Lock();
 	mtx.UnLock();*/
 	//sched_yield();
-	//f32	ftime1 = CSystem::GetRef().GetLoResTime();
+	//f32	ftime1 = OldSchool::GetRef().GetLoResTime();
 	//f32 ftime2 = ftime1 + f32(millisec)*0.001f;
 	while( millisec>0 )
 	{
@@ -282,7 +282,7 @@ void usleep(int microsec)
 }
 #endif
 
-int CSystem::GetNumCores()
+int OldSchool::GetNumCores()
 {
 	#if defined(IX)
 	int numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
@@ -290,7 +290,7 @@ int CSystem::GetNumCores()
 	int numCPUs=3;
 	#else
 	SYSTEM_INFO sysinfo;
-	GetSystemInfo( &sysinfo );
+	GetOldSchoolInfo( &sysinfo );
 	int numCPUs = sysinfo.dwNumberOfProcessors;
 	#endif
 	orkprintf( "NumCpus<%d>\n", numCPUs );
@@ -300,7 +300,7 @@ int CSystem::GetNumCores()
 }
 
 
-S64 CSystem::GetClockCycle(void)
+S64 OldSchool::GetClockCycle(void)
 {
 #if defined(ORK_WIN32)
 	f64 ftime = GetRef().GetHiResTime();
@@ -332,7 +332,7 @@ S64 CSystem::GetClockCycle(void)
 #endif
 }
 
-S64 CSystem::ClockCyclesToMicroSeconds(S64 cycles)
+S64 OldSchool::ClockCyclesToMicroSeconds(S64 cycles)
 {
 #if defined( NITRO )
 	return S64(OS_TicksToMicroSeconds(cycles));
@@ -352,7 +352,7 @@ S64 CSystem::ClockCyclesToMicroSeconds(S64 cycles)
 ///////////////////////////////////////////////
 #if defined( _DARWIN )
 ///////////////////////////////////////////////
-f32	CSystem::GetLoResTime( void )
+f32	OldSchool::GetLoResTime( void )
 {
 	auto getres = []()->double
 	{
@@ -369,7 +369,7 @@ f32	CSystem::GetLoResTime( void )
 ///////////////////////////////////////////////
 #elif defined( IX )
 ///////////////////////////////////////////////
-f32	CSystem::GetLoResTime( void )
+f32	OldSchool::GetLoResTime( void )
 {
 	static const float kbasetime = get_sync_time();
 	return get_sync_time()-kbasetime;
@@ -382,7 +382,7 @@ static void CALLBACK TimerCallback(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DW
 {
 	inumtimercallbacks++;
 }
-f32	CSystem::GetLoResTime( void )
+f32	OldSchool::GetLoResTime( void )
 {
 #if defined (_XBOX)
 	//static int basetime = GetTickCount();
@@ -458,7 +458,7 @@ f32	CSystem::GetLoResTime( void )
 }
 ///////////////////////////////////////////////////////////////////////////////
 #elif defined( WII )
-f32	CSystem::GetLoResTime( void )
+f32	OldSchool::GetLoResTime( void )
 {
 	const double ktimerkonst = double(1000)/double(OS_TIMER_CLOCK);
 	static OSTime base_time = OSGetTime();
@@ -470,7 +470,7 @@ f32	CSystem::GetLoResTime( void )
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-f32	CSystem::GetLoResRelTime( void )
+f32	OldSchool::GetLoResRelTime( void )
 {
     static f32 fBaseTime = GetLoResTime();
     f32 fCurTime = GetLoResTime();
@@ -481,7 +481,7 @@ f32	CSystem::GetLoResRelTime( void )
 // higher res lower reliability timing
 ///////////////////////////////////////////////////////////////////////////////
 
-f64	CSystem::GetHiResRelTime( void )
+f64	OldSchool::GetHiResRelTime( void )
 {
     static f64 fBaseTime = GetHiResTime();
     f64 fCurTime = GetHiResTime();
@@ -490,7 +490,7 @@ f64	CSystem::GetHiResRelTime( void )
     return fRelTime;
 }
 
-f64 CSystem::GetHiResTime( void )
+f64 OldSchool::GetHiResTime( void )
 {
     ///////////////////////////////////////////////
     #if defined( _WIN32 ) && defined( _MSVC ) && ! defined(_XBOX)
@@ -635,9 +635,9 @@ s64 CPerformanceItem::Calculate( void )
 
 void CPerformanceItem::Enter()
 {
-	//miStartCycle = CSystem::GetClockCycle();
-	f64 ftime = CSystem::GetRef().GetLoResTime();
-	S64 output = S64(ftime*CSystem::GetRef().mfClockRate);
+	//miStartCycle = OldSchool::GetClockCycle();
+	f64 ftime = OldSchool::GetRef().GetLoResTime();
+	S64 output = S64(ftime*OldSchool::GetRef().mfClockRate);
 	miStartCycle = output;
 }
 
@@ -645,9 +645,9 @@ void CPerformanceItem::Enter()
 
 void CPerformanceItem::Exit()
 {
-	//miStartCycle = CSystem::GetClockCycle();
-	f64 ftime = CSystem::GetRef().GetLoResTime();
-	S64 output = S64(ftime*CSystem::GetRef().mfClockRate);
+	//miStartCycle = OldSchool::GetClockCycle();
+	f64 ftime = OldSchool::GetRef().GetLoResTime();
+	S64 output = S64(ftime*OldSchool::GetRef().mfClockRate);
 	miEndCycle = output;
 	miAccumCycle += (miEndCycle-miStartCycle);
 }

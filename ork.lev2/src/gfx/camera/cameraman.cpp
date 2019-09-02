@@ -12,25 +12,25 @@
 #include <ork/math/polar.h>
 #include <ork/pch.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CCamera, "CCamera");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Camera, "Camera");
 
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera::Describe() {
-  ork::reflect::RegisterProperty("Focus", &CCamera::CamFocus);
-  ork::reflect::RegisterProperty("Center", &CCamera::mvCenter);
-  ork::reflect::RegisterProperty("Loc", &CCamera::mfLoc);
-  ork::reflect::RegisterProperty("QuatC", &CCamera::QuatC);
+void Camera::Describe() {
+  ork::reflect::RegisterProperty("Focus", &Camera::CamFocus);
+  ork::reflect::RegisterProperty("Center", &Camera::mvCenter);
+  ork::reflect::RegisterProperty("Loc", &Camera::mfLoc);
+  ork::reflect::RegisterProperty("QuatC", &Camera::QuatC);
 
-  ork::reflect::AnnotatePropertyForEditor<CCamera>("Loc", "editor.range.min", "0.1f");
-  ork::reflect::AnnotatePropertyForEditor<CCamera>("Loc", "editor.range.max", "1000.0f");
+  ork::reflect::AnnotatePropertyForEditor<Camera>("Loc", "editor.range.min", "0.1f");
+  ork::reflect::AnnotatePropertyForEditor<Camera>("Loc", "editor.range.max", "1000.0f");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CCamera::CCamera()
+Camera::Camera()
     : CamFocus(0.0f, 0.0f, 0.0f), mfLoc(3.0f), mvCenter(0.0f, 0.0, 0.0f), QuatC(0.0f, -1.0f, 0.0f, 0.0f), locscale(1.0f),
       LastMeasuredCameraVelocity(0.0f, 0.0f, 0.0f), MeasuredCameraVelocity(0.0f, 0.0f, 0.0f), mbInMotion(false), mpViewport(0),
       mfWorldSizeAtLocator(1.0f)
@@ -41,32 +41,32 @@ CCamera::CCamera()
   printf("SETLEV2CAM<%p>\n", this);
 }
 
-std::string CCamera::get_full_name(void) {
+std::string Camera::get_full_name(void) {
   std::string rval = type_name + (std::string) ":" + instance_name + (std::string) ":" + other_info;
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CCamera::IsXVertical() const {
+bool Camera::IsXVertical() const {
   const fvec3& yn = mCameraData.GetYNormal();
   float dotY = yn.Dot(fvec3(1.0f, 0.0f, 0.0f));
   return (float(CFloat::Abs(dotY)) > float(0.707f));
 }
 
-bool CCamera::IsYVertical() const {
+bool Camera::IsYVertical() const {
   const fvec3& yn = mCameraData.GetYNormal();
   float dotY = yn.Dot(fvec3(0.0f, 1.0f, 0.0f));
   return (float(CFloat::Abs(dotY)) > float(0.707f));
 }
 
-bool CCamera::IsZVertical() const {
+bool Camera::IsZVertical() const {
   const fvec3& yn = mCameraData.GetYNormal();
   float dotY = yn.Dot(fvec3(0.0f, 0.0f, 1.0f));
   return (float(CFloat::Abs(dotY)) > float(0.707f));
 }
 
-fquat CCamera::VerticalRot(float amt) const {
+fquat Camera::VerticalRot(float amt) const {
   fquat qrot;
 
   if (IsXVertical()) {
@@ -86,7 +86,7 @@ fquat CCamera::VerticalRot(float amt) const {
   return qrot;
 }
 
-fquat CCamera::HorizontalRot(float amt) const {
+fquat Camera::HorizontalRot(float amt) const {
   fquat qrot;
 
   if (IsYVertical()) {
@@ -105,7 +105,7 @@ fquat CCamera::HorizontalRot(float amt) const {
 ///////////////////////////////////////////////////////////////////////////////
 // motion state tracking
 
-bool CCamera::CheckMotion() {
+bool Camera::CheckMotion() {
   auto pVP = GetViewport();
 
   LastMeasuredCameraVelocity = MeasuredCameraVelocity;
@@ -143,7 +143,7 @@ bool CCamera::CheckMotion() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera::CommonPostSetup(void) {
+void Camera::CommonPostSetup(void) {
   ///////////////////////////////
   // billboard support
 
@@ -174,16 +174,16 @@ void CCamera::CommonPostSetup(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float CCamera::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) { return float(0.0f); }
+float Camera::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) { return float(0.0f); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CManipHandler::CManipHandler() // const CCamera& pcam)
+ManipHandler::ManipHandler() // const Camera& pcam)
     : Origin(float(0.0f), float(0.0f), float(0.0f))
 //	, mParentCamera(pcam)
 {}
 
-void CManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const fquat& RCurQuat) {
+void ManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const fquat& RCurQuat) {
   IMVPMat = RCurIMVPMat;
   Quat = RCurQuat;
 
@@ -204,7 +204,7 @@ void CManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
+bool ManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
   YNormal = fmtx4::Identity.GetYNormal();
@@ -225,7 +225,7 @@ bool CManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, f
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
+bool ManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
   XNormal = fmtx4::Identity.GetXNormal();
@@ -247,7 +247,7 @@ bool CManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, f
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
+bool ManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
   ZNormal = fmtx4::Identity.GetZNormal();
@@ -268,7 +268,7 @@ bool CManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, f
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipHandler::Intersect(const ork::fvec2& posubp) {
+void ManipHandler::Intersect(const ork::fvec2& posubp) {
   fvec3 Intersection;
   float Angle;
   IntersectXZ(posubp, Intersection, Angle);
@@ -284,7 +284,7 @@ void CManipHandler::Intersect(const ork::fvec2& posubp) {
 fvec4 TRayN;
 fvec4 TRayF;
 
-void CManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& RayZNormal, fvec3& RayNear) {
+void ManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& RayZNormal, fvec3& RayNear) {
   fvec3 RayFar;
   ///////////////////////////////////////////
   fvec3 vWinN(posubp.GetX(), posubp.GetY(), 0.0f);

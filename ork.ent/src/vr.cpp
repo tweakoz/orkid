@@ -114,8 +114,8 @@ struct VrFrameTechnique final : public FrameTechniqueBase
     }
     void renderBothEyes( FrameRenderer& renderer,
                          CompositorSystemDrawData& drawdata,
-                         CCameraData* lcam,
-                         CCameraData* rcam,
+                         CameraData* lcam,
+                         CameraData* rcam,
                          const std::map<int,ControllerState>& controllers ) {
       RenderContextFrameData&	FrameData = renderer.GetFrameData();
     	GfxTarget *pTARG = FrameData.GetTarget();
@@ -131,7 +131,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
       // render all controller poses
       //////////////////////////////////////////////////////
 
-      auto renderposes = [&](CCameraData* camdat){
+      auto renderposes = [&](CameraData* camdat){
 
         fmtx4 rx;
         fmtx4 ry;
@@ -178,7 +178,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
 
       lcam->BindGfxTarget(pTARG);
       FrameData.SetCameraData(lcam);
-      _CPD._impl.Set<const CCameraData*>(lcam);
+      _CPD._impl.Set<const CameraData*>(lcam);
       _CPD._clearColor = fvec4(0,0,.1,1);
 
       RtGroupRenderTarget rtL(_rtg_left);
@@ -202,7 +202,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
 
       rcam->BindGfxTarget(pTARG);
       FrameData.SetCameraData(rcam);
-      _CPD._impl.Set<const CCameraData*>(rcam);
+      _CPD._impl.Set<const CameraData*>(rcam);
       _CPD._clearColor = fvec4(0,0,.1,1);
 
       drawdata.mCompositingGroupStack.push(_CPD);{
@@ -412,8 +412,8 @@ struct VRSYSTEMIMPL {
 	VrFrameTechnique*	_frametek;
   uint32_t _width, _height;
   std::map<std::string,fmtx4> _posemap;
-  CCameraData _leftcamera;
-  CCameraData _rightcamera;
+  CameraData _leftcamera;
+  CameraData _rightcamera;
   std::map<int,ControllerState> _controllers;
   bool _active;
   fmtx4 _offsetmatrix;

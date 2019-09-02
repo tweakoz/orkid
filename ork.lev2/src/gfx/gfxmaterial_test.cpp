@@ -212,7 +212,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-  const CCameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
+  const CameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
   bool bforcenoz = rdata->IsForceNoZWrite();
 
   // mRasterState.SetZWriteMask( ! bforcenoz );
@@ -261,7 +261,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   }
 
   if (hParamTime) {
-    float reltime = std::fmod(CSystem::GetRef().GetLoResRelTime(), 300.0f);
+    float reltime = std::fmod(OldSchool::GetRef().GetLoResRelTime(), 300.0f);
     // printf( "reltime<%f>\n", reltime );
     FXI->BindParamFloat(hModFX, hParamTime, reltime);
   }

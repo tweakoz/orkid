@@ -168,7 +168,7 @@ void XgmClusterizerDiced::End()
 
 	if( gbFORCEDICE || mPreDicedMesh.GetNumPolys() > 10000 )
 	{
-		float ftimeA = float(CSystem::GetRef().GetLoResTime());
+		float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 		ork::MeshUtil::GridGraph thegraph(isize);
 		thegraph.BeginPreMerge();
@@ -176,7 +176,7 @@ void XgmClusterizerDiced::End()
 		thegraph.EndPreMerge();
 		thegraph.MergeMesh( mPreDicedMesh, DicedMesh );
 
-		float ftimeB = float(CSystem::GetRef().GetLoResTime());
+		float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 
 		float ftime = (ftimeB-ftimeA);
 		orkprintf( "<<PROFILE>> <<dicemesh %f seconds>>\n", ftime );
@@ -193,7 +193,7 @@ void XgmClusterizerDiced::End()
 	size_t inumgroups = pgmap.size();
 	static int igroup = 0;
 
-	float ftimeC = float(CSystem::GetRef().GetLoResTime());
+	float ftimeC = float(OldSchool::GetRef().GetLoResTime());
 	for( orklut<std::string, ork::MeshUtil::submesh* >::const_iterator it=pgmap.begin(); it!=pgmap.end(); it++ )
 	{
 		const std::string& pgname = it->first;
@@ -228,7 +228,7 @@ void XgmClusterizerDiced::End()
 			}
 		}
 	}
-	float ftimeD = float(CSystem::GetRef().GetLoResTime());
+	float ftimeD = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeD-ftimeC);
 	orkprintf( "<<PROFILE>> <<clusterize %f seconds>>\n", ftime );
 
