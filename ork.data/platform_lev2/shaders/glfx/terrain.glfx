@@ -21,6 +21,7 @@ uniform_block ublock_vtx {
   uniform vec4 User0;          // aabbmin
   uniform vec4 User1;          // aabbmax
   uniform vec4 User2;          // aabbmax-aabmin
+  uniform mat3 MatRotW;
 }
 uniform_block ublock_frg {
   uniform vec4 modcolor;
@@ -46,7 +47,7 @@ fragment_interface iface_fdefault : ublock_frg {
   in vec3 frg_wpos;
   in float frg_camdist;
   //
-  out vec4 out_clr;
+  layout(location = 0) out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
 // shaders
@@ -112,6 +113,36 @@ fragment_shader ps_terrain1
   // out_clr = vec4(strata_index,strata_index,strata_index,1);
 }
 ///////////////////////////////////////////////////////////////
+// pick
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vpick : ublock_vtx {
+  //
+  in vec4 position : POSITION;
+  //
+  out vec4 frg_nrmd;
+}
+fragment_interface iface_fpick : ublock_frg {
+  in vec4 frg_nrmd;
+
+  layout(location = 0) out vec4 out_clr;
+  layout(location = 1) out vec4 out_nrmd;
+}
+vertex_shader vs_pick
+  : iface_vpick
+  : lib_terrain {
+  vec3 campos = inverse(MatMV)[3].xyz;
+  TerOut tero = computeTerrain(campos);
+  ///////////////////////////
+  // apply to GL
+  ///////////////////////////
+  gl_Position = MatMVP * vec4(tero.wpos, 1);
+  frg_nrmd = vec4(tero.wnrm,distance(tero.wpos, campos));
+}
+fragment_shader ps_pick : iface_fpick {
+  out_clr = modcolor;
+  out_nrmd = frg_nrmd;
+}
+///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
 state_block sb_default { inherits default; }
@@ -121,6 +152,14 @@ technique terrain1 {
   pass p0 {
     vertex_shader = vs_terrain1;
     fragment_shader = ps_terrain1;
+    state_block = sb_default;
+  }
+}
+technique tek_pick {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_pick;
+    fragment_shader = ps_pick;
     state_block = sb_default;
   }
 }
