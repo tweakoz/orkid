@@ -59,7 +59,7 @@ namespace lev2 { class GfxTarget; }
 ///////////////////////////////////////////////////////////////////////////////
 
 
-class CPerformanceItem
+class PerformanceItem
 {
 public:
 	static const int TIMER_AVGAMT = 10;
@@ -72,16 +72,16 @@ public:
 	s64			miChildAvgCycle;
 	s64			miAverageSumCycle[ TIMER_AVGAMT ];
 
-	orkmap<std::string, CPerformanceItem*> mChildrenMap;
-	orklist<CPerformanceItem*> mChildrenList;
+	orkmap<std::string, PerformanceItem*> mChildrenMap;
+	orklist<PerformanceItem*> mChildrenList;
 
 	////////////////////////////////////////////
 
-	CPerformanceItem( std::string nam );
+	PerformanceItem( std::string nam );
 
 	////////////////////////////////////////////
 
-	void AddItem( CPerformanceItem& Item );
+	void AddItem( PerformanceItem& Item );
 	s64 Calculate();
 
 	void Enter();
@@ -89,13 +89,13 @@ public:
 
 	////////////////////////////////////////////
 
-	orklist<CPerformanceItem*>* GetChildrenList() { return & mChildrenList;	}
+	orklist<PerformanceItem*>* GetChildrenList() { return & mChildrenList;	}
 	const std::string GetName() const { return mName; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CPerformanceTracker : public NoRttiSingleton<CPerformanceTracker>
+class PerformanceTracker : public NoRttiSingleton<PerformanceTracker>
 {
 public:
 
@@ -105,18 +105,18 @@ public:
 		EPS_GFXTHREAD,
 		EPS_END,
 	};
-	CPerformanceItem* mRoots[EPS_END];
+	PerformanceItem* mRoots[EPS_END];
 
 	////////////////////////////////////////////
 
-	CPerformanceTracker();
+	PerformanceTracker();
 	//static void ClassInit() { GetClassStatic(); }
 
 	////////////////////////////////////////////
 
 	static s64 Calculate();
-	static void AddItem( eperfset eset, CPerformanceItem& Item );
-	static orklist<CPerformanceItem*>* GetItemList(eperfset eset);
+	static void AddItem( eperfset eset, PerformanceItem& Item );
+	static orklist<PerformanceItem*>* GetItemList(eperfset eset);
 
 	static void Draw(ork::lev2::GfxTarget *pTARG);
 	static void TextDump();

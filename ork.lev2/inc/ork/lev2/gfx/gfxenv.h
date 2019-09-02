@@ -172,7 +172,7 @@ class GfxTarget : public ork::rtti::ICastable
 	void						SetCurrentObject( const ork::rtti::ICastable *pobj ) { mpCurrentObject=pobj; }
 	ETargetType					GetTargetType( void ) const { return meTargetType; }
 	int							GetTargetFrame( void ) const { return miTargetFrame; }
-	CPerformanceItem&			GetFramePerfItem( void ) { return mFramePerfItem; }
+	PerformanceItem&			GetFramePerfItem( void ) { return mFramePerfItem; }
 	CTXBASE*					GetCtxBase( void ) const { return mCtxBase; }
 
 	///////////////////////////////////////////////////////
@@ -213,7 +213,7 @@ protected:
 	fvec4							mvModColor;
 	bool								mbPostInitializeContext;
 	int									miTargetFrame;
-	CPerformanceItem					mFramePerfItem;
+	PerformanceItem					mFramePerfItem;
 	const RenderContextInstData*		mRenderContextInstData;
 	const RenderContextFrameData*		mRenderContextFrameData;
 	GfxMaterial*						mpCurMaterial;

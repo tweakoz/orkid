@@ -151,12 +151,12 @@ class sortperfpred
 {
 public:
 
-	bool operator()( const CPerformanceItem* t1, const CPerformanceItem* t2 ) const // comparison predicate for map sorting
+	bool operator()( const PerformanceItem* t1, const PerformanceItem* t2 ) const // comparison predicate for map sorting
 	{
 		bool bval = true;
 			
-		const CPerformanceItem* RootU = CPerformanceTracker::GetRef().mRoots[ CPerformanceTracker::EPS_UPDTHREAD];
-		const CPerformanceItem* RootG = CPerformanceTracker::GetRef().mRoots[ CPerformanceTracker::EPS_GFXTHREAD];
+		const PerformanceItem* RootU = PerformanceTracker::GetRef().mRoots[ PerformanceTracker::EPS_UPDTHREAD];
+		const PerformanceItem* RootG = PerformanceTracker::GetRef().mRoots[ PerformanceTracker::EPS_GFXTHREAD];
 
 
 		if( (t1==RootU)||(t1==RootG) )
@@ -177,11 +177,11 @@ public:
 	}
 };
 
-void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
+void PerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 {
 	//return; //
-	//orklist<CPerformanceItem*>* PerfItemList = CPerformanceTracker::GetItemList();
-	/*s64 PerfTotal = CPerformanceTracker::GetRef().mpRoot->miAvgCycle;
+	//orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
+	/*s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;
 
 	int itX = pTARG->GetX();
 	int itY = pTARG->GetY();
@@ -207,17 +207,17 @@ void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 	pTARG->PushModColor( fcolor4(0.0f,0.5f,0.0f) );
 
 	//////////////////////////////////////////////////////////////////////
-	orkstack<CPerformanceItem*> PerfItemStack;
-	PerfItemStack.push(CPerformanceTracker::GetRef().mpRoot);
-	orkvector<CPerformanceItem*> SortedPerfVect;
+	orkstack<PerformanceItem*> PerfItemStack;
+	PerfItemStack.push(PerformanceTracker::GetRef().mpRoot);
+	orkvector<PerformanceItem*> SortedPerfVect;
 	while( false == PerfItemStack.empty() )
 	{
-		CPerformanceItem* pItem = PerfItemStack.top();
+		PerformanceItem* pItem = PerfItemStack.top();
 		PerfItemStack.pop();
 
 		SortedPerfVect.push_back( pItem );
-		orklist<CPerformanceItem*>* ChildList = pItem->GetChildrenList();
-		for( orklist<CPerformanceItem*>::iterator itc=ChildList->begin(); itc!=ChildList->end(); itc++ )
+		orklist<PerformanceItem*>* ChildList = pItem->GetChildrenList();
+		for( orklist<PerformanceItem*>::iterator itc=ChildList->begin(); itc!=ChildList->end(); itc++ )
 		{
 			PerfItemStack.push(*itc);
 		}
@@ -229,7 +229,7 @@ void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 
 	for( int i=0; i<int(SortedPerfVect.size()); i++ )
 	{
-		CPerformanceItem* pItem = SortedPerfVect[i];
+		PerformanceItem* pItem = SortedPerfVect[i];
 
 		s64 fvalue = pItem->miAvgCycle;
 
@@ -269,7 +269,7 @@ void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 	pTARG->PushModColor( fcolor4::White() );
 	for( int i=0; i<int(SortedPerfVect.size()); i++ )
 	{
-		CPerformanceItem* pItem = SortedPerfVect[i];
+		PerformanceItem* pItem = SortedPerfVect[i];
 
 		s64 fvalue = pItem->miAvgCycle;
 

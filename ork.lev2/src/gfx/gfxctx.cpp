@@ -106,7 +106,7 @@ GfxTarget::GfxTarget()
 	, mPlatformHandle(nullptr)
 	, mpCurMaterial(nullptr)
 {
-	//CPerformanceTracker::GetRef().AddItem( mFramePerfItem );
+	//PerformanceTracker::GetRef().AddItem( mFramePerfItem );
 	//ork::lev2::GfxEnv::GetRef().SetLoaderTarget( this ) ;
 }
 

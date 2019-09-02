@@ -221,8 +221,8 @@ class GfxMaterialFx : public GfxMaterial
 
 	orkvector<VertexConfig>							mVertexConfigData;
 
-	static CPerformanceItem*						gMatFxBeginPassPerfItem;
-	static CPerformanceItem*						gMatFxBeginBlockPerfItem;
+	static PerformanceItem*						gMatFxBeginPassPerfItem;
+	static PerformanceItem*						gMatFxBeginBlockPerfItem;
 
 	static const int kMaxEngineParamFloats = RenderContextInstData::kMaxEngineParamFloats;
 

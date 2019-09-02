@@ -891,8 +891,8 @@ void GfxMaterialFx::SetTechnique( const std::string & TechniqueName )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CPerformanceItem* GfxMaterialFx::gMatFxBeginPassPerfItem = 0;
-CPerformanceItem* GfxMaterialFx::gMatFxBeginBlockPerfItem = 0;
+PerformanceItem* GfxMaterialFx::gMatFxBeginPassPerfItem = 0;
+PerformanceItem* GfxMaterialFx::gMatFxBeginBlockPerfItem = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
