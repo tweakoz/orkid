@@ -611,11 +611,12 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         ptarg->PushMaterial(material);
         int ivbidx = 0;
 
-        CColor4 color = CColor4::White();
+        fvec4 color = CColor4::White();
 
         if (bpick) {
           auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
-          color = pickbuf->AssignPickId((Object *)&pent->GetEntData());
+          uint64_t pickid = pickbuf->AssignPickId((Object *)&pent->GetEntData());
+          color.SetRGBAU64(pickid);
         } else if (false) { // is_sel ){
           color = CColor4::Red();
         }
