@@ -44,7 +44,7 @@ template class orklut<std::string, int>;
 template class orklut<ork::PoolString, CMatrix4>;
 template class orklut<std::string, std::string>;
 
-template class orklut<ork::CReal, ork::PoolString>;
+template class orklut<float, ork::PoolString>;
 
 //////////////////////////////////////////////////////////////
 namespace util {

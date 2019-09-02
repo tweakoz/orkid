@@ -365,8 +365,8 @@ bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 	///////////////////////////////
 
 	CVector2 Dims;
-	Dims.SetX( CReal(pTarg->GetW()) );
-	Dims.SetY( CReal(pTarg->GetH()) );
+	Dims.SetX( float(pTarg->GetW()) );
+	Dims.SetY( float(pTarg->GetH()) );
 
 	///////////////////////////////
 
@@ -400,7 +400,7 @@ bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 	fxi->BindParamCTex( hFX, hAuxMap0, mpAuxMap0 );
 	fxi->BindParamCTex( hFX, hAuxMap1, mpAuxMap1 );
 
-	CReal BlurFactor(16.0f);
+	float BlurFactor(16.0f);
 	fxi->BindParamFloat( hFX, hBlurFactor, BlurFactor );
 	fxi->BindParamInt( hFX, hBlurFactorI, int(BlurFactor) );
 

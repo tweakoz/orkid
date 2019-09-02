@@ -140,7 +140,7 @@ class EcicVertexTransformInterface : public ork::ITransformInterface
 
 			transform.GetWorldTransform()->SetMatrix( CMatrix4::Identity );
 
-			CVector4 xlate( pent->GetPosition().GetX(), pent->GetPosition().GetY(), CReal(0.0f) );
+			CVector4 xlate( pent->GetPosition().GetX(), pent->GetPosition().GetY(), float(0.0f) );
 
 			transform.Translate( TransformNode3D::EMODE_ABSOLUTE, xlate.Transform(MatW).xyz() );
 		}				
@@ -285,10 +285,10 @@ class EcicEdgeTransformInterface : public ork::ITransformInterface
 			transform.GetWorldTransform()->SetMatrix( CMatrix4::Identity );
 			const CVector2& vpa = va->GetPosition();
 			const CVector2& vpb = vb->GetPosition();
-			CVector2 Middle = (vpa+vpb)*CReal(0.5f);
+			CVector2 Middle = (vpa+vpb)*float(0.5f);
 			sva = (vpa-Middle);
 			svb = (vpb-Middle);
-			CVector3 xlate( Middle.GetX(), Middle.GetY(), CReal(0.0f) );
+			CVector3 xlate( Middle.GetX(), Middle.GetY(), float(0.0f) );
 			transform.Translate( TransformNode3D::EMODE_ABSOLUTE, xlate );
 			base_transform = transform;
 		}

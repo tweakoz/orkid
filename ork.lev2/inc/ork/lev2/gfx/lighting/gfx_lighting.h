@@ -94,7 +94,7 @@ class  Light : public ork::Object
 
 public:
 
-	CReal		mPriority;
+	float		mPriority;
 	int			miInFrustumID;
 	bool		mbIsDynamic;
 
@@ -231,8 +231,8 @@ class  SpotLightData : public LightData
 {
 	RttiDeclareConcrete(SpotLightData, LightData);
 
-	CReal				mFovy;
-	CReal				mRange;
+	float				mFovy;
+	float				mRange;
 	lev2::TextureAsset*	mTexture;
 
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
@@ -259,8 +259,8 @@ public:
 	CMatrix4		mProjectionMatrix;
 	CMatrix4		mViewMatrix;
 	Frustum			mWorldSpaceLightFrustum;
-	//CReal			mFovy;
-	//CReal			mRange;
+	//float			mFovy;
+	//float			mRange;
 	lev2::TextureAsset*	mTexture;
 
 
@@ -271,7 +271,7 @@ public:
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
 	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_SPOT; }
 
-	void Set( const CVector3& pos, const CVector3& target, const CVector3& up, CReal fovy );
+	void Set( const CVector3& pos, const CVector3& target, const CVector3& up, float fovy );
 
 	void SetTexture( lev2::TextureAsset* ptex ) { mTexture=ptex; }
 	lev2::TextureAsset* GetTexture() const { return mTexture; }
@@ -289,7 +289,7 @@ struct  LightContainer
 {
 	static const int kmaxlights = 8;
 
-	typedef fixedlut<CReal,Light*,kmaxlights> map_type;
+	typedef fixedlut<float,Light*,kmaxlights> map_type;
 
 	map_type	mPrioritizedLights;
 
@@ -304,7 +304,7 @@ struct  GlobalLightContainer
 {
 	static const int kmaxlights = 256;
 
-	typedef fixedlut<CReal,Light*,kmaxlights> map_type;
+	typedef fixedlut<float,Light*,kmaxlights> map_type;
 
 	map_type	mPrioritizedLights;
 

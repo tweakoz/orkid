@@ -1044,14 +1044,14 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
         CMatrix4 MatW;
         ManipManager().GetCurTransform().GetMatrix(MatW);
         const CVector4 V0 = MatW.GetTranslation();
-        const CVector4 V1 = V0 + ScreenXNorm * CReal(30.0f);
-        CVector2 VP(CReal(pProxyTarg->GetW()), CReal(pProxyTarg->GetH()));
+        const CVector4 V1 = V0 + ScreenXNorm * float(30.0f);
+        CVector2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
         const CCameraData* camdat = pProxyTarg->GetRenderContextFrameData()->GetCameraData();
         CVector3 Pos = MatW.GetTranslation();
         CVector3 UpVector;
         CVector3 RightVector;
         camdat->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
-        CReal rscale = RightVector.Mag(); // CReal(100.0f);
+        float rscale = RightVector.Mag(); // float(100.0f);
         // printf( "OUTERmanip rscale<%f>\n", rscale );
 
         static float fRSCALE = 1.0f;

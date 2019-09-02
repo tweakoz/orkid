@@ -15,7 +15,7 @@
 #include <ork/math/line.h>
 #include "line.hpp"
 
-using ork::CReal;
+
 using ork::CVector2;
 using ork::TVector2;
 

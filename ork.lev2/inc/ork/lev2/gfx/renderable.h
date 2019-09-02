@@ -169,8 +169,8 @@ public: //
 	{
 	}
 	
-	void				SetSize( CReal sz ) { mSize=sz; }
-	CReal				GetSize( void ) const { return mSize; }
+	void				SetSize( float sz ) { mSize=sz; }
+	float				GetSize( void ) const { return mSize; }
 	void				SetMaterial( const GfxMaterial *pmat ) { mpMaterial=pmat; } 
 	const GfxMaterial*	GetMaterial( void ) const { return mpMaterial; } 
 
@@ -182,7 +182,7 @@ public: //
 private:
 
 	const GfxMaterial*		mpMaterial;
-	CReal					mSize;
+	float					mSize;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -200,12 +200,12 @@ public:
 	inline void SetMaterialPassIndex( int idx ) { mMaterialPassIndex=idx; }
 	inline void SetModelInst(const lev2::XgmModelInst* modelInst) { mModelInst = modelInst; }
 	inline void SetEdgeColor(int edge_color) { mEdgeColor = edge_color; }
-	void SetScale(CReal scale) { mScale = scale; }
+	void SetScale(float scale) { mScale = scale; }
 	inline void SetSubMesh( const lev2::XgmSubMesh*cs ) { mSubMesh=cs; }
 	inline void SetCluster( const lev2::XgmCluster* c ) { mCluster=c; }
 	inline void SetMesh( const lev2::XgmMesh* m ) { mMesh=m; }
 
-	CReal GetScale() const { return mScale; }
+	float GetScale() const { return mScale; }
 	inline const lev2::XgmModelInst* GetModelInst() const { return mModelInst; }
 	inline const CMatrix4& GetWorldMatrix() const;
 	inline int GetMaterialIndex( void ) const { return mMaterialIndex; }
@@ -248,7 +248,7 @@ private:
 	int							mMaterialIndex;
 	int							mMaterialPassIndex;
 	int							mEdgeColor;
-	CReal						mScale;
+	float						mScale;
 	CVector3					mOffset;
 	CVector3					mRotate;
 	const lev2::XgmWorldPose*	mWorldPose;

@@ -77,7 +77,7 @@ namespace ork { namespace reflect {\
 
 ///////////
 
-//	MACRO(CLASS<CReal>); \
+//	MACRO(CLASS<float>); \
 
 #define FOREACH_PRIMITIVE_TYPE(MACRO,CLASS) \
     MACRO(CLASS<char>); \

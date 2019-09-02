@@ -500,8 +500,8 @@ bool CColladaModel::BuildXgmTriStripModel( void )
 	}
 	mXgmModel.SetBoundingAA_XYZ( mAABoundXYZ );
 	mXgmModel.SetBoundingAA_WHD( mAABoundWHD );
-	mXgmModel.SetBoundingCenter( mAABoundXYZ + (mAABoundWHD*CReal(0.5f)) );
-	mXgmModel.SetBoundingRadius( mAABoundWHD.Mag()*CReal(0.5f) );
+	mXgmModel.SetBoundingCenter( mAABoundXYZ + (mAABoundWHD*float(0.5f)) );
+	mXgmModel.SetBoundingRadius( mAABoundWHD.Mag()*float(0.5f) );
 
 	return (inummeshes>0);
 
@@ -641,7 +641,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer( const SColladaMatGroup& matgro
 void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal pc skinned
 {
 	lev2::GfxTargetDummy DummyTarget;
-	const CReal kVertexScale(1.0f);
+	const float kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
@@ -690,7 +690,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 
 void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skinned
 {
-	const CReal kVertexScale(1.0f);
+	const float kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 
@@ -738,7 +738,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 
 void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinned
 {
-	const CReal kVertexScale(1.0f);
+	const float kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
@@ -826,7 +826,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer( const SColladaMatGroup& matgroup
 
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environment
 {
-	const CReal kVertexScale(1.0f);
+	const float kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
@@ -861,7 +861,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environm
 
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc environment
 {
-	const CReal kVertexScale(1.0f);
+	const float kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
@@ -883,7 +883,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc envir
 }
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environment
 {
-	const CReal kVertexScale(1.0f);
+	const float kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
@@ -906,7 +906,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environ
 
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc environment
 {
-	const CReal kVertexScale(1.0f);
+	const float kVertexScale(1.0f);
 	const CVector2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;

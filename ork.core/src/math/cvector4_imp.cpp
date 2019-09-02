@@ -77,7 +77,7 @@ template<> CVector4 CPropType<CVector4>::FromString(const PropTypeString& String
 {
 	float x, y, z, w;
 	sscanf(String.c_str(), "%g %g %g %g", &x, &y, &z, &w);
-	return CVector4(CReal(x), CReal(y), CReal(z), CReal(w));
+	return CVector4(float(x), float(y), float(z), float(w));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

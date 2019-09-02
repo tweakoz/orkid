@@ -94,11 +94,11 @@ void RegisterLightingModule( EditorMainWindow& emw )
 /*
 void EditorLightManager::GetStationaryLights( const Frustum& frustum, lev2::LightContainer& container )
 {
-	for( orklut<CReal,lev2::Light*>::const_iterator	it =  mGlobalStationaryLights.mPrioritizedLights.begin();
+	for( orklut<float,lev2::Light*>::const_iterator	it =  mGlobalStationaryLights.mPrioritizedLights.begin();
 													it != mGlobalStationaryLights.mPrioritizedLights.end();
 													it++ )
 	{
-		CReal prio			= it->first;
+		float prio			= it->first;
 		lev2::Light* plight	= it->second;
 
 		if( plight->IsInFrustum( frustum ) )
@@ -110,11 +110,11 @@ void EditorLightManager::GetStationaryLights( const Frustum& frustum, lev2::Ligh
 }
 void EditorLightManager::GetMovingLights( const Frustum& frustum, lev2::LightContainer& container )
 {
-	for( orklut<CReal,lev2::Light*>::const_iterator	it =  mGlobalMovingLights.mPrioritizedLights.begin();
+	for( orklut<float,lev2::Light*>::const_iterator	it =  mGlobalMovingLights.mPrioritizedLights.begin();
 													it != mGlobalMovingLights.mPrioritizedLights.end();
 													it++ )
 	{
-		CReal prio			= it->first;
+		float prio			= it->first;
 		lev2::Light* plight	= it->second;
 
 		if( plight->IsInFrustum( frustum ) )

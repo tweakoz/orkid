@@ -119,7 +119,7 @@ Texture::~Texture()
 
 void Texture::Clear( const CColor4 & color )
 {
-	CReal Mul(255.0f);
+	float Mul(255.0f);
 
 	u8 ur = (u8) (color.GetX()*Mul);
 	u8 ug = (u8) (color.GetY()*Mul);
@@ -146,7 +146,7 @@ void Texture::Clear( const CColor4 & color )
 
 void Texture::SetTexel( const CColor4 & color, const CVector2 & ST )
 {
-	CReal Mul(255.0f);
+	float Mul(255.0f);
 	U8* pu8data = (U8*) mpImageData;
 
 	u8 ur = (u8) (color.GetX()*Mul);

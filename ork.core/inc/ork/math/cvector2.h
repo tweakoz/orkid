@@ -163,7 +163,7 @@ public:
 
 };
 
-typedef TVector2<CReal> CVector2;
+typedef TVector2<float> CVector2;
 
 typedef TVector2<float> fvec2;
 typedef TVector2<double> dvec2;

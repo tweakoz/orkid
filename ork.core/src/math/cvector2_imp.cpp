@@ -78,7 +78,7 @@ template<> CVector2 CPropType<CVector2>::FromString(const PropTypeString& String
 {
 	float x, y;
 	sscanf(String.c_str(), "%g %g", &x, &y);
-	return CVector2(CReal(x), CReal(y));
+	return CVector2(float(x), float(y));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

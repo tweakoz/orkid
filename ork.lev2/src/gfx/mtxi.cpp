@@ -100,7 +100,7 @@ void MatrixStackInterface::OnVMatrixDirty( void )
 	mmMVMatrix = RefMMatrix() * VMatrix;
 	mmVPMatrix = RefVMatrix() * RefPMatrix();
 	//////////////////////////////////////////////////////
-	const CReal * pfmatrix = VMatrix.GetArray();
+	const float * pfmatrix = VMatrix.GetArray();
 	mVectorScreenRightNormal	= CVector4(pfmatrix[0],pfmatrix[4], pfmatrix[8] );
 	mVectorScreenUpNormal		= CVector4(pfmatrix[1],pfmatrix[5], pfmatrix[9] );
 	//////////////////////////////////////////////////////
@@ -317,15 +317,15 @@ CMatrix4 MatrixStackInterface::Frustum( float left, float right, float top, floa
 
 	/////////////////////////////////////////////
 
-	rval.SetElemYX(0,0, CReal( (two*zn)/width) );
-	rval.SetElemYX(1,1, CReal( (two*zn)/height) );
-	rval.SetElemYX(2,2, CReal( -(zf + zn)/depth) );
-	rval.SetElemYX(3,3, CReal( 0.0f ) );
+	rval.SetElemYX(0,0, float( (two*zn)/width) );
+	rval.SetElemYX(1,1, float( (two*zn)/height) );
+	rval.SetElemYX(2,2, float( -(zf + zn)/depth) );
+	rval.SetElemYX(3,3, float( 0.0f ) );
 
-	rval.SetElemYX(0,2, CReal( (right + left) / width) );
-	rval.SetElemYX(1,2, CReal( (top + bottom) / height) );
-	rval.SetElemYX(2,3, CReal( -(two*zf*zn) / depth) );
-	rval.SetElemYX(3,2, CReal(-1.0f) );
+	rval.SetElemYX(0,2, float( (right + left) / width) );
+	rval.SetElemYX(1,2, float( (top + bottom) / height) );
+	rval.SetElemYX(2,3, float( -(two*zf*zn) / depth) );
+	rval.SetElemYX(3,2, float(-1.0f) );
 
 	return rval;
 }

@@ -15,7 +15,7 @@ using ork::lev2::Texture;
 
 namespace ork {
 
-/*void PlaceGlyph( ork::lev2::Renderer *pRenderer, ork::lev2::CGlyphsRenderable& renderable, const CFontGlyph &glyph, float scaleFactor, CVector2 pos, CReal z, U32 color, CReal invW, CReal invH)
+/*void PlaceGlyph( ork::lev2::Renderer *pRenderer, ork::lev2::CGlyphsRenderable& renderable, const CFontGlyph &glyph, float scaleFactor, CVector2 pos, float z, U32 color, float invW, float invH)
 {
 	typedef CVector4 CRect; // (LEFT,TOP,RIGHT,BOTTOM)
 	static float eggtestr = 0.5f;
@@ -26,14 +26,14 @@ namespace ork {
 
 	ork::lev2::GfxTarget* pTARG = pRenderer->GetTarget();
 
-	CReal invScreenWidth = 1.0f;  
-	CReal invScreenHeight = 1.0f;  
+	float invScreenWidth = 1.0f;  
+	float invScreenHeight = 1.0f;  
 	
-	CReal boundAmount(0.0f);
-	CReal left = (glyphTexRect[0] - boundAmount + eggtestl) * invW;
-	CReal right = ((glyphTexRect[0] + glyphTexRect[2] + boundAmount + eggtestr) * invW);
-	CReal top = (glyphTexRect[1] + eggtestt ) * invH;
-	CReal bottom = (glyphTexRect[1] + glyphTexRect[3] + eggtestb ) * invH;
+	float boundAmount(0.0f);
+	float left = (glyphTexRect[0] - boundAmount + eggtestl) * invW;
+	float right = ((glyphTexRect[0] + glyphTexRect[2] + boundAmount + eggtestr) * invW);
+	float top = (glyphTexRect[1] + eggtestt ) * invH;
+	float bottom = (glyphTexRect[1] + glyphTexRect[3] + eggtestb ) * invH;
 
 	CVector2 uv1(left, top);
 	CVector2 uv2(left, bottom);
@@ -41,8 +41,8 @@ namespace ork {
 	CVector2 uv4(right, top);
 
 
-	CReal posX1((pos[0])*invScreenWidth),  posX2((pos[0] + (scaleFactor * glyphTexRect[2]))*invScreenWidth);
-	CReal posY1((pos[1] - (scaleFactor * glyphTexRect[3]))*invScreenHeight), posY2((pos[1])*invScreenHeight);
+	float posX1((pos[0])*invScreenWidth),  posX2((pos[0] + (scaleFactor * glyphTexRect[2]))*invScreenWidth);
+	float posY1((pos[1] - (scaleFactor * glyphTexRect[3]))*invScreenHeight), posY2((pos[1])*invScreenHeight);
 
 	// same order
 

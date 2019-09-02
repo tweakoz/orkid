@@ -26,9 +26,9 @@ namespace ork
 /// as well as providing a few (hopefully optimized) trigonometric functions.
 ///
 /// The interface of CFixed and CFloat classes should be kept exactly the same, most (if not all) functions inlined,
-/// no virtuals, and the sole member variable should be a signed numeric in CFixed, and a float or double in CReal.
+/// no virtuals, and the sole member variable should be a signed numeric in CFixed, and a float or double in float.
 ///
-/// Commonly, the typedef CReal is seen in code, which is the selected as the preferred fractional type on a platform.
+/// Commonly, the typedef float is seen in code, which is the selected as the preferred fractional type on a platform.
 ///
 /// Use FXCast() to convert the internal value to a fixed-point number.
 /// Other casts act like normal float<->int casts.

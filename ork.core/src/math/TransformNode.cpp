@@ -57,7 +57,7 @@ void TransformNode::ToPropTypeString( PropTypeString& tstr ) const
 {
 	const CVector3 pos = GetTransform().GetPosition();
 	const CQuaternion quat = GetTransform().GetRotation();
-	const CReal scale = GetTransform().GetScale();
+	const float scale = GetTransform().GetScale();
 	tstr.format("(%g %g %g) (%g %g %g %g) (%g)", pos.GetX(), pos.GetY(), pos.GetZ(),
 				quat.GetX(), quat.GetY(), quat.GetZ(), quat.GetW(),
 				scale);
@@ -69,9 +69,9 @@ void TransformNode::FromPropTypeString( const PropTypeString& tstr )
 	float qx, qy, qz, qw;
 	float s;
 	sscanf(tstr.c_str(), "(%g %g %g) (%g %g %g %g) (%g)", &x, &y, &z, &qx, &qy, &qz, &qw, &s);
-	Translate(TransformNode::EMODE_ABSOLUTE, CVector3(CReal(x), CReal(y), CReal(z)));
-	GetTransform().SetRotation(CQuaternion(CReal(qx), CReal(qy), CReal(qz), CReal(qw)));
-	GetTransform().SetScale(CReal(s));
+	Translate(TransformNode::EMODE_ABSOLUTE, CVector3(float(x), float(y), float(z)));
+	GetTransform().SetRotation(CQuaternion(float(qx), float(qy), float(qz), float(qw)));
+	GetTransform().SetScale(float(s));
 }
 
 TransformNode::TransformNode( const TransformNode& oth )
@@ -148,7 +148,7 @@ void TransformNode::ReParent( const TransformNode* ppar )
 
 		CVector3 NewPos;
 		CQuaternion NewQ;
-		CReal NewScale;
+		float NewScale;
 
 		CorMatrix.DecomposeMatrix( NewPos, NewQ, NewScale );
 		
@@ -182,7 +182,7 @@ void Serialize(const TransformNode* in, TransformNode* out, BidirectionalSeriali
 
 		CQuaternion oq;
 		CVector3 pos;
-		CReal Scale;
+		float Scale;
 		temp.DecomposeMatrix( pos, oq, Scale );
 		result.ComposeMatrix( pos, oq, Scale );
 
@@ -232,16 +232,16 @@ CQuaternion Transform3DMatrix::GetRotation() const
 {
 	CQuaternion q;
 	CVector3 pos;
-	CReal Scale;
+	float Scale;
 	mMatrix.DecomposeMatrix( pos, q, Scale );
 	return q;
 }
 
-CReal Transform3DMatrix::GetScale() const
+float Transform3DMatrix::GetScale() const
 {
 	CQuaternion q;
 	CVector3 pos;
-	CReal Scale;
+	float Scale;
 	mMatrix.DecomposeMatrix( pos, q, Scale );
 	return Scale;
 }
@@ -250,7 +250,7 @@ void Transform3DMatrix::SetRotation( const CQuaternion &nq )
 {
 	CQuaternion oq;
 	CVector3 pos;
-	CReal Scale;
+	float Scale;
 	mMatrix.DecomposeMatrix( pos, oq, Scale );
 	mMatrix.ComposeMatrix( pos, nq, Scale );
 }
@@ -259,7 +259,7 @@ void Transform3DMatrix::SetScale( const float nscale)
 {
 	CQuaternion q;
 	CVector3 pos;
-	CReal Scale;
+	float Scale;
 	mMatrix.DecomposeMatrix( pos, q, Scale );
 	mMatrix.ComposeMatrix( pos, q, nscale );
 }
@@ -268,7 +268,7 @@ void Transform3DMatrix::SetPosition( const CVector3& npos )
 {
 	CQuaternion q;
 	CVector3 pos;
-	CReal Scale;
+	float Scale;
 	mMatrix.DecomposeMatrix( pos, q, Scale );
 	mMatrix.ComposeMatrix( npos, q, Scale );
 }

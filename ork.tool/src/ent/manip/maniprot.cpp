@@ -29,7 +29,7 @@ CManipRot::CManipRot( CManipManager& mgr, const CVector4 & LocRotMat )
 CManipRX::CManipRX( CManipManager& mgr )
 	: CManipRot(mgr,CVector4( 1.0f, 0.0f, 0.0f) )
 {
-	mmRotModel.SetRotateZ( CFloat::Pi() / CReal(2.0f) );
+	mmRotModel.SetRotateZ( CFloat::Pi() / float(2.0f) );
 	mColor = CColor4::Red();
 }
 
@@ -42,7 +42,7 @@ CManipRY::CManipRY( CManipManager& mgr )
 CManipRZ::CManipRZ(CManipManager& mgr)
 	: CManipRot(mgr,CVector4( 0.0f, 0.0f, 1.0f))
 {
-	mmRotModel.SetRotateX( CFloat::Pi() / CReal(2.0f) );
+	mmRotModel.SetRotateX( CFloat::Pi() / float(2.0f) );
 	mColor = CColor4::Blue();
 }
 
@@ -87,7 +87,7 @@ void CManipRot::Draw( GfxTarget *pTARG ) const
 
 	bool bdrawok = true;
 	CVector4 v_dir;
-	const CReal vizthresh(0.15f);
+	const float vizthresh(0.15f);
 	if( GetClass() == CManipRX::GetClassStatic() )
 	{
 		v_dir = CVector4( 1.0f, 0.0f, 0.0f, 0.0f );
@@ -170,11 +170,11 @@ void CManipRot::Draw( GfxTarget *pTARG ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CReal SnapReal( CReal Input, CReal SnapVal )
+float SnapReal( float Input, float SnapVal )
 {
 	int ival = int(Input/SnapVal);
 
-	CReal ret( CReal(ival)*SnapVal );
+	float ret( float(ival)*SnapVal );
 		
 	orkprintf( "SnapReal %f [%d] -> %f \n", Input, ival, ret );
 
@@ -243,8 +243,8 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 				///////////////////////////////////////////
 				// calc plane local rotation
 				CVector4 AxisAngle = mLocalRotationAxis; 
-				CVector4 D0I = CVector4(D0,CReal(0.0f)).Transform(MatWldToPln);
-				CVector4 D1I = CVector4(D1,CReal(0.0f)).Transform(MatWldToPln);
+				CVector4 D0I = CVector4(D0,float(0.0f)).Transform(MatWldToPln);
+				CVector4 D1I = CVector4(D1,float(0.0f)).Transform(MatWldToPln);
 				//orkprintf( "D0 <%f %f %f>\n", float(D0.GetX()), float(D0.GetY()), float(D0.GetZ()) );
 				//orkprintf( "D1 <%f %f %f>\n", float(D1.GetX()), float(D1.GetY()), float(D1.GetZ()) );
 				//orkprintf( "D0I <%f %f %f>\n", float(D0I.GetX()), float(D0I.GetY()), float(D0I.GetZ()) );
@@ -255,9 +255,9 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 				///////////////////
 				// Rot Snap
 				if( isshift )
-				{	CReal SnapAngleVal( PI2/16.0f );
+				{	float SnapAngleVal( PI2/16.0f );
 					CVector4 NewAxisAngle = RotQ.ToAxisAngle();
-					CReal Angle = NewAxisAngle.GetW();
+					float Angle = NewAxisAngle.GetW();
 					Angle = SnapReal( Angle, SnapAngleVal );
 					NewAxisAngle.SetW( Angle );
 					RotQ.FromAxisAngle( NewAxisAngle );
@@ -270,7 +270,7 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 				// Rot Reset To Identity
 				if( isctrl && isshift )
 				{
-					NewQ.FromAxisAngle( CVector4( CReal(0.0f), CReal(1.0f), CReal(0.0f), CReal(0.0f) ) );
+					NewQ.FromAxisAngle( CVector4( float(0.0f), float(1.0f), float(0.0f), float(0.0f) ) );
 				}
 				///////////////////
 				TransformNode mset = mManager.mCurTransform;

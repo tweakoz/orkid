@@ -39,7 +39,7 @@ bool CollisionTester::FrustumPointTest( const Frustum& frus, const CVector3& pnt
 
 bool CollisionTester::FrustumSphereTest( const Frustum& frus, const Sphere& sph )
 {
-	CReal nrad = -sph.mRadius;
+	float nrad = -sph.mRadius;
 	CVector4 tpos( sph.mCenter );
 	
 	float nd = frus.mNearPlane.GetPointDistance( tpos );

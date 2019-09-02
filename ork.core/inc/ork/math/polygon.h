@@ -118,8 +118,8 @@ public:
 	void SetComponentIndex( int idx ) { miComponentIndex=idx; }
 
 	//vtx ComputeCenter( const vertexpool<vtx> &vpool ) const;
-	//CReal ComputeEdgeLength( const vertexpool<vertex> &vpool, const CMatrix4 & MatRange, int iedge ) const;
-	//CReal ComputeArea( const vertexpool &vpool, const CMatrix4 & MatRange ) const;
+	//float ComputeEdgeLength( const vertexpool<vertex> &vpool, const CMatrix4 & MatRange, int iedge ) const;
+	//float ComputeArea( const vertexpool &vpool, const CMatrix4 & MatRange ) const;
 	//U64 HashIndices( void ) const;
 };
 

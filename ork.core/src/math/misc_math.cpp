@@ -133,39 +133,39 @@ CPolynomial CPolynomial::Differentiate() const
 {
 	CPolynomial result;
 
-    result.SetCoefs(1, CReal(0));
-    result.SetCoefs(2, coefs[0] * CReal(3));
-    result.SetCoefs(3, coefs[1] * CReal(2));
+    result.SetCoefs(1, float(0));
+    result.SetCoefs(2, coefs[0] * float(3));
+    result.SetCoefs(3, coefs[1] * float(2));
     result.SetCoefs(4, coefs[2]);
 
     return result;
 }
 
-void CPolynomial::SetCoefs(const CReal *array)
+void CPolynomial::SetCoefs(const float *array)
 {
 	memcpy(coefs, array, 4 * sizeof(float));
 }
 
-void CPolynomial::SetCoefs(int i, CReal num)
+void CPolynomial::SetCoefs(int i, float num)
 {
 	OrkAssert(i >= 1);
 	OrkAssert(i <= 4);
 	coefs[i-1] = num;
 }
 
-CReal CPolynomial::GetCoefs(int i) const
+float CPolynomial::GetCoefs(int i) const
 {
 	OrkAssert(i >= 1);
 	OrkAssert(i <= 4);
 	return coefs[i-1];
 }
 
-CReal CPolynomial::Evaluate(CReal val) const
+float CPolynomial::Evaluate(float val) const
 {
 	return (((coefs[0]) * val + coefs[1]) * val + coefs[2]) * val + coefs[3];
 }
 
-CReal CPolynomial::operator()(CReal val) const
+float CPolynomial::operator()(float val) const
 {
 	return (((coefs[0]) * val + coefs[1]) * val + coefs[2]) * val + coefs[3];
 }

@@ -174,7 +174,7 @@ template <typename T> class  TMatrix3
 
 };
 
-typedef TMatrix3<CReal> CMatrix3;
+typedef TMatrix3<float> CMatrix3;
 
 ///////////////////////////////////////////////////////////////////////////////
 

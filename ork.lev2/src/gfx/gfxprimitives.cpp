@@ -1010,8 +1010,8 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 		/////////////////////////////////////////////////////////////////
 		// Compute Heightfield
 
-		CReal fmin =  CFloat::TypeMax();
-		CReal fmax = -CFloat::TypeMax();
+		float fmin =  CFloat::TypeMax();
+		float fmax = -CFloat::TypeMax();
 
 		struct sheightfield
 		{
@@ -1083,8 +1083,8 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 					fy += CPerlin2D::PlaneNoiseFunc( fx, fz, 0.0f, 0.0f, fascal, ffscal );
 				}
 
-				if( CReal(fy)<fmin ) fmin=CReal(fy);
-				if( CReal(fy)>fmax ) fmax=CReal(fy);
+				if( float(fy)<fmin ) fmin=float(fy);
+				if( float(fy)>fmax ) fmax=float(fy);
 
 				heightfield.XYZ(iX,iZ).SetX( fx );
 				heightfield.XYZ(iX,iZ).SetY( fy );
@@ -1095,7 +1095,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 			}
 		}
 
-		CReal frange = fmax-fmin;
+		float frange = fmax-fmin;
 
 		/////////////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////
@@ -1149,10 +1149,10 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 				/////////////////////////////////////////////////////
 				// calc height lerps
 
-				CReal YLerpX1Z1 = CFloat::Pow( (CReal(fYH_X1Z1)-fmin)/frange, 2.0f );
-				CReal YLerpX2Z1 = CFloat::Pow( (CReal(fYH_X2Z1)-fmin)/frange, 2.0f );
-				CReal YLerpX2Z2 = CFloat::Pow( (CReal(fYH_X2Z2)-fmin)/frange, 2.0f );
-				CReal YLerpX1Z2 = CFloat::Pow( (CReal(fYH_X1Z2)-fmin)/frange, 2.0f );
+				float YLerpX1Z1 = CFloat::Pow( (float(fYH_X1Z1)-fmin)/frange, 2.0f );
+				float YLerpX2Z1 = CFloat::Pow( (float(fYH_X2Z1)-fmin)/frange, 2.0f );
+				float YLerpX2Z2 = CFloat::Pow( (float(fYH_X2Z2)-fmin)/frange, 2.0f );
+				float YLerpX1Z2 = CFloat::Pow( (float(fYH_X1Z2)-fmin)/frange, 2.0f );
 
 				/////////////////////////////////////////////////////
 				// calc normals
@@ -1163,10 +1163,10 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 				CVector3 nX2Z2 = heightfield.Normal(iX2,iZ2);
 
 				CVector3 Up( 0.0f, 1.0f, 0.0f );
-				CReal DotX1Z1 = CFloat::Pow( Up.Dot( nX1Z1 ), 6.0f );
-				CReal DotX2Z1 = CFloat::Pow( Up.Dot( nX2Z1 ), 6.0f );
-				CReal DotX1Z2 = CFloat::Pow( Up.Dot( nX1Z2 ), 6.0f );
-				CReal DotX2Z2 = CFloat::Pow( Up.Dot( nX2Z2 ), 6.0f );
+				float DotX1Z1 = CFloat::Pow( Up.Dot( nX1Z1 ), 6.0f );
+				float DotX2Z1 = CFloat::Pow( Up.Dot( nX2Z1 ), 6.0f );
+				float DotX1Z2 = CFloat::Pow( Up.Dot( nX1Z2 ), 6.0f );
+				float DotX2Z2 = CFloat::Pow( Up.Dot( nX2Z2 ), 6.0f );
 
 				/////////////////////////////////////////////////////
 
