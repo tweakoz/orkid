@@ -260,7 +260,7 @@ GridControllerInst::GridControllerInst( const GridControllerData& data, ent::Ent
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* GridControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* GridControllerData::createComponent(ent::Entity* pent) const
 {
     return OrkNew GridControllerInst( *this, pent );
 }

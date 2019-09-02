@@ -127,7 +127,7 @@ void BulletObjectControllerData::ShapeSetter( ork::rtti::ICastable* const & val)
 	mShapeData = ( (ptr==0) ? 0 : rtti::safe_downcast<BulletShapeBaseData*>(ptr) );
 }
 ///////////////////////////////////////////////////////////////////////////////
-ComponentInst* BulletObjectControllerData::CreateComponent(Entity *pent) const
+ComponentInst* BulletObjectControllerData::createComponent(Entity *pent) const
 {
 	BulletObjectControllerInst* pinst = new BulletObjectControllerInst( *this, pent );
 	return pinst;

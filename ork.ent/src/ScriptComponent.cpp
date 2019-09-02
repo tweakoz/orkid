@@ -47,7 +47,7 @@ ScriptComponentData::ScriptComponentData()
 	printf( "ScriptComponentData::ScriptComponentData() this: %p\n", this );
 }
 
-ent::ComponentInst* ScriptComponentData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* ScriptComponentData::createComponent(ent::Entity* pent) const
 {
 	return new ScriptComponentInst( *this, pent );
 }

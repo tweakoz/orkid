@@ -1190,7 +1190,7 @@ float TrackData::GetRespawnProgress(float actual_progress) const
 	return respawn_progress;
 }
 
-ork::ent::ComponentInst *TrackData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *TrackData::createComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew TrackInst( *this, pent );
 }
@@ -1268,7 +1268,7 @@ SectorTrackerData::SectorTrackerData()
 SectorTrackerData::~SectorTrackerData()
 {
 }
-ork::ent::ComponentInst *SectorTrackerData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *SectorTrackerData::createComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew SectorTrackerInst( *this, pent );
 }

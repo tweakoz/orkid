@@ -55,7 +55,7 @@ AudioStreamComponentData::AudioStreamComponentData()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::ComponentInst *AudioStreamComponentData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *AudioStreamComponentData::createComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew AudioStreamComponentInst( *this, pent );
 }

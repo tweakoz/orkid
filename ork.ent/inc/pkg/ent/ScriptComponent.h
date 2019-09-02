@@ -31,7 +31,7 @@ struct ScriptComponentData : public ent::ComponentData
 
 private:
 	RttiDeclareConcrete( ScriptComponentData, ent::ComponentData );
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
 
 	file::Path mScriptPath;

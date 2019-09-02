@@ -240,7 +240,7 @@ SkyBoxControllerInst::SkyBoxControllerInst( const SkyBoxControllerData& data, en
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* SkyBoxControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* SkyBoxControllerData::createComponent(ent::Entity* pent) const
 {
 	return OrkNew SkyBoxControllerInst( *this, pent );
 }

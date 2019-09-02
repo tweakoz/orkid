@@ -61,7 +61,7 @@ public:
 private:
 
     ~SimpleAnimatableData() final;
-	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+	ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 
 	AnimationMap mAnimationMap;
 	AnimSeqTableMap mAnimSeqTableMap;

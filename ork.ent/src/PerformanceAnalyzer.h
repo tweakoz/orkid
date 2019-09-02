@@ -21,7 +21,7 @@ class PerfAnalyzerControllerData : public ent::ComponentData
 
 public:
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	PerfAnalyzerControllerData();
 	

@@ -81,7 +81,7 @@ EditorCamControllerData::EditorCamControllerData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* EditorCamControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* EditorCamControllerData::createComponent(ent::Entity* pent) const
 {
 	mPerspCam->SetName( pent->GetEntData().GetName().c_str() );
 	return new EditorCamControllerInst( *this, pent );

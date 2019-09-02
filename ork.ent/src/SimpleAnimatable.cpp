@@ -85,7 +85,7 @@ bool SimpleAnimatableData::HasAnimation(ork::PoolString name) const
 	return mAnimationMap.find(name) != mAnimationMap.end();
 }
 
-ork::ent::ComponentInst *SimpleAnimatableData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *SimpleAnimatableData::createComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew SimpleAnimatableInst(*this, pent);
 }

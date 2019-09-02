@@ -205,7 +205,7 @@ void SimpleCharacterArchetype::Describe()
 {
 }
 
-ComponentInst* SimpleCharControllerData::CreateComponent(Entity *pent) const
+ComponentInst* SimpleCharControllerData::createComponent(Entity *pent) const
 {
 	return new SimpleCharControllerInst(*this,pent);
 }
@@ -222,6 +222,7 @@ void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<ork::ent::ModelComponentData>();
 	composer.Register<ork::ent::SimpleAnimatableData>();
 	composer.Register<ork::ent::ScriptComponentData>();
+  composer.Register<ork::ent::InputComponentData>();
 	composer.Register<SimpleCharControllerData>();
     composer.Register<BulletObjectControllerData>();
     composer.Register<AudioEffectComponentData>();

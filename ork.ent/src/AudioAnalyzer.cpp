@@ -130,7 +130,7 @@ AudioAnalysisComponentData::AudioAnalysisComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::ComponentInst* AudioAnalysisComponentData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst* AudioAnalysisComponentData::createComponent(ork::ent::Entity *pent) const
 {
 	return new AudioAnalysisComponentInst( *this, pent );
 }

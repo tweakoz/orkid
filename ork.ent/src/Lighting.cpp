@@ -57,7 +57,7 @@ LightingComponentData::~LightingComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::ComponentInst *LightingComponentData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *LightingComponentData::createComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew LightingComponentInst( *this, pent );
 }

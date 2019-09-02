@@ -293,7 +293,7 @@ public:
 	float GetRespawnProgress(float actual_progress) const;
 private:
 	
-	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+	ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 
 	ork::file::Path				mSecMeshName;
 	float						mTrackScale;
@@ -345,7 +345,7 @@ public:
 
 private:
 
-	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+	ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 
 };
 

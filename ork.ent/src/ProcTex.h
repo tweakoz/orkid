@@ -104,7 +104,7 @@ public:
 
 private:
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	ork::Object* TemplateAccessor() { return & mTemplate; }
 	void OutputGetter(ork::rtti::ICastable*& val) const;

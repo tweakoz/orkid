@@ -88,7 +88,7 @@ const RacingLine *RacingLineData::GetRacingLine(int index) const
 	return it->second;
 }
 
-ork::ent::ComponentInst *RacingLineData::CreateComponent(ork::ent::Entity *pent) const
+ork::ent::ComponentInst *RacingLineData::createComponent(ork::ent::Entity *pent) const
 {
 	return OrkNew RacingLineInst(*this, pent);
 }

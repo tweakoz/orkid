@@ -64,7 +64,7 @@ class ComponentData : public Object {
 public:
   ComponentData();
 
-  virtual ComponentInst *CreateComponent(Entity *pent) const = 0;
+  virtual ComponentInst *createComponent(Entity *pent) const = 0;
 
   PoolString GetFamily() const;
 
@@ -141,7 +141,7 @@ public:
   ConstString GetProperty(const ConstString &key) const;
 
 private:
-  ComponentInst *CreateComponent(Entity *pent) const final {
+  ComponentInst *createComponent(Entity *pent) const final {
     return new EditorPropMapInst(this, pent);
   }
 

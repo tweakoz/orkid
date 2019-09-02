@@ -30,7 +30,7 @@ class MissileControllerData : public ent::ComponentData
 
 public:
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
+	virtual ent::ComponentInst* createComponent(ent::Entity* pent) const;
 	ork::ent::ArchetypeAsset* GetExplosionArchetype() const { return mpExplosionArchAsset; }
 
 	MissileControllerData();

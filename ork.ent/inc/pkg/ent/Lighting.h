@@ -69,7 +69,7 @@ public:
 	bool IsDynamic() const { return mbDynamic; }
 
 private:
-    ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+    ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 
 	void LdGetter(ork::rtti::ICastable*& val) const { val=mLightData; }
 	void LdSetter(ork::rtti::ICastable* const & val) { mLightData=ork::rtti::downcast<ork::lev2::LightData*>(val); }
