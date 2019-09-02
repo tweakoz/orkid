@@ -12,10 +12,10 @@
                                     <object type='EditorCamControllerData' id='2'>
                                         <property name='Camera'>
                                             <object type='CCamera_persp' id='3'>
-                                                <property name='Center'>0.063413 0.00232812 0</property>
+                                                <property name='Center'>0 0 0</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>11.0769</property>
-                                                <property name='QuatC'>0 -1 0 0</property>
+                                                <property name='Loc'>50.4812</property>
+                                                <property name='QuatC'>0.0348558 -0.139602 -0.989593 -0.00212744</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>10000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -37,11 +37,11 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='ProcTexControllerData' id='5'>
                                         <property name='BufferDim'>1024</property>
-                                        <property name='FrameRate'>29.6552</property>
+                                        <property name='FrameRate'>0</property>
                                         <property name='Output'>
                                             <reference category='ObjectClass'>
-                                                <object type='ProcTexOutputQuad' id='6'>
-                                                    <property name='Scale'>10</property>
+                                                <object type='ProcTexOutputDynTex' id='6'>
+                                                    <property name='DynTexName'>"PTEX"</property>
                                                 </object>
                                             </reference>
                                         </property>
@@ -577,12 +577,34 @@
                     </object>
                 </reference>
             </item>
+            <item key='SceneObject3'>
+                <reference category='SceneObjectClass'>
+                    <object type='GridArchetype' id='92'>
+                        <property name='Name'>"SceneObject3"</property>
+                        <property name='Components'>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='GridControllerData' id='93'>
+                                        <property name='Scale'>1</property>
+                                        <property name='SpinRate'>0</property>
+                                        <property name='Texture'>
+                                            <reference category='AssetClass'>
+                                                "lev2tex" "lev2://textures/gridcell_blue"
+                                            </reference>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
             <item key='edcam'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='92'>
+                    <object type='Ent3dEntData' id='94'>
                         <property name='Name'>"edcam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='93'>
+                            <object type='Ent3dDagNode' id='95'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -592,12 +614,27 @@
                     </object>
                 </reference>
             </item>
+            <item key='grid'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='96'>
+                        <property name='Name'>"grid"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='97'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='92'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
             <item key='ptex'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='94'>
+                    <object type='Ent3dEntData' id='98'>
                         <property name='Name'>"ptex"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='95'>
+                            <object type='Ent3dDagNode' id='99'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -608,5 +645,7 @@
                 </reference>
             </item>
         </property>
+        <property name='ScriptFile'>""</property>
+        <property name='SystemData'></property>
     </object>
 </reference>
