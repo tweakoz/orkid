@@ -84,8 +84,8 @@ InputDeviceIX::InputDeviceIX() : InputDevice() {
   OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_RIGHT, (int) ETRIG_RAW_KEY_RIGHT );
   OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_DOWN, (int) ETRIG_RAW_KEY_DOWN );*/
 
-  OrkSTXMapInsert(mInputMap, ETRIG_RAW_JOY0_LANA_YAXIS, (int)ETRIG_RAW_JOY0_LANA_YAXIS);
-  OrkSTXMapInsert(mInputMap, ETRIG_RAW_JOY0_RANA_YAXIS, (int)ETRIG_RAW_JOY0_RANA_YAXIS);
+  _ixinputmap[ETRIG_RAW_JOY0_LANA_YAXIS]=ETRIG_RAW_JOY0_LANA_YAXIS;
+  _ixinputmap[ETRIG_RAW_JOY0_RANA_YAXIS]=ETRIG_RAW_JOY0_RANA_YAXIS;
 
   auto thr = new ork::Thread("InputDeviceIX");
 
@@ -157,7 +157,7 @@ void InputDeviceIX::Input_Init(void) { return; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputDeviceIX::Input_Poll() {
+void InputDeviceIX::poll() {
   // printf( "POLL IXID\n");
   mConnectionStatus = CONN_STATUS_ACTIVE;
 
@@ -165,9 +165,9 @@ void InputDeviceIX::Input_Poll() {
 
   inpstate.BeginCycle();
 
-  for (const auto& item : mInputMap) {
-    char k = item.first;
-    char v = item.second;
+  for (const auto& item : _ixinputmap) {
+    uint32_t k = item.first;
+    uint32_t v = item.second;
     int ist = int(CSystem::IsKeyDepressed(k)) * 127;
     // printf( "KEY<%d> ST<%d>\n", int(k), ist );
     inpstate.SetPressure(v, ist);

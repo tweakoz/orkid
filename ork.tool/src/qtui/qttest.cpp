@@ -200,7 +200,7 @@ int BootQtThreadImpl(void* arg_opaq )
 	std::string AppClassName = CSystem::GetGlobalStringVariable( "ProjectApplicationClassName" );
 
 	ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
-    ork::lev2::InputManager::Poll();
+    ork::lev2::InputManager::poll();
 
 	ent::EditorMainWindow MainWin(0, AppClassName, *gpQtApplication );
 	ent::gEditorMainWindow = &MainWin;

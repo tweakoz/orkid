@@ -64,7 +64,7 @@ public:
 	Boolean		IsRunning();
 	OSStatus	SetInputDeviceAsCurrent(AudioDeviceID in);
 	
-	AudioDeviceID GetInputDeviceID()	{ return mInputDevice.mID;	}
+	AudioDeviceID getInputDeviceID()	{ return mInputDevice.mID;	}
 
 private:
 	OSStatus SetupGraph();
@@ -586,7 +586,7 @@ CAPlayThroughHost::~CAPlayThroughHost()
 void CAPlayThroughHost::CreatePlayThrough(AudioDeviceID input)
 {
 	mPlayThrough = new CAPlayThrough(input,mpAACI);
-	AddDeviceListeners(input);
+	addDeviceListeners(input);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -596,7 +596,7 @@ void CAPlayThroughHost::DeletePlayThrough()
 	if(mPlayThrough)
 	{
 		mPlayThrough->Stop();
-		RemoveDeviceListeners(mPlayThrough->GetInputDeviceID());
+		RemoveDeviceListeners(mPlayThrough->getInputDeviceID());
 		delete mPlayThrough;
 		mPlayThrough = NULL;
 	}
@@ -607,7 +607,7 @@ void CAPlayThroughHost::DeletePlayThrough()
 void CAPlayThroughHost::ResetPlayThrough ()
 {
 	
-	AudioDeviceID input = mPlayThrough->GetInputDeviceID();
+	AudioDeviceID input = mPlayThrough->getInputDeviceID();
 	DeletePlayThrough();
 	CreatePlayThrough(input); //, output);
 	mPlayThrough->Start();
@@ -647,7 +647,7 @@ Boolean		CAPlayThroughHost::IsRunning()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CAPlayThroughHost::AddDeviceListeners(AudioDeviceID input)
+void CAPlayThroughHost::addDeviceListeners(AudioDeviceID input)
 {
 	// StreamListener is called whenever the sample rate changes (as well as other format characteristics of the device)
 	UInt32 propSize;

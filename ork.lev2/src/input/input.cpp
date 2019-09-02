@@ -36,12 +36,12 @@ InputMap InputState::gInputMap;
 
 InputState::InputState() {
   for (int ival = 0; ival < KMAX_TRIGGERS; ival++) {
-    LastPressureValues[ival] = 0;
-    PressureValues[ival] = 0;
-    PressureThresh[ival] = 16;
-    TriggerDown[ival] = false;
-    TriggerUp[ival] = false;
-    TriggerState[ival] = false;
+    _prevPressureValues[ival] = 0;
+    _pressureValues[ival] = 0;
+    _pressureThresh[ival] = 16;
+    _triggerDown[ival] = false;
+    _triggerUp[ival] = false;
+    _triggerState[ival] = false;
   }
 }
 
@@ -50,7 +50,7 @@ InputState::InputState() {
 bool InputState::IsDown(MappedInputKey mapped, const InputMap& InputMap) const {
   // RawInputKey raw = InputMap.MapInput( mapped );
   int index = int(mapped.mKey);
-  return TriggerState[index];
+  return _triggerState[index];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -58,7 +58,7 @@ bool InputState::IsDown(MappedInputKey mapped, const InputMap& InputMap) const {
 bool InputState::IsUpEdge(MappedInputKey mapped, const InputMap& InputMap) const {
   RawInputKey raw = InputMap.MapInput(mapped);
   int index = int(mapped.mKey);
-  return TriggerUp[index];
+  return _triggerUp[index];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,7 +67,7 @@ bool InputState::IsDownEdge(MappedInputKey mapped, const InputMap& InputMap) con
   RawInputKey raw = InputMap.MapInput(mapped);
   int index = int(mapped.mKey);
   OrkAssert(index < KMAX_TRIGGERS);
-  return TriggerDown[index];
+  return _triggerDown[index];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -77,30 +77,34 @@ F32 InputState::GetPressure(MappedInputKey mapped, const InputMap& InputMap) con
   const F32 frecip = 1.0f / 127.0f;
   int index = int(raw.mKey);
   OrkAssert(index < KMAX_TRIGGERS);
-  S8 uval = PressureValues[index];
+  float uval = _pressureValues[index];
   F32 fval = frecip * (F32)uval;
   return F32(fval);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputState::SetPressure(RawInputKey ch, S8 uVal) {
+void InputState::SetPressure(RawInputKey ch, float uVal) {
 
   int index = int(ch.mKey);
   OrkAssert(index < KMAX_TRIGGERS);
-  S8 Thresh = PressureThresh[index];
+  float Thresh = _pressureThresh[index];
   bool newstate = (uVal > Thresh);
-  PressureValues[index] = uVal;
-  TriggerState[index] = newstate;
+  _pressureValues[index] = uVal;
+  _triggerState[index] = newstate;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-S8 InputState::GetPressureRaw(int ch) const { return (PressureValues[ch]); }
+float InputState::GetPressureRaw(int ch) const {
+  return (_pressureValues[ch]);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputState::SetPressureRaw(int ch, S8 uVal) { PressureValues[ch] = uVal; }
+void InputState::SetPressureRaw(int ch, float uVal) {
+  _pressureValues[ch] = uVal;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -112,10 +116,10 @@ void InputState::Clear(int index) {
   OrkAssert(index < KMAX_TRIGGERS);
 
   if (index >= 0)
-    TriggerState[index] = 0;
+    _triggerState[index] = 0;
   else {
     for (int index = 0; index < KMAX_TRIGGERS; index++) {
-      TriggerState[index] = 0;
+      _triggerState[index] = 0;
     }
   }
 }
@@ -124,84 +128,72 @@ void InputState::Clear(int index) {
 
 void InputState::EndCycle() {
   for (int index = 0; index < KMAX_TRIGGERS; index++) {
-    bool newstate = TriggerState[index];
+    bool newstate = _triggerState[index];
 
-    S8 Thresh = PressureThresh[index];
-    S8 OldVal = LastPressureValues[index];
+    float Thresh = _pressureThresh[index];
+    float OldVal = _prevPressureValues[index];
 
     bool oldstate = (OldVal > Thresh);
     if ((false == oldstate) && (true == newstate)) // key on
     {
-      TriggerDown[index] = true;
-      TriggerUp[index] = false;
+      _triggerDown[index] = true;
+      _triggerUp[index] = false;
       // orkprintf( "KEYON<%d> %x\n", index,(void *) this );
     } else if ((true == oldstate) && (false == newstate)) // key off
     {
-      TriggerDown[index] = false;
-      TriggerUp[index] = true;
+      _triggerDown[index] = false;
+      _triggerUp[index] = true;
       // orkprintf( "KEYOFF<%d> %x\n", index,(void *) this );
     } else {
-      TriggerDown[index] = false;
-      TriggerUp[index] = false;
+      _triggerDown[index] = false;
+      _triggerUp[index] = false;
     }
 
-    LastPressureValues[index] = PressureValues[index];
+    _prevPressureValues[index] = _pressureValues[index];
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-InputManager::InputManager() : NoRttiSingleton<InputManager>() { CreateInputDevices(); }
+InputManager::InputManager() : NoRttiSingleton<InputManager>() { discoverDevices(); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputManager::Poll(void) {
-  size_t inumdevices = GetRef().mvpInputDevices.size();
-  for (size_t i = 0; i < inumdevices; i++) {
-    InputDevice* pdevice = GetRef().mvpInputDevices[i];
-    pdevice->Input_Poll();
-  }
+void InputManager::poll(void) {
+  for( InputDevice* pdevice : GetRef().mvpInputDevices )
+    pdevice->poll();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputManager::ClearAll() {
-  for (size_t i = 0; i < GetRef().mvpInputDevices.size(); i++)
-    GetRef().mvpInputDevices[i]->RefInputState().Clear(-1);
+void InputManager::clearAll() {
+  for( InputDevice* pdevice : GetRef().mvpInputDevices )
+    pdevice->RefInputState().Clear(-1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputManager::SetRumble(bool mode) {
-  for (size_t i = 0; i < GetRef().mvpInputDevices.size(); i++)
-    GetRef().mvpInputDevices[i]->SetMasterRumbleEnabled(mode);
+void InputManager::setRumble(bool mode) {
+  for( InputDevice* pdevice : GetRef().mvpInputDevices )
+    pdevice->SetMasterRumbleEnabled(mode);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const InputDevice* InputManager::GetInputDevice(unsigned int id) const {
-  int inumdevs = GetRef().mvpInputDevices.size();
-  if (0 == inumdevs)
-    return nullptr;
-  return mvpInputDevices[id % inumdevs];
+InputDevice* InputManager::getInputDevice(size_t id) {
+  auto& devvect = GetRef().mvpInputDevices;
+  size_t numdevs = devvect.size();
+  return (0 == numdevs)
+        ? nullptr
+        : devvect[id % numdevs];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-InputDevice* InputManager::GetInputDevice(unsigned int id) {
-  int inumdevs = GetRef().mvpInputDevices.size();
-  if (0 == inumdevs)
-    return nullptr;
-  return mvpInputDevices[id % inumdevs];
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void InputManager::CreateInputDevices() {
+void InputManager::discoverDevices() {
 #if defined(IX)
   InputDeviceIX* pref = new InputDeviceIX();
-  // pref->SetUserIndex(0);
-  InputManager::GetRef().AddDevice(pref);
+  InputManager::GetRef().addDevice(pref);
   InputManager::GetRef().mvpKeyboardInputDevice = pref;
 #endif
 }

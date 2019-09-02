@@ -298,7 +298,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 
 	DagNode* shipdn = & GetEntity()->GetDagNode();
 
-	ork::lev2::InputDevice *inputdevice = ork::lev2::InputManager::GetRef().GetInputDevice(0);
+	ork::lev2::InputDevice *inputdevice = ork::lev2::InputManager::GetRef().getInputDevice(0);
 	//inputdevice->Input_Poll(0);
 
 	if( false == inputdevice->IsActive() )

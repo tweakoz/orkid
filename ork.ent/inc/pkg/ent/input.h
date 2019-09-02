@@ -62,6 +62,8 @@ public:
   InputSystem(const InputSystemData &data, SceneInst* psi);
   ~InputSystem();
 
+  svar256_t _impl;
+
 };
 
 }

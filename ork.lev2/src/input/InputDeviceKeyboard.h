@@ -16,7 +16,7 @@ class InputDeviceKeyboard : public ork::lev2::InputDevice
 public:
     InputDeviceKeyboard();
 
-	virtual void Input_Poll();
+	virtual void Input_poll();
 
 	 orkmultimap<int, int> mKeyboardInputMap;
 };

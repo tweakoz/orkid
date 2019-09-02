@@ -69,7 +69,7 @@ InputDeviceKeyboard::InputDeviceKeyboard()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void InputDeviceKeyboard::Input_Poll()
+void InputDeviceKeyboard::Input_poll()
 {
 	mConnectionStatus = CONN_STATUS_ACTIVE;
 
