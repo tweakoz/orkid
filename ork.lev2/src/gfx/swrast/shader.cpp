@@ -84,12 +84,12 @@ Shader1::Shader1(/*const CLengine& eng*/)
 
 }
 
-ork::CVector4 test_volume_shader::ShadeVolume( const ork::CVector3& entrywpos, const ork::CVector3& exitwpos ) const // virtual 
+ork::fvec4 test_volume_shader::ShadeVolume( const ork::fvec3& entrywpos, const ork::fvec3& exitwpos ) const // virtual 
 {
 	float fdist = (exitwpos-entrywpos).Mag();
 	float fsd = 1.5f*fdist/10.0f;
 	float falpha = std::pow(fsd,2.0f);
-	return ork::CVector4(1.7f,0.2f,0.2f,falpha);
+	return ork::fvec4(1.7f,0.2f,0.2f,falpha);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,17 +99,17 @@ void Shader1::Shade( const rend_prefragment& prefrag, rend_fragment* pdstfrag ) 
 	const rend_ivtx* srcvtxR = prefrag.srcvtxR;
 	const rend_ivtx* srcvtxS = prefrag.srcvtxS;
 	const rend_ivtx* srcvtxT = prefrag.srcvtxT;
-	const ork::CVector3& onrmR = srcvtxR->mObjSpaceNrm;
-	const ork::CVector3& onrmS = srcvtxS->mObjSpaceNrm;
-	const ork::CVector3& onrmT = srcvtxT->mObjSpaceNrm;
+	const ork::fvec3& onrmR = srcvtxR->mObjSpaceNrm;
+	const ork::fvec3& onrmS = srcvtxS->mObjSpaceNrm;
+	const ork::fvec3& onrmT = srcvtxT->mObjSpaceNrm;
 	float r = prefrag.mfR;
 	float s = prefrag.mfS;
 	float t = prefrag.mfT;
 	float onx = onrmR.GetX()*r+onrmS.GetX()*s+onrmT.GetX()*t;
 	float ony = onrmR.GetY()*r+onrmS.GetY()*s+onrmT.GetY()*t;
 	float onz = onrmR.GetZ()*r+onrmS.GetZ()*s+onrmT.GetZ()*t;
-	ork::CVector3 c( onx, ony, onz );
-	pdstfrag->mRGBA = ork::CVector4( c, 1.0f );
+	ork::fvec3 c( onx, ony, onz );
+	pdstfrag->mRGBA = ork::fvec4( c, 1.0f );
 	pdstfrag->mZ = prefrag.mfZ;
 }
 
@@ -168,7 +168,7 @@ void Shader1::ShadeBlock( AABuffer& aabuf, int ifragbase, int icount, int inumtr
 		aabuf.mTriangleClBuffer->TransferAndBlock( mRenderData->mClEngine.GetDevice(), inumtri*36*sizeof(float) );
 		aabuf.mFragInpClBuffer->TransferAndBlock( mRenderData->mClEngine.GetDevice(), ifraginpsize );
 		//////////////////////////////////////////////
-		const ork::CVector3& veye = mRenderData->mEye;
+		const ork::fvec3& veye = mRenderData->mEye;
 		const float* peye = veye.GetArray();
 		//////////////////////////////////////////////
 		// set arguments
@@ -223,7 +223,7 @@ void Shader1::ShadeBlock( AABuffer& aabuf, int ifragbase, int icount, int inumtr
 	for( int i=0; i<icount; i++ )
 	{	const rend_prefragment& pfrag = PFRAGS.mPreFrags[ifragidx++];
 		rend_fragment* frag = aabuf.mpFragments[i];
-//		const ork::CVector3 nrm = (frag->mWldSpaceNrm*0.5f)+ork::CVector3(0.5f,0.5f,0.5f);
+//		const ork::fvec3 nrm = (frag->mWldSpaceNrm*0.5f)+ork::fvec3(0.5f,0.5f,0.5f);
 		frag->mRGBA.SetXYZ( pfrag.mfR, pfrag.mfS, pfrag.mfT );
 		//frag->mRGBA.SetXYZ( nrm.GetX(), nrm.GetY(), nrm.GetZ() );
 		frag->mRGBA.SetW( 0.5f );

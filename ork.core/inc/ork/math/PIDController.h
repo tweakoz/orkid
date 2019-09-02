@@ -24,15 +24,15 @@ template<typename T> struct PIDController
 		T proportional = T(0.075f),
 		T integral = T(0.0f),
 		T derivative = T(0.05f),
-		const TVector2<T> &irange = TVector2<T>(-10.0f, 10.0f),
-		const TVector2<T> &maxdelta = TVector2<T>(-0.5f, 0.5f));
+		const Vector2<T> &irange = Vector2<T>(-10.0f, 10.0f),
+		const Vector2<T> &maxdelta = Vector2<T>(-0.5f, 0.5f));
 
 	void Configure(
 		T proportional = T(0.075f),
 		T integral = T(0.00f),
 		T derivative = T(0.05f),
-		const TVector2<T> &irange = TVector2<T>(-10.0, 10.0),
-		const TVector2<T> &maxdelta = TVector2<T>(-0.5, 0.5));
+		const Vector2<T> &irange = Vector2<T>(-10.0, 10.0),
+		const Vector2<T> &maxdelta = Vector2<T>(-0.5, 0.5));
 
 	void InitPosition(T target);
 
@@ -46,8 +46,8 @@ template<typename T> struct PIDController
 	T mProportionalFactor;
 	T mIntegralFactor;
 	T mDerivativeFactor;
-	TVector2<T> mIntegralRange;
-	TVector2<T> mMaxDelta;
+	Vector2<T> mIntegralRange;
+	Vector2<T> mMaxDelta;
 
 	/// Runtime Parameters
 
@@ -65,8 +65,8 @@ public:
             T proportional = T(0.075f),
             T integral = T(0.0f),
             T derivative = T(0.05f),
-            TVector2<T> irange = TVector2<T>(-10.0f,10.0f),
-            TVector2<T> maxdelta = TVector2<T>(-0.5f, 0.5f),
+            Vector2<T> irange = Vector2<T>(-10.0f,10.0f),
+            Vector2<T> maxdelta = Vector2<T>(-0.5f, 0.5f),
 			float decay = 0.1f
             );
 
@@ -76,8 +76,8 @@ public:
             T proportional = T(0.075f),
             T integral = T(0.00f),
             T derivative = T(0.05f),
-            TVector2<T> irange = TVector2<T>(-10,10),
-            TVector2<T> maxdelta = TVector2<T>(-0.5, 0.5),
+            Vector2<T> irange = Vector2<T>(-10,10),
+            Vector2<T> maxdelta = Vector2<T>(-0.5, 0.5),
 			float decay = 0.1f);
 private:
     T mLastError;
@@ -87,8 +87,8 @@ private:
     /*const*/ T mProportionalFactor;
     /*const*/ T mIntegralFactor;
     /*const*/ T mDerivativeFactor;
-    /*const*/ TVector2<T> mIntegralRange;
-    /*const*/ TVector2<T> mMaxDelta;
+    /*const*/ Vector2<T> mIntegralRange;
+    /*const*/ Vector2<T> mMaxDelta;
     /*const*/ float mIntegralDecay;
 };
 

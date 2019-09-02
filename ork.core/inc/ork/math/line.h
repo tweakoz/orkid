@@ -3,11 +3,9 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
-
-#ifndef _ORK_MATH_LINE_H
-#define _ORK_MATH_LINE_H
+#pragma once
 
 #include <ork/kernel/any.h>
 
@@ -18,7 +16,7 @@ namespace ork {
 template <typename T>
 class InfiniteLine2D
 {
-    typedef TVector2<T> vec2_type;
+    typedef Vector2<T> vec2_type;
 protected:
     vec2_type   mNormal;    // A, B
     T           mfC;        // C
@@ -142,7 +140,7 @@ public:
 template <typename T>
 struct TLineSegment3
 {
-	typedef TVector3<T> vec3_type;
+	typedef Vector3<T> vec3_type;
 
 	vec3_type	mStart;
 	vec3_type	mEnd;
@@ -155,7 +153,7 @@ struct TLineSegment3
 template <typename T>
 class TLineSegment2
 {
-	typedef TVector2<T> vec2_type;
+	typedef Vector2<T> vec2_type;
 protected:
 	vec2_type	mStart;
 	vec2_type	mEnd;
@@ -171,11 +169,11 @@ protected:
 template <typename T>
 class TLineSegment2Helper
 {
-	typedef TVector2<T> vec2_type;
+	typedef Vector2<T> vec2_type;
 
 	vec2_type	mStart;
 	vec2_type	mEnd;
-	vec2_type	mOrigin;  
+	vec2_type	mOrigin;
 	T			mMag;
 public:
 	float GetPointDistanceSquared( const vec2_type  &pt ) const;
@@ -191,9 +189,9 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-struct TRay3
+struct Ray3
 {
-    typedef TVector3<T> vec3_type;
+    typedef Vector3<T> vec3_type;
 
     vec3_type   mOrigin;
     vec3_type   mDirection;
@@ -206,8 +204,8 @@ struct TRay3
     T           mdot_oo;
     int         mID;
 
-    TRay3() : mID(-1) {}
-    TRay3( const vec3_type& o, const vec3_type& d )
+    Ray3() : mID(-1) {}
+    Ray3( const vec3_type& o, const vec3_type& d )
         : mOrigin(o)
         , mDirection(d)
         , mInverseDirection(1.0f/d.GetX(), 1.0f/d.GetY(), 1.0f/d.GetZ())
@@ -224,24 +222,24 @@ struct TRay3
     void SetID( int id ) { mID = id; }
     int GetID() const { return mID; }
 
-    void Lerp( const TRay3& a, const TRay3& b, float fi )
+    void Lerp( const Ray3& a, const Ray3& b, float fi )
     {
         vec3_type o, d;
         o.Lerp( a.mOrigin, b.mOrigin, fi );
         d.Lerp( a.mDirection, b.mDirection, fi );
         d.Normalize();
-        *this = TRay3( o, d );
+        *this = Ray3( o, d );
     }
-    void BiLerp( const TRay3& x0y0, const TRay3&  x1y0, const TRay3& x0y1, const TRay3&  x1y1, float fx, float fy )
+    void BiLerp( const Ray3& x0y0, const Ray3&  x1y0, const Ray3& x0y1, const Ray3&  x1y1, float fx, float fy )
     {
-        TRay3 t; t.Lerp( x0y0, x1y0, fx );
-        TRay3 b; b.Lerp( x0y1, x1y1, fx );
+        Ray3 t; t.Lerp( x0y0, x1y0, fx );
+        Ray3 b; b.Lerp( x0y1, x1y1, fx );
         Lerp( t, b, fy );
     }
 };
 
-typedef TRay3<float> fray3;
-typedef TRay3<double> dray3;
+typedef Ray3<float> fray3;
+typedef Ray3<double> dray3;
 
 ///////////////////////////////////////////////////////////////////////////////
 // temporary till all code done being refactored
@@ -249,7 +247,6 @@ typedef TRay3<double> dray3;
 typedef TLineSegment2<float> LineSegment2;
 typedef TLineSegment3<float> LineSegment3;
 typedef TLineSegment2Helper<float> LineSegment2Helper;
-typedef TRay3<float> Ray3;
 
 struct Ray3HitTest
 {
@@ -258,11 +255,9 @@ struct Ray3HitTest
     int miTriTests;
     int miTriTestsPassed;
     Ray3HitTest() : miSphTests(0), miTriTests(0), miSphTestsPassed(0), miTriTestsPassed(0) {}
-    void OnHit( const any32& userdata, const Ray3& r ){ DoOnHit(userdata,r);    }
-    virtual void DoOnHit( const any32& userdata, const Ray3& r ){}
+    void OnHit( const any32& userdata, const fray3& r ){ DoOnHit(userdata,r);    }
+    virtual void DoOnHit( const any32& userdata, const fray3& r ){}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 }
-///////////////////////////////////////////////////////////////////////////////
-#endif

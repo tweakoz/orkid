@@ -137,7 +137,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
         case 'k': {
           if (isshift) {
             // move editor camera to selected locator
-            CMatrix4 matrix;
+            fmtx4 matrix;
             if (mEditor.EditorGetEntityLocation(matrix) && _editorCamera) {
               _editorCamera->SetFromWorldSpaceMatrix(matrix);
             }
@@ -147,7 +147,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
         case 'l': {
           if (isshift) {
             // move selected locator to editor camera
-            // CMatrix4 matrix = mpActiveCamera->GetVMatrix();
+            // fmtx4 matrix = mpActiveCamera->GetVMatrix();
             // matrix.Inverse();
             // mEditor.EditorLocateEntity(matrix);
           }
@@ -245,7 +245,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
             if (as_ent) {
               auto& dn = as_ent->GetDagNode();
-              CMatrix4 mtx;
+              fmtx4 mtx;
               dn.GetMatrix(mtx);
 
               auto pos = mtx.GetTranslation();

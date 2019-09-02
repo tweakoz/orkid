@@ -40,10 +40,10 @@ public:
 	void AddItem( const unsigned short& data );
 	void AddItem( const int& data );
 	void AddItem( const float& data );
-	void AddItem( const CMatrix4& data );
-	void AddItem( const CVector4& data );
-	void AddItem( const CVector3& data );
-	void AddItem( const CVector2& data );
+	void AddItem( const fmtx4& data );
+	void AddItem( const fvec4& data );
+	void AddItem( const fvec3& data );
+	void AddItem( const fvec2& data );
 	/////////////////////////////////////////////
 
 	int GetSize() const { return int(mData.size()); }

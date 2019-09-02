@@ -208,7 +208,7 @@ void ReferenceArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoStartEntity(SceneInst* inst, const CMatrix4 &world, Entity *pent) const
+void ReferenceArchetype::DoStartEntity(SceneInst* inst, const fmtx4 &world, Entity *pent) const
 {
 	if(mArchetypeAsset)
 		if(mArchetypeAsset->GetArchetype())

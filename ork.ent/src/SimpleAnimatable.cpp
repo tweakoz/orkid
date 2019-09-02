@@ -210,7 +210,7 @@ SimpleAnimatableInst::~SimpleAnimatableInst()
 	}
 }
 
-bool SimpleAnimatableInst::DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world)
+bool SimpleAnimatableInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world)
 {
 	const auto& amap = mData.GetAnimationMap();
 	auto nam = AddPooledLiteral("start");

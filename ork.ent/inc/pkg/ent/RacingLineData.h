@@ -35,8 +35,8 @@ class RacingLineSample : public ork::Object
 public:
 	RacingLineSample() : mThrust(0.0f), mBrake(0.0f), mSteering(0.0f), mFlags(RACINGLINEFLAG_NONE) {}
 
-	const ork::CMatrix4 &GetPosition() const { return mPosition; }
-	void SetPosition(const ork::CMatrix4 &position) { mPosition = position; }
+	const ork::fmtx4 &GetPosition() const { return mPosition; }
+	void SetPosition(const ork::fmtx4 &position) { mPosition = position; }
 
 	float GetTime() const { return mTime; }
 	void SetTime(float time) { mTime = time; }
@@ -59,7 +59,7 @@ public:
 	int getFlags() const {return mFlags;}
 	void setFlags(int flags) {mFlags = (RacingLineFlags)flags;}
 protected:
-	ork::CMatrix4 mPosition;
+	ork::fmtx4 mPosition;
 	float mThrust;
 	float mBrake;
 	float mSteering;
@@ -114,7 +114,7 @@ public:
 	const RacingLineData &GetData() const { return mData; }
 
 	void Sample(int racing_line_index, float progress, RacingLineSample &sample,
-		ork::CVector3 &racingLineDir) const;
+		ork::fvec3 &racingLineDir) const;
 private:
 
 	void DoUpdate(ork::ent::SceneInst *sinst) final;

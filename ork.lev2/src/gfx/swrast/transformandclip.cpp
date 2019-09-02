@@ -257,9 +257,9 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 
 	int inumsub = mRenderData.mpSrcMesh->miNumSubMesh;
 
-	const ork::CMatrix4& mtxM = mRenderData.mMatrixM;
-	const ork::CMatrix4& mtxMV = mRenderData.mMatrixMV;
-	const ork::CMatrix4& mtxMVP = mRenderData.mMatrixMVP;
+	const ork::fmtx4& mtxM = mRenderData.mMatrixM;
+	const ork::fmtx4& mtxMV = mRenderData.mMatrixMV;
+	const ork::fmtx4& mtxMVP = mRenderData.mMatrixMVP;
 
 	float fiW = float(mRenderData.miImageWidth);
 	float fiH = float(mRenderData.miImageHeight);
@@ -281,7 +281,7 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 			//if( (it%16) < 12 ) continue;
 
 			const rend_srctri& Tri = Sub.mpTriangles[it];
-//			const ork::CPlane& Plane = Tri.mFacePlane;
+//			const ork::fplane3& Plane = Tri.mFacePlane;
 			const rend_srcvtx& TriV0 = Tri.mpVertices[0];
 			const rend_srcvtx& TriV1 = Tri.mpVertices[1];
 			const rend_srcvtx& TriV2 = Tri.mpVertices[2];
@@ -292,37 +292,37 @@ void TransformAndClipModule::do_process( const ork::threadpool::sub_task* tsk, c
 
 			//////////////////////////////////////
 
-			const ork::CVector4& o0 = TriV0.mPos;
-			const ork::CVector4& o1 = TriV1.mPos;
-			const ork::CVector4& o2 = TriV2.mPos;
-			ork::CVector4 w0 = o0.Transform(mtxM);
-			ork::CVector4 w1 = o1.Transform(mtxM);
-			ork::CVector4 w2 = o2.Transform(mtxM);
-			const ork::CVector3& on0 = TriV0.mVertexNormal;
-			const ork::CVector3& on1 = TriV1.mVertexNormal;
-			const ork::CVector3& on2 = TriV2.mVertexNormal;
-			const ork::CVector3 wn0 = on0.Transform3x3( mtxM ).Normal();
-			const ork::CVector3 wn1 = on1.Transform3x3( mtxM ).Normal();
-			const ork::CVector3 wn2 = on2.Transform3x3( mtxM ).Normal();
+			const ork::fvec4& o0 = TriV0.mPos;
+			const ork::fvec4& o1 = TriV1.mPos;
+			const ork::fvec4& o2 = TriV2.mPos;
+			ork::fvec4 w0 = o0.Transform(mtxM);
+			ork::fvec4 w1 = o1.Transform(mtxM);
+			ork::fvec4 w2 = o2.Transform(mtxM);
+			const ork::fvec3& on0 = TriV0.mVertexNormal;
+			const ork::fvec3& on1 = TriV1.mVertexNormal;
+			const ork::fvec3& on2 = TriV2.mVertexNormal;
+			const ork::fvec3 wn0 = on0.Transform3x3( mtxM ).Normal();
+			const ork::fvec3 wn1 = on1.Transform3x3( mtxM ).Normal();
+			const ork::fvec3 wn2 = on2.Transform3x3( mtxM ).Normal();
 
 			//////////////////////////////////////
 			// trivial reject
 			//////////////////////////////////////
 
-			ork::CVector4 h0 = o0.Transform(mtxMVP);
-			ork::CVector4 h1 = o1.Transform(mtxMVP);
-			ork::CVector4 h2 = o2.Transform(mtxMVP);
+			ork::fvec4 h0 = o0.Transform(mtxMVP);
+			ork::fvec4 h1 = o1.Transform(mtxMVP);
+			ork::fvec4 h2 = o2.Transform(mtxMVP);
 
-			ork::CVector4 hd0 = h0;
-			ork::CVector4 hd1 = h1;
-			ork::CVector4 hd2 = h2;
+			ork::fvec4 hd0 = h0;
+			ork::fvec4 hd1 = h1;
+			ork::fvec4 hd2 = h2;
 			hd0.PerspectiveDivide();
 			hd1.PerspectiveDivide();
 			hd2.PerspectiveDivide();
-			ork::CVector3 d0 = (hd1.xyz()-hd0.xyz());
-			ork::CVector3 d1 = (hd2.xyz()-hd1.xyz());
+			ork::fvec3 d0 = (hd1.xyz()-hd0.xyz());
+			ork::fvec3 d1 = (hd2.xyz()-hd1.xyz());
 
-			ork::CVector3 dX = d0.Cross(d1);
+			ork::fvec3 dX = d0.Cross(d1);
 
 			bool bFRONTFACE = (dX.GetZ()<=0.0f);
 

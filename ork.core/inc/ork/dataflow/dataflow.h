@@ -373,18 +373,18 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  vect3inplug : public inplug<CVector3>
+class  vect3inplug : public inplug<fvec3>
 {
-	RttiDeclareAbstract(vect3inplug,inplug<CVector3>);
+	RttiDeclareAbstract(vect3inplug,inplug<fvec3>);
 
 public:
 
-	vect3inplug( module*pmod, EPlugRate epr, CVector3& def, const char* pname ) : inplug<CVector3>(pmod,epr,def,pname) {}
+	vect3inplug( module*pmod, EPlugRate epr, fvec3& def, const char* pname ) : inplug<fvec3>(pmod,epr,def,pname) {}
 
 private:
 
-	void SetValAccessor( CVector3 const & val) { mDefault=val; }
-	void GetValAccessor( CVector3 & val) const { val=mDefault; } 
+	void SetValAccessor( fvec3 const & val) { mDefault=val; }
+	void GetValAccessor( fvec3 & val) const { val=mDefault; } 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -429,7 +429,7 @@ template <typename xf> class  vect3inplugxf : public vect3inplug
 
 public:
 
-	explicit vect3inplugxf( module*pmod, EPlugRate epr, CVector3& def, const char* pname ) 
+	explicit vect3inplugxf( module*pmod, EPlugRate epr, fvec3& def, const char* pname ) 
 		: vect3inplug(pmod,epr,def,pname)
 		, mtransform()
 	{
@@ -441,8 +441,8 @@ public:
 
 	///////////////////////////////////////////////////////////////
 
-	inline const CVector3& GetValue() // virtual
-	{	outplug<CVector3>* connected = 0;
+	inline const fvec3& GetValue() // virtual
+	{	outplug<fvec3>* connected = 0;
 		GetTypedInput(connected);
 		mtransformed = mtransform.transform((connected!=0) ? (connected->GetValue()) : mDefault);
 		return mtransformed;
@@ -451,7 +451,7 @@ public:
 private:
 
 	xf mtransform;
-	mutable CVector3 mtransformed;
+	mutable fvec3 mtransformed;
 	ork::Object* XfAccessor() { return & mtransform; }
 };
 
@@ -587,7 +587,7 @@ public:
 	const floatxf&	GetTransformY() const { return mTransformY; }
 	const floatxf&	GetTransformZ() const { return mTransformZ; }
 
-	CVector3 transform( const CVector3& input ) const;
+	fvec3 transform( const fvec3& input ) const;
 
 private:
 
@@ -703,8 +703,8 @@ public:
 	virtual graph_data* GetChildGraph() const { return 0; }
 	bool IsGroup() const { return GetChildGraph()!=0; }
 	////////////////////////////////////////////
-	const CVector2& GetGVPos() const { return mgvpos; }
-	void SetGVPos(const CVector2&p) { mgvpos=p; }
+	const fvec2& GetGVPos() const { return mgvpos; }
+	void SetGVPos(const fvec2&p) { mgvpos=p; }
 
 protected:
 
@@ -715,7 +715,7 @@ private:
 	Affinity		mAffinity;
 	graph_data*		mParent;
 	nodekey			mKey;
-	CVector2		mgvpos;
+	fvec2		mgvpos;
 };
 
 class dyn_external
@@ -729,8 +729,8 @@ public:
 	};
 	struct Vect3Binding
 	{
-		const CVector3*							mpSource;
-		orklut<PoolString,CVector3>::iterator	mIterator;
+		const fvec3*							mpSource;
+		orklut<PoolString,fvec3>::iterator	mIterator;
 	};
 
 	const orklut<PoolString,FloatBinding>& GetFloatBindings() const { return mFloatBindings; }
@@ -946,7 +946,7 @@ protected:
 	ork::Object* InpAccessor##name() { return & InpPlugName(name); }
 
 #define DeclareVect3XfPlug( name )\
-	ork::CVector3 mv##name;\
+	ork::fvec3 mv##name;\
 	ork::dataflow::vect3xfinplug	InpPlugName(name);\
 	ork::Object* InpAccessor##name() { return & InpPlugName(name); }
 
@@ -956,8 +956,8 @@ protected:
 	ork::Object* PlgAccessor##name() { return & OutPlugName(name); }
 
 #define DeclareVect3OutPlug( name )\
-	ork::CVector3 OutDataName(name);\
-	ork::dataflow::outplug<ork::CVector3> OutPlugName(name);\
+	ork::fvec3 OutDataName(name);\
+	ork::dataflow::outplug<ork::fvec3> OutPlugName(name);\
 	ork::Object* PlgAccessor##name() { return & OutPlugName(name); }
 
 ///////////

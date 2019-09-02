@@ -314,7 +314,7 @@ class GedCurveV4Widget : public GedItemNode
 			lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
 			vw.Lock( pTARG, & VB, reserveA );
 
-			CVector2 uv;
+			fvec2 uv;
 
 			int icountA = 0;
 			
@@ -325,10 +325,10 @@ class GedCurveV4Widget : public GedItemNode
 			float fw = float(pthis->miW);
 			float fh = float(kh);
 
-			lev2::SVtxV12C4T16 v0( CVector3(fx,fy,kz), uv, 0xffffffff );
-			lev2::SVtxV12C4T16 v1( CVector3(fx+fw,fy,kz), uv, 0xffffffff );
-			lev2::SVtxV12C4T16 v2( CVector3(fx+fw,fy+fh,kz), uv, 0xffffffff );
-			lev2::SVtxV12C4T16 v3( CVector3(fx,fy+fh,kz), uv, 0xffffffff );
+			lev2::SVtxV12C4T16 v0( fvec3(fx,fy,kz), uv, 0xffffffff );
+			lev2::SVtxV12C4T16 v1( fvec3(fx+fw,fy,kz), uv, 0xffffffff );
+			lev2::SVtxV12C4T16 v2( fvec3(fx+fw,fy+fh,kz), uv, 0xffffffff );
+			lev2::SVtxV12C4T16 v3( fvec3(fx,fy+fh,kz), uv, 0xffffffff );
 
 			vw.AddVertex( v0 );
 			vw.AddVertex( v1 );
@@ -380,8 +380,8 @@ class GedCurveV4Widget : public GedItemNode
 							fx1 = fx+(fiaR*fw);
 							fy0 = fy+fh-(fuL*fh);
 							fy1 = fy+fh-(fuR*fh);
-							lev2::SVtxV12C4T16 v0( CVector3(fx0,fy0,kz), uv, 0xffffffff );
-							lev2::SVtxV12C4T16 v1( CVector3(fx1,fy1,kz), uv, 0xffffffff );
+							lev2::SVtxV12C4T16 v0( fvec3(fx0,fy0,kz), uv, 0xffffffff );
+							lev2::SVtxV12C4T16 v1( fvec3(fx1,fy1,kz), uv, 0xffffffff );
 							vw.AddVertex( v0 );
 							vw.AddVertex( v1 );
 							icountA += 2;
@@ -389,17 +389,17 @@ class GedCurveV4Widget : public GedItemNode
 						break;
 					}
 					case EMCST_LINEAR:
-					{	lev2::SVtxV12C4T16 v0( CVector3(fx0,fy0,kz), uv, 0xffffffff );
-						lev2::SVtxV12C4T16 v1( CVector3(fx1,fy1,kz), uv, 0xffffffff );
+					{	lev2::SVtxV12C4T16 v0( fvec3(fx0,fy0,kz), uv, 0xffffffff );
+						lev2::SVtxV12C4T16 v1( fvec3(fx1,fy1,kz), uv, 0xffffffff );
 						vw.AddVertex( v0 );
 						vw.AddVertex( v1 );
 						icountA += 2;
 						break;
 					}
 					case EMCST_BOX:
-					{	lev2::SVtxV12C4T16 v0( CVector3(fx0,fy0,kz), uv, 0xffffffff );
-						lev2::SVtxV12C4T16 v1( CVector3(fx1,fy0,kz), uv, 0xffffffff );
-						lev2::SVtxV12C4T16 v2( CVector3(fx1,fy1,kz), uv, 0xffffffff );
+					{	lev2::SVtxV12C4T16 v0( fvec3(fx0,fy0,kz), uv, 0xffffffff );
+						lev2::SVtxV12C4T16 v1( fvec3(fx1,fy0,kz), uv, 0xffffffff );
+						lev2::SVtxV12C4T16 v2( fvec3(fx1,fy1,kz), uv, 0xffffffff );
 						vw.AddVertex( v0 );
 						vw.AddVertex( v1 );
 						vw.AddVertex( v1 );
@@ -416,15 +416,15 @@ class GedCurveV4Widget : public GedItemNode
 			F32 fVPH = (F32) pTARG->FBI()->GetVPH();
 			if( 0.0f == fVPW ) fVPW = 1.0f;
 			if( 0.0f == fVPH ) fVPH = 1.0f;
-			CMatrix4 mtxortho = pTARG->MTXI()->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f );
+			fmtx4 mtxortho = pTARG->MTXI()->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f );
 			pTARG->MTXI()->PushPMatrix( mtxortho );
-			pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-			pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+			pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+			pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 				pTARG->BindMaterial( & gridmat );
-				pTARG->PushModColor( CVector3::Blue() );
+				pTARG->PushModColor( fvec3::Blue() );
 					pTARG->GBI()->DrawPrimitive( VB, ork::lev2::EPRIM_TRIANGLES, ivbaseA, 6 );
 				pTARG->PopModColor();
-				pTARG->PushModColor( CVector3::White() );
+				pTARG->PushModColor( fvec3::White() );
 					pTARG->GBI()->DrawPrimitive( VB, ork::lev2::EPRIM_LINES, ivbaseA+6, icountA-6 );
 				pTARG->PopModColor();
 			pTARG->MTXI()->PopPMatrix();

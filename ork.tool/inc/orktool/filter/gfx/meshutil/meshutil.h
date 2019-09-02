@@ -52,8 +52,8 @@ class Light : public ork::Object
 public:
 
 	std::string		mName;
-	CMatrix4		mWorldMatrix;
-	CVector3		mColor;
+	fmtx4		mWorldMatrix;
+	fvec3		mColor;
 	float			mIntensity;
 	float			mShadowSamples;
 	float			mShadowBias;
@@ -61,7 +61,7 @@ public:
 	bool			mbSpecular;
 	bool			mbIsShadowCaster;
 
-	virtual bool AffectsSphere( const CVector3& center, float radius ) const { return false; }
+	virtual bool AffectsSphere( const fvec3& center, float radius ) const { return false; }
 	virtual bool AffectsAABox( const AABox& aab ) const { return false; }
 
 	Light() 
@@ -183,9 +183,9 @@ public:
 
 struct uvmapcoord
 {
-	CVector3 mMapBiNormal;
-	CVector3 mMapTangent;
-	CVector2 mMapTexCoord;
+	fvec3 mMapBiNormal;
+	fvec3 mMapTangent;
+	fvec2 mMapTexCoord;
 
 	void Lerp( const uvmapcoord & ina, const uvmapcoord &inb, float flerp );
 
@@ -198,9 +198,9 @@ struct uvmapcoord
 
 	void Clear( void )
 	{
-		mMapBiNormal = CVector3();
-		mMapTangent = CVector3();
-		mMapTexCoord = CVector2();
+		mMapBiNormal = fvec3();
+		mMapTangent = fvec3();
+		mMapTexCoord = fvec2();
 	}
 };
 
@@ -213,8 +213,8 @@ struct vertex
 	static const int kmaxuvs = 2;
 	static const int kmaxconpoly = 8;
 
-	CVector3	mPos;
-	CVector3	mNrm;
+	fvec3	mPos;
+	fvec3	mNrm;
 
 	int				miNumWeights;
 	int				miNumColors;
@@ -222,7 +222,7 @@ struct vertex
 
 	std::string	mJointNames[kmaxinfluences];
 
-	CVector4	mCol[kmaxcolors];
+	fvec4	mCol[kmaxcolors];
 	uvmapcoord	mUV[kmaxuvs];
 	float		mJointWeights[kmaxinfluences];
 
@@ -233,7 +233,7 @@ struct vertex
 	{
 		for( int i=0; i<kmaxcolors; i++ )
 		{
-			mCol[i] = CVector4::White();
+			mCol[i] = fvec4::White();
 		}
 		for( int i=0; i<kmaxinfluences; i++ )
 		{
@@ -245,7 +245,7 @@ struct vertex
 	vertex Lerp( const vertex & vtx, float flerp ) const;
 	void Lerp( const vertex& a, const vertex & b, float flerp );
 
-	const CVector3& Pos() const { return mPos; }
+	const fvec3& Pos() const { return mPos; }
 
 	void Center( const vertex** pverts, int icnt );
 
@@ -390,9 +390,9 @@ public:
 	int VertexCCW(int vert) const;
 
 	vertex ComputeCenter( const vertexpool &vpool ) const;
-	float ComputeEdgeLength( const vertexpool &vpool, const CMatrix4 & MatRange, int iedge ) const;
-	float ComputeArea( const vertexpool &vpool, const CMatrix4 & MatRange ) const;
-	CVector3 ComputeNormal( const vertexpool& vpool) const;
+	float ComputeEdgeLength( const vertexpool &vpool, const fmtx4 & MatRange, int iedge ) const;
+	float ComputeArea( const vertexpool &vpool, const fmtx4 & MatRange ) const;
+	fvec3 ComputeNormal( const vertexpool& vpool) const;
 
 	U64 HashIndices( void ) const;
 
@@ -514,9 +514,9 @@ class toolmesh
 	orkmap<std::string,ork::tool::SColladaMaterial*>	mMaterialsByShadingGroup;
 	orkmap<std::string,ork::tool::SColladaMaterial*>	mMaterialsByName;
 
-	CVector4							mRangeScale;
-	CVector4							mRangeTranslate;
-	CMatrix4							mMatRange;
+	fvec4							mRangeScale;
+	fvec4							mRangeTranslate;
+	fmtx4							mMatRange;
 	orkmap<std::string,std::string>		mAnnotations;
 	orklut<std::string, submesh*>		mPolyGroupLut;
 	material_semanticmap_t				mShadingGroupToMaterialMap;
@@ -577,7 +577,7 @@ public:
 
 	/////////////////////////////////////////////////////////////////////////
 
-	void SetRangeTransform( const CVector4 &VScale, const CVector4 & VTrans );
+	void SetRangeTransform( const fvec4 &VScale, const fvec4 & VTrans );
 
 	/////////////////////////////////////////////////////////////////////////
 	
@@ -687,7 +687,7 @@ class AmbientLight : public Light
 	RttiDeclareConcrete(AmbientLight, Light);
 public:
 	AmbientLight(){}
-	bool AffectsSphere( const CVector3& center, float radius ) const final { return true; }
+	bool AffectsSphere( const fvec3& center, float radius ) const final { return true; }
 	bool AffectsAABox( const AABox& aab ) const final { return true; }
 };
 
@@ -697,12 +697,12 @@ struct DirLight : public Light
 {
 	RttiDeclareConcrete(DirLight, Light);
 public:
-	CVector3	mFrom;
-	CVector3	mTo;
+	fvec3	mFrom;
+	fvec3	mTo;
 
 	DirLight() {}
 
-	bool AffectsSphere( const CVector3& center, float radius ) const final { return true; }
+	bool AffectsSphere( const fvec3& center, float radius ) const final { return true; }
 	bool AffectsAABox( const AABox& aab ) const final { return true; }
 
 };
@@ -713,13 +713,13 @@ class PointLight : public Light
 {
 	RttiDeclareConcrete(PointLight, Light);
 public:
-	CVector3	mPoint;
+	fvec3	mPoint;
 	float		mFalloff;
 	float		mRadius;
 
 	PointLight() : mFalloff(1.0f), mRadius(0.0f) {}
 
-	bool AffectsSphere( const CVector3& center, float radius ) const final ;
+	bool AffectsSphere( const fvec3& center, float radius ) const final ;
 	bool AffectsAABox( const AABox& aab ) const final ;
 };
 

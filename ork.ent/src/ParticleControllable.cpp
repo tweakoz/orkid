@@ -125,9 +125,9 @@ ParticleControllableInst::~ParticleControllableInst()
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ParticleControllableInst::DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world)
+bool ParticleControllableInst::DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world)
 {
-	ork::CVector3 pos = world.GetTranslation();
+	ork::fvec3 pos = world.GetTranslation();
 
 	mPrevTime = 0.0f;
 
@@ -296,7 +296,7 @@ void ParticleArchetype::DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity
 {
 }
 
-void ParticleArchetype::DoStartEntity(ork::ent::SceneInst*, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const
+void ParticleArchetype::DoStartEntity(ork::ent::SceneInst*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const
 {
 	pent->GetDagNode().GetTransformNode().GetTransform().SetMatrix(mtx);
 

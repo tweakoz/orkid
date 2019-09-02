@@ -31,7 +31,7 @@ GridGraph::GridGraph( int fgsize )
 	, areatot(0.0f)
 	, areaavg(0.0f)
 	, totpolys(0)
-	, mMtxWorldToGrid( CMatrix4::Identity )
+	, mMtxWorldToGrid( fmtx4::Identity )
 	, miNumFilledGrids( 0 )
 {
 }
@@ -53,9 +53,9 @@ GridGraph::~GridGraph()
 
 void GridGraph::BeginPreMerge()
 {
-	vsize = CVector3(0.0f,0.0f,0.0f);
-	vmin = CVector3(0.0f,0.0f,0.0f);
-	vmax = CVector3(0.0f,0.0f,0.0f);
+	vsize = fvec3(0.0f,0.0f,0.0f);
+	vmin = fvec3(0.0f,0.0f,0.0f);
+	vmax = fvec3(0.0f,0.0f,0.0f);
 	areamax=0.0f;
 	areamin=0.0f;
 	areatot=0.0f;
@@ -97,7 +97,7 @@ void GridGraph::PreMergeMesh( const submesh& MeshIn )
 		}
 
 		///////////////////////////////
-		float thisarea = ply.ComputeArea( InVPool, CMatrix4::Identity );
+		float thisarea = ply.ComputeArea( InVPool, fmtx4::Identity );
 		thisareamax = CFloat::Max( thisareamax, thisarea );
 		thisareamin = CFloat::Min( thisareamin, thisarea );
 		thisareaavg += thisarea;
@@ -140,9 +140,9 @@ void GridGraph::SetGridNode( const GridAddr& addr, GridNode*node )
 
 ////////////////////////////////////////////////////
 
-GridAddr GridGraph::GetGridAddress( const CVector3& v )
+GridAddr GridGraph::GetGridAddress( const fvec3& v )
 {
-	CVector3 vxf = v.Transform( mMtxWorldToGrid ).xyz();
+	fvec3 vxf = v.Transform( mMtxWorldToGrid ).xyz();
 
 	GridAddr ret;
 	ret.ix = int(vxf.GetX());
@@ -155,9 +155,9 @@ GridAddr GridGraph::GetGridAddress( const CVector3& v )
 ////////////////////////////////////////////////////
 
 void GridGraph::GetCuttingPlanes(	const GridAddr& addr, 
-						CPlane& topplane, CPlane& botplane,
-						CPlane& lftplane, CPlane& rgtplane,
-						CPlane& frnplane, CPlane& bakplane )
+						fplane3& topplane, fplane3& botplane,
+						fplane3& lftplane, fplane3& rgtplane,
+						fplane3& frnplane, fplane3& bakplane )
 {
 	const int ix = addr.ix;
 	const int iy = addr.iy;
@@ -171,19 +171,19 @@ void GridGraph::GetCuttingPlanes(	const GridAddr& addr,
 	float fy1 = fy0+kfixedgridsize;
 	float fz1 = fz0+kfixedgridsize;
 
-	static const CVector3 vn_top( 0.0f, -1.0f,  0.0f );
-	static const CVector3 vn_bot( 0.0f,  1.0f,  0.0f );
-	static const CVector3 vn_lft( 1.0f,  0.0f,  0.0f );
-	static const CVector3 vn_rgt( -1.0f, 0.0f,  0.0f );
-	static const CVector3 vn_bak( 0.0f,  0.0f, -1.0f );
-	static const CVector3 vn_frn( 0.0f,  0.0f,  1.0f );
+	static const fvec3 vn_top( 0.0f, -1.0f,  0.0f );
+	static const fvec3 vn_bot( 0.0f,  1.0f,  0.0f );
+	static const fvec3 vn_lft( 1.0f,  0.0f,  0.0f );
+	static const fvec3 vn_rgt( -1.0f, 0.0f,  0.0f );
+	static const fvec3 vn_bak( 0.0f,  0.0f, -1.0f );
+	static const fvec3 vn_frn( 0.0f,  0.0f,  1.0f );
 
-	CVector3 vp_top( 0.0f, fy1, 0.0f );
-	CVector3 vp_bot( 0.0f, fy0, 0.0f );
-	CVector3 vp_lft( fx0, 0.0f, 0.0f );
-	CVector3 vp_rgt( fx1, 0.0f, 0.0f );
-	CVector3 vp_frn( 0.0f, 0.0f, fz0 );
-	CVector3 vp_bak( 0.0f, 0.0f, fz1 );
+	fvec3 vp_top( 0.0f, fy1, 0.0f );
+	fvec3 vp_bot( 0.0f, fy0, 0.0f );
+	fvec3 vp_lft( fx0, 0.0f, 0.0f );
+	fvec3 vp_rgt( fx1, 0.0f, 0.0f );
+	fvec3 vp_frn( 0.0f, 0.0f, fz0 );
+	fvec3 vp_bak( 0.0f, 0.0f, fz1 );
 
 	topplane.CalcFromNormalAndOrigin( vn_top, vp_top );
 	botplane.CalcFromNormalAndOrigin( vn_bot, vp_bot );
@@ -247,16 +247,16 @@ void GridGraph::EndPreMerge()
 
 	///////////////////////////////////////////////
 
-	CMatrix4 MatS;
-	CMatrix4 MatT;
+	fmtx4 MatS;
+	fmtx4 MatT;
 
 	MatS.Scale( fscal, fscal, fscal );
 	MatT.SetTranslation( -vmin );
 	mMtxWorldToGrid = MatT*MatS;
 
-	CVector3 vtest_min = vmin.Transform( mMtxWorldToGrid ).xyz();
-	CVector3 vtest_max = vmax.Transform( mMtxWorldToGrid ).xyz();
-	CVector3 vtest_ctr = vctr.Transform( mMtxWorldToGrid ).xyz();
+	fvec3 vtest_min = vmin.Transform( mMtxWorldToGrid ).xyz();
+	fvec3 vtest_max = vmax.Transform( mMtxWorldToGrid ).xyz();
+	fvec3 vtest_ctr = vctr.Transform( mMtxWorldToGrid ).xyz();
 
 	///////////////////////////////////////////////
 
@@ -280,7 +280,7 @@ void GridGraph::MergeMesh( const submesh& MeshIn, toolmesh& MeshOut )
 	static int ginuminners = 0;
 	static int ginumouters = 0;
 
-	CPlane topplane, bottomplane, leftplane, rightplane, frontplane, backplane;
+	fplane3 topplane, bottomplane, leftplane, rightplane, frontplane, backplane;
 
 	for( int ipoly=0; ipoly<inumpolys; ipoly++ )
 	{
@@ -295,24 +295,24 @@ void GridGraph::MergeMesh( const submesh& MeshIn, toolmesh& MeshOut )
 		thaab.BeginGrow();
 		for( int iv=0; iv<ply.GetNumSides(); iv++ )
 		{
-			const CVector3& vpos = InVPool.GetVertex( ply.GetVertexID(iv) ).mPos;
+			const fvec3& vpos = InVPool.GetVertex( ply.GetVertexID(iv) ).mPos;
 			thaab.Grow(vpos);
 		}
 		thaab.EndGrow();
 
 
-		CVector3 pntA = InVPool.GetVertex( ply.GetVertexID(0)).mPos;
-		CVector3 pntB = InVPool.GetVertex( ply.GetVertexID(1)).mPos;
-		CVector3 pntC = InVPool.GetVertex( ply.GetVertexID(2)).mPos;
-		CVector3 dirA = (pntA-pntB).Normal();
-		CVector3 dirB = (pntA-pntC).Normal();
-		CVector3 pnrm = dirA.Cross(dirB);
-		CVector3 pctr = (pntA+pntB+pntC)*0.333333333f;
-		CPlane PolyPlane(pnrm,pctr);
+		fvec3 pntA = InVPool.GetVertex( ply.GetVertexID(0)).mPos;
+		fvec3 pntB = InVPool.GetVertex( ply.GetVertexID(1)).mPos;
+		fvec3 pntC = InVPool.GetVertex( ply.GetVertexID(2)).mPos;
+		fvec3 dirA = (pntA-pntB).Normal();
+		fvec3 dirB = (pntA-pntC).Normal();
+		fvec3 pnrm = dirA.Cross(dirB);
+		fvec3 pctr = (pntA+pntB+pntC)*0.333333333f;
+		fplane3 PolyPlane(pnrm,pctr);
 
 		/////////////////////////////////
-		const CVector3& polymin = thaab.Min();
-		const CVector3& polymax = thaab.Max();
+		const fvec3& polymin = thaab.Min();
+		const fvec3& polymax = thaab.Max();
 		/////////////////////////////////
 
 		const GridAddr ga_min = GetGridAddress( polymin );
@@ -392,9 +392,9 @@ void GridGraph::MergeMesh( const submesh& MeshIn, toolmesh& MeshOut )
 						{
 							for( int ic=0; ic<inumclippedverts; ic++ )
 							{
-								const CVector3& pos = poly_bak.GetVertex(ic).Pos();
+								const fvec3& pos = poly_bak.GetVertex(ic).Pos();
 								PropTypeString pts;
-								CPropType<CVector3>::ToString( pos, pts );
+								CPropType<fvec3>::ToString( pos, pts );
 								
 								orkprintf( "v %s\n", ic, pts.c_str() );
 

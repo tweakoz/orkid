@@ -65,7 +65,7 @@ public:
         mpTarget->BeginFrame();
         {
             //mpTarget->TXI()->VRamUpload(tex);
-            ork::CVector4 clr1(1.0f,1.0f,1.0f,1.0f);
+            ork::fvec4 clr1(1.0f,1.0f,1.0f,1.0f);
             mtl.SetTexture( tex );
             //mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
             mtl.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_TEX_COLOR );

@@ -125,8 +125,8 @@ public:
 
 	///////////////////////////////////////////////
 
-	//void SetCursor( const ork::CVector3& v3 ) { mCursor=v3; }
-	void setSpawnMatrix( const ork::CMatrix4& mtx ) { mSpawnMatrix=mtx; }
+	//void SetCursor( const ork::fvec3& v3 ) { mCursor=v3; }
+	void setSpawnMatrix( const ork::fmtx4& mtx ) { mSpawnMatrix=mtx; }
 
 	///////////////////////////////////////////////
 
@@ -148,8 +148,8 @@ public:
     
 	///////////////////////////////////////////////
 
-	void EditorLocateEntity(const CMatrix4 &matrix);
-	bool EditorGetEntityLocation(CMatrix4 &matrix);
+	void EditorLocateEntity(const fmtx4 &matrix);
+	bool EditorGetEntityLocation(fmtx4 &matrix);
 
 	void EditorNewEntities(int count);
 	ent::EntData* EditorReplicateEntity();
@@ -175,7 +175,7 @@ public:
 
 	void GetSelected( orkset<ork::Object*>& SelSet );
 
-	ork::CColor4 GetModColor( const ork::Object* pobj ) const;
+	ork::fcolor4 GetModColor( const ork::Object* pobj ) const;
 
 	void QueueOpASync( const var_t& op );
 	void QueueOpSync( const var_t& op );
@@ -214,8 +214,8 @@ private:
 	lev2::CManipManager				mManipManager;
 
 	ork::MpMcBoundedQueue<var_t>	mSerialQ;
-	//ork::CVector3					mCursor;
-	ork::CMatrix4					mSpawnMatrix;
+	//ork::fvec3					mCursor;
+	ork::fmtx4					mSpawnMatrix;
 
 	SceneInst*						mpExecSceneInst;
 	SceneInst*						mpEditSceneInst;

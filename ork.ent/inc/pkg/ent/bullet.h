@@ -63,44 +63,44 @@ class BulletSystem;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btVector3 orkv3tobtv3(const ork::CVector3 &v3);
-ork::CVector3 btv3toorkv3(const btVector3 &v3);
-btTransform orkmtx4tobtmtx4(const ork::CMatrix4 &mtx);
-btMatrix3x3 orkmtx3tobtbasis(const ork::CMatrix3 &mtx);
-ork::CMatrix4 btmtx4toorkmtx4(const btTransform &mtx);
-ork::CMatrix3 btbasistoorkmtx3(const btMatrix3x3 &mtx);
+btVector3 orkv3tobtv3(const ork::fvec3 &v3);
+ork::fvec3 btv3toorkv3(const btVector3 &v3);
+btTransform orkmtx4tobtmtx4(const ork::fmtx4 &mtx);
+btMatrix3x3 orkmtx3tobtbasis(const ork::fmtx3 &mtx);
+ork::fmtx4 btmtx4toorkmtx4(const btTransform &mtx);
+ork::fmtx3 btbasistoorkmtx3(const btMatrix3x3 &mtx);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline const btVector3 &operator<<=(btVector3 &lhs, const ork::CVector3 &v3) {
+inline const btVector3 &operator<<=(btVector3 &lhs, const ork::fvec3 &v3) {
   lhs = orkv3tobtv3(v3);
   return lhs;
 }
-inline btVector3 operator!(const ork::CVector3 &v3) { return orkv3tobtv3(v3); }
-inline ork::CVector3 operator!(const btVector3 &v3) { return btv3toorkv3(v3); }
+inline btVector3 operator!(const ork::fvec3 &v3) { return orkv3tobtv3(v3); }
+inline ork::fvec3 operator!(const btVector3 &v3) { return btv3toorkv3(v3); }
 
-inline btTransform operator!(const ork::CMatrix4 &mtx) {
+inline btTransform operator!(const ork::fmtx4 &mtx) {
   return orkmtx4tobtmtx4(mtx);
 }
-inline ork::CMatrix4 operator!(const btTransform &mtx) {
+inline ork::fmtx4 operator!(const btTransform &mtx) {
   return btmtx4toorkmtx4(mtx);
 }
 
-inline btMatrix3x3 operator!(const ork::CMatrix3 &mtx) {
+inline btMatrix3x3 operator!(const ork::fmtx3 &mtx) {
   return orkmtx3tobtbasis(mtx);
 }
-inline ork::CMatrix3 operator!(const btMatrix3x3 &mtx) {
+inline ork::fmtx3 operator!(const btMatrix3x3 &mtx) {
   return btbasistoorkmtx3(mtx);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PhysicsDebuggerLine {
-  CVector3 mFrom;
-  CVector3 mTo;
-  CVector3 mColor;
+  fvec3 mFrom;
+  fvec3 mTo;
+  fvec3 mColor;
 
-  PhysicsDebuggerLine(const CVector3 &f, const CVector3 &t, const CVector3 &c)
+  PhysicsDebuggerLine(const fvec3 &f, const fvec3 &t, const fvec3 &c)
       : mFrom(f), mTo(t), mColor(c) {}
 };
 
@@ -124,8 +124,8 @@ struct PhysicsDebugger : public btIDebugDraw {
   bool IsClearOnBeginInternalTick() { return mClearOnBeginInternalTick; }
   bool IsDebugEnabled() const { return mbDEBUG; }
 
-  void AddLine(const ork::CVector3 &from, const ork::CVector3 &to,
-               const ork::CVector3 &color);
+  void AddLine(const ork::fvec3 &from, const ork::fvec3 &to,
+               const ork::fvec3 &color);
   void Render(ork::lev2::RenderContextInstData &rcid,
               ork::lev2::GfxTarget *ptarg);
   void Render(ork::lev2::RenderContextInstData &rcid,
@@ -170,7 +170,7 @@ class BulletSystemData : public SystemData {
   float mfTimeScale;
   float mSimulationRate;
   bool mbDEBUG;
-  CVector3 mGravity;
+  fvec3 mGravity;
 
 public:
   BulletSystemData();
@@ -178,7 +178,7 @@ public:
   float GetTimeScale() const { return mfTimeScale; }
   bool IsDebug() const { return mbDEBUG; }
   float GetSimulationRate() const { return mSimulationRate; }
-  const CVector3 &GetGravity() const { return mGravity; }
+  const fvec3 &GetGravity() const { return mGravity; }
 
 protected:
   System* createSystem(SceneInst* psi) const final;
@@ -273,7 +273,7 @@ private:
   void DoCompose(ork::ent::ArchComposer &composer) override;
   void DoLinkEntity(ork::ent::SceneInst *inst,
                     ork::ent::Entity *pent) const override;
-  void DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world,
+  void DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world,
                      ork::ent::Entity *pent) const override;
 };
 
@@ -428,7 +428,7 @@ public:
   const file::Path &HeightMapPath() const { return mHeightMapName; }
   float WorldHeight() const { return mWorldHeight; }
   float WorldSize() const { return mWorldSize; }
-  const CVector3 &GetVisualOffset() const { return mVisualOffset; }
+  const fvec3 &GetVisualOffset() const { return mVisualOffset; }
 
   ork::lev2::TextureAsset *GetSphereMap() const { return mSphereLightMap; }
 
@@ -441,7 +441,7 @@ private:
   file::Path mHeightMapName;
   float mWorldHeight;
   float mWorldSize;
-  CVector3 mVisualOffset;
+  fvec3 mVisualOffset;
   ork::lev2::TextureAsset *mSphereLightMap;
 };
 

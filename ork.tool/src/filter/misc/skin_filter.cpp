@@ -119,25 +119,25 @@ pXmlElement->NextSiblingElement())
         if( strcmp(pXmlElement->Value(), "DiffuseColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            CVector3 Color = CPropType<CVector3>::FromString( DifColStr );
+            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
             pmdl->SetDiffuseColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "AmbientColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            CVector3 Color = CPropType<CVector3>::FromString( DifColStr );
+            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
             pmdl->SetAmbientColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "SpecularColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            CVector3 Color = CPropType<CVector3>::FromString( DifColStr );
+            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
             pmdl->SetSpecularColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "EmissiveColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            CVector3 Color = CPropType<CVector3>::FromString( DifColStr );
+            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
             pmdl->SetEmissiveColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "Light0") == 0 )
@@ -383,7 +383,7 @@ void ParseSphereNode( const TiXmlElement *pelem, EntitySkin & skin )
     bool			DefaultActive;
     float			Multiplier;
     float			Radius;
-    CVector3		Offset;
+    fvec3		Offset;
 
     const char *JointVal = pelem->Attribute( "Joint" );
     const char *TakeDamageVal = pelem->Attribute( "TakeDamage" );
@@ -410,7 +410,7 @@ void ParseSphereNode( const TiXmlElement *pelem, EntitySkin & skin )
     DefaultActive = CPropType<bool>::FromString( DefActiveVal );
     Multiplier =	CPropType<float>::FromString( MultiplierVal );
     Radius =		CPropType<float>::FromString( RadiusVal );
-    Offset =		CPropType<CVector3>::FromString( OffsetVal );
+    Offset =		CPropType<fvec3>::FromString( OffsetVal );
 
     skin.AddCollisionSphere( GroupName.c_str(), Joint.c_str(), Radius, Offset, TakeDamage, GiveDamage, StopMotion, Multiplier,
 DefaultActive );
@@ -434,10 +434,10 @@ void ParseCylinderNode( const TiXmlElement *pelem, EntitySkin & skin )
     bool			DefaultActive = ReadAttribute<bool>(pelem, "Cylinder", "DefaultActive");
     float			Multiplier = ReadAttribute<float>(pelem, "Cylinder", "Multiplier");
     float			Radius = ReadAttribute<float>(pelem, "Cylinder", "Radius");
-    CVector3		Start = ReadAttribute<CVector3>(pelem, "Cylinder", "Start");
-    CVector3		End = ReadAttribute<CVector3>(pelem, "Cylinder", "End");
+    fvec3		Start = ReadAttribute<fvec3>(pelem, "Cylinder", "Start");
+    fvec3		End = ReadAttribute<fvec3>(pelem, "Cylinder", "End");
 
-    CVector3 delta = End - Start;
+    fvec3 delta = End - Start;
     float distance = delta.Mag();
     float countspheres = float::Ceil( distance/(float(1.5f)*Radius) );
     int numspheres = countspheres.NumericCast();

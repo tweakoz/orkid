@@ -118,7 +118,7 @@ private:
 
 	void DoUpdate(ork::ent::SceneInst *inst) override;
 	bool DoNotify(const ork::event::Event *event) override;
-	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world) override;
+	bool DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world) override;
 	bool DoLink(ork::ent::SceneInst *inst ) override;
 	const ParticleControllableData&	mData;
 	bool							mbEnable;
@@ -201,7 +201,7 @@ public:
 	
 private:
 	void DoCompose(ork::ent::ArchComposer& composer) override; 
-	void DoStartEntity(ork::ent::SceneInst*, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const override;
+	void DoStartEntity(ork::ent::SceneInst*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const override;
 	void DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity *pent) const override;
 };
 

@@ -19,25 +19,25 @@ namespace ork { namespace ent {
 
 struct PointMass
 {
-	CVector3	mPosition;
+	fvec3	mPosition;
 
 	///////////////////////////////
-	CVector3	mWPosition;
-	CVector3	mLastWPosition;
+	fvec3	mWPosition;
+	fvec3	mLastWPosition;
 	///////////////////////////////
 
 	float		mMass;
-	CVector3	mMOI;	
-	CVector3	mImpulse;
-	CVector3	mColPos;
-	CVector3	mColNrm;
+	fvec3	mMOI;	
+	fvec3	mImpulse;
+	fvec3	mColPos;
+	fvec3	mColNrm;
 	float		mCollisionDepth;
 	float		mPointHeight;
 	float		mLastPointHeight;
 	float		msimp;
 
 #if defined( _DEBUG_FORCES )
-	orkvector<CVector3>	mForces;
+	orkvector<fvec3>	mForces;
 #endif
 
    PointMass();
@@ -50,45 +50,45 @@ struct RigidBody
 	////////////////////////////////////////
 
 	orkvector<PointMass>    mPoints;
-	CVector3                mCenterOfMass;
+	fvec3                mCenterOfMass;
 	float                   mTotalMass;
 
-	CMatrix4                mIniInertiaTensor;
-	CMatrix4                mIniInertiaTensorInv;
-	CMatrix4                mCurInertiaTensorInv;
-	CMatrix4                mCurInertiaTensor;
+	fmtx4                mIniInertiaTensor;
+	fmtx4                mIniInertiaTensorInv;
+	fmtx4                mCurInertiaTensorInv;
+	fmtx4                mCurInertiaTensor;
 
 	////////////////////////////////////////
 	// state vars
 	////////////////////////////////////////
 
-	CVector3                mPosition;
+	fvec3                mPosition;
 	CQuaternion				mOrientation;
-	CVector3				mAngularMomentum;
-	CVector3				mLinearMomentum;
+	fvec3				mAngularMomentum;
+	fvec3				mLinearMomentum;
 	
 	////////////////////////////////////////
 	// derived state vars
 	////////////////////////////////////////
 
-	CVector3                mVelocity;
-	CVector3                mLinAccel;
-	CVector3                mPrevLinAccel;
-	CVector3                mPrevVelocity;
-	CVector3				mAngularVelocity;
-	CVector3                mAngAccel;
+	fvec3                mVelocity;
+	fvec3                mLinAccel;
+	fvec3                mPrevLinAccel;
+	fvec3                mPrevVelocity;
+	fvec3				mAngularVelocity;
+	fvec3                mAngAccel;
 
-	CVector3                mLinImpulse;
-	CVector3                mAngImpulse;
+	fvec3                mLinImpulse;
+	fvec3                mAngImpulse;
 
-	CVector3                mTotalLinForce;
-	CVector3                mTotalTorque;
+	fvec3                mTotalLinForce;
+	fvec3                mTotalTorque;
 	float                   mElasticity;
 
 	////////////////////////////////////////
 
-	CMatrix4                mCurrentMatrix;
-	CMatrix4                mCurrentInvMatrix;
+	fmtx4                mCurrentMatrix;
+	fmtx4                mCurrentInvMatrix;
 
 	////////////////////////////////////////
 
@@ -102,24 +102,24 @@ struct RigidBody
 	////////////////////////////////////////////////////////
 	// WorldSpace Functions
 
-	CVector3 PointVelocityW( const CVector3& wp ) const;
+	fvec3 PointVelocityW( const fvec3& wp ) const;
 	void BeginForces();
-	void ApplyForce( const CVector3& Force, const CVector3& loc);
-	void ApplyImpulse( const CVector3& Impulse, const CVector3& loc);
+	void ApplyForce( const fvec3& Force, const fvec3& loc);
+	void ApplyImpulse( const fvec3& Impulse, const fvec3& loc);
 	void EndForces();
 
-	CVector3 ComW() const;
-	CVector3 PntW(int idx) const;
+	fvec3 ComW() const;
+	fvec3 PntW(int idx) const;
 
-	static float DualBodyImpulse(   const CVector3& collisionnormal,
-									const CVector3& collisionpoint,
+	static float DualBodyImpulse(   const fvec3& collisionnormal,
+									const fvec3& collisionpoint,
 									const RigidBody& rb1,
 									const RigidBody& rb2,
 									float rb1mass,
 									float rb2mass  );
 
-	static float SingleBodyImpulse(	const CVector3& collisionnormal,
-									const CVector3& collisionpoint,
+	static float SingleBodyImpulse(	const fvec3& collisionnormal,
+									const fvec3& collisionpoint,
 									const RigidBody& rb1,
 									float rb1mass
 									);
@@ -131,8 +131,8 @@ struct RigidBody
 
 	void ComputeOrientation( float fdt );
 
-	static CVector3 MassMOI_Box( const CVector3& whd, const float fmass );
-	static CVector3 MassMOI_Sphere( const float radius, const float fmass );
+	static fvec3 MassMOI_Box( const fvec3& whd, const float fmass );
+	static fvec3 MassMOI_Sphere( const float radius, const float fmass );
 
 };
 

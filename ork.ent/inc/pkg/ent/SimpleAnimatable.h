@@ -177,7 +177,7 @@ private:
 	static bool AnimDataUpdate(AnimData &data, float delta, ork::lev2::XgmModelInst *modelInst, ork::ent::Entity *entity = NULL);
 
 	void DoUpdate(ork::ent::SceneInst *inst) final;
-	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final;
+	bool DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world) final;
 	bool DoLink(ork::ent::SceneInst *psi) final; 
 	bool DoNotify(const ork::event::Event *event) final;
 

@@ -134,13 +134,13 @@ class EcicVertexTransformInterface : public ork::ITransformInterface
 	{
 		if( EnvironmentCollision2DFactory::GetBoundDagObject() )
 		{
-			CMatrix4 MatW = EnvironmentCollision2DFactory::GetBoundDagObject()->GetTransformNode().GetWorldTransform()->GetMatrix();
+			fmtx4 MatW = EnvironmentCollision2DFactory::GetBoundDagObject()->GetTransformNode().GetWorldTransform()->GetMatrix();
 
 			ecic_vertex *pent = (ecic_vertex*) pobj;
 
-			transform.GetWorldTransform()->SetMatrix( CMatrix4::Identity );
+			transform.GetWorldTransform()->SetMatrix( fmtx4::Identity );
 
-			CVector4 xlate( pent->GetPosition().GetX(), pent->GetPosition().GetY(), float(0.0f) );
+			fvec4 xlate( pent->GetPosition().GetX(), pent->GetPosition().GetY(), float(0.0f) );
 
 			transform.Translate( TransformNode3D::EMODE_ABSOLUTE, xlate.Transform(MatW).xyz() );
 		}				
@@ -151,12 +151,12 @@ class EcicVertexTransformInterface : public ork::ITransformInterface
 	{
 		if( EnvironmentCollision2DFactory::GetBoundDagObject() )
 		{
-			CMatrix4 MatW = EnvironmentCollision2DFactory::GetBoundDagObject()->GetTransformNode().GetWorldTransform()->GetMatrix();
-			CMatrix4 MatIW = MatW; MatIW.Inverse();
+			fmtx4 MatW = EnvironmentCollision2DFactory::GetBoundDagObject()->GetTransformNode().GetWorldTransform()->GetMatrix();
+			fmtx4 MatIW = MatW; MatIW.Inverse();
 
 			ecic_vertex *pent = (ecic_vertex*) pobj;
 
-			CVector4 xlate = pMat.GetWorldTransform()->GetMatrix().GetTranslation();
+			fvec4 xlate = pMat.GetWorldTransform()->GetMatrix().GetTranslation();
 			xlate = xlate.Transform(MatIW);
 
 			pent->SetPosition( xlate.xyz().GetXY() );
@@ -270,8 +270,8 @@ class EcicEdgeTransformInterface : public ork::ITransformInterface
 {
 	TransformNode3D base_transform;
 	TransformNode3D transform;
-	CVector2 sva;
-	CVector2 svb;
+	fvec2 sva;
+	fvec2 svb;
 
 	public:
 
@@ -282,13 +282,13 @@ class EcicEdgeTransformInterface : public ork::ITransformInterface
 			ecic_edge *pent = (ecic_edge*) pobj;
 			ecic_vertex* va = pent->mvertexa;
 			ecic_vertex* vb = pent->mvertexb;
-			transform.GetWorldTransform()->SetMatrix( CMatrix4::Identity );
-			const CVector2& vpa = va->GetPosition();
-			const CVector2& vpb = vb->GetPosition();
-			CVector2 Middle = (vpa+vpb)*float(0.5f);
+			transform.GetWorldTransform()->SetMatrix( fmtx4::Identity );
+			const fvec2& vpa = va->GetPosition();
+			const fvec2& vpb = vb->GetPosition();
+			fvec2 Middle = (vpa+vpb)*float(0.5f);
 			sva = (vpa-Middle);
 			svb = (vpb-Middle);
-			CVector3 xlate( Middle.GetX(), Middle.GetY(), float(0.0f) );
+			fvec3 xlate( Middle.GetX(), Middle.GetY(), float(0.0f) );
 			transform.Translate( TransformNode3D::EMODE_ABSOLUTE, xlate );
 			base_transform = transform;
 		}
@@ -300,7 +300,7 @@ class EcicEdgeTransformInterface : public ork::ITransformInterface
 		if( EnvironmentCollision2DFactory::GetBoundDagObject() )
 		{
 			ecic_edge *pent = (ecic_edge*) pobj;
-			CVector2 xlate = pMat.GetWorldTransform()->GetMatrix().GetTranslation().GetXY();
+			fvec2 xlate = pMat.GetWorldTransform()->GetMatrix().GetTranslation().GetXY();
 			ecic_vertex* va = pent->mvertexa;
 			ecic_vertex* vb = pent->mvertexb;
 			va->SetPosition( xlate+sva );

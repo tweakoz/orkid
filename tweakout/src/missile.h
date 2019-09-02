@@ -41,15 +41,15 @@ public:
 
 struct ITarget
 {
-	virtual void NotifyDamage(const CVector3& Impulse) = 0;
-	virtual CVector3 GetPos() = 0;
+	virtual void NotifyDamage(const fvec3& Impulse) = 0;
+	virtual fvec3 GetPos() = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void LaunchMissile(	ent::SceneInst* sinst,
 					const ent::DagNode& dn,
-					const CVector3& InitialVelocity,
+					const fvec3& InitialVelocity,
 					WorldControllerInst* wci,
 					ITarget& tgt,
 					float fdmgmult
@@ -74,22 +74,22 @@ class MissileControllerInst : public ent::ComponentInst
 	WorldControllerInst*			mWCI;
 	ESTATE							meState;
 	float							mftimer;
-	CVector3						mWaypoint;
-	CVector3						mLastTargetPos;
+	fvec3						mWaypoint;
+	fvec3						mLastTargetPos;
 	float							mLifeTime;
 	ITarget*						mTarget;
 	float							mDamageMult;
 	ent::RigidBody					mRigidBody;
 	PIDController2<float>			mPIDController[3];
 
-	CVector3 mPosition;
-	CVector3 ZNormal;
+	fvec3 mPosition;
+	fvec3 ZNormal;
 
 	virtual void DoUpdate(ent::SceneInst* sinst);
 
 	void CalcForces( float fddt );
 
-	void Detonate(ork::ent::SceneInst *sinst,const ork::CMatrix4& mtx);
+	void Detonate(ork::ent::SceneInst *sinst,const ork::fmtx4& mtx);
 
 public:
 

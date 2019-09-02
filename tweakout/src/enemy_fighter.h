@@ -39,10 +39,10 @@ class FighterControllerInst;
 
 struct FighterTarget : public ITarget
 {
-	CVector3	mDamageImpulse;
+	fvec3	mDamageImpulse;
 	FighterControllerInst& mFCI;
-	/*virtual*/ void NotifyDamage(const CVector3& Impulse);
-	/*virtual*/ CVector3 GetPos();
+	/*virtual*/ void NotifyDamage(const fvec3& Impulse);
+	/*virtual*/ fvec3 GetPos();
 	FighterTarget( FighterControllerInst& fci ) : mFCI(fci) {}
 
 };
@@ -74,8 +74,8 @@ class FighterControllerInst : public ent::ComponentInst
 	float							mfRePosTimer;
 	float							mfReAssTimer;
 	float							mfMissileTimer;
-	CVector3						mWaypoint;
-	CVector3						mVelocity;
+	fvec3						mWaypoint;
+	fvec3						mVelocity;
 	FighterTarget					mThisTarget;
 	float							mHitPoints;
 	HotSpot*						mHotSpot;
@@ -83,8 +83,8 @@ class FighterControllerInst : public ent::ComponentInst
 	ent::RigidBody				mRigidBody;
 	PIDController2<float>			mPositionController[3];
 
-	CVector3 mPosition;
-	CVector3 ZNormal;
+	fvec3 mPosition;
+	fvec3 ZNormal;
 
 	virtual void DoUpdate(ent::SceneInst* sinst);
 

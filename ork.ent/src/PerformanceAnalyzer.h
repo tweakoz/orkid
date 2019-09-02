@@ -72,7 +72,7 @@ public:
 private:
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 	void DoLinkEntity(SceneInst* inst, Entity *pent) const final;
-	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final;
+	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final;
 	void DoStopEntity(SceneInst* psi, Entity *pent) const final;
 
 };

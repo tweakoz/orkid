@@ -22,7 +22,7 @@ public:
 	Sphere	mSphere;
 	SphereTreeNode*	mChildren[2];
 
-	SphereTreeNode() : mSphere(CVector3::Zero(),0.0f)
+	SphereTreeNode() : mSphere(fvec3::Zero(),0.0f)
 	{
 		mChildren[0] = 0;
 		mChildren[1] = 0;
@@ -40,13 +40,13 @@ public:
 	SphereTreeNode	mRoot;
 	SphereTreeNode& GetRoot() { return mRoot; }
 
-	inline void RayTest( const Ray3& ray, Ray3HitTest& test_set ) const;
+	inline void RayTest( const fray3& ray, Ray3HitTest& test_set ) const;
 
 };
 
 ///////////////////////////////////////////////
 
-inline void SphereTree::RayTest( const Ray3& ray, Ray3HitTest& test_set ) const
+inline void SphereTree::RayTest( const fray3& ray, Ray3HitTest& test_set ) const
 {
 	static int inumhit = 0;
 	static int inummiss = 0;

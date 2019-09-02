@@ -19,72 +19,72 @@ namespace ork
 {
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> float TVector4<float>::Sin( float fin )
+template<> float Vector4<float>::Sin( float fin )
 {
 	return CFloat::Sin( fin );
 }
-template<> float TVector4<float>::Cos( float fin )
+template<> float Vector4<float>::Cos( float fin )
 {
 	return CFloat::Cos( fin );
 }
-template<> float TVector4<float>::Sqrt( float fin )
+template<> float Vector4<float>::Sqrt( float fin )
 {
 	return CFloat::Sqrt( fin );
 }
-template<> float TVector4<float>::Epsilon()
+template<> float Vector4<float>::Epsilon()
 {
 	return CFloat::Epsilon();
 }
-template<> float TVector4<float>::Abs( float fin )
+template<> float Vector4<float>::Abs( float fin )
 {
 	return CFloat::Abs( fin );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> double TVector4<double>::Sin( double fin )
+template<> double Vector4<double>::Sin( double fin )
 {
 	return std::sin(fin);
 }
-template<> double TVector4<double>::Cos( double fin )
+template<> double Vector4<double>::Cos( double fin )
 {
 	return std::cos(fin);
 }
-template<> double TVector4<double>::Sqrt( double fin )
+template<> double Vector4<double>::Sqrt( double fin )
 {
 	return std::sqrt( fin );
 }
-template<> double TVector4<double>::Epsilon()
+template<> double Vector4<double>::Epsilon()
 {
 	return double(CFloat::Epsilon());
 }
-template<> double TVector4<double>::Abs( double fin )
+template<> double Vector4<double>::Abs( double fin )
 {
 	return std::abs(fin);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> const EPropType CPropType<CVector4>::meType				= EPROPTYPE_VEC4REAL;
-template<> const char* CPropType<CVector4>::mstrTypeName					= "VEC4REAL";
-template<> void CPropType<CVector4>::ToString(const CVector4 & Value, PropTypeString& tstr)
+template<> const EPropType CPropType<fvec4>::meType				= EPROPTYPE_VEC4REAL;
+template<> const char* CPropType<fvec4>::mstrTypeName					= "VEC4REAL";
+template<> void CPropType<fvec4>::ToString(const fvec4 & Value, PropTypeString& tstr)
 {
-	CVector4 v = Value;
+	fvec4 v = Value;
 	tstr.format( "%g %g %g %g", float(v.GetX()), float(v.GetY()), float(v.GetZ()), float(v.GetW()));
 }
 
-template<> CVector4 CPropType<CVector4>::FromString(const PropTypeString& String)
+template<> fvec4 CPropType<fvec4>::FromString(const PropTypeString& String)
 {
 	float x, y, z, w;
 	sscanf(String.c_str(), "%g %g %g %g", &x, &y, &z, &w);
-	return CVector4(float(x), float(y), float(z), float(w));
+	return fvec4(float(x), float(y), float(z), float(w));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class TVector4<float>;		// explicit template instantiation
-template class TVector4<double>;		// explicit template instantiation
-template class CPropType<CVector4>;
+template class Vector4<float>;		// explicit template instantiation
+template class Vector4<double>;		// explicit template instantiation
+template class CPropType<fvec4>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -92,11 +92,11 @@ template class CPropType<CVector4>;
 
 namespace reflect {
 
-template<> void Serialize( const CVector4*in, CVector4*out, reflect::BidirectionalSerializer& bidi )
+template<> void Serialize( const fvec4*in, fvec4*out, reflect::BidirectionalSerializer& bidi )
 {
 	if( bidi.Serializing() )
 	{
-		bidi.Serializer()->Hint("CVector4");
+		bidi.Serializer()->Hint("fvec4");
 		for( int i=0; i<4; i++ )
 		{
 			bidi | in->GetArray()[i];
@@ -111,7 +111,7 @@ template<> void Serialize( const CVector4*in, CVector4*out, reflect::Bidirection
 	}
 }
 
-template<> void Serialize( const orkmap<float,CVector4>*in,  orkmap<float,CVector4>*out, reflect::BidirectionalSerializer& bidi )
+template<> void Serialize( const orkmap<float,fvec4>*in,  orkmap<float,fvec4>*out, reflect::BidirectionalSerializer& bidi )
 {
 	if( bidi.Serializing() )
 	{

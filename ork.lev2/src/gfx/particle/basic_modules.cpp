@@ -181,8 +181,8 @@ int Constants::GetNumOutputs() const
 	}
 	////////////////////////////////////////////
 	for( size_t i=0; i<inumvp; i++ )
-	{	const std::pair<PoolString,ork::dataflow::outplug<CVector3>*>& pr = mVect3Plugs.GetItemAtIndex(i);
-		ork::dataflow::outplug<CVector3>* __restrict pplug = pr.second;
+	{	const std::pair<PoolString,ork::dataflow::outplug<fvec3>*>& pr = mVect3Plugs.GetItemAtIndex(i);
+		ork::dataflow::outplug<fvec3>* __restrict pplug = pr.second;
 		if( pplug )
 		{	pplug->SetModule(const_cast<Constants*>(this));
 			pplug->SetName( pr.first );
@@ -209,7 +209,7 @@ dataflow::outplugbase* Constants::GetOutput(int idx)
 	}
 	////////////////////////////////////////////
 	for( size_t i=0; i<inumvp; i++ )
-	{	ork::dataflow::outplug<CVector3>* __restrict pplug = mVect3Plugs.GetItemAtIndex(i).second;
+	{	ork::dataflow::outplug<fvec3>* __restrict pplug = mVect3Plugs.GetItemAtIndex(i).second;
 		if( pplug )
 		{	if( ipcounter == idx )
 			{	return pplug;
@@ -247,20 +247,20 @@ void Constants::OnTopologyUpdate(void)
 	}
 	////////////////////////////////////////////
 	for( size_t i=0; i<inumvp; i++ )
-	{	const std::pair<PoolString,CVector3>& pr = mVect3Consts.GetItemAtIndex(i);
+	{	const std::pair<PoolString,fvec3>& pr = mVect3Consts.GetItemAtIndex(i);
 		/////////////////////////////////////////////
 		// get data
 		PoolString Name = pr.first;
-		const CVector3& val = pr.second;
+		const fvec3& val = pr.second;
 		/////////////////////////////////////////////
 		// find existing plug
-		ork::orklut<ork::PoolString, ork::dataflow::outplug<CVector3>* >::iterator it=mVect3Plugs.find(Name);
+		ork::orklut<ork::PoolString, ork::dataflow::outplug<fvec3>* >::iterator it=mVect3Plugs.find(Name);
 		/////////////////////////////////////////////
 		// merge if does not exist
 		if( it==mVect3Plugs.end() )
 		{
-			ork::dataflow::outplug<CVector3>* pplug =
-				new ork::dataflow::outplug<CVector3>(this,ork::dataflow::EPR_UNIFORM,&val,pr.first.c_str());
+			ork::dataflow::outplug<fvec3>* pplug =
+				new ork::dataflow::outplug<fvec3>(this,ork::dataflow::EPR_UNIFORM,&val,pr.first.c_str());
 			mVect3Plugs.insert(std::make_pair(pr.first,pplug));
 			it=mVect3Plugs.find(pr.first);
 		}
@@ -293,7 +293,7 @@ void Constants::OnTopologyUpdate(void)
 	// delete unused vec3 plugs
 	////////////////////////////////////////////
 	std::set<PoolString> Vect3Names;
-	for( ork::orklut<ork::PoolString, ork::dataflow::outplug<CVector3>* >::iterator 
+	for( ork::orklut<ork::PoolString, ork::dataflow::outplug<fvec3>* >::iterator 
 			it=mVect3Plugs.begin();
 			it!=mVect3Plugs.end();
 			it++ )
@@ -302,11 +302,11 @@ void Constants::OnTopologyUpdate(void)
 	while( Vect3Names.size() )
 	{
 		std::set<PoolString>::iterator it = Vect3Names.begin();
-		ork::orklut<ork::PoolString,CVector3>::const_iterator itf = mVect3Consts.find(*it);
+		ork::orklut<ork::PoolString,fvec3>::const_iterator itf = mVect3Consts.find(*it);
 		if( itf == mVect3Consts.end() ) // erase it
 		{
-			ork::orklut<ork::PoolString, ork::dataflow::outplug<CVector3>* >::iterator itE=mVect3Plugs.find(*it);
-			ork::dataflow::outplug<CVector3>* pplug = itE->second;
+			ork::orklut<ork::PoolString, ork::dataflow::outplug<fvec3>* >::iterator itE=mVect3Plugs.find(*it);
+			ork::dataflow::outplug<fvec3>* pplug = itE->second;
 			delete pplug;
 			mVect3Plugs.erase(itE);
 		}
@@ -369,8 +369,8 @@ int ExtConnector::GetNumOutputs() const
 	}
 	////////////////////////////////////////////
 	for( size_t i=0; i<inumvp; i++ )
-	{	const std::pair<PoolString,ork::dataflow::outplug<CVector3>*>& pr = mVect3Plugs.GetItemAtIndex(i);
-		ork::dataflow::outplug<CVector3>* pplug = pr.second;
+	{	const std::pair<PoolString,ork::dataflow::outplug<fvec3>*>& pr = mVect3Plugs.GetItemAtIndex(i);
+		ork::dataflow::outplug<fvec3>* pplug = pr.second;
 		if( pplug )
 		{	pplug->SetModule(const_cast<ExtConnector*>(this));
 			pplug->SetName( pr.first );
@@ -397,7 +397,7 @@ dataflow::outplugbase* ExtConnector::GetOutput(int idx)
 	}
 	////////////////////////////////////////////
 	for( size_t i=0; i<inumvp; i++ )
-	{	ork::dataflow::outplug<CVector3>* pplug = mVect3Plugs.GetItemAtIndex(i).second;
+	{	ork::dataflow::outplug<fvec3>* pplug = mVect3Plugs.GetItemAtIndex(i).second;
 		if( pplug )
 		{	if( ipcounter == idx )
 			{	return pplug;
@@ -425,9 +425,9 @@ void ExtConnector::BindConnector( dataflow::dyn_external* pconnector )
 			}
 		}
 		for( size_t i=0; i<inumvp; i++ )
-		{	ork::dataflow::outplug<CVector3>* pplug = mVect3Plugs.GetItemAtIndex(i).second;
+		{	ork::dataflow::outplug<fvec3>* pplug = mVect3Plugs.GetItemAtIndex(i).second;
 			if( pplug )
-			{	const CVector3* pvect3 = 0;
+			{	const fvec3* pvect3 = 0;
 				const orklut<PoolString,dataflow::dyn_external::Vect3Binding>& vect3_bindings = pconnector->GetVect3Bindings();
 				orklut<PoolString,dataflow::dyn_external::Vect3Binding>::const_iterator it=vect3_bindings.find(pplug->GetName());
 				if( it != vect3_bindings.end() )
@@ -515,8 +515,8 @@ void Vec3Op2Module::Compute( float dt )
 			mOutDataOutput = mPlugInpInputA.GetValue()*mPlugInpInputB.GetValue();
 			break;
 		case EPSYS_VEC3OP_DOT:
-		{	//CVector3 a = mPlugInpInputA.GetValue();
-			//CVector3 b = mPlugInpInputA.GetValue();
+		{	//fvec3 a = mPlugInpInputA.GetValue();
+			//fvec3 b = mPlugInpInputA.GetValue();
 			//mOutDataOutput = .Dot(mPlugInpInputB.GetValue());
 		}
 		break;
@@ -554,7 +554,7 @@ Vec3SplitModule::Vec3SplitModule()
 {}
 ///////////////////////////////////////////////////////////////////////////////
 void Vec3SplitModule::Compute( float dt )
-{	CVector3 inp = mPlugInpInput.GetValue();
+{	fvec3 inp = mPlugInpInput.GetValue();
 	mOutDataOutputX = inp.GetX();
 	mOutDataOutputY = inp.GetY();
 	mOutDataOutputZ = inp.GetZ();
@@ -780,21 +780,21 @@ dataflow::outplugbase* RingEmitter::GetOutput(int idx)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void RingDirectedEmitter::ComputePosDir( float fi, CVector3& pos, CVector3& dir )
+void RingDirectedEmitter::ComputePosDir( float fi, fvec3& pos, fvec3& dir )
 {	float scaler = (fi*mEmitterModule.mfThisRadius)+((1.0f-fi)*mEmitterModule.mfLastRadius);
 	float phase = (fi*mEmitterModule.mfPhase2)+((1.0f-fi)*mEmitterModule.mfPhase);
 	float fpx = CFloat::Cos(phase);
 	float fpz = CFloat::Sin(phase);
 	float fdx = CFloat::Cos(phase+PI_DIV_2);
 	float fdz = CFloat::Sin(phase+PI_DIV_2);
-	pos = CVector3((fpx*scaler),0.0f,(fpz*scaler));
+	pos = fvec3((fpx*scaler),0.0f,(fpz*scaler));
 	if( meDirection==EMITDIR_USER )
 	{
 		dir = mUserDir;
 	}
 	else
 	{
-		dir = CVector3(fdx,0.0f,fdz);
+		dir = fvec3(fdx,0.0f,fdz);
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -821,7 +821,7 @@ void RingEmitter::Emit( float fdt )
 	mEmitterCtx.mDispersion = mPlugInpDispersionAngle.GetValue();
 	mDirectedEmitter.meDirection = meDirection;
 	mDirectedEmitter.mUserDir = mPlugInpDirection.GetValue();
-	mEmitterCtx.mPosition = CVector3( offx, offy, offz );
+	mEmitterCtx.mPosition = fvec3( offx, offy, offz );
 	mDirectedEmitter.Emit( mEmitterCtx );
 	float fphaseINC = fspr*fdt;
 	mfPhase = std::fmod( mfPhase+fphaseINC, PI2*1000.0f );
@@ -917,8 +917,8 @@ NozzleEmitter::NozzleEmitter()
 }
 void NozzleEmitter::Reset()
 {
-	mLastPosition = CVector3(0.0f,0.0f,0.0f);
-	mLastDirection = CVector3(0.0f,1.0f,0.0f);
+	mLastPosition = fvec3(0.0f,0.0f,0.0f);
+	mLastDirection = fvec3(0.0f,1.0f,0.0f);
 	mfAccumTime = 0.0f;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -947,7 +947,7 @@ dataflow::outplugbase* NozzleEmitter::GetOutput(int idx)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void NozzleDirectedEmitter::ComputePosDir( float fi, CVector3& pos, CVector3& dir )
+void NozzleDirectedEmitter::ComputePosDir( float fi, fvec3& pos, fvec3& dir )
 {	
 	//pos = mEmitterModule.mvOffset;
 	pos.Lerp( mEmitterModule.mLastPosition, mEmitterModule.mOffsetSample, fi );
@@ -968,9 +968,9 @@ void NozzleEmitter::Emit( float fdt )
 	mEmitterCtx.mfEmissionVelocity = femitvel;
 	mEmitterCtx.mDispersion = mPlugInpDispersionAngle.GetValue();
 	mDirectedEmitter.meDirection = EMITDIR_CONSTANT;
-	CVector3 dir = mPlugInpDirection.GetValue();
-	mEmitterCtx.mPosition = CVector3(0.0f,0.0f,0.0f); //mPlugInpOffset.GetValue();
-	CVector3 offsetVel = mPlugInpOffsetVelocity.GetValue();
+	fvec3 dir = mPlugInpDirection.GetValue();
+	mEmitterCtx.mPosition = fvec3(0.0f,0.0f,0.0f); //mPlugInpOffset.GetValue();
+	fvec3 offsetVel = mPlugInpOffsetVelocity.GetValue();
 	mEmitterCtx.mOffsetVelocity = offsetVel;
 	mDirectedEmitter.Emit( mEmitterCtx );
 }
@@ -998,7 +998,7 @@ void NozzleEmitter::Compute( float fdt )
 
 	if( mDirectionSample.MagSquared()==0.0f )
 	{
-		mDirectionSample = CVector3::Green();
+		mDirectionSample = fvec3::Green();
 	}
 
 	if( mfAccumTime >= 0.03333f ) // limit to 30hz
@@ -1018,7 +1018,7 @@ void NozzleEmitter::Compute( float fdt )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ReDirectedEmitter::ComputePosDir( float fi, CVector3& pos, CVector3& dir )
+void ReDirectedEmitter::ComputePosDir( float fi, fvec3& pos, fvec3& dir )
 {
 	//pos.Lerp( mEmitterModule.mEmitterCtx.mPosition, mEmitterModule.mEmitterCtx.mLastPosition, fi );
 	//dir = (mEmitterModule.mEmitterCtx.mPosition-mEmitterModule.mEmitterCtx.mLastPosition).Normal();
@@ -1178,7 +1178,7 @@ WindModule::WindModule()
 void WindModule::Compute( float dt )
 {	const psys_ptclbuf& pb = mPlugInpInput.GetValue();
 	if( pb.mPool )
-	{	ork::CVector4 accel( 0.0f , mPlugInpForce.GetValue(), 0.0f );
+	{	ork::fvec4 accel( 0.0f , mPlugInpForce.GetValue(), 0.0f );
 		for( int i=0; i<pb.mPool->GetNumAlive(); i++ )
 		{	BasicParticle *particle = pb.mPool->GetActiveParticle(i);
 			particle->mVelocity += accel*dt;
@@ -1243,15 +1243,15 @@ void GravityModule::Compute( float dt )
 		float mindist = mPlugInpMinDistance.GetValue();
 		for( int i=0; i<pb.mPool->GetNumAlive(); i++ )
 		{	BasicParticle *particle = pb.mPool->GetActiveParticle(i);
-			const CVector3& OldPos = particle->mPosition;
-			CVector3 Dir = (mvCenter-OldPos);
+			const fvec3& OldPos = particle->mPosition;
+			fvec3 Dir = (mvCenter-OldPos);
 			float Mag = Dir.Mag();
 			if(Mag<mindist)
 			 Mag=mindist;
 			Dir = Dir*(1.0f/Mag);
 			float denom = Mag*Mag;
-			CVector3 forceVec = Dir*(numer/denom);
-			CVector3 accel = forceVec*finvmass;
+			fvec3 forceVec = Dir*(numer/denom);
+			fvec3 accel = forceVec*finvmass;
 			//printf( "numer<%f> denim<%f> accel<%f %f %f>\n", numer, denom, accel.GetX(), accel.GetY(), accel.GetZ() );
 			particle->mVelocity += accel*dt;
 		}
@@ -1320,17 +1320,17 @@ void PlanarColliderModule::Compute( float dt )
 	if( pb.mPool )
 	{	
 		//////////////////////////////////////////////////////////
-		ork::CVector3 PlaneN;
+		ork::fvec3 PlaneN;
 		PlaneN.SetX(mPlugInpNormalX.GetValue());
 		PlaneN.SetY(mPlugInpNormalY.GetValue());
 		PlaneN.SetZ(mPlugInpNormalZ.GetValue());
 		PlaneN.Normalize();
-		if( PlaneN.Mag() == 0.0f ) PlaneN = CVector3(0.0f,1.0f,0.0f);
-		ork::CVector3 PlaneO;
+		if( PlaneN.Mag() == 0.0f ) PlaneN = fvec3(0.0f,1.0f,0.0f);
+		ork::fvec3 PlaneO;
 		PlaneO.SetX(mPlugInpOriginX.GetValue());
 		PlaneO.SetY(mPlugInpOriginY.GetValue());
 		PlaneO.SetZ(mPlugInpOriginZ.GetValue());
-		ork::CPlane CollisionPlane;
+		ork::fplane3 CollisionPlane;
 		CollisionPlane.CalcFromNormalAndOrigin( PlaneN, PlaneO );
 		float retention = 1.0f-mPlugInpAbsorbtion.GetValue();
 		//////////////////////////////////////////////////////////
@@ -1552,7 +1552,7 @@ void TurbulenceModule::Compute( float dt )
 			F32 randX = mPlugInpAmountX.GetValue()*furx;
 			F32 randY = mPlugInpAmountY.GetValue()*fury;
 			F32 randZ = mPlugInpAmountZ.GetValue()*furz;
-			ork::CVector4 accel( randX , randY, randZ );
+			ork::fvec4 accel( randX , randY, randZ );
 			particle->mVelocity += accel*dt;
 		}
 	}
@@ -1605,12 +1605,12 @@ void VortexModule::Compute( float dt )
 			F32 vortexstrength = mPlugInpVortexStrength.GetValue();
 			F32 outwardstrength = mPlugInpOutwardStrength.GetValue();
 
-			CVector3 Pos2D = particle->mPosition;
+			fvec3 Pos2D = particle->mPosition;
 			Pos2D.SetY(0.0f);
-			CVector3 N = particle->mPosition.Normal();
-			CVector3 Dir = N.Cross(CVector3::UnitY());
+			fvec3 N = particle->mPosition.Normal();
+			fvec3 Dir = N.Cross(fvec3::UnitY());
 			float fstr = 1.0f/(1.0f+falloff/Pos2D.Mag());
-			CVector3 Force = Dir*(vortexstrength*fstr);
+			fvec3 Force = Dir*(vortexstrength*fstr);
 			         Force += N*(outwardstrength*fstr);
 
 			particle->mVelocity += Force*dt;

@@ -39,10 +39,10 @@ void FragmentCompositorZBuffer::Visit( const rend_fragment* pfrag ) // virtual
 	}
 }
 ////////////////////////////////////////////////////////////
-ork::CVector3 FragmentCompositorZBuffer::Composite(const ork::CVector3&clrcolor)
+ork::fvec3 FragmentCompositorZBuffer::Composite(const ork::fvec3&clrcolor)
 {
 	////////////////////////////////////////////////////////////
-	ork::CVector3 rgb = clrcolor;
+	ork::fvec3 rgb = clrcolor;
 	if(mpOpaqueFragment!=0) rgb = mpOpaqueFragment->mRGBA.xyz();
 	////////////////////////////////////////////////////////////
 	//rgb.Saturate();
@@ -140,7 +140,7 @@ void FragmentCompositorREYES::SortAndHide()
 
 }
 ////////////////////////////////////////////////////////////
-ork::CVector3 FragmentCompositorREYES::Composite(const ork::CVector3&clrcolor)
+ork::fvec3 FragmentCompositorREYES::Composite(const ork::fvec3&clrcolor)
 {	////////////////////////////////////////////////////////////
 	// sort, hide fragments
 	////////////////////////////////////////////////////////////
@@ -151,7 +151,7 @@ ork::CVector3 FragmentCompositorREYES::Composite(const ork::CVector3&clrcolor)
 	// atmospheric processing/volume shaders can go in here
 	//  remember to disable backface culling for volume shaders
 	////////////////////////////////////////////////////////////
-	ork::CVector3 rgb = clrcolor;
+	ork::fvec3 rgb = clrcolor;
 	const u32 uthreadmask = 1<<miThreadID;
 
 	const int ilast = miNumFragments-1;
@@ -162,8 +162,8 @@ ork::CVector3 FragmentCompositorREYES::Composite(const ork::CVector3&clrcolor)
 	for( int i=0; i<miNumFragments; i++ ) 
 	{	int j = ilast-i;
 		const rend_fragment* pfrag = mpSortedFragments[ j ];
-		const ork::CVector3& wpos = pfrag->mWorldPos;		
-		const ork::CVector4& fragrgba = pfrag->mRGBA;
+		const ork::fvec3& wpos = pfrag->mWorldPos;		
+		const ork::fvec4& fragrgba = pfrag->mRGBA;
 
 		const rend_volume_shader* pcurrvolumeshader = ( pfrag->mpShader!=0) ? pfrag->mpShader->mpVolumeShader : 0;
 		const rend_fragment* plastfragment = VolumeStack.top();
@@ -197,17 +197,17 @@ ork::CVector3 FragmentCompositorREYES::Composite(const ork::CVector3&clrcolor)
 		{
 			if( fragrgba.GetW() < 1.0f )
 			{
-				const ork::CVector3& cnrm = pfrag->mWldSpaceNrm;
-				const ork::CVector3& lnrm = plastfragment->mWldSpaceNrm;
+				const ork::fvec3& cnrm = pfrag->mWldSpaceNrm;
+				const ork::fvec3& lnrm = plastfragment->mWldSpaceNrm;
 
 //				if( cnrm.Dot(lnrm) > 0.0f )
 				{
 
-				const ork::CVector3& lpos = plastfragment->mWorldPos;
+				const ork::fvec3& lpos = plastfragment->mWorldPos;
 				OrkAssert( plastvolumeshader );
-				ork::CVector4 shcol = plastvolumeshader->ShadeVolume( lpos, wpos );
+				ork::fvec4 shcol = plastvolumeshader->ShadeVolume( lpos, wpos );
 				float falpha = shcol.GetW();
-				ork::CVector3 res;
+				ork::fvec3 res;
 				res.Lerp( rgb, shcol.xyz(), falpha );
 				rgb = res;			
 				}
@@ -215,7 +215,7 @@ ork::CVector3 FragmentCompositorREYES::Composite(const ork::CVector3&clrcolor)
 		}
 		////////////////////////////////////
 
-		ork::CVector3 res;
+		ork::fvec3 res;
 		res.Lerp( rgb, fragrgba.xyz(), fragrgba.GetW() );
 		rgb = res;
 	}
@@ -234,7 +234,7 @@ rend_texture2D::rend_texture2D()
 {
 	ork::CPerlin2D perlin;
 
-	mpData = new ork::CVector4[ 256*256 ];
+	mpData = new ork::fvec4[ 256*256 ];
 	for( int iy=0; iy<256; iy++ )
 	{
 		float fiy = float(iy)/256.0f;
@@ -300,7 +300,7 @@ void rend_texture2D::Load( const std::string& pth )
 			
 			if( mpData ) delete[] mpData;
 
-			mpData = new ork::CVector4[ miWidth*miHeight ];
+			mpData = new ork::fvec4[ miWidth*miHeight ];
 
 			for( int iy=0; iy<miHeight; iy++ )
 			{
@@ -331,7 +331,7 @@ void rend_texture2D::Load( const std::string& pth )
 
 rend_texture2D::~rend_texture2D() { delete[] mpData; }
 
-ork::CVector4 rend_texture2D::sample_point( float u, float v, bool wrapu, bool wrapv ) const
+ork::fvec4 rend_texture2D::sample_point( float u, float v, bool wrapu, bool wrapv ) const
 {
 	if( wrapu )
 	{
@@ -367,7 +367,7 @@ ork::CVector4 rend_texture2D::sample_point( float u, float v, bool wrapu, bool w
 	int ix = int(std::floor(u*miWidth));
 	int iy = int(std::floor(v*miHeight));
 	int idx = iy*miWidth+ix;
-	ork::CVector4 rval = mpData[idx];
+	ork::fvec4 rval = mpData[idx];
 	return rval;
 }
 

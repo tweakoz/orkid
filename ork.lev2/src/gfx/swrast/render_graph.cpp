@@ -134,10 +134,10 @@ void RenderData::operator=( const RenderData& oth )
 void RenderData::Update()
 {
 	float faspect = float(miImageWidth)/float(miImageHeight);
-	mMatrixV = ork::CMatrix4::Identity;
-	mMatrixP = ork::CMatrix4::Identity;
-//	mMatrixV.LookAt( mEye+ork::CVector3(0.0f,750.0f,0.0f), mTarget, -ork::CVector3::Green() );
-	mMatrixV.LookAt( mEye+ork::CVector3(0.0f,1.5f,0.0f), mTarget, -ork::CVector3::Green() );
+	mMatrixV = ork::fmtx4::Identity;
+	mMatrixP = ork::fmtx4::Identity;
+//	mMatrixV.LookAt( mEye+ork::fvec3(0.0f,750.0f,0.0f), mTarget, -ork::fvec3::Green() );
+	mMatrixV.LookAt( mEye+ork::fvec3(0.0f,1.5f,0.0f), mTarget, -ork::fvec3::Green() );
 	//mMatrixP.Perspective( 25.0f, faspect, 1500.0f, 10000.0f );
 	mMatrixP.Perspective( 25.0f, faspect, 1500.0f, 10000.0f );
 //	mMatrixP.Perspective( 25.0f, faspect, 0.1f, 10.0f );
@@ -151,16 +151,16 @@ void RenderData::Update()
 	mMatrixMV = (mMatrixM*mMatrixV);
 	mMatrixMVP = mMatrixMV*mMatrixP;
 
-	ork::CVector3 root_topn = mFrustum.mTopPlane.GetNormal();
-	ork::CVector3 root_botn = mFrustum.mBottomPlane.GetNormal();
-	ork::CVector3 root_lftn = mFrustum.mLeftPlane.GetNormal();
-	ork::CVector3 root_rhtn = mFrustum.mRightPlane.GetNormal();
-	//ork::CVector3 root_topc = mFrustum.mFarCorners
+	ork::fvec3 root_topn = mFrustum.mTopPlane.GetNormal();
+	ork::fvec3 root_botn = mFrustum.mBottomPlane.GetNormal();
+	ork::fvec3 root_lftn = mFrustum.mLeftPlane.GetNormal();
+	ork::fvec3 root_rhtn = mFrustum.mRightPlane.GetNormal();
+	//ork::fvec3 root_topc = mFrustum.mFarCorners
 
-	ork::Ray3 Ray[4];
+	ork::fray3 Ray[4];
 	for( int i=0; i<4; i++ )
 	{
-		Ray[i] = ork::Ray3( mFrustum.mNearCorners[i], (mFrustum.mFarCorners[i]-mFrustum.mNearCorners[i]).Normal() );
+		Ray[i] = ork::fray3( mFrustum.mNearCorners[i], (mFrustum.mFarCorners[i]-mFrustum.mNearCorners[i]).Normal() );
 	}
 
 	/////////////////////////////////////////////////////////////////
@@ -175,8 +175,8 @@ void RenderData::Update()
 		float fiby = float(iby)/float(miImageHeight);
 		/////////////////////////////////////////////////////
 		
-		ork::CVector3 topn;
-		ork::CVector3 botn;
+		ork::fvec3 topn;
+		ork::fvec3 botn;
 		topn.Lerp( root_topn, -root_botn, fity );
 		botn.Lerp( -root_topn, root_botn, fiby );
 		topn.Normalize();
@@ -184,10 +184,10 @@ void RenderData::Update()
 
 		/////////////////////////////////////////////////
 
-		ork::CVector3 LN[2];
-		ork::CVector3 RN[2];
-		ork::CVector3 LF[2];
-		ork::CVector3 RF[2];
+		ork::fvec3 LN[2];
+		ork::fvec3 RN[2];
+		ork::fvec3 LF[2];
+		ork::fvec3 RF[2];
 
 		LN[0].Lerp( mFrustum.mNearCorners[0], mFrustum.mNearCorners[3], fity );	// left near top
 		LN[1].Lerp( mFrustum.mNearCorners[0], mFrustum.mNearCorners[3], fiby );	// left near bot
@@ -199,7 +199,7 @@ void RenderData::Update()
 		RF[0].Lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fity );		// right far top
 		RF[1].Lerp( mFrustum.mFarCorners[1], mFrustum.mFarCorners[2], fiby );		// right far bot
 
-		ork::CPlane NFCenterPlane( mFrustum.mNearPlane.GetNormal(), mFrustum.mCenter );
+		ork::fplane3 NFCenterPlane( mFrustum.mNearPlane.GetNormal(), mFrustum.mCenter );
 
 		/////////////////////////////////////////////////
 
@@ -213,10 +213,10 @@ void RenderData::Update()
 			float firx = float(irx)/float(miImageWidth);
 			/////////////////////////////////////////////////////
 
-			ork::Ray3 RayTL; RayTL.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], filx, fity );
-			ork::Ray3 RayTR; RayTR.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], firx, fity );
-			ork::Ray3 RayBL; RayBL.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], filx, fiby );
-			ork::Ray3 RayBR; RayBR.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], firx, fiby );
+			ork::fray3 RayTL; RayTL.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], filx, fity );
+			ork::fray3 RayTR; RayTR.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], firx, fity );
+			ork::fray3 RayBL; RayBL.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], filx, fiby );
+			ork::fray3 RayBR; RayBR.BiLerp( Ray[0], Ray[1], Ray[3], Ray[2], firx, fiby );
 
 			float distTL, distTR, distBL, distBR;
 
@@ -225,26 +225,26 @@ void RenderData::Update()
 			bool bisectBL = NFCenterPlane.Intersect( RayBL, distBL );
 			bool bisectBR = NFCenterPlane.Intersect( RayBR, distBR );
 
-			ork::CVector3 vCTL = RayTL.mOrigin + RayTL.mDirection*distTL;
-			ork::CVector3 vCTR = RayTR.mOrigin + RayTR.mDirection*distTR;
-			ork::CVector3 vCBL = RayBL.mOrigin + RayBL.mDirection*distBL;
-			ork::CVector3 vCBR = RayBR.mOrigin + RayBR.mDirection*distBR;
+			ork::fvec3 vCTL = RayTL.mOrigin + RayTL.mDirection*distTL;
+			ork::fvec3 vCTR = RayTR.mOrigin + RayTR.mDirection*distTR;
+			ork::fvec3 vCBL = RayBL.mOrigin + RayBL.mDirection*distBL;
+			ork::fvec3 vCBR = RayBR.mOrigin + RayBR.mDirection*distBR;
 
 			/////////////////////////////////////////////////////
 
-			ork::CVector3 N0; N0.Lerp( LN[0], RN[0], filx );
-			ork::CVector3 N1; N1.Lerp( LN[0], RN[0], firx );
-			ork::CVector3 N2; N2.Lerp( LN[1], RN[1], firx );
-			ork::CVector3 N3; N3.Lerp( LN[1], RN[1], filx );
-			ork::CVector3 F0; F0.Lerp( LF[0], RF[0], filx );
-			ork::CVector3 F1; F1.Lerp( LF[0], RF[0], firx );
-			ork::CVector3 F2; F2.Lerp( LF[1], RF[1], firx );
-			ork::CVector3 F3; F3.Lerp( LF[1], RF[1], filx );
+			ork::fvec3 N0; N0.Lerp( LN[0], RN[0], filx );
+			ork::fvec3 N1; N1.Lerp( LN[0], RN[0], firx );
+			ork::fvec3 N2; N2.Lerp( LN[1], RN[1], firx );
+			ork::fvec3 N3; N3.Lerp( LN[1], RN[1], filx );
+			ork::fvec3 F0; F0.Lerp( LF[0], RF[0], filx );
+			ork::fvec3 F1; F1.Lerp( LF[0], RF[0], firx );
+			ork::fvec3 F2; F2.Lerp( LF[1], RF[1], firx );
+			ork::fvec3 F3; F3.Lerp( LF[1], RF[1], filx );
 
 			/////////////////////////////////////////////////////
 
-			ork::CVector3 lftn;
-			ork::CVector3 rhtn;
+			ork::fvec3 lftn;
+			ork::fvec3 rhtn;
 			lftn.Lerp( root_lftn, -root_rhtn, filx );
 			rhtn.Lerp( -root_lftn, root_rhtn, firx );
 			lftn.Normalize();
@@ -280,7 +280,7 @@ void RenderData::Update()
 			the_tile.mFrustum.mFarCorners[2].Lerp( LF[1], RF[1], firx );
 			the_tile.mFrustum.mFarCorners[3].Lerp( LF[1], RF[1], filx );
 
-			ork::CVector3 C; for( int i=0; i<4; i++ ) C += the_tile.mFrustum.mNearCorners[i];
+			ork::fvec3 C; for( int i=0; i<4; i++ ) C += the_tile.mFrustum.mNearCorners[i];
 			for( int i=0; i<4; i++ ) C += the_tile.mFrustum.mFarCorners[i];
 		
 			the_tile.mFrustum.mCenter = C*0.125f;
@@ -393,10 +393,10 @@ static rend_srcmesh* LoadRgm( const char* pfname, RenderData& rdata )
 
 	ShaderBuilder builder(&RayEngine,&rdata);
 	ork::RgmModel* prgmmodel = ork::LoadRgmFile( pfname, builder );
-	ork::CVector3 dist = (prgmmodel->mAABox.Max()-prgmmodel->mAABox.Min());
+	ork::fvec3 dist = (prgmmodel->mAABox.Max()-prgmmodel->mAABox.Min());
 
 	poutmesh->mTarget = (prgmmodel->mAABox.Min()+prgmmodel->mAABox.Max())*0.5f;
-	poutmesh->mEye = poutmesh->mTarget-ork::CVector3(0.0f,0.0f,dist.Mag());
+	poutmesh->mEye = poutmesh->mTarget-ork::fvec3(0.0f,0.0f,dist.Mag());
 
 	int inumsub = prgmmodel->minumsubs;
 
@@ -487,7 +487,7 @@ static rend_srcmesh* LoadObj( const char* pfname, RenderData& rdata )
 			int inumv = inpoly.GetNumSides();
 			OrkAssert(inumv==3);
 			outtri.mFaceNormal = inpoly.ComputeNormal( psrcsub->RefVertexPool() );
-			outtri.mSurfaceArea = inpoly.ComputeArea(psrcsub->RefVertexPool(), ork::CMatrix4::Identity );
+			outtri.mSurfaceArea = inpoly.ComputeArea(psrcsub->RefVertexPool(), ork::fmtx4::Identity );
 			int iv0 = inpoly.GetVertexID(0);
 			int iv1 = inpoly.GetVertexID(1);
 			int iv2 = inpoly.GetVertexID(2);
@@ -509,9 +509,9 @@ static rend_srcmesh* LoadObj( const char* pfname, RenderData& rdata )
 	}
 	aabox.EndGrow();
 
-	ork::CVector3 dist = (aabox.Max()-aabox.Min());
+	ork::fvec3 dist = (aabox.Max()-aabox.Min());
 	poutmesh->mTarget = (aabox.Min()+aabox.Max())*0.5f;
-	poutmesh->mEye = poutmesh->mTarget-ork::CVector3(0.0f,0.0f,dist.Mag());
+	poutmesh->mEye = poutmesh->mTarget-ork::fvec3(0.0f,0.0f,dist.Mag());
 
 	return poutmesh;
 }
@@ -530,8 +530,8 @@ render_graph::render_graph()
 	//mRenderData.mpSrcMesh = LoadObj("data/obj/rhino_2.obj",mRenderData);
 	//mRenderData.mpSrcMesh = LoadObj("data/obj/cube.obj",mRenderData);
 	//mRenderData.mpSrcMesh = LoadObj("data/obj/sphere.obj",mRenderData);
-	//mRenderData.mTarget = ork::CVector3(0.0f,0.0f,0.0f); //mRenderData.mpSrcMesh->mTarget;
-	//mRenderData.mEye = ork::CVector3(0.0f,5.0f,30.0f)*.7f; //mRenderData.mpSrcMesh->mEye;
+	//mRenderData.mTarget = ork::fvec3(0.0f,0.0f,0.0f); //mRenderData.mpSrcMesh->mTarget;
+	//mRenderData.mEye = ork::fvec3(0.0f,5.0f,30.0f)*.7f; //mRenderData.mpSrcMesh->mEye;
 	mRenderData.mTarget = mRenderData.mpSrcMesh->mTarget;
 	mRenderData.mEye = mRenderData.mpSrcMesh->mEye;
 

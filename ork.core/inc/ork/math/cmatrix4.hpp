@@ -15,12 +15,12 @@
 
 namespace ork {
 
-template <typename T> const TMatrix4<T> TMatrix4<T>::Identity;
+template <typename T> const Matrix44<T> Matrix44<T>::Identity;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetToIdentity(void) {
+template <typename T> void Matrix44<T>::SetToIdentity(void) {
   /*	xbox wasn't optimizing this.
       int	j,k;
 
@@ -51,7 +51,7 @@ template <typename T> void TMatrix4<T>::SetToIdentity(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::dump(const char* name) const {
+template <typename T> void Matrix44<T>::dump(const char* name) const {
   orkprintf("Matrix %p %s\n{	", this, name);
 
   for (int i = 0; i < 4; i++) {
@@ -69,25 +69,25 @@ template <typename T> void TMatrix4<T>::dump(const char* name) const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetElemYX(int ix, int iy, T val) { elements[iy][ix] = val; }
+template <typename T> void Matrix44<T>::SetElemYX(int ix, int iy, T val) { elements[iy][ix] = val; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T TMatrix4<T>::GetElemYX(int ix, int iy) const { return elements[iy][ix]; }
+template <typename T> T Matrix44<T>::GetElemYX(int ix, int iy) const { return elements[iy][ix]; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetElemXY(int ix, int iy, T val) { elements[ix][iy] = val; }
+template <typename T> void Matrix44<T>::SetElemXY(int ix, int iy, T val) { elements[ix][iy] = val; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T TMatrix4<T>::GetElemXY(int ix, int iy) const { return elements[ix][iy]; }
+template <typename T> T Matrix44<T>::GetElemXY(int ix, int iy) const { return elements[ix][iy]; }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Translate(const TVector4<T>& vec) {
-  TMatrix4<T> temp, res;
+template <typename T> void Matrix44<T>::Translate(const Vector4<T>& vec) {
+  Matrix44<T> temp, res;
   temp.SetTranslation(vec);
   res = temp * *this;
   *this = res;
@@ -95,8 +95,8 @@ template <typename T> void TMatrix4<T>::Translate(const TVector4<T>& vec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Translate(T vx, T vy, T vz) {
-  TMatrix4<T> temp, res;
+template <typename T> void Matrix44<T>::Translate(T vx, T vy, T vz) {
+  Matrix44<T> temp, res;
   temp.SetTranslation(vx, vy, vz);
   res = temp * *this;
   *this = res;
@@ -104,21 +104,21 @@ template <typename T> void TMatrix4<T>::Translate(T vx, T vy, T vz) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetTranslation(const TVector3<T>& vec) { SetColumn(3, TVector4<T>(vec, 1.0f)); }
+template <typename T> void Matrix44<T>::SetTranslation(const Vector3<T>& vec) { SetColumn(3, Vector4<T>(vec, 1.0f)); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector3<T> TMatrix4<T>::GetTranslation(void) const { return GetColumn(3).xyz(); }
+template <typename T> Vector3<T> Matrix44<T>::GetTranslation(void) const { return GetColumn(3).xyz(); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetTranslation(T _x, T _y, T _z) { SetTranslation(TVector3<T>(_x, _y, _z)); }
+template <typename T> void Matrix44<T>::SetTranslation(T _x, T _y, T _z) { SetTranslation(Vector3<T>(_x, _y, _z)); }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
-template <typename T> void TMatrix4<T>::SetRotateX(T rad) {
+template <typename T> void Matrix44<T>::SetRotateX(T rad) {
   T cosa, sina;
 
   cosa = CFloat::Cos(rad);
@@ -140,7 +140,7 @@ template <typename T> void TMatrix4<T>::SetRotateX(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
-template <typename T> void TMatrix4<T>::SetRotateY(T rad) {
+template <typename T> void Matrix44<T>::SetRotateY(T rad) {
   T cosa, sina;
 
   cosa = CFloat::Cos(rad);
@@ -162,7 +162,7 @@ template <typename T> void TMatrix4<T>::SetRotateY(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
-template <typename T> void TMatrix4<T>::SetRotateZ(T rad) {
+template <typename T> void Matrix44<T>::SetRotateZ(T rad) {
   T cosa, sina;
 
   cosa = CFloat::Cos(rad);
@@ -184,8 +184,8 @@ template <typename T> void TMatrix4<T>::SetRotateZ(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 //	rotate in place
 
-template <typename T> void TMatrix4<T>::RotateX(T rad) {
-  TMatrix4<T> temp, res;
+template <typename T> void Matrix44<T>::RotateX(T rad) {
+  Matrix44<T> temp, res;
   temp.SetRotateX(rad);
   res = temp * *this;
   *this = res;
@@ -194,8 +194,8 @@ template <typename T> void TMatrix4<T>::RotateX(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 //	rotate in place
 
-template <typename T> void TMatrix4<T>::RotateY(T rad) {
-  TMatrix4<T> temp, res;
+template <typename T> void Matrix44<T>::RotateY(T rad) {
+  Matrix44<T> temp, res;
   temp.SetRotateY(rad);
   res = temp * *this;
   *this = res;
@@ -204,8 +204,8 @@ template <typename T> void TMatrix4<T>::RotateY(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 //	rotate in place
 
-template <typename T> void TMatrix4<T>::RotateZ(T rad) {
-  TMatrix4<T> temp, res;
+template <typename T> void Matrix44<T>::RotateZ(T rad) {
+  Matrix44<T> temp, res;
   temp.SetRotateZ(rad);
   res = temp * *this;
   *this = res;
@@ -214,11 +214,11 @@ template <typename T> void TMatrix4<T>::RotateZ(T rad) {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetScale(const TVector4<T>& vec) { SetScale(vec.GetX(), vec.GetY(), vec.GetZ()); }
+template <typename T> void Matrix44<T>::SetScale(const Vector4<T>& vec) { SetScale(vec.GetX(), vec.GetY(), vec.GetZ()); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetScale(T x, T y, T z) {
+template <typename T> void Matrix44<T>::SetScale(T x, T y, T z) {
   SetElemXY(0, 0, x);
   SetElemXY(1, 0, 0.0f);
   SetElemXY(2, 0, 0.0f);
@@ -234,12 +234,12 @@ template <typename T> void TMatrix4<T>::SetScale(T x, T y, T z) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetScale(T s) { SetScale(s, s, s); }
+template <typename T> void Matrix44<T>::SetScale(T s) { SetScale(s, s, s); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Scale(const TVector4<T>& vec) {
-  TMatrix4<T> temp, res;
+template <typename T> void Matrix44<T>::Scale(const Vector4<T>& vec) {
+  Matrix44<T> temp, res;
   temp.SetScale(vec);
   res = temp * *this;
   *this = res;
@@ -247,8 +247,8 @@ template <typename T> void TMatrix4<T>::Scale(const TVector4<T>& vec) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Scale(T xscl, T yscl, T zscl) {
-  TMatrix4<T> temp, res;
+template <typename T> void Matrix44<T>::Scale(T xscl, T yscl, T zscl) {
+  Matrix44<T> temp, res;
   temp.SetScale(xscl, yscl, zscl);
   res = temp * *this;
   *this = res;
@@ -258,7 +258,7 @@ template <typename T> void TMatrix4<T>::Scale(T xscl, T yscl, T zscl) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // sm - rotation matrix from quaternion
-template <typename T> void TMatrix4<T>::FromQuaternion(TQuaternion<T> quat) {
+template <typename T> void Matrix44<T>::FromQuaternion(TQuaternion<T> quat) {
   T xx = quat.GetX() * quat.GetX();
   T yy = quat.GetY() * quat.GetY();
   T zz = quat.GetZ() * quat.GetZ();
@@ -290,10 +290,10 @@ template <typename T> void TMatrix4<T>::FromQuaternion(TQuaternion<T> quat) {
 ///////////////////////////////////////////////////////////////////////////////
 // sm - billboard matrix from object/view position
 
-template <typename T> void TMatrix4<T>::CreateBillboard(TVector3<T> objectPos, TVector3<T> viewPos, TVector3<T> upVec) {
-  TVector3<T> dir;
-  TVector3<T> res;
-  TVector3<T> cross;
+template <typename T> void Matrix44<T>::CreateBillboard(Vector3<T> objectPos, Vector3<T> viewPos, Vector3<T> upVec) {
+  Vector3<T> dir;
+  Vector3<T> res;
+  Vector3<T> cross;
 
   dir.SetX(objectPos.GetX() - viewPos.GetX());
   dir.SetY(objectPos.GetY() - viewPos.GetY());
@@ -361,8 +361,8 @@ template <typename T> void fpuM44xM44(const T a[4][4], const T b[4][4], T c[4][4
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TMatrix4<T> TMatrix4<T>::MatrixMult(const TMatrix4<T>& mat1) const {
-  TMatrix4<T> result;
+template <typename T> Matrix44<T> Matrix44<T>::MatrixMult(const Matrix44<T>& mat1) const {
+  Matrix44<T> result;
 
   ////////////////////////////////////////////////////////////////
   //              i  j                i  k                  k  j
@@ -430,8 +430,8 @@ template <typename T> TMatrix4<T> TMatrix4<T>::MatrixMult(const TMatrix4<T>& mat
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TMatrix4<T> TMatrix4<T>::Mult(T scalar) const {
-  TMatrix4<T> res;
+template <typename T> Matrix44<T> Matrix44<T>::Mult(T scalar) const {
+  Matrix44<T> res;
 
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
@@ -444,8 +444,8 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Mult(T scalar) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TMatrix4<T> TMatrix4<T>::Concat43(const TMatrix4<T>& mat1) const {
-  TMatrix4<T> result;
+template <typename T> Matrix44<T> Matrix44<T>::Concat43(const Matrix44<T>& mat1) const {
+  Matrix44<T> result;
 
   ////////////////////////////////////////////////////////////////
   //              i  j                i  k                  k  j
@@ -502,8 +502,8 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43(const TMatrix4<T>& mat1)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TMatrix4<T> TMatrix4<T>::Concat43Transpose(const TMatrix4<T>& mat1) const {
-  TMatrix4<T> result;
+template <typename T> Matrix44<T> Matrix44<T>::Concat43Transpose(const Matrix44<T>& mat1) const {
+  Matrix44<T> result;
 
   ////////////////////////////////////////////////////////////////
   //              i  j                i  k                  k  j
@@ -560,7 +560,7 @@ template <typename T> TMatrix4<T> TMatrix4<T>::Concat43Transpose(const TMatrix4<
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::CorrectionMatrix(const TMatrix4<T>& from, const TMatrix4<T>& to) {
+template <typename T> void Matrix44<T>::CorrectionMatrix(const Matrix44<T>& from, const Matrix44<T>& to) {
   /////////////////////////
   //
   //	GENERATE CORRECTION	TO GET FROM A to C
@@ -571,7 +571,7 @@ template <typename T> void TMatrix4<T>::CorrectionMatrix(const TMatrix4<T>& from
   //
   /////////////////////////
 
-  TMatrix4<T> iFrom = from;
+  Matrix44<T> iFrom = from;
 
   // iFrom.Inverse();
   GEMSMatrixInverse(from, iFrom);
@@ -581,8 +581,8 @@ template <typename T> void TMatrix4<T>::CorrectionMatrix(const TMatrix4<T>& from
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetRotation(const TMatrix4<T>& from) {
-  TMatrix4<T> rval = from;
+template <typename T> void Matrix44<T>::SetRotation(const Matrix44<T>& from) {
+  Matrix44<T> rval = from;
   rval.SetTranslation(T(0.0f), T(0.0f), T(0.0f));
   rval.Normalize();
   *this = rval;
@@ -590,24 +590,24 @@ template <typename T> void TMatrix4<T>::SetRotation(const TMatrix4<T>& from) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetTranslation(const TMatrix4<T>& from) {
+template <typename T> void Matrix44<T>::SetTranslation(const Matrix44<T>& from) {
   SetToIdentity();
-  TVector4<T> t = from.GetTranslation();
+  Vector4<T> t = from.GetTranslation();
   SetTranslation(t);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void TMatrix4<T>::SetScale(const TMatrix4<T>& from) // assumes rot is zero!
+void Matrix44<T>::SetScale(const Matrix44<T>& from) // assumes rot is zero!
 {
-  TMatrix4<T> RS = from;
+  Matrix44<T> RS = from;
   RS.SetTranslation(T(0.0f), T(0.0f), T(0.0f));
 
-  TMatrix4<T> R = RS;
+  Matrix44<T> R = RS;
   R.Normalize();
 
-  TMatrix4<T> S;
+  Matrix44<T> S;
   S.CorrectionMatrix(R, RS);
 
   *this = S;
@@ -616,22 +616,22 @@ void TMatrix4<T>::SetScale(const TMatrix4<T>& from) // assumes rot is zero!
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void TMatrix4<T>::Lerp(const TMatrix4<T>& from, const TMatrix4<T>& to, T par) // par 0.0f .. 1.0f
+void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) // par 0.0f .. 1.0f
 {
   //////////////////
 
-  TVector4<T> vF = from.GetTranslation();
-  TVector4<T> vT = to.GetTranslation();
-  TVector4<T> vT2;
+  Vector4<T> vF = from.GetTranslation();
+  Vector4<T> vT = to.GetTranslation();
+  Vector4<T> vT2;
   vT2.Lerp(vF, vT, par);
-  TMatrix4<T> matT;
+  Matrix44<T> matT;
   matT.SetTranslation(vT2);
 
   //////////////////
 
-  TMatrix4<T> FromR;
+  Matrix44<T> FromR;
   FromR.SetRotation(from); // froms ROTATION
-  TMatrix4<T> ToR;
+  Matrix44<T> ToR;
   ToR.SetRotation(to); // froms ROTATION
 
   TQuaternion<T> FromQ;
@@ -639,17 +639,17 @@ void TMatrix4<T>::Lerp(const TMatrix4<T>& from, const TMatrix4<T>& to, T par) //
   TQuaternion<T> ToQ;
   ToQ.FromMatrix(ToR);
 
-  TMatrix4<T> CORR;
+  Matrix44<T> CORR;
   CORR.CorrectionMatrix(from, to); // CORR.Normalize();
 
   TQuaternion<T> Qidn;
   TQuaternion<T> Qrot;
   Qrot.FromMatrix(CORR);
 
-  // TVector4<T>  rawaxisang = Qrot.ToAxisAngle();
+  // Vector4<T>  rawaxisang = Qrot.ToAxisAngle();
   // T rawangle = rawaxisang.GetW();
   // T	newangle = rawangle*par;
-  // TVector4<T> newaxisang = rawaxisang;
+  // Vector4<T> newaxisang = rawaxisang;
   // newaxisang.SetW( newangle );
   // TCQuaternion newQrot;	newQrot.FromAxisAngle( newaxisang );
 
@@ -669,7 +669,7 @@ void TMatrix4<T>::Lerp(const TMatrix4<T>& from, const TMatrix4<T>& to, T par) //
 
   // TCQuaternion newQrot = FromQ.Slerp( ToQ, par );
 
-  TMatrix4<T> matR;
+  Matrix44<T> matR;
   matR = newQrot.ToMatrix();
   // matR.Normalize();
 
@@ -680,10 +680,10 @@ void TMatrix4<T>::Lerp(const TMatrix4<T>& from, const TMatrix4<T>& to, T par) //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::DecomposeMatrix(TVector3<T>& pos, TQuaternion<T>& qrot, T& Scale) const {
+template <typename T> void Matrix44<T>::DecomposeMatrix(Vector3<T>& pos, TQuaternion<T>& qrot, T& Scale) const {
   pos = GetTranslation();
 
-  TMatrix4<T> rot = *this;
+  Matrix44<T> rot = *this;
 
   rot.SetElemYX(3, 0, T(0.0f));
   rot.SetElemYX(3, 1, T(0.0f));
@@ -694,8 +694,8 @@ template <typename T> void TMatrix4<T>::DecomposeMatrix(TVector3<T>& pos, TQuate
 
   rot.SetElemYX(3, 3, T(1.0f));
 
-  TVector4<T> UnitVector(T(1.0f), T(0.0f), T(0.0f), T(1.0f));
-  TVector4<T> XFVector = UnitVector.Transform(rot);
+  Vector4<T> UnitVector(T(1.0f), T(0.0f), T(0.0f), T(1.0f));
+  Vector4<T> XFVector = UnitVector.Transform(rot);
 
   Scale = XFVector.Mag();
 
@@ -710,7 +710,7 @@ template <typename T> void TMatrix4<T>::DecomposeMatrix(TVector3<T>& pos, TQuate
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::ComposeMatrix(const TVector3<T>& pos, const TQuaternion<T>& qrot, const T& Scale) {
+template <typename T> void Matrix44<T>::ComposeMatrix(const Vector3<T>& pos, const TQuaternion<T>& qrot, const T& Scale) {
   *this = qrot.ToMatrix();
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
@@ -723,8 +723,8 @@ template <typename T> void TMatrix4<T>::ComposeMatrix(const TVector3<T>& pos, co
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector4<T> TMatrix4<T>::GetRow(int irow) const {
-  TVector4<T> out;
+template <typename T> Vector4<T> Matrix44<T>::GetRow(int irow) const {
+  Vector4<T> out;
   out.SetX(GetElemXY(0, irow));
   out.SetY(GetElemXY(1, irow));
   out.SetZ(GetElemXY(2, irow));
@@ -734,8 +734,8 @@ template <typename T> TVector4<T> TMatrix4<T>::GetRow(int irow) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector4<T> TMatrix4<T>::GetColumn(int icol) const {
-  TVector4<T> out;
+template <typename T> Vector4<T> Matrix44<T>::GetColumn(int icol) const {
+  Vector4<T> out;
   out.SetX(GetElemXY(icol, 0));
   out.SetY(GetElemXY(icol, 1));
   out.SetZ(GetElemXY(icol, 2));
@@ -745,7 +745,7 @@ template <typename T> TVector4<T> TMatrix4<T>::GetColumn(int icol) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetRow(int irow, const TVector4<T>& v) {
+template <typename T> void Matrix44<T>::SetRow(int irow, const Vector4<T>& v) {
   SetElemXY(0, irow, v.GetX());
   SetElemXY(1, irow, v.GetY());
   SetElemXY(2, irow, v.GetZ());
@@ -754,7 +754,7 @@ template <typename T> void TMatrix4<T>::SetRow(int irow, const TVector4<T>& v) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::SetColumn(int icol, const TVector4<T>& v) {
+template <typename T> void Matrix44<T>::SetColumn(int icol, const Vector4<T>& v) {
   SetElemXY(icol, 0, v.GetX());
   SetElemXY(icol, 1, v.GetY());
   SetElemXY(icol, 2, v.GetZ());
@@ -763,15 +763,15 @@ template <typename T> void TMatrix4<T>::SetColumn(int icol, const TVector4<T>& v
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::fromNormalVectors(const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv) {
-  SetColumn(0, TVector4<T>(xv, T(0)));
-  SetColumn(1, TVector4<T>(yv, T(0)));
-  SetColumn(2, TVector4<T>(zv, T(0)));
+template <typename T> void Matrix44<T>::fromNormalVectors(const Vector3<T>& xv, const Vector3<T>& yv, const Vector3<T>& zv) {
+  SetColumn(0, Vector4<T>(xv, T(0)));
+  SetColumn(1, Vector4<T>(yv, T(0)));
+  SetColumn(2, Vector4<T>(zv, T(0)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::toNormalVectors(TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv) const {
+template <typename T> void Matrix44<T>::toNormalVectors(Vector3<T>& xv, Vector3<T>& yv, Vector3<T>& zv) const {
   xv = GetColumn(0).xyz();
   yv = GetColumn(1).xyz();
   zv = GetColumn(2).xyz();
@@ -782,7 +782,7 @@ template <typename T> void TMatrix4<T>::toNormalVectors(TVector3<T>& xv, TVector
 // this will project a point into a clip space box ranged from -1..1 on x/y and 0..1 on z
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Perspective(T fovy, T aspect, T fnear, T ffar) {
+template <typename T> void Matrix44<T>::Perspective(T fovy, T aspect, T fnear, T ffar) {
   OrkAssert(fnear >= 0.0f);
   OrkAssert(ffar > fnear);
 
@@ -800,7 +800,7 @@ template <typename T> void TMatrix4<T>::Perspective(T fovy, T aspect, T fnear, T
 // this will project a point into a clip space box ranged from -1..1 on x/y and 0..1 on z
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Frustum(T left, T right, T top, T bottom, T zn, T zf) {
+template <typename T> void Matrix44<T>::Frustum(T left, T right, T top, T bottom, T zn, T zf) {
 
   SetToIdentity();
 
@@ -821,16 +821,16 @@ template <typename T> void TMatrix4<T>::Frustum(T left, T right, T top, T bottom
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::LookAt(const TVector3<T>& Eye, const TVector3<T>& Ctr, const TVector3<T>& Up) {
+template <typename T> void Matrix44<T>::LookAt(const Vector3<T>& Eye, const Vector3<T>& Ctr, const Vector3<T>& Up) {
   SetToIdentity();
 
-  TVector3<T> zaxis = (Ctr - Eye).Normal();
-  TVector3<T> xaxis = (Up.Cross(zaxis)).Normal();
-  TVector3<T> yaxis = zaxis.Cross(xaxis);
+  Vector3<T> zaxis = (Ctr - Eye).Normal();
+  Vector3<T> xaxis = (Up.Cross(zaxis)).Normal();
+  Vector3<T> yaxis = zaxis.Cross(xaxis);
 
-  SetRow(0, TVector4<T>(xaxis, 0.0f));
-  SetRow(1, TVector4<T>(yaxis, 0.0f));
-  SetRow(2, TVector4<T>(zaxis, 0.0f));
+  SetRow(0, Vector4<T>(xaxis, 0.0f));
+  SetRow(1, Vector4<T>(yaxis, 0.0f));
+  SetRow(2, Vector4<T>(zaxis, 0.0f));
 
   SetElemXY(3, 0, -xaxis.Dot(Eye));
   SetElemXY(3, 1, -yaxis.Dot(Eye));
@@ -839,10 +839,10 @@ template <typename T> void TMatrix4<T>::LookAt(const TVector3<T>& Eye, const TVe
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::LookAt(T eyex, T eyey, T eyez, T centerx, T centery, T centerz, T upx, T upy, T upz) {
-  TVector3<T> Ctr(centerx, centery, centerz);
-  TVector3<T> Eye(eyex, eyey, eyez);
-  TVector3<T> Up(upx, upy, upz);
+template <typename T> void Matrix44<T>::LookAt(T eyex, T eyey, T eyez, T centerx, T centery, T centerz, T upx, T upy, T upz) {
+  Vector3<T> Ctr(centerx, centery, centerz);
+  Vector3<T> Eye(eyex, eyey, eyez);
+  Vector3<T> Up(upx, upy, upz);
   LookAt(Eye, Ctr, Up);
 }
 
@@ -850,7 +850,7 @@ template <typename T> void TMatrix4<T>::LookAt(T eyex, T eyey, T eyez, T centerx
 // abstract ortho (all axis -1 .. 1 )
 // if you want device specific see the gfxtarget
 
-template <typename T> void TMatrix4<T>::Ortho(T left, T right, T top, T bottom, T fnear, T ffar) {
+template <typename T> void Matrix44<T>::Ortho(T left, T right, T top, T bottom, T fnear, T ffar) {
   T invWidth = T(1.0f) / (right - left);
   T invHeight = T(1.0f) / (top - bottom);
   T invDepth = T(1.0f) / (ffar - fnear);
@@ -885,29 +885,29 @@ template <typename T> void TMatrix4<T>::Ortho(T left, T right, T top, T bottom, 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-bool TMatrix4<T>::UnProject(const TVector4<T>& rVWin, const TMatrix4<T>& rIMVP, const SRect& rVP, TVector3<T>& rVObj) {
+bool Matrix44<T>::UnProject(const Vector4<T>& rVWin, const Matrix44<T>& rIMVP, const SRect& rVP, Vector3<T>& rVObj) {
   T in[4];
   T _z = rVWin.GetZ();
   in[0] = (rVWin.GetX() - T(rVP.miX)) * T(2) / T(rVP.miW) - T(1.0f);
   in[1] = (T(rVP.miH) - rVWin.GetY() - T(rVP.miY)) * T(2) / T(rVP.miH) - T(1.0f);
   in[2] = _z;
   in[3] = T(1.0f);
-  TVector4<T> rVDev(in[0], in[1], in[2], in[3]);
-  TVector4<T> rval = rVDev.Transform(rIMVP);
+  Vector4<T> rVDev(in[0], in[1], in[2], in[3]);
+  Vector4<T> rval = rVDev.Transform(rIMVP);
   rval.PerspectiveDivide();
   rVObj = rval.xyz();
   return true;
 }
-template <typename T> bool TMatrix4<T>::UnProject(const TMatrix4<T>& rIMVP, const TVector3<T>& ClipCoord, TVector3<T>& rVObj) {
-  TVector4<T> rval = ClipCoord.Transform(rIMVP);
+template <typename T> bool Matrix44<T>::UnProject(const Matrix44<T>& rIMVP, const Vector3<T>& ClipCoord, Vector3<T>& rVObj) {
+  Vector4<T> rval = ClipCoord.Transform(rIMVP);
   rval.PerspectiveDivide();
   rVObj = rval.xyz();
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Transpose(void) {
-  TMatrix4<T> temp = *this;
+template <typename T> void Matrix44<T>::Transpose(void) {
+  Matrix44<T> temp = *this;
 
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -918,8 +918,8 @@ template <typename T> void TMatrix4<T>::Transpose(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Inverse(void) {
-  TMatrix4<T> result;
+template <typename T> void Matrix44<T>::Inverse(void) {
+  Matrix44<T> result;
 
   /////////////
   // The rotational part of the matrix is simply the transpose of the original matrix.
@@ -966,8 +966,8 @@ template <typename T> void TMatrix4<T>::Inverse(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::InverseTranspose(void) {
-  TMatrix4<T> result;
+template <typename T> void Matrix44<T>::InverseTranspose(void) {
+  Matrix44<T> result;
 
   /////////////
   // The rotational part of the matrix is simply the transpose of the original matrix.
@@ -1014,8 +1014,8 @@ template <typename T> void TMatrix4<T>::InverseTranspose(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::Normalize(void) {
-  TMatrix4<T> result;
+template <typename T> void Matrix44<T>::Normalize(void) {
+  Matrix44<T> result;
 
   T Xx = GetElemXY(0, 0);
   T Xy = GetElemXY(0, 1);

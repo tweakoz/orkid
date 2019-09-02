@@ -625,7 +625,7 @@ void AudioEffectComponentInst::DoUpdate(ork::ent::SceneInst *inst)
 
 		const ork::ent::Entity * pent = GetEntity();
 
-		ork::CVector3 emitter_trans = mXform->GetTransform().GetPosition();
+		ork::fvec3 emitter_trans = mXform->GetTransform().GetPosition();
 
 		const int kmaxpbs = 4;
 		int inumpbsfreed = 0;
@@ -647,8 +647,8 @@ void AudioEffectComponentInst::DoUpdate(ork::ent::SceneInst *inst)
 			else
 			{
 				/*const ork::lev2::AudioProgram* progr = playback->GetProgram();
-				const ork::CMatrix4& mtx = mXform->GetMatrix();
-				const ork::CVector3 pos = mtx.GetTranslation();
+				const ork::fmtx4& mtx = mXform->GetMatrix();
+				const ork::fvec3 pos = mtx.GetTranslation();
 				if( 0 == strcmp( "SpecialAttack_Sponge", progr->GetName().c_str() ) )
 				{
 					//orkprintf( "pb<%s> pos<%f,%f,%f>\n", progr->GetName().c_str(), pos.GetX(), pos.GetY(), pos.GetZ() );
@@ -682,9 +682,9 @@ void AudioEffectComponentInst::UpdateEmitter( const ork::CCameraData* camdat1, c
 
 		const float kmaxemitterdistsq = emitterctx.mMaxDist * emitterctx.mMaxDist;
 
-		ork::CVector3 emitter_trans = mXform->GetTransform().GetPosition();
-		ork::CVector3 eye1 = camdat1 ? camdat1->GetEye() : emitter_trans;
-		ork::CVector3 eye2 = camdat2 ? camdat2->GetEye() : emitter_trans;
+		ork::fvec3 emitter_trans = mXform->GetTransform().GetPosition();
+		ork::fvec3 eye1 = camdat1 ? camdat1->GetEye() : emitter_trans;
+		ork::fvec3 eye2 = camdat2 ? camdat2->GetEye() : emitter_trans;
 
 		float fdistsq1 = (eye1-emitter_trans).MagSquared();
 		float fdistsq2 = (eye2-emitter_trans).MagSquared();
@@ -855,7 +855,7 @@ bool AudioEffectComponentInst::DoLink(ork::ent::SceneInst *psi)
 	mDflowRecv = pent->GetTypedComponent<ork::ent::DataflowRecieverComponentInst>();
 	return true;
 }
-bool AudioEffectComponentInst::DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world)
+bool AudioEffectComponentInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world)
 {
 	////////////////////////////////////////////////
 	// do we have an emitter ?

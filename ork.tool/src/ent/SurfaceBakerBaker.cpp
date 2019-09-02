@@ -525,7 +525,7 @@ void CollectLights( MeshUtil::LightContainer& lc, const SceneData* psd, const st
 			
 			if( bmatchitem )
 			{
-				CMatrix4 MtxWorld;
+				fmtx4 MtxWorld;
 				pentd->GetDagNode().GetTransformNode().GetMatrix(MtxWorld);
 				const LightingComponentData* plightdatacomp = pentd->GetTypedComponent<LightingComponentData>();
 				if( plightdatacomp )
@@ -535,11 +535,11 @@ void CollectLights( MeshUtil::LightContainer& lc, const SceneData* psd, const st
 						const ork::lev2::PointLightData* ppld = rtti::autocast(plightdata);
 						const ork::lev2::SpotLightData* psld = rtti::autocast(plightdata);
 						const ork::lev2::AmbientLightData* pald = rtti::autocast(plightdata);
-						CVector3 LightColor = plightdata->GetColor();
+						fvec3 LightColor = plightdata->GetColor();
 						MeshUtil::Light* pgl = 0;
 						if( pdld )
 						{	ork::lev2::DirectionalLight dlight( MtxWorld, pdld );
-							ork::CVector3 LightDir = dlight.GetDirection();
+							ork::fvec3 LightDir = dlight.GetDirection();
 							MeshUtil::DirLight* pgdl = new MeshUtil::DirLight;
 							pgdl->mWorldMatrix = MtxWorld;
 							pgdl->mFrom = dlight.GetWorldPosition();
@@ -549,7 +549,7 @@ void CollectLights( MeshUtil::LightContainer& lc, const SceneData* psd, const st
 						}
 						if( ppld )
 						{	ork::lev2::PointLight plight( MtxWorld, ppld );
-							ork::CVector3 LightDir = plight.GetDirection();
+							ork::fvec3 LightDir = plight.GetDirection();
 							MeshUtil::PointLight* pgpl = new MeshUtil::PointLight;
 							pgpl->mWorldMatrix = MtxWorld;
 							pgpl->mPoint = plight.GetWorldPosition();

@@ -65,7 +65,7 @@ public:
 
   float mForce;
   float mTorque;
-  CVector3 mOrigin;
+  fvec3 mOrigin;
   float mPFACTOR;
   float mIFACTOR;
   float mDFACTOR;
@@ -166,7 +166,7 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
   const btMotionState* motionState = rbody->getMotionState();
 
   float FORCE = mTestData.mForce;
-  CVector3 ORIGIN = mTestData.mOrigin;
+  fvec3 ORIGIN = mTestData.mOrigin;
   mPIDsteering.Configure(mTestData.mPFACTOR, mTestData.mIFACTOR, mTestData.mDFACTOR);
   mPIDroll.Configure(mTestData.mPFACTOR, mTestData.mIFACTOR, mTestData.mDFACTOR);
 
@@ -175,7 +175,7 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
   if (mpTarget) {
     DagNode& dnode = mpTarget->GetDagNode();
     TransformNode& t3d = dnode.GetTransformNode();
-    CMatrix4 mtx = t3d.GetTransform().GetMatrix();
+    fmtx4 mtx = t3d.GetTransform().GetMatrix();
     ORIGIN = mtx.GetTranslation();
   }
 
@@ -185,22 +185,22 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
   /////////////////////////////
   btTransform xf;
   motionState->getWorldTransform(xf);
-  CMatrix4 xfW = !xf;
-  CVector3 pos = !xf.getOrigin();
-  CVector3 znormal = xfW.GetZNormal();
-  CVector3 xnormal = xfW.GetXNormal();
-  CVector3 ynormal = xfW.GetYNormal();
-  CVector3 dir_to_origin = (ORIGIN - pos).Normal();
+  fmtx4 xfW = !xf;
+  fvec3 pos = !xf.getOrigin();
+  fvec3 znormal = xfW.GetZNormal();
+  fvec3 xnormal = xfW.GetXNormal();
+  fvec3 ynormal = xfW.GetYNormal();
+  fvec3 dir_to_origin = (ORIGIN - pos).Normal();
   /////////////////////////////
 
   auto shape_inst = boci->GetShapeInst();
 
   const AABox& bbox = shape_inst->GetBoundingBox();
-  CVector3 ctr = (bbox.Min() + bbox.Max()) * 0.5f;
-  CVector3 ctr_bak(ctr.GetX(), ctr.GetY(), bbox.Max().GetZ());
-  CVector3 force_pos = pos; // - ctr_bak;
-  CVector3 force_dir = dir_to_origin;
-  CVector3 force_amt = force_dir * FORCE;
+  fvec3 ctr = (bbox.Min() + bbox.Max()) * 0.5f;
+  fvec3 ctr_bak(ctr.GetX(), ctr.GetY(), bbox.Max().GetZ());
+  fvec3 force_pos = pos; // - ctr_bak;
+  fvec3 force_dir = dir_to_origin;
+  fvec3 force_amt = force_dir * FORCE;
   // rbody->applyForce( ! force_amt, ! force_pos );
   rbody->applyCentralForce(!force_amt);
   /////////////////////////////
@@ -209,16 +209,16 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
   /////////////////////////////
   // Get Torque Axis
 
-  CVector3 Z_torque_vec = znormal.Cross(dir_to_origin);
+  fvec3 Z_torque_vec = znormal.Cross(dir_to_origin);
 
   ///////////////////////////////
   // torque to for ROLL
   {
-    CVector3 Y_reference = Z_torque_vec.Cross(dir_to_origin);
+    fvec3 Y_reference = Z_torque_vec.Cross(dir_to_origin);
     /////////////////////////////
     // the Z_torque_ref_plane is the plane
     //
-    CPlane Z_torque_ref_plane;
+    fplane3 Z_torque_ref_plane;
     Z_torque_ref_plane.CalcFromNormalAndOrigin(Z_torque_vec, pos);
     float ztrpD = Z_torque_ref_plane.GetPointDistance(ORIGIN);
     /////////////////////////////
@@ -231,8 +231,8 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
     }
     /////////////////////////////
     // Splitting plane for signed error
-    CVector3 Y_split_vec = ynormal.Cross(Z_torque_vec);
-    CPlane Y_plane;
+    fvec3 Y_split_vec = ynormal.Cross(Z_torque_vec);
+    fplane3 Y_plane;
     Y_plane.CalcFromNormalAndOrigin(Z_torque_vec, pos); //! calc given normal and position of plane origin
     /////////////////////////////
     // Signed Error
@@ -263,8 +263,8 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
     }
     /////////////////////////////
     // Splitting plane for signed error
-    CVector3 Z_split_vec = znormal.Cross(Z_torque_vec);
-    CPlane Z_plane;
+    fvec3 Z_split_vec = znormal.Cross(Z_torque_vec);
+    fplane3 Z_plane;
     Z_plane.CalcFromNormalAndOrigin(Z_split_vec, pos); //! calc given normal and position of plane origin
     /////////////////////////////
     // Signed Error
@@ -296,7 +296,7 @@ public:
   DirectionalForceData() : mForce(1.0f), mDirection(0.0f, 0.0f, 0.0f) {}
 
   float GetForce() const { return mForce; }
-  const CVector3& GetDirection() const { return mDirection; }
+  const fvec3& GetDirection() const { return mDirection; }
 
 private:
   ~DirectionalForceData() final {}
@@ -304,7 +304,7 @@ private:
                                                              ork::ent::Entity* pent) const final;
 
   float mForce;
-  CVector3 mDirection;
+  fvec3 mDirection;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -350,24 +350,24 @@ void DirectionalForceInst::UpdateForces(ork::ent::SceneInst* inst, BulletObjectC
   const btMotionState* motionState = rbody->getMotionState();
 
   float FORCE = mData.GetForce();
-  CVector3 DIRECTION = mData.GetDirection();
+  fvec3 DIRECTION = mData.GetDirection();
 
   /////////////////////////////
   btTransform xf;
   motionState->getWorldTransform(xf);
-  CMatrix4 xfW = !xf;
-  CVector3 pos = !xf.getOrigin();
-  CVector3 znormal = xfW.GetZNormal();
-  CVector3 xnormal = xfW.GetXNormal();
-  CVector3 ynormal = xfW.GetYNormal();
+  fmtx4 xfW = !xf;
+  fvec3 pos = !xf.getOrigin();
+  fvec3 znormal = xfW.GetZNormal();
+  fvec3 xnormal = xfW.GetXNormal();
+  fvec3 ynormal = xfW.GetYNormal();
   /////////////////////////////
   auto shape_inst = boci->GetShapeInst();
   const AABox& bbox = shape_inst->GetBoundingBox();
 
-  CVector3 ctr = (bbox.Min() + bbox.Max()) * 0.5f;
-  CVector3 ctr_bak(ctr.GetX(), ctr.GetY(), bbox.Max().GetZ());
-  CVector3 force_pos = pos; // - ctr_bak;
-  CVector3 force_amt = DIRECTION * FORCE;
+  fvec3 ctr = (bbox.Min() + bbox.Max()) * 0.5f;
+  fvec3 ctr_bak(ctr.GetX(), ctr.GetY(), bbox.Max().GetZ());
+  fvec3 force_pos = pos; // - ctr_bak;
+  fvec3 force_amt = DIRECTION * FORCE;
   // rbody->applyForce( ! force_amt, ! force_pos );
   rbody->applyCentralForce(!force_amt);
   /////////////////////////////

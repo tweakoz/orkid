@@ -45,9 +45,9 @@ public:
 	enum EChannelType
 	{
 		EXGMAC_FLOAT = 0,
-		EXGMAC_VECT2,		// CVector2
-		EXGMAC_VECT3,		// CVector3
-		EXGMAC_VECT4,		// CVector4
+		EXGMAC_VECT2,		// fvec2
+		EXGMAC_VECT3,		// fvec3
+		EXGMAC_VECT4,		// fvec4
 		//EXGMAC_MTX43,		// 4x3 Matrix
 		EXGMAC_MTX44,		// 4x4 Matrix
 		EXGMAC_DCMTX,		// Decomposed 4x4 Matrix (quat, scale and pos)
@@ -103,15 +103,15 @@ class XgmVect3AnimChannel : public XgmAnimChannel
 {
 	RttiDeclareConcrete(XgmVect3AnimChannel,XgmAnimChannel);
 
-	orkvector<CVector3>	mSampledFrames;
+	orkvector<fvec3>	mSampledFrames;
 
 public:
 
 	XgmVect3AnimChannel( const PoolString& ObjName, const PoolString & ChanName, const PoolString & Usage );
 	XgmVect3AnimChannel();
 
-	void AddFrame( const CVector3& v ) { mSampledFrames.push_back(v); }
-	const CVector3& GetFrame(int index ) const { return mSampledFrames[index]; }
+	void AddFrame( const fvec3& v ) { mSampledFrames.push_back(v); }
+	const fvec3& GetFrame(int index ) const { return mSampledFrames[index]; }
 	void ReserveFrames( int iv ) { mSampledFrames.reserve(iv); }
 
 private:
@@ -125,15 +125,15 @@ class XgmVect4AnimChannel : public XgmAnimChannel
 {
 	RttiDeclareConcrete(XgmVect4AnimChannel,XgmAnimChannel);
 
-	orkvector<CVector4>	mSampledFrames;
+	orkvector<fvec4>	mSampledFrames;
 
 public:
 
 	XgmVect4AnimChannel( const PoolString& ObjName, const PoolString & ChanName, const PoolString & Usage );
 	XgmVect4AnimChannel();
 
-	void AddFrame( const CVector4& v ) { mSampledFrames.push_back(v); }
-	const CVector4& GetFrame(int index ) const { return mSampledFrames[index]; }
+	void AddFrame( const fvec4& v ) { mSampledFrames.push_back(v); }
+	const fvec4& GetFrame(int index ) const { return mSampledFrames[index]; }
 	void ReserveFrames( int iv ) { mSampledFrames.reserve(iv); }
 
 private:
@@ -162,10 +162,10 @@ enum EXFORM_COMPONENT
 struct DecompMtx44
 {
 	CQuaternion mRot;
-	CVector3	mTrans;
+	fvec3	mTrans;
 	float		mScale;
 
-	void Compose(CMatrix4 &mtx, EXFORM_COMPONENT components) const;
+	void Compose(fmtx4 &mtx, EXFORM_COMPONENT components) const;
 
 	void EndianSwap();
 };
@@ -206,7 +206,7 @@ class XgmMatrixAnimChannel : public XgmAnimChannel
 
 protected:
 
-	CMatrix4*				mSampledFrames;
+	fmtx4*				mSampledFrames;
 	int						miNumFrames;
 	int						miAddIndex;
 
@@ -215,8 +215,8 @@ public:
 	XgmMatrixAnimChannel( const PoolString& ObjName, const PoolString & ChanName, const PoolString & Usage );
 	XgmMatrixAnimChannel();
 
-	void AddFrame( const CMatrix4& v );
-	const CMatrix4& GetFrame( int index ) const;
+	void AddFrame( const fmtx4& v );
+	const fmtx4& GetFrame( int index ) const;
 	void ReserveFrames( int iv ); 
 };
 
@@ -359,8 +359,8 @@ public:
 struct XgmSkelNode
 {
 	std::string						mNodeName;
-	CMatrix4						mBindMatrixInverse;
-	CMatrix4						mJointMatrix;
+	fmtx4						mBindMatrixInverse;
+	fmtx4						mJointMatrix;
 	XgmSkelNode*					mpParent;
 	orkvector<XgmSkelNode*>			mChildren;
 	int								miSkelIndex;
@@ -389,7 +389,7 @@ struct XgmBone
 struct PoseCallback
 {
 	virtual void PostBlendPreConcat(DecompMtx44 &decomposed_local) = 0;
-	virtual void PostBlendPostConcat(CMatrix4 &composed_object) = 0;
+	virtual void PostBlendPostConcat(fmtx4 &composed_object) = 0;
 };
 
 struct XgmBlendPoseInfo
@@ -403,7 +403,7 @@ public:
 	void InitBlendPose();
 	void AddPose(const DecompMtx44 &mat, float weight, EXFORM_COMPONENT components);
 
-	void ComputeMatrix(CMatrix4 &mtx) const;
+	void ComputeMatrix(fmtx4 &mtx) const;
 
 	int GetNumAnims() const { return miNumAnims; }
 
@@ -431,9 +431,9 @@ private:
 class XgmLocalPose
 {
 	const XgmSkeleton&				mSkeleton;
-	orkvector<CMatrix4>				mLocalMatrices;
+	orkvector<fmtx4>				mLocalMatrices;
 	orkvector<XgmBlendPoseInfo>		mBlendPoseInfos;
-	CVector4						mObjSpaceBoundingSphere;
+	fvec4						mObjSpaceBoundingSphere;
 	AABox							mObjSpaceAABoundingBox;
 
 	void Concatenate( void );
@@ -448,14 +448,14 @@ public:
 	void BuildPose( void );			/// Blend Poses, and Concatenate
 	int NumJoints() const;
 
-	CMatrix4& RefLocalMatrix( int idx ) { return mLocalMatrices[idx]; }
+	fmtx4& RefLocalMatrix( int idx ) { return mLocalMatrices[idx]; }
 	XgmBlendPoseInfo& RefBlendPoseInfo( int idx ) { return mBlendPoseInfos[idx]; }
-	CVector4& RefObjSpaceBoundingSphere() { return mObjSpaceBoundingSphere; }
+	fvec4& RefObjSpaceBoundingSphere() { return mObjSpaceBoundingSphere; }
 	AABox& RefObjSpaceAABoundingBox() { return mObjSpaceAABoundingBox; }
 
-	const CMatrix4& RefLocalMatrix( int idx ) const { return mLocalMatrices[idx]; }
+	const fmtx4& RefLocalMatrix( int idx ) const { return mLocalMatrices[idx]; }
 	const XgmBlendPoseInfo& RefBlendPoseInfo( int idx ) const { return mBlendPoseInfos[idx]; }
-	const CVector4& RefObjSpaceBoundingSphere() const { return mObjSpaceBoundingSphere; }
+	const fvec4& RefObjSpaceBoundingSphere() const { return mObjSpaceBoundingSphere; }
 	const AABox& RefObjSpaceAABoundingBox() const { return mObjSpaceAABoundingBox; }
 
 	////////////////////////////////////////////////////////////////
@@ -498,13 +498,13 @@ public:
 class XgmWorldPose
 {
 	const XgmSkeleton&			mSkeleton;
-	orkvector<CMatrix4>			mWorldMatrices;
+	orkvector<fmtx4>			mWorldMatrices;
 
 public:
 
 	XgmWorldPose( const XgmSkeleton& Skeleton, const XgmLocalPose& LocalPose );
-	orkvector<CMatrix4>& GetMatrices() { return mWorldMatrices; }
-	const orkvector<CMatrix4>& GetMatrices() const { return mWorldMatrices; }
+	orkvector<fmtx4>& GetMatrices() { return mWorldMatrices; }
+	const orkvector<fmtx4>& GetMatrices() const { return mWorldMatrices; }
 
 };
 
@@ -518,8 +518,8 @@ public:
 class XgmSkeleton
 {	
 
-	CMatrix4*						mpInverseBindMatrices;
-	CMatrix4*						mpJointMatrices;
+	fmtx4*						mpInverseBindMatrices;
+	fmtx4*						mpJointMatrices;
 	int								miNumJoints;
 	orkvector<PoolString>			mvJointNameVect;
 	orkvector< XgmBone >			mFlattenedBones;
@@ -533,13 +533,13 @@ public:
 	
 	orklut<PoolString,int>			mmJointNameMap;
 	
-	CVector4						mBoundMin;
-	CVector4						mBoundMax;
+	fvec4						mBoundMin;
+	fvec4						mBoundMax;
 	void*							mpUserData;
 	U32*							mpJointFlags;
 
-	CMatrix4						mBindShapeMatrix;
-	CMatrix4						mTopNodesMatrix;
+	fmtx4						mBindShapeMatrix;
+	fmtx4						mTopNodesMatrix;
 
 	/////////////////////////////////////
 
@@ -564,10 +564,10 @@ public:
 
 	/////////////////////////////////////
 
-	CMatrix4&			RefJointMatrix( int idx ) { return mpJointMatrices[ idx ]; }
-	const CMatrix4&		RefJointMatrix( int idx ) const { return mpJointMatrices[ idx ]; }
-	CMatrix4&			RefInverseBindMatrix( int idx ) { return mpInverseBindMatrices[ idx ]; }
-	const CMatrix4&		RefInverseBindMatrix( int idx ) const { return mpInverseBindMatrices[ idx ]; }
+	fmtx4&			RefJointMatrix( int idx ) { return mpJointMatrices[ idx ]; }
+	const fmtx4&		RefJointMatrix( int idx ) const { return mpJointMatrices[ idx ]; }
+	fmtx4&			RefInverseBindMatrix( int idx ) { return mpInverseBindMatrices[ idx ]; }
+	const fmtx4&		RefInverseBindMatrix( int idx ) const { return mpInverseBindMatrices[ idx ]; }
 
 	/////////////////////////////////////
 

@@ -120,7 +120,7 @@ void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::GfxTarget* pTARG, int ix, int iy
 			{	UiMat.SetTexture( lev2::ETEXDEST_DIFFUSE, 0 );
 				UiMat.mRasterState.SetBlending( lev2::EBLENDING_OFF );
 				pTARG->BindMaterial( & UiMat );
-				pTARG->PushModColor( CColor4::Green() );
+				pTARG->PushModColor( fcolor4::Green() );
 					pTARG->GBI()->DrawPrimitive( vb, lev2::EPRIM_TRIANGLES, ibase, 6 );
 				pTARG->PopModColor();
 			}
@@ -131,7 +131,7 @@ void UIToolHandler<VPTYPE>::DrawToolIcon( lev2::GfxTarget* pTARG, int ix, int iy
 			UiMatTex.mRasterState.SetAlphaTest( lev2::EALPHATEST_OFF, 0.0f );
 			UiMatTex.mRasterState.SetDepthTest( lev2::EDEPTHTEST_ALWAYS );
 			pTARG->BindMaterial( & UiMatTex );
-			pTARG->PushModColor( CColor4::White() );
+			pTARG->PushModColor( fcolor4::White() );
 				pTARG->GBI()->DrawPrimitive( vb, lev2::EPRIM_TRIANGLES, bhilite ? ibase+6 : ibase, 6 );
 			pTARG->PopModColor();
 		}

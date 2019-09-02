@@ -14,12 +14,12 @@ using namespace pybind11::literals;
 
 namespace std
 {
-    ostream& operator<<(ostream& ostr,const ::ork::CVector3& vec3)
+    ostream& operator<<(ostream& ostr,const ::ork::fvec3& vec3)
     {
         ostr<<"("<<vec3.GetX()<<","<<vec3.GetY()<<","<<vec3.GetZ()<<")";
         return ostr;
     }
-    ostream& operator<<(ostream& ostr,const ::ork::CVector2& vec2)
+    ostream& operator<<(ostream& ostr,const ::ork::fvec2& vec2)
     {
         ostr<<"("<<vec2.GetX()<<","<<vec2.GetY()<<")";
         return ostr;
@@ -62,58 +62,58 @@ public:
 void orkpy_initork()
 {
     ////////////////////////
-    // ork::CVector3
+    // ork::fvec3
     ////////////////////////
 
     py::module mm("__main__","Orkid");
     py::object main_namespace = mm.attr("__dict__");
 
-    main_namespace["vec2"] = py::class_<CVector2>(mm,"vec2")
+    main_namespace["vec2"] = py::class_<fvec2>(mm,"vec2")
                             .def(py::init<>())
                             .def(py::init<float,float>())
-                            .def_property("x", &CVector2::GetX, &CVector2::SetX)
-                            .def_property("y", &CVector2::GetY, &CVector2::SetY)
-                            .def("dot",&CVector2::Dot) // __add__
-                            .def("perp",&CVector2::PerpDot) // __add__
-                            .def("mag",&CVector2::Mag) // __add__
-                            .def("magsquared",&CVector2::MagSquared) // __add__
-                            .def("lerp",&CVector2::Lerp) // __add__
-                            .def("serp",&CVector2::Serp) // __add__
-                            .def("normal",&CVector2::Normal) // __add__
-                            .def("normalize",&CVector2::Normalize) // __add__
+                            .def_property("x", &fvec2::GetX, &fvec2::SetX)
+                            .def_property("y", &fvec2::GetY, &fvec2::SetY)
+                            .def("dot",&fvec2::Dot) // __add__
+                            .def("perp",&fvec2::PerpDot) // __add__
+                            .def("mag",&fvec2::Mag) // __add__
+                            .def("magsquared",&fvec2::MagSquared) // __add__
+                            .def("lerp",&fvec2::Lerp) // __add__
+                            .def("serp",&fvec2::Serp) // __add__
+                            .def("normal",&fvec2::Normal) // __add__
+                            .def("normalize",&fvec2::Normalize) // __add__
                             .def(py::self + py::self) // __add__
                             .def(py::self - py::self) // __sub__
                             .def(py::self * py::self) // __scalar mul__
-                            .def("__str__", [](const CVector2& v)->std::string
+                            .def("__str__", [](const fvec2& v)->std::string
                             {
                                 fxstring<64> fxs; fxs.format("vec2(%g,%g)",v.x,v.y);
                                 return fxs.c_str();
                             });
                             //.def(self_ns::str(self));
 
-    main_namespace["vec3"] = py::class_<CVector3>(mm,"vec3")
+    main_namespace["vec3"] = py::class_<fvec3>(mm,"vec3")
                             .def(py::init<>())
                             .def(py::init<float,float,float>())
-                            .def_property("x", &CVector3::GetX, &CVector3::SetX)
-                            .def_property("y", &CVector3::GetY, &CVector3::SetY)
-                            .def_property("z", &CVector3::GetZ, &CVector3::SetZ)
-                            .def("dot",&CVector3::Dot) // __add__
-                            .def("cross",&CVector3::Cross) // __add__
-                            .def("mag",&CVector3::Mag) // __add__
-                            .def("magsquared",&CVector3::MagSquared) // __add__
-                            .def("lerp",&CVector3::Lerp) // __add__
-                            .def("serp",&CVector3::Serp) // __add__
-                            .def("reflect",&CVector3::Reflect) // __add__
-                            .def("saturate",&CVector3::Saturate) // __add__
-                            .def("normal",&CVector3::Normal) // __add__
-                            .def("normalize",&CVector3::Normalize) // __add__
-                            .def("rotx",&CVector3::RotateX) // __add__
-                            .def("roty",&CVector3::RotateY) // __add__
-                            .def("rotz",&CVector3::RotateZ) // __add__
+                            .def_property("x", &fvec3::GetX, &fvec3::SetX)
+                            .def_property("y", &fvec3::GetY, &fvec3::SetY)
+                            .def_property("z", &fvec3::GetZ, &fvec3::SetZ)
+                            .def("dot",&fvec3::Dot) // __add__
+                            .def("cross",&fvec3::Cross) // __add__
+                            .def("mag",&fvec3::Mag) // __add__
+                            .def("magsquared",&fvec3::MagSquared) // __add__
+                            .def("lerp",&fvec3::Lerp) // __add__
+                            .def("serp",&fvec3::Serp) // __add__
+                            .def("reflect",&fvec3::Reflect) // __add__
+                            .def("saturate",&fvec3::Saturate) // __add__
+                            .def("normal",&fvec3::Normal) // __add__
+                            .def("normalize",&fvec3::Normalize) // __add__
+                            .def("rotx",&fvec3::RotateX) // __add__
+                            .def("roty",&fvec3::RotateY) // __add__
+                            .def("rotz",&fvec3::RotateZ) // __add__
                             .def(py::self + py::self) // __add__
                             .def(py::self - py::self) // __sub__
                             .def(py::self * py::self)// // __scalar mul__
-                            .def("__str__", [](const CVector3& v)->std::string
+                            .def("__str__", [](const fvec3& v)->std::string
                             {
                                 fxstring<64> fxs; fxs.format("vec3(%g,%g,%g)",v.x,v.y,v.z);
                                 return fxs.c_str();

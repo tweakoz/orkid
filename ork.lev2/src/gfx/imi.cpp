@@ -37,9 +37,9 @@ void ImmInterface::DrawLine( int iX1, int iY1, int iX2, int iY2 )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ImmInterface::DrawLine( int iX1, int iY1, int iX2, int iY2, const CColor4& color )
+void ImmInterface::DrawLine( int iX1, int iY1, int iX2, int iY2, const fcolor4& color )
 {
-	U32 uColor = mTarget.CColor4ToU32(color);
+	U32 uColor = mTarget.fcolor4ToU32(color);
 
 	mVtxBufUILine.AddVertex( SVtxV4C4( s16(iX1), s16(iY1), uColor ) );
 	mVtxBufUILine.AddVertex( SVtxV4C4( s16(iX2), s16(iY2), uColor ) );
@@ -47,9 +47,9 @@ void ImmInterface::DrawLine( int iX1, int iY1, int iX2, int iY2, const CColor4& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ImmInterface::DrawSolidBox( int iX1, int iY1, int iX2, int iY2, const CColor4& color )
+void ImmInterface::DrawSolidBox( int iX1, int iY1, int iX2, int iY2, const fcolor4& color )
 {
-	U32 ucolor = mTarget.CColor4ToU32(color);
+	U32 ucolor = mTarget.fcolor4ToU32(color);
 
 	float maxuv = 1.0f;
 	float minuv = 0.0f;
@@ -99,9 +99,9 @@ void ImmInterface::DrawBox( int iX1, int iY1, int iX2, int iY2 )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ImmInterface::DrawBox( int iX1, int iY1, int iX2, int iY2, const CColor4& color )
+void ImmInterface::DrawBox( int iX1, int iY1, int iX2, int iY2, const fcolor4& color )
 {
-	U32 uColor = mTarget.CColor4ToU32(color);
+	U32 uColor = mTarget.fcolor4ToU32(color);
 
 	mVtxBufUILine.AddVertex( SVtxV4C4( s16(iX1), s16(iY1), uColor ) );
 	mVtxBufUILine.AddVertex( SVtxV4C4( s16(iX2), s16(iY1), uColor ) );

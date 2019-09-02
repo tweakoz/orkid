@@ -72,9 +72,9 @@ class GlTextureInterface;
 ///////////////////////////////////////////////////////////////////////////////
 
 class GlImiInterface : public ImmInterface {
-  virtual void DrawLine(const CVector4& From, const CVector4& To);
+  virtual void DrawLine(const fvec4& From, const fvec4& To);
   virtual void DrawPoint(F32 fx, F32 fy, F32 fz);
-  virtual void DrawPrim(const CVector4* Points, int inumpoints, EPrimitiveType eType);
+  virtual void DrawPrim(const fvec4* Points, int inumpoints, EPrimitiveType eType);
   virtual void DoBeginFrame() {}
   virtual void DoEndFrame() {}
 
@@ -98,8 +98,8 @@ class GlRasterStateInterface : public RasterStateInterface {
 ///////////////////////////////////////////////////////////////////////////////
 
 class GlMatrixStackInterface : public MatrixStackInterface {
-  CMatrix4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar); // virtual
-  CMatrix4 Frustum(float left, float right, float top, float bottom, float zn, float zf);    // virtual
+  fmtx4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar); // virtual
+  fmtx4 Frustum(float left, float right, float top, float bottom, float zn, float zf);    // virtual
 
 public:
   GlMatrixStackInterface(GfxTarget& target);
@@ -169,7 +169,7 @@ public:
 
   ///////////////////////////////////////////////////////
 
-  virtual void Clear(const CColor4& rCol, float fdepth);
+  virtual void Clear(const fcolor4& rCol, float fdepth);
 
   virtual void SetViewport(int iX, int iY, int iW, int iH);
   virtual void SetScissor(int iX, int iY, int iW, int iH);
@@ -182,7 +182,7 @@ public:
 
   virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth);
   virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) { return false; }
-  virtual void GetPixel(const CVector4& rAt, GetPixelContext& ctx);
+  virtual void GetPixel(const fvec4& rAt, GetPixelContext& ctx);
 
   //////////////////////////////////////////////
 

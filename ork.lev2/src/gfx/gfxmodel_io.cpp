@@ -196,9 +196,9 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
                 }
 				mdl->mSkeleton.AddJoint( iskelindex , iparentindex, AddPooledString(jnamp.c_str()) );
 				ptstring.set(chunkreader.GetString(ijointmatrix));
-				mdl->mSkeleton.RefJointMatrix( iskelindex ) = CPropType<CMatrix4>::FromString(ptstring);
+				mdl->mSkeleton.RefJointMatrix( iskelindex ) = CPropType<fmtx4>::FromString(ptstring);
 				ptstring.set(chunkreader.GetString(iinvrestmatrix));
-				mdl->mSkeleton.RefInverseBindMatrix( iskelindex ) = CPropType<CMatrix4>::FromString(ptstring);
+				mdl->mSkeleton.RefInverseBindMatrix( iskelindex ) = CPropType<fmtx4>::FromString(ptstring);
 			}
 		}
 		///////////////////////////////////
@@ -285,7 +285,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 			{
 				lev2::GfxMaterial3DSolid* pmatsld = new lev2::GfxMaterial3DSolid;
 				int imode;
-				CVector4 color;
+				fvec4 color;
 //				float fr, fg, fb, fa;
 				HeaderStream->GetItem( imode );
 				HeaderStream->GetItem( color );
@@ -323,26 +323,26 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					GfxMaterialFxParamBase* param = 0;
 					switch( ept )
 					{	case EPROPTYPE_VEC2REAL:
-						{	GfxMaterialFxParamArtist<CVector2> *paramf = new GfxMaterialFxParamArtist<CVector2>;
-							paramf->mValue = CPropType<CVector2>::FromString( paramval );
+						{	GfxMaterialFxParamArtist<fvec2> *paramf = new GfxMaterialFxParamArtist<fvec2>;
+							paramf->mValue = CPropType<fvec2>::FromString( paramval );
 							param = paramf;
 							break;
 						}
 						case EPROPTYPE_VEC3FLOAT:
-						{	GfxMaterialFxParamArtist<CVector3> *paramf = new GfxMaterialFxParamArtist<CVector3>;
-							paramf->mValue = CPropType<CVector3>::FromString( paramval );
+						{	GfxMaterialFxParamArtist<fvec3> *paramf = new GfxMaterialFxParamArtist<fvec3>;
+							paramf->mValue = CPropType<fvec3>::FromString( paramval );
 							param = paramf;
 							break;
 						}
 						case EPROPTYPE_VEC4REAL:
-						{	GfxMaterialFxParamArtist<CVector4> *paramf = new GfxMaterialFxParamArtist<CVector4>;
-							paramf->mValue = CPropType<CVector4>::FromString( paramval );
+						{	GfxMaterialFxParamArtist<fvec4> *paramf = new GfxMaterialFxParamArtist<fvec4>;
+							paramf->mValue = CPropType<fvec4>::FromString( paramval );
 							param = paramf;
 							break;
 						}
 						case EPROPTYPE_MAT44REAL:
-						{	GfxMaterialFxParamArtist<CMatrix4> *paramf = new GfxMaterialFxParamArtist<CMatrix4>;
-							paramf->mValue = CPropType<CMatrix4>::FromString( paramval );
+						{	GfxMaterialFxParamArtist<fmtx4> *paramf = new GfxMaterialFxParamArtist<fmtx4>;
+							paramf->mValue = CPropType<fmtx4>::FromString( paramval );
 							param = paramf;
 							break;
 						}
@@ -527,7 +527,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					int ivboffset = -1;
 					int ivbnum = -1;
 					int ivbsize = -1;
-					CVector3 boxmin, boxmax;
+					fvec3 boxmin, boxmax;
 
 					////////////////////////////////////////////////////////////////////////
 					HeaderStream->GetItem( iclusindex );
@@ -732,8 +732,8 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 	{
 		const PoolString & JointName = skel.GetJointName(ib);
 		int32_t JointParentIndex = skel.GetJointParent(ib);
-		const CMatrix4 & InvRestMatrix = skel.RefInverseBindMatrix(ib);
-		const CMatrix4 & JointMatrix = skel.RefJointMatrix(ib);
+		const fmtx4 & InvRestMatrix = skel.RefInverseBindMatrix(ib);
+		const fmtx4 & JointMatrix = skel.RefJointMatrix(ib);
 
 		HeaderStream->AddItem( ib  );
 		HeaderStream->AddItem( JointParentIndex  );
@@ -741,11 +741,11 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 		HeaderStream->AddItem( istring  );
 
 		PropTypeString tstr;
-		CPropType<CMatrix4>::ToString( JointMatrix, tstr );
+		CPropType<fmtx4>::ToString( JointMatrix, tstr );
 		istring = chunkwriter.GetStringIndex(tstr.c_str());
 		HeaderStream->AddItem( istring  );
 
-		CPropType<CMatrix4>::ToString( InvRestMatrix, tstr );
+		CPropType<fmtx4>::ToString( InvRestMatrix, tstr );
 		istring = chunkwriter.GetStringIndex(tstr.c_str());
 		HeaderStream->AddItem( istring  );
 	}
@@ -775,10 +775,10 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 	printf( "WriteXgm<%s> nummeshes<%d>\n", Filename.c_str(), inummeshes );
 	printf( "WriteXgm<%s> nummtls<%d>\n", Filename.c_str(), inummats );
 
-	const CVector3& bc = mdl->GetBoundingCenter();
+	const fvec3& bc = mdl->GetBoundingCenter();
 	float br = mdl->GetBoundingRadius();
-	const CVector3& bbxyz = mdl->GetBoundingAA_XYZ();
-	const CVector3&	bbwhd = mdl->GetBoundingAA_WHD();
+	const fvec3& bbxyz = mdl->GetBoundingAA_XYZ();
+	const fvec3&	bbwhd = mdl->GetBoundingAA_WHD();
 
 	HeaderStream->AddItem( bc.GetX()  );
 	HeaderStream->AddItem( bc.GetY()  );
@@ -844,7 +844,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 			const lev2::GfxMaterial3DSolid *pbasmat = rtti::safe_downcast<const lev2::GfxMaterial3DSolid*>( pmat );
 
 			int32_t imode = int(pbasmat->GetColorMode());
-			const CVector4& clr = pbasmat->GetColor();
+			const fvec4& clr = pbasmat->GetColor();
 
 			HeaderStream->AddItem( imode  );
 

@@ -78,7 +78,7 @@ void WorldArchetype::DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) cons
 
 }
 
-void WorldArchetype::DoStartEntity( ork::ent::SceneInst* psi, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const
+void WorldArchetype::DoStartEntity( ork::ent::SceneInst* psi, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const
 {
 
 }

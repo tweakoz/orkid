@@ -331,7 +331,7 @@ void Outliner2View::DoInit( lev2::GfxTarget* pt )
 		lev2::PickBufferBase::EPICK_FACE_VTX );
 
 	mpPickBuffer->CreateContext();
-	mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
+	mpPickBuffer->GetContext()->FBI()->SetClearColor( fcolor4(0.0f,0.0f,0.0f,0.0f) );
 	mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
 
 	mFont = lev2::CFontMan::GetFont("i13");
@@ -363,7 +363,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 	// Compute Scoll Transform
 	//////////////////////////////////////////////////
 
-	ork::CMatrix4 matSCROLL;
+	ork::fmtx4 matSCROLL;
 	matSCROLL.SetTranslation( 0.0f, float(miScrollY), 0.0f );
 	lev2::SRasterState defstate;
 
@@ -460,7 +460,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 
 				lev2::CFontMan::PushFont(mFont);
 				tgt->PushMaterial( & uimat );
-				tgt->PushModColor( mDark ? CColor4(0.7f,0.7f,0.8f) : CColor4::Black() );
+				tgt->PushModColor( mDark ? fcolor4(0.7f,0.7f,0.8f) : fcolor4::Black() );
 				lev2::CFontMan::BeginTextBlock( tgt );
 				iy = kheaderH+5;
 				for( const auto& item : items )
@@ -502,7 +502,7 @@ void Outliner2View::SetNameOfSelectedItem()
 	//int irootx = mParent->miX;
 	//int ipary = mParent->miY;
 
-	auto g = mCtxBase->MapCoordToGlobal(CVector2(irx,iry));
+	auto g = mCtxBase->MapCoordToGlobal(fvec2(irx,iry));
 
 	//QString qstr = tool::ged::GedInputDialog::getText ( &qev, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
 	tool::ged::GedInputDialog dialog;
@@ -579,7 +579,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					break;
 				}
 				case 'f':{
-					CVector3 new_target;
+					fvec3 new_target;
 
 					auto scene = ed.GetSceneData();
 					const EntData* entdata = nullptr;

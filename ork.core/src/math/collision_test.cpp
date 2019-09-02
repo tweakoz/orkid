@@ -22,9 +22,9 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CollisionTester::FrustumPointTest( const Frustum& frus, const CVector3& pnt )
+bool CollisionTester::FrustumPointTest( const Frustum& frus, const fvec3& pnt )
 {
-	CVector4 tpos( pnt );
+	fvec4 tpos( pnt );
 	bool	bv = frus.mNearPlane.IsPointInFront( tpos );
 			bv &= frus.mFarPlane.IsPointInFront( tpos );
 			bv &= frus.mLeftPlane.IsPointInFront( tpos );
@@ -40,7 +40,7 @@ bool CollisionTester::FrustumPointTest( const Frustum& frus, const CVector3& pnt
 bool CollisionTester::FrustumSphereTest( const Frustum& frus, const Sphere& sph )
 {
 	float nrad = -sph.mRadius;
-	CVector4 tpos( sph.mCenter );
+	fvec4 tpos( sph.mCenter );
 	
 	float nd = frus.mNearPlane.GetPointDistance( tpos );
 	float fd = frus.mFarPlane.GetPointDistance( tpos );
@@ -63,7 +63,7 @@ bool CollisionTester::FrustumSphereTest( const Frustum& frus, const Sphere& sph 
 
 bool CollisionTester::FrustumCircleXZTest( const Frustum& frus, const Circle& cirXZ )
 {
-	Sphere sph( CVector3( cirXZ.mCenter.GetX(), frus.mCenter.GetY(), cirXZ.mCenter.GetY() ), cirXZ.mRadius );
+	Sphere sph( fvec3( cirXZ.mCenter.GetX(), frus.mCenter.GetY(), cirXZ.mCenter.GetY() ), cirXZ.mRadius );
 	return FrustumSphereTest( frus, sph );
 }
 
@@ -93,18 +93,18 @@ bool CollisionTester::FrustumAABoxTest( const Frustum& frus, const AABox& box )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CollisionTester::RayTriangleTest( const Ray3& ray, const CVector3& A, const CVector3& B, const CVector3& C, CVector3& isect, float& s, float& t )
+bool CollisionTester::RayTriangleTest( const fray3& ray, const fvec3& A, const fvec3& B, const fvec3& C, fvec3& isect, float& s, float& t )
 {
-	const CVector3& O = ray.mOrigin;
-	const CVector3& D = ray.mDirection;
+	const fvec3& O = ray.mOrigin;
+	const fvec3& D = ray.mDirection;
 
 	///////////////////////////////////////////////////
 	// first calc intersection to plane
 
-	CVector3 vab = (B-A);
-	CVector3 vac = (C-A);
+	fvec3 vab = (B-A);
+	fvec3 vac = (C-A);
 
-	CVector3 Nabc = vab.Cross(vac);
+	fvec3 Nabc = vab.Cross(vac);
 	float dist_O_to_P = -(O-A).Dot(Nabc)/(D.Dot(Nabc));
 	isect = O+(D*dist_O_to_P); // plane_isect
 		
@@ -114,13 +114,13 @@ bool CollisionTester::RayTriangleTest( const Ray3& ray, const CVector3& A, const
 	///////////////////////////////////////////////////
 	// calc s and t (pseudo-barycentric method)
 
-	//CVector3 vop = (isect-O); // debugging?
-	CVector3 voa = (A-O);
-	CVector3 vob = (B-O);
-	CVector3 voc = (C-O);
+	//fvec3 vop = (isect-O); // debugging?
+	fvec3 voa = (A-O);
+	fvec3 vob = (B-O);
+	fvec3 voc = (C-O);
 
-	CPlane PlaneOCA( voc.Cross(voa).Normal(), O );
-	CPlane PlaneOBA( voa.Cross(vob).Normal(), O );
+	fplane3 PlaneOCA( voc.Cross(voa).Normal(), O );
+	fplane3 PlaneOBA( voa.Cross(vob).Normal(), O );
 		
 	t = PlaneOCA.GetPointDistance( isect )/PlaneOCA.GetPointDistance(B);
 	s = PlaneOBA.GetPointDistance( isect )/PlaneOBA.GetPointDistance(C);
@@ -131,7 +131,7 @@ bool CollisionTester::RayTriangleTest( const Ray3& ray, const CVector3& A, const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CollisionTester::RayTriangleTest( const Ray3& ray, const CPlane& FacePlane, const CPlane& EdgePlane0, const CPlane& EdgePlane1, const CPlane& EdgePlane2, CVector3& isect )
+bool CollisionTester::RayTriangleTest( const fray3& ray, const fplane3& FacePlane, const fplane3& EdgePlane0, const fplane3& EdgePlane1, const fplane3& EdgePlane2, fvec3& isect )
 {
     float fdis = 0.0f;
     bool bisect = FacePlane.Intersect( ray, fdis, isect );
@@ -143,7 +143,7 @@ bool CollisionTester::RayTriangleTest( const Ray3& ray, const CPlane& FacePlane,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CollisionTester::RayTriangleTest( const Ray3& ray, const CPlane& FacePlane, const CPlane& EdgePlane0, const CPlane& EdgePlane1, const CPlane& EdgePlane2, CVector3& isect, float &fdis )
+bool CollisionTester::RayTriangleTest( const fray3& ray, const fplane3& FacePlane, const fplane3& EdgePlane0, const fplane3& EdgePlane1, const fplane3& EdgePlane2, fvec3& isect, float &fdis )
 {
     bool bisect = FacePlane.Intersect( ray, fdis, isect );
     bisect &= EdgePlane0.GetPointDistance(isect)>=0.0f;
@@ -154,16 +154,16 @@ bool CollisionTester::RayTriangleTest( const Ray3& ray, const CPlane& FacePlane,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CollisionTester::RayTriangleTest( const Ray3& ray, const CVector3& A, const CVector3& B, const CVector3& C )
+bool CollisionTester::RayTriangleTest( const fray3& ray, const fvec3& A, const fvec3& B, const fvec3& C )
 {
 	float s, t;
-	CVector3 isect;
+	fvec3 isect;
 	return RayTriangleTest( ray, A, B, C, isect, s, t );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CollisionTester::RaySphereTest(const Ray3& ray, const Sphere& sph, float& t)
+bool CollisionTester::RaySphereTest(const fray3& ray, const Sphere& sph, float& t)
 {
 	///////////////////////////////////////////////////////
     float a_coef = ray.mdot_dd;
@@ -200,11 +200,11 @@ bool CollisionTester::RaySphereTest(const Ray3& ray, const Sphere& sph, float& t
 bool CollisionTester::AbstractCollidableBisectionTest(	IAbstractCollidable& collidable,
 														const float fs, const float fe,
 														const LineSegment3& seg,
-														CVector3& cp, CVector3& vn, float& fat )
+														fvec3& cp, fvec3& vn, float& fat )
 {
 	fat = -1.0f;
 
-	CVector3 p0, n0;
+	fvec3 p0, n0;
 
 	IAbstractCollidable::EColFlg ecf = collidable.CollisionTest( seg, p0, n0 );
 
@@ -222,10 +222,10 @@ bool CollisionTester::AbstractCollidableBisectionTest(	IAbstractCollidable& coll
 				return true;
 			}
 
-			CVector3 vm = (seg.mStart+seg.mEnd)*0.5f;
+			fvec3 vm = (seg.mStart+seg.mEnd)*0.5f;
 			float fm = (fs+fe)*0.5f;
-			CVector3 vp0, vn0;
-			CVector3 vp1, vn1;
+			fvec3 vp0, vn0;
+			fvec3 vp1, vn1;
 			float fat0, fat1;
 			////////////////////////////////////////
 			LineSegment3 biseg1( seg.mStart, vm );

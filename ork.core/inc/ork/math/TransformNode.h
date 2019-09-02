@@ -23,23 +23,23 @@ namespace ork {
 
 struct Transform3DMatrix 
 {
-	typedef CVector3		PosType;
+	typedef fvec3		PosType;
 	typedef CQuaternion	RotType;
 	typedef float			ScaType;
-	typedef CMatrix4&		MatType;
+	typedef fmtx4&		MatType;
 
-	void SetMatrix( const CMatrix4& );
-	const CMatrix4& GetMatrix() const;
-	CVector3		GetPosition() const;
+	void SetMatrix( const fmtx4& );
+	const fmtx4& GetMatrix() const;
+	fvec3		GetPosition() const;
 	CQuaternion 	GetRotation() const;
 	float			GetScale() const;
 	void			SetRotation( const CQuaternion& q );
 	void			SetScale( const float scale);
-	void			SetPosition( const CVector3& pos );
+	void			SetPosition( const fvec3& pos );
 
 private:
 	
-	CMatrix4				mMatrix;	/// matrix in world space
+	fmtx4				mMatrix;	/// matrix in world space
 
 };
 
@@ -65,7 +65,7 @@ public:
 		  
 	//////////////////////////////////////////////////////////////////////////////
 
-	void GetMatrix( CMatrix4& mtx ) const;
+	void GetMatrix( fmtx4& mtx ) const;
 
 	//////////////////////////////////////////////////////////////////////////////
 
@@ -75,7 +75,7 @@ public:
 		EMODE_LOCAL_RELATIVE,				/// Concatenate
 	};
 
-	void Translate( ETransformHierMode emode, const CVector3 & pos );
+	void Translate( ETransformHierMode emode, const fvec3 & pos );
 
 	//////////////////////////////////////////////////////////////////////////////
 	const TransformNode*	GetParent() const { return mpParent; }

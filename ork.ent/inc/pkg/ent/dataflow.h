@@ -31,13 +31,13 @@ public:
 
 	ork::orklut<ork::PoolString,float>& GetFloatValues() { return mFloatValues; }
 	const ork::orklut<ork::PoolString,float>& GetFloatValues() const { return mFloatValues; }
-	ork::orklut<ork::PoolString,CVector3>& GetVect3Values() { return mVect3Values; }
-	const ork::orklut<ork::PoolString,CVector3>& GetVect3Values() const { return mVect3Values; }
+	ork::orklut<ork::PoolString,fvec3>& GetVect3Values() { return mVect3Values; }
+	const ork::orklut<ork::PoolString,fvec3>& GetVect3Values() const { return mVect3Values; }
 
 private:
 
 	ork::orklut<ork::PoolString,float>		mFloatValues;
-	ork::orklut<ork::PoolString,CVector3>	mVect3Values;
+	ork::orklut<ork::PoolString,fvec3>	mVect3Values;
 
 	bool DoNotify(const event::Event *event) final;
 
@@ -61,7 +61,7 @@ public:
 	//////////////////////////////////////////////////////////////
 
 	void BindExternalValue( PoolString name, const float* psource );
-	void BindExternalValue( PoolString name, const CVector3* psource );
+	void BindExternalValue( PoolString name, const fvec3* psource );
 
 	dataflow::dyn_external&					RefExternal() { return mExternal; }
 	const dataflow::dyn_external&			RefExternal() const { return mExternal; }
@@ -71,7 +71,7 @@ private:
 	const DataflowRecieverComponentData&	mData;
 	dataflow::dyn_external					mExternal;
 	orklut<PoolString,float>				mMutableFloatValues;
-	orklut<PoolString,CVector3>				mMutableVect3Values;
+	orklut<PoolString,fvec3>				mMutableVect3Values;
 
 	void DoUpdate( ork::ent::SceneInst* psi ) final;
     bool DoNotify(const event::Event *event) final;

@@ -293,7 +293,7 @@ public:
 
 private:
 	void DoCompose(ArchComposer& composer) final {}
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final  {}
+	void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const final  {}
 
 	orklut<PoolString,BakerSettings*>	mSettingsMap;
 	PoolString							mCurrentSetting;							

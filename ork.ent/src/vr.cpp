@@ -155,7 +155,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
           pTARG->MTXI()->PushMMatrix( mmtx );
           pTARG->MTXI()->PushVMatrix( camdat->GetVMatrix() );
           pTARG->MTXI()->PushPMatrix( camdat->GetPMatrix() );
-          pTARG->PushModColor( CVector4::White() );
+          pTARG->PushModColor( fvec4::White() );
           {
             if( c._button2down )
               ork::lev2::CGfxPrimitives::GetRef().RenderBox( pTARG );

@@ -46,7 +46,7 @@ class WorldArchetype : public ork::ent::Archetype
 
 	void DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) const override;
 	void DoCompose(ork::ent::ArchComposer& composer) override;
-	void DoStartEntity( ork::ent::SceneInst* psi, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const override;
+	void DoStartEntity( ork::ent::SceneInst* psi, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const override;
 
 public:
 

@@ -208,10 +208,10 @@ public: //
 
 struct BasicParticle
 {
-	ork::CVector3	mPosition;
-	ork::CVector3	mLastPosition;
-	ork::CVector3	mVelocity;
-	ork::CVector3	mLastVelocity;
+	ork::fvec3	mPosition;
+	ork::fvec3	mLastPosition;
+	ork::fvec3	mVelocity;
+	ork::fvec3	mLastVelocity;
 	float			mfRandom;
 	float			mfAge;
 	float			mfLifeSpan;
@@ -249,9 +249,9 @@ struct Event
 {
 	Char4 mEventType;
 	Char4 mEventId;			// 8
-	CVector3 mPosition;		// 20
-	CVector3 mVelocity;		// 32
-	CVector3 mLastPosition;	// 44
+	fvec3 mPosition;		// 20
+	fvec3 mVelocity;		// 32
+	fvec3 mLastPosition;	// 44
 	
 	Event( const Event& oth )
 		: mEventType(oth.mEventType)
@@ -330,9 +330,9 @@ enum EmitterDirection
 struct EmitterCtx
 {
 	Pool<BasicParticle>*	mPool;
-	CVector3				mPosition;
-	CVector3				mLastPosition;
-	CVector3				mOffsetVelocity;
+	fvec3				mPosition;
+	fvec3				mLastPosition;
+	fvec3				mOffsetVelocity;
 	EventQueue*				mSpawnQueue;
 	EventQueue*				mDeathQueue;
 	float					mfSpawnProbability;
@@ -359,7 +359,7 @@ public:
 	EmitterDirection	meDirection;
 	float				mDispersionAngle;
 
-	virtual void ComputePosDir( float fi, CVector3& pos, CVector3& dir ) = 0; 
+	virtual void ComputePosDir( float fi, fvec3& pos, fvec3& dir ) = 0; 
 };
 
 enum ParticleItemAlignment

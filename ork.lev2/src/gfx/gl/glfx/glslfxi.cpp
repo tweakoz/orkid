@@ -767,7 +767,7 @@ void GlslFxInterface::BindParamInt( FxShader* hfx, const FxShaderParam* hpar, co
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec )
+void GlslFxInterface::BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec )
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
@@ -789,7 +789,7 @@ void GlslFxInterface::BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, 
 	}
 }
 
-void GlslFxInterface::BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec )
+void GlslFxInterface::BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec )
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
@@ -811,7 +811,7 @@ void GlslFxInterface::BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, 
 	}
 }
 
-void GlslFxInterface::BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec )
+void GlslFxInterface::BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec )
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
@@ -833,7 +833,7 @@ void GlslFxInterface::BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, 
 	}
 }
 
-void GlslFxInterface::BindParamVect4Array( FxShader* hfx, const FxShaderParam* hpar, const CVector4 * Vec, const int icount )
+void GlslFxInterface::BindParamVect4Array( FxShader* hfx, const FxShaderParam* hpar, const fvec4 * Vec, const int icount )
 {
 	/*GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
@@ -900,7 +900,7 @@ void GlslFxInterface::BindParamFloat2( FxShader* hfx, const FxShaderParam* hpar,
 		GLenum etyp = puni->meType;
 		OrkAssert( etyp == 	GL_FLOAT_VEC2 );
 
-		CVector2 v2( fA, fB );
+		fvec2 v2( fA, fB );
 
 		glUniform2fv( iloc, 1, v2.GetArray() );
 		GL_ERRORCHECK();
@@ -919,7 +919,7 @@ void GlslFxInterface::BindParamFloat3( FxShader* hfx, const FxShaderParam* hpar,
 		GLenum etyp = puni->meType;
 		OrkAssert( etyp == 	GL_FLOAT_VEC3 );
 
-		CVector3 v3( fA, fB, fC );
+		fvec3 v3( fA, fB, fC );
 
 		glUniform3fv( iloc, 1, v3.GetArray() );
 		GL_ERRORCHECK();
@@ -938,7 +938,7 @@ void GlslFxInterface::BindParamFloat4( FxShader* hfx, const FxShaderParam* hpar,
 		GLenum etyp = puni->meType;
 		OrkAssert( etyp == 	GL_FLOAT_VEC4 );
 
-		CVector4 v4( fA, fB, fC, fD );
+		fvec4 v4( fA, fB, fC, fD );
 
 		glUniform4fv( iloc, 1, v4.GetArray() );
 		GL_ERRORCHECK();
@@ -955,7 +955,7 @@ void GlslFxInterface::BindParamU32( FxShader* hfx, const FxShaderParam* hpar, U3
 */
 }
 
-void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 & Mat )
+void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const fmtx4 & Mat )
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
@@ -978,7 +978,7 @@ void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar,
 	}
 }
 
-void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const CMatrix3 & Mat )
+void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const fmtx3 & Mat )
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );
@@ -1000,7 +1000,7 @@ void GlslFxInterface::BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar,
 	}
 }
 
-void GlslFxInterface::BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 * Mat, int iCount )
+void GlslFxInterface::BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const fmtx4 * Mat, int iCount )
 {
 	GlslFxContainer* container = static_cast<GlslFxContainer*>( hfx->GetInternalHandle() );
 	GlslFxUniform* puni = static_cast<GlslFxUniform*>( hpar->GetPlatformHandle() );

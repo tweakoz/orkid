@@ -104,7 +104,7 @@ void CCamera_persp::draw(GfxTarget* pT) {
   extern fvec4 TRayN;
   extern fvec4 TRayF;
 
-  CMatrix4 MatP, MatV, MatT;
+  fmtx4 MatP, MatV, MatT;
 
   float CurVelMag = MeasuredCameraVelocity.Mag();
 
@@ -112,7 +112,7 @@ void CCamera_persp::draw(GfxTarget* pT) {
   pT->MTXI()->PushUIMatrix();
   {
 
-    pT->PushModColor(CColor4::Black());
+    pT->PushModColor(fcolor4::Black());
     ork::lev2::CFontMan::PushFont("i14");
     CFontMan::BeginTextBlock(pT);
     CFontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
@@ -127,7 +127,7 @@ void CCamera_persp::draw(GfxTarget* pT) {
     CFontMan::EndTextBlock(pT);
     pT->PopModColor();
 
-    pT->PushModColor(CColor4::Yellow());
+    pT->PushModColor(fcolor4::Yellow());
     CFontMan::BeginTextBlock(pT);
     CFontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
     CFontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
@@ -790,12 +790,12 @@ bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::SetFromWorldSpaceMatrix(const CMatrix4& matrix) {
+void CCamera_persp::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
   ork::fvec3 xnormal = matrix.GetXNormal();
   ork::fvec3 ynormal = matrix.GetYNormal();
   ork::fvec3 znormal = matrix.GetZNormal();
 
-  CMatrix4 matrot, imatrot;
+  fmtx4 matrot, imatrot;
   matrot.fromNormalVectors(xnormal, ynormal, znormal);
   imatrot.GEMSInverse(matrot);
 
@@ -1119,8 +1119,8 @@ void CCamera_persp::updateMatrices(void) {
   mRot = QuatC.ToMatrix();
   mTrans.SetTranslation(mvCenter * -1.0f);
 
-  CMatrix4 matxf = (mTrans * mRot);
-  CMatrix4 matixf;
+  fmtx4 matxf = (mTrans * mRot);
+  fmtx4 matixf;
   matxf.GEMSInverse(matxf);
 
   fvec3 veye = fvec3(0.0f, 0.0f, -mfLoc).Transform(matxf);
@@ -1163,14 +1163,14 @@ float CCamera_persp::ViewLengthToWorldLength(const fvec4& pos, float ViewLength)
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const CMatrix4& IMat) const {
+void CCamera_persp::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const fmtx4& IMat) const {
   float fx = pos2D.GetX();
   float fy = pos2D.GetY();
   //////////////////////////////////////////
   fvec4 vWinN(fx, fy, 0.0f);
   fvec4 vWinF(fx, fy, 1.0f);
-  CMatrix4::UnProject(mCameraData.GetIVPMatrix(), vWinN, rayN);
-  CMatrix4::UnProject(mCameraData.GetIVPMatrix(), vWinF, rayF);
+  fmtx4::UnProject(mCameraData.GetIVPMatrix(), vWinN, rayN);
+  fmtx4::UnProject(mCameraData.GetIVPMatrix(), vWinF, rayF);
   //////////////////////////////////////////
 }
 

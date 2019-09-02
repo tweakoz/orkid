@@ -245,7 +245,7 @@ class FCDAsset;
 
 namespace ork { namespace tool {
 
-CMatrix4 FCDMatrixToCMatrix4( const FMMatrix44 & inmat );
+fmtx4 FCDMatrixTofmtx4( const FMMatrix44 & inmat );
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -286,8 +286,8 @@ struct SColladaMaterial
 	SColladaMaterialChannel				mAmbientMapChannel;
 
 	ork::lev2::GfxMaterial*				mpOrkMaterial;
-	CVector4							mEmissiveColor;
-	CVector4							mTransparencyColor;
+	fvec4							mEmissiveColor;
+	fvec4							mTransparencyColor;
 	FCDEffect*							mFx;
 	FCDMaterial*					    mFxProfile;
 	FCDEffectStandard*					mStdProfile;
@@ -594,10 +594,10 @@ public:
 	MeshUtil::material_semanticmap_t			mMaterialSemanticBindingMap;
 	orkmap<std::string,ork::lev2::XgmSkelNode*>	mSkeleton;
 	ork::lev2::XgmSkelNode*						mSkeletonRoot;
-	CVector3									mAABoundXYZ;
-	CVector3									mAABoundWHD;
-	CMatrix4									mBindShapeMatrix;
-	CMatrix4									mTopNodesMatrix;
+	fvec3									mAABoundXYZ;
+	fvec3									mAABoundWHD;
+	fmtx4									mBindShapeMatrix;
+	fmtx4									mTopNodesMatrix;
 	DaeReadOpts									mReadOpts;
 
 	orkvector<std::string>						mVertexColorSources;
@@ -622,7 +622,7 @@ public:
 
 	bool IsSkinned() const { return mSkeleton.size()>0; }
 
-	typedef orkvector<ork::CMatrix4> MatrixVector;
+	typedef orkvector<ork::fmtx4> MatrixVector;
 
 	void AddTexture( lev2::TextureAsset*ptex ) { mTextures.insert(ptex); }
 
@@ -668,7 +668,7 @@ class ColladaMatrixAnimChannel : public ColladaAnimChannel
 
 	int								miSettingFrame;
 
-	orkvector<CMatrix4>				mSampledFrames;
+	orkvector<fmtx4>				mSampledFrames;
 
 public:
 
@@ -682,7 +682,7 @@ public:
 
 	int GetNumFrames() const final { return int(mSampledFrames.size()); } // virtual
 
-	const CMatrix4& GetFrame( int idx ) const { return mSampledFrames[idx]; }
+	const fmtx4& GetFrame( int idx ) const { return mSampledFrames[idx]; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -776,7 +776,7 @@ public:
 
 	///////////////////////////////////////////////////////////////////
 
-	orkmap<std::string,CMatrix4> mPose;
+	orkmap<std::string,fmtx4> mPose;
 
 	static CColladaAnim* Load( const AssetPath & fname );
 

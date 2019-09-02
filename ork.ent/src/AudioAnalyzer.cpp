@@ -177,7 +177,7 @@ void AudioAnalysisComponentInst::DoUnLink(SceneInst *psi)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AudioAnalysisComponentInst::DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world)
+bool AudioAnalysisComponentInst::DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world)
 {
 	if( mCoreAudioHost )
 		mCoreAudioHost->Start();

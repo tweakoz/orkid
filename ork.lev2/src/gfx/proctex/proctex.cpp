@@ -265,11 +265,11 @@ void ImgModule::Compute( dataflow::workunit* wu )
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ImgModule::UnitTexQuad( ork::lev2::GfxTarget* pTARG )
-{	//CMatrix4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
-	pTARG->MTXI()->PushPMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
-	pTARG->PushModColor( CVector3::White() );
+{	//fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
+	pTARG->MTXI()->PushPMatrix( fmtx4::Identity );
+	pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+	pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
+	pTARG->PushModColor( fvec3::White() );
 	{	RenderQuad( pTARG, -1.0f, -1.0f, 1.0f, 1.0f );
 	}
 	pTARG->PopModColor();
@@ -331,17 +331,17 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 	gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 	gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 	gridmat.SetTexture( ptexture );
-	gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(wrbuf.miW)) );
+	gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(wrbuf.miW)) );
 	pTARG->BindMaterial( & gridmat );
 	////////////////////////////////////////////////////////////////
 	float ftexw = ptexture ? ptexture->GetWidth() : 1.0f;
-	pTARG->PushModColor( ork::CVector4( ftexw, ftexw, ftexw, ftexw ) );
+	pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
 	////////////////////////////////////////////////////////////////
-	CMatrix4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
+	fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
 	//pTARG->MTXI()->PushPMatrix( mtxortho );
-	pTARG->MTXI()->PushPMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+	pTARG->MTXI()->PushPMatrix( fmtx4::Identity );
+	pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+	pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 	{
 		RenderQuad( pTARG, -1.0f, -1.0f, 1.0f, 1.0f );
 	}
@@ -623,7 +623,7 @@ AA16Render::AA16Render( ProcTex& ptx, Buffer& bo )
 	downsamplemat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 	downsamplemat.mRasterState.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
 	downsamplemat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-	downsamplemat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
+	downsamplemat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(bo.miW)) );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -643,7 +643,7 @@ void AA16Render::RenderAA()
 	auto mtxi = target->MTXI();
 	auto txi = target->TXI();
 
-	CMatrix4 mtxortho;
+	fmtx4 mtxortho;
 
 	float boxx = mOrthoBoxXYWH.GetX();
 	float boxy = mOrthoBoxXYWH.GetY();
@@ -709,9 +709,9 @@ void AA16Render::RenderAA()
 		
 		{			
 			temp_buffer->PtexBegin(target, true, true );
-			CMatrix4 mtxortho = mtxi->Ortho( left,right,top,bottom, 0.0f, 1.0f );
-			mtxi->PushMMatrix( CMatrix4::Identity );
-			mtxi->PushVMatrix( CMatrix4::Identity );
+			fmtx4 mtxortho = mtxi->Ortho( left,right,top,bottom, 0.0f, 1.0f );
+			mtxi->PushMMatrix( fmtx4::Identity );
+			mtxi->PushVMatrix( fmtx4::Identity );
 			mtxi->PushPMatrix( mtxortho );
 			DoRender( left,right,top,bottom, *temp_buffer );
 			mtxi->PopPMatrix();
@@ -737,9 +737,9 @@ void AA16Render::RenderAA()
 			tex->TexSamplingMode().PresetPointAndClamp();
 			txi->ApplySamplingMode(tex);
 
-			CMatrix4 mtxortho = mtxi->Ortho( l,r,t,b, 0.0f, 1.0f );
-			mtxi->PushMMatrix( CMatrix4::Identity );
-			mtxi->PushVMatrix( CMatrix4::Identity );
+			fmtx4 mtxortho = mtxi->Ortho( l,r,t,b, 0.0f, 1.0f );
+			mtxi->PushMMatrix( fmtx4::Identity );
+			mtxi->PushVMatrix( fmtx4::Identity );
 			mtxi->PushPMatrix( mtxortho );
 			target->PushMaterial( & downsamplemat );
 				RenderQuad( target, q.fx0,q.fy1,q.fx1,q.fy0, 0.0f, 0.0f, 1.0f, 1.0f );
@@ -774,9 +774,9 @@ void AA16Render::RenderNoAA()
 	float b = y+h;
 
 	bufout.PtexBegin(target,true,true);
-	{	CMatrix4 mtxortho = mtxi->Ortho( l,r,t,b, 0.0f, 1.0f );
-		mtxi->PushMMatrix( CMatrix4::Identity );
-		mtxi->PushVMatrix( CMatrix4::Identity );
+	{	fmtx4 mtxortho = mtxi->Ortho( l,r,t,b, 0.0f, 1.0f );
+		mtxi->PushMMatrix( fmtx4::Identity );
+		mtxi->PushVMatrix( fmtx4::Identity );
 		mtxi->PushPMatrix( mtxortho );
 		DoRender( l,r,t,b, bufout );
 		mtxi->PopPMatrix();

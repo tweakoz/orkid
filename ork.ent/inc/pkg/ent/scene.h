@@ -197,10 +197,10 @@ private:
 
 struct EntityActivationQueueItem
 {
-	CMatrix4	mMatrix;
+	fmtx4	mMatrix;
 	Entity*		mpEntity;
 
-	EntityActivationQueueItem( const CMatrix4& mtx = CMatrix4::Identity, Entity* pent=0 )
+	EntityActivationQueueItem( const fmtx4& mtx = fmtx4::Identity, Entity* pent=0 )
 		: mMatrix( mtx )
 		, mpEntity( pent )
 	{

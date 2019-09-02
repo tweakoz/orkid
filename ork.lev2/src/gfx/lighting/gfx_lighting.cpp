@@ -93,7 +93,7 @@ void PointLightData::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PointLight::PointLight( const CMatrix4& mtx, const PointLightData* pld )
+PointLight::PointLight( const fmtx4& mtx, const PointLightData* pld )
 	: Light(mtx,pld)
 	, mPld( pld )
 {
@@ -103,7 +103,7 @@ PointLight::PointLight( const CMatrix4& mtx, const PointLightData* pld )
 
 bool PointLight::IsInFrustum( const Frustum& frustum ) 
 {
-	const CVector3& wpos = GetWorldPosition();
+	const fvec3& wpos = GetWorldPosition();
 
 	float fd = frustum.mNearPlane.GetPointDistance(wpos);
 
@@ -125,7 +125,7 @@ void PointLight::ImmRender( Renderer& renderer )
 
 ///////////////////////////////////////////////////////////
 
-bool PointLight::AffectsSphere( const CVector3& center, float radius )
+bool PointLight::AffectsSphere( const fvec3& center, float radius )
 {
 	float dist = ( GetWorldPosition()-center).Mag();
 	float combinedradii = (radius+GetRadius());
@@ -149,7 +149,7 @@ bool PointLight::AffectsAABox( const AABox& aab )
 
 bool PointLight::AffectsCircleXZ( const Circle& cirXZ )
 {
-	CVector3 center( cirXZ.mCenter.GetX(),  GetWorldPosition().GetY(), cirXZ.mCenter.GetY() );
+	fvec3 center( cirXZ.mCenter.GetX(),  GetWorldPosition().GetY(), cirXZ.mCenter.GetY() );
 	float dist = ( GetWorldPosition()-center).Mag();
 	float combinedradii = (cirXZ.mRadius+GetRadius());
 
@@ -170,7 +170,7 @@ void DirectionalLight::Describe()
 
 }
 
-DirectionalLight::DirectionalLight( const CMatrix4& mtx, const DirectionalLightData* dld )
+DirectionalLight::DirectionalLight( const fmtx4& mtx, const DirectionalLightData* dld )
 	: Light(mtx,dld)
 {
 }
@@ -197,7 +197,7 @@ void AmbientLight::Describe()
 {
 }
 
-AmbientLight::AmbientLight( const CMatrix4& mtx, const AmbientLightData* dld )
+AmbientLight::AmbientLight( const fmtx4& mtx, const AmbientLightData* dld )
 	: Light(mtx,dld)
 	, mAld(dld)
 {
@@ -264,7 +264,7 @@ void SpotLightData::GetTextureAccessor( ork::rtti::ICastable* & tex) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpotLight::SpotLight(const CMatrix4& mtx, const SpotLightData* sld )
+SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld )
 	: Light(mtx,sld)
 	, mSld(sld)
 	, mTexture(0)
@@ -275,9 +275,9 @@ SpotLight::SpotLight(const CMatrix4& mtx, const SpotLightData* sld )
 
 bool SpotLight::IsInFrustum( const Frustum& frustum ) 
 {
-	CVector3 pos = GetMatrix().GetTranslation();
-	CVector3 tgt = pos + GetMatrix().GetZNormal()*GetRange();
-	CVector3 up = GetMatrix().GetYNormal();
+	fvec3 pos = GetMatrix().GetTranslation();
+	fvec3 tgt = pos + GetMatrix().GetZNormal()*GetRange();
+	fvec3 up = GetMatrix().GetYNormal();
 	float fovy = 15.0f;
 
 	Set( pos, tgt, up, fovy );
@@ -287,7 +287,7 @@ bool SpotLight::IsInFrustum( const Frustum& frustum )
 
 ///////////////////////////////////////////////////////////
 
-void SpotLight::Set( const CVector3& pos, const CVector3& tgt, const CVector3& up, float fovy )
+void SpotLight::Set( const fvec3& pos, const fvec3& tgt, const fvec3& up, float fovy )
 {
 	//mFovy = fovy;
 
@@ -321,7 +321,7 @@ void SpotLight::ImmRender( Renderer& renderer )
 
 ///////////////////////////////////////////////////////////
 
-bool SpotLight::AffectsSphere( const CVector3& center, float radius )
+bool SpotLight::AffectsSphere( const fvec3& center, float radius )
 {
 	return CollisionTester::FrustumSphereTest( mWorldSpaceLightFrustum, Sphere( center, radius ) );
 }
@@ -446,7 +446,7 @@ LightCollector::~LightCollector()
 	///printf( "lc maxgroups<%d>\n", imax );
 }
 
-void LightCollector::QueueInstance( const LightMask& lmask, const CMatrix4& mtx )
+void LightCollector::QueueInstance( const LightMask& lmask, const fmtx4& mtx )
 {
 	U32 uval = lmask.mMask;
 
@@ -531,7 +531,7 @@ void LightManager::EnumerateInFrustum( const Frustum& frustum )
 
 ///////////////////////////////////////////////////////////
 
-void LightManager::QueueInstance( const LightMask& lmask, const CMatrix4& mtx )
+void LightManager::QueueInstance( const LightMask& lmask, const fmtx4& mtx )
 {
 	mcollector.QueueInstance( lmask, mtx );
 }
@@ -579,7 +579,7 @@ size_t LightingGroup::GetNumMatrices() const
 
 ///////////////////////////////////////////////////////////
 
-const CMatrix4* LightingGroup::GetMatrices() const
+const fmtx4* LightingGroup::GetMatrices() const
 {
 	return & mInstances[0];
 }
@@ -624,13 +624,13 @@ HeadLightManager::HeadLightManager( RenderContextFrameData & FrameData )
 	, mHeadLightManager( mHeadLightManagerData )
 {
 	const CCameraData* cdata = FrameData.GetCameraData();
-	ork::CVector3 vZ = cdata->GetZNormal();
-	ork::CVector3 vY = cdata->GetYNormal();
-	ork::CVector3 vP = cdata->GetFrustum().mNearCorners[0];
+	ork::fvec3 vZ = cdata->GetZNormal();
+	ork::fvec3 vY = cdata->GetYNormal();
+	ork::fvec3 vP = cdata->GetFrustum().mNearCorners[0];
 	mHeadLightMatrix = cdata->GetIVMatrix();
-	mHeadLightData.SetColor( CVector3(1.3f,1.3f,1.5f) );
+	mHeadLightData.SetColor( fvec3(1.3f,1.3f,1.5f) );
 	mHeadLightData.SetAmbientShade(0.757f);
-	mHeadLightData.SetHeadlightDir(CVector3(0.0f,0.5f,1.0f));
+	mHeadLightData.SetHeadlightDir(fvec3(0.0f,0.5f,1.0f));
 	mHeadLight.miInFrustumID = 1;
 	mHeadLightGroup.mLightMask.AddLight( & mHeadLight );
 	mHeadLightGroup.mLightManager = FrameData.GetLightManager();
@@ -682,11 +682,11 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 
 			static const int kmaxl = 8;
 
-			static CVector4 DirLightColors[kmaxl];
-			static CVector4 DirLightDirs[kmaxl];
-			static CVector4 DirLightPos[kmaxl];
-			static CVector4 DirLightAtnA[kmaxl];
-			static CVector4 DirLightAtnK[kmaxl];
+			static fvec4 DirLightColors[kmaxl];
+			static fvec4 DirLightDirs[kmaxl];
+			static fvec4 DirLightPos[kmaxl];
+			static fvec4 DirLightAtnA[kmaxl];
+			static fvec4 DirLightAtnK[kmaxl];
 			static float LightMode[kmaxl];
 
 			int inumdl = 0;
@@ -706,7 +706,7 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 
 				Light* plight = lgroup->mLightManager->mLightsInFrustum[ ilightid ];
 
-				CVector3 LightColor = plight->GetColor();
+				fvec3 LightColor = plight->GetColor();
 				//float fimag = 1.0f;
 				//if( (LightColor.GetX()<0.0f) || (LightColor.GetY()<0.0f) || (LightColor.GetZ()<0.0f) )
 				//{
@@ -730,8 +730,8 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 						float frang = pspotlight->GetRange();
 						float fovy = pspotlight->GetFovy()*DTOR;
 
-						DirLightAtnA[inumdl] = CVector3( 0.0f, 0.0f, fovy );
-						DirLightAtnK[inumdl] = CVector3( 0.0f, 0.0f, 10.0f/frang );
+						DirLightAtnA[inumdl] = fvec3( 0.0f, 0.0f, fovy );
+						DirLightAtnK[inumdl] = fvec3( 0.0f, 0.0f, 10.0f/frang );
 						inumdl++;
 						break;
 					}
@@ -749,8 +749,8 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 
 						//float flin = 2.0ffalloff
 
-						DirLightAtnA[inumdl] = CVector3( 0.0f, 1.0f, 0.0f );
-						DirLightAtnK[inumdl] = CVector3( 1.0f, 0.0f, falloff );
+						DirLightAtnA[inumdl] = fvec3( 0.0f, 1.0f, 0.0f );
+						DirLightAtnK[inumdl] = fvec3( 1.0f, 0.0f, falloff );
 
 						LightMode[inumdl] = 1.0f;
 
@@ -766,8 +766,8 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 						DirLightColors[inumdl] = LightColor;
 						DirLightPos[inumdl] = pdirlight->GetWorldPosition();
 
-						DirLightAtnA[inumdl] = CVector3( 0.0f, 1.0f, 0.0f );
-						DirLightAtnK[inumdl] = CVector3( 1.0f, 0.0f, 0.0f );
+						DirLightAtnA[inumdl] = fvec3( 0.0f, 1.0f, 0.0f );
+						DirLightAtnK[inumdl] = fvec3( 1.0f, 0.0f, 0.0f );
 
 						inumdl++;
 						break;
@@ -775,11 +775,11 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 					case lev2::ELIGHTTYPE_AMBIENT:
 					{
 						lev2::AmbientLight* phedlight = (lev2::AmbientLight*) plight;
-						const ork::CMatrix4&  mativ = pTarg->MTXI()->RefVITGMatrix();
+						const ork::fmtx4&  mativ = pTarg->MTXI()->RefVITGMatrix();
 
-						ork::CVector4 veye = camdata ? ork::CVector4(camdata->GetEye()) : ork::CVector4::Zero();
+						ork::fvec4 veye = camdata ? ork::fvec4(camdata->GetEye()) : ork::fvec4::Zero();
 
-						ork::CVector3 vzdir;
+						ork::fvec3 vzdir;
 
 						if( camdata )
 						{
@@ -793,16 +793,16 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 						DirLightColors[inumdl] = LightColor;
 						DirLightPos[inumdl] = veye;
 
-						ork::CVector4 vzn = vzdir; vzn.SetW(0.0f);
-						CVector3 viewz = vzn.Transform(pTarg->MTXI()->RefVMatrix());
+						ork::fvec4 vzn = vzdir; vzn.SetW(0.0f);
+						fvec3 viewz = vzn.Transform(pTarg->MTXI()->RefVMatrix());
 
 						float fambientshade = phedlight->GetAmbientShade();
 						float fa0 = (1.0f-fambientshade);
 						float fa1 = fambientshade;
 
 						//orkprintf( "veye<%f %f %f> veyev<%f %f %f>\n", veye.GetX(), veye.GetY(), veye.GetZ(), veyev.GetX(), veyev.GetY(), veyev.GetZ() );
-						DirLightAtnA[inumdl] = CVector3( fa0, fa1, 0.0f );
-						DirLightAtnK[inumdl] = CVector3( 1.0f, 0.0f, 0.0f );
+						DirLightAtnA[inumdl] = fvec3( fa0, fa1, 0.0f );
+						DirLightAtnK[inumdl] = fvec3( 1.0f, 0.0f, 0.0f );
 
 						inumdl++;
 						break;

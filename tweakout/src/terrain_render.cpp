@@ -213,7 +213,7 @@ void hmap_hfield_module::ComputeGeometry( )
 							float fv = float(izv)/float(igl-1);
 
 							float fheight = mDefDataBlock.mHeightMap.GetHeight(iadX,iadZ);
-							const CVector3& clr = Color( iadX, iadZ );
+							const fvec3& clr = Color( iadX, iadZ );
 							vtx.miX = (fx-0.5f)*fsize; 
 							vtx.miY = fheight;
 							vtx.miZ = (fz-0.5f)*fsize; 
@@ -280,18 +280,18 @@ void sheightfield_iface_editor::FastRender( const lev2::Renderer* renderer,
 
 				TerMat.SetTexture( ColorTex );
 
-				CColor4 ObjColor;
+				fcolor4 ObjColor;
 				ObjColor.SetRGBAU32( reinterpret_cast<U32>( rable.GetObject() ) );
 
 
 				ptarg->BindMaterial( & TerMat );
 
 				int ivbidx = 0;
-				CMatrix4 wmat; //rable.GetTransformNode()->GetTransform()->GetMatrix();
+				fmtx4 wmat; //rable.GetTransformNode()->GetTransform()->GetMatrix();
 
 				ptarg->PushModColor( ptarg->IsPickState() 
 					? ObjColor
-					: CColor4::White()
+					: fcolor4::White()
 				);
 				ptarg->PushMMatrix(wmat);
 				{

@@ -530,7 +530,7 @@ HeightFieldEditorArchetype::HeightFieldEditorArchetype()
 void HeightFieldEditorArchetype::DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity *pent) const // virtual
 {
 }
-void HeightFieldEditorArchetype::DoStartEntity( ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity* pent ) const
+void HeightFieldEditorArchetype::DoStartEntity( ent::SceneInst* psi, const ork::fmtx4& mtx, ent::Entity* pent ) const
 {
 }
 ///////////////////////////////////////////////////////////////////////////////

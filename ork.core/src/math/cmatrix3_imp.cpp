@@ -18,11 +18,11 @@
 
 namespace ork
 {
-template<> const EPropType CPropType<CMatrix3>::meType				= EPROPTYPE_MAT33REAL;
-template<> const char* CPropType<CMatrix3>::mstrTypeName					= "MAT33REAL";
-template<> void CPropType<CMatrix3>::ToString( const CMatrix3 & Value, PropTypeString& tstr)
+template<> const EPropType CPropType<fmtx3>::meType				= EPROPTYPE_MAT33REAL;
+template<> const char* CPropType<fmtx3>::mstrTypeName					= "MAT33REAL";
+template<> void CPropType<fmtx3>::ToString( const fmtx3 & Value, PropTypeString& tstr)
 {
-	const CMatrix3 & v = Value;
+	const fmtx3 & v = Value;
 
 	std::string result;
 	for(int i = 0; i < 9; i++)
@@ -31,14 +31,14 @@ template<> void CPropType<CMatrix3>::ToString( const CMatrix3 & Value, PropTypeS
 	tstr.format( "%s", result.c_str() );
 }
 
-template<> CMatrix3 CPropType<CMatrix3>::FromString(const PropTypeString& String)
+template<> fmtx3 CPropType<fmtx3>::FromString(const PropTypeString& String)
 {
 	float m[3][3];
 	sscanf(String.c_str(), "%g %g %g %g %g %g %g %g %g",
 		&m[0][0], &m[0][1], &m[0][2],
 		&m[1][0], &m[1][1], &m[1][2],
 		&m[2][0], &m[2][1], &m[2][2] );
-	CMatrix3 result;
+	fmtx3 result;
 	for(int i = 0; i < 9; i++)
 		result.elements[i/3][i%3] = m[i/3][i%3];
 	return result;
@@ -49,11 +49,11 @@ template<> CMatrix3 CPropType<CMatrix3>::FromString(const PropTypeString& String
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace reflect {
-template<> void Serialize( const CMatrix3*in, CMatrix3*out, reflect::BidirectionalSerializer& bidi )
+template<> void Serialize( const fmtx3*in, fmtx3*out, reflect::BidirectionalSerializer& bidi )
 {
 	if( bidi.Serializing() )
 	{
-		bidi.Serializer()->Hint("CMatrix3");
+		bidi.Serializer()->Hint("fmtx3");
 		for( int i=0; i<9; i++ )
 		{
 			bidi | in->GetArray()[i];
@@ -72,7 +72,7 @@ template<> void Serialize( const CMatrix3*in, CMatrix3*out, reflect::Bidirection
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template class CPropType<CMatrix3>;
-template class TMatrix3<float>;		// explicit template instantiation
+template class CPropType<fmtx3>;
+template class Matrix33<float>;		// explicit template instantiation
 
 }

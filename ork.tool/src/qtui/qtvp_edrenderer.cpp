@@ -43,11 +43,11 @@ U32 Renderer::ComposeSortKey(U32 texIndex, U32 depthIndex, U32 passIndex, U32 tr
 ///////////////////////////////////////////////////////////////////////////////
 
 void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
-  CMatrix4 wmat = BoxRen.GetMatrix();
+  fmtx4 wmat = BoxRen.GetMatrix();
 
   GetTarget()->BindMaterial(lev2::GfxEnv::GetRef().GetDefault3DMaterial());
   if (GetTarget()->FBI()->IsPickState()) {
-    CColor4 ObjColor;
+    fcolor4 ObjColor;
     ObjColor.SetRGBAU32((U32)((u64)BoxRen.GetObject()));
 
     GetTarget()->PushModColor(ObjColor);
@@ -57,13 +57,13 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
     GetTarget()->MTXI()->PopMMatrix();
 
     CQuaternion quat;
-    quat.FromAxisAngle(CVector4(0.0f, 0.0f, 1.0f, PI * -0.5f));
+    quat.FromAxisAngle(fvec4(0.0f, 0.0f, 1.0f, PI * -0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
     ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
 
-    quat.FromAxisAngle(CVector4(1.0f, 0.0f, 0.0f, PI * 0.5f));
+    quat.FromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI * 0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
     ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
@@ -72,24 +72,24 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
     GetTarget()->PopModColor();
   } else {
     GetTarget()->MTXI()->PushMMatrix(wmat);
-    GetTarget()->PushModColor(CColor4(0.3f, 0.7f, 0.3f));
+    GetTarget()->PushModColor(fcolor4(0.3f, 0.7f, 0.3f));
     ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
     GetTarget()->PopModColor();
 
     CQuaternion quat;
-    quat.FromAxisAngle(CVector4(0.0f, 0.0f, 1.0f, PI * -0.5f));
+    quat.FromAxisAngle(fvec4(0.0f, 0.0f, 1.0f, PI * -0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
-    GetTarget()->PushModColor(CColor4(0.7f, 0.3f, 0.3f));
+    GetTarget()->PushModColor(fcolor4(0.7f, 0.3f, 0.3f));
     ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
     GetTarget()->PopModColor();
 
-    quat.FromAxisAngle(CVector4(1.0f, 0.0f, 0.0f, PI * 0.5f));
+    quat.FromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI * 0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
-    GetTarget()->PushModColor(CColor4(0.3f, 0.3f, 0.7f));
+    GetTarget()->PushModColor(fcolor4(0.3f, 0.3f, 0.7f));
     ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
     GetTarget()->PopModColor();
@@ -123,28 +123,28 @@ void Renderer::RenderModel(const lev2::CModelRenderable& ModelRen, ork::lev2::Re
 
   float fscale = ModelRen.GetScale();
 
-  const ork::CVector3& offset = ModelRen.GetOffset();
-  const ork::CVector3& rotate = ModelRen.GetRotate();
+  const ork::fvec3& offset = ModelRen.GetOffset();
+  const ork::fvec3& rotate = ModelRen.GetRotate();
 
-  CMatrix4 smat;
-  CMatrix4 tmat;
-  CMatrix4 rmat;
+  fmtx4 smat;
+  fmtx4 tmat;
+  fmtx4 rmat;
 
   smat.SetScale(fscale);
   tmat.SetTranslation(offset);
   rmat.SetRotateY(rotate.GetY() + rotate.GetZ());
 
-  CMatrix4 wmat = ModelRen.GetMatrix();
+  fmtx4 wmat = ModelRen.GetMatrix();
 
   /////////////////////////////////////////////////////////////
   // compute world matrix
   /////////////////////////////////////////////////////////////
 
-  CMatrix4 nmat = tmat * rmat * smat * wmat;
+  fmtx4 nmat = tmat * rmat * smat * wmat;
 
   if (minst->IsBlenderZup()) // zup to yup conversion matrix
   {
-    CMatrix4 rmatx, rmaty;
+    fmtx4 rmatx, rmaty;
     rmatx.RotateX(3.14159f * 0.5f);
     rmaty.RotateX(3.14159f);
     nmat = (rmatx * rmaty) * nmat;
@@ -198,7 +198,7 @@ void Renderer::RenderModel(const lev2::CModelRenderable& ModelRen, ork::lev2::Re
   //  if selected - override with red
   ///////////////////////////////////////
 
-  CColor4 ObjColor = ModelRen.GetModColor();
+  fcolor4 ObjColor = ModelRen.GetModColor();
 
   if (is_pick_state) {
     uint64_t pid = pickBuf
@@ -206,7 +206,7 @@ void Renderer::RenderModel(const lev2::CModelRenderable& ModelRen, ork::lev2::Re
 								 : 0;
     ObjColor.SetRGBAU64(pid);
   } else if (is_sel) {
-    ObjColor = CColor4::Red();
+    ObjColor = fcolor4::Red();
   }
 
   ///////////////////////////////////////
@@ -235,12 +235,12 @@ void Renderer::RenderFrustum(const lev2::FrustumRenderable& FrusRen) const {
   if (bpickbuffer)
     return;
 
-  CColor4 ObjColor;
+  fcolor4 ObjColor;
   u64 asu64 = (u64)mpCurrentQueueObject;
   ObjColor.SetRGBAU32((U32)asu64);
 
-  CVector3 vScreenUp, vScreenRight;
-  CVector2 vpdims(float(GetTarget()->GetW()), float(GetTarget()->GetH()));
+  fvec3 vScreenUp, vScreenRight;
+  fvec2 vpdims(float(GetTarget()->GetW()), float(GetTarget()->GetH()));
 
   bool objspace = FrusRen.IsObjSpace();
 
@@ -252,11 +252,11 @@ void Renderer::RenderFrustum(const lev2::FrustumRenderable& FrusRen) const {
     StdMaterial.mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
     StdMaterial.mRasterState.SetZWriteMask(false);
 
-    CColor4 AlphaYellow(1.0f, 1.0f, 0.0f, 0.3f);
+    fcolor4 AlphaYellow(1.0f, 1.0f, 0.0f, 0.3f);
     if (false == objspace)
-      GetTarget()->MTXI()->PushMMatrix(CMatrix4::Identity);
+      GetTarget()->MTXI()->PushMMatrix(fmtx4::Identity);
     {
-      CVector2 uvZED;
+      fvec2 uvZED;
       lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
       lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
 
@@ -266,22 +266,22 @@ void Renderer::RenderFrustum(const lev2::FrustumRenderable& FrusRen) const {
       const Frustum& frus = FrusRen.GetFrustum();
       {
         for (int i = 0; i < 4; i++) {
-          const CVector3& p0 = frus.mNearCorners[i];
-          const CVector3& p1 = frus.mFarCorners[i];
+          const fvec3& p0 = frus.mNearCorners[i];
+          const fvec3& p1 = frus.mFarCorners[i];
           // printf( "pN<%d> %f %f %f\n", i, p0.GetX(), p0.GetY(), p0.GetZ() );
           // printf( "pF<%d> %f %f %f\n", i, p1.GetX(), p1.GetY(), p1.GetZ() );
           vw.AddVertex(lev2::SVtxV12C4T16(p0, uvZED, 0xffffffff));
           vw.AddVertex(lev2::SVtxV12C4T16(p1, uvZED, 0xffffffff));
         }
         for (int i = 0; i < 4; i++) {
-          const CVector3& p0 = frus.mNearCorners[i];
-          const CVector3& p1 = frus.mNearCorners[(i + 1) % 4];
+          const fvec3& p0 = frus.mNearCorners[i];
+          const fvec3& p1 = frus.mNearCorners[(i + 1) % 4];
           vw.AddVertex(lev2::SVtxV12C4T16(p0, uvZED, 0xffffffff));
           vw.AddVertex(lev2::SVtxV12C4T16(p1, uvZED, 0xffffffff));
         }
         for (int i = 0; i < 4; i++) {
-          const CVector3& p0 = frus.mFarCorners[i];
-          const CVector3& p1 = frus.mFarCorners[(i + 1) % 4];
+          const fvec3& p0 = frus.mFarCorners[i];
+          const fvec3& p1 = frus.mFarCorners[(i + 1) % 4];
           vw.AddVertex(lev2::SVtxV12C4T16(p0, uvZED, 0xffffffff));
           vw.AddVertex(lev2::SVtxV12C4T16(p1, uvZED, 0xffffffff));
         }
@@ -301,7 +301,7 @@ void Renderer::RenderFrustum(const lev2::FrustumRenderable& FrusRen) const {
 
 void Renderer::RenderSphere(const lev2::SphereRenderable& SphRen) const {
   lev2::GfxTarget* pTARG = GetTarget();
-  CMatrix4 mtx;
+  fmtx4 mtx;
   mtx.SetTranslation(SphRen.GetPosition());
   mtx.SetScale(SphRen.GetRadius());
   GetTarget()->MTXI()->PushMMatrix(mtx);

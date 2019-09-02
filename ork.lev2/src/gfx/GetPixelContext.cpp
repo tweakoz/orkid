@@ -30,7 +30,7 @@ namespace ork::lev2 {
 
 GetPixelContext::GetPixelContext() : mAsBuffer(nullptr), mRtGroup(nullptr), miMrtMask(0), mUserData(nullptr) {
   for (int i = 0; i < kmaxitems; i++) {
-    mPickColors[i] = CColor4(0.0f, 0.0f, 0.0f, 0.0f);
+    mPickColors[i] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
     mUsage[i] = EPU_FLOAT;
   }
 }

@@ -26,7 +26,7 @@ class TetherCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( TetherCamArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const override {}
+	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const override {}
 	void DoCompose(ork::ent::ArchComposer& composer) override;
 
 public:
@@ -44,9 +44,9 @@ class TetherCamControllerData : public ent::ComponentData
 	PoolString	mTarget;
 	float		mMinDistance;
 	float		mMaxDistance;
-	CVector3	mEyeUp;
-	CVector3	mEyeOffset;
-	CVector3	mTgtOffset;
+	fvec3	mEyeUp;
+	fvec3	mEyeOffset;
+	fvec3	mTgtOffset;
 	float		mfAperature;
 	float		mfNear;
 	float		mfFar;
@@ -58,10 +58,10 @@ public:
 
 	TetherCamControllerData();
 	PoolString GetTarget() const { return mTarget; }
-	CVector3 GetEyeUp() const { return mEyeUp; }
-	CVector3 GetEyeOffset() const { return mEyeOffset; }
-	CVector3 GetMinDistance() const { return mMinDistance; }
-	CVector3 GetMaxDistance() const { return mMaxDistance; }
+	fvec3 GetEyeUp() const { return mEyeUp; }
+	fvec3 GetEyeOffset() const { return mEyeOffset; }
+	fvec3 GetMinDistance() const { return mMinDistance; }
+	fvec3 GetMaxDistance() const { return mMaxDistance; }
 	float GetAperature() const { return mfAperature; }
 	float GetNear() const { return mfNear; }
 	float GetFar() const { return mfFar; }
@@ -81,7 +81,7 @@ class TetherCamControllerInst : public ent::ComponentInst
 	
 	void DoUpdate(ent::SceneInst* sinst) final;
     bool DoLink(SceneInst *psi) final;
-    bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+    bool DoStart(SceneInst *psi, const fmtx4 &world) final;
 
 public:
 	const TetherCamControllerData&	GetCD() const { return mCD; }

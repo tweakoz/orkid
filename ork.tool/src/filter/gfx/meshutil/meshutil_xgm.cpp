@@ -109,18 +109,18 @@ void toolSubMeshToXgmSubMesh(const toolmesh& mesh, const submesh& smesh, ork::le
 	////////////////////////////////////////////////////////
 	int inumclus = 1;
 	static int gicolor = 0;
-	static CVector4 gColors[8] = 
+	static fvec4 gColors[8] = 
 	{
-		CVector4::Black(),		//0
-		CVector4::Red(),		//1
-		CVector4::Green(),		//2
-		CVector4::Yellow(),		//3
-		CVector4::Blue(),		//4
-		CVector4::Magenta(),	// 5
-		CVector4::Cyan(),		// 6
-		CVector4::White(),		// 7
+		fvec4::Black(),		//0
+		fvec4::Red(),		//1
+		fvec4::Green(),		//2
+		fvec4::Yellow(),		//3
+		fvec4::Blue(),		//4
+		fvec4::Magenta(),	// 5
+		fvec4::Cyan(),		// 6
+		fvec4::White(),		// 7
 	};
-	CVector4 outcolor = gColors[gicolor];
+	fvec4 outcolor = gColors[gicolor];
 	gicolor = (gicolor+1)%8;
 	meshout.miNumClusters = inumclus;
 	meshout.mpClusters = new ork::lev2::XgmCluster[inumclus];
@@ -282,7 +282,7 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 											ToolVertex.mPos = InVtx.mPosition;
 											ToolVertex.mNrm = InVtx.mNormal;
 											ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
-											ToolVertex.mCol[0] = CColor4::White();
+											ToolVertex.mCol[0] = fcolor4::White();
 											int ioutidx = outsub.MergeVertex( ToolVertex );
 											indexcache[ (ii%3) ] = ioutidx;
 											if( 2 == (ii%3) )
@@ -304,7 +304,7 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 											ToolVertex.mPos = InVtx.mPosition;
 											ToolVertex.mNrm = InVtx.mNormal;
 											ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
-											ToolVertex.mCol[0] = CColor4::White();
+											ToolVertex.mCol[0] = fcolor4::White();
 											int ioutidx = outsub.MergeVertex( ToolVertex );
 											indexcache[ (ii%3) ] = ioutidx;
 											if( 2 == (ii%3) )
@@ -327,7 +327,7 @@ void toolmesh::ReadFromXGM( const file::Path& BasePath )
 											ToolVertex.mPos = InVtx.mPosition;
 											ToolVertex.mNrm = InVtx.mNormal;
 											ToolVertex.mUV[0].mMapTexCoord = InVtx.mUV0;
-											ToolVertex.mCol[0] = CColor4::White();
+											ToolVertex.mCol[0] = fcolor4::White();
 											int ioutidx = outsub.MergeVertex( ToolVertex );
 											indexcache[ (ii%3) ] = ioutidx;
 											if( 2 == (ii%3) )

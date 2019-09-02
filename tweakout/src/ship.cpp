@@ -43,7 +43,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::wiidom::ShipControllerData, "Tweakout/ShipCon
 using namespace ork::ent;
 
 namespace ork {
-namespace ent { void RigidBody_Draw( lev2::GfxTarget* targ, const CMatrix4& matw, const RigidBody& rbody, bool bdebug ); }
+namespace ent { void RigidBody_Draw( lev2::GfxTarget* targ, const fmtx4& matw, const RigidBody& rbody, bool bdebug ); }
 namespace wiidom {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,7 +96,7 @@ bool ShipControllerInst::DoLink(ent::SceneInst* psi)
 				p8.mMass = pmass*9.0f;
 				p9.mMass = pmass*0.1;
 				//mRigidBody.AddPointMass( p9 );
-				mRigidBody.mPosition = CVector3( 0.0f, 200.0f, 0.0f );
+				mRigidBody.mPosition = fvec3( 0.0f, 200.0f, 0.0f );
 				mRigidBody.mElasticity = 0.90f;
 				//////////////////////////////////////
 				p0.mPosition.SetXYZ( 1.0f,0.0f,0.0f );
@@ -107,7 +107,7 @@ bool ShipControllerInst::DoLink(ent::SceneInst* psi)
 				p0.mPosition.SetXYZ( 0.0f,0.0f,1.0f );
 				mGroundBody.AddPointMass( p0 );
 				mGroundBody.Close();
-				mGroundBody.mPosition = CVector3( 0.0f, 0.0f, 0.0f );
+				mGroundBody.mPosition = fvec3( 0.0f, 0.0f, 0.0f );
 				mGroundBody.BeginForces();
 				mGroundBody.EndForces();
 				mGroundBody.IntegrateForces(0.0f);
@@ -116,8 +116,8 @@ bool ShipControllerInst::DoLink(ent::SceneInst* psi)
 
 				DagNode& dnode = this_ent->GetDagNode();
 				TransformNode& t3d = dnode.GetTransformNode();
-				CMatrix4 mtx_e = t3d.GetTransform().GetMatrix();
-				CMatrix4 mtx_r; //mtx_r.SetRotateX(PI*0.5f);
+				fmtx4 mtx_e = t3d.GetTransform().GetMatrix();
+				fmtx4 mtx_r; //mtx_r.SetRotateX(PI*0.5f);
 				auto mtx = (mtx_r*mtx_e);
 
 				auto ship_shape = new btCylinderShape (btVector3(frad,prad,frad));
@@ -168,7 +168,7 @@ ShipControllerInst::ShipControllerInst( const ShipControllerData& pcd, ent::Enti
 			}
 			OrkAssert( sci );
 			ShipControllerInst* scinc = const_cast<ShipControllerInst*>(sci);
-			CMatrix4 matw;
+			fmtx4 matw;
 			pent->GetDagNode().GetTransformNode().GetMatrix( matw );
 			//RigidBody_Draw( targ, matw, scinc->RigidBody(), scinc->GetSCD().GetDebug() );
 		}
@@ -185,11 +185,11 @@ ShipControllerInst::ShipControllerInst( const ShipControllerData& pcd, ent::Enti
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 ShipTarget::GetPos()
+fvec3 ShipTarget::GetPos()
 {
-	return CVector3(); //mSCI.RigidBody().mPosition;
+	return fvec3(); //mSCI.RigidBody().mPosition;
 }
-void ShipTarget::NotifyDamage(const CVector3& Impulse)
+void ShipTarget::NotifyDamage(const fvec3& Impulse)
 {
 	mDamageImpulse += Impulse;
 }
@@ -206,26 +206,26 @@ bool ShipControllerInst::Collision(float fddt)
 	if( mThisTarget.mDamageImpulse.MagSquared() != 0.0f )
 	{
 		mRigidBody.ApplyImpulse( mThisTarget.mDamageImpulse, mRigidBody.ComW() );
-		mThisTarget.mDamageImpulse = CVector3(0.0f,0.0f,0.0f);
+		mThisTarget.mDamageImpulse = fvec3(0.0f,0.0f,0.0f);
 	}
 
 	for( int ip=0; ip<inump; ip++ )
-	{	const CVector3 wp  = mRigidBody.PntW(ip);
-		const CVector3 NextPos = wp+mRigidBody.PointVelocityW( wp )*fddt;
-		mRigidBody.mPoints[ip].mImpulse = CVector3(0.0f,0.0f,0.0f);
+	{	const fvec3 wp  = mRigidBody.PntW(ip);
+		const fvec3 NextPos = wp+mRigidBody.PointVelocityW( wp )*fddt;
+		mRigidBody.mPoints[ip].mImpulse = fvec3(0.0f,0.0f,0.0f);
 		/////////////////////////////////
 		/////////////////////////////////
-		CVector3 GroundCollideNormal,CollisionPoint;
+		fvec3 GroundCollideNormal,CollisionPoint;
 		float fat;
-		CVector3 curhfxyz, curhfn;
-		CVector3 tp = (wp+NextPos)*0.5f;
+		fvec3 curhfxyz, curhfn;
+		fvec3 tp = (wp+NextPos)*0.5f;
 		mWCI->ReadSurface( tp, curhfxyz, curhfn );
 		float fh = (tp.GetY()-curhfxyz.GetY());
 		mRigidBody.mPoints[ip].mCollisionDepth = 0.0f;
 		mRigidBody.mPoints[ip].mLastPointHeight = mRigidBody.mPoints[ip].mPointHeight;
 		mRigidBody.mPoints[ip].mPointHeight = fh;
-		mRigidBody.mPoints[ip].mColNrm = CVector3( 0.0f,1.0f,0.0f);
-		mRigidBody.mPoints[ip].mImpulse = CVector3( 0.0f,0.0f,0.0f);
+		mRigidBody.mPoints[ip].mColNrm = fvec3( 0.0f,1.0f,0.0f);
+		mRigidBody.mPoints[ip].mImpulse = fvec3( 0.0f,0.0f,0.0f);
 		mRigidBody.mPoints[ip].msimp = 0.0f;
 
 		if( mWCI->CollisionCheck( wp, NextPos, CollisionPoint, GroundCollideNormal, fat ) )
@@ -240,7 +240,7 @@ bool ShipControllerInst::Collision(float fddt)
 					mRigidBody,
 					mRigidBody.mPoints[ip].mMass ); // * (1.0f-fat); // * fddt;
 			/////////////////////////////////
-			CVector3 MagImp = GroundCollideNormal*impulse; //*(1.0f-fat);
+			fvec3 MagImp = GroundCollideNormal*impulse; //*(1.0f-fat);
 			/////////////////////////////////
 			if( impulse>0.0f ) // && (impulse<10.0f) )
 			{	mRigidBody.ApplyImpulse( MagImp, CollisionPoint );
@@ -275,13 +275,13 @@ bool ShipControllerInst::DoUpdate_Flip( const ork::lev2::InputState& inpstate, f
 	{
 #if 0
 		mRigidBody.mOrientation = ork::CQuaternion::Lerp( mRigidBody.mOrientation, ident, fdt*2.0f );
-		mRigidBody.mPosition += ork::CVector3(0.0f,fdt*3.0f,0.0f);
+		mRigidBody.mPosition += ork::fvec3(0.0f,fdt*3.0f,0.0f);
 		mRigidBody.mVelocity = 0.0f;
 		mRigidBody.mLinAccel *= 0.0f;
 		mRigidBody.mAngularVelocity = 0.0f;
 		mRigidBody.mAngAccel = 0.0f;
-		mRigidBody.mLinearMomentum = CVector3();
-		mRigidBody.mAngularMomentum = CVector3();
+		mRigidBody.mLinearMomentum = fvec3();
+		mRigidBody.mAngularMomentum = fvec3();
 #endif
 		bv = true;
 	}
@@ -322,13 +322,13 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 
 		if( cdata )
 		{
-			const ork::CVector3& vz = cdata->GetZNormal();
+			const ork::fvec3& vz = cdata->GetZNormal();
 
 			float fat2 = atan2( vz.GetZ(), vz.GetX() );
 
 			const ork::ent::ModelComponentData& mdata = mci->GetData();
 			ork::ent::ModelComponentData& ncdata = const_cast<ork::ent::ModelComponentData&>( mdata );
-			ork::CVector3 rotate = ncdata.GetRotate();
+			ork::fvec3 rotate = ncdata.GetRotate();
 			rotate.SetZ( fat2 );
 
 			ncdata.SetRotate(rotate);
@@ -356,7 +356,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	float fx = filtx.compute( fwiimotionx );
 	float fy = filty.compute( fwiimotiony );
 	float fz = filtz.compute( fwiimotionz );
-	const CVector3 wiimotion = -CVector3( fx, fy, fz ).Normal();
+	const fvec3 wiimotion = -fvec3( fx, fy, fz ).Normal();
 	static int irumbctr = 0;
 	/////////////////////
 	float lanay = inpstate.GetPressure(lev2::ETRIG_RAW_JOY0_LANA_YAXIS);
@@ -374,7 +374,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	if( nullptr == mRigidBody )
 		return;
 
-	CMatrix4 mtx_ent;
+	fmtx4 mtx_ent;
 
 	//////////////////////////////////////////////////
 	// copy motion state to entity transform
@@ -400,7 +400,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 
 	if( lanay>0.01f )
 	{	//mRigidBody->applyCentralForce( !(ship_ynorm*lanay*1e2) );
-		auto f = CVector3(0.0f,lanay*3e3,0.0f);
+		auto f = fvec3(0.0f,lanay*3e3,0.0f);
 
 		//printf( "force<%f %f %f\n",
 		//	f.GetX(), f.GetY(), f.GetZ() );
@@ -422,9 +422,9 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	// lift due to spin
 	//////////////////////////////////////////////////////////
 
-	CVector3 lift = (!mRigidBody->getAngularVelocity())*1.5e1;
+	fvec3 lift = (!mRigidBody->getAngularVelocity())*1.5e1;
 
-	if( lift.Dot(CVector3(0.0f,1.0f,0.0f)) < 0.0f ) lift = lift*-1.0f;
+	if( lift.Dot(fvec3(0.0f,1.0f,0.0f)) < 0.0f ) lift = lift*-1.0f;
 
 	//mRigidBody->applyCentralForce( !lift );
 
@@ -432,13 +432,13 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	// vertical stabilizer
 	//////////////////////////////////////////////////////////
 
-	CVector3 stab_axis = (CVector3(0.0f,1.0f,0.0f).Cross(ship_ynorm)).Normal();
-	float stab_amt = 1.0f-(CVector3(0.0f,1.0f,0.0f).Dot(ship_ynorm));
+	fvec3 stab_axis = (fvec3(0.0f,1.0f,0.0f).Cross(ship_ynorm)).Normal();
+	float stab_amt = 1.0f-(fvec3(0.0f,1.0f,0.0f).Dot(ship_ynorm));
 
 	/*printf( "stab<%f %f %f> amt<%f>\n",
 			stab_axis.GetX(), stab_axis.GetY(), stab_axis.GetZ(), stab_amt );
 
-	if( ship_xnorm.Dot(CVector3(1.0f,0.0f,0.0f)) > 0.5f )
+	if( ship_xnorm.Dot(fvec3(1.0f,0.0f,0.0f)) > 0.5f )
 		mRigidBody->applyTorque( !(stab_axis*stab_amt*-3e4) );
 	#endif
 
@@ -451,9 +451,9 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 	int inump = 10; //mRigidBody.mPoints.size();
 	float point_mass = 20000.0f;
 	float total_mass = point_mass*float(inump);
-	//const CMatrix4& cmat = mRigidBody.mCurrentMatrix;
-	//const CVector3 CurrentPos = cmat.GetTranslation();
-	//const CVector3 wctr = mRigidBody.ComW();
+	//const fmtx4& cmat = mRigidBody.mCurrentMatrix;
+	//const fvec3 CurrentPos = cmat.GetTranslation();
+	//const fvec3 wctr = mRigidBody.ComW();
 	//////////////////////
 	// accum forces
 	//////////////////////
@@ -474,15 +474,15 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 			// per point
 			///////////////////////////////////////////////
 
-			//CVector3 ctrW = mRigidBody.PntW(kcenterpoint);
+			//fvec3 ctrW = mRigidBody.PntW(kcenterpoint);
 			for( int ip=0; ip<inump; ip++ )
 			{
 				float fphi = PI2*float(ip)/float(inump);
 				float fphi_sin = sinf(fphi);
 				float fphi_cos = cosf(fphi);
 
-				CVector3 point_pos = ship_center+(ship_xnorm*fphi_sin)+(ship_znorm*fphi_cos);
-				CVector3 vup = ship_ynorm;
+				fvec3 point_pos = ship_center+(ship_xnorm*fphi_sin)+(ship_znorm*fphi_cos);
+				fvec3 vup = ship_ynorm;
 
 				////////////////////////////////////////////////
 				// ship vertical thrusters
@@ -493,9 +493,9 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 				{
 					//if( ip != kcenterpoint ) // spinner
 					{
-						CVector3 center_to_edge_dir = (point_pos-ship_center).Normal();
-						CVector3 vsp = ship_ynorm.Cross(center_to_edge_dir);
-						CVector3 tf = ship_ynorm*point_mass*5000.0f*(lanay);
+						fvec3 center_to_edge_dir = (point_pos-ship_center).Normal();
+						fvec3 vsp = ship_ynorm.Cross(center_to_edge_dir);
+						fvec3 tf = ship_ynorm*point_mass*5000.0f*(lanay);
 
 						printf( "apply force<%f %f %f> pos<%f %f %f> p<%d>\n",
 								tf.GetX(), tf.GetY(), tf.GetZ(),
@@ -507,9 +507,9 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 				}
 				if( ip == kcenterpoint ) // Lift Due to Spin
 				{
-					//CVector3 lift = mRigidBody.mAngularVelocity*tmass*5.0f;
+					//fvec3 lift = mRigidBody.mAngularVelocity*tmass*5.0f;
 
-					//if( lift.Dot(CVector3(0.0f,1.0f,0.0f)) < 0.0f ) lift = lift*-1.0f;
+					//if( lift.Dot(fvec3(0.0f,1.0f,0.0f)) < 0.0f ) lift = lift*-1.0f;
 
 					//mRigidBody.ApplyForce( lift, p );
 				}
@@ -520,23 +520,23 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 				////////////////////////////////////////////////
 				if( ranay>0.01f )
 				{
-					const CMatrix4& mz = cmat;
-					CVector3 vdir, vup, vsid;
+					const fmtx4& mz = cmat;
+					fvec3 vdir, vup, vsid;
 					////////////////////////////////////////////
-					static CVector3 vdirac = CVector3(0.0f,0.0f,-15.0f);
-					vdir = (mRigidBody.mVelocity*CVector3(1.0f,0.0f,1.0f)).Normal();
+					static fvec3 vdirac = fvec3(0.0f,0.0f,-15.0f);
+					vdir = (mRigidBody.mVelocity*fvec3(1.0f,0.0f,1.0f)).Normal();
 					vdirac += vdir;
 					vdirac = vdirac.Normal()*15.0f;
 					if( vdirac.Mag() == 0.0f )
 					{
 						orkprintf( "vdirac.Mag==0.0f\n" );
-						vdirac = CVector3(0.0f,0.0f,-15.0f);
+						vdirac = fvec3(0.0f,0.0f,-15.0f);
 					}
 
 					vdir = vdirac.Normal();
-					vup = CVector3(0.0f,1.0f,0.0f);
+					vup = fvec3(0.0f,1.0f,0.0f);
 					vsid = vdir.Cross( vup );
-					CMatrix4 MatShipRot;
+					fmtx4 MatShipRot;
 					MatShipRot.fromNormalVectors( vsid, vup, vdir );
 					////////////////////////////////////////////
 					float fturn = (fx*mPcd.GetSteeringAngle());
@@ -544,9 +544,9 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 					//float fforcebas = 20.0f;
 					////////////////////////////////////////////
 					CQuaternion q;
-					q.FromAxisAngle( CVector4( 0.0f, 1.0f, 0.0f, fturn ) );
+					q.FromAxisAngle( fvec4( 0.0f, 1.0f, 0.0f, fturn ) );
 					MatShipRot = q.ToMatrix()*MatShipRot;
-					CVector3 fdir	=	CVector3(0.0f,0.0f,mPcd.GetForwardForce()
+					fvec3 fdir	=	fvec3(0.0f,0.0f,mPcd.GetForwardForce()
 									+	(ftm*mPcd.GetForwardForce()*mPcd.GetSteeringRatio()))
 									.	Transform3x3(MatShipRot);
 
@@ -555,7 +555,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 						const float khmax = 5.0f;
 						if( fheight > khmax )
 						{
-							CVector3 downforce( 0.0f, -1.0f, 0.0f );
+							fvec3 downforce( 0.0f, -1.0f, 0.0f );
 							mRigidBody.ApplyForce( downforce*tmass, p );
 						}
 						else
@@ -570,9 +570,9 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 				// friction
 				///////////////////////////////////////////////
 				float fric = bcol ? mPcd.GetGroundFriction() : mPcd.GetAirFriction();
-				CVector3 vel = mRigidBody.PointVelocityW(p);
-				CVector3 acc = vel*(1.0f/fddt);
-				CVector3 accxz = CVector3( acc.GetX(), 0.0f, acc.GetZ() )*fric;
+				fvec3 vel = mRigidBody.PointVelocityW(p);
+				fvec3 acc = vel*(1.0f/fddt);
+				fvec3 accxz = fvec3( acc.GetX(), 0.0f, acc.GetZ() )*fric;
 				if( ip == kcenterpoint )
 				{
 					mRigidBody.ApplyForce( - accxz * tmass, p );
@@ -588,7 +588,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 					float fmag = powf(kh-fheight,1.0f/kp) * mRigidBody.mVelocity.Mag()/20.0f;
 					if( fmag>0.0f )
 					{
-						CVector3 tf = -(cnorm*pmass*9.8f) * fmag;
+						fvec3 tf = -(cnorm*pmass*9.8f) * fmag;
 						//mRigidBody.ApplyForce( tf*(1.0003f/powf(kh,1.0f/kp)), p );
 					}
 				}
@@ -596,14 +596,14 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 				{
 					int inext = (ip+1)%kcenterpoint;
 
-					CVector3 del = (mRigidBody.PntW(ip)-ctrW).Normal();
-					CVector3 delnex = (mRigidBody.PntW(inext)-ctrW).Normal();
+					fvec3 del = (mRigidBody.PntW(ip)-ctrW).Normal();
+					fvec3 delnex = (mRigidBody.PntW(inext)-ctrW).Normal();
 
-					CVector3 vup = mRigidBody.mCurrentMatrix.GetYNormal(); //  del.Cross(delnex).Normal();
+					fvec3 vup = mRigidBody.mCurrentMatrix.GetYNormal(); //  del.Cross(delnex).Normal();
 
 					float dh = (p.GetY()-ctrW.GetY());
 					//float fmag = (1.0f-fheight);
-					CVector3 tf = vup*pmass*1.0f*dh;
+					fvec3 tf = vup*pmass*1.0f*dh;
 
 					if( tf.Mag() < 10.0f )
 					{
@@ -636,9 +636,9 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 	#if 0
 	EnemySpawnerControllerInst* spwci = sinst->FindTypedEntityComponent<EnemySpawnerControllerInst>("/ent/spawner");
 
-	const CVector3& MyPos = mRigidBody.mPosition;
-	const CVector3& MyVel = mRigidBody.mVelocity;
-	const CVector3& MyDir = MyVel.Normal();
+	const fvec3& MyPos = mRigidBody.mPosition;
+	const fvec3& MyVel = mRigidBody.mVelocity;
+	const fvec3& MyDir = MyVel.Normal();
 
 	if( spwci )
 	{
@@ -649,8 +649,8 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 
 		float fmind = CFloat::TypeMax();
 
-		CVector3 testpoint;
-		CVector3 testpointHF, testpointHFN;
+		fvec3 testpoint;
+		fvec3 testpointHF, testpointHFN;
 
 		static const int kmaxc = 4;
 		static FighterControllerInst* Candidates[kmaxc];
@@ -660,7 +660,7 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 		{
 			FighterControllerInst* fsi = Fighters[i];
 
-			const CVector3& fsipos = fsi->RigidBody().mPosition;
+			const fvec3& fsipos = fsi->RigidBody().mPosition;
 
 			//////////////////////////////////////////
 			// first is it in range ?
@@ -674,7 +674,7 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 				// is it in front of us ?
 				//////////////////////////////////////////
 
-				CVector3 DirToEnem = (fsipos-MyPos).Normal();
+				fvec3 DirToEnem = (fsipos-MyPos).Normal();
 
 				if( MyDir.Dot( DirToEnem ) > 0.3f )
 				{
@@ -700,7 +700,7 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 
 					if( false == bobsc )
 					{
-						CVector3 proj = MyPos + (MyDir*fsidist);
+						fvec3 proj = MyPos + (MyDir*fsidist);
 						float distfr = (fsipos-proj).MagSquared();
 
 						if( distfr < fmind )
@@ -726,7 +726,7 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 			tfsi = Candidates[irand];
 
 			float fmag = mRigidBody.mVelocity.Mag();
-			CVector3 mdir = (mRigidBody.mVelocity+CVector3(0.0f,0.5f,0.0f)).Normal();
+			fvec3 mdir = (mRigidBody.mVelocity+fvec3(0.0f,0.5f,0.0f)).Normal();
 
 			wiidom::LaunchMissile( sinst, GetEntity()->GetDagNode(), mdir*fmag, mWCI, tfsi->GetITarget(), 3.0f );
 		}
@@ -759,7 +759,7 @@ void ShipArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	//sscomposer.Register<ent::BulletObjectControllerData>();
 }
 
-void ShipArchetype::DoStartEntity(ork::ent::SceneInst*, const ork::CMatrix4& mtx, ork::ent::Entity* pent ) const
+void ShipArchetype::DoStartEntity(ork::ent::SceneInst*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const
 {
 	//pent->GetDagNode().GetTransformNode().GetTransform()->SetMatrix(mtx);
 

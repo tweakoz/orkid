@@ -585,8 +585,8 @@ void submesh::GetConnectedPolys( const edge & ed, orkset<int>& output ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void toolmesh::SetRangeTransform( const CVector4 & vscale, const CVector4 & vtrans )
-{	CMatrix4 MatS, MatT;
+void toolmesh::SetRangeTransform( const fvec4 & vscale, const fvec4 & vtrans )
+{	fmtx4 MatS, MatT;
 	MatS.Scale( vscale.GetX(), vscale.GetY(), vscale.GetZ() );
 	MatT.SetTranslation( vtrans.GetX(), vtrans.GetY(), vtrans.GetZ() );
 	mMatRange = MatS*MatT;

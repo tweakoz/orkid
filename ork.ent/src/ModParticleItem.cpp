@@ -73,7 +73,7 @@ struct ModItemBufferDataDB
 	//ork::recursive_mutex							mBufferMutex;
 	float											mfTimeElapsed;
 	float											mfStartTime;
-	CMatrix4										mMatrix;
+	fmtx4										mMatrix;
 
 	ModItemBufferDataDB() {} //: mBufferMutex("ModItemBufferDataDB::Mutex") {}
 	~ModItemBufferDataDB()

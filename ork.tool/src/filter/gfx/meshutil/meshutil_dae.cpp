@@ -834,7 +834,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 					float fCG = daesrc.GetData( iclridx+1 );
 					float fCB = daesrc.GetData( iclridx+2 );
 					float fCA = daesrc.GetData( iclridx+3 );
-					muvtx.mCol[icolor] = CVector4( fCR, fCG, fCB, fCA );
+					muvtx.mCol[icolor] = fvec4( fCR, fCG, fCB, fCA );
 				}
 			}
 			/////////////////////////////////
@@ -853,7 +853,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 					uint32 iuvidx = daesrc.GetSourceIndex( iface_fvertbase, iface_v );
 					float fU0 = daesrc.GetData( iuvidx+0 );
 					float fV0 = daesrc.GetData( iuvidx+1 );
-					muvtx.mUV[iuv].mMapTexCoord = CVector2( fU0, fV0 );
+					muvtx.mUV[iuv].mMapTexCoord = fvec2( fU0, fV0 );
 				}
 			}
 			/////////////////////////////////
@@ -873,7 +873,7 @@ void DaeReadQueueItem::ReadPolys(int ithreadidx) const
 					float fbx = daesrc.GetData( iuvidx+0 );
 					float fby = daesrc.GetData( iuvidx+1 );
 					float fbz = daesrc.GetData( iuvidx+2 );
-					muvtx.mUV[ibin].mMapBiNormal = CVector3( fbx, fby, fbz ).Normal();
+					muvtx.mUV[ibin].mMapBiNormal = fvec3( fbx, fby, fbz ).Normal();
 				}
 			}
 			//const std::string& PolyGroupName =	ShadingGroupName; //	readopts.mbMergeMeshShGrpName

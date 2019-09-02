@@ -3,183 +3,156 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
-
-#ifndef __ORK_MATH_MATRIX3_H__
-#define __ORK_MATH_MATRIX3_H__
-
+#pragma once
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <ork/orktypes.h>
 #include <ork/math/quaternion.h>
+#include <ork/orktypes.h>
 
 #include <ork/config/config.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace ork
-{
+namespace ork {
 
-template <typename T> class TVector4;
-template <typename T> class TVector3;
+template <typename T> class Vector4;
+template <typename T> class Vector3;
 template <typename T> class TQuaternion;
 
-template <typename T> class  TMatrix3
-{
-	friend class TVector4<T>;
+template <typename T> class Matrix33 {
+  friend class Vector4<T>;
 
-	public:
+public:
+  typedef T value_type;
 
-	typedef T value_type;
+  ////////////////
 
-	////////////////
+  T elements[3][3];
 
-	T	elements[3][3];
+  Matrix33(const Matrix33<T>& m) {
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        elements[i][j] = m.elements[i][j];
+      }
+    }
+  }
 
-	TMatrix3(const TMatrix3<T>& m)
-	{
-		for(int i = 0; i < 3; i++)
-		{
-			for(int j = 0; j < 3; j++)
-			{
-				elements[i][j] = m.elements[i][j];
-			}
-		}
-	}
+  ////////////////
 
-	////////////////
+  Matrix33(void) { SetToIdentity(); }
 
-	TMatrix3(void)
-	{	
-		SetToIdentity();
-	}
+  ~Matrix33() {}
 
-	~TMatrix3()
-	{
-	}
+  /////////
 
-	/////////
+  void SetToIdentity(void);
 
-	void SetToIdentity(void);
+  /////////
 
-	/////////
+  void RotateX(T rad);
+  void RotateY(T rad);
+  void RotateZ(T rad);
+  void SetRotateX(T rad);
+  void SetRotateY(T rad);
+  void SetRotateZ(T rad);
 
-	void RotateX( T rad );
-	void RotateY( T rad );
-	void RotateZ( T rad );
-	void SetRotateX(T rad);
-	void SetRotateY(T rad);
-	void SetRotateZ(T rad);
+  /////////
 
-	/////////
+  void SetScale(const Vector4<T>& vec);
+  void SetScale(T x, T y, T z);
+  void SetScale(T s);
+  void Scale(const Vector4<T>& vec);
+  void Scale(T xscl, T yscl, T zscl);
 
-	void SetScale( const TVector4<T> &vec);
-	void SetScale(T x, T y, T z);
-	void SetScale(T s);
-	void Scale(const TVector4<T> &vec);
-	void Scale(T xscl, T yscl, T zscl);
+  /////////
 
-	/////////
+  void FromQuaternion(TQuaternion<T> quat);
 
-	void FromQuaternion(TQuaternion<T> quat);
+  /////////
 
-	/////////
+  Matrix33<T> Mult(T scalar) const;
+  Matrix33<T> MatrixMult(const Matrix33<T>& mat1) const;
 
-	TMatrix3<T> Mult( T scalar ) const;
-	TMatrix3<T> MatrixMult( const TMatrix3<T> &mat1 ) const;
+  inline Matrix33<T> operator*(const Matrix33<T>& mat) const { return MatrixMult(mat); }
 
-	inline TMatrix3<T> operator*( const TMatrix3<T> &mat ) const { return MatrixMult(mat); }
+  void Transpose(void);
+  void InverseTranspose();
+  void Inverse(void);
+  void Normalize(void);
+  // void GEMSInverse( const Matrix33<T> &in );
 
-	void Transpose(void);
-	void InverseTranspose();
-	void Inverse( void );
-	void Normalize( void );
-	//void GEMSInverse( const TMatrix3<T> &in );
+  void CorrectionMatrix(const Matrix33<T>& from, const Matrix33<T>& to);
+  void SetRotation(const Matrix33<T>& from);
+  void SetScale(const Matrix33<T>& from);
 
-	void CorrectionMatrix( const TMatrix3<T> &from, const TMatrix3<T> &to );
-	void SetRotation( const TMatrix3<T> &from );
-	void SetScale( const TMatrix3<T> &from );
+  void Lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par); // par 0.0f .. 1.0f
 
-	void Lerp( const TMatrix3<T> &from, const TMatrix3<T> &to, T par ); // par 0.0f .. 1.0f
+  void DecomposeMatrix(TQuaternion<T>& rot, T& Scale) const;
+  void ComposeMatrix(const TQuaternion<T>& rot, const T& Scale);
 
-    void DecomposeMatrix( TQuaternion<T>& rot, T& Scale ) const;
-    void ComposeMatrix( const TQuaternion<T>& rot, const T& Scale );
+  ////////////////
 
-	////////////////
+  void SetElemYX(int ix, int iy, T val);
+  T GetElemYX(int ix, int iy) const;
+  void SetElemXY(int ix, int iy, T val);
+  T GetElemXY(int ix, int iy) const;
 
-	void SetElemYX( int ix, int iy, T val );
-	T GetElemYX( int ix, int iy ) const;
-	void SetElemXY( int ix, int iy, T val );
-	T GetElemXY( int ix, int iy ) const ;
+  ////////////////
 
-	////////////////
+  void dump(STRING name);
 
-	void dump( STRING name );
+  inline bool operator==(const Matrix33<T>& b) const {
+    bool beq = true;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        if (elements[i][j] != b.elements[i][j]) {
+          beq = false;
+        }
+      }
+    }
+    return beq;
+  }
+  inline bool operator!=(const Matrix33<T>& b) const {
+    bool beq = true;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        if (elements[i][j] != b.elements[i][j]) {
+          beq = false;
+        }
+      }
+    }
+    return (false == beq);
+  }
 
-	inline bool operator==( const TMatrix3<T> &b ) const
-	{
-		bool beq = true;
-		for( int i=0; i<3; i++ )
-		{
-			for( int j=0; j<3; j++ )
-			{
-				if( elements[i][j] != b.elements[i][j] )
-				{
-					beq = false;
-				}
-			}
-		}
-		return beq;
-	}
-	inline bool operator!=( const TMatrix3<T> &b ) const
-	{
-		bool beq = true;
-		for( int i=0; i<3; i++ )
-		{
-			for( int j=0; j<3; j++ )
-			{
-				if( elements[i][j] != b.elements[i][j] )
-				{
-					beq = false;
-				}
-			}
-		}
-		return (false==beq);
-	}
+  ///////////////////////////////////////////////////////////////////////////////
+  // Column/Row Accessors
+  ///////////////////////////////////////////////////////////////////////////////
 
-	///////////////////////////////////////////////////////////////////////////////
-    // Column/Row Accessors
-	///////////////////////////////////////////////////////////////////////////////
+  Vector3<T> GetRow(int irow) const;
+  Vector3<T> GetColumn(int icol) const;
+  void SetRow(int irow, const Vector3<T>& v);
+  void SetColumn(int icol, const Vector3<T>& v);
 
-	TVector3<T> GetRow( int irow ) const;
-	TVector3<T> GetColumn( int icol ) const;
-	void SetRow( int irow, const TVector3<T>& v );
-	void SetColumn( int icol, const TVector3<T>& v );
+  Vector3<T> GetXNormal(void) const { return GetColumn(0); }
+  Vector3<T> GetYNormal(void) const { return GetColumn(1); }
+  Vector3<T> GetZNormal(void) const { return GetColumn(2); }
 
-	TVector3<T> GetXNormal( void ) const { return GetColumn(0); }
-	TVector3<T> GetYNormal( void ) const { return GetColumn(1); }
-	TVector3<T> GetZNormal( void ) const { return GetColumn(2); }
+  void fromNormalVectors(const Vector3<T>& xv, const Vector3<T>& yv, const Vector3<T>& zv);
+  void toNormalVectors(Vector3<T>& xv, Vector3<T>& yv, Vector3<T>& zv) const;
 
-	void fromNormalVectors( const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv );
-	void toNormalVectors( TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv ) const;
+  ///////////////////////////////////////////////////////////////////////////////
 
-    ///////////////////////////////////////////////////////////////////////////////
+  static const Matrix33<T> Identity;
 
-	static const TMatrix3<T> Identity;
+  T* GetArray(void) const { return (T*)&elements[0][0]; }
 
-    T *GetArray( void ) const { return (T*) & elements[0][0]; }
-
-    ///////////////////////////////////////////////////////////////////////////////
-
+  ///////////////////////////////////////////////////////////////////////////////
 };
 
-typedef TMatrix3<float> CMatrix3;
+typedef Matrix33<float> fmtx3;
 
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork
-
-//#include <ork/math/cmatrix4.hpp>
-
-#endif

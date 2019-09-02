@@ -65,7 +65,7 @@ template <typename T>T det3x3( T a1, T a2, T a3, T b1, T b2, T b3, T c1, T c2, T
  * calculate the determinant of a 4x4 matrix.
  */
 
-template <typename T> T det4x4( const TMatrix4<T> &m )
+template <typename T> T det4x4( const Matrix44<T> &m )
 {
     // assign to individual variable names to aid selecting  correct elements
 
@@ -119,7 +119,7 @@ template <typename T> T det4x4( const TMatrix4<T> &m )
  *                     ij
  */
 
-template <typename T> void GEMSadjoint( const TMatrix4<T> &in, TMatrix4<T> &out )// Matrix4 *in; Matrix4 *out;
+template <typename T> void GEMSadjoint( const Matrix44<T> &in, Matrix44<T> &out )// Matrix4 *in; Matrix4 *out;
 {
     T a1, a2, a3, a4, b1, b2, b3, b4;
     T c1, c2, c3, c4, d1, d2, d3, d4;
@@ -183,7 +183,7 @@ template <typename T> void GEMSadjoint( const TMatrix4<T> &in, TMatrix4<T> &out 
  */
 
 
-template <typename T> void GEMSMatrixInverse( const TMatrix4<T> &in, TMatrix4<T> &out )
+template <typename T> void GEMSMatrixInverse( const Matrix44<T> &in, Matrix44<T> &out )
 {
     // calculate the adjoint matrix
 
@@ -209,9 +209,9 @@ template <typename T> void GEMSMatrixInverse( const TMatrix4<T> &in, TMatrix4<T>
 
 }
 
-template <typename T> void TMatrix4<T>::GEMSInverse( const TMatrix4<T> &in )
+template <typename T> void Matrix44<T>::GEMSInverse( const Matrix44<T> &in )
 {
-    TMatrix4<T> out;
+    Matrix44<T> out;
 	
     GEMSadjoint<T>( in, out ); // calculate the adjoint matrix
     T det = det4x4<T>( in ); //	calculate the 4x4 determinant, if the determinant is zero then the inverse matrix is not unique

@@ -318,10 +318,10 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 
 					FMVector2 fval = Float2ColladaParam->GetValue();
 
-					ork::lev2::GfxMaterialFxParamArtist<CVector2> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CVector2>;
-					paramf->mValue = CVector2( fval.x, fval.y );
+					ork::lev2::GfxMaterialFxParamArtist<fvec2> *paramf = new ork::lev2::GfxMaterialFxParamArtist<fvec2>;
+					paramf->mValue = fvec2( fval.x, fval.y );
 					param=paramf;
-					param->GetRecord().meParameterType = CPropType<CVector2>::GetType();
+					param->GetRecord().meParameterType = CPropType<fvec2>::GetType();
 					break;
 				}
 				case FCDEffectParameter::FLOAT3:
@@ -329,20 +329,20 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 					FCDEffectParameterFloat3* Float3ColladaParam = (FCDEffectParameterFloat3*) Param;
 
 					FMVector3 fval = Float3ColladaParam->GetValue();
-					ork::lev2::GfxMaterialFxParamArtist<CVector3> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CVector3>;
-					paramf->mValue = CVector3( fval.x, fval.y, fval.z );
+					ork::lev2::GfxMaterialFxParamArtist<fvec3> *paramf = new ork::lev2::GfxMaterialFxParamArtist<fvec3>;
+					paramf->mValue = fvec3( fval.x, fval.y, fval.z );
 					param=paramf;
-					param->GetRecord().meParameterType = CPropType<CVector3>::GetType();
+					param->GetRecord().meParameterType = CPropType<fvec3>::GetType();
 					break;
 				}
 				case FCDEffectParameter::VECTOR:
 				{
 					FCDEffectParameterVector* Float4ColladaParam = (FCDEffectParameterVector*) Param;
 					FMVector4 fval = Float4ColladaParam->GetValue();
-					ork::lev2::GfxMaterialFxParamArtist<CVector4> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CVector4>;
-					paramf->mValue = CVector4( fval.x, fval.y, fval.z, fval.w );
+					ork::lev2::GfxMaterialFxParamArtist<fvec4> *paramf = new ork::lev2::GfxMaterialFxParamArtist<fvec4>;
+					paramf->mValue = fvec4( fval.x, fval.y, fval.z, fval.w );
 					param=paramf;
-					param->GetRecord().meParameterType = CPropType<CVector4>::GetType();
+					param->GetRecord().meParameterType = CPropType<fvec4>::GetType();
 					break;
 				}
 				case FCDEffectParameter::BOOLEAN:
@@ -361,10 +361,10 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 				}
 				case FCDEffectParameter::MATRIX:
 				{
-					ork::lev2::GfxMaterialFxParamArtist<CMatrix4> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CMatrix4>;
-					//paramf->mValue = CPropType<CMatrix4>::FromString( CgFxParamValue );
+					ork::lev2::GfxMaterialFxParamArtist<fmtx4> *paramf = new ork::lev2::GfxMaterialFxParamArtist<fmtx4>;
+					//paramf->mValue = CPropType<fmtx4>::FromString( CgFxParamValue );
 					param=paramf;
-					param->GetRecord().meParameterType = CPropType<CMatrix4>::GetType();
+					param->GetRecord().meParameterType = CPropType<fmtx4>::GetType();
 					break;
 				}
 				case FCDEffectParameter::STRING:
@@ -391,10 +391,10 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 					{
 						FCDEffectParameterString *ParamString = (FCDEffectParameterString*) Param;
 
-						ork::lev2::GfxMaterialFxParamArtist<CVector3> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CVector3>;
-						//paramf->mValue = CVector3( fval.x, fval.y, fval.z );
+						ork::lev2::GfxMaterialFxParamArtist<fvec3> *paramf = new ork::lev2::GfxMaterialFxParamArtist<fvec3>;
+						//paramf->mValue = fvec3( fval.x, fval.y, fval.z );
 						param=paramf;
-						param->GetRecord().meParameterType = CPropType<CVector3>::GetType();
+						param->GetRecord().meParameterType = CPropType<fvec3>::GetType();
 						const char* pvalstr = ParamString->GetValue().c_str();
 						printf( "valstr<%s>\n", pvalstr );
 						orkvector<std::string> splitvect;
@@ -404,16 +404,16 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 						float fy = float(atof( splitvect[1].c_str() ));
 						float fz = float(atof( splitvect[2].c_str() ));
 						//"1 1 1"
-						paramf->mValue = CVector3( fx, fy, fz );
+						paramf->mValue = fvec3( fx, fy, fz );
 					}
 					else if( ptypeanno=="Vector4" )
 					{
 						FCDEffectParameterString *ParamString = (FCDEffectParameterString*) Param;
 
-						ork::lev2::GfxMaterialFxParamArtist<CVector4> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CVector4>;
-						//paramf->mValue = CVector3( fval.x, fval.y, fval.z );
+						ork::lev2::GfxMaterialFxParamArtist<fvec4> *paramf = new ork::lev2::GfxMaterialFxParamArtist<fvec4>;
+						//paramf->mValue = fvec3( fval.x, fval.y, fval.z );
 						param=paramf;
-						param->GetRecord().meParameterType = CPropType<CVector4>::GetType();
+						param->GetRecord().meParameterType = CPropType<fvec4>::GetType();
 						const char* pvalstr = ParamString->GetValue().c_str();
 						printf( "valstr<%s>\n", pvalstr );
 						orkvector<std::string> splitvect;
@@ -424,7 +424,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 						float fz = float(atof( splitvect[2].c_str() ));
 						float fw = float(atof( splitvect[2].c_str() ));
 						//"1 1 1"
-						paramf->mValue = CVector4( fx, fy, fz, fw );
+						paramf->mValue = fvec4( fx, fy, fz, fw );
 					}
 					else
 					{

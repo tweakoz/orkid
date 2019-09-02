@@ -110,7 +110,7 @@ bool SequenceCamControllerInst::DoLink(SceneInst *psi)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SequenceCamControllerInst::DoStart(SceneInst *psi, const CMatrix4 &world)
+bool SequenceCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 {
 	if( GetEntity() )
 	{
@@ -273,9 +273,9 @@ void SpinnyCamControllerInst::DoUpdate(ent::SceneInst* psi)
 	float fx = sinf(mfPhase)*famp;
 	float fy = -cosf(mfPhase)*famp;
 
-	CVector3 eye(fx,mSCCD.GetElevation(),fy);
-	CVector3 tgt(0.0f,0.0f,0.0f);
-	CVector3 up(0.0f,1.0f,0.0f);
+	fvec3 eye(fx,mSCCD.GetElevation(),fy);
+	fvec3 tgt(0.0f,0.0f,0.0f);
+	fvec3 up(0.0f,1.0f,0.0f);
 	mCameraData.Lookat( eye,tgt,up );
 }
 
@@ -348,9 +348,9 @@ void CurvyCamControllerInst::DoUpdate(ent::SceneInst* psi)
 	float fx = sinf(mfPhase)*famp;
 	float fy = -cosf(mfPhase)*famp;
 
-	CVector3 eye(fx,mCCCD.GetElevation(),fy);
-	CVector3 tgt(0.0f,0.0f,0.0f);
-	CVector3 up(0.0f,1.0f,0.0f);
+	fvec3 eye(fx,mCCCD.GetElevation(),fy);
+	fvec3 tgt(0.0f,0.0f,0.0f);
+	fvec3 up(0.0f,1.0f,0.0f);
 	mCameraData.Lookat( eye,tgt,up );
 }
 

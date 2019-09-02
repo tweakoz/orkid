@@ -117,7 +117,7 @@ Texture::~Texture()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Texture::Clear( const CColor4 & color )
+void Texture::Clear( const fcolor4 & color )
 {
 	float Mul(255.0f);
 
@@ -144,7 +144,7 @@ void Texture::Clear( const CColor4 & color )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Texture::SetTexel( const CColor4 & color, const CVector2 & ST )
+void Texture::SetTexel( const fcolor4 & color, const fvec2 & ST )
 {
 	float Mul(255.0f);
 	U8* pu8data = (U8*) mpImageData;

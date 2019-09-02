@@ -33,7 +33,7 @@ def DefaultBuildEnv( env, prj ):
 	if USE_DEBUG_CXX:
 		DEFS += ' _GLIBCXX_DEBUG '
 	if prj.IsLinux:
-		DEFS += "LINUX ORK_LINUX"
+		DEFS += "LINUX IX"
 	CCFLG = ' '
 	CXXFLG = ' '
 	LIBS = "m rt pthread openvr_api"

@@ -85,12 +85,12 @@ public:
 
 private:
 	const poly& Poly(int polyIndex) const { return mSubmesh->RefPoly(polyIndex); }
-	const CVector3& VertexPos(int vertIndex) const { return mSubmesh->RefVertexPool().GetVertex(vertIndex).mPos; }
-	CVector3 ComputeNormal(int polyIndex) const;
-	CVector3 ComputeCenter(int polyIndex) const { return Poly(polyIndex).ComputeCenter(mSubmesh->RefVertexPool()).mPos; }
-	CPlane ComputePlane(int polyIndex) const
+	const fvec3& VertexPos(int vertIndex) const { return mSubmesh->RefVertexPool().GetVertex(vertIndex).mPos; }
+	fvec3 ComputeNormal(int polyIndex) const;
+	fvec3 ComputeCenter(int polyIndex) const { return Poly(polyIndex).ComputeCenter(mSubmesh->RefVertexPool()).mPos; }
+	fplane3 ComputePlane(int polyIndex) const
 	{
-		CPlane plane;
+		fplane3 plane;
 		plane.CalcFromNormalAndOrigin(ComputeNormal(polyIndex), ComputeCenter(polyIndex));
 		return plane;
 	}
@@ -157,7 +157,7 @@ private:
 	
 ///////////////////////////////////////////////////////////////////////////////
 
-static void AssertFailed(const char* secName, const CVector3& pos, const char* format, ...)
+static void AssertFailed(const char* secName, const fvec3& pos, const char* format, ...)
 {
 	char buffer[1024];
 	ParseVarArgs(buffer);
@@ -313,17 +313,17 @@ SectorWalker::SectorWalker(const toolmesh& mesh, ent::bullet::SectorData& target
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 SectorWalker::ComputeNormal(int polyIndex) const
+fvec3 SectorWalker::ComputeNormal(int polyIndex) const
 {
-	CVector3 rval(0,0,0);
+	fvec3 rval(0,0,0);
 
 	const poly& ThePoly = mSubmesh->RefPoly(polyIndex);
 	const vertexpool& vpool = mSubmesh->RefVertexPool();
 	
 	for(int i=0 ; i<ThePoly.GetNumSides() ; i++) {
-		const CVector3 &v0 = vpool.GetVertex(ThePoly.GetVertexID((i+0)%ThePoly.GetNumSides())).mPos;
-		const CVector3 &v1 = vpool.GetVertex(ThePoly.GetVertexID((i+1)%ThePoly.GetNumSides())).mPos;
-		const CVector3 &v2 = vpool.GetVertex(ThePoly.GetVertexID((i+2)%ThePoly.GetNumSides())).mPos;
+		const fvec3 &v0 = vpool.GetVertex(ThePoly.GetVertexID((i+0)%ThePoly.GetNumSides())).mPos;
+		const fvec3 &v1 = vpool.GetVertex(ThePoly.GetVertexID((i+1)%ThePoly.GetNumSides())).mPos;
+		const fvec3 &v2 = vpool.GetVertex(ThePoly.GetVertexID((i+2)%ThePoly.GetNumSides())).mPos;
 		rval += (v0-v1).Cross(v2-v1);
 	}
 
@@ -458,7 +458,7 @@ void SectorWalker::InitPortal(ent::bullet::SectorPortal &portal, int bl, int tl,
 	portal.mCornerVerts[ent::bullet::PORTAL_CORNER_TR] = getOutVertID(tr);
 	portal.mCornerVerts[ent::bullet::PORTAL_CORNER_BR] = getOutVertID(br);
 	poly tmp(bl, tl, tr, br);
-	portal.mPlane = CPlane(tmp.ComputeNormal(mSubmesh->RefVertexPool()), tmp.ComputeCenter(mSubmesh->RefVertexPool()).mPos);
+	portal.mPlane = fplane3(tmp.ComputeNormal(mSubmesh->RefVertexPool()), tmp.ComputeCenter(mSubmesh->RefVertexPool()).mPos);
 	portal.mTrackProgress = -1; // uncomputed
 	int startCheck = Poly(mStartPoly).VertexCCW(bl);
 	if (startCheck == br) {
@@ -551,7 +551,7 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 			// |   |
 			// 1---4
 			
-			CVector3 v1, v2, v3, v4;
+			fvec3 v1, v2, v3, v4;
 			v1.Lerp(mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
 				mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos, 0.5);
 			v2.Lerp(mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TL]].mPos,
@@ -592,7 +592,7 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 		// |   |
 		// 1---4
 		
-		CVector3 v1, v2, v3, v4;
+		fvec3 v1, v2, v3, v4;
 		v1.Lerp(mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos,
 			mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos, 0.5);
 		v2.Lerp(mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
@@ -637,7 +637,7 @@ bool SectorWalker::ComputeSectorAdjacency(int index, const SectorPolys& polys)
 				if (IsStart(*polyIter)) continue;
 				int sectorind = mPolyOwners[*polyIter];
 				if (sectorind == index) continue;
-				CVector3 pos = Poly(*polyIter).ComputeCenter(mSubmesh->RefVertexPool()).mPos;
+				fvec3 pos = Poly(*polyIter).ComputeCenter(mSubmesh->RefVertexPool()).mPos;
 			//	orkerrorlog("adjacent sector %d via poly @ <%f,%f,%f>\n", sectorind, pos.GetX(), pos.GetY(), pos.GetZ());
 			}
 		}
@@ -946,7 +946,7 @@ bool SectorWalker::AddKillInfo(const submesh& mesh) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ToolmeshToVertexIndexArrays(const MeshUtil::submesh& triangles, orkvector<CVector3>& verts, orkvector<int>& indices, orkvector<int>& flags)
+void ToolmeshToVertexIndexArrays(const MeshUtil::submesh& triangles, orkvector<fvec3>& verts, orkvector<int>& indices, orkvector<int>& flags)
 {
 /*	toolmesh triangles;
 	rawMesh.Triangulate(&triangles);*/
@@ -996,9 +996,9 @@ void ToolmeshToVertexIndexArrays(const MeshUtil::submesh& triangles, orkvector<C
 /*
 void DrawTrackArea(file::Path path,
 				   ent::bullet::Track& track, 
-				   const CVector3& origin,
-				   const CVector3& uBasis,
-				   const CVector3& vBasis,
+				   const fvec3& origin,
+				   const fvec3& uBasis,
+				   const fvec3& vBasis,
 				   float scale, int outputSize)
 {
 	#pragma pack(push, 1)
@@ -1021,12 +1021,12 @@ void DrawTrackArea(file::Path path,
 			const float u = -scale + 2 * scale * tu;
 			const float v = -scale + 2 * scale * tv;
 
-			CVector3 pos = origin + u * uBasis + v * vBasis;
+			fvec3 pos = origin + u * uBasis + v * vBasis;
 
 			const int posSector = track.FindSectorByPoint(pos);
 			if (posSector >= 0)
 			{
-				CVector3 xDir, yDir, zDir;
+				fvec3 xDir, yDir, zDir;
 				track.GetInterpolatedBasis(posSector, pos, xDir, yDir, zDir);
 				Pixel& pixel = pixels[x + y * outputSize];
 			#if 0
@@ -1070,9 +1070,9 @@ void DrawSector(file::Path path, ent::bullet::Track& track, int sectorIdx)
 {
 	const ent::bullet::Sector& sector = track.RefSector(sectorIdx);
 
-	const CVector3 origin = sector.mCenter;
-	const CVector3 uBasis = sector.mDirX;
-	const CVector3 vBasis = sector.mDirZ;
+	const fvec3 origin = sector.mCenter;
+	const fvec3 uBasis = sector.mDirX;
+	const fvec3 vBasis = sector.mDirZ;
 
 	int outputSize = 256;
 
@@ -1116,11 +1116,11 @@ void DebugSectorBasisInterp(file::Path path)
 {
 	ent::bullet::Track track;
 
-	CMatrix4 transform;
+	fmtx4 transform;
 	transform.RotateX(1.5f);
 	transform.RotateY(1.8f);
 	transform.RotateZ(2.9f);
-	transform.SetTranslation(CVector3(100, 200, 300));
+	transform.SetTranslation(fvec3(100, 200, 300));
 
 	track.Load(path, transform);
 
@@ -1134,9 +1134,9 @@ void DebugSectorBasisInterp(file::Path path)
 	}
 	bounds.EndGrow();
 
-	CVector3 min = bounds.Min();
-	CVector3 max = bounds.Max();
-	CVector3 origin;
+	fvec3 min = bounds.Min();
+	fvec3 max = bounds.Max();
+	fvec3 origin;
 	origin.Lerp(min, max, 0.5f);
 	min.SetY(0.0f);
 	max.SetY(0.0f);
@@ -1144,7 +1144,7 @@ void DebugSectorBasisInterp(file::Path path)
 
 #if DRAW_TRACK
 	orkprintf("Drawing track\n");
-	DrawTrackArea(path.ToAbsoluteFolder() + "track.png", track, origin, CVector3(1.0f, 0.0f, 0.0f), CVector3(0.0f, 0.0f, 1.0f), scale, 1024);
+	DrawTrackArea(path.ToAbsoluteFolder() + "track.png", track, origin, fvec3(1.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), scale, 1024);
 #endif
 }
 */

@@ -78,7 +78,7 @@ public:
 	void SetTarget(GfxTarget*pt) { mpTarget=pt; }
 	void SetWindow(GfxWindow*pw) { mpGfxWindow=pw; }
 
-	virtual CVector2 MapCoordToGlobal( const CVector2& v ) const { return v; }
+	virtual fvec2 MapCoordToGlobal( const fvec2& v ) const { return v; }
 
 protected:
 

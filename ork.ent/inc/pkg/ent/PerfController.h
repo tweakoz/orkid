@@ -140,7 +140,7 @@ public:
 	PerfControllerArchetype();
 private:
 	void DoCompose(ArchComposer& composer) final; // virtual
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
+	void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

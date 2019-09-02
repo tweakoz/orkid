@@ -24,7 +24,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::stringstream& operator<<(std::stringstream& str, const ork::CVector3& v)
+std::stringstream& operator<<(std::stringstream& str, const ork::fvec3& v)
 {
 	ork::fxstring<256> fxs;
 	fxs.format("[%f,%f,%f]", v.GetX(), v.GetY(), v.GetZ() );
@@ -120,12 +120,12 @@ luabind::object GetArchetypeName( lua_State* L, luabind::object o )
 
 luabind::object CreateVector3( lua_State* L, double x, double y, double z )
 {
-	auto v = new CVector3(float(x),float(y),float(z));
+	auto v = new fvec3(float(x),float(y),float(z));
 	return luabind::object(L,v);
 }
 luabind::object GetVec3XZ( lua_State* L,  luabind::object o )
 {
-	auto v = object_cast<CVector3*>(o);
+	auto v = object_cast<fvec3*>(o);
 	fxstring<256> fx;
 	fx.format("[%f,%f]", v->GetX(), v->GetZ() );
 	std::string rval = fx.c_str();
@@ -161,7 +161,7 @@ LuaSystem::LuaSystem(SceneInst*psi)
         .beginClass<fvec3>("vec3")
             .addConstructor(LUA_ARGS(float,float,float))
             //.def(tostring(self))
-            //.property("xz", &CVector3,&SetVec3XZ)
+            //.property("xz", &fvec3,&SetVec3XZ)
             .addProperty("x", &fvec3::GetX,&fvec3::SetX)
             .addProperty("y", &fvec3::GetY,&fvec3::SetY)
             .addProperty("z", &fvec3::GetZ,&fvec3::SetZ)
@@ -305,14 +305,14 @@ LuaSystem::LuaSystem(SceneInst*psi)
 		class_<LuaOpaque16>("Opaque16")
 			.def("type", &LuaOpaque16::GetType ),
 
-		class_<CVector3,CVector3*>("vec3")
+		class_<fvec3,fvec3*>("vec3")
 			.def(tostring(self))
 			.property("xz", &GetVec3XZ,&SetVec3XZ)
 			.property("x", &GetVec3X,&SetVec3X)
 			.property("y", &GetVec3Y,&SetVec3Y)
 			.property("z", &GetVec3Z,&SetVec3Z),
 
-		/*class_<CVector4,CVector4*>("Vector4")
+		/*class_<fvec4,fvec4*>("Vector4")
 			.def(tostring(self))
 			.property("x", &GetVec4X,&SetVec4X)
 			.property("y", &GetVec4Y,&SetVec4Y)

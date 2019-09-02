@@ -265,7 +265,7 @@ void CameraDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::Renderer
 	//printf( "CameraDrawable::QueueToRenderer mcd<%p>\n", mCameraData );
 	if( 0 == mCameraData ) return;
 	lev2::FrustumRenderable& frusrend = renderer->QueueFrustum();
-	frusrend.SetColor( ork::CColor4::White() );
+	frusrend.SetColor( ork::fcolor4::White() );
 
 	CameraCalcContext cctx;
 	int iw = fdata->GetTarget()->GetW();
@@ -376,14 +376,14 @@ void ModelDrawable::QueueToLayer(	const DrawQueueXfData& xfdata,
 			const ork::lev2::XgmSkeleton & Skeleton = Model->RefSkel();
 
 			const ork::lev2::XgmLocalPose& locpos = mModelInst->RefLocalPose();
-			orkvector<CMatrix4>& WorldMatrices = pworldpose->GetMatrices();
+			orkvector<fmtx4>& WorldMatrices = pworldpose->GetMatrices();
 			int inumch = locpos.NumJoints();
 			for( int ich=0; ich<inumch; ich++ )
 			{
 				//orkprintf( " mdrwq2b setmtxblk ich<%d>\n", ich );
-				const CMatrix4 & MatIBind = Skeleton.RefInverseBindMatrix(ich);
-				const CMatrix4 & MatJ = Skeleton.RefJointMatrix( ich );
-				const CMatrix4& MatAnimJCat = locpos.RefLocalMatrix(ich);
+				const fmtx4 & MatIBind = Skeleton.RefInverseBindMatrix(ich);
+				const fmtx4 & MatJ = Skeleton.RefJointMatrix( ich );
+				const fmtx4& MatAnimJCat = locpos.RefLocalMatrix(ich);
 
 				WorldMatrices[ich]=(MatIBind * MatAnimJCat);
 			}
@@ -413,16 +413,16 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 	}
 	const Frustum& frus = bvisicd ? camdat->GetFrustum() : ccctx.mFrustum; //camdat->GetFrustum();
 
-	const ork::CMatrix4& matw = item.mXfData.mWorldMatrix;
+	const ork::fmtx4& matw = item.mXfData.mWorldMatrix;
 
 	bool IsPickState = renderer->GetTarget()->FBI()->IsPickState();
 	bool IsSkinned = Model->IsSkinned();
 
-	ork::CVector3 center_plus_offset = mOffset + Model->GetBoundingCenter();
+	ork::fvec3 center_plus_offset = mOffset + Model->GetBoundingCenter();
 
-	ork::CVector3 ctr = ork::CVector4(center_plus_offset*mfScale).Transform(matw);
+	ork::fvec3 ctr = ork::fvec4(center_plus_offset*mfScale).Transform(matw);
 
-	ork::CVector3 vwhd = Model->GetBoundingAA_WHD();
+	ork::fvec3 vwhd = Model->GetBoundingAA_WHD();
 	float frad = vwhd.GetX();
 	if( vwhd.GetY() > frad ) frad = vwhd.GetY();
 	if( vwhd.GetZ() > frad ) frad = vwhd.GetZ();
@@ -434,7 +434,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 
 	const ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
 
-	ork::CVector3 matw_trans;
+	ork::fvec3 matw_trans;
 	ork::CQuaternion matw_rot;
 	float matw_scale;
 
@@ -447,7 +447,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 	if( false==IsPickState && mbShowBoundingSphere )
 	{
 		lev2::SphereRenderable& sphrend = renderer->QueueSphere();
-		sphrend.SetColor( ork::CColor4::White() );
+		sphrend.SetColor( ork::fcolor4::White() );
 		sphrend.SetPosition( ctr );
 		sphrend.SetRadius( frad*mfScale );
 	}
@@ -545,7 +545,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 						const Sphere& bsph = cluster.mBoundingSphere;
 
 						float clussphrad = bsph.mRadius*matw_scale*mfScale;
-						CVector3 clussphctr = ((bsph.mCenter+mOffset)*mfScale).Transform(matw);
+						fvec3 clussphctr = ((bsph.mCenter+mOffset)*mfScale).Transform(matw);
 						Sphere sph2( clussphctr, clussphrad );
 
 						btest =true; // CollisionTester::FrustumSphereTest( frus, sph2 );
@@ -565,7 +565,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 								bool binside = frus.Contains(clussphctr);
 
 								lev2::SphereRenderable& sphrend = renderer->QueueSphere();
-								sphrend.SetColor( binside ? ork::CColor4::Green()*0.3f : ork::CColor4::Green() );
+								sphrend.SetColor( binside ? ork::fcolor4::Green()*0.3f : ork::fcolor4::Green() );
 								sphrend.SetPosition( clussphctr );
 								sphrend.SetRadius( clussphrad );
 								sphrend.SetRadius( clussphrad );
@@ -575,7 +575,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 							// lighting sphere test
 							////////////////////////////////////////////////
 
-							ork::CVector3 ctr = ork::CVector4(Model->GetBoundingCenter()).Transform(matw);
+							ork::fvec3 ctr = ork::fvec4(Model->GetBoundingCenter()).Transform(matw);
 							for( size_t il=0; il<inuml; il++ )
 							{
 								ork::lev2::Light* plight = light_manager->mLightsInFrustum[il];

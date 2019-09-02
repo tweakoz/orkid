@@ -98,57 +98,57 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
 
     bool bismapnode = (pmapnode != 0);
 
-    CVector3 color;
+    fvec3 color;
     bool bsc = true;
     bool balternate = true;
     switch (ic) {
       case ESTYLE_BACKGROUND_1:
-        color = bismapnode ? CVector3(0.8f, 0.8f, 0.78f) : CVector3(0.6f, 0.6f, 0.58f);
+        color = bismapnode ? fvec3(0.8f, 0.8f, 0.78f) : fvec3(0.6f, 0.6f, 0.58f);
         break;
       case ESTYLE_BACKGROUND_2:
-        color = CVector3(0.9f, 0.9f, 0.88f);
+        color = fvec3(0.9f, 0.9f, 0.88f);
         break;
       case ESTYLE_BACKGROUND_3:
-        color = CVector3(1.0f, 0.7f, 0.7f);
+        color = fvec3(1.0f, 0.7f, 0.7f);
         break;
       case ESTYLE_BACKGROUND_4:
-        color = CVector3(0.8f, 0.5f, 0.8f);
+        color = fvec3(0.8f, 0.5f, 0.8f);
         break;
       case ESTYLE_BACKGROUND_5:
-        color = CVector3(0.8f, 0.8f, 0.5f);
+        color = fvec3(0.8f, 0.8f, 0.5f);
         break;
       case ESTYLE_BACKGROUND_OPS:
-        color = CVector3(0.8f, 0.4f, 0.4f);
+        color = fvec3(0.8f, 0.4f, 0.4f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_OBJNODE_LABEL:
-        color = CVector3(0.4f, 0.4f, 1.0f);
+        color = fvec3(0.4f, 0.4f, 1.0f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_GROUP_LABEL:
-        color = CVector3(0.5f, 0.5f, 0.7f);
+        color = fvec3(0.5f, 0.5f, 0.7f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_MAPNODE_LABEL:
-        color = CVector3(0.7f, 0.5f, 0.5f);
+        color = fvec3(0.7f, 0.5f, 0.5f);
         balternate = false;
         break;
       case ESTYLE_DEFAULT_HIGHLIGHT:
-        color = CVector3(0.85f, 0.82f, 0.8f);
+        color = fvec3(0.85f, 0.82f, 0.8f);
         break;
       case ESTYLE_DEFAULT_OUTLINE:
-        color = CVector3(0.5f, 0.5f, 0.5f);
+        color = fvec3(0.5f, 0.5f, 0.5f);
         break;
       case ESTYLE_DEFAULT_CHECKBOX:
-        color = CVector3(0.0f, 0.0f, 0.0f);
+        color = fvec3(0.0f, 0.0f, 0.0f);
         bsc = false;
         break;
       case ESTYLE_BUTTON_OUTLINE:
-        color = CVector3(0.0f, 0.0f, 0.0f);
+        color = fvec3(0.0f, 0.0f, 0.0f);
         bsc = false;
         break;
       default:
-        color = CVector3(1.0f, 0.0f, 0.0f);
+        color = fvec3(1.0f, 0.0f, 0.0f);
         break;
     }
 
@@ -289,7 +289,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     miAccepted = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
     ////////////////////////
-    ork::CMatrix4 mtxW = pTARG->MTXI()->RefMMatrix();
+    ork::fmtx4 mtxW = pTARG->MTXI()->RefMMatrix();
     pTARG->MTXI()->PushUIMatrix(iw, ih);
     pTARG->MTXI()->PushMMatrix(mtxW);
     ////////////////////////
@@ -367,8 +367,8 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
     ////////////////////////
     if (false == mbPickMode) { ////////////////////////
       uimat.SetUIColorMode(EUICOLOR_MOD);
-      // pTARG->PushModColor(CColor4(0.0f,0.0f,0.2f));
-      pTARG->PushModColor(CColor4::Black());
+      // pTARG->PushModColor(fcolor4(0.0f,0.0f,0.2f));
+      pTARG->PushModColor(fcolor4::Black());
       lev2::CFontMan::PushFont(mpFONT);
       lev2::CFontMan::BeginTextBlock(pTARG);
       {
@@ -407,58 +407,58 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
 
     bool bismapnode = (pmapnode != 0);
 
-    CVector3 color;
+    fvec3 color;
     bool bsc = true;
     bool balternate = true;
     switch (ic) {
       case ESTYLE_BACKGROUND_1:
-        color = bismapnode ? CVector3(0.2f, 0.2f, 0.3f) : CVector3(0.4f, 0.4f, 0.5f);
+        color = bismapnode ? fvec3(0.2f, 0.2f, 0.3f) : fvec3(0.4f, 0.4f, 0.5f);
         break;
       case ESTYLE_BACKGROUND_2:
-        color = CVector3(0.0f, 0.0f, 0.0f);
+        color = fvec3(0.0f, 0.0f, 0.0f);
         break;
       case ESTYLE_BACKGROUND_3:
-        color = CVector3(0.0f, 0.0f, 0.3f);
+        color = fvec3(0.0f, 0.0f, 0.3f);
         break;
       case ESTYLE_BACKGROUND_4:
-        color = CVector3(0.3f, 0.0f, 0.3f);
+        color = fvec3(0.3f, 0.0f, 0.3f);
         break;
       case ESTYLE_BACKGROUND_5:
-        color = CVector3(0.7f, 0.0f, 0.0f);
+        color = fvec3(0.7f, 0.0f, 0.0f);
         break;
       case ESTYLE_BACKGROUND_OPS:
-        color = CVector3(0.8f, 0.4f, 0.4f);
+        color = fvec3(0.8f, 0.4f, 0.4f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_OBJNODE_LABEL:
-        color = CVector3(0.4f, 0.4f, 1.0f);
+        color = fvec3(0.4f, 0.4f, 1.0f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_GROUP_LABEL:
-        color = CVector3(0.5f, 0.5f, 0.7f);
+        color = fvec3(0.5f, 0.5f, 0.7f);
         balternate = false;
         break;
       case ESTYLE_BACKGROUND_MAPNODE_LABEL:
-        color = CVector3(0.7f, 0.5f, 0.5f);
+        color = fvec3(0.7f, 0.5f, 0.5f);
         balternate = false;
         break;
       case ESTYLE_DEFAULT_HIGHLIGHT:
-        color = CVector3(0.1f, 0.2f, 0.3f);
+        color = fvec3(0.1f, 0.2f, 0.3f);
         break;
       case ESTYLE_DEFAULT_OUTLINE:
-        color = CVector3(0.7f, 0.7f, 0.7f);
+        color = fvec3(0.7f, 0.7f, 0.7f);
         break;
       case ESTYLE_BUTTON_OUTLINE:
-        color = CVector3(0.6f, 0.6f, 0.7f);
+        color = fvec3(0.6f, 0.6f, 0.7f);
         balternate = false;
         bsc = false;
         break;
       case ESTYLE_DEFAULT_CHECKBOX:
-        color = CVector3(0.6f, 0.6f, 0.7f);
+        color = fvec3(0.6f, 0.6f, 0.7f);
         bsc = false;
         break;
       default:
-        color = CVector3(0.0f, 0.0f, 0.0f);
+        color = fvec3(0.0f, 0.0f, 0.0f);
         break;
     }
 
@@ -594,7 +594,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     miAccepted = 0;
     lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
     ////////////////////////
-    const ork::CMatrix4& mtxW = pTARG->MTXI()->RefMMatrix();
+    const ork::fmtx4& mtxW = pTARG->MTXI()->RefMMatrix();
     pTARG->MTXI()->PushUIMatrix(iw, ih);
     pTARG->MTXI()->PushMMatrix(mtxW);
     ////////////////////////
@@ -674,7 +674,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
       uimat.SetUIColorMode(EUICOLOR_MOD);
       lev2::CFontMan::PushFont(mpFONT);
       lev2::CFontMan::BeginTextBlock(pTARG);
-      pTARG->PushModColor(CColor4(0.8f, 0.9f, 1.0f));
+      pTARG->PushModColor(fcolor4(0.8f, 0.9f, 1.0f));
       {
         int inumt = (int)mTexts.size();
         for (int it = 0; it < inumt; it++) {

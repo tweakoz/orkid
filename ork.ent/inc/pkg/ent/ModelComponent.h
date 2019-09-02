@@ -56,9 +56,9 @@ public:
 	bool IsAlwaysVisible() const { return mAlwaysVisible; }
 	float GetScale() const { return mfScale; }
 	void SetScale( float v ) { mfScale=v; }
-	const CVector3& GetRotate() const { return mRotate; }
-	const CVector3& GetOffset() const { return mOffset; }
-	void SetRotate( const CVector3& r) { mRotate=r; }
+	const fvec3& GetRotate() const { return mRotate; }
+	const fvec3& GetOffset() const { return mOffset; }
+	void SetRotate( const fvec3& r) { mRotate=r; }
 
 	const orklut<PoolString,lev2::FxShaderAsset*>& GetLayerFXMap() const { return mLayerFx; }
 
@@ -77,8 +77,8 @@ private:
 
 	bool									mAlwaysVisible;
 	float									mfScale;
-	CVector3								mOffset;
-	CVector3								mRotate;
+	fvec3								mOffset;
+	fvec3								mRotate;
 	lev2::XgmModelAsset*					mModel;
 	bool									mbShowBoundingSphere;
 	bool									mbCopyDag;

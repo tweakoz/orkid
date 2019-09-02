@@ -27,7 +27,7 @@ class EditorCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( EditorCamArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
@@ -65,7 +65,7 @@ class EditorCamControllerInst : public ent::ComponentInst
 	
 	void DoUpdate(ent::SceneInst* sinst) final;
     bool DoLink(SceneInst *psi) final;
-    bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+    bool DoStart(SceneInst *psi, const fmtx4 &world) final;
 
 public:
 	const EditorCamControllerData&	GetCD() const { return mCD; }

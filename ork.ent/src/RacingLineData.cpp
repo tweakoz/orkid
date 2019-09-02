@@ -112,7 +112,7 @@ RacingLineInst::RacingLineInst(const RacingLineData &data, ork::ent::Entity *pen
 static void LerpSamples(float progressPrev, const RacingLineSample &samplePrev,
 						float progressNext, const RacingLineSample &sampleNext,
 						float progress, RacingLineSample &sample,
-						ork::CVector3 &racingLineDir)
+						ork::fvec3 &racingLineDir)
 {
 	// Lerp
 	float inverse_distance = 1.0f / (progressNext - progressPrev);
@@ -122,14 +122,14 @@ static void LerpSamples(float progressPrev, const RacingLineSample &samplePrev,
 	sample.SetBrake(weight_next * sampleNext.GetBrake() + weight_prev * samplePrev.GetBrake());
 	sample.SetSteering(weight_next * sampleNext.GetSteering() + weight_prev * samplePrev.GetSteering());
 
-	const ork::CMatrix4 &nextmatrix = sampleNext.GetPosition();
-	const ork::CMatrix4 &prevmatrix = samplePrev.GetPosition();
-	ork::CVector3 nextposition = nextmatrix.GetTranslation();
-	ork::CVector3 prevposition = prevmatrix.GetTranslation();
+	const ork::fmtx4 &nextmatrix = sampleNext.GetPosition();
+	const ork::fmtx4 &prevmatrix = samplePrev.GetPosition();
+	ork::fvec3 nextposition = nextmatrix.GetTranslation();
+	ork::fvec3 prevposition = prevmatrix.GetTranslation();
 	racingLineDir = (prevposition - nextposition).Normal();
-	ork::CVector3 position = weight_next * nextposition + weight_prev * prevposition;
+	ork::fvec3 position = weight_next * nextposition + weight_prev * prevposition;
 
-	ork::CMatrix4 matrix = nextmatrix;
+	ork::fmtx4 matrix = nextmatrix;
 	matrix.SetTranslation(position);
 	sample.SetPosition(matrix);
 
@@ -137,7 +137,7 @@ static void LerpSamples(float progressPrev, const RacingLineSample &samplePrev,
 }
 
 void RacingLineInst::Sample(int racing_line_index, float progress, RacingLineSample &sample,
-							ork::CVector3 &racingLineDir) const
+							ork::fvec3 &racingLineDir) const
 {
 	if(const ork::ent::bullet::RacingLine *racingLine = mData.GetRacingLine(racing_line_index))
 	{
@@ -239,8 +239,8 @@ void RacingLineInst::DoUpdate(ork::ent::SceneInst *sinst)
 					it2 != racingLineSampleLut.end(); it2++)
 			{
 				RacingLineSample *racingLineSample = it2->second;
-				const ork::CMatrix4 &matrix = racingLineSample->GetPosition();
-				ork::CVector3 position = matrix.GetTranslation();
+				const ork::fmtx4 &matrix = racingLineSample->GetPosition();
+				ork::fvec3 position = matrix.GetTranslation();
 				btVector3 next_position = !position;
 
 				if(it2 != racingLineSampleLut.begin())

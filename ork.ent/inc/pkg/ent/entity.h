@@ -93,7 +93,7 @@ protected:
 	DagRenderableContextData				mRenderableContextData;
 
 	static const int knumtimedmtx = 3;
-	CMatrix4								mPrevMtx[knumtimedmtx];
+	fmtx4								mPrevMtx[knumtimedmtx];
 	float									mTimeStamps[knumtimedmtx];
 
 public:
@@ -107,8 +107,8 @@ public:
 	DagRenderableContextData&				GetRenderableContextData() { return mRenderableContextData; }
 	const ork::rtti::ICastable*				GetOwner() const { return mpOwner; }
 	orkvector<DagNode*>&					GetChildren() { return mChildren; }
-	void									GetMatrix(	ork::CMatrix4& mtx ) const { mTransformNode3D.GetMatrix(mtx); }
-	const CMatrix4& 						GetTimedMatrix(int idx) const
+	void									GetMatrix(	ork::fmtx4& mtx ) const { mTransformNode3D.GetMatrix(mtx); }
+	const fmtx4& 						GetTimedMatrix(int idx) const
 	{	OrkAssert( idx < knumtimedmtx );
 		return mPrevMtx[idx];
 	}
@@ -117,7 +117,7 @@ public:
 	void RemoveChild( DagNode* pchild );
 
 	void CopyTransformMatrixFrom( const DagNode& other );
-	void SetTransformMatrix( const CMatrix4& mtx );
+	void SetTransformMatrix( const fmtx4& mtx );
 };
 
 
@@ -217,7 +217,7 @@ public:
 	ComponentTable& GetComponents();
 	Entity *Self() { return this; }
 	void PrintName();
-	CVector3 GetEntityPosition() const; //e this should eb gone BUT some entities have NO componenets
+	fvec3 GetEntityPosition() const; //e this should eb gone BUT some entities have NO componenets
 
 	template <typename T> T* GetTypedComponent( bool bsubclass=false );
 	template <typename T> const T* GetTypedComponent( bool bsubclass=false ) const;
@@ -228,8 +228,8 @@ public:
 	const DagNode& GetDagNode() const { return mDagNode; }
 	DagNode& GetDagNode() { return mDagNode; }
 
-	CMatrix4 GetEffectiveMatrix() const; // get Entity matrix if scene is running, EntData matrix if scene is stopped
-	void SetDynMatrix( const CMatrix4& mtx ); // set this (Entity) matrix
+	fmtx4 GetEffectiveMatrix() const; // get Entity matrix if scene is running, EntData matrix if scene is stopped
+	void SetDynMatrix( const fmtx4& mtx ); // set this (Entity) matrix
 
 	void AddDrawable( const PoolString& layername, Drawable* pdrw );// { mDrawable.push_back(pdrw); }
 
@@ -302,7 +302,7 @@ public:
 
 	void LinkEntity( SceneInst* psi, Entity *pent ) const;
 	void UnLinkEntity( SceneInst* psi, Entity *pent ) const;
-	void StartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const;
+	void StartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const;
 	void StopEntity(SceneInst* psi, Entity *pent ) const;
 
 	void ComposeEntity( Entity *pent ) const;
@@ -326,7 +326,7 @@ protected:
 	virtual void DoDeComposeEntity(Entity *pent) const;
 	virtual void DoLinkEntity(SceneInst* psi, Entity *pent) const;
 	virtual void DoUnLinkEntity(SceneInst* psi, Entity *pent) const;
-	virtual void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent) const = 0;
+	virtual void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent) const = 0;
 	virtual void DoStopEntity(SceneInst* psi, Entity *pent) const {}
 
 	virtual void DoCompose( ArchComposer& arch_composer ) = 0;

@@ -45,7 +45,7 @@ void Surface::GetPixel( int ix, int iy, lev2::GetPixelContext& ctx )
 		/////////////////////////////////////////////////////////////
 		mpPickBuffer->Draw(ctx);
 		/////////////////////////////////////////////////////////////
-		fbi->GetPixel( CVector4( fx, fy, 0.0f ), ctx );
+		fbi->GetPixel( fvec4( fx, fy, 0.0f ), ctx );
 		/////////////////////////////////////////////////////////////
 	}
 	/////////////////////////////////////////////////////////////
@@ -126,7 +126,7 @@ void Surface::DoDraw(DrawEvent& drwev)
 		tgt->PushMaterial( defmtl );
 
 	bool has_foc = HasMouseFocus();
-	tgt->PushModColor( has_foc?CColor4::Green():CColor4::Blue() );
+	tgt->PushModColor( has_foc?fcolor4::Green():fcolor4::Blue() );
 	mtxi->PushUIMatrix();
 	{
 		int ix_root = 0;

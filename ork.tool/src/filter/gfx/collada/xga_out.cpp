@@ -80,7 +80,7 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 			const ColladaMatrixAnimChannel* MatrixChannelData = rtti::autocast( ChannelData );
 			const ColladaUvAnimChannel* UvChannelData = rtti::autocast( ChannelData );
 			const ColladaFxAnimChannel<float>* FloatChannelData = rtti::autocast( ChannelData );
-			const ColladaFxAnimChannel<CVector3>* Float3ChannelData = rtti::autocast( ChannelData );
+			const ColladaFxAnimChannel<fvec3>* Float3ChannelData = rtti::autocast( ChannelData );
 
 			if( MatrixChannelData )
 			{
@@ -89,7 +89,7 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 				XgmChan->ReserveFrames(inumframes);
 				for( int ifr=0; ifr<inumframes; ifr++ )
 				{
-					const CMatrix4 & Matrix = MatrixChannelData->GetFrame( ifr );
+					const fmtx4 & Matrix = MatrixChannelData->GetFrame( ifr );
 					ork::lev2::DecompMtx44 decomp;
 					Matrix.DecomposeMatrix( decomp.mTrans, decomp.mRot, decomp.mScale );
 					XgmChan->AddFrame(decomp);
@@ -106,8 +106,8 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 				{
 					const Place2dData & p2d = UvChannelData->GetFrame( ifr );
 
-					CMatrix4 mtxR, mtxS, mtxT, mtx;
-					CMatrix4 mtxRO, mtxRIO;
+					fmtx4 mtxR, mtxS, mtxT, mtx;
+					fmtx4 mtxRO, mtxRIO;
 					mtxRIO.Translate( -0.5f, -0.5f, 0.0f );
 					mtxRO.Translate( 0.5f, 0.5f, 0.0f );
 
@@ -143,7 +143,7 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 				XgmChan->ReserveFrames(inumframes);
 				for( int ifr=0; ifr<inumframes; ifr++ )
 				{
-					ork::CVector3 fval = Float3ChannelData->GetFrame( ifr );
+					ork::fvec3 fval = Float3ChannelData->GetFrame( ifr );
 					XgmChan->AddFrame(fval);
 				}
 				colanim->mXgmAnim.AddChannel( ChannelPooledName, XgmChan );
@@ -156,10 +156,10 @@ bool DAEXGAFilter::ConvertAsset( const tokenlist& toklist )
 
 		orklut<PoolString,ork::lev2::DecompMtx44>& StaticPose = colanim->mXgmAnim.GetStaticPose();
 
-		for( orkmap<std::string,CMatrix4>::const_iterator it=colanim->mPose.begin(); it!=colanim->mPose.end(); it++ )
+		for( orkmap<std::string,fmtx4>::const_iterator it=colanim->mPose.begin(); it!=colanim->mPose.end(); it++ )
 		{
 			const std::string &jname = (*it).first;
-			const CMatrix4 & Mtx = (*it).second;
+			const fmtx4 & Mtx = (*it).second;
 			PoolString ChannelPooledName = AddPooledString(jname.c_str());
 
 			ork::lev2::DecompMtx44 decmtx;
@@ -262,7 +262,7 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 		{
 			for( int ifr=0; ifr<inumframes; ifr++ )
 			{
-				const CMatrix4 & Matrix = MtxChannel->GetFrame(ifr);
+				const fmtx4 & Matrix = MtxChannel->GetFrame(ifr);
 				AnimDataStream->AddItem( Matrix );
 			}
 		}
@@ -278,7 +278,7 @@ bool XgmAnim::Save( const AssetPath& Filename, const XgmAnim *anm )
 		{
 			for( int ifr=0; ifr<inumframes; ifr++ )
 			{
-				const CVector3 & value = Vec3Channel->GetFrame(ifr);
+				const fvec3 & value = Vec3Channel->GetFrame(ifr);
 				AnimDataStream->AddItem( value );
 			}
 		}

@@ -83,18 +83,18 @@ DataflowRecieverComponentInst::DataflowRecieverComponentInst(const DataflowRecie
 		float_bindings.AddSorted( name, binding );
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-	const orklut<PoolString,CVector3>& invals_vect3 = mData.GetVect3Values();
+	const orklut<PoolString,fvec3>& invals_vect3 = mData.GetVect3Values();
 	orklut<PoolString,ork::dataflow::dyn_external::Vect3Binding>& vect3_bindings = mExternal.GetVect3Bindings();
 	vect3_bindings.clear();
 	mMutableVect3Values = invals_vect3;
 
-	for( orklut<PoolString,CVector3>::const_iterator
+	for( orklut<PoolString,fvec3>::const_iterator
 			it=invals_vect3.begin();
 			it!=invals_vect3.end();
 			it++ )
 	{
 		const ork::PoolString& name = it->first;
-		const CVector3& ConstReferencedValue = it->second;
+		const fvec3& ConstReferencedValue = it->second;
 		ork::dataflow::dyn_external::Vect3Binding binding;
 		binding.mpSource = & ConstReferencedValue;
 		vect3_bindings.AddSorted( name, binding );
@@ -117,7 +117,7 @@ void DataflowRecieverComponentInst::BindExternalValue( PoolString name, const fl
 	}
 }
 
-void DataflowRecieverComponentInst::BindExternalValue( PoolString name, const CVector3* psource )
+void DataflowRecieverComponentInst::BindExternalValue( PoolString name, const fvec3* psource )
 {
 	if( false == gbusepreview )
 	{

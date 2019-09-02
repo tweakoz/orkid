@@ -43,8 +43,8 @@ void OutputStream::AddItem( const float& data )
     Write( (unsigned char*) & temp, sizeof(temp) );		
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem( const CMatrix4& data )
-{	CMatrix4 temp = data;
+void OutputStream::AddItem( const fmtx4& data )
+{	fmtx4 temp = data;
     for( int i=0; i<16; i++ )
     {
         swapbytes_dynamic( temp.GetArray()[i] );
@@ -52,8 +52,8 @@ void OutputStream::AddItem( const CMatrix4& data )
     Write( (unsigned char*) & temp, sizeof(temp) );		
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem( const CVector4& data )
-{	CVector4 temp = data;
+void OutputStream::AddItem( const fvec4& data )
+{	fvec4 temp = data;
     for( int i=0; i<4; i++ )
     {
         swapbytes_dynamic( temp.GetArray()[i] );
@@ -61,8 +61,8 @@ void OutputStream::AddItem( const CVector4& data )
     Write( (unsigned char*) & temp, sizeof(temp) );		
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem( const CVector3& data )
-{	CVector3 temp = data;
+void OutputStream::AddItem( const fvec3& data )
+{	fvec3 temp = data;
     for( int i=0; i<3; i++ )
     {
         swapbytes_dynamic( temp.GetArray()[i] );
@@ -70,8 +70,8 @@ void OutputStream::AddItem( const CVector3& data )
     Write( (unsigned char*) & temp, sizeof(temp) );		
 }
 ///////////////////////////////////////////////////////////////////////////////
-void OutputStream::AddItem( const CVector2& data )
-{	CVector2 temp = data;
+void OutputStream::AddItem( const fvec2& data )
+{	fvec2 temp = data;
     for( int i=0; i<2; i++ )
     {
         swapbytes_dynamic( temp.GetArray()[i] );

@@ -92,7 +92,7 @@ public:
   PoolString GetFamily() const;
 
   void Update(SceneInst *inst);
-  void Start(SceneInst *psi, const CMatrix4 &world);
+  void Start(SceneInst *psi, const fmtx4 &world);
   void Link(SceneInst *psi);
   void UnLink(SceneInst *psi);
   void Stop(SceneInst *psi); // { DoStop(psi); }
@@ -110,7 +110,7 @@ private:
   bool DoNotify(const ork::event::Event *event) override { return false; }
 
   virtual void DoUpdate(SceneInst *inst) {}
-  virtual bool DoStart(SceneInst *psi, const CMatrix4 &world) { return true; }
+  virtual bool DoStart(SceneInst *psi, const fmtx4 &world) { return true; }
   virtual bool DoLink(SceneInst *psi) { return true; }
   virtual void DoUnLink(SceneInst *psi) {}
   virtual void DoStop(SceneInst *psi) {}

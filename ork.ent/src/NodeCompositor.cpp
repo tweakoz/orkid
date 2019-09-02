@@ -98,11 +98,11 @@ void NodeCompositingTechnique::CompositeToScreen(ork::lev2::GfxTarget* pT, Compo
       SRect quadrect(0, h - 1, w - 1, 0);
 
       mCompositingMaterial.SetTextureA(ptex);
-      mCompositingMaterial.SetLevelA(CVector4(1.0f, 1.0f, 1.0f, 1.0f));
-      mCompositingMaterial.SetLevelB(CVector4(0.0f, 0.0f, 0.0f, 0.0f));
-      mCompositingMaterial.SetLevelC(CVector4(0.0f, 0.0f, 0.0f, 0.0f));
+      mCompositingMaterial.SetLevelA(fvec4(1.0f, 1.0f, 1.0f, 1.0f));
+      mCompositingMaterial.SetLevelB(fvec4(0.0f, 0.0f, 0.0f, 0.0f));
+      mCompositingMaterial.SetLevelC(fvec4(0.0f, 0.0f, 0.0f, 0.0f));
       mCompositingMaterial.SetTechnique("Asolo");
-      buf->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, CVector4::White());
+      buf->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
     }
   }
 }
@@ -250,7 +250,7 @@ void SeriesCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Composi
     mCompositingMaterial.SetTextureA(ptex);
     mCompositingMaterial.SetTechnique("Asolo");
 
-    fbi->GetThisBuffer()->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, CVector4::White());
+    fbi->GetThisBuffer()->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
 
     gbi->EndFrame();
     fbi->PopRtGroup();
@@ -413,7 +413,7 @@ void InsertCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Composi
         mCompositingMaterial.SetTextureA(ptex);
         mCompositingMaterial.SetTechnique("Asolo");
 
-        fbi->GetThisBuffer()->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, CVector4::White());
+        fbi->GetThisBuffer()->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
 
         gbi->EndFrame();
         fbi->PopRtGroup();
@@ -537,7 +537,7 @@ void Op2CompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositin
     mCompositingMaterial.SetBiasB(mBiasB);
     mCompositingMaterial.SetLevelA(mLevelA);
     mCompositingMaterial.SetLevelB(mLevelB);
-    mCompositingMaterial.SetLevelC(CVector4(0.0f, 0.0f, 0.0f, 0.0f));
+    mCompositingMaterial.SetLevelC(fvec4(0.0f, 0.0f, 0.0f, 0.0f));
 
     switch (mMode) {
       case Op2AsumB:
@@ -563,7 +563,7 @@ void Op2CompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositin
         break;
     }
 
-    fbi->GetThisBuffer()->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, CVector4::White());
+    fbi->GetThisBuffer()->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
   }
 
   gbi->EndFrame();

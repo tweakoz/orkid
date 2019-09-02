@@ -27,9 +27,9 @@ template<> int MaxFanout<ork::ent::HeightMap>() { return 1; }
 }}
 namespace ork { namespace terrain {
 
-void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvector<CVector3>& outputnormals );
+void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvector<fvec3>& outputnormals );
 void ComputeColorsGpu(HeightMap_datablock& db);
-void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex );
+void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<fvec3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex );
 lev2::CaptureBuffer& HeightMapGPGPUCaptureBuffer()
 {
 	static lev2::CaptureBuffer capbuf;
@@ -71,8 +71,8 @@ heightfield_compute_buffer::heightfield_compute_buffer()
 //	OrkAssert( bOK );
 }
 //////////////////////////////////////////////////////////
-void GpGpuTask	(	const CVector4& ClearColor,
-					const CVector4& ModColor,
+void GpGpuTask	(	const fvec4& ClearColor,
+					const fvec4& ModColor,
 					lev2::GfxMaterial& material,
 					int iwidth, int iheight,
 					heightfield_compute_buffer& MyComputeBuffer
@@ -84,14 +84,14 @@ void GpGpuTask	(	const CVector4& ClearColor,
 	MyComputeBuffer.GetContext()->SetAutoClear(true);
 	MyComputeBuffer.BeginFrame();
 	//////////////////////////////////////////////////////////
-	{	CMatrix4 MatP = MyComputeBuffer.GetContext()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );		
+	{	fmtx4 MatP = MyComputeBuffer.GetContext()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );		
 		OrkAssert( isize <= heightfield_compute_buffer::kw );
 		OrkAssert( isize <= heightfield_compute_buffer::kh );
 		SRect VPRECT( 0, 0, iwidth, iheight );
 		//////////////////////////////////////////////////////////
 		MyComputeBuffer.GetContext()->PushPMatrix( MatP );
-		MyComputeBuffer.GetContext()->PushVMatrix( CMatrix4::Identity );
-		MyComputeBuffer.GetContext()->PushMMatrix( CMatrix4::Identity );
+		MyComputeBuffer.GetContext()->PushVMatrix( fmtx4::Identity );
+		MyComputeBuffer.GetContext()->PushMMatrix( fmtx4::Identity );
 		MyComputeBuffer.GetContext()->BindMaterial( & material );
 		MyComputeBuffer.GetContext()->PushModColor( ModColor );
 		MyComputeBuffer.GetContext()->PushViewport(VPRECT);
@@ -279,11 +279,11 @@ void hmap_hfield_module::CombineWork( const dataflow::cluster* clus )
 	#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
-CVector3 hmap_hfield_module::XYZ( int iX, int iZ ) const
+fvec3 hmap_hfield_module::XYZ( int iX, int iZ ) const
 {	return mDefDataBlock.mHeightMap.XYZ(iX,iZ);
 }
 ///////////////////////////////////////////////////////////////////////////////
-CVector3 hmap_hfield_module::ComputeNormal(int ix1,int iz1) const
+fvec3 hmap_hfield_module::ComputeNormal(int ix1,int iz1) const
 {	return mDefDataBlock.mHeightMap.ComputeNormal(ix1,iz1);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -321,11 +321,11 @@ void hmap_hfield_module::ComputeColors()
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-CVector3& hmap_hfield_module::Normal(int ix,int iz)
+fvec3& hmap_hfield_module::Normal(int ix,int iz)
 {	int idx = mDefDataBlock.mHeightMap.CalcAddress(ix,iz);
 	return mnormals[idx];
 }
-const CVector3& hmap_hfield_module::Normal(int ix,int iz) const
+const fvec3& hmap_hfield_module::Normal(int ix,int iz) const
 {	int idx = mDefDataBlock.mHeightMap.CalcAddress(ix,iz);
 	return mnormals[idx];
 }
@@ -339,7 +339,7 @@ U32& hmap_hfield_module::Color(int ix, int iz)
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvector<CVector3>& outputnormals )
+void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvector<fvec3>& outputnormals )
 {	
 	#if 0
 	HeightMap& hm = db.mHeightMap;
@@ -351,13 +351,13 @@ void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvect
 	//////////////////////////////////////////////////////////
 	lev2::CaptureBuffer& heightbuf = ComputeBuffer.tex1buffer;
 	lev2::CTexture& heighttex = ComputeBuffer.tex1;
-	CVector4* pv4 = const_cast<CVector4*>( static_cast<const CVector4*>( heightbuf.GetData()  ));
+	fvec4* pv4 = const_cast<fvec4*>( static_cast<const fvec4*>( heightbuf.GetData()  ));
 	float* pf = (float*) db.mHeightMap.GetHeightData();
 	for( int iz=0; iz<isize; iz++ )
 	{	int iaddr = heightbuf.CalcDataIndex(0,iz);
 		for( int ix=0; ix<isize; ix++ )
 		{	float fx = float(ix)/float(isize);
-			CVector3 xyz = mod.XYZ( ix, iz );
+			fvec3 xyz = mod.XYZ( ix, iz );
 			pv4[iaddr++] = xyz; 
 		}
 	}
@@ -366,17 +366,17 @@ void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvect
 	matsolid.SetTexture( & heighttex );
 	float texw = float(heighttex.GetWidth());
 	float itexw = 1.0f / float( heighttex.GetWidth() );
-	CColor4 mc( float(isize), float(isize), texw, itexw );
+	fcolor4 mc( float(isize), float(isize), texw, itexw );
 	lev2::CaptureBuffer& MyCaptureBuffer = ComputeBuffer.MyCaptureBuffer;
-	GpGpuTask( CColor4::Blue(), mc, matsolid, isize, isize, ComputeBuffer );
+	GpGpuTask( fcolor4::Blue(), mc, matsolid, isize, isize, ComputeBuffer );
 	ComputeBuffer.GetContext()->Capture( MyCaptureBuffer );
 	//////////////////////////////////////////////////////////
-	const CVector4* VecBuffer = (const CVector4*) MyCaptureBuffer.GetData();
+	const fvec4* VecBuffer = (const fvec4*) MyCaptureBuffer.GetData();
 	for( int iZ=0; iZ<isize; iZ++ )
 	{	for( int iX=0; iX<isize; iX++ )
 		{	int index = MyCaptureBuffer.CalcDataIndex( iX, iZ );
 			int index_n = (iZ*isize)+iX;
-			const CVector4& v = VecBuffer[ index ];
+			const fvec4& v = VecBuffer[ index ];
 			outputnormals[index_n] = v.xyz();
 		}
 	}
@@ -396,7 +396,7 @@ static heightfield_compute_buffer& GetComputeRead()
 {
 	return HeightMapGPGPUComputeBuffer((gindex+1)&1);
 }
-void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex )
+void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<fvec3>& normals , orkvector<U32>& outputcolors, lev2::Texture* lightenvtex )
 {
 	#if 0
 	int isize = db.mHeightMap.GetGridSize();
@@ -435,9 +435,9 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 		for( int iz=0; iz<BUFH; iz++ )
 		{	for( int ix=0; ix<BUFW; ix++ )
 			{	int index_n = (iz*isize)+ix;
-				CVector3 xyz = db.mHeightMap.XYZ(ix,iz);
-				const CVector3& normal = normals[index_n];
-				CVector2 nxz( normal.GetX(), normal.GetZ() );
+				fvec3 xyz = db.mHeightMap.XYZ(ix,iz);
+				const fvec3& normal = normals[index_n];
+				fvec2 nxz( normal.GetX(), normal.GetZ() );
 				HFVBuf.AddVertex(ork::lev2::SVtxV12C4T8(xyz, nxz));
 			}
 		}
@@ -482,11 +482,11 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 		// clear read buffer
 		///////////////////////////////////////////////////////////////////
 		
-		ReadBuffer->GetContext()->SetClearColor( ork::CColor4::Black() );
+		ReadBuffer->GetContext()->SetClearColor( ork::fcolor4::Black() );
 		ReadBuffer->GetContext()->BeginFrame();
-		ReadBuffer->GetContext()->PushPMatrix( CMatrix4::Identity );
-		ReadBuffer->GetContext()->PushVMatrix( CMatrix4::Identity );
-		ReadBuffer->GetContext()->PushMMatrix( CMatrix4::Identity );
+		ReadBuffer->GetContext()->PushPMatrix( fmtx4::Identity );
+		ReadBuffer->GetContext()->PushVMatrix( fmtx4::Identity );
+		ReadBuffer->GetContext()->PushMMatrix( fmtx4::Identity );
 		{
 		}
 		ReadBuffer->GetContext()->PopPMatrix();
@@ -496,13 +496,13 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 
 		///////////////////////////////////////////////////////////////////
 
-		CVector4* pv4 = const_cast<CVector4*>( static_cast<const CVector4*>( WriteBuffer->tex1buffer.GetData()  ));
+		fvec4* pv4 = const_cast<fvec4*>( static_cast<const fvec4*>( WriteBuffer->tex1buffer.GetData()  ));
 		for( int iz=0; iz<BUFH; iz++ )
 		{	int iaddr = WriteBuffer->tex1buffer.CalcDataIndex(0,iz);
 			for( int ix=0; ix<BUFW; ix++ )
 			{	int index_n = (iz*isize)+ix;
-				const CVector3& normal = normals[index_n];
-				CVector3 xyz = db.mHeightMap.XYZ(ix,iz);
+				const fvec3& normal = normals[index_n];
+				fvec3 xyz = db.mHeightMap.XYZ(ix,iz);
 				pv4[iaddr++] = xyz;
 			}
 		}
@@ -525,23 +525,23 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 			float fy = float(iy)/512.0f;
 			float fz = float(iz)/512.0f;
 
-			CVector3 vdir = CVector3( fx, fy, fz ).Normal();
-			CVector3 vsid = vdir.Cross(CVector3::Green());
-			CVector3 vup = vsid.Cross(vdir);
+			fvec3 vdir = fvec3( fx, fy, fz ).Normal();
+			fvec3 vsid = vdir.Cross(fvec3::Green());
+			fvec3 vup = vsid.Cross(vdir);
 
-			CVector3 veye = vdir*2000.0f;
+			fvec3 veye = vdir*2000.0f;
 
 			////////////
 			ork::CCameraData cdata;
 			cdata.BindGfxTarget( ShadowBuffer.GetContext() );
-			cdata.Lookat( veye, ork::CVector3::Black(), vup, 1.0f, 3000.0f, 70.0f );
+			cdata.Lookat( veye, ork::fvec3::Black(), vup, 1.0f, 3000.0f, 70.0f );
 			cdata.CalcCameraData();
 
-			ShadowBuffer.GetContext()->SetClearColor( ork::CColor4::Black() );
+			ShadowBuffer.GetContext()->SetClearColor( ork::fcolor4::Black() );
 			ShadowBuffer.GetContext()->BeginFrame();
 			ShadowBuffer.GetContext()->PushPMatrix( cdata.GetPMatrix() );
 			ShadowBuffer.GetContext()->PushVMatrix( cdata.GetVMatrix() );
-			ShadowBuffer.GetContext()->PushMMatrix( CMatrix4::Identity );
+			ShadowBuffer.GetContext()->PushMMatrix( fmtx4::Identity );
 			{
 				lev2::GfxMaterial3DSolid ShadowGenMaterial( ShadowBuffer.GetContext(), "miniorkshader://heightmap_edit", "depthcolor" );
 				ShadowGenMaterial.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
@@ -566,8 +566,8 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 			matsolid.SetAuxMatrix( cdata.GetVMatrix()*cdata.GetPMatrix() );
 			float texw = float(WriteBuffer->tex1.GetWidth());
 			float itexw = 1.0f / float( WriteBuffer->tex1.GetWidth() );
-			CColor4 mc( float(isize), float(isize), texw, itexw );
-			GpGpuTask( CColor4::Black(), mc, matsolid, isize, isize, *WriteBuffer );
+			fcolor4 mc( float(isize), float(isize), texw, itexw );
+			GpGpuTask( fcolor4::Black(), mc, matsolid, isize, isize, *WriteBuffer );
 			//WriteBuffer->GetContext()->Capture( "yoout.dds" );
 
 			WriteBuffer = & GetComputeWrite();
@@ -576,12 +576,12 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 		}
 		ReadBuffer->GetContext()->Capture( ReadBuffer->MyCaptureBuffer );
 		//////////////////////////////////////////////////////////
-		const CVector4* VecBuffer = (const CVector4*) ReadBuffer->MyCaptureBuffer.GetData();
+		const fvec4* VecBuffer = (const fvec4*) ReadBuffer->MyCaptureBuffer.GetData();
 		for( int iZ=0; iZ<BUFW; iZ++ )
 		{	for( int iX=0; iX<BUFH; iX++ )
 			{	int index_n = (iZ*isize)+iX;
 				int index = ReadBuffer->MyCaptureBuffer.CalcDataIndex( iX, iZ );
-				const CVector4& v = VecBuffer[ index ];
+				const fvec4& v = VecBuffer[ index ];
 				outputcolors[index_n] = (v.xyz()*1.0/float(knumpasses)).GetRGBAU32();
 			}
 		}
@@ -592,13 +592,13 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 	
 		#else
 
-		CVector4* pv4 = const_cast<CVector4*>( static_cast<const CVector4*>( ComputeBuffer.tex1buffer.GetData()  ));
+		fvec4* pv4 = const_cast<fvec4*>( static_cast<const fvec4*>( ComputeBuffer.tex1buffer.GetData()  ));
 		for( int iz=0; iz<BUFH; iz++ )
 		{	int iaddr = ComputeBuffer.tex1buffer.CalcDataIndex(0,iz);
 			for( int ix=0; ix<BUFW; ix++ )
 			{	int index_n = (iz*isize)+ix;
-				const CVector3& normal = normals[index_n];
-				CVector3 xyz = db.mHeightMap.XYZ(ix,iz);
+				const fvec3& normal = normals[index_n];
+				fvec3 xyz = db.mHeightMap.XYZ(ix,iz);
 				pv4[iaddr++] = xyz; //normal; 
 			}
 		}
@@ -608,16 +608,16 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 		matsolid.SetTexture2( lightenvtex );
 		float texw = float(ComputeBuffer.tex1.GetWidth());
 		float itexw = 1.0f / float( ComputeBuffer.tex1.GetWidth() );
-		CColor4 mc( float(isize), float(isize), texw, itexw );
-		GpGpuTask( CColor4::Black(), mc, matsolid, isize, isize, ComputeBuffer );
+		fcolor4 mc( float(isize), float(isize), texw, itexw );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, isize, isize, ComputeBuffer );
 		ComputeBuffer.GetContext()->Capture( ComputeBuffer.MyCaptureBuffer );
 		//////////////////////////////////////////////////////////
-		const CVector4* VecBuffer = (const CVector4*) ComputeBuffer.MyCaptureBuffer.GetData();
+		const fvec4* VecBuffer = (const fvec4*) ComputeBuffer.MyCaptureBuffer.GetData();
 		for( int iZ=0; iZ<BUFW; iZ++ )
 		{	for( int iX=0; iX<BUFH; iX++ )
 			{	int index_n = (iZ*isize)+iX;
 				int index = ComputeBuffer.MyCaptureBuffer.CalcDataIndex( iX, iZ );
-				const CVector4& v = VecBuffer[ index ];
+				const fvec4& v = VecBuffer[ index ];
 				outputcolors[index_n] = v.GetRGBAU32();
 			}
 		}
@@ -635,7 +635,7 @@ void ComputeColorsGpu(HeightMap_datablock& db, const orkvector<CVector3>& normal
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void hmap_hfield_module::ReadSurface( const CVector3& xyz, CVector3& pos, CVector3& nrm ) const
+void hmap_hfield_module::ReadSurface( const fvec3& xyz, fvec3& pos, fvec3& nrm ) const
 {
 	float fiterX, fiterZ;
 	bool bOK = HeightMapData().CalcClosestAddress( xyz, fiterX, fiterZ );
@@ -645,35 +645,35 @@ void hmap_hfield_module::ReadSurface( const CVector3& xyz, CVector3& pos, CVecto
 	int igsiz = HeightMapData().GetGridSize()-2;
 
 	//////////////////////////////////////////
-	nrm = CVector3(0.0f,1.0f,0.0f);
-	pos = CVector3(xyz.GetX(),xyz.GetY()+50.0f,xyz.GetZ());
+	nrm = fvec3(0.0f,1.0f,0.0f);
+	pos = fvec3(xyz.GetX(),xyz.GetY()+50.0f,xyz.GetZ());
 	//////////////////////////////////////////
 	if( false == bOK )
 	{
 		if( fiterX==-1.0f )
 		{
-			nrm = CVector3(1.0f,0.0f,0.0f);
+			nrm = fvec3(1.0f,0.0f,0.0f);
 		}
 		else if( fiterX==-2.0f)
 		{
-			nrm = CVector3(-1.0f,0.0f,0.0f);
+			nrm = fvec3(-1.0f,0.0f,0.0f);
 		}
 		//////////////////////////////////////////
 		if( fiterZ==-1.0f )
 		{
-			nrm = CVector3(0.0f,0.0f,1.0f);
+			nrm = fvec3(0.0f,0.0f,1.0f);
 		}
 		else if( fiterZ==-2.0f)
 		{
-			nrm = CVector3(0.0f,0.0f,-1.0f);
+			nrm = fvec3(0.0f,0.0f,-1.0f);
 		}
 	}
 	//////////////////////////////////////////
 	else if( iterX >= 2 && iterZ >= 2 && iterX < igsiz && iterZ < igsiz )
 	//////////////////////////////////////////
 	{
-		CVector3 terp_xyz[4];
-		CVector3 terp_nrm[4];
+		fvec3 terp_xyz[4];
+		fvec3 terp_nrm[4];
 		for( int is=0; is<4; is++ )
 		{
 			int isx = is&1;
@@ -685,13 +685,13 @@ void hmap_hfield_module::ReadSurface( const CVector3& xyz, CVector3& pos, CVecto
 		float flerpx = fiterX-float(iterX);
 		float flerpz = fiterZ-float(iterZ);
 
-		CVector3 pza;	pza.Lerp( terp_xyz[0],terp_xyz[2], flerpz );
-		CVector3 pzb;	pzb.Lerp( terp_xyz[1],terp_xyz[3], flerpz );
+		fvec3 pza;	pza.Lerp( terp_xyz[0],terp_xyz[2], flerpz );
+		fvec3 pzb;	pzb.Lerp( terp_xyz[1],terp_xyz[3], flerpz );
 
 		pos.Lerp( pza, pzb, flerpx );
 
-		CVector3 nra;	nra.Lerp( terp_nrm[0],terp_nrm[2], flerpz );
-		CVector3 nrb;	nrb.Lerp( terp_nrm[1],terp_nrm[3], flerpz );
+		fvec3 nra;	nra.Lerp( terp_nrm[0],terp_nrm[2], flerpz );
+		fvec3 nrb;	nrb.Lerp( terp_nrm[1],terp_nrm[3], flerpz );
 
 		nrm.Lerp( nra, nrb, flerpx );
 
@@ -722,7 +722,7 @@ void hmap_hfield_module::SaveNormalsToTexture( const file::Path& filename ) cons
 	{
 		for( int ix=0; ix<miSize; ix++ )
 		{
-			const CVector3& Normal = this->Normal( ix, iz );
+			const fvec3& Normal = this->Normal( ix, iz );
 			int ipix = (iz*miSize)+ix;
 
 			U8* ppix = pDst+(ipix*3);
@@ -777,7 +777,7 @@ void hmap_hfield_module::SaveLightingToTexture( const file::Path& filename ) con
 	{
 		for( int ix=0; ix<miSize; ix++ )
 		{
-			const CVector3& Normal = this->Color( ix, iz );
+			const fvec3& Normal = this->Color( ix, iz );
 			int ipix = (iz*miSize)+ix;
 
 			U8* ppix = pDst+(ipix*3);
@@ -823,7 +823,7 @@ void hmap_hfield_module::SaveHeightToTexture( const file::Path& filename ) const
 	{
 		for( int ix=0; ix<miSize; ix++ )
 		{
-			const CVector3& XYZ = this->XYZ( ix, iz );
+			const fvec3& XYZ = this->XYZ( ix, iz );
 			float fy = XYZ.GetY();
 			if( fy > fmax ) fmax = fy;
 			if( fy < fmin ) fmin = fy;
@@ -835,7 +835,7 @@ void hmap_hfield_module::SaveHeightToTexture( const file::Path& filename ) const
 	{
 		for( int ix=0; ix<miSize; ix++ )
 		{
-			const CVector3& XYZ = this->XYZ( ix, iz );
+			const fvec3& XYZ = this->XYZ( ix, iz );
 			int ipix = (iz*miSize)+ix;
 			float fy = XYZ.GetY();
 			*(pDst+ipix) = (fy-fmin)/frange;

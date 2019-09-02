@@ -98,12 +98,12 @@ void BoundAndSplitModule::do_process( const ork::threadpool::sub_task* tsk, cons
 	int ith = tile.miHeight;
 	int itx = tile.miScreenXBase;
 	int ity = tile.miScreenYBase;
-	const ork::CPlane& topplane = tile.mFrustum.mTopPlane;
-	const ork::CPlane& bottomplane = tile.mFrustum.mBottomPlane;
-	const ork::CPlane& nearplane = tile.mFrustum.mNearPlane;
-	const ork::CPlane& farplane = tile.mFrustum.mFarPlane;
-	const ork::CPlane& leftplane = tile.mFrustum.mLeftPlane;
-	const ork::CPlane& rightplane = tile.mFrustum.mRightPlane;
+	const ork::fplane3& topplane = tile.mFrustum.mTopPlane;
+	const ork::fplane3& bottomplane = tile.mFrustum.mBottomPlane;
+	const ork::fplane3& nearplane = tile.mFrustum.mNearPlane;
+	const ork::fplane3& farplane = tile.mFrustum.mFarPlane;
+	const ork::fplane3& leftplane = tile.mFrustum.mLeftPlane;
+	const ork::fplane3& rightplane = tile.mFrustum.mRightPlane;
 
 	int imgW = mRenderData.miImageWidth;
 
@@ -120,7 +120,7 @@ void BoundAndSplitModule::do_process( const ork::threadpool::sub_task* tsk, cons
 	u8 ucg = (gicounter&2)<<(ishift+4);
 	u8 ucb = (gicounter&4)<<(ishift+3);
 	u32 upix = (ucb<<0)|u32(ucg<<8)|u32(ucr<<16);
-	ork::CVector3 clear_color;//( float(ucr)/255.0f, float(ucg)/255.0f, float(ucb)/255.0f );
+	ork::fvec3 clear_color;//( float(ucr)/255.0f, float(ucg)/255.0f, float(ucb)/255.0f );
 	int tilaabufidx = gicounter%kAABUFTILES;
 	AABuffer& aabuf = mAABufTiles[ tilaabufidx ];
 
@@ -360,8 +360,8 @@ void BoundAndSplitModule::RasterizeTri( const rendtri_context& ctx, const rend_t
 	const rend_ivtx& rvtx1 = tri.mSVerts[1];
 	const rend_ivtx& rvtx2 = tri.mSVerts[2];
 	////////////////////////////////
-	const ork::CVector3& n = tri.mFaceNormal;
-	ork::CVector3 un = (n*0.5f)+ork::CVector3(0.5f,0.5f,0.5f);
+	const ork::fvec3& n = tri.mFaceNormal;
+	ork::fvec3 un = (n*0.5f)+ork::fvec3(0.5f,0.5f,0.5f);
 	U32 unc = un.GetBGRAU32();
 	////////////////////////////////
 	int order[3];

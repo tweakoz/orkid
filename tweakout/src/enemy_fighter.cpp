@@ -29,7 +29,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::wiidom::FighterControllerData, "FighterContro
 //INSTANTIATE_TRANSPARENT_RTTI( ork::wiidom::FighterControllerInst, "FighterControllerInst" );
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { 
-namespace ent { void RigidBody_Draw( lev2::GfxTarget* targ, const CMatrix4& matw, const RigidBody& rbody, bool bdebug ); }
+namespace ent { void RigidBody_Draw( lev2::GfxTarget* targ, const fmtx4& matw, const RigidBody& rbody, bool bdebug ); }
 namespace wiidom {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,11 +53,11 @@ ent::ComponentInst* FighterControllerData::createComponent(ent::Entity* pent) co
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 FighterTarget::GetPos()
+fvec3 FighterTarget::GetPos()
 {
 	return mFCI.RigidBody().mPosition;
 }
-void FighterTarget::NotifyDamage(const CVector3& Impulse)
+void FighterTarget::NotifyDamage(const fvec3& Impulse)
 {
 	mDamageImpulse = Impulse;
 	mFCI.Damage( 1.0f );
@@ -111,7 +111,7 @@ FighterControllerInst::FighterControllerInst( const FighterControllerData& pcd, 
 
 	mRigidBody.Close();
 
-	mRigidBody.mPosition = CVector3( 0.0f, 200.0f, 0.0f );
+	mRigidBody.mPosition = fvec3( 0.0f, 200.0f, 0.0f );
 	
 	mRigidBody.BeginForces();
 	mRigidBody.EndForces();
@@ -127,8 +127,8 @@ FighterControllerInst::FighterControllerInst( const FighterControllerData& pcd, 
 	static const float kintg = 0.0f;	// mystery value
 	static const float kderi = 0.04f;	// minimum approach velocity
 
-	static const CVector2 pidrange(-100.0f,100.0f);
-	static const CVector2 pidmaxd(-30.0f,30.0f);
+	static const fvec2 pidrange(-100.0f,100.0f);
+	static const fvec2 pidmaxd(-30.0f,30.0f);
 	mPositionController[0].Configure( kprop, kintg, kderi, pidrange, pidmaxd );
 	mPositionController[1].Configure( kprop, kintg, kderi, pidrange, pidmaxd );
 	mPositionController[2].Configure( kprop, kintg, kderi, pidrange, pidmaxd );
@@ -148,7 +148,7 @@ FighterControllerInst::FighterControllerInst( const FighterControllerData& pcd, 
 			const FighterControllerInst* sci = pent->GetTypedComponent<FighterControllerInst>();
 			OrkAssert( sci );
 			FighterControllerInst* scinc = const_cast<FighterControllerInst*>(sci);
-			CMatrix4 MatS;
+			fmtx4 MatS;
 			static lev2::GfxMaterial3DSolid matsolid(targ);
 
 			///////////////////////////////////////////////////////
@@ -165,7 +165,7 @@ FighterControllerInst::FighterControllerInst( const FighterControllerData& pcd, 
 			////////////////////////////////////////////////
 			MatS.SetScale( 3.0f, 0.3f, 3.0f );
 			MatS.SetTranslation( rbody.ComW() );
-			targ->PushModColor( CVector3::Red() );
+			targ->PushModColor( fvec3::Red() );
 			targ->PushMMatrix( MatS );
 			{
 				matsolid.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
@@ -195,18 +195,18 @@ void FighterControllerInst::CalcForces( float fddt )
 {
 	////////////////////////////////////
 	int inump = mRigidBody.mPoints.size();
-	const CMatrix4& cmat = mRigidBody.mCurrentMatrix;
-	const CVector3 CurrentPos = cmat.GetTranslation();
-	const CVector3 CurrentVel = mRigidBody.mVelocity;
-	const CVector3 World_COM = mRigidBody.ComW(); 
+	const fmtx4& cmat = mRigidBody.mCurrentMatrix;
+	const fvec3 CurrentPos = cmat.GetTranslation();
+	const fvec3 CurrentVel = mRigidBody.mVelocity;
+	const fvec3 World_COM = mRigidBody.ComW(); 
 	
 	////////////////////////////////
 	// measure target motion
 	////////////////////////////////
 	
-	//const CVector3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform()->GetPosition();
-	//static CVector3 TargetLPos = TargetPos+CVector3(0.0f,1.0f,0.0f);
-	//const CVector3 TargetVel = (TargetPos-TargetLPos)*(1.0f/fddt);
+	//const fvec3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform()->GetPosition();
+	//static fvec3 TargetLPos = TargetPos+fvec3(0.0f,1.0f,0.0f);
+	//const fvec3 TargetVel = (TargetPos-TargetLPos)*(1.0f/fddt);
 	//TargetLPos = TargetPos;
 
 	////////////////////////////////
@@ -214,8 +214,8 @@ void FighterControllerInst::CalcForces( float fddt )
 	// gravity
 	////////////////////////////////
 
-	CVector3 wgaccel( 0.0f, -90.8f, 0.0f ); // gravity
-	CVector3 wgforce = wgaccel*mRigidBody.mTotalMass;
+	fvec3 wgaccel( 0.0f, -90.8f, 0.0f ); // gravity
+	fvec3 wgforce = wgaccel*mRigidBody.mTotalMass;
 
 	mRigidBody.ApplyForce( wgforce, World_COM );
 
@@ -225,23 +225,23 @@ void FighterControllerInst::CalcForces( float fddt )
 
 	// Delta to where we want to go
 
-	const CVector3 DeltaPos = (mWaypoint-CurrentPos);
+	const fvec3 DeltaPos = (mWaypoint-CurrentPos);
 
 	float fdist = DeltaPos.Mag();
 
 	if( fdist > 200.0f ) fdist = 200.0f;
 
-	CVector3 IdealVel = DeltaPos.Normal()*fdist;
+	fvec3 IdealVel = DeltaPos.Normal()*fdist;
 	
-	CVector3 DeltaVel = (IdealVel-CurrentVel);
-	CVector3 DeltaAcc = (DeltaVel*(0.4f/fddt)-wgaccel);
+	fvec3 DeltaVel = (IdealVel-CurrentVel);
+	fvec3 DeltaAcc = (DeltaVel*(0.4f/fddt)-wgaccel);
 
-	//CVector3 Error = (IdealVel-CurrentVel);
+	//fvec3 Error = (IdealVel-CurrentVel);
 
 	//float cor_X = mPositionController[0].Update(Error.GetX(),fddt);
 	//float cor_Y = mPositionController[1].Update(Error.GetY(),fddt);
 	//float cor_Z = mPositionController[2].Update(Error.GetZ(),fddt);
-	//CVector3 rktforce( cor_X, cor_Y, cor_Z );
+	//fvec3 rktforce( cor_X, cor_Y, cor_Z );
 
 	// compute thruster from PID controller
 
@@ -254,9 +254,9 @@ void FighterControllerInst::CalcForces( float fddt )
 	// friction 
 	///////////////////////////////////////////////
 	float fric = 0.001f;
-	//CVector3 vel = mRigidBody.PointVelocityW(p);
-	CVector3 acc = CurrentVel*(1.0f/fddt);
-	CVector3 accxz = CVector3( acc.GetX(), acc.GetY(), acc.GetZ() )*fric;
+	//fvec3 vel = mRigidBody.PointVelocityW(p);
+	fvec3 acc = CurrentVel*(1.0f/fddt);
+	fvec3 accxz = fvec3( acc.GetX(), acc.GetY(), acc.GetZ() )*fric;
 	mRigidBody.ApplyForce( - accxz * mRigidBody.mTotalMass, World_COM );
 	mRigidBody.mAngularMomentum *= 0.9999f;
 
@@ -265,9 +265,9 @@ void FighterControllerInst::CalcForces( float fddt )
 	if( mThisTarget.mDamageImpulse.MagSquared() != 0.0f )
 	{
 		float fmag = mThisTarget.mDamageImpulse.Mag();
-		CVector3 vimp = (mThisTarget.mDamageImpulse.Normal()+CVector3(0.0f,1.0f,0.0f))*0.5f;
+		fvec3 vimp = (mThisTarget.mDamageImpulse.Normal()+fvec3(0.0f,1.0f,0.0f))*0.5f;
 		mRigidBody.ApplyImpulse( vimp*fmag, World_COM );
-		mThisTarget.mDamageImpulse = CVector3(0.0f,0.0f,0.0f);
+		mThisTarget.mDamageImpulse = fvec3(0.0f,0.0f,0.0f);
 	}
 
 }
@@ -291,8 +291,8 @@ void FighterControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 	// Logic
 	///////////////////////////////////////////
 
-	CVector3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform().GetPosition();
-	CVector3 MyPos = GetEntity()->GetDagNode().GetTransformNode().GetTransform().GetPosition();
+	fvec3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform().GetPosition();
+	fvec3 MyPos = GetEntity()->GetDagNode().GetTransformNode().GetTransform().GetPosition();
 
 	/////////////////////////////////
 	// Reposition Timer
@@ -305,10 +305,10 @@ void FighterControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 		float fzd = ((float( rand()%32768 )/32768.0f) - 0.5f) * 5.0f;
 		float fyd = ((float( rand()%32768 )/32768.0f) - 0.5f) * 5.0f;
 
-		CVector3 ReqPos = mHotSpot->RequestPosition();
-		CVector3 ToTgt = (TargetPos-ReqPos).Normal()*10.0f;
+		fvec3 ReqPos = mHotSpot->RequestPosition();
+		fvec3 ToTgt = (TargetPos-ReqPos).Normal()*10.0f;
 
-		CVector3 ToTgtCross = ToTgt.Cross(CVector3(0.0f,1.0f,0.0f));
+		fvec3 ToTgtCross = ToTgt.Cross(fvec3(0.0f,1.0f,0.0f));
 		
 		int irand = rand()%8;
 		int irand2 = rand()%8;
@@ -316,13 +316,13 @@ void FighterControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 		float frand = (float(irand)/8.0f)-0.5f;
 		float frand2 = (float(irand2)/8.0f);
 
-		CVector3 dir = ToTgt+(ToTgtCross*frand2);
+		fvec3 dir = ToTgt+(ToTgtCross*frand2);
 
-		CVector3 HomeLoc = ReqPos + (dir*(frand*2.0f));
-		CVector3 NextWp = HomeLoc + CVector3( fxd, 0.0f, fzd );
-		CVector3 hfnextp, hfnextn;
+		fvec3 HomeLoc = ReqPos + (dir*(frand*2.0f));
+		fvec3 NextWp = HomeLoc + fvec3( fxd, 0.0f, fzd );
+		fvec3 hfnextp, hfnextn;
 		//mWCI->ReadSurface( NextWp, hfnextp, hfnextn );
-		mWaypoint = hfnextp + CVector3(0.0f,8.0f+fyd,0.0f);
+		mWaypoint = hfnextp + fvec3(0.0f,8.0f+fyd,0.0f);
 	}
 
 	/////////////////////////////////
@@ -348,7 +348,7 @@ void FighterControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 
 		if( (MyPos-TargetPos).MagSquared() < (90.0f*90.0f) )
 		{
-			wiidom::LaunchMissile( sinst, GetEntity()->GetDagNode(), CVector3(0.0f,0.0f,0.0f), mWCI, sci->GetITarget(), 0.5f );
+			wiidom::LaunchMissile( sinst, GetEntity()->GetDagNode(), fvec3(0.0f,0.0f,0.0f), mWCI, sci->GetITarget(), 0.5f );
 			mfMissileTimer = 1.5f;
 		}
 	}

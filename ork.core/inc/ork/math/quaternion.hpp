@@ -68,14 +68,14 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Lerp( const TQuaternion<T> 
 
 }
 
-template <typename T> TQuaternion<T>::TQuaternion(const TMatrix4<T> &matrix)
+template <typename T> TQuaternion<T>::TQuaternion(const Matrix44<T> &matrix)
 {
 	FromMatrix(matrix);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::FromMatrix(const TMatrix4<T> &M)
+template <typename T> void TQuaternion<T>::FromMatrix(const Matrix44<T> &M)
 {
 	T q[4];
 	const int nxt[3] = {1,2,0};
@@ -122,7 +122,7 @@ template <typename T> void TQuaternion<T>::FromMatrix(const TMatrix4<T> &M)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::FromMatrix3(const TMatrix3<T> &M)
+template <typename T> void TQuaternion<T>::FromMatrix3(const Matrix33<T> &M)
 {
 	T q[4];
 	const int nxt[3] = {1,2,0};
@@ -169,9 +169,9 @@ template <typename T> void TQuaternion<T>::FromMatrix3(const TMatrix3<T> &M)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TMatrix4<T> TQuaternion<T>::ToMatrix(void) const
+template <typename T> Matrix44<T> TQuaternion<T>::ToMatrix(void) const
 {
-	TMatrix4<T> result;
+	Matrix44<T> result;
 
 	T s,xs,ys,zs,wx,wy,wz,xx,xy,xz,yy,yz,zz,l;
 
@@ -208,9 +208,9 @@ template <typename T> TMatrix4<T> TQuaternion<T>::ToMatrix(void) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TMatrix3<T> TQuaternion<T>::ToMatrix3(void) const
+template <typename T> Matrix33<T> TQuaternion<T>::ToMatrix3(void) const
 {
-	TMatrix3<T> result;
+	Matrix33<T> result;
 
 	T s,xs,ys,zs,wx,wy,wz,xx,xy,xz,yy,yz,zz,l;
 
@@ -231,9 +231,9 @@ template <typename T> TMatrix3<T> TQuaternion<T>::ToMatrix3(void) const
 	xx = GetX() * xs;  xy = GetX() * ys; xz = GetX() * zs;
 	yy = GetY() * ys;  yz = GetY() * zs; zz = GetZ() * zs;
 
-	result.SetColumn( 0, TVector3<T>( T(1.0f) - (yy +zz), xy - wz, xz + wy ) );
-	result.SetColumn( 1, TVector3<T>( xy + wz, T(1.0f) - (xx +zz), yz - wx ) );
-	result.SetColumn( 2, TVector3<T>( xz - wy, yz + wx, T(1.0f) - (xx + yy) ) );
+	result.SetColumn( 0, Vector3<T>( T(1.0f) - (yy +zz), xy - wz, xz + wy ) );
+	result.SetColumn( 1, Vector3<T>( xy + wz, T(1.0f) - (xx +zz), yz - wx ) );
+	result.SetColumn( 2, Vector3<T>( xz - wy, yz + wx, T(1.0f) - (xx + yy) ) );
 
 	return result;
 
@@ -369,7 +369,7 @@ template <typename T> T TQuaternion<T>::Magnitude(void)
 ///////////////////////////////////////////////////////////////////////////////
 //	DESC: Converts a normalized axis and angle to a unit quaternion.
 
-template <typename T> void TQuaternion<T>::FromAxisAngle( const TVector4<T> &v )
+template <typename T> void TQuaternion<T>::FromAxisAngle( const Vector4<T> &v )
 {
 	T l=v.Mag();
 
@@ -391,7 +391,7 @@ template <typename T> void TQuaternion<T>::FromAxisAngle( const TVector4<T> &v )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector4<T> TQuaternion<T>::ToAxisAngle(void) const
+template <typename T> Vector4<T> TQuaternion<T>::ToAxisAngle(void) const
 {
 	static const double kAAC = (114.591559026*DTOR);
 	T tr = CFloat::ArcCos(GetW());
@@ -401,7 +401,7 @@ template <typename T> TVector4<T> TQuaternion<T>::ToAxisAngle(void) const
 	T vy = GetY() * invscale;
 	T vz = GetZ() * invscale;
 	T ang = tr * T((float)kAAC);
-	return TVector4<T>( vx, vy, vz, -ang );
+	return Vector4<T>( vx, vy, vz, -ang );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -460,12 +460,12 @@ template <typename T> void TQuaternion<T>::Identity(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>:: ShortestRotationArc( TVector4<T> v0, TVector4<T> v1 )
+template <typename T> void TQuaternion<T>:: ShortestRotationArc( Vector4<T> v0, Vector4<T> v1 )
 {
 	v0.Normalize();
 	v1.Normalize();
 
-	TVector4<T> cross = v1.Cross( v0 ); // Cross is non destructive
+	Vector4<T> cross = v1.Cross( v0 ); // Cross is non destructive
 	T dot = v1.Dot( v0 );
 	T s = CFloat::Sqrt( (T(1.0f)+dot)*T(2.0f));
 

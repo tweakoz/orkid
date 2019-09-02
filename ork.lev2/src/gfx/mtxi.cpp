@@ -42,20 +42,20 @@ void MatrixStackInterface::PushUIMatrix()
 
 	//float fw = (F32) mTarget.FBI()->GetVPW();
 	//float fh = (F32) mTarget.FBI()->GetVPH();
-	ork::CMatrix4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, fw, 0.0f, fh, 0.0f, 1.0f );
+	ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, fw, 0.0f, fh, 0.0f, 1.0f );
 	PushPMatrix( mtxMVP );
-	PushVMatrix( ork::CMatrix4::Identity );
-	PushMMatrix( ork::CMatrix4::Identity );
+	PushVMatrix( ork::fmtx4::Identity );
+	PushMMatrix( ork::fmtx4::Identity );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void MatrixStackInterface::PushUIMatrix(int iw, int ih)
 {
-	ork::CMatrix4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, float(iw), 0.0f, float(ih), 0.0f, 1.0f );
+	ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, float(iw), 0.0f, float(ih), 0.0f, 1.0f );
 	PushPMatrix( mtxMVP );
-	PushVMatrix( ork::CMatrix4::Identity );
-	PushMMatrix( ork::CMatrix4::Identity );
+	PushVMatrix( ork::fmtx4::Identity );
+	PushMMatrix( ork::fmtx4::Identity );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ void MatrixStackInterface::PopUIMatrix()
 
 void MatrixStackInterface::OnMMatrixDirty( void )
 {
-	const CMatrix4& wmat = RefMMatrix();
+	const fmtx4& wmat = RefMMatrix();
 	//mmR3Matrix.SetToIdentity();
 	mmR3Matrix.fromNormalVectors(
 		wmat.GetXNormal().Normal(),
@@ -96,19 +96,19 @@ void MatrixStackInterface::OnMMatrixDirty( void )
 void MatrixStackInterface::OnVMatrixDirty( void )
 {
 	//////////////////////////////////////////////////////
-	const CMatrix4 & VMatrix = RefVMatrix();
+	const fmtx4 & VMatrix = RefVMatrix();
 	mmMVMatrix = RefMMatrix() * VMatrix;
 	mmVPMatrix = RefVMatrix() * RefPMatrix();
 	//////////////////////////////////////////////////////
 	const float * pfmatrix = VMatrix.GetArray();
-	mVectorScreenRightNormal	= CVector4(pfmatrix[0],pfmatrix[4], pfmatrix[8] );
-	mVectorScreenUpNormal		= CVector4(pfmatrix[1],pfmatrix[5], pfmatrix[9] );
+	mVectorScreenRightNormal	= fvec4(pfmatrix[0],pfmatrix[4], pfmatrix[8] );
+	mVectorScreenUpNormal		= fvec4(pfmatrix[1],pfmatrix[5], pfmatrix[9] );
 	//////////////////////////////////////////////////////
 	mMatrixVIT=VMatrix;
 	mMatrixVIT.Inverse();
 	mMatrixVIT.Transpose();
 	//////////////////////////////////////////////////////
-	CMatrix4 matiy;
+	fmtx4 matiy;
 	matiy.Scale( 1.0f, -1.0f, 1.0f );
 	mMatrixVITIY = mMatrixVIT*matiy;
 	//////////////////////////////////////////////////////
@@ -128,7 +128,7 @@ void MatrixStackInterface::OnPMatrixDirty( void )
 ///////////////////////////////////////////////////////////////////////
 // Matrix Stack
 
-void MatrixStackInterface::PushMMatrix( const CMatrix4 &rMat )
+void MatrixStackInterface::PushMMatrix( const fmtx4 &rMat )
 {	OrkAssert( miMatrixStackIndexM<(kiMatrixStackMax-1) );
 	maMatrixStackM[ ++miMatrixStackIndexM ] = rMat;
 	OnMMatrixDirty();
@@ -144,7 +144,7 @@ void MatrixStackInterface::PopMMatrix( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void MatrixStackInterface::SetMMatrix( const CMatrix4 &rMat )
+void MatrixStackInterface::SetMMatrix( const fmtx4 &rMat )
 {
 	OrkAssert( miMatrixStackIndexM>=0 );
 	OrkAssert( miMatrixStackIndexM<kiMatrixStackMax );
@@ -154,7 +154,7 @@ void MatrixStackInterface::SetMMatrix( const CMatrix4 &rMat )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefMMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefMMatrix( void ) const
 {	OrkAssert( miMatrixStackIndexM>=0 );
 	OrkAssert( miMatrixStackIndexM<kiMatrixStackMax );
 	return maMatrixStackM[ miMatrixStackIndexM ];
@@ -162,19 +162,19 @@ const CMatrix4 &MatrixStackInterface::RefMMatrix( void ) const
 
 ///////////////////////////////////////////////////////
 
-const CMatrix3 &MatrixStackInterface::RefR3Matrix( void ) const
+const fmtx3 &MatrixStackInterface::RefR3Matrix( void ) const
 {	return mmR3Matrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefR4Matrix( void ) const
+const fmtx4 &MatrixStackInterface::RefR4Matrix( void ) const
 {	return mmR4Matrix;
 }
 
 ///////////////////////////////////////////////////////
 
-void MatrixStackInterface::PushVMatrix( const CMatrix4 &rMat )
+void MatrixStackInterface::PushVMatrix( const fmtx4 &rMat )
 {	OrkAssert( miMatrixStackIndexV<(kiMatrixStackMax-1) );
 	maMatrixStackV[ ++miMatrixStackIndexV ] = rMat;
 	OnVMatrixDirty();
@@ -184,13 +184,13 @@ void MatrixStackInterface::PushVMatrix( const CMatrix4 &rMat )
 
 void MatrixStackInterface::PopVMatrix( void )
 {	OrkAssert( miMatrixStackIndexV>0 );
-	CMatrix4 &rMat = maMatrixStackV[ --miMatrixStackIndexV ];
+	fmtx4 &rMat = maMatrixStackV[ --miMatrixStackIndexV ];
 	OnVMatrixDirty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefVMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefVMatrix( void ) const
 {	OrkAssert( miMatrixStackIndexV>=0 );
 	OrkAssert( miMatrixStackIndexV<kiMatrixStackMax );
 	return maMatrixStackV[ miMatrixStackIndexV ];
@@ -198,44 +198,44 @@ const CMatrix4 &MatrixStackInterface::RefVMatrix( void ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefVITMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefVITMatrix( void ) const
 {	return mMatrixVIT;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefVITIYMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefVITIYMatrix( void ) const
 {	return mMatrixVITIY;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefVITGMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefVITGMatrix( void ) const
 {	return mMatrixVITG;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefMVMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefMVMatrix( void ) const
 {	return mmMVMatrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefMVPMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefMVPMatrix( void ) const
 {
 	return mmMVPMatrix;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4 &MatrixStackInterface::RefVPMatrix( void ) const
+const fmtx4 &MatrixStackInterface::RefVPMatrix( void ) const
 {	return mmVPMatrix;
 }
 
 ///////////////////////////////////////////////////////
 
-void MatrixStackInterface::PushPMatrix( const CMatrix4 &rMat )
+void MatrixStackInterface::PushPMatrix( const fmtx4 &rMat )
 {
 	if( miMatrixStackIndexP==5 )
 	{
@@ -251,21 +251,21 @@ void MatrixStackInterface::PushPMatrix( const CMatrix4 &rMat )
 
 void MatrixStackInterface::PopPMatrix( void )
 {	OrkAssert( miMatrixStackIndexP>0 );
-	CMatrix4 &rMat = maMatrixStackP[ --miMatrixStackIndexP ];
+	fmtx4 &rMat = maMatrixStackP[ --miMatrixStackIndexP ];
 	OnPMatrixDirty();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4& MatrixStackInterface::RefPMatrix( void ) const
+const fmtx4& MatrixStackInterface::RefPMatrix( void ) const
 {	return maMatrixStackP[ miMatrixStackIndexP ];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CMatrix4 MatrixStackInterface::Persp( float fovy, float aspect, float fnear, float ffar )
+fmtx4 MatrixStackInterface::Persp( float fovy, float aspect, float fnear, float ffar )
 {
-	CMatrix4 mtx;
+	fmtx4 mtx;
 #if 0
 //#if defined(_IOS)
 //#elif defined(_DSIX)
@@ -303,9 +303,9 @@ CMatrix4 MatrixStackInterface::Persp( float fovy, float aspect, float fnear, flo
 // GfxTarget::Frustum virtual virtual
 ///////////////////////////////////////////////////////////////////////////////
 
-CMatrix4 MatrixStackInterface::Frustum( float left, float right, float top, float bottom, float zn, float zf ) // virtual
+fmtx4 MatrixStackInterface::Frustum( float left, float right, float top, float bottom, float zn, float zf ) // virtual
 {
-	CMatrix4 rval;
+	fmtx4 rval;
 
 		printf( "yo3\n" );
 	rval.SetToIdentity();
@@ -332,9 +332,9 @@ CMatrix4 MatrixStackInterface::Frustum( float left, float right, float top, floa
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CMatrix4 MatrixStackInterface::LookAt( const CVector3& eye, const CVector3& tgt, const CVector3& up ) const
+fmtx4 MatrixStackInterface::LookAt( const fvec3& eye, const fvec3& tgt, const fvec3& up ) const
 {
-	CMatrix4 rval;
+	fmtx4 rval;
 
 #if 0 //defined(_IOS)
 //#elif defined(_DIIX)
@@ -358,9 +358,9 @@ CMatrix4 MatrixStackInterface::LookAt( const CVector3& eye, const CVector3& tgt,
 	rval.dump("GL");
 	//rval.Transpose();
 #else
-	CVector3 zaxis = (eye - tgt).Normal();
-	CVector3 xaxis = (up.Cross(zaxis)).Normal();
-	CVector3 yaxis = zaxis.Cross(xaxis);
+	fvec3 zaxis = (eye - tgt).Normal();
+	fvec3 xaxis = (up.Cross(zaxis)).Normal();
+	fvec3 yaxis = zaxis.Cross(xaxis);
 
 	rval.SetElemYX( 0,0, xaxis.GetX() );
 	rval.SetElemYX( 1,0, yaxis.GetX() );

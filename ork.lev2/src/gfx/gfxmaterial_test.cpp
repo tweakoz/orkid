@@ -362,7 +362,7 @@ void GfxMaterial3DSolid::SetMaterialProperty(const char* prop, const char* val) 
       ucolor |= hexchar2int::doit(hexd0) << 28;
       printf("color<0x%08x>\n", ucolor);
 
-      Color = CVector4(ucolor);
+      Color = fvec4(ucolor);
       printf("color<%f %f %f %f>\n", Color.GetX(), Color.GetY(), Color.GetZ(), Color.GetW());
     }
   }

@@ -18,7 +18,7 @@ TEST(MergeVertex)
 	// Set only portions
 	vtx1.mPos.SetXYZ(0.0f, 0.0f, 0.0f);
 	vtx1.mNrm.SetXYZ(0.0f, 0.0f, 0.0f);
-	vtx1.mUV[0].mMapTexCoord = CVector2(0.0f, 0.0f);
+	vtx1.mUV[0].mMapTexCoord = fvec2(0.0f, 0.0f);
 	vtx1.mCol[0].SetXYZ(0.0f, 0.0f, 0.0f);
 	vtx1.mCol[1].SetXYZ(0.0f, 0.0f, 0.0f);
 
@@ -31,7 +31,7 @@ TEST(MergeVertex)
 	// Set only portions
 	vtx2.mPos.SetXYZ(0.0f, 0.0f, 0.0f);
 	vtx2.mNrm.SetXYZ(0.0f, 0.0f, 0.0f);
-	vtx2.mUV[0].mMapTexCoord = CVector2(0.0f, 0.0f);
+	vtx2.mUV[0].mMapTexCoord = fvec2(0.0f, 0.0f);
 	vtx2.mCol[0].SetXYZ(0.0f, 0.0f, 0.0f);
 	vtx2.mCol[1].SetXYZ(0.0f, 0.0f, 0.0f);
 

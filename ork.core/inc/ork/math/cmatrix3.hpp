@@ -12,12 +12,12 @@
 
 namespace ork {
 
-template <typename T> const TMatrix3<T> TMatrix3<T>::Identity;
+template <typename T> const Matrix33<T> Matrix33<T>::Identity;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetToIdentity(void)
+template <typename T> void Matrix33<T>::SetToIdentity(void)
 {
 	int	j,k;
 
@@ -32,7 +32,7 @@ template <typename T> void TMatrix3<T>::SetToIdentity(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::dump( STRING name )
+template <typename T> void Matrix33<T>::dump( STRING name )
 {
 	orkprintf( "Matrix %p %s\n{	", this, name  );
 
@@ -54,28 +54,28 @@ template <typename T> void TMatrix3<T>::dump( STRING name )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetElemYX( int ix, int iy, T val )
+template <typename T> void Matrix33<T>::SetElemYX( int ix, int iy, T val )
 {
 	elements[iy][ix] = val;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T TMatrix3<T>::GetElemYX( int ix, int iy ) const
+template <typename T> T Matrix33<T>::GetElemYX( int ix, int iy ) const
 {
 	return elements[iy][ix];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetElemXY( int ix, int iy, T val )
+template <typename T> void Matrix33<T>::SetElemXY( int ix, int iy, T val )
 {
 	elements[ix][iy] = val;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T TMatrix3<T>::GetElemXY( int ix, int iy ) const
+template <typename T> T Matrix33<T>::GetElemXY( int ix, int iy ) const
 {
 	return elements[ix][iy];
 }
@@ -84,7 +84,7 @@ template <typename T> T TMatrix3<T>::GetElemXY( int ix, int iy ) const
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
-template <typename T> void TMatrix3<T>::SetRotateX(T rad)
+template <typename T> void Matrix33<T>::SetRotateX(T rad)
 {
 	T cosa, sina;
 
@@ -107,7 +107,7 @@ template <typename T> void TMatrix3<T>::SetRotateX(T rad)
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
-template <typename T> void TMatrix3<T>::SetRotateY(T rad)
+template <typename T> void Matrix33<T>::SetRotateY(T rad)
 {
 	T cosa, sina;
 
@@ -130,7 +130,7 @@ template <typename T> void TMatrix3<T>::SetRotateY(T rad)
 ///////////////////////////////////////////////////////////////////////////////
 //	set rotation explicitly
 
-template <typename T> void TMatrix3<T>::SetRotateZ(T rad)
+template <typename T> void Matrix33<T>::SetRotateZ(T rad)
 {
 	T cosa, sina;
 
@@ -153,9 +153,9 @@ template <typename T> void TMatrix3<T>::SetRotateZ(T rad)
 ///////////////////////////////////////////////////////////////////////////////
 //	rotate in place
 
-template <typename T> void TMatrix3<T>::RotateX( T rad )
+template <typename T> void Matrix33<T>::RotateX( T rad )
 {
-	TMatrix3<T> temp, res;
+	Matrix33<T> temp, res;
 	temp.SetRotateX(rad);
 	res = temp * *this;
 	*this = res;
@@ -164,9 +164,9 @@ template <typename T> void TMatrix3<T>::RotateX( T rad )
 ///////////////////////////////////////////////////////////////////////////////
 //	rotate in place
 
-template <typename T> void TMatrix3<T>::RotateY( T rad )
+template <typename T> void Matrix33<T>::RotateY( T rad )
 {
-	TMatrix3<T> temp, res;
+	Matrix33<T> temp, res;
 	temp.SetRotateY(rad);
 	res = temp * *this;
 	*this = res;
@@ -175,9 +175,9 @@ template <typename T> void TMatrix3<T>::RotateY( T rad )
 ///////////////////////////////////////////////////////////////////////////////
 //	rotate in place
 
-template <typename T> void TMatrix3<T>::RotateZ( T rad )
+template <typename T> void Matrix33<T>::RotateZ( T rad )
 {
-	TMatrix3<T> temp, res;
+	Matrix33<T> temp, res;
 	temp.SetRotateZ(rad);
 	res = temp * *this;
 	*this = res;
@@ -186,14 +186,14 @@ template <typename T> void TMatrix3<T>::RotateZ( T rad )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetScale( const TVector4<T> &vec)
+template <typename T> void Matrix33<T>::SetScale( const Vector4<T> &vec)
 {
 	SetScale( vec.GetX(), vec.GetY(), vec.GetZ() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetScale(T x, T y, T z)
+template <typename T> void Matrix33<T>::SetScale(T x, T y, T z)
 {
 	SetElemXY( 0, 0, x );
 	SetElemXY( 1, 0, 0.0f );
@@ -210,16 +210,16 @@ template <typename T> void TMatrix3<T>::SetScale(T x, T y, T z)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetScale(T s)
+template <typename T> void Matrix33<T>::SetScale(T s)
 {
 	SetScale( s,s,s );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::Scale( const TVector4<T> &vec )
+template <typename T> void Matrix33<T>::Scale( const Vector4<T> &vec )
 {
-	TMatrix3<T> temp, res;
+	Matrix33<T> temp, res;
 	temp.SetScale( vec );
 	res = temp * *this;
 	*this = res;
@@ -227,9 +227,9 @@ template <typename T> void TMatrix3<T>::Scale( const TVector4<T> &vec )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::Scale( T xscl, T yscl, T zscl )
+template <typename T> void Matrix33<T>::Scale( T xscl, T yscl, T zscl )
 {
-	TMatrix3<T> temp, res;
+	Matrix33<T> temp, res;
 	temp.SetScale( xscl, yscl, zscl );
 	res = temp * *this;
 	*this = res;
@@ -239,7 +239,7 @@ template <typename T> void TMatrix3<T>::Scale( T xscl, T yscl, T zscl )
 ///////////////////////////////////////////////////////////////////////////////
 
 // sm - rotation matrix from quaternion
-template <typename T> void TMatrix3<T>::FromQuaternion(TQuaternion<T> quat)
+template <typename T> void Matrix33<T>::FromQuaternion(TQuaternion<T> quat)
 {
 	T xx = quat.GetX() * quat.GetX();
 	T yy = quat.GetY() * quat.GetY();
@@ -290,9 +290,9 @@ template <typename T> void fpuM33xM33( const T a[3][3], const T b[3][3], T c[3][
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TMatrix3<T> TMatrix3<T>::MatrixMult( const TMatrix3<T> &mat1 ) const
+template <typename T> Matrix33<T> Matrix33<T>::MatrixMult( const Matrix33<T> &mat1 ) const
 {
-	TMatrix3<T>	result;
+	Matrix33<T>	result;
 
 	////////////////////////////////////////////////////////////////
 	//              i  j                i  k                  k  j
@@ -344,9 +344,9 @@ template <typename T> TMatrix3<T> TMatrix3<T>::MatrixMult( const TMatrix3<T> &ma
 	return( result );
 }
 
-template <typename T> TMatrix3<T> TMatrix3<T>::Mult( T scalar ) const
+template <typename T> Matrix33<T> Matrix33<T>::Mult( T scalar ) const
 {
-	TMatrix3<T> res;
+	Matrix33<T> res;
 
 	for(int i = 0; i < 3; ++i)
 	{
@@ -361,7 +361,7 @@ template <typename T> TMatrix3<T> TMatrix3<T>::Mult( T scalar ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::CorrectionMatrix( const TMatrix3<T> &from, const TMatrix3<T> &to )
+template <typename T> void Matrix33<T>::CorrectionMatrix( const Matrix33<T> &from, const Matrix33<T> &to )
 {
 	/////////////////////////
 	//
@@ -373,7 +373,7 @@ template <typename T> void TMatrix3<T>::CorrectionMatrix( const TMatrix3<T> &fro
 	//
 	/////////////////////////
 
-	TMatrix3<T> iFrom = from;
+	Matrix33<T> iFrom = from;
 
 	iFrom.Inverse();
 
@@ -382,23 +382,23 @@ template <typename T> void TMatrix3<T>::CorrectionMatrix( const TMatrix3<T> &fro
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetRotation( const TMatrix3<T> &from )
+template <typename T> void Matrix33<T>::SetRotation( const Matrix33<T> &from )
 {
-	TMatrix3<T> rval = from;
+	Matrix33<T> rval = from;
 	rval.Normalize();
 	*this = rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetScale( const TMatrix3<T> &from ) // assumes rot is zero!
+template <typename T> void Matrix33<T>::SetScale( const Matrix33<T> &from ) // assumes rot is zero!
 {
-	TMatrix3<T> RS = from;
+	Matrix33<T> RS = from;
 
-	TMatrix3<T> R = RS;
+	Matrix33<T> R = RS;
 	R.Normalize();
 
-	TMatrix3<T> S;
+	Matrix33<T> S;
 	S.CorrectionMatrix( R, RS );
 
 	*this = S;
@@ -406,9 +406,9 @@ template <typename T> void TMatrix3<T>::SetScale( const TMatrix3<T> &from ) // a
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::Lerp( const TMatrix3<T> &from, const TMatrix3<T> &to, T par ) // par 0.0f .. 1.0f
+template <typename T> void Matrix33<T>::Lerp( const Matrix33<T> &from, const Matrix33<T> &to, T par ) // par 0.0f .. 1.0f
 {
-	TMatrix3<T> FromR, ToR, CORR, matR;
+	Matrix33<T> FromR, ToR, CORR, matR;
 	TQuaternion<T> FromQ, ToQ, Qidn, Qrot;
 
 	//////////////////
@@ -444,12 +444,12 @@ template <typename T> void TMatrix3<T>::Lerp( const TMatrix3<T> &from, const TMa
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void TMatrix3<T>::DecomposeMatrix( TQuaternion<T>& qrot, T& Scale ) const
+void Matrix33<T>::DecomposeMatrix( TQuaternion<T>& qrot, T& Scale ) const
 {
-	TMatrix3<T> rot = *this;
+	Matrix33<T> rot = *this;
 
-	TVector3<T> UnitVector( T(1.0f), T(0.0f), T(0.0f) );
-	TVector3<T> XFVector = UnitVector.Transform( rot );
+	Vector3<T> UnitVector( T(1.0f), T(0.0f), T(0.0f) );
+	Vector3<T> XFVector = UnitVector.Transform( rot );
 
 	Scale = XFVector.Mag();
 
@@ -467,7 +467,7 @@ void TMatrix3<T>::DecomposeMatrix( TQuaternion<T>& qrot, T& Scale ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-void TMatrix3<T>::ComposeMatrix( const TQuaternion<T>& qrot, const T& Scale )
+void Matrix33<T>::ComposeMatrix( const TQuaternion<T>& qrot, const T& Scale )
 {
 	*this = qrot.ToMatrix3();
 	for( int i=0; i<3; i++ )
@@ -482,9 +482,9 @@ void TMatrix3<T>::ComposeMatrix( const TQuaternion<T>& qrot, const T& Scale )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector3<T> TMatrix3<T>::GetRow( int irow ) const
+template <typename T> Vector3<T> Matrix33<T>::GetRow( int irow ) const
 {
-    TVector3<T> out;
+    Vector3<T> out;
 	out.SetX(GetElemXY(0,irow));
 	out.SetY(GetElemXY(1,irow));
 	out.SetZ(GetElemXY(2,irow));
@@ -493,9 +493,9 @@ template <typename T> TVector3<T> TMatrix3<T>::GetRow( int irow ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TVector3<T> TMatrix3<T>::GetColumn( int icol ) const
+template <typename T> Vector3<T> Matrix33<T>::GetColumn( int icol ) const
 {
-    TVector3<T> out;
+    Vector3<T> out;
 	out.SetX(GetElemXY(icol,0));
 	out.SetY(GetElemXY(icol,1));
 	out.SetZ(GetElemXY(icol,2));
@@ -504,7 +504,7 @@ template <typename T> TVector3<T> TMatrix3<T>::GetColumn( int icol ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetRow( int irow, const TVector3<T>& v )
+template <typename T> void Matrix33<T>::SetRow( int irow, const Vector3<T>& v )
 {
 	SetElemXY( 0, irow, v.GetX() );
 	SetElemXY( 1, irow, v.GetY() );
@@ -513,7 +513,7 @@ template <typename T> void TMatrix3<T>::SetRow( int irow, const TVector3<T>& v )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::SetColumn( int icol, const TVector3<T>& v )
+template <typename T> void Matrix33<T>::SetColumn( int icol, const Vector3<T>& v )
 {
 	SetElemXY( icol, 0, v.GetX() );
 	SetElemXY( icol, 1, v.GetY() );
@@ -522,7 +522,7 @@ template <typename T> void TMatrix3<T>::SetColumn( int icol, const TVector3<T>& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::fromNormalVectors( const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv )
+template <typename T> void Matrix33<T>::fromNormalVectors( const Vector3<T>& xv, const Vector3<T>& yv, const Vector3<T>& zv )
 {
 	SetColumn( 0, xv );
 	SetColumn( 1, yv );
@@ -531,7 +531,7 @@ template <typename T> void TMatrix3<T>::fromNormalVectors( const TVector3<T>& xv
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::toNormalVectors( TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv ) const
+template <typename T> void Matrix33<T>::toNormalVectors( Vector3<T>& xv, Vector3<T>& yv, Vector3<T>& zv ) const
 {
 	xv = GetColumn( 0 );
 	yv = GetColumn( 1 );
@@ -540,9 +540,9 @@ template <typename T> void TMatrix3<T>::toNormalVectors( TVector3<T>& xv, TVecto
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::Transpose(void)
+template <typename T> void Matrix33<T>::Transpose(void)
 {
-	TMatrix3<T> temp = *this;
+	Matrix33<T> temp = *this;
 
 	for( int i=0; i<3; i++ )
 	{
@@ -556,9 +556,9 @@ template <typename T> void TMatrix3<T>::Transpose(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::Inverse( void )
+template <typename T> void Matrix33<T>::Inverse( void )
 {
-	TMatrix3<T> result;
+	Matrix33<T> result;
 
 	/////////////
 	// The rotational part of the matrix is simply the transpose of the original matrix.
@@ -579,9 +579,9 @@ template <typename T> void TMatrix3<T>::Inverse( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::InverseTranspose( void )
+template <typename T> void Matrix33<T>::InverseTranspose( void )
 {
-	TMatrix3<T> result;
+	Matrix33<T> result;
 
 	/////////////
 	// The rotational part of the matrix is simply the transpose of the original matrix.
@@ -602,9 +602,9 @@ template <typename T> void TMatrix3<T>::InverseTranspose( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::Normalize( void )
+template <typename T> void Matrix33<T>::Normalize( void )
 {
-	TMatrix3<T> result;
+	Matrix33<T> result;
 	
 	T Xx = GetElemXY( 0,0 );
 	T Xy = GetElemXY( 0,1 );

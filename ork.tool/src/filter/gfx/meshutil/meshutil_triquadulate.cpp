@@ -69,9 +69,9 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 {
 	///////////////////////////////////////
 
-	CPlane P0, P1;
+	fplane3 P0, P1;
 	int ici[6];
-	CVector4 VPos[6];
+	fvec4 VPos[6];
 
 	///////////////////////////////////////
 
@@ -91,9 +91,9 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 		VPos[1] = mvpool.VertexPool[ ici[1] ].mPos;
 		VPos[2] = mvpool.VertexPool[ ici[2] ].mPos;
 		P0.CalcPlaneFromTriangle( VPos[0], VPos[1], VPos[2] );
-		//CVector4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
+		//fvec4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
 
-		float fArea012 = CVector4::CalcTriArea( VPos[0],VPos[1],VPos[2], P0.GetNormal() );
+		float fArea012 = fvec4::CalcTriArea( VPos[0],VPos[1],VPos[2], P0.GetNormal() );
 
 		/*if( 0 != _isnan( fArea012 ) )
 		{
@@ -141,9 +141,9 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 				VPos[5] = mvpool.VertexPool[ ici[5] ].mPos;
 
 				P1.CalcPlaneFromTriangle( VPos[3], VPos[4], VPos[5] );
-				//CVector4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
+				//fvec4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
 
-				float fArea345 = CVector4::CalcTriArea( VPos[3],VPos[4],VPos[5], P1.GetNormal() );
+				float fArea345 = fvec4::CalcTriArea( VPos[3],VPos[4],VPos[5], P1.GetNormal() );
 
 				/*if( 0 != _isnan( fArea345 ) )
 				{
@@ -235,10 +235,10 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 
 								// AD are corners
 
-								CVector4 VDelAC = (VPos[icorner0]-VPos[ilo0]).Normal();
-								CVector4 VDelAB = (VPos[icorner0]-VPos[ilo1]).Normal();
-								CVector4 VDelDC = (VPos[icorner1]-VPos[ilo0]).Normal();
-								CVector4 VDelBD = (VPos[ilo1]-VPos[icorner1]).Normal();
+								fvec4 VDelAC = (VPos[icorner0]-VPos[ilo0]).Normal();
+								fvec4 VDelAB = (VPos[icorner0]-VPos[ilo1]).Normal();
+								fvec4 VDelDC = (VPos[icorner1]-VPos[ilo0]).Normal();
+								fvec4 VDelBD = (VPos[ilo1]-VPos[icorner1]).Normal();
 
 								float fdotACBD = VDelAC.Dot( VDelBD );		// quad is at least a parallelogram if ang(V02) == ang(V31)
 								float fdotACAB = VDelAC.Dot( VDelAB );		// quad is rectangular if V01 is perpendicular to V02
@@ -256,7 +256,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 									//////////////////////////////////////
 									// ensure good winding order
 
-									CPlane P3;
+									fplane3 P3;
 									P3.CalcPlaneFromTriangle( VPos[icorner0], VPos[ilo0], VPos[ilo1] );
 
 									float fdot = P3.n.Dot( P0.n );

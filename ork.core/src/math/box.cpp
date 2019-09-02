@@ -19,7 +19,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::AABox,"AABox");
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-Sphere::Sphere( const CVector3& boxmin, const CVector3& boxmax )
+Sphere::Sphere( const fvec3& boxmin, const fvec3& boxmax )
 {
 	mCenter = (boxmin+boxmax)*0.5f;
 	mRadius = (boxmax-mCenter).Mag();
@@ -35,7 +35,7 @@ void ork::AABox::Describe()
 AABox::AABox()
 {
 }
-AABox::AABox( const CVector3& vmin, const CVector3& vmax )
+AABox::AABox( const fvec3& vmin, const fvec3& vmax )
     : mMin( vmin )
     , mMax( vmax )
 {
@@ -53,24 +53,24 @@ void AABox::operator=(const AABox& oth )
     mMax = oth.mMax;
     ComputePlanes();
 }
-void AABox::SetMinMax( const CVector3& vmin, const CVector3& vmax )
+void AABox::SetMinMax( const fvec3& vmin, const fvec3& vmax )
 {
     mMin=vmin;
     mMax=vmax;
     ComputePlanes();
 }
-bool AABox::Intersect( const Ray3& ray, CVector3& isect_in, CVector3& isect_out ) const
+bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) const
 {
     float tmin, tmax, tymin, tymax, tzmin, tzmax;
 
-    const CVector3& bndx = ray.mbSignX ? mMin : mMax;
-    const CVector3& bndix = ray.mbSignX ? mMax : mMin;
-    const CVector3& bndy = ray.mbSignY ? mMin : mMax;
-    const CVector3& bndiy = ray.mbSignY ? mMax : mMin;
-    const CVector3& bndz = ray.mbSignZ ? mMin : mMax;
-    const CVector3& bndiz = ray.mbSignZ ? mMax : mMin;
+    const fvec3& bndx = ray.mbSignX ? mMin : mMax;
+    const fvec3& bndix = ray.mbSignX ? mMax : mMin;
+    const fvec3& bndy = ray.mbSignY ? mMin : mMax;
+    const fvec3& bndiy = ray.mbSignY ? mMax : mMin;
+    const fvec3& bndz = ray.mbSignZ ? mMin : mMax;
+    const fvec3& bndiz = ray.mbSignZ ? mMax : mMin;
 
-    const CVector3& ori = ray.mOrigin;
+    const fvec3& ori = ray.mOrigin;
 
     tmin = (bndx.GetX() - ori.GetX()) * ray.mInverseDirection.GetX();
     tmax = (bndix.GetX() - ori.GetX()) * ray.mInverseDirection.GetX();
@@ -104,7 +104,7 @@ bool AABox::Intersect( const Ray3& ray, CVector3& isect_in, CVector3& isect_out 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AABox::SupportMapping( const CVector3& v, CVector3& result ) const
+void AABox::SupportMapping( const fvec3& v, fvec3& result ) const
 {
     //Vector3.Dot(ref this.corners[0], ref v, out num3);
     float num3 = v.Dot( Corner(0) );
@@ -129,11 +129,11 @@ void AABox::BeginGrow()
 {
     float fmin = CFloat::TypeMax();
     float fmax = -CFloat::TypeMax();
-    mMin = CVector3( fmin,fmin,fmin );
-    mMax = CVector3( fmax,fmax,fmax );
+    mMin = fvec3( fmin,fmin,fmin );
+    mMax = fvec3( fmax,fmax,fmax );
 }
 
-void AABox::Grow( const CVector3& vin )
+void AABox::Grow( const fvec3& vin )
 {
     mMin.SetX( CFloat::Min( mMin.GetX(), vin.GetX() ) );
     mMin.SetY( CFloat::Min( mMin.GetY(), vin.GetY() ) );
@@ -153,18 +153,18 @@ void AABox::EndGrow()
 
 void AABox::ComputePlanes()
 {
-    CVector3 nX( 1.0f, 0.0f, 0.0f );
-    CVector3 nY( 0.0f, 1.0f, 0.0f );
-    CVector3 nZ( 0.0f, 1.0f, 0.0f );
+    fvec3 nX( 1.0f, 0.0f, 0.0f );
+    fvec3 nY( 0.0f, 1.0f, 0.0f );
+    fvec3 nZ( 0.0f, 1.0f, 0.0f );
 
-    mPlaneNX[0] = CPlane( nX, mMin.GetX() );
-    mPlaneNX[1] = CPlane( -nX, mMax.GetX() );
+    mPlaneNX[0] = fplane3( nX, mMin.GetX() );
+    mPlaneNX[1] = fplane3( -nX, mMax.GetX() );
 
-    mPlaneNY[0] = CPlane( nY, mMin.GetY() );
-    mPlaneNY[1] = CPlane( -nY, mMax.GetY() );
+    mPlaneNY[0] = fplane3( nY, mMin.GetY() );
+    mPlaneNY[1] = fplane3( -nY, mMax.GetY() );
 
-    mPlaneNZ[0] = CPlane( nZ, mMin.GetZ() );
-    mPlaneNZ[1] = CPlane( -nZ, mMax.GetZ() );
+    mPlaneNZ[0] = fplane3( nZ, mMin.GetZ() );
+    mPlaneNZ[1] = fplane3( -nZ, mMax.GetZ() );
 }
 
 bool AABox::Contains(const float test_point_X, const float test_point_Z) const
@@ -200,7 +200,7 @@ bool AABox::Contains(const float test_point_X, const float test_point_Z) const
  
  ///////////////////////////////////////////////////////////////////////////////
 
- bool AABox::Contains(const CVector3& test_point) const
+ bool AABox::Contains(const fvec3& test_point) const
  {
     if (test_point.GetX() > mMax.GetX())
         return false;
@@ -224,7 +224,7 @@ bool AABox::Contains(const float test_point_X, const float test_point_Z) const
     return true;
  }
  
-void AABox::Constrain(CVector3& test_point) const
+void AABox::Constrain(fvec3& test_point) const
 {
     if (test_point.GetX() > mMax.GetX())
         test_point.SetX(mMax.GetX());
@@ -246,9 +246,9 @@ void AABox::Constrain(CVector3& test_point) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 AABox::Corner( int idx ) const
+fvec3 AABox::Corner( int idx ) const
 {
-    CVector3 rval;
+    fvec3 rval;
     rval.SetX( ((idx & 1) == 1) ? mMax.GetX() : mMin.GetX() );
     rval.SetY( ((idx & 2) == 1) ? mMax.GetY() : mMin.GetY() );
     rval.SetZ( ((idx & 4) == 1) ? mMax.GetZ() : mMin.GetZ() );

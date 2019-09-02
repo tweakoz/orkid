@@ -42,20 +42,20 @@ struct HeightMap {
 
   float GetWorldHeight() const { return mWorldHeight; }
 
-  bool CalcClosestAddress(const CVector3 &to, float &outx, float &outz) const;
+  bool CalcClosestAddress(const fvec3 &to, float &outx, float &outz) const;
 
   float GetHeight(int ix, int iz) const;
   void SetHeight(int ix, int iz, float fh);
 
   const float *GetHeightData() const { return mHeightData.data(); }
 
-  CVector3 Min() const;
-  CVector3 Max() const;
-  CVector3 Range() const;
-  CVector3 XYZ(int iX, int iZ) const;
-  CVector3 ComputeNormal(int iX, int iZ) const;
-  void ReadSurface(bool bfilter, const CVector3 &xyz, CVector3 &pos,
-                   CVector3 &nrm) const;
+  fvec3 Min() const;
+  fvec3 Max() const;
+  fvec3 Range() const;
+  fvec3 XYZ(int iX, int iZ) const;
+  fvec3 ComputeNormal(int iX, int iZ) const;
+  void ReadSurface(bool bfilter, const fvec3 &xyz, fvec3 &pos,
+                   fvec3 &nrm) const;
 
   /////////////////////////////////////////////
 
@@ -78,15 +78,15 @@ struct HeightMap {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GradientSet {
-  const orkmap<float, CVector4> *mGradientLo;
-  const orkmap<float, CVector4> *mGradientHi;
+  const orkmap<float, fvec4> *mGradientLo;
+  const orkmap<float, fvec4> *mGradientHi;
   float mHeightLo;
   float mHeightHi;
 
   GradientSet()
       : mGradientLo(0), mGradientHi(0), mHeightLo(0.0f), mHeightHi(0.0f) {}
 
-  CVector4 Lerp(float fu, float fv) const;
+  fvec4 Lerp(float fu, float fv) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

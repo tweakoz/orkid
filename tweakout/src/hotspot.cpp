@@ -59,9 +59,9 @@ void HotSpot::RemoveFighter(FighterControllerInst*fci)
 // request a position to equalize density
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 HotSpot::RequestPosition()
+fvec3 HotSpot::RequestPosition()
 {
-	CVector3 result = mPosition;
+	fvec3 result = mPosition;
 	return result;
 }
 
@@ -77,7 +77,7 @@ HotSpotController::HotSpotController()
 {
 }
 
-void HotSpotController::ReadSurface( const CVector3& xyz, CVector3& pos, CVector3& normal ) const
+void HotSpotController::ReadSurface( const fvec3& xyz, fvec3& pos, fvec3& normal ) const
 {
 	/*const terrain::heightfield_ed_component& hec = mHEI->GetHEC();
 	const terrain::TerrainSynth& hf = hec.GetTerrainSynth();
@@ -103,8 +103,8 @@ void HotSpotController::Link(WorldControllerInst*wci)
 		{
 			float fz = (float(iz)*kmul)-500.0f;
 
-			CVector3 pos( fx, 0.0f, fz );
-			CVector3 hfpos, hfn;
+			fvec3 pos( fx, 0.0f, fz );
+			fvec3 hfpos, hfn;
 			ReadSurface( pos, hfpos, hfn );
 
 
@@ -115,7 +115,7 @@ void HotSpotController::Link(WorldControllerInst*wci)
 			result->miX = ix;
 			result->miZ = iz;
 
-			result->mPosition = hfpos+CVector3(0.0f,5.0f,0.0f);
+			result->mPosition = hfpos+fvec3(0.0f,5.0f,0.0f);
 		}
 	}
 
@@ -129,17 +129,17 @@ void HotSpotController::Link(WorldControllerInst*wci)
 // via random distribution checks
 ///////////////////////////////////////////////////////////////////////////////
 
-HotSpot* HotSpotController::UpdateHotSpot( const CVector3& TargetPos, const CVector3& TargetVel, const CVector3& TargetAcc )
+HotSpot* HotSpotController::UpdateHotSpot( const fvec3& TargetPos, const fvec3& TargetVel, const fvec3& TargetAcc )
 {
 	////////////////////////////////
 	// measure target motion
 	////////////////////////////////
 	
-	static CVector3 TargetLPos = TargetPos+CVector3(0.0f,1.0f,0.0f);
+	static fvec3 TargetLPos = TargetPos+fvec3(0.0f,1.0f,0.0f);
 
 	//////////////////////////////////
 
-	CVector3 TargetDir = ( (TargetVel.Normal()*0.6f) + (TargetAcc.Normal()*0.4f) ).Normal();
+	fvec3 TargetDir = ( (TargetVel.Normal()*0.6f) + (TargetAcc.Normal()*0.4f) ).Normal();
 
 	static avg_filter<16> filtx;
 	static avg_filter<16> filty;
@@ -149,7 +149,7 @@ HotSpot* HotSpotController::UpdateHotSpot( const CVector3& TargetPos, const CVec
 	float fy = filty.compute( TargetDir.GetY() );
 	float fz = filtz.compute( TargetDir.GetZ() );
 
-	TargetDir = CVector3( fx, fy, fz );
+	TargetDir = fvec3( fx, fy, fz );
 
 	//////////////////////////////////
 
@@ -162,18 +162,18 @@ HotSpot* HotSpotController::UpdateHotSpot( const CVector3& TargetPos, const CVec
 	int jrand = rand()%10;
 	float fjrand = 0.0f; //0.3f*((float(jrand)/10.0f)-0.5f);
 
-	CVector3 JDir = TargetDir.Cross( CVector3(0.0f,1.0f,0.0f) ).Normal();
+	fvec3 JDir = TargetDir.Cross( fvec3(0.0f,1.0f,0.0f) ).Normal();
 
-	CVector3 Dir = ((TargetDir*frand)+(JDir*fjrand)).Normal();
-	CVector3 AnticTargetPos = TargetPos+(Dir*fmag);
+	fvec3 Dir = ((TargetDir*frand)+(JDir*fjrand)).Normal();
+	fvec3 AnticTargetPos = TargetPos+(Dir*fmag);
 
 	//////////////////////////////////
 	// find projected spot
 	//////////////////////////////////
-	//CVector3 Home = CVector3( fx, fy, fz );
-	CVector3 hfnextp, hfnextn;
+	//fvec3 Home = fvec3( fx, fy, fz );
+	fvec3 hfnextp, hfnextn;
 	//mWCI->ReadSurface( AnticTargetPos, hfnextp, hfnextn );
-	AnticTargetPos = hfnextp+CVector3( 0.0f, 5.0f, 0.0f );
+	AnticTargetPos = hfnextp+fvec3( 0.0f, 5.0f, 0.0f );
 	//////////////////////////////////
 
 	static float koffs = 0.5f / float(khsdim);
@@ -196,8 +196,8 @@ HotSpot* HotSpotController::UpdateHotSpot( const CVector3& TargetPos, const CVec
 
 			if( mPrevious )
 			{
-				CVector3 vdir = (mClosest->mPosition-mPrevious->mPosition).Normal();
-				CVector2 vdirXZ = CVector2( vdir.GetX(), vdir.GetZ() ).Normal();
+				fvec3 vdir = (mClosest->mPosition-mPrevious->mPosition).Normal();
+				fvec2 vdirXZ = fvec2( vdir.GetX(), vdir.GetZ() ).Normal();
 				int icard = GetCardinalDir( vdirXZ );
 				mPrevious->mCardinalDirWeight[ icard ] += 1.0f;
 			}
@@ -225,7 +225,7 @@ HotSpot* HotSpotController::GetHotSpot( int iX, int iZ )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int HotSpotController::GetCardinalDir(const ork::CVector2 &vxz)
+int HotSpotController::GetCardinalDir(const ork::fvec2 &vxz)
 {
 	float fat2 = atan2( vxz.GetY(), vxz.GetX() );
 	int io = int( fat2 * (8.0f/PI2) );

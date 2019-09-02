@@ -31,7 +31,7 @@ public:
 	NoiseCache2D(int seed = 0, u32 samplesPerSide = 64);
 	void SmoothCache();
 	~NoiseCache2D();
-	float ValueAt(const CVector2& pos, const CVector2& offset, float amplitude, float frequency);
+	float ValueAt(const fvec2& pos, const fvec2& offset, float amplitude, float frequency);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@ private:
 		NoiseCache2D* mNoise;
 		float mFrequency;
 		float mAmplitude;
-		CVector2 mOffset;
+		fvec2 mOffset;
 	};
 
 	orklist<Octave> mOctaves;
@@ -53,9 +53,9 @@ public:
 	PerlinNoiseGenerator();
 	~PerlinNoiseGenerator();
 
-	void AddOctave(float frequency, float amplitude, const CVector2& offset, int seed, u32 dimensions);
+	void AddOctave(float frequency, float amplitude, const fvec2& offset, int seed, u32 dimensions);
 
-	float ValueAt(const CVector2& pos);
+	float ValueAt(const fvec2& pos);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

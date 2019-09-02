@@ -137,7 +137,7 @@ bool GfxMaterialUI::BeginPass( GfxTarget *pTarg, int iPass )
 	pTarg->RSI()->BindRasterState( mRasterState );
 	///////////////////////////////
 
-	const CMatrix4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
+	const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
 	///////////////////////////////
 
@@ -224,7 +224,7 @@ bool GfxMaterialUIText::BeginPass( GfxTarget *pTarg, int iPass )
 
 	///////////////////////////////
 
-	const CMatrix4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
+	const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
 	pTarg->FXI()->BindParamMatrix( hModFX, hTransform, MatMVP );
 
@@ -323,7 +323,7 @@ bool GfxMaterialUITextured::BeginPass( GfxTarget *pTarg, int iPass )
 	pTarg->RSI()->BindRasterState( mRasterState );
 	///////////////////////////////
 
-	const CMatrix4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
+	const fmtx4& MatMVP = pTarg->MTXI()->RefMVPMatrix();
 
 	pTarg->FXI()->BindPass( hModFX, iPass );
 	pTarg->FXI()->BindParamMatrix( hModFX, hTransform, MatMVP );

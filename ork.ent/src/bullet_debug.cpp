@@ -141,7 +141,7 @@ void PhysicsDebugger::Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::
 
 	const ork::CCameraData* pcamdata = ptarg->GetRenderContextFrameData()->GetCameraData();
 
-	ork::CVector3 szn = 0;
+	ork::fvec3 szn = 0;
 
 	DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 
@@ -157,10 +157,10 @@ void PhysicsDebugger::Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::
 		{
 			const PhysicsDebuggerLine& line = lines[il];
 
-			U32 ucolor = line.mColor.GetBGRAU32(); // ptarg->CColor4ToU32(line.mColor);
+			U32 ucolor = line.mColor.GetBGRAU32(); // ptarg->fcolor4ToU32(line.mColor);
 
-			CVector3 vf = line.mFrom+szn;
-			CVector3 vt = line.mTo+szn;
+			fvec3 vf = line.mFrom+szn;
+			fvec3 vt = line.mTo+szn;
 
 			vwriter.AddVertex( ork::lev2::SVtxV12C4T16( vf.GetX(), vf.GetY(), vf.GetZ(), 0.0f, 0.0f, ucolor ) );
 			vwriter.AddVertex( ork::lev2::SVtxV12C4T16( vt.GetX(), vt.GetY(), vt.GetZ(), 0.0f, 0.0f, ucolor ) );
@@ -174,9 +174,9 @@ void PhysicsDebugger::Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::
 		material.mRasterState.SetZWriteMask( true );
 		material.SetColorMode( ork::lev2::GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
 		ptarg->BindMaterial( & material );
-		ptarg->PushModColor( CVector4::White() );
+		ptarg->PushModColor( fvec4::White() );
 		ptarg->FXI()->InvalidateStateBlock();
-		ork::CMatrix4 mtx_dbg;
+		ork::fmtx4 mtx_dbg;
 		mtx_dbg.SetTranslation( cam_z*-1.3f );
 
 		ptarg->MTXI()->PushMMatrix(mtx_dbg);
@@ -187,7 +187,7 @@ void PhysicsDebugger::Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::
 	}
 }
 
-void PhysicsDebugger::AddLine(const ork::CVector3 &from, const ork::CVector3 &to, const ork::CVector3 &color)
+void PhysicsDebugger::AddLine(const ork::fvec3 &from, const ork::fvec3 &to, const ork::fvec3 &color)
 {
 	if(mClearOnBeginInternalTick)
 		mClearOnBeginInternalTickLines.push_back(PhysicsDebuggerLine(from, to, color));
@@ -197,9 +197,9 @@ void PhysicsDebugger::AddLine(const ork::CVector3 &from, const ork::CVector3 &to
 
 void PhysicsDebugger::drawLine(const btVector3& from,const btVector3& to,const btVector3& color)
 {
-	CVector3 vfrom = !from;
-	CVector3 vto = !to;
-	CVector3 vclr = !color * (1.0f/256.0f);
+	fvec3 vfrom = !from;
+	fvec3 vto = !to;
+	fvec3 vclr = !color * (1.0f/256.0f);
 
 	AddLine(vfrom, vto, vclr);
 }
@@ -209,10 +209,10 @@ void PhysicsDebugger::drawContactPoint(const btVector3& PointOnB,const btVector3
 	bool clearOnBeginInternalTick = mClearOnBeginInternalTick;
 	mClearOnBeginInternalTick = false;
 
-	CVector3 vfrom = !PointOnB;
-	CVector3 vdir = !normalOnB;
-	CVector3 vto = vfrom + vdir * 4.0F;//distance;
-	CVector3 vclr = !color;
+	fvec3 vfrom = !PointOnB;
+	fvec3 vdir = !normalOnB;
+	fvec3 vto = vfrom + vdir * 4.0F;//distance;
+	fvec3 vclr = !color;
 
 	AddLine(vfrom, vto, vclr);
 

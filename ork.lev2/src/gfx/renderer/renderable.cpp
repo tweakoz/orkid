@@ -30,7 +30,7 @@ IRenderable::IRenderable()
 IRenderableDag::IRenderableDag()
 	: IRenderable()
 	, mpObject(0)
-	, mModColor( CColor4::White() )
+	, mModColor( fcolor4::White() )
 	, mDrwDataA(nullptr)
 	, mDrwDataB(nullptr)
 {

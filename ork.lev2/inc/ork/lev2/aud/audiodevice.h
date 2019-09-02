@@ -566,7 +566,7 @@ protected:
 	U32							muFlags;
 	SubMixString				mSubMix;
 	int							mibasepan;
-	//CVector3					mEmitterPos;
+	//fvec3					mEmitterPos;
 	float						mfMaxDistance;
 	const ork::TransformNode*	mEmitterMatrix;
 	int							miSerialNumber;
@@ -629,10 +629,10 @@ public:
 		
 	virtual void ShutdownNow() {}
 
-	const ork::CVector3& GetListenerPos1() const { return mListenerPos1; }
-	const ork::CVector3& GetListenerForward1() const { return mListenerForward1; }
-	const ork::CVector3& GetListenerPos2() const { return mListenerPos2; }
-	const ork::CVector3& GetListenerForward2() const { return mListenerForward2; }
+	const ork::fvec3& GetListenerPos1() const { return mListenerPos1; }
+	const ork::fvec3& GetListenerForward1() const { return mListenerForward1; }
+	const ork::fvec3& GetListenerPos2() const { return mListenerPos2; }
+	const ork::fvec3& GetListenerForward2() const { return mListenerForward2; }
 
 	void SetSubMix( const SubMixString& submixname, float fvolume );
 
@@ -698,8 +698,8 @@ public:
 
 	//////////////////
 
-	void						SetListener1( const ork::CVector3& pos, const ork::CVector3& up, const ork::CVector3& forward );
-	void						SetListener2( const ork::CVector3& pos, const ork::CVector3& up, const ork::CVector3& forward );
+	void						SetListener1( const ork::fvec3& pos, const ork::fvec3& up, const ork::fvec3& forward );
+	void						SetListener2( const ork::fvec3& pos, const ork::fvec3& up, const ork::fvec3& forward );
 
 	//////////////////
 
@@ -718,12 +718,12 @@ protected:
 	LockedResource<ModPlaybackPool>	mModPlaybacks;
 	LockedResource<PlaybackPool>	mPlaybackHandles;
 
-	ork::CVector3					mListenerPos1;
-	ork::CVector3					mListenerUp1;
-	ork::CVector3					mListenerForward1;
-	ork::CVector3					mListenerPos2;
-	ork::CVector3					mListenerUp2;
-	ork::CVector3					mListenerForward2;
+	ork::fvec3					mListenerPos1;
+	ork::fvec3					mListenerUp1;
+	ork::fvec3					mListenerForward1;
+	ork::fvec3					mListenerPos2;
+	ork::fvec3					mListenerUp2;
+	ork::fvec3					mListenerForward2;
 
 	float							mfDistScale;
 	float							mfMinDist;

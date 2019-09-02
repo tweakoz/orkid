@@ -86,7 +86,7 @@ class GfxMaterialWiiBasic : public GfxMaterial //TRttiBase<GfxMaterialWiiBasic,G
     const std::string & GetBasicTechName( void ) const { return mBasicTechName; }
 
     float           mSpecularPower;
-    CVector4        mEmissiveColor;
+    fvec4        mEmissiveColor;
 
 protected:
 
@@ -136,8 +136,8 @@ protected:
 	///////////////////////////////////////////
 
 
-	CVector4		mColor;
-	CVector3		mScreenZDir;
+	fvec4		mColor;
+	fvec3		mScreenZDir;
 
 private:
 

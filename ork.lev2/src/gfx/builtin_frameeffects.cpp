@@ -181,7 +181,7 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 	////////////////////////////////////////////////////////////////
 	// Aux Buffers (External Buffer)
 
-	//mpAuxBuffer0->mClearColor = CVector4::Blue();
+	//mpAuxBuffer0->mClearColor = fvec4::Blue();
 
 	mFrameEffectBlurX.PostInit			( pTARG, "orkshader://framefx", "frameeffect_glow_blurx" );
 	mFrameEffectBlurY.PostInit			( pTARG, "orkshader://framefx", "frameeffect_glow_blury" );
@@ -360,11 +360,11 @@ bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 	F32 fVPW = (F32) fbi->GetVPW();
 	F32 fVPH = (F32) fbi->GetVPH();
 
-	CMatrix4 MatP = mxi->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f );
+	fmtx4 MatP = mxi->Ortho( 0.0f, fVPW, 0.0f, fVPH, 0.0f, 1.0f );
 
 	///////////////////////////////
 
-	CVector2 Dims;
+	fvec2 Dims;
 	Dims.SetX( float(pTarg->GetW()) );
 	Dims.SetY( float(pTarg->GetH()) );
 
@@ -443,7 +443,7 @@ void RenderMatOrthoQuad(	GfxTarget* pTARG,
 							GfxMaterial *pmat,
 							float fu0=0.0f, float fv0=0.0f,
 							float fu1=1.0f, float fv1=1.0f,
-							float *uv2=0, const CColor4& clr=CColor4::White() )
+							float *uv2=0, const fcolor4& clr=fcolor4::White() )
 {
 	static SRasterState DefaultRasterState;
 
@@ -463,8 +463,8 @@ void RenderMatOrthoQuad(	GfxTarget* pTARG,
 	auto gbi = pTARG->GBI();
 
 	MTXIO->PushPMatrix( MTXIO->Ortho(fx0,fx1,fy0,fy1,0.0f,1.0f) );
-	MTXIO->PushVMatrix( CMatrix4::Identity );
-	MTXIO->PushMMatrix( CMatrix4::Identity );
+	MTXIO->PushVMatrix( fmtx4::Identity );
+	MTXIO->PushMMatrix( fmtx4::Identity );
 	pTARG->RSI()->BindRasterState( DefaultRasterState, true );
 	fbi->PushViewport( ViewportRect );
 	fbi->PushScissor( ViewportRect );
@@ -585,7 +585,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 					// attenuate direct source
 					////////////////////////////////////////////////////
 
-					CVector4 clr1(0.0f,0.0f,0.0f,fatten);
+					fvec4 clr1(0.0f,0.0f,0.0f,fatten);
 					mUtilMaterial.SetTexture( mpRadialMap );
 					mUtilMaterial.SetColorMode( GfxMaterial3DSolid::EMODE_USER );
 					mUtilMaterial.mRasterState.SetBlending( EBLENDING_ALPHA );
@@ -602,9 +602,9 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 						{
 							static const float kMAXW = 1;// - 1.0f/rtgroupFBW->GetW();
 							static const float kMAXH = 1; // - 1.0f/10.0f;a
-							CMatrix4 mtx;
+							fmtx4 mtx;
 							//mtx.SetScale(2.0f,2.0f,2.0f);
-							CVector4 fboutclr(ffback,ffback,ffback,1.0f);
+							fvec4 fboutclr(ffback,ffback,ffback,1.0f);
 							pTARG->PushModColor( fboutclr );
 							mFBinMaterial.SetAuxMatrix( mtx );
 							mFBinMaterial.SetTexture( ptex );
@@ -679,7 +679,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 				{
 					SRect vprect(0,0,igW,igH);
 					SRect quadrect(0,igH,igW,0);
-					CVector4 clr( 1.0f, 1.0f, 1.0f, 1.0f );
+					fvec4 clr( 1.0f, 1.0f, 1.0f, 1.0f );
                     auto thisbuf = pTARG->FBI()->GetThisBuffer();
 					thisbuf->RenderMatOrthoQuad( vprect,
                                                  quadrect,
@@ -926,7 +926,7 @@ ShadowFrameTechnique::ShadowFrameTechnique(  GfxWindow* Parent, ui::Viewport* pv
 	, _pShadowBuffer( 0 )
 {
 	_pShadowBuffer = new TexBuffer( Parent, EBUFFMT_Z32, 1024, 1024 );
-	_pShadowBuffer->RefClearColor() = CVector4::Black();
+	_pShadowBuffer->RefClearColor() = fvec4::Black();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -943,17 +943,17 @@ void ShadowFrameTechnique::Render( FrameRenderer & frenderer )
 	/////////////////////////////////////////////////
 
 	/*
-	CMatrix4 lvmat = GetPropertyValueDynamic<CMatrix4>( ContextData.GetScene(), "LightLookAt" );
-	CMatrix4 lpmat = GetPropertyValueDynamic<CMatrix4>( ContextData.GetScene(), "LightProjection" );
+	fmtx4 lvmat = GetPropertyValueDynamic<fmtx4>( ContextData.GetScene(), "LightLookAt" );
+	fmtx4 lpmat = GetPropertyValueDynamic<fmtx4>( ContextData.GetScene(), "LightProjection" );
 
-	CVector3 lpos = GetPropertyValueDynamic<CVector3>( ContextData.GetScene(), "LightPos" );
-	CVector3 cpos = ContextData.GetCamera()->CamFocus;
+	fvec3 lpos = GetPropertyValueDynamic<fvec3>( ContextData.GetScene(), "LightPos" );
+	fvec3 cpos = ContextData.GetCamera()->CamFocus;
 
 	mpShadowBuffer->GetContext()->BeginFrame();
 	mpShadowBuffer->GetContext()->PushCamera( ContextData.GetCamera() );
 	mpShadowBuffer->GetContext()->MTXI()->PushPMatrix( lpmat );
 	mpShadowBuffer->GetContext()->MTXI()->PushVMatrix( lvmat );
-	mpShadowBuffer->GetContext()->MTXI()->PushMMatrix( CMatrix4::Identity );
+	mpShadowBuffer->GetContext()->MTXI()->PushMMatrix( fmtx4::Identity );
 	ContextData.GetCamera()->RenderUpdate();
 	{
 		ContextData.SetRenderingMode( RenderContextFrameData::ERENDMODE_SHADOWMAP );

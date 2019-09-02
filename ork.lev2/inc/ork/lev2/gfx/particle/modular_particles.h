@@ -122,10 +122,10 @@ class Constants : public Module
 	RttiDeclareConcrete( Constants, Module );
 
 	ork::orklut<ork::PoolString, ork::dataflow::outplug<float>* >		mFloatPlugs;
-	ork::orklut<ork::PoolString, ork::dataflow::outplug<CVector3>* >	mVect3Plugs;
+	ork::orklut<ork::PoolString, ork::dataflow::outplug<fvec3>* >	mVect3Plugs;
 
 	ork::orklut<ork::PoolString,float>									mFloatConsts;
-	ork::orklut<ork::PoolString,CVector3>								mVect3Consts;
+	ork::orklut<ork::PoolString,fvec3>								mVect3Consts;
 
 	bool																mbPlugsDirty;
 	/////////////////////////////////////////////////////
@@ -157,7 +157,7 @@ class ExtConnector : public Module
 
 	dataflow::dyn_external*	mpExternalConnector;
 	ork::orklut<ork::PoolString, ork::dataflow::outplug<float>* >		mFloatPlugs;
-	ork::orklut<ork::PoolString, ork::dataflow::outplug<CVector3>* >	mVect3Plugs;
+	ork::orklut<ork::PoolString, ork::dataflow::outplug<fvec3>* >	mVect3Plugs;
 
 	/////////////////////////////////////////////////////
 	// data currently only flows in from externals
@@ -242,10 +242,10 @@ class RingEmitter;
 class RingDirectedEmitter : public DirectedEmitter 
 {
 	RingEmitter& mEmitterModule;
-	void ComputePosDir( float fi, CVector3& pos, CVector3& dir ); 
+	void ComputePosDir( float fi, fvec3& pos, fvec3& dir ); 
 public:
 	RingDirectedEmitter(RingEmitter& EmitterModule) : mEmitterModule(EmitterModule) {}
-	CVector3 mUserDir;
+	fvec3 mUserDir;
 };
 
 class RingEmitter : public ParticleModule
@@ -312,7 +312,7 @@ class NozzleEmitter;
 class NozzleDirectedEmitter : public DirectedEmitter 
 {
 	NozzleEmitter& mEmitterModule;
-	void ComputePosDir( float fi, CVector3& pos, CVector3& dir ); 
+	void ComputePosDir( float fi, fvec3& pos, fvec3& dir ); 
 public:
 	NozzleDirectedEmitter(NozzleEmitter& EmitterModule) : mEmitterModule(EmitterModule) {}
 };
@@ -327,10 +327,10 @@ class NozzleEmitter : public ParticleModule
 	Pool<BasicParticle>							mDeadPool;
 	EmitterCtx									mEmitterCtx;
 	NozzleDirectedEmitter						mDirectedEmitter;
-	CVector3									mLastPosition;
-	CVector3									mLastDirection;
-	CVector3									mDirectionSample;
-	CVector3									mOffsetSample;
+	fvec3									mLastPosition;
+	fvec3									mLastDirection;
+	fvec3									mDirectionSample;
+	fvec3									mOffsetSample;
 
 	//////////////////////////////////////////////////
 	// inputs
@@ -375,7 +375,7 @@ class ReEmitter;
 class ReDirectedEmitter : public DirectedEmitter 
 {
 	ReEmitter& mEmitterModule;
-	void ComputePosDir( float fi, CVector3& pos, CVector3& dir ); 
+	void ComputePosDir( float fi, fvec3& pos, fvec3& dir ); 
 public:
 	ReDirectedEmitter(ReEmitter& EmitterModule) : mEmitterModule(EmitterModule) {}
 };
@@ -825,7 +825,7 @@ public:
 
 	RendererModule();
 
-	virtual void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) = 0;
+	virtual void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) = 0;
 
 	const Pool<BasicParticle>* GetPool();
 
@@ -927,14 +927,14 @@ class SpriteRenderer : public RendererModule
 	//////////////////////////////////////////////////
 
 	void DrawParticle( const ork::lev2::particle::BasicParticle* ptcl );
-	ork::CVector2 uvr0;
-	ork::CVector2 uvr1;
-	ork::CVector2 uvr2;
-	ork::CVector2 uvr3;
-	ork::CVector3 NX_NY;
-	ork::CVector3 PX_NY;
-	ork::CVector3 PX_PY;
-	ork::CVector3 NX_PY;
+	ork::fvec2 uvr0;
+	ork::fvec2 uvr1;
+	ork::fvec2 uvr2;
+	ork::fvec2 uvr3;
+	ork::fvec3 NX_NY;
+	ork::fvec3 PX_NY;
+	ork::fvec3 PX_PY;
+	ork::fvec3 NX_PY;
 	float mCurFGI;
 	int	  miTexCnt;
 	float mfTexs;
@@ -954,7 +954,7 @@ class SpriteRenderer : public RendererModule
 	int								miImageFrame;
 
 	void Compute( float dt ) final;
-	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
+	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
 	void DoLink() final;
 	bool DoNotify(const ork::event::Event *event) final;
 
@@ -989,19 +989,19 @@ class StreakRenderer : public RendererModule
 
 	//////////////////////////////////////////////////
 
-	ork::Gradient<ork::CVector4>	mGradient;
+	ork::Gradient<ork::fvec4>	mGradient;
 	ork::lev2::EBlending			meBlendMode;
 	GfxMaterial3DSolid*				mpMaterial;
 	ork::lev2::TextureAsset*		mTexture;
 	bool							mbSort;
-	ork::CVector4 					mAlphaMux;
+	ork::fvec4 					mAlphaMux;
 
 	ork::Object* GradientAccessor() { return & mGradient; }
 	void SetTextureAccessor( ork::rtti::ICastable* const & tex);
 	void GetTextureAccessor( ork::rtti::ICastable* & tex) const;
 
 	void Compute( float dt ) final {} 
-	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
+	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final; 
 
 	ork::lev2::Texture* GetTexture() const;
 
@@ -1038,15 +1038,15 @@ class ModelRenderer : public RendererModule
 	//////////////////////////////////////////////////
 
 	ork::lev2::XgmModelAsset*		mModel;
-	CVector3 						mUpVector;
-	CVector4 						mBaseRotAxisAngle;
-	CVector3 						mAnimRotAxis;
+	fvec3 						mUpVector;
+	fvec4 						mBaseRotAxisAngle;
+	fvec3 						mAnimRotAxis;
 
 	void SetModelAccessor( ork::rtti::ICastable* const & tex);
 	void GetModelAccessor( ork::rtti::ICastable* & tex) const;
 
 	void Compute( float dt ) final {}  
-	void Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final;
+	void Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ) final;
 
 	ork::lev2::XgmModel* GetModel() const;
 

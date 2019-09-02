@@ -114,7 +114,7 @@ bool CCamera::CheckMotion() {
   float CurVelMag = MeasuredCameraVelocity.Mag();
   float LastVelMag = LastMeasuredCameraVelocity.Mag();
 
-  CVector2 VP;
+  fvec2 VP;
   if (pVP) {
     VP.SetX((float)pVP->GetW());
     VP.SetY((float)pVP->GetH());
@@ -183,7 +183,7 @@ CManipHandler::CManipHandler() // const CCamera& pcam)
 //	, mParentCamera(pcam)
 {}
 
-void CManipHandler::Init(const ork::CVector2& posubp, const CMatrix4& RCurIMVPMat, const fquat& RCurQuat) {
+void CManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const fquat& RCurQuat) {
   IMVPMat = RCurIMVPMat;
   Quat = RCurQuat;
 
@@ -204,13 +204,13 @@ void CManipHandler::Init(const ork::CVector2& posubp, const CMatrix4& RCurIMVPMa
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CManipHandler::IntersectXZ(const ork::CVector2& posubp, fvec3& Intersection, float& Angle) {
+bool CManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
   YNormal = fmtx4::Identity.GetYNormal();
   XZPlane.CalcFromNormalAndOrigin(YNormal, Origin);
   float isect_dist;
-  Ray3 ray;
+  fray3 ray;
   ray.mOrigin = RayNear;
   ray.mDirection = RayZNormal;
   DoesIntersectXZ = XZPlane.Intersect(ray, isect_dist, Intersection);
@@ -225,14 +225,14 @@ bool CManipHandler::IntersectXZ(const ork::CVector2& posubp, fvec3& Intersection
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CManipHandler::IntersectYZ(const ork::CVector2& posubp, fvec3& Intersection, float& Angle) {
+bool CManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  XNormal = CMatrix4::Identity.GetXNormal();
+  XNormal = fmtx4::Identity.GetXNormal();
   YZPlane.CalcFromNormalAndOrigin(XNormal, Origin);
 
   float isect_dist;
-  Ray3 ray;
+  fray3 ray;
   ray.mOrigin = RayNear;
   ray.mDirection = RayZNormal;
   DoesIntersectYZ = YZPlane.Intersect(ray, isect_dist, Intersection);
@@ -247,13 +247,13 @@ bool CManipHandler::IntersectYZ(const ork::CVector2& posubp, fvec3& Intersection
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CManipHandler::IntersectXY(const ork::CVector2& posubp, fvec3& Intersection, float& Angle) {
+bool CManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
   fvec3 RayZNormal;
   GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  ZNormal = CMatrix4::Identity.GetZNormal();
+  ZNormal = fmtx4::Identity.GetZNormal();
   XYPlane.CalcFromNormalAndOrigin(ZNormal, Origin);
   float isect_dist;
-  Ray3 ray;
+  fray3 ray;
   ray.mOrigin = RayNear;
   ray.mDirection = RayZNormal;
   DoesIntersectXY = XYPlane.Intersect(ray, isect_dist, Intersection);
@@ -268,7 +268,7 @@ bool CManipHandler::IntersectXY(const ork::CVector2& posubp, fvec3& Intersection
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CManipHandler::Intersect(const ork::CVector2& posubp) {
+void CManipHandler::Intersect(const ork::fvec2& posubp) {
   fvec3 Intersection;
   float Angle;
   IntersectXZ(posubp, Intersection, Angle);
@@ -284,13 +284,13 @@ void CManipHandler::Intersect(const ork::CVector2& posubp) {
 fvec4 TRayN;
 fvec4 TRayF;
 
-void CManipHandler::GenerateIntersectionRays(const ork::CVector2& posubp, fvec3& RayZNormal, fvec3& RayNear) {
+void CManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& RayZNormal, fvec3& RayNear) {
   fvec3 RayFar;
   ///////////////////////////////////////////
   fvec3 vWinN(posubp.GetX(), posubp.GetY(), 0.0f);
   fvec3 vWinF(posubp.GetX(), posubp.GetY(), 1.0f);
-  CMatrix4::UnProject(IMVPMat, vWinN, RayNear);
-  CMatrix4::UnProject(IMVPMat, vWinF, RayFar);
+  fmtx4::UnProject(IMVPMat, vWinN, RayNear);
+  fmtx4::UnProject(IMVPMat, vWinF, RayFar);
   TRayN = RayNear;
   TRayF = RayFar;
   ///////////////////////////////////////////

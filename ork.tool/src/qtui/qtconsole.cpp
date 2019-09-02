@@ -277,7 +277,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
 	int IH = pTARG->GetH();
 
 	pTARG->FBI()->SetAutoClear(true);
-	pTARG->FBI()->SetClearColor(CColor4(1.0f,0.0f,0.1f,0.0f));
+	pTARG->FBI()->SetClearColor(fcolor4(1.0f,0.0f,0.1f,0.0f));
 	BeginFrame(pTARG);
 	SRect VPRect( 0, 0, IW, IH );
 	pTARG->FBI()->PushViewport( VPRect );
@@ -298,15 +298,15 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
                             float x1, float y1
                         ){
 
-            CVector2 uv0(0.0f,0.0f);
-            CVector2 uv1(1.0f,0.0f);
-            CVector2 uv2(1.0f,1.0f);
-            CVector2 uv3(0.0f,1.0f);
+            fvec2 uv0(0.0f,0.0f);
+            fvec2 uv1(1.0f,0.0f);
+            fvec2 uv2(1.0f,1.0f);
+            fvec2 uv3(0.0f,1.0f);
 
-            auto v0 = lev2::SVtxV12C4T16( CVector3(x0,y0,0.0f), uv0, ucolor1 );
-    		auto v1 = lev2::SVtxV12C4T16( CVector3(x1,y0,0.0f), uv1, ucolor1 );
-    		auto v2 = lev2::SVtxV12C4T16( CVector3(x1,y1,0.0f), uv2, ucolor2 );
-    		auto v3 = lev2::SVtxV12C4T16( CVector3(x0,y1,0.0f), uv3, ucolor2 );
+            auto v0 = lev2::SVtxV12C4T16( fvec3(x0,y0,0.0f), uv0, ucolor1 );
+    		auto v1 = lev2::SVtxV12C4T16( fvec3(x1,y0,0.0f), uv1, ucolor1 );
+    		auto v2 = lev2::SVtxV12C4T16( fvec3(x1,y1,0.0f), uv2, ucolor2 );
+    		auto v3 = lev2::SVtxV12C4T16( fvec3(x0,y1,0.0f), uv3, ucolor2 );
 
     		lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
     		vw.Lock( pTARG, &vbuf, 6 );
@@ -389,7 +389,7 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
                  cursorx+10,fy+12);
 		/////////////////////////
 		static int ibase = 0;
-		pTARG->PushModColor( ork::CColor4::Green() );
+		pTARG->PushModColor( ork::fcolor4::Green() );
 		ork::lev2::CFontMan::PushFont("i16");
 		ork::lev2::CFontMan::BeginTextBlock( pTARG, inumchars+inumactuallines );
 		{

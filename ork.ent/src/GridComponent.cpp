@@ -101,7 +101,7 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
             CAMDAT->projectDepthRay(topr,ray_topr);
             CAMDAT->projectDepthRay(botr,ray_botr);
             CAMDAT->projectDepthRay(botl,ray_botl);
-            CPlane groundplane(0,1,0,0);
+            fplane3 groundplane(0,1,0,0);
 
             float dtl, dtr, dbl, dbr;
             bool does_topl_isect = groundplane.Intersect(ray_topl,dtl);
@@ -145,15 +145,15 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 
                 vw.UnLock(targ);
 
-                const CMatrix4& PMTX = CCC.mPMatrix;
-                const CMatrix4& VMTX = CCC.mVMatrix;
+                const fmtx4& PMTX = CCC.mPMatrix;
+                const fmtx4& VMTX = CCC.mVMatrix;
 
                 auto mtxi = targ->MTXI();
                 auto gbi = targ->GBI();
                 mtxi->PushMMatrix(fmtx4());
                 mtxi->PushVMatrix(VMTX);
                 mtxi->PushPMatrix(PMTX);
-                targ->PushModColor( CColor4::Green() );
+                targ->PushModColor( fcolor4::Green() );
                 targ->PushMaterial( mtl );
                     gbi->DrawPrimitive( vw, ork::lev2::EPRIM_TRIANGLES, 6 );
                 targ->PopModColor( );

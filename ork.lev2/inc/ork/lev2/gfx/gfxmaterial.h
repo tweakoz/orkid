@@ -63,14 +63,14 @@ class MaterialInstItemMatrix : public MaterialInstItem
 {
 	RttiDeclareAbstract(MaterialInstItemMatrix,MaterialInstItem);
 
-	CMatrix4			mMatrix;
+	fmtx4			mMatrix;
 
 public:
 
 	MaterialInstItemMatrix() {}
 
-	void				SetMatrix( const CMatrix4& pmat ) { mMatrix=pmat; }
-	const CMatrix4&		GetMatrix() const { return mMatrix; }
+	void				SetMatrix( const fmtx4& pmat ) { mMatrix=pmat; }
+	const fmtx4&		GetMatrix() const { return mMatrix; }
 
 private:
     void Set() override {}
@@ -84,17 +84,17 @@ class MaterialInstItemMatrixBlock : public MaterialInstItem
 	RttiDeclareAbstract(MaterialInstItemMatrixBlock,MaterialInstItem);
 
 	size_t				miNumMatrices;
-	const CMatrix4*		mpMatrices;
+	const fmtx4*		mpMatrices;
 
 public:
 
 	MaterialInstItemMatrixBlock() : miNumMatrices(0), mpMatrices(0) {}
 
 	void				SetNumMatrices(size_t i) { miNumMatrices=i; }
-	void				SetMatrixBlock( const CMatrix4* pmat ) { mpMatrices=pmat; }
+	void				SetMatrixBlock( const fmtx4* pmat ) { mpMatrices=pmat; }
 
 	size_t				GetNumMatrices() const { return miNumMatrices; }
-	const CMatrix4*		GetMatrices() const { return mpMatrices; }
+	const fmtx4*		GetMatrices() const { return mpMatrices; }
 
 private:
     

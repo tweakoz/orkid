@@ -76,11 +76,11 @@ void Renderer::RenderFrustum( const FrustumRenderable & FrusRen ) const
 
 	bool bpickbuffer = ( mpTarget->FBI()->IsOffscreenTarget() );
 
-	CColor4 ObjColor;
+	fcolor4 ObjColor;
 	ObjColor.SetRGBAU32( (U32) mpCurrentQueueObject );
 
-	CVector3 vScreenUp, vScreenRight;
-	CVector2 vpdims(float(mpTarget->GetW()),float(mpTarget->GetH()));
+	fvec3 vScreenUp, vScreenRight;
+	fvec2 vpdims(float(mpTarget->GetW()),float(mpTarget->GetH()));
 
 	bool objspace = FrusRen.IsObjSpace();
 
@@ -93,14 +93,14 @@ void Renderer::RenderFrustum( const FrustumRenderable & FrusRen ) const
 		StdMaterial.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 		StdMaterial.mRasterState.SetZWriteMask( false );
 
-		CColor4 AlphaYellow( 1.0f, 1.0f, 0.0f, 0.3f );
-		if( false == objspace ) mpTarget->MTXI()->PushMMatrix( CMatrix4::Identity );
+		fcolor4 AlphaYellow( 1.0f, 1.0f, 0.0f, 0.3f );
+		if( false == objspace ) mpTarget->MTXI()->PushMMatrix( fmtx4::Identity );
 		{
-			mpTarget->PushModColor( CVector4( FrusRen.GetColor().xyz(), 1.0f ) );
+			mpTarget->PushModColor( fvec4( FrusRen.GetColor().xyz(), 1.0f ) );
 			mpTarget->BindMaterial( & StdMaterial );
 			for( int i=0; i<4; i++ )
 			{
-				CVector4 points[2];
+				fvec4 points[2];
 				points[0] = FrusRen.GetFrustum()->mNearCorners[i];
 				points[1] = FrusRen.GetFrustum()->mFarCorners[i];
 				//mpTarget->DrawLine( vFrom, vTo );
@@ -110,22 +110,22 @@ void Renderer::RenderFrustum( const FrustumRenderable & FrusRen ) const
 			{
 				int i2 = (i+1)%4;
 
-				const CVector4 & vFromN		= FrusRen.GetFrustum()->mNearCorners[i];
-				const CVector4 & vToN		= FrusRen.GetFrustum()->mNearCorners[i2];
-				const CVector4 & vFromF		= FrusRen.GetFrustum()->mFarCorners[i];
-				const CVector4 & vToF		= FrusRen.GetFrustum()->mFarCorners[i2];
+				const fvec4 & vFromN		= FrusRen.GetFrustum()->mNearCorners[i];
+				const fvec4 & vToN		= FrusRen.GetFrustum()->mNearCorners[i2];
+				const fvec4 & vFromF		= FrusRen.GetFrustum()->mFarCorners[i];
+				const fvec4 & vToF		= FrusRen.GetFrustum()->mFarCorners[i2];
 				mpTarget->IMI()->DrawLine( vFromN, vToN );
 				mpTarget->IMI()->DrawLine( vFromF, vToF );
 				mpTarget->IMI()->QueFlush();
 			}
 			mpTarget->PopModColor();
-			CColor4 AlphaYellow2( 1.0f, 1.0f, 0.0f, 0.1f );
-			mpTarget->PushModColor( CVector4( AlphaYellow2.xyz(), 0.3f ) );
-			//mpTarget->PushModColor( CVector4( FrusRen.GetColor().xyz(), 0.3f ) );
+			fcolor4 AlphaYellow2( 1.0f, 1.0f, 0.0f, 0.1f );
+			mpTarget->PushModColor( fvec4( AlphaYellow2.xyz(), 0.3f ) );
+			//mpTarget->PushModColor( fvec4( FrusRen.GetColor().xyz(), 0.3f ) );
 			{
-				const CVector3 * vn = FrusRen.GetFrustum()->mNearCorners;
-				const CVector3 * vf = FrusRen.GetFrustum()->mFarCorners;
-				CVector4 VQuad[36];
+				const fvec3 * vn = FrusRen.GetFrustum()->mNearCorners;
+				const fvec3 * vf = FrusRen.GetFrustum()->mFarCorners;
+				fvec4 VQuad[36];
 
 				/////////////////////////////////////////////////////////////////////////
 				// NEAR
@@ -174,16 +174,16 @@ void Renderer::RenderSphere( const SphereRenderable & SphereRen ) const
 	/*
 	mpTarget->IMI()->QueFlush();
 
-	const CVector3& pos = SphereRen.GetPosition();
+	const fvec3& pos = SphereRen.GetPosition();
 	float radius = SphereRen.GetRadius();
 
 	bool bpickbuffer = ( mpTarget->FBI()->IsOffscreenTarget() );
 
-	CColor4 ObjColor;
+	fcolor4 ObjColor;
 	ObjColor.SetRGBAU32( (U32) mpCurrentQueueObject );
 
-	CVector3 vScreenUp, vScreenRight;
-	CVector2 vpdims(float(mpTarget->GetW()),float(mpTarget->GetH()));
+	fvec3 vScreenUp, vScreenRight;
+	fvec2 vpdims(float(mpTarget->GetW()),float(mpTarget->GetH()));
 
 	if( false == mpTarget->FBI()->IsOffscreenTarget() )
 	{
@@ -194,21 +194,21 @@ void Renderer::RenderSphere( const SphereRenderable & SphereRen ) const
 		StdMaterial.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 		StdMaterial.mRasterState.SetZWriteMask( false );
 
-		//CColor4 AlphaYellow( 1.0f, 1.0f, 0.0f, 1.0f );
+		//fcolor4 AlphaYellow( 1.0f, 1.0f, 0.0f, 1.0f );
 
-		CMatrix4 M;
+		fmtx4 M;
 		M.SetScale( radius, radius, radius );
 		M.SetTranslation( pos );
 
 		mpTarget->MTXI()->PushMMatrix( M );
-		mpTarget->PushModColor( CVector4( SphereRen.GetColor().xyz(), 0.3f ) );
+		mpTarget->PushModColor( fvec4( SphereRen.GetColor().xyz(), 0.3f ) );
 		mpTarget->BindMaterial( & StdMaterial );
 		{
 			CGfxPrimitives::GetRef().RenderTriCircle( mpTarget );
 		}
 		mpTarget->PopModColor();
 		mpTarget->MTXI()->PopMMatrix();
-//		CColor4 AlphaYellow2( 1.0f, 1.0f, 0.0f, 0.1f );
+//		fcolor4 AlphaYellow2( 1.0f, 1.0f, 0.0f, 0.1f );
 //		mpTarget->PushModColor( AlphaYellow2 );
 //		{
 //

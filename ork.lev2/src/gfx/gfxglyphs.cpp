@@ -15,9 +15,9 @@ using ork::lev2::Texture;
 
 namespace ork {
 
-/*void PlaceGlyph( ork::lev2::Renderer *pRenderer, ork::lev2::CGlyphsRenderable& renderable, const CFontGlyph &glyph, float scaleFactor, CVector2 pos, float z, U32 color, float invW, float invH)
+/*void PlaceGlyph( ork::lev2::Renderer *pRenderer, ork::lev2::CGlyphsRenderable& renderable, const CFontGlyph &glyph, float scaleFactor, fvec2 pos, float z, U32 color, float invW, float invH)
 {
-	typedef CVector4 CRect; // (LEFT,TOP,RIGHT,BOTTOM)
+	typedef fvec4 CRect; // (LEFT,TOP,RIGHT,BOTTOM)
 	static float eggtestr = 0.5f;
 	static float eggtestl = 0.5f;
 	static float eggtestt = 0.5f;
@@ -35,10 +35,10 @@ namespace ork {
 	float top = (glyphTexRect[1] + eggtestt ) * invH;
 	float bottom = (glyphTexRect[1] + glyphTexRect[3] + eggtestb ) * invH;
 
-	CVector2 uv1(left, top);
-	CVector2 uv2(left, bottom);
-	CVector2 uv3(right, bottom);
-	CVector2 uv4(right, top);
+	fvec2 uv1(left, top);
+	fvec2 uv2(left, bottom);
+	fvec2 uv3(right, bottom);
+	fvec2 uv4(right, top);
 
 
 	float posX1((pos[0])*invScreenWidth),  posX2((pos[0] + (scaleFactor * glyphTexRect[2]))*invScreenWidth);
@@ -46,10 +46,10 @@ namespace ork {
 
 	// same order
 
-	CVector3 pos1(posX1, posY1, z);
-	CVector3 pos2(posX1, posY2, z);
-	CVector3 pos3(posX2, posY2, z);
-	CVector3 pos4(posX2, posY1, z);
+	fvec3 pos1(posX1, posY1, z);
+	fvec3 pos2(posX1, posY2, z);
+	fvec3 pos3(posX2, posY2, z);
+	fvec3 pos4(posX2, posY1, z);
 
 	CColor3 col;
 	col.SetARGBU32(color);
