@@ -70,6 +70,7 @@ public:
 
 	////////////////////////////////////////////
 
+  void SetWRotMatrix( const CMatrix3& wrot ) { mRotMatrix=wrot; }
 	void SetAuxMatrix( const CMatrix4& mtx ) { mMatAux=mtx; }
 
     bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
@@ -103,6 +104,7 @@ public:
 	std::string		mUserFxName;
 	std::string		mUserTekName;
 	CMatrix4		mMatAux;
+  CMatrix3 mRotMatrix;
 	bool 			mUnManaged;
 	bool			mAllowCompileFailure;
 
@@ -122,6 +124,7 @@ public:
 	const FxShaderParam*		hMatMV;
 	const FxShaderParam*		hMatMVP;
 	const FxShaderParam*		hMatAux;
+  const FxShaderParam*		hMatRot;
 	const FxShaderParam*		hVolumeMap;
 	const FxShaderParam*		hColorMap;
 	const FxShaderParam*		hColorMap2;

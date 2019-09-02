@@ -117,10 +117,12 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
     hTekTexModColor = pTarg->FXI()->GetTechnique(hModFX, "texmodcolor");
     hTekTexTexModColor = pTarg->FXI()->GetTechnique(hModFX, "textexmodcolor");
     hTekTexVertexColor = pTarg->FXI()->GetTechnique(hModFX, "texvtxcolor");
-    hTekPick = pTarg->FXI()->GetTechnique(hModFX, "tek_pick");
   }
 
+  hTekPick = pTarg->FXI()->GetTechnique(hModFX, "tek_pick");
+
   hMatAux = pTarg->FXI()->GetParameterH(hModFX, "MatAux");
+  hMatRot = pTarg->FXI()->GetParameterH(hModFX, "MatRotW");
 
   hMatMVP = pTarg->FXI()->GetParameterH(hModFX, "MatMVP");
   hMatMV = pTarg->FXI()->GetParameterH(hModFX, "MatMV");
@@ -159,8 +161,9 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 
 int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& MatCtx) {
 
-  if (pTarg->FBI()->IsPickState() and _enablePick and hTekPick  )
-      pTarg->FXI()->BindTechnique(hModFX, hTekPick);
+  if (pTarg->FBI()->IsPickState() and _enablePick and hTekPick){
+    pTarg->FXI()->BindTechnique(hModFX, hTekPick);
+  }
   else
     switch (meColorMode) {
       case EMODE_VERTEX_COLOR:
@@ -220,79 +223,85 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   if (hModFX->GetFailedCompile())
     return false;
 
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatM, pTarg->MTXI()->RefMMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatMV, pTarg->MTXI()->RefMVMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatP, pTarg->MTXI()->RefPMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatMVP, pTarg->MTXI()->RefMVPMatrix());
+  auto MTXI = pTarg->MTXI();
+  auto FXI = pTarg->FXI();
 
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatAux, mMatAux);
+  FXI->BindParamMatrix(hModFX, hMatM, MTXI->RefMMatrix());
+  FXI->BindParamMatrix(hModFX, hMatMV, MTXI->RefMVMatrix());
+  FXI->BindParamMatrix(hModFX, hMatP, MTXI->RefPMatrix());
+  FXI->BindParamMatrix(hModFX, hMatMVP, MTXI->RefMVPMatrix());
+
+  FXI->BindParamMatrix(hModFX, hMatAux, mMatAux);
 
   if (hMatV) {
-    pTarg->FXI()->BindParamMatrix(hModFX, hMatV, pTarg->MTXI()->RefVMatrix());
+    FXI->BindParamMatrix(hModFX, hMatV, MTXI->RefVMatrix());
   }
 
+  if (hMatRot)
+    FXI->BindParamMatrix(hModFX, hMatRot, MTXI->RefR3Matrix());
+
   if (pTarg->FBI()->IsPickState()) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamModColor, pTarg->RefModColor());
+    FXI->BindParamVect4(hModFX, hParamModColor, pTarg->RefModColor());
   } else {
     if (meColorMode == EMODE_INTERNAL_COLOR) {
-      pTarg->FXI()->BindParamVect4(hModFX, hParamModColor, Color);
+      FXI->BindParamVect4(hModFX, hParamModColor, Color);
     } else {
-      pTarg->FXI()->BindParamVect4(hModFX, hParamModColor, pTarg->RefModColor());
+      FXI->BindParamVect4(hModFX, hParamModColor, pTarg->RefModColor());
     }
   }
 
   if (hParamNoiseAmp) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamNoiseAmp, mNoiseAmp);
+    FXI->BindParamVect4(hModFX, hParamNoiseAmp, mNoiseAmp);
   }
   if (hParamNoiseFreq) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamNoiseFreq, mNoiseFreq);
+    FXI->BindParamVect4(hModFX, hParamNoiseFreq, mNoiseFreq);
   }
   if (hParamNoiseShift) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamNoiseShift, mNoiseShift);
+    FXI->BindParamVect4(hModFX, hParamNoiseShift, mNoiseShift);
   }
 
   if (hParamTime) {
     float reltime = std::fmod(CSystem::GetRef().GetLoResRelTime(), 300.0f);
     // printf( "reltime<%f>\n", reltime );
-    pTarg->FXI()->BindParamFloat(hModFX, hParamTime, reltime);
+    FXI->BindParamFloat(hModFX, hParamTime, reltime);
   }
 
   if (hParamUser0) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamUser0, mUser0);
+    FXI->BindParamVect4(hModFX, hParamUser0, mUser0);
   }
   if (hParamUser1) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamUser1, mUser1);
+    FXI->BindParamVect4(hModFX, hParamUser1, mUser1);
   }
   if (hParamUser2) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamUser2, mUser2);
+    FXI->BindParamVect4(hModFX, hParamUser2, mUser2);
   }
   if (hParamUser3) {
-    pTarg->FXI()->BindParamVect4(hModFX, hParamUser3, mUser3);
+    FXI->BindParamVect4(hModFX, hParamUser3, mUser3);
   }
 
   if (mVolumeTexture && hVolumeMap) {
-    pTarg->FXI()->BindParamCTex(hModFX, hVolumeMap, mVolumeTexture);
+    FXI->BindParamCTex(hModFX, hVolumeMap, mVolumeTexture);
   }
 
   if (mCurrentTexture && hColorMap) {
     if (IsDebug())
       printf("Binding texmap<%p> to param<%p>\n", mCurrentTexture, hColorMap);
-    pTarg->FXI()->BindParamCTex(hModFX, hColorMap, mCurrentTexture);
+    FXI->BindParamCTex(hModFX, hColorMap, mCurrentTexture);
   }
   if (mCurrentTexture2 && hColorMap2) {
     // printf( "Binding texmap2<%p> to param<%p>\n", mCurrentTexture2, hColorMap2 );
-    pTarg->FXI()->BindParamCTex(hModFX, hColorMap2, mCurrentTexture2);
+    FXI->BindParamCTex(hModFX, hColorMap2, mCurrentTexture2);
   }
 
   if (mCurrentTexture3 && hColorMap3) {
-    pTarg->FXI()->BindParamCTex(hModFX, hColorMap3, mCurrentTexture3);
+    FXI->BindParamCTex(hModFX, hColorMap3, mCurrentTexture3);
   }
 
   if (mCurrentTexture4 && hColorMap4) {
-    pTarg->FXI()->BindParamCTex(hModFX, hColorMap4, mCurrentTexture4);
+    FXI->BindParamCTex(hModFX, hColorMap4, mCurrentTexture4);
   }
 
-  pTarg->FXI()->CommitParams();
+  FXI->CommitParams();
   return true;
 }
 

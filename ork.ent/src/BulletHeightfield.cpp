@@ -152,7 +152,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   mTerrainMtl =
       new lev2::GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain1");
   mTerrainMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
-
+  mTerrainMtl->_enablePick = true;
 
   orkprintf("ComputingGeometry\n");
 
