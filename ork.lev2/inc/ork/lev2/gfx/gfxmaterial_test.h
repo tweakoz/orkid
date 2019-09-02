@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 
@@ -18,12 +18,12 @@ class GfxMaterial3DSolid : public GfxMaterial
 {
 	RttiDeclareConcrete(GfxMaterial3DSolid,GfxMaterial);
 public:
-	
+
 	static void ClassInit();
 	GfxMaterial3DSolid(GfxTarget* pTARG=0);
 	GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure=false,bool unmanaged=false );
     ~GfxMaterial3DSolid() final {};
-	
+
 	void SetVolumeTexture( Texture* ptex ) { mVolumeTexture=ptex; }
 	void SetTexture( Texture* ptex ) { mCurrentTexture=ptex; }
 	void SetTexture2( Texture* ptex ) { mCurrentTexture2=ptex; }
@@ -78,11 +78,13 @@ public:
     void EndBlock( GfxTarget* pTARG ) final;
     void Init( GfxTarget *pTarg ) final;
 
+    bool _enablePick = false;
+
 	protected:
 
     void Update( void ) final {}
     void SetMaterialProperty( const char* prop, const char* val ) final;
-		
+
 	EColorMode		meColorMode;
 	CVector4		mNoiseAmp;
 	CVector4		mNoiseFreq;
@@ -112,6 +114,7 @@ public:
 	const FxShaderTechnique*	hTekVertexColor;
 	const FxShaderTechnique*	hTekVertexModColor;
 	const FxShaderTechnique*	hTekModColor;
+  const FxShaderTechnique*	hTekPick;
 
 	const FxShaderParam*		hMatM;
 	const FxShaderParam*		hMatV;

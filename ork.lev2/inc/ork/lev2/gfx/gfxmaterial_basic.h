@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 
@@ -77,18 +77,18 @@ class GfxMaterialWiiBasic : public GfxMaterial //TRttiBase<GfxMaterialWiiBasic,G
 	int  BeginBlock( GfxTarget* pTARG, const RenderContextInstData &MatCtx ) final;
 	void EndBlock( GfxTarget* pTARG ) final;
 	void Update( void ) final {}
-	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;						
-	void EndPass( GfxTarget* pTARG ) final;										
-	void BindMaterialInstItem( MaterialInstItem* pitem ) const final;				
-	void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;			
-	void UpdateMVPMatrix( GfxTarget *pTARG ) final ;								
+	bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
+	void EndPass( GfxTarget* pTARG ) final;
+	void BindMaterialInstItem( MaterialInstItem* pitem ) const final;
+	void UnBindMaterialInstItem( MaterialInstItem* pitem ) const final;
+	void UpdateMVPMatrix( GfxTarget *pTARG ) final ;
 
     const std::string & GetBasicTechName( void ) const { return mBasicTechName; }
 
     float           mSpecularPower;
     CVector4        mEmissiveColor;
-							
-protected:																		
+
+protected:
 
 	const std::string	mBasicTechName;
 
@@ -150,4 +150,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-

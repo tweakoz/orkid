@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -223,16 +223,16 @@ bool PerfMarkerPop( PerfItem2& outmkr )
 
 	}
 	return rval;
-}	
+}
 
 
-#if defined(_DARWIN) || defined(IX)//( _BUILD_LEVEL <= _CONSOLE_BUILD_LEVEL ) || defined( _LINUX ) || defined( _OSX )
+#if defined(_DARWIN) || defined(IX)
 
 void msleep( int millisec )
 {
 	/*ork::mutex mtx("msleep");
 	mtx.Lock();
-	
+
 	__block ork::mutex* pMTX = & mtx;
 	auto handler_blk = ^ void ()
 	{
@@ -240,7 +240,7 @@ void msleep( int millisec )
 	};
 
 	dispatch_time_t at = dispatch_time(DISPATCH_TIME_NOW, millisec*1000*1000 ); // in nanos
-	dispatch_after( at, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH,0), handler_blk );		
+	dispatch_after( at, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH,0), handler_blk );
 
 	mtx.Lock();
 	mtx.UnLock();*/
@@ -318,7 +318,7 @@ S64 CSystem::GetClockCycle(void)
 	S64 output;
     U32 high_end, low_end;
 	//__asm__ __volatile__(
-	//	"\n nop \n" 
+	//	"\n nop \n"
 	//	:"=a" (low_end), "=d" (high_end)
 	//	:
 	//);
@@ -378,12 +378,12 @@ f32	CSystem::GetLoResTime( void )
 #elif defined( ORK_WIN32 ) && defined( _MSVC )
 ///////////////////////////////////////////////
 static volatile int inumtimercallbacks = 0;
-static void CALLBACK TimerCallback(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DWORD dw1, DWORD dw2 ) 
-{ 
+static void CALLBACK TimerCallback(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DWORD dw1, DWORD dw2 )
+{
 	inumtimercallbacks++;
-} 
+}
 f32	CSystem::GetLoResTime( void )
-{   
+{
 #if defined (_XBOX)
 	//static int basetime = GetTickCount();
 	//inumtimercallbacks = (GetTickCount()-basetime);
@@ -398,10 +398,10 @@ f32	CSystem::GetLoResTime( void )
 		fTicksPerMicrosecond = (DOUBLE)TicksPerSecond.QuadPart * 0.000001;
 		binit = false;
 	}
-    
+
 	LARGE_INTEGER Current;
     QueryPerformanceCounter( &Current );
-	static LARGE_INTEGER TimeBase = Current;    
+	static LARGE_INTEGER TimeBase = Current;
     __int64 reltime = Current.QuadPart-TimeBase.QuadPart;
 	float ftimsecs = float((double(reltime)/fTicksPerMicrosecond)/1000000.0);
 	//orkprintf( "time %f\n", ftimsecs );
@@ -412,15 +412,15 @@ f32	CSystem::GetLoResTime( void )
 
 	if( 0 == wTimerRes )
 	{
-		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR) 
+		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR)
 		{
 			OrkAssert(false);
 			// Error; application can't continue.
 		}
 
 		static const UINT TARGET_RESOLUTION = 1; // 1-millisecond target resolution
-		wTimerRes = std::min(std::max(tc.wPeriodMin, TARGET_RESOLUTION), tc.wPeriodMax);	
-		MMRESULT result = timeBeginPeriod(wTimerRes); 
+		wTimerRes = std::min(std::max(tc.wPeriodMin, TARGET_RESOLUTION), tc.wPeriodMax);
+		MMRESULT result = timeBeginPeriod(wTimerRes);
 
 		UINT timerid = timeSetEvent(
 			1,                    // delay
@@ -445,10 +445,10 @@ f32	CSystem::GetLoResTime( void )
 		fTicksPerMicrosecond = (DOUBLE)TicksPerSecond.QuadPart * 0.000001;
 		binit = false;
 	}
-    
+
 	LARGE_INTEGER Current;
     QueryPerformanceCounter( &Current );
-	static LARGE_INTEGER TimeBase = Current;    
+	static LARGE_INTEGER TimeBase = Current;
     __int64 reltime = Current.QuadPart-TimeBase.QuadPart;
 	float ftimsecs = float((double(reltime)/fTicksPerMicrosecond)/1000000.0);
 	//orkprintf( "time %f\n", ftimsecs );
@@ -482,7 +482,7 @@ f32	CSystem::GetLoResRelTime( void )
 ///////////////////////////////////////////////////////////////////////////////
 
 f64	CSystem::GetHiResRelTime( void )
-{   
+{
     static f64 fBaseTime = GetHiResTime();
     f64 fCurTime = GetHiResTime();
     f64 fRelTime = fCurTime-fBaseTime;
@@ -491,12 +491,12 @@ f64	CSystem::GetHiResRelTime( void )
 }
 
 f64 CSystem::GetHiResTime( void )
-{   
+{
     ///////////////////////////////////////////////
     #if defined( _WIN32 ) && defined( _MSVC ) && ! defined(_XBOX)
     ///////////////////////////////////////////////
 	static LARGE_INTEGER llfreq;
-    
+
 	DWORD_PTR oldmask=SetThreadAffinityMask(GetCurrentThread(), 1);
 
 	bool bqpf = QueryPerformanceFrequency( & llfreq );
@@ -510,7 +510,7 @@ f64 CSystem::GetHiResTime( void )
 	__int64 i64val(llctr.QuadPart);
 	__int64 irelctr = i64val - i64_base;
     //static double dctr_base = li2d( base_llctr );
-    
+
 	//double dctr = li2d( (llctr-base_llctr) ) - dctr_base;
     double dtim = double(irelctr) / dfreq;
     f64 fTime = (f64) dtim;
@@ -540,7 +540,7 @@ f64 CSystem::GetHiResTime( void )
     ///////////////////////////////////////////////
         time_t CourseTime;
         struct timeb FineTime;
-        
+
         ///////////////////
         time( &CourseTime );
         ftime( &FineTime );
@@ -581,7 +581,7 @@ CPerformanceItem::CPerformanceItem( std::string nam )
 	, miChildAvgCycle( 0 )
 	, miAccumCycle( 0 )
 {
-	
+
 
 	for(int i = 0; i < TIMER_AVGAMT; i++)
 		miAverageSumCycle[i] = 0;

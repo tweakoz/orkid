@@ -9,7 +9,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/reflect/RegisterProperty.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::SelectManager, "SelectionManager");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::SelectManager, "selectionManager");
 
 namespace ork { namespace tool {
 
@@ -30,7 +30,7 @@ SelectManager::SelectManager()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const orkset<ork::Object*> & SelectManager::GetActiveSelection( void ) const
+const orkset<ork::Object*> & SelectManager::getActiveSelection( void ) const
 {
 	return mActiveSelectionSet;
 }

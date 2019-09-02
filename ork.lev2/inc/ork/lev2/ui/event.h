@@ -10,8 +10,8 @@ struct HandlerResult
 {
 	HandlerResult(Widget* ph=nullptr);
 
-	bool WasHandled() const { return mHandler!=nullptr; }
-	void SetHandled( Widget* by ) { mHandler = by; }
+	bool wasHandled() const { return mHandler!=nullptr; }
+	void setHandled( Widget* by ) { mHandler = by; }
 
 	Widget*    mHandler;
 	bool       mHoldFocus;

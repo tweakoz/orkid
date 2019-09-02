@@ -19,18 +19,18 @@
 
 #include <orktool/toolcore/dataflow.h>
 
+#include "qtui_scenevp.h"
+#include "qtvp_uievh.h"
 #include <QtCore/QSettings>
 #include <QtGui/qclipboard.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <pkg/ent/editor/edmainwin.h>
-#include "qtui_scenevp.h"
-#include "qtvp_uievh.h"
 #include <pkg/ent/scene.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include "uitoolhandler.inl"
+#include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.hpp>
 
@@ -48,7 +48,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx);
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::BindToolHandler(SceneEditorVPToolHandler* handler) {
+void SceneEditorVP::bindToolHandler(SceneEditorVPToolHandler* handler) {
   if (mpCurrentHandler) {
     mpCurrentHandler->Detach(this);
   }
@@ -58,9 +58,9 @@ void SceneEditorVP::BindToolHandler(SceneEditorVPToolHandler* handler) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::BindToolHandler(const std::string& toolname) {
+void SceneEditorVP::bindToolHandler(const std::string& toolname) {
   OrkAssert(mToolHandlers.find(toolname) != mToolHandlers.end());
-  BindToolHandler((*mToolHandlers.find(toolname)).second);
+  bindToolHandler((*mToolHandlers.find(toolname)).second);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -110,7 +110,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
   if (_editorCamera) {
     bcamhandled = _editorCamera->UIEventHandler(EV);
     if (bcamhandled) {
-      ret.SetHandled(this);
+      ret.setHandled(this);
       return ret;
     }
   }
@@ -193,33 +193,33 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
           else
             miCullCameraIndex = miCameraIndex;
           printf("CULLCAMERAINDEX<%d>\n", miCullCameraIndex);
-          ret.SetHandled(this);
+          ret.setHandled(this);
           break;
         }
         case '`': {
           miCameraIndex++;
           printf("CAMERAINDEX<%d>\n", miCameraIndex);
-          ret.SetHandled(this);
+          ret.setHandled(this);
           break;
         }
         case '1': {
           mCompositorSceneIndex++;
-          ret.SetHandled(this);
+          ret.setHandled(this);
           break;
         }
         case '2': {
           mCompositorSceneItemIndex++;
-          ret.SetHandled(this);
+          ret.setHandled(this);
           break;
         }
         case '!': {
           mCompositorSceneIndex = -1;
-          ret.SetHandled(this);
+          ret.setHandled(this);
           break;
         }
         case '@': {
           mCompositorSceneItemIndex = -1;
-          ret.SetHandled(this);
+          ret.setHandled(this);
           break;
         }
         case '/': {
@@ -233,8 +233,8 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
         }
         case 'f': // focus on selected entity
         {
-          auto& selmgr = mEditor.SelectionManager();
-          auto selset = selmgr.GetActiveSelection();
+          auto& selmgr = mEditor.selectionManager();
+          auto selset = selmgr.getActiveSelection();
 
           if (selset.size() == 1) {
             EntData* as_ent = rtti::autocast(*selset.begin());
@@ -281,8 +281,8 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
           auto th = (*it).second;
 
           printf("bInWidget<%d>, th<%p>\n", int(bInWidget), th);
-          BindToolHandler(th);
-          ret.SetHandled(th);
+          bindToolHandler(th);
+          ret.setHandled(th);
         }
         ity += 36;
       }
@@ -291,7 +291,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
   }
 
   if (mpCurrentHandler) {
-    if (!ret.WasHandled()) {
+    if (!ret.wasHandled()) {
       // printf( "CurrentHandler<%s>\n", mpCurrentHandler->GetToolName().c_str() );
       ret = mpCurrentHandler->OnUiEvent(EV);
     }
@@ -302,62 +302,43 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-static CMatrix4 mtx_spawn;
-void SceneEditorVPToolHandler::SetSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy) {
+void SceneEditorVPToolHandler::setSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy) {
 
-  auto cam = GetViewport()->GetActiveCamera();
-
-  if (cam) {
+  if (auto cam = GetViewport()->getActiveCamera()) {
 
     auto& camdat = cam->mCameraData;
-    fmtx4 ipmatrix; ipmatrix.GEMSInverse(camdat.GetPMatrix());
-    fmtx4 ivmatrix = camdat.GetIVMatrix();
-
-    fvec4 homo_pos = ctx.mPickColors[1];
-    printf( "homo_pos<%g %g %g %g>\n", homo_pos.x, homo_pos.y, homo_pos.z, homo_pos.w );
-    fvec4 clippos = (fvec3(homo_pos)*2.0)-fvec3(1,1,1);
-    orkprintf( "clippos <%f,%f,%f>\n", clippos.x, clippos.y, clippos.z );
-    fvec4 viewpos = clippos.Transform(ipmatrix);
-    viewpos.PerspectiveDivide();
-    orkprintf( "viewpos <%f,%f,%f>\n", viewpos.x, viewpos.y, viewpos.z );
-    fvec3 spawnloc = viewpos.Transform(ivmatrix).xyz();
-    orkprintf( "spawncursor <%f,%f,%f>\n", spawnloc.x, spawnloc.y, spawnloc.z );
-
-    /////////////////////////////////////////////////////////
-
-    printf( "CamNear<%g> CamFar<%g>\n", camdat.GetNear(), camdat.GetFar());
 
     /////////////////////////////////////////////////////////
 
     fvec3 vdir, vori;
-    camdat.ProjectDepthRay( fvec2( fx, fy ),
-                            vdir,
-                            vori );
+    camdat.projectDepthRay(fvec2(fx, fy), vdir, vori);
+
+    orkprintf("vdir <%f,%f,%f>\n", vdir.x, vdir.y, vdir.z);
+    orkprintf("vori <%f,%f,%f>\n", vori.x, vori.y, vori.z);
 
     /////////////////////////////////////////////////////////
 
-    fvec3 ynormal(0,1,0); //( normal_d.x, normal_d.y, normal_d.z );
-    ynormal.Normalize();
-    cam->CamFocus = spawnloc;
-    orkprintf( "vdir <%f,%f,%f>\n", vdir.x, vdir.y, vdir.z );
-    orkprintf( "vori <%f,%f,%f>\n", vori.x, vori.y, vori.z );
-    fvec3 xnormal = ynormal.Cross( vdir.Normal() ).Normal();
-    fvec3 znormal = xnormal.Cross( ynormal ).Normal();
-    mtx_spawn.NormalVectorsIn( xnormal, ynormal, znormal );
-    mtx_spawn.SetTranslation( spawnloc );
-    mEditor.SetSpawnMatrix( mtx_spawn );
-    cam->CamFocusYNormal = ynormal;
-    cam->CamFocus = spawnloc;
+    fvec4 normal_d = ctx.mPickColors[1];
+    fvec3 spawnloc = vori + vdir * normal_d.w;
 
-    CCamera_persp* as_persp = rtti::autocast(cam);
+    /////////////////////////////////////////////////////////
 
-    if (as_persp) {
-      //as_persp->mvCenter = spawnloc;
-      as_persp->CamLoc = spawnloc;
+    fvec3 ynormal = normal_d.xyz().Normal();
+    fvec3 xnormal = ynormal.Cross(vdir.Normal()).Normal();
+    fvec3 znormal = xnormal.Cross(ynormal).Normal();
+
+    fmtx4 mtx_spawn;
+    mtx_spawn.fromNormalVectors(xnormal, ynormal, znormal);
+    mtx_spawn.SetTranslation(spawnloc);
+    mEditor.setSpawnMatrix(mtx_spawn);
+
+    orkprintf("spawncursor <%f,%f,%f>\n", spawnloc.x, spawnloc.y, spawnloc.z);
+
+    if (CCamera_persp* as_persp = rtti::autocast(cam)) {
+      as_persp->mvCenter = spawnloc;
+      as_persp->updateMatrices();
     }
-
   }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////

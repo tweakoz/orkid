@@ -83,6 +83,8 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 
             mtl->SetTexture(texture);
 
+            mtl->_enablePick = true;
+
             bool IsPickState = targ->FBI()->IsPickState();
             float fphase = ssci->GetPhase();
 
@@ -95,10 +97,10 @@ void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
             fvec2 botl(-1,+1), botr(+1,+1);
             fray3 ray_topl, ray_topr, ray_botl, ray_botr;
 
-            CAMDAT->ProjectDepthRay(topl,ray_topl);
-            CAMDAT->ProjectDepthRay(topr,ray_topr);
-            CAMDAT->ProjectDepthRay(botr,ray_botr);
-            CAMDAT->ProjectDepthRay(botl,ray_botl);
+            CAMDAT->projectDepthRay(topl,ray_topl);
+            CAMDAT->projectDepthRay(topr,ray_topr);
+            CAMDAT->projectDepthRay(botr,ray_botr);
+            CAMDAT->projectDepthRay(botl,ray_botl);
             CPlane groundplane(0,1,0,0);
 
             float dtl, dtr, dbl, dbr;

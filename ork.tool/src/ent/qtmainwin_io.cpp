@@ -165,7 +165,7 @@ void EditorMainWindow::SaveSceneFile() {
 
 void EditorMainWindow::SaveSelected() {
   orkset<ork::Object *> SelectedObjects;
-  SelectedObjects = mEditorBase.SelectionManager().GetActiveSelection();
+  SelectedObjects = mEditorBase.selectionManager().getActiveSelection();
 
   if (SelectedObjects.size() == 1) {
     const ork::Object *pobj = *SelectedObjects.begin();

@@ -62,7 +62,7 @@ Outliner2Model::~Outliner2Model()
 }
 void Outliner2Model::IncSel()
 {
-	auto& selmgr = mEditor.SelectionManager();
+	auto& selmgr = mEditor.selectionManager();
 
 	ork::Object* pobj = nullptr;
 
@@ -79,7 +79,7 @@ void Outliner2Model::IncSel()
 }
 void Outliner2Model::DecSel()
 {
-	auto& selmgr = mEditor.SelectionManager();
+	auto& selmgr = mEditor.selectionManager();
 
 	ork::Object* pobj = nullptr;
 
@@ -293,11 +293,11 @@ Outliner2View::Outliner2View(SceneEditorBase&ed)
 						& this->GetSlotModelChanged()
 						 );
 
-	object::Connect(	& ed.SelectionManager().GetSigObjectSelected(),
+	object::Connect(	& ed.selectionManager().GetSigObjectSelected(),
 						& mOutlinerModel.GetSlotObjectSelected()
 						 );
 
-	object::Connect(	& ed.SelectionManager().GetSigObjectDeSelected(),
+	object::Connect(	& ed.selectionManager().GetSigObjectDeSelected(),
 						& mOutlinerModel.GetSlotObjectDeSelected()
 						 );
 }
@@ -517,7 +517,7 @@ void Outliner2View::SetNameOfSelectedItem()
 		auto result = dialog.getResult();
 		const char* rescstr = result.toStdString().c_str();
 		auto& ed = mOutlinerModel.Editor();
-		auto& sm = ed.SelectionManager();
+		auto& sm = ed.selectionManager();
 		printf( "rescstr<%s>\n", rescstr );
 		ed.EditorRenameSceneObject((ent::SceneObject*)item.mObject,rescstr);
 		sm.ClearSelection();
@@ -531,7 +531,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 	ui::HandlerResult ret(this);
 
 	auto& ed = mOutlinerModel.Editor();
-	auto& sm = ed.SelectionManager();
+	auto& sm = ed.selectionManager();
 	const auto& filtev = EV.mFilteredEvent;
 
 	//ork::tool::ged::ObjModel::FlushAllQueues();
@@ -584,7 +584,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 					auto scene = ed.GetSceneData();
 					const EntData* entdata = nullptr;
 					// TODO: Implement Visitor pattern to collect and grow bounding boxes for selected items
-					const auto& selection = ed.SelectionManager().GetActiveSelection();
+					const auto& selection = ed.selectionManager().getActiveSelection();
 					for( auto it : selection )
 					{
 						if( const EntData* an_entdata = rtti::autocast(it) )
@@ -616,7 +616,7 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 							//auto upd = cam->GetUp();
 
 							cam->mvCenter = new_target;
-							cam->UpdateMatrices();
+							cam->updateMatrices();
 
 						}
 					}

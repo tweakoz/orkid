@@ -126,12 +126,12 @@ public:
 	///////////////////////////////////////////////
 
 	//void SetCursor( const ork::CVector3& v3 ) { mCursor=v3; }
-	void SetSpawnMatrix( const ork::CMatrix4& mtx ) { mSpawnMatrix=mtx; }
+	void setSpawnMatrix( const ork::CMatrix4& mtx ) { mSpawnMatrix=mtx; }
 
 	///////////////////////////////////////////////
 
-	const tool::SelectManager&		SelectionManager() const { return mSelectionManager; }
-	tool::SelectManager&			SelectionManager() { return mSelectionManager; }
+	const tool::SelectManager&		selectionManager() const { return mselectionManager; }
+	tool::SelectManager&			selectionManager() { return mselectionManager; }
 	lev2::CManipManager&			ManipManager() { return mManipManager; }
 
 	///////////////////////////////////////////////
@@ -210,7 +210,7 @@ private:
 
 	int 							mRunStatus;
 
-	tool::SelectManager				mSelectionManager;
+	tool::SelectManager				mselectionManager;
 	lev2::CManipManager				mManipManager;
 
 	ork::MpMcBoundedQueue<var_t>	mSerialQ;

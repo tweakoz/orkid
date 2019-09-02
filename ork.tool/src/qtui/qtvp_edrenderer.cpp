@@ -114,7 +114,7 @@ void Renderer::RenderModelGroup(const ork::lev2::CModelRenderable** Renderables,
 void Renderer::RenderModel(const lev2::CModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs) const {
   lev2::GfxTarget* target = GetTarget();
 
-  const auto& SelMgr = mEditor.SelectionManager();
+  const auto& SelMgr = mEditor.selectionManager();
 
   const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
   const lev2::XgmModel* model = minst->GetXgmModel();

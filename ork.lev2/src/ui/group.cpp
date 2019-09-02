@@ -93,7 +93,7 @@ HandlerResult Group::DoRouteUiEvent( const Event& Ev )
 			if( binside )
 			{	
 				auto child_res = child->RouteUiEvent(Ev);
-				if( child_res.WasHandled() )
+				if( child_res.wasHandled() )
 				{	res = child_res;
 				}
 			}

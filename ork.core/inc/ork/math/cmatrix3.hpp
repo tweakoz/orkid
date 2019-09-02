@@ -522,7 +522,7 @@ template <typename T> void TMatrix3<T>::SetColumn( int icol, const TVector3<T>& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::NormalVectorsIn( const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv )
+template <typename T> void TMatrix3<T>::fromNormalVectors( const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv )
 {
 	SetColumn( 0, xv );
 	SetColumn( 1, yv );
@@ -531,7 +531,7 @@ template <typename T> void TMatrix3<T>::NormalVectorsIn( const TVector3<T>& xv, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix3<T>::NormalVectorsOut( TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv ) const
+template <typename T> void TMatrix3<T>::toNormalVectors( TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv ) const
 {
 	xv = GetColumn( 0 );
 	yv = GetColumn( 1 );

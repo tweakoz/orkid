@@ -880,7 +880,7 @@ void ModelRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData
 			qrot.FromAxisAngle(anim_axis_angle);
 			r2mtx.FromQuaternion(qrot);
 
-			nmtx.NormalVectorsIn(xaxis,yaxis,zaxis);
+			nmtx.fromNormalVectors(xaxis,yaxis,zaxis);
 			nmtx.SetTranslation( ptcl->mPosition );
 
 			gmatrixblock[i] = (rmtx*r2mtx*smtx*nmtx*mtx);

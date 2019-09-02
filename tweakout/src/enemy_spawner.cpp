@@ -289,7 +289,7 @@ void EnemySpawnerControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 			FighterControllerInst* fci = (FighterControllerInst*) fcd.CreateComponent(pent);
 			fci->SetWCI( mWCI );
 			fci->SetTarget( mTarget );
-			fci->SetSpawner( this );
+			fci->setSpawner( this );
 			fci->SetHotSpot( hspot );
 			mFighters.push_back( fci );
 

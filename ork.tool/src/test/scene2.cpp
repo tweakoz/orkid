@@ -93,7 +93,7 @@ TEST(SceneTortureTest)
 		ork::lev2::CManipManager::GetRef().AttachObject( pent2 );
 		ork::lev2::CManipManager::GetRef().ReleaseObject();
 
-		const orkset<CObject*> & SelSet = ork::tool::SelectManager::GetRef().GetActiveSelection();
+		const orkset<CObject*> & SelSet = ork::tool::SelectManager::GetRef().getActiveSelection();
 		/*
 		DagSceneObject * DagObj = cobject_downcast<DagSceneObject>( pent2 );
 

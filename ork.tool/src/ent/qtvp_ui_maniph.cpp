@@ -69,7 +69,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 			mEditor.ManipManager().DisableManip();
 			mEditor.ManipManager().SetActiveCamera( 0 );
-			ret.SetHandled(this);
+			ret.setHandled(this);
 		}
 		break;
 		case ui::UIEV_DOUBLECLICK:
@@ -101,10 +101,10 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 
 				if( isleft )
 				{
-					if( GetViewport()->GetActiveCamera() )
+					if( GetViewport()->getActiveCamera() )
 					{
-					//	printf( "SetSpawnLoc fx<%f> fy<%f>\n", fx, fy );
-						SetSpawnLoc( ctx, fx, fy );
+					//	printf( "setSpawnLoc fx<%f> fy<%f>\n", fx, fy );
+						setSpawnLoc( ctx, fx, fy );
 					}
 
 				}*/
@@ -156,7 +156,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 				{
 					//if( GetViewport()->GetCamera() )
 					{
-					//	SetSpawnLoc( ctx, fx, fy );
+					//	setSpawnLoc( ctx, fx, fy );
 					}
 
 				}
@@ -179,7 +179,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 			///////////////////////////////////////////////////////////
 
 			mEditor.ManipManager().UIEventHandler( EV );
-			ret.SetHandled(this);
+			ret.setHandled(this);
 		}
 		break;
 
@@ -187,7 +187,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 		{
 			if( false == GetViewport()->HasKeyboardFocus() ) break;
 			if(mEditor.ManipManager().UIEventHandler( EV ))
-				ret.SetHandled(this);
+				ret.setHandled(this);
 		}
 		break;
 
@@ -234,7 +234,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 			//OuterPickOp(pickctx);		
 			///////////////////////////////////////////////////////////
 
-			//ret.SetHandled(this);
+			//ret.setHandled(this);
 		}
 		break;
 	}

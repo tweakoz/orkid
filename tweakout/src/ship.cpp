@@ -537,7 +537,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 					vup = CVector3(0.0f,1.0f,0.0f);
 					vsid = vdir.Cross( vup );
 					CMatrix4 MatShipRot;
-					MatShipRot.NormalVectorsIn( vsid, vup, vdir );
+					MatShipRot.fromNormalVectors( vsid, vup, vdir );
 					////////////////////////////////////////////
 					float fturn = (fx*mPcd.GetSteeringAngle());
 					float ftm = fabs(fx);
