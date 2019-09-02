@@ -14,19 +14,14 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
-#include <ork/lev2/gfx/gfxenv_enum.h>
+#include "gfxenv_enum.h"
 #include <ork/lev2/ui/ui.h>
-#include <ork/lev2/gfx/gfxvtxbuf.h>
+#include "gfxvtxbuf.h"
+#include "targetinterfaces.h"
+
 #include <ork/kernel/mutex.h>
-#include <ork/lev2/gfx/gfxenv_targetinterfaces.h>
 #include <ork/event/Event.h>
 #include <ork/object/AutoConnector.h>
-
-///////////////////////////////////////////////////////////////////////////////
-#if defined( IX ) || defined( _WIN32 )
-#define HAVE_IL
-#endif
-///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
@@ -62,9 +57,6 @@ struct GfxTargetCreationParams
 		, miDefaultMrtWidth(640)
 		, miDefaultMrtHeight(480)
 		, miQuality(100)
-#if defined(_WIN32) && ! defined(_XBOX)
-		, mHWND(0)
-#endif
 	{
 	}
 
@@ -76,9 +68,6 @@ struct GfxTargetCreationParams
 	int		miDefaultMrtWidth;
 	int		miDefaultMrtHeight;
 	int		miQuality;
-#if defined(_WIN32) && ! defined(_XBOX)
-	HWND	mHWND;
-#endif
 };
 
 /// ////////////////////////////////////////////////////////////////////////////
@@ -129,7 +118,7 @@ class GfxTarget : public ork::rtti::ICastable
 
 	//////////////////////////////////////////////
 	// Interfaces
-	
+
 	virtual FxInterface*				FXI() { return 0; }	// Fx Shader Interface (optional)
 	virtual ImmInterface*				IMI() { return 0; }	// Immediate Mode Interface (optional)
 	virtual RasterStateInterface*		RSI() = 0;			// Raster State Interface
@@ -151,7 +140,7 @@ class GfxTarget : public ork::rtti::ICastable
 	int					GetH( void ) const { return miH; }
 
 	virtual void		SetSize( int ix, int iy, int iw, int ih ) = 0;
-	
+
 	//////////////////////////////////////////////
 
 	void				BeginFrame( void );
@@ -195,12 +184,6 @@ class GfxTarget : public ork::rtti::ICastable
 
 	//////////////////////////////////////////////
 
-	#if defined(_WIN32) && (!(defined(_XBOX)))
-	virtual HWND GetHWND( void ) { return 0; }
-	#endif
-
-	//////////////////////////////////////////////
-
 	bool IsDeviceAvailable() const { return mbDeviceAvailable; }
 	void SetDeviceAvailable( bool bv ) { mbDeviceAvailable=bv; }
 
@@ -211,9 +194,9 @@ class GfxTarget : public ork::rtti::ICastable
 
 	void* GetPlatformHandle() const { return mPlatformHandle; }
 	void SetPlatformHandle(void*ph) { mPlatformHandle=ph; }
-	
+
 	virtual void TakeThreadOwnership() {}
-	
+
 	void* BeginLoad();
 	void EndLoad(void*ploadtok);
 
@@ -229,7 +212,7 @@ protected:
 	const ork::rtti::ICastable*			mpCurrentObject;
 	CVector4							mvModColor;
 	bool								mbPostInitializeContext;
-	int									miTargetFrame;	
+	int									miTargetFrame;
 	CPerformanceItem					mFramePerfItem;
 	const RenderContextInstData*		mRenderContextInstData;
 	const RenderContextFrameData*		mRenderContextFrameData;
@@ -314,7 +297,7 @@ class GfxBuffer : public ork::Object
 	int GetContextY( void ) const { return GetContext()->GetY(); }
 	int GetContextW( void ) const { return GetContext()->GetW(); }
 	int GetContextH( void ) const { return GetContext()->GetH(); }
-	
+
 	int GetBufferW( void ) const { return miWidth; }
 	int GetBufferH( void ) const { return miHeight; }
 	void SetBufferWidth( int iw ) { mbSizeIsDirty=(miWidth!=iw); miWidth=iw; }
@@ -335,7 +318,7 @@ class GfxBuffer : public ork::Object
 
 	void RenderMatOrthoQuad(	const SRect& ViewportRect,
 								const SRect& QuadRect,
-								GfxMaterial *pmat, 
+								GfxMaterial *pmat,
 								float fu0 = 0.0f,
 								float fv0 = 0.0f,
 								float fu1 = 1.0f,
@@ -463,6 +446,7 @@ class GfxEnv : public NoRttiSingleton< GfxEnv >
 
 	static DynamicVertexBuffer<SVtxV12C4T16>&	GetSharedDynamicVB();
 	static DynamicVertexBuffer<SVtxV12N12B12T8C4>&	GetSharedDynamicVB2();
+	static DynamicVertexBuffer<SVtxV16T16C16>&	GetSharedDynamicV16T16C16();
 
 	//////////////////////////////////////////////////////////////////////////////
 	protected:
@@ -479,6 +463,7 @@ class GfxEnv : public NoRttiSingleton< GfxEnv >
 
 	DynamicVertexBuffer<SVtxV12C4T16>	mVtxBufSharedVect;
 	DynamicVertexBuffer<SVtxV12N12B12T8C4> mVtxBufSharedVect2;
+	DynamicVertexBuffer<SVtxV16T16C16> _vtxBufSharedV16T16C16;
 	orkmap<std::string,std::string>		mRuntimeEnvironment;
 	orkstack<GfxTargetCreationParams>	mCreationParams;
 	recursive_mutex						mGfxEnvMutex;
@@ -493,7 +478,7 @@ class GfxEnv : public NoRttiSingleton< GfxEnv >
 class DrawHudEvent : public ork::event::Event
 {
     RttiDeclareConcrete( DrawHudEvent, ork::event::Event );
-    
+
 public:
 
 	DrawHudEvent(GfxTarget *target = NULL, int camera_number = 1) : mTarget(target), mCameraNumber(camera_number) {}

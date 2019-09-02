@@ -461,7 +461,7 @@ void VrCompositingNode::DoInit( lev2::GfxTarget* pTARG, int iW, int iH ) // virt
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) // virtual
+void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* compsys) // virtual
 {
     auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
     static PoolString vrcamname = AddPooledString("vrcam");
@@ -469,8 +469,8 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
     //////////////////////////////////////////////
     // find vr camera
     //////////////////////////////////////////////
-    /*
-    auto psi = pCCI->sceneInst();
+
+    auto psi = compsys->sceneinst();
     auto vrcam = psi->GetCameraData(vrcamname);
 
     fmtx4 rootmatrix;
@@ -481,7 +481,6 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
       auto up = vrcam->GetUp();
       rootmatrix.LookAt(eye,tgt,up);
     }
-
 
     //////////////////////////////////////////////
     // process OpenVR events
@@ -734,7 +733,6 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
       //printf( "pose_classes<%s>\n", pose_classes.c_str() );
     }
     #endif // ENABLE_VR
-    */
 
 }
 ///////////////////////////////////////////////////////////////////////////////

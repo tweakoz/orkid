@@ -215,7 +215,7 @@ struct GLVtxBufHandle
 		//glBufferData( GL_ARRAY_BUFFER, iVBlen, bSTATIC ? gzerobuf : 0, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
 		glBufferData( GL_ARRAY_BUFFER, iVBlen, gzerobuf, bSTATIC ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW );
 		free(gzerobuf);
-		
+
 		GL_ERRORCHECK();
 
 		//////////////////////////////////////////////
@@ -658,6 +658,18 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 				{"COLOR0",		4,	GL_UNSIGNED_BYTE,	true,	12,		0,0},
 				{"TEXCOORD0",	2,	GL_FLOAT,			false,	16,		0,0},
 				{"TEXCOORD1",	2,	GL_FLOAT,			false,	24,		0,0}
+			};
+			for( vtx_config& vcfg : cfgs )
+				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);
+			rval = true;
+			break;
+		}
+		case EVTXSTREAMFMT_V16T16C16:
+		{
+			static vtx_config cfgs[] =
+			{	{"POSITION",	4,	GL_FLOAT,	false,	0,		0,0},
+				{"TEXCOORD0",	4,	GL_FLOAT,	false,	16,		0,0},
+				{"COLOR0",		4,	GL_FLOAT,	false,	32,		0,0},
 			};
 			for( vtx_config& vcfg : cfgs )
 				component_mask |= vcfg.bind_to_attr(pfxpass,iStride);

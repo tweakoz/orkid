@@ -112,7 +112,7 @@ struct GetPixelContext
 	enum EPixelUsage
 	{
 		EPU_FLOAT = 0,
-		EPU_PTR32 ,
+		EPU_PTR64 ,
 	};
 
 	static const int kmaxitems = 4;

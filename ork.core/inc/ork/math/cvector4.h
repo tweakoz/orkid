@@ -179,6 +179,9 @@ public:
   void SetARGBU32(U32 uval);
   void SetABGRU32(U32 uval);
 
+  uint64_t GetRGBAU64( void ) const;
+  void SetRGBAU64( uint64_t v );
+
   static const TVector4& Black(void);
   static const TVector4& DarkGrey(void);
   static const TVector4& MediumGrey(void);

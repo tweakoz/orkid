@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/math/cmatrix4.h>
@@ -137,13 +137,13 @@ template <typename T> TVector3<T>::TVector3( T _x, T _y, T _z)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 TVector3<T>::GetVtxColorAsU32( void ) const 
+template <typename T> U32 TVector3<T>::GetVtxColorAsU32( void ) const
 {
 	U32 r = U32(GetX()*T(255.0f));
 	U32 g = U32(GetY()*T(255.0f));
 	U32 b = U32(GetZ()*T(255.0f));
 	U32 a = 255;
-	
+
 #if defined(_DARWIN)||defined(IX)
 	return U32( (a<<24)|(b<<16)|(g<<8)|r );
 #else // WIN32/DX
@@ -153,31 +153,31 @@ template <typename T> U32 TVector3<T>::GetVtxColorAsU32( void ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 TVector3<T>::GetABGRU32( void ) const 
+template <typename T> U32 TVector3<T>::GetABGRU32( void ) const
 {
 	U32 r = U32(GetX()*T(255.0f));
 	U32 g = U32(GetY()*T(255.0f));
 	U32 b = U32(GetZ()*T(255.0f));
 	U32 a = 255;
-	
+
 	return U32( (a<<24)|(b<<16)|(g<<8)|r );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 TVector3<T>::GetARGBU32( void ) const 
+template <typename T> U32 TVector3<T>::GetARGBU32( void ) const
 {
 	U32 r = U32(GetX()*T(255.0f));
 	U32 g = U32(GetY()*T(255.0f));
 	U32 b = U32(GetZ()*T(255.0f));
 	U32 a = 255;
-	
+
 	return U32( (a<<24)|(r<<16)|(g<<8)|b );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U32 TVector3<T>::GetRGBAU32( void ) const 
+template <typename T> U32 TVector3<T>::GetRGBAU32( void ) const
 {
 	U32 r = U32(GetX()*T(255.0f));
 	U32 g = U32(GetY()*T(255.0f));
@@ -198,13 +198,13 @@ template <typename T> U32 TVector3<T>::GetBGRAU32( void ) const
 	U32 g = U32(GetY()*T(255.0f));
 	U32 b = U32(GetZ()*T(255.0f));
 	U32 a = 255;
-	
+
 	return U32( (b<<24)|(g<<16)|(r<<8)|a );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> U16 TVector3<T>::GetRGBU16() const 
+template <typename T> U16 TVector3<T>::GetRGBU16() const
 {
 	U32 r = U32(GetX() * T(31.0f));
 	U32 g = U32(GetY() * T(31.0f));
@@ -217,8 +217,8 @@ template <typename T> U16 TVector3<T>::GetRGBU16() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector3<T>::SetRGBAU32(U32 uval) 
-{	
+template <typename T> void TVector3<T>::SetRGBAU32(U32 uval)
+{
 	U32 r = (uval>>24) & 0xff;
 	U32 g = (uval>>16) & 0xff;
 	U32 b = (uval>>8) & 0xff;
@@ -232,8 +232,8 @@ template <typename T> void TVector3<T>::SetRGBAU32(U32 uval)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector3<T>::SetBGRAU32( U32 uval ) 
-{	
+template <typename T> void TVector3<T>::SetBGRAU32( U32 uval )
+{
 	U32 b = (uval>>24) & 0xff;
 	U32 g = (uval>>16) & 0xff;
 	U32 r = (uval>>8) & 0xff;
@@ -247,8 +247,8 @@ template <typename T> void TVector3<T>::SetBGRAU32( U32 uval )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector3<T>::SetARGBU32(U32 uval) 
-{	
+template <typename T> void TVector3<T>::SetARGBU32(U32 uval)
+{
 	U32 r = (uval>>16) & 0xff;
 	U32 g = (uval>>8) & 0xff;
 	U32 b = (uval) & 0xff;
@@ -262,8 +262,8 @@ template <typename T> void TVector3<T>::SetARGBU32(U32 uval)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TVector3<T>::SetABGRU32(U32 uval) 
-{	
+template <typename T> void TVector3<T>::SetABGRU32(U32 uval)
+{
 	U32 b = (uval>>16) & 0xff;
 	U32 g = (uval>>8) & 0xff;
 	U32 r = (uval) & 0xff;
@@ -273,6 +273,27 @@ template <typename T> void TVector3<T>::SetABGRU32(U32 uval)
 	SetX(kfic * T(int(r)));
 	SetY(kfic * T(int(g)));
 	SetZ(kfic * T(int(b)));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T> uint64_t TVector3<T>::GetRGBAU64(void) const {
+		uint64_t r = round(x*T(65535.0f));
+		uint64_t g = round(y*T(65535.0f));
+		uint64_t b = round(z*T(65535.0f));
+		return ((r<<48)|(g<<32)|(b<<16));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename T> void TVector3<T>::SetRGBAU64(uint64_t inp) {
+	static constexpr T kfic( T(1.0) / T(65535.0) );
+	uint64_t r = (inp>>48)&0xffff;
+	uint64_t g = (inp>>32)&0xffff;
+	uint64_t b = (inp>>16)&0xffff;
+	x = (kfic * T(uint64_t(r)));
+	y = (kfic * T(uint64_t(g)));
+	z = (kfic * T(uint64_t(b)));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -493,7 +514,7 @@ template <typename T> void TVector3<T>::Lerp( const TVector3<T> &from, const TVe
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T TVector3<T>::CalcTriArea( const TVector3<T> &V, const TVector3<T> & N ) 
+template <typename T> T TVector3<T>::CalcTriArea( const TVector3<T> &V, const TVector3<T> & N )
 {
     return T(0);
 }

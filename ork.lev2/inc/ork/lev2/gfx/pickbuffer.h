@@ -34,9 +34,9 @@ class PickBufferBase : public ork::lev2::GfxBuffer
 					 EPickBufferType etyp );
 
 	void Init();
-	
-    uint32_t        AssignPickId(ork::Object*);
-    ork::Object*    GetObjectFromPickId(uint32_t);
+
+    uint64_t        AssignPickId(ork::Object*);
+    ork::Object*    GetObjectFromPickId(uint64_t);
 
 	virtual void Draw( lev2::GetPixelContext& ctx ) = 0;
 
@@ -45,7 +45,7 @@ class PickBufferBase : public ork::lev2::GfxBuffer
 	EPickBufferType				meType;
 	bool						mbInitTex;
 	GfxMaterialUITextured*		mpUIMaterial;
-    std::map<uint32_t,ork::Object*>	mPickIds;
+  std::map<uint64_t,ork::Object*>	mPickIds;
 	ork::lev2::RtGroup*			mpPickRtGroup;
 
 };
@@ -60,10 +60,10 @@ template <typename VPT> class CPickBuffer : public PickBufferBase
 					VPT* pVP,
 					int iX, int iY, int iW, int iH,
 					EPickBufferType etyp );
-	
+
 
 	virtual void Draw( lev2::GetPixelContext& ctx );
-	
+
 	VPT* mpViewport;
 };
 
@@ -84,4 +84,3 @@ CPickBuffer<TLev2Viewport>::CPickBuffer(	lev2::GfxBuffer *Parent,
 ///////////////////////////////////////////////////////////////////////////////
 }} //namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-

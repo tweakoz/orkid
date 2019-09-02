@@ -305,33 +305,57 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 static CMatrix4 mtx_spawn;
 void SceneEditorVPToolHandler::SetSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy) {
 
-  if (GetViewport()->GetActiveCamera()) {
+  auto cam = GetViewport()->GetActiveCamera();
 
-    fvec4 normal_d = ctx.mPickColors[1];
+  if (cam) {
 
-    auto cam = GetViewport()->GetActiveCamera();
     auto& camdat = cam->mCameraData;
+    fmtx4 ipmatrix; ipmatrix.GEMSInverse(camdat.GetPMatrix());
+    fmtx4 ivmatrix = camdat.GetIVMatrix();
+
+    fvec4 homo_pos = ctx.mPickColors[1];
+    printf( "homo_pos<%g %g %g %g>\n", homo_pos.x, homo_pos.y, homo_pos.z, homo_pos.w );
+    fvec4 clippos = (fvec3(homo_pos)*2.0)-fvec3(1,1,1);
+    orkprintf( "clippos <%f,%f,%f>\n", clippos.x, clippos.y, clippos.z );
+    fvec4 viewpos = clippos.Transform(ipmatrix);
+    viewpos.PerspectiveDivide();
+    orkprintf( "viewpos <%f,%f,%f>\n", viewpos.x, viewpos.y, viewpos.z );
+    fvec3 spawnloc = viewpos.Transform(ivmatrix).xyz();
+    orkprintf( "spawncursor <%f,%f,%f>\n", spawnloc.x, spawnloc.y, spawnloc.z );
+
+    /////////////////////////////////////////////////////////
+
+    printf( "CamNear<%g> CamFar<%g>\n", camdat.GetNear(), camdat.GetFar());
+
+    /////////////////////////////////////////////////////////
+
     fvec3 vdir, vori;
     camdat.ProjectDepthRay( fvec2( fx, fy ),
                             vdir,
                             vori );
-    float l = normal_d.z;
-    float il = 1.0-l;
 
-    //float fd = (normal_d.GetZ()-camdat.GetNear() / camdat.GetFar());
-    float fd = (il*camdat.GetNear())+(l*camdat.GetFar());
-    fvec3 ynormal( normal_d.x, normal_d.y, normal_d.z );
+    /////////////////////////////////////////////////////////
+
+    fvec3 ynormal(0,1,0); //( normal_d.x, normal_d.y, normal_d.z );
     ynormal.Normalize();
-    fvec3 spawnloc = normal_d.xyz(); //vori+(vdir*fd);
     cam->CamFocus = spawnloc;
     orkprintf( "vdir <%f,%f,%f>\n", vdir.x, vdir.y, vdir.z );
-    orkprintf( "spawncursor <%f,%f,%f> fd<%f>\n", spawnloc.x, spawnloc.y, spawnloc.z, fd );
+    orkprintf( "vori <%f,%f,%f>\n", vori.x, vori.y, vori.z );
     fvec3 xnormal = ynormal.Cross( vdir.Normal() ).Normal();
     fvec3 znormal = xnormal.Cross( ynormal ).Normal();
     mtx_spawn.NormalVectorsIn( xnormal, ynormal, znormal );
     mtx_spawn.SetTranslation( spawnloc );
     mEditor.SetSpawnMatrix( mtx_spawn );
     cam->CamFocusYNormal = ynormal;
+    cam->CamFocus = spawnloc;
+
+    CCamera_persp* as_persp = rtti::autocast(cam);
+
+    if (as_persp) {
+      //as_persp->mvCenter = spawnloc;
+      as_persp->CamLoc = spawnloc;
+    }
+
   }
 
 }

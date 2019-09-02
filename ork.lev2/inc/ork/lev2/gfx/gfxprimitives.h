@@ -72,6 +72,7 @@ class CGfxPrimitives : public NoRttiSingleton< CGfxPrimitives >
 	static void RenderQuadAtX( GfxTarget *pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV );
 	static void RenderQuadAtY( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV );
 	static void RenderQuadAtZ( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV );
+	static void RenderQuadAtZV16T16C16( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV );
 
 	static void RenderQuad( GfxTarget *pTarg, CVector4 &V0, CVector4 &V1, CVector4 &V2, CVector4 &V3 );
 

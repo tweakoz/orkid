@@ -89,7 +89,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 	// Axis
 
 	F32 fLineSize = 1.0f;
-	
+
 	lev2::VtxWriter<SVtxV12C4T16> vw;
 
 	vw.Lock( pTarg, & GetRef().mVtxBuf_Axis, 6 );
@@ -227,7 +227,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 	}
 
 	vw.UnLock(pTarg,EULFLG_ASSIGNVBLEN);
-	
+
 	////////////////////////////////////////////////////
 	// CircleUI
 
@@ -266,7 +266,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 	}
 
 	vw.UnLock(pTarg,EULFLG_ASSIGNVBLEN);
-	
+
 	////////////////////////////////////////////////////
 	// Cone
 
@@ -287,7 +287,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 		vw.AddVertex( SVtxV12C4T16( 0.0f, CONESIZE, 0.0f, 0, 0, uColor ) );
 	}
 	vw.UnLock(pTarg,EULFLG_ASSIGNVBLEN);
-	
+
 	////////////////////////////////////////////////////
 	// DirCone
 
@@ -407,7 +407,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 
 	////////////////////////////////////////////////////
 	// Dome
-		
+
 	//caps
 	const int kiUD = 50;
 	const int kiVD = 10;
@@ -487,7 +487,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 
 	}
 	vw.UnLock(pTarg,EULFLG_ASSIGNVBLEN);
-	
+
 	////////////////////////////////////////////////////
 	// Box
 
@@ -545,7 +545,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 
 	}
 	vw.UnLock(pTarg,EULFLG_ASSIGNVBLEN);
-	
+
 	////////////////////////////////////////////////////
 	// Axis Line
 
@@ -836,7 +836,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 		vw.AddVertex( SVtxV12C4T16( p2X, 0.0f, p2Z, 0, 0, ucolor ) );
 		vw.AddVertex( SVtxV12C4T16( p0X, 0.0f, p0Z, 0, 0, ucolor ) );
 		vw.AddVertex( SVtxV12C4T16( 0.0f, -fscale, 0.0f, 0, 0, ucolor ) );
-		
+
 		vw.UnLock(pTarg,EULFLG_ASSIGNVBLEN);
 	}
 	////////////////////////////////////////////////////
@@ -1420,7 +1420,7 @@ void CGfxPrimitives::RenderOrthoQuad( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY
 	vw.AddVertex( SVtxV12C4T16( fX1, fY2, 0.0f, iminU, imaxV, 0xffffffff ) );
 
 	vw.UnLock(pTarg);
-	
+
 	///////////////////////////////////////////
 	// Render Using Ortho Matrix
 
@@ -1466,7 +1466,7 @@ void CGfxPrimitives::RenderQuadAtX( GfxTarget *pTarg, f32 fY1, f32 fY2, f32 fZ1,
 	vw.AddVertex( SVtxV12C4T16( fX, fY1, fZ2, iminU, imaxV, 0xffffffff ) );
 
 	vw.UnLock(pTarg);
-	
+
 	///////////////////////////////////////////
 
 	pTarg->GBI()->DrawPrimitive( vw, EPRIM_TRIANGLES );
@@ -1537,6 +1537,36 @@ void CGfxPrimitives::RenderQuadAtZ( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1,
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void CGfxPrimitives::RenderQuadAtZV16T16C16( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
+{
+	auto vb = & GfxEnv::GetSharedDynamicV16T16C16();
+
+	///////////////////////////////////////////
+	// SET VERTICES (range 0..1)
+
+	lev2::VtxWriter<SVtxV16T16C16> vw;
+	vw.Lock( pTarg, vb, 6 );
+
+	vw.AddVertex( SVtxV16T16C16( fvec4(fX1, fY1, fZ), fvec4(1,1,1,1), fvec4(iminU, iminV, 0,0) ) );
+	vw.AddVertex( SVtxV16T16C16( fvec4(fX2, fY1, fZ), fvec4(1,1,1,1), fvec4(imaxU, iminV, 0,0) ) );
+	vw.AddVertex( SVtxV16T16C16( fvec4(fX2, fY2, fZ), fvec4(1,1,1,1), fvec4(imaxU, imaxV, 0,0) ) );
+
+	vw.AddVertex( SVtxV16T16C16( fvec4(fX1, fY1, fZ), fvec4(1,1,1,1), fvec4(iminU, iminV, 0,0) ) );
+	vw.AddVertex( SVtxV16T16C16( fvec4(fX2, fY2, fZ), fvec4(1,1,1,1), fvec4(imaxU, imaxV, 0,0) ) );
+	vw.AddVertex( SVtxV16T16C16( fvec4(fX1, fY2, fZ), fvec4(1,1,1,1), fvec4(iminU, imaxV, 0,0) ) );
+
+	vw.UnLock( pTarg );
+
+	///////////////////////////////////////////
+
+	pTarg->GBI()->DrawPrimitive( vw, EPRIM_TRIANGLES );
+
+	///////////////////////////////////////////
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void CGfxPrimitives::RenderQuad( GfxTarget *pTarg, CVector4 &V0, CVector4 &V1, CVector4 &V2, CVector4 &V3 )
 {
 	auto vb = & GfxEnv::GetSharedDynamicVB();
@@ -1561,7 +1591,7 @@ void CGfxPrimitives::RenderQuad( GfxTarget *pTarg, CVector4 &V0, CVector4 &V1, C
 	vw.AddVertex( SVtxV12C4T16( V3.GetX(), V3.GetY(), V3.GetZ(), imaxU, imaxV, 0xffffffff ) );
 
 	vw.UnLock(pTarg);
-	
+
 	///////////////////////////////////////////
 
 	pTarg->GBI()->DrawPrimitive( vw, EPRIM_TRIANGLES );
