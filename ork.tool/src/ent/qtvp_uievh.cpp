@@ -37,6 +37,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 bool gtoggle_hud = true;
+bool gtoggle_pickbuffer = false;
 
 using namespace ork::lev2;
 
@@ -223,7 +224,10 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
           break;
         }
         case '/': {
-          gtoggle_hud = !gtoggle_hud;
+          if (isctrl)
+            gtoggle_pickbuffer = !gtoggle_pickbuffer;
+          else
+            gtoggle_hud = !gtoggle_hud;
           break;
         }
         case ' ': {
