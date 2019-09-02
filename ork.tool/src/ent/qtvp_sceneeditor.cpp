@@ -154,7 +154,7 @@ void SceneEditorVP::Init() {
   // RegisterToolHandler( "4Bsp", new BspToolHandler( this, mEditor ) );
 
   mpDefaultHandler = mToolHandlers["0Default"];
-  BindToolHandler("0Default");
+  bindToolHandler("0Default");
 
   ///////////////////////////////////////////////////////////
   // INIT MODULAR TOOL HANDLERS
@@ -771,8 +771,6 @@ void SceneEditorView::UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameDat
   if (0 == sinst)
     return;
 
-  // ork::tool::ged::ObjModel::FlushAllQueues();
-  ///////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////
   // refresh control
 
@@ -824,14 +822,14 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   pTARG->MTXI()->PushPMatrix(CMatrix4::Identity);
   pTARG->MTXI()->PushVMatrix(CMatrix4::Identity);
   pTARG->MTXI()->PushMMatrix(CMatrix4::Identity);
-  // pTARG->MTXI()->PushUIMatrix();
+
   static SRasterState defstate;
   pTARG->RSI()->BindRasterState(defstate);
   {
     /////////////////////////////////////////////////
     // little spinner so i know which window is active
     pTARG->PushModColor(CColor4::White());
-    // pTARG->BindMaterial( GfxEnv::GetDefaultUIMaterial() );
+
     pTARG->FXI()->InvalidateStateBlock();
     {
       static float gfspinner = 0.0f;
@@ -882,7 +880,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         u32 ucolor = 0xffff00ff;
         ork::CVector2 uvZ(0.0f, 0.0f);
         float fZ = 0.0f;
-        // pTARG->IMI()->DrawLine( ibaseX-int(fx*ilen),ibaseY-int(fy*ilen), ibaseX+int(fx*ilen),ibaseY+int(fy*ilen) );
+
         lev2::SVtxV12C4T16 v0(CVector3(float(ibaseX - int(fx * ilen)), float(ibaseY - int(fy * ilen)), fZ), uvZ, ucolor);
         lev2::SVtxV12C4T16 v1(CVector3(float(ibaseX + int(fx * ilen)), float(ibaseY + int(fy * ilen)), fZ), uvZ, ucolor);
 
@@ -899,7 +897,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     pTARG->PopModColor();
     /////////////////////////////////////////////////
     if (draw_pickbuffer && mEditor.GetActiveSceneInst()) {
-      // pTARG->IMI()->QueFlush( false );
+
       ent::ESceneInstMode emode = mEditor.GetActiveSceneInst()->GetSceneInstMode();
 
       Texture* ptex = (emode == ent::ESCENEMODE_RUN) ? pplaytex : ppaustex;
@@ -961,7 +959,6 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         pTARG->MTXI()->PushUIMatrix();
         pTARG->GBI()->DrawPrimitive(vw, lev2::EPRIM_TRIANGLES, 6);
         pTARG->MTXI()->PopUIMatrix();
-        // pTARG->IMI()->QueFlush( false );
       }
       pTARG->PopModColor();
       pTARG->BindMaterial(0);
@@ -990,7 +987,6 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     /////////////////////////////////////////////////
     /////////////////////////////////////////////////
   }
-  // pTARG->MTXI()->PopUIMatrix();
 
   pTARG->MTXI()->PopPMatrix(); // back to ortho
   pTARG->MTXI()->PopVMatrix(); // back to ortho
@@ -1031,9 +1027,10 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
   const CameraCalcContext& ccctx = fdata.GetCameraCalcCtx();
 
   ork::lev2::GfxTarget* pOutputTarget = fdata.GetTarget();
-  pOutputTarget->MTXI()->PushPMatrix(ccctx.mPMatrix);
-  pOutputTarget->MTXI()->PushVMatrix(ccctx.mVMatrix);
-  pOutputTarget->MTXI()->PushMMatrix(CMatrix4::Identity);
+  auto MTXI = pOutputTarget->MTXI();
+  MTXI->PushPMatrix(ccctx.mPMatrix);
+  MTXI->PushVMatrix(ccctx.mVMatrix);
+  MTXI->PushMMatrix(CMatrix4::Identity);
   {
     switch (ManipManager().GetUIMode()) {
       case CManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
@@ -1079,9 +1076,9 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
         break;
     }
   }
-  pOutputTarget->MTXI()->PopPMatrix();
-  pOutputTarget->MTXI()->PopVMatrix();
-  pOutputTarget->MTXI()->PopMMatrix();
+  MTXI->PopPMatrix();
+  MTXI->PopVMatrix();
+  MTXI->PopMMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

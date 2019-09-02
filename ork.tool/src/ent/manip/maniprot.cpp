@@ -190,7 +190,7 @@ bool CManipRot::UIEventHandler( const ui::Event& EV )
 	
 	CVector2 posubp = EV.GetUnitCoordBP();
 
-	CCamera *pcam = mManager.GetActiveCamera();
+	CCamera *pcam = mManager.getActiveCamera();
 	
 	bool brval = false;
 			

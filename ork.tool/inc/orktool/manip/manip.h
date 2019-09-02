@@ -426,7 +426,7 @@ public:
 
 	bool UIEventHandler( const ui::Event& EV );
 
-	CCamera*			GetActiveCamera( void ) const { return mpActiveCamera; }
+	CCamera*			getActiveCamera( void ) const { return mpActiveCamera; }
 	void				SetActiveCamera( CCamera*pCam ) { mpActiveCamera=pCam; }
 
 	f32					GetManipScale( void  )  const { return mfManipScale; }

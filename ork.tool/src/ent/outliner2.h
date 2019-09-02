@@ -113,7 +113,7 @@ private:
 	void SetNameOfSelectedItem();
 
 	bool mBlockUser;
-	bool mInSlotFromSelectionManager;
+	bool mInSlotFromselectionManager;
 	ork::lev2::CFont* mFont;
 	int mCharW, mCharH;
 	int miScrollY;

@@ -75,7 +75,7 @@ void EditorMainWindow::SlotObjectSelected( ork::Object* pobj ){
 	if( pdata ){
 		CMatrix4 mtx;
 		mtx = pdata->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
-		mEditorBase.SetSpawnMatrix( mtx );
+		mEditorBase.setSpawnMatrix( mtx );
 		mEditorBase.ManipManager().AttachObject( pobj );
 	}
 	mGedModelObj.Attach( pobj );
@@ -188,13 +188,13 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	object::Connect(	& this->GetSigNewObject(),
 						& mEditorBase.GetSlotNewObject() );
 
-	object::Connect(	& mEditorBase.SelectionManager().GetSigObjectSelected(),
+	object::Connect(	& mEditorBase.selectionManager().GetSigObjectSelected(),
 						& this->GetSlotObjectSelected() );
 
-	object::Connect(	& mEditorBase.SelectionManager().GetSigObjectDeSelected(),
+	object::Connect(	& mEditorBase.selectionManager().GetSigObjectDeSelected(),
 						& this->GetSlotObjectDeSelected() );
 
-	object::Connect(	& mEditorBase.SelectionManager().GetSigClearSelection(),
+	object::Connect(	& mEditorBase.selectionManager().GetSigClearSelection(),
 						& this->GetSlotClearSelection() );
 
 	bool bconOK = object::Connect(	& mEditorBase, AddPooledLiteral("SigObjectDeleted"),
@@ -434,7 +434,7 @@ struct EntArchDeRef final : public ork::tool::ged::IOpsDelegate{
 								ReplaceArchetype( pscene, parch, pderefarch );
 								/////////////////////////////////////////////////////////////
 								SetProgress(1.0f);
-								gEditorMainWindow->mEditorBase.SelectionManager().AddObjectToSelection(pderefarch);
+								gEditorMainWindow->mEditorBase.selectionManager().AddObjectToSelection(pderefarch);
 							}
 						}
 					}
@@ -521,7 +521,7 @@ struct EntArchReRef final : public ork::tool::ged::IOpsDelegate {
 						ReplaceArchetype( pscene, parch, newrefarch );
 						/////////////////////////////////////////////////////////////
 						SetProgress(1.0f);
-						gEditorMainWindow->mEditorBase.SelectionManager().AddObjectToSelection(newrefarch);
+						gEditorMainWindow->mEditorBase.selectionManager().AddObjectToSelection(newrefarch);
 					}
 				}
 			}

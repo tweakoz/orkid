@@ -763,7 +763,7 @@ template <typename T> void TMatrix4<T>::SetColumn(int icol, const TVector4<T>& v
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::NormalVectorsIn(const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv) {
+template <typename T> void TMatrix4<T>::fromNormalVectors(const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv) {
   SetColumn(0, TVector4<T>(xv, T(0)));
   SetColumn(1, TVector4<T>(yv, T(0)));
   SetColumn(2, TVector4<T>(zv, T(0)));
@@ -771,7 +771,7 @@ template <typename T> void TMatrix4<T>::NormalVectorsIn(const TVector3<T>& xv, c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TMatrix4<T>::NormalVectorsOut(TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv) const {
+template <typename T> void TMatrix4<T>::toNormalVectors(TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv) const {
   xv = GetColumn(0).xyz();
   yv = GetColumn(1).xyz();
   zv = GetColumn(2).xyz();

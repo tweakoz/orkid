@@ -187,7 +187,7 @@ MissileControllerInst::MissileControllerInst( const MissileControllerData& pcd, 
 			CVector3 vup = CVector3(1.0f,1.0f,1.0f);
 			CVector3 vsid = vdir.Cross(vup);
 
-			MatE.NormalVectorsIn( vsid, vup, vdir );
+			MatE.fromNormalVectors( vsid, vup, vdir );
 			MatE.SetTranslation( rbody.mPosition );
 			CMatrix4 MatS; MatS.SetScale( 0.3f, 0.3f, 3.0f );
 			targ->PushModColor( CVector3::White() );
@@ -361,7 +361,7 @@ void MissileControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 	CVector3 vup = CVector3(1.0f,1.0f,1.0f);
 	CVector3 vsid = vdir.Cross(vup);
 
-	MatE.NormalVectorsIn( vsid, vup, vdir );
+	MatE.fromNormalVectors( vsid, vup, vdir );
 	MatE.SetTranslation( mRigidBody.mPosition );
 
 	////////////////////////////////////////////////

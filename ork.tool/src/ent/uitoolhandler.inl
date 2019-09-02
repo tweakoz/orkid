@@ -44,7 +44,7 @@ ui::HandlerResult UIToolHandler<VPTYPE>::DoOnUiEvent(const ui::Event& EV)
 						SetState(mState + 1);
 					else
 						SetState(0);
-					ret.SetHandled(this);
+					ret.setHandled(this);
 					break;
 			}
 		}

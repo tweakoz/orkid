@@ -73,13 +73,13 @@ void MatrixStackInterface::OnMMatrixDirty( void )
 {
 	const CMatrix4& wmat = RefMMatrix();
 	//mmR3Matrix.SetToIdentity();
-	mmR3Matrix.NormalVectorsIn(
+	mmR3Matrix.fromNormalVectors(
 		wmat.GetXNormal().Normal(),
 		wmat.GetYNormal().Normal(),
 		wmat.GetZNormal().Normal()
 		);
 	//mmR4Matrix.SetToIdentity();
-	mmR4Matrix.NormalVectorsIn(
+	mmR4Matrix.fromNormalVectors(
 		wmat.GetXNormal().Normal(),
 		wmat.GetYNormal().Normal(),
 		wmat.GetZNormal().Normal()

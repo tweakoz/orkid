@@ -161,8 +161,8 @@ template <typename T> class  TMatrix3
 	TVector3<T> GetYNormal( void ) const { return GetColumn(1); }
 	TVector3<T> GetZNormal( void ) const { return GetColumn(2); }
 
-	void NormalVectorsIn( const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv );
-	void NormalVectorsOut( TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv ) const;
+	void fromNormalVectors( const TVector3<T>& xv, const TVector3<T>& yv, const TVector3<T>& zv );
+	void toNormalVectors( TVector3<T>& xv, TVector3<T>& yv, TVector3<T>& zv ) const;
 
     ///////////////////////////////////////////////////////////////////////////////
 

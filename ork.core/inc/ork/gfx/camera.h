@@ -57,8 +57,8 @@ public:
 	////////////////////////////////////////////////////////////////////
 	// generate direction vector/origin (from 2d normalized screen coordinate)
 
-	void ProjectDepthRay( const CVector2& v2d, CVector3& vdir, CVector3& vori ) const;
-    void ProjectDepthRay( const CVector2& v2d, fray3& ray_out ) const;
+	void projectDepthRay( const CVector2& v2d, CVector3& vdir, CVector3& vori ) const;
+    void projectDepthRay( const CVector2& v2d, fray3& ray_out ) const;
 
 	void SetWidth(float fv) { mfWidth=fv; }
 	void SetHeight(float fv) { mfHeight=fv; }

@@ -28,7 +28,7 @@ class SceneEditorVPToolHandler : public SceneEditorVPToolHandlerBase
 protected:
 	SceneEditorBase&	mEditor;
 
-	void SetSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy);
+	void setSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy);
 
 public:
 	SceneEditorVPToolHandler( SceneEditorBase& editor );

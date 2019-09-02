@@ -159,15 +159,15 @@ SceneEditorBase::SceneEditorBase()
   mChoiceMan.AddChoiceList("refarch", mpRefArchChoices);
   mChoiceMan.AddChoiceList("FxShader", mpFxShaderChoices);
 
-  object::Connect(&this->GetSigObjectDeleted(), &mSelectionManager.GetSlotObjectDeleted());
+  object::Connect(&this->GetSigObjectDeleted(), &mselectionManager.GetSlotObjectDeleted());
 
   object::Connect(&this->GetSigObjectDeleted(), &mManipManager.GetSlotObjectDeleted());
 
-  object::Connect(&mSelectionManager.GetSigObjectSelected(), &mManipManager.GetSlotObjectSelected());
+  object::Connect(&mselectionManager.GetSigObjectSelected(), &mManipManager.GetSlotObjectSelected());
 
-  object::Connect(&mSelectionManager.GetSigObjectDeSelected(), &mManipManager.GetSlotObjectDeSelected());
+  object::Connect(&mselectionManager.GetSigObjectDeSelected(), &mManipManager.GetSlotObjectDeSelected());
 
-  object::Connect(&mSelectionManager.GetSigClearSelection(), &mManipManager.GetSlotClearSelection());
+  object::Connect(&mselectionManager.GetSigClearSelection(), &mManipManager.GetSlotClearSelection());
 
   ///////////////////////////////////////////////////////////////////////////
 
@@ -354,7 +354,7 @@ SceneData* SceneEditorBase::ImplNewScene() {
     auto& dfset = tool::GetGlobalDataFlowScheduler()->GraphSet();
     dfset.LockForWrite().clear();
 
-    mSelectionManager.ClearSelection();
+    mselectionManager.ClearSelection();
     ent::SceneData* poldscene = mpScene;
     mpScene = new ent::SceneData;
     mpArchChoices->EnumerateChoices();
@@ -386,7 +386,7 @@ void SceneEditorBase::ImplLoadScene(std::string fname) {
   auto pre_load_op = [=]() {
     this->DisableViews();
     lev2::GfxEnv::GetRef().GetGlobalLock().Lock(0x666);
-    this->mSelectionManager.ClearSelection();
+    this->mselectionManager.ClearSelection();
     ent::SceneData* poldscene = this->mpScene;
     this->mpScene = 0;
     ////////////////////////////////////
@@ -434,7 +434,7 @@ void SceneEditorBase::EditorDupe() { SigSceneTopoChanged(); }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorGroup() {
   if (mpScene) {
-    const orkset<Object*>& SelSet = mSelectionManager.GetActiveSelection();
+    const orkset<Object*>& SelSet = mselectionManager.getActiveSelection();
 
     if (SelSet.size()) {
       const CReal kmax = CFloat::TypeMax();
@@ -495,7 +495,7 @@ void SceneEditorBase::EditorGroup() {
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorArchExport() {
   if (mpScene) {
-    const orkset<Object*>& selection = mSelectionManager.GetActiveSelection();
+    const orkset<Object*>& selection = mselectionManager.getActiveSelection();
     if (selection.size() > 0) {
       for (orkset<Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
         if (ent::Archetype* archetype = rtti::autocast(*it))
@@ -567,7 +567,7 @@ void SceneEditorBase::EditorArchImport() {
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorArchMakeReferenced() {
   if (mpScene) {
-    const orkset<Object*>& selection = mSelectionManager.GetActiveSelection();
+    const orkset<Object*>& selection = mselectionManager.getActiveSelection();
     if (selection.size() > 0) {
       for (orkset<Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
         if (ent::Archetype* archetype = rtti::autocast(*it))
@@ -604,7 +604,7 @@ void SceneEditorBase::EditorArchMakeReferenced() {
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorArchMakeLocal() {
   if (mpScene) {
-    const orkset<Object*>& selection = mSelectionManager.GetActiveSelection();
+    const orkset<Object*>& selection = mselectionManager.getActiveSelection();
     if (selection.size() > 0) {
       for (orkset<Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
         if (ent::ReferenceArchetype* refarchetype = rtti::autocast(*it))
@@ -624,7 +624,7 @@ void SceneEditorBase::EditorUnGroup(SceneGroup* pgrp) {
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::EditorPlaceEntity() {
   if (mpScene) {
-    const orkset<ork::Object*>& selset = SelectionManager().GetActiveSelection();
+    const orkset<ork::Object*>& selset = selectionManager().getActiveSelection();
 
     for (orkset<ork::Object*>::const_iterator it = selset.begin(); it != selset.end(); it++) {
       ent::EntData* pentdata = rtti::autocast(*it);
@@ -640,7 +640,7 @@ void SceneEditorBase::EditorLocateEntity(const CMatrix4& matrix) {
   ent::EntData* pentdata = 0;
 
   if (mpScene) {
-    const orkset<ork::Object*>& selection = SelectionManager().GetActiveSelection();
+    const orkset<ork::Object*>& selection = selectionManager().getActiveSelection();
     if (selection.size() == 1) {
       ork::Object* pobj = *selection.begin();
       if (ent::EntData* entdata = rtti::autocast(pobj)) {
@@ -655,7 +655,7 @@ bool SceneEditorBase::EditorGetEntityLocation(CMatrix4& matrix) {
   ent::EntData* pentdata = 0;
 
   if (mpScene) {
-    const orkset<ork::Object*>& selection = SelectionManager().GetActiveSelection();
+    const orkset<ork::Object*>& selection = selectionManager().getActiveSelection();
     if (selection.size() == 1) {
       ork::Object* pobj = *selection.begin();
       if (ent::EntData* entdata = rtti::autocast(pobj)) {
@@ -705,7 +705,7 @@ ent::EntData* SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype) {
 
   auto lamb = [&]() {
     if (nullptr != parchetype) {
-      const orkset<ork::Object*>& selection = SelectionManager().GetActiveSelection();
+      const orkset<ork::Object*>& selection = selectionManager().getActiveSelection();
       // if archetype selected, assign to new entity
       // if entitiy selected, use its archetype
       if (selection.size() == 1) {
@@ -756,7 +756,7 @@ ent::EntData* SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype) {
 void SceneEditorBase::EditorNewEntities(int count) {
   if (mpScene) {
     ent::Archetype* archetype = NULL;
-    const orkset<ork::Object*>& selection = SelectionManager().GetActiveSelection();
+    const orkset<ork::Object*>& selection = selectionManager().getActiveSelection();
     if (selection.size() == 1) {
       ork::Object* pobj = *selection.begin();
       archetype = rtti::autocast(pobj);
@@ -776,7 +776,7 @@ ent::EntData* SceneEditorBase::EditorReplicateEntity() {
     CQuaternion rotation;
     std::string name;
 
-    const orkset<ork::Object*>& selection = SelectionManager().GetActiveSelection();
+    const orkset<ork::Object*>& selection = selectionManager().getActiveSelection();
     if (selection.size() == 1) {
       ork::Object* pobj = *selection.begin();
       archetype = rtti::autocast(pobj);
@@ -868,7 +868,7 @@ ork::CColor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
   const Entity* pent = rtti::autocast(pobj);
   const ent::EntData* pentdata = &pent->GetEntData();
   const ent::Archetype* parch = pentdata->GetArchetype();
-  const ork::tool::SelectManager& selectmgr = SelectionManager();
+  const ork::tool::SelectManager& selectmgr = selectionManager();
 
   if (pent) {
     const float finvsaturation = 0.3f;
@@ -879,7 +879,7 @@ ork::CColor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
       return ork::CVector4(finvsaturation, finvsaturation, 1.0f, 1.0f);
     } else if (parch) // is any archetype indirectly referenced by this entity selected (via spawner)
     {
-      const orkset<ork::Object*>& selset = selectmgr.GetActiveSelection();
+      const orkset<ork::Object*>& selset = selectmgr.getActiveSelection();
 
       if (1 == selset.size()) {
         const ent::Archetype* prefarch = rtti::autocast(*selset.begin());
@@ -1221,7 +1221,7 @@ void SceneEditorBase::SigNewScene() {
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ClearSelection() {
   AssertOnOpQ2(UpdateSerialOpQ());
-  mSelectionManager.ClearSelection();
+  mselectionManager.ClearSelection();
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
@@ -1232,7 +1232,7 @@ void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
     pobj = const_cast<EntData*>(&pent->GetEntData());
   }
 
-  mSelectionManager.AddObjectToSelection(pobj);
+  mselectionManager.AddObjectToSelection(pobj);
 
   /////////////////////////////////////////////////
   object::ObjectClass* pclass = rtti::safe_downcast<object::ObjectClass*>(pobj->GetClass());
@@ -1245,7 +1245,7 @@ void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
 
   /////////////////////////////////////////////////
 
-  const orkset<ork::Object*>& SelSet = mSelectionManager.GetActiveSelection();
+  const orkset<ork::Object*>& SelSet = mselectionManager.getActiveSelection();
   if (SelSet.size() == 1) {
     ork::Object* pobj = *SelSet.begin();
 
@@ -1260,11 +1260,11 @@ void SceneEditorBase::AddObjectToSelection(ork::Object* pobj) {
   /////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneEditorBase::GetSelected(orkset<ork::Object*>& SelSet) { SelSet = mSelectionManager.GetActiveSelection(); }
+void SceneEditorBase::GetSelected(orkset<ork::Object*>& SelSet) { SelSet = mselectionManager.getActiveSelection(); }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ToggleSelection(ork::Object* pobj) {
-  mSelectionManager.ToggleSelection(pobj);
-  // bool bsel = mSelectionManager.IsObjectSelected( pobj );
+  mselectionManager.ToggleSelection(pobj);
+  // bool bsel = mselectionManager.IsObjectSelected( pobj );
 }
 ///////////////////////////////////////////////////////////////////////////////
 // abstract editor has created a new object, there may be more work to do

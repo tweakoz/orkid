@@ -114,10 +114,13 @@ vertex_shader vs_vtxtexcolor : iface_rigid {
 
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_wnormal : iface_rigid {
-  gl_Position = WVPMatrix * position;
+  vec4 cpos = WVMatrix * position;
   vec3 wnorm = normalize(WRotMatrix * normal);
+
+  gl_Position = WVPMatrix * position;
   frg_clr = vec4(wnorm.xyz, 1.0);
   frg_uv0 = uv0;
+  frg_nrmd = vec4(wnorm,-cpos.z);
 }
 
 ///////////////////////////////////////////////////////////////
@@ -156,15 +159,13 @@ fragment_shader ps_modtex : iface_fmt {
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_rigid {
-  vec4 hpos = WVPMatrix * position;
-  gl_Position = hpos;
+  vec4 cpos = WVMatrix * position;
   vec3 wnorm = normalize(WRotMatrix * normal);
-  // frg_clr = vtxcolor;
+
+  gl_Position = WVPMatrix * position;
   frg_clr = vtxcolor.bgra;
   frg_uv0 = uv0 * vec2(1.0f, -1.0f);
-  float depth = hpos.z/hpos.w;
-	frg_nrmd = vec4(wnorm,depth);//hpos;
-  // frg_uv1 = uv0;
+	frg_nrmd = vec4(wnorm,-cpos.z);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault { out_clr = frg_clr; }

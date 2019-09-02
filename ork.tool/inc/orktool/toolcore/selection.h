@@ -37,7 +37,7 @@ public:
   bool IsObjectSelected(const ork::Object* pobj) const;
   void ClearSelection();
 
-  const orkset<ork::Object*>& GetActiveSelection() const;
+  const orkset<ork::Object*>& getActiveSelection() const;
 
   SelectManager();
 

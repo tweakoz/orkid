@@ -165,7 +165,7 @@ void CManip::CalcPlanes() {
 CVector3 CManip::IntersectWithPlanes(const ork::CVector2& posubp) {
   CVector3 rval;
 
-  const CCamera* cam = mManager.GetActiveCamera();
+  const CCamera* cam = mManager.getActiveCamera();
   CMatrix4 CurMatrix;
   mBaseTransform.GetMatrix(CurMatrix);
   /////////////////////////////

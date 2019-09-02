@@ -55,11 +55,11 @@ QWidget * EditorMainWindow::NewCamView( bool bfloat )
 	gpvp->Init();
 	//////////////////////////////////////////////
 
-	bool bconOK = object::Connect(	& mEditorBase.SelectionManager(), AddPooledLiteral("SigObjectSelected"),
+	bool bconOK = object::Connect(	& mEditorBase.selectionManager(), AddPooledLiteral("SigObjectSelected"),
 									& gpvp->SceneEditorView(), AddPooledLiteral("SlotObjectSelected") );
 	OrkAssert(bconOK);
 
-	    bconOK = object::Connect(	& mEditorBase.SelectionManager(), AddPooledLiteral("SigObjectDeSelected"),
+	    bconOK = object::Connect(	& mEditorBase.selectionManager(), AddPooledLiteral("SigObjectDeSelected"),
 									& gpvp->SceneEditorView(), AddPooledLiteral("SlotObjectDeSelected") );
 	OrkAssert(bconOK);
 
@@ -109,10 +109,10 @@ void EditorMainWindow::SceneObjPropEdit()
 	object::Connect(	& mEditorBase.GetSigObjectDeleted(),
 						& mGedModelObj.GetSlotObjectDeleted() );
 	//////
-	object::Connect(	& mEditorBase.SelectionManager().GetSigObjectSelected(),
+	object::Connect(	& mEditorBase.selectionManager().GetSigObjectSelected(),
 						& mGedModelObj.GetSlotObjectSelected() );
 	//////
-	object::Connect(	& mEditorBase.SelectionManager().GetSigObjectDeSelected(),
+	object::Connect(	& mEditorBase.selectionManager().GetSigObjectDeSelected(),
 						& mGedModelObj.GetSlotObjectDeSelected() );
 	/////////////////////////////////////////////////////////////////////////////////////
 	//

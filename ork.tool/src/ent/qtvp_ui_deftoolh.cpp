@@ -128,7 +128,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       switch (EV.miKeyCode) {
         case 0x01000007: // delete
         {
-          orkset<ork::Object*> selection = mEditor.SelectionManager().GetActiveSelection();
+          orkset<ork::Object*> selection = mEditor.selectionManager().getActiveSelection();
           auto l = [=]() {
             mEditor.ClearSelection();
             for (orkset<ork::Object*>::const_iterator it = selection.begin(); it != selection.end(); it++)
@@ -177,7 +177,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
         break;
       if (AreAnyMoveKeysDown)
         break;
-      if (GetViewport()->GetActiveCamera()) {
+      if (GetViewport()->getActiveCamera()) {
         auto pickctx = new DeferredPickOperationContext;
         pickctx->miX = ix;
         pickctx->miY = iy;
@@ -194,7 +194,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
 
           SceneEditorVPToolHandler* handler = pickctx->mHandler;
           auto& pixctx = pickctx->_pixelctx;
-          this->SetSpawnLoc( pixctx, fx, fy );
+          this->setSpawnLoc( pixctx, fx, fy );
         };
 
         pickctx->mViewport = GetViewport();

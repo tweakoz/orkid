@@ -99,7 +99,7 @@ public:
 	FighterControllerInst( const FighterControllerData& cd, ork::ent::Entity* pent );
 
 	void SetTarget( ent::Entity*pent ) { mTarget=pent; }
-	void SetSpawner( EnemySpawnerControllerInst* pspw ) { mSpawner=pspw; }
+	void setSpawner( EnemySpawnerControllerInst* pspw ) { mSpawner=pspw; }
 	void SetHotSpot( HotSpot* hs );
 	ent::RigidBody& RigidBody() { return mRigidBody; }
 	const ent::RigidBody& RigidBody() const { return mRigidBody; }

@@ -107,7 +107,7 @@ void CCameraData::setCustomProjection( const ork::CMatrix4& proj){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::ProjectDepthRay( const CVector2& v2d, fvec3& vdir, fvec3& vori ) const
+void CCameraData::projectDepthRay( const CVector2& v2d, fvec3& vdir, fvec3& vori ) const
 {
 	const Frustum& camfrus = mFrustum;
 	fvec3 near_xt_lerp; near_xt_lerp.Lerp( camfrus.mNearCorners[0], camfrus.mNearCorners[1], v2d.GetX() );
@@ -120,10 +120,10 @@ void CCameraData::ProjectDepthRay( const CVector2& v2d, fvec3& vdir, fvec3& vori
 	vori=near_lerp;
 }
 
-void CCameraData::ProjectDepthRay( const CVector2& v2d, fray3& ray_out ) const
+void CCameraData::projectDepthRay( const CVector2& v2d, fray3& ray_out ) const
 {
     fvec3 dir, ori;
-    ProjectDepthRay(v2d,dir,ori);
+    projectDepthRay(v2d,dir,ori);
     ray_out = fray3(ori,dir);
 }
 

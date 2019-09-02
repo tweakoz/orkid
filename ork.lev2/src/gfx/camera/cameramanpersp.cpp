@@ -32,8 +32,8 @@ using namespace ork::ui;
 
 namespace ork { namespace lev2 {
 
-	void OrkGlobalDisableMousePointer();
-	void OrkGlobalEnableMousePointer();
+void OrkGlobalDisableMousePointer();
+void OrkGlobalEnableMousePointer();
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -154,78 +154,26 @@ void CCamera_persp::draw(GfxTarget* pT) {
   // this is necessary to get UI based rotations working correctly
   //////////////////////////////////////////
   mCameraData = camdat;
-  // FrameData.SetCameraData( pcamdata );
   ///////////////////////////////////////////////////////////////
 
-  // MatP =camdat.GetPMatrix();
-  // MatV = camdat.GetVMatrix();
-  // pT->MTXI()->PushPMatrix( MatP );
-  // pT->MTXI()->PushVMatrix( MatV );
   pT->BindMaterial(GfxEnv::GetDefault3DMaterial());
   {
-    LengthReal lux(mvCenter.GetX(), LengthUnit::Meters());
-    LengthReal luy(mvCenter.GetY(), LengthUnit::Meters());
-    LengthReal luz(mvCenter.GetZ(), LengthUnit::Meters());
-
-    fvec3 vt;
-    vt.SetX(lux.GetValue(LengthUnit::GetProjectUnits()));
-    vt.SetY(luy.GetValue(LengthUnit::GetProjectUnits()));
-    vt.SetZ(luz.GetValue(LengthUnit::GetProjectUnits()));
-
-    MatT.SetTranslation(vt);
+    MatT.SetTranslation(mvCenter);
     float Scale = mfLoc / 30.0f;
     MatT.Scale(fvec4(Scale, Scale, Scale));
     pT->MTXI()->PushMMatrix(MatT);
     {
       CGfxPrimitives::GetRef().RenderTriCircle(pT);
       CGfxPrimitives::GetRef().RenderAxis(pT);
-
-      // pT->IMI()->QueFlush();
-      pT->PushModColor(CColor4::Red());
-      // pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(0.0f) ), fvec4( float(10.0f), float(0.0f), float(0.0f) ) );
-      // pT->IMI()->QueFlush();
-      pT->PopModColor();
-      pT->PushModColor(CColor4::Green());
-      // pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(0.0f) ), fvec4( float(0.0f), float(10.0f), float(0.0f) ) );
-      // pT->IMI()->QueFlush();
-      pT->PopModColor();
-      pT->PushModColor(CColor4::Blue());
-      // pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(0.0f) ), fvec4( float(0.0f), float(0.0f), float(10.0f) ) );
-      // pT->IMI()->QueFlush();
-      pT->PopModColor();
-
-      // pT->IMI()->QueFlush();
-      pT->PushModColor(CColor4::Red() * float(0.5f));
-      // pT->IMI()->DrawLine( fvec4( float(-10.0f), float(0.0f), float(0.0f) ), fvec4( float(0.0f), float(0.0f), float(0.0f) ) );
-      // pT->IMI()->QueFlush();
-      pT->PopModColor();
-      pT->PushModColor(CColor4::Green() * float(0.5f));
-      // pT->IMI()->DrawLine( fvec4( float(0.0f), float(-10.0f), float(0.0f) ), fvec4( float(0.0f), float(0.0f), float(0.0f) ) );
-      // pT->IMI()->QueFlush();
-      pT->PopModColor();
-      pT->PushModColor(CColor4::Blue() * float(0.5f));
-      // pT->IMI()->DrawLine( fvec4( float(0.0f), float(0.0f), float(-10.0f) ), fvec4( float(0.0f), float(0.0f), float(0.0f) ) );
-      // pT->IMI()->QueFlush();
-      pT->PopModColor();
     }
     pT->MTXI()->PopMMatrix();
-
     ///////////////////////////////
-    lux.SetValue(CamFocus.GetX(), LengthUnit::Meters());
-    luy.SetValue(CamFocus.GetY(), LengthUnit::Meters());
-    luz.SetValue(CamFocus.GetZ(), LengthUnit::Meters());
-    vt.SetX(lux.GetValue(LengthUnit::GetProjectUnits()));
-    vt.SetY(luy.GetValue(LengthUnit::GetProjectUnits()));
-    vt.SetZ(luz.GetValue(LengthUnit::GetProjectUnits()));
-
-    MatT.SetTranslation(vt);
+    MatT.SetTranslation(CamFocus);
     pT->MTXI()->PushMMatrix(MatT);
     { CGfxPrimitives::GetRef().RenderTriCircle(pT); }
     pT->MTXI()->PopMMatrix();
     ///////////////////////////////
   }
-  // pT->MTXI()->PopVMatrix();
-  // pT->MTXI()->PopPMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -237,7 +185,7 @@ static QPoint pmousepos;
 void CCamera_persp::PanBegin(const CamEvTrackData& ed) {
   printf("BeginPan\n");
   pmousepos = QCursor::pos();
-  //OrkGlobalDisableMousePointer();
+  // OrkGlobalDisableMousePointer();
   mDoPan = true;
 }
 
@@ -251,7 +199,7 @@ void CCamera_persp::PanUpdate(const CamEvTrackData& ed) {
   int ipushx = ed.ipushX;
   int ipushy = ed.ipushY;
 
-  CVector2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
+  fvec2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
 
   fvec3 outx, outy;
 
@@ -263,15 +211,15 @@ void CCamera_persp::PanUpdate(const CamEvTrackData& ed) {
 
   mvCenter = ed.vPushCenter - (outx * fdx) - (outy * fdy);
 
-  //QCursor::setPos(pmousepos);
+  // QCursor::setPos(pmousepos);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void CCamera_persp::PanEnd() {
   printf("EndPan\n");
-  //QCursor::setPos(pmousepos);
-  //OrkGlobalEnableMousePointer();
+  // QCursor::setPos(pmousepos);
+  // OrkGlobalEnableMousePointer();
   mDoPan = false;
 }
 
@@ -285,7 +233,7 @@ void CCamera_persp::RotBegin(const CamEvTrackData& ed) {
   vPushNY = mCameraData.GetYNormal();
   vPushNZ = mCameraData.GetZNormal();
   pmousepos = QCursor::pos();
-  //OrkGlobalDisableMousePointer();
+  // OrkGlobalDisableMousePointer();
   mDoRotate = true;
 }
 void CCamera_persp::RotUpdate(const CamEvTrackData& ed) {
@@ -302,7 +250,7 @@ void CCamera_persp::RotUpdate(const CamEvTrackData& ed) {
   int ipushx = ed.ipushX;
   int ipushy = ed.ipushY;
 
-  CVector2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
+  fvec2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
 
   fvec3 outx, outy;
 
@@ -367,12 +315,12 @@ void CCamera_persp::RotUpdate(const CamEvTrackData& ed) {
       break;
     }
   }
-  //QCursor::setPos(pmousepos);
+  // QCursor::setPos(pmousepos);
 }
 void CCamera_persp::RotEnd() {
   printf("EndRot\n");
-  //QCursor::setPos(pmousepos);
-  //OrkGlobalEnableMousePointer();
+  // QCursor::setPos(pmousepos);
+  // OrkGlobalEnableMousePointer();
   mDoRotate = false;
 }
 
@@ -381,7 +329,7 @@ void CCamera_persp::RotEnd() {
 void CCamera_persp::DollyBegin(const CamEvTrackData& ed) {
   printf("BeginDolly\n");
   pmousepos = QCursor::pos();
-  //OrkGlobalDisableMousePointer();
+  // OrkGlobalDisableMousePointer();
   mDoDolly = true;
 }
 void CCamera_persp::DollyUpdate(const CamEvTrackData& ed) {
@@ -391,7 +339,7 @@ void CCamera_persp::DollyUpdate(const CamEvTrackData& ed) {
   int ipushy = ed.ipushY;
 
   assert(mDoDolly);
-  CVector2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
+  fvec2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
 
   fvec3 outx, outy;
 
@@ -418,12 +366,12 @@ void CCamera_persp::DollyUpdate(const CamEvTrackData& ed) {
 
   mvCenter += MoveVec;
 
-  //QCursor::setPos(pmousepos);
+  // QCursor::setPos(pmousepos);
 }
 void CCamera_persp::DollyEnd() {
   printf("EndDolly\n");
-  //QCursor::setPos(pmousepos);
-  //OrkGlobalEnableMousePointer();
+  // QCursor::setPos(pmousepos);
+  // OrkGlobalEnableMousePointer();
   mDoDolly = false;
 }
 
@@ -441,7 +389,7 @@ bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
   float fpux = (fux * 2.0f) - 1.0f;
   float fpuy = (fuy * 2.0f) - 1.0f;
 
-  CVector2 pos2D(fpux, fpuy);
+  fvec2 pos2D(fpux, fpuy);
 
   int state = 0;
   bool isctrl = filtev.mCTRL;
@@ -642,7 +590,7 @@ bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
         beginy = esy;
 
       } else if (mDoDolly) {
-        CVector2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
+        fvec2 VP(float(mpViewport->GetW()), float(mpViewport->GetH()));
 
         fvec3 outx, outy;
 
@@ -685,8 +633,8 @@ bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
       static bool gbInMtPan = false;
       static bool gbInMtRot = false;
       struct PointProc {
-        static CVector2 unitPos(const ui::MultiTouchPoint& pnt, ui::Viewport* pVP) {
-          CVector2 rval;
+        static fvec2 unitPos(const ui::MultiTouchPoint& pnt, ui::Viewport* pVP) {
+          fvec2 rval;
           rval.SetX(pnt.mfCurrX / float(pVP->GetW()));
           rval.SetY(pnt.mfCurrY / float(pVP->GetH()));
           return rval;
@@ -694,7 +642,7 @@ bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
       };
 
       const ui::MultiTouchPoint* mp[3];
-      CVector2 upos[3];
+      fvec2 upos[3];
       if (EV.miNumMultiTouchPoints) {
         int inumpushed = 0;
         int inumdown = 0;
@@ -815,30 +763,26 @@ bool CCamera_persp::UIEventHandler(const ui::Event& EV) {
         fvec4 Delta = RotZ * zmoveamt * EV.miMWY;
         mvCenter += Delta;
       } else {
-        CVector2 VP(float(pVP->GetW()), float(pVP->GetH()));
+        fvec2 VP(pVP->GetW(), pVP->GetH());
         fvec3 Pos = mvCenter;
         fvec3 UpVector;
         fvec3 RightVector;
         mCameraData.GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
-        float CameraFactor = RightVector.Mag() * float(20.0f); // 20 pixels of movement
-        const float kmin = 0.1f;
-        const float kmax = 20000.0f;
-        if (mfLoc < kmin)
-          mfLoc = kmin;
-        if (mfLoc > kmax)
-          mfLoc = kmax;
-        float DeltaInMeters = float(-EV.miMWY) * CameraFactor * zmoveamt;
+        float CameraFactor = RightVector.Mag() * 20.0f; // 20 pixels of movement
+        constexpr float kmin = 0.1f;
+        constexpr float kmax = 20000.0f;
+        mfLoc = clamp(mfLoc,kmin,kmax);
+        float DeltaInMeters = float(-EV.miMWY)
+                            * CameraFactor
+                            * zmoveamt;
         mfLoc += DeltaInMeters;
-        if (mfLoc < kmin)
-          mfLoc = kmin;
-        if (mfLoc > kmax)
-          mfLoc = kmax;
+        mfLoc = clamp(mfLoc,kmin,kmax);
       }
       break;
     }
   }
 
-  UpdateMatrices();
+  updateMatrices();
   // CommonPostSetup();
 
   return (mDoPan || mDoRotate || mDoDolly);
@@ -852,7 +796,7 @@ void CCamera_persp::SetFromWorldSpaceMatrix(const CMatrix4& matrix) {
   ork::fvec3 znormal = matrix.GetZNormal();
 
   CMatrix4 matrot, imatrot;
-  matrot.NormalVectorsIn(xnormal, ynormal, znormal);
+  matrot.fromNormalVectors(xnormal, ynormal, znormal);
   imatrot.GEMSInverse(matrot);
 
   fquat quat;
@@ -864,7 +808,7 @@ void CCamera_persp::SetFromWorldSpaceMatrix(const CMatrix4& matrix) {
   QuatC = quat;
   mvCenter = pos + fvec3(0.0f, 0.0f, mfLoc).Transform3x3(matrot);
 
-  UpdateMatrices();
+  updateMatrices();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -900,7 +844,7 @@ void CCamera_persp::RenderUpdate(void) {
   float CurVelMag = MeasuredCameraVelocity.Mag();
   float LastVelMag = LastMeasuredCameraVelocity.Mag();
 
-  CVector2 VP;
+  fvec2 VP;
   if (pVP) {
     VP.SetX((float)pVP->GetW());
     VP.SetY((float)pVP->GetH());
@@ -1132,12 +1076,12 @@ void CCamera_persp::RenderUpdate(void) {
 
   ////////////////////////////////////////
 
-  UpdateMatrices();
+  updateMatrices();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::UpdateMatrices(void) {
+void CCamera_persp::updateMatrices(void) {
   if (mfLoc < 0.001f)
     mfLoc = 0.001f;
 
@@ -1156,11 +1100,11 @@ void CCamera_persp::UpdateMatrices(void) {
   //	100000.0	5		10000.0		10000000.0	1000.0
 
   float flog10 = log10(mfLoc);
-  float flerpidx = (flog10 + float(1.0f)) / float(6.0f);
+  float flerpidx = (flog10 + 1.0f) / 6.0f;
   float finvlerpidx = float(1.0f) - flerpidx;
 
-  float neardiv = (float(0.5f) * finvlerpidx) + (float(100.0f) * flerpidx);
-  float farmul = (float(500.0f) * finvlerpidx) + (float(0.5f) * flerpidx);
+  float neardiv = (0.5f * finvlerpidx + 100.0f) * flerpidx;
+  float farmul = (500.0f * finvlerpidx + 0.5f) * flerpidx;
 
   float fnear = mfLoc / neardiv;
   float ffar = mfLoc * farmul;
@@ -1173,7 +1117,7 @@ void CCamera_persp::UpdateMatrices(void) {
   ///////////////////////////////////////////////////////////////
 
   mRot = QuatC.ToMatrix();
-  mTrans.SetTranslation(mvCenter * float(-1.0f));
+  mTrans.SetTranslation(mvCenter * -1.0f);
 
   CMatrix4 matxf = (mTrans * mRot);
   CMatrix4 matixf;
@@ -1219,7 +1163,7 @@ float CCamera_persp::ViewLengthToWorldLength(const fvec4& pos, float ViewLength)
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void CCamera_persp::GenerateDepthRay(const CVector2& pos2D, fvec3& rayN, fvec3& rayF, const CMatrix4& IMat) const {
+void CCamera_persp::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const CMatrix4& IMat) const {
   float fx = pos2D.GetX();
   float fy = pos2D.GetY();
   //////////////////////////////////////////

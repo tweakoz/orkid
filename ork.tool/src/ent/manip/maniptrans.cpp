@@ -115,7 +115,7 @@ bool CManipTrans::UIEventHandler( const ui::Event& EV )
 
 void CManipTrans::HandleMouseDown(const ork::CVector2& pos)
 {
-	CCamera *pcam = mManager.GetActiveCamera();
+	CCamera *pcam = mManager.getActiveCamera();
 
 	//printf( "CManipTrans::HandleMouseDown() pcam<%p>\n", pcam );
 	if( pcam )
@@ -289,7 +289,7 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 
 void CManipSingleTrans::HandleDrag(const ork::CVector2& pos)
 {
-	CCamera *pcam = mManager.GetActiveCamera();
+	CCamera *pcam = mManager.getActiveCamera();
 
 	IntersectWithPlanes( pos );
 	bool bisect = CheckIntersect();
@@ -363,7 +363,7 @@ void CManipDualTrans::Draw(GfxTarget *pTARG ) const
 
 void CManipDualTrans::HandleDrag(const ork::CVector2& pos)
 {
-	/*CCamera *pcam = mManager.GetActiveCamera();
+	/*CCamera *pcam = mManager.getActiveCamera();
 	ui::Viewport *pVP = pcam->GetViewport();
 
 	ork::CMatrix4 view;// = pcam->GetVMatrix();

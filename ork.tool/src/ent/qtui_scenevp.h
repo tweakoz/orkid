@@ -128,8 +128,8 @@ public:
 	const ent::CompositingGroup* GetCompositingGroup(int igrp);
 	ent::CompositingComponentInst* GetCompositingComponentInst( int icidx );
 	//////////////////////
-	void BindToolHandler( SceneEditorVPToolHandler*handler );
-	void BindToolHandler( const std::string& ToolName );
+	void bindToolHandler( SceneEditorVPToolHandler*handler );
+	void bindToolHandler( const std::string& ToolName );
 	void RegisterToolHandler( const std::string& ToolName, SceneEditorVPToolHandler*handler );
 	//////////////////////
 	void SetHeadLightMode( bool bv ) { mbHeadLight=bv; }
@@ -154,7 +154,7 @@ public:
 	EditorMainWindow& MainWindow() const { return mMainWindow; }
 	ork::lev2::Renderer* GetRenderer() const { return mRenderer; }
 	lev2::CManipManager& ManipManager() { return mEditor.ManipManager(); }
-	lev2::CCamera* GetActiveCamera() const { return _editorCamera; }
+	lev2::CCamera* getActiveCamera() const { return _editorCamera; }
 
 	///////////////////////////////////////////////////
 
