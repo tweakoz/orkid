@@ -402,14 +402,16 @@ void CManipManager::DrawManip(CManip* pmanip, GfxTarget* pTARG) {
     return;
 
   lev2::PickBufferBase* pickBuf = pTARG->FBI()->GetCurrentPickBuffer();
-  U32 pickID = pickBuf ? pickBuf->AssignPickId((ork::Object*)pmanip) : 0;
+
+  uint64_t pickID = pickBuf ? pickBuf->AssignPickId((ork::Object*)pmanip) : 0;
   CColor4 col = pmanip->GetColor();
 
   pTARG->SetCurrentObject(pmanip);
   // orkprintf( "MANIP<%p>\n", pmanip );
 
   if (pTARG->FBI()->IsPickState()) {
-    pTARG->PushModColor(ork::CColor4(pickID));
+    fvec4 asv4; asv4.SetRGBAU64(pickID);
+    pTARG->PushModColor(asv4);
     pmanip->Draw(pTARG);
     pTARG->PopModColor();
   } else {
