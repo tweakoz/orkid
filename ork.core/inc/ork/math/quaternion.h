@@ -27,10 +27,10 @@ struct QuatCodec
 };
 				
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T> class TMatrix4;
-template <typename T> class TMatrix3;
-template <typename T> class TVector4;
-template <typename T> class TVector3;
+template <typename T> class Matrix44;
+template <typename T> class Matrix33;
+template <typename T> class Vector4;
+template <typename T> class Vector3;
 
 template <typename T> class  TQuaternion
 {
@@ -45,7 +45,7 @@ template <typename T> class  TQuaternion
 	
 	TQuaternion(T x, T y, T z, T w);
 
-	TQuaternion(const TMatrix4<T> &matrix);
+	TQuaternion(const Matrix44<T> &matrix);
 	
 	~TQuaternion()
 	{
@@ -67,11 +67,11 @@ template <typename T> class  TQuaternion
 	
 	/////////
 	
-	void			FromMatrix(const TMatrix4<T> &matrix);
-	TMatrix4<T>		ToMatrix(void) const;
+	void			FromMatrix(const Matrix44<T> &matrix);
+	Matrix44<T>		ToMatrix(void) const;
 
-	void			FromMatrix3(const TMatrix3<T> &matrix);
-	TMatrix3<T>		ToMatrix3(void) const;
+	void			FromMatrix3(const Matrix33<T> &matrix);
+	Matrix33<T>		ToMatrix3(void) const;
 
 	void			Scale(T scalar);
 	TQuaternion		Multiply(const TQuaternion &q) const;
@@ -79,8 +79,8 @@ template <typename T> class  TQuaternion
 	void			Sub(TQuaternion &a);
 	void			Add(TQuaternion &a);
 	
-	TVector4<T>		ToAxisAngle(void) const;
-	void			FromAxisAngle( const TVector4<T> &v );
+	Vector4<T>		ToAxisAngle(void) const;
+	void			FromAxisAngle( const Vector4<T> &v );
 	
 	T				Magnitude(void);
 	TQuaternion		Conjugate(TQuaternion &a);
@@ -93,7 +93,7 @@ template <typename T> class  TQuaternion
 	static TQuaternion Slerp( const TQuaternion &a , const TQuaternion &b, T alpha );
 
 	void			Identity(void);
-	void			ShortestRotationArc( TVector4<T> v0, TVector4<T> v1 );
+	void			ShortestRotationArc( Vector4<T> v0, Vector4<T> v1 );
 
 	/////////
 	

@@ -34,15 +34,15 @@ struct rend_prefragsubgroup;
 
 struct rend_srcvtx
 {
-	ork::CVector3	mPos;
-	ork::CVector3	mVertexNormal;
-	ork::CVector3	mUv;
+	ork::fvec3	mPos;
+	ork::fvec3	mVertexNormal;
+	ork::fvec3	mUv;
 };
 
 struct rend_srctri
 {
 	rend_srcvtx		mpVertices[3];
-	ork::CVector3	mFaceNormal;
+	ork::fvec3	mFaceNormal;
 	float			mSurfaceArea;
 };
 
@@ -60,8 +60,8 @@ struct rend_srcmesh
 	int					miNumSubMesh;
 	rend_srcsubmesh*	mpSubMeshes;
 	ork::AABox			mAABox;
-	ork::CVector3		mTarget;
-	ork::CVector3		mEye;
+	ork::fvec3		mTarget;
+	ork::fvec3		mEye;
 
 	rend_srcmesh() : miNumSubMesh(0), mpSubMeshes(0) {}
 };
@@ -77,16 +77,16 @@ struct rend_ivtx
 	float	mToZ;
 	float	mfDepth;
 	float	mfInvDepth;
-	ork::CVector3 mWldSpacePos;
-	ork::CVector3 mObjSpacePos;
-	ork::CVector3 mWldSpaceNrm;
-	ork::CVector3 mObjSpaceNrm;
+	ork::fvec3 mWldSpacePos;
+	ork::fvec3 mObjSpacePos;
+	ork::fvec3 mWldSpaceNrm;
+	ork::fvec3 mObjSpaceNrm;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct rend_triangle
 {
 	rend_ivtx			mSVerts[3];
-	ork::CVector3		mFaceNormal;
+	ork::fvec3		mFaceNormal;
 	float				mfArea;
 	const rend_shader*	mpShader;
 };
@@ -150,9 +150,9 @@ struct rend_prefrags
 ///////////////////////////////////////////////////////////////////////////////
 struct rend_fragment
 {
-	ork::CVector4			mRGBA;
-	ork::CVector3			mWorldPos;	// needed for volume shaders
-	ork::CVector3			mWldSpaceNrm;
+	ork::fvec4			mRGBA;
+	ork::fvec3			mWorldPos;	// needed for volume shaders
+	ork::fvec3			mWldSpaceNrm;
 	float					mZ;
 	const rend_triangle*	mpPrimitive;
 	const rend_fragment*	mpNext;
@@ -170,13 +170,13 @@ struct rend_fragment
 ///////////////////////////////////////////////////////////////////////////////
 struct rend_texture2D
 {
-	ork::CVector4*	mpData;
+	ork::fvec4*	mpData;
 	int				miWidth;
 	int				miHeight;
 	//mutable cl_mem	mCLhandle;
 	rend_texture2D();
 	~rend_texture2D();
-	ork::CVector4 sample_point( float u, float v, bool wrapu, bool wrapv ) const;
+	ork::fvec4 sample_point( float u, float v, bool wrapu, bool wrapv ) const;
 
 	void Load( const std::string& pth );
 	void Init( /*const CLDevice* pdev*/ ) const;
@@ -193,7 +193,7 @@ struct rend_volume_shader
 //	virtual void Compute( rend_fragment* pfrag ) = 0;
 	u32	mBooleanKey;
 	rend_volume_shader() : mBooleanKey(0) {}
-	virtual ork::CVector4 ShadeVolume( const ork::CVector3& entrywpos, const ork::CVector3& exitwpos ) const = 0;
+	virtual ork::fvec4 ShadeVolume( const ork::fvec3& entrywpos, const ork::fvec3& exitwpos ) const = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct rend_fraglist_visitor
@@ -256,7 +256,7 @@ struct FragmentCompositorREYES : public rend_fraglist_visitor
 	void Visit( const rend_fragment* pfrag ); // virtual
 	void SortAndHide(); // Sort and Hide occluded
 	void Reset();
-	ork::CVector3 Composite(const ork::CVector3&clrcolor);
+	ork::fvec3 Composite(const ork::fvec3&clrcolor);
 	////////////////////////////////////////////
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -303,7 +303,7 @@ struct FragmentCompositorZBuffer : public rend_fraglist_visitor
 	FragmentCompositorZBuffer() : opaqueZ(1.0e30f), mpOpaqueFragment(0) {}
 	void Visit( const rend_fragment* pfrag ); // virtual
 	void Reset();
-	ork::CVector3 Composite(const ork::CVector3&clrcolor);
+	ork::fvec3 Composite(const ork::fvec3&clrcolor);
 	////////////////////////////////////////////
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -362,7 +362,7 @@ struct GeoPrimTable // complete table of all primitives for the bounder/splitter
 	void AddPrim( IGeoPrim* prim ); // thread safe function
 
 	////////////////////////////////////////////
-	ork::CMatrix4		mProjectionMatrix;
+	ork::fmtx4		mProjectionMatrix;
 	ork::Frustum 		mProjectionFrustum;
 	////////////////////////////////////////////
 	static const int kmaxdivs = 16;
@@ -409,13 +409,13 @@ public:
 	rend_srcmesh*			mpSrcMesh;
 	//ork::RgmModel*			mpModel;
 	//ork::Engine				mRayEngine;
-	ork::CVector3			mEye;
-	ork::CVector3			mTarget;
-	ork::CMatrix4			mMatrixP;
-	ork::CMatrix4			mMatrixV;
-	ork::CMatrix4			mMatrixM;
-	ork::CMatrix4			mMatrixMV;
-	ork::CMatrix4			mMatrixMVP;
+	ork::fvec3			mEye;
+	ork::fvec3			mTarget;
+	ork::fmtx4			mMatrixP;
+	ork::fmtx4			mMatrixV;
+	ork::fmtx4			mMatrixM;
+	ork::fmtx4			mMatrixMV;
+	ork::fmtx4			mMatrixMVP;
 	ork::Frustum			mFrustum;
 	u32*					mPixelData;
 	
@@ -488,12 +488,12 @@ inline int RenderData::CalcAAPixelAddress( int ix, int iy ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ClipVert
-{	ork::CVector3 pos;
+{	ork::fvec3 pos;
 	void Lerp( const ClipVert& va, const ClipVert& vb, float flerp )
 	{	pos.Lerp( va.pos, vb.pos, flerp );
 	}
-	const ork::CVector3& Pos() const { return pos; }
-	ClipVert(const ork::CVector3&tp) : pos(tp) {}
+	const ork::fvec3& Pos() const { return pos; }
+	ClipVert(const ork::fvec3&tp) : pos(tp) {}
 	ClipVert() : pos() {}
 };
 

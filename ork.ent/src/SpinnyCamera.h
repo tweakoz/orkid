@@ -27,7 +27,7 @@ class SequenceCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( SequenceCamArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
@@ -107,7 +107,7 @@ public:
 private:
     void DoUpdate(ent::SceneInst* sinst) final;
     bool DoLink(SceneInst *psi) final;
-    bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+    bool DoStart(SceneInst *psi, const fmtx4 &world) final;
 	bool DoNotify(const ork::event::Event *event) final;
 	orklut<PoolString,SeqCamItemInstBase*>	mItemInsts;
 	SeqCamItemInstBase*						mpActiveItem;

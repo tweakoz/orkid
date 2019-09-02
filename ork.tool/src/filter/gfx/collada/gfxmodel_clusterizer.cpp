@@ -121,7 +121,7 @@ void XgmClusterizerDiced::End()
 	///////////////////////////////////////////////
 
 	AABox aab = mPreDicedMesh.GetAABox();
-	CVector3 extents = aab.Max()-aab.Min();
+	fvec3 extents = aab.Max()-aab.Min();
 
 #if 0
 
@@ -241,8 +241,8 @@ void XgmClusterizerDiced::End()
 	{
 		const XgmClusterBuilder& clus = *ClusterVect[ic];
 		AABox bbox = clus.mSubMesh.GetAABox();
-		CVector3 vmin = bbox.Min();
-		CVector3 vmax = bbox.Max();
+		fvec3 vmin = bbox.Min();
+		fvec3 vmax = bbox.Max();
 		float fdist = (vmax-vmin).Mag();
 
 		int inumv = (int) clus.mSubMesh.RefVertexPool().GetNumVertices();

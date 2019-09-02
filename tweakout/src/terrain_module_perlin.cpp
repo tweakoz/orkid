@@ -236,7 +236,7 @@ bool Perlin3DMaterial::BeginPass( lev2::GfxTarget *pTarg, int iPass )
 	float frot2 = sinf(mRotate);
 	float frot3 = cosf(mRotate);
 
-	pTarg->FXI()->BindParamVect4( hModFX, hRotationMtx, CVector4(frot0,frot1,frot2,frot3) );
+	pTarg->FXI()->BindParamVect4( hModFX, hRotationMtx, fvec4(frot0,frot1,frot2,frot3) );
 
 	if( mHeightTexture )
 	{
@@ -266,7 +266,7 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 
 	heightfield_compute_buffer& ComputeBuffer = HeightMapGPGPUComputeBuffer();
 
-	ComputeBuffer.GetContext()->SetClearColor( CColor4::Black() );
+	ComputeBuffer.GetContext()->SetClearColor( fcolor4::Black() );
 	ComputeBuffer.GetContext()->SetAutoClear(true);
 
 	//const int BUFW = heightfield_compute_buffer::kw;
@@ -297,7 +297,7 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 
 			ComputeBuffer.BeginFrame();
 			{
-				CMatrix4 MatP = ComputeBuffer.GetContext()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );		
+				fmtx4 MatP = ComputeBuffer.GetContext()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );		
 				
 				SRect VPRECT( 0, 0, BUFW, BUFH );
 
@@ -312,8 +312,8 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 				matsolid.mRasterState.SetDepthTest( lev2::EDEPTHTEST_OFF );
 
 				ComputeBuffer.GetContext()->PushPMatrix( MatP );
-				ComputeBuffer.GetContext()->PushVMatrix( CMatrix4::Identity );
-				ComputeBuffer.GetContext()->PushMMatrix( CMatrix4::Identity );
+				ComputeBuffer.GetContext()->PushVMatrix( fmtx4::Identity );
+				ComputeBuffer.GetContext()->PushMMatrix( fmtx4::Identity );
 				ComputeBuffer.GetContext()->BindMaterial( & matsolid );
 				ComputeBuffer.GetContext()->PushViewport(VPRECT);
 				ComputeBuffer.GetContext()->PushScissor(VPRECT);
@@ -360,7 +360,7 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 					//////////////////////////////////////////////////////////////
 					// set texsize for texture filters for depthmap
 					float texw( mpDepthModTexture ? mpDepthModTexture->GetWidth() : 1.0f );
-					CColor4 CubicFilterParams( float(ix2), float(iz2), texw, 1.0f/texw );
+					fcolor4 CubicFilterParams( float(ix2), float(iz2), texw, 1.0f/texw );
 					//////////////////////////////////////////////////////////////
 					ComputeBuffer.GetContext()->PushModColor( CubicFilterParams );
 					matsolid.mHeightTexture=mpDepthModTexture;
@@ -399,7 +399,7 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 					//////////////////////////////////////////////////////////////
 					// set texsize for texture filters for noismap
 					texw = mpNoiseModTexture ? mpNoiseModTexture->GetWidth() : 1.0f;
-					CubicFilterParams = CColor4( float(ix2), float(iz2), texw, 1.0f/texw );
+					CubicFilterParams = fcolor4( float(ix2), float(iz2), texw, 1.0f/texw );
 					//////////////////////////////////////////////////////////////
 					ComputeBuffer.GetContext()->PushModColor( CubicFilterParams );
 					{
@@ -453,7 +453,7 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 			lev2::CaptureBuffer MyCaptureBuffer;
 			ComputeBuffer.GetContext()->Capture( MyCaptureBuffer );
 
-			const CVector4* VecBuffer = (const CVector4*) MyCaptureBuffer.GetData();
+			const fvec4* VecBuffer = (const fvec4*) MyCaptureBuffer.GetData();
 
 			///////////////////////////////////////////
 
@@ -463,7 +463,7 @@ void hmap_perlin_module::ComputeGPU(dataflow::workunit* wu) const
 				{	
 					int index = MyCaptureBuffer.CalcDataIndex( iX, iZ );
 
-					const CVector4& v = VecBuffer[ index ];
+					const fvec4& v = VecBuffer[ index ];
 					float fy = v.GetX();
 					hm.SetHeight(iX+ix1,iZ+iz1,fy);
 				}

@@ -289,18 +289,18 @@ public:
 
 	virtual void BindParamBool( FxShader* hfx, const FxShaderParam* hpar, const bool bval );
 	virtual void BindParamInt( FxShader* hfx, const FxShaderParam* hpar, const int ival );
-	virtual void BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec );
-	virtual void BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec );
-	virtual void BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec );
-	virtual void BindParamVect4Array( FxShader* hfx, const FxShaderParam* hpar, const CVector4 * Vec, const int icount );
+	virtual void BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec );
+	virtual void BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec );
+	virtual void BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec );
+	virtual void BindParamVect4Array( FxShader* hfx, const FxShaderParam* hpar, const fvec4 * Vec, const int icount );
 	virtual void BindParamFloatArray( FxShader* hfx, const FxShaderParam* hpar, const float * pfA, const int icnt );
 	virtual void BindParamFloat( FxShader* hfx, const FxShaderParam* hpar, float fA );
 	virtual void BindParamFloat2( FxShader* hfx, const FxShaderParam* hpar, float fA, float fB );
 	virtual void BindParamFloat3( FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC );
 	virtual void BindParamFloat4( FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD );
-	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 & Mat );
-	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const CMatrix3 & Mat );
-	virtual void BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 * MatArray, int iCount );
+	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const fmtx4 & Mat );
+	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const fmtx3 & Mat );
+	virtual void BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const fmtx4 * MatArray, int iCount );
 	virtual void BindParamU32( FxShader* hfx, const FxShaderParam* hpar, U32 uval );
 	virtual void BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, const Texture *pTex );
 	virtual bool LoadFxShader( const AssetPath& pth, FxShader *ptex );

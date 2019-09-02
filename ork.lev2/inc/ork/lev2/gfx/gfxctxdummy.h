@@ -31,18 +31,18 @@ public:
 
   virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) {}
   virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) {}
-  virtual void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const CVector4& Vec) {}
-  virtual void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const CVector4& Vec) {}
-  virtual void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const CVector4& Vec) {}
-  virtual void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const CVector4* Vec, const int icount) {}
+  virtual void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {}
+  virtual void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {}
+  virtual void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {}
+  virtual void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) {}
   virtual void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) {}
   virtual void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) {}
   virtual void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) {}
   virtual void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) {}
   virtual void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) {}
-  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const CMatrix4& Mat) {}
-  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const CMatrix3& Mat) {}
-  virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const CMatrix4* MatArray, int iCount) {}
+  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) {}
+  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) {}
+  virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) {}
   virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval) {}
   virtual void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) {}
 
@@ -68,7 +68,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 class DuMatrixStackInterface : public MatrixStackInterface {
-  virtual CMatrix4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar);
+  virtual fmtx4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar);
 
 public:
   DuMatrixStackInterface(GfxTarget& target) : MatrixStackInterface(target) {}
@@ -125,9 +125,9 @@ public:
 
   virtual void SetViewport(int iX, int iY, int iW, int iH) {}
   virtual void SetScissor(int iX, int iY, int iW, int iH) {}
-  virtual void Clear(const CColor4& rCol, float fdepth) {}
+  virtual void Clear(const fcolor4& rCol, float fdepth) {}
 
-  virtual void GetPixel(const CVector4& rAt, GetPixelContext& ctx) {}
+  virtual void GetPixel(const fvec4& rAt, GetPixelContext& ctx) {}
 
   //////////////////////////////////////////////
 

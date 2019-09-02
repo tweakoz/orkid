@@ -99,7 +99,7 @@ TEST(SceneTortureTest)
 
 		if( DagObj )
 		{
-			CVector3 Pos = DagObj->GetTransformNode().GetWorldTransform()->GetPosition();
+			fvec3 Pos = DagObj->GetTransformNode().GetWorldTransform()->GetPosition();
 		}
 		switch( rand()%10 )
 		{
@@ -206,7 +206,7 @@ TEST(SceneTortureTest)
 			float fx(float(rand()%65535)/float(65536.0f));
 			float fy(float(rand()%65535)/float(65536.0f));
 			float fz(float(rand()%65535)/float(65536.0f));
-			ork::CVector3 Translation( fx,fy,fz );
+			ork::fvec3 Translation( fx,fy,fz );
 			xfnode.Translate( ork::TransformNode3D::EMODE_ABSOLUTE, Translation );
 			ork::lev2::CManipManager::GetRef().ApplyTransform( xfnode );
 			ork::lev2::CManipManager::GetRef().ReleaseObject();

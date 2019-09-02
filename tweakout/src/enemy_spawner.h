@@ -64,7 +64,7 @@ struct HotSpot
 {
 	float								mCardinalDirWeight[9];
 	float								mWeight;
-	CVector3							mPosition;
+	fvec3							mPosition;
 	//orkvector<FighterControllerInst*>	mFighters;
 	int									miX, miZ;
 
@@ -72,7 +72,7 @@ struct HotSpot
 	
 	//void AddFighter(FighterControllerInst*fci);
 	//void RemoveFighter(FighterControllerInst*fci);
-	CVector3 RequestPosition();
+	fvec3 RequestPosition();
 
 };
 
@@ -93,19 +93,19 @@ struct HotSpotController
 	float								mMaxLinkDistance;
 	WorldControllerInst*				mWCI;
 
-	void ReadSurface( const CVector3& xyz, CVector3& pos, CVector3& normal ) const;
+	void ReadSurface( const fvec3& xyz, fvec3& pos, fvec3& normal ) const;
 	
 	HotSpotController();
 
 	void UpdateHotSpotLinks();
 	HotSpot* GetHotSpot();
-	HotSpot* UpdateHotSpot( const CVector3& TargetPos, const CVector3& TargetVel, const CVector3& TargetAcc );
+	HotSpot* UpdateHotSpot( const fvec3& TargetPos, const fvec3& TargetVel, const fvec3& TargetAcc );
 
 	void Link(WorldControllerInst*wci);
 
 	const orkvector<HotSpot>& HotSpots() const { return mHotSpots; }
 
-	int GetCardinalDir( const CVector2& vxz );
+	int GetCardinalDir( const fvec2& vxz );
 	void SortConnections( const HotSpot* phs, int(&Cardinals)[9] );
 	HotSpot* GetConnected( const HotSpot* psrc, int icard );
 	HotSpot* GetHotSpot( int ix, int iz );
@@ -123,8 +123,8 @@ class EnemySpawnerControllerInst : public ent::ComponentInst
 	ent::Entity*						mTarget;
 	WorldControllerInst*				mWCI;
 	ShipControllerInst*					mSCI;
-	CVector3							mTargetVel;
-	CVector3							mTargetAcc;
+	fvec3							mTargetVel;
+	fvec3							mTargetAcc;
 	int									mNumEnemies;
 	float								mfTimer;
 	orkvector<FighterControllerInst*>	mFighters;
@@ -168,7 +168,7 @@ class EnemySpawnerArchetype : public ork::ent::Archetype
 		
 	/*virtual*/ void DoCompose();
 	/*virtual*/ void DoLinkEntity( const ent::SceneInst* psi, ent::Entity *pent ) const;
-	/*virtual*/ void DoStartEntity( const ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity *pent ) const {}
+	/*virtual*/ void DoStartEntity( const ent::SceneInst* psi, const ork::fmtx4& mtx, ent::Entity *pent ) const {}
 
 public:
 

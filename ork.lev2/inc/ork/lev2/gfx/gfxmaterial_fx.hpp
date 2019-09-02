@@ -23,14 +23,14 @@ template <> GfxMaterialFxParamArtist<int>::GfxMaterialFxParamArtist(GfxMaterialF
 {
 }
 
-template <> GfxMaterialFxParamArtist<CMatrix4>::GfxMaterialFxParamArtist(GfxMaterialFx *parent)
-	: GfxMaterialFxParam<CMatrix4>(parent)
+template <> GfxMaterialFxParamArtist<fmtx4>::GfxMaterialFxParamArtist(GfxMaterialFx *parent)
+	: GfxMaterialFxParam<fmtx4>(parent)
 	, mValue()
 {
 }
 
-template <> GfxMaterialFxParamArtist<CMatrix3>::GfxMaterialFxParamArtist(GfxMaterialFx *parent)
-	: GfxMaterialFxParam<CMatrix3>(parent)
+template <> GfxMaterialFxParamArtist<fmtx3>::GfxMaterialFxParamArtist(GfxMaterialFx *parent)
+	: GfxMaterialFxParam<fmtx3>(parent)
 	, mValue()
 {
 }

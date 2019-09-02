@@ -319,7 +319,7 @@ void RotSolid::compute( ProcTex& ptex )
 		mVBHash = testhash;
 	}
 	////////////////////////////////////////////////////////////////
-	//CMatrix4 mtxortho = pTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
+	//fmtx4 mtxortho = pTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
 	////////////////////////////////////////////////////////////////
 	
 	struct AA16RenderRot : public AA16Render
@@ -344,9 +344,9 @@ void RotSolid::compute( ProcTex& ptex )
 			stdmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 			stdmat.mRasterState.SetBlending( ebm );
 			stdmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-			stdmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
+			stdmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
-			mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
+			mOrthoBoxXYWH = fvec4( -1.0f, -1.0f, 2.0f, 2.0f );
 		}
 	};
 
@@ -421,7 +421,7 @@ void ImgOp2::compute( ProcTex& ptex )
 		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 		gridmat.SetTexture( conplugA->GetValue().GetTexture(ptex) );
 		gridmat.SetTexture2( conplugB->GetValue().GetTexture(ptex) );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+		gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
 		UnitTexQuad( pTARG );
@@ -536,7 +536,7 @@ void ImgOp3::compute( ProcTex& ptex )
 		cur_mtl->SetTexture( conplugA->GetValue().GetTexture(ptex) );
 		cur_mtl->SetTexture2( conplugB->GetValue().GetTexture(ptex) );
 		cur_mtl->SetTexture3( conplugM->GetValue().GetTexture(ptex) );
-		cur_mtl->SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+		cur_mtl->SetUser0( fvec4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 
 		////////////////////////////////////////////////////////////////
 		buffer.PtexBegin(pTARG,true,true);
@@ -608,7 +608,7 @@ void Transform::compute( ProcTex& ptex )
 		////////////////////////////////////////////////////////////////
 		float rot = PI2*mPlugInpRotate.GetValue()/360.0f;
 		////////////////////////////////////////////////////////////////
-		CMatrix4 mtxR, mtxS, mtxT, mtxTO1, mtxTO2;
+		fmtx4 mtxR, mtxS, mtxT, mtxTO1, mtxTO2;
 		mtxS.Scale( mPlugInpScaleX.GetValue(), mPlugInpScaleY.GetValue(), 1.0f );
 		mtxTO1.SetTranslation( -0.5f,-0.5f, 0.0f );
 		mtxTO2.SetTranslation( +0.5f,+0.5f, 0.0f );
@@ -619,7 +619,7 @@ void Transform::compute( ProcTex& ptex )
 		////////////////////////////////////////////////////////////////
 		mMaterial->SetTexture( conplug->GetValue().GetTexture(ptex) );
 		mMaterial->SetAuxMatrix( (mtxTO1*(mtxR*mtxS)*mtxTO2)*mtxT );
-		mMaterial->SetUser0( CVector4(sina,cosa,0.0f,float(buffer.miW)) );
+		mMaterial->SetUser0( fvec4(sina,cosa,0.0f,float(buffer.miW)) );
 		////////////////////////////////////////////////////////////////
 		pTARG->PushMaterial( mMaterial );
 		UnitTexQuad( pTARG );
@@ -656,17 +656,17 @@ void Texture::compute( ProcTex& ptex )
 	gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 	gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 	gridmat.SetTexture( GetTexture() );
-	gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+	gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 	pTARG->BindMaterial( & gridmat );
 	////////////////////////////////////////////////////////////////
 	float ftexw = GetTexture() ? GetTexture()->GetWidth() : 1.0f;
-	pTARG->PushModColor( ork::CVector4( ftexw, ftexw, ftexw, ftexw ) );
+	pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
 	////////////////////////////////////////////////////////////////
-	CMatrix4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
+	fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
 	pTARG->MTXI()->PushPMatrix( mtxortho );
-	pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
-	//pTARG->PushModColor( CVector3::White() );
+	pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+	pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
+	//pTARG->PushModColor( fvec3::White() );
 	{	
 		RenderQuad( pTARG, -1,1,1,-1 );
 
@@ -787,13 +787,13 @@ void ShaderQuad::compute( ProcTex& ptex )
 		else
 			mShader->SetTexture( GetTexture() );
 
-		mShader->SetUser0( CVector4(mPlugInpUser0X.GetValue(),mPlugInpUser0Y.GetValue(),mPlugInpUser0Z.GetValue(),float(buffer.miW)) );
+		mShader->SetUser0( fvec4(mPlugInpUser0X.GetValue(),mPlugInpUser0Y.GetValue(),mPlugInpUser0Z.GetValue(),float(buffer.miW)) );
 		////////////////////////////////////////////////////////////////
 		//float ftexw = GetTexture() ? GetTexture()->GetWidth() : 1.0f;
-		//pTARG->PushModColor( ork::CVector4( ftexw, ftexw, ftexw, ftexw ) );
+		//pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
 		////////////////////////////////////////////////////////////////
 		buffer.PtexBegin(pTARG,true,false);
-		pTARG->PushModColor( CVector3::White() );
+		pTARG->PushModColor( fvec3::White() );
 		{	
 			pTARG->PushMaterial( mShader );
 			UnitTexQuad( pTARG );
@@ -855,16 +855,16 @@ void SolidColor::compute( ProcTex& ptex )
 		mMaterial->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 		mMaterial->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 		mMaterial->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-		mMaterial->SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+		mMaterial->SetUser0( fvec4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 	}
 
 	pTARG->BindMaterial( mMaterial );
 	////////////////////////////////////////////////////////////////
-	pTARG->PushModColor( ork::CVector4( mfr, mfg, mfb, mfa ) );
+	pTARG->PushModColor( ork::fvec4( mfr, mfg, mfb, mfa ) );
 	////////////////////////////////////////////////////////////////
-	pTARG->MTXI()->PushPMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-	pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+	pTARG->MTXI()->PushPMatrix( fmtx4::Identity );
+	pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+	pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 	{	
 		RenderQuad( pTARG, -1,-1,1,1 );
 	}
@@ -917,14 +917,14 @@ void Gradient::compute( ProcTex& ptex )
 
 	Buffer& buffer = GetWriteBuffer(ptex);
 
-	const orklut<float,ork::CVector4> & data = mGradient.Data();
+	const orklut<float,ork::fvec4> & data = mGradient.Data();
 	float frw = 1.0f / float(miRepeat);
 	bool bpingpong = (meRepeatMode==EGS_PINGPONG);
 	const int knumpoints = data.size();
 	const int ksegs = knumpoints-1;
 	const float kz = 0.0f;
 			
-	CVector2 uv;
+	fvec2 uv;
 	mVertexBuffer.Reset();
 
 	if( nullptr == mMtl )
@@ -940,7 +940,7 @@ void Gradient::compute( ProcTex& ptex )
 
 	}
 
-	mMtl->SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+	mMtl->SetUser0( fvec4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 
 	/////////////////////////////////////////
 	// compute vertex count
@@ -952,8 +952,8 @@ void Gradient::compute( ProcTex& ptex )
 		float frght = fleft+frw;
 		bool bppalt = bpingpong&(ir&1);
 		for( int i=0; i<ksegs; i++ )
-		{	std::pair<float,ork::CVector4> data_a = data.GetItemAtIndex(i);
-			std::pair<float,ork::CVector4> data_b = data.GetItemAtIndex(i+1);
+		{	std::pair<float,ork::fvec4> data_a = data.GetItemAtIndex(i);
+			std::pair<float,ork::fvec4> data_b = data.GetItemAtIndex(i+1);
 			float fia = data_a.first;
 			float fib = data_b.first;
 			float fx0 = bppalt ? frght-(fia*frw) : fleft+(fia*frw);
@@ -995,8 +995,8 @@ void Gradient::compute( ProcTex& ptex )
 		for( int i=0; i<ksegs; i++ )
 		{
 
-			std::pair<float,ork::CVector4> data_a = data.GetItemAtIndex(i);
-			std::pair<float,ork::CVector4> data_b = data.GetItemAtIndex(i+1);
+			std::pair<float,ork::fvec4> data_a = data.GetItemAtIndex(i);
+			std::pair<float,ork::fvec4> data_b = data.GetItemAtIndex(i+1);
 
 			float fia = data_a.first;
 			float fib = data_b.first;
@@ -1006,16 +1006,16 @@ void Gradient::compute( ProcTex& ptex )
 			float fy0 = 0.0f;
 			float fy1 = 1.0f;
 
-			CVector4 c0 = data_a.second;			
-			CVector4 c1 = data_b.second;			
+			fvec4 c0 = data_a.second;			
+			fvec4 c1 = data_b.second;			
 
 			switch( meGradientType )
 			{
 				case EGT_VERTICAL:
-				{	lev2::SVtxV12C4T16 v0( CVector3(fy0,fx0,kz), uv, c0.GetVtxColorAsU32() );
-					lev2::SVtxV12C4T16 v1( CVector3(fy0,fx1,kz), uv, c1.GetVtxColorAsU32() );
-					lev2::SVtxV12C4T16 v2( CVector3(fy1,fx1,kz), uv, c1.GetVtxColorAsU32() );
-					lev2::SVtxV12C4T16 v3( CVector3(fy1,fx0,kz), uv, c0.GetVtxColorAsU32() );
+				{	lev2::SVtxV12C4T16 v0( fvec3(fy0,fx0,kz), uv, c0.GetVtxColorAsU32() );
+					lev2::SVtxV12C4T16 v1( fvec3(fy0,fx1,kz), uv, c1.GetVtxColorAsU32() );
+					lev2::SVtxV12C4T16 v2( fvec3(fy1,fx1,kz), uv, c1.GetVtxColorAsU32() );
+					lev2::SVtxV12C4T16 v3( fvec3(fy1,fx0,kz), uv, c0.GetVtxColorAsU32() );
 					vw.AddVertex( v0 );
 					vw.AddVertex( v1 );
 					vw.AddVertex( v2 );
@@ -1025,10 +1025,10 @@ void Gradient::compute( ProcTex& ptex )
 					break;
 				}
 				case EGT_HORIZONTAL:
-				{	lev2::SVtxV12C4T16 v0( CVector3(fx0,fy0,kz), uv, c0.GetVtxColorAsU32() );
-					lev2::SVtxV12C4T16 v1( CVector3(fx1,fy0,kz), uv, c1.GetVtxColorAsU32() );
-					lev2::SVtxV12C4T16 v2( CVector3(fx1,fy1,kz), uv, c1.GetVtxColorAsU32() );
-					lev2::SVtxV12C4T16 v3( CVector3(fx0,fy1,kz), uv, c0.GetVtxColorAsU32() );
+				{	lev2::SVtxV12C4T16 v0( fvec3(fx0,fy0,kz), uv, c0.GetVtxColorAsU32() );
+					lev2::SVtxV12C4T16 v1( fvec3(fx1,fy0,kz), uv, c1.GetVtxColorAsU32() );
+					lev2::SVtxV12C4T16 v2( fvec3(fx1,fy1,kz), uv, c1.GetVtxColorAsU32() );
+					lev2::SVtxV12C4T16 v3( fvec3(fx0,fy1,kz), uv, c0.GetVtxColorAsU32() );
 					vw.AddVertex( v0 );
 					vw.AddVertex( v1 );
 					vw.AddVertex( v2 );
@@ -1055,8 +1055,8 @@ void Gradient::compute( ProcTex& ptex )
 					{	float fi = float(issg)*kfisegdiv;
 						float fphA = fph0 + (fi*fphd);
 						float fphB = fph0 + ((fi+kfisegdiv)*fphd);
-						CVector4 cA; cA.Lerp( c0, c1, fi );
-						CVector4 cB; cB.Lerp( c0, c1, fi+kfisegdiv );
+						fvec4 cA; cA.Lerp( c0, c1, fi );
+						fvec4 cB; cB.Lerp( c0, c1, fi+kfisegdiv );
 
 						float fxa = pol2rect_x( fphA, 0.0f ) + 0.5f;
 						float fya = pol2rect_y( fphA, 0.0f ) + 0.5f;
@@ -1065,9 +1065,9 @@ void Gradient::compute( ProcTex& ptex )
 						float fxc = pol2rect_x( fphB, 1.5f ) + 0.5f;
 						float fyc = pol2rect_y( fphB, 1.5f ) + 0.5f;
 
-						lev2::SVtxV12C4T16 v0( CVector3(fxa,fya,kz), uv, cA.GetVtxColorAsU32() );
-						lev2::SVtxV12C4T16 v1( CVector3(fxb,fyb,kz), uv, cA.GetVtxColorAsU32() );
-						lev2::SVtxV12C4T16 v2( CVector3(fxc,fyc,kz), uv, cB.GetVtxColorAsU32() );
+						lev2::SVtxV12C4T16 v0( fvec3(fxa,fya,kz), uv, cA.GetVtxColorAsU32() );
+						lev2::SVtxV12C4T16 v1( fvec3(fxb,fyb,kz), uv, cA.GetVtxColorAsU32() );
+						lev2::SVtxV12C4T16 v2( fvec3(fxc,fyc,kz), uv, cB.GetVtxColorAsU32() );
 						vw.AddVertex( v0 );
 						vw.AddVertex( v1 );
 						vw.AddVertex( v2 );
@@ -1088,8 +1088,8 @@ void Gradient::compute( ProcTex& ptex )
 					{	float fi = float(issg)*kfisegdiv;
 						float fphA = fi*PI2;
 						float fphB = (fi+kfisegdiv)*PI2;
-						CVector4 cA; cA.Lerp( c0, c1, fi );
-						CVector4 cB; cB.Lerp( c0, c1, fi+kfisegdiv );
+						fvec4 cA; cA.Lerp( c0, c1, fi );
+						fvec4 cB; cB.Lerp( c0, c1, fi+kfisegdiv );
 
 						float fxa = pol2rect_x( fphA, fmx0*0.5f ) + 0.5f;
 						float fya = pol2rect_y( fphA, fmx0*0.5f ) + 0.5f;
@@ -1100,10 +1100,10 @@ void Gradient::compute( ProcTex& ptex )
 						float fxd = pol2rect_x( fphB, fmx0*0.5f ) + 0.5f;
 						float fyd = pol2rect_y( fphB, fmx0*0.5f ) + 0.5f;
 
-						lev2::SVtxV12C4T16 v0( CVector3(fxa,fya,kz), uv, c0.GetVtxColorAsU32() );
-						lev2::SVtxV12C4T16 v1( CVector3(fxb,fyb,kz), uv, c1.GetVtxColorAsU32() );
-						lev2::SVtxV12C4T16 v2( CVector3(fxc,fyc,kz), uv, c1.GetVtxColorAsU32() );
-						lev2::SVtxV12C4T16 v3( CVector3(fxd,fyd,kz), uv, c0.GetVtxColorAsU32() );
+						lev2::SVtxV12C4T16 v0( fvec3(fxa,fya,kz), uv, c0.GetVtxColorAsU32() );
+						lev2::SVtxV12C4T16 v1( fvec3(fxb,fyb,kz), uv, c1.GetVtxColorAsU32() );
+						lev2::SVtxV12C4T16 v2( fvec3(fxc,fyc,kz), uv, c1.GetVtxColorAsU32() );
+						lev2::SVtxV12C4T16 v3( fvec3(fxd,fyd,kz), uv, c0.GetVtxColorAsU32() );
 						vw.AddVertex( v0 );
 						vw.AddVertex( v1 );
 						vw.AddVertex( v2 );
@@ -1119,8 +1119,8 @@ void Gradient::compute( ProcTex& ptex )
 	vw.UnLock(pTARG);
 	struct AA16RenderGrad : public AA16Render
 	{	void DoRender( float left, float right, float top, float bot, Buffer& buf  ) override
-		{	CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
-			mPTX.GetTarget()->PushModColor( CVector3::White() );
+		{	fmtx4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+			mPTX.GetTarget()->PushModColor( fvec3::White() );
 			mPTX.GetTarget()->PushMaterial( mMtl );
 			mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 			mPTX.GetTarget()->GBI()->DrawPrimitive( mVertexBuffer, ork::lev2::EPRIM_TRIANGLES, 0, mVertexBuffer.GetNumVertices() );
@@ -1138,7 +1138,7 @@ void Gradient::compute( ProcTex& ptex )
 			, mMtl( mtl )
 			, mVertexBuffer(vb)
 		{
-			mOrthoBoxXYWH = CVector4( 0.0f, 0.0f, 1.0f, 1.0f );
+			mOrthoBoxXYWH = fvec4( 0.0f, 0.0f, 1.0f, 1.0f );
 		}
 	};
 
@@ -1185,16 +1185,16 @@ void Group::compute( ProcTex& ptex )
 		gridmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 		gridmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 		gridmat.SetTexture( ptexture );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(computebuffer.miW)) );
+		gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(computebuffer.miW)) );
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
 		float ftexw = ptexture ? ptexture->GetWidth() : 1.0f;
-		pTARG->PushModColor( ork::CVector4( ftexw, ftexw, ftexw, ftexw ) );
+		pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
 		////////////////////////////////////////////////////////////////
-		CMatrix4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
+		fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
 		pTARG->MTXI()->PushPMatrix( mtxortho );
-		pTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-		pTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+		pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+		pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 		{	
 			RenderQuad( pTARG, -1,-1,1,1 );
 		}

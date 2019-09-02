@@ -30,7 +30,7 @@ public:
 protected:
 
   void DoUpdate(SceneInst *psi) final {}
-  bool DoStart(SceneInst *psi, const CMatrix4 &world) final { return true; }
+  bool DoStart(SceneInst *psi, const fmtx4 &world) final { return true; }
   bool DoLink(SceneInst *psi) final { return true; }
   void DoUnLink(SceneInst *psi) final {}
   void DoStop(SceneInst *psi) final {}

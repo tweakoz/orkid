@@ -38,12 +38,12 @@ public:
 
 	AABox			mExtends;
 	ObjectList**	mpCells;
-	CVector3		m_SR;
-	CVector3		m_CW;
+	fvec3		m_SR;
+	fvec3		m_CW;
 
 	void DestroyGrid();
 	void BuildGrid(const AABox& extends, const orkvector<const Primitive*>& prims);
-	//bool FastCall FindNearest( const Ray3& a_Ray, float& a_Dist, CVector3& isect, const Primitive*& a_Prim ) const;
+	//bool FastCall FindNearest( const fray3& a_Ray, float& a_Dist, fvec3& isect, const Primitive*& a_Prim ) const;
 	/*inline int FastCall CalcAddress( int ix, int iy, int iz ) const
 	{
 		OrkAssert( ix<GRIDSIZE );
@@ -54,7 +54,7 @@ public:
 		return iaddress;
 	}*/
 
-	inline bool CheckCell( const Ray3& InpRay, const ObjectList* plistbase, float& OutDistance, const Primitive*& OutPrim ) const
+	inline bool CheckCell( const fray3& InpRay, const ObjectList* plistbase, float& OutDistance, const Primitive*& OutPrim ) const
 	{
 		bool bretval = false;
 		const ObjectList* list = plistbase;
@@ -63,7 +63,7 @@ public:
 		{	const Primitive* pr = list->GetPrimitive();
 			//if (pr->GetLastRayID() != a_Ray.GetID())
 			{
-				CVector3 tisect;
+				fvec3 tisect;
                 int result = pr->Intersect( InpRay, tisect, TempDistance );
 				if( result ) 
 				{	
@@ -82,12 +82,12 @@ public:
 		return bretval;
 	}
 
-	inline bool FindNearest( const Ray3& InpRay, const CVector3& the_start, const CVector3& the_end, CVector3& isect, float& OutDistance, const Primitive*& OutPrim ) const
+	inline bool FindNearest( const fray3& InpRay, const fvec3& the_start, const fvec3& the_end, fvec3& isect, float& OutDistance, const Primitive*& OutPrim ) const
 	{
 		struct Args
 		{
-			CVector3 start;
-			CVector3 end;
+			fvec3 start;
+			fvec3 end;
 		};
 
 		std::queue<Args> args;
@@ -103,11 +103,11 @@ public:
 		{
 			Args a = args.front();
 			args.pop();
-			const CVector3& start = a.start;
-			const CVector3& end = a.end;
+			const fvec3& start = a.start;
+			const fvec3& end = a.end;
 
-			CVector3 cell1 = (start - e.Min()) * m_SR;
-			CVector3 cell2 = (end - e.Min()) * m_SR;
+			fvec3 cell1 = (start - e.Min()) * m_SR;
+			fvec3 cell2 = (end - e.Min()) * m_SR;
 			int X1 = (int)cell1.GetX();
 			int Y1 = (int)cell1.GetY();
 			int Z1 = (int)cell1.GetZ();
@@ -122,8 +122,8 @@ public:
 
 			if( (X1!=X2) || (Y1!=Y2) || (Z1!=Z2) )
 			{
-				CVector3 center = (start+end)*0.5f;
-				CVector3 cellC = (center - e.Min()) * m_SR;
+				fvec3 center = (start+end)*0.5f;
+				fvec3 cellC = (center - e.Min()) * m_SR;
 				int XC = (int)cellC.GetX();
 				int YC = (int)cellC.GetY();
 				int ZC = (int)cellC.GetZ();
@@ -160,18 +160,18 @@ public:
 		return false;
 	}
 
-	inline bool FindNearest( const Ray3& a_Ray, float& a_Dist, CVector3& isect, const Primitive*& a_Prim ) const
+	inline bool FindNearest( const fray3& a_Ray, float& a_Dist, fvec3& isect, const Primitive*& a_Prim ) const
 	{
 		giNumRays++;
 
 		float fdisttmp;
 		bool retval = false;
 		const AABox& e = mExtends;
-		const CVector3& start = a_Ray.mOrigin; // + a_Ray.mDirection* fbias;
-		const CVector3& end = a_Ray.mOrigin + a_Ray.mDirection*a_Dist; // + a_Ray.mDirection* fbias;
-		const CVector3& raydir = a_Ray.mDirection;
+		const fvec3& start = a_Ray.mOrigin; // + a_Ray.mDirection* fbias;
+		const fvec3& end = a_Ray.mOrigin + a_Ray.mDirection*a_Dist; // + a_Ray.mDirection* fbias;
+		const fvec3& raydir = a_Ray.mDirection;
 
-		CVector3 isect_in, isect_out;
+		fvec3 isect_in, isect_out;
 
 		bool bisect = e.Intersect( a_Ray, isect_in, isect_out );
 		

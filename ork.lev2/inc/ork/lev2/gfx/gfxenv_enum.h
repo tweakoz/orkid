@@ -223,7 +223,7 @@ enum ECullTest
 
 enum EVtxStreamFormat
 {
-	EVTXSTREAMFMT_V16 = 0,		// 16 BPV	flat CVector4's
+	EVTXSTREAMFMT_V16 = 0,		// 16 BPV	flat fvec4's
 	EVTXSTREAMFMT_V4T4 ,		// 8 BPV	2D text (or textured quads) no vtxcolors
 	EVTXSTREAMFMT_V4C4 ,		// 8 BPV	2D Colored
 	EVTXSTREAMFMT_V4T4C4,		// 12 BPV	2D text (or textured quads) w / vtxcolors

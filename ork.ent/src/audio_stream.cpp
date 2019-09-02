@@ -29,7 +29,7 @@ template class ork::orklut<ork::PoolString,ork::lev2::AudioStream*>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-bool AudioStreamComponentInst::DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world)
+bool AudioStreamComponentInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world)
 {
 	return true;
 }

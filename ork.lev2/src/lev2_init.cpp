@@ -204,7 +204,7 @@ void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 	Material.mRasterState.SetZWriteMask( false );
 	pTARG->BindMaterial( & Material );
 
-	pTARG->PushModColor( CColor4(0.0f,0.5f,0.0f) );
+	pTARG->PushModColor( fcolor4(0.0f,0.5f,0.0f) );
 
 	//////////////////////////////////////////////////////////////////////
 	orkstack<CPerformanceItem*> PerfItemStack;
@@ -243,7 +243,7 @@ void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 
 			f32 fx = (f32) iSX+1;
 			f32 fx2 = (f32) (iSX + (fpercent*iSW))-1;
-			CVector4 Vertices[6];
+			fvec4 Vertices[6];
 			Vertices[0].SetXYZ( fx, (f32) ipY+1, 0.5f );
 			Vertices[1].SetXYZ( fx, (f32) ipY2-1, 0.5f );
 			Vertices[2].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
@@ -266,7 +266,7 @@ void CPerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 	ipY2 = (itH-8)+2;
 	ipY = ipY2-iih;
 
-	pTARG->PushModColor( CColor4::White() );
+	pTARG->PushModColor( fcolor4::White() );
 	for( int i=0; i<int(SortedPerfVect.size()); i++ )
 	{
 		CPerformanceItem* pItem = SortedPerfVect[i];

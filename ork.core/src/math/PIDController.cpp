@@ -24,8 +24,8 @@ PIDController<T>::PIDController(
 		T proportional,
 		T integral,
 		T derivative,
-		const TVector2<T> &irange,
-		const TVector2<T> &maxdelta)
+		const Vector2<T> &irange,
+		const Vector2<T> &maxdelta)
 	: mProportionalFactor(proportional)
 	, mIntegralFactor(integral)
 	, mDerivativeFactor(derivative)
@@ -42,8 +42,8 @@ void PIDController<T>::Configure(
 	T proportional,
 	T integral,
 	T derivative,
-	const TVector2<T> &irange,
-	const TVector2<T> &maxdelta)
+	const Vector2<T> &irange,
+	const Vector2<T> &maxdelta)
 {
 	mProportionalFactor = proportional;
 	mIntegralFactor = integral;
@@ -118,7 +118,7 @@ T PIDController2<T>::Update(T MeasuredError, float dt )
 ///////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-PIDController2<T>::PIDController2(T proportional, T integral, T derivative, TVector2<T> irange, TVector2<T> maxdelta, float decay)
+PIDController2<T>::PIDController2(T proportional, T integral, T derivative, Vector2<T> irange, Vector2<T> maxdelta, float decay)
     : mProportionalFactor(proportional)
     , mIntegralFactor(integral)
     , mDerivativeFactor(derivative)
@@ -137,8 +137,8 @@ void PIDController2<T>::Configure(
     T proportional,
     T integral,
     T derivative,
-    TVector2<T> irange,
-    TVector2<T> maxdelta, 
+    Vector2<T> irange,
+    Vector2<T> maxdelta, 
 	float decay)
 {
     mProportionalFactor = proportional;

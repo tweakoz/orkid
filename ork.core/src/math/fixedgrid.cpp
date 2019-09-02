@@ -72,8 +72,8 @@ void FixedGrid::BuildGrid( const AABox& extends, const orkvector<const Primitive
 	m_CW = extends.GetSize() * (1.0f / GRIDSIZE);
 
 	// initialize regular grid
-	const CVector3& p1 = extends.Min();
-	const CVector3& p2 = extends.Max();
+	const fvec3& p1 = extends.Min();
+	const fvec3& p2 = extends.Max();
 	// calculate cell width, height and depth
 	const float dx = (p2.GetX() - p1.GetX()) / GRIDSIZE;
 	const float dx_reci = 1.0f / dx;
@@ -101,8 +101,8 @@ void FixedGrid::BuildGrid( const AABox& extends, const orkvector<const Primitive
 
 		//if (m_Primitive[p]->IsLight()) m_Light[m_Lights++] = m_Primitive[p];
 		const AABox& bound = prim->GetAABox();
-		const CVector3& bv1 = bound.Min();
-		const CVector3& bv2 = bound.Max();
+		const fvec3& bv1 = bound.Min();
+		const fvec3& bv2 = bound.Max();
 		// find out which cells could contain the primitive (based on aabb)
 		int x1 = (int)((bv1.GetX() - p1.GetX()) * dx_reci);
 		int x2 = (int)((bv2.GetX() - p1.GetX()) * dx_reci) + 1;
@@ -126,8 +126,8 @@ void FixedGrid::BuildGrid( const AABox& extends, const orkvector<const Primitive
 				{
 					// construct aabb for current cell
 					int idx = CalcAddress(x,y,z);
-					CVector3 pos( p1.GetX() + x * dx, p1.GetY() + y * dy, p1.GetZ() + z * dz );
-					AABox cell( pos, pos+CVector3( dx, dy, dz ) );
+					fvec3 pos( p1.GetX() + x * dx, p1.GetY() + y * dy, p1.GetZ() + z * dz );
+					AABox cell( pos, pos+fvec3( dx, dy, dz ) );
 					// do an accurate aabb / primitive intersection test
 					if (prim->IntersectBox( cell ))
 					{

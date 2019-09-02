@@ -20,10 +20,10 @@ namespace ork {
 struct SplineV2 {
   static const int Nu_components = 2;
 
-  SplineV2(const CVector2& pos);
+  SplineV2(const fvec2& pos);
   SplineV2() {}
 
-  CVector2 mData;
+  fvec2 mData;
 
   float GetComponent(int idx) const;
   void SetComponent(int idx, float fv);
@@ -34,10 +34,10 @@ struct SplineV2 {
 struct SplineV3 {
   static const int Nu_components = 3;
 
-  SplineV3(const CVector3& pos);
+  SplineV3(const fvec3& pos);
   SplineV3() {}
 
-  CVector3 mData;
+  fvec3 mData;
 
   float GetComponent(int idx) const;
   void SetComponent(int idx, float fv);
@@ -48,10 +48,10 @@ struct SplineV3 {
 struct SplineV4 {
   static const int Nu_components = 4;
 
-  SplineV4(const CVector4& pos);
+  SplineV4(const fvec4& pos);
   SplineV4() {}
 
-  CVector4 mData;
+  fvec4 mData;
 
   float GetComponent(int idx) const;
   void SetComponent(int idx, float fv);

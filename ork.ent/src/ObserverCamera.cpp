@@ -110,7 +110,7 @@ ObserverCamControllerInst::ObserverCamControllerInst(const ObserverCamController
 	pcamd->SetOwner(pent);
 
 	mCameraData.Persp( 0.1f, 1.0f, 45.0f );
-	mCameraData.Lookat( CVector3(0.0f,0.0f,0.0f), CVector3(0.0f,0.0f,1.0f), CVector3(0.0f,1.0f,0.0f) );
+	mCameraData.Lookat( fvec3(0.0f,0.0f,0.0f), fvec3(0.0f,0.0f,1.0f), fvec3(0.0f,1.0f,0.0f) );
 
 	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, & mCameraData, mCameraData.getEditorCamera() );
 }
@@ -124,7 +124,7 @@ bool ObserverCamControllerInst::DoLink(SceneInst *psi)
 	return true;
 }
 
-bool ObserverCamControllerInst::DoStart(SceneInst *psi, const CMatrix4 &world)
+bool ObserverCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 {
 	if( GetEntity() )
 	{
@@ -141,17 +141,17 @@ bool ObserverCamControllerInst::DoStart(SceneInst *psi, const CMatrix4 &world)
 
 void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
 {
-	CVector3 cam_UP = CVector3(0.0f,1.0f,0.0f);
-	CVector3 cam_EYE = CVector3(0.0f,0.0f,0.0f);
+	fvec3 cam_UP = fvec3(0.0f,1.0f,0.0f);
+	fvec3 cam_EYE = fvec3(0.0f,0.0f,0.0f);
 
-	CVector3 eye_up = mCD.GetEyeUp();
+	fvec3 eye_up = mCD.GetEyeUp();
 
 	if( mpEye )
 	{
 		DagNode& dnodeEYE = mpEye->GetDagNode();
 		const TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
-		CMatrix4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
-		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).xyz();
+		fmtx4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
+		cam_EYE = fvec4(mCD.GetEyeOffset()).Transform(mtxEYE).xyz();
 		cam_UP = mtxEYE.GetYNormal();
 
 		if( eye_up.Mag() )
@@ -161,22 +161,22 @@ void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
 	{
 		DagNode& dnodeEYE = GetEntity()->GetDagNode();
 		const TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
-		CMatrix4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
-		cam_EYE = CVector4(mCD.GetEyeOffset()).Transform(mtxEYE).xyz();
+		fmtx4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
+		cam_EYE = fvec4(mCD.GetEyeOffset()).Transform(mtxEYE).xyz();
 	}
 
 	if( mpTarget )
 	{
 		DagNode& dnodeTGT = mpTarget->GetDagNode();
 		const TransformNode& t3dTGT = dnodeTGT.GetTransformNode();
-		CMatrix4 mtxTGT = t3dTGT.GetTransform().GetMatrix();
-		CVector3 cam_TGT = CVector4(mCD.GetTgtOffset()).Transform(mtxTGT).xyz();
+		fmtx4 mtxTGT = t3dTGT.GetTransform().GetMatrix();
+		fvec3 cam_TGT = fvec4(mCD.GetTgtOffset()).Transform(mtxTGT).xyz();
 
 		float fnear = mCD.GetNear();
 		float ffar = mCD.GetFar();
 		float faper = mCD.GetAperature();
 
-		CVector3 N = (cam_TGT-cam_EYE).Normal();
+		fvec3 N = (cam_TGT-cam_EYE).Normal();
 
 		mCameraData.Persp( fnear, ffar, faper );
 		mCameraData.Lookat( cam_EYE, cam_TGT, cam_UP );

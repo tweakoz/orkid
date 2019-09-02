@@ -58,11 +58,11 @@ struct MidlineVert;
 
 struct SectorPortal {
 	int mCornerVerts[NUM_PORTAL_CORNERS];
-	CPlane mPlane; // points inside sector will be in front of this one
+	fplane3 mPlane; // points inside sector will be in front of this one
 	float mTrackProgress; // 0 = just after starting line, 1 = just before starting line
 	int mNeighbor; // sector on other side
 
-	ork::CVector3 GetCenter(orkvector<SectorVert> boundsVerts) const;
+	ork::fvec3 GetCenter(orkvector<SectorVert> boundsVerts) const;
 	void ContributeBasis(bool reverse, SectorData &data);
 
 	SectorPortal() :
@@ -91,17 +91,17 @@ struct Sector
 		mFlags = 0;
 	}
 
-	bool ContainsPoint(const SectorData &data, const ork::CVector3& position) const;
-	void Transform(const CMatrix4& transform);
+	bool ContainsPoint(const SectorData &data, const ork::fvec3& position) const;
+	void Transform(const fmtx4& transform);
 
 	float ContributeBasis(SectorData &data);
 
-	void GetRelativePositionOfPoint(const SectorData &data, const ork::CVector3& position, float &x, float &y, float &z) const ;
+	void GetRelativePositionOfPoint(const SectorData &data, const ork::fvec3& position, float &x, float &y, float &z) const ;
 
-	float GetProgressForPosition(const SectorData &data, const ork::CVector3& position) const;
-	void GetBasis(const SectorData& data, const ork::CVector3& position, CVector3& dirX, CVector3& dirY, CVector3& dirZ) const;
-	bool GetMidline(const SectorData& data, const ork::CVector3& position, MidlineVert& midline) const;
-	bool CrossedKill(const SectorData& data, const ork::CVector3& oldpos, const ork::CVector3& newpos) const;
+	float GetProgressForPosition(const SectorData &data, const ork::fvec3& position) const;
+	void GetBasis(const SectorData& data, const ork::fvec3& position, fvec3& dirX, fvec3& dirY, fvec3& dirZ) const;
+	bool GetMidline(const SectorData& data, const ork::fvec3& position, MidlineVert& midline) const;
+	bool CrossedKill(const SectorData& data, const ork::fvec3& oldpos, const ork::fvec3& newpos) const;
 
 	bool IsStart() const { return mFlags & SECTORFLAG_START; }
 	void FlagStart() { mFlags |= SECTORFLAG_START; }
@@ -111,20 +111,20 @@ struct Sector
 
 	// number of portal slots used is determined by flags
 	SectorPortal mPortals[kmaxportals];
-	CPlane mSplitPlane;
+	fplane3 mSplitPlane;
 
 
 	float Length(orkvector<SectorVert> mBoundsVerts) const;
 
-/*	CVector3 mDirX;
-	CVector3 mDirY;
-	CVector3 mDirZ;
-	CVector3 mCenter;
+/*	fvec3 mDirX;
+	fvec3 mDirY;
+	fvec3 mDirZ;
+	fvec3 mCenter;
 
-	CVector3 mUBasis;
-	CVector3 mVBasis;
-	CVector3 mUVNormal;
-	CVector3 mOrigin;*/
+	fvec3 mUBasis;
+	fvec3 mVBasis;
+	fvec3 mUVNormal;
+	fvec3 mOrigin;*/
 
 	U32 mFlags;
 //	float mTrackPosition;
@@ -140,14 +140,14 @@ struct Sector
 
 struct SectorVert {
 	// x basis vector would never be used anyway
-	CVector3 mPos, mY, mZ;
+	fvec3 mPos, mY, mZ;
 
 	SectorVert() :
 		mY(0,0,0),
 		mZ(0,0,0)
 	{}
 
-	SectorVert(const CVector3 &pos) :
+	SectorVert(const fvec3 &pos) :
 		mPos(pos),
 		mY(0,0,0),
 		mZ(0,0,0)
@@ -155,7 +155,7 @@ struct SectorVert {
 
 	~SectorVert()
 	{
-		mPos = ork::CVector3::Black();
+		mPos = ork::fvec3::Black();
 	}
 
 };
@@ -163,14 +163,14 @@ struct SectorVert {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct MidlineVert {
-	CVector3 mPos;
+	fvec3 mPos;
 	float mTubeGrav;
 	float mTotalGrav;
 	float mVelocityFollow;
 
 	MidlineVert() {}
 
-	MidlineVert(const CVector3 &pos, float tube, float total, float velfollow) :
+	MidlineVert(const fvec3 &pos, float tube, float total, float velfollow) :
 		mPos(pos),
 		mTubeGrav(tube),
 		mTotalGrav(total),
@@ -178,7 +178,7 @@ struct MidlineVert {
 	{}
 	~MidlineVert()
 	{
-		mPos = ork::CVector3::Black();
+		mPos = ork::fvec3::Black();
 	}
 };
 
@@ -190,8 +190,8 @@ struct SectorData {
 	orkvector<int> mMidlineTris;
 	orkvector<MidlineVert> mMidlineVerts;
 	orkvector<int> mKillTris;
-	orkvector<CPlane> mKillPlanes;
-	orkvector<CVector3> mKillVerts;
+	orkvector<fplane3> mKillPlanes;
+	orkvector<fvec3> mKillVerts;
 	float mLength;
 	~SectorData()
 	{
@@ -203,7 +203,7 @@ struct SectorData {
 
 struct TrackSaveData : public SectorData
 {
-	orkvector<CVector3> mTrackVerts;
+	orkvector<fvec3> mTrackVerts;
 	orkvector<int> mTrackIndices;
 	orkvector<int> mTrackFlags;
 };
@@ -220,21 +220,21 @@ public:
 
 	~Track();
 
-	bool Load(const ork::file::Path& path, const ork::CMatrix4& transform);
+	bool Load(const ork::file::Path& path, const ork::fmtx4& transform);
 	static bool Save(const ork::file::Path& path, const TrackSaveData& data);
 
-	int FindSectorByPoint(const ork::CVector3& point) const;
+	int FindSectorByPoint(const ork::fvec3& point) const;
 
 	btBvhTriangleMeshShape* GetTrackShape() const { return mTrackShape; }
 
-	void GetBasis(unsigned int currSector, const ork::CVector3& pos, CVector3& dirX, CVector3& dirY, CVector3& dirZ) const;
-	bool GetMidline(unsigned int currSector, const ork::CVector3& position, MidlineVert& midline) const;
-	bool CrossedKill(unsigned int currSector, const ork::CVector3& oldpos, const ork::CVector3& newpos) const;
+	void GetBasis(unsigned int currSector, const ork::fvec3& pos, fvec3& dirX, fvec3& dirY, fvec3& dirZ) const;
+	bool GetMidline(unsigned int currSector, const ork::fvec3& position, MidlineVert& midline) const;
+	bool CrossedKill(unsigned int currSector, const ork::fvec3& oldpos, const ork::fvec3& newpos) const;
 
-	int CheckTraversal(unsigned int currSector, const ork::CVector3& pos, bool allowInvalid = false) const;
-	float GetProgressForPosition(unsigned int currSector, const ork::CVector3& pos) const	;
+	int CheckTraversal(unsigned int currSector, const ork::fvec3& pos, bool allowInvalid = false) const;
+	float GetProgressForPosition(unsigned int currSector, const ork::fvec3& pos) const	;
 	
-	CVector3 GetSectorEntry(int sector) const;
+	fvec3 GetSectorEntry(int sector) const;
 
 	//DEBUG
 	int GetNumSectors() const { return mSectorData.mSectors.size(); }
@@ -363,30 +363,30 @@ public:
 	const SectorTrackerData &GetData() const { return mData; }
 
 	////////////////////////////////////////
-	bool UpdatePos( const ork::CVector3& newpos, ork::CVector3 &newvel );
+	bool UpdatePos( const ork::fvec3& newpos, ork::fvec3 &newvel );
 	////////////////////////////////////////
 
 	bool IsValid() const { return mCurrSector>=0; }
 
 	int						GetCurrentSector() const { return mCurrSector; }
-	const ork::CVector3&	GetBasisX() const { return mBasisX; }
-	const ork::CVector3&	GetBasisY() const { return mBasisY; }
-	const ork::CVector3&	GetBasisZ() const { return mBasisZ; }
+	const ork::fvec3&	GetBasisX() const { return mBasisX; }
+	const ork::fvec3&	GetBasisY() const { return mBasisY; }
+	const ork::fvec3&	GetBasisZ() const { return mBasisZ; }
 	float					GetGravity() const { return mMidlineVert.mTotalGrav; }
 
 	float					GetTrackProgress() const { return mTrackProgress; }
 
-	void Init( const ork::CVector3& pos );
+	void Init( const ork::fvec3& pos );
 
 	const Track *GetTrack() const { return mTrack; }
 
 	bool IsDisallowCheating() const { return mDisallowCheating; }
 	void SetDisallowCheating(bool disallow) { mDisallowCheating = disallow; }
 
-	const ork::CVector3 &GetOldPos() const { return mOldpos; }
+	const ork::fvec3 &GetOldPos() const { return mOldpos; }
 private:
 
-	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world) final;
+	bool DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world) final;
 	bool DoLink(ork::ent::SceneInst *inst) final;
 	bool DoNotify(const ork::event::Event *event) final;
 
@@ -394,10 +394,10 @@ private:
 	const Track*					mTrack;
 	int								mCurrSector;
 	float							mTrackProgress;
-	ork::CVector3					mBasisX;
-	ork::CVector3					mBasisY;
-	ork::CVector3					mBasisZ;
-	ork::CVector3					mOldpos;
+	ork::fvec3					mBasisX;
+	ork::fvec3					mBasisY;
+	ork::fvec3					mBasisZ;
+	ork::fvec3					mOldpos;
 	MidlineVert						mMidlineVert;
 	bool							mCrossedKill;
 	bool							mDisallowCheating;
@@ -413,7 +413,7 @@ private:
 
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 	void DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const final;
-	void DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const final;
+	void DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const final;
 
 };
 

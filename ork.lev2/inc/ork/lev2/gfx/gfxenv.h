@@ -155,16 +155,16 @@ class GfxTarget : public ork::rtti::ICastable
 
 	///////////////////////////////////////////////////////////////////////
 
-	virtual U32			CColor4ToU32( const CColor4& clr ) { return clr.GetRGBAU32(); }
+	virtual U32			fcolor4ToU32( const fcolor4& clr ) { return clr.GetRGBAU32(); }
 	virtual U32			CColor3ToU32( const CColor3& clr ) { return clr.GetRGBAU32(); }
-	virtual CColor4		U32ToCColor4( const U32 uclr ) { CColor4 clr; clr.SetRGBAU32(uclr); return clr; }
+	virtual fcolor4		U32Tofcolor4( const U32 uclr ) { fcolor4 clr; clr.SetRGBAU32(uclr); return clr; }
 	virtual CColor3		U32ToCColor3( const U32 uclr ) { CColor3 clr; clr.SetRGBAU32(uclr); return clr; }
 
 	///////////////////////////////////////////////////////////////////////
 
-	CVector4&			RefModColor( void ) { return mvModColor; }
-	void				PushModColor( const CVector4 & mclr );
-	CVector4&			PopModColor( void );
+	fvec4&			RefModColor( void ) { return mvModColor; }
+	void				PushModColor( const fvec4 & mclr );
+	fvec4&			PopModColor( void );
 
 	///////////////////////////////////////////////////////////////////////
 
@@ -207,10 +207,10 @@ protected:
 	CTXBASE*							mCtxBase;
 	void*								mPlatformHandle;
 	ETargetType							meTargetType;
-	CVector4							maModColorStack[kiModColorStackMax];
+	fvec4							maModColorStack[kiModColorStackMax];
 	int									miModColorStackIndex;
 	const ork::rtti::ICastable*			mpCurrentObject;
-	CVector4							mvModColor;
+	fvec4							mvModColor;
 	bool								mbPostInitializeContext;
 	int									miTargetFrame;
 	CPerformanceItem					mFramePerfItem;
@@ -238,7 +238,7 @@ struct OrthoQuad
 {
 	OrthoQuad();
 
-	ork::CColor4 mColor;
+	ork::fcolor4 mColor;
 	SRect mQrect;
 	float mfu0a;
 	float mfv0a;
@@ -285,7 +285,7 @@ class GfxBuffer : public ork::Object
 	bool IsDirty( void ) const { return mbDirty; }
 	bool IsSizeDirty( void ) const { return mbSizeIsDirty; }
 	const std::string & GetName( void ) const { return msName; }
-	const CColor4& GetClearColor() const { return mClearColor; }
+	const fcolor4& GetClearColor() const { return mClearColor; }
 	GfxBuffer* GetParent( void ) const { return mParent; }
 	ETargetType GetTargetType( void ) const { return meTargetType; }
 	EBufferFormat GetBufferFormat( void ) const { return meFormat; }
@@ -309,7 +309,7 @@ class GfxBuffer : public ork::Object
 	void SetDirty( bool bval ) { mbDirty=bval; }
 	void SetSizeDirty( bool bv ) { mbSizeIsDirty=bv; }
 	void SetParentMrt( RtGroup* ParentMrt ) { mParentRtGroup=ParentMrt; }
-	CColor4& RefClearColor() { return mClearColor; }
+	fcolor4& RefClearColor() { return mClearColor; }
 	void SetContext( GfxTarget* pctx ) { mpContext=pctx; }
 	void SetTexture( Texture* ptex ) { mpTexture=ptex; }
 	void SetMaterial( GfxMaterial* pmtl ) { mpMaterial=pmtl; }
@@ -324,7 +324,7 @@ class GfxBuffer : public ork::Object
 								float fu1 = 1.0f,
 								float fv1 = 1.0f,
 								float *uv2=NULL,
-								const CColor4& clr = CColor4::White() );
+								const fcolor4& clr = fcolor4::White() );
 
 	void RenderMatOrthoQuads( const OrthoQuads& oquads );
 
@@ -351,7 +351,7 @@ protected:
 	bool				mbDirty;
 	bool				mbSizeIsDirty;
 	std::string			msName;
-	CColor4				mClearColor;
+	fcolor4				mClearColor;
 	GfxBuffer*			mParent;
 	RtGroup*			mParentRtGroup;
     void*              	mPlatformHandle;

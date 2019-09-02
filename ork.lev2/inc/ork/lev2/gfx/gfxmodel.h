@@ -168,7 +168,7 @@ class XgmMesh
 	XgmMesh( XgmMesh *pMesh );
 	virtual ~XgmMesh();
 	/////////////////////////////////////
-	void						SetBoundingBox( CVector4 &Min, CVector4 &Max ) { mvBoundingBoxMin=Min; mvBoundingBoxMax=Max;	}
+	void						SetBoundingBox( fvec4 &Min, fvec4 &Max ) { mvBoundingBoxMin=Min; mvBoundingBoxMax=Max;	}
 	void						SetFlags( U32 flags ) { muFlags |= flags; }
 	void						SetMeshIndex( int i ) { miMeshIndex=i; }
 	void						SetMeshName( const PoolString& name ) { mMeshName=name; }
@@ -179,8 +179,8 @@ class XgmMesh
 	const XgmSubMesh*			GetSubMesh( int idx ) const  { return mSubMeshes[idx]; }
 	XgmSubMesh*					GetSubMesh( int idx ) { return mSubMeshes[idx]; }
 	const PoolString&			GetMeshName() const { return mMeshName; }
-	const CVector4&				RefBoundingBoxMin( void ) const { return mvBoundingBoxMin; }
-	const CVector4&				RefBoundingBoxMax( void ) const { return mvBoundingBoxMax; }
+	const fvec4&				RefBoundingBoxMin( void ) const { return mvBoundingBoxMin; }
+	const fvec4&				RefBoundingBoxMax( void ) const { return mvBoundingBoxMax; }
 	/////////////////////////////////////
 	void						ReserveSubMeshes( int icount ) { mSubMeshes.reserve( icount ); }
 	void						AddSubMesh( XgmSubMesh* psubmesh ) { mSubMeshes.push_back(psubmesh); }
@@ -191,12 +191,12 @@ class XgmMesh
 private:
 
 	orkvector<XgmSubMesh*>	mSubMeshes;
-	CVector4				mvBoundingBoxMin;
-	CVector4				mvBoundingBoxMax;
+	fvec4				mvBoundingBoxMin;
+	fvec4				mvBoundingBoxMax;
 	U32						muFlags;
 	int						miNumBoneBindings;	// for ps2 truth only
 	F32						mfBoundingRadius;
-	CVector4				mvBoundingCenter;
+	fvec4				mvBoundingCenter;
 	PoolString				mMeshName;
 	int						miMeshIndex;
 };
@@ -243,26 +243,26 @@ public:
 	GfxMaterial*			GetMaterial(int idx) { return mvMaterials[idx]; }
 	void					AddMaterial(GfxMaterial* hM);
 	
-	const CVector3&			GetBoundingCenter() const { return mBoundingCenter; }
+	const fvec3&			GetBoundingCenter() const { return mBoundingCenter; }
 	float					GetBoundingRadius() const { return mBoundingRadius; }
-	const CVector3&			GetBoundingAA_XYZ() const { return mAABoundXYZ; }
-	const CVector3&			GetBoundingAA_WHD() const { return mAABoundWHD; }
+	const fvec3&			GetBoundingAA_XYZ() const { return mAABoundXYZ; }
+	const fvec3&			GetBoundingAA_WHD() const { return mAABoundWHD; }
 
 	int						GetBonesPerCluster() const { return miBonesPerCluster; }
 
 	/////////////////////////////////////
 
-	void					SetBoundingCenter(const CVector3& v) { mBoundingCenter=v; }
+	void					SetBoundingCenter(const fvec3& v) { mBoundingCenter=v; }
 	void					SetBoundingRadius(float v) { mBoundingRadius=v; }
-	void					SetBoundingAA_XYZ(const CVector3& v) { mAABoundXYZ=v; }
-	void					SetBoundingAA_WHD(const CVector3& v) { mAABoundWHD=v; }
+	void					SetBoundingAA_XYZ(const fvec3& v) { mAABoundXYZ=v; }
+	void					SetBoundingAA_WHD(const fvec3& v) { mAABoundWHD=v; }
 
 	void					SetBonesPerCluster( int i ) { miBonesPerCluster=i; }
 
 	/////////////////////////////////////
 
-	void BeginRigidBlock(		const CColor4& ModColor,
-								const CMatrix4& WorldMat,
+	void BeginRigidBlock(		const fcolor4& ModColor,
+								const fmtx4& WorldMat,
 								ork::lev2::GfxTarget* pTARG,
 								const RenderContextInstData & MatCtx,
 								const RenderContextInstModelData& MdlCtx ) const;
@@ -270,30 +270,30 @@ public:
 	void RenderRigidBlockItem() const;
 
 
-	void RenderRigid(		const CColor4& ModColor,
-							const CMatrix4& WorldMat,
+	void RenderRigid(		const fcolor4& ModColor,
+							const fmtx4& WorldMat,
 							ork::lev2::GfxTarget* pTARG,
 							const RenderContextInstData & MatCtx,
 							const RenderContextInstModelData& MdlCtx ) const;
 
-	void RenderMultipleRigid(	const CColor4& ModColor,
-								const CMatrix4* WorldMats, int icount,
+	void RenderMultipleRigid(	const fcolor4& ModColor,
+								const fmtx4* WorldMats, int icount,
 								ork::lev2::GfxTarget* pTARG,
 								const RenderContextInstData & MatCtx,
 								const RenderContextInstModelData& MdlCtx ) const;
 
 	void RenderSkinned(	
 							const XgmModelInst* minst,
-							const CColor4& ModColor,
-							const CMatrix4& WorldMat,
+							const fcolor4& ModColor,
+							const fmtx4& WorldMat,
 							ork::lev2::GfxTarget* pTARG,
 							const RenderContextInstData & MatCtx,
 							const RenderContextInstModelData& MdlCtx ) const;
 
 	void RenderMultipleSkinned(	
 							const XgmModelInst* minst,
-							const CColor4& ModColor,
-							const CMatrix4* WorldMats, int icount,
+							const fcolor4& ModColor,
+							const fmtx4* WorldMats, int icount,
 							ork::lev2::GfxTarget* pTARG,
 							const RenderContextInstData & MatCtx,
 							const RenderContextInstModelData& MdlCtx ) const;
@@ -319,9 +319,9 @@ private:
 	void*						mpUserData;
 	int							miNumMaterials;
 	PoolString					msModelName;
-	CVector3					mAABoundXYZ;
-	CVector3					mAABoundWHD;
-	CVector3					mBoundingCenter;
+	fvec3					mAABoundXYZ;
+	fvec3					mAABoundWHD;
+	fvec3					mBoundingCenter;
 	float						mBoundingRadius;
 	bool						mbSkinned;
 

@@ -199,8 +199,8 @@ Entity::Entity(const EntData& edata, SceneInst* inst)
   // mDrawable.reserve(4);
 }
 ///////////////////////////////////////////////////////////////////////////////
-CMatrix4 Entity::GetEffectiveMatrix() const {
-  CMatrix4 rval;
+fmtx4 Entity::GetEffectiveMatrix() const {
+  fmtx4 rval;
   switch (mSceneInst->GetSceneInstMode()) {
     case ESCENEMODE_RUN:
     case ESCENEMODE_SINGLESTEP:
@@ -220,7 +220,7 @@ CMatrix4 Entity::GetEffectiveMatrix() const {
   return rval;
 }
 
-void Entity::SetDynMatrix(const CMatrix4& mtx) { this->GetDagNode().SetTransformMatrix(mtx); }
+void Entity::SetDynMatrix(const fmtx4& mtx) { this->GetDagNode().SetTransformMatrix(mtx); }
 
 ///////////////////////////////////////////////////////////////////////////////
 Entity::~Entity() {
@@ -239,7 +239,7 @@ Entity::~Entity() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-CVector3 Entity::GetEntityPosition() const { return GetDagNode().GetTransformNode().GetTransform().GetPosition(); }
+fvec3 Entity::GetEntityPosition() const { return GetDagNode().GetTransformNode().GetTransform().GetPosition(); }
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::PrintName() { orkprintf("EntityName:%s: \n", mEntData.GetName().c_str()); }
 ///////////////////////////////////////////////////////////////////////////////
@@ -438,7 +438,7 @@ void Archetype::DoUnLinkEntity(SceneInst* psi, Entity* pent) const {}
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::DoDeComposeEntity(Entity* pent) const {}
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::StartEntity(SceneInst* psi, const CMatrix4& world, Entity* pent) const {
+void Archetype::StartEntity(SceneInst* psi, const fmtx4& world, Entity* pent) const {
   // printf( "Archetype<%p>::StartEntity<%p>\n", this, pent );
 
   StopEntity(psi, pent);

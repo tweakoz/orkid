@@ -14,7 +14,7 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-SplineV2::SplineV2(const CVector2& data) : mData(data) {}
+SplineV2::SplineV2(const fvec2& data) : mData(data) {}
 
 float SplineV2::GetComponent(int idx) const {
   OrkAssert(idx < Nu_components);
@@ -43,7 +43,7 @@ void SplineV2::SetComponent(int idx, float fv) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SplineV3::SplineV3(const CVector3& data) : mData(data) {}
+SplineV3::SplineV3(const fvec3& data) : mData(data) {}
 
 float SplineV3::GetComponent(int idx) const {
   OrkAssert(idx < Nu_components);
@@ -78,7 +78,7 @@ void SplineV3::SetComponent(int idx, float fv) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SplineV4::SplineV4(const CVector4& data) : mData(data) {}
+SplineV4::SplineV4(const fvec4& data) : mData(data) {}
 
 float SplineV4::GetComponent(int idx) const {
   OrkAssert(idx < Nu_components);

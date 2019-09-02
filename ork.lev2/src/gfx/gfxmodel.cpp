@@ -202,7 +202,7 @@ XgmCluster::XgmCluster()
 	: miNumPrimGroups(0)
 	, mpPrimGroups(0)
 	, mpVertexBuffer(0)
-	, mBoundingSphere( CVector3::Zero(), 0.0f )
+	, mBoundingSphere( fvec3::Zero(), 0.0f )
 {
 }
 
@@ -278,8 +278,8 @@ void XgmModel::AddMaterial( GfxMaterial * Mat )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModel::RenderRigid(	const CColor4 & ModColor,
-							const CMatrix4 &WorldMat,
+void XgmModel::RenderRigid(	const fcolor4 & ModColor,
+							const fmtx4 &WorldMat,
 							ork::lev2::GfxTarget *pTARG,\
 							const RenderContextInstData & RCID,
 							const RenderContextInstModelData & mdlctx ) const
@@ -466,8 +466,8 @@ void XgmModel::RenderRigid(	const CColor4 & ModColor,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmModel::RenderMultipleRigid(	const CColor4 & ModColor,
-									const CMatrix4* WorldMatrices, int icount,
+void XgmModel::RenderMultipleRigid(	const fcolor4 & ModColor,
+									const fmtx4* WorldMatrices, int icount,
 									ork::lev2::GfxTarget *pTARG,
 									const RenderContextInstData & ctx,
 									const RenderContextInstModelData & mdlctx ) const
@@ -507,7 +507,7 @@ void XgmModel::RenderMultipleRigid(	const CColor4 & ModColor,
 					for( int imtx=0; imtx<icount; imtx++ )
 					{
 
-						const CMatrix4& mtxW = WorldMatrices[imtx];
+						const fmtx4& mtxW = WorldMatrices[imtx];
 						pTARG->MTXI()->SetMMatrix(mtxW);
 						pmaterial->UpdateMVPMatrix( pTARG );
 
@@ -537,12 +537,12 @@ void XgmModel::RenderMultipleRigid(	const CColor4 & ModColor,
 ///////////////////////////////////////////////////////////////////////////////
 
 static const int kMatrixBlockSize = 32;
-static CMatrix4 MatrixBlock[ kMatrixBlockSize ];
+static fmtx4 MatrixBlock[ kMatrixBlockSize ];
 int eggtest = 0;
 
 void XgmModel::RenderSkinned(	const XgmModelInst* minst, 
-								const CColor4 & ModColor,
-								const CMatrix4 &WorldMat,
+								const fcolor4 & ModColor,
+								const fmtx4 &WorldMat,
 								ork::lev2::GfxTarget *pTARG,
 								const RenderContextInstData & Ctx,
 								const RenderContextInstModelData & mdlctx ) const
@@ -596,14 +596,14 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 						{
 							const PoolString& JointName = XgmCluster.mJoints[ ijointreg ];
 							int JointSkelIndex = XgmCluster.mJointSkelIndices[ ijointreg ];
-							//const CMatrix4 & MatIBind = Skeleton.RefInverseBindMatrix(JointSkelIndex);
-							//const CMatrix4 & MatJ = Skeleton.RefJointMatrix( JointSkelIndex );
-							//const CMatrix4 & MatAnimJCat = LocalPose.RefLocalMatrix(JointSkelIndex);
-							//const CMatrix4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
-							const CMatrix4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
+							//const fmtx4 & MatIBind = Skeleton.RefInverseBindMatrix(JointSkelIndex);
+							//const fmtx4 & MatJ = Skeleton.RefJointMatrix( JointSkelIndex );
+							//const fmtx4 & MatAnimJCat = LocalPose.RefLocalMatrix(JointSkelIndex);
+							//const fmtx4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
+							const fmtx4 & MatAnimJCat = pworldpose->GetMatrices()[JointSkelIndex];
 
 							//////////////////////////////////////
-							//MatrixBlock[ijointreg] = CMatrix4::Identity; //(MatIBind * MatAnimJCat); 
+							//MatrixBlock[ijointreg] = fmtx4::Identity; //(MatIBind * MatAnimJCat); 
 							MatrixBlock[ijointreg] = MatAnimJCat; //(MatIBind * MatAnimJCat); 
 						}
 
@@ -664,18 +664,18 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 		pTARG->BindMaterial( GfxEnv::GetDefault3DMaterial() );
 		{
 			int inumbones = RefSkel().GetNumBones();
-			const CMatrix4 & MatBindShape = RefSkel().mBindShapeMatrix;
-			CMatrix4 MatStatScale;
+			const fmtx4 & MatBindShape = RefSkel().mBindShapeMatrix;
+			fmtx4 MatStatScale;
 			float rstat(0.5f);
 			MatStatScale.Scale(rstat,rstat,rstat);
 			
 			for( int ib=0; ib<inumbones; ib++ )
 			{
-				const CMatrix4 & MatIBind = RefSkel().RefInverseBindMatrix( ib );
-				const CMatrix4 & MatJ = RefSkel().RefJointMatrix( ib );
-				const CMatrix4 & MatAnimJCat = LocalPose.RefLocalMatrix(ib);
-				CMatrix4 MatW = MatStatScale * MatAnimJCat * WorldMat;
-				CVector3 Pos = MatW.GetTranslation();
+				const fmtx4 & MatIBind = RefSkel().RefInverseBindMatrix( ib );
+				const fmtx4 & MatJ = RefSkel().RefJointMatrix( ib );
+				const fmtx4 & MatAnimJCat = LocalPose.RefLocalMatrix(ib);
+				fmtx4 MatW = MatStatScale * MatAnimJCat * WorldMat;
+				fvec3 Pos = MatW.GetTranslation();
 				pTARG->MTXI()->PushMMatrix( MatW );
 				{
 					CGfxPrimitives::GetRef().RenderAxis( pTARG );
@@ -690,8 +690,8 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 ///////////////////////////////////////////////////////////////////////////////
 
 void XgmModel::RenderMultipleSkinned(	const XgmModelInst* minst, 
-										const CColor4 & ModColor,
-										const CMatrix4* WorldMats, int icount,
+										const fcolor4 & ModColor,
+										const fmtx4* WorldMats, int icount,
 										ork::lev2::GfxTarget *pTARG,
 										const RenderContextInstData & Ctx,
 										const RenderContextInstModelData & mdlctx ) const
@@ -742,15 +742,15 @@ void XgmModel::RenderMultipleSkinned(	const XgmModelInst* minst,
 						size_t inumjoints = XgmClus.mJoints.size();
 
 						static const int kMaxBonesPerCluster = miBonesPerCluster;
-						static CMatrix4* MatrixBlock = new CMatrix4[ kMaxBonesPerCluster ];
+						static fmtx4* MatrixBlock = new fmtx4[ kMaxBonesPerCluster ];
 
 						for( size_t ijointreg=0; ijointreg<inumjoints; ijointreg++ )
 						{
 							const PoolString JointName = XgmClus.mJoints[ ijointreg ];
 							int JointSkelIndex = XgmClus.mJointSkelIndices[ ijointreg ];
-							const CMatrix4 & MatIBind = Skeleton.RefInverseBindMatrix(JointSkelIndex);						
-							const CMatrix4 & MatAnimJCat = LocalPose.RefLocalMatrix(JointSkelIndex);						
-							CMatrix4 MatCat = MatIBind.Concat43(MatAnimJCat);
+							const fmtx4 & MatIBind = Skeleton.RefInverseBindMatrix(JointSkelIndex);						
+							const fmtx4 & MatAnimJCat = LocalPose.RefLocalMatrix(JointSkelIndex);						
+							fmtx4 MatCat = MatIBind.Concat43(MatAnimJCat);
 							MatrixBlock[ijointreg] = MatCat; 
 						}
 						
@@ -759,7 +759,7 @@ void XgmModel::RenderMultipleSkinned(	const XgmModelInst* minst,
 
 						for( int ic=0; ic<icount; ic++ )
 						{
-							const CMatrix4& WorldMat = WorldMats[ic];
+							const fmtx4& WorldMat = WorldMats[ic];
 							pTARG->MTXI()->PushMMatrix( WorldMat );
 							{
 								mtxblockitem.mApplicator->ApplyToTarget( pTARG );

@@ -68,7 +68,7 @@ private:
 	void DoUpdate(ent::SceneInst* sinst) final;
 	bool DoLink(SceneInst *psi) final;
 	void DoUnLink(SceneInst *psi) final;
-	bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+	bool DoStart(SceneInst *psi, const fmtx4 &world) final;
 	void DoStop(SceneInst *psi) final;
 	const ScriptComponentData&		mCD;
 	std::string mScriptText;

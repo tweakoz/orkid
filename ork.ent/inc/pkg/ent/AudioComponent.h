@@ -318,7 +318,7 @@ private:
 	void DoUpdate(ork::ent::SceneInst *inst) final;
 	ork::lev2::AudioInstrumentPlayback* PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode* pnode );
 
-	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final;
+	bool DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world) final;
 	bool DoLink( ork::ent::SceneInst *psi ) final;
 	void DoStop(ork::ent::SceneInst *psi) final;
 
@@ -416,7 +416,7 @@ private:
 
 	ork::orklut<ork::PoolString, AudioStreamInstItem> mItems;
 
-	bool DoStart(ork::ent::SceneInst *psi, const ork::CMatrix4 &world) final;
+	bool DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world) final;
     void DoStop(ork::ent::SceneInst *psi) final;
 };
 

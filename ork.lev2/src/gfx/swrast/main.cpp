@@ -85,9 +85,9 @@ void DemoApp::Render1()
 
 
 	int i = 0;
-	ork::CVector3 x0;
-	ork::CVector3 x1;
-	ork::CVector3 xy;
+	ork::fvec3 x0;
+	ork::fvec3 x1;
+	ork::fvec3 xy;
 
 	mRenderGraph->Compute(mpThreadPool);
 	const u8* psrcpixels = (const u8*) mRenderGraph->GetPixels();

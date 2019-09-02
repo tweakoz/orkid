@@ -88,9 +88,9 @@ namespace ork { namespace reflect {\
 	MACRO(CLASS<PoolString>); \
 	MACRO(CLASS<file::Path>); \
 	MACRO(CLASS<TransformNode>); \
-	MACRO(CLASS<CVector2>); \
-	MACRO(CLASS<CVector3>); \
-	MACRO(CLASS<CVector4>); \
+	MACRO(CLASS<fvec2>); \
+	MACRO(CLASS<fvec3>); \
+	MACRO(CLASS<fvec4>); \
 	MACRO(CLASS<ICastablePointer>);
 
 #define FOREACH_DEPENDENT_TYPE(MACRO,DEPENDENTCLASS,CLASS) \
@@ -153,10 +153,10 @@ FOREACH_RTTI_PROPERTY_TYPE(INSTANTIATE_TRANSPARENT_CASTABLE);
 namespace ork { namespace reflect {
 template class IObjectPropertyType<int>;
 template class IObjectPropertyType<float>;
-template class IObjectPropertyType<CVector2>;
-template class IObjectPropertyType<CVector3>;
-template class IObjectPropertyType<CVector4>;
-template class IObjectPropertyType<CMatrix4>;
+template class IObjectPropertyType<fvec2>;
+template class IObjectPropertyType<fvec3>;
+template class IObjectPropertyType<fvec4>;
+template class IObjectPropertyType<fmtx4>;
 template class IObjectPropertyType<ork::rtti::ICastable*>;
 template class IObjectPropertyType<ork::Object*>;
 template class IObjectPropertyType<ork::file::Path>;
@@ -175,11 +175,11 @@ template class DirectObjectMapPropertyType<orklut<PoolString,PoolString> >;
 template class AccessorObjectMapPropertyObject<int>;
 template class AccessorObjectMapPropertyType<int, char>;
 template class AccessorObjectMapPropertyType<int, ICastablePointer>;
-template class DirectObjectPropertyType<CMatrix4>;
+template class DirectObjectPropertyType<fmtx4>;
 template class DirectObjectPropertyType< TQuaternion<float> >;
 
-template class DirectObjectMapPropertyType<orkmap< float, CVector4> >;
-//template class DirectObjectPropertyType<orkvector<CVector2> >;
+template class DirectObjectMapPropertyType<orkmap< float, fvec4> >;
+//template class DirectObjectPropertyType<orkvector<fvec2> >;
 
 bool SetInvokationParameter(IInvokation *invokation, int param, const char *paramdata)
 {

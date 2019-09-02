@@ -104,23 +104,23 @@ public:
   void SetTextureA(lev2::Texture* ptex) { mCurrentTextureA = ptex; }
   void SetTextureB(lev2::Texture* ptex) { mCurrentTextureB = ptex; }
   void SetTextureC(lev2::Texture* ptex) { mCurrentTextureC = ptex; }
-  void SetLevelA(const CVector4& la) { mLevelA = la; }
-  void SetLevelB(const CVector4& lb) { mLevelB = lb; }
-  void SetLevelC(const CVector4& lc) { mLevelC = lc; }
-  void SetBiasA(const CVector4& ba) { mBiasA = ba; }
-  void SetBiasB(const CVector4& bb) { mBiasB = bb; }
-  void SetBiasC(const CVector4& bc) { mBiasC = bc; }
+  void SetLevelA(const fvec4& la) { mLevelA = la; }
+  void SetLevelB(const fvec4& lb) { mLevelB = lb; }
+  void SetLevelC(const fvec4& lc) { mLevelC = lc; }
+  void SetBiasA(const fvec4& ba) { mBiasA = ba; }
+  void SetBiasB(const fvec4& bb) { mBiasB = bb; }
+  void SetBiasC(const fvec4& bc) { mBiasC = bc; }
   void SetTechnique(const std::string& tek);
   /////////////////////////////////////////////////
   lev2::Texture* mCurrentTextureA;
   lev2::Texture* mCurrentTextureB;
   lev2::Texture* mCurrentTextureC;
-  CVector4 mLevelA;
-  CVector4 mLevelB;
-  CVector4 mLevelC;
-  CVector4 mBiasA;
-  CVector4 mBiasB;
-  CVector4 mBiasC;
+  fvec4 mLevelA;
+  fvec4 mLevelB;
+  fvec4 mLevelC;
+  fvec4 mBiasA;
+  fvec4 mBiasB;
+  fvec4 mBiasC;
 
   const lev2::FxShaderTechnique* hTekOp2AmulB;
   const lev2::FxShaderTechnique* hTekOp2AdivB;
@@ -338,10 +338,10 @@ private:
   CompositingMaterial mCompositingMaterial;
   lev2::RtGroup* mOutput;
   EOp2CompositeMode mMode;
-  CVector4 mLevelA;
-  CVector4 mLevelB;
-  CVector4 mBiasA;
-  CVector4 mBiasB;
+  fvec4 mLevelA;
+  fvec4 mLevelB;
+  fvec4 mBiasA;
+  fvec4 mBiasB;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class NodeCompositingTechnique : public CompositingTechnique {

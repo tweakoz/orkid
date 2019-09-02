@@ -7,18 +7,18 @@
 
 
 
-inline ork::CVector4 SphMap( const ork::CVector3& N, const ork::CVector3& EyeToPointDir, const rend_texture2D& tex ) 
+inline ork::fvec4 SphMap( const ork::fvec3& N, const ork::fvec3& EyeToPointDir, const rend_texture2D& tex ) 
 {
-	ork::CVector3 ref = EyeToPointDir-N*(N.Dot(EyeToPointDir)*2.0f);
+	ork::fvec3 ref = EyeToPointDir-N*(N.Dot(EyeToPointDir)*2.0f);
 	float p = ::sqrtf( ref.GetX()*ref.GetX()+ref.GetY()*ref.GetY()+::powf(ref.GetZ()+1.0f,2.0f) );
 	float reflectS = ref.GetX()/(2.0f*p)+0.5f;
 	float reflectT = ref.GetY()/(2.0f*p)+0.5f;
 	return tex.sample_point( reflectS, reflectT, true, true );
 }
 
-inline ork::CVector4 OctaveTex( int inumoctaves, float fu, float fv, float texscale, float texamp, float texscalemodifier, float texampmodifier, const rend_texture2D& tex )
+inline ork::fvec4 OctaveTex( int inumoctaves, float fu, float fv, float texscale, float texamp, float texscalemodifier, float texampmodifier, const rend_texture2D& tex )
 {
-	ork::CVector4 tex0;
+	ork::fvec4 tex0;
 	for( int i=0; i<inumoctaves; i++ )
 	{
 		tex0 += tex.sample_point( std::abs(fu*texscale), std::abs(fv*texscale), true, true )*texamp;
@@ -31,7 +31,7 @@ inline ork::CVector4 OctaveTex( int inumoctaves, float fu, float fv, float texsc
 ///////////////////////////////////////////////////////////////////////////////
 struct test_volume_shader : public rend_volume_shader
 {
-	ork::CVector4 ShadeVolume( const ork::CVector3& entrywpos, const ork::CVector3& exitwpos ) const; // virtual 
+	ork::fvec4 ShadeVolume( const ork::fvec3& entrywpos, const ork::fvec3& exitwpos ) const; // virtual 
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct Shader1 : public rend_shader
@@ -66,12 +66,12 @@ struct Shader2 : public rend_shader
 		const rend_ivtx* srcvtxR = prefrag.srcvtxR;
 		const rend_ivtx* srcvtxS = prefrag.srcvtxS;
 		const rend_ivtx* srcvtxT = prefrag.srcvtxT;
-		const ork::CVector3& wposR = srcvtxR->mWldSpacePos;
-		const ork::CVector3& wposS = srcvtxS->mWldSpacePos;
-		const ork::CVector3& wposT = srcvtxT->mWldSpacePos;
-		const ork::CVector3& wnrmR = srcvtxR->mWldSpaceNrm;
-		const ork::CVector3& wnrmS = srcvtxS->mWldSpaceNrm;
-		const ork::CVector3& wnrmT = srcvtxT->mWldSpaceNrm;
+		const ork::fvec3& wposR = srcvtxR->mWldSpacePos;
+		const ork::fvec3& wposS = srcvtxS->mWldSpacePos;
+		const ork::fvec3& wposT = srcvtxT->mWldSpacePos;
+		const ork::fvec3& wnrmR = srcvtxR->mWldSpaceNrm;
+		const ork::fvec3& wnrmS = srcvtxS->mWldSpaceNrm;
+		const ork::fvec3& wnrmT = srcvtxT->mWldSpaceNrm;
 		float r = prefrag.mfR;
 		float s = prefrag.mfS;
 		float t = prefrag.mfT;
@@ -89,20 +89,20 @@ struct Shader2 : public rend_shader
 		float wxm = ::fmod( ::abs(wx)/20.0f, 1.0f )<0.1f;
 		float wym = ::fmod( ::abs(wy)/20.0f, 1.0f )<0.1f;
 		float wzm = ::fmod( ::abs(wz)/20.0f, 1.0f )<0.1f;
-		ork::CVector3 vN = (ork::CVector3(wx,wy,wz)-mRenderData->mEye).Normal();
+		ork::fvec3 vN = (ork::fvec3(wx,wy,wz)-mRenderData->mEye).Normal();
 		/////////////////////////////////////////////////////////////////
-		ork::CVector4 tex0 = OctaveTex( 4, wy, wy, 0.01f, 0.407f, 2.0f, 0.6f, mTexture1 );
-		ork::CVector4 tex1 = OctaveTex( 4, wx, wz, 0.01f, 0.507f, 2.0f, 0.5f, mTexture1 );
-		ork::CVector4 texout = tex0*tex1;
+		ork::fvec4 tex0 = OctaveTex( 4, wy, wy, 0.01f, 0.407f, 2.0f, 0.6f, mTexture1 );
+		ork::fvec4 tex1 = OctaveTex( 4, wx, wz, 0.01f, 0.507f, 2.0f, 0.5f, mTexture1 );
+		ork::fvec4 texout = tex0*tex1;
 		/////////////////////////////////////////////////////////////////
 		float fgrid = (wxm+wym+wzm)!=0.0f;
 		///////////////////////////////////////////////
 		float fZblend = 64.0f*::pow( z, 5.0f );
 		///////////////////////////////////////////////
-		ork::CVector4 sphtexout = SphMap( ork::CVector3(wnx,wny,wnz), vN, mSphMapTexture );
+		ork::fvec4 sphtexout = SphMap( ork::fvec3(wnx,wny,wnz), vN, mSphMapTexture );
 		///////////////////////////////////////////////
-		ork::CVector3 c0( fgrid, fgrid, fgrid );
-		ork::CVector3 c( wnx, wny, wnz ); c=c*0.6f+c0*0.1f+texout*::powf(areaintens,0.1f)*0.7f+sphtexout*0.5f;
+		ork::fvec3 c0( fgrid, fgrid, fgrid );
+		ork::fvec3 c( wnx, wny, wnz ); c=c*0.6f+c0*0.1f+texout*::powf(areaintens,0.1f)*0.7f+sphtexout*0.5f;
 		pdstfrag->mRGBA.Set(c.GetX(), c.GetY(), c.GetZ(), fZblend ); // cunc
 		pdstfrag->mZ = z;
 		pdstfrag->mpPrimitive = prefrag.mpSrcPrimitive;

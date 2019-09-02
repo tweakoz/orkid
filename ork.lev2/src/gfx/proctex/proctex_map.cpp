@@ -55,8 +55,8 @@ void Colorize::compute( ProcTex& ptex )
 	if(conplugA && conplugB )
 	{	struct AA16RenderCells : public AA16Render
 		{	virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-			{	mPTX.GetTarget()->PushModColor( ork::CVector4::Red() );
-				CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
+			{	mPTX.GetTarget()->PushModColor( ork::fvec4::Red() );
+				fmtx4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
 				mPTX.GetTarget()->BindMaterial( & mtl );
 				mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 
@@ -91,10 +91,10 @@ void Colorize::compute( ProcTex& ptex )
 				targ->TXI()->ApplySamplingMode(inptexb);
 				mtl.SetTexture( inptexa );
 				mtl.SetTexture2( inptexb );
-				mtl.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
+				mtl.SetUser0( fvec4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
-				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
-				//mOrthoBoxXYWH = CVector4( 1.0f, 1.0f, -2.0f, -2.0f );
+				mOrthoBoxXYWH = fvec4( -1.0f, -1.0f, 2.0f, 2.0f );
+				//mOrthoBoxXYWH = fvec4( 1.0f, 1.0f, -2.0f, -2.0f );
 			}
 		};
 
@@ -130,8 +130,8 @@ UvMap::UvMap()
 }
 void RenderMapQuad(lev2::GfxTarget* targ, lev2::GfxMaterial3DSolid& mtl, float l, float r, float t, float b)
 {	auto mtxi = targ->MTXI();
-	targ->PushModColor( ork::CVector4::Red() );
-	CMatrix4 mtxortho = mtxi->Ortho( l, r, t, b, 0.0f, 1.0f );
+	targ->PushModColor( ork::fvec4::Red() );
+	fmtx4 mtxortho = mtxi->Ortho( l, r, t, b, 0.0f, 1.0f );
 	targ->BindMaterial( & mtl );
 	mtxi->PushPMatrix( mtxortho );
 	RenderQuad( targ, -1,1,1,-1 );
@@ -171,9 +171,9 @@ void UvMap::compute( ProcTex& ptex )
 				targ->TXI()->ApplySamplingMode(inptexb);
 				mtl.SetTexture( inptexa );
 				mtl.SetTexture2( inptexb );
-				mtl.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
+				mtl.SetUser0( fvec4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
-				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
+				mOrthoBoxXYWH = fvec4( -1.0f, -1.0f, 2.0f, 2.0f );
 			}
 		};
 
@@ -244,9 +244,9 @@ void SphMap::compute( ProcTex& ptex )
 				targ->TXI()->ApplySamplingMode(inptexb);
 				mtl.SetTexture( inptexa );
 				mtl.SetTexture2( inptexb );
-				mtl.SetUser0( CVector4(0.0f,0.0f,direc,float(bo.miW)) );
+				mtl.SetUser0( fvec4(0.0f,0.0f,direc,float(bo.miW)) );
 
-				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
+				mOrthoBoxXYWH = fvec4( -1.0f, -1.0f, 2.0f, 2.0f );
 			}
 		};
 
@@ -316,9 +316,9 @@ void SphRefract::compute( ProcTex& ptex )
 				mtl.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
 				mtl.SetTexture( cpa->GetValue().GetTexture(ptex) );
 				mtl.SetTexture2( cpb->GetValue().GetTexture(ptex) );
-				mtl.SetUser0( CVector4(0.0f,direc,ior,float(bo.miW)) );
+				mtl.SetUser0( fvec4(0.0f,direc,ior,float(bo.miW)) );
 
-				mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
+				mOrthoBoxXYWH = fvec4( -1.0f, -1.0f, 2.0f, 2.0f );
 			}
 		};
 
@@ -383,7 +383,7 @@ void H2N::compute( ProcTex& ptex )
 	if(nullptr==conplug) return;
 	////////////////////////////////////////////////////////////////
 	float fscy = mPlugInpScaleY.GetValue();
-	CMatrix4 mtxS;
+	fmtx4 mtxS;
 	mtxS.Scale( 1.0f, fscy, 1.0f );
 	////////////////////////////////////////////////////////////////
 	auto inptex = conplug->GetValue().GetTexture(ptex);
@@ -392,7 +392,7 @@ void H2N::compute( ProcTex& ptex )
 	//printf( "HSNinputtex<%p>\n", inptex );
 	mMTL.SetTexture( inptex );
 	mMTL.SetAuxMatrix( mtxS );
-	mMTL.SetUser0( CVector4(0.0f,fscy,0.0f,buffer.miW) );
+	mMTL.SetUser0( fvec4(0.0f,fscy,0.0f,buffer.miW) );
 	////////////////////////////////////////////////////////////////
 	struct AA16RenderH2N : public AA16Render
 	{
@@ -402,7 +402,7 @@ void H2N::compute( ProcTex& ptex )
 			RenderMapQuad(mPTX.GetTarget(),mH2N.mMTL,left,right,top,bot);
 			/*auto pTARG = mPTX.GetTarget();
 			pTARG->PushMaterial( & mH2N.mMTL );
-			CMatrix4 mtxortho = pTARG->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+			fmtx4 mtxortho = pTARG->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
 			pTARG->MTXI()->PushPMatrix( mtxortho );
 			RenderQuad( pTARG, -1.0f, -1.0f, 1.0f, 1.0f );
 			pTARG->MTXI()->PopPMatrix();
@@ -412,7 +412,7 @@ void H2N::compute( ProcTex& ptex )
 			: AA16Render( ptex, bo )
 			, mH2N(h2n)
 		{
-			mOrthoBoxXYWH = CVector4( -1.0f, -1.0f, 2.0f, 2.0f );
+			mOrthoBoxXYWH = fvec4( -1.0f, -1.0f, 2.0f, 2.0f );
 		}
 	};
 	AA16RenderH2N renderer(	*this, ptex, buffer );
@@ -462,7 +462,7 @@ dataflow::inplugbase* Kaled::GetInput(int idx)
 void Kaled::addvtx( float fx, float fy, float fu, float fv )
 {	U32 uc = 0xffffffff;
 	const float kz = 0.0f;
-	mVW.AddVertex( vtxt( CVector3(fx,fy,kz), CVector2( fu, fv ), uc ) );
+	mVW.AddVertex( vtxt( fvec3(fx,fy,kz), fvec2( fu, fv ), uc ) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Kaled::compute( ProcTex& ptex )
@@ -483,14 +483,14 @@ void Kaled::compute( ProcTex& ptex )
 		inptexa->TexSamplingMode().PresetTrilinearWrap();
 		targ->TXI()->ApplySamplingMode(inptexa);
 		gridmat.SetTexture( inptexa );
-		gridmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(buffer.miW)) );
+		gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 		////////////////////////////////////////////////////////////////
 		auto mtxi = targ->MTXI();
-		CMatrix4 mtxortho = mtxi->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
+		fmtx4 mtxortho = mtxi->Ortho( 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f );
 		buffer.PtexBegin(targ,true,false);
 		mtxi->PushPMatrix( mtxortho );
-		mtxi->PushVMatrix( CMatrix4::Identity );
-		mtxi->PushMMatrix( CMatrix4::Identity );
+		mtxi->PushVMatrix( fmtx4::Identity );
+		mtxi->PushMMatrix( fmtx4::Identity );
 		{	float fsize = mPlugInpSize.GetValue();
 			float foffsetx = mPlugInpOffsetX.GetValue();
 			float foffsety = mPlugInpOffsetY.GetValue();

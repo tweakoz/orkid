@@ -65,7 +65,7 @@ static int GetNumCores()
 void RgmTri::Compute()
 {
 	mFacePlane.CalcPlaneFromTriangle( mpv0->pos, mpv1->pos, mpv2->pos );
-	const CVector3 vn = mFacePlane.n;
+	const fvec3 vn = mFacePlane.n;
 	mEdgePlane0.CalcPlaneFromTriangle( mpv0->pos, vn+mpv0->pos, mpv1->pos );
 	mEdgePlane1.CalcPlaneFromTriangle( mpv1->pos, vn+mpv1->pos, mpv2->pos );
 	mEdgePlane2.CalcPlaneFromTriangle( mpv2->pos, vn+mpv2->pos, mpv0->pos );
@@ -73,7 +73,7 @@ void RgmTri::Compute()
 
 }
 
-Jitterer::Jitterer( int ikos, float fradius, const CVector3& dX, const CVector3& dY )
+Jitterer::Jitterer( int ikos, float fradius, const fvec3& dX, const fvec3& dY )
 {
 	miKos = ikos;
 
@@ -111,7 +111,7 @@ Material::Material()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Material::SetParameters( float a_Refl, float a_Refr, const CVector3& a_Col, float a_Diff, float a_Spec )
+void Material::SetParameters( float a_Refl, float a_Refr, const fvec3& a_Col, float a_Diff, float a_Spec )
 {
 	m_Refl = a_Refl;
 	m_Refr = a_Refr;
@@ -131,7 +131,7 @@ Primitive::~Primitive()
 	
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 Primitive::GetColor( const CVector3& a_Pos ) const
+fvec3 Primitive::GetColor( const fvec3& a_Pos ) const
 {
 	return mMaterial->GetColor();
 }
@@ -176,9 +176,9 @@ CVector3 Primitive::GetColor( const CVector3& a_Pos ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Primitive::PlaneBoxOverlap( const CVector3& a_Normal, const CVector3& a_Vert, const CVector3& a_MaxBox )
+bool Primitive::PlaneBoxOverlap( const fvec3& a_Normal, const fvec3& a_Vert, const fvec3& a_MaxBox )
 {
-	CVector3 vmin, vmax;
+	fvec3 vmin, vmax;
 	for( int q = 0; q < 3; q++ )
 	{
 		float v = a_Vert[q];
@@ -200,9 +200,9 @@ bool Primitive::PlaneBoxOverlap( const CVector3& a_Normal, const CVector3& a_Ver
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Primitive::IntersectTriBox( const CVector3& a_BoxCentre, const CVector3& a_BoxHalfsize, const CVector3& a_V0, const CVector3& a_V1, const CVector3& a_V2 )
+bool Primitive::IntersectTriBox( const fvec3& a_BoxCentre, const fvec3& a_BoxHalfsize, const fvec3& a_V0, const fvec3& a_V1, const fvec3& a_V2 )
 {
-	CVector3 v0, v1, v2, normal, e0, e1, e2;
+	fvec3 v0, v1, v2, normal, e0, e1, e2;
 	float min, max, p0, p1, p2, rad, fex, fey, fez;
 	v0 = a_V0 - a_BoxCentre;
 	v1 = a_V1 - a_BoxCentre;
@@ -254,11 +254,11 @@ RaytTriangle::RaytTriangle( const RgmVertex* v1, const RgmVertex* v2, const RgmV
 	// precompute what we can
 	//////////////////////////////////////
 
-	CVector3 A = mVertex[0]->pos;
-	CVector3 B = mVertex[1]->pos;
-	CVector3 C = mVertex[2]->pos;
-	CVector3 c = B - A;
-	CVector3 b = C - A;
+	fvec3 A = mVertex[0]->pos;
+	fvec3 B = mVertex[1]->pos;
+	fvec3 C = mVertex[2]->pos;
+	fvec3 c = B - A;
+	fvec3 b = C - A;
 	mN = b.Cross( c );
 	int u, v;
 	if (std::abs( mN.GetX() ) > std::abs( mN.GetY()))
@@ -306,16 +306,16 @@ AABox RaytTriangle::GetAABox() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int RaytTriangle::Intersect( const Ray3& a_Ray, CVector3& isect, float& a_Dist ) const
+int RaytTriangle::Intersect( const fray3& a_Ray, fvec3& isect, float& a_Dist ) const
 {
 	const RgmTri* tri = this->mRgmPoly;
-	const CVector3& v0 = mVertex[0]->pos;
-	const CVector3& v1 = mVertex[1]->pos;
-	const CVector3& v2 = mVertex[2]->pos;
-	const CPlane& fp = tri->mFacePlane;
-	const CPlane& ep0 = tri->mEdgePlane0;
-	const CPlane& ep1 = tri->mEdgePlane1;
-	const CPlane& ep2 = tri->mEdgePlane2;
+	const fvec3& v0 = mVertex[0]->pos;
+	const fvec3& v1 = mVertex[1]->pos;
+	const fvec3& v2 = mVertex[2]->pos;
+	const fplane3& fp = tri->mFacePlane;
+	const fplane3& ep0 = tri->mEdgePlane0;
+	const fplane3& ep1 = tri->mEdgePlane1;
+	const fplane3& ep2 = tri->mEdgePlane2;
 	float s,t;
 	bool bv = CollisionTester::RayTriangleTest( a_Ray, fp, ep0, ep1, ep2, isect, a_Dist );
 	return bv;
@@ -323,12 +323,12 @@ int RaytTriangle::Intersect( const Ray3& a_Ray, CVector3& isect, float& a_Dist )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 RaytTriangle::GetNormal( const CVector3& a_Pos ) const
+fvec3 RaytTriangle::GetNormal( const fvec3& a_Pos ) const
 { 
-	CVector3 N1 = mVertex[0]->nrm;
-	CVector3 N2 = mVertex[1]->nrm;
-	CVector3 N3 = mVertex[2]->nrm;
-	CVector3 N = N1 + mU * (N2 - N1) + mV * (N3 - N1);
+	fvec3 N1 = mVertex[0]->nrm;
+	fvec3 N2 = mVertex[1]->nrm;
+	fvec3 N3 = mVertex[2]->nrm;
+	fvec3 N = N1 + mU * (N2 - N1) + mV * (N3 - N1);
 	N.Normalize();
 	return N;
 }
@@ -349,13 +349,13 @@ void RaytTriangle::Rasterize( Engine* peng ) const
 	int ih = peng->GetHeight();
 
 	const BakeShader* bshader = GetBakeShader();
-	const CVector2& uv0 = mRgmPoly->mpv0->uv;
-	const CVector2& uv1 = mRgmPoly->mpv1->uv;
-	const CVector2& uv2 = mRgmPoly->mpv2->uv;
+	const fvec2& uv0 = mRgmPoly->mpv0->uv;
+	const fvec2& uv1 = mRgmPoly->mpv1->uv;
+	const fvec2& uv2 = mRgmPoly->mpv2->uv;
 
-	CVector3 v0( uv0.GetX()*iw, uv0.GetY()*ih, 0.0f );
-	CVector3 v1( uv1.GetX()*iw, uv1.GetY()*ih, 0.0f );
-	CVector3 v2( uv2.GetX()*iw, uv2.GetY()*ih, 0.0f );
+	fvec3 v0( uv0.GetX()*iw, uv0.GetY()*ih, 0.0f );
+	fvec3 v1( uv1.GetX()*iw, uv1.GetY()*ih, 0.0f );
+	fvec3 v2( uv2.GetX()*iw, uv2.GetY()*ih, 0.0f );
 
 	BakeShadowFragment bv0, bv1, bv2;
 	bv0.mPos = mRgmPoly->mpv0->pos;
@@ -376,7 +376,7 @@ void RaytTriangle::Rasterize( Engine* peng ) const
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-RaytSphere::RaytSphere( CVector3& center, float radius )
+RaytSphere::RaytSphere( fvec3& center, float radius )
 {
 	mCenter = center;
 	mSqRadius = radius * radius;
@@ -384,19 +384,19 @@ RaytSphere::RaytSphere( CVector3& center, float radius )
 	mRRadius = 1.0f / radius;
 	//mMaterial = new Material();
 	// set vectors for texture mapping
-	mVn = CVector3( 0, 1, 0 );
-	mVe = CVector3( 1, 0, 0 );
+	mVn = fvec3( 0, 1, 0 );
+	mVe = fvec3( 1, 0, 0 );
 	mVc = mVn.Cross( mVe );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool RaytSphere::IntersectSphereBox( const CVector3& a_Centre, const AABox& a_Box ) const
+bool RaytSphere::IntersectSphereBox( const fvec3& a_Centre, const AABox& a_Box ) const
 {
 	float dmin = 0;
-	CVector3 spos = a_Centre;
-	CVector3 bpos = a_Box.Min();
-	CVector3 bsize = a_Box.GetSize();
+	fvec3 spos = a_Centre;
+	fvec3 bpos = a_Box.Min();
+	fvec3 bsize = a_Box.GetSize();
 	for ( int i = 0; i < 3; i++ )
 	{
 		if (spos[i] < bpos[i]) 
@@ -434,9 +434,9 @@ AABox RaytSphere::GetAABox() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int RaytSphere::Intersect( const Ray3& a_Ray, CVector3& isect, float& a_Dist ) const
+int RaytSphere::Intersect( const fray3& a_Ray, fvec3& isect, float& a_Dist ) const
 {
-	CVector3 v = a_Ray.mOrigin - mCenter;
+	fvec3 v = a_Ray.mOrigin - mCenter;
 	float b = -v.Dot( a_Ray.mDirection );
 	float det = (b * b) - v.Dot( v ) + mSqRadius;
 	int retval = MISS;
@@ -470,7 +470,7 @@ int RaytSphere::Intersect( const Ray3& a_Ray, CVector3& isect, float& a_Dist ) c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 RaytSphere::GetNormal( const CVector3& a_Pos ) const
+fvec3 RaytSphere::GetNormal( const fvec3& a_Pos ) const
 { 
 	return (a_Pos - mCenter) * mRRadius; 
 }
@@ -502,13 +502,13 @@ void Scene::ExitScene()
 bool Scene::InitScene( const AABox& scene_box )
 {
 	//Material* mat = new Material();
-	//mat->SetParameters( 0.0f, 0.0f, CVector3( 0.4f, 0.3f, 0.3f ), 1.0f, 0.0f );
+	//mat->SetParameters( 0.0f, 0.0f, fvec3( 0.4f, 0.3f, 0.3f ), 1.0f, 0.0f );
 	//mat = new Material();
-	//mat->SetParameters( 0.0f, 0.0f, CVector3( 0.5f, 0.3f, 0.5f ), 0.6f, 0.0f );
+	//mat->SetParameters( 0.0f, 0.0f, fvec3( 0.5f, 0.3f, 0.5f ), 0.6f, 0.0f );
 	//mat = new Material();
-	//mat->SetParameters( 0.0f, 0.0f, CVector3( 0.4f, 0.7f, 0.7f ), 0.5f, 0.0f );
+	//mat->SetParameters( 0.0f, 0.0f, fvec3( 0.4f, 0.7f, 0.7f ), 0.5f, 0.0f );
 	//mat = new Material();
-	//mat->SetParameters( 0.9f, 0, CVector3( 0.9f, 0.9f, 1 ), 0.3f, 0.7f );
+	//mat->SetParameters( 0.9f, 0, fvec3( 0.9f, 0.9f, 1 ), 0.3f, 0.7f );
 	//mat->SetRefrIndex( 1.3f );
 
 	mExtends = scene_box;
@@ -578,8 +578,8 @@ void RgmLightContainer::LoadLitFile( const char* pfilename )
 		HeaderStream->GetItem(inumlights);
 		for( int il=0; il<inumlights; il++ )
 		{	int iname, itype;
-			CMatrix4 mtxW;
-			CVector3 clr;
+			fmtx4 mtxW;
+			fvec3 clr;
 			float intens;
 			int   icastsshadows;
 			HeaderStream->GetItem(iname);
@@ -593,7 +593,7 @@ void RgmLightContainer::LoadLitFile( const char* pfilename )
 
 			if( 0 == strcmp( ptype, "PointLight" ) )
 			{
-				RgmLight rlite( CVector3::Black(), clr );
+				RgmLight rlite( fvec3::Black(), clr );
 				HeaderStream->GetItem(rlite.mPos);
 				HeaderStream->GetItem(rlite.mFalloff);
 				HeaderStream->GetItem(rlite.mRadius);
@@ -755,7 +755,7 @@ void Engine::SetTarget( RayPixel* dest, int w, int h )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static float AreaOfTri( const CVector3& A, const CVector3& B, const CVector3& C )
+static float AreaOfTri( const fvec3& A, const fvec3& B, const fvec3& C )
 {
 	float farea = (A-C).Cross(B-C).Mag() * 0.5f;
 	return farea;
@@ -763,7 +763,7 @@ static float AreaOfTri( const CVector3& A, const CVector3& B, const CVector3& C 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Primitive* Engine::Raytrace( const Ray3& ray, const int irecdepth, const float irindex, CVector3& acc, float& dist )
+const Primitive* Engine::Raytrace( const fray3& ray, const int irecdepth, const float irindex, fvec3& acc, float& dist )
 {
 	const Primitive* prim = 0;
 
@@ -771,8 +771,8 @@ const Primitive* Engine::Raytrace( const Ray3& ray, const int irecdepth, const f
 	// find the nearest intersection
 	////////////////////////////////////////////////////
 
-	acc = CVector3(0.1f,0.1f,0.2f);
-	CVector3 P;
+	acc = fvec3(0.1f,0.1f,0.2f);
+	fvec3 P;
 	bool bhit = GetScene()->GetFixedGrid()->FindNearest( ray, dist, P, prim );
 	if (false==bhit) return 0;
 
@@ -782,12 +782,12 @@ const Primitive* Engine::Raytrace( const Ray3& ray, const int irecdepth, const f
 	// Compute Barycentric
 	////////////////////////////////////////////////////
 
-	const CVector3& NA = tri.mpv0->nrm;
-	const CVector3& NB = tri.mpv1->nrm;
-	const CVector3& NC = tri.mpv2->nrm;
-	const CVector3& A = tri.mpv0->pos;
-	const CVector3& B = tri.mpv1->pos;
-	const CVector3& C = tri.mpv2->pos;
+	const fvec3& NA = tri.mpv0->nrm;
+	const fvec3& NB = tri.mpv1->nrm;
+	const fvec3& NC = tri.mpv2->nrm;
+	const fvec3& A = tri.mpv0->pos;
+	const fvec3& B = tri.mpv1->pos;
+	const fvec3& C = tri.mpv2->pos;
 		
 	float PBC = ( AreaOfTri(P,B,C) );
 	float PCA = ( AreaOfTri(P,C,A) );
@@ -802,28 +802,28 @@ const Primitive* Engine::Raytrace( const Ray3& ray, const int irecdepth, const f
 	// Interpolated Normal
 	//////////////////////////
 	
-	CVector3 N = (NA*a+NB*b+NC*c);
+	fvec3 N = (NA*a+NB*b+NC*c);
 
 	////////////////////////////////////////////////////
 	// lighting
 	////////////////////////////////////////////////////
 
-	CVector3 LightPos = CVector3(76,-15,-900);
-	CVector3 LMP = (LightPos-P);
-	CVector3 LightDir = LMP.Normal();
+	fvec3 LightPos = fvec3(76,-15,-900);
+	fvec3 LMP = (LightPos-P);
+	fvec3 LightDir = LMP.Normal();
 
 	float fdot = N.Dot(LightDir);
 
 	if( fdot<0.0f ) fdot=0.0f;
 
-	acc = CVector3(fdot,fdot,fdot);
+	acc = fvec3(fdot,fdot,fdot);
 
 	/////////////////////////////////////////////
 	// backfacing to light automatically black
 	/////////////////////////////////////////////
 	if( fdot <= 0.0f )
 	{
-		acc = CVector3::Black();
+		acc = fvec3::Black();
 		return prim;
 	}
 	/////////////////////////////////////////////
@@ -836,7 +836,7 @@ const Primitive* Engine::Raytrace( const Ray3& ray, const int irecdepth, const f
 		const Primitive* primL = 0;
 
 		float shadowdist = 100000.0f;
-		CVector3 ShadowPos;
+		fvec3 ShadowPos;
 		bool bshadowhit = GetScene()->GetFixedGrid()->FindNearest( RayToLight, shadowdist, ShadowPos, primL );
 
 		if( bshadowhit )
@@ -977,49 +977,49 @@ void Engine::RasterizeTriangle(	const BakeShader& shader,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Engine::InitRender( CVector3& eye, CVector3& target )
+void Engine::InitRender( fvec3& eye, fvec3& target )
 {
 	///////////////////////////////////////
 	// calculate lookat matrix
 	///////////////////////////////////////
 
-	CVector3 zdir = (target-eye).Normal();
-	CVector3 cross = zdir.Cross(CVector3(0.0f,1.0f,0.0f));
-	if( cross.Mag()==0.0f ) cross=zdir.Cross(CVector3(1.0f,0.0f,0.0f));
-	if( cross.Mag()==0.0f ) cross=zdir.Cross(CVector3(0.0f,0.0f,1.0f));
+	fvec3 zdir = (target-eye).Normal();
+	fvec3 cross = zdir.Cross(fvec3(0.0f,1.0f,0.0f));
+	if( cross.Mag()==0.0f ) cross=zdir.Cross(fvec3(1.0f,0.0f,0.0f));
+	if( cross.Mag()==0.0f ) cross=zdir.Cross(fvec3(0.0f,0.0f,1.0f));
 
-	CVector3 up = zdir.Cross(cross);
+	fvec3 up = zdir.Cross(cross);
 
-	CMatrix4 mtxLookat;
+	fmtx4 mtxLookat;
 	mtxLookat.LookAt( eye, target, up );
 
 	///////////////////////////////////////
 	// set projection matrix
 	///////////////////////////////////////
 
-	CMatrix4 mtxP;
+	fmtx4 mtxP;
 
 	float faspect = float(GetWidth())/float(GetHeight());
 	mtxP.Perspective( 45, faspect, 1.0f, 10000.0f );
 	//mtxP.Ortho( -1, 1, -1, 1, 1, 10000  );
 
-	CVector3 vo(0.0f,0.0f,0.0f);
-	CVector3 vpn(0.0f,0.0f,1.0f);
-	CVector3 vpf(0.0f,0.0f,10000.0f);
+	fvec3 vo(0.0f,0.0f,0.0f);
+	fvec3 vpn(0.0f,0.0f,1.0f);
+	fvec3 vpf(0.0f,0.0f,10000.0f);
 
-	CVector3 pvo = vo.Transform(mtxP);
-	CVector3 pvn = vpn.Transform(mtxP);
-	CVector3 pvf = vpf.Transform(mtxP);
+	fvec3 pvo = vo.Transform(mtxP);
+	fvec3 pvn = vpn.Transform(mtxP);
+	fvec3 pvf = vpf.Transform(mtxP);
 
 	///////////////////////////////////////
 
-	//CMatrix4 mtxViewport;
+	//fmtx4 mtxViewport;
 	//float xs = 2.0f/
 	//mtxViewport.Scale(
 	///////////////////////////////////////
 	
-	const CMatrix4 matVP = (mtxLookat*mtxP);
-	CMatrix4 matIVP;
+	const fmtx4 matVP = (mtxLookat*mtxP);
+	fmtx4 matIVP;
 	matIVP.GEMSInverse(matVP);
 
 	// set eye and screen plane position
@@ -1032,19 +1032,19 @@ void Engine::InitRender( CVector3& eye, CVector3& target )
 
 	SRect VP( x1, y1, x2, y2 );
 
-	CVector4 Vxcyc( (x1+x2)*0.5f, (y1+y2)*0.5f, 0.0f, 1.0f );
-	CVector4 Vx0y0( x1, y1, 0.0f, 1.0f );
-	CVector4 Vx1y0( x2, y1, 0.0f, 1.0f );
-	CVector4 Vx1y1( x2, y2, 0.0f, 1.0f );
-	CVector4 Vx0y1( x1, y2, 0.0f, 1.0f );
+	fvec4 Vxcyc( (x1+x2)*0.5f, (y1+y2)*0.5f, 0.0f, 1.0f );
+	fvec4 Vx0y0( x1, y1, 0.0f, 1.0f );
+	fvec4 Vx1y0( x2, y1, 0.0f, 1.0f );
+	fvec4 Vx1y1( x2, y2, 0.0f, 1.0f );
+	fvec4 Vx0y1( x1, y2, 0.0f, 1.0f );
 
-	CVector3 Center, CenterDir;
+	fvec3 Center, CenterDir;
 
-	CMatrix4::UnProject( Vxcyc, matIVP, VP, Center );
-	CMatrix4::UnProject( Vx0y0, matIVP, VP, mCornerTL );
-	CMatrix4::UnProject( Vx1y0, matIVP, VP, mCornerTR );
-	CMatrix4::UnProject( Vx1y1, matIVP, VP, mCornerBR );
-	CMatrix4::UnProject( Vx0y1, matIVP, VP, mCornerBL );
+	fmtx4::UnProject( Vxcyc, matIVP, VP, Center );
+	fmtx4::UnProject( Vx0y0, matIVP, VP, mCornerTL );
+	fmtx4::UnProject( Vx1y0, matIVP, VP, mCornerTR );
+	fmtx4::UnProject( Vx1y1, matIVP, VP, mCornerBR );
+	fmtx4::UnProject( Vx0y1, matIVP, VP, mCornerBL );
 
 	CenterDir = (Center-eye).Normal();
 
@@ -1056,10 +1056,10 @@ void Engine::InitRender( CVector3& eye, CVector3& target )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const Primitive* Engine::RenderRay( CVector3 screen_pos, CVector3& acc )
+const Primitive* Engine::RenderRay( fvec3 screen_pos, fvec3& acc )
 {
 	AABox e = mScene->GetExtends();
-	CVector3 dir = (screen_pos - mEye);
+	fvec3 dir = (screen_pos - mEye);
 	dir.Normalize();
 	Ray3 r( mEye, dir );
 	float dist = 100000.0f;
@@ -1087,13 +1087,13 @@ void* RenderingJobThread(void *vptr_args)
 	int ih = mpCtx->mpEngine->GetHeight();
 	int iw = mpCtx->mpEngine->GetWidth();
 
-	const CVector3& cTL = mpCtx->mpEngine->CornerTL();
-	const CVector3& cTR = mpCtx->mpEngine->CornerTR();
-	const CVector3& cBL = mpCtx->mpEngine->CornerBL();
-	const CVector3& cBR = mpCtx->mpEngine->CornerBR();
+	const fvec3& cTL = mpCtx->mpEngine->CornerTL();
+	const fvec3& cTR = mpCtx->mpEngine->CornerTR();
+	const fvec3& cBL = mpCtx->mpEngine->CornerBL();
+	const fvec3& cBR = mpCtx->mpEngine->CornerBR();
 
-	const CVector3& cQX = (cTR-cTL)*1.0f/float(iw);
-	const CVector3& cQY = (cBL-cTL)*1.0f/float(ih);
+	const fvec3& cQX = (cTR-cTL)*1.0f/float(iw);
+	const fvec3& cQY = (cBL-cTL)*1.0f/float(ih);
 
 	const Jitterer my_jitter( kOS, kJITTER, cQX, cQY );
 
@@ -1103,20 +1103,20 @@ void* RenderingJobThread(void *vptr_args)
 		if( y%64 == mpCtx->miCore ) orkprintf( "core<%d> y<%d>\n", mpCtx->miCore, y );
 		
 		float fy = float(y)/float(ih);
-		CVector3 lSC, rSC;
+		fvec3 lSC, rSC;
 		lSC.Lerp( cTL, cBL, fy );
 		rSC.Lerp( cTR, cBR, fy );
 		for ( int x = 0; x < iw; x++ )
 		{	float fx = float(x)/float(iw);
-			CVector3 screen_pos, jittered_pos;
+			fvec3 screen_pos, jittered_pos;
 			screen_pos.Lerp( lSC, rSC, fx );
 			
-			CVector3 acc( 0, 0, 0 );
+			fvec3 acc( 0, 0, 0 );
 			for( int isamp=0; isamp<my_jitter.miNumSamples; isamp++ )
 			{
 				jittered_pos = screen_pos+my_jitter.GetSample(isamp);
 							
-				CVector3 sample( 0, 0, 0 );
+				fvec3 sample( 0, 0, 0 );
 
 				const Primitive* prim = mpCtx->mpEngine->RenderRay( jittered_pos, sample );
 				acc += sample;
@@ -1154,9 +1154,9 @@ bool Engine::Render( const AABox& bbox, const std::string& OutputName )
 	RayPixel* pixels = new RayPixel[kIW*kIW];
 	memset( (void*) pixels, 0, sizeof(RayPixel)*kIW*kIW );
 
-	CVector3 dim = (bbox.Max()-bbox.Min());
-	CVector3 ctr = CVector3(0.0f,275.0f,0.0f)+(bbox.Min()+bbox.Max())*0.5f;
-	CVector3 eye = ctr+CVector3(0.0f,30.0f,75.0f);
+	fvec3 dim = (bbox.Max()-bbox.Min());
+	fvec3 ctr = fvec3(0.0f,275.0f,0.0f)+(bbox.Min()+bbox.Max())*0.5f;
+	fvec3 eye = ctr+fvec3(0.0f,30.0f,75.0f);
 
 	SetTarget( pixels, kIW, kIW );
 
@@ -1290,9 +1290,9 @@ bool Engine::Bake( const AABox& bbox, const std::string& OutputName )
 	mFragments = new BakeShadowFragment[iKIW*iKIW];
 	memset( (void*) mFragments, 0, sizeof(BakeShadowFragment)*kIW*kIW );
 
-	CVector3 dim = (bbox.Max()-bbox.Min());
-	CVector3 ctr = (bbox.Min()+bbox.Max())*0.5f;
-	CVector3 eye = ctr+CVector3(0.0f,0.0f,75.0f);
+	fvec3 dim = (bbox.Max()-bbox.Min());
+	fvec3 ctr = (bbox.Min()+bbox.Max())*0.5f;
+	fvec3 eye = ctr+fvec3(0.0f,0.0f,75.0f);
 
 	SetTarget( pixels, iKIW, iKIW );
 

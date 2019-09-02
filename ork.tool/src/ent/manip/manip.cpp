@@ -122,7 +122,7 @@ IntersectionRecord::IntersectionRecord()
     : mIntersectionPoint(0.0f, 0.0f, 0.0f), mOldIntersectionPoint(0.0f, 0.0f, 0.0f), mBaseIntersectionPoint(0.0f, 0.0f, 0.0f),
       mbHasItersected(false) {}
 
-CVector4 IntersectionRecord::GetLocalSpaceDelta(const CMatrix4& InvLocalMatrix) {
+fvec4 IntersectionRecord::GetLocalSpaceDelta(const fmtx4& InvLocalMatrix) {
   return mIntersectionPoint.Transform(InvLocalMatrix) - mOldIntersectionPoint.Transform(InvLocalMatrix);
 }
 
@@ -142,17 +142,17 @@ bool CManip::CheckIntersect(void) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 void CManip::CalcPlanes() {
-  CMatrix4 CurMatrix;
+  fmtx4 CurMatrix;
   mBaseTransform.GetMatrix(CurMatrix);
-  CVector4 origin = CurMatrix.GetTranslation();
-  CVector4 normalX = CurMatrix.GetXNormal();
-  CVector4 normalY = CurMatrix.GetYNormal();
-  CVector4 normalZ = CurMatrix.GetZNormal();
+  fvec4 origin = CurMatrix.GetTranslation();
+  fvec4 normalX = CurMatrix.GetXNormal();
+  fvec4 normalY = CurMatrix.GetYNormal();
+  fvec4 normalZ = CurMatrix.GetZNormal();
   /////////////////////////////
   if (mManager.mbWorldTrans && (CManipManager::EMANIPMODE_WORLD_TRANS == mManager.GetManipMode())) {
-    normalX = CVector4(1.0f, 0.0f, 0.0f);
-    normalY = CVector4(0.0f, 1.0f, 0.0f);
-    normalZ = CVector4(0.0f, 0.0f, 1.0f);
+    normalX = fvec4(1.0f, 0.0f, 0.0f);
+    normalY = fvec4(0.0f, 1.0f, 0.0f);
+    normalZ = fvec4(0.0f, 0.0f, 1.0f);
   }
   /////////////////////////////
   mPlaneXZ.CalcFromNormalAndOrigin(normalY, origin);
@@ -162,27 +162,27 @@ void CManip::CalcPlanes() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CVector3 CManip::IntersectWithPlanes(const ork::CVector2& posubp) {
-  CVector3 rval;
+fvec3 CManip::IntersectWithPlanes(const ork::fvec2& posubp) {
+  fvec3 rval;
 
   const CCamera* cam = mManager.getActiveCamera();
-  CMatrix4 CurMatrix;
+  fmtx4 CurMatrix;
   mBaseTransform.GetMatrix(CurMatrix);
   /////////////////////////////
-  CVector3 rayN, rayF;
+  fvec3 rayN, rayF;
   cam->GenerateDepthRay(posubp, rayN, rayF, InvMatrix);
-  CVector4 rayDir = (rayF - rayN).Normal();
-  Ray3 ray;
+  fvec4 rayDir = (rayF - rayN).Normal();
+  fray3 ray;
   ray.mOrigin = rayN;
   ray.mDirection = rayDir;
   /////////////////////////////
   float dist;
   mIntersection[EPLANE_XZ].mbHasItersected = mPlaneXZ.Intersect(ray, dist);
-  CVector4 rayOutXZ = (rayDir * dist);
+  fvec4 rayOutXZ = (rayDir * dist);
   mIntersection[EPLANE_YZ].mbHasItersected = mPlaneYZ.Intersect(ray, dist);
-  CVector4 rayOutYZ = (rayDir * dist);
+  fvec4 rayOutYZ = (rayDir * dist);
   mIntersection[EPLANE_XY].mbHasItersected = mPlaneXY.Intersect(ray, dist);
-  CVector4 rayOutXY = (rayDir * dist);
+  fvec4 rayOutXY = (rayDir * dist);
   /////////////////////////////
   mIntersection[EPLANE_XZ].mIntersectionPoint = rayN + rayOutXZ;
   mIntersection[EPLANE_YZ].mIntersectionPoint = rayN + rayOutYZ;
@@ -194,11 +194,11 @@ CVector3 CManip::IntersectWithPlanes(const ork::CVector2& posubp) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManip::SelectBestPlane(const ork::CVector2& posubp) {
+void CManip::SelectBestPlane(const ork::fvec2& posubp) {
   bool brotmode = (mManager.GetManipMode() == CManipManager::EMANIPMODE_LOCAL_ROTATE);
 
   CalcPlanes();
-  CVector3 RayDir = IntersectWithPlanes(posubp);
+  fvec3 RayDir = IntersectWithPlanes(posubp);
   /////////////////////////////
   mIntersection[EPLANE_XZ].mOldIntersectionPoint = mIntersection[EPLANE_XZ].mIntersectionPoint;
   mIntersection[EPLANE_YZ].mOldIntersectionPoint = mIntersection[EPLANE_YZ].mIntersectionPoint;
@@ -297,10 +297,10 @@ void CManipManager::DetachObject() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void CManipManager::CalcObjectScale(void) {
-  CVector3 pos;
+  fvec3 pos;
   CQuaternion rot;
   float scale;
-  CMatrix4 ScaleMat;
+  fmtx4 ScaleMat;
   mCurTransform.GetMatrix(ScaleMat);
   ScaleMat.DecomposeMatrix(pos, rot, scale);
 
@@ -324,17 +324,17 @@ void CManipManager::ReleaseObject(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 float CManipManager::CalcViewScale(float fW, float fH, const CCameraData* camdat) const {
-  CMatrix4 MatW;
+  fmtx4 MatW;
   mCurTransform.GetMatrix(MatW);
 
   //////////////////////////////////////////////////////////////
   // Calc World Scale of manip (maintain constant size)
 
-  CVector2 VP(fW, fH);
+  fvec2 VP(fW, fH);
 
-  CVector3 Pos = MatW.GetTranslation();
-  CVector3 UpVector;
-  CVector3 RightVector;
+  fvec3 Pos = MatW.GetTranslation();
+  fvec3 UpVector;
+  fvec3 RightVector;
   camdat->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
 
   float rscale = RightVector.Mag();
@@ -358,13 +358,13 @@ void CManipManager::Setup(ork::lev2::Renderer* prend) {
     }
   }
 
-  CMatrix4 MatW;
+  fmtx4 MatW;
   mCurTransform.GetMatrix(MatW);
 
-  const CVector4& ScreenXNorm = pTARG->MTXI()->GetScreenRightNormal();
+  const fvec4& ScreenXNorm = pTARG->MTXI()->GetScreenRightNormal();
 
-  const CVector4 V0 = MatW.GetTranslation();
-  const CVector4 V1 = V0 + ScreenXNorm * float(30.0f);
+  const fvec4 V0 = MatW.GetTranslation();
+  const fvec4 V1 = V0 + ScreenXNorm * float(30.0f);
 
   mfManipScale = float(mfBaseManipSize) * mfViewScale;
 
@@ -404,7 +404,7 @@ void CManipManager::DrawManip(CManip* pmanip, GfxTarget* pTARG) {
   lev2::PickBufferBase* pickBuf = pTARG->FBI()->GetCurrentPickBuffer();
 
   uint64_t pickID = pickBuf ? pickBuf->AssignPickId((ork::Object*)pmanip) : 0;
-  CColor4 col = pmanip->GetColor();
+  fcolor4 col = pmanip->GetColor();
 
   pTARG->SetCurrentObject(pmanip);
   // orkprintf( "MANIP<%p>\n", pmanip );
@@ -415,7 +415,7 @@ void CManipManager::DrawManip(CManip* pmanip, GfxTarget* pTARG) {
     pmanip->Draw(pTARG);
     pTARG->PopModColor();
   } else {
-    CColor4 outcolor = (GetHover() == pmanip) ? CColor4::Yellow() : col;
+    fcolor4 outcolor = (GetHover() == pmanip) ? fcolor4::Yellow() : col;
     outcolor.SetW(0.6f);
 
     pTARG->PushModColor(outcolor);

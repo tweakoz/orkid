@@ -11,8 +11,8 @@
 #include <ork/math/perlin_noise.h>
 
 
-using ork::CVector2;
-using ork::TVector2;
+using ork::fvec2;
+using ork::Vector2;
 
 namespace ork {
 
@@ -116,11 +116,11 @@ NoiseCache2D::~NoiseCache2D()
 	delete[] mCache;
 }
 
-float NoiseCache2D::ValueAt(const CVector2& pos, const CVector2& offset, float amplitude, float frequency)
+float NoiseCache2D::ValueAt(const fvec2& pos, const fvec2& offset, float amplitude, float frequency)
 {
 	u32 numSamplesMask = mkSamplesPerSide - 1;
 
-	CVector2 adjPos = (pos + offset) * frequency;
+	fvec2 adjPos = (pos + offset) * frequency;
 	int iX = int(adjPos.GetX());
 	int iY = int(adjPos.GetY());
 
@@ -149,7 +149,7 @@ PerlinNoiseGenerator::~PerlinNoiseGenerator()
 	}
 }
 
-void PerlinNoiseGenerator::AddOctave(float frequency, float amplitude, const CVector2& offset, int seed, u32 dimensions)
+void PerlinNoiseGenerator::AddOctave(float frequency, float amplitude, const fvec2& offset, int seed, u32 dimensions)
 {
 	Octave octave;
 	octave.mAmplitude = amplitude;
@@ -161,7 +161,7 @@ void PerlinNoiseGenerator::AddOctave(float frequency, float amplitude, const CVe
 	mOctaves.push_back(octave);
 }
 
-float PerlinNoiseGenerator::ValueAt(const CVector2& pos)
+float PerlinNoiseGenerator::ValueAt(const fvec2& pos)
 {
 	float total(0.0f);
 

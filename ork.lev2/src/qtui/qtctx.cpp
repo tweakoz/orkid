@@ -885,11 +885,11 @@ void CTQT::SetParent( QWidget* pparent )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector2 CTQT::MapCoordToGlobal( const CVector2& v ) const
+fvec2 CTQT::MapCoordToGlobal( const fvec2& v ) const
 {
 	QPoint p(v.GetX(),v.GetY());
 	QPoint p2 = mpQtWidget->mapToGlobal(p);
-	return CVector2(p2.x(),p2.y());
+	return fvec2(p2.x(),p2.y());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

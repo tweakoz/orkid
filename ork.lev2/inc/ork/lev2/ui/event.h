@@ -77,8 +77,8 @@ struct Event final // RawEvent
 	bool mbMiddleButton;
 	bool mbRightButton;
         
-	CVector4 mvRayN;
-	CVector4 mvRayF;
+	fvec4 mvRayN;
+	fvec4 mvRayF;
 
 	void* mpBlindEventData;
 
@@ -89,9 +89,9 @@ struct Event final // RawEvent
     MultiTouchPoint mMultiTouchPoints[kmaxmtpoints];
     int             miNumMultiTouchPoints;
 
-	CVector2 GetUnitCoordBP() const
+	fvec2 GetUnitCoordBP() const
 	{
-		CVector2 rval;
+		fvec2 rval;
 		rval.SetX( 2.0f*mfUnitX-1.0f );
 		rval.SetY( -(2.0f*mfUnitY-1.0f) );
 		return rval;

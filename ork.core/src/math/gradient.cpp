@@ -123,15 +123,15 @@ template <typename T> void GradientD2<T>::Describe()
 
 }
 
-typedef ork::Gradient<ork::CVector4> GradientV4;
-typedef ork::GradientD2<ork::CVector4> GradientD2V4;
+typedef ork::Gradient<ork::fvec4> GradientV4;
+typedef ork::GradientD2<ork::fvec4> GradientD2V4;
 INSTANTIATE_TRANSPARENT_RTTI(ork::GradientBase,"GradientBase");
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(GradientV4,"GradientV4");
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI(GradientD2V4,"GradientD2V4");
 
-template class ork::orklut<float,ork::CVector4>;
-//template class ork::orklut<float, ork::orklut<float,ork::CVector4> >;
-template class ork::GradLut<ork::CVector4>;
-//template class ork::GradLut< ork::GradLut<ork::CVector4> >; //ork::orklut<float,ork::CVector4>;
-template class ork::Gradient<ork::CVector4>;
-template class ork::GradientD2<ork::CVector4>;
+template class ork::orklut<float,ork::fvec4>;
+//template class ork::orklut<float, ork::orklut<float,ork::fvec4> >;
+template class ork::GradLut<ork::fvec4>;
+//template class ork::GradLut< ork::GradLut<ork::fvec4> >; //ork::orklut<float,ork::fvec4>;
+template class ork::Gradient<ork::fvec4>;
+template class ork::GradientD2<ork::fvec4>;

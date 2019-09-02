@@ -269,12 +269,12 @@ struct SVtxV12N6C2T4 // WII rigid format
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12I4N12T8 {
-  CVector3 mPosition;
+  fvec3 mPosition;
   U32 mIDX;
-  CVector3 mNormal;
-  CVector2 mUV0;
+  fvec3 mNormal;
+  fvec2 mUV0;
 
-  SVtxV12I4N12T8(const CVector3& pos = CVector3(), const CVector3& nrm = CVector3(), const CVector2& uv = CVector2(), U32 idx = 0)
+  SVtxV12I4N12T8(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec2& uv = fvec2(), U32 idx = 0)
       : mPosition(pos), mNormal(nrm), mUV0(uv), mIDX(idx) {}
 
   void EndianSwap() {}
@@ -285,13 +285,13 @@ struct SVtxV12I4N12T8 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12B12T8 {
-  CVector3 mPosition;
-  CVector3 mNormal;
-  CVector3 mBiNormal;
-  CVector2 mUV0;
+  fvec3 mPosition;
+  fvec3 mNormal;
+  fvec3 mBiNormal;
+  fvec2 mUV0;
 
-  SVtxV12N12B12T8(const CVector3& pos = CVector3(), const CVector3& nrm = CVector3(), const CVector3& binrm = CVector3(),
-                  const CVector2& uv = CVector2())
+  SVtxV12N12B12T8(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec3& binrm = fvec3(),
+                  const fvec2& uv = fvec2())
       : mPosition(pos), mNormal(nrm), mBiNormal(binrm), mUV0(uv) {}
 
   void EndianSwap() {}
@@ -302,14 +302,14 @@ struct SVtxV12N12B12T8 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12B12T8C4 {
-  CVector3 mPosition;
-  CVector3 mNormal;
-  CVector3 mBiNormal;
-  CVector2 mUV0;
+  fvec3 mPosition;
+  fvec3 mNormal;
+  fvec3 mBiNormal;
+  fvec2 mUV0;
   U32 mColor;
 
-  SVtxV12N12B12T8C4(const CVector3& pos = CVector3(), const CVector3& nrm = CVector3(), const CVector3& binrm = CVector3(),
-                    const CVector2& uv = CVector2(), const U32 clr = 0xffffffff)
+  SVtxV12N12B12T8C4(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec3& binrm = fvec3(),
+                    const fvec2& uv = fvec2(), const U32 clr = 0xffffffff)
       : mPosition(pos), mNormal(nrm), mBiNormal(binrm), mUV0(uv), mColor(clr) {}
 
   void EndianSwap() {
@@ -337,14 +337,14 @@ struct SVtxV12N12B12T8C4 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12B12T16 {
-  CVector3 mPosition;
-  CVector3 mNormal;
-  CVector3 mBiNormal;
-  CVector2 mUV0;
-  CVector2 mUV1;
+  fvec3 mPosition;
+  fvec3 mNormal;
+  fvec3 mBiNormal;
+  fvec2 mUV0;
+  fvec2 mUV1;
 
-  SVtxV12N12B12T16(const CVector3& pos = CVector3(), const CVector3& nrm = CVector3(), const CVector3& binrm = CVector3(),
-                   const CVector2& uv0 = CVector2(), const CVector2& uv1 = CVector2())
+  SVtxV12N12B12T16(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec3& binrm = fvec3(),
+                   const fvec2& uv0 = fvec2(), const fvec2& uv1 = fvec2())
       : mPosition(pos), mNormal(nrm), mBiNormal(binrm), mUV0(uv0), mUV1(uv1) {}
 
   void EndianSwap() {
@@ -373,14 +373,14 @@ struct SVtxV12N12B12T16 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12T16C4 {
-  CVector3 mPosition;
-  CVector3 mNormal;
-  CVector2 mUV0;
-  CVector2 mUV1;
+  fvec3 mPosition;
+  fvec3 mNormal;
+  fvec2 mUV0;
+  fvec2 mUV1;
   U32 mColor;
 
-  SVtxV12N12T16C4(const CVector3& pos = CVector3(), const CVector3& nrm = CVector3(), const CVector2& uv0 = CVector2(),
-                  const CVector2& uv1 = CVector2(), const U32 clr = 0xffffffff)
+  SVtxV12N12T16C4(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec2& uv0 = fvec2(),
+                  const fvec2& uv1 = fvec2(), const U32 clr = 0xffffffff)
       : mPosition(pos), mNormal(nrm), mUV0(uv0), mUV1(uv1), mColor(clr) {}
 
   void EndianSwap() {
@@ -407,13 +407,13 @@ struct SVtxV12N12T16C4 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12T8I4W4 {
-  CVector3 mPosition;
-  CVector3 mNormal;
-  CVector2 mUV0;
+  fvec3 mPosition;
+  fvec3 mNormal;
+  fvec2 mUV0;
   U32 mBoneIndices;
   U32 mBoneWeights;
 
-  SVtxV12N12T8I4W4(const CVector3& pos = CVector3(), const CVector3& nrm = CVector3(), const CVector2& uv = CVector2(),
+  SVtxV12N12T8I4W4(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec2& uv = fvec2(),
                    U32 BoneIndices = 0, U32 BoneWeights = 0)
       : mPosition(pos), mNormal(nrm), mUV0(uv), mBoneIndices(BoneIndices), mBoneWeights(BoneWeights) {}
 
@@ -439,15 +439,15 @@ struct SVtxV12N12T8I4W4 {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct SVtxV12N12B12T8I4W4 {
-  CVector3 mPosition;
-  CVector3 mNormal;
-  CVector3 mBiNormal;
-  CVector2 mUV0;
+  fvec3 mPosition;
+  fvec3 mNormal;
+  fvec3 mBiNormal;
+  fvec2 mUV0;
   U32 mBoneIndices;
   U32 mBoneWeights;
 
-  SVtxV12N12B12T8I4W4(const CVector3& pos = CVector3(), const CVector3& nrm = CVector3(), const CVector3& binrm = CVector3(),
-                      const CVector2& uv = CVector2(), U32 BoneIndices = 0, U32 BoneWeights = 0)
+  SVtxV12N12B12T8I4W4(const fvec3& pos = fvec3(), const fvec3& nrm = fvec3(), const fvec3& binrm = fvec3(),
+                      const fvec2& uv = fvec2(), U32 BoneIndices = 0, U32 BoneWeights = 0)
       : mPosition(pos), mNormal(nrm), mBiNormal(binrm), mUV0(uv), mBoneIndices(BoneIndices), mBoneWeights(BoneWeights) {}
 
   void EndianSwap() {
@@ -531,11 +531,11 @@ struct SVtxV12C4T16 // 32 BPV
   SVtxV12C4T16(F32 iX, F32 iY, F32 iZ, F32 fU, F32 fV, F32 fU2, F32 fV2, U32 uColor = 0xffffffff)
       : miX(iX), miY(iY), miZ(iZ), muColor(uColor), mfU(fU), mfV(fV), mfU2(fU2), mfV2(fV2) {}
 
-  SVtxV12C4T16(const CVector3& pos, const CVector2& uv, U32 uColor = 0xffffffff)
+  SVtxV12C4T16(const fvec3& pos, const fvec2& uv, U32 uColor = 0xffffffff)
       : miX(pos.GetX()), miY(pos.GetY()), miZ(pos.GetZ()), muColor(uColor), mfU(uv.GetX()), mfV(uv.GetY()), mfU2(0.0f), mfV2(0.0f) {
   }
 
-  SVtxV12C4T16(const CVector3& pos, const CVector2& uv, const CVector2& uv2, U32 uColor = 0xffffffff)
+  SVtxV12C4T16(const fvec3& pos, const fvec2& uv, const fvec2& uv2, U32 uColor = 0xffffffff)
       : miX(pos.GetX()), miY(pos.GetY()), miZ(pos.GetZ()), muColor(uColor), mfU(uv.GetX()), mfV(uv.GetY()), mfU2(uv2.GetX()),
         mfV2(uv2.GetY()) {}
 
@@ -655,7 +655,7 @@ struct SVtxMODELERRIGID {
       : mX(X), mY(Y), mZ(Z), mObjectID(obj), mFaceID(0), mVertexID(0), mColor(clr), mNX(NX), mNY(NY), mNZ(0), mS(0), mBX(BX),
         mBY(BY), mBZ(0), mT(0), mU0(u0), mV0(v0), mU1(u1), mV1(v1), mU2(0), mV2(0), mU3(0), mV3(0), mU4(0), mV4(0) {}
 
-  SVtxMODELERRIGID(const CVector4& Pos, U32 obj, U32 cmp, U32 clr, S16 NX, S16 NY, S16 BX, S16 BY, S16 u0, S16 v0, S16 u1, S16 v1)
+  SVtxMODELERRIGID(const fvec4& Pos, U32 obj, U32 cmp, U32 clr, S16 NX, S16 NY, S16 BX, S16 BY, S16 u0, S16 v0, S16 u1, S16 v1)
       : mObjectID(obj), mFaceID(0), mVertexID(0), mColor(clr), mNX(NX), mNY(NY), mNZ(0), mS(0), mBX(BX), mBY(BY), mBZ(0), mT(0),
         mU0(u0), mV0(v0), mU1(u1), mV1(v1), mU2(0), mV2(0), mU3(0), mV3(0), mU4(0), mV4(0) {}
 

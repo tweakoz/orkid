@@ -165,11 +165,11 @@ bool MapTraverseSerializer::Serialize(const float &value)
 	}
 	else
 	{
-		if( mLastHint==FindPooledString("CVector3") )
+		if( mLastHint==FindPooledString("fvec3") )
 		{
 			if( miFloatCounter == 2 )
 			{
-				GedSimpleNode< GedMapIoDriver, CVector3 >* simplenode = new GedSimpleNode< GedMapIoDriver, CVector3 >
+				GedSimpleNode< GedMapIoDriver, fvec3 >* simplenode = new GedSimpleNode< GedMapIoDriver, fvec3 >
 					( 
 					mModel, 
 					GetDecoKeyString().c_str(),
@@ -649,7 +649,7 @@ void MapItemWriteSerializer::SetValue( float flt )
 	OrkAssert( bok );
 }
 ///////////////////////////////////////////////////////////////////////////////
-void MapItemWriteSerializer::SetValue( const CVector3& v3 )
+void MapItemWriteSerializer::SetValue( const fvec3& v3 )
 {
 	ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
 	MapKeyWriter keyser( mIoDriver );
@@ -774,12 +774,12 @@ float MapItemReadSerializer::GetFloat()
 	return mFloat;
 }
 ///////////////////////////////////////////////////////////////////////////////
-CVector3 MapItemReadSerializer::GetCVector3()
+fvec3 MapItemReadSerializer::Getfvec3()
 {	
 	meReadType = ERT_CVECTOR3;
 	if( mIoDriver.mDecoKey.mActualKey == "" )
 	{
-		return CVector3();
+		return fvec3();
 	}
 	MapKeyWriter keyser( mIoDriver );
 	bool bok = mMapProp->SerializeItem( *this, keyser, mIoDriver.mDecoKey.miMultiIndex, mIoDriver.GetObject() );
@@ -1471,7 +1471,7 @@ void GedMapIoDriver::GetValue( float& flt ) const
 	flt = ser.GetFloat();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapIoDriver::SetValue(const CVector3& flt)
+void GedMapIoDriver::SetValue(const fvec3& flt)
 {
 	MapItemWriteSerializer deser_key( *this );
 	deser_key.SetValue( flt );
@@ -1480,10 +1480,10 @@ void GedMapIoDriver::SetValue(const CVector3& flt)
 	GetObject()->Notify(&ev);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void GedMapIoDriver::GetValue( CVector3& flt ) const
+void GedMapIoDriver::GetValue( fvec3& flt ) const
 {
 	MapItemReadSerializer ser( *this );
-	flt = ser.GetCVector3();
+	flt = ser.Getfvec3();
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

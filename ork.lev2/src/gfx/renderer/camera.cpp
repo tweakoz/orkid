@@ -88,14 +88,14 @@ void CCameraData::Lookat( const fvec3& eye, const fvec3& tgt, const fvec3& up )
 	_explicitViewMatrix = false;
 }
 
-void CCameraData::SetView( const ork::CMatrix4 &view)
+void CCameraData::SetView( const ork::fmtx4 &view)
 {
 	mMatView = view;
 	//view.dump("setview");
 	_explicitViewMatrix = true;
 }
 
-void CCameraData::setCustomProjection( const ork::CMatrix4& proj){
+void CCameraData::setCustomProjection( const ork::fmtx4& proj){
 	//proj.dump("setproj");
 	mMatProj = proj;
 	_explicitProjectionMatrix = true;
@@ -107,7 +107,7 @@ void CCameraData::setCustomProjection( const ork::CMatrix4& proj){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::projectDepthRay( const CVector2& v2d, fvec3& vdir, fvec3& vori ) const
+void CCameraData::projectDepthRay( const fvec2& v2d, fvec3& vdir, fvec3& vori ) const
 {
 	const Frustum& camfrus = mFrustum;
 	fvec3 near_xt_lerp; near_xt_lerp.Lerp( camfrus.mNearCorners[0], camfrus.mNearCorners[1], v2d.GetX() );
@@ -120,7 +120,7 @@ void CCameraData::projectDepthRay( const CVector2& v2d, fvec3& vdir, fvec3& vori
 	vori=near_lerp;
 }
 
-void CCameraData::projectDepthRay( const CVector2& v2d, fray3& ray_out ) const
+void CCameraData::projectDepthRay( const fvec2& v2d, fray3& ray_out ) const
 {
     fvec3 dir, ori;
     projectDepthRay(v2d,dir,ori);
@@ -129,7 +129,7 @@ void CCameraData::projectDepthRay( const CVector2& v2d, fray3& ray_out ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CCameraData::GetPixelLengthVectors( const fvec3& Pos, const CVector2& vp, fvec3& OutX, fvec3& OutY ) const
+void CCameraData::GetPixelLengthVectors( const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY ) const
 {
 	/////////////////////////////////////////////////////////////////
 	int ivpw = int(vp.GetX());
@@ -184,8 +184,8 @@ void CCameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) cons
 	ctx.mPMatrix.Perspective( faper, faspect, fnear, ffar );
 	ctx.mVMatrix.LookAt( mEye, mTarget, mUp );
 	///////////////////////////////////////////////////
-	CMatrix4 matgp_vp = ctx.mVMatrix*ctx.mPMatrix;
-	CMatrix4 matgp_ivp;
+	fmtx4 matgp_vp = ctx.mVMatrix*ctx.mPMatrix;
+	fmtx4 matgp_ivp;
 	matgp_ivp.GEMSInverse(matgp_vp);
 	//matgp_iv.GEMSInverse(matgp_view);
 	ctx.mFrustum.Set( matgp_ivp );
@@ -230,7 +230,7 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 	//////////////////////////////////////////////
 
 	if(!_explicitViewMatrix)
-		mMatView = CMatrix4::Identity;
+		mMatView = fmtx4::Identity;
 	if( mpGfxTarget != 0 )
 	{
 		//mpGfxTarget->FBI()->ForceFlush();
@@ -267,7 +267,7 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 
 		}
 		else{
-			mMatProj = CMatrix4::Identity;
+			mMatProj = fmtx4::Identity;
 		}
 	//	mpGfxTarget->FBI()->ForceFlush();
 	}
@@ -285,10 +285,10 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 	// gameplay calculation
 	///////////////////////////////
 
-	CMatrix4 matgp_proj;
-	CMatrix4 matgp_view;
-	CMatrix4 matgp_ivp;
-	CMatrix4 matgp_iv;
+	fmtx4 matgp_proj;
+	fmtx4 matgp_view;
+	fmtx4 matgp_ivp;
+	fmtx4 matgp_iv;
 
 	if( mpGfxTarget )
 	{
@@ -300,7 +300,7 @@ void CCameraData::CalcCameraData(CameraCalcContext& calcctx)
 		else
 			matgp_view.LookAt( mEye, mTarget, mUp );
 
-		CMatrix4 matgp_vp = matgp_view*matgp_proj;
+		fmtx4 matgp_vp = matgp_view*matgp_proj;
 		matgp_ivp.GEMSInverse(matgp_vp);
 		matgp_iv.GEMSInverse(matgp_view);
 

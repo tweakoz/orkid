@@ -218,7 +218,7 @@ void GraphVP::DoInit(lev2::GfxTarget* pt) {
 
   mpPickBuffer->CreateContext();
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
-  mpPickBuffer->GetContext()->FBI()->SetClearColor(CColor4(0.0f, 0.0f, 0.0f, 0.0f));
+  mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto tgt = drwev.GetTarget();
@@ -285,8 +285,8 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
     fbi->Clear(fvec4::Blue(), 1.0f);
     mtxi->PushPMatrix(mGrid.GetOrthoMatrix());
-    mtxi->PushVMatrix(CMatrix4::Identity);
-    mtxi->PushMMatrix(CMatrix4::Identity);
+    mtxi->PushVMatrix(fmtx4::Identity);
+    mtxi->PushMMatrix(fmtx4::Identity);
     {
       uint64_t pickID = mpPickBuffer->AssignPickId(GetTopGraph());
       fvec4 color(1, 1, 1, 1);
@@ -460,7 +460,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
     mtxi->PushUIMatrix(miW, miH);
     if (false == is_pick) {
       lev2::CFontMan::BeginTextBlock(tgt);
-      tgt->PushModColor(CColor4::Yellow());
+      tgt->PushModColor(fcolor4::Yellow());
       {
         lev2::CFontMan::DrawText(tgt, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth());
         if (mDflowEditor.GetSelModule()) {

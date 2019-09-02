@@ -62,7 +62,7 @@ void BulletObjectArchetype::DoCompose(ork::ent::ArchComposer& composer)
 void BulletObjectArchetype::DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const
 {
 }
-void BulletObjectArchetype::DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const
+void BulletObjectArchetype::DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const
 {
 }
 
@@ -223,7 +223,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 						////////////////////////////////
 						const DagNode& dnode = shape_create_data.mEntity->GetEntData().GetDagNode();
 						const TransformNode& t3d = dnode.GetTransformNode();
-						CMatrix4 mtx = t3d.GetTransform().GetMatrix();
+						fmtx4 mtx = t3d.GetTransform().GetMatrix();
 						////////////////////////////////
 						btTransform btTrans = ! mtx;
 						mRigidBody = bulletsys->AddLocalRigidBody(shape_create_data.mEntity,mBOCD.GetMass(),btTrans,pshape);
@@ -286,7 +286,7 @@ void BulletObjectControllerInst::DoUpdate(ork::ent::SceneInst* inst)
         {
             const btMotionState* motionState = mRigidBody->getMotionState();
             motionState->getWorldTransform(xf);
-            CMatrix4 xfW = ! xf;
+            fmtx4 xfW = ! xf;
             t3d.GetTransform().SetMatrix( xfW );
         }
 
@@ -396,7 +396,7 @@ BulletShapePlaneData::BulletShapePlaneData()
 	mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst*
 	{
 		auto rval = new BulletShapeBaseInst;
-		rval->mCollisionShape = new btStaticPlaneShape(  ! CVector3::Green(), 0.0f );
+		rval->mCollisionShape = new btStaticPlaneShape(  ! fvec3::Green(), 0.0f );
 		return rval;
 	};
 }

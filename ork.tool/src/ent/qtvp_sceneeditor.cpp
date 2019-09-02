@@ -173,7 +173,7 @@ void SceneEditorVP::RegisterInitCallback(ork::ent::SceneEditorInitCb icb) { mIni
 void SceneEditorView::SlotObjectSelected(ork::Object* pobj) {
   EntData* pdata = rtti::autocast(pobj);
   if (pdata) {
-    CVector3 pos = pdata->GetDagNode().GetTransformNode().GetTransform().GetPosition();
+    fvec3 pos = pdata->GetDagNode().GetTransformNode().GetTransform().GetPosition();
     // if( mVP->GetCamera() )
     //	mVP->GetCamera()->CamFocus = pos;
     // mVP->mpPickBuffer->SetDirty(true);
@@ -200,11 +200,11 @@ void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
                                                       lev2::PickBufferBase::EPICK_FACE_VTX);
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
   mpPickBuffer->CreateContext();
-  mpPickBuffer->GetContext()->FBI()->SetClearColor(CColor4(0.0f, 0.0f, 0.0f, 0.0f));
+  mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
   int iw = pTARG->GetW();
   int ih = pTARG->GetH();
 
-  pTARG->FBI()->SetClearColor(CColor4(0.0f, 0.0f, 0.0f, 0.0f));
+  pTARG->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
 
   orkprintf("PickBuffer<%p>\n", mpPickBuffer);
 }
@@ -700,8 +700,8 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   gfxtarg->BindMaterial(lev2::GfxEnv::GetDefault3DMaterial());
   GL_ERRORCHECK();
   /////////////////////////////////////////////////////////////////////////////
-  const CMatrix4& PMTX = FrameData.GetCameraCalcCtx().mPMatrix;
-  const CMatrix4& VMTX = FrameData.GetCameraCalcCtx().mVMatrix;
+  const fmtx4& PMTX = FrameData.GetCameraCalcCtx().mPMatrix;
+  const fmtx4& VMTX = FrameData.GetCameraCalcCtx().mVMatrix;
   /////////////////////////////////////////////////////////////////////////////
   // Main Renderer
   {
@@ -712,7 +712,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
 
     MTXI->PushPMatrix(PMTX);
     MTXI->PushVMatrix(VMTX);
-    MTXI->PushMMatrix(CMatrix4::Identity);
+    MTXI->PushMMatrix(fmtx4::Identity);
     { /////////////////////////////////////////
       // manip
       /////////////////////////////////////////
@@ -819,16 +819,16 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
   /////////////////////////////////////////////////
   lev2::GfxMaterialUI UiMat(pTARG);
-  pTARG->MTXI()->PushPMatrix(CMatrix4::Identity);
-  pTARG->MTXI()->PushVMatrix(CMatrix4::Identity);
-  pTARG->MTXI()->PushMMatrix(CMatrix4::Identity);
+  pTARG->MTXI()->PushPMatrix(fmtx4::Identity);
+  pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
+  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
 
   static SRasterState defstate;
   pTARG->RSI()->BindRasterState(defstate);
   {
     /////////////////////////////////////////////////
     // little spinner so i know which window is active
-    pTARG->PushModColor(CColor4::White());
+    pTARG->PushModColor(fcolor4::White());
 
     pTARG->FXI()->InvalidateStateBlock();
     {
@@ -844,11 +844,11 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       vw.Lock(pTARG, &GfxEnv::GetSharedDynamicVB(), 2);
       {
         u32 ucolor = 0xffffffff;
-        ork::CVector2 uvZ(0.0f, 0.0f);
+        ork::fvec2 uvZ(0.0f, 0.0f);
         float fZ = 0.0f;
 
-        lev2::SVtxV12C4T16 v0(CVector3(float(ibaseX - int(fx * ilen)), float(ibaseY - int(fy * ilen)), fZ), uvZ, ucolor);
-        lev2::SVtxV12C4T16 v1(CVector3(float(ibaseX + int(fx * ilen)), float(ibaseY + int(fy * ilen)), fZ), uvZ, ucolor);
+        lev2::SVtxV12C4T16 v0(fvec3(float(ibaseX - int(fx * ilen)), float(ibaseY - int(fy * ilen)), fZ), uvZ, ucolor);
+        lev2::SVtxV12C4T16 v1(fvec3(float(ibaseX + int(fx * ilen)), float(ibaseY + int(fy * ilen)), fZ), uvZ, ucolor);
 
         vw.AddVertex(v0);
         vw.AddVertex(v1);
@@ -862,7 +862,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       gfspinner += (PI2 / 60.0f);
     }
     pTARG->PopModColor();
-    pTARG->PushModColor(CColor4::Yellow());
+    pTARG->PushModColor(fcolor4::Yellow());
     {
 
       float gfspinner = CSystem::GetRef().GetLoResRelTime() * PI;
@@ -878,11 +878,11 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
       vw.Lock(pTARG, &GfxEnv::GetSharedDynamicVB(), 2);
       {
         u32 ucolor = 0xffff00ff;
-        ork::CVector2 uvZ(0.0f, 0.0f);
+        ork::fvec2 uvZ(0.0f, 0.0f);
         float fZ = 0.0f;
 
-        lev2::SVtxV12C4T16 v0(CVector3(float(ibaseX - int(fx * ilen)), float(ibaseY - int(fy * ilen)), fZ), uvZ, ucolor);
-        lev2::SVtxV12C4T16 v1(CVector3(float(ibaseX + int(fx * ilen)), float(ibaseY + int(fy * ilen)), fZ), uvZ, ucolor);
+        lev2::SVtxV12C4T16 v0(fvec3(float(ibaseX - int(fx * ilen)), float(ibaseY - int(fy * ilen)), fZ), uvZ, ucolor);
+        lev2::SVtxV12C4T16 v1(fvec3(float(ibaseX + int(fx * ilen)), float(ibaseY + int(fy * ilen)), fZ), uvZ, ucolor);
 
         vw.AddVertex(v0);
         vw.AddVertex(v1);
@@ -918,7 +918,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         pTARG->BindMaterial(&UiMat);
       }
       UiMat.mRasterState.SetBlending(lev2::EBLENDING_OFF);
-      pTARG->PushModColor(CColor4::White());
+      pTARG->PushModColor(fcolor4::White());
       {
         const int ksize = 512;
         lev2::VtxWriter<SVtxV12C4T16> vw;
@@ -933,14 +933,14 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
           f32 h0 = f32(ksize - 18);
           f32 x1 = x0 + w0;
           f32 y1 = y0 + h0;
-          ork::CVector2 uv0(0.0f, 1.0f);
-          ork::CVector2 uv1(1.0f, 1.0f);
-          ork::CVector2 uv2(1.0f, 0.0f);
-          ork::CVector2 uv3(0.0f, 0.0f);
-          ork::CVector3 vv0(x0, y0, fZ);
-          ork::CVector3 vv1(x1, y0, fZ);
-          ork::CVector3 vv2(x1, y1, fZ);
-          ork::CVector3 vv3(x0, y1, fZ);
+          ork::fvec2 uv0(0.0f, 1.0f);
+          ork::fvec2 uv1(1.0f, 1.0f);
+          ork::fvec2 uv2(1.0f, 0.0f);
+          ork::fvec2 uv3(0.0f, 0.0f);
+          ork::fvec3 vv0(x0, y0, fZ);
+          ork::fvec3 vv1(x1, y0, fZ);
+          ork::fvec3 vv2(x1, y1, fZ);
+          ork::fvec3 vv3(x0, y1, fZ);
 
           lev2::SVtxV12C4T16 v0(vv0, uv0, ucolor);
           lev2::SVtxV12C4T16 v1(vv1, uv1, ucolor);
@@ -1030,7 +1030,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
   auto MTXI = pOutputTarget->MTXI();
   MTXI->PushPMatrix(ccctx.mPMatrix);
   MTXI->PushVMatrix(ccctx.mVMatrix);
-  MTXI->PushMMatrix(CMatrix4::Identity);
+  MTXI->PushMMatrix(fmtx4::Identity);
   {
     switch (ManipManager().GetUIMode()) {
       case CManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
@@ -1039,17 +1039,17 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
         fdata.SetTarget(pProxyTarg);
 
         ///////////////////////////////////////
-        const CVector4& ScreenXNorm = pProxyTarg->MTXI()->GetScreenRightNormal();
+        const fvec4& ScreenXNorm = pProxyTarg->MTXI()->GetScreenRightNormal();
 
-        CMatrix4 MatW;
+        fmtx4 MatW;
         ManipManager().GetCurTransform().GetMatrix(MatW);
-        const CVector4 V0 = MatW.GetTranslation();
-        const CVector4 V1 = V0 + ScreenXNorm * float(30.0f);
-        CVector2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
+        const fvec4 V0 = MatW.GetTranslation();
+        const fvec4 V1 = V0 + ScreenXNorm * float(30.0f);
+        fvec2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
         const CCameraData* camdat = pProxyTarg->GetRenderContextFrameData()->GetCameraData();
-        CVector3 Pos = MatW.GetTranslation();
-        CVector3 UpVector;
-        CVector3 RightVector;
+        fvec3 Pos = MatW.GetTranslation();
+        fvec3 UpVector;
+        fvec3 RightVector;
         camdat->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
         float rscale = RightVector.Mag(); // float(100.0f);
         // printf( "OUTERmanip rscale<%f>\n", rscale );
@@ -1111,14 +1111,14 @@ void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& FrameData) {
   bool bhasfocus = HasKeyboardFocus();
   float fw = FrameData.GetDstRect().miW;
   float fh = FrameData.GetDstRect().miH;
-  ork::CMatrix4 mtxP = FrameData.GetTarget()->MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
+  ork::fmtx4 mtxP = FrameData.GetTarget()->MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   // GfxEnv::SetUIColorMode( ork::lev2::EUICOLOR_MOD );
   GfxMaterialUI matui(FrameData.GetTarget());
   FrameData.GetTarget()->BindMaterial(&matui);
-  FrameData.GetTarget()->PushModColor(bhasfocus ? ork::CColor4::Red() : ork::CColor4::Black());
+  FrameData.GetTarget()->PushModColor(bhasfocus ? ork::fcolor4::Red() : ork::fcolor4::Black());
   FrameData.GetTarget()->MTXI()->PushPMatrix(mtxP);
-  FrameData.GetTarget()->MTXI()->PushVMatrix(ork::CMatrix4::Identity);
-  FrameData.GetTarget()->MTXI()->PushMMatrix(ork::CMatrix4::Identity);
+  FrameData.GetTarget()->MTXI()->PushVMatrix(ork::fmtx4::Identity);
+  FrameData.GetTarget()->MTXI()->PushMMatrix(ork::fmtx4::Identity);
   {
     DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
 

@@ -39,8 +39,8 @@ public:
 	void SetValue( ork::Object* pobject );
 	void GetValue( const ork::Object* & rp ) const;
 	/////////////////////////////////////////
-	void SetValue( const ork::CVector3& pobject );
-	void GetValue( ork::CVector3& rp ) const;
+	void SetValue( const ork::fvec3& pobject );
+	void GetValue( ork::fvec3& rp ) const;
 	/////////////////////////////////////////
 	void SetValue( PoolString ps );
 	void GetValue( PoolString& ps ) const;
@@ -98,7 +98,7 @@ class MapTraverseSerializer : public reflect::serialize::LayerSerializer
 	int								miMultiIndex;
 	int								miFloatCounter;
 	PoolString						mLastHint;
-	CVector3						mVec3Acc;
+	fvec3						mVec3Acc;
 	bool							mbIsKey;
 
 	bool IsMultiKey() const;
@@ -144,7 +144,7 @@ class MapItemWriteSerializer : public reflect::serialize::LayerDeserializer
 	/////////////////////////////////////////////////////
 	ork::ArrayString<1024>					mArrayString;
 	float									mFloat;
-	CVector3								mVector3;
+	fvec3								mVector3;
 	/////////////////////////////////////////////////////
 	rtti::ICastable*						mValueCastable;
 	ork::PoolString							mValuePoolString;
@@ -178,7 +178,7 @@ public:
 	void SetValue( rtti::ICastable *castable );
 	void SetValue( const char* pstr );
 	void SetValue( float flt );
-	void SetValue( const CVector3& flt );
+	void SetValue( const fvec3& flt );
 	/////////////////////////////////////////////////////
 };
 
@@ -205,7 +205,7 @@ class MapItemReadSerializer : public reflect::serialize::LayerSerializer
 	ork::PoolString						mPoolString;
 	ork::file::Path						mPathObject;
 	float								mFloat;
-	CVector3							mVector3;
+	fvec3							mVector3;
 	EREADTYPE							meReadType;
 	int									miFloatIndex;
 	/////////////////////////////////////////////////////
@@ -221,7 +221,7 @@ public:
 	PoolString GetPoolString();
 	file::Path GetPathObject();
 	float GetFloat();
-	CVector3 GetCVector3();
+	fvec3 Getfvec3();
 	/////////////////////////////////////////////////////
 };
 

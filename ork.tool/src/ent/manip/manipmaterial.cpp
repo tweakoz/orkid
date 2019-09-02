@@ -65,7 +65,7 @@ bool GfxMaterialManip::BeginPass( GfxTarget* pTarg, int ipass )
 	pTarg->FXI()->BindPass( hModFX, ipass );
 	pTarg->FXI()->BindParamMatrix( hModFX, hMVP, pTarg->MTXI()->RefMVPMatrix() );
 
-	CColor4 Color = pTarg->RefModColor();
+	fcolor4 Color = pTarg->RefModColor();
 	pTarg->FXI()->BindParamVect4( hModFX, hCOLOR, Color );
 
 	pTarg->FXI()->CommitParams();

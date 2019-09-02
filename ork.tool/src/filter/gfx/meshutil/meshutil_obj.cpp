@@ -33,7 +33,7 @@ struct objmesh
 };
 struct objmat
 {
-	CVector3			mColor;
+	fvec3			mColor;
 };
 void toolmesh::WriteToWavefrontObj( const file::Path& BasePath ) const
 {
@@ -52,9 +52,9 @@ void toolmesh::WriteToWavefrontObj( const file::Path& BasePath ) const
 
 	///////////////////////////////////////////////////
 	///////////////////////////////////////////////////
-	orkvector<CVector3>			ObjVertexPool;
-	orkvector<CVector3>			ObjNormalPool;
-	orkvector<CVector2>			ObjUv0Pool;
+	orkvector<fvec3>			ObjVertexPool;
+	orkvector<fvec3>			ObjNormalPool;
+	orkvector<fvec2>			ObjUv0Pool;
 	orkvector<objmesh>			ObjMeshPool;
 	orkmap<std::string,objmat>	ObjMaterialPool;
 	///////////////////////////////////////////////////
@@ -298,9 +298,9 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 
 	int inumlines = int(ObjLines.size());
 
-	orkvector<CVector3> ObjV;
-	orkvector<CVector3> ObjVN;
-	orkvector<CVector2> ObjVT;
+	orkvector<fvec3> ObjV;
+	orkvector<fvec3> ObjVN;
+	orkvector<fvec2> ObjVT;
 	orkvector<objpoly>  ObjPolys;
 
 	std::string curgroup;
@@ -359,7 +359,7 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 					if( Tokens[0] == "v" )
 					{
 						OrkAssert( Tokens.size() == 4 );
-						CVector3 v;
+						fvec3 v;
 						sscanf( Tokens[1].c_str(), "%f", v.GetArray()+0 );
 						sscanf( Tokens[2].c_str(), "%f", v.GetArray()+1 );
 						sscanf( Tokens[3].c_str(), "%f", v.GetArray()+2 );
@@ -368,7 +368,7 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 					if( Tokens[0] == "vn" )
 					{
 						OrkAssert( Tokens.size() == 4 );
-						CVector3 vn;
+						fvec3 vn;
 						sscanf( Tokens[1].c_str(), "%f", vn.GetArray()+0 );
 						sscanf( Tokens[2].c_str(), "%f", vn.GetArray()+1 );
 						sscanf( Tokens[3].c_str(), "%f", vn.GetArray()+2 );
@@ -377,7 +377,7 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 					if( Tokens[0] == "vt" )
 					{
 						OrkAssert( Tokens.size() == 3 );
-						CVector2 vt;
+						fvec2 vt;
 						sscanf( Tokens[1].c_str(), "%f", vt.GetArray()+0 );
 						sscanf( Tokens[2].c_str(), "%f", vt.GetArray()+1 );
 						ObjVT.push_back( vt );
@@ -531,12 +531,12 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 				int inrmidx = opoly.mnrmindices[iv]-1;
 				int iuv0idx = opoly.muvindices[iv]-1;
 					
-				static CVector3 NoUv0( 0.0f, 0.0f, 0.0f );
-				static CVector3 NoNrm( 0.0f, 1.0f, 0.0f );
+				static fvec3 NoUv0( 0.0f, 0.0f, 0.0f );
+				static fvec3 NoNrm( 0.0f, 1.0f, 0.0f );
 
-				const CVector3& pos = ObjV [ iposidx ];
-				const CVector3& nrm = inumnrm ? ObjVN[ inrmidx ] : NoNrm; 
-				const CVector3 uv0 = (inumuv0!=0) ? CVector3(ObjVT[ iuv0idx ]) : CVector3(NoUv0); 
+				const fvec3& pos = ObjV [ iposidx ];
+				const fvec3& nrm = inumnrm ? ObjVN[ inrmidx ] : NoNrm; 
+				const fvec3 uv0 = (inumuv0!=0) ? fvec3(ObjVT[ iuv0idx ]) : fvec3(NoUv0); 
 
 				vertex ToolVertex;
 

@@ -137,7 +137,7 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 	}
 
 	const AABox& bbox = inmesh.GetAABox();
-	CVector3 bbox_size = bbox.Max()-bbox.Min();
+	fvec3 bbox_size = bbox.Max()-bbox.Min();
 	int inumtriangles = inmesh.GetNumPolys(3);
 	int inumfaces = inmesh.GetNumPolys();
 	int inumvertices = inmesh.RefVertexPool().GetNumVertices();
@@ -158,8 +158,8 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 	{
 		const vertex& vtx = inmesh.RefVertexPool().GetVertex(iv);
 
-		const CVector3& pos = vtx.mPos;
-		const CVector3& nrm = vtx.mNrm;
+		const fvec3& pos = vtx.mPos;
+		const fvec3& nrm = vtx.mNrm;
 		int inumcontri = int( vtx.mConnectedPolys.size() );
 
 		DataStream->AddItem( pos );
@@ -218,8 +218,8 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 			int iv2 = ply.GetVertexID((iv + 1) % 3);
 			const vertex& vtx1 = inmesh.RefVertexPool().GetVertex(ivi);
 			const vertex& vtx2 = inmesh.RefVertexPool().GetVertex(iv2);
-			const CVector3& pos1 = vtx1.Pos();
-			const CVector3& pos2 = vtx2.Pos();
+			const fvec3& pos1 = vtx1.Pos();
+			const fvec3& pos2 = vtx2.Pos();
 
 			U64 uei = ply.mEdges[iv];
 			const edge& edg = inmesh.GetEdge( uei );
@@ -260,8 +260,8 @@ bool NAVOutput( const file::Path& outpath, const toolmesh& inmesh )
 				int iv2 = edg.GetVertexID(1);
 				const vertex& vtx1 = inmesh.RefVertexPool().GetVertex(iv1);
 				const vertex& vtx2 = inmesh.RefVertexPool().GetVertex(iv2);
-				const CVector3& v1 = vtx1.Pos();
-				const CVector3& v2 = vtx2.Pos();
+				const fvec3& v1 = vtx1.Pos();
+				const fvec3& v2 = vtx2.Pos();
 				orkerrorlog("ERROR: 2-MANIFOLD: %s - There is not 1 or 2 connected connected triangles to an edge\n", outpath.c_str(), inumcon);
 				orkerrorlog("  edge: (%g,%g,%g) - (%g,%g,%g)\n", v1.GetX(), v1.GetY(), v1.GetZ(), v2.GetX(), v2.GetY(), v2.GetZ() );
 				error = true;

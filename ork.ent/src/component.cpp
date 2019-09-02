@@ -117,7 +117,7 @@ void ComponentInst::UnLink(SceneInst *psi)
 	mbValid = false;
 }
 
-void ComponentInst::Start(SceneInst *psi, const CMatrix4 &world)
+void ComponentInst::Start(SceneInst *psi, const fmtx4 &world)
 {
 	if( mbValid && (false == mbStarted) )
 	{

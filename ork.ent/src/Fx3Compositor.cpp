@@ -183,9 +183,9 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(	lev2::GfxTarget* pT,
 		mCompositingMaterial.SetTextureB( ptexB );
 		mCompositingMaterial.SetTextureC( ptexC );
 
-		mCompositingMaterial.SetLevelA( CVector4(levA,levA,levA,levA) );
-		mCompositingMaterial.SetLevelB( CVector4(levB,levB,levB,levB) );
-		mCompositingMaterial.SetLevelC( CVector4(levC,levC,levC,levC) );
+		mCompositingMaterial.SetLevelA( fvec4(levA,levA,levA,levA) );
+		mCompositingMaterial.SetLevelB( fvec4(levB,levB,levB,levB) );
+		mCompositingMaterial.SetLevelC( fvec4(levC,levC,levC,levC) );
 
 		switch( eblend )
 		{
@@ -213,7 +213,7 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(	lev2::GfxTarget* pT,
 		}
 
 
-		out_buf->RenderMatOrthoQuad( vprect, quadrect, & mCompositingMaterial, 0.0f, 0.0f, kMAXW, kMAXH, 0, CVector4::White() );
+		out_buf->RenderMatOrthoQuad( vprect, quadrect, & mCompositingMaterial, 0.0f, 0.0f, kMAXW, kMAXH, 0, fvec4::White() );
 
 	}
 }

@@ -48,9 +48,9 @@ class GfxMaterialUI : public GfxMaterial
 
 	protected:
 
-	CVector4 PosScale;
-	CVector4 PosBias;
-	CVector4 Color;
+	fvec4 PosScale;
+	fvec4 PosBias;
+	fvec4 Color;
 	FxShader* hModFX;
 	EUIColorMode meUIColorMode;
 	const FxShaderTechnique* hTekMod;
@@ -92,10 +92,10 @@ class GfxMaterialUIText : public GfxMaterial
 
 	protected:
 
-	CVector4 PosScale;
-	CVector4 PosBias;
-	CVector4 TexScale;
-	CVector4 TexColor;
+	fvec4 PosScale;
+	fvec4 PosBias;
+	fvec4 TexScale;
+	fvec4 TexColor;
 
 	FxShader* hModFX;
 	const FxShaderTechnique* hTek;
@@ -129,7 +129,7 @@ class GfxMaterialUITextured : public GfxMaterial
 	
 	std::string mTechniqueName;
 
-	CVector4 Color;
+	fvec4 Color;
 	FxShader* hModFX;
 
 	const FxShaderTechnique* hTek;

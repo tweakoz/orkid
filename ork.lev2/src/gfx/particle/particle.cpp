@@ -22,7 +22,7 @@
 
 using namespace ork::lev2::particle;
 
-template class ork::reflect::DirectObjectMapPropertyType< orkmap<float,ork::CVector4> >;
+template class ork::reflect::DirectObjectMapPropertyType< orkmap<float,ork::fvec4> >;
 template class ork::reflect::DirectObjectPropertyType< ork::lev2::EBlending >;
 template class ork::reflect::DirectObjectPropertyType< ork::lev2::EPrimitiveType>;
 namespace ork { namespace lev2 { namespace particle {
@@ -176,7 +176,7 @@ void DirectedEmitter::EmitCB( EmitterCtx& ctx )
 	ctx.mfEmitterMark += fdeltap;
 	//printf( "emitrate<%f> deltat<%f> deltap<%f> mark<%f>\n", ctx.mfEmissionRate,ctx.mfDeltaTime,fdeltap,ctx.mfEmitterMark );
 	int icount = int(ctx.mfEmitterMark);
-	CVector3 dir, pos, disp, vbin, vtan, yo;
+	fvec3 dir, pos, disp, vbin, vtan, yo;
 	for( int ic=0; ic<icount; ic++ )
 	{	float fi = float(ic)/float(icount);
 		ComputePosDir( fi, pos, dir );
@@ -187,13 +187,13 @@ void DirectedEmitter::EmitCB( EmitterCtx& ctx )
 			ptc->mfLifeSpan = ctx.mfLifespan;
 			switch( meDirection )
 			{	case EMITDIR_CROSS_X:
-					dir = dir.Cross(CVector3::Red());
+					dir = dir.Cross(fvec3::Red());
 					break;
 				case EMITDIR_CROSS_Y:
-					dir = dir.Cross(CVector3::Green());
+					dir = dir.Cross(fvec3::Green());
 					break;
 				case EMITDIR_CROSS_Z:
-					dir = dir.Cross(CVector3::Blue());
+					dir = dir.Cross(fvec3::Blue());
 					break;
 				case EMITDIR_CONSTANT:
 				case EMITDIR_VEL:
@@ -201,8 +201,8 @@ void DirectedEmitter::EmitCB( EmitterCtx& ctx )
 					break;
 
 			}
-			vbin = dir.Cross(CVector3::Green());
-			if( vbin.MagSquared() < .1f ) vbin = dir.Cross(CVector3::Red());
+			vbin = dir.Cross(fvec3::Green());
+			if( vbin.MagSquared() < .1f ) vbin = dir.Cross(fvec3::Red());
 			vbin.Normalize();
 			vtan = vbin.Cross(dir);
 			float fu = ((std::rand()%256)/256.0f)-0.5f;
@@ -226,7 +226,7 @@ void DirectedEmitter::EmitSQ( EmitterCtx& ctx )
 	float fdeltap = (ctx.mfEmissionRate*ctx.mfDeltaTime);
 	ctx.mfEmitterMark += fdeltap;
 	int icount = ctx.mSpawnQueue->GetNumEvents();
-	CVector3 odir, dir, pos, disp, vbin, vtan, yo;
+	fvec3 odir, dir, pos, disp, vbin, vtan, yo;
 	
 	//printf( "DirectedEmitter<%p>::EmitSQ() count<%d>\n", this, icount );
 	float EmitterSpeed = ctx.mfEmissionVelocity;
@@ -259,8 +259,8 @@ void DirectedEmitter::EmitSQ( EmitterCtx& ctx )
 					//////////////////////////////////////////////
 					// calc dispersion
 					//////////////////////////////////////////////
-					vbin = dir.Cross(CVector3::Green());
-					if( vbin.MagSquared() < .1f ) vbin = dir.Cross(CVector3::Red());
+					vbin = dir.Cross(fvec3::Green());
+					if( vbin.MagSquared() < .1f ) vbin = dir.Cross(fvec3::Red());
 					vbin.Normalize();
 					vtan = vbin.Cross(dir);
 					float fu = ((std::rand()%256)/256.0f)-0.5f;

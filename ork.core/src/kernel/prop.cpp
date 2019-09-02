@@ -41,7 +41,7 @@ template class orklut<Char8, ork::Object*>;
 template class orklut<u64, bool>;
 template class orklut<std::string, int>;
 
-template class orklut<ork::PoolString, CMatrix4>;
+template class orklut<ork::PoolString, fmtx4>;
 template class orklut<std::string, std::string>;
 
 template class orklut<float, ork::PoolString>;

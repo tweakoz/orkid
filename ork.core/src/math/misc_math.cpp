@@ -44,7 +44,7 @@ f32* CPerlin2D::g2 = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-//Could add this function to the CVector4 class
+//Could add this function to the fvec4 class
 XYZ RotatePointAboutLine(XYZ p, double theta, XYZ p1, XYZ p2)
 {
    XYZ u,q1,q2;

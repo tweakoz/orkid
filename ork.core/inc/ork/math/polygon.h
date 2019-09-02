@@ -118,8 +118,8 @@ public:
 	void SetComponentIndex( int idx ) { miComponentIndex=idx; }
 
 	//vtx ComputeCenter( const vertexpool<vtx> &vpool ) const;
-	//float ComputeEdgeLength( const vertexpool<vertex> &vpool, const CMatrix4 & MatRange, int iedge ) const;
-	//float ComputeArea( const vertexpool &vpool, const CMatrix4 & MatRange ) const;
+	//float ComputeEdgeLength( const vertexpool<vertex> &vpool, const fmtx4 & MatRange, int iedge ) const;
+	//float ComputeArea( const vertexpool &vpool, const fmtx4 & MatRange ) const;
 	//U64 HashIndices( void ) const;
 };
 
@@ -157,7 +157,7 @@ public:
 
 template <typename T> class circle
 {
-	typedef TVector2<T>	point_type;
+	typedef Vector2<T>	point_type;
 
     point_type		mCenter;
     T				mRadius;

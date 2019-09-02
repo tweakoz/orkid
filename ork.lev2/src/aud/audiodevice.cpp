@@ -502,7 +502,7 @@ void AudioInstrumentZoneContext::SetLpfReson( float kfco, float krez )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioDevice::SetListener1( const ork::CVector3& pos, const ork::CVector3& up, const ork::CVector3& forward )
+void AudioDevice::SetListener1( const ork::fvec3& pos, const ork::fvec3& up, const ork::fvec3& forward )
 {
 	mListenerPos1 = pos;
 	mListenerUp1 = up;
@@ -511,7 +511,7 @@ void AudioDevice::SetListener1( const ork::CVector3& pos, const ork::CVector3& u
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioDevice::SetListener2( const ork::CVector3& pos, const ork::CVector3& up, const ork::CVector3& forward )
+void AudioDevice::SetListener2( const ork::fvec3& pos, const ork::fvec3& up, const ork::fvec3& forward )
 {
 	mListenerPos2 = pos;
 	mListenerUp2 = up;

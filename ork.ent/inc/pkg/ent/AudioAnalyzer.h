@@ -238,7 +238,7 @@ private:
     ~AudioAnalysisComponentInst() final;
 	bool DoLink(ork::ent::SceneInst *psi) final;
 	void DoUnLink(SceneInst *psi) final;
-	bool DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world) final;
+	bool DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world) final;
 	void DoUpdate(SceneInst *inst) final;
 
     const AudioAnalysisComponentData& mAnalysisData;
@@ -267,7 +267,7 @@ public:
 	AudioAnalysisArchetype();
 private:
 	void DoCompose(ArchComposer& composer) final;
-	void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const final {}
+	void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

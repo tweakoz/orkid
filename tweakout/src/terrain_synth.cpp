@@ -108,7 +108,7 @@ void TerrainSynth::UnLockVisMap() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 TerrainSynth::XYZ( int iX, int iZ ) const
+fvec3 TerrainSynth::XYZ( int iX, int iZ ) const
 {
 	return mhf_target.XYZ(iX,iZ);
 }

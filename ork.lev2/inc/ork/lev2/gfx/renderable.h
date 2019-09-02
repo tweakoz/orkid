@@ -98,11 +98,11 @@ public:
 	void SetObject( const ork::Object* o ) { mpObject = o; }
 	const ork::Object* GetObject() const { return mpObject; }
 		
-	inline const CColor4& GetModColor() const { return mModColor; }
-	inline void SetModColor(const CColor4& Color) { mModColor = Color; }
+	inline const fcolor4& GetModColor() const { return mModColor; }
+	inline void SetModColor(const fcolor4& Color) { mModColor = Color; }
 
-	void SetMatrix( const CMatrix4& mtx ) { mMatrix=mtx; }
-	const CMatrix4& GetMatrix() const { return mMatrix; }
+	void SetMatrix( const fmtx4& mtx ) { mMatrix=mtx; }
+	const fmtx4& GetMatrix() const { return mMatrix; }
 
 	void SetDrawableDataA( const anyp& ap ) { mDrwDataA=ap; }
 	const anyp& GetDrawableDataA() const { return mDrwDataA; }
@@ -111,9 +111,9 @@ public:
 
 protected:
 
-	CMatrix4						mMatrix;
+	fmtx4						mMatrix;
 	const ork::Object*				mpObject;
-	CColor4							mModColor;
+	fcolor4							mModColor;
 	anyp							mDrwDataA;
 	anyp							mDrwDataB;
 
@@ -135,12 +135,12 @@ public: //
 	int					GetPass( void ) const { return miPass; }
 	
 	void				SetPass( int ipass ) { miPass=ipass; }
-	void				SetBox( const CVector4 & box ) { mBox=box; }
-	void				SetColor( const CColor4 & clr ) { mColor=clr; }
+	void				SetBox( const fvec4 & box ) { mBox=box; }
+	void				SetColor( const fcolor4 & clr ) { mColor=clr; }
 	void				SetDefaultSortKey( U32 DefSortKey ) { mDefSortKey=DefSortKey; }
 
-	const CVector4 &	GetBox( void ) const { return mBox; }
-	const CColor4 &		GetColor( void ) const { return mColor; }
+	const fvec4 &	GetBox( void ) const { return mBox; }
+	const fcolor4 &		GetColor( void ) const { return mColor; }
 
 
 	void Render( const Renderer *renderer ) const final;
@@ -150,8 +150,8 @@ private:
 
 	int						miPass;
 	
-	CVector4				mBox;
-	CColor4					mColor;
+	fvec4				mBox;
+	fcolor4					mColor;
 	U32						mDefSortKey;
 
 };
@@ -207,7 +207,7 @@ public:
 
 	float GetScale() const { return mScale; }
 	inline const lev2::XgmModelInst* GetModelInst() const { return mModelInst; }
-	inline const CMatrix4& GetWorldMatrix() const;
+	inline const fmtx4& GetWorldMatrix() const;
 	inline int GetMaterialIndex( void ) const { return mMaterialIndex; }
 	inline int GetMaterialPassIndex( void ) const { return mMaterialPassIndex; }
 	inline int GetEdgeColor() const { return mEdgeColor; }
@@ -222,11 +222,11 @@ public:
 
 	const lev2::LightMask& GetLightMask() const { return mLightMask; }
 
-	void SetRotate( const CVector3& v ) { mRotate=v; }
-	void SetOffset( const CVector3& v ) { mOffset=v; }
+	void SetRotate( const fvec3& v ) { mRotate=v; }
+	void SetOffset( const fvec3& v ) { mOffset=v; }
 
-	const CVector3& GetRotate() const { return mRotate; }
-	const CVector3& GetOffset() const { return mOffset; }
+	const fvec3& GetRotate() const { return mRotate; }
+	const fvec3& GetOffset() const { return mOffset; }
 
 	void SetEngineParamFloat(int idx, float fv);
 	float GetEngineParamFloat(int idx) const;
@@ -249,8 +249,8 @@ private:
 	int							mMaterialPassIndex;
 	int							mEdgeColor;
 	float						mScale;
-	CVector3					mOffset;
-	CVector3					mRotate;
+	fvec3					mOffset;
+	fvec3					mRotate;
 	const lev2::XgmWorldPose*	mWorldPose;
 	const lev2::XgmSubMesh*		mSubMesh;
 	const lev2::XgmCluster*		mCluster;
@@ -306,10 +306,10 @@ public:
 	}
 	
 	const Frustum&		GetFrustum() const { return mFrustum; }
-	const CColor4&		GetColor() const { return mColor; }
+	const fcolor4&		GetColor() const { return mColor; }
 
 	void				SetFrustum( const Frustum& frus ) { mFrustum = frus; }
-	void				SetColor( const CColor4& clr ) { mColor = clr; }
+	void				SetColor( const fcolor4& clr ) { mColor = clr; }
 
 
 	bool				IsObjSpace() const { return mObjSpace; }
@@ -321,7 +321,7 @@ private:
     void    Render( const Renderer *renderer ) const final;
 
 	Frustum			mFrustum;
-	CColor4			mColor;
+	fcolor4			mColor;
 	bool			mObjSpace;
 
 };
@@ -338,12 +338,12 @@ public: //
 	{
 	}
 
-	void				SetColor( const CColor4& clr ) { mColor = clr; }
-	void				SetPosition( const CVector3& pos ) { mPosition=pos; }
+	void				SetColor( const fcolor4& clr ) { mColor = clr; }
+	void				SetPosition( const fvec3& pos ) { mPosition=pos; }
 	void				SetRadius( float rad ) { mRadius=rad; }
 
-	const CColor4&		GetColor() const { return mColor; }
-	const CVector3 &	GetPosition() const { return mPosition; }
+	const fcolor4&		GetColor() const { return mColor; }
+	const fvec3 &	GetPosition() const { return mPosition; }
 	float				GetRadius() const { return mRadius; }
 
 private:
@@ -351,8 +351,8 @@ private:
     void        Render( const Renderer *renderer ) const final;
     U32         ComposeSortKey( const Renderer *renderer ) const final { return 0; }
 
-	CColor4					mColor;
-	CVector3				mPosition;
+	fcolor4					mColor;
+	fvec3				mPosition;
 	float					mRadius;
 };
 

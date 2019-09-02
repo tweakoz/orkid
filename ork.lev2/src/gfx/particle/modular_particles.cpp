@@ -116,7 +116,7 @@ bool psys_graph::CanConnect( const ork::dataflow::inplugbase* pin, const ork::da
 	bool brval = false;
 	brval |= (&pin->GetDataTypeId()==&typeid(psys_ptclbuf))&&(&pout->GetDataTypeId()==&typeid(psys_ptclbuf));
 	brval |= (&pin->GetDataTypeId()==&typeid(float))&&(&pout->GetDataTypeId()==&typeid(float));
-	brval |= (&pin->GetDataTypeId()==&typeid(CVector3))&&(&pout->GetDataTypeId()==&typeid(CVector3));
+	brval |= (&pin->GetDataTypeId()==&typeid(fvec3))&&(&pout->GetDataTypeId()==&typeid(fvec3));
 	return brval;
 }
 

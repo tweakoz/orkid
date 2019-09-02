@@ -159,7 +159,7 @@ void PerformanceAnalyzerArchetype::DoCompose(ork::ent::ArchComposer& composer)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerformanceAnalyzerArchetype::DoStartEntity(SceneInst* inst, const CMatrix4 &world, Entity *pent) const
+void PerformanceAnalyzerArchetype::DoStartEntity(SceneInst* inst, const fmtx4 &world, Entity *pent) const
 {
 	const PerfAnalyzerControllerInst* ssci = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
 	if( ssci )
@@ -204,7 +204,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 				float frawdeltatime = pSI->GetUpDeltaTime();
 
 				pTARG->MTXI()->PushUIMatrix();
-				pTARG->PushModColor( CColor4::Green() );
+				pTARG->PushModColor( fcolor4::Green() );
 				ork::lev2::CFontMan::PushFont("d24");
 				ork::lev2::CFontMan::GetRef().BeginTextBlock(pTARG);
 				int y=pTARG->GetH()-24;

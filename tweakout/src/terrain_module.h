@@ -27,8 +27,8 @@ typedef dataflow::outplug<ent::cv4_map2d>	V4Map2dOutPlugType;
 class heightfield_compute_buffer;
 
 ///////////////////////////////////////////////////////////////////////////////
-void GpGpuTask	(	const CVector4& ClearColor,
-					const CVector4& ModColor,
+void GpGpuTask	(	const fvec4& ClearColor,
+					const fvec4& ModColor,
 					lev2::GfxMaterial& material,
 					int iwidth, int iheight,
 					heightfield_compute_buffer& MyComputeBuffer
@@ -205,7 +205,7 @@ class hmap_hfield_module : public dataflow::dgmodule
 	mutex							mVisMutex;
 
 	orkvector<U32>			mrgb;
-	orkvector<CVector3>		mnormals;
+	orkvector<fvec3>		mnormals;
 
 	HeightMapInPlugType		mInputPlug;
 	HeightMapOutPlugType	mHeightOutputPlug;
@@ -235,7 +235,7 @@ class hmap_hfield_module : public dataflow::dgmodule
 	void ComputeColors();
 	////////////////////////////////////////////////
 	U32& Color( int ix, int iz );
-	CVector3& Normal(int ix,int iz);
+	fvec3& Normal(int ix,int iz);
 	////////////////////////////////////////////////
 
 
@@ -251,13 +251,13 @@ public:
 	/*virtual*/ void Compute(dataflow::workunit* wu);
 	////////////////////////////////////////////////
 	U32 Color( int ix, int iz ) const;
-	const CVector3& Normal(int ix,int iz) const;
+	const fvec3& Normal(int ix,int iz) const;
 	////////////////////////////////////////////////
 	/*virtual*/ void CombineWork( const dataflow::cluster* clus );
 	const ent::HeightMap& HeightMapData() const { return mDefDataBlock.mHeightMap; }
 	////////////////////////////////////////////////
-	CVector3 XYZ( int iX, int iZ ) const;
-	CVector3 ComputeNormal(int ix1,int iz1) const;
+	fvec3 XYZ( int iX, int iZ ) const;
+	fvec3 ComputeNormal(int ix1,int iz1) const;
 	////////////////////////////////////////////////
 	void LockVisMap() const;
 	void UnLockVisMap() const;
@@ -271,7 +271,7 @@ public:
 	void SetLightEnvTexture(lev2::Texture*ptex);// { mpLightEnvTexture=ptex; }
 	void SetColorMapTexture(lev2::Texture*ptex); // { mpColorMapTexture=ptex; }
 	////////////////////////////////////////////////
-	void ReadSurface( const CVector3& xyz, CVector3& pos, CVector3& nrm ) const;
+	void ReadSurface( const fvec3& xyz, fvec3& pos, fvec3& nrm ) const;
 	////////////////////////////////////////////////
 	void SaveNormalsToTexture( const file::Path& filename ) const;
 	void SaveColorsToTexture( const file::Path& filename ) const;

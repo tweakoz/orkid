@@ -128,7 +128,7 @@ struct AA16Render
 	ProcTex&					mPTX;
 	Buffer&						bufout;
 	lev2::GfxMaterial3DSolid	downsamplemat;
-	CVector4					mOrthoBoxXYWH;
+	fvec4					mOrthoBoxXYWH;
 
 	AA16Render( ProcTex& ptx, Buffer& bo );
 	void RenderAA();
@@ -568,12 +568,12 @@ public:
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct CellVert
-{	CVector3 pos;
+{	fvec3 pos;
 	void Lerp( const CellVert& va, const CellVert& vb, float flerp )
 	{	pos.Lerp( va.pos, vb.pos, flerp );
 	}
-	const CVector3& Pos() const { return pos; }
-	CellVert(const CVector3&tp) : pos(tp) {}
+	const fvec3& Pos() const { return pos; }
+	CellVert(const fvec3&tp) : pos(tp) {}
 	CellVert() : pos() {}
 };
 class CellPoly
@@ -601,8 +601,8 @@ class Cells : public Img32Module
 	int						miDimV;
 	int						miDiv;
 	int						miSmoothing;
-	orkvector<CVector3>		mSitesA;
-	orkvector<CVector3>		mSitesB;
+	orkvector<fvec3>		mSitesA;
+	orkvector<fvec3>		mSitesB;
 	orkvector<CellPoly>		mPolys;
 	bool					mbAA;
 	dataflow::node_hash		mVBHash;
@@ -906,7 +906,7 @@ class Gradient : public Img32Module
 	RttiDeclareConcrete( Gradient, Img32Module );
 
 	ork::lev2::Texture*			mpTexture;
-	ork::Gradient<ork::CVector4>	mGradient;
+	ork::Gradient<ork::fvec4>	mGradient;
 	int								miRepeat;
 	EGradientRepeatMode				meRepeatMode;
 	EGradientType					meGradientType;

@@ -161,7 +161,7 @@ void DagNode::CopyTransformMatrixFrom( const DagNode& other )
 	const auto& other_mtx = other.GetTransformNode().GetTransform().GetMatrix();
 	GetTransformNode().GetTransform().SetMatrix( other_mtx );
 }
-void DagNode::SetTransformMatrix( const CMatrix4& mtx )
+void DagNode::SetTransformMatrix( const fmtx4& mtx )
 {
 	GetTransformNode().GetTransform().SetMatrix( mtx );
 }

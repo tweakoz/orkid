@@ -88,9 +88,9 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 		// panel outline (resize/moving)
 		/////////////
 
-		CVector4 clr = CColor4(1.0f,0.0f,1.0f,0.4f);
+		fvec4 clr = fcolor4(1.0f,0.0f,1.0f,0.4f);
 		if( has_foc )
-			clr = CColor4::White();
+			clr = fcolor4::White();
 
 		defmtl->mRasterState.SetBlending( lev2::EBLENDING_ALPHA );
 		tgt->PushModColor( clr );
@@ -103,13 +103,13 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 		/////////////
 
 		LocalToRoot( mCloseX, mCloseY, ixr, iyr );
-		tgt->PushModColor( CColor4(0.3f,0.0f,0.0f) );
+		tgt->PushModColor( fcolor4(0.3f,0.0f,0.0f) );
 		ren_quad( ixr+1, iyr+1, ixr+kpanelw-1, iyr+kpanelw-1 );
 		tgt->PopModColor();
-		tgt->PushModColor( CColor4(1.0f,0.3f,0.3f) );
+		tgt->PushModColor( fcolor4(1.0f,0.3f,0.3f) );
 		ren_quad( ixr+2, iyr+2, ixr+kpanelw-2, iyr+kpanelw-2 );
 		tgt->PopModColor();
-		tgt->PushModColor( CColor4(0.3f,0.0f,0.0f) );
+		tgt->PushModColor( fcolor4(0.3f,0.0f,0.0f) );
 		ren_line( ixr+1, iyr+1, ixr+kpanelw-1, iyr+kpanelw-1 );
 		ren_line( ixr+kpanelw-1, iyr+1, ixr+1, iyr+kpanelw-1 );
 		tgt->PopModColor();

@@ -144,7 +144,7 @@ void GfxWindow::CreateContext()
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxBuffer::RenderMatOrthoQuad( const SRect& ViewportRect, const SRect& QuadRect, GfxMaterial *pmat, float fu0, float fv0, float fu1, float fv1, float *uv2, const CColor4& clr )
+void GfxBuffer::RenderMatOrthoQuad( const SRect& ViewportRect, const SRect& QuadRect, GfxMaterial *pmat, float fu0, float fv0, float fu1, float fv1, float *uv2, const fcolor4& clr )
 {
 	static SRasterState DefaultRasterState;
 	auto ctx = GetContext();
@@ -166,8 +166,8 @@ void GfxBuffer::RenderMatOrthoQuad( const SRect& ViewportRect, const SRect& Quad
 		uv2 = zeros;
 
 	mtxi->PushPMatrix( mtxi->Ortho(fvx0,fvx1,fvy0,fvy1,0.0f,1.0f) );
-	mtxi->PushVMatrix( CMatrix4::Identity );
-	mtxi->PushMMatrix( CMatrix4::Identity );
+	mtxi->PushVMatrix( fmtx4::Identity );
+	mtxi->PushMMatrix( fmtx4::Identity );
 	ctx->RSI()->BindRasterState( DefaultRasterState, true );
 	fbi->PushViewport( ViewportRect );
 	fbi->PushScissor( ViewportRect );
@@ -235,15 +235,15 @@ void GfxBuffer::RenderMatOrthoQuads( const OrthoQuads& oquads )
 	float fvy1 = float(OrthoRect.miY2);
 
 	GetContext()->MTXI()->PushPMatrix( GetContext()->MTXI()->Ortho(fvx0,fvx1,fvy0,fvy1,0.0f,1.0f) );
-	GetContext()->MTXI()->PushVMatrix( CMatrix4::Identity );
-	GetContext()->MTXI()->PushMMatrix( CMatrix4::Identity );
+	GetContext()->MTXI()->PushVMatrix( fmtx4::Identity );
+	GetContext()->MTXI()->PushMMatrix( fmtx4::Identity );
 	GetContext()->RSI()->BindRasterState( DefaultRasterState, true );
 	GetContext()->FBI()->PushViewport( ViewportRect );
 	GetContext()->FBI()->PushScissor( ViewportRect );
 	{	// Draw Full Screen Quad with specified material
 		GetContext()->BindMaterial( pmtl );
 		GetContext()->FXI()->InvalidateStateBlock();
-		GetContext()->PushModColor( ork::CColor4::White() );
+		GetContext()->PushModColor( ork::fcolor4::White() );
 		{	
 			ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> &vb = GfxEnv::GetSharedDynamicVB();
 
@@ -253,7 +253,7 @@ void GfxBuffer::RenderMatOrthoQuads( const OrthoQuads& oquads )
 				{
 					const OrthoQuad& Q = pquads[iq];
 					const SRect& QuadRect = Q.mQrect;
-					const CColor4& C = Q.mColor;
+					const fcolor4& C = Q.mColor;
 					U32 uc = C.GetBGRAU32();
 					
 					bool brot = Q.mfrot!=0.0f;

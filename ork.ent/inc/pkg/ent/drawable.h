@@ -49,7 +49,7 @@ class DrawableBuffer;
 
 struct DrawQueueXfData
 {
-	ork::CMatrix4 mWorldMatrix;
+	ork::fmtx4 mWorldMatrix;
 };
 
 
@@ -228,11 +228,11 @@ public:
 	void SetScale( float fscale ) { mfScale=fscale; }
 	float GetScale() const { return mfScale; }
 
-	const CVector3& GetRotate() const { return mRotate; }
-	const CVector3& GetOffset() const { return mOffset; }
+	const fvec3& GetRotate() const { return mRotate; }
+	const fvec3& GetOffset() const { return mOffset; }
 
-	void SetRotate( const CVector3& v ) { mRotate=v; }
-	void SetOffset( const CVector3& v ) { mOffset=v; }
+	void SetRotate( const fvec3& v ) { mRotate=v; }
+	void SetOffset( const fvec3& v ) { mOffset=v; }
 
 	void SetEngineParamFloat(int idx, float fv);
 	float GetEngineParamFloat(int idx) const;
@@ -248,8 +248,8 @@ private:
 	lev2::XgmModelInst*	mModelInst;
 	lev2::XgmWorldPose*	mpWorldPose;
 	float				mfScale;
-	CVector3			mOffset;
-	CVector3			mRotate;
+	fvec3			mOffset;
+	fvec3			mRotate;
 	bool				mbShowBoundingSphere;
 	
 	static const int kMaxEngineParamFloats = ork::lev2::RenderContextInstData::kMaxEngineParamFloats;

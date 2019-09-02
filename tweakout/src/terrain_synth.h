@@ -41,8 +41,8 @@ public:
 
 	TerrainSynth( ent::GradientSet& gset, int igl, float worldsize );
 
-	orkmap<float,CVector4>		mGradLo;
-	orkmap<float,CVector4>		mGradHi;
+	orkmap<float,fvec4>		mGradLo;
+	orkmap<float,fvec4>		mGradHi;
 
 	//////////////////////////////////////////////////////////
 
@@ -66,10 +66,10 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	CVector3 XYZ( int ix, int iz ) const;
+	fvec3 XYZ( int ix, int iz ) const;
 
 	U32 Color( int ix, int iz ) const { return mhf_target.Color(ix,iz); }
-	const CVector3& Normal(int ix,int iz) const { return  mhf_target.Normal(ix,iz); }
+	const fvec3& Normal(int ix,int iz) const { return  mhf_target.Normal(ix,iz); }
 
 	//////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////

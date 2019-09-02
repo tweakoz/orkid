@@ -108,7 +108,7 @@ void Octaves::compute( ProcTex& ptex )
 		float sina = 0.0f;
 		float cosa = 1.0f;
 
-		mOctMaterial.SetUser0( CVector4(sina,cosa,0.0f,float(buffer.miW)) );
+		mOctMaterial.SetUser0( fvec4(sina,cosa,0.0f,float(buffer.miW)) );
 		////////////////////////////////////
 		float ffrq = mPlugInpBaseFreq.GetValue();
 		float famp = mPlugInpBaseAmp.GetValue();
@@ -118,7 +118,7 @@ void Octaves::compute( ProcTex& ptex )
 		pTARG->BindMaterial( & mOctMaterial );
 		for( int i=0; i<miNumOctaves; i++ )
 		{
-			CMatrix4 mtxR, mtxS, mtxT;
+			fmtx4 mtxR, mtxS, mtxT;
 
 			mtxT.SetTranslation(offx,offy,0.0f);
 			mtxS.Scale( ffrq, ffrq, famp );
@@ -211,8 +211,8 @@ dataflow::inplugbase* Cells::GetInput(int idx)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Cells::ComputeVB( lev2::GfxTarget* pTARG )
-{	CVector3 wrapu( float(miDimU), 0.0f, 0.0f );
-	CVector3 wrapv( 0.0f, float(miDimV), 0.0f );
+{	fvec3 wrapu( float(miDimU), 0.0f, 0.0f );
+	fvec3 wrapv( 0.0f, float(miDimV), 0.0f );
 	////////////////////////////////////////////////
 	int ivecsize = miDimU*miDimV;
 	mSitesA.resize(ivecsize);
@@ -221,10 +221,10 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 	for( int ix=0; ix<miDimU; ix++ )
 	{	for( int iy=0; iy<miDimV; iy++ )
 		{	mPolys[site_index(ix,iy)].SetDefault();
-			mPolys[site_index(ix,iy)].AddVertex( CVector3(-100.0f,-100.0f,0.0f) );
-			mPolys[site_index(ix,iy)].AddVertex( CVector3(+100.0f,-100.0f,0.0f) );
-			mPolys[site_index(ix,iy)].AddVertex( CVector3(+100.0f,+100.0f,0.0f) );
-			mPolys[site_index(ix,iy)].AddVertex( CVector3(-100.0f,+100.0f,0.0f) );
+			mPolys[site_index(ix,iy)].AddVertex( fvec3(-100.0f,-100.0f,0.0f) );
+			mPolys[site_index(ix,iy)].AddVertex( fvec3(+100.0f,-100.0f,0.0f) );
+			mPolys[site_index(ix,iy)].AddVertex( fvec3(+100.0f,+100.0f,0.0f) );
+			mPolys[site_index(ix,iy)].AddVertex( fvec3(-100.0f,+100.0f,0.0f) );
 
 		}
 	}
@@ -235,7 +235,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 			float fx = float(ix)+ifx*mPlugInpDispersion.GetValue();
 			float ify = float(rand()%miDiv)/float(miDiv);	
 			float fy = float(iy)+ify*mPlugInpDispersion.GetValue();
-			mSitesA[site_index(ix,iy)] = CVector3(fx,fy,0.0f);
+			mSitesA[site_index(ix,iy)] = fvec3(fx,fy,0.0f);
 		}
 	}
 	srand(miSeedB);
@@ -245,7 +245,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 			float fx = float(ix)+ifx*mPlugInpDispersion.GetValue();
 			float ify = float(rand()%miDiv)/float(miDiv);	
 			float fy = float(iy)+ify*mPlugInpDispersion.GetValue();
-			mSitesB[site_index(ix,iy)] = CVector3(fx,fy,0.0f);
+			mSitesB[site_index(ix,iy)] = fvec3(fx,fy,0.0f);
 		}
 	}
 	float flerp = mPlugInpSeedLerp.GetValue();
@@ -255,8 +255,8 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 	////////////////////////////////////////////////
 	for( int ix=0; ix<miDimU; ix++ )
 	{	for( int iy=0; iy<miDimV; iy++ )
-		{	const CVector3& Site0A = mSitesA[site_index(ix,iy)];
-			const CVector3& Site0B = mSitesB[site_index(ix,iy)];
+		{	const fvec3& Site0A = mSitesA[site_index(ix,iy)];
+			const fvec3& Site0B = mSitesB[site_index(ix,iy)];
 			static const int kmaxpc = 64;
 			CellPoly polychain[kmaxpc];
 			int polychi = 0;
@@ -272,24 +272,24 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 						bool bwrapT = (iyb<0);
 						bool bwrapB = (iyb>=miDimV);
 						iyb = bwrapT ? iyb+miDimV : iyb%miDimV;
-						CVector3 Site1A = mSitesA[site_index(ixb,iyb)];
-						CVector3 Site1B = mSitesB[site_index(ixb,iyb)];
+						fvec3 Site1A = mSitesA[site_index(ixb,iyb)];
+						fvec3 Site1B = mSitesB[site_index(ixb,iyb)];
 						if( bwrapL ) { Site1A -= wrapu; Site1B -= wrapu; }
 						if( bwrapR ) { Site1A += wrapu; Site1B += wrapu; }
 						if( bwrapB ) { Site1A += wrapv; Site1B += wrapv; }
 						if( bwrapT ) { Site1A -= wrapv; Site1B -= wrapv; }
 
-						CVector3 CenterA = (Site0A+Site1A)*0.5f;
-						CVector3 DirA = (Site0A-Site1A).Normal();
+						fvec3 CenterA = (Site0A+Site1A)*0.5f;
+						fvec3 DirA = (Site0A-Site1A).Normal();
 
-						CVector3 CenterB = (Site0B+Site1B)*0.5f;
-						CVector3 DirB = (Site0B-Site1B).Normal();
+						fvec3 CenterB = (Site0B+Site1B)*0.5f;
+						fvec3 DirB = (Site0B-Site1B).Normal();
 
-						CVector3 Center; Center.Lerp(CenterA,CenterB,flerp );
-						CVector3 Dir; Dir.Lerp(DirA,DirB,flerp );
+						fvec3 Center; Center.Lerp(CenterA,CenterB,flerp );
+						fvec3 Dir; Dir.Lerp(DirA,DirB,flerp );
 						Dir.Normalize();
 
-						CPlane plane( Dir, Center );
+						fplane3 plane( Dir, Center );
 						plane.ClipPoly( polychain[polychi], polychain[polychi+1] );
 						polychi++;
 					}
@@ -297,7 +297,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 			}
 			OrkAssert(polychi<kmaxpc);
 			const CellPoly& outpoly = polychain[polychi]; 
-			CVector3 vctr;
+			fvec3 vctr;
 			vctr.Lerp( Site0A,Site0B, flerp );
 			
 			////////////////////////////////////////////////
@@ -308,30 +308,30 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 				for( int iv=0; iv<outpoly.GetNumVertices(); iv++ )
 				{	int ivp = (iv-1); if(ivp<0) ivp+= outpoly.GetNumVertices();
 					int ivn = (iv+1)%outpoly.GetNumVertices();
-					CVector3 p0; p0.Lerp( vctr, outpoly.GetVertex(iv).Pos(), smoothrad );
-					CVector3 pp; pp.Lerp( vctr, outpoly.GetVertex(ivp).Pos(), smoothrad );
-					CVector3 pn; pn.Lerp( vctr, outpoly.GetVertex(ivn).Pos(), smoothrad );
+					fvec3 p0; p0.Lerp( vctr, outpoly.GetVertex(iv).Pos(), smoothrad );
+					fvec3 pp; pp.Lerp( vctr, outpoly.GetVertex(ivp).Pos(), smoothrad );
+					fvec3 pn; pn.Lerp( vctr, outpoly.GetVertex(ivn).Pos(), smoothrad );
 					
 					for( int is=0; is<miSmoothing; is++ )
 					{
 						float fu0 = (float(is)/float(miSmoothing));
 						float fu1 = (float(is+1)/float(miSmoothing));
 
-						CVector3 p_0 = (pp+p0)*0.5f;
-						CVector3 n_0 = (p0+pn)*0.5f;
+						fvec3 p_0 = (pp+p0)*0.5f;
+						fvec3 n_0 = (p0+pn)*0.5f;
 
-						CVector3 p_p_0; p_p_0.Lerp( p_0, p0, fu0 );
-						CVector3 p_p_1; p_p_1.Lerp( p_0, p0, fu1 );
+						fvec3 p_p_0; p_p_0.Lerp( p_0, p0, fu0 );
+						fvec3 p_p_1; p_p_1.Lerp( p_0, p0, fu1 );
 
-						CVector3 p_n_0; p_n_0.Lerp( p0, n_0, fu0 );
-						CVector3 p_n_1; p_n_1.Lerp( p0, n_0, fu1 );
+						fvec3 p_n_0; p_n_0.Lerp( p0, n_0, fu0 );
+						fvec3 p_n_1; p_n_1.Lerp( p0, n_0, fu1 );
 
-						CVector3 p_s_0; p_s_0.Lerp( p_p_0, p_n_0, fu0 );
-						CVector3 p_s_1; p_s_1.Lerp( p_p_1, p_n_1, fu1 );
+						fvec3 p_s_0; p_s_0.Lerp( p_p_0, p_n_0, fu0 );
+						fvec3 p_s_1; p_s_1.Lerp( p_p_1, p_n_1, fu1 );
 
-						mVW.AddVertex( ork::lev2::SVtxV12C4T16(vctr,CVector2(),0xffffffff) );
-						mVW.AddVertex( ork::lev2::SVtxV12C4T16(p_s_0,CVector2(),0) );
-						mVW.AddVertex( ork::lev2::SVtxV12C4T16(p_s_1,CVector2(),0) );
+						mVW.AddVertex( ork::lev2::SVtxV12C4T16(vctr,fvec2(),0xffffffff) );
+						mVW.AddVertex( ork::lev2::SVtxV12C4T16(p_s_0,fvec2(),0) );
+						mVW.AddVertex( ork::lev2::SVtxV12C4T16(p_s_1,fvec2(),0) );
 					}
 				}
 			}
@@ -339,13 +339,13 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 			for( int iv=0; iv<outpoly.GetNumVertices(); iv++ )
 			{	
 				float fi = float(iv)/float(outpoly.GetNumVertices()-1);
-				CVector4 clr(fi,fi,fi,fi);
+				fvec4 clr(fi,fi,fi,fi);
 				int ivi = (iv+1)%outpoly.GetNumVertices();
-				CVector3 p0 = outpoly.GetVertex(iv).Pos();
-				CVector3 p1 = outpoly.GetVertex(ivi).Pos();
-				mVW.AddVertex( ork::lev2::SVtxV12C4T16(vctr,CVector2(),0xffffffff) );
-				mVW.AddVertex( ork::lev2::SVtxV12C4T16(p0,CVector2(),0) );
-				mVW.AddVertex( ork::lev2::SVtxV12C4T16(p1,CVector2(),0) );
+				fvec3 p0 = outpoly.GetVertex(iv).Pos();
+				fvec3 p1 = outpoly.GetVertex(ivi).Pos();
+				mVW.AddVertex( ork::lev2::SVtxV12C4T16(vctr,fvec2(),0xffffffff) );
+				mVW.AddVertex( ork::lev2::SVtxV12C4T16(p0,fvec2(),0) );
+				mVW.AddVertex( ork::lev2::SVtxV12C4T16(p1,fvec2(),0) );
 			}
 		}
 	}
@@ -375,16 +375,16 @@ void Cells::compute( ProcTex& ptex )
 	struct AA16RenderCells : public AA16Render
 	{
 		virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
-		{	mPTX.GetTarget()->PushModColor( ork::CVector4::Red() );
-			CMatrix4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
+		{	mPTX.GetTarget()->PushModColor( ork::fvec4::Red() );
+			fmtx4 mtxortho = mPTX.GetTarget()->MTXI()->Ortho( left, right, top, bot, 0.0f, 1.0f );
 			mPTX.GetTarget()->PushMaterial( & stdmat );
 			mPTX.GetTarget()->MTXI()->PushPMatrix( mtxortho );
 			for( int iw=0; iw<9; iw++ )
 			{	int ix = (iw%3)-1;
 				int iy = (iw/3)-1;
-				CVector3 wpu = (ix>0) ? wrapu : (ix<0) ? -wrapu : CVector3::Zero(); 
-				CVector3 wpv = (iy>0) ? wrapv : (iy<0) ? -wrapv : CVector3::Zero(); 
-				CMatrix4 mtx;
+				fvec3 wpu = (ix>0) ? wrapu : (ix<0) ? -wrapu : fvec3::Zero(); 
+				fvec3 wpv = (iy>0) ? wrapv : (iy<0) ? -wrapv : fvec3::Zero(); 
+				fmtx4 mtx;
 				mtx.SetTranslation( wpu+wpv );
 				mPTX.GetTarget()->MTXI()->PushMMatrix( mtx );
 				mPTX.GetTarget()->GBI()->DrawPrimitive( mVW, ork::lev2::EPRIM_TRIANGLES );
@@ -396,8 +396,8 @@ void Cells::compute( ProcTex& ptex )
 		}
 		lev2::GfxMaterial3DSolid stdmat;
 		ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16>& mVW;
-		CVector3 wrapu;
-		CVector3 wrapv;
+		fvec3 wrapu;
+		fvec3 wrapv;
 		AA16RenderCells( ProcTex& ptx, Buffer& bo,
 						 ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16>& vw,
 						 int idimU, int idimV )
@@ -412,9 +412,9 @@ void Cells::compute( ProcTex& ptex )
 			stdmat.mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 			stdmat.mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 			stdmat.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-			stdmat.SetUser0( CVector4(0.0f,0.0f,0.0f,float(bo.miW)) );
+			stdmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(bo.miW)) );
 
-			mOrthoBoxXYWH = CVector4( 0.0f, 0.0f, float(idimU), float(idimV) );
+			mOrthoBoxXYWH = fvec4( 0.0f, 0.0f, float(idimU), float(idimV) );
 		}
 	};
 
@@ -430,5 +430,5 @@ void Cells::compute( ProcTex& ptex )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template bool ork::CPlane::ClipPoly<ork::proctex::CellPoly>(const ork::proctex::CellPoly& in, ork::proctex::CellPoly& out );
-template bool ork::CPlane::ClipPoly<ork::proctex::CellPoly>(const ork::proctex::CellPoly& in, ork::proctex::CellPoly& fr, ork::proctex::CellPoly& bk );
+template bool ork::fplane3::ClipPoly<ork::proctex::CellPoly>(const ork::proctex::CellPoly& in, ork::proctex::CellPoly& out );
+template bool ork::fplane3::ClipPoly<ork::proctex::CellPoly>(const ork::proctex::CellPoly& in, ork::proctex::CellPoly& fr, ork::proctex::CellPoly& bk );

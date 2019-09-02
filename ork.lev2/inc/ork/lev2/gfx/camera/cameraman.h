@@ -23,7 +23,7 @@ namespace ork { namespace lev2 {
 
 class CManipHandler {
 public: //
-  CMatrix4 IMVPMat;
+  fmtx4 IMVPMat;
   CQuaternion Quat;
   fvec3 Origin;
   fvec3 RayNear;
@@ -34,9 +34,9 @@ public: //
   fvec3 YNormal;
   fvec3 ZNormal;
 
-  CPlane XYPlane;
-  CPlane XZPlane;
-  CPlane YZPlane;
+  fplane3 XYPlane;
+  fplane3 XZPlane;
+  fplane3 YZPlane;
 
   fvec3 XYIntersect;
   fvec3 XZIntersect;
@@ -74,12 +74,12 @@ public: //
 
   CManipHandler();
 
-  void Init(const ork::CVector2& posubp, const CMatrix4& RCurIMVPMat, const CQuaternion& RCurQuat);
-  bool IntersectXZ(const ork::CVector2& posubp, fvec3& Intersection, float& Angle);
-  bool IntersectYZ(const ork::CVector2& posubp, fvec3& Intersection, float& Angle);
-  bool IntersectXY(const ork::CVector2& posubp, fvec3& Intersection, float& Angle);
-  void Intersect(const ork::CVector2& posubp);
-  void GenerateIntersectionRays(const ork::CVector2& posubp, fvec3& RayZNormal, fvec3& RayNear);
+  void Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const CQuaternion& RCurQuat);
+  bool IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle);
+  bool IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle);
+  bool IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle);
+  void Intersect(const ork::fvec2& posubp);
+  void GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& RayZNormal, fvec3& RayNear);
 
   ///////////////////////////////////////////////////////////////////////////////
 };
@@ -101,13 +101,13 @@ public:
 
   float mfWorldSizeAtLocator;
 
-  CMatrix4 mCamRot;
+  fmtx4 mCamRot;
 
   CQuaternion QuatC, QuatL, QuatCPushed;
 
-  CMatrix4 lookatmatrix;
-  CMatrix4 eyematrixROT;
-  CMatrix4 clipmatrix;
+  fmtx4 lookatmatrix;
+  fmtx4 eyematrixROT;
+  fmtx4 clipmatrix;
 
   fvec3 camrayN, camrayF;
   fvec3 CamFocus, CamFocusZNormal;
@@ -154,10 +154,10 @@ public:
 
   virtual void RenderUpdate(void) = 0;
 
-  virtual void SetFromWorldSpaceMatrix(const CMatrix4&) = 0;
+  virtual void SetFromWorldSpaceMatrix(const fmtx4&) = 0;
 
   virtual float ViewLengthToWorldLength(const fvec4& pos, float ViewLength) = 0;
-  virtual void GenerateDepthRay(const CVector2& pos2D, fvec3& rayN, fvec3& rayF, const CMatrix4& IMat) const = 0;
+  virtual void GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const fmtx4& IMat) const = 0;
 
   std::string get_full_name();
 
@@ -208,7 +208,7 @@ public: //
   float curquat[4];
   float lastquat[4];
 
-  CMatrix4 mRot, mTrans;
+  fmtx4 mRot, mTrans;
 
   fvec4 mMoveVelocity;
 
@@ -235,10 +235,10 @@ public: //
   void draw(GfxTarget* pT) override;
 
   void RenderUpdate(void) final;
-  void SetFromWorldSpaceMatrix(const CMatrix4& matrix) final;
+  void SetFromWorldSpaceMatrix(const fmtx4& matrix) final;
 
   float ViewLengthToWorldLength(const fvec4& pos, float ViewLength) final;
-  void GenerateDepthRay(const CVector2& pos2D, fvec3& rayN, fvec3& rayF, const CMatrix4& IMat) const final;
+  void GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, const fmtx4& IMat) const final;
 
   void DrawBillBoardQuad(fvec4& inpt, float size);
 

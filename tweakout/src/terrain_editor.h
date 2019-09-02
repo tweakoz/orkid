@@ -24,8 +24,8 @@ class heightfield_ed_component : public ent::ComponentData
 	sheightfield_iface_editor	mhfif;
 	TerrainSynth				mhf;
 	int							mhfsize;
-	orkmap<float,CVector4>		mGradLo;
-	orkmap<float,CVector4>		mGradHi;
+	orkmap<float,fvec4>		mGradLo;
+	orkmap<float,fvec4>		mGradHi;
 
 	ent::GradientSet			mGradientSet;
 
@@ -145,7 +145,7 @@ public:
 struct TerBrushEvent
 {
 	const lev2::GetPixelContext&	mCtx;
-	const CVector3&					mPos;
+	const fvec3&					mPos;
 	const ui::Event*				mUiEv;
 	ent::GradientSet				mGradientSet;
 	heightfield_ed_component*		mHEC;
@@ -154,7 +154,7 @@ struct TerBrushEvent
 
 	TerBrushEvent(	const ui::Event* pev,
 					const lev2::GetPixelContext& ctx,
-					const CVector3& pos,
+					const fvec3& pos,
 					heightfield_ed_component* hec
 				);
 };
@@ -231,8 +231,8 @@ class GradPaintTool : public ZBrushTool
 {
 	RttiDeclareAbstract(GradPaintTool,ZBrushTool);
 	float									mHeightLerp;
-	orkmap<float,CVector4>					mGradientLo;
-	orkmap<float,CVector4>					mGradientHi;
+	orkmap<float,fvec4>					mGradientLo;
+	orkmap<float,fvec4>					mGradientHi;
 	void OnEvent( const TerBrushEvent& ev );
 public:
 	GradPaintTool();
@@ -360,7 +360,7 @@ class HeightFieldEditorArchetype : public ent::Archetype
 	//void DoComposeEntity( ent::Entity *pent ) const;	//virtual
 	void DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity *pent) const; // virtual
 	void DoCompose(ork::ent::ArchComposer& composer);									//virtual
-	void DoStartEntity( ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity* pent ) const;	// virtual
+	void DoStartEntity( ent::SceneInst* psi, const ork::fmtx4& mtx, ent::Entity* pent ) const;	// virtual
 
 public:
 	HeightFieldEditorArchetype();

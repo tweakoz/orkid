@@ -47,25 +47,25 @@ template<> void GfxMaterialFxParam<float>::Describe() {}
 template<> void GfxMaterialFxParamArtist<float>::Describe() {}
 template<> void GfxMaterialFxParamEngine<float>::Describe() {}
 
-template<> void GfxMaterialFxParam<CVector2>::Describe() {}
-template<> void GfxMaterialFxParamArtist<CVector2>::Describe() {}
-template<> void GfxMaterialFxParamEngine<CVector2>::Describe() {}
+template<> void GfxMaterialFxParam<fvec2>::Describe() {}
+template<> void GfxMaterialFxParamArtist<fvec2>::Describe() {}
+template<> void GfxMaterialFxParamEngine<fvec2>::Describe() {}
 
-template<> void GfxMaterialFxParam<CVector3>::Describe() {}
-template<> void GfxMaterialFxParamArtist<CVector3>::Describe() {}
-template<> void GfxMaterialFxParamEngine<CVector3>::Describe() {}
+template<> void GfxMaterialFxParam<fvec3>::Describe() {}
+template<> void GfxMaterialFxParamArtist<fvec3>::Describe() {}
+template<> void GfxMaterialFxParamEngine<fvec3>::Describe() {}
 
-template<> void GfxMaterialFxParam<CVector4>::Describe() {}
-template<> void GfxMaterialFxParamArtist<CVector4>::Describe() {}
-template<> void GfxMaterialFxParamEngine<CVector4>::Describe() {}
+template<> void GfxMaterialFxParam<fvec4>::Describe() {}
+template<> void GfxMaterialFxParamArtist<fvec4>::Describe() {}
+template<> void GfxMaterialFxParamEngine<fvec4>::Describe() {}
 
-template<> void GfxMaterialFxParam<CMatrix4>::Describe() {}
-template<> void GfxMaterialFxParamArtist<CMatrix4>::Describe() {}
-template<> void GfxMaterialFxParamEngine<CMatrix4>::Describe() {}
+template<> void GfxMaterialFxParam<fmtx4>::Describe() {}
+template<> void GfxMaterialFxParamArtist<fmtx4>::Describe() {}
+template<> void GfxMaterialFxParamEngine<fmtx4>::Describe() {}
 
-template<> void GfxMaterialFxParam<CMatrix3>::Describe() {}
-template<> void GfxMaterialFxParamArtist<CMatrix3>::Describe() {}
-template<> void GfxMaterialFxParamEngine<CMatrix3>::Describe() {}
+template<> void GfxMaterialFxParam<fmtx3>::Describe() {}
+template<> void GfxMaterialFxParamArtist<fmtx3>::Describe() {}
+template<> void GfxMaterialFxParamEngine<fmtx3>::Describe() {}
 
 template<> void GfxMaterialFxParam<std::string>::Describe() {}
 template<> void GfxMaterialFxParamArtist<std::string>::Describe() {}
@@ -354,11 +354,11 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "worldviewprojection" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				param = ParamMatrix4;
 				struct yo
 				{
-					static const CMatrix4& RefMvpMtx(GfxTarget *pTARG,const GfxMaterialFxParamBase*param)
+					static const fmtx4& RefMvpMtx(GfxTarget *pTARG,const GfxMaterialFxParamBase*param)
 					{
 						return pTARG->MTXI()->RefMVPMatrix();
 					}
@@ -372,12 +372,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			{
 				struct getmat
 				{
-					static const CMatrix4& doit_worldrot( GfxTarget *pTARG )
+					static const fmtx4& doit_worldrot( GfxTarget *pTARG )
 					{
 						return pTARG->MTXI()->RefR4Matrix();
 					}
 				};
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				ParamMatrix4->mFuncptrVoid = getmat::doit_worldrot;
 				param = ParamMatrix4;
 			}
@@ -387,12 +387,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			{
 				struct getmat
 				{
-					static const CMatrix3& doit_worldrot3( GfxTarget *pTARG )
+					static const fmtx3& doit_worldrot3( GfxTarget *pTARG )
 					{
 						return pTARG->MTXI()->RefR3Matrix();
 					}
 				};
-				GfxMaterialFxParamEngine<CMatrix3> *ParamMatrix3 = new GfxMaterialFxParamEngine<CMatrix3>(this);
+				GfxMaterialFxParamEngine<fmtx3> *ParamMatrix3 = new GfxMaterialFxParamEngine<fmtx3>(this);
 				ParamMatrix3->mFuncptrVoid = getmat::doit_worldrot3;
 				param = ParamMatrix3;
 			}	
@@ -402,15 +402,15 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			{
 				struct getmat
 				{
-					static const CMatrix4& doit_worldroti( GfxTarget *pTARG )
+					static const fmtx4& doit_worldroti( GfxTarget *pTARG )
 					{
-						static CMatrix4 MatR;
+						static fmtx4 MatR;
 						MatR = pTARG->MTXI()->RefR4Matrix();
 						MatR.Inverse();
 						return MatR;
 					}
 				};
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				ParamMatrix4->mFuncptrVoid = getmat::doit_worldroti;
 				param = ParamMatrix4;
 			}
@@ -420,15 +420,15 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			{
 				struct getmat
 				{
-					static const CMatrix4& doit_worldinverse( GfxTarget *pTARG )
+					static const fmtx4& doit_worldinverse( GfxTarget *pTARG )
 					{
-						static CMatrix4 wimat;
+						static fmtx4 wimat;
 						wimat = pTARG->MTXI()->RefMMatrix();
 						wimat.Inverse();
 						return wimat;
 					}
 				};
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				ParamMatrix4->mFuncptrVoid = getmat::doit_worldinverse;
 				param = ParamMatrix4;
 			}
@@ -438,15 +438,15 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			{
 				struct getmat
 				{
-					static const CMatrix4& doit_worldviewprojectioninverse( GfxTarget *pTARG )
+					static const fmtx4& doit_worldviewprojectioninverse( GfxTarget *pTARG )
 					{
-						static CMatrix4 wvpimat;
+						static fmtx4 wvpimat;
 						wvpimat = pTARG->MTXI()->RefMVPMatrix();
 						wvpimat.Inverse();
 						return wvpimat;
 					}
 				};
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				ParamMatrix4->mFuncptrVoid = getmat::doit_worldviewprojectioninverse;
 				param = ParamMatrix4;
 			}
@@ -456,12 +456,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			{
 				struct getmat
 				{
-					static const CMatrix4& doit_viewprojection( GfxTarget *pTARG )
+					static const fmtx4& doit_viewprojection( GfxTarget *pTARG )
 					{
 						return pTARG->MTXI()->RefVPMatrix();
 					}
 				};
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				ParamMatrix4->mFuncptrVoid = getmat::doit_viewprojection;
 				param = ParamMatrix4;
 			}
@@ -469,12 +469,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "world" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				param = ParamMatrix4;
 
 				struct getmat
 				{
-					static const CMatrix4& doit_world( GfxTarget *pTARG )
+					static const fmtx4& doit_world( GfxTarget *pTARG )
 					{
 						return pTARG->MTXI()->RefMMatrix();
 					}
@@ -487,15 +487,15 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "worldview" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				param = ParamMatrix4;
 
 				struct getmat
 				{
-					static const CMatrix4& doit_worldview( GfxTarget *pTARG )
+					static const fmtx4& doit_worldview( GfxTarget *pTARG )
 					{
-						//const CMatrix4& wmat = pTARG->MTXI()->RefMMatrix();
-						//const CMatrix4& vmat = pTARG->MTXI()->RefVMatrix();
+						//const fmtx4& wmat = pTARG->MTXI()->RefMMatrix();
+						//const fmtx4& vmat = pTARG->MTXI()->RefVMatrix();
 						return pTARG->MTXI()->RefMVMatrix(); //(wmat*vmat);
 					}
 				};
@@ -507,12 +507,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "viewportdim" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CVector2> *ParamVector2 = new GfxMaterialFxParamEngine<CVector2>(this);
+				GfxMaterialFxParamEngine<fvec2> *ParamVector2 = new GfxMaterialFxParamEngine<fvec2>(this);
 				param = ParamVector2;
 				struct getcurrentdims
-				{	static const CVector2& doit_viewportdim( GfxTarget *pTARG )
+				{	static const fvec2& doit_viewportdim( GfxTarget *pTARG )
 					{
-						static CVector2 Dims;
+						static fvec2 Dims;
 						//Dims.SetX( float(GfxEnv::GetRef().GetCT()->GetW()) );
 						//Dims.SetY( float(GfxEnv::GetRef().GetCT()->GetH()) );
 						return Dims;
@@ -524,30 +524,30 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic.find("view") != std::string::npos )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				param = ParamMatrix4;
 
 				struct getmat
 				{
-					static const CMatrix4& doit_std( GfxTarget *pTARG )
+					static const fmtx4& doit_std( GfxTarget *pTARG )
 					{
 						return pTARG->MTXI()->RefVMatrix();
 					}
-					static const CMatrix4& doit_i( GfxTarget *pTARG )
+					static const fmtx4& doit_i( GfxTarget *pTARG )
 					{
-						static CMatrix4 mat;
+						static fmtx4 mat;
 						mat = pTARG->MTXI()->RefVMatrix();
 						mat.Inverse();
 						return mat;
 					}
-					static const CMatrix4& doit_t( GfxTarget *pTARG )
+					static const fmtx4& doit_t( GfxTarget *pTARG )
 					{
-						static CMatrix4 mat;
+						static fmtx4 mat;
 						mat = pTARG->MTXI()->RefVMatrix();
 						mat.Transpose();
 						return mat;
 					}
-					static const CMatrix4& doit_it( GfxTarget *pTARG )
+					static const fmtx4& doit_it( GfxTarget *pTARG )
 					{
 						return pTARG->MTXI()->RefVITIYMatrix();
 					}
@@ -565,12 +565,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "projection" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CMatrix4> *ParamMatrix4 = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamMatrix4 = new GfxMaterialFxParamEngine<fmtx4>(this);
 				param = ParamMatrix4;
 
 				struct getmat
 				{
-					static const CMatrix4& doit_std( GfxTarget *pTARG )
+					static const fmtx4& doit_std( GfxTarget *pTARG )
 					{
 						return pTARG->MTXI()->RefPMatrix();
 					}
@@ -582,11 +582,11 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "modcolor" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CVector4> *ParamVector4 = new GfxMaterialFxParamEngine<CVector4>(this);
+				GfxMaterialFxParamEngine<fvec4> *ParamVector4 = new GfxMaterialFxParamEngine<fvec4>(this);
 				param = ParamVector4;
 				struct yo
 				{
-					static const CVector4& RefModColor(GfxTarget *pTARG)
+					static const fvec4& RefModColor(GfxTarget *pTARG)
 					{
 						return pTARG->RefModColor();
 					}
@@ -597,13 +597,13 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "currentobj" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CVector4> *ParamVector4 = new GfxMaterialFxParamEngine<CVector4>(this);
+				GfxMaterialFxParamEngine<fvec4> *ParamVector4 = new GfxMaterialFxParamEngine<fvec4>(this);
 				param = ParamVector4;
 				struct getcurrentobj
-				{	static const CVector4& doit( GfxTarget *pTARG )
+				{	static const fvec4& doit( GfxTarget *pTARG )
 					{
 						//const CObject *pobj = GfxEnv::GetRef().GetCT()->GetCurrentObject();
-						static CVector4 ObjColor ;
+						static fvec4 ObjColor ;
 						//ObjColor.SetRGBAU32( (U32) pobj );
 						return ObjColor;
 					}
@@ -667,12 +667,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "lightdir" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CVector3> *ParamT = new GfxMaterialFxParamEngine<CVector3>(this);
+				GfxMaterialFxParamEngine<fvec3> *ParamT = new GfxMaterialFxParamEngine<fvec3>(this);
 				param = ParamT;
 				struct paramget
-				{	static const CVector3& doit( GfxTarget *pTARG )
+				{	static const fvec3& doit( GfxTarget *pTARG )
 					{
-						static CVector3 vout; //GfxEnv::GetRef().GetCurrentContext();
+						static fvec3 vout; //GfxEnv::GetRef().GetCurrentContext();
 						//CCamera *pcam = 0; //pTarg->GetCurrentCamera();
 						return vout; //pcam->mCameraData.mCamZNormal;
 					}
@@ -698,15 +698,15 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			}
 			else if( Semantic == "toshadow" )
 			{
-				GfxMaterialFxParamEngine<CMatrix4> *ParamT = new GfxMaterialFxParamEngine<CMatrix4>(this);
+				GfxMaterialFxParamEngine<fmtx4> *ParamT = new GfxMaterialFxParamEngine<fmtx4>(this);
 				param = ParamT;
 				struct paramget
-				{	static const CMatrix4& doit( GfxTarget *pTARG )
+				{	static const fmtx4& doit( GfxTarget *pTARG )
 					{
-						const CMatrix4& ShadVMat = pTARG->MTXI()->GetShadowVMatrix();
-						const CMatrix4& ShadPMat = pTARG->MTXI()->GetShadowPMatrix();
+						const fmtx4& ShadVMat = pTARG->MTXI()->GetShadowVMatrix();
+						const fmtx4& ShadPMat = pTARG->MTXI()->GetShadowPMatrix();
 
-						static CMatrix4 Mat;
+						static fmtx4 Mat;
 						Mat = pTARG->MTXI()->RefVMatrix();
 						Mat.Inverse();
 
@@ -1142,45 +1142,45 @@ void GfxMaterialFxParam<float>::Bind( FxShader* fxh, GfxTarget *ptarg )
 ///////////////////////////////////////////////////////////////////////////////
 
 template<>
-void GfxMaterialFxParam<CVector2>::Bind( FxShader* fxh, GfxTarget *ptarg )
+void GfxMaterialFxParam<fvec2>::Bind( FxShader* fxh, GfxTarget *ptarg )
 {
-	CVector4 Value( GetValue(ptarg) );
+	fvec4 Value( GetValue(ptarg) );
 	ptarg->FXI()->BindParamVect2( fxh, GetRecord().mParameterHandle, Value );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<>
-void GfxMaterialFxParam<CVector3>::Bind( FxShader* fxh, GfxTarget *ptarg )
+void GfxMaterialFxParam<fvec3>::Bind( FxShader* fxh, GfxTarget *ptarg )
 {
-	CVector3 Value = GetValue(ptarg);
+	fvec3 Value = GetValue(ptarg);
 	ptarg->FXI()->BindParamVect3( fxh, GetRecord().mParameterHandle, Value );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<>
-void GfxMaterialFxParam<CVector4>::Bind( FxShader* fxh, GfxTarget *ptarg )
+void GfxMaterialFxParam<fvec4>::Bind( FxShader* fxh, GfxTarget *ptarg )
 {
-	CVector4 Value = GetValue(ptarg);
+	fvec4 Value = GetValue(ptarg);
 	ptarg->FXI()->BindParamVect4( fxh, GetRecord().mParameterHandle, Value );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<>
-void GfxMaterialFxParam<CMatrix4>::Bind( FxShader* fxh, GfxTarget *ptarg )
+void GfxMaterialFxParam<fmtx4>::Bind( FxShader* fxh, GfxTarget *ptarg )
 {
-	CMatrix4 Value( GetValue(ptarg) );
+	fmtx4 Value( GetValue(ptarg) );
 	ptarg->FXI()->BindParamMatrix( fxh, GetRecord().mParameterHandle, Value );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<>
-void GfxMaterialFxParam<CMatrix3>::Bind( FxShader* fxh, GfxTarget *ptarg )
+void GfxMaterialFxParam<fmtx3>::Bind( FxShader* fxh, GfxTarget *ptarg )
 {
-	CMatrix3 Value( GetValue(ptarg) );
+	fmtx3 Value( GetValue(ptarg) );
 	ptarg->FXI()->BindParamMatrix( fxh, GetRecord().mParameterHandle, Value );
 }
 
@@ -1233,38 +1233,38 @@ std::string GfxMaterialFxParam<float>::GetValueString( void ) const
 	return valstr.c_str();
 }
 template<>
-std::string GfxMaterialFxParam<CVector2>::GetValueString( void ) const
+std::string GfxMaterialFxParam<fvec2>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<CVector2>::ToString( GetValue(0), valstr );
+	CPropType<fvec2>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
-std::string GfxMaterialFxParam<CVector3>::GetValueString( void ) const
+std::string GfxMaterialFxParam<fvec3>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<CVector3>::ToString( GetValue(0), valstr );
+	CPropType<fvec3>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
-std::string GfxMaterialFxParam<CVector4>::GetValueString( void ) const
+std::string GfxMaterialFxParam<fvec4>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<CVector4>::ToString( GetValue(0), valstr );
+	CPropType<fvec4>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
-std::string GfxMaterialFxParam<CMatrix3>::GetValueString( void ) const
+std::string GfxMaterialFxParam<fmtx3>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<CMatrix3>::ToString( GetValue(0), valstr );
+	CPropType<fmtx3>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
-std::string GfxMaterialFxParam<CMatrix4>::GetValueString( void ) const
+std::string GfxMaterialFxParam<fmtx4>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<CMatrix4>::ToString( GetValue(0), valstr );
+	CPropType<fmtx4>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
@@ -1299,9 +1299,9 @@ FxMatrixBlockApplicator::FxMatrixBlockApplicator( MaterialInstItemMatrixBlock*	m
 void FxMatrixBlockApplicator::ApplyToTarget( GfxTarget *pTARG ) // virtual
 {
 	size_t inumbones = mMatrixBlockItem->GetNumMatrices();
-	const CMatrix4* Matrices =  mMatrixBlockItem->GetMatrices();
+	const fmtx4* Matrices =  mMatrixBlockItem->GetMatrices();
 	FxShader* hshader = mMaterial->GetEffectInstance().mpEffect;
-	//CMatrix4 iwmat;
+	//fmtx4 iwmat;
 	//iwmat.GEMSInverse(pTARG->MTXI()->RefMVMatrix());
 	pTARG->FXI()->BindParamMatrixArray( hshader, mMaterial->mBonesParam, Matrices, (int) inumbones );
 	pTARG->FXI()->CommitParams();
@@ -1472,10 +1472,10 @@ void GfxMaterialFx::SetMaterialProperty( const char* prop, const char* val ) // 
 
 template class GfxMaterialFxParamArtist<int>;
 template class GfxMaterialFxParamArtist<float>;
-template class GfxMaterialFxParamArtist<CVector2>;
-template class GfxMaterialFxParamArtist<CVector3>;
-template class GfxMaterialFxParamArtist<CVector4>;
-template class GfxMaterialFxParamArtist<CMatrix3>;
+template class GfxMaterialFxParamArtist<fvec2>;
+template class GfxMaterialFxParamArtist<fvec3>;
+template class GfxMaterialFxParamArtist<fvec4>;
+template class GfxMaterialFxParamArtist<fmtx3>;
 template class GfxMaterialFxParamArtist<ork::lev2::Texture*>;
 	
 } }
@@ -1488,25 +1488,25 @@ typedef ork::lev2::GfxMaterialFxParam<float>						OrkLev2GfxMaterialFxParamFloat
 typedef ork::lev2::GfxMaterialFxParamArtist<float>					OrkLev2GfxMaterialFxParamFloatArtist;
 typedef ork::lev2::GfxMaterialFxParamEngine<float>					OrkLev2GfxMaterialFxParamFloatEngine;
 
-typedef ork::lev2::GfxMaterialFxParam<ork::CVector2>				OrkLev2GfxMaterialFxParamCVector2;
-typedef ork::lev2::GfxMaterialFxParamArtist<ork::CVector2>			OrkLev2GfxMaterialFxParamCVector2Artist;
-typedef ork::lev2::GfxMaterialFxParamEngine<ork::CVector2>			OrkLev2GfxMaterialFxParamCVector2Engine;
+typedef ork::lev2::GfxMaterialFxParam<ork::fvec2>				OrkLev2GfxMaterialFxParamVector2;
+typedef ork::lev2::GfxMaterialFxParamArtist<ork::fvec2>			OrkLev2GfxMaterialFxParamVector2Artist;
+typedef ork::lev2::GfxMaterialFxParamEngine<ork::fvec2>			OrkLev2GfxMaterialFxParamVector2Engine;
 
-typedef ork::lev2::GfxMaterialFxParam<ork::CVector3>				OrkLev2GfxMaterialFxParamCVector3;
-typedef ork::lev2::GfxMaterialFxParamArtist<ork::CVector3>			OrkLev2GfxMaterialFxParamCVector3Artist;
-typedef ork::lev2::GfxMaterialFxParamEngine<ork::CVector3>			OrkLev2GfxMaterialFxParamCVector3Engine;
+typedef ork::lev2::GfxMaterialFxParam<ork::fvec3>				OrkLev2GfxMaterialFxParamVector3;
+typedef ork::lev2::GfxMaterialFxParamArtist<ork::fvec3>			OrkLev2GfxMaterialFxParamVector3Artist;
+typedef ork::lev2::GfxMaterialFxParamEngine<ork::fvec3>			OrkLev2GfxMaterialFxParamVector3Engine;
 
-typedef ork::lev2::GfxMaterialFxParam<ork::CVector4>				OrkLev2GfxMaterialFxParamCVector4;
-typedef ork::lev2::GfxMaterialFxParamArtist<ork::CVector4>			OrkLev2GfxMaterialFxParamCVector4Artist;
-typedef ork::lev2::GfxMaterialFxParamEngine<ork::CVector4>			OrkLev2GfxMaterialFxParamCVector4Engine;
+typedef ork::lev2::GfxMaterialFxParam<ork::fvec4>				OrkLev2GfxMaterialFxParamVector4;
+typedef ork::lev2::GfxMaterialFxParamArtist<ork::fvec4>			OrkLev2GfxMaterialFxParamVector4Artist;
+typedef ork::lev2::GfxMaterialFxParamEngine<ork::fvec4>			OrkLev2GfxMaterialFxParamVector4Engine;
 
-typedef ork::lev2::GfxMaterialFxParam<ork::CMatrix3>				OrkLev2GfxMaterialFxParamCMatrix3;
-typedef ork::lev2::GfxMaterialFxParamArtist<ork::CMatrix3>			OrkLev2GfxMaterialFxParamCMatrix3Artist;
-typedef ork::lev2::GfxMaterialFxParamEngine<ork::CMatrix3>			OrkLev2GfxMaterialFxParamCMatrix3Engine;
+typedef ork::lev2::GfxMaterialFxParam<ork::fmtx3>				OrkLev2GfxMaterialFxParamMatrix3;
+typedef ork::lev2::GfxMaterialFxParamArtist<ork::fmtx3>			OrkLev2GfxMaterialFxParamMatrix3Artist;
+typedef ork::lev2::GfxMaterialFxParamEngine<ork::fmtx3>			OrkLev2GfxMaterialFxParamMatrix3Engine;
 
-typedef ork::lev2::GfxMaterialFxParam<ork::CMatrix4>				OrkLev2GfxMaterialFxParamCMatrix4;
-typedef ork::lev2::GfxMaterialFxParamArtist<ork::CMatrix4>			OrkLev2GfxMaterialFxParamCMatrix4Artist;
-typedef ork::lev2::GfxMaterialFxParamEngine<ork::CMatrix4>			OrkLev2GfxMaterialFxParamCMatrix4Engine;
+typedef ork::lev2::GfxMaterialFxParam<ork::fmtx4>				OrkLev2GfxMaterialFxParamMatrix4;
+typedef ork::lev2::GfxMaterialFxParamArtist<ork::fmtx4>			OrkLev2GfxMaterialFxParamMatrix4Artist;
+typedef ork::lev2::GfxMaterialFxParamEngine<ork::fmtx4>			OrkLev2GfxMaterialFxParamMatrix4Engine;
 
 typedef ork::lev2::GfxMaterialFxParam<std::string>					OrkLev2GfxMaterialFxParamStdString;
 typedef ork::lev2::GfxMaterialFxParamArtist<std::string>			OrkLev2GfxMaterialFxParamStdStringArtist;
@@ -1524,25 +1524,25 @@ INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamFloat, "FxParamF
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamFloatArtist, "FxParamArtistFloat" );
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamFloatEngine, "FxParamEngineFloat" );
 
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector2, "FxParamFloat2" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector2Artist, "FxParamArtistFloat2" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector2Engine, "FxParamEngineFloat2" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector2, "FxParamFloat2" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector2Artist, "FxParamArtistFloat2" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector2Engine, "FxParamEngineFloat2" );
 
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector3, "FxParamFloat3" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector3Artist, "FxParamArtistFloat3" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector3Engine, "FxParamEngineFloat3" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector3, "FxParamFloat3" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector3Artist, "FxParamArtistFloat3" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector3Engine, "FxParamEngineFloat3" );
 
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector4, "FxParamFloat4" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector4Artist, "FxParamArtistFloat4" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCVector4Engine, "FxParamEngineFloat4" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector4, "FxParamFloat4" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector4Artist, "FxParamArtistFloat4" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamVector4Engine, "FxParamEngineFloat4" );
 
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCMatrix3, "FxParamMatrix3" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCMatrix3Artist, "FxParamArtistMatrix3" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCMatrix3Engine, "FxParamEngineMatrix3" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamMatrix3, "FxParamMatrix3" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamMatrix3Artist, "FxParamArtistMatrix3" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamMatrix3Engine, "FxParamEngineMatrix3" );
 
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCMatrix4, "FxParamMatrix4" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCMatrix4Artist, "FxParamArtistMatrix4" );
-INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamCMatrix4Engine, "FxParamEngineMatrix4" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamMatrix4, "FxParamMatrix4" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamMatrix4Artist, "FxParamArtistMatrix4" );
+INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamMatrix4Engine, "FxParamEngineMatrix4" );
 
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamStdString, "FxParamString" );
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamStdStringArtist, "FxParamArtistString" );

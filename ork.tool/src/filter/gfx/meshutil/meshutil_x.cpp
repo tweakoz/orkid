@@ -204,7 +204,7 @@ void FromD3DXMesh( ID3DXMesh* indxmesh, submesh& mesh )
 		for( int iv=0; iv<inumvertices; iv++ )
 		{
 			const float* pnrm = (const float*)( pcharbase+nrmelem.Offset + (iv*isrcvtxstride) );
-			SourceVerts[iv].mNrm = CVector3( pnrm[0], pnrm[1], pnrm[2] );
+			SourceVerts[iv].mNrm = fvec3( pnrm[0], pnrm[1], pnrm[2] );
 		}
 		///////////////////////////////////////////////////
 		// get binormals
@@ -218,7 +218,7 @@ void FromD3DXMesh( ID3DXMesh* indxmesh, submesh& mesh )
 			if( ibinidx < 4 )
 			{	for( int iv=0; iv<inumvertices; iv++ )
 				{	const float* pnrm = (const float*)( pcharbase+binelem.Offset + (iv*isrcvtxstride) );
-					SourceVerts[iv].mUV[ibinidx].mMapBiNormal = CVector3( pnrm[0], pnrm[1], pnrm[2] );
+					SourceVerts[iv].mUV[ibinidx].mMapBiNormal = fvec3( pnrm[0], pnrm[1], pnrm[2] );
 				}
 			}
 			ibinidx++;
@@ -235,7 +235,7 @@ void FromD3DXMesh( ID3DXMesh* indxmesh, submesh& mesh )
 			if( iuvidx < 4 )
 			{	for( int iv=0; iv<inumvertices; iv++ )
 				{	const float* puv0 = (const float*)( pcharbase+uvelem.Offset + (iv*isrcvtxstride) );
-					SourceVerts[iv].mUV[iuvidx].mMapTexCoord = CVector2( puv0[0], puv0[1] );
+					SourceVerts[iv].mUV[iuvidx].mMapTexCoord = fvec2( puv0[0], puv0[1] );
 					SourceVerts[iv].miNumUvs = iuvidx+1;
 				}
 			}

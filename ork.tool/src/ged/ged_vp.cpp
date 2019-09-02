@@ -108,7 +108,7 @@ void GedVP::DoInit( lev2::GfxTarget* pt )
 												 lev2::PickBufferBase::EPICK_FACE_VTX );
 
 	mpPickBuffer->CreateContext();
-	mpPickBuffer->GetContext()->FBI()->SetClearColor( CColor4(0.0f,0.0f,0.0f,0.0f) );
+	mpPickBuffer->GetContext()->FBI()->SetClearColor( fcolor4(0.0f,0.0f,0.0f,0.0f) );
 	mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,7 +140,7 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	// Compute Scoll Transform
 	//////////////////////////////////////////////////
 
-	ork::CMatrix4 matSCROLL;
+	ork::fmtx4 matSCROLL;
 	matSCROLL.SetTranslation( 0.0f, float(miScrollY), 0.0f );
 
 	//////////////////////////////////////////////////

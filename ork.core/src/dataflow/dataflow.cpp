@@ -19,8 +19,8 @@ template class ork::orklut<ork::PoolString, ork::dataflow::module *>;
 
 typedef ork::dataflow::outplug<float> OrkDataflowOutPlugFloat;
 typedef ork::dataflow::inplug<float> OrkDataflowInpPlugFloat;
-typedef ork::dataflow::outplug<ork::CVector3> OrkDataflowOutPlugFloat3;
-typedef ork::dataflow::inplug<ork::CVector3> OrkDataflowInpPlugFloat3;
+typedef ork::dataflow::outplug<ork::fvec3> OrkDataflowOutPlugFloat3;
+typedef ork::dataflow::inplug<ork::fvec3> OrkDataflowInpPlugFloat3;
 typedef ork::dataflow::floatinplugxf<ork::dataflow::floatxf>
     OrkDataflowFloatInpPlugXf;
 typedef ork::dataflow::vect3inplugxf<ork::dataflow::vect3xf>
@@ -90,20 +90,20 @@ template <> const float &outplug<float>::GetValue() const {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-template <> int MaxFanout<CVector3>() { return 0; }
-template <> void inplug<CVector3>::Describe() {}
-template <> void outplug<CVector3>::Describe() {}
-template class outplug<CVector3>;
+template <> int MaxFanout<fvec3>() { return 0; }
+template <> void inplug<fvec3>::Describe() {}
+template <> void outplug<fvec3>::Describe() {}
+template class outplug<fvec3>;
 ///////////////////////////////////////////////////////////////////////////////
-template <> const CVector3 &outplug<CVector3>::GetInternalData() const {
-  static const CVector3 kdefault;
+template <> const fvec3 &outplug<fvec3>::GetInternalData() const {
+  static const fvec3 kdefault;
   if (0 == mOutputData) {
     return kdefault;
   }
   return *mOutputData;
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> const CVector3 &outplug<CVector3>::GetValue() const {
+template <> const fvec3 &outplug<fvec3>::GetValue() const {
   return GetInternalData();
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,8 +244,8 @@ float floatxf::transform(float input) const {
 ///////////////////////////////////////////////////////////////////////////////
 void vect3xf::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
-CVector3 vect3xf::transform(const CVector3 &input) const {
-  CVector3 output;
+fvec3 vect3xf::transform(const fvec3 &input) const {
+  fvec3 output;
   output.SetX(mTransformX.transform(input.GetX()));
   output.SetY(mTransformX.transform(input.GetY()));
   output.SetZ(mTransformX.transform(input.GetZ()));

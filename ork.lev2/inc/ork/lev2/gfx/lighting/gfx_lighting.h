@@ -54,7 +54,7 @@ class  LightData : public ork::Object
 {
 	RttiDeclareAbstract(LightData, ork::Object);
 
-	CVector3				mColor;
+	fvec3				mColor;
 	bool					mbShadowCaster;
 	float					mShadowSamples;
 	float					mShadowBlur;
@@ -69,8 +69,8 @@ public:
 	bool GetSpecular() const { return mbSpecular; }
 	bool IsShadowCaster() const { return mbShadowCaster; }
 
-	const CVector3& GetColor() const { return mColor; }
-	void SetColor(const CVector3&clr) { mColor=clr; }
+	const fvec3& GetColor() const { return mColor; }
+	void SetColor(const fvec3&clr) { mColor=clr; }
 
 	LightData() 
 		: mColor( 1.0f, 0.0f, 0.0f )
@@ -90,7 +90,7 @@ class  Light : public ork::Object
 	RttiDeclareAbstract(Light, ork::Object);
 
 	const LightData* mLd;
-	const CMatrix4& mWorldMatrix;
+	const fmtx4& mWorldMatrix;
 
 public:
 
@@ -100,17 +100,17 @@ public:
 
 	virtual bool IsInFrustum( const Frustum& frustum ) = 0;
 	virtual void ImmRender( Renderer& renderer ) = 0;
-	virtual bool AffectsSphere( const CVector3& center, float radius ) = 0;
+	virtual bool AffectsSphere( const fvec3& center, float radius ) = 0;
 	virtual bool AffectsAABox( const AABox& aab ) = 0;
 	virtual bool AffectsCircleXZ( const Circle& cir ) = 0;
 	virtual ELightType LightType() const = 0;
 	
-	const CVector3& GetColor() const { return mLd->GetColor(); }
-	const CMatrix4& GetMatrix() const { return mWorldMatrix; }
-	CVector3 GetWorldPosition() const { return mWorldMatrix.GetTranslation(); }
-	CVector3 GetDirection() const { return mWorldMatrix.GetZNormal(); }
+	const fvec3& GetColor() const { return mLd->GetColor(); }
+	const fmtx4& GetMatrix() const { return mWorldMatrix; }
+	fvec3 GetWorldPosition() const { return mWorldMatrix.GetTranslation(); }
+	fvec3 GetDirection() const { return mWorldMatrix.GetZNormal(); }
 
-	Light( const CMatrix4& mtx, const LightData* ld=0 ) : mWorldMatrix(mtx), mLd(ld), mbIsDynamic(false), mPriority(0.0f) {}
+	Light( const fmtx4& mtx, const LightData* ld=0 ) : mWorldMatrix(mtx), mLd(ld), mbIsDynamic(false), mPriority(0.0f) {}
 
 };
 
@@ -143,7 +143,7 @@ public:
 	
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
 	/*virtual*/ void ImmRender( Renderer& renderer ) override;
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override;
+	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override;
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
 	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_POINT; }
@@ -151,7 +151,7 @@ public:
 	float GetRadius() const { return mPld->GetRadius(); }
 	float GetFalloff() const { return mPld->GetFalloff(); }
 
-	PointLight( const CMatrix4& mtx, const PointLightData* pld=0 );
+	PointLight( const fmtx4& mtx, const PointLightData* pld=0 );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,12 +177,12 @@ public:
 
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum )override;
 	/*virtual*/ void ImmRender( Renderer& renderer ) override {}
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override { return true; }
+	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override { return true; }
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
 	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_DIRECTIONAL; }
 
-	DirectionalLight( const CMatrix4& mtx, const DirectionalLightData* dld=0 );
+	DirectionalLight( const fmtx4& mtx, const DirectionalLightData* dld=0 );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -192,15 +192,15 @@ class  AmbientLightData : public LightData
 	RttiDeclareConcrete(AmbientLightData, LightData);
 
 	float	mfAmbientShade;
-	CVector3 mvHeadlightDir;
+	fvec3 mvHeadlightDir;
 
 public:
 
 	AmbientLightData() : mfAmbientShade(0.0f), mvHeadlightDir(0.0f, 0.5f, 1.0f) {}
 	float GetAmbientShade() const { return mfAmbientShade; }
 	void SetAmbientShade( float fv ) { mfAmbientShade=fv; }
-	const CVector3& GetHeadlightDir() const { return mvHeadlightDir; }
-	void SetHeadlightDir( const CVector3 &dir) { mvHeadlightDir=dir; }
+	const fvec3& GetHeadlightDir() const { return mvHeadlightDir; }
+	void SetHeadlightDir( const fvec3 &dir) { mvHeadlightDir=dir; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -215,14 +215,14 @@ public:
 
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
 	/*virtual*/ void ImmRender( Renderer& renderer ) override {}
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override { return true; }
+	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override { return true; }
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
 	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_AMBIENT; }
 	float GetAmbientShade() const { return mAld->GetAmbientShade(); }
-	const CVector3& GetHeadlightDir() const { return mAld->GetHeadlightDir(); }
+	const fvec3& GetHeadlightDir() const { return mAld->GetHeadlightDir(); }
 
-	AmbientLight( const CMatrix4& mtx, const AmbientLightData* dld=0 );
+	AmbientLight( const fmtx4& mtx, const AmbientLightData* dld=0 );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,8 +256,8 @@ class  SpotLight : public Light
 
 public:
 
-	CMatrix4		mProjectionMatrix;
-	CMatrix4		mViewMatrix;
+	fmtx4		mProjectionMatrix;
+	fmtx4		mViewMatrix;
 	Frustum			mWorldSpaceLightFrustum;
 	//float			mFovy;
 	//float			mRange;
@@ -266,12 +266,12 @@ public:
 
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
 	/*virtual*/ void ImmRender( Renderer& renderer ) override;
-	/*virtual*/ bool AffectsSphere( const CVector3& center, float radius ) override;
+	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override;
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
 	/*virtual*/ ELightType LightType() const override { return ELIGHTTYPE_SPOT; }
 
-	void Set( const CVector3& pos, const CVector3& target, const CVector3& up, float fovy );
+	void Set( const fvec3& pos, const fvec3& target, const fvec3& up, float fovy );
 
 	void SetTexture( lev2::TextureAsset* ptex ) { mTexture=ptex; }
 	lev2::TextureAsset* GetTexture() const { return mTexture; }
@@ -279,7 +279,7 @@ public:
 	float GetFovy() const { return mSld->GetFovy(); }
 	float GetRange() const { return mSld->GetRange(); }
 
-	SpotLight( const CMatrix4& mtx, const SpotLightData* sld = 0 );
+	SpotLight( const fmtx4& mtx, const SpotLightData* sld = 0 );
 
 };
 
@@ -337,14 +337,14 @@ struct  LightingGroup
 	static const int kmaxinst = 32;
 
 	LightMask							mLightMask;	
-	ork::fixedvector<CMatrix4,kmaxinst>	mInstances;
+	ork::fixedvector<fmtx4,kmaxinst>	mInstances;
 	LightManager*						mLightManager;
 	Texture*							mLightMap;
 	Texture*							mDPEnvMap;
 
 	size_t GetNumLights() const;
 	size_t GetNumMatrices() const;
-	const CMatrix4* GetMatrices() const;
+	const fmtx4* GetMatrices() const;
 	int GetLightId( int idx ) const;
 
 	LightingGroup();
@@ -388,7 +388,7 @@ public:
 	void Clear();
 	LightCollector();
 	~LightCollector();
-	void QueueInstance( const LightMask& lmask, const CMatrix4& mtx );
+	void QueueInstance( const LightMask& lmask, const fmtx4& mtx );
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -416,7 +416,7 @@ public:
 
 	//int	miNumLightsInFrustum;
 
-	void QueueInstance( const LightMask& lgid, const CMatrix4& mtx );
+	void QueueInstance( const LightMask& lgid, const fmtx4& mtx );
 
 	size_t GetNumLightGroups() const;
 	void Clear();
@@ -426,7 +426,7 @@ public:
 
 struct HeadLightManager
 {
-	ork::CMatrix4		mHeadLightMatrix;
+	ork::fmtx4		mHeadLightMatrix;
 	LightingGroup		mHeadLightGroup;
 	AmbientLightData	mHeadLightData;
 	AmbientLight		mHeadLight;

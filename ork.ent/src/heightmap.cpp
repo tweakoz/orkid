@@ -16,7 +16,7 @@ namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 HeightMap HeightMap::gdefhm(3, 3);
-typedef orkmap<float, CVector4> gradient_t;
+typedef orkmap<float, fvec4> gradient_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 HeightMap::HeightMap(int isx, int isz)
@@ -70,7 +70,7 @@ float HeightMap::GetHeight(int ix, int iz) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 HeightMap::XYZ(int iX, int iZ) const {
+fvec3 HeightMap::XYZ(int iX, int iZ) const {
   int isx = GetGridSizeX();
   int isz = GetGridSizeZ();
 
@@ -84,12 +84,12 @@ CVector3 HeightMap::XYZ(int iX, int iZ) const {
   float fz = (float(iZ - izd2) * mIndexToUnitZ) * mfWorldSizeZ;
 
   float fy = GetHeight(iX, iZ) * mWorldHeight;
-  auto rval = CVector3(fx, fy, fz);
+  auto rval = fvec3(fx, fy, fz);
   // printf( "XYZ<%d %d> - <%f %f %f>\n", iX, iZ, fx, fy, fz );
   return rval;
 }
 
-CVector3 HeightMap::ComputeNormal(int ix1, int iz1) const {
+fvec3 HeightMap::ComputeNormal(int ix1, int iz1) const {
   int isx = GetGridSizeX();
   int isz = GetGridSizeZ();
 
@@ -107,43 +107,43 @@ CVector3 HeightMap::ComputeNormal(int ix1, int iz1) const {
   if (iz2 > (isz - 1))
     iz2 = isz - 1;
 
-  // CVector3 hscale(1.0f,mWorldHeight,1.0f);
+  // fvec3 hscale(1.0f,mWorldHeight,1.0f);
 
-  CVector3 VC = XYZ(ix1, iz1);
+  fvec3 VC = XYZ(ix1, iz1);
 
-  CVector3 d0 = (XYZ(ix0, iz0) - VC).Normal();
-  CVector3 d1 = (XYZ(ix1, iz0) - VC).Normal();
-  CVector3 d2 = (XYZ(ix2, iz0) - VC).Normal();
-  CVector3 d3 = (XYZ(ix2, iz1) - VC).Normal();
-  CVector3 d4 = (XYZ(ix2, iz2) - VC).Normal();
-  CVector3 d5 = (XYZ(ix1, iz2) - VC).Normal();
-  CVector3 d6 = (XYZ(ix0, iz2) - VC).Normal();
-  CVector3 d7 = (XYZ(ix0, iz1) - VC).Normal();
+  fvec3 d0 = (XYZ(ix0, iz0) - VC).Normal();
+  fvec3 d1 = (XYZ(ix1, iz0) - VC).Normal();
+  fvec3 d2 = (XYZ(ix2, iz0) - VC).Normal();
+  fvec3 d3 = (XYZ(ix2, iz1) - VC).Normal();
+  fvec3 d4 = (XYZ(ix2, iz2) - VC).Normal();
+  fvec3 d5 = (XYZ(ix1, iz2) - VC).Normal();
+  fvec3 d6 = (XYZ(ix0, iz2) - VC).Normal();
+  fvec3 d7 = (XYZ(ix0, iz1) - VC).Normal();
 
-  CVector3 c0 = d0.Cross(d1);
-  CVector3 c1 = d1.Cross(d2);
-  CVector3 c2 = d2.Cross(d3);
-  CVector3 c3 = d3.Cross(d4);
-  CVector3 c4 = d4.Cross(d5);
-  CVector3 c5 = d5.Cross(d6);
-  CVector3 c6 = d6.Cross(d7);
-  CVector3 c7 = d7.Cross(d0);
+  fvec3 c0 = d0.Cross(d1);
+  fvec3 c1 = d1.Cross(d2);
+  fvec3 c2 = d2.Cross(d3);
+  fvec3 c3 = d3.Cross(d4);
+  fvec3 c4 = d4.Cross(d5);
+  fvec3 c5 = d5.Cross(d6);
+  fvec3 c6 = d6.Cross(d7);
+  fvec3 c7 = d7.Cross(d0);
 
-  CVector3 vdx = -(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7).Normal();
+  fvec3 vdx = -(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7).Normal();
 
   return vdx;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool HeightMap::CalcClosestAddress(const CVector3 &to, float &outx,
+bool HeightMap::CalcClosestAddress(const fvec3 &to, float &outx,
                                     float &outz) const {
   bool bOK = false;
 
   /*float isx = GetGridSizeX();
   float isz = GetGridSizeZ();
 
-  CVector3 vnorm = (to-Min());
+  fvec3 vnorm = (to-Min());
 
   float fX = (vnorm.GetX()/Range().GetX());
   float fZ = (vnorm.GetZ()/Range().GetZ());
@@ -175,21 +175,21 @@ bool HeightMap::CalcClosestAddress(const CVector3 &to, float &outx,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 HeightMap::Min() const {
-  CVector3 ret(mfWorldSizeX * -0.5f, mMin, mfWorldSizeZ * -0.5f);
+fvec3 HeightMap::Min() const {
+  fvec3 ret(mfWorldSizeX * -0.5f, mMin, mfWorldSizeZ * -0.5f);
   return ret;
 }
-CVector3 HeightMap::Max() const {
-  CVector3 ret(mfWorldSizeX * 0.5f, mMax, mfWorldSizeZ * 0.5f);
+fvec3 HeightMap::Max() const {
+  fvec3 ret(mfWorldSizeX * 0.5f, mMax, mfWorldSizeZ * 0.5f);
   return ret;
 }
-CVector3 HeightMap::Range() const {
-  CVector3 ret(mfWorldSizeX, mRange, mfWorldSizeZ);
+fvec3 HeightMap::Range() const {
+  fvec3 ret(mfWorldSizeX, mRange, mfWorldSizeZ);
   return ret;
 }
 
-void HeightMap::ReadSurface(bool bfilter, const CVector3 &xyz, CVector3 &pos,
-                             CVector3 &nrm)
+void HeightMap::ReadSurface(bool bfilter, const fvec3 &xyz, fvec3 &pos,
+                             fvec3 &nrm)
     const { /*
                    float fiterX, fiterZ;
                    bool bOK = CalcClosestAddress( xyz, fiterX, fiterZ );
@@ -200,30 +200,30 @@ void HeightMap::ReadSurface(bool bfilter, const CVector3 &xyz, CVector3 &pos,
                    int igsizZ = GetGridSizeZ()-2;
 
                    //////////////////////////////////////////
-                   nrm = CVector3(0.0f,1.0f,0.0f);
-                   pos = CVector3(xyz.GetX(),xyz.GetY()+50.0f,xyz.GetZ());
+                   nrm = fvec3(0.0f,1.0f,0.0f);
+                   pos = fvec3(xyz.GetX(),xyz.GetY()+50.0f,xyz.GetZ());
                    //////////////////////////////////////////
                    if( false == bOK )
                    {
-                           //nrm = CVector3(0.0f,1.0f,0.0f);
+                           //nrm = fvec3(0.0f,1.0f,0.0f);
                            //pos =
-               CVector3(xyz.GetX(),xyz.GetY()+50.0f,xyz.GetZ()); if(
+               fvec3(xyz.GetX(),xyz.GetY()+50.0f,xyz.GetZ()); if(
                fiterX==-1.0f )
                            {
-                                   nrm = CVector3(1.0f,0.0f,0.0f);
+                                   nrm = fvec3(1.0f,0.0f,0.0f);
                            }
                            else if( fiterX==-2.0f)
                            {
-                                   nrm = CVector3(-1.0f,0.0f,0.0f);
+                                   nrm = fvec3(-1.0f,0.0f,0.0f);
                            }
                            //////////////////////////////////////////
                            if( fiterZ==-1.0f )
                            {
-                                   nrm = CVector3(0.0f,0.0f,1.0f);
+                                   nrm = fvec3(0.0f,0.0f,1.0f);
                            }
                            else if( fiterZ==-2.0f)
                            {
-                                   nrm = CVector3(0.0f,0.0f,-1.0f);
+                                   nrm = fvec3(0.0f,0.0f,-1.0f);
                            }
                    }
                    //////////////////////////////////////////
@@ -233,8 +233,8 @@ void HeightMap::ReadSurface(bool bfilter, const CVector3 &xyz, CVector3 &pos,
                    {
                            if( bfilter )
                            {
-                                   CVector3 terp_xyz[4];
-                                   CVector3 terp_nrm[4];
+                                   fvec3 terp_xyz[4];
+                                   fvec3 terp_nrm[4];
                                    for( int is=0; is<4; is++ )
                                    {
                                            int isx = is&1;
@@ -247,14 +247,14 @@ void HeightMap::ReadSurface(bool bfilter, const CVector3 &xyz, CVector3 &pos,
                                    float flerpx = fiterX-float(iterX);
                                    float flerpz = fiterZ-float(iterZ);
 
-                                   CVector3 pza;	pza.Lerp(
-               terp_xyz[0],terp_xyz[2], flerpz ); CVector3 pzb;	pzb.Lerp(
+                                   fvec3 pza;	pza.Lerp(
+               terp_xyz[0],terp_xyz[2], flerpz ); fvec3 pzb;	pzb.Lerp(
                terp_xyz[1],terp_xyz[3], flerpz );
 
                                    pos.Lerp( pza, pzb, flerpx );
 
-                                   CVector3 nra;	nra.Lerp(
-               terp_nrm[0],terp_nrm[2], flerpz ); CVector3 nrb;	nrb.Lerp(
+                                   fvec3 nra;	nra.Lerp(
+               terp_nrm[0],terp_nrm[2], flerpz ); fvec3 nrb;	nrb.Lerp(
                terp_nrm[1],terp_nrm[3], flerpz );
 
                                    nrm.Lerp( nra, nrb, flerpx );
@@ -359,9 +359,9 @@ bool HeightMap::Load(const ork::file::Path &pth) {
   return bexists;
 }
 
-static CVector4 GetGradientColor(float fin, const gradient_t &gmap) {
+static fvec4 GetGradientColor(float fin, const gradient_t &gmap) {
 
-  CVector4 rval = CColor4::White();
+  fvec4 rval = fcolor4::White();
 
   if (gmap.size() >= 2) {
     fin = 1.0f - fin;
@@ -391,10 +391,10 @@ static CVector4 GetGradientColor(float fin, const gradient_t &gmap) {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-CVector4 GradientSet::Lerp(float fu, float fv) const {
-  CVector3 lo = GetGradientColor(fu, *mGradientLo);
-  CVector3 hi = GetGradientColor(fu, *mGradientHi);
-  CVector3 result;
+fvec4 GradientSet::Lerp(float fu, float fv) const {
+  fvec3 lo = GetGradientColor(fu, *mGradientLo);
+  fvec3 hi = GetGradientColor(fu, *mGradientHi);
+  fvec3 result;
   result.Lerp(lo, hi, fv);
   return result;
 }

@@ -56,10 +56,10 @@ void GfxTarget::BeginFrame( void )
 	if( GfxEnv::GetRef().GetDefaultUIMaterial() )
 		BindMaterial( GfxEnv::GetRef().GetDefaultUIMaterial() );
 
-	PushModColor( CColor4::White() );
-	MTXI()->PushMMatrix( CMatrix4::Identity );
-	MTXI()->PushVMatrix( CMatrix4::Identity );
-	MTXI()->PushPMatrix( CMatrix4::Identity );
+	PushModColor( fcolor4::White() );
+	MTXI()->PushMMatrix( fmtx4::Identity );
+	MTXI()->PushVMatrix( fmtx4::Identity );
+	MTXI()->PushPMatrix( fmtx4::Identity );
 
 	mpCurrentObject = 0;
 

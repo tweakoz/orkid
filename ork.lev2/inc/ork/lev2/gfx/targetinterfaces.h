@@ -120,7 +120,7 @@ struct GetPixelContext
 	GfxBuffer*	mAsBuffer;
 	RtGroup*	mRtGroup;
 	int			miMrtMask;
-	CColor4		mPickColors[kmaxitems];
+	fcolor4		mPickColors[kmaxitems];
 	EPixelUsage	mUsage[kmaxitems];
 	anyp 		mUserData;
 
@@ -171,18 +171,18 @@ public:
 
 	virtual void BindParamBool( FxShader* hfx, const FxShaderParam* hpar, const bool bval ) = 0;
 	virtual void BindParamInt( FxShader* hfx, const FxShaderParam* hpar, const int ival ) = 0;
-	virtual void BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec ) = 0;
-	virtual void BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec ) = 0;
-	virtual void BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, const CVector4 & Vec ) = 0;
-	virtual void BindParamVect4Array( FxShader* hfx, const FxShaderParam* hpar, const CVector4 * Vec, const int icount ) = 0;
+	virtual void BindParamVect2( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec ) = 0;
+	virtual void BindParamVect3( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec ) = 0;
+	virtual void BindParamVect4( FxShader* hfx, const FxShaderParam* hpar, const fvec4 & Vec ) = 0;
+	virtual void BindParamVect4Array( FxShader* hfx, const FxShaderParam* hpar, const fvec4 * Vec, const int icount ) = 0;
 	virtual void BindParamFloatArray( FxShader* hfx, const FxShaderParam* hpar, const float * pfA, const int icnt ) = 0;
 	virtual void BindParamFloat( FxShader* hfx, const FxShaderParam* hpar, float fA ) = 0;
 	virtual void BindParamFloat2( FxShader* hfx, const FxShaderParam* hpar, float fA, float fB ) = 0;
 	virtual void BindParamFloat3( FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC ) = 0;
 	virtual void BindParamFloat4( FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD ) = 0;
-	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 & Mat ) = 0;
-	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const CMatrix3 & Mat ) = 0;
-	virtual void BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const CMatrix4 * MatArray, int iCount ) = 0;
+	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const fmtx4 & Mat ) = 0;
+	virtual void BindParamMatrix( FxShader* hfx, const FxShaderParam* hpar, const fmtx3 & Mat ) = 0;
+	virtual void BindParamMatrixArray( FxShader* hfx, const FxShaderParam* hpar, const fmtx4 * MatArray, int iCount ) = 0;
 	virtual void BindParamU32( FxShader* hfx, const FxShaderParam* hpar, U32 uval ) = 0;
 	virtual void BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, const Texture *pTex ) = 0;
 
@@ -292,27 +292,27 @@ public:
 
 	MatrixStackInterface( GfxTarget& target );
 
-	void PushMMatrix( const CMatrix4 &rMat );
-	void PushVMatrix( const CMatrix4 &rMat );
-	void PushPMatrix( const CMatrix4 &rMat );
-	void SetMMatrix( const CMatrix4 &rMat );
+	void PushMMatrix( const fmtx4 &rMat );
+	void PushVMatrix( const fmtx4 &rMat );
+	void PushPMatrix( const fmtx4 &rMat );
+	void SetMMatrix( const fmtx4 &rMat );
 
 	void PopMMatrix( void );
 	void PopVMatrix( void );
 	void PopPMatrix( void );
 
-	const CMatrix4& RefMMatrix( void ) const;
-	const CMatrix4& RefR4Matrix( void ) const;
-	const CMatrix3& RefR3Matrix( void ) const;
-	const CMatrix4& RefVMatrix( void ) const;
-	const CMatrix4& RefVITMatrix( void ) const;
-	const CMatrix4& RefVITIYMatrix( void ) const;
-	const CMatrix4& RefVITGMatrix( void ) const;
-	const CMatrix4& RefPMatrix( void ) const;
+	const fmtx4& RefMMatrix( void ) const;
+	const fmtx4& RefR4Matrix( void ) const;
+	const fmtx3& RefR3Matrix( void ) const;
+	const fmtx4& RefVMatrix( void ) const;
+	const fmtx4& RefVITMatrix( void ) const;
+	const fmtx4& RefVITIYMatrix( void ) const;
+	const fmtx4& RefVITGMatrix( void ) const;
+	const fmtx4& RefPMatrix( void ) const;
 
-	const CMatrix4& RefMVMatrix( void ) const;
-	const CMatrix4& RefVPMatrix( void ) const;
-	const CMatrix4& RefMVPMatrix( void ) const;
+	const fmtx4& RefMVMatrix( void ) const;
+	const fmtx4& RefVPMatrix( void ) const;
+	const fmtx4& RefMVPMatrix( void ) const;
 
 	void OnMMatrixDirty( void );
 	void OnVMatrixDirty( void );
@@ -322,29 +322,29 @@ public:
 	int GetVStackDepth( void ) { return int( miMatrixStackIndexV ); }
 	int GetPStackDepth( void ) { return int( miMatrixStackIndexP ); }
 
-	CMatrix4 &GetUIOrthoProjectionMatrix( void ) { return mUIOrthoProjectionMatrix; }
+	fmtx4 &GetUIOrthoProjectionMatrix( void ) { return mUIOrthoProjectionMatrix; }
 
-	virtual CMatrix4 Ortho( float left, float right, float top, float bottom, float fnear, float ffar ) = 0;
-	virtual CMatrix4 Persp( float fovy, float aspect, float fnear, float ffar );
-	virtual CMatrix4 Frustum( float left, float right, float top, float bottom, float zn, float zf );
-	virtual CMatrix4 LookAt( const CVector3& eye, const CVector3& tgt, const CVector3& up ) const;
+	virtual fmtx4 Ortho( float left, float right, float top, float bottom, float fnear, float ffar ) = 0;
+	virtual fmtx4 Persp( float fovy, float aspect, float fnear, float ffar );
+	virtual fmtx4 Frustum( float left, float right, float top, float bottom, float zn, float zf );
+	virtual fmtx4 LookAt( const fvec3& eye, const fvec3& tgt, const fvec3& up ) const;
 
-	const CMatrix4& GetOrthoMatrix( void ) const { return mMatOrtho; }
-	void SetOrthoMatrix( const CMatrix4& mtx ) { mMatOrtho=mtx; }
+	const fmtx4& GetOrthoMatrix( void ) const { return mMatOrtho; }
+	void SetOrthoMatrix( const fmtx4& mtx ) { mMatOrtho=mtx; }
 
 	///////////////////////////////////////////////////////////////////////
 	// these will probably get moved somewhere else
 
-	const CMatrix4& GetShadowVMatrix( void ) const { return mShadowVMatrix; }
-	const CMatrix4& GetShadowPMatrix( void ) const { return mShadowPMatrix; }
+	const fmtx4& GetShadowVMatrix( void ) const { return mShadowVMatrix; }
+	const fmtx4& GetShadowPMatrix( void ) const { return mShadowPMatrix; }
 
-	void SetShadowVMatrix( const CMatrix4& vmat ) { mShadowVMatrix=vmat; }
-	void SetShadowPMatrix( const CMatrix4& pmat ) { mShadowPMatrix=pmat; }
+	void SetShadowVMatrix( const fmtx4& vmat ) { mShadowVMatrix=vmat; }
+	void SetShadowPMatrix( const fmtx4& pmat ) { mShadowPMatrix=pmat; }
 
 	///////////////////////////////////////////////////////////////////////
 
-	const CVector4& GetScreenRightNormal( void ) { return mVectorScreenRightNormal; }
-	const CVector4& GetScreenUpNormal( void ) { return mVectorScreenUpNormal; }
+	const fvec4& GetScreenRightNormal( void ) { return mVectorScreenRightNormal; }
+	const fvec4& GetScreenUpNormal( void ) { return mVectorScreenUpNormal; }
 
 	///////////////////////////////////////////////////////////////////////
 
@@ -363,30 +363,30 @@ protected:
 	int									miMatrixStackIndexP;
 	int									miMatrixStackIndexUI;
 
-	CMatrix4							maMatrixStackP[ kiMatrixStackMax ];
-	CMatrix4							maMatrixStackM[ kiMatrixStackMax ];
-	CMatrix4							maMatrixStackV[ kiMatrixStackMax ];
-	CMatrix4							maMatrixStackUI[ kiMatrixStackMax ];
+	fmtx4							maMatrixStackP[ kiMatrixStackMax ];
+	fmtx4							maMatrixStackM[ kiMatrixStackMax ];
+	fmtx4							maMatrixStackV[ kiMatrixStackMax ];
+	fmtx4							maMatrixStackUI[ kiMatrixStackMax ];
 
-	CMatrix4							mMatrixVIT;
-	CMatrix4							mMatrixVITIY;
-	CMatrix4							mMatrixVITG;
+	fmtx4							mMatrixVIT;
+	fmtx4							mMatrixVITIY;
+	fmtx4							mMatrixVITG;
 
-	CMatrix4							mMatOrtho;
+	fmtx4							mMatOrtho;
 
-	CMatrix3							mmR3Matrix;
-	CMatrix4							mmR4Matrix;
-	CMatrix4							mmMVMatrix;
-	CMatrix4							mmVPMatrix;
-	CMatrix4							mmMVPMatrix;
+	fmtx3							mmR3Matrix;
+	fmtx4							mmR4Matrix;
+	fmtx4							mmMVMatrix;
+	fmtx4							mmVPMatrix;
+	fmtx4							mmMVPMatrix;
 
-	CMatrix4							mShadowVMatrix;
-	CMatrix4							mShadowPMatrix;
+	fmtx4							mShadowVMatrix;
+	fmtx4							mShadowPMatrix;
 
-	CMatrix4							mUIOrthoProjectionMatrix;
+	fmtx4							mUIOrthoProjectionMatrix;
 
-	CVector4							mVectorScreenRightNormal;
-	CVector4							mVectorScreenUpNormal;
+	fvec4							mVectorScreenRightNormal;
+	fvec4							mVectorScreenUpNormal;
 
 	GfxTarget&							mTarget;
 
@@ -478,8 +478,8 @@ public:
 
 	Texture*		GetBufferTexture( void ) { return mpBufferTex; }
 	void			SetBufferTexture( Texture* ptex ) { mpBufferTex=ptex; }
-	void			SetClearColor( const CColor4 &scol ) { mcClearColor=scol; }
-	const CColor4&	GetClearColor() const { return mcClearColor; }
+	void			SetClearColor( const fcolor4 &scol ) { mcClearColor=scol; }
+	const fcolor4&	GetClearColor() const { return mcClearColor; }
 	void			SetAutoClear( bool bv ) { mbAutoClear=bv; }
 	bool			GetAutoClear() const { return mbAutoClear; }
 	void			SetVSyncEnable( bool bv ) { mbEnableVSync=bv; }
@@ -498,7 +498,7 @@ public:
 
 	virtual void	SetViewport( int iX, int iY, int iW, int iH ) = 0;
 	virtual void	SetScissor( int iX, int iY, int iW, int iH ) = 0;
-	virtual void	Clear( const CColor4 &rCol, float fdepth ) = 0;
+	virtual void	Clear( const fcolor4 &rCol, float fdepth ) = 0;
 	virtual void	PushViewport( const SRect &rViewportRect );
 	virtual SRect&	PopViewport( void );
 	SRect&			GetViewport( void );
@@ -520,7 +520,7 @@ public:
 	//virtual void	Capture( GfxBuffer& inpbuf, const file::Path& pth ) {}
 	//virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer ) {}
 	virtual bool	CaptureToTexture( const CaptureBuffer& capbuf, Texture& tex ) { return false; }
-	virtual void	GetPixel( const CVector4 &rAt, GetPixelContext& ctx ) = 0;
+	virtual void	GetPixel( const fvec4 &rAt, GetPixelContext& ctx ) = 0;
 
 	//////////////////////////////////////////////
 
@@ -557,7 +557,7 @@ protected:
 	GfxBuffer*				mpThisBuffer;
 	Texture*				mpBufferTex;
 	RtGroup*				mCurrentRtGroup;
-	CColor4					mcClearColor;
+	fcolor4					mcClearColor;
 	bool					mbAutoClear;
 	bool					mbIsPbuffer;
 	bool					mbEnableFullScreen;

@@ -21,10 +21,10 @@ template class ork::tool::ged::GedBoolNode<ork::tool::ged::PropSetterObj>;
 template class ork::tool::ged::GedIntNode< ork::tool::ged::GedIoDriver<int> >;
 template class ork::tool::ged::GedFloatNode< ork::tool::ged::GedIoDriver<float> >;
 ///////////////////////////////////////////////////////////////////////////////
-template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::CMatrix4> , ork::CMatrix4 >;
-template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::CVector4> , ork::CVector4 >;
-template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::CVector3> , ork::CVector3 >;
-template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::CVector2> , ork::CVector2 >;
+template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::fmtx4> , ork::fmtx4 >;
+template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::fvec4> , ork::fvec4 >;
+template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::fvec3> , ork::fvec3 >;
+template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<ork::fvec2> , ork::fvec2 >;
 template class ork::tool::ged::GedSimpleNode< ork::tool::ged::GedIoDriver<int> , int >;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {

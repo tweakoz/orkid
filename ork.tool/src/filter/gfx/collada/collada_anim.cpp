@@ -43,7 +43,7 @@
 #include <cstring>
 
 typedef ork::tool::ColladaFxAnimChannel<float> ColladaFxAnimChannelFloat;
-typedef ork::tool::ColladaFxAnimChannel<ork::CVector3> ColladaFxAnimChannelFloat3;
+typedef ork::tool::ColladaFxAnimChannel<ork::fvec3> ColladaFxAnimChannelFloat3;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -96,7 +96,7 @@ template<> void ColladaFxAnimChannel<float>::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<>void ColladaFxAnimChannel<ork::CVector3>::Describe()
+template<>void ColladaFxAnimChannel<ork::fvec3>::Describe()
 {
 }
 
@@ -147,12 +147,12 @@ void ColladaMatrixAnimChannel::SetParam( int iframe, int irow, int icol, float f
 	if( iframe >= miSettingFrame )
 	{
 		OrkAssert( miSettingFrame == iframe ); // only allow adding 1 at a time 4 now
-		mSampledFrames.push_back( CMatrix4::Identity );
+		mSampledFrames.push_back( fmtx4::Identity );
 
 		miSettingFrame = mSampledFrames.size();
 	}
 
-	CMatrix4 & Mtx = mSampledFrames[ iframe ];
+	fmtx4 & Mtx = mSampledFrames[ iframe ];
 	Mtx.SetElemYX(irow,icol,fval);
 }
 
@@ -167,10 +167,10 @@ bool CColladaAnim::GetPose( void )
 	if( 1 == inument )
 	{
 		const FCDSceneNode *prootnode = VizLib->GetEntity(0);
-		CMatrix4 RootMtx = FCDMatrixToCMatrix4( prootnode->ToMatrix() );
+		fmtx4 RootMtx = FCDMatrixTofmtx4( prootnode->ToMatrix() );
 
 		orkstack<const FCDSceneNode *> NodeStack;
-		orkstack<CMatrix4> MtxStack;
+		orkstack<fmtx4> MtxStack;
 
 		NodeStack.push( prootnode );
 		MtxStack.push( RootMtx );
@@ -180,7 +180,7 @@ bool CColladaAnim::GetPose( void )
 			const FCDSceneNode *pnode = NodeStack.top();
 			bool bparentjoint = pnode->GetJointFlag();
 
-			const CMatrix4 ParentMtx = MtxStack.top();
+			const fmtx4 ParentMtx = MtxStack.top();
 			NodeStack.pop();
 			MtxStack.pop();
 
@@ -191,7 +191,7 @@ bool CColladaAnim::GetPose( void )
 				bool bchildjoint = pchild->GetJointFlag();
 				std::string ChildName = pchild->GetName().c_str();
 
-				CMatrix4 ChildMtx = FCDMatrixToCMatrix4( pchild->ToMatrix() );
+				fmtx4 ChildMtx = FCDMatrixTofmtx4( pchild->ToMatrix() );
 
 				NodeStack.push(pchild);
 				MtxStack.push(ChildMtx);
@@ -318,7 +318,7 @@ void CColladaAnim::ParseMaterials()
 						continue;
 					}
 
-					GfxMaterialFxParamArtist<CVector3>* paramvect3 = rtti::autocast( param );
+					GfxMaterialFxParamArtist<fvec3>* paramvect3 = rtti::autocast( param );
 					if( paramvect3 )
 					{
 						std::string FullParamName = MaterialName + std::string("_") + paramname;
@@ -580,7 +580,7 @@ bool CColladaAnim::Parse( void )
 					FCDAnimationChannel* InputChannel = Anim->GetChannel(0);
 					int inumcurves = InputChannel->GetCurveCount();
 					OrkAssert( inumcurves==3 );
-					ColladaFxAnimChannel<CVector3>* OutputAnimChannel = new ColladaFxAnimChannel<CVector3>( AnimName, AnimBaseName, AnimCompName );
+					ColladaFxAnimChannel<fvec3>* OutputAnimChannel = new ColladaFxAnimChannel<fvec3>( AnimName, AnimBaseName, AnimCompName );
 					mAnimationChannels[ AnimName ] = OutputAnimChannel;
 					FCDAnimationCurve *Curve0 = InputChannel->GetCurve(0);
 					int inumkeys = Curve0->GetKeyCount();
@@ -595,7 +595,7 @@ bool CColladaAnim::Parse( void )
 						float KeyFrameX = CurveX->Evaluate( fi );
 						float KeyFrameY = CurveY->Evaluate( fi );
 						float KeyFrameZ = CurveZ->Evaluate( fi );
-						OutputAnimChannel->AddFrame( CVector3(KeyFrameX,KeyFrameY,KeyFrameZ) );
+						OutputAnimChannel->AddFrame( fvec3(KeyFrameX,KeyFrameY,KeyFrameZ) );
 					}
 					break;
 				}

@@ -26,7 +26,7 @@ class ObserverCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( ObserverCamArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
@@ -43,9 +43,9 @@ class ObserverCamControllerData : public ent::ComponentData
 
 	PoolString	mEye;
 	PoolString	mTarget;
-	CVector3	mEyeOffset;
-	CVector3	mEyeUp;
-	CVector3	mTgtOffset;
+	fvec3	mEyeOffset;
+	fvec3	mEyeUp;
+	fvec3	mTgtOffset;
 	float		mfAperature;
 	float		mfNear;
 	float		mfFar;
@@ -57,9 +57,9 @@ public:
 	ObserverCamControllerData();
 	PoolString GetTarget() const { return mTarget; }
 	PoolString GetEye() const { return mEye; }
-	CVector3 GetEyeUp() const { return mEyeUp; }
-	CVector3 GetEyeOffset() const { return mEyeOffset; }
-	CVector3 GetTgtOffset() const { return mTgtOffset; }
+	fvec3 GetEyeUp() const { return mEyeUp; }
+	fvec3 GetEyeOffset() const { return mEyeOffset; }
+	fvec3 GetTgtOffset() const { return mTgtOffset; }
 	float GetAperature() const { return mfAperature; }
 	float GetNear() const { return mfNear; }
 	float GetFar() const { return mfFar; }
@@ -79,7 +79,7 @@ class ObserverCamControllerInst : public ent::ComponentInst
 	
 	void DoUpdate(ent::SceneInst* sinst) final;
     bool DoLink(SceneInst *psi) final;
-    bool DoStart(SceneInst *psi, const CMatrix4 &world) final;
+    bool DoStart(SceneInst *psi, const fmtx4 &world) final;
 
 public:
 	const ObserverCamControllerData&	GetCD() const { return mCD; }

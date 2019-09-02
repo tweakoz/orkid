@@ -32,10 +32,10 @@ public:
 	{
 	}
 	dataflow::inplug<float>*	mPlugFloat;
-	dataflow::inplug<CVector3>*	mPlugVect3;
+	dataflow::inplug<fvec3>*	mPlugVect3;
 
 	void SetPlug( dataflow::inplug<float>* pplug ) { mPlugFloat=pplug; }
-	void SetPlug( dataflow::inplug<CVector3>* pplug ) { mPlugVect3=pplug; }
+	void SetPlug( dataflow::inplug<fvec3>* pplug ) { mPlugVect3=pplug; }
 	
 	void SetValue( float val )
 	{
@@ -44,7 +44,7 @@ public:
 		ev.mProperty = GetProp();
 		GetObject()->Notify(&ev);
 	}
-	void SetValue( const CVector3& val )
+	void SetValue( const fvec3& val )
 	{
 		if( mPlugVect3 ) mPlugVect3->SetDefault(val);
 		ObjectGedEditEvent ev;
@@ -56,7 +56,7 @@ public:
 	{
 		if( mPlugFloat ) outval = mPlugFloat->GetDefault();
 	}
-	void GetValue( CVector3& outval )
+	void GetValue( fvec3& outval )
 	{
 		if( mPlugVect3 ) outval = mPlugVect3->GetDefault();
 	}
@@ -301,7 +301,7 @@ public:
 		{	mInputPlug = rtti::autocast(pprop->Access(obj));
 		}
 		dataflow::inplug<float>*pfloatplug = rtti::autocast(mInputPlug);
-		dataflow::inplug<CVector3>*pvect3plug = rtti::autocast(mInputPlug);
+		dataflow::inplug<fvec3>*pvect3plug = rtti::autocast(mInputPlug);
 		////////////////////////////////////////////////////
 		if( pfloatplug )
 		{	mIoDriver.SetPlug( pfloatplug );
@@ -423,7 +423,7 @@ public:
                 ////////////////////////////////
                 ////////////////////////////////
                 dataflow::inplug<float>* pfloatplug = rtti::autocast(mInputPlug);
-                dataflow::inplug<CVector3>* pvect3plug = rtti::autocast(mInputPlug);
+                dataflow::inplug<fvec3>* pvect3plug = rtti::autocast(mInputPlug);
                 ////////////////////////////////
                 // check connector
                 ////////////////////////////////
@@ -626,7 +626,7 @@ void OutPlugChoiceDelegate::EnumerateChoices( tool::ged::GedItemNode* pnode, Out
 				dataflow::module* pmodule = rtti::autocast( it->second );
                 if(	(pmodule && pmodule != pinputplug->GetModule())
 					||	(pinputplug->GetDataTypeId() == typeid(float))
-					||	(pinputplug->GetDataTypeId() == typeid(CVector3))
+					||	(pinputplug->GetDataTypeId() == typeid(fvec3))
 				)
 				{	dataflow::dgmodule* dgmod = rtti::autocast(pmodule);
 					dataflow::graph_data* pgraph2 = dgmod->GetParent();

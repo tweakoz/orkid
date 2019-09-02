@@ -236,7 +236,7 @@ void XgmBlendPoseInfo::AddPose(const DecompMtx44 &mat, float weight, EXFORM_COMP
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DecompMtx44::Compose(CMatrix4 &mtx, EXFORM_COMPONENT components) const
+void DecompMtx44::Compose(fmtx4 &mtx, EXFORM_COMPONENT components) const
 {
 	if(XFORM_COMPONENT_ALL == components)
 		mtx.ComposeMatrix(mTrans, mRot, mScale); // = scaleMat * rotMat * transMat;
@@ -249,16 +249,16 @@ void DecompMtx44::Compose(CMatrix4 &mtx, EXFORM_COMPONENT components) const
 	}
 	else if((XFORM_COMPONENT_ORIENT | XFORM_COMPONENT_SCALE) == components)
 	{
-		ork::CMatrix4 scaleMat;
+		ork::fmtx4 scaleMat;
 		scaleMat.SetScale(mScale, mScale, mScale);
-		ork::CMatrix4 rotMat = mRot.ToMatrix();
+		ork::fmtx4 rotMat = mRot.ToMatrix();
 		mtx = scaleMat * rotMat;
 	}
 	else if((XFORM_COMPONENT_TRANS | XFORM_COMPONENT_SCALE) == components)
 	{
-		ork::CMatrix4 scaleMat;
+		ork::fmtx4 scaleMat;
 		scaleMat.SetScale(mScale, mScale, mScale);
-		ork::CMatrix4 transMat;
+		ork::fmtx4 transMat;
 		mtx.SetTranslation(mTrans);
 		mtx = scaleMat * transMat;
 	}
@@ -269,9 +269,9 @@ void DecompMtx44::Compose(CMatrix4 &mtx, EXFORM_COMPONENT components) const
 	}
 	else if(XFORM_COMPONENT_TRANSORIENT == components)
 	{
-		ork::CMatrix4 transMat;
+		ork::fmtx4 transMat;
 		transMat.SetTranslation(mTrans);
-		ork::CMatrix4 rotMat = mRot.ToMatrix();
+		ork::fmtx4 rotMat = mRot.ToMatrix();
 		mtx = rotMat * transMat;
 	}
 }
@@ -314,7 +314,7 @@ void DecompMtx44::EndianSwap()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
+void XgmBlendPoseInfo::ComputeMatrix( fmtx4 & outmatrix ) const
 {
 	//printf( "miNumAnims<%d>\n", miNumAnims );
 
@@ -393,7 +393,7 @@ void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
 			// decent results. Try it.
 		{
 			OrkAssert(false);
-			outmatrix = CMatrix4::Identity;
+			outmatrix = fmtx4::Identity;
 		}
 		break;
 	}
@@ -593,7 +593,7 @@ void XgmLocalPose::ApplyAnimInst( const XgmAnimInst& AnimInst )
 			PoolString JointName = FindPooledString( channelname.c_str() );
 			int iskelindex = XgmSkl.GetJointIndex( JointName );
 			if( -1 != iskelindex )
-			{	const CMatrix4 & ChannelMatrix = ChannelData->GetFrame(iframe);
+			{	const fmtx4 & ChannelMatrix = ChannelData->GetFrame(iframe);
 				LocalPose.RefBlendPoseInfo( 0 ).AddPose( ChannelMatrix, ratio );
 			}
 		}
@@ -666,7 +666,7 @@ void XgmLocalPose::BuildPose( void )
 
 void XgmLocalPose::Concatenate( void )
 {
-	CMatrix4* __restrict pmats = & RefLocalMatrix(0);
+	fmtx4* __restrict pmats = & RefLocalMatrix(0);
 
 	float fminx = CFloat::TypeMax();
 	float fminy = CFloat::TypeMax();
@@ -677,7 +677,7 @@ void XgmLocalPose::Concatenate( void )
 
 	if( mSkeleton.miRootNode >= 0 )
 	{
-		const CMatrix4 & RootAnimMat = RefLocalMatrix( mSkeleton.miRootNode );
+		const fmtx4 & RootAnimMat = RefLocalMatrix( mSkeleton.miRootNode );
 		pmats[ mSkeleton.miRootNode ] = RootAnimMat.Concat43(mSkeleton.mTopNodesMatrix);
 
 		int inumbones = mSkeleton.GetNumBones();
@@ -686,15 +686,15 @@ void XgmLocalPose::Concatenate( void )
 			const XgmBone & Bone = mSkeleton.GetFlattenedBone( ib );
 			int iparent = Bone.miParent;
 			int ichild = Bone.miChild;
-			const CMatrix4 & ParentMatrix = pmats[ iparent ];
-			const CMatrix4 & LocMatrix = pmats[ ichild ];
+			const fmtx4 & ParentMatrix = pmats[ iparent ];
+			const fmtx4 & LocMatrix = pmats[ ichild ];
 
 			pmats[ ichild ] = LocMatrix.Concat43(ParentMatrix);
 
 			if(RefBlendPoseInfo(ichild).GetPoseCallback())
 				RefBlendPoseInfo(ichild).GetPoseCallback()->PostBlendPostConcat(pmats[ ichild ]);
 
-			CVector3 vtrans = pmats[ ichild ].GetTranslation();
+			fvec3 vtrans = pmats[ ichild ].GetTranslation();
 
 			fminx = CFloat::Min( fminx, vtrans.GetX() );
 			fminy = CFloat::Min( fminy, vtrans.GetY() );
@@ -711,13 +711,13 @@ void XgmLocalPose::Concatenate( void )
 	float fmidy = (fminy+fmaxy)*0.5f;
 	float fmidz = (fminz+fmaxz)*0.5f;
 
-	CVector3 range( (fmaxx-fminx), (fmaxy-fminy), (fmaxz-fminz) );
+	fvec3 range( (fmaxx-fminx), (fmaxy-fminy), (fmaxz-fminz) );
 
 	float frange = range.Mag()*0.5f;
 
-	mObjSpaceBoundingSphere = CVector4( fmidx, fmidy, fmidz, frange );
+	mObjSpaceBoundingSphere = fvec4( fmidx, fmidy, fmidz, frange );
 
-	mObjSpaceAABoundingBox.SetMinMax( CVector3( fminx,fminy,fminz ), CVector3( fmaxx,fmaxy,fmaxz ) );
+	mObjSpaceAABoundingBox.SetMinMax( fvec3( fminx,fminy,fminz ), fvec3( fmaxx,fmaxy,fmaxz ) );
 
 }
 
@@ -795,7 +795,7 @@ public:
 
 		float fw = mAnimInst.GetWeight();
 		float fr = mAnimInst.GetCurrentFrame();
-		const CMatrix4& mtx = mChannel->GetFrame( int(fr) );
+		const fmtx4& mtx = mChannel->GetFrame( int(fr) );
 		SetMatrix( mtx );
 	}
 };
@@ -1040,7 +1040,7 @@ XgmMatrixAnimChannel::XgmMatrixAnimChannel( const PoolString& ObjName, const Poo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmMatrixAnimChannel::AddFrame( const CMatrix4& v )
+void XgmMatrixAnimChannel::AddFrame( const fmtx4& v )
 {
 	mSampledFrames[ miAddIndex ] = v;
 	miAddIndex++;
@@ -1049,7 +1049,7 @@ void XgmMatrixAnimChannel::AddFrame( const CMatrix4& v )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CMatrix4& XgmMatrixAnimChannel::GetFrame( int index ) const
+const fmtx4& XgmMatrixAnimChannel::GetFrame( int index ) const
 {
 	OrkAssert( index < miAddIndex );
 	return mSampledFrames[index];
@@ -1068,13 +1068,13 @@ void XgmMatrixAnimChannel::ReserveFrames(int icount)
 {
 	miNumFrames = icount;
 #if defined(WII)
-	mSampledFrames = (CMatrix4*) wii::MEM2StackedAlloc( sizeof( CMatrix4 ) * icount );
+	mSampledFrames = (fmtx4*) wii::MEM2StackedAlloc( sizeof( fmtx4 ) * icount );
 #else
-  	mSampledFrames = (CMatrix4*) new CMatrix4[icount];
+  	mSampledFrames = (fmtx4*) new fmtx4[icount];
 #endif
 	for( int i=0; i<icount; i++ )
 	{
-		new (mSampledFrames+i) CMatrix4;
+		new (mSampledFrames+i) fmtx4;
 	}
 }
 
@@ -1164,8 +1164,8 @@ void XgmSkeleton::SetNumJoints( int inumjoints )
 	mvJointNameVect.resize(inumjoints);
 	maJointParents.resize(inumjoints);
 
-	mpInverseBindMatrices =	new CMatrix4[ inumjoints ];
-	mpJointMatrices =		new CMatrix4[ inumjoints ];
+	mpInverseBindMatrices =	new fmtx4[ inumjoints ];
+	mpJointMatrices =		new fmtx4[ inumjoints ];
 	mpJointFlags =			new U32[ inumjoints ];
 
 }
@@ -1276,10 +1276,10 @@ struct chansettter
 			}
 		}
 		if( MtxChannel )
-		{	const CMatrix4 *MatBase = (const CMatrix4 *)pdata;
+		{	const fmtx4 *MatBase = (const fmtx4 *)pdata;
 			MtxChannel->ReserveFrames(anm->GetNumFrames());
 			for( int ifr=0;ifr<anm->GetNumFrames(); ifr++ )
-			{	CMatrix4 Matrix = MatBase[ifr];
+			{	fmtx4 Matrix = MatBase[ifr];
 				MtxChannel->AddFrame( Matrix );
 			}
 		}
@@ -1292,10 +1292,10 @@ struct chansettter
 			}
 		}
 		else if( Ve3Channel )
-		{	const CVector3 *Ve3Base = (const CVector3 *)pdata;
+		{	const fvec3 *Ve3Base = (const fvec3 *)pdata;
 			Ve3Channel->ReserveFrames(anm->GetNumFrames());
 			for( int ifr=0;ifr<anm->GetNumFrames(); ifr++ )
-			{	CVector3 value = Ve3Base[ifr];
+			{	fvec3 value = Ve3Base[ifr];
 				Ve3Channel->AddFrame( value );
 			}
 		}

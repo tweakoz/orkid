@@ -16,10 +16,10 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> class TMatrix4;
-template <typename T> class TVector3;
+template <typename T> class Matrix44;
+template <typename T> class Vector3;
 
-template <typename T> class TVector4 {
+template <typename T> class Vector4 {
   static T Sin(T);
   static T Cos(T);
   static T Sqrt(T);
@@ -27,31 +27,31 @@ template <typename T> class TVector4 {
   static T Abs(T);
 
 public:
-  TVector4();
-  explicit TVector4(T x, T y, T z, T w = T(1.0f)); // constructor from 3 floats
-  TVector4(const TVector4& vec);                   // constructor from a vector
-  TVector4(const TVector3<T>& vec, T w = T(1.0f)); // constructor from a vector
-  TVector4(U32 uval) { SetRGBAU32(uval); }
-  ~TVector4(){}; // default destructor, does nothing
+  Vector4();
+  explicit Vector4(T x, T y, T z, T w = T(1.0f)); // constructor from 3 floats
+  Vector4(const Vector4& vec);                   // constructor from a vector
+  Vector4(const Vector3<T>& vec, T w = T(1.0f)); // constructor from a vector
+  Vector4(U32 uval) { SetRGBAU32(uval); }
+  ~Vector4(){}; // default destructor, does nothing
 
   void RotateX(T rad);
   void RotateY(T rad);
   void RotateZ(T rad);
 
-  TVector4 Saturate() const;
-  T Dot(const TVector4& vec) const;          // dot product of two vectors
-  TVector4 Cross(const TVector4& vec) const; // cross product of two vectors
+  Vector4 Saturate() const;
+  T Dot(const Vector4& vec) const;          // dot product of two vectors
+  Vector4 Cross(const Vector4& vec) const; // cross product of two vectors
 
   void Normalize(void); // normalize this vector
-  TVector4 Normal() const;
+  Vector4 Normal() const;
 
   T Mag(void) const;                                   // return magnitude of this vector
   T MagSquared(void) const;                            // return magnitude of this vector squared
-  TVector4 Transform(const TMatrix4<T>& matrix) const; // transform this vector
+  Vector4 Transform(const Matrix44<T>& matrix) const; // transform this vector
   void PerspectiveDivide(void);
 
-  void Lerp(const TVector4& from, const TVector4& to, T par);
-  void Serp(const TVector4& PA, const TVector4& PB, const TVector4& PC, const TVector4& PD, T Par);
+  void Lerp(const Vector4& from, const Vector4& to, T par);
+  void Serp(const Vector4& PA, const Vector4& PB, const Vector4& PC, const Vector4& PD, T Par);
 
   T GetX(void) const { return (x); }
   T GetY(void) const { return (y); }
@@ -83,10 +83,10 @@ public:
   void SetWidth(T width) { z = width; }
   void SetHeight(T height) { w = height; }
 
-  TVector3<T> xyz(void) const { return TVector3<T>(*this); }
+  Vector3<T> xyz(void) const { return Vector3<T>(*this); }
 
-  static TVector4 Zero(void) { return TVector4(T(0), T(0), T(0), T(0)); }
-  static T CalcTriArea(const TVector4& V0, const TVector4& V1, const TVector4& V2, const TVector4& N);
+  static Vector4 Zero(void) { return Vector4(T(0), T(0), T(0), T(0)); }
+  static T CalcTriArea(const Vector4& V0, const Vector4& V1, const Vector4& V2, const Vector4& N);
 
   void SetXYZ(T _x, T _y, T _z) {
     SetX(_x);
@@ -106,28 +106,28 @@ public:
     return v[i];
   }
 
-  inline TVector4 operator-() const { return TVector4(-x, -y, -z, -w); }
+  inline Vector4 operator-() const { return Vector4(-x, -y, -z, -w); }
 
-  inline TVector4 operator+(const TVector4& b) const { return TVector4((x + b.x), (y + b.y), (z + b.z), (w + b.w)); }
+  inline Vector4 operator+(const Vector4& b) const { return Vector4((x + b.x), (y + b.y), (z + b.z), (w + b.w)); }
 
-  inline TVector4 operator*(const TVector4& b) const { return TVector4((x * b.x), (y * b.y), (z * b.z), (w * b.w)); }
+  inline Vector4 operator*(const Vector4& b) const { return Vector4((x * b.x), (y * b.y), (z * b.z), (w * b.w)); }
 
-  inline TVector4 operator*(T scalar) const { return TVector4((x * scalar), (y * scalar), (z * scalar), (w * scalar)); }
+  inline Vector4 operator*(T scalar) const { return Vector4((x * scalar), (y * scalar), (z * scalar), (w * scalar)); }
 
-  inline TVector4 operator-(const TVector4& b) const { return TVector4((x - b.x), (y - b.y), (z - b.z), (w - b.w)); }
+  inline Vector4 operator-(const Vector4& b) const { return Vector4((x - b.x), (y - b.y), (z - b.z), (w - b.w)); }
 
-  inline TVector4 operator/(const TVector4& b) const { return TVector4((x / b.x), (y / b.y), (z / b.z), (w / b.w)); }
+  inline Vector4 operator/(const Vector4& b) const { return Vector4((x / b.x), (y / b.y), (z / b.z), (w / b.w)); }
 
-  inline TVector4 operator/(T scalar) const { return TVector4((x / scalar), (y / scalar), (z / scalar), (w / scalar)); }
+  inline Vector4 operator/(T scalar) const { return Vector4((x / scalar), (y / scalar), (z / scalar), (w / scalar)); }
 
-  inline void operator+=(const TVector4& b) {
+  inline void operator+=(const Vector4& b) {
     x += b.x;
     y += b.y;
     z += b.z;
     w += b.w;
   }
 
-  inline void operator-=(const TVector4& b) {
+  inline void operator-=(const Vector4& b) {
     x -= b.x;
     y -= b.y;
     z -= b.z;
@@ -141,14 +141,14 @@ public:
     w *= scalar;
   }
 
-  inline void operator*=(const TVector4& b) {
+  inline void operator*=(const Vector4& b) {
     x *= b.x;
     y *= b.y;
     z *= b.z;
     w *= b.w;
   }
 
-  inline void operator/=(const TVector4& b) {
+  inline void operator/=(const Vector4& b) {
     x /= b.x;
     y /= b.y;
     z /= b.z;
@@ -162,8 +162,8 @@ public:
     w /= scalar;
   }
 
-  inline bool operator==(const TVector4& b) const { return (x == b.x && y == b.y && z == b.z && w == b.w); }
-  inline bool operator!=(const TVector4& b) const { return (x != b.x || y != b.y || z != b.z || w != b.w); }
+  inline bool operator==(const Vector4& b) const { return (x == b.x && y == b.y && z == b.z && w == b.w); }
+  inline bool operator!=(const Vector4& b) const { return (x != b.x || y != b.y || z != b.z || w != b.w); }
 
   void SetHSV(T h, T s, T v);
   void SetRGB(T r, T g, T b) { SetXYZ(r, g, b); }
@@ -182,23 +182,23 @@ public:
   uint64_t GetRGBAU64( void ) const;
   void SetRGBAU64( uint64_t v );
 
-  static const TVector4& Black(void);
-  static const TVector4& DarkGrey(void);
-  static const TVector4& MediumGrey(void);
-  static const TVector4& LightGrey(void);
-  static const TVector4& White(void);
+  static const Vector4& Black(void);
+  static const Vector4& DarkGrey(void);
+  static const Vector4& MediumGrey(void);
+  static const Vector4& LightGrey(void);
+  static const Vector4& White(void);
 
-  static const TVector4& Red(void);
-  static const TVector4& Green(void);
-  static const TVector4& Blue(void);
-  static const TVector4& Magenta(void);
-  static const TVector4& Cyan(void);
-  static const TVector4& Yellow(void);
+  static const Vector4& Red(void);
+  static const Vector4& Green(void);
+  static const Vector4& Blue(void);
+  static const Vector4& Magenta(void);
+  static const Vector4& Cyan(void);
+  static const Vector4& Yellow(void);
 
   T* GetArray(void) const { return const_cast<T*>(&x); }
 
-  template <typename U> static TVector4 FromTVector4(TVector4<U> vec) {
-    return TVector4(T::FromFX(vec.GetX().FXCast()), T::FromFX(vec.GetY().FXCast()), T::FromFX(vec.GetZ().FXCast()),
+  template <typename U> static Vector4 FromVector4(Vector4<U> vec) {
+    return Vector4(T::FromFX(vec.GetX().FXCast()), T::FromFX(vec.GetY().FXCast()), T::FromFX(vec.GetZ().FXCast()),
                     T::FromFX(vec.GetW().FXCast()));
   }
 
@@ -209,17 +209,16 @@ public:
   T w;
 };
 
-typedef TVector4<float> CVector4; // this alias is deprecated! fvec4 is the new alias
-typedef TVector4<float> fvec4;
-typedef TVector4<double> dvec4;
-typedef CVector4 CColor4;
+typedef Vector4<float> fvec4;
+typedef Vector4<double> dvec4;
+typedef Vector4<float> fcolor4;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> inline ork::TVector4<T> operator*(T scalar, const ork::TVector4<T>& b) {
-  return ork::TVector4<T>((scalar * b.GetX()), (scalar * b.GetY()), (scalar * b.GetZ()));
+template <typename T> inline ork::Vector4<T> operator*(T scalar, const ork::Vector4<T>& b) {
+  return ork::Vector4<T>((scalar * b.GetX()), (scalar * b.GetY()), (scalar * b.GetZ()));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

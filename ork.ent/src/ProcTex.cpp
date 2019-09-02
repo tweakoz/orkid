@@ -210,14 +210,14 @@ void ProcTexOutputQuad::DoLinkEntity(SceneInst* psi, Entity* pent) const {
       f32 y0 = -quad->mScale;
       f32 x1 = quad->mScale;
       f32 y1 = quad->mScale;
-      ork::CVector2 uv0(0.0f, 1.0f);
-      ork::CVector2 uv1(1.0f, 1.0f);
-      ork::CVector2 uv2(1.0f, 0.0f);
-      ork::CVector2 uv3(0.0f, 0.0f);
-      ork::CVector3 vv0(x0, y0, fZ);
-      ork::CVector3 vv1(x1, y0, fZ);
-      ork::CVector3 vv2(x1, y1, fZ);
-      ork::CVector3 vv3(x0, y1, fZ);
+      ork::fvec2 uv0(0.0f, 1.0f);
+      ork::fvec2 uv1(1.0f, 1.0f);
+      ork::fvec2 uv2(1.0f, 0.0f);
+      ork::fvec2 uv3(0.0f, 0.0f);
+      ork::fvec3 vv0(x0, y0, fZ);
+      ork::fvec3 vv1(x1, y0, fZ);
+      ork::fvec3 vv2(x1, y1, fZ);
+      ork::fvec3 vv3(x0, y1, fZ);
 
       lev2::SVtxV12C4T16 v0(vv0, uv0, ucolor);
       lev2::SVtxV12C4T16 v1(vv1, uv1, ucolor);
@@ -234,7 +234,7 @@ void ProcTexOutputQuad::DoLinkEntity(SceneInst* psi, Entity* pent) const {
     }
     vw.UnLock(targ);
 
-    const CMatrix4& mtx = pren->GetMatrix();
+    const fmtx4& mtx = pren->GetMatrix();
 
     targ->GBI()->DrawPrimitive(vw, lev2::EPRIM_TRIANGLES, 6);
 
@@ -284,11 +284,11 @@ void ProcTexOutputSkybox::DoLinkEntity(SceneInst* psi, Entity* pent) const {
     auto frame_data = targ->GetRenderContextFrameData();
     float fscale = skybox->mScale;
     float fphase = 0.0f;
-    CVector3 pos = frame_data->GetCameraData()->GetEye();
+    fvec3 pos = frame_data->GetCameraData()->GetEye();
     pos.SetY(pos.GetY() + skybox->mVerticalAdjust);
-    CMatrix4 mtxSPIN;
+    fmtx4 mtxSPIN;
     mtxSPIN.RotateY(fphase);
-    CMatrix4 mtxSKY;
+    fmtx4 mtxSKY;
     mtxSKY.SetScale(fscale);
     mtxSKY.SetTranslation(pos);
     mtxSKY = mtxSPIN * mtxSKY;

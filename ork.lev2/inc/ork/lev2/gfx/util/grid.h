@@ -63,27 +63,27 @@ public:
 
 	Grid2d();
 
-	CVector2			Snap( CVector2 inp ) const;
+	fvec2			Snap( fvec2 inp ) const;
 
 	float				GetZoom() const { return mZoom; }
 	float				GetExtent() const { return mExtent; }
-	const CVector2&		GetCenter() const { return mCenter; }
+	const fvec2&		GetCenter() const { return mCenter; }
 
 	void				SetZoom( float fz );
 	void				SetExtent( float fz );
-	void				SetCenter( const CVector2& ctr );
+	void				SetCenter( const fvec2& ctr );
 	
-	const CMatrix4&		GetOrthoMatrix() const { return mMtxOrtho; }
+	const fmtx4&		GetOrthoMatrix() const { return mMtxOrtho; }
 
-	const CVector2&		GetTopLeft() const { return mTopLeft; }
-	const CVector2&		GetBotRight() const { return mBotRight; }
+	const fvec2&		GetTopLeft() const { return mTopLeft; }
+	const fvec2&		GetBotRight() const { return mBotRight; }
 
 private:
 
 	void ReCalc(int iw, int ih);
 
 
-	CMatrix4			mMtxOrtho;
+	fmtx4			mMtxOrtho;
 	float				mVisGridBase;
 	float				mVisGridDiv;
 	float				mVisGridHiliteDiv;
@@ -94,9 +94,9 @@ private:
 	float				mZoom;
 	float				mVisGridSize;
 	float				mExtent;
-	CVector2			mCenter;
-	CVector2			mTopLeft;
-	CVector2			mBotRight;
+	fvec2			mCenter;
+	fvec2			mTopLeft;
+	fvec2			mBotRight;
 
 };
 

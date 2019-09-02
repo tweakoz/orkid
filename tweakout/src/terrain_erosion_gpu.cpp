@@ -57,13 +57,13 @@ void GpuErodeBegin(	ErosionContext& ec, const Map2D<float>& hfin )
 	//////////////////////////////////////////////////////////
 	lev2::GfxEnv::GetRef().GetGlobalLock().Lock();
 	//////////////////////////////////////////////////////////
-	{	CVector4* pv4 = const_cast<CVector4*>( static_cast<const CVector4*>( ComputeBuffer.tex1buffer.GetData()  ));
+	{	fvec4* pv4 = const_cast<fvec4*>( static_cast<const fvec4*>( ComputeBuffer.tex1buffer.GetData()  ));
 		for( int iz=0; iz<kSIZE; iz++ )
 		{	int iaddr = ComputeBuffer.tex1buffer.CalcDataIndex(0,iz);
 			const float* floatbase = & hfin.Read(0,iz);
 			for( int ix=0; ix<kSIZE; ix++ )
 			{	float fheight = floatbase[ix];
-				pv4[iaddr++] = CVector4( fheight, 0.0f, 0.0f, 0.0f ); 
+				pv4[iaddr++] = fvec4( fheight, 0.0f, 0.0f, 0.0f ); 
 			}
 		}
 		//////////////////////////////////////////////////////////
@@ -71,8 +71,8 @@ void GpuErodeBegin(	ErosionContext& ec, const Map2D<float>& hfin )
 		matsolid.SetTexture( & ComputeBuffer.tex1 );
 		float texw = float(ComputeBuffer.tex1.GetWidth());
 		float itexw = 1.0f / float( ComputeBuffer.tex1.GetWidth() );
-		CColor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBuffer );
+		fcolor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBuffer );
 	}
 	//////////////////////////////////////////////////////////
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
@@ -94,8 +94,8 @@ void GpuFindFlow2(	ErosionContext& ec )
 		matsolid.SetTexture( ComputeBufferRD.mpTexture );
 		float texw = float(ComputeBufferRD.mpTexture->GetWidth());
 		float itexw = 1.0f / texw;
-		CColor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+		fcolor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 	}
 	//////////////////////////////////////////////////////////
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
@@ -118,8 +118,8 @@ void GpuFindUpFlow(	ErosionContext& ec )
 		matsolid.SetTexture( ComputeBufferRD.mpTexture );
 		float texw = float(ComputeBufferRD.mpTexture->GetWidth());
 		float itexw = 1.0f / texw;
-		CColor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+		fcolor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 	}
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 	//////////////////////////////////////////////////////////
@@ -136,13 +136,13 @@ void GpuFindUphillArea1( const ErosionContext& ec, Map2D<float>& hfout_ua )
 	{	
 		heightfield_compute_buffer& ComputeBufferWR = GetComputeWrite();
 		heightfield_compute_buffer& ComputeBufferRD = GetComputeRead();
-		CVector4* pv4 = const_cast<CVector4*>( static_cast<const CVector4*>( ComputeBufferWR.tex1buffer.GetData()  ));
+		fvec4* pv4 = const_cast<fvec4*>( static_cast<const fvec4*>( ComputeBufferWR.tex1buffer.GetData()  ));
 		for( int iz=0; iz<kSIZE; iz++ )
 		{	int iaddr = ComputeBufferWR.tex1buffer.CalcDataIndex(0,iz);
 			const float* uabase = & hfout_ua.Read(0,iz);
 			for( int ix=0; ix<kSIZE; ix++ )
 			{	float uain = uabase[ix];
-				pv4[iaddr++] = CVector4( uain, 0.0f,0.0f, 0.0f ); 
+				pv4[iaddr++] = fvec4( uain, 0.0f,0.0f, 0.0f ); 
 			}
 		}
 		//////////////////////////////////////////////////////////
@@ -151,8 +151,8 @@ void GpuFindUphillArea1( const ErosionContext& ec, Map2D<float>& hfout_ua )
 		matsolid.SetTexture2( & ComputeBufferWR.tex1 );
 		float texw = float(ComputeBufferWR.tex1.GetWidth());
 		float itexw = 1.0f / texw;
-		CColor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+		fcolor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 	}
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 	//////////////////////////////////////////////////////////
@@ -168,19 +168,19 @@ void GpuFindUphillArea1( const ErosionContext& ec, Map2D<float>& hfout_ua )
 			matsolid.SetTexture( ComputeBufferRD.mpTexture );
 			float texw = float(ComputeBufferRD.tex1.GetWidth());
 			float itexw = 1.0f / texw;
-			CColor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
-			GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+			fcolor4 mc( float(kSIZE), float(kSIZE), texw, itexw );
+			GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 		}
 		lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
 		if( i==2 )
 		{
 			ComputeBufferWR.GetContext()->Capture( ComputeBufferWR.MyCaptureBuffer );
-			const CVector4* VecBuffer = (const CVector4*) ComputeBufferWR.MyCaptureBuffer.GetData();
+			const fvec4* VecBuffer = (const fvec4*) ComputeBufferWR.MyCaptureBuffer.GetData();
 			for( int iZ=0; iZ<kSIZE; iZ++ )
 			{	for( int iX=0; iX<kSIZE; iX++ )
 				{	int index_n = (iZ*kSIZE)+iX;
 					int index = ComputeBufferWR.MyCaptureBuffer.CalcDataIndex( iX, iZ );
-					const CVector4& v = VecBuffer[ index ];
+					const fvec4& v = VecBuffer[ index ];
 					float uaout = v.GetW();
 					hfout_ua.Write(iX,iZ) = uaout;
 				}
@@ -204,8 +204,8 @@ void GpuErode1(	ErosionContext& ec )
 		matsolid.SetTexture( ComputeBufferRD.mpTexture );
 		matsolid.SetTexture2( & ComputeBufferWR.tex1 );
 		float slopefactor = ec.mfTerrainHeight / (ec.mfTerrainSize / ec.xsize);  // slope of 0.0 next to 1.0 
-		CColor4 mc( float(kSIZE), slopefactor, ec.mErosionRate, 0.0f );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+		fcolor4 mc( float(kSIZE), slopefactor, ec.mErosionRate, 0.0f );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 	}
 	//////////////////////////////////////////////////////////
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
@@ -225,8 +225,8 @@ void GpuErodeCorrect( ErosionContext& ec )
 	//////////////////////////////////////////////////////////
 	{	lev2::GfxMaterial3DSolid matsolid( ComputeBufferWR.GetContext(), "miniorkshader://heightmap_erode", "erode_correct" );
 		matsolid.SetTexture( ComputeBufferRD.mpTexture );
-		CColor4 mc( float(kSIZE), 0.0f, 0.0f, 0.0f );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+		fcolor4 mc( float(kSIZE), 0.0f, 0.0f, 0.0f );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 	}
 	//////////////////////////////////////////////////////////
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
@@ -246,8 +246,8 @@ void GpuSlump(	ErosionContext& ec )
 	//////////////////////////////////////////////////////////
 	{	lev2::GfxMaterial3DSolid matsolid( ComputeBufferWR.GetContext(), "miniorkshader://heightmap_erode", "slump" );
 		matsolid.SetTexture( ComputeBufferRD.mpTexture );
-		CColor4 mc( float(kSIZE), ec.mSmoothingRate, ec.mSlumpScale, 0.0f );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+		fcolor4 mc( float(kSIZE), ec.mSmoothingRate, ec.mSlumpScale, 0.0f );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 	}
 	//////////////////////////////////////////////////////////
 	lev2::GfxEnv::GetRef().GetGlobalLock().UnLock();
@@ -267,8 +267,8 @@ void GpuSmooth(	ErosionContext& ec )
 	//////////////////////////////////////////////////////////
 	{	lev2::GfxMaterial3DSolid matsolid( ComputeBufferWR.GetContext(), "miniorkshader://heightmap_erode", "smooth" );
 		matsolid.SetTexture( ComputeBufferRD.mpTexture );
-		CColor4 mc( float(kSIZE), ec.mSmoothingRate, 0.0f, 0.0f );
-		GpGpuTask( CColor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
+		fcolor4 mc( float(kSIZE), ec.mSmoothingRate, 0.0f, 0.0f );
+		GpGpuTask( fcolor4::Black(), mc, matsolid, kSIZE, kSIZE, ComputeBufferWR );
 		//ComputeBufferWR.GetContext()->Capture( ComputeBufferWR.MyCaptureBuffer );
 	}
 	//////////////////////////////////////////////////////////
@@ -288,12 +288,12 @@ void GpuErodeEnd(	ErosionContext& ec,	Map2D<float>& hfout	)
 	heightfield_compute_buffer& ComputeBufferRD = GetComputeRead();
 	//ComputeBufferRD.GetContext()->Capture( ComputeBufferRD.MyCaptureBuffer );
 	//////////////////////////////////////////////////////////
-	{	const CVector4* VecBuffer = (const CVector4*) ComputeBufferRD.MyCaptureBuffer.GetData();
+	{	const fvec4* VecBuffer = (const fvec4*) ComputeBufferRD.MyCaptureBuffer.GetData();
 		for( int iZ=0; iZ<kSIZE; iZ++ )
 		{	for( int iX=0; iX<kSIZE; iX++ )
 			{	int index_n = (iZ*kSIZE)+iX;
 				int index = ComputeBufferRD.MyCaptureBuffer.CalcDataIndex( iX, iZ );
-				const CVector4& v = VecBuffer[ index ];
+				const fvec4& v = VecBuffer[ index ];
 				hfout.Write(iX,iZ) = v.GetX();
 	}
 		}

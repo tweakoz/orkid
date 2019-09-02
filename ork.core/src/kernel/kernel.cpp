@@ -12,14 +12,6 @@
 #include <ork/kernel/core_interface.h>
 #include <ork/kernel/opq.h>
 
-#include <fcntl.h>
-#if defined(IX)
-#include <unistd.h>
-#include <sys/ioctl.h>
-#endif
-#if defined(ORK_LINUX)
-#include <linux/input.h>
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

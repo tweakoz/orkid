@@ -25,14 +25,14 @@ class CManipManager;
 
 struct IntersectionRecord
 {
-	CVector3	mIntersectionPoint;
-	CVector3	mOldIntersectionPoint;
-	CVector3	mBaseIntersectionPoint;
+	fvec3	mIntersectionPoint;
+	fvec3	mOldIntersectionPoint;
+	fvec3	mBaseIntersectionPoint;
     bool		mbHasItersected;
 
 	IntersectionRecord();
 
-	CVector4 GetLocalSpaceDelta( const CMatrix4 &InvLocalMatrix );
+	fvec4 GetLocalSpaceDelta( const fmtx4 &InvLocalMatrix );
 };
 
 enum EPlaneRec
@@ -50,15 +50,15 @@ class CManip : public ork::Object
 
 public:
 
-	CMatrix4				InvMatrix;
+	fmtx4				InvMatrix;
 	TransformNode			mBaseTransform;
 
 	IntersectionRecord		mIntersection[EPLANE_END];
 	IntersectionRecord*		mActiveIntersection;
 
-	CPlane					mPlaneXZ;
-	CPlane					mPlaneYZ;
-	CPlane					mPlaneXY;
+	fplane3					mPlaneXZ;
+	fplane3					mPlaneYZ;
+	fplane3					mPlaneXY;
 
 	CManipManager&			mManager;
 
@@ -67,17 +67,17 @@ public:
 	virtual void Draw( GfxTarget *pTARG ) const = 0;
 	virtual bool UIEventHandler( const ui::Event& EV ) = 0;
 
-	CVector3 IntersectWithPlanes(const ork::CVector2& posubp);
-	void SelectBestPlane(const ork::CVector2& posubp);
+	fvec3 IntersectWithPlanes(const ork::fvec2& posubp);
+	void SelectBestPlane(const ork::fvec2& posubp);
 	void CalcPlanes();
 
 	bool CheckIntersect( void ) const;
 
-	CColor4 GetColor() const { return mColor; }
+	fcolor4 GetColor() const { return mColor; }
 
 protected:
 
-	CColor4		mColor;
+	fcolor4		mColor;
 };
 
 class CManipTrans : public CManip
@@ -92,9 +92,9 @@ public:
 
 protected:
 
-	virtual void HandleMouseDown(const ork::CVector2& pos);
-	virtual void HandleMouseUp(const ork::CVector2& pos);
-	virtual void HandleDrag(const ork::CVector2& pos);
+	virtual void HandleMouseDown(const ork::fvec2& pos);
+	virtual void HandleMouseUp(const ork::fvec2& pos);
+	virtual void HandleDrag(const ork::fvec2& pos);
 };
 
 class CManipSingleTrans : public CManipTrans
@@ -110,11 +110,11 @@ public:
 protected:
 
     void Draw(GfxTarget* pTARG) const final;
-	void HandleDrag(const ork::CVector2& pos) final;
+	void HandleDrag(const ork::fvec2& pos) final;
 
-	virtual ork::CVector3 GetNormal() const = 0;
+	virtual ork::fvec3 GetNormal() const = 0;
 
-	CMatrix4			mmRotModel;
+	fmtx4			mmRotModel;
 };
 
 class CManipDualTrans : public CManipTrans
@@ -129,10 +129,10 @@ public:
 
 protected:
 
-	virtual void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
-		ork::CVector4& v2, ork::CVector4& v3) const = 0;
+	virtual void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
+		ork::fvec4& v2, ork::fvec4& v3) const = 0;
 
-	void HandleDrag(const ork::CVector2& pos) final;
+	void HandleDrag(const ork::fvec2& pos) final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ public:
 
 protected:
 
-	virtual ork::CVector3 GetNormal() const final { return ork::CVector3::UnitX(); };
+	virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitX(); };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +162,7 @@ public:
 
 protected:
 
-	virtual ork::CVector3 GetNormal() const final { return ork::CVector3::UnitY(); };
+	virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitY(); };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ public:
 
 protected:
 
-	virtual ork::CVector3 GetNormal() const final { return ork::CVector3::UnitZ(); };
+	virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitZ(); };
 };
 
 class CManipTXY : public CManipDualTrans
@@ -190,8 +190,8 @@ public:
 
 protected:
 
-	void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
-		ork::CVector4& v2, ork::CVector4& v3) const final;
+	void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
+		ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
 class CManipTXZ : public CManipDualTrans
@@ -204,8 +204,8 @@ public:
 
 protected:
 
-	void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
-		ork::CVector4& v2, ork::CVector4& v3) const final;
+	void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
+		ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
 class CManipTYZ : public CManipDualTrans
@@ -218,8 +218,8 @@ public:
 
 protected:
 
-	void GetQuad(float ext, ork::CVector4& v0, ork::CVector4& v1,
-		ork::CVector4& v2, ork::CVector4& v3) const final;
+	void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
+		ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -230,17 +230,17 @@ class CManipRot : public CManip
 
 public: //
 
-    CManipRot( CManipManager& mgr, const CVector4 &LocRotMat );
+    CManipRot( CManipManager& mgr, const fvec4 &LocRotMat );
 
 	void Draw( GfxTarget *pTARG ) const final;
 	bool UIEventHandler( const ui::Event& EV ) final;
 
-	virtual F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const = 0;
+	virtual F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const = 0;
 
 	////////////////////////////////////////
 
-	CMatrix4			mmRotModel;
-	const CVector4		mLocalRotationAxis;
+	fmtx4			mmRotModel;
+	const fvec4		mLocalRotationAxis;
 
 };
 
@@ -254,7 +254,7 @@ public: //
 
     CManipRX(CManipManager& mgr);
 
-	F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const final;
+	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
 
 };
 
@@ -268,7 +268,7 @@ public: //
 
     CManipRY(CManipManager& mgr);
 
-	F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const final;
+	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
 
 };
 
@@ -282,7 +282,7 @@ class CManipRZ : public CManipRot
 
     CManipRZ(CManipManager& mgr);
 
-	F32 CalcAngle( CVector4 & inv_isect, CVector4 & inv_lisect ) const final;
+	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
 
 };
 
@@ -325,7 +325,7 @@ class GfxMaterialManip : public GfxMaterial
 	const FxShaderParam*	hTEX;
 	const FxShaderParam*	hCOLOR;
 
-	CVector4		mColor;
+	fvec4		mColor;
 
 	bool			mbNoDepthTest;
 
@@ -477,8 +477,8 @@ private:
 	CManipHandler		mManipHandler;
 	CCamera*			mpActiveCamera;
 
-	CVector4			mPickCenter;
-	CVector4			mPickAccum;
+	fvec4			mPickCenter;
+	fvec4			mPickAccum;
 
 	bool				mbDoComponents;
 

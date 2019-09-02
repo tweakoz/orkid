@@ -61,7 +61,7 @@ class GridArchetype : public Archetype
     RttiDeclareConcrete( GridArchetype, Archetype );
 
     void DoLinkEntity( SceneInst* psi, Entity *pent ) const final;
-    void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final {}
+    void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
     void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:

@@ -20,33 +20,33 @@ namespace ork {
 
 
 template< typename T>
-bool TPlane<T>::PlaneIntersect( const TPlane<T>& oth, TVector3<T>& outpos, TVector3<T>& outdir )
+bool Plane<T>::PlaneIntersect( const Plane<T>& oth, Vector3<T>& outpos, Vector3<T>& outdir )
 {
     outdir = GetNormal().Cross( oth.GetNormal() );
     T num = outdir.MagSquared();
-	TVector3<T> c1 = (GetD()*oth.GetNormal()) + (oth.GetD()*GetNormal());
+	Vector3<T> c1 = (GetD()*oth.GetNormal()) + (oth.GetD()*GetNormal());
 	outpos = c1.Cross( outdir ) * T(1.0)/num;
     return true; 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> float TPlane<float>::Abs( float in )
+template<> float Plane<float>::Abs( float in )
 {
 	return CFloat::Abs( in );
 }
-template<> float TPlane<float>::Epsilon()
+template<> float Plane<float>::Epsilon()
 {
 	return CFloat::Epsilon();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> double TPlane<double>::Abs( double in )
+template<> double Plane<double>::Abs( double in )
 {
 	return std::abs( in );
 }
-template<> double TPlane<double>::Epsilon()
+template<> double Plane<double>::Epsilon()
 {
 	return double(CFloat::Epsilon())*0.0001;
 }
@@ -59,8 +59,8 @@ template<> double TPlane<double>::Epsilon()
 
 }
 
-template class ork::TPlane<float>;		// explicit template instantiation
-template class ork::TPlane<double>;		// explicit template instantiation
+template class ork::Plane<float>;		// explicit template instantiation
+template class ork::Plane<double>;		// explicit template instantiation
 
 //template class ork::chunkfile::Reader<ork::lev2::CollisionLoadAllocator>;
 

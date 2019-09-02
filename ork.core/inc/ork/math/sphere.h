@@ -16,28 +16,28 @@ namespace ork {
 
 struct Sphere
 {
-	CVector3	mCenter;
+	fvec3	mCenter;
 	float		mRadius;
 
-	Sphere( const CVector3& pos, float r ) : mCenter(pos), mRadius(r) {}
-	Sphere( const CVector3& boxmin, const CVector3& boxmax );
+	Sphere( const fvec3& pos, float r ) : mCenter(pos), mRadius(r) {}
+	Sphere( const fvec3& boxmin, const fvec3& boxmax );
 
-    void SupportMapping( const CVector3& v, CVector3& result) const;
+    void SupportMapping( const fvec3& v, fvec3& result) const;
 
-	bool Intersect( const Ray3& ray, CVector3& isect_in, CVector3& isect_out, CVector3& sphnormal ) const;
+	bool Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out, fvec3& sphnormal ) const;
 
 
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline void Sphere::SupportMapping( const CVector3& v, CVector3& result) const
+inline void Sphere::SupportMapping( const fvec3& v, fvec3& result) const
 {
 }
 
-inline bool Sphere::Intersect( const Ray3& ray, CVector3& isect_in, CVector3& isect_out, CVector3& isect_normal ) const
+inline bool Sphere::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out, fvec3& isect_normal ) const
 {
-	CVector3 L = mCenter-ray.mOrigin;
+	fvec3 L = mCenter-ray.mOrigin;
 	float tca = L.Dot(ray.mDirection);
 	if( tca<0.0f ) return false;
 	float d2 = L.Dot(L) - (tca*tca);
@@ -56,10 +56,10 @@ inline bool Sphere::Intersect( const Ray3& ray, CVector3& isect_in, CVector3& is
 
 struct Circle
 {
-	CVector2	mCenter;
+	fvec2	mCenter;
 	float		mRadius;
 
-	Circle( const CVector2& pos, float r ) : mCenter(pos), mRadius(r) {}
+	Circle( const fvec2& pos, float r ) : mCenter(pos), mRadius(r) {}
 };
 
 //////////////////////////

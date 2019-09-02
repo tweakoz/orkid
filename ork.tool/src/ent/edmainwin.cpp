@@ -73,7 +73,7 @@ void EditorMainWindow::SlotSceneInstInvalidated( ork::Object* pSI ){}
 void EditorMainWindow::SlotObjectSelected( ork::Object* pobj ){
 	EntData* pdata = rtti::autocast(pobj);
 	if( pdata ){
-		CMatrix4 mtx;
+		fmtx4 mtx;
 		mtx = pdata->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 		mEditorBase.setSpawnMatrix( mtx );
 		mEditorBase.ManipManager().AttachObject( pobj );

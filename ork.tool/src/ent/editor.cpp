@@ -454,7 +454,7 @@ void SceneEditorBase::EditorGroup() {
         if (pentdata || pgroup) {
           DagNode& Node = pentdata ? pentdata->GetDagNode() : pgroup->GetDagNode();
 
-          CVector3 Pos = Node.GetTransformNode().GetTransform().GetPosition();
+          fvec3 Pos = Node.GetTransformNode().GetTransform().GetPosition();
 
           fmaxx = (fmaxx > Pos.GetX()) ? fmaxx : Pos.GetX();
           fmaxy = (fmaxy > Pos.GetY()) ? fmaxy : Pos.GetY();
@@ -468,7 +468,7 @@ void SceneEditorBase::EditorGroup() {
 
       SceneGroup* pgroup = new SceneGroup;
 
-      CVector3 center((fmaxx + fminx) * 0.5f, (fmaxy + fminy) * 0.5f, (fmaxz + fminz) * 0.5f);
+      fvec3 center((fmaxx + fminx) * 0.5f, (fmaxy + fminy) * 0.5f, (fmaxz + fminz) * 0.5f);
 
       pgroup->GetDagNode().GetTransformNode().GetTransform().SetPosition(center);
 
@@ -636,7 +636,7 @@ void SceneEditorBase::EditorPlaceEntity() {
   }
 }
 
-void SceneEditorBase::EditorLocateEntity(const CMatrix4& matrix) {
+void SceneEditorBase::EditorLocateEntity(const fmtx4& matrix) {
   ent::EntData* pentdata = 0;
 
   if (mpScene) {
@@ -651,7 +651,7 @@ void SceneEditorBase::EditorLocateEntity(const CMatrix4& matrix) {
   }
 }
 
-bool SceneEditorBase::EditorGetEntityLocation(CMatrix4& matrix) {
+bool SceneEditorBase::EditorGetEntityLocation(fmtx4& matrix) {
   ent::EntData* pentdata = 0;
 
   if (mpScene) {
@@ -792,7 +792,7 @@ ent::EntData* SceneEditorBase::EditorReplicateEntity() {
 
     pentdata = new ent::EntData;
 
-    ork::CVector3 cursor_pos = mSpawnMatrix.GetTranslation();
+    ork::fvec3 cursor_pos = mSpawnMatrix.GetTranslation();
 
     pentdata->GetDagNode().GetTransformNode().GetTransform().SetPosition(cursor_pos);
     pentdata->GetDagNode().GetTransformNode().GetTransform().SetRotation(rotation);
@@ -864,7 +864,7 @@ bool QueryArchetypeReferenced(ork::Object* pobj, const ent::Archetype* parch) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-ork::CColor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
+ork::fcolor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
   const Entity* pent = rtti::autocast(pobj);
   const ent::EntData* pentdata = &pent->GetEntData();
   const ent::Archetype* parch = pentdata->GetArchetype();
@@ -874,9 +874,9 @@ ork::CColor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
     const float finvsaturation = 0.3f;
 
     if (selectmgr.IsObjectSelected(pentdata)) {
-      return ork::CVector4(1.0f, finvsaturation, finvsaturation, 1.0f);
+      return ork::fvec4(1.0f, finvsaturation, finvsaturation, 1.0f);
     } else if (selectmgr.IsObjectSelected(parch)) {
-      return ork::CVector4(finvsaturation, finvsaturation, 1.0f, 1.0f);
+      return ork::fvec4(finvsaturation, finvsaturation, 1.0f, 1.0f);
     } else if (parch) // is any archetype indirectly referenced by this entity selected (via spawner)
     {
       const orkset<ork::Object*>& selset = selectmgr.getActiveSelection();
@@ -892,7 +892,7 @@ ork::CColor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
               bool bisref = QueryArchetypeReferenced(pcompdata, prefarch);
 
               if (bisref) {
-                return ork::CVector4(finvsaturation, 1.0f, finvsaturation, 1.0f);
+                return ork::fvec4(finvsaturation, 1.0f, finvsaturation, 1.0f);
               }
             }
           }
@@ -900,7 +900,7 @@ ork::CColor4 SceneEditorBase::GetModColor(const ork::Object* pobj) const {
       }
     }
   }
-  return ork::CColor4::White();
+  return ork::fcolor4::White();
 }
 
 ///////////////////////////////////////////////////////////////////////////

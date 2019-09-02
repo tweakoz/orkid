@@ -120,22 +120,22 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 			const ork::lev2::Renderer *prenderer = rcid.GetRenderer();
 
 			const ork::TransformNode& xf = & pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
-			ork::CMatrix4 mtxw = xf.GetTransform()->GetMatrix();
+			ork::fmtx4 mtxw = xf.GetTransform()->GetMatrix();
 
 			if( false == targ->FBI()->IsPickState() )
 			{
 				ork::lev2::SphereRenderable sphrend;
-				sphrend.SetColor( ork::CColor4::White() );
+				sphrend.SetColor( ork::fcolor4::White() );
 				sphrend.SetPosition( mtxw.GetTranslation() );
 				sphrend.SetRadius( ppntlight->GetRadius() );
 				prenderer->RenderSphere( sphrend );
 			}
 
-			ork::CColor4 ModColor = pren->GetModColor();
-			ork::CColor4 ObjColor;
+			ork::fcolor4 ModColor = pren->GetModColor();
+			ork::fcolor4 ObjColor;
 			ObjColor.SetRGBAU32( reinterpret_cast<U32>( pren->GetObject() ) );
 
-			ork::CColor4 color = targ->FBI()->IsPickState()
+			ork::fcolor4 color = targ->FBI()->IsPickState()
 									? ObjColor
 									: ModColor*ppntlight->GetColor();
 
@@ -171,20 +171,20 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 						{	bool btest = true;
 							const ork::lev2::XgmCluster& cluster = submesh.RefCluster(ic);
 
-							ork::CColor4 ModColor = pren->GetModColor();
+							ork::fcolor4 ModColor = pren->GetModColor();
 
 							if( pyo->mpLight )
 							{
 								ModColor *= pyo->mpLight->GetColor();
 							}
-							ork::CColor4 ObjColor;
+							ork::fcolor4 ObjColor;
 							ObjColor.SetRGBAU32( reinterpret_cast<U32>( pren->GetObject() ) );
 
-							ork::CColor4 color = targ->FBI()->IsPickState()
+							ork::fcolor4 color = targ->FBI()->IsPickState()
 													? ObjColor
 													: ModColor;
 
-							ork::CMatrix4 mtxw = xf.GetTransform()->GetMatrix();
+							ork::fmtx4 mtxw = xf.GetTransform()->GetMatrix();
 							ork::lev2::RenderContextInstModelData MdlCtx;
 
 							MdlCtx.mMesh = & mesh;

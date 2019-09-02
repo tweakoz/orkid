@@ -90,7 +90,7 @@ void TexToVtx( const tokenlist& options )
 			{
 				int idx = inpoly.GetVertexID(iv);
 				const vertex& invtx = inmesh.RefVertexPool().GetVertex(idx);
-				const CVector3& pos = invtx.mPos;
+				const fvec3& pos = invtx.mPos;
 				boost::Crc64 crc64 = boost::crc64( (const void *) & pos, sizeof( pos ) );
 				VertexPosToVtxPoolIndices[ crc64.crc0 ].insert( idx );
 				VertexPosToFacePoolIndices[ crc64.crc0 ].insert( iface );
@@ -157,9 +157,9 @@ void TexToVtx( const tokenlist& options )
 				const vertex& invtxA = inmesh.RefVertexPool().GetVertex(inpoly.GetVertexID(0));
 				const vertex& invtxB = inmesh.RefVertexPool().GetVertex(inpoly.GetVertexID(1));
 				const vertex& invtxC = inmesh.RefVertexPool().GetVertex(inpoly.GetVertexID(2));
-				const CVector3& posA = invtxA.mPos;
-				const CVector3& posB = invtxB.mPos;
-				const CVector3& posC = invtxC.mPos;
+				const fvec3& posA = invtxA.mPos;
+				const fvec3& posB = invtxB.mPos;
+				const fvec3& posC = invtxC.mPos;
 				boost::Crc64 crc64A = boost::crc64( (const void *) & posA, sizeof( posA ) );
 				boost::Crc64 crc64B = boost::crc64( (const void *) & posB, sizeof( posB ) );
 				boost::Crc64 crc64C = boost::crc64( (const void *) & posC, sizeof( posC ) );
@@ -190,7 +190,7 @@ void TexToVtx( const tokenlist& options )
 				const int knumsamplesperface = 256;
 				const float kfaceweight = 1.0f/float(knumsamplesperface);
 
-				CVector3 AvgFaceColor(0.0f,0.0f,0.0f);
+				fvec3 AvgFaceColor(0.0f,0.0f,0.0f);
 				for( int isamp=0; isamp<knumsamplesperface; isamp++ )
 				{
 					float fu = float(rand()%0xfff)/float(4096.0f);	// 0 .. 1
@@ -228,16 +228,16 @@ void TexToVtx( const tokenlist& options )
 						}
 					}
 					
-					const CVector2& vstA = psrcA->mUV[0].mMapTexCoord;
-					const CVector2& vstB = psrcB->mUV[0].mMapTexCoord;
-					const CVector2& vstC = psrcC->mUV[0].mMapTexCoord;
+					const fvec2& vstA = psrcA->mUV[0].mMapTexCoord;
+					const fvec2& vstB = psrcB->mUV[0].mMapTexCoord;
+					const fvec2& vstC = psrcC->mUV[0].mMapTexCoord;
 
-					CVector2 vst_AB = (vstB-vstA);
-					CVector2 vst_AC = (vstC-vstA);
+					fvec2 vst_AB = (vstB-vstA);
+					fvec2 vst_AC = (vstC-vstA);
 
-					CVector2 vst_S; vst_S.Lerp( vst_AB, vst_AC, fu );
+					fvec2 vst_S; vst_S.Lerp( vst_AB, vst_AC, fu );
 
-					CVector2 vst_ST; vst_ST.Lerp( vstA, (vstA+vst_S), (fv*0.5f) );
+					fvec2 vst_ST; vst_ST.Lerp( vstA, (vstA+vst_S), (fv*0.5f) );
 
 					float fs = vst_ST.GetX();
 					float ft = vst_ST.GetY();
@@ -314,9 +314,9 @@ void TexToVtx( const tokenlist& options )
 				vertex tv0 = inmesh.RefVertexPool().GetVertex( idxcache[0] );
 				vertex tv1 = inmesh.RefVertexPool().GetVertex( idxcache[1] );
 				vertex tv2 = inmesh.RefVertexPool().GetVertex( idxcache[2] );
-				const CVector3& posA = tv0.mPos;
-				const CVector3& posB = tv1.mPos;
-				const CVector3& posC = tv2.mPos;
+				const fvec3& posA = tv0.mPos;
+				const fvec3& posB = tv1.mPos;
+				const fvec3& posC = tv2.mPos;
 				boost::Crc64 crc64A = boost::crc64( (const void *) & posA, sizeof( posA ) );
 				boost::Crc64 crc64B = boost::crc64( (const void *) & posB, sizeof( posB ) );
 				boost::Crc64 crc64C = boost::crc64( (const void *) & posC, sizeof( posC ) );
@@ -325,9 +325,9 @@ void TexToVtx( const tokenlist& options )
 				CColor3 clrB = VertexColorMap[ crc64B.crc0 ];
 				CColor3 clrC = VertexColorMap[ crc64C.crc0 ];
 
-				tv0.mCol[0] = CVector4(clrA);
-				tv1.mCol[0] = CVector4(clrB);
-				tv2.mCol[0] = CVector4(clrC);
+				tv0.mCol[0] = fvec4(clrA);
+				tv1.mCol[0] = fvec4(clrB);
+				tv2.mCol[0] = fvec4(clrC);
 
 				int imapped0 = outmesh.MergeVertex( tv0 );
 				int imapped1 = outmesh.MergeVertex( tv1 );

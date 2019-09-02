@@ -165,8 +165,8 @@ public:
 
 	//////////////////////////////////////////////////////
 
-	void Clear( const CColor4 & color );
-	void SetTexel( const CColor4 & color, const CVector2 & ST );
+	void Clear( const fcolor4 & color );
+	void SetTexel( const fcolor4 & color, const fvec2 & ST );
 
 	Md5Sum GetMd5Sum( void ) const { return mMd5Sum; }
 	void SetMd5Sum( Md5Sum sum ) { mMd5Sum=sum; }

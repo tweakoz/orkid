@@ -191,7 +191,7 @@ class GfxMaterialFx : public GfxMaterial
 
 	LightingFxInterface			mLightingInterface;
 
-	CVector3					mScreenZDir;
+	fvec3					mScreenZDir;
 
 	///////////////////////////////////////////
 

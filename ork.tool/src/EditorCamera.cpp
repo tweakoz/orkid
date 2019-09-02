@@ -120,7 +120,7 @@ bool EditorCamControllerInst::DoLink(SceneInst *psi)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool EditorCamControllerInst::DoStart(SceneInst *psi, const CMatrix4 &world)
+bool EditorCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 {
 	const lev2::CCamera* pcam = mCD.GetCamera();
 	if( GetEntity() )

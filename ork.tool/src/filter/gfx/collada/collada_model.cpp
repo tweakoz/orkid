@@ -195,7 +195,7 @@ bool CColladaModel::FindDaeMeshes( void )
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 
-	mTopNodesMatrix = CMatrix4::Identity;
+	mTopNodesMatrix = fmtx4::Identity;
 
 	bool rval = false;
 
@@ -292,14 +292,14 @@ bool CColladaModel::ParseControllers( )
 
 	////////////////////////////////////////////////////////////////////
 
-	mTopNodesMatrix = CMatrix4::Identity;
+	mTopNodesMatrix = fmtx4::Identity;
 
 	orkmap<std::string,std::string> NodeSubIdMap;
 
 	if( 1 == inumvizent )
 	{
 		const FCDSceneNode *prootnode = VizLib->GetEntity(0);
-		CMatrix4 RootMtx = FCDMatrixToCMatrix4( prootnode->ToMatrix() );
+		fmtx4 RootMtx = FCDMatrixTofmtx4( prootnode->ToMatrix() );
 
 		orkstack<const FCDSceneNode *> NodeStack;
 
@@ -341,7 +341,7 @@ bool CColladaModel::ParseControllers( )
 		///////////////////////////////////////////////////
 		// fill in skelnode data
 
-		orkstack<CMatrix4> MtxStack;
+		orkstack<fmtx4> MtxStack;
 
 		NodeStack.push( prootnode );
 		MtxStack.push( RootMtx );
@@ -349,7 +349,7 @@ bool CColladaModel::ParseControllers( )
 		while( false == NodeStack.empty() )
 		{
 			const FCDSceneNode *pnode = NodeStack.top();
-			const CMatrix4 ParentMtx = MtxStack.top();
+			const fmtx4 ParentMtx = MtxStack.top();
 			NodeStack.pop();
 			MtxStack.pop();
 
@@ -374,7 +374,7 @@ bool CColladaModel::ParseControllers( )
 				const FCDSceneNode *pchild = pnode->GetChild(i);
 				std::string ChildName = pchild->GetName().c_str();
 				std::string ChildSid = pchild->GetSubId().c_str();
-				CMatrix4 ChildMtx = FCDMatrixToCMatrix4( pchild->ToMatrix() );
+				fmtx4 ChildMtx = FCDMatrixTofmtx4( pchild->ToMatrix() );
 				NodeStack.push(pchild);
 				MtxStack.push(ChildMtx);
 
@@ -420,7 +420,7 @@ bool CColladaModel::ParseControllers( )
 	{
 		const FCDSkinController* skinController = SkinControllers[iskincon];
 
-		mBindShapeMatrix = FCDMatrixToCMatrix4(skinController->GetBindShapeTransform());
+		mBindShapeMatrix = FCDMatrixTofmtx4(skinController->GetBindShapeTransform());
 
 		const FCDEntity *ptarget = skinController->GetTarget();
 		const std::string targetDaeId = ptarget->GetDaeId().c_str();
@@ -443,7 +443,7 @@ bool CColladaModel::ParseControllers( )
 			ork::lev2::XgmSkelNode* skelnode = it->second;
 			if( skelnode )
 			{
-				skelnode->mBindMatrixInverse = FCDMatrixToCMatrix4(invertedBindPoseMat);
+				skelnode->mBindMatrixInverse = FCDMatrixTofmtx4(invertedBindPoseMat);
 			}
 		}
 
@@ -976,7 +976,7 @@ bool CColladaModel::ParseGeometries()
 						if(fX < fminX)	fminX = fX;
 						if(fY < fminY)	fminY = fY;
 						if(fZ < fminZ)	fminZ = fZ;
-						MuVtx.mPos = CVector3( fX, fY, fZ );								
+						MuVtx.mPos = fvec3( fX, fY, fZ );								
 						/////////////////////////////////
 						// normal
 						/////////////////////////////////
@@ -989,7 +989,7 @@ bool CColladaModel::ParseGeometries()
 						float fNX = NrmSource->GetData( inrmidx+0 );
 						float fNY = NrmSource->GetData( inrmidx+1 );
 						float fNZ = NrmSource->GetData( inrmidx+2 );
-						MuVtx.mNrm = CVector3( fNX, fNY, fNZ );								
+						MuVtx.mNrm = fvec3( fNX, fNY, fNZ );								
 						/////////////////////////////////
 						// texcoords
 						/////////////////////////////////
@@ -999,7 +999,7 @@ bool CColladaModel::ParseGeometries()
 							uint32 iuvidx = UvSource->GetSourceIndex( iface_fvertbase, iface_v );
 							float fS = UvSource->GetData( iuvidx+0 );
 							float fT = UvSource->GetData( iuvidx+1 );
-							MuVtx.mUV[ic].mMapTexCoord = CVector2( fS, fT );	
+							MuVtx.mUV[ic].mMapTexCoord = fvec2( fS, fT );	
 							//////////////////////////
 							if( ic<int(BinSetSources.size()) )
 							{	const DaeDataSource * BinSource = BinSetSources[ic];
@@ -1007,7 +1007,7 @@ bool CColladaModel::ParseGeometries()
 								float fBX = BinSource->GetData( ibinidx+0 );
 								float fBY = BinSource->GetData( ibinidx+1 );
 								float fBZ = BinSource->GetData( ibinidx+2 );
-								MuVtx.mUV[ic].mMapBiNormal = CVector3( fBX, fBY, fBZ );	
+								MuVtx.mUV[ic].mMapBiNormal = fvec3( fBX, fBY, fBZ );	
 							}
 							//////////////////////////
 							if( ic<int(TanSetSources.size()) )
@@ -1016,7 +1016,7 @@ bool CColladaModel::ParseGeometries()
 								float fTX = TanSource->GetData( itanidx+0 );
 								float fTY = TanSource->GetData( itanidx+1 );
 								float fTZ = TanSource->GetData( itanidx+2 );
-								MuVtx.mUV[ic].mMapTangent = CVector3( fTX, fTY, fTZ );	
+								MuVtx.mUV[ic].mMapTangent = fvec3( fTX, fTY, fTZ );	
 							}	
 							//////////////////////////
 						}
@@ -1118,7 +1118,7 @@ void CColladaModel::GetNodeMatricesByName(MatrixVector& nodeMatrices, const char
 			const FCDSceneNode* childNode = sceneNode->GetChild(nodeIndex);
 			if(strncmp(childNode->GetName().c_str(), nodeName, nodeNameLength) == 0)
 			{
-				nodeMatrices.push_back(FCDMatrixToCMatrix4(childNode->ToMatrix()));
+				nodeMatrices.push_back(FCDMatrixTofmtx4(childNode->ToMatrix()));
 			}
 		}
 	}

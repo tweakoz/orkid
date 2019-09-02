@@ -68,10 +68,10 @@ class ShipControllerInst;
 struct ShipTarget : public ITarget
 {
 	ShipControllerInst& mSCI;
-	CVector3			mDamageImpulse;
+	fvec3			mDamageImpulse;
 
-	/*virtual*/ void NotifyDamage(const CVector3& Impulse);
-	/*virtual*/ CVector3 GetPos();
+	/*virtual*/ void NotifyDamage(const fvec3& Impulse);
+	/*virtual*/ fvec3 GetPos();
 
 	ShipTarget( ShipControllerInst& sci ) : mSCI(sci) {}
 };
@@ -126,7 +126,7 @@ class ShipArchetype : public ork::ent::Archetype
 	RttiDeclareConcrete( ShipArchetype, ent::Archetype );
 		
 	void DoCompose(ork::ent::ArchComposer& composer) override;
-	void DoStartEntity( ent::SceneInst* psi, const ork::CMatrix4& mtx, ent::Entity *pent ) const override;
+	void DoStartEntity( ent::SceneInst* psi, const ork::fmtx4& mtx, ent::Entity *pent ) const override;
 
 public:
 

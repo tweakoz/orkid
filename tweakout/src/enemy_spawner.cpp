@@ -101,7 +101,7 @@ EnemySpawnerControllerInst::EnemySpawnerControllerInst( const EnemySpawnerContro
 			const EnemySpawnerControllerInst* sci = pent->GetTypedComponent<EnemySpawnerControllerInst>();
 			OrkAssert( sci );
 			EnemySpawnerControllerInst* scinc = const_cast<EnemySpawnerControllerInst*>(sci);
-			CMatrix4 MatS;
+			fmtx4 MatS;
 			static lev2::GfxMaterial3DSolid matsolid(targ);
 
 			if( scinc->GetData().GetDebug() )
@@ -125,7 +125,7 @@ EnemySpawnerControllerInst::EnemySpawnerControllerInst( const EnemySpawnerContro
 					///////////////////////////////////////////
 					
 					/*int inumcon = hs->mConnections.size();
-					CVector4 a = hs->mPosition;
+					fvec4 a = hs->mPosition;
 					bool bcon2 = false;
 					for( orkmap<U32,HotSpotLink*>::const_iterator it = hs->mConnections.begin(); it!=hs->mConnections.end(); it++ )
 					{
@@ -137,7 +137,7 @@ EnemySpawnerControllerInst::EnemySpawnerControllerInst( const EnemySpawnerContro
 						{
 							bcon2 = true;
 						}
-						CVector4 b = ohs->mPosition;
+						fvec4 b = ohs->mPosition;
 						targ->ImmDrawLine( a, b );
 					}*/
 
@@ -153,7 +153,7 @@ EnemySpawnerControllerInst::EnemySpawnerControllerInst( const EnemySpawnerContro
 						//float ftem = hs->mTemperature*0.3f;
 						float ftem = (hs == sci->HotSpots().mClosest) ? 1.0f : 0.0f;
 
-						targ->PushModColor( CVector3::Yellow()*ftem );
+						targ->PushModColor( fvec3::Yellow()*ftem );
 						targ->MTXI()->PushMMatrix( MatS );
 						{
 							matsolid.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
@@ -189,13 +189,13 @@ void EnemySpawnerControllerInst::Link( ShipControllerInst*sci, WorldControllerIn
 
 void EnemySpawnerControllerInst::ReAssignFighter( FighterControllerInst* fci )
 {
-	//const CVector3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform()->GetPosition();
-	//CVector3 TargetDir = ((mTargetAcc.Normal()*0.3f)+(mTargetVel.Normal()*0.7f)).Normal();
+	//const fvec3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform()->GetPosition();
+	//fvec3 TargetDir = ((mTargetAcc.Normal()*0.3f)+(mTargetVel.Normal()*0.7f)).Normal();
 	if( mHotSpots.mClosest )
 	{	
 		HotSpot* asshp = mHotSpots.mClosest;
 
-		CVector3 ClosPos = asshp->mPosition;
+		fvec3 ClosPos = asshp->mPosition;
 		
 		fci->SetHotSpot( asshp );
 	}
@@ -220,11 +220,11 @@ void EnemySpawnerControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 			fx *= 1000.0f;
 			fz *= 1000.0f;
 
-			CVector3 pos( fx, 0.0f, fz );
-			CVector3 hfpos, hfn;
+			fvec3 pos( fx, 0.0f, fz );
+			fvec3 hfpos, hfn;
 			//mWCI->ReadSurface( pos, hfpos, hfn );
 
-			//HotSpot* ClosestHotSpot = mHotSpots.UpdateHotSpot( hfpos+CVector3( 0.0f, 5.0f, 0.0f ) );
+			//HotSpot* ClosestHotSpot = mHotSpots.UpdateHotSpot( hfpos+fvec3( 0.0f, 5.0f, 0.0f ) );
 
 		}
 
@@ -244,10 +244,10 @@ void EnemySpawnerControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 	// measure target motion
 	////////////////////////////////
 	
-	const CVector3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform().GetPosition();
-	static CVector3 TargetLPos = TargetPos+CVector3(0.0f,1.0f,0.0f);
+	const fvec3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform().GetPosition();
+	static fvec3 TargetLPos = TargetPos+fvec3(0.0f,1.0f,0.0f);
 	mTargetVel = (TargetPos-TargetLPos)*(1.0f/dt);
-	static CVector3 TargetLVel = mTargetVel;
+	static fvec3 TargetLVel = mTargetVel;
 
 	mTargetAcc = (mTargetVel-TargetLVel)*(1.0f/dt);;
 

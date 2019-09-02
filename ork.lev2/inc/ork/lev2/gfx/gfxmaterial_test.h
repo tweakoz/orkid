@@ -30,10 +30,10 @@ public:
 	void SetTexture3( Texture* ptex ) { mCurrentTexture3=ptex; }
 	void SetTexture4( Texture* ptex ) { mCurrentTexture4=ptex; }
 
-	void SetUser0( const CVector4& vuser ) { mUser0=vuser; }
-	void SetUser1( const CVector4& vuser ) { mUser1=vuser; }
-	void SetUser2( const CVector4& vuser ) { mUser2=vuser; }
-	void SetUser3( const CVector4& vuser ) { mUser3=vuser; }
+	void SetUser0( const fvec4& vuser ) { mUser0=vuser; }
+	void SetUser1( const fvec4& vuser ) { mUser1=vuser; }
+	void SetUser2( const fvec4& vuser ) { mUser2=vuser; }
+	void SetUser3( const fvec4& vuser ) { mUser3=vuser; }
 
 	void SetUserFx( const char* puserfx, const char* pusertek )
 	{
@@ -62,16 +62,16 @@ public:
 
 	EColorMode GetColorMode() const { return meColorMode; }
 	void SetColorMode( EColorMode emode ) { meColorMode = emode; }
-	void SetColor( const CVector4& color ) { Color=color; }
-	const CVector4& GetColor() const { return Color; }
-	void SetNoiseAmp( const CVector4& color ) { mNoiseAmp=color; }
-	void SetNoiseFreq( const CVector4& color ) { mNoiseFreq=color; }
-	void SetNoiseShift( const CVector4& color ) { mNoiseShift=color; }
+	void SetColor( const fvec4& color ) { Color=color; }
+	const fvec4& GetColor() const { return Color; }
+	void SetNoiseAmp( const fvec4& color ) { mNoiseAmp=color; }
+	void SetNoiseFreq( const fvec4& color ) { mNoiseFreq=color; }
+	void SetNoiseShift( const fvec4& color ) { mNoiseShift=color; }
 
 	////////////////////////////////////////////
 
-  void SetWRotMatrix( const CMatrix3& wrot ) { mRotMatrix=wrot; }
-	void SetAuxMatrix( const CMatrix4& mtx ) { mMatAux=mtx; }
+  void SetWRotMatrix( const fmtx3& wrot ) { mRotMatrix=wrot; }
+	void SetAuxMatrix( const fmtx4& mtx ) { mMatAux=mtx; }
 
     bool BeginPass( GfxTarget* pTARG, int iPass=0 ) final;
     void EndPass( GfxTarget* pTARG ) final;
@@ -87,14 +87,14 @@ public:
     void SetMaterialProperty( const char* prop, const char* val ) final;
 
 	EColorMode		meColorMode;
-	CVector4		mNoiseAmp;
-	CVector4		mNoiseFreq;
-	CVector4		mNoiseShift;
-	CVector4		Color;
-	CVector4		mUser0;
-	CVector4		mUser1;
-	CVector4		mUser2;
-	CVector4		mUser3;
+	fvec4		mNoiseAmp;
+	fvec4		mNoiseFreq;
+	fvec4		mNoiseShift;
+	fvec4		Color;
+	fvec4		mUser0;
+	fvec4		mUser1;
+	fvec4		mUser2;
+	fvec4		mUser3;
 	FxShader*		hModFX;
 	Texture*		mVolumeTexture;
 	Texture*		mCurrentTexture;
@@ -103,8 +103,8 @@ public:
 	Texture*		mCurrentTexture4;
 	std::string		mUserFxName;
 	std::string		mUserTekName;
-	CMatrix4		mMatAux;
-  CMatrix3 mRotMatrix;
+	fmtx4		mMatAux;
+  fmtx3 mRotMatrix;
 	bool 			mUnManaged;
 	bool			mAllowCompileFailure;
 

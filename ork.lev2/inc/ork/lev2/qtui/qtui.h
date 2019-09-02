@@ -159,7 +159,7 @@ public:
 	QCtxWidget* GetQWidget() const { return mpQtWidget; }
 	QWidget* GetParent() const { return mParent; }
 
-	CVector2 MapCoordToGlobal( const CVector2& v ) const override;
+	fvec2 MapCoordToGlobal( const fvec2& v ) const override;
 
 };
 

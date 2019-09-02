@@ -115,7 +115,7 @@ TetherCamControllerInst::TetherCamControllerInst(const TetherCamControllerData& 
 	pcamd->SetOwner(pent);
 
 	mCameraData.Persp( 0.1f, 1.0f, 45.0f );
-	mCameraData.Lookat( CVector3(0.0f,0.0f,0.0f), CVector3(0.0f,0.0f,1.0f), CVector3(0.0f,1.0f,0.0f) );
+	mCameraData.Lookat( fvec3(0.0f,0.0f,0.0f), fvec3(0.0f,0.0f,1.0f), fvec3(0.0f,1.0f,0.0f) );
 
 	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, & mCameraData, mCameraData.getEditorCamera() );
 }
@@ -129,7 +129,7 @@ bool TetherCamControllerInst::DoLink(SceneInst *psi)
 	return true;
 }
 
-bool TetherCamControllerInst::DoStart(SceneInst *psi, const CMatrix4 &world)
+bool TetherCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 {
 	if( GetEntity() )
 	{
@@ -148,15 +148,15 @@ void TetherCamControllerInst::DoUpdate( SceneInst* psi )
 {
 	float fdt = psi->GetDeltaTime();
 
-	CVector3 cam_UP = CVector3(0.0f,1.0f,0.0f);
-	CVector3 cam_EYE = CVector3(0.0f,0.0f,0.0f);
-	CVector3 eye_up = mCD.GetEyeUp();
+	fvec3 cam_UP = fvec3(0.0f,1.0f,0.0f);
+	fvec3 cam_EYE = fvec3(0.0f,0.0f,0.0f);
+	fvec3 eye_up = mCD.GetEyeUp();
 
 	if( GetEntity() && mpTarget )
 	{
 		DagNode& dnodeEYE = GetEntity()->GetDagNode();
 		TransformNode& t3dEYE = dnodeEYE.GetTransformNode();
-		CMatrix4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
+		fmtx4 mtxEYE = t3dEYE.GetTransform().GetMatrix();
 		auto eye_base = mtxEYE.GetTranslation();
 		cam_EYE = eye_base+mCD.GetEyeOffset();
 		cam_UP = mtxEYE.GetYNormal();
@@ -168,8 +168,8 @@ void TetherCamControllerInst::DoUpdate( SceneInst* psi )
 
 		DagNode& dnodeTGT = mpTarget->GetDagNode();
 		TransformNode& t3dTGT = dnodeTGT.GetTransformNode();
-		CMatrix4 mtxTGT = t3dTGT.GetTransform().GetMatrix();
-		CVector3 cam_TGT = mtxTGT.GetTranslation();
+		fmtx4 mtxTGT = t3dTGT.GetTransform().GetMatrix();
+		fvec3 cam_TGT = mtxTGT.GetTranslation();
 
 		float fnear = mCD.GetNear();
 		float ffar = mCD.GetFar();
@@ -177,13 +177,13 @@ void TetherCamControllerInst::DoUpdate( SceneInst* psi )
 
 		//////////
 
-		CVector3 DELT = (cam_TGT-cam_EYE);
-		CVector3 N = DELT.Normal();
+		fvec3 DELT = (cam_TGT-cam_EYE);
+		fvec3 N = DELT.Normal();
 		float dist = DELT.Mag();
 
 		//////////
 
-		CVector3 DELT2 = (cam_TGT-eye_base);
+		fvec3 DELT2 = (cam_TGT-eye_base);
 		auto new_eye = eye_base+DELT2*mCD.GetApproachSpeed()*fdt;
 		t3dEYE.GetTransform().SetPosition( new_eye );
 

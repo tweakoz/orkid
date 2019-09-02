@@ -16,8 +16,8 @@
 #include "line.hpp"
 
 
-using ork::CVector2;
-using ork::TVector2;
+using ork::fvec2;
+using ork::Vector2;
 
 namespace ork {
 

@@ -364,7 +364,7 @@ bool SpriteRenderer::DoNotify(const ork::event::Event *event)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
+void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	
 	gtarg = targ;
 	
@@ -374,9 +374,9 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 	//////////////////////////////////////////
 	mpVB = & GfxEnv::GetSharedDynamicVB();
 	float Scale = 1.0f;
-	ork::CMatrix4 MatScale;
+	ork::fmtx4 MatScale;
 	MatScale.SetScale( Scale,Scale,Scale );
-	const CMatrix4& MVP = targ->MTXI()->RefMVPMatrix();
+	const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
 	///////////////////////////////////////////////////////////////
 	mCurFGI = mPlugInpGradientIntensity.GetValue();
 	///////////////////////////////////////////////////////////////
@@ -388,18 +388,18 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 	if( icnt )
 	{	lev2::VtxWriter<SVtxV12C4T16> vw;
 		vw.Lock( targ, mpVB, ivertexlockcount );
-		{	//ork::CColor4 CL;
+		{	//ork::fcolor4 CL;
 			switch( meAlignment )
 			{	case EPIA_BILLBOARD:
-				{	ork::CMatrix4 matrs( mtx );
+				{	ork::fmtx4 matrs( mtx );
 					matrs.SetTranslation( 0.0f, 0.0f, 0.0f );
 					matrs.Transpose();
-					ork::CVector3 nx = cdata->GetXNormal().Transform( matrs );
-					ork::CVector3 ny = cdata->GetYNormal().Transform( matrs );
-					ork::CVector3 NX = nx*-1.0f;
-					ork::CVector3 PX = nx;
-					ork::CVector3 NY = ny*-1.0f;
-					ork::CVector3 PY = ny;
+					ork::fvec3 nx = cdata->GetXNormal().Transform( matrs );
+					ork::fvec3 ny = cdata->GetYNormal().Transform( matrs );
+					ork::fvec3 NX = nx*-1.0f;
+					ork::fvec3 PX = nx;
+					ork::fvec3 NY = ny*-1.0f;
+					ork::fvec3 PY = ny;
 					NX_NY = (NX+NY);
 					PX_NY = (PX+NY);
 					PX_PY = (PX+PY);
@@ -407,24 +407,24 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					break;
 				}
 				case EPIA_XZ:
-				{	NX_NY = ork::CVector3(-1.0f,0.0f,-1.0f);
-					PX_NY = ork::CVector3(+1.0f,0.0f,-1.0f);
-					PX_PY = ork::CVector3(+1.0f,0.0f,+1.0f);
-					NX_PY = ork::CVector3(-1.0f,0.0f,+1.0f);
+				{	NX_NY = ork::fvec3(-1.0f,0.0f,-1.0f);
+					PX_NY = ork::fvec3(+1.0f,0.0f,-1.0f);
+					PX_PY = ork::fvec3(+1.0f,0.0f,+1.0f);
+					NX_PY = ork::fvec3(-1.0f,0.0f,+1.0f);
 					break;
 				}
 				case EPIA_XY:
-				{	NX_NY = ork::CVector3(-1.0f,-1.0f,0.0f);
-					PX_NY = ork::CVector3(+1.0f,-1.0f,0.0f);
-					PX_PY = ork::CVector3(+1.0f,+1.0f,0.0f);
-					NX_PY = ork::CVector3(-1.0f,+1.0f,0.0f);
+				{	NX_NY = ork::fvec3(-1.0f,-1.0f,0.0f);
+					PX_NY = ork::fvec3(+1.0f,-1.0f,0.0f);
+					PX_PY = ork::fvec3(+1.0f,+1.0f,0.0f);
+					NX_PY = ork::fvec3(-1.0f,+1.0f,0.0f);
 					break;
 				}
 				case EPIA_YZ:
-				{	NX_NY = ork::CVector3(0.0f,-1.0f,-1.0f);
-					PX_NY = ork::CVector3(0.0f,+1.0f,-1.0f);
-					PX_PY = ork::CVector3(0.0f,+1.0f,+1.0f);
-					NX_PY = ork::CVector3(0.0f,-1.0f,+1.0f);
+				{	NX_NY = ork::fvec3(0.0f,-1.0f,-1.0f);
+					PX_NY = ork::fvec3(0.0f,+1.0f,-1.0f);
+					PX_PY = ork::fvec3(0.0f,+1.0f,+1.0f);
+					NX_PY = ork::fvec3(0.0f,-1.0f,+1.0f);
 					break;
 				}
 			}
@@ -433,14 +433,14 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 			mfTexs = 1.0f/1.0f; //float(miAnimTexDim);
 			miTexCnt = (miAnimTexDim*miAnimTexDim);
 			mfTexs = 1.0f/float(miAnimTexDim);
-			uvr0 = ork::CVector2( 0.0f, 0.0f );
-			uvr1 = ork::CVector2( mfTexs, 0.0f );
-			uvr2 = ork::CVector2( mfTexs, mfTexs );
-			uvr3 = ork::CVector2( 0.0f, mfTexs );
+			uvr0 = ork::fvec2( 0.0f, 0.0f );
+			uvr1 = ork::fvec2( mfTexs, 0.0f );
+			uvr2 = ork::fvec2( mfTexs, mfTexs );
+			uvr3 = ork::fvec2( 0.0f, mfTexs );
 
 			////////////////////////////////////////////////////////////////////
 
-			ork::Gradient<ork::CVector4>* pGRAD = 0;
+			ork::Gradient<ork::fvec4>* pGRAD = 0;
 			if( mpTemplateModule )
 			{
 				SpriteRenderer* ptemplate_module = 0;
@@ -470,7 +470,7 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 				SortedParticles.clear();
 				for( int i=0; i<icnt; i++ )
 				{	const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles+i;
-					{	CVector4 proj = ptcl->mPosition.Transform(MVP);
+					{	fvec4 proj = ptcl->mPosition.Transform(MVP);
 						proj.PerspectiveDivide();
 						float fv = proj.GetZ();
 						SortedParticles.AddSorted( fv, ptcl );
@@ -487,7 +487,7 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					float fiunitage = (1.0f-mOutDataUnitAge);
 					float fsize = mPlugInpSize.GetValue();
 					//////////////////////////////////////////////////////
-					CVector4 color;
+					fvec4 color;
 					 if( pGRAD )
 						color = (pGRAD->Sample(mOutDataUnitAge)*mCurFGI).Saturate();
 					U32 ucolor = color.GetVtxColorAsU32();
@@ -495,17 +495,17 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					float fang = mPlugInpRot.GetValue()*DTOR;
 					float sinfr = ork::CFloat::Sin(fang)*fsize;
 					float cosfr = ork::CFloat::Cos(fang)*fsize;
-					CVector3 rota = (NX_NY*cosfr)+(NX_PY*sinfr);
-					CVector3 rotb = (NX_PY*cosfr)-(NX_NY*sinfr);
-					CVector3 p0 = ptcl->mPosition+rota;
-					CVector3 p1 = ptcl->mPosition+rotb;
-					CVector3 p2 = ptcl->mPosition-rota;
-					CVector3 p3 = ptcl->mPosition-rotb;
+					fvec3 rota = (NX_NY*cosfr)+(NX_PY*sinfr);
+					fvec3 rotb = (NX_PY*cosfr)-(NX_NY*sinfr);
+					fvec3 p0 = ptcl->mPosition+rota;
+					fvec3 p1 = ptcl->mPosition+rotb;
+					fvec3 p2 = ptcl->mPosition-rota;
+					fvec3 p3 = ptcl->mPosition-rotb;
 					//////////////////////////////////////////////////////
 					float flastframe = float(miTexCnt-1);
 					float ftexframe = mPlugInpAnimFrame.GetValue()*flastframe;
 					ftexframe = ( ftexframe<0.0f ) ? 0.0f : (ftexframe>=flastframe) ? flastframe : ftexframe;
-					ork::CVector2 uvA( funitage, 1.0f ); //float(miAnimTexDim) );
+					ork::fvec2 uvA( funitage, 1.0f ); //float(miAnimTexDim) );
 					//////////////////////////////////////////////////////
 					vw.AddVertex( ork::lev2::SVtxV12C4T16(p0,uvr0,uvA, ucolor) );
 					//vw.AddVertex( ork::lev2::SVtxV12C4T16(p1,uvr1,uvA, ucolor) );
@@ -532,7 +532,7 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					mOutDataPtcRandom = ptcl->mfRandom;
 					float fiunitage = (1.0f-mOutDataUnitAge);
 					float fsize = mPlugInpSize.GetValue();
-					CVector4 color;
+					fvec4 color;
 					if( pGRAD )
 						color = (pGRAD->Sample(mOutDataUnitAge)*mCurFGI).Saturate();
 					U32 ucolor = color.GetVtxColorAsU32();
@@ -543,10 +543,10 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					ftexframe = ( ftexframe<0.0f ) ? 0.0f : (ftexframe>=flastframe) ? flastframe : ftexframe;
 					bool is_texanim = ( miAnimTexDim>1 );
 
-					ork::CVector2 uv0( fang, fsize ); 
-					ork::CVector2 uv1 = is_texanim 
-									  ? ork::CVector2( ftexframe, 0.0f )
-									  : ork::CVector2( mOutDataUnitAge,mOutDataPtcRandom );
+					ork::fvec2 uv0( fang, fsize ); 
+					ork::fvec2 uv1 = is_texanim 
+									  ? ork::fvec2( ftexframe, 0.0f )
+									  : ork::fvec2( mOutDataUnitAge,mOutDataPtcRandom );
 					
 					vw.AddVertex( ork::lev2::SVtxV12C4T16(ptcl->mPosition,uv0,uv1, ucolor) );
 				}
@@ -565,9 +565,9 @@ void SpriteRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 		
 			if( bound_mtl )
 			{
-				CVector4 user0 = NX_NY;
-				CVector4 user1 = NX_PY;
-				CVector4 user2( float(miAnimTexDim), float(miTexCnt), 0.0f );
+				fvec4 user0 = NX_NY;
+				fvec4 user1 = NX_PY;
+				fvec4 user2( float(miAnimTexDim), float(miTexCnt), 0.0f );
 
 				bound_mtl->SetUser0( user0 );
 				bound_mtl->SetUser1( user1 );
@@ -659,13 +659,13 @@ dataflow::outplugbase* StreakRenderer::GetOutput(int idx)
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
+void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
 	const ork::CCameraData* cdata = framedata->GetCameraData();
 	//////////////////////////////////////////
 	ork::lev2::CVtxBuffer<ork::lev2::SVtxV12N12B12T8C4>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2(); 
 	float Scale = 1.0f;
-	ork::CMatrix4 mtx_scale;
+	ork::fmtx4 mtx_scale;
 	mtx_scale.SetScale( Scale,Scale,Scale );
 	///////////////////////////////////////////////////////////////
 	float fgi = mPlugInpGradientIntensity.GetValue();
@@ -675,9 +675,9 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 	int icnt = buffer.miNumParticles;
 	if( icnt )
 	{	////////////////////////////////////////////////////////////////////////////
-		ork::CMatrix4 mtx_iw = mtx;
+		ork::fmtx4 mtx_iw = mtx;
 		mtx_iw.Inverse();
-		CVector3 obj_nrmz = CVector4(cdata->GetZNormal(),0.0f).Transform(mtx_iw).Normal();
+		fvec3 obj_nrmz = fvec4(cdata->GetZNormal(),0.0f).Transform(mtx_iw).Normal();
 		////////////////////////////////////////////////////////////////////////////
 		lev2::VtxWriter<SVtxV12N12B12T8C4> vw;
 		vw.Lock( targ, &vtxbuf, icnt );
@@ -692,10 +692,10 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 			{
 				static ork::fixedlut<float,const ork::lev2::particle::BasicParticle*,20000> SortedParticles(EKEYPOLICY_MULTILUT);
 				SortedParticles.clear();
-				const CMatrix4& MVP = targ->MTXI()->RefMVPMatrix();
+				const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
 				for( int i=0; i<icnt; i++ )
 				{	const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles+i;
-					{	CVector4 proj = ptcl->mPosition.Transform(MVP);
+					{	fvec4 proj = ptcl->mPosition.Transform(MVP);
 						proj.PerspectiveDivide();
 						float fv = proj.GetZ();
 						SortedParticles.AddSorted( fv, ptcl );
@@ -711,12 +711,12 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					//
 					float fwidth = mPlugInpWidth.GetValue();
 					float flength = mPlugInpLength.GetValue();
-					CVector4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
+					fvec4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
 					////////////////////////////////////////////////
 					vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
 																obj_nrmz,
 																ptcl->mVelocity,
-																ork::CVector2( fwidth, flength ),
+																ork::fvec2( fwidth, flength ),
 																color.GetVtxColorAsU32() ) );
 					////////////////////////////////////////////////
 				}
@@ -733,12 +733,12 @@ void StreakRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstDat
 					//
 					float fwidth = mPlugInpWidth.GetValue();
 					float flength = mPlugInpLength.GetValue();
-					CVector4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
+					fvec4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
 					////////////////////////////////////////////////
 					vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
 																obj_nrmz,
 																ptcl->mVelocity,
-																ork::CVector2( fwidth, flength ),
+																ork::fvec2( fwidth, flength ),
 																color.GetVtxColorAsU32() ) );
 					////////////////////////////////////////////////
 				}
@@ -834,13 +834,13 @@ dataflow::outplugbase* ModelRenderer::GetOutput(int idx)
 	return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ModelRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
+void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	if( 0 == GetModel() ) return;
 	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
 	const ork::CCameraData* cdata = framedata->GetCameraData();
 	int icnt = buffer.miNumParticles;
 	static const int kmaxinstances = 1024;
-	static CMatrix4 gmatrixblock[ kmaxinstances ]; 
+	static fmtx4 gmatrixblock[ kmaxinstances ]; 
 	OrkAssert( icnt<kmaxinstances );
 	if( icnt>=kmaxinstances ) icnt=kmaxinstances-1;
 	if( icnt )
@@ -848,15 +848,15 @@ void ModelRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData
 		// uniform properties
 		////////////////////////////////////////////////	
 		//printf( "psys::ModelRenderer::Render() icnt<%d>\n", icnt );
-		CMatrix4 nmtx, rmtx, r2mtx, smtx;
+		fmtx4 nmtx, rmtx, r2mtx, smtx;
 
 		CQuaternion qrot;
-		CVector4 axisang = mBaseRotAxisAngle;
+		fvec4 axisang = mBaseRotAxisAngle;
 		axisang.SetW( 3.1415926*axisang.GetW()/90.0f );
 		qrot.FromAxisAngle(axisang);
 		rmtx.FromQuaternion(qrot);		
 
-		CVector3 upvec = (mUpVector.Mag()==0.0f) ? CVector3::Green() : mUpVector.Normal();
+		fvec3 upvec = (mUpVector.Mag()==0.0f) ? fvec3::Green() : mUpVector.Normal();
 
 		for( int i=0; i<icnt; i++ )
 		{	const ork::lev2::particle::BasicParticle* ptcl = buffer.mpParticles+i;
@@ -876,7 +876,7 @@ void ModelRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData
 			smtx.SetScale( fscale, fscale, fscale );
 
 			float fanimrot = mPlugInpAnimRot.GetValue();
-			CVector4 anim_axis_angle(mAnimRotAxis,3.1415926*fanimrot/90.0f);
+			fvec4 anim_axis_angle(mAnimRotAxis,3.1415926*fanimrot/90.0f);
 			qrot.FromAxisAngle(anim_axis_angle);
 			r2mtx.FromQuaternion(qrot);
 
@@ -896,13 +896,13 @@ void ModelRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData
 		///////////////////////////////////////////////////////////
 		// setup headlight (default lighting)
 		///////////////////////////////////////////////////////////
-		ork::CMatrix4				HeadLightMatrix;
+		ork::fmtx4				HeadLightMatrix;
 		ork::lev2::LightingGroup	HeadLightGroup;
 		ork::lev2::AmbientLightData	HeadLightData;
 		ork::lev2::AmbientLight		HeadLight(HeadLightMatrix,&HeadLightData);
 		ork::lev2::LightManagerData	HeadLightManagerData;
 		ork::lev2::LightManager HeadLightManager(HeadLightManagerData);
-		HeadLightData.SetColor(ork::CVector3(1.3f, 1.3f, 1.5f));
+		HeadLightData.SetColor(ork::fvec3(1.3f, 1.3f, 1.5f));
 		HeadLightData.SetAmbientShade( 0.75f );
 		HeadLight.miInFrustumID = 1;
 		HeadLightGroup.mLightMask.AddLight( & HeadLight );
@@ -940,7 +940,7 @@ void ModelRenderer::Render(const CMatrix4& mtx, ork::lev2::RenderContextInstData
 					MdlCtx.mSubMesh = & submesh;
 					MdlCtx.mCluster = & submesh.RefCluster(ic);
 
-					GetModel()->RenderMultipleRigid(	ork::CColor4::White(), 
+					GetModel()->RenderMultipleRigid(	ork::fcolor4::White(), 
 														gmatrixblock, icnt,
 														targ,
 														MatCtx,

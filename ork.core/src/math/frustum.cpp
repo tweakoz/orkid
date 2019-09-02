@@ -19,8 +19,8 @@ namespace ork {
 void Frustum::SupportMapping(const vec3_type& v, vec3_type& result ) const
 {
     float num3;
-    //const CVector3* pres = 0;
-    num3 = 0.0f; //mNearCorners[0].Dot(v); //CVector3.Dot(this.corners[0], v, num3);
+    //const fvec3* pres = 0;
+    num3 = 0.0f; //mNearCorners[0].Dot(v); //fvec3.Dot(this.corners[0], v, num3);
     for (int i=0; i<4; i++ )
     {
         float num2;
@@ -110,8 +110,8 @@ void Frustum::Set( const mtx44_type& IVPMatrix )
 
 	vec3_type camrayN, camrayF;
 
-	mtx44_type::UnProject( IVPMatrix, CVector4(0.0f,0.0f,minz), camrayN );
-	mtx44_type::UnProject( IVPMatrix, CVector4(0.0f,0.0f,maxz), camrayF );
+	mtx44_type::UnProject( IVPMatrix, fvec4(0.0f,0.0f,minz), camrayN );
+	mtx44_type::UnProject( IVPMatrix, fvec4(0.0f,0.0f,maxz), camrayF );
 
     vec4_type camrayHALF = (camrayN+camrayF)*float(0.5f);
 

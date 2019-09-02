@@ -504,17 +504,17 @@ GedItemNode* ObjModel::CreateNode(const std::string& Name, const reflect::IObjec
   else if (const reflect::IObjectPropertyType<float>* floatprop = rtti::autocast(prop))
     return new GedFloatNode<GedIoDriver<float>>(*this, Name.c_str(), floatprop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<CVector4>* vec4prop = rtti::autocast(prop))
-    return new GedSimpleNode<GedIoDriver<CVector4>, CVector4>(*this, Name.c_str(), vec4prop, pobject);
+  else if (const reflect::IObjectPropertyType<fvec4>* vec4prop = rtti::autocast(prop))
+    return new GedSimpleNode<GedIoDriver<fvec4>, fvec4>(*this, Name.c_str(), vec4prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<CVector3>* vec3prop = rtti::autocast(prop))
-    return new GedSimpleNode<GedIoDriver<CVector3>, CVector3>(*this, Name.c_str(), vec3prop, pobject);
+  else if (const reflect::IObjectPropertyType<fvec3>* vec3prop = rtti::autocast(prop))
+    return new GedSimpleNode<GedIoDriver<fvec3>, fvec3>(*this, Name.c_str(), vec3prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<CVector2>* vec2prop = rtti::autocast(prop))
-    return new GedSimpleNode<GedIoDriver<CVector2>, CVector2>(*this, Name.c_str(), vec2prop, pobject);
+  else if (const reflect::IObjectPropertyType<fvec2>* vec2prop = rtti::autocast(prop))
+    return new GedSimpleNode<GedIoDriver<fvec2>, fvec2>(*this, Name.c_str(), vec2prop, pobject);
   /////////////////////////////////////////////////////////////////////////
-  else if (const reflect::IObjectPropertyType<CMatrix4>* mtx44prop = rtti::autocast(prop))
-    return new GedSimpleNode<GedIoDriver<CMatrix4>, CMatrix4>(*this, Name.c_str(), mtx44prop, pobject);
+  else if (const reflect::IObjectPropertyType<fmtx4>* mtx44prop = rtti::autocast(prop))
+    return new GedSimpleNode<GedIoDriver<fmtx4>, fmtx4>(*this, Name.c_str(), mtx44prop, pobject);
   /////////////////////////////////////////////////////////////////////////
   else if (const reflect::IObjectPropertyType<ork::rtti::ICastable*>* castprop = rtti::autocast(prop))
     return new GedObjNode<PropSetterObj>(*this, Name.c_str(), prop, pobject);

@@ -77,7 +77,7 @@ void PointLight::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PointLight::AffectsSphere( const CVector3& center, float radius ) const
+bool PointLight::AffectsSphere( const fvec3& center, float radius ) const
 {
 	float dist = ( mWorldMatrix.GetTranslation()-center).Mag();
 	float combinedradii = (radius+mRadius);

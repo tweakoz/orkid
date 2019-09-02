@@ -134,7 +134,7 @@ public:
 	//////////////////////
 	void SetHeadLightMode( bool bv ) { mbHeadLight=bv; }
 	void SaveCubeMap();
-	void SetCursor( const CVector3& c ) { mCursor=c; }
+	void SetCursor( const fvec3& c ) { mCursor=c; }
 	void UpdateScene(ent::DrawableBuffer*pdb);
 
 	///////////////////////////////////////////////////
@@ -187,7 +187,7 @@ protected:
 	ork::ent::SceneEditorView						mSceneView;
 	lev2::Renderer*									mRenderer;
 	lev2::CCamera*									_editorCamera;
-	CVector3										mCursor;
+	fvec3										mCursor;
 	CPerformanceItem								mFramePerfItem;
 	int												miCameraIndex;
 	int												miCullCameraIndex;

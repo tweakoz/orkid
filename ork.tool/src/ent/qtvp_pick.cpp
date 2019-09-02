@@ -116,7 +116,7 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::GetPixelContext& ctx) {
   mpPickBuffer->GetContext()->FBI()->SetScissor(0, 0, iW, iH);
   /////////////////////////////////////////////////////////////
 
-  mpPickBuffer->GetContext()->FBI()->GetPixel(CVector4(fx, fy, 0.0f), ctx);
+  mpPickBuffer->GetContext()->FBI()->GetPixel(fvec4(fx, fy, 0.0f), ctx);
 }
 
 }} // namespace ork::ent
@@ -197,7 +197,7 @@ template <> void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::Get
     // EXTARG->RSI()->GetOverrideRasterState().muAlphaTest = EALPHATEST_OFF;
     pTEXTARG->FBI()->PushViewport(VPRect);
     pTEXTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
-    pTEXTARG->PushModColor(CColor4::Yellow());
+    pTEXTARG->PushModColor(fcolor4::Yellow());
     mpViewport->mCompositingGroupStack.push(compositor_node);
     { mpViewport->RenderQueuedScene(*frame_data); }
     mpViewport->mCompositingGroupStack.pop();

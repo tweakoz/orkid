@@ -21,7 +21,7 @@ GlImiInterface::GlImiInterface( GfxTargetGL& target )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlImiInterface::DrawPrim( const CVector4 *Points, int inumpoints, EPrimitiveType eType )
+void GlImiInterface::DrawPrim( const fvec4 *Points, int inumpoints, EPrimitiveType eType )
 {
 /*	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 	int inumpasses = mTarget.GetCurMaterial()->BeginBlock(&mTarget);
@@ -70,7 +70,7 @@ void GlImiInterface::DrawPrim( const CVector4 *Points, int inumpoints, EPrimitiv
 	}*/
 }
 
-void GlImiInterface::DrawLine( const CVector4 &From, const CVector4 &To )
+void GlImiInterface::DrawLine( const fvec4 &From, const fvec4 &To )
 {
 /*	glBindBuffer( GL_ARRAY_BUFFER_ARB, 0 );
 	int inumpasses = mTarget.GetCurMaterial()->BeginBlock(&mTarget);
@@ -82,8 +82,8 @@ void GlImiInterface::DrawLine( const CVector4 &From, const CVector4 &To )
 		if( bDRAW )
 		{
 			glBegin( GL_LINES );
-				glVertex3fv( (float*)const_cast<CVector4&>(From).GetArray() );
-				glVertex3fv( (float*)const_cast<CVector4&>(To).GetArray() );
+				glVertex3fv( (float*)const_cast<fvec4&>(From).GetArray() );
+				glVertex3fv( (float*)const_cast<fvec4&>(To).GetArray() );
 			glEnd();
 		}
 		mTarget.GetCurMaterial()->EndPass(&mTarget);

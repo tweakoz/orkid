@@ -19,9 +19,9 @@ GlMatrixStackInterface::GlMatrixStackInterface( GfxTarget& target )
 {
 }
 
-CMatrix4 GlMatrixStackInterface::Frustum( float left, float right, float top, float bottom, float zn, float zf ) // virtual
+fmtx4 GlMatrixStackInterface::Frustum( float left, float right, float top, float bottom, float zn, float zf ) // virtual
 {
-	CMatrix4 rval;
+	fmtx4 rval;
 
 	if( 1 ) // GL3 core
 	{
@@ -41,10 +41,10 @@ CMatrix4 GlMatrixStackInterface::Frustum( float left, float right, float top, fl
 		const float m32 = -1.0f;
 		
 
-		rval.SetRow(0, CVector4(m00, 0.0f, m02, 0.0f) );
-		rval.SetRow(1, CVector4(0.0f, m11, m12, 0.0f) );
-		rval.SetRow(2, CVector4(0.0f, 0.0f, m22, m23) );
-		rval.SetRow(3, CVector4(0.0f, 0.0f, m32, 0.0f) );
+		rval.SetRow(0, fvec4(m00, 0.0f, m02, 0.0f) );
+		rval.SetRow(1, fvec4(0.0f, m11, m12, 0.0f) );
+		rval.SetRow(2, fvec4(0.0f, 0.0f, m22, m23) );
+		rval.SetRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );
 	}
 	else
 	{	/*
@@ -56,18 +56,18 @@ CMatrix4 GlMatrixStackInterface::Frustum( float left, float right, float top, fl
 //		rval.Transpose();
 	}
 
-/*	rval.SetCol(0, CVector4(m00, 0.0f, m02, 0.0f) );
-	rval.SetRow(1, CVector4(0.0f, m11, m12, 0.0f) );
-	rval.SetRow(2, CVector4(0.0f, 0.0f, m22, m23) );
-	rval.SetRow(3, CVector4(0.0f, 0.0f, m32, 0.0f) );*/
+/*	rval.SetCol(0, fvec4(m00, 0.0f, m02, 0.0f) );
+	rval.SetRow(1, fvec4(0.0f, m11, m12, 0.0f) );
+	rval.SetRow(2, fvec4(0.0f, 0.0f, m22, m23) );
+	rval.SetRow(3, fvec4(0.0f, 0.0f, m32, 0.0f) );*/
 
 	return rval;
 }
 
-CMatrix4 GlMatrixStackInterface::Ortho( float left, float right, float top, float bottom, float fnear, float ffar )
+fmtx4 GlMatrixStackInterface::Ortho( float left, float right, float top, float bottom, float fnear, float ffar )
 {
 
-	CMatrix4 rval;
+	fmtx4 rval;
 	
 	if(1)
 	{

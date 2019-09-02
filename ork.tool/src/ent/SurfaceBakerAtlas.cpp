@@ -414,9 +414,9 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 						{
 							int ivi = in_ply.GetVertexID(iv);
 							const ork::MeshUtil::vertex& in_vtx = sub_mesh->RefVertexPool().GetVertex(ivi);
-							const CVector4& OrigColor = in_vtx.mCol[0];
-							const CVector3 Normal = in_vtx.mNrm.Normal();
-							CVector3 LightAccumColor(0.0f,0.0f,0.0f);
+							const fvec4& OrigColor = in_vtx.mCol[0];
+							const fvec3 Normal = in_vtx.mNrm.Normal();
+							fvec3 LightAccumColor(0.0f,0.0f,0.0f);
 							for( orklut<PoolString,ork::MeshUtil::Light*>::const_iterator itl=GroupLights.begin(); itl!=GroupLights.end(); itl++ )
 							{	const ork::MeshUtil::Light* plight = itl->second;
 								const ork::MeshUtil::DirLight* pdlight = ork::rtti::autocast(plight);
@@ -430,7 +430,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 								}
 								else if( pplight )
 								{
-									CVector3 wtol = (in_vtx.mPos-pplight->mWorldMatrix.GetTranslation());
+									fvec3 wtol = (in_vtx.mPos-pplight->mWorldMatrix.GetTranslation());
 									float fdot = Normal.Normal().Dot( -wtol.Normal() );
 									
 									
@@ -442,7 +442,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 									LightAccumColor += pplight->mColor*atten;
 								}
 							}
-							CVector3 NewColor = LightAccumColor; //(OrigColor*LightAccumColor);
+							fvec3 NewColor = LightAccumColor; //(OrigColor*LightAccumColor);
 							//pow( lmpCol.x*1.0f, 1.5f )*2.0f;
 							////////////////////////////////
 							NewColor.SetX( std::pow( double(NewColor.GetX()), 0.5 )*0.5f );
@@ -453,7 +453,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 							if( NewColor.GetZ() > 1.0f ) NewColor.SetZ(1.0f);
 							////////////////////////////////
 							ork::MeshUtil::vertex NewVertex = in_vtx;
-							NewVertex.mCol[0] = CVector4( NewColor, OrigColor.GetW() );
+							NewVertex.mCol[0] = fvec4( NewColor, OrigColor.GetW() );
 							int inewvi = DefSubMesh.MergeVertex( NewVertex );
 							NewPoly.miVertices[iv] = inewvi;
 						}

@@ -76,21 +76,21 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 				// picking support
 				///////////////////////////////////////////////////////////
 
-				CColor4 ObjColor;
+				fcolor4 ObjColor;
 				//toz64 ObjColor.SetRGBAU32( reinterpret_cast<U32>( (u32)((size_t)pren->GetObject() )) );
 
-				CColor4 color = targ->FBI()->IsPickState() ? ObjColor : pren->GetModColor();
+				fcolor4 color = targ->FBI()->IsPickState() ? ObjColor : pren->GetModColor();
 
 				///////////////////////////////////////////////////////////
 				// setup headlight (default lighting)
 				///////////////////////////////////////////////////////////
-				ork::CMatrix4				HeadLightMatrix;
+				ork::fmtx4				HeadLightMatrix;
 				ork::lev2::LightingGroup	HeadLightGroup;
 				ork::lev2::AmbientLightData	HeadLightData;
 				ork::lev2::AmbientLight		HeadLight(HeadLightMatrix,&HeadLightData);
 				ork::lev2::LightManagerData	HeadLightManagerData;
 				ork::lev2::LightManager HeadLightManager(HeadLightManagerData);
-				HeadLightData.SetColor(ork::CVector3(1.3f, 1.3f, 1.5f));
+				HeadLightData.SetColor(ork::fvec3(1.3f, 1.3f, 1.5f));
 				HeadLightData.SetAmbientShade( 0.75f );
 				HeadLight.miInFrustumID = 1;
 				HeadLightGroup.mLightMask.AddLight( & HeadLight );
@@ -105,10 +105,10 @@ void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 				///////////////////////////////////////////////////////////
 
 				float fscale = cd.GetScale();
-				CVector3 pos = FrameData.GetCameraData()->GetEye();
-				CMatrix4 mtxSPIN;
+				fvec3 pos = FrameData.GetCameraData()->GetEye();
+				fmtx4 mtxSPIN;
 				mtxSPIN.RotateY(fphase);
-				CMatrix4 mtxSKY;
+				fmtx4 mtxSKY;
 				mtxSKY.SetScale( fscale );
 				mtxSKY.SetTranslation( pos );
 

@@ -24,7 +24,7 @@ namespace ork { namespace tool {
 
 struct NormalToSphereCoordMapper
 {
-	CMatrix4 NormalToSphMapMtx;
+	fmtx4 NormalToSphMapMtx;
 
 	NormalToSphereCoordMapper()
 	{
@@ -36,22 +36,22 @@ struct NormalToSphereCoordMapper
 		NormalToSphMapMtx.SetElemYX( 1,3, -0.5f );
 	}
 
-	CVector2 MapBottom( const CVector3& vin )
+	fvec2 MapBottom( const fvec3& vin )
 	{
-		CVector3 vdir = vin;
+		fvec3 vdir = vin;
 		vdir.Normalize();
-		CVector2 rval;
+		fvec2 rval;
 
 		rval.SetX( vdir.GetX()/(1.0-vdir.GetY()) );
 		rval.SetY( vdir.GetZ()/(1.0-vdir.GetY()) );
 
 		return rval;
 	}
-	CVector2 MapTop( const CVector3& vin )
+	fvec2 MapTop( const fvec3& vin )
 	{
-		CVector3 vdir = vin;
+		fvec3 vdir = vin;
 		vdir.Normalize();
-		CVector2 rval;
+		fvec2 rval;
 
 		rval.SetX( -vdir.GetX()/(1.0+vdir.GetY()) );
 		rval.SetY( -vdir.GetZ()/(1.0+vdir.GetY()) );
@@ -59,13 +59,13 @@ struct NormalToSphereCoordMapper
 		return rval;
 	}
 
-	U32 ToColor( const CVector3& vin )
+	U32 ToColor( const fvec3& vin )
 	{
-		CVector3 vdir = vin;
+		fvec3 vdir = vin;
 		vdir.Normalize();
-		vdir = (vdir*0.5f)+CVector3(0.5f,0.5f,0.5f);
+		vdir = (vdir*0.5f)+fvec3(0.5f,0.5f,0.5f);
 
-		CVector4 v4( vdir, 1.0f );
+		fvec4 v4( vdir, 1.0f );
 
 		return v4.GetARGBU32();
 	}
@@ -75,11 +75,11 @@ struct NormalToSphereCoordMapper
 ///////////////////////////////////////////////////////////////////////////////
 
 #if 0
-static void RenderFace( lev2::GfxTarget* pTARG, const CColor4 & clr, lev2::Texture* ptex,
+static void RenderFace( lev2::GfxTarget* pTARG, const fcolor4 & clr, lev2::Texture* ptex,
 						int iface, float fstep,
 						float fumin, float fumax,
 						float fvmin, float fvmax,
-						const CMatrix4& uvmatrix,
+						const fmtx4& uvmatrix,
 						bool btop )
 {
 
@@ -111,10 +111,10 @@ static void RenderFace( lev2::GfxTarget* pTARG, const CColor4 & clr, lev2::Textu
 		{	
 			float fv2 = fv+fstep;
 
-			CVector3 vface00;
-			CVector3 vface10;
-			CVector3 vface01;
-			CVector3 vface11;
+			fvec3 vface00;
+			fvec3 vface10;
+			fvec3 vface01;
+			fvec3 vface11;
 
 			switch( iface )
 			{
@@ -122,63 +122,63 @@ static void RenderFace( lev2::GfxTarget* pTARG, const CColor4 & clr, lev2::Textu
 				// +/- Y
 				//////////////////////////////////
 				case 0:
-					vface00 = CVector3( fu, 1.0f, fv );
-					vface10 = CVector3( fu2, 1.0f, fv );
-					vface01 = CVector3( fu, 1.0f, fv2 );
-					vface11 = CVector3( fu2, 1.0f, fv2 );
+					vface00 = fvec3( fu, 1.0f, fv );
+					vface10 = fvec3( fu2, 1.0f, fv );
+					vface01 = fvec3( fu, 1.0f, fv2 );
+					vface11 = fvec3( fu2, 1.0f, fv2 );
 					break;
 				case 1:
-					vface00 = CVector3( fu, -1.0f, fv );
-					vface10 = CVector3( fu2, -1.0f, fv );
-					vface01 = CVector3( fu, -1.0f, fv2 );
-					vface11 = CVector3( fu2, -1.0f, fv2 );
+					vface00 = fvec3( fu, -1.0f, fv );
+					vface10 = fvec3( fu2, -1.0f, fv );
+					vface01 = fvec3( fu, -1.0f, fv2 );
+					vface11 = fvec3( fu2, -1.0f, fv2 );
 					break;
 
 				//////////////////////////////////
 				// +/- Z
 				//////////////////////////////////
 				case 2:
-					vface00 = CVector3( fu, fv, -1.0f );
-					vface10 = CVector3( fu2, fv, -1.0f );
-					vface01 = CVector3( fu, fv2, -1.0f );
-					vface11 = CVector3( fu2, fv2, -1.0f );
+					vface00 = fvec3( fu, fv, -1.0f );
+					vface10 = fvec3( fu2, fv, -1.0f );
+					vface01 = fvec3( fu, fv2, -1.0f );
+					vface11 = fvec3( fu2, fv2, -1.0f );
 					break;
 				case 3:
-					vface00 = CVector3( fu, fv, 1.0f );
-					vface10 = CVector3( fu2, fv, 1.0f );
-					vface01 = CVector3( fu, fv2, 1.0f );
-					vface11 = CVector3( fu2, fv2, 1.0f );
+					vface00 = fvec3( fu, fv, 1.0f );
+					vface10 = fvec3( fu2, fv, 1.0f );
+					vface01 = fvec3( fu, fv2, 1.0f );
+					vface11 = fvec3( fu2, fv2, 1.0f );
 					break;
 
 				//////////////////////////////////
 				// +/- X
 				//////////////////////////////////
 				case 4: // top
-					vface00 = CVector3( 1.0f, fu, fv );
-					vface10 = CVector3( 1.0f, fu2, fv );
-					vface01 = CVector3( 1.0f, fu, fv2 );
-					vface11 = CVector3( 1.0f, fu2, fv2 );
+					vface00 = fvec3( 1.0f, fu, fv );
+					vface10 = fvec3( 1.0f, fu2, fv );
+					vface01 = fvec3( 1.0f, fu, fv2 );
+					vface11 = fvec3( 1.0f, fu2, fv2 );
 					break;
 				case 5:
-					vface00 = CVector3( -1.0f, fu, fv );
-					vface10 = CVector3( -1.0f, fu2, fv );
-					vface01 = CVector3( -1.0f, fu, fv2 );
-					vface11 = CVector3( -1.0f, fu2, fv2 );
+					vface00 = fvec3( -1.0f, fu, fv );
+					vface10 = fvec3( -1.0f, fu2, fv );
+					vface01 = fvec3( -1.0f, fu, fv2 );
+					vface11 = fvec3( -1.0f, fu2, fv2 );
 					break;
 
 			}
 
-			CVector2 vface00_mapped = btop ? Mapper.MapTop( vface00 ) : Mapper.MapBottom( vface00 );
-			CVector2 vface10_mapped = btop ? Mapper.MapTop( vface10 ) : Mapper.MapBottom( vface10 );
-			CVector2 vface01_mapped = btop ? Mapper.MapTop( vface01 ) : Mapper.MapBottom( vface01 );
-			CVector2 vface11_mapped = btop ? Mapper.MapTop( vface11 ) : Mapper.MapBottom( vface11 );
+			fvec2 vface00_mapped = btop ? Mapper.MapTop( vface00 ) : Mapper.MapBottom( vface00 );
+			fvec2 vface10_mapped = btop ? Mapper.MapTop( vface10 ) : Mapper.MapBottom( vface10 );
+			fvec2 vface01_mapped = btop ? Mapper.MapTop( vface01 ) : Mapper.MapBottom( vface01 );
+			fvec2 vface11_mapped = btop ? Mapper.MapTop( vface11 ) : Mapper.MapBottom( vface11 );
 
 			lev2::SVtxV12C4T16 vtx00, vtx10, vtx01, vtx11;
 
-			CVector4 vUV00 = CVector4( fu, fv, 0.0f, 0.0f ).Transform( uvmatrix );
-			CVector4 vUV10 = CVector4( fu2, fv, 0.0f, 0.0f ).Transform( uvmatrix );
-			CVector4 vUV01 = CVector4( fu, fv2, 0.0f, 0.0f ).Transform( uvmatrix );
-			CVector4 vUV11 = CVector4( fu2, fv2, 0.0f, 0.0f ).Transform( uvmatrix );
+			fvec4 vUV00 = fvec4( fu, fv, 0.0f, 0.0f ).Transform( uvmatrix );
+			fvec4 vUV10 = fvec4( fu2, fv, 0.0f, 0.0f ).Transform( uvmatrix );
+			fvec4 vUV01 = fvec4( fu, fv2, 0.0f, 0.0f ).Transform( uvmatrix );
+			fvec4 vUV11 = fvec4( fu2, fv2, 0.0f, 0.0f ).Transform( uvmatrix );
 
 
 			vtx00.miX = vface00_mapped.GetX();
@@ -240,7 +240,7 @@ void SceneEditorVP::SaveCubeMap()
 	CPickBuffer<SceneEditorVP>* pb = mpPickBuffer;
 	lev2::GfxTarget* pTEXTARG = mpPickBuffer->GetContext();
 
-	const CVector3 Locator = mPerspCam->CamFocus.xyz();
+	const fvec3 Locator = mPerspCam->CamFocus.xyz();
 
 
 	float ffar = 1000.0f;
@@ -252,16 +252,16 @@ void SceneEditorVP::SaveCubeMap()
 
 	CCameraData CardinalCameras[6]; // top bottom front back left right
 
-	ork::CMatrix4 ProjMat = pTEXTARG->MTXI()->Persp( fang, 1.0f, fnear, ffar );
+	ork::fmtx4 ProjMat = pTEXTARG->MTXI()->Persp( fang, 1.0f, fnear, ffar );
 
-	CardinalCameras[0].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+CVector3(0.0f,1.0f,0.0f), CVector3(0.0f,0.0f,1.0f) );
-	CardinalCameras[1].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+CVector3(0.0f,-1.0f,0.0f), CVector3(0.0f,0.0f,1.0f) );
+	CardinalCameras[0].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+fvec3(0.0f,1.0f,0.0f), fvec3(0.0f,0.0f,1.0f) );
+	CardinalCameras[1].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+fvec3(0.0f,-1.0f,0.0f), fvec3(0.0f,0.0f,1.0f) );
 
-	CardinalCameras[2].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+CVector3(0.0f,0.0f,1.0f), CVector3(0.0f,1.0f,0.0f) );
-	CardinalCameras[3].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+CVector3(0.0f,0.0f,-1.0f), CVector3(0.0f,1.0f,0.0f) );
+	CardinalCameras[2].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+fvec3(0.0f,0.0f,1.0f), fvec3(0.0f,1.0f,0.0f) );
+	CardinalCameras[3].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+fvec3(0.0f,0.0f,-1.0f), fvec3(0.0f,1.0f,0.0f) );
 
-	CardinalCameras[4].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+CVector3(1.0f,0.0f,0.0f), CVector3(0.0f,1.0f,0.0f) );
-	CardinalCameras[5].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+CVector3(-1.0f,0.0f,0.0f), CVector3(0.0f,1.0f,0.0f) );
+	CardinalCameras[4].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+fvec3(1.0f,0.0f,0.0f), fvec3(0.0f,1.0f,0.0f) );
+	CardinalCameras[5].mMatView = pTEXTARG->MTXI()->LookAt(	Locator, Locator+fvec3(-1.0f,0.0f,0.0f), fvec3(0.0f,1.0f,0.0f) );
 
 	for( int icam=0; icam<6; icam++ )
 	{
@@ -298,10 +298,10 @@ void SceneEditorVP::SaveCubeMap()
 
 			pTEXTARG->MTXI()->PushPMatrix( CardinalCameras[icam].mMatProj );
 			pTEXTARG->MTXI()->PushVMatrix( CardinalCameras[icam].mMatView );
-			pTEXTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+			pTEXTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 			{
 				pTEXTARG->BindMaterial( lev2::GfxEnv::GetDefault3DMaterial() );
-				pTEXTARG->PushModColor( CColor4::White() );
+				pTEXTARG->PushModColor( fcolor4::White() );
 				{
 					mRenderer->DrawQueuedRenderables();
 					//ContextData.GetCamera()->AttachViewport( this );
@@ -343,8 +343,8 @@ void SceneEditorVP::SaveCubeMap()
 	const float fstep = 1.0f / 30.0f;
 
 	////////////////////////////////////////
-	CMatrix4 MatInvY, MatInvX, MatRotZN90;
-	CMatrix4 MatBiasY, MatBiasX;
+	fmtx4 MatInvY, MatInvX, MatRotZN90;
+	fmtx4 MatBiasY, MatBiasX;
 	MatInvX.Scale( -1.0f, 1.0f, 1.0f );
 	MatInvY.Scale( 1.0f, -1.0f, 1.0f );
 	MatRotZN90.RotateZ( -90.0f * DTOR );
@@ -361,12 +361,12 @@ void SceneEditorVP::SaveCubeMap()
 		mRenderer->SetTarget( pTEXTARG );
 
 		pTEXTARG->MTXI()->PushPMatrix( pTEXTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f ) );
-		pTEXTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-		pTEXTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+		pTEXTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+		pTEXTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 		pTEXTARG->PushViewport( SRect(0,0,1024,1024) );
 		{
 
-			CMatrix4 TexMatrix[6];
+			fmtx4 TexMatrix[6];
 
 			TexMatrix[2] = (MatInvY*MatInvX)*(MatBiasY*MatBiasX);
 			TexMatrix[3] = MatInvY*MatBiasY;
@@ -376,13 +376,13 @@ void SceneEditorVP::SaveCubeMap()
 
 			pTEXTARG->BindMaterial( & tmat );
 			{
-				RenderFace( pTEXTARG, CColor4::Green(),	FaceTextures[0], 0, fstep, -1.0f, 1.0f, -1.0f, 1.0f, TexMatrix[0], true );
+				RenderFace( pTEXTARG, fcolor4::Green(),	FaceTextures[0], 0, fstep, -1.0f, 1.0f, -1.0f, 1.0f, TexMatrix[0], true );
 				
-				RenderFace( pTEXTARG, CColor4::Blue(),	FaceTextures[2], 2, fstep, -1.0f, 1.0f, 0.0f, 1.0f, TexMatrix[2], true );
-				RenderFace( pTEXTARG, CColor4::Blue(),	FaceTextures[3], 3, fstep, -1.0f, 1.0f, 0.0f, 1.0f, TexMatrix[3], true );
+				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[2], 2, fstep, -1.0f, 1.0f, 0.0f, 1.0f, TexMatrix[2], true );
+				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[3], 3, fstep, -1.0f, 1.0f, 0.0f, 1.0f, TexMatrix[3], true );
 
-				RenderFace( pTEXTARG, CColor4::Red(),	FaceTextures[4], 4, fstep, 0.0f, 1.0f, -1.0f, 1.0f, TexMatrix[4], true );
-				RenderFace( pTEXTARG, CColor4::Red(),	FaceTextures[5], 5, fstep, 0.0f, 1.0f, -1.0f, 1.0f, TexMatrix[5], true );
+				RenderFace( pTEXTARG, fcolor4::Red(),	FaceTextures[4], 4, fstep, 0.0f, 1.0f, -1.0f, 1.0f, TexMatrix[4], true );
+				RenderFace( pTEXTARG, fcolor4::Red(),	FaceTextures[5], 5, fstep, 0.0f, 1.0f, -1.0f, 1.0f, TexMatrix[5], true );
 			}
 
 		}
@@ -410,11 +410,11 @@ void SceneEditorVP::SaveCubeMap()
 		mRenderer->SetTarget( pTEXTARG );
 
 		pTEXTARG->MTXI()->PushPMatrix( pTEXTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f ) );
-		pTEXTARG->MTXI()->PushVMatrix( CMatrix4::Identity );
-		pTEXTARG->MTXI()->PushMMatrix( CMatrix4::Identity );
+		pTEXTARG->MTXI()->PushVMatrix( fmtx4::Identity );
+		pTEXTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 		pTEXTARG->PushViewport( SRect(0,0,1024,1024) );
 		{
-			CMatrix4 TexMatrix[6];
+			fmtx4 TexMatrix[6];
 
 			TexMatrix[1] = (MatInvY*MatInvX)*(MatBiasY*MatBiasX);
 			
@@ -426,13 +426,13 @@ void SceneEditorVP::SaveCubeMap()
 
 			pTEXTARG->BindMaterial( & tmat );
 			{
-				RenderFace( pTEXTARG, CColor4::Green(),	FaceTextures[1], 1, fstep, -1.0f, 1.0f, -1.0f, 1.0f, TexMatrix[0], false );
+				RenderFace( pTEXTARG, fcolor4::Green(),	FaceTextures[1], 1, fstep, -1.0f, 1.0f, -1.0f, 1.0f, TexMatrix[0], false );
 				
-				RenderFace( pTEXTARG, CColor4::Blue(),	FaceTextures[2], 2, fstep, -1.0f, 1.0f, -1.0f, 0.0f, TexMatrix[2], false );
-				RenderFace( pTEXTARG, CColor4::Blue(),	FaceTextures[3], 3, fstep, -1.0f, 1.0f, -1.0f, 0.0f, TexMatrix[3], false );
+				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[2], 2, fstep, -1.0f, 1.0f, -1.0f, 0.0f, TexMatrix[2], false );
+				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[3], 3, fstep, -1.0f, 1.0f, -1.0f, 0.0f, TexMatrix[3], false );
 
-				RenderFace( pTEXTARG, CColor4::Red(),	FaceTextures[5], 4, fstep, -1.0f, 0.0f, -1.0f, 1.0f, TexMatrix[4], false );
-				RenderFace( pTEXTARG, CColor4::Red(),	FaceTextures[4], 5, fstep, -1.0f, 0.0f, -1.0f, 1.0f, TexMatrix[5], false );
+				RenderFace( pTEXTARG, fcolor4::Red(),	FaceTextures[5], 4, fstep, -1.0f, 0.0f, -1.0f, 1.0f, TexMatrix[4], false );
+				RenderFace( pTEXTARG, fcolor4::Red(),	FaceTextures[4], 5, fstep, -1.0f, 0.0f, -1.0f, 1.0f, TexMatrix[5], false );
 			}
 
 		}

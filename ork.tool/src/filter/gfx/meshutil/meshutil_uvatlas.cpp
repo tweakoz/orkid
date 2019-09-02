@@ -36,7 +36,7 @@ IDirect3DDevice9* GetNullD3dDevice();
 
 struct ColorComp
 {
-	bool operator()( const CColor4& c1, const CColor4& c2 ) const
+	bool operator()( const fcolor4& c1, const fcolor4& c2 ) const
 	{
 		boost::Crc64 crc1 = boost::crc64( (const void *) & c1, sizeof(c1) );
 		boost::Crc64 crc2 = boost::crc64( (const void *) & c2, sizeof(c2) );
@@ -78,7 +78,7 @@ static float ComputePolyArea( const char* pdata, int istride, int ivA, int ivB, 
 	const float* pposC = (const float*)
 	( pdata+(ivC*istride) );
 
-	CVector3 vtx[3];
+	fvec3 vtx[3];
 	vtx[0].SetXYZ( pposA[0], pposA[1], pposA[2] );
 	vtx[1].SetXYZ( pposB[0], pposB[1], pposB[2] );
 	vtx[2].SetXYZ( pposC[0], pposC[1], pposC[2] );

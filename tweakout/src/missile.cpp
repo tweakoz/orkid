@@ -53,7 +53,7 @@ static lev2::XgmModelAsset* model = 0;
 
 void LaunchMissile(	ent::SceneInst* sinst,
 					const ent::DagNode& dn,
-					const CVector3& InitialVelocity,
+					const fvec3& InitialVelocity,
 					WorldControllerInst* wci,
 					ITarget& tgt,
 					float fdmgmult )
@@ -137,8 +137,8 @@ MissileControllerInst::MissileControllerInst( const MissileControllerData& pcd, 
 	static const float kintg = 0.0f;	// mystery value
 	static const float kderi = 0.04f;	// minimum approach velocity
 
-	static const CVector2 pidrange(-100.0f,100.0f);
-	static const CVector2 pidmaxd(-30.0f,30.0f);
+	static const fvec2 pidrange(-100.0f,100.0f);
+	static const fvec2 pidmaxd(-30.0f,30.0f);
 	mPIDController[0].Configure( kprop, kintg, kderi, pidrange, pidmaxd );
 	mPIDController[1].Configure( kprop, kintg, kderi, pidrange, pidmaxd );
 	mPIDController[2].Configure( kprop, kintg, kderi, pidrange, pidmaxd );
@@ -182,15 +182,15 @@ MissileControllerInst::MissileControllerInst( const MissileControllerData& pcd, 
 			////////////////////////////////////////////////
 			// Draw Point Mass
 			////////////////////////////////////////////////
-			CMatrix4 MatE;
-			CVector3 vdir = rbody.mVelocity.Normal();
-			CVector3 vup = CVector3(1.0f,1.0f,1.0f);
-			CVector3 vsid = vdir.Cross(vup);
+			fmtx4 MatE;
+			fvec3 vdir = rbody.mVelocity.Normal();
+			fvec3 vup = fvec3(1.0f,1.0f,1.0f);
+			fvec3 vsid = vdir.Cross(vup);
 
 			MatE.fromNormalVectors( vsid, vup, vdir );
 			MatE.SetTranslation( rbody.mPosition );
-			CMatrix4 MatS; MatS.SetScale( 0.3f, 0.3f, 3.0f );
-			targ->PushModColor( CVector3::White() );
+			fmtx4 MatS; MatS.SetScale( 0.3f, 0.3f, 3.0f );
+			targ->PushModColor( fvec3::White() );
 			targ->MTXI()->PushMMatrix( MatS*MatE );
 
 			ork::lev2::RenderContextInstModelData rcimd;
@@ -223,7 +223,7 @@ MissileControllerInst::MissileControllerInst( const MissileControllerData& pcd, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void MissileControllerInst::Detonate(ork::ent::SceneInst *sinst, const ork::CMatrix4& mtx)
+void MissileControllerInst::Detonate(ork::ent::SceneInst *sinst, const ork::fmtx4& mtx)
 {
 #if 0
 
@@ -233,9 +233,9 @@ void MissileControllerInst::Detonate(ork::ent::SceneInst *sinst, const ork::CMat
 
 	parch->ComposeEntity( pent );
 	
-	CMatrix4 mtxs;
+	fmtx4 mtxs;
 	mtxs.SetScale(0.1f);
-	CMatrix4 mtx2 = mtx*mtxs;
+	fmtx4 mtx2 = mtx*mtxs;
 
 	pent->GetDagNode().GetTransformNode().GetTransform()->SetMatrix( mtx2 );
 
@@ -252,17 +252,17 @@ void MissileControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 
 	///////////////////////////////////////////
 
-	const CMatrix4& cmat = mRigidBody.mCurrentMatrix;
-	const CVector3 CurrentPos = cmat.GetTranslation();
-	const CVector3 DeltaPos = (mWaypoint-CurrentPos);
+	const fmtx4& cmat = mRigidBody.mCurrentMatrix;
+	const fvec3 CurrentPos = cmat.GetTranslation();
+	const fvec3 DeltaPos = (mWaypoint-CurrentPos);
 
 	///////////////////////////////////////////
 	// Logic
 	///////////////////////////////////////////
 
-	CVector3 TargetPos = mTarget->GetPos();
+	fvec3 TargetPos = mTarget->GetPos();
 
-	CVector3 TargetVel = (TargetPos-mLastTargetPos)*(1.0f/dt);
+	fvec3 TargetVel = (TargetPos-mLastTargetPos)*(1.0f/dt);
 
 	mLastTargetPos = TargetPos;
 
@@ -272,7 +272,7 @@ void MissileControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 		{	OrkAssert( mTarget );
 			if( mftimer <= 0.0f )
 			{
-				//mEntity->GetDagNode().GetTransformNode().GetTransform()->SetPosition( mHomeLoc + CVector3( 0.0f, 50.0f, 0.0f ) );
+				//mEntity->GetDagNode().GetTransformNode().GetTransform()->SetPosition( mHomeLoc + fvec3( 0.0f, 50.0f, 0.0f ) );
 				meState = ESTATE_AQUIRE;
 				mWaypoint = TargetPos+(TargetVel*0.5f);
 			}
@@ -283,7 +283,7 @@ void MissileControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 			if( mftimer <= 0.0f )
 			{
 				mftimer = 0.1f;
-				mWaypoint = TargetPos+(TargetVel*0.2f)+CVector3(0.0f,0.0f,0.0f);
+				mWaypoint = TargetPos+(TargetVel*0.2f)+fvec3(0.0f,0.0f,0.0f);
 			}
 			if( mLifeTime <= 0.0f )
 			{
@@ -298,7 +298,7 @@ void MissileControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 			// if we hit the ground, detonate
 			////////////////////////////////////
 
-			CVector3 hfnextp, hfnextn;
+			fvec3 hfnextp, hfnextn;
 			//mWCI->ReadSurface( CurrentPos, hfnextp, hfnextn );
 
 			if( CurrentPos.GetY() < hfnextp.GetY() )
@@ -316,7 +316,7 @@ void MissileControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 				mTarget->NotifyDamage( mRigidBody.mVelocity*mRigidBody.mTotalMass*mDamageMult );
 			}
 
-			CMatrix4 mtx;
+			fmtx4 mtx;
 			mtx.SetTranslation( CurrentPos );
 			Detonate(sinst,mtx);
 			
@@ -356,10 +356,10 @@ void MissileControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 	////////////////////////////////////////////////
 	// Draw Point Mass
 	////////////////////////////////////////////////
-	CMatrix4 MatE;
-	CVector3 vdir = mRigidBody.mVelocity.Normal();
-	CVector3 vup = CVector3(1.0f,1.0f,1.0f);
-	CVector3 vsid = vdir.Cross(vup);
+	fmtx4 MatE;
+	fvec3 vdir = mRigidBody.mVelocity.Normal();
+	fvec3 vup = fvec3(1.0f,1.0f,1.0f);
+	fvec3 vsid = vdir.Cross(vup);
 
 	MatE.fromNormalVectors( vsid, vup, vdir );
 	MatE.SetTranslation( mRigidBody.mPosition );
@@ -376,17 +376,17 @@ void MissileControllerInst::CalcForces( float fddt )
 {
 	////////////////////////////////////
 	int inump = mRigidBody.mPoints.size();
-	const CMatrix4& cmat = mRigidBody.mCurrentMatrix;
-	const CVector3 CurrentPos = cmat.GetTranslation();
-	const CVector3 CurrentVel = mRigidBody.mVelocity;
-	const CVector3 World_COM = mRigidBody.ComW(); 
+	const fmtx4& cmat = mRigidBody.mCurrentMatrix;
+	const fvec3 CurrentPos = cmat.GetTranslation();
+	const fvec3 CurrentVel = mRigidBody.mVelocity;
+	const fvec3 World_COM = mRigidBody.ComW(); 
 	
 	////////////////////////////////
 	// gravity
 	////////////////////////////////
 
-	CVector3 wgaccel( 0.0f, -9.8f, 0.0f ); // gravity
-	CVector3 wgforce = wgaccel*mRigidBody.mTotalMass;
+	fvec3 wgaccel( 0.0f, -9.8f, 0.0f ); // gravity
+	fvec3 wgforce = wgaccel*mRigidBody.mTotalMass;
 
 	mRigidBody.ApplyForce( wgforce, World_COM );
 
@@ -394,12 +394,12 @@ void MissileControllerInst::CalcForces( float fddt )
 	// PID Controller Update
 	////////////////////////////////
 
-	const CVector3 DeltaPos = (mWaypoint-CurrentPos);
+	const fvec3 DeltaPos = (mWaypoint-CurrentPos);
 
-	CVector3 IdealVel = DeltaPos.Normal()*150.0f;
+	fvec3 IdealVel = DeltaPos.Normal()*150.0f;
 	
-	CVector3 DeltaVel = (IdealVel-CurrentVel);
-	CVector3 DeltaAcc = (DeltaVel*(0.3f/fddt)-wgaccel);
+	fvec3 DeltaVel = (IdealVel-CurrentVel);
+	fvec3 DeltaAcc = (DeltaVel*(0.3f/fddt)-wgaccel);
 
 	float da_mag = DeltaAcc.Mag();
 
@@ -414,8 +414,8 @@ void MissileControllerInst::CalcForces( float fddt )
 	// friction 
 	///////////////////////////////////////////////
 	float fric = 0.000001f;
-	CVector3 acc = CurrentVel*(1.0f/fddt);
-	CVector3 accxz = CVector3( acc.GetX(), acc.GetY(), acc.GetZ() )*fric;
+	fvec3 acc = CurrentVel*(1.0f/fddt);
+	fvec3 accxz = fvec3( acc.GetX(), acc.GetY(), acc.GetZ() )*fric;
 	mRigidBody.ApplyForce( - accxz * mRigidBody.mTotalMass, World_COM );
 	mRigidBody.mAngularMomentum *= 0.9999f;
 

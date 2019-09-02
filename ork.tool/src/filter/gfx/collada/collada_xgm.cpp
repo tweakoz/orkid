@@ -642,7 +642,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 {
 	lev2::GfxTargetDummy DummyTarget;
 	const float kVertexScale(1.0f);
-	const CVector2 UVScale( 1.0f,1.0f );
+	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	mpVertexBuffer = new ork::lev2::StaticVertexBuffer<ork::lev2::SVtxV12N12B12T8I4W4>( NumVertexIndices, 0, ork::lev2::EPRIM_MULTI );
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8I4W4> vwriter;
@@ -673,7 +673,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 
 		OutVtx.mBoneIndices = (index0) | (index1<<8) | (index2<<16) | (index3<<24);
 
-		CVector4 vw;
+		fvec4 vw;
 		vw.SetX(InVtx.mJointWeights[3]);
 		vw.SetY(InVtx.mJointWeights[2]);
 		vw.SetZ(InVtx.mJointWeights[1]);
@@ -691,7 +691,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12B12T8I4W4() // binormal p
 void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skinned
 {
 	const float kVertexScale(1.0f);
-	const CVector2 UVScale( 1.0f,1.0f );
+	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 
 	lev2::GfxTargetDummy DummyTarget;
@@ -723,7 +723,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 
 		OutVtx.mBoneIndices = (index0) | (index1<<8) | (index2<<16) | (index3<<24);
 
-		CVector4 vw;
+		fvec4 vw;
 		vw.SetX(InVtx.mJointWeights[3]);
 		vw.SetY(InVtx.mJointWeights[2]);
 		vw.SetZ(InVtx.mJointWeights[1]);
@@ -739,7 +739,7 @@ void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N12T8I4W4() // basic pc skin
 void XgmSkinnedClusterBuilder::BuildVertexBuffer_V12N6I1T4() // basic wii skinned
 {
 	const float kVertexScale(1.0f);
-	const CVector2 UVScale( 1.0f,1.0f );
+	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N6I1T4> vwriter;
@@ -827,7 +827,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer( const SColladaMatGroup& matgroup
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environment
 {
 	const float kVertexScale(1.0f);
-	const CVector2 UVScale( 1.0f,1.0f );
+	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N6C2T4> vwriter;
@@ -862,7 +862,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N6C2T4() // basic wii environm
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc environment
 {
 	const float kVertexScale(1.0f);
-	const CVector2 UVScale( 1.0f,1.0f );
+	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T8C4> vwriter;
@@ -884,7 +884,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T8C4() // basic pc envir
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environment
 {
 	const float kVertexScale(1.0f);
-	const CVector2 UVScale( 1.0f,1.0f );
+	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12T16C4> vwriter;
@@ -907,7 +907,7 @@ void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12T16C4() // basic pc environ
 void XgmRigidClusterBuilder::BuildVertexBuffer_V12N12B12T16() // basic pc environment
 {
 	const float kVertexScale(1.0f);
-	const CVector2 UVScale( 1.0f,1.0f );
+	const fvec2 UVScale( 1.0f,1.0f );
 	int NumVertexIndices = mSubMesh.RefVertexPool().GetNumVertices();
 	lev2::GfxTargetDummy DummyTarget;
 	lev2::VtxWriter<ork::lev2::SVtxV12N12B12T16> vwriter;

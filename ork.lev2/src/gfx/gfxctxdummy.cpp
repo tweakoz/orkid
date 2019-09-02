@@ -42,9 +42,9 @@ bool DummyFxInterface::LoadFxShader( const AssetPath& pth, FxShader *pfxshader  
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CMatrix4 DuMatrixStackInterface::Ortho( float left, float right, float top, float bottom, float fnear, float ffar )
+fmtx4 DuMatrixStackInterface::Ortho( float left, float right, float top, float bottom, float fnear, float ffar )
 {
-	CMatrix4 mat;
+	fmtx4 mat;
 	mat.Ortho( left, right, top, bottom, fnear, ffar );
 	return  mat;
 }

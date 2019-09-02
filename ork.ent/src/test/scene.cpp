@@ -85,7 +85,7 @@ TEST(SceneManip1)
 
 class ScriptOnlyArchetype : public Archetype
 {
-	void DoStartEntity(SceneInst* psi, const CMatrix4 &world, Entity *pent ) const final
+	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final
 	{
 		//printf( "ScriptOnlyArchetype::DoStartEntity(%p)\n", pent );
 
@@ -140,7 +140,7 @@ TEST(ScriptCompTest)
 			auto& xn = dn.GetTransformNode();
 			auto& xf = xn.GetTransform();
 
-			xf.SetPosition(CVector3(fx,fy,fz));
+			xf.SetPosition(fvec3(fx,fy,fz));
 		}
 
 	    auto app = ApplicationStack::Top();

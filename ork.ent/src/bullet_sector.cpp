@@ -115,7 +115,7 @@ public:
 
 		//Create storage for the indices and verts
 		mIndices = new int[mNumIndices];
-		mVerts = new CVector3[mNumVerts];
+		mVerts = new fvec3[mNumVerts];
 
 		if (!mVerts || !mIndices)
 			return;
@@ -133,7 +133,7 @@ public:
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	TriangleIndexVertexBuffer(const orkvector<int>& indices, const orkvector<CVector3>& verts)
+	TriangleIndexVertexBuffer(const orkvector<int>& indices, const orkvector<fvec3>& verts)
 		: mLoaded(false)
 		, mNumIndices(0)
 		, mNumVerts(0)
@@ -146,7 +146,7 @@ public:
 		mNumIndices = indices.size();
 		mNumTris = mNumIndices/3;
 
-		mVerts = new CVector3[mNumVerts];
+		mVerts = new fvec3[mNumVerts];
 		mIndices = new int[mNumIndices];
 		mFlags = new int[mNumTris];
 
@@ -203,7 +203,7 @@ public:
 		mesh.m_indexType = PHY_INTEGER;
 		mesh.m_numVertices = mNumVerts;
 		mesh.m_vertexBase = (const unsigned char*)mVerts;
-		mesh.m_vertexStride = sizeof(CVector3);
+		mesh.m_vertexStride = sizeof(fvec3);
 
 		//Create a new bullet triangle index/vertex array and add the mesh to it
 		btTriangleIndexVertexArray* triangles = new btTriangleIndexVertexArray;
@@ -218,7 +218,7 @@ public:
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	void Transform(const ork::CMatrix4& transform)
+	void Transform(const ork::fmtx4& transform)
 	{
 		for (int vertIdx = 0;  vertIdx < mNumVerts; ++vertIdx)
 			mVerts[vertIdx] = mVerts[vertIdx].Transform(transform).xyz();
@@ -228,7 +228,7 @@ public:
 
 private:
 	bool mLoaded;
-	CVector3* mVerts;
+	fvec3* mVerts;
 	int* mIndices;
 	int* mFlags;
 	int mNumVerts;
@@ -519,7 +519,7 @@ float Sector::ContributeBasis(SectorData &data) {
 }
 
 void SectorPortal::ContributeBasis(bool reverse, SectorData &data) {
-	ork::CVector3 y, z;
+	ork::fvec3 y, z;
 	z = mPlane.GetNormal();
 	y  = data.mSectorVerts[mCornerVerts[PORTAL_CORNER_TL]].mPos - data.mSectorVerts[mCornerVerts[PORTAL_CORNER_BL]].mPos;
 	y += data.mSectorVerts[mCornerVerts[PORTAL_CORNER_TR]].mPos - data.mSectorVerts[mCornerVerts[PORTAL_CORNER_BR]].mPos;
@@ -548,7 +548,7 @@ Sector::Sector()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Sector::ContainsPoint(const SectorData &data, const ork::CVector3& position) const
+bool Sector::ContainsPoint(const SectorData &data, const ork::fvec3& position) const
 {
 	for(int portal = 0 ; portal < NumPortals() ; portal++) {
 		if ((mPortals[portal].mPlane.GetPointDistance(position)<-EPSILON))
@@ -563,8 +563,8 @@ bool Sector::ContainsPoint(const SectorData &data, const ork::CVector3& position
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Sector::GetRelativePositionOfPoint(const SectorData &data, const ork::CVector3& position, float &x, float &y, float &z) const {
-	CVector3 bl, tl, tr, br;
+void Sector::GetRelativePositionOfPoint(const SectorData &data, const ork::fvec3& position, float &x, float &y, float &z) const {
+	fvec3 bl, tl, tr, br;
 	int portal1 = 1;
 	float xmin = 0, xmax = 1, ymin = 0, ymax = 1;
 
@@ -647,11 +647,11 @@ void Sector::GetRelativePositionOfPoint(const SectorData &data, const ork::CVect
 	tr.Lerp(tr, data.mSectorVerts[mPortals[portal1].mCornerVerts[PORTAL_CORNER_TR]].mPos, z);
 	br.Lerp(br, data.mSectorVerts[mPortals[portal1].mCornerVerts[PORTAL_CORNER_BR]].mPos, z);
 
-	CVector3 dz = ((tr-tl)+(br-bl)).Cross((tl-bl)+(tr-br));
+	fvec3 dz = ((tr-tl)+(br-bl)).Cross((tl-bl)+(tr-br));
 
 	{
-		CVector3 n1 = dz.Cross(br-bl).Normal();
-		CVector3 n2 = dz.Cross(tl-tr).Normal();
+		fvec3 n1 = dz.Cross(br-bl).Normal();
+		fvec3 n2 = dz.Cross(tl-tr).Normal();
 
 		float d1 = n1.Dot(position)-n1.Dot(bl);
 		float d2 = n2.Dot(position)-n2.Dot(tl);
@@ -660,8 +660,8 @@ void Sector::GetRelativePositionOfPoint(const SectorData &data, const ork::CVect
 	}
 
 	{
-		CVector3 n1 = dz.Cross(tl-bl).Normal();
-		CVector3 n2 = dz.Cross(br-tr).Normal();
+		fvec3 n1 = dz.Cross(tl-bl).Normal();
+		fvec3 n2 = dz.Cross(br-tr).Normal();
 
 		float d1 = n1.Dot(position)-n1.Dot(bl);
 		float d2 = n2.Dot(position)-n2.Dot(br);
@@ -674,8 +674,8 @@ void Sector::GetRelativePositionOfPoint(const SectorData &data, const ork::CVect
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::CVector3 SectorPortal::GetCenter(orkvector<SectorVert> boundsVerts) const {
-	ork::CVector3 out(0,0,0);
+ork::fvec3 SectorPortal::GetCenter(orkvector<SectorVert> boundsVerts) const {
+	ork::fvec3 out(0,0,0);
 	for(int i=0 ; i<NUM_PORTAL_CORNERS ; i++)
 		out += boundsVerts[mCornerVerts[i]].mPos;
 	return out * (1.0f/NUM_PORTAL_CORNERS);
@@ -693,7 +693,7 @@ float Sector::Length(orkvector<SectorVert> mBoundsVerts) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Sector::Transform(const CMatrix4& transform)
+void Sector::Transform(const fmtx4& transform)
 {
 	// TODO
 /*	for (int i = 0; i < NUM_FACES; ++i)
@@ -813,7 +813,7 @@ Track::~Track()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Track::Load(const ork::file::Path& path, const ork::CMatrix4& transform)
+bool Track::Load(const ork::file::Path& path, const ork::fmtx4& transform)
 {
 	CollisonReader reader(path, "sec");
 
@@ -892,7 +892,7 @@ bool Track::Load(const ork::file::Path& path, const ork::CMatrix4& transform)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int Track::FindSectorByPoint(const ork::CVector3& point) const
+int Track::FindSectorByPoint(const ork::fvec3& point) const
 {
 	for (int sectorIdx = 0; sectorIdx < int(mSectorData.mSectors.size()); sectorIdx++)
 		if (mSectorData.mSectors[sectorIdx].ContainsPoint(mSectorData, point))
@@ -903,7 +903,7 @@ int Track::FindSectorByPoint(const ork::CVector3& point) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int Track::CheckTraversal(unsigned int currSector, const ork::CVector3& pos, bool allowInvalid) const
+int Track::CheckTraversal(unsigned int currSector, const ork::fvec3& pos, bool allowInvalid) const
 {
 	// OPTIMIZE?
 	if (currSector == -1) return -1;
@@ -917,7 +917,7 @@ int Track::CheckTraversal(unsigned int currSector, const ork::CVector3& pos, boo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float Track::GetProgressForPosition(unsigned int currSector, const ork::CVector3& pos) const
+float Track::GetProgressForPosition(unsigned int currSector, const ork::fvec3& pos) const
 {
 	const Sector& sector = mSectorData.mSectors[currSector];
 	return sector.GetProgressForPosition(mSectorData, pos);
@@ -925,7 +925,7 @@ float Track::GetProgressForPosition(unsigned int currSector, const ork::CVector3
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float Sector::GetProgressForPosition(const SectorData& data, const ork::CVector3& position) const
+float Sector::GetProgressForPosition(const SectorData& data, const ork::fvec3& position) const
 {
 	int farportal;
 	float x, y, z;
@@ -940,12 +940,12 @@ float Sector::GetProgressForPosition(const SectorData& data, const ork::CVector3
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Sector::GetBasis(const SectorData& data, const ork::CVector3& position, CVector3& dirX, CVector3& dirY, CVector3& dirZ) const
+void Sector::GetBasis(const SectorData& data, const ork::fvec3& position, fvec3& dirX, fvec3& dirY, fvec3& dirZ) const
 {
 	float x, y, z;
 	GetRelativePositionOfPoint(data, position, x, y, z);
 
-	ork::CVector3 a, b;
+	ork::fvec3 a, b;
 
 	a.Lerp(data.mSectorVerts[mPortals[0].mCornerVerts[PORTAL_CORNER_BL]].mY,
 		data.mSectorVerts[mPortals[0].mCornerVerts[PORTAL_CORNER_BR]].mY, 1-x);
@@ -997,7 +997,7 @@ void Sector::GetBasis(const SectorData& data, const ork::CVector3& position, CVe
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Sector::GetMidline(const SectorData& data, const ork::CVector3& position, MidlineVert& midline) const
+bool Sector::GetMidline(const SectorData& data, const ork::fvec3& position, MidlineVert& midline) const
 {
 	if (mMidlineTriCount == 0)
 		return false;
@@ -1010,9 +1010,9 @@ bool Sector::GetMidline(const SectorData& data, const ork::CVector3& position, M
 		const MidlineVert &vb = data.mMidlineVerts[data.mMidlineTris[mMidlineTriStart+i*3+1]];
 		const MidlineVert &vc = data.mMidlineVerts[data.mMidlineTris[mMidlineTriStart+i*3+2]];
 
-		ork::CVector3 v0 = vb.mPos-va.mPos;
-		ork::CVector3 v1 = vc.mPos-va.mPos;
-		ork::CVector3 vp = position-va.mPos;
+		ork::fvec3 v0 = vb.mPos-va.mPos;
+		ork::fvec3 v1 = vc.mPos-va.mPos;
+		ork::fvec3 vp = position-va.mPos;
 
 		float dot00 = v0.Dot(v0);
 		float dot01 = v0.Dot(v1);
@@ -1026,7 +1026,7 @@ bool Sector::GetMidline(const SectorData& data, const ork::CVector3& position, M
 		float dc = (dot11*dot0p-dot01*dot1p )*denom;
 
 		if (db + dc > 1) {
-			ork::CVector3 v = vc.mPos-vb.mPos;
+			ork::fvec3 v = vc.mPos-vb.mPos;
 			float x = v.Dot(position-vb.mPos)/v.Dot(v);
 			if (x < 0) x = 0;
 			if (x > 1) x = 1;
@@ -1048,7 +1048,7 @@ bool Sector::GetMidline(const SectorData& data, const ork::CVector3& position, M
 
 		float da = 1-(db+dc);
 
-		ork::CVector3 v = da*va.mPos + db*vb.mPos + dc*vc.mPos;
+		ork::fvec3 v = da*va.mPos + db*vb.mPos + dc*vc.mPos;
 
 		float dist = (v-position).MagSquared();
 		if (dist < closestDistSquared) {
@@ -1067,18 +1067,18 @@ bool Sector::GetMidline(const SectorData& data, const ork::CVector3& position, M
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Sector::CrossedKill(const SectorData& data, const ork::CVector3& oldpos, const ork::CVector3& newpos) const
+bool Sector::CrossedKill(const SectorData& data, const ork::fvec3& oldpos, const ork::fvec3& newpos) const
 {
 	for(int tri=0 ; tri<mKillTriCount ; tri++) {
-		const CPlane &plane = data.mKillPlanes[mKillTriStart+tri];
+		const fplane3 &plane = data.mKillPlanes[mKillTriStart+tri];
 		if (plane.GetPointDistance(oldpos)*plane.GetPointDistance(newpos) > 0) break;
-		CVector3 intersect;
+		fvec3 intersect;
 		float dis;
 		plane.Intersect(LineSegment3(oldpos, newpos), dis, intersect);
-		ork::CVector3 base = data.mKillVerts[data.mKillTris[(mKillTriStart+tri)*3+0]];
-		ork::CVector3 v0 = data.mKillVerts[data.mKillTris[(mKillTriStart+tri)*3+1]]-base;
-		ork::CVector3 v1 = data.mKillVerts[data.mKillTris[(mKillTriStart+tri)*3+2]]-base;
-		ork::CVector3 vp = intersect-base;
+		ork::fvec3 base = data.mKillVerts[data.mKillTris[(mKillTriStart+tri)*3+0]];
+		ork::fvec3 v0 = data.mKillVerts[data.mKillTris[(mKillTriStart+tri)*3+1]]-base;
+		ork::fvec3 v1 = data.mKillVerts[data.mKillTris[(mKillTriStart+tri)*3+2]]-base;
+		ork::fvec3 vp = intersect-base;
 
 		float dot00 = v0.Dot(v0);
 		float dot01 = v0.Dot(v1);
@@ -1101,7 +1101,7 @@ bool Sector::CrossedKill(const SectorData& data, const ork::CVector3& oldpos, co
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 Track::GetSectorEntry(int currSector) const {
+fvec3 Track::GetSectorEntry(int currSector) const {
 	const ork::ent::bullet::Sector& sector = mSectorData.mSectors[currSector];
 	int portal = 0;
 	if (sector.mPortals[1].mTrackProgress < sector.mPortals[0].mTrackProgress)
@@ -1109,21 +1109,21 @@ CVector3 Track::GetSectorEntry(int currSector) const {
 	return sector.mPortals[portal].GetCenter(mSectorData.mSectorVerts);
 }
 
-void Track::GetBasis(unsigned int currSector, const ork::CVector3& pos, CVector3& dirX, CVector3& dirY, CVector3& dirZ) const
+void Track::GetBasis(unsigned int currSector, const ork::fvec3& pos, fvec3& dirX, fvec3& dirY, fvec3& dirZ) const
 {
 	const ork::ent::bullet::Sector& sector = mSectorData.mSectors[currSector];
 
 	sector.GetBasis(mSectorData, pos, dirX, dirY, dirZ);
 }
 
-bool Track::GetMidline(unsigned int currSector, const ork::CVector3& pos, MidlineVert &midline) const
+bool Track::GetMidline(unsigned int currSector, const ork::fvec3& pos, MidlineVert &midline) const
 {
 	const ork::ent::bullet::Sector& sector = mSectorData.mSectors[currSector];
 
 	return sector.GetMidline(mSectorData, pos, midline);
 }
 
-bool Track::CrossedKill(unsigned int currSector, const ork::CVector3& oldpos, const ork::CVector3& newpos) const
+bool Track::CrossedKill(unsigned int currSector, const ork::fvec3& oldpos, const ork::fvec3& newpos) const
 {
 	const ork::ent::bullet::Sector& sector = mSectorData.mSectors[currSector];
 
@@ -1205,10 +1205,10 @@ TrackInst::TrackInst(const TrackData &data, ork::ent::Entity *pent)
 {
 	AllocationLabel("TrackInst::TrackInst");
 	//Get the transform from the entity
-	ork::CMatrix4 trans = GetEntity()->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
+	ork::fmtx4 trans = GetEntity()->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
 
 	//Get the scale from the Data
-	ork::CMatrix4 scale = fmtx4::Identity;
+	ork::fmtx4 scale = fmtx4::Identity;
 	float fscale = mData.GetTrackScale();
 	scale.SetScale( fscale );
 	trans = scale * trans;
@@ -1236,7 +1236,7 @@ bool TrackInst::DoLink(ork::ent::SceneInst* psi)
 				btScalar mass(0.0);
 				btVector3 localInertia(0, 0, 0);
 
-				btTransform btTrans = !ork::CMatrix4::Identity;
+				btTransform btTrans = !ork::fmtx4::Identity;
 
 				btDefaultMotionState* motionState = new btDefaultMotionState(btTrans);
 				btRigidBody::btRigidBodyConstructionInfo bodyInfo(mass, motionState, trackInst->GetTrack().GetTrackShape(), localInertia);
@@ -1310,7 +1310,7 @@ bool SectorTrackerInst::DoLink(ork::ent::SceneInst *inst)
 	return (mTrack!=0);
 }
 
-bool SectorTrackerInst::DoStart(ork::ent::SceneInst *inst, const ork::CMatrix4 &world)
+bool SectorTrackerInst::DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world)
 {
 	return true;
 }
@@ -1320,7 +1320,7 @@ bool SectorTrackerInst::DoNotify(const ork::event::Event *event)
 	return true;
 }
 
-bool SectorTrackerInst::UpdatePos(const ork::CVector3 &newpos, ork::CVector3 &newvel)
+bool SectorTrackerInst::UpdatePos(const ork::fvec3 &newpos, ork::fvec3 &newvel)
 {
 	OrkAssert(mTrack);
 
@@ -1352,13 +1352,13 @@ bool SectorTrackerInst::UpdatePos(const ork::CVector3 &newpos, ork::CVector3 &ne
 	mCurrSector = sector;
 	mTrackProgress = progress;
 
-	ork::CVector3 oldBasisY = mBasisY;
+	ork::fvec3 oldBasisY = mBasisY;
 
 	mTrack->GetBasis(mCurrSector, newpos, mBasisX, mBasisY, mBasisZ);
 
 	if (mTrack->GetMidline(mCurrSector, newpos, mMidlineVert)) {
 		// strict not-equal is correct, this is just an optimization for the no-midline case.
-		ork::CVector3 tubeY = (mMidlineVert.mPos-newpos).Normal();
+		ork::fvec3 tubeY = (mMidlineVert.mPos-newpos).Normal();
 		if (mMidlineVert.mTubeGrav > 0)
 			mBasisY.Lerp(mBasisY, -tubeY, mMidlineVert.mTubeGrav);
 		else
@@ -1393,7 +1393,7 @@ bool SectorTrackerInst::UpdatePos(const ork::CVector3 &newpos, ork::CVector3 &ne
 	return !mCrossedKill;
 }
 
-void SectorTrackerInst::Init(const ork::CVector3 &pos)
+void SectorTrackerInst::Init(const ork::fvec3 &pos)
 {
 	OrkAssert(mTrack);
 
@@ -1428,7 +1428,7 @@ void TrackArchetype::DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *p
 
 }
 
-void TrackArchetype::DoStartEntity(ork::ent::SceneInst *inst, const ork::CMatrix4 &world, ork::ent::Entity *pent) const
+void TrackArchetype::DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const
 {
 }
 

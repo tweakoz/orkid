@@ -150,8 +150,8 @@ void GfxMaterialWiiBasic::Init(ork::lev2::GfxTarget* pTarg) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static CMatrix4 BuildTextureMatrix(const TextureContext& Ctx) {
-  CMatrix4 MapMatrix;
+static fmtx4 BuildTextureMatrix(const TextureContext& Ctx) {
+  fmtx4 MapMatrix;
   MapMatrix.Scale(Ctx.mfRepeatU, Ctx.mfRepeatV, 1.0f);
   return MapMatrix;
 }
@@ -173,14 +173,14 @@ WiiMatrixBlockApplicator::WiiMatrixBlockApplicator(MaterialInstItemMatrixBlock* 
 void WiiMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
 {
   size_t inumbones = mMatrixBlockItem->GetNumMatrices();
-  const CMatrix4* Matrices = mMatrixBlockItem->GetMatrices();
+  const fmtx4* Matrices = mMatrixBlockItem->GetMatrices();
   FxShader* hshader = mMaterial->hModFX;
 
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hMatMV, pTARG->MTXI()->RefMVMatrix());
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hWVPMatrix, pTARG->MTXI()->RefMVPMatrix());
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hWMatrix, pTARG->MTXI()->RefMMatrix());
 
-  CMatrix4 iwmat;
+  fmtx4 iwmat;
   iwmat.GEMSInverse(pTARG->MTXI()->RefMVMatrix());
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hIWMatrix, iwmat);
 
@@ -194,7 +194,7 @@ WiiMatrixApplicator::WiiMatrixApplicator(MaterialInstItemMatrix* mtxitem, const 
     : mMatrixItem(mtxitem), mMaterial(pmat) {}
 
 void WiiMatrixApplicator::ApplyToTarget(GfxTarget* pTARG) {
-  const CMatrix4& mtx = mMatrixItem->GetMatrix();
+  const fmtx4& mtx = mMatrixItem->GetMatrix();
   FxShader* hshader = mMaterial->hModFX;
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hDiffuseMapMatrix, mtx);
 }
@@ -295,9 +295,9 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const Texture* diftexture = DiffuseCtx.mpTexture;
 
-  // CMatrix4 ivmat = pTarg->MTXI()->RefVMatrix();
+  // fmtx4 ivmat = pTarg->MTXI()->RefVMatrix();
 
-  CColor4 ModColor = pTarg->RefModColor();
+  fcolor4 ModColor = pTarg->RefModColor();
 
   mRasterState.SetZWriteMask(!bforcenoz);
 

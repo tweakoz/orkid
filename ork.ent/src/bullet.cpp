@@ -37,20 +37,20 @@ static const bool USE_GIMPACT = true;
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-btVector3 orkv3tobtv3( const ork::CVector3& v3 )
+btVector3 orkv3tobtv3( const ork::fvec3& v3 )
 {
 	return btVector3( v3.GetX(), v3.GetY(), v3.GetZ() );
 }
-ork::CVector3 btv3toorkv3( const btVector3& v3 )
+ork::fvec3 btv3toorkv3( const btVector3& v3 )
 {
-	return ork::CVector3( float(v3.x()), float(v3.y()), float(v3.z()) );
+	return ork::fvec3( float(v3.x()), float(v3.y()), float(v3.z()) );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btTransform orkmtx4tobtmtx4( const ork::CMatrix4& mtx )
+btTransform orkmtx4tobtmtx4( const ork::fmtx4& mtx )
 {	btTransform xf;
-	ork::CVector3 position = mtx.GetTranslation();
+	ork::fvec3 position = mtx.GetTranslation();
 	xf.setOrigin( ! position );
 	btMatrix3x3& mtx33 = xf.getBasis();
 	for( int i=0; i<3; i++ )
@@ -62,9 +62,9 @@ btTransform orkmtx4tobtmtx4( const ork::CMatrix4& mtx )
 	return xf;
 }
 
-ork::CMatrix4 btmtx4toorkmtx4( const btTransform& mtx )
-{	ork::CMatrix4 rval;
-	ork::CVector3 position = ! mtx.getOrigin();
+ork::fmtx4 btmtx4toorkmtx4( const btTransform& mtx )
+{	ork::fmtx4 rval;
+	ork::fvec3 position = ! mtx.getOrigin();
 	rval.SetTranslation( position );
 	const btMatrix3x3& mtx33 = mtx.getBasis();
 	for( int i=0; i<3; i++ )
@@ -78,7 +78,7 @@ ork::CMatrix4 btmtx4toorkmtx4( const btTransform& mtx )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btMatrix3x3 orkmtx3tobtbasis( const ork::CMatrix3& mtx )
+btMatrix3x3 orkmtx3tobtbasis( const ork::fmtx3& mtx )
 {	btMatrix3x3 xf;
 	for( int i=0; i<3; i++ )
 	{	float fx = mtx.GetElemYX(i,0);
@@ -89,8 +89,8 @@ btMatrix3x3 orkmtx3tobtbasis( const ork::CMatrix3& mtx )
 	return xf;
 }
 
-ork::CMatrix3 btbasistoorkmtx3( const btMatrix3x3& mtx )
-{	ork::CMatrix3 rval;
+ork::fmtx3 btbasistoorkmtx3( const btMatrix3x3& mtx )
+{	ork::fmtx3 rval;
 	for( int i=0; i<3; i++ )
 	{	const btVector3& vec = mtx.getColumn(i);
 		rval.SetElemXY(i,0,float(vec.x()));
@@ -120,12 +120,12 @@ void EntMotionState::setWorldTransform(const btTransform &transform)
 		/*const btVector3 &btOrigin = transform.getOrigin();
 		btQuaternion btRotation = transform.getRotation();
 
-		ork::CVector3 position = ! btOrigin;
+		ork::fvec3 position = ! btOrigin;
 
 		mEntity->GetDagNode().GetTransformNode().GetTransform()->SetPosition(position);
 
 		ork::CQuaternion rotationQuat(float(btRotation.x()), float(btRotation.y()), float(btRotation.z()), float(btRotation.w()) );
-		ork::CMatrix4 rotationMat;
+		ork::fmtx4 rotationMat;
 		rotationMat.FromQuaternion(rotationQuat);
 
 		mEntity->GetDagNode().GetTransformNode().GetTransform()->SetRotation(rotationMat);*/
@@ -139,9 +139,9 @@ static ork::PoolString sWorldString;
 
 btBoxShape *XgmModelToBoxShape(const ork::lev2::XgmModel *xgmmodel,float fscale)
 {
-	const ork::CVector3 &xyz = xgmmodel->GetBoundingAA_XYZ();
-	const ork::CVector3 &whd = xgmmodel->GetBoundingAA_WHD();
-	const ork::CVector3 &center = xgmmodel->GetBoundingCenter();
+	const ork::fvec3 &xyz = xgmmodel->GetBoundingAA_XYZ();
+	const ork::fvec3 &whd = xgmmodel->GetBoundingAA_WHD();
+	const ork::fvec3 &center = xgmmodel->GetBoundingCenter();
 	float radius = xgmmodel->GetBoundingRadius();
 	float fsc = 0.5f*fscale;
 
@@ -155,9 +155,9 @@ btBoxShape *XgmModelToBoxShape(const ork::lev2::XgmModel *xgmmodel,float fscale)
 
 btSphereShape *XgmModelToSphereShape(const ork::lev2::XgmModel *xgmmodel,float fscale)
 {
-	const ork::CVector3 &xyz = xgmmodel->GetBoundingAA_XYZ();
-	const ork::CVector3 &whd = xgmmodel->GetBoundingAA_WHD();
-	const ork::CVector3 &center = xgmmodel->GetBoundingCenter();
+	const ork::fvec3 &xyz = xgmmodel->GetBoundingAA_XYZ();
+	const ork::fvec3 &whd = xgmmodel->GetBoundingAA_WHD();
+	const ork::fvec3 &center = xgmmodel->GetBoundingCenter();
 	float radius = xgmmodel->GetBoundingRadius()*fscale;
 
 	// Assumes center of sphere is at origin

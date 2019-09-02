@@ -95,7 +95,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
 
     if (GetAutoClear()) {
       fvec4 rCol = GetClearColor();
-      // U32 ClearColorU = mTarget.CColor4ToU32(GetClearColor());
+      // U32 ClearColorU = mTarget.fcolor4ToU32(GetClearColor());
       if (IsPickState())
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       else
@@ -520,7 +520,7 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::Clear(const CColor4& color, float fdepth) {
+void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
   if (IsPickState())
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   else
@@ -624,7 +624,7 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, GetPixelContext& ctx) {
-  CColor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
+  fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
   int sx = int((rAt.GetX()) * float(mTarget.GetW()));
   int sy = int((1.0f - rAt.GetY()) * float(mTarget.GetH()));
@@ -654,7 +654,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, GetPixelContext& ctx) {
           for (int MrtIndex = 0; MrtIndex < 4; MrtIndex++) {
             int MrtTest = 1 << MrtIndex;
 
-            ctx.mPickColors[MrtIndex] = CColor4(0.0f, 0.0f, 0.0f, 0.0f);
+            ctx.mPickColors[MrtIndex] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
 
             if (MrtTest & MrtMask) {
 

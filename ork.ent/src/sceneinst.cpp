@@ -683,7 +683,7 @@ void SceneInst::StartEntities() {
     OrkAssert(pent);
 
     if (edata.GetArchetype()) {
-      CMatrix4 world = pent->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
+      fmtx4 world = pent->GetDagNode().GetTransformNode().GetTransform().GetMatrix();
       edata.GetArchetype()->StartEntity(this, world, pent);
     }
   }
@@ -833,7 +833,7 @@ void SceneInst::ServiceActivateQueue() {
   for (orkvector<EntityActivationQueueItem>::const_iterator it = activate_queue.begin(); it != activate_queue.end(); it++) {
     const EntityActivationQueueItem& item = (*it);
     ent::Entity* pent = item.mpEntity;
-    const CMatrix4& mtx = item.mMatrix;
+    const fmtx4& mtx = item.mMatrix;
     OrkAssert(pent);
 
     // printf( "Activating Entity (Q) : ent<%p>\n", pent );
@@ -856,7 +856,7 @@ Entity* SceneInst::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
   auto arch = spawn_rec->GetArchetype();
   arch->ComposeEntity(newent);
   arch->LinkEntity(this, newent);
-  EntityActivationQueueItem qi(CMatrix4::Identity, newent);
+  EntityActivationQueueItem qi(fmtx4::Identity, newent);
   this->QueueActivateEntity(qi);
   mEntities[spawn_rec->GetName()] = newent;
   return newent;

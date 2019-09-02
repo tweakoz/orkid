@@ -108,7 +108,7 @@ public:
     float mDisplacement;
 private:
     void DoCompose(ArchComposer& composer) override;
-    void DoStartEntity(SceneInst*, const CMatrix4& mtx, Entity* pent ) const override {}
+    void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const override {}
     void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
 
 };
@@ -155,7 +155,7 @@ void FnBallArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
             const FnBallComponentInst* fnbi = pent->GetTypedComponent<FnBallComponentInst>();
             const FnBallComponentData& fd = fnbi->GetFbd();
             bool IsPickState = rcid.GetRenderer()->GetTarget()->FBI()->IsPickState();
-            const CMatrix4& MVP = targ->MTXI()->RefMVPMatrix();
+            const fmtx4& MVP = targ->MTXI()->RefMVPMatrix();
 
             if( fd.mpMaterial && false==IsPickState )
             {
@@ -165,23 +165,23 @@ void FnBallArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
 
                 const float kdim = 30.0f;
 
-                CVector3 ori(0.0f,0.0f,0.0f);
-                CVector3 top(0.0f,kdim,0.0f);
-                CVector3 bot(0.0f,-kdim,0.0f);
-                CVector3 lft(-kdim,0.0f,0.0f);
-                CVector3 rht(+kdim,0.0f,0.0f);
-                CVector3 near(0.0f,0.0f,-kdim);
-                CVector3 far(0.0f,0.0f,+kdim);
+                fvec3 ori(0.0f,0.0f,0.0f);
+                fvec3 top(0.0f,kdim,0.0f);
+                fvec3 bot(0.0f,-kdim,0.0f);
+                fvec3 lft(-kdim,0.0f,0.0f);
+                fvec3 rht(+kdim,0.0f,0.0f);
+                fvec3 near(0.0f,0.0f,-kdim);
+                fvec3 far(0.0f,0.0f,+kdim);
 
-                CVector2 u_top(0.0f,0.0f);
-                CVector2 u_bot(0.0f,1.0f);
-                CVector2 u_lft(0.0f,0.5f);
-                CVector2 u_rht(0.5f,0.5f);
-                CVector2 u_near(0.25f,0.5f);
-                CVector2 u_far(0.75f,0.5f);
+                fvec2 u_top(0.0f,0.0f);
+                fvec2 u_bot(0.0f,1.0f);
+                fvec2 u_lft(0.0f,0.5f);
+                fvec2 u_rht(0.5f,0.5f);
+                fvec2 u_near(0.25f,0.5f);
+                fvec2 u_far(0.75f,0.5f);
 
-                auto do_vtx = [&]( const CVector3& pos,
-                                    const CVector2& uv ) -> vertex_t
+                auto do_vtx = [&]( const fvec3& pos,
+                                    const fvec2& uv ) -> vertex_t
                 {
                     return vertex_t( pos,
                                      pos.Normal(),
@@ -221,18 +221,18 @@ void FnBallArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
                 vw.UnLock(targ);            
 
                 ////////////////////////////////////////
-                auto mtx = CMatrix4::Identity;
+                auto mtx = fmtx4::Identity;
                 auto framedata = targ->GetRenderContextFrameData();
                 auto cdata = framedata->GetCameraData();
-                CMatrix4 matrs( mtx );
+                fmtx4 matrs( mtx );
                 matrs.SetTranslation( 0.0f, 0.0f, 0.0f );
                 matrs.Transpose();
-                CVector3 nx = cdata->GetXNormal().Transform( matrs );
-                CVector3 ny = cdata->GetYNormal().Transform( matrs );
+                fvec3 nx = cdata->GetXNormal().Transform( matrs );
+                fvec3 ny = cdata->GetYNormal().Transform( matrs );
 
-                CVector4 user0 = -(ny+nx);
-                CVector4 user1 =  (ny-nx);
-                auto user3 = CVector4(  parch->mTessLevel,
+                fvec4 user0 = -(ny+nx);
+                fvec4 user1 =  (ny-nx);
+                auto user3 = fvec4(  parch->mTessLevel,
                                         parch->mDisplacement,
                                         kdim,
                                         0.0f );

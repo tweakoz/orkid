@@ -86,10 +86,10 @@ vertex vertex::Lerp( const vertex & vtx, float flerp ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 void vertex::Center( const vertex** pverts, int icnt )
-{	mPos = CVector3(0.0f,0.0f,0.0f);
-	mNrm = CVector3(0.0f,0.0f,0.0f);
+{	mPos = fvec3(0.0f,0.0f,0.0f);
+	mNrm = fvec3(0.0f,0.0f,0.0f);
 	for( int i=0; i<vertex::kmaxcolors; i++ )
-	{	mCol[i] = CVector4(0.0f,0.0f,0.0f);
+	{	mCol[i] = fvec4(0.0f,0.0f,0.0f);
 	}
 	for( int i=0; i<vertex::kmaxuvs; i++ )
 	{	mUV[i].Clear();
@@ -184,10 +184,10 @@ int poly::VertexCCW(int vert) const
 vertex poly::ComputeCenter( const vertexpool &vpool ) const
 {	int inumv = GetNumSides();
 	vertex vcenter;
-	vcenter.mPos = CVector4( 0.0f, 0.0f, 0.0f );
-	vcenter.mNrm = CVector4( 0.0f, 0.0f, 0.0f );
+	vcenter.mPos = fvec4( 0.0f, 0.0f, 0.0f );
+	vcenter.mNrm = fvec4( 0.0f, 0.0f, 0.0f );
 	for( int ic=0; ic<vertex::kmaxcolors; ic++ )
-	{	vcenter.mCol[ic] = CVector4( 0.0f, 0.0f, 0.0f );
+	{	vcenter.mCol[ic] = fvec4( 0.0f, 0.0f, 0.0f );
 	}
 	for( int it=0; it<vertex::kmaxuvs; it++ )
 	{	vcenter.mUV[it].Clear();
@@ -212,13 +212,13 @@ vertex poly::ComputeCenter( const vertexpool &vpool ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float poly::ComputeArea( const vertexpool & vpool, const CMatrix4 & MatRange ) const
+float poly::ComputeArea( const vertexpool & vpool, const fmtx4 & MatRange ) const
 {	float farea = 0.0f;
-	ork::CVector3 base = vpool.GetVertex(miVertices[0]).mPos.Transform(MatRange);
-	ork::CVector3 prev = vpool.GetVertex(miVertices[1]).mPos.Transform(MatRange);
+	ork::fvec3 base = vpool.GetVertex(miVertices[0]).mPos.Transform(MatRange);
+	ork::fvec3 prev = vpool.GetVertex(miVertices[1]).mPos.Transform(MatRange);
 	// compute area polygon as area of triangle fan
 	for(int i=2 ; i<miNumSides ; i++) 
-	{	ork::CVector3 next = vpool.GetVertex(miVertices[i]).mPos.Transform(MatRange);
+	{	ork::fvec3 next = vpool.GetVertex(miVertices[i]).mPos.Transform(MatRange);
 		// area of triangle 1/2 length of cross product the vector of any two edges
 		farea += (prev-base).Cross(next-base).Mag() * 0.5f;
 		prev = next;
@@ -228,7 +228,7 @@ float poly::ComputeArea( const vertexpool & vpool, const CMatrix4 & MatRange ) c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float poly::ComputeEdgeLength( const vertexpool &vpool, const CMatrix4 &MatRange, int iedge) const
+float poly::ComputeEdgeLength( const vertexpool &vpool, const fmtx4 &MatRange, int iedge) const
 {	int inumvtx = miNumSides;
 	int iv0 = miVertices[ (iedge+0)%miNumSides ];
 	int iv1 = miVertices[ (iedge+1)%miNumSides ];
@@ -238,12 +238,12 @@ float poly::ComputeEdgeLength( const vertexpool &vpool, const CMatrix4 &MatRange
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CVector3 poly::ComputeNormal( const vertexpool& vpool ) const
-{	CVector3 rval(0,0,0);
-	const CVector3 *v0 = &vpool.GetVertex(miVertices[0]).mPos;
-	const CVector3 *v1 = &vpool.GetVertex(miVertices[1]).mPos;
+fvec3 poly::ComputeNormal( const vertexpool& vpool ) const
+{	fvec3 rval(0,0,0);
+	const fvec3 *v0 = &vpool.GetVertex(miVertices[0]).mPos;
+	const fvec3 *v1 = &vpool.GetVertex(miVertices[1]).mPos;
 	for(int i=2 ; i<miNumSides ; i++)
-	{	const CVector3 *v2 = &vpool.GetVertex(miVertices[i%miNumSides]).mPos;
+	{	const fvec3 *v2 = &vpool.GetVertex(miVertices[i%miNumSides]).mPos;
 		rval += (*v0-*v1).Cross(*v2-*v1);
 		v0 = v1;
 		v1 = v2;

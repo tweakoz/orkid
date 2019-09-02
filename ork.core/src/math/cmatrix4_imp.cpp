@@ -19,11 +19,11 @@
 
 namespace ork
 {
-template<> const EPropType CPropType<CMatrix4>::meType				= EPROPTYPE_MAT44REAL;
-template<> const char* CPropType<CMatrix4>::mstrTypeName					= "MAT44REAL";
-template<> void CPropType<CMatrix4>::ToString( const CMatrix4 & Value, PropTypeString& tstr)
+template<> const EPropType CPropType<fmtx4>::meType				= EPROPTYPE_MAT44REAL;
+template<> const char* CPropType<fmtx4>::mstrTypeName					= "MAT44REAL";
+template<> void CPropType<fmtx4>::ToString( const fmtx4 & Value, PropTypeString& tstr)
 {
-	const CMatrix4 & v = Value;
+	const fmtx4 & v = Value;
 
 	std::string result;
 	for(int i = 0; i < 15; i++)
@@ -32,7 +32,7 @@ template<> void CPropType<CMatrix4>::ToString( const CMatrix4 & Value, PropTypeS
 	tstr.format( "%s", result.c_str() );
 }
 
-template<> CMatrix4 CPropType<CMatrix4>::FromString(const PropTypeString& String)
+template<> fmtx4 CPropType<fmtx4>::FromString(const PropTypeString& String)
 {
 	float m[4][4];
 	sscanf(String.c_str(), "%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g",
@@ -40,7 +40,7 @@ template<> CMatrix4 CPropType<CMatrix4>::FromString(const PropTypeString& String
 		&m[1][0], &m[1][1], &m[1][2], &m[1][3],
 		&m[2][0], &m[2][1], &m[2][2], &m[2][3],
 		&m[3][0], &m[3][1], &m[3][2], &m[3][3]);
-	CMatrix4 result;
+	fmtx4 result;
 	for(int i = 0; i < 16; i++)
 		result.elements[i/4][i%4] = m[i/4][i%4];
 	return result;
@@ -51,11 +51,11 @@ template<> CMatrix4 CPropType<CMatrix4>::FromString(const PropTypeString& String
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace reflect {
-template<> void Serialize( const CMatrix4*in, CMatrix4*out, reflect::BidirectionalSerializer& bidi )
+template<> void Serialize( const fmtx4*in, fmtx4*out, reflect::BidirectionalSerializer& bidi )
 {
 	if( bidi.Serializing() )
 	{
-		bidi.Serializer()->Hint("CMatrix4");
+		bidi.Serializer()->Hint("fmtx4");
 		for( int i=0; i<16; i++ )
 		{
 			bidi | in->GetArray()[i];
@@ -74,7 +74,7 @@ template<> void Serialize( const CMatrix4*in, CMatrix4*out, reflect::Bidirection
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template class CPropType<CMatrix4>;
-template class TMatrix4<float>;		// explicit template instantiation
+template class CPropType<fmtx4>;
+template class Matrix44<float>;		// explicit template instantiation
 
 }

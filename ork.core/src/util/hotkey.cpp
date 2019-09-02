@@ -10,6 +10,7 @@
 #include <ork/util/hotkey.h>
 #include <ork/util/Context.hpp>
 #include <ork/kernel/string/PoolString.h>
+#include <ork/kernel/thread.h>
 #include <ork/application/application.h>
 #include <ork/file/path.h>
 #include <ork/file/fileenv.h>
@@ -19,9 +20,14 @@
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
-
 #include <ork/reflect/RegisterProperty.h>
 
+#include <fcntl.h>
+#if defined(IX)
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/input.h>
+#endif
 
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::HotKey, "HotKey" );
@@ -30,8 +36,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::HotKeyManager, "HotKeyManager" );
 
 namespace ork {
 
-#if defined( ORK_LINUX )
-
+#if defined( IX )
 
 static bool ix_kb_state[256];
 

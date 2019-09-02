@@ -118,7 +118,7 @@ void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 	}
 }
 
-bool ScriptComponentInst::DoStart(SceneInst *psi, const CMatrix4 &world)
+bool ScriptComponentInst::DoStart(SceneInst *psi, const fmtx4 &world)
 {
 	auto scm = psi->findSystem<ScriptSystem>();
 
