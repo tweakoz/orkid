@@ -401,7 +401,7 @@ public:
 	XgmBlendPoseInfo();
 
 	void InitBlendPose();
-	void AddPose(const DecompMtx44 &mat, CReal weight, EXFORM_COMPONENT components);
+	void AddPose(const DecompMtx44 &mat, float weight, EXFORM_COMPONENT components);
 
 	void ComputeMatrix(CMatrix4 &mtx) const;
 
@@ -415,7 +415,7 @@ private:
 	int								miNumAnims;
 
 	DecompMtx44						AnimMat[kmaxblendanims];
-	CReal							AnimWeight[kmaxblendanims];
+	float							AnimWeight[kmaxblendanims];
 	EXFORM_COMPONENT				Ani_components[kmaxblendanims];
 
 	PoseCallback *mPoseCallback;

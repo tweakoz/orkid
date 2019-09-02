@@ -309,7 +309,7 @@ struct SColladaVertexWeightingInfo
 	static const int kmaxweights = 4;
 
 	ork::lev2::XgmSkelNode*		mpSkelNodes[kmaxweights];
-	CReal						mWeighting[kmaxweights];
+	float						mWeighting[kmaxweights];
 	int							miNumWeights;
 
 	SColladaVertexWeightingInfo()
@@ -319,7 +319,7 @@ struct SColladaVertexWeightingInfo
 		for( int i=0; i<kmaxweights; i++ )
 		{
 			mpSkelNodes[i] = 0;
-			mWeighting[i] = CReal(0.0f);
+			mWeighting[i] = float(0.0f);
 		}
 	}
 
@@ -672,7 +672,7 @@ class ColladaMatrixAnimChannel : public ColladaAnimChannel
 
 public:
 
-	void SetParam( int iframe, int irow, int icol, CReal fval );
+	void SetParam( int iframe, int irow, int icol, float fval );
 
 	ColladaMatrixAnimChannel( const std::string & Name )
 		: ColladaAnimChannel(Name)
@@ -709,7 +709,7 @@ class ColladaUvAnimChannel : public ColladaAnimChannel
 
 public:
 
-	//void SetParam( int iframe, int irow, int icol, CReal fval );
+	//void SetParam( int iframe, int irow, int icol, float fval );
 
 	ColladaUvAnimChannel( const std::string & Name )
 		: ColladaAnimChannel(Name)

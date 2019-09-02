@@ -176,7 +176,7 @@ CVector3 CManip::IntersectWithPlanes(const ork::CVector2& posubp) {
   ray.mOrigin = rayN;
   ray.mDirection = rayDir;
   /////////////////////////////
-  CReal dist;
+  float dist;
   mIntersection[EPLANE_XZ].mbHasItersected = mPlaneXZ.Intersect(ray, dist);
   CVector4 rayOutXZ = (rayDir * dist);
   mIntersection[EPLANE_YZ].mbHasItersected = mPlaneYZ.Intersect(ray, dist);
@@ -218,12 +218,12 @@ void CManip::SelectBestPlane(const ork::CVector2& posubp) {
       mActiveIntersection = &mIntersection[EPLANE_XY];
     }
   } else {
-    CReal dotxz = RayDir.Dot(mPlaneXZ.GetNormal());
-    CReal dotxy = RayDir.Dot(mPlaneXY.GetNormal());
-    CReal dotyz = RayDir.Dot(mPlaneYZ.GetNormal());
-    CReal adotxz = CFloat::Abs(dotxz);
-    CReal adotxy = CFloat::Abs(dotxy);
-    CReal adotyz = CFloat::Abs(dotyz);
+    float dotxz = RayDir.Dot(mPlaneXZ.GetNormal());
+    float dotxy = RayDir.Dot(mPlaneXY.GetNormal());
+    float dotyz = RayDir.Dot(mPlaneYZ.GetNormal());
+    float adotxz = CFloat::Abs(dotxz);
+    float adotxy = CFloat::Abs(dotxy);
+    float adotyz = CFloat::Abs(dotyz);
 
     // printf( "mManager.mpCurrentManip<%p>\n", mManager.mpCurrentManip );
 
@@ -299,13 +299,13 @@ void CManipManager::DetachObject() {
 void CManipManager::CalcObjectScale(void) {
   CVector3 pos;
   CQuaternion rot;
-  CReal scale;
+  float scale;
   CMatrix4 ScaleMat;
   mCurTransform.GetMatrix(ScaleMat);
   ScaleMat.DecomposeMatrix(pos, rot, scale);
 
   mObjScale = scale;
-  mObjInvScale = CReal(1.0f) / mObjScale;
+  mObjInvScale = float(1.0f) / mObjScale;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -364,9 +364,9 @@ void CManipManager::Setup(ork::lev2::Renderer* prend) {
   const CVector4& ScreenXNorm = pTARG->MTXI()->GetScreenRightNormal();
 
   const CVector4 V0 = MatW.GetTranslation();
-  const CVector4 V1 = V0 + ScreenXNorm * CReal(30.0f);
+  const CVector4 V1 = V0 + ScreenXNorm * float(30.0f);
 
-  mfManipScale = CReal(mfBaseManipSize) * mfViewScale;
+  mfManipScale = float(mfBaseManipSize) * mfViewScale;
 
   //////////////////////////////////////////////////////////////
 

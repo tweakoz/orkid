@@ -470,7 +470,7 @@ template class CPropType<S32>;
 template class CPropType<U32>;
 template class CPropType<U16>;
 //template class CPropType<int>;
-template class CPropType<CReal>;
+template class CPropType<float>;
 template class CPropType<std::string>;
 template class CPropType<Char8>;
 template class CPropType<rtti::ICastable*>;

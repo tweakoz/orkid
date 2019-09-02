@@ -484,8 +484,8 @@ private:
 
 	f32					mfManipScale;
 
-	//CReal				mfGridSnap;
-	CReal				mfBaseManipSize;
+	//float				mfGridSnap;
+	float				mfBaseManipSize;
 
 	IManipInterface*	mpCurrentInterface;
 	Object*				mpCurrentObject;
@@ -493,8 +493,8 @@ private:
 	TransformNode		mOldTransform;
 	TransformNode		mCurTransform;
 
-	CReal				mObjScale;
-	CReal				mObjInvScale;
+	float				mObjScale;
+	float				mObjInvScale;
 
 	Grid3d				mGrid;
 };

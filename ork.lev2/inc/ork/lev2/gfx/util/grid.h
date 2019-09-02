@@ -29,23 +29,23 @@ public:
 
 	void SetGridMode( EGrid egrid ) { meGridMode=egrid; }
 
-	CReal				GetVisGridBase() const { return mVisGridBase; }
-	CReal				GetVisGridDiv() const { return mVisGridDiv; }
-	CReal				GetVisGridSize() const { return mVisGridSize; }
+	float				GetVisGridBase() const { return mVisGridBase; }
+	float				GetVisGridDiv() const { return mVisGridDiv; }
+	float				GetVisGridSize() const { return mVisGridSize; }
 
 	Grid3d();
 
 private:
 
 	EGrid				meGridMode;
-	CReal				mVisGridBase;
-	CReal				mVisGridDiv;
-	CReal				mVisGridHiliteDiv;
-	CReal				mGridDL;
-	CReal				mGridDR;
-	CReal				mGridDB;
-	CReal				mGridDT;
-	CReal				mVisGridSize;
+	float				mVisGridBase;
+	float				mVisGridDiv;
+	float				mVisGridHiliteDiv;
+	float				mGridDL;
+	float				mGridDR;
+	float				mGridDB;
+	float				mGridDT;
+	float				mVisGridSize;
 
 };
 

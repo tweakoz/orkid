@@ -17,18 +17,18 @@ namespace ork
 ///////////////////////////////////////////////////////////////////////////////
 // default to meters
 
-LengthUnit LengthUnit::geProjectUnits( CReal(1.0f) ); 
-const LengthUnit LengthUnit::mMeters( CReal(1.0f) );
-const LengthUnit LengthUnit::mCentimeters( CReal(0.01f) );
+LengthUnit LengthUnit::geProjectUnits( float(1.0f) ); 
+const LengthUnit LengthUnit::mMeters( float(1.0f) );
+const LengthUnit LengthUnit::mCentimeters( float(0.01f) );
 
 ///////////////////////////////////////////////////////////////////////////////
 // default to seconds
 
-TimeUnit TimeUnit::geProjectUnits( CReal(1.0f) );
-const TimeUnit TimeUnit::mSeconds( CReal(1.0f) );
-const TimeUnit TimeUnit::mMilliseconds( CReal(0.01f) );
-const TimeUnit TimeUnit::mMinutes( CReal(60.0f) );
-const TimeUnit TimeUnit::mHours( CReal(3600.0f) );
+TimeUnit TimeUnit::geProjectUnits( float(1.0f) );
+const TimeUnit TimeUnit::mSeconds( float(1.0f) );
+const TimeUnit TimeUnit::mMilliseconds( float(0.01f) );
+const TimeUnit TimeUnit::mMinutes( float(60.0f) );
+const TimeUnit TimeUnit::mHours( float(3600.0f) );
 
 ///////////////////////////////////////////////////////////////////////////////
 

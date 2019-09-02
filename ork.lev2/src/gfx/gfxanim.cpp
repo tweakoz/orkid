@@ -223,7 +223,7 @@ void XgmBlendPoseInfo::InitBlendPose()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void XgmBlendPoseInfo::AddPose(const DecompMtx44 &mat, CReal weight, EXFORM_COMPONENT components)
+void XgmBlendPoseInfo::AddPose(const DecompMtx44 &mat, float weight, EXFORM_COMPONENT components)
 {
 	OrkAssert(miNumAnims < kmaxblendanims);
 
@@ -341,7 +341,7 @@ void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
 		{
 			float fw = std::fabs(AnimWeight[0] + AnimWeight[1] - 1.0f);
 			//printf( "aw0<%f> aw1<%f>\n", AnimWeight[0], AnimWeight[1]);
-			OrkAssert(fw < CReal(0.01f));
+			OrkAssert(fw < float(0.01f));
 
 			const DecompMtx44 &a = AnimMat[0];
 			const DecompMtx44 &b = AnimMat[1];
@@ -352,7 +352,7 @@ void XgmBlendPoseInfo::ComputeMatrix( CMatrix4 & outmatrix ) const
 
 			// TODO: Callback for decomposed, pre-concatenated, pre-blended joint info
 
-			CReal flerp = AnimWeight[1];
+			float flerp = AnimWeight[1];
 
 			if(flerp < 0.0f) flerp = 0.0f;
 			if(flerp > 1.0f) flerp = 1.0f;

@@ -98,7 +98,7 @@ void SpiralEmitter<ptype>::Emit( Pool<ptype>& pool, float dt )
 {
 	// emit new particles
 
-	CReal scaler = mSed.GetEmitScale();
+	float scaler = mSed.GetEmitScale();
 
 	float fdeltap = (mSed.GetEmissionRate()*dt);
 	float femitout = mSed.GetEmissionOut();

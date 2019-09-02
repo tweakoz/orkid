@@ -142,7 +142,7 @@ void ColladaUvAnimChannel::SetData( int iframe, const std::string& itemname, flo
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ColladaMatrixAnimChannel::SetParam( int iframe, int irow, int icol, CReal fval )
+void ColladaMatrixAnimChannel::SetParam( int iframe, int irow, int icol, float fval )
 {
 	if( iframe >= miSettingFrame )
 	{

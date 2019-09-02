@@ -71,19 +71,19 @@ CMatrix4 GlMatrixStackInterface::Ortho( float left, float right, float top, floa
 	
 	if(1)
 	{
-		CReal zero(0.0f);
-		CReal one(1.0f);
-		CReal two(2.0f);
+		float zero(0.0f);
+		float one(1.0f);
+		float two(2.0f);
 
-		CReal invWidth = one / CReal(right - left);
-		CReal invHeight = one / CReal(top - bottom);
-		CReal invDepth = one / CReal(ffar - fnear);
-		CReal fScaleX = two * invWidth;
-		CReal fScaleY = two * invHeight;
-		CReal fScaleZ = -two * invDepth;
-		CReal TransX = -CReal(right + left) * invWidth;
-		CReal TransY = -CReal(top + bottom) * invHeight;
-		CReal TransZ = -CReal(ffar + fnear) * invDepth;
+		float invWidth = one / float(right - left);
+		float invHeight = one / float(top - bottom);
+		float invDepth = one / float(ffar - fnear);
+		float fScaleX = two * invWidth;
+		float fScaleY = two * invHeight;
+		float fScaleZ = -two * invDepth;
+		float TransX = -float(right + left) * invWidth;
+		float TransY = -float(top + bottom) * invHeight;
+		float TransZ = -float(ffar + fnear) * invDepth;
 
 
 		rval.SetElemYX( 0,0, fScaleX );

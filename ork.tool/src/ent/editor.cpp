@@ -437,13 +437,13 @@ void SceneEditorBase::EditorGroup() {
     const orkset<Object*>& SelSet = mselectionManager.getActiveSelection();
 
     if (SelSet.size()) {
-      const CReal kmax = CFloat::TypeMax();
-      CReal fmaxx = -kmax;
-      CReal fmaxy = -kmax;
-      CReal fmaxz = -kmax;
-      CReal fminx = kmax;
-      CReal fminy = kmax;
-      CReal fminz = kmax;
+      const float kmax = CFloat::TypeMax();
+      float fmaxx = -kmax;
+      float fmaxy = -kmax;
+      float fmaxz = -kmax;
+      float fminx = kmax;
+      float fminy = kmax;
+      float fminz = kmax;
 
       for (orkset<Object*>::const_iterator it = SelSet.begin(); it != SelSet.end(); it++) {
         SceneObject* pso = rtti::downcast<SceneObject*>((*it));

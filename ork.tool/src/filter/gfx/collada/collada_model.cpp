@@ -1043,7 +1043,7 @@ bool CColladaModel::ParseGeometries()
 							int inumweights = Weighting.miNumWeights;
 							MuVtx.miNumWeights = inumweights;
 							int ilargestweightindex = -1;
-							CReal fmaxw(0.0f);
+							float fmaxw(0.0f);
 							for( int iw=0; iw<inumweights; iw++ )
 							{
 								MuVtx.mJointNames[ iw ] = Weighting.mpSkelNodes[ iw ]->mNodeName;
@@ -1089,12 +1089,12 @@ bool CColladaModel::ParseGeometries()
 			brval = true;
 		}
 	}
-	mAABoundXYZ.SetX(CReal(fminX));
-	mAABoundXYZ.SetY(CReal(fminY));
-	mAABoundXYZ.SetZ(CReal(fminZ));
-	mAABoundWHD.SetX(CReal(fmaxX - fminX));
-	mAABoundWHD.SetY(CReal(fmaxY - fminY));
-	mAABoundWHD.SetZ(CReal(fmaxZ - fminZ));
+	mAABoundXYZ.SetX(float(fminX));
+	mAABoundXYZ.SetY(float(fminY));
+	mAABoundXYZ.SetZ(float(fminZ));
+	mAABoundWHD.SetX(float(fmaxX - fminX));
+	mAABoundWHD.SetY(float(fmaxY - fminY));
+	mAABoundWHD.SetZ(float(fmaxZ - fminZ));
 	return brval;
 }
 

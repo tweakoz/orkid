@@ -93,7 +93,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 		P0.CalcPlaneFromTriangle( VPos[0], VPos[1], VPos[2] );
 		//CVector4 VArea012[3] = { VPos[0],VPos[1],VPos[2] };
 
-		CReal fArea012 = CVector4::CalcTriArea( VPos[0],VPos[1],VPos[2], P0.GetNormal() );
+		float fArea012 = CVector4::CalcTriArea( VPos[0],VPos[1],VPos[2], P0.GetNormal() );
 
 		/*if( 0 != _isnan( fArea012 ) )
 		{
@@ -143,19 +143,19 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 				P1.CalcPlaneFromTriangle( VPos[3], VPos[4], VPos[5] );
 				//CVector4 VArea345[3] = { VPos[3],VPos[4],VPos[5] };
 
-				CReal fArea345 = CVector4::CalcTriArea( VPos[3],VPos[4],VPos[5], P1.GetNormal() );
+				float fArea345 = CVector4::CalcTriArea( VPos[3],VPos[4],VPos[5], P1.GetNormal() );
 
 				/*if( 0 != _isnan( fArea345 ) )
 				{
 					fArea345 = 0.0f;
 				}*/
 
-				CReal DelArea = CFloat::Abs(fArea012-fArea345);
-				CReal AvgArea = (fArea012+fArea345)*CReal(0.5f);
+				float DelArea = CFloat::Abs(fArea012-fArea345);
+				float AvgArea = (fArea012+fArea345)*float(0.5f);
 
 				if( P0.IsCoPlanar( P1 ) )
 				{
-					if( (DelArea/AvgArea)<CReal(0.01f) ) // are the areas within 1% of each other ?
+					if( (DelArea/AvgArea)<float(0.01f) ) // are the areas within 1% of each other ?
 					{
 						////////////////////////////////////////////
 						// count number of unique indices in the 2 triangles, for quads this should be 4
@@ -240,13 +240,13 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 								CVector4 VDelDC = (VPos[icorner1]-VPos[ilo0]).Normal();
 								CVector4 VDelBD = (VPos[ilo1]-VPos[icorner1]).Normal();
 
-								CReal fdotACBD = VDelAC.Dot( VDelBD );		// quad is at least a parallelogram if ang(V02) == ang(V31)
-								CReal fdotACAB = VDelAC.Dot( VDelAB );		// quad is rectangular if V01 is perpendicular to V02
-								CReal fdotDCBD = VDelDC.Dot( VDelBD );		// quad is rectangular if V01 is perpendicular to V02
+								float fdotACBD = VDelAC.Dot( VDelBD );		// quad is at least a parallelogram if ang(V02) == ang(V31)
+								float fdotACAB = VDelAC.Dot( VDelAB );		// quad is rectangular if V01 is perpendicular to V02
+								float fdotDCBD = VDelDC.Dot( VDelBD );		// quad is rectangular if V01 is perpendicular to V02
 
 								// make sure its a rectangular quad by comparing edge directions
 
-								if( (fdotACBD > CReal(0.999f) ) && (CFloat::Abs(fdotACAB)<CReal(0.02f)) && (CFloat::Abs(fdotDCBD)<CReal(0.02f)) )
+								if( (fdotACBD > float(0.999f) ) && (CFloat::Abs(fdotACAB)<float(0.02f)) && (CFloat::Abs(fdotDCBD)<float(0.02f)) )
 								{
 									int i0 = ici[ icorner0 ];
 									int i1 = ici[ ilo0 ];
@@ -259,16 +259,16 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 									CPlane P3;
 									P3.CalcPlaneFromTriangle( VPos[icorner0], VPos[ilo0], VPos[ilo1] );
 
-									CReal fdot = P3.n.Dot( P0.n );
+									float fdot = P3.n.Dot( P0.n );
 
 									//////////////////////////////////////
 
-									if( (CReal(1.0f)-fdot) < CReal(0.001f) )
+									if( (float(1.0f)-fdot) < float(0.001f) )
 									{
 										poutmesh->MergePoly( MeshUtil::poly( i0, i1, i3, i2 ) );
 										basquad = true;
 									}
-									else if( (CReal(1.0f)+fdot) < CReal(0.001f) )
+									else if( (float(1.0f)+fdot) < float(0.001f) )
 									{
 										poutmesh->MergePoly( MeshUtil::poly( i0, i2, i3, i1 ) );
 										basquad = true;

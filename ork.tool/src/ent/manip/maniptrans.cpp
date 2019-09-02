@@ -16,7 +16,7 @@
 
 namespace ork { namespace lev2 {
 
-static const CReal k90Degrees = CFloat::Pi() / CReal(2.0f);
+static const float k90Degrees = CFloat::Pi() / float(2.0f);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -198,7 +198,7 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 
 	bool bdrawok = true;
 	CVector4 v_dir;
-	const CReal vizthresh(0.90f);
+	const float vizthresh(0.90f);
 	if( GetClass() == CManipTX::GetClassStatic() )
 	{
 		v_dir = CVector4( 1.0f, 0.0f, 0.0f, 0.0f );
@@ -402,7 +402,7 @@ void CManipDualTrans::HandleDrag(const ork::CVector2& pos)
 	ork::CPlane plane(norm, 0);
 	ork::CVector3 spt;
 	ork::CVector3 ept;
-	ork::CReal d;
+	float d;
 
 	if(!plane.Intersect(sray, d, spt) || !plane.Intersect(eray, d, ept))
 		return;

@@ -34,8 +34,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::SpotLightData, "SpotLightData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
-template class fixedlut<CReal,lev2::Light*,lev2::LightContainer::kmaxlights>;
-template class fixedlut<CReal,lev2::Light*,lev2::GlobalLightContainer::kmaxlights>;
+template class fixedlut<float,lev2::Light*,lev2::LightContainer::kmaxlights>;
+template class fixedlut<float,lev2::Light*,lev2::GlobalLightContainer::kmaxlights>;
 template class ork::fixedvector<std::pair<U32,lev2::LightingGroup*>,lev2::LightCollector::kmaxonscreengroups>;
 template class ork::fixedvector<lev2::LightingGroup,lev2::LightCollector::kmaxonscreengroups>;
 template class ork::fixedvector<lev2::Light*,lev2::LightManager::kmaxinfrustum>;
@@ -287,7 +287,7 @@ bool SpotLight::IsInFrustum( const Frustum& frustum )
 
 ///////////////////////////////////////////////////////////
 
-void SpotLight::Set( const CVector3& pos, const CVector3& tgt, const CVector3& up, CReal fovy )
+void SpotLight::Set( const CVector3& pos, const CVector3& tgt, const CVector3& up, float fovy )
 {
 	//mFovy = fovy;
 
@@ -297,7 +297,7 @@ void SpotLight::Set( const CVector3& pos, const CVector3& tgt, const CVector3& u
 
 	//mWorldSpaceDirection.Normalize();
 
-	mProjectionMatrix.Perspective( GetFovy(), 1.0, GetRange()/CReal(1000.0f), GetRange() );
+	mProjectionMatrix.Perspective( GetFovy(), 1.0, GetRange()/float(1000.0f), GetRange() );
 	mViewMatrix.LookAt(		pos.GetX(), pos.GetY(), pos.GetZ(), 
 							tgt.GetX(), tgt.GetY(), tgt.GetZ(),
 							up.GetX(), up.GetY(), up.GetZ() );

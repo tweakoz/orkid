@@ -513,8 +513,8 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				{	static const CVector2& doit_viewportdim( GfxTarget *pTARG )
 					{
 						static CVector2 Dims;
-						//Dims.SetX( CReal(GfxEnv::GetRef().GetCT()->GetW()) );
-						//Dims.SetY( CReal(GfxEnv::GetRef().GetCT()->GetH()) );
+						//Dims.SetX( float(GfxEnv::GetRef().GetCT()->GetW()) );
+						//Dims.SetY( float(GfxEnv::GetRef().GetCT()->GetH()) );
 						return Dims;
 					}
 				};
@@ -614,12 +614,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "reltimemod300" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CReal> *ParamFloat = new GfxMaterialFxParamEngine<CReal>(this);
+				GfxMaterialFxParamEngine<float> *ParamFloat = new GfxMaterialFxParamEngine<float>(this);
 				param = ParamFloat;
 				struct gettime
-				{	static const CReal& doit( GfxTarget *pTARG )
-					{	static CReal reltime;
-						reltime = std::fmod( CReal( CSystem::GetRef().GetLoResRelTime() ), 300.0f );
+				{	static const float& doit( GfxTarget *pTARG )
+					{	static float reltime;
+						reltime = std::fmod( float( CSystem::GetRef().GetLoResRelTime() ), 300.0f );
 						return reltime;
 					}
 				};
@@ -629,12 +629,12 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "reltime" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CReal> *ParamFloat = new GfxMaterialFxParamEngine<CReal>(this);
+				GfxMaterialFxParamEngine<float> *ParamFloat = new GfxMaterialFxParamEngine<float>(this);
 				param = ParamFloat;
 				struct gettime
-				{	static const CReal& doit( GfxTarget *pTARG )
-					{	static CReal reltime;
-						reltime = CReal( CSystem::GetRef().GetLoResRelTime() );
+				{	static const float& doit( GfxTarget *pTARG )
+					{	static float reltime;
+						reltime = float( CSystem::GetRef().GetLoResRelTime() );
 						return reltime;
 					}
 				};
@@ -644,11 +644,11 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 			else if( Semantic == "engine_float_0" )
 			////////////////////////////////////
 			{
-				GfxMaterialFxParamEngine<CReal> *ParamFloat = new GfxMaterialFxParamEngine<CReal>(this);
+				GfxMaterialFxParamEngine<float> *ParamFloat = new GfxMaterialFxParamEngine<float>(this);
 				param = ParamFloat;
 				struct get_engine_float_0
 				{
-					static const CReal& doit(GfxTarget *pTARG, const GfxMaterialFxParamBase *param)
+					static const float& doit(GfxTarget *pTARG, const GfxMaterialFxParamBase *param)
 					{	
 						if(GfxMaterialFx *pmaterial = param->GetParentMaterial())
 						{
@@ -657,7 +657,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 
 							return pmaterial->mEngineParamFloats[0];
 						}
-						static const CReal zero = 0.0f;
+						static const float zero = 0.0f;
 						return zero;
 					}
 				};
@@ -1133,7 +1133,7 @@ void GfxMaterialFxParam<int>::Bind( FxShader* fxh, GfxTarget *ptarg )
 ///////////////////////////////////////////////////////////////////////////////
 
 template<>
-void GfxMaterialFxParam<CReal>::Bind( FxShader* fxh, GfxTarget *ptarg )
+void GfxMaterialFxParam<float>::Bind( FxShader* fxh, GfxTarget *ptarg )
 {
 	const std::string& paramname = GetRecord().mParameterName;
 	ptarg->FXI()->BindParamFloat( fxh, GetRecord().mParameterHandle, GetValue(ptarg) );
@@ -1226,10 +1226,10 @@ std::string GfxMaterialFxParam<int>::GetValueString( void ) const
 	return valstr.c_str();
 }
 template<>
-std::string GfxMaterialFxParam<CReal>::GetValueString( void ) const
+std::string GfxMaterialFxParam<float>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<CReal>::ToString( GetValue(0), valstr );
+	CPropType<float>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>

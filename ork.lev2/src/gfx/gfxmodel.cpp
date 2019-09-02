@@ -666,7 +666,7 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 			int inumbones = RefSkel().GetNumBones();
 			const CMatrix4 & MatBindShape = RefSkel().mBindShapeMatrix;
 			CMatrix4 MatStatScale;
-			CReal rstat(0.5f);
+			float rstat(0.5f);
 			MatStatScale.Scale(rstat,rstat,rstat);
 			
 			for( int ib=0; ib<inumbones; ib++ )

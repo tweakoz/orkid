@@ -27,19 +27,19 @@ enum EUnitType
 template <typename Unit>
 class UnitizedReal // internal format is in meters
 {
-	CReal mReal; 
+	float mReal; 
 
-	UnitizedReal( const CReal& v );
+	UnitizedReal( const float& v );
 
 public:
 
-	UnitizedReal( const CReal& v, const Unit& elunit );
-	CReal GetValue( const Unit& elunit ) const;
-	void SetValue( const CReal& v, const Unit& elunit );
+	UnitizedReal( const float& v, const Unit& elunit );
+	float GetValue( const Unit& elunit ) const;
+	void SetValue( const float& v, const Unit& elunit );
 	bool operator< ( const UnitizedReal<Unit>& oth );
 	bool operator> ( const UnitizedReal<Unit>& oth );
-	UnitizedReal<Unit> operator* ( const CReal& scalar );
-	void operator*= ( const CReal& scalar );
+	UnitizedReal<Unit> operator* ( const float& scalar );
+	void operator*= ( const float& scalar );
 	UnitizedReal<Unit> operator+ ( const UnitizedReal<Unit>& oth );
 	UnitizedReal<Unit> operator+= ( const UnitizedReal<Unit>& oth );
 };
@@ -47,38 +47,38 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename Unit>
-UnitizedReal<Unit>::UnitizedReal( const CReal& v )
+UnitizedReal<Unit>::UnitizedReal( const float& v )
 	: mReal( v, Unit::GetUnitType() )
 {
 }
 
 template <typename Unit>
-UnitizedReal<Unit>::UnitizedReal( const CReal& v, const Unit& elunit )
-	: mReal( CReal(0.0f) )
+UnitizedReal<Unit>::UnitizedReal( const float& v, const Unit& elunit )
+	: mReal( float(0.0f) )
 {
 	SetValue( v, elunit );
 }
 
 template <typename Unit>
-CReal UnitizedReal<Unit>::GetValue( const Unit& elunit ) const
+float UnitizedReal<Unit>::GetValue( const Unit& elunit ) const
 {
 	return elunit.FromNative()*mReal;
 }
 
 template <typename Unit>
-void UnitizedReal<Unit>::SetValue( const CReal& v, const Unit& elunit )
+void UnitizedReal<Unit>::SetValue( const float& v, const Unit& elunit )
 {
 	mReal = elunit.ToNative()*v;
 }
 
 template <typename Unit>
-UnitizedReal<Unit> UnitizedReal<Unit>::operator* ( const CReal& scalar )
+UnitizedReal<Unit> UnitizedReal<Unit>::operator* ( const float& scalar )
 {
 	return UnitizedReal<Unit>( mReal*scalar, Unit::GetNativeUnits() );
 }
 
 template <typename Unit>
-void UnitizedReal<Unit>::operator*= ( const CReal& scalar )
+void UnitizedReal<Unit>::operator*= ( const float& scalar )
 {
 	mReal*=scalar;
 }
@@ -112,14 +112,14 @@ bool UnitizedReal<Unit>::operator> ( const UnitizedReal<Unit>& oth )
 
 struct LengthUnit
 {
-	LengthUnit( CReal tometers )
+	LengthUnit( float tometers )
 		: mToMeters( tometers )
-		, mFromMeters( CReal(1.0f)/tometers )
+		, mFromMeters( float(1.0f)/tometers )
 	{
 	}
 
-	CReal ToNative() const { return mToMeters; }
-	CReal FromNative() const { return mFromMeters; }
+	float ToNative() const { return mToMeters; }
+	float FromNative() const { return mFromMeters; }
 
 	static const LengthUnit& GetProjectUnits() { return geProjectUnits; }
 	static const LengthUnit& GetNativeUnits() { return mMeters; }
@@ -131,8 +131,8 @@ struct LengthUnit
 
 private:
 
-	CReal mToMeters;
-	CReal mFromMeters;
+	float mToMeters;
+	float mFromMeters;
 
 	static LengthUnit						geProjectUnits;
 	static const LengthUnit				mMeters;
@@ -143,14 +143,14 @@ private:
 
 struct TimeUnit
 {
-	TimeUnit( CReal toseconds )
+	TimeUnit( float toseconds )
 		: mToSeconds( toseconds )
-		, mFromSeconds( CReal(1.0f)/toseconds )
+		, mFromSeconds( float(1.0f)/toseconds )
 	{
 	}
 
-	CReal ToNative() const { return mToSeconds; }
-	CReal FromNative() const { return mFromSeconds; }
+	float ToNative() const { return mToSeconds; }
+	float FromNative() const { return mFromSeconds; }
 
 	static const TimeUnit& GetProjectUnits() { return geProjectUnits; }
 	static const TimeUnit& GetNative() { return mSeconds; }
@@ -162,8 +162,8 @@ struct TimeUnit
 
 private:
 
-	CReal mToSeconds;
-	CReal mFromSeconds;
+	float mToSeconds;
+	float mFromSeconds;
 
 	static TimeUnit						geProjectUnits;
 	static const TimeUnit					mSeconds;

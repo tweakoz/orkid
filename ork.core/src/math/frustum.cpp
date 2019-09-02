@@ -113,7 +113,7 @@ void Frustum::Set( const mtx44_type& IVPMatrix )
 	mtx44_type::UnProject( IVPMatrix, CVector4(0.0f,0.0f,minz), camrayN );
 	mtx44_type::UnProject( IVPMatrix, CVector4(0.0f,0.0f,maxz), camrayF );
 
-    vec4_type camrayHALF = (camrayN+camrayF)*CReal(0.5f);
+    vec4_type camrayHALF = (camrayN+camrayF)*float(0.5f);
 
 	mXNormal = mFarCorners[1] - mFarCorners[0];
 	mYNormal = mFarCorners[3] - mFarCorners[0];
@@ -122,7 +122,7 @@ void Frustum::Set( const mtx44_type& IVPMatrix )
     mYNormal.Normalize();
     mZNormal.Normalize();
 
-	vec3_type  inNormal = mZNormal*CReal(-1.0f);
+	vec3_type  inNormal = mZNormal*float(-1.0f);
 	mNearPlane.CalcFromNormalAndOrigin( mZNormal, camrayN );
     mFarPlane.CalcFromNormalAndOrigin( inNormal, camrayF );
 

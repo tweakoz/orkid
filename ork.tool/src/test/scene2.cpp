@@ -203,9 +203,9 @@ TEST(SceneTortureTest)
 
 			ork::lev2::CManipManager::GetRef().AttachObject( pobj );
 			ork::TransformNode3D xfnode;
-			CReal fx(CReal(rand()%65535)/CReal(65536.0f));
-			CReal fy(CReal(rand()%65535)/CReal(65536.0f));
-			CReal fz(CReal(rand()%65535)/CReal(65536.0f));
+			float fx(float(rand()%65535)/float(65536.0f));
+			float fy(float(rand()%65535)/float(65536.0f));
+			float fz(float(rand()%65535)/float(65536.0f));
 			ork::CVector3 Translation( fx,fy,fz );
 			xfnode.Translate( ork::TransformNode3D::EMODE_ABSOLUTE, Translation );
 			ork::lev2::CManipManager::GetRef().ApplyTransform( xfnode );

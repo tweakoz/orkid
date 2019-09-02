@@ -10,7 +10,7 @@
 #include <ork/math/misc_math.h>
 #include <ork/math/perlin_noise.h>
 
-using ork::CReal;
+
 using ork::CVector2;
 using ork::TVector2;
 
@@ -116,7 +116,7 @@ NoiseCache2D::~NoiseCache2D()
 	delete[] mCache;
 }
 
-CReal NoiseCache2D::ValueAt(const CVector2& pos, const CVector2& offset, CReal amplitude, CReal frequency)
+float NoiseCache2D::ValueAt(const CVector2& pos, const CVector2& offset, float amplitude, float frequency)
 {
 	u32 numSamplesMask = mkSamplesPerSide - 1;
 
@@ -124,12 +124,12 @@ CReal NoiseCache2D::ValueAt(const CVector2& pos, const CVector2& offset, CReal a
 	int iX = int(adjPos.GetX());
 	int iY = int(adjPos.GetY());
 
-	const CReal smoothXT(SmoothT(adjPos.GetX() - CReal(iX)));
-	const CReal smoothYT(SmoothT(adjPos.GetY() - CReal(iY)));
+	const float smoothXT(SmoothT(adjPos.GetX() - float(iX)));
+	const float smoothYT(SmoothT(adjPos.GetY() - float(iY)));
 
-	const CReal edgePos0(LinearInterp(smoothYT, CacheAt(u32(iX),     u32(iY)), CacheAt(u32(iX),     u32(iY + 1))));
-	const CReal edgePos1(LinearInterp(smoothYT, CacheAt(u32(iX + 1), u32(iY)), CacheAt(u32(iX + 1), u32(iY + 1))));
-	return amplitude * CReal(LinearInterp(smoothXT, edgePos0, edgePos1));
+	const float edgePos0(LinearInterp(smoothYT, CacheAt(u32(iX),     u32(iY)), CacheAt(u32(iX),     u32(iY + 1))));
+	const float edgePos1(LinearInterp(smoothYT, CacheAt(u32(iX + 1), u32(iY)), CacheAt(u32(iX + 1), u32(iY + 1))));
+	return amplitude * float(LinearInterp(smoothXT, edgePos0, edgePos1));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,7 +149,7 @@ PerlinNoiseGenerator::~PerlinNoiseGenerator()
 	}
 }
 
-void PerlinNoiseGenerator::AddOctave(CReal frequency, CReal amplitude, const CVector2& offset, int seed, u32 dimensions)
+void PerlinNoiseGenerator::AddOctave(float frequency, float amplitude, const CVector2& offset, int seed, u32 dimensions)
 {
 	Octave octave;
 	octave.mAmplitude = amplitude;
@@ -161,9 +161,9 @@ void PerlinNoiseGenerator::AddOctave(CReal frequency, CReal amplitude, const CVe
 	mOctaves.push_back(octave);
 }
 
-CReal PerlinNoiseGenerator::ValueAt(const CVector2& pos)
+float PerlinNoiseGenerator::ValueAt(const CVector2& pos)
 {
-	CReal total(0.0f);
+	float total(0.0f);
 
 	for (orklist<Octave>::iterator it = mOctaves.begin(); it != mOctaves.end(); ++it) 
 		total += it->mNoise->ValueAt(pos, it->mOffset, it->mAmplitude, it->mFrequency);

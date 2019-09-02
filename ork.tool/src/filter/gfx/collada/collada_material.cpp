@@ -306,7 +306,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 				{
 					FCDEffectParameterFloat* FloatColladaParam = (FCDEffectParameterFloat*) Param;
 
-					ork::lev2::GfxMaterialFxParamArtist<CReal> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CReal>;
+					ork::lev2::GfxMaterialFxParamArtist<float> *paramf = new ork::lev2::GfxMaterialFxParamArtist<float>;
 					paramf->mValue = FloatColladaParam->GetValue();
 					param=paramf;
 					param->GetRecord().meParameterType = CPropType<float>::GetType();
@@ -373,7 +373,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 					{
 						FCDEffectParameterString *ParamString = (FCDEffectParameterString*) Param;
 
-						ork::lev2::GfxMaterialFxParamArtist<CReal> *paramf = new ork::lev2::GfxMaterialFxParamArtist<CReal>;
+						ork::lev2::GfxMaterialFxParamArtist<float> *paramf = new ork::lev2::GfxMaterialFxParamArtist<float>;
 						paramf->mValue = float(atof( ParamString->GetValue().c_str() ));
 						param=paramf;
 						param->GetRecord().meParameterType = CPropType<float>::GetType();

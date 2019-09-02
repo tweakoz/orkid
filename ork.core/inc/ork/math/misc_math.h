@@ -345,17 +345,17 @@ public:
   CPolynomial() {}
 
   CPolynomial Differentiate() const;
-  void SetCoefs(const CReal* array);
-  void SetCoefs(int i, CReal num);
-  CReal GetCoefs(int i) const;
-  CReal Evaluate(CReal val) const;
-  CReal operator()(CReal val) const;
+  void SetCoefs(const float* array);
+  void SetCoefs(int i, float num);
+  float GetCoefs(int i) const;
+  float Evaluate(float val) const;
+  float operator()(float val) const;
   CPolynomial operator=(const CPolynomial& a);
   CPolynomial operator+(const CPolynomial& a);
   CPolynomial operator-(const CPolynomial& a);
 
 private:
-  CReal coefs[4];
+  float coefs[4];
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -626,8 +626,8 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
 void GlFrameBufferInterface::GetPixel(const fvec4& rAt, GetPixelContext& ctx) {
   CColor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
-  int sx = int((rAt.GetX()) * CReal(mTarget.GetW()));
-  int sy = int((1.0f - rAt.GetY()) * CReal(mTarget.GetH()));
+  int sx = int((rAt.GetX()) * float(mTarget.GetW()));
+  int sy = int((1.0f - rAt.GetY()) * float(mTarget.GetH()));
 
   bool bInBounds = ((sx < mTarget.GetW()) && (sy < mTarget.GetH()) && (sx > 0) && (sy > 0));
 

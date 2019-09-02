@@ -80,7 +80,7 @@ template <typename T> class TPlane
 
 };
 
-typedef TPlane<CReal> CPlane;
+typedef TPlane<float> CPlane;
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

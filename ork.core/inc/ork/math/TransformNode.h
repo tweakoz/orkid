@@ -25,7 +25,7 @@ struct Transform3DMatrix
 {
 	typedef CVector3		PosType;
 	typedef CQuaternion	RotType;
-	typedef CReal			ScaType;
+	typedef float			ScaType;
 	typedef CMatrix4&		MatType;
 
 	void SetMatrix( const CMatrix4& );

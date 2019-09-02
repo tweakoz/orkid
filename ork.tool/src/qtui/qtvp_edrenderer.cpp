@@ -240,7 +240,7 @@ void Renderer::RenderFrustum(const lev2::FrustumRenderable& FrusRen) const {
   ObjColor.SetRGBAU32((U32)asu64);
 
   CVector3 vScreenUp, vScreenRight;
-  CVector2 vpdims(CReal(GetTarget()->GetW()), CReal(GetTarget()->GetH()));
+  CVector2 vpdims(float(GetTarget()->GetW()), float(GetTarget()->GetH()));
 
   bool objspace = FrusRen.IsObjSpace();
 

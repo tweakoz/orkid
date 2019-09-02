@@ -187,10 +187,10 @@ struct uvmapcoord
 	CVector3 mMapTangent;
 	CVector2 mMapTexCoord;
 
-	void Lerp( const uvmapcoord & ina, const uvmapcoord &inb, CReal flerp );
+	void Lerp( const uvmapcoord & ina, const uvmapcoord &inb, float flerp );
 
 	uvmapcoord operator+ ( const uvmapcoord & ina ) const;
-	uvmapcoord operator* ( const CReal Scalar ) const;
+	uvmapcoord operator* ( const float Scalar ) const;
 
 	uvmapcoord()
 	{
@@ -224,7 +224,7 @@ struct vertex
 
 	CVector4	mCol[kmaxcolors];
 	uvmapcoord	mUV[kmaxuvs];
-	CReal		mJointWeights[kmaxinfluences];
+	float		mJointWeights[kmaxinfluences];
 
 	vertex()
 		: miNumWeights( 0 )
@@ -238,12 +238,12 @@ struct vertex
 		for( int i=0; i<kmaxinfluences; i++ )
 		{
 			mJointNames[i] = "";
-			mJointWeights[i] = CReal(0.0f);
+			mJointWeights[i] = float(0.0f);
 		}
 	}
 
-	vertex Lerp( const vertex & vtx, CReal flerp ) const;
-	void Lerp( const vertex& a, const vertex & b, CReal flerp );
+	vertex Lerp( const vertex & vtx, float flerp ) const;
+	void Lerp( const vertex& a, const vertex & b, float flerp );
 
 	const CVector3& Pos() const { return mPos; }
 
@@ -390,8 +390,8 @@ public:
 	int VertexCCW(int vert) const;
 
 	vertex ComputeCenter( const vertexpool &vpool ) const;
-	CReal ComputeEdgeLength( const vertexpool &vpool, const CMatrix4 & MatRange, int iedge ) const;
-	CReal ComputeArea( const vertexpool &vpool, const CMatrix4 & MatRange ) const;
+	float ComputeEdgeLength( const vertexpool &vpool, const CMatrix4 & MatRange, int iedge ) const;
+	float ComputeArea( const vertexpool &vpool, const CMatrix4 & MatRange ) const;
 	CVector3 ComputeNormal( const vertexpool& vpool) const;
 
 	U64 HashIndices( void ) const;

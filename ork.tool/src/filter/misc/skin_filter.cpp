@@ -225,7 +225,7 @@ one action");
         evt->SetSoundName(CStringTable::RefTopStringTable().AddString(SoundOneShot));
         evt->SetSoundOn(true);
         evt->SetSoundLooping(false);
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 
     if( SoundLoopOn && X::SetParsed(parsed, pelem) )
@@ -234,7 +234,7 @@ one action");
         evt->SetSoundName(CStringTable::RefTopStringTable().AddString(SoundOneShot));
         evt->SetSoundOn(true);
         evt->SetSoundLooping(true);
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 
     if( SoundLoopOff && X::SetParsed(parsed, pelem) )
@@ -243,7 +243,7 @@ one action");
         evt->SetSoundName(CStringTable::RefTopStringTable().AddString(SoundOneShot));
         evt->SetSoundOn(false);
         evt->SetSoundLooping(true);
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 
     if( CollisionOn && X::SetParsed(parsed, pelem) )
@@ -251,7 +251,7 @@ one action");
         CollisionEvent* evt = OrkNew CollisionEvent();
         evt->SetObjectName(CStringTable::RefTopStringTable().AddString(CollisionOn));
         evt->SetActivate(true);
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 
     if( CollisionOff && X::SetParsed(parsed, pelem) )
@@ -259,28 +259,28 @@ one action");
         CollisionEvent* evt = OrkNew CollisionEvent();
         evt->SetObjectName(CStringTable::RefTopStringTable().AddString(CollisionOn));
         evt->SetActivate(false);
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 
     if( Explosion && X::SetParsed(parsed, pelem) )
     {
         ExplosionEvent* evt = OrkNew ExplosionEvent();
         evt->SetExplosionName(CStringTable::RefTopStringTable().AddString(Explosion));
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 
     if( Projectile && X::SetParsed(parsed, pelem) )
     {
         ProjectileEvent* evt = OrkNew ProjectileEvent();
         evt->SetProjectileName(CStringTable::RefTopStringTable().AddString(Projectile));
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 
     if( ComboWindow && X::SetParsed(parsed, pelem))
     {
         ComboWindowEvent* evt = OrkNew ComboWindowEvent();
         evt->SetComboWindowName(CStringTable::RefTopStringTable().AddString(ComboWindow));
-        ptab->AddEvent(CPropType<CReal>::FromString(Frame), evt);
+        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
     }
 }
 
@@ -381,8 +381,8 @@ void ParseSphereNode( const TiXmlElement *pelem, EntitySkin & skin )
     bool			TakeDamage;
     bool			StopMotion;
     bool			DefaultActive;
-    CReal			Multiplier;
-    CReal			Radius;
+    float			Multiplier;
+    float			Radius;
     CVector3		Offset;
 
     const char *JointVal = pelem->Attribute( "Joint" );
@@ -408,8 +408,8 @@ void ParseSphereNode( const TiXmlElement *pelem, EntitySkin & skin )
     GiveDamage =	CPropType<bool>::FromString( GiveDamageVal );
     StopMotion =	CPropType<bool>::FromString( StopMotionVal );
     DefaultActive = CPropType<bool>::FromString( DefActiveVal );
-    Multiplier =	CPropType<CReal>::FromString( MultiplierVal );
-    Radius =		CPropType<CReal>::FromString( RadiusVal );
+    Multiplier =	CPropType<float>::FromString( MultiplierVal );
+    Radius =		CPropType<float>::FromString( RadiusVal );
     Offset =		CPropType<CVector3>::FromString( OffsetVal );
 
     skin.AddCollisionSphere( GroupName.c_str(), Joint.c_str(), Radius, Offset, TakeDamage, GiveDamage, StopMotion, Multiplier,
@@ -432,19 +432,19 @@ void ParseCylinderNode( const TiXmlElement *pelem, EntitySkin & skin )
     bool			TakeDamage = ReadAttribute<bool>(pelem, "Cylinder", "TakeDamage");
     bool			StopMotion = ReadAttribute<bool>(pelem, "Cylinder", "StopMotion");
     bool			DefaultActive = ReadAttribute<bool>(pelem, "Cylinder", "DefaultActive");
-    CReal			Multiplier = ReadAttribute<CReal>(pelem, "Cylinder", "Multiplier");
-    CReal			Radius = ReadAttribute<CReal>(pelem, "Cylinder", "Radius");
+    float			Multiplier = ReadAttribute<float>(pelem, "Cylinder", "Multiplier");
+    float			Radius = ReadAttribute<float>(pelem, "Cylinder", "Radius");
     CVector3		Start = ReadAttribute<CVector3>(pelem, "Cylinder", "Start");
     CVector3		End = ReadAttribute<CVector3>(pelem, "Cylinder", "End");
 
     CVector3 delta = End - Start;
-    CReal distance = delta.Mag();
-    CReal countspheres = CReal::Ceil( distance/(CReal(1.5f)*Radius) );
+    float distance = delta.Mag();
+    float countspheres = float::Ceil( distance/(float(1.5f)*Radius) );
     int numspheres = countspheres.NumericCast();
 
     for(int i = 0; i < numspheres; i++)
     {
-        skin.AddCollisionSphere( GroupName.c_str(), Joint.c_str(), Radius, Start + delta*(CReal(i)/countspheres), TakeDamage,
+        skin.AddCollisionSphere( GroupName.c_str(), Joint.c_str(), Radius, Start + delta*(float(i)/countspheres), TakeDamage,
 GiveDamage, StopMotion, Multiplier, DefaultActive );
     }
 }

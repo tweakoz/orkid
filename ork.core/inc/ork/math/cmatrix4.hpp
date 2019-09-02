@@ -804,19 +804,19 @@ template <typename T> void TMatrix4<T>::Frustum(T left, T right, T top, T bottom
 
   SetToIdentity();
 
-  CReal width = right - left;
-  CReal height = top - bottom;
-  CReal depth = (zf - zn);
+  float width = right - left;
+  float height = top - bottom;
+  float depth = (zf - zn);
 
   /////////////////////////////////////////////
 
-  SetElemYX(0, 0, CReal(2.0f * zn) / -width);
-  SetElemYX(1, 1, CReal(2.0f * zn) / height);
-  SetElemYX(2, 2, CReal(zf) / depth);
-  SetElemYX(3, 3, CReal(0.0f));
+  SetElemYX(0, 0, float(2.0f * zn) / -width);
+  SetElemYX(1, 1, float(2.0f * zn) / height);
+  SetElemYX(2, 2, float(zf) / depth);
+  SetElemYX(3, 3, float(0.0f));
 
-  SetElemYX(2, 3, CReal(zn * zf) / CReal(zn - zf));
-  SetElemYX(3, 2, CReal(1.0f));
+  SetElemYX(2, 3, float(zn * zf) / float(zn - zf));
+  SetElemYX(3, 2, float(1.0f));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

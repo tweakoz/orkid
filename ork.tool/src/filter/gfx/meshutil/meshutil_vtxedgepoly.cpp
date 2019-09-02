@@ -63,13 +63,13 @@ orkset<AnnoMap*> AnnoMap::gAllAnnoSets;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void vertex::Lerp( const vertex& a, const vertex & b, CReal flerp )
+void vertex::Lerp( const vertex& a, const vertex & b, float flerp )
 {	*this = b.Lerp(a,flerp);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-vertex vertex::Lerp( const vertex & vtx, CReal flerp ) const
+vertex vertex::Lerp( const vertex & vtx, float flerp ) const
 {	vertex vcenter;
 	vcenter.mPos.Lerp( vtx.mPos, mPos, flerp );
 	vcenter.mNrm.Lerp( vtx.mNrm, mNrm, flerp );
@@ -192,7 +192,7 @@ vertex poly::ComputeCenter( const vertexpool &vpool ) const
 	for( int it=0; it<vertex::kmaxuvs; it++ )
 	{	vcenter.mUV[it].Clear();
 	}
-	CReal frecip = CReal(1.0f) / CReal( inumv );
+	float frecip = float(1.0f) / float( inumv );
 	for( int iv=0; iv<inumv; iv++ )
 	{	int idx = miVertices[iv];
 		const vertex & v = vpool.VertexPool[ idx ];
@@ -212,7 +212,7 @@ vertex poly::ComputeCenter( const vertexpool &vpool ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CReal poly::ComputeArea( const vertexpool & vpool, const CMatrix4 & MatRange ) const
+float poly::ComputeArea( const vertexpool & vpool, const CMatrix4 & MatRange ) const
 {	float farea = 0.0f;
 	ork::CVector3 base = vpool.GetVertex(miVertices[0]).mPos.Transform(MatRange);
 	ork::CVector3 prev = vpool.GetVertex(miVertices[1]).mPos.Transform(MatRange);
@@ -228,11 +228,11 @@ CReal poly::ComputeArea( const vertexpool & vpool, const CMatrix4 & MatRange ) c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CReal poly::ComputeEdgeLength( const vertexpool &vpool, const CMatrix4 &MatRange, int iedge) const
+float poly::ComputeEdgeLength( const vertexpool &vpool, const CMatrix4 &MatRange, int iedge) const
 {	int inumvtx = miNumSides;
 	int iv0 = miVertices[ (iedge+0)%miNumSides ];
 	int iv1 = miVertices[ (iedge+1)%miNumSides ];
-	CReal elen = (vpool.GetVertex(iv0).mPos.Transform(MatRange)-vpool.GetVertex(iv1).mPos.Transform(MatRange)).Mag();
+	float elen = (vpool.GetVertex(iv0).mPos.Transform(MatRange)-vpool.GetVertex(iv1).mPos.Transform(MatRange)).Mag();
 	return elen;
 }
 
@@ -301,7 +301,7 @@ const std::string& poly::GetAnnotation( const std::string& annoname ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void uvmapcoord::Lerp(const MeshUtil::uvmapcoord &ina, const MeshUtil::uvmapcoord &inb, ork::CReal flerp)
+void uvmapcoord::Lerp(const MeshUtil::uvmapcoord &ina, const MeshUtil::uvmapcoord &inb, float flerp)
 {	mMapTexCoord.Lerp( ina.mMapTexCoord, inb.mMapTexCoord, flerp );
 	mMapBiNormal.Lerp( ina.mMapBiNormal, inb.mMapBiNormal, flerp );
 	mMapTangent.Lerp( ina.mMapTangent, inb.mMapTangent, flerp );
@@ -320,7 +320,7 @@ uvmapcoord uvmapcoord::operator+( const MeshUtil::uvmapcoord &ina) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-uvmapcoord uvmapcoord::operator*( CReal Scalar ) const
+uvmapcoord uvmapcoord::operator*( float Scalar ) const
 {	uvmapcoord out;
 	out.mMapTexCoord = mMapTexCoord * Scalar;
 	out.mMapBiNormal = mMapBiNormal * Scalar;

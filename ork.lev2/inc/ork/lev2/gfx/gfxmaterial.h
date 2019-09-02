@@ -133,8 +133,8 @@ class GfxMaterial : public ork::Object
 	void SetName( const PoolString & nam ) { mMaterialName = nam; }
 	const PoolString & GetName( void ) const { return mMaterialName; }
 
-	void SetFogStart( F32 fstart ) { mfFogStart=CReal(fstart); };
-	void SetFogRange( F32 frange ) { mfFogRange=CReal(frange); };
+	void SetFogStart( F32 fstart ) { mfFogStart=float(fstart); };
+	void SetFogRange( F32 frange ) { mfFogRange=float(frange); };
 
 	virtual void UpdateMVPMatrix( GfxTarget *pTARG ) {}
 
@@ -159,8 +159,8 @@ class GfxMaterial : public ork::Object
 	int										miNumPasses;		///< Number Of Render Passes in this Material (platform specific)
 	PoolString								mMaterialName;
 	TextureContext							mTextureMap[ETEXDEST_END];
-	CReal mfFogStart;
-	CReal mfFogRange;
+	float mfFogStart;
+	float mfFogRange;
 	RenderQueueSortingData					mSortingData;
 	const RenderContextInstData*			mRenderContexInstData;
 	std::stack<bool>						mDebug;

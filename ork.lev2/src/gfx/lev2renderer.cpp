@@ -80,7 +80,7 @@ void Renderer::RenderFrustum( const FrustumRenderable & FrusRen ) const
 	ObjColor.SetRGBAU32( (U32) mpCurrentQueueObject );
 
 	CVector3 vScreenUp, vScreenRight;
-	CVector2 vpdims(CReal(mpTarget->GetW()),CReal(mpTarget->GetH()));
+	CVector2 vpdims(float(mpTarget->GetW()),float(mpTarget->GetH()));
 
 	bool objspace = FrusRen.IsObjSpace();
 
@@ -183,7 +183,7 @@ void Renderer::RenderSphere( const SphereRenderable & SphereRen ) const
 	ObjColor.SetRGBAU32( (U32) mpCurrentQueueObject );
 
 	CVector3 vScreenUp, vScreenRight;
-	CVector2 vpdims(CReal(mpTarget->GetW()),CReal(mpTarget->GetH()));
+	CVector2 vpdims(float(mpTarget->GetW()),float(mpTarget->GetH()));
 
 	if( false == mpTarget->FBI()->IsOffscreenTarget() )
 	{
