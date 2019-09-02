@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -29,7 +29,7 @@ static const int kerrorbuffersize = 4096;
 
 char errorbuffer[kerrorbuffersize];
 
-template class ork::util::Context<ork::CSystem::LogPolicy>;
+template class ork::util::Context<ork::OldSchool::LogPolicy>;
 template class ork::util::ContextTLS<CheckPointContext>;
 
 char gchkpointbuffer[kgchkpointnumbuffers][kgchkpointbuffersize];
@@ -176,7 +176,7 @@ void OrkAssertFunction(const char *fmtstr, ...)
 #endif
 
 	char *pFUCKED = nullptr;
-	*pFUCKED = 0; 
+	*pFUCKED = 0;
 
 	std::exception a;
 	throw a;
@@ -206,7 +206,7 @@ void OrkAssertFunction(const char *fmtstr, ...)
 	ARMStackTrace();
 
 	fflush(stdout);
-	
+
 	int *pFUCKED = 0;
 	*pFUCKED = 0;
 
@@ -240,7 +240,7 @@ void orkerrorlog(const char *formatstring, ...)
 	va_start(argp, formatstring);
 	vsnprintf(&aPrintBuffer[0], sizeof(aPrintBuffer), formatstring, argp);
 	va_end(argp);
-	
+
 	aPrintBuffer[sizeof(aPrintBuffer)-1] = '\0';
 	fprintf( stderr, "%s", aPrintBuffer);
 	//OutputDebugString(aPrintBuffer);
@@ -357,9 +357,9 @@ void orkmessageh( U32 chanid, const char *formatstring, ... )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static CSystem::LogPolicy sDefaultPolicy;
+static OldSchool::LogPolicy sDefaultPolicy;
 
-void CSystem::Log(LOG_SEVERITY severity, const std::string &chanid, char *formatstring, ...)
+void OldSchool::Log(LOG_SEVERITY severity, const std::string &chanid, char *formatstring, ...)
 {
 	va_list argp;
 	va_start( argp, formatstring );
@@ -369,7 +369,7 @@ void CSystem::Log(LOG_SEVERITY severity, const std::string &chanid, char *format
 	static const char *SEVERITY_TEXT[] = { "INFO: ", "WARNING: ", "ERROR: ", "FATAL: " };
 
 #if !defined(NITRO) && !defined(WII)
-	if(CSystem::LogPolicy::GetContext()->mFileOut)
+	if(OldSchool::LogPolicy::GetContext()->mFileOut)
 	{
 		CFile *pFile = new CFile((chanid + ".Log").c_str(), EFM_APPEND);
 		EFileErrCode eFileErr = pFile->Open();
@@ -385,12 +385,12 @@ void CSystem::Log(LOG_SEVERITY severity, const std::string &chanid, char *format
 	}
 #endif
 
-	if(CSystem::LogPolicy::GetContext()->mAllChannelsToStdOut
-			|| CSystem::LogPolicy::GetContext()->mChannelsToStdOut.find(chanid) != CSystem::LogPolicy::GetContext()->mChannelsToStdOut.end())
+	if(OldSchool::LogPolicy::GetContext()->mAllChannelsToStdOut
+			|| OldSchool::LogPolicy::GetContext()->mChannelsToStdOut.find(chanid) != OldSchool::LogPolicy::GetContext()->mChannelsToStdOut.end())
 		orkprintf("[%s] %s%s\n", chanid.c_str(), SEVERITY_TEXT[severity], errorbuffer);
 }
 
-CSystem::~CSystem()
+OldSchool::~OldSchool()
 {
 	for( orkmap<std::string, CFile*>::iterator it=mvLogChannels.begin(); it!=mvLogChannels.end(); it++ )
 	{	std::pair<std::string, CFile*> pr = *it;
@@ -412,4 +412,3 @@ void win_messageh( const char *formatstring, ... )
 }
 
 } // namespace ork
-

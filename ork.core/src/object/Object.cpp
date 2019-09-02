@@ -249,7 +249,7 @@ reflect::BidirectionalSerializer &operator ||(reflect::BidirectionalSerializer &
 
 static Object *LoadObjectFromFile(ConstString filename, bool binary)
 {
-	float ftime1 = ork::CSystem::GetRef().GetLoResRelTime();
+	float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
 	stream::FileInputStream stream(filename.c_str());
 
 	Object *object = NULL;
@@ -266,7 +266,7 @@ static Object *LoadObjectFromFile(ConstString filename, bool binary)
 		DeserializeUnknownObject(deserializer, object);
 	}
 
-	float ftime2 = ork::CSystem::GetRef().GetLoResRelTime();
+	float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
 
 	static float ftotaltime = 0.0f;
 	static int iltotaltime = 0;

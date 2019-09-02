@@ -145,7 +145,7 @@ DrawableBuffer::~DrawableBuffer()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CCameraData* DrawableBuffer::GetCameraData( int icam ) const
+const CameraData* DrawableBuffer::GetCameraData( int icam ) const
 {
 	int inumscenecameras = mCameraDataLUT.size();
 	//printf( "NumSceneCameras<%d>\n", inumscenecameras );
@@ -153,8 +153,8 @@ const CCameraData* DrawableBuffer::GetCameraData( int icam ) const
 	{
 		icam = icam%inumscenecameras;
 		auto& itCAM = mCameraDataLUT.GetItemAtIndex(icam);
-		const CCameraData* pdata = & itCAM.second;
-		const lev2::CCamera* pcam = pdata->getEditorCamera();
+		const CameraData* pdata = & itCAM.second;
+		const lev2::Camera* pcam = pdata->getEditorCamera();
 		//printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
 		return pdata;
 	}
@@ -163,13 +163,13 @@ const CCameraData* DrawableBuffer::GetCameraData( int icam ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CCameraData* DrawableBuffer::GetCameraData( const PoolString& named ) const
+const CameraData* DrawableBuffer::GetCameraData( const PoolString& named ) const
 {
 	int inumscenecameras = mCameraDataLUT.size();
 	auto itCAM = mCameraDataLUT.find(named);
 	if( itCAM != mCameraDataLUT.end() )
 	{
-		const CCameraData* pdata = & itCAM->second;
+		const CameraData* pdata = & itCAM->second;
 		return pdata;
 	}
 	return 0;
@@ -252,7 +252,7 @@ void DrawableBuffer::ClearAndSyncWriters()
 	EndClearAndSyncWriters();
 }
 ///////////////////////////////////////////////////////////////////////////////
-CameraDrawable::CameraDrawable( Entity* pent, const CCameraData* camData )
+CameraDrawable::CameraDrawable( Entity* pent, const CameraData* camData )
 	: Drawable()
 	, mCameraData( camData )
 {
@@ -402,7 +402,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 	AssertOnOpQ2( MainThreadOpQ() );
 	const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
 	const lev2::XgmModel* Model = mModelInst->GetXgmModel();
-	const CCameraData* camdat = fdata->GetCameraData();
+	const CameraData* camdat = fdata->GetCameraData();
 	OrkAssert(camdat!=0);
 
 	const CameraCalcContext& ccctx = fdata->GetCameraCalcCtx();
@@ -435,7 +435,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 	const ork::lev2::XgmWorldPose* pworldpose = GetUserDataA().Get<ork::lev2::XgmWorldPose*>();
 
 	ork::fvec3 matw_trans;
-	ork::CQuaternion matw_rot;
+	ork::fquat matw_rot;
 	float matw_scale;
 
 	matw.DecomposeMatrix( matw_trans, matw_rot, matw_scale );

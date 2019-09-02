@@ -90,8 +90,8 @@ TEST(SceneTortureTest)
 	}
 
 #if 0
-		ork::lev2::CManipManager::GetRef().AttachObject( pent2 );
-		ork::lev2::CManipManager::GetRef().ReleaseObject();
+		ork::lev2::ManipManager::GetRef().AttachObject( pent2 );
+		ork::lev2::ManipManager::GetRef().ReleaseObject();
 
 		const orkset<CObject*> & SelSet = ork::tool::SelectManager::GetRef().getActiveSelection();
 		/*
@@ -201,15 +201,15 @@ TEST(SceneTortureTest)
 			// move it whatever it is
 			////////////////////////////////////////////////////////////
 
-			ork::lev2::CManipManager::GetRef().AttachObject( pobj );
+			ork::lev2::ManipManager::GetRef().AttachObject( pobj );
 			ork::TransformNode3D xfnode;
 			float fx(float(rand()%65535)/float(65536.0f));
 			float fy(float(rand()%65535)/float(65536.0f));
 			float fz(float(rand()%65535)/float(65536.0f));
 			ork::fvec3 Translation( fx,fy,fz );
 			xfnode.Translate( ork::TransformNode3D::EMODE_ABSOLUTE, Translation );
-			ork::lev2::CManipManager::GetRef().ApplyTransform( xfnode );
-			ork::lev2::CManipManager::GetRef().ReleaseObject();
+			ork::lev2::ManipManager::GetRef().ApplyTransform( xfnode );
+			ork::lev2::ManipManager::GetRef().ReleaseObject();
 
 			/*if( group )
 			{

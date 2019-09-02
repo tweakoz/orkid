@@ -11,7 +11,6 @@
 #include <ork/gfx/camera.h>
 #include <ork/kernel/core/singleton.h>
 #include <ork/lev2/ui/ui.h>
-#include <ork/math/units.h>
 #include <ork/util/hotkey.h>
 
 namespace ork { namespace lev2 {
@@ -21,10 +20,10 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CManipHandler {
+class ManipHandler {
 public: //
   fmtx4 IMVPMat;
-  CQuaternion Quat;
+  fquat Quat;
   fvec3 Origin;
   fvec3 RayNear;
   fvec3 RayFar;
@@ -72,9 +71,9 @@ public: //
 
   ///////////////////////////////////////////////////////////////////////////////
 
-  CManipHandler();
+  ManipHandler();
 
-  void Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const CQuaternion& RCurQuat);
+  void Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const fquat& RCurQuat);
   bool IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle);
   bool IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle);
   bool IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle);
@@ -84,8 +83,8 @@ public: //
   ///////////////////////////////////////////////////////////////////////////////
 };
 
-class CCamera : public ork::Object {
-  RttiDeclareAbstract(CCamera, ork::Object);
+class Camera : public ork::Object {
+  RttiDeclareAbstract(Camera, ork::Object);
 
 protected:
   std::string type_name;
@@ -94,16 +93,16 @@ protected:
 
 public:
   /////////////////////////////////////////////////////////////////////
-  CCamera();
+  Camera();
   /////////////////////////////////////////////////////////////////////
 
-  CCameraData mCameraData;
+  CameraData mCameraData;
 
   float mfWorldSizeAtLocator;
 
   fmtx4 mCamRot;
 
-  CQuaternion QuatC, QuatL, QuatCPushed;
+  fquat QuatC, QuatL, QuatCPushed;
 
   fmtx4 lookatmatrix;
   fmtx4 eyematrixROT;
@@ -129,7 +128,7 @@ public:
 
   ui::Viewport* mpViewport;
 
-  CManipHandler ManipHandler;
+  ManipHandler ManipHandler;
 
   bool mbInMotion;
 
@@ -139,13 +138,13 @@ public:
   bool IsYVertical() const;
   bool IsZVertical() const;
 
-  CQuaternion VerticalRot(float amt) const;
-  CQuaternion HorizontalRot(float amt) const;
+  fquat VerticalRot(float amt) const;
+  fquat HorizontalRot(float amt) const;
 
   //////////////////////////////////////////////////////////////////////////////
 
-  CCameraData& GetCameraData() { return mCameraData; }
-  const CCameraData& GetCameraData() const { return mCameraData; }
+  CameraData& GetCameraData() { return mCameraData; }
+  const CameraData& GetCameraData() const { return mCameraData; }
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -185,8 +184,8 @@ struct CamEvTrackData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CCamera_persp : public CCamera {
-  RttiDeclareConcrete(CCamera_persp, CCamera);
+class EzUiCam : public Camera {
+  RttiDeclareConcrete(EzUiCam, Camera);
 
 public: //
   enum erotmode {
@@ -256,7 +255,7 @@ public: //
   void DollyUpdate(const CamEvTrackData& ed);
   void DollyEnd();
 
-  CCamera_persp();
+  EzUiCam();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

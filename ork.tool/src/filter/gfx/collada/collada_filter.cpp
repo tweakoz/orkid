@@ -209,7 +209,7 @@ bool DAEXGMFilter::ConvertAsset( const tokenlist& toklist )
        bool bDICE = options.GetOption( "-dice" )->GetValue()=="true";
        bool brval = false;
 
-       CSystem::SetGlobalStringVariable( "StripJoinPolicy", "true" );
+       OldSchool::SetGlobalStringVariable( "StripJoinPolicy", "true" );
 
        ///////////////////////////////////////////////////
        // swap endian on xb360 assets

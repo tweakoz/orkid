@@ -77,7 +77,7 @@ class TetherCamControllerInst : public ent::ComponentInst
 
 	const TetherCamControllerData&			mCD;
 	Entity*									mpTarget;
-	CCameraData								mCameraData;
+	CameraData								mCameraData;
 	
 	void DoUpdate(ent::SceneInst* sinst) final;
     bool DoLink(SceneInst *psi) final;

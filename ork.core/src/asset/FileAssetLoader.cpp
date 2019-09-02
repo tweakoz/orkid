@@ -234,7 +234,7 @@ bool FileAssetLoader::CheckAsset(const PieceString &name)
 
 bool FileAssetLoader::LoadAsset(Asset *asset)
 {
-	float ftime1 = ork::CSystem::GetRef().GetLoResRelTime();
+	float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
 #if defined(_XBOX) && defined(PROFILE)
 	PIXBeginNamedEvent(0, "FileAssetLoader::LoadAsset(%s)", asset->GetName());
 #endif
@@ -255,7 +255,7 @@ bool FileAssetLoader::LoadAsset(Asset *asset)
 #if defined(_XBOX) && defined(PROFILE)
 	PIXEndNamedEvent();
 #endif
-	float ftime2 = ork::CSystem::GetRef().GetLoResRelTime();
+	float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
 
 	static float ftotaltime = 0.0f;
 	static int iltotaltime = 0;

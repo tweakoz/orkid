@@ -168,7 +168,7 @@ void InputDeviceIX::poll() {
   for (const auto& item : _ixinputmap) {
     uint32_t k = item.first;
     uint32_t v = item.second;
-    int ist = int(CSystem::IsKeyDepressed(k)) * 127;
+    int ist = int(OldSchool::IsKeyDepressed(k)) * 127;
     // printf( "KEY<%d> ST<%d>\n", int(k), ist );
     inpstate.SetPressure(v, ist);
   }

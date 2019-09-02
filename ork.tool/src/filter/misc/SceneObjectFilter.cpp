@@ -49,7 +49,7 @@ SceneObjectFilterInterface::SceneObjectFilterInterface() : CAssetFilterInterface
 bool SceneObjectFilterInterface::ConvertAsset(const std::string& FromFileName, const std::string& ToFileName) {
   ork::CMemoryManager::GetCurrentMemoryManager().Push();
 
-  std::string ProjectSceneClassName = CSystem::GetGlobalStringVariable("ProjectSceneClassName");
+  std::string ProjectSceneClassName = OldSchool::GetGlobalStringVariable("ProjectSceneClassName");
   Scene* pscene = safe_cobject_downcast<Scene>(
       CClassManager::CreateObject(ProjectSceneClassName.c_str(), CMiniorkApplication::GetRef().GetCurrentContext()));
   CMiniorkApplication::GetRef().GetCurrentContext()->SetScene("new", pscene);

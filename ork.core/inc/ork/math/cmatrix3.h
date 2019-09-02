@@ -19,7 +19,7 @@ namespace ork {
 
 template <typename T> class Vector4;
 template <typename T> class Vector3;
-template <typename T> class TQuaternion;
+template <typename T> class Quaternion;
 
 template <typename T> class Matrix33 {
   friend class Vector4<T>;
@@ -68,7 +68,7 @@ public:
 
   /////////
 
-  void FromQuaternion(TQuaternion<T> quat);
+  void FromQuaternion(Quaternion<T> quat);
 
   /////////
 
@@ -89,8 +89,8 @@ public:
 
   void Lerp(const Matrix33<T>& from, const Matrix33<T>& to, T par); // par 0.0f .. 1.0f
 
-  void DecomposeMatrix(TQuaternion<T>& rot, T& Scale) const;
-  void ComposeMatrix(const TQuaternion<T>& rot, const T& Scale);
+  void DecomposeMatrix(Quaternion<T>& rot, T& Scale) const;
+  void ComposeMatrix(const Quaternion<T>& rot, const T& Scale);
 
   ////////////////
 

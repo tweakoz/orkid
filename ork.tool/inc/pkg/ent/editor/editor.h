@@ -132,7 +132,7 @@ public:
 
 	const tool::SelectManager&		selectionManager() const { return mselectionManager; }
 	tool::SelectManager&			selectionManager() { return mselectionManager; }
-	lev2::CManipManager&			ManipManager() { return mManipManager; }
+	lev2::ManipManager&			ManipManager() { return mManipManager; }
 
 	///////////////////////////////////////////////
 
@@ -211,7 +211,7 @@ private:
 	int 							mRunStatus;
 
 	tool::SelectManager				mselectionManager;
-	lev2::CManipManager				mManipManager;
+	lev2::ManipManager				mManipManager;
 
 	ork::MpMcBoundedQueue<var_t>	mSerialQ;
 	//ork::fvec3					mCursor;

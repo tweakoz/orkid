@@ -177,7 +177,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	//mpSplashScreen = new QSplashScreen(pixmap);
 	//mpSplashScreen->show();
 
-	f64 SplashTimeBase = CSystem::GetRef().GetLoResTime();
+	f64 SplashTimeBase = OldSchool::GetRef().GetLoResTime();
 
 	mEditorBase.RegisterChoices();
 

@@ -61,7 +61,7 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::Asset* pAsset, ConstString asset
 	}
 	gaastack.push(pAsset);
 	
-	float ftime1 = ork::CSystem::GetRef().GetLoResRelTime();
+	float ftime1 = ork::OldSchool::GetRef().GetLoResRelTime();
 	ArchetypeAsset* archasset = rtti::autocast(pAsset);
 
 	stream::FileInputStream istream(asset_name.c_str());
@@ -92,7 +92,7 @@ bool ArchetypeAssetLoader::LoadFileAsset(asset::Asset* pAsset, ConstString asset
 	//ork::Object* pobj = rtti::autocast(DeserializeObject(asset_name.c_str()));
 	//archasset->SetArchetype(rtti::autocast(pobj));
 
-	float ftime2 = ork::CSystem::GetRef().GetLoResRelTime();
+	float ftime2 = ork::OldSchool::GetRef().GetLoResRelTime();
 
 	static float ftotaltime = 0.0f;
 	static int iltotaltime = 0;

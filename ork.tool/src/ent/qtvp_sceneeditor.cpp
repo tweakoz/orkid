@@ -615,7 +615,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   // camera setup
   ///////////////////////////////////////////////////////////////////////////
 
-  CCameraData TempCamData, TempCullCamData;
+  CameraData TempCamData, TempCullCamData;
   _editorCamera = 0;
 
   anyp pvdb = FrameData.GetUserProperty("DB");
@@ -623,8 +623,8 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   if (0 == DB)
     return;
 
-  const CCameraData* pcamdata = DB->GetCameraData(miCameraIndex);
-  const CCameraData* pcullcamdata = DB->GetCameraData(miCullCameraIndex);
+  const CameraData* pcamdata = DB->GetCameraData(miCameraIndex);
+  const CameraData* pcullcamdata = DB->GetCameraData(miCullCameraIndex);
   // FrameData.GetTarget()->FBI()->ForceFlush();
 
   if (nullptr == pcamdata)
@@ -642,20 +642,20 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   }
 
   /////////////////////////////////////////
-  // try named CCameraData from NODE
+  // try named CameraData from NODE
   /////////////////////////////////////////
 
   if (NODE.mpCameraName) {
-    const CCameraData* pcamdataNAMED = DB->GetCameraData(*NODE.mpCameraName);
+    const CameraData* pcamdataNAMED = DB->GetCameraData(*NODE.mpCameraName);
     if (pcamdataNAMED)
       pcamdata = pcamdataNAMED;
   }
 
   /////////////////////////////////////////
-  // try direct CCameraData from NODE
+  // try direct CameraData from NODE
   /////////////////////////////////////////
 
-  if (auto from_node = NODE._impl.TryAs<const CCameraData*>()) {
+  if (auto from_node = NODE._impl.TryAs<const CameraData*>()) {
     pcamdata = from_node.value();
     // printf( "from node\n");
   }
@@ -865,7 +865,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     pTARG->PushModColor(fcolor4::Yellow());
     {
 
-      float gfspinner = CSystem::GetRef().GetLoResRelTime() * PI;
+      float gfspinner = OldSchool::GetRef().GetLoResRelTime() * PI;
       float fx = sinf(gfspinner);
       float fy = cosf(gfspinner);
 
@@ -1021,7 +1021,7 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev2::GfxTarget* pProxyTarg) {
-  const CCameraData* pcamdata = fdata.GetCameraData();
+  const CameraData* pcamdata = fdata.GetCameraData();
   if (0 == pcamdata)
     return;
   const CameraCalcContext& ccctx = fdata.GetCameraCalcCtx();
@@ -1033,8 +1033,8 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
   MTXI->PushMMatrix(fmtx4::Identity);
   {
     switch (ManipManager().GetUIMode()) {
-      case CManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
-      case CManipManager::EUIMODE_MANIP_LOCAL_ROTATE: {
+      case ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
+      case ManipManager::EUIMODE_MANIP_LOCAL_ROTATE: {
         GetRenderer()->SetTarget(pProxyTarg);
         fdata.SetTarget(pProxyTarg);
 
@@ -1046,7 +1046,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
         const fvec4 V0 = MatW.GetTranslation();
         const fvec4 V1 = V0 + ScreenXNorm * float(30.0f);
         fvec2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
-        const CCameraData* camdat = pProxyTarg->GetRenderContextFrameData()->GetCameraData();
+        const CameraData* camdat = pProxyTarg->GetRenderContextFrameData()->GetCameraData();
         fvec3 Pos = MatW.GetTranslation();
         fvec3 UpVector;
         fvec3 RightVector;
@@ -1095,7 +1095,7 @@ void SceneEditorVP::SetupLighting(lev2::HeadLightManager& hlmgr, lev2::RenderCon
     if (mEditor.GetActiveSceneInst()) {
       if (auto lmi = mEditor.GetActiveSceneInst()->findSystem<ent::LightingSystem>()) {
         ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
-        const CCameraData* cdata = FrameData.GetCameraData();
+        const CameraData* cdata = FrameData.GetCameraData();
         lightmanager.EnumerateInFrustum(cdata->GetFrustum());
         if (lightmanager.mLightsInFrustum.size()) {
           FrameData.SetLightManager(&lightmanager);

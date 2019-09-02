@@ -75,7 +75,7 @@ class ObserverCamControllerInst : public ent::ComponentInst
 	const ObserverCamControllerData&		mCD;
 	Entity*									mpEye;
 	Entity*									mpTarget;
-	CCameraData								mCameraData;
+	CameraData								mCameraData;
 	
 	void DoUpdate(ent::SceneInst* sinst) final;
     bool DoLink(SceneInst *psi) final;

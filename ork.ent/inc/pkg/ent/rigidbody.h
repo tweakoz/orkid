@@ -63,7 +63,7 @@ struct RigidBody
 	////////////////////////////////////////
 
 	fvec3                mPosition;
-	CQuaternion				mOrientation;
+	fquat				mOrientation;
 	fvec3				mAngularMomentum;
 	fvec3				mLinearMomentum;
 	

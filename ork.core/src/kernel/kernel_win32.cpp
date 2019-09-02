@@ -114,7 +114,7 @@ int ExecuteProcess(std::string FullPathToExe, std::string Parameters, int Second
 
 namespace ork {
 
-int CSystem::SpawnProcess(const std::string& exename, const std::string& args) {
+int System::SpawnProcess(const std::string& exename, const std::string& args) {
   int rv = ExecuteProcess(exename, args, 0);
 
   return rv;

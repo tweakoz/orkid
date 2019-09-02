@@ -16,16 +16,16 @@
 #include <ork/kernel/string/string.h>
 
 namespace ork {
-template class TQuaternion<float>;		// explicit template instantiation
-typedef class TQuaternion<float> CQuaternion;
-template<> const EPropType CPropType<CQuaternion>::meType = EPROPTYPE_QUATERNION;
-template<> const char* CPropType<CQuaternion>::mstrTypeName	= "QUATERNION";
+template class Quaternion<float>;		// explicit template instantiation
+typedef class Quaternion<float> fquat;
+template<> const EPropType CPropType<fquat>::meType = EPROPTYPE_QUATERNION;
+template<> const char* CPropType<fquat>::mstrTypeName	= "QUATERNION";
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> void CPropType<CQuaternion>::ToString( const CQuaternion & Value, PropTypeString& tstr)
+template<> void CPropType<fquat>::ToString( const fquat & Value, PropTypeString& tstr)
 {
-	const CQuaternion & v = Value;
+	const fquat & v = Value;
 
 	std::string result;
 	result += CreateFormattedString("%g ", v.GetX() );
@@ -37,12 +37,12 @@ template<> void CPropType<CQuaternion>::ToString( const CQuaternion & Value, Pro
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> CQuaternion CPropType<CQuaternion>::FromString(const PropTypeString& String)
+template<> fquat CPropType<fquat>::FromString(const PropTypeString& String)
 {
 	float m[4];
 	sscanf(String.c_str(), "%g %g %g %g",
 		&m[0], &m[1], &m[2], &m[3] );
-	CQuaternion result;
+	fquat result;
 	result.SetX( m[0] );
 	result.SetY( m[1] );
 	result.SetZ( m[2] );
@@ -54,11 +54,11 @@ template<> CQuaternion CPropType<CQuaternion>::FromString(const PropTypeString& 
 
 namespace reflect {
 	
-	template<> void Serialize( const CQuaternion*in, CQuaternion*out, reflect::BidirectionalSerializer& bidi )
+	template<> void Serialize( const fquat*in, fquat*out, reflect::BidirectionalSerializer& bidi )
 	{
 		if( bidi.Serializing() )
 		{
-			bidi.Serializer()->Hint("CQuaternion");
+			bidi.Serializer()->Hint("fquat");
 			bidi | in->GetX();
 			bidi | in->GetY();
 			bidi | in->GetZ();

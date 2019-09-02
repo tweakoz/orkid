@@ -92,7 +92,7 @@ Global::Global()
 }
 void Global::OnStart()
 {
-	mfTimeBase = ork::CSystem::GetRef().GetLoResTime()*mPlugInpTimeScale.GetValue();
+	mfTimeBase = ork::OldSchool::GetRef().GetLoResTime()*mPlugInpTimeScale.GetValue();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Global::Compute( float fdt )

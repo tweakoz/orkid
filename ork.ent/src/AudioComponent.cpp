@@ -72,7 +72,7 @@ static bool CheckPlayTracker( const ork::lev2::AudioProgram* pdb )
 		return true;
 	}
 
-	float fcurtime = ork::CSystem::GetRef().GetLoResTime();
+	float fcurtime = ork::OldSchool::GetRef().GetLoResTime();
 
 	int icount = 0;
 
@@ -670,7 +670,7 @@ void AudioEffectComponentInst::DoUpdate(ork::ent::SceneInst *inst)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioEffectComponentInst::UpdateEmitter( const ork::CCameraData* camdat1, const ork::CCameraData* camdat2 )
+void AudioEffectComponentInst::UpdateEmitter( const ork::CameraData* camdat1, const ork::CameraData* camdat2 )
 {
 	int inumemitters = mEmitters.size();
 

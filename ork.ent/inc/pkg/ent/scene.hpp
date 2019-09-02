@@ -15,7 +15,7 @@
 
 namespace ork {
 
-class CCameraData;
+class CameraData;
 
 namespace lev2 {
 class XgmModel;

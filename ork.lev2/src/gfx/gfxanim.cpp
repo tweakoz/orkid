@@ -359,7 +359,7 @@ void XgmBlendPoseInfo::ComputeMatrix( fmtx4 & outmatrix ) const
 			float iflerp = 1.0f - flerp;
 
 			if(acomp & XFORM_COMPONENT_ORIENT && bcomp & XFORM_COMPONENT_ORIENT)
-				c.mRot = CQuaternion::Lerp(a.mRot, b.mRot, flerp);
+				c.mRot = fquat::Lerp(a.mRot, b.mRot, flerp);
 			else if(acomp & XFORM_COMPONENT_ORIENT)
 				c.mRot = a.mRot;
 			else if(bcomp & XFORM_COMPONENT_ORIENT)

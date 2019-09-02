@@ -23,7 +23,7 @@ TriStripper::TriStripper( const std::vector<unsigned int> &InTriIndices, int ica
 
 	int inumtriindices = int(InTriIndices.size());
 
-	bool StripJoinPolicy = true;//CSystem::GetGlobalStringVariable( "StripJoinPolicy" ) == "true";
+	bool StripJoinPolicy = true;//OldSchool::GetGlobalStringVariable( "StripJoinPolicy" ) == "true";
 
 	int iminindex = 1<<30;
 	int imaxindex = 0;

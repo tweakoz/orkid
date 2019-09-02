@@ -20,60 +20,60 @@ static const float k90Degrees = CFloat::Pi() / float(2.0f);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CManipTrans::CManipTrans( CManipManager& mgr )
-	: CManip(mgr)
+ManipTrans::ManipTrans( ManipManager& mgr )
+	: Manip(mgr)
 {
 
 }
 
-CManipSingleTrans::CManipSingleTrans(CManipManager& mgr)
-	: CManipTrans(mgr)
+ManipSingleTrans::ManipSingleTrans(ManipManager& mgr)
+	: ManipTrans(mgr)
 {
 
 }
 
-CManipDualTrans::CManipDualTrans(CManipManager& mgr)
-	: CManipTrans(mgr)
+ManipDualTrans::ManipDualTrans(ManipManager& mgr)
+	: ManipTrans(mgr)
 {
 	
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CManipTX::CManipTX( CManipManager& mgr )
-	: CManipSingleTrans(mgr)
+ManipTX::ManipTX( ManipManager& mgr )
+	: ManipSingleTrans(mgr)
 {
  	mmRotModel.SetRotateZ( k90Degrees );
 	mColor = fcolor4::Red();
 }
 
-CManipTY::CManipTY(CManipManager& mgr)
-	: CManipSingleTrans(mgr)
+ManipTY::ManipTY(ManipManager& mgr)
+	: ManipSingleTrans(mgr)
 {
 	mColor = fcolor4::Green();
 } 
 
-CManipTZ::CManipTZ(CManipManager& mgr)
-	: CManipSingleTrans(mgr)
+ManipTZ::ManipTZ(ManipManager& mgr)
+	: ManipSingleTrans(mgr)
 {
 	mmRotModel.SetRotateX( k90Degrees );
 	mColor = fcolor4::Blue();
 }
 
-CManipTXY::CManipTXY(CManipManager& mgr)
-	: CManipDualTrans(mgr)
+ManipTXY::ManipTXY(ManipManager& mgr)
+	: ManipDualTrans(mgr)
 {
 	mColor = fcolor4::Blue();
 }
 
-CManipTXZ::CManipTXZ(CManipManager& mgr)
-	: CManipDualTrans(mgr)
+ManipTXZ::ManipTXZ(ManipManager& mgr)
+	: ManipDualTrans(mgr)
 {
 	mColor = fcolor4::Green();
 }
 
-CManipTYZ::CManipTYZ(CManipManager& mgr)
-	: CManipDualTrans(mgr)
+ManipTYZ::ManipTYZ(ManipManager& mgr)
+	: ManipDualTrans(mgr)
 {
 	mColor = fcolor4::Red();
 }
@@ -81,11 +81,11 @@ CManipTYZ::CManipTYZ(CManipManager& mgr)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CManipTrans::UIEventHandler( const ui::Event& EV )
+bool ManipTrans::UIEventHandler( const ui::Event& EV )
 {	
 	ork::fvec2 cm = EV.GetUnitCoordBP();
 
-	//printf( "CManipTrans<%p>::UIEventHandler() evcod<%d>\n", this, int(pEV->miEventCode) );
+	//printf( "ManipTrans<%p>::UIEventHandler() evcod<%d>\n", this, int(pEV->miEventCode) );
 	bool brval = false;
 	switch( EV.miEventCode )
 	{	case ui::UIEV_PUSH:
@@ -113,11 +113,11 @@ bool CManipTrans::UIEventHandler( const ui::Event& EV )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipTrans::HandleMouseDown(const ork::fvec2& pos)
+void ManipTrans::HandleMouseDown(const ork::fvec2& pos)
 {
-	CCamera *pcam = mManager.getActiveCamera();
+	Camera *pcam = mManager.getActiveCamera();
 
-	//printf( "CManipTrans::HandleMouseDown() pcam<%p>\n", pcam );
+	//printf( "ManipTrans::HandleMouseDown() pcam<%p>\n", pcam );
 	if( pcam )
 	{
 		mManager.mManipHandler.Init( pos, pcam->mCameraData.GetIVPMatrix(), pcam->QuatC );
@@ -126,12 +126,12 @@ void CManipTrans::HandleMouseDown(const ork::fvec2& pos)
 	}
 }
 
-void CManipTrans::HandleMouseUp(const ork::fvec2& pos)
+void ManipTrans::HandleMouseUp(const ork::fvec2& pos)
 {
 	mManager.DisableManip();
 }
 
-void CManipTrans::HandleDrag(const ork::fvec2& pos)
+void ManipTrans::HandleDrag(const ork::fvec2& pos)
 {
 	
 }
@@ -139,7 +139,7 @@ void CManipTrans::HandleDrag(const ork::fvec2& pos)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipSingleTrans::DrawAxis(GfxTarget* pTARG) const
+void ManipSingleTrans::DrawAxis(GfxTarget* pTARG) const
 {
 	auto mtl = mManager.GetMaterial();
 	auto fbi = pTARG->FBI();
@@ -177,7 +177,7 @@ void CManipSingleTrans::DrawAxis(GfxTarget* pTARG) const
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipSingleTrans::Draw( GfxTarget *pTARG ) const 
+void ManipSingleTrans::Draw( GfxTarget *pTARG ) const 
 {	
 	fmtx4 Mat;
 	fmtx4 VisMat;
@@ -185,7 +185,7 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 	fmtx4 MatS;
 	fmtx4 MatR; 
 	fvec3 pos;
-	CQuaternion rot;
+	fquat rot;
 	float scale;
 
 	mManager.mCurTransform.GetMatrix(Mat);
@@ -199,15 +199,15 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 	bool bdrawok = true;
 	fvec4 v_dir;
 	const float vizthresh(0.90f);
-	if( GetClass() == CManipTX::GetClassStatic() )
+	if( GetClass() == ManipTX::GetClassStatic() )
 	{
 		v_dir = fvec4( 1.0f, 0.0f, 0.0f, 0.0f );
 	}
-	else if( GetClass() == CManipTY::GetClassStatic() )
+	else if( GetClass() == ManipTY::GetClassStatic() )
 	{
 		v_dir = fvec4( 0.0f, 1.0f, 0.0f, 0.0f );
 	}
-	else if( GetClass() == CManipTZ::GetClassStatic() )
+	else if( GetClass() == ManipTZ::GetClassStatic() )
 	{
 		v_dir = fvec4( 0.0f, 0.0f, 1.0f, 0.0f );
 	}
@@ -236,7 +236,7 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 	////////////////////
 
 	fmtx4 MatCur;
-	CQuaternion neg_rot;
+	fquat neg_rot;
 	
 	//mManager.mCurTransform.GetMatrix(MatCur);
 	//MatCur.DecomposeMatrix(pos, rot, scale);
@@ -246,11 +246,11 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 
 	MatCur.ComposeMatrix(pos, rot, mManager.GetManipScale());
 
-	if( GetClass() == CManipTX::GetClassStatic() )
+	if( GetClass() == ManipTX::GetClassStatic() )
 		neg_rot.FromAxisAngle(fvec4(0.0f, 1.0f, 0.0f, PI));
-	else if( GetClass() == CManipTY::GetClassStatic() )
+	else if( GetClass() == ManipTY::GetClassStatic() )
 		neg_rot.FromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI));
-	else if( GetClass() == CManipTZ::GetClassStatic() )
+	else if( GetClass() == ManipTZ::GetClassStatic() )
 		neg_rot.FromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI));
 
 	////////////////////////
@@ -287,9 +287,9 @@ void CManipSingleTrans::Draw( GfxTarget *pTARG ) const
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipSingleTrans::HandleDrag(const ork::fvec2& pos)
+void ManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 {
-	CCamera *pcam = mManager.getActiveCamera();
+	Camera *pcam = mManager.getActiveCamera();
 
 	IntersectWithPlanes( pos );
 	bool bisect = CheckIntersect();
@@ -306,17 +306,17 @@ void CManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 
 		fvec3 isect_loc = isect.Transform( mtx_inv );
 
-		if(GetClass() == CManipTX::GetClassStatic())
+		if(GetClass() == ManipTX::GetClassStatic())
 		{
 			isect_loc.SetY(0.0f);
 			isect_loc.SetZ(0.0f);
 		}
-		else if(GetClass() == CManipTY::GetClassStatic())
+		else if(GetClass() == ManipTY::GetClassStatic())
 		{
 			isect_loc.SetX(0.0f);
 			isect_loc.SetZ(0.0f);
 		}
-		else if(GetClass() == CManipTZ::GetClassStatic())
+		else if(GetClass() == ManipTZ::GetClassStatic())
 		{
 			isect_loc.SetX(0.0f);
 			isect_loc.SetY(0.0f);
@@ -335,11 +335,11 @@ void CManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipDualTrans::Draw(GfxTarget *pTARG ) const
+void ManipDualTrans::Draw(GfxTarget *pTARG ) const
 {	
 	fmtx4 MatCur;
 	fvec3 pos;
-	CQuaternion rot;
+	fquat rot;
 	float scale;
 
 	mManager.mCurTransform.GetMatrix(MatCur);
@@ -361,9 +361,9 @@ void CManipDualTrans::Draw(GfxTarget *pTARG ) const
 	pTARG->MTXI()->PopMMatrix();
 }
 
-void CManipDualTrans::HandleDrag(const ork::fvec2& pos)
+void ManipDualTrans::HandleDrag(const ork::fvec2& pos)
 {
-	/*CCamera *pcam = mManager.getActiveCamera();
+	/*Camera *pcam = mManager.getActiveCamera();
 	ui::Viewport *pVP = pcam->GetViewport();
 
 	ork::fmtx4 view;// = pcam->GetVMatrix();
@@ -371,7 +371,7 @@ void CManipDualTrans::HandleDrag(const ork::fvec2& pos)
 
 	ork::fmtx4 tform;
 	ork::fvec3 pos = mManager.mCurTransform.GetTransform()->GetPosition();
-	ork::CQuaternion rot;
+	ork::fquat rot;
 	float scale = 1.0f;
 	tform.ComposeMatrix(pos, rot, scale);
 	tform.GEMSInverse(tform);
@@ -392,11 +392,11 @@ void CManipDualTrans::HandleDrag(const ork::fvec2& pos)
 	ork::fray3 eray(enear.Transform(tform).xyz(), (efar - enear).Transform(tform).xyz().Normal());
 
 	ork::fvec3 norm;
-	if(GetClass() == CManipTXY::GetClassStatic())
+	if(GetClass() == ManipTXY::GetClassStatic())
 		norm.SetZ(1);
-	else if(GetClass() == CManipTXZ::GetClassStatic())
+	else if(GetClass() == ManipTXZ::GetClassStatic())
 		norm.SetY(1);
-	else if(GetClass() == CManipTYZ::GetClassStatic())
+	else if(GetClass() == ManipTYZ::GetClassStatic())
 		norm.SetX(1);
 
 	ork::fplane3 plane(norm, 0);
@@ -420,7 +420,7 @@ void CManipDualTrans::HandleDrag(const ork::fvec2& pos)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CManipTXY::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const
+void ManipTXY::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const
 {
 	v0.Set(-ext, ext, 0, 1);
 	v1.Set(ext, ext, 0, 1);
@@ -428,7 +428,7 @@ void CManipTXY::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v
 	v2.Set(-ext, -ext, 0 , 1);
 }
 
-void CManipTXZ::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const
+void ManipTXZ::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const
 {
 	v0.Set(-ext, 0, ext, 1);
 	v1.Set(ext, 0, ext, 1);
@@ -436,7 +436,7 @@ void CManipTXZ::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v
 	v2.Set(-ext, 0, -ext, 1);
 }
 
-void CManipTYZ::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const
+void ManipTYZ::GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const
 {
 	v0.Set(0, ext, ext, 1);
 	v1.Set(0, ext, -ext, 1);

@@ -124,7 +124,7 @@ void EntMotionState::setWorldTransform(const btTransform &transform)
 
 		mEntity->GetDagNode().GetTransformNode().GetTransform()->SetPosition(position);
 
-		ork::CQuaternion rotationQuat(float(btRotation.x()), float(btRotation.y()), float(btRotation.z()), float(btRotation.w()) );
+		ork::fquat rotationQuat(float(btRotation.x()), float(btRotation.y()), float(btRotation.z()), float(btRotation.w()) );
 		ork::fmtx4 rotationMat;
 		rotationMat.FromQuaternion(rotationQuat);
 

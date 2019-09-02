@@ -147,7 +147,7 @@ void* ix_kb_thread( void* pctx )
 
 
 
-bool CSystem::IsKeyDepressed(int ch)
+bool OldSchool::IsKeyDepressed(int ch)
 {
 #if 1
 	return false;
@@ -643,7 +643,7 @@ bool HotKeyManager::IsDepressed( const HotKey& hkey )
 		if( ikc>=0 )
 		{
 #if defined(IX)
-			return CSystem::IsKeyDepressed(ikc);
+			return OldSchool::IsKeyDepressed(ikc);
 #elif defined(_XBOX)
 			return false;
 #elif defined(_WIN32)

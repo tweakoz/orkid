@@ -26,18 +26,18 @@ using std::sin;
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TQuaternion<T>::TQuaternion(T x, T y, T z, T w)
+template <typename T> Quaternion<T>::Quaternion(T x, T y, T z, T w)
 {
 	SetX(x), SetY(y), SetZ(z), SetW(w);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TQuaternion<T> TQuaternion<T>::Lerp( const TQuaternion<T> &a , const TQuaternion<T> &b, T alpha )
+template <typename T> Quaternion<T> Quaternion<T>::Lerp( const Quaternion<T> &a , const Quaternion<T> &b, T alpha )
 {
     bool bflip;
 
-    TQuaternion q;
+    Quaternion q;
 
     T cos_t = a.GetX()*b.GetX() + a.GetY()*b.GetY() + a.GetZ()*b.GetZ() + a.GetW()*b.GetW();
 
@@ -68,14 +68,14 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Lerp( const TQuaternion<T> 
 
 }
 
-template <typename T> TQuaternion<T>::TQuaternion(const Matrix44<T> &matrix)
+template <typename T> Quaternion<T>::Quaternion(const Matrix44<T> &matrix)
 {
 	FromMatrix(matrix);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::FromMatrix(const Matrix44<T> &M)
+template <typename T> void Quaternion<T>::FromMatrix(const Matrix44<T> &M)
 {
 	T q[4];
 	const int nxt[3] = {1,2,0};
@@ -122,7 +122,7 @@ template <typename T> void TQuaternion<T>::FromMatrix(const Matrix44<T> &M)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::FromMatrix3(const Matrix33<T> &M)
+template <typename T> void Quaternion<T>::FromMatrix3(const Matrix33<T> &M)
 {
 	T q[4];
 	const int nxt[3] = {1,2,0};
@@ -169,7 +169,7 @@ template <typename T> void TQuaternion<T>::FromMatrix3(const Matrix33<T> &M)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Matrix44<T> TQuaternion<T>::ToMatrix(void) const
+template <typename T> Matrix44<T> Quaternion<T>::ToMatrix(void) const
 {
 	Matrix44<T> result;
 
@@ -208,7 +208,7 @@ template <typename T> Matrix44<T> TQuaternion<T>::ToMatrix(void) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Matrix33<T> TQuaternion<T>::ToMatrix3(void) const
+template <typename T> Matrix33<T> Quaternion<T>::ToMatrix3(void) const
 {
 	Matrix33<T> result;
 
@@ -241,7 +241,7 @@ template <typename T> Matrix33<T> TQuaternion<T>::ToMatrix3(void) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::Scale(T scalar)
+template <typename T> void Quaternion<T>::Scale(T scalar)
 {
 	m_v[0] *= scalar;
 	m_v[1] *= scalar;
@@ -251,7 +251,7 @@ template <typename T> void TQuaternion<T>::Scale(T scalar)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TQuaternion<T> TQuaternion<T>::Slerp( const TQuaternion<T> &a, const TQuaternion<T> &b, T alpha)
+template <typename T> Quaternion<T> Quaternion<T>::Slerp( const Quaternion<T> &a, const Quaternion<T> &b, T alpha)
 {
 	// Original code from Graphics Gems III - (Morrison, quaternion interpolation with extra spins).
 
@@ -263,7 +263,7 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Slerp( const TQuaternion<T>
 	int spin = 0;
 	//const F32 EPSILON = 0.0001f;
 	//const F32 PI=3.14159254f;
-	TQuaternion<T> q;
+	Quaternion<T> q;
 
 	if((a.GetX() == b.GetX()) && (a.GetY() == b.GetY()) && (a.GetZ() == b.GetZ()) && (a.GetW() == b.GetW()))
 	{
@@ -318,9 +318,9 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Slerp( const TQuaternion<T>
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TQuaternion<T> TQuaternion<T>::Negate(void)
+template <typename T> Quaternion<T> Quaternion<T>::Negate(void)
 {
-	TQuaternion<T> result;
+	Quaternion<T> result;
 
 	result.SetX(-GetX());
 	result.SetY(-GetY());
@@ -332,10 +332,10 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Negate(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TQuaternion<T> TQuaternion<T>::Square(void)
+template <typename T> Quaternion<T> Quaternion<T>::Square(void)
 {
 	T temp=T(2)*GetW();
-	TQuaternion<T> result;
+	Quaternion<T> result;
 
 	result.SetX(GetX()*temp);
 	result.SetY(GetY()*temp);
@@ -347,9 +347,9 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Square(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TQuaternion<T> TQuaternion<T>::Conjugate(TQuaternion<T> &a)
+template <typename T> Quaternion<T> Quaternion<T>::Conjugate(Quaternion<T> &a)
 {
-	TQuaternion<T> result;
+	Quaternion<T> result;
 
 	result.SetX(-GetX());
 	result.SetY(-GetY());
@@ -361,7 +361,7 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Conjugate(TQuaternion<T> &a
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T TQuaternion<T>::Magnitude(void)
+template <typename T> T Quaternion<T>::Magnitude(void)
 {
 	return(GetW()*GetW() + GetX()*GetX() + GetY()*GetY() + GetZ()*GetZ());
 }
@@ -369,7 +369,7 @@ template <typename T> T TQuaternion<T>::Magnitude(void)
 ///////////////////////////////////////////////////////////////////////////////
 //	DESC: Converts a normalized axis and angle to a unit quaternion.
 
-template <typename T> void TQuaternion<T>::FromAxisAngle( const Vector4<T> &v )
+template <typename T> void Quaternion<T>::FromAxisAngle( const Vector4<T> &v )
 {
 	T l=v.Mag();
 
@@ -391,7 +391,7 @@ template <typename T> void TQuaternion<T>::FromAxisAngle( const Vector4<T> &v )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Vector4<T> TQuaternion<T>::ToAxisAngle(void) const
+template <typename T> Vector4<T> Quaternion<T>::ToAxisAngle(void) const
 {
 	static const double kAAC = (114.591559026*DTOR);
 	T tr = CFloat::ArcCos(GetW());
@@ -406,7 +406,7 @@ template <typename T> Vector4<T> TQuaternion<T>::ToAxisAngle(void) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::Add(TQuaternion<T> &a)
+template <typename T> void Quaternion<T>::Add(Quaternion<T> &a)
 {
 	m_v[0]+=a.GetX();
 	m_v[1]+=a.GetY();
@@ -416,7 +416,7 @@ template <typename T> void TQuaternion<T>::Add(TQuaternion<T> &a)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::Sub(TQuaternion<T> &a)
+template <typename T> void Quaternion<T>::Sub(Quaternion<T> &a)
 {
 	m_v[0]-=a.GetX();
 	m_v[1]-=a.GetY();
@@ -426,9 +426,9 @@ template <typename T> void TQuaternion<T>::Sub(TQuaternion<T> &a)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> TQuaternion<T> TQuaternion<T>::Multiply(const TQuaternion<T> &b) const
+template <typename T> Quaternion<T> Quaternion<T>::Multiply(const Quaternion<T> &b) const
 {
-	TQuaternion<T> a;
+	Quaternion<T> a;
 
     a.SetX(GetX()*b.GetW() + GetY()*b.GetZ() - GetZ()*b.GetY() + GetW()*b.GetX());
     a.SetY(-GetX()*b.GetZ() + GetY()*b.GetW() + GetZ()*b.GetX() + GetW()*b.GetY());
@@ -440,7 +440,7 @@ template <typename T> TQuaternion<T> TQuaternion<T>::Multiply(const TQuaternion<
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::Divide(TQuaternion<T> &a)
+template <typename T> void Quaternion<T>::Divide(Quaternion<T> &a)
 {
 	m_v[0]/=a.GetX();
 	m_v[1]/=a.GetY();
@@ -450,7 +450,7 @@ template <typename T> void TQuaternion<T>::Divide(TQuaternion<T> &a)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::Identity(void)
+template <typename T> void Quaternion<T>::Identity(void)
 {
 	SetW(T(1.0f));
 	SetX(T(0.0f));
@@ -460,7 +460,7 @@ template <typename T> void TQuaternion<T>::Identity(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>:: ShortestRotationArc( Vector4<T> v0, Vector4<T> v1 )
+template <typename T> void Quaternion<T>:: ShortestRotationArc( Vector4<T> v0, Vector4<T> v1 )
 {
 	v0.Normalize();
 	v1.Normalize();
@@ -477,7 +477,7 @@ template <typename T> void TQuaternion<T>:: ShortestRotationArc( Vector4<T> v0, 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::dump( void )
+template <typename T> void Quaternion<T>::dump( void )
 {
 	orkprintf( "quat %f %f %f %f\n",
 		GetX(),
@@ -491,7 +491,7 @@ template <typename T> void TQuaternion<T>::dump( void )
 // smallest 3 compression - 16 bytes -> 4 bytes  (game gems 3, page 189)
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> QuatCodec TQuaternion<T>::Compress( void ) const
+template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 {
 	static const T frange = T( (1<<9)-1 );
 	
@@ -598,7 +598,7 @@ template <typename T> QuatCodec TQuaternion<T>::Compress( void ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void TQuaternion<T>::DeCompress( QuatCodec uquat )
+template <typename T> void Quaternion<T>::DeCompress( QuatCodec uquat )
 {
 	static const T frange = T( (1<<9)-1 );
 	static const T fsqr2d2 = CFloat::Sqrt( T(2.0f) ) / T(2.0f);
@@ -623,7 +623,7 @@ template <typename T> void TQuaternion<T>::DeCompress( QuatCodec uquat )
 ///////////////////////////////////////////////////////////////////////////////
 
 
-template <typename T> void TQuaternion<T>::Normalize()
+template <typename T> void Quaternion<T>::Normalize()
 {
 	float x2 = m_v[0]*m_v[0];
 	float y2 = m_v[1]*m_v[1];

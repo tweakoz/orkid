@@ -5,15 +5,15 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/pch.h>
+#include <math.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/lev2renderer.h>
-#include <ork/math/misc_math.h>
-#include <ork/math/audiomath.h>
-#include <math.h>
 #include <ork/lev2/gfx/util/grid.h>
-#include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/math/audiomath.h>
+#include <ork/math/misc_math.h>
+#include <ork/pch.h>
 
 using namespace ork::audiomath;
 
@@ -23,188 +23,166 @@ using namespace ork::audiomath;
 
 namespace ork { namespace lev2 {
 
-Grid3d::Grid3d()
-	: mVisGridBase( 0.3f )
-	, mVisGridDiv( 10.0f )
-	, mVisGridHiliteDiv( 100.0f )
-{
-
-}
+Grid3d::Grid3d() : mVisGridBase(0.3f), mVisGridDiv(10.0f), mVisGridHiliteDiv(100.0f) {}
 ///////////////////////////////////////////////////////////////////////////////
-void Grid3d::Calc( const CCameraData& camdat )
-{
-	const fvec4& vn0 = camdat.GetFrustum().mNearCorners[0];
-	const fvec4& vn1 = camdat.GetFrustum().mNearCorners[1];
-	const fvec4& vn2 = camdat.GetFrustum().mNearCorners[2];
-	const fvec4& vn3 = camdat.GetFrustum().mNearCorners[3];
-	const fvec4& vf0 = camdat.GetFrustum().mFarCorners[0];
-	const fvec4& vf1 = camdat.GetFrustum().mFarCorners[1];
-	const fvec4& vf2 = camdat.GetFrustum().mFarCorners[2];
-	const fvec4& vf3 = camdat.GetFrustum().mFarCorners[3];
-	fvec3 vr0 = (vf0-vn0).Normal();
-	fvec3 vr1 = (vf1-vn1).Normal();
-	fvec3 vr2 = (vf2-vn2).Normal();
-	fvec3 vr3 = (vf3-vn3).Normal();
+void Grid3d::Calc(const CameraData& camdat) {
+  const fvec4& vn0 = camdat.GetFrustum().mNearCorners[0];
+  const fvec4& vn1 = camdat.GetFrustum().mNearCorners[1];
+  const fvec4& vn2 = camdat.GetFrustum().mNearCorners[2];
+  const fvec4& vn3 = camdat.GetFrustum().mNearCorners[3];
+  const fvec4& vf0 = camdat.GetFrustum().mFarCorners[0];
+  const fvec4& vf1 = camdat.GetFrustum().mFarCorners[1];
+  const fvec4& vf2 = camdat.GetFrustum().mFarCorners[2];
+  const fvec4& vf3 = camdat.GetFrustum().mFarCorners[3];
+  fvec3 vr0 = (vf0 - vn0).Normal();
+  fvec3 vr1 = (vf1 - vn1).Normal();
+  fvec3 vr2 = (vf2 - vn2).Normal();
+  fvec3 vr3 = (vf3 - vn3).Normal();
 
-	/////////////////////////////////////////////////////////////////
-	// get center ray
+  /////////////////////////////////////////////////////////////////
+  // get center ray
 
-	fvec3 vnc = (vn0+vn1+vn2+vn3)*float(0.25f);
-	fvec3 vfc = (vf0+vf1+vf2+vf3)*float(0.25f);
-	fvec3 vrc = (vfc-vnc).Normal();
+  fvec3 vnc = (vn0 + vn1 + vn2 + vn3) * float(0.25f);
+  fvec3 vfc = (vf0 + vf1 + vf2 + vf3) * float(0.25f);
+  fvec3 vrc = (vfc - vnc).Normal();
 
-	fray3 centerray;
-	centerray.mOrigin = vnc;
-	centerray.mDirection = vrc;
+  fray3 centerray;
+  centerray.mOrigin = vnc;
+  centerray.mDirection = vrc;
 
-	/////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////
 
-	float itx0 = 0.0f, itx1= 0.0f, ity0= 0.0f, ity1= 0.0f;
+  float itx0 = 0.0f, itx1 = 0.0f, ity0 = 0.0f, ity1 = 0.0f;
 
-	/////////////////////////////////////////////////////////////////
-	// calc intersection of frustum and XYPlane
+  /////////////////////////////////////////////////////////////////
+  // calc intersection of frustum and XYPlane
 
-	float DistToPlane(0.0f);
+  float DistToPlane(0.0f);
 
-	if( meGridMode == EGRID_XY )
-	{
-		fplane3 XYPlane( fvec3(float(0.0f),float(0.0f),float(1.0f)), fvec3::Zero() );
-		fvec3 vc;
-		bool bc = XYPlane.Intersect( centerray, DistToPlane );
-		float isect_dist;
-	    bc = XYPlane.Intersect( centerray, isect_dist, vc );
-		float Restrict = DistToPlane*float(1.0f);
-		// extend Grid to cover full viewport
-		itx0 = vc.GetX() - Restrict;
-		itx1 = vc.GetX() + Restrict;
-		ity0 = vc.GetY() - Restrict;
-		ity1 = vc.GetY() + Restrict;
-	}
-	else if( meGridMode == EGRID_XZ )
-	{
-		fplane3 XZPlane( fvec3(float(0.0f),float(1.0f),float(0.0f)), fvec3::Zero() );
-		fvec3 vc;
-		bool bc = XZPlane.Intersect( centerray, DistToPlane );
-		float isect_dist;
-	    bc = XZPlane.Intersect( centerray, isect_dist, vc );
-		float Restrict = DistToPlane*float(1.0f);
-		// extend Grid to cover full viewport
-		itx0 = vc.GetX() - Restrict;
-		itx1 = vc.GetX() + Restrict;
-		ity0 = vc.GetZ() - Restrict;
-		ity1 = vc.GetZ() + Restrict;
-	}
+  if (meGridMode == EGRID_XY) {
+    fplane3 XYPlane(fvec3(float(0.0f), float(0.0f), float(1.0f)), fvec3::Zero());
+    fvec3 vc;
+    bool bc = XYPlane.Intersect(centerray, DistToPlane);
+    float isect_dist;
+    bc = XYPlane.Intersect(centerray, isect_dist, vc);
+    float Restrict = DistToPlane * float(1.0f);
+    // extend Grid to cover full viewport
+    itx0 = vc.GetX() - Restrict;
+    itx1 = vc.GetX() + Restrict;
+    ity0 = vc.GetY() - Restrict;
+    ity1 = vc.GetY() + Restrict;
+  } else if (meGridMode == EGRID_XZ) {
+    fplane3 XZPlane(fvec3(float(0.0f), float(1.0f), float(0.0f)), fvec3::Zero());
+    fvec3 vc;
+    bool bc = XZPlane.Intersect(centerray, DistToPlane);
+    float isect_dist;
+    bc = XZPlane.Intersect(centerray, isect_dist, vc);
+    float Restrict = DistToPlane * float(1.0f);
+    // extend Grid to cover full viewport
+    itx0 = vc.GetX() - Restrict;
+    itx1 = vc.GetX() + Restrict;
+    ity0 = vc.GetZ() - Restrict;
+    ity1 = vc.GetZ() + Restrict;
+  }
 
-	/////////////////////////////////////////////////////////////////
-	// get params for grid
+  /////////////////////////////////////////////////////////////////
+  // get params for grid
 
-	float fLEFT = float(itx0);
-	float fRIGHT = float(itx1);
-	float fTOP = float(ity0);
-	float fBOTTOM = float(ity1);
+  float fLEFT = float(itx0);
+  float fRIGHT = float(itx1);
+  float fTOP = float(ity0);
+  float fBOTTOM = float(ity1);
 
-	float fWIDTH = fRIGHT-fLEFT;
-	float fHEIGHT = fBOTTOM-fTOP;
-	float fASPECT = fHEIGHT/fWIDTH;
+  float fWIDTH = fRIGHT - fLEFT;
+  float fHEIGHT = fBOTTOM - fTOP;
+  float fASPECT = fHEIGHT / fWIDTH;
 
-	float fLOG = float(log_base( mVisGridDiv, DistToPlane*mVisGridBase ));
-	float fiLOG = float(pow_base( mVisGridDiv, float(CFloat::Floor(fLOG)) ));
-	mVisGridSize = fiLOG/mVisGridDiv;
+  float fLOG = float(log_base(mVisGridDiv, DistToPlane * mVisGridBase));
+  float fiLOG = float(pow_base(mVisGridDiv, float(CFloat::Floor(fLOG))));
+  mVisGridSize = fiLOG / mVisGridDiv;
 
-	if( mVisGridSize<10.0f ) mVisGridSize=10.0f;
+  if (mVisGridSize < 10.0f)
+    mVisGridSize = 10.0f;
 
+  // if( mVisGridSize<float(0.5f) ) mVisGridSize = float(0.5f);
+  // if( mVisGridSize>float(8.0f) ) mVisGridSize = float(8.0f);
 
-	//if( mVisGridSize<float(0.5f) ) mVisGridSize = float(0.5f);
-	//if( mVisGridSize>float(8.0f) ) mVisGridSize = float(8.0f);
-
-	mGridDL = mVisGridSize*float(CFloat::Floor(fLEFT/mVisGridSize));
-	mGridDR = mVisGridSize*float(CFloat::Ceil(fRIGHT/mVisGridSize));
-	mGridDT = mVisGridSize*float(CFloat::Floor(fTOP/mVisGridSize));
-	mGridDB = mVisGridSize*float(CFloat::Ceil(fBOTTOM/mVisGridSize));
-
+  mGridDL = mVisGridSize * float(CFloat::Floor(fLEFT / mVisGridSize));
+  mGridDR = mVisGridSize * float(CFloat::Ceil(fRIGHT / mVisGridSize));
+  mGridDT = mVisGridSize * float(CFloat::Floor(fTOP / mVisGridSize));
+  mGridDB = mVisGridSize * float(CFloat::Ceil(fBOTTOM / mVisGridSize));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Grid3d::Render( RenderContextFrameData& FrameData ) const
-{
-	GfxTarget* pTARG = FrameData.GetTarget();
+void Grid3d::Render(RenderContextFrameData& FrameData) const {
+  GfxTarget* pTARG = FrameData.GetTarget();
 
-	//pTARG->MTXI()->PushPMatrix( FrameData.GetCameraData()->GetPMatrix() );
-	//pTARG->MTXI()->PushVMatrix( FrameData.GetCameraData()->GetVMatrix() );
-	pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
-	{
-		static GfxMaterial3DSolid gridmat( pTARG );
-		gridmat.SetColorMode( GfxMaterial3DSolid::EMODE_MOD_COLOR );
-		gridmat.mRasterState.SetBlending( EBLENDING_ADDITIVE );
+  // pTARG->MTXI()->PushPMatrix( FrameData.GetCameraData()->GetPMatrix() );
+  // pTARG->MTXI()->PushVMatrix( FrameData.GetCameraData()->GetVMatrix() );
+  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+  {
+    static GfxMaterial3DSolid gridmat(pTARG);
+    gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_MOD_COLOR);
+    gridmat.mRasterState.SetBlending(EBLENDING_ADDITIVE);
 
-		pTARG->BindMaterial( & gridmat );
+    pTARG->BindMaterial(&gridmat);
 
-		////////////////////////////////
-		// Grid
+    ////////////////////////////////
+    // Grid
 
-		float GridGrey(0.10f);
-		float GridHili(0.20f);
-		fvec4 BaseGridColor( GridGrey,GridGrey,GridGrey );
-		fvec4 HiliGridColor( GridHili,GridHili,GridHili );
+    float GridGrey(0.10f);
+    float GridHili(0.20f);
+    fvec4 BaseGridColor(GridGrey, GridGrey, GridGrey);
+    fvec4 HiliGridColor(GridHili, GridHili, GridHili);
 
-		pTARG->PushModColor( BaseGridColor );
+    pTARG->PushModColor(BaseGridColor);
 
-		if( meGridMode == EGRID_XY
-			)
-		{
-			for( float fX=mGridDL; fX<=mGridDR; fX+=mVisGridSize )
-			{
-				bool bORIGIN = (fX==0.0f);
-				bool bhi = std::fmod( CFloat::Abs(fX), mVisGridHiliteDiv ) <CFloat::Epsilon();
+    if (meGridMode == EGRID_XY) {
+      for (float fX = mGridDL; fX <= mGridDR; fX += mVisGridSize) {
+        bool bORIGIN = (fX == 0.0f);
+        bool bhi = std::fmod(CFloat::Abs(fX), mVisGridHiliteDiv) < CFloat::Epsilon();
 
-				pTARG->PushModColor( bORIGIN ? fcolor4::Green() : (bhi ? HiliGridColor : BaseGridColor) );
-				//pTARG->IMI()->DrawLine( fvec4( fX, mGridDT, 0.0f, 1.0f ), fvec4( fX, mGridDB, 0.0f, 1.0f ) );
-				//pTARG->IMI()->QueFlush( false );
-				pTARG->PopModColor();
-			}
-			for( float fY=mGridDT; fY<=mGridDB; fY+=mVisGridSize )
-			{
-				bool bORIGIN = (fY==0.0f);
-				bool bhi = std::fmod( CFloat::Abs(fY),mVisGridHiliteDiv ) < CFloat::Epsilon();
+        pTARG->PushModColor(bORIGIN ? fcolor4::Green() : (bhi ? HiliGridColor : BaseGridColor));
+        // pTARG->IMI()->DrawLine( fvec4( fX, mGridDT, 0.0f, 1.0f ), fvec4( fX, mGridDB, 0.0f, 1.0f ) );
+        // pTARG->IMI()->QueFlush( false );
+        pTARG->PopModColor();
+      }
+      for (float fY = mGridDT; fY <= mGridDB; fY += mVisGridSize) {
+        bool bORIGIN = (fY == 0.0f);
+        bool bhi = std::fmod(CFloat::Abs(fY), mVisGridHiliteDiv) < CFloat::Epsilon();
 
-				pTARG->PushModColor( bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor) );
-				//pTARG->IMI()->DrawLine( fvec4( mGridDL, fY, 0.0f, 1.0f ), fvec4( mGridDR, fY, 0.0f, 1.0f ) );
-				//pTARG->IMI()->QueFlush( false );
-				pTARG->PopModColor();
-			}
-		}
-		else if( meGridMode == EGRID_XZ )
-		{
-			for( float fX=mGridDL; fX<=mGridDR; fX+=mVisGridSize )
-			{
-				bool bORIGIN = (fX==0.0f);
-				bool bhi = std::fmod( CFloat::Abs(fX), mVisGridHiliteDiv ) < CFloat::Epsilon();
+        pTARG->PushModColor(bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor));
+        // pTARG->IMI()->DrawLine( fvec4( mGridDL, fY, 0.0f, 1.0f ), fvec4( mGridDR, fY, 0.0f, 1.0f ) );
+        // pTARG->IMI()->QueFlush( false );
+        pTARG->PopModColor();
+      }
+    } else if (meGridMode == EGRID_XZ) {
+      for (float fX = mGridDL; fX <= mGridDR; fX += mVisGridSize) {
+        bool bORIGIN = (fX == 0.0f);
+        bool bhi = std::fmod(CFloat::Abs(fX), mVisGridHiliteDiv) < CFloat::Epsilon();
 
-				pTARG->PushModColor( bORIGIN ? fcolor4::Blue() : (bhi ? HiliGridColor : BaseGridColor) );
-				//pTARG->IMI()->DrawLine( fvec4( fX, 0.0f, mGridDT, 1.0f ), fvec4( fX, 0.0f, mGridDB, 1.0f ) );
-				//pTARG->IMI()->QueFlush( false );
-				pTARG->PopModColor();
-			}
-			for( float fY=mGridDT; fY<=mGridDB; fY+=mVisGridSize )
-			{
-				bool bORIGIN = (fY==0.0f);
-				bool bhi = std::fmod( CFloat::Abs(fY), mVisGridHiliteDiv ) < CFloat::Epsilon();
+        pTARG->PushModColor(bORIGIN ? fcolor4::Blue() : (bhi ? HiliGridColor : BaseGridColor));
+        // pTARG->IMI()->DrawLine( fvec4( fX, 0.0f, mGridDT, 1.0f ), fvec4( fX, 0.0f, mGridDB, 1.0f ) );
+        // pTARG->IMI()->QueFlush( false );
+        pTARG->PopModColor();
+      }
+      for (float fY = mGridDT; fY <= mGridDB; fY += mVisGridSize) {
+        bool bORIGIN = (fY == 0.0f);
+        bool bhi = std::fmod(CFloat::Abs(fY), mVisGridHiliteDiv) < CFloat::Epsilon();
 
-				pTARG->PushModColor( bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor) );
-				//pTARG->IMI()->DrawLine( fvec4( mGridDL, 0.0f, fY, 1.0f ), fvec4( mGridDR, 0.0f, fY, 1.0f ) );
-				//pTARG->IMI()->QueFlush( false );
-				pTARG->PopModColor();
-			}
-		}
-		//CFontMan::FlushQue(pTARG);
-		pTARG->PopModColor();
-
-	}
-	//pTARG->MTXI()->PopPMatrix();
-	//pTARG->MTXI()->PopVMatrix();
-	pTARG->MTXI()->PopMMatrix();
-
+        pTARG->PushModColor(bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor));
+        // pTARG->IMI()->DrawLine( fvec4( mGridDL, 0.0f, fY, 1.0f ), fvec4( mGridDR, 0.0f, fY, 1.0f ) );
+        // pTARG->IMI()->QueFlush( false );
+        pTARG->PopModColor();
+      }
+    }
+    // CFontMan::FlushQue(pTARG);
+    pTARG->PopModColor();
+  }
+  // pTARG->MTXI()->PopPMatrix();
+  // pTARG->MTXI()->PopVMatrix();
+  pTARG->MTXI()->PopMMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -212,16 +190,8 @@ void Grid3d::Render( RenderContextFrameData& FrameData ) const
 ///////////////////////////////////////////////////////////////////////////////
 
 Grid2d::Grid2d()
-	: mVisGridBase( 0.3f )
-	, mVisGridDiv( 10.0f )
-	, mVisGridHiliteDiv( 100.0f )
-    , mVisGridSize(10)
-	, mCenter(0.0f,0.0f)
-	, mExtent(100.0f)
-	, mZoom(1.0f)
-{
-
-}
+    : mVisGridBase(0.3f), mVisGridDiv(10.0f), mVisGridHiliteDiv(100.0f), mVisGridSize(10), mCenter(0.0f, 0.0f), mExtent(100.0f),
+      mZoom(1.0f) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 /*
@@ -270,7 +240,8 @@ struct grid_calculator
         it = (int(devviewrect.y-filog)/ispace)*ispace;
         ib = (int(devviewrect.y2+filog)/ispace)*ispace;
         ic = (ir-il)/ispace;
-        printf( "scale_factor<%f> flog<%f> filog<%f> il<%d> ir<%d> ispace<%d> ic<%d>\n", scale_factor, flog, filog, il, ir, ispace, ic );
+        printf( "scale_factor<%f> flog<%f> filog<%f> il<%d> ir<%d> ispace<%d> ic<%d>\n", scale_factor, flog, filog, il, ir, ispace,
+ic );
     }
 
 
@@ -279,162 +250,148 @@ struct grid_calculator
 ////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-void Grid2d::ReCalc( int iw, int ih )
-{
-	//float scale_factor = (dev_view_rect.y2 - dev_view_rect.y) / gmastercfg.ideviceH;
-	//grid_calculator the_grid_calc(dev_view_rect,scale_factor);
-	float ftW = float(iw);
-	float ftH = float(ih);
-	float fASPECT = ftH/ftW;
+void Grid2d::ReCalc(int iw, int ih) {
+  // float scale_factor = (dev_view_rect.y2 - dev_view_rect.y) / gmastercfg.ideviceH;
+  // grid_calculator the_grid_calc(dev_view_rect,scale_factor);
+  float ftW = float(iw);
+  float ftH = float(ih);
+  float fASPECT = ftH / ftW;
 
-	float fnext = mExtent/mZoom;
+  float fnext = mExtent / mZoom;
 
-	float itx0 = mCenter.GetX() - fnext*0.5f;
-	float itx1 = mCenter.GetX() + fnext*0.5f;
-	float ity0 = mCenter.GetY() - fnext*0.5f*fASPECT;
-	float ity1 = mCenter.GetY() + fnext*0.5f*fASPECT;
+  float itx0 = mCenter.GetX() - fnext * 0.5f;
+  float itx1 = mCenter.GetX() + fnext * 0.5f;
+  float ity0 = mCenter.GetY() - fnext * 0.5f * fASPECT;
+  float ity1 = mCenter.GetY() + fnext * 0.5f * fASPECT;
 
-	/////////////////////////////////////////////////////////////////
-	// get params for grid
+  /////////////////////////////////////////////////////////////////
+  // get params for grid
 
-	float fLEFT = itx0;
-	float fRIGHT = itx1;
-	float fTOP = ity0;
-	float fBOTTOM = ity1;
+  float fLEFT = itx0;
+  float fRIGHT = itx1;
+  float fTOP = ity0;
+  float fBOTTOM = ity1;
 
-	float fWIDTH = fRIGHT-fLEFT;
-	float fHEIGHT = fBOTTOM-fTOP;
+  float fWIDTH = fRIGHT - fLEFT;
+  float fHEIGHT = fBOTTOM - fTOP;
 
-	float fLOG = log_base( mVisGridDiv, fnext*mVisGridBase );
-	float fiLOG = pow_base( mVisGridDiv, CFloat::Floor(fLOG) );
-	mVisGridSize = fiLOG/mVisGridDiv;
+  float fLOG = log_base(mVisGridDiv, fnext * mVisGridBase);
+  float fiLOG = pow_base(mVisGridDiv, CFloat::Floor(fLOG));
+  mVisGridSize = fiLOG / mVisGridDiv;
 
-	if( mVisGridSize<10.0f ) mVisGridSize=10.0f;
-    if( mVisGridSize>100.0f ) mVisGridSize=100.0f;
+  if (mVisGridSize < 10.0f)
+    mVisGridSize = 10.0f;
+  if (mVisGridSize > 100.0f)
+    mVisGridSize = 100.0f;
 
-	//if( mVisGridSize<float(0.5f) ) mVisGridSize = float(0.5f);
-	//if( mVisGridSize>float(8.0f) ) mVisGridSize = float(8.0f);
+  // if( mVisGridSize<float(0.5f) ) mVisGridSize = float(0.5f);
+  // if( mVisGridSize>float(8.0f) ) mVisGridSize = float(8.0f);
 
-	mTopLeft.SetX( mVisGridSize*float(CFloat::Floor(fLEFT/mVisGridSize)) );
-	mTopLeft.SetY( mVisGridSize*float(CFloat::Floor(fTOP/mVisGridSize)) );
+  mTopLeft.SetX(mVisGridSize * float(CFloat::Floor(fLEFT / mVisGridSize)));
+  mTopLeft.SetY(mVisGridSize * float(CFloat::Floor(fTOP / mVisGridSize)));
 
-	mBotRight.SetX( mVisGridSize*float(CFloat::Ceil(fRIGHT/mVisGridSize)) );
-	mBotRight.SetY( mVisGridSize*float(CFloat::Ceil(fBOTTOM/mVisGridSize)) );
-
+  mBotRight.SetX(mVisGridSize * float(CFloat::Ceil(fRIGHT / mVisGridSize)));
+  mBotRight.SetY(mVisGridSize * float(CFloat::Ceil(fBOTTOM / mVisGridSize)));
 }
 
-void Grid2d::SetExtent( float fv )
-{
-	mExtent = fv;
-}
-void Grid2d::SetZoom( float fv )
-{
-	mZoom = fv;
-}
-void Grid2d::SetCenter( const fvec2& ctr)
-{
-	mCenter = ctr;
-}
+void Grid2d::SetExtent(float fv) { mExtent = fv; }
+void Grid2d::SetZoom(float fv) { mZoom = fv; }
+void Grid2d::SetCenter(const fvec2& ctr) { mCenter = ctr; }
 ///////////////////////////////////////////////////////////////////////////////
 
-fvec2 Grid2d::Snap( fvec2 inp ) const
-{
-	float ffx = inp.GetX();
-	float ffy = inp.GetY();
-	float ffxm = std::fmod(ffx,mVisGridSize);
-	float ffym = std::fmod(ffy,mVisGridSize);
+fvec2 Grid2d::Snap(fvec2 inp) const {
+  float ffx = inp.GetX();
+  float ffy = inp.GetY();
+  float ffxm = std::fmod(ffx, mVisGridSize);
+  float ffym = std::fmod(ffy, mVisGridSize);
 
-	bool blx = (ffxm<(mVisGridSize*0.5f));
-	bool bly = (ffym<(mVisGridSize*0.5f));
+  bool blx = (ffxm < (mVisGridSize * 0.5f));
+  bool bly = (ffym < (mVisGridSize * 0.5f));
 
-	float fnx = blx ? (ffx-ffxm) : (ffx-ffxm)+mVisGridSize;
-	float fny = bly ? (ffy-ffym) : (ffy-ffym)+mVisGridSize;
+  float fnx = blx ? (ffx - ffxm) : (ffx - ffxm) + mVisGridSize;
+  float fny = bly ? (ffy - ffym) : (ffy - ffym) + mVisGridSize;
 
-	return fvec2(fnx,fny);
+  return fvec2(fnx, fny);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Grid2d::Render( GfxTarget* pTARG, int iw, int ih )
-{
-	auto mtxi = pTARG->MTXI();
+void Grid2d::Render(GfxTarget* pTARG, int iw, int ih) {
+  auto mtxi = pTARG->MTXI();
 
-	lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
+  lev2::DynamicVertexBuffer<lev2::SVtxV12C4T16>& VB = lev2::GfxEnv::GetSharedDynamicVB();
 
-	ReCalc( iw,ih );
+  ReCalc(iw, ih);
 
-	mMtxOrtho = mtxi->Ortho( mTopLeft.GetX(), mBotRight.GetX(), mTopLeft.GetY(), mBotRight.GetY(), 0.0f, 1.0f );
+  mMtxOrtho = mtxi->Ortho(mTopLeft.GetX(), mBotRight.GetX(), mTopLeft.GetY(), mBotRight.GetY(), 0.0f, 1.0f);
 
-	mtxi->PushPMatrix( mMtxOrtho );
-	mtxi->PushVMatrix( fmtx4::Identity );
-	mtxi->PushMMatrix( fmtx4::Identity );
-	{
-		static GfxMaterial3DSolid gridmat( pTARG );
-		gridmat.SetColorMode( GfxMaterial3DSolid::EMODE_VERTEX_COLOR );
-		gridmat.mRasterState.SetBlending( EBLENDING_ADDITIVE );
+  mtxi->PushPMatrix(mMtxOrtho);
+  mtxi->PushVMatrix(fmtx4::Identity);
+  mtxi->PushMMatrix(fmtx4::Identity);
+  {
+    static GfxMaterial3DSolid gridmat(pTARG);
+    gridmat.SetColorMode(GfxMaterial3DSolid::EMODE_VERTEX_COLOR);
+    gridmat.mRasterState.SetBlending(EBLENDING_ADDITIVE);
 
-		pTARG->PushMaterial( & gridmat );
+    pTARG->PushMaterial(&gridmat);
 
-		////////////////////////////////
-		// Grid
+    ////////////////////////////////
+    // Grid
 
-		float GridGrey(0.10f);
-		float GridHili(0.20f);
-		fvec4 BaseGridColor( GridGrey,GridGrey,GridGrey );
-		fvec4 HiliGridColor( GridHili,GridHili,GridHili );
+    float GridGrey(0.10f);
+    float GridHili(0.20f);
+    fvec4 BaseGridColor(GridGrey, GridGrey, GridGrey);
+    fvec4 HiliGridColor(GridHili, GridHili, GridHili);
 
-		float x1 = mTopLeft.GetX();
-		float x2 = mBotRight.GetX();
-		float y1 = mTopLeft.GetY();
-		float y2 = mBotRight.GetY();
+    float x1 = mTopLeft.GetX();
+    float x2 = mBotRight.GetX();
+    float y1 = mTopLeft.GetY();
+    float y2 = mBotRight.GetY();
 
-		int inumx = 0;
-		int inumy = 0;
-		for( float fx=x1; fx<=x2; fx+=mVisGridSize ) inumx++;
-		for( float fy=y1; fy<=y2; fy+=mVisGridSize ) inumy++;
+    int inumx = 0;
+    int inumy = 0;
+    for (float fx = x1; fx <= x2; fx += mVisGridSize)
+      inumx++;
+    for (float fy = y1; fy <= y2; fy += mVisGridSize)
+      inumy++;
 
-        int count = (inumx+inumy)*2;
+    int count = (inumx + inumy) * 2;
 
-        if( count )
-        {
-    		lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
-    		vw.Lock( pTARG, &VB, (inumx+inumy)*2 );
+    if (count) {
+      lev2::VtxWriter<lev2::SVtxV12C4T16> vw;
+      vw.Lock(pTARG, &VB, (inumx + inumy) * 2);
 
-    		fvec2 uv0(0.0f,0.0f);
-    		for( float fx=x1; fx<=x2; fx+=mVisGridSize )
-    		{
-    			bool bORIGIN = (fx==0.0f);
-    			bool bhi = std::fmod( CFloat::Abs(fx), mVisGridHiliteDiv ) <CFloat::Epsilon();
+      fvec2 uv0(0.0f, 0.0f);
+      for (float fx = x1; fx <= x2; fx += mVisGridSize) {
+        bool bORIGIN = (fx == 0.0f);
+        bool bhi = std::fmod(CFloat::Abs(fx), mVisGridHiliteDiv) < CFloat::Epsilon();
 
-    			auto color = bORIGIN ? fcolor4::Green() : (bhi ? HiliGridColor : BaseGridColor);
-    			u32 ucolor = color.GetVtxColorAsU32();
-    			ork::lev2::SVtxV12C4T16 v0( fvec3(fx,y1,0.0f), uv0, ucolor );
-    			ork::lev2::SVtxV12C4T16 v1( fvec3(fx,y2,0.0f), uv0, ucolor );
-    			vw.AddVertex(v0);
-    			vw.AddVertex(v1);
-    		}
-    		for( float fy=y1; fy<=y2; fy+=mVisGridSize )
-    		{
-    			bool bORIGIN = (fy==0.0f);
-    			bool bhi = std::fmod( CFloat::Abs(fy),mVisGridHiliteDiv ) < CFloat::Epsilon();
+        auto color = bORIGIN ? fcolor4::Green() : (bhi ? HiliGridColor : BaseGridColor);
+        u32 ucolor = color.GetVtxColorAsU32();
+        ork::lev2::SVtxV12C4T16 v0(fvec3(fx, y1, 0.0f), uv0, ucolor);
+        ork::lev2::SVtxV12C4T16 v1(fvec3(fx, y2, 0.0f), uv0, ucolor);
+        vw.AddVertex(v0);
+        vw.AddVertex(v1);
+      }
+      for (float fy = y1; fy <= y2; fy += mVisGridSize) {
+        bool bORIGIN = (fy == 0.0f);
+        bool bhi = std::fmod(CFloat::Abs(fy), mVisGridHiliteDiv) < CFloat::Epsilon();
 
-    			auto color = bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor);
-    			u32 ucolor = color.GetVtxColorAsU32();
-    			ork::lev2::SVtxV12C4T16 v0( fvec3(x1,fy,0.0f), uv0, ucolor );
-    			ork::lev2::SVtxV12C4T16 v1( fvec3(x2,fy,0.0f), uv0, ucolor );
-    			vw.AddVertex(v0);
-    			vw.AddVertex(v1);
-
-    		}
-    		vw.UnLock(pTARG);
-    		pTARG->GBI()->DrawPrimitive( vw, ork::lev2::EPRIM_LINES );
-        }
-		pTARG->PopMaterial();
-	}
-	mtxi->PopPMatrix();
-	mtxi->PopVMatrix();
-	mtxi->PopMMatrix();
-
+        auto color = bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor);
+        u32 ucolor = color.GetVtxColorAsU32();
+        ork::lev2::SVtxV12C4T16 v0(fvec3(x1, fy, 0.0f), uv0, ucolor);
+        ork::lev2::SVtxV12C4T16 v1(fvec3(x2, fy, 0.0f), uv0, ucolor);
+        vw.AddVertex(v0);
+        vw.AddVertex(v1);
+      }
+      vw.UnLock(pTARG);
+      pTARG->GBI()->DrawPrimitive(vw, ork::lev2::EPRIM_LINES);
+    }
+    pTARG->PopMaterial();
+  }
+  mtxi->PopPMatrix();
+  mtxi->PopVMatrix();
+  mtxi->PopMMatrix();
 }
 
-}}
+}} // namespace ork::lev2

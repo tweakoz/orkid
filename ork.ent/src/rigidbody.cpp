@@ -293,7 +293,7 @@ void RigidBody::IntegrateImpulses( float fdt )
 	fvec3 av_axis = mAngularVelocity.Normal();
 	float av_mag = mAngularVelocity.Mag();
 
-	CQuaternion qav; qav.FromAxisAngle( fvec4( av_axis, av_mag*fdt ) );
+	fquat qav; qav.FromAxisAngle( fvec4( av_axis, av_mag*fdt ) );
 	qav.Normalize();
 
 	mOrientation = mOrientation.Multiply(qav);

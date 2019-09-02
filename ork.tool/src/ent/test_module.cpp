@@ -17,7 +17,7 @@ void EditorMainWindow::ViewToggleCollisionSpheres()
 {
 	static bool bviewcs = true;
 
-	CSystem::SetGlobalIntVariable( "ViewCollisionSpheres", int(bviewcs) );
+	OldSchool::SetGlobalIntVariable( "ViewCollisionSpheres", int(bviewcs) );
 
 	bviewcs = bviewcs ? false : true;
 }

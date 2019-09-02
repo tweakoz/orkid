@@ -15,7 +15,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 
-GfxMaterialManip::GfxMaterialManip(GfxTarget* pTARG,CManipManager&mgr)
+GfxMaterialManip::GfxMaterialManip(GfxTarget* pTARG,ManipManager&mgr)
 	: mbNoDepthTest( false )
 	, mManager(mgr)
 {

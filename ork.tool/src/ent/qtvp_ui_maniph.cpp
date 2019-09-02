@@ -134,7 +134,7 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 					if( pobj && pobj!=pillegal)
 					{
 						//printf( "maniptest<%p>\n", pobj );
-						if(CManip *manip = ork::rtti::autocast(pobj))
+						if(Manip *manip = ork::rtti::autocast(pobj))
 						{
 							//printf( "maniptest2<%p>\n", pobj );
 							//mEditor.ManipManager().SetActiveCamera(GetViewport()->GetCamera());
@@ -207,8 +207,8 @@ ui::HandlerResult ManipHandler::DoOnUiEvent( const ui::Event& EV )
 				ork::rtti::ICastable *pillegal = (ork::rtti::ICastable *) 0xffffffff;
 				//orkprintf( "obj<%p>\n", pobj );
 
-				if(pobj && pobj!=pillegal && pobj->GetClass()->IsSubclassOf( CManip::GetClassStatic() ))
-					editor.ManipManager().SetHover((CManip*)pobj);
+				if(pobj && pobj!=pillegal && pobj->GetClass()->IsSubclassOf( Manip::GetClassStatic() ))
+					editor.ManipManager().SetHover((Manip*)pobj);
 				else
 					editor.ManipManager().SetHover(NULL);
 
@@ -252,12 +252,12 @@ ManipTransHandler::ManipTransHandler( SceneEditorBase& editor )
 void ManipTransHandler::DoAttach(SceneEditorVP* pvp)
 {
 	mEditor.ManipManager().SetWorldTrans( false );
-	mEditor.ManipManager().SetUIMode( CManipManager::EUIMODE_MANIP_WORLD_TRANSLATE );
-	mEditor.ManipManager().SetManipMode( CManipManager::EMANIPMODE_WORLD_TRANS );
+	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE );
+	mEditor.ManipManager().SetManipMode( ManipManager::EMANIPMODE_WORLD_TRANS );
 }
 void ManipTransHandler::DoDetach(SceneEditorVP* pvp)
 {
-	mEditor.ManipManager().SetUIMode( CManipManager::EUIMODE_STD );
+	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_STD );
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -271,12 +271,12 @@ ManipRotHandler::ManipRotHandler( SceneEditorBase& editor )
 void ManipRotHandler::DoAttach(SceneEditorVP* pvp)
 {
 	mEditor.ManipManager().SetWorldTrans( true );
-	mEditor.ManipManager().SetUIMode( CManipManager::EUIMODE_MANIP_LOCAL_ROTATE );
-	mEditor.ManipManager().SetManipMode( CManipManager::EMANIPMODE_LOCAL_ROTATE );
+	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_MANIP_LOCAL_ROTATE );
+	mEditor.ManipManager().SetManipMode( ManipManager::EMANIPMODE_LOCAL_ROTATE );
 }
 void ManipRotHandler::DoDetach(SceneEditorVP* pvp)
 {
-	mEditor.ManipManager().SetUIMode( CManipManager::EUIMODE_STD );
+	mEditor.ManipManager().SetUIMode( ManipManager::EUIMODE_STD );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

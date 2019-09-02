@@ -1162,7 +1162,7 @@ bool DAEToSECCollision(const tokenlist& options)
 {
 	bool rval = true;
 
-	float ftimeA = float(CSystem::GetRef().GetLoResTime());
+	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 	ork::tool::FilterOptMap	OptionsMap;
 	OptionsMap.SetDefault("-in", "coldae_in.dae");
@@ -1238,7 +1238,7 @@ bool DAEToSECCollision(const tokenlist& options)
 		//killMesh.WriteToWavefrontObj( outpth );
 	}
 
-	float ftimeB = float(CSystem::GetRef().GetLoResTime());
+	float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<DAEToSECCollision::LoadDaes %f seconds>>\n", ftime );
 
@@ -1246,7 +1246,7 @@ bool DAEToSECCollision(const tokenlist& options)
 
 	////////////////////////////////////////////////////////
 
-	ftimeA = float(CSystem::GetRef().GetLoResTime());
+	ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 	if( 0 == sectorMesh.GetNumSubMeshes() )
 	{
@@ -1259,13 +1259,13 @@ bool DAEToSECCollision(const tokenlist& options)
 	rval &= meshWalker.ComputeSectors();
 	ConverterAssert(rval, "SectorWalker was able to compute sectors");
 
-	ftimeB = float(CSystem::GetRef().GetLoResTime());
+	ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<DAEToSECCollision::ComputeSectors %f seconds>>\n", ftime );
 
 	////////////////////////////////////////////////////////
 
-	ftimeA = float(CSystem::GetRef().GetLoResTime());
+	ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 	toolmesh gravityMerged;
 	if( gravityMesh.GetNumSubMeshes() )
@@ -1283,7 +1283,7 @@ bool DAEToSECCollision(const tokenlist& options)
 		ConverterAssert(rval, "SectorWalker was able to add kill info to sectors");
 	}
 
-	ftimeB = float(CSystem::GetRef().GetLoResTime());
+	ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<DAEToSECCollision::GravKill %f seconds>>\n", ftime );
 
@@ -1291,7 +1291,7 @@ bool DAEToSECCollision(const tokenlist& options)
 
 	if( rval )
 	{
-		ftimeA = float(CSystem::GetRef().GetLoResTime());
+		ftimeA = float(OldSchool::GetRef().GetLoResTime());
 	
 		//Read track collision data from the DAE file
 		ColladaExportPolicy collisionPolicy;
@@ -1305,11 +1305,11 @@ bool DAEToSECCollision(const tokenlist& options)
 		MeshUtil::toolmesh collisionMesh;
 		collisionMesh.ReadFromDaeFile(inPath, collisionReadOptions);
 
-		ftimeB = float(CSystem::GetRef().GetLoResTime());
+		ftimeB = float(OldSchool::GetRef().GetLoResTime());
 		ftime = (ftimeB-ftimeA);
 		orkprintf( "<<PROFILE>> <<DAEToSECCollision::ReadCol %f seconds>>\n", ftime );
 
-		ftimeA = float(CSystem::GetRef().GetLoResTime());
+		ftimeA = float(OldSchool::GetRef().GetLoResTime());
 	//		ConverterAssert(sectorMesh.GetNumPolys() != 0, "There are polys in the 'sectors' layer");
 
 		toolmesh merged;
@@ -1318,7 +1318,7 @@ bool DAEToSECCollision(const tokenlist& options)
 
 		rval &= ent::bullet::Track::Save(outPath, saveData);
 	
-		ftimeB = float(CSystem::GetRef().GetLoResTime());
+		ftimeB = float(OldSchool::GetRef().GetLoResTime());
 		ftime = (ftimeB-ftimeA);
 		orkprintf( "<<PROFILE>> <<DAEToSECCollision::End %f seconds>>\n", ftime );
 

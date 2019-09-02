@@ -270,11 +270,11 @@ bool ShipControllerInst::DoUpdate_Flip( const ork::lev2::InputState& inpstate, f
 
 	static float fdta = 0.0f;
 
-	ork::CQuaternion ident = ork::CQuaternion();
+	ork::fquat ident = ork::fquat();
 	if( inpstate.IsDown( lev2::ETRIG_RAW_JOY0_RDIG_UP ) )
 	{
 #if 0
-		mRigidBody.mOrientation = ork::CQuaternion::Lerp( mRigidBody.mOrientation, ident, fdt*2.0f );
+		mRigidBody.mOrientation = ork::fquat::Lerp( mRigidBody.mOrientation, ident, fdt*2.0f );
 		mRigidBody.mPosition += ork::fvec3(0.0f,fdt*3.0f,0.0f);
 		mRigidBody.mVelocity = 0.0f;
 		mRigidBody.mLinAccel *= 0.0f;
@@ -318,7 +318,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 
 	if( mci )
 	{
-		const CCameraData* cdata = sinst->GetCameraData( ork::AddPooledLiteral("game") );
+		const CameraData* cdata = sinst->GetCameraData( ork::AddPooledLiteral("game") );
 
 		if( cdata )
 		{
@@ -543,7 +543,7 @@ void ShipControllerInst::DoUpdate(SceneInst* sinst)
 					float ftm = fabs(fx);
 					//float fforcebas = 20.0f;
 					////////////////////////////////////////////
-					CQuaternion q;
+					fquat q;
 					q.FromAxisAngle( fvec4( 0.0f, 1.0f, 0.0f, fturn ) );
 					MatShipRot = q.ToMatrix()*MatShipRot;
 					fvec3 fdir	=	fvec3(0.0f,0.0f,mPcd.GetForwardForce()

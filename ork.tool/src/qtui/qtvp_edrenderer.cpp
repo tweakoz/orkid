@@ -56,7 +56,7 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
     ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
 
-    CQuaternion quat;
+    fquat quat;
     quat.FromAxisAngle(fvec4(0.0f, 0.0f, 1.0f, PI * -0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
@@ -77,7 +77,7 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
     GetTarget()->MTXI()->PopMMatrix();
     GetTarget()->PopModColor();
 
-    CQuaternion quat;
+    fquat quat;
     quat.FromAxisAngle(fvec4(0.0f, 0.0f, 1.0f, PI * -0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);

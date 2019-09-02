@@ -258,7 +258,7 @@ template <typename T> void Matrix44<T>::Scale(T xscl, T yscl, T zscl) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // sm - rotation matrix from quaternion
-template <typename T> void Matrix44<T>::FromQuaternion(TQuaternion<T> quat) {
+template <typename T> void Matrix44<T>::FromQuaternion(Quaternion<T> quat) {
   T xx = quat.GetX() * quat.GetX();
   T yy = quat.GetY() * quat.GetY();
   T zz = quat.GetZ() * quat.GetZ();
@@ -634,16 +634,16 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   Matrix44<T> ToR;
   ToR.SetRotation(to); // froms ROTATION
 
-  TQuaternion<T> FromQ;
+  Quaternion<T> FromQ;
   FromQ.FromMatrix(FromR);
-  TQuaternion<T> ToQ;
+  Quaternion<T> ToQ;
   ToQ.FromMatrix(ToR);
 
   Matrix44<T> CORR;
   CORR.CorrectionMatrix(from, to); // CORR.Normalize();
 
-  TQuaternion<T> Qidn;
-  TQuaternion<T> Qrot;
+  Quaternion<T> Qidn;
+  Quaternion<T> Qrot;
   Qrot.FromMatrix(CORR);
 
   // Vector4<T>  rawaxisang = Qrot.ToAxisAngle();
@@ -651,11 +651,11 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   // T	newangle = rawangle*par;
   // Vector4<T> newaxisang = rawaxisang;
   // newaxisang.SetW( newangle );
-  // TCQuaternion newQrot;	newQrot.FromAxisAngle( newaxisang );
+  // Tfquat newQrot;	newQrot.FromAxisAngle( newaxisang );
 
 #if 1
 
-  TQuaternion<T> dQ = Qrot;
+  Quaternion<T> dQ = Qrot;
   dQ.Sub(Qidn);
   dQ.Scale(par);
   dQ.Add(Qidn);
@@ -663,11 +663,11 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
   if (dQ.Magnitude() > T(0.0f))
     dQ.Negate();
 
-  TQuaternion<T> newQrot = dQ;
+  Quaternion<T> newQrot = dQ;
 
 #endif
 
-  // TCQuaternion newQrot = FromQ.Slerp( ToQ, par );
+  // Tfquat newQrot = FromQ.Slerp( ToQ, par );
 
   Matrix44<T> matR;
   matR = newQrot.ToMatrix();
@@ -680,7 +680,7 @@ void Matrix44<T>::Lerp(const Matrix44<T>& from, const Matrix44<T>& to, T par) //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::DecomposeMatrix(Vector3<T>& pos, TQuaternion<T>& qrot, T& Scale) const {
+template <typename T> void Matrix44<T>::DecomposeMatrix(Vector3<T>& pos, Quaternion<T>& qrot, T& Scale) const {
   pos = GetTranslation();
 
   Matrix44<T> rot = *this;
@@ -710,7 +710,7 @@ template <typename T> void Matrix44<T>::DecomposeMatrix(Vector3<T>& pos, TQuater
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void Matrix44<T>::ComposeMatrix(const Vector3<T>& pos, const TQuaternion<T>& qrot, const T& Scale) {
+template <typename T> void Matrix44<T>::ComposeMatrix(const Vector3<T>& pos, const Quaternion<T>& qrot, const T& Scale) {
   *this = qrot.ToMatrix();
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {

@@ -584,7 +584,7 @@ bool Widget::IsKeyDepressed( int ch )
 		return false;
 	}
 
-	return CSystem::GetRef().IsKeyDepressed( ch );
+	return OldSchool::GetRef().IsKeyDepressed( ch );
 }
 
 /////////////////////////////////////////////////////////////////////////

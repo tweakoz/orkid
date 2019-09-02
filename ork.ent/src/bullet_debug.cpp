@@ -111,7 +111,7 @@ void BulletDebugRenderCallback(	ork::lev2::RenderContextInstData& rcid,
 			if( 0 == pbwci ) return;
 			//////////////////////////////////////////
 			const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-			const ork::CCameraData* cdata = framedata->GetCameraData();
+			const ork::CameraData* cdata = framedata->GetCameraData();
 
 			pyo->mpDebugger->Lock();
 			pyo->mpDebugger->Render(rcid, targ, srec->mLines1);	
@@ -139,7 +139,7 @@ void PhysicsDebugger::Render(ork::lev2::RenderContextInstData &rcid, ork::lev2::
 
 	const ork::lev2::Renderer* prenderer = rcid.GetRenderer();
 
-	const ork::CCameraData* pcamdata = ptarg->GetRenderContextFrameData()->GetCameraData();
+	const ork::CameraData* pcamdata = ptarg->GetRenderContextFrameData()->GetCameraData();
 
 	ork::fvec3 szn = 0;
 

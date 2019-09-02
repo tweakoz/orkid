@@ -65,7 +65,7 @@ void toolmesh::MergeSubMesh( const submesh& src )
 
 void toolmesh::MergeSubMesh( const toolmesh& src, const submesh* pgrp, const char* newname )
 {
-	float ftimeA = float(CSystem::GetRef().GetLoResTime());
+	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 	submesh* pnewgroup = FindSubMesh( newname );
 	if( 0 == pnewgroup ) 
 	{
@@ -86,7 +86,7 @@ void toolmesh::MergeSubMesh( const toolmesh& src, const submesh* pgrp, const cha
 		NewPoly.SetAnnoMap(ply.GetAnnoMap());
 		pnewgroup->MergePoly(NewPoly);
 	}
-	float ftimeB = float(CSystem::GetRef().GetLoResTime());
+	float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<toolmesh::MergeSubMesh %f seconds>>\n", ftime );
 }
@@ -121,7 +121,7 @@ struct MergeToolMeshQueue
 
 void MergeToolMeshQueueItem::DoIt(int ithread) const
 {
-	float ftimeA = float(CSystem::GetRef().GetLoResTime());
+	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 	int inump = mpSourceSubMesh->GetNumPolys();
 	for( int i=0; i<inump; i++ )
 	{	
@@ -142,7 +142,7 @@ void MergeToolMeshQueueItem::DoIt(int ithread) const
 		polyA.SetAnnoMap(ply.GetAnnoMap());
 		mpDestSubMesh->MergePoly( polyA );
 	}
-	float ftimeB = float(CSystem::GetRef().GetLoResTime());
+	float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<toolmesh::MergeToolMeshThreaded  Thread<%d> Dest<%s> NumPolys<%d> %f seconds>>\n", ithread, destname.c_str(), inump, ftime );
 }
@@ -200,7 +200,7 @@ struct MergeToolMeshJobThread : public ork::Thread
 
 void toolmesh::MergeToolMeshThreadedExcluding( const toolmesh & sr, int inumthreads, const std::set<std::string>& ExcludeSet )
 {
-	float ftimeA = float(CSystem::GetRef().GetLoResTime());
+	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 
 	MergeToolMeshQueue Q;
 	orkvector<MergeToolMeshQueueItem>& QV = Q.mJobSet.LockForWrite();
@@ -249,7 +249,7 @@ void toolmesh::MergeToolMeshThreadedExcluding( const toolmesh & sr, int inumthre
 	/////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////
 	MergeMaterialsFromToolMesh( sr );
-	float ftimeB = float(CSystem::GetRef().GetLoResTime());
+	float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<toolmesh::MergeToolMeshThreaded %f seconds>>\n", ftime );
 }
@@ -318,7 +318,7 @@ submesh& toolmesh::MergeSubMesh( const char* pname, const submesh::AnnotationMap
 
 void submesh::MergeSubMesh( const submesh& inp_mesh )
 {	
-	float ftimeA = float(CSystem::GetRef().GetLoResTime());
+	float ftimeA = float(OldSchool::GetRef().GetLoResTime());
 	int inumpingroup = inp_mesh.GetNumPolys();
 	for( int i=0; i<inumpingroup; i++ )
 	{	const poly& ply = inp_mesh.RefPoly( i );
@@ -334,7 +334,7 @@ void submesh::MergeSubMesh( const submesh& inp_mesh )
 		NewPoly.SetAnnoMap(ply.GetAnnoMap());
 		MergePoly(NewPoly);
 	}
-	float ftimeB = float(CSystem::GetRef().GetLoResTime());
+	float ftimeB = float(OldSchool::GetRef().GetLoResTime());
 	float ftime = (ftimeB-ftimeA);
 	orkprintf( "<<PROFILE>> <<submesh::MergeSubMesh %f seconds>>\n", ftime );
 }

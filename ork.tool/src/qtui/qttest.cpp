@@ -197,7 +197,7 @@ int BootQtThreadImpl(void* arg_opaq )
 
 	gpQtApplication = new OrkQtApp( args->argc, args->argv );
 
-	std::string AppClassName = CSystem::GetGlobalStringVariable( "ProjectApplicationClassName" );
+	std::string AppClassName = OldSchool::GetGlobalStringVariable( "ProjectApplicationClassName" );
 
 	ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
     ork::lev2::InputManager::poll();

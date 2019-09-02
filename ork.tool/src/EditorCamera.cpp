@@ -72,7 +72,7 @@ void EditorCamControllerData::Describe()
 
 EditorCamControllerData::EditorCamControllerData()
 {
-	mPerspCam = new lev2::CCamera_persp;
+	mPerspCam = new lev2::EzUiCam;
 
 	mPerspCam->mfLoc = 1.0f;
 
@@ -99,7 +99,7 @@ EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& 
 	: ComponentInst( & occd, pent )
 	, mCD( occd )
 {
-	const lev2::CCamera* pcam = mCD.GetCamera();
+	const lev2::Camera* pcam = mCD.GetCamera();
 	CameraDrawable* pcamd = new CameraDrawable(pent,& pcam->GetCameraData()); // deleted when entity deleted
 	//pent->AddDrawable(AddPooledLiteral("Debug"),pcamd);
 	pcamd->SetOwner(pent);
@@ -122,7 +122,7 @@ bool EditorCamControllerInst::DoLink(SceneInst *psi)
 
 bool EditorCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 {
-	const lev2::CCamera* pcam = mCD.GetCamera();
+	const lev2::Camera* pcam = mCD.GetCamera();
 	if( GetEntity() )
 	{
 		const ent::EntData& ED = GetEntity()->GetEntData();

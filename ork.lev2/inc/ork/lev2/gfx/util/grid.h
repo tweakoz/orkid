@@ -24,7 +24,7 @@ public:
 		EGRID_END,
 	};
 
-	void Calc( const ork::CCameraData& camdat );
+	void Calc( const ork::CameraData& camdat );
 	void Render( RenderContextFrameData& FrameData ) const;
 
 	void SetGridMode( EGrid egrid ) { meGridMode=egrid; }

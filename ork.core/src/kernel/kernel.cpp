@@ -35,44 +35,44 @@ const std::string gstring_noval("");
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-void CSystem::SetGlobalFloatVariable( const std::string & variable, f32 value )
+void OldSchool::SetGlobalFloatVariable( const std::string & variable, f32 value )
 {
 	GetRef().mmGlobalFloatVariables[ variable ] = value;
 }
 
-f32 CSystem::GetGlobalFloatVariable( const std::string & variable )
+f32 OldSchool::GetGlobalFloatVariable( const std::string & variable )
 {
 	return OrkSTXFindValFromKey( GetRef().mmGlobalFloatVariables, variable, (f32) 0.0f );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CSystem::SetGlobalStringVariable( const std::string & variable, std::string value )
+void OldSchool::SetGlobalStringVariable( const std::string & variable, std::string value )
 {
 	GetRef().mmGlobalStringVariables[ variable ] = value;
 }
 
-std::string CSystem::GetGlobalStringVariable( const std::string & variable )
+std::string OldSchool::GetGlobalStringVariable( const std::string & variable )
 {
 	return OrkSTXFindValFromKey( GetRef().mmGlobalStringVariables, variable, (std::string) "NoVariable" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CSystem::SetGlobalIntVariable( const std::string & variable, int value )
+void OldSchool::SetGlobalIntVariable( const std::string & variable, int value )
 {
 	GetRef().mmGlobalIntVariables[ variable ] = value;
 }
 
-int CSystem::GetGlobalIntVariable( const std::string & variable )
+int OldSchool::GetGlobalIntVariable( const std::string & variable )
 {
 	return OrkSTXFindValFromKey( GetRef().mmGlobalIntVariables, variable, 0 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CSystem::CSystem()
-	: NoRttiSingleton< CSystem >()
+OldSchool::OldSchool()
+	: NoRttiSingleton< OldSchool >()
 {
 #if defined( NITRO )
 	OS_InitTick();
@@ -86,7 +86,7 @@ CSystem::CSystem()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const char *CSystem::ExpandString( char *outbuf, size_t outsize, const char *pfmtstr )
+const char *OldSchool::ExpandString( char *outbuf, size_t outsize, const char *pfmtstr )
 {
 	size_t out = 0;
 	char keybuf[ 512 ];

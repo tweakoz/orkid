@@ -177,7 +177,7 @@ float SceneInst::ComputeDeltaTime() {
   float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
 
   AssertOnOpQ2(UpdateSerialOpQ());
-  float systime = float(CSystem::GetRef().GetLoResTime());
+  float systime = float(OldSchool::GetRef().GetLoResTime());
   float fdelta = (frame_rate != 0.0f) ? (1.0f / frame_rate) : (systime - mUpTime);
 
   static float fbasetime = systime;
@@ -194,7 +194,7 @@ float SceneInst::ComputeDeltaTime() {
   if (fdelta < 0.00001f) {
     // orkprintf( "FPS is over 10000HZ!!!! you need to reset valid fps range\n"
     // ); fdelta=0.001f; ork::msleep(1);
-    systime = float(CSystem::GetRef().GetLoResTime());
+    systime = float(OldSchool::GetRef().GetLoResTime());
     fdelta = 0.00001f;
     mUpTime = systime;
     mUpDeltaTime = fdelta;
@@ -235,7 +235,7 @@ float SceneInst::ComputeDeltaTime() {
   return fdelta;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::SetCameraData(const PoolString& name, const CCameraData* camdat) {
+void SceneInst::SetCameraData(const PoolString& name, const CameraData* camdat) {
   CameraLut::iterator it = mCameraLut.find(name);
 
   if (it == mCameraLut.end()) {
@@ -250,14 +250,14 @@ void SceneInst::SetCameraData(const PoolString& name, const CCameraData* camdat)
     }
   }
 
-  lev2::CCamera* pcam = (camdat != 0) ? camdat->getEditorCamera() : 0;
+  lev2::Camera* pcam = (camdat != 0) ? camdat->getEditorCamera() : 0;
 
   // orkprintf( "SceneInst::SetCameraData() name<%s> camdat<%p> l2cam<%p>\n",
   // name.c_str(), camdat, pcam );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const CCameraData* SceneInst::GetCameraData(const PoolString& name) const {
+const CameraData* SceneInst::GetCameraData(const PoolString& name) const {
   CameraLut::const_iterator it = mCameraLut.find(name);
   return (it == mCameraLut.end()) ? 0 : it->second;
 }
@@ -328,7 +328,7 @@ void SceneInst::EnterEditState() {
   ServiceDeactivateQueue(); // HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION
                             // WHILE LINKING
   StartEntities();
-  mStartTime = float(CSystem::GetRef().GetLoResTime());
+  mStartTime = float(OldSchool::GetRef().GetLoResTime());
   mGameTime = 0.0f;
   mUpDeltaTime = 0.0f;
   mPrevDeltaTime = 1.0f / 30.0f;
@@ -395,7 +395,7 @@ void SceneInst::EnterRunState() {
   StartEntities();
   StartSystems();
 
-  mStartTime = float(CSystem::GetRef().GetLoResTime());
+  mStartTime = float(OldSchool::GetRef().GetLoResTime());
   mGameTime = 0.0f;
   mUpDeltaTime = 0.0f;
   mPrevDeltaTime = 1.0f / 30.0f;
@@ -872,8 +872,8 @@ static void CopyCameraData(const SceneInst::CameraLut& srclut, CameraLut& dstlut
   // printf( "Copying CameraData\n" );
   for (SceneInst::CameraLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
     const PoolString& CameraName = itCAM->first;
-    const CCameraData* pcameradata = itCAM->second;
-    const lev2::CCamera* pcam = pcameradata ? pcameradata->getEditorCamera() : 0;
+    const CameraData* pcameradata = itCAM->second;
+    const lev2::Camera* pcam = pcameradata ? pcameradata->getEditorCamera() : 0;
     // printf( "CopyCameraData Idx<%d> CamName<%s> pcamdata<%p> pcam<%p>\n",
     // idx, CameraName.c_str(), pcameradata, pcam );
     if (pcameradata) {
@@ -901,7 +901,7 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 
   ////////////////////////////////////////////////////////////////
 
-  float t0 = ork::CSystem::GetRef().GetLoResTime();
+  float t0 = ork::OldSchool::GetRef().GetLoResTime();
 
   for (const auto& it : mEntities) {
     const ork::ent::Entity* pent = it.second;
@@ -976,7 +976,7 @@ void SceneInst::RenderDrawableBuffer(lev2::Renderer* renderer, const ork::ent::D
 
   ////////////////////////////////////////////////
   static int ictr = 0;
-  float fcurtime = ork::CSystem::GetRef().GetLoResTime();
+  float fcurtime = ork::OldSchool::GetRef().GetLoResTime();
   static float lltime = fcurtime;
   float fdelta = fcurtime - lltime;
   if (fdelta > 1.0f) {
@@ -1081,9 +1081,9 @@ struct MyTimer {
   std::string mName;
 
   MyTimer(const char* name) : mfTimeStart(0.0f), mfTimeEnd(0.0f), mfTimeAcc(0.0f), miCounter(0), mName(name) {}
-  void Start() { mfTimeStart = ork::CSystem::GetRef().GetLoResTime(); }
+  void Start() { mfTimeStart = ork::OldSchool::GetRef().GetLoResTime(); }
   void Stop() {
-    mfTimeEnd = ork::CSystem::GetRef().GetLoResTime();
+    mfTimeEnd = ork::OldSchool::GetRef().GetLoResTime();
     mfTimeAcc += (mfTimeEnd - mfTimeStart);
     miCounter++;
     if ((miCounter % 30) == 0) {

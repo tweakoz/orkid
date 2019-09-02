@@ -773,7 +773,7 @@ ent::EntData* SceneEditorBase::EditorReplicateEntity() {
 
   if (mpScene) {
     const ent::Archetype* archetype = NULL;
-    CQuaternion rotation;
+    fquat rotation;
     std::string name;
 
     const orkset<ork::Object*>& selection = selectionManager().getActiveSelection();
