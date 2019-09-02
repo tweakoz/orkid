@@ -42,7 +42,7 @@ void InputDeviceOSX::Input_Init(void)
     return ;
 }
 
-void InputDeviceOSX::Input_Poll()
+void InputDeviceOSX::Input_poll()
 {
 	mConnectionStatus = CONN_STATUS_ACTIVE;
 

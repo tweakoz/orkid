@@ -8,6 +8,8 @@
 #pragma once
 
 #include <ork/kernel/core/singleton.h>
+#include <unordered_map>
+#include <map>
 
 namespace ork { namespace lev2 {
 
@@ -198,22 +200,22 @@ static const int KMAX_TRIGGERS = 1024;
 
 struct RawInputKey
 {
-	U32	mKey;
-	RawInputKey(U32 v = ETRIG_RAW_BEGIN) { mKey = v; }
+	uint32_t	mKey;
+	RawInputKey(uint32_t v = ETRIG_RAW_BEGIN) { mKey = v; }
 	bool operator<( const RawInputKey& oth ) const { return oth.mKey < mKey; }
 };
 
 struct MappedInputKey
 {
-	U32	mKey;
-	MappedInputKey(U32 v = ETRIG_BEGIN) { mKey = v; }
+	uint32_t	mKey;
+	MappedInputKey(uint32_t v = ETRIG_BEGIN) { mKey = v; }
 	bool operator<(const MappedInputKey &oth) const { return oth.mKey < mKey; }
 };
 
 class InputMap
 {
 public:
-	orkmap<MappedInputKey, RawInputKey> mInputMap;
+	std::map<MappedInputKey, RawInputKey> mInputMap;
 	RawInputKey MapInput(const MappedInputKey &inkey) const;
 	void Set(MappedInputKey inch, RawInputKey outch);
 };
@@ -229,10 +231,10 @@ public:
 	bool IsUpEdge(MappedInputKey ch, const InputMap &InputMap = gInputMap) const;
 	bool IsDownEdge(MappedInputKey ch, const InputMap &InputMap = gInputMap) const;
 	F32 GetPressure(MappedInputKey ch, const InputMap &InputMap = gInputMap) const;
-	S8 GetPressureRaw(int ch) const;
+	float GetPressureRaw(int ch) const;
 
-	void SetPressure(RawInputKey ch, S8 uVal);
-	void SetPressureRaw(int ich, S8 uVal);
+	void SetPressure(RawInputKey ch, float uVal);
+	void SetPressureRaw(int ich, float uVal);
 
 	InputState( );
 
@@ -242,13 +244,13 @@ public:
 
 private:
 
-	S8						LastPressureValues[KMAX_TRIGGERS];
-	S8						PressureValues[KMAX_TRIGGERS];
-	S8						PressureThresh[KMAX_TRIGGERS];
+	float						_prevPressureValues[KMAX_TRIGGERS];
+	float						_pressureValues[KMAX_TRIGGERS];
+	float						_pressureThresh[KMAX_TRIGGERS];
 
-	bool					TriggerDown[KMAX_TRIGGERS];
-	bool					TriggerUp[KMAX_TRIGGERS];
-	bool					TriggerState[KMAX_TRIGGERS];
+	bool					_triggerDown[KMAX_TRIGGERS];
+	bool					_triggerUp[KMAX_TRIGGERS];
+	bool					_triggerState[KMAX_TRIGGERS];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -292,20 +294,20 @@ public:
 
 	// Function: Input_Poll
 	// Updates the device's connection status and InputState, if connected.
-	virtual void Input_Poll() { mConnectionStatus = CONN_STATUS_UNKNOWN; }
+	virtual void poll() { mConnectionStatus = CONN_STATUS_UNKNOWN; }
 	virtual void RumbleClear() ;
 	virtual void RumbleTrigger(int amount) ;
 
 
-	void SetRumbleEnabled(bool enable) {
+	void setRumbleEnabled(bool enable) {
 
 		mRumbleEnabled = enable;
-	} 
+	}
     // Each device can have it's own on and off and there there is a global setting
 	void SetMasterRumbleEnabled(bool enable) {
 
 		mMasterRumbleEnabled = enable;
-	} 
+	}
 
 	CONN_STATUS GetConnectionStatus() const { return mConnectionStatus; }
 
@@ -346,27 +348,31 @@ private:
 class InputManager : public NoRttiSingleton< InputManager >
 {
 public:
-	static void Poll();
-	static void ClearAll();
-	static void SetRumble(bool);
+	static void poll();
+	static void clearAll();
+	static void setRumble(bool);
 
 	InputManager();
 
-	static void CreateInputDevices();
+	static void discoverDevices();
 
-	const InputDevice *GetInputDevice(unsigned int id) const;
-	InputDevice * GetInputDevice(unsigned int id);
-	const InputDevice *GetKeyboardInputDevice() const { return mvpKeyboardInputDevice; }
+	static InputDevice * getInputDevice(size_t id);
+	static const InputDevice *getKeyboardDevice() { return GetRef().mvpKeyboardInputDevice; }
 
-	void AddDevice(InputDevice *pref) { pref->SetId((int)mvpInputDevices.size()); mvpInputDevices.push_back(pref); }
+	static void addDevice(InputDevice *pref) {
+    pref->SetId((int)GetRef().mvpInputDevices.size());
+    GetRef().mvpInputDevices.push_back(pref);
+  }
 
-	int GetNumberInputDevices() const { return int(mvpInputDevices.size()); }
+	static size_t getNumberInputDevices() {
+    return GetRef().mvpInputDevices.size();
+  }
 
 private:
 	InputDevice *mvpDipSwitchDevice;
 	InputDevice *mvpKeyboardInputDevice;
-	orkvector<InputDevice *> mvpInputDevices;
-	int GetHWNumberInputDevices(void);
+	std::vector<InputDevice *> mvpInputDevices;
+	//int getHWNumberInputDevices(void);
 };
 
 } }

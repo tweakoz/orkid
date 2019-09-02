@@ -484,7 +484,7 @@ void QCtxWidget::MouseEventCommon( QMouseEvent * event )
 
 	uiev.mpBlindEventData = (void*) event;
 
-    InputManager::Poll();
+    InputManager::poll();
 
 	Qt::MouseButtons Buttons = event->buttons();
 	Qt::KeyboardModifiers modifiers = event->modifiers();

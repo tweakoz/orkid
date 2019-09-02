@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -14,20 +14,6 @@
 #include <ork/kernel/tempstring.h>
 
 namespace ork {
-
-///////////////////////////////////////////////////////////////////////////
-
-struct HotMouseTest
-{
-	bool	mbCurLMB;
-	bool	mbCurMMB;
-	bool	mbCurRMB;
-	bool	mbCurAlt;
-	bool	mbCurShf;
-	bool	mbCurCtl;
-
-	HotMouseTest( bool lmb, bool mmb, bool rmb, bool alt, bool shf, bool ctl );
-};
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +48,7 @@ class HotKeyConfiguration : public ork::Object
 	orklut<PoolString,ork::Object*>	mHotKeys;
 	orkset<boost::Crc64>			mHotKeysUsed;
 
-	bool PostDeserialize(reflect::IDeserializer &) final; 
+	bool PostDeserialize(reflect::IDeserializer &) final;
 
 public:
 
@@ -90,8 +76,8 @@ class HotKeyManager : public ork::Object
 
 	HotKeyManager();
 
-    bool PreDeserialize(reflect::IDeserializer &) final;  
-    bool PostDeserialize(reflect::IDeserializer &) final; 
+    bool PreDeserialize(reflect::IDeserializer &) final;
+    bool PostDeserialize(reflect::IDeserializer &) final;
 
 public:
 
@@ -114,8 +100,6 @@ public:
 	static bool IsDepressed(PoolString action);
 	static bool IsDepressed(const char* action);
 	static bool IsDepressed(const HotKey& action);
-
-	static bool IsDepressed( const HotKey& action, const HotMouseTest& hms );
 
 	static FixedString<32> GetAcceleratorCode(const char* action) ;
 };

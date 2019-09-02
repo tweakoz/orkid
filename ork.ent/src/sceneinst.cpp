@@ -1105,7 +1105,7 @@ void SceneInst::Update() {
 
   switch (this->GetSceneInstMode()) {
     case ork::ent::ESCENEMODE_PAUSE: {
-      ork::lev2::InputManager::Poll();
+      ork::lev2::InputManager::poll();
       if (mApplication)
         mApplication->PreUpdate();
       if (mApplication)
@@ -1150,7 +1150,7 @@ void SceneInst::Update() {
       while (mDeltaTimeAccum >= step) {
         mDeltaTimeAccum -= step;
 
-        ork::lev2::InputManager::Poll();
+        ork::lev2::InputManager::poll();
 
         SetDeltaTime(step);
 

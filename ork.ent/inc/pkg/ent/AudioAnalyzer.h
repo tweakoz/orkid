@@ -132,7 +132,7 @@ public:
 private:
 	CAPlayThrough* GetPlayThrough() { return mPlayThrough; }
 
-	void AddDeviceListeners(AudioDeviceID input);
+	void addDeviceListeners(AudioDeviceID input);
 	void RemoveDeviceListeners(AudioDeviceID input);
 
 	void ResetPlayThrough();
