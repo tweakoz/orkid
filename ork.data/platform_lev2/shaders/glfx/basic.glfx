@@ -63,7 +63,7 @@ fragment_interface iface_fdefault {
   in vec2 frg_uv0;
   in vec4 frg_nrmd;
 
-  out vec4 out_clr;
+  layout(location = 0) out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
 
@@ -76,7 +76,7 @@ fragment_interface iface_fmt : ub_frg {
   in vec4 frg_clr;
   in vec2 frg_uv0;
 
-  out vec4 out_clr;
+  layout(location = 0) out vec4 out_clr;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -85,8 +85,8 @@ fragment_interface iface_fpick : ub_frg {
   in vec2 frg_uv0;
   in vec4 frg_nrmd;
 
-  out vec4 out_clr;
-  out vec4 out_nrmd;
+  layout(location = 0) out vec4 out_clr;
+  layout(location = 1) out vec4 out_nrmd;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -163,7 +163,7 @@ vertex_shader vs_vtxcolor : iface_rigid {
   frg_clr = vtxcolor.bgra;
   frg_uv0 = uv0 * vec2(1.0f, -1.0f);
   float depth = hpos.z/hpos.w;
-	frg_nrmd = hpos;
+	frg_nrmd = vec4(wnorm,depth);//hpos;
   // frg_uv1 = uv0;
 }
 ///////////////////////////////////////////////////////////////

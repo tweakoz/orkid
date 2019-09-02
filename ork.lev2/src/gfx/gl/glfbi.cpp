@@ -667,14 +667,14 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, GetPixelContext& ctx) {
               glReadBuffer(GL_COLOR_ATTACHMENT0 + MrtIndex);
               GL_ERRORCHECK();
 
-              F32 rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+              float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
               glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rgba);
               GL_ERRORCHECK();
               fvec4 rv = fvec4(rgba[0], rgba[1], rgba[2], rgba[3]);
               ctx.mPickColors[MrtIndex] = rv;
 
-               printf( "getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w );
+              printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
             }
           }
           GL_ERRORCHECK();
