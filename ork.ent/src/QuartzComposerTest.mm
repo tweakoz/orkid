@@ -103,7 +103,7 @@ QuartzComposerData::QuartzComposerData()
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-ComponentInst *QuartzComposerData::CreateComponent(Entity *pent) const
+ComponentInst *QuartzComposerData::createComponent(Entity *pent) const
 {
 	ComponentInst* pinst = OrkNew QuartzComposerInst( *this, pent );
 	return pinst;

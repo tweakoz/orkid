@@ -96,7 +96,7 @@ WorldControllerData::WorldControllerData()
 {
 }
 
-ent::ComponentInst* WorldControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* WorldControllerData::createComponent(ent::Entity* pent) const
 {
 	return OrkNew WorldControllerInst( *this, pent );
 }

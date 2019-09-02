@@ -52,7 +52,7 @@ class ObserverCamControllerData : public ent::ComponentData
 	
 public:
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	ObserverCamControllerData();
 	PoolString GetTarget() const { return mTarget; }

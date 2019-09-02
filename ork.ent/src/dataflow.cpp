@@ -48,7 +48,7 @@ DataflowRecieverComponentData::DataflowRecieverComponentData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ComponentInst *DataflowRecieverComponentData::CreateComponent(Entity *pent) const
+ComponentInst *DataflowRecieverComponentData::createComponent(Entity *pent) const
 {
 	return OrkNew DataflowRecieverComponentInst( *this, pent );
 }

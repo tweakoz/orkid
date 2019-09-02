@@ -841,7 +841,7 @@ ShipControllerData::ShipControllerData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ent::ComponentInst* ShipControllerData::CreateComponent(Entity* pent) const
+ent::ComponentInst* ShipControllerData::createComponent(Entity* pent) const
 {
 	ShipControllerInst* sci = OrkNew ShipControllerInst( *this, pent );
 	return sci;

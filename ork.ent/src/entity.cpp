@@ -42,6 +42,7 @@
 #include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleAnimatable.h>
 #include <pkg/ent/SimpleCharacterArchetype.h>
+#include <pkg/ent/input.h>
 
 #include "GridComponent.h"
 #include "ObserverCamera.h"
@@ -399,7 +400,7 @@ void Archetype::DoComposeEntity(Entity* pent) const {
   for (ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it != clut.end(); it++) {
     ent::ComponentData* pcompdata = it->second;
     if (pcompdata) {
-      ent::ComponentInst* pinst = pcompdata->CreateComponent(pent);
+      ent::ComponentInst* pinst = pcompdata->createComponent(pent);
       if (pinst) {
         pent->GetComponents().AddComponent(pinst);
       }
@@ -507,6 +508,8 @@ void Init() {
   SceneInst::GetClassStatic();
   GridControllerData::GetClassStatic();
 
+  InputComponentData::GetClassStatic();
+
   // heightfield_rt_inst::GetClassStatic();
 
   ScriptComponentData::GetClassStatic();
@@ -567,6 +570,8 @@ void Init() {
   RegisterFamily<ModelComponentData>(ork::AddPooledLiteral("control"));
   // RegisterFamily<SectorTrackerData>(ork::AddPooledLiteral("control"));
   // RegisterFamily<RacingLineData>(ork::AddPooledLiteral("control"));
+
+  RegisterFamily<InputComponentData>(ork::AddPooledLiteral("input"));
 
   RegisterFamily<LightingComponentData>(ork::AddPooledLiteral("lighting"));
 

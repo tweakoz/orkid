@@ -174,7 +174,7 @@ void ReferenceArchetype::DoComposeEntity( Entity *pent ) const
 		//for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
 		//{	ent::ComponentData* pcompdata = it->second;
 		//	if( pcompdata )
-		//	{	ent::ComponentInst* pinst = pcompdata->CreateComponent(pent);
+		//	{	ent::ComponentInst* pinst = pcompdata->createComponent(pent);
 		//		if( pinst )
 		//		{	pent->GetComponents().AddComponent(pinst);
 		//		}
@@ -186,7 +186,7 @@ void ReferenceArchetype::DoComposeEntity( Entity *pent ) const
 			//for( ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it!= clut.end(); it++ )
 			//{	ent::ComponentData* pcompdata = it->second;
 			//	if(pcompdata)
-			//	{	ent::ComponentInst* pinst = pcompdata->CreateComponent(pent);
+			//	{	ent::ComponentInst* pinst = pcompdata->createComponent(pent);
 			//		if( pinst )
 			//		{	pent->GetComponents().AddComponent(pinst);
 			//		}

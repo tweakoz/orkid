@@ -83,7 +83,7 @@ public:
 private:
 
     ~PerfControllerComponentData() final;
-    ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+    ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 
 	orklut<PoolString,ork::Object*> mPrograms;
 	PoolString						mCurrentProgram;

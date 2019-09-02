@@ -54,7 +54,7 @@ class TetherCamControllerData : public ent::ComponentData
 	
 public:
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const override;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const override;
 
 	TetherCamControllerData();
 	PoolString GetTarget() const { return mTarget; }

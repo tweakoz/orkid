@@ -64,7 +64,7 @@ EnemySpawnerControllerData::EnemySpawnerControllerData()
 {
 }
 
-ent::ComponentInst* EnemySpawnerControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* EnemySpawnerControllerData::createComponent(ent::Entity* pent) const
 {
 	return OrkNew EnemySpawnerControllerInst( *this, pent );
 }
@@ -286,14 +286,14 @@ void EnemySpawnerControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 			///////////////////////////////
 			// create entity components and connect them
 			///////////////////////////////
-			FighterControllerInst* fci = (FighterControllerInst*) fcd.CreateComponent(pent);
+			FighterControllerInst* fci = (FighterControllerInst*) fcd.createComponent(pent);
 			fci->SetWCI( mWCI );
 			fci->SetTarget( mTarget );
 			fci->setSpawner( this );
 			fci->SetHotSpot( hspot );
 			mFighters.push_back( fci );
 
-			ork::ent::ModelComponentInst* mci = ork::rtti::autocast(mcd.CreateComponent(pent));
+			ork::ent::ModelComponentInst* mci = ork::rtti::autocast(mcd.createComponent(pent));
 	
 			///////////////////////////////
 			// activate entity in sceneinst

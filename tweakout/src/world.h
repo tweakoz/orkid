@@ -17,7 +17,7 @@ class WorldControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( WorldControllerData, ent::ComponentData );
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const override;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const override;
 
 public:
 

@@ -42,7 +42,7 @@ public:
 
 	QuartzComposerData();
 	
-	ComponentInst *CreateComponent(Entity *pent) const final;
+	ComponentInst *createComponent(Entity *pent) const final;
 	
 	const ork::file::Path& GetCompositionPath() const { return mCompositionPath; }
 	float GetStartTime() const { return mfStartTime; }

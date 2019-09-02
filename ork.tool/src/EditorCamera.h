@@ -44,7 +44,7 @@ class EditorCamControllerData : public ent::ComponentData
 
 	lev2::CCamera_persp*					mPerspCam;
 
-    ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+    ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 public:
 

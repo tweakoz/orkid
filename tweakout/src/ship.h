@@ -32,7 +32,7 @@ class ShipControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( ShipControllerData, ent::ComponentData );
 
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const override;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const override;
 
 	float	mForwardForce;
 	float	mSteeringRatio;

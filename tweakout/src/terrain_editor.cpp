@@ -327,7 +327,7 @@ void heightfield_ed_component::Event( const event::Event& Evc )
 	}*/
 }
 
-ent::ComponentInst* heightfield_ed_component::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* heightfield_ed_component::createComponent(ent::Entity* pent) const
 {
 	return OrkNew heightfield_ed_inst(*this,pent);
 }

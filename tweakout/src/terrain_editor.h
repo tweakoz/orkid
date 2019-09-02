@@ -121,7 +121,7 @@ public:
 
 	virtual bool PostDeserialize(reflect::IDeserializer &);
 
-	virtual ent::ComponentInst* CreateComponent(ent::Entity* pent) const;
+	virtual ent::ComponentInst* createComponent(ent::Entity* pent) const;
 
 	sheightfield_iface_editor& GetHfIf() { return mhfif; }
 	const sheightfield_iface_editor& GetHfIf() const { return mhfif; }

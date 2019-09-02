@@ -26,6 +26,7 @@
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/SimpleAnimatable.h>
 #include <pkg/ent/ScriptComponent.h>
+#include <pkg/ent/input.h>
 #include <pkg/ent/SimpleCharacterArchetype.h>
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/event/MeshEvent.h>
@@ -43,7 +44,7 @@ class SimpleCharControllerData : public ComponentData
 {
 	RttiDeclareConcrete(SimpleCharControllerData, ComponentData)
 
-	ComponentInst *CreateComponent(Entity *pent) const override;
+	ComponentInst *createComponent(Entity *pent) const override;
 
 public:
 

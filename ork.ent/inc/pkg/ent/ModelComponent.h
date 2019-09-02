@@ -68,7 +68,7 @@ public:
 	
 	bool IsBlenderZup() const { return mBlenderZup; }
 
-    ComponentInst *CreateComponent(Entity *pent) const final;
+    ComponentInst *createComponent(Entity *pent) const final;
 
 private:
 

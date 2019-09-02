@@ -27,7 +27,7 @@ public:
 
 	DataflowRecieverComponentData();
 
-	ComponentInst *CreateComponent(Entity *pent) const final;
+	ComponentInst *createComponent(Entity *pent) const final;
 
 	ork::orklut<ork::PoolString,float>& GetFloatValues() { return mFloatValues; }
 	const ork::orklut<ork::PoolString,float>& GetFloatValues() const { return mFloatValues; }

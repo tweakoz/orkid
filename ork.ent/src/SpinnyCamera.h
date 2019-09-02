@@ -85,7 +85,7 @@ public:
 
 private:
 
-    ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+    ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	orklut<PoolString,ork::Object*>	mItemDatas;
 	mutable PoolString				mCurrentItem;

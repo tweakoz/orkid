@@ -29,7 +29,7 @@ public:
 
     lev2::Texture* GetTexture() const;
     float GetScale() const { return mfScale; }
-    ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+    ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
     GridControllerData();
     float GetSpinRate() const { return mfSpinRate; }

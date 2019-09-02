@@ -270,7 +270,7 @@ private:
 	ork::PoolString											mMutexGroups;
 
 	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
-    ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+    ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -343,7 +343,7 @@ public:
 
 	AudioStreamComponentData();
 
-	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+	ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 
 	const StreamMap& GetStreamMap() const { return mStreamMap; }
 	StreamMap& GetStreamMap() { return mStreamMap; }

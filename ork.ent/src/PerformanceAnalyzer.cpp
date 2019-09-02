@@ -36,7 +36,7 @@ PerfAnalyzerControllerData::PerfAnalyzerControllerData()
 	: mbEnable(true)
 {
 }
-ent::ComponentInst* PerfAnalyzerControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* PerfAnalyzerControllerData::createComponent(ent::Entity* pent) const
 {
 	return new PerfAnalyzerControllerInst( *this, pent );
 }

@@ -96,7 +96,7 @@ public:
 	const RacingLine *GetRacingLine(int index) const;
 private:
 
-	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const final;
+	ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const final;
 	bool PostDeserialize(reflect::IDeserializer &) final;
 
 	~RacingLineData();

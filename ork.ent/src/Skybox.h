@@ -37,7 +37,7 @@ public:
 
 	lev2::XgmModel* GetModel() const;
 	float GetScale() const { return mfScale; }
-	ent::ComponentInst* CreateComponent(ent::Entity* pent) const final;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	SkyBoxControllerData();
 	float GetSpinRate() const { return mfSpinRate; }

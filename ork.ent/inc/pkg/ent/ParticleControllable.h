@@ -76,7 +76,7 @@ public:
 	///////////////////////////////////////////////////////
 	ParticleControllableData();
 	~ParticleControllableData();
-	ork::ent::ComponentInst *CreateComponent(ork::ent::Entity *pent) const override;
+	ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const override;
 	const ork::orklut<ork::PoolString,ParticleItemBase*>& GetItems() const { return mItems; }
 	ork::PoolString GetEntAttachment() const { return mEntAttachment; }
 	

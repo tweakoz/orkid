@@ -43,7 +43,7 @@ MissileControllerData::MissileControllerData()
 	mpExplosionArchAsset = asset::AssetManager<ork::ent::ArchetypeAsset>::Load( "data://archetypes/particles/dust_cloud" );
 }
 
-ent::ComponentInst* MissileControllerData::CreateComponent(ent::Entity* pent) const
+ent::ComponentInst* MissileControllerData::createComponent(ent::Entity* pent) const
 {
 	return OrkNew MissileControllerInst( *this, pent );
 }
@@ -80,7 +80,7 @@ void LaunchMissile(	ent::SceneInst* sinst,
 	///////////////////////////////
 	// create entity components and connect them
 	///////////////////////////////
-	MissileControllerInst* mci = (MissileControllerInst*) mcd.CreateComponent(pent);
+	MissileControllerInst* mci = (MissileControllerInst*) mcd.createComponent(pent);
 	mci->SetWCI( wci );
 	mci->SetEntity( pent );
 	mci->SetTarget( & tgt );
@@ -89,7 +89,7 @@ void LaunchMissile(	ent::SceneInst* sinst,
 
 	///////////////////////////////
 
-//	ork::ent::ModelComponentInst* mdlci = ork::rtti::autocast(mdlcd.CreateComponent(pent));
+//	ork::ent::ModelComponentInst* mdlci = ork::rtti::autocast(mdlcd.createComponent(pent));
 
 	///////////////////////////////
 	// activate entity in sceneinst

@@ -473,7 +473,7 @@ public:
 protected:
   friend class BulletObjectControllerInst;
 
-  ComponentInst *CreateComponent(Entity *pent) const final;
+  ComponentInst *createComponent(Entity *pent) const final;
 	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
 
   const BulletShapeBaseData *mShapeData;

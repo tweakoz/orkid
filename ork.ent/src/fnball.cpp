@@ -53,7 +53,7 @@ public:
         MainThreadOpQ().push(lamb);
     }
     ~FnBallComponentData() {}
-    ComponentInst* CreateComponent(Entity *pent) const override;
+    ComponentInst* createComponent(Entity *pent) const override;
     ///////////////////////////////////////////////////////
 
     GfxMaterial3DSolid* mpMaterial;
@@ -282,7 +282,7 @@ void FnBallArchetypeTouch()
 ///////////////////////////////////////////////////////////////////////////////
 
 
-ork::ent::ComponentInst* FnBallComponentData::CreateComponent( ork::ent::Entity *pent ) const
+ork::ent::ComponentInst* FnBallComponentData::createComponent( ork::ent::Entity *pent ) const
 {
     return new FnBallComponentInst(*this,pent);
 }
