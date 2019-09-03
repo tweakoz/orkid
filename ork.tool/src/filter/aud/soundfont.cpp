@@ -852,7 +852,7 @@ void SoundFont::LoadSearchPaths( void )
 					if( ORKPARSE_MATCH == Parser.CompareToken( 0, "path" ) )
 					{
 						const char *ppath = Parser.GetToken( 1 );
-						OrkSTXSetInsert( mSearchPaths, (std::string) ppath );
+						OldStlSchoolSetInsert( mSearchPaths, (std::string) ppath );
 						Parser.AdvanceToken( 2 );
 					}
 				}
@@ -866,7 +866,7 @@ void SoundFont::LoadSearchPaths( void )
 
 void SoundFont::AddSearchPath( const std::string & searchpath )
 {
-	if( OrkSTXSetInsert( mSearchPaths, searchpath ) )
+	if( OldStlSchoolSetInsert( mSearchPaths, searchpath ) )
 	{
 		file::Path ConfigFile( "soundfonts.cfg" );
 		

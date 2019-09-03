@@ -110,8 +110,8 @@ public:
 	
 	//void PushParamContext( void );
 	//void PopParamContext( void );
-	//SFileDevContext & RefParamContext( void ) { return mFileDevContext[ mFileDevContextStackDepth ]; }
-	//const SFileDevContext & RefParamContext( void ) const  { return mFileDevContext[ mFileDevContextStackDepth ]; }
+	//FileDevContext & RefParamContext( void ) { return mFileDevContext[ mFileDevContextStackDepth ]; }
+	//const FileDevContext & RefParamContext( void ) const  { return mFileDevContext[ mFileDevContextStackDepth ]; }
 
 	void SetWatcher( FileProgressWatcher* watcher ) { mWatcher=watcher; }
 	FileProgressWatcher* GetWatcher() const { return mWatcher; }
@@ -121,7 +121,7 @@ protected:
 	static const int kFileDevContextStackMax = 4;
 	int	mFileDevContextStackDepth;
 
-	SFileDevContext	mFileDevContext[ kFileDevContextStackMax ];
+	FileDevContext	mFileDevContext[ kFileDevContextStackMax ];
 
 	file::Path::NameType	mFsBaseAbs;
 	file::Path::NameType	mFsBaseRel;

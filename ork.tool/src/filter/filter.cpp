@@ -201,7 +201,7 @@ void AssetFilter::RegisterFilter(const char* filtername, const char* classname, 
   pinfo->classname = AddPooledString(classname);
   pinfo->pathmethod = AddPooledString(pathmethod);
   pinfo->pathloc = AddPooledString(pathloc);
-  bool badded = OrkSTXMapInsert(smFilterMap, AddPooledString(filtername), pinfo);
+  bool badded = OldStlSchoolMapInsert(smFilterMap, AddPooledString(filtername), pinfo);
   OrkAssert(badded);
 }
 
@@ -210,7 +210,7 @@ void AssetFilter::RegisterFilter(const char* filtername, const char* classname, 
 bool AssetFilter::ConvertFile(const char* filter_name, const tokenlist& toklist) {
   bool rval = false;
 
-  FilterInfo* info = OrkSTXFindValFromKey(smFilterMap, FindPooledString(filter_name), (FilterInfo*)nullptr);
+  FilterInfo* info = OldStlSchoolFindValFromKey(smFilterMap, FindPooledString(filter_name), (FilterInfo*)nullptr);
 
   if (info) {
     PoolString classname = info->classname;
@@ -258,9 +258,9 @@ bool AssetFilter::ListFilters() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CNullAppWindow : public ork::lev2::GfxWindow {
+class NullAppWindow : public ork::lev2::GfxWindow {
 public: //
-  CNullAppWindow(int iX, int iY, int iW, int iH) : ork::lev2::GfxWindow(iX, iY, iW, iH) { CreateContext(); }
+  NullAppWindow(int iX, int iY, int iW, int iH) : ork::lev2::GfxWindow(iX, iY, iW, iH) { CreateContext(); }
 
   virtual void Draw(void) {}
   //	virtual void Show( void ) {};
@@ -277,7 +277,7 @@ int Main_Filter(tokenlist toklist) {
   //////////////////////////////////////////
   // Register fxshader:// data urlbase
 
-  static SFileDevContext FxShaderFileContext;
+  static FileDevContext FxShaderFileContext;
   file::Path::NameType fxshaderbase = ork::file::GetStartupDirectory() + "data/src/shaders/dummy";
   file::Path fxshaderpath(fxshaderbase.c_str());
   FxShaderFileContext.SetFilesystemBaseAbs(fxshaderpath.c_str());
@@ -291,7 +291,7 @@ int Main_Filter(tokenlist toklist) {
   //	ork::lev2::GfxEnv::GetRef().SetCurrentRenderer( ork::lev2::EGFXENVTYPE_DUMMY );
   ork::lev2::GfxEnv::SetTargetClass(ork::lev2::GfxTargetDummy::GetClassStatic());
 
-  CNullAppWindow* w = new CNullAppWindow(0, 0, 640, 480);
+  NullAppWindow* w = new NullAppWindow(0, 0, 640, 480);
   ork::lev2::GfxEnv::GetRef().RegisterWinContext(w);
   ork::lev2::GfxEnv::GetRef().SetLoaderTarget(w->GetContext());
 
@@ -306,7 +306,7 @@ int Main_Filter(tokenlist toklist) {
   if (blist || (ftype == (std::string) "list")) {
     AssetFilter::ListFilters();
   } else {
-    FilterInfo* info = OrkSTXFindValFromKey(AssetFilter::smFilterMap, FindPooledString(ftype.c_str()), (FilterInfo*)0);
+    FilterInfo* info = OldStlSchoolFindValFromKey(AssetFilter::smFilterMap, FindPooledString(ftype.c_str()), (FilterInfo*)0);
     printf("Main_Filter find<%s> finfo<%p>\n", ftype.c_str(), info);
     if (info) {
       tokenlist newtoklist;
@@ -333,7 +333,7 @@ int Main_FilterTree(tokenlist toklist) {
 
   // ork::lev2::GfxEnv::GetRef().SetCurrentRenderer( ork::lev2::EGFXENVTYPE_DUMMY );
   ork::lev2::GfxEnv::SetTargetClass(ork::lev2::GfxTargetDummy::GetClassStatic());
-  CNullAppWindow* w = new CNullAppWindow(0, 0, 640, 480);
+  NullAppWindow* w = new NullAppWindow(0, 0, 640, 480);
 
   //////////////////////////////
 

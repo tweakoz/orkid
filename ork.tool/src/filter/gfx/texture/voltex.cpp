@@ -68,13 +68,13 @@ bool VolTexAssemble( const tokenlist& toklist )
 	SplitString( (const char*) pdata, splitvect, "\n " );
 
 	int inumitems = splitvect.size();
-	std::vector<ork::lev2::dxt::DDSFile*> ddsfiles;
+	std::vector<ork::lev2::dxt::DDFile*> ddsfiles;
 	printf( "NUMITEMS<%d>\n", inumitems );
 	for( int i=0; i<inumitems; i++ )
 	{
 		const std::string& item = splitvect[i];
 		printf( "item<%d:%s>\n", i, item.c_str() );
-		ddsfiles.push_back( new lev2::dxt::DDSFile(item.c_str() ) );
+		ddsfiles.push_back( new lev2::dxt::DDFile(item.c_str() ) );
 	}
 	int idepth = NextPowerOfTwo(inumitems);
 	lev2::dxt::DDS_HEADER OutHeader = ddsfiles[0]->mHeader;
@@ -102,7 +102,7 @@ bool VolTexAssemble( const tokenlist& toklist )
 		for( int i=0; i<idepth; i++ )
 		{
 			int j = (i<inumitems) ? i : (inumitems-1);
-			const lev2::dxt::DDSFile* ddsfile = ddsfiles[j];
+			const lev2::dxt::DDFile* ddsfile = ddsfiles[j];
 			const char* imgdata = ddsfile->mpImageDataBase+ireadctr;
 			outf.Write( imgdata, iImgsize );
 		}

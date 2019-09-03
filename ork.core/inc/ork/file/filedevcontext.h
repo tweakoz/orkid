@@ -27,7 +27,7 @@ enum ETocMode
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SFileDevContext
+class FileDevContext
 {
 public:
 
@@ -36,8 +36,8 @@ public:
 	typedef bool (*path_converter_type) ( file::Path& pth );
 
 
-	SFileDevContext();
-	SFileDevContext( const SFileDevContext& oth );
+	FileDevContext();
+	FileDevContext( const FileDevContext& oth );
 
 	void AddPathConverter( path_converter_type cvr ) { mPathConverters.push_back( cvr ); }
 	const orkvector<path_converter_type>& GetPathConverters() const { return mPathConverters; }

@@ -158,7 +158,7 @@ bool IsXBGR8( dxt::DDS_PIXELFORMAT& pf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-DDSFile::DDSFile( const ork::file::Path& pth )
+DDFile::DDFile( const ork::file::Path& pth )
 {
 	ork::File fil;
 	size_t ifilelen = 0;

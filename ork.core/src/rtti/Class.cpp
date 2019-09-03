@@ -155,7 +155,7 @@ const PoolString &Class::Name() const
 
 Class *Class::FindClass(const ConstString &name)
 {
-	return OrkSTXFindValFromKey(mClassMap, FindPooledString(name.c_str()), NULL);
+	return OldStlSchoolFindValFromKey(mClassMap, FindPooledString(name.c_str()), NULL);
 }
 
 Class *Class::FindClassNoCase(const ConstString &name)

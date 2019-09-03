@@ -70,7 +70,7 @@ static void ToolStartupDataFolder()
 {
 	//////////////////////////////////////////
 	// Register data:// urlbase
-	static SFileDevContext WorkingDirContext;
+	static FileDevContext WorkingDirContext;
 	WorkingDirContext.SetFilesystemBaseEnable( true );
 	WorkingDirContext.SetFilesystemBaseRel( "data/" );
 

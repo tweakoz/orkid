@@ -209,7 +209,7 @@ void SlashTree::remove_node( SlashNode *pnode )
 
 			if( tnode==pnode )
 			{
-				OrkSTXRemoveFromMap( pparent->children_map, pnode->name );
+				OldStlSchoolRemoveFromMap( pparent->children_map, pnode->name );
 				delete tnode;
 				bremoved = true;
 				break;

@@ -75,14 +75,14 @@ int rpid = -1;
 InputDeviceIX::InputDeviceIX() : InputDevice() {
 
   printf("CREATED IX INPUTDEVICE\n");
-  /*OrkSTXMapInsert( mInputMap, 'W', (int) ETRIG_RAW_JOY0_LDIG_UP );
-  OrkSTXMapInsert( mInputMap, 'A', (int) ETRIG_RAW_JOY0_LDIG_LEFT );
-  OrkSTXMapInsert( mInputMap, 'D', (int) ETRIG_RAW_KEY_RIGHT );
-  OrkSTXMapInsert( mInputMap, 'S', (int) ETRIG_RAW_KEY_DOWN );
-  OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_LEFT, (int) ETRIG_RAW_KEY_LEFT );
-  OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_UP, (int) ETRIG_RAW_KEY_UP );
-  OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_RIGHT, (int) ETRIG_RAW_KEY_RIGHT );
-  OrkSTXMapInsert( mInputMap, ETRIG_RAW_KEY_DOWN, (int) ETRIG_RAW_KEY_DOWN );*/
+  /*OldStlSchoolMapInsert( mInputMap, 'W', (int) ETRIG_RAW_JOY0_LDIG_UP );
+  OldStlSchoolMapInsert( mInputMap, 'A', (int) ETRIG_RAW_JOY0_LDIG_LEFT );
+  OldStlSchoolMapInsert( mInputMap, 'D', (int) ETRIG_RAW_KEY_RIGHT );
+  OldStlSchoolMapInsert( mInputMap, 'S', (int) ETRIG_RAW_KEY_DOWN );
+  OldStlSchoolMapInsert( mInputMap, ETRIG_RAW_KEY_LEFT, (int) ETRIG_RAW_KEY_LEFT );
+  OldStlSchoolMapInsert( mInputMap, ETRIG_RAW_KEY_UP, (int) ETRIG_RAW_KEY_UP );
+  OldStlSchoolMapInsert( mInputMap, ETRIG_RAW_KEY_RIGHT, (int) ETRIG_RAW_KEY_RIGHT );
+  OldStlSchoolMapInsert( mInputMap, ETRIG_RAW_KEY_DOWN, (int) ETRIG_RAW_KEY_DOWN );*/
 
   _ixinputmap[ETRIG_RAW_JOY0_LANA_YAXIS]=ETRIG_RAW_JOY0_LANA_YAXIS;
   _ixinputmap[ETRIG_RAW_JOY0_RANA_YAXIS]=ETRIG_RAW_JOY0_RANA_YAXIS;

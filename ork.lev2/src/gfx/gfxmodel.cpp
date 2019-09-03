@@ -269,7 +269,7 @@ XgmMesh::~XgmMesh()
 
 void XgmModel::AddMaterial( GfxMaterial * Mat )
 {
-	if( false == OrkSTXIsItemInVector(mvMaterials,Mat ) )
+	if( false == OldStlSchoolIsItemInVector(mvMaterials,Mat ) )
 	{
 		mvMaterials.push_back( Mat );
 	}

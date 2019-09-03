@@ -31,7 +31,7 @@ const bool kPerformBuffering = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SFileDevContext::SFileDevContext()
+FileDevContext::FileDevContext()
 	: msFilesystemBaseAbs("")
 	, msFilesystemBaseRel("")
 	, mbPrependFilesystemBase( false )
@@ -42,7 +42,7 @@ SFileDevContext::SFileDevContext()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SFileDevContext::SFileDevContext( const SFileDevContext& oth )
+FileDevContext::FileDevContext( const FileDevContext& oth )
 	: msFilesystemBaseAbs(oth.msFilesystemBaseAbs)
 	, msFilesystemBaseRel(oth.msFilesystemBaseRel)
 	, mbPrependFilesystemBase( oth.mbPrependFilesystemBase )
@@ -67,7 +67,7 @@ static file::Path::NameType BaseDir(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void SFileDevContext::SetFilesystemBaseAbs( file::Path::NameType base )
+void FileDevContext::SetFilesystemBaseAbs( file::Path::NameType base )
 {
 	file::Path pbase( base.c_str() );
 
@@ -94,7 +94,7 @@ void SFileDevContext::SetFilesystemBaseAbs( file::Path::NameType base )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SFileDevContext::SetFilesystemBaseRel( file::Path::NameType base )
+void FileDevContext::SetFilesystemBaseRel( file::Path::NameType base )
 {
 	auto startupdir = BaseDir();
 	file::Path::NameType nbase = startupdir+base; //(base.c_str=="./") ? startupdir : base;
@@ -104,7 +104,7 @@ void SFileDevContext::SetFilesystemBaseRel( file::Path::NameType base )
 	//std::transform( msFilesystemBaseAbs.begin(), msFilesystemBaseAbs.end(), msFilesystemBaseAbs.begin(), dos2unixpathsep() );
 }
 
-void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
+void FileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 {
 	if( meTocMode == ETM_CREATE_TOC )
 	{

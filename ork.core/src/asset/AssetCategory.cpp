@@ -99,7 +99,7 @@ AssetClass *AssetCategory::FindAssetClass(PieceString type) const
 
 	if(asset_class == NULL)
 	{
-		asset_class = OrkSTXFindValFromKey(mTypeAliasMap, FindPooledString(asset_type), NULL);
+		asset_class = OldStlSchoolFindValFromKey(mTypeAliasMap, FindPooledString(asset_type), NULL);
 	}
 
 	return asset_class;

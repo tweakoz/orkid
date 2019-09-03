@@ -126,8 +126,8 @@ void toolmesh::WriteToWavefrontObj( const file::Path& BasePath ) const
 		const objmat& material = (*itm).second;
 
 		std::string mayamatname = matname;
-		OrkSTXFindAndReplace<std::string>( mayamatname, ":", "_" );
-		OrkSTXFindAndReplace<std::string>( mayamatname, "/", "_" );
+		OldStlSchoolFindAndReplace<std::string>( mayamatname, ":", "_" );
+		OldStlSchoolFindAndReplace<std::string>( mayamatname, "/", "_" );
 
 		//newmtl initialShadingGroup
 		//illum 4
@@ -199,11 +199,11 @@ void toolmesh::WriteToWavefrontObj( const file::Path& BasePath ) const
 		const objmesh& omesh = ObjMeshPool[ ie ];
 
 		std::string mayaname = omesh.name;
-		OrkSTXFindAndReplace<std::string>( mayaname, ":", "_" );
-		OrkSTXFindAndReplace<std::string>( mayaname, "/", "_" );
+		OldStlSchoolFindAndReplace<std::string>( mayaname, ":", "_" );
+		OldStlSchoolFindAndReplace<std::string>( mayaname, "/", "_" );
 		std::string mayamatname = omesh.matname;
-		OrkSTXFindAndReplace<std::string>( mayamatname, ":", "_" );
-		OrkSTXFindAndReplace<std::string>( mayamatname, "/", "_" );
+		OldStlSchoolFindAndReplace<std::string>( mayamatname, ":", "_" );
+		OldStlSchoolFindAndReplace<std::string>( mayamatname, "/", "_" );
 
 
 		outstr += CreateFormattedString( "g %s\n", mayaname.c_str() );

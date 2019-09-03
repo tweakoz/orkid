@@ -33,7 +33,7 @@ ChoiceList::~ChoiceList()
 
 const AttrChoiceValue* ChoiceList::FindFromLongName( const std::string &longname  ) const
 {
-	AttrChoiceValue* rval = OrkSTXFindValFromKey( mNameMap, longname, (AttrChoiceValue*) 0 );
+	AttrChoiceValue* rval = OldStlSchoolFindValFromKey( mNameMap, longname, (AttrChoiceValue*) 0 );
 	return rval;
 }
 
@@ -41,7 +41,7 @@ const AttrChoiceValue* ChoiceList::FindFromLongName( const std::string &longname
 
 const AttrChoiceValue* ChoiceList::FindFromShortName( const std::string &shortname ) const
 {
-	AttrChoiceValue* rval = OrkSTXFindValFromKey( mShortNameMap, shortname, (AttrChoiceValue*) 0 );
+	AttrChoiceValue* rval = OldStlSchoolFindValFromKey( mShortNameMap, shortname, (AttrChoiceValue*) 0 );
 	return rval;
 }
 
@@ -49,7 +49,7 @@ const AttrChoiceValue* ChoiceList::FindFromShortName( const std::string &shortna
 
 const AttrChoiceValue* ChoiceList::FindFromValue( const std::string & uval ) const
 {
-	AttrChoiceValue* rval = OrkSTXFindValFromKey( mValueMap, uval, (AttrChoiceValue*) 0 );
+	AttrChoiceValue* rval = OldStlSchoolFindValFromKey( mValueMap, uval, (AttrChoiceValue*) 0 );
 	return rval;
 }
 
@@ -87,9 +87,9 @@ void ChoiceList::add( const AttrChoiceValue & val )
 	pNewVal->CopyKeywords( val );
 	pNewVal->SetCustomData( val.GetCustomData() );
 
-	OrkSTXMapInsert( mNameMap,      LongName,           pNewVal );
-	OrkSTXMapInsert( mShortNameMap, val.GetShortName(), pNewVal );
-	OrkSTXMapInsert( mValueMap,     val.GetValue(),     pNewVal );
+	OldStlSchoolMapInsert( mNameMap,      LongName,           pNewVal );
+	OldStlSchoolMapInsert( mShortNameMap, val.GetShortName(), pNewVal );
+	OldStlSchoolMapInsert( mValueMap,     val.GetValue(),     pNewVal );
 
 }
 
@@ -136,7 +136,7 @@ void ChoiceList::UpdateHierarchy( void ) // update hierarchy
 	{
 		AttrChoiceValue *val = mChoicesVect[i];
 		mHierarchy->add_node( val->GetName().c_str(), (void *) val );
-		OrkSTXMapInsert( mValueMap, val->GetValue(), val );
+		OldStlSchoolMapInsert( mValueMap, val->GetValue(), val );
 	}
 }
 
@@ -177,7 +177,7 @@ void ChoiceManager::AddChoiceList( const std::string & ListName, ChoiceList *pli
 
 	if( 0 == plist2 )
 	{
-		OrkSTXMapInsert( mChoiceListMap, ListName, plist );
+		OldStlSchoolMapInsert( mChoiceListMap, ListName, plist );
 	}
 }
 

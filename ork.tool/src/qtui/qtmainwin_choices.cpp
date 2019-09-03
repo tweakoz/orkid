@@ -209,7 +209,7 @@ void ChoiceList::FindAssetChoices(const file::Path& sdir, const std::string& wil
     file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension(the_stripped);
     file::Path::NameType ObjPtrStrA;
     ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "");
-    // OrkSTXFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
+    // OldStlSchoolFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
     file::Path::NameType ObjPtrStr2 = file::Path::NameType(sdir.c_str()) + ObjPtrStrA;
     file::Path OutPath(ObjPtrStr2.c_str());
     // OutPath.SetUrlBase( sdir.GetUrlBase().c_str() );

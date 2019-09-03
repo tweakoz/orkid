@@ -52,15 +52,15 @@ void InputDeviceOSX::Input_poll()
 	if( bInitInputMap )
 	{
 		bInitInputMap = false;
-		for( int i='a'; i<='z'; i++ ) OrkSTXMapInsert( InputMap, i, i );
-		for( int i='0'; i<='9'; i++ ) OrkSTXMapInsert( InputMap, i, i );
-		for( int i=(FL_F+1); i<=(FL_F+12); i++ ) OrkSTXMapInsert( InputMap, i, i );
-		OrkSTXMapInsert( InputMap, FL_Up, (int) ETRIG_RAW_KEY_UP );
-		OrkSTXMapInsert( InputMap, FL_Down, (int) ETRIG_RAW_KEY_DOWN );
-		OrkSTXMapInsert( InputMap, FL_Left, (int) ETRIG_RAW_KEY_LEFT );
-		OrkSTXMapInsert( InputMap, FL_Right, (int) ETRIG_RAW_KEY_RIGHT );
-		OrkSTXMapInsert( InputMap, (int) '[', (int) '[' );
-		OrkSTXMapInsert( InputMap, (int) ']', (int) ']' );
+		for( int i='a'; i<='z'; i++ ) OldStlSchoolMapInsert( InputMap, i, i );
+		for( int i='0'; i<='9'; i++ ) OldStlSchoolMapInsert( InputMap, i, i );
+		for( int i=(FL_F+1); i<=(FL_F+12); i++ ) OldStlSchoolMapInsert( InputMap, i, i );
+		OldStlSchoolMapInsert( InputMap, FL_Up, (int) ETRIG_RAW_KEY_UP );
+		OldStlSchoolMapInsert( InputMap, FL_Down, (int) ETRIG_RAW_KEY_DOWN );
+		OldStlSchoolMapInsert( InputMap, FL_Left, (int) ETRIG_RAW_KEY_LEFT );
+		OldStlSchoolMapInsert( InputMap, FL_Right, (int) ETRIG_RAW_KEY_RIGHT );
+		OldStlSchoolMapInsert( InputMap, (int) '[', (int) '[' );
+		OldStlSchoolMapInsert( InputMap, (int) ']', (int) ']' );
 	}
 
 	bool bALT = Fl::event_alt();

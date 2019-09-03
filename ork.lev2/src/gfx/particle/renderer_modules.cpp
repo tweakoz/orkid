@@ -178,7 +178,7 @@ void SpriteRenderer::DoLink()
 			{
 				std::string assetname = BaseAsset.c_str();
 				std::string seqidx = CreateFormattedString("%04d",i);
-				OrkSTXFindAndReplace<std::string>( assetname, "0000", seqidx );
+				OldStlSchoolFindAndReplace<std::string>( assetname, "0000", seqidx );
 				
 				ork::lev2::TextureAsset* passet = ork::asset::AssetManager<ork::lev2::TextureAsset>::Load( assetname.c_str() );
 			

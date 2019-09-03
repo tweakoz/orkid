@@ -591,7 +591,7 @@ PerformanceItem::PerformanceItem( std::string nam )
 
 void PerformanceItem::AddItem( PerformanceItem& Item )
 {
-	OrkSTXMapInsert( mChildrenMap, Item.mName, & Item );
+	OldStlSchoolMapInsert( mChildrenMap, Item.mName, & Item );
 	mChildrenList.push_back( & Item );
 }
 

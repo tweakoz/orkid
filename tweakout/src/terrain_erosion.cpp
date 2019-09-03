@@ -51,7 +51,7 @@ static const int gYOffsets[9] =
 template <typename T> T pow( T x, T y ) {	return std::powf(x,y); }
 template <typename T> T min( T a, T b ) { return (a<b) ? a : b; }
 template <typename T> T max( T a, T b ) { return (a>b) ? a : b; }
-template <typename T> T clamp( T tin, T tmin, T tmax ) { return OrkSTXClampToRange( tin, tmin, tmax ); }
+template <typename T> T clamp( T tin, T tmin, T tmax ) { return OldStlSchoolClampToRange( tin, tmin, tmax ); }
 float P( float xprob ) { return ( ((float)rand()/RAND_MAX) < xprob);	}
 //////////////////////////////////////////////
 static float sgn(float a)
