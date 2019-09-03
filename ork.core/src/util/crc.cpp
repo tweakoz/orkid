@@ -1,25 +1,18 @@
-////////////////////////////////////////////////////////////////
-// Orkid Media Engine
-// Copyright 1996-2012, Michael T. Mayers.
-// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
-// see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
 ///////////////////////////////////////////////////////////////////////////////
-//	CRC (Cyclic Redundancy Check) for hashing strings
+// MicroOrk (Orkid)
+// Copyright 1996-2013, Michael T. Mayers
+// Provided under the MIT License (see LICENSE.txt)
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <ork/pch.h>
+#include <ork/orktypes.h>
 #include <ork/util/crc.h>
+#include <string.h>
 
 ////////////////////////////////////////////////////////////////////////////
 
-//
-// - 16 bit, non-reflected CRC using the polynomial 0x1021
-// - CCITT standard CRC used by XMODEM
-//
+namespace ork {
 
-const U16 CCRC::crc_table[256] = 
+const uint16_t Crc32::crc_table[256] =
 {
     0x0000,0x1021,0x2042,0x3063,0x4084,0x50a5,0x60c6,0x70e7,	0x8108,0x9129,0xa14a,0xb16b,0xc18c,0xd1ad,0xe1ce,0xf1ef,
     0x1231,0x0210,0x3273,0x2252,0x52b5,0x4294,0x72f7,0x62d6,    0x9339,0x8318,0xb37b,0xa35a,0xd3bd,0xc39c,0xf3ff,0xe3de,
@@ -42,22 +35,22 @@ const U16 CCRC::crc_table[256] =
 
 ////////////////////////////////////////////////////////////////////////////
 
-static U16 CrcConv16( u32 inp )
+static uint16_t CrcConv16( uint32_t inp )
 {
-	return u16( inp&0xffff );
+	return uint16_t( inp&0xffff );
 }
 
-void CCRC::Add( U16 & _v, U8 _d )
+void Crc32::Add( uint16_t & _v, uint8_t _d )
 {
-	u32 uval = (_v << 8) ^ crc_table[(_v >> 8) ^ _d];
+	uint32_t uval = (_v << 8) ^ crc_table[(_v >> 8) ^ _d];
 	_v = CrcConv16(uval);
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
-void CCRC::Add( U16 & _v, S32 _d )
+void Crc32::Add( uint16_t & _v, int32_t _d )
 {
-    U8 * dByte = (U8*) &_d;
+    uint8_t * dByte = (uint8_t*) &_d;
 
     _v = CrcConv16((_v << 8) ^ crc_table[(_v >> 8) ^ *dByte]);    dByte++;
     _v = CrcConv16((_v << 8) ^ crc_table[(_v >> 8) ^ *dByte]);    dByte++;
@@ -67,25 +60,25 @@ void CCRC::Add( U16 & _v, S32 _d )
 
 ////////////////////////////////////////////////////////////////////////////
 
-void CCRC::Add( U16 & _v, S16 _d )
+void Crc32::Add( uint16_t & _v, int16_t _d )
 {
-	U8 * data = (U8*) & _d;
+	uint8_t * data = (uint8_t*) & _d;
 	_v = CrcConv16((_v << 8) ^ crc_table[(_v >> 8) ^ *data]);	data++;
 	_v = CrcConv16((_v << 8) ^ crc_table[(_v >> 8) ^ *data]);
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
-U32 CCRC::HashStringCaseInsensitive( const char * _string )
+uint64_t Crc32::HashStringCaseInsensitive( const char * _string )
 {
     if ( !_string )
     {
 		return( 0 );
     }
 
-    U16 crc_16s[2];
-    S32 pos = 0;
-    U32 crc_final;
+    uint16_t crc_16s[2];
+    int32_t pos = 0;
+    uint64_t crc_final;
     unsigned char data;
 
     Init( crc_16s[0] );
@@ -108,23 +101,23 @@ U32 CCRC::HashStringCaseInsensitive( const char * _string )
         pos++;
     }
 
-    crc_final = U32((crc_16s[0] << 16) | crc_16s[1]);
+    crc_final = uint64_t((crc_16s[0] << 16) | crc_16s[1]);
 
     return crc_final;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
-U32 CCRC::HashStringCaseSensitive( const char * _string )
+uint64_t Crc32::HashStringCaseSensitive( const char * _string )
 {
     if ( !_string )
     {
 		return( 0 );
     }
 
-    U16 crc_16s[2];
-    S32 pos = 0;
-    U32 crc_final;
+    uint16_t crc_16s[2];
+    int32_t pos = 0;
+    uint64_t crc_final;
     unsigned char data;
 
     Init( crc_16s[0] );
@@ -138,47 +131,49 @@ U32 CCRC::HashStringCaseSensitive( const char * _string )
         pos++;
     }
 
-    crc_final = U32((crc_16s[0] << 16) | crc_16s[1]);
+    crc_final = uint64_t((crc_16s[0] << 16) | crc_16s[1]);
 
     return crc_final;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
-U32 CCRC::HashMemory( const void * _address, S32 _length )
+uint64_t Crc32::HashMemory( const void * _address, int32_t _length )
 {
 	if ( !_address )
     {
 		return( 0 );
     }
 
-    U16 crc_16s[2];
-    S32 pos = 0;
-    U32 crc_final;
-    u8 data;
+    uint16_t crc_16s[2];
+    int32_t pos = 0;
+    uint64_t crc_final;
+    uint8_t data;
 
     Init( crc_16s[0] );
     Init( crc_16s[1] );
 
-	const u8* pu8 = ((const u8*)_address);
+	const uint8_t* puint8_t = ((const uint8_t*)_address);
 
     for (pos = 0; pos < _length; pos++)
     {
-        data = pu8[pos];
+        data = puint8_t[pos];
 
 		int idx = pos&1;
 
         Add( crc_16s[idx], data );
     }
 
-    crc_final = U32((crc_16s[0] << 16) | crc_16s[1]);
+    crc_final = uint64_t((crc_16s[0] << 16) | crc_16s[1]);
 
     return crc_final;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 
-bool CCRC::DoesDataMatch(const void* pv0, const void* pv1, int ilen)
+bool Crc32::DoesDataMatch(const void* pv0, const void* pv1, int ilen)
 {
 	return memcmp(pv0, pv1, size_t(ilen)) == 0;
 }
+
+} // end namespace ork

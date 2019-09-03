@@ -8,6 +8,8 @@
 #pragma once
 
 #include <ork/kernel/core/singleton.h>
+#include <ork/kernel/mutex.h>
+#include <ork/kernel/svariant.h>
 #include <unordered_map>
 #include <map>
 
@@ -345,12 +347,74 @@ private:
 	int mId;
 };
 
-class InputManager : public NoRttiSingleton< InputManager >
+struct InputChannel {
+	svar256_t _value;
+};
+
+struct InputGroup {
+	typedef std::map<std::string,InputChannel> channelmap_t;
+	LockedResource<channelmap_t> _channels;
+
+	struct setter {
+		std::string _channelname;
+		InputGroup* _group = nullptr;
+		template <typename T> void as(const T& value){
+			assert(_group);
+			_group->setAs<T>(_channelname,value);
+		}
+	};
+	struct getter {
+		std::string _channelname;
+		InputGroup* _group = nullptr;
+		template <typename T> attempt_cast<T> tryAs(){
+			assert(_group);
+			return _group->tryAs<T>(_channelname);
+		}
+	};
+
+	setter setChannel(const std::string& channelname){
+		setter rval;
+		rval._channelname = channelname;
+		rval._group = this;
+		return rval;
+	}
+	getter getChannel(const std::string& channelname){
+		getter rval;
+		rval._channelname = channelname;
+		rval._group = this;
+		return rval;
+	}
+
+	template <typename T> void setAs(const std::string& chname, const T& value){
+		_channels.atomicOp([&](channelmap_t& chmap){
+			chmap[chname]._value.Set<T>(value);
+		});
+	}
+	template <typename T> T get(const std::string& chname){
+		T rval;
+		_channels.atomicOp([&](channelmap_t& chmap){
+			rval = chmap[chname]._value.Get<T>();
+		});
+		return rval;
+	}
+	template <typename T> attempt_cast<T> tryAs(const std::string& chname){
+		attempt_cast<T> rval;
+		_channels.atomicOp([&](channelmap_t& chmap){
+			rval = chmap[chname]._value.TryAs<T>();
+		});
+		return rval;
+	}
+};
+
+struct InputManager : public NoRttiSingleton< InputManager >
 {
-public:
+	typedef std::unordered_map<std::string,InputGroup*> inputgrp_map_t;;
+
 	static void poll();
 	static void clearAll();
 	static void setRumble(bool);
+
+
 
 	InputManager();
 
@@ -368,11 +432,14 @@ public:
     return GetRef().mvpInputDevices.size();
   }
 
+	static InputGroup* inputGroup(const std::string& name);
+
 private:
 	InputDevice *mvpDipSwitchDevice;
 	InputDevice *mvpKeyboardInputDevice;
 	std::vector<InputDevice *> mvpInputDevices;
-	//int getHWNumberInputDevices(void);
+	LockedResource<inputgrp_map_t> _inputGroups;
+
 };
 
 } }

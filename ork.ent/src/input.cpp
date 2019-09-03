@@ -1,8 +1,12 @@
 #include <pkg/ent/input.h>
 #include <ork/lev2/input/inputdevice.h>
+#include "LuaBindings.h"
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputSystemData, "InputSystemData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputComponentData, "InputComponentData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputComponent, "InputComponent");
+
+using namespace LuaIntf;
 
 namespace ork::ent {
 
@@ -10,6 +14,10 @@ namespace ork::ent {
 
   InputComponentData::InputComponentData(){
 
+    auto fam = GetFamily();
+
+    //printf( "InputComponentData::Family<%s>\n", fam.c_str() );
+    //assert(false);
   }
 
   void InputComponentData::Describe(){
@@ -17,12 +25,28 @@ namespace ork::ent {
   }
 
   ComponentInst* InputComponentData::createComponent(Entity *pent) const {
-      return new InputComponentInst(*this,pent);
+      return new InputComponent(*this,pent);
   }
 
 
-  InputComponentInst::InputComponentInst(const InputComponentData& data, Entity *entity)
+  InputComponent::InputComponent(const InputComponentData& data, Entity *entity)
     : ComponentInst(&data,entity) {
+  }
+
+  void InputComponent::Describe(){
+
+  }
+
+  bool InputComponent::DoNotify(const ork::event::Event* event)
+	{
+    if(const ork::event::VEvent* vev = ork::rtti::autocast(event))
+    {   const auto& LR = vev->mData.Get<LuaRef>();
+        assert(false);
+    }
+    return false;
+  }
+  void InputComponent::onActivate(SceneInst* psi) {
+
   }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -12,6 +12,11 @@ function Diver:OnEntityLink()
     printf( "charcon: %s", tostring(self.charcon) );
 end
 -------------------------------------------------------------------------------
+function Diver:OnEntityActivate()
+end
+function Diver:OnEntityDeactivate()
+end
+-------------------------------------------------------------------------------
 function Diver:OnEntityStart()
     printf( "DIVER::OnEntityStart()" )
     self.timer = 1.0
@@ -61,7 +66,7 @@ function Diver.SpawnBallz(self)
 end
 -------------------------------------------------------------------------------
 function Diver:OnEntityUpdate(dt)
-    --printf( "DIVER::OnEntityUpdate()" )
+    --printf( "DIVER::OnEntityUpdate()::begin" )
     --printf( "entname<%s> dt<%g>",self.ent.name,dt )
     --printf( "ent<%s> pos<%s>",tostring(self.ent),tostring(self.ent.pos) )
     self.timer = self.timer-dt
@@ -86,7 +91,7 @@ function Diver:OnEntityUpdate(dt)
         --------------
         Diver.SpawnBallz(self)
     end
-
+    --printf( "DIVER::OnEntityUpdate()::end" )
 end
 -------------------------------------------------------------------------------
 return Diver

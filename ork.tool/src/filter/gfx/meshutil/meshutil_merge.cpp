@@ -440,7 +440,7 @@ int vertexpool::MergeVertex( const vertex & vtx, int inidx )
 		const vertex & OtherVertex = VertexPool[ iother ];
 		//boost::Crc64 otherCRC = boost::crc64( (const void *) & vtx, sizeof( vertex ) );
 		//U32 otherCRC = Crc32( (const unsigned char *) & OtherVertex, sizeof( vertex ) );
-		//OrkAssert( CCRC::DoesDataMatch( & vtx, & OtherVertex, sizeof( vertex ) ) );
+		//OrkAssert( Crc32::DoesDataMatch( & vtx, & OtherVertex, sizeof( vertex ) ) );
 		ioutidx = iother;
 	}
 	else

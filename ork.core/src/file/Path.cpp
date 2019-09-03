@@ -151,7 +151,7 @@ Path::HashType Path::Hash() const
 	NameType copy = mPathString;
 	//////////////////
 	// 1st pass hash
-	U32 uval = CCRC::HashMemory( copy.c_str(), int(strlen(copy.c_str())));
+	U32 uval = Crc32::HashMemory( copy.c_str(), int(strlen(copy.c_str())));
 	//orkprintf( "HashPath path<%s> hash<%08x>\n", copy.c_str(), uval );
 	//////////////////
 	return file::Path::HashType(uval);

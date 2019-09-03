@@ -148,16 +148,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='11'>
-                                        <property name='RunSpeed'>350</property>
-                                        <property name='SpeedLerpRate'>10</property>
-                                        <property name='WalkSpeed'>135</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='12'>
+                                    <object type='ModelComponentData' id='11'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -176,8 +167,17 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='13'>
+                                    <object type='ScriptComponentData' id='12'>
                                         <property name='ScriptFile'>"src://scripts/arch/diver.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='13'>
+                                        <property name='RunSpeed'>350</property>
+                                        <property name='SpeedLerpRate'>10</property>
+                                        <property name='WalkSpeed'>135</property>
                                     </object>
                                 </reference>
                             </item>
@@ -200,7 +200,7 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='EditorCamControllerData' id='16'>
                                         <property name='Camera'>
-                                            <object type='CCamera_persp' id='17'>
+                                            <object type='EzUiCam' id='17'>
                                                 <property name='Center'>-1704.73 -467.783 -67.6048</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>36.3931</property>
@@ -259,7 +259,7 @@
                                         <property name='Shape'>
                                             <reference category='ObjectClass'>
                                                 <object type='BulletShapeHeightfieldData' id='22'>
-                                                    <property name='HeightMap'>"data://terrain/testhmap2_2048.png"</property>
+                                                    <property name='HeightMap'>"data://terrain/testhmap2_1024.png"</property>
                                                     <property name='SphericalLightMap'>
                                                         <reference category='AssetClass'>
                                                             "lev2tex" "data://effect_textures/NoiseKern"
@@ -385,7 +385,7 @@
                                 <reference category='ComponentDataClass'>
                                     <object type='EditorCamControllerData' id='35'>
                                         <property name='Camera'>
-                                            <object type='CCamera_persp' id='36'>
+                                            <object type='EzUiCam' id='36'>
                                                 <property name='Center'>0 0 0</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>100</property>
@@ -747,16 +747,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='87'>
-                                        <property name='RunSpeed'>50</property>
-                                        <property name='SpeedLerpRate'>1</property>
-                                        <property name='WalkSpeed'>30</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='88'>
+                                    <object type='ModelComponentData' id='87'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -775,8 +766,17 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='89'>
+                                    <object type='ScriptComponentData' id='88'>
                                         <property name='ScriptFile'>"src://scripts/arch/terplayer.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='89'>
+                                        <property name='RunSpeed'>50</property>
+                                        <property name='SpeedLerpRate'>1</property>
+                                        <property name='WalkSpeed'>30</property>
                                     </object>
                                 </reference>
                             </item>

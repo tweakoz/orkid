@@ -89,6 +89,10 @@ public:
   // Shortcut to make debugging printfs easier
   const char *GetEntityName() const;
 
+  virtual const char* friendlyName() {
+      return GetClass()->Name().c_str();
+  }
+
   PoolString GetFamily() const;
 
   void Update(SceneInst *inst);
@@ -96,6 +100,8 @@ public:
   void Link(SceneInst *psi);
   void UnLink(SceneInst *psi);
   void Stop(SceneInst *psi); // { DoStop(psi); }
+  void activate(SceneInst *psi) { onActivate(psi); }
+  void deactivate(SceneInst *psi) { onDeactivate(psi); }
 
   const char *GetShortSelector() const {
     return (mComponentData != 0) ? mComponentData->GetShortSelector() : 0;
@@ -111,6 +117,8 @@ private:
 
   virtual void DoUpdate(SceneInst *inst) {}
   virtual bool DoStart(SceneInst *psi, const fmtx4 &world) { return true; }
+  virtual void onActivate(SceneInst *psi) {}
+  virtual void onDeactivate(SceneInst *psi) {}
   virtual bool DoLink(SceneInst *psi) { return true; }
   virtual void DoUnLink(SceneInst *psi) {}
   virtual void DoStop(SceneInst *psi) {}
