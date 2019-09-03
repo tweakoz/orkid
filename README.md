@@ -8,13 +8,13 @@ Some Features Include:
 * Built in Scene/Object Editor.
 * Data Driven Design.
 * Entity/Component based scene/simulation system.
-* External references of character archetypes for sharing across scenes.
-* Generic Dataflow modeling primitives used for modular audio synthesis, modular particle systems and modular terrain synthesis .
+* External references of character archetypes (prefabs) for sharing across scenes.
+* Generic dataflow modeling primitives used for modular audio synthesis, modular particle systems and modular terrain synthesis .
 * Flexible simulation architecture does not to dictate game/simulation policy, but does provide tools to help with implementation.
 * Game-Genre agnostic.. 
 * Integrated Bullet Physics Engine.
-* HlslFx/CgFx/GlslFx shader based renderer.
-* Fixed Function and Node based compositing engine with offline rendering mode (dumps to image files on disk).
+* GlFx shader based renderer. Uses OpenGL 4.1 on OSX and 4.5 on Linux.
+* Realtime fixed function and node based compositor with offline rendering mode (dumps to image files on disk).
 * QT5/OpenGL based UI
 * Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. That includes building the embedded bullet and fcollada.
 * Many more...
