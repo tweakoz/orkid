@@ -17,15 +17,15 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 extern const bool kPerformBuffering;
-class CFile;
-class CFileDev;
+class File;
+class FileDev;
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileContext
+class FileContext
 {
 private:
 
-	CFile * mpCurFile;
+	File * mpCurFile;
 	int     miCtxPosition;
 	U32     muDeviceFlags;
 };
@@ -45,21 +45,21 @@ public:
 
 	virtual void BeginBlock() = 0;
 	virtual void EndBlock() = 0;
-	virtual void BeginFile(const CFile* file) = 0;
-	virtual void EndFile(const CFile* file) = 0;
-	virtual void Reading( const CFile* file, size_t ibytes ) = 0;
+	virtual void BeginFile(const File* file) = 0;
+	virtual void EndFile(const File* file) = 0;
+	virtual void Reading( const File* file, size_t ibytes ) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileDev
+class FileDev
 {
-	virtual EFileErrCode DoRead( CFile &rFile, void *pTo, size_t iSize, size_t& iactualread ) = 0;
-	virtual EFileErrCode DoOpenFile( CFile &rFile ) = 0;
-	virtual EFileErrCode DoCloseFile( CFile &rFile ) = 0;
-	virtual EFileErrCode DoSeekFromStart( CFile &rFile, size_t iTo ) = 0;
-	virtual EFileErrCode DoSeekFromCurrent( CFile &rFile, size_t iOffset ) = 0;
-	virtual EFileErrCode DoGetLength( CFile &rFile, size_t& riLength ) = 0;
+	virtual EFileErrCode DoRead( File &rFile, void *pTo, size_t iSize, size_t& iactualread ) = 0;
+	virtual EFileErrCode DoOpenFile( File &rFile ) = 0;
+	virtual EFileErrCode DoCloseFile( File &rFile ) = 0;
+	virtual EFileErrCode DoSeekFromStart( File &rFile, size_t iTo ) = 0;
+	virtual EFileErrCode DoSeekFromCurrent( File &rFile, size_t iOffset ) = 0;
+	virtual EFileErrCode DoGetLength( File &rFile, size_t& riLength ) = 0;
 
 public:
 
@@ -68,10 +68,10 @@ public:
 	static const int kBUFFERALIGNM1 = (kBUFFERALIGN-1);
 	static const int kSEEKALIGN = 4;
 
-	void           PushContext( CFileContext * pCTX );
-	CFileContext * PopContext( void );
+	void           PushContext( FileContext * pCTX );
+	FileContext * PopContext( void );
 
-	EFileErrCode CheckFileDevCaps( CFile &rFile );
+	EFileErrCode CheckFileDevCaps( File &rFile );
 
 	inline bool CanRead( void ) { return (bool)( muDeviceCaps & EFDF_CAN_READ ); }
 	inline bool CanWrite( void ) { return (bool)( muDeviceCaps & EFDF_CAN_WRITE ); }
@@ -86,17 +86,17 @@ public:
 
 	//////////////////////////////////////////
 
-	EFileErrCode Read( CFile &rFile, void *pTo, size_t iSize );
-	EFileErrCode OpenFile( CFile &rFile );
-	EFileErrCode CloseFile( CFile &rFile );
-	EFileErrCode SeekFromStart( CFile &rFile, size_t iTo );
-	EFileErrCode SeekFromCurrent( CFile &rFile, size_t iOffset );
-	EFileErrCode GetLength( CFile &rFile, size_t& riLength );
+	EFileErrCode Read( File &rFile, void *pTo, size_t iSize );
+	EFileErrCode OpenFile( File &rFile );
+	EFileErrCode CloseFile( File &rFile );
+	EFileErrCode SeekFromStart( File &rFile, size_t iTo );
+	EFileErrCode SeekFromCurrent( File &rFile, size_t iOffset );
+	EFileErrCode GetLength( File &rFile, size_t& riLength );
 
 	//////////////////////////////////////////
 	// Abstract Interface
 
-	virtual EFileErrCode Write( CFile &rFile, const void *pFrom, size_t iSize ) = 0;
+	virtual EFileErrCode Write( File &rFile, const void *pFrom, size_t iSize ) = 0;
 	virtual EFileErrCode GetCurrentDirectory( file::Path::NameType& directory ) = 0;
 	virtual EFileErrCode SetCurrentDirectory( const file::Path::NameType& directory ) = 0;
 
@@ -104,9 +104,9 @@ public:
 	virtual bool DoesDirectoryExist( const file::Path& filespec ) = 0;
 	virtual bool IsFileWritable( const file::Path& filespec ) = 0;
 
-	CFileDev( file::Path::NameType devicename, file::Path fsbase, U32 devcaps );
+	FileDev( file::Path::NameType devicename, file::Path fsbase, U32 devcaps );
 
-	virtual ~CFileDev() {}
+	virtual ~FileDev() {}
 	
 	//void PushParamContext( void );
 	//void PopParamContext( void );
@@ -129,8 +129,8 @@ protected:
 
 	file::Path::NameType	msDeviceName;
 	U32						muDeviceCaps;
-	CFileContext *			mpCurrentContext;
-	//CFileContext *			maContextStack[ MAX_FILE_CONTEXT ];
+	FileContext *			mpCurrentContext;
+	//FileContext *			maContextStack[ MAX_FILE_CONTEXT ];
 	u8*						mReadBuffer;
 	FileProgressWatcher*	mWatcher;
 

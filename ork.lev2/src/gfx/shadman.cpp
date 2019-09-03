@@ -84,18 +84,18 @@ static SFileDevContext gShaderFileContext2;
 
 void FxShader::RegisterLoaders( const file::Path::NameType & base, const file::Path::NameType & ext )
 {
-	const SFileDevContext& MorkCtx = CFileEnv::UrlBaseToContext( "lev2" );
+	const SFileDevContext& MorkCtx = FileEnv::UrlBaseToContext( "lev2" );
 	gShaderFileContext1.SetFilesystemBaseAbs( MorkCtx.GetFilesystemBaseRel()+"/"+base );
 	gShaderFileContext1.SetFilesystemBaseEnable( true );
 	file::Path::NameType fsbase1 = gShaderFileContext1.GetFilesystemBaseAbs();
 	
-	const SFileDevContext& DataCtx = CFileEnv::UrlBaseToContext( "data" );
+	const SFileDevContext& DataCtx = FileEnv::UrlBaseToContext( "data" );
 	gShaderFileContext2.SetFilesystemBaseAbs( DataCtx.GetFilesystemBaseRel()+"/"+base );
 	gShaderFileContext2.SetFilesystemBaseEnable( true );
 	file::Path::NameType fsbase2 = gShaderFileContext2.GetFilesystemBaseAbs();
 
-	CFileEnv::RegisterUrlBase( "orkshader://", gShaderFileContext1 );
-	CFileEnv::RegisterUrlBase( "prjshader://", gShaderFileContext2 );
+	FileEnv::RegisterUrlBase( "orkshader://", gShaderFileContext1 );
+	FileEnv::RegisterUrlBase( "prjshader://", gShaderFileContext2 );
 	printf( "FxShader::RegisterLoaders ext<%s> base<miniorkshader:> pth<%s>\n", ext.c_str(), fsbase1.c_str() );
 	printf( "FxShader::RegisterLoaders ext<%s> base<gameshader:> pth<%s>\n", ext.c_str(), fsbase2.c_str() );
 	gearlyhack = false;

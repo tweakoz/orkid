@@ -18,19 +18,19 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileDevPSP : public CFileDev
+class FileDevPSP : public FileDev
 {
 public:
 
-	CFileDevPSP();
+	FileDevPSP();
 
-	virtual EFileErrCode OpenFile( CFile& rFile );
-	virtual EFileErrCode CloseFile( CFile& rFile );
-	virtual EFileErrCode Read( CFile& rFile, void* pTo, int iSize );
-	virtual EFileErrCode Write( CFile& rFile, const void* pFrom, int iSize );
-	virtual EFileErrCode SeekFromStart( CFile& rFile, int iTo );
-	virtual EFileErrCode SeekFromCurrent( CFile& rFile, int iOffset );
-	virtual EFileErrCode GetLength( CFile& rFile, int& riLength );
+	virtual EFileErrCode OpenFile( File& rFile );
+	virtual EFileErrCode CloseFile( File& rFile );
+	virtual EFileErrCode Read( File& rFile, void* pTo, int iSize );
+	virtual EFileErrCode Write( File& rFile, const void* pFrom, int iSize );
+	virtual EFileErrCode SeekFromStart( File& rFile, int iTo );
+	virtual EFileErrCode SeekFromCurrent( File& rFile, int iOffset );
+	virtual EFileErrCode GetLength( File& rFile, int& riLength );
 	virtual EFileErrCode GetCurrentDirectory( std::string& directory );
 	virtual EFileErrCode SetCurrentDirectory( const std::string& directory );
 	virtual bool DoesFileExist( const std::string& filespec );
@@ -39,7 +39,7 @@ public:
 private:
 	std::string GetAbsolutePath(const std::string& path);
 	std::string GetDeviceFilename(const std::string& unqualifiedName);
-	EFileErrCode InternalSeek(CFile& rFile, int iTo, int sceWhence); 
+	EFileErrCode InternalSeek(File& rFile, int iTo, int sceWhence); 
 	static EFileErrCode TranslateError(int sceError);
 	static const SceMode kmsDefaultMode;
 };

@@ -36,7 +36,7 @@ struct test_volume_shader : public rend_volume_shader
 ///////////////////////////////////////////////////////////////////////////////
 struct Shader1 : public rend_shader
 {
-	ork::CPerlin2D						mPerlin2D;
+	ork::Perlin2D						mPerlin2D;
 	rend_texture2D mTexture1;
 	//cl_program							mProgram;
 	//cl_kernel							mKernel;

@@ -270,7 +270,7 @@ void sheightfield_iface_editor::FastRender( const lev2::Renderer* renderer,
 
 				static lev2::GfxMaterial3DSolid TerMat( ptarg );
 
-				lev2::CTexture* ColorTex = this->mColorTexture;
+				lev2::Texture* ColorTex = this->mColorTexture;
 
 				TerMat.SetColorMode( ptarg->IsPickState() 
 										? lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR

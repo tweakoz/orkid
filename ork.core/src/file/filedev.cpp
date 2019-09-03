@@ -120,7 +120,7 @@ void SFileDevContext::CreateToc(const file::Path::SmallNameType& UrlName)
 		searchdir = searchdir.ToAbsoluteFolder();
 		ork::file::Path::NameType wildcard = "*.*";
 		//searchdir = "d:\\";
-		orkset<file::Path::NameType> tempset = CFileEnv::filespec_search_sorted( wildcard, searchdir );
+		orkset<file::Path::NameType> tempset = FileEnv::filespec_search_sorted( wildcard, searchdir );
 		std::string mTocString;
 
 		file::Path::SmallNameType::size_type colonslsl = UrlName.find_first_of( "://" );
@@ -300,7 +300,7 @@ size_t QueueBuffer::GetNumBytesQueued() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
+EFileErrCode FileDev::Read( File &rFile, void *pTo, size_t iSize )
 {
 	// There should be no assert here since Reading a non-open file is an error condition.
 	if(!rFile.IsOpen())
@@ -339,10 +339,10 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 	// LINFILE READ
 	///////////////////////////////////////////
 
-	if( CFileEnv::GetLinFileMode() == ELFM_READ && (&rFile) != CFileEnv::GetLinFile() )
+	if( FileEnv::GetLinFileMode() == ELFM_READ && (&rFile) != FileEnv::GetLinFile() )
 	{
 		////OutputDebugString( "Reading From LinFile!!!\n" );
-		EFileErrCode efm = CFileEnv::GetLinFile()->Read(pTo, iSize);
+		EFileErrCode efm = FileEnv::GetLinFile()->Read(pTo, iSize);
 		OrkAssert( efm == EFEC_FILE_OK );
 		size_t iuserpos = rFile.GetUserPos();
 		rFile.SetUserPos( iuserpos + iSize );
@@ -437,9 +437,9 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 				char* pthis = ((char*)pTo)+ireadctr;
 				rFile.mFifo.Read( pthis, ithiscnt );
 				/////////////////////////////////////////////////
-				if( CFileEnv::GetLinFileMode() == ELFM_WRITE )
+				if( FileEnv::GetLinFileMode() == ELFM_WRITE )
 				{
-					CFileEnv::GetLinFile()->Write(pthis, ithiscnt);
+					FileEnv::GetLinFile()->Write(pthis, ithiscnt);
 				}
 				/////////////////////////////////////////////////
 				ireadctr += ithiscnt;
@@ -453,9 +453,9 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 		size_t iactualread = 0;
 		ecode = DoRead(rFile,pTo,iSize,iactualread);
 		/////////////////////////////////////////////////
-		if( CFileEnv::GetLinFileMode() == ELFM_WRITE )
+		if( FileEnv::GetLinFileMode() == ELFM_WRITE )
 		{
-			CFileEnv::GetLinFile()->Write(pTo, iSize);
+			FileEnv::GetLinFile()->Write(pTo, iSize);
 		}
 		/////////////////////////////////////////////////
 	}
@@ -476,7 +476,7 @@ EFileErrCode CFileDev::Read( CFile &rFile, void *pTo, size_t iSize )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDev::OpenFile( CFile &rFile )
+EFileErrCode FileDev::OpenFile( File &rFile )
 {
 	rFile.mFifo.Flush();
 	rFile.SetPhysicalPos(0);
@@ -495,10 +495,10 @@ EFileErrCode CFileDev::OpenFile( CFile &rFile )
 	// BEGIN Linfile Support
 	///////////////////////////////////////////////////////////
 
-	CFile* pLinFile = ork::CFileEnv::GetLinFile();
+	File* pLinFile = ork::FileEnv::GetLinFile();
 	if( pLinFile && (&rFile!=pLinFile) )
 	{
-		switch( ork::CFileEnv::GetLinFileMode()  )
+		switch( ork::FileEnv::GetLinFileMode()  )
 		{
             case ork::ELFM_NONE:
                 break;
@@ -564,7 +564,7 @@ EFileErrCode CFileDev::OpenFile( CFile &rFile )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDev::CloseFile( CFile &rFile )
+EFileErrCode FileDev::CloseFile( File &rFile )
 {
 	if( mWatcher ) mWatcher->EndFile( & rFile );
 
@@ -581,7 +581,7 @@ EFileErrCode CFileDev::CloseFile( CFile &rFile )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDev::SeekFromStart( CFile &rFile, size_t iTo )
+EFileErrCode FileDev::SeekFromStart( File &rFile, size_t iTo )
 {	if(!rFile.IsOpen())
 	{
 		return ork::EFEC_FILE_NOT_OPEN;
@@ -604,7 +604,7 @@ EFileErrCode CFileDev::SeekFromStart( CFile &rFile, size_t iTo )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDev::SeekFromCurrent( CFile &rFile, size_t iOffset )
+EFileErrCode FileDev::SeekFromCurrent( File &rFile, size_t iOffset )
 {	if(!rFile.IsOpen())
 	{
 		return ork::EFEC_FILE_NOT_OPEN;
@@ -628,7 +628,7 @@ EFileErrCode CFileDev::SeekFromCurrent( CFile &rFile, size_t iOffset )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDev::GetLength( CFile &rFile, size_t& riLength )
+EFileErrCode FileDev::GetLength( File &rFile, size_t& riLength )
 {
 	EFileErrCode ecode = EFEC_FILE_OK;
 	if( rFile.IsOpen() )
@@ -647,7 +647,7 @@ EFileErrCode CFileDev::GetLength( CFile &rFile, size_t& riLength )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*void CFileDev::PushParamContext( void )
+/*void FileDev::PushParamContext( void )
 {
 	OrkAssert( mFileDevContextStackDepth < (kFileDevContextStackMax-1) );
 	mFileDevContextStackDepth++;
@@ -655,7 +655,7 @@ EFileErrCode CFileDev::GetLength( CFile &rFile, size_t& riLength )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFileDev::PopParamContext( void )
+void FileDev::PopParamContext( void )
 {
 	OrkAssert( mFileDevContextStackDepth >= 1 );
 	mFileDevContextStackDepth--;
@@ -663,7 +663,7 @@ void CFileDev::PopParamContext( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDev::CheckFileDevCaps( CFile &rFile )
+EFileErrCode FileDev::CheckFileDevCaps( File &rFile )
 {
 	if( rFile.Appending() || rFile.Writing() )
 	{
@@ -684,7 +684,7 @@ EFileErrCode CFileDev::CheckFileDevCaps( CFile &rFile )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFileDev::CFileDev( file::Path::NameType devicename, file::Path fsbase, U32 devcaps )
+FileDev::FileDev( file::Path::NameType devicename, file::Path fsbase, U32 devcaps )
 	: msDeviceName( devicename )
 	, muDeviceCaps( devcaps )
 	, mFileDevContextStackDepth( 0 )

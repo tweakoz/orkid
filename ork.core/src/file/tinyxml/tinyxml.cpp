@@ -39,8 +39,8 @@ void TIXML_FILE_PRINTF( TIXML_FILE* file, const char* formatstring, ... )
 	va_end( argp );
 	file->Write( buffer, int(strlen(buffer)) );
 }
-using ork::CFile;
-using ork::CFileEnv;
+using ork::File;
+using ork::FileEnv;
 #endif
 
 #ifdef TIXML_USE_STL
@@ -1037,7 +1037,7 @@ bool TiXmlDocument::LoadFile( const char* filename, TiXmlEncoding encoding )
 	// reading in binary mode so that tinyxml can normalize the EOL
 #ifdef TIXML_ORKID_FILEIO
 	OrkHeapCheck();
-	CFile file( ork::file::Path(filename), ork::EFM_READ );
+	File file( ork::file::Path(filename), ork::EFM_READ );
 	if( file.IsOpen() )
 	{
 		bool result = LoadFile( &file, encoding );
@@ -1197,8 +1197,8 @@ bool TiXmlDocument::LoadFile( TIXML_FILE* file, TiXmlEncoding encoding )
 bool TiXmlDocument::SaveFile( const char * filename ) const
 {
 #ifdef TIXML_ORKID_FILEIO
-	CFile file( ork::file::Path(filename), ork::EFM_WRITE );
-	//ork::EFileErrCode err = CFileEnv::OpenFile( file );
+	File file( ork::file::Path(filename), ork::EFM_WRITE );
+	//ork::EFileErrCode err = FileEnv::OpenFile( file );
 	if( 1 ) //ork::EFEC_FILE_OK == err )
 	{
 		bool result = SaveFile( &file );

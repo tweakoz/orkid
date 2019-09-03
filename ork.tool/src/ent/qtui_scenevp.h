@@ -36,7 +36,7 @@ class QWidget;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork{ namespace lev2 {
 
-class CGfxMaterialUITextured;
+class GfxMaterialUITextured;
 class RenderContextFrameData;
 class FrameTechniqueBase;
 class Renderer;
@@ -47,7 +47,7 @@ class Camera;
 } // namespace lev2
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace tool { template <typename T> class CPickBuffer; }
+namespace tool { template <typename T> class PickBuffer; }
 ///////////////////////////////////////////////////////////////////////////////
 namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ public:
 class SceneEditorVP : public ui::Viewport
 {
 	RttiDeclareAbstract( SceneEditorVP, ui::Viewport );
-	friend class lev2::CPickBuffer<SceneEditorVP>;
+	friend class lev2::PickBuffer<SceneEditorVP>;
 
 public:
 
@@ -119,7 +119,7 @@ public:
 	void QueueSceneInstToDb(ent::DrawableBuffer*pDB);
 	void RenderQueuedScene( ork::lev2::RenderContextFrameData & ContextData );
 	//////////////////////
-	//lev2::CPickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::CPickBuffer<SceneEditorVP>*)mpPickBuffer; }
+	//lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
 	void IncPickDirtyCount( int icount );
 	void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
 	ork::Object* GetObject( lev2::GetPixelContext& ctx, int ichan );
@@ -170,7 +170,7 @@ protected:
 
 	ork::atomic<int>								mRenderLock;
 
-	//lev2::CPickBuffer<SceneEditorVP>*				mpPickBuffer;
+	//lev2::PickBuffer<SceneEditorVP>*				mpPickBuffer;
 	int												miPickDirtyCount;
 	bool											mbHeadLight;
 	SceneEditorBase&								mEditor;

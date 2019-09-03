@@ -83,7 +83,7 @@ static bool CheckPlayTracker( const ork::lev2::AudioProgram* pdb )
 		if( pr.first == pdb )
 		{
 			float ftime = pr.second;
-			float ftd = ork::CFloat::Abs( fcurtime-ftime );
+			float ftd = ork::Float::Abs( fcurtime-ftime );
 
 			if( ftd < (1.0f/30.0f) )
 			{

@@ -47,7 +47,7 @@ void Panel::DoDraw(ui::DrawEvent& drwev)
 	auto tgt = drwev.GetTarget();
 	auto fbi = tgt->FBI();
 	auto mtxi = tgt->MTXI();
-	auto& primi = lev2::CGfxPrimitives::GetRef();
+	auto& primi = lev2::GfxPrimitives::GetRef();
 	auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
 
 	lev2::SRasterState defstate;

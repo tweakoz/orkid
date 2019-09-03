@@ -228,7 +228,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 	const file::Path& daepath = psetting->GetDaeInput();
 	const SceneData* psd = pOPS->mpARCH->GetSceneData();
 	//////////////////////////////////////////////////////////////
-	if( false == CFileEnv::DoesFileExist(daepath) ) return false;
+	if( false == FileEnv::DoesFileExist(daepath) ) return false;
 	//////////////////////////////////////////////////////////////
 	file::Path ColFile( daepath.c_str() );
 	const file::Path::NameType outname = ColFile.GetName();

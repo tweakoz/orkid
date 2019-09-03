@@ -53,11 +53,11 @@ bool VolTexAssemble( const tokenlist& toklist )
 	file::Path VtcPath( tex_in.c_str() );
 	file::Path DdsPath( tex_out.c_str() );
 	
-	bool bVtcPresent = CFileEnv::GetRef().DoesFileExist( VtcPath );
+	bool bVtcPresent = FileEnv::GetRef().DoesFileExist( VtcPath );
 	
 	if( false == bVtcPresent ) return false;
 
-	ork::CFile fil( VtcPath, EFM_READ );
+	ork::File fil( VtcPath, EFM_READ );
 	void* pdata = 0;
 	size_t ilength;
 	EFileErrCode ecode = fil.Load( & pdata, ilength );
@@ -80,7 +80,7 @@ bool VolTexAssemble( const tokenlist& toklist )
 	lev2::dxt::DDS_HEADER OutHeader = ddsfiles[0]->mHeader;
 	OutHeader.dwDepth = idepth;
 	
-	ork::CFile outf( DdsPath, EFM_WRITE );
+	ork::File outf( DdsPath, EFM_WRITE );
 	int ireadctr = 0;
 	int iw = OutHeader.dwWidth;
 	int ih = OutHeader.dwHeight;

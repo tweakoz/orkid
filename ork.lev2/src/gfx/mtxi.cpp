@@ -286,7 +286,7 @@ fmtx4 MatrixStackInterface::Persp( float fovy, float aspect, float fnear, float 
     }
 
 	float xmin, xmax, ymin, ymax;
-	ymax = fnear * CFloat::Tan( fovy*DTOR*0.5f );
+	ymax = fnear * Float::Tan( fovy*DTOR*0.5f );
 	ymin = -ymax;
 	xmin = ymin * aspect;
 	xmax = ymax * aspect;

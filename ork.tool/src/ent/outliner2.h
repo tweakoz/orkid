@@ -12,7 +12,7 @@
 #include <ork/object/AutoConnector.h>
 #include <ork/lev2/ui/surface.h>
 
-namespace ork { namespace lev2{ class CFont; } }
+namespace ork { namespace lev2{ class Font; } }
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ private:
 
 	bool mBlockUser;
 	bool mInSlotFromselectionManager;
-	ork::lev2::CFont* mFont;
+	ork::lev2::Font* mFont;
 	int mCharW, mCharH;
 	int miScrollY;
 	int mContentH;

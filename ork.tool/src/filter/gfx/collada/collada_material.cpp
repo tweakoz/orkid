@@ -112,7 +112,7 @@ struct StandardEffectTexGetter
 					ImgBasePath.SetFile( "" );
 
 					std::string wildcard = CreateFormattedString("%s.*.%s",BaseName.c_str(),ext.c_str());
-					orkset<file::Path::NameType> files = CFileEnv::filespec_search_sorted( wildcard.c_str(), ImgBasePath.c_str() );
+					orkset<file::Path::NameType> files = FileEnv::filespec_search_sorted( wildcard.c_str(), ImgBasePath.c_str() );
 					
 					for( orkset<file::Path::NameType>::const_iterator it=files.begin(); it!=files.end(); it++ )
 					{

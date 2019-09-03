@@ -25,19 +25,19 @@ public:
 
 };
 
-class CSF2PXVFilter 
+class SF2PXVFilter 
 {
 	public: //
 
 	////////////////////////////////////
 
-	CSF2PXVFilter( );
+	SF2PXVFilter( );
 
 	////////////////////////////////////
 
-	static void PostProcess( CSoundFont *pSF2 );
-	static void PostProcessPresets( CSoundFont *pSF2 );
-	static void PostProcessInstruments( CSoundFont *pSF2 );
+	static void PostProcess( SoundFont *pSF2 );
+	static void PostProcessPresets( SoundFont *pSF2 );
+	static void PostProcessInstruments( SoundFont *pSF2 );
 
 	////////////////////////////////////
 

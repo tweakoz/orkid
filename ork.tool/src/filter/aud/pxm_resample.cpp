@@ -300,7 +300,7 @@ U32 calcnewsize( F64 factor, U32 incount )
 // return: 0 - notDone //
 //        >0 - index of last sample //
 
-U32 CSF2Sample::ResampleReadData( S16 *outptr, U32 bufsize, U32 xoff )
+U32 SF2Sample::ResampleReadData( S16 *outptr, U32 bufsize, U32 xoff )
 {	U32 rval = 0;
 	U32 nsamps = bufsize-xoff;
 	for( U32 i=0; i<nsamps; i++ )
@@ -318,7 +318,7 @@ U32 CSF2Sample::ResampleReadData( S16 *outptr, U32 bufsize, U32 xoff )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CSF2Sample::ResampleForVag( F64 factor, bool interpFilt, bool largefilter, int & resample_len, S16 * & resample_data )
+void SF2Sample::ResampleForVag( F64 factor, bool interpFilt, bool largefilter, int & resample_len, S16 * & resample_data )
 {
 	OrkHeapCheck();
 	U32 Time, Time2;		// Current time/pos in input sample

@@ -628,7 +628,7 @@ void HotKeyManager::Save()
 void HotKeyManager::Load()
 {	mHotKeyConfigurations.clear();
 	file::Path pth(HotKeyFileName);
-	if( ork::CFileEnv::GetRef().DoesFileExist( pth ) )
+	if( ork::FileEnv::GetRef().DoesFileExist( pth ) )
 	{	ork::stream::FileInputStream istream(pth.c_str());
 		ork::reflect::serialize::XMLDeserializer deser(istream);
 		GetClass()->Description().DeserializeProperties(deser, this);

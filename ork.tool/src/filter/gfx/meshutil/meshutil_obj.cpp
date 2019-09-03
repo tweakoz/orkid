@@ -234,12 +234,12 @@ void toolmesh::WriteToWavefrontObj( const file::Path& BasePath ) const
 	// Write Files
 	//////////////////////////////////////////////////////////////////////////////
 
-	CFile outfile;
+	File outfile;
 	outfile.OpenFile( ObjPath, EFM_WRITE );
 	outfile.Write( outstr.c_str(), outstr.size() );
 	outfile.Close();
 
-	CFile mtloutfile;
+	File mtloutfile;
 	mtloutfile.OpenFile( MtlPath, EFM_WRITE );
 	mtloutfile.Write( mtloutstr.c_str(), mtloutstr.size() );
 	mtloutfile.Close();
@@ -274,7 +274,7 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 	FxmPath.SetExtension( "fxm" );
 
 
-	CFile objfile( ObjPath, EFM_READ );
+	File objfile( ObjPath, EFM_READ );
 	//objfile.Open(  );
 	size_t ifilelen = 0;
 	ork::EFileErrCode ecode = objfile.GetLength( ifilelen );

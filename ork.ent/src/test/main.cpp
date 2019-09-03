@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 	SrcPlatformLevel2FileContext.SetFilesystemBaseAbs( "data/src/" );
 	SrcPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
-	CFileEnv::RegisterUrlBase( "src://", SrcPlatformLevel2FileContext );
+	FileEnv::RegisterUrlBase( "src://", SrcPlatformLevel2FileContext );
 
 	static SFileDevContext WorkingDirContext;
 	OldSchool::SetGlobalStringVariable("data://", ork::file::GetStartupDirectory().c_str());
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 	TempPlatformLevel2FileContext.SetFilesystemBaseAbs( "data/temp/" );
 	TempPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
-	CFileEnv::RegisterUrlBase( "temp://", TempPlatformLevel2FileContext );
+	FileEnv::RegisterUrlBase( "temp://", TempPlatformLevel2FileContext );
 
 
     ork::lev2::Init("dummy");

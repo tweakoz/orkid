@@ -371,7 +371,7 @@ void OldSchool::Log(LOG_SEVERITY severity, const std::string &chanid, char *form
 #if !defined(NITRO) && !defined(WII)
 	if(OldSchool::LogPolicy::GetContext()->mFileOut)
 	{
-		CFile *pFile = new CFile((chanid + ".Log").c_str(), EFM_APPEND);
+		File *pFile = new File((chanid + ".Log").c_str(), EFM_APPEND);
 		EFileErrCode eFileErr = pFile->Open();
 		if(eFileErr == EFEC_FILE_OK)
 		{
@@ -392,9 +392,9 @@ void OldSchool::Log(LOG_SEVERITY severity, const std::string &chanid, char *form
 
 OldSchool::~OldSchool()
 {
-	for( orkmap<std::string, CFile*>::iterator it=mvLogChannels.begin(); it!=mvLogChannels.end(); it++ )
-	{	std::pair<std::string, CFile*> pr = *it;
-		CFile *pFile = pr.second;
+	for( orkmap<std::string, File*>::iterator it=mvLogChannels.begin(); it!=mvLogChannels.end(); it++ )
+	{	std::pair<std::string, File*> pr = *it;
+		File *pFile = pr.second;
 		if( pFile )
 			pFile->Close();
 	}

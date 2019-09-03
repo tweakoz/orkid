@@ -501,7 +501,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 				//////////////////////////////
 				else if( submesh->mLightMapPath.length() )
 				{
-					if( CFileEnv::DoesFileExist( submesh->mLightMapPath ) )
+					if( FileEnv::DoesFileExist( submesh->mLightMapPath ) )
 					{
 						ork::lev2::TextureAsset* plmtexa = asset::AssetManager<TextureAsset>::Create(submesh->mLightMapPath.c_str());
 						submesh->mLightMap = (plmtexa==0) ? 0 : plmtexa->GetTexture();

@@ -313,7 +313,7 @@ void ProcTexOutputSkybox::DoLinkEntity(SceneInst* psi, Entity* pent) const {
     mtl->SetTexture(ptx);
     targ->PushMaterial(mtl);
     targ->MTXI()->PushMMatrix(mtxSKY);
-    lev2::CGfxPrimitives::GetRef().RenderSkySphere(targ);
+    lev2::GfxPrimitives::GetRef().RenderSkySphere(targ);
     targ->MTXI()->PopMMatrix();
     targ->PopMaterial();
   };

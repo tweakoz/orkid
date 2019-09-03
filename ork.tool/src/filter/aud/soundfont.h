@@ -180,7 +180,7 @@ struct SSoundFontGenerator
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CSamplePlatformData
+class SamplePlatformData
 {
 	private:
 
@@ -188,7 +188,7 @@ class CSamplePlatformData
 
 	protected:
 
-	CSamplePlatformData( const std::string &type )
+	SamplePlatformData( const std::string &type )
 		: mType( type )
 	{
 
@@ -202,9 +202,9 @@ class CSamplePlatformData
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CSoundFont;
+class SoundFont;
 
-class CSF2Sample
+class SF2Sample
 {
 	private:
 
@@ -229,13 +229,13 @@ class CSF2Sample
 	bool is_sample_used;
 	U32 strip_order;
 
-	CSamplePlatformData*	mpPlatformData;
+	SamplePlatformData*	mpPlatformData;
 
 	/////////////
 	/////////////
 	
 
-	CSF2Sample( Ssfontsample * smp = 0 )
+	SF2Sample( Ssfontsample * smp = 0 )
 		: start( smp ? smp->dwStart : 0 )
 		, end( smp ? smp->dwEnd : 0 )
 		, miloopstart( smp ? smp->dwStartloop : 0 )
@@ -294,7 +294,7 @@ class CSF2Sample
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CSF2InstrumentZone : public ork::lev2::AudioInstrumentZone
+class SF2InstrumentZone : public ork::lev2::AudioInstrumentZone
 {
 	public: //
 
@@ -314,7 +314,7 @@ class CSF2InstrumentZone : public ork::lev2::AudioInstrumentZone
 
 	//////////////////////////////////////////////////////////
 
-	CSF2InstrumentZone()
+	SF2InstrumentZone()
 		: miBaseModulator( 0 )
 		, mbGlobalZone( false )
 		, num_generators( 0 )
@@ -352,11 +352,11 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CSF2Instrument
+class SF2Instrument
 {
 	public: //
 	
-	CSF2Instrument()
+	SF2Instrument()
 		: izone_base(0)
 		, num_izones(0)
 		, miIndex(0)
@@ -371,20 +371,20 @@ class CSF2Instrument
 
 	//////////////////////////////////////////////////////////////////////////////
 
-	const CSF2InstrumentZone& GetIZoneFromIndex( size_t idx ) const
+	const SF2InstrumentZone& GetIZoneFromIndex( size_t idx ) const
 	{
 		return mIZones[ idx ];
 	}
 
-	const CSF2InstrumentZone* GetIZoneFromVelKey( int ikey, int ivel ) const
+	const SF2InstrumentZone* GetIZoneFromVelKey( int ikey, int ivel ) const
 	{
-		const CSF2InstrumentZone* prval = 0;
+		const SF2InstrumentZone* prval = 0;
 		
 		size_t inumiz = mIZones.size();
 
 		for( size_t iz=0; iz<inumiz; iz++ )
 		{
-			const CSF2InstrumentZone & ptestz = mIZones[ iz ];
+			const SF2InstrumentZone & ptestz = mIZones[ iz ];
 
 			if(		(ikey >= ptestz.GetKeyMin())
 				&&	(ikey <= ptestz.GetKeyMax())
@@ -404,7 +404,7 @@ class CSF2Instrument
 
 	size_t							izone_base;
 	size_t							num_izones;
-	orkvector<CSF2InstrumentZone>	mIZones;
+	orkvector<SF2InstrumentZone>	mIZones;
 
 private:
 
@@ -415,7 +415,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CSF2ProgramZone
+class SF2ProgramZone
 {
 	public: //
 
@@ -431,7 +431,7 @@ class CSF2ProgramZone
 
 	int instrumentID;
 
-	CSF2ProgramZone()
+	SF2ProgramZone()
 		: num_generators( 0 )
 		, base_generator( 0 )
 		, generator_ids( 0 )
@@ -448,7 +448,7 @@ class CSF2ProgramZone
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CSF2Program
+class SF2Program
 {
 	public: //
 		
@@ -465,16 +465,16 @@ class CSF2Program
 
 	int mapped_preset;
 
-	CSF2Program();
+	SF2Program();
 
 	const std::string & GetName( void ) const { return mName; }
 	void SetName( const std::string name ) { mName=name; }
 
 	size_t GetNumZones( void ) const { return mPZones.size(); }
-	const CSF2ProgramZone & GetZone( size_t idx ) const { return mPZones[ idx ]; }
-	void AddZone( const CSF2ProgramZone & zone ) { mPZones.push_back( zone ); }
+	const SF2ProgramZone & GetZone( size_t idx ) const { return mPZones[ idx ]; }
+	void AddZone( const SF2ProgramZone & zone ) { mPZones.push_back( zone ); }
 
-	orkvector<CSF2ProgramZone>	mPZones;
+	orkvector<SF2ProgramZone>	mPZones;
 
 };
 
@@ -482,12 +482,12 @@ class CSF2Program
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CSoundFontConversionEngine
+class SoundFontConversionEngine
 {
 	public:
 
-	CSoundFontConversionEngine( const std::string & SoundFontName );
-	virtual ~CSoundFontConversionEngine();
+	SoundFontConversionEngine( const std::string & SoundFontName );
+	virtual ~SoundFontConversionEngine();
 
 	void SetSoundFontName( const std::string Name ) { mSoundFontName = Name; }
 
@@ -516,29 +516,29 @@ class CSoundFontConversionEngine
 
 	size_t GetNumSamples( void ) const { return mPXMSamples.size(); }
 
-	const CSF2Instrument * GetInstrument( size_t idx ) const
+	const SF2Instrument * GetInstrument( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumInstruments() );
 		return mPXMInstruments[ idx ];
 	}
-	const CSF2InstrumentZone * GetInstrumentZone( size_t idx ) const
+	const SF2InstrumentZone * GetInstrumentZone( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumIZones() );
 		return mPXMInstrumentZones[ idx ];
 	}
 
-	const CSF2Program * GetProgram( size_t idx ) const
+	const SF2Program * GetProgram( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumPrograms() );
 		return mPXMPrograms[ idx ];
 	}
-	const CSF2ProgramZone * GetProgramZone( size_t idx ) const
+	const SF2ProgramZone * GetProgramZone( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumPZones() );
 		return mPXMProgramZones[ idx ];
 	}
 
-	const CSF2Sample * GetSample( size_t idx ) const
+	const SF2Sample * GetSample( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumSamples() );
 		return mPXMSamples[ idx ];
@@ -554,22 +554,22 @@ protected:
 	int 								numsamples;
 	const int							misampleblockdatalen;
 
-	CRIFFChunk *						root;
-	CRIFFChunk *						list_info;
-	CRIFFChunk *						list_sdta;
-	CRIFFChunk *						list_pdta;
+	RIFFChunk *						root;
+	RIFFChunk *						list_info;
+	RIFFChunk *						list_sdta;
+	RIFFChunk *						list_pdta;
 
-	orkvector<CRIFFChunk*>					mDynamicChunks;
+	orkvector<RIFFChunk*>					mDynamicChunks;
 
 	////////////////////////////////////////////////////
 	// Orkid Data Structures
 
-	orkvector<CSF2Program *>			mPXMPrograms;
-	orkvector<CSF2Sample *>			mPXMSamples;
-	orkvector<CSF2Instrument *>		mPXMInstruments;
-	orkvector<CSF2ProgramZone *>		mPXMProgramZones;
+	orkvector<SF2Program *>			mPXMPrograms;
+	orkvector<SF2Sample *>			mPXMSamples;
+	orkvector<SF2Instrument *>		mPXMInstruments;
+	orkvector<SF2ProgramZone *>		mPXMProgramZones;
 	orkvector<SSoundFontGenerator *>	mPXMPresetGen;
-	orkvector<CSF2InstrumentZone *>	mPXMInstrumentZones;
+	orkvector<SF2InstrumentZone *>	mPXMInstrumentZones;
 	orkvector<SSoundFontGenerator *>	mPXMInstrumentGen;
 
 	orkvector<S16>					mSampleData;
@@ -586,13 +586,13 @@ protected:
 
 	////////////////////////////////////////////////////////////
 
-	U32 GetSBFK( CRIFFChunk *pROOT );
-	U32 GetINFOChunk( CRIFFChunk *ParChunk, U32 offset );
-	U32 GetINFOList( CRIFFChunk* ParChunk, U32 offset );
-	U32 GetSDTAChunk( CRIFFChunk *ParChunk, U32 offset );
-	U32 GetSDTAList( CRIFFChunk* ParChunk, U32 offset ) ;
-	U32 GetPDTAList( CRIFFChunk* ParChunk, U32 offset );
-	U32 GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset );
+	U32 GetSBFK( RIFFChunk *pROOT );
+	U32 GetINFOChunk( RIFFChunk *ParChunk, U32 offset );
+	U32 GetINFOList( RIFFChunk* ParChunk, U32 offset );
+	U32 GetSDTAChunk( RIFFChunk *ParChunk, U32 offset );
+	U32 GetSDTAList( RIFFChunk* ParChunk, U32 offset ) ;
+	U32 GetPDTAList( RIFFChunk* ParChunk, U32 offset );
+	U32 GetPDTAChunk( RIFFChunk* ParChunk, U32 offset );
 
 	virtual void ProcessInstruments( void );
 	virtual void ProcessPresets( void );
@@ -601,7 +601,7 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class CSoundFont //: public CObject
+class SoundFont //: public CObject
 {
 
 	public:
@@ -610,14 +610,14 @@ class CSoundFont //: public CObject
 
 	//static void ClassInit( CClass *pclass );
 
-	CSoundFont( CSoundFontConversionEngine *pengine );
-	CSoundFont( /*CClass *pclass*/ );
+	SoundFont( SoundFontConversionEngine *pengine );
+	SoundFont( /*CClass *pclass*/ );
 	
 	//////////////////////////////////////
 
 	const std::string & GetName( void ) const { return mSoundFontName; }
 
-	const CSF2Sample * GetSample( int idx ) const;
+	const SF2Sample * GetSample( int idx ) const;
 
 	S16* GetSampleData( int idx ) const
 	{
@@ -631,7 +631,7 @@ class CSoundFont //: public CObject
 
 	//////////////////////////////////////
 
-	const CSF2Instrument * GetInstrument( int idx ) const;
+	const SF2Instrument * GetInstrument( int idx ) const;
 
 	//////////////////////////////////////
 
@@ -642,14 +642,14 @@ class CSoundFont //: public CObject
 
 	//////////////////////////////////////
 
-	//static CChoiceManager				mSF2IntrumentChoices;
+	//static ChoiceManager				mSF2IntrumentChoices;
 
 private:
 
 	std::string							mSoundFontName;
-	orkvector<CSF2Instrument>			mSF2Instruments;
-	orkvector<CSF2InstrumentZone>		mSF2InstrumentZones;
-	orkvector<CSF2Sample>				mSF2Samples;
+	orkvector<SF2Instrument>			mSF2Instruments;
+	orkvector<SF2InstrumentZone>		mSF2InstrumentZones;
+	orkvector<SF2Sample>				mSF2Samples;
 	s16*								mpSampleData;
 	int									miSampleBlockLength;
 
@@ -658,9 +658,9 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class SF2XABFilter : public CAssetFilterBase
+class SF2XABFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(SF2XABFilter,CAssetFilterBase);
+	RttiDeclareConcrete(SF2XABFilter,AssetFilterBase);
 public: //
 	SF2XABFilter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
@@ -668,9 +668,9 @@ public: //
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class SF2GABFilter : public CAssetFilterBase
+class SF2GABFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(SF2GABFilter,CAssetFilterBase);
+	RttiDeclareConcrete(SF2GABFilter,AssetFilterBase);
 public: //
 	SF2GABFilter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;

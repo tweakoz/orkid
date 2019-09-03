@@ -121,11 +121,11 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CBoxRenderable : public IRenderableDag
+class BoxRenderable : public IRenderableDag
 {
 public: //
 
-	CBoxRenderable()
+	BoxRenderable()
 		: IRenderableDag()
 		, miPass( -1 )
 		, mDefSortKey( 0 )
@@ -158,11 +158,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CBillboardRenderable : public IRenderableDag
+class BillboardRenderable : public IRenderableDag
 {
 public: //
 
-	CBillboardRenderable()
+	BillboardRenderable()
 		: IRenderableDag()
 		, mSize( 1.0f )
 		, mpMaterial( 0 )
@@ -187,14 +187,14 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CModelRenderable : public IRenderableDag
+class ModelRenderable : public IRenderableDag
 {
-	RttiDeclareConcrete(CModelRenderable,IRenderableDag);
+	RttiDeclareConcrete(ModelRenderable,IRenderableDag);
 public:
 
 	static const int kMaxEngineParamFloats = ork::lev2::RenderContextInstData::kMaxEngineParamFloats;
 
-	CModelRenderable(Renderer *renderer = NULL);
+	ModelRenderable(Renderer *renderer = NULL);
 	
 	inline void SetMaterialIndex( int idx ) { mMaterialIndex=idx; }
 	inline void SetMaterialPassIndex( int idx ) { mMaterialPassIndex=idx; }

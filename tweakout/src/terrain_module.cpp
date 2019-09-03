@@ -350,7 +350,7 @@ void ComputeNormalsGpu(hmap_hfield_module& mod, HeightMap_datablock& db, orkvect
 	heightfield_compute_buffer& ComputeBuffer = HeightMapGPGPUComputeBuffer();
 	//////////////////////////////////////////////////////////
 	lev2::CaptureBuffer& heightbuf = ComputeBuffer.tex1buffer;
-	lev2::CTexture& heighttex = ComputeBuffer.tex1;
+	lev2::Texture& heighttex = ComputeBuffer.tex1;
 	fvec4* pv4 = const_cast<fvec4*>( static_cast<const fvec4*>( heightbuf.GetData()  ));
 	float* pf = (float*) db.mHeightMap.GetHeightData();
 	for( int iz=0; iz<isize; iz++ )
@@ -817,8 +817,8 @@ void hmap_hfield_module::SaveHeightToTexture( const file::Path& filename ) const
 	hr = dxtex->LockRect( 0, &d3dlr, 0, 0 );
 	OrkAssert( SUCCEEDED( hr ) );
 	float* pDst = (float*) d3dlr.pBits;
-	float fmin = CFloat::TypeMax();
-	float fmax = -CFloat::TypeMax();
+	float fmin = Float::TypeMax();
+	float fmax = -Float::TypeMax();
 	for( int iz=0; iz<miSize; iz++ )
 	{
 		for( int ix=0; ix<miSize; ix++ )

@@ -60,7 +60,7 @@ typedef class Ciffchunk
 {
 	public: //
 		
-	U32 chunkID; // #define CRIFFChunk::ChunkName()
+	U32 chunkID; // #define RIFFChunk::ChunkName()
 	U32 size;
 	void *data;
 	orkvector< TCiffchunk * > children_vect;

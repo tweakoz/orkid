@@ -58,7 +58,7 @@ CColladaAsset::~CColladaAsset()
 CColladaAsset::EAssetType CColladaAsset::GetAssetType( const AssetPath & fname )
 {
 	CColladaAsset::EAssetType etype = CColladaAsset::ECOLLADA_END;
-	CFile ColladaFile;
+	File ColladaFile;
 	ColladaFile.OpenFile( fname, EFM_READ );
 	size_t isize = 0;
 	ColladaFile.GetLength(isize);

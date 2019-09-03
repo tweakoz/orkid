@@ -30,7 +30,7 @@ class SceneEditorBase;
 
 const ork::PoolString& EditorChanName();
 
-class ArchetypeChoices : public ork::tool::CChoiceList
+class ArchetypeChoices : public ork::tool::ChoiceList
 {
 	SceneEditorBase& mSceneEditor;
 
@@ -43,7 +43,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class SystemDataChoices : public ork::tool::CChoiceList
+class SystemDataChoices : public ork::tool::ChoiceList
 {
 	SceneEditorBase& mSceneEditor;
 
@@ -56,7 +56,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class RefArchetypeChoices : public ork::tool::CChoiceList
+class RefArchetypeChoices : public ork::tool::ChoiceList
 {
 public:
 	virtual void EnumerateChoices( bool bforcenocache );
@@ -102,12 +102,12 @@ public:
 
 	ork::Application*				mApplication;
 	bool							mbInit;
-	ork::tool::CChoiceManager		mChoiceMan;
+	ork::tool::ChoiceManager		mChoiceMan;
 
-	tool::CModelChoices*			mpMdlChoices;
+	tool::ModelChoices*			mpMdlChoices;
 	tool::ChsmChoices*				mpChsmChoices;
 	tool::CAnimChoices*				mpAnmChoices;
-	tool::CTextureChoices*			mpTexChoices;
+	tool::TextureChoices*			mpTexChoices;
 	tool::ScriptChoices*			mpScriptChoices;
 	tool::AudioStreamChoices*		mpAudStreamChoices;
 	tool::AudioBankChoices*			mpAudBankChoices;

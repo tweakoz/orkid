@@ -14,7 +14,7 @@ using namespace ork::audiomath;
 
 namespace ork::audio::singularity::sf2 {
 
-CSF2Sample::CSF2Sample( Ssfontsample* smp )
+SF2Sample::SF2Sample( Ssfontsample* smp )
     : start( smp ? smp->dwStart : 0 )
     , end( smp ? smp->dwEnd : 0 )
     , loopstart( smp ? smp->dwStartloop : 0 )

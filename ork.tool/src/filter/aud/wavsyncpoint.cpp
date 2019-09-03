@@ -19,10 +19,10 @@
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 
-int yo( CRIFFChunk* parchunk, int ioffset, orkmultimap<U32,CRIFFChunk*>& ChunkMap )
+int yo( RIFFChunk* parchunk, int ioffset, orkmultimap<U32,RIFFChunk*>& ChunkMap )
 {
 	U8 *parchkdata = parchunk->GetChunkData();
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = parchunk->GetU32( ioffset );
 	nchnk->chunklen = parchunk->GetU32( ioffset+4 );
 	nchnk->chunkdata = & parchkdata[ ioffset+8 ];
@@ -30,7 +30,7 @@ int yo( CRIFFChunk* parchunk, int ioffset, orkmultimap<U32,CRIFFChunk*>& ChunkMa
 
 	ChunkMap.insert( std::make_pair(nchnk->chunkID,nchnk) );
 
-	//CRIFFChunk::PrintChunkID(nchnk->chunkID);
+	//RIFFChunk::PrintChunkID(nchnk->chunkID);
 	return rval;
 }
 
@@ -44,7 +44,7 @@ struct cue_point
 	U32	smpoffset;	//0x14 	4 	Sample Offset 	Byte Offset to sample byte of First Channel
 };
 
-void GetSubChunks( CRIFFChunk* basechunk, int iparlen, orkmultimap<U32,CRIFFChunk*>& ChunkMap )
+void GetSubChunks( RIFFChunk* basechunk, int iparlen, orkmultimap<U32,RIFFChunk*>& ChunkMap )
 {
 	//int ilen = basechunk->chunklen;
 	int ioffset = 0;
@@ -57,7 +57,7 @@ void GetSubChunks( CRIFFChunk* basechunk, int iparlen, orkmultimap<U32,CRIFFChun
 	}
 }
 
-void GetSubListChunks( CRIFFChunk* basechunk, int ioffset, orkmultimap<U32,CRIFFChunk*>& ChunkMap )
+void GetSubListChunks( RIFFChunk* basechunk, int ioffset, orkmultimap<U32,RIFFChunk*>& ChunkMap )
 {
 	basechunk->chunkdata -= 4;
 	basechunk->chunklen = *reinterpret_cast<u32*>( basechunk->chunkdata-8 );
@@ -66,15 +66,15 @@ void GetSubListChunks( CRIFFChunk* basechunk, int ioffset, orkmultimap<U32,CRIFF
 
 	struct subyo
 	{
-		static int yo( CRIFFChunk* parchunk, int ioffset, orkmultimap<U32,CRIFFChunk*>& ChunkMap )
+		static int yo( RIFFChunk* parchunk, int ioffset, orkmultimap<U32,RIFFChunk*>& ChunkMap )
 		{
 			U8 *parchkdata = parchunk->GetChunkData();
-			CRIFFChunk *nchnk = new CRIFFChunk;
+			RIFFChunk *nchnk = new RIFFChunk;
 			nchnk->chunkID = parchunk->GetU32( ioffset );
 
-			bool islabl = nchnk->chunkID==CRIFFChunk::ChunkName( 'l', 'a', 'b', 'l' );
+			bool islabl = nchnk->chunkID==RIFFChunk::ChunkName( 'l', 'a', 'b', 'l' );
 
-			CRIFFChunk::PrintChunkID(nchnk->chunkID);
+			RIFFChunk::PrintChunkID(nchnk->chunkID);
 			nchnk->chunklen = parchunk->GetU32( ioffset+4 );
 			nchnk->chunkdata = & parchkdata[ ioffset+8 ];
 			int rval = 8+nchnk->chunklen;
@@ -110,21 +110,21 @@ bool WavToMkr( const tokenlist& toklist )
 	ork::file::Path InPath( ttv_in.c_str() );
 	ork::file::Path Outfile( ttv_out.c_str() );
 
-	CRIFFFile RiffFile;
+	RIFFFile RiffFile;
 	RiffFile.OpenFile( InPath.ToAbsolute().c_str() );
 	RiffFile.LoadChunks();
 
-	orkmultimap<U32,CRIFFChunk*> ChunkMap;
+	orkmultimap<U32,RIFFChunk*> ChunkMap;
 
-	CRIFFChunk* proot = RiffFile.GetChunk( "ROOT" );
+	RIFFChunk* proot = RiffFile.GetChunk( "ROOT" );
 
 	int irootlen = proot->chunklen;
 
 	U32 rval =0;
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = proot->GetU32( 0 );
 	U8* chunkdata = proot->GetChunkData();
-	nchnk->chunklen = CRIFFChunk::GetChunkLen( chunkdata[1] );
+	nchnk->chunklen = RIFFChunk::GetChunkLen( chunkdata[1] );
 	nchnk->chunkdata = & proot->chunkdata[4];
 	nchnk->DumpHeader();
 
@@ -136,10 +136,10 @@ bool WavToMkr( const tokenlist& toklist )
 
 	int isamprate = 0;
 
-	orkmultimap<U32,CRIFFChunk*>::const_iterator itfmt = ChunkMap.find( CRIFFChunk::ChunkName( 'f', 'm', 't', ' ' ) );
+	orkmultimap<U32,RIFFChunk*>::const_iterator itfmt = ChunkMap.find( RIFFChunk::ChunkName( 'f', 'm', 't', ' ' ) );
 	if( itfmt != ChunkMap.end() )
 	{
-		CRIFFChunk*	pfmtchunk = itfmt->second;
+		RIFFChunk*	pfmtchunk = itfmt->second;
 		u8* pdata = pfmtchunk->chunkdata;
 
 		isamprate = *reinterpret_cast<int*>( pdata+0x04 );
@@ -153,30 +153,30 @@ bool WavToMkr( const tokenlist& toklist )
 	
 	orkvector<std::string> labels;
 
-	orkmultimap<U32,CRIFFChunk*>::const_iterator list_lower = ChunkMap.lower_bound( CRIFFChunk::ChunkName( 'L', 'I', 'S', 'T' ) );
-	orkmultimap<U32,CRIFFChunk*>::const_iterator list_upper = ChunkMap.upper_bound( CRIFFChunk::ChunkName( 'L', 'I', 'S', 'T' ) );
+	orkmultimap<U32,RIFFChunk*>::const_iterator list_lower = ChunkMap.lower_bound( RIFFChunk::ChunkName( 'L', 'I', 'S', 'T' ) );
+	orkmultimap<U32,RIFFChunk*>::const_iterator list_upper = ChunkMap.upper_bound( RIFFChunk::ChunkName( 'L', 'I', 'S', 'T' ) );
 
-	for( orkmultimap<U32,CRIFFChunk*>::const_iterator itlist=list_lower; itlist!=list_upper; itlist++ )
+	for( orkmultimap<U32,RIFFChunk*>::const_iterator itlist=list_lower; itlist!=list_upper; itlist++ )
 	{
-		CRIFFChunk*	plistchunk = itlist->second;
+		RIFFChunk*	plistchunk = itlist->second;
 
-		orkmultimap<U32,CRIFFChunk*> ListChunkMap;
+		orkmultimap<U32,RIFFChunk*> ListChunkMap;
 		GetSubChunks( plistchunk, nchnk->chunklen, ListChunkMap );
 
-		orkmultimap<U32,CRIFFChunk*>::const_iterator itadtl = ListChunkMap.find( CRIFFChunk::ChunkName( 'a', 'd', 't', 'l' ) );
+		orkmultimap<U32,RIFFChunk*>::const_iterator itadtl = ListChunkMap.find( RIFFChunk::ChunkName( 'a', 'd', 't', 'l' ) );
 		if( itadtl != ListChunkMap.end() )
 		{
-			CRIFFChunk*	padtlchunk = itadtl->second;
+			RIFFChunk*	padtlchunk = itadtl->second;
 
-			orkmultimap<U32,CRIFFChunk*> AdtlChunkMap;
+			orkmultimap<U32,RIFFChunk*> AdtlChunkMap;
 			GetSubListChunks( padtlchunk, 0, AdtlChunkMap );
 					
-			orkmultimap<U32,CRIFFChunk*>::const_iterator labl_lower = AdtlChunkMap.lower_bound( CRIFFChunk::ChunkName( 'l', 'a', 'b', 'l' ) );
-			orkmultimap<U32,CRIFFChunk*>::const_iterator labl_upper = AdtlChunkMap.upper_bound( CRIFFChunk::ChunkName( 'l', 'a', 'b', 'l' ) );
+			orkmultimap<U32,RIFFChunk*>::const_iterator labl_lower = AdtlChunkMap.lower_bound( RIFFChunk::ChunkName( 'l', 'a', 'b', 'l' ) );
+			orkmultimap<U32,RIFFChunk*>::const_iterator labl_upper = AdtlChunkMap.upper_bound( RIFFChunk::ChunkName( 'l', 'a', 'b', 'l' ) );
 
-			for( orkmultimap<U32,CRIFFChunk*>::const_iterator itlab=labl_lower; itlab!=labl_upper; itlab++ )
+			for( orkmultimap<U32,RIFFChunk*>::const_iterator itlab=labl_lower; itlab!=labl_upper; itlab++ )
 			{
-				CRIFFChunk*	plablchunk = itlab->second;
+				RIFFChunk*	plablchunk = itlab->second;
 
 				int ilen = plablchunk->chunklen;
 
@@ -197,12 +197,12 @@ bool WavToMkr( const tokenlist& toklist )
 	// get cue points
 	//////////////////////////////////////
 
-	orkmultimap<U32,CRIFFChunk*>::const_iterator it = ChunkMap.find( CRIFFChunk::ChunkName( 'c', 'u', 'e', ' ' ) );
+	orkmultimap<U32,RIFFChunk*>::const_iterator it = ChunkMap.find( RIFFChunk::ChunkName( 'c', 'u', 'e', ' ' ) );
 
 	orkmap<float,std::string> CueMap;
 	if( it != ChunkMap.end() )
 	{
-		CRIFFChunk*	pcuechunk = it->second;
+		RIFFChunk*	pcuechunk = it->second;
 
 		int ichunklen = pcuechunk->chunklen;
 		u8* pdata = pcuechunk->chunkdata;
@@ -233,7 +233,7 @@ bool WavToMkr( const tokenlist& toklist )
 		}
 	}
 
-	CFile ofile( Outfile, ork::EFM_WRITE );
+	File ofile( Outfile, ork::EFM_WRITE );
 
 	int icount = (int) CueMap.size();
 	ofile.Write( & icount, sizeof(icount) );

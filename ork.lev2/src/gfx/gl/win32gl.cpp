@@ -328,7 +328,7 @@ bool GfxTargetGL::SetDisplayMode(DisplayMode *mode)
 
 GfxTargetGL::~GfxTargetGL()
 {
-//	CFontMan::FlushFonts();
+//	FontMan::FlushFonts();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

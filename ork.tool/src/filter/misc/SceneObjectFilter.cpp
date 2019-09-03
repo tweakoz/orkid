@@ -16,7 +16,7 @@ namespace ork { namespace tool {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SceneObjectFilterInterface : public ork::lev2::CAssetFilterInterface {
+class SceneObjectFilterInterface : public ork::lev2::AssetFilterInterface {
 public:
   virtual bool ConvertAsset(const std::string& inf, const std::string& outf);
   SceneObjectFilterInterface();
@@ -42,7 +42,7 @@ void SceneObjectFilter::ManualClassInit(CClass* pClass) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SceneObjectFilterInterface::SceneObjectFilterInterface() : CAssetFilterInterface("sceneobjectfilter") {}
+SceneObjectFilterInterface::SceneObjectFilterInterface() : AssetFilterInterface("sceneobjectfilter") {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -55,7 +55,7 @@ bool SceneObjectFilterInterface::ConvertAsset(const std::string& FromFileName, c
   CMiniorkApplication::GetRef().GetCurrentContext()->SetScene("new", pscene);
   // pscene->SetApplication(mApplication);
   {
-    // ork::CMiniorkApplication::SetSceneName(ork::CFileEnv::filespec_to_name(FromFileName).c_str());
+    // ork::CMiniorkApplication::SetSceneName(ork::FileEnv::filespec_to_name(FromFileName).c_str());
     ork::ApplicationContext* applicationContext = ork::CMiniorkApplication::GetRef().GetCurrentContext();
 
     orkvector<ork::CObject*> deserialized;

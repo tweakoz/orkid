@@ -264,7 +264,7 @@ ScriptSystem::ScriptSystem( const ScriptSystemData& data, ork::ent::SceneInst *p
 
 	if( abspath.DoesPathExist() )
 	{
-		CFile scriptfile(abspath,EFM_READ);
+		File scriptfile(abspath,EFM_READ);
 		size_t filesize = 0;
 		scriptfile.GetLength(filesize);
 		char* scripttext = (char*) malloc(filesize+1);
@@ -387,7 +387,7 @@ ScriptObject* ScriptSystem::FlyweightScriptObject( const ork::file::Path& pth )
 			// load script text
 			//////////////////////////////////////////
 
-			CFile scriptfile(abspath,EFM_READ);
+			File scriptfile(abspath,EFM_READ);
 			size_t filesize = 0;
 			scriptfile.GetLength(filesize);
 			char* scripttext = (char*) malloc(filesize+1);

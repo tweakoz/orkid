@@ -201,7 +201,7 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 				std::string ObjPtrStr = CreateFormattedString( "%p", pobj );
 				std::string ObjName = CreateFormattedString( "%s", parch->GetName().c_str() );
 
-				tool::CAttrChoiceValue ChoiceVal( ObjName, ObjPtrStr );
+				tool::AttrChoiceValue ChoiceVal( ObjName, ObjPtrStr );
 				ChoiceVal.SetFunctor( & Functor );
 				add( ChoiceVal );
 			}
@@ -220,7 +220,7 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 
 			std::string ObjPtrStr = CreateFormattedString( "%p", pfact );
 
-			tool::CAttrChoiceValue ChoiceVal( std::string("/New/")+pfact->GetFactoryClass()->Name().c_str(), ObjPtrStr );
+			tool::AttrChoiceValue ChoiceVal( std::string("/New/")+pfact->GetFactoryClass()->Name().c_str(), ObjPtrStr );
 			ChoiceVal.SetFunctor( & Functor );
 
 			add( ChoiceVal );
@@ -233,7 +233,7 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 
 		ork::file::Path searchdir("data://archetypes/");
 		file::Path::NameType wildcard = "*.mox";
-		orkvector<file::Path::NameType> files = CFileEnv::filespec_search( wildcard, searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS) );
+		orkvector<file::Path::NameType> files = FileEnv::filespec_search( wildcard, searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS) );
 		size_t inumfiles = files.size();
 
 		ork::file::Path searchabs = searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS);
@@ -252,7 +252,7 @@ void ArchetypeChoices::EnumerateChoices( bool bforcenocache )
 
 			file::Path::NameType ChoiceStr = file::Path::NameType("/New/Reference/")+ObjPtrStr;
 
-			tool::CAttrChoiceValue ChoiceVal( ChoiceStr.c_str(), ChoiceStr.c_str() );
+			tool::AttrChoiceValue ChoiceVal( ChoiceStr.c_str(), ChoiceStr.c_str() );
 			ChoiceVal.SetFunctor( & Functor );
 			ChoiceVal.AddKeyword( "userarchetype=true" );
 			add( ChoiceVal );
@@ -317,7 +317,7 @@ void SystemDataChoices::EnumerateChoices( bool bforcenocache )
 
 			std::string ObjPtrStr = CreateFormattedString( "%p", pfact );
 
-			tool::CAttrChoiceValue ChoiceVal( std::string("/New/")+pfact->GetFactoryClass()->Name().c_str(), ObjPtrStr );
+			tool::AttrChoiceValue ChoiceVal( std::string("/New/")+pfact->GetFactoryClass()->Name().c_str(), ObjPtrStr );
 			ChoiceVal.SetFunctor( & Functor );
 
 			add( ChoiceVal );
@@ -330,7 +330,7 @@ void SystemDataChoices::EnumerateChoices( bool bforcenocache )
 
 		ork::file::Path searchdir("data://archetypes/");
 		file::Path::NameType wildcard = "*.mox";
-		orkvector<file::Path::NameType> files = CFileEnv::filespec_search( wildcard, searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS) );
+		orkvector<file::Path::NameType> files = FileEnv::filespec_search( wildcard, searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS) );
 		size_t inumfiles = files.size();
 
 		ork::file::Path searchabs = searchdir.ToAbsolute(ork::file::Path::EPATHTYPE_DOS);
@@ -349,7 +349,7 @@ void SystemDataChoices::EnumerateChoices( bool bforcenocache )
 
 			file::Path::NameType ChoiceStr = file::Path::NameType("/New/Reference/")+ObjPtrStr;
 
-			tool::CAttrChoiceValue ChoiceVal( ChoiceStr.c_str(), ChoiceStr.c_str() );
+			tool::AttrChoiceValue ChoiceVal( ChoiceStr.c_str(), ChoiceStr.c_str() );
 			ChoiceVal.SetFunctor( & Functor );
 			ChoiceVal.AddKeyword( "userarchetype=true" );
 			add( ChoiceVal );

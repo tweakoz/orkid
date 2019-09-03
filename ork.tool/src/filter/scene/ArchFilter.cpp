@@ -26,8 +26,8 @@
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 bool ConvertArchetypeSbox2Arch(const tokenlist& toklist);
-class ArchSandBoxExporter : public CAssetFilterBase {
-  RttiDeclareConcrete(ArchSandBoxExporter, CAssetFilterBase);
+class ArchSandBoxExporter : public AssetFilterBase {
+  RttiDeclareConcrete(ArchSandBoxExporter, AssetFilterBase);
 
 public: //
   ArchSandBoxExporter() {}
@@ -36,7 +36,7 @@ public: //
 ///////////////////////////////////////////////////////////////////////////////
 void ArchSandBoxExporter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
-void RegisterArchFilters() { CAssetFilter::RegisterFilter("sbox2arch", ArchSandBoxExporter::DesignNameStatic().c_str()); }
+void RegisterArchFilters() { AssetFilter::RegisterFilter("sbox2arch", ArchSandBoxExporter::DesignNameStatic().c_str()); }
 ///////////////////////////////////////////////////////////////////////////////
 bool ConvertArchetypeSbox2Arch(const tokenlist& toklist) {
   ork::tool::FilterOptMap options;

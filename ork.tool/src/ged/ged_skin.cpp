@@ -88,7 +88,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
   bool mbPickMode;
   orkvector<GedText> mTexts;
   GedSkin0(GfxTarget* ptarg) : GedSkin(ptarg) {
-    mpFONT = lev2::CFontMan::GetFont("i14");
+    mpFONT = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
   }
@@ -369,19 +369,19 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
       uimat.SetUIColorMode(EUICOLOR_MOD);
       // pTARG->PushModColor(fcolor4(0.0f,0.0f,0.2f));
       pTARG->PushModColor(fcolor4::Black());
-      lev2::CFontMan::PushFont(mpFONT);
-      lev2::CFontMan::BeginTextBlock(pTARG);
+      lev2::FontMan::PushFont(mpFONT);
+      lev2::FontMan::BeginTextBlock(pTARG);
       {
         int inumt = (int)mTexts.size();
         for (int it = 0; it < inumt; it++) {
           const GedText& text = mTexts[it];
           if (IsVisible(pTARG, text.iy, text.iy + 8)) {
-            lev2::CFontMan::DrawText(pTARG, text.ix, text.iy, text.mString.c_str());
+            lev2::FontMan::DrawText(pTARG, text.ix, text.iy, text.mString.c_str());
           }
         }
       }
-      lev2::CFontMan::EndTextBlock(pTARG);
-      lev2::CFontMan::PopFont();
+      lev2::FontMan::EndTextBlock(pTARG);
+      lev2::FontMan::PopFont();
       pTARG->PopModColor();
     }
     ////////////////////////
@@ -397,7 +397,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
   orkvector<GedText> mTexts;
   ///////////////////////////////////////////////////////////////////
   GedSkin1(GfxTarget* ptarg) : GedSkin(ptarg) {
-    mpFONT = lev2::CFontMan::GetFont("i14");
+    mpFONT = lev2::FontMan::GetFont("i14");
     miCHARW = mpFONT->GetFontDesc().miAdvanceWidth;
     miCHARH = mpFONT->GetFontDesc().miAdvanceHeight;
   }
@@ -672,20 +672,20 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
     ////////////////////////
     if (false == mbPickMode) { ////////////////////////
       uimat.SetUIColorMode(EUICOLOR_MOD);
-      lev2::CFontMan::PushFont(mpFONT);
-      lev2::CFontMan::BeginTextBlock(pTARG);
+      lev2::FontMan::PushFont(mpFONT);
+      lev2::FontMan::BeginTextBlock(pTARG);
       pTARG->PushModColor(fcolor4(0.8f, 0.9f, 1.0f));
       {
         int inumt = (int)mTexts.size();
         for (int it = 0; it < inumt; it++) {
           const GedText& text = mTexts[it];
           if (IsVisible(pTARG, text.iy, text.iy + 8)) {
-            lev2::CFontMan::DrawText(pTARG, text.ix, text.iy, text.mString.c_str());
+            lev2::FontMan::DrawText(pTARG, text.ix, text.iy, text.mString.c_str());
           }
         }
       }
-      lev2::CFontMan::EndTextBlock(pTARG);
-      lev2::CFontMan::PopFont();
+      lev2::FontMan::EndTextBlock(pTARG);
+      lev2::FontMan::PopFont();
       pTARG->PopModColor();
     }
     ////////////////////////

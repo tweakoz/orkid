@@ -123,7 +123,7 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::GetPixelContext& ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <> void ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetPixelContext& ctx) {
+template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetPixelContext& ctx) {
   AssertOnOpQ2(MainThreadOpQ());
 
   const ent::SceneInst* psi = mpViewport->GetSceneInst();

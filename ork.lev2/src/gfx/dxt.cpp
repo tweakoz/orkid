@@ -160,7 +160,7 @@ bool IsXBGR8( dxt::DDS_PIXELFORMAT& pf )
 
 DDSFile::DDSFile( const ork::file::Path& pth )
 {
-	ork::CFile fil;
+	ork::File fil;
 	size_t ifilelen = 0;
 	fil.OpenFile(pth,EFM_READ);
 	EFileErrCode eFileErr = fil.GetLength( ifilelen );

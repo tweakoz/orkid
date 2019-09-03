@@ -17,11 +17,11 @@
 #include <ork/math/basicfilters.h>
 #include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
-template class ork::lev2::CPickBuffer<ork::tool::ged::GedVP>;
+template class ork::lev2::PickBuffer<ork::tool::ged::GedVP>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 template<>
-void CPickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
+void PickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
 {
     mPickIds.clear();
 
@@ -102,7 +102,7 @@ GedVP::~GedVP()
 void GedVP::DoInit( lev2::GfxTarget* pt )
 {
 	auto par = pt->FBI()->GetThisBuffer();
-	mpPickBuffer = new lev2::CPickBuffer<GedVP>( par,
+	mpPickBuffer = new lev2::PickBuffer<GedVP>( par,
 												 this,
 												 0, 0, miW, miH,
 												 lev2::PickBufferBase::EPICK_FACE_VTX );

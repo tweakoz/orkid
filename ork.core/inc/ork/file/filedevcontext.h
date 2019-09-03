@@ -13,8 +13,8 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileDev;
-class CFile;
+class FileDev;
+class File;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -49,8 +49,8 @@ public:
 	const file::Path::NameType& GetFilesystemBaseRel() const { return msFilesystemBaseRel; }
 	bool GetPrependFilesystemBase() const { return mbPrependFilesystemBase; }
 	void SetPrependFilesystemBase(bool bv) { mbPrependFilesystemBase=bv; }
-	CFileDev *GetFileDevice() const { return mpFileDevice; }
-	void SetFileDevice(CFileDev *pFileDevice) { mpFileDevice = pFileDevice; }
+	FileDev *GetFileDevice() const { return mpFileDevice; }
+	void SetFileDevice(FileDev *pFileDevice) { mpFileDevice = pFileDevice; }
 
 	void CreateToc(const file::Path::SmallNameType& UrlName);
 	void SetTocMode( ETocMode etm ) { meTocMode=etm; }
@@ -64,7 +64,7 @@ private:
 	file::Path::NameType msFilesystemBaseAbs;
 	file::Path::NameType msFilesystemBaseRel;
 	bool mbPrependFilesystemBase;
-	CFileDev *mpFileDevice;
+	FileDev *mpFileDevice;
 	orkvector<path_converter_type>		mPathConverters;
 	orkmap<file::Path::NameType,int>	mTOC;
 	ETocMode							meTocMode;

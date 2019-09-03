@@ -26,9 +26,9 @@ public:
 
 private:
 
-	void RenderBox( const lev2::CBoxRenderable & BoxRen ) const override;
-	void RenderModel( const lev2::CModelRenderable & ModelRen, ork::lev2::RenderGroupState rgs=ork::lev2::ERGST_NONE ) const override;
-	void RenderModelGroup( const lev2::CModelRenderable** ModelRens, int inumr ) const override;
+	void RenderBox( const lev2::BoxRenderable & BoxRen ) const override;
+	void RenderModel( const lev2::ModelRenderable & ModelRen, ork::lev2::RenderGroupState rgs=ork::lev2::ERGST_NONE ) const override;
+	void RenderModelGroup( const lev2::ModelRenderable** ModelRens, int inumr ) const override;
 	void RenderFrustum( const lev2::FrustumRenderable & FrusRen ) const override;
 	void RenderSphere( const lev2::SphereRenderable & FrusRen ) const override;
 	void RenderCallback( const lev2::CallbackRenderable & cbren ) const override;

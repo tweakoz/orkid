@@ -803,17 +803,17 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DAEXGMFilter : public CAssetFilterBase
+class DAEXGMFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(DAEXGMFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAEXGMFilter,AssetFilterBase);
 	bool ConvertTextures( CColladaModel* mdl, const file::Path& outmdlpth );
 public: //
 	DAEXGMFilter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
-class DAEXGAFilter : public CAssetFilterBase
+class DAEXGAFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(DAEXGAFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAEXGAFilter,AssetFilterBase);
 public: //
 	DAEXGAFilter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;

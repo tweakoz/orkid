@@ -42,9 +42,9 @@ distribution.
 #ifdef TIXML_ORKID_FILEIO
 namespace ork
 {
-	class CFile;
+	class File;
 }
-# define TIXML_FILE	ork::CFile
+# define TIXML_FILE	ork::File
 void TIXML_FILE_PRINTF( TIXML_FILE* file, const char* formatstring, ... );
 #else
 # define TIXML_FILE	FILE
@@ -1308,7 +1308,7 @@ public:
 #endif
 
 	/** Load a file. Returns true if successful. Note that this method
-		doesn't stream - the entire object pointed at by the FILE* (or CFile*)
+		doesn't stream - the entire object pointed at by the FILE* (or File*)
 		will be interpreted as an XML file. TinyXML doesn't stream in XML from the current
 		file location. Streaming may be added in the future.
 	*/
@@ -1317,7 +1317,7 @@ public:
 	bool LoadFile( TIXML_FILE* file, TiXmlEncoding encoding = TIXML_DEFAULT_ENCODING );
 
 #ifdef TIXML_WRITE
-	/// Save a file using the given FILE* (or CFile*). Returns true if successful.
+	/// Save a file using the given FILE* (or File*). Returns true if successful.
 	bool SaveFile( TIXML_FILE* ) const;
 #endif
 

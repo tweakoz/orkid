@@ -513,7 +513,7 @@ void RigidBody_Draw( lev2::GfxTarget* targ, const fmtx4& matw, const RigidBody& 
 		targ->MTXI()->PushMMatrix( MatS*matw );
 		{
 			matsolid.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-			lev2::CGfxPrimitives::GetRef().RenderDiamond( targ );
+			lev2::GfxPrimitives::GetRef().RenderDiamond( targ );
 
 		}
 		targ->PopModColor();
@@ -528,7 +528,7 @@ void RigidBody_Draw( lev2::GfxTarget* targ, const fmtx4& matw, const RigidBody& 
 		targ->MTXI()->PushMMatrix( MatS );
 		{
 			matsolid.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-			lev2::CGfxPrimitives::GetRef().RenderDiamond( targ );
+			lev2::GfxPrimitives::GetRef().RenderDiamond( targ );
 
 		}
 		targ->PopModColor();

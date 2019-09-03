@@ -668,12 +668,12 @@ void XgmLocalPose::Concatenate( void )
 {
 	fmtx4* __restrict pmats = & RefLocalMatrix(0);
 
-	float fminx = CFloat::TypeMax();
-	float fminy = CFloat::TypeMax();
-	float fminz = CFloat::TypeMax();
-	float fmaxx = -CFloat::TypeMax();
-	float fmaxy = -CFloat::TypeMax();
-	float fmaxz = -CFloat::TypeMax();
+	float fminx = Float::TypeMax();
+	float fminy = Float::TypeMax();
+	float fminz = Float::TypeMax();
+	float fmaxx = -Float::TypeMax();
+	float fmaxy = -Float::TypeMax();
+	float fmaxz = -Float::TypeMax();
 
 	if( mSkeleton.miRootNode >= 0 )
 	{
@@ -696,13 +696,13 @@ void XgmLocalPose::Concatenate( void )
 
 			fvec3 vtrans = pmats[ ichild ].GetTranslation();
 
-			fminx = CFloat::Min( fminx, vtrans.GetX() );
-			fminy = CFloat::Min( fminy, vtrans.GetY() );
-			fminz = CFloat::Min( fminz, vtrans.GetZ() );
+			fminx = Float::Min( fminx, vtrans.GetX() );
+			fminy = Float::Min( fminy, vtrans.GetY() );
+			fminz = Float::Min( fminz, vtrans.GetZ() );
 
-			fmaxx = CFloat::Max( fmaxx, vtrans.GetX() );
-			fmaxy = CFloat::Max( fmaxy, vtrans.GetY() );
-			fmaxz = CFloat::Max( fmaxz, vtrans.GetZ() );
+			fmaxx = Float::Max( fmaxx, vtrans.GetX() );
+			fmaxy = Float::Max( fmaxy, vtrans.GetY() );
+			fmaxz = Float::Max( fmaxz, vtrans.GetZ() );
 
 		}
 	}

@@ -20,7 +20,7 @@ class GfxTarget;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CTextureMipData
+class TextureMipData
 {
 	public:
 
@@ -35,7 +35,7 @@ class CTextureMipData
 	int		miImageDataSize;
 	int		miUniqueColors;
 
-	CTextureMipData()
+	TextureMipData()
 		: mpImageData( 0 )
 		, mpClutData( 0 )
 		, miClutSize( 0 )
@@ -176,8 +176,8 @@ public:
 
 	//////////////////////////////////////////////////////
 
-	void AddMip( const CTextureMipData & Mip ) { mMipImages.push_back( Mip ); }
-	const CTextureMipData & GetMip( int imip ) const { return mMipImages[ imip ]; }
+	void AddMip( const TextureMipData & Mip ) { mMipImages.push_back( Mip ); }
+	const TextureMipData & GetMip( int imip ) const { return mMipImages[ imip ]; }
 
 	int GetNumMipMaps( void ) const { return miNumMipMaps; }
 	void SetNumMipMaps( int imips ) { miNumMipMaps=imips; }
@@ -225,7 +225,7 @@ public:
 	private:
 
 	Md5Sum							mMd5Sum;	// for dirty checking (mipgen/palettegen)
-	orkvector< CTextureMipData >	mMipImages;
+	orkvector< TextureMipData >	mMipImages;
 	int								miTotalUniqueColors;
 	int								miMaxMipUniqueColors;
 

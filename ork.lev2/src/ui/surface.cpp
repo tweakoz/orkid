@@ -77,7 +77,7 @@ void Surface::DoDraw(DrawEvent& drwev)
 	auto fbi = tgt->FBI();
 	auto fxi = tgt->FXI();
 	auto rsi = tgt->RSI();
-	auto& primi = lev2::CGfxPrimitives::GetRef();
+	auto& primi = lev2::GfxPrimitives::GetRef();
 	auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
 
 	if( nullptr == mRtGroup )

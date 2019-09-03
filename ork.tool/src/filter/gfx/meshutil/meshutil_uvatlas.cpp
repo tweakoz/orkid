@@ -296,7 +296,7 @@ bool UvAtlasSubMesh( const UvAtlasContext& Ctx )
 		file::Path abspath = texbase.ToAbsolute();
 		orkprintf( "attempting to use <%s> for IMT\n", abspath.c_str() );
 
-		if( CFileEnv::DoesFileExist( abspath ) )
+		if( FileEnv::DoesFileExist( abspath ) )
 		{
 			orkprintf( "ok, <%s> exists\n", abspath.c_str() );
 

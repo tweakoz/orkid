@@ -33,7 +33,7 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting()
 		auto dir = item.mPathBase;
 
 
-		auto files = CFileEnv::filespec_search( wild.c_str(), dir );
+		auto files = FileEnv::filespec_search( wild.c_str(), dir );
 		int inumfiles = (int) files.size();
 
 		//orkprintf( "FileAssetLoader<%p> searching<%s> for<%s> inumfiles<%d>\n",
@@ -47,8 +47,8 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting()
 		for( int ifile=0; ifile<inumfiles; ifile++ )
 		{
 			auto the_file = files[ifile];
-			auto the_stripped = CFileEnv::filespec_strip_base( the_file, "./" );
-			file::Path::NameType ObjPtrStr = CFileEnv::filespec_no_extension( the_stripped );
+			auto the_stripped = FileEnv::filespec_strip_base( the_file, "./" );
+			file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension( the_stripped );
 			file::Path::NameType ObjPtrStrA;
 			ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "" );
 			//OrkSTXFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
@@ -118,7 +118,7 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 
 	file::Path::SmallNameType url = pathobjnoq.GetUrlBase();
 
-	const SFileDevContext& ctx = ork::CFileEnv::UrlBaseToContext(url);
+	const SFileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
 
 	//////////////////////
 	// munge the path
@@ -158,7 +158,7 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 
 		if( has_valid_extension ) // path already have an extension ?
 		{
-			if(CFileEnv::DoesFileExist(MungedPath))
+			if(FileEnv::DoesFileExist(MungedPath))
 			{
 				result = MungedPath.c_str();
 				return true;
@@ -172,7 +172,7 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 
 				//printf( "munged_ext<%s>\n", MungedPath.c_str() );
 
-				if(CFileEnv::DoesFileExist(MungedPath))
+				if(FileEnv::DoesFileExist(MungedPath))
 				{
 					//pathobj.SetExtension( extension.c_str() );
 
@@ -193,7 +193,7 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 	if( has_valid_extension )
 	{
 					//printf( "TESTPTH3<%s>\n", pathobjnoq.c_str() );
-		if(CFileEnv::DoesFileExist(pathobjnoq))
+		if(FileEnv::DoesFileExist(pathobjnoq))
 		{
 			ork::PieceString ps(pathobjnoq.c_str());
 			result = ps;
@@ -208,7 +208,7 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 			pathobjnoq.SetExtension( l.mExt.c_str() );
 
 			//		printf( "TESTPTH4<%s>\n", pathobjnoq.c_str() );
-			if(CFileEnv::DoesFileExist(pathobjnoq))
+			if(FileEnv::DoesFileExist(pathobjnoq))
 			{
 				result = pathobjnoq.c_str();
 				//printf( "PTH4<%s>\n", pathobjnoq.c_str() );

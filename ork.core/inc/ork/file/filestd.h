@@ -15,25 +15,25 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileDevStd : public ork::CFileDev
+class FileDevStd : public ork::FileDev
 {
 protected:
 
-	orkmap< ork::CFile *, ork::FileH >	mmFileHandleMap;
+	orkmap< ork::File *, ork::FileH >	mmFileHandleMap;
 
 public:
 
-	CFileDevStd( );
+	FileDevStd( );
 
 private:
-	virtual ork::EFileErrCode DoOpenFile( ork::CFile &rFile );
-	virtual ork::EFileErrCode DoCloseFile( ork::CFile &rFile );
-	virtual ork::EFileErrCode DoRead( ork::CFile &rFile, void *pTo, size_t iSize, size_t& actualread );
-	virtual ork::EFileErrCode DoSeekFromStart( ork::CFile &rFile, size_t iTo );
-	virtual ork::EFileErrCode DoSeekFromCurrent( ork::CFile &rFile, size_t iOffset );
-	virtual ork::EFileErrCode DoGetLength( ork::CFile &rFile, size_t &riLength );
+	virtual ork::EFileErrCode DoOpenFile( ork::File &rFile );
+	virtual ork::EFileErrCode DoCloseFile( ork::File &rFile );
+	virtual ork::EFileErrCode DoRead( ork::File &rFile, void *pTo, size_t iSize, size_t& actualread );
+	virtual ork::EFileErrCode DoSeekFromStart( ork::File &rFile, size_t iTo );
+	virtual ork::EFileErrCode DoSeekFromCurrent( ork::File &rFile, size_t iOffset );
+	virtual ork::EFileErrCode DoGetLength( ork::File &rFile, size_t &riLength );
 
-	virtual ork::EFileErrCode Write( ork::CFile &rFile, const void *pFrom, size_t iSize );
+	virtual ork::EFileErrCode Write( ork::File &rFile, const void *pFrom, size_t iSize );
 	virtual ork::EFileErrCode GetCurrentDirectory( file::Path::NameType& directory );
 	virtual ork::EFileErrCode SetCurrentDirectory( const file::Path::NameType& directory );
 

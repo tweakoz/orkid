@@ -33,11 +33,11 @@ bool Plane<T>::PlaneIntersect( const Plane<T>& oth, Vector3<T>& outpos, Vector3<
 
 template<> float Plane<float>::Abs( float in )
 {
-	return CFloat::Abs( in );
+	return Float::Abs( in );
 }
 template<> float Plane<float>::Epsilon()
 {
-	return CFloat::Epsilon();
+	return Float::Epsilon();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,7 +48,7 @@ template<> double Plane<double>::Abs( double in )
 }
 template<> double Plane<double>::Epsilon()
 {
-	return double(CFloat::Epsilon())*0.0001;
+	return double(Float::Epsilon())*0.0001;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

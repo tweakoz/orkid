@@ -324,7 +324,7 @@ int Outliner2View::kitemh() const
 void Outliner2View::DoInit( lev2::GfxTarget* pt )
 {
 	auto par = pt->FBI()->GetThisBuffer();
-	mpPickBuffer = new lev2::CPickBuffer<Outliner2View>(
+	mpPickBuffer = new lev2::PickBuffer<Outliner2View>(
 		par,
 		this,
 		0, 0, miW, miH,
@@ -334,7 +334,7 @@ void Outliner2View::DoInit( lev2::GfxTarget* pt )
 	mpPickBuffer->GetContext()->FBI()->SetClearColor( fcolor4(0.0f,0.0f,0.0f,0.0f) );
 	mpPickBuffer->RefClearColor().SetRGBAU32( 0 );
 
-	mFont = lev2::CFontMan::GetFont("i13");
+	mFont = lev2::FontMan::GetFont("i13");
 	auto& fontdesc = mFont->GetFontDesc();
 
 	mCharW = fontdesc.miAdvanceWidth;
@@ -351,7 +351,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 	auto fbi = tgt->FBI();
 	auto fxi = tgt->FXI();
 	auto rsi = tgt->RSI();
-	auto& primi = lev2::CGfxPrimitives::GetRef();
+	auto& primi = lev2::GfxPrimitives::GetRef();
 	auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
 	lev2::DynamicVertexBuffer<vtx_t>& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
 	SceneEditorBase& ed = mOutlinerModel.Editor();
@@ -458,22 +458,22 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 				lev2::GfxMaterialUI uimat(tgt);
 				uimat.SetUIColorMode( ork::lev2::EUICOLOR_MOD );
 
-				lev2::CFontMan::PushFont(mFont);
+				lev2::FontMan::PushFont(mFont);
 				tgt->PushMaterial( & uimat );
 				tgt->PushModColor( mDark ? fcolor4(0.7f,0.7f,0.8f) : fcolor4::Black() );
-				lev2::CFontMan::BeginTextBlock( tgt );
+				lev2::FontMan::BeginTextBlock( tgt );
 				iy = kheaderH+5;
 				for( const auto& item : items )
 				{	const std::string& name = item.mName;
 					auto pobj = item.mObject;
 					int indent = item.mIndent;
 
-					lev2::CFontMan::DrawText( tgt, (indent+1)*16, iy, name.c_str() );
+					lev2::FontMan::DrawText( tgt, (indent+1)*16, iy, name.c_str() );
 			        iy += kitemh();
 					alt = ! alt;
 				}
-				lev2::CFontMan::EndTextBlock( tgt );
-				lev2::CFontMan::PopFont();
+				lev2::FontMan::EndTextBlock( tgt );
+				lev2::FontMan::PopFont();
 				tgt->PopMaterial();
 				tgt->PopModColor();
 			}
@@ -712,11 +712,11 @@ ui::HandlerResult Outliner2View::DoOnUiEvent( const ui::Event& EV )
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-template class ork::lev2::CPickBuffer<ork::ent::Outliner2View>;
+template class ork::lev2::PickBuffer<ork::ent::Outliner2View>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 template<>
-void CPickBuffer<ork::ent::Outliner2View>::Draw( lev2::GetPixelContext& ctx )
+void PickBuffer<ork::ent::Outliner2View>::Draw( lev2::GetPixelContext& ctx )
 {
     mPickIds.clear();
 

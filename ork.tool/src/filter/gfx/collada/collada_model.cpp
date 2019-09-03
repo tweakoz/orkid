@@ -738,7 +738,7 @@ bool CColladaModel::ParseGeometries()
 								LightMapPath.SetExtension("dds");
 								ork::file::Path PngPath = LightMapPath; PngPath.SetExtension("png");
 
-								if( CFileEnv::GetRef().DoesFileExist( LightMapPath ) || CFileEnv::GetRef().DoesFileExist( PngPath ) )
+								if( FileEnv::GetRef().DoesFileExist( LightMapPath ) || FileEnv::GetRef().DoesFileExist( PngPath ) )
 								{
 									FixedString<1024> pth = LightMapPath.c_str();
 									pth.replace_in_place("data/src/", "data://" );

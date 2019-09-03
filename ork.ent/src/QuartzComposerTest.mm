@@ -138,7 +138,7 @@ QuartzComposerInst::QuartzComposerInst(const QuartzComposerData &data, Entity *p
 	////////////////////////////////
 	QCRenderer* pqcren = 0;
 	file::Path abspath = pth.ToAbsolute();
-	bool bQTZPRESENT = CFileEnv::GetRef().DoesFileExist( abspath );
+	bool bQTZPRESENT = FileEnv::GetRef().DoesFileExist( abspath );
 	if( bQTZPRESENT )
 	{	printf( "found qtz file<%s> \n", abspath.c_str() );
 		NSString* PathToComp = [NSString stringWithUTF8String:abspath.c_str()];

@@ -100,7 +100,7 @@ void hmap_perlin_module::ComputeCPU(dataflow::workunit* wu) const
 			for( int iOctave=0; iOctave<hcw->minumoct; iOctave++ )
 			{	f32 fascal = hcw->mfampbas * powf( hcw->mfampsca, (f32) (iOctave) );
 				f32 ffscal = frqbase * powf( hcw->mffrqsca, (f32) (iOctave) );
-				fy += CPerlin2D::PlaneNoiseFunc( fx, fz, 0.0f, 0.0f, fascal, ffscal );
+				fy += Perlin2D::PlaneNoiseFunc( fx, fz, 0.0f, 0.0f, fascal, ffscal );
 			}
 			hm.SetHeight(iX,iZ,fy);
 		}

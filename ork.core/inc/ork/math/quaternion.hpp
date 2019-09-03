@@ -84,7 +84,7 @@ template <typename T> void Quaternion<T>::FromMatrix(const Matrix44<T> &M)
 
 	if( tr > T(0.0f) )
 	{
-		T s = CFloat::Sqrt(tr + T(1.0f));
+		T s = Float::Sqrt(tr + T(1.0f));
 		q[3] = s * T(0.5f);
 		s = T(0.5f) / s;
 		q[0] = (M.GetElemYX(1,2) - M.GetElemYX(2,1)) * s;
@@ -98,10 +98,10 @@ template <typename T> void Quaternion<T>::FromMatrix(const Matrix44<T> &M)
 		if (M.GetElemYX(2,2) > M.GetElemYX(i,i)) i = 2;
 		int j = nxt[i];
 		int k = nxt[j];
-		T s = CFloat::Sqrt((M.GetElemYX(i,i)-(M.GetElemYX(j,j)+M.GetElemYX(k,k)))+T(1.0f));
+		T s = Float::Sqrt((M.GetElemYX(i,i)-(M.GetElemYX(j,j)+M.GetElemYX(k,k)))+T(1.0f));
 		q[i] = s * T(0.5f);
 
-		if (CFloat::Abs(s)<T(EPSILON))
+		if (Float::Abs(s)<T(EPSILON))
 		{
 			Identity();
 		}
@@ -131,7 +131,7 @@ template <typename T> void Quaternion<T>::FromMatrix3(const Matrix33<T> &M)
 
 	if( tr > T(0.0f) )
 	{
-		T s = CFloat::Sqrt(tr + T(1.0f));
+		T s = Float::Sqrt(tr + T(1.0f));
 		q[3] = s * T(0.5f);
 		s = T(0.5f) / s;
 		q[0] = (M.GetElemYX(1,2) - M.GetElemYX(2,1)) * s;
@@ -145,10 +145,10 @@ template <typename T> void Quaternion<T>::FromMatrix3(const Matrix33<T> &M)
 		if (M.GetElemYX(2,2) > M.GetElemYX(i,i)) i = 2;
 		int j = nxt[i];
 		int k = nxt[j];
-		T s = CFloat::Sqrt((M.GetElemYX(i,i)-(M.GetElemYX(j,j)+M.GetElemYX(k,k)))+T(1.0f));
+		T s = Float::Sqrt((M.GetElemYX(i,i)-(M.GetElemYX(j,j)+M.GetElemYX(k,k)))+T(1.0f));
 		q[i] = s * T(0.5f);
 
-		if (CFloat::Abs(s)<T(EPSILON))
+		if (Float::Abs(s)<T(EPSILON))
 		{
 			Identity();
 		}
@@ -178,7 +178,7 @@ template <typename T> Matrix44<T> Quaternion<T>::ToMatrix(void) const
 	l=GetX()*GetX() + GetY()*GetY() + GetZ()*GetZ() + GetW()*GetW();
 
 	// should this be T::Epsilon() ?
-	if(CFloat::Abs(l)<T(EPSILON))
+	if(Float::Abs(l)<T(EPSILON))
 	{
 		s=T(1.0f);
 	}
@@ -217,7 +217,7 @@ template <typename T> Matrix33<T> Quaternion<T>::ToMatrix3(void) const
 	l=GetX()*GetX() + GetY()*GetY() + GetZ()*GetZ() + GetW()*GetW();
 
 	// should this be T::Epsilon() ?
-	if(CFloat::Abs(l)<T(EPSILON))
+	if(Float::Abs(l)<T(EPSILON))
 	{
 		s=T(1.0f);
 	}
@@ -291,17 +291,17 @@ template <typename T> Quaternion<T> Quaternion<T>::Slerp( const Quaternion<T> &a
 	 * just linear interpolate between A and B.
 	 * Can't do spins, since we don't know what direction to spin.
 	 */
-	if (T(1.0f)-cos_t < CFloat::Epsilon())
+	if (T(1.0f)-cos_t < Float::Epsilon())
 	{
 		beta = T(1.0f)-alpha;
 	}
 	else
 	{				/* normal case */
-		theta = CFloat::ArcCos(cos_t);
-		phi = theta+T(spin)*CFloat::Pi();
-		sin_t = CFloat::Sin(theta);
-		beta = CFloat::Sin(theta-alpha*phi)/sin_t;
-		alpha = CFloat::Sin(alpha*phi)/sin_t;
+		theta = Float::ArcCos(cos_t);
+		phi = theta+T(spin)*Float::Pi();
+		sin_t = Float::Sin(theta);
+		beta = Float::Sin(theta-alpha*phi)/sin_t;
+		alpha = Float::Sin(alpha*phi)/sin_t;
 	}
 
 	if (bflip)
@@ -373,7 +373,7 @@ template <typename T> void Quaternion<T>::FromAxisAngle( const Vector4<T> &v )
 {
 	T l=v.Mag();
 
-	if(l<CFloat::Epsilon())
+	if(l<Float::Epsilon())
 	{
 		m_v[0]=m_v[1]=m_v[2]=T(0.0f);
 		m_v[3]=T(1.0f);
@@ -381,11 +381,11 @@ template <typename T> void Quaternion<T>::FromAxisAngle( const Vector4<T> &v )
 	}
 
 	T omega=-T(0.5f)*v.GetW();
-	T s=CFloat::Sin(omega)/l;
+	T s=Float::Sin(omega)/l;
 	SetX(s*v.GetX());
 	SetY(s*v.GetY());
 	SetZ(s*v.GetZ());
-	SetW(CFloat::Cos(omega));
+	SetW(Float::Cos(omega));
 
 }
 
@@ -394,8 +394,8 @@ template <typename T> void Quaternion<T>::FromAxisAngle( const Vector4<T> &v )
 template <typename T> Vector4<T> Quaternion<T>::ToAxisAngle(void) const
 {
 	static const double kAAC = (114.591559026*DTOR);
-	T tr = CFloat::ArcCos(GetW());
-	T dsin = CFloat::Sin(tr);
+	T tr = Float::ArcCos(GetW());
+	T dsin = Float::Sin(tr);
 	T invscale = (dsin==T(0.0f)) ? T(1.0f) : T(1.0f) / dsin;
 	T vx = GetX() * invscale;
 	T vy = GetY() * invscale;
@@ -467,7 +467,7 @@ template <typename T> void Quaternion<T>:: ShortestRotationArc( Vector4<T> v0, V
 
 	Vector4<T> cross = v1.Cross( v0 ); // Cross is non destructive
 	T dot = v1.Dot( v0 );
-	T s = CFloat::Sqrt( (T(1.0f)+dot)*T(2.0f));
+	T s = Float::Sqrt( (T(1.0f)+dot)*T(2.0f));
 
 	SetX( cross.GetX() / s );
 	SetY( cross.GetY() / s );
@@ -507,7 +507,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 	////////////////////////////////////////
 	// normalize quaternion
 
-	T fmag = CFloat::Sqrt( qf[0]*qf[0] + qf[1]*qf[1] + qf[2]*qf[2] + qf[3]*qf[3] );
+	T fmag = Float::Sqrt( qf[0]*qf[0] + qf[1]*qf[1] + qf[2]*qf[2] + qf[3]*qf[3] );
 
 	//qf[0] /= fmag;
 	//qf[1] /= fmag;
@@ -521,7 +521,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 	
 	for( int i=0; i<4; i++ )
 	{
-		T fqi = CFloat::Abs( qf[i] );
+		T fqi = Float::Abs( qf[i] );
 
 		if( fqi > fqmax )
 		{
@@ -534,7 +534,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 
 	////////////////////////////////////////
 	// scale quat component from -1 .. 1
-	const T fsqr2d2 = T(1.0f) / CFloat::Sqrt( T(2.0f) );
+	const T fsqr2d2 = T(1.0f) / Float::Sqrt( T(2.0f) );
 	////////////////////////////////////////
 
 	int iq3[3];
@@ -547,7 +547,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 
 	for( int i=0; i<4; i++ )
 	{
-		T fqi = CFloat::Abs( qf[i] );
+		T fqi = Float::Abs( qf[i] );
 
 		if( i != iqlargest )
 		{
@@ -587,9 +587,9 @@ template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 	// 1.0f = ftq0123 + (ftqD*ftqD)
 	// ftqD*ftqD = 1.0f - ftq0123
 
-	T ftqD = CFloat::Sqrt( T(1.0f) - ftq012 );
+	T ftqD = Float::Sqrt( T(1.0f) - ftq012 );
 
-	T ferr = CFloat::Abs( ftqD - qf[ iqlargest ] );
+	T ferr = Float::Abs( ftqD - qf[ iqlargest ] );
 
 	////////////////////////////////
 
@@ -601,7 +601,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 template <typename T> void Quaternion<T>::DeCompress( QuatCodec uquat )
 {
 	static const T frange = T( (1<<9)-1 );
-	static const T fsqr2d2 = CFloat::Sqrt( T(2.0f) ) / T(2.0f);
+	static const T fsqr2d2 = Float::Sqrt( T(2.0f) ) / T(2.0f);
 	static const T firange = fsqr2d2 / frange;
 
 	int iqlargest = int(uquat.milargest);
@@ -617,7 +617,7 @@ template <typename T> void Quaternion<T>::DeCompress( QuatCodec uquat )
 
 	T fq012 = ((fq0*fq0)+(fq1*fq1)+(fq2*fq2));
 
-	pfq[ iqlargest ] = CFloat::Sqrt( T(1.0f) - fq012 ) * (iqlsign ? T(1.0f) : T(-1.0f));
+	pfq[ iqlargest ] = Float::Sqrt( T(1.0f) - fq012 ) * (iqlsign ? T(1.0f) : T(-1.0f));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -630,7 +630,7 @@ template <typename T> void Quaternion<T>::Normalize()
 	float z2 = m_v[2]*m_v[2];
 	float w2 = m_v[3]*m_v[3];
 
-	float sq = CFloat::Sqrt(w2 + x2 + y2 + z2);
+	float sq = Float::Sqrt(w2 + x2 + y2 + z2);
 
 	m_v[0] /= sq;
 	m_v[1] /= sq;

@@ -158,9 +158,9 @@ struct VrFrameTechnique final : public FrameTechniqueBase
           pTARG->PushModColor( fvec4::White() );
           {
             if( c._button2down )
-              ork::lev2::CGfxPrimitives::GetRef().RenderBox( pTARG );
+              ork::lev2::GfxPrimitives::GetRef().RenderBox( pTARG );
             else
-              ork::lev2::CGfxPrimitives::GetRef().RenderAxis( pTARG );
+              ork::lev2::GfxPrimitives::GetRef().RenderAxis( pTARG );
           }
           pTARG->PopModColor();
           pTARG->MTXI()->PopPMatrix();

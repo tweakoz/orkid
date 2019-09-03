@@ -50,8 +50,8 @@ private:
 	ork::fixedvector<const RenderQueue::Node*,RenderQueue::krqmaxsize>	mQueueSortNodes;
 
 
-	ork::fixedvector<CBoxRenderable,kmaxrablessm>			mBoxes;
-	ork::fixedvector<CModelRenderable,kmaxrables>			mModels;
+	ork::fixedvector<BoxRenderable,kmaxrablessm>			mBoxes;
+	ork::fixedvector<ModelRenderable,kmaxrables>			mModels;
 	ork::fixedvector<FrustumRenderable,kmaxrablessm>		mFrustums;
 	ork::fixedvector<SphereRenderable,kmaxrables>			mSpheres;
 	ork::fixedvector<CallbackRenderable,kmaxrablesmed>			mCallbacks;
@@ -62,9 +62,9 @@ public:
 	 * Immediate Rendering (sort of, actually just submit the renderable to the target, which might itself place into a display list)
 	 ******************************************************************************************************************/
 
-	virtual void RenderBox( const CBoxRenderable & CubeRen ) const = 0;
-	virtual void RenderModel( const CModelRenderable & ModelRen, RenderGroupState rgs=ERGST_NONE ) const = 0;
-	virtual void RenderModelGroup( const CModelRenderable** Renderables, int inumr ) const = 0;
+	virtual void RenderBox( const BoxRenderable & CubeRen ) const = 0;
+	virtual void RenderModel( const ModelRenderable & ModelRen, RenderGroupState rgs=ERGST_NONE ) const = 0;
+	virtual void RenderModelGroup( const ModelRenderable** Renderables, int inumr ) const = 0;
 	virtual void RenderFrustum( const FrustumRenderable & Frusren ) const = 0;
 	virtual void RenderSphere( const SphereRenderable & SphereRen ) const = 0;
 	virtual void RenderCallback( const CallbackRenderable & cbren ) const = 0;
@@ -73,8 +73,8 @@ public:
 	 * Deferred rendering
 	 ******************************************************************************************************************/
 
-	CBoxRenderable & QueueBox()				{ CBoxRenderable& rend=mBoxes.create(); QueueRenderable(&rend); return rend; }
-	CModelRenderable & QueueModel()			{ CModelRenderable& rend=mModels.create(); QueueRenderable(&rend); return rend; }
+	BoxRenderable & QueueBox()				{ BoxRenderable& rend=mBoxes.create(); QueueRenderable(&rend); return rend; }
+	ModelRenderable & QueueModel()			{ ModelRenderable& rend=mModels.create(); QueueRenderable(&rend); return rend; }
 	FrustumRenderable & QueueFrustum()		{ FrustumRenderable& rend=mFrustums.create(); QueueRenderable(&rend); return rend; }
 	SphereRenderable & QueueSphere()		{ SphereRenderable& rend=mSpheres.create(); QueueRenderable(&rend); return rend; }
 	CallbackRenderable & QueueCallback()	{ CallbackRenderable& rend=mCallbacks.create(); QueueRenderable(&rend); return rend; }

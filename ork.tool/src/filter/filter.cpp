@@ -40,7 +40,7 @@ bool WavToMkr( const tokenlist& toklist );
 void RegisterColladaFilters();
 void RegisterArchFilters();
 
-void CAssetFilterBase::Describe()
+void AssetFilterBase::Describe()
 {
 
 }
@@ -51,9 +51,9 @@ bool QtzComposerToPng( const tokenlist& toklist );
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class VolTexAssembleFilter : public CAssetFilterBase
+class VolTexAssembleFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(VolTexAssembleFilter,CAssetFilterBase);
+	RttiDeclareConcrete(VolTexAssembleFilter,AssetFilterBase);
 public: //
 	VolTexAssembleFilter(  )
 	{
@@ -68,9 +68,9 @@ void VolTexAssembleFilter::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class QtzComposerToPngFilter : public CAssetFilterBase
+class QtzComposerToPngFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(QtzComposerToPngFilter,CAssetFilterBase);
+	RttiDeclareConcrete(QtzComposerToPngFilter,AssetFilterBase);
 public: //
 	QtzComposerToPngFilter(  )
 	{
@@ -90,9 +90,9 @@ void QtzComposerToPngFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 bool Tga2DdsFilterDriver( const tokenlist& toklist );
 
-class TGADDSFilter : public CAssetFilterBase
+class TGADDSFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(TGADDSFilter,CAssetFilterBase);
+	RttiDeclareConcrete(TGADDSFilter,AssetFilterBase);
 public: //
 	TGADDSFilter() {}
 	bool ConvertAsset( const tokenlist& toklist ) final
@@ -103,9 +103,9 @@ public: //
 void TGADDSFilter::Describe() {}
 
 #if defined(_USE_D3DX)
-class UvAtlasFilter : public CAssetFilterBase
+class UvAtlasFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(UvAtlasFilter,CAssetFilterBase);
+	RttiDeclareConcrete(UvAtlasFilter,AssetFilterBase);
 public: //
 	UvAtlasFilter(  )
 	{
@@ -119,9 +119,9 @@ public: //
 void UvAtlasFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class Tex2VtxBakeFilter : public CAssetFilterBase
+class Tex2VtxBakeFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(Tex2VtxBakeFilter,CAssetFilterBase);
+	RttiDeclareConcrete(Tex2VtxBakeFilter,AssetFilterBase);
 public: //
 	Tex2VtxBakeFilter(  )
 	{
@@ -138,9 +138,9 @@ void Tex2VtxBakeFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class fg3dFilter : public CAssetFilterBase
+class fg3dFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(fg3dFilter,CAssetFilterBase);
+	RttiDeclareConcrete(fg3dFilter,AssetFilterBase);
 public: //
 	fg3dFilter(  )
 	{
@@ -156,9 +156,9 @@ void fg3dFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class WAVMKRFilter : public CAssetFilterBase
+class WAVMKRFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(WAVMKRFilter,CAssetFilterBase);
+	RttiDeclareConcrete(WAVMKRFilter,AssetFilterBase);
 public: //
 	WAVMKRFilter(  )
 	{
@@ -179,11 +179,11 @@ static void RegisterFilters()
 
 	if(binit)
 	{
-		CAssetFilter::RegisterFilter("wav:mkr", WAVMKRFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("wav:mkr", WAVMKRFilter::DesignNameStatic().c_str());
 		///////////////////////////////////////////////////
 		#if defined(_USE_SOUNDFONT)
-		CAssetFilter::RegisterFilter("sf2:xab", SF2XABFilter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("sf2:gab", SF2GABFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("sf2:xab", SF2XABFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("sf2:gab", SF2GABFilter::DesignNameStatic().c_str());
 		#endif
 		///////////////////////////////////////////////////
 		#if defined(USE_FCOLLADA)
@@ -193,23 +193,23 @@ static void RegisterFilters()
 		ork::tool::RegisterArchFilters();
 		///////////////////////////////////////////////////
 		#if defined(_USE_D3DX)
-		CAssetFilter::RegisterFilter("x:obj", MeshUtil::D3DX_OBJ_Filter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("xgm:x", MeshUtil::XGM_D3DX_Filter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("obj:x", MeshUtil::OBJ_D3DX_Filter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("uvatlas", UvAtlasFilter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("tex2vtx", Tex2VtxBakeFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("x:obj", MeshUtil::D3DX_OBJ_Filter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("xgm:x", MeshUtil::XGM_D3DX_Filter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("obj:x", MeshUtil::OBJ_D3DX_Filter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("uvatlas", UvAtlasFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("tex2vtx", Tex2VtxBakeFilter::DesignNameStatic().c_str());
 		#endif
 		///////////////////////////////////////////////////
-		CAssetFilter::RegisterFilter("xgm:obj", MeshUtil::XGM_OBJ_Filter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("xgm:obj", MeshUtil::XGM_OBJ_Filter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("obj:xgm", MeshUtil::OBJ_XGM_Filter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("tga:dds", TGADDSFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
 		/////////////////////////
 		#if defined(ORK_OSXX)
-		CAssetFilter::RegisterFilter("qtz:png", QtzComposerToPngFilter::DesignNameStatic().c_str());
-		CAssetFilter::RegisterFilter("vtc:dds", VolTexAssembleFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("qtz:png", QtzComposerToPngFilter::DesignNameStatic().c_str());
+		AssetFilter::RegisterFilter("vtc:dds", VolTexAssembleFilter::DesignNameStatic().c_str());
 		#endif
 		/////////////////////////
 		binit = false;
@@ -218,15 +218,15 @@ static void RegisterFilters()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CAssetFilterBase::CAssetFilterBase( )
+AssetFilterBase::AssetFilterBase( )
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-orkmap<ork::PoolString, SFilterInfo* > CAssetFilter::smFilterMap;
+orkmap<ork::PoolString, SFilterInfo* > AssetFilter::smFilterMap;
 
-void CAssetFilter::RegisterFilter( const char* filtername, const char* classname, const char* pathmethod, const char* pathloc )
+void AssetFilter::RegisterFilter( const char* filtername, const char* classname, const char* pathmethod, const char* pathloc )
 {
 	SFilterInfo *pinfo = new SFilterInfo;
 	pinfo->filtername = AddPooledString(filtername);
@@ -239,7 +239,7 @@ void CAssetFilter::RegisterFilter( const char* filtername, const char* classname
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CAssetFilter::ConvertFile( const char* Filter, const tokenlist& toklist )
+bool AssetFilter::ConvertFile( const char* Filter, const tokenlist& toklist )
 {
 	bool rval = false;
 
@@ -253,7 +253,7 @@ bool CAssetFilter::ConvertFile( const char* Filter, const tokenlist& toklist )
 
 		OrkAssert( pclass != 0 );
 
-		CAssetFilterBase *pfilter = rtti::safe_downcast<CAssetFilterBase*>( pclass->CreateObject() );
+		AssetFilterBase *pfilter = rtti::safe_downcast<AssetFilterBase*>( pclass->CreateObject() );
 
 		OrkAssert( pfilter != 0 );
 
@@ -267,16 +267,16 @@ bool CAssetFilter::ConvertFile( const char* Filter, const tokenlist& toklist )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CAssetFilter::ConvertTree( const char* Filter, const std::string &InTree, const std::string &OutDir )
+bool AssetFilter::ConvertTree( const char* Filter, const std::string &InTree, const std::string &OutDir )
 {
-	OrkAssertNotImplI("CAssetFilter::ConvertTree is not implemented!");
+	OrkAssertNotImplI("AssetFilter::ConvertTree is not implemented!");
 	return false;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CAssetFilter::ListFilters()
+bool AssetFilter::ListFilters()
 {
 	int idx = 0;
 	orkmessageh( "///////////////////////////////////////\n" );
@@ -315,7 +315,7 @@ int Main_Filter( tokenlist toklist )
 {
 	RegisterFilters();
 
-	CFileEnv::SetFilesystemBase( "./" );
+	FileEnv::SetFilesystemBase( "./" );
 
 	//////////////////////////////////////////
 	// Register fxshader:// data urlbase
@@ -326,7 +326,7 @@ int Main_Filter( tokenlist toklist )
 	FxShaderFileContext.SetFilesystemBaseAbs( fxshaderpath.c_str() );
 	FxShaderFileContext.SetPrependFilesystemBase( true );
 
-	CFileEnv::RegisterUrlBase( "fxshader://", FxShaderFileContext );
+	FileEnv::RegisterUrlBase( "fxshader://", FxShaderFileContext );
 
 	//////////////////////////////
 	// need a gfx context for some filters
@@ -348,11 +348,11 @@ int Main_Filter( tokenlist toklist )
 
 	if( blist || (ftype == (std::string) "list") )
 	{
-		CAssetFilter::ListFilters();
+		AssetFilter::ListFilters();
 	}
 	else
 	{
-		SFilterInfo* FilterInfo = OrkSTXFindValFromKey(CAssetFilter::smFilterMap, FindPooledString(ftype.c_str()),  (SFilterInfo*) 0 );
+		SFilterInfo* FilterInfo = OrkSTXFindValFromKey(AssetFilter::smFilterMap, FindPooledString(ftype.c_str()),  (SFilterInfo*) 0 );
 		printf( "Main_Filter find<%s> finfo<%p>\n", ftype.c_str(), FilterInfo );
 		if(FilterInfo)
 		{
@@ -360,7 +360,7 @@ int Main_Filter( tokenlist toklist )
 
 			newtoklist.insert( newtoklist.begin(), it, toklist.end() );
 
-			bool bret = CAssetFilter::ConvertFile( ftype.c_str(), newtoklist );
+			bool bret = AssetFilter::ConvertFile( ftype.c_str(), newtoklist );
 			return bret ? 0 : -1;
 		}
 	}
@@ -374,7 +374,7 @@ int Main_FilterTree( tokenlist toklist )
 {
 	RegisterFilters();
 
-	CFileEnv::SetFilesystemBase( "./" );
+	FileEnv::SetFilesystemBase( "./" );
 
     //////////////////////////////
 	// need a gfx context for some filters
@@ -408,7 +408,7 @@ int Main_FilterTree( tokenlist toklist )
 	}
 
 	orkmessageh( "Converting Directory Tree [%s]\n", treename.c_str() );
-	CAssetFilter::ConvertTree( ftype.c_str(), treename, outdest );
+	AssetFilter::ConvertTree( ftype.c_str(), treename, outdest );
 
 	return 0;
 }
@@ -569,7 +569,7 @@ void FilterOptMap::DumpOptions() const
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::UvAtlasFilter,"UvAtlasFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::Tex2VtxBakeFilter,"Tex2VtxBakeFilter");
 #endif
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::CAssetFilterBase,"CAssetFilterBase");
+INSTANTIATE_TRANSPARENT_RTTI(ork::tool::AssetFilterBase,"AssetFilterBase");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::fg3dFilter,"fg3dFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::WAVMKRFilter,"WAVMKRFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::TGADDSFilter,"TGADDSFilter");

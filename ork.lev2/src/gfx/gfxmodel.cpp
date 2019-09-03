@@ -678,7 +678,7 @@ void XgmModel::RenderSkinned(	const XgmModelInst* minst,
 				fvec3 Pos = MatW.GetTranslation();
 				pTARG->MTXI()->PushMMatrix( MatW );
 				{
-					CGfxPrimitives::GetRef().RenderAxis( pTARG );
+					GfxPrimitives::GetRef().RenderAxis( pTARG );
 				}
 				pTARG->MTXI()->PopMMatrix();
 			}

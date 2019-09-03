@@ -14,7 +14,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-using ork::CFileEnv;
+using ork::FileEnv;
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <psapi.h>

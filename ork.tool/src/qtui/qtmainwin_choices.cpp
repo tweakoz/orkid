@@ -23,7 +23,7 @@ namespace ork { namespace tool {
 
 ///////////////////////////////////////////////////////////////////////////
 
-bool CChoiceList::DoesSlashNodePassFilter(const SlashNode* pnode, const ChoiceListFilters* Filter) const {
+bool ChoiceList::DoesSlashNodePassFilter(const SlashNode* pnode, const ChoiceListFilters* Filter) const {
   bool bpass = true;
 
   if (Filter) {
@@ -49,7 +49,7 @@ bool CChoiceList::DoesSlashNodePassFilter(const SlashNode* pnode, const ChoiceLi
         if (pchild->IsLeaf()) {
           if (Filter) {
             if (Filter->mFilterMap.size()) {
-              const CAttrChoiceValue* chcval = FindFromLongName(pchild->getfullpath());
+              const AttrChoiceValue* chcval = FindFromLongName(pchild->getfullpath());
 
               if (chcval) {
                 for (orkmultimap<std::string, std::string>::const_iterator it = Filter->mFilterMap.begin();
@@ -82,7 +82,7 @@ struct StackNode {
   }
 };
 
-QMenu* CChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
+QMenu* ChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
   QMenu* pMenu = new QMenu(0);
 
   const SlashTree* phier = GetHierarchy();
@@ -115,7 +115,7 @@ QMenu* CChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
           badd = false;
 
           if (Filter->mFilterMap.size()) {
-            const CAttrChoiceValue* chcval = FindFromLongName(pchild->getfullpath());
+            const AttrChoiceValue* chcval = FindFromLongName(pchild->getfullpath());
 
             if (chcval) {
               for (orkmultimap<std::string, std::string>::const_iterator it = Filter->mFilterMap.begin();
@@ -131,7 +131,7 @@ QMenu* CChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
         if (badd) {
           QAction* pchildact = snode.mpmenu->addAction(pchild->GetNodeName().c_str());
 
-          const CAttrChoiceValue* chcval = FindFromLongName(pchild->getfullpath());
+          const AttrChoiceValue* chcval = FindFromLongName(pchild->getfullpath());
 
           pchildact->setProperty("chcval", QVariant::fromValue((void*)chcval));
 
@@ -158,29 +158,29 @@ QMenu* CChoiceList::CreateMenu(const ChoiceListFilters* Filter) const {
 ///////////////////////////////////////////////////////////////////////////
 
 #if defined(USE_FCOLLADA)
-void ColladaChoiceCache(const file::Path& sdir, CChoiceList* ChcList, const std::string& ext,
+void ColladaChoiceCache(const file::Path& sdir, ChoiceList* ChcList, const std::string& ext,
                         const CColladaAsset::EAssetType TestType) {
   // TiXmlDeclaration * XmlDeclNode = new TiXmlDeclaration( "1.0", "", "" );
   // TiXmlElement *CacheRootNode = new TiXmlElement( CacheName );
   // CacheDoc.LinkEndChild( XmlDeclNode );
   // CacheDoc.LinkEndChild( CacheRootNode );
-  // file::Path searchdir = CFileEnv::GetRef().GetPathFromUrlExt("data://");
+  // file::Path searchdir = FileEnv::GetRef().GetPathFromUrlExt("data://");
   file::Path::NameType wildcard = CreateFormattedString("*.%s", ext.c_str()).c_str();
-  orkvector<file::Path::NameType> files = CFileEnv::filespec_search(wildcard, sdir);
+  orkvector<file::Path::NameType> files = FileEnv::filespec_search(wildcard, sdir);
   int inumfiles = (int)files.size();
   file::Path::NameType searchdir(sdir.ToAbsolute().c_str());
   searchdir.replace_in_place("\\", "/");
   for (int ifile = 0; ifile < inumfiles; ifile++) {
-    file::Path::NameType ObjPtrStr = CFileEnv::filespec_no_extension(CFileEnv::filespec_strip_base(files[ifile], "./"));
+    file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension(FileEnv::filespec_strip_base(files[ifile], "./"));
     ObjPtrStr.replace_in_place(searchdir.c_str(), "");
-    ChcList->add(CAttrChoiceValue(ObjPtrStr.c_str(), ObjPtrStr.c_str()));
+    ChcList->add(AttrChoiceValue(ObjPtrStr.c_str(), ObjPtrStr.c_str()));
   }
 }
 #endif
 
 ///////////////////////////////////////////////////////////////////////////
 
-void CModelChoices::EnumerateChoices(bool bforcenocache) {
+void ModelChoices::EnumerateChoices(bool bforcenocache) {
   clear();
   FindAssetChoices("data://", "*.xgm");
   // ColladaChoiceCache( "data://", this, "xgm", CColladaAsset::ECOLLADA_MODEL
@@ -198,22 +198,22 @@ void CAnimChoices::EnumerateChoices(bool bforcenocache) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void CChoiceList::FindAssetChoices(const file::Path& sdir, const std::string& wildcard) {
-  orkvector<file::Path::NameType> files = CFileEnv::filespec_search(wildcard.c_str(), sdir.c_str());
+void ChoiceList::FindAssetChoices(const file::Path& sdir, const std::string& wildcard) {
+  orkvector<file::Path::NameType> files = FileEnv::filespec_search(wildcard.c_str(), sdir.c_str());
   int inumfiles = (int)files.size();
   file::Path::NameType searchdir(sdir.ToAbsolute().c_str());
   searchdir.replace_in_place("\\", "/");
   for (int ifile = 0; ifile < inumfiles; ifile++) {
     auto the_file = files[ifile];
-    auto the_stripped = CFileEnv::filespec_strip_base(the_file, "./");
-    file::Path::NameType ObjPtrStr = CFileEnv::filespec_no_extension(the_stripped);
+    auto the_stripped = FileEnv::filespec_strip_base(the_file, "./");
+    file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension(the_stripped);
     file::Path::NameType ObjPtrStrA;
     ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "");
     // OrkSTXFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
     file::Path::NameType ObjPtrStr2 = file::Path::NameType(sdir.c_str()) + ObjPtrStrA;
     file::Path OutPath(ObjPtrStr2.c_str());
     // OutPath.SetUrlBase( sdir.GetUrlBase().c_str() );
-    add(CAttrChoiceValue(OutPath.c_str(), OutPath.c_str()));
+    add(AttrChoiceValue(OutPath.c_str(), OutPath.c_str()));
     // orkprintf( "FOUND ASSERT<%s>\n", the_file.c_str() );
   }
 }
@@ -243,13 +243,13 @@ void ScriptChoices::EnumerateChoices(bool bforcenocache) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void CTextureChoices::EnumerateChoices(bool bforcenocache) {
+void TextureChoices::EnumerateChoices(bool bforcenocache) {
   clear();
 
   auto items = lev2::TextureAsset::GetClassStatic()->EnumerateExisting();
 
   for (const auto& i : items)
-    add(CAttrChoiceValue(i.c_str(), i.c_str()));
+    add(AttrChoiceValue(i.c_str(), i.c_str()));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -278,11 +278,11 @@ AudioStreamChoices::AudioStreamChoices() { EnumerateChoices(); }
 
 AudioBankChoices::AudioBankChoices() { EnumerateChoices(); }
 
-CModelChoices::CModelChoices() { EnumerateChoices(); }
+ModelChoices::ModelChoices() { EnumerateChoices(); }
 
 CAnimChoices::CAnimChoices() { EnumerateChoices(); }
 
-CTextureChoices::CTextureChoices() { EnumerateChoices(); }
+TextureChoices::TextureChoices() { EnumerateChoices(); }
 ScriptChoices::ScriptChoices() { EnumerateChoices(); }
 
 }} // namespace ork::tool

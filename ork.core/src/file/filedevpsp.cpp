@@ -20,12 +20,12 @@
 const std::string deviceName = "host0:";
 
 // User read/write, group read, other read
-const SceMode CFileDevPSP::kmsDefaultMode(0x0644);
+const SceMode FileDevPSP::kmsDefaultMode(0x0644);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFileDevPSP::CFileDevPSP()
-	: CFileDev("PSPKernel", "", EFDF_CAN_READ | EFDF_CAN_WRITE)
+FileDevPSP::FileDevPSP()
+	: FileDev("PSPKernel", "", EFDF_CAN_READ | EFDF_CAN_WRITE)
 {
 	int error = sceIoChdir(deviceName.c_str());
 	OrkAssert(error == 0);
@@ -33,7 +33,7 @@ CFileDevPSP::CFileDevPSP()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::OpenFile(CFile& rFile)
+EFileErrCode FileDevPSP::OpenFile(File& rFile)
 {
 	rFile.miFilePos = 0;
 	rFile.miSeekPos = 0;
@@ -87,7 +87,7 @@ EFileErrCode CFileDevPSP::OpenFile(CFile& rFile)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::CloseFile( CFile &rFile )
+EFileErrCode FileDevPSP::CloseFile( File &rFile )
 {
 	OrkAssert(rFile.mHandle != 0);
 
@@ -97,7 +97,7 @@ EFileErrCode CFileDevPSP::CloseFile( CFile &rFile )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::Read( CFile& rFile, void* pTo, int iSize )
+EFileErrCode FileDevPSP::Read( File& rFile, void* pTo, int iSize )
 {
 	OrkAssert(pTo && iSize > 0);
 
@@ -141,7 +141,7 @@ EFileErrCode CFileDevPSP::Read( CFile& rFile, void* pTo, int iSize )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::Write( CFile &rFile, const void *pFrom, int iSize )
+EFileErrCode FileDevPSP::Write( File &rFile, const void *pFrom, int iSize )
 {
 	// Bad pointer... 
     if(NULL == pFrom) 
@@ -184,21 +184,21 @@ EFileErrCode CFileDevPSP::Write( CFile &rFile, const void *pFrom, int iSize )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::SeekFromStart(CFile &rFile, int iTo)
+EFileErrCode FileDevPSP::SeekFromStart(File &rFile, int iTo)
 {
 	return InternalSeek(rFile, iTo, SCE_SEEK_SET);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::SeekFromCurrent( CFile &rFile, int iOffset )
+EFileErrCode FileDevPSP::SeekFromCurrent( File &rFile, int iOffset )
 {
 	return InternalSeek(rFile, iOffset, SCE_SEEK_CUR);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::GetLength( CFile &rFile, int &riLen )
+EFileErrCode FileDevPSP::GetLength( File &rFile, int &riLen )
 {
 	SceIoStat ioStatus; 
     int error = sceIoGetstat(rFile.GetFileName().c_str(), &ioStatus);
@@ -213,7 +213,7 @@ EFileErrCode CFileDevPSP::GetLength( CFile &rFile, int &riLen )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::GetCurrentDirectory( std::string& directory )
+EFileErrCode FileDevPSP::GetCurrentDirectory( std::string& directory )
 {
 	// TODO: This looks shady...
 	//std::string temp = deviceName + std::string(":.");
@@ -245,7 +245,7 @@ EFileErrCode CFileDevPSP::GetCurrentDirectory( std::string& directory )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::SetCurrentDirectory( const std::string& directory )
+EFileErrCode FileDevPSP::SetCurrentDirectory( const std::string& directory )
 {
 	int error = sceIoChdir(directory.c_str());
 	return TranslateError(error);
@@ -253,7 +253,7 @@ EFileErrCode CFileDevPSP::SetCurrentDirectory( const std::string& directory )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileDevPSP::DoesFileExist(const std::string& filespec)
+bool FileDevPSP::DoesFileExist(const std::string& filespec)
 {
 	SceUID fd = sceIoOpen(filespec.c_str(), SCE_O_RDONLY, kmsDefaultMode);
 
@@ -271,9 +271,9 @@ bool CFileDevPSP::DoesFileExist(const std::string& filespec)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string CFileDevPSP::GetAbsolutePath(const std::string& path)
+std::string FileDevPSP::GetAbsolutePath(const std::string& path)
 {
-	bool pathIsAbsolute = CFileEnv::filespec_isabs(path);
+	bool pathIsAbsolute = FileEnv::filespec_isabs(path);
 
 	std::string fullFilename;
 	if(GetPrependFilesystemBase() && (false == pathIsAbsolute))
@@ -285,19 +285,19 @@ std::string CFileDevPSP::GetAbsolutePath(const std::string& path)
 		fullFilename = path;
 	}
 
-	return CFileEnv::filespec_to_native(fullFilename);
+	return FileEnv::filespec_to_native(fullFilename);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string CFileDevPSP::GetDeviceFilename(const std::string& unqualifiedName)
+std::string FileDevPSP::GetDeviceFilename(const std::string& unqualifiedName)
 {
 	return deviceName + GetAbsolutePath(unqualifiedName);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::InternalSeek(CFile& rFile, int iTo, int sceWhence)
+EFileErrCode FileDevPSP::InternalSeek(File& rFile, int iTo, int sceWhence)
 {
     if(!rFile.IsOpen())
     {
@@ -325,7 +325,7 @@ EFileErrCode CFileDevPSP::InternalSeek(CFile& rFile, int iTo, int sceWhence)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevPSP::TranslateError(int sceError)
+EFileErrCode FileDevPSP::TranslateError(int sceError)
 {
 	switch(sceError)
 	{

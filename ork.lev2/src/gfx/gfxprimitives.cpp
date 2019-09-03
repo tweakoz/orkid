@@ -36,8 +36,8 @@ static const int NUM_DOME_TRIANGLES = 10 * 50 * 6;
 
 
 
-CGfxPrimitives::CGfxPrimitives()
-	: NoRttiSingleton< CGfxPrimitives > ()
+GfxPrimitives::GfxPrimitives()
+	: NoRttiSingleton< GfxPrimitives > ()
 	, mVtxBuf_Axis( 6, 6, EPRIM_LINES )
 	, mVtxBuf_GridX100( 1000, 400, EPRIM_LINES )
 	, mVtxBuf_Cone( 1000, 400, EPRIM_TRIANGLES )
@@ -68,7 +68,7 @@ CGfxPrimitives::CGfxPrimitives()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::Init( GfxTarget *pTarg )
+void GfxPrimitives::Init( GfxTarget *pTarg )
 {
 	static bool binit = true;
 
@@ -1010,8 +1010,8 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 		/////////////////////////////////////////////////////////////////
 		// Compute Heightfield
 
-		float fmin =  CFloat::TypeMax();
-		float fmax = -CFloat::TypeMax();
+		float fmin =  Float::TypeMax();
+		float fmax = -Float::TypeMax();
 
 		struct sheightfield
 		{
@@ -1080,7 +1080,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 					f32 fascal = fAmp * powf( fAmpScale, (f32) (iOctave) );
 					f32 ffscal = fFrq * powf( fFrqScale, (f32) (iOctave) );
 
-					fy += CPerlin2D::PlaneNoiseFunc( fx, fz, 0.0f, 0.0f, fascal, ffscal );
+					fy += Perlin2D::PlaneNoiseFunc( fx, fz, 0.0f, 0.0f, fascal, ffscal );
 				}
 
 				if( float(fy)<fmin ) fmin=float(fy);
@@ -1149,10 +1149,10 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 				/////////////////////////////////////////////////////
 				// calc height lerps
 
-				float YLerpX1Z1 = CFloat::Pow( (float(fYH_X1Z1)-fmin)/frange, 2.0f );
-				float YLerpX2Z1 = CFloat::Pow( (float(fYH_X2Z1)-fmin)/frange, 2.0f );
-				float YLerpX2Z2 = CFloat::Pow( (float(fYH_X2Z2)-fmin)/frange, 2.0f );
-				float YLerpX1Z2 = CFloat::Pow( (float(fYH_X1Z2)-fmin)/frange, 2.0f );
+				float YLerpX1Z1 = Float::Pow( (float(fYH_X1Z1)-fmin)/frange, 2.0f );
+				float YLerpX2Z1 = Float::Pow( (float(fYH_X2Z1)-fmin)/frange, 2.0f );
+				float YLerpX2Z2 = Float::Pow( (float(fYH_X2Z2)-fmin)/frange, 2.0f );
+				float YLerpX1Z2 = Float::Pow( (float(fYH_X1Z2)-fmin)/frange, 2.0f );
 
 				/////////////////////////////////////////////////////
 				// calc normals
@@ -1163,10 +1163,10 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 				fvec3 nX2Z2 = heightfield.Normal(iX2,iZ2);
 
 				fvec3 Up( 0.0f, 1.0f, 0.0f );
-				float DotX1Z1 = CFloat::Pow( Up.Dot( nX1Z1 ), 6.0f );
-				float DotX2Z1 = CFloat::Pow( Up.Dot( nX2Z1 ), 6.0f );
-				float DotX1Z2 = CFloat::Pow( Up.Dot( nX1Z2 ), 6.0f );
-				float DotX2Z2 = CFloat::Pow( Up.Dot( nX2Z2 ), 6.0f );
+				float DotX1Z1 = Float::Pow( Up.Dot( nX1Z1 ), 6.0f );
+				float DotX2Z1 = Float::Pow( Up.Dot( nX2Z1 ), 6.0f );
+				float DotX1Z2 = Float::Pow( Up.Dot( nX1Z2 ), 6.0f );
+				float DotX2Z2 = Float::Pow( Up.Dot( nX2Z2 ), 6.0f );
 
 				/////////////////////////////////////////////////////
 
@@ -1229,7 +1229,7 @@ void CGfxPrimitives::Init( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderAxis( GfxTarget *pTarg )
+void GfxPrimitives::RenderAxis( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_Axis );
@@ -1238,7 +1238,7 @@ void CGfxPrimitives::RenderAxis( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderGridX100( GfxTarget *pTarg )
+void GfxPrimitives::RenderGridX100( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_GridX100 );
@@ -1247,7 +1247,7 @@ void CGfxPrimitives::RenderGridX100( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderCone( GfxTarget *pTarg )
+void GfxPrimitives::RenderCone( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_Cone );
@@ -1256,7 +1256,7 @@ void CGfxPrimitives::RenderCone( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderDirCone( GfxTarget *pTarg )
+void GfxPrimitives::RenderDirCone( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_DirCone );
@@ -1264,7 +1264,7 @@ void CGfxPrimitives::RenderDirCone( GfxTarget *pTarg )
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderCircleStrip( GfxTarget *pTarg )
+void GfxPrimitives::RenderCircleStrip( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_CircleStrip );
@@ -1273,7 +1273,7 @@ void CGfxPrimitives::RenderCircleStrip( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderCircleUI( GfxTarget *pTarg )
+void GfxPrimitives::RenderCircleUI( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_CircleUI );
@@ -1282,7 +1282,7 @@ void CGfxPrimitives::RenderCircleUI( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderCircleStripUI( GfxTarget *pTarg )
+void GfxPrimitives::RenderCircleStripUI( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_CircleStripUI );
@@ -1291,7 +1291,7 @@ void CGfxPrimitives::RenderCircleStripUI( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderTriCircle( GfxTarget *pTarg )
+void GfxPrimitives::RenderTriCircle( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_TriCircle );
@@ -1300,21 +1300,21 @@ void CGfxPrimitives::RenderTriCircle( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderDiamond( GfxTarget *pTarg )
+void GfxPrimitives::RenderDiamond( GfxTarget *pTarg )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_Diamond );
 	pTarg->BindMaterial( 0 );
 }
 
-void CGfxPrimitives::RenderCylinder( GfxTarget *pTarg, bool drawoutline )
+void GfxPrimitives::RenderCylinder( GfxTarget *pTarg, bool drawoutline )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_Cylinder );
 	pTarg->BindMaterial( 0 );
 }
 
-void CGfxPrimitives::RenderCapsule( GfxTarget *pTarg, float radius )
+void GfxPrimitives::RenderCapsule( GfxTarget *pTarg, float radius )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	fmtx4 MatScale, MatTrans, MatRotate;
@@ -1341,7 +1341,7 @@ void CGfxPrimitives::RenderCapsule( GfxTarget *pTarg, float radius )
 	pTarg->BindMaterial( 0 );
 }
 
-void CGfxPrimitives::RenderBox( GfxTarget *pTarg, bool drawoutline )
+void GfxPrimitives::RenderBox( GfxTarget *pTarg, bool drawoutline )
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_Box );
@@ -1349,7 +1349,7 @@ void CGfxPrimitives::RenderBox( GfxTarget *pTarg, bool drawoutline )
 	pTarg->BindMaterial( 0 );
 }
 
-void CGfxPrimitives::RenderAxisLineCone(GfxTarget* pTarg)
+void GfxPrimitives::RenderAxisLineCone(GfxTarget* pTarg)
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_AxisCone);
@@ -1357,7 +1357,7 @@ void CGfxPrimitives::RenderAxisLineCone(GfxTarget* pTarg)
 	pTarg->BindMaterial( 0 );
 }
 
-void CGfxPrimitives::RenderAxisBox(GfxTarget* pTarg)
+void GfxPrimitives::RenderAxisBox(GfxTarget* pTarg)
 {
 	pTarg->BindMaterial( & GetRef().mMaterial );
 	pTarg->GBI()->DrawPrimitive(GetRef().mVtxBuf_AxisBox);
@@ -1365,7 +1365,7 @@ void CGfxPrimitives::RenderAxisBox(GfxTarget* pTarg)
 }
 
 /*
-void CGfxPrimitives::RenderHalfSphere( GfxTarget *pTarg )
+void GfxPrimitives::RenderHalfSphere( GfxTarget *pTarg )
 {
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_Dome );
 }
@@ -1373,35 +1373,35 @@ void CGfxPrimitives::RenderHalfSphere( GfxTarget *pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderEQSphere( GfxTarget *pTarg )
+void GfxPrimitives::RenderEQSphere( GfxTarget *pTarg )
 {
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_EQSphere );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderSkySphere( GfxTarget *pTarg )
+void GfxPrimitives::RenderSkySphere( GfxTarget *pTarg )
 {
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_SkySphere );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderGroundPlane( GfxTarget *pTarg )
+void GfxPrimitives::RenderGroundPlane( GfxTarget *pTarg )
 {
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_GroundPlane );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderPerlinTerrain( GfxTarget *pTarg )
+void GfxPrimitives::RenderPerlinTerrain( GfxTarget *pTarg )
 {
 	pTarg->GBI()->DrawPrimitive( GetRef().mVtxBuf_PerlinTerrain );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderOrthoQuad( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
+void GfxPrimitives::RenderOrthoQuad( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
 	auto vb = & GfxEnv::GetSharedDynamicVB();
 
@@ -1447,7 +1447,7 @@ void CGfxPrimitives::RenderOrthoQuad( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderQuadAtX( GfxTarget *pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
+void GfxPrimitives::RenderQuadAtX( GfxTarget *pTarg, f32 fY1, f32 fY2, f32 fZ1, f32 fZ2, f32 fX, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
 	auto vb = & GfxEnv::GetSharedDynamicVB();
 
@@ -1477,7 +1477,7 @@ void CGfxPrimitives::RenderQuadAtX( GfxTarget *pTarg, f32 fY1, f32 fY2, f32 fZ1,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderQuadAtY( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
+void GfxPrimitives::RenderQuadAtY( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fZ1, f32 fZ2, f32 fY, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
 	auto vb = & GfxEnv::GetSharedDynamicVB();
 
@@ -1507,7 +1507,7 @@ void CGfxPrimitives::RenderQuadAtY( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fZ1,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderQuadAtZ( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
+void GfxPrimitives::RenderQuadAtZ( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
 	auto vb = & GfxEnv::GetSharedDynamicVB();
 
@@ -1537,7 +1537,7 @@ void CGfxPrimitives::RenderQuadAtZ( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderQuadAtZV16T16C16( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
+void GfxPrimitives::RenderQuadAtZV16T16C16( GfxTarget *pTarg, f32 fX1, f32 fX2, f32 fY1, f32 fY2, f32 fZ, f32 iminU, f32 imaxU, f32 iminV, f32 imaxV )
 {
 	auto vb = & GfxEnv::GetSharedDynamicV16T16C16();
 
@@ -1567,7 +1567,7 @@ void CGfxPrimitives::RenderQuadAtZV16T16C16( GfxTarget *pTarg, f32 fX1, f32 fX2,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CGfxPrimitives::RenderQuad( GfxTarget *pTarg, fvec4 &V0, fvec4 &V1, fvec4 &V2, fvec4 &V3 )
+void GfxPrimitives::RenderQuad( GfxTarget *pTarg, fvec4 &V0, fvec4 &V1, fvec4 &V2, fvec4 &V3 )
 {
 	auto vb = & GfxEnv::GetSharedDynamicVB();
 

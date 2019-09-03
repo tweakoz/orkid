@@ -20,12 +20,12 @@
 namespace ork
 {
 
-/// CFixed and CFloat are both wrappers around a non-integral numeric type.
+/// CFixed and Float are both wrappers around a non-integral numeric type.
 ///
-/// A CFloat contains a float, and provides the same operators as a normal float,
+/// A Float contains a float, and provides the same operators as a normal float,
 /// as well as providing a few (hopefully optimized) trigonometric functions.
 ///
-/// The interface of CFixed and CFloat classes should be kept exactly the same, most (if not all) functions inlined,
+/// The interface of CFixed and Float classes should be kept exactly the same, most (if not all) functions inlined,
 /// no virtuals, and the sole member variable should be a signed numeric in CFixed, and a float or double in float.
 ///
 /// Commonly, the typedef float is seen in code, which is the selected as the preferred fractional type on a platform.
@@ -34,7 +34,7 @@ namespace ork
 /// Other casts act like normal float<->int casts.
 ///
 /// @see CFixed
-class CFloat
+class Float
 {
 
 public:
@@ -68,7 +68,7 @@ public:
 
 	static float Rand(float low = float(0), float high = float(1));
 
-	static bool RelCompare(const float& a, const float& b, const float& toler = CFloat::Epsilon());
+	static bool RelCompare(const float& a, const float& b, const float& toler = Float::Epsilon());
 };
 
 ///////////////////////////////////////////////////////////////////////////////

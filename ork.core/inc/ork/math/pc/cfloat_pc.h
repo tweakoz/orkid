@@ -18,28 +18,28 @@ namespace ork
 
 ///////////////////////////////////////////////////////////////////////////////
 // static methods
-inline float CFloat::Ceil(const float &a)
+inline float Float::Ceil(const float &a)
 {
 	return float(::std::ceil(a));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Floor(const float &a)
+inline float Float::Floor(const float &a)
 {
 	return float(::std::floor(a));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Pow(const float &a, const float &b)
+inline float Float::Pow(const float &a, const float &b)
 {
 	return float(::std::pow(a, b));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Sqrt(const float &r)
+inline float Float::Sqrt(const float &r)
 {
 #if defined(WII)
 	//return __fsqrts(r);
@@ -51,7 +51,7 @@ inline float CFloat::Sqrt(const float &r)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::MAdd( float m1, float m2, float a1 )
+inline float Float::MAdd( float m1, float m2, float a1 )
 {
 #if defined(WII)
 	return __fmadds(m1, m2, a1); 
@@ -62,14 +62,14 @@ inline float CFloat::MAdd( float m1, float m2, float a1 )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Cos(const float &x)
+inline float Float::Cos(const float &x)
 {
 	return float(::std::cos(x));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Abs(const float &x)
+inline float Float::Abs(const float &x)
 {
 #if defined(WII)
 	return __fabsf(x); 
@@ -80,56 +80,56 @@ inline float CFloat::Abs(const float &x)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::ArcCos(const float &x)
+inline float Float::ArcCos(const float &x)
 {
 	return float(::std::acos(x));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Sin(const float &x)
+inline float Float::Sin(const float &x)
 {
 	return float(::std::sin(x));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::ArcTan(const float &x)
+inline float Float::ArcTan(const float &x)
 {
 	return float(::std::atan(x));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::ArcTan2(const float &x, const float &y)
+inline float Float::ArcTan2(const float &x, const float &y)
 {
 	return float(::std::atan2(x, y));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Tan(const float &x)
+inline float Float::Tan(const float &x)
 {
 	return Sin(x) / Cos(x);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Min(const float &a, const float &b)
+inline float Float::Min(const float &a, const float &b)
 {
 	return a < b ? a : b;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Max(const float &a, const float &b)
+inline float Float::Max(const float &a, const float &b)
 {
 	return a > b ? a : b;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline float CFloat::Rand(float low, float high)
+inline float Float::Rand(float low, float high)
 {
 	static const float fdivis( 1.0f / 32768.0f );
 	float fdiff = (high-low);
@@ -139,9 +139,9 @@ inline float CFloat::Rand(float low, float high)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline bool CFloat::RelCompare(const float& a, const float& b, const float& toler)
+inline bool Float::RelCompare(const float& a, const float& b, const float& toler)
 {
-	return CFloat::Abs(a - b) <= toler * CFloat::Max(1.0f, CFloat::Max(a, b));
+	return Float::Abs(a - b) <= toler * Float::Max(1.0f, Float::Max(a, b));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

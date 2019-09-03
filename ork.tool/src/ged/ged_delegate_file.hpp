@@ -10,13 +10,13 @@
 #include <QMenu>
 
 namespace ork { namespace tool { 
-void FindAssetChoices(const file::Path& sdir, CChoiceList* choice_list, const std::string& wildcard);
+void FindAssetChoices(const file::Path& sdir, ChoiceList* choice_list, const std::string& wildcard);
 }}
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
-class UserFileChoices : public ork::tool::CChoiceList
+class UserFileChoices : public ork::tool::ChoiceList
 {
 	file::Path	mBaseDir;
 	std::string	mWildCard;

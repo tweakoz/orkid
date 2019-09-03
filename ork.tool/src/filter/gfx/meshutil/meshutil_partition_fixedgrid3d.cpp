@@ -79,8 +79,8 @@ void GridGraph::PreMergeMesh( const submesh& MeshIn )
 	//  aa bbox / extents
 	///////////////////////////////////////////
 
-	float thisareamax = -CFloat::TypeMax();
-	float thisareamin = CFloat::TypeMax();
+	float thisareamax = -Float::TypeMax();
+	float thisareamin = Float::TypeMax();
 	float thisareaavg = 0.0f;
 
 	for( int ipoly=0; ipoly<inumpolys; ipoly++ )
@@ -98,13 +98,13 @@ void GridGraph::PreMergeMesh( const submesh& MeshIn )
 
 		///////////////////////////////
 		float thisarea = ply.ComputeArea( InVPool, fmtx4::Identity );
-		thisareamax = CFloat::Max( thisareamax, thisarea );
-		thisareamin = CFloat::Min( thisareamin, thisarea );
+		thisareamax = Float::Max( thisareamax, thisarea );
+		thisareamin = Float::Min( thisareamin, thisarea );
 		thisareaavg += thisarea;
 		///////////////////////////////
 		areatot += thisarea;
-		areamin = CFloat::Min( areamin, thisarea );
-		areamax = CFloat::Max( areamax, thisarea );
+		areamin = Float::Min( areamin, thisarea );
+		areamax = Float::Max( areamax, thisarea );
 		///////////////////////////////
 		totpolys++;
 	}

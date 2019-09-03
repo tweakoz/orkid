@@ -13,7 +13,7 @@ namespace ork::audio::singularity {
 
 void parse_cz101(CzData* outd, const std::string& path,const std::string& bnkname)
 {
-    ork::CFile syxfile(path.c_str(),ork::EFM_READ);
+    ork::File syxfile(path.c_str(),ork::EFM_READ);
     u8* data = nullptr;
     size_t size = 0;
     syxfile.Load((void**)(&data),size);

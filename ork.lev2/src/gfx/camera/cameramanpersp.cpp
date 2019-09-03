@@ -116,33 +116,33 @@ void EzUiCam::draw(GfxTarget* pT) {
   {
 
     pT->PushModColor(fcolor4::Black());
-    ork::lev2::CFontMan::PushFont("i14");
-    CFontMan::BeginTextBlock(pT);
-    CFontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
-    CFontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
-    CFontMan::DrawText(pT, 41, 33, "zf %f", (mCameraData.GetFar()));
-    CFontMan::DrawText(pT, 41, 45, "zn %f", (mCameraData.GetNear()));
-    CFontMan::DrawText(pT, 41, 57, "zfoverzn %f", (mCameraData.GetFar() / mCameraData.GetNear()));
-    CFontMan::DrawText(pT, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
-    CFontMan::DrawText(pT, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
-    CFontMan::DrawText(pT, 41, 93, "Aper %f", aper);
-    CFontMan::DrawText(pT, 41, 105, "Name %s", GetName().c_str());
-    CFontMan::EndTextBlock(pT);
+    ork::lev2::FontMan::PushFont("i14");
+    FontMan::BeginTextBlock(pT);
+    FontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
+    FontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
+    FontMan::DrawText(pT, 41, 33, "zf %f", (mCameraData.GetFar()));
+    FontMan::DrawText(pT, 41, 45, "zn %f", (mCameraData.GetNear()));
+    FontMan::DrawText(pT, 41, 57, "zfoverzn %f", (mCameraData.GetFar() / mCameraData.GetNear()));
+    FontMan::DrawText(pT, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
+    FontMan::DrawText(pT, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
+    FontMan::DrawText(pT, 41, 93, "Aper %f", aper);
+    FontMan::DrawText(pT, 41, 105, "Name %s", GetName().c_str());
+    FontMan::EndTextBlock(pT);
     pT->PopModColor();
 
     pT->PushModColor(fcolor4::Yellow());
-    CFontMan::BeginTextBlock(pT);
-    CFontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
-    CFontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
-    CFontMan::DrawText(pT, 41, 33, "zf %f", (mCameraData.GetFar()));
-    CFontMan::DrawText(pT, 41, 45, "zn %f", (mCameraData.GetNear()));
-    CFontMan::DrawText(pT, 41, 57, "zfoverzn %f", (mCameraData.GetFar() / mCameraData.GetNear()));
-    CFontMan::DrawText(pT, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
-    CFontMan::DrawText(pT, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
-    CFontMan::DrawText(pT, 41, 93, "Aper %f", aper);
-    CFontMan::DrawText(pT, 41, 105, "Name %s", GetName().c_str());
-    CFontMan::EndTextBlock(pT);
-    ork::lev2::CFontMan::PopFont();
+    FontMan::BeginTextBlock(pT);
+    FontMan::DrawText(pT, 41, 9, "CamFocus %f %f %f", mvCenter.GetX(), mvCenter.GetY(), mvCenter.GetZ());
+    FontMan::DrawText(pT, 41, 21, "CamLoc   %f %f %f", CamLoc.GetX(), CamLoc.GetY(), CamLoc.GetZ());
+    FontMan::DrawText(pT, 41, 33, "zf %f", (mCameraData.GetFar()));
+    FontMan::DrawText(pT, 41, 45, "zn %f", (mCameraData.GetNear()));
+    FontMan::DrawText(pT, 41, 57, "zfoverzn %f", (mCameraData.GetFar() / mCameraData.GetNear()));
+    FontMan::DrawText(pT, 41, 69, "Loc(m) %f Speed(m/f) %f", mfLoc, CurVelMag);
+    FontMan::DrawText(pT, 41, 81, "RotMode %s", (meRotMode == EROT_SCREENZ) ? "ScreenZ" : "ScreenXY");
+    FontMan::DrawText(pT, 41, 93, "Aper %f", aper);
+    FontMan::DrawText(pT, 41, 105, "Name %s", GetName().c_str());
+    FontMan::EndTextBlock(pT);
+    ork::lev2::FontMan::PopFont();
     pT->PopModColor();
   }
   pT->MTXI()->PopUIMatrix();
@@ -166,14 +166,14 @@ void EzUiCam::draw(GfxTarget* pT) {
     MatT.Scale(fvec4(Scale, Scale, Scale));
     pT->MTXI()->PushMMatrix(MatT);
     {
-      CGfxPrimitives::GetRef().RenderTriCircle(pT);
-      CGfxPrimitives::GetRef().RenderAxis(pT);
+      GfxPrimitives::GetRef().RenderTriCircle(pT);
+      GfxPrimitives::GetRef().RenderAxis(pT);
     }
     pT->MTXI()->PopMMatrix();
     ///////////////////////////////
     MatT.SetTranslation(CamFocus);
     pT->MTXI()->PushMMatrix(MatT);
-    { CGfxPrimitives::GetRef().RenderTriCircle(pT); }
+    { GfxPrimitives::GetRef().RenderTriCircle(pT); }
     pT->MTXI()->PopMMatrix();
     ///////////////////////////////
   }
@@ -524,8 +524,8 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       flogdx = (flogdx * float(1.5f)) - float(0.5f);
       flogdy = (flogdy * float(1.5f)) - float(0.5f);
 
-      dx = float(CFloat::Pow(float(10.0f), flogdx)) * ((dx < float(0.0f)) ? float(-1.0f) : float(1.0f));
-      dy = float(CFloat::Pow(float(10.0f), flogdy)) * ((dy < float(0.0f)) ? float(-1.0f) : float(1.0f));
+      dx = float(Float::Pow(float(10.0f), flogdx)) * ((dx < float(0.0f)) ? float(-1.0f) : float(1.0f));
+      dy = float(Float::Pow(float(10.0f), flogdy)) * ((dy < float(0.0f)) ? float(-1.0f) : float(1.0f));
 
       //////////////////////////////////////////////////
 

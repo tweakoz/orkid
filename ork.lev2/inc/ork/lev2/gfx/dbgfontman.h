@@ -47,7 +47,7 @@ struct CharDesc {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFont {
+class Font {
   /////////////////////////////////////////////
 public:
   /////////////////////////////////////////////
@@ -55,7 +55,7 @@ public:
   static const int kMaxChars;
   U8 muaCurColor[4];
 
-  CFont(const std::string& fontname, const std::string& filename);
+  Font(const std::string& fontname, const std::string& filename);
 
   void LoadFromDisk(GfxTarget* pTARG, const FontDesc& fd);
   const FontDesc& GetFontDesc(void) { return mFontDesc; }
@@ -74,53 +74,53 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFontMan : public NoRttiSingleton<CFontMan> {
+class FontMan : public NoRttiSingleton<FontMan> {
   /////////////////////////////////////////////
 public: //
   /////////////////////////////////////////////
 
-  CFontMan();
-  ~CFontMan();
+  FontMan();
+  ~FontMan();
 
   static void InitFonts(GfxTarget* pTARG);
 
   static void AddFont(GfxTarget* pTARG, const FontDesc& fdesc);
   static void DrawText(GfxTarget* pTARG, int iX, int iY, const char* pFmt, ...);
 
-  static CFont* GetCurrentFont(void) { return GetRef().mpCurrentFont; }
+  static Font* GetCurrentFont(void) { return GetRef().mpCurrentFont; }
 
-  static CFont* GetFont(const std::string& name) {
-    CFont* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (CFont*)0);
+  static Font* GetFont(const std::string& name) {
+    Font* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (Font*)0);
     return pFont;
   }
 
-  static CFont* SetCurrentFont(const std::string& name) {
-    CFont* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (CFont*)0);
+  static Font* SetCurrentFont(const std::string& name) {
+    Font* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (Font*)0);
     OrkAssert(pFont);
     GetRef().mpCurrentFont = pFont;
     return pFont;
   }
-  static void PushFont(CFont* pFont) {
+  static void PushFont(Font* pFont) {
     OrkAssert(pFont);
     GetRef().mFontStack.push(GetRef().mpCurrentFont);
     GetRef().mpCurrentFont = pFont;
   }
-  static CFont* PushFont(const std::string& name) {
-    CFont* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (CFont*)0);
+  static Font* PushFont(const std::string& name) {
+    Font* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (Font*)0);
     OrkAssert(pFont);
     GetRef().mFontStack.push(GetRef().mpCurrentFont);
     GetRef().mpCurrentFont = pFont;
     return pFont;
   }
-  static CFont* PopFont() {
+  static Font* PopFont() {
     GetRef().mFontStack.pop();
-    CFont* pFont = GetRef().mFontStack.top();
+    Font* pFont = GetRef().mFontStack.top();
     OrkAssert(pFont);
     GetRef().mpCurrentFont = pFont;
     return pFont;
   }
 
-  static CFont* SetDefaultFont(void) {
+  static Font* SetDefaultFont(void) {
     GetRef().mpCurrentFont = GetRef().mpDefaultFont;
     return GetRef().mpCurrentFont;
   }
@@ -132,11 +132,11 @@ public: //
 protected:
   /////////////////////////////////////////////
 
-  orkstack<CFont*> mFontStack;
-  orkvector<CFont*> mFontVect;
-  orkmap<std::string, CFont*> mFontMap;
-  CFont* mpCurrentFont;
-  CFont* mpDefaultFont;
+  orkstack<Font*> mFontStack;
+  orkvector<Font*> mFontVect;
+  orkmap<std::string, Font*> mFontMap;
+  Font* mpCurrentFont;
+  Font* mpDefaultFont;
   VtxWriter<SVtxV12C4T16> mTextWriter;
   CharDesc mCharDescriptions[256];
 };

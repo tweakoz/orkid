@@ -783,10 +783,10 @@ dataflow::outplugbase* RingEmitter::GetOutput(int idx)
 void RingDirectedEmitter::ComputePosDir( float fi, fvec3& pos, fvec3& dir )
 {	float scaler = (fi*mEmitterModule.mfThisRadius)+((1.0f-fi)*mEmitterModule.mfLastRadius);
 	float phase = (fi*mEmitterModule.mfPhase2)+((1.0f-fi)*mEmitterModule.mfPhase);
-	float fpx = CFloat::Cos(phase);
-	float fpz = CFloat::Sin(phase);
-	float fdx = CFloat::Cos(phase+PI_DIV_2);
-	float fdz = CFloat::Sin(phase+PI_DIV_2);
+	float fpx = Float::Cos(phase);
+	float fpz = Float::Sin(phase);
+	float fdx = Float::Cos(phase+PI_DIV_2);
+	float fdz = Float::Sin(phase+PI_DIV_2);
 	pos = fvec3((fpx*scaler),0.0f,(fpz*scaler));
 	if( meDirection==EMITDIR_USER )
 	{

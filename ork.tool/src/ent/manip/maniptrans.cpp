@@ -16,7 +16,7 @@
 
 namespace ork { namespace lev2 {
 
-static const float k90Degrees = CFloat::Pi() / float(2.0f);
+static const float k90Degrees = Float::Pi() / float(2.0f);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -158,12 +158,12 @@ void ManipSingleTrans::DrawAxis(GfxTarget* pTARG) const
 			{
 				if( fbi->IsPickState() )
 				{
-					gbi->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisBoxVB() );
+					gbi->DrawPrimitiveEML( ork::lev2::GfxPrimitives::GetAxisBoxVB() );
 				}
 				else
 				{
-					gbi->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisLineVB() );
-					gbi->DrawPrimitiveEML( ork::lev2::CGfxPrimitives::GetAxisConeVB() );
+					gbi->DrawPrimitiveEML( ork::lev2::GfxPrimitives::GetAxisLineVB() );
+					gbi->DrawPrimitiveEML( ork::lev2::GfxPrimitives::GetAxisConeVB() );
 				}
 			}
 
@@ -215,7 +215,7 @@ void ManipSingleTrans::Draw( GfxTarget *pTARG ) const
 	fmtx4 VMatrix = pTARG->MTXI()->RefVMatrix();
 	fvec4 wvx = v_dir.Transform(VisMat);
 	fvec4 clip_vdir = wvx.Transform(VMatrix);
-	if( CFloat::Abs( clip_vdir.GetZ() ) >= vizthresh )
+	if( Float::Abs( clip_vdir.GetZ() ) >= vizthresh )
 	{
 		bdrawok = false;
 	}
@@ -356,7 +356,7 @@ void ManipDualTrans::Draw(GfxTarget *pTARG ) const
 	pTARG->MTXI()->PushMMatrix(MatCur);
 	{
 		pTARG->FXI()->InvalidateStateBlock();
-		ork::lev2::CGfxPrimitives::RenderQuad(pTARG, v0, v1, v2, v3);
+		ork::lev2::GfxPrimitives::RenderQuad(pTARG, v0, v1, v2, v3);
 	}
 	pTARG->MTXI()->PopMMatrix();
 }

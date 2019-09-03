@@ -184,7 +184,7 @@ public:
 
 private:
   //////////////////////////////////////////////
-  // CGfxHWContext Concrete Interface
+  // GfxHWContext Concrete Interface
 
   void DoBeginFrame(void) final {}
   void DoEndFrame(void) final {}

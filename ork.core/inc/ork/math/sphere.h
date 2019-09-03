@@ -39,7 +39,7 @@ inline bool Sphere::Intersect(const fray3& ray, fvec3& isect_in, fvec3& isect_ou
   float r2 = (mRadius * mRadius);
   if (d2 > r2)
     return false;
-  float thc = CFloat::Sqrt(r2 - d2);
+  float thc = Float::Sqrt(r2 - d2);
   isect_in = ray.mOrigin + ray.mDirection * (tca - thc);
   isect_out = ray.mOrigin + ray.mDirection * (tca + thc);
   isect_normal = (isect_in - mCenter).Normal();

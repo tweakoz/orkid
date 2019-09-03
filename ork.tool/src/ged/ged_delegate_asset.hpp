@@ -42,7 +42,7 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
   OrkAssert(passetclass);
 
   if (passetclass) {
-    CChoiceList* chclist = 0;
+    ChoiceList* chclist = 0;
     ;
 
     chclist = mModel.GetChoiceManager()->GetChoiceList(annotype.c_str());
@@ -75,8 +75,8 @@ template <typename IODriver> void GedAssetNode<IODriver>::OnCreateObject() {
 
       QVariant chcvalprop = pact->property("chcval");
 
-      const CAttrChoiceValue* chcval =
-          chcvalprop.isValid() ? (const CAttrChoiceValue*)chcvalprop.value<void*>() : (const CAttrChoiceValue*)0;
+      const AttrChoiceValue* chcval =
+          chcvalprop.isValid() ? (const AttrChoiceValue*)chcvalprop.value<void*>() : (const AttrChoiceValue*)0;
 
       if (chcval) {
         if (0 != strstr(chcval->GetValue().c_str(), "asset<")) {

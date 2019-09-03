@@ -62,8 +62,8 @@ class CSMFParser
 	CAudioSequence mSequence;
 	MidiTimeStamp LastTempoChangeTime;
 	F32		 LastTempoChange;
-	CFile mInFile;
-	CRIFFFile mRiffFile;
+	File mInFile;
+	RIFFFile mRiffFile;
 	U32 bytesleft;
 	U32 numchunks;
 	bool done;
@@ -103,7 +103,7 @@ class CSMF2MMTFilter // standard midifile -> orkid midi trax file
 
 	////////////////////////////////////
 
-	static bool ConvertAsset( CObject *pOBJ, CAssetFilterContext*pEV );
+	static bool ConvertAsset( CObject *pOBJ, AssetFilterContext*pEV );
 
 	////////////////////////////////////
 

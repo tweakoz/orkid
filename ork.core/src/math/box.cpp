@@ -127,21 +127,21 @@ void AABox::SupportMapping( const fvec3& v, fvec3& result ) const
 
 void AABox::BeginGrow()
 {
-    float fmin = CFloat::TypeMax();
-    float fmax = -CFloat::TypeMax();
+    float fmin = Float::TypeMax();
+    float fmax = -Float::TypeMax();
     mMin = fvec3( fmin,fmin,fmin );
     mMax = fvec3( fmax,fmax,fmax );
 }
 
 void AABox::Grow( const fvec3& vin )
 {
-    mMin.SetX( CFloat::Min( mMin.GetX(), vin.GetX() ) );
-    mMin.SetY( CFloat::Min( mMin.GetY(), vin.GetY() ) );
-    mMin.SetZ( CFloat::Min( mMin.GetZ(), vin.GetZ() ) );
+    mMin.SetX( Float::Min( mMin.GetX(), vin.GetX() ) );
+    mMin.SetY( Float::Min( mMin.GetY(), vin.GetY() ) );
+    mMin.SetZ( Float::Min( mMin.GetZ(), vin.GetZ() ) );
 
-    mMax.SetX( CFloat::Max( mMax.GetX(), vin.GetX() ) );
-    mMax.SetY( CFloat::Max( mMax.GetY(), vin.GetY() ) );
-    mMax.SetZ( CFloat::Max( mMax.GetZ(), vin.GetZ() ) );
+    mMax.SetX( Float::Max( mMax.GetX(), vin.GetX() ) );
+    mMax.SetY( Float::Max( mMax.GetY(), vin.GetY() ) );
+    mMax.SetZ( Float::Max( mMax.GetZ(), vin.GetZ() ) );
 
 }
 void AABox::EndGrow()

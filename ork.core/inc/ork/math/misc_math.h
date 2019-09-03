@@ -234,7 +234,7 @@ void Normalise(XYZ* p);
 ///////////////////////////////////////////////////////////////////////////////
 // 2D Perlin Noise
 
-class CPerlin2D {
+class Perlin2D {
 public:
   // static const f32 ONEDIVNOISETABLESAMPLES =		0.03125f;
   static const int NOISETABLESAMPLES = 32;

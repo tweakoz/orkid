@@ -238,7 +238,7 @@ void GfxEnv::SetLoaderTarget(GfxTarget* target) {
 
     mpUIMaterial->Init(gLoaderTarget);
     mp3DMaterial->Init(gLoaderTarget);
-    ork::lev2::CGfxPrimitives::Init(gLoaderTarget);
+    ork::lev2::GfxPrimitives::Init(gLoaderTarget);
 
     gLoaderTarget->BeginFrame();
     gLoaderTarget->EndFrame();

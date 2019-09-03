@@ -157,7 +157,7 @@ EnemySpawnerControllerInst::EnemySpawnerControllerInst( const EnemySpawnerContro
 						targ->MTXI()->PushMMatrix( MatS );
 						{
 							matsolid.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-							lev2::CGfxPrimitives::GetRef().RenderDiamond( targ );
+							lev2::GfxPrimitives::GetRef().RenderDiamond( targ );
 
 						}
 						targ->PopModColor();

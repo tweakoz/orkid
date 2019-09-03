@@ -325,7 +325,7 @@ private:
 	virtual bool DoDrawDefault() const { return false; }
 };
 ///////////////////////////////////////////////////////////////////////////////
-class UserChoices : public tool::CChoiceList
+class UserChoices : public tool::ChoiceList
 {
 	IUserChoiceDelegate&								mucd;
 	orkmap<PoolString,IUserChoiceDelegate::ValueType>	mUserChoices;
