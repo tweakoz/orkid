@@ -18,9 +18,9 @@
 
 namespace ork
 {
-template<> const EPropType CPropType<fmtx3>::meType				= EPROPTYPE_MAT33REAL;
-template<> const char* CPropType<fmtx3>::mstrTypeName					= "MAT33REAL";
-template<> void CPropType<fmtx3>::ToString( const fmtx3 & Value, PropTypeString& tstr)
+template<> const EPropType PropType<fmtx3>::meType				= EPROPTYPE_MAT33REAL;
+template<> const char* PropType<fmtx3>::mstrTypeName					= "MAT33REAL";
+template<> void PropType<fmtx3>::ToString( const fmtx3 & Value, PropTypeString& tstr)
 {
 	const fmtx3 & v = Value;
 
@@ -31,7 +31,7 @@ template<> void CPropType<fmtx3>::ToString( const fmtx3 & Value, PropTypeString&
 	tstr.format( "%s", result.c_str() );
 }
 
-template<> fmtx3 CPropType<fmtx3>::FromString(const PropTypeString& String)
+template<> fmtx3 PropType<fmtx3>::FromString(const PropTypeString& String)
 {
 	float m[3][3];
 	sscanf(String.c_str(), "%g %g %g %g %g %g %g %g %g",
@@ -72,7 +72,7 @@ template<> void Serialize( const fmtx3*in, fmtx3*out, reflect::BidirectionalSeri
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-template class CPropType<fmtx3>;
+template class PropType<fmtx3>;
 template class Matrix33<float>;		// explicit template instantiation
 
 }

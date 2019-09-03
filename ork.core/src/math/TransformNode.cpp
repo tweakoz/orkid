@@ -195,21 +195,21 @@ void Serialize(const TransformNode* in, TransformNode* out, BidirectionalSeriali
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> const EPropType CPropType<TransformNode>::meType = EPROPTYPE_TRANSFORMNODE3D;
-template<> const char * CPropType<TransformNode>::mstrTypeName		= "TRANSFORMNODE3D";
-template<> void CPropType<TransformNode>::ToString( const TransformNode & Value, PropTypeString& tstr)
+template<> const EPropType PropType<TransformNode>::meType = EPROPTYPE_TRANSFORMNODE3D;
+template<> const char * PropType<TransformNode>::mstrTypeName		= "TRANSFORMNODE3D";
+template<> void PropType<TransformNode>::ToString( const TransformNode & Value, PropTypeString& tstr)
 {
 	Value.ToPropTypeString( tstr );
 }
 
-template<> TransformNode CPropType<TransformNode>::FromString(const PropTypeString& String)
+template<> TransformNode PropType<TransformNode>::FromString(const PropTypeString& String)
 {
 	TransformNode value;
 	value.FromPropTypeString( String );
 	return value;
 }
 
-template class CPropType<TransformNode>;
+template class PropType<TransformNode>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

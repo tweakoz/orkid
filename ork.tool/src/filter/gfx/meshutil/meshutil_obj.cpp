@@ -511,7 +511,7 @@ void toolmesh::ReadFromWavefrontObj( const file::Path& BasePath )
 		submesh& smesh = MergeSubMesh( opoly.group.c_str() );
 		/////////////////////////////////////////////
 		PropTypeString outstr;
-		CPropType<lev2::EVtxStreamFormat>::ToString( ork::lev2::EVTXSTREAMFMT_V12N12B12T16, outstr );
+		PropType<lev2::EVtxStreamFormat>::ToString( ork::lev2::EVTXSTREAMFMT_V12N12B12T16, outstr );
 		smesh.SetAnnotation( "OutVtxFormat", outstr.c_str() );
 		/////////////////////////////////////////////
 

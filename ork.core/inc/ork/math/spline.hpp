@@ -183,8 +183,8 @@ void CatmullRomSpline<T>::SampleAt( float fU, T& res, T& deriv ) const
 	for( int ic=0; ic<knumcomponents; ic++ )
 	{
 		int ibi = BaseIndex(indexl, ic);
-		CPolynomial& ply = mBases[ibi];
-		CPolynomial& ply_deriv = mBasesDeriv[ibi];
+		Polynomial& ply = mBases[ibi];
+		Polynomial& ply_deriv = mBasesDeriv[ibi];
 
 		float fval = 0.5f * ply(flerp);
 		float fder = 0.5f * ply_deriv(flerp);

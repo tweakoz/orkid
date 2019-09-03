@@ -510,7 +510,7 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 					/////////////////////////////////////////////////////////
 					fbaseprogress = float(ipg)/float(inumpgs);
 					fnextprogresspart = 1.0f/float(inumpgs);
-					CPropType<lev2::EVtxStreamFormat>::ToString(lev2::EVTXSTREAMFMT_V12N12B12T16,vtxfmt);
+					PropType<lev2::EVtxStreamFormat>::ToString(lev2::EVTXSTREAMFMT_V12N12B12T16,vtxfmt);
 					DicedMesh.SetAnnotation( "OutVtxFormat", vtxfmt.c_str() );
 					bakinggroup_submesh.SetAnnotation( "OutVtxFormat", vtxfmt.c_str() );
 					ork::MeshUtil::GridGraph thegraph(idicesize);

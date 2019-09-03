@@ -464,7 +464,7 @@ void GenerateUVAtlas( const tokenlist& options )
 		////////////////////////
 		MeshUtil::toolmesh* srcmesh = tmeshes[im];
 		PropTypeString vtxfmt; 
-		CPropType<lev2::EVtxStreamFormat>::ToString(lev2::EVTXSTREAMFMT_V12N12B12T16,vtxfmt);
+		PropType<lev2::EVtxStreamFormat>::ToString(lev2::EVTXSTREAMFMT_V12N12B12T16,vtxfmt);
 		srcmesh->SetAnnotation( "OutVtxFormat", vtxfmt.c_str() );
 		MeshUtil::toolmesh outmesh;
 		UvAtlasContext UvaCtx( *srcmesh, outmesh );

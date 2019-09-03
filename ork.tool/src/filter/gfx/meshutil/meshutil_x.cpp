@@ -135,7 +135,7 @@ void toolmesh::WriteToD3DXFile( const file::Path& BasePath ) const
 void FromD3DXMesh( ID3DXMesh* indxmesh, submesh& mesh )
 {
 	const char* vtxformat = mesh.GetAnnotation("OutVtxFormat");
-	lev2::EVtxStreamFormat evtxformat = CPropType<lev2::EVtxStreamFormat>::FromString( vtxformat );
+	lev2::EVtxStreamFormat evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat );
 	////////////////////////////////////////////////////////
 	switch( evtxformat )
 	{

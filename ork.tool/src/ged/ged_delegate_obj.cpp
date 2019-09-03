@@ -283,7 +283,7 @@ void GedObjNode<Setter>::OnCreateObject()
 			{
 				std::string valuestr = Chc->EvaluateValue();
 				PropTypeString tstr(valuestr.c_str());
-				NewObject = CPropType<Object*>::FromString(tstr);
+				NewObject = PropType<Object*>::FromString(tstr);
 				const reflect::IObjectPropertyType<ork::rtti::ICastable*>* objprop = rtti::autocast( GetOrkProp() );
 				if( objprop && NewObject )
 				{

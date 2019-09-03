@@ -65,15 +65,15 @@ template<> double Vector4<double>::Abs( double fin )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> const EPropType CPropType<fvec4>::meType				= EPROPTYPE_VEC4REAL;
-template<> const char* CPropType<fvec4>::mstrTypeName					= "VEC4REAL";
-template<> void CPropType<fvec4>::ToString(const fvec4 & Value, PropTypeString& tstr)
+template<> const EPropType PropType<fvec4>::meType				= EPROPTYPE_VEC4REAL;
+template<> const char* PropType<fvec4>::mstrTypeName					= "VEC4REAL";
+template<> void PropType<fvec4>::ToString(const fvec4 & Value, PropTypeString& tstr)
 {
 	fvec4 v = Value;
 	tstr.format( "%g %g %g %g", float(v.GetX()), float(v.GetY()), float(v.GetZ()), float(v.GetW()));
 }
 
-template<> fvec4 CPropType<fvec4>::FromString(const PropTypeString& String)
+template<> fvec4 PropType<fvec4>::FromString(const PropTypeString& String)
 {
 	float x, y, z, w;
 	sscanf(String.c_str(), "%g %g %g %g", &x, &y, &z, &w);
@@ -84,7 +84,7 @@ template<> fvec4 CPropType<fvec4>::FromString(const PropTypeString& String)
 
 template class Vector4<float>;		// explicit template instantiation
 template class Vector4<double>;		// explicit template instantiation
-template class CPropType<fvec4>;
+template class PropType<fvec4>;
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

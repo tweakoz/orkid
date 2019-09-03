@@ -65,15 +65,15 @@ template<> double Vector2<double>::Abs( double fin )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> const EPropType CPropType<fvec2>::meType				= EPROPTYPE_VEC2REAL;
-template<> const char* CPropType<fvec2>::mstrTypeName					= "VEC2REAL";
-template<> void CPropType<fvec2>::ToString( const fvec2 & Value, PropTypeString& tstr )
+template<> const EPropType PropType<fvec2>::meType				= EPROPTYPE_VEC2REAL;
+template<> const char* PropType<fvec2>::mstrTypeName					= "VEC2REAL";
+template<> void PropType<fvec2>::ToString( const fvec2 & Value, PropTypeString& tstr )
 {
 	fvec2 v = Value;
 	tstr.format( "%g %g", float(v.GetX()), float(v.GetY()));
 }
 
-template<> fvec2 CPropType<fvec2>::FromString(const PropTypeString& String)
+template<> fvec2 PropType<fvec2>::FromString(const PropTypeString& String)
 {
 	float x, y;
 	sscanf(String.c_str(), "%g %g", &x, &y);
@@ -84,7 +84,7 @@ template<> fvec2 CPropType<fvec2>::FromString(const PropTypeString& String)
 
 template class Vector2<float>;			// explicit template instantiation
 template class Vector2<double>;		// explicit template instantiation
-template class CPropType<fvec2>;
+template class PropType<fvec2>;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace reflect {

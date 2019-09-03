@@ -114,43 +114,43 @@ static const std::string BlendingStrings[EBLENDING_END + 2] = {"EBLENDING_OFF",
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-template <> const EPropType CPropType<EVtxStreamFormat>::meType = EPROPTYPE_ENUM;
-template <> const EPropType CPropType<EPrimitiveType>::meType = EPROPTYPE_ENUM;
-template <> const EPropType CPropType<EBlending>::meType = EPROPTYPE_ENUM;
+template <> const EPropType PropType<EVtxStreamFormat>::meType = EPROPTYPE_ENUM;
+template <> const EPropType PropType<EPrimitiveType>::meType = EPROPTYPE_ENUM;
+template <> const EPropType PropType<EBlending>::meType = EPROPTYPE_ENUM;
 ///////////////////////////////////////////////////////////////////////////////
-template <> const char* CPropType<EVtxStreamFormat>::mstrTypeName = "GfxEnv::EVtxStreamFormat";
-template <> const char* CPropType<EPrimitiveType>::mstrTypeName = "GfxEnv::EPrimitiveType";
-template <> const char* CPropType<EBlending>::mstrTypeName = "GfxEnv::EBlending";
+template <> const char* PropType<EVtxStreamFormat>::mstrTypeName = "GfxEnv::EVtxStreamFormat";
+template <> const char* PropType<EPrimitiveType>::mstrTypeName = "GfxEnv::EPrimitiveType";
+template <> const char* PropType<EBlending>::mstrTypeName = "GfxEnv::EBlending";
 ///////////////////////////////////////////////////////////////////////////////
-template <> EVtxStreamFormat CPropType<EVtxStreamFormat>::FromString(const PropTypeString& String) {
-  return CPropType::FindValFromStrings<EVtxStreamFormat>(String.c_str(), VertexFormatStrings, EVTXSTREAMFMT_END);
+template <> EVtxStreamFormat PropType<EVtxStreamFormat>::FromString(const PropTypeString& String) {
+  return PropType::FindValFromStrings<EVtxStreamFormat>(String.c_str(), VertexFormatStrings, EVTXSTREAMFMT_END);
 }
-template <> EPrimitiveType CPropType<EPrimitiveType>::FromString(const PropTypeString& String) {
-  return CPropType::FindValFromStrings<EPrimitiveType>(String.c_str(), PrimTypeStrings, EPRIM_END);
+template <> EPrimitiveType PropType<EPrimitiveType>::FromString(const PropTypeString& String) {
+  return PropType::FindValFromStrings<EPrimitiveType>(String.c_str(), PrimTypeStrings, EPRIM_END);
 }
-template <> EBlending CPropType<EBlending>::FromString(const PropTypeString& String) {
-  return CPropType::FindValFromStrings<EBlending>(String.c_str(), BlendingStrings, EBLENDING_END);
+template <> EBlending PropType<EBlending>::FromString(const PropTypeString& String) {
+  return PropType::FindValFromStrings<EBlending>(String.c_str(), BlendingStrings, EBLENDING_END);
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void CPropType<EVtxStreamFormat>::ToString(const EVtxStreamFormat& e, PropTypeString& tstr) {
+template <> void PropType<EVtxStreamFormat>::ToString(const EVtxStreamFormat& e, PropTypeString& tstr) {
   tstr.set(VertexFormatStrings[int(e)].c_str());
 }
-template <> void CPropType<EPrimitiveType>::ToString(const EPrimitiveType& e, PropTypeString& tstr) {
+template <> void PropType<EPrimitiveType>::ToString(const EPrimitiveType& e, PropTypeString& tstr) {
   tstr.set(PrimTypeStrings[int(e)].c_str());
 }
-template <> void CPropType<EBlending>::ToString(const EBlending& e, PropTypeString& tstr) {
+template <> void PropType<EBlending>::ToString(const EBlending& e, PropTypeString& tstr) {
   tstr.set(BlendingStrings[int(e)].c_str());
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <> void CPropType<EVtxStreamFormat>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
+template <> void PropType<EVtxStreamFormat>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
   NumStrings = EVTXSTREAMFMT_END + 1;
   ValueStrings = VertexFormatStrings;
 }
-template <> void CPropType<EPrimitiveType>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
+template <> void PropType<EPrimitiveType>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
   NumStrings = EPRIM_END + 1;
   ValueStrings = PrimTypeStrings;
 }
-template <> void CPropType<EBlending>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
+template <> void PropType<EBlending>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
   NumStrings = EBLENDING_END + 1;
   ValueStrings = BlendingStrings;
 }

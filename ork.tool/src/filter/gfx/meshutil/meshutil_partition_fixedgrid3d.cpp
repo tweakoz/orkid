@@ -394,7 +394,7 @@ void GridGraph::MergeMesh( const submesh& MeshIn, toolmesh& MeshOut )
 							{
 								const fvec3& pos = poly_bak.GetVertex(ic).Pos();
 								PropTypeString pts;
-								CPropType<fvec3>::ToString( pos, pts );
+								PropType<fvec3>::ToString( pos, pts );
 								
 								orkprintf( "v %s\n", ic, pts.c_str() );
 

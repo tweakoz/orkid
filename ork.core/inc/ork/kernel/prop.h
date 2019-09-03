@@ -94,19 +94,19 @@ enum EPropType
  * Provides a type-safe mechanism for determining the Type and TypeName of a particular
  * C/C++ data type.
  *
- * For example, CPropType<bool>::GetType() returns ETYPE_BOOL and CPropType<bool>::GetTypeName() returns "BOOL".
+ * For example, PropType<bool>::GetType() returns ETYPE_BOOL and PropType<bool>::GetTypeName() returns "BOOL".
  *
- * The CTypedProp implementation of CProp defers to CPropType for its runtime type identification information.
+ * The CTypedProp implementation of CProp defers to PropType for its runtime type identification information.
  *
  * The definitions of meType and mstrTypeName are all located in attr.hpp as template specializations.
  *
  * The one exception to the rules is ETYPE_OBJECTDELEGATE. That type is not returned by any specialization
- * of CPropType because it would conflict with ETYPE_OBJECTPTR. Therefore ETYPE_OBJECTDELEGATE is almost
+ * of PropType because it would conflict with ETYPE_OBJECTPTR. Therefore ETYPE_OBJECTDELEGATE is almost
  * entirely implemented by CObjectDelegateProp.
  */
 
 template<typename T>
-class CPropType
+class PropType
 {
 public:
 

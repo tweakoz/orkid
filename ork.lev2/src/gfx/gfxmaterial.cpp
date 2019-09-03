@@ -27,17 +27,17 @@ static const std::string TexDestStrings[lev2::ETEXDEST_END+2] =
 	"ETEXDEST_END",
 	""
 };
-template<> const EPropType CPropType<lev2::ETextureDest>::meType = EPROPTYPE_ENUM;
-template<> const char * CPropType<lev2::ETextureDest>::mstrTypeName = "GfxEnv::ETextureDest";
-template<> lev2::ETextureDest CPropType<lev2::ETextureDest>::FromString(const PropTypeString& String)
+template<> const EPropType PropType<lev2::ETextureDest>::meType = EPROPTYPE_ENUM;
+template<> const char * PropType<lev2::ETextureDest>::mstrTypeName = "GfxEnv::ETextureDest";
+template<> lev2::ETextureDest PropType<lev2::ETextureDest>::FromString(const PropTypeString& String)
 {
-	return CPropType::FindValFromStrings<lev2::ETextureDest>( String.c_str(), TexDestStrings, lev2::ETEXDEST_END );
+	return PropType::FindValFromStrings<lev2::ETextureDest>( String.c_str(), TexDestStrings, lev2::ETEXDEST_END );
 }
-template<> void CPropType<lev2::ETextureDest>::ToString( const lev2::ETextureDest & e, PropTypeString& tstr )
+template<> void PropType<lev2::ETextureDest>::ToString( const lev2::ETextureDest & e, PropTypeString& tstr )
 {
 	tstr.set( TexDestStrings[ int(e) ].c_str() );
 }
-template<> void CPropType<lev2::ETextureDest>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<> void PropType<lev2::ETextureDest>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = lev2::ETEXDEST_END+1;
 	ValueStrings = TexDestStrings;

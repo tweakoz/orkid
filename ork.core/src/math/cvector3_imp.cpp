@@ -66,15 +66,15 @@ template<> double Vector3<double>::Abs( double fin )
 
 // FIXED ///////////////////////////////////////////////////////////////////////
 
-template<> const EPropType CPropType<Vector3<float> >::meType   = EPROPTYPE_VEC3FLOAT;
-template<> const char* CPropType<Vector3<float> >::mstrTypeName = "VEC3FLOAT";
-template<> void CPropType<Vector3<float> >::ToString(const Vector3<float> & Value, PropTypeString& tstr )
+template<> const EPropType PropType<Vector3<float> >::meType   = EPROPTYPE_VEC3FLOAT;
+template<> const char* PropType<Vector3<float> >::mstrTypeName = "VEC3FLOAT";
+template<> void PropType<Vector3<float> >::ToString(const Vector3<float> & Value, PropTypeString& tstr )
 {
 	Vector3<float> v = Value;
 	tstr.format("%g %g %g", float(v.GetX()), float(v.GetY()), float(v.GetZ()));
 }
 
-template<> Vector3<float> CPropType<Vector3<float> >::FromString(const PropTypeString& String)
+template<> Vector3<float> PropType<Vector3<float> >::FromString(const PropTypeString& String)
 {
 	float x, y, z;
 	sscanf(String.c_str(), "%g %g %g", &x, &y, &z);
@@ -84,7 +84,7 @@ template<> Vector3<float> CPropType<Vector3<float> >::FromString(const PropTypeS
 ///////////////////////////////////////////////////////////////////////////////
 
 template class Vector3<float>;		// explicit template instantiation
-template class CPropType<Vector3<float> >;
+template class PropType<Vector3<float> >;
 
 template class Vector3<double>;		// explicit template instantiation
 

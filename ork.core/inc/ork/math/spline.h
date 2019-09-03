@@ -68,8 +68,8 @@ public:
 
   //////////////////////////////////////////////////////////
 
-  mutable orkvector<CPolynomial> mBases;
-  mutable orkvector<CPolynomial> mBasesDeriv;
+  mutable orkvector<Polynomial> mBases;
+  mutable orkvector<Polynomial> mBasesDeriv;
 
   int BaseIndex(int ipoint, int icomponent) const;
   //{ return (ipoint*knumcomponents)+icomponent; }

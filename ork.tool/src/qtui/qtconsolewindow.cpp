@@ -230,7 +230,7 @@ void QtConsoleWindow::EchoToggle( void )
 {
 	mbEcho = mbEcho ? false : true;
 	PropTypeString tstr;
-	CPropType<bool>::ToString(mbEcho,tstr);
+	PropType<bool>::ToString(mbEcho,tstr);
 
 	std::string tglline = CreateFormattedString( "echo = %s", tstr.c_str() );
 	AppendOutput(tglline);
