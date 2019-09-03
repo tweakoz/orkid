@@ -292,7 +292,7 @@ void SoundFont::ProcessInstruments( void )
         {
             int iGenINDEX = iBASEGEN + g;
 
-            SSoundFontGenerator *igen = mPXMInstrumentGen[iGenINDEX];
+            SoundFontGenerator *igen = mPXMInstrumentGen[iGenINDEX];
 
             ESF2Generators egen = ESF2Generators(igen->muGeneratorID);
 
@@ -473,7 +473,7 @@ void SoundFont::ProcessPresets( void )
         for( int g=0; g<pre->num_generators; g++ )
         {
             int gnum = g+pre->base_generator;
-            SSoundFontGenerator *pgen = mPXMPresetGen[gnum];
+            SoundFontGenerator *pgen = mPXMPresetGen[gnum];
 
             if( pgen->muGeneratorID == 41 ) // instrument
             {

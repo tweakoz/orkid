@@ -38,7 +38,7 @@ class XgmSubMesh;
 class XgmModel;
 class XgmMesh;
 class XgmModelInst;
-class CAnim;
+class Anim;
 class Renderer;
 class GfxMaterial;
 class Manip;

@@ -9,7 +9,7 @@
 #include <ork/file/file.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/lev2/gfx/gfxanim.h> // For CAnimManager
+#include <ork/lev2/gfx/gfxanim.h> // For AnimManager
 #include <ork/kernel/string/string.h>
 #include <orktool/toolcore/FunctionManager.h>
 

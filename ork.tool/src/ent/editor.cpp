@@ -141,7 +141,7 @@ void GetSceneReq::SetScene(SceneData* sd) {
 
 SceneEditorBase::SceneEditorBase()
     : mbInit(true), mApplication(nullptr), mpScene(nullptr), mpEditSceneInst(nullptr), mpExecSceneInst(nullptr),
-      mpMdlChoices(new tool::ModelChoices), mpAnmChoices(new tool::CAnimChoices), mpAudStreamChoices(new tool::AudioStreamChoices),
+      mpMdlChoices(new tool::ModelChoices), mpAnmChoices(new tool::AnimChoices), mpAudStreamChoices(new tool::AudioStreamChoices),
       mpAudBankChoices(new tool::AudioBankChoices), mpTexChoices(new tool::TextureChoices),
       mpScriptChoices(new tool::ScriptChoices), mpArchChoices(new ArchetypeChoices(*this)), mpChsmChoices(new tool::ChsmChoices),
       mpRefArchChoices(new RefArchetypeChoices), mpFxShaderChoices(new tool::FxShaderChoices), ConstructAutoSlot(ModelInvalidated),

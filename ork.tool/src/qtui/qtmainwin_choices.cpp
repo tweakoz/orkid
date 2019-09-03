@@ -189,7 +189,7 @@ void ModelChoices::EnumerateChoices(bool bforcenocache) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void CAnimChoices::EnumerateChoices(bool bforcenocache) {
+void AnimChoices::EnumerateChoices(bool bforcenocache) {
   clear();
 #if defined(USE_FCOLLADA)
   ColladaChoiceCache("data://", this, "xga", CColladaAsset::ECOLLADA_ANIM);
@@ -280,7 +280,7 @@ AudioBankChoices::AudioBankChoices() { EnumerateChoices(); }
 
 ModelChoices::ModelChoices() { EnumerateChoices(); }
 
-CAnimChoices::CAnimChoices() { EnumerateChoices(); }
+AnimChoices::AnimChoices() { EnumerateChoices(); }
 
 TextureChoices::TextureChoices() { EnumerateChoices(); }
 ScriptChoices::ScriptChoices() { EnumerateChoices(); }

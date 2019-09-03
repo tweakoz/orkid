@@ -85,7 +85,7 @@ enum ESF2Generators
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Ssfontpreset
+struct sfontpreset
 {
 	char achPresetName[20];	// 20
 	S16 wPreset;			// 22
@@ -95,7 +95,7 @@ struct Ssfontpreset
 	S32 dwGenre;			// 34
 	S32 dwMorphology;		// 38
 
-	Ssfontpreset()
+	sfontpreset()
 		: wPreset(0)
 		, wBank(0)
 		, wPresetBagNdx(0)
@@ -122,12 +122,12 @@ struct Ssfontpreset
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Ssfontinst
+struct sfontinst
 {
 	char achInstName[20];
 	U16 wInstBagNdx;
 
-	Ssfontinst()
+	sfontinst()
 		: wInstBagNdx(0)
 	{
 		for( int i=0; i<21; i++ )
@@ -151,7 +151,7 @@ struct Ssfontinst
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Ssfontsample
+struct sfontsample
 {
 	U8 achSampleName[20];	// 20
 	S32 dwStart;			// 24
@@ -168,7 +168,7 @@ struct Ssfontsample
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Ssfontinstbag
+struct sfontinstbag
 {
 	U16 wInstGenNdx;
 	U16 wInstModNdx;
@@ -177,7 +177,7 @@ struct Ssfontinstbag
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Ssfontprebag
+struct sfontprebag
 {
 	U16 wInstGenNdx;
 	U16 wInstModNdx;
@@ -186,7 +186,7 @@ struct Ssfontprebag
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct SSoundFontGenerator
+struct SoundFontGenerator
 {
 	U16 muGeneratorID;
 	S16 miGeneratorValue;
@@ -197,7 +197,7 @@ struct SSoundFontGenerator
 
 struct SF2Sample
 {
-	SF2Sample( Ssfontsample * smp = nullptr );
+	SF2Sample( sfontsample * smp = nullptr );
 
 	std::string name;
 
@@ -432,13 +432,13 @@ struct SoundFont
 
 	void SetName( const std::string Name ) { mSoundFontName = Name; }
 
-	void AddProgram( Ssfontpreset *preset );
-	void AddSample( Ssfontsample *sample );
-	void AddPresetGen( SSoundFontGenerator *pgn );
-	void AddInstrumentZone( Ssfontinstbag *ibg );
-	void AddInstrument( Ssfontinst *inst );
-	void AddInstrumentGen( SSoundFontGenerator *igen );
-	void AddProgramZone( Ssfontprebag *pbg );
+	void AddProgram( sfontpreset *preset );
+	void AddSample( sfontsample *sample );
+	void AddPresetGen( SoundFontGenerator *pgn );
+	void AddInstrumentZone( sfontinstbag *ibg );
+	void AddInstrument( sfontinst *inst );
+	void AddInstrumentGen( SoundFontGenerator *igen );
+	void AddProgramZone( sfontprebag *pbg );
 
 	inline void Process( void )
 	{
@@ -508,9 +508,9 @@ struct SoundFont
 	std::vector<SF2Sample *>			mPXMSamples;
 	std::vector<SF2Instrument *>		mPXMInstruments;
 	std::vector<SF2ProgramZone *>		mPXMProgramZones;
-	std::vector<SSoundFontGenerator *>	mPXMPresetGen;
+	std::vector<SoundFontGenerator *>	mPXMPresetGen;
 	std::vector<InstrumentZone *>	mPXMInstrumentZones;
-	std::vector<SSoundFontGenerator *>	mPXMInstrumentGen;
+	std::vector<SoundFontGenerator *>	mPXMInstrumentGen;
 
 	//std::vector<S16>					mSampleData;
 
