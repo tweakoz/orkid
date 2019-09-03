@@ -1304,9 +1304,7 @@ void SceneEditorBase::SlotNewObject(ork::Object* pobj) {
 }
 
 void SceneEditorBase::SlotPreNewObject() {
-  if (mpEditSceneInst) {
-    mpEditSceneInst->SetSceneInstMode(ESCENEMODE_EDIT);
-  }
+  StopLocalReq();
 }
 
 void SceneEditorBase::SlotModelInvalidated() { SigSceneTopoChanged(); }

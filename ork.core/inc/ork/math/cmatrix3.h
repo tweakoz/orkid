@@ -81,7 +81,6 @@ public:
   void InverseTranspose();
   void Inverse(void);
   void Normalize(void);
-  // void GEMSInverse( const Matrix33<T> &in );
 
   void CorrectionMatrix(const Matrix33<T>& from, const Matrix33<T>& to);
   void SetRotation(const Matrix33<T>& from);

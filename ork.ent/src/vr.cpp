@@ -143,7 +143,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase
         for( auto item : controllers ){
 
           auto c = item.second;
-          fmtx4 ivomatrix; ivomatrix.GEMSInverse(_viewOffsetMatrix);
+          fmtx4 ivomatrix; ivomatrix.inverseOf(_viewOffsetMatrix);
 
           fmtx4 scalemtx;
           scalemtx.SetScale(c._button1down ? 0.05 : 0.025 );
@@ -261,8 +261,8 @@ struct VRSYSTEMIMPL {
 
           _posemap["projl"] = proj_mtx_l;
           _posemap["projr"] = proj_mtx_r;
-          _posemap["eyel"].GEMSInverse(eyep_mtx_l);
-          _posemap["eyer"].GEMSInverse(eyep_mtx_r);
+          _posemap["eyel"].inverseOf(eyep_mtx_l);
+          _posemap["eyer"].inverseOf(eyep_mtx_r);
     }
     else {
         printf( "VR NOT INITIALIZED for some reason...\n");
@@ -698,7 +698,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
           fmtx4 inverse;
           fmtx4 transpose = orkmtx;
           transpose.Transpose();
-          inverse.GEMSInverse(orkmtx);
+          inverse.inverseOf(orkmtx);
           vrimpl->_poseMatrices[dev_index] = orkmtx;
     			//if (vrimpl->_devclass[dev_index]==0){
     				switch (hmd->GetTrackedDeviceClass(dev_index)){
@@ -727,7 +727,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
     		}
     	}
       if ( vrimpl->_trackedPoses[vr::k_unTrackedDeviceIndex_Hmd].bPoseIsValid ){
-    		vrimpl->_posemap["hmd"].GEMSInverse(vrimpl->_poseMatrices[vr::k_unTrackedDeviceIndex_Hmd]);
+    		vrimpl->_posemap["hmd"].inverseOf(vrimpl->_poseMatrices[vr::k_unTrackedDeviceIndex_Hmd]);
     	}
 
       //printf( "pose_classes<%s>\n", pose_classes.c_str() );

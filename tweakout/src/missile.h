@@ -30,7 +30,7 @@ class MissileControllerData : public ent::ComponentData
 
 public:
 
-	virtual ent::ComponentInst* createComponent(ent::Entity* pent) const;
+	virtual ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 	ork::ent::ArchetypeAsset* GetExplosionArchetype() const { return mpExplosionArchAsset; }
 
 	MissileControllerData();
@@ -85,7 +85,7 @@ class MissileControllerInst : public ent::ComponentInst
 	fvec3 mPosition;
 	fvec3 ZNormal;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	virtual void DoUpdate(ent::SceneInst* sinst) final;
 
 	void CalcForces( float fddt );
 
@@ -100,7 +100,7 @@ public:
 	MissileControllerInst( const MissileControllerData& pcd, ork::ent::Entity* pent );
 
 	void SetTarget( ITarget* pt ) { mTarget=pt; }
-	
+
 	ent::RigidBody& RigidBody() { return mRigidBody; }
 	const ent::RigidBody& RigidBody() const { return mRigidBody; }
 };
@@ -108,4 +108,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-

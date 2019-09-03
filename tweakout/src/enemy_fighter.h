@@ -30,7 +30,7 @@ class FighterControllerData : public ent::ComponentData
 
 public:
 
-	virtual ent::ComponentInst* createComponent(ent::Entity* pent) const;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	FighterControllerData();
 };
@@ -59,10 +59,10 @@ class FighterControllerInst : public ent::ComponentInst
 
 	enum ESTATE
 	{
-		ESTATE_RESET = 0,		
-		ESTATE_PLACEMENT,		
-		ESTATE_DODGE,		
-		ESTATE_ATTACK,		
+		ESTATE_RESET = 0,
+		ESTATE_PLACEMENT,
+		ESTATE_DODGE,
+		ESTATE_ATTACK,
 	};
 
 	const FighterControllerData&	mCD;
@@ -86,7 +86,7 @@ class FighterControllerInst : public ent::ComponentInst
 	fvec3 mPosition;
 	fvec3 ZNormal;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	virtual void DoUpdate(ent::SceneInst* sinst) final;
 
 	void CalcForces( float fddt );
 
@@ -114,4 +114,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 }}
 ///////////////////////////////////////////////////////////////////////////////
-

@@ -608,7 +608,8 @@ public:
 
 	static orkset<GedVP*> gAllViewports;
 	void SetDims( int iw, int ih );
-
+  void onInvalidate();
+  
 private:
 
 	void DoRePaintSurface(ui::DrawEvent& drwev) override;

@@ -232,7 +232,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   mRenderLock = 1;
 
   bool bFX = false;
-  auto pCMCI = GetCMCI();
+  auto pCMCI = compositingSystem();
   if (GetSceneInst()) {
     ent::ESceneInstMode emode = GetSceneInst()->GetSceneInstMode();
     if (pCMCI)
@@ -405,9 +405,9 @@ void SceneEditorVP::FrameRenderer::Render() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-ent::CompositingSystem* SceneEditorVP::GetCMCI() {
+ent::CompositingSystem* SceneEditorVP::compositingSystem() {
   auto psi = mEditor.GetActiveSceneInst();
-  return (psi != nullptr) ? psi->GetCMCI() : nullptr;
+  return (psi != nullptr) ? psi->compositingSystem() : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -552,7 +552,7 @@ void SceneEditorVP::QueueSceneInstToDb(ent::DrawableBuffer* pDB) // Queue SceneD
 
 const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp) {
   const CompositingGroup* pCG = 0;
-  if (ent::CompositingSystem* pCMCI = GetCMCI()) {
+  if (ent::CompositingSystem* pCMCI = compositingSystem()) {
     const CompositingSystemData& CCD = pCMCI->systemData();
     auto& Groups = CCD.GetGroups();
     int inumgroups = Groups.size();
@@ -609,7 +609,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
 
   CompositingPassData NODE = cstack->top();
 
-  ent::CompositingSystem* pCMCI = GetCMCI();
+  ent::CompositingSystem* pCMCI = compositingSystem();
 
   ///////////////////////////////////////////////////////////////////////////
   // camera setup

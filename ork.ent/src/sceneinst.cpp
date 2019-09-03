@@ -157,7 +157,7 @@ SceneInst::~SceneInst() {
 }
 ///////////////////////////////////////////////////////////////////////////
 
-CompositingSystem* SceneInst::GetCMCI() {
+CompositingSystem* SceneInst::compositingSystem() {
   if (nullptr == _cachedComSys) {
     _cachedComSys = findSystem<CompositingSystem>();
   }
@@ -173,7 +173,7 @@ float SceneInst::random(float mmin, float mmax) {
 
 ///////////////////////////////////////////////////////////////////////////////
 float SceneInst::ComputeDeltaTime() {
-  auto cmci = GetCMCI();
+  auto cmci = compositingSystem();
   float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
 
   AssertOnOpQ2(UpdateSerialOpQ());
@@ -1119,7 +1119,7 @@ void SceneInst::Update() {
       // Update Components
       ///////////////////////////////
 
-      auto cmci = GetCMCI();
+      auto cmci = compositingSystem();
       float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
       bool externally_fixed_rate = (frame_rate != 0.0f);
 

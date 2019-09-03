@@ -40,7 +40,7 @@ class EnemySpawnerControllerData : public ent::ComponentData
 
 public:
 
-	virtual ent::ComponentInst* createComponent(ent::Entity* pent) const;
+  virtual ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	EnemySpawnerControllerData();
 	int GetDebug() const { return mDebug; }
@@ -69,7 +69,7 @@ struct HotSpot
 	int									miX, miZ;
 
 	HotSpot();
-	
+
 	//void AddFighter(FighterControllerInst*fci);
 	//void RemoveFighter(FighterControllerInst*fci);
 	fvec3 RequestPosition();
@@ -94,7 +94,7 @@ struct HotSpotController
 	WorldControllerInst*				mWCI;
 
 	void ReadSurface( const fvec3& xyz, fvec3& pos, fvec3& normal ) const;
-	
+
 	HotSpotController();
 
 	void UpdateHotSpotLinks();
@@ -165,10 +165,10 @@ public:
 class EnemySpawnerArchetype : public ork::ent::Archetype
 {
 	RttiDeclareAbstract( EnemySpawnerArchetype, ent::Archetype );
-		
-	/*virtual*/ void DoCompose();
-	/*virtual*/ void DoLinkEntity( const ent::SceneInst* psi, ent::Entity *pent ) const;
-	/*virtual*/ void DoStartEntity( const ent::SceneInst* psi, const ork::fmtx4& mtx, ent::Entity *pent ) const {}
+
+	void DoCompose(ork::ent::ArchComposer& composer) final;
+	void DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) const final;
+	void DoStartEntity( ent::SceneInst* psi, const ork::fmtx4& mtx, ent::Entity *pent ) const final {}
 
 public:
 

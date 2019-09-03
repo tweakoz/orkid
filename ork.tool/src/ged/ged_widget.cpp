@@ -123,13 +123,13 @@ void GedWidget::PropertyInvalidated( ork::Object* pobj, const reflect::IObjectPr
 void GedWidget::SlotRepaint( )
 {
 	//printf( "GedWidget::SlotRepaint\n" );
-	GetViewport()->MarkSurfaceDirty();
+  GetViewport()->onInvalidate();
 }
 
 void GedWidget::SlotModelInvalidated( )
 {
 	//printf( "GedWidget::SlotModelInvalidated\n" );
-	GetViewport()->MarkSurfaceDirty();
+  GetViewport()->onInvalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////////

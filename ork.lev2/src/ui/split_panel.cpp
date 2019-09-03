@@ -176,19 +176,21 @@ void SplitPanel::DoLayout()
 
 HandlerResult SplitPanel::DoRouteUiEvent( const Event& Ev )
 {
-	//printf( "Panel::DoRouteUiEvent mPanelUiState<%d>\n", mPanelUiState );
+	printf( "Panel::DoRouteUiEvent xy<%d %d> mPanelUiState<%d>\n", Ev.miX, Ev.miY, mPanelUiState );
 
 	if( mChild1 && mChild1->IsEventInside(Ev) && mPanelUiState==0 )
 	{
+    printf( "Child1\n");
 		HandlerResult res = mChild1->RouteUiEvent(Ev);
 		if( res.mHandler != nullptr )
-			return res;	
+			return res;
 	}
 	else if( mChild2 && mChild2->IsEventInside(Ev) && mPanelUiState==0 )
 	{
+    printf( "Child2\n");
 		HandlerResult res = mChild2->RouteUiEvent(Ev);
 		if( res.mHandler != nullptr )
-			return res;	
+			return res;
 	}
 
 	return OnUiEvent(Ev);
@@ -268,11 +270,11 @@ HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 
 			bool is_splitter = (fabs(funity-mSplitVal)<funitks)
 							&& (ilocy<(miH-kpanelw*2));
-			
+
 			is_splitter &= (ilocx>kpanelw)&&(ilocx<(miW-kpanelw)); // x check
 
 			//printf( "ilocy<%d> funity<%f> funitks<%f> mSplitVal<%f> is_splitter<%d> b0<%d>\n", ilocy, funity, funitks, mSplitVal, int(is_splitter), int(filtev.mBut0) );
-			
+
 			if( filtev.mBut0 )
 			{
 				if(     mEnableCloseButton
@@ -282,7 +284,7 @@ HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 					&& ((ilocy-mCloseY)<kpanelw)
 					)
 				{
-					auto lamb = [=]() 
+					auto lamb = [=]()
 					{	delete this;
 					};
 					Op(lamb).QueueASync(MainThreadOpQ());
@@ -346,7 +348,7 @@ HandlerResult SplitPanel::DoOnUiEvent( const Event& Ev )
 			SetSize(iprevpw+dx,iprevph);
 			break;
 		case 6: // set splitter
-		{	
+		{
 			mSplitVal = float(ilocy-ksplith)/float(miH);
 			DoLayout();
 			SetDirty();
@@ -369,5 +371,3 @@ void SplitPanel::DoOnExit()
 }
 
 }} // namespace ork { namespace ui {
-
-

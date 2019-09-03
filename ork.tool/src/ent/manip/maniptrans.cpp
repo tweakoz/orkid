@@ -35,7 +35,7 @@ ManipSingleTrans::ManipSingleTrans(ManipManager& mgr)
 ManipDualTrans::ManipDualTrans(ManipManager& mgr)
 	: ManipTrans(mgr)
 {
-	
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -51,7 +51,7 @@ ManipTY::ManipTY(ManipManager& mgr)
 	: ManipSingleTrans(mgr)
 {
 	mColor = fcolor4::Green();
-} 
+}
 
 ManipTZ::ManipTZ(ManipManager& mgr)
 	: ManipSingleTrans(mgr)
@@ -82,7 +82,7 @@ ManipTYZ::ManipTYZ(ManipManager& mgr)
 ////////////////////////////////////////////////////////////////////////////////
 
 bool ManipTrans::UIEventHandler( const ui::Event& EV )
-{	
+{
 	ork::fvec2 cm = EV.GetUnitCoordBP();
 
 	//printf( "ManipTrans<%p>::UIEventHandler() evcod<%d>\n", this, int(pEV->miEventCode) );
@@ -133,7 +133,7 @@ void ManipTrans::HandleMouseUp(const ork::fvec2& pos)
 
 void ManipTrans::HandleDrag(const ork::fvec2& pos)
 {
-	
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -177,13 +177,13 @@ void ManipSingleTrans::DrawAxis(GfxTarget* pTARG) const
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-void ManipSingleTrans::Draw( GfxTarget *pTARG ) const 
-{	
+void ManipSingleTrans::Draw( GfxTarget *pTARG ) const
+{
 	fmtx4 Mat;
 	fmtx4 VisMat;
 	fmtx4 MatT;
 	fmtx4 MatS;
-	fmtx4 MatR; 
+	fmtx4 MatR;
 	fvec3 pos;
 	fquat rot;
 	float scale;
@@ -228,7 +228,7 @@ void ManipSingleTrans::Draw( GfxTarget *pTARG ) const
 		{
 			ColorScale = 0.3f;
 		}
-		
+
 	}
 
 	////////////////////
@@ -237,7 +237,7 @@ void ManipSingleTrans::Draw( GfxTarget *pTARG ) const
 
 	fmtx4 MatCur;
 	fquat neg_rot;
-	
+
 	//mManager.mCurTransform.GetMatrix(MatCur);
 	//MatCur.DecomposeMatrix(pos, rot, scale);
 
@@ -259,7 +259,7 @@ void ManipSingleTrans::Draw( GfxTarget *pTARG ) const
 
 	Mat = mmRotModel * MatCur;
 
-	fcolor4 ModColor = pTARG->RefModColor(); 
+	fcolor4 ModColor = pTARG->RefModColor();
 
 	pTARG->MTXI()->PushMMatrix(Mat);
 	pTARG->PushModColor( ModColor*ColorScale );
@@ -295,14 +295,13 @@ void ManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 	bool bisect = CheckIntersect();
 	//printf( "bisect<%d>\n", int(bisect) );
 	if (  bisect )
-	{	
+	{
 		fvec3 isect = mActiveIntersection->mIntersectionPoint;
 
 		fmtx4 mtx_bas;
 		fmtx4 mtx_inv;
 		mBaseTransform.GetMatrix(mtx_bas);
-		mtx_inv = mtx_bas;
-		mtx_inv.Inverse();
+		mtx_inv.inverseOf(mtx_bas);
 
 		fvec3 isect_loc = isect.Transform( mtx_inv );
 
@@ -321,8 +320,8 @@ void ManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 			isect_loc.SetX(0.0f);
 			isect_loc.SetY(0.0f);
 		}
-			
-		fvec3 isect_wld = isect_loc.Transform(mtx_bas); 
+
+		fvec3 isect_wld = isect_loc.Transform(mtx_bas);
 
 		if(pcam->mCameraData.GetFrustum().Contains(isect_wld))
 		{
@@ -336,7 +335,7 @@ void ManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 ////////////////////////////////////////////////////////////////////////////////
 
 void ManipDualTrans::Draw(GfxTarget *pTARG ) const
-{	
+{
 	fmtx4 MatCur;
 	fvec3 pos;
 	fquat rot;
@@ -374,12 +373,12 @@ void ManipDualTrans::HandleDrag(const ork::fvec2& pos)
 	ork::fquat rot;
 	float scale = 1.0f;
 	tform.ComposeMatrix(pos, rot, scale);
-	tform.GEMSInverse(tform);
+	tform.inverseOf(tform);
 
-	ork::fvec3 snear = pVP->UnProject(ork::fvec3(start.GetX(), start.GetY(), 0), 
+	ork::fvec3 snear = pVP->UnProject(ork::fvec3(start.GetX(), start.GetY(), 0),
 		proj, view, ork::fmtx4::Identity);
 
-	ork::fvec3 sfar = pVP->UnProject(ork::fvec3(start.GetX(), start.GetY(), 1), 
+	ork::fvec3 sfar = pVP->UnProject(ork::fvec3(start.GetX(), start.GetY(), 1),
 		proj, view, ork::fmtx4::Identity);
 
 	ork::fvec3 enear = pVP->UnProject(ork::fvec3(end.GetX(), end.GetY(), 0),

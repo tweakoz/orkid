@@ -181,7 +181,7 @@ void WiiMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hWMatrix, pTARG->MTXI()->RefMMatrix());
 
   fmtx4 iwmat;
-  iwmat.GEMSInverse(pTARG->MTXI()->RefMVMatrix());
+  iwmat.inverseOf(pTARG->MTXI()->RefMVMatrix());
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hIWMatrix, iwmat);
 
   pTARG->FXI()->BindParamMatrixArray(hshader, mMaterial->hBoneMatrices, Matrices, (int)inumbones);

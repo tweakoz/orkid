@@ -1020,7 +1020,7 @@ void Engine::InitRender( fvec3& eye, fvec3& target )
 	
 	const fmtx4 matVP = (mtxLookat*mtxP);
 	fmtx4 matIVP;
-	matIVP.GEMSInverse(matVP);
+	matIVP.inverseOf(matVP);
 
 	// set eye and screen plane position
 	mEye = eye;

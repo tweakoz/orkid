@@ -119,9 +119,9 @@ public:
 
 	heightfield_ed_component();
 
-	virtual bool PostDeserialize(reflect::IDeserializer &);
+	bool PostDeserialize(reflect::IDeserializer &) final;
 
-	virtual ent::ComponentInst* createComponent(ent::Entity* pent) const;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	sheightfield_iface_editor& GetHfIf() { return mhfif; }
 	const sheightfield_iface_editor& GetHfIf() const { return mhfif; }
@@ -132,7 +132,7 @@ public:
 class heightfield_ed_inst : public ent::ComponentInst
 {
 	RttiDeclareAbstract( heightfield_ed_inst, ent::ComponentInst );
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	void DoUpdate(ent::SceneInst* sinst) final;
 
 	const heightfield_ed_component& mHEC;
 
