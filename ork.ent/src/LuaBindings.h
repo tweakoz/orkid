@@ -8,6 +8,7 @@ extern "C" {
 
 #include <cxxabi.h>
 #include "LuaIntf/LuaIntf.h"
+#include <map>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
@@ -22,6 +23,10 @@ struct ScriptVar
 	void fromLua(lua_State* L, int index);
 	void pushToLua(lua_State* L) const;
 
+};
+struct ScriptTable
+{
+  std::map<std::string,ScriptVar> _items;
 };
 
 struct LuaSystem

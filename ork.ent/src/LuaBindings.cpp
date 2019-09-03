@@ -75,8 +75,28 @@ void ScriptVar::fromLua(lua_State* L, int index) {
       _encoded.Set<bool>(lua_toboolean(L, index));
       break;
     case LUA_TSTRING: {
-      size_t length = 0;
-      _encoded.Set<std::string>(luaL_tolstring(L, index, &length));
+      _encoded.Set<std::string>(lua_tostring(L, index));
+      break;
+    }
+    case LUA_TLIGHTUSERDATA: {
+      _encoded.Set<void*>(lua_touserdata(L, index));
+      break;
+    }
+    case LUA_TTABLE: {
+      auto table = _encoded.Make<ScriptTable>();
+      ScriptVar key, val;
+      lua_pushnil(L);
+      while(lua_next(L, -2) != 0) {
+          key.fromLua(L,-2);
+          val.fromLua(L,-1);
+          if( auto as_str = key._encoded.TryAs<std::string>() ){
+            table._items[as_str.value()]=val;
+          }
+          else{
+            assert(false);
+          }
+          lua_pop(L, 1);
+      }
       break;
     }
     default:
@@ -105,6 +125,9 @@ void ScriptVar::pushToLua(lua_State* L) const {
 	}
 	else if( auto as_number = _encoded.TryAs<int32_t>() ){
 		lua_pushnumber(L, double(as_number.value()) );
+	}
+  else if( auto as_vstar = _encoded.TryAs<void*>() ){
+		lua_pushlightuserdata (L, as_vstar.value() );
 	}
 	else {
 		lua_pushnil(L);
@@ -197,11 +220,11 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                      auto clazz = ci->GetClass();
                      auto cn = clazz->Name();
                      printf("query\n");
-                     event::VEvent vev;
-                     vev.mCode = AddPooledString(evcode);
-                     vev.mData = evdata._encoded;
+                     ComponentQuery q;
+                     q._eventID = evcode;
+                     q._eventData = evdata._encoded;
 										 ScriptVar rval;
-										 rval._encoded = ci->query(&vev);
+										 rval._encoded = ci->query(q);
 										 return rval;
                    })
       ////////////////////////////////////////
