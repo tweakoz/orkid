@@ -45,9 +45,22 @@ namespace ork::ent {
     }
     return false;
   }
-  svar64_t InputComponent::doQuery(const ork::event::Event* q) {
+  svar64_t InputComponent::doQuery(const ComponentQuery& q) {
     svar64_t rval;
-    rval.Set<std::string>("gyeah..");
+    if(q._eventID == "get.group"){
+      auto grpname = q._eventData.Get<std::string>();
+      auto grp = lev2::InputManager::inputGroup(grpname);
+      rval.Set<lev2::InputGroup*>(grp);
+    }
+    else if(q._eventID == "read"){
+      auto grp = static_cast<lev2::InputGroup*>(q._eventData.Get<void*>());
+      assert(grp!=nullptr);
+      //rval.Set<bool>(grp->);
+    }
+    else{
+      printf( "invalid evid<%s>\n", q._eventID.c_str() );
+      assert(false);
+    }
     return rval;
   }
 

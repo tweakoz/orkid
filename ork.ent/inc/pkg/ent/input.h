@@ -43,7 +43,7 @@ protected:
   }
 
   bool DoNotify(const ork::event::Event* event) final;
-  svar64_t doQuery(const ork::event::Event* q) final;
+  svar64_t doQuery(const ComponentQuery& q) final;
 
 
 };

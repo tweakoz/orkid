@@ -27,7 +27,8 @@ function TerPlayer:OnEntityActivate()
     self.timer = 1.0
     self.input:sendEvent("whatup",{
     })
-
+    self.hands = self.input:query("get.group","hands")
+    printf( "hands group<%s>",tostring(self.hands))
 end
 -------------------------------------------------------------------------------
 function TerPlayer:OnEntityDeactivate()
@@ -39,7 +40,10 @@ function TerPlayer:OnEntityUpdate(dt)
     if self.timer<0 then
         self.timer = math.random(1,3)
     end
-    local ltrigger = self.input:query("whatup","dude")
+    local ltrigger = self.input:query("read",{
+      grp=self.hands,
+      channel="left.trigger"
+    })
     printf( "TERPLAYER::ltrigger %s", ltrigger )
 end
 -------------------------------------------------------------------------------

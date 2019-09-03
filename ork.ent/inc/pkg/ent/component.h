@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "componentfamily.h"
-#include <ork/event/EventListener.h>
+#include <ork/event/Event.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/object/Object.h>
 #include "system.h"
@@ -78,9 +78,13 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ComponentQuery {
+    std::string _eventID;
+    svar64_t _eventData;
+};
+
 class ComponentInst : public Object {
   RttiDeclareAbstract(ComponentInst, Object);
-
 public:
   void SetEntity(Entity *entity) { mEntity = entity; }
   Entity *GetEntity() { return mEntity; }
@@ -107,7 +111,7 @@ public:
     return (mComponentData != 0) ? mComponentData->GetShortSelector() : 0;
   }
 
-  svar64_t query(const ork::event::Event* q) { return doQuery(q); }
+  svar64_t query(const ComponentQuery& q) { return doQuery(q); }
 
 protected:
   ComponentInst(const ComponentData *data, Entity *entity);
@@ -116,7 +120,7 @@ protected:
 
 private:
   bool DoNotify(const ork::event::Event *event) override { return false; }
-  virtual svar64_t doQuery(const ork::event::Event* q) { return svar64_t(); }
+  virtual svar64_t doQuery(const ComponentQuery& q) { return svar64_t(); }
 
   virtual void DoUpdate(SceneInst *inst) {}
   virtual bool DoStart(SceneInst *psi, const fmtx4 &world) { return true; }
