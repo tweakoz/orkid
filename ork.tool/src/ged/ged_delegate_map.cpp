@@ -138,7 +138,7 @@ bool MapTraverseSerializer::Serialize(const int &value)
 
 	if( iskey )
 	{
-		CPropType<int>::ToString( value, mKeyString );
+		PropType<int>::ToString( value, mKeyString );
 		mKeyDeco = KeyDecoName( mKeyString.c_str(), miMultiIndex );
 		mMapNode.AddKey( mKeyDeco );
 	}
@@ -158,7 +158,7 @@ bool MapTraverseSerializer::Serialize(const float &value)
 
 	if( iskey )
 	{
-		CPropType<float>::ToString( value, mKeyString );
+		PropType<float>::ToString( value, mKeyString );
 		mKeyDeco = KeyDecoName( mKeyString.c_str(), miMultiIndex );
 		mMapNode.AddKey( mKeyDeco );
 		//OrkAssertNotImpl();

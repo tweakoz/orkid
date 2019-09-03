@@ -196,9 +196,9 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
                 }
 				mdl->mSkeleton.AddJoint( iskelindex , iparentindex, AddPooledString(jnamp.c_str()) );
 				ptstring.set(chunkreader.GetString(ijointmatrix));
-				mdl->mSkeleton.RefJointMatrix( iskelindex ) = CPropType<fmtx4>::FromString(ptstring);
+				mdl->mSkeleton.RefJointMatrix( iskelindex ) = PropType<fmtx4>::FromString(ptstring);
 				ptstring.set(chunkreader.GetString(iinvrestmatrix));
-				mdl->mSkeleton.RefInverseBindMatrix( iskelindex ) = CPropType<fmtx4>::FromString(ptstring);
+				mdl->mSkeleton.RefInverseBindMatrix( iskelindex ) = PropType<fmtx4>::FromString(ptstring);
 			}
 		}
 		///////////////////////////////////
@@ -269,7 +269,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 				pmat->SetName( AddPooledString(pmatname) );
 				HeaderStream->GetItem( iblendmode );
 				const char* blendmodestring = chunkreader.GetString(iblendmode);
-				lev2::EBlending eblend = CPropType<lev2::EBlending>::FromString( blendmodestring );
+				lev2::EBlending eblend = PropType<lev2::EBlending>::FromString( blendmodestring );
 				lev2::RenderQueueSortingData& rqdata = pbasmat->GetRenderQueueSortingData();
 
 				if( (eblend!=lev2::EBLENDING_OFF) )
@@ -324,31 +324,31 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					switch( ept )
 					{	case EPROPTYPE_VEC2REAL:
 						{	GfxMaterialFxParamArtist<fvec2> *paramf = new GfxMaterialFxParamArtist<fvec2>;
-							paramf->mValue = CPropType<fvec2>::FromString( paramval );
+							paramf->mValue = PropType<fvec2>::FromString( paramval );
 							param = paramf;
 							break;
 						}
 						case EPROPTYPE_VEC3FLOAT:
 						{	GfxMaterialFxParamArtist<fvec3> *paramf = new GfxMaterialFxParamArtist<fvec3>;
-							paramf->mValue = CPropType<fvec3>::FromString( paramval );
+							paramf->mValue = PropType<fvec3>::FromString( paramval );
 							param = paramf;
 							break;
 						}
 						case EPROPTYPE_VEC4REAL:
 						{	GfxMaterialFxParamArtist<fvec4> *paramf = new GfxMaterialFxParamArtist<fvec4>;
-							paramf->mValue = CPropType<fvec4>::FromString( paramval );
+							paramf->mValue = PropType<fvec4>::FromString( paramval );
 							param = paramf;
 							break;
 						}
 						case EPROPTYPE_MAT44REAL:
 						{	GfxMaterialFxParamArtist<fmtx4> *paramf = new GfxMaterialFxParamArtist<fmtx4>;
-							paramf->mValue = CPropType<fmtx4>::FromString( paramval );
+							paramf->mValue = PropType<fmtx4>::FromString( paramval );
 							param = paramf;
 							break;
 						}
 						case EPROPTYPE_REAL:
 						{	GfxMaterialFxParamArtist<float> *paramf = new GfxMaterialFxParamArtist<float>;
-							paramf->mValue = CPropType<float>::FromString( paramval );
+							paramf->mValue = PropType<float>::FromString( paramval );
 							param = paramf;
 							orkprintf( "ModelIO::LoadFloatParam mdl<> param<%s> val<%s>\n",paramname, paramval );
 							break;
@@ -358,7 +358,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 							////////////////////////////////////////////////////////
 							// read artist supplied renderqueue sorting key
 							////////////////////////////////////////////////////////
-							int ival = CPropType<int>::FromString( paramval );
+							int ival = PropType<int>::FromString( paramval );
 							if( strcmp(paramname,"ork_rqsort") == 0 )
 							{
 								rqdata.miSortingOffset = ival;
@@ -428,7 +428,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 			{	int itexdest = -1;
 				HeaderStream->GetItem( itexdest );
 				const char* texdest = chunkreader.GetString(itexdest);
-				ETextureDest TexDest = CPropType<ETextureDest>::FromString( texdest );
+				ETextureDest TexDest = PropType<ETextureDest>::FromString( texdest );
 				TextureContext & TexCtx = pmat->GetTexture( TexDest );
 				int itexname;
 				HeaderStream->GetItem( itexname );
@@ -546,7 +546,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 					Clus.mBoundingSphere = Sphere( boxmin, boxmax );
 					////////////////////////////////////////////////////////////////////////
 					const char* vbfmt = chunkreader.GetString(ivbformat);
-					EVtxStreamFormat efmt = CPropType<EVtxStreamFormat>::FromString( vbfmt );
+					EVtxStreamFormat efmt = PropType<EVtxStreamFormat>::FromString( vbfmt );
 					//printf( "XGMLOAD vbfmt<%s> efmt<%d>\n", vbfmt, int(efmt) );
 					////////////////////////////////////////////////////////////////////////
 					// fix a bug in old files
@@ -597,7 +597,7 @@ bool XgmModel::LoadUnManaged( XgmModel * mdl, const AssetPath& Filename )
 						XgmPrimGroup & PG = Clus.RefPrimGroup(ipg);
 						HeaderStream->GetItem( ipgprimtype );
 						const char* primtype = chunkreader.GetString(ipgprimtype);
-						PG.mePrimType = CPropType<EPrimitiveType>::FromString( primtype );
+						PG.mePrimType = PropType<EPrimitiveType>::FromString( primtype );
 						HeaderStream->GetItem( PG.miNumIndices );
 
 						int idxdataoffset = -1;
@@ -741,11 +741,11 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 		HeaderStream->AddItem( istring  );
 
 		PropTypeString tstr;
-		CPropType<fmtx4>::ToString( JointMatrix, tstr );
+		PropType<fmtx4>::ToString( JointMatrix, tstr );
 		istring = chunkwriter.GetStringIndex(tstr.c_str());
 		HeaderStream->AddItem( istring  );
 
-		CPropType<fmtx4>::ToString( InvRestMatrix, tstr );
+		PropType<fmtx4>::ToString( InvRestMatrix, tstr );
 		istring = chunkwriter.GetStringIndex(tstr.c_str());
 		HeaderStream->AddItem( istring  );
 	}
@@ -831,7 +831,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 			lev2::EBlending eblend = pbasmat->mRasterState.GetBlending();
 
 			PropTypeString BlendModeString;
-			CPropType<lev2::EBlending>::ToString( eblend,BlendModeString );
+			PropType<lev2::EBlending>::ToString( eblend,BlendModeString );
 
 			istring = chunkwriter.GetStringIndex(BlendModeString.c_str());
 			HeaderStream->AddItem( istring  );
@@ -948,7 +948,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 			const lev2::TextureContext & TexCtx = pmat->GetTexture( edest );
 
 			PropTypeString tstr;
-			CPropType<lev2::ETextureDest>::ToString( edest, tstr );
+			PropType<lev2::ETextureDest>::ToString( edest, tstr );
 			std::string TexDest = tstr.c_str();
 
 			std::string TexName = "None";
@@ -1048,7 +1048,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 
 
 				PropTypeString tstr;
-				CPropType<lev2::EVtxStreamFormat>::ToString( VB->GetStreamFormat(), tstr );
+				PropType<lev2::EVtxStreamFormat>::ToString( VB->GetStreamFormat(), tstr );
 				std::string VertexFmt = tstr.c_str();
 
 				int32_t ivbufoffset = ModelDataStream->GetSize();
@@ -1083,7 +1083,7 @@ bool SaveXGM( const AssetPath& Filename, const lev2::XgmModel *mdl )
 				{
 					const lev2::XgmPrimGroup & PG = Clus.RefPrimGroup( ipg );
 
-					CPropType<lev2::EPrimitiveType>::ToString( PG.GetPrimType(), tstr );
+					PropType<lev2::EPrimitiveType>::ToString( PG.GetPrimType(), tstr );
 					std::string PrimType = tstr.c_str();
 
 					int32_t inumidx = PG.GetNumIndices();

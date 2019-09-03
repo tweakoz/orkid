@@ -26,7 +26,7 @@ Slider<T>::Slider( T& ParentW, datatype min, datatype max, datatype def )
 	, mmax(max)
 	, mbUpdateOnDrag(false)
 {
-	CPropType<datatype>::ToString( mval,mValStr );
+	PropType<datatype>::ToString( mval,mValStr );
 
 	datatype val = def;
 
@@ -36,7 +36,7 @@ Slider<T>::Slider( T& ParentW, datatype min, datatype max, datatype def )
 	float fx = mlogmode ? ValToLog(mval) : ValToLin(mval);
 	
 	PropTypeString outstr;
-	CPropType<datatype>::ToString( val, outstr );
+	PropType<datatype>::ToString( val, outstr );
 
 	mval = val;
 
@@ -133,7 +133,7 @@ void Slider<T>::SetVal( datatype val )
 	if( val>mmax ) val = mmax;
 	mval = val;
 	mParent.RefIODriver().SetValue( val );
-	CPropType<datatype>::ToString( mval,mValStr );
+	PropType<datatype>::ToString( mval,mValStr );
 	Refresh();
 }
 
@@ -174,7 +174,7 @@ void Slider<T>::OnUiEvent( const ork::ui::Event& ev ) // final
                 mval = dx;
                 if( mval<mmin ) mval = mmin;
                 if( mval>mmax ) mval = mmax;
-                CPropType<datatype>::ToString( mval,mValStr );
+                PropType<datatype>::ToString( mval,mValStr );
                 Refresh();
 
                 if( mbUpdateOnDrag )
@@ -207,7 +207,7 @@ void Slider<T>::OnUiEvent( const ork::ui::Event& ev ) // final
 
             //mIoDriver.GetValue(val);
             PropTypeString ptsg;
-            CPropType<datatype>::ToString( mval, ptsg );
+            PropType<datatype>::ToString( mval, ptsg );
 
             QString qstr = GedInputDialog::getText ( ev, & mParent, ptsg.c_str(), 2, 2, mParent.width()-3, iheight );
 
@@ -215,7 +215,7 @@ void Slider<T>::OnUiEvent( const ork::ui::Event& ev ) // final
             if( sstr.length() )
             {
                 PropTypeString pts( sstr.c_str() );
-                datatype val = CPropType<datatype>::FromString( pts );
+                datatype val = PropType<datatype>::FromString( pts );
                 if( val<mmin ) val = mmin;
                 if( val>mmax ) val = mmax;
                 mval = val;
@@ -480,7 +480,7 @@ void GedSimpleNode<IODriver,T>::OnUiEvent(const ork::ui::Event& ev)
 
         	mIoDriver.GetValue(val);
         	PropTypeString ptsg;
-        	CPropType<T>::ToString( val, ptsg );
+        	PropType<T>::ToString( val, ptsg );
 
         	ConstString anno_ucdclass = GetOrkProp()->GetAnnotation( "ged.userchoice.delegate" );
 
@@ -513,7 +513,7 @@ void GedSimpleNode<IODriver,T>::OnUiEvent(const ork::ui::Event& ev)
         						}
         						std::string valuestr = Chc->EvaluateValue();
         						PropTypeString pts( valuestr.c_str() );
-        						val = CPropType<T>::FromString( pts );
+        						val = PropType<T>::FromString( pts );
         						mIoDriver.SetValue(val);
         					}
         				}
@@ -526,7 +526,7 @@ void GedSimpleNode<IODriver,T>::OnUiEvent(const ork::ui::Event& ev)
         		std::string sstr = qstr.toStdString();
         		if( sstr.length() )
         		{	PropTypeString pts( sstr.c_str() );
-        			val = CPropType<T>::FromString( pts );
+        			val = PropType<T>::FromString( pts );
         			mIoDriver.SetValue(val);
         		}
         	}
@@ -553,7 +553,7 @@ void GedSimpleNode<IODriver,T>::DoDraw( lev2::GfxTarget* pTARG )
 	if( false==IsPickState )
 	{
 		PropTypeString pts;
-		CPropType<T>::ToString( val, pts );
+		PropType<T>::ToString( val, pts );
 		//////////////////////////////////////
 
 		GetSkin()->DrawText( this, miX+ilabw, ity, pts.c_str() );

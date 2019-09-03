@@ -340,19 +340,19 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CPolynomial {
+class Polynomial {
 public:
-  CPolynomial() {}
+  Polynomial() {}
 
-  CPolynomial Differentiate() const;
+  Polynomial Differentiate() const;
   void SetCoefs(const float* array);
   void SetCoefs(int i, float num);
   float GetCoefs(int i) const;
   float Evaluate(float val) const;
   float operator()(float val) const;
-  CPolynomial operator=(const CPolynomial& a);
-  CPolynomial operator+(const CPolynomial& a);
-  CPolynomial operator-(const CPolynomial& a);
+  Polynomial operator=(const Polynomial& a);
+  Polynomial operator+(const Polynomial& a);
+  Polynomial operator-(const Polynomial& a);
 
 private:
   float coefs[4];

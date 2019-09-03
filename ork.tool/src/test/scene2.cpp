@@ -283,7 +283,7 @@ TEST(SceneTortureTest)
 			EntityArchetypeVect.push_back( pent->GetArchetype()->GetName() );
 			const TransformNode3D& Node = GetEntityTransformNode(pent);
 			PropTypeString tstr;
-			CPropType<TransformNode3D>::ToString(Node,tstr);
+			PropType<TransformNode3D>::ToString(Node,tstr);
 			EntityTransforms.push_back( tstr.c_str() );
 		}
 		else if( pobj->GetClass()->IsSubclassOf( EntityArchetype::GetClassStatic() ) )
@@ -329,7 +329,7 @@ TEST(SceneTortureTest)
 			CHECK( pent->GetArchetype()->GetName() == EntityArchetypeVect[ ientidx ] );
 			const TransformNode3D& Node = GetEntityTransformNode(pent);
 			PropTypeString tstr;
-			CPropType<TransformNode3D>::ToString(Node,tstr);
+			PropType<TransformNode3D>::ToString(Node,tstr);
 			CHECK( 0 == strcmp( tstr.c_str(), EntityTransforms[ientidx].c_str() ) );
 
 			ientidx++;

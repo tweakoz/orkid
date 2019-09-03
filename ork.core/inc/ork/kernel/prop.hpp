@@ -15,7 +15,7 @@ namespace ork{
 
 // TODO: escape double-quotes in all strings
 
-template<typename T> void CPropType<T>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
+template<typename T> void PropType<T>::GetValueSet( const std::string * & ValueStrings, int & NumStrings )
 {	
 	NumStrings = 0;
 	ValueStrings = 0;
@@ -34,7 +34,7 @@ static U ConvInt2U( int iv )
 
 template<typename T>
 template <typename U>
-U CPropType<T>::FindValFromStrings( const std::string& String, const std::string Strings[], U defaultval )
+U PropType<T>::FindValFromStrings( const std::string& String, const std::string Strings[], U defaultval )
 {	U rval = defaultval;
 	int idx = 0;
 	while( idx>=0 )

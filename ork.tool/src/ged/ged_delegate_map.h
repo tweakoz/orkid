@@ -238,12 +238,12 @@ class MapKeyWriter : public reflect::serialize::LayerDeserializer
 	}
 	bool Deserialize(float &rval)
 	{	
-		rval = CPropType<float>::FromString(mIoDriver.mDecoKey.mActualKey);
+		rval = PropType<float>::FromString(mIoDriver.mDecoKey.mActualKey);
 		return true;
 	}
 	bool Deserialize(int &rval)
 	{	
-		rval = CPropType<int>::FromString(mIoDriver.mDecoKey.mActualKey);
+		rval = PropType<int>::FromString(mIoDriver.mDecoKey.mActualKey);
 		return true;
 	}
 public:

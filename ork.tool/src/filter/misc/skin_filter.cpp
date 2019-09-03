@@ -119,55 +119,55 @@ pXmlElement->NextSiblingElement())
         if( strcmp(pXmlElement->Value(), "DiffuseColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
+            fvec3 Color = PropType<fvec3>::FromString( DifColStr );
             pmdl->SetDiffuseColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "AmbientColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
+            fvec3 Color = PropType<fvec3>::FromString( DifColStr );
             pmdl->SetAmbientColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "SpecularColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
+            fvec3 Color = PropType<fvec3>::FromString( DifColStr );
             pmdl->SetSpecularColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "EmissiveColor") == 0 )
         {
             const PropTypeString DifColStr( pXmlElement->Attribute( "Val" ) );
-            fvec3 Color = CPropType<fvec3>::FromString( DifColStr );
+            fvec3 Color = PropType<fvec3>::FromString( DifColStr );
             pmdl->SetEmissiveColor( Color );
         }
         else if( strcmp(pXmlElement->Value(), "Light0") == 0 )
         {
             const PropTypeString Enable( pXmlElement->Attribute( "Val" ) );
-            bool bena = CPropType<bool>::FromString( Enable );
+            bool bena = PropType<bool>::FromString( Enable );
             pmdl->LightEnable( 0, bena );
         }
         else if( strcmp(pXmlElement->Value(), "Light1") == 0 )
         {
             const PropTypeString Enable( pXmlElement->Attribute( "Val" ) );
-            bool bena = CPropType<bool>::FromString( Enable );
+            bool bena = PropType<bool>::FromString( Enable );
             pmdl->LightEnable( 1, bena );
         }
         else if( strcmp(pXmlElement->Value(), "Light2") == 0 )
         {
             const PropTypeString Enable( pXmlElement->Attribute( "Val" ) );
-            bool bena = CPropType<bool>::FromString( Enable );
+            bool bena = PropType<bool>::FromString( Enable );
             pmdl->LightEnable( 2, bena );
         }
         else if( strcmp(pXmlElement->Value(), "Light3") == 0 )
         {
             const PropTypeString Enable( pXmlElement->Attribute( "Val" ) );
-            bool bena = CPropType<bool>::FromString( Enable );
+            bool bena = PropType<bool>::FromString( Enable );
             pmdl->LightEnable( 3, bena );
         }
         else if( strcmp(pXmlElement->Value(), "ToonShade") == 0 )
         {
             const PropTypeString Enable( pXmlElement->Attribute( "Val" ) );
-            bool bena = CPropType<bool>::FromString( Enable );
+            bool bena = PropType<bool>::FromString( Enable );
             pmdl->ToonShadingEnable( bena );
         }
         else
@@ -225,7 +225,7 @@ one action");
         evt->SetSoundName(CStringTable::RefTopStringTable().AddString(SoundOneShot));
         evt->SetSoundOn(true);
         evt->SetSoundLooping(false);
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 
     if( SoundLoopOn && X::SetParsed(parsed, pelem) )
@@ -234,7 +234,7 @@ one action");
         evt->SetSoundName(CStringTable::RefTopStringTable().AddString(SoundOneShot));
         evt->SetSoundOn(true);
         evt->SetSoundLooping(true);
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 
     if( SoundLoopOff && X::SetParsed(parsed, pelem) )
@@ -243,7 +243,7 @@ one action");
         evt->SetSoundName(CStringTable::RefTopStringTable().AddString(SoundOneShot));
         evt->SetSoundOn(false);
         evt->SetSoundLooping(true);
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 
     if( CollisionOn && X::SetParsed(parsed, pelem) )
@@ -251,7 +251,7 @@ one action");
         CollisionEvent* evt = OrkNew CollisionEvent();
         evt->SetObjectName(CStringTable::RefTopStringTable().AddString(CollisionOn));
         evt->SetActivate(true);
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 
     if( CollisionOff && X::SetParsed(parsed, pelem) )
@@ -259,28 +259,28 @@ one action");
         CollisionEvent* evt = OrkNew CollisionEvent();
         evt->SetObjectName(CStringTable::RefTopStringTable().AddString(CollisionOn));
         evt->SetActivate(false);
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 
     if( Explosion && X::SetParsed(parsed, pelem) )
     {
         ExplosionEvent* evt = OrkNew ExplosionEvent();
         evt->SetExplosionName(CStringTable::RefTopStringTable().AddString(Explosion));
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 
     if( Projectile && X::SetParsed(parsed, pelem) )
     {
         ProjectileEvent* evt = OrkNew ProjectileEvent();
         evt->SetProjectileName(CStringTable::RefTopStringTable().AddString(Projectile));
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 
     if( ComboWindow && X::SetParsed(parsed, pelem))
     {
         ComboWindowEvent* evt = OrkNew ComboWindowEvent();
         evt->SetComboWindowName(CStringTable::RefTopStringTable().AddString(ComboWindow));
-        ptab->AddEvent(CPropType<float>::FromString(Frame), evt);
+        ptab->AddEvent(PropType<float>::FromString(Frame), evt);
     }
 }
 
@@ -404,13 +404,13 @@ void ParseSphereNode( const TiXmlElement *pelem, EntitySkin & skin )
     if( 0 == OffsetVal ) throw SkinFilterMissingAttrErr( pelem->Row(), pelem->Column(), "Sphere", "Offset" );
 
     Joint =			JointVal;
-    TakeDamage =	CPropType<bool>::FromString( TakeDamageVal );
-    GiveDamage =	CPropType<bool>::FromString( GiveDamageVal );
-    StopMotion =	CPropType<bool>::FromString( StopMotionVal );
-    DefaultActive = CPropType<bool>::FromString( DefActiveVal );
-    Multiplier =	CPropType<float>::FromString( MultiplierVal );
-    Radius =		CPropType<float>::FromString( RadiusVal );
-    Offset =		CPropType<fvec3>::FromString( OffsetVal );
+    TakeDamage =	PropType<bool>::FromString( TakeDamageVal );
+    GiveDamage =	PropType<bool>::FromString( GiveDamageVal );
+    StopMotion =	PropType<bool>::FromString( StopMotionVal );
+    DefaultActive = PropType<bool>::FromString( DefActiveVal );
+    Multiplier =	PropType<float>::FromString( MultiplierVal );
+    Radius =		PropType<float>::FromString( RadiusVal );
+    Offset =		PropType<fvec3>::FromString( OffsetVal );
 
     skin.AddCollisionSphere( GroupName.c_str(), Joint.c_str(), Radius, Offset, TakeDamage, GiveDamage, StopMotion, Multiplier,
 DefaultActive );
@@ -421,7 +421,7 @@ static T ReadAttribute( const TiXmlElement *pelem, const char *node, const char 
 {
     const char *Val = pelem->Attribute( name );
     if( 0 == Val ) throw SkinFilterMissingAttrErr( pelem->Row(), pelem->Column(), node, name );
-    return CPropType<T>::FromString( Val );
+    return PropType<T>::FromString( Val );
 }
 
 void ParseCylinderNode( const TiXmlElement *pelem, EntitySkin & skin )

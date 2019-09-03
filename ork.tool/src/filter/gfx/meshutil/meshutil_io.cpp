@@ -167,7 +167,7 @@ FlatSubMesh::FlatSubMesh( const submesh& mesh )
 	mesh.FindNSidedPolys( QuadPolyIndices, 4 );
 
 	const char* vtxformat = mesh.GetAnnotation("OutVtxFormat");
-	evtxformat = CPropType<lev2::EVtxStreamFormat>::FromString( vtxformat );
+	evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat );
 
 	orkprintf( "vtxformat<%s>\n", vtxformat );
 	

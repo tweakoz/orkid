@@ -18,12 +18,12 @@
 namespace ork {
 template class Quaternion<float>;		// explicit template instantiation
 typedef class Quaternion<float> fquat;
-template<> const EPropType CPropType<fquat>::meType = EPROPTYPE_QUATERNION;
-template<> const char* CPropType<fquat>::mstrTypeName	= "QUATERNION";
+template<> const EPropType PropType<fquat>::meType = EPROPTYPE_QUATERNION;
+template<> const char* PropType<fquat>::mstrTypeName	= "QUATERNION";
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> void CPropType<fquat>::ToString( const fquat & Value, PropTypeString& tstr)
+template<> void PropType<fquat>::ToString( const fquat & Value, PropTypeString& tstr)
 {
 	const fquat & v = Value;
 
@@ -37,7 +37,7 @@ template<> void CPropType<fquat>::ToString( const fquat & Value, PropTypeString&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<> fquat CPropType<fquat>::FromString(const PropTypeString& String)
+template<> fquat PropType<fquat>::FromString(const PropTypeString& String)
 {
 	float m[4];
 	sscanf(String.c_str(), "%g %g %g %g",

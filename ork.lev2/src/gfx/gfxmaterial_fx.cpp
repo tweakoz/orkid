@@ -1222,56 +1222,56 @@ template<>
 std::string GfxMaterialFxParam<int>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<int>::ToString( GetValue(0), valstr );
+	PropType<int>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
 std::string GfxMaterialFxParam<float>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<float>::ToString( GetValue(0), valstr );
+	PropType<float>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
 std::string GfxMaterialFxParam<fvec2>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<fvec2>::ToString( GetValue(0), valstr );
+	PropType<fvec2>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
 std::string GfxMaterialFxParam<fvec3>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<fvec3>::ToString( GetValue(0), valstr );
+	PropType<fvec3>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
 std::string GfxMaterialFxParam<fvec4>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<fvec4>::ToString( GetValue(0), valstr );
+	PropType<fvec4>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
 std::string GfxMaterialFxParam<fmtx3>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<fmtx3>::ToString( GetValue(0), valstr );
+	PropType<fmtx3>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
 std::string GfxMaterialFxParam<fmtx4>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	CPropType<fmtx4>::ToString( GetValue(0), valstr );
+	PropType<fmtx4>::ToString( GetValue(0), valstr );
 	return valstr.c_str();
 }
 template<>
 std::string GfxMaterialFxParam<lev2::Texture *>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	//CPropType<Asset *>::ToString( (Asset *) GetValue(0), valstr );
+	//PropType<Asset *>::ToString( (Asset *) GetValue(0), valstr );
 	return valstr.c_str();
 }
 

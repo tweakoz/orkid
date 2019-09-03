@@ -129,9 +129,9 @@ void Normalise( XYZ *p )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CPolynomial CPolynomial::Differentiate() const
+Polynomial Polynomial::Differentiate() const
 {
-	CPolynomial result;
+	Polynomial result;
 
     result.SetCoefs(1, float(0));
     result.SetCoefs(2, coefs[0] * float(3));
@@ -141,36 +141,36 @@ CPolynomial CPolynomial::Differentiate() const
     return result;
 }
 
-void CPolynomial::SetCoefs(const float *array)
+void Polynomial::SetCoefs(const float *array)
 {
 	memcpy(coefs, array, 4 * sizeof(float));
 }
 
-void CPolynomial::SetCoefs(int i, float num)
+void Polynomial::SetCoefs(int i, float num)
 {
 	OrkAssert(i >= 1);
 	OrkAssert(i <= 4);
 	coefs[i-1] = num;
 }
 
-float CPolynomial::GetCoefs(int i) const
+float Polynomial::GetCoefs(int i) const
 {
 	OrkAssert(i >= 1);
 	OrkAssert(i <= 4);
 	return coefs[i-1];
 }
 
-float CPolynomial::Evaluate(float val) const
+float Polynomial::Evaluate(float val) const
 {
 	return (((coefs[0]) * val + coefs[1]) * val + coefs[2]) * val + coefs[3];
 }
 
-float CPolynomial::operator()(float val) const
+float Polynomial::operator()(float val) const
 {
 	return (((coefs[0]) * val + coefs[1]) * val + coefs[2]) * val + coefs[3];
 }
 
-CPolynomial CPolynomial::operator = ( const CPolynomial & a )
+Polynomial Polynomial::operator = ( const Polynomial & a )
 {
 	SetCoefs(1, a.GetCoefs(1));
 	SetCoefs(2, a.GetCoefs(2));
@@ -179,9 +179,9 @@ CPolynomial CPolynomial::operator = ( const CPolynomial & a )
 	return *this;
 }
 
-CPolynomial CPolynomial::operator + ( const CPolynomial & a )
+Polynomial Polynomial::operator + ( const Polynomial & a )
 {
-	CPolynomial result;
+	Polynomial result;
 	result.SetCoefs(1, a.GetCoefs(1) + coefs[0]);
 	result.SetCoefs(1, a.GetCoefs(2) + coefs[1]);
 	result.SetCoefs(1, a.GetCoefs(3) + coefs[2]);
@@ -190,9 +190,9 @@ CPolynomial CPolynomial::operator + ( const CPolynomial & a )
 
 }
 
-CPolynomial CPolynomial::operator - ( const CPolynomial & a )
+Polynomial Polynomial::operator - ( const Polynomial & a )
 {
-	CPolynomial result;
+	Polynomial result;
 	result.SetCoefs(1, a.GetCoefs(1) - GetCoefs(1));
 	result.SetCoefs(1, a.GetCoefs(2) - GetCoefs(2));
 	result.SetCoefs(1, a.GetCoefs(3) - GetCoefs(3));

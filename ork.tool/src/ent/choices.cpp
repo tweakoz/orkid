@@ -117,7 +117,7 @@ private:
 	virtual std::string ComputeValue( const std::string & ValueStr ) const{
 		Archetype *parch = 0;
 		PropTypeString tstr( ValueStr.c_str() );
-		Object* ValueObj = CPropType<Object*>::FromString( tstr );
+		Object* ValueObj = PropType<Object*>::FromString( tstr );
 
 		orkprintf( "ValueStr %s\n", ValueStr.c_str() );
 		orkprintf( "ValueObj %p\n", ValueObj );
@@ -163,7 +163,7 @@ private:
 			//parch->SetObjectFlag( CObject::EFLAGS_EXPANDED, true );
 		}
 
-		CPropType<Object*>::ToString( parch,tstr);
+		PropType<Object*>::ToString( parch,tstr);
 		return std::string(tstr.c_str());
 	}
 };
@@ -279,7 +279,7 @@ private:
 	virtual std::string ComputeValue( const std::string & ValueStr ) const{
 		SystemData *sdat = 0;
 		PropTypeString tstr( ValueStr.c_str() );
-		Object* ValueObj = CPropType<Object*>::FromString( tstr );
+		Object* ValueObj = PropType<Object*>::FromString( tstr );
 
 		orkprintf( "ValueStr %s\n", ValueStr.c_str() );
 		orkprintf( "ValueObj %p\n", ValueObj );
@@ -287,7 +287,7 @@ private:
 		if( ValueObj->GetClass()->IsSubclassOf( SystemData::GetClassStatic() ) ) {
 			sdat = rtti::autocast(ValueObj);
 		}
-		CPropType<Object*>::ToString( sdat,tstr);
+		PropType<Object*>::ToString( sdat,tstr);
 		return std::string(tstr.c_str());
 	}
 };
