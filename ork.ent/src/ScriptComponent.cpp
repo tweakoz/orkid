@@ -148,8 +148,6 @@ void ScriptComponentInst::onActivate(SceneInst* psi) {
 
 	if( scm && mScriptObject )
 	{
-		assert(false);
-
 		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
 		OrkAssert(asluasys);
 		auto L = asluasys->mLuaState;

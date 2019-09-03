@@ -39,7 +39,8 @@ function TerPlayer:OnEntityUpdate(dt)
     if self.timer<0 then
         self.timer = math.random(1,3)
     end
-    --printf( "TERPLAYER::OnEntityUpdate()::end" )
+    local ltrigger = self.input:query("whatup","dude")
+    printf( "TERPLAYER::ltrigger %s", ltrigger )
 end
 -------------------------------------------------------------------------------
 return TerPlayer

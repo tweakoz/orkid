@@ -41,10 +41,17 @@ namespace ork::ent {
 	{
     if(const ork::event::VEvent* vev = ork::rtti::autocast(event))
     {   const auto& LR = vev->mData.Get<LuaRef>();
-        assert(false);
+
     }
     return false;
   }
+  svar64_t InputComponent::doQuery(const ork::event::Event* q) {
+    svar64_t rval;
+    rval.Set<std::string>("gyeah..");
+    return rval;
+  }
+
+
   void InputComponent::onActivate(SceneInst* psi) {
 
   }
