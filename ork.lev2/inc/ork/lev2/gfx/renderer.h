@@ -27,7 +27,6 @@
 
 namespace ork {
 
-class IZoneManager;
 class PerformanceItem;
 class CameraData;
 
@@ -35,7 +34,7 @@ namespace lev2 {
 
 class GfxTarget;
 
-class Renderer // Abstract Renderer that doesnt use virtuals (function pointers embedded in object, not in vtable)
+class Renderer
 {
 public:
 	//static const int kmaxnodes = 4096;

@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -88,14 +88,14 @@ void Renderer::DrawQueuedRenderables()
 
 	static const ork::lev2::ModelRenderable*	spGroupedModels[RenderQueue::krqmaxsize];
 	for( size_t i = 0; i < renderQueueSize; i++ )
-	{	
+	{
 		OrkAssert(sortedRenderQueueIndices[i] < U32(renderQueueSize));
 		const RenderQueue::Node *pnode = mQueueSortNodes[ sortedRenderQueueIndices[i] ];
 		OrkAssert(pnode);
 		int igroupsize = 0;
 		bool bren = true;
 		bool islast = (i+1 == renderQueueSize);
-			
+
 		//if( pnode )
 		//{
 			//u32 ukey = pnode->mpRenderable->ComposeSortKey( this );
@@ -130,10 +130,10 @@ void Renderer::DrawQueuedRenderables()
 		//orkprintf( "//////////////////////////\n" );
 		if( bren )
 		{	if( igroupsize ) // render renderables as a group to amortize state setup costs
-			{	
+			{
 				//orkprintf( "rq<%d> Rendering Group size<%d>\n", i, igroupsize );
 				//OrkAssert( mpTarget->FBI()->IsPickState() == false );
-				
+
 				this->RenderModelGroup( spGroupedModels, igroupsize );
 			}
 			else
@@ -191,4 +191,3 @@ void Renderer::PopPickID()
 
 
 } } // namespace ork
-
