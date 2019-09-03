@@ -319,6 +319,15 @@ public:
 
 private:
 
+	void _compose();
+	void _decompose();
+	void _link();
+	void _unlink();
+	void _stage();
+	void _unstage();
+	void _activate();
+	void _deactivate();
+
 	void DecomposeEntities();
 	void ComposeEntities();
 	void LinkEntities();

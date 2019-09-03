@@ -107,6 +107,8 @@ public:
     return (mComponentData != 0) ? mComponentData->GetShortSelector() : 0;
   }
 
+  svar64_t query(const ork::event::Event* q) { return doQuery(q); }
+
 protected:
   ComponentInst(const ComponentData *data, Entity *entity);
 
@@ -114,6 +116,7 @@ protected:
 
 private:
   bool DoNotify(const ork::event::Event *event) override { return false; }
+  virtual svar64_t doQuery(const ork::event::Event* q) { return svar64_t(); }
 
   virtual void DoUpdate(SceneInst *inst) {}
   virtual bool DoStart(SceneInst *psi, const fmtx4 &world) { return true; }

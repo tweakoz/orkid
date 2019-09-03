@@ -902,6 +902,8 @@ public:
     /**
      * Add or replace a member function.
      */
+
+
     template <typename FN>
     CppBindClass<T, PARENT>& addFunction(const char* name, const FN& proc)
     {
@@ -1002,4 +1004,3 @@ public:
         return PARENT(m_meta.rawget("___parent"));
     }
 };
-

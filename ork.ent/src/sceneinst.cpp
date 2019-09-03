@@ -291,6 +291,88 @@ void SceneInst::SetEntity(const ent::EntData* pentdata, ent::Entity* pent) {
   assert(pent != nullptr);
   mEntities[pentdata->GetName()] = pent;
 }
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_compose(){
+  ComposeEntities();
+  composeSystems();
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_decompose(){
+  DecomposeEntities();
+  decomposeSystems();
+  mActiveEntityComponents.clear();
+  mActiveEntities.clear();
+  mEntityDeactivateQueue.clear();
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_link(){
+  LinkEntities();
+  LinkSystems();
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_unlink(){
+  UnLinkEntities();
+  UnLinkSystems();
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_stage(){
+  StartEntities();
+  mStartTime = float(OldSchool::GetRef().GetLoResTime());
+  mGameTime = 0.0f;
+  mUpDeltaTime = 0.0f;
+  mPrevDeltaTime = 1.0f / 30.0f;
+  mDeltaTime = 1.0f / 30.0f;
+  mDeltaTimeAccum = 0.0f;
+  mUpTime = mStartTime;
+  mLastGameTime = 0.0f;
+
+  ServiceDeactivateQueue();
+
+  SceneInstEvent outev(this, SceneInstEvent::ESIEV_START);
+  ork::Application::GetContext()->Notify(&outev);
+  DrawableBuffer::EndClearAndSyncReaders();
+
+  RenderSyncToken rentok;
+  while (DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
+  }
+  while (DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
+  }
+  rentok.mFrameIndex = 0;
+  DrawableBuffer::mOfflineUpdateSynchro.push(rentok);
+
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_unstage(){
+  StopEntities();
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_activate(){
+  for (const auto& item : mEntities) {
+    auto pent = item.second;
+    ActivateEntity(pent);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+void SceneInst::_deactivate(){
+
+}
+
 ///////////////////////////////////////////////////////////////////////////
 #define ANSI_COLOR_RED "\x1b[31m"
 #define ANSI_COLOR_RESET "\x1b[30m"
@@ -311,35 +393,23 @@ void SceneInst::EnterEditState() {
 
   LeaveRunMode();
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
-  StopEntities();
-  mActiveEntityComponents.clear();
-  mActiveEntities.clear();
-  mEntityDeactivateQueue.clear();
 
-  UnLinkEntities();
-  DecomposeEntities();
-  UnLinkSystems();
-  decomposeSystems();
-  ComposeEntities();
-  composeSystems();
-  LinkEntities();
-  LinkSystems();
+  ///////////////////////////////////
+  // tear down
+  ///////////////////////////////////
 
-  ServiceDeactivateQueue(); // HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION
-                            // WHILE LINKING
-  StartEntities();
-  mStartTime = float(OldSchool::GetRef().GetLoResTime());
-  mGameTime = 0.0f;
-  mUpDeltaTime = 0.0f;
-  mPrevDeltaTime = 1.0f / 30.0f;
-  mDeltaTime = 1.0f / 30.0f;
-  mDeltaTimeAccum = 0.0f;
-  mUpTime = mStartTime;
-  mLastGameTime = 0.0f;
-  ServiceDeactivateQueue();
-  SceneInstEvent outev(this, SceneInstEvent::ESIEV_START);
-  ork::Application::GetContext()->Notify(&outev);
-  DrawableBuffer::EndClearAndSyncReaders();
+  _deactivate();
+  _unstage();
+  _unlink();
+  _decompose();
+
+  ///////////////////////////////////
+  // bring up
+  ///////////////////////////////////
+
+  _compose();
+  _link();
+  _stage();
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneInst::EnterPauseState() { ork::lev2::AudioDevice::GetDevice()->StopAllVoices(); }
@@ -362,63 +432,26 @@ void SceneInst::EnterRunState() {
 
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
 
-  mActiveEntityComponents.clear();
-  mActiveEntities.clear();
-  mEntityDeactivateQueue.clear();
+  ///////////////////////////////////
+  // tear down
+  ///////////////////////////////////
 
-  // DoEnterRunState();
+  _deactivate();
+  _unstage();
+  _unlink();
+  _decompose();
 
-  AllocationLabel label268("SceneInst::EnterRunState::268");
+  ///////////////////////////////////
+  // bring up
+  ///////////////////////////////////
 
-  UnLinkEntities();
-  DecomposeEntities();
-  UnLinkSystems();
-  decomposeSystems();
-  ComposeEntities();
-  composeSystems();
+  _compose();
+  _link();
+  _stage();
+  _activate();
 
-  for (const auto& item : mEntities) {
-    auto pent = item.second;
-    ActivateEntity(pent);
-  }
+  ///////////////////////////////////
 
-  AllocationLabel label281("SceneInst::EnterRunState::281");
-
-  LinkEntities();
-  LinkSystems();
-
-  // HACK TO REMOVE ENTITIES QUEUED FOR DEACTIVATION WHILE LINKING
-  ServiceDeactivateQueue();
-
-  AllocationLabel label288("SceneInst::EnterRunState:288");
-
-  StartEntities();
-  StartSystems();
-
-  mStartTime = float(OldSchool::GetRef().GetLoResTime());
-  mGameTime = 0.0f;
-  mUpDeltaTime = 0.0f;
-  mPrevDeltaTime = 1.0f / 30.0f;
-  mDeltaTime = 1.0f / 30.0f;
-  mDeltaTimeAccum = 0.0f;
-  mUpTime = mStartTime;
-  mLastGameTime = 0.0f;
-
-  ServiceDeactivateQueue();
-
-  AllocationLabel label303("SceneInst::EnterRunState::303");
-
-  SceneInstEvent outev(this, SceneInstEvent::ESIEV_START);
-  ork::Application::GetContext()->Notify(&outev);
-  DrawableBuffer::EndClearAndSyncReaders();
-
-  RenderSyncToken rentok;
-  while (DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
-  }
-  while (DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
-  }
-  rentok.mFrameIndex = 0;
-  DrawableBuffer::mOfflineUpdateSynchro.push(rentok);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneInst::OnSceneInstMode(ESceneInstMode emode) {

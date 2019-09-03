@@ -10,28 +10,18 @@ extern "C" {
 #include "LuaIntf/LuaIntf.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace ent {
+namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-struct LuaOpaque64
+struct ScriptNil {};
+
+struct ScriptVar
 {
-	any64 mValue;
-};
-struct LuaOpaque16
-{
-	any16 mValue;
-	LuaOpaque16(){}
-	template <typename T> LuaOpaque16(const T& the_t)
-	{
-		mValue.Set<T>(the_t);
-	}
-	std::string GetType() const
-	{
-		int status;
-		auto mangled = mValue.GetTypeName();
-		auto demangled = abi::__cxa_demangle( mangled, 0, 0, & status );
-		return demangled;
-	}
+	svar64_t _encoded;
+
+	void fromLua(lua_State* L, int index);
+	void pushToLua(lua_State* L) const;
+
 };
 
 struct LuaSystem
@@ -44,8 +34,4 @@ struct LuaSystem
 
 bool DoString(lua_State* L, const char* str);
 
-struct SCILuaData
-{
-};
-
-}} // namespace ork { namespace ent {
+} // namespace ork::ent {
