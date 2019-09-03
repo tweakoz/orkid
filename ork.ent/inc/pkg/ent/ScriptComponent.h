@@ -50,8 +50,10 @@ struct ScriptObject
 	int mOnEntLink;
 	int mOnEntStart;
 	int mOnEntStop;
+	int mOnEntActivate;
+	int mOnEntDeactivate;
 	int mOnEntUpdate;
-    int mModTabRef;
+  int mModTabRef;
 	int mScriptRef;
 };
 
@@ -70,6 +72,8 @@ private:
 	void DoUnLink(SceneInst *psi) final;
 	bool DoStart(SceneInst *psi, const fmtx4 &world) final;
 	void DoStop(SceneInst *psi) final;
+	void onActivate(SceneInst* psi) final;
+	void onDeactivate(SceneInst* psi) final;
 	const ScriptComponentData&		mCD;
 	std::string mScriptText;
 	ScriptObject* mScriptObject;

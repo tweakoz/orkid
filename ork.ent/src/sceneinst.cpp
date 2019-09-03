@@ -736,10 +736,14 @@ void SceneInst::ActivateEntity(ent::Entity* pent) {
     for (ent::ComponentTable::LutType::const_iterator itc = EntComps.begin(); itc != EntComps.end(); itc++) {
       ent::ComponentInst* cinst = (*itc).second;
 
+      cinst->activate(this);
+
       PoolString fam = cinst->GetFamily();
 
       // Don't add components that don't do anything to the active components
       // list
+
+
       if (fam.empty())
         continue;
 
@@ -749,6 +753,7 @@ void SceneInst::ActivateEntity(ent::Entity* pent) {
       itl = mActiveEntityComponents.find(fam);
 
       (itl->second).push_back(cinst);
+
     }
   } else {
     orkprintf("WARNING, activating an already active entity <%p>\n", pent);
@@ -776,9 +781,6 @@ void SceneInst::DeActivateEntity(ent::Entity* pent) {
 
   mActiveEntities.erase(listit);
 
-  if (parch)
-    parch->StopEntity(this, pent);
-
   /////////////////////////////////////////
   // deactivate components
   /////////////////////////////////////////
@@ -786,6 +788,8 @@ void SceneInst::DeActivateEntity(ent::Entity* pent) {
   ent::ComponentTable::LutType& EntComps = pent->GetComponents().GetComponents();
   for (ent::ComponentTable::LutType::const_iterator itc = EntComps.begin(); itc != EntComps.end(); itc++) {
     ent::ComponentInst* cinst = (*itc).second;
+
+    cinst->deactivate(this);
 
     const PoolString& fam = cinst->GetFamily();
 
@@ -803,6 +807,9 @@ void SceneInst::DeActivateEntity(ent::Entity* pent) {
         thelist.erase(itc2);
     }
   }
+
+  if (parch)
+    parch->StopEntity(this, pent);
 }
 
 bool SceneInst::IsEntityActive(Entity* pent) const {

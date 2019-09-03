@@ -21,11 +21,13 @@ protected:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class InputComponentInst : public ComponentInst {
+class InputComponent : public ComponentInst {
+
+  RttiDeclareNoFactory(InputComponent, ComponentInst);
 
 public:
 
-  InputComponentInst(const InputComponentData& data, Entity *entity);
+  InputComponent(const InputComponentData& data, Entity *entity);
 
 protected:
 
@@ -34,6 +36,15 @@ protected:
   bool DoLink(SceneInst *psi) final { return true; }
   void DoUnLink(SceneInst *psi) final {}
   void DoStop(SceneInst *psi) final {}
+  void onActivate(SceneInst* psi) final;
+
+  const char* friendlyName() final {
+      return "Input";
+  }
+
+  bool DoNotify(const ork::event::Event* event) final;
+
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

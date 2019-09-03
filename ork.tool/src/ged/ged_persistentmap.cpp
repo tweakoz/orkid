@@ -85,12 +85,12 @@ namespace ork::tool::ged {
   		ork::rtti::Class* pclass = mProperty->GetClass();
   		const ork::PoolString & name = pclass->Name();
   		const char* pname = name.c_str();
-  		phash = CCRC::HashMemory( pname, int(strlen(pname)));
+  		phash = Crc32::HashMemory( pname, int(strlen(pname)));
   	}
   	if( mObject ){
   		ork::rtti::Class* pclass = mObject->GetClass();
   		const ork::PoolString & name = pclass->Name();
-  		ohash = CCRC::HashMemory( name.c_str(), int(strlen(name.c_str())));
+  		ohash = Crc32::HashMemory( name.c_str(), int(strlen(name.c_str())));
   	}
   	U32 key = phash^ohash;
   	int ikey = *reinterpret_cast<int*>(&key);

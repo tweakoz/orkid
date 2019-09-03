@@ -141,6 +141,53 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const fmtx4 &world)
 	}
 	return true;
 }
+
+void ScriptComponentInst::onActivate(SceneInst* psi) {
+
+	auto scm = psi->findSystem<ScriptSystem>();
+
+	if( scm && mScriptObject )
+	{
+		assert(false);
+
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+		auto L = asluasys->mLuaState;
+
+		auto ent = this->GetEntity();
+		auto name = ent->GetEntData().GetName().c_str();
+
+		printf( "Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
+
+        LuaState lua = L;
+        lua.getRef(mScriptObject->mOnEntActivate);
+        assert(lua.isFunction(-1));
+        lua.push(mEntTable);
+        lua.ppcall(1,0,0);
+	}
+}
+void ScriptComponentInst::onDeactivate(SceneInst* psi) {
+	auto scm = psi->findSystem<ScriptSystem>();
+
+	if( scm && mScriptObject )
+	{
+		auto asluasys = scm->GetLuaManager().Get<LuaSystem*>();
+		OrkAssert(asluasys);
+		auto L = asluasys->mLuaState;
+
+		auto ent = this->GetEntity();
+		auto name = ent->GetEntData().GetName().c_str();
+
+		printf( "Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
+
+        LuaState lua = L;
+        lua.getRef(mScriptObject->mOnEntDeactivate);
+        assert(lua.isFunction(-1));
+        lua.push(mEntTable);
+        lua.ppcall(1,0,0);
+	}
+}
+
 void ScriptComponentInst::DoStop(SceneInst *psi)
 {
 	auto scm = psi->findSystem<ScriptSystem>();
@@ -441,6 +488,8 @@ ScriptObject* ScriptSystem::FlyweightScriptObject( const ork::file::Path& pth )
 
             rval->mOnEntLink = getMethodRef("OnEntityLink");
             rval->mOnEntStart = getMethodRef("OnEntityStart");
+						rval->mOnEntActivate = getMethodRef("OnEntityActivate");
+						rval->mOnEntDeactivate = getMethodRef("OnEntityDeactivate");
             rval->mOnEntStop = getMethodRef("OnEntityStop");
             rval->mOnEntUpdate = getMethodRef("OnEntityUpdate");
 
