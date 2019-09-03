@@ -32,7 +32,7 @@ class ShipControllerData : public ent::ComponentData
 {
 	RttiDeclareConcrete( ShipControllerData, ent::ComponentData );
 
-	ent::ComponentInst* createComponent(ent::Entity* pent) const override;
+	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
 
 	float	mForwardForce;
 	float	mSteeringRatio;
@@ -92,8 +92,8 @@ class ShipControllerInst : public ent::ComponentInst
 
 	ShipTarget						mThisTarget;
 
-	void DoUpdate(ent::SceneInst* sinst) override;
-	bool DoLink(ent::SceneInst* psi) override;
+	void DoUpdate(ent::SceneInst* sinst) final;
+	bool DoLink(ent::SceneInst* psi) final;
 
 	bool DoUpdate_Flip( const ork::lev2::InputState& inpstate, float fdt );
 
@@ -124,7 +124,7 @@ public:
 class ShipArchetype : public ork::ent::Archetype
 {
 	RttiDeclareConcrete( ShipArchetype, ent::Archetype );
-		
+
 	void DoCompose(ork::ent::ArchComposer& composer) override;
 	void DoStartEntity( ent::SceneInst* psi, const ork::fmtx4& mtx, ent::Entity *pent ) const override;
 
@@ -137,4 +137,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 } }
 ///////////////////////////////////////////////////////////////////////////////
-

@@ -231,8 +231,11 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
           break;
         }
         case ' ': {
-          const auto& CDATA = GetCMCI()->systemData();
-          CDATA.Toggle();
+          auto compsys = compositingSystem();
+          if( compsys ){
+            const auto& CDATA = compsys->systemData();
+            CDATA.Toggle();
+          }
           break;
         }
         case 'f': // focus on selected entity

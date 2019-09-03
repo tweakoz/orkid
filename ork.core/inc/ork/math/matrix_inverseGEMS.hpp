@@ -209,7 +209,7 @@ template <typename T> void GEMSMatrixInverse( const Matrix44<T> &in, Matrix44<T>
 
 }
 
-template <typename T> void Matrix44<T>::GEMSInverse( const Matrix44<T> &in )
+template <typename T> void Matrix44<T>::inverseOf( const Matrix44<T> &in )
 {
     Matrix44<T> out;
 	

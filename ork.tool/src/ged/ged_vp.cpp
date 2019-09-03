@@ -81,7 +81,7 @@ GedVP::GedVP( const std::string & name, ObjModel& model )
 	object::Connect( & model.GetSigModelInvalidated(), & mWidget.GetSlotModelInvalidated() );
 
     _sceneinst_subscriber = msgrouter::channel("SceneInst")->subscribe([=](msgrouter::content_t c){
-        mpActiveNode=nullptr;
+        this->onInvalidate();
     });
 
 }
@@ -166,6 +166,11 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void GedVP::onInvalidate(){
+  mpActiveNode = nullptr;
+  MarkSurfaceDirty();
+}
 
 ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 {
@@ -257,9 +262,9 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 					{
 						miScrollY = iscrollmin;
 					}
+          printf( "predelta<%d> iscrollmin<%d> miScrollY<%d>\n", idelta, iscrollmin, miScrollY );
 
 				}
-				printf( "predelta<%d> miScrollY<%d>\n", idelta, miScrollY );
 
 			}
 

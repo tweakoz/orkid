@@ -123,7 +123,7 @@ EnemySpawnerControllerInst::EnemySpawnerControllerInst( const EnemySpawnerContro
 					///////////////////////////////////////////
 					// Draw Edges
 					///////////////////////////////////////////
-					
+
 					/*int inumcon = hs->mConnections.size();
 					fvec4 a = hs->mPosition;
 					bool bcon2 = false;
@@ -164,7 +164,7 @@ EnemySpawnerControllerInst::EnemySpawnerControllerInst( const EnemySpawnerContro
 						targ->MTXI()->PopMMatrix();
 					}
 				}
-			
+
 			}
 		}
 	};
@@ -192,11 +192,11 @@ void EnemySpawnerControllerInst::ReAssignFighter( FighterControllerInst* fci )
 	//const fvec3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform()->GetPosition();
 	//fvec3 TargetDir = ((mTargetAcc.Normal()*0.3f)+(mTargetVel.Normal()*0.7f)).Normal();
 	if( mHotSpots.mClosest )
-	{	
+	{
 		HotSpot* asshp = mHotSpots.mClosest;
 
 		fvec3 ClosPos = asshp->mPosition;
-		
+
 		fci->SetHotSpot( asshp );
 	}
 }
@@ -243,7 +243,7 @@ void EnemySpawnerControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 	////////////////////////////////
 	// measure target motion
 	////////////////////////////////
-	
+
 	const fvec3 TargetPos = mTarget->GetDagNode().GetTransformNode().GetTransform().GetPosition();
 	static fvec3 TargetLPos = TargetPos+fvec3(0.0f,1.0f,0.0f);
 	mTargetVel = (TargetPos-TargetLPos)*(1.0f/dt);
@@ -294,7 +294,7 @@ void EnemySpawnerControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 			mFighters.push_back( fci );
 
 			ork::ent::ModelComponentInst* mci = ork::rtti::autocast(mcd.createComponent(pent));
-	
+
 			///////////////////////////////
 			// activate entity in sceneinst
 			///////////////////////////////
@@ -303,9 +303,9 @@ void EnemySpawnerControllerInst::DoUpdate(ork::ent::SceneInst *sinst)
 			//sinst->QueueActivateEntity( pent );
 			assert(false);
 			///////////////////////////////
-				
+
 			mNumEnemies++;
-			
+
 		}
 	}
 
@@ -323,7 +323,7 @@ void EnemySpawnerControllerInst::Despawning( FighterControllerInst* fsi )
 	orkvector<FighterControllerInst*>::iterator it = std::find( mFighters.begin(), mFighters.end(), fsi );
 
 	OrkAssert( it != mFighters.end() );
-	
+
 	mFighters.erase(it);
 
 }
@@ -345,7 +345,7 @@ EnemySpawnerArchetype::EnemySpawnerArchetype()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EnemySpawnerArchetype::DoCompose()
+void EnemySpawnerArchetype::DoCompose(ork::ent::ArchComposer& composer)
 {
 	EnemySpawnerControllerData* acd = GetTypedComponent<EnemySpawnerControllerData>();
 
@@ -358,7 +358,7 @@ void EnemySpawnerArchetype::DoCompose()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EnemySpawnerArchetype::DoLinkEntity( const ent::SceneInst* psi, ent::Entity *pent ) const
+void EnemySpawnerArchetype::DoLinkEntity( ent::SceneInst* psi, ent::Entity *pent ) const
 {
 	EnemySpawnerControllerInst* sci = pent->GetTypedComponent<EnemySpawnerControllerInst>();
 	OrkAssert( sci );

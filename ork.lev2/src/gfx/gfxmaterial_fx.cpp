@@ -25,7 +25,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::GfxMaterialFxParamBase, "FxParamBase" )
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::FxMatrixBlockApplicator, "FxMatrixBlockApplicator" )
 
-namespace ork { 
+namespace ork {
 
 template class orklut<std::string,lev2::GfxMaterialFxParamBase*>;
 template class orklut<PoolString,lev2::GfxMaterialFx*>;
@@ -134,7 +134,7 @@ GfxMaterialFx::GfxMaterialFx()
 
 GfxMaterialFx::~GfxMaterialFx()
 {
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -240,7 +240,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 
 	std::string FxDesc = GetParamValue( "description" );
 	std::string TekName = GetParamValue( "technique" );
-	
+
     printf( "FxDesc<%s>\n", FxDesc.c_str() );
 	mMainTechniqueName = TekName;
 
@@ -395,7 +395,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				GfxMaterialFxParamEngine<fmtx3> *ParamMatrix3 = new GfxMaterialFxParamEngine<fmtx3>(this);
 				ParamMatrix3->mFuncptrVoid = getmat::doit_worldrot3;
 				param = ParamMatrix3;
-			}	
+			}
 			////////////////////////////////////
 			else if( Semantic == "worldroti" )
 			////////////////////////////////////
@@ -405,8 +405,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 					static const fmtx4& doit_worldroti( GfxTarget *pTARG )
 					{
 						static fmtx4 MatR;
-						MatR = pTARG->MTXI()->RefR4Matrix();
-						MatR.Inverse();
+						MatR.inverseOf(pTARG->MTXI()->RefR4Matrix());
 						return MatR;
 					}
 				};
@@ -423,8 +422,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 					static const fmtx4& doit_worldinverse( GfxTarget *pTARG )
 					{
 						static fmtx4 wimat;
-						wimat = pTARG->MTXI()->RefMMatrix();
-						wimat.Inverse();
+            wimat.inverseOf(pTARG->MTXI()->RefMMatrix());
 						return wimat;
 					}
 				};
@@ -441,8 +439,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 					static const fmtx4& doit_worldviewprojectioninverse( GfxTarget *pTARG )
 					{
 						static fmtx4 wvpimat;
-						wvpimat = pTARG->MTXI()->RefMVPMatrix();
-						wvpimat.Inverse();
+						wvpimat.inverseOf(pTARG->MTXI()->RefMVPMatrix());
 						return wvpimat;
 					}
 				};
@@ -536,8 +533,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 					static const fmtx4& doit_i( GfxTarget *pTARG )
 					{
 						static fmtx4 mat;
-						mat = pTARG->MTXI()->RefVMatrix();
-						mat.Inverse();
+						mat.inverseOf(pTARG->MTXI()->RefVMatrix());
 						return mat;
 					}
 					static const fmtx4& doit_t( GfxTarget *pTARG )
@@ -649,7 +645,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				struct get_engine_float_0
 				{
 					static const float& doit(GfxTarget *pTARG, const GfxMaterialFxParamBase *param)
-					{	
+					{
 						if(GfxMaterialFx *pmaterial = param->GetParentMaterial())
 						{
 							//if(pmaterial->mEngineParamFloats[0] > 0.0f && pmaterial->mEngineParamFloats[0] < 1.0f)
@@ -707,8 +703,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 						const fmtx4& ShadPMat = pTARG->MTXI()->GetShadowPMatrix();
 
 						static fmtx4 Mat;
-						Mat = pTARG->MTXI()->RefVMatrix();
-						Mat.Inverse();
+						Mat.inverseOf(pTARG->MTXI()->RefVMatrix());
 
 						Mat = Mat*ShadVMat;
 						Mat = Mat*ShadPMat;
@@ -734,7 +729,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				param->GetRecord().mParameterSemantic = Semantic;
 				param->GetRecord().mParameterHandle = FxParam;
 				param->SetBindable(true);
-				
+
 				///////////////////////////////////////////////////////
 				// for now we replace (instead of add), because:
 				//   1. maya might export a material with a 'time' artist param
@@ -743,7 +738,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				//
 				//  TODO - fix this with a more elegant solution
 				////////////////////////////////////////////////////////
-				
+
 				mEffectInstance.ReplaceParameter( param );
 
 				const orklut<std::string,std::string>& Annos = FxParam->mAnnotations;
@@ -949,7 +944,7 @@ bool GfxMaterialFx::BeginPass( GfxTarget *pTarg, int iPass )
 					}
 					case FxParamRec::ESCOPE_PERMATERIALINST:
 					{
-						
+
 						bool bfximatch = (this==pTarg->FXI()->GetLastFxMaterial());
 						bool bpassmatch = (iPass==LastPass);
 						if( (false==bfximatch) || (false==bpassmatch) )
@@ -1302,7 +1297,7 @@ void FxMatrixBlockApplicator::ApplyToTarget( GfxTarget *pTARG ) // virtual
 	const fmtx4* Matrices =  mMatrixBlockItem->GetMatrices();
 	FxShader* hshader = mMaterial->GetEffectInstance().mpEffect;
 	//fmtx4 iwmat;
-	//iwmat.GEMSInverse(pTARG->MTXI()->RefMVMatrix());
+	//iwmat.inverseOf(pTARG->MTXI()->RefMVMatrix());
 	pTARG->FXI()->BindParamMatrixArray( hshader, mMaterial->mBonesParam, Matrices, (int) inumbones );
 	pTARG->FXI()->CommitParams();
 }
@@ -1413,7 +1408,7 @@ void GfxMaterialFx::SetMaterialProperty( const char* prop, const char* val ) // 
 		//printf( "LOADING<%s>\n", val );
 		LoadEffect( val );
 		asset::AssetManager<lev2::FxShaderAsset>::AutoLoad();
-		
+
 		GfxMaterialFxParamArtist<std::string>* paramstr = new GfxMaterialFxParamArtist<std::string>;
 		std::string descstr = ork::CreateFormattedString("morkshader<%s>", val);
 		paramstr->mValue = descstr;
@@ -1435,15 +1430,15 @@ void GfxMaterialFx::SetMaterialProperty( const char* prop, const char* val ) // 
 	}
 	else
 	{
-	
+
 		const orkmap<std::string,const FxShaderParam*> & ParamNameMap = mEffectInstance.mpEffect->GetParametersByName();
 
 		orkmap<std::string,const FxShaderParam*>::const_iterator itparam = ParamNameMap.find(prop);
 
 		const FxShaderParam* param = (itparam==ParamNameMap.end()) ? 0 : itparam->second;
-		
+
 		//printf( "GfxMaterialFx::SetMaterialProperty() prop<%s> val<%s> param<%p>\n", prop, val, param );
-		
+
 /*			GfxMaterialFxParamArtist<lev2::Texture*> *paramf = new GfxMaterialFxParamArtist<lev2::Texture*>;
 							AssetPath texname ( paramval );
 							Texture* ptex(NULL);
@@ -1451,7 +1446,7 @@ void GfxMaterialFx::SetMaterialProperty( const char* prop, const char* val ) // 
 							{
 								ork::lev2::TextureAsset* ptexa = asset::AssetManager<TextureAsset>::Create(texname.c_str());
 								ptex = ptexa ? ptexa->GetTexture() : 0;
-#if defined(_DEBUG)				
+#if defined(_DEBUG)
 								if( ptex )
 								{
 									ptex->SetProperty( "filename", texname.c_str() );
@@ -1477,7 +1472,7 @@ template class GfxMaterialFxParamArtist<fvec3>;
 template class GfxMaterialFxParamArtist<fvec4>;
 template class GfxMaterialFxParamArtist<fmtx3>;
 template class GfxMaterialFxParamArtist<ork::lev2::Texture*>;
-	
+
 } }
 
 typedef ork::lev2::GfxMaterialFxParam<int>							OrkLev2GfxMaterialFxParamInt;
@@ -1551,4 +1546,3 @@ INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamStdStringEngine,
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamTex, "FxParamTexture" );
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamTexArtist, "FxParamArtistTexture" );
 INSTANTIATE_TRANSPARENT_TEMPLATE_RTTI( OrkLev2GfxMaterialFxParamTexEngine, "FxParamEngineTexture" );
-

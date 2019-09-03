@@ -124,7 +124,7 @@ public:
 	void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
 	ork::Object* GetObject( lev2::GetPixelContext& ctx, int ichan );
 	//////////////////////
-	ent::CompositingSystem* GetCMCI();
+	ent::CompositingSystem* compositingSystem();
 	const ent::CompositingGroup* GetCompositingGroup(int igrp);
 	ent::CompositingComponentInst* GetCompositingComponentInst( int icidx );
 	//////////////////////

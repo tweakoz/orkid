@@ -104,15 +104,14 @@ void MatrixStackInterface::OnVMatrixDirty( void )
 	mVectorScreenRightNormal	= fvec4(pfmatrix[0],pfmatrix[4], pfmatrix[8] );
 	mVectorScreenUpNormal		= fvec4(pfmatrix[1],pfmatrix[5], pfmatrix[9] );
 	//////////////////////////////////////////////////////
-	mMatrixVIT=VMatrix;
-	mMatrixVIT.Inverse();
+	mMatrixVIT.inverseOf(VMatrix);
 	mMatrixVIT.Transpose();
 	//////////////////////////////////////////////////////
 	fmtx4 matiy;
 	matiy.Scale( 1.0f, -1.0f, 1.0f );
 	mMatrixVITIY = mMatrixVIT*matiy;
 	//////////////////////////////////////////////////////
-	mMatrixVITG.GEMSInverse(VMatrix);
+	mMatrixVITG.inverseOf(VMatrix);
 	mMatrixVITG.Transpose();
 	//////////////////////////////////////////////////////
 }

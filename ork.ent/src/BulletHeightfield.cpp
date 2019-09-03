@@ -566,7 +566,7 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
   htri->init_visgeom(ptarg);
   //////////////////////////
   fmtx4 inv_view;
-  inv_view.GEMSInverse(VMTX);
+  inv_view.inverseOf(VMTX);
   fvec3 campos = inv_view.GetTranslation();
   campos.y = 0;
   fmtx4 follow;

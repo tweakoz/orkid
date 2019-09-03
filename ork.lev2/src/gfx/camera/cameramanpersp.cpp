@@ -800,7 +800,7 @@ void EzUiCam::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
 
   fmtx4 matrot, imatrot;
   matrot.fromNormalVectors(xnormal, ynormal, znormal);
-  imatrot.GEMSInverse(matrot);
+  imatrot.inverseOf(matrot);
 
   fquat quat;
   quat.FromMatrix(imatrot);
@@ -1124,7 +1124,7 @@ void EzUiCam::updateMatrices(void) {
 
   fmtx4 matxf = (mTrans * mRot);
   fmtx4 matixf;
-  matxf.GEMSInverse(matxf);
+  matxf.inverseOf(matxf);
 
   fvec3 veye = fvec3(0.0f, 0.0f, -mfLoc).Transform(matxf);
   fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).Transform(matxf);

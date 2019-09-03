@@ -165,7 +165,7 @@ void RigidBody::Close()
 	// initial inverse tensors
 	//////////////////////////////////////////////
 	mCurInertiaTensor = mIniInertiaTensor;
-	mCurInertiaTensorInv.GEMSInverse( mCurInertiaTensor );
+	mCurInertiaTensorInv.inverseOf( mCurInertiaTensor );
 	mIniInertiaTensorInv = mCurInertiaTensorInv;
 	//////////////////////////////////////////////
 
@@ -338,7 +338,7 @@ void RigidBody::ComputeOrientation( float fdt )
 	mCurrentMatrix = MatRot;
 	mCurrentMatrix.SetTranslation( mPosition );
 
-	mCurrentInvMatrix.GEMSInverse( mCurrentMatrix );
+	mCurrentInvMatrix.inverseOf( mCurrentMatrix );
 
 	//////////////////////////////////////////////////////
 	// update inertia tensors
@@ -346,7 +346,7 @@ void RigidBody::ComputeOrientation( float fdt )
 	fmtx4 MatOT = MatRot;
 	MatOT.Transpose();
 	mCurInertiaTensorInv = MatOT*(mIniInertiaTensorInv * MatRot);
-	mCurInertiaTensor.GEMSInverse( mCurInertiaTensorInv );
+	mCurInertiaTensor.inverseOf( mCurInertiaTensorInv );
 
 	//////////////////////////////////////////////////////
 }

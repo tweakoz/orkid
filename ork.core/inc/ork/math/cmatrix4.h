@@ -89,10 +89,8 @@ public:
   Matrix44<T> Concat43Transpose(const Matrix44<T>& mat) const;
 
   void Transpose(void);
-  void InverseTranspose();
-  void Inverse(void);
   void Normalize(void);
-  void GEMSInverse(const Matrix44<T>& in);
+  void inverseOf(const Matrix44<T>& in);
 
   void CorrectionMatrix(const Matrix44<T>& from, const Matrix44<T>& to);
   void SetRotation(const Matrix44<T>& from);

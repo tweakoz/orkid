@@ -186,8 +186,8 @@ void CameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) const
 	///////////////////////////////////////////////////
 	fmtx4 matgp_vp = ctx.mVMatrix*ctx.mPMatrix;
 	fmtx4 matgp_ivp;
-	matgp_ivp.GEMSInverse(matgp_vp);
-	//matgp_iv.GEMSInverse(matgp_view);
+	matgp_ivp.inverseOf(matgp_vp);
+	//matgp_iv.inverseOf(matgp_view);
 	ctx.mFrustum.Set( matgp_ivp );
 
 }
@@ -278,8 +278,8 @@ void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 	///////////////////////////////
 
 	mVPMatrix = mMatView*mMatProj;
-	mIVMatrix.GEMSInverse(mMatView);
-	mIVPMatrix.GEMSInverse(mVPMatrix);
+	mIVMatrix.inverseOf(mMatView);
+	mIVPMatrix.inverseOf(mVPMatrix);
 
 	///////////////////////////////
 	// gameplay calculation
@@ -301,8 +301,8 @@ void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 			matgp_view.LookAt( mEye, mTarget, mUp );
 
 		fmtx4 matgp_vp = matgp_view*matgp_proj;
-		matgp_ivp.GEMSInverse(matgp_vp);
-		matgp_iv.GEMSInverse(matgp_view);
+		matgp_ivp.inverseOf(matgp_vp);
+		matgp_iv.inverseOf(matgp_view);
 
 		//mpGfxTarget->FBI()->ForceFlush();
 	}

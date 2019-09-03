@@ -70,12 +70,12 @@ F32 ManipRZ::CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const
 ////////////////////////////////////////////////////////////////////////////////
 
 void ManipRot::Draw( GfxTarget *pTARG ) const
-{	
+{
 	fmtx4 Mat;
 	fmtx4 VisMat;
 	fmtx4 MatT;
 	fmtx4 MatS;
-	fmtx4 MatR; 
+	fmtx4 MatR;
 	fvec3 pos;
 	fquat rot;
 	float scale;
@@ -125,7 +125,7 @@ void ManipRot::Draw( GfxTarget *pTARG ) const
 	Mat = MatS * mmRotModel * MatR * MatT;
 
 	float ColorScale = 1.0f;
-	
+
 	if(!bdrawok)
 	{
 		if(pTARG->FBI()->IsPickState())
@@ -136,7 +136,7 @@ void ManipRot::Draw( GfxTarget *pTARG ) const
 		}
 	}
 
-	fcolor4 ModColor = pTARG->RefModColor(); 
+	fcolor4 ModColor = pTARG->RefModColor();
 
 
 	pTARG->MTXI()->PushMMatrix(Mat);
@@ -175,7 +175,7 @@ float SnapReal( float Input, float SnapVal )
 	int ival = int(Input/SnapVal);
 
 	float ret( float(ival)*SnapVal );
-		
+
 	orkprintf( "SnapReal %f [%d] -> %f \n", Input, ival, ret );
 
 	return ret;
@@ -184,23 +184,23 @@ float SnapReal( float Input, float SnapVal )
 ////////////////////////////////////////////////////////////////////////////////
 
 bool ManipRot::UIEventHandler( const ui::Event& EV )
-{	
+{
 	int ex = EV.miX;
 	int ey = EV.miY;
-	
+
 	fvec2 posubp = EV.GetUnitCoordBP();
 
 	Camera *pcam = mManager.getActiveCamera();
-	
+
 	bool brval = false;
-			
+
 	bool isshift = false; //OldSchool::IsKeyDepressed(VK_SHIFT );
 	bool isctrl = false; //OldSchool::IsKeyDepressed(VK_CONTROL );
-	
+
 	switch( EV.miEventCode )
 	{
 		case ui::UIEV_PUSH:
-		{	
+		{
 			mManager.mManipHandler.Init(posubp, pcam->mCameraData.GetIVPMatrix(), pcam->QuatC );
 			mBaseTransform = mManager.mCurTransform;
 
@@ -223,7 +223,7 @@ bool ManipRot::UIEventHandler( const ui::Event& EV )
 			IntersectWithPlanes( posubp );
 
 			if ( CheckIntersect() )
-			{	
+			{
 				///////////////////////////////////////////
 				// calc normalvectors from base:origin to point on activeintersection plane (in world space)
 				const fvec3 & Origin = mBaseTransform.GetTransform().GetPosition();
@@ -231,18 +231,18 @@ bool ManipRot::UIEventHandler( const ui::Event& EV )
 				fvec3 D0 = (Origin-mActiveIntersection->mBaseIntersectionPoint).Normal();
 				///////////////////////////////////////////
 				// calc matrix to put worldspace vector into plane local space
-				fmtx4 MatWldToObj = mBaseTransform.GetTransform().GetMatrix(); //GetRotation();
-				MatWldToObj.Inverse();
-				fvec4 bAxisAngle = mLocalRotationAxis; 
+				fmtx4 MatWldToObj;
+        MatWldToObj.inverseOf(mBaseTransform.GetTransform().GetMatrix());
+				fvec4 bAxisAngle = mLocalRotationAxis;
 				fquat brq;
 				brq.FromAxisAngle(bAxisAngle);
-				fmtx4 MatObjToPln = brq.ToMatrix();
-				MatObjToPln.Inverse();
+				fmtx4 MatObjToPln;
+				MatObjToPln.inverseOf(brq.ToMatrix());
 				fmtx4 MatWldToPln = MatObjToPln*MatWldToObj;
 				//fmtx4 MatInvRot = InvQuat.ToMatrix();
 				///////////////////////////////////////////
 				// calc plane local rotation
-				fvec4 AxisAngle = mLocalRotationAxis; 
+				fvec4 AxisAngle = mLocalRotationAxis;
 				fvec4 D0I = fvec4(D0,float(0.0f)).Transform(MatWldToPln);
 				fvec4 D1I = fvec4(D1,float(0.0f)).Transform(MatWldToPln);
 				//orkprintf( "D0 <%f %f %f>\n", float(D0.GetX()), float(D0.GetY()), float(D0.GetZ()) );

@@ -151,7 +151,7 @@ void Frustum::Set( const mtx44_type& VMatrix, const mtx44_type& PMatrix )
 {
 	mtx44_type IVPMatrix;
 	mtx44_type VPMatrix = VMatrix*PMatrix;
-	IVPMatrix.GEMSInverse(VPMatrix);
+	IVPMatrix.inverseOf(VPMatrix);
 	Set( IVPMatrix );
 }
 
