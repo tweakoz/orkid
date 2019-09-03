@@ -42,7 +42,9 @@ LUA_USING_LIST_TYPE(std::vector)
 LUA_USING_MAP_TYPE(std::map)
 
 template <> struct LuaTypeMapping<ork::ent::ScriptVar> {
-  static void push(lua_State* L, const ork::ent::ScriptVar& inp) { inp.pushToLua(L); }
+  static void push(lua_State* L, const ork::ent::ScriptVar& inp) {
+		inp.pushToLua(L);
+	}
   static ork::ent::ScriptVar get(lua_State* L, int index) {
     ork::ent::ScriptVar rval;
     rval.fromLua(L, index);
@@ -83,20 +85,14 @@ void ScriptVar::fromLua(lua_State* L, int index) {
       break;
     }
     case LUA_TTABLE: {
-      auto table = _encoded.Make<ScriptTable>();
+      auto& table = _encoded.Make<ScriptTable>();
       ScriptVar key, val;
-      lua_pushnil(L);
-      while(lua_next(L, -2) != 0) {
-          key.fromLua(L,-2);
-          val.fromLua(L,-1);
-          if( auto as_str = key._encoded.TryAs<std::string>() ){
-            table._items[as_str.value()]=val;
-          }
-          else{
-            assert(false);
-          }
-          lua_pop(L, 1);
-      }
+			int j = index;
+			auto m = Lua::getMap<std::map<std::string,ScriptVar>>(L,index);
+			for( auto item : m ){
+				printf( "GOTKEY<%s>\n", item.first.c_str());
+				table._items[item.first]=item.second;
+			}
       break;
     }
     default:
@@ -108,6 +104,7 @@ void ScriptVar::fromLua(lua_State* L, int index) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void ScriptVar::pushToLua(lua_State* L) const {
+	assert(_encoded.IsSet());
 	if( auto as_str = _encoded.TryAs<std::string>() ){
 		lua_pushlstring(L, as_str.value().c_str(), as_str.value().length() );
 	}
@@ -130,7 +127,7 @@ void ScriptVar::pushToLua(lua_State* L) const {
 		lua_pushlightuserdata (L, as_vstar.value() );
 	}
 	else {
-		lua_pushnil(L);
+		assert(false);
 	}
 }
 

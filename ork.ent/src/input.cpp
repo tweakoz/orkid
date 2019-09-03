@@ -50,12 +50,21 @@ namespace ork::ent {
     if(q._eventID == "get.group"){
       auto grpname = q._eventData.Get<std::string>();
       auto grp = lev2::InputManager::inputGroup(grpname);
-      rval.Set<lev2::InputGroup*>(grp);
+      rval.Set<void*>(grp);
     }
     else if(q._eventID == "read"){
-      auto grp = static_cast<lev2::InputGroup*>(q._eventData.Get<void*>());
+      const auto& tbl = q._eventData.Get<ScriptTable>();
+      for( auto i : tbl._items ){
+        printf( "read tablekey<%s>\n", i.first.c_str() );
+      }
+      auto itg = tbl._items.find("grp");
+      assert(itg!=tbl._items.end());
+      auto itch = tbl._items.find("channel");
+      assert(itch!=tbl._items.end());
+      auto grp = static_cast<lev2::InputGroup*>(itg->second._encoded.Get<void*>());
       assert(grp!=nullptr);
-      //rval.Set<bool>(grp->);
+      auto channel_name = itch->second._encoded.Get<std::string>();
+      rval = grp->getChannel(channel_name).rawValue();
     }
     else{
       printf( "invalid evid<%s>\n", q._eventID.c_str() );

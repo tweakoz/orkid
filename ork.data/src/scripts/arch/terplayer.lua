@@ -29,6 +29,7 @@ function TerPlayer:OnEntityActivate()
     })
     self.hands = self.input:query("get.group","hands")
     printf( "hands group<%s>",tostring(self.hands))
+    assert(self.hands~=nil)
 end
 -------------------------------------------------------------------------------
 function TerPlayer:OnEntityDeactivate()
@@ -44,7 +45,7 @@ function TerPlayer:OnEntityUpdate(dt)
       grp=self.hands,
       channel="left.trigger"
     })
-    printf( "TERPLAYER::ltrigger %s", ltrigger )
+    printf( "TERPLAYER::ltrigger %s", tostring(ltrigger) )
 end
 -------------------------------------------------------------------------------
 return TerPlayer
