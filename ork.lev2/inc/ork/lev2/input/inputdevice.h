@@ -348,7 +348,10 @@ private:
 };
 
 struct InputChannel {
-	svar256_t _value;
+	InputChannel(){
+		_value.Set<float>(0.0f);
+	}
+	svar64_t _value;
 };
 
 struct InputGroup {
@@ -369,6 +372,17 @@ struct InputGroup {
 		template <typename T> attempt_cast<T> tryAs(){
 			assert(_group);
 			return _group->tryAs<T>(_channelname);
+		}
+		svar64_t rawValue() const {
+			svar64_t rval;
+			_group->_channels.atomicOp([&](channelmap_t& chmap){
+				if(chmap.find(_channelname)==chmap.end()){
+					printf( "uhoh, cannot find channelname<%s>\n", _channelname.c_str() );
+					assert(false);
+				}
+				rval = chmap[_channelname]._value;
+			});
+			return rval;
 		}
 	};
 

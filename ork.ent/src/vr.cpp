@@ -218,6 +218,18 @@ struct VRSYSTEMIMPL {
         _height(1024),
         _hmdinputgroup(*lev2::InputManager::inputGroup("hmd")) {
 
+
+      auto handgroup = lev2::InputManager::inputGroup("hands");
+      handgroup->setChannel("left.button1").as<bool>(false);
+      handgroup->setChannel("left.button2").as<bool>(false);
+      handgroup->setChannel("left.trigger").as<bool>(false);
+      handgroup->setChannel("left.thumb").as<bool>(false);
+
+      handgroup->setChannel("right.button1").as<bool>(false);
+      handgroup->setChannel("right.button2").as<bool>(false);
+      handgroup->setChannel("right.trigger").as<bool>(false);
+      handgroup->setChannel("right.thumb").as<bool>(false);
+
 #if defined(ENABLE_VR)
     vr::EVRInitError error = vr::VRInitError_None;
     _hmd = vr::VR_Init(&error, vr::VRApplication_Scene);
