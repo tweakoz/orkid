@@ -106,7 +106,7 @@ public:
 
 	tool::ModelChoices*			mpMdlChoices;
 	tool::ChsmChoices*				mpChsmChoices;
-	tool::CAnimChoices*				mpAnmChoices;
+	tool::AnimChoices*				mpAnmChoices;
 	tool::TextureChoices*			mpTexChoices;
 	tool::ScriptChoices*			mpScriptChoices;
 	tool::AudioStreamChoices*		mpAudStreamChoices;

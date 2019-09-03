@@ -112,7 +112,7 @@ SoundFontConversionEngine::~SoundFontConversionEngine()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFontConversionEngine::AddProgram( Ssfontpreset *preset )
+void SoundFontConversionEngine::AddProgram( sfontpreset *preset )
 {
 	SF2Program *cpre = new SF2Program;
 
@@ -134,7 +134,7 @@ void SoundFontConversionEngine::AddProgram( Ssfontpreset *preset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFontConversionEngine::AddSample( Ssfontsample *sample )
+void SoundFontConversionEngine::AddSample( sfontsample *sample )
 {
 	SF2Sample *pxsample = new SF2Sample( sample );
 	mPXMSamples.push_back( pxsample );
@@ -142,14 +142,14 @@ void SoundFontConversionEngine::AddSample( Ssfontsample *sample )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFontConversionEngine::AddPresetGen( SSoundFontGenerator *pgn )
+void SoundFontConversionEngine::AddPresetGen( SoundFontGenerator *pgn )
 {
 	mPXMPresetGen.push_back( pgn );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFontConversionEngine::AddInstrumentZone( Ssfontinstbag *ibg )
+void SoundFontConversionEngine::AddInstrumentZone( sfontinstbag *ibg )
 {
 	SF2InstrumentZone *pxmi = new SF2InstrumentZone;
 	pxmi->base_generator = ibg->wInstGenNdx;
@@ -159,7 +159,7 @@ void SoundFontConversionEngine::AddInstrumentZone( Ssfontinstbag *ibg )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFontConversionEngine::AddInstrument( Ssfontinst *inst )
+void SoundFontConversionEngine::AddInstrument( sfontinst *inst )
 {
 	SF2Instrument *pxmi = new SF2Instrument;
 	pxmi->izone_base = inst->wInstBagNdx;
@@ -171,14 +171,14 @@ void SoundFontConversionEngine::AddInstrument( Ssfontinst *inst )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFontConversionEngine::AddInstrumentGen( SSoundFontGenerator *igen )
+void SoundFontConversionEngine::AddInstrumentGen( SoundFontGenerator *igen )
 {
 	mPXMInstrumentGen.push_back( igen );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFontConversionEngine::AddProgramZone( Ssfontprebag *pbg )
+void SoundFontConversionEngine::AddProgramZone( sfontprebag *pbg )
 {
 	SF2ProgramZone *pxmp = new SF2ProgramZone;
 	pxmp->base_generator = pbg->wInstGenNdx;
@@ -455,7 +455,7 @@ void SoundFontConversionEngine::ProcessInstruments( void )
 		{	
 			int iGenINDEX = iBASEGEN + g;
 			
-			SSoundFontGenerator *igen = mPXMInstrumentGen[iGenINDEX];
+			SoundFontGenerator *igen = mPXMInstrumentGen[iGenINDEX];
 			
 			ESF2Generators egen = ESF2Generators(igen->muGeneratorID);
 
@@ -688,7 +688,7 @@ void SoundFontConversionEngine::ProcessPresets( void )
 		for( int g=0; g<pre->num_generators; g++ )
 		{	
 			int gnum = g+pre->base_generator;
-			SSoundFontGenerator *pgen = mPXMPresetGen[gnum];
+			SoundFontGenerator *pgen = mPXMPresetGen[gnum];
 			
 			if( pgen->muGeneratorID == 41 ) // instrument
 			{

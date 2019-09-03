@@ -182,7 +182,7 @@ void Cpstring::write_to_file( FILE *fout )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 Ciffchunk::calcsize( void )
+U32 iff_chunk::calcsize( void )
 {
 	size = 0;
 	size_t numchildren = children_vect.size();
@@ -196,7 +196,7 @@ U32 Ciffchunk::calcsize( void )
 	return size;
 }
 
-void Ciffchunk::write_to_file( FILE *fout )
+void iff_chunk::write_to_file( FILE *fout )
 {
 	write_U32( fout, RIFFChunk::ChunkName( 'F', 'O', 'R', 'M' ) );
 	hal_write_U32( fout, size );
@@ -211,13 +211,13 @@ void Ciffchunk::write_to_file( FILE *fout )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 Caiff_comm::calcsize( void )
+U32 aiff_comm::calcsize( void )
 {
 	size = 18; // 0x12
 	return size;
 }
 
-void Caiff_comm::write_to_file( FILE *fout )
+void aiff_comm::write_to_file( FILE *fout )
 {
 	write_U32( fout, chunkID );
 	hal_write_U32( fout, size );
@@ -232,14 +232,14 @@ void Caiff_comm::write_to_file( FILE *fout )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 Caiff_ssnd::calcsize( void )
+U32 aiff_ssnd::calcsize( void )
 {
 	U32 numsamps = export_sample->len;
 	size = 8 + (numsamps*2);
 	return size;
 }
 
-void Caiff_ssnd::write_to_file( FILE *fout )
+void aiff_ssnd::write_to_file( FILE *fout )
 {
 	write_U32( fout, chunkID );
 	hal_write_U32( fout, size );
@@ -256,26 +256,26 @@ void Caiff_ssnd::write_to_file( FILE *fout )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 TCaiff_marker::calcsize( void )
+U32 Taiff_marker::calcsize( void )
 {
 	U32 rval = 6 + name.count+1+1; // strlen + pad + size + zero
 	return rval;
 }
 
-U32 Caiff_mark::calcsize( void )
+U32 aiff_mark::calcsize( void )
 {
 	size_t nummarkers = marker_vect.size();
 	size = 2;
 
 	for( U32 i=0; i<nummarkers; i++ )
 	{
-		TCaiff_marker *marker = marker_vect[i];
+		Taiff_marker *marker = marker_vect[i];
 		size += marker->calcsize();
 	}
 	return size;
 }
 
-void Caiff_mark::write_to_file( FILE *fout )
+void aiff_mark::write_to_file( FILE *fout )
 {
 	write_U32( fout, chunkID );
 	hal_write_U32( fout, size );
@@ -285,7 +285,7 @@ void Caiff_mark::write_to_file( FILE *fout )
 	hal_write_U16( fout, u16(nummarkers) );
 
 	for( U32 i=0; i<nummarkers; i++ )
-	{	TCaiff_marker *marker = marker_vect[i];
+	{	Taiff_marker *marker = marker_vect[i];
 		hal_write_U16( fout, marker->mkrID );
 		hal_write_U32( fout, marker->pos );
 		marker->name.write_to_file( fout );
@@ -294,7 +294,7 @@ void Caiff_mark::write_to_file( FILE *fout )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 Caiff_inst::calcsize( void )
+U32 aiff_inst::calcsize( void )
 {
 	size	= 6; // basenote detune lonote hinote lovel hivel
 	size	+= 2; // gain
@@ -304,7 +304,7 @@ U32 Caiff_inst::calcsize( void )
 	return size;
 }
 
-void Caiff_inst::write_to_file( FILE *fout )
+void aiff_inst::write_to_file( FILE *fout )
 {
 	write_U32( fout, chunkID );
 	hal_write_U32( fout, size );
@@ -329,13 +329,13 @@ void Caiff_inst::write_to_file( FILE *fout )
 	
 ///////////////////////////////////////////////////////////////////////////////
 
-TCiffchunk aiff_main_chunk;
-TCaiff_comm aiff_comm_chunk;
-TCaiff_ssnd aiff_ssnd_chunk;
-TCaiff_mark aiff_mark_chunk;
-TCaiff_inst aiff_inst_chunk;
-TCaiff_marker start_marker;
-TCaiff_marker end_marker;
+iff_chunk_t aiff_main_chunk;
+Taiff_comm aiff_comm_chunk;
+Taiff_ssnd aiff_ssnd_chunk;
+Taiff_mark aiff_mark_chunk;
+Taiff_inst aiff_inst_chunk;
+Taiff_marker start_marker;
+Taiff_marker end_marker;
 	
 void init_aiff_exporter( void )
 {
@@ -365,7 +365,7 @@ void init_aiff_exporter( void )
 
 }
 
-void write_sample_aiff( const char * fname, TCaiff_exp *exp )
+void write_sample_aiff( const char * fname, Taiff_exp *exp )
 {
 	aiff_ssnd_chunk.export_sample = exp;
 	aiff_ssnd_chunk.offset = 0;

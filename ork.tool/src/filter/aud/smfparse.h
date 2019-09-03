@@ -14,7 +14,7 @@
 
 namespace ork { namespace tool {
 
-class TCsmfparse
+class smfparse_t
 
 {	public: // data
 
@@ -26,7 +26,7 @@ class TCsmfparse
 		
 	public: // methods
 
-	TCsmfparse( void ); // default constructor
+	smfparse_t( void ); // default constructor
 	bool openfilename( STRING fname );
 	void getchunks( void );
 
@@ -51,7 +51,7 @@ class Criffchunk
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CSMFParser
+class SMFParser
 
 {
 	///////////////////////////////////
@@ -77,7 +77,7 @@ class CSMFParser
 	public: // methods
 	///////////////////////////////////
 
-	CSMFParser( void ); // default constructor
+	SMFParser( void ); // default constructor
 	bool openfilename( string fname );
 	void close( void );
 	void getchunks( void );
@@ -91,15 +91,15 @@ class CSMFParser
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CSMF2MMTFilter // standard midifile -> orkid midi trax file
+class SMF2MMTFilter // standard midifile -> orkid midi trax file
 {
 	public: //
 
 	////////////////////////////////////
 
 	static void ClassInit( CClass *pClass );
-	CSMF2MMTFilter( CClass *pClass );
-	static string GetClassName( void ) { return string("CSMF2MMTFilter"); }
+	SMF2MMTFilter( CClass *pClass );
+	static string GetClassName( void ) { return string("SMF2MMTFilter"); }
 
 	////////////////////////////////////
 

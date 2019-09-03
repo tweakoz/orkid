@@ -12,7 +12,7 @@ namespace ork { namespace tool {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef class Caiff_exp
+typedef class aiff_exp
 {
 	public: //
 		
@@ -23,7 +23,7 @@ typedef class Caiff_exp
 	int isamplerate;
 	bool mbLoopEnable;
 
-	Caiff_exp()
+	aiff_exp()
 	{
 		sounddata = 0;
 		len = 0;
@@ -33,7 +33,7 @@ typedef class Caiff_exp
 		mbLoopEnable = false;
 	}
 
-} TCaiff_exp;
+} Taiff_exp;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -54,25 +54,25 @@ typedef class Cpstring
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef class Ciffchunk TCiffchunk;
+typedef class iff_chunk iff_chunk_t;
 
-typedef class Ciffchunk
+typedef class iff_chunk
 {
 	public: //
 		
 	U32 chunkID; // #define RIFFChunk::ChunkName()
 	U32 size;
 	void *data;
-	orkvector< TCiffchunk * > children_vect;
+	orkvector< iff_chunk_t * > children_vect;
 
 	virtual U32 calcsize( void );
 	virtual void write_to_file( FILE *fout );
 
-} TCiffchunk;
+} iff_chunk_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef class Caiff_comm : public TCiffchunk
+typedef class aiff_comm : public iff_chunk_t
 {
 	public: //
 
@@ -84,7 +84,7 @@ typedef class Caiff_comm : public TCiffchunk
 	virtual U32 calcsize( void );
 	virtual void write_to_file( FILE *fout );
 
-	Caiff_comm()
+	aiff_comm()
 	{
 		num_channels = 1;
 		num_bits = 16;
@@ -92,11 +92,11 @@ typedef class Caiff_comm : public TCiffchunk
 		num_frames = 0;
 	}
 
-} TCaiff_comm;
+} Taiff_comm;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef class Caiff_ssnd : public TCiffchunk
+typedef class aiff_ssnd : public iff_chunk_t
 {
 	public: //
 
@@ -107,20 +107,20 @@ typedef class Caiff_ssnd : public TCiffchunk
 	virtual U32 calcsize( void );
 	virtual void write_to_file( FILE *fout );
 
-	TCaiff_exp *export_sample;
+	Taiff_exp *export_sample;
 
-	Caiff_ssnd()
+	aiff_ssnd()
 	{
 		offset = 0;
 		blocksize = 0;
 		export_sample = 0;
 	}
 
-} TCaiff_ssnd;
+} Taiff_ssnd;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef class Caiff_marker
+typedef class aiff_marker
 {
 	public: //
 		
@@ -130,23 +130,23 @@ typedef class Caiff_marker
 
 	U32 calcsize( void );
 
-} TCaiff_marker;
+} Taiff_marker;
 
-typedef class Caiff_mark : public TCiffchunk
+typedef class aiff_mark : public iff_chunk_t
 {
 	public: //
 
 	//U16 num_markers;
-	orkvector< TCaiff_marker * > marker_vect;
+	orkvector< Taiff_marker * > marker_vect;
 
-	Caiff_mark()
+	aiff_mark()
 	{
 	}
 
 	virtual U32 calcsize( void );
 	virtual void write_to_file( FILE *fout );
 	
-} TCaiff_mark;
+} Taiff_mark;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -162,7 +162,7 @@ typedef struct Saiff_loop
 
 } TSaiff_loop;
 
-typedef class Caiff_inst : public TCiffchunk
+typedef class aiff_inst : public iff_chunk_t
 {
 	public: //
 
@@ -180,7 +180,7 @@ typedef class Caiff_inst : public TCiffchunk
 	virtual U32 calcsize( void );
 	virtual void write_to_file( FILE *fout );
 
-	Caiff_inst()
+	aiff_inst()
 	{
 		basenote = 60;
 		detune = 0;
@@ -198,10 +198,10 @@ typedef class Caiff_inst : public TCiffchunk
 		
 	}
 
-} TCaiff_inst;
+} Taiff_inst;
 
 
-void write_sample_aiff( const char * fname, TCaiff_exp *exp );
+void write_sample_aiff( const char * fname, Taiff_exp *exp );
 
 ///////////////////////////////////////////////////////////////////////////////
 

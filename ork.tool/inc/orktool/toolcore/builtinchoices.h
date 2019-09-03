@@ -18,12 +18,12 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class CAnimChoices : public ork::tool::ChoiceList
+class AnimChoices : public ork::tool::ChoiceList
 {
 public:
 
 	virtual void EnumerateChoices( bool bforcenocache=false );
-	CAnimChoices();
+	AnimChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////

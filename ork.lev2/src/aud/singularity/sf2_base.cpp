@@ -70,7 +70,7 @@ SoundFont::~SoundFont()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFont::AddProgram( Ssfontpreset *preset )
+void SoundFont::AddProgram( sfontpreset *preset )
 {
 	auto cpre = new SF2Program;
 
@@ -92,7 +92,7 @@ void SoundFont::AddProgram( Ssfontpreset *preset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFont::AddSample( Ssfontsample *sample )
+void SoundFont::AddSample( sfontsample *sample )
 {
 	SF2Sample *pxsample = new SF2Sample( sample );
 	mPXMSamples.push_back( pxsample );
@@ -100,14 +100,14 @@ void SoundFont::AddSample( Ssfontsample *sample )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFont::AddPresetGen( SSoundFontGenerator *pgn )
+void SoundFont::AddPresetGen( SoundFontGenerator *pgn )
 {
 	mPXMPresetGen.push_back( pgn );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFont::AddInstrumentZone( Ssfontinstbag *ibg )
+void SoundFont::AddInstrumentZone( sfontinstbag *ibg )
 {
 	auto pxmi = new InstrumentZone;
 	pxmi->base_generator = ibg->wInstGenNdx;
@@ -117,7 +117,7 @@ void SoundFont::AddInstrumentZone( Ssfontinstbag *ibg )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFont::AddInstrument( Ssfontinst *inst )
+void SoundFont::AddInstrument( sfontinst *inst )
 {
 	auto pxmi = new SF2Instrument;
 	pxmi->izone_base = inst->wInstBagNdx;
@@ -129,14 +129,14 @@ void SoundFont::AddInstrument( Ssfontinst *inst )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFont::AddInstrumentGen( SSoundFontGenerator *igen )
+void SoundFont::AddInstrumentGen( SoundFontGenerator *igen )
 {
 	mPXMInstrumentGen.push_back( igen );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void SoundFont::AddProgramZone( Ssfontprebag *pbg )
+void SoundFont::AddProgramZone( sfontprebag *pbg )
 {
 	auto pxmp = new SF2ProgramZone;
 	pxmp->base_generator = pbg->wInstGenNdx;

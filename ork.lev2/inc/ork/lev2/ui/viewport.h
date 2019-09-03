@@ -20,7 +20,7 @@ public:
 		EREFRESH_REQUEST,		// Refreshes on any draw request
 	};
 
-	struct SViewportFlags
+	struct ViewportFlags
 	{
 		ERefreshState	meRefreshState			:2;
 		unsigned		mPad					:30;
