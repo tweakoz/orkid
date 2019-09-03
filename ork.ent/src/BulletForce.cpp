@@ -80,7 +80,7 @@ struct MyPid {
 
   float Update(float MeasuredError, float dt) {
     mIntegral += MeasuredError * dt;
-    mIntegral *= std::pow(mIntegralDecay, dt);
+    mIntegral *= powf(mIntegralDecay, dt);
     mIntegral = maximum(mIntegral, mIntegralMin);
     mIntegral = minimum(mIntegral, mIntegralMax);
     float P = MeasuredError;
@@ -241,9 +241,9 @@ void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObje
     float Y_ferr = Y_ferrABS * Y_fsign;
     /////////////////////////////
     float Y_famt = mPIDroll.Update(Y_ferr, 1.0f);
-    float kfmaxT = clamp(mTestData.mTorque * 0.1f,
-                         -kfmaxT,
-                         +kfmaxT);
+    float kfmaxT = std::clamp(mTestData.mTorque * 0.1f,
+                              -kfmaxT,
+                              +kfmaxT);
     rbody->applyTorque(!(znormal * Y_famt));
     /////////////////////////////
   }

@@ -96,7 +96,7 @@ template<typename T>
 T PIDController2<T>::Update(T MeasuredError, float dt )
 {
     mIntegral += MeasuredError*dt;
-	mIntegral *= std::pow(mIntegralDecay, dt);
+	mIntegral *= powf(mIntegralDecay, dt);
 
 	//mIntegral = maximum(mIntegral, mMaxDelta.GetX());
 	//mIntegral = minimum(mIntegral, mMaxDelta.GetY());

@@ -275,7 +275,7 @@ void AudioInstrumentPlayback::SetZonePlayback( int ich, AudioZonePlayback* pb )
 
 float tri_osc( float fphase_radians )
 {
-	float fmod_rad = std::fmod( fphase_radians, PI2 ) / PI; // 0 .. 2.0f
+	float fmod_rad = fmodf( fphase_radians, PI2 ) / PI; // 0 .. 2.0f
 
 	if( fmod_rad > 1.5f )
 	{
@@ -355,7 +355,7 @@ void AudioSf2ZonePlayback::Update( float fdt )
 	float fc = fcbase * cents_to_linear_freq_ratio(fcmod_cents);
 	float fq = (pizone->GetFilterQ()/960.0f);
 
-	float fsq = ork::powf( fq, 2.0f );
+	float fsq = powf( fq, 2.0f );
 	float fdiq = fq-fsq;
 
 	fq = fq+fdiq;
@@ -476,10 +476,10 @@ void AudioInstrumentZoneContext::SetLpfReson( float kfco, float krez )
 	float kfcon = kfco*pi2isr;
 	float kfcon2 = (2.0f*kfcon);
 
-	float cos_kfcon = std::cos( kfcon );
-	float cos_kfcon2 = std::cos( kfcon2 );
-	float sin_kfcon = std::sin( kfcon );
-	float sin_kfcon2 = std::sin( kfcon2 );
+	float cos_kfcon = cosf( kfcon );
+	float cos_kfcon2 = cosf( kfcon2 );
+	float sin_kfcon = sinf( kfcon );
+	float sin_kfcon2 = sinf( kfcon2 );
 	float krezsq = (krez*krez);
 	float krez_cos_kfcon = krez*cos_kfcon;
 
@@ -491,7 +491,7 @@ void AudioInstrumentZoneContext::SetLpfReson( float kfco, float krez )
 	float km1 = kag+kbs;
 	float km2 = kag-kbs;
 
-	float kden = std::sqrt(km1*km1+km2*km2);
+	float kden = sqrtf(km1*km1+km2*km2);
 
 	mfa1 = -2.0f*krez*cos_kfcon;
 	mfa2 = krez*krez;

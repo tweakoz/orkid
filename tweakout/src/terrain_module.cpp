@@ -817,8 +817,8 @@ void hmap_hfield_module::SaveHeightToTexture( const file::Path& filename ) const
 	hr = dxtex->LockRect( 0, &d3dlr, 0, 0 );
 	OrkAssert( SUCCEEDED( hr ) );
 	float* pDst = (float*) d3dlr.pBits;
-	float fmin = Float::TypeMax();
-	float fmax = -Float::TypeMax();
+	float fmin = std::numeric_limits<float>::max();
+	float fmax = -std::numeric_limits<float>::max();
 	for( int iz=0; iz<miSize; iz++ )
 	{
 		for( int ix=0; ix<miSize; ix++ )

@@ -619,7 +619,7 @@ void GfxMaterialFx::Init( GfxTarget* pTARG )
 				struct gettime
 				{	static const float& doit( GfxTarget *pTARG )
 					{	static float reltime;
-						reltime = std::fmod( float( OldSchool::GetRef().GetLoResRelTime() ), 300.0f );
+						reltime = fmodf( float( OldSchool::GetRef().GetLoResRelTime() ), 300.0f );
 						return reltime;
 					}
 				};

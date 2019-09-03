@@ -159,7 +159,7 @@ struct GedSkin0 : public GedSkin { /////////////////////////////////////////////
 
     fdepth = (1.0f - fdepth);
 
-    fdepth = ork::powf(fdepth, 0.20f);
+    fdepth = powf(fdepth, 0.20f);
 
     int icidx = pnode->GetDecoIndex();
 
@@ -464,7 +464,7 @@ struct GedSkin1 : public GedSkin { /////////////////////////////////////////////
 
     float fdepth = bsc ? float(pnode->GetDepth()) / 12.0f : 1.0f;
 
-    fdepth = ork::powf(fdepth, 0.5f);
+    fdepth = powf(fdepth, 0.5f);
 
     int icidx = pnode->GetDecoIndex();
 

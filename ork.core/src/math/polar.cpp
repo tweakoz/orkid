@@ -14,10 +14,10 @@
 
 // As psp-gcc does _not_ qualify sqrtf with std:: we must make CW 'using' it
 #ifdef NITRO
-using std::fabs;
-using std::sinf;
-using std::cosf;
-using std::sqrtf;
+using fabs;
+using sinff;
+using cosff;
+using sqrtff;
 using std::atanf;
 #endif
 
@@ -25,7 +25,7 @@ using std::atanf;
 
 F32 pol2rect_x( F32 ang, F32 rad )
 {
-	F32 x = rad * ork::cosf( ang );
+	F32 x = rad * cosf( ang );
 	return x;
 }
 
@@ -33,7 +33,7 @@ F32 pol2rect_x( F32 ang, F32 rad )
 
 F32 pol2rect_y( F32 ang, F32 rad )
 {
-	F32 y = rad * ork::sinf( ang );
+	F32 y = rad * sinf( ang );
 	return y;
 }
 
@@ -61,19 +61,19 @@ F32 rect2pol_ang( F32 x, F32 y )
 	
 	// Q0 ( bottom right )
 	else if( (x>0.0f) && (y>0.0f) )
-	{	ang = ork::atanf( y/x );
+	{	ang = atanf( y/x );
 	}
 	// Q1 ( bottom left )
 	else if( (x<0.0f) && (y>0.0f) )
-	{	ang = PI+ork::atanf( y/x );
+	{	ang = PI+atanf( y/x );
 	}
 	// Q2 ( top left )
 	else if( (x<0.0f) && (y<0.0f) )
-	{	ang = PI+ork::atanf( y/x );
+	{	ang = PI+atanf( y/x );
 	}
 	// Q3 ( top right )
 	else if( (x>0.0f) && (y<0.0f) )
-	{	ang = ork::atanf( y/x );
+	{	ang = atanf( y/x );
 	}
 	
 	return ang;
@@ -103,19 +103,19 @@ F32 rect2pol_angr( F32 x, F32 y )
 	
 	// Q0 ( bottom right )
 	else if( (x>0.0f) && (y>0.0f) )
-	{	ang = ork::atanf( y/x );
+	{	ang = atanf( y/x );
 	}
 	// Q1 ( bottom left )
 	else if( (x<0.0f) && (y>0.0f) )
-	{	ang = PI+ork::atanf( y/x );
+	{	ang = PI+atanf( y/x );
 	}
 	// Q2 ( top left )
 	else if( (x<0.0f) && (y<0.0f) )
-	{	ang = PI+ork::atanf( y/x );
+	{	ang = PI+atanf( y/x );
 	}
 	// Q3 ( top right )
 	else if( (x>0.0f) && (y<0.0f) )
-	{	ang = ork::atanf( y/x );
+	{	ang = atanf( y/x );
 	}
 	
 	return ang;
@@ -125,6 +125,6 @@ F32 rect2pol_angr( F32 x, F32 y )
 
 F32 rect2pol_rad( F32 x, F32 y )
 {
-	F32 rad = ork::sqrtf( (x*x)+(y*y) );
+	F32 rad = sqrtf( (x*x)+(y*y) );
 	return rad;
 }

@@ -88,7 +88,7 @@ ork::fvec4 test_volume_shader::ShadeVolume( const ork::fvec3& entrywpos, const o
 {
 	float fdist = (exitwpos-entrywpos).Mag();
 	float fsd = 1.5f*fdist/10.0f;
-	float falpha = std::pow(fsd,2.0f);
+	float falpha = powf(fsd,2.0f);
 	return ork::fvec4(1.7f,0.2f,0.2f,falpha);
 }
 

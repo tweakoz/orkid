@@ -263,7 +263,7 @@ void AudioStreamLerpableParam::Update( float fdeltatime )
 {
 	float fdelta = (mfTarget-mfCurrent);
 	int isdelta = (fdelta==0.0f) ? 0 : (fdelta<0.0f) ? -1 : 1;
-	if( std::fabs(fdelta) > 0.0f )
+	if( fabs(fdelta) > 0.0f )
 	{	if( mfTransitionTime == 0.0f )
 		{	mfCurrent = mfTarget;
 		}

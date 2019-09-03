@@ -11,7 +11,7 @@
 
 // As psp-gcc does _not_ qualify sqrtf with std:: we must make CW 'using' it
 #ifdef NITRO
-using std::fabs;
+using fabs;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -151,7 +151,7 @@ template< typename T> void Plane<T>::crossProduct( F64 ii1, F64 jj1, F64 kk1, F6
 
 template< typename T> static bool AreValuesCloseEnoughtToBeEqual( f64 a,f64 b, f64 ftolerance )
 {
-	return (std::fabs(a-b) >= ftolerance) ? false : true;
+	return (fabs(a-b) >= ftolerance) ? false : true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

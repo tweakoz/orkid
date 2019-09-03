@@ -338,7 +338,7 @@ ork::fvec4 rend_texture2D::sample_point( float u, float v, bool wrapu, bool wrap
 		if( u < 0.0f )
 		{
 			// -1.2
-			float fau = std::abs(u); // 1.2
+			float fau = fabs(u); // 1.2
 			u = 1.0f-fmod( fau, 1.0f ); // 1.0f-.2 == .8
 		}
 		else
@@ -350,7 +350,7 @@ ork::fvec4 rend_texture2D::sample_point( float u, float v, bool wrapu, bool wrap
 	{
 		if( v < 0.0f )
 		{
-			float fav = std::abs(v);
+			float fav = fabs(v);
 			v = 1.0f-fmod( fav, 1.0f );
 		}
 		else

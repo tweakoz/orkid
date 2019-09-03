@@ -98,7 +98,7 @@ void Grid3d::Calc(const CameraData& camdat) {
   float fASPECT = fHEIGHT / fWIDTH;
 
   float fLOG = float(log_base(mVisGridDiv, DistToPlane * mVisGridBase));
-  float fiLOG = float(pow_base(mVisGridDiv, float(Float::Floor(fLOG))));
+  float fiLOG = float(pow_base(mVisGridDiv, float(floor(fLOG))));
   mVisGridSize = fiLOG / mVisGridDiv;
 
   if (mVisGridSize < 10.0f)
@@ -107,10 +107,10 @@ void Grid3d::Calc(const CameraData& camdat) {
   // if( mVisGridSize<float(0.5f) ) mVisGridSize = float(0.5f);
   // if( mVisGridSize>float(8.0f) ) mVisGridSize = float(8.0f);
 
-  mGridDL = mVisGridSize * float(Float::Floor(fLEFT / mVisGridSize));
-  mGridDR = mVisGridSize * float(Float::Ceil(fRIGHT / mVisGridSize));
-  mGridDT = mVisGridSize * float(Float::Floor(fTOP / mVisGridSize));
-  mGridDB = mVisGridSize * float(Float::Ceil(fBOTTOM / mVisGridSize));
+  mGridDL = mVisGridSize * float(floor(fLEFT / mVisGridSize));
+  mGridDR = mVisGridSize * float(ceil(fRIGHT / mVisGridSize));
+  mGridDT = mVisGridSize * float(floor(fTOP / mVisGridSize));
+  mGridDB = mVisGridSize * float(ceil(fBOTTOM / mVisGridSize));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ void Grid3d::Render(RenderContextFrameData& FrameData) const {
     if (meGridMode == EGRID_XY) {
       for (float fX = mGridDL; fX <= mGridDR; fX += mVisGridSize) {
         bool bORIGIN = (fX == 0.0f);
-        bool bhi = std::fmod(Float::Abs(fX), mVisGridHiliteDiv) < Float::Epsilon();
+        bool bhi = fmodf(fabs(fX), mVisGridHiliteDiv) < Float::Epsilon();
 
         pTARG->PushModColor(bORIGIN ? fcolor4::Green() : (bhi ? HiliGridColor : BaseGridColor));
         // pTARG->IMI()->DrawLine( fvec4( fX, mGridDT, 0.0f, 1.0f ), fvec4( fX, mGridDB, 0.0f, 1.0f ) );
@@ -150,7 +150,7 @@ void Grid3d::Render(RenderContextFrameData& FrameData) const {
       }
       for (float fY = mGridDT; fY <= mGridDB; fY += mVisGridSize) {
         bool bORIGIN = (fY == 0.0f);
-        bool bhi = std::fmod(Float::Abs(fY), mVisGridHiliteDiv) < Float::Epsilon();
+        bool bhi = fmodf(fabs(fY), mVisGridHiliteDiv) < Float::Epsilon();
 
         pTARG->PushModColor(bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor));
         // pTARG->IMI()->DrawLine( fvec4( mGridDL, fY, 0.0f, 1.0f ), fvec4( mGridDR, fY, 0.0f, 1.0f ) );
@@ -160,7 +160,7 @@ void Grid3d::Render(RenderContextFrameData& FrameData) const {
     } else if (meGridMode == EGRID_XZ) {
       for (float fX = mGridDL; fX <= mGridDR; fX += mVisGridSize) {
         bool bORIGIN = (fX == 0.0f);
-        bool bhi = std::fmod(Float::Abs(fX), mVisGridHiliteDiv) < Float::Epsilon();
+        bool bhi = fmodf(fabs(fX), mVisGridHiliteDiv) < Float::Epsilon();
 
         pTARG->PushModColor(bORIGIN ? fcolor4::Blue() : (bhi ? HiliGridColor : BaseGridColor));
         // pTARG->IMI()->DrawLine( fvec4( fX, 0.0f, mGridDT, 1.0f ), fvec4( fX, 0.0f, mGridDB, 1.0f ) );
@@ -169,7 +169,7 @@ void Grid3d::Render(RenderContextFrameData& FrameData) const {
       }
       for (float fY = mGridDT; fY <= mGridDB; fY += mVisGridSize) {
         bool bORIGIN = (fY == 0.0f);
-        bool bhi = std::fmod(Float::Abs(fY), mVisGridHiliteDiv) < Float::Epsilon();
+        bool bhi = fmodf(fabs(fY), mVisGridHiliteDiv) < Float::Epsilon();
 
         pTARG->PushModColor(bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor));
         // pTARG->IMI()->DrawLine( fvec4( mGridDL, 0.0f, fY, 1.0f ), fvec4( mGridDR, 0.0f, fY, 1.0f ) );
@@ -217,12 +217,12 @@ struct grid_calculator
 
         auto log_base = []( float base, float inp ) ->float
         {
-            float rval = std::log( inp ) / std::log( base );
+            float rval = logf( inp ) / logf( base );
             return rval;
         };
         auto pow_base = []( float base, float inp ) ->float
         {
-            float rval = std::pow( base, inp );
+            float rval = powf( base, inp );
             return rval;
         };
 
@@ -276,7 +276,7 @@ void Grid2d::ReCalc(int iw, int ih) {
   float fHEIGHT = fBOTTOM - fTOP;
 
   float fLOG = log_base(mVisGridDiv, fnext * mVisGridBase);
-  float fiLOG = pow_base(mVisGridDiv, Float::Floor(fLOG));
+  float fiLOG = pow_base(mVisGridDiv, floor(fLOG));
   mVisGridSize = fiLOG / mVisGridDiv;
 
   if (mVisGridSize < 10.0f)
@@ -287,11 +287,11 @@ void Grid2d::ReCalc(int iw, int ih) {
   // if( mVisGridSize<float(0.5f) ) mVisGridSize = float(0.5f);
   // if( mVisGridSize>float(8.0f) ) mVisGridSize = float(8.0f);
 
-  mTopLeft.SetX(mVisGridSize * float(Float::Floor(fLEFT / mVisGridSize)));
-  mTopLeft.SetY(mVisGridSize * float(Float::Floor(fTOP / mVisGridSize)));
+  mTopLeft.SetX(mVisGridSize * float(floor(fLEFT / mVisGridSize)));
+  mTopLeft.SetY(mVisGridSize * float(floor(fTOP / mVisGridSize)));
 
-  mBotRight.SetX(mVisGridSize * float(Float::Ceil(fRIGHT / mVisGridSize)));
-  mBotRight.SetY(mVisGridSize * float(Float::Ceil(fBOTTOM / mVisGridSize)));
+  mBotRight.SetX(mVisGridSize * float(ceil(fRIGHT / mVisGridSize)));
+  mBotRight.SetY(mVisGridSize * float(ceil(fBOTTOM / mVisGridSize)));
 }
 
 void Grid2d::SetExtent(float fv) { mExtent = fv; }
@@ -302,8 +302,8 @@ void Grid2d::SetCenter(const fvec2& ctr) { mCenter = ctr; }
 fvec2 Grid2d::Snap(fvec2 inp) const {
   float ffx = inp.GetX();
   float ffy = inp.GetY();
-  float ffxm = std::fmod(ffx, mVisGridSize);
-  float ffym = std::fmod(ffy, mVisGridSize);
+  float ffxm = fmodf(ffx, mVisGridSize);
+  float ffym = fmodf(ffy, mVisGridSize);
 
   bool blx = (ffxm < (mVisGridSize * 0.5f));
   bool bly = (ffym < (mVisGridSize * 0.5f));
@@ -364,7 +364,7 @@ void Grid2d::Render(GfxTarget* pTARG, int iw, int ih) {
       fvec2 uv0(0.0f, 0.0f);
       for (float fx = x1; fx <= x2; fx += mVisGridSize) {
         bool bORIGIN = (fx == 0.0f);
-        bool bhi = std::fmod(Float::Abs(fx), mVisGridHiliteDiv) < Float::Epsilon();
+        bool bhi = fmodf(fabs(fx), mVisGridHiliteDiv) < Float::Epsilon();
 
         auto color = bORIGIN ? fcolor4::Green() : (bhi ? HiliGridColor : BaseGridColor);
         u32 ucolor = color.GetVtxColorAsU32();
@@ -375,7 +375,7 @@ void Grid2d::Render(GfxTarget* pTARG, int iw, int ih) {
       }
       for (float fy = y1; fy <= y2; fy += mVisGridSize) {
         bool bORIGIN = (fy == 0.0f);
-        bool bhi = std::fmod(Float::Abs(fy), mVisGridHiliteDiv) < Float::Epsilon();
+        bool bhi = fmodf(fabs(fy), mVisGridHiliteDiv) < Float::Epsilon();
 
         auto color = bORIGIN ? fcolor4::Red() : (bhi ? HiliGridColor : BaseGridColor);
         u32 ucolor = color.GetVtxColorAsU32();

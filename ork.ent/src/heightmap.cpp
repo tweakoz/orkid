@@ -20,8 +20,8 @@ typedef orkmap<float, fvec4> gradient_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 HeightMap::HeightMap(int isx, int isz)
-    : miGridSizeX(0), miGridSizeZ(0), mHeightData(), mMin(Float::TypeMax()),
-      mMax(-Float::TypeMax()), mRange(0.0f), mMutex("shmMutex"),
+    : miGridSizeX(0), miGridSizeZ(0), mHeightData(), mMin(std::numeric_limits<float>::max()),
+      mMax(-std::numeric_limits<float>::max()), mRange(0.0f), mMutex("shmMutex"),
       mfWorldSizeX(1.0f), mfWorldSizeZ(1.0f), mIndexToUnitX(1.0f),
       mIndexToUnitZ(1.0f), mWorldHeight(1.0f)
 
@@ -29,8 +29,8 @@ HeightMap::HeightMap(int isx, int isz)
   SetGridSize(isx, isz);
 }
 void HeightMap::ResetMinMax() {
-  mMin = Float::TypeMax();
-  mMax = -Float::TypeMax();
+  mMin = std::numeric_limits<float>::max();
+  mMax = -std::numeric_limits<float>::max();
   mRange = 0.0f;
 }
 

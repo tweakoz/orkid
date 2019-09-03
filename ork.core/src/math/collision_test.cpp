@@ -173,7 +173,7 @@ bool CollisionTester::RaySphereTest(const fray3& ray, const Sphere& sph, float& 
     float discriminant = (b_coef*b_coef) - (4.0f*a_coef*c_coef);
     if (discriminant < 0.0f) return false; 
 	///////////////////////////////////////////////////////
-	float dist = ork::sqrtf(discriminant);
+	float dist = sqrtf(discriminant);
 	float quadratic = (b_coef < 0.0f) ? (-b_coef - dist)*0.5f : (-b_coef + dist)*0.5f;
     float t0 = quadratic / a_coef;
     float t1 = c_coef / quadratic;

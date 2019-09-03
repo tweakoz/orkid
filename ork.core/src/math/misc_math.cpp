@@ -59,10 +59,10 @@ XYZ RotatePointAboutLine(XYZ p, double theta, XYZ p1, XYZ p2)
    u.y = p2.y - p1.y;
    u.z = p2.z - p1.z;
    Normalise(&u);
-   d = std::sqrt(u.y*u.y + u.z*u.z);
+   d = sqrtf(u.y*u.y + u.z*u.z);
 
    /* Step 2 */
-   if (std::fabs(d) > 0.000001) {
+   if (fabs(d) > 0.000001) {
       q2.x = q1.x;
       q2.y = q1.y * u.z / d - q1.z * u.y / d;
       q2.z = q1.y * u.y / d + q1.z * u.z / d;
@@ -76,8 +76,8 @@ XYZ RotatePointAboutLine(XYZ p, double theta, XYZ p1, XYZ p2)
    q1.z = q2.x * u.x + q2.z * d;
 
    /* Step 4 */
-   q2.x = q1.x * std::cos(theta) - q1.y * std::sin(theta);
-   q2.y = q1.x * std::sin(theta) + q1.y * std::cos(theta);
+   q2.x = q1.x * cosf(theta) - q1.y * sinf(theta);
+   q2.y = q1.x * sinf(theta) + q1.y * cosf(theta);
    q2.z = q1.z;
 
    /* Inverse of step 3 */
@@ -86,7 +86,7 @@ XYZ RotatePointAboutLine(XYZ p, double theta, XYZ p1, XYZ p2)
    q1.z = - q2.x * u.x + q2.z * d;
 
    /* Inverse of step 2 */
-   if (std::fabs(d) > 0.000001) {
+   if (fabs(d) > 0.000001) {
       q2.x =   q1.x;
       q2.y =   q1.y * u.z / d + q1.z * u.y / d;
       q2.z = - q1.y * u.y / d + q1.z * u.z / d;
@@ -103,7 +103,7 @@ XYZ RotatePointAboutLine(XYZ p, double theta, XYZ p1, XYZ p2)
 
 void Normalise( XYZ *p )
 {
-	float ork = (float) std::sqrt( p->x * p->x + p->y * p->y + p->z * p->z );
+	float ork = (float) sqrtf( p->x * p->x + p->y * p->y + p->z * p->z );
 	if( ork > 0.000001f )
 	{
 		p->x /= ork;

@@ -1,9 +1,7 @@
 #include <ork/kernel/thread.h>
 
-#if defined(IX)
+#if defined(LINUX)
 #include <sys/prctl.h>
-#elif defined(_WIN32)
-#include <windows.h>
 #endif
 
 namespace ork
@@ -121,7 +119,7 @@ void SetCurrentThreadName(const char* threadName)
 	for( int i=0; i<kMAX_NAME_LEN; i++ ) name[i]=0;
 	strncpy(name,threadName,kMAX_NAME_LEN);
 	name[kMAX_NAME_LEN]=0;
-#if defined(IX)
+#if defined(LINUX)
 	prctl(PR_SET_NAME,(unsigned long)&name);
 #elif defined(ORK_OSX)
 	pthread_setname_np(threadName); 

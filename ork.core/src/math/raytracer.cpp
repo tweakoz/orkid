@@ -261,13 +261,13 @@ RaytTriangle::RaytTriangle( const RgmVertex* v1, const RgmVertex* v2, const RgmV
 	fvec3 b = C - A;
 	mN = b.Cross( c );
 	int u, v;
-	if (std::abs( mN.GetX() ) > std::abs( mN.GetY()))
+	if (fabs( mN.GetX() ) > fabs( mN.GetY()))
 	{
-		if (std::abs( mN.GetX() ) > std::abs( mN.GetZ() )) k = 0; else k = 2;
+		if (fabs( mN.GetX() ) > fabs( mN.GetZ() )) k = 0; else k = 2;
 	}
 	else
 	{
-		if (std::abs( mN.GetY() ) > std::abs( mN.GetZ() )) k = 1; else k = 2;
+		if (fabs( mN.GetY() ) > fabs( mN.GetZ() )) k = 1; else k = 2;
 	}
 	u = (k + 1) % 3;
 	v = (k + 2) % 3;
@@ -442,7 +442,7 @@ int RaytSphere::Intersect( const fray3& a_Ray, fvec3& isect, float& a_Dist ) con
 	int retval = MISS;
 	if (det > 0)
 	{
-		det = std::sqrt( det );
+		det = sqrtf( det );
 		float i1 = b - det;
 		float i2 = b + det;
 		if (i2 > 0)

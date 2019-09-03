@@ -273,10 +273,10 @@ void HotSpotController::SortConnections( const HotSpot* phs, int(&SortedCardinal
 	// sort by weight
 	////////////////////////////////
 
-	float fmax = Float::TypeMax();
+	float fmax = std::numeric_limits<float>::max();
 	for( int ic=0; ic<3; ic++ )
 	{	float fmx = fmax;
-		float fmin = -Float::TypeMax();
+		float fmin = -std::numeric_limits<float>::max();
 		for( int iw=0; iw<9; iw++ )
 		{	float fw = phs->mCardinalDirWeight[ iw ];
 			if( (fw<fmx) && (fw>fmin) )

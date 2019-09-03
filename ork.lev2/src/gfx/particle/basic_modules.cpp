@@ -627,7 +627,7 @@ void ParticlePool::Compute( float fdt )
 		/////////////////////////////////
 		float fage = ptc->mfAge;
 		float unit_age = (fage/ptc->mfLifeSpan);
-		mOutDataUnitAge = ork::clamp(unit_age,0.001f,0.999f);
+		mOutDataUnitAge = std::clamp(unit_age,0.001f,0.999f);
 		
 		//printf( "ptcl<%d> age<%f> ls<%f> IsDead<%d> unitage<%f>\n", i, fage, ptc->mfLifeSpan, int(ptc->IsDead()), mOutDataUnitAge );
 		/////////////////////////////////
@@ -783,10 +783,10 @@ dataflow::outplugbase* RingEmitter::GetOutput(int idx)
 void RingDirectedEmitter::ComputePosDir( float fi, fvec3& pos, fvec3& dir )
 {	float scaler = (fi*mEmitterModule.mfThisRadius)+((1.0f-fi)*mEmitterModule.mfLastRadius);
 	float phase = (fi*mEmitterModule.mfPhase2)+((1.0f-fi)*mEmitterModule.mfPhase);
-	float fpx = Float::Cos(phase);
-	float fpz = Float::Sin(phase);
-	float fdx = Float::Cos(phase+PI_DIV_2);
-	float fdz = Float::Sin(phase+PI_DIV_2);
+	float fpx = cosf(phase);
+	float fpz = sinf(phase);
+	float fdx = cosf(phase+PI_DIV_2);
+	float fdz = sinf(phase+PI_DIV_2);
 	pos = fvec3((fpx*scaler),0.0f,(fpz*scaler));
 	if( meDirection==EMITDIR_USER )
 	{
@@ -803,7 +803,7 @@ void RingEmitter::Emit( float fdt )
 	Pool<BasicParticle>& pool = *pb.mPool;
 	float scaler = mPlugInpEmissionRadius.GetValue();
 	float femitvel = mPlugInpEmissionVelocity.GetValue();
-	float lifespan = ork::clamp(mPlugInpLifespan.GetValue(),0.01f,10.0f);
+	float lifespan = std::clamp(mPlugInpLifespan.GetValue(),0.01f,10.0f);
 	float emissionrate = mPlugInpEmissionRate.GetValue();
 	float fspr = mPlugInpEmitterSpinRate.GetValue()*PI2;
 	float offx = mPlugInpOffsetX.GetValue();
@@ -811,7 +811,7 @@ void RingEmitter::Emit( float fdt )
 	float offz = mPlugInpOffsetZ.GetValue();
 	float fadaptive = ((mfPhase2-mfPhase)/fdt);
 	if( fadaptive == 0.0f ) fadaptive=1.0f;
-	fadaptive = ork::clamp(fadaptive,0.1f,1.0f);
+	fadaptive = std::clamp(fadaptive,0.1f,1.0f);
 	mEmitterCtx.mPool = pb.mPool;
 	mEmitterCtx.mfEmissionRate = emissionrate*fadaptive;
 	mEmitterCtx.mKey = (void*) this;
@@ -824,8 +824,8 @@ void RingEmitter::Emit( float fdt )
 	mEmitterCtx.mPosition = fvec3( offx, offy, offz );
 	mDirectedEmitter.Emit( mEmitterCtx );
 	float fphaseINC = fspr*fdt;
-	mfPhase = std::fmod( mfPhase+fphaseINC, PI2*1000.0f );
-	mfPhase2 = std::fmod( mfPhase+fphaseINC, PI2*1000.0f );
+	mfPhase = fmodf( mfPhase+fphaseINC, PI2*1000.0f );
+	mfPhase2 = fmodf( mfPhase+fphaseINC, PI2*1000.0f );
 	mfLastRadius = mfThisRadius;
 	mfThisRadius = mPlugInpEmissionRadius.GetValue();
 }
@@ -958,7 +958,7 @@ void NozzleEmitter::Emit( float fdt )
 {	const psys_ptclbuf& pb = InpPlugName(Input).GetValue();
 	Pool<BasicParticle>& pool = *pb.mPool;
 	float femitvel = mPlugInpEmissionVelocity.GetValue();
-	float lifespan = ork::clamp(mPlugInpLifespan.GetValue(),0.01f,10.0f);
+	float lifespan = std::clamp(mPlugInpLifespan.GetValue(),0.01f,10.0f);
 	float emissionrate = mPlugInpEmissionRate.GetValue();
 	mEmitterCtx.mPool = pb.mPool;
 	mEmitterCtx.mfEmissionRate = emissionrate;
@@ -1235,9 +1235,9 @@ void GravityModule::Compute( float dt )
 {	const psys_ptclbuf& pb = mPlugInpInput.GetValue();
 	if( pb.mPool )
 	{	
-		float fmass = std::pow(10.0f,mPlugInpMass.GetValue());
-		float fothmass = std::pow(10.0f,mPlugInpOthMass.GetValue());
-		float fG = std::pow(10.0f,mPlugInpG.GetValue());
+		float fmass = powf(10.0f,mPlugInpMass.GetValue());
+		float fothmass = powf(10.0f,mPlugInpOthMass.GetValue());
+		float fG = powf(10.0f,mPlugInpG.GetValue());
 		float finvmass = (fothmass==0.0f) ? 0.0f : (1.0f/fothmass);
 		float numer = (fmass*fothmass*fG);
 		float mindist = mPlugInpMinDistance.GetValue();
@@ -1498,7 +1498,7 @@ DecayModule::DecayModule()
 void DecayModule::Compute( float dt )
 {	const psys_ptclbuf& pb = mPlugInpInput.GetValue();
 	if( pb.mPool )
-	{	float decay = ork::powf(mPlugInpDecay.GetValue(), dt);
+	{	float decay = powf(mPlugInpDecay.GetValue(), dt);
 		for( int i=0; i<pb.mPool->GetNumAlive(); i++ )
 		{	BasicParticle *particle = pb.mPool->GetActiveParticle(i);
 			particle->mVelocity *= decay;

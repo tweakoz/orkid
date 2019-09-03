@@ -493,8 +493,8 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 					U32 ucolor = color.GetVtxColorAsU32();
 					//////////////////////////////////////////////////////
 					float fang = mPlugInpRot.GetValue()*DTOR;
-					float sinfr = ork::Float::Sin(fang)*fsize;
-					float cosfr = ork::Float::Cos(fang)*fsize;
+					float sinfr = sinf(fang)*fsize;
+					float cosfr = cosf(fang)*fsize;
 					fvec3 rota = (NX_NY*cosfr)+(NX_PY*sinfr);
 					fvec3 rotb = (NX_PY*cosfr)-(NX_NY*sinfr);
 					fvec3 p0 = ptcl->mPosition+rota;
@@ -707,7 +707,7 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 					// varying properties
 					////////////////////////////////////////////////
 					float fage = ptcl->mfAge;
-					mOutDataUnitAge = ork::clamp((fage/ptcl->mfLifeSpan),0.0f,1.0f);
+					mOutDataUnitAge = std::clamp((fage/ptcl->mfLifeSpan),0.0f,1.0f);
 					//
 					float fwidth = mPlugInpWidth.GetValue();
 					float flength = mPlugInpLength.GetValue();
@@ -729,7 +729,7 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 					// varying properties
 					////////////////////////////////////////////////
 					float fage = ptcl->mfAge;
-					mOutDataUnitAge = ork::clamp((fage/ptcl->mfLifeSpan),0.0f,1.0f);
+					mOutDataUnitAge = std::clamp((fage/ptcl->mfLifeSpan),0.0f,1.0f);
 					//
 					float fwidth = mPlugInpWidth.GetValue();
 					float flength = mPlugInpLength.GetValue();

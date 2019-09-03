@@ -1340,9 +1340,9 @@ bool SectorTrackerInst::UpdatePos(const ork::fvec3 &newpos, ork::fvec3 &newvel)
 	float progress = mTrack->GetProgressForPosition(sector, newpos);
 	if(mDisallowCheating)
 	{
-		if(std::abs(progress - mTrackProgress) > CHEATING
-				&& std::abs(progress - mTrackProgress - 1.0f) > CHEATING
-				&& std::abs(progress - mTrackProgress + 1.0f) > CHEATING)
+		if(fabs(progress - mTrackProgress) > CHEATING
+				&& fabs(progress - mTrackProgress - 1.0f) > CHEATING
+				&& fabs(progress - mTrackProgress + 1.0f) > CHEATING)
 		{
 			orkprintf("INFO: No cheating!\n");
 			return false;

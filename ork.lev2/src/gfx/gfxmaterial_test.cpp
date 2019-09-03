@@ -261,7 +261,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   }
 
   if (hParamTime) {
-    float reltime = std::fmod(OldSchool::GetRef().GetLoResRelTime(), 300.0f);
+    float reltime = fmodf(OldSchool::GetRef().GetLoResRelTime(), 300.0f);
     // printf( "reltime<%f>\n", reltime );
     FXI->BindParamFloat(hModFX, hParamTime, reltime);
   }
