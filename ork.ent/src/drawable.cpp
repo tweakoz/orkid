@@ -591,7 +591,7 @@ void ModelDrawable::QueueToRenderer( const DrawableBufItem& item,
 
 					if( btest )
 					{
-						lev2::CModelRenderable& renderable = renderer->QueueModel();
+						lev2::ModelRenderable& renderable = renderer->QueueModel();
 
 						//if(mEngineParamFloats[0] < 1.0f && mEngineParamFloats[0] > 0.0f)
 						//	orkprintf("mEngineParamFloats[0] = %g\n", mEngineParamFloats[0]);

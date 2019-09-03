@@ -15,24 +15,24 @@ namespace ork {
 
 struct MemoryFS;
 
-class CFileDevNitro : public CFileDev
+class FileDevNitro : public FileDev
 {
 protected:
 
-	orkmap< CFile *, FileH >	mmFileHandleMap;
+	orkmap< File *, FileH >	mmFileHandleMap;
 
 public:
 
-	CFileDevNitro( );
+	FileDevNitro( );
 
-	virtual EFileErrCode OpenFile( CFile& rFile );
-	virtual EFileErrCode CloseFile( CFile& rFile );
-	virtual EFileErrCode Read( CFile& rFile, void* pTo, int iSize );
-	virtual EFileErrCode Map( CFile& rFile, void** ppTo, int& riSize );
-	virtual EFileErrCode Write( CFile& rFile, const void* pFrom, int iSize );
-	virtual EFileErrCode SeekFromStart( CFile& rFile, int iTo );
-	virtual EFileErrCode SeekFromCurrent( CFile& rFile, int iOffset );
-	virtual EFileErrCode GetLength( CFile& rFile, int& riLength );
+	virtual EFileErrCode OpenFile( File& rFile );
+	virtual EFileErrCode CloseFile( File& rFile );
+	virtual EFileErrCode Read( File& rFile, void* pTo, int iSize );
+	virtual EFileErrCode Map( File& rFile, void** ppTo, int& riSize );
+	virtual EFileErrCode Write( File& rFile, const void* pFrom, int iSize );
+	virtual EFileErrCode SeekFromStart( File& rFile, int iTo );
+	virtual EFileErrCode SeekFromCurrent( File& rFile, int iOffset );
+	virtual EFileErrCode GetLength( File& rFile, int& riLength );
 	virtual EFileErrCode GetCurrentDirectory( std::string& directory );
 	virtual EFileErrCode SetCurrentDirectory( const std::string& directory );
 

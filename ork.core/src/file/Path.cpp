@@ -522,7 +522,7 @@ Path Path::ToAbsoluteFolder( EPathType etype ) const
 
 	if( HasUrlBase() )
 	{
-		const char* pstr = CFileEnv::GetPathFromUrlExt( GetUrlBase().c_str() ).c_str();
+		const char* pstr = FileEnv::GetPathFromUrlExt( GetUrlBase().c_str() ).c_str();
 		size_t ilen = strlen(pstr);
 
 		bool b_ends_with_slash = pstr[ilen-1] == '/';
@@ -531,7 +531,7 @@ Path Path::ToAbsoluteFolder( EPathType etype ) const
 	}
 	else if( HasDrive() )
 	{
-		rval.mPathString.format( "%s", CFileEnv::GetPathFromUrlExt( GetDrive().c_str() ).c_str() );
+		rval.mPathString.format( "%s", FileEnv::GetPathFromUrlExt( GetDrive().c_str() ).c_str() );
 	}
 	else if( IsAbsolute() )
 	{

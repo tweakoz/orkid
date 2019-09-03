@@ -56,11 +56,11 @@ struct FilterOptMap
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CAssetFilterContext //: public IInterface::Context
+class AssetFilterContext //: public IInterface::Context
 {
 	public: //
 	std::string infile, outfile, mifname;
-	CAssetFilterContext( std::string ifname, std::string inf, std::string outf )
+	AssetFilterContext( std::string ifname, std::string inf, std::string outf )
 		: infile(inf)
 		, outfile(outf)
 		, mifname( ifname )
@@ -75,13 +75,13 @@ class CAssetFilterContext //: public IInterface::Context
 // newer better filters (adds interface support for various functions like configurable logging)
 
 
-class CAssetFilterBase : public ork::Object
+class AssetFilterBase : public ork::Object
 {
-	RttiDeclareAbstract(CAssetFilterBase,ork::Object);
+	RttiDeclareAbstract(AssetFilterBase,ork::Object);
 
 public: //
 
-	CAssetFilterBase();
+	AssetFilterBase();
 
 	bool IsConverted( void ) const { return false; }
 
@@ -105,11 +105,11 @@ struct SFilterInfo
 	ork::PoolString pathloc;	// rebase location
 };
 
-class CAssetFilter
+class AssetFilter
 {
 	public: //
 
-	static orkvector< CAssetFilter* >					svFilters;
+	static orkvector< AssetFilter* >					svFilters;
 	static orkmap< ork::PoolString, SFilterInfo* >		smFilterMap;
 
 	static bool ConvertFile( const char* Filter, const tokenlist& toklist );

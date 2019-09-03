@@ -13,7 +13,7 @@
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IRenderable, "IRenderable" )
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::IRenderableDag, "IRenderableDag" )
-INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::CModelRenderable, "ModelRenderable" );
+INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::ModelRenderable, "ModelRenderable" );
 
 namespace ork { namespace lev2 {
 
@@ -21,7 +21,7 @@ namespace ork { namespace lev2 {
 
 void IRenderable::Describe() {}
 void IRenderableDag::Describe() {}
-void CModelRenderable::Describe() {}
+void ModelRenderable::Describe() {}
 
 IRenderable::IRenderable()
 {
@@ -48,12 +48,12 @@ void FrustumRenderable::Render(const Renderer *renderer) const
 	renderer->RenderFrustum( *this );
 }
 
-void CBoxRenderable::Render(const Renderer *renderer) const
+void BoxRenderable::Render(const Renderer *renderer) const
 {
 	renderer->RenderBox( *this );
 }
 
-U32 CBoxRenderable::ComposeSortKey( const Renderer *renderer ) const
+U32 BoxRenderable::ComposeSortKey( const Renderer *renderer ) const
 {
 	return 0x1ffffffe;
 }
@@ -79,7 +79,7 @@ void CallbackRenderable::Render(const Renderer *renderer) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CModelRenderable::CModelRenderable(Renderer *renderer)
+ModelRenderable::ModelRenderable(Renderer *renderer)
 	: IRenderableDag()
 	, mModelInst( 0 )
 	, mSortKey( 0 )
@@ -100,7 +100,7 @@ CModelRenderable::CModelRenderable(Renderer *renderer)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CModelRenderable::SetEngineParamFloat(int idx, float fv)
+void ModelRenderable::SetEngineParamFloat(int idx, float fv)
 {
 	OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
 
@@ -109,7 +109,7 @@ void CModelRenderable::SetEngineParamFloat(int idx, float fv)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float CModelRenderable::GetEngineParamFloat(int idx) const
+float ModelRenderable::GetEngineParamFloat(int idx) const
 {
 	OrkAssert(idx >= 0 && idx < kMaxEngineParamFloats);
 
@@ -118,16 +118,16 @@ float CModelRenderable::GetEngineParamFloat(int idx) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CModelRenderable::Render(const Renderer *renderer) const
+void ModelRenderable::Render(const Renderer *renderer) const
 {
 	renderer->RenderModel( *this );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CModelRenderable::CanGroup( const IRenderable* oth ) const
+bool ModelRenderable::CanGroup( const IRenderable* oth ) const
 {
-	const CModelRenderable* pren = ork::rtti::autocast(oth);
+	const ModelRenderable* pren = ork::rtti::autocast(oth);
 	if( pren )
 	{
 		const lev2::XgmSubMesh* submesh = pren->GetSubMesh();

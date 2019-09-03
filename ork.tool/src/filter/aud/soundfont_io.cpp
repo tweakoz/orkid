@@ -16,14 +16,14 @@
 
 namespace ork { namespace tool {
 
-U32 CSoundFontConversionEngine::GetSBFK( CRIFFChunk *pROOT )
+U32 SoundFontConversionEngine::GetSBFK( RIFFChunk *pROOT )
 {
 
 	U32 rval =0;
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = pROOT->GetU32( 0 );
 	U8* chunkdata = pROOT->GetChunkData();
-	nchnk->chunklen = CRIFFChunk::GetChunkLen( chunkdata[1] );
+	nchnk->chunklen = RIFFChunk::GetChunkLen( chunkdata[1] );
 	nchnk->chunkdata = & pROOT->chunkdata[4];
 	nchnk->DumpHeader();
 	//children.push_back( nchnk );
@@ -42,12 +42,12 @@ U32 CSoundFontConversionEngine::GetSBFK( CRIFFChunk *pROOT )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-U32 CSoundFontConversionEngine::GetINFOChunk( CRIFFChunk *ParChunk, U32 offset )
+U32 SoundFontConversionEngine::GetINFOChunk( RIFFChunk *ParChunk, U32 offset )
 {
 	//orkmessageh( "get_chunk( 0x%x )\n", offset );
 	U32 rval =0;
 	U8 *parchkdata = ParChunk->GetChunkData();
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = ParChunk->GetU32( offset );
 	nchnk->chunklen = ParChunk->GetU32( offset+4 );
 	nchnk->chunkdata = & parchkdata[ offset+8 ];
@@ -59,32 +59,32 @@ U32 CSoundFontConversionEngine::GetINFOChunk( CRIFFChunk *ParChunk, U32 offset )
 
 #if 0
 	orkmessageh( "//////////////////////////\n" );
-	if( nchnk->chunkID == CRIFFChunk::ChunkName( 'i', 'f', 'i', 'l' ) )
+	if( nchnk->chunkID == RIFFChunk::ChunkName( 'i', 'f', 'i', 'l' ) )
 	{	orkmessageh( "ifil chunk found!\n" );
 		U32 version = nchnk->GetU32( 0 );
 		orkmessageh( "SoundFont Version: 0x%08x\n", version );
 	}	
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'i', 's', 'n', 'g' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'i', 's', 'n', 'g' ) )
 	{	orkmessageh( "isng chunk found!\n" );
 		orkmessageh( "SoundEngine: %s\n", nchnk->chunkdata );
 	}	
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'I', 'N', 'A', 'M' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'I', 'N', 'A', 'M' ) )
 	{	orkmessageh( "INAM chunk found!\n" );
 		orkmessageh( "BANKName: %s\n", nchnk->chunkdata );
 	}	
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'I', 'S', 'F', 'T' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'I', 'S', 'F', 'T' ) )
 	{	orkmessageh( "ISFT chunk found!\n" );
 		orkmessageh( "Application: %s\n", nchnk->chunkdata );
 	}	
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'I', 'E', 'N', 'G' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'I', 'E', 'N', 'G' ) )
 	{	orkmessageh( "IENG chunk found!\n" );
 		orkmessageh( "Creator: %s\n", nchnk->chunkdata );
 	}	
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'I', 'C', 'O', 'P' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'I', 'C', 'O', 'P' ) )
 	{	orkmessageh( "ICOP chunk found!\n" );
 		orkmessageh( "Copyright: %s\n", nchnk->chunkdata );
 	}	
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'I', 'C', 'M', 'T' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'I', 'C', 'M', 'T' ) )
 	{	orkmessageh( "ICMT chunk found!\n" );
 		orkmessageh( "Comment: %s\n", nchnk->chunkdata );
 	}	
@@ -101,15 +101,15 @@ U32 CSoundFontConversionEngine::GetINFOChunk( CRIFFChunk *ParChunk, U32 offset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-U32 CSoundFontConversionEngine::GetINFOList( CRIFFChunk* ParChunk, U32 offset )
+U32 SoundFontConversionEngine::GetINFOList( RIFFChunk* ParChunk, U32 offset )
 {
 	orkmessageh( "get_info_list()\n" );
 	U32 rval =0;
 	U8 *parchkdata = ParChunk->GetChunkData();
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = ParChunk->GetU32( offset );
 	nchnk->subID = ParChunk->GetU32( offset+8 );
-	nchnk->chunklen = CRIFFChunk::GetChunkLen( ParChunk->GetU32( offset+4 ) );
+	nchnk->chunklen = RIFFChunk::GetChunkLen( ParChunk->GetU32( offset+4 ) );
 	nchnk->chunkdata = & parchkdata[(3*4)];
 	nchnk->DumpListHeader();
 
@@ -129,12 +129,12 @@ U32 CSoundFontConversionEngine::GetINFOList( CRIFFChunk* ParChunk, U32 offset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-U32 CSoundFontConversionEngine::GetSDTAChunk( CRIFFChunk *ParChunk, U32 offset )
+U32 SoundFontConversionEngine::GetSDTAChunk( RIFFChunk *ParChunk, U32 offset )
 {
 	//orkmessageh( "get_chunk( 0x%x )\n", offset );
 	U32 rval =0;
 	U8 *parchkdata = ParChunk->GetChunkData();
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = ParChunk->GetU32( offset );
 	nchnk->chunklen = ParChunk->GetU32( offset+4 );
 	nchnk->chunkdata = & parchkdata[ offset+8 ];
@@ -144,7 +144,7 @@ U32 CSoundFontConversionEngine::GetSDTAChunk( CRIFFChunk *ParChunk, U32 offset )
 	mDynamicChunks.push_back( nchnk );
 
 	orkmessageh( "//////////////////////////\n" );
-	if( nchnk->chunkID == CRIFFChunk::ChunkName( 's', 'm', 'p', 'l' ) )
+	if( nchnk->chunkID == RIFFChunk::ChunkName( 's', 'm', 'p', 'l' ) )
 	{	orkmessageh( "smpl chunk found! (offset: 0x%x len: %d\n", offset, nchnk->chunklen );
 		sampledata = (S16 *) & nchnk->chunkdata[ 2 ];
 		int *pbdlen = const_cast<int*>(& misampleblockdatalen);
@@ -163,13 +163,13 @@ U32 CSoundFontConversionEngine::GetSDTAChunk( CRIFFChunk *ParChunk, U32 offset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-U32 CSoundFontConversionEngine::GetSDTAList( CRIFFChunk* ParChunk, U32 offset )
+U32 SoundFontConversionEngine::GetSDTAList( RIFFChunk* ParChunk, U32 offset )
 {
 	orkmessageh( "get_sdta_list( 0x%x )\n", offset );
 	U32 rval =0;
 	U8 *parchkdata = ParChunk->GetChunkData();
 
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = ParChunk->GetU32( offset );
 	nchnk->subID = ParChunk->GetU32( offset+8 );
 	nchnk->chunklen = ParChunk->GetU32( offset+4 );
@@ -193,15 +193,15 @@ U32 CSoundFontConversionEngine::GetSDTAList( CRIFFChunk* ParChunk, U32 offset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-U32 CSoundFontConversionEngine::GetPDTAList( CRIFFChunk* ParChunk, U32 offset )
+U32 SoundFontConversionEngine::GetPDTAList( RIFFChunk* ParChunk, U32 offset )
 {
 	orkmessageh( "get_pdta_list( 0x%x )\n", offset );
 	U32 rval =0;
 	U8 *parchkdata = ParChunk->GetChunkData();
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = ParChunk->GetU32( offset );
 	nchnk->subID = ParChunk->GetU32( offset+8 );
-	nchnk->chunklen = CRIFFChunk::GetChunkLen( ParChunk->GetU32( offset+4 ) );
+	nchnk->chunklen = RIFFChunk::GetChunkLen( ParChunk->GetU32( offset+4 ) );
 	nchnk->chunkdata = & parchkdata[(3*4)];
 	nchnk->DumpListHeader();
 	
@@ -224,15 +224,15 @@ U32 CSoundFontConversionEngine::GetPDTAList( CRIFFChunk* ParChunk, U32 offset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
+U32 SoundFontConversionEngine::GetPDTAChunk( RIFFChunk* ParChunk, U32 offset )
 {
 	orkmessageh( "get_chunk( 0x%x )\n", offset );
 	U32 rval =0;
 	U8 *parchkdata = ParChunk->GetChunkData();
 
-	CRIFFChunk *nchnk = new CRIFFChunk;
+	RIFFChunk *nchnk = new RIFFChunk;
 	nchnk->chunkID = ParChunk->GetU32( offset );
-	nchnk->chunklen = CRIFFChunk::GetChunkLen( ParChunk->GetU32( offset+4 ) );
+	nchnk->chunklen = RIFFChunk::GetChunkLen( ParChunk->GetU32( offset+4 ) );
 	nchnk->chunkdata = & parchkdata[ offset+8 ];
 	//children.push_back( nchnk );
 	rval = 8+nchnk->chunklen;
@@ -240,7 +240,7 @@ U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
 	mDynamicChunks.push_back( nchnk );
 
 	orkmessageh( "//////////////////////////\n" );
-	if( nchnk->chunkID == CRIFFChunk::ChunkName( 'p', 'h', 'd', 'r' ) )
+	if( nchnk->chunkID == RIFFChunk::ChunkName( 'p', 'h', 'd', 'r' ) )
 	{	orkmessageh( "phdr chunk found!\n" );
 		U32 sizofpre = sizeof( Ssfontpreset );	
 		U32 numpresets = (nchnk->chunklen / 38)-1;
@@ -257,7 +257,7 @@ U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
 		}
 
 	}
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 's', 'h', 'd', 'r' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 's', 'h', 'd', 'r' ) )
 	{	orkmessageh( "//////////////////////////\n" );
 		orkmessageh( "shdr chunk found!\n" );
 		sizofsmp = sizeof( Ssfontsample );	
@@ -271,7 +271,7 @@ U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
 			AddSample( osample );
 		}
 	}
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'i', 'g', 'e', 'n' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'i', 'g', 'e', 'n' ) )
 	{	orkmessageh( "//////////////////////////\n" );
 		orkmessageh( "igen chunk found!\n" );
 		U32 sizofign = sizeof( SSoundFontGenerator );	
@@ -286,7 +286,7 @@ U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
 			
 		}
 	}
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'p', 'g', 'e', 'n' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'p', 'g', 'e', 'n' ) )
 	{	orkmessageh( "//////////////////////////\n" );
 		orkmessageh( "pgen chunk found!\n" );
 		U32 sizofpgn = sizeof( SSoundFontGenerator );	
@@ -300,7 +300,7 @@ U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
 			AddPresetGen( pgn );
 		}
 	}
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'i', 'b', 'a', 'g' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'i', 'b', 'a', 'g' ) )
 	{	orkmessageh( "//////////////////////////\n" );
 		orkmessageh( "ibag chunk found!\n" );
 		U32 sizofibg = sizeof( Ssfontinstbag );	
@@ -318,7 +318,7 @@ U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
 
 		}
 	}
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'i', 'n', 's', 't' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'i', 'n', 's', 't' ) )
 	{	orkmessageh( "//////////////////////////\n" );
 		orkmessageh( "inst chunk found!\n" );
 		U32 sizofinst = sizeof( Ssfontinst );	
@@ -337,7 +337,7 @@ U32 CSoundFontConversionEngine::GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset )
 
 		}
 	}
-	else if( nchnk->chunkID == CRIFFChunk::ChunkName( 'p', 'b', 'a', 'g' ) )
+	else if( nchnk->chunkID == RIFFChunk::ChunkName( 'p', 'b', 'a', 'g' ) )
 	{	orkmessageh( "//////////////////////////\n" );
 		orkmessageh( "pbag chunk found!\n" );
 		U32 sizofpbg = sizeof( Ssfontprebag );	

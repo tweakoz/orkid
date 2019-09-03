@@ -1271,7 +1271,7 @@ template<>
 std::string GfxMaterialFxParam<lev2::Texture *>::GetValueString( void ) const
 {
 	PropTypeString valstr;
-	//CPropType<CAsset *>::ToString( (CAsset *) GetValue(0), valstr );
+	//CPropType<Asset *>::ToString( (Asset *) GetValue(0), valstr );
 	return valstr.c_str();
 }
 

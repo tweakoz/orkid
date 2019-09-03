@@ -25,7 +25,7 @@ fvec4 PickIdToVertexColor( uint64_t pid ){
 	return out;
 }
 
-/*template<> void reflect::Serialize( const CFloat*in, CFloat*out, reflect::BidirectionalSerializer& bidi )
+/*template<> void reflect::Serialize( const Float*in, Float*out, reflect::BidirectionalSerializer& bidi )
 {
 	if( bidi.Serializing() )
 	{
@@ -39,8 +39,8 @@ fvec4 PickIdToVertexColor( uint64_t pid ){
 	}
 }*/
 
-int* CPerlin2D::p = 0;
-f32* CPerlin2D::g2 = 0;
+int* Perlin2D::p = 0;
+f32* Perlin2D::g2 = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 

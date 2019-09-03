@@ -441,7 +441,7 @@ public:
                             {   IPlugChoiceDelegate::OutPlugMapType choices;
                                 ucd->EnumerateChoices( this, choices );
                                 ///////////////////////////////////////////////////////////////////////////////
-                                class PlugChoices : public tool::CChoiceList
+                                class PlugChoices : public tool::ChoiceList
                                 {
                                 public:
                                     const IPlugChoiceDelegate::OutPlugMapType& choices;
@@ -449,7 +449,7 @@ public:
                                     {   typedef IPlugChoiceDelegate::OutPlugMapType::const_iterator iter_t;
                                         for( iter_t it=choices.begin(); it!=choices.end(); it++ )
                                         {   const std::string& name = it->first;
-                                            CAttrChoiceValue myval( name, name );
+                                            AttrChoiceValue myval( name, name );
                                             myval.SetCustomData( it->second );
                                             add( myval );
                                         }
@@ -457,7 +457,7 @@ public:
                                     PlugChoices( const IPlugChoiceDelegate::OutPlugMapType& chc ) 
                                         : choices(chc)
                                     {   EnumerateChoices();
-                                        CAttrChoiceValue none( "none", "none" );
+                                        AttrChoiceValue none( "none", "none" );
                                         add( none );
                                     }
                                 };
@@ -470,9 +470,9 @@ public:
                                 {   QVariant UserData = pact->data();
                                     QString UserName = UserData.toString();
                                     QVariant chcvalprop = pact->property( "chcval" );
-                                    const CAttrChoiceValue* chcval  = chcvalprop.isValid()
-                                                                    ? (const CAttrChoiceValue*)chcvalprop.value<void*>()
-                                                                    : (const CAttrChoiceValue*)0;
+                                    const AttrChoiceValue* chcval  = chcvalprop.isValid()
+                                                                    ? (const AttrChoiceValue*)chcvalprop.value<void*>()
+                                                                    : (const AttrChoiceValue*)0;
                                     if( chcval )
                                     {   if( mInputPlug )
                                         {   const any64& customdata = chcval->GetCustomData();

@@ -87,7 +87,7 @@ static void ToolStartupDataFolder()
 
 
 
-	CFileEnv::RegisterUrlBase( "data://", WorkingDirContext );
+	FileEnv::RegisterUrlBase( "data://", WorkingDirContext );
 	//////////////////////////////////////////
 }
 

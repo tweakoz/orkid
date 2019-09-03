@@ -8,17 +8,17 @@
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////
 
-class CModelChoices : public ork::tool::CChoiceList
+class ModelChoices : public ork::tool::ChoiceList
 {
 public:
 
 	virtual void EnumerateChoices( bool bforcenocache=false );
-	CModelChoices();
+	ModelChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class CAnimChoices : public ork::tool::CChoiceList
+class CAnimChoices : public ork::tool::ChoiceList
 {
 public:
 
@@ -28,7 +28,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class AudioStreamChoices : public ork::tool::CChoiceList
+class AudioStreamChoices : public ork::tool::ChoiceList
 {
 public:
 
@@ -38,7 +38,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class AudioBankChoices : public ork::tool::CChoiceList
+class AudioBankChoices : public ork::tool::ChoiceList
 {
 public:
 
@@ -48,17 +48,17 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class CTextureChoices : public ork::tool::CChoiceList
+class TextureChoices : public ork::tool::ChoiceList
 {
 public:
 
 	virtual void EnumerateChoices( bool bforcenocache=false );
-	CTextureChoices();
+	TextureChoices();
 };
 
 ///////////////////////////////////////////////////////////////////////////
 
-class FxShaderChoices : public ork::tool::CChoiceList
+class FxShaderChoices : public ork::tool::ChoiceList
 {
 public:
 
@@ -68,7 +68,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class ScriptChoices : public ork::tool::CChoiceList
+class ScriptChoices : public ork::tool::ChoiceList
 {
 public:
 
@@ -78,7 +78,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////
 
-class ChsmChoices : public ork::tool::CChoiceList
+class ChsmChoices : public ork::tool::ChoiceList
 {
 public:
 

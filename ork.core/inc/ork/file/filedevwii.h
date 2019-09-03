@@ -17,24 +17,24 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileDevWII : public CFileDev
+class FileDevWII : public FileDev
 {
-	virtual EFileErrCode DoOpenFile( CFile& rFile );
-	virtual EFileErrCode DoCloseFile( CFile& rFile );
-	virtual EFileErrCode DoRead( CFile& rFile, void* pTo, int iSize, int& iactualread );
-	virtual EFileErrCode DoSeekFromStart( CFile& rFile, int iTo );
-	virtual EFileErrCode DoSeekFromCurrent( CFile& rFile, int iOffset );
-	virtual EFileErrCode DoGetLength( CFile& rFile, int& riLength );
+	virtual EFileErrCode DoOpenFile( File& rFile );
+	virtual EFileErrCode DoCloseFile( File& rFile );
+	virtual EFileErrCode DoRead( File& rFile, void* pTo, int iSize, int& iactualread );
+	virtual EFileErrCode DoSeekFromStart( File& rFile, int iTo );
+	virtual EFileErrCode DoSeekFromCurrent( File& rFile, int iOffset );
+	virtual EFileErrCode DoGetLength( File& rFile, int& riLength );
 
-	//orkmap< CFile *, FileH >	mmFileHandleMap;
+	//orkmap< File *, FileH >	mmFileHandleMap;
 
 	orkset<file::Path>	mTOC;
 
 public:
 
-	CFileDevWII( );
+	FileDevWII( );
 	
-	virtual EFileErrCode Write( CFile& rFile, const void* pFrom, int iSize );
+	virtual EFileErrCode Write( File& rFile, const void* pFrom, int iSize );
 	virtual EFileErrCode GetCurrentDirectory( file::Path::NameType& directory );
 	virtual EFileErrCode SetCurrentDirectory( const file::Path::NameType& directory );
 

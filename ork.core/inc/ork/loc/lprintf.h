@@ -1,8 +1,8 @@
 #ifndef LPRINTF_H_
 #define LPRINTF_H_
 
-int lfprintf(ork::CFile *file, const char *fmt, ...);
-int lvfprintf(ork::CFile *file, const char *fmt, va_list args);
+int lfprintf(ork::File *file, const char *fmt, ...);
+int lvfprintf(ork::File *file, const char *fmt, va_list args);
 
 int lprintf(const char *fmt, ...);
 int lvprintf(const char *fmt, va_list args);

@@ -647,7 +647,7 @@ void ShipControllerInst::LaunchMissile(ent::SceneInst* sinst)
 
 		FighterControllerInst* tfsi = 0;
 
-		float fmind = CFloat::TypeMax();
+		float fmind = Float::TypeMax();
 
 		fvec3 testpoint;
 		fvec3 testpointHF, testpointHFN;

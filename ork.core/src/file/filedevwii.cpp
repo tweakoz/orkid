@@ -30,8 +30,8 @@ struct DirEnt
 	DVDDir		dir;
 };
 
-CFileDevWII::CFileDevWII( )
-	: CFileDev( "Wii", "/", ( EFDF_CAN_READ ) )
+FileDevWII::FileDevWII( )
+	: FileDev( "Wii", "/", ( EFDF_CAN_READ ) )
 {
 	DVDInit();
 	DVDSetAutoInvalidation(true);
@@ -102,7 +102,7 @@ CFileDevWII::CFileDevWII( )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::DoOpenFile( CFile& rFile )
+EFileErrCode FileDevWII::DoOpenFile( File& rFile )
 {
 	const file::Path& fname = rFile.GetFileName();
 	bool bISAbsolute = fname.IsAbsolute();
@@ -137,7 +137,7 @@ EFileErrCode CFileDevWII::DoOpenFile( CFile& rFile )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::DoCloseFile( CFile &rFile )
+EFileErrCode FileDevWII::DoCloseFile( File &rFile )
 {
 	DVDFileInfo* pfile = reinterpret_cast<DVDFileInfo*>(rFile.mHandle);
 
@@ -222,7 +222,7 @@ int MyDvdRead( DVDFileInfo* pfile, void* pwhere, int icount, int ioffset )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::DoRead( CFile& rFile, void* pTo, int icount, int& iactualread )
+EFileErrCode FileDevWII::DoRead( File& rFile, void* pTo, int icount, int& iactualread )
 {
 	/////////////////////////////////////////////////////////
 	int iphyspos = rFile.GetPhysicalPos();
@@ -307,7 +307,7 @@ EFileErrCode CFileDevWII::DoRead( CFile& rFile, void* pTo, int icount, int& iact
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::Write( CFile &rFile, const void *pFrom, int iSize )
+EFileErrCode FileDevWII::Write( File &rFile, const void *pFrom, int iSize )
 {
 	OrkAssert(false);
 	return EFEC_FILE_UNSUPPORTED;
@@ -315,7 +315,7 @@ EFileErrCode CFileDevWII::Write( CFile &rFile, const void *pFrom, int iSize )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::DoSeekFromStart( CFile &rFile, int iTo )
+EFileErrCode FileDevWII::DoSeekFromStart( File &rFile, int iTo )
 {
 	DVDFileInfo* pfile = reinterpret_cast<DVDFileInfo*>(rFile.mHandle);
 	OrkAssert( rFile.IsOpen() );
@@ -338,7 +338,7 @@ EFileErrCode CFileDevWII::DoSeekFromStart( CFile &rFile, int iTo )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::DoSeekFromCurrent( CFile &rFile, int iOffset )
+EFileErrCode FileDevWII::DoSeekFromCurrent( File &rFile, int iOffset )
 {
 	DVDFileInfo* pfile = reinterpret_cast<DVDFileInfo*>(rFile.mHandle);
 	OrkAssert( rFile.IsOpen() );
@@ -363,7 +363,7 @@ EFileErrCode CFileDevWII::DoSeekFromCurrent( CFile &rFile, int iOffset )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::DoGetLength( CFile &rFile, int &riLen )
+EFileErrCode FileDevWII::DoGetLength( File &rFile, int &riLen )
 {
 	DVDFileInfo* pfile = reinterpret_cast<DVDFileInfo*>(rFile.mHandle);
 	OrkAssert( rFile.IsOpen() );
@@ -394,7 +394,7 @@ EFileErrCode CFileDevWII::DoGetLength( CFile &rFile, int &riLen )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::GetCurrentDirectory(file::Path::NameType& directory)
+EFileErrCode FileDevWII::GetCurrentDirectory(file::Path::NameType& directory)
 {
 	directory = "/";
 	return EFEC_FILE_OK;
@@ -402,14 +402,14 @@ EFileErrCode CFileDevWII::GetCurrentDirectory(file::Path::NameType& directory)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevWII::SetCurrentDirectory(const file::Path::NameType& inspec)
+EFileErrCode FileDevWII::SetCurrentDirectory(const file::Path::NameType& inspec)
 {
 	return EFEC_FILE_UNSUPPORTED;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileDevWII::DoesFileExist( const file::Path& filespec )
+bool FileDevWII::DoesFileExist( const file::Path& filespec )
 {
 	file::Path absol = filespec.ToAbsolute();
 	std::string lowstr( absol.c_str() );
@@ -428,7 +428,7 @@ bool CFileDevWII::DoesFileExist( const file::Path& filespec )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileDevWII::DoesDirectoryExist( const file::Path& filespec )
+bool FileDevWII::DoesDirectoryExist( const file::Path& filespec )
 {
 	file::Path absol = filespec.ToAbsolute();
 	std::string lowstr( absol.c_str() );
@@ -447,7 +447,7 @@ bool CFileDevWII::DoesDirectoryExist( const file::Path& filespec )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileDevWII::IsFileWritable( const file::Path& filespec )
+bool FileDevWII::IsFileWritable( const file::Path& filespec )
 {
 	return false;
 }

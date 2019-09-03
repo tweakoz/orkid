@@ -17,7 +17,7 @@ public:
     ~FileOutputStream();
     /*virtual*/ bool Write(const unsigned char *buffer, size_type bufsize);
 private:
-    CFile mFile;
+    File mFile;
 };
 
 } }

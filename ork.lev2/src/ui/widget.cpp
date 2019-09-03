@@ -469,7 +469,7 @@ void Widget::Draw(ui::DrawEvent& drwev)
 
 	if( mbInit )
 	{
-		ork::lev2::CFontMan::GetRef();
+		ork::lev2::FontMan::GetRef();
 		Init(mpTarget);
 		mbInit = false;
 	}
@@ -496,7 +496,7 @@ void Widget::ExtDraw( lev2::GfxTarget* pTARG )
 {
 	if( mbInit )
 	{
-		ork::lev2::CFontMan::GetRef();
+		ork::lev2::FontMan::GetRef();
 		Init(mpTarget);
 		mbInit = false;
 	}

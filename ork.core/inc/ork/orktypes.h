@@ -74,13 +74,13 @@ struct const_string
 
 class Object;
 
-class CAssetHandle
+class AssetHandle
 {
 	public: //
 	ork::Object*	mpEngine;
 	void*			mpAsset;
 
-	CAssetHandle()
+	AssetHandle()
 		: mpEngine( 0 )
 		, mpAsset( 0 )
 	{

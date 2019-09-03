@@ -42,7 +42,7 @@ U32 Renderer::ComposeSortKey(U32 texIndex, U32 depthIndex, U32 passIndex, U32 tr
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
+void Renderer::RenderBox(const lev2::BoxRenderable& BoxRen) const {
   fmtx4 wmat = BoxRen.GetMatrix();
 
   GetTarget()->BindMaterial(lev2::GfxEnv::GetRef().GetDefault3DMaterial());
@@ -53,27 +53,27 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
     GetTarget()->PushModColor(ObjColor);
 
     GetTarget()->MTXI()->PushMMatrix(wmat);
-    ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
+    ork::lev2::GfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
 
     fquat quat;
     quat.FromAxisAngle(fvec4(0.0f, 0.0f, 1.0f, PI * -0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
-    ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
+    ork::lev2::GfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
 
     quat.FromAxisAngle(fvec4(1.0f, 0.0f, 0.0f, PI * 0.5f));
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
-    ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
+    ork::lev2::GfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
 
     GetTarget()->PopModColor();
   } else {
     GetTarget()->MTXI()->PushMMatrix(wmat);
     GetTarget()->PushModColor(fcolor4(0.3f, 0.7f, 0.3f));
-    ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
+    ork::lev2::GfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
     GetTarget()->PopModColor();
 
@@ -82,7 +82,7 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
     GetTarget()->PushModColor(fcolor4(0.7f, 0.3f, 0.3f));
-    ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
+    ork::lev2::GfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
     GetTarget()->PopModColor();
 
@@ -90,7 +90,7 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
 
     GetTarget()->MTXI()->PushMMatrix(quat.ToMatrix() * wmat);
     GetTarget()->PushModColor(fcolor4(0.3f, 0.3f, 0.7f));
-    ork::lev2::CGfxPrimitives::RenderAxisBox(GetTarget());
+    ork::lev2::GfxPrimitives::RenderAxisBox(GetTarget());
     GetTarget()->MTXI()->PopMMatrix();
     GetTarget()->PopModColor();
   }
@@ -98,11 +98,11 @@ void Renderer::RenderBox(const lev2::CBoxRenderable& BoxRen) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Renderer::RenderModelGroup(const ork::lev2::CModelRenderable** Renderables, int inumr) const {
+void Renderer::RenderModelGroup(const ork::lev2::ModelRenderable** Renderables, int inumr) const {
   // printf( "Renderer::RenderModelGroup() numr<%d>\n", inumr );
 
   for (int i = 0; i < inumr; i++) {
-    const ork::lev2::CModelRenderable& r = *Renderables[i];
+    const ork::lev2::ModelRenderable& r = *Renderables[i];
     const ork::lev2::XgmSubMesh* psub = r.GetSubMesh();
     ork::lev2::GfxMaterial* pmtl = psub->GetMaterial();
     RenderModel(r);
@@ -111,7 +111,7 @@ void Renderer::RenderModelGroup(const ork::lev2::CModelRenderable** Renderables,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Renderer::RenderModel(const lev2::CModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs) const {
+void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs) const {
   lev2::GfxTarget* target = GetTarget();
 
   const auto& SelMgr = mEditor.selectionManager();
@@ -173,7 +173,7 @@ void Renderer::RenderModel(const lev2::CModelRenderable& ModelRen, ork::lev2::Re
   // if(ModelRen.GetEngineParamFloat(0) < 1.0f && ModelRen.GetEngineParamFloat(0) > 0.0f)
   //	orkprintf("ModelRen.GetEngineParamFloat(0) = %g\n", ModelRen.GetEngineParamFloat(0));
 
-  for (int i = 0; i < ork::lev2::CModelRenderable::kMaxEngineParamFloats; i++)
+  for (int i = 0; i < ork::lev2::ModelRenderable::kMaxEngineParamFloats; i++)
     MatCtx.SetEngineParamFloat(i, ModelRen.GetEngineParamFloat(i));
 
   MatCtx.SetTopEnvMap(mTopSkyEnvMap);
@@ -306,7 +306,7 @@ void Renderer::RenderSphere(const lev2::SphereRenderable& SphRen) const {
   mtx.SetScale(SphRen.GetRadius());
   GetTarget()->MTXI()->PushMMatrix(mtx);
   pTARG->PushModColor(SphRen.GetColor());
-  { ork::lev2::CGfxPrimitives::GetRef().RenderTriCircle(pTARG); }
+  { ork::lev2::GfxPrimitives::GetRef().RenderTriCircle(pTARG); }
   GetTarget()->PopModColor();
   GetTarget()->MTXI()->PopMMatrix();
 }

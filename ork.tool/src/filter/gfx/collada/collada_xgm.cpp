@@ -124,7 +124,7 @@ struct TexSetter
 		if( MatChanIn.mTextureName.length() )
 		{
 			file::Path::NameType texname = MatChanIn.mTextureName.c_str();
-			file::Path::NameType texext = CFileEnv::filespec_to_extension(MatChanIn.mTextureName.c_str());
+			file::Path::NameType texext = FileEnv::filespec_to_extension(MatChanIn.mTextureName.c_str());
 
 			texname.replace_in_place("\\","/");
 
@@ -174,7 +174,7 @@ struct TexSetter
 			auto itt = mTextureMap.find( PathToTexture );
 
 			if( mTextureMap.end() == itt ){
-				if( CFileEnv::DoesFileExist( PathToTexture ) ){
+				if( FileEnv::DoesFileExist( PathToTexture ) ){
 					lev2::GfxTargetDummy DummyTarget;
 					ork::lev2::TextureAsset *pl2tex = new ork::lev2::TextureAsset;
 					ork::lev2::Texture* ptex = pl2tex->GetTexture();
@@ -210,8 +210,8 @@ void ConfigureFxMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup
 	const SColladaMaterial &ColladaMaterial = ColModel->GetMaterialFromShadingGroup( ShadingGroupName );
 
 	// TODO: The dependency on the "data://" URL prefix should be removed so any URL can work.
-	const file::Path::NameType mdlname = CFileEnv::filespec_strip_base(ColModel->mFileName.c_str(), "data://");
-	const file::Path::NameType model_directory = CFileEnv::FilespecToContainingDirectory(mdlname);
+	const file::Path::NameType mdlname = FileEnv::filespec_strip_base(ColModel->mFileName.c_str(), "data://");
+	const file::Path::NameType model_directory = FileEnv::FilespecToContainingDirectory(mdlname);
 
 	///////////////////////////////////////////////
 
@@ -276,8 +276,8 @@ void ConfigureStdMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGrou
 	const SColladaMaterial &ColladaMaterial = ColModel->GetMaterialFromShadingGroup( ShadingGroupName );
 	const std::string& MaterialName = ColladaMaterial.mMaterialName;
 
-	const file::Path mdlname = CFileEnv::GetPathFromUrlExt(ColModel->mFileName.c_str());
-	const file::Path::NameType model_directory = CFileEnv::FilespecToContainingDirectory(ColModel->mFileName.c_str());
+	const file::Path mdlname = FileEnv::GetPathFromUrlExt(ColModel->mFileName.c_str());
+	const file::Path::NameType model_directory = FileEnv::FilespecToContainingDirectory(ColModel->mFileName.c_str());
 
 	///////////////////////////////////////////////
 

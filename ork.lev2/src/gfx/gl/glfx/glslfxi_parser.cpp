@@ -198,7 +198,7 @@ struct GlSlFxParser
 
 			//printf( "impnam<%s> a<%s> b<%s> imppath<%s>\n", imp.c_str(), a.c_str(), b.c_str(), imppath.c_str() );
 			///////////////////////////////////
-			CFile fx_file( imppath.c_str(), EFM_READ );
+			File fx_file( imppath.c_str(), EFM_READ );
 			OrkAssert( fx_file.IsOpen() );
 			EFileErrCode eFileErr = fx_file.GetLength( scanner2.ifilelen );
 			OrkAssert( scanner2.ifilelen<scanner2.kmaxfxblen );
@@ -1278,7 +1278,7 @@ GlslFxContainer* LoadFxFromFile( const AssetPath& pth )
 	GlslFxScanner scanner;
 	GlSlFxParser parser(pth,scanner);
 	///////////////////////////////////
-	CFile fx_file( pth, EFM_READ );
+	File fx_file( pth, EFM_READ );
 	OrkAssert( fx_file.IsOpen() );
 	EFileErrCode eFileErr = fx_file.GetLength( scanner.ifilelen );
 	OrkAssert( scanner.ifilelen<scanner.kmaxfxblen );

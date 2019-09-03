@@ -14,17 +14,17 @@
 
 namespace ork { namespace lev2 {
 
-const int CFont::kMaxChars = 16384;
+const int Font::kMaxChars = 16384;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFontMan::BeginTextBlock( GfxTarget *pTARG, int imaxcharcount )
+void FontMan::BeginTextBlock( GfxTarget *pTARG, int imaxcharcount )
 {
 #if ! defined(_XBOX)
 	static bool bLoadFonts = true;
 	if( bLoadFonts )
 	{
-		CFontMan::InitFonts( pTARG );
+		FontMan::InitFonts( pTARG );
 		bLoadFonts = false;
 	}
 #endif
@@ -51,9 +51,9 @@ void CFontMan::BeginTextBlock( GfxTarget *pTARG, int imaxcharcount )
 	vw.Lock( pTARG, &pTARG->IMI()->RefTextVB(), inumv );
 }
 
-void CFontMan::EndTextBlock( GfxTarget *pTARG )
+void FontMan::EndTextBlock( GfxTarget *pTARG )
 {
-	CFontMan& fm = GetRef();
+	FontMan& fm = GetRef();
 	OrkAssert( pTARG->IMI()->RefTextVB().IsLocked() );
 	fm.mTextWriter.UnLock(pTARG);
 	pTARG->BindMaterial( fm.mpCurrentFont->GetMaterial() );
@@ -68,8 +68,8 @@ void CFontMan::EndTextBlock( GfxTarget *pTARG )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFontMan::CFontMan()
-	: NoRttiSingleton< CFontMan >()
+FontMan::FontMan()
+	: NoRttiSingleton< FontMan >()
 	, mpCurrentFont( 0 )
 {
 	InitFonts( ork::lev2::GfxEnv::GetRef().GetLoaderTarget() );
@@ -82,7 +82,7 @@ CFontMan::CFontMan()
 	}
 
 }
-CFontMan::~CFontMan()
+FontMan::~FontMan()
 {
 	for( auto item : GetRef().mFontVect ) delete item;
 	GetRef().mFontMap.clear();
@@ -97,7 +97,7 @@ CFontMan::~CFontMan()
 //  a 'cell' is one of the 256(16x16) tiles in the texture, 
 //   if the texture size is 512x512, then a single cell will be 32x32
 
-void CFontMan::InitFonts( GfxTarget *pTARG )
+void FontMan::InitFonts( GfxTarget *pTARG )
 {
 	FontDesc Inconsolata12;
 	Inconsolata12.mFontName = "i12";
@@ -199,13 +199,13 @@ void CFontMan::InitFonts( GfxTarget *pTARG )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFontMan::AddFont( GfxTarget *pTARG, const FontDesc& fdesc )
+void FontMan::AddFont( GfxTarget *pTARG, const FontDesc& fdesc )
 {
-	CFont *pFontAlreadyLoaded = OrkSTXFindValFromKey( GetRef().mFontMap, fdesc.mFontName, (CFont *) 0 );
+	Font *pFontAlreadyLoaded = OrkSTXFindValFromKey( GetRef().mFontMap, fdesc.mFontName, (Font *) 0 );
 
 	if( 0 == pFontAlreadyLoaded )
 	{
-		CFont *pNewFont = new CFont( fdesc.mFontName, fdesc.mFontFile );
+		Font *pNewFont = new Font( fdesc.mFontName, fdesc.mFontFile );
 
 		pNewFont->LoadFromDisk( pTARG, fdesc );
 
@@ -217,7 +217,7 @@ void CFontMan::AddFont( GfxTarget *pTARG, const FontDesc& fdesc )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFontMan::DrawText( GfxTarget *pTARG, int iX, int iY, const char *pFmt, ... )
+void FontMan::DrawText( GfxTarget *pTARG, int iX, int iY, const char *pFmt, ... )
 {
 	char TextBuffer[1024];
 	va_list argp;
@@ -227,7 +227,7 @@ void CFontMan::DrawText( GfxTarget *pTARG, int iX, int iY, const char *pFmt, ...
 
 	///////////////////////////////////
 
-	CFont *pFont = GetRef().mpCurrentFont;
+	Font *pFont = GetRef().mpCurrentFont;
 	size_t iLen = strlen( TextBuffer );
 	const FontDesc& fdesc = pFont->GetFontDesc();
 	
@@ -284,7 +284,7 @@ void CFontMan::DrawText( GfxTarget *pTARG, int iX, int iY, const char *pFmt, ...
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFont::CFont( const std::string & fontname, const std::string & filename )
+Font::Font( const std::string & fontname, const std::string & filename )
 	: msFileName( filename )
 	, msFontName( fontname )
 {
@@ -292,7 +292,7 @@ CFont::CFont( const std::string & fontname, const std::string & filename )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline void CFont::QueChar( GfxTarget *pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor )
+inline void Font::QueChar( GfxTarget *pTARG, VtxWriter<SVtxV12C4T16>& vw, int ix, int iy, int iu, int iv, U32 ucolor )
 {	
 	static const float kftexsiz = float(mFontDesc.miTexWidth);
 	static const float kfU0offset = +0.0f;
@@ -354,7 +354,7 @@ inline void CFont::QueChar( GfxTarget *pTARG, VtxWriter<SVtxV12C4T16>& vw, int i
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFont::LoadFromDisk( GfxTarget* pTARG, const FontDesc& fdesc )
+void Font::LoadFromDisk( GfxTarget* pTARG, const FontDesc& fdesc )
 {	mpMaterial = new GfxMaterialUIText;
 	mpMaterial->Init( pTARG );
 	AssetPath apath( msFileName.c_str() );

@@ -85,7 +85,7 @@ void EditorMainWindow::OpenSceneFile() {
   ///////////////////////////////////////////////
   // Check if Read-Only flag is set (SVN requires lock?)
   ///////////////////////////////////////////////
-  bool writable = CFileEnv::IsFileWritable(file::Path(fname.c_str()));
+  bool writable = FileEnv::IsFileWritable(file::Path(fname.c_str()));
   if (!writable) {
     gUpdateStatus.SetState(EUPD_STOP);
     int result = QMessageBox::question(
@@ -139,7 +139,7 @@ void EditorMainWindow::SaveSceneFile() {
   file::Path::NameType fname = FileName.toStdString().c_str();
   if (fname.length()) {
     SetRecentSceneFile(FileName.toStdString().c_str(), SCENEFILE_DIR);
-    if (CFileEnv::filespec_to_extension(fname).length() == 0)
+    if (FileEnv::filespec_to_extension(fname).length() == 0)
       fname += ".mox";
     if (mEditorBase.mpScene) {
       if (!strcmp(GetRecentSceneFile(SCENEFILE_DIR).c_str(), fname.c_str())) {
@@ -191,7 +191,7 @@ void EditorMainWindow::SaveSelected() {
 
         file::Path::NameType fname = FileName.toStdString().c_str();
         if (fname.length()) {
-          file::Path::NameType ext = CFileEnv::filespec_to_extension(fname);
+          file::Path::NameType ext = FileEnv::filespec_to_extension(fname);
 
           if (ext.length() == 0) {
             fname += ".mox";

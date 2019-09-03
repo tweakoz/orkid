@@ -237,7 +237,7 @@ static void RenderFace( lev2::GfxTarget* pTARG, const fcolor4 & clr, lev2::Textu
 void SceneEditorVP::SaveCubeMap()
 {
 	const lev2::EzUiCam* persp = mPerspCam;
-	CPickBuffer<SceneEditorVP>* pb = mpPickBuffer;
+	PickBuffer<SceneEditorVP>* pb = mpPickBuffer;
 	lev2::GfxTarget* pTEXTARG = mpPickBuffer->GetContext();
 
 	const fvec3 Locator = mPerspCam->CamFocus.xyz();

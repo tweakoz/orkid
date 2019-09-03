@@ -22,19 +22,19 @@ namespace ork {
 
 template<> float Vector3<float>::Sin( float fin )
 {
-	return CFloat::Sin( fin );
+	return Float::Sin( fin );
 }
 template<> float Vector3<float>::Cos( float fin )
 {
-	return CFloat::Cos( fin );
+	return Float::Cos( fin );
 }
 template<> float Vector3<float>::Sqrt( float fin )
 {
-	return CFloat::Sqrt( fin );
+	return Float::Sqrt( fin );
 }
 template<> float Vector3<float>::Epsilon()
 {
-	return CFloat::FloatEpsilon();
+	return Float::FloatEpsilon();
 }
 template<> float Vector3<float>::Abs( float fin )
 {
@@ -57,7 +57,7 @@ template<> double Vector3<double>::Sqrt( double fin )
 }
 template<> double Vector3<double>::Epsilon()
 {
-	return CFloat::DoubleEpsilon();
+	return Float::DoubleEpsilon();
 }
 template<> double Vector3<double>::Abs( double fin )
 {

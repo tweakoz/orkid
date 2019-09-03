@@ -339,38 +339,38 @@ void SimpleAnimatableInst::ChangeAnimationSpeedEx(ork::PoolString name, float sp
 void SimpleAnimatableInst::ChangeAnimationFrameToFirst()
 {
 	for(BodyPartMap::iterator itmask = mBodyPartMap.begin(); itmask != mBodyPartMap.end(); itmask++)
-		itmask->second->mCurrentAnimData.SetFrame(ork::CFloat::Zero());
+		itmask->second->mCurrentAnimData.SetFrame(ork::Float::Zero());
 }
 
 void SimpleAnimatableInst::ChangeAnimationFrameToFirstEx(ork::PoolString name)
 {
 	for(BodyPartMap::iterator itmask = mBodyPartMap.begin(); itmask != mBodyPartMap.end(); itmask++)
 		if(itmask->second->mCurrentAnimData.mName == name)
-			itmask->second->mCurrentAnimData.SetFrame(ork::CFloat::Zero());
+			itmask->second->mCurrentAnimData.SetFrame(ork::Float::Zero());
 }
 
 void SimpleAnimatableInst::ChangeAnimationFrameToLast()
 {
 	for(BodyPartMap::iterator itmask = mBodyPartMap.begin(); itmask != mBodyPartMap.end(); itmask++)
-		itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One());
+		itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One());
 }
 
 void SimpleAnimatableInst::ChangeAnimationFrameToLastEx(ork::PoolString name)
 {
 	for(BodyPartMap::iterator itmask = mBodyPartMap.begin(); itmask != mBodyPartMap.end(); itmask++)
 		if(itmask->second->mCurrentAnimData.mName == name)
-			itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One());
+			itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One());
 }
 
 void SimpleAnimatableInst::ChangeAnimationFrameToMiddle(float scale)
 {
 	for(BodyPartMap::iterator itmask = mBodyPartMap.begin(); itmask != mBodyPartMap.end(); itmask++)
 	{
-		float frame = scale * (itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One());
-		if(frame >= itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One())
-			itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One());
-		else if(frame <= ork::CFloat::Zero())
-			itmask->second->mCurrentAnimData.SetFrame(ork::CFloat::Zero());
+		float frame = scale * (itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One());
+		if(frame >= itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One())
+			itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One());
+		else if(frame <= ork::Float::Zero())
+			itmask->second->mCurrentAnimData.SetFrame(ork::Float::Zero());
 		else
 			itmask->second->mCurrentAnimData.SetFrame(frame);
 	}
@@ -382,11 +382,11 @@ void SimpleAnimatableInst::ChangeAnimationFrameToMiddleEx(ork::PoolString name, 
 	{
 		if(itmask->second->mCurrentAnimData.mName == name)
 		{
-			float frame = scale * (itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One());
-			if(frame >= itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One())
-				itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::CFloat::One());
-			else if(frame <= ork::CFloat::Zero())
-				itmask->second->mCurrentAnimData.SetFrame(ork::CFloat::Zero());
+			float frame = scale * (itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One());
+			if(frame >= itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One())
+				itmask->second->mCurrentAnimData.SetFrame(itmask->second->mCurrentAnimData.AnimInst().GetNumFrames() - ork::Float::One());
+			else if(frame <= ork::Float::Zero())
+				itmask->second->mCurrentAnimData.SetFrame(ork::Float::Zero());
 			else
 				itmask->second->mCurrentAnimData.SetFrame(frame);
 		}

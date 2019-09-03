@@ -37,7 +37,7 @@ Viewport::Viewport( const std::string & name, int x, int y, int w, int h, CColor
 
 void Viewport::BeginFrame( lev2::GfxTarget* pTARG )
 {
-	ork::lev2::CFontMan::GetRef();
+	ork::lev2::FontMan::GetRef();
 	//////////////////////////////////////////////////////////
 	//GfxEnv::GetRef().GetGlobalLock().Lock(); // InterThreadLock
 	//////////////////////////////////////////////////////////

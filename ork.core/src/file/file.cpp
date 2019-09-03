@@ -54,7 +54,7 @@ QueueBuffer::~QueueBuffer()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFile::CFile(CFileDev* pdev)
+File::File(FileDev* pdev)
 	: mpDevice(pdev)
 	, msFileName("NoFile")
 	, meFileMode(EFM_READ)
@@ -65,12 +65,12 @@ CFile::CFile(CFileDev* pdev)
     , mbEnableBuffering(true)
 {
 	if(NULL == mpDevice)
-		mpDevice = CFileEnv::GetRef().GetDefaultDevice();
+		mpDevice = FileEnv::GetRef().GetDefaultDevice();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFile::CFile( const char* sFileName, EFileMode eMode, CFileDev* pdev )
+File::File( const char* sFileName, EFileMode eMode, FileDev* pdev )
 	: mpDevice(pdev)
 	, msFileName(sFileName)
 	, meFileMode(eMode)
@@ -81,12 +81,12 @@ CFile::CFile( const char* sFileName, EFileMode eMode, CFileDev* pdev )
     , mbEnableBuffering(true)
 {
 	if(NULL == mpDevice)
-		mpDevice = CFileEnv::GetRef().GetDeviceForUrl(msFileName);
+		mpDevice = FileEnv::GetRef().GetDeviceForUrl(msFileName);
 
 	OpenFile( sFileName, eMode );
 }
 
-CFile::CFile(const file::Path &sFileName, EFileMode eMode, CFileDev *pdev)
+File::File(const file::Path &sFileName, EFileMode eMode, FileDev *pdev)
 	: mpDevice(pdev)
 	, msFileName(sFileName)
 	, meFileMode(eMode)
@@ -97,22 +97,22 @@ CFile::CFile(const file::Path &sFileName, EFileMode eMode, CFileDev *pdev)
     , mbEnableBuffering(true)
 {
 	if(NULL == mpDevice)
-		mpDevice = CFileEnv::GetRef().GetDeviceForUrl(msFileName);
+		mpDevice = FileEnv::GetRef().GetDeviceForUrl(msFileName);
 
 	OpenFile(sFileName, eMode);
 }
 
-CFile::~CFile()
+File::~File()
 {
 	if(IsOpen())
 		Close();
 }
 
-bool CFile::IsOpen() const
+bool File::IsOpen() const
 {
-	if( ork::CFileEnv::GetLinFileMode() == ork::ELFM_READ )
+	if( ork::FileEnv::GetLinFileMode() == ork::ELFM_READ )
 	{
-		if( ork::CFileEnv::GetLinFile() != this )
+		if( ork::FileEnv::GetLinFile() != this )
 		{
 			return miFileLen!=0;
 		}
@@ -122,7 +122,7 @@ bool CFile::IsOpen() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFile::Open()
+EFileErrCode File::Open()
 {
 	float ftime = ork::OldSchool::GetRef().GetLoResRelTime();
 
@@ -133,14 +133,14 @@ EFileErrCode CFile::Open()
 	return mpDevice->OpenFile( *this );
 }
 
-EFileErrCode CFile::OpenFile( const file::Path& fname, EFileMode eMode )
+EFileErrCode File::OpenFile( const file::Path& fname, EFileMode eMode )
 {
 	meFileMode = eMode;
 	msFileName = fname;
 	return Open();
 }
 
-EFileErrCode CFile::Load( void **filebuffer, size_t &size )
+EFileErrCode File::Load( void **filebuffer, size_t &size )
 {
 	OrkAssert( meFileMode & EFM_READ );
 	OrkAssert( IsOpen() );

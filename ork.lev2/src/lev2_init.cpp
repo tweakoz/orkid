@@ -54,7 +54,7 @@ void Init(const std::string& gfxlayer)
 	AllocationLabel label("ork::lev2::Init");
 
 	GfxEnv::GetRef();
-	CGfxPrimitives::GetRef();
+	GfxPrimitives::GetRef();
 
 	GfxMaterialWiiBasic::StaticInit();
 
@@ -286,7 +286,7 @@ void PerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 
 			int fps = int(1.0f/ftime);
 #ifndef WII
-			ork::lev2::CFontMan::DrawText( pTARG, ix, ipY, (char*) CreateFormattedString( "%s <%02d fps> <%2.2f msec>", (char *) name.c_str(), fps, ftime*1000.0f ).c_str() );
+			ork::lev2::FontMan::DrawText( pTARG, ix, ipY, (char*) CreateFormattedString( "%s <%02d fps> <%2.2f msec>", (char *) name.c_str(), fps, ftime*1000.0f ).c_str() );
 #endif
 
 			ipY -= iih;

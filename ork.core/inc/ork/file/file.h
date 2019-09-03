@@ -45,7 +45,7 @@ struct QueueBuffer
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFile
+class File
 {
 	//int					miFilePos; //current position the OS has us at
 	size_t					miPhysicalPos;
@@ -54,17 +54,17 @@ class CFile
 public:
 
 	QueueBuffer				mFifo;
-	CFileDev*				mpDevice;
+	FileDev*				mpDevice;
 	file::Path				msFileName;
 	EFileMode				meFileMode;
 	size_t					miFileLen;
 	FileH					mHandle;
     bool                    mbEnableBuffering;
 
-	CFile( CFileDev* pdev = NULL );
-	CFile( const char* sFileName, EFileMode eMode, CFileDev* pdev = NULL );
-	CFile( const file::Path & sFileName, EFileMode eMode, CFileDev* pdev = NULL );
-	~CFile();
+	File( FileDev* pdev = NULL );
+	File( const char* sFileName, EFileMode eMode, FileDev* pdev = NULL );
+	File( const file::Path & sFileName, EFileMode eMode, FileDev* pdev = NULL );
+	~File();
 
 	EFileErrCode OpenFile( const file::Path& sFileName, EFileMode eMode );
 	EFileErrCode Open();
@@ -78,8 +78,8 @@ public:
 	EFileErrCode GetLength( size_t& riOffset );
 
 	// Serializer functions
-	template<class T> inline CFile & operator<<( const T & d );
-	template<class T> inline CFile & operator>>( T & d );
+	template<class T> inline File & operator<<( const T & d );
+	template<class T> inline File & operator>>( T & d );
 
 	const file::Path& GetFileName( void ) { return msFileName; }
 
@@ -106,50 +106,50 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline EFileErrCode CFile::Read( void *pTo, size_t iSize )
+inline EFileErrCode File::Read( void *pTo, size_t iSize )
 {
 	return mpDevice->Read( *this, pTo, iSize );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline EFileErrCode CFile::Write( const void *pFrom, size_t iSize )
+inline EFileErrCode File::Write( const void *pFrom, size_t iSize )
 {
 	return mpDevice->Write( *this, pFrom, iSize );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline EFileErrCode CFile::SeekFromStart( size_t iOffset )
+inline EFileErrCode File::SeekFromStart( size_t iOffset )
 {
 	return mpDevice->SeekFromStart( *this, iOffset );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline EFileErrCode CFile::SeekFromCurrent( size_t iOffset )
+inline EFileErrCode File::SeekFromCurrent( size_t iOffset )
 {
 	return mpDevice->SeekFromCurrent( *this, iOffset );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline EFileErrCode CFile::GetLength( size_t &riOffset )
+inline EFileErrCode File::GetLength( size_t &riOffset )
 {
 	return mpDevice->GetLength( *this, riOffset );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline EFileErrCode CFile::Close( void )
+inline EFileErrCode File::Close( void )
 {
 	return mpDevice->CloseFile( *this );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<class T> CFile &
-CFile::operator<<( const T & d )
+template<class T> File &
+File::operator<<( const T & d )
 {
 	OrkAssert( !Reading() );
 
@@ -157,7 +157,7 @@ CFile::operator<<( const T & d )
 	{
 		//CStringStream strStream;
 		//strStream << d;
-		//CFileEnv::Write( *this, (void *)strStream.str().c_str(), strStream.str().length() * sizeof( char ) );
+		//FileEnv::Write( *this, (void *)strStream.str().c_str(), strStream.str().length() * sizeof( char ) );
 	}
 	else
 		mpDevice->Write( *this, (void *)&d, sizeof( T ) );
@@ -167,7 +167,7 @@ CFile::operator<<( const T & d )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template<class T> CFile &CFile::operator>>( T & d )
+template<class T> File &File::operator>>( T & d )
 {
 	OrkAssert( Reading() );
 	mpDevice->Read( *this, (void *)&d, sizeof( T ) );

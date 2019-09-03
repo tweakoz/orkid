@@ -21,7 +21,7 @@ public:
     using IInputStream::size_type;
 	using IInputStream::kEOF;
 private:
-    ork::CFile mFile;
+    ork::File mFile;
 };
 
 } }

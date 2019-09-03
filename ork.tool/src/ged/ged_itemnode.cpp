@@ -202,7 +202,7 @@ void GedItemNode::Draw( lev2::GfxTarget* pTARG )
 int GedItemNode::GetNameWidth() const
 {
 	int istrw = (int) strlen( mName.c_str() );
-	const lev2::FontDesc& fdesc = lev2::CFontMan::GetRef().GetCurrentFont()->GetFontDesc();
+	const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().GetCurrentFont()->GetFontDesc();
 	int ifontw = fdesc.miCharWidth;
 	int ilabw = ifontw * istrw;
 	return ilabw;
@@ -211,7 +211,7 @@ int GedItemNode::GetNameWidth() const
 int GedItemNode::GetLabelWidth() const
 {
 	int istrw = (int) strlen( mLabel.c_str() );
-	const lev2::FontDesc& fdesc = lev2::CFontMan::GetRef().GetCurrentFont()->GetFontDesc();
+	const lev2::FontDesc& fdesc = lev2::FontMan::GetRef().GetCurrentFont()->GetFontDesc();
 	int ifontw = fdesc.miCharWidth;
 	int ilabw = ifontw * istrw;
 	return ilabw;

@@ -32,12 +32,12 @@ file::Path::NameType GetStartupDirectory(){
 
 EFileErrCode SetCurDir( const file::Path::NameType & inspec )
 {
-	return EFEC_FILE_UNSUPPORTED; //CFileEnv::GetRef().mpDefaultDevice->SetCurrentDirectory(inspec);
+	return EFEC_FILE_UNSUPPORTED; //FileEnv::GetRef().mpDefaultDevice->SetCurrentDirectory(inspec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-file::Path::NameType GetCurDir() // the curdir of the process, not the CFileDevice
+file::Path::NameType GetCurDir() // the curdir of the process, not the FileDevice
 {
 	file::Path::NameType outspec;
 	char cwdbuf[4096];
@@ -59,21 +59,21 @@ file::Path::NameType GetCurDir() // the curdir of the process, not the CFileDevi
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-CFileEnv::CFileEnv() : NoRttiSingleton<CFileEnv>(), mpDefaultDevice(NULL)
+FileEnv::FileEnv() : NoRttiSingleton<FileEnv>(), mpDefaultDevice(NULL)
 {
-	CFileDev* fileEnvironment = new CFileDevStd;
+	FileDev* fileEnvironment = new FileDevStd;
 	SetDefaultDevice(fileEnvironment);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFileDev* CFileEnv::GetDeviceForUrl(const file::Path &fileName) const
+FileDev* FileEnv::GetDeviceForUrl(const file::Path &fileName) const
 {
-	ork::file::Path::SmallNameType urlbase = CFileEnv::GetRef().UrlNameToBase(fileName.GetUrlBase().c_str()).c_str();
+	ork::file::Path::SmallNameType urlbase = FileEnv::GetRef().UrlNameToBase(fileName.GetUrlBase().c_str()).c_str();
 
 	orkmap<ork::file::Path::SmallNameType, SFileDevContext>::const_iterator it
-		= CFileEnv::GetRef().RefUrlRegistry().find(urlbase);
-	if(it != CFileEnv::GetRef().RefUrlRegistry().end())
+		= FileEnv::GetRef().RefUrlRegistry().find(urlbase);
+	if(it != FileEnv::GetRef().RefUrlRegistry().end())
 		if(it->second.GetFileDevice())
 			return it->second.GetFileDevice();
 
@@ -82,27 +82,27 @@ CFileDev* CFileEnv::GetDeviceForUrl(const file::Path &fileName) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileEnv::CanRead( void ) { return GetRef().mpDefaultDevice->CanRead(); }
-bool CFileEnv::CanWrite( void ) { return GetRef().mpDefaultDevice->CanWrite(); }
-bool CFileEnv::CanReadAsync( void ) { return GetRef().mpDefaultDevice->CanReadAsync(); }
+bool FileEnv::CanRead( void ) { return GetRef().mpDefaultDevice->CanRead(); }
+bool FileEnv::CanWrite( void ) { return GetRef().mpDefaultDevice->CanWrite(); }
+bool FileEnv::CanReadAsync( void ) { return GetRef().mpDefaultDevice->CanReadAsync(); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFileEnv::SetFilesystemBase( file::Path::NameType FSBase )
+void FileEnv::SetFilesystemBase( file::Path::NameType FSBase )
 {
     GetRef().mpDefaultDevice->SetFileSystemBaseAbs( FSBase );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const file::Path::NameType & CFileEnv::GetFilesystemBase( void )
+const file::Path::NameType & FileEnv::GetFilesystemBase( void )
 {
     return GetRef().mpDefaultDevice->GetFilesystemBaseAbs();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const SFileDevContext & CFileEnv::UrlBaseToContext( const file::Path::SmallNameType &UrlName )
+const SFileDevContext & FileEnv::UrlBaseToContext( const file::Path::SmallNameType &UrlName )
 {
 	static SFileDevContext DefaultContext;
 	orkmap<ork::file::Path::SmallNameType, SFileDevContext> & Map = GetRef().mUrlRegistryMap;
@@ -121,7 +121,7 @@ const SFileDevContext & CFileEnv::UrlBaseToContext( const file::Path::SmallNameT
 
 ///////////////////////////////////////////////////////////////////////////////
 
-file::Path::SmallNameType CFileEnv::UrlNameToBase(const file::Path::NameType& UrlName)
+file::Path::SmallNameType FileEnv::UrlNameToBase(const file::Path::NameType& UrlName)
 {
 	file::Path::SmallNameType urlbase = "";
 	file::Path::NameType::size_type find_url_colon = UrlName.cue_to_char(':', 0);
@@ -141,7 +141,7 @@ file::Path::SmallNameType CFileEnv::UrlNameToBase(const file::Path::NameType& Ur
 
 ///////////////////////////////////////////////////////////////////////////////
 
-file::Path::NameType CFileEnv::UrlNameToPath( const file::Path::NameType& UrlName )
+file::Path::NameType FileEnv::UrlNameToPath( const file::Path::NameType& UrlName )
 {
 	file::Path::NameType path = "";
 	file::Path::NameType::size_type find_url_colon = UrlName.cue_to_char( ':', 0 );
@@ -174,7 +174,7 @@ file::Path::NameType CFileEnv::UrlNameToPath( const file::Path::NameType& UrlNam
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::file::Path CFileEnv::GetPathFromUrlExt( const file::Path::NameType& UrlName, const file::Path::NameType & subfolder, const file::Path::SmallNameType & ext )
+ork::file::Path FileEnv::GetPathFromUrlExt( const file::Path::NameType& UrlName, const file::Path::NameType & subfolder, const file::Path::SmallNameType & ext )
 {
 	file::Path::NameType Base = UrlNameToBase( UrlName ).c_str();
 	file::Path::NameType Tail = UrlNameToPath( UrlName );
@@ -200,7 +200,7 @@ ork::file::Path CFileEnv::GetPathFromUrlExt( const file::Path::NameType& UrlName
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFileEnv::RegisterUrlBase( const file::Path::SmallNameType& UrlName, const SFileDevContext & FileContext )
+void FileEnv::RegisterUrlBase( const file::Path::SmallNameType& UrlName, const SFileDevContext & FileContext )
 {
 	file::Path::SmallNameType urlbase = UrlNameToBase( UrlName.c_str() );
 	orkmap<ork::file::Path::SmallNameType, SFileDevContext> & Map = GetRef().mUrlRegistryMap;
@@ -213,19 +213,19 @@ void CFileEnv::RegisterUrlBase( const file::Path::SmallNameType& UrlName, const 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileEnv::PathIsUrlForm( const file::Path& PathName )
+bool FileEnv::PathIsUrlForm( const file::Path& PathName )
 {
 	return PathName.HasUrlBase();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileEnv::IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase)
+bool FileEnv::IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase)
 {
 	return OrkSTXIsInMap(GetRef().mUrlRegistryMap, urlBase);
 }
 
-file::Path::NameType CFileEnv::StripUrlFromPath(const file::Path::NameType& urlName)
+file::Path::NameType FileEnv::StripUrlFromPath(const file::Path::NameType& urlName)
 {
 	file::Path::NameType urlStr = urlName.c_str();
 	file::Path::NameType path = "";
@@ -247,43 +247,43 @@ file::Path::NameType CFileEnv::StripUrlFromPath(const file::Path::NameType& urlN
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileEnv::DoesFileExist(  const file::Path& filespec )
+bool FileEnv::DoesFileExist(  const file::Path& filespec )
 {
-	return CFileEnv::GetRef().GetDeviceForUrl(filespec)->DoesFileExist(filespec);
+	return FileEnv::GetRef().GetDeviceForUrl(filespec)->DoesFileExist(filespec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileEnv::DoesDirectoryExist( const file::Path& filespec )
+bool FileEnv::DoesDirectoryExist( const file::Path& filespec )
 {
-	return CFileEnv::GetRef().GetDeviceForUrl(filespec)->DoesDirectoryExist(filespec);
+	return FileEnv::GetRef().GetDeviceForUrl(filespec)->DoesDirectoryExist(filespec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileEnv::IsFileWritable( const file::Path& filespec )
+bool FileEnv::IsFileWritable( const file::Path& filespec )
 {
-	return CFileEnv::GetRef().GetDeviceForUrl(filespec)->IsFileWritable(filespec);
+	return FileEnv::GetRef().GetDeviceForUrl(filespec)->IsFileWritable(filespec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFileEnv::SetPrependFilesystemBase(bool setting)
+void FileEnv::SetPrependFilesystemBase(bool setting)
 {
-	CFileEnv::GetRef().mpDefaultDevice->SetPrependFilesystemBase(setting);
+	FileEnv::GetRef().mpDefaultDevice->SetPrependFilesystemBase(setting);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileEnv::GetPrependFilesystemBase(void)
+bool FileEnv::GetPrependFilesystemBase(void)
 {
-	return(CFileEnv::GetRef().mpDefaultDevice->GetPrependFilesystemBase());
+	return(FileEnv::GetRef().mpDefaultDevice->GetPrependFilesystemBase());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-bool CFileEnv::filespec_isdos( const file::Path::NameType & inspec )
+bool FileEnv::filespec_isdos( const file::Path::NameType & inspec )
 {
 	bool rval = true;
 
@@ -317,7 +317,7 @@ bool CFileEnv::filespec_isdos( const file::Path::NameType & inspec )
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-bool CFileEnv::filespec_isunix( const file::Path::NameType & inspec )
+bool FileEnv::filespec_isunix( const file::Path::NameType & inspec )
 {
 	bool rval = true;
 
@@ -340,7 +340,7 @@ bool CFileEnv::filespec_isunix( const file::Path::NameType & inspec )
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-file::Path::NameType CFileEnv::filespec_to_extension( const file::Path::NameType & inspec )
+file::Path::NameType FileEnv::filespec_to_extension( const file::Path::NameType & inspec )
 {	file::Path::NameType::size_type i1stDot = inspec.find_first_of(".");
 	file::Path::NameType::size_type iLstDot = inspec.find_last_of(".");
 	//OrkAssert( i1stDot==iLstDot );
@@ -358,7 +358,7 @@ file::Path::NameType CFileEnv::filespec_to_extension( const file::Path::NameType
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-file::Path::NameType CFileEnv::filespec_no_extension( const file::Path::NameType & inspec )
+file::Path::NameType FileEnv::filespec_no_extension( const file::Path::NameType & inspec )
 {	file::Path::NameType::size_type i1stDot = inspec.find_first_of(".");
 	file::Path::NameType::size_type iLstDot = inspec.find_last_of(".");
 	//OrkAssert( i1stDot==iLstDot );
@@ -370,7 +370,7 @@ file::Path::NameType CFileEnv::filespec_no_extension( const file::Path::NameType
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-file::Path::NameType CFileEnv::filespec_strip_base( const file::Path::NameType & inspec, const file::Path::NameType & base )
+file::Path::NameType FileEnv::filespec_strip_base( const file::Path::NameType & inspec, const file::Path::NameType & base )
 {
 	file::Path::NameType outstr = inspec;
 	std::transform( outstr.begin(), outstr.end(), outstr.begin(), dos2unixpathsep() );
@@ -383,7 +383,7 @@ file::Path::NameType CFileEnv::filespec_strip_base( const file::Path::NameType &
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-orkvector< file::Path::NameType > CFileEnv::filespec_separate_terms( const file::Path::NameType & inspec )
+orkvector< file::Path::NameType > FileEnv::filespec_separate_terms( const file::Path::NameType & inspec )
 {
 	file::Path::NameType _instr = inspec;
 	std::transform( _instr.begin(), _instr.end(), _instr.begin(), dos2unixpathsep() );
@@ -412,11 +412,11 @@ orkvector< file::Path::NameType > CFileEnv::filespec_separate_terms( const file:
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-file::Path::NameType CFileEnv::FilespecToContainingDirectory(const file::Path::NameType& path)
+file::Path::NameType FileEnv::FilespecToContainingDirectory(const file::Path::NameType& path)
 {
 	file::Path::NameType rval("");
-	bool isurl = CFileEnv::PathIsUrlForm(ork::file::Path(path.c_str()));
-	file::Path::SmallNameType urlbase = CFileEnv::UrlNameToBase(path.c_str());
+	bool isurl = FileEnv::PathIsUrlForm(ork::file::Path(path.c_str()));
+	file::Path::SmallNameType urlbase = FileEnv::UrlNameToBase(path.c_str());
 	// This nonsense is so we can work with URLs too...
 	file::Path::NameType UrlStrippedPath = path;
 	if(isurl)
@@ -458,7 +458,7 @@ file::Path::NameType CFileEnv::FilespecToContainingDirectory(const file::Path::N
 ///////////////////////////////////////////////////////////////////////////////
 /// DEPRECATED (ork::file::Path will be replacement)
 
-file::Path::NameType CFileEnv::TruncateAtFirstCharFromSet(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars)
+file::Path::NameType FileEnv::TruncateAtFirstCharFromSet(const file::Path::NameType& stringToTruncate, const file::Path::NameType& setOfChars)
 {
 	size_t isetsize = setOfChars.length();
 
@@ -489,21 +489,21 @@ file::Path::NameType CFileEnv::TruncateAtFirstCharFromSet(const file::Path::Name
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFileEnv::BeginLinFile( const file::Path& lfn, ELINFILEMODE emode )
+void FileEnv::BeginLinFile( const file::Path& lfn, ELINFILEMODE emode )
 {
 	if( emode==ELFM_WRITE )
 	{
 		std::string lfile1 = std::string(lfn.c_str());
-		GetRef().mpLinFile = new CFile( lfile1.c_str(), ork::EFM_WRITE );
+		GetRef().mpLinFile = new File( lfile1.c_str(), ork::EFM_WRITE );
 		GetRef().meLinFileMode = emode;
 	}
 	else if( emode==ELFM_READ )
 	{
 		std::string lfile3 = std::string("data/")+std::string(lfn.c_str());
-		if( ork::CFileEnv::DoesFileExist(lfile3.c_str()) )
+		if( ork::FileEnv::DoesFileExist(lfile3.c_str()) )
 		{
 			//OutputDebugString( "OpeningLinFile!!!\n" );
-			GetRef().mpLinFile = new CFile( lfile3.c_str(), ork::EFM_READ );
+			GetRef().mpLinFile = new File( lfile3.c_str(), ork::EFM_READ );
 			GetRef().meLinFileMode = emode;
 		}
 	}
@@ -511,7 +511,7 @@ void CFileEnv::BeginLinFile( const file::Path& lfn, ELINFILEMODE emode )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CFileEnv::EndLinFile()
+void FileEnv::EndLinFile()
 {
 	if( GetRef().mpLinFile )
 		delete GetRef().mpLinFile;

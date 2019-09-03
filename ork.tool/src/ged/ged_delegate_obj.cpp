@@ -152,7 +152,7 @@ GedObjNode<PropSetterObj>::GedObjNode( ObjModel& mdl, const char* name, const re
 
 	if( anno.length() )
 	{
-		CChoiceList* chclist = mModel.GetChoiceManager()->GetChoiceList( anno.c_str() );
+		ChoiceList* chclist = mModel.GetChoiceManager()->GetChoiceList( anno.c_str() );
 			
 		if( chclist )
 		{
@@ -250,7 +250,7 @@ void GedObjNode<Setter>::OnCreateObject()
 
 	if( anno.length() )
 	{
-		CChoiceList* chclist = 0;;
+		ChoiceList* chclist = 0;;
 
 		chclist = mModel.GetChoiceManager()->GetChoiceList( anno.c_str() );
 			
@@ -277,7 +277,7 @@ void GedObjNode<Setter>::OnCreateObject()
 			QVariant UserData = pact->data();
 			std::string pname = UserData.toString().toStdString();
 
-			const CAttrChoiceValue *Chc = chclist->FindFromLongName(pname);
+			const AttrChoiceValue *Chc = chclist->FindFromLongName(pname);
 
 			if( Chc )
 			{

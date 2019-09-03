@@ -256,11 +256,11 @@ void BakeJobThread::ActivateJob()
 	dst_imgpathA.AppendFolder( "../lightmaps/" );
 	dst_imgpathB.AppendFolder( "../../lightmaps/" );
 	ork::file::Path dst_imagepath =
-			CFileEnv::DoesDirectoryExist(dst_imgpathA)
+			FileEnv::DoesDirectoryExist(dst_imgpathA)
 		?	dst_imgpathA
 		:	dst_imgpathB;
 	
-	if( false == CFileEnv::DoesDirectoryExist(dst_imagepath) )
+	if( false == FileEnv::DoesDirectoryExist(dst_imagepath) )
 	{
 		std::string  str = CreateFormattedString("ERROR lightmaps Folder Does Not Exist<%s>\n",dst_imagepath.c_str());
 		SigAppendString( QString(str.c_str()) );

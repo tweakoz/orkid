@@ -23,7 +23,7 @@ using namespace ork::audiomath;
 namespace ork { namespace tool
 {
 
-std::set<std::string> CSoundFont::mSearchPaths;
+std::set<std::string> SoundFont::mSearchPaths;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -60,7 +60,7 @@ bool SF2GABFilter::ConvertAsset( const tokenlist& toklist )
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-CSF2Program::CSF2Program()
+SF2Program::SF2Program()
 {
 	preset = 0;
 	bank = 0;
@@ -80,7 +80,7 @@ CSF2Program::CSF2Program()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CSoundFontConversionEngine::CSoundFontConversionEngine( const std::string & SoundFontName )
+SoundFontConversionEngine::SoundFontConversionEngine( const std::string & SoundFontName )
 	: mSoundFontName( SoundFontName )
 	, numinst( 0 )
 	, numizones( 0 )
@@ -91,7 +91,7 @@ CSoundFontConversionEngine::CSoundFontConversionEngine( const std::string & Soun
 {
 	std::string filename = SoundFontName;
 
-	CRIFFFile RiffFile;
+	RIFFFile RiffFile;
 	RiffFile.OpenFile( filename );
 	RiffFile.LoadChunks();
 
@@ -99,7 +99,7 @@ CSoundFontConversionEngine::CSoundFontConversionEngine( const std::string & Soun
 	Process();
 }
 
-CSoundFontConversionEngine::~CSoundFontConversionEngine()
+SoundFontConversionEngine::~SoundFontConversionEngine()
 {
 	for( auto item : mPXMPrograms ) delete item;
 	for( auto item : mPXMProgramZones ) delete item;
@@ -112,9 +112,9 @@ CSoundFontConversionEngine::~CSoundFontConversionEngine()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::AddProgram( Ssfontpreset *preset )
+void SoundFontConversionEngine::AddProgram( Ssfontpreset *preset )
 {
-	CSF2Program *cpre = new CSF2Program;
+	SF2Program *cpre = new SF2Program;
 
 	cpre->bank = preset->wBank;
 	cpre->genre = preset->dwGenre;
@@ -134,24 +134,24 @@ void CSoundFontConversionEngine::AddProgram( Ssfontpreset *preset )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::AddSample( Ssfontsample *sample )
+void SoundFontConversionEngine::AddSample( Ssfontsample *sample )
 {
-	CSF2Sample *pxsample = new CSF2Sample( sample );
+	SF2Sample *pxsample = new SF2Sample( sample );
 	mPXMSamples.push_back( pxsample );
 }	
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::AddPresetGen( SSoundFontGenerator *pgn )
+void SoundFontConversionEngine::AddPresetGen( SSoundFontGenerator *pgn )
 {
 	mPXMPresetGen.push_back( pgn );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::AddInstrumentZone( Ssfontinstbag *ibg )
+void SoundFontConversionEngine::AddInstrumentZone( Ssfontinstbag *ibg )
 {
-	CSF2InstrumentZone *pxmi = new CSF2InstrumentZone;
+	SF2InstrumentZone *pxmi = new SF2InstrumentZone;
 	pxmi->base_generator = ibg->wInstGenNdx;
 	pxmi->SetBaseModulator( ibg->wInstModNdx );
 	mPXMInstrumentZones.push_back( pxmi );
@@ -159,9 +159,9 @@ void CSoundFontConversionEngine::AddInstrumentZone( Ssfontinstbag *ibg )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::AddInstrument( Ssfontinst *inst )
+void SoundFontConversionEngine::AddInstrument( Ssfontinst *inst )
 {
-	CSF2Instrument *pxmi = new CSF2Instrument;
+	SF2Instrument *pxmi = new SF2Instrument;
 	pxmi->izone_base = inst->wInstBagNdx;
 	//strncpy( (char *) & pxmi->name[0], (char *) & inst->achInstName[0], 20 );
 	pxmi->SetName( inst->GetName() );
@@ -171,23 +171,23 @@ void CSoundFontConversionEngine::AddInstrument( Ssfontinst *inst )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::AddInstrumentGen( SSoundFontGenerator *igen )
+void SoundFontConversionEngine::AddInstrumentGen( SSoundFontGenerator *igen )
 {
 	mPXMInstrumentGen.push_back( igen );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::AddProgramZone( Ssfontprebag *pbg )
+void SoundFontConversionEngine::AddProgramZone( Ssfontprebag *pbg )
 {
-	CSF2ProgramZone *pxmp = new CSF2ProgramZone;
+	SF2ProgramZone *pxmp = new SF2ProgramZone;
 	pxmp->base_generator = pbg->wInstGenNdx;
 	mPXMProgramZones.push_back( pxmp );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
+void SF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
 {
 	const float kfrqbase = 8.1757989156f;
 
@@ -418,7 +418,7 @@ void CSF2InstrumentZone::ApplyGenerator( ESF2Generators egen, S16 GenVal )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CSoundFontConversionEngine::ProcessInstruments( void )
+void SoundFontConversionEngine::ProcessInstruments( void )
 {
 	numinst = (int) mPXMInstruments.size();
 	numizones = (int) mPXMInstrumentZones.size();
@@ -433,8 +433,8 @@ void CSoundFontConversionEngine::ProcessInstruments( void )
 	for( int j=1; j<=numizones; j++ )
 	{	int i = j-1;
 		
-		CSF2InstrumentZone *izone = mPXMInstrumentZones[i];
-		//CSF2InstrumentZone *izone2 = mPXMInstrumentZones[j];
+		SF2InstrumentZone *izone = mPXMInstrumentZones[i];
+		//SF2InstrumentZone *izone2 = mPXMInstrumentZones[j];
 		
 		if( j==849 )
 		{
@@ -514,7 +514,7 @@ void CSoundFontConversionEngine::ProcessInstruments( void )
 	{	
 		int i=j-1;
 				
-		CSF2Instrument *inst = mPXMInstruments[i];
+		SF2Instrument *inst = mPXMInstruments[i];
 		
 		int iz1 = (int) inst->izone_base;
 		int iz2 = (j<=(numinst-1)) ? (int) mPXMInstruments[j]->izone_base : (numizones);
@@ -525,14 +525,14 @@ void CSoundFontConversionEngine::ProcessInstruments( void )
 		// find wacky SF2 "Global Split" Data
 		/////////////////////////////////////////////////////////
 
-		CSF2InstrumentZone* pGlobalIZone = 0;
+		SF2InstrumentZone* pGlobalIZone = 0;
 		bool bHasGlobalZone = false;
 
 		for( size_t iz=0; iz<inst->num_izones; iz++ )
 		{
 			int izone_index = int(inst->izone_base) + iz ;
 
-			CSF2InstrumentZone *pZ = mPXMInstrumentZones[ izone_index ];
+			SF2InstrumentZone *pZ = mPXMInstrumentZones[ izone_index ];
 
 			if( pZ->IsGlobalZone() )
 			{
@@ -548,7 +548,7 @@ void CSoundFontConversionEngine::ProcessInstruments( void )
 
 		for( size_t iz=0; iz<inst->num_izones; iz++ )
 		{
-			CSF2InstrumentZone *pZ = mPXMInstrumentZones[ inst->izone_base + iz ];
+			SF2InstrumentZone *pZ = mPXMInstrumentZones[ inst->izone_base + iz ];
 
 			if( bHasGlobalZone )
 			{
@@ -590,12 +590,12 @@ void CSoundFontConversionEngine::ProcessInstruments( void )
 	// Mark samples as looped
 	
 	for( int i=0; i<numizones; i++ )
-	{	CSF2InstrumentZone *izone = mPXMInstrumentZones[i];
+	{	SF2InstrumentZone *izone = mPXMInstrumentZones[i];
 		U32 smpID = izone->sampleID;
 		
 		int loopi = (izone->loop & 1);
 		if( loopi && (smpID != 0xffff) )
-		{	CSF2Sample *smp = mPXMSamples[ smpID ];
+		{	SF2Sample *smp = mPXMSamples[ smpID ];
 			smp->loop = 1;
 		}
 	}
@@ -613,7 +613,7 @@ void CSoundFontConversionEngine::ProcessInstruments( void )
 
 	for( int i=0; i<numsamples; i++ )
 	{
-		CSF2Sample *smp = mPXMSamples[ i ];
+		SF2Sample *smp = mPXMSamples[ i ];
 
 		int ilen = smp->end - smp->start;
 
@@ -660,7 +660,7 @@ void CSoundFontConversionEngine::ProcessInstruments( void )
 	//////////////////////////////////////////////////
 }
 
-void CSoundFontConversionEngine::ProcessPresets( void )
+void SoundFontConversionEngine::ProcessPresets( void )
 {
 	int inumpresets = (int) mPXMPrograms.size();
 	int inumprez = (int) this->mPXMProgramZones.size();
@@ -674,7 +674,7 @@ void CSoundFontConversionEngine::ProcessPresets( void )
 	{	
 		int i = j-1;
 		
-		CSF2ProgramZone *pre = mPXMProgramZones[i];
+		SF2ProgramZone *pre = mPXMProgramZones[i];
 		
 		int pg1 = pre->base_generator;
 		int pg2 = ( j<=inumprez-1 ) ? mPXMProgramZones[j]->base_generator : inumpgen;
@@ -726,7 +726,7 @@ void CSoundFontConversionEngine::ProcessPresets( void )
 	{
 		int i=j-1;
 
-		CSF2Program *preset = mPXMPrograms[i];
+		SF2Program *preset = mPXMPrograms[i];
 		U32 pr1 = preset->pbag_base;
 		U32 pr2 = ( j<=inumpresets-1 ) ? mPXMPrograms[j]->pbag_base : numprebags;
 
@@ -735,17 +735,17 @@ void CSoundFontConversionEngine::ProcessPresets( void )
 		orkmessageh( "//////////////////////////\n" );
 		orkmessageh( "// program: %03d <%s> pbag_base %d num_pbags %d pr1 %d pr2 %d mapped %d\n", i, preset->GetName().c_str(), preset->pbag_base, preset->num_pbags, pr1, pr2, preset->mapped_preset );
 		
-//		CSF2Program *mapped = mPXMPrograms[ preset->mapped_preset ];
+//		SF2Program *mapped = mPXMPrograms[ preset->mapped_preset ];
 
 		for( int ipbag=0; ipbag<preset->num_pbags; ipbag++ )
 		{	
 			int zoneidx = preset->pbag_base + ipbag;
 			
-			CSF2ProgramZone *pzone = mPXMProgramZones[zoneidx];
+			SF2ProgramZone *pzone = mPXMProgramZones[zoneidx];
 
 			if( pzone->instrumentID>=0 )
 			{
-				CSF2Instrument *inst = mPXMInstruments[ pzone->instrumentID ];
+				SF2Instrument *inst = mPXMInstruments[ pzone->instrumentID ];
 				preset->AddZone( *pzone );
 				orkmessageh( "//	[zone %d of %d] [zoneID %d] [name %s]\n", ipbag, preset->num_pbags, pzone->instrumentID, inst->GetName().c_str() );
 			}
@@ -756,7 +756,7 @@ void CSoundFontConversionEngine::ProcessPresets( void )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CSoundFont::CSoundFont( ) 
+SoundFont::SoundFont( ) 
 	: mpSampleData( 0 )
 	, miSampleBlockLength( 0 )
 {
@@ -764,7 +764,7 @@ CSoundFont::CSoundFont( )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CSoundFont::CSoundFont( CSoundFontConversionEngine *pengine ) 
+SoundFont::SoundFont( SoundFontConversionEngine *pengine ) 
 	: mpSampleData( 0 )
 	, miSampleBlockLength( 0 )
 {
@@ -789,23 +789,23 @@ CSoundFont::CSoundFont( CSoundFontConversionEngine *pengine )
 
 		for( int i=0; i<inuminstruments; i++ )
 		{
-			const CSF2Instrument *pinst = pengine->GetInstrument( i );
+			const SF2Instrument *pinst = pengine->GetInstrument( i );
 			
 			mSF2Instruments.push_back( *pinst );
 
 
-			const CSF2Instrument *psf2i = & mSF2Instruments[ i ];
+			const SF2Instrument *psf2i = & mSF2Instruments[ i ];
 
 
 			std::string InstrumentName = CreateFormattedString( "/%s/[%d]%s", mSoundFontName.c_str(), pinst->GetIndex(), pinst->GetName().c_str() );
 			std::string InstrumentShortName = CreateFormattedString( "/[%d] %s", pinst->GetIndex(), pinst->GetName().c_str() );
-		//	CSoundFont::mSF2IntrumentChoices.add( CAttrChoiceValue( InstrumentName, (u32) i, InstrumentShortName ) );
+		//	SoundFont::mSF2IntrumentChoices.add( AttrChoiceValue( InstrumentName, (u32) i, InstrumentShortName ) );
 
 		}
 
 		for( int i=0; i<inumsamples; i++ )
 		{
-			const CSF2Sample *psamp = pengine->GetSample( i );
+			const SF2Sample *psamp = pengine->GetSample( i );
 			mSF2Samples.push_back( *psamp );
 
 		}
@@ -814,12 +814,12 @@ CSoundFont::CSoundFont( CSoundFontConversionEngine *pengine )
 
 }
 
-const CSF2Instrument *CSoundFont::GetInstrument( int idx ) const
+const SF2Instrument *SoundFont::GetInstrument( int idx ) const
 {
 	return & mSF2Instruments[ idx ];
 }
 
-const CSF2Sample * CSoundFont::GetSample( int idx ) const
+const SF2Sample * SoundFont::GetSample( int idx ) const
 {
 	OrkAssert( idx < int(mSF2Samples.size()) );
 	return & mSF2Samples[ idx ];
@@ -827,13 +827,13 @@ const CSF2Sample * CSoundFont::GetSample( int idx ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CSoundFont::LoadSearchPaths( void )
+void SoundFont::LoadSearchPaths( void )
 {
 	mSearchPaths.clear();
 
 /*	file::Path ConfigFile( "data://soundfonts/soundfonts.cfg" );
 
-	if( CFileEnv::DoesFileExist( ConfigFile ) )
+	if( FileEnv::DoesFileExist( ConfigFile ) )
 	{
 		CScannerParser Parser( ConfigFile );
 
@@ -864,13 +864,13 @@ void CSoundFont::LoadSearchPaths( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CSoundFont::AddSearchPath( const std::string & searchpath )
+void SoundFont::AddSearchPath( const std::string & searchpath )
 {
 	if( OrkSTXSetInsert( mSearchPaths, searchpath ) )
 	{
 		file::Path ConfigFile( "soundfonts.cfg" );
 		
-		CFile OutFile( ConfigFile, EFM_WRITE );
+		File OutFile( ConfigFile, EFM_WRITE );
 		OutFile.Open();
 
 		std::string OutData;
@@ -893,7 +893,7 @@ void CSoundFont::AddSearchPath( const std::string & searchpath )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string CSoundFont::FindSoundFont( const std::string & named )
+std::string SoundFont::FindSoundFont( const std::string & named )
 {
 	std::string rval;
 
@@ -903,7 +903,7 @@ std::string CSoundFont::FindSoundFont( const std::string & named )
 
 		std::string filename = path + named + ".sf2";
 
-		if( CFileEnv::DoesFileExist( file::Path(filename.c_str()) ) )
+		if( FileEnv::DoesFileExist( file::Path(filename.c_str()) ) )
 		{
 			rval = filename;
 		}
@@ -913,17 +913,17 @@ std::string CSoundFont::FindSoundFont( const std::string & named )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int CSF2Sample::GetLoopStart( void ) const 
+int SF2Sample::GetLoopStart( void ) const 
 {
 	return miloopstart;
 }
 
-int CSF2Sample::GetLoopEnd( void ) const 
+int SF2Sample::GetLoopEnd( void ) const 
 {
 	return miloopend;
 }
 
-S16 CSF2Sample::GetSample( int idx ) const
+S16 SF2Sample::GetSample( int idx ) const
 {
 	OrkAssert( idx < misamplelen );
 	return mpsampledata[ idx ];

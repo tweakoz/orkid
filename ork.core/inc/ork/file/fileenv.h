@@ -20,10 +20,10 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileDev;
-class CFile;
+class FileDev;
+class File;
 
-struct CFileEnvDir
+struct FileEnvDir
 {
     long					handle; /* -1 for failed rewind */
     file::Path::NameType	result; /* d_name null iff first time */
@@ -53,33 +53,33 @@ enum ELINFILEMODE
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileEnv : public NoRttiSingleton< CFileEnv >
+class FileEnv : public NoRttiSingleton< FileEnv >
 {
 	// The constructor of a singleton must be private to show users that they must use GetRef instead.
 	// This ugly friend declaration is a side-effect of that. The only alternative is to ditch the template
 	// and just use singleton as a pattern.
-	friend class NoRttiSingleton< CFileEnv >;
+	friend class NoRttiSingleton< FileEnv >;
 
-	CFileDev *mpDefaultDevice;
+	FileDev *mpDefaultDevice;
 	orkmap<ork::file::Path::SmallNameType, SFileDevContext> mUrlRegistryMap;
 
 public:
-	CFileEnv();
+	FileEnv();
 
-	// These should all be forwarded to CFileDev
-	CFileEnvDir*			OpenDir(const char *);
-	int						CloseDir(CFileEnvDir *);
-	file::Path::NameType	ReadDir(CFileEnvDir *);
-	void					RewindDir(CFileEnvDir *);
+	// These should all be forwarded to FileDev
+	FileEnvDir*			OpenDir(const char *);
+	int						CloseDir(FileEnvDir *);
+	file::Path::NameType	ReadDir(FileEnvDir *);
+	void					RewindDir(FileEnvDir *);
 
 	const orkmap<ork::file::Path::SmallNameType, SFileDevContext>& RefUrlRegistry() const { return mUrlRegistryMap; }
 
-	CFileDev* GetDefaultDevice() const { return mpDefaultDevice; }
-	CFileDev* GetDeviceForUrl(const file::Path &fileName) const;
+	FileDev* GetDefaultDevice() const { return mpDefaultDevice; }
+	FileDev* GetDeviceForUrl(const file::Path &fileName) const;
 
 	//////////////////////////////////////////
 
-	void SetDefaultDevice(CFileDev *pDevice) { mpDefaultDevice = pDevice; }
+	void SetDefaultDevice(FileDev *pDevice) { mpDefaultDevice = pDevice; }
 
 	//////////////////////////////////////////
 	// Caps And Flags
@@ -195,7 +195,7 @@ public:
 	
 	static ELINFILEMODE GetLinFileMode() { return GetRef().meLinFileMode; }
 	static const file::Path& GetLinFileName() { return GetRef().mLinFileName; }
-	static CFile* GetLinFile() { return GetRef().mpLinFile; }
+	static File* GetLinFile() { return GetRef().mpLinFile; }
 
 	private:
 
@@ -206,7 +206,7 @@ public:
 	static file::Path::NameType StripUrlFromPath(const file::Path::NameType& urlName);
 	file::Path				mLinFileName;
 	ELINFILEMODE			meLinFileMode;
-	CFile*					mpLinFile;
+	File*					mpLinFile;
 };
 
 typedef void (*FileAsyncDoneCallback)( void );

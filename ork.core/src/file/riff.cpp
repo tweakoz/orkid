@@ -13,14 +13,14 @@
 #include <ork/file/riff.h>
 #include <ork/util/endian.h>
 
-using ork::CRIFFChunk;
-using ork::CRIFFFile;
+using ork::RIFFChunk;
+using ork::RIFFFile;
 using ork::RiffChunk2;
 using ork::RiffFile2;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 CRIFFChunk::ChunkName( U8 a, U8 b, U8 c, U8 d )
+U32 RIFFChunk::ChunkName( U8 a, U8 b, U8 c, U8 d )
 {
 	U32 uval = ((static_cast<U32>(a)&255))
 				+ ((static_cast<U32>(b)&255)<<8)
@@ -28,7 +28,7 @@ U32 CRIFFChunk::ChunkName( U8 a, U8 b, U8 c, U8 d )
 				+ ((static_cast<U32>(d)&255)<<24);
 	
 #if defined( _OSX )
-	CRIFFFile::SwapBytes( reinterpret_cast<u8*>( & uval ), 4 );
+	RIFFFile::SwapBytes( reinterpret_cast<u8*>( & uval ), 4 );
 #endif
 
 	return uval;
@@ -36,14 +36,14 @@ U32 CRIFFChunk::ChunkName( U8 a, U8 b, U8 c, U8 d )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 CRIFFChunk::ChunkName( const char *pCHKNAM )
+U32 RIFFChunk::ChunkName( const char *pCHKNAM )
 {
 	return ChunkName((unsigned char)pCHKNAM[0], (unsigned char)pCHKNAM[1], (unsigned char)pCHKNAM[2], (unsigned char)pCHKNAM[3]);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 CRIFFChunk::GetChunkLen( U32 val )
+U32 RIFFChunk::GetChunkLen( U32 val )
 {
 	U8 ch0, ch1, ch2, ch3;
 	
@@ -53,17 +53,17 @@ U32 CRIFFChunk::GetChunkLen( U32 val )
 	ch0 = (U8)(((U32)val&0x000000ff));
 	U32 outval = U32((ch3<<24)+(ch2<<16)+(ch1<<8)+ch0);
 	#if defined( _OSX )
-	CRIFFFile::SwapBytes( reinterpret_cast<u8*>( & outval ), 4 );
+	RIFFFile::SwapBytes( reinterpret_cast<u8*>( & outval ), 4 );
 	#endif
 	return outval;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CRIFFChunk::PrintChunkID( U32 val )
+void RIFFChunk::PrintChunkID( U32 val )
 {
 	#if defined( _OSX )
-	CRIFFFile::SwapBytes( reinterpret_cast<u8*>( & val ), 4 );
+	RIFFFile::SwapBytes( reinterpret_cast<u8*>( & val ), 4 );
 	#endif
 	U8 ch0, ch1, ch2, ch3;
 	ch3 = (U8)(((U32)val&0xff000000)>>24);
@@ -74,7 +74,7 @@ void CRIFFChunk::PrintChunkID( U32 val )
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-U32 CRIFFChunk::GetU32( U32 offset )
+U32 RIFFChunk::GetU32( U32 offset )
 {
 	U32 rval = 0;
 	U8 *u8ptr = & chunkdata[ offset ];
@@ -83,14 +83,14 @@ U32 CRIFFChunk::GetU32( U32 offset )
 	rval |= (u8ptr[1]<<8);
 	rval |= u8ptr[0];
 	#if defined( _OSX )
-	CRIFFFile::SwapBytes( reinterpret_cast<u8*>( & rval ), 4 );
+	RIFFFile::SwapBytes( reinterpret_cast<u8*>( & rval ), 4 );
 	#endif
 	return rval;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CRIFFChunk::DumpHeader( void )
+void RIFFChunk::DumpHeader( void )
 {	PrintChunkID( chunkID );
 	U8 ch0, ch1, ch2, ch3;
 	ch3 = (U8)(((U32)chunklen&0xff000000)>>24);
@@ -105,14 +105,14 @@ void CRIFFChunk::DumpHeader( void )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CRIFFChunk::DumpListHeader( void )
+void RIFFChunk::DumpListHeader( void )
 {	PrintChunkID( chunkID );
 	PrintChunkID( subID );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CRIFFChunk::CRIFFChunk()
+RIFFChunk::RIFFChunk()
 {	chunklen=0;
 	chunkdata=0;
 	chunkID=0;
@@ -121,13 +121,13 @@ CRIFFChunk::CRIFFChunk()
 
 ///////////////////////////////////////////////////////
 
-CRIFFChunk::~CRIFFChunk()
+RIFFChunk::~RIFFChunk()
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CRIFFFile::CRIFFFile() : // default constructor
+RIFFFile::RIFFFile() : // default constructor
 	mpRawData(0),
 	miRawDataLen(0)
 {
@@ -135,7 +135,7 @@ CRIFFFile::CRIFFFile() : // default constructor
 
 ///////////////////////////////////////////////////////////////////////////////
 
-	CRIFFFile::~CRIFFFile()
+	RIFFFile::~RIFFFile()
 {
 	if( mpRawData )
 	{
@@ -144,10 +144,10 @@ CRIFFFile::CRIFFFile() : // default constructor
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-bool CRIFFFile::OpenFile( std::string FileName )
+bool RIFFFile::OpenFile( std::string FileName )
 {	
 	miRawDataLen = 0;
-	CFile RiffFile( FileName.c_str(), EFM_READ );
+	File RiffFile( FileName.c_str(), EFM_READ );
 	RiffFile.Open();
 	EFileErrCode eFileErr = RiffFile.GetLength( miRawDataLen );
 	mpRawData = (U8*)malloc(U32(miRawDataLen));
@@ -159,7 +159,7 @@ bool CRIFFFile::OpenFile( std::string FileName )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CRIFFChunk::CRIFFChunk( void* psubdata )
+RIFFChunk::RIFFChunk( void* psubdata )
 	: chunkdata(0)
 	, chunklen(0)
 {
@@ -171,9 +171,9 @@ CRIFFChunk::CRIFFChunk( void* psubdata )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CRIFFFile::LoadChunks( void )
+void RIFFFile::LoadChunks( void )
 {	
-	CRIFFChunk* RootChunk = new CRIFFChunk;
+	RIFFChunk* RootChunk = new RIFFChunk;
 
 	RootChunk->chunkID = U32(BigEndianS32(&mpRawData[0], 4));
 	RootChunk->chunklen = U32(LitEndianS32(&mpRawData[4], 4));
@@ -186,17 +186,17 @@ void CRIFFFile::LoadChunks( void )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CRIFFChunk* CRIFFChunk::GetChunk( const char *pCHKNAM )
+RIFFChunk* RIFFChunk::GetChunk( const char *pCHKNAM )
 {
-	CRIFFChunk *pChunk = OrkSTXFindValFromKey( ChunkMap, (std::string) pCHKNAM, (CRIFFChunk*) 0 );
+	RIFFChunk *pChunk = OrkSTXFindValFromKey( ChunkMap, (std::string) pCHKNAM, (RIFFChunk*) 0 );
 	return pChunk;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CRIFFChunk::AddChunk( const char*ChunkName, CRIFFChunk *Chunk )
+void RIFFChunk::AddChunk( const char*ChunkName, RIFFChunk *Chunk )
 {
-	U32 ChunkID = CRIFFChunk::ChunkName( ChunkName );
+	U32 ChunkID = RIFFChunk::ChunkName( ChunkName );
 	std::string scn = (std::string) ChunkName;
 	OrkSTXMapInsert( ChunkMap, scn, Chunk );
 	Chunks.push_back( Chunk );
@@ -204,17 +204,17 @@ void CRIFFChunk::AddChunk( const char*ChunkName, CRIFFChunk *Chunk )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CRIFFChunk* CRIFFFile::GetChunk( const char *pCHKNAM )
+RIFFChunk* RIFFFile::GetChunk( const char *pCHKNAM )
 {
-	CRIFFChunk *pChunk = OrkSTXFindValFromKey( ChunkMap, (std::string) pCHKNAM, (CRIFFChunk*) 0 );
+	RIFFChunk *pChunk = OrkSTXFindValFromKey( ChunkMap, (std::string) pCHKNAM, (RIFFChunk*) 0 );
 	return pChunk;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CRIFFFile::AddChunk( const char*ChunkName, CRIFFChunk *Chunk )
+void RIFFFile::AddChunk( const char*ChunkName, RIFFChunk *Chunk )
 {
-	U32 ChunkID = CRIFFChunk::ChunkName( ChunkName );
+	U32 ChunkID = RIFFChunk::ChunkName( ChunkName );
 	std::string scn = (std::string) ChunkName;
 	OrkSTXMapInsert( ChunkMap, scn, Chunk );
 	Chunks.push_back( Chunk );
@@ -222,7 +222,7 @@ void CRIFFFile::AddChunk( const char*ChunkName, CRIFFChunk *Chunk )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CRIFFFile::SwapBytes( U8* bytes, U32 len ) // inplace endian swap
+void RIFFFile::SwapBytes( U8* bytes, U32 len ) // inplace endian swap
 {	U32 i = 0;	U32 j = 0;
 	U8 tempd[8]; // up to 8 byte ints handled
 	U8 *bp = reinterpret_cast<U8 *>(bytes);
@@ -232,7 +232,7 @@ void CRIFFFile::SwapBytes( U8* bytes, U32 len ) // inplace endian swap
 
 ///////////////////////////////////////////////////////////////////////////////
 
-S32 CRIFFFile::ReadVarLenInt( U8 *buf, U32 *size )
+S32 RIFFFile::ReadVarLenInt( U8 *buf, U32 *size )
 {	*size = 0;
 	U32 l = 0, i = 0;
 	S32 rval = 0;
@@ -248,7 +248,7 @@ S32 CRIFFFile::ReadVarLenInt( U8 *buf, U32 *size )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-S32 CRIFFFile::BigEndianS32( U8 *pD, U32 size ) // get from bigendian source
+S32 RIFFFile::BigEndianS32( U8 *pD, U32 size ) // get from bigendian source
 {	S32 rval = 0;
 	U32 shift = (size-1)*8;
 	for( U32 i=0; i<size; i++, shift-=8 )
@@ -259,7 +259,7 @@ S32 CRIFFFile::BigEndianS32( U8 *pD, U32 size ) // get from bigendian source
 
 ///////////////////////////////////////////////////////////////////////////////
 
-S32 CRIFFFile::LitEndianS32( U8 *pD, U32 size ) // get from littleendian source
+S32 RIFFFile::LitEndianS32( U8 *pD, U32 size ) // get from littleendian source
 {	S32 rval = 0;
 	U32 shift = 0;
 	for( U32 i=0; i<size; i++, shift+=8 )
@@ -309,7 +309,7 @@ void RiffFile2::Open( const ork::file::Path& pth )
 	// Read Data
 	///////////////////////////////////////////
 
-	ork::CFile File( pth, ork::EFM_READ );
+	ork::File File( pth, ork::EFM_READ );
 	size_t isiz = 0;
 	File.GetLength( isiz );
 	mpAllocData = new char[ isiz ];
@@ -378,7 +378,7 @@ void RiffFile2::Open( const ork::file::Path& pth )
 			orkprintf( "chunktype <%08x> chunklen %08x\n", chunktype, chunklength );
 
 			#if ! defined( _OSX )
-			//CRIFFFile::SwapBytes( reinterpret_cast<U8 *>( & chunklength ), 4 );
+			//RIFFFile::SwapBytes( reinterpret_cast<U8 *>( & chunklength ), 4 );
 			#endif
 
 			int bytesleft = chunklength;

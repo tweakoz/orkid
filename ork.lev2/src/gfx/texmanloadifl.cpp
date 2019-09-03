@@ -214,7 +214,7 @@ bool LoadIL( const AssetPath& fname, Texture *newtex )
 	/////////////////////////////////////////////////////
 	// go thru search paths
 
-	if( CFileEnv::GetRef().DoesFileExist( fullpath ) )
+	if( FileEnv::GetRef().DoesFileExist( fullpath ) )
 	{
 		////////////////////////////////////
 		// Load Data

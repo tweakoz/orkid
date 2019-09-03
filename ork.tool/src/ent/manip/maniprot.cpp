@@ -29,7 +29,7 @@ ManipRot::ManipRot( ManipManager& mgr, const fvec4 & LocRotMat )
 ManipRX::ManipRX( ManipManager& mgr )
 	: ManipRot(mgr,fvec4( 1.0f, 0.0f, 0.0f) )
 {
-	mmRotModel.SetRotateZ( CFloat::Pi() / float(2.0f) );
+	mmRotModel.SetRotateZ( Float::Pi() / float(2.0f) );
 	mColor = fcolor4::Red();
 }
 
@@ -42,7 +42,7 @@ ManipRY::ManipRY( ManipManager& mgr )
 ManipRZ::ManipRZ(ManipManager& mgr)
 	: ManipRot(mgr,fvec4( 0.0f, 0.0f, 1.0f))
 {
-	mmRotModel.SetRotateX( CFloat::Pi() / float(2.0f) );
+	mmRotModel.SetRotateX( Float::Pi() / float(2.0f) );
 	mColor = fcolor4::Blue();
 }
 
@@ -104,7 +104,7 @@ void ManipRot::Draw( GfxTarget *pTARG ) const
 	fmtx4 VMatrix = pTARG->MTXI()->RefVMatrix();
 	fvec4 wvx = v_dir.Transform(VisMat);
 	fvec4 clip_vdir = wvx.Transform(VMatrix);
-	if( CFloat::Abs( clip_vdir.GetZ() ) <= vizthresh )
+	if( Float::Abs( clip_vdir.GetZ() ) <= vizthresh )
 	{
 		bdrawok = false;
 	}
@@ -144,7 +144,7 @@ void ManipRot::Draw( GfxTarget *pTARG ) const
 	{
 		pTARG->FXI()->InvalidateStateBlock();
 
-		CVtxBuffer<SVtxV12C4T16>& vb = ork::lev2::CGfxPrimitives::GetCircleStripVB();
+		CVtxBuffer<SVtxV12C4T16>& vb = ork::lev2::GfxPrimitives::GetCircleStripVB();
 
 		int inumpasses = mManager.GetMaterial()->BeginBlock(pTARG);
 
@@ -163,7 +163,7 @@ void ManipRot::Draw( GfxTarget *pTARG ) const
 		}
 		mManager.GetMaterial()->EndBlock(pTARG);
 	}
-	//ork::lev2::CGfxPrimitives::RenderCircleStrip( pTARG );
+	//ork::lev2::GfxPrimitives::RenderCircleStrip( pTARG );
 	pTARG->PopModColor();
 	pTARG->MTXI()->PopMMatrix();
 }

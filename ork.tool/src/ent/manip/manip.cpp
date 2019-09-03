@@ -221,9 +221,9 @@ void Manip::SelectBestPlane(const ork::fvec2& posubp) {
     float dotxz = RayDir.Dot(mPlaneXZ.GetNormal());
     float dotxy = RayDir.Dot(mPlaneXY.GetNormal());
     float dotyz = RayDir.Dot(mPlaneYZ.GetNormal());
-    float adotxz = CFloat::Abs(dotxz);
-    float adotxy = CFloat::Abs(dotxy);
-    float adotyz = CFloat::Abs(dotyz);
+    float adotxz = Float::Abs(dotxz);
+    float adotxy = Float::Abs(dotxy);
+    float adotyz = Float::Abs(dotyz);
 
     // printf( "mManager.mpCurrentManip<%p>\n", mManager.mpCurrentManip );
 

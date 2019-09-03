@@ -204,7 +204,7 @@ void Renderer::RenderSphere( const SphereRenderable & SphereRen ) const
 		mpTarget->PushModColor( fvec4( SphereRen.GetColor().xyz(), 0.3f ) );
 		mpTarget->BindMaterial( & StdMaterial );
 		{
-			CGfxPrimitives::GetRef().RenderTriCircle( mpTarget );
+			GfxPrimitives::GetRef().RenderTriCircle( mpTarget );
 		}
 		mpTarget->PopModColor();
 		mpTarget->MTXI()->PopMMatrix();

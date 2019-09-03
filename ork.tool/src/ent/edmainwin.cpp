@@ -240,7 +240,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	////////////////////////////////////////////////
 
 	ork::file::Path collapse_filename( "collapse_state.cst" );
-	if( ork::CFileEnv::DoesFileExist( collapse_filename ) )
+	if( ork::FileEnv::DoesFileExist( collapse_filename ) )
 	{
 		ork::tool::ged::PersistMapContainer& container = mGedModelObj.GetPersistMapContainer();
 

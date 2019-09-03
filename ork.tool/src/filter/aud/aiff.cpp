@@ -198,9 +198,9 @@ U32 Ciffchunk::calcsize( void )
 
 void Ciffchunk::write_to_file( FILE *fout )
 {
-	write_U32( fout, CRIFFChunk::ChunkName( 'F', 'O', 'R', 'M' ) );
+	write_U32( fout, RIFFChunk::ChunkName( 'F', 'O', 'R', 'M' ) );
 	hal_write_U32( fout, size );
-	write_U32( fout, CRIFFChunk::ChunkName( 'A', 'I', 'F', 'F' ) );
+	write_U32( fout, RIFFChunk::ChunkName( 'A', 'I', 'F', 'F' ) );
 	
 	size_t numchildren = children_vect.size();
 	for( size_t i=0; i<numchildren; i++ )
@@ -344,11 +344,11 @@ void init_aiff_exporter( void )
 	aiff_main_chunk.children_vect.push_back( & aiff_inst_chunk );
 	aiff_main_chunk.children_vect.push_back( & aiff_ssnd_chunk );
 
-	aiff_main_chunk.chunkID = CRIFFChunk::ChunkName( 'A', 'I', 'F', 'F' );
-	aiff_comm_chunk.chunkID = CRIFFChunk::ChunkName( 'C', 'O', 'M', 'M' );
-	aiff_ssnd_chunk.chunkID = CRIFFChunk::ChunkName( 'S', 'S', 'N', 'D' );
-	aiff_mark_chunk.chunkID = CRIFFChunk::ChunkName( 'M', 'A', 'R', 'K' );
-	aiff_inst_chunk.chunkID = CRIFFChunk::ChunkName( 'I', 'N', 'S', 'T' );
+	aiff_main_chunk.chunkID = RIFFChunk::ChunkName( 'A', 'I', 'F', 'F' );
+	aiff_comm_chunk.chunkID = RIFFChunk::ChunkName( 'C', 'O', 'M', 'M' );
+	aiff_ssnd_chunk.chunkID = RIFFChunk::ChunkName( 'S', 'S', 'N', 'D' );
+	aiff_mark_chunk.chunkID = RIFFChunk::ChunkName( 'M', 'A', 'R', 'K' );
+	aiff_inst_chunk.chunkID = RIFFChunk::ChunkName( 'I', 'N', 'S', 'T' );
 
 	aiff_mark_chunk.marker_vect.push_back( & start_marker );
 	aiff_mark_chunk.marker_vect.push_back( & end_marker );

@@ -142,12 +142,12 @@ TESTSUITE_TEST(2, RelativePaths)
 	
 	// Verify the relative file path generation when the root has no drive letter
 	manager.PushRootFile(FC("\\ARootFolder\\BFile"));
-	uri = FUUri(FC("A:\\ARootFolder\\CFile"));
+	uri = FUUri(FC("A:\\ARootFolder\\File"));
 	f = uri.GetAbsolutePath();
-	PassIf(PlatformEquivalent(f, FC("A:\\ARootFolder\\CFile")));
+	PassIf(PlatformEquivalent(f, FC("A:\\ARootFolder\\File")));
 
-	f = manager.GetCurrentUri().MakeRelative(FC("BPureRelative\\CFile"));
-	PassIf(PlatformEquivalent(f, FC(".\\BPureRelative\\CFile")));
+	f = manager.GetCurrentUri().MakeRelative(FC("BPureRelative\\File"));
+	PassIf(PlatformEquivalent(f, FC(".\\BPureRelative\\File")));
 
 TESTSUITE_TEST(3, AbsolutePaths)
 #ifdef WIN32
@@ -230,26 +230,26 @@ TESTSUITE_TEST(4, URI_Generation)
 #ifdef WIN32
 	// Verify the URI generation with respect to a networked file
 	manager.PushRootFile(FC("\\\\BNetwork\\BFolder\\BSubfolder\\BFile"));
-	uri = FUUri(FC("C:\\BFolder\\BSubfolder\\CFile"));
+	uri = FUUri(FC("C:\\BFolder\\BSubfolder\\File"));
 	f = uri.GetRelativeUri(manager.GetCurrentUri());
-	PassIf(f == FC("file:///C:/BFolder/BSubfolder/CFile"));
-	uri = FUUri(FC("C:\\BFolder\\BSubfolder\\CFile"));
+	PassIf(f == FC("file:///C:/BFolder/BSubfolder/File"));
+	uri = FUUri(FC("C:\\BFolder\\BSubfolder\\File"));
 	f = uri.GetAbsoluteUri();
-	PassIf(f == FC("file:///C:/BFolder/BSubfolder/CFile"));
+	PassIf(f == FC("file:///C:/BFolder/BSubfolder/File"));
 
-	uri = FUUri(FC("\\\\BNetwork\\BFolder\\CFile"));
+	uri = FUUri(FC("\\\\BNetwork\\BFolder\\File"));
 	f = uri.GetRelativeUri(manager.GetCurrentUri());
-	PassIf(f == FC("../CFile"));
-	uri = FUUri(FC("\\\\BNetwork\\BFolder\\CFile"));
+	PassIf(f == FC("../File"));
+	uri = FUUri(FC("\\\\BNetwork\\BFolder\\File"));
 	f = uri.GetAbsoluteUri();
-	PassIf(f == FC("file://BNetwork/BFolder/CFile"));
+	PassIf(f == FC("file://BNetwork/BFolder/File"));
 
-	uri = FUUri(FC("file://BNetwork/BFolder/BSubfolder/CFile"));
+	uri = FUUri(FC("file://BNetwork/BFolder/BSubfolder/File"));
 	f = uri.GetRelativeUri(manager.GetCurrentUri());
-	PassIf(f == FC("./CFile"));
-	uri = FUUri(FC("file://BNetwork/BFolder/BSubfolder/CFile"));
+	PassIf(f == FC("./File"));
+	uri = FUUri(FC("file://BNetwork/BFolder/BSubfolder/File"));
 	f = uri.GetAbsoluteUri();
-	PassIf(f == FC("file://BNetwork/BFolder/BSubfolder/CFile"));
+	PassIf(f == FC("file://BNetwork/BFolder/BSubfolder/File"));
 #endif // WIN32
 
 TESTSUITE_TEST(5, BackwardCompatibility)

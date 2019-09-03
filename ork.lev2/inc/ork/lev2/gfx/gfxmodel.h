@@ -34,7 +34,7 @@
 namespace ork { namespace lev2
 {
 
-typedef CAssetHandle ModelH;
+typedef AssetHandle ModelH;
 
 /////////////////////////////////////////////////////
 //////////////////////////

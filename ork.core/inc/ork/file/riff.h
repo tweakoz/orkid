@@ -14,7 +14,7 @@
 namespace ork{
 ///////////////////////////////////////////////////////////////////////////////
 
-class CRIFFChunk
+class RIFFChunk
 {
 	public: //
 	
@@ -22,8 +22,8 @@ class CRIFFChunk
 	U32 subID;
 	U32 chunklen;
 	U8 *chunkdata;
-	orkvector< CRIFFChunk* >		Chunks;
-	orkmap< std::string, CRIFFChunk* >	ChunkMap;
+	orkvector< RIFFChunk* >		Chunks;
+	orkmap< std::string, RIFFChunk* >	ChunkMap;
 
 	///////////////////////////////////////////////////////
 
@@ -36,15 +36,15 @@ class CRIFFChunk
 	static U32 ChunkName( const char *pCHKNAM );
 	static U32 GetChunkLen( U32 val );
 	static void PrintChunkID( U32 val );
-	CRIFFChunk* GetChunk( const char* pCHKNAM );
-	void AddChunk( const char*ChunkName, CRIFFChunk * );
+	RIFFChunk* GetChunk( const char* pCHKNAM );
+	void AddChunk( const char*ChunkName, RIFFChunk * );
 
 	///////////////////////////////////////////////////////
 
-	CRIFFChunk();
-	~CRIFFChunk();
+	RIFFChunk();
+	~RIFFChunk();
 
-	CRIFFChunk( void* psubdata );
+	RIFFChunk( void* psubdata );
 
 };
 
@@ -79,17 +79,17 @@ struct RiffFile2
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CRIFFFile
+class RIFFFile
 {	
 	public: // methods
 
-	orkvector< CRIFFChunk* >		Chunks;
-	orkmap< std::string, CRIFFChunk* >	ChunkMap;
+	orkvector< RIFFChunk* >		Chunks;
+	orkmap< std::string, RIFFChunk* >	ChunkMap;
 	U8*							mpRawData;
 	size_t						miRawDataLen;
 
-	CRIFFFile( void ); // default constructor
-	~CRIFFFile();
+	RIFFFile( void ); // default constructor
+	~RIFFFile();
 	
 	bool OpenFile( std::string fname );
 
@@ -98,8 +98,8 @@ class CRIFFFile
 	S32 BigEndianS32( U8 *pD, U32 size ); // get from bigendian source
 	S32 ReadVarLenInt( U8 *buf, U32 *size );
 	static void SwapBytes( U8* bytes, U32 len ); // inplace endian swap
-	CRIFFChunk* GetChunk( const char* pCHKNAM );
-	void AddChunk( const char*ChunkName, CRIFFChunk * );
+	RIFFChunk* GetChunk( const char* pCHKNAM );
+	void AddChunk( const char*ChunkName, RIFFChunk * );
 };
 
 ///////////////////////////////////////////////////////////////////////////////

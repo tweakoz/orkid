@@ -28,11 +28,11 @@ public:
 	
 ///////////////////////////////////////////////////////////////////////////////
 
-class CAttrChoiceValue
+class AttrChoiceValue
 {
     public: //
 
-    CAttrChoiceValue()
+    AttrChoiceValue()
 		: mName( "defaultchoice" )
 		, mValue( "" )
 		, mpSlashNode( 0 )
@@ -41,7 +41,7 @@ class CAttrChoiceValue
     {
     }
 
-	CAttrChoiceValue( const std::string &nam, const std::string &val, const std::string & shname = ""  )
+	AttrChoiceValue( const std::string &nam, const std::string &val, const std::string & shname = ""  )
 		: mName( nam )
 		, mValue( val )
 		, mShortName( shname )
@@ -49,7 +49,7 @@ class CAttrChoiceValue
 	{
     }
 
-	CAttrChoiceValue set( const std::string & nname, const std::string &nval, const std::string & shname = "" )
+	AttrChoiceValue set( const std::string & nname, const std::string &nval, const std::string & shname = "" )
     {
         mName = nname;
         mValue = nval;
@@ -81,7 +81,7 @@ class CAttrChoiceValue
 
 	bool HasKeyword( const std::string & Keyword ) const { return mKeywords.find(Keyword)!=mKeywords.end(); }
 
-	void CopyKeywords( const CAttrChoiceValue &From ) { mKeywords=From.mKeywords; }
+	void CopyKeywords( const AttrChoiceValue &From ) { mKeywords=From.mKeywords; }
 
 	void SetFunctor( const ChoiceFunctor* ftor ) { mpFunctor=ftor; }
 	const ChoiceFunctor* GetFunctor( void ) const { return mpFunctor; }
@@ -114,39 +114,39 @@ struct ChoiceListFilters
 
 };
 
-class CChoiceList
+class ChoiceList
 {
 private:
 
-    orkvector< CAttrChoiceValue* >						mChoicesVect;
-	orkmap< std::string, CAttrChoiceValue * >			mValueMap;
-    orkmap< std::string, CAttrChoiceValue * >			mNameMap;
-    orkmap< std::string, CAttrChoiceValue * >			mShortNameMap;
+    orkvector< AttrChoiceValue* >						mChoicesVect;
+	orkmap< std::string, AttrChoiceValue * >			mValueMap;
+    orkmap< std::string, AttrChoiceValue * >			mNameMap;
+    orkmap< std::string, AttrChoiceValue * >			mShortNameMap;
     SlashTree*											mHierarchy;
 
     void UpdateHierarchy( void );
 
 protected:
 	
-    void remove( const CAttrChoiceValue & val );
+    void remove( const AttrChoiceValue & val );
 
 	void clear( void );
 
 public: //
 
-    CChoiceList();
-    virtual ~CChoiceList();
+    ChoiceList();
+    virtual ~ChoiceList();
 
 	void FindAssetChoices(const file::Path& sdir, const std::string& wildcard);
 
-    const CAttrChoiceValue* FindFromLongName( const std::string &longname  ) const ;
-    const CAttrChoiceValue* FindFromShortName( const std::string &shortname ) const ;
-	const CAttrChoiceValue* FindFromValue( const std::string & uval ) const;
+    const AttrChoiceValue* FindFromLongName( const std::string &longname  ) const ;
+    const AttrChoiceValue* FindFromShortName( const std::string &shortname ) const ;
+	const AttrChoiceValue* FindFromValue( const std::string & uval ) const;
 
 	const SlashTree* GetHierarchy( void ) const { return mHierarchy; }
 
 	virtual void EnumerateChoices( bool bforcenocache=false ) = 0;
-	void add( const CAttrChoiceValue & val );
+	void add( const AttrChoiceValue & val );
 
 	QMenu* CreateMenu( const ChoiceListFilters *Filter = 0 ) const;
 
@@ -157,18 +157,18 @@ public: //
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CChoiceManager
+class ChoiceManager
 {
-	orkmap<std::string,CChoiceList*>	mChoiceListMap;
+	orkmap<std::string,ChoiceList*>	mChoiceListMap;
 
 public:
 
-	void AddChoiceList( const std::string & ListName, CChoiceList *plist );
-	const CChoiceList *GetChoiceList( const std::string & ListName ) const;
-	CChoiceList *GetChoiceList( const std::string & ListName );
+	void AddChoiceList( const std::string & ListName, ChoiceList *plist );
+	const ChoiceList *GetChoiceList( const std::string & ListName ) const;
+	ChoiceList *GetChoiceList( const std::string & ListName );
 
-	CChoiceManager();
-	~CChoiceManager();
+	ChoiceManager();
+	~ChoiceManager();
 
 };
 

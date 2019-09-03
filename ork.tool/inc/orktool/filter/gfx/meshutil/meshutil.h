@@ -651,30 +651,30 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class OBJ_OBJ_Filter : public ork::tool::CAssetFilterBase
+class OBJ_OBJ_Filter : public ork::tool::AssetFilterBase
 {
-	RttiDeclareConcrete(OBJ_OBJ_Filter,ork::tool::CAssetFilterBase);
+	RttiDeclareConcrete(OBJ_OBJ_Filter,ork::tool::AssetFilterBase);
 public: //
 	OBJ_OBJ_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
-class D3DX_OBJ_Filter : public ork::tool::CAssetFilterBase
+class D3DX_OBJ_Filter : public ork::tool::AssetFilterBase
 {
-	RttiDeclareConcrete(D3DX_OBJ_Filter,ork::tool::CAssetFilterBase);
+	RttiDeclareConcrete(D3DX_OBJ_Filter,ork::tool::AssetFilterBase);
 public: //
 	D3DX_OBJ_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
-class XGM_OBJ_Filter : public ork::tool::CAssetFilterBase
+class XGM_OBJ_Filter : public ork::tool::AssetFilterBase
 {
-	RttiDeclareConcrete(XGM_OBJ_Filter,ork::tool::CAssetFilterBase);
+	RttiDeclareConcrete(XGM_OBJ_Filter,ork::tool::AssetFilterBase);
 public: //
 	XGM_OBJ_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
-class OBJ_XGM_Filter : public ork::tool::CAssetFilterBase
+class OBJ_XGM_Filter : public ork::tool::AssetFilterBase
 {
-	RttiDeclareConcrete(OBJ_XGM_Filter,ork::tool::CAssetFilterBase);
+	RttiDeclareConcrete(OBJ_XGM_Filter,ork::tool::AssetFilterBase);
 public: //
 	OBJ_XGM_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
@@ -745,16 +745,16 @@ struct FlatSubMesh
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(_USE_D3DX)
-class XGM_D3DX_Filter : public ork::tool::CAssetFilterBase
+class XGM_D3DX_Filter : public ork::tool::AssetFilterBase
 {
-	RttiDeclareConcrete(XGM_D3DX_Filter,ork::tool::CAssetFilterBase);
+	RttiDeclareConcrete(XGM_D3DX_Filter,ork::tool::AssetFilterBase);
 public: //
 	XGM_D3DX_Filter(  );
 	virtual bool ConvertAsset( const tokenlist& toklist );
 };
-class OBJ_D3DX_Filter : public ork::tool::CAssetFilterBase
+class OBJ_D3DX_Filter : public ork::tool::AssetFilterBase
 {
-	RttiDeclareConcrete(OBJ_D3DX_Filter,ork::tool::CAssetFilterBase);
+	RttiDeclareConcrete(OBJ_D3DX_Filter,ork::tool::AssetFilterBase);
 public: //
 	OBJ_D3DX_Filter(  );
 	virtual bool ConvertAsset( const tokenlist& toklist );

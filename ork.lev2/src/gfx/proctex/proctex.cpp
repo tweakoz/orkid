@@ -255,7 +255,7 @@ void ImgModule::Compute( dataflow::workunit* wu )
 		{
 
 			//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
-			if( ork::CFileEnv::filespec_to_extension( fname.c_str() ).length() == 0 ) 
+			if( ork::FileEnv::filespec_to_extension( fname.c_str() ).length() == 0 ) 
 				fname += ".dds";
 			fbi->Capture( *rtg, 0, fname );
 		}

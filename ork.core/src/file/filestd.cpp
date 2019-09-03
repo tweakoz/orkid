@@ -11,8 +11,8 @@
 
 #include <ork/file/filestd.h>
 
-using ork::CFileDev;
-using ork::CFile;
+using ork::FileDev;
+using ork::File;
 using ork::FileH;
 using ork::EFileErrCode;
 
@@ -30,8 +30,8 @@ namespace ork {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CFileDevStd::CFileDevStd( void )
-	: CFileDev( "StandardIO",
+FileDevStd::FileDevStd( void )
+	: FileDev( "StandardIO",
 				"./",
 				( ork::EFDF_CAN_READ| ork::EFDF_CAN_WRITE ) )
 {
@@ -61,7 +61,7 @@ static int GetLengthFromToc(const ork::file::Path& fname)
 
 int ifilecount = 0;
 
-EFileErrCode CFileDevStd::DoOpenFile( CFile &rFile )
+EFileErrCode FileDevStd::DoOpenFile( File &rFile )
 {
 	ifilecount++;
 
@@ -88,7 +88,7 @@ EFileErrCode CFileDevStd::DoOpenFile( CFile &rFile )
 
 		// reading and it exists
 
-		if( CFileEnv::GetLinFileMode() == ELFM_READ )
+		if( FileEnv::GetLinFileMode() == ELFM_READ )
 		{
 			int ilen = GetLengthFromToc(fname);
 			rFile.miFileLen = ilen;
@@ -123,7 +123,7 @@ EFileErrCode CFileDevStd::DoOpenFile( CFile &rFile )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode CFileDevStd::DoCloseFile( CFile &rFile )
+ork::EFileErrCode FileDevStd::DoCloseFile( File &rFile )
 {
 	ifilecount--;
 	FILE *pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
@@ -133,7 +133,7 @@ ork::EFileErrCode CFileDevStd::DoCloseFile( CFile &rFile )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode CFileDevStd::DoRead( CFile &rFile, void *pTo, size_t icount, size_t& iactualread )
+ork::EFileErrCode FileDevStd::DoRead( File &rFile, void *pTo, size_t icount, size_t& iactualread )
 {
 	FILE *pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
 	int iphyspos = ftell( pFILE );
@@ -183,7 +183,7 @@ ork::EFileErrCode CFileDevStd::DoRead( CFile &rFile, void *pTo, size_t icount, s
 	}
 	else
 	{
-		perror("CFileDevStd::DoReadFailed: ");
+		perror("FileDevStd::DoReadFailed: ");
 		return ork::EFEC_FILE_UNKNOWN;
 	}
 	/////////////////////////////////////////////////////////
@@ -192,7 +192,7 @@ ork::EFileErrCode CFileDevStd::DoRead( CFile &rFile, void *pTo, size_t icount, s
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode CFileDevStd::Write( CFile &rFile, const void *pFrom, size_t iSize )
+ork::EFileErrCode FileDevStd::Write( File &rFile, const void *pFrom, size_t iSize )
 {
 	if(!rFile.IsOpen())
 	{
@@ -221,7 +221,7 @@ ork::EFileErrCode CFileDevStd::Write( CFile &rFile, const void *pFrom, size_t iS
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevStd::DoSeekFromStart( CFile &rFile, size_t iTo )
+EFileErrCode FileDevStd::DoSeekFromStart( File &rFile, size_t iTo )
 {
 	FILE *pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
 	OrkAssert( pFILE );
@@ -232,7 +232,7 @@ EFileErrCode CFileDevStd::DoSeekFromStart( CFile &rFile, size_t iTo )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::EFileErrCode CFileDevStd::DoSeekFromCurrent( CFile &rFile, size_t iOffset )
+ork::EFileErrCode FileDevStd::DoSeekFromCurrent( File &rFile, size_t iOffset )
 {
 	FILE *pFILE = reinterpret_cast<FILE*>(rFile.mHandle);
 	OrkAssert( pFILE );
@@ -243,13 +243,13 @@ ork::EFileErrCode CFileDevStd::DoSeekFromCurrent( CFile &rFile, size_t iOffset )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-EFileErrCode CFileDevStd::DoGetLength( CFile &rFile, size_t &riLen )
+EFileErrCode FileDevStd::DoGetLength( File &rFile, size_t &riLen )
 {
 	riLen = 0;
 
 	const ork::file::Path& fname = rFile.GetFileName();
 	file::Path::SmallNameType url = fname.GetUrlBase();
-	const SFileDevContext& ctx = ork::CFileEnv::UrlBaseToContext(url);
+	const SFileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
 	bool bTRYTOC = false;
 	bool bEXISTSINTOC = false;
 	int iTOCSIZE = -1;
@@ -309,7 +309,7 @@ EFileErrCode CFileDevStd::DoGetLength( CFile &rFile, size_t &riLen )
 // but what they are is the current directory of the process
 ///////////////////////////////////////////////
 
-EFileErrCode CFileDevStd::GetCurrentDirectory( file::Path::NameType& directory )
+EFileErrCode FileDevStd::GetCurrentDirectory( file::Path::NameType& directory )
 {
 	file::Path::NameType outspec;
 	// Not implemented for this platform!
@@ -319,7 +319,7 @@ EFileErrCode CFileDevStd::GetCurrentDirectory( file::Path::NameType& directory )
 	return ork::EFEC_FILE_OK;
 }
 
-EFileErrCode CFileDevStd::SetCurrentDirectory( const file::Path::NameType& directory )
+EFileErrCode FileDevStd::SetCurrentDirectory( const file::Path::NameType& directory )
 {
 	OrkAssert(false);
 	return ork::EFEC_FILE_UNKNOWN;
@@ -327,10 +327,10 @@ EFileErrCode CFileDevStd::SetCurrentDirectory( const file::Path::NameType& direc
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileDevStd::DoesFileExist( const file::Path& filespec )
+bool FileDevStd::DoesFileExist( const file::Path& filespec )
 {
 	file::Path::SmallNameType url = filespec.GetUrlBase();
-	const SFileDevContext& ctx = ork::CFileEnv::UrlBaseToContext(url);
+	const SFileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
 
 	bool bTRYTOC = false;
 	bool bEXISTSINTOC = false;
@@ -383,9 +383,9 @@ bool CFileDevStd::DoesFileExist( const file::Path& filespec )
 
 	if( false == bv )
 	{
-		ork::CFileEnvDir * pdir = ork::CFileEnv::GetRef().OpenDir(filespec.c_str());
+		ork::FileEnvDir * pdir = ork::FileEnv::GetRef().OpenDir(filespec.c_str());
 		bv = (pdir!=0);
-		if( pdir ) ork::CFileEnv::GetRef().CloseDir( pdir );
+		if( pdir ) ork::FileEnv::GetRef().CloseDir( pdir );
 	}
 	return bv;
 
@@ -393,7 +393,7 @@ bool CFileDevStd::DoesFileExist( const file::Path& filespec )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileDevStd::IsFileWritable( const file::Path& filespec )
+bool FileDevStd::IsFileWritable( const file::Path& filespec )
 {
 	file::Path absol = filespec.ToAbsolute();
 
@@ -406,7 +406,7 @@ bool CFileDevStd::IsFileWritable( const file::Path& filespec )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CFileDevStd::DoesDirectoryExist( const file::Path& filespec )
+bool FileDevStd::DoesDirectoryExist( const file::Path& filespec )
 {
 	file::Path absol = filespec.ToAbsolute();
 
@@ -421,7 +421,7 @@ bool CFileDevStd::DoesDirectoryExist( const file::Path& filespec )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::FileStampH ork::CFileEnv::EncodeFileStamp( int year, int month, int day, int hour, int minute, int second )
+ork::FileStampH ork::FileEnv::EncodeFileStamp( int year, int month, int day, int hour, int minute, int second )
 {
 	OrkAssert( year >= 2000 );
 	OrkAssert( year <= 2063 );
@@ -442,7 +442,7 @@ ork::FileStampH ork::CFileEnv::EncodeFileStamp( int year, int month, int day, in
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ork::CFileEnv::DecodeFileStamp( ork::FileStampH stamp, int& year, int& month, int& day, int& hour, int& minute, int& second )
+void ork::FileEnv::DecodeFileStamp( ork::FileStampH stamp, int& year, int& month, int& day, int& hour, int& minute, int& second )
 {
 	U32 UStamp = static_cast<U32>( stamp );
 	year	= ((stamp&0xfc000000)>>26) + 2000;
@@ -453,7 +453,7 @@ void ork::CFileEnv::DecodeFileStamp( ork::FileStampH stamp, int& year, int& mont
 	second	=  (stamp&0x0000003f);
 }
 
-ork::FileStampH ork::CFileEnv::GetFileStamp( const file::Path::NameType & filespec )
+ork::FileStampH ork::FileEnv::GetFileStamp( const file::Path::NameType & filespec )
 {
 	ork::FileStampH Result = 0x00000000;
 	return Result;
@@ -461,25 +461,25 @@ ork::FileStampH ork::CFileEnv::GetFileStamp( const file::Path::NameType & filesp
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::CFileEnvDir *ork::CFileEnv::OpenDir(const char *name)
+ork::FileEnvDir *ork::FileEnv::OpenDir(const char *name)
 {
-    ork::CFileEnvDir *dir = 0;
+    ork::FileEnvDir *dir = 0;
     return dir;
 }
 
-int ork::CFileEnv::CloseDir(ork::CFileEnvDir *dir)
+int ork::FileEnv::CloseDir(ork::FileEnvDir *dir)
 {
     int result = -1;
     return result;
 }
 
-file::Path::NameType ork::CFileEnv::ReadDir(ork::CFileEnvDir *dir)
+file::Path::NameType ork::FileEnv::ReadDir(ork::FileEnvDir *dir)
 {
 	file::Path::NameType result;
     return result;
 }
 
-void ork::CFileEnv::RewindDir(ork::CFileEnvDir *dir)
+void ork::FileEnv::RewindDir(ork::FileEnvDir *dir)
 {
 }
 
@@ -532,7 +532,7 @@ int wildcmp( const char *wild, const char *string)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-orkset<file::Path::NameType> ork::CFileEnv::filespec_search_sorted( const file::Path::NameType & wildcards, const ork::file::Path& initdir )
+orkset<file::Path::NameType> ork::FileEnv::filespec_search_sorted( const file::Path::NameType & wildcards, const ork::file::Path& initdir )
 {
 	orkvector<file::Path::NameType> files = filespec_search( wildcards, initdir );
 	orkset<file::Path::NameType> rval;
@@ -549,7 +549,7 @@ orkset<file::Path::NameType> ork::CFileEnv::filespec_search_sorted( const file::
 
 ///////////////////////////////////////////////////////////////////////////////
 
-orkvector<file::Path::NameType> ork::CFileEnv::filespec_search( const file::Path::NameType & wildcards, const ork::file::Path& initdir )
+orkvector<file::Path::NameType> ork::FileEnv::filespec_search( const file::Path::NameType & wildcards, const ork::file::Path& initdir )
 {
 	orkvector<file::Path::NameType> rval;
 

@@ -14,7 +14,7 @@ namespace ork::audio::singularity::sf2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CSF2Program::CSF2Program()
+SF2Program::SF2Program()
 {
 	preset = 0;
 	bank = 0;
@@ -46,7 +46,7 @@ SoundFont::SoundFont( const std::string & SoundFontName, const std::string& bank
 {
 	std::string filename = SoundFontName;
 
-	CRIFFFile RiffFile;
+	RIFFFile RiffFile;
 	RiffFile.OpenFile( filename );
 	RiffFile.LoadChunks();
 
@@ -72,7 +72,7 @@ SoundFont::~SoundFont()
 
 void SoundFont::AddProgram( Ssfontpreset *preset )
 {
-	auto cpre = new CSF2Program;
+	auto cpre = new SF2Program;
 
 	cpre->bank = preset->wBank;
 	cpre->genre = preset->dwGenre;
@@ -94,7 +94,7 @@ void SoundFont::AddProgram( Ssfontpreset *preset )
 
 void SoundFont::AddSample( Ssfontsample *sample )
 {
-	CSF2Sample *pxsample = new CSF2Sample( sample );
+	SF2Sample *pxsample = new SF2Sample( sample );
 	mPXMSamples.push_back( pxsample );
 }
 
@@ -119,7 +119,7 @@ void SoundFont::AddInstrumentZone( Ssfontinstbag *ibg )
 
 void SoundFont::AddInstrument( Ssfontinst *inst )
 {
-	auto pxmi = new CSF2Instrument;
+	auto pxmi = new SF2Instrument;
 	pxmi->izone_base = inst->wInstBagNdx;
 	//strncpy( (char *) & pxmi->name[0], (char *) & inst->achInstName[0], 20 );
 	pxmi->SetName( inst->GetName() );
@@ -138,7 +138,7 @@ void SoundFont::AddInstrumentGen( SSoundFontGenerator *igen )
 
 void SoundFont::AddProgramZone( Ssfontprebag *pbg )
 {
-	auto pxmp = new CSF2ProgramZone;
+	auto pxmp = new SF2ProgramZone;
 	pxmp->base_generator = pbg->wInstGenNdx;
 	mPXMProgramZones.push_back( pxmp );
 }

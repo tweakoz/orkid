@@ -304,7 +304,7 @@ Object *DeserializeObject(PieceString file)
 		filename = file;
 		filename += ".mox";
 
-		if(CFileEnv::DoesFileExist(filename.c_str()))
+		if(FileEnv::DoesFileExist(filename.c_str()))
 		{
 			return LoadObjectFromFile(filename, false);
 		}
@@ -312,7 +312,7 @@ Object *DeserializeObject(PieceString file)
 		filename = file;
 		filename += ".mob";
 
-		if(CFileEnv::DoesFileExist(filename.c_str()))
+		if(FileEnv::DoesFileExist(filename.c_str()))
 		{
 			return LoadObjectFromFile(filename, true);
 		}

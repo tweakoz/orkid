@@ -142,7 +142,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 			mtxw.SetScale(0.25f);
 			targ->PushModColor( color );
 			targ->MTXI()->PushMMatrix(mtxw);
-			ork::lev2::CGfxPrimitives::GetRef().RenderDiamond( targ );
+			ork::lev2::GfxPrimitives::GetRef().RenderDiamond( targ );
 			targ->MTXI()->PopMMatrix();
 			targ->PopModColor();
 #endif

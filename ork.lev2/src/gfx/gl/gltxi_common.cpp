@@ -149,7 +149,7 @@ struct TexSetter
 		return rval;
 	}
 
-	static void Set2D(GlTextureInterface* txi, Texture* tex, GLuint numC, GLuint fmt, GLuint typ, GLuint tgt, int BPP, int inummips, int& iw, int& ih, CFile& file ) //, int& irdptr, const u8* dataBASE )
+	static void Set2D(GlTextureInterface* txi, Texture* tex, GLuint numC, GLuint fmt, GLuint typ, GLuint tgt, int BPP, int inummips, int& iw, int& ih, File& file ) //, int& irdptr, const u8* dataBASE )
 	{
 		size_t ifilelen = 0;
 		EFileErrCode eFileErr = file.GetLength( ifilelen );
@@ -297,7 +297,7 @@ struct TexSetter
 			isize = iw*ih*BPP;
 		}
 	}
-	static void Set3D(GlTextureInterface* txi, /*GLuint numC,*/ GLuint fmt, GLuint typ, GLuint tgt, /*int BPP,*/ int inummips, int& iw, int& ih, int& id, CFile& file ) //, int& irdptr, const u8* dataBASE )
+	static void Set3D(GlTextureInterface* txi, /*GLuint numC,*/ GLuint fmt, GLuint typ, GLuint tgt, /*int BPP,*/ int inummips, int& iw, int& ih, int& id, File& file ) //, int& irdptr, const u8* dataBASE )
 	{	for( int imip=0; imip<inummips; imip++ )
 		{
 			/////////////////////////////////////////////////
@@ -385,7 +385,7 @@ struct TexSetter
 			//irdptr+=isize;
 		}
 	}
-	static void Set2DC(GlTextureInterface* txi, GLuint fmt, GLuint tgt, int BPP, int inummips, int& iw, int& ih, CFile& file ) //, int& irdptr, const u8* dataBASE )
+	static void Set2DC(GlTextureInterface* txi, GLuint fmt, GLuint tgt, int BPP, int inummips, int& iw, int& ih, File& file ) //, int& irdptr, const u8* dataBASE )
 	{	for( int imip=0; imip<inummips; imip++ )
 		{	int iBwidth = (iw+3)/4;
 			int iBheight = (ih+3)/4;
@@ -482,7 +482,7 @@ struct TexSetter
 			ih>>=1;
 		}
 	}
-	static void Set3DC(GlTextureInterface* txi, GLuint fmt, GLuint tgt, int BPP, int inummips, int& iw, int& ih, int& id, CFile& file ) //, int& irdptr, const u8* dataBASE )
+	static void Set3DC(GlTextureInterface* txi, GLuint fmt, GLuint tgt, int BPP, int inummips, int& iw, int& ih, int& id, File& file ) //, int& irdptr, const u8* dataBASE )
 	{	for( int imip=0; imip<inummips; imip++ )
 		{
 			int iBwidth = (iw+3)/4;
@@ -519,8 +519,8 @@ bool GlTextureInterface::LoadTexture( const AssetPath& infname, Texture *ptex )
 	AssetPath VdsFilename = infname;
 	DdsFilename.SetExtension( "dds" );
 	VdsFilename.SetExtension( "vds" );
-	bool bDDSPRESENT = CFileEnv::GetRef().DoesFileExist( DdsFilename );
-	bool bVDSPRESENT = CFileEnv::GetRef().DoesFileExist( VdsFilename );
+	bool bDDSPRESENT = FileEnv::GetRef().DoesFileExist( DdsFilename );
+	bool bVDSPRESENT = FileEnv::GetRef().DoesFileExist( VdsFilename );
 
 	if( bVDSPRESENT )
 		return LoadVDSTexture( VdsFilename, ptex );
@@ -550,7 +550,7 @@ VdsTextureAnimation::VdsTextureAnimation( const AssetPath& pth )
     printf( "Loading VDS<%s>\n", pth.c_str() );
 	AssetPath Filename = pth;
 	///////////////////////////////////////////////
-	mpFile = new CFile( Filename, EFM_READ );
+	mpFile = new File( Filename, EFM_READ );
     mpFile->mbEnableBuffering = false;
 	if( false == mpFile->IsOpen() )
 	{
@@ -808,7 +808,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	dxt::DDS_HEADER* ddsh = req.ddsh;
 	Texture* ptex = req.ptex;
 	GLTextureObject* pTEXOBJ = req.pTEXOBJ;
-	CFile& TextureFile = *req.pTEXFILE;
+	File& TextureFile = *req.pTEXFILE;
 
 	int NumMips = (ddsh->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
 	int iwidth = ddsh->dwWidth;
@@ -985,7 +985,7 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 {
 	AssetPath Filename = infname;
 	///////////////////////////////////////////////
-	CFile* TextureFile = new CFile( Filename, EFM_READ );
+	File* TextureFile = new File( Filename, EFM_READ );
 	if( false == TextureFile->IsOpen() )
 	{
 		return false;

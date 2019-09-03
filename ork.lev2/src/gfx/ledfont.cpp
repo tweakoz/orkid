@@ -149,7 +149,7 @@ void CDebugFont::DrawCharacter( int iCol, int iRow, char cChar )
 	///////////////////////
 	// Draw
 
-	//CGfxHWContext *pCTX = GfxEnv::GetCurrentContext();
+	//GfxHWContext *pCTX = GfxEnv::GetCurrentContext();
 
 	//if (led & SEG_0)	gGfxEnv.DrawLine( lftx, topy,	lftx, midy );
 	//if (led & SEG_1)	gGfxEnv.DrawLine( lftx, midy,	lftx, boty );

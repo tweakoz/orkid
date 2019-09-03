@@ -25,7 +25,7 @@ struct QcCompositionCache
 	{
 		const file::Path pth( pname );
 		file::Path abspath = pth.ToAbsolute();
-		if( CFileEnv::GetRef().DoesFileExist( abspath ) )
+		if( FileEnv::GetRef().DoesFileExist( abspath ) )
 		{
 			std::string BasePath = abspath.c_str();
 			OrkSTXFindAndReplace<std::string>( BasePath, "/pc/", "/src/" );
@@ -33,7 +33,7 @@ struct QcCompositionCache
 			BasePath = CreateFormattedString( "%s", BasePath.c_str() );
 			printf( "BasePATH<%s>\n", BasePath.c_str() );
 			//////////////////////////////////////////
-			if( false == CFileEnv::GetRef().DoesFileExist( BasePath.c_str() ) )
+			if( false == FileEnv::GetRef().DoesFileExist( BasePath.c_str() ) )
 			{
 				std::string cmdstr = CreateFormattedString( "mkdir -p %s", BasePath.c_str() );
 				printf( "CMD<%s>\n", cmdstr.c_str() );
@@ -79,7 +79,7 @@ bool QtzToPngSequence(	const file::Path& pth,
 	QCRenderer* pqcren = 0;
 	Objc::Object QCREN;
 	file::Path abspath = pth.ToAbsolute();
-	bool bQTZPRESENT = CFileEnv::GetRef().DoesFileExist( abspath );
+	bool bQTZPRESENT = FileEnv::GetRef().DoesFileExist( abspath );
 	if( bQTZPRESENT )
 	{	printf( "found qtz file<%s> inumnotcached<%d>\n", abspath.c_str(), inumnotcached );
 		NSString* PathToComp = [NSString stringWithUTF8String:abspath.c_str()];
@@ -112,7 +112,7 @@ bool QtzToPngSequence(	const file::Path& pth,
 		
 		const file::Path& texpth = itF->second;
 		
-		bool bEXISTS = CFileEnv::GetRef().DoesFileExist( texpth.ToAbsolute() );
+		bool bEXISTS = FileEnv::GetRef().DoesFileExist( texpth.ToAbsolute() );
 
 		/////////////////////////////////////
 		// write to disk
@@ -178,7 +178,7 @@ bool QtzComposerToPng( const tokenlist& toklist )
 	file::Path QtzPath( qtz_in.c_str() );
 	file::Path PngPath( png_out.c_str() );
 	
-	bool bQtzPresent = CFileEnv::GetRef().DoesFileExist( QtzPath );
+	bool bQtzPresent = FileEnv::GetRef().DoesFileExist( QtzPath );
 	
 	if( false == bQtzPresent ) return false;
 

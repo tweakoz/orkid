@@ -17,14 +17,14 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class CFileDevRam : public CFileDev
+class FileDevRam : public FileDev
 {
-	virtual EFileErrCode DoOpenFile(CFile &rFile);
-	virtual EFileErrCode DoCloseFile(CFile &rFile);
-	virtual EFileErrCode DoRead(CFile &rFile, void *pTo, size_t iSize, size_t &iactualread);
-	virtual EFileErrCode DoSeekFromStart(CFile &rFile, size_t iTo);
-	virtual EFileErrCode DoSeekFromCurrent(CFile &rFile, size_t iOffset);
-	virtual EFileErrCode DoGetLength(CFile &rFile, size_t &riLength);
+	virtual EFileErrCode DoOpenFile(File &rFile);
+	virtual EFileErrCode DoCloseFile(File &rFile);
+	virtual EFileErrCode DoRead(File &rFile, void *pTo, size_t iSize, size_t &iactualread);
+	virtual EFileErrCode DoSeekFromStart(File &rFile, size_t iTo);
+	virtual EFileErrCode DoSeekFromCurrent(File &rFile, size_t iOffset);
+	virtual EFileErrCode DoGetLength(File &rFile, size_t &riLength);
 
 	struct RamFile
 	{
@@ -37,9 +37,9 @@ class CFileDevRam : public CFileDev
 
 public:
 
-	CFileDevRam();
+	FileDevRam();
 	
-	virtual EFileErrCode Write(CFile &rFile, const void *pFrom, size_t iSize);
+	virtual EFileErrCode Write(File &rFile, const void *pFrom, size_t iSize);
 	virtual EFileErrCode GetCurrentDirectory(std::string &directory);
 	virtual EFileErrCode SetCurrentDirectory(const std::string &directory);
 

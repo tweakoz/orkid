@@ -205,14 +205,14 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 
 				pTARG->MTXI()->PushUIMatrix();
 				pTARG->PushModColor( fcolor4::Green() );
-				ork::lev2::CFontMan::PushFont("d24");
-				ork::lev2::CFontMan::GetRef().BeginTextBlock(pTARG);
+				ork::lev2::FontMan::PushFont("d24");
+				ork::lev2::FontMan::GetRef().BeginTextBlock(pTARG);
 				int y=pTARG->GetH()-24;
-				ork::lev2::CFontMan::DrawText( pTARG, 16, y-=24, "AvgUpd<%f> UPS<%f>", ssci->favgupdate, 1.0f/ssci->favgupdate );
-				ork::lev2::CFontMan::DrawText( pTARG, 16, y-=24, "AvgDrw<%f> FPS<%f>", ssci->favgdraw, 1.0f/ssci->favgdraw );
-				ork::lev2::CFontMan::DrawText( pTARG, 16, y-=24, "RawDT<%f>", frawdeltatime );
-				ork::lev2::CFontMan::GetRef().EndTextBlock(pTARG);
-				ork::lev2::CFontMan::PopFont();
+				ork::lev2::FontMan::DrawText( pTARG, 16, y-=24, "AvgUpd<%f> UPS<%f>", ssci->favgupdate, 1.0f/ssci->favgupdate );
+				ork::lev2::FontMan::DrawText( pTARG, 16, y-=24, "AvgDrw<%f> FPS<%f>", ssci->favgdraw, 1.0f/ssci->favgdraw );
+				ork::lev2::FontMan::DrawText( pTARG, 16, y-=24, "RawDT<%f>", frawdeltatime );
+				ork::lev2::FontMan::GetRef().EndTextBlock(pTARG);
+				ork::lev2::FontMan::PopFont();
 				pTARG->PopModColor( );
 				pTARG->MTXI()->PopUIMatrix();
 			}

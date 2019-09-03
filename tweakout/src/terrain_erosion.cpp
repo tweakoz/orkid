@@ -67,8 +67,8 @@ ErosionContext::ErosionContext()
 }
 ///////////////////////////////////////////////////////////////////////////////
 float ErosionContext::normalize()
-{	float umax = -CFloat::TypeMax();
-	float umin = CFloat::TypeMax();
+{	float umax = -Float::TypeMax();
+	float umin = Float::TypeMax();
 	for( int iy=0; iy<ysize; iy++)
 	{	for( int ix=0; ix<xsize; ix++)
 		{	float uval = mHeightMap.Read(ix,iy);

@@ -18,7 +18,7 @@ namespace ork { namespace tool {
 /*
 ///////////////////////////////////////////////////////////////////////////////
 
-class EntSkinAssetFilterInterface : public ork::lev2::CAssetFilterInterface
+class EntSkinAssetFilterInterface : public ork::lev2::AssetFilterInterface
 {
 public:
     virtual bool ConvertAsset( const std::string & inf, const std::string & outf );
@@ -51,7 +51,7 @@ void EntitySkinFilter::ManualClassInit( CClass *pClass )
 ///////////////////////////////////////////////////////////////////////////////
 
 EntSkinAssetFilterInterface::EntSkinAssetFilterInterface()
-    : CAssetFilterInterface( "skinfilter" )
+    : AssetFilterInterface( "skinfilter" )
 {
 }
 
@@ -106,7 +106,7 @@ void ParseModelNode( const TiXmlElement *pmdlelem, EntitySkin & skin )
 {
     const std::string Asset = pmdlelem->Attribute( "Asset" );
 
-    ork::CModel *pmdl = CModelManager::GetRef().Create( Asset );
+    ork::Model *pmdl = ModelManager::GetRef().Create( Asset );
 
     if( 0 == pmdl )
     {
@@ -565,7 +565,7 @@ bool EntSkinAssetFilterInterface::ConvertAsset( const std::string & FromFileName
         {
             const char * AssetName = SkinNode->Attribute( "AssetName" );
 
-            std::string AssetNameStr = CFileEnv::filespec_to_native( AssetName );
+            std::string AssetNameStr = FileEnv::filespec_to_native( AssetName );
 
             if( 0 == AssetName )
             {
@@ -582,7 +582,7 @@ FromFileName.c_str() );
             else
             {
                 std::string nextchk = FromFileName.substr( findit );
-                nextchk = CFileEnv::filespec_no_extension( nextchk );
+                nextchk = FileEnv::filespec_no_extension( nextchk );
 
                 if( nextchk != AssetNameStr )
                 {

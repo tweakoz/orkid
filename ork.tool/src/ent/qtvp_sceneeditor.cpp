@@ -52,7 +52,7 @@ using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template class ork::lev2::CPickBuffer<ork::ent::SceneEditorVP>;
+template class ork::lev2::PickBuffer<ork::ent::SceneEditorVP>;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -196,7 +196,7 @@ SceneEditorView::SceneEditorView(SceneEditorVP* vp) : mVP(vp) {}
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
-  mpPickBuffer = new lev2::CPickBuffer<SceneEditorVP>(pTARG->FBI()->GetThisBuffer(), this, 0, 0, 1024, 1024,
+  mpPickBuffer = new lev2::PickBuffer<SceneEditorVP>(pTARG->FBI()->GetThisBuffer(), this, 0, 0, 1024, 1024,
                                                       lev2::PickBufferBase::EPICK_FACE_VTX);
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
   mpPickBuffer->CreateContext();

@@ -598,7 +598,7 @@ void MapItemWriteSerializer::Export( const KeyDecoName& kdeco, const char* pname
 	if( fname.length() )
 	{
 		//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
-		if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mit";
+		if( ork::FileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mit";
 
 		ork::PropSetContext pctx( ork::PropSetContext::EPROPEDITOR );
 	

@@ -195,9 +195,9 @@ struct SSoundFontGenerator
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct CSF2Sample
+struct SF2Sample
 {
-	CSF2Sample( Ssfontsample * smp = nullptr );
+	SF2Sample( Ssfontsample * smp = nullptr );
 
 	std::string name;
 
@@ -299,9 +299,9 @@ struct InstrumentZone
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct CSF2Instrument
+struct SF2Instrument
 {
-	CSF2Instrument()
+	SF2Instrument()
 		: izone_base(0)
 		, num_izones(0)
 		, miIndex(0)
@@ -358,7 +358,7 @@ struct CSF2Instrument
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CSF2ProgramZone
+class SF2ProgramZone
 {
 	public: //
 
@@ -374,7 +374,7 @@ class CSF2ProgramZone
 
 	int instrumentID;
 
-	CSF2ProgramZone()
+	SF2ProgramZone()
 		: num_generators( 0 )
 		, base_generator( 0 )
 		, generator_ids( 0 )
@@ -391,7 +391,7 @@ class CSF2ProgramZone
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CSF2Program
+class SF2Program
 {
 	public: //
 
@@ -408,16 +408,16 @@ class CSF2Program
 
 	int mapped_preset;
 
-	CSF2Program();
+	SF2Program();
 
 	const std::string & GetName( void ) const { return mName; }
 	void SetName( const std::string name ) { mName=name; }
 
 	size_t GetNumZones( void ) const { return mPZones.size(); }
-	const CSF2ProgramZone & GetZone( size_t idx ) const { return mPZones[ idx ]; }
-	void AddZone( const CSF2ProgramZone & zone ) { mPZones.push_back( zone ); }
+	const SF2ProgramZone & GetZone( size_t idx ) const { return mPZones[ idx ]; }
+	void AddZone( const SF2ProgramZone & zone ) { mPZones.push_back( zone ); }
 
-	std::vector<CSF2ProgramZone>	mPZones;
+	std::vector<SF2ProgramZone>	mPZones;
 
 };
 
@@ -457,7 +457,7 @@ struct SoundFont
 
 	size_t GetNumSamples( void ) const { return mPXMSamples.size(); }
 
-	const CSF2Instrument * GetInstrument( size_t idx ) const
+	const SF2Instrument * GetInstrument( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumInstruments() );
 		return mPXMInstruments[ idx ];
@@ -468,18 +468,18 @@ struct SoundFont
 		return mPXMInstrumentZones[ idx ];
 	}
 
-	const CSF2Program * GetProgram( size_t idx ) const
+	const SF2Program * GetProgram( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumPrograms() );
 		return mPXMPrograms[ idx ];
 	}
-	const CSF2ProgramZone * GetProgramZone( size_t idx ) const
+	const SF2ProgramZone * GetProgramZone( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumPZones() );
 		return mPXMProgramZones[ idx ];
 	}
 
-	const CSF2Sample * GetSample( size_t idx ) const
+	const SF2Sample * GetSample( size_t idx ) const
 	{
 		OrkAssert( idx < GetNumSamples() );
 		return mPXMSamples[ idx ];
@@ -494,20 +494,20 @@ struct SoundFont
 	int 								numigen;
 	int 								numsamples;
 
-	CRIFFChunk *						root;
-	CRIFFChunk *						list_info;
-	CRIFFChunk *						list_sdta;
-	CRIFFChunk *						list_pdta;
+	RIFFChunk *						root;
+	RIFFChunk *						list_info;
+	RIFFChunk *						list_sdta;
+	RIFFChunk *						list_pdta;
 
-	std::vector<CRIFFChunk*>					mDynamicChunks;
+	std::vector<RIFFChunk*>					mDynamicChunks;
 
 	////////////////////////////////////////////////////
 	// Orkid Data Structures
 
-	std::vector<CSF2Program *>			mPXMPrograms;
-	std::vector<CSF2Sample *>			mPXMSamples;
-	std::vector<CSF2Instrument *>		mPXMInstruments;
-	std::vector<CSF2ProgramZone *>		mPXMProgramZones;
+	std::vector<SF2Program *>			mPXMPrograms;
+	std::vector<SF2Sample *>			mPXMSamples;
+	std::vector<SF2Instrument *>		mPXMInstruments;
+	std::vector<SF2ProgramZone *>		mPXMProgramZones;
 	std::vector<SSoundFontGenerator *>	mPXMPresetGen;
 	std::vector<InstrumentZone *>	mPXMInstrumentZones;
 	std::vector<SSoundFontGenerator *>	mPXMInstrumentGen;
@@ -529,13 +529,13 @@ struct SoundFont
 
 	////////////////////////////////////////////////////////////
 
-	U32 GetSBFK( CRIFFChunk *pROOT );
-	U32 GetINFOChunk( CRIFFChunk *ParChunk, U32 offset );
-	U32 GetINFOList( CRIFFChunk* ParChunk, U32 offset );
-	U32 GetSDTAChunk( CRIFFChunk *ParChunk, U32 offset );
-	U32 GetSDTAList( CRIFFChunk* ParChunk, U32 offset ) ;
-	U32 GetPDTAList( CRIFFChunk* ParChunk, U32 offset );
-	U32 GetPDTAChunk( CRIFFChunk* ParChunk, U32 offset );
+	U32 GetSBFK( RIFFChunk *pROOT );
+	U32 GetINFOChunk( RIFFChunk *ParChunk, U32 offset );
+	U32 GetINFOList( RIFFChunk* ParChunk, U32 offset );
+	U32 GetSDTAChunk( RIFFChunk *ParChunk, U32 offset );
+	U32 GetSDTAList( RIFFChunk* ParChunk, U32 offset ) ;
+	U32 GetPDTAList( RIFFChunk* ParChunk, U32 offset );
+	U32 GetPDTAChunk( RIFFChunk* ParChunk, U32 offset );
 
 	virtual void ProcessInstruments( void );
 	virtual void ProcessPresets( void );

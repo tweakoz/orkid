@@ -15,11 +15,11 @@
 namespace ork { namespace lev2
 {
 
-class CGfxPrimitives : public NoRttiSingleton< CGfxPrimitives >
+class GfxPrimitives : public NoRttiSingleton< GfxPrimitives >
 {
 	public:
 
-	CGfxPrimitives();
+	GfxPrimitives();
 	//static void ClassInit() {}
 	static void Init( GfxTarget *pTarg );
 

@@ -141,8 +141,8 @@ void GetSceneReq::SetScene(SceneData* sd) {
 
 SceneEditorBase::SceneEditorBase()
     : mbInit(true), mApplication(nullptr), mpScene(nullptr), mpEditSceneInst(nullptr), mpExecSceneInst(nullptr),
-      mpMdlChoices(new tool::CModelChoices), mpAnmChoices(new tool::CAnimChoices), mpAudStreamChoices(new tool::AudioStreamChoices),
-      mpAudBankChoices(new tool::AudioBankChoices), mpTexChoices(new tool::CTextureChoices),
+      mpMdlChoices(new tool::ModelChoices), mpAnmChoices(new tool::CAnimChoices), mpAudStreamChoices(new tool::AudioStreamChoices),
+      mpAudBankChoices(new tool::AudioBankChoices), mpTexChoices(new tool::TextureChoices),
       mpScriptChoices(new tool::ScriptChoices), mpArchChoices(new ArchetypeChoices(*this)), mpChsmChoices(new tool::ChsmChoices),
       mpRefArchChoices(new RefArchetypeChoices), mpFxShaderChoices(new tool::FxShaderChoices), ConstructAutoSlot(ModelInvalidated),
       ConstructAutoSlot(PreNewObject), ConstructAutoSlot(NewObject) {
@@ -437,7 +437,7 @@ void SceneEditorBase::EditorGroup() {
     const orkset<Object*>& SelSet = mselectionManager.getActiveSelection();
 
     if (SelSet.size()) {
-      const float kmax = CFloat::TypeMax();
+      const float kmax = Float::TypeMax();
       float fmaxx = -kmax;
       float fmaxy = -kmax;
       float fmaxz = -kmax;
@@ -518,7 +518,7 @@ void SceneEditorBase::EditorArchExport() {
                 QFileDialog::getSaveFileName(0, "Save Archetype File", absassetname.c_str(), "OrkArchetypeFile (*.mox *.mob)");
             file::Path::NameType fname = FileName.toStdString().c_str();
             if (fname.length()) {
-              if (CFileEnv::filespec_to_extension(fname).length() == 0)
+              if (FileEnv::filespec_to_extension(fname).length() == 0)
                 fname += ".mox";
 
               stream::FileOutputStream ostream(fname.c_str());
@@ -590,7 +590,7 @@ void SceneEditorBase::EditorArchMakeReferenced() {
                 QFileDialog::getSaveFileName(0, "Save Archetype File", absassetname.c_str(), "OrkArchetypeFile (*.mox *.mob)");
             file::Path::NameType fname = FileName.toStdString().c_str();
             if (fname.length()) {
-              if (CFileEnv::filespec_to_extension(fname).length() == 0)
+              if (FileEnv::filespec_to_extension(fname).length() == 0)
                 fname += ".mox";
 
               stream::FileOutputStream ostream(fname.c_str());

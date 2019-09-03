@@ -11,11 +11,11 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CRandomNumbers
+class RandomNumbers
 	{
 	public:
-		CRandomNumbers(void) ;
-		~CRandomNumbers() ;
+		RandomNumbers(void) ;
+		~RandomNumbers() ;
 
 		void	Restart(U32 seed) ;									// restart random number generator with specified seed
 		void	Restart(void) ;										// restart random number generator
@@ -31,6 +31,6 @@ class CRandomNumbers
 
 ///////////////////////////////////////////////////////////////////////////////
 
-extern CRandomNumbers	*g_randomNumber ;
+extern RandomNumbers	*g_randomNumber ;
 
 #endif

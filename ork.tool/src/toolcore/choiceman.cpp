@@ -16,14 +16,14 @@ std::string ChoiceFunctor::ComputeValue( const std::string & ValueStr ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CChoiceList::CChoiceList()
+ChoiceList::ChoiceList()
 	: mHierarchy( new SlashTree )
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CChoiceList::~CChoiceList()
+ChoiceList::~ChoiceList()
 {
 	for( auto item : mChoicesVect ) delete item;
 	delete mHierarchy;
@@ -31,31 +31,31 @@ CChoiceList::~CChoiceList()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CAttrChoiceValue* CChoiceList::FindFromLongName( const std::string &longname  ) const
+const AttrChoiceValue* ChoiceList::FindFromLongName( const std::string &longname  ) const
 {
-	CAttrChoiceValue* rval = OrkSTXFindValFromKey( mNameMap, longname, (CAttrChoiceValue*) 0 );
+	AttrChoiceValue* rval = OrkSTXFindValFromKey( mNameMap, longname, (AttrChoiceValue*) 0 );
 	return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CAttrChoiceValue* CChoiceList::FindFromShortName( const std::string &shortname ) const
+const AttrChoiceValue* ChoiceList::FindFromShortName( const std::string &shortname ) const
 {
-	CAttrChoiceValue* rval = OrkSTXFindValFromKey( mShortNameMap, shortname, (CAttrChoiceValue*) 0 );
+	AttrChoiceValue* rval = OrkSTXFindValFromKey( mShortNameMap, shortname, (AttrChoiceValue*) 0 );
 	return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CAttrChoiceValue* CChoiceList::FindFromValue( const std::string & uval ) const
+const AttrChoiceValue* ChoiceList::FindFromValue( const std::string & uval ) const
 {
-	CAttrChoiceValue* rval = OrkSTXFindValFromKey( mValueMap, uval, (CAttrChoiceValue*) 0 );
+	AttrChoiceValue* rval = OrkSTXFindValFromKey( mValueMap, uval, (AttrChoiceValue*) 0 );
 	return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CChoiceList::add( const CAttrChoiceValue & val )
+void ChoiceList::add( const AttrChoiceValue & val )
 {
 	std::string LongName = val.GetName();
 
@@ -76,11 +76,11 @@ void CChoiceList::add( const CAttrChoiceValue & val )
 
 	//////////////////////////////////////
 
-	CAttrChoiceValue *pNewVal = new CAttrChoiceValue( LongName, val.GetValue(), val.GetShortName() );
+	AttrChoiceValue *pNewVal = new AttrChoiceValue( LongName, val.GetValue(), val.GetShortName() );
 	pNewVal->SetFunctor( val.GetFunctor() );
 	mChoicesVect.push_back( pNewVal );
 	int nch = (int) mChoicesVect.size() - 1;
-	CAttrChoiceValue * ChcVal = mChoicesVect[nch];
+	AttrChoiceValue * ChcVal = mChoicesVect[nch];
 	void * pData = (void *) ChcVal;
 	SlashNode *pnode = mHierarchy->add_node( LongName.c_str(), pData );
 	pNewVal->SetSlashNode( pnode );
@@ -95,13 +95,13 @@ void CChoiceList::add( const CAttrChoiceValue & val )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CChoiceList::remove( const CAttrChoiceValue & val )
+void ChoiceList::remove( const AttrChoiceValue & val )
 {
 	int inumchoices = (int) mChoicesVect.size();
 
 	for( int iv=0; iv<inumchoices; iv++ )
 	{
-		CAttrChoiceValue * ChcVal = mChoicesVect[iv];
+		AttrChoiceValue * ChcVal = mChoicesVect[iv];
 
 		if( (ChcVal->GetName() == val.GetName()) && (ChcVal->GetShortName() == val.GetShortName()) )
 		{
@@ -125,7 +125,7 @@ void CChoiceList::remove( const CAttrChoiceValue & val )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CChoiceList::UpdateHierarchy( void ) // update hierarchy
+void ChoiceList::UpdateHierarchy( void ) // update hierarchy
 {
 	delete mHierarchy;
 	mHierarchy = new SlashTree;
@@ -134,7 +134,7 @@ void CChoiceList::UpdateHierarchy( void ) // update hierarchy
 	size_t nch = mChoicesVect.size();
 	for( size_t i=0; i<nch; i++ )
 	{
-		CAttrChoiceValue *val = mChoicesVect[i];
+		AttrChoiceValue *val = mChoicesVect[i];
 		mHierarchy->add_node( val->GetName().c_str(), (void *) val );
 		OrkSTXMapInsert( mValueMap, val->GetValue(), val );
 	}
@@ -142,36 +142,36 @@ void CChoiceList::UpdateHierarchy( void ) // update hierarchy
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CChoiceList::dump( void )
+void ChoiceList::dump( void )
 {
 	mHierarchy->dump();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CChoiceManager::CChoiceManager()
+ChoiceManager::ChoiceManager()
 {
 	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CChoiceManager::~CChoiceManager()
+ChoiceManager::~ChoiceManager()
 {
-	for( orkmap<std::string,CChoiceList*>::const_iterator it=mChoiceListMap.begin(); it!=mChoiceListMap.end(); it++ )
+	for( orkmap<std::string,ChoiceList*>::const_iterator it=mChoiceListMap.begin(); it!=mChoiceListMap.end(); it++ )
 	{
-		CChoiceList* plist = it->second;
+		ChoiceList* plist = it->second;
 		delete plist;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CChoiceManager::AddChoiceList( const std::string & ListName, CChoiceList *plist )
+void ChoiceManager::AddChoiceList( const std::string & ListName, ChoiceList *plist )
 {
-	orkmap<std::string,CChoiceList*>::const_iterator it = mChoiceListMap.find( ListName );
+	orkmap<std::string,ChoiceList*>::const_iterator it = mChoiceListMap.find( ListName );
 	
-	CChoiceList *plist2 = (it==mChoiceListMap.end()) ? 0 : it->second;
+	ChoiceList *plist2 = (it==mChoiceListMap.end()) ? 0 : it->second;
 
 	OrkAssert( 0 == plist2 );
 
@@ -183,11 +183,11 @@ void CChoiceManager::AddChoiceList( const std::string & ListName, CChoiceList *p
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CChoiceList *CChoiceManager::GetChoiceList( const std::string & ListName )
+ChoiceList *ChoiceManager::GetChoiceList( const std::string & ListName )
 {
-	CChoiceList *plist = 0;
+	ChoiceList *plist = 0;
 
-	orkmap<std::string,CChoiceList*>::const_iterator it = mChoiceListMap.find( ListName );
+	orkmap<std::string,ChoiceList*>::const_iterator it = mChoiceListMap.find( ListName );
 	
 	if( it != mChoiceListMap.end() )
 	{
@@ -199,11 +199,11 @@ CChoiceList *CChoiceManager::GetChoiceList( const std::string & ListName )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CChoiceList *CChoiceManager::GetChoiceList( const std::string & ListName ) const 
+const ChoiceList *ChoiceManager::GetChoiceList( const std::string & ListName ) const 
 {
-	const CChoiceList *plist = 0;
+	const ChoiceList *plist = 0;
 
-	orkmap<std::string,CChoiceList*>::const_iterator it = mChoiceListMap.find( ListName );
+	orkmap<std::string,ChoiceList*>::const_iterator it = mChoiceListMap.find( ListName );
 	
 	if( it != mChoiceListMap.end() )
 	{
@@ -216,7 +216,7 @@ const CChoiceList *CChoiceManager::GetChoiceList( const std::string & ListName )
 ///////////////////////////////////////////////////////////////////////////////
 
 
-void CChoiceList::clear( void )
+void ChoiceList::clear( void )
 {
 	mHierarchy = new SlashTree;
 	mChoicesVect.clear();

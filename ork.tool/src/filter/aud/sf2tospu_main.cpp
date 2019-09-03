@@ -30,14 +30,14 @@ void init_aiff_exporter( void );
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CSF2PXVFilter::CSF2PXVFilter( )
+SF2PXVFilter::SF2PXVFilter( )
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 SF2PXVAssetFilterInterface::SF2PXVAssetFilterInterface()
-	//: CAssetFilterInterface( "yo" )
+	//: AssetFilterInterface( "yo" )
 {
 
 }
@@ -74,7 +74,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 	//////////////////////////////////////////////////////////////
 	// Load the Soundfont
 
-	CSoundFontConversionEngine SF2Converter( FromFileName );
+	SoundFontConversionEngine SF2Converter( FromFileName );
 
 	//////////////////////////////////////////////////////////////
 
@@ -111,7 +111,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 	{
 		HeaderStream->AddItem( isamp );
 
-		const CSF2Sample *psamp = SF2Converter.GetSample( isamp );
+		const SF2Sample *psamp = SF2Converter.GetSample( isamp );
 
 		const std::string & samplename = psamp->name;
 
@@ -148,7 +148,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 
 	for( int iinst=0; iinst<inuminst; iinst++ )
 	{
-		const CSF2Instrument *pinst = SF2Converter.GetInstrument( iinst );
+		const SF2Instrument *pinst = SF2Converter.GetInstrument( iinst );
 		const std::string & instname = pinst->GetName();
 		int inumzones = (int) pinst->GetNumZones();
 		//////////////////////////////////
@@ -159,7 +159,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 		orkmessageh( "//inst<%d of %d> name<%s> numzones<%d>\n", iinst, inuminst, instname.c_str(), inumzones );
 		//////////////////////////////////
 		for( int izone=0; izone<inumzones; izone++ )
-		{	const CSF2InstrumentZone & InstrumentZone = pinst->GetIZoneFromIndex( izone );
+		{	const SF2InstrumentZone & InstrumentZone = pinst->GetIZoneFromIndex( izone );
 			HeaderStream->AddItem( izone );
 			//////////////////////////////////
 			ork::lev2::AudioInstrumentZone tempizone( InstrumentZone );
@@ -180,7 +180,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 
 	for( int iprog=0; iprog<inumprogs; iprog++ )
 	{
-		const CSF2Program *pprog = SF2Converter.GetProgram( iprog );
+		const SF2Program *pprog = SF2Converter.GetProgram( iprog );
 		int imapped = pprog->mapped_preset;
 		std::string instname = pprog->GetName();
 		//////////////////////////////////
@@ -221,7 +221,7 @@ bool SF2PXVAssetFilterInterface::ConvertAsset( const std::string & FromFileName,
 		orkmessageh( "//prog<%d> name<%s> numzones<%d>\n", iprog, instname.c_str(), inumzones );
 		//////////////////////////////////
 		for( int izone=0; izone<inumzones; izone++ )
-		{	const CSF2ProgramZone & pzone = pprog->GetZone( izone );
+		{	const SF2ProgramZone & pzone = pprog->GetZone( izone );
 			HeaderStream->AddItem( izone );
 			//////////////////////////////////
 			lev2::AudioProgramZone temppzone;

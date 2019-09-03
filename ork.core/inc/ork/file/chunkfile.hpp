@@ -79,9 +79,9 @@ Reader<Allocator>::Reader( const file::Path& inpath, const char* ptype )
 {
     const Char4 good_chunk_magic("chkf");
     OrkHeapCheck();
-    if( CFileEnv::GetRef().DoesFileExist( inpath ) )
+    if( FileEnv::GetRef().DoesFileExist( inpath ) )
     {
-        ork::CFile inputfile( inpath, ork::EFM_READ );
+        ork::File inputfile( inpath, ork::EFM_READ );
         OrkHeapCheck();
 
         ///////////////////////////

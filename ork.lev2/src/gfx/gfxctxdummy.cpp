@@ -197,7 +197,7 @@ bool DuTextureInterface::LoadTexture( const AssetPath& fname, Texture *ptex )
 		Filename.SetExtension( "dds" );
 	}
 	///////////////////////////////////////////////
-	CFile TextureFile( Filename, ork::EFM_READ );
+	File TextureFile( Filename, ork::EFM_READ );
 	if( false == TextureFile.IsOpen() )
 	{
 		return false;

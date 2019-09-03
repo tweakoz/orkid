@@ -75,7 +75,7 @@ tokenlist Init(int argc, char **argv)
 
 	printf( "CPA\n");
 
-	if(CFileEnv::GetRef().DoesDirectoryExist("../ext/miniork"))
+	if(FileEnv::GetRef().DoesDirectoryExist("../ext/miniork"))
 	{
 		// Try the relative path from your project directory "data" folder
 		OldSchool::SetGlobalStringVariable( "lev2://", CreateFormattedString("../ext/miniork/data/platform_lev2/") );
@@ -83,7 +83,7 @@ tokenlist Init(int argc, char **argv)
 		OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("../data/src/") );
 		OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("../data/temp/") );
 	}
-	else if(CFileEnv::GetRef().DoesDirectoryExist("ext/miniork"))
+	else if(FileEnv::GetRef().DoesDirectoryExist("ext/miniork"))
 	{
 
 		OldSchool::SetGlobalStringVariable( "lev2://", CreateFormattedString("ext/miniork/data/platform_lev2/") );
@@ -124,7 +124,7 @@ tokenlist Init(int argc, char **argv)
 	LocPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "lev2://" ).c_str() );
 	LocPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
-	CFileEnv::RegisterUrlBase( "lev2://", LocPlatformLevel2FileContext );
+	FileEnv::RegisterUrlBase( "lev2://", LocPlatformLevel2FileContext );
 
 	printf( "CPB3\n");
 
@@ -135,7 +135,7 @@ tokenlist Init(int argc, char **argv)
 	SrcPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "src://" ).c_str() );
 	SrcPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
-	CFileEnv::RegisterUrlBase( "src://", SrcPlatformLevel2FileContext );
+	FileEnv::RegisterUrlBase( "src://", SrcPlatformLevel2FileContext );
 
 	printf( "CPC\n");
 
@@ -146,7 +146,7 @@ tokenlist Init(int argc, char **argv)
 	TempPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "temp://" ).c_str() );
 	TempPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
-	CFileEnv::RegisterUrlBase( "temp://", TempPlatformLevel2FileContext );
+	FileEnv::RegisterUrlBase( "temp://", TempPlatformLevel2FileContext );
 
 	//////////////////////////////////////////
 	// Register miniork:// data urlbase
@@ -155,7 +155,7 @@ tokenlist Init(int argc, char **argv)
 	LocPlatformMorkDataFileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "miniorkdata://" ).c_str() );
 	LocPlatformMorkDataFileContext.SetPrependFilesystemBase( true );
 
-	CFileEnv::RegisterUrlBase( "miniorkdata://", LocPlatformMorkDataFileContext );
+	FileEnv::RegisterUrlBase( "miniorkdata://", LocPlatformMorkDataFileContext );
 
 	//////////////////////////////////////////
 
@@ -181,12 +181,12 @@ tokenlist Init(int argc, char **argv)
 			file::Path::NameType dirname = pth.ToAbsolute().c_str();
 			std::transform( dirname.begin(), dirname.end(), dirname.begin(), ork::dos2unixpathsep() );
 
-			CFileEnvDir* TheDir = CFileEnv::GetRef().OpenDir( dirname.c_str() );
+			FileEnvDir* TheDir = FileEnv::GetRef().OpenDir( dirname.c_str() );
 
 			if( TheDir )
 			{
 				OldSchool::SetGlobalStringVariable( "data://", dirname.c_str() );
-				CFileEnv::GetRef().CloseDir( TheDir );
+				FileEnv::GetRef().CloseDir( TheDir );
 				DataDirContext.SetFilesystemBaseAbs( dirname );
 			}
 			else
@@ -202,12 +202,12 @@ tokenlist Init(int argc, char **argv)
 			file::Path::NameType dirname = pth.ToAbsolute().c_str();
 			std::transform( dirname.begin(), dirname.end(), dirname.begin(), ork::dos2unixpathsep() );
 
-			CFileEnvDir* TheDir = CFileEnv::GetRef().OpenDir( dirname.c_str() );
+			FileEnvDir* TheDir = FileEnv::GetRef().OpenDir( dirname.c_str() );
 
 			if( TheDir )
 			{
 				OldSchool::SetGlobalStringVariable( "lev2://", dirname.c_str() );
-				CFileEnv::GetRef().CloseDir( TheDir );
+				FileEnv::GetRef().CloseDir( TheDir );
 				MiniorkDirContext.SetFilesystemBaseAbs( dirname );
 			}
 			else
@@ -222,8 +222,8 @@ tokenlist Init(int argc, char **argv)
 		}
 	}
 
-	CFileEnv::RegisterUrlBase( "data://", DataDirContext );
-	CFileEnv::RegisterUrlBase( "lev2://", MiniorkDirContext );
+	FileEnv::RegisterUrlBase( "data://", DataDirContext );
+	FileEnv::RegisterUrlBase( "lev2://", MiniorkDirContext );
 
 	ork::lev2::Init("");
 

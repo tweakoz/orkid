@@ -23,7 +23,7 @@ namespace ork
 		EMEMTYPE_END
 	};
 
-	class CFile;
+	class File;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -130,7 +130,7 @@ namespace ork
 		f64 mfWallClockTime;
 		int miCalibCounter;
 		U32 muMemTypeFlags[ EMEMTYPE_END ];
-		orkmap< std::string, CFile * > mvLogChannels;
+		orkmap< std::string, File * > mvLogChannels;
 		orkmap< std::string, std::string > mmGlobalStringVariables;
 		orkmap< std::string, int > mmGlobalIntVariables;
 		orkmap< std::string, f32 > mmGlobalFloatVariables;

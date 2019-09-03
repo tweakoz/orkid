@@ -305,7 +305,7 @@ bool AudioDevicePa::DoLoadStream( AudioStream* streamhandle, ConstString fname )
 
 		filename.SetExtension( "mkr" );
 
-		CFile ifile( filename, ork::EFM_READ );
+		File ifile( filename, ork::EFM_READ );
 
 		int icount = 0;
 		ifile.Read( & icount, sizeof(icount) );

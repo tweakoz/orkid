@@ -30,7 +30,7 @@ using namespace ork::asset;using namespace ork::dataflow;
 using namespace ork::lev2;
 
 namespace ork::lev2 {
-template <> void CPickBuffer<ork::tool::GraphVP>::Draw(lev2::GetPixelContext& ctx) {
+template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::GetPixelContext& ctx) {
   mPickIds.clear();
 
   auto tgt = GetContext();
@@ -214,7 +214,7 @@ struct regstr {
 void GraphVP::DoInit(lev2::GfxTarget* pt) {
   auto fbi = pt->FBI();
   auto par = fbi->GetThisBuffer();
-  mpPickBuffer = new lev2::CPickBuffer<GraphVP>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
+  mpPickBuffer = new lev2::PickBuffer<GraphVP>(par, this, 0, 0, miW, miH, lev2::PickBufferBase::EPICK_FACE_VTX);
 
   mpPickBuffer->CreateContext();
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
@@ -227,7 +227,7 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
   auto fxi = tgt->FXI();
   auto rsi = tgt->RSI();
   auto gbi = tgt->GBI();
-  auto& primi = lev2::CGfxPrimitives::GetRef();
+  auto& primi = lev2::GfxPrimitives::GetRef();
   auto defmtl = lev2::GfxEnv::GetDefaultUIMaterial();
   auto& VB = lev2::GfxEnv::GetSharedDynamicV16T16C16();
   bool has_foc = HasMouseFocus();
@@ -459,13 +459,13 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 
     mtxi->PushUIMatrix(miW, miH);
     if (false == is_pick) {
-      lev2::CFontMan::BeginTextBlock(tgt);
+      lev2::FontMan::BeginTextBlock(tgt);
       tgt->PushModColor(fcolor4::Yellow());
       {
-        lev2::CFontMan::DrawText(tgt, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth());
+        lev2::FontMan::DrawText(tgt, 8, 8, "GroupDepth<%d>", mDflowEditor.StackDepth());
         if (mDflowEditor.GetSelModule()) {
           dataflow::dgmodule* pdgmod = mDflowEditor.GetSelModule();
-          lev2::CFontMan::DrawText(tgt, 8, 16, "Sel<%s>", pdgmod->GetName().c_str());
+          lev2::FontMan::DrawText(tgt, 8, 16, "Sel<%s>", pdgmod->GetName().c_str());
         }
 
         float fxa = mGrid.GetTopLeft().GetX();
@@ -498,11 +498,11 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
           float ioff = fmodsizew * (ftw / fgw);
 
           if (false == is_pick) {
-            lev2::CFontMan::DrawText(tgt, imx + ioff, imy + ioff, "%d:%d", rs.ser, rs.ireg);
+            lev2::FontMan::DrawText(tgt, imx + ioff, imy + ioff, "%d:%d", rs.ser, rs.ireg);
           }
         }
       }
-      lev2::CFontMan::EndTextBlock(tgt);
+      lev2::FontMan::EndTextBlock(tgt);
       tgt->PopModColor();
     }
     mtxi->PopUIMatrix();
@@ -519,8 +519,8 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 void GraphVP::ReCenter() {
   dataflow::graph_data* pgrf = mDflowEditor.GetTopGraph();
   if (pgrf) {
-    fvec2 vmin(+CFloat::TypeMax(), +CFloat::TypeMax());
-    fvec2 vmax(-CFloat::TypeMax(), -CFloat::TypeMax());
+    fvec2 vmin(+Float::TypeMax(), +Float::TypeMax());
+    fvec2 vmax(-Float::TypeMax(), -Float::TypeMax());
     const orklut<ork::PoolString, ork::Object*>& modules = pgrf->Modules();
     for (orklut<ork::PoolString, ork::Object*>::const_iterator it = modules.begin(); it != modules.end(); it++) {
       dataflow::dgmodule* pmod = rtti::autocast(it->second);

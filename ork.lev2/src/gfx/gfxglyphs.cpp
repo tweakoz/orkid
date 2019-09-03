@@ -15,7 +15,7 @@ using ork::lev2::Texture;
 
 namespace ork {
 
-/*void PlaceGlyph( ork::lev2::Renderer *pRenderer, ork::lev2::CGlyphsRenderable& renderable, const CFontGlyph &glyph, float scaleFactor, fvec2 pos, float z, U32 color, float invW, float invH)
+/*void PlaceGlyph( ork::lev2::Renderer *pRenderer, ork::lev2::CGlyphsRenderable& renderable, const FontGlyph &glyph, float scaleFactor, fvec2 pos, float z, U32 color, float invW, float invH)
 {
 	typedef fvec4 CRect; // (LEFT,TOP,RIGHT,BOTTOM)
 	static float eggtestr = 0.5f;

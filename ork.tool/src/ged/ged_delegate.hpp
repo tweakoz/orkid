@@ -503,7 +503,7 @@ void GedSimpleNode<IODriver,T>::OnUiEvent(const ork::ui::Event& ev)
         					QString UserName = UserData.toString();
         					std::string pname = UserName.toStdString();
         					
-        					const CAttrChoiceValue *Chc = uchc.FindFromLongName(pname);
+        					const AttrChoiceValue *Chc = uchc.FindFromLongName(pname);
 
         					if( Chc )
         					{

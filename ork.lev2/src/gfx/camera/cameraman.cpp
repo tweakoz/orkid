@@ -51,19 +51,19 @@ std::string Camera::get_full_name(void) {
 bool Camera::IsXVertical() const {
   const fvec3& yn = mCameraData.GetYNormal();
   float dotY = yn.Dot(fvec3(1.0f, 0.0f, 0.0f));
-  return (float(CFloat::Abs(dotY)) > float(0.707f));
+  return (float(Float::Abs(dotY)) > float(0.707f));
 }
 
 bool Camera::IsYVertical() const {
   const fvec3& yn = mCameraData.GetYNormal();
   float dotY = yn.Dot(fvec3(0.0f, 1.0f, 0.0f));
-  return (float(CFloat::Abs(dotY)) > float(0.707f));
+  return (float(Float::Abs(dotY)) > float(0.707f));
 }
 
 bool Camera::IsZVertical() const {
   const fvec3& yn = mCameraData.GetYNormal();
   float dotY = yn.Dot(fvec3(0.0f, 0.0f, 1.0f));
-  return (float(CFloat::Abs(dotY)) > float(0.707f));
+  return (float(Float::Abs(dotY)) > float(0.707f));
 }
 
 fquat Camera::VerticalRot(float amt) const {

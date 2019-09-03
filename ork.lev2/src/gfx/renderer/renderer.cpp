@@ -19,8 +19,8 @@
 template class ork::fixedvector<U32,ork::lev2::RenderQueue::krqmaxsize>;
 template class ork::fixedvector<const ork::lev2::RenderQueue::Node*,ork::lev2::RenderQueue::krqmaxsize>;
 
-template class ork::fixedvector<ork::lev2::CBoxRenderable,ork::lev2::Renderer::kmaxrablessm>;
-template class ork::fixedvector<ork::lev2::CModelRenderable,ork::lev2::Renderer::kmaxrables>;
+template class ork::fixedvector<ork::lev2::BoxRenderable,ork::lev2::Renderer::kmaxrablessm>;
+template class ork::fixedvector<ork::lev2::ModelRenderable,ork::lev2::Renderer::kmaxrables>;
 template class ork::fixedvector<ork::lev2::FrustumRenderable,ork::lev2::Renderer::kmaxrablessm>;
 template class ork::fixedvector<ork::lev2::SphereRenderable,ork::lev2::Renderer::kmaxrablessm>;
 //template class ork::fixedvector<ork::lev2::CGlyphsRenderable,ork::lev2::Renderer::kmaxrables>;
@@ -86,7 +86,7 @@ void Renderer::DrawQueuedRenderables()
 
 	float fruntot = 0.0f;
 
-	static const ork::lev2::CModelRenderable*	spGroupedModels[RenderQueue::krqmaxsize];
+	static const ork::lev2::ModelRenderable*	spGroupedModels[RenderQueue::krqmaxsize];
 	for( size_t i = 0; i < renderQueueSize; i++ )
 	{	
 		OrkAssert(sortedRenderQueueIndices[i] < U32(renderQueueSize));
@@ -104,7 +104,7 @@ void Renderer::DrawQueuedRenderables()
 		if( i < renderQueueSize )
 		{	int sortedindex = sortedRenderQueueIndices[i+1];
 			const RenderQueue::Node *pnext = islast ? 0 : mQueueSortNodes[ sortedindex ];
-			const ork::lev2::CModelRenderable* pmdl = rtti::autocast(pnode->mpRenderable);
+			const ork::lev2::ModelRenderable* pmdl = rtti::autocast(pnode->mpRenderable);
 
 
 			if( pmdl )
@@ -119,7 +119,7 @@ void Renderer::DrawQueuedRenderables()
 			}
 			else
 			{	if( irun>0 )
-				{	const ork::lev2::CModelRenderable* pmdl = rtti::autocast(pnode->mpRenderable);
+				{	const ork::lev2::ModelRenderable* pmdl = rtti::autocast(pnode->mpRenderable);
 					spGroupedModels[irun] = pmdl;
 					igroupsize = (irun+1);
 				}

@@ -37,9 +37,9 @@ namespace ork { namespace MeshUtil
 
 namespace ork { namespace tool {
 
-class DAENAVFilter : public CAssetFilterBase
+class DAENAVFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(DAENAVFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAENAVFilter,AssetFilterBase);
 public: //
 	DAENAVFilter(  )
 	{
@@ -54,9 +54,9 @@ void DAENAVFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class DAESECFilter : public CAssetFilterBase
+class DAESECFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(DAESECFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAESECFilter,AssetFilterBase);
 public: //
 	DAESECFilter(  )
 	{
@@ -71,9 +71,9 @@ void DAESECFilter::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class DAEDAEFilter : public CAssetFilterBase
+class DAEDAEFilter : public AssetFilterBase
 {
-	RttiDeclareConcrete(DAEDAEFilter,CAssetFilterBase);
+	RttiDeclareConcrete(DAEDAEFilter,AssetFilterBase);
 public: //
 	DAEDAEFilter(  )
 	{
@@ -173,11 +173,11 @@ namespace tool {
 
 void RegisterColladaFilters()
 {
-	CAssetFilter::RegisterFilter("dae:xga", DAEXGAFilter::DesignNameStatic().c_str());
-	CAssetFilter::RegisterFilter("dae:xgm", DAEXGMFilter::DesignNameStatic().c_str());
-	CAssetFilter::RegisterFilter("dae:nav", DAENAVFilter::DesignNameStatic().c_str());
-	CAssetFilter::RegisterFilter("dae:dae", DAEDAEFilter::DesignNameStatic().c_str());
-	CAssetFilter::RegisterFilter("dae:sec", DAESECFilter::DesignNameStatic().c_str());
+	AssetFilter::RegisterFilter("dae:xga", DAEXGAFilter::DesignNameStatic().c_str());
+	AssetFilter::RegisterFilter("dae:xgm", DAEXGMFilter::DesignNameStatic().c_str());
+	AssetFilter::RegisterFilter("dae:nav", DAENAVFilter::DesignNameStatic().c_str());
+	AssetFilter::RegisterFilter("dae:dae", DAEDAEFilter::DesignNameStatic().c_str());
+	AssetFilter::RegisterFilter("dae:sec", DAESECFilter::DesignNameStatic().c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

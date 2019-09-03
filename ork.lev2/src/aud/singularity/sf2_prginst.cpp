@@ -349,7 +349,7 @@ void SoundFont::ProcessInstruments( void )
     {
         int i=j-1;
 
-        CSF2Instrument *inst = mPXMInstruments[i];
+        SF2Instrument *inst = mPXMInstruments[i];
 
         int iz1 = (int) inst->izone_base;
         int iz2 = (j<=(numinst-1)) ? (int) mPXMInstruments[j]->izone_base : (numizones);
@@ -459,7 +459,7 @@ void SoundFont::ProcessPresets( void )
     {
         int i = j-1;
 
-        CSF2ProgramZone *pre = mPXMProgramZones[i];
+        SF2ProgramZone *pre = mPXMProgramZones[i];
 
         int pg1 = pre->base_generator;
         int pg2 = ( j<=inumprez-1 ) ? mPXMProgramZones[j]->base_generator : inumpgen;
@@ -511,7 +511,7 @@ void SoundFont::ProcessPresets( void )
     {
         int i=j-1;
 
-        CSF2Program *preset = mPXMPrograms[i];
+        SF2Program *preset = mPXMPrograms[i];
         U32 pr1 = preset->pbag_base;
         U32 pr2 = ( j<=inumpresets-1 ) ? mPXMPrograms[j]->pbag_base : numprebags;
 
@@ -520,17 +520,17 @@ void SoundFont::ProcessPresets( void )
         //printf( "//////////////////////////\n" );
         //printf( "// program: %03d <%s> pbag_base %d num_pbags %d pr1 %d pr2 %d mapped %d\n", i, preset->GetName().c_str(), preset->pbag_base, preset->num_pbags, pr1, pr2, preset->mapped_preset );
 
-//      CSF2Program *mapped = mPXMPrograms[ preset->mapped_preset ];
+//      SF2Program *mapped = mPXMPrograms[ preset->mapped_preset ];
 
         for( int ipbag=0; ipbag<preset->num_pbags; ipbag++ )
         {
             int zoneidx = preset->pbag_base + ipbag;
 
-            CSF2ProgramZone *pzone = mPXMProgramZones[zoneidx];
+            SF2ProgramZone *pzone = mPXMProgramZones[zoneidx];
 
             if( pzone->instrumentID>=0 )
             {
-                CSF2Instrument *inst = mPXMInstruments[ pzone->instrumentID ];
+                SF2Instrument *inst = mPXMInstruments[ pzone->instrumentID ];
                 preset->AddZone( *pzone );
                 //printf( "// [zone %d of %d] [zoneID %d] [name %s]\n", ipbag, preset->num_pbags, pzone->instrumentID, inst->GetName().c_str() );
             }

@@ -24,11 +24,11 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 class Object;
-namespace lev2 { class CFont; }
+namespace lev2 { class Font; }
 namespace ui { struct Event; }
 namespace tool {
-class CChoiceManager;
-template <typename T> class CPickBuffer;
+class ChoiceManager;
+template <typename T> class PickBuffer;
 namespace ged {
 ///////////////////////////////////////////////////////////////////////////////
 class GedWidget;
@@ -107,8 +107,8 @@ public:
 	ObjModel();
     /*virtual*/ ~ObjModel();
 
-	void SetChoiceManager( CChoiceManager* chcman ) { mChoiceManager=chcman; }
-	CChoiceManager* GetChoiceManager( void ) const { return mChoiceManager; }
+	void SetChoiceManager( ChoiceManager* chcman ) { mChoiceManager=chcman; }
+	ChoiceManager* GetChoiceManager( void ) const { return mChoiceManager; }
 
 	void Dump(const char* header) const;
 
@@ -140,7 +140,7 @@ private:
 	ork::Object*													mCurrentObject;
 	ork::Object*													mRootObject;
 	ork::Object*													mQueueObject;
-	CChoiceManager*													mChoiceManager;
+	ChoiceManager*													mChoiceManager;
 	orkstack<ork::Object*>											mBrowseStack;
 	PersistMapContainer												mPersistMapContainer;
 	bool															mbEnablePaint;
@@ -306,7 +306,7 @@ protected:
 	int miRejected;
 	int miAccepted;
     GedVP* mpCurrentGedVp;
-	ork::lev2::CFont* mpFONT;
+	ork::lev2::Font* mpFONT;
 	int	miCHARW;
 	int	miCHARH;
 
@@ -595,7 +595,7 @@ class GedVP : public ui::Surface
 {
 public:
 
-	friend class lev2::CPickBuffer<GedVP>;
+	friend class lev2::PickBuffer<GedVP>;
 
   fvec4 AssignPickId(GedObject*pobj);
 	GedWidget& GetGedWidget() { return mWidget; }

@@ -52,11 +52,11 @@ class PickBufferBase : public ork::lev2::GfxBuffer
 
 ///////////////////////////////////////////////////////////////////////////
 
-template <typename VPT> class CPickBuffer : public PickBufferBase
+template <typename VPT> class PickBuffer : public PickBufferBase
 {
 	public:
 
-	CPickBuffer(	lev2::GfxBuffer* pbuf,
+	PickBuffer(	lev2::GfxBuffer* pbuf,
 					VPT* pVP,
 					int iX, int iY, int iW, int iH,
 					EPickBufferType etyp );
@@ -70,7 +70,7 @@ template <typename VPT> class CPickBuffer : public PickBufferBase
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename TLev2Viewport>
-CPickBuffer<TLev2Viewport>::CPickBuffer(	lev2::GfxBuffer *Parent,
+PickBuffer<TLev2Viewport>::PickBuffer(	lev2::GfxBuffer *Parent,
 											TLev2Viewport *pVP,
 											int iX, int iY, int iW, int iH,
 											EPickBufferType etyp )

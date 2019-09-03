@@ -267,7 +267,7 @@ void UserChoices::EnumerateChoices( bool bforcenocache )
 	for( orkmap<PoolString,IUserChoiceDelegate::ValueType>::const_iterator it=mUserChoices.begin(); it!=mUserChoices.end(); it++ )
 	{
 		const char* item = it->first.c_str();
-		CAttrChoiceValue myval( item, item );
+		AttrChoiceValue myval( item, item );
 		myval.SetCustomData( it->second );
 		add( myval );
 	}
@@ -828,7 +828,7 @@ class GraphImportDelegate : public IOpsDelegate
 			if( fname.length() )
 			{
 				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
-				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".dfg";
+				if( ork::FileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".dfg";
 				stream::FileInputStream istream(fname.c_str());
 				reflect::serialize::XMLDeserializer iser(istream);
 				//ork::stream::FileOutputStream ostream(fname.c_str());
@@ -856,7 +856,7 @@ class GraphExportDelegate : public IOpsDelegate
 			if( fname.length() )
 			{
 				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
-				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".dfg";
+				if( ork::FileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".dfg";
 				ork::stream::FileOutputStream ostream(fname.c_str());
 				ork::reflect::serialize::XMLSerializer oser(ostream);
 				//oser.Serialize(ptex);
@@ -877,7 +877,7 @@ class GraphExportDelegate : public IOpsDelegate
 			if( fname.length() )
 			{
 				//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
-				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";
+				if( ork::FileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";
 				stream::FileInputStream istream(fname.c_str());
 				reflect::serialize::XMLDeserializer iser(istream);
 				//ork::stream::FileOutputStream ostream(fname.c_str());
@@ -900,7 +900,7 @@ class GraphExportDelegate : public IOpsDelegate
 			file::Path::NameType fname = FileName.toStdString().c_str();
 			if( fname.length() )
 			{
-				if( ork::CFileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";
+				if( ork::FileEnv::filespec_to_extension( fname ).length() == 0 ) fname += ".mox";
 				ork::stream::FileOutputStream ostream(fname.c_str());
 				ork::reflect::serialize::XMLSerializer oser(ostream);
 				//oser.Serialize(ptex);

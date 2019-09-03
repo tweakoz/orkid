@@ -202,7 +202,7 @@ MissileControllerInst::MissileControllerInst( const MissileControllerData& pcd, 
 			rcimd.miSubMeshIndex = 0;
 			{
 				matsolid.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-				lev2::CGfxPrimitives::GetRef().RenderDiamond( targ );
+				lev2::GfxPrimitives::GetRef().RenderDiamond( targ );
 
 				//model->RenderRigid(vup,MatE,targ,rcid,rcimd);
 

@@ -20,8 +20,8 @@ typedef orkmap<float, fvec4> gradient_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 HeightMap::HeightMap(int isx, int isz)
-    : miGridSizeX(0), miGridSizeZ(0), mHeightData(), mMin(CFloat::TypeMax()),
-      mMax(-CFloat::TypeMax()), mRange(0.0f), mMutex("shmMutex"),
+    : miGridSizeX(0), miGridSizeZ(0), mHeightData(), mMin(Float::TypeMax()),
+      mMax(-Float::TypeMax()), mRange(0.0f), mMutex("shmMutex"),
       mfWorldSizeX(1.0f), mfWorldSizeZ(1.0f), mIndexToUnitX(1.0f),
       mIndexToUnitZ(1.0f), mWorldHeight(1.0f)
 
@@ -29,8 +29,8 @@ HeightMap::HeightMap(int isx, int isz)
   SetGridSize(isx, isz);
 }
 void HeightMap::ResetMinMax() {
-  mMin = CFloat::TypeMax();
-  mMax = -CFloat::TypeMax();
+  mMin = Float::TypeMax();
+  mMax = -Float::TypeMax();
   mRange = 0.0f;
 }
 
@@ -283,7 +283,7 @@ void HeightMap::ReadSurface(bool bfilter, const fvec3 &xyz, fvec3 &pos,
 bool HeightMap::Load(const ork::file::Path &pth) {
   auto abs_path = pth.ToAbsolute();
 
-  bool bexists = CFileEnv::DoesFileExist(abs_path);
+  bool bexists = FileEnv::DoesFileExist(abs_path);
 
   uint16_t hfmin = 0xffff;
   uint16_t hfmax = 0x0;

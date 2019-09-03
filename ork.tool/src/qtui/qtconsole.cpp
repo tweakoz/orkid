@@ -390,17 +390,17 @@ void vp_cons::DoDraw(ui::DrawEvent& drwev)
 		/////////////////////////
 		static int ibase = 0;
 		pTARG->PushModColor( ork::fcolor4::Green() );
-		ork::lev2::CFontMan::PushFont("i16");
-		ork::lev2::CFontMan::BeginTextBlock( pTARG, inumchars+inumactuallines );
+		ork::lev2::FontMan::PushFont("i16");
+		ork::lev2::FontMan::BeginTextBlock( pTARG, inumchars+inumactuallines );
 		{
 			for( int ili=0; ili<inumactuallines; ili++ )
 			{
 				const std::string& line = display_lines[ili];
-				ork::lev2::CFontMan::DrawText( pTARG, fx,  fy, line.c_str() );
+				ork::lev2::FontMan::DrawText( pTARG, fx,  fy, line.c_str() );
                 fy -= 14.0f;
 			}
 		}
-		ork::lev2::CFontMan::EndTextBlock(pTARG);
+		ork::lev2::FontMan::EndTextBlock(pTARG);
 		pTARG->PopModColor();
 		ibase++;
 	/////////////////////////

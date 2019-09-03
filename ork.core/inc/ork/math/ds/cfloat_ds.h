@@ -7,86 +7,86 @@
 namespace ork
 {
 
-inline CFloat CFloat::operator +(const CFloat &r) const { return CFloat(mValue + r.mValue); }
-inline CFloat CFloat::operator -(const CFloat &r) const { return CFloat(mValue - r.mValue); }
-inline CFloat CFloat::operator *(const CFloat &r) const { return CFloat(mValue * r.mValue); }
-inline CFloat CFloat::operator /(const CFloat &r) const { return CFloat(mValue / r.mValue); }
-inline CFloat CFloat::operator %(const CFloat &r) const { return CFloat(::std::fmod(mValue, r.mValue)); }
+inline Float Float::operator +(const Float &r) const { return Float(mValue + r.mValue); }
+inline Float Float::operator -(const Float &r) const { return Float(mValue - r.mValue); }
+inline Float Float::operator *(const Float &r) const { return Float(mValue * r.mValue); }
+inline Float Float::operator /(const Float &r) const { return Float(mValue / r.mValue); }
+inline Float Float::operator %(const Float &r) const { return Float(::std::fmod(mValue, r.mValue)); }
 
 // static methods
-inline CFloat CFloat::Ceil(const CFloat &a)
+inline Float Float::Ceil(const Float &a)
 {
-	return CFloat(::std::ceil(a.mValue));
+	return Float(::std::ceil(a.mValue));
 }
 
-inline CFloat CFloat::Floor(const CFloat &a)
+inline Float Float::Floor(const Float &a)
 {
-	return CFloat(::std::floor(a.mValue));
+	return Float(::std::floor(a.mValue));
 }
 
-inline CFloat CFloat::Pow(const CFloat &a, const CFloat &b)
+inline Float Float::Pow(const Float &a, const Float &b)
 {
-	return CFloat(::std::pow(a.mValue, b.mValue));
+	return Float(::std::pow(a.mValue, b.mValue));
 }
 
-inline CFloat CFloat::Sqrt(const CFloat &r)
+inline Float Float::Sqrt(const Float &r)
 {
-	return CFloat(::std::sqrt(r.mValue));
+	return Float(::std::sqrt(r.mValue));
 }
 
-inline CFloat CFloat::Cos(const CFloat &x)
+inline Float Float::Cos(const Float &x)
 {
-	return CFloat(::std::cos(x.mValue));
+	return Float(::std::cos(x.mValue));
 }
 
-inline CFloat CFloat::Abs(const CFloat &x)
+inline Float Float::Abs(const Float &x)
 {
 	return maximum(x, -x);
 }
 
-inline CFloat CFloat::ArcCos(const CFloat &x)
+inline Float Float::ArcCos(const Float &x)
 {
-	return CFloat(::std::acos(x.mValue));
+	return Float(::std::acos(x.mValue));
 }
 
-inline CFloat CFloat::Sin(const CFloat &x)
+inline Float Float::Sin(const Float &x)
 {
-	return CFloat(::std::sin(x.mValue));
+	return Float(::std::sin(x.mValue));
 }
 
-inline CFloat CFloat::ArcTan(const CFloat &x)
+inline Float Float::ArcTan(const Float &x)
 {
-	return CFloat(::std::atan(x.mValue));
+	return Float(::std::atan(x.mValue));
 }
 
-inline CFloat CFloat::ArcTan2(const CFloat &x, const CFloat &y)
+inline Float Float::ArcTan2(const Float &x, const Float &y)
 {
-	return CFloat(::std::atan2(x.mValue, y.mValue));
+	return Float(::std::atan2(x.mValue, y.mValue));
 }
 
-inline CFloat CFloat::Tan(const CFloat &x)
+inline Float Float::Tan(const Float &x)
 {
 	return Sin(x) / Cos(x);
 }
 
-inline CFloat CFloat::Min(const CFloat &a, const CFloat &b)
+inline Float Float::Min(const Float &a, const Float &b)
 {
 	return a < b ? a : b;
 }
 
-inline CFloat CFloat::Max(const CFloat &a, const CFloat &b)
+inline Float Float::Max(const Float &a, const Float &b)
 {
 	return a > b ? a : b;
 }
 
-inline CFloat CFloat::Rand(CFloat low, CFloat high)
+inline Float Float::Rand(Float low, Float high)
 {
-	return CFloat::FromFX((unsigned)::std::rand() % (high.FXCast() - low.FXCast()) + low.FXCast());
+	return Float::FromFX((unsigned)::std::rand() % (high.FXCast() - low.FXCast()) + low.FXCast());
 }
 
-inline bool CFloat::RelCompare(const CFloat& a, const CFloat& b, const CFloat& toler)
+inline bool Float::RelCompare(const Float& a, const Float& b, const Float& toler)
 {
-	return CFloat::Abs(a - b) <= toler * CFloat::Max(CFloat::One(), CFloat::Max(a, b));
+	return Float::Abs(a - b) <= toler * Float::Max(Float::One(), Float::Max(a, b));
 }
 
 }

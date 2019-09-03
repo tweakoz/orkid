@@ -493,8 +493,8 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 					U32 ucolor = color.GetVtxColorAsU32();
 					//////////////////////////////////////////////////////
 					float fang = mPlugInpRot.GetValue()*DTOR;
-					float sinfr = ork::CFloat::Sin(fang)*fsize;
-					float cosfr = ork::CFloat::Cos(fang)*fsize;
+					float sinfr = ork::Float::Sin(fang)*fsize;
+					float cosfr = ork::Float::Cos(fang)*fsize;
 					fvec3 rota = (NX_NY*cosfr)+(NX_PY*sinfr);
 					fvec3 rotb = (NX_PY*cosfr)-(NX_NY*sinfr);
 					fvec3 p0 = ptcl->mPosition+rota;

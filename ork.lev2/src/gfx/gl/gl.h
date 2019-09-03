@@ -221,7 +221,7 @@ public:
 
   int miW, miH;
   int miNumFrames;
-  CFile* mpFile;
+  File* mpFile;
   std::string mPath;
   dxt::DDS_HEADER* mpDDSHEADER;
   int miFrameBaseSize;
@@ -261,7 +261,7 @@ struct GlTexLoadReq {
   Texture* ptex;
   dxt::DDS_HEADER* ddsh;
   GLTextureObject* pTEXOBJ;
-  CFile* pTEXFILE;
+  File* pTEXFILE;
 };
 
 class GlTextureInterface : public TextureInterface {

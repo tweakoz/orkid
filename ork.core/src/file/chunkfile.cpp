@@ -148,7 +148,7 @@ int Writer::GetStringIndex( const char* pstr )
 
 void Writer::WriteToFile( const file::Path& outpath )
 {
-	ork::CFile outputfile( outpath, ork::EFM_WRITE );
+	ork::File outputfile( outpath, ork::EFM_WRITE );
 
 	Char4 chunk_magic("chkf");
 	//swapbytes_dynamic( chunk_magic );
