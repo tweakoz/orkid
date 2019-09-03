@@ -188,7 +188,7 @@ void RIFFFile::LoadChunks( void )
 
 RIFFChunk* RIFFChunk::GetChunk( const char *pCHKNAM )
 {
-	RIFFChunk *pChunk = OrkSTXFindValFromKey( ChunkMap, (std::string) pCHKNAM, (RIFFChunk*) 0 );
+	RIFFChunk *pChunk = OldStlSchoolFindValFromKey( ChunkMap, (std::string) pCHKNAM, (RIFFChunk*) 0 );
 	return pChunk;
 }
 
@@ -198,7 +198,7 @@ void RIFFChunk::AddChunk( const char*ChunkName, RIFFChunk *Chunk )
 {
 	U32 ChunkID = RIFFChunk::ChunkName( ChunkName );
 	std::string scn = (std::string) ChunkName;
-	OrkSTXMapInsert( ChunkMap, scn, Chunk );
+	OldStlSchoolMapInsert( ChunkMap, scn, Chunk );
 	Chunks.push_back( Chunk );
 }
 
@@ -206,7 +206,7 @@ void RIFFChunk::AddChunk( const char*ChunkName, RIFFChunk *Chunk )
 
 RIFFChunk* RIFFFile::GetChunk( const char *pCHKNAM )
 {
-	RIFFChunk *pChunk = OrkSTXFindValFromKey( ChunkMap, (std::string) pCHKNAM, (RIFFChunk*) 0 );
+	RIFFChunk *pChunk = OldStlSchoolFindValFromKey( ChunkMap, (std::string) pCHKNAM, (RIFFChunk*) 0 );
 	return pChunk;
 }
 
@@ -216,7 +216,7 @@ void RIFFFile::AddChunk( const char*ChunkName, RIFFChunk *Chunk )
 {
 	U32 ChunkID = RIFFChunk::ChunkName( ChunkName );
 	std::string scn = (std::string) ChunkName;
-	OrkSTXMapInsert( ChunkMap, scn, Chunk );
+	OldStlSchoolMapInsert( ChunkMap, scn, Chunk );
 	Chunks.push_back( Chunk );
 }
 

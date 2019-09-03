@@ -98,7 +98,7 @@ void SelectManager::InternalAddObjectToSelection( ork::Object *pobj )
 {
 	if( pobj )
 	{
-		bool badded = OrkSTXSetInsert( mActiveSelectionSet, pobj );
+		bool badded = OldStlSchoolSetInsert( mActiveSelectionSet, pobj );
 		if( badded )
 		{
 			SigObjectSelected( pobj );
@@ -115,7 +115,7 @@ void SelectManager::RemoveObjectFromSelection( ork::Object *pobj )
 
 void SelectManager::InternalRemoveObjectFromSelection( ork::Object *pobj )
 {
-	bool bremoved = OrkSTXRemoveFromSet( mActiveSelectionSet, pobj );
+	bool bremoved = OldStlSchoolRemoveFromSet( mActiveSelectionSet, pobj );
 	if( bremoved )
 		SigObjectDeSelected( pobj );
 }
@@ -124,7 +124,7 @@ void SelectManager::InternalRemoveObjectFromSelection( ork::Object *pobj )
 
 bool SelectManager::IsObjectSelected( const ork::Object *pobj ) const 
 {
-	return OrkSTXIsInSet( mActiveSelectionSet, const_cast<ork::Object*>( pobj ) );
+	return OldStlSchoolIsInSet( mActiveSelectionSet, const_cast<ork::Object*>( pobj ) );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

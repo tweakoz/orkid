@@ -90,12 +90,12 @@ public: //
   static Font* GetCurrentFont(void) { return GetRef().mpCurrentFont; }
 
   static Font* GetFont(const std::string& name) {
-    Font* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (Font*)0);
+    Font* pFont = OldStlSchoolFindValFromKey(GetRef().mFontMap, name, (Font*)0);
     return pFont;
   }
 
   static Font* SetCurrentFont(const std::string& name) {
-    Font* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (Font*)0);
+    Font* pFont = OldStlSchoolFindValFromKey(GetRef().mFontMap, name, (Font*)0);
     OrkAssert(pFont);
     GetRef().mpCurrentFont = pFont;
     return pFont;
@@ -106,7 +106,7 @@ public: //
     GetRef().mpCurrentFont = pFont;
   }
   static Font* PushFont(const std::string& name) {
-    Font* pFont = OrkSTXFindValFromKey(GetRef().mFontMap, name, (Font*)0);
+    Font* pFont = OldStlSchoolFindValFromKey(GetRef().mFontMap, name, (Font*)0);
     OrkAssert(pFont);
     GetRef().mFontStack.push(GetRef().mpCurrentFont);
     GetRef().mpCurrentFont = pFont;

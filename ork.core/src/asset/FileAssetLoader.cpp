@@ -51,7 +51,7 @@ std::set<file::Path> FileAssetLoader::EnumerateExisting()
 			file::Path::NameType ObjPtrStr = FileEnv::filespec_no_extension( the_stripped );
 			file::Path::NameType ObjPtrStrA;
 			ObjPtrStrA.replace(ObjPtrStr.c_str(), searchdir.c_str(), "" );
-			//OrkSTXFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
+			//OldStlSchoolFindAndReplace( ObjPtrStrA, searchdir, file::Path::NameType("") );
 			file::Path::NameType ObjPtrStr2 = file::Path::NameType(dir.c_str()) + ObjPtrStrA;
 			file::Path OutPath( ObjPtrStr2.c_str() );
 			//orkprintf( "FOUND ASSET<%s>\n", the_file.c_str() );
@@ -118,13 +118,13 @@ bool FileAssetLoader::FindAsset(const PieceString &name, MutableString result, i
 
 	file::Path::SmallNameType url = pathobjnoq.GetUrlBase();
 
-	const SFileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
+	const FileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
 
 	//////////////////////
 	// munge the path
 	//////////////////////
 
-	const orkvector<SFileDevContext::path_converter_type>& converters = ctx.GetPathConverters();
+	const orkvector<FileDevContext::path_converter_type>& converters = ctx.GetPathConverters();
 
 	int inumc = int( converters.size() );
 

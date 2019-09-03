@@ -42,16 +42,16 @@ int main(int argc, char** argv)
 	TestApplication the_app;
     ApplicationStack::Push(&the_app);
 
-	static SFileDevContext SrcPlatformLevel2FileContext;
+	static FileDevContext SrcPlatformLevel2FileContext;
 	SrcPlatformLevel2FileContext.SetFilesystemBaseAbs( "data/src/" );
 	SrcPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
 	FileEnv::RegisterUrlBase( "src://", SrcPlatformLevel2FileContext );
 
-	static SFileDevContext WorkingDirContext;
+	static FileDevContext WorkingDirContext;
 	OldSchool::SetGlobalStringVariable("data://", ork::file::GetStartupDirectory().c_str());
 
-	static SFileDevContext TempPlatformLevel2FileContext;
+	static FileDevContext TempPlatformLevel2FileContext;
 	TempPlatformLevel2FileContext.SetFilesystemBaseAbs( "data/temp/" );
 	TempPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 

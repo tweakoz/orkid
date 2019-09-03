@@ -11,7 +11,7 @@
 #include <ork/orktypes.h>
 #include <ork/orkstl.h>
 
-//#define OrkSTXSafeDelete(p) { if(p && ((U32) p != 0xcdcdcdcd) && ((U32) p != 0xbaadf00d)) { delete (p); (p)=NULL; } }
+//#define OldStlSchoolSafeDelete(p) { if(p && ((U32) p != 0xcdcdcdcd) && ((U32) p != 0xbaadf00d)) { delete (p); (p)=NULL; } }
 
 /*template< typename TYPE > void free_vect( orkvector< TYPE > *vec )
 {
@@ -20,7 +20,7 @@
 	for( int i=0; i<numinvect; i++ )
 	{
 		TYPE delobj = (*vec)[i];
-		OrkSTXSafeDelete(delobj);
+		OldStlSchoolSafeDelete(delobj);
 	}
 	vec->clear();
 }*/
@@ -38,12 +38,12 @@ struct lower
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct OrkSTXPredicateAlways
+struct OldStlSchoolPredicateAlways
 {
 	template< typename Type > bool operator()( Type T ) { return true; }
 };
 
-struct OrkSTXPredicateNever
+struct OldStlSchoolPredicateNever
 {
 	template< typename Type > bool operator()( Type T ) { return false; }
 };
@@ -51,7 +51,7 @@ struct OrkSTXPredicateNever
 ///////////////////////////////////////////////////////////////////////////////
 // use this for sorting containers of pointers
 
-template<typename T> class OrkSTXPointerPredGreater
+template<typename T> class OldStlSchoolPointerPredGreater
 {
 	public: //
 
@@ -65,7 +65,7 @@ template<typename T> class OrkSTXPointerPredGreater
 	}
 };
 
-template<typename T> class OrkSTXPointerPredLess
+template<typename T> class OldStlSchoolPointerPredLess
 {
 	public: //
 
@@ -81,7 +81,7 @@ template<typename T> class OrkSTXPointerPredLess
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template< typename TYPE > bool OrkSTXIsItemInVector( orkvector< TYPE > &vec, const TYPE & obj )
+template< typename TYPE > bool OldStlSchoolIsItemInVector( orkvector< TYPE > &vec, const TYPE & obj )
 {
 	bool rval = false;
 
@@ -99,7 +99,7 @@ template< typename TYPE > bool OrkSTXIsItemInVector( orkvector< TYPE > &vec, con
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename maptype >
-typename maptype::mapped_type & OrkSTXRefValFromKey( const maptype &rMap, const typename maptype::key_type & key )
+typename maptype::mapped_type & OldStlSchoolRefValFromKey( const maptype &rMap, const typename maptype::key_type & key )
 {
 	static typename maptype::mapped_type Default;
 	typename maptype::const_iterator it = rMap.find( key );
@@ -109,7 +109,7 @@ typename maptype::mapped_type & OrkSTXRefValFromKey( const maptype &rMap, const 
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename maptype >
-typename maptype::mapped_type OrkSTXFindValFromKey( const maptype &rMap, const typename maptype::key_type & key, const typename maptype::mapped_type & def=0 )
+typename maptype::mapped_type OldStlSchoolFindValFromKey( const maptype &rMap, const typename maptype::key_type & key, const typename maptype::mapped_type & def=0 )
 {
 	typename maptype::mapped_type val = def;
 	typename maptype::const_iterator it = rMap.find( key );
@@ -121,7 +121,7 @@ typename maptype::mapped_type OrkSTXFindValFromKey( const maptype &rMap, const t
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename maptype >
-int OrkSTXFindKeysFromVal( const maptype &rMap, const typename maptype::mapped_type & val, orkvector<typename maptype::key_type> &rKeyVect )
+int OldStlSchoolFindKeysFromVal( const maptype &rMap, const typename maptype::mapped_type & val, orkvector<typename maptype::key_type> &rKeyVect )
 {	int inumfound = 0;
 	typename maptype::const_iterator it=rMap.begin();
 	for( ; it!=rMap.end(); ++it )
@@ -137,7 +137,7 @@ int OrkSTXFindKeysFromVal( const maptype &rMap, const typename maptype::mapped_t
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename maptype >
-bool OrkSTXIsInMap( const maptype &rMap, const typename maptype::key_type &key )
+bool OldStlSchoolIsInMap( const maptype &rMap, const typename maptype::key_type &key )
 {
 	return ( rMap.find( key ) != rMap.end() );
 }
@@ -145,7 +145,7 @@ bool OrkSTXIsInMap( const maptype &rMap, const typename maptype::key_type &key )
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename maptype >
-bool OrkSTXMapInsert( maptype &rMap, const typename maptype::key_type & key, const typename maptype::mapped_type & val )
+bool OldStlSchoolMapInsert( maptype &rMap, const typename maptype::key_type & key, const typename maptype::mapped_type & val )
 {	bool bRVAL = false;
 	if( rMap.find( key ) == rMap.end() )
 	{	rMap.insert( std::make_pair( key, val ) );
@@ -155,7 +155,7 @@ bool OrkSTXMapInsert( maptype &rMap, const typename maptype::key_type & key, con
 }
 
 template< typename luttype >
-bool OrkSTXLutInsert( luttype &rMap, const typename luttype::key_type & key, const typename luttype::mapped_type & val )
+bool OldStlSchoolLutInsert( luttype &rMap, const typename luttype::key_type & key, const typename luttype::mapped_type & val )
 {	bool bRVAL = false;
 	if( rMap.find( key ) == rMap.end() )
 	{	rMap.AddSorted( key, val );
@@ -167,14 +167,14 @@ bool OrkSTXLutInsert( luttype &rMap, const typename luttype::key_type & key, con
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename multimaptype >
-void OrkSTXMultiMapInsert( multimaptype &rMap, const typename multimaptype::key_type & key, const typename multimaptype::mapped_type & val )
+void OldStlSchoolMultiMapInsert( multimaptype &rMap, const typename multimaptype::key_type & key, const typename multimaptype::mapped_type & val )
 {	rMap.insert( std::make_pair( key, val ) );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename maptype >
-bool OrkSTXRemoveFromMap( maptype &rMap, const typename maptype::key_type & key )
+bool OldStlSchoolRemoveFromMap( maptype &rMap, const typename maptype::key_type & key )
 {
 	bool bRVAL = false;
 	typename maptype::iterator it = rMap.find( key );
@@ -187,7 +187,7 @@ bool OrkSTXRemoveFromMap( maptype &rMap, const typename maptype::key_type & key 
 }
 
 template< typename multimaptype >
-bool OrkSTXRemoveSingleKeyFromMultiMap( multimaptype &rMap, const typename multimaptype::key_type & key )
+bool OldStlSchoolRemoveSingleKeyFromMultiMap( multimaptype &rMap, const typename multimaptype::key_type & key )
 {
 	bool bRVAL = false;
 	typename multimaptype::iterator it = rMap.find( key );
@@ -200,7 +200,7 @@ bool OrkSTXRemoveSingleKeyFromMultiMap( multimaptype &rMap, const typename multi
 }
 
 template< typename multimaptype  >
-bool OrkSTXRemoveSingleValueFromMultiMap( multimaptype &rMap, const typename multimaptype::mapped_type & val )
+bool OldStlSchoolRemoveSingleValueFromMultiMap( multimaptype &rMap, const typename multimaptype::mapped_type & val )
 {
 	bool bRVAL = false;
 
@@ -221,7 +221,7 @@ bool OrkSTXRemoveSingleValueFromMultiMap( multimaptype &rMap, const typename mul
 }
 
 template< typename settype >
-bool OrkSTXRemoveFromSet( settype &rSet, const typename settype::key_type & val )
+bool OldStlSchoolRemoveFromSet( settype &rSet, const typename settype::key_type & val )
 {
 	bool bRVAL = false;
 
@@ -237,7 +237,7 @@ bool OrkSTXRemoveFromSet( settype &rSet, const typename settype::key_type & val 
 }
 
 template< typename multimaptype >
-bool OrkSTXRemoveSingleKeyAndValueFromMultiMap( multimaptype &rMap, const typename multimaptype::key_type & key, const typename multimaptype::mapped_type & val )
+bool OldStlSchoolRemoveSingleKeyAndValueFromMultiMap( multimaptype &rMap, const typename multimaptype::key_type & key, const typename multimaptype::mapped_type & val )
 {
 	bool bRVAL = false;
 
@@ -263,7 +263,7 @@ bool OrkSTXRemoveSingleKeyAndValueFromMultiMap( multimaptype &rMap, const typena
 	return bRVAL;
 }
 
-template< typename vectortype > bool OrkSTXRemoveSingleItemFromVect( vectortype &vec, const typename vectortype::value_type & val  )
+template< typename vectortype > bool OldStlSchoolRemoveSingleItemFromVect( vectortype &vec, const typename vectortype::value_type & val  )
 {
 	typename vectortype::iterator vIter = std::find( vec.begin(), vec.end(), val );
 
@@ -281,7 +281,7 @@ template< typename vectortype > bool OrkSTXRemoveSingleItemFromVect( vectortype 
 ////////////////////////////////////////////////////////////////////////////////
 
 template< typename KeyType, typename LessPredType >
-bool OrkSTXPredSetInsert( std::set< KeyType, LessPredType > &rSet, const KeyType & key )
+bool OldStlSchoolPredSetInsert( std::set< KeyType, LessPredType > &rSet, const KeyType & key )
 {	bool bRVAL = false;
 	if( rSet.find( key ) == rSet.end() )
 	{	rSet.insert( key );
@@ -293,7 +293,7 @@ bool OrkSTXPredSetInsert( std::set< KeyType, LessPredType > &rSet, const KeyType
 ////////////////////////////////////////////////////////////////////////////////
 
 template< typename KeyType >
-bool OrkSTXSetInsert( std::set< KeyType > &rSet, const KeyType & key )
+bool OldStlSchoolSetInsert( std::set< KeyType > &rSet, const KeyType & key )
 {	bool bRVAL = false;
 	if( rSet.find( key ) == rSet.end() )
 	{	rSet.insert( key );
@@ -303,7 +303,7 @@ bool OrkSTXSetInsert( std::set< KeyType > &rSet, const KeyType & key )
 }
 
 template< typename KeyType >
-bool OrkSTXIsInSet( const std::set< KeyType > &rSet, const KeyType & key )
+bool OldStlSchoolIsInSet( const std::set< KeyType > &rSet, const KeyType & key )
 {
 	return ( rSet.find( key ) != rSet.end() );
 }
@@ -311,13 +311,13 @@ bool OrkSTXIsInSet( const std::set< KeyType > &rSet, const KeyType & key )
 ///////////////////////////////////////////////////////////////////////////////
 
 template< typename T >
-inline T OrkSTXClampToRange( T inp, T min, T max )
+inline T OldStlSchoolClampToRange( T inp, T min, T max )
 {	if( inp>max ) inp=max;	else if( inp<min ) inp=min;
 	return inp;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define OrkSTXForEachInSet( Set, Type, it ) for( typename std::set<Type>::const_iterator it=Set.begin(); it!=Set.end(); ++it )
+#define OldStlSchoolForEachInSet( Set, Type, it ) for( typename std::set<Type>::const_iterator it=Set.begin(); it!=Set.end(); ++it )
 
 #endif

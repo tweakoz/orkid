@@ -201,7 +201,7 @@ void FontMan::InitFonts( GfxTarget *pTARG )
 
 void FontMan::AddFont( GfxTarget *pTARG, const FontDesc& fdesc )
 {
-	Font *pFontAlreadyLoaded = OrkSTXFindValFromKey( GetRef().mFontMap, fdesc.mFontName, (Font *) 0 );
+	Font *pFontAlreadyLoaded = OldStlSchoolFindValFromKey( GetRef().mFontMap, fdesc.mFontName, (Font *) 0 );
 
 	if( 0 == pFontAlreadyLoaded )
 	{
@@ -210,7 +210,7 @@ void FontMan::AddFont( GfxTarget *pTARG, const FontDesc& fdesc )
 		pNewFont->LoadFromDisk( pTARG, fdesc );
 
 		GetRef().mFontVect.push_back( pNewFont );
-		OrkSTXMapInsert( GetRef().mFontMap, fdesc.mFontName, pNewFont );
+		OldStlSchoolMapInsert( GetRef().mFontMap, fdesc.mFontName, pNewFont );
 		GetRef().mpCurrentFont = pNewFont;
 	}
 }

@@ -104,7 +104,7 @@ tokenlist Init(int argc, char **argv)
 	//////////////////////////////////////////
 	// Register data:// urlbase
 
-	static SFileDevContext WorkingDirContext;
+	static FileDevContext WorkingDirContext;
 
 	auto base_dir = ork::file::GetStartupDirectory();
 
@@ -120,7 +120,7 @@ tokenlist Init(int argc, char **argv)
 	// Register lev2:// data urlbase
 	tokenlist toklist;
 
-	static SFileDevContext LocPlatformLevel2FileContext;
+	static FileDevContext LocPlatformLevel2FileContext;
 	LocPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "lev2://" ).c_str() );
 	LocPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
@@ -131,7 +131,7 @@ tokenlist Init(int argc, char **argv)
 	//////////////////////////////////////////
 	// Register src:// data urlbase
 
-	static SFileDevContext SrcPlatformLevel2FileContext;
+	static FileDevContext SrcPlatformLevel2FileContext;
 	SrcPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "src://" ).c_str() );
 	SrcPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
@@ -142,7 +142,7 @@ tokenlist Init(int argc, char **argv)
 	//////////////////////////////////////////
 	// Register temp:// data urlbase
 
-	static SFileDevContext TempPlatformLevel2FileContext;
+	static FileDevContext TempPlatformLevel2FileContext;
 	TempPlatformLevel2FileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "temp://" ).c_str() );
 	TempPlatformLevel2FileContext.SetPrependFilesystemBase( true );
 
@@ -151,7 +151,7 @@ tokenlist Init(int argc, char **argv)
 	//////////////////////////////////////////
 	// Register miniork:// data urlbase
 
-	static SFileDevContext LocPlatformMorkDataFileContext;
+	static FileDevContext LocPlatformMorkDataFileContext;
 	LocPlatformMorkDataFileContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "miniorkdata://" ).c_str() );
 	LocPlatformMorkDataFileContext.SetPrependFilesystemBase( true );
 
@@ -159,12 +159,12 @@ tokenlist Init(int argc, char **argv)
 
 	//////////////////////////////////////////
 
-	static SFileDevContext DataDirContext;
+	static FileDevContext DataDirContext;
 
 	DataDirContext.SetFilesystemBaseAbs( "data/pc" );
 	DataDirContext.SetPrependFilesystemBase( true );
 
-	static SFileDevContext MiniorkDirContext;
+	static FileDevContext MiniorkDirContext;
 	MiniorkDirContext.SetFilesystemBaseAbs( OldSchool::GetGlobalStringVariable( "lev2://" ).c_str() );
 	MiniorkDirContext.SetPrependFilesystemBase( true );
 

@@ -61,7 +61,7 @@ class FileEnv : public NoRttiSingleton< FileEnv >
 	friend class NoRttiSingleton< FileEnv >;
 
 	FileDev *mpDefaultDevice;
-	orkmap<ork::file::Path::SmallNameType, SFileDevContext> mUrlRegistryMap;
+	orkmap<ork::file::Path::SmallNameType, FileDevContext> mUrlRegistryMap;
 
 public:
 	FileEnv();
@@ -72,7 +72,7 @@ public:
 	file::Path::NameType	ReadDir(FileEnvDir *);
 	void					RewindDir(FileEnvDir *);
 
-	const orkmap<ork::file::Path::SmallNameType, SFileDevContext>& RefUrlRegistry() const { return mUrlRegistryMap; }
+	const orkmap<ork::file::Path::SmallNameType, FileDevContext>& RefUrlRegistry() const { return mUrlRegistryMap; }
 
 	FileDev* GetDefaultDevice() const { return mpDefaultDevice; }
 	FileDev* GetDeviceForUrl(const file::Path &fileName) const;
@@ -140,7 +140,7 @@ public:
 
 	//////////////////////////////////////////
 
-	static const SFileDevContext& UrlBaseToContext( const file::Path::SmallNameType &UrlName );
+	static const FileDevContext& UrlBaseToContext( const file::Path::SmallNameType &UrlName );
 
 	//////////////////////////////////////////
 
@@ -159,7 +159,7 @@ public:
 	/// @return Whether or the not the URL base is registered
 	static bool						IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase);
 
-	static void					RegisterUrlBase(const file::Path::SmallNameType& UrlBase, const SFileDevContext& PathBase);
+	static void					RegisterUrlBase(const file::Path::SmallNameType& UrlBase, const FileDevContext& PathBase);
 	static ork::file::Path		GetPathFromUrlExt( const file::Path::NameType& UrlName, const file::Path::NameType & subfolder = "", const file::Path::SmallNameType & ext = "");
 
 	static bool IsCharAlpha( char c )

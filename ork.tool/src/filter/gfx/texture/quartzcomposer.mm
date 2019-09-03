@@ -28,8 +28,8 @@ struct QcCompositionCache
 		if( FileEnv::GetRef().DoesFileExist( abspath ) )
 		{
 			std::string BasePath = abspath.c_str();
-			OrkSTXFindAndReplace<std::string>( BasePath, "/pc/", "/src/" );
-			OrkSTXFindAndReplace<std::string>( BasePath, ".qtz", "" );
+			OldStlSchoolFindAndReplace<std::string>( BasePath, "/pc/", "/src/" );
+			OldStlSchoolFindAndReplace<std::string>( BasePath, ".qtz", "" );
 			BasePath = CreateFormattedString( "%s", BasePath.c_str() );
 			printf( "BasePATH<%s>\n", BasePath.c_str() );
 			//////////////////////////////////////////
@@ -125,7 +125,7 @@ bool QtzToPngSequence(	const file::Path& pth,
 			file::Path pngpth = texpth.ToAbsolute();
 			pngpth.SetExtension("png" );
 			std::string pngpthS = pngpth.c_str();
-			OrkSTXFindAndReplace<std::string>( pngpthS, "/pc/", "/src/" );
+			OldStlSchoolFindAndReplace<std::string>( pngpthS, "/pc/", "/src/" );
 			NSString* PathToPng = [NSString stringWithUTF8String:pngpthS.c_str()];
 			printf( "RENDER QTZCOMP time<%f> fname<%s>\n", ftime, pngpthS.c_str() );
 			NSData*data = [pbmap representationUsingType:NSPNGFileType properties:nil];

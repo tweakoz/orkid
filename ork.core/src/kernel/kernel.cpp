@@ -42,7 +42,7 @@ void OldSchool::SetGlobalFloatVariable( const std::string & variable, f32 value 
 
 f32 OldSchool::GetGlobalFloatVariable( const std::string & variable )
 {
-	return OrkSTXFindValFromKey( GetRef().mmGlobalFloatVariables, variable, (f32) 0.0f );
+	return OldStlSchoolFindValFromKey( GetRef().mmGlobalFloatVariables, variable, (f32) 0.0f );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,7 +54,7 @@ void OldSchool::SetGlobalStringVariable( const std::string & variable, std::stri
 
 std::string OldSchool::GetGlobalStringVariable( const std::string & variable )
 {
-	return OrkSTXFindValFromKey( GetRef().mmGlobalStringVariables, variable, (std::string) "NoVariable" );
+	return OldStlSchoolFindValFromKey( GetRef().mmGlobalStringVariables, variable, (std::string) "NoVariable" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ void OldSchool::SetGlobalIntVariable( const std::string & variable, int value )
 
 int OldSchool::GetGlobalIntVariable( const std::string & variable )
 {
-	return OrkSTXFindValFromKey( GetRef().mmGlobalIntVariables, variable, 0 );
+	return OldStlSchoolFindValFromKey( GetRef().mmGlobalIntVariables, variable, 0 );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

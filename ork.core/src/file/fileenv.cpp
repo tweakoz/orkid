@@ -71,7 +71,7 @@ FileDev* FileEnv::GetDeviceForUrl(const file::Path &fileName) const
 {
 	ork::file::Path::SmallNameType urlbase = FileEnv::GetRef().UrlNameToBase(fileName.GetUrlBase().c_str()).c_str();
 
-	orkmap<ork::file::Path::SmallNameType, SFileDevContext>::const_iterator it
+	orkmap<ork::file::Path::SmallNameType, FileDevContext>::const_iterator it
 		= FileEnv::GetRef().RefUrlRegistry().find(urlbase);
 	if(it != FileEnv::GetRef().RefUrlRegistry().end())
 		if(it->second.GetFileDevice())
@@ -102,15 +102,15 @@ const file::Path::NameType & FileEnv::GetFilesystemBase( void )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const SFileDevContext & FileEnv::UrlBaseToContext( const file::Path::SmallNameType &UrlName )
+const FileDevContext & FileEnv::UrlBaseToContext( const file::Path::SmallNameType &UrlName )
 {
-	static SFileDevContext DefaultContext;
-	orkmap<ork::file::Path::SmallNameType, SFileDevContext> & Map = GetRef().mUrlRegistryMap;
+	static FileDevContext DefaultContext;
+	orkmap<ork::file::Path::SmallNameType, FileDevContext> & Map = GetRef().mUrlRegistryMap;
 
 	file::Path::SmallNameType strip_name;
 	strip_name.replace( UrlName.c_str(), "://", "" );
 
-	orkmap<ork::file::Path::SmallNameType, SFileDevContext>::const_iterator it=Map.find(strip_name);
+	orkmap<ork::file::Path::SmallNameType, FileDevContext>::const_iterator it=Map.find(strip_name);
 
 	if( it!=Map.end() )
 	{
@@ -155,7 +155,7 @@ file::Path::NameType FileEnv::UrlNameToPath( const file::Path::NameType& UrlName
 
 				file::Path::SmallNameType urlp = urlbase.c_str();
 
-				if( OrkSTXIsInMap( GetRef().mUrlRegistryMap, urlp ) )
+				if( OldStlSchoolIsInMap( GetRef().mUrlRegistryMap, urlp ) )
 				{
 					file::Path::NameType::size_type ipathbase = find_url_colon+3;
 					path = UrlName.substr(ipathbase, UrlName.size() - ipathbase).c_str();
@@ -181,7 +181,7 @@ ork::file::Path FileEnv::GetPathFromUrlExt( const file::Path::NameType& UrlName,
 
 	if( Tail==(Base+"://") ) Tail="";
 
-	const SFileDevContext & Ctx = UrlBaseToContext( Base.c_str() );
+	const FileDevContext & Ctx = UrlBaseToContext( Base.c_str() );
 
 	file::Path::NameType path;
 
@@ -200,14 +200,14 @@ ork::file::Path FileEnv::GetPathFromUrlExt( const file::Path::NameType& UrlName,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FileEnv::RegisterUrlBase( const file::Path::SmallNameType& UrlName, const SFileDevContext & FileContext )
+void FileEnv::RegisterUrlBase( const file::Path::SmallNameType& UrlName, const FileDevContext & FileContext )
 {
 	file::Path::SmallNameType urlbase = UrlNameToBase( UrlName.c_str() );
-	orkmap<ork::file::Path::SmallNameType, SFileDevContext> & Map = GetRef().mUrlRegistryMap;
-	std::pair<ork::file::Path::SmallNameType, SFileDevContext> the_pair(urlbase.c_str(), FileContext);
+	orkmap<ork::file::Path::SmallNameType, FileDevContext> & Map = GetRef().mUrlRegistryMap;
+	std::pair<ork::file::Path::SmallNameType, FileDevContext> the_pair(urlbase.c_str(), FileContext);
 	Map.insert( the_pair );
 
-	SFileDevContext& nc = const_cast<SFileDevContext&>(FileContext);
+	FileDevContext& nc = const_cast<FileDevContext&>(FileContext);
 	nc.CreateToc(UrlName);
 }
 
@@ -222,7 +222,7 @@ bool FileEnv::PathIsUrlForm( const file::Path& PathName )
 
 bool FileEnv::IsUrlBaseRegistered(const file::Path::SmallNameType& urlBase)
 {
-	return OrkSTXIsInMap(GetRef().mUrlRegistryMap, urlBase);
+	return OldStlSchoolIsInMap(GetRef().mUrlRegistryMap, urlBase);
 }
 
 file::Path::NameType FileEnv::StripUrlFromPath(const file::Path::NameType& urlName)

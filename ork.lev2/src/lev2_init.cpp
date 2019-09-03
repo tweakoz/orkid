@@ -29,8 +29,8 @@ namespace ork {
 
 namespace lev2 {
 
-static SFileDevContext LocPlatformLevel2FileContext;
-const SFileDevContext & PlatformLevel2FileContext = LocPlatformLevel2FileContext;
+static FileDevContext LocPlatformLevel2FileContext;
+const FileDevContext & PlatformLevel2FileContext = LocPlatformLevel2FileContext;
 
 #if defined(_WIN32)
 static bool gbPREFEROPENGL = false;

@@ -249,7 +249,7 @@ EFileErrCode FileDevStd::DoGetLength( File &rFile, size_t &riLen )
 
 	const ork::file::Path& fname = rFile.GetFileName();
 	file::Path::SmallNameType url = fname.GetUrlBase();
-	const SFileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
+	const FileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
 	bool bTRYTOC = false;
 	bool bEXISTSINTOC = false;
 	int iTOCSIZE = -1;
@@ -330,7 +330,7 @@ EFileErrCode FileDevStd::SetCurrentDirectory( const file::Path::NameType& direct
 bool FileDevStd::DoesFileExist( const file::Path& filespec )
 {
 	file::Path::SmallNameType url = filespec.GetUrlBase();
-	const SFileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
+	const FileDevContext& ctx = ork::FileEnv::UrlBaseToContext(url);
 
 	bool bTRYTOC = false;
 	bool bEXISTSINTOC = false;

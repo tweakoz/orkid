@@ -133,9 +133,9 @@ namespace ork { namespace lev2 { namespace dxt {
 	bool IsRGB8( DDS_PIXELFORMAT& pf );
 	bool IsXBGR8( DDS_PIXELFORMAT& pf );
 
-	struct DDSFile
+	struct DDFile
 	{
-		DDSFile( const ork::file::Path& pth );
+		DDFile( const ork::file::Path& pth );
 		
 		DDS_HEADER		mHeader;
 		DdsLoadInfo		mLoadInfo;

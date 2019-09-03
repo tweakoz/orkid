@@ -79,17 +79,17 @@ void FxShader::AddParameter( const FxShaderParam * param )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static SFileDevContext gShaderFileContext1;
-static SFileDevContext gShaderFileContext2;
+static FileDevContext gShaderFileContext1;
+static FileDevContext gShaderFileContext2;
 
 void FxShader::RegisterLoaders( const file::Path::NameType & base, const file::Path::NameType & ext )
 {
-	const SFileDevContext& MorkCtx = FileEnv::UrlBaseToContext( "lev2" );
+	const FileDevContext& MorkCtx = FileEnv::UrlBaseToContext( "lev2" );
 	gShaderFileContext1.SetFilesystemBaseAbs( MorkCtx.GetFilesystemBaseRel()+"/"+base );
 	gShaderFileContext1.SetFilesystemBaseEnable( true );
 	file::Path::NameType fsbase1 = gShaderFileContext1.GetFilesystemBaseAbs();
 	
-	const SFileDevContext& DataCtx = FileEnv::UrlBaseToContext( "data" );
+	const FileDevContext& DataCtx = FileEnv::UrlBaseToContext( "data" );
 	gShaderFileContext2.SetFilesystemBaseAbs( DataCtx.GetFilesystemBaseRel()+"/"+base );
 	gShaderFileContext2.SetFilesystemBaseEnable( true );
 	file::Path::NameType fsbase2 = gShaderFileContext2.GetFilesystemBaseAbs();
