@@ -150,7 +150,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 					fArea345 = 0.0f;
 				}*/
 
-				float DelArea = Float::Abs(fArea012-fArea345);
+				float DelArea = fabs(fArea012-fArea345);
 				float AvgArea = (fArea012+fArea345)*float(0.5f);
 
 				if( P0.IsCoPlanar( P1 ) )
@@ -246,7 +246,7 @@ void submesh::TrianglesToQuads( submesh *poutmesh ) const
 
 								// make sure its a rectangular quad by comparing edge directions
 
-								if( (fdotACBD > float(0.999f) ) && (Float::Abs(fdotACAB)<float(0.02f)) && (Float::Abs(fdotDCBD)<float(0.02f)) )
+								if( (fdotACBD > float(0.999f) ) && (fabs(fdotACAB)<float(0.02f)) && (fabs(fdotDCBD)<float(0.02f)) )
 								{
 									int i0 = ici[ icorner0 ];
 									int i1 = ici[ ilo0 ];

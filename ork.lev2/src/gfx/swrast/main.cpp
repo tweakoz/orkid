@@ -309,14 +309,14 @@ void DemoApp::Render2()
 	static float fphase = 0.0f;
 	fphase += 0.001f;
 
-	vtxA.mSX = std::sinf( fphase )*8.f;
-	vtxA.mSY = std::cosf( fphase )*8.f;
+	vtxA.mSX = sinff( fphase )*8.f;
+	vtxA.mSY = cosff( fphase )*8.f;
 	vtxA.mfDepth = 1.0f;
-	vtxC.mSX = std::sinf( fphase+(PI*0.8f) )*8.f;
-	vtxC.mSY = std::cosf( fphase+(PI*0.8f) )*7.f;
+	vtxC.mSX = sinff( fphase+(PI*0.8f) )*8.f;
+	vtxC.mSY = cosff( fphase+(PI*0.8f) )*7.f;
 	vtxC.mfDepth = 1.0f;
-	vtxB.mSX = std::sinf( fphase+(PI*1.5f)  )*6.f;
-	vtxB.mSY = std::cosf( fphase+(PI*1.5f)  )*7.f;
+	vtxB.mSX = sinff( fphase+(PI*1.5f)  )*6.f;
+	vtxB.mSY = cosff( fphase+(PI*1.5f)  )*7.f;
 	vtxB.mfDepth = 1.0f;
 
 	if( vtxB.mSY > vtxC.mSY ) std::swap( vtxC, vtxB );

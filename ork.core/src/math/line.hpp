@@ -48,7 +48,7 @@ float TLineSegment2Helper<T>::GetPointDistanceSquared( const vec2_type  &pt ) co
 
 	T U_num2 =  ((pt.GetX() - mStart.GetX()) * (mEnd.GetX() - mStart.GetX()) + ((pt.GetY() - mStart.GetY()) * (mEnd.GetY() - mStart.GetY())));
 
-	if(std::fabs(U_num) < U_den)
+	if(fabs(U_num) < U_den)
 	{
 		T U = U_num / U_den;
 		return(pt_origin - (mOrigin * U)).MagSquared();
@@ -69,7 +69,7 @@ float TLineSegment2Helper<T>::GetPointDistancePercent( const vec2_type  &pt ) co
 	vec2_type pt_origin = pt - mStart;
 	T U_num = (pt_origin).Dot(mOrigin);
     T U_den = ( mMag * mMag );
-	if(std::fabs(U_num) < U_den)
+	if(fabs(U_num) < U_den)
 	{
 		return(U_num / U_den);
 	}

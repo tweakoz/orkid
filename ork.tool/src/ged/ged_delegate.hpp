@@ -48,7 +48,7 @@ Slider<T>::Slider( T& ParentW, datatype min, datatype max, datatype def )
 template <typename T> 
 float Slider<T>::LogToVal( float flog ) const		
 {
-	const float klogoffset = std::abs(float(mmax)-float(mmin))/100.0f;
+	const float klogoffset = fabs(float(mmax)-float(mmin))/100.0f;
 	float flogmin = log10f( klogoffset+float(mmin) );	
 	float flogmax = log10f( klogoffset+float(mmax) );	
 	float flogrange = flogmax-flogmin;				
@@ -69,7 +69,7 @@ float Slider<T>::LogToVal( float flog ) const
 template <typename T> 
 float Slider<T>::ValToLog( float val ) const
 {
-	const float klogoffset = std::abs(float(mmax)-float(mmin))/100.0f;
+	const float klogoffset = fabs(float(mmax)-float(mmin))/100.0f;
 	float flogmin = log10f( klogoffset+float(mmin) );	
 	float flogmax = log10f( klogoffset+float(mmax) );	
 	float flogrange = flogmax-flogmin;				

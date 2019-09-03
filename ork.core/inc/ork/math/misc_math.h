@@ -17,31 +17,9 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(IX)
+#if defined(LINUX)
 #define MathNS
-#elif defined(_WIN32)
-#define MathNS std
 #endif
-
-inline float sqrtf(float finp) { return MathNS::sqrtf(finp); }
-inline float acosf(float finp) { return MathNS::acosf(finp); }
-inline float cosf(float finp) { return MathNS::cosf(finp); }
-inline float sinf(float finp) { return MathNS::sinf(finp); }
-inline float tanf(float finp) { return MathNS::tanf(finp); }
-inline float fabs(float finp) { return MathNS::fabs(finp); }
-inline float atanf(float finp) { return MathNS::atanf(finp); }
-inline float atan2f(float finp, float finp2) { return MathNS::atan2f(finp, finp2); }
-inline float pow(float finp, float finp2) { return MathNS::pow(finp, finp2); }
-inline float powf(float finp, float finp2) { return MathNS::powf(finp, finp2); }
-inline float ceil(float finp) { return MathNS::ceil(finp); }
-inline float floor(float finp) { return MathNS::floor(finp); }
-
-template <typename T> T inline clamp( T tin, T tmin, T tmax )
-{
-	return (tin<tmin) ? tmin
-	                  : (tin>tmax) ? tmax
-								   : tin;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -102,7 +80,7 @@ inline int floor_int(float x) {
 		sar i, 1
 	}
 #else
-  i = (int)ork::floor(x);
+  i = (int)floor(x);
 #endif
   return (i);
 }
@@ -124,7 +102,7 @@ inline int ceil_int(float x) {
 		sar i, 1
 	}
 #else
-  i = (int)ork::ceil(x);
+  i = (int)ceil(x);
 #endif
   return (-i);
 }
@@ -201,7 +179,7 @@ inline F32 calc_dist(F32 x0, F32 y0, F32 z0, F32 x1, F32 y1, F32 z1) {
   F32 dx = (x1 - x0);
   F32 dy = (y1 - y0);
   F32 dz = (z1 - z0);
-  F32 dist = ork::sqrtf((dx * dx) + (dy * dy) + (dz * dz));
+  F32 dist = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
   return dist;
 }
 
@@ -250,7 +228,7 @@ public:
 
   void static pnnormalize2(f32* v) {
     f32 s;
-    s = ork::sqrtf(v[0] * v[0] + v[1] * v[1]);
+    s = sqrtf(v[0] * v[0] + v[1] * v[1]);
     v[0] = v[0] / s;
     v[1] = v[1] / s;
   }

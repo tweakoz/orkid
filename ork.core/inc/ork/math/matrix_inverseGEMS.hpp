@@ -13,7 +13,7 @@
 
 // As psp-gcc does _not_ qualify sqrtf with std:: we must make CW 'using' it
 #ifdef NITRO
-using std::fabs;
+using fabs;
 #endif
 
 #define SMALL_NUMBER	1.e-24f
@@ -193,7 +193,7 @@ template <typename T> void GEMSMatrixInverse( const Matrix44<T> &in, Matrix44<T>
 
     T det = det4x4( in );
 
-    if(Float::Abs(det) < T(SMALL_NUMBER))
+    if(fabs(det) < T(SMALL_NUMBER))
 	{
 		OrkAssert( 0 );
 		//fl_fatalerror( "Non-singular matrix, no inverse!\n" );
@@ -216,7 +216,7 @@ template <typename T> void Matrix44<T>::GEMSInverse( const Matrix44<T> &in )
     GEMSadjoint<T>( in, out ); // calculate the adjoint matrix
     T det = det4x4<T>( in ); //	calculate the 4x4 determinant, if the determinant is zero then the inverse matrix is not unique
 
-    if(Float::Abs(det) < T(SMALL_NUMBER))
+    if(fabs(det) < T(SMALL_NUMBER))
 	{
         printf( "Non-singular matrix, no inverse!\n" );
         return;

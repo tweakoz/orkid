@@ -22,15 +22,15 @@ namespace ork {
 
 template<> float Vector3<float>::Sin( float fin )
 {
-	return Float::Sin( fin );
+	return sinf( fin );
 }
 template<> float Vector3<float>::Cos( float fin )
 {
-	return Float::Cos( fin );
+	return cosf( fin );
 }
 template<> float Vector3<float>::Sqrt( float fin )
 {
-	return Float::Sqrt( fin );
+	return sqrtf( fin );
 }
 template<> float Vector3<float>::Epsilon()
 {
@@ -38,22 +38,22 @@ template<> float Vector3<float>::Epsilon()
 }
 template<> float Vector3<float>::Abs( float fin )
 {
-	return ork::fabs( fin );
+	return fabs( fin );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<> double Vector3<double>::Sin( double fin )
 {
-	return (double) ork::sinf((float)fin);
+	return (double) sinf((float)fin);
 }
 template<> double Vector3<double>::Cos( double fin )
 {
-	return (double) ork::cosf((float)fin);
+	return (double) cosf((float)fin);
 }
 template<> double Vector3<double>::Sqrt( double fin )
 {
-	return (double) ork::sqrtf( (float)fin );
+	return (double) sqrtf( (float)fin );
 }
 template<> double Vector3<double>::Epsilon()
 {
@@ -61,7 +61,7 @@ template<> double Vector3<double>::Epsilon()
 }
 template<> double Vector3<double>::Abs( double fin )
 {
-	return (double) ork::fabs((float)fin);
+	return (double) fabs((float)fin);
 }
 
 // FIXED ///////////////////////////////////////////////////////////////////////

@@ -14,8 +14,8 @@ static const float OPI2ISR = pi2*OISR;
 
 float BW2Q(float fc,float BWoct) {
     float w0 = fc*OPI2ISR;
-    float sii = std::log(2.0f)/2.0f*BWoct*w0/sin(w0);
-    float denom = 2.0f*std::sinh(sii);
+    float sii = logf(2.0f)/2.0f*BWoct*w0/sin(w0);
+    float denom = 2.0f*sinf(sii);
     float Q = 1.0f / denom;
     return Q;
 }
@@ -232,10 +232,10 @@ void BiQuad::SetLpfReson( float kfco, float krez )
     float w0 = kfco*PI2ISR;
     float w02 = (2.0f*w0);
 
-    float cosW0 = std::cos( w0 );
-    float cosW02 = std::cos( w02 );
-    float sinW0 = std::sin( w0 );
-    float sinW02 = std::sin( w02 );
+    float cosW0 = cosf( w0 );
+    float cosW02 = cosf( w02 );
+    float sinW0 = sinf( w0 );
+    float sinW02 = sinf( w02 );
     float krezsq = (krez*krez);
     float krezCosW0 = krez*cosW0;
 
@@ -253,7 +253,7 @@ void BiQuad::SetLpfReson( float kfco, float krez )
     float km1 = kag+kbs;
     float km2 = kag-kbs;
 
-    float kden = std::sqrt(km1*km1+km2*km2);
+    float kden = sqrtf(km1*km1+km2*km2);
 
     // YSIDE COEF
     _mfa1 = -2.0f*krez*cosW0;
@@ -303,8 +303,8 @@ void BiQuad::SetBpfWithBWoct( float kfco, float BWoct, float peakGain )
 {
     BWoct = clip_float(fabs(BWoct),0.2,8);
     float w0 = kfco*PI2ISR;
-    float sii = std::log(2.0f)/2.0f*BWoct*w0/sin(w0);
-    float denom = 2.0f*std::sinh(sii);
+    float sii = logf(2.0f)/2.0f*BWoct*w0/sin(w0);
+    float denom = 2.0f*sinf(sii);
     float Q = 1.0f / denom;
    // printf( "w0<%f> denom<%f> BWoct<%f> sii<%f> Q<%f>\n", w0, denom, BWoct, sii, Q );
     SetBpfWithQ( kfco, Q, peakGain );
@@ -340,8 +340,8 @@ void BiQuad::SetNotchWithQ( float kfco, float Q, float peakGain )
 void BiQuad::SetNotchWithBWoct( float kfco, float BWoct, float peakGain )
 {
     float w0 = kfco*PI2ISR;
-    float sii = std::log(2.0f)/2.0f*BWoct*w0/sin(w0);
-    float denom = 2.0f*std::sinh(sii);
+    float sii = logf(2.0f)/2.0f*BWoct*w0/sin(w0);
+    float denom = 2.0f*sinf(sii);
     float Q = 1.0f / denom;
     SetNotchWithQ( kfco, Q, peakGain );
 
@@ -435,8 +435,8 @@ void BiQuad::SetParametric( float kfco, float wid, float peakGain )
         wid = 0.1;
 
     float w0 = kfco*PI2ISR;
-    float sii = std::log(2.0f)/2.0f*wid*w0/sin(w0);
-    float denom = 2.0f*std::sinh(sii);
+    float sii = logf(2.0f)/2.0f*wid*w0/sin(w0);
+    float denom = 2.0f*sinf(sii);
     float Q = 1.0f / denom;
     float V = powf(10.0f, fabs(peakGain) / 20.0f);
     //float V = decibel_to_linear_amp_ratio(peakGain);

@@ -24,7 +24,7 @@ float LinearInterp(float t, float a, float b)
 
 inline float CosInterp(float t, float a, float b)
 {
-	float f = (float(1) - Float::Cos(t * Float::Pi()) * float(0.5f));
+	float f = (float(1) - cosf(t * Float::Pi()) * float(0.5f));
 	return (a * (float(1) - f)) + (b * f);
 }
 

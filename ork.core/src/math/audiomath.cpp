@@ -26,7 +26,7 @@ namespace ork { namespace audiomath {
 
 float log_base( float base, float inp )
 {
-	float rval = std::log( inp ) / std::log( base );
+	float rval = logf( inp ) / logf( base );
 	return rval;
 }
 
@@ -34,7 +34,7 @@ float log_base( float base, float inp )
 
 float pow_base( float base, float inp )
 {
-	float rval = std::pow( base, inp );
+	float rval = powf( base, inp );
 	return rval;
 }
 
@@ -55,7 +55,7 @@ S32 round_to_nearest( float in )
 	trval = (float) urval;
 	trval2 = (float) urval2;
 	
-	if( std::fabs( trval2-in ) < std::fabs( trval-in ) )
+	if( fabs( trval2-in ) < fabs( trval-in ) )
 		rval = urval2;
 	else
 		rval = urval;

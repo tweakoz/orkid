@@ -423,7 +423,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
       float fx = float(esx) / float(pVP->GetW()) - 0.5f;
       float fy = float(esy) / float(pVP->GetH()) - 0.5f;
-      float frad = ork::sqrtf((fx * fx) + (fy * fy));
+      float frad = sqrtf((fx * fx) + (fy * fy));
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
@@ -500,7 +500,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
       float fx = float(esx) / float(pVP->GetW()) - 0.5f;
       float fy = float(esy) / float(pVP->GetH()) - 0.5f;
-      float frad = ork::sqrtf((fx * fx) + (fy * fy));
+      float frad = sqrtf((fx * fx) + (fy * fy));
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
@@ -524,8 +524,8 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       flogdx = (flogdx * float(1.5f)) - float(0.5f);
       flogdy = (flogdy * float(1.5f)) - float(0.5f);
 
-      dx = float(Float::Pow(float(10.0f), flogdx)) * ((dx < float(0.0f)) ? float(-1.0f) : float(1.0f));
-      dy = float(Float::Pow(float(10.0f), flogdy)) * ((dy < float(0.0f)) ? float(-1.0f) : float(1.0f));
+      dx = float(powf(float(10.0f), flogdx)) * ((dx < float(0.0f)) ? float(-1.0f) : float(1.0f));
+      dy = float(powf(float(10.0f), flogdy)) * ((dy < float(0.0f)) ? float(-1.0f) : float(1.0f));
 
       //////////////////////////////////////////////////
 
@@ -774,12 +774,12 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
         float CameraFactor = RightVector.Mag() * 20.0f; // 20 pixels of movement
         constexpr float kmin = 0.1f;
         constexpr float kmax = 20000.0f;
-        mfLoc = clamp(mfLoc,kmin,kmax);
+        mfLoc = std::clamp(mfLoc,kmin,kmax);
         float DeltaInMeters = float(-EV.miMWY)
                             * CameraFactor
                             * zmoveamt;
         mfLoc += DeltaInMeters;
-        mfLoc = clamp(mfLoc,kmin,kmax);
+        mfLoc = std::clamp(mfLoc,kmin,kmax);
       }
       break;
     }

@@ -121,8 +121,8 @@ template <typename T> void Matrix44<T>::SetTranslation(T _x, T _y, T _z) { SetTr
 template <typename T> void Matrix44<T>::SetRotateX(T rad) {
   T cosa, sina;
 
-  cosa = Float::Cos(rad);
-  sina = Float::Sin(rad);
+  cosa = cosf(rad);
+  sina = sinf(rad);
 
   elements[0][0] = 1.0f;
   elements[0][1] = 0.0f;
@@ -143,8 +143,8 @@ template <typename T> void Matrix44<T>::SetRotateX(T rad) {
 template <typename T> void Matrix44<T>::SetRotateY(T rad) {
   T cosa, sina;
 
-  cosa = Float::Cos(rad);
-  sina = Float::Sin(rad);
+  cosa = cosf(rad);
+  sina = sinf(rad);
 
   elements[0][0] = cosa;
   elements[0][1] = 0.0f;
@@ -165,8 +165,8 @@ template <typename T> void Matrix44<T>::SetRotateY(T rad) {
 template <typename T> void Matrix44<T>::SetRotateZ(T rad) {
   T cosa, sina;
 
-  cosa = Float::Cos(rad);
-  sina = Float::Sin(rad);
+  cosa = cosf(rad);
+  sina = sinf(rad);
 
   elements[0][0] = cosa;
   elements[0][1] = sina;
@@ -300,7 +300,7 @@ template <typename T> void Matrix44<T>::CreateBillboard(Vector3<T> objectPos, Ve
   dir.SetZ(objectPos.GetZ() - viewPos.GetZ());
 
   T slen = dir.MagSquared();
-  dir = dir * (T(1.0f) / Float::Sqrt(slen));
+  dir = dir * (T(1.0f) / sqrtf(slen));
 
   cross = upVec;
   cross = cross.Cross(dir);
@@ -787,7 +787,7 @@ template <typename T> void Matrix44<T>::Perspective(T fovy, T aspect, T fnear, T
   OrkAssert(ffar > fnear);
 
   float xmin, xmax, ymin, ymax;
-  ymax = fnear * Float::Tan(fovy * DTOR * 0.5f);
+  ymax = fnear * tanf(fovy * DTOR * 0.5f);
   ymin = -ymax;
   xmin = ymin * aspect;
   xmax = ymax * aspect;
@@ -1027,9 +1027,9 @@ template <typename T> void Matrix44<T>::Normalize(void) {
   T Zy = GetElemXY(2, 1);
   T Zz = GetElemXY(2, 2);
 
-  T Xi = T(1.0f) / Float::Sqrt((Xx * Xx) + (Xy * Xy) + (Xz * Xz));
-  T Yi = T(1.0f) / Float::Sqrt((Yx * Yx) + (Yy * Yy) + (Yz * Yz));
-  T Zi = T(1.0f) / Float::Sqrt((Zx * Zx) + (Zy * Zy) + (Zz * Zz));
+  T Xi = T(1.0f) / sqrtf((Xx * Xx) + (Xy * Xy) + (Xz * Xz));
+  T Yi = T(1.0f) / sqrtf((Yx * Yx) + (Yy * Yy) + (Yz * Yz));
+  T Zi = T(1.0f) / sqrtf((Zx * Zx) + (Zy * Zy) + (Zz * Zz));
 
   Xx *= Xi;
   Xy *= Xi;

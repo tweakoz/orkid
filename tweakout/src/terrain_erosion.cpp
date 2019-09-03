@@ -48,7 +48,7 @@ static const int gYOffsets[9] =
 	1,1,0
 };
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T> T pow( T x, T y ) {	return std::powf(x,y); }
+template <typename T> T pow( T x, T y ) {	return powff(x,y); }
 template <typename T> T min( T a, T b ) { return (a<b) ? a : b; }
 template <typename T> T max( T a, T b ) { return (a>b) ? a : b; }
 template <typename T> T clamp( T tin, T tmin, T tmax ) { return OldStlSchoolClampToRange( tin, tmin, tmax ); }
@@ -67,8 +67,8 @@ ErosionContext::ErosionContext()
 }
 ///////////////////////////////////////////////////////////////////////////////
 float ErosionContext::normalize()
-{	float umax = -Float::TypeMax();
-	float umin = Float::TypeMax();
+{	float umax = -std::numeric_limits<float>::max();
+	float umin = std::numeric_limits<float>::max();
 	for( int iy=0; iy<ysize; iy++)
 	{	for( int ix=0; ix<xsize; ix++)
 		{	float uval = mHeightMap.Read(ix,iy);

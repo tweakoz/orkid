@@ -421,8 +421,8 @@ void OpsNode::DoDraw( lev2::GfxTarget* pTARG ) // virtual
 				GetSkin()->DrawText( this, ix, miY+4, Label.c_str() );
 
 				float fspinner = float(ispinner)/100.0f;
-				float fxo = ork::sinf( fspinner )*float(miH/3);
-				float fyo = ork::cosf( fspinner )*float(miH/3);
+				float fxo = sinf( fspinner )*float(miH/3);
+				float fyo = cosf( fspinner )*float(miH/3);
 
 				float fxc = ix+(ops_size-ops_ioff)-(miH/3);
 				float fyc = miY+(miH/2);

@@ -1010,8 +1010,8 @@ void GfxPrimitives::Init( GfxTarget *pTarg )
 		/////////////////////////////////////////////////////////////////
 		// Compute Heightfield
 
-		float fmin =  Float::TypeMax();
-		float fmax = -Float::TypeMax();
+		float fmin =  std::numeric_limits<float>::max();
+		float fmax = -std::numeric_limits<float>::max();
 
 		struct sheightfield
 		{
@@ -1149,10 +1149,10 @@ void GfxPrimitives::Init( GfxTarget *pTarg )
 				/////////////////////////////////////////////////////
 				// calc height lerps
 
-				float YLerpX1Z1 = Float::Pow( (float(fYH_X1Z1)-fmin)/frange, 2.0f );
-				float YLerpX2Z1 = Float::Pow( (float(fYH_X2Z1)-fmin)/frange, 2.0f );
-				float YLerpX2Z2 = Float::Pow( (float(fYH_X2Z2)-fmin)/frange, 2.0f );
-				float YLerpX1Z2 = Float::Pow( (float(fYH_X1Z2)-fmin)/frange, 2.0f );
+				float YLerpX1Z1 = powf( (float(fYH_X1Z1)-fmin)/frange, 2.0f );
+				float YLerpX2Z1 = powf( (float(fYH_X2Z1)-fmin)/frange, 2.0f );
+				float YLerpX2Z2 = powf( (float(fYH_X2Z2)-fmin)/frange, 2.0f );
+				float YLerpX1Z2 = powf( (float(fYH_X1Z2)-fmin)/frange, 2.0f );
 
 				/////////////////////////////////////////////////////
 				// calc normals
@@ -1163,10 +1163,10 @@ void GfxPrimitives::Init( GfxTarget *pTarg )
 				fvec3 nX2Z2 = heightfield.Normal(iX2,iZ2);
 
 				fvec3 Up( 0.0f, 1.0f, 0.0f );
-				float DotX1Z1 = Float::Pow( Up.Dot( nX1Z1 ), 6.0f );
-				float DotX2Z1 = Float::Pow( Up.Dot( nX2Z1 ), 6.0f );
-				float DotX1Z2 = Float::Pow( Up.Dot( nX1Z2 ), 6.0f );
-				float DotX2Z2 = Float::Pow( Up.Dot( nX2Z2 ), 6.0f );
+				float DotX1Z1 = powf( Up.Dot( nX1Z1 ), 6.0f );
+				float DotX2Z1 = powf( Up.Dot( nX2Z1 ), 6.0f );
+				float DotX1Z2 = powf( Up.Dot( nX1Z2 ), 6.0f );
+				float DotX2Z2 = powf( Up.Dot( nX2Z2 ), 6.0f );
 
 				/////////////////////////////////////////////////////
 

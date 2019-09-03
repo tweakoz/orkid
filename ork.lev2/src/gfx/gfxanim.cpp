@@ -339,7 +339,7 @@ void XgmBlendPoseInfo::ComputeMatrix( fmtx4 & outmatrix ) const
 
 		case 2: // decompose 2 matrices and lerp components (ideally anims will be stored pre-decomposed)
 		{
-			float fw = std::fabs(AnimWeight[0] + AnimWeight[1] - 1.0f);
+			float fw = fabs(AnimWeight[0] + AnimWeight[1] - 1.0f);
 			//printf( "aw0<%f> aw1<%f>\n", AnimWeight[0], AnimWeight[1]);
 			OrkAssert(fw < float(0.01f));
 
@@ -668,12 +668,12 @@ void XgmLocalPose::Concatenate( void )
 {
 	fmtx4* __restrict pmats = & RefLocalMatrix(0);
 
-	float fminx = Float::TypeMax();
-	float fminy = Float::TypeMax();
-	float fminz = Float::TypeMax();
-	float fmaxx = -Float::TypeMax();
-	float fmaxy = -Float::TypeMax();
-	float fmaxz = -Float::TypeMax();
+	float fminx = std::numeric_limits<float>::max();
+	float fminy = std::numeric_limits<float>::max();
+	float fminz = std::numeric_limits<float>::max();
+	float fmaxx = -std::numeric_limits<float>::max();
+	float fmaxy = -std::numeric_limits<float>::max();
+	float fmaxz = -std::numeric_limits<float>::max();
 
 	if( mSkeleton.miRootNode >= 0 )
 	{
@@ -696,13 +696,13 @@ void XgmLocalPose::Concatenate( void )
 
 			fvec3 vtrans = pmats[ ichild ].GetTranslation();
 
-			fminx = Float::Min( fminx, vtrans.GetX() );
-			fminy = Float::Min( fminy, vtrans.GetY() );
-			fminz = Float::Min( fminz, vtrans.GetZ() );
+			fminx = std::min( fminx, vtrans.GetX() );
+			fminy = std::min( fminy, vtrans.GetY() );
+			fminz = std::min( fminz, vtrans.GetZ() );
 
-			fmaxx = Float::Max( fmaxx, vtrans.GetX() );
-			fmaxy = Float::Max( fmaxy, vtrans.GetY() );
-			fmaxz = Float::Max( fmaxz, vtrans.GetZ() );
+			fmaxx = std::max( fmaxx, vtrans.GetX() );
+			fmaxy = std::max( fmaxy, vtrans.GetY() );
+			fmaxz = std::max( fmaxz, vtrans.GetZ() );
 
 		}
 	}

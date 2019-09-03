@@ -23,7 +23,7 @@
 #include <ork/reflect/RegisterProperty.h>
 
 #include <fcntl.h>
-#if defined(IX)
+#if defined(LINUX)
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/input.h>
@@ -36,7 +36,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::HotKeyManager, "HotKeyManager" );
 
 namespace ork {
 
-#if defined( IX )
+#if defined( LINUX )
 
 static bool ix_kb_state[256];
 

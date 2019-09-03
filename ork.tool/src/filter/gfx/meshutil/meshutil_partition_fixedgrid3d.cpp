@@ -79,8 +79,8 @@ void GridGraph::PreMergeMesh( const submesh& MeshIn )
 	//  aa bbox / extents
 	///////////////////////////////////////////
 
-	float thisareamax = -Float::TypeMax();
-	float thisareamin = Float::TypeMax();
+	float thisareamax = -std::numeric_limits<float>::max();
+	float thisareamin = std::numeric_limits<float>::max();
 	float thisareaavg = 0.0f;
 
 	for( int ipoly=0; ipoly<inumpolys; ipoly++ )
@@ -98,13 +98,13 @@ void GridGraph::PreMergeMesh( const submesh& MeshIn )
 
 		///////////////////////////////
 		float thisarea = ply.ComputeArea( InVPool, fmtx4::Identity );
-		thisareamax = Float::Max( thisareamax, thisarea );
-		thisareamin = Float::Min( thisareamin, thisarea );
+		thisareamax = std::max( thisareamax, thisarea );
+		thisareamin = std::min( thisareamin, thisarea );
 		thisareaavg += thisarea;
 		///////////////////////////////
 		areatot += thisarea;
-		areamin = Float::Min( areamin, thisarea );
-		areamax = Float::Max( areamax, thisarea );
+		areamin = std::min( areamin, thisarea );
+		areamax = std::max( areamax, thisarea );
 		///////////////////////////////
 		totpolys++;
 	}

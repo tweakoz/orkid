@@ -173,18 +173,18 @@ double PolyBLEP::getAndInc() {
 }
 
 double PolyBLEP::sin() const {
-    return amplitude * std::sin(TWO_PI * t);
+    return amplitude * sinf(TWO_PI * t);
 }
 
 double PolyBLEP::cos() const {
-    return amplitude * std::cos(TWO_PI * t);
+    return amplitude * cosf(TWO_PI * t);
 }
 
 double PolyBLEP::half() const {
     double t2 = t + 0.5;
     t2 -= bitwiseOrZero(t2);
 
-    double y = (t < 0.5 ? 2 * std::sin(TWO_PI * t) - 2 / M_PI : -2 / M_PI);
+    double y = (t < 0.5 ? 2 * sinf(TWO_PI * t) - 2 / M_PI : -2 / M_PI);
     y += TWO_PI * freqInSecondsPerSample * (blamp(t, freqInSecondsPerSample) + blamp(t2, freqInSecondsPerSample));
 
     return amplitude * y;
@@ -194,7 +194,7 @@ double PolyBLEP::full() const {
     double _t = this->t + 0.25;
     _t -= bitwiseOrZero(_t);
 
-    double y = 2 * std::sin(M_PI * _t) - 4 / M_PI;
+    double y = 2 * sinf(M_PI * _t) - 4 / M_PI;
     y += TWO_PI * freqInSecondsPerSample * blamp(_t, freqInSecondsPerSample);
 
     return amplitude * y;

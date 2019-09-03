@@ -445,9 +445,9 @@ bool PerformAtlas( AtlasMapperOps* pOPS, const BakerSettings* psetting )
 							fvec3 NewColor = LightAccumColor; //(OrigColor*LightAccumColor);
 							//pow( lmpCol.x*1.0f, 1.5f )*2.0f;
 							////////////////////////////////
-							NewColor.SetX( std::pow( double(NewColor.GetX()), 0.5 )*0.5f );
-							NewColor.SetY( std::pow( double(NewColor.GetY()), 0.5 )*0.5f );
-							NewColor.SetZ( std::pow( double(NewColor.GetZ()), 0.5 )*0.5f );
+							NewColor.SetX( powf( double(NewColor.GetX()), 0.5 )*0.5f );
+							NewColor.SetY( powf( double(NewColor.GetY()), 0.5 )*0.5f );
+							NewColor.SetZ( powf( double(NewColor.GetZ()), 0.5 )*0.5f );
 							if( NewColor.GetX() > 1.0f ) NewColor.SetX(1.0f);
 							if( NewColor.GetY() > 1.0f ) NewColor.SetY(1.0f);
 							if( NewColor.GetZ() > 1.0f ) NewColor.SetZ(1.0f);

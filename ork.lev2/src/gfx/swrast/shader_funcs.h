@@ -21,7 +21,7 @@ inline ork::fvec4 OctaveTex( int inumoctaves, float fu, float fv, float texscale
 	ork::fvec4 tex0;
 	for( int i=0; i<inumoctaves; i++ )
 	{
-		tex0 += tex.sample_point( std::abs(fu*texscale), std::abs(fv*texscale), true, true )*texamp;
+		tex0 += tex.sample_point( fabs(fu*texscale), fabs(fv*texscale), true, true )*texamp;
 		texscale *= texscalemodifier;
 		texamp *= texampmodifier;
 	}

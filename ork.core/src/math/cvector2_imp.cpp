@@ -21,15 +21,15 @@ namespace ork
 
 template<> float Vector2<float>::Sin( float fin )
 {
-	return Float::Sin( fin );
+	return sinf( fin );
 }
 template<> float Vector2<float>::Cos( float fin )
 {
-	return Float::Cos( fin );
+	return cosf( fin );
 }
 template<> float Vector2<float>::Sqrt( float fin )
 {
-	return Float::Sqrt( fin );
+	return sqrtf( fin );
 }
 template<> float Vector2<float>::Epsilon()
 {
@@ -37,22 +37,22 @@ template<> float Vector2<float>::Epsilon()
 }
 template<> float Vector2<float>::Abs( float fin )
 {
-	return Float::Abs( fin );
+	return fabs( fin );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template<> double Vector2<double>::Sin( double fin )
 {
-	return std::sin(fin);
+	return sinf(fin);
 }
 template<> double Vector2<double>::Cos( double fin )
 {
-	return std::cos(fin);
+	return cosf(fin);
 }
 template<> double Vector2<double>::Sqrt( double fin )
 {
-	return std::sqrt( fin );
+	return sqrtf( fin );
 }
 template<> double Vector2<double>::Epsilon()
 {
@@ -60,7 +60,7 @@ template<> double Vector2<double>::Epsilon()
 }
 template<> double Vector2<double>::Abs( double fin )
 {
-	return std::abs(fin);
+	return fabs(fin);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

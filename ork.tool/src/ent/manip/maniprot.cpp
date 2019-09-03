@@ -104,7 +104,7 @@ void ManipRot::Draw( GfxTarget *pTARG ) const
 	fmtx4 VMatrix = pTARG->MTXI()->RefVMatrix();
 	fvec4 wvx = v_dir.Transform(VisMat);
 	fvec4 clip_vdir = wvx.Transform(VMatrix);
-	if( Float::Abs( clip_vdir.GetZ() ) <= vizthresh )
+	if( fabs( clip_vdir.GetZ() ) <= vizthresh )
 	{
 		bdrawok = false;
 	}

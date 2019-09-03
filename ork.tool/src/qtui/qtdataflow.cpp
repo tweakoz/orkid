@@ -519,8 +519,8 @@ void GraphVP::DoRePaintSurface(ui::DrawEvent& drwev) {
 void GraphVP::ReCenter() {
   dataflow::graph_data* pgrf = mDflowEditor.GetTopGraph();
   if (pgrf) {
-    fvec2 vmin(+Float::TypeMax(), +Float::TypeMax());
-    fvec2 vmax(-Float::TypeMax(), -Float::TypeMax());
+    fvec2 vmin(+std::numeric_limits<float>::max(), +std::numeric_limits<float>::max());
+    fvec2 vmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
     const orklut<ork::PoolString, ork::Object*>& modules = pgrf->Modules();
     for (orklut<ork::PoolString, ork::Object*>::const_iterator it = modules.begin(); it != modules.end(); it++) {
       dataflow::dgmodule* pmod = rtti::autocast(it->second);

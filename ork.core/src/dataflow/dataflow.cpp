@@ -171,7 +171,7 @@ void floatxfmsbcurve::Describe() {
 float floatxfmsbcurve::transform(float input) const {
   if (mbDoModScaBia || mbDoCurve) {
     float fsca = (GetScale() * input) + GetBias();
-    float modout = (GetMod() > 0.0f) ? std::fmod(fsca, GetMod()) : fsca;
+    float modout = (GetMod() > 0.0f) ? fmodf(fsca, GetMod()) : fsca;
     float biasout = modout;
     input = biasout;
   }
@@ -209,7 +209,7 @@ float floatxfmodstep::transform(float input) const {
   int isteps = miSteps > 0 ? miSteps : 1;
 
   float fclamped = (input < 0.0f) ? 0.0f : (input > 1.0f) ? 1.0f : input;
-  input = (mMod > 0.0f) ? (std::fmod(input, mMod) / mMod) : fclamped;
+  input = (mMod > 0.0f) ? (fmodf(input, mMod) / mMod) : fclamped;
   float finpsc = input * float(isteps); // 0..1 -> 0..4
   int iinpsc = int(std::floor(finpsc));
   float fout = float(iinpsc) / float(isteps);

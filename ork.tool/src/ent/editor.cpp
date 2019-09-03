@@ -437,7 +437,7 @@ void SceneEditorBase::EditorGroup() {
     const orkset<Object*>& SelSet = mselectionManager.getActiveSelection();
 
     if (SelSet.size()) {
-      const float kmax = Float::TypeMax();
+      const float kmax = std::numeric_limits<float>::max();
       float fmaxx = -kmax;
       float fmaxy = -kmax;
       float fmaxz = -kmax;

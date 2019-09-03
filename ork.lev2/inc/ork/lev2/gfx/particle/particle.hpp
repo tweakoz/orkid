@@ -114,8 +114,8 @@ void SpiralEmitter<ptype>::Emit( Pool<ptype>& pool, float dt )
 			pool.mInactiveParticles.erase( pool.mInactiveParticles.begin()+inumdead-1 );
 			pool.mActiveParticles.push_back(ptc);
 
-			float fsx = Float::Sin(mfPhase);
-			float fsz = Float::Cos(mfPhase);
+			float fsx = sinf(mfPhase);
+			float fsz = cosf(mfPhase);
 
 			ptc->mfAge = 0.0f;
 			ptc->mfLifeSpan = mSed.GetLifespan();
