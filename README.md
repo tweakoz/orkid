@@ -16,6 +16,7 @@ Some Features Include:
 * HlslFx/CgFx/GlslFx shader based renderer.
 * Fixed Function and Node based compositing engine with offline rendering mode (dumps to image files on disk).
 * QT5/OpenGL based UI
+* Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. That includes building the embedded bullet and fcollada.
 * Many more...
 
 ![Particles](http://tweakoz.com/resources/images/th_sshot_psys.jpg)
@@ -30,12 +31,5 @@ for other examples of content, go [here](http://www.youtube.com/user/tweakoz) an
 Doxygen
 ========
 http://tweakoz.com:8099/doxygen_html/index.html
-
-
-Binary Distributions
-====================
-OSX Mavericks: Requires an OpenGL4.1 compatible GPU.
-
-http://www.tweakoz.com/orkid/OrkidTool.dmg (includes LGPL licensed Qt4.8)
 
 
