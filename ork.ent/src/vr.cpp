@@ -379,11 +379,11 @@ struct VRSYSTEMIMPL {
       if (curthumbL and false == _prevthumbL) {
 
         fquat q;
-        q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
+        q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
         _headingmatrix = _headingmatrix * q.ToMatrix();
       } else if (curthumbR and false == _prevthumbR) {
         fquat q;
-        q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
+        q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
         _headingmatrix = _headingmatrix * q.ToMatrix();
       }
       _prevthumbL = curthumbL;
@@ -401,13 +401,21 @@ struct VRSYSTEMIMPL {
 
      fmtx4 wmtx;
      wmtx.SetTranslation(vvtrans+fvec3(0,2,0));
+     wmtx = _headingmatrix*wmtx;
 
      VVMTX.inverseOf(wmtx);
 
     _frametek->_viewOffsetMatrix = VVMTX;
 
+    fmtx4 cmv = VVMTX * hmd;
     fmtx4 lmv = VVMTX * hmd * eyeL;
     fmtx4 rmv = VVMTX * hmd * eyeR;
+
+    msgrouter::content_t c;
+    c.Set<fmtx4>(cmv);
+
+    msgrouter::channel("eggytest")->post(c);
+
 
     _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
     _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
