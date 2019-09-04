@@ -118,9 +118,9 @@ struct MyPid {
 
 struct TestForceControllerInst : public BulletObjectForceControllerInst {
   TestForceControllerInst(const TestForceControllerData& data);
-  ~TestForceControllerInst();
-  void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci);
-  bool DoLink(SceneInst* psi);
+  ~TestForceControllerInst() final;
+  void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
+  bool DoLink(SceneInst* psi) final;
 
   MyPid mPIDsteering;
   MyPid mPIDroll;
@@ -312,9 +312,9 @@ private:
 class DirectionalForceInst : public BulletObjectForceControllerInst {
 public:
   DirectionalForceInst(const DirectionalForceData& data);
-  ~DirectionalForceInst();
-  void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci);
-  bool DoLink(SceneInst* psi);
+  ~DirectionalForceInst() final;
+  void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
+  bool DoLink(SceneInst* psi) final;
 
 private:
   const DirectionalForceData& mData;
