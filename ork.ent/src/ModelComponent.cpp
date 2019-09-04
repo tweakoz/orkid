@@ -183,6 +183,19 @@ void ModelComponentInst::DoStop( ork::ent::SceneInst* psi )
 	dw.Disable();
 }
 
+void ModelComponentInst::doNotify(const ComponentEvent& e) {
+  if(e._eventID == "yo"){
+    _yo = true;
+    auto& dw = GetModelDrawable();
+    GetEntity()->_renderMtxProvider = [this]() -> fmtx4 {
+      auto m = GetEntity()->GetEffectiveMatrix();
+      auto t = m.GetTranslation()+fvec3(0,2,0);
+      fmtx4 outmtx; outmtx.SetTranslation(t);
+      return outmtx;
+    };
+  }
+}
+
 bool ModelComponentInst::DoNotify(const ork::event::Event *event)
 {
 	if(const event::MeshEnableEvent *meshenaev = ork::rtti::autocast(event))

@@ -10,11 +10,13 @@ function Diver:OnEntityLink()
     local c = self.ent.components
     self.charcon = c["SimpleCharController"]
     self.loco = c["Loco"]
+    self.mdlc = c["ModelComponent"]
+
     printf( "charcon: %s", tostring(self.charcon) );
     printf( "loco: %s", tostring(self.loco) );
     printf( "DIVER::OnEntityLink() end" )
 
-
+    self.mdlc:notify("yo",nil);
     self.playerent = scene:findEntity("playerspawn")
 end
 -------------------------------------------------------------------------------

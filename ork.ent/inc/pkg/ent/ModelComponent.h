@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -65,7 +65,7 @@ public:
 	bool ShowBoundingSphere() const { return mbShowBoundingSphere; }
 
 	bool IsCopyDag() const { return mbCopyDag; }
-	
+
 	bool IsBlenderZup() const { return mBlenderZup; }
 
     ComponentInst *createComponent(Entity *pent) const final;
@@ -83,7 +83,7 @@ private:
 	bool									mbShowBoundingSphere;
 	bool									mbCopyDag;
 	bool									mBlenderZup;
-	
+
 	orklut<PoolString,lev2::FxShaderAsset*>	mLayerFx;
 };
 
@@ -105,17 +105,22 @@ public:
 
 	const ModelComponentData &GetData() const { return mData; }
 
-	
+
 protected:
 
 	const ModelComponentData&								mData;
 	ModelDrawable*											mModelDrawable;
 	orklut<PoolString,lev2::GfxMaterialFx*>					mFxMaterials;
 	ork::lev2::XgmModelInst*								mXgmModelInst;
+  bool _yo = false;
+  const char* scriptName() final {
+      return "ModelComponent";
+  }
 
-	void DoUpdate( ork::ent::SceneInst* psi ) final; 
+	void DoUpdate( ork::ent::SceneInst* psi ) final;
 	bool DoNotify(const ork::event::Event *event) final;
 	void DoStop( ork::ent::SceneInst* psi ) final;
+  void doNotify(const ComponentEvent& e) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

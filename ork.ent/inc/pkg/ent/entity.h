@@ -28,7 +28,7 @@ class Layer;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SceneObjectClass 
+class SceneObjectClass
 	: public object::ObjectClass
 {
 	RttiDeclareExplicit(SceneObjectClass, object::ObjectClass, rtti::NamePolicy, object::ObjectCategory);
@@ -209,6 +209,7 @@ class Entity : public ork::Object
 public:
 	typedef orkvector<Drawable *> DrawableVector;
 	typedef orklut<PoolString,DrawableVector*> LayerMap;
+  typedef std::function<fmtx4()> _rendermtxprovider_t;
 
 	////////////////////////////////////////////////////////////////
 	// Component Interface
@@ -221,7 +222,7 @@ public:
 
 	template <typename T> T* GetTypedComponent( bool bsubclass=false );
 	template <typename T> const T* GetTypedComponent( bool bsubclass=false ) const;
-	
+
 	ComponentInst *GetComponentByClass(rtti::Class *clazz);
 	ComponentInst *GetComponentByClassName(ork::PoolString classname);
 
@@ -237,7 +238,7 @@ public:
 	const DrawableVector* GetDrawables( const PoolString& layer ) const;
 
 	const LayerMap& GetLayers() const { return mLayerMap; }
-	
+
 	const EntData& GetEntData() const { return mEntData; }
 
 	////////////////////////////////////////////////////////////////
@@ -255,9 +256,11 @@ public:
 
     const char* name() const;
 
+    _rendermtxprovider_t _renderMtxProvider = nullptr;
+
 private:
 
-	bool DoNotify(const ork::event::Event *event) final; 
+	bool DoNotify(const ork::event::Event *event) final;
 
 	SceneInst *mSceneInst;
 
@@ -286,7 +289,7 @@ struct ArchComposer
 	void Register( ork::ent::ComponentData* pdata );
 	ArchComposer( ork::ent::Archetype* parch, SceneComposer& scene_composer );
 	~ArchComposer();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
