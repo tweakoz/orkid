@@ -38,11 +38,11 @@ protected:
   void DoStop(SceneInst *psi) final {}
   void onActivate(SceneInst* psi) final;
 
-  const char* friendlyName() final {
+  const char* scriptName() final {
       return "Input";
   }
 
-  bool DoNotify(const ork::event::Event* event) final;
+  void doNotify(const ComponentEvent& e) final;
   svar64_t doQuery(const ComponentQuery& q) final;
 
 

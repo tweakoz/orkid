@@ -95,8 +95,8 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 		{
 			auto ent = this->GetEntity();
 
-            LuaState lua = L;
-            mEntTable = LuaRef::createTable(L);
+            LuaIntf::LuaState lua = L;
+            mEntTable = LuaIntf::LuaRef::createTable(L);
             mEntTable["ent"] = ent;
 
             lua.getRef(mScriptObject->mOnEntLink);
@@ -133,7 +133,7 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const fmtx4 &world)
 
 		printf( "Starting SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
 
-        LuaState lua = L;
+        LuaIntf::LuaState lua = L;
         lua.getRef(mScriptObject->mOnEntStart);
         assert(lua.isFunction(-1));
         lua.push(mEntTable);
@@ -157,7 +157,7 @@ void ScriptComponentInst::onActivate(SceneInst* psi) {
 
 		printf( "Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
 
-        LuaState lua = L;
+        LuaIntf::LuaState lua = L;
         lua.getRef(mScriptObject->mOnEntActivate);
         assert(lua.isFunction(-1));
         lua.push(mEntTable);
@@ -178,7 +178,7 @@ void ScriptComponentInst::onDeactivate(SceneInst* psi) {
 
 		printf( "Activating SCRIPTCOMPONENT<%p> of ent<%p:%s> into Lua exec list\n", this, ent, name );
 
-        LuaState lua = L;
+        LuaIntf::LuaState lua = L;
         lua.getRef(mScriptObject->mOnEntDeactivate);
         assert(lua.isFunction(-1));
         lua.push(mEntTable);
@@ -199,7 +199,7 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 		auto ent = this->GetEntity();
 		auto name = ent->GetEntData().GetName().c_str();
 
-        LuaState lua = L;
+        LuaIntf::LuaState lua = L;
         lua.getRef(mScriptObject->mOnEntStop);
         assert(lua.isFunction(-1));
         lua.push(mEntTable);
@@ -230,7 +230,7 @@ void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
             double gt = psi->GetGameTime();
 
 
-            LuaState lua = L;
+            LuaIntf::LuaState lua = L;
             lua.getRef(mScriptObject->mOnEntUpdate);
             assert(lua.isFunction(-1));
             lua.push(mEntTable);
@@ -469,6 +469,7 @@ ScriptObject* ScriptSystem::FlyweightScriptObject( const ork::file::Path& pth )
             ret = lua_pcall(luast,0,1,0);
             if( ret )
             {
+							printf( "\n%s\n", rval->mScriptText.c_str() );
                 printf( "LUAERRCODE<%d>\n", ret );
                 printf("LUAERR<%s>\n", lua_tostring(luast, -1));
                 assert(false);

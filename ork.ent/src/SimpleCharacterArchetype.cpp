@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "SimpleCharacterArchetype.h"
+#include "CharacterLocoComponent.h"
 #include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI( ork::ent::SimpleCharacterArchetype, "SimpleCharacterArchetype" );
@@ -36,7 +37,7 @@ void SimpleCharControllerData::Describe()
 
 class SimpleCharControllerInst : public ComponentInst
 {
-	RttiDeclareAbstract(SimpleCharControllerInst, ComponentInst)
+	RttiDeclareNoFactory(SimpleCharControllerInst, ComponentInst)
 
 public:
 
@@ -111,28 +112,26 @@ public:
     Timer _spawntimer;
     ///////////////////////////////////////////////////////////////////////////
 
-	bool DoNotify(const ork::event::Event* event) final
+  void doNotify(const ComponentEvent& e) final
 	{
-        if(const ork::event::VEvent* vev = ork::rtti::autocast(event))
-        {   const auto& LR = vev->mData.Get<LuaRef>();
-            if(vev->mCode==STR().kState)
-            {   auto state = LR.get<std::string>("id");
-                mState = AddPooledString(state.c_str());
-                //printf( "charcon got state change request id<%s>\n", state.c_str() );
-            }
-            if(vev->mCode==STR().kSetDir)
-            {   float dir = LR.toValue<float>();
-                mDesiredDirection.FromAxisAngle(fvec4(0,1,0,dir));
-                //printf( "charcon got direction change request dir<%f>\n", dir );
-            }
-            if(vev->mCode==STR().kSetPos)
-            {   auto pos = LR.toValue<fvec3>();
-                mPosition = pos;
-                //printf( "charcon got position change request pos<%f %f %f>\n", pos.x, pos.y, pos.z );
-            }
-        }
-		else if(const event::AnimFinishEvent* afe = ork::rtti::autocast(event))
-		{
+      if(e._eventID == "state")
+      {   auto state = e._eventData.Get<std::string>();
+          mState = AddPooledString(state.c_str());
+          //printf( "charcon got state change request id<%s>\n", state.c_str() );
+      }
+      else if(e._eventID == "setDir")
+      {   float dir = e._eventData.Get<double>();
+          mDesiredDirection.FromAxisAngle(fvec4(0,1,0,dir));
+          //printf( "charcon got direction change request dir<%f>\n", dir );
+      }
+      else if(e._eventID == "setPos")
+      {   mPosition = e._eventData.Get<fvec3>();
+          //printf( "charcon got position change request pos<%f %f %f>\n", pos.x, pos.y, pos.z );
+      }
+      else if( e._eventID == "animFinished" ){
+        /*
+        const event::AnimFinishEvent* afe = ork::rtti::autocast(event)
+
             if( mState==STR().kIdle)
             {
                 mAnima->PlayAnimation(STR().kIdle);
@@ -152,10 +151,9 @@ public:
             {
                 mAnima->PlayAnimation(mState);
                 mDesiredSpeed = 0.0;
-            }
+            }*/
 		}
 
-		return true;
 	}
 
     ///////////////////////////////////////////////////////////////////////////
@@ -226,6 +224,7 @@ void SimpleCharacterArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<SimpleCharControllerData>();
     composer.Register<BulletObjectControllerData>();
     composer.Register<AudioEffectComponentData>();
+    composer.Register<CharacterLocoData>();
 	//pedpropmapdata->SetProperty( "visual.lighting.reciever.scope", "static" );
 }
 

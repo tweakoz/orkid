@@ -78,6 +78,11 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ComponentEvent {
+    std::string _eventID;
+    svar64_t _eventData;
+};
+
 struct ComponentQuery {
     std::string _eventID;
     svar64_t _eventData;
@@ -93,7 +98,7 @@ public:
   // Shortcut to make debugging printfs easier
   const char *GetEntityName() const;
 
-  virtual const char* friendlyName() {
+  virtual const char* scriptName() {
       return GetClass()->Name().c_str();
   }
 
@@ -112,6 +117,7 @@ public:
   }
 
   svar64_t query(const ComponentQuery& q) { return doQuery(q); }
+  void notify(const ComponentEvent& e) { return doNotify(e); }
 
 protected:
   ComponentInst(const ComponentData *data, Entity *entity);
@@ -119,8 +125,8 @@ protected:
   Entity *mEntity;
 
 private:
-  bool DoNotify(const ork::event::Event *event) override { return false; }
   virtual svar64_t doQuery(const ComponentQuery& q) { return svar64_t(); }
+  virtual void doNotify(const ComponentEvent& e) {}
 
   virtual void DoUpdate(SceneInst *inst) {}
   virtual bool DoStart(SceneInst *psi, const fmtx4 &world) { return true; }

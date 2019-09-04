@@ -12,7 +12,6 @@
 #include <pkg/ent/scene.hpp>
 #include <unittest++/UnitTest++.h>
 #include <pkg/ent/ScriptComponent.h>
-#include <pkg/ent/SimpleCharacterArchetype.h>
 
 using namespace ork;
 using namespace ork::ent;

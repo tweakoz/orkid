@@ -5,13 +5,16 @@ local TerPlayer = {}
 local scene = ork.scene()
 -------------------------------------------------------------------------------
 function TerPlayer:OnEntityLink()
-    printf( "TERPLAYER::OnEntityLink()" )
+    printf( "TERPLAYER::OnEntityLink()::begin" )
     self.timer = 1.0
     local c = self.ent.components
     self.charcon = c["SimpleCharController"]
     self.input = c["Input"]
+    self.loco = c["Loco"]
     printf( "charcon: %s", tostring(self.charcon) );
     printf( "input: %s", tostring(self.input) );
+    printf( "loco: %s", tostring(self.loco) );
+    printf( "TERPLAYER::OnEntityLink()::end" )
 end
 -------------------------------------------------------------------------------
 function TerPlayer:OnEntityStart()
@@ -25,7 +28,7 @@ end
 function TerPlayer:OnEntityActivate()
     printf( "TERPLAYER::OnEntityActivate()" )
     self.timer = 1.0
-    self.input:sendEvent("whatup",{
+    self.input:notify("whatup",{
     })
     self.hands = self.input:query("get.group","hands")
     printf( "hands group<%s>",tostring(self.hands))
@@ -45,7 +48,17 @@ function TerPlayer:OnEntityUpdate(dt)
       grp=self.hands,
       channel="left.trigger"
     })
+
     printf( "TERPLAYER::ltrigger %s", tostring(ltrigger) )
+
+    local mode = "stop";
+    if ltrigger then
+      mode="walk"
+      --assert(false)
+    end
+
+    self.loco:notify("locostate",mode )
+
 end
 -------------------------------------------------------------------------------
 return TerPlayer

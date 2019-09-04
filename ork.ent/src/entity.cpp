@@ -41,7 +41,6 @@
 #include <pkg/ent/PerfController.h>
 #include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleAnimatable.h>
-#include <pkg/ent/SimpleCharacterArchetype.h>
 #include <pkg/ent/input.h>
 
 #include "GridComponent.h"
@@ -50,6 +49,7 @@
 #include "ProcTex.h"
 #include "QuartzComposerTest.h"
 #include "SimpleCharacterArchetype.h"
+#include "CharacterLocoComponent.h"
 #include "Skybox.h"
 #include "SpinnyCamera.h"
 #include "TetherCamera.h"
@@ -563,7 +563,7 @@ void Init() {
   RegisterFamily<ScriptComponentData>(ork::AddPooledLiteral("control"));
   RegisterFamily<CompositingSystemData>(ork::AddPooledLiteral("control"));
   RegisterFamily<PerfControllerComponentData>(ork::AddPooledLiteral("control"));
-  // RegisterFamily<AudioAnalysisComponentData>(ork::AddPooledLiteral("control"));
+  RegisterFamily<CharacterLocoData>(ork::AddPooledLiteral("control"));
   RegisterFamily<GridControllerData>(ork::AddPooledLiteral("control"));
   RegisterFamily<SkyBoxControllerData>(ork::AddPooledLiteral("control"));
   RegisterFamily<PerfAnalyzerControllerData>(ork::AddPooledLiteral("control"));

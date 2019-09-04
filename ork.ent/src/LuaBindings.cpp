@@ -56,7 +56,25 @@ template <> struct LuaTypeMapping<ork::ent::ScriptVar> {
   }
 };
 
-} // namespace LuaIntf
+template <> struct LuaTypeMapping<ork::fvec3> {
+  static void push(lua_State* L, const ork::fvec3& inp) {
+		//inp.pushToLua(L);
+    assert(false);
+	}
+  static ork::fvec3 get(lua_State* L, int index) {
+    assert(false);
+    ork::fvec3 rval;
+    //rval.fromLua(L, index);
+    return rval;
+  }
+
+  static ork::fvec3 opt(lua_State* L, int index, const ork::fvec3& def) {
+    assert(false);
+    return lua_isnoneornil(L, index) ? def : get(L, index);
+  }
+};
+
+} // namespace x
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -82,6 +100,14 @@ void ScriptVar::fromLua(lua_State* L, int index) {
     }
     case LUA_TLIGHTUSERDATA: {
       _encoded.Set<void*>(lua_touserdata(L, index));
+      break;
+    }
+    case LUA_TUSERDATA: {
+      if( auto pfvec3 = LuaIntf::CppObject::cast<fvec3>(L,index,false) )
+        _encoded.Set<fvec3>(*pfvec3);
+      else {
+        assert(false);
+      }
       break;
     }
     case LUA_TTABLE: {
@@ -201,15 +227,15 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                      return ps.c_str();
                    })
       ////////////////////////////////////////
-      .addFunction("sendEvent",
-                   [](ComponentInst* ci, const char* evcode, LuaRef evdata) {
+      .addFunction("notify",
+                   [](ComponentInst* ci, const char* evcode, ScriptVar evdata) {
                      auto clazz = ci->GetClass();
                      auto cn = clazz->Name();
-                     printf("sendEvent ci<%s> code<%s> ... \n", cn.c_str(), evcode);
-                     event::VEvent vev;
-                     vev.mCode = AddPooledString(evcode);
-                     vev.mData.Set<LuaRef>(evdata);
-                     ci->Notify(&vev);
+                     printf("notify ci<%s> code<%s> ... \n", cn.c_str(), evcode);
+                     ComponentEvent ev;
+                     ev._eventID = evcode;
+                     ev._eventData = evdata._encoded;
+                     ci->notify(ev);
                    })
       ////////////////////////////////////////
       .addFunction("query",
@@ -248,7 +274,7 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                              std::map<std::string, ComponentInst*> rval;
                              for (auto item : e->GetComponents().GetComponents()) {
                                auto c = item.second;
-                               rval[c->friendlyName()] = c;
+                               rval[c->scriptName()] = c;
                              }
                              printf("ent<%p> components size<%zu>\n", e, rval.size());
                              return rval;
