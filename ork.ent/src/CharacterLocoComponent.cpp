@@ -115,7 +115,14 @@ class CharacterLocoComponent : public ComponentInst {
       fvec4 nn(0,0,-1);
       #endif
       auto nnn = nn.Transform(_headingmatrix);
-      auto f = nnn.xyz()*(_arewalking?15.0:0.0);
+      float forc = _arewalking
+                 ?_walkingForce
+                 :0.0;
+      bool dirset = _setDir.Mag()>0.0f;
+      auto f = dirset
+             ? _setDir
+             : nnn.xyz();
+      f = f * forc;
       printf( "force<%g %g %g>\n", f.x, f.y, f.z );
       _locoforce->setForce(f);
   }
@@ -133,6 +140,13 @@ class CharacterLocoComponent : public ComponentInst {
           assert(false);
         }
         printf( "loco got state change request id<%s>\n", state.c_str() );
+    }
+    else if(e._eventID == "setDir"){
+        _setDir = e._eventData.Get<fvec3>();
+        _arewalking=true;
+    }
+    else if(e._eventID == "setWalkingForce"){
+        _walkingForce = e._eventData.Get<double>();
     }
 
   }
@@ -169,6 +183,8 @@ class CharacterLocoComponent : public ComponentInst {
   fmtx4 _headingmatrix;
   msgrouter::subscriber_t _subscriber;
   bool _arewalking = false;
+  fvec3 _setDir;
+  float _walkingForce = 15.0f;
 };
 
 void CharacterLocoComponent::Describe() {}

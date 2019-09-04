@@ -56,24 +56,6 @@ template <> struct LuaTypeMapping<ork::ent::ScriptVar> {
   }
 };
 
-template <> struct LuaTypeMapping<ork::fvec3> {
-  static void push(lua_State* L, const ork::fvec3& inp) {
-		//inp.pushToLua(L);
-    assert(false);
-	}
-  static ork::fvec3 get(lua_State* L, int index) {
-    assert(false);
-    ork::fvec3 rval;
-    //rval.fromLua(L, index);
-    return rval;
-  }
-
-  static ork::fvec3 opt(lua_State* L, int index, const ork::fvec3& def) {
-    assert(false);
-    return lua_isnoneornil(L, index) ? def : get(L, index);
-  }
-};
-
 } // namespace x
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -202,6 +184,14 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
       ////////////////////////////////////////
       .addProperty("z", &fvec3::GetZ, &fvec3::SetZ)
       ////////////////////////////////////////
+      .addFunction("mag",[](const fvec3* v) -> float {
+        return v->Mag();
+      })
+      ////////////////////////////////////////
+      .addFunction("normal",[](const fvec3* v) -> fvec3 {
+        return v->Normal();
+      })
+      ////////////////////////////////////////
       .addMetaFunction("__tostring",
                        [](const fvec3* v) -> std::string {
                          fxstring<64> fxs;
@@ -210,6 +200,7 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                        })
       ////////////////////////////////////////
       .addMetaFunction("__add", [](const fvec3* a, const fvec3* b) -> fvec3 { return (*a) + (*b); })
+      .addMetaFunction("__sub", [](const fvec3* a, const fvec3* b) -> fvec3 { return (*a) - (*b); })
       .endClass()
       ////////////////////////////////////////
       ////////////////////////////////////////
@@ -321,6 +312,11 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                      }
                      return nullptr;
                    })
+      .addFunction("findEntity",[](SceneInst* psi, const char* entname)->Entity* {
+        auto entname_str = AddPooledString(entname);
+        auto e = psi->FindEntity(entname_str);
+        return e;
+      })
       .endClass()
       ////////////////////////////////////////
       ////////////////////////////////////////
