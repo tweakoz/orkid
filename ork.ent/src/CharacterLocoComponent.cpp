@@ -109,7 +109,11 @@ class CharacterLocoComponent : public ComponentInst {
     if( nullptr == _locoforce )
       return;
 
+      #if defined(__APPLE__)
+      fvec4 nn(0,0,+1);
+      #else
       fvec4 nn(0,0,-1);
+      #endif
       auto nnn = nn.Transform(_headingmatrix);
       auto f = nnn.xyz()*(_arewalking?15.0:0.0);
       printf( "force<%g %g %g>\n", f.x, f.y, f.z );

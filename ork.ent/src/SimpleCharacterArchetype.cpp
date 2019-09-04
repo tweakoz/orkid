@@ -80,7 +80,7 @@ public:
         fmtx4 mtx;
         mtx.ComposeMatrix( mPosition, mCurrentDirection, 1.0f );
 
-        mEntity->SetDynMatrix(mtx);
+        //mEntity->SetDynMatrix(mtx);
 
 
         fmtx4 popped;

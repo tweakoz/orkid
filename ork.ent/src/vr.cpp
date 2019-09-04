@@ -215,20 +215,18 @@ struct VRSYSTEMIMPL {
   ///////////////////////////////////////
   VRSYSTEMIMPL()
       : _frametek(nullptr), _camname(AddPooledString("Camera")), _layers(AddPooledString("All")), _active(false), _width(1024),
-        _height(1024),
-        _hmdinputgroup(*lev2::InputManager::inputGroup("hmd")) {
+        _height(1024), _hmdinputgroup(*lev2::InputManager::inputGroup("hmd")) {
 
+    auto handgroup = lev2::InputManager::inputGroup("hands");
+    handgroup->setChannel("left.button1").as<bool>(false);
+    handgroup->setChannel("left.button2").as<bool>(false);
+    handgroup->setChannel("left.trigger").as<bool>(false);
+    handgroup->setChannel("left.thumb").as<bool>(false);
 
-      auto handgroup = lev2::InputManager::inputGroup("hands");
-      handgroup->setChannel("left.button1").as<bool>(false);
-      handgroup->setChannel("left.button2").as<bool>(false);
-      handgroup->setChannel("left.trigger").as<bool>(false);
-      handgroup->setChannel("left.thumb").as<bool>(false);
-
-      handgroup->setChannel("right.button1").as<bool>(false);
-      handgroup->setChannel("right.button2").as<bool>(false);
-      handgroup->setChannel("right.trigger").as<bool>(false);
-      handgroup->setChannel("right.thumb").as<bool>(false);
+    handgroup->setChannel("right.button1").as<bool>(false);
+    handgroup->setChannel("right.button2").as<bool>(false);
+    handgroup->setChannel("right.trigger").as<bool>(false);
+    handgroup->setChannel("right.thumb").as<bool>(false);
 
 #if defined(ENABLE_VR)
     vr::EVRInitError error = vr::VRInitError_None;
@@ -254,6 +252,48 @@ struct VRSYSTEMIMPL {
     } else {
       printf("VR NOT INITIALIZED for some reason...\n");
     }
+#else
+
+    _qtmousesubsc = msgrouter::channel("qtmousepos")->subscribe([this](msgrouter::content_t c) { _qtmousepos = c.Get<fvec2>(); });
+
+    _qtkbdownsubs = msgrouter::channel("qtkeyboard.down")->subscribe([this, handgroup](msgrouter::content_t c) {
+      int key = c.Get<int>();
+      switch (key) {
+        case 'w':
+          handgroup->setChannel("left.trigger").as<bool>(true);
+          break;
+        case 'a':
+          handgroup->setChannel("left.thumb").as<bool>(true);
+          break;
+        case 's':
+          break;
+        case 'd':
+          handgroup->setChannel("right.thumb").as<bool>(true);
+          break;
+      }
+    });
+    _qtkbupsubs = msgrouter::channel("qtkeyboard.up")->subscribe([this, handgroup](msgrouter::content_t c) {
+      int key = c.Get<int>();
+      switch (key) {
+        case 'w':
+          handgroup->setChannel("left.trigger").as<bool>(false);
+          break;
+        case 'a':
+          handgroup->setChannel("left.thumb").as<bool>(false);
+          break;
+        case 's':
+          break;
+        case 'd':
+          handgroup->setChannel("right.thumb").as<bool>(false);
+          break;
+      }
+    });
+
+    _posemap["projl"].Perspective(45, 16.0 / 9.0, .1, 100000);
+    _posemap["projr"].Perspective(45, 16.0 / 9.0, .1, 100000);
+    _posemap["eyel"] = fmtx4::Identity;
+    _posemap["eyer"] = fmtx4::Identity;
+
 #endif
     _leftcamera.SetWidth(_width);
     _leftcamera.SetHeight(_height);
@@ -301,6 +341,9 @@ struct VRSYSTEMIMPL {
     rotmtx.Transpose();
     // rotmtx.dump("rotmtx");
 
+    using inpmgr = lev2::InputManager;
+    auto& handgroup = *inpmgr::inputGroup("hands");
+
     fmtx4 xlate;
 ///////////////////////////////////////////////////////////
 // up down
@@ -308,12 +351,8 @@ struct VRSYSTEMIMPL {
 #if defined(ENABLE_VR)
     if (_rightControllerDeviceIndex >= 0 and _leftControllerDeviceIndex >= 0) {
 
-      using inpmgr = lev2::InputManager;
-
       auto& LCONTROLLER = _controllers[_leftControllerDeviceIndex];
       auto& RCONTROLLER = _controllers[_rightControllerDeviceIndex];
-
-      auto& handgroup = *inpmgr::inputGroup("hands");
 
       handgroup.setChannel("left.button1").as<bool>(LCONTROLLER._button1down);
       handgroup.setChannel("left.button2").as<bool>(LCONTROLLER._button2down);
@@ -336,8 +375,8 @@ struct VRSYSTEMIMPL {
       ivomatrix.inverseOf(_frametek->_viewOffsetMatrix);
       fmtx4 lworld = (LCONTROLLER._matrix * ivomatrix);
       fmtx4 rworld = (RCONTROLLER._matrix * ivomatrix);
-      handgroup.setChannel("left.matrix").as<fmtx4>(rx*ry*rz*lworld);
-      handgroup.setChannel("right.matrix").as<fmtx4>(rx*ry*rz*rworld);
+      handgroup.setChannel("left.matrix").as<fmtx4>(rx * ry * rz * lworld);
+      handgroup.setChannel("right.matrix").as<fmtx4>(rx * ry * rz * rworld);
 
       //////////////////////////////////////
 
@@ -370,40 +409,46 @@ struct VRSYSTEMIMPL {
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix * xlate;
       }
-      ///////////////////////////////////////////////////////////
-      // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
-      ///////////////////////////////////////////////////////////
-      bool curthumbL = LCONTROLLER._buttonThumbdown;
-      bool curthumbR = RCONTROLLER._buttonThumbdown;
-
-      if (curthumbL and false == _prevthumbL) {
-
-        fquat q;
-        q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
-        _headingmatrix = _headingmatrix * q.ToMatrix();
-      } else if (curthumbR and false == _prevthumbR) {
-        fquat q;
-        q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
-        _headingmatrix = _headingmatrix * q.ToMatrix();
-      }
-      _prevthumbL = curthumbL;
-      _prevthumbR = curthumbR;
     } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
+    bool curthumbL = LCONTROLLER._buttonThumbdown;
+    bool curthumbR = RCONTROLLER._buttonThumbdown;
+#else
+
+    bool curthumbL = handgroup.tryAs<bool>("left.thumb").value();
+    bool curthumbR = handgroup.tryAs<bool>("right.thumb").value();
+
 #endif
+
+    ///////////////////////////////////////////////////////////
+    // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
+    ///////////////////////////////////////////////////////////
+
+    if (curthumbL and false == _prevthumbL) {
+
+      fquat q;
+      q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
+      _headingmatrix = _headingmatrix * q.ToMatrix();
+    } else if (curthumbR and false == _prevthumbR) {
+      fquat q;
+      q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
+      _headingmatrix = _headingmatrix * q.ToMatrix();
+    }
+    _prevthumbL = curthumbL;
+    _prevthumbR = curthumbR;
+
     ///////////////////////////////////////////////////////////
 
     _hmdMatrix = hmd;
 
     fmtx4 VVMTX = playermtx;
-    // VVMTX.inverseOf(playermtx); // _offsetmatrix * _headingmatrix
 
-     fvec3 vvtrans = VVMTX.GetTranslation();
+    fvec3 vvtrans = VVMTX.GetTranslation();
 
-     fmtx4 wmtx;
-     wmtx.SetTranslation(vvtrans+fvec3(0,2,0));
-     wmtx = _headingmatrix*wmtx;
+    fmtx4 wmtx;
+    wmtx.SetTranslation(vvtrans + fvec3(0, 2, 0));
+    wmtx = _headingmatrix * wmtx;
 
-     VVMTX.inverseOf(wmtx);
+    VVMTX.inverseOf(wmtx);
 
     _frametek->_viewOffsetMatrix = VVMTX;
 
@@ -415,7 +460,6 @@ struct VRSYSTEMIMPL {
     c.Set<fmtx4>(cmv);
 
     msgrouter::channel("eggytest")->post(c);
-
 
     _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
     _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
@@ -443,6 +487,10 @@ struct VRSYSTEMIMPL {
   bool _prevthumbR = false;
   InputSystem* _inputsys = nullptr;
   lev2::InputGroup& _hmdinputgroup;
+  msgrouter::subscriber_t _qtmousesubsc;
+  msgrouter::subscriber_t _qtkbdownsubs;
+  msgrouter::subscriber_t _qtkbupsubs;
+  fvec2 _qtmousepos;
 #if defined(ENABLE_VR)
   vr::IVRSystem* _hmd;
   vr::TrackedDevicePose_t _trackedPoses[vr::k_unMaxTrackedDeviceCount];
@@ -594,7 +642,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
     anyp PassData;
     PassData.Set<const char*>("All");
     the_renderer.GetFrameData().SetUserProperty("pass", PassData);
-    vrimpl->_myrender(psi,the_renderer, drawdata, rootmatrix);
+    vrimpl->_myrender(psi, the_renderer, drawdata, rootmatrix);
 
     /////////////////////////////////////////////////////////////////////////////
     // VR compositor
@@ -635,9 +683,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
         //////////////////////////////////////////////////
 
         GLuint erl = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-        // assert(erl==GL_NO_ERROR);
         GLuint err = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
-        // assert(err==GL_NO_ERROR);
 
         //////////////////////////////////////////////////
         // undo above PushVp/Scissor
@@ -732,7 +778,18 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
 
     // printf( "pose_classes<%s>\n", pose_classes.c_str() );
   }
-#endif // ENABLE_VR
+#else // ENABLE_VR
+
+  auto mpos = vrimpl->_qtmousepos;
+  float r = mpos.Mag();
+  float z = 1.0f - r;
+  auto v3 = fvec3(-mpos.x, -mpos.y, z).Normal();
+  fmtx4 w;
+  w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
+  vrimpl->_posemap["hmd"] = w;
+  printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
+
+#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::RtGroup* VrCompositingNode::GetOutput() const {

@@ -20,6 +20,8 @@
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QGesture>
 #include <ork/math/basicfilters.h>
+#include <QtGui/QCursor>
+#include <ork/kernel/msgrouter.inl>
 
 #if defined(_DARWIN)
 //#define USE_MTOUCH
@@ -519,11 +521,15 @@ void QCtxWidget::MouseEventCommon( QMouseEvent * event )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+static fvec2  gpos;
 void QCtxWidget::mouseMoveEvent ( QMouseEvent * event )
 {
 	auto& uiev = UIEvent();
 	auto gfxwin = uiev.mpGfxWin;
 	auto vp = gfxwin ? gfxwin->GetRootWidget() : nullptr;
+
+  gpos.x = event->x();
+  gpos.y = event->y();
 
 	MouseEventCommon( event );
 
@@ -644,6 +650,12 @@ void QCtxWidget::keyPressEvent ( QKeyEvent * event )
 	if( (ikeyUNI>=Qt::Key_A) && (ikeyUNI<=Qt::Key_Z) )
 	{
 		uiev.miKeyCode = (ikeyUNI-Qt::Key_A)+int('a');
+
+    msgrouter::content_t c;
+    c.Set<int>(uiev.miKeyCode );
+    msgrouter::channel("qtkeyboard.down")->post(c);
+
+
 	}
 	if( ikeyUNI==0x01000004 ) // enter != (Qt::Key_Enter)
 	{
@@ -679,6 +691,9 @@ void QCtxWidget::keyReleaseEvent ( QKeyEvent * event )
 	{
 
 		uiev.miKeyCode = (ikeyUNI-Qt::Key_A)+int('a');
+    msgrouter::content_t c;
+    c.Set<int>(uiev.miKeyCode );
+    msgrouter::channel("qtkeyboard.up")->post(c);
 	}
 	if( ikeyUNI==0x01000004 ) // enter != (Qt::Key_Enter)
 	{
@@ -921,6 +936,18 @@ void CTQT::SlotRepaint()
 	{
 		if( nullptr == GfxEnv::GetRef().GetDefaultUIMaterial() )
 			return;
+
+      auto pos = QCursor::pos();
+
+    msgrouter::content_t c;
+
+    float fx = (gpos.x/1440.0)*2.0f-1.0f;
+    float fy = (gpos.y/900.0)*2.0f-1.0f;
+
+    c.Set<fvec2>(fvec2(fx,fy));
+
+    msgrouter::channel("qtmousepos")->post(c);
+
 
 		ork::PerfMarkerPush( "ork.viewport.draw.begin" );
 

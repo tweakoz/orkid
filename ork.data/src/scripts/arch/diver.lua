@@ -21,7 +21,7 @@ end
 function Diver:OnEntityStart()
     printf( "DIVER::OnEntityStart()" )
     self.timer = 1.0
-    self.charcon:notify("state","idle")
+    --self.charcon:notify("state","idle")
 
     self.statetable = {
         [1] = "idle",
@@ -48,9 +48,9 @@ function Diver.SpawnBallz(self)
     if r<2 then
         --printf( "SPAWN %d", spawned)
         local entname = "dynaentXZ"..self.spawned
-        local ent = scene:spawn("/arch/ball",entname,{
-            pos = self.ent.pos+ork.vec3(0,150,0)
-        })
+        --local ent = scene:spawn("/arch/ball",entname,{
+          --  pos = self.ent.pos+ork.vec3(0,150,0)
+        --})
 
         self.balls[ent]=ent
         self.spawned = self.spawned+1
@@ -74,20 +74,20 @@ function Diver:OnEntityUpdate(dt)
     self.phase = self.phase+dt*0.1
     px = math.sin(self.phase)*3.0
     pz = math.cos(self.phase)*-3.0
-    self.charcon:notify("setPos",ork.vec3(px,0,pz))
+    --self.charcon:notify("setPos",ork.vec3(px,0,pz))
 
     if self.timer<0 then
         self.timer = math.random(1,3)
         local stnum = math.random(1,6)
         local statename = self.statetable[stnum]
         if statename ~= nil then
-            self.charcon:notify("state",statename);
+            --self.charcon:notify("state",statename);
         end
         --------------
         dir = math.random(-180,180)
-        self.charcon:notify("setDir",dir*math.pi/180)
+        --self.charcon:notify("setDir",dir*math.pi/180)
         --------------
-        Diver.SpawnBallz(self)
+        --Diver.SpawnBallz(self)
     end
     --printf( "DIVER::OnEntityUpdate()::end" )
 end
