@@ -67,7 +67,9 @@ BulletObjectForceControllerInst* LocomotionForceData::CreateForceControllerInst(
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LocomotionForceInst::LocomotionForceInst(const LocomotionForceData& data) : BulletObjectForceControllerInst(data), mData(data) {}
+LocomotionForceInst::LocomotionForceInst(const LocomotionForceData& data)
+  : BulletObjectForceControllerInst(data), mData(data) {
+  }
 LocomotionForceInst::~LocomotionForceInst() {}
 
 bool LocomotionForceInst::DoLink(SceneInst* psi) {
@@ -88,23 +90,40 @@ class CharacterLocoComponent : public ComponentInst {
       ///////////////////////////////////////////////////////////////////////////
 
       CharacterLocoComponent(const CharacterLocoData& data, Entity* pent)
-      : ComponentInst(&data, pent), _data(data), _boci(nullptr) {}
+      : ComponentInst(&data, pent), _data(data), _boci(nullptr) {
+
+        _subscriber = msgrouter::channel("eggytest")->subscribe([this](msgrouter::content_t c) {
+
+          fmtx4 hmdrmtx = c.Get<fmtx4>();
+          hmdrmtx.SetTranslation(fvec3(0,0,0));
+          this->_headingmatrix.inverseOf(hmdrmtx);
+        });
+
+
+      }
   ~CharacterLocoComponent() {}
 
   ///////////////////////////////////////////////////////////////////////////
 
-  void DoUpdate(SceneInst* psi) final {}
+  void DoUpdate(SceneInst* psi) final {
+    if( nullptr == _locoforce )
+      return;
+
+      fvec4 nn(0,0,-1);
+      auto nnn = nn.Transform(_headingmatrix);
+      auto f = nnn.xyz()*(_arewalking?15.0:0.0);
+      printf( "force<%g %g %g>\n", f.x, f.y, f.z );
+      _locoforce->setForce(f);
+  }
 
   void doNotify(const ComponentEvent& e) final {
     if(e._eventID == "locostate")
     {   auto state = e._eventData.Get<std::string>();
         if( state=="stop" ){
-          if( _locoforce )
-            _locoforce->setForce(fvec3(0,0,0));
+          _arewalking = false;
         }
         else if( state=="walk" ){
-          if( _locoforce )
-            _locoforce->setForce(fvec3(100,0,0));
+          _arewalking = true;
         }
         else{
           assert(false);
@@ -143,6 +162,9 @@ class CharacterLocoComponent : public ComponentInst {
   const CharacterLocoData& _data;
   BulletObjectControllerInst* _boci;
   LocomotionForceInst* _locoforce;
+  fmtx4 _headingmatrix;
+  msgrouter::subscriber_t _subscriber;
+  bool _arewalking = false;
 };
 
 void CharacterLocoComponent::Describe() {}

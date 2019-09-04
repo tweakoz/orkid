@@ -51,9 +51,6 @@ public:
         mState = STR().kIdle;
         mCurrentSpeed = 0.0f;
 
-        _subscriber = msgrouter::channel("eggytest")->subscribe([this](msgrouter::content_t c) {
-          this->_spq.try_push(c.Get<fmtx4>());
-        });
 
 
 	}
@@ -107,7 +104,6 @@ public:
 
     }
 
-    msgrouter::subscriber_t _subscriber;
     ork::MpMcBoundedQueue<fmtx4,2> _spq;
     Timer _spawntimer;
     ///////////////////////////////////////////////////////////////////////////
