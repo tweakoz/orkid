@@ -953,7 +953,13 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
     // NOTE: No culling! May need "was visible last frame" hack to be fast
 
     DrawQueueXfData xfdata;
-    xfdata.mWorldMatrix = pent->GetEffectiveMatrix();
+
+    if( pent->_renderMtxProvider!=nullptr ){
+      xfdata.mWorldMatrix = pent->_renderMtxProvider();
+    }
+    else {
+      xfdata.mWorldMatrix = pent->GetEffectiveMatrix();
+    }
 
     // node3d.GetMatrix(xfdata.mWorldMatrix);
 

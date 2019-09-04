@@ -68,6 +68,7 @@ void ScriptVar::fromLua(lua_State* L, int index) {
 
   switch (type) {
     case LUA_TNONE:
+    case LUA_TNIL:
       _encoded.Set<ScriptNil>(ScriptNil());
       break;
     case LUA_TNUMBER:
