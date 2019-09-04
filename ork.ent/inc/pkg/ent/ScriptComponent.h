@@ -15,7 +15,7 @@
 #include <ork/gfx/camera.h>
 #include "LuaBindings.h"
 
-using namespace LuaIntf;
+//using namespace LuaIntf;
 
 
 namespace ork { namespace ent {
@@ -79,7 +79,7 @@ private:
 	ScriptObject* mScriptObject;
 
 	any<64> mLuaData;
-    LuaRef mEntTable;
+    LuaIntf::LuaRef mEntTable;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -128,41 +128,5 @@ private:
 	std::map<ork::file::Path,ScriptObject*> mScriptObjects;
 	int mScriptRef;
 };
-
-///////////////////////////////////////////////////////////////////////////////
-
-/*class StartNamedScripts : public ork::EntityEvent
-{
-	DECLARE_TRANSPARENT_CASTABLE(ScriptComponent, ork::EntityEvent)
-public:
-
-	StartNamedScripts(ork::PieceString name = ork::PieceString());
-	StartNamedScripts(ork::PoolString name);
-
-	void SetName(ork::PieceString name);
-	void SetName(ork::PoolString name);
-	ork::PoolString GetName() const;
-
-private:
-
-	ork::PoolString mName;
-};
-
-class StartScript : public ork::EntityEvent
-{
-	DECLARE_TRANSPARENT_CASTABLE(StartScript, ork::EntityEvent)
-public:
-
-	StartScript(ork::PieceString name = ork::PieceString());
-	StartScript(ork::PoolString name);
-
-	void SetName(ork::PieceString name);
-	void SetName(ork::PoolString name);
-	ork::PoolString GetName() const;
-
-private:
-
-	ork::PoolString mName;
-};*/
 
 }} // namespace ork/ent

@@ -5,11 +5,12 @@ local Diver = {}
 local scene = ork.scene()
 -------------------------------------------------------------------------------
 function Diver:OnEntityLink()
-    printf( "DIVER::OnEntityLink()" )
+    printf( "DIVER::OnEntityLink() begin" )
     self.timer = 1.0
     local c = self.ent.components
     self.charcon = c["SimpleCharController"]
     printf( "charcon: %s", tostring(self.charcon) );
+    printf( "DIVER::OnEntityLink() end" )
 end
 -------------------------------------------------------------------------------
 function Diver:OnEntityActivate()
@@ -20,9 +21,8 @@ end
 function Diver:OnEntityStart()
     printf( "DIVER::OnEntityStart()" )
     self.timer = 1.0
-    self.charcon:sendEvent("state",{
-        id = "idle"
-    })
+    self.charcon:notify("state","idle")
+
     self.statetable = {
         [1] = "idle",
         [2] = "walk",
@@ -74,20 +74,18 @@ function Diver:OnEntityUpdate(dt)
     self.phase = self.phase+dt*0.1
     px = math.sin(self.phase)*3.0
     pz = math.cos(self.phase)*-3.0
-    self.charcon:sendEvent("setPos",ork.vec3(px,0,pz))
+    self.charcon:notify("setPos",ork.vec3(px,0,pz))
 
     if self.timer<0 then
         self.timer = math.random(1,3)
         local stnum = math.random(1,6)
         local statename = self.statetable[stnum]
         if statename ~= nil then
-            self.charcon:sendEvent("state",{
-                id = statename
-            })
+            self.charcon:notify("state",statename);
         end
         --------------
         dir = math.random(-180,180)
-        self.charcon:sendEvent("setDir",dir*math.pi/180)
+        self.charcon:notify("setDir",dir*math.pi/180)
         --------------
         Diver.SpawnBallz(self)
     end

@@ -6,8 +6,6 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputSystemData, "InputSystemData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputComponentData, "InputComponentData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputComponent, "InputComponent");
 
-using namespace LuaIntf;
-
 namespace ork::ent {
 
   ///////////////////////////////////////////////////////////////////////////////
@@ -37,13 +35,8 @@ namespace ork::ent {
 
   }
 
-  bool InputComponent::DoNotify(const ork::event::Event* event)
+  void InputComponent::doNotify(const ComponentEvent& e)
 	{
-    if(const ork::event::VEvent* vev = ork::rtti::autocast(event))
-    {   const auto& LR = vev->mData.Get<LuaRef>();
-
-    }
-    return false;
   }
   svar64_t InputComponent::doQuery(const ComponentQuery& q) {
     svar64_t rval;
