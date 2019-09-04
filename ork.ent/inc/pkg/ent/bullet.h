@@ -297,7 +297,7 @@ public:
 class BulletObjectForceControllerInst {
 public:
   BulletObjectForceControllerInst(const BulletObjectForceControllerData &data);
-  ~BulletObjectForceControllerInst();
+  virtual ~BulletObjectForceControllerInst();
   virtual void UpdateForces(ork::ent::SceneInst *inst,
                             BulletObjectControllerInst *boci) = 0;
   virtual bool DoLink(ent::SceneInst *psi) = 0;
@@ -500,6 +500,7 @@ public:
   const BulletObjectControllerData &GetData() const { return mBOCD; }
 
   const BulletShapeBaseInst *GetShapeInst() const { return mShapeInst; }
+	BulletObjectForceControllerInst* getForceController(PoolString ps) const;
 
 private:
   const BulletObjectControllerData &mBOCD;

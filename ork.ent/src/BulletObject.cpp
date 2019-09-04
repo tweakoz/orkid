@@ -176,6 +176,17 @@ BulletObjectControllerInst::~BulletObjectControllerInst()
 	if( mShapeInst )
 		delete mShapeInst;
 }
+
+BulletObjectForceControllerInst* BulletObjectControllerInst::getForceController(PoolString ps) const {
+
+	BulletObjectForceControllerInst* rval = nullptr;
+	auto it = mForceControllerInstMap.find(ps);
+	if( it != mForceControllerInstMap.end() ){
+		return it->second;
+	}
+	return nullptr;
+}
+
 void BulletObjectControllerInst::DoStop(SceneInst* psi)
 {
 	if( mBOCD._disablePhysics )

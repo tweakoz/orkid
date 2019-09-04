@@ -279,7 +279,10 @@ struct VRSYSTEMIMPL {
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
-  void _myrender(FrameRenderer& renderer, CompositorSystemDrawData& drawdata, fmtx4 rootmatrix) {
+  void _myrender(SceneInst* psi, FrameRenderer& renderer, CompositorSystemDrawData& drawdata, fmtx4 rootmatrix) {
+
+    auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
+    auto playermtx = playerspawn->GetEffectiveMatrix();
 
     fmtx4 hmd = _posemap["hmd"];
     fmtx4 eyeL = _posemap["eyel"];
@@ -391,10 +394,20 @@ struct VRSYSTEMIMPL {
 
     _hmdMatrix = hmd;
 
-    _frametek->_viewOffsetMatrix = _offsetmatrix * _headingmatrix;
+    fmtx4 VVMTX = playermtx;
+    // VVMTX.inverseOf(playermtx); // _offsetmatrix * _headingmatrix
 
-    fmtx4 lmv = _offsetmatrix * _headingmatrix * hmd * eyeL;
-    fmtx4 rmv = _offsetmatrix * _headingmatrix * hmd * eyeR;
+     fvec3 vvtrans = VVMTX.GetTranslation();
+
+     fmtx4 wmtx;
+     wmtx.SetTranslation(vvtrans+fvec3(0,2,0));
+
+     VVMTX.inverseOf(wmtx);
+
+    _frametek->_viewOffsetMatrix = VVMTX;
+
+    fmtx4 lmv = VVMTX * hmd * eyeL;
+    fmtx4 rmv = VVMTX * hmd * eyeR;
 
     _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
     _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
@@ -573,7 +586,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
     anyp PassData;
     PassData.Set<const char*>("All");
     the_renderer.GetFrameData().SetUserProperty("pass", PassData);
-    vrimpl->_myrender(the_renderer, drawdata, rootmatrix);
+    vrimpl->_myrender(psi,the_renderer, drawdata, rootmatrix);
 
     /////////////////////////////////////////////////////////////////////////////
     // VR compositor
