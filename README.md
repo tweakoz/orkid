@@ -51,6 +51,7 @@ for other examples of content:
 
 [OrkidVR-POC](https://www.youtube.com/watch?v=6tOPVw8T_sU)
 
+[Singularity-NewAudioSynth](https://www.youtube.com/watch?v=irBaba13quQ)
 
 Doxygen
 ========
