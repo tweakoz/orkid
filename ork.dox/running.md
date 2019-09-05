@@ -11,7 +11,7 @@ To run on Ubuntu19.04 LTS x86/64
 * directly load a scene from the commandline with a command like this:
 ```ork.tool.test.osx.release -edit ork.data/src/example_scenes/particles/vortex1.mox```
 
-General Keys
+Main Viewport Keys
 =============
 ```
   (replace ctrl with cmd on mac)
