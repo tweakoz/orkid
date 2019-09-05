@@ -36,9 +36,11 @@ for other examples of content:
 
 [Paritcles-SphereColliderNode](https://www.youtube.com/watch?v=yb9a6k4VeaU)
 
-[ParticlesAndCompositor](https://www.youtube.com/watch?v=qmULG3ZOoS0)
+[Particles-MultiSystem](https://www.youtube.com/watch?v=o7uJFNQc3Go)
 
 [Particles-ChainOfSystems](https://youtu.be/sQTiz0Ooo6I)
+
+[ParticlesAndCompositor](https://www.youtube.com/watch?v=qmULG3ZOoS0)
 
 [ProceduralTexture](https://www.youtube.com/watch?v=FdAfxQjR3AQ)
 
