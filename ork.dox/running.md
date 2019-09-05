@@ -30,6 +30,20 @@ zxc    : left,middle and right mouse button emulation for those with 1 button tr
 wasd   : left dpad emulation (only when playing)
 cursors: right dpad emulation (only when playing)
 ```
+editor camera navigation:
+=========================
+```
+alt-left-mouse-drag : rotate editor camera
+z-trackpad-move     : rotate editor camera
+
+alt-middle-mouse-drag : pan editor camera
+x-trackpad-move       : pan editor camera
+
+mousewheel            : zoom editor camera
+shift-mousewheel      :  .. but faster
+
+move   : rotate editor camera 
+```
 
 Outliner Keys
 =============
