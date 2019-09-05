@@ -7,7 +7,8 @@ Some Features Include:
 * Batch conversion system (asset filters), I suppose its similar to assimp.
 * Built in Scene/Object Editor.
 * Data Driven Design.
-* Entity/Component based scene/simulation system.
+* Entity/Component (ECS) based scene/simulation system.
+* LuaScript ECS component
 * External references of character archetypes (prefabs) for sharing across scenes.
 * Generic dataflow modeling primitives used for modular audio synthesis, modular particle systems and modular terrain synthesis .
 * Flexible simulation architecture does not to dictate game/simulation policy, but does provide tools to help with implementation.
