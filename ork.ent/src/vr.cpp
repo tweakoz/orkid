@@ -432,6 +432,22 @@ struct VRSYSTEMIMPL {
 
     bool curthumbL = handgroup.tryAs<bool>("left.thumb").value();
     bool curthumbR = handgroup.tryAs<bool>("right.thumb").value();
+    ///////////////////////////////////////////////////////////
+    // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
+    ///////////////////////////////////////////////////////////
+
+    if (curthumbL and false == _prevthumbL) {
+
+      fquat q;
+      q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
+      _headingmatrix = _headingmatrix * q.ToMatrix();
+    } else if (curthumbR and false == _prevthumbR) {
+      fquat q;
+      q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
+      _headingmatrix = _headingmatrix * q.ToMatrix();
+    }
+    _prevthumbL = curthumbL;
+    _prevthumbR = curthumbR;
 
 #endif
 
