@@ -33,4 +33,5 @@ g      : toggle display of scene globals
 s      : toggle display of systems
 e      : toggle display of entities
 a      : toggle display of archetypes (and again for child component data's)
+!      : switch between day and night ui themes
 ```
