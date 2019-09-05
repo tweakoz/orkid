@@ -72,7 +72,7 @@ static void ToolStartupDataFolder()
 	// Register data:// urlbase
 	static FileDevContext WorkingDirContext;
 	WorkingDirContext.SetFilesystemBaseEnable( true );
-	WorkingDirContext.SetFilesystemBaseRel( "data/" );
+	WorkingDirContext.SetFilesystemBaseRel( "ork.data/" );
 
     QSettings settings("TweakoZ", "OrkidTool");
     settings.beginGroup("App");
@@ -142,7 +142,7 @@ int main(int& argc, char **argv)
   settings.beginGroup("App");
   if( settings.contains("datadir")==false )
   {
-      settings.setValue("datadir", qs(gexecdir+"/data"));
+      settings.setValue("datadir", qs(gexecdir+"/ork.data"));
   }
   settings.endGroup();
 
