@@ -23,6 +23,7 @@ To build on Ubuntu19.04 x86/64
 * clone it, cd into repo 
 * make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
 * ork.installdeps.ubuntu19.py
+* build and install openvr sdk from https://github.com/ValveSoftware/openvr
 * make prep (copy some deps to the stage folder)
 * make (to build orkid itself)
 * ork.asset.buildall.py
