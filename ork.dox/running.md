@@ -15,11 +15,13 @@ Main Viewport Keys
 =============
 ```
   (replace ctrl with cmd on mac)
-ctrl-. : play (since it kinda looks like a play button)
-ctrl-, : stop
+ctrl-n : new scene
 ctrl-o : load scene
 ctrl-s : save scene
+ctrl-e : new entity
 ctrl-f : toggle fullscreen
+ctrl-. : play (since it kinda looks like a play button)
+ctrl-, : stop
 `      : cycle through cameras
 /      : toggle editor/HUD on or off
 ctrl-/ : toggle pickbuffer debugger
@@ -30,8 +32,6 @@ zxc    : left,middle and right mouse button emulation for those with 1 button tr
 Outliner Keys
 =============
 ```
-ctrl-n : new scene
-ctrl-e : new entity
 g      : toggle display of scene globals
 s      : toggle display of systems
 e      : toggle display of entities
