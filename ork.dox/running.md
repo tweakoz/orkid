@@ -39,7 +39,7 @@ z-trackpad-move     : rotate editor camera
 alt-middle-mouse-drag : pan editor camera
 x-trackpad-move       : pan editor camera
 
-mousewheel            : zoom editor camera (best when wheel has intertia)
+mousewheel            : zoom editor camera (best when wheel has intertia, like a mac trackpad)
 shift-mousewheel      :  .. but faster
 
 double-click          : set spawnpoint on mouseray/surface intersection
