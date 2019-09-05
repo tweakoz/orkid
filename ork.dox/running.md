@@ -42,7 +42,7 @@ x-trackpad-move       : pan editor camera
 mousewheel            : zoom editor camera
 shift-mousewheel      :  .. but faster
 
-double-click          : set spawnpoint on surface
+double-click          : set spawnpoint on mouseray/surface intersection
                          center camera on spawnpoint
 
 move   : rotate editor camera 
