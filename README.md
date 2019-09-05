@@ -30,6 +30,8 @@ for other examples of content:
 
 [MoonDiver](https://youtu.be/2zNd4k_6I6s)
 
+[Compositor](https://www.youtube.com/watch?v=zLBhF8WCDgQ)
+
 [NodeCompositor](https://www.youtube.com/watch?v=AGMazbsbJYE)
 
 [Particles-Vortex&TurbulenceNodes](https://youtu.be/Qr8QK6ns0Tk)
