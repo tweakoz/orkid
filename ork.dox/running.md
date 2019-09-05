@@ -34,8 +34,8 @@ cursors: right dpad emulation (only when playing)
 editor camera navigation:
 =========================
 ```
-alt-left-mouse-drag : rotate editor camera
-z-trackpad-move     : rotate editor camera
+alt-left-mouse-drag : rotate-xy editor camera (on outer circle of screen: rotate-z) 
+z-trackpad-move     : rotate-xy editor camera
 
 alt-middle-mouse-drag : pan editor camera
 x-trackpad-move       : pan editor camera
