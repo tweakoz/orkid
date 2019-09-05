@@ -38,6 +38,8 @@ for other examples of content:
 
 [ParticlesAndCompositor](https://www.youtube.com/watch?v=qmULG3ZOoS0)
 
+[Particles-ChainOfSystems](https://youtu.be/sQTiz0Ooo6I)
+
 [ProceduralTexture](https://www.youtube.com/watch?v=FdAfxQjR3AQ)
 
 [Prodigy2-GameDemo](http://tweakoz.com/resources/videos/p2d.mp4)
