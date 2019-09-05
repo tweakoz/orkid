@@ -12,7 +12,7 @@ In general building will require a bunch of dependencies which are not included.
 To build on Osx Mojave (10.14)+
 ==================================
 * install homebrew, and with install deps listed in ork.installdeps.ubuntu19.py
-* clone it, cd into repo 
+* clone it, cd into repo
 * make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
 * make prep (copy some deps to the stage folder)
 * make (to build orkid itself)
@@ -20,7 +20,7 @@ To build on Osx Mojave (10.14)+
 
 To build on Ubuntu19.04 x86/64
 ==================================
-* clone it, cd into repo 
+* clone it, cd into repo
 * make env (this will setup build environment on your local shell only. just "exit" to unset this environment)
 * ork.installdeps.ubuntu19.py
 * build and install openvr sdk from https://github.com/ValveSoftware/openvr
@@ -31,41 +31,8 @@ To build on Ubuntu19.04 x86/64
 everything will be built/installed into the <repo_root>/stage folder.
 the stage/bin and stage/lib paths were added to your environment variables already when you did a 'make env'.
 
-To run on Ubuntu19.04 LTS x86/64
-======
-* run ork.tool.test.ix.release (from the repo root folder). It is in your path already, so just type ork.[tab tab] and see which orkid executables are present.
-* directly load a scene from the commandline with a command like this:
-```ork.tool.test.osx.release -edit ork.data/src/example_scenes/particles/vortex1.mox```
-
-General Keys
-=============
-```
-  (replace ctrl with cmd on mac)
-ctrl-. : play (since it kinda looks like a play button)
-ctrl-, : stop
-`      : cycle through cameras
-/      : toggle editor/HUD on or off
-ctrl-/ : toggle pickbuffer debugger
-space  : toggle compositor on or off
-zxc    : left,middle and right mouse button emulation for those with 1 button trackpads
-```
-
-Outliner Keys
-=============
-```
-ctrl-n : new scene
-ctrl-e : new entity
-g      : toggle display of scene globals 
-s      : toggle display of systems 
-e      : toggle display of entities
-a      : toggle display of archetypes (and again for child component data's)
-```
-
 misc
 =====
 ork.find.py "phrase" - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
 
 the automatic asset pipe is in flux. in the meantime typing "make assets" will build whatever assets are configured to convert for a given branch - see do_assets.py in the repo's root folder.
-
-
-
