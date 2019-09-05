@@ -17,6 +17,7 @@ Some Features Include:
 * GlFx shader based renderer. Uses OpenGL 4.1 on OSX and 4.5 on Linux.
 * Realtime fixed function and node based compositor with offline rendering mode (dumps to image files on disk).
 * QT5/OpenGL based UI
+* Singularity - Pro synthesizer inspired audio engine
 * Now has OpenVR/Linux support!
 * Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. That includes building the embedded bullet and fcollada.
 * Many more...
@@ -52,6 +53,8 @@ for other examples of content:
 [OrkidVR-POC](https://www.youtube.com/watch?v=6tOPVw8T_sU)
 
 [Singularity-NewAudioSynth](https://www.youtube.com/watch?v=irBaba13quQ)
+
+[Singularity-ModulatorHUD](https://www.youtube.com/watch?v=1PEXp9-6eRA)
 
 Doxygen
 ========
