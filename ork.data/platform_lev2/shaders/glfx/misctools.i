@@ -131,16 +131,18 @@ libblock lib_terrain {
       /////////////////////////////////
       vec4 sampleLoMip = textureLod(ColorMap2, rval.uv_lowmip, lowMIP);
       float heightSampleLoMip = sampleLoMip.r;
-      float heightSampleHiMip = textureLod(ColorMap2, uvHiMip, highMIP).r;
+      vec4 sampleHiMip = textureLod(ColorMap2, uvHiMip, highMIP);
+      float heightSampleHiMip = sampleHiMip.r;
       float lerpIndex = llod - lowMIP;
-      float h = mix(heightSampleLoMip, heightSampleHiMip, lerpIndex);
+      float h = heightSampleLoMip; //mix(heightSampleLoMip, heightSampleHiMip, lerpIndex);
+      vec3 n = sampleLoMip.yzw; //mix(sampleLoMip.yzw, sampleHiMip.yzw, lerpIndex);
       /////////////////////////////////
       // final computation
       /////////////////////////////////
       wpos.y = (h * hfHeightScale) + hfHeightBias;
 
       rval.wpos = wpos;
-      rval.wnrm = normalize(sampleLoMip.yzw);
+      rval.wnrm = normalize(n);
       rval.wdepth = distance(wpos, campos);
 
       return rval;
