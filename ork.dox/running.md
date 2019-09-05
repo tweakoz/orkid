@@ -20,7 +20,7 @@ ctrl-, : stop
 `      : cycle through cameras
 /      : toggle editor/HUD on or off
 ctrl-/ : toggle pickbuffer debugger
-space  : toggle compositor on or off
+space  : toggle compositor on or off (only on when playing)
 zxc    : left,middle and right mouse button emulation for those with 1 button trackpads
 ```
 
