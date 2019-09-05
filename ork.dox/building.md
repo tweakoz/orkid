@@ -34,6 +34,8 @@ the stage/bin and stage/lib paths were added to your environment variables alrea
 To run on Ubuntu19.04 LTS x86/64
 ======
 * run ork.tool.test.ix.release (from the repo root folder). It is in your path already, so just type ork.[tab tab] and see which orkid executables are present.
+* directly load a scene from the commandline with a command like this:
+```ork.tool.test.osx.release -edit ork.data/src/example_scenes/particles/vortex1.mox```
 
 misc
 =====
