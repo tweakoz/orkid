@@ -74,31 +74,10 @@ tokenlist Init(int argc, char **argv)
 	LinkMe();
 
 	printf( "CPA\n");
-
-	if(FileEnv::GetRef().DoesDirectoryExist("../ext/miniork"))
-	{
-		// Try the relative path from your project directory "data" folder
-		OldSchool::SetGlobalStringVariable( "lev2://", CreateFormattedString("../ext/miniork/data/platform_lev2/") );
-		OldSchool::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("../ext/miniork/data/") );
-		OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("../data/src/") );
-		OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("../data/temp/") );
-	}
-	else if(FileEnv::GetRef().DoesDirectoryExist("ext/miniork"))
-	{
-
-		OldSchool::SetGlobalStringVariable( "lev2://", CreateFormattedString("ext/miniork/data/platform_lev2/") );
-		OldSchool::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("ext/miniork/data/") );
-		OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
-		OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
-	}
-	else
-	{
-		// Otherwise, assume we're in the root of miniork already
-		OldSchool::SetGlobalStringVariable("lev2://", std::string("data/platform_lev2/"));
-		OldSchool::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("data/") );
-		OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("data/src/") );
-		OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("data/temp/") );
-	}
+	OldSchool::SetGlobalStringVariable("lev2://", std::string("ork.data/platform_lev2/"));
+	OldSchool::SetGlobalStringVariable( "miniorkdata://", CreateFormattedString("ork.data/") );
+	OldSchool::SetGlobalStringVariable( "src://", CreateFormattedString("ork.data/src/") );
+	OldSchool::SetGlobalStringVariable( "temp://", CreateFormattedString("ork.data/temp/") );
 
 	printf( "CPB\n");
 	//////////////////////////////////////////
@@ -161,7 +140,7 @@ tokenlist Init(int argc, char **argv)
 
 	static FileDevContext DataDirContext;
 
-	DataDirContext.SetFilesystemBaseAbs( "data/pc" );
+	DataDirContext.SetFilesystemBaseAbs( "ork.data/pc" );
 	DataDirContext.SetPrependFilesystemBase( true );
 
 	static FileDevContext MiniorkDirContext;
