@@ -36,6 +36,12 @@ To run on Ubuntu19.04 LTS x86/64
 * run ork.tool.test.ix.release (from the repo root folder). It is in your path already, so just type ork.[tab tab] and see which orkid executables are present.
 * directly load a scene from the commandline with a command like this:
 ```ork.tool.test.osx.release -edit ork.data/src/example_scenes/particles/vortex1.mox```
+* once loaded use ctrl-. to play (since it kinda looks like a play button)
+*             use ctrl-, to stop
+*             use ` for cycle through cameras
+*             use / to toggle editor/HUD on or off
+*             use space to toggle compositor on or off
+
 
 misc
 =====
