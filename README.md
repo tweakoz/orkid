@@ -16,6 +16,7 @@ Some Features Include:
 * GlFx shader based renderer. Uses OpenGL 4.1 on OSX and 4.5 on Linux.
 * Realtime fixed function and node based compositor with offline rendering mode (dumps to image files on disk).
 * QT5/OpenGL based UI
+* Now has OpenVR support!
 * Fairly lightweight build. A clean build builds in about 5 mins on a 2.8ghz 4core ivybridge 2013 macbook pro or 80 seconds on a 2.8ghz 20core ivybridge xeon. That includes building the embedded bullet and fcollada.
 * Many more...
 
