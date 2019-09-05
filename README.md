@@ -31,7 +31,7 @@ for other examples of content:
 [NodeCompositor](https://www.youtube.com/watch?v=AGMazbsbJYE)
 [Particles](https://www.youtube.com/watch?v=qmULG3ZOoS0)
 [ProcTex](https://www.youtube.com/watch?v=FdAfxQjR3AQ)
-[Prodigy2](http://tweakoz.com/portfolio/p2d.mp4)
+[Prodigy2](http://tweakoz.com/resources/videos/p2d.mp4)
 [OrkidVR](https://www.youtube.com/watch?v=6tOPVw8T_sU)
 
 
