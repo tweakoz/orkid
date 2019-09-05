@@ -26,7 +26,13 @@ Some Features Include:
 
 ![TerrainGen](http://tweakoz.com/resources/images/th_terrain03.jpg)
 
-for other examples of content, go [here](http://www.youtube.com/user/tweakoz) and [here](http://tweakoz.com/portfolio/p2d.mp4)
+for other examples of content: 
+[MoonDiver](https://youtu.be/2zNd4k_6I6s)
+[NodeCompositor](https://www.youtube.com/watch?v=AGMazbsbJYE)
+[Particles](https://www.youtube.com/watch?v=qmULG3ZOoS0)
+[ProcTex](https://www.youtube.com/watch?v=FdAfxQjR3AQ)
+[Prodigy2](http://tweakoz.com/portfolio/p2d.mp4)
+[OrkidVR](https://www.youtube.com/watch?v=6tOPVw8T_sU)
 
 
 Doxygen
