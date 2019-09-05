@@ -29,6 +29,7 @@ Some Features Include:
 for other examples of content: 
 [MoonDiver](https://youtu.be/2zNd4k_6I6s)
 [NodeCompositor](https://www.youtube.com/watch?v=AGMazbsbJYE)
+[Particles](https://youtu.be/Qr8QK6ns0Tk)
 [Particles](https://www.youtube.com/watch?v=qmULG3ZOoS0)
 [ProcTex](https://www.youtube.com/watch?v=FdAfxQjR3AQ)
 [Prodigy2](http://tweakoz.com/resources/videos/p2d.mp4)
