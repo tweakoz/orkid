@@ -19,6 +19,7 @@ ctrl-. : play (since it kinda looks like a play button)
 ctrl-, : stop
 ctrl-o : load scene
 ctrl-s : save scene
+ctrl-f : toggle fullscreen
 `      : cycle through cameras
 /      : toggle editor/HUD on or off
 ctrl-/ : toggle pickbuffer debugger
