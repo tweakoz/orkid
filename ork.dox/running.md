@@ -27,6 +27,8 @@ ctrl-, : stop
 ctrl-/ : toggle pickbuffer debugger
 space  : toggle compositor on or off (only on when playing)
 zxc    : left,middle and right mouse button emulation for those with 1 button trackpads
+wasd   : left dpad emulation (only when playing)
+cursors: right dpad emulation (only when playing)
 ```
 
 Outliner Keys
