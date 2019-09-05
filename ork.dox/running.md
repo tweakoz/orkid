@@ -32,9 +32,9 @@ zxc    : left,middle and right mouse button emulation for those with 1 button tr
 Outliner Keys
 =============
 ```
-g      : toggle display of scene globals
 s      : toggle display of systems
 e      : toggle display of entities
+g      : toggle display of scene globals
 a      : toggle display of archetypes (and again for child component data's)
 !      : switch between day and night ui themes
 ```
