@@ -18,7 +18,7 @@ Main Viewport Keys
 ctrl-n : new scene
 ctrl-o : load scene
 ctrl-s : save scene
-ctrl-e : new entity
+ctrl-e : new entity (at spawnpoint)
 ctrl-f : toggle fullscreen
 ctrl-. : play (since it kinda looks like a play button)
 ctrl-, : stop
@@ -41,6 +41,9 @@ x-trackpad-move       : pan editor camera
 
 mousewheel            : zoom editor camera
 shift-mousewheel      :  .. but faster
+
+double-click          : set spawnpoint on surface
+                         center camera on spawnpoint
 
 move   : rotate editor camera 
 ```
