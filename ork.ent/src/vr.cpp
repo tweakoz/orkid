@@ -409,9 +409,25 @@ struct VRSYSTEMIMPL {
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix * xlate;
       }
+      bool curthumbL = LCONTROLLER._buttonThumbdown;
+      bool curthumbR = RCONTROLLER._buttonThumbdown;
+      ///////////////////////////////////////////////////////////
+      // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
+      ///////////////////////////////////////////////////////////
+
+      if (curthumbL and false == _prevthumbL) {
+
+        fquat q;
+        q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
+        _headingmatrix = _headingmatrix * q.ToMatrix();
+      } else if (curthumbR and false == _prevthumbR) {
+        fquat q;
+        q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
+        _headingmatrix = _headingmatrix * q.ToMatrix();
+      }
+      _prevthumbL = curthumbL;
+      _prevthumbR = curthumbR;
     } // if( _rightControllerDeviceIndex>=0 and _leftControllerDeviceIndex>=0 ){
-    bool curthumbL = LCONTROLLER._buttonThumbdown;
-    bool curthumbR = RCONTROLLER._buttonThumbdown;
 #else
 
     bool curthumbL = handgroup.tryAs<bool>("left.thumb").value();
@@ -419,22 +435,6 @@ struct VRSYSTEMIMPL {
 
 #endif
 
-    ///////////////////////////////////////////////////////////
-    // turn left,right ( we rotate in discrete steps here, because it causes eye strain otherwise)
-    ///////////////////////////////////////////////////////////
-
-    if (curthumbL and false == _prevthumbL) {
-
-      fquat q;
-      q.FromAxisAngle(fvec4(0, 1, 0, PI / 12.0));
-      _headingmatrix = _headingmatrix * q.ToMatrix();
-    } else if (curthumbR and false == _prevthumbR) {
-      fquat q;
-      q.FromAxisAngle(fvec4(0, 1, 0, -PI / 12.0));
-      _headingmatrix = _headingmatrix * q.ToMatrix();
-    }
-    _prevthumbL = curthumbL;
-    _prevthumbR = curthumbR;
 
     ///////////////////////////////////////////////////////////
 
