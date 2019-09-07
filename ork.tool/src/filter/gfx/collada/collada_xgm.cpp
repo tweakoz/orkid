@@ -181,7 +181,6 @@ struct TexSetter
 					bool bOK = DummyTarget.TXI()->LoadTexture( PathToTexture, ptex );
 					if( bOK ){
             printf( "loaded texture<%s>\n", PathToTexture.c_str() );
-						ptex->SetTexClass( ork::lev2::Texture::ETEXCLASS_STATIC );
 						pl2tex->SetName( ork::AddPooledString(PathToTexture.c_str()) );
 						ptex->setProperty<std::string>( "abspath", PathToTexture.c_str() );
 						htexture = 	pl2tex;

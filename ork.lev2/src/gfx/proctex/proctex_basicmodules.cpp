@@ -78,7 +78,7 @@ namespace ork { namespace proctex {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Periodic::Describe()
-{	
+{
 	RegisterFloatXfPlug( Periodic, Frequency, 0.0f, 36.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( Periodic, Amplitude, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
 	RegisterFloatXfPlug( Periodic, PhaseOffset, -1.0f, 1.0f, ged::OutPlugChoiceDelegate );
@@ -127,16 +127,16 @@ float Periodic::compute( float unitphase )
 	switch( meShape )
 	{	case ESH_SAW:
 			rval = (2.0f*fmod( inphase, 1.0f ))-1.0f;
-			break;	
+			break;
 		case ESH_SQU:
 			rval = fmod( inphase, 1.0f ) < 0.5f ? 0.0f : 1.0f;
-			break;	
+			break;
 		case ESH_COS:
 			rval = cosf( inphase*PI2 );
-			break;	
+			break;
 		case ESH_SIN:
 			rval = sinf( inphase*PI2 );
-			break;	
+			break;
 		default:
 			break;
 	}
@@ -147,7 +147,7 @@ float Periodic::compute( float unitphase )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Global::Describe(){}
-Global::Global() 
+Global::Global()
 	: ConstructOutPlug( Time,dataflow::EPR_UNIFORM )
 	, ConstructOutPlug( TimeDiv10,dataflow::EPR_UNIFORM )
 	, ConstructOutPlug( TimeDiv100,dataflow::EPR_UNIFORM )
@@ -159,14 +159,14 @@ Global::Global()
 {
 }
 void Global::Compute( dataflow::workunit* wu ) // virtual
-{	
+{
 	auto ptex = wu->GetContextData().Get<ProcTex*>();
 	auto ctx = ptex->GetPTC();
 
 	float ftime = ctx->mCurrentTime;
-	const_cast<Global*>(this)->mOutDataTime = ftime;	
-	const_cast<Global*>(this)->mOutDataTimeDiv10 = ftime*0.1f;	
-	const_cast<Global*>(this)->mOutDataTimeDiv100 = ftime*0.01f;	
+	const_cast<Global*>(this)->mOutDataTime = ftime;
+	const_cast<Global*>(this)->mOutDataTimeDiv10 = ftime*0.1f;
+	const_cast<Global*>(this)->mOutDataTimeDiv100 = ftime*0.01f;
 }
 dataflow::outplugbase* Global::GetOutput(int idx)
 {	dataflow::outplugbase* rval = 0;
@@ -185,7 +185,7 @@ void Curve1D::Describe()
 	ork::reflect::RegisterProperty( "curve", & Curve1D::CurveAccessor );
 	//ork::reflect::AnnotatePropertyForEditor<Curve1D>( "curve", "editor.class", "ged.factory.curve1d" );
 }
-Curve1D::Curve1D() 
+Curve1D::Curve1D()
 	: mOutput( this,dataflow::EPR_UNIFORM,&mOutValue, "Output" )
 	, mPlugInpInput( this,dataflow::EPR_UNIFORM, mInValue, "Input" )
 	, mOutValue(0.0f)
@@ -243,7 +243,7 @@ RotSolid::RotSolid()
 	, mPlugInpPhaseOffset( this,dataflow::EPR_UNIFORM, mfPhaseOffset, "pho" )
 	, mbAA(false)
 {
-	
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void RotSolid::ComputeVB( ork::lev2::GfxTarget* pTARG )
@@ -288,7 +288,7 @@ void RotSolid::ComputeVB( ork::lev2::GfxTarget* pTARG )
 		vertexa.miX = fsinA;
 		vertexa.miY = fcosA;
 		vertexa.miZ = kfZ;
-	
+
 		vertexb.miX = fsinB;
 		vertexb.miY = fcosB;
 		vertexb.miZ = kfZ;
@@ -306,7 +306,7 @@ void RotSolid::compute( ProcTex& ptex )
 
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
-	
+
 	//////////////////////////////////////
 	dataflow::node_hash testhash;
 	mRadiusFunc.Hash( testhash );
@@ -321,7 +321,7 @@ void RotSolid::compute( ProcTex& ptex )
 	////////////////////////////////////////////////////////////////
 	//fmtx4 mtxortho = pTARG->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
 	////////////////////////////////////////////////////////////////
-	
+
 	struct AA16RenderRot : public AA16Render
 	{
 		virtual void DoRender( float left, float right, float top, float bot, Buffer& buf  )
@@ -354,7 +354,7 @@ void RotSolid::compute( ProcTex& ptex )
 
 	AA16RenderRot renderer( ptex, buffer, meBlendMode, mVertexBuffer );
 	renderer.Render( mbAA );
-		
+
 	////////////////////////////////////////////////////////////////
 
 
@@ -373,8 +373,8 @@ void ImgOp2::Describe()
 ork::dataflow::inplugbase* ImgOp2::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInputA; break; 
-		case 1:	rval = & mPlugInpInputB; break; 
+	{	case 0:	rval = & mPlugInpInputA; break;
+		case 1:	rval = & mPlugInpInputB; break;
 	}
 	return rval;
 }
@@ -385,7 +385,7 @@ ImgOp2::ImgOp2()
 {
 }
 void ImgOp2::compute( ProcTex& ptex )
-{	
+{
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
 
@@ -393,10 +393,10 @@ void ImgOp2::compute( ProcTex& ptex )
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
 	const ImgOutPlug* conplugB = rtti::autocast(mPlugInpInputB.GetExternalOutput());
 	if(conplugA && conplugB )
-	{	
+	{
 
 		buffer.PtexBegin(pTARG,true,false);
-		
+
 		const char* pop = 0;
 		switch( meOp )
 		{
@@ -426,7 +426,7 @@ void ImgOp2::compute( ProcTex& ptex )
 		////////////////////////////////////////////////////////////////
 		UnitTexQuad( pTARG );
 		buffer.PtexEnd(true);
-				
+
 	}
 	MarkClean();
 }
@@ -445,9 +445,9 @@ void ImgOp3::Describe()
 ork::dataflow::inplugbase* ImgOp3::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInputA; break; 
-		case 1:	rval = & mPlugInpInputB; break; 
-		case 2:	rval = & mPlugInpInputM; break; 
+	{	case 0:	rval = & mPlugInpInputA; break;
+		case 1:	rval = & mPlugInpInputB; break;
+		case 2:	rval = & mPlugInpInputM; break;
 	}
 	return rval;
 }
@@ -464,7 +464,7 @@ ImgOp3::ImgOp3()
 {
 }
 void ImgOp3::compute( ProcTex& ptex )
-{	
+{
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
 
@@ -484,7 +484,7 @@ void ImgOp3::compute( ProcTex& ptex )
 	//printf( "RENDERING ImgOp3<%p> output mod<%p:%s> buf<%p> plug<%p:%s> rtg<%p>\n", this, con_mod, mod_nam.c_str(), & plugbuf, output_plug, plug_name.c_str(), conrtg );
 
 	if(conplugA && conplugB && conplugM )
-	{	
+	{
 		if( nullptr == mMtlLerp )
 		{
 			mMtlLerp = new lev2::GfxMaterial3DSolid( pTARG, "orkshader://proctex", "imgop3_lerp" );
@@ -562,12 +562,12 @@ void Transform::Describe()
 ork::dataflow::inplugbase* Transform::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpInput; break; 
-		case 1:	rval = & mPlugInpScaleX; break; 
-		case 2:	rval = & mPlugInpScaleY; break; 
-		case 3:	rval = & mPlugInpOffsetX; break; 
-		case 4:	rval = & mPlugInpOffsetY; break; 
-		case 5:	rval = & mPlugInpRotate; break; 
+	{	case 0:	rval = & mPlugInpInput; break;
+		case 1:	rval = & mPlugInpScaleX; break;
+		case 2:	rval = & mPlugInpScaleY; break;
+		case 3:	rval = & mPlugInpOffsetX; break;
+		case 4:	rval = & mPlugInpOffsetY; break;
+		case 5:	rval = & mPlugInpRotate; break;
 	}
 	return rval;
 }
@@ -659,7 +659,7 @@ void Texture::compute( ProcTex& ptex )
 	gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(buffer.miW)) );
 	pTARG->BindMaterial( & gridmat );
 	////////////////////////////////////////////////////////////////
-	float ftexw = GetTexture() ? GetTexture()->GetWidth() : 1.0f;
+	float ftexw = GetTexture() ? GetTexture()->_width : 1.0f;
 	pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
 	////////////////////////////////////////////////////////////////
 	fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
@@ -667,7 +667,7 @@ void Texture::compute( ProcTex& ptex )
 	pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
 	pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
 	//pTARG->PushModColor( fvec3::White() );
-	{	
+	{
 		RenderQuad( pTARG, -1,1,1,-1 );
 
 	}
@@ -685,7 +685,7 @@ void Texture::compute( ProcTex& ptex )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void ShaderQuad::Describe()
-{	
+{
 	ork::reflect::RegisterProperty( "ShaderFile", & ShaderQuad::mShaderPath );
 	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.class", "ged.factory.filelist");
 	ork::reflect::AnnotatePropertyForEditor<ShaderQuad>("ShaderFile", "editor.filetype", "glfx");
@@ -719,7 +719,7 @@ void ShaderQuad::Describe()
 	};
 
 	reflect::AnnotateClassForEditor< ShaderQuad >("editor.object.ops", opm );
-	
+
 	////////////////////////////////////////
 
 }
@@ -738,10 +738,10 @@ ShaderQuad::ShaderQuad()
 ork::dataflow::inplugbase* ShaderQuad::GetInput(int idx)
 {	ork::dataflow::inplugbase* rval = 0;
 	switch( idx )
-	{	case 0:	rval = & mPlugInpUser0X; break; 
-		case 1:	rval = & mPlugInpUser0Y; break; 
-		case 2:	rval = & mPlugInpUser0Z; break; 
-		case 3:	rval = & mPlugInpImgInput0; break; 
+	{	case 0:	rval = & mPlugInpUser0X; break;
+		case 1:	rval = & mPlugInpUser0Y; break;
+		case 2:	rval = & mPlugInpUser0Z; break;
+		case 3:	rval = & mPlugInpImgInput0; break;
 	}
 	return rval;
 }
@@ -770,10 +770,10 @@ void ShaderQuad::compute( ProcTex& ptex )
 		mShader->mRasterState.SetCullTest( ork::lev2::ECULLTEST_OFF );
 		mShader->mRasterState.SetBlending( ork::lev2::EBLENDING_OFF );
 		mShader->mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-		
+
 
 		if(conplug)
-		{	
+		{
 			auto& plugbuf = conplug->GetValue().GetBuffer(ptex);
 			const auto& conrtg = plugbuf.GetRtGroup(pTARG);
 			auto plug_name = conplug->GetName();
@@ -794,7 +794,7 @@ void ShaderQuad::compute( ProcTex& ptex )
 		////////////////////////////////////////////////////////////////
 		buffer.PtexBegin(pTARG,true,false);
 		pTARG->PushModColor( fvec3::White() );
-		{	
+		{
 			pTARG->PushMaterial( mShader );
 			UnitTexQuad( pTARG );
 			pTARG->PopMaterial();
@@ -841,7 +841,7 @@ SolidColor::SolidColor()
 {
 }
 void SolidColor::compute( ProcTex& ptex )
-{	
+{
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
 	Buffer& buffer = GetWriteBuffer(ptex);
@@ -865,7 +865,7 @@ void SolidColor::compute( ProcTex& ptex )
 	pTARG->MTXI()->PushPMatrix( fmtx4::Identity );
 	pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
 	pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
-	{	
+	{
 		RenderQuad( pTARG, -1,-1,1,1 );
 	}
 	pTARG->MTXI()->PopPMatrix();
@@ -911,7 +911,7 @@ Gradient::Gradient()
 {
 }
 void Gradient::compute( ProcTex& ptex )
-{	
+{
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
 
@@ -923,7 +923,7 @@ void Gradient::compute( ProcTex& ptex )
 	const int knumpoints = data.size();
 	const int ksegs = knumpoints-1;
 	const float kz = 0.0f;
-			
+
 	fvec2 uv;
 	mVertexBuffer.Reset();
 
@@ -1006,8 +1006,8 @@ void Gradient::compute( ProcTex& ptex )
 			float fy0 = 0.0f;
 			float fy1 = 1.0f;
 
-			fvec4 c0 = data_a.second;			
-			fvec4 c1 = data_b.second;			
+			fvec4 c0 = data_a.second;
+			fvec4 c1 = data_b.second;
 
 			switch( meGradientType )
 			{
@@ -1038,7 +1038,7 @@ void Gradient::compute( ProcTex& ptex )
 					break;
 				}
 				case EGT_CONICAL:
-				{	
+				{
 					float fmx0 = bppalt ? fx1 : fx0;
 					float fmx1 = bppalt ? fx0 : fx1;
 
@@ -1075,7 +1075,7 @@ void Gradient::compute( ProcTex& ptex )
 					break;
 				}
 				case EGT_RADIAL:
-				{	
+				{
 					float fmx0 = bppalt ? fx1 : fx0;
 					float fmx1 = bppalt ? fx0 : fx1;
 
@@ -1126,7 +1126,7 @@ void Gradient::compute( ProcTex& ptex )
 			mPTX.GetTarget()->GBI()->DrawPrimitive( mVertexBuffer, ork::lev2::EPRIM_TRIANGLES, 0, mVertexBuffer.GetNumVertices() );
 			mPTX.GetTarget()->MTXI()->PopPMatrix();
 			mPTX.GetTarget()->PopMaterial();
-			mPTX.GetTarget()->PopModColor(); 
+			mPTX.GetTarget()->PopModColor();
 		}
 		lev2::GfxMaterial3DSolid* mMtl;
 		ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16>& mVertexBuffer;
@@ -1146,7 +1146,7 @@ void Gradient::compute( ProcTex& ptex )
 	renderer.Render( mbAA );
 
 	////////////////////////////////////////////////////////////////
-	//F32 fVPW = (F32) pTARG->GetVPW(); 
+	//F32 fVPW = (F32) pTARG->GetVPW();
 	//F32 fVPH = (F32) pTARG->GetVPH();
 	//if( 0.0f == fVPW ) fVPW = 1.0f;
 	//if( 0.0f == fVPH ) fVPH = 1.0f;
@@ -1155,7 +1155,7 @@ void Gradient::compute( ProcTex& ptex )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void Group::Describe()
-{	
+{
 	ork::reflect::RegisterProperty("ProcTex", &Group::GetTextureAccessor, &Group::SetTextureAccessor );
 	ork::reflect::AnnotatePropertyForEditor<Group>("ProcTex", "editor.visible", "false");
 	ork::reflect::AnnotateClassForEditor< Group >("editor.object.ops", ConstString("load:proctexgroupload save:proctexgroupsave") );
@@ -1188,14 +1188,14 @@ void Group::compute( ProcTex& ptex )
 		gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(computebuffer.miW)) );
 		pTARG->BindMaterial( & gridmat );
 		////////////////////////////////////////////////////////////////
-		float ftexw = ptexture ? ptexture->GetWidth() : 1.0f;
+		float ftexw = ptexture ? ptexture->_width : 1.0f;
 		pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
 		////////////////////////////////////////////////////////////////
 		fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
 		pTARG->MTXI()->PushPMatrix( mtxortho );
 		pTARG->MTXI()->PushVMatrix( fmtx4::Identity );
 		pTARG->MTXI()->PushMMatrix( fmtx4::Identity );
-		{	
+		{
 			RenderQuad( pTARG, -1,-1,1,1 );
 		}
 		pTARG->MTXI()->PopPMatrix();
@@ -1203,7 +1203,7 @@ void Group::compute( ProcTex& ptex )
 		pTARG->MTXI()->PopMMatrix();
 		pTARG->PopModColor();
 		MarkClean();
-		computebuffer.PtexEnd(true);	
+		computebuffer.PtexEnd(true);
 		//////////////////////////
 	}
 }

@@ -60,22 +60,17 @@ Texture *Texture::CreateBlank( int iw, int ih, EBufferFormat efmt )
 {
 	Texture *pTex = new Texture;
 
-	pTex->SetWidth( iw );
-	pTex->SetHeight( ih );
-	pTex->SetTexClass( Texture::ETEXCLASS_PAINTABLE );
+	pTex->_width = iw;
+	pTex->_height = ih;
 
 	switch( efmt )
 	{
 		case EBUFFMT_RGBA32:
 		case EBUFFMT_F32:
-			pTex->SetBytesPerPixel( 4 );
-			pTex->SetTexData( new U8[ iw*ih*4 ] );
-			memset( pTex->GetTexData(), 0, iw*ih*4 );
+			pTex->_data = calloc(iw*ih*4,1);
 			break;
 		case EBUFFMT_RGBA128:
-			pTex->SetBytesPerPixel( 16 );
-			pTex->SetTexData( new U8[ iw*ih*16 ] );
-			memset( pTex->GetTexData(), 0, iw*ih*16 );
+      pTex->_data = calloc(iw*ih*16,1);
 			break;
 		default:
 			assert(false);
@@ -86,25 +81,6 @@ Texture *Texture::CreateBlank( int iw, int ih, EBufferFormat efmt )
 ///////////////////////////////////////////////////////////////////////////////
 
 Texture::Texture()
-	: mMaxMip(0)
-	, meTexDest(ETEXDEST_END)
-	, meTexType(ETEXTYPE_END)
-	, meTexClass(ETEXCLASS_END)
-	, meTexFormat(EBUFFMT_END)
-	, miWidth(0)
-	, miHeight(0)
-	, miDepth(0)
-	, muvW(0)
-	, muvH(0)
-	, miBPP(0)
-	, mFlags(0)
-	, mbDirty(true)
-	, miMaxMipUniqueColors( 0 )
-	, miTotalUniqueColors( 0 )
-	, mpData(nullptr)
-	, mpTexAnim(nullptr)
-	, mInternalHandle(nullptr)
-	, mpImageData(nullptr)
 {}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,51 +93,49 @@ Texture::~Texture()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Texture::Clear( const fcolor4 & color )
-{
-	float Mul(255.0f);
-
-	u8 ur = (u8) (color.GetX()*Mul);
-	u8 ug = (u8) (color.GetY()*Mul);
-	u8 ub = (u8) (color.GetZ()*Mul);
-	u8 ua = (u8) (color.GetW()*Mul);
-
-	U8* pu8data = (U8*) mpImageData;
-
-	for( int ix=0; ix<miWidth; ix++ )
-	{
-		for( int iy=0; iy<miHeight; iy++ )
-		{
-			int idx = 4 * (ix*miHeight + iy);
-			pu8data[idx+0] = ub;
-			pu8data[idx+1] = ug;
-			pu8data[idx+2] = ur;
-			pu8data[idx+3] = ua;
-		}
-	}
-	SetDirty(true);
+MipChain::MipChain(int w, int h,EBufferFormat fmt,ETextureType typ){
+  assert(typ==ETEXTYPE_2D);
+  _format = fmt;
+  _type = typ;
+  while(w>=1 and h>=1){
+    mipchainlevel_t level = std::make_shared<MipChainLevel>();
+    _levels.push_back(level);
+    level->_width = w;
+    level->_height = h;
+    switch(fmt){
+      case EBUFFMT_RGBA128:
+        level->_length = w*h*4*sizeof(float);
+        break;
+      case EBUFFMT_RGBA64:
+        level->_length = w*h*4*sizeof(uint16_t);
+        break;
+      case EBUFFMT_RGBA32:
+        level->_length = w*h*4*sizeof(uint8_t);
+        break;
+      case EBUFFMT_F32:
+      case EBUFFMT_Z24S8:
+      case EBUFFMT_Z32:
+        level->_length = w*h*4*sizeof(float);
+        break;
+      case EBUFFMT_Z16:
+        level->_length = w*h*sizeof(uint16_t);
+        break;
+      case EBUFFMT_DEPTH:
+      default:
+        assert(false);
+    }
+    level->_data = malloc(level->_length);
+    w>>=1;
+    h>>=1;
+  }
+}
+MipChain::~MipChain(){
+  for( auto l : _levels ){
+    free(l->_data);
+  }
 }
 
-///////////////////////////////////////////////////////////////////////////////
 
-void Texture::SetTexel( const fcolor4 & color, const fvec2 & ST )
-{
-	float Mul(255.0f);
-	U8* pu8data = (U8*) mpImageData;
-
-	u8 ur = (u8) (color.GetX()*Mul);
-	u8 ug = (u8) (color.GetY()*Mul);
-	u8 ub = (u8) (color.GetZ()*Mul);
-	u8 ua = (u8) (color.GetW()*Mul);
-	int ix = (int) (miWidth * fmod( (float) ST.GetY(), 1.0f ));
-	int iy = (int) (miHeight * fmod( (float) ST.GetX(), 1.0f ));
-	int idx = (int) (4 * (ix*miHeight + iy));
-	pu8data[idx+0] = ub;
-	pu8data[idx+1] = ug;
-	pu8data[idx+2] = ur;
-	pu8data[idx+3] = ua;
-	SetDirty(true);
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -59,4 +59,6 @@ do_actors( actors )
 do_anims( anims )
 #do_objects( objects )
 
+os.system("mkdir ork.data/pc/terrain")
+os.system("cp -r ork.data/src/terrain/* ork.data/pc/terrain/")
 #######################################

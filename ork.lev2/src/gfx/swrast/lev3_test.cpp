@@ -45,7 +45,7 @@ public:
     {
         mtl.Init(pTARG);
         tex = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBUFFMT_RGBA32);
-        uint32_t* pu32 = (uint32_t*) tex->GetTexData();
+        auto pu32 = (uint32_t*) tex->_data;
         uint32_t idx=0;
         for( int iw=0; iw<512; iw++ )
             for( int ih=0; ih<512; ih++ )
@@ -53,7 +53,7 @@ public:
                 pu32[idx++] = idx;
 
             }
-        tex->SetDirty(true);
+        tex->_dirty=true;
     }
     void DoRePaintSurface(ork::ui::DrawEvent& ev) override
     {

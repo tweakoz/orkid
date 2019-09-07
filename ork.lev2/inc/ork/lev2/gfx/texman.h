@@ -18,38 +18,6 @@ namespace ork { namespace lev2 {
 
 class GfxTarget;
 
-///////////////////////////////////////////////////////////////////////////////
-
-class TextureMipData
-{
-	public:
-
-	void*	mpImageData;
-	void*	mpClutData;
-
-	int		miWidth;
-	int		miHeight;
-	int		miImageBytesPerPixel;
-	int		miClutBytesPerPixel;
-	int		miClutSize;
-	int		miImageDataSize;
-	int		miUniqueColors;
-
-	TextureMipData()
-		: mpImageData( 0 )
-		, mpClutData( 0 )
-		, miClutSize( 0 )
-		, miWidth( 0 )
-		, miHeight( 0 )
-		, miImageBytesPerPixel( 0 )
-		, miClutBytesPerPixel( 0 )
-		, miImageDataSize( 0 )
-		, miUniqueColors( 0 )
-	{
-
-	}
-};
-
 //////////////////////////////////////////////////////////////////////////
 
 struct TextureSamplingModeData
@@ -85,7 +53,6 @@ class TextureAnimationInst;
 class Texture;
 class TextureInterface;
 
-
 class TextureAnimationBase
 {
 public:
@@ -114,19 +81,41 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-class Texture
+struct MipChainLevel {
+
+  template <typename T> T& sample(int x, int y){
+    auto base = (T*) _data;
+    assert(x<_width);
+    assert(y<_height);
+    size_t index = y*_width+x;
+    assert((index*sizeof(T))<_length);
+    return base[index];
+  }
+
+  int _width = 0;
+  int _height = 0;
+  size_t _length = 0;
+  void* _data = nullptr;
+
+};
+
+struct MipChain {
+  MipChain(int w, int h,EBufferFormat fmt,ETextureType typ);
+  ~MipChain();
+
+  typedef std::shared_ptr<MipChainLevel> mipchainlevel_t;
+  std::vector<mipchainlevel_t> _levels;
+  int _width = 0;
+  int _height = 0;
+
+  EBufferFormat _format = EBUFFMT_END;
+  ETextureType _type = ETEXTYPE_END;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+struct Texture
 {
-public:
-
-	enum ETexClass
-	{
-		ETEXCLASS_STATIC = 0,		// standard static texture
-		ETEXCLASS_RENDERTARGET ,	// rendered texture
-		ETEXCLASS_PAINTABLE ,		// paintable texture (like a rendertarget, but doesnt clear every frame)
-		ETEXCLASS_DATA ,			// RAW DATA (non renderable)
-		ETEXCLASS_END,
-	};
-
 	//////////////////////////////////////////////////////
 
 	Texture();
@@ -134,59 +123,21 @@ public:
 
 	//////////////////////////////////////////////////////
 
-	int	GetWidth( void ) const { return miWidth; }
-	int	GetHeight( void ) const { return miHeight; }
-	int	GetDepth( void ) const { return miDepth; }
-	int	GetBytesPerPixel( void ) const { return miBPP; }
-	U32 GetFlags( void ) const { return mFlags; }
+	bool IsVolumeTexture( void ) const { return (_depth>1); }
+	bool IsDirty( void ) const { return _dirty; }
 
-	bool IsVolumeTexture( void ) const { return (miDepth>1); }
-	bool IsDirty( void ) const { return mbDirty; }
+	void* GetTexIH( void ) const { return _internalHandle; }
 
-	void* GetTexIH( void ) const { return mInternalHandle; }
-
-	ETexClass GetTexClass( void ) const { return meTexClass; }
-	ETextureType GetTexType( void ) const { return meTexType; }
-	ETextureDest GetTexDest( void ) const { return meTexDest; }
-
-	void* GetTexData( void ) const { return mpData; }
-
-	void SetWidth( int iw ) { miWidth=iw; }
-	void SetHeight( int ih ) { miHeight=ih; }
-	void SetDepth( int id ) { miDepth=id; }
-	void SetBytesPerPixel( int ib ) { miBPP=ib; }
-	void SetTexClass( ETexClass eclass ) { meTexClass=eclass; }
-	void SetTexType( ETextureType etype ) { meTexType=etype; }
-	void SetTexDest( ETextureDest edest ) { meTexDest=edest; }
-	void SetTexIH( void* hIH ) const { mInternalHandle=hIH; }
-	void SetDirty( bool bv ) const { mbDirty=bv; }
-	void SetFlags( u32 uf ) { mFlags = uf; }
-	void SetTexData( void *pd ) { mpData=reinterpret_cast<u8*>( pd ); }
+	ETextureType GetTexType( void ) const { return _texType; }
+	ETextureDest GetTexDest( void ) const { return _texDest; }
 
 	//////////////////////////////////////////////////////
-
-	void Clear( const fcolor4 & color );
-	void SetTexel( const fcolor4 & color, const fvec2 & ST );
 
 	Md5Sum GetMd5Sum( void ) const { return mMd5Sum; }
 	void SetMd5Sum( Md5Sum sum ) { mMd5Sum=sum; }
 
-    const TextureSamplingModeData& TexSamplingMode() const { return mTexSampleMode; }
-    TextureSamplingModeData& TexSamplingMode() { return mTexSampleMode; }
-
-	//////////////////////////////////////////////////////
-
-	void AddMip( const TextureMipData & Mip ) { mMipImages.push_back( Mip ); }
-	const TextureMipData & GetMip( int imip ) const { return mMipImages[ imip ]; }
-
-	int GetNumMipMaps( void ) const { return miNumMipMaps; }
-	void SetNumMipMaps( int imips ) { miNumMipMaps=imips; }
-
-	int GetMipMaxUniqueColors( void ) const { return miMaxMipUniqueColors; }
-	int GetMipTotalUniqueColors( void ) const { return miTotalUniqueColors; }
-
-	void SetMipMaxUniqueColors( int ival ) { miMaxMipUniqueColors=ival; }
-	void SetMipTotalUniqueColors( int ival ) { miTotalUniqueColors=ival; }
+  const TextureSamplingModeData& TexSamplingMode() const { return mTexSampleMode; }
+  TextureSamplingModeData& TexSamplingMode() { return mTexSampleMode; }
 
 	//////////////////////////////////////////////////////
 
@@ -209,48 +160,34 @@ public:
 
 	//////////////////////////////////////////////////////////
 
-	TextureAnimationBase* GetTexAnim() const { return mpTexAnim; }
-	void SetTexAnim( TextureAnimationBase* ptexanim ) { mpTexAnim=ptexanim; }
-	//////////////////////////////////////////////////////////
-
-	void* GetImageData() const { return mpImageData; }
-	void SetImageData( void* pid ) { mpImageData = pid; }
+	TextureAnimationBase* GetTexAnim() const { return _anim; }
+	void SetTexAnim( TextureAnimationBase* ptexanim ) { _anim=ptexanim; }
 
 	//////////////////////////////////////////////////////////
 
 	static void RegisterLoaders( void );
 
-	int 							mMaxMip;
-
-	private:
-
 	Md5Sum							mMd5Sum;	// for dirty checking (mipgen/palettegen)
-	orkvector< TextureMipData >	mMipImages;
 	int								miTotalUniqueColors;
 	int								miMaxMipUniqueColors;
 
-	ETextureDest			meTexDest;
-	ETextureType			meTexType;
-	ETexClass					meTexClass;
-	EBufferFormat			meTexFormat;
 
-	int								miWidth, miHeight, miDepth;
-	int								miNumMipMaps;
-	int								muvW, muvH;
-
-	U32								miBPP;
-	void*							mpImageData;
-
-	U32								mFlags;
-
-	mutable void*			mInternalHandle;
-
-	mutable bool			mbDirty;
-	void*							mpData;
-
-	TextureAnimationBase*			mpTexAnim;
 	orkmap<std::string,svar64_t>	_textureProperties;
   TextureSamplingModeData			mTexSampleMode;
+
+  ETextureDest			_texDest = ETEXDEST_END;
+	ETextureType			_texType = ETEXTYPE_END;
+	EBufferFormat			_texFormat = EBUFFMT_END;
+
+  int								_width = 0;
+  int               _height = 0;
+  int               _depth = 0;
+  uint64_t					_flags = 0;
+  MipChain*         _chain = nullptr;
+  mutable bool			_dirty = true;
+  void*							_data = nullptr;
+  TextureAnimationBase*	_anim = nullptr;
+  mutable void*			_internalHandle = nullptr;
 
 };
 
