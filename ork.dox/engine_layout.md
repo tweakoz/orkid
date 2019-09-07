@@ -14,7 +14,6 @@ Orkid is divided into several shared libraries:
 	- Asset managers
 	- General OS utilities.
 	- Notable dependencies: 
-		+ Intel TBB
 		+ Boost
 
 ---
@@ -23,13 +22,11 @@ Orkid is divided into several shared libraries:
 	- Platform a/v/input drivers.
 		- Graphics
 			+ OpenGL
-			+ D3D9c
 		- Audio
-			+ FMOD (wii & pc)
-			+ XAudio2
+			+ PortAudio
 		- Input
 			+ KB/mouse
-			+ XInput
+			+ OpenVR
 	- low level renderables and audibles.
 		+ MultiBuffered threaded renderer
 		+ Frustum culler
@@ -42,11 +39,10 @@ Orkid is divided into several shared libraries:
 		+ Spatialized audio effect system
 		+ Audio stream playback controllers.
 	- Notable dependencies: 
-		+ OpenGL (win32/iX)
-		+ QT5. (win32/iX)
-		+ D3D9c (win32)
-		+ FMod (win32/wii/iX)
-
+		+ OpenGL (osx/iX)
+		+ QT5. (osx/iX)
+		+ PortAudio (osx/iX)
+		+ OpenVR (iX)
 ---
 
 * ork.bullet273 : bullet physics engine 
