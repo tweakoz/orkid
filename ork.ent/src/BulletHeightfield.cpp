@@ -41,7 +41,8 @@ struct BulletHeightfieldImpl {
   bool _initViz = true;
   Entity* _entity = nullptr;
   GfxMaterial3DSolid* mTerrainMtl = nullptr;
-  Texture* _heightmapTexture = nullptr;
+  Texture* _heightmapTextureA = nullptr;
+  Texture* _heightmapTextureB = nullptr;
   btHeightfieldTerrainShape* _terrainShape = nullptr;
 
   fvec3 _aabbmin;
@@ -175,21 +176,44 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   int MIPW = iglX;
   int MIPH = iglZ;
 
-  auto chain = new MipChain(MIPW,MIPH,EBUFFMT_RGBA128,ETEXTYPE_2D);
+  auto chainA = new MipChain(MIPW,MIPH,EBUFFMT_RGBA128,ETEXTYPE_2D);
+  auto chainB = new MipChain(MIPW,MIPH,EBUFFMT_RGBA128,ETEXTYPE_2D);
 
-  auto mip0 = chain->_levels[0];
-  auto pfloattex = (float*) mip0->_data;
-  assert(pfloattex!=nullptr);
+  auto mipA0 = chainA->_levels[0];
+  auto mipB0 = chainB->_levels[0];
+  auto pfloattexA = (float*) mipA0->_data;
+  auto pfloattexB = (float*) mipB0->_data;
+  assert(pfloattexA!=nullptr);
+  assert(pfloattexB!=nullptr);
 
   fvec2 origin(0,0);
 
   auto heightdata = (float*) _heightmap.GetHeightData();
 
-  for( size_t z=0; z<MIPH; z++ ){
-    size_t zz = z-(MIPH>>1);
+  const bool debugmip = false;
+
+  fvec3 mipdebugcolors[12] = {
+
+    fvec3(0,0,0), // 0
+    fvec3(0,0,1), // 1
+    fvec3(0,1,0), // 2
+    fvec3(0,1,1), // 3
+    fvec3(1,0,0), // 4
+    fvec3(1,0,1), // 5
+    fvec3(1,1,0), // 6
+    fvec3(1,1,1), //7
+    fvec3(0,0,0), // 0
+    fvec3(0,0,1), // 1
+    fvec3(0,1,0), // 2
+    fvec3(0,1,1), // 3
+  };
+
+
+  for( ssize_t z=0; z<MIPH; z++ ){
+    ssize_t zz = z-(MIPH>>1);
     float fzz = float(zz)/float(MIPH>>1); // -1 .. 1
-    for( size_t x=0; x<MIPW; x++ ){
-      size_t xx = x-(MIPW>>1);
+    for( ssize_t x=0; x<MIPW; x++ ){
+      ssize_t xx = x-(MIPW>>1);
       float fxx = float(xx)/float(MIPW>>1);
       fvec2 pos2d(fxx,fzz);
       float d = (pos2d-origin).Mag();
@@ -197,7 +221,10 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
       size_t index = z*MIPW+x;
       float h = heightdata[index];
       size_t pixelbase = index*4;
-      pfloattex[pixelbase+0]=float(h);
+      pfloattexA[pixelbase+0]=float(xx);
+      pfloattexA[pixelbase+1]=float(h);
+      pfloattexA[pixelbase+2]=float(zz);
+      pfloattexB[pixelbase+0]=float(h);
       ///////////////////
       // compute normal
       ///////////////////
@@ -219,9 +246,9 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
           fvec3 e01 = (pos3d_dx-pos3d).Normal();
           fvec3 e02 = (pos3d_dz-pos3d).Normal();
           auto n = e02.Cross(e01).Normal();
-          pfloattex[pixelbase+1]=float(n.x);//r x
-          pfloattex[pixelbase+2]=float(n.y);//g y
-          pfloattex[pixelbase+3]=float(n.z);//b z
+          pfloattexB[pixelbase+1]=debugmip?0.0f:float(n.x);//r x
+          pfloattexB[pixelbase+2]=debugmip?0.0f:float(n.y);//g y
+          pfloattexB[pixelbase+3]=debugmip?0.0f:float(n.z);//b z
 
       } // if(x>0 and z>0){
     } // for( size_t x=0; x<MIPW; x++ ){
@@ -235,36 +262,70 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   MIPW >>= 1;
   MIPH >>= 1;
   while(MIPW>=2 and MIPH>=2){
-    assert((levindex+1)<chain->_levels.size());
-    auto prevlev = chain->_levels[levindex];
-    auto nextlev = chain->_levels[levindex+1];
-    printf( "levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlev.get(), nextlev.get() );
-    auto prevbas = (float*) prevlev->_data;
-    auto nextbas = (float*) nextlev->_data;
+    assert((levindex+1)<chainA->_levels.size());
+    auto prevlevA = chainA->_levels[levindex];
+    auto nextlevA = chainA->_levels[levindex+1];
+    auto prevlevB = chainB->_levels[levindex];
+    auto nextlevB = chainB->_levels[levindex+1];
+    printf( "levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlevA.get(), nextlevA.get() );
+    auto prevbasA = (float*) prevlevA->_data;
+    auto nextbasA = (float*) nextlevA->_data;
+    auto prevbasB = (float*) prevlevB->_data;
+    auto nextbasB = (float*) nextlevB->_data;
     ////////////////////////////////////////////////
     constexpr float kdiv9 = 1.0f/9.0f;
+    int MAXW = (MIPW*2-1);
+    int MAXH = (MIPH*2-1);
     for( int y=0; y<MIPH; y++ ){
       for( int x=0; x<MIPW; x++ ){
+        ///////////////////////////////////////////
         int plx = x*2;
         int ply = y*2;
-        int plxm1 = (x>0)?plx-1:0;
-        int plym1 = (y>0)?ply-1:0;
-        int plxp1 = (x<MIPW-1)?plx+1:(MIPW*2-1);
-        int plyp1 = (y<MIPH-1)?ply+1:(MIPH*2-1);
-        auto& dest_sample = nextlev->sample<fvec4>(x,y);
-        dest_sample  = prevlev->sample<fvec4>(plxm1,plym1);
-        dest_sample += prevlev->sample<fvec4>(plx,plym1);
-        dest_sample += prevlev->sample<fvec4>(plxp1,plym1);
-        dest_sample += prevlev->sample<fvec4>(plxm1,ply);
-        dest_sample += prevlev->sample<fvec4>(plx,ply);
-        dest_sample += prevlev->sample<fvec4>(plxp1,ply);
-        dest_sample += prevlev->sample<fvec4>(plxm1,plyp1);
-        dest_sample += prevlev->sample<fvec4>(plx,plyp1);
-        dest_sample += prevlev->sample<fvec4>(plxp1,plyp1);
-        dest_sample.x *= kdiv9;
-        dest_sample.y *= kdiv9;
-        dest_sample.z *= kdiv9;
-        dest_sample.w *= kdiv9;
+        ///////////////////////////////////////////
+        int plxm1 = std::clamp(plx-1,0,MAXW);
+        int plxp1 = std::clamp(plx+1,0,MAXW);
+        int plyp1 = std::clamp(ply+1,0,MAXH);
+        int plym1 = std::clamp(ply-1,0,MAXH);
+        ///////////////////////////////////////////
+        auto& dest_sampleA = nextlevA->sample<fvec4>(x,y);
+        auto& dest_sampleB = nextlevB->sample<fvec4>(x,y);
+        ///////////////////////////////////////////
+        dest_sampleA  = prevlevA->sample<fvec4>(plxm1,plym1);
+        dest_sampleA += prevlevA->sample<fvec4>(plx,plym1);
+        dest_sampleA += prevlevA->sample<fvec4>(plxp1,plym1);
+        dest_sampleA += prevlevA->sample<fvec4>(plxm1,ply);
+        dest_sampleA += prevlevA->sample<fvec4>(plx,ply);
+        dest_sampleA += prevlevA->sample<fvec4>(plxp1,ply);
+        dest_sampleA += prevlevA->sample<fvec4>(plxm1,plyp1);
+        dest_sampleA += prevlevA->sample<fvec4>(plx,plyp1);
+        dest_sampleA += prevlevA->sample<fvec4>(plxp1,plyp1);
+        ///////////////////////////////////////////
+        dest_sampleB  = prevlevB->sample<fvec4>(plxm1,plym1);
+        dest_sampleB += prevlevB->sample<fvec4>(plx,plym1);
+        dest_sampleB += prevlevB->sample<fvec4>(plxp1,plym1);
+        dest_sampleB += prevlevB->sample<fvec4>(plxm1,ply);
+        dest_sampleB += prevlevB->sample<fvec4>(plx,ply);
+        dest_sampleB += prevlevB->sample<fvec4>(plxp1,ply);
+        dest_sampleB += prevlevB->sample<fvec4>(plxm1,plyp1);
+        dest_sampleB += prevlevB->sample<fvec4>(plx,plyp1);
+        dest_sampleB += prevlevB->sample<fvec4>(plxp1,plyp1);
+        ///////////////////////////////////////////
+        dest_sampleA.x *= kdiv9;
+        dest_sampleA.y *= kdiv9;
+        dest_sampleA.z *= kdiv9;
+        dest_sampleA.w *= kdiv9;
+        //
+        dest_sampleB.x *= kdiv9;
+        dest_sampleB.y *= kdiv9;
+        dest_sampleB.z *= kdiv9;
+        dest_sampleB.w *= kdiv9;
+        ///////////////////////////////////////////
+        if(debugmip){
+          auto& dm = mipdebugcolors[levindex];
+          dest_sampleB.y = dm.x;
+          dest_sampleB.z = dm.y;
+          dest_sampleB.w = dm.z;
+        }
       }
     }
     ////////////////////////////////////////////////
@@ -274,7 +335,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   }
   ////////////////////////////////////////////////////////////////
 
-  _heightmapTexture = ptarg->TXI()->createFromMipChain(chain);
+  _heightmapTextureA = ptarg->TXI()->createFromMipChain(chainA);
+  _heightmapTextureB = ptarg->TXI()->createFromMipChain(chainB);
 
   ////////////////////////////////////////////////////////////////
 
@@ -650,7 +712,8 @@ void FastRender(const RenderContextInstData &rcidata,
 
         material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
         material->SetTexture(ColorTex);
-        material->SetTexture2(htri->_heightmapTexture);
+        material->SetTexture2(htri->_heightmapTextureA);
+        material->SetTexture3(htri->_heightmapTextureB);
 
         auto range = htri->_aabbmax-htri->_aabbmin;
         material->SetUser0(htri->_aabbmin);
