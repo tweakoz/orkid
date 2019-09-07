@@ -156,13 +156,15 @@ struct TexSetter
 
 		//const u8* pimgdata = & dataBASE[irdptr];
 		int isize = iw*ih*BPP;
-		tex->mMaxMip = 0;
+    auto glto = (GLTextureObject*) tex->_internalHandle;
+
+		glto->_maxmip = 0;
 
 		for( int imip=0; imip<inummips; imip++ )
 		{
 			if( iw<4 ) continue;
 			if( ih<4 ) continue;
-			tex->mMaxMip = imip;
+			glto->_maxmip = imip;
 
 			GLuint nfmt = fmt;
 
@@ -768,15 +770,15 @@ float VdsTextureAnimation::GetLengthOfTime() const
 bool GlTextureInterface::LoadVDSTexture( const AssetPath& infname, Texture *ptex )
 {
 	GLTextureObject* pTEXOBJ = new GLTextureObject;
-	ptex->SetTexIH( (void*) pTEXOBJ );
+	ptex->_internalHandle = (void*) pTEXOBJ;
 	glGenTextures( 1, & pTEXOBJ->mObject );
 
     VdsTextureAnimation* vta = new VdsTextureAnimation( infname );
     ptex->SetTexAnim( vta );
 
-	ptex->SetWidth( vta->miW );
-	ptex->SetHeight( vta->miH );
-	ptex->SetDepth( 1 );
+	ptex->_width = vta->miW;
+	ptex->_height = vta->miH;
+	ptex->_depth = 1;
 
 	glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
 
@@ -974,7 +976,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 
 	this->ApplySamplingMode(ptex);
 
-	ptex->SetDirty( false );
+	ptex->_dirty = false;
 	glBindTexture( TARGET, 0 );
 	GL_ERRORCHECK();
 
@@ -998,9 +1000,9 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 	eFileErr = TextureFile->Read( pdata, sizeof( dxt::DDS_HEADER ) );
 	dxt::DDS_HEADER* ddsh = (dxt::DDS_HEADER*) pdata;
 	////////////////////////////////////////////////////////////////////
-	ptex->SetWidth( ddsh->dwWidth );
-	ptex->SetHeight( ddsh->dwHeight );
-	ptex->SetDepth( (ddsh->dwDepth>1) ? ddsh->dwDepth : 1 );
+	ptex->_width = ddsh->dwWidth;
+	ptex->_height = ddsh->dwHeight;
+	ptex->_depth = (ddsh->dwDepth>1) ? ddsh->dwDepth : 1;
 	////////////////////////////////////////////////////////////////////
 	int NumMips = (ddsh->dwFlags & dxt::DDSD_MIPMAPCOUNT) ? ddsh->dwMipMapCount : 1;
 	int iwidth = ddsh->dwWidth;
@@ -1026,7 +1028,7 @@ bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex
 
 	///////////////////////////////////////////////
 	GLTextureObject* pTEXOBJ = new GLTextureObject;
-	ptex->SetTexIH( (void*) pTEXOBJ );
+	ptex->_internalHandle = (void*) pTEXOBJ;
 
 	///////////////////////////////////////////////
 	GlTexLoadReq load_req;
@@ -1127,7 +1129,7 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 	int inummips =  0;
 	if(minfilt==GL_LINEAR_MIPMAP_LINEAR)
 	{
-		inummips =  ptex->mMaxMip;
+		inummips =  pTEXOBJ->_maxmip;
 		if(inummips<3)
 		{
 			inummips = 0;
@@ -1161,12 +1163,12 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 
 void GlTextureInterface::generateMipMaps(Texture *ptex) {
 
-    auto plattex = (GLTextureObject*) ptex->GetTexIH();
+    auto plattex = (GLTextureObject*) ptex->_internalHandle;
     glBindTexture( GL_TEXTURE_2D, plattex->mObject );
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    int w =ptex->GetWidth();
+    int w =ptex->_width;
     int l = HighestPowerOfTwo(w);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, l);
     glBindTexture( GL_TEXTURE_2D, 0 );
@@ -1177,19 +1179,19 @@ void GlTextureInterface::generateMipMaps(Texture *ptex) {
 void GlTextureInterface::initTextureFromData( Texture *ptex, bool autogenmips ) {
 
 	GLTextureObject* pTEXOBJ = new GLTextureObject;
-	ptex->SetTexIH( (void*) pTEXOBJ );
+	ptex->_internalHandle = (void*) pTEXOBJ;
 	glGenTextures( 1, & pTEXOBJ->mObject );
 	glBindTexture( GL_TEXTURE_2D, pTEXOBJ->mObject );
 
 	glTexImage2D( GL_TEXTURE_2D,
 	              0,
                   GL_RGBA32F,
-                  ptex->GetWidth(),
-                  ptex->GetHeight(),
+                  ptex->_width,
+                  ptex->_height,
                   0,
                   GL_RGBA,
                   GL_FLOAT,
-                  ptex->GetTexData()
+                  ptex->_data
 				);
 
 	glGenerateMipmap(GL_TEXTURE_2D);
@@ -1202,6 +1204,51 @@ void GlTextureInterface::initTextureFromData( Texture *ptex, bool autogenmips ) 
 
 	glBindTexture( GL_TEXTURE_2D, 0 );
 
+}
+
+Texture* GlTextureInterface::createFromMipChain( MipChain* from_chain ){
+  auto tex = new Texture;
+  tex->_chain = from_chain;
+  tex->_width = from_chain->_width;
+  tex->_height = from_chain->_height;
+  tex->_texFormat = from_chain->_format;
+  tex->_texType = from_chain->_type;
+
+  assert(tex->_texFormat==EBUFFMT_RGBA128);
+  assert(tex->_texType==ETEXTYPE_2D);
+
+  GLTextureObject* texobj = new GLTextureObject;
+	tex->_internalHandle = (void*) texobj;
+	glGenTextures( 1, & texobj->mObject );
+	glBindTexture( GL_TEXTURE_2D, texobj->mObject );
+
+  size_t nummips = from_chain->_levels.size();
+
+  for( size_t l=0; l<nummips; l++ ){
+    auto pchl = from_chain->_levels[l];
+    assert(pchl->_length==pchl->_width*pchl->_height*sizeof(fvec4));
+    glTexImage2D( GL_TEXTURE_2D,
+  	              l,
+                  GL_RGBA32F,
+                  pchl->_width,
+                  pchl->_height,
+                  0,
+                  GL_RGBA,
+                  GL_FLOAT,
+                  pchl->_data
+  				);
+  }
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, nummips-1);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+
+
+	glBindTexture( GL_TEXTURE_2D, 0 );
+
+  return tex;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

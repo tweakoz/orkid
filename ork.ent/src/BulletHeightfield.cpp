@@ -29,6 +29,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletShapeHeightfieldData,
                              "BulletShapeHeightfieldData");
+
+using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -38,8 +40,8 @@ struct BulletHeightfieldImpl {
   bool _loadok = false;
   bool _initViz = true;
   Entity* _entity = nullptr;
-  lev2::GfxMaterial3DSolid* mTerrainMtl = nullptr;
-  lev2::Texture* _heightmapTexture = nullptr;
+  GfxMaterial3DSolid* mTerrainMtl = nullptr;
+  Texture* _heightmapTexture = nullptr;
   btHeightfieldTerrainShape* _terrainShape = nullptr;
 
   fvec3 _aabbmin;
@@ -52,7 +54,7 @@ struct BulletHeightfieldImpl {
 
   BulletHeightfieldImpl(const BulletShapeHeightfieldData &data);
 
-  void init_visgeom(lev2::GfxTarget *ptarg);
+  void init_visgeom(GfxTarget *ptarg);
   btHeightfieldTerrainShape *init_bullet_shape(const ShapeCreateData &data);
 };
 
@@ -140,7 +142,7 @@ BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
+void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   if (false == _initViz)
     return;
 
@@ -150,8 +152,8 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   auto sphmaptex = (sphmap != nullptr) ? sphmap->GetTexture() : nullptr;
 
   mTerrainMtl =
-      new lev2::GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain1");
-  mTerrainMtl->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
+      new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain1");
+  mTerrainMtl->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
   mTerrainMtl->_enablePick = true;
 
   orkprintf("ComputingGeometry\n");
@@ -170,24 +172,29 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   // create and fill in gpu texture
   ////////////////////////////////////////////////////////////////
 
-  _heightmapTexture = lev2::Texture::CreateBlank(iglX,iglZ,lev2::EBUFFMT_RGBA128);
-  auto pfloattex = (float*) _heightmapTexture->GetTexData();
+  int MIPW = iglX;
+  int MIPH = iglZ;
+
+  auto chain = new MipChain(MIPW,MIPH,EBUFFMT_RGBA128,ETEXTYPE_2D);
+
+  auto mip0 = chain->_levels[0];
+  auto pfloattex = (float*) mip0->_data;
   assert(pfloattex!=nullptr);
 
   fvec2 origin(0,0);
 
   auto heightdata = (float*) _heightmap.GetHeightData();
 
-  for( size_t z=0; z<iglZ; z++ ){
-    size_t zz = z-(iglZ>>1);
-    float fzz = float(zz)/float(iglZ>>1); // -1 .. 1
-    for( size_t x=0; x<iglX; x++ ){
-      size_t xx = x-(iglX>>1);
-      float fxx = float(xx)/float(iglX>>1);
+  for( size_t z=0; z<MIPH; z++ ){
+    size_t zz = z-(MIPH>>1);
+    float fzz = float(zz)/float(MIPH>>1); // -1 .. 1
+    for( size_t x=0; x<MIPW; x++ ){
+      size_t xx = x-(MIPW>>1);
+      float fxx = float(xx)/float(MIPW>>1);
       fvec2 pos2d(fxx,fzz);
       float d = (pos2d-origin).Mag();
       float dpow = powf(d,3);
-      size_t index = z*iglX+x;
+      size_t index = z*MIPW+x;
       float h = heightdata[index];
       size_t pixelbase = index*4;
       pfloattex[pixelbase+0]=float(h);
@@ -199,8 +206,8 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
           float fxxm1 = float(xxm1);
           size_t zzm1 = z-1;
           float fzzm1 = float(zzm1);
-          size_t index_dxm1 = (z*iglX)+xxm1;
-          size_t index_dzm1 = (zzm1*iglX)+x;
+          size_t index_dxm1 = (z*MIPW)+xxm1;
+          size_t index_dzm1 = (zzm1*MIPW)+x;
           float hd0 = heightdata[index]*1500;
           float hdx = heightdata[index_dxm1]*1500;
           float hdz = heightdata[index_dzm1]*1500;
@@ -216,16 +223,58 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
           pfloattex[pixelbase+2]=float(n.y);//g y
           pfloattex[pixelbase+3]=float(n.z);//b z
 
+      } // if(x>0 and z>0){
+    } // for( size_t x=0; x<MIPW; x++ ){
+  } // for( size_t z=0; z<MIPH; z++ ){
+
+  /////////////////////////////
+  // compute mips
+  /////////////////////////////
+
+  int levindex = 0;
+  MIPW >>= 1;
+  MIPH >>= 1;
+  while(MIPW>=2 and MIPH>=2){
+    assert((levindex+1)<chain->_levels.size());
+    auto prevlev = chain->_levels[levindex];
+    auto nextlev = chain->_levels[levindex+1];
+    printf( "levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlev.get(), nextlev.get() );
+    auto prevbas = (float*) prevlev->_data;
+    auto nextbas = (float*) nextlev->_data;
+    ////////////////////////////////////////////////
+    constexpr float kdiv9 = 1.0f/9.0f;
+    for( int y=0; y<MIPH; y++ ){
+      for( int x=0; x<MIPW; x++ ){
+        int plx = x*2;
+        int ply = y*2;
+        int plxm1 = (x>0)?plx-1:0;
+        int plym1 = (y>0)?ply-1:0;
+        int plxp1 = (x<MIPW-1)?plx+1:(MIPW*2-1);
+        int plyp1 = (y<MIPH-1)?ply+1:(MIPH*2-1);
+        auto& dest_sample = nextlev->sample<fvec4>(x,y);
+        dest_sample  = prevlev->sample<fvec4>(plxm1,plym1);
+        dest_sample += prevlev->sample<fvec4>(plx,plym1);
+        dest_sample += prevlev->sample<fvec4>(plxp1,plym1);
+        dest_sample += prevlev->sample<fvec4>(plxm1,ply);
+        dest_sample += prevlev->sample<fvec4>(plx,ply);
+        dest_sample += prevlev->sample<fvec4>(plxp1,ply);
+        dest_sample += prevlev->sample<fvec4>(plxm1,plyp1);
+        dest_sample += prevlev->sample<fvec4>(plx,plyp1);
+        dest_sample += prevlev->sample<fvec4>(plxp1,plyp1);
+        dest_sample.x *= kdiv9;
+        dest_sample.y *= kdiv9;
+        dest_sample.z *= kdiv9;
+        dest_sample.w *= kdiv9;
       }
-
-
-
-
     }
-
+    ////////////////////////////////////////////////
+    MIPW >>= 1;
+    MIPH >>= 1;
+    levindex++;
   }
+  ////////////////////////////////////////////////////////////////
 
-  ptarg->TXI()->initTextureFromData(_heightmapTexture,true);
+  _heightmapTexture = ptarg->TXI()->createFromMipChain(chain);
 
   ////////////////////////////////////////////////////////////////
 
@@ -424,7 +473,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   // find/create vertexbuffers
   ////////////////////////////////////////////
 
-  typedef lev2::SVtxV12C4T16 vertex_type;
+  typedef SVtxV12C4T16 vertex_type;
 
   TerVtxBuffersType *vertexbuffers = 0;
 
@@ -435,8 +484,8 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
     vertexbuffers = OrkNew TerVtxBuffersType;
     vtxbufmap[terrain_ngrids] = vertexbuffers;
 
-    auto vbuf = new lev2::StaticVertexBuffer<vertex_type>(
-        vertex_count, 0, lev2::EPRIM_POINTS);
+    auto vbuf = new StaticVertexBuffer<vertex_type>(
+        vertex_count, 0, EPRIM_POINTS);
     vertexbuffers->push_back(vbuf);
   } else {
     vertexbuffers = itv->second;
@@ -445,7 +494,7 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
   auto vbuf = (*vertexbuffers)[0];
   vbuf->Reset();
   ////////////////////////////////////////////
-  lev2::VtxWriter<vertex_type> vwriter;
+  VtxWriter<vertex_type> vwriter;
   vwriter.Lock(ptarg, vbuf, vertex_count);
   ////////////////////////////////////////////
   triangle_count = 0;
@@ -544,15 +593,15 @@ void BulletHeightfieldImpl::init_visgeom(lev2::GfxTarget *ptarg) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void FastRender(const lev2::RenderContextInstData &rcidata,
+void FastRender(const RenderContextInstData &rcidata,
                 BulletHeightfieldImpl *htri) {
 
-  const lev2::Renderer *renderer = rcidata.GetRenderer();
+  const Renderer *renderer = rcidata.GetRenderer();
   const ent::Entity *pent = htri->_entity;
   const auto &hfd = htri->_hfd;
   auto sphmap = hfd.GetSphereMap();
 
-  lev2::GfxTarget *ptarg = renderer->GetTarget();
+  GfxTarget *ptarg = renderer->GetTarget();
 
   auto framedata = ptarg->GetRenderContextFrameData();
 
@@ -593,13 +642,13 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         // render
         ///////////////////////////////////////////////////////////////////
 
-        lev2::Texture *ColorTex = nullptr;
+        Texture *ColorTex = nullptr;
         if (sphmap && sphmap->GetTexture())
           ColorTex = sphmap->GetTexture();
 
         auto material = htri->mTerrainMtl;
 
-        material->SetColorMode(lev2::GfxMaterial3DSolid::EMODE_USER);
+        material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
         material->SetTexture(ColorTex);
         material->SetTexture2(htri->_heightmapTexture);
 
@@ -607,7 +656,7 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
         material->SetUser0(htri->_aabbmin);
         material->SetUser1(range);
         material->SetUser2(fvec4(hfd.WorldHeight(),0,0,0));
-        material->mRasterState.SetCullTest( lev2::ECULLTEST_PASS_BACK );
+        material->mRasterState.SetCullTest( ECULLTEST_PASS_BACK );
         ptarg->PushMaterial(material);
         int ivbidx = 0;
 
@@ -630,7 +679,7 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
             for (int ivb = 0; ivb < inumvb; ivb++) {
               auto vertex_buf = vertexbuffers[ivb];
               ptarg->GBI()->DrawPrimitiveEML(*vertex_buf,
-                                             lev2::EPRIM_TRIANGLES);
+                                             EPRIM_TRIANGLES);
             }
             htri->mTerrainMtl->EndPass(ptarg);
             htri->mTerrainMtl->EndBlock(ptarg);
@@ -649,9 +698,9 @@ void FastRender(const lev2::RenderContextInstData &rcidata,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void RenderHeightfield(lev2::RenderContextInstData &rcid,
-                              lev2::GfxTarget *targ,
-                              const lev2::CallbackRenderable *pren) {
+static void RenderHeightfield(RenderContextInstData &rcid,
+                              GfxTarget *targ,
+                              const CallbackRenderable *pren) {
   auto data = pren->GetDrawableDataA().Get<BulletHeightfieldImpl *>();
   if (data)
     FastRender(rcid, data);

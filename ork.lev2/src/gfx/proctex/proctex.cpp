@@ -49,7 +49,7 @@ template<> const ork::proctex::ImgBase& outplug<ork::proctex::ImgBase>::GetValue
 }
 }}
 
-namespace ork { 
+namespace ork {
 
 file::Path SaveFileRequester( const std::string& title, const std::string& ext );
 
@@ -82,7 +82,7 @@ void Buffer::SetBufferSize( int w, int h )
 void Buffer::PtexBegin(lev2::GfxTarget*ptgt, bool push_full_vp, bool clear_all )
 {	mTarget = ptgt;
 	mTarget->FBI()->SetAutoClear(false);
-	//mTarget->FBI()->BeginFrame();	
+	//mTarget->FBI()->BeginFrame();
 	auto rtg = GetRtGroup(ptgt);
 
 	mTarget->FBI()->PushRtGroup(rtg);
@@ -108,7 +108,7 @@ void Buffer::PtexEnd(bool pop_vp )
 	//printf( "  buffer<%p> end\n", this);
 
 	mTarget->FBI()->PopRtGroup();
-	//mTarget->FBI()->EndFrame();	
+	//mTarget->FBI()->EndFrame();
 	mTarget = nullptr;
 }
 lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
@@ -117,7 +117,7 @@ lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
 	{
 		mRtGroup = new RtGroup( ptgt, miW, miH );
 
-		auto mrt = new ork::lev2::RtBuffer(	
+		auto mrt = new ork::lev2::RtBuffer(
 			mRtGroup,
 			lev2::ETGTTYPE_MRT0,
 			lev2::EBUFFMT_RGBA32,
@@ -129,7 +129,7 @@ lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
 		ptgt->FBI()->PushRtGroup(mRtGroup);
 		ptgt->FBI()->PopRtGroup();
 	}
-	return mRtGroup;	
+	return mRtGroup;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -198,7 +198,7 @@ void ImgModule::Describe()
 
 }
 void Img32Module::Describe()
-{	
+{
 	RegisterObjOutPlug( Img32Module, ImgOut );
 
 
@@ -248,14 +248,14 @@ void ImgModule::Compute( dataflow::workunit* wu )
 		auto fbi = pTARG->FBI();
 
 		auto rtg = wrbuf.GetRtGroup(pTARG);
-		
+
 		auto fname = SaveFileRequester( "Export ProcTexImage", "DDS (*.dds)" );
 
 		if( fname.length() )
 		{
 
 			//SetRecentSceneFile(FileName.toAscii().data(),SCENEFILE_DIR);
-			if( ork::FileEnv::filespec_to_extension( fname.c_str() ).length() == 0 ) 
+			if( ork::FileEnv::filespec_to_extension( fname.c_str() ).length() == 0 )
 				fname += ".dds";
 			fbi->Capture( *rtg, 0, fname );
 		}
@@ -322,7 +322,7 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 		return;
 
 	//mThumbBuffer.BeginFrame();
-	
+
 	fbi->PushRtGroup(mThumbBuffer.GetRtGroup(pTARG));
 	GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
 	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
@@ -334,7 +334,7 @@ void ImgModule::UpdateThumb( ProcTex& ptex )
 	gridmat.SetUser0( fvec4(0.0f,0.0f,0.0f,float(wrbuf.miW)) );
 	pTARG->BindMaterial( & gridmat );
 	////////////////////////////////////////////////////////////////
-	float ftexw = ptexture ? ptexture->GetWidth() : 1.0f;
+	float ftexw = ptexture ? ptexture->_width : 1.0f;
 	pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
 	////////////////////////////////////////////////////////////////
 	fmtx4 mtxortho = pTARG->MTXI()->Ortho( -1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f );
@@ -375,7 +375,7 @@ ProcTex::ProcTex()
 	Texture::GetClassStatic();
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ProcTex::CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const //virtual 
+bool ProcTex::CanConnect( const ork::dataflow::inplugbase* pin, const ork::dataflow::outplugbase* pout ) const //virtual
 {	bool brval = false;
 	brval |= (&pin->GetDataTypeId()==&typeid(ImgBase))&&(&pout->GetDataTypeId()==&typeid(Img64));
 	brval |= (&pin->GetDataTypeId()==&typeid(ImgBase))&&(&pout->GetDataTypeId()==&typeid(Img32));
@@ -420,7 +420,7 @@ void ProcTex::compute( ProcTexContext& ptctx )
 
 				if( outplug->GetRegister() )
 				{
-					int ireg = outplug->GetRegister()->mIndex;	
+					int ireg = outplug->GetRegister()->mIndex;
 					//OrkAssert( ireg>=0 && ireg<ibufmax );
 					outplug->GetValue().miBufferIndex = ireg;
 					//printf( "pmod<%p> reg<%d>\n", img_module, ireg );
@@ -515,15 +515,15 @@ Buffer& ProcTexContext::GetBuffer32(int edest)
 {
 	if( edest < 0 ) return mTrashBuffer;
 	OrkAssert( edest<k32buffers );
-	return *mBuffer32[edest]; 
+	return *mBuffer32[edest];
 }
 Buffer& ProcTexContext::GetBuffer64(int edest)
 {
 	if( edest < 0 ) return mTrashBuffer;
 	OrkAssert( edest<k64buffers );
-	return *mBuffer64[edest]; 
+	return *mBuffer64[edest];
 }
-ProcTexContext::ProcTexContext() 
+ProcTexContext::ProcTexContext()
 	: mdflowctx()
 	, mFloatRegs("ptex_float", 4)
 	, mImage32Regs("ptex_img32", k32buffers)
@@ -547,7 +547,7 @@ ProcTexContext::ProcTexContext()
 	for( int i=0; i<k32buffers; i++ )
 		mBuffer32[i] = AllocBuffer64();
 }
-ProcTexContext::~ProcTexContext() 
+ProcTexContext::~ProcTexContext()
 {
 	for( int i=0; i<k64buffers; i++ )
 		ReturnBuffer( mBuffer64[i] );
@@ -662,12 +662,12 @@ void AA16Render::RenderAA()
 	float yd = boxy+(boxh*0.75f);
 	float ye = boxy+(boxh*1.0f);
 
-	quad quads[16] = 
+	quad quads[16] =
 	{
-		{ xa, ya, xb, yb }, { xb, ya, xc, yb }, { xc, ya, xd, yb },  { xd, ya, xe, yb }, 
-		{ xa, yb, xb, yc }, { xb, yb, xc, yc }, { xc, yb, xd, yc },  { xd, yb, xe, yc }, 
-		{ xa, yc, xb, yd }, { xb, yc, xc, yd }, { xc, yc, xd, yd },  { xd, yc, xe, yd }, 
-		{ xa, yd, xb, ye }, { xb, yd, xc, ye }, { xc, yd, xd, ye },  { xd, yd, xe, ye }, 
+		{ xa, ya, xb, yb }, { xb, ya, xc, yb }, { xc, ya, xd, yb },  { xd, ya, xe, yb },
+		{ xa, yb, xb, yc }, { xb, yb, xc, yc }, { xc, yb, xd, yc },  { xd, yb, xe, yc },
+		{ xa, yc, xb, yd }, { xb, yc, xc, yd }, { xc, yc, xd, yd },  { xd, yc, xe, yd },
+		{ xa, yd, xb, ye }, { xb, yd, xc, ye }, { xc, yd, xd, ye },  { xd, yd, xe, ye },
 	};
 
 	float ua = 0.0f;
@@ -682,16 +682,16 @@ void AA16Render::RenderAA()
 	float vd = 0.75f;
 	float ve = 1.0f;
 
-	quad quadsUV[16] = 
+	quad quadsUV[16] =
 	{
-		{ ua, va, ub, vb }, { ub, va, uc, vb }, { uc, va, ud, vb },  { ud, va, ue, vb }, 
-		{ ua, vb, ub, vc }, { ub, vb, uc, vc }, { uc, vb, ud, vc },  { ud, vb, ue, vc }, 
-		{ ua, vc, ub, vd }, { ub, vc, uc, vd }, { uc, vc, ud, vd },  { ud, vc, ue, vd }, 
-		{ ua, vd, ub, ve }, { ub, vd, uc, ve }, { uc, vd, ud, ve },  { ud, vd, ue, ve }, 
+		{ ua, va, ub, vb }, { ub, va, uc, vb }, { uc, va, ud, vb },  { ud, va, ue, vb },
+		{ ua, vb, ub, vc }, { ub, vb, uc, vc }, { uc, vb, ud, vc },  { ud, vb, ue, vc },
+		{ ua, vc, ub, vd }, { ub, vc, uc, vd }, { uc, vc, ud, vd },  { ud, vc, ue, vd },
+		{ ua, vd, ub, ve }, { ub, vd, uc, ve }, { uc, vd, ud, ve },  { ud, vd, ue, ve },
 	};
 
-	
-	auto temp_buffer = bufout.IsBuf32() ? ProcTexContext::AllocBuffer32() 
+
+	auto temp_buffer = bufout.IsBuf32() ? ProcTexContext::AllocBuffer32()
 										: ProcTexContext::AllocBuffer64();
 
 	for( int i=0; i<16; i++ )
@@ -706,8 +706,8 @@ void AA16Render::RenderAA()
 		//////////////////////////////////////////////////////
 		// Render subsection to BufTA
 		//////////////////////////////////////////////////////
-		
-		{			
+
+		{
 			temp_buffer->PtexBegin(target, true, true );
 			fmtx4 mtxortho = mtxi->Ortho( left,right,top,bottom, 0.0f, 1.0f );
 			mtxi->PushMMatrix( fmtx4::Identity );

@@ -580,6 +580,9 @@ protected:
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
+struct MipChainLevel;
+struct MipChain;
+
 class TextureInterface
 {
 public:
@@ -592,7 +595,8 @@ public:
 	virtual void UpdateAnimatedTexture( Texture *ptex, TextureAnimationInst* tai ) {}
 	virtual void ApplySamplingMode( Texture *ptex ) {}
 	virtual void initTextureFromData( Texture *ptex, bool autogenmips ) {}
-    virtual void generateMipMaps(Texture *ptex) = 0;
+  virtual Texture* createFromMipChain( MipChain* from_chain ) { return nullptr; }
+  virtual void generateMipMaps(Texture *ptex) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

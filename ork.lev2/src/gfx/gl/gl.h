@@ -241,6 +241,7 @@ struct GLTextureObject {
   GLuint mFbo;
   GLuint mDbo;
   GLenum mTarget;
+  int _maxmip = 0;
 
   GLTextureObject() : mObject(0), mFbo(0), mDbo(0), mTarget(GL_NONE) {} //, mfQtzTime(0.0f) {}
 };
@@ -285,6 +286,7 @@ private:
   void UpdateAnimatedTexture(Texture* ptex, TextureAnimationInst* tai) final;
   void initTextureFromData(Texture* ptex, bool autogenmips) final;
   void generateMipMaps(Texture* ptex) final;
+  Texture* createFromMipChain(MipChain* from_chain) final;
 
   std::map<int, PboSet*> mPBOSets;
   GfxTargetGL& mTargetGL;

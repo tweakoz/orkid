@@ -171,6 +171,8 @@ public:
 };
 
 typedef Matrix44<float> fmtx4;
+extern template class Matrix44<float>;
+extern template class Matrix44<double>;
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -29,7 +29,7 @@ enum EGfxTargetNiceness
 
 enum ETargetType
 {
-	ETGTTYPE_WINDOW = 0, 
+	ETGTTYPE_WINDOW = 0,
 	ETGTTYPE_MRT0 = 0,		// windows are always MRT 0
 	ETGTTYPE_MRT1 ,
 	ETGTTYPE_MRT2 ,
@@ -153,7 +153,7 @@ enum EBlending
 	EBLENDING_SUBTRACTIVE ,			// (SrcClr*0) + (FBClr*(1-SrcColor))
 	EBLENDING_ALPHA_SUBTRACTIVE ,	// (SrcClr*0) + (FBClr*(1-SrcAlpha))
 	EBLENDING_MODULATE ,			// (SrcClr*0) + (FBClr*(1-SrcAlpha))
-	EBLENDING_END ,	
+	EBLENDING_END ,
 };	// 3 bit
 
 //////////////////////////////////////

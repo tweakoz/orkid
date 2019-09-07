@@ -153,7 +153,7 @@ void GlFrameBufferInterface::DoEndFrame(void) {
   } else if (IsOffscreenTarget()) {
     // printf( "ENDFRAME<OST>\n" );
     GfxBuffer* pbuf = GetThisBuffer();
-    pbuf->GetTexture()->SetDirty(false);
+    pbuf->GetTexture()->_dirty = false;
     pbuf->SetDirty(false);
     // mTargetGL.EndContextFBO();
   } else {
@@ -211,10 +211,8 @@ void GlFrameBufferInterface::InitializeContext(GfxBuffer* pBuf) {
   // create orknum texture and link it
 
   Texture* ptexture = new Texture();
-  ptexture->SetWidth(mTarget.GetW());
-  ptexture->SetHeight(mTarget.GetH());
-  // ptexture->SetBytesPerPixel( ibytesperpix );
-  ptexture->SetTexClass(ork::lev2::Texture::ETEXCLASS_RENDERTARGET);
+  ptexture->_width = mTarget.GetW();
+  ptexture->_height = mTarget.GetH();
 
   SetBufferTexture(ptexture);
 
@@ -316,13 +314,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       GL_ERRORCHECK();
       ptexOBJ->mObject = FboObj->mTEX[it];
       //////////////////////////////////////////
-      ptex->SetWidth(iw);
-      ptex->SetHeight(ih);
-      ptex->SetTexIH((void*)ptexOBJ);
+      ptex->_width=iw;
+      ptex->_height=ih;
+      ptex->_internalHandle=(void*)ptexOBJ;
 
       ptex->setProperty<GLuint>("gltexobj", FboObj->mTEX[it]);
 
-      ptex->SetTexClass(ork::lev2::Texture::ETEXCLASS_RENDERTARGET);
       mTargetGL.TXI()->ApplySamplingMode(ptex);
       pB->SetTexture(ptex);
       //////////////////////////////////////////
