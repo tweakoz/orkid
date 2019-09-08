@@ -112,19 +112,32 @@ libblock lib_terrain {
       /////////////////////////////////
       // uvgen
       /////////////////////////////////
+      float lerpindex = mod(d2c/128.0,1);
+
       vec2 uv_xz = position.xz * metersPerTexel + oq.xy;
       vec2 uvd = uv_xz*0.5*texelsPerMeter*INVHFDIM;
       uvd += vec2(0.5,0.5);
-      float h = textureLod(ColorMap3,uvd,vtxlod).r;
+      /////////////////////////////////
+      float h_hi = textureLod(ColorMap3,uvd,vtxlod).r;
+      float h_lo = textureLod(ColorMap3,uvd,vtxlod+1).r;
+      float h = mix(h_hi,h_lo,lerpindex);
       h = (h * hfHeightScale) + hfHeightBias;
+      /////////////////////////////////
       //uvd =  abs(-uvd);
       //uvd = mod(uvd,1);
+      /////////////////////////////////
+      vec3 n_hi = textureLod(ColorMap3,uvd,vtxlod).yzw;
+      vec3 n_lo = textureLod(ColorMap3,uvd,vtxlod+1).yzw;
+      vec3 n = normalize(mix(n_hi,n_lo,lerpindex));
+      /////////////////////////////////
       w_xzq3.y = h;
       /////////////////////////////////
       rval.wpos = w_xzq3;
       rval.wpossh = rval.wpos;
-      rval.wnrm = vec3(mod(h*0.003,1)  );
+      //rval.wnrm = vec3(lerpindex);
+      //rval.wnrm = vec3(mod(h*0.01,1),lerpindex,0);
       //rval.wnrm = vec3(uvd,0);
+      rval.wnrm = n;
       rval.wdepth = distance(rval.wpos, vec3(0,0,0));
       rval.uv_lowmip = vec2(0,0);
 
