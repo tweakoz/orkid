@@ -109,25 +109,31 @@ libblock lib_terrain {
       vec2 oq = campos.xz-o2wo;
       vec2 w_xz = position.xz * metersPerTexel + oq;
       vec3 w_xzq3 = vec3(w_xz.x, 0, w_xz.y);
+      vec2 opos = (w_xz - o2w);
       /////////////////////////////////
       // uvgen
       /////////////////////////////////
-      float lerpindex = mod(d2c/128.0,1);
-
       vec2 uv_xz = position.xz * metersPerTexel + oq.xy;
       vec2 uvd = uv_xz*0.5*texelsPerMeter*INVHFDIM;
       uvd += vec2(0.5,0.5);
       /////////////////////////////////
-      float h_hi = textureLod(ColorMap3,uvd,vtxlod).r;
-      float h_lo = textureLod(ColorMap3,uvd,vtxlod+1).r;
+      float invBaseGridTexelDim = 0.013;
+      float size = max(0.5, max2(abs(opos * 2.0 * invBaseGridTexelDim)));
+      float llod = max(log2(size) - 0.75, 0.0);
+      float lomip = floor(llod);
+      float himip = lomip+1;
+      float lerpindex = llod - lomip;
+      /////////////////////////////////
+      float h_hi = textureLod(ColorMap3,uvd,lomip).r;
+      float h_lo = textureLod(ColorMap3,uvd,himip).r;
       float h = mix(h_hi,h_lo,lerpindex);
       h = (h * hfHeightScale) + hfHeightBias;
       /////////////////////////////////
       //uvd =  abs(-uvd);
       //uvd = mod(uvd,1);
       /////////////////////////////////
-      vec3 n_hi = textureLod(ColorMap3,uvd,vtxlod).yzw;
-      vec3 n_lo = textureLod(ColorMap3,uvd,vtxlod+1).yzw;
+      vec3 n_hi = textureLod(ColorMap3,uvd,lomip).yzw;
+      vec3 n_lo = textureLod(ColorMap3,uvd,himip).yzw;
       vec3 n = normalize(mix(n_hi,n_lo,lerpindex));
       /////////////////////////////////
       w_xzq3.y = h;
