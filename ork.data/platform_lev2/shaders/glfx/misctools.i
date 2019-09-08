@@ -129,17 +129,18 @@ libblock lib_terrain {
       float h = mix(h_hi,h_lo,lerpindex);
       h = (h * hfHeightScale) + hfHeightBias;
       /////////////////////////////////
-      //uvd =  abs(-uvd);
-      //uvd = mod(uvd,1);
-      /////////////////////////////////
       vec3 n_hi = textureLod(ColorMap3,uvd,lomip).yzw;
       vec3 n_lo = textureLod(ColorMap3,uvd,himip).yzw;
       vec3 n = normalize(mix(n_hi,n_lo,lerpindex));
       /////////////////////////////////
+      vec3 p_hi = textureLod(ColorMap2,uvd,lomip).xyz;
+      vec3 p_lo = textureLod(ColorMap2,uvd,himip).xyz;
+      vec3 p = mix(p_hi,p_lo,lerpindex);
+      /////////////////////////////////
       w_xzq3.y = h;
       /////////////////////////////////
       rval.wpos = w_xzq3;
-      rval.wpossh = rval.wpos;
+      rval.wpossh = p; //vec3(w_xzq3.x,h,w_xzq3.z);
       //rval.wnrm = vec3(lerpindex);
       //rval.wnrm = vec3(mod(h*0.01,1),lerpindex,0);
       //rval.wnrm = vec3(uvd,0);

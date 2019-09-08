@@ -84,11 +84,11 @@ fragment_shader ps_terrain1
   const vec3 side = vec3(0.2, 0.2, 0.25);
   const vec3 top = vec3(0.3, 0.3, 0.3);
 
+  /*
   vec3 nrml = frg_nrm;
   float u = mod(frg_uv.x, 1);
   float v = mod(frg_uv.y, 1);
 
-  /*
   float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
   float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
   float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
@@ -109,10 +109,10 @@ fragment_shader ps_terrain1
   vec3 final_diffuse_color = c_strata - noiz * 0.4;
 
   vec3 lightcol = ambient + mix(side, top, dot(nrml, vec3(0, 1, 0)));
+  out_clr = vec4(final_diffuse_color * lightcol, 1);
   */
-  //out_clr = vec4(final_diffuse_color * lightcol, 1);
-  out_clr =  vec4(nrml,1);//+vec3(u*0.25,v*0.25,0),1);
-  // out_clr = vec4(strata_index,strata_index,strata_index,1);
+  //out_clr =  vec4(nrml,1);//+vec3(u*0.25,v*0.25,0),1);
+   out_clr = vec4(mod(frg_wpos*0.1,1),1);
 }
 ///////////////////////////////////////////////////////////////
 // pick
