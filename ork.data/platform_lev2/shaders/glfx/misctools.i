@@ -113,17 +113,17 @@ libblock lib_terrain {
       // uvgen
       /////////////////////////////////
       vec2 uv_xz = position.xz * metersPerTexel + oq.xy;
-      //vec2 uv_xzq = uv_xz-o2wo;
-      //vec3 uv_xzq3 = vec3(w_xzq.x, 0, w_xzq.y);
-      vec2 uvd = uv_xz/(HFDIM-1);
-      float h = textureLod(ColorMap3,uvd,0).r;
+      vec2 uvd = uv_xz*0.5*texelsPerMeter*INVHFDIM;
+      uvd += vec2(0.5,0.5);
+      float h = textureLod(ColorMap3,uvd,vtxlod).r;
       h = (h * hfHeightScale) + hfHeightBias;
       //uvd =  abs(-uvd);
       //uvd = mod(uvd,1);
+      w_xzq3.y = h;
       /////////////////////////////////
       rval.wpos = w_xzq3;
       rval.wpossh = rval.wpos;
-      rval.wnrm = vec3(mod(h*0.01,1)  );
+      rval.wnrm = vec3(mod(h*0.003,1)  );
       //rval.wnrm = vec3(uvd,0);
       rval.wdepth = distance(rval.wpos, vec3(0,0,0));
       rval.uv_lowmip = vec2(0,0);
