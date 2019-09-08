@@ -444,8 +444,10 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
 
   iters.push_back(Iter{0, 256});  // 256*2 = 512m
   iters.push_back(Iter{1, 128});  // 128*4 = 512m   tot(1024m)
-  iters.push_back(Iter{2, 128});  // 128*8 = 1024m  tot(2048)
-  iters.push_back(Iter{3, 128});  // 128*16 = 2048m tot(4096m) - 2.56mi
+  iters.push_back(Iter{2, 64});  // 64*8 = 512  tot(1536)
+  iters.push_back(Iter{3, 32});  // 32*16 = 512m tot(2048m) - 2.56mi
+  iters.push_back(Iter{4, 16});  // 16*32 = 512m tot(2560m) - 2.56mi
+  iters.push_back(Iter{5, 8});  // 8*64 = 512m tot(3072m) - 2.56mi
   //iters.push_back(Iter{4, 128});
   //iters.push_back(Iter{5, 128});
 
