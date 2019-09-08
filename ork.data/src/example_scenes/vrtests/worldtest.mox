@@ -216,10 +216,10 @@
                                     <object type='EditorCamControllerData' id='18'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='19'>
-                                                <property name='Center'>-67.9191 105.268 251.93</property>
+                                                <property name='Center'>949.415 -2074.34 984.489</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>218.317</property>
-                                                <property name='QuatC'>-0.124255 -0.961878 0.109143 -0.219196</property>
+                                                <property name='Loc'>7846.76</property>
+                                                <property name='QuatC'>-0.0396523 -0.695862 0.717515 -0.00474034</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -280,7 +280,7 @@
                                                             "lev2tex" "data://effect_textures/NoiseKern"
                                                         </reference>
                                                     </property>
-                                                    <property name='VisualOffset'>0 4.1 0</property>
+                                                    <property name='VisualOffset'>0 0 0</property>
                                                     <property name='WorldHeight'>1500</property>
                                                     <property name='WorldSize'>8192</property>
                                                 </object>

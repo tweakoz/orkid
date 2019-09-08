@@ -18,6 +18,7 @@ uniform_block ublock_vtx {
   uniform vec4 modcolor;
   uniform float Time;
   uniform sampler2D ColorMap2; // technically a heightmap
+  uniform sampler2D ColorMap3; // technically a heightmap
   uniform vec4 User0;          // aabbmin
   uniform vec4 User1;          // aabbmax
   uniform vec4 User2;          // aabbmax-aabmin
@@ -61,8 +62,8 @@ vertex_shader vs_terrain1
   // apply to GL
   ///////////////////////////
   gl_Position = MatMVP * vec4(tero.wpos, 1);
-  frg_wpos = tero.wpos;
-  frg_clr = vec4(tero.wpos, tero.wnrm.x);
+  frg_wpos = tero.wpossh;
+  frg_clr = vec4(tero.wpos, 1.0);
   frg_uv = vec4(tero.uv_lowmip * 100.0, tero.wnrm.yz);
   frg_nrm = tero.wnrm;
   frg_camdist = distance(tero.wpos, campos);
@@ -83,8 +84,11 @@ fragment_shader ps_terrain1
   const vec3 side = vec3(0.2, 0.2, 0.25);
   const vec3 top = vec3(0.3, 0.3, 0.3);
 
-  vec3 nrml = normalize(frg_nrm);
+  vec3 nrml = frg_nrm;
+  float u = mod(frg_uv.x, 1);
+  float v = mod(frg_uv.y, 1);
 
+  /*
   float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
   float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
   float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
@@ -93,8 +97,6 @@ fragment_shader ps_terrain1
   vec3 c_strataandsnow = mix(c_strataandsnow_far, c_strataandsnow_near, ddd2);
   vec3 c_strata1 = mix(c_strata1_far, c_strata1_near, ddd2);
 
-  float u = mod(frg_uv.x, 1);
-  float v = mod(frg_uv.y, 1);
   float noiz1 = noise(frg_clr.xyz) * 0.25 * ddd3;
   float noiz2 = noise(frg_clr.xyz * 31.9) * 0.1 * ddd2;
   vec3 noiz = mix(a, b, noiz1 + noiz2);
@@ -107,9 +109,9 @@ fragment_shader ps_terrain1
   vec3 final_diffuse_color = c_strata - noiz * 0.4;
 
   vec3 lightcol = ambient + mix(side, top, dot(nrml, vec3(0, 1, 0)));
-
-  out_clr = vec4(final_diffuse_color * lightcol, 1);
-  // out_clr =  vec4(nrml,1);
+  */
+  //out_clr = vec4(final_diffuse_color * lightcol, 1);
+  out_clr =  vec4(nrml,1);//+vec3(u*0.25,v*0.25,0),1);
   // out_clr = vec4(strata_index,strata_index,strata_index,1);
 }
 ///////////////////////////////////////////////////////////////
