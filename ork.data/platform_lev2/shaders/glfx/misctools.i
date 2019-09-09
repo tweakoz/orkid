@@ -73,6 +73,9 @@ libblock lib_terrain {
       vec3 wnrm;
       float wdepth;
       vec2 uv_lowmip;
+      vec2 uvxplane;
+      vec2 uvyplane;
+      vec2 uvzplane;
     };
 
     vec2 quantize(vec2 inp, float quantum) {
@@ -117,14 +120,13 @@ libblock lib_terrain {
       vec2 uvd = uv_xz*0.5*texelsPerMeter*INVHFDIM;
       uvd += vec2(0.5,0.5);
       /////////////////////////////////
-      float invBaseGridTexelDim = 1/512.0;
+      float invBaseGridTexelDim = 1/(32.0*(8-vtxlod));
       float size = max(0.5, max2(abs(opos * 2.0 * invBaseGridTexelDim)));
       float llod = max(log2(size) - 0.75, 0.0);
       float hires_mip = floor(llod);
       float lores_mip = hires_mip+1;
       float lerpindex = (llod - hires_mip);
       lerpindex = pow(lerpindex,2);
-      //lerpindex = smoothstep(0.0,0.2,lerpindex);
       /////////////////////////////////
       vec4 hires_sample = textureLod(ColorMap3,uvd,hires_mip);
       vec4 lores_sample = textureLod(ColorMap3,uvd,lores_mip);
@@ -134,18 +136,13 @@ libblock lib_terrain {
       /////////////////////////////////
       vec3 n = mix(hires_sample.yzw,lores_sample.yzw,lerpindex);
       /////////////////////////////////
-      //vec3 p_hires = textureLod(ColorMap2,uvd,hires_mip).xyz;
-      //vec3 p_lores = textureLod(ColorMap2,uvd,lores_mip).xyz;
-      //vec3 p = mix(p_lores,p_hires,lerpindex);
-      //p.y = (p.y * hfHeightScale) + hfHeightBias;
-      /////////////////////////////////
       w_xzq3.y = h;
       /////////////////////////////////
       rval.wpos = w_xzq3;
-      rval.wpossh = w_xzq3;//vec3(w_xzq3.x,p.y,w_xzq3.z);
-      //rval.wnrm = vec3(lerpindex);
-      //rval.wnrm = vec3(mod(h*0.01,1),lerpindex,0);
-      //rval.wnrm = vec3(uvd,0);
+      rval.wpossh = w_xzq3;
+      rval.uvxplane = w_xzq3.zy;
+      rval.uvyplane = w_xzq3.xz;
+      rval.uvzplane = w_xzq3.xy;
       rval.wnrm = n;
       rval.wdepth = distance(rval.wpos, vec3(0,0,0));
       rval.uv_lowmip = vec2(0,0);
