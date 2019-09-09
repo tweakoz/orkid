@@ -47,9 +47,9 @@ namespace ork::ent {
     }
     else if(q._eventID == "read"){
       const auto& tbl = q._eventData.Get<ScriptTable>();
-      for( auto i : tbl._items ){
-        printf( "read tablekey<%s>\n", i.first.c_str() );
-      }
+      //for( auto i : tbl._items ){
+        //printf( "read tablekey<%s>\n", i.first.c_str() );
+      //}
       auto itg = tbl._items.find("grp");
       assert(itg!=tbl._items.end());
       auto itch = tbl._items.find("channel");

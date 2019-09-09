@@ -117,30 +117,32 @@ libblock lib_terrain {
       vec2 uvd = uv_xz*0.5*texelsPerMeter*INVHFDIM;
       uvd += vec2(0.5,0.5);
       /////////////////////////////////
-      float invBaseGridTexelDim = 0.013;
+      float invBaseGridTexelDim = 1/512.0;
       float size = max(0.5, max2(abs(opos * 2.0 * invBaseGridTexelDim)));
       float llod = max(log2(size) - 0.75, 0.0);
-      float lomip = floor(llod);
-      float himip = lomip+1;
-      float lerpindex = llod - lomip;
+      float hires_mip = floor(llod);
+      float lores_mip = hires_mip+1;
+      float lerpindex = (llod - hires_mip);
+      lerpindex = pow(lerpindex,2);
+      //lerpindex = smoothstep(0.0,0.2,lerpindex);
       /////////////////////////////////
-      float h_hi = textureLod(ColorMap3,uvd,lomip).r;
-      float h_lo = textureLod(ColorMap3,uvd,himip).r;
-      float h = mix(h_hi,h_lo,lerpindex);
+      vec4 hires_sample = textureLod(ColorMap3,uvd,hires_mip);
+      vec4 lores_sample = textureLod(ColorMap3,uvd,lores_mip);
+      /////////////////////////////////
+      float h = mix(hires_sample.x,lores_sample.x,lerpindex);
       h = (h * hfHeightScale) + hfHeightBias;
       /////////////////////////////////
-      vec3 n_hi = textureLod(ColorMap3,uvd,lomip).yzw;
-      vec3 n_lo = textureLod(ColorMap3,uvd,himip).yzw;
-      vec3 n = normalize(mix(n_hi,n_lo,lerpindex));
+      vec3 n = mix(hires_sample.yzw,lores_sample.yzw,lerpindex);
       /////////////////////////////////
-      vec3 p_hi = textureLod(ColorMap2,uvd,lomip).xyz;
-      vec3 p_lo = textureLod(ColorMap2,uvd,himip).xyz;
-      vec3 p = mix(p_hi,p_lo,lerpindex);
+      //vec3 p_hires = textureLod(ColorMap2,uvd,hires_mip).xyz;
+      //vec3 p_lores = textureLod(ColorMap2,uvd,lores_mip).xyz;
+      //vec3 p = mix(p_lores,p_hires,lerpindex);
+      //p.y = (p.y * hfHeightScale) + hfHeightBias;
       /////////////////////////////////
       w_xzq3.y = h;
       /////////////////////////////////
       rval.wpos = w_xzq3;
-      rval.wpossh = p; //vec3(w_xzq3.x,h,w_xzq3.z);
+      rval.wpossh = w_xzq3;//vec3(w_xzq3.x,p.y,w_xzq3.z);
       //rval.wnrm = vec3(lerpindex);
       //rval.wnrm = vec3(mod(h*0.01,1),lerpindex,0);
       //rval.wnrm = vec3(uvd,0);

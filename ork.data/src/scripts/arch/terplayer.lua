@@ -49,7 +49,7 @@ function TerPlayer:OnEntityUpdate(dt)
       channel="left.trigger"
     })
 
-    printf( "TERPLAYER::ltrigger %s", tostring(ltrigger) )
+    --printf( "TERPLAYER::ltrigger %s", tostring(ltrigger) )
 
     local mode = "stop";
     if ltrigger then

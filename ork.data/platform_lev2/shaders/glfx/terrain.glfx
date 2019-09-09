@@ -72,26 +72,28 @@ vertex_shader vs_terrain1
 fragment_shader ps_terrain1
   : iface_fdefault
   : lib_mmnoise {
-  const vec3 a = vec3(0.5, 0.5, 0.5);
-  const vec3 b = vec3(0.7, 0.7, 0.7);
-  const vec3 c_snowcolor_near = vec3(1.3, 1.3, 1.4);
-  const vec3 c_snowcolor_far = vec3(1.0, 1.0, 1.1);
-  const vec3 c_strata1_far = vec3(0.9, 0.9, 1.0);
-  const vec3 c_strataandsnow_far = vec3(0.8, 0.8, 0.9);
-  const vec3 c_strata1_near = vec3(1.0, 1.0, 1.1);
-  const vec3 c_strataandsnow_near = vec3(0.7, 0.7, 0.8);
-  const vec3 ambient = vec3(0.6, 0.6, 0.65);
-  const vec3 side = vec3(0.2, 0.2, 0.25);
-  const vec3 top = vec3(0.3, 0.3, 0.3);
-
-  /*
-  vec3 nrml = frg_nrm;
-  float u = mod(frg_uv.x, 1);
-  float v = mod(frg_uv.y, 1);
 
   float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
   float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
   float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
+
+  const vec3 fogcolor = vec3(0.6, 0.6, 0.7);
+  const vec3 ambient = vec3(0.6, 0.6, 0.65);
+  const vec3 side = vec3(0.2, 0.2, 0.25);
+  const vec3 top = vec3(0.3, 0.3, 0.3);
+
+/*  const vec3 a = vec3(0.5, 0.5, 0.5);
+  const vec3 b = vec3(0.7, 0.7, 0.7);
+  const vec3 c_snowcolor_near = vec3(1.3, 1.3, 1.4);
+  const vec3 c_strata1_far = vec3(0.9, 0.9, 1.0);
+  const vec3 c_strataandsnow_far = vec3(0.8, 0.8, 0.9);
+  const vec3 c_strata1_near = vec3(1.0, 1.0, 1.1);
+  const vec3 c_strataandsnow_near = vec3(0.7, 0.7, 0.8);
+
+
+  float u = mod(frg_uv.x, 1);
+  float v = mod(frg_uv.y, 1);
+
 
   vec3 c_snowcolor = mix(c_snowcolor_far, c_snowcolor_near, ddd2);
   vec3 c_strataandsnow = mix(c_strataandsnow_far, c_strataandsnow_near, ddd2);
@@ -108,11 +110,13 @@ fragment_shader ps_terrain1
   vec3 c_strata = mix(c_strataandsnow, c_basecolor, strata_index);
   vec3 final_diffuse_color = c_strata - noiz * 0.4;
 
-  vec3 lightcol = ambient + mix(side, top, dot(nrml, vec3(0, 1, 0)));
-  out_clr = vec4(final_diffuse_color * lightcol, 1);
+  //out_clr = vec4(final_diffuse_color * lightcol, 1);
   */
-  //out_clr =  vec4(nrml,1);//+vec3(u*0.25,v*0.25,0),1);
-   out_clr = vec4(mod(frg_wpos*0.1,1),1);
+  vec3 n = normalize(frg_nrm);
+  vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
+  vec3 c = lightcol*mix(fogcolor,n,ddd2);
+  out_clr = vec4(c,1);//+vec3(u*0.25,v*0.25,0),1);
+   //out_clr = vec4(mod(frg_wpos*0.1,1),1);
 }
 ///////////////////////////////////////////////////////////////
 // pick

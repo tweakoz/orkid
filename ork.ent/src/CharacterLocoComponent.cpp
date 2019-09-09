@@ -48,7 +48,7 @@ struct LocomotionForceInst : public BulletObjectForceControllerInst {
   void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
   bool DoLink(SceneInst* psi) final;
   void setForce(fvec3 force) {
-    printf( "setting force<%g %g %g>\n", force.x, force.y, force.z );
+    //printf( "setting force<%g %g %g>\n", force.x, force.y, force.z );
     _force=force;
   }
 
@@ -123,7 +123,7 @@ class CharacterLocoComponent : public ComponentInst {
              ? _setDir
              : nnn.xyz();
       f = f * forc;
-      printf( "force<%g %g %g>\n", f.x, f.y, f.z );
+      //printf( "force<%g %g %g>\n", f.x, f.y, f.z );
       _locoforce->setForce(f);
   }
 
@@ -139,7 +139,7 @@ class CharacterLocoComponent : public ComponentInst {
         else{
           assert(false);
         }
-        printf( "loco got state change request id<%s>\n", state.c_str() );
+        //printf( "loco got state change request id<%s>\n", state.c_str() );
     }
     else if(e._eventID == "setDir"){
         _setDir = e._eventData.Get<fvec3>();
