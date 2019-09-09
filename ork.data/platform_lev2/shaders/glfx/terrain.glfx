@@ -101,7 +101,7 @@ fragment_shader ps_terrain1
                   snow,
                   gsblend );
 
-  vec3 c = hor*pow(tpw.y,0.5);
+  vec3 c = hor*pow(tpw.y,0.5)
          + rock1*pow(tpw.x,0.5)
          + rock2*pow(tpw.z,0.5);
 
