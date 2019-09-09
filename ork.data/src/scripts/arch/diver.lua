@@ -83,17 +83,17 @@ function Diver:OnEntityUpdate(dt)
     pz = math.cos(self.phase)*-3.0
     --self.charcon:notify("setPos",ork.vec3(px,0,pz))
 
-    printf("selfent<%s>",tostring(self.ent))
-    printf("plyrent<%s>",tostring(self.playerent))
+    --printf("selfent<%s>",tostring(self.ent))
+    --printf("plyrent<%s>",tostring(self.playerent))
 
     local ppos = self.playerent.pos
     local mpos = self.ent.pos
     local del = (ppos-mpos)
     self.loco:notify("setDir",del:normal())
     self.loco:notify("setWalkingForce",10)
-    printf("ppos<%g %g %g>",ppos.x,ppos.y,ppos.z)
-    printf("mpos<%g %g %g>",mpos.x,mpos.y,mpos.z)
-    printf("del.mag<%g>", del:mag())
+    --printf("ppos<%g %g %g>",ppos.x,ppos.y,ppos.z)
+    --printf("mpos<%g %g %g>",mpos.x,mpos.y,mpos.z)
+    --printf("del.mag<%g>", del:mag())
     if self.timer<0 then
         self.timer = math.random(1,3)
         local stnum = math.random(1,6)

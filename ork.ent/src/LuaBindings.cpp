@@ -99,7 +99,7 @@ void ScriptVar::fromLua(lua_State* L, int index) {
 			int j = index;
 			auto m = Lua::getMap<std::map<std::string,ScriptVar>>(L,index);
 			for( auto item : m ){
-				printf( "GOTKEY<%s>\n", item.first.c_str());
+				//printf( "GOTKEY<%s>\n", item.first.c_str());
 				table._items[item.first]=item.second;
 			}
       break;
@@ -223,7 +223,7 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                    [](ComponentInst* ci, const char* evcode, ScriptVar evdata) {
                      auto clazz = ci->GetClass();
                      auto cn = clazz->Name();
-                     printf("notify ci<%s> code<%s> ... \n", cn.c_str(), evcode);
+                     //printf("notify ci<%s> code<%s> ... \n", cn.c_str(), evcode);
                      ComponentEvent ev;
                      ev._eventID = evcode;
                      ev._eventData = evdata._encoded;
@@ -234,7 +234,7 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                    [](ComponentInst* ci, const char* evcode, ScriptVar evdata) -> ScriptVar {
                      auto clazz = ci->GetClass();
                      auto cn = clazz->Name();
-                     printf("query\n");
+                     //printf("query\n");
                      ComponentQuery q;
                      q._eventID = evcode;
                      q._eventData = evdata._encoded;

@@ -803,7 +803,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
   fmtx4 w;
   w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
   vrimpl->_posemap["hmd"] = w;
-  printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
+  //printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
 
 #endif
 }
