@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import os,string
-from ork.build.common import TargetPlatform
+import ork.host
 
-os.chdir(os.environ["ORKDOTBUILD_WORKSPACE_DIR"])
+os.chdir(os.environ["ORKID_WORKSPACE_DIR"])
 
-tool = "ork.tool.test."+TargetPlatform+".release"
+tool = "ork.tool.test."+ork.host.PlatformId+".release"
 print(tool)
 
 def mkdir( actnam ):
