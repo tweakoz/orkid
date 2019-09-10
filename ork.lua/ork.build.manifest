@@ -1,3 +1,0 @@
-<project name="ork.lua">
-  <depends_on project="ork.build"/>
-</project>
