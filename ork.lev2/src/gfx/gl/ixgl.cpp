@@ -416,10 +416,8 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 	// Bind Texture
 
 	Texture* pTexture = new Texture();
-	pTexture->SetWidth( miW );
-	pTexture->SetHeight( miH );
-	pTexture->SetBytesPerPixel( 4 );
-	pTexture->SetTexClass( ork::lev2::Texture::ETEXCLASS_RENDERTARGET );
+	pTexture->_width = miW;
+	pTexture->_height = miH;
 
 	FBI()->SetBufferTexture( pTexture );
 
