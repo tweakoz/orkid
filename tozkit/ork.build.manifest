@@ -1,4 +1,0 @@
-<project name="tozkit">
-  <depends_on project="ork.build"/>
-  <autoexec script="setenv.py"/>
-</project>
