@@ -1,3 +1,0 @@
-<project name="ork.mayax">
-  <depends_on project="ork.build"/>
-</project>
