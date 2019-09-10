@@ -1,0 +1,4 @@
+{
+  "name": "orkid",
+  "autoexec": "scripts/initenv.py"
+}
