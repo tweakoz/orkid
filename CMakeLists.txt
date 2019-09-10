@@ -41,3 +41,5 @@ link_directories(${CMAKE_INSTALL_PREFIX}/lib/)
 ##############################
 
 add_subdirectory (ork.core)
+add_subdirectory (ork.tuio)
+add_subdirectory (ork.utpp)
