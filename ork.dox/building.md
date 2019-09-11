@@ -33,7 +33,7 @@ the ```<stage>/bin``` and ```<stage>/lib``` paths were added to your environment
 
 misc
 =====
-```<staging_folder>/.launch_env``` <- relaunch previously made environment container.
-```ork.find.py "phrase"``` - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
+* ```<staging_folder>/.launch_env``` <- relaunch previously made environment container.
+* ```ork.find.py "phrase"``` - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
 
 the automatic asset pipe is in flux. in the meantime typing "make assets" will build whatever assets are configured to convert for a given branch - see do_assets.py in the repo's root folder.
