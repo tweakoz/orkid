@@ -33,6 +33,15 @@ link_directories(${destlib})
 include_directories(AFTER $ENV{OBT_STAGE}/include)
 link_directories($ENV{OBT_STAGE}/lib/)
 
+link_directories($ENV{OBT_STAGE}/orkid/ork.tuio )
+link_directories($ENV{OBT_STAGE}/orkid/ork.utpp )
+link_directories($ENV{OBT_STAGE}/orkid/ork.core )
+link_directories($ENV{OBT_STAGE}/orkid/ork.lev2 )
+link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
+link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
+
+
+
 ##############################
 
 add_subdirectory (ork.tuio)

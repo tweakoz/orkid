@@ -6,13 +6,13 @@ set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/ext/fcollada )
 
 ###################################
 
-file(GLOB src_1 ${SRCD}/Fcollada/*.cpp)
-file(GLOB src_2 ${SRCD}/Fcollada/LibXML/*.c)
-file(GLOB src_3 ${SRCD}/Fcollada/FCDocument/*.cpp)
-file(GLOB src_4 ${SRCD}/Fcollada/FMath/*.cpp)
-file(GLOB src_5 ${SRCD}/Fcollada/FUtils/*.cpp)
-file(GLOB src_6 ${SRCD}/Fcollada/Output/*.cpp)
-file(GLOB src_7 ${SRCD}/Fcollada/Output/*.cpp)
+file(GLOB src_1 ${SRCD}/FCollada/*.cpp)
+file(GLOB src_2 ${SRCD}/FCollada/LibXML/*.c)
+file(GLOB src_3 ${SRCD}/FCollada/FCDocument/*.cpp)
+file(GLOB src_4 ${SRCD}/FCollada/FMath/*.cpp)
+file(GLOB src_5 ${SRCD}/FCollada/FUtils/*.cpp)
+file(GLOB src_6 ${SRCD}/FCollada/Output/*.cpp)
+file(GLOB src_7 ${SRCD}/FCollada/Output/*.cpp)
 file(GLOB src_8 ${SRCD}/FColladaPlugins/FArchiveXML/*.cpp)
 
 ###################################

@@ -1,8 +1,6 @@
 project (ork CXX)
 include (GenerateExportHeader)
 
-link_directories($ENV{OBT_STAGE}/lib)
-
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
@@ -30,10 +28,10 @@ IF(${APPLE})
     target_include_directories (ork_ecs PRIVATE /usr/local/include)
     list(APPEND libs m pthread )
 ELSEIF(${UNIX})
-    list(APPEND libs rt dl pthread GL )
+    list(APPEND libs rt dl pthread GL openvr_api )
 ENDIF()
 
-target_link_libraries(ork_ecs ${libs})
+target_link_libraries(ork_ecs PRIVATE ${libs})
 
 target_include_directories (ork_ecs PRIVATE ${INCD} )
 target_include_directories (ork_ecs PRIVATE ${SRCD} )
@@ -46,4 +44,7 @@ target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 ###################################
 
+
 install(TARGETS ork_ecs LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
+
+

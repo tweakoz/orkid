@@ -21,6 +21,7 @@ set(Qt5Network_DIR ${QT5BASE}/lib/cmake/Qt5Network)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Gui REQUIRED)
+find_package(Qt5X11Extras REQUIRED)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -89,7 +90,7 @@ IF(${APPLE})
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
     list(APPEND libs glfw.3 objc Qt5::Widgets Qt5::Core Qt5::Gui )
 ELSEIF(${UNIX})
-    list(APPEND libs rt dl pthread GL )
+    list(APPEND libs rt dl pthread python2.7 GL Qt5::X11Extras )
 ENDIF()
 
 target_link_libraries(ork_tool ${libs})
