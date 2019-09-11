@@ -3,8 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
-
+////////////////////////////////////////////////////////////////
 
 #include <ork/pch.h>
 #include <ork/application/application.h>
@@ -13,8 +12,6 @@
 #include <ork/kernel/string/PoolString.h>
 
 #include <ork/util/Context.hpp>
-
-//#include <pkg/ent/scene.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

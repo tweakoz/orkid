@@ -31,7 +31,7 @@ ELSEIF(${UNIX})
     list(APPEND libs rt dl pthread GL openvr_api )
 ENDIF()
 
-target_link_libraries(ork_ecs PRIVATE ${libs})
+target_link_libraries(ork_ecs ${libs})
 
 target_include_directories (ork_ecs PRIVATE ${INCD} )
 target_include_directories (ork_ecs PRIVATE ${SRCD} )
@@ -46,5 +46,3 @@ target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/bullet )
 
 
 install(TARGETS ork_ecs LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
-
-

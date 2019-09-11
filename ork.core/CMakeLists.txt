@@ -39,7 +39,6 @@ IF(${APPLE})
         "-framework IOKit"
     )
     target_link_libraries(ork_core LINK_PUBLIC objc )
-    #set_target_properties( SHLINKFLAGS = string.split("-install_name @executable_path/../lib/lib%s.so" % self.OutputName) )
 ELSEIF(${UNIX})
     target_link_libraries(ork_core LINK_PUBLIC rt dl pthread)
 ENDIF()

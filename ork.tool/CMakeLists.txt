@@ -21,7 +21,11 @@ set(Qt5Network_DIR ${QT5BASE}/lib/cmake/Qt5Network)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Gui REQUIRED)
+
+IF(${APPLE})
+ELSE()
 find_package(Qt5X11Extras REQUIRED)
+ENDIF()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
