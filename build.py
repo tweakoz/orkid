@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 
-import os
+import os, argparse
 import ork.host
 from ork.path import Path
 from ork.command import Command
+
+parser = argparse.ArgumentParser(description='orkid build')
+parser.add_argument('--clean', action="store_true", help='force clean build' )
+
+_args = vars(parser.parse_args())
 
 print(ork.host.SYSTEM)
 
@@ -15,4 +20,8 @@ prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
 cmd = ["cmake",prj_root]
 
 Command(cmd).exec()
-Command(["make"]).exec()
+if _args["clean"]!=False:
+    Command(["make","clean"]).exec()
+
+
+Command(["make","-j",ork.host.NumCores]).exec()

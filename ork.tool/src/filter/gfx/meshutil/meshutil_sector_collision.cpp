@@ -19,7 +19,7 @@
 #include <ork/util/endian.h>
 
 #if 1
-#include <btBulletCollisionCommon.h>
+#include <BulletCollision/btBulletCollisionCommon.h>
 #include <pkg/ent/bullet_sector.h>
 
 //#include <IL/il.h>
@@ -107,7 +107,7 @@ private:
 
 	bool GatherSectorPolysStep(SectorPolys& polys, int first, int prev, int cur, int n) const;
 	bool GatherSectorPolys(SectorPolys& polys, int top) const;
-	bool ComputeSectorDefinition(ent::bullet::Sector& sector, const SectorPolys& polys);	
+	bool ComputeSectorDefinition(ent::bullet::Sector& sector, const SectorPolys& polys);
 	bool ComputeSectorAdjacency(int index, const SectorPolys& polys);
 	bool ComputeSectorTrackPositions();
 
@@ -135,7 +135,7 @@ private:
 		}
 		return mOutVertIDs[vert];
 	}
-	
+
 	ent::bullet::SectorData &mTarget;
 
 	SectorArray& mSectors;
@@ -154,7 +154,7 @@ private:
 	vsnprintf(buffer, sizeof(buffer), format, args); \
 	va_end(args); \
 	buffer[sizeof(buffer)-1] = '\0';
-	
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static void AssertFailed(const char* secName, const fvec3& pos, const char* format, ...)
@@ -244,10 +244,10 @@ SectorWalker::SectorWalker(const toolmesh& mesh, ent::bullet::SectorData& target
 
 	mStraightCapGroups.push_back(mFrontGroup);
 	mStraightCapGroups.push_back(mStartGroup);*/
-	
+
 	unsigned int numStartPolys = 0;
 	unsigned int numBottomPolys = 0;
-	
+
 	for (int polyIndex = 0; polyIndex < mSubmesh->GetNumPolys(); ++polyIndex)
 	{
 		if (IsBottom(polyIndex))
@@ -269,7 +269,7 @@ SectorWalker::SectorWalker(const toolmesh& mesh, ent::bullet::SectorData& target
 	for (int polyIndex = 0; polyIndex < mSubmesh->GetNumPolys(); ++polyIndex)
 	{
 		const poly& thePoly = mSubmesh->RefPoly(polyIndex);
-			
+
 		PolyAssert(thePoly.GetNumSides() != 3, polyIndex, "No triangles in sector geometry");
 
 		orkvector<edge> edges;
@@ -279,7 +279,7 @@ SectorWalker::SectorWalker(const toolmesh& mesh, ent::bullet::SectorData& target
 			orkset<int> connectedPolys;
 			mSubmesh->GetConnectedPolys(*edgeIter,connectedPolys);
 			const unsigned int numConnectedPolys = connectedPolys.size();
-			
+
 			PolyAssert(numConnectedPolys >= 2, polyIndex, "Edge is connected to at least 2 polys (connected to %d)", numConnectedPolys);
 			PolyAssert(numConnectedPolys <= 3, polyIndex, "Edge is connected to at most 3 polys (connected to %d)", numConnectedPolys);
 
@@ -319,7 +319,7 @@ fvec3 SectorWalker::ComputeNormal(int polyIndex) const
 
 	const poly& ThePoly = mSubmesh->RefPoly(polyIndex);
 	const vertexpool& vpool = mSubmesh->RefVertexPool();
-	
+
 	for(int i=0 ; i<ThePoly.GetNumSides() ; i++) {
 		const fvec3 &v0 = vpool.GetVertex(ThePoly.GetVertexID((i+0)%ThePoly.GetNumSides())).mPos;
 		const fvec3 &v1 = vpool.GetVertex(ThePoly.GetVertexID((i+1)%ThePoly.GetNumSides())).mPos;
@@ -340,7 +340,7 @@ bool SectorWalker::GatherSectorPolysStep(SectorPolys& polys, int first, int prev
 	int end;
 	if (prev >= 0) {
 		const edge &baseEdge = mSubmesh->RefEdge(mSubmesh->GetEdgeBetween(prev, cur));
-		
+
 		at = thePoly.VertexCCW(baseEdge.GetVertexID(0));
 
 		if ( at == baseEdge.GetVertexID(1)) {
@@ -352,7 +352,7 @@ bool SectorWalker::GatherSectorPolysStep(SectorPolys& polys, int first, int prev
 	} else {
 		at = end = thePoly.GetVertexID(0);
 	}
-	
+
 	do {
 		int next = thePoly.VertexCCW(at);
 		const edge &atEdge = mSubmesh->RefEdge(edge(at, next).GetHashKey());
@@ -403,7 +403,7 @@ bool SectorWalker::GatherSectorPolys(SectorPolys& polys, int botPolyIndex) const
 
 	// sanity check
 	PolyAssertReturn(polys.size() == 4, botPolyIndex, "sector has four polys");
-	
+
 	return true;
 }
 
@@ -524,7 +524,7 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 
 	if (left.miNumSides == 4) {
 		// not a V split, could be an H split
-	
+
 		int tl = right.VertexCCW(bl);
 		int stop = bot.VertexCCW(bl);
 
@@ -538,19 +538,19 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 			int tr = top.VertexCCW(tl);
 			InitPortal(sector.mPortals[numPortals], bl, tl, tr, br);
 			numPortals++;
-			
+
 			PolyAssertReturn(numPortals <= 3, polys[0], "At most 3 portals (internal - tell inio)");
 		}
-			
+
 		PolyAssertReturn(numPortals >= 2, polys[0], "At least 2 portals (internal - tell inio)");
-		
+
 		if (numPortals == 3) {
 			sector.mFlags |= ork::ent::bullet::SECTORFLAG_SPLITH;
 
 			// 2---3
 			// |   |
 			// 1---4
-			
+
 			fvec3 v1, v2, v3, v4;
 			v1.Lerp(mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
 				mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos, 0.5);
@@ -562,7 +562,7 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 				((v3-v2)+(v4-v1)).Cross((v2-v1)+(v3-v4)).Normal(),
 				(v1+v2+v3+v4)*(1.0f/4.0f));
 		}
-		
+
 	} else {
 		// v split
 
@@ -578,7 +578,7 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 		tr = right.VertexCW(br);
 
 		InitPortal(sector.mPortals[1], bl, tl, tr, br);
-		
+
 		bl = tl;
 		br = tr;
 		tl = left.VertexCCW(bl);
@@ -587,11 +587,11 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 		InitPortal(sector.mPortals[2], bl, tl, tr, br);
 
 		sector.mFlags |= ork::ent::bullet::SECTORFLAG_SPLITV;
-		
+
 		// 2---3
 		// |   |
 		// 1---4
-		
+
 		fvec3 v1, v2, v3, v4;
 		v1.Lerp(mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_BR]].mPos,
 			mOutVerts[sector.mPortals[0].mCornerVerts[ent::bullet::PORTAL_CORNER_TR]].mPos, 0.5);
@@ -613,9 +613,9 @@ bool SectorWalker::ComputeSectorDefinition(ent::bullet::Sector& sector, const Se
 bool SectorWalker::ComputeSectorAdjacency(int index, const SectorPolys& polys)
 {
 	ent::bullet::Sector& sector = mSectors[index];
-	
+
 	orkset<int> adjpolys;
-	
+
 	for(int i=0 ; i<4 ; i++)
 		mSubmesh->GetAdjacentPolys(polys[i],adjpolys);
 
@@ -627,7 +627,7 @@ bool SectorWalker::ComputeSectorAdjacency(int index, const SectorPolys& polys)
 		if (sectorind == index) continue;
 		adjsectors.insert(sectorind);
 	}
-	
+
 
 	if (sector.IsSplit()){
 		PolyAssertReturn(adjsectors.size() == 3 , polys[0], "split sector has 3 adjacent sectors (had %d)", adjsectors.size());
@@ -649,9 +649,9 @@ bool SectorWalker::ComputeSectorAdjacency(int index, const SectorPolys& polys)
 
 		ent::bullet::SectorPortal &portal = sector.mPortals[nearportal];
 		for(orkset<int>::const_iterator sectIter = adjsectors.begin() ; sectIter != adjsectors.end() ; sectIter++) {
-			
+
 			ent::bullet::Sector& othersector = mSectors[*sectIter];
-			
+
 			for(int farportal = 0 ; farportal < (othersector.IsSplit()?3:2) ; farportal++) {
 				ent::bullet::SectorPortal &otherportal = othersector.mPortals[farportal];
 				const int nverts = ent::bullet::NUM_PORTAL_CORNERS;
@@ -670,8 +670,8 @@ bool SectorWalker::ComputeSectorAdjacency(int index, const SectorPolys& polys)
 		}
 		if (!match)
 			match = false;
-		LocAssertReturn(match , 
-			mOutVerts[portal.mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos, 
+		LocAssertReturn(match ,
+			mOutVerts[portal.mCornerVerts[ent::bullet::PORTAL_CORNER_BL]].mPos,
 			"could not find adjacent sector");
 	}
 
@@ -754,7 +754,7 @@ bool SectorWalker::ComputeSectorTrackPositions()
 		if (mSectors[snum].mPortals[1].mTrackProgress == 0) b = &start;
 		if (mSectors[snum].mPortals[1].mTrackProgress == 1) b = &end;
 		len = (mSectors[snum].mPortals[0].GetCenter(mOutVerts)-mSectors[snum].mPortals[1].GetCenter(mOutVerts)).Mag();
-		
+
 		if (!mSectors[snum].IsSplit()) {
 			edges.push_back(ProgressRelaxationEdge(a, b, len));
 
@@ -785,13 +785,13 @@ bool SectorWalker::ComputeSectorTrackPositions()
 	}
 
 	ork::msleep(10000);
-	
+
 	for(int snum = 0; snum < (int)mSectors.size(); snum++) {
 		for(int pnum = 0 ; pnum < (mSectors[snum].IsSplit()?3:2) ; pnum++) {
 			int othersec = mSectors[snum].mPortals[pnum].mNeighbor;
 
 			if (mSectors[snum].mPortals[pnum].mTrackProgress < 0)
-				mSectors[snum].mPortals[pnum].mTrackProgress = 
+				mSectors[snum].mPortals[pnum].mTrackProgress =
 					nodes[nodemap[PortalKey(snum, pnum)]].progress;
 		}
 	}
@@ -995,7 +995,7 @@ void ToolmeshToVertexIndexArrays(const MeshUtil::submesh& triangles, orkvector<f
 ///////////////////////////////////////////////////////////////////////////////
 /*
 void DrawTrackArea(file::Path path,
-				   ent::bullet::Track& track, 
+				   ent::bullet::Track& track,
 				   const fvec3& origin,
 				   const fvec3& uBasis,
 				   const fvec3& vBasis,
@@ -1201,7 +1201,7 @@ bool DAEToSECCollision(const tokenlist& options)
 //	ConverterAssert(sectorMesh.GetNumPolys() != 0, "There are polys in the 'sectors' layer");
 
 	//Read gravity data from the DAE file
-	
+
 	MeshUtil::toolmesh gravityMesh;
 	{
 		ColladaExportPolicy gravityPolicy;
@@ -1212,7 +1212,7 @@ bool DAEToSECCollision(const tokenlist& options)
 		gravityPolicy.mTriangulation.SetPolicy( ColladaTriangulationPolicy::ECTP_TRIANGULATE );
 		DaeReadOpts gravityReadOptions;
 		gravityReadOptions.mReadLayers.insert("gravity");
-		gravityMesh.ReadFromDaeFile(inPath, gravityReadOptions);	
+		gravityMesh.ReadFromDaeFile(inPath, gravityReadOptions);
 		//std::string outp = std::string(inPath.GetName().c_str())+std::string("_grav");
 		//ork::file::Path outpth( inPath.c_str() );
 		//outpth.SetFile( outp.c_str() );
@@ -1221,7 +1221,7 @@ bool DAEToSECCollision(const tokenlist& options)
 	}
 
 	//Read kill data from the DAE file
-	
+
 	MeshUtil::toolmesh killMesh;
 	{
 		ColladaExportPolicy killPolicy;
@@ -1292,7 +1292,7 @@ bool DAEToSECCollision(const tokenlist& options)
 	if( rval )
 	{
 		ftimeA = float(OldSchool::GetRef().GetLoResTime());
-	
+
 		//Read track collision data from the DAE file
 		ColladaExportPolicy collisionPolicy;
 		collisionPolicy.mNormalPolicy.meNormalPolicy = ColladaNormalPolicy::ENP_ALLOW_SPLIT_NORMALS;
@@ -1317,7 +1317,7 @@ bool DAEToSECCollision(const tokenlist& options)
 		ToolmeshToVertexIndexArrays(*merged.FindSubMesh("all"), saveData.mTrackVerts, saveData.mTrackIndices, saveData.mTrackFlags);
 
 		rval &= ent::bullet::Track::Save(outPath, saveData);
-	
+
 		ftimeB = float(OldSchool::GetRef().GetLoResTime());
 		ftime = (ftimeB-ftimeA);
 		orkprintf( "<<PROFILE>> <<DAEToSECCollision::End %f seconds>>\n", ftime );

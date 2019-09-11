@@ -137,8 +137,11 @@ struct PhysicsDebugger : public btIDebugDraw {
 
   //////////////////////////
 
-  void beginInternalStep() override { BeginInternalTickClear(); }
-  void endInternalStep() override {}
+  void flushLines() final {
+      BeginInternalTickClear();
+  }
+  //void beginInternalStep() override { BeginInternalTickClear(); }
+  //void endInternalStep() override {}
   void drawLine(const btVector3 &from, const btVector3 &to,
                 const btVector3 &color) override;
   void drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB,

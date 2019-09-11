@@ -10,7 +10,7 @@
 #include <BulletCollision/CollisionShapes/btStaticPlaneShape.h>
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
+//#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <pkg/ent/bullet.h>
