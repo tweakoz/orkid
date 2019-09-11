@@ -9,7 +9,7 @@
 
 #include <pkg/ent/bullet.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
+//#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -31,7 +31,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static const bool USE_GIMPACT = true;
+static const bool USE_GIMPACT = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -191,28 +191,28 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster
 
 		const void* pIBDATA = pTARG->GBI()->LockIB( *ibase );
 		const void* pVBDATA = pTARG->GBI()->LockVB( *pVB );
-	
+
 		if( pIBDATA && pVBDATA )
 		{
 			std::vector<u16> Indices;
-		
+
 			const u16* psrcIDC = (const u16*) pIBDATA;
-					
+
 			switch( ept )
 			{
 				case lev2::EPRIM_TRIANGLESTRIP:
-				{	
+				{
 					for( int ii=0; ii<(inumindices-2); ii++ )
 					{
 						u16 idx0 = psrcIDC[ii+0];
 						u16 idx1 = psrcIDC[ii+1];
 						u16 idx2 = psrcIDC[ii+2];
-						
-						bool bOK = 
+
+						bool bOK =
 							( idx0!=idx1 )
 							&& ( idx0!=idx2 )
 							&& ( idx1!=idx2 );
-						
+
 						if( bOK )
 						{
 							Indices.push_back( idx0 );
@@ -223,18 +223,18 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster
 					break;
 				}
 				case lev2::EPRIM_TRIANGLES:
-				{	
+				{
 					for( int ii=0; ii<inumindices; ii+=3 )
 					{
 						u16 idx0 = psrcIDC[ii+0];
 						u16 idx1 = psrcIDC[ii+1];
 						u16 idx2 = psrcIDC[ii+2];
-						
-						bool bOK = 
+
+						bool bOK =
 							( idx0!=idx1 )
 							&& ( idx0!=idx2 )
 							&& ( idx1!=idx2 );
-						
+
 						if( bOK )
 						{
 							Indices.push_back( idx0 );
@@ -328,7 +328,7 @@ btTriangleIndexVertexArray* XgmClusterToTriVertArray(const ork::lev2::XgmCluster
 	}
 
 	pTARG->EndLoad(ploadtoken);
-	
+
 	return indexVertexArrays;
 }
 
@@ -382,7 +382,7 @@ btCompoundShape *XgmMeshToCompoundShape(const ork::lev2::XgmMesh *xgmmesh,float 
 btCollisionShape *XgmClusterToBvhTriangleMeshShape(const ork::lev2::XgmCluster &xgmcluster,float fscale)
 {
 	btTriangleIndexVertexArray* arrays = XgmClusterToTriVertArray(xgmcluster,fscale);
-	
+
 	btVector3 aabbMin, aabbMax;
 	arrays->calculateAabbBruteForce(aabbMin, aabbMax);
 
@@ -394,7 +394,7 @@ btCollisionShape *XgmClusterToBvhTriangleMeshShape(const ork::lev2::XgmCluster &
 
 	printf( "MeshAABB min<%f %f %f> max<%f %f %f>\n",
 		aabbMin.getX(), aabbMin.getY(), aabbMin.getZ(),
-		aabbMax.getX(), aabbMax.getY(), aabbMax.getZ() );		
+		aabbMax.getX(), aabbMax.getY(), aabbMax.getZ() );
 
 	return pshape ;
 }
@@ -412,10 +412,10 @@ btCollisionShape* XgmClusterToGimpactMeshShape(const ork::lev2::XgmCluster &xgmc
 
 	if( USE_GIMPACT )
 	{
-	btVector3 scale(fscale,fscale,fscale);
+	  /*btVector3 scale(fscale,fscale,fscale);
 		btGImpactConvexDecompositionShape* pshape = new btGImpactConvexDecompositionShape(arrays,scale);
 		pshape->updateBound();
-		rval = pshape;
+		rval = pshape;*/
 	}
 	else
 	{	btGImpactMeshShape* pshape = new btGImpactMeshShape(arrays);
@@ -424,7 +424,7 @@ btCollisionShape* XgmClusterToGimpactMeshShape(const ork::lev2::XgmCluster &xgmc
  //
 	printf( "MeshAABB min<%f %f %f> max<%f %f %f>\n",
 		aabbMin.getX(), aabbMin.getY(), aabbMin.getZ(),
-		aabbMax.getX(), aabbMax.getY(), aabbMax.getZ() );		
+		aabbMax.getX(), aabbMax.getY(), aabbMax.getZ() );
 
 	return rval;
 }

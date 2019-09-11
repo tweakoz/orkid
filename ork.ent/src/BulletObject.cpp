@@ -9,7 +9,7 @@
 
 #include <pkg/ent/bullet.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
+//#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 #include <BulletCollision/CollisionShapes/btStaticPlaneShape.h>
 #include <ork/lev2/gfx/gfxmodel.h>

@@ -4,7 +4,9 @@ include (GenerateExportHeader)
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set(CMAKE_CXX_FLAGS "-Wno-deprecated --std=c++17")
-
+set( TUIO_DEST_HEADERDIR ${CMAKE_INSTALL_PREFIX}/include/tuio )
+set( OSC_DEST_HEADERDIR ${CMAKE_INSTALL_PREFIX}/include/osc )
+set( IP_DEST_HEADERDIR ${CMAKE_INSTALL_PREFIX}/include/ip )
 ###################################
 
 file(GLOB src_1 ${SRCD}/*.cpp)
@@ -36,7 +38,33 @@ target_include_directories (ork_tuio PRIVATE ${SRCD}/oscpack )
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 ###################################
-#install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/inc/ork DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
 #install( TARGETS ork_tuio DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 
 ###################################
+
+add_custom_target(mktuiohdrdir ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${TUIO_DEST_HEADERDIR})
+
+add_custom_target(mkoschdrdir ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${OSC_DEST_HEADERDIR})
+
+add_custom_target(mkiphdrdir ALL
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${IP_DEST_HEADERDIR})
+
+add_custom_command(
+  TARGET ork_tuio
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy ${SRCD}/*.h ${TUIO_DEST_HEADERDIR}
+)
+
+add_custom_command(
+  TARGET ork_tuio
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy ${SRCD}/oscpack/osc/*.h ${OSC_DEST_HEADERDIR}
+)
+
+add_custom_command(
+  TARGET ork_tuio
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy ${SRCD}/oscpack/ip/*.h ${IP_DEST_HEADERDIR}
+)

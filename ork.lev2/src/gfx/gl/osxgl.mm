@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #import <ork/pch.h>
-#if defined( ORK_CONFIG_OPENGL ) && defined( ORK_OSX )
+#if defined( ORK_OSX )
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
 #import <CoreData/CoreData.h>

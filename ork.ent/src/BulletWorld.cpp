@@ -9,7 +9,7 @@
 
 #include <pkg/ent/bullet.h>
 #include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
+//#include <Extras/GIMPACTUtils/btGImpactConvexDecompositionShape.h>
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -182,13 +182,13 @@ btRigidBody* BulletSystem::AddLocalRigidBody(ork::ent::Entity* pent
 void BulletSystem::InitWorld()
 {
 	btDefaultCollisionConstructionInfo cinfo;
-	cinfo.m_stackAlloc = 0;
+	//cinfo.m_stackAlloc = 0;
 	cinfo.m_persistentManifoldPool = 0;
 	cinfo.m_collisionAlgorithmPool = 0;
 
 	cinfo.m_defaultMaxPersistentManifoldPoolSize = 4096;
 	cinfo.m_defaultMaxCollisionAlgorithmPoolSize = 4096;
-	cinfo.m_defaultStackAllocatorSize = 64<<20; // 2MB
+	//cinfo.m_defaultStackAllocatorSize = 64<<20; // 2MB
 
 	// collision configuration contains default setup for memory, collision setup
 	mBtConfig = new btDefaultCollisionConfiguration(cinfo);

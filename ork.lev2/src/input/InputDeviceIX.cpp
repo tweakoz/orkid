@@ -10,8 +10,8 @@
 
 #include "InputDeviceIX.h"
 
-#include "TuioClient.h"
-#include "TuioListener.h"
+#include <tuio/TuioClient.h>
+#include <tuio/TuioListener.h>
 #include <functional>
 using namespace TUIO;
 

@@ -13,6 +13,7 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 IF(${APPLE})
 set(CMAKE_MACOSX_RPATH 1)
 
+set(CMAKE_INSTALL_PREFIX $ENV{OBT_STAGE})
 # add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
 
@@ -40,6 +41,10 @@ link_directories(${CMAKE_INSTALL_PREFIX}/lib/)
 
 ##############################
 
-add_subdirectory (ork.core)
 add_subdirectory (ork.tuio)
 add_subdirectory (ork.utpp)
+add_subdirectory (ork.fcollada305)
+add_subdirectory (ork.core)
+add_subdirectory (ork.lev2)
+add_subdirectory (ork.ent)
+add_subdirectory (ork.tool)
