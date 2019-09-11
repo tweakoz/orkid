@@ -11,7 +11,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxanim.h>
 #include <ork/kernel/string/string.h>
-#include <unittest++/UnitTest++.h>
+#include <utpp/UnitTest++.h>
 
 #include <orktool/toolcore/FunctionManager.h>
 

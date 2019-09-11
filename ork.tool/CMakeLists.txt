@@ -28,7 +28,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
+link_directories($ENV{OBT_STAGE}/lib)
 
 ###################################
 
@@ -38,12 +38,6 @@ set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
 set( LEV2INCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.lev2/inc )
 set( ECSINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.ent/inc )
 set( CLDABASE ${CMAKE_CURRENT_SOURCE_DIR}/../ork.fcollada305/ext/fcollada )
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-add_compile_options(-Wno-deprecated)
-add_compile_options(-Wno-unused-command-line-argument)
-
-add_compile_options(-Wno-register) # python27 headers
 
 ###################################
 
@@ -68,8 +62,6 @@ list( APPEND mocsrcs ${INCD}/orktool/ged/ged.h )
 list( APPEND orksrcs ${mocsrcs} )
 
 ###################################
-ADD_DEFINITIONS(-DORK_OSX)
-ADD_DEFINITIONS(-DLINUX)
 
 add_library (ork_tool SHARED ${orksrcs})
 
@@ -80,6 +72,7 @@ target_include_directories (ork_tool PRIVATE ${LEV2INCD} )
 target_include_directories (ork_tool PRIVATE ${ECSINCD} )
 target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada )
 target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada/LibXML/include )
+target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include/bullet )
 target_include_directories (ork_tool PRIVATE /usr/include/python2.7 )
 

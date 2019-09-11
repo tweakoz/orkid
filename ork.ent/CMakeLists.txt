@@ -1,7 +1,7 @@
 project (ork CXX)
 include (GenerateExportHeader)
 
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
+link_directories($ENV{OBT_STAGE}/lib)
 
 ###################################
 
@@ -9,10 +9,6 @@ set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
 set( LEV2INCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.lev2/inc )
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-add_compile_options(-Wno-deprecated)
-add_compile_options(-Wno-unused-command-line-argument)
 ###################################
 
 file(GLOB_RECURSE src_event ${SRCD}/event/*.cpp)
@@ -22,7 +18,6 @@ file(GLOB src_ent ${SRCD}/*.cpp)
 set( orksrcs ${src_event} ${src_luaintf} ${src_ent} )
 
 ###################################
-ADD_DEFINITIONS(-DORK_OSX)
 
 add_library (ork_ecs SHARED ${orksrcs})
 
@@ -48,9 +43,5 @@ target_include_directories (ork_ecs PRIVATE ${LEV2INCD} )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/luajit-2.0 )
 target_include_directories (ork_ecs PRIVATE $ENV{OBT_STAGE}/include/bullet )
-
-###################################
-#install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/inc/ork DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
-#install( TARGETS ork_ecs DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 
 ###################################
