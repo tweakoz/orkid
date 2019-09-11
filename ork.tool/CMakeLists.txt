@@ -22,6 +22,8 @@ find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Gui REQUIRED)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -49,20 +51,37 @@ file(GLOB_RECURSE src_ent ${SRCD}/ent/*.cpp)
 file(GLOB_RECURSE src_filter ${SRCD}/filter/*.cpp)
 file(GLOB_RECURSE src_ged ${SRCD}/ged/*.cpp)
 file(GLOB_RECURSE src_qtui ${SRCD}/qtui/*.cpp)
+file(GLOB_RECURSE src_test ${SRCD}/test/*.cpp)
 file(GLOB_RECURSE src_toolcore ${SRCD}/toolcore/*.cpp)
 file(GLOB src_tool ${SRCD}/*.cpp)
 
-set( orksrcs ${src_ent} ${src_filter} ${src_ged} )
+set( orksrcs ${src_ent} ${src_filter} ${src_ged} ${src_test} )
 list( APPEND orksrcs ${src_qtui} ${src_tool} ${src_toolcore} )
+
+###################################
+
+set( mocsrcs ${INCD}/qtui/qtmainwin.h ) 
+
+list( APPEND orksrcs ${mocsrcs} )
 
 ###################################
 ADD_DEFINITIONS(-DORK_OSX)
 
 add_library (ork_tool SHARED ${orksrcs})
 
+target_include_directories (ork_tool PRIVATE ${INCD} )
+target_include_directories (ork_tool PRIVATE ${SRCD} )
+target_include_directories (ork_tool PRIVATE ${COREINCD} )
+target_include_directories (ork_tool PRIVATE ${LEV2INCD} )
+target_include_directories (ork_tool PRIVATE ${ECSINCD} )
+target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada )
+target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada/LibXML/include )
+target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include/bullet )
+target_include_directories (ork_tool PRIVATE /usr/include/python2.7 )
+
 ###################################
 
-set( libs ork_core ork_tuio ork_lev2 ork_ecs ork_fcollada )
+set( libs ork_core ork_tuio ork_lev2 ork_ecs ork_fcollada ork_utpp )
 list(APPEND libs OpenImageIO OpenImageIO_Util portaudio )
 
 IF(${APPLE})
@@ -80,15 +99,6 @@ ENDIF()
 
 target_link_libraries(ork_tool ${libs})
 
-target_include_directories (ork_tool PRIVATE ${INCD} )
-target_include_directories (ork_tool PRIVATE ${SRCD} )
-target_include_directories (ork_tool PRIVATE ${COREINCD} )
-target_include_directories (ork_tool PRIVATE ${LEV2INCD} )
-target_include_directories (ork_tool PRIVATE ${ECSINCD} )
-target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada )
-target_include_directories (ork_tool PRIVATE ${CLDABASE}/FCollada/LibXML/include )
-target_include_directories (ork_tool PRIVATE $ENV{OBT_STAGE}/include/bullet )
-target_include_directories (ork_tool PRIVATE /usr/include/python2.7 )
 
 ###################################
 #install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/inc/ork DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
