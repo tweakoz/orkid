@@ -63,7 +63,6 @@ void ComponentInst::Update(SceneInst *inst)
 {
 	if( mbValid )
 	{
-		MCheckPointContext( "ComponentInst::Update" );
 		DoUpdate(inst);
 	}
 }

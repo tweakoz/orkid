@@ -420,7 +420,6 @@ void AudioDevicePa::DoStopStream( AudioStreamPlayback* pb )
 
 float AudioDevicePa::GetStreamPlaybackLength( AudioStreamPlayback* streampb_handle )
 {
-	MCheckPointContext( "AudioDeviceWII::GetStreamPlaybackLength" );
 	if(streampb_handle)
 	{
 		PaPlayHandle* pnph = (PaPlayHandle*)streampb_handle;

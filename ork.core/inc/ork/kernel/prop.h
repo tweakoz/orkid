@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -12,7 +12,6 @@
 #include <ork/util/Context.h>
 #include <ork/kernel/tempstring.h>
 ///////////////////////////////////////////////////////////////////////////////
-#if defined( NITRO ) || defined(IX) || defined(_PSP) || defined(WII)
 inline char *_strdup( const char *str)
 {
 	unsigned len = strlen( str );
@@ -21,7 +20,6 @@ inline char *_strdup( const char *str)
 	dup[len] = '\0';
 	return dup;
 }
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////

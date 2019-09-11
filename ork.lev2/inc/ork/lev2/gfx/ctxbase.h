@@ -32,15 +32,7 @@ namespace ork { namespace lev2 {
 /// this abstraction allows us to switch UI toolkits (Qt/Fltk, etc...)
 /// ////////////////////////////////////////////////////////////////////////////
 
-#if defined( _WIN32 )
- typedef HWND CTFLXID;
-#elif defined( _OSX )
- typedef WindowPtr CTFLXID;
-#elif defined (IX)
  typedef void* CTFLXID;
-#elif defined (WII)
- typedef unsigned long int CTFLXID;
-#endif
 
  class CTXBASE : public ork::AutoConnector
 {
@@ -51,9 +43,9 @@ namespace ork { namespace lev2 {
 public:
 
 	enum ERefreshPolicy
-	{	
+	{
 		EREFRESH_FASTEST = 0,	// refresh as fast as the update loop can go
-		EREFRESH_WHENDIRTY,		// refresh whenever dirty 
+		EREFRESH_WHENDIRTY,		// refresh whenever dirty
 		EREFRESH_FIXEDFPS,		// refresh at a fixed frame rate
 	};
 

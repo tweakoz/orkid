@@ -12,12 +12,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(_USE_D3DX)
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::D3DX_OBJ_Filter,"D3DX_OBJ_Filter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::XGM_D3DX_Filter,"XGM_D3DX_Filter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::OBJ_D3DX_Filter,"OBJ_D3DX_Filter");
-#endif
-
 INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::XGM_OBJ_Filter,"XGM_OBJ_Filter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::OBJ_OBJ_Filter,"OBJ_OBJ_Filter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::MeshUtil::OBJ_XGM_Filter,"OBJ_XGM_Filter");
@@ -65,47 +59,6 @@ bool OBJ_OBJ_Filter::ConvertAsset( const tokenlist& toklist )
 	return true;
 }
 
-#if defined(_USE_D3DX)
-void XGM_D3DX_Filter::Describe() {}
-void D3DX_OBJ_Filter::Describe() {}
-void OBJ_D3DX_Filter::Describe() {}
-D3DX_OBJ_Filter::D3DX_OBJ_Filter( ){}
-XGM_D3DX_Filter::XGM_D3DX_Filter( ){}
-OBJ_D3DX_Filter::OBJ_D3DX_Filter( ){}
-
-bool D3DX_OBJ_Filter::ConvertAsset( const tokenlist& toklist )
-{
-	tokenlist::const_iterator it = toklist.begin();
-	const std::string& inf = *it++;
-	const std::string& outf = *it++;
-	MeshUtil::toolmesh tmesh;
-	tmesh.ReadFromD3DXFile( inf.c_str() );
-	tmesh.WriteToWavefrontObj( outf.c_str() );
-	return true;
-}
-bool XGM_D3DX_Filter::ConvertAsset( const tokenlist& toklist )
-{
-	tokenlist::const_iterator it = toklist.begin();
-	const std::string& inf = *it++;
-	const std::string& outf = *it++;
-	MeshUtil::toolmesh tmesh;
-	tmesh.ReadFromXGM( inf.c_str() );
-	tmesh.WriteToD3DXFile( outf.c_str() );
-	return true;
-}
-bool OBJ_D3DX_Filter::ConvertAsset( const tokenlist& toklist )
-{
-	tokenlist::const_iterator it = toklist.begin();
-	const std::string& inf = *it++;
-	const std::string& outf = *it++;
-	MeshUtil::toolmesh tmesh;
-	tmesh.ReadFromWavefrontObj( inf.c_str() );
-	tmesh.WriteToD3DXFile( outf.c_str() );
-	return true;
-}
-
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void toolmesh::ReadAuto( const file::Path& BasePath )
@@ -126,12 +79,6 @@ void toolmesh::ReadAuto( const file::Path& BasePath )
 	{
 		ReadFromXGM( BasePath );
 	}
-#if defined(_USE_D3DX)
-	else if( ext == "x" )
-	{
-		ReadFromD3DXFile( BasePath );
-	}
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -150,12 +97,6 @@ void toolmesh::WriteAuto( const file::Path& BasePath ) const
 	{
 		WriteToWavefrontObj( BasePath );
 	}
-#if ! defined(IX)
-	else if( ext == "x" )
-	{
-		WriteToD3DXFile( BasePath );
-	}
-#endif
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -170,20 +111,20 @@ FlatSubMesh::FlatSubMesh( const submesh& mesh )
 	evtxformat = PropType<lev2::EVtxStreamFormat>::FromString( vtxformat );
 
 	orkprintf( "vtxformat<%s>\n", vtxformat );
-	
+
 	////////////////////////////////////////////////////////
 	int inumv = (int) vpool.GetNumVertices();
 	int inumtri = int(TrianglePolyIndices.size());
 	int inumqua = int(QuadPolyIndices.size());
 	////////////////////////////////////////////////////////
-	
+
 	switch( evtxformat )
 	{
 		case lev2::EVTXSTREAMFMT_V12N12B12T16:
-		{	
+		{
 			lev2::SVtxV12N12B12T16 OutVertex;
 			for( int iv0=0; iv0<inumv; iv0++ )
-			{	
+			{
 				const vertex& invtx =  vpool.GetVertex(iv0);
 
 				OutVertex.mPosition = invtx.mPos;
@@ -200,11 +141,11 @@ FlatSubMesh::FlatSubMesh( const submesh& mesh )
 			break;
 		}
 		case lev2::EVTXSTREAMFMT_V12N12B12T8C4:
-		{	
+		{
 			orkvector<lev2::SVtxV12N12B12T8C4>	MergeVerts;
 			lev2::SVtxV12N12B12T8C4 OutVertex;
 			for( int iv0=0; iv0<inumv; iv0++ )
-			{	
+			{
 				const vertex& invtx =  vpool.GetVertex(iv0);
 
 				OutVertex.mPosition = invtx.mPos;

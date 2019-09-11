@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -18,27 +18,12 @@
 
 void OrkHeapCheck();
 
-#if defined(WII)
-	//#if !defined(_DEBUG)
-	//	#define orkprintf(...) ((void)0)
-		#define printf(...) ((void)0)
-	//#else
-		#define orkprintf OSReport
-		#define orkerrorlog OSReport
-	//#endif
+void orkprintf( const char *formatstring, ... );
+void orkerrorlog( const char *formatstring, ... );
 
-#elif defined(RETAIL)
-	#define orkprintf(...) ((void)0);
-	#define orkerrorlog(...) ((void)0);
-	#define printf(...) ((void)0);
-#else
-	void orkprintf( const char *formatstring, ... );
-	void orkerrorlog( const char *formatstring, ... );
-#endif
-
-#ifdef __cplusplus
+//#ifdef __cplusplus
 namespace ork {
-#endif
+//#endif
 
 void msleep( int millisec );
 void usleep( int microsec );
@@ -49,12 +34,6 @@ std::string getfilename( const std::string & filterdesc, const std::string &filt
 
 void win_messageh( const char *formatstring, ... );
 
-#ifdef NITRO
-# define lite_printf(...) OS_TPrintf(__VA_ARGS__)
-#else
-# define lite_printf(...) orkprintf(__VA_ARGS__)
-#endif
-
 orkvector< std::string > getfilenames_multiple( char * filter, char * title, char * initdir );
 void orkmessageh( const char *formatstring, ... );
 void orkmessageh( U32 chanid, const char *formatstring, ... );
@@ -62,30 +41,5 @@ void SplitString( const std::string &instr, orkvector<std::string> &splitvect, c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////////
-
-#if defined ( IX )
-template <typename T> T min( T a, T b ) { return (a<b) ? a : b; }
-#endif
-
-#ifdef __cplusplus
+//#ifdef __cplusplus
 }
-
-
-struct CheckPointContext : public ork::util::ContextTLS<CheckPointContext>
-{
-	char mBuffer[256];
-	CheckPointContext(const char *formatstring, ...);
-	~CheckPointContext();
-};
-
-#if 1
-# define CPC_CONCAT(x,y) CPC_CONCAT_(x,y)
-# define CPC_CONCAT_(x,y) x ## y
-# define MCheckPointContext(...)  CheckPointContext CPC_CONCAT(cpc_, __LINE__)(__VA_ARGS__)
-#else
-# define MCheckPointContext(...)  ((void)0)
-#endif
-
-#endif
-

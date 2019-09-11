@@ -13,18 +13,10 @@
 #include <tuio/TuioClient.h>
 #include <tuio/TuioListener.h>
 #include <functional>
-using namespace TUIO;
-
-#if defined(_IOS)
-#elif defined(IX)
+#include <ork/kernel/csystem.h>
 #include <ork/lev2/qtui/qtui.h>
-#elif defined(_LINUX)
-#include <GL/glx.h>
-#include <Qt/QX11Info>
-#define XK_LATIN1
-#define XK_MISCELLANY
-#include <X11/keysymdef.h>
-#endif
+
+using namespace TUIO;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
