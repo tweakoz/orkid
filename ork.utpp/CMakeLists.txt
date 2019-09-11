@@ -4,7 +4,7 @@ include (GenerateExportHeader)
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set(CMAKE_CXX_FLAGS "-Wno-deprecated --std=c++17")
-set( UTPP_DEST_HEADERDIR ${CMAKE_INSTALL_PREFIX}/include/utpp )
+set( UTPP_DEST_HEADERDIR $ENV{OBT_STAGE}/include/utpp )
 
 ###################################
 

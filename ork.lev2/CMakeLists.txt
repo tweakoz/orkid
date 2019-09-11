@@ -4,25 +4,25 @@ include (GenerateExportHeader)
 ###################################
 
 IF(${APPLE})
-set(QT5BASE /usr/local/opt/qt)
+set(QT5BASE /usr/local/opt/qt/lib/cmake)
 set(CMAKE_MACOSX_RPATH 1)
+ELSE()
+set(QT5BASE /usr/lib/x86_64-linux-gnu/cmake)
 ENDIF()
 
 ###################################
 
-set(Qt5Widgets_DIR ${QT5BASE}/lib/cmake/Qt5Widgets)
-set(Qt5Test_DIR ${QT5BASE}/lib/cmake/Qt5Test)
-set(Qt5Core_DIR ${QT5BASE}/lib/cmake/Qt5Core)
-set(Qt5_DIR ${QT5BASE}/lib/cmake)
-set(Qt5Concurrent_DIR ${QT5BASE}/lib/cmake/Qt5Concurrent)
-set(Qt5Gui_DIR ${QT5BASE}/lib/cmake/Qt5Gui)
-set(Qt5Network_DIR ${QT5BASE}/lib/cmake/Qt5Network)
+set(Qt5Widgets_DIR ${QT5BASE}/Qt5Widgets)
+set(Qt5Test_DIR ${QT5BASE}/Qt5Test)
+set(Qt5Core_DIR ${QT5BASE}/Qt5Core)
+set(Qt5_DIR ${QT5BASE})
+set(Qt5Concurrent_DIR ${QT5BASE}/Qt5Concurrent)
+set(Qt5Gui_DIR ${QT5BASE}/Qt5Gui)
+set(Qt5Network_DIR ${QT5BASE}/Qt5Network)
 
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Gui REQUIRED)
-
-#find_package(Qt5 REQUIRED COMPONENTS Widgets Core)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -50,8 +50,10 @@ file(GLOB src_lev2 ${SRCD}/*.cpp)
 
 IF(${APPLE})
   file(GLOB src_apple ${SRCD}/gfx/gl/*.mm)
+  ADD_DEFINITIONS(-DORK_OSX)
 ELSE()
-  set( src_apple {} )
+  set( src_apple )
+  ADD_DEFINITIONS(-DIX)
 ENDIF()
 
 set( orksrcs ${src_aud} ${src_gfx} ${src_input} )
@@ -59,7 +61,6 @@ list( APPEND orksrcs ${src_qtui} ${src_ui} ${src_lev2} )
 list( APPEND orksrcs ${src_apple} )
 
 ###################################
-ADD_DEFINITIONS(-DORK_OSX)
 
 add_library (ork_lev2 SHARED ${orksrcs})
 
@@ -76,10 +77,12 @@ IF(${APPLE})
     list(APPEND libs "-framework AudioUnit" "-framework AudioToolbox" )
     list(APPEND libs "-framework Carbon" "-framework Foundation" )
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
-    list(APPEND libs glfw.3 objc Qt5::Widgets Qt5::Core Qt5::Gui )
+    list(APPEND libs glfw.3 objc)
 ELSEIF(${UNIX})
     list(APPEND libs rt dl pthread GL )
 ENDIF()
+
+list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)
 
 target_link_libraries(ork_lev2 ${libs})
 

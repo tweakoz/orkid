@@ -299,7 +299,7 @@ void EzUiCam::RotUpdate(const CamEvTrackData& ed) {
       fquat QuatZ;
       vPushNZ.SetW(dangle);
       QuatZ.FromAxisAngle(vPushNZ);
-      QuatC = QuatZ.Multiply(ManipHandler.Quat);
+      QuatC = QuatZ.Multiply(_manipHandler.Quat);
 
       break;
     }
@@ -438,7 +438,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
         // calculate planes with world rotation, but current view target as origin
 
         fvec4 Origin = mvCenter;
-        ManipHandler.Init(pos2D, mCameraData.GetIVPMatrix(), QuatC);
+        _manipHandler.Init(pos2D, mCameraData.GetIVPMatrix(), QuatC);
       }
       //////////////////////////////////////////////////
 
@@ -510,7 +510,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       //////////////////////////////////////////////////
       // intersect ray with worlds XZ/XY/YZ planes
 
-      ManipHandler.Intersect(pos2D);
+      _manipHandler.Intersect(pos2D);
 
       float dx = float(esx - beginx);
       float dy = float(esy - beginy);
@@ -569,7 +569,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
             fquat QuatZ;
             vPushNZ.SetW(dangle);
             QuatZ.FromAxisAngle(vPushNZ);
-            QuatC = QuatZ.Multiply(ManipHandler.Quat);
+            QuatC = QuatZ.Multiply(_manipHandler.Quat);
 
             break;
           }

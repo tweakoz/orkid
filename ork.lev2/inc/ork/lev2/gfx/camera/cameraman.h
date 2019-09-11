@@ -128,7 +128,7 @@ public:
 
   ui::Viewport* mpViewport;
 
-  ManipHandler ManipHandler;
+  ManipHandler _manipHandler;
 
   bool mbInMotion;
 
