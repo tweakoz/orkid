@@ -3,7 +3,6 @@ include (GenerateExportHeader)
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/ext/fcollada )
-set(CMAKE_CXX_FLAGS "-Wno-deprecated --std=c++17")
 
 ###################################
 
@@ -36,14 +35,7 @@ ELSEIF(${UNIX})
     target_link_libraries(ork_fcollada LINK_PUBLIC rt dl pthread)
 ENDIF()
 
-ADD_DEFINITIONS(-DLINUX)
-
 target_include_directories (ork_fcollada PRIVATE ${SRCD}/FCollada )
 target_include_directories (ork_fcollada PRIVATE ${SRCD}/FCollada/LibXML/include )
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
-
-###################################
-#install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/inc/ork DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
-#install( TARGETS ork_fcollada DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 
 ###################################

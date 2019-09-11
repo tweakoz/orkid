@@ -32,8 +32,6 @@ ELSEIF(${UNIX})
     target_link_libraries(ork_tuio LINK_PUBLIC rt dl pthread)
 ENDIF()
 
-ADD_DEFINITIONS(-DLINUX)
-
 target_include_directories (ork_tuio PRIVATE ${SRCD}/oscpack )
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 

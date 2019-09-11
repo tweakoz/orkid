@@ -33,9 +33,6 @@
 #include <unistd.h>
 #endif
 
-//#pragma comment( lib, "devil.lib" )
-//#pragma comment( lib, "ilu.lib" )
-
 s64 giNumRays = 0;
 
 namespace ork {
@@ -50,16 +47,7 @@ static const float kJITTER = 0.5f; // 0.5
 
 static int GetNumCores()
 {
-	#if defined(IX)
-	int numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
-	#else
-	SYSTEM_INFO sysinfo;
-	GetSystemInfo( &sysinfo );
-	int numCPUs = sysinfo.dwNumberOfProcessors;
-	#endif
-	orkprintf( "NumCpus<%d>\n", numCPUs );
-	fflush(stdout);
-	return numCPUs;
+	return OldSchool::GetNumCores();
 }
 
 void RgmTri::Compute()
