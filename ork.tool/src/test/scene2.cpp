@@ -4,7 +4,7 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/editor/editor.h>
-#include <unittest++/UnitTest++.h>
+#include <utpp/UnitTest++.h>
 
 using namespace ork;
 using namespace ork::ent;

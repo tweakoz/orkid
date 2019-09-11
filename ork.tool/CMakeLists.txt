@@ -60,12 +60,16 @@ list( APPEND orksrcs ${src_qtui} ${src_tool} ${src_toolcore} )
 
 ###################################
 
-set( mocsrcs ${INCD}/qtui/qtmainwin.h ) 
+set( mocsrcs ${INCD}/orktool/qtui/qtmainwin.h )
+list( APPEND mocsrcs ${INCD}/orktool/qtui/qtconsole.h )
+list( APPEND mocsrcs ${INCD}/orktool/qtui/qtapp.h )
+list( APPEND mocsrcs ${INCD}/orktool/ged/ged.h )
 
 list( APPEND orksrcs ${mocsrcs} )
 
 ###################################
 ADD_DEFINITIONS(-DORK_OSX)
+ADD_DEFINITIONS(-DLINUX)
 
 add_library (ork_tool SHARED ${orksrcs})
 
