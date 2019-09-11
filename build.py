@@ -38,4 +38,6 @@ if _args["verbose"]!=False:
 if _args["serial"]==False:
     cmd += ["-j",ork.host.NumCores]
 
+cmd += ["install"]
+
 Command(cmd).exec()

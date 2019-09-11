@@ -50,3 +50,5 @@ add_custom_command(
 )
 
 ###################################
+
+install(TARGETS ork_utpp LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )

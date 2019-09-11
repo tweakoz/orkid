@@ -14,7 +14,7 @@
 
 #include <ork/lev2/gfx/dbgfontman.h>
 
-//#define USE_OIIO
+#define USE_OIIO
 
 #if defined(USE_OIIO)
 

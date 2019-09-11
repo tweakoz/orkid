@@ -66,3 +66,5 @@ add_custom_command(
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy ${SRCD}/oscpack/ip/*.h ${IP_DEST_HEADERDIR}
 )
+
+install(TARGETS ork_tuio LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )

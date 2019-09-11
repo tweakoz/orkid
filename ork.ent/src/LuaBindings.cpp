@@ -156,6 +156,7 @@ bool DoString(lua_State* L, const char* str) {
 
 LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
   mLuaState = ::luaL_newstate(); // aka lua_open
+  assert(mLuaState!=nullptr);
   luaL_openlibs(mLuaState);
   auto L = mLuaState;
 

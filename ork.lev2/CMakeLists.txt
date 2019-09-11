@@ -83,3 +83,5 @@ target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 
 ###################################
+
+install(TARGETS ork_lev2 LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )

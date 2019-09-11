@@ -91,7 +91,7 @@ static void ToolStartupDataFolder()
 	//////////////////////////////////////////
 }
 
-int main(int& argc, char **argv)
+int toolmain(int& argc, char **argv)
 {
 	struct rlimit oldlimit, newlimit;
 
