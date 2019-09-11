@@ -4,7 +4,6 @@ include (GenerateExportHeader)
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
-set(CMAKE_CXX_FLAGS "-Wno-deprecated --std=c++17")
 
 ###################################
 

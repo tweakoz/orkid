@@ -28,17 +28,13 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
+link_directories($ENV{OBT_STAGE}/lib)
 
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
 set( INCD ${CMAKE_CURRENT_SOURCE_DIR}/inc )
 set( COREINCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.core/inc )
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-add_compile_options(-Wno-deprecated)
-add_compile_options(-Wno-unused-command-line-argument)
 ###################################
 
 file(GLOB_RECURSE src_aud ${SRCD}/aud/*.cpp)
@@ -50,10 +46,8 @@ file(GLOB src_lev2 ${SRCD}/*.cpp)
 
 IF(${APPLE})
   file(GLOB src_apple ${SRCD}/gfx/gl/*.mm)
-  ADD_DEFINITIONS(-DORK_OSX)
 ELSE()
   set( src_apple )
-  ADD_DEFINITIONS(-DIX)
 ENDIF()
 
 set( orksrcs ${src_aud} ${src_gfx} ${src_input} )
@@ -86,6 +80,7 @@ list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)
 
 target_link_libraries(ork_lev2 ${libs})
 
+target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
 
