@@ -26,10 +26,10 @@ IF(${APPLE})
     set_target_properties( ork.tool.release PROPERTIES LINK_FLAGS -Wl,-stack_size,0x4000000,-pagezero_size,10000,-image_base,100000000 )
 ELSEIF(${UNIX})
     list(APPEND libs rt dl pthread )
-    set_target_properties( ork.tool.release PROPERTIES LINK_FLAGS -Wl,-stack_size,0x4000000 )
+    #set_target_properties( ork.tool.release PROPERTIES LINK_FLAGS "-Wl,--stack,0x4000000" )
 ENDIF()
 
-target_link_libraries(ork.tool.release ${libs} ork_tool )
+target_link_libraries(ork.tool.release ${libs} ork_tool ork_ecs ork_lev2 ork_core ork_utpp ork_tuio ork_fcollada )
 
 target_include_directories (ork.tool.release PRIVATE ${COREINCD} )
 

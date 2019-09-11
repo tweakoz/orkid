@@ -59,8 +59,8 @@ FileDevContext::FileDevContext( const FileDevContext& oth )
 static file::Path::NameType BaseDir(){
 	file::Path::NameType startupdir = file::GetStartupDirectory();
 
-	if( getenv("ORKDOTBUILD_WORKSPACE_DIR")!=nullptr )
-		startupdir = file::Path::NameType(getenv("ORKDOTBUILD_WORKSPACE_DIR"))+file::Path::NameType("/");
+	if( getenv("ORKID_WORKSPACE_DIR")!=nullptr )
+		startupdir = file::Path::NameType(getenv("ORKID_WORKSPACE_DIR"))+file::Path::NameType("/");
 
 		return startupdir;
 

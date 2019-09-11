@@ -87,8 +87,8 @@ tokenlist Init(int argc, char **argv)
 
 	auto base_dir = ork::file::GetStartupDirectory();
 
-	if( getenv("ORKDOTBUILD_WORKSPACE_DIR")!=nullptr )
-		base_dir = getenv("ORKDOTBUILD_WORKSPACE_DIR");
+	if( getenv("ORKID_WORKSPACE_DIR")!=nullptr )
+		base_dir = getenv("ORKID_WORKSPACE_DIR");
 
 	OldSchool::SetGlobalStringVariable("data://", base_dir.c_str());
 

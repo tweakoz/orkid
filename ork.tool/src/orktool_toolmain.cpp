@@ -136,7 +136,7 @@ int toolmain(int& argc, char **argv)
       settings.endGroup();
 
 #else
-  gexecdir = getenv("ORKDOTBUILD_WORKSPACE_DIR");
+  gexecdir = getenv("ORKID_WORKSPACE_DIR");
 
   QSettings settings("TweakoZ", "OrkidTool");
   settings.beginGroup("App");
