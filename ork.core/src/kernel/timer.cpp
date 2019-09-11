@@ -11,24 +11,22 @@
 #include <ork/kernel/concurrent_queue.h>
 
 //////////////////////////////////////////////////////////////////////////////
-#if defined(WIN32) && ! defined(_XBOX)
-#pragma comment( lib, "Winmm.lib" )
-#endif
-//////////////////////////////////////////////////////////////////////////////
 #if defined(ORK_OSX)
 #include <mach/mach_time.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 #endif
 #if defined(IX)
 #include <unistd.h>
 #include <sys/time.h>
-#include <ork/kernel/mutex.h>
 #include <sched.h>
 #include <time.h>
-//#include <tbb/tbb.h>
 #endif
 //////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/kernel.h>
 #include <ork/kernel/timer.h>
+#include <ork/kernel/mutex.h>
+
 #include <time.h>
 #include <stdio.h>
 #include <sys/timeb.h>
@@ -284,15 +282,15 @@ void usleep(int microsec)
 
 int OldSchool::GetNumCores()
 {
-	#if defined(IX)
+#if defined(IX)
 	int numCPUs = sysconf(_SC_NPROCESSORS_ONLN);
-	#elif defined(_XBOX) || defined(ORK_WIN32)
-	int numCPUs=3;
-	#else
-	SYSTEM_INFO sysinfo;
-	GetOldSchoolInfo( &sysinfo );
-	int numCPUs = sysinfo.dwNumberOfProcessors;
-	#endif
+#else
+	int numCPUs;
+	size_t count_len = sizeof(numCPUs);
+	sysctlbyname("hw.logicalcpu", &numCPUs, &count_len, NULL, 0);
+	fprintf(stderr,"you have %i cpu cores", numCPUs);
+		
+#endif
 	orkprintf( "NumCpus<%d>\n", numCPUs );
 	fflush(stdout);
 	return numCPUs;

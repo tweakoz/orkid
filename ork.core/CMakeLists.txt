@@ -44,10 +44,5 @@ ELSEIF(${UNIX})
 ENDIF()
 
 target_include_directories (ork_core PRIVATE ${INCD} )
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
-
-###################################
-install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/inc/ork DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
-install( TARGETS ork_core DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 
 ###################################

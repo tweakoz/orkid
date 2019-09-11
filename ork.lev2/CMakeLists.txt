@@ -28,8 +28,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-link_directories($ENV{OBT_STAGE}/lib)
-
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
@@ -83,9 +81,5 @@ target_link_libraries(ork_lev2 ${libs})
 target_include_directories (ork_lev2 PRIVATE $ENV{OBT_STAGE}/include )
 target_include_directories (ork_lev2 PRIVATE ${INCD} )
 target_include_directories (ork_lev2 PRIVATE ${COREINCD} )
-
-###################################
-#install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/inc/ork DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
-#install( TARGETS ork_lev2 DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 
 ###################################

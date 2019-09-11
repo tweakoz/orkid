@@ -28,8 +28,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-link_directories($ENV{OBT_STAGE}/lib)
-
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
@@ -95,10 +93,5 @@ ELSEIF(${UNIX})
 ENDIF()
 
 target_link_libraries(ork_tool ${libs})
-
-
-###################################
-#install( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/inc/ork DESTINATION ${CMAKE_INSTALL_PREFIX}/include )
-#install( TARGETS ork_tool DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 
 ###################################

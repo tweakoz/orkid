@@ -3,7 +3,6 @@ include (GenerateExportHeader)
 ###################################
 
 set( SRCD ${CMAKE_CURRENT_SOURCE_DIR}/src )
-set(CMAKE_CXX_FLAGS "-Wno-deprecated --std=c++17")
 set( UTPP_DEST_HEADERDIR $ENV{OBT_STAGE}/include/utpp )
 
 ###################################
@@ -29,10 +28,7 @@ ELSEIF(${UNIX})
     target_link_libraries(ork_utpp LINK_PUBLIC rt dl pthread)
 ENDIF()
 
-ADD_DEFINITIONS(-DLINUX)
-
 target_include_directories (ork_utpp PRIVATE ${SRCD}/oscpack )
-link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
 ###################################
 
