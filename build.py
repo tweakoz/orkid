@@ -9,7 +9,7 @@ from ork.command import Command
 parser = argparse.ArgumentParser(description='orkid build')
 parser.add_argument('--clean', action="store_true", help='force clean build' )
 parser.add_argument('--verbose', action="store_true", help='verbose build' )
-
+parser.add_argument('--serial',action="store_true", help="non-parallel-build")
 _args = vars(parser.parse_args())
 
 print(ork.host.SYSTEM)
@@ -34,6 +34,8 @@ if _args["clean"]!=False:
 cmd = ["make"]
 if _args["verbose"]!=False:
     cmd += ["VERBOSE=1"]
-cmd += ["-j",ork.host.NumCores]
+
+if _args["serial"]==False:
+    cmd += ["-j",ork.host.NumCores]
 
 Command(cmd).exec()
