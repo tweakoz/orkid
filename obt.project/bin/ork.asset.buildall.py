@@ -5,7 +5,7 @@ import ork.host
 
 os.chdir(os.environ["ORKID_WORKSPACE_DIR"])
 
-tool = "ork.tool.test."+ork.host.PlatformId+".release"
+tool = "ork.tool.release"
 print(tool)
 
 def mkdir( actnam ):
