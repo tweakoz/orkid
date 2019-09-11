@@ -147,10 +147,6 @@ float get_sync_time()
     float sec = float(tms_del)*0.001f;
     return sec;
 ////////////////////////////////
-#elif defined(ORK_VS2012)
-////////////////////////////////
-	return OldSchool::GetRef().GetLoResTime();
-////////////////////////////////
 #else
 ////////////////////////////////
 #error // not implemented
@@ -224,7 +220,7 @@ bool PerfMarkerPop( PerfItem2& outmkr )
 }
 
 
-#if defined(_DARWIN) || defined(IX)
+#if defined(__APPLE__) || defined(IX)
 
 void msleep( int millisec )
 {
@@ -289,7 +285,7 @@ int OldSchool::GetNumCores()
 	size_t count_len = sizeof(numCPUs);
 	sysctlbyname("hw.logicalcpu", &numCPUs, &count_len, NULL, 0);
 	fprintf(stderr,"you have %i cpu cores", numCPUs);
-		
+
 #endif
 	orkprintf( "NumCpus<%d>\n", numCPUs );
 	fflush(stdout);
@@ -300,27 +296,11 @@ int OldSchool::GetNumCores()
 
 S64 OldSchool::GetClockCycle(void)
 {
-#if defined(ORK_WIN32)
-	f64 ftime = GetRef().GetHiResTime();
-	S64 output = S64(ftime*GetRef().mfClockRate);
-    return output;
-#elif defined(ORK_OSX) || defined(IX)
+#if defined(__APPLE__) || defined(IX)
 	S64 output;
     U32 high_end, low_end;
     __asm__ __volatile__("     rdtsc" :"=a" (low_end), "=d" (high_end));
     output = high_end;
-    output = output << 32;
-    output += low_end;
-    return output;
-#elif defined( GCC ) && defined( _PS2 )
-	S64 output;
-    U32 high_end, low_end;
-	//__asm__ __volatile__(
-	//	"\n nop \n"
-	//	:"=a" (low_end), "=d" (high_end)
-	//	:
-	//);
-	output = high_end;
     output = output << 32;
     output += low_end;
     return output;
@@ -332,15 +312,8 @@ S64 OldSchool::GetClockCycle(void)
 
 S64 OldSchool::ClockCyclesToMicroSeconds(S64 cycles)
 {
-#if defined( NITRO )
-	return S64(OS_TicksToMicroSeconds(cycles));
-#elif defined( _MSVC )
-	f64 rval = 1000000.0*(f64( cycles )/GetRef().mfClockRate);
-	return S64(rval);
-#else
 	OrkAssert(false);//not impl
 	return S64(0);
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -348,7 +321,7 @@ S64 OldSchool::ClockCyclesToMicroSeconds(S64 cycles)
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////
-#if defined( _DARWIN )
+#if defined( __APPLE__ )
 ///////////////////////////////////////////////
 f32	OldSchool::GetLoResTime( void )
 {
@@ -371,100 +344,6 @@ f32	OldSchool::GetLoResTime( void )
 {
 	static const float kbasetime = get_sync_time();
 	return get_sync_time()-kbasetime;
-}
-///////////////////////////////////////////////
-#elif defined( ORK_WIN32 ) && defined( _MSVC )
-///////////////////////////////////////////////
-static volatile int inumtimercallbacks = 0;
-static void CALLBACK TimerCallback(UINT wTimerID, UINT msg, DWORD_PTR dwUser, DWORD dw1, DWORD dw2 )
-{
-	inumtimercallbacks++;
-}
-f32	OldSchool::GetLoResTime( void )
-{
-#if defined (_XBOX)
-	//static int basetime = GetTickCount();
-	//inumtimercallbacks = (GetTickCount()-basetime);
-
-
-	static bool binit = true;
-	static LARGE_INTEGER TicksPerSecond;
-	static DOUBLE fTicksPerMicrosecond;
-
-	if( binit )
-	{	QueryPerformanceFrequency( &TicksPerSecond );
-		fTicksPerMicrosecond = (DOUBLE)TicksPerSecond.QuadPart * 0.000001;
-		binit = false;
-	}
-
-	LARGE_INTEGER Current;
-    QueryPerformanceCounter( &Current );
-	static LARGE_INTEGER TimeBase = Current;
-    __int64 reltime = Current.QuadPart-TimeBase.QuadPart;
-	float ftimsecs = float((double(reltime)/fTicksPerMicrosecond)/1000000.0);
-	//orkprintf( "time %f\n", ftimsecs );
-	return ftimsecs;
-#else
-	static TIMECAPS tc;
-	static UINT     wTimerRes = 0;
-
-	if( 0 == wTimerRes )
-	{
-		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR)
-		{
-			OrkAssert(false);
-			// Error; application can't continue.
-		}
-
-		static const UINT TARGET_RESOLUTION = 1; // 1-millisecond target resolution
-		wTimerRes = std::min(std::max(tc.wPeriodMin, TARGET_RESOLUTION), tc.wPeriodMax);
-		MMRESULT result = timeBeginPeriod(wTimerRes);
-
-		UINT timerid = timeSetEvent(
-			1,                    // delay
-			wTimerRes,            // resolution (global variable)
-			(LPTIMECALLBACK) TimerCallback,        // callback function
-			0,					  // user data
-			TIME_PERIODIC );      // single timer event
-
-		OrkAssert( timerid != 0 );
-
-		orkprintf( "Starting Timer<%d>\n", timerid );
-	}
-	return float(inumtimercallbacks)*0.001f;
-
-
-	/*static bool binit = true;
-	static LARGE_INTEGER TicksPerSecond;
-	static DOUBLE fTicksPerMicrosecond;
-
-	if( binit )
-	{	QueryPerformanceFrequency( &TicksPerSecond );
-		fTicksPerMicrosecond = (DOUBLE)TicksPerSecond.QuadPart * 0.000001;
-		binit = false;
-	}
-
-	LARGE_INTEGER Current;
-    QueryPerformanceCounter( &Current );
-	static LARGE_INTEGER TimeBase = Current;
-    __int64 reltime = Current.QuadPart-TimeBase.QuadPart;
-	float ftimsecs = float((double(reltime)/fTicksPerMicrosecond)/1000000.0);
-	//orkprintf( "time %f\n", ftimsecs );
-	return ftimsecs;*/
-
-#endif
-}
-///////////////////////////////////////////////////////////////////////////////
-#elif defined( WII )
-f32	OldSchool::GetLoResTime( void )
-{
-	const double ktimerkonst = double(1000)/double(OS_TIMER_CLOCK);
-	static OSTime base_time = OSGetTime();
-	OSTime new_time = OSGetTime();
-	OSTime reltime = (new_time-base_time);
-	double dwiitime = double(reltime);
-	double dwiitime_msec = dwiitime*ktimerkonst;
-	return float(dwiitime_msec)*0.001f;
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////
@@ -490,78 +369,8 @@ f64	OldSchool::GetHiResRelTime( void )
 
 f64 OldSchool::GetHiResTime( void )
 {
-    ///////////////////////////////////////////////
-    #if defined( _WIN32 ) && defined( _MSVC ) && ! defined(_XBOX)
-    ///////////////////////////////////////////////
-	static LARGE_INTEGER llfreq;
-
-	DWORD_PTR oldmask=SetThreadAffinityMask(GetCurrentThread(), 1);
-
-	bool bqpf = QueryPerformanceFrequency( & llfreq );
-    double dfreq = li2d( llfreq );
-    mfClockRate = dfreq;
-    static LARGE_INTEGER base_llctr;
-    LARGE_INTEGER llctr;
-	static bool yo = QueryPerformanceCounter( & base_llctr );
-    bool bqpc = QueryPerformanceCounter( & llctr );
-	__int64 i64_base(base_llctr.QuadPart);
-	__int64 i64val(llctr.QuadPart);
-	__int64 irelctr = i64val - i64_base;
-    //static double dctr_base = li2d( base_llctr );
-
-	//double dctr = li2d( (llctr-base_llctr) ) - dctr_base;
-    double dtim = double(irelctr) / dfreq;
-    f64 fTime = (f64) dtim;
-
-	//////////////////////////////////////
-	// check for negative time delta's
-	// this shouldnt happen anymore with
-	// the SetThreadAffinityMask() fix
-	// see http://channel9.msdn.com/ShowPost.aspx?PostID=156175
-
-	static f64 LastTime = fTime;
-
-	if( (fTime-LastTime) < 0.0f )
-	{
-		fTime = LastTime;
-	}
-
-	//////////////////////////////////////
-
-	LastTime = fTime;
+    f64 fTime = 0.0f;
     mfWallClockTime = fTime;
-
-	SetThreadAffinityMask(GetCurrentThread(), oldmask);
-
-    ///////////////////////////////////////////////
-    #elif defined( GCC ) && defined( _WIN32 )
-    ///////////////////////////////////////////////
-        time_t CourseTime;
-        struct timeb FineTime;
-
-        ///////////////////
-        time( &CourseTime );
-        ftime( &FineTime );
-        ///////////////////
-        F32 fMillis = ((F32)FineTime.millitm)*0.001f;
-        static S32 iBase = CourseTime;
-        static F32 fBaseMilli = fMillis;
-        static F32 fBase = ((F32)iBase)+fMillis;
-        F32 fTime = (((F32)CourseTime)+fMillis) - fBase;
-
-        mfWallClockTime = fTime;
-	///////////////////////////////////////////////
-    #elif defined( NITRO )
-	///////////////////////////////////////////////
-        F64 fTime = (F64)OS_TicksToMicroSeconds( OS_GetTick() ) / 1000000.0;
-        mfWallClockTime = fTime;
-    ///////////////////////////////////////////////
-    #else
-	///////////////////////////////////////////////
-        F32 fTime = 0.0f;
-        mfWallClockTime = fTime;
-    #endif
-
     return fTime;
 }
 

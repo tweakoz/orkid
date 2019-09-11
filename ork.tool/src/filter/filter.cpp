@@ -25,9 +25,6 @@
 #include <orktool/toolcore/FunctionManager.h>
 
 namespace ork { namespace MeshUtil {
-#if defined(_USE_D3DX)
-void TexToVtx(const tokenlist& options);
-#endif
 void PartitionMesh_FixedGrid3d_Driver(const tokenlist& options);
 void TerrainTest(const tokenlist& toklist);
 }} // namespace ork::MeshUtil
@@ -89,33 +86,6 @@ public: //
 };
 void TGADDSFilter::Describe() {}
 
-#if defined(_USE_D3DX)
-class UvAtlasFilter : public AssetFilterBase {
-  RttiDeclareConcrete(UvAtlasFilter, AssetFilterBase);
-
-public: //
-  UvAtlasFilter() {}
-  bool ConvertAsset(const tokenlist& toklist) final {
-    MeshUtil::GenerateUVAtlas(toklist);
-    return true;
-  }
-};
-void UvAtlasFilter::Describe() {}
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-class Tex2VtxBakeFilter : public AssetFilterBase {
-  RttiDeclareConcrete(Tex2VtxBakeFilter, AssetFilterBase);
-
-public: //
-  Tex2VtxBakeFilter() {}
-  bool ConvertAsset(const tokenlist& toklist) final {
-    MeshUtil::TexToVtx(toklist);
-    return true;
-  }
-};
-void Tex2VtxBakeFilter::Describe() {}
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -162,14 +132,6 @@ static void RegisterFilters() {
 #endif
     ///////////////////////////////////////////////////
     ork::tool::RegisterArchFilters();
-///////////////////////////////////////////////////
-#if defined(_USE_D3DX)
-    AssetFilter::RegisterFilter("x:obj", MeshUtil::D3DX_OBJ_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("xgm:x", MeshUtil::XGM_D3DX_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("obj:x", MeshUtil::OBJ_D3DX_Filter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("uvatlas", UvAtlasFilter::DesignNameStatic().c_str());
-    AssetFilter::RegisterFilter("tex2vtx", Tex2VtxBakeFilter::DesignNameStatic().c_str());
-#endif
     ///////////////////////////////////////////////////
     AssetFilter::RegisterFilter("xgm:obj", MeshUtil::XGM_OBJ_Filter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("obj:obj", MeshUtil::OBJ_OBJ_Filter::DesignNameStatic().c_str());
@@ -178,7 +140,7 @@ static void RegisterFilters() {
     AssetFilter::RegisterFilter("png:dds", TGADDSFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("fg3d", fg3dFilter::DesignNameStatic().c_str());
 /////////////////////////
-#if defined(ORK_OSXX)
+#if defined(ORK_OSXX_DISABLED)
     AssetFilter::RegisterFilter("qtz:png", QtzComposerToPngFilter::DesignNameStatic().c_str());
     AssetFilter::RegisterFilter("vtc:dds", VolTexAssembleFilter::DesignNameStatic().c_str());
 #endif
@@ -484,16 +446,12 @@ void FilterOptMap::DumpOptions() const {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_USE_D3DX)
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::UvAtlasFilter, "UvAtlasFilter");
-INSTANTIATE_TRANSPARENT_RTTI(ork::tool::Tex2VtxBakeFilter, "Tex2VtxBakeFilter");
-#endif
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::AssetFilterBase, "AssetFilterBase");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::fg3dFilter, "fg3dFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::WAVMKRFilter, "WAVMKRFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::TGADDSFilter, "TGADDSFilter");
 
-#if defined(ORK_OSXX)
+#if defined(ORK_OSXX_DISABLED)
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::VolTexAssembleFilter, "VolTexAssembleFilter");
 INSTANTIATE_TRANSPARENT_RTTI(ork::tool::QtzComposerToPngFilter, "QtzComposerToPngFilter");
 #endif

@@ -1,31 +1,20 @@
-#!/usr/bin/python
-import os, sys, string
-import ork.build.search as search
+#!/usr/bin/env python3
+###############################################################################
+# Orkid Build System
+# Copyright 2010-2018, Michael T. Mayers
+# email: michael@tweakoz.com
+# The Orkid Build System is published under the GPL 2.0 license
+# see http://www.gnu.org/licenses/gpl-2.0.html
+###############################################################################
 
-#################################################################################
-class visitor:
-  def __init__(self):
-    pass
-  def onPath(self,pth):
-    print "/////////////////////////////////////////////////////////////"
-    print "// path : %s" % pth
-    print "/////////"
-  def onItem(self,item):
-    print "%-*s : line %-*d : %s" % (40, item.path, 5, item.lineno, item.text)
+import os, sys, string
+import ork.search
+
 #################################################################################
 
 if __name__ == "__main__":
-  #########################
-  if not len(sys.argv) >= 2:
-    print("usage: word [module]")
-    sys.exit(1)
-  #########################
-  modulelist = search.search_modulelist
-  if len(sys.argv) == 3:
-    modulelist = search.makeModuleList(sys.argv[2])
-  #########################
-  wsdir = os.environ["ORKDOTBUILD_WORKSPACE_DIR"]
-  os.chdir(wsdir)
-  find_word = sys.argv[1]
-  print("searching for word<%s>" % find_word)
-  search.visit(find_word,visitor(),modulelist)
+ if not len(sys.argv) == 2:
+  print("usage: word")
+  sys.exit(1)
+ word = sys.argv[1]
+ ork.search.execute(word)

@@ -9,8 +9,13 @@ def setup():
   obtprj_dir = scripts_dir/".."
   orkid_dir = (obtprj_dir/"..").resolve()
   orkbin_dir = obtprj_dir/"bin"
-  print(orkid_dir)
   ORK_PROJECT_NAME = "Orkid"
   assert(orkid_dir.exists())
   ork.env.set("ORKID_WORKSPACE_DIR",orkid_dir)
   ork.env.prepend("PATH",orkbin_dir)
+
+
+  ork.env.append("ORK_FIND_PATH",orkid_dir/"ork.core")
+  ork.env.append("ORK_FIND_PATH",orkid_dir/"ork.lev2")
+  ork.env.append("ORK_FIND_PATH",orkid_dir/"ork.ent")
+  ork.env.append("ORK_FIND_PATH",orkid_dir/"ork.tool")

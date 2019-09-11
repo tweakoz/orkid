@@ -28,7 +28,7 @@ struct DaeWriteOpts;
 
 namespace ork { namespace tool {
 
-struct SColladaMaterial; 
+struct SColladaMaterial;
 
 }}
 
@@ -64,9 +64,9 @@ public:
 	virtual bool AffectsSphere( const fvec3& center, float radius ) const { return false; }
 	virtual bool AffectsAABox( const AABox& aab ) const { return false; }
 
-	Light() 
+	Light()
 		: mColor(1.0f,1.0f,1.0f)
-		, mIntensity(1.0f) 
+		, mIntensity(1.0f)
 		, mbSpecular(false)
 		, mShadowSamples(1.0f)
 		, mShadowBlur(0.0f)
@@ -102,7 +102,7 @@ struct HashU6432
 		return s1 < s2;
 	}
 };
-	
+
 struct Hash3232
     : public std::unary_function<int, std::size_t>
 {
@@ -132,7 +132,7 @@ class edge
 
 public:
 
-	int GetVertexID( int iv ) const 
+	int GetVertexID( int iv ) const
 	{
 		int id = -1;
 
@@ -141,7 +141,7 @@ public:
 			case 0: id = miVertexA; break;
 			case 1: id = miVertexB; break;
 			default:
-				OrkAssert( false ); 
+				OrkAssert( false );
 				break;
 		}
 
@@ -151,9 +151,9 @@ public:
 	U64 GetHashKey( void ) const;
 	bool Matches( const edge & other ) const;
 
-	edge() 
+	edge()
 		: miVertexA(-1)
-		, miVertexB(-1) 
+		, miVertexB(-1)
 		, miNumConnectedPolys( 0 )
 	{
 		for( int i=0; i<kmaxpolysperedge; i++ )  miConnectedPolys[i]=-1;
@@ -171,7 +171,7 @@ public:
 
 	int GetNumConnectedPolys( void ) const { return miNumConnectedPolys; }
 
-	int GetConnectedPoly( int ip ) const 
+	int GetConnectedPoly( int ip ) const
 	{
 		OrkAssert( ip<miNumConnectedPolys );
 		return miConnectedPolys[ ip ];
@@ -504,7 +504,7 @@ struct submesh
 
 	submesh(const vertexpool& vpool = vertexpool::EmptyPool);
 	~submesh();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -529,7 +529,7 @@ public:
 	void SetMergeEdges( bool bflg ) { mbMergeEdges=bflg; }
 
 	/////////////////////////////////////////////////////////////////////////
-	
+
 	void Dump(const std::string& comment) const;
 
 	/////////////////////////////////////////////////////////////////////////
@@ -539,7 +539,7 @@ public:
 	const orkmap<std::string,ork::tool::SColladaMaterial*>& RefMaterialsByName() const { return mMaterialsByName; }
 	const LightContainer& RefLightContainer() const { return mLights; }
 	LightContainer& RefLightContainer() { return mLights; }
-	
+
 	void CopyMaterialsFromToolMesh( const toolmesh& from );
 	void MergeMaterialsFromToolMesh( const toolmesh& from );
 
@@ -563,11 +563,6 @@ public:
 	void ReadFromDaeFile( const file::Path& inpath, DaeReadOpts& readopts );
 
 	/////////////////////////////////////////////////////////////////////////
-#if defined(_USE_D3DX)
-	void WriteToD3DXFile( const file::Path& outpath ) const;
-	void ReadFromD3DXFile( const file::Path& inpath );
-#endif
-	/////////////////////////////////////////////////////////////////////////
 
 	void ReadAuto( const file::Path& outpath );
 
@@ -580,7 +575,7 @@ public:
 	void SetRangeTransform( const fvec4 &VScale, const fvec4 & VTrans );
 
 	/////////////////////////////////////////////////////////////////////////
-	
+
 	void MergeToolMeshAs( const toolmesh & sr, const char* pgroupname );
 	void MergeToolMeshThreadedExcluding( const toolmesh & sr, int inumthreads, const std::set<std::string>& ExcludeSet );
 	void MergeToolMeshThreaded( const toolmesh & sr, int inumthreads );
@@ -595,7 +590,7 @@ public:
 	const orklut<std::string, submesh*>& RefSubMeshLut() const;
 	const material_semanticmap_t& RefShadingGroupToMaterialMap() const { return mShadingGroupToMaterialMap; }
 	material_semanticmap_t& RefShadingGroupToMaterialMap() { return mShadingGroupToMaterialMap; }
-	
+
 	int GetNumSubMeshes() const { return int(mPolyGroupLut.size()); }
 
 	const submesh* FindSubMeshFromMaterialName(const std::string& materialname ) const;
@@ -610,7 +605,7 @@ public:
 
 private:
 
-	toolmesh(const toolmesh&oth) 
+	toolmesh(const toolmesh&oth)
 	{
 		OrkAssert(false);
 	}
@@ -656,13 +651,6 @@ class OBJ_OBJ_Filter : public ork::tool::AssetFilterBase
 	RttiDeclareConcrete(OBJ_OBJ_Filter,ork::tool::AssetFilterBase);
 public: //
 	OBJ_OBJ_Filter(  );
-	bool ConvertAsset( const tokenlist& toklist ) final;
-};
-class D3DX_OBJ_Filter : public ork::tool::AssetFilterBase
-{
-	RttiDeclareConcrete(D3DX_OBJ_Filter,ork::tool::AssetFilterBase);
-public: //
-	D3DX_OBJ_Filter(  );
 	bool ConvertAsset( const tokenlist& toklist ) final;
 };
 class XGM_OBJ_Filter : public ork::tool::AssetFilterBase
@@ -743,47 +731,5 @@ struct FlatSubMesh
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-#if defined(_USE_D3DX)
-class XGM_D3DX_Filter : public ork::tool::AssetFilterBase
-{
-	RttiDeclareConcrete(XGM_D3DX_Filter,ork::tool::AssetFilterBase);
-public: //
-	XGM_D3DX_Filter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
-};
-class OBJ_D3DX_Filter : public ork::tool::AssetFilterBase
-{
-	RttiDeclareConcrete(OBJ_D3DX_Filter,ork::tool::AssetFilterBase);
-public: //
-	OBJ_D3DX_Filter(  );
-	virtual bool ConvertAsset( const tokenlist& toklist );
-};
-struct UvAtlasContext
-{
-	const submesh&						mInpMesh;
-	submesh&							mOutMesh;
-	float								mfGutter;
-	float								mfStretching;
-	int									miTexRes;
-	bool								mbDoIMT;
-	float								mfAreaUnification;
-	ork::file::Path						mIMTTexturePath;
-	std::string							mGroupName;
-
-	UvAtlasContext( const submesh& inmesh, submesh& outmesh );
-};
-
-
-bool UvAtlasSubMesh( const UvAtlasContext& Ctx );
-bool UvAtlasSubMesh2( const UvAtlasContext& Ctx );
-void GenerateUVAtlas( const tokenlist& options );
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
 } } // namespace MeshUtil
-
-
