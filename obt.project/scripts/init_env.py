@@ -19,3 +19,4 @@ def setup():
   ork.env.append("ORK_FIND_PATH",orkid_dir/"ork.lev2")
   ork.env.append("ORK_FIND_PATH",orkid_dir/"ork.ent")
   ork.env.append("ORK_FIND_PATH",orkid_dir/"ork.tool")
+  ork.env.append("LUA_PATH",orkid_dir/"ork.data"/"src"/"scripts"/"?.lua")

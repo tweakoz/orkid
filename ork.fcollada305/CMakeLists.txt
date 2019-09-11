@@ -39,3 +39,5 @@ target_include_directories (ork_fcollada PRIVATE ${SRCD}/FCollada )
 target_include_directories (ork_fcollada PRIVATE ${SRCD}/FCollada/LibXML/include )
 
 ###################################
+
+install(TARGETS ork_fcollada LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )

@@ -95,3 +95,5 @@ ENDIF()
 target_link_libraries(ork_tool ${libs})
 
 ###################################
+
+install(TARGETS ork_tool LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
