@@ -14,7 +14,7 @@ To build on Osx Mojave (10.14)+
 * install homebrew, and with install deps listed in ork.installdeps.ubuntu19.py
 * ```git clone https://github.com/tweakoz/orkid```
 * ```cd orkid```
-* ```/ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
+* ```/ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
 * ```./build.py``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
@@ -28,11 +28,12 @@ To build on Ubuntu19.04 x86/64
 * ```./build.py``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
-everything will be built/installed into the <repo_root>/stage folder.
-the stage/bin and stage/lib paths were added to your environment variables already when you did a 'make env'.
+everything will be built/installed into the staging folder.
+the <stage>/bin and <stage>/lib paths were added to your environment variables already when you launched the environment'.
 
 misc
 =====
+```<staging_folder>/.launch_env``` <- relaunch previously made environment container.
 ork.find.py "phrase" - search source folders for a quoted phrase - the quotes are optional for simple single word seaches
 
 the automatic asset pipe is in flux. in the meantime typing "make assets" will build whatever assets are configured to convert for a given branch - see do_assets.py in the repo's root folder.
