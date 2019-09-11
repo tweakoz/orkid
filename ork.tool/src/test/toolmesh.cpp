@@ -5,7 +5,7 @@
 
 #include <orktool/orktool_pch.h>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
-#include <unittest++/UnitTest++.h>
+#include <utpp/UnitTest++.h>
 
 namespace ork { namespace MeshUtil {
 
