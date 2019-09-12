@@ -80,7 +80,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
   lev2::CTXBASE* CtxBase = GetTarget() ? GetTarget()->GetCtxBase() : 0;
 
-  ork::ent::Simulation* psceneinst = mEditor.GetActiveSimulation();
+  ork::ent::Simulation* psimulation = mEditor.GetActiveSimulation();
 
   ////////////////////////////////////////////////////////////////
 
@@ -94,7 +94,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
   switch (EV.miEventCode) {
     case ui::UIEV_GOT_KEYFOCUS: {
-      // bool brunning = psceneinst ? psceneinst->GetSimulationMode()==ork::ent::ESCENEMODE_RUN : false;
+      // bool brunning = psimulation ? psimulation->GetSimulationMode()==ork::ent::ESCENEMODE_RUN : false;
       // CtxBase->SetRefreshPolicy( brunning ? lev2::CTXBASE::EREFRESH_FASTEST : lev2::CTXBASE::EREFRESH_WHENDIRTY );
       break;
     }

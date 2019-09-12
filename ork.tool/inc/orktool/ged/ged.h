@@ -622,7 +622,7 @@ private:
 	GedObject*						mpActiveNode;
 	int								miScrollY;
 	const GedObject*				mpMouseOverNode;
-    ork::msgrouter::subscriber_t    _sceneinst_subscriber;
+    ork::msgrouter::subscriber_t    _simulation_subscriber;
 
 
 };

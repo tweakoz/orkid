@@ -28,16 +28,16 @@ TEST(SceneManip1)
 	    entdata2->SetName("entity2");
 	    scenedata->AddSceneObject(entdata2);
 
-	    Simulation *sceneinst = new Simulation(scenedata, ApplicationStack::Top());
-	    sceneinst->SetSimulationMode(ESCENEMODE_RUN);
+	    Simulation *simulation = new Simulation(scenedata, ApplicationStack::Top());
+	    simulation->SetSimulationMode(ESCENEMODE_RUN);
 
-	    Entity *entity = sceneinst->FindEntity(AddPooledLiteral("entity1"));
+	    Entity *entity = simulation->FindEntity(AddPooledLiteral("entity1"));
 
 	    printf( "entity<%p>\n", entity );
-	    entity = sceneinst->FindEntity(AddPooledLiteral("entity2"));
+	    entity = simulation->FindEntity(AddPooledLiteral("entity2"));
 	    printf( "entity2<%p>\n", entity );
 
-	    delete sceneinst;
+	    delete simulation;
 	    delete scenedata;
 	    printf( "DONE\n");
 	};
