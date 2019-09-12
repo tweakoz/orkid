@@ -229,6 +229,15 @@ void BulletSystem::enqueueDrawables(DrawableBuffer& buffer) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void BulletSystem::beginRenderFrame(const Simulation* psi) {
+    _debugger.beginRenderFrame();
+}
+void BulletSystem::endRenderFrame(const Simulation* psi) {
+  _debugger.endRenderFrame();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void BulletSystem::LinkPhysicsObject(ork::ent::Simulation* inst, ork::ent::Entity* pent) {
   mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, inst);
 

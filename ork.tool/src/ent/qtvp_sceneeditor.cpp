@@ -67,10 +67,6 @@ int GetGlError(void);
 void SetCurrentThreadName(const char* pname);
 namespace ent {
 
-#if defined(NDEBUG)
-#error
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorView::Describe() {
@@ -233,8 +229,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
   bool bFX = false;
   auto pCMCI = compositingSystem();
-  if (GetSimulation()) {
-    ent::ESimulationMode emode = GetSimulation()->GetSimulationMode();
+  if (simulation()) {
+    ent::ESimulationMode emode = simulation()->GetSimulationMode();
     if (pCMCI)
       switch (emode) {
         case ent::ESCENEMODE_RUN:
@@ -260,7 +256,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     if (bFX && pCMCI) {
       float frame_rate = pCMCI ? pCMCI->GetCurrentFrameRate() : 0.0f;
       bool externally_fixed_rate = (frame_rate != 0.0f);
-      const ent::Simulation* psi = this->GetSimulation();
+      const ent::Simulation* psi = this->simulation();
 
       RenderSyncToken syntok;
       /////////////////////////////
@@ -513,7 +509,7 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
     FrameData.AddLayer(AddPooledLiteral("P"));
     FrameData.AddLayer(AddPooledLiteral("Q"));
 
-    const ent::Simulation* psi = GetSimulation();
+    const ent::Simulation* psi = simulation();
     mSceneView.UpdateRefreshPolicy(FrameData, psi);
 
     this->GetClearColorRef() = node._clearColor.xyz();
@@ -540,12 +536,11 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::QueueSimulationToDb(ent::DrawableBuffer* pDB) // Queue SceneDrawLayerData
-{
+void SceneEditorVP::enqueueSimulationDrawables(ent::DrawableBuffer* pDB) {
   AssertOnOpQ2(UpdateSerialOpQ());
-
-  if (GetSimulation())
-    GetSimulation()->QueueAllDrawablesToBuffer(*pDB);
+  auto sim = simulation();
+  if (sim)
+    sim->enqueueDrawablesToBuffer(*pDB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -568,7 +563,7 @@ const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ent::Simulation* SceneEditorVP::GetSimulation() {
+const ent::Simulation* SceneEditorVP::simulation() {
   const ent::Simulation* psi = 0;
   if (mEditor.mpScene) {
     if (ApplicationStack::Top()) {
@@ -590,6 +585,9 @@ const ent::Simulation* SceneEditorVP::GetSimulation() {
   }
 
 void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
+
+
+
   GL_ERRORCHECK();
   lev2::IRenderTarget* pIRT = FrameData.GetRenderTarget();
   bool IsPickState = FrameData.GetTarget()->FBI()->IsPickState();
@@ -598,6 +596,19 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
     FrameData.GetTarget()->FBI()->EnterPickState(mpPickBuffer);
   // FrameData.GetTarget()->FBI()->ForceFlush();
   GL_ERRORCHECK();
+
+  ///////////////////////////////////////////////////////////////////////////
+  struct ScopedSimFramer {
+      ScopedSimFramer(const Simulation* sim) : _sim(sim){
+        sim->beginRenderFrame();
+      }
+      ~ScopedSimFramer(){
+        _sim->endRenderFrame();
+      }
+      const Simulation* _sim;
+  };
+  ///////////////////////////////////////////////////////////////////////////
+  ScopedSimFramer framescope(simulation());
   ///////////////////////////////////////////////////////////////////////////
   // get the compositor if there is one
   ///////////////////////////////////////////////////////////////////////////
@@ -743,10 +754,10 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
       }
       // printf( "USING LAYERNAME<%s>\n", LayerName.c_str() );
       // const DrawableBuffer& DB = DrawableBuffer::GetLockedReadBuffer(0);
-      auto psi = GetSimulation();
       auto rend = GetRenderer();
+      auto sim = simulation();
       for (const PoolString& layer_name : LayerNames)
-        psi->RenderDrawableBuffer(rend, *DB, layer_name);
+        sim->RenderDrawableBuffer(rend, *DB, layer_name);
       rend->DrawQueuedRenderables();
       /////////////////////////////////////////
     }

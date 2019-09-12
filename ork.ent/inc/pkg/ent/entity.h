@@ -252,7 +252,7 @@ public:
 
 	////////////////////////////////////////////////////////////////
 
-	Simulation *GetSimulation() const { return mSimulation; }
+	Simulation *simulation() const { return mSimulation; }
 
     const char* name() const;
 

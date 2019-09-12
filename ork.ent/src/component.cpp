@@ -142,7 +142,7 @@ const char* ComponentInst::GetEntityName() const
 	return mEntity->GetEntData().GetName().c_str();
 }
 
-Simulation* ComponentInst::sceneInst() const { return mEntity->GetSimulation(); }
+Simulation* ComponentInst::sceneInst() const { return mEntity->simulation(); }
 
 
 } }

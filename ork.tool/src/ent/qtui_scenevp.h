@@ -116,7 +116,7 @@ public:
 	//////////////////////
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	//////////////////////
-	void QueueSimulationToDb(ent::DrawableBuffer*pDB);
+	void enqueueSimulationDrawables(ent::DrawableBuffer*pDB);
 	void RenderQueuedScene( ork::lev2::RenderContextFrameData & ContextData );
 	//////////////////////
 	//lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
@@ -148,7 +148,7 @@ public:
 	void Init();
 	///////////////////////////////////////////////////
 
-	const ent::Simulation* GetSimulation();
+	const ent::Simulation* simulation();
 	SceneEditorBase& SceneEditor() { return mEditor; }
 	ork::ent::SceneEditorView& SceneEditorView() { return mSceneView; }
 	EditorMainWindow& MainWindow() const { return mMainWindow; }
