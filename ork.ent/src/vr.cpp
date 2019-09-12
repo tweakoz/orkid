@@ -547,7 +547,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
   // find vr camera
   //////////////////////////////////////////////
 
-  auto psi = compsys->sceneinst();
+  auto psi = compsys->simulation();
   auto vrcam = psi->GetCameraData(vrcamname);
 
   fmtx4 rootmatrix;

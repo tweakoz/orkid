@@ -103,7 +103,7 @@ Simulation::Simulation(const SceneData* sdata, Application* application)
     : mSceneData(sdata), meSimulationMode(ESCENEMODE_ATTACHED), mApplication(application), mUpTime(0.0f), mDeltaTime(0.0f),
       mPrevDeltaTime(0.0f), mLastGameTime(0.0f), mStartTime(0.0f), mUpDeltaTime(0.0f), mGameTime(0.0f), mDeltaTimeAccum(0.0f),
       mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f), mEntityUpdateCount(0), _cachedComSys(nullptr) {
-  printf("new sceneinst <%p>\n", this);
+  printf("new simulation <%p>\n", this);
 
   AssertOnOpQ2(UpdateSerialOpQ());
   OrkAssertI(mApplication, "Simulation must be constructed with a non-NULL Application!");
@@ -124,7 +124,7 @@ Simulation::Simulation(const SceneData* sdata, Application* application)
 }
 ///////////////////////////////////////////////////////////////////////////////
 Simulation::~Simulation() {
-  printf("deleting sceneinst <%p>\n", this);
+  printf("deleting simulation <%p>\n", this);
   AssertOnOpQ2(UpdateSerialOpQ());
   DrawableBuffer::BeginClearAndSyncReaders();
   for (orkmap<PoolString, Entity*>::iterator it = mEntities.begin(); it != mEntities.end(); it++) {
@@ -934,7 +934,7 @@ void Simulation::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) con
   buffer.Reset();
 
   ////////////////////////////////////////////////////////////////
-  // copy camera data from sceneinst to dbuffer
+  // copy camera data from simulation to dbuffer
   ////////////////////////////////////////////////////////////////
 
   CopyCameraData(mCameraLut, buffer.mCameraDataLUT);
@@ -1173,7 +1173,7 @@ void Simulation::Update() {
       break;
     }
     case ork::ent::ESCENEMODE_RUN: {
-      ork::PerfMarkerPush("ork.sceneinst.update.begin");
+      ork::PerfMarkerPush("ork.simulation.update.begin");
 
       ///////////////////////////////
       // Update Components
@@ -1260,7 +1260,7 @@ void Simulation::Update() {
           pinst->Update(this);
         }
       });
-      ork::PerfMarkerPush("ork.sceneinst.update.end");
+      ork::PerfMarkerPush("ork.simulation.update.end");
 
       ///////////////////////////////
       break;

@@ -52,7 +52,7 @@ class System {
 public:
   virtual systemkey_t systemTypeDynamic() = 0;
 
-  Simulation* sceneinst() { return mpSimulation; }
+  Simulation* simulation() { return mpSimulation; }
 
 protected:
   System(const SystemData* scd, Simulation* pinst) : _systemData(scd), mpSimulation(pinst), mbStarted(false) {}

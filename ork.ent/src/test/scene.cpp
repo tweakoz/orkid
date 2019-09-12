@@ -42,14 +42,14 @@ TEST(SceneManip1)
 		    scenedata->AddSceneObject(entdata2);
 
 		    auto app = ApplicationStack::Top();
-		    Simulation *sceneinst = new Simulation(scenedata,app);
-			sceneinst->SetSimulationMode(ESCENEMODE_EDIT);
-		    sceneinst->SetSimulationMode(ESCENEMODE_RUN);
+		    Simulation *simulation = new Simulation(scenedata,app);
+			simulation->SetSimulationMode(ESCENEMODE_EDIT);
+		    simulation->SetSimulationMode(ESCENEMODE_RUN);
 
-		    Entity *entity = sceneinst->FindEntity(AddPooledLiteral("entity1"));
+		    Entity *entity = simulation->FindEntity(AddPooledLiteral("entity1"));
 
 		    //printf( "entity<%p>\n", entity );
-		    entity = sceneinst->FindEntity(AddPooledLiteral("entity2"));
+		    entity = simulation->FindEntity(AddPooledLiteral("entity2"));
 		    //printf( "entity2<%p>\n", entity );
 
 			auto opl2 = [=,&counter]()
@@ -57,7 +57,7 @@ TEST(SceneManip1)
 
 				auto opl3 = [=,&counter]()
 				{
-				    delete sceneinst;
+				    delete simulation;
 				    delete scenedata;
 					counter --;
 				};
@@ -143,8 +143,8 @@ TEST(ScriptCompTest)
 		}
 
 	    auto app = ApplicationStack::Top();
-	    Simulation *sceneinst = new Simulation(scenedata,app);
-		sceneinst->SetSimulationMode(ESCENEMODE_EDIT);
+	    Simulation *simulation = new Simulation(scenedata,app);
+		simulation->SetSimulationMode(ESCENEMODE_EDIT);
 	    scenedata->EnterEditState();
 
 	    auto sc = arch->GetTypedComponent<ScriptComponentData>();
@@ -154,17 +154,17 @@ TEST(ScriptCompTest)
 		printf( "%s", ANSI_COLOR_GREEN );
 		//printf( "%s", ANSI_COLOR_RESET );
 		printf( "ScriptCompTest: starting up test scene\n");
-	    sceneinst->SetSimulationMode(ESCENEMODE_RUN);
+	    simulation->SetSimulationMode(ESCENEMODE_RUN);
 
 	    ork::Timer tmr;
 	    tmr.Start();
 	    static const int knumframes = 2000;
 	    for( int i=0; i<knumframes; i++ )
 	    {
-			sceneinst->Update();
+			simulation->Update();
 	    }
 	    float ftime = tmr.SecsSinceStart();
-	    size_t numentupd = sceneinst->GetEntityUpdateCount();
+	    size_t numentupd = simulation->GetEntityUpdateCount();
 
 		printf( "ScriptCompTest: shutting down up test scene\n");
 		printf( "FPS<%f>\n", float(knumframes)/ftime);
@@ -172,7 +172,7 @@ TEST(ScriptCompTest)
 		printf( "LuaEntUpdatesPS<%f>\n", float(numentupd)/ftime );
 		//printf( "%s", ANSI_COLOR_RESET );
 		printf( "%s", ANSI_COLOR_GREEN );
-	    delete sceneinst;
+	    delete simulation;
 	    delete scenedata;
 
 	};

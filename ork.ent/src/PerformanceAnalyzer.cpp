@@ -72,11 +72,11 @@ void PerfAnalyzerControllerInst::DoUpdate(ent::Simulation* sinst)
 		bpopped = PerfMarkerPop( pi );
 		if( bpopped )
 		{
-			if( 0 == strcmp(pi.mpMarkerName, "ork.sceneinst.update.begin") )
+			if( 0 == strcmp(pi.mpMarkerName, "ork.simulation.update.begin") )
 			{
 				updbeg[iupdsampleindex] = pi.mfMarkerTime;
 			}
-			if( 0 == strcmp(pi.mpMarkerName, "ork.sceneinst.update.end") )
+			if( 0 == strcmp(pi.mpMarkerName, "ork.simulation.update.end") )
 			{
 				updend[iupdsampleindex] = pi.mfMarkerTime;
 				iupdsampleindex ++;
