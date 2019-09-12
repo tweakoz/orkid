@@ -264,7 +264,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 					}
 				}
 
-				bulletsys->LinkPhysics(psi, this_ent);
+				bulletsys->LinkPhysicsObject(psi, this_ent);
 
 			}
 	} // if( auto bulletsys = psi->findSystem<BulletSystem>() ){

@@ -50,27 +50,30 @@ protected:
 class System {
 
 public:
-  void Update(SceneInst* inst);
-  void Start(SceneInst* psi);
-  void Link(SceneInst* psi);
-  void UnLink(SceneInst* psi);
-  void Stop(SceneInst* psi);
-  virtual ~System(){};
   virtual systemkey_t systemTypeDynamic() = 0;
 
   SceneInst* sceneinst() { return mpSceneInst; }
 
 protected:
   System(const SystemData* scd, SceneInst* pinst) : _systemData(scd), mpSceneInst(pinst), mbStarted(false) {}
-
   SceneInst* mpSceneInst;
+  virtual ~System(){};
 
 private:
+  friend class SceneInst;
+
+  void Update(SceneInst* inst);
+  void Start(SceneInst* psi);
+  void Link(SceneInst* psi);
+  void UnLink(SceneInst* psi);
+  void Stop(SceneInst* psi);
+
   virtual void DoUpdate(SceneInst* inst) {}
   virtual void DoStart(SceneInst* psi) {}
   virtual bool DoLink(SceneInst* psi) { return true; }
   virtual void DoUnLink(SceneInst* psi) {}
   virtual void DoStop(SceneInst* psi) {}
+  virtual void enqueueDrawables(DrawableBuffer& buffer) {}
 
   const SystemData* _systemData;
   bool mbStarted;

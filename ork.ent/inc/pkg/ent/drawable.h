@@ -273,10 +273,10 @@ public:
   void SetQueueToLayerCallback(Q2LCBType cb) { mQueueToLayerCallback = cb; }
   U32 GetSortKey() const { return mSortKey; }
   void SetSortKey(U32 uv) { mSortKey = uv; }
+  void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const final;
+  void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
 private:
-  void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const override;
-  void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const override;
   ICallbackDrawableDataDestroyer* mDataDestroyer;
   lev2::CallbackRenderable::cbtype_t mRenderCallback;
   Q2LCBType mQueueToLayerCallback;

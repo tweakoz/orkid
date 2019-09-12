@@ -197,7 +197,7 @@ SceneEditorView::SceneEditorView(SceneEditorVP* vp) : mVP(vp) {}
 
 void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
   mpPickBuffer = new lev2::PickBuffer<SceneEditorVP>(pTARG->FBI()->GetThisBuffer(), this, 0, 0, 1024, 1024,
-                                                      lev2::PickBufferBase::EPICK_FACE_VTX);
+                                                     lev2::PickBufferBase::EPICK_FACE_VTX);
   mpPickBuffer->RefClearColor().SetRGBAU32(0);
   mpPickBuffer->CreateContext();
   mpPickBuffer->GetContext()->FBI()->SetClearColor(fcolor4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -906,8 +906,8 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
       if (mpPickBuffer) {
         if (mpPickBuffer->mpPickRtGroup) {
-					auto mrt = mpPickBuffer->mpPickRtGroup->GetMrt(1);
-					auto mtl = mrt->GetMaterial();
+          auto mrt = mpPickBuffer->mpPickRtGroup->GetMrt(1);
+          auto mtl = mrt->GetMaterial();
           ptex = mrt->GetTexture();
           if (mtl) {
             pTARG->BindMaterial(mtl);
@@ -975,7 +975,7 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     /////////////////////////////////////////////////
     int iy = 4;
     int ix = 4;
-    for (auto it : mToolHandlers ) {
+    for (auto it : mToolHandlers) {
       SceneEditorVPToolHandler* phandler = it.second;
       bool bhilite = (phandler == mpCurrentHandler);
       phandler->DrawToolIcon(pTARG, ix, iy, bhilite);

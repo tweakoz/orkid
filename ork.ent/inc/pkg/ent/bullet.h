@@ -111,6 +111,11 @@ struct PhysicsDebugger final : public btIDebugDraw {
 
   //////////////////////////
 
+  void beginSimFrame(BulletSystem*system);
+  void endSimFrame(BulletSystem*system);
+
+  //////////////////////////
+
   void flushLines() final;
   void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) final;
   void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime,
@@ -120,12 +125,13 @@ struct PhysicsDebugger final : public btIDebugDraw {
   void setDebugMode(int debugMode) final;
   int getDebugMode() const override;
 
-  void Lock();
-  void UnLock();
+  //void Lock();
+  //void UnLock();
 
-  ork::mutex _mutex;
+  //ork::mutex _mutex;
   MpMcBoundedQueue<lineqptr_t,4> _lineqpool;
   lineqptr_t _currentwritelq = nullptr;
+  std::atomic<lineqptr_t> _curreadlq;
   bool _enabled = false;
 
   //////////////////////////
@@ -134,7 +140,6 @@ struct PhysicsDebugger final : public btIDebugDraw {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BulletDebugDrawDBRec {
-  const ork::ent::Entity* mpEntity;
   BulletSystem* _bulletSystem;
   PhysicsDebugger::lineqptr_t _lines = nullptr;
 };
@@ -142,13 +147,12 @@ struct BulletDebugDrawDBRec {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct BulletDebugDrawDBData {
-  ork::ent::Entity* mpEntity;
   BulletSystem* _bulletSystem;
-
+  Layer* _drawLayer = nullptr;
   BulletDebugDrawDBRec mDBRecs[ork::ent::DrawableBuffer::kmaxbuffers];
   PhysicsDebugger* _debugger;
 
-  BulletDebugDrawDBData(BulletSystem* psi, ork::ent::Entity* pent);
+  BulletDebugDrawDBData(BulletSystem* psi);
   ~BulletDebugDrawDBData();
 };
 
@@ -178,18 +182,6 @@ protected:
 
 class BulletSystem : public ork::ent::System {
 
-  btDiscreteDynamicsWorld* mDynamicsWorld;
-  btDefaultCollisionConfiguration* mBtConfig;
-  btBroadphaseInterface* mBroadPhase;
-  btCollisionDispatcher* mDispatcher;
-  btSequentialImpulseConstraintSolver* mSolver;
-  const BulletSystemData& mBWCBD;
-  PhysicsDebugger _debugger;
-  int mMaxSubSteps;
-  int mNumSubStepsTaken;
-  float mfAvgDtAcc;
-  float mfAvgDtCtr;
-
   void DoUpdate(ork::ent::SceneInst* inst) final;
 
 public:
@@ -203,7 +195,9 @@ public:
 
   btDiscreteDynamicsWorld* GetDynamicsWorld() const { return mDynamicsWorld; }
 
-  void LinkPhysics(ork::ent::SceneInst* inst, ork::ent::Entity* entity);
+  bool DoLink(SceneInst* psi) final;
+  void LinkPhysicsObject(ork::ent::SceneInst* inst, ork::ent::Entity* entity);
+  void enqueueDrawables(DrawableBuffer& buffer) final;
 
   void InitWorld();
 
@@ -215,7 +209,24 @@ public:
 
   int GetNumSubStepsTaken() const { return mNumSubStepsTaken; }
 
-  const BulletSystemData& GetWorldData() const { return mBWCBD; }
+  const BulletSystemData& GetWorldData() const { return _systemData; }
+
+private:
+
+  CallbackDrawable* _debugDrawable = nullptr;
+  btDiscreteDynamicsWorld* mDynamicsWorld;
+  btDefaultCollisionConfiguration* mBtConfig;
+  btBroadphaseInterface* mBroadPhase;
+  btCollisionDispatcher* mDispatcher;
+  btSequentialImpulseConstraintSolver* mSolver;
+  const BulletSystemData& _systemData;
+  PoolString _dbgdrawlayername;
+  DrawQueueXfData _dbgdrawXF;
+  PhysicsDebugger _debugger;
+  int mMaxSubSteps;
+  int mNumSubStepsTaken;
+  float mfAvgDtAcc;
+  float mfAvgDtCtr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
