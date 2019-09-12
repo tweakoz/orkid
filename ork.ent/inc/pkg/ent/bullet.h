@@ -24,6 +24,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/heightmap.h>
 #include <pkg/ent/scene.h>
+#include <ork/kernel/concurrent_queue.h>
 
 //#define BT_USE_DOUBLE_PRECISION
 
@@ -42,11 +43,11 @@ class btDefaultCollisionConfiguration;
 class btVector3;
 
 namespace ork::lev2 {
-	class XgmModel;
-	class XgmMesh;
-	class XgmCluster;
-	class GfxTarget;
-	class RenderContextInstData;
+class XgmModel;
+class XgmMesh;
+class XgmCluster;
+class GfxTarget;
+class RenderContextInstData;
 } // namespace ork::lev2
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,35 +64,27 @@ class BulletSystem;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btVector3 orkv3tobtv3(const ork::fvec3 &v3);
-ork::fvec3 btv3toorkv3(const btVector3 &v3);
-btTransform orkmtx4tobtmtx4(const ork::fmtx4 &mtx);
-btMatrix3x3 orkmtx3tobtbasis(const ork::fmtx3 &mtx);
-ork::fmtx4 btmtx4toorkmtx4(const btTransform &mtx);
-ork::fmtx3 btbasistoorkmtx3(const btMatrix3x3 &mtx);
+btVector3 orkv3tobtv3(const ork::fvec3& v3);
+ork::fvec3 btv3toorkv3(const btVector3& v3);
+btTransform orkmtx4tobtmtx4(const ork::fmtx4& mtx);
+btMatrix3x3 orkmtx3tobtbasis(const ork::fmtx3& mtx);
+ork::fmtx4 btmtx4toorkmtx4(const btTransform& mtx);
+ork::fmtx3 btbasistoorkmtx3(const btMatrix3x3& mtx);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-inline const btVector3 &operator<<=(btVector3 &lhs, const ork::fvec3 &v3) {
+inline const btVector3& operator<<=(btVector3& lhs, const ork::fvec3& v3) {
   lhs = orkv3tobtv3(v3);
   return lhs;
 }
-inline btVector3 operator!(const ork::fvec3 &v3) { return orkv3tobtv3(v3); }
-inline ork::fvec3 operator!(const btVector3 &v3) { return btv3toorkv3(v3); }
+inline btVector3 operator!(const ork::fvec3& v3) { return orkv3tobtv3(v3); }
+inline ork::fvec3 operator!(const btVector3& v3) { return btv3toorkv3(v3); }
 
-inline btTransform operator!(const ork::fmtx4 &mtx) {
-  return orkmtx4tobtmtx4(mtx);
-}
-inline ork::fmtx4 operator!(const btTransform &mtx) {
-  return btmtx4toorkmtx4(mtx);
-}
+inline btTransform operator!(const ork::fmtx4& mtx) { return orkmtx4tobtmtx4(mtx); }
+inline ork::fmtx4 operator!(const btTransform& mtx) { return btmtx4toorkmtx4(mtx); }
 
-inline btMatrix3x3 operator!(const ork::fmtx3 &mtx) {
-  return orkmtx3tobtbasis(mtx);
-}
-inline ork::fmtx3 operator!(const btMatrix3x3 &mtx) {
-  return btbasistoorkmtx3(mtx);
-}
+inline btMatrix3x3 operator!(const ork::fmtx3& mtx) { return orkmtx3tobtbasis(mtx); }
+inline ork::fmtx3 operator!(const btMatrix3x3& mtx) { return btbasistoorkmtx3(mtx); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -100,69 +93,68 @@ struct PhysicsDebuggerLine {
   fvec3 mTo;
   fvec3 mColor;
 
-  PhysicsDebuggerLine(const fvec3 &f, const fvec3 &t, const fvec3 &c)
-      : mFrom(f), mTo(t), mColor(c) {}
+  PhysicsDebuggerLine(const fvec3& f, const fvec3& t, const fvec3& c) : mFrom(f), mTo(t), mColor(c) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PhysicsDebugger : public btIDebugDraw {
-  const orkvector<PhysicsDebuggerLine> &GetLines1() const {
-    return mClearOnBeginInternalTickLines;
-  }
-  const orkvector<PhysicsDebuggerLine> &GetLines2() const {
-    return mClearOnRenderLines;
-  }
+struct PhysicsDebugger final : public btIDebugDraw {
+  //const std::vector<PhysicsDebuggerLine>& GetLines() const { return _clearOnRenderLines; }
 
   PhysicsDebugger();
 
-  void ClearOnBeginInternalTick() { mClearOnBeginInternalTick = true; }
-  void ClearOnRender() { mClearOnBeginInternalTick = false; }
-  void SetClearOnBeginInternalTick(bool internalTick = true) {
-    mClearOnBeginInternalTick = internalTick;
-  }
-  bool IsClearOnBeginInternalTick() { return mClearOnBeginInternalTick; }
   bool IsDebugEnabled() const { return mbDEBUG; }
 
-  void AddLine(const ork::fvec3 &from, const ork::fvec3 &to,
-               const ork::fvec3 &color);
-  void Render(ork::lev2::RenderContextInstData &rcid,
-              ork::lev2::GfxTarget *ptarg);
-  void Render(ork::lev2::RenderContextInstData &rcid,
-              ork::lev2::GfxTarget *ptarg,
-              const orkvector<PhysicsDebuggerLine> &lines);
+  void addLine(const ork::fvec3& from, const ork::fvec3& to, const ork::fvec3& color);
+  void render(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* ptarg);
+  void render(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* ptarg, const std::vector<PhysicsDebuggerLine>& lines);
   void SetDebug(bool bv) { mbDEBUG = bv; }
-  void BeginInternalTickClear() { mClearOnBeginInternalTickLines.clear(); }
-  void RenderClear() { mClearOnRenderLines.clear(); }
+  //void RenderClear() { _clearOnRenderLines.clear(); }
 
   //////////////////////////
 
-  void flushLines() final {
-      BeginInternalTickClear();
-  }
-  //void beginInternalStep() override { BeginInternalTickClear(); }
-  //void endInternalStep() override {}
-  void drawLine(const btVector3 &from, const btVector3 &to,
-                const btVector3 &color) override;
-  void drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB,
-                        btScalar distance, int lifeTime,
-                        const btVector3 &color) override;
-  void reportErrorWarning(const char *warningString) override;
-  void draw3dText(const btVector3 &location, const char *textString) override;
-  void setDebugMode(int debugMode) override;
+  void flushLines() final;
+  void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) final;
+  void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime,
+                        const btVector3& color) final;
+  void reportErrorWarning(const char* warningString) final;
+  void draw3dText(const btVector3& location, const char* textString) final;
+  void setDebugMode(int debugMode) final;
   int getDebugMode() const override;
 
   void Lock();
   void UnLock();
 
-private:
-  ork::mutex mMutex;
-  orkvector<PhysicsDebuggerLine> mClearOnBeginInternalTickLines;
-  orkvector<PhysicsDebuggerLine> mClearOnRenderLines;
-  bool mClearOnBeginInternalTick;
+  typedef std::vector<PhysicsDebuggerLine> lineq_t;
+  typedef lineq_t* lineqptr_t;
+
+  ork::mutex _mutex;
+  MpMcBoundedQueue<lineqptr_t,3> _lineqpool;
+  std::atomic<lineqptr_t> _currentwritelq;
   bool mbDEBUG;
 
   //////////////////////////
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct BulletDebugDrawDBRec {
+  const ork::ent::Entity* mpEntity;
+  BulletSystem* _bulletSystem;
+  PhysicsDebugger::lineqptr_t _lines = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct BulletDebugDrawDBData {
+  ork::ent::Entity* mpEntity;
+  BulletSystem* _bulletSystem;
+
+  BulletDebugDrawDBRec mDBRecs[ork::ent::DrawableBuffer::kmaxbuffers];
+  PhysicsDebugger* _debugger;
+
+  BulletDebugDrawDBData(BulletSystem* psi, ork::ent::Entity* pent);
+  ~BulletDebugDrawDBData();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,89 +173,68 @@ public:
   float GetTimeScale() const { return mfTimeScale; }
   bool IsDebug() const { return mbDEBUG; }
   float GetSimulationRate() const { return mSimulationRate; }
-  const fvec3 &GetGravity() const { return mGravity; }
+  const fvec3& GetGravity() const { return mGravity; }
 
 protected:
   System* createSystem(SceneInst* psi) const final;
-};
-
-struct BulletDebugDrawDBRec {
-  const ork::ent::Entity *mpEntity;
-  BulletSystem *mpBWCI;
-  orkvector<PhysicsDebuggerLine> mLines1;
-  orkvector<PhysicsDebuggerLine> mLines2;
-};
-struct BulletDebugDrawDBData {
-  ork::ent::Entity *mpEntity;
-  BulletSystem *mpBWCI;
-
-  BulletDebugDrawDBRec mDBRecs[ork::ent::DrawableBuffer::kmaxbuffers];
-  PhysicsDebugger *mpDebugger;
-
-  BulletDebugDrawDBData(BulletSystem *psi, ork::ent::Entity *pent);
-  ~BulletDebugDrawDBData();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class BulletSystem : public ork::ent::System {
 
-  btDiscreteDynamicsWorld *mDynamicsWorld;
-  btDefaultCollisionConfiguration *mBtConfig;
-  btBroadphaseInterface *mBroadPhase;
-  btCollisionDispatcher *mDispatcher;
-  btSequentialImpulseConstraintSolver *mSolver;
-  const BulletSystemData &mBWCBD;
-  PhysicsDebugger mDebugger;
+  btDiscreteDynamicsWorld* mDynamicsWorld;
+  btDefaultCollisionConfiguration* mBtConfig;
+  btBroadphaseInterface* mBroadPhase;
+  btCollisionDispatcher* mDispatcher;
+  btSequentialImpulseConstraintSolver* mSolver;
+  const BulletSystemData& mBWCBD;
+  PhysicsDebugger _debugger;
   int mMaxSubSteps;
   int mNumSubStepsTaken;
   float mfAvgDtAcc;
   float mfAvgDtCtr;
 
-  void DoUpdate(ork::ent::SceneInst *inst) final;
+  void DoUpdate(ork::ent::SceneInst* inst) final;
 
 public:
+  static constexpr systemkey_t SystemType = "BulletSystem";
+  systemkey_t systemTypeDynamic() final { return SystemType; }
 
-	static constexpr systemkey_t SystemType = "BulletSystem";
-	systemkey_t systemTypeDynamic() final { return SystemType; }
-
-  BulletSystem(const BulletSystemData &data,
-                            ork::ent::SceneInst* psi);
+  BulletSystem(const BulletSystemData& data, ork::ent::SceneInst* psi);
   ~BulletSystem();
 
-  btRigidBody *AddLocalRigidBody(ork::ent::Entity *pent, btScalar mass,
-                                 const btTransform &startTransform,
-                                 btCollisionShape *shape);
+  btRigidBody* AddLocalRigidBody(ork::ent::Entity* pent, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
 
-  btDiscreteDynamicsWorld *GetDynamicsWorld() const { return mDynamicsWorld; }
+  btDiscreteDynamicsWorld* GetDynamicsWorld() const { return mDynamicsWorld; }
 
-  void LinkPhysics(ork::ent::SceneInst *inst, ork::ent::Entity *entity);
+  void LinkPhysics(ork::ent::SceneInst* inst, ork::ent::Entity* entity);
 
   void InitWorld();
 
-  PhysicsDebugger &Debugger() { return mDebugger; }
-  btDynamicsWorld *BulletWorld() { return mDynamicsWorld; }
+  PhysicsDebugger& Debugger() { return _debugger; }
+  btDynamicsWorld* BulletWorld() { return mDynamicsWorld; }
 
   int GetMaxSubSteps() const { return mMaxSubSteps; }
   void SetMaxSubSteps(int maxsubsteps) { mMaxSubSteps = maxsubsteps; }
 
   int GetNumSubStepsTaken() const { return mNumSubStepsTaken; }
 
-  const BulletSystemData &GetWorldData() const { return mBWCBD; }
+  const BulletSystemData& GetWorldData() const { return mBWCBD; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class EntMotionState : public btMotionState {
 public:
-  EntMotionState(const btTransform &initialpos, ork::ent::Entity *entity);
+  EntMotionState(const btTransform& initialpos, ork::ent::Entity* entity);
 
-  virtual void getWorldTransform(btTransform &transform) const;
+  virtual void getWorldTransform(btTransform& transform) const;
 
-  virtual void setWorldTransform(const btTransform &transform);
+  virtual void setWorldTransform(const btTransform& transform);
 
 protected:
-  ork::ent::Entity *mEntity;
+  ork::ent::Entity* mEntity;
   btTransform mTransform;
 };
 
@@ -273,15 +244,12 @@ class BulletObjectArchetype : public ork::ent::Archetype {
   RttiDeclareConcrete(BulletObjectArchetype, ork::ent::Archetype);
 
 private:
-  void DoCompose(ork::ent::ArchComposer &composer) override;
-  void DoLinkEntity(ork::ent::SceneInst *inst,
-                    ork::ent::Entity *pent) const override;
-  void DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world,
-                     ork::ent::Entity *pent) const override;
+  void DoCompose(ork::ent::ArchComposer& composer) override;
+  void DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity* pent) const override;
+  void DoStartEntity(ork::ent::SceneInst* inst, const ork::fmtx4& world, ork::ent::Entity* pent) const override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 
 class BulletObjectForceControllerData : public ork::Object {
   RttiDeclareAbstract(BulletObjectForceControllerData, ork::Object);
@@ -290,41 +258,37 @@ public:
   BulletObjectForceControllerData();
   ~BulletObjectForceControllerData();
 
-  virtual BulletObjectForceControllerInst *
-  CreateForceControllerInst(const BulletObjectControllerData &data,
-                            ork::ent::Entity *pent) const = 0;
+  virtual BulletObjectForceControllerInst* CreateForceControllerInst(const BulletObjectControllerData& data,
+                                                                     ork::ent::Entity* pent) const = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class BulletObjectForceControllerInst {
 public:
-  BulletObjectForceControllerInst(const BulletObjectForceControllerData &data);
+  BulletObjectForceControllerInst(const BulletObjectForceControllerData& data);
   virtual ~BulletObjectForceControllerInst();
-  virtual void UpdateForces(ork::ent::SceneInst *inst,
-                            BulletObjectControllerInst *boci) = 0;
-  virtual bool DoLink(ent::SceneInst *psi) = 0;
+  virtual void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) = 0;
+  virtual bool DoLink(ent::SceneInst* psi) = 0;
 
 private:
-  const BulletObjectForceControllerData &mData;
+  const BulletObjectForceControllerData& mData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct ShapeCreateData {
-  Entity *mEntity;
-  BulletSystem *mWorld;
-  BulletObjectControllerInst *mObject;
+  Entity* mEntity;
+  BulletSystem* mWorld;
+  BulletObjectControllerInst* mObject;
 };
 
 struct ShapeFactory {
 
-  typedef std::function<BulletShapeBaseInst *(const ShapeCreateData &data)>
-      creator_t;
-  typedef std::function<void(BulletShapeBaseData *)> invalidator_t;
+  typedef std::function<BulletShapeBaseInst*(const ShapeCreateData& data)> creator_t;
+  typedef std::function<void(BulletShapeBaseData*)> invalidator_t;
 
-  ShapeFactory(creator_t c = nullptr,
-               invalidator_t i = [](BulletShapeBaseData *) {})
+  ShapeFactory(creator_t c = nullptr, invalidator_t i = [](BulletShapeBaseData*) {})
       : _createShape(c), _invalidate(i), _impl(nullptr) {}
 
   creator_t _createShape;
@@ -341,25 +305,24 @@ public:
   BulletShapeBaseData();
   ~BulletShapeBaseData();
 
-  BulletShapeBaseInst *CreateShape(const ShapeCreateData &data) const;
+  BulletShapeBaseInst* CreateShape(const ShapeCreateData& data) const;
 
 protected:
   shape_factory_t mShapeFactory;
 
-  bool DoNotify(const event::Event *event) override;
+  bool DoNotify(const event::Event* event) override;
 };
 
 struct BulletShapeBaseInst {
-  BulletShapeBaseInst(const BulletShapeBaseData *data = nullptr)
-      : _shapeData(data), mCollisionShape(nullptr), _impl(nullptr) {}
+  BulletShapeBaseInst(const BulletShapeBaseData* data = nullptr) : _shapeData(data), mCollisionShape(nullptr), _impl(nullptr) {}
 
-  const AABox &GetBoundingBox() const { return mBoundingBox; }
-  btCollisionShape *GetBulletShape() const { return mCollisionShape; }
+  const AABox& GetBoundingBox() const { return mBoundingBox; }
+  btCollisionShape* GetBulletShape() const { return mCollisionShape; }
 
-  const BulletShapeBaseData *_shapeData;
-  btCollisionShape *mCollisionShape;
+  const BulletShapeBaseData* _shapeData;
+  btCollisionShape* mCollisionShape;
   AABox mBoundingBox;
-  CallbackDrawable *_drawable = nullptr;
+  CallbackDrawable* _drawable = nullptr;
   svar16_t _impl;
 };
 
@@ -406,13 +369,13 @@ public:
   BulletShapeModelData();
   ~BulletShapeModelData();
 
-  lev2::XgmModelAsset *GetAsset() { return mModelAsset; }
-  void SetModelAccessor(ork::rtti::ICastable *const &mdl);
-  void GetModelAccessor(ork::rtti::ICastable *&mdl) const;
+  lev2::XgmModelAsset* GetAsset() { return mModelAsset; }
+  void SetModelAccessor(ork::rtti::ICastable* const& mdl);
+  void GetModelAccessor(ork::rtti::ICastable*& mdl) const;
   float GetScale() const { return mfScale; }
 
 private:
-  lev2::XgmModelAsset *mModelAsset;
+  lev2::XgmModelAsset* mModelAsset;
   float mfScale;
 };
 
@@ -425,27 +388,27 @@ public:
   BulletShapeHeightfieldData();
   ~BulletShapeHeightfieldData();
 
-  void SetHeightMapName(file::Path const &lmap);
-  void GetHeightMapName(file::Path &lmap) const;
+  void SetHeightMapName(file::Path const& lmap);
+  void GetHeightMapName(file::Path& lmap) const;
 
-  const file::Path &HeightMapPath() const { return mHeightMapName; }
+  const file::Path& HeightMapPath() const { return mHeightMapName; }
   float WorldHeight() const { return mWorldHeight; }
   float WorldSize() const { return mWorldSize; }
-  const fvec3 &GetVisualOffset() const { return mVisualOffset; }
+  const fvec3& GetVisualOffset() const { return mVisualOffset; }
 
-  ork::lev2::TextureAsset *GetSphereMap() const { return mSphereLightMap; }
+  ork::lev2::TextureAsset* GetSphereMap() const { return mSphereLightMap; }
 
 private:
-  void SetTextureAccessor(ork::rtti::ICastable *const &tex);
-  void GetTextureAccessor(ork::rtti::ICastable *&tex) const;
+  void SetTextureAccessor(ork::rtti::ICastable* const& tex);
+  void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
 
-  bool PostDeserialize(reflect::IDeserializer &) final;
+  bool PostDeserialize(reflect::IDeserializer&) final;
 
   file::Path mHeightMapName;
   float mWorldHeight;
   float mWorldSize;
   fvec3 mVisualOffset;
-  ork::lev2::TextureAsset *mSphereLightMap;
+  ork::lev2::TextureAsset* mSphereLightMap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -464,22 +427,20 @@ public:
   bool GetAllowSleeping() const { return mbAllowSleeping; }
   bool GetKinematic() const { return mbKinematic; }
 
-  const ork::ObjectMap GetForceControllerData() const {
-    return mForceControllerDataMap;
-  }
-  const BulletShapeBaseData *GetShapeData() const;
-  void SetShapeData(BulletShapeBaseData *pdata) { mShapeData = pdata; }
+  const ork::ObjectMap GetForceControllerData() const { return mForceControllerDataMap; }
+  const BulletShapeBaseData* GetShapeData() const;
+  void SetShapeData(BulletShapeBaseData* pdata) { mShapeData = pdata; }
 
-  void ShapeGetter(ork::rtti::ICastable *&val) const;
-  void ShapeSetter(ork::rtti::ICastable *const &val);
+  void ShapeGetter(ork::rtti::ICastable*& val) const;
+  void ShapeSetter(ork::rtti::ICastable* const& val);
 
 protected:
   friend class BulletObjectControllerInst;
 
-  ComponentInst *createComponent(Entity *pent) const final;
-	void DoRegisterWithScene( ork::ent::SceneComposer& sc ) final;
+  ComponentInst* createComponent(Entity* pent) const final;
+  void DoRegisterWithScene(ork::ent::SceneComposer& sc) final;
 
-  const BulletShapeBaseData *mShapeData;
+  const BulletShapeBaseData* mShapeData;
   ork::ObjectMap mForceControllerDataMap;
   float mfRestitution;
   float mfFriction;
@@ -495,43 +456,35 @@ class BulletObjectControllerInst : public ork::ent::ComponentInst {
   RttiDeclareAbstract(BulletObjectControllerInst, ork::ent::ComponentInst);
 
 public:
-  BulletObjectControllerInst(const BulletObjectControllerData &data,
-                             ork::ent::Entity *entity);
+  BulletObjectControllerInst(const BulletObjectControllerData& data, ork::ent::Entity* entity);
   ~BulletObjectControllerInst();
 
-  btRigidBody *GetRigidBody() { return mRigidBody; }
-  const BulletObjectControllerData &GetData() const { return mBOCD; }
+  btRigidBody* GetRigidBody() { return mRigidBody; }
+  const BulletObjectControllerData& GetData() const { return mBOCD; }
 
-  const BulletShapeBaseInst *GetShapeInst() const { return mShapeInst; }
-	BulletObjectForceControllerInst* getForceController(PoolString ps) const;
+  const BulletShapeBaseInst* GetShapeInst() const { return mShapeInst; }
+  BulletObjectForceControllerInst* getForceController(PoolString ps) const;
 
 private:
-  const BulletObjectControllerData &mBOCD;
-  btRigidBody *mRigidBody;
-  orkmap<PoolString, BulletObjectForceControllerInst *> mForceControllerInstMap;
-  BulletShapeBaseInst *mShapeInst;
+  const BulletObjectControllerData& mBOCD;
+  btRigidBody* mRigidBody;
+  orkmap<PoolString, BulletObjectForceControllerInst*> mForceControllerInstMap;
+  BulletShapeBaseInst* mShapeInst;
 
-  void DoUpdate(ork::ent::SceneInst *inst) final;
-  bool DoNotify(const ork::event::Event *event) final { return false; }
-  bool DoLink(SceneInst *psi) final;
-  void DoStop(SceneInst *psi) final;
+  void DoUpdate(ork::ent::SceneInst* inst) final;
+  bool DoNotify(const ork::event::Event* event) final { return false; }
+  bool DoLink(SceneInst* psi) final;
+  void DoStop(SceneInst* psi) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-btBoxShape *XgmModelToBoxShape(const ork::lev2::XgmModel *xgmmodel,
-                               float fscale);
-btSphereShape *XgmModelToSphereShape(const ork::lev2::XgmModel *xgmmodel,
-                                     float fscale);
-btCompoundShape *XgmModelToCompoundShape(const ork::lev2::XgmModel *xgmmodel,
-                                         float fscale);
-btCompoundShape *XgmMeshToCompoundShape(const ork::lev2::XgmMesh *xgmmesh,
-                                        float fscale);
-btCollisionShape *
-XgmClusterToBvhTriangleMeshShape(const ork::lev2::XgmCluster &xgmcluster,
-                                 float fscale);
-btCollisionShape *XgmModelToGimpactShape(const ork::lev2::XgmModel *xgmmodel,
-                                         float fscale);
+btBoxShape* XgmModelToBoxShape(const ork::lev2::XgmModel* xgmmodel, float fscale);
+btSphereShape* XgmModelToSphereShape(const ork::lev2::XgmModel* xgmmodel, float fscale);
+btCompoundShape* XgmModelToCompoundShape(const ork::lev2::XgmModel* xgmmodel, float fscale);
+btCompoundShape* XgmMeshToCompoundShape(const ork::lev2::XgmMesh* xgmmesh, float fscale);
+btCollisionShape* XgmClusterToBvhTriangleMeshShape(const ork::lev2::XgmCluster& xgmcluster, float fscale);
+btCollisionShape* XgmModelToGimpactShape(const ork::lev2::XgmModel* xgmmodel, float fscale);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent

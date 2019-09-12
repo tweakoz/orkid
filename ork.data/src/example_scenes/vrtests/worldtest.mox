@@ -154,16 +154,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='12'>
-                                        <property name='RunSpeed'>350</property>
-                                        <property name='SpeedLerpRate'>10</property>
-                                        <property name='WalkSpeed'>135</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='CharacterLocoData' id='13'>
+                                    <object type='CharacterLocoData' id='12'>
                                         <property name='RunSpeed'>50</property>
                                         <property name='SpeedLerpRate'>1</property>
                                         <property name='WalkSpeed'>30</property>
@@ -172,7 +163,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='14'>
+                                    <object type='ModelComponentData' id='13'>
                                         <property name='AlwaysVisible'>true</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -191,8 +182,17 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='15'>
+                                    <object type='ScriptComponentData' id='14'>
                                         <property name='ScriptFile'>"src://scripts/arch/diver.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='15'>
+                                        <property name='RunSpeed'>350</property>
+                                        <property name='SpeedLerpRate'>10</property>
+                                        <property name='WalkSpeed'>135</property>
                                     </object>
                                 </reference>
                             </item>
@@ -769,7 +769,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='90'>
+                                    <object type='CharacterLocoData' id='90'>
                                         <property name='RunSpeed'>50</property>
                                         <property name='SpeedLerpRate'>1</property>
                                         <property name='WalkSpeed'>30</property>
@@ -778,16 +778,7 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='CharacterLocoData' id='91'>
-                                        <property name='RunSpeed'>50</property>
-                                        <property name='SpeedLerpRate'>1</property>
-                                        <property name='WalkSpeed'>30</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='92'>
+                                    <object type='ModelComponentData' id='91'>
                                         <property name='AlwaysVisible'>false</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -806,8 +797,17 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='93'>
+                                    <object type='ScriptComponentData' id='92'>
                                         <property name='ScriptFile'>"src://scripts/arch/terplayer.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='SimpleCharControllerData' id='93'>
+                                        <property name='RunSpeed'>50</property>
+                                        <property name='SpeedLerpRate'>1</property>
+                                        <property name='WalkSpeed'>30</property>
                                     </object>
                                 </reference>
                             </item>
@@ -940,7 +940,7 @@
             <item key='BulletSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='BulletSystemData' id='109'>
-                        <property name='Debug'>true</property>
+                        <property name='Debug'>false</property>
                         <property name='Gravity'>0 -9 0</property>
                         <property name='SimulationRate'>120</property>
                         <property name='TimeScale'>1</property>

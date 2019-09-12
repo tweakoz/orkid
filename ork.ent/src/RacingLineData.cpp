@@ -224,8 +224,8 @@ void RacingLineInst::DoUpdate(ork::ent::SceneInst *sinst)
 {
 	if(mPhysicsDebugger->getDebugMode())
 	{
-		bool clearOnBeginInternalTick = mPhysicsDebugger->IsClearOnBeginInternalTick();
-		mPhysicsDebugger->ClearOnRender();
+		//bool clearOnBeginInternalTick = mPhysicsDebugger->IsClearOnBeginInternalTick();
+		//mPhysicsDebugger->ClearOnRender();
 
 		const orklut<int, RacingLine *> &racingLineLut
 			= mData.GetRacingLines();
@@ -262,7 +262,7 @@ void RacingLineInst::DoUpdate(ork::ent::SceneInst *sinst)
 			}
 		}
 
-		mPhysicsDebugger->SetClearOnBeginInternalTick(clearOnBeginInternalTick);
+	//	mPhysicsDebugger->SetClearOnBeginInternalTick(clearOnBeginInternalTick);
 	}
 }
 
