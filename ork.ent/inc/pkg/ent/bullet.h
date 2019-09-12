@@ -99,17 +99,15 @@ struct PhysicsDebuggerLine {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PhysicsDebugger final : public btIDebugDraw {
-  //const std::vector<PhysicsDebuggerLine>& GetLines() const { return _clearOnRenderLines; }
+
+  typedef std::vector<PhysicsDebuggerLine> lineq_t;
+  typedef lineq_t* lineqptr_t;
 
   PhysicsDebugger();
 
-  bool IsDebugEnabled() const { return mbDEBUG; }
-
   void addLine(const ork::fvec3& from, const ork::fvec3& to, const ork::fvec3& color);
-  void render(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* ptarg);
-  void render(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* ptarg, const std::vector<PhysicsDebuggerLine>& lines);
-  void SetDebug(bool bv) { mbDEBUG = bv; }
-  //void RenderClear() { _clearOnRenderLines.clear(); }
+  void render(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* ptarg, lineqptr_t lines);
+  void SetDebug(bool bv) { _enabled = bv; }
 
   //////////////////////////
 
@@ -125,13 +123,10 @@ struct PhysicsDebugger final : public btIDebugDraw {
   void Lock();
   void UnLock();
 
-  typedef std::vector<PhysicsDebuggerLine> lineq_t;
-  typedef lineq_t* lineqptr_t;
-
   ork::mutex _mutex;
-  MpMcBoundedQueue<lineqptr_t,3> _lineqpool;
-  std::atomic<lineqptr_t> _currentwritelq;
-  bool mbDEBUG;
+  MpMcBoundedQueue<lineqptr_t,4> _lineqpool;
+  lineqptr_t _currentwritelq = nullptr;
+  bool _enabled = false;
 
   //////////////////////////
 };

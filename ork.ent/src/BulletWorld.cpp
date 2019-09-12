@@ -135,11 +135,11 @@ btRigidBody* BulletSystem::AddLocalRigidBody(ork::ent::Entity* pent, btScalar ma
   if (isDynamic && shape)
     shape->calculateLocalInertia(mass, localInertia);
 
-  btMotionState* motionstate = new EntMotionState(startTransform, pent);
+  auto motionstate = new EntMotionState(startTransform, pent);
 
   btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionstate, shape, localInertia);
 
-  btRigidBody* body = new btRigidBody(cInfo);
+  auto body = new btRigidBody(cInfo);
   body->setUserPointer(pent);
   body->setRestitution(1.0f);
   body->setFriction(1.0f);

@@ -30,7 +30,14 @@ using namespace ork::lev2;
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-PhysicsDebugger::PhysicsDebugger() : mbDEBUG(false), _mutex("bulletdebuggerlines") {}
+PhysicsDebugger::PhysicsDebugger()
+  : _mutex("bulletdebuggerlines") {
+
+    for(int i=0; i<4; i++){
+      _lineqpool.push(new lineq_t);
+    }
+
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -62,7 +69,7 @@ void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
   BulletDebugDrawDBData* pdata = cdb.mUserData0.Get<BulletDebugDrawDBData*>();
   auto dbger = pdata->_debugger;
 
-  if (dbger->IsDebugEnabled()) {
+  if (dbger->_enabled) {
     BulletSystem* system = pdata->_bulletSystem;
 
     BulletDebugDrawDBRec* prec = pdata->mDBRecs + cdb.miBufferIndex;
@@ -71,15 +78,20 @@ void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
     if (system) {
 
       dbger->_currentwritelq = nullptr;
-      _lineqpool.pop(_currentwritelq);
+      /*
+      while( false == dbger->_lineqpool.try_pop(dbger->_currentwritelq) ){
+        sched_yield();
+      }
 
-      //system->BulletWorld()->debugDrawWorld();
-      //pdata->_debugger->Lock();
-      //auto curwlines = system->
+      // dbger->_currentwritelq is now valid
 
-      //prec->_lines = system->Debugger().GetLines();
-      //pdata->_debugger->UnLock();
-      //system->Debugger().RenderClear();
+      pdata->_debugger->Lock();
+      dbger->_currentwritelq->clear();
+      system->BulletWorld()->debugDrawWorld();
+      prec->_lines = dbger->_currentwritelq;
+      pdata->_debugger->UnLock();
+      dbger->_currentwritelq = nullptr;
+      */
     }
   }
 }
@@ -92,7 +104,7 @@ void bulletDebugRender(RenderContextInstData& rcid, GfxTarget* targ, const Callb
   //////////////////////////////////////////
   auto pyo = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
 
-  if (pyo->_debugger->IsDebugEnabled() && pren->GetUserData1().IsA<BulletDebugDrawDBRec*>()) {
+  if (pyo->_debugger->_enabled && pren->GetUserData1().IsA<BulletDebugDrawDBRec*>()) {
     auto srec = pren->GetUserData1().Get<BulletDebugDrawDBRec*>();
     //////////////////////////////////////////
     if (false == targ->FBI()->IsPickState()) {
@@ -106,26 +118,27 @@ void bulletDebugRender(RenderContextInstData& rcid, GfxTarget* targ, const Callb
       const ork::CameraData* cdata = framedata->GetCameraData();
 
       pyo->_debugger->Lock();
-      pyo->_debugger->render(rcid, targ, srec->_lines);
+      //pyo->_debugger->render(rcid, targ, srec->_lines);
       pyo->_debugger->UnLock();
 
-      pyo->_debugger->_lineqpool.push(srec->_lines);
-      //	RenderClear();
+      ////////////////////////
+      // done rendering lines, return to pool
+      ////////////////////////
+
+    //  pyo->_debugger->_lineqpool.push(srec->_lines);
+
+      ////////////////////////
+
     }
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg) {
-  //	Render(rcid, ptarg, _clearOnRenderLines);
-  //	RenderClear();
-}
+void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, lineqptr_t lines) {
+  typedef SVtxV12C4T16 vtx_t;
 
-///////////////////////////////////////////////////////////////////////////////
-
-void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, const std::vector<PhysicsDebuggerLine>& lines) {
-  int inumlines = lines.size();
+  int inumlines = lines->size();
 
   const Renderer* prenderer = rcid.GetRenderer();
 
@@ -133,25 +146,22 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, cons
 
   fvec3 szn = 0;
 
-  DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+  DynamicVertexBuffer<vtx_t>& vb = GfxEnv::GetSharedDynamicVB();
 
-  // int ibase = vb.GetNum();
   int icount = inumlines * 2;
 
   if (icount) {
-    VtxWriter<SVtxV12C4T16> vwriter;
+    VtxWriter<vtx_t> vwriter;
     vwriter.Lock(ptarg, &vb, icount);
-    // ptarg->GBI()->LockVB( vwriter, icount );
-    for (int il = 0; il < inumlines; il++) {
-      const PhysicsDebuggerLine& line = lines[il];
+    for (const auto& line : (*lines)) {
 
-      U32 ucolor = line.mColor.GetBGRAU32(); // ptarg->fcolor4ToU32(line.mColor);
+      U32 ucolor = line.mColor.GetBGRAU32();
 
       fvec3 vf = line.mFrom + szn;
       fvec3 vt = line.mTo + szn;
 
-      vwriter.AddVertex(SVtxV12C4T16(vf.GetX(), vf.GetY(), vf.GetZ(), 0.0f, 0.0f, ucolor));
-      vwriter.AddVertex(SVtxV12C4T16(vt.GetX(), vt.GetY(), vt.GetZ(), 0.0f, 0.0f, ucolor));
+      vwriter.AddVertex(vtx_t(vf.x, vf.y, vf.z, 0.0f, 0.0f, ucolor));
+      vwriter.AddVertex(vtx_t(vt.x, vt.y, vt.z, 0.0f, 0.0f, ucolor));
     }
     vwriter.UnLock(ptarg);
 
@@ -163,8 +173,8 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, cons
     ptarg->BindMaterial(&material);
     ptarg->PushModColor(fvec4::White());
     ptarg->FXI()->InvalidateStateBlock();
-    ork::fmtx4 mtx_dbg;
-    mtx_dbg.SetTranslation(cam_z * -1.3f);
+    fmtx4 mtx_dbg;
+    mtx_dbg.SetTranslation(cam_z * -.013f);
 
     ptarg->MTXI()->PushMMatrix(mtx_dbg);
     ptarg->GBI()->DrawPrimitive(vwriter, ork::lev2::EPRIM_LINES);
@@ -177,18 +187,8 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, cons
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::addLine(const fvec3& from, const fvec3& to, const fvec3& color) {
-
-  lineq_t* gotlq = _currentwritelq.fetch_and_store(nullptr);
-  while( gotlq == nullptr ){
-    gotlq =
-    if( gotlq == nullptr ){
-      sched_yield();
-    }
-    else {
-      gotlq->push_back(PhysicsDebuggerLine(from, to, color));
-    }
-  }
-    _clearOnRenderLines.push_back(PhysicsDebuggerLine(from, to, color));
+  assert(_currentwritelq!=nullptr);
+  //_currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -228,10 +228,8 @@ void PhysicsDebugger::setDebugMode(int debugMode) {}
 ///////////////////////////////////////////////////////////////////////////////
 
 int PhysicsDebugger::getDebugMode() const {
-  return (false == mbDEBUG) ? 0
-                            : btIDebugDraw::DBG_DrawContactPoints | btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb;
-  //| btIDebugDraw::DBG_DrawAabb;
-  // return btIDebugDraw::DBG_DrawContactPoints|btIDebugDraw::DBG_DrawWireframe|btIDebugDraw::DBG_DrawAabb;
+  return _enabled ? (btIDebugDraw::DBG_DrawContactPoints | btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb)
+                 : (btIDebugDraw::DBG_NoDebug);
 }
 
 } // namespace ork::ent
