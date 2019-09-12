@@ -138,6 +138,8 @@ BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
   _terrainShape->setLocalScaling(
       btVector3(scalex, _heightmap.GetWorldHeight(), scalez));
 
+  printf("_terrainShape<%p>\n", _terrainShape );
+
   return _terrainShape;
 }
 
