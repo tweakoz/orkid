@@ -16,7 +16,7 @@ extern bool gbheadlight;
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 //Moc.AddSlot0( "LightingHeadLightMode()", & EditorMainWindow::LightingHeadLightMode );
-//Moc.AddSlot0( "LightingSceneInstMode()", & EditorMainWindow::LightingSceneMode );
+//Moc.AddSlot0( "LightingSimulationMode()", & EditorMainWindow::LightingSceneMode );
 //Moc.AddSlot0( "LightingSetLightPos()", & EditorMainWindow::LightingSetLightPos );
 //QAction * BakeLightsAct = new QAction(tr("BakeLighting..."), this);
 //BakeLightsAct->setStatusTip(tr("Bake static lighting"));

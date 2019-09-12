@@ -319,7 +319,7 @@ struct VRSYSTEMIMPL {
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
-  void _myrender(SceneInst* psi, FrameRenderer& renderer, CompositorSystemDrawData& drawdata, fmtx4 rootmatrix) {
+  void _myrender(Simulation* psi, FrameRenderer& renderer, CompositorSystemDrawData& drawdata, fmtx4 rootmatrix) {
 
     auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
     auto playermtx = playerspawn->GetEffectiveMatrix();

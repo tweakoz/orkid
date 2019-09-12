@@ -69,8 +69,8 @@ public:
 	QuartzComposerInst(const QuartzComposerData &data, Entity *pent);
 	~QuartzComposerInst();
 
-	void DoUpdate( ork::ent::SceneInst* psi ) final;		// virtual 
-	bool DoLink(ork::ent::SceneInst *psi) final;			// virtual
+	void DoUpdate( ork::ent::Simulation* psi ) final;		// virtual 
+	bool DoLink(ork::ent::Simulation *psi) final;			// virtual
 	bool DoNotify(const ork::event::Event *event) final;	// virtual
 	
 	const QuartzComposerData& mCD;
@@ -94,7 +94,7 @@ class QuartzComposerArchetype : public Archetype
 {
 	RttiDeclareConcrete( QuartzComposerArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
+	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final {}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:

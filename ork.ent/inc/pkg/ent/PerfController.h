@@ -119,12 +119,12 @@ public:
 	PerfControllerComponentInst( const PerfControllerComponentData &data, ork::ent::Entity *pent );
 	~PerfControllerComponentInst();
 	const PerfControllerComponentData& GetPCCD() const { return mPCCD; }
-	void ChangeProgram( ent::SceneInst* psi, const PoolString& progname );
+	void ChangeProgram( ent::Simulation* psi, const PoolString& progname );
 	
 private:
 
-	virtual void DoUpdate(ork::ent::SceneInst *inst) final;
-	bool DoLink(ork::ent::SceneInst *psi) final; // virtual
+	virtual void DoUpdate(ork::ent::Simulation *inst) final;
+	bool DoLink(ork::ent::Simulation *psi) final; // virtual
 
 	const PerfControllerComponentData&	mPCCD;
 	PoolString							mCurrentProgram;
@@ -140,7 +140,7 @@ public:
 	PerfControllerArchetype();
 private:
 	void DoCompose(ArchComposer& composer) final; // virtual
-	void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const final {}
+	void DoStartEntity(Simulation*, const fmtx4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

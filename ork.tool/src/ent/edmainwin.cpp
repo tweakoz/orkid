@@ -40,8 +40,8 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::EditorMainWindow, "EditorMainWindow" );
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-SceneInst* GetEditorSceneInst(){
-	return gEditorMainWindow->mEditorBase.GetEditSceneInst();
+Simulation* GetEditorSimulation(){
+	return gEditorMainWindow->mEditorBase.GetEditSimulation();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneTopoChanged(){
@@ -59,7 +59,7 @@ void EditorMainWindow::Describe(){
 	///////////////////////////////////////////////////////////
 	RegisterAutoSlot( EditorMainWindow, UpdateAll );
 	RegisterAutoSlot( EditorMainWindow, OnTimer );
-	RegisterAutoSlot( EditorMainWindow, SceneInstInvalidated );
+	RegisterAutoSlot( EditorMainWindow, SimulationInvalidated );
 	RegisterAutoSlot( EditorMainWindow, ObjectSelected );
 	RegisterAutoSlot( EditorMainWindow, ObjectDeSelected );
 	RegisterAutoSlot( EditorMainWindow, SpawnNewGed );
@@ -68,7 +68,7 @@ void EditorMainWindow::Describe(){
 	///////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////
-void EditorMainWindow::SlotSceneInstInvalidated( ork::Object* pSI ){}
+void EditorMainWindow::SlotSimulationInvalidated( ork::Object* pSI ){}
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::SlotObjectSelected( ork::Object* pobj ){
 	EntData* pdata = rtti::autocast(pobj);
@@ -118,7 +118,7 @@ EditorMainWindow::EditorMainWindow(QWidget *parent, const std::string& applicati
 	, ConstructAutoSlot(SpawnNewGed)
 	, ConstructAutoSlot(ClearSelection)
 	, ConstructAutoSlot(PostNewObject)
-	, ConstructAutoSlot(SceneInstInvalidated){
+	, ConstructAutoSlot(SimulationInvalidated){
 
 	_fullscreen = false;
 	//setWindowFlags(Qt::Window | Qt::FramelessWindowHint);

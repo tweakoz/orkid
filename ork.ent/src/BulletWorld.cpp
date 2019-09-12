@@ -70,11 +70,11 @@ BulletSystemData::BulletSystemData() : mfTimeScale(1.0f), mbDEBUG(false), mSimul
 
 ///////////////////////////////////////////////////////////////////////////////
 
-System* BulletSystemData::createSystem(ork::ent::SceneInst* pinst) const { return OrkNew BulletSystem(*this, pinst); }
+System* BulletSystemData::createSystem(ork::ent::Simulation* pinst) const { return OrkNew BulletSystem(*this, pinst); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BulletSystem::BulletSystem(const BulletSystemData& data, ork::ent::SceneInst* psi)
+BulletSystem::BulletSystem(const BulletSystemData& data, ork::ent::Simulation* psi)
     : System(&data, psi), mDynamicsWorld(0), mBtConfig(0), mBroadPhase(0), mDispatcher(0), mSolver(0), _systemData(data),
       mMaxSubSteps(128), mNumSubStepsTaken(0), mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f) {
   AllocationLabel("BulletSystem::BulletSystem");
@@ -106,7 +106,7 @@ static void BulletSystemInternalTickCallback(btDynamicsWorld* world, btScalar ti
 
   btDiscreteDynamicsWorld* dynaworld = (btDiscreteDynamicsWorld*)world;
 
-  ork::ent::SceneInst* sinst = reinterpret_cast<ork::ent::SceneInst*>(world->getWorldUserInfo());
+  ork::ent::Simulation* sinst = reinterpret_cast<ork::ent::Simulation*>(world->getWorldUserInfo());
 
   float previous_dt = sinst->GetDeltaTime();
 
@@ -196,7 +196,7 @@ void BulletSystem::InitWorld() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool BulletSystem::DoLink(SceneInst* psi) {
+bool BulletSystem::DoLink(Simulation* psi) {
 
   _dbgdrawlayername = AddPooledLiteral("Default");
 
@@ -229,7 +229,7 @@ void BulletSystem::enqueueDrawables(DrawableBuffer& buffer) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::LinkPhysicsObject(ork::ent::SceneInst* inst, ork::ent::Entity* pent) {
+void BulletSystem::LinkPhysicsObject(ork::ent::Simulation* inst, ork::ent::Entity* pent) {
   mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, inst);
 
   mDynamicsWorld->setDebugDrawer(&_debugger);
@@ -240,7 +240,7 @@ void BulletSystem::LinkPhysicsObject(ork::ent::SceneInst* inst, ork::ent::Entity
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::DoUpdate(ork::ent::SceneInst* inst) {
+void BulletSystem::DoUpdate(ork::ent::Simulation* inst) {
   if (mDynamicsWorld) {
     float dt = inst->GetDeltaTime();
 

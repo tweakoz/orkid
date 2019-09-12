@@ -117,14 +117,14 @@ ObserverCamControllerInst::ObserverCamControllerInst(const ObserverCamController
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ObserverCamControllerInst::DoLink(SceneInst *psi)
+bool ObserverCamControllerInst::DoLink(Simulation *psi)
 {
 	mpTarget = psi->FindEntity(mCD.GetTarget());
 	mpEye = psi->FindEntity(mCD.GetEye());
 	return true;
 }
 
-bool ObserverCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
+bool ObserverCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
 	if( GetEntity() )
 	{
@@ -139,7 +139,7 @@ bool ObserverCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void ObserverCamControllerInst::DoUpdate( SceneInst* psi )
+void ObserverCamControllerInst::DoUpdate( Simulation* psi )
 {
 	fvec3 cam_UP = fvec3(0.0f,1.0f,0.0f);
 	fvec3 cam_EYE = fvec3(0.0f,0.0f,0.0f);

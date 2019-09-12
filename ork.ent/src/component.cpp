@@ -59,7 +59,7 @@ PoolString ComponentInst::GetFamily() const
 }
 
 
-void ComponentInst::Update(SceneInst *inst)
+void ComponentInst::Update(Simulation *inst)
 {
 	if( mbValid )
 	{
@@ -102,7 +102,7 @@ ComponentInst::ComponentInst( const ComponentData* data, Entity* pent )
 	//printf( "ComponentInst::ComponentInst<%p> ent<%p>\n", this, pent );
 }
 
-void ComponentInst::Link(SceneInst *psi)
+void ComponentInst::Link(Simulation *psi)
 {
 	mbValid = DoLink(psi);
 
@@ -110,13 +110,13 @@ void ComponentInst::Link(SceneInst *psi)
 		, GetClass()->Name().c_str(), mEntity->GetEntData().GetName().c_str()
 		, mEntity->GetEntData().GetArchetype() ? mEntity->GetEntData().GetArchetype()->GetName().c_str() : "null");*/
 }
-void ComponentInst::UnLink(SceneInst *psi)
+void ComponentInst::UnLink(Simulation *psi)
 {
 	DoUnLink(psi);
 	mbValid = false;
 }
 
-void ComponentInst::Start(SceneInst *psi, const fmtx4 &world)
+void ComponentInst::Start(Simulation *psi, const fmtx4 &world)
 {
 	if( mbValid && (false == mbStarted) )
 	{
@@ -128,7 +128,7 @@ void ComponentInst::Start(SceneInst *psi, const fmtx4 &world)
 	}
 }
 
-void ComponentInst::Stop(SceneInst *psi)
+void ComponentInst::Stop(Simulation *psi)
 {
 	if( mbStarted )
 	{
@@ -142,7 +142,7 @@ const char* ComponentInst::GetEntityName() const
 	return mEntity->GetEntData().GetName().c_str();
 }
 
-SceneInst* ComponentInst::sceneInst() const { return mEntity->GetSceneInst(); }
+Simulation* ComponentInst::sceneInst() const { return mEntity->GetSimulation(); }
 
 
 } }

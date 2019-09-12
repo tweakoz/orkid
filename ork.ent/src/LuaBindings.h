@@ -31,10 +31,10 @@ struct ScriptTable
 
 struct LuaSystem
 {
-	LuaSystem(SceneInst*psi);
+	LuaSystem(Simulation*psi);
 	~LuaSystem();
 	lua_State* mLuaState;
-	SceneInst* mSceneInst;
+	Simulation* mSimulation;
 };
 
 bool DoString(lua_State* L, const char* str);

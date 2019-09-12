@@ -154,7 +154,7 @@ bool DoString(lua_State* L, const char* str) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
+LuaSystem::LuaSystem(Simulation* psi) : mSimulation(psi) {
   mLuaState = ::luaL_newstate(); // aka lua_open
   assert(mLuaState!=nullptr);
   luaL_openlibs(mLuaState);
@@ -286,9 +286,9 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
       .endClass()
       ////////////////////////////////////////
       ////////////////////////////////////////
-      .beginClass<SceneInst>("scene")
+      .beginClass<Simulation>("scene")
       .addFunction("spawn",
-                   [](SceneInst* psi, const char* arch, const char* entname, LuaRef spdata) -> Entity* {
+                   [](Simulation* psi, const char* arch, const char* entname, LuaRef spdata) -> Entity* {
                      const auto& scenedata = psi->GetData();
                      auto archnamestr = std::string(arch);
                      auto entnamestr = std::string(entname);
@@ -314,7 +314,7 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
                      }
                      return nullptr;
                    })
-      .addFunction("findEntity",[](SceneInst* psi, const char* entname)->Entity* {
+      .addFunction("findEntity",[](Simulation* psi, const char* entname)->Entity* {
         auto entname_str = AddPooledString(entname);
         auto e = psi->FindEntity(entname_str);
         return e;
@@ -322,7 +322,7 @@ LuaSystem::LuaSystem(SceneInst* psi) : mSceneInst(psi) {
       .endClass()
       ////////////////////////////////////////
       ////////////////////////////////////////
-      .addFunction("scene", [=]() -> SceneInst* { return psi; })
+      .addFunction("scene", [=]() -> Simulation* { return psi; })
       ////////////////////////////////////////
       ////////////////////////////////////////
       .endModule();

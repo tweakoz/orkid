@@ -111,7 +111,7 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
       mUpdateThread(nullptr) {
   mRenderLock = 0;
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  bcaster.AddListenerOnChannel(this, ork::ent::SceneInst::EventChannel());
+  bcaster.AddListenerOnChannel(this, ork::ent::Simulation::EventChannel());
 
   ///////////////////////////////////////////////////////////
 
@@ -135,7 +135,7 @@ SceneEditorVP::~SceneEditorVP() {
   delete mUpdateThread;
 
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  bcaster.RemoveListenerOnChannel(this, ork::ent::SceneInst::EventChannel());
+  bcaster.RemoveListenerOnChannel(this, ork::ent::Simulation::EventChannel());
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -233,8 +233,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
   bool bFX = false;
   auto pCMCI = compositingSystem();
-  if (GetSceneInst()) {
-    ent::ESceneInstMode emode = GetSceneInst()->GetSceneInstMode();
+  if (GetSimulation()) {
+    ent::ESimulationMode emode = GetSimulation()->GetSimulationMode();
     if (pCMCI)
       switch (emode) {
         case ent::ESCENEMODE_RUN:
@@ -260,7 +260,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     if (bFX && pCMCI) {
       float frame_rate = pCMCI ? pCMCI->GetCurrentFrameRate() : 0.0f;
       bool externally_fixed_rate = (frame_rate != 0.0f);
-      const ent::SceneInst* psi = this->GetSceneInst();
+      const ent::Simulation* psi = this->GetSimulation();
 
       RenderSyncToken syntok;
       /////////////////////////////
@@ -406,7 +406,7 @@ void SceneEditorVP::FrameRenderer::Render() {
 ///////////////////////////////////////////////////////////////////////////
 
 ent::CompositingSystem* SceneEditorVP::compositingSystem() {
-  auto psi = mEditor.GetActiveSceneInst();
+  auto psi = mEditor.GetActiveSimulation();
   return (psi != nullptr) ? psi->compositingSystem() : nullptr;
 }
 
@@ -513,7 +513,7 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
     FrameData.AddLayer(AddPooledLiteral("P"));
     FrameData.AddLayer(AddPooledLiteral("Q"));
 
-    const ent::SceneInst* psi = GetSceneInst();
+    const ent::Simulation* psi = GetSimulation();
     mSceneView.UpdateRefreshPolicy(FrameData, psi);
 
     this->GetClearColorRef() = node._clearColor.xyz();
@@ -540,12 +540,12 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::QueueSceneInstToDb(ent::DrawableBuffer* pDB) // Queue SceneDrawLayerData
+void SceneEditorVP::QueueSimulationToDb(ent::DrawableBuffer* pDB) // Queue SceneDrawLayerData
 {
   AssertOnOpQ2(UpdateSerialOpQ());
 
-  if (GetSceneInst())
-    GetSceneInst()->QueueAllDrawablesToBuffer(*pDB);
+  if (GetSimulation())
+    GetSimulation()->QueueAllDrawablesToBuffer(*pDB);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -568,11 +568,11 @@ const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const ent::SceneInst* SceneEditorVP::GetSceneInst() {
-  const ent::SceneInst* psi = 0;
+const ent::Simulation* SceneEditorVP::GetSimulation() {
+  const ent::Simulation* psi = 0;
   if (mEditor.mpScene) {
     if (ApplicationStack::Top()) {
-      psi = mEditor.GetActiveSceneInst();
+      psi = mEditor.GetActiveSimulation();
     }
   }
   return psi;
@@ -743,7 +743,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
       }
       // printf( "USING LAYERNAME<%s>\n", LayerName.c_str() );
       // const DrawableBuffer& DB = DrawableBuffer::GetLockedReadBuffer(0);
-      auto psi = GetSceneInst();
+      auto psi = GetSimulation();
       auto rend = GetRenderer();
       for (const PoolString& layer_name : LayerNames)
         psi->RenderDrawableBuffer(rend, *DB, layer_name);
@@ -767,7 +767,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorView::UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameData, const SceneInst* sinst) {
+void SceneEditorView::UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameData, const Simulation* sinst) {
   if (0 == sinst)
     return;
 
@@ -778,11 +778,11 @@ void SceneEditorView::UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameDat
 
   lev2::GfxTarget* ptarg = FrameData.GetTarget();
 
-  static orkstack<ent::ESceneInstMode> semodestack;
+  static orkstack<ent::ESimulationMode> semodestack;
 
   if (pctxb) {
-    ent::ESceneInstMode ecurmode = semodestack.size() ? semodestack.top() : ent::ESCENEMODE_EDIT;
-    ent::ESceneInstMode enewmode = sinst->GetSceneInstMode();
+    ent::ESimulationMode ecurmode = semodestack.size() ? semodestack.top() : ent::ESCENEMODE_EDIT;
+    ent::ESimulationMode enewmode = sinst->GetSimulationMode();
 
     // if( enewmode != ecurmode )
     {
@@ -896,9 +896,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     }
     pTARG->PopModColor();
     /////////////////////////////////////////////////
-    if (gtoggle_pickbuffer && mEditor.GetActiveSceneInst()) {
+    if (gtoggle_pickbuffer && mEditor.GetActiveSimulation()) {
 
-      ent::ESceneInstMode emode = mEditor.GetActiveSceneInst()->GetSceneInstMode();
+      ent::ESimulationMode emode = mEditor.GetActiveSimulation()->GetSimulationMode();
 
       Texture* ptex = (emode == ent::ESCENEMODE_RUN) ? pplaytex : ppaustex;
 
@@ -965,8 +965,8 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
       if (emode == ent::ESCENEMODE_RUN) {
         ork::lev2::DrawHudEvent drawHudEvent(pTARG, 1);
-        if (mEditor.GetActiveSceneInst()->GetApplication())
-          mEditor.GetActiveSceneInst()->GetApplication()->Notify(&drawHudEvent);
+        if (mEditor.GetActiveSimulation()->GetApplication())
+          mEditor.GetActiveSimulation()->GetApplication()->Notify(&drawHudEvent);
       }
     }
     pTARG->BindMaterial(0);
@@ -1092,8 +1092,8 @@ void SceneEditorVP::SetupLighting(lev2::HeadLightManager& hlmgr, lev2::RenderCon
   // override with lightmanager in scene if one exists
   ///////////////////////////////////////////////////////////
   if (mEditor.mpScene) {
-    if (mEditor.GetActiveSceneInst()) {
-      if (auto lmi = mEditor.GetActiveSceneInst()->findSystem<ent::LightingSystem>()) {
+    if (mEditor.GetActiveSimulation()) {
+      if (auto lmi = mEditor.GetActiveSimulation()->findSystem<ent::LightingSystem>()) {
         ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
         const CameraData* cdata = FrameData.GetCameraData();
         lightmanager.EnumerateInFrustum(cdata->GetFrustum());

@@ -1221,7 +1221,7 @@ TrackInst::~TrackInst()
 {
 }
 
-bool TrackInst::DoLink(ork::ent::SceneInst* psi)
+bool TrackInst::DoLink(ork::ent::Simulation* psi)
 {
 	auto* bulletsys = psi->findSystem<ork::ent::BulletSystem>();
 	if( 0 == bulletsys ) return false;
@@ -1297,7 +1297,7 @@ SectorTrackerInst::~SectorTrackerInst()
 {
 }
 
-bool SectorTrackerInst::DoLink(ork::ent::SceneInst *inst)
+bool SectorTrackerInst::DoLink(ork::ent::Simulation *inst)
 {
 	ork::ent::Entity* ptrackent = inst->FindEntityLoose(ork::AddPooledLiteral("track"));
 
@@ -1310,7 +1310,7 @@ bool SectorTrackerInst::DoLink(ork::ent::SceneInst *inst)
 	return (mTrack!=0);
 }
 
-bool SectorTrackerInst::DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world)
+bool SectorTrackerInst::DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world)
 {
 	return true;
 }
@@ -1423,12 +1423,12 @@ void TrackArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<ork::ent::ModelComponentData>();
 }
 
-void TrackArchetype::DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const
+void TrackArchetype::DoLinkEntity(ork::ent::Simulation *inst, ork::ent::Entity *pent) const
 {
 
 }
 
-void TrackArchetype::DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const
+void TrackArchetype::DoStartEntity(ork::ent::Simulation *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const
 {
 }
 

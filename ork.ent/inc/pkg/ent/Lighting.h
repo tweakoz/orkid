@@ -30,7 +30,7 @@ public:
 
 private:
 
-    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
+    ork::ent::System* createSystem(ork::ent::Simulation *pinst) const final;
 	ork::Object* LmdAccessor() { return & mLmd; }
 
 	ork::lev2::LightManagerData	mLmd;
@@ -45,7 +45,7 @@ public:
 	static constexpr systemkey_t SystemType = "LightingSystem";
 	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-	LightingSystem( const LightingSystemData &data, ork::ent::SceneInst *pinst );
+	LightingSystem( const LightingSystemData &data, ork::ent::Simulation *pinst );
 
 	ork::lev2::LightManager& GetLightManager() { return mLightManager; }
 
@@ -94,8 +94,8 @@ public:
 private:
 
     ~LightingComponentInst() final;
-	void DoUpdate(ork::ent::SceneInst *inst) final;
-	bool DoLink(ork::ent::SceneInst *psi) final;
+	void DoUpdate(ork::ent::Simulation *inst) final;
+	bool DoLink(ork::ent::Simulation *psi) final;
 
 	ork::lev2::Light*	mLight;
 	const LightingComponentData& mLightData;
@@ -111,7 +111,7 @@ public:
 	LightArchetype();
 private:
 	void DoCompose(ArchComposer& composer) final;  // virtual
-	void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const final {}
+	void DoStartEntity(Simulation*, const fmtx4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

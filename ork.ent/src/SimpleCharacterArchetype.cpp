@@ -61,7 +61,7 @@ public:
 
     ///////////////////////////////////////////////////////////////////////////
 
-    void DoUpdate(SceneInst* psi) final
+    void DoUpdate(Simulation* psi) final
     {
         float dt = psi->GetDeltaTime();
 
@@ -154,7 +154,7 @@ public:
 
     ///////////////////////////////////////////////////////////////////////////
 
-	bool DoLink(ork::ent::SceneInst *psi) final
+	bool DoLink(ork::ent::Simulation *psi) final
 	{
     _spawntimer.Start();
 		mAnima = GetEntity()->GetTypedComponent<ork::ent::SimpleAnimatableInst>();

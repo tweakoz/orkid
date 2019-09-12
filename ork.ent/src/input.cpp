@@ -67,7 +67,7 @@ namespace ork::ent {
   }
 
 
-  void InputComponent::onActivate(SceneInst* psi) {
+  void InputComponent::onActivate(Simulation* psi) {
 
   }
 
@@ -81,7 +81,7 @@ void InputSystemData::Describe(){
 
 }
 
-System* InputSystemData::createSystem(SceneInst* psi) const {
+System* InputSystemData::createSystem(Simulation* psi) const {
     return new InputSystem(*this,psi);
 }
 
@@ -99,7 +99,7 @@ struct _InputSystemIMPL {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-InputSystem::InputSystem(const InputSystemData& data, SceneInst* psi)
+InputSystem::InputSystem(const InputSystemData& data, Simulation* psi)
     : System(&data,psi){
 
       _impl.Make<_InputSystemIMPL>();
@@ -109,7 +109,7 @@ InputSystem::~InputSystem(){
 
 }
 
-void InputSystem::DoUpdate(SceneInst* psi){
+void InputSystem::DoUpdate(Simulation* psi){
   lev2::InputManager::poll();
 }
 ///////////////////////////////////////////////////////////////////////////////

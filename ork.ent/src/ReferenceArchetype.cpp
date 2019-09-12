@@ -199,7 +199,7 @@ void ReferenceArchetype::DoComposeEntity( Entity *pent ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) const
+void ReferenceArchetype::DoLinkEntity(Simulation* inst, Entity *pent) const
 {
 	if(mArchetypeAsset)
 		if(mArchetypeAsset->GetArchetype())
@@ -208,7 +208,7 @@ void ReferenceArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoStartEntity(SceneInst* inst, const fmtx4 &world, Entity *pent) const
+void ReferenceArchetype::DoStartEntity(Simulation* inst, const fmtx4 &world, Entity *pent) const
 {
 	if(mArchetypeAsset)
 		if(mArchetypeAsset->GetArchetype())
@@ -217,7 +217,7 @@ void ReferenceArchetype::DoStartEntity(SceneInst* inst, const fmtx4 &world, Enti
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ReferenceArchetype::DoStopEntity(SceneInst* psi, Entity *pent) const
+void ReferenceArchetype::DoStopEntity(Simulation* psi, Entity *pent) const
 {
 	if(mArchetypeAsset)
 		if(mArchetypeAsset->GetArchetype())

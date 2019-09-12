@@ -21,7 +21,7 @@ namespace ork::ent {
 
 class ComponentInst;
 class Entity;
-class SceneInst;
+class Simulation;
 class ComponentDataTable;
 class SceneComposer;
 
@@ -94,7 +94,7 @@ public:
   void SetEntity(Entity *entity) { mEntity = entity; }
   Entity *GetEntity() { return mEntity; }
   const Entity *GetEntity() const { return mEntity; }
-  SceneInst *sceneInst() const;
+  Simulation *sceneInst() const;
   // Shortcut to make debugging printfs easier
   const char *GetEntityName() const;
 
@@ -104,13 +104,13 @@ public:
 
   PoolString GetFamily() const;
 
-  void Update(SceneInst *inst);
-  void Start(SceneInst *psi, const fmtx4 &world);
-  void Link(SceneInst *psi);
-  void UnLink(SceneInst *psi);
-  void Stop(SceneInst *psi); // { DoStop(psi); }
-  void activate(SceneInst *psi) { onActivate(psi); }
-  void deactivate(SceneInst *psi) { onDeactivate(psi); }
+  void Update(Simulation *inst);
+  void Start(Simulation *psi, const fmtx4 &world);
+  void Link(Simulation *psi);
+  void UnLink(Simulation *psi);
+  void Stop(Simulation *psi); // { DoStop(psi); }
+  void activate(Simulation *psi) { onActivate(psi); }
+  void deactivate(Simulation *psi) { onDeactivate(psi); }
 
   const char *GetShortSelector() const {
     return (mComponentData != 0) ? mComponentData->GetShortSelector() : 0;
@@ -128,13 +128,13 @@ private:
   virtual svar64_t doQuery(const ComponentQuery& q) { return svar64_t(); }
   virtual void doNotify(const ComponentEvent& e) {}
 
-  virtual void DoUpdate(SceneInst *inst) {}
-  virtual bool DoStart(SceneInst *psi, const fmtx4 &world) { return true; }
-  virtual void onActivate(SceneInst *psi) {}
-  virtual void onDeactivate(SceneInst *psi) {}
-  virtual bool DoLink(SceneInst *psi) { return true; }
-  virtual void DoUnLink(SceneInst *psi) {}
-  virtual void DoStop(SceneInst *psi) {}
+  virtual void DoUpdate(Simulation *inst) {}
+  virtual bool DoStart(Simulation *psi, const fmtx4 &world) { return true; }
+  virtual void onActivate(Simulation *psi) {}
+  virtual void onDeactivate(Simulation *psi) {}
+  virtual bool DoLink(Simulation *psi) { return true; }
+  virtual void DoUnLink(Simulation *psi) {}
+  virtual void DoStop(Simulation *psi) {}
 
   const ComponentData *mComponentData;
   bool mbStarted;

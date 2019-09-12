@@ -42,9 +42,9 @@ TEST(SceneManip1)
 		    scenedata->AddSceneObject(entdata2);
 
 		    auto app = ApplicationStack::Top();
-		    SceneInst *sceneinst = new SceneInst(scenedata,app);
-			sceneinst->SetSceneInstMode(ESCENEMODE_EDIT);
-		    sceneinst->SetSceneInstMode(ESCENEMODE_RUN);
+		    Simulation *sceneinst = new Simulation(scenedata,app);
+			sceneinst->SetSimulationMode(ESCENEMODE_EDIT);
+		    sceneinst->SetSimulationMode(ESCENEMODE_RUN);
 
 		    Entity *entity = sceneinst->FindEntity(AddPooledLiteral("entity1"));
 
@@ -84,7 +84,7 @@ TEST(SceneManip1)
 
 class ScriptOnlyArchetype : public Archetype
 {
-	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final
+	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final
 	{
 		//printf( "ScriptOnlyArchetype::DoStartEntity(%p)\n", pent );
 
@@ -143,8 +143,8 @@ TEST(ScriptCompTest)
 		}
 
 	    auto app = ApplicationStack::Top();
-	    SceneInst *sceneinst = new SceneInst(scenedata,app);
-		sceneinst->SetSceneInstMode(ESCENEMODE_EDIT);
+	    Simulation *sceneinst = new Simulation(scenedata,app);
+		sceneinst->SetSimulationMode(ESCENEMODE_EDIT);
 	    scenedata->EnterEditState();
 
 	    auto sc = arch->GetTypedComponent<ScriptComponentData>();
@@ -154,7 +154,7 @@ TEST(ScriptCompTest)
 		printf( "%s", ANSI_COLOR_GREEN );
 		//printf( "%s", ANSI_COLOR_RESET );
 		printf( "ScriptCompTest: starting up test scene\n");
-	    sceneinst->SetSceneInstMode(ESCENEMODE_RUN);
+	    sceneinst->SetSimulationMode(ESCENEMODE_RUN);
 
 	    ork::Timer tmr;
 	    tmr.Start();

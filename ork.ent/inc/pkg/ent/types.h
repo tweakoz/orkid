@@ -7,7 +7,7 @@ namespace ork::ent {
 typedef std::string_view systemkey_t;
 
 class Scene;
-class SceneInst;
+class Simulation;
 
 class EntData;
 class Archetype;

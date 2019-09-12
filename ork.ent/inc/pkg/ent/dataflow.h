@@ -73,7 +73,7 @@ private:
 	orklut<PoolString,float>				mMutableFloatValues;
 	orklut<PoolString,fvec3>				mMutableVect3Values;
 
-	void DoUpdate( ork::ent::SceneInst* psi ) final;
+	void DoUpdate( ork::ent::Simulation* psi ) final;
     bool DoNotify(const event::Event *event) final;
 
 };

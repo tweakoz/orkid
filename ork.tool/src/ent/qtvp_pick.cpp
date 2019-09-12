@@ -27,7 +27,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
   if (pickctx->mViewport == nullptr)
     return;
 
-  const ent::SceneInst* psi = viewport->GetSceneInst();
+  const ent::Simulation* psi = viewport->GetSimulation();
   const ent::SceneData* pscene = viewport->SceneEditor().mpScene;
 
   if (nullptr == pscene)
@@ -56,7 +56,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     auto lamb = [&]() {
       AssertOnOpQ2(UpdateSerialOpQ());
       d_buf->miBufferIndex = 0;
-      viewport->QueueSceneInstToDb(d_buf);
+      viewport->QueueSimulationToDb(d_buf);
       ////////////
       MainThreadOpQ().sync();
       ////////////
@@ -126,7 +126,7 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::GetPixelContext& ctx) {
 template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetPixelContext& ctx) {
   AssertOnOpQ2(MainThreadOpQ());
 
-  const ent::SceneInst* psi = mpViewport->GetSceneInst();
+  const ent::Simulation* psi = mpViewport->GetSimulation();
   ent::SceneData* pscene = mpViewport->mEditor.mpScene;
 
   if (nullptr == pscene)

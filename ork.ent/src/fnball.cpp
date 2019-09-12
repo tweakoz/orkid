@@ -80,8 +80,8 @@ public:
 
 private:
 
-    void DoUpdate(SceneInst *inst) override {}
-    bool DoLink(SceneInst *psi) override { return true; }
+    void DoUpdate(Simulation *inst) override {}
+    bool DoLink(Simulation *psi) override { return true; }
 
     const FnBallComponentData& mFnbData;
 };
@@ -108,8 +108,8 @@ public:
     float mDisplacement;
 private:
     void DoCompose(ArchComposer& composer) override;
-    void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const override {}
-    void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+    void DoStartEntity(Simulation*, const fmtx4& mtx, Entity* pent ) const override {}
+    void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
 
 };
 
@@ -137,7 +137,7 @@ void FnBallArchetype::DoCompose(ArchComposer& composer)
 
 }
 
-void FnBallArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
+void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 {
     typedef SVtxV12N12B12T8C4 vertex_t;
     struct yo

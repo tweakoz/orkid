@@ -101,12 +101,12 @@ template <typename T> T *SceneComposer::Register() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/// SceneInst is all the work data associated with running a scene
+/// Simulation is all the work data associated with running a scene
 /// this might be subclassed
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-T *SceneInst::FindTypedEntityComponent(const PoolString &entname) const {
+T *Simulation::FindTypedEntityComponent(const PoolString &entname) const {
   T *pret = 0;
   Entity *pent = FindEntity(entname);
   if (pent) {
@@ -118,7 +118,7 @@ T *SceneInst::FindTypedEntityComponent(const PoolString &entname) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> T *SceneInst::findSystem() const {
+template <typename T> T *Simulation::findSystem() const {
   T* rval = nullptr;
   systemkey_t pclass = T::SystemType;
   _systems.atomicOp([&](const SystemLut& syslut){
@@ -133,7 +133,7 @@ template <typename T> T *SceneInst::findSystem() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-T *SceneInst::FindTypedEntityComponent(const char *entname) const {
+T *Simulation::FindTypedEntityComponent(const char *entname) const {
   return FindTypedEntityComponent<T>(AddPooledString(entname));
 }
 

@@ -80,7 +80,7 @@ GedVP::GedVP( const std::string & name, ObjModel& model )
 	object::Connect( & model.GetSigRepaint(), & mWidget.GetSlotRepaint() );
 	object::Connect( & model.GetSigModelInvalidated(), & mWidget.GetSlotModelInvalidated() );
 
-    _sceneinst_subscriber = msgrouter::channel("SceneInst")->subscribe([=](msgrouter::content_t c){
+    _sceneinst_subscriber = msgrouter::channel("Simulation")->subscribe([=](msgrouter::content_t c){
         this->onInvalidate();
     });
 

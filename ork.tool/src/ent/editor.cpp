@@ -140,7 +140,7 @@ void GetSceneReq::SetScene(SceneData* sd) {
 ///////////////////////////////////////////////////////////////////////////
 
 SceneEditorBase::SceneEditorBase()
-    : mbInit(true), mApplication(nullptr), mpScene(nullptr), mpEditSceneInst(nullptr), mpExecSceneInst(nullptr),
+    : mbInit(true), mApplication(nullptr), mpScene(nullptr), mpEditSimulation(nullptr), mpExecSimulation(nullptr),
       mpMdlChoices(new tool::ModelChoices), mpAnmChoices(new tool::AnimChoices), mpAudStreamChoices(new tool::AudioStreamChoices),
       mpAudBankChoices(new tool::AudioBankChoices), mpTexChoices(new tool::TextureChoices),
       mpScriptChoices(new tool::ScriptChoices), mpArchChoices(new ArchetypeChoices(*this)), mpChsmChoices(new tool::ChsmChoices),
@@ -316,21 +316,21 @@ void SceneEditorBase::EditorRefreshModels() { mpMdlChoices->EnumerateChoices(tru
 void SceneEditorBase::EditorRefreshAnims() { mpAnmChoices->EnumerateChoices(true); }
 void SceneEditorBase::EditorRefreshTextures() { mpTexChoices->EnumerateChoices(true); }
 ///////////////////////////////////////////////////////////////////////////
-void SceneEditorBase::NewSceneInst() {
-  if (mpEditSceneInst) {
-    bool BOK = object::Disconnect(this, AddPooledLiteral("SigSceneTopoChanged"), mpEditSceneInst,
+void SceneEditorBase::NewSimulation() {
+  if (mpEditSimulation) {
+    bool BOK = object::Disconnect(this, AddPooledLiteral("SigSceneTopoChanged"), mpEditSimulation,
                                   AddPooledLiteral("SlotSceneTopoChanged"));
     assert(BOK);
-    SceneInst* psi2del = mpEditSceneInst;
-    mpEditSceneInst = nullptr;
+    Simulation* psi2del = mpEditSimulation;
+    mpEditSimulation = nullptr;
     delete psi2del;
   }
   if (mpScene) {
-    mpEditSceneInst = new SceneInst(mpScene, ApplicationStack::Top());
+    mpEditSimulation = new Simulation(mpScene, ApplicationStack::Top());
     bool bconOK =
-        object::Connect(this, AddPooledLiteral("SigSceneTopoChanged"), mpEditSceneInst, AddPooledLiteral("SlotSceneTopoChanged"));
+        object::Connect(this, AddPooledLiteral("SigSceneTopoChanged"), mpEditSimulation, AddPooledLiteral("SlotSceneTopoChanged"));
     assert(bconOK);
-    mpEditSceneInst->SetSceneInstMode(ESCENEMODE_EDIT);
+    mpEditSimulation->SetSimulationMode(ESCENEMODE_EDIT);
   }
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -358,7 +358,7 @@ SceneData* SceneEditorBase::ImplNewScene() {
     ent::SceneData* poldscene = mpScene;
     mpScene = new ent::SceneData;
     mpArchChoices->EnumerateChoices();
-    NewSceneInst();
+    NewSimulation();
     if (poldscene) {
       delete poldscene;
     }
@@ -405,7 +405,7 @@ void SceneEditorBase::ImplLoadScene(std::string fname) {
           } else {
             OrkNonFatalAssertFunction("Are you sure you are trying to load a scene file? I think not..");
           }
-          this->NewSceneInst();
+          this->NewSimulation();
           if (poldscene) {
             delete poldscene;
           }
@@ -735,14 +735,14 @@ ent::EntData* SceneEditorBase::ImplNewEntity(const ent::Archetype* parchetype) {
     // create an instance for the editor to draw
     ////////////////////
 
-    ent::Entity* pent = new ent::Entity(*pentdata, mpEditSceneInst);
+    ent::Entity* pent = new ent::Entity(*pentdata, mpEditSimulation);
 
     if (parchetype) {
       parchetype->ComposeEntity(pent);
     }
 
-    mpEditSceneInst->SetEntity(pentdata, pent);
-    mpEditSceneInst->ActivateEntity(pent);
+    mpEditSimulation->SetEntity(pentdata, pent);
+    mpEditSimulation->ActivateEntity(pent);
 
     ////////////////////
     SigSceneTopoChanged();
@@ -808,13 +808,13 @@ ent::EntData* SceneEditorBase::EditorReplicateEntity() {
     // create an instance for the editor to draw
     ////////////////////
 
-    ent::Entity* pent = new ent::Entity(*pentdata, mpEditSceneInst);
+    ent::Entity* pent = new ent::Entity(*pentdata, mpEditSimulation);
     if (archetype) {
       archetype->ComposeEntity(pent);
-      archetype->LinkEntity(mpEditSceneInst, pent);
+      archetype->LinkEntity(mpEditSimulation, pent);
     }
-    mpEditSceneInst->SetEntity(pentdata, pent);
-    mpEditSceneInst->ActivateEntity(pent);
+    mpEditSimulation->SetEntity(pentdata, pent);
+    mpEditSimulation->ActivateEntity(pent);
 
     ////////////////////
     SigSceneTopoChanged();
@@ -1005,29 +1005,29 @@ void SceneEditorBase::DisableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::ent::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  SceneInstEvent disviewev(0, SceneInstEvent::ESIEV_DISABLE_UPDATE);
-  bcaster.BroadcastNotifyOnChannel(&disviewev, SceneInst::EventChannel());
+  SimulationEvent disviewev(0, SimulationEvent::ESIEV_DISABLE_UPDATE);
+  bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
 }
 void SceneEditorBase::EnableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::ent::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  SceneInstEvent disviewev(0, SceneInstEvent::ESIEV_ENABLE_UPDATE);
-  bcaster.BroadcastNotifyOnChannel(&disviewev, SceneInst::EventChannel());
+  SimulationEvent disviewev(0, SimulationEvent::ESIEV_ENABLE_UPDATE);
+  bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
 }
 void SceneEditorBase::DisableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::ent::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  SceneInstEvent disviewev(0, SceneInstEvent::ESIEV_DISABLE_VIEW);
-  bcaster.BroadcastNotifyOnChannel(&disviewev, SceneInst::EventChannel());
+  SimulationEvent disviewev(0, SimulationEvent::ESIEV_DISABLE_VIEW);
+  bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
 }
 void SceneEditorBase::EnableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::ent::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  SceneInstEvent enaviewev(mpEditSceneInst, SceneInstEvent::ESIEV_ENABLE_VIEW);
-  bcaster.BroadcastNotifyOnChannel(&enaviewev, SceneInst::EventChannel());
+  SimulationEvent enaviewev(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
+  bcaster.BroadcastNotifyOnChannel(&enaviewev, Simulation::EventChannel());
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterRunLocalState() {
@@ -1040,12 +1040,12 @@ void SceneEditorBase::ImplEnterRunLocalState() {
     DisableViews();
     tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
     ork::ent::DrawableBuffer::ClearAndSyncReaders();
-    NewSceneInst();
+    NewSimulation();
 
-    if (mpEditSceneInst) {
-      switch (mpEditSceneInst->GetSceneInstMode()) {
+    if (mpEditSimulation) {
+      switch (mpEditSimulation->GetSimulationMode()) {
         case ent::ESCENEMODE_RUN:
-          mpEditSceneInst->SetSceneInstMode(ent::ESCENEMODE_EDIT);
+          mpEditSimulation->SetSimulationMode(ent::ESCENEMODE_EDIT);
           break;
         default:
           break;
@@ -1059,7 +1059,7 @@ void SceneEditorBase::ImplEnterRunLocalState() {
 #endif
       //////////////////////////////////////////////////////////
 
-      mpEditSceneInst->SetSceneInstMode(ent::ESCENEMODE_RUN);
+      mpEditSimulation->SetSimulationMode(ent::ESCENEMODE_RUN);
     }
     ork::ent::DrawableBuffer::ClearAndSyncReaders();
     tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
@@ -1068,11 +1068,11 @@ void SceneEditorBase::ImplEnterRunLocalState() {
   Op(lamb).QueueSync(UpdateSerialOpQ());
 }
 ///////////////////////////////////////////////////////////////////////////
-SceneInst* SceneEditorBase::GetEditSceneInst() const { return mpEditSceneInst; }
+Simulation* SceneEditorBase::GetEditSimulation() const { return mpEditSimulation; }
 ///////////////////////////////////////////////////////////////////////////
-SceneInst* SceneEditorBase::GetExecSceneInst() const { return mpExecSceneInst; }
+Simulation* SceneEditorBase::GetExecSimulation() const { return mpExecSimulation; }
 ///////////////////////////////////////////////////////////////////////////
-SceneInst* SceneEditorBase::GetActiveSceneInst() const { return (mpExecSceneInst != nullptr) ? mpExecSceneInst : mpEditSceneInst; }
+Simulation* SceneEditorBase::GetActiveSimulation() const { return (mpExecSimulation != nullptr) ? mpExecSimulation : mpEditSimulation; }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterPauseState() {
   ////////////////////////////////////
@@ -1081,8 +1081,8 @@ void SceneEditorBase::ImplEnterPauseState() {
   ////////////////////////////////////
 
   auto lamb = [&]() {
-    if (mpEditSceneInst) {
-      mpEditSceneInst->SetSceneInstMode(ent::ESCENEMODE_PAUSE);
+    if (mpEditSimulation) {
+      mpEditSimulation->SetSimulationMode(ent::ESCENEMODE_PAUSE);
     }
   };
   Op(lamb).QueueSync(UpdateSerialOpQ());
@@ -1099,9 +1099,9 @@ void SceneEditorBase::ImplEnterEditState() {
 
     tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
     ork::ent::DrawableBuffer::ClearAndSyncReaders();
-    NewSceneInst();
+    NewSimulation();
 
-    if (mpEditSceneInst) {
+    if (mpEditSimulation) {
       //////////////////////////////////////////////////////////
       // UNLOADABLE ASSETS
       //////////////////////////////////////////////////////////
@@ -1112,7 +1112,7 @@ void SceneEditorBase::ImplEnterEditState() {
 #endif
       //////////////////////////////////////////////////////////
 
-      mpEditSceneInst->SetSceneInstMode(ent::ESCENEMODE_EDIT);
+      mpEditSimulation->SetSimulationMode(ent::ESCENEMODE_EDIT);
     }
     ork::ent::DrawableBuffer::ClearAndSyncReaders();
     tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();

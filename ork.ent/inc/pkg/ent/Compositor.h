@@ -439,7 +439,7 @@ private:
   EOutputResMult mOutputResMult;
   EOutputTimeStep mOutputFrameRate;
 
-  ork::ent::System* createSystem(ork::ent::SceneInst* pinst) const final;
+  ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -449,7 +449,7 @@ public:
   static constexpr systemkey_t SystemType = "CompositingSystem";
   systemkey_t systemTypeDynamic() final { return SystemType; }
 
-  CompositingSystem(const CompositingSystemData& data, ork::ent::SceneInst* pinst);
+  CompositingSystem(const CompositingSystemData& data, ork::ent::Simulation* pinst);
   ~CompositingSystem();
 
   void Draw(CompositorSystemDrawData& drawdata);
@@ -472,9 +472,9 @@ public:
 private:
   const CompositingSystemData& _compositingData;
 
-  // bool DoLink(ork::ent::SceneInst* psi) final;
-  // void DoUnLink(SceneInst* psi) final;
-  void DoUpdate(SceneInst* psi) final;
+  // bool DoLink(ork::ent::Simulation* psi) final;
+  // void DoUnLink(Simulation* psi) final;
+  void DoUpdate(Simulation* psi) final;
 
   float mfTimeAccum;
   float mfLastTime;

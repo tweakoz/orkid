@@ -22,7 +22,7 @@ namespace ork { namespace ent {
 class DagComponent;
 class Archetype;
 class Drawable;
-class SceneInst;
+class Simulation;
 class SceneData;
 class Layer;
 
@@ -247,12 +247,12 @@ public:
 
 	////////////////////////////////////////////////////////////////
 
-	Entity( const EntData& edata, SceneInst *inst );
+	Entity( const EntData& edata, Simulation *inst );
 	~Entity();
 
 	////////////////////////////////////////////////////////////////
 
-	SceneInst *GetSceneInst() const { return mSceneInst; }
+	Simulation *GetSimulation() const { return mSimulation; }
 
     const char* name() const;
 
@@ -262,7 +262,7 @@ private:
 
 	bool DoNotify(const ork::event::Event *event) final;
 
-	SceneInst *mSceneInst;
+	Simulation *mSimulation;
 
 	const EntData&							mEntData;
 	mutable bool							mComposed;
@@ -303,10 +303,10 @@ public:
 	Archetype();
 	~Archetype() { DeleteComponents(); }
 
-	void LinkEntity( SceneInst* psi, Entity *pent ) const;
-	void UnLinkEntity( SceneInst* psi, Entity *pent ) const;
-	void StartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const;
-	void StopEntity(SceneInst* psi, Entity *pent ) const;
+	void LinkEntity( Simulation* psi, Entity *pent ) const;
+	void UnLinkEntity( Simulation* psi, Entity *pent ) const;
+	void StartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const;
+	void StopEntity(Simulation* psi, Entity *pent ) const;
 
 	void ComposeEntity( Entity *pent ) const;
 	void Compose(SceneComposer& scene_composer);
@@ -327,10 +327,10 @@ protected:
 
 	virtual void DoComposeEntity(Entity *pent) const;
 	virtual void DoDeComposeEntity(Entity *pent) const;
-	virtual void DoLinkEntity(SceneInst* psi, Entity *pent) const;
-	virtual void DoUnLinkEntity(SceneInst* psi, Entity *pent) const;
-	virtual void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent) const = 0;
-	virtual void DoStopEntity(SceneInst* psi, Entity *pent) const {}
+	virtual void DoLinkEntity(Simulation* psi, Entity *pent) const;
+	virtual void DoUnLinkEntity(Simulation* psi, Entity *pent) const;
+	virtual void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent) const = 0;
+	virtual void DoStopEntity(Simulation* psi, Entity *pent) const {}
 
 	virtual void DoCompose( ArchComposer& arch_composer ) = 0;
 

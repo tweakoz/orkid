@@ -122,14 +122,14 @@ TetherCamControllerInst::TetherCamControllerInst(const TetherCamControllerData& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool TetherCamControllerInst::DoLink(SceneInst *psi)
+bool TetherCamControllerInst::DoLink(Simulation *psi)
 {
 	mpTarget = psi->FindEntity(mCD.GetTarget());
 	//mpEye = psi->FindEntity(mCD.GetEye());
 	return true;
 }
 
-bool TetherCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
+bool TetherCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
 	if( GetEntity() )
 	{
@@ -144,7 +144,7 @@ bool TetherCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void TetherCamControllerInst::DoUpdate( SceneInst* psi )
+void TetherCamControllerInst::DoUpdate( Simulation* psi )
 {
 	float fdt = psi->GetDeltaTime();
 

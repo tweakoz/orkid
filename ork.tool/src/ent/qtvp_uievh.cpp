@@ -80,7 +80,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
   lev2::CTXBASE* CtxBase = GetTarget() ? GetTarget()->GetCtxBase() : 0;
 
-  ork::ent::SceneInst* psceneinst = mEditor.GetActiveSceneInst();
+  ork::ent::Simulation* psceneinst = mEditor.GetActiveSimulation();
 
   ////////////////////////////////////////////////////////////////
 
@@ -94,7 +94,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
   switch (EV.miEventCode) {
     case ui::UIEV_GOT_KEYFOCUS: {
-      // bool brunning = psceneinst ? psceneinst->GetSceneInstMode()==ork::ent::ESCENEMODE_RUN : false;
+      // bool brunning = psceneinst ? psceneinst->GetSimulationMode()==ork::ent::ESCENEMODE_RUN : false;
       // CtxBase->SetRefreshPolicy( brunning ? lev2::CTXBASE::EREFRESH_FASTEST : lev2::CTXBASE::EREFRESH_WHENDIRTY );
       break;
     }
@@ -172,13 +172,13 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
           break;
         }
         case Qt::Key_Pause: {
-          /*switch( mEditor.mpSceneInst->GetSceneInstMode() )
+          /*switch( mEditor.mpSimulation->GetSimulationMode() )
           {
               case ent::ESCENEMODE_RUN:
-                  mEditor.mpSceneInst->SetSceneInstMode( ent::ESCENEMODE_EDIT );
+                  mEditor.mpSimulation->SetSimulationMode( ent::ESCENEMODE_EDIT );
                   break;
               default:
-                  mEditor.mpSceneInst->SetSceneInstMode( ent::ESCENEMODE_RUN );
+                  mEditor.mpSimulation->SetSimulationMode( ent::ESCENEMODE_RUN );
                   break;
           }*/
           break;

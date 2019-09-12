@@ -47,12 +47,12 @@ public:
 private:
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 	void DoComposeEntity( Entity *pent ) const final ;
-	void DoLinkEntity(SceneInst* inst, Entity *pent) const final;
-	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final;
-	void DoStopEntity(SceneInst* psi, Entity *pent) const final;
+	void DoLinkEntity(Simulation* inst, Entity *pent) const final;
+	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final;
+	void DoStopEntity(Simulation* psi, Entity *pent) const final;
 
-	void DoComposePooledEntities(SceneInst *inst);
-	void DoLinkPooledEntities(SceneInst *inst);
+	void DoComposePooledEntities(Simulation *inst);
+	void DoLinkPooledEntities(Simulation *inst);
 
 	ArchetypeAsset* mArchetypeAsset;
 };

@@ -45,8 +45,8 @@ private:
 struct LocomotionForceInst : public BulletObjectForceControllerInst {
   LocomotionForceInst(const LocomotionForceData& data);
   ~LocomotionForceInst() final;
-  void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
-  bool DoLink(SceneInst* psi) final;
+  void UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) final;
+  bool DoLink(Simulation* psi) final;
   void setForce(fvec3 force) {
     //printf( "setting force<%g %g %g>\n", force.x, force.y, force.z );
     _force=force;
@@ -72,12 +72,12 @@ LocomotionForceInst::LocomotionForceInst(const LocomotionForceData& data)
   }
 LocomotionForceInst::~LocomotionForceInst() {}
 
-bool LocomotionForceInst::DoLink(SceneInst* psi) {
+bool LocomotionForceInst::DoLink(Simulation* psi) {
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void LocomotionForceInst::UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) { // final
+void LocomotionForceInst::UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) { // final
   btRigidBody* rbody = boci->GetRigidBody();
   rbody->applyCentralForce(!_force);
 }
@@ -105,7 +105,7 @@ class CharacterLocoComponent : public ComponentInst {
 
   ///////////////////////////////////////////////////////////////////////////
 
-  void DoUpdate(SceneInst* psi) final {
+  void DoUpdate(Simulation* psi) final {
     if( nullptr == _locoforce )
       return;
 
@@ -157,13 +157,13 @@ class CharacterLocoComponent : public ComponentInst {
 
   ///////////////////////////////////////////////////////////////////////////
 
-  bool DoLink(ork::ent::SceneInst* psi) final {
+  bool DoLink(ork::ent::Simulation* psi) final {
 
     _boci = mEntity->GetTypedComponent<BulletObjectControllerInst>();
     return true;
   }
 
-  void onActivate(SceneInst *psi) final {
+  void onActivate(Simulation *psi) final {
     if( _boci ){
       _locoforce = dynamic_cast<LocomotionForceInst*>(_boci->getForceController(AddPooledString("loco")));
       if( _locoforce ){

@@ -319,7 +319,7 @@ public:
 	const Track& GetTrack() const { return mTrack; }
 
 protected:
-	bool DoLink(ork::ent::SceneInst *inst) final;
+	bool DoLink(ork::ent::Simulation *inst) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -386,8 +386,8 @@ public:
 	const ork::fvec3 &GetOldPos() const { return mOldpos; }
 private:
 
-	bool DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world) final;
-	bool DoLink(ork::ent::SceneInst *inst) final;
+	bool DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world) final;
+	bool DoLink(ork::ent::Simulation *inst) final;
 	bool DoNotify(const ork::event::Event *event) final;
 
 	const SectorTrackerData&		mData;
@@ -412,8 +412,8 @@ class TrackArchetype : public ork::ent::Archetype
 private:
 
 	void DoCompose(ork::ent::ArchComposer& composer) final;
-	void DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const final;
-	void DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const final;
+	void DoLinkEntity(ork::ent::Simulation *inst, ork::ent::Entity *pent) const final;
+	void DoStartEntity(ork::ent::Simulation *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const final;
 
 };
 

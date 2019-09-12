@@ -28,7 +28,7 @@ class EditorMainWindow 	: public tool::MiniorkMainWindow
 
 	DeclarePublicAutoSlot( UpdateAll );
 	DeclarePublicAutoSlot( OnTimer );
-	DeclarePublicAutoSlot( SceneInstInvalidated );
+	DeclarePublicAutoSlot( SimulationInvalidated );
 	DeclarePublicAutoSlot( ObjectSelected );
 	DeclarePublicAutoSlot( ObjectDeSelected );
 	DeclarePublicAutoSlot( SpawnNewGed );
@@ -63,7 +63,7 @@ public://
 
 	void SlotUpdateAll();
 	void SlotOnTimer();
-	void SlotSceneInstInvalidated( ork::Object* pSI );
+	void SlotSimulationInvalidated( ork::Object* pSI );
 	void SlotObjectSelected( ork::Object* pobj );
 	void SlotObjectDeSelected( ork::Object* pobj );
 	void SlotSpawnNewGed( ork::Object* pobj );

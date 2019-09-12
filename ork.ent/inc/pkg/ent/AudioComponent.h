@@ -315,12 +315,12 @@ private:
 	const ork::TransformNode*											mXform;
 	orkvector<EmitterCtx>												mEmitters;
 
-	void DoUpdate(ork::ent::SceneInst *inst) final;
+	void DoUpdate(ork::ent::Simulation *inst) final;
 	ork::lev2::AudioInstrumentPlayback* PlaySoundEx( ork::PoolString soundname, int inote, int ivel, const ork::TransformNode* pnode );
 
-	bool DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world) final;
-	bool DoLink( ork::ent::SceneInst *psi ) final;
-	void DoStop(ork::ent::SceneInst *psi) final;
+	bool DoStart(ork::ent::Simulation *psi, const ork::fmtx4 &world) final;
+	bool DoLink( ork::ent::Simulation *psi ) final;
+	void DoStop(ork::ent::Simulation *psi) final;
 
 	bool DoNotify(const ork::event::Event *pev) final;
 
@@ -405,7 +405,7 @@ public:
 	const AudioStreamComponentData& GetData() const { return mData; }
 	void Stop( ork::PoolString streamname );
 private:
-	void DoUpdate(ork::ent::SceneInst *inst) final;
+	void DoUpdate(ork::ent::Simulation *inst) final;
 	const AudioStreamComponentData& mData;
 
 
@@ -416,8 +416,8 @@ private:
 
 	ork::orklut<ork::PoolString, AudioStreamInstItem> mItems;
 
-	bool DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world) final;
-    void DoStop(ork::ent::SceneInst *psi) final;
+	bool DoStart(ork::ent::Simulation *psi, const ork::fmtx4 &world) final;
+    void DoStop(ork::ent::Simulation *psi) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -440,7 +440,7 @@ public:
 
 private:
 
-    ork::ent::System* createSystem( ork::ent::SceneInst *pinst ) const final;
+    ork::ent::System* createSystem( ork::ent::Simulation *pinst ) const final;
 
 	ork::Object*					ReverbAccessor() { return & mReverbProperties; }
 
@@ -461,7 +461,7 @@ public:
 	static constexpr systemkey_t SystemType = "AudioSystem";
 	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-	AudioSystem( const AudioSystemData& ascd, ork::ent::SceneInst *pinst );
+	AudioSystem( const AudioSystemData& ascd, ork::ent::Simulation *pinst );
 
 	void AddEmitter( AudioEffectComponentInst* mEmitter ) { mEmitters.push_back(mEmitter); }
 
@@ -469,8 +469,8 @@ public:
 
 private:
   ~AudioSystem() final;
-	void DoUpdate(ork::ent::SceneInst *inst) final;
-	void DoStop(ork::ent::SceneInst *psi) final;
+	void DoUpdate(ork::ent::Simulation *inst) final;
+	void DoStop(ork::ent::Simulation *psi) final;
 
 	orkvector<AudioEffectComponentInst*>	mEmitters;
 	const AudioSystemData& mAmcd;

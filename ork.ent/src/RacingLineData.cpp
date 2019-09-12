@@ -203,7 +203,7 @@ bool RacingLineData::PostDeserialize(reflect::IDeserializer &)
 	return true;
 }
 
-bool RacingLineInst::DoLink(ork::ent::SceneInst* psi)
+bool RacingLineInst::DoLink(ork::ent::Simulation* psi)
 {
 	ork::ent::Entity *trackEntity = psi->FindEntityLoose(sTrackString);
 	if( 0 == trackEntity ) return false;
@@ -220,7 +220,7 @@ bool RacingLineInst::DoLink(ork::ent::SceneInst* psi)
 	return true;
 }
 
-void RacingLineInst::DoUpdate(ork::ent::SceneInst *sinst)
+void RacingLineInst::DoUpdate(ork::ent::Simulation *sinst)
 {
 	if(mPhysicsDebugger->getDebugMode())
 	{

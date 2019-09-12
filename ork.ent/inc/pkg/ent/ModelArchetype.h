@@ -25,7 +25,7 @@ class ModelArchetype : public Archetype
 {
 	RttiDeclareConcrete( ModelArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
+	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final {}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
@@ -68,7 +68,7 @@ class SkyBoxControllerInst : public ent::ComponentInst
 	const SkyBoxControllerData&		mCD;
 	float							mPhase;
 
-	virtual void DoUpdate(ent::SceneInst* sinst);
+	virtual void DoUpdate(ent::Simulation* sinst);
 
 public:
 	const SkyBoxControllerData&	GetCD() const { return mCD; }
@@ -83,8 +83,8 @@ class SkyBoxArchetype : public Archetype
 {
 	RttiDeclareConcrete( SkyBoxArchetype, Archetype );
 
-	/*virtual*/ void DoLinkEntity( SceneInst* psi, Entity *pent ) const;
-	/*virtual*/ void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const {}
+	/*virtual*/ void DoLinkEntity( Simulation* psi, Entity *pent ) const;
+	/*virtual*/ void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const {}
 	/*virtual*/ void DoCompose(ork::ent::ArchComposer& composer);
 
 	//void					SetSkyTexture( ork::rtti::ICastable* const & l2tex);

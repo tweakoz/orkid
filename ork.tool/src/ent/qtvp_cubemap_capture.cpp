@@ -293,7 +293,7 @@ void SceneEditorVP::SaveCubeMap()
 			{
 				mRenderer->SetActiveDisplayLayer( 0 );
 				mRenderer->SetCameraData( & CardinalCameras[icam] );
-				mSceneView.Render( ContextData, mEditor.mpSceneInst );
+				mSceneView.Render( ContextData, mEditor.mpSimulation );
 			}
 
 			pTEXTARG->MTXI()->PushPMatrix( CardinalCameras[icam].mMatProj );

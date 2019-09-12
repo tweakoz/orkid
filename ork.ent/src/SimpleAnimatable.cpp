@@ -210,7 +210,7 @@ SimpleAnimatableInst::~SimpleAnimatableInst()
 	}
 }
 
-bool SimpleAnimatableInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world)
+bool SimpleAnimatableInst::DoStart(ork::ent::Simulation *psi, const ork::fmtx4 &world)
 {
 	const auto& amap = mData.GetAnimationMap();
 	auto nam = AddPooledLiteral("start");
@@ -223,7 +223,7 @@ bool SimpleAnimatableInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &w
 	return true;
 }
 
-bool SimpleAnimatableInst::DoLink(ork::ent::SceneInst *psi)
+bool SimpleAnimatableInst::DoLink(ork::ent::Simulation *psi)
 {
 	auto modelcinst = GetEntity()->GetTypedComponent<ork::ent::ModelComponentInst>();
 
@@ -680,7 +680,7 @@ float SimpleAnimatableInst::GetFrameNumOnAnimationOnFirstMask()
 	return(-1.0f);
 }
 
-void SimpleAnimatableInst::DoUpdate(ork::ent::SceneInst *inst)
+void SimpleAnimatableInst::DoUpdate(ork::ent::Simulation *inst)
 {
 #if 1
 	float dt = inst->GetDeltaTime();

@@ -327,7 +327,7 @@ void ModularSystem::DoReset()
 	//orkprintf( "DoReset modular psys<%p>\n", this );
 }
 
-void ModularSystem::DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent )
+void ModularSystem::DoStartSystem( const ork::ent::Simulation* psi, ork::ent::Entity*pent )
 {
 	//orkprintf( "DoStartSystem modular psys<%p>\n", this );
 
@@ -354,7 +354,7 @@ void ModularSystem::DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Ent
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModularSystem::DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent )
+void ModularSystem::DoLinkSystem( ork::ent::Simulation* psi, ork::ent::Entity* pent )
 {
 	///////////////////////////////////////
 	mParticleControllerInst = pent->GetTypedComponent<ork::psys::ParticleControllableInst>();

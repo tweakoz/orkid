@@ -55,7 +55,7 @@ ProcTexArchetype::ProcTexArchetype() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ProcTexArchetype::DoLinkEntity(SceneInst* psi, Entity* pent) const {
+void ProcTexArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
   ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
   auto output = cd.GetOutput();
@@ -146,7 +146,7 @@ ent::ComponentInst* ProcTexControllerData::createComponent(ent::Entity* pent) co
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ProcTexControllerInst::DoUpdate(ent::SceneInst* sinst) {
+void ProcTexControllerInst::DoUpdate(ent::Simulation* sinst) {
 
   //	mPhase += mCD.GetSpinRate()*sinst->GetDeltaTime();
 }
@@ -162,7 +162,7 @@ void ProcTexOutputQuad::Describe() {
   ork::reflect::AnnotatePropertyForEditor<ProcTexOutputQuad>("Scale", "editor.range.max", "1000");
 }
 ProcTexOutputQuad::ProcTexOutputQuad() : mScale(1.0f), mMaterial(nullptr) {}
-void ProcTexOutputQuad::DoLinkEntity(SceneInst* psi, Entity* pent) const {
+void ProcTexOutputQuad::DoLinkEntity(Simulation* psi, Entity* pent) const {
   auto l_render_quad = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
     bool IsPickState = targ->FBI()->IsPickState();
     if (IsPickState)
@@ -181,7 +181,7 @@ void ProcTexOutputQuad::DoLinkEntity(SceneInst* psi, Entity* pent) const {
 
     auto ssci = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
     auto ent = ssci->GetEntity();
-    auto psi = ent->GetSceneInst();
+    auto psi = ent->GetSimulation();
     const ProcTexControllerData& cd = ssci->GetCD();
     proctex::ProcTex& templ = cd.GetTemplate();
     // auto md5 = templ.CalcMd5().hex_digest();
@@ -266,7 +266,7 @@ void ProcTexOutputSkybox::Describe() {
   ork::reflect::AnnotatePropertyForEditor<ProcTexOutputSkybox>("Scale", "editor.range.max", "10000.0");
 }
 ProcTexOutputSkybox::ProcTexOutputSkybox() : mVerticalAdjust(0.0f), mMaterial(nullptr), mScale(1.0f) {}
-void ProcTexOutputSkybox::DoLinkEntity(SceneInst* psi, Entity* pent) const {
+void ProcTexOutputSkybox::DoLinkEntity(Simulation* psi, Entity* pent) const {
   auto l_render_skybox = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
     bool IsPickState = targ->FBI()->IsPickState();
     if (IsPickState)
@@ -295,7 +295,7 @@ void ProcTexOutputSkybox::DoLinkEntity(SceneInst* psi, Entity* pent) const {
     // rcid.ForceNoZWrite( true );
     auto ssci = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
     auto ent = ssci->GetEntity();
-    auto psi = ent->GetSceneInst();
+    auto psi = ent->GetSimulation();
     const ProcTexControllerData& cd = ssci->GetCD();
     proctex::ProcTex& templ = cd.GetTemplate();
     // auto md5 = templ.CalcMd5().hex_digest();
@@ -394,7 +394,7 @@ ProcTexOutputDynTex::~ProcTexOutputDynTex() {
   });
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ProcTexOutputDynTex::DoLinkEntity(SceneInst* psi, Entity* pent) const {
+void ProcTexOutputDynTex::DoLinkEntity(Simulation* psi, Entity* pent) const {
   auto l_compute = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
     bool IsPickState = targ->FBI()->IsPickState();
     if (IsPickState)
@@ -404,7 +404,7 @@ void ProcTexOutputDynTex::DoLinkEntity(SceneInst* psi, Entity* pent) const {
 
     auto ssci = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
     auto ent = ssci->GetEntity();
-    auto psi = ent->GetSceneInst();
+    auto psi = ent->GetSimulation();
     const ProcTexControllerData& cd = ssci->GetCD();
     proctex::ProcTex& templ = cd.GetTemplate();
     // auto md5 = templ.CalcMd5().hex_digest();
@@ -478,7 +478,7 @@ void ProcTexControllerData::IncrementFrame() const
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-void ProcTexOutputBake::DoLinkEntity(SceneInst* psi, Entity* pent) const {}
+void ProcTexOutputBake::DoLinkEntity(Simulation* psi, Entity* pent) const {}
 
 ///////////////////////////////////////////////////////////////////////////////
 

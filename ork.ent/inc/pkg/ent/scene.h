@@ -67,7 +67,7 @@ enum ESceneDataMode
 	ESCENEDATAMODE_RUN,
 };
 
-enum ESceneInstMode
+enum ESimulationMode
 {
 	ESCENEMODE_ATTACHED = 0,	// attached to a SceneData
 	ESCENEMODE_EDIT,			// editing
@@ -161,13 +161,13 @@ struct SceneComposer
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// SceneInst is all the work data associated with running a scene
+/// Simulation is all the work data associated with running a scene
 /// this might be subclassed
 ///////////////////////////////////////////////////////////////////////////////
 
-class SceneInstEvent : public ork::event::Event
+class SimulationEvent : public ork::event::Event
 {
-	RttiDeclareAbstract( SceneInstEvent, ork::event::Event );
+	RttiDeclareAbstract( SimulationEvent, ork::event::Event );
 public:
 
 	enum ESIEvent
@@ -182,14 +182,14 @@ public:
 		ESIEV_USER,
 	};
 
-	SceneInstEvent( SceneInst* psi, ESIEvent ev ) : mpSceneInst(psi), mEvent(ev) {}
-	SceneInst* GetSceneInst() const { return mpSceneInst; }
+	SimulationEvent( Simulation* psi, ESIEvent ev ) : mpSimulation(psi), mEvent(ev) {}
+	Simulation* GetSimulation() const { return mpSimulation; }
 	ESIEvent GetEvent() const { return mEvent; }
 	void SetUserData( const anyp& ud ) { mUserData=ud; }
 	const anyp& GetUserData() const { return mUserData; }
 
 private:
-	SceneInst*	mpSceneInst;
+	Simulation*	mpSimulation;
 	ESIEvent	mEvent;
 	anyp		mUserData;
 
@@ -207,9 +207,9 @@ struct EntityActivationQueueItem
 	}
 };
 
-class SceneInst : public ork::Object
+class Simulation : public ork::Object
 {
-	RttiDeclareAbstract( SceneInst, ork::Object );
+	RttiDeclareAbstract( Simulation, ork::Object );
 
 public:
 
@@ -218,13 +218,13 @@ public:
 	typedef orklist<ComponentInst*> ComponentList;
 	typedef orkset<Entity*> EntitySet;
 
-	SceneInst( const SceneData* sdata, Application *application );
-	~SceneInst();
+	Simulation( const SceneData* sdata, Application *application );
+	~Simulation();
 
 	///////////////////////////////////////////////////
 
-	void SetSceneInstMode(ESceneInstMode emode) { OnSceneInstMode(emode); }
-	ESceneInstMode GetSceneInstMode() const { return meSceneInstMode; }
+	void SetSimulationMode(ESimulationMode emode) { OnSimulationMode(emode); }
+	ESimulationMode GetSimulationMode() const { return meSimulationMode; }
 
 	const SceneData &GetData() const { return *mSceneData; }
 
@@ -386,9 +386,9 @@ protected:
 private:
 	Application *mApplication;
 
-	ESceneInstMode										meSceneInstMode;
+	ESimulationMode										meSimulationMode;
 	const SceneData*									mSceneData;
-	void OnSceneInstMode(ESceneInstMode emode);
+	void OnSimulationMode(ESimulationMode emode);
 	void SlotSceneTopoChanged();
 
 };

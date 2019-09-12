@@ -119,8 +119,8 @@ struct MyPid {
 struct TestForceControllerInst : public BulletObjectForceControllerInst {
   TestForceControllerInst(const TestForceControllerData& data);
   ~TestForceControllerInst() final;
-  void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
-  bool DoLink(SceneInst* psi) final;
+  void UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) final;
+  bool DoLink(Simulation* psi) final;
 
   MyPid mPIDsteering;
   MyPid mPIDroll;
@@ -154,12 +154,12 @@ TestForceControllerInst::TestForceControllerInst(const TestForceControllerData& 
     : BulletObjectForceControllerInst(data), mTestData(data), mpTarget(0) {}
 TestForceControllerInst::~TestForceControllerInst() {}
 
-bool TestForceControllerInst::DoLink(SceneInst* psi) {
+bool TestForceControllerInst::DoLink(Simulation* psi) {
   mpTarget = psi->FindEntity(mTestData.mTarget);
   return true;
 }
 
-void TestForceControllerInst::UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) {
+void TestForceControllerInst::UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) {
   float fDT = inst->GetDeltaTime();
   const BulletObjectControllerData& BOCD = boci->GetData();
   btRigidBody* rbody = boci->GetRigidBody();
@@ -313,8 +313,8 @@ class DirectionalForceInst : public BulletObjectForceControllerInst {
 public:
   DirectionalForceInst(const DirectionalForceData& data);
   ~DirectionalForceInst() final;
-  void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) final;
-  bool DoLink(SceneInst* psi) final;
+  void UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) final;
+  bool DoLink(Simulation* psi) final;
 
 private:
   const DirectionalForceData& mData;
@@ -338,12 +338,12 @@ BulletObjectForceControllerInst* DirectionalForceData::CreateForceControllerInst
 DirectionalForceInst::DirectionalForceInst(const DirectionalForceData& data) : BulletObjectForceControllerInst(data), mData(data) {}
 DirectionalForceInst::~DirectionalForceInst() {}
 
-bool DirectionalForceInst::DoLink(SceneInst* psi) {
+bool DirectionalForceInst::DoLink(Simulation* psi) {
   // mpTarget = psi->FindEntity(mTestData.GetTarget());
   return true;
 }
 
-void DirectionalForceInst::UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) {
+void DirectionalForceInst::UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) {
   float fDT = inst->GetDeltaTime();
   const BulletObjectControllerData& BOCD = boci->GetData();
   btRigidBody* rbody = boci->GetRigidBody();

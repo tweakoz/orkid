@@ -112,7 +112,7 @@ EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool EditorCamControllerInst::DoLink(SceneInst *psi)
+bool EditorCamControllerInst::DoLink(Simulation *psi)
 {
 	//printf( "LINKING EditorCamControllerInst\n" );
 	return true;
@@ -120,7 +120,7 @@ bool EditorCamControllerInst::DoLink(SceneInst *psi)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool EditorCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
+bool EditorCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
 	const lev2::Camera* pcam = mCD.GetCamera();
 	if( GetEntity() )
@@ -136,7 +136,7 @@ bool EditorCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void EditorCamControllerInst::DoUpdate( SceneInst* psi )
+void EditorCamControllerInst::DoUpdate( Simulation* psi )
 {
 }
 

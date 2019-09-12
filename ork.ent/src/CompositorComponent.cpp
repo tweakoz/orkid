@@ -109,7 +109,7 @@ CompositingSystemData::CompositingSystemData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* CompositingSystemData::createSystem(ork::ent::SceneInst *pinst) const
+ork::ent::System* CompositingSystemData::createSystem(ork::ent::Simulation *pinst) const
 {
 	return new CompositingSystem( *this, pinst );
 }
@@ -117,7 +117,7 @@ ork::ent::System* CompositingSystemData::createSystem(ork::ent::SceneInst *pinst
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingSystem::CompositingSystem( const CompositingSystemData& data, ork::ent::SceneInst *pinst )
+CompositingSystem::CompositingSystem( const CompositingSystemData& data, ork::ent::Simulation *pinst )
 	: ork::ent::System( &data, pinst )
 	, _compositingData(data)
 	, miActiveSceneItem(0)
@@ -241,7 +241,7 @@ void CompositingSystem::Draw( CompositorSystemDrawData& drawdata ) {
 
 	/////////////////////////////////////////////////////////////////////////////////
 
-	ESceneInstMode emode = mpSceneInst->GetSceneInstMode();
+	ESimulationMode emode = mpSimulation->GetSimulationMode();
 
 	/////////////////////////////////
 	// Lock Drawable Buffer
@@ -284,7 +284,7 @@ const CompositingGroup* CompositingSystem::GetGroup(const PoolString& grpname) c
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingSystem::DoUpdate(SceneInst *inst) {
+void CompositingSystem::DoUpdate(Simulation *inst) {
 	float fDT = inst->GetDeltaTime();
 
 	mfLastTime = mfTimeAccum;

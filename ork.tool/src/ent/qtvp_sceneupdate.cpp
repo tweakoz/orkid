@@ -96,7 +96,7 @@ void UpdateThread::run() // virtual
         {
           OrkAssert(dbuf);
 
-          auto psi = (ent::SceneInst*)mpVP->GetSceneInst();
+          auto psi = (ent::Simulation*)mpVP->GetSimulation();
           if (psi) {
             auto cmci = psi->compositingSystem();
             float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
@@ -112,7 +112,7 @@ void UpdateThread::run() // virtual
             } else
               psi->Update();
           }
-          mpVP->QueueSceneInstToDb(dbuf);
+          mpVP->QueueSimulationToDb(dbuf);
         }
         ork::ent::DrawableBuffer::UnLockWriteBuffer(dbuf);
         // ork::PerfMarkerPush( "ork.end_update" );
@@ -138,21 +138,21 @@ void UpdateThread::run() // virtual
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SceneEditorVP::DoNotify(const ork::event::Event* pev) {
-  const ork::ent::SceneInstEvent* sei = ork::rtti::autocast(pev);
+  const ork::ent::SimulationEvent* sei = ork::rtti::autocast(pev);
 
   if (sei) {
     switch (sei->GetEvent()) {
-      case ork::ent::SceneInstEvent::ESIEV_DISABLE_UPDATE: {
+      case ork::ent::SimulationEvent::ESIEV_DISABLE_UPDATE: {
         auto lamb = [=]() { gUpdateStatus.SetState(EUPD_STOP); };
         Op(lamb).QueueASync(UpdateSerialOpQ());
         break;
       }
-      case ork::ent::SceneInstEvent::ESIEV_ENABLE_UPDATE: {
+      case ork::ent::SimulationEvent::ESIEV_ENABLE_UPDATE: {
         auto lamb = [=]() { gUpdateStatus.SetState(EUPD_START); };
         Op(lamb).QueueASync(UpdateSerialOpQ());
         break;
       }
-      case ork::ent::SceneInstEvent::ESIEV_DISABLE_VIEW: {
+      case ork::ent::SimulationEvent::ESIEV_DISABLE_VIEW: {
         auto lamb = [=]() {
           this->DisableSceneDisplay();
           //#disable path that would lead to gfx globallock
@@ -162,7 +162,7 @@ bool SceneEditorVP::DoNotify(const ork::event::Event* pev) {
         // mDbLock.ReleaseCurrent();
         break;
       }
-      case ork::ent::SceneInstEvent::ESIEV_ENABLE_VIEW: {
+      case ork::ent::SimulationEvent::ESIEV_ENABLE_VIEW: {
         auto lamb = [=]() {
           this->EnableSceneDisplay();
           //#disable path that would lead to gfx globallock
@@ -172,14 +172,14 @@ bool SceneEditorVP::DoNotify(const ork::event::Event* pev) {
         // mDbLock.ReleaseCurrent();
         break;
       }
-      case ork::ent::SceneInstEvent::ESIEV_BIND:
+      case ork::ent::SimulationEvent::ESIEV_BIND:
         // mDbLock.ReleaseCurrent();
         break;
-      case ork::ent::SceneInstEvent::ESIEV_START:
+      case ork::ent::SimulationEvent::ESIEV_START:
         break;
-      case ork::ent::SceneInstEvent::ESIEV_STOP:
+      case ork::ent::SimulationEvent::ESIEV_STOP:
         break;
-      case ork::ent::SceneInstEvent::ESIEV_USER:
+      case ork::ent::SimulationEvent::ESIEV_USER:
         break;
     }
   }

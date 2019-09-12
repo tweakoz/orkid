@@ -67,13 +67,13 @@ struct ScriptComponentInst : public ent::ComponentInst
 private:
 
 	RttiDeclareAbstract( ScriptComponentInst, ent::ComponentInst );
-	void DoUpdate(ent::SceneInst* sinst) final;
-	bool DoLink(SceneInst *psi) final;
-	void DoUnLink(SceneInst *psi) final;
-	bool DoStart(SceneInst *psi, const fmtx4 &world) final;
-	void DoStop(SceneInst *psi) final;
-	void onActivate(SceneInst* psi) final;
-	void onDeactivate(SceneInst* psi) final;
+	void DoUpdate(ent::Simulation* sinst) final;
+	bool DoLink(Simulation *psi) final;
+	void DoUnLink(Simulation *psi) final;
+	bool DoStart(Simulation *psi, const fmtx4 &world) final;
+	void DoStop(Simulation *psi) final;
+	void onActivate(Simulation* psi) final;
+	void onDeactivate(Simulation* psi) final;
 	const ScriptComponentData&		mCD;
 	std::string mScriptText;
 	ScriptObject* mScriptObject;
@@ -94,7 +94,7 @@ public:
 	///////////////////////////////////////////////////////
 
 private:
-    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
+    ork::ent::System* createSystem(ork::ent::Simulation *pinst) const final;
 
 };
 
@@ -107,7 +107,7 @@ public:
   static constexpr systemkey_t SystemType = "ScriptSystem";
 	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-	ScriptSystem( const ScriptSystemData &data, ork::ent::SceneInst *pinst );
+	ScriptSystem( const ScriptSystemData &data, ork::ent::Simulation *pinst );
 
 	anyp GetLuaManager() { return mLuaManager; }
 
@@ -117,11 +117,11 @@ private:
 
   ~ScriptSystem() final;
 
-	bool DoLink(SceneInst *psi) final;
-	void DoUnLink(SceneInst *psi) final;
-	void DoUpdate(SceneInst *inst) final;
-	void DoStart(SceneInst *psi) final;
-	void DoStop(SceneInst *inst) final;
+	bool DoLink(Simulation *psi) final;
+	void DoUnLink(Simulation *psi) final;
+	void DoUpdate(Simulation *inst) final;
+	void DoStart(Simulation *psi) final;
+	void DoStop(Simulation *inst) final;
 
 	anyp mLuaManager;
 	std::string mScriptText;

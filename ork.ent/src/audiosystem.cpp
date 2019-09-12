@@ -61,11 +61,11 @@ AudioSystemData::AudioSystemData()
 	, mfDistAttenPower(0.0f){
 }
 ///////////////////////////////////////////////////////////////////////////////
-ork::ent::System *AudioSystemData::createSystem(ork::ent::SceneInst *pinst) const{
+ork::ent::System *AudioSystemData::createSystem(ork::ent::Simulation *pinst) const{
 	return new AudioSystem( *this, pinst );
 }
 ///////////////////////////////////////////////////////////////////////////////
-AudioSystem::AudioSystem( const AudioSystemData& ascd, ork::ent::SceneInst* psi )
+AudioSystem::AudioSystem( const AudioSystemData& ascd, ork::ent::Simulation* psi )
 	: System( & ascd, psi )
 	, mAmcd( ascd ){
 	ork::lev2::AudioDevice::GetDevice()->SetReverbProperties( ascd.GetReverbProperties() );
@@ -77,7 +77,7 @@ AudioSystem::~AudioSystem(){
 	ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioSystem::DoUpdate(ork::ent::SceneInst* inst){
+void AudioSystem::DoUpdate(ork::ent::Simulation* inst){
 	auto pdev = ork::lev2::AudioDevice::GetDevice();
 
 	auto camdat1 = inst->GetCameraData(ork::AddPooledLiteral("game1"));
@@ -114,7 +114,7 @@ void AudioSystem::DoUpdate(ork::ent::SceneInst* inst){
 
 }
 ////////////////////////////////////////////////////////////////////////////////
-void AudioSystem::DoStop(ork::ent::SceneInst *psi){
+void AudioSystem::DoStop(ork::ent::Simulation *psi){
 	ork::lev2::AudioDevice::GetDevice()->ReInitDevice();
 }
 ///////////////////////////////////////////////////////////////////////////////

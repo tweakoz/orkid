@@ -44,7 +44,7 @@ SkyBoxArchetype::SkyBoxArchetype()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SkyBoxArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
+void SkyBoxArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 {
 	struct yo
 	{
@@ -247,7 +247,7 @@ ent::ComponentInst* SkyBoxControllerData::createComponent(ent::Entity* pent) con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SkyBoxControllerInst::DoUpdate(ent::SceneInst* sinst)
+void SkyBoxControllerInst::DoUpdate(ent::Simulation* sinst)
 {
 	mPhase += mCD.GetSpinRate()*sinst->GetDeltaTime();
 }

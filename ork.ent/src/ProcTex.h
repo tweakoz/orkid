@@ -28,13 +28,13 @@ class ProcTexOutputBase : public ork::Object
 {
 	RttiDeclareAbstract( ProcTexOutputBase, ork::Object );
 public:
-	virtual void DoLinkEntity( SceneInst* psi, Entity *pent ) const = 0;
+	virtual void DoLinkEntity( Simulation* psi, Entity *pent ) const = 0;
 };
 
 class ProcTexOutputQuad : public ProcTexOutputBase
 {
 	RttiDeclareConcrete( ProcTexOutputQuad, ProcTexOutputBase );
-	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
 public:
 	ProcTexOutputQuad();
 	mutable lev2::GfxMaterial3DSolid* mMaterial;
@@ -44,7 +44,7 @@ public:
 class ProcTexOutputSkybox : public ProcTexOutputBase
 {
 	RttiDeclareConcrete( ProcTexOutputSkybox, ProcTexOutputBase );
-	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
 public:
 	ProcTexOutputSkybox();
 	float mVerticalAdjust;
@@ -58,7 +58,7 @@ class ProcTexOutputDynTex : public ProcTexOutputBase
 public:
 	ProcTexOutputDynTex();
 	~ProcTexOutputDynTex();
-	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
 	ork::PoolString mDynTexPath;
 	mutable lev2::TextureAsset* mAsset;
 };
@@ -68,7 +68,7 @@ class ProcTexOutputBake : public ProcTexOutputBase
 	RttiDeclareConcrete( ProcTexOutputBake, ProcTexOutputBase );
 public:
 	ProcTexOutputBake();
-	void DoLinkEntity( SceneInst* psi, Entity *pent ) const override;
+	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
 	//int GetNumExportFrames() const { return mNumExportFrames; }
 	//bool IsBaking() const { return mPerformingBake; }
 	//void IncrementFrame() const;
@@ -125,7 +125,7 @@ class ProcTexControllerInst : public ent::ComponentInst
 
 	const ProcTexControllerData&		mCD;
 
-	void DoUpdate(ent::SceneInst* sinst) final;
+	void DoUpdate(ent::Simulation* sinst) final;
 
 public:
 	const ProcTexControllerData&	GetCD() const { return mCD; }
@@ -142,8 +142,8 @@ class ProcTexArchetype : public Archetype
 {
 	RttiDeclareConcrete( ProcTexArchetype, Archetype );
 
-	void DoLinkEntity( SceneInst* psi, Entity *pent ) const final;
-	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
+	void DoLinkEntity( Simulation* psi, Entity *pent ) const final;
+	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final {}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:

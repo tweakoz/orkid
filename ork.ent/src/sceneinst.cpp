@@ -59,8 +59,8 @@ void LeaveRunMode();
 
 ///////////////////////////////////////////////////////////////////////////////
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneInst, "Ent3dSceneInst");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SceneInstEvent, "SceneInstEvent");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::Simulation, "Ent3dSimulation");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SimulationEvent, "SimulationEvent");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -68,7 +68,7 @@ template class ork::orklut<const ork::object::ObjectClass*, ork::ent::System*>;
 
 namespace ork::ent {
 
-static ork::PoolString sSceneInstEvChanName;
+static ork::PoolString sSimulationEvChanName;
 static ork::PoolString sAudioFamily;
 static ork::PoolString sCameraFamily;
 static ork::PoolString sControlFamily;
@@ -81,12 +81,12 @@ static ork::PoolString sParticleFamily;
 static ork::PoolString sLightFamily;
 static ork::PoolString sInputFamily;
 
-void SceneInstEvent::Describe() { sSceneInstEvChanName = ork::AddPooledLiteral("SceneInstEvChannel"); }
-const ork::PoolString& SceneInst::EventChannel() { return sSceneInstEvChanName; }
+void SimulationEvent::Describe() { sSimulationEvChanName = ork::AddPooledLiteral("SimulationEvChannel"); }
+const ork::PoolString& Simulation::EventChannel() { return sSimulationEvChanName; }
 
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::Describe() {
-  reflect::RegisterFunctor("SlotSceneTopoChanged", &SceneInst::SlotSceneTopoChanged);
+void Simulation::Describe() {
+  reflect::RegisterFunctor("SlotSceneTopoChanged", &Simulation::SlotSceneTopoChanged);
 
   sInputFamily = ork::AddPooledLiteral("input");
   sAudioFamily = ork::AddPooledLiteral("audio");
@@ -99,14 +99,14 @@ void SceneInst::Describe() {
   sLightFamily = ork::AddPooledLiteral("lighting");
 }
 ///////////////////////////////////////////////////////////////////////////////
-SceneInst::SceneInst(const SceneData* sdata, Application* application)
-    : mSceneData(sdata), meSceneInstMode(ESCENEMODE_ATTACHED), mApplication(application), mUpTime(0.0f), mDeltaTime(0.0f),
+Simulation::Simulation(const SceneData* sdata, Application* application)
+    : mSceneData(sdata), meSimulationMode(ESCENEMODE_ATTACHED), mApplication(application), mUpTime(0.0f), mDeltaTime(0.0f),
       mPrevDeltaTime(0.0f), mLastGameTime(0.0f), mStartTime(0.0f), mUpDeltaTime(0.0f), mGameTime(0.0f), mDeltaTimeAccum(0.0f),
       mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f), mEntityUpdateCount(0), _cachedComSys(nullptr) {
   printf("new sceneinst <%p>\n", this);
 
   AssertOnOpQ2(UpdateSerialOpQ());
-  OrkAssertI(mApplication, "SceneInst must be constructed with a non-NULL Application!");
+  OrkAssertI(mApplication, "Simulation must be constructed with a non-NULL Application!");
 
   Layer* player = new Layer;
   AddLayer(AddPooledLiteral("Default"), player);
@@ -123,7 +123,7 @@ SceneInst::SceneInst(const SceneData* sdata, Application* application)
   DrawableBuffer::mOfflineUpdateSynchro.push(rentok); // push 1 token
 }
 ///////////////////////////////////////////////////////////////////////////////
-SceneInst::~SceneInst() {
+Simulation::~Simulation() {
   printf("deleting sceneinst <%p>\n", this);
   AssertOnOpQ2(UpdateSerialOpQ());
   DrawableBuffer::BeginClearAndSyncReaders();
@@ -157,7 +157,7 @@ SceneInst::~SceneInst() {
 }
 ///////////////////////////////////////////////////////////////////////////
 
-CompositingSystem* SceneInst::compositingSystem() {
+CompositingSystem* Simulation::compositingSystem() {
   if (nullptr == _cachedComSys) {
     _cachedComSys = findSystem<CompositingSystem>();
   }
@@ -166,13 +166,13 @@ CompositingSystem* SceneInst::compositingSystem() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float SceneInst::random(float mmin, float mmax) {
+float Simulation::random(float mmin, float mmax) {
   float r = float(rand() & 0xffff) / 65536.0f;
   return mmin + (r * (mmax - mmin));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-float SceneInst::ComputeDeltaTime() {
+float Simulation::ComputeDeltaTime() {
   auto cmci = compositingSystem();
   float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
 
@@ -208,7 +208,7 @@ float SceneInst::ComputeDeltaTime() {
 
   mUpDeltaTime = fdelta;
 
-  switch (this->GetSceneInstMode()) {
+  switch (this->GetSimulationMode()) {
     case ork::ent::ESCENEMODE_ATTACHED:
     case ork::ent::ESCENEMODE_EDIT:
     case ork::ent::ESCENEMODE_SINGLESTEP:
@@ -235,7 +235,7 @@ float SceneInst::ComputeDeltaTime() {
   return fdelta;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::SetCameraData(const PoolString& name, const CameraData* camdat) {
+void Simulation::SetCameraData(const PoolString& name, const CameraData* camdat) {
   CameraLut::iterator it = mCameraLut.find(name);
 
   if (it == mCameraLut.end()) {
@@ -252,41 +252,41 @@ void SceneInst::SetCameraData(const PoolString& name, const CameraData* camdat) 
 
   lev2::Camera* pcam = (camdat != 0) ? camdat->getEditorCamera() : 0;
 
-  // orkprintf( "SceneInst::SetCameraData() name<%s> camdat<%p> l2cam<%p>\n",
+  // orkprintf( "Simulation::SetCameraData() name<%s> camdat<%p> l2cam<%p>\n",
   // name.c_str(), camdat, pcam );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const CameraData* SceneInst::GetCameraData(const PoolString& name) const {
+const CameraData* Simulation::GetCameraData(const PoolString& name) const {
   CameraLut::const_iterator it = mCameraLut.find(name);
   return (it == mCameraLut.end()) ? 0 : it->second;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::SlotSceneTopoChanged() {
+void Simulation::SlotSceneTopoChanged() {
   auto topo_op = [=]() {
-    msgrouter::channel("SceneInst")->post(std::string("SceneInstInvalidated"));
+    msgrouter::channel("Simulation")->post(std::string("SimulationInvalidated"));
     this->GetData().AutoLoadAssets();
     this->EnterEditState();
   };
   UpdateSerialOpQ().push(Op(topo_op));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::UpdateEntityComponents(const SceneInst::ComponentList& components) {
+void Simulation::UpdateEntityComponents(const Simulation::ComponentList& components) {
   AssertOnOpQ2(UpdateSerialOpQ());
-  for (SceneInst::ComponentList::const_iterator it = components.begin(); it != components.end(); ++it) {
+  for (Simulation::ComponentList::const_iterator it = components.begin(); it != components.end(); ++it) {
     ComponentInst* pci = (*it);
     OrkAssert(pci != 0);
     pci->Update(this);
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-ent::Entity* SceneInst::GetEntity(const ent::EntData* pdata) const {
+ent::Entity* Simulation::GetEntity(const ent::EntData* pdata) const {
   const PoolString& name = pdata->GetName();
   ent::Entity* pent = FindEntity(name);
   return pent;
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::SetEntity(const ent::EntData* pentdata, ent::Entity* pent) {
+void Simulation::SetEntity(const ent::EntData* pentdata, ent::Entity* pent) {
   AssertOnOpQ2(UpdateSerialOpQ());
   assert(pent != nullptr);
   mEntities[pentdata->GetName()] = pent;
@@ -294,14 +294,14 @@ void SceneInst::SetEntity(const ent::EntData* pentdata, ent::Entity* pent) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_compose(){
+void Simulation::_compose(){
   ComposeEntities();
   composeSystems();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_decompose(){
+void Simulation::_decompose(){
   DecomposeEntities();
   decomposeSystems();
   mActiveEntityComponents.clear();
@@ -311,21 +311,21 @@ void SceneInst::_decompose(){
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_link(){
+void Simulation::_link(){
   LinkEntities();
   LinkSystems();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_unlink(){
+void Simulation::_unlink(){
   UnLinkEntities();
   UnLinkSystems();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_stage(){
+void Simulation::_stage(){
   StartEntities();
   mStartTime = float(OldSchool::GetRef().GetLoResTime());
   mGameTime = 0.0f;
@@ -338,7 +338,7 @@ void SceneInst::_stage(){
 
   ServiceDeactivateQueue();
 
-  SceneInstEvent outev(this, SceneInstEvent::ESIEV_START);
+  SimulationEvent outev(this, SimulationEvent::ESIEV_START);
   ork::Application::GetContext()->Notify(&outev);
   DrawableBuffer::EndClearAndSyncReaders();
 
@@ -354,13 +354,13 @@ void SceneInst::_stage(){
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_unstage(){
+void Simulation::_unstage(){
   StopEntities();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_activate(){
+void Simulation::_activate(){
   for (const auto& item : mEntities) {
     auto pent = item.second;
     ActivateEntity(pent);
@@ -369,7 +369,7 @@ void SceneInst::_activate(){
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::_deactivate(){
+void Simulation::_deactivate(){
 
 }
 
@@ -378,16 +378,16 @@ void SceneInst::_deactivate(){
 #define ANSI_COLOR_RESET "\x1b[30m"
 #define ANSI_COLOR_GREEN "\x1b[32m"
 
-void SceneInst::EnterEditState() {
+void Simulation::EnterEditState() {
   printf("%s", ANSI_COLOR_RED);
   printf("////////////////////////\n");
-  printf("SceneInst<%p> EnterEditState\n", this);
+  printf("Simulation<%p> EnterEditState\n", this);
   printf("////////////////////////\n");
   printf("%s", ANSI_COLOR_GREEN);
   DrawableBuffer::BeginClearAndSyncReaders();
   AssertOnOpQ2(UpdateSerialOpQ());
 
-  SceneInstEvent bindev(this, SceneInstEvent::ESIEV_BIND);
+  SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
 
   ork::event::Broadcaster::GetRef().BroadcastNotifyOnChannel(&bindev, EventChannel());
 
@@ -412,12 +412,12 @@ void SceneInst::EnterEditState() {
   _stage();
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::EnterPauseState() { ork::lev2::AudioDevice::GetDevice()->StopAllVoices(); }
+void Simulation::EnterPauseState() { ork::lev2::AudioDevice::GetDevice()->StopAllVoices(); }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::EnterRunState() {
+void Simulation::EnterRunState() {
   printf("%s", ANSI_COLOR_RED);
   printf("////////////////////////\n");
-  printf("SceneInst<%p> EnterRunState\n", this);
+  printf("Simulation<%p> EnterRunState\n", this);
   printf("////////////////////////\n");
   printf("%s", ANSI_COLOR_GREEN);
 
@@ -425,9 +425,9 @@ void SceneInst::EnterRunState() {
   AssertOnOpQ2(UpdateSerialOpQ());
   EnterRunMode();
 
-  AllocationLabel label("SceneInst::EnterRunState::255");
+  AllocationLabel label("Simulation::EnterRunState::255");
 
-  SceneInstEvent bindev(this, SceneInstEvent::ESIEV_BIND);
+  SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
   ork::Application::GetContext()->Notify(&bindev);
 
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
@@ -454,10 +454,10 @@ void SceneInst::EnterRunState() {
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::OnSceneInstMode(ESceneInstMode emode) {
+void Simulation::OnSimulationMode(ESimulationMode emode) {
   AssertOnOpQ2(UpdateSerialOpQ());
 
-  switch (meSceneInstMode) {
+  switch (meSimulationMode) {
     case ork::ent::ESCENEMODE_ATTACHED:
     case ork::ent::ESCENEMODE_EDIT:
     case ork::ent::ESCENEMODE_SINGLESTEP:
@@ -470,13 +470,13 @@ void SceneInst::OnSceneInstMode(ESceneInstMode emode) {
 
   switch (emode) {
     case ESCENEMODE_EDIT:
-      assert(meSceneInstMode != ESCENEMODE_RUN);
-      if (meSceneInstMode != ESCENEMODE_EDIT) {
+      assert(meSimulationMode != ESCENEMODE_RUN);
+      if (meSimulationMode != ESCENEMODE_EDIT) {
         EnterEditState();
       }
       break;
     case ESCENEMODE_RUN:
-      assert(meSceneInstMode != ESCENEMODE_RUN);
+      assert(meSimulationMode != ESCENEMODE_RUN);
       EnterRunState();
       break;
     case ESCENEMODE_SINGLESTEP:
@@ -487,12 +487,12 @@ void SceneInst::OnSceneInstMode(ESceneInstMode emode) {
     case ork::ent::ESCENEMODE_ATTACHED:
       break;
   }
-  this->meSceneInstMode = emode;
+  this->meSimulationMode = emode;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::DecomposeEntities() {
-  // printf( "SceneInst<%p> BEGIN DecomposeEntities()\n", this );
+void Simulation::DecomposeEntities() {
+  // printf( "Simulation<%p> BEGIN DecomposeEntities()\n", this );
   // printf( "/////////////////////////////////////\n");
   // std::string bt = get_backtrace();
   // printf( "%s", bt.c_str() );
@@ -509,10 +509,10 @@ void SceneInst::DecomposeEntities() {
   mEntities.clear();
 
   // printf( "/////////////////////////////////////\n");
-  // printf( "SceneInst<%p> END DecomposeEntities()\n", this );
+  // printf( "Simulation<%p> END DecomposeEntities()\n", this );
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::ComposeEntities() {
+void Simulation::ComposeEntities() {
   AssertOnOpQ2(UpdateSerialOpQ());
   ///////////////////////////////////
   // clear runtime containers
@@ -564,7 +564,7 @@ void SceneInst::ComposeEntities() {
   // orkprintf( "end si<%p> Compose Entities..\n", this );
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::LinkEntities() {
+void Simulation::LinkEntities() {
   // orkprintf( "beg si<%p> Link Entities..\n", this );
   AssertOnOpQ2(UpdateSerialOpQ());
   ///////////////////////////////////
@@ -588,7 +588,7 @@ void SceneInst::LinkEntities() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::UnLinkEntities() {
+void Simulation::UnLinkEntities() {
   // orkprintf( "beg si<%p> Link Entities..\n", this );
   AssertOnOpQ2(UpdateSerialOpQ());
 
@@ -612,7 +612,7 @@ void SceneInst::UnLinkEntities() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::composeSystems() {
+void Simulation::composeSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
   ///////////////////////////////////
   // Systems
@@ -629,7 +629,7 @@ void SceneInst::composeSystems() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::decomposeSystems() {
+void Simulation::decomposeSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
 
   // todo this atomic will go away when we
@@ -645,7 +645,7 @@ void SceneInst::decomposeSystems() {
 }
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::LinkSystems() {
+void Simulation::LinkSystems() {
   // todo this atomic will go away when we
   //  complete opq refactor
   _systems.atomicOp([&](const SystemLut& syslut) {
@@ -658,7 +658,7 @@ void SceneInst::LinkSystems() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::UnLinkSystems() {
+void Simulation::UnLinkSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
 
   ///////////////////////////////////
@@ -675,7 +675,7 @@ void SceneInst::UnLinkSystems() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::StartSystems() {
+void Simulation::StartSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
   // todo this atomic will go away when we
   //  complete opq refactor
@@ -687,7 +687,7 @@ void SceneInst::StartSystems() {
   });
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::StopSystems() {
+void Simulation::StopSystems() {
   AssertOnOpQ2(UpdateSerialOpQ());
   // todo this atomic will go away when we
   //  complete opq refactor
@@ -701,7 +701,7 @@ void SceneInst::StopSystems() {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::StartEntities() {
+void Simulation::StartEntities() {
   AssertOnOpQ2(UpdateSerialOpQ());
 
   ///////////////////////////////////
@@ -722,7 +722,7 @@ void SceneInst::StartEntities() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::StopEntities() {
+void Simulation::StopEntities() {
   AssertOnOpQ2(UpdateSerialOpQ());
   ///////////////////////////////////
   // Start Entities
@@ -741,19 +741,19 @@ void SceneInst::StopEntities() {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::QueueActivateEntity(const EntityActivationQueueItem& item) {
+void Simulation::QueueActivateEntity(const EntityActivationQueueItem& item) {
   // DEBUG_PRINT( "QueueActivateEntity<%p:%s>\n",  item.mpEntity,
   // item.mpEntity->GetEntData().GetName().c_str() );
   mEntityActivateQueue.push_back(item);
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::QueueDeactivateEntity(Entity* pent) {
+void Simulation::QueueDeactivateEntity(Entity* pent) {
   // printf( "QueueDeActivateEntity<%p:%s>\n",  pent,
   // pent->GetEntData().GetName().c_str() );
   mEntityDeactivateQueue.push_back(pent);
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::ActivateEntity(ent::Entity* pent) {
+void Simulation::ActivateEntity(ent::Entity* pent) {
   AssertOnOpQ2(UpdateSerialOpQ());
   // DEBUG_PRINT( "ActivateEntity<%p:%s>\n",  pent,
   // pent->GetEntData().GetName().c_str()  );
@@ -793,7 +793,7 @@ void SceneInst::ActivateEntity(ent::Entity* pent) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::DeActivateEntity(ent::Entity* pent) {
+void Simulation::DeActivateEntity(ent::Entity* pent) {
   AssertOnOpQ2(UpdateSerialOpQ());
   // printf( "DeActivateEntity<%p:%s>\n",  pent,
   // pent->GetEntData().GetName().c_str() );
@@ -845,12 +845,12 @@ void SceneInst::DeActivateEntity(ent::Entity* pent) {
     parch->StopEntity(this, pent);
 }
 
-bool SceneInst::IsEntityActive(Entity* pent) const {
+bool Simulation::IsEntityActive(Entity* pent) const {
   auto listit = mActiveEntities.find(pent);
   return (listit != mActiveEntities.end());
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::ServiceDeactivateQueue() {
+void Simulation::ServiceDeactivateQueue() {
   AssertOnOpQ2(UpdateSerialOpQ());
   // Copy queue so we can queue more inside Stop
   orkvector<ent::Entity*> deactivate_queue = mEntityDeactivateQueue;
@@ -864,7 +864,7 @@ void SceneInst::ServiceDeactivateQueue() {
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::ServiceActivateQueue() {
+void Simulation::ServiceActivateQueue() {
   AssertOnOpQ2(UpdateSerialOpQ());
   // Copy queue so we can queue more inside Start
   orkvector<EntityActivationQueueItem> activate_queue = mEntityActivateQueue;
@@ -890,7 +890,7 @@ void SceneInst::ServiceActivateQueue() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-Entity* SceneInst::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
+Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
   // printf( "SpawnDynamicEntity ed<%p>\n", spawn_rec );
   auto newent = new Entity(*spawn_rec, this);
   auto arch = spawn_rec->GetArchetype();
@@ -906,11 +906,11 @@ Entity* SceneInst::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-static void CopyCameraData(const SceneInst::CameraLut& srclut, CameraLut& dstlut) {
+static void CopyCameraData(const Simulation::CameraLut& srclut, CameraLut& dstlut) {
   dstlut.clear();
   int idx = 0;
   // printf( "Copying CameraData\n" );
-  for (SceneInst::CameraLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
+  for (Simulation::CameraLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
     const PoolString& CameraName = itCAM->first;
     const CameraData* pcameradata = itCAM->second;
     const lev2::Camera* pcam = pcameradata ? pcameradata->getEditorCamera() : 0;
@@ -927,7 +927,7 @@ static void CopyCameraData(const SceneInst::CameraLut& srclut, CameraLut& dstlut
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const {
+void Simulation::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const {
   // orkprintf( "beg si<%p> qad2b..\n", this );
   AssertOnOpQ2(UpdateSerialOpQ());
 
@@ -999,7 +999,7 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneInst::RenderDrawableBuffer(lev2::Renderer* renderer, const ork::ent::DrawableBuffer& dbuffer,
+void Simulation::RenderDrawableBuffer(lev2::Renderer* renderer, const ork::ent::DrawableBuffer& dbuffer,
                                      const PoolString& LayerName) const {
   const ork::lev2::RenderContextFrameData* pfdata = renderer->GetTarget()->GetRenderContextFrameData();
   ork::lev2::RenderContextFrameData framedata = *pfdata;
@@ -1052,12 +1052,12 @@ void SceneInst::RenderDrawableBuffer(lev2::Renderer* renderer, const ork::ent::D
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-ent::Entity* SceneInst::FindEntity(PoolString entity) const {
+ent::Entity* Simulation::FindEntity(PoolString entity) const {
   orkmap<PoolString, Entity*>::const_iterator it = mEntities.find(entity);
   return (it == mEntities.end()) ? 0 : it->second;
 }
 ///////////////////////////////////////////////////////////////////////////////
-ent::Entity* SceneInst::FindEntityLoose(PoolString entity) const {
+ent::Entity* Simulation::FindEntityLoose(PoolString entity) const {
   const int kmaxtries = 128;
 
   orkmap<PoolString, Entity*>::const_iterator it = mEntities.find(entity);
@@ -1092,7 +1092,7 @@ ent::Entity* SceneInst::FindEntityLoose(PoolString entity) const {
   return NULL;
 }
 ///////////////////////////////////////////////////////////////////////////////
-const SceneInst::ComponentList& SceneInst::GetActiveComponents(ork::PoolString family) const {
+const Simulation::ComponentList& Simulation::GetActiveComponents(ork::PoolString family) const {
   ActiveComponentType::const_iterator found = mActiveEntityComponents.find(family);
   if (found != mActiveEntityComponents.end())
     return (*found).second;
@@ -1100,7 +1100,7 @@ const SceneInst::ComponentList& SceneInst::GetActiveComponents(ork::PoolString f
     return mEmptyList;
 }
 ///////////////////////////////////////////////////////////////////////////
-SceneInst::ComponentList& SceneInst::GetActiveComponents(ork::PoolString family) {
+Simulation::ComponentList& Simulation::GetActiveComponents(ork::PoolString family) {
   ActiveComponentType::iterator found = mActiveEntityComponents.find(family);
   if (found != mActiveEntityComponents.end())
     return (*found).second;
@@ -1109,22 +1109,22 @@ SceneInst::ComponentList& SceneInst::GetActiveComponents(ork::PoolString family)
   }
 }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::UpdateActiveComponents(ork::PoolString family) { UpdateEntityComponents(GetActiveComponents(family)); }
+void Simulation::UpdateActiveComponents(ork::PoolString family) { UpdateEntityComponents(GetActiveComponents(family)); }
 ///////////////////////////////////////////////////////////////////////////
-void SceneInst::AddLayer(const PoolString& name, Layer* player) {
+void Simulation::AddLayer(const PoolString& name, Layer* player) {
   orkmap<PoolString, Layer*>::const_iterator it = mLayers.find(name);
   OrkAssert(it == mLayers.end());
   mLayers[name] = player;
   player->mLayerName = name;
 }
-Layer* SceneInst::GetLayer(const PoolString& name) {
+Layer* Simulation::GetLayer(const PoolString& name) {
   Layer* rval = 0;
   orkmap<PoolString, Layer*>::const_iterator it = mLayers.find(name);
   if (it != mLayers.end())
     rval = it->second;
   return rval;
 }
-const Layer* SceneInst::GetLayer(const PoolString& name) const {
+const Layer* Simulation::GetLayer(const PoolString& name) const {
   const Layer* rval = 0;
   orkmap<PoolString, Layer*>::const_iterator it = mLayers.find(name);
   if (it != mLayers.end())
@@ -1154,7 +1154,7 @@ struct MyTimer {
   }
 };
 
-void SceneInst::Update() {
+void Simulation::Update() {
   AssertOnOpQ2(UpdateSerialOpQ());
   // ork::msleep(1);
   ComputeDeltaTime();
@@ -1163,7 +1163,7 @@ void SceneInst::Update() {
   if (mDeltaTimeAccum > 1.0f)
     mDeltaTimeAccum = 1.0f;
 
-  switch (this->GetSceneInstMode()) {
+  switch (this->GetSimulationMode()) {
     case ork::ent::ESCENEMODE_PAUSE: {
       ork::lev2::InputManager::poll();
       if (mApplication)
@@ -1271,7 +1271,7 @@ void SceneInst::Update() {
   ictr++;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SceneInst::addSystem(systemkey_t key, System* system) {
+void Simulation::addSystem(systemkey_t key, System* system) {
   // todo this atomic will go away when we
   //  complete opq refactor
   _systems.atomicOp([&](SystemLut& syslut) {

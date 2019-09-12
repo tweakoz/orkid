@@ -161,7 +161,7 @@ public:
 
 private:
 
-    ork::ent::System* createSystem(ork::ent::SceneInst *pinst) const final;
+    ork::ent::System* createSystem(ork::ent::Simulation *pinst) const final;
 	std::map<AudioDeviceID,std::string>	mDeviceNames;
 	std::string							mSelectedDevice;
 	AudioDeviceList*					mAudioDeviceList;
@@ -173,7 +173,7 @@ private:
 class AudioAnalysisSystem : public ork::ent::System
 {
 public:
-	AudioAnalysisSystem( const AudioAnalysisSystemData &data, ork::ent::SceneInst *pinst );
+	AudioAnalysisSystem( const AudioAnalysisSystemData &data, ork::ent::Simulation *pinst );
 
 	AudioAnalysisComponentInst* GetAudioAnalysisComponentInst( int icidx ) const;
 
@@ -236,10 +236,10 @@ public:
 private:
 
     ~AudioAnalysisComponentInst() final;
-	bool DoLink(ork::ent::SceneInst *psi) final;
-	void DoUnLink(SceneInst *psi) final;
-	bool DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world) final;
-	void DoUpdate(SceneInst *inst) final;
+	bool DoLink(ork::ent::Simulation *psi) final;
+	void DoUnLink(Simulation *psi) final;
+	bool DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world) final;
+	void DoUpdate(Simulation *inst) final;
 
     const AudioAnalysisComponentData& mAnalysisData;
 	orkmap<int,float> mControlValues;
@@ -267,7 +267,7 @@ public:
 	AudioAnalysisArchetype();
 private:
 	void DoCompose(ArchComposer& composer) final;
-	void DoStartEntity(SceneInst*, const fmtx4& mtx, Entity* pent ) const final {}
+	void DoStartEntity(Simulation*, const fmtx4& mtx, Entity* pent ) const final {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

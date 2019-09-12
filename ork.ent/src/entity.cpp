@@ -191,17 +191,17 @@ void Entity::EntDataGetter(ork::rtti::ICastable*& ptr) const {
   ptr = static_cast<ork::rtti::ICastable*>(pdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-Entity::Entity(const EntData& edata, SceneInst* inst)
+Entity::Entity(const EntData& edata, Simulation* inst)
     : _components(EKEYPOLICY_MULTILUT), mEntData(edata), mDagNode(edata.GetDagNode())
       //, mDrawable( 0 )
       ,
-      mComponentTable(_components), mSceneInst(inst) {
+      mComponentTable(_components), mSimulation(inst) {
   // mDrawable.reserve(4);
 }
 ///////////////////////////////////////////////////////////////////////////////
 fmtx4 Entity::GetEffectiveMatrix() const {
   fmtx4 rval;
-  switch (mSceneInst->GetSceneInstMode()) {
+  switch (mSimulation->GetSimulationMode()) {
     case ESCENEMODE_RUN:
     case ESCENEMODE_SINGLESTEP:
     case ESCENEMODE_PAUSE: {
@@ -314,7 +314,7 @@ void Entity::AddDrawable(const PoolString& layername, Drawable* pdrw) {
     }
   }
 
-  SceneInst* psi = GetSceneInst();
+  Simulation* psi = GetSimulation();
   OrkAssert(psi);
   Layer* player = psi->GetLayer(actualLayerName);
 
@@ -408,7 +408,7 @@ void Archetype::DoComposeEntity(Entity* pent) const {
   }
 }
 
-void Archetype::LinkEntity(ork::ent::SceneInst* psi, ork::ent::Entity* pent) const {
+void Archetype::LinkEntity(ork::ent::Simulation* psi, ork::ent::Entity* pent) const {
   if (GetClass() != ReferenceArchetype::GetClassStatic()) {
     const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
     for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
@@ -420,7 +420,7 @@ void Archetype::LinkEntity(ork::ent::SceneInst* psi, ork::ent::Entity* pent) con
   DoLinkEntity(psi, pent);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::UnLinkEntity(ork::ent::SceneInst* psi, ork::ent::Entity* pent) const {
+void Archetype::UnLinkEntity(ork::ent::Simulation* psi, ork::ent::Entity* pent) const {
   if (GetClass() != ReferenceArchetype::GetClassStatic()) {
     const ComponentTable::LutType& lut = pent->GetComponents().GetComponents();
     for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
@@ -432,13 +432,13 @@ void Archetype::UnLinkEntity(ork::ent::SceneInst* psi, ork::ent::Entity* pent) c
   DoUnLinkEntity(psi, pent);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::DoLinkEntity(SceneInst* psi, Entity* pent) const {}
+void Archetype::DoLinkEntity(Simulation* psi, Entity* pent) const {}
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::DoUnLinkEntity(SceneInst* psi, Entity* pent) const {}
+void Archetype::DoUnLinkEntity(Simulation* psi, Entity* pent) const {}
 ///////////////////////////////////////////////////////////////////////////////
 void Archetype::DoDeComposeEntity(Entity* pent) const {}
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::StartEntity(SceneInst* psi, const fmtx4& world, Entity* pent) const {
+void Archetype::StartEntity(Simulation* psi, const fmtx4& world, Entity* pent) const {
   // printf( "Archetype<%p>::StartEntity<%p>\n", this, pent );
 
   StopEntity(psi, pent);
@@ -458,7 +458,7 @@ void Archetype::StartEntity(SceneInst* psi, const fmtx4& world, Entity* pent) co
   // printf( "yo2\n" );
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Archetype::StopEntity(SceneInst* psi, Entity* pent) const {
+void Archetype::StopEntity(Simulation* psi, Entity* pent) const {
   // printf( "Archetype<%p>::StopEntity<%p:%s>::0\n", this, pent, pent->GetEntData().GetName().c_str() );
 
   if (GetClass() != ReferenceArchetype::GetClassStatic()) {
@@ -505,7 +505,7 @@ void Init() {
   EntData::GetClassStatic();
   SceneObject::GetClassStatic();
   SceneData::GetClassStatic();
-  SceneInst::GetClassStatic();
+  Simulation::GetClassStatic();
   GridControllerData::GetClassStatic();
 
   InputComponentData::GetClassStatic();
