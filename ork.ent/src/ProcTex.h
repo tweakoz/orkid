@@ -28,13 +28,19 @@ class ProcTexOutputBase : public ork::Object
 {
 	RttiDeclareAbstract( ProcTexOutputBase, ork::Object );
 public:
-	virtual void DoLinkEntity( Simulation* psi, Entity *pent ) const = 0;
+	void DoLinkEntity( Simulation* psi, Entity *pent );
+protected:
+	ProcTexOutputBase();
+	virtual void OnLinkEntity( Simulation* psi, Entity *pent ) = 0;
+	float _timeperupdate = 0.0f;
+	float _elapsed = 0.0f;
+	ork::Timer _timer;
 };
 
 class ProcTexOutputQuad : public ProcTexOutputBase
 {
 	RttiDeclareConcrete( ProcTexOutputQuad, ProcTexOutputBase );
-	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
+	void OnLinkEntity( Simulation* psi, Entity *pent ) final;
 public:
 	ProcTexOutputQuad();
 	mutable lev2::GfxMaterial3DSolid* mMaterial;
@@ -44,7 +50,7 @@ public:
 class ProcTexOutputSkybox : public ProcTexOutputBase
 {
 	RttiDeclareConcrete( ProcTexOutputSkybox, ProcTexOutputBase );
-	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
+	void OnLinkEntity( Simulation* psi, Entity *pent ) final;
 public:
 	ProcTexOutputSkybox();
 	float mVerticalAdjust;
@@ -58,7 +64,7 @@ class ProcTexOutputDynTex : public ProcTexOutputBase
 public:
 	ProcTexOutputDynTex();
 	~ProcTexOutputDynTex();
-	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
+	void OnLinkEntity( Simulation* psi, Entity *pent ) final;
 	ork::PoolString mDynTexPath;
 	mutable lev2::TextureAsset* mAsset;
 };
@@ -68,7 +74,7 @@ class ProcTexOutputBake : public ProcTexOutputBase
 	RttiDeclareConcrete( ProcTexOutputBake, ProcTexOutputBase );
 public:
 	ProcTexOutputBake();
-	void DoLinkEntity( Simulation* psi, Entity *pent ) const override;
+	void OnLinkEntity( Simulation* psi, Entity *pent ) final;
 	//int GetNumExportFrames() const { return mNumExportFrames; }
 	//bool IsBaking() const { return mPerformingBake; }
 	//void IncrementFrame() const;
@@ -79,6 +85,7 @@ public:
 	bool mPerformingBake;
 	int mBakeFrameIndex;
 	ork::PoolString mWritePath;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,7 +107,7 @@ public:
 	bool NeedsRefresh() const { return mNeedsRefresh; }
 	void DidRefresh() const { mNeedsRefresh=false; }
 
-	const ProcTexOutputBase* GetOutput() const { return mOutput; }
+	ProcTexOutputBase* GetOutput() const { return mOutput; }
 
 private:
 
@@ -131,8 +138,7 @@ public:
 	const ProcTexControllerData&	GetCD() const { return mCD; }
 
 	proctex::ProcTexContext mContext;
-	ork::Timer 				mTimer;
-	
+
 	ProcTexControllerInst( const ProcTexControllerData& cd, ork::ent::Entity* pent );
 };
 

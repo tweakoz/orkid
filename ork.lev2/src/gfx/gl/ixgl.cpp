@@ -374,16 +374,20 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
   PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI;
 
 	glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress( (const GLubyte*)"glXSwapIntervalEXT");
-  if (glXSwapIntervalEXT != NULL)
+  if (glXSwapIntervalEXT != NULL){
     glXSwapIntervalEXT(x_dpy, x_window, 0);
-	else
-	  glXSwapIntervalMESA = (PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddress( (const GLubyte*)"glXSwapIntervalMESA");
-	  if ( glXSwapIntervalMESA != NULL )
-	     glXSwapIntervalMESA(0);
-	  else
+		printf( "DISABLEVSYNC VIA EXT\n");
+	}
+	//else
+	  //glXSwapIntervalMESA = (PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddress( (const GLubyte*)"glXSwapIntervalMESA");
+	  //if ( glXSwapIntervalMESA != NULL )
+	    // glXSwapIntervalMESA(0);
+	  else{
 	     glXSwapIntervalSGI = (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddress( (const GLubyte*)"glXSwapIntervalSGI");
 	     if ( glXSwapIntervalSGI != NULL )
 	        glXSwapIntervalSGI(0);
+					printf( "DISABLEVSYNC VIA SGI\n");
+		}
 
 	mFbI.SetThisBuffer( pWin );
 	mFbI.SetOffscreenTarget( false );

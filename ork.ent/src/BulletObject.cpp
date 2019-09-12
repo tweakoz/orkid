@@ -153,7 +153,7 @@ BulletObjectControllerInst::BulletObjectControllerInst(const BulletObjectControl
 	if( mBOCD._disablePhysics )
 		return;
 
-	pent->GetSimulation()->findSystem<BulletSystem>();
+	pent->simulation()->findSystem<BulletSystem>();
 
 	const orkmap<PoolString,ork::Object*> forcecontrollers = data.GetForceControllerData();
 

@@ -576,7 +576,7 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	, mAmci( 0 )
 	, mDflowRecv( 0 )
 {
-	mAmci = pent->GetSimulation()->findSystem<AudioSystem>();
+	mAmci = pent->simulation()->findSystem<AudioSystem>();
 	///////////////////////////////////////////////////////////
 
 	const ork::orklut<ork::PoolString,ork::lev2::AudioBank*>& bmap = mData.GetBankMap();
@@ -601,7 +601,7 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	}
 	///////////////////////////////////////////////////////////////
 
-	ork::ent::Simulation *inst = pent->GetSimulation();
+	ork::ent::Simulation *inst = pent->simulation();
 	const auto& ent_xfnode = pent->GetDagNode().GetTransformNode();
 	mXform = & ent_xfnode;
 }

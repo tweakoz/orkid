@@ -74,6 +74,8 @@ private:
   virtual void DoUnLink(Simulation* psi) {}
   virtual void DoStop(Simulation* psi) {}
   virtual void enqueueDrawables(DrawableBuffer& buffer) {}
+  virtual void beginRenderFrame(const Simulation* psi) {}
+  virtual void endRenderFrame(const Simulation* psi) {}
 
   const SystemData* _systemData;
   bool mbStarted;

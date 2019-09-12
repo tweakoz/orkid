@@ -290,7 +290,7 @@ bool LightingComponentInst::DoLink(ork::ent::Simulation *psi)
 
 LightingComponentInst::~LightingComponentInst()
 {
-	if( auto lmi = GetEntity()->GetSimulation()->findSystem<ent::LightingSystem>() ) {
+	if( auto lmi = GetEntity()->simulation()->findSystem<ent::LightingSystem>() ) {
 
 		ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
 

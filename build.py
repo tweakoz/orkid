@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(description='orkid build')
 parser.add_argument('--clean', action="store_true", help='force clean build' )
 parser.add_argument('--verbose', action="store_true", help='verbose build' )
 parser.add_argument('--serial',action="store_true", help="non-parallel-build")
+parser.add_argument('--debug',action="store_true", help=" debug build")
 _args = vars(parser.parse_args())
 
 print(ork.host.SYSTEM)
@@ -25,9 +26,19 @@ build_dest.chdir()
 
 
 prj_root = Path(os.environ["ORKID_WORKSPACE_DIR"])
-cmd = ["cmake",prj_root]
+cmd = ["cmake"]
+
+if _args["debug"]!=False:
+    cmd += ["-DCMAKE_BUILD_TYPE=Debug"]
+else:
+    cmd += ["-DCMAKE_BUILD_TYPE=Release"]
+
+cmd += [prj_root]
 
 Command(cmd).exec()
+
+
+
 if _args["clean"]!=False:
     Command(["make","clean"]).exec()
 

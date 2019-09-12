@@ -210,7 +210,7 @@ AudioAnalysisComponentInst::AudioAnalysisComponentInst( const AudioAnalysisCompo
 	, mfTimeAccum(0.0f)
 {
 	StartMidi();
-	Simulation* psi = pent->GetSimulation();
+	Simulation* psi = pent->simulation();
 	mpAAMCI = psi->findSystem<ent::AudioAnalysisSystem>();
 	const AudioAnalysisSystemData& AAMCD = mpAAMCI->GetAAMCD();
 

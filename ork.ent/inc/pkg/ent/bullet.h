@@ -113,10 +113,11 @@ struct PhysicsDebugger final : public btIDebugDraw {
 
   void beginSimFrame(BulletSystem*system);
   void endSimFrame(BulletSystem*system);
+  void beginRenderFrame();
+  void endRenderFrame();
 
   //////////////////////////
 
-  void flushLines() final;
   void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) final;
   void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime,
                         const btVector3& color) final;
@@ -125,13 +126,10 @@ struct PhysicsDebugger final : public btIDebugDraw {
   void setDebugMode(int debugMode) final;
   int getDebugMode() const override;
 
-  //void Lock();
-  //void UnLock();
-
-  //ork::mutex _mutex;
   MpMcBoundedQueue<lineqptr_t,4> _lineqpool;
   lineqptr_t _currentwritelq = nullptr;
   std::atomic<lineqptr_t> _curreadlq;
+  lineqptr_t _checkedoutreadlq = nullptr;
   bool _enabled = false;
 
   //////////////////////////
@@ -139,10 +137,7 @@ struct PhysicsDebugger final : public btIDebugDraw {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct BulletDebugDrawDBRec {
-  BulletSystem* _bulletSystem;
-  PhysicsDebugger::lineqptr_t _lines = nullptr;
-};
+struct BulletDebugDrawDBRec {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -151,7 +146,6 @@ struct BulletDebugDrawDBData {
   Layer* _drawLayer = nullptr;
   BulletDebugDrawDBRec mDBRecs[ork::ent::DrawableBuffer::kmaxbuffers];
   PhysicsDebugger* _debugger;
-
   BulletDebugDrawDBData(BulletSystem* psi);
   ~BulletDebugDrawDBData();
 };
@@ -210,6 +204,8 @@ public:
   int GetNumSubStepsTaken() const { return mNumSubStepsTaken; }
 
   const BulletSystemData& GetWorldData() const { return _systemData; }
+  void beginRenderFrame(const Simulation* psi) final;
+  void endRenderFrame(const Simulation* psi) final;
 
 private:
 

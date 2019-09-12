@@ -314,7 +314,7 @@ void Entity::AddDrawable(const PoolString& layername, Drawable* pdrw) {
     }
   }
 
-  Simulation* psi = GetSimulation();
+  Simulation* psi = simulation();
   OrkAssert(psi);
   Layer* player = psi->GetLayer(actualLayerName);
 

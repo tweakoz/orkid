@@ -927,7 +927,7 @@ static void CopyCameraData(const Simulation::CameraLut& srclut, CameraLut& dstlu
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const {
+void Simulation::enqueueDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const {
   // orkprintf( "beg si<%p> qad2b..\n", this );
   AssertOnOpQ2(UpdateSerialOpQ());
 
@@ -986,10 +986,8 @@ void Simulation::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) con
   // per system drawables
   ////////////////////////////////////////////////////////////////
 
-  _systems.atomicOp([&](const SystemLut& syslut){
-    for( auto sys : syslut )
-      sys.second->enqueueDrawables(buffer);
-  });
+  for( auto sys : _updsyslutcopy )
+    sys.second->enqueueDrawables(buffer);
 
   ////////////////////////////////////////////////////////////////
 
@@ -1253,13 +1251,12 @@ void Simulation::Update() {
 
       // todo this atomic will go away when we
       //  complete opq refactor
-      _systems.atomicOp([&](SystemLut& syslut) {
-        size_t inumsc = syslut.size();
-        for (size_t isc = 0; isc < inumsc; isc++) {
-          System* pinst = syslut.GetItemAtIndex(isc).second;
-          pinst->Update(this);
-        }
+      _systems.atomicOp([&](const SystemLut& syslut){
+        _updsyslutcopy = syslut;
       });
+      for( auto sys : _updsyslutcopy )
+          sys.second->Update(this);
+
       ork::PerfMarkerPush("ork.simulation.update.end");
 
       ///////////////////////////////
@@ -1279,5 +1276,19 @@ void Simulation::addSystem(systemkey_t key, System* system) {
     syslut.AddSorted(key, system);
   });
 }
+///////////////////////////////////////////////////////////////////////////////
+void Simulation::beginRenderFrame() const {
+  _systems.atomicOp([&](const SystemLut& syslut){
+    _rensyslutcopy = syslut;
+  });
+  for( auto sys : _rensyslutcopy )
+      sys.second->beginRenderFrame(this);
+}
+///////////////////////////////////////////////////////////////////////////////
+void Simulation::endRenderFrame() const {
+  for( auto sys : _rensyslutcopy )
+      sys.second->beginRenderFrame(this);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent

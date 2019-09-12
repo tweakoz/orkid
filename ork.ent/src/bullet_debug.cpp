@@ -31,159 +31,106 @@ namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
 PhysicsDebugger::PhysicsDebugger() {
-  //: _mutex("bulletdebuggerlines") {
-
   for (int i = 0; i < 4; i++) {
     _lineqpool.push(new lineq_t);
   }
-
   _curreadlq = nullptr;
+  DefaultColors mycolors;
+  mycolors.m_activeObject = btVector3(.5,1,.5);
+  setDefaultColors(mycolors);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-// void PhysicsDebugger::Lock() { _mutex.Lock(); }
-
-///////////////////////////////////////////////////////////////////////////////
-
-// void PhysicsDebugger::UnLock() { _mutex.UnLock(); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletDebugDrawDBData::BulletDebugDrawDBData(BulletSystem* system)
     : _bulletSystem(system), _debugger(0) {
   for (int i = 0; i < DrawableBuffer::kmaxbuffers; i++) {
-    mDBRecs[i]._bulletSystem = system;
+    mDBRecs[i]; //._bulletSystem = system;
   }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PhysicsDebugger::flushLines() { // final
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
   AssertOnOpQ2(UpdateSerialOpQ());
-
   BulletDebugDrawDBData* pdata = cdb.mUserData0.Get<BulletDebugDrawDBData*>();
   auto dbger = pdata->_debugger;
-
   if (dbger->_enabled) {
-    BulletSystem* system = pdata->_bulletSystem;
-
     BulletDebugDrawDBRec* prec = pdata->mDBRecs + cdb.miBufferIndex;
     cdb.mUserData1.Set(prec);
-
-    if (system) {
-
-      printf("physdbg enq\n");
-
-      prec->_lines = dbger->_curreadlq.exchange(nullptr);
-
-      /*dbger->_currentwritelq = nullptr;
-
-      while( false == dbger->_lineqpool.try_pop(dbger->_currentwritelq) ){
-        sched_yield();
-      }
-
-      // dbger->_currentwritelq is now valid
-
-      pdata->_debugger->Lock();
-      dbger->_currentwritelq->clear();
-      system->BulletWorld()->debugDrawWorld();
-      pdata->_debugger->UnLock();
-      dbger->_currentwritelq = nullptr;*/
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void bulletDebugRender(RenderContextInstData& rcid, GfxTarget* targ, const CallbackRenderable* pren) {
-  AssertOnOpQ2(MainThreadOpQ());
-
-  if (targ->FBI()->IsPickState())
-    return;
-
-  //////////////////////////////////////////
-  auto drawdata = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
-
-  auto debugger = drawdata->_debugger;
-
-  if (false == debugger->_enabled)
-    return;
-  //////////////////////////////////////////
-
-  if (auto as_rec = pren->GetUserData1().TryAs<BulletDebugDrawDBRec*>()) {
-    //////////////////////////////////////////
-
-    const BulletSystem* system = drawdata->_bulletSystem;
-
-    printf("physdbg begin render\n");
-
-    //////////////////////////////////////////
-    //const RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-    //const ork::CameraData* cdata = framedata->GetCameraData();
-    //auto srec = ;
-
-    // drawdata->_debugger->Lock();
-    debugger->render(rcid, targ, as_rec.value()->_lines);
-
-    auto tmp = debugger->_curreadlq.exchange(as_rec.value()->_lines);
-
-    if( tmp == nullptr ){ //no new one posted yet, just put it back
-      // and since it was a fetch and fetch_and_store
-      //  it is alread back...
-    }
-    else { // a new one was posted
-      // put back into the pool
-      debugger->_lineqpool.push(tmp);
-    }
-
-    printf("physdbg end render\n");
-
-    // drawdata->_debugger->UnLock();
-
-    ////////////////////////
-    // done rendering lines, return to pool
-    ////////////////////////
-
-    // drawdata->_debugger->_lineqpool.push(srec->_lines);
-
-    ////////////////////////
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::beginSimFrame(BulletSystem* system) {
+  AssertOnOpQ2(UpdateSerialOpQ());
   if (_enabled) {
-
     _currentwritelq = nullptr;
-
     bool got_one = _lineqpool.try_pop(_currentwritelq);
-    assert(got_one);
-    assert(_currentwritelq != nullptr);
-    _currentwritelq->clear();
-    printf("checked out _currentwritelq<%p>\n", _currentwritelq);
+    if( got_one ){
+      assert(_currentwritelq != nullptr);
+      _currentwritelq->clear();
+    }
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
 void PhysicsDebugger::endSimFrame(BulletSystem* system) {
   if (_enabled and _currentwritelq) {
-    //system->BulletWorld()->debugDrawWorld();
-    printf("returning _currentwritelq<%p>\n", _currentwritelq);
-
+    system->BulletWorld()->debugDrawWorld();
     auto prevread = _curreadlq.exchange(_currentwritelq);
-
-    if( prevread ) { //
-      _lineqpool.push(prevread);
+    if( prevread ) { // replacing old readbuffer
+      _lineqpool.push(prevread); // so return old readbuffer to pool
     }
-
+    else {
+      // _currentwritelq transferred to _curreadlq
+    }
     _currentwritelq = nullptr;
-
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PhysicsDebugger::beginRenderFrame() {
+  _checkedoutreadlq = _curreadlq.exchange(nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void bulletDebugRender(RenderContextInstData& rcid, GfxTarget* targ, const CallbackRenderable* pren) {
+  if (targ->FBI()->IsPickState())
+    return;
+  //////////////////////////////////////////
+  auto drawdata = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
+  auto debugger = drawdata->_debugger;
+  if (false == debugger->_enabled)
+    return;
+  //////////////////////////////////////////
+  if (auto as_rec = pren->GetUserData1().TryAs<BulletDebugDrawDBRec*>()) {
+    debugger->render(rcid, targ, debugger->_checkedoutreadlq);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PhysicsDebugger::endRenderFrame() {
+  auto tmp = _curreadlq.exchange(_checkedoutreadlq); // return _checkedoutreadlq
+
+  if( tmp == nullptr ){ //no new one posted yet, just put it back
+    // and since it was a fetch and fetch_and_store
+    //  it is alread back...
+  }
+  else { // tmp is new rlq that was posted
+    auto tmp2 = _curreadlq.exchange(tmp); // put tmp back into curread
+    assert(tmp2==_checkedoutreadlq);
+    // put _checkedoutreadlq back into the pool
+    _lineqpool.push(tmp2);
+  }
+
+  _checkedoutreadlq = nullptr;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -198,7 +145,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
   int inumlines = lines->size();
 
 
-  printf( "draw numlines<%d>\n", inumlines );
+  //printf( "draw numlines<%d>\n", inumlines );
   const Renderer* prenderer = rcid.GetRenderer();
 
   const ork::CameraData* pcamdata = ptarg->GetRenderContextFrameData()->GetCameraData();
@@ -214,7 +161,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
     vwriter.Lock(ptarg, &vb, icount);
     for (const auto& line : (*lines)) {
 
-      U32 ucolor = line.mColor.GetBGRAU32();
+      U32 ucolor = line.mColor.GetABGRU32();
 
       fvec3 vf = line.mFrom + szn;
       fvec3 vt = line.mTo + szn;
@@ -241,15 +188,13 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
     ptarg->PopModColor();
     ptarg->BindMaterial(0);
   }
-
-  printf( "draw done\n" );
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::addLine(const fvec3& from, const fvec3& to, const fvec3& color) {
-  if(_currentwritelq!=nullptr);
+  AssertOnOpQ2(UpdateSerialOpQ());
+  if(_currentwritelq!=nullptr)
     _currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
 }
 
@@ -270,8 +215,8 @@ void PhysicsDebugger::drawContactPoint(const btVector3& PointOnB, const btVector
   fvec3 vfrom = !PointOnB;
   fvec3 vdir = !normalOnB;
   fvec3 vto = vfrom + vdir * 4.0F; // distance;
-  fvec3 vclr = !color;
-
+  fvec3 vclr = ! normalOnB;
+  vclr = (vclr+fvec3(1,1,1))*0.5;
   addLine(vfrom, vto, vclr);
 }
 
@@ -290,7 +235,7 @@ void PhysicsDebugger::setDebugMode(int debugMode) {}
 ///////////////////////////////////////////////////////////////////////////////
 
 int PhysicsDebugger::getDebugMode() const {
-  return _enabled ? (btIDebugDraw::DBG_DrawContactPoints | btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb)
+  return _enabled ? (btIDebugDraw::DBG_DrawContactPoints | btIDebugDraw::DBG_FastWireframe | btIDebugDraw::DBG_DrawAabb)
                   : (btIDebugDraw::DBG_NoDebug);
 }
 

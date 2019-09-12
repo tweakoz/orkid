@@ -96,7 +96,7 @@ void UpdateThread::run() // virtual
         {
           OrkAssert(dbuf);
 
-          auto psi = (ent::Simulation*)mpVP->GetSimulation();
+          auto psi = (ent::Simulation*)mpVP->simulation();
           if (psi) {
             auto cmci = psi->compositingSystem();
             float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
@@ -112,7 +112,7 @@ void UpdateThread::run() // virtual
             } else
               psi->Update();
           }
-          mpVP->QueueSimulationToDb(dbuf);
+          mpVP->enqueueSimulationDrawables(dbuf);
         }
         ork::ent::DrawableBuffer::UnLockWriteBuffer(dbuf);
         // ork::PerfMarkerPush( "ork.end_update" );
