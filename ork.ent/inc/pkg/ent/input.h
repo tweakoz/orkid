@@ -31,12 +31,12 @@ public:
 
 protected:
 
-  void DoUpdate(SceneInst *psi) final {}
-  bool DoStart(SceneInst *psi, const fmtx4 &world) final { return true; }
-  bool DoLink(SceneInst *psi) final { return true; }
-  void DoUnLink(SceneInst *psi) final {}
-  void DoStop(SceneInst *psi) final {}
-  void onActivate(SceneInst* psi) final;
+  void DoUpdate(Simulation *psi) final {}
+  bool DoStart(Simulation *psi, const fmtx4 &world) final { return true; }
+  bool DoLink(Simulation *psi) final { return true; }
+  void DoUnLink(Simulation *psi) final {}
+  void DoStop(Simulation *psi) final {}
+  void onActivate(Simulation* psi) final;
 
   const char* scriptName() final {
       return "Input";
@@ -57,21 +57,21 @@ public:
   InputSystemData();
 
 protected:
-  System* createSystem(SceneInst* psi) const final;
+  System* createSystem(Simulation* psi) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class InputSystem : public System {
 
-  void DoUpdate(SceneInst *inst) final;
+  void DoUpdate(Simulation *inst) final;
 
 public:
 
 	static constexpr systemkey_t SystemType = "InputSystem";
 	systemkey_t systemTypeDynamic() final { return SystemType; }
 
-  InputSystem(const InputSystemData &data, SceneInst* psi);
+  InputSystem(const InputSystemData &data, Simulation* psi);
   ~InputSystem();
 
   svar256_t _impl;

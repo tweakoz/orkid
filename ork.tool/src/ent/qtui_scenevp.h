@@ -55,7 +55,7 @@ class CompositingGroup;
 class CompositingSceneItem;
 class CompositingComponentInst;
 class SceneEditorVP;
-class EditorSceneInst;
+class EditorSimulation;
 class EditorMainWindow;
 class CompositingSystem;
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ public:
 	SceneEditorView(SceneEditorVP*vp);
 
 	//////////////////////////////////////////////////////////
-	void UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameData, const SceneInst* sinst);
+	void UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameData, const Simulation* sinst);
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -116,7 +116,7 @@ public:
 	//////////////////////
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	//////////////////////
-	void QueueSceneInstToDb(ent::DrawableBuffer*pDB);
+	void QueueSimulationToDb(ent::DrawableBuffer*pDB);
 	void RenderQueuedScene( ork::lev2::RenderContextFrameData & ContextData );
 	//////////////////////
 	//lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
@@ -148,7 +148,7 @@ public:
 	void Init();
 	///////////////////////////////////////////////////
 
-	const ent::SceneInst* GetSceneInst();
+	const ent::Simulation* GetSimulation();
 	SceneEditorBase& SceneEditor() { return mEditor; }
 	ork::ent::SceneEditorView& SceneEditorView() { return mSceneView; }
 	EditorMainWindow& MainWindow() const { return mMainWindow; }

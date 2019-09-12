@@ -74,7 +74,7 @@ ScriptComponentInst::ScriptComponentInst( const ScriptComponentData& data, ent::
 {
 }
 
-bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
+bool ScriptComponentInst::DoLink(ork::ent::Simulation *psi)
 {
 	auto path = mCD.GetPath();
 
@@ -107,7 +107,7 @@ bool ScriptComponentInst::DoLink(ork::ent::SceneInst *psi)
 	}
 	return true;
 }
-void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
+void ScriptComponentInst::DoUnLink(ork::ent::Simulation *psi)
 {
 	auto scm = psi->findSystem<ScriptSystem>();
 
@@ -118,7 +118,7 @@ void ScriptComponentInst::DoUnLink(ork::ent::SceneInst *psi)
 	}
 }
 
-bool ScriptComponentInst::DoStart(SceneInst *psi, const fmtx4 &world)
+bool ScriptComponentInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
 	auto scm = psi->findSystem<ScriptSystem>();
 
@@ -142,7 +142,7 @@ bool ScriptComponentInst::DoStart(SceneInst *psi, const fmtx4 &world)
 	return true;
 }
 
-void ScriptComponentInst::onActivate(SceneInst* psi) {
+void ScriptComponentInst::onActivate(Simulation* psi) {
 
 	auto scm = psi->findSystem<ScriptSystem>();
 
@@ -164,7 +164,7 @@ void ScriptComponentInst::onActivate(SceneInst* psi) {
         lua.ppcall(1,0,0);
 	}
 }
-void ScriptComponentInst::onDeactivate(SceneInst* psi) {
+void ScriptComponentInst::onDeactivate(Simulation* psi) {
 	auto scm = psi->findSystem<ScriptSystem>();
 
 	if( scm && mScriptObject )
@@ -186,7 +186,7 @@ void ScriptComponentInst::onDeactivate(SceneInst* psi) {
 	}
 }
 
-void ScriptComponentInst::DoStop(SceneInst *psi)
+void ScriptComponentInst::DoStop(Simulation *psi)
 {
 	auto scm = psi->findSystem<ScriptSystem>();
 
@@ -213,7 +213,7 @@ void ScriptComponentInst::DoStop(SceneInst *psi)
 }
 
 
-void ScriptComponentInst::DoUpdate(ork::ent::SceneInst* psi)
+void ScriptComponentInst::DoUpdate(ork::ent::Simulation* psi)
 {
 
 	if( false == kUSEEXECTABUPDATE )
@@ -251,14 +251,14 @@ ScriptSystemData::ScriptSystemData()
 
 }
 
-System* ScriptSystemData::createSystem(ork::ent::SceneInst *pinst) const
+System* ScriptSystemData::createSystem(ork::ent::Simulation *pinst) const
 {
 	return new ScriptSystem( *this, pinst );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ScriptSystem::ScriptSystem( const ScriptSystemData& data, ork::ent::SceneInst *pinst )
+ScriptSystem::ScriptSystem( const ScriptSystemData& data, ork::ent::Simulation *pinst )
 	: ork::ent::System( &data, pinst )
 	, mScriptRef(LUA_NOREF)
 {
@@ -358,7 +358,7 @@ ScriptSystem::~ScriptSystem()
 	delete asluasys;
 }
 
-bool ScriptSystem::DoLink(SceneInst* psi) // final
+bool ScriptSystem::DoLink(Simulation* psi) // final
 {
 	//printf( "ScriptSystem::DoLink()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
@@ -367,21 +367,21 @@ bool ScriptSystem::DoLink(SceneInst* psi) // final
 
 	return true;
 }
-void ScriptSystem::DoUnLink(SceneInst* psi) // final
+void ScriptSystem::DoUnLink(Simulation* psi) // final
 {
 	printf( "ScriptSystem::DoUnLink()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneUnLink");
 }
-void ScriptSystem::DoStart(SceneInst *psi) // final
+void ScriptSystem::DoStart(Simulation *psi) // final
 {
 	//printf( "ScriptSystem::DoStart()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);
 	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStart");
 }
-void ScriptSystem::DoStop(SceneInst *inst) // final
+void ScriptSystem::DoStop(Simulation *inst) // final
 {
 	//printf( "ScriptSystem::DoStop()\n" );
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
@@ -389,7 +389,7 @@ void ScriptSystem::DoStop(SceneInst *inst) // final
 	//LuaProtectedCallByName( asluasys->mLuaState, mScriptRef, "OnSceneStop");
 }
 
-void ScriptSystem::DoUpdate(SceneInst* psi) // final
+void ScriptSystem::DoUpdate(Simulation* psi) // final
 {
 	auto asluasys = mLuaManager.Get<LuaSystem*>();
 	OrkAssert(asluasys);

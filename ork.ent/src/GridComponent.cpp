@@ -45,7 +45,7 @@ GridArchetype::GridArchetype()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GridArchetype::DoLinkEntity( SceneInst* psi, Entity *pent ) const
+void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 {
     struct yo
     {
@@ -267,7 +267,7 @@ ent::ComponentInst* GridControllerData::createComponent(ent::Entity* pent) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GridControllerInst::DoUpdate(ent::SceneInst* sinst)
+void GridControllerInst::DoUpdate(ent::Simulation* sinst)
 {
     mPhase += mCD.GetSpinRate()*sinst->GetDeltaTime();
 }

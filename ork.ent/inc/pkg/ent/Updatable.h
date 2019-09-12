@@ -10,12 +10,12 @@
 
 namespace ork { namespace ent {
 
-class SceneInst;
+class Simulation;
 
 class IUpdatable
 {
 public:
-	virtual void Update(SceneInst*) = 0;
+	virtual void Update(Simulation*) = 0;
 };
 
 } } // ork::ent

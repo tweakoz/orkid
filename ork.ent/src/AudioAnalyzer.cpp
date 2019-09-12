@@ -36,7 +36,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentData, "AudioAnalysi
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisComponentInst, "AudioAnalysisComponentInst");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioAnalysisArchetype, "AudioAnalysisArchetype");
 
-template  ork::ent::AudioAnalysisSystem* ork::ent::SceneInst::findSystem() const;
+template  ork::ent::AudioAnalysisSystem* ork::ent::Simulation::findSystem() const;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
@@ -69,7 +69,7 @@ AudioAnalysisSystemData::AudioAnalysisSystemData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* AudioAnalysisSystemData::createSystem(ork::ent::SceneInst *pinst) const
+ork::ent::System* AudioAnalysisSystemData::createSystem(ork::ent::Simulation *pinst) const
 {
 	return new AudioAnalysisSystem( *this, pinst );
 }
@@ -83,7 +83,7 @@ void AudioAnalysisSystem::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AudioAnalysisSystem::AudioAnalysisSystem( const AudioAnalysisSystemData& data, ork::ent::SceneInst *pinst )
+AudioAnalysisSystem::AudioAnalysisSystem( const AudioAnalysisSystemData& data, ork::ent::Simulation *pinst )
 	: ork::ent::System( &data, pinst )
 	, mAAMCD(data)
 {
@@ -152,7 +152,7 @@ void AudioAnalysisComponentInst::Describe()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AudioAnalysisComponentInst::DoLink(ork::ent::SceneInst *psi)
+bool AudioAnalysisComponentInst::DoLink(ork::ent::Simulation *psi)
 {
 	auto cmi = psi->findSystem<ent::AudioAnalysisSystem>();
 	OrkAssert(cmi!=0);
@@ -171,13 +171,13 @@ bool AudioAnalysisComponentInst::DoLink(ork::ent::SceneInst *psi)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioAnalysisComponentInst::DoUnLink(SceneInst *psi)
+void AudioAnalysisComponentInst::DoUnLink(Simulation *psi)
 {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AudioAnalysisComponentInst::DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world)
+bool AudioAnalysisComponentInst::DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world)
 {
 	if( mCoreAudioHost )
 		mCoreAudioHost->Start();
@@ -187,7 +187,7 @@ bool AudioAnalysisComponentInst::DoStart(ork::ent::SceneInst *inst, const ork::f
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioAnalysisComponentInst::DoUpdate(SceneInst *inst)
+void AudioAnalysisComponentInst::DoUpdate(Simulation *inst)
 {
 	float fDT = inst->GetDeltaTime();
 
@@ -210,7 +210,7 @@ AudioAnalysisComponentInst::AudioAnalysisComponentInst( const AudioAnalysisCompo
 	, mfTimeAccum(0.0f)
 {
 	StartMidi();
-	SceneInst* psi = pent->GetSceneInst();
+	Simulation* psi = pent->GetSimulation();
 	mpAAMCI = psi->findSystem<ent::AudioAnalysisSystem>();
 	const AudioAnalysisSystemData& AAMCD = mpAAMCI->GetAAMCD();
 

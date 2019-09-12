@@ -175,28 +175,28 @@ public:
   const fvec3& GetGravity() const { return mGravity; }
 
 protected:
-  System* createSystem(SceneInst* psi) const final;
+  System* createSystem(Simulation* psi) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class BulletSystem : public ork::ent::System {
 
-  void DoUpdate(ork::ent::SceneInst* inst) final;
+  void DoUpdate(ork::ent::Simulation* inst) final;
 
 public:
   static constexpr systemkey_t SystemType = "BulletSystem";
   systemkey_t systemTypeDynamic() final { return SystemType; }
 
-  BulletSystem(const BulletSystemData& data, ork::ent::SceneInst* psi);
+  BulletSystem(const BulletSystemData& data, ork::ent::Simulation* psi);
   ~BulletSystem();
 
   btRigidBody* AddLocalRigidBody(ork::ent::Entity* pent, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
 
   btDiscreteDynamicsWorld* GetDynamicsWorld() const { return mDynamicsWorld; }
 
-  bool DoLink(SceneInst* psi) final;
-  void LinkPhysicsObject(ork::ent::SceneInst* inst, ork::ent::Entity* entity);
+  bool DoLink(Simulation* psi) final;
+  void LinkPhysicsObject(ork::ent::Simulation* inst, ork::ent::Entity* entity);
   void enqueueDrawables(DrawableBuffer& buffer) final;
 
   void InitWorld();
@@ -251,8 +251,8 @@ class BulletObjectArchetype : public ork::ent::Archetype {
 
 private:
   void DoCompose(ork::ent::ArchComposer& composer) override;
-  void DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity* pent) const override;
-  void DoStartEntity(ork::ent::SceneInst* inst, const ork::fmtx4& world, ork::ent::Entity* pent) const override;
+  void DoLinkEntity(ork::ent::Simulation* inst, ork::ent::Entity* pent) const override;
+  void DoStartEntity(ork::ent::Simulation* inst, const ork::fmtx4& world, ork::ent::Entity* pent) const override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -274,8 +274,8 @@ class BulletObjectForceControllerInst {
 public:
   BulletObjectForceControllerInst(const BulletObjectForceControllerData& data);
   virtual ~BulletObjectForceControllerInst();
-  virtual void UpdateForces(ork::ent::SceneInst* inst, BulletObjectControllerInst* boci) = 0;
-  virtual bool DoLink(ent::SceneInst* psi) = 0;
+  virtual void UpdateForces(ork::ent::Simulation* inst, BulletObjectControllerInst* boci) = 0;
+  virtual bool DoLink(ent::Simulation* psi) = 0;
 
 private:
   const BulletObjectForceControllerData& mData;
@@ -477,10 +477,10 @@ private:
   orkmap<PoolString, BulletObjectForceControllerInst*> mForceControllerInstMap;
   BulletShapeBaseInst* mShapeInst;
 
-  void DoUpdate(ork::ent::SceneInst* inst) final;
+  void DoUpdate(ork::ent::Simulation* inst) final;
   bool DoNotify(const ork::event::Event* event) final { return false; }
-  bool DoLink(SceneInst* psi) final;
-  void DoStop(SceneInst* psi) final;
+  bool DoLink(Simulation* psi) final;
+  void DoStop(Simulation* psi) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

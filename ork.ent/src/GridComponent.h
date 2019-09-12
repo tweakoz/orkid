@@ -45,7 +45,7 @@ class GridControllerInst : public ent::ComponentInst
     const GridControllerData&     mCD;
     float                         mPhase;
 
-    void DoUpdate(ent::SceneInst* sinst) final;
+    void DoUpdate(ent::Simulation* sinst) final;
 
 public:
     const GridControllerData& GetCD() const { return mCD; }
@@ -60,8 +60,8 @@ class GridArchetype : public Archetype
 {
     RttiDeclareConcrete( GridArchetype, Archetype );
 
-    void DoLinkEntity( SceneInst* psi, Entity *pent ) const final;
-    void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
+    void DoLinkEntity( Simulation* psi, Entity *pent ) const final;
+    void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final {}
     void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:

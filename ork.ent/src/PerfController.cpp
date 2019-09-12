@@ -34,7 +34,7 @@ INSTANTIATE_TRANSPARENT_RTTI( ork::ent::PerfSnapShotEvent, "PerfSnapShotEvent" )
 namespace ork {
 namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-extern SceneInst* GetEditorSceneInst();
+extern Simulation* GetEditorSimulation();
 extern void SceneTopoChanged();
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -156,7 +156,7 @@ void PerfControllerComponentData::MorphEvent(const ork::dataflow::morph_event* m
 		const std::string& EntityName = AutoTargets[it];
 		PoolString psobjname = AddPooledString( EntityName.c_str() );
 #if defined(ORK_OSXX)
-		ent::SceneInst* psi = GetEditorSceneInst();
+		ent::Simulation* psi = GetEditorSimulation();
 		printf( "SCENEINST<%p> EntityName<%s>\n", psi, EntityName.c_str() );
 		if( psi )
 		{
@@ -227,7 +227,7 @@ void PerfControllerComponentData::WriteProgram()
 
 		PoolString psobjname = AddPooledString( EntityName.c_str() );
 
-		ent::SceneInst* psi = GetEditorSceneInst();
+		ent::Simulation* psi = GetEditorSimulation();
 
 		printf( "SCENEINST<%p> EntityName<%s>\n", psi, EntityName.c_str() );
 
@@ -277,7 +277,7 @@ void PerfControllerComponentData::AddProgram( PoolString name, PerfProgramData* 
 
 		PoolString psobjname = AddPooledString( EntityName.c_str() );
 
-		ent::SceneInst* psi = GetEditorSceneInst();
+		ent::Simulation* psi = GetEditorSimulation();
 
 		printf( "SCENEINST<%p> EntityName<%s>\n", psi, EntityName.c_str() );
 
@@ -338,7 +338,7 @@ PerfControllerComponentInst::~PerfControllerComponentInst()
 {
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PerfControllerComponentInst::ChangeProgram( ent::SceneInst* psi, const PoolString& progname )
+void PerfControllerComponentInst::ChangeProgram( ent::Simulation* psi, const PoolString& progname )
 {
 	// apply all data change entries to thier cooresponding entity components
 
@@ -389,7 +389,7 @@ void PerfControllerComponentInst::ChangeProgram( ent::SceneInst* psi, const Pool
 	mCurrentProgram = progname;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PerfControllerComponentInst::DoUpdate(ent::SceneInst* psi)
+void PerfControllerComponentInst::DoUpdate(ent::Simulation* psi)
 {
 	if( mCurrentProgram != mPCCD.GetCurrentProgram() )
 	{
@@ -398,7 +398,7 @@ void PerfControllerComponentInst::DoUpdate(ent::SceneInst* psi)
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool PerfControllerComponentInst::DoLink( ork::ent::SceneInst* psi )
+bool PerfControllerComponentInst::DoLink( ork::ent::Simulation* psi )
 {
 	ChangeProgram( psi, mPCCD.GetCurrentProgram() );
 	return true;

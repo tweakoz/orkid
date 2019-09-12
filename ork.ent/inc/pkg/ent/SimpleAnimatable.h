@@ -176,9 +176,9 @@ private:
 	/// Helper routine for incrementing the anim frame, applying optional loop, and notifying the entity of AnimSeq and AnimFinish events
 	static bool AnimDataUpdate(AnimData &data, float delta, ork::lev2::XgmModelInst *modelInst, ork::ent::Entity *entity = NULL);
 
-	void DoUpdate(ork::ent::SceneInst *inst) final;
-	bool DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world) final;
-	bool DoLink(ork::ent::SceneInst *psi) final; 
+	void DoUpdate(ork::ent::Simulation *inst) final;
+	bool DoStart(ork::ent::Simulation *psi, const ork::fmtx4 &world) final;
+	bool DoLink(ork::ent::Simulation *psi) final; 
 	bool DoNotify(const ork::event::Event *event) final;
 
 	BodyPartMap mBodyPartMap;

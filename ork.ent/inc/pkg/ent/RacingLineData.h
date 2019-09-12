@@ -117,8 +117,8 @@ public:
 		ork::fvec3 &racingLineDir) const;
 private:
 
-	void DoUpdate(ork::ent::SceneInst *sinst) final;
-	bool DoLink(ork::ent::SceneInst *sinst) final;
+	void DoUpdate(ork::ent::Simulation *sinst) final;
+	bool DoLink(ork::ent::Simulation *sinst) final;
 
 	const RacingLineData &mData;
 

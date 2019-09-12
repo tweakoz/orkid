@@ -161,7 +161,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData &data, Entity *p
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelComponentInst::DoUpdate( ork::ent::SceneInst* psi )
+void ModelComponentInst::DoUpdate( ork::ent::Simulation* psi )
 {
 	if( mData.IsCopyDag() )
 	{
@@ -177,7 +177,7 @@ void ModelComponentInst::DoUpdate( ork::ent::SceneInst* psi )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelComponentInst::DoStop( ork::ent::SceneInst* psi )
+void ModelComponentInst::DoStop( ork::ent::Simulation* psi )
 {
 	auto& dw = GetModelDrawable();
 	dw.Disable();

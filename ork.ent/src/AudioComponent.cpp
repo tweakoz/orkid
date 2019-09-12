@@ -576,7 +576,7 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	, mAmci( 0 )
 	, mDflowRecv( 0 )
 {
-	mAmci = pent->GetSceneInst()->findSystem<AudioSystem>();
+	mAmci = pent->GetSimulation()->findSystem<AudioSystem>();
 	///////////////////////////////////////////////////////////
 
 	const ork::orklut<ork::PoolString,ork::lev2::AudioBank*>& bmap = mData.GetBankMap();
@@ -601,7 +601,7 @@ AudioEffectComponentInst::AudioEffectComponentInst( const AudioEffectComponentDa
 	}
 	///////////////////////////////////////////////////////////////
 
-	ork::ent::SceneInst *inst = pent->GetSceneInst();
+	ork::ent::Simulation *inst = pent->GetSimulation();
 	const auto& ent_xfnode = pent->GetDagNode().GetTransformNode();
 	mXform = & ent_xfnode;
 }
@@ -617,7 +617,7 @@ AudioEffectComponentInst::~AudioEffectComponentInst()
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioEffectComponentInst::DoUpdate(ork::ent::SceneInst *inst)
+void AudioEffectComponentInst::DoUpdate(ork::ent::Simulation *inst)
 {
 	if( mPlaybacks.size() )
 	{
@@ -849,13 +849,13 @@ bool AudioEffectComponentInst::DoNotify(const ork::event::Event *pev)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-bool AudioEffectComponentInst::DoLink(ork::ent::SceneInst *psi)
+bool AudioEffectComponentInst::DoLink(ork::ent::Simulation *psi)
 {
 	ork::ent::Entity* pent = GetEntity();
 	mDflowRecv = pent->GetTypedComponent<ork::ent::DataflowRecieverComponentInst>();
 	return true;
 }
-bool AudioEffectComponentInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world)
+bool AudioEffectComponentInst::DoStart(ork::ent::Simulation *psi, const ork::fmtx4 &world)
 {
 	////////////////////////////////////////////////
 	// do we have an emitter ?
@@ -871,7 +871,7 @@ bool AudioEffectComponentInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioEffectComponentInst::DoStop(ork::ent::SceneInst *psi)
+void AudioEffectComponentInst::DoStop(ork::ent::Simulation *psi)
 {
 	StopAllSounds();
 }

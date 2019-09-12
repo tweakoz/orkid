@@ -117,9 +117,9 @@ protected:
       return "ModelComponent";
   }
 
-	void DoUpdate( ork::ent::SceneInst* psi ) final;
+	void DoUpdate( ork::ent::Simulation* psi ) final;
 	bool DoNotify(const ork::event::Event *event) final;
-	void DoStop( ork::ent::SceneInst* psi ) final;
+	void DoStop( ork::ent::Simulation* psi ) final;
   void doNotify(const ComponentEvent& e) final;
 };
 

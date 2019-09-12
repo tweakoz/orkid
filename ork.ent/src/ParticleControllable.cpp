@@ -125,7 +125,7 @@ ParticleControllableInst::~ParticleControllableInst()
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ParticleControllableInst::DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world)
+bool ParticleControllableInst::DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world)
 {
 	ork::fvec3 pos = world.GetTranslation();
 
@@ -145,7 +145,7 @@ bool ParticleControllableInst::DoStart(ork::ent::SceneInst *inst, const ork::fmt
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool ParticleControllableInst::DoLink( ork::ent::SceneInst *psi )
+bool ParticleControllableInst::DoLink( ork::ent::Simulation *psi )
 {
 	////////////////////////////////
 	// first check archetype for attachment
@@ -180,7 +180,7 @@ bool ParticleControllableInst::DoLink( ork::ent::SceneInst *psi )
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ParticleControllableInst::DoUpdate(ork::ent::SceneInst *inst)
+void ParticleControllableInst::DoUpdate(ork::ent::Simulation *inst)
 {
 	if( mpAttachEntity )
 	{
@@ -262,7 +262,7 @@ void ParticleControllableInst::Reset()
 
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NovaParticleSystem::StartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent )
+void NovaParticleSystem::StartSystem( const ork::ent::Simulation* psi, ork::ent::Entity*pent )
 {
 	DoStartSystem( psi, pent );
 }
@@ -292,11 +292,11 @@ void ParticleArchetype::DoCompose(ork::ent::ArchComposer& composer)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ParticleArchetype::DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity *pent) const
+void ParticleArchetype::DoLinkEntity(ork::ent::Simulation* inst, ork::ent::Entity *pent) const
 {
 }
 
-void ParticleArchetype::DoStartEntity(ork::ent::SceneInst*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const
+void ParticleArchetype::DoStartEntity(ork::ent::Simulation*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const
 {
 	pent->GetDagNode().GetTransformNode().GetTransform().SetMatrix(mtx);
 

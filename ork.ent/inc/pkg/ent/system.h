@@ -38,7 +38,7 @@ class SystemData : public Object {
   RttiDeclareExplicit(SystemData, Object, rtti::AbstractPolicy, SystemDataClass);
 
 public:
-  virtual System* createSystem(ork::ent::SceneInst* psi) const = 0;
+  virtual System* createSystem(ork::ent::Simulation* psi) const = 0;
   PoolString GetFamily() const;
 
 protected:
@@ -52,27 +52,27 @@ class System {
 public:
   virtual systemkey_t systemTypeDynamic() = 0;
 
-  SceneInst* sceneinst() { return mpSceneInst; }
+  Simulation* sceneinst() { return mpSimulation; }
 
 protected:
-  System(const SystemData* scd, SceneInst* pinst) : _systemData(scd), mpSceneInst(pinst), mbStarted(false) {}
-  SceneInst* mpSceneInst;
+  System(const SystemData* scd, Simulation* pinst) : _systemData(scd), mpSimulation(pinst), mbStarted(false) {}
+  Simulation* mpSimulation;
   virtual ~System(){};
 
 private:
-  friend class SceneInst;
+  friend class Simulation;
 
-  void Update(SceneInst* inst);
-  void Start(SceneInst* psi);
-  void Link(SceneInst* psi);
-  void UnLink(SceneInst* psi);
-  void Stop(SceneInst* psi);
+  void Update(Simulation* inst);
+  void Start(Simulation* psi);
+  void Link(Simulation* psi);
+  void UnLink(Simulation* psi);
+  void Stop(Simulation* psi);
 
-  virtual void DoUpdate(SceneInst* inst) {}
-  virtual void DoStart(SceneInst* psi) {}
-  virtual bool DoLink(SceneInst* psi) { return true; }
-  virtual void DoUnLink(SceneInst* psi) {}
-  virtual void DoStop(SceneInst* psi) {}
+  virtual void DoUpdate(Simulation* inst) {}
+  virtual void DoStart(Simulation* psi) {}
+  virtual bool DoLink(Simulation* psi) { return true; }
+  virtual void DoUnLink(Simulation* psi) {}
+  virtual void DoStop(Simulation* psi) {}
   virtual void enqueueDrawables(DrawableBuffer& buffer) {}
 
   const SystemData* _systemData;

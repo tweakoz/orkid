@@ -55,7 +55,7 @@ class GfxMaterialFxEffectInstance;
 
 namespace ent {
 
-class SceneInst;
+class Simulation;
 class DrawableBuffer;
 
 ///////////////////////////////////////////////////////////////////////////

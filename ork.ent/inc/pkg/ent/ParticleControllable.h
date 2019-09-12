@@ -46,9 +46,9 @@ public:
 
 	NovaParticleSystem(const NovaParticleItemBase&pib) : ParticleSystemBase(pib), mDrawable(0) {}
 	ork::ent::Drawable* GetDrawable() const { return mDrawable; }
-	void LinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent ) { DoLinkSystem(psi,pent); }
+	void LinkSystem( ork::ent::Simulation* psi, ork::ent::Entity* pent ) { DoLinkSystem(psi,pent); }
 
-	void StartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent);
+	void StartSystem( const ork::ent::Simulation* psi, ork::ent::Entity*pent);
 
 	void SetName( const ork::PoolString& n ) { mName=n; }
 	ork::PoolString GetName() const { return mName; }
@@ -60,8 +60,8 @@ protected:
 
 private:
 
-	virtual void DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent ) {}
-	virtual void DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent ) {}
+	virtual void DoLinkSystem( ork::ent::Simulation* psi, ork::ent::Entity* pent ) {}
+	virtual void DoStartSystem( const ork::ent::Simulation* psi, ork::ent::Entity*pent ) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,10 +116,10 @@ public:
 
 private:
 
-	void DoUpdate(ork::ent::SceneInst *inst) override;
+	void DoUpdate(ork::ent::Simulation *inst) override;
 	bool DoNotify(const ork::event::Event *event) override;
-	bool DoStart(ork::ent::SceneInst *inst, const ork::fmtx4 &world) override;
-	bool DoLink(ork::ent::SceneInst *inst ) override;
+	bool DoStart(ork::ent::Simulation *inst, const ork::fmtx4 &world) override;
+	bool DoLink(ork::ent::Simulation *inst ) override;
 	const ParticleControllableData&	mData;
 	bool							mbEnable;
 	orkvector<NovaParticleSystem*>	_systems;
@@ -181,8 +181,8 @@ public:
 private:
 
     void SetEmitterEnable( bool bv ) final;
-    void DoLinkSystem( ork::ent::SceneInst* psi, ork::ent::Entity* pent ) final;
-    void DoStartSystem( const ork::ent::SceneInst* psi, ork::ent::Entity*pent ) final;
+    void DoLinkSystem( ork::ent::Simulation* psi, ork::ent::Entity* pent ) final;
+    void DoStartSystem( const ork::ent::Simulation* psi, ork::ent::Entity*pent ) final;
     bool DoNotify(const event::Event *event) final;
 
 	psys_graph*							mGraphInstance;
@@ -201,8 +201,8 @@ public:
 	
 private:
 	void DoCompose(ork::ent::ArchComposer& composer) override; 
-	void DoStartEntity(ork::ent::SceneInst*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const override;
-	void DoLinkEntity(ork::ent::SceneInst* inst, ork::ent::Entity *pent) const override;
+	void DoStartEntity(ork::ent::Simulation*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const override;
+	void DoLinkEntity(ork::ent::Simulation* inst, ork::ent::Entity *pent) const override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

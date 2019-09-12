@@ -368,7 +368,7 @@ struct QuartzComposerDrawable
 
 	}
 };
-bool QuartzComposerInst::DoLink(ork::ent::SceneInst *psi)
+bool QuartzComposerInst::DoLink(ork::ent::Simulation *psi)
 {
 	Entity* pent = GetEntity();
 	CallbackDrawable* pdrw = new CallbackDrawable(pent);
@@ -389,7 +389,7 @@ bool QuartzComposerInst::DoLink(ork::ent::SceneInst *psi)
 
 	return true;
 }
-void QuartzComposerInst::DoUpdate( ork::ent::SceneInst* psi )
+void QuartzComposerInst::DoUpdate( ork::ent::Simulation* psi )
 {
 	float fdeltaT = psi->GetDeltaTime();
 	mfUpdateTime += fdeltaT;

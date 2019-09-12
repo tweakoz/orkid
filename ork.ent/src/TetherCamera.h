@@ -26,7 +26,7 @@ class TetherCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( TetherCamArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const override {}
+	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const override {}
 	void DoCompose(ork::ent::ArchComposer& composer) override;
 
 public:
@@ -79,9 +79,9 @@ class TetherCamControllerInst : public ent::ComponentInst
 	Entity*									mpTarget;
 	CameraData								mCameraData;
 	
-	void DoUpdate(ent::SceneInst* sinst) final;
-    bool DoLink(SceneInst *psi) final;
-    bool DoStart(SceneInst *psi, const fmtx4 &world) final;
+	void DoUpdate(ent::Simulation* sinst) final;
+    bool DoLink(Simulation *psi) final;
+    bool DoStart(Simulation *psi, const fmtx4 &world) final;
 
 public:
 	const TetherCamControllerData&	GetCD() const { return mCD; }

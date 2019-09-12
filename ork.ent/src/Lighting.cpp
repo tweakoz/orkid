@@ -251,7 +251,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 
 }
 
-bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
+bool LightingComponentInst::DoLink(ork::ent::Simulation *psi)
 {
 	if( GetLight() )
 	{
@@ -290,7 +290,7 @@ bool LightingComponentInst::DoLink(ork::ent::SceneInst *psi)
 
 LightingComponentInst::~LightingComponentInst()
 {
-	if( auto lmi = GetEntity()->GetSceneInst()->findSystem<ent::LightingSystem>() ) {
+	if( auto lmi = GetEntity()->GetSimulation()->findSystem<ent::LightingSystem>() ) {
 
 		ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
 
@@ -305,7 +305,7 @@ LightingComponentInst::~LightingComponentInst()
 	if( mLight ) delete mLight;
 }
 
-void LightingComponentInst::DoUpdate(ork::ent::SceneInst *inst)
+void LightingComponentInst::DoUpdate(ork::ent::Simulation *inst)
 {
 }
 
@@ -325,7 +325,7 @@ LightingSystemData::LightingSystemData()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* LightingSystemData::createSystem(ork::ent::SceneInst *pinst) const
+ork::ent::System* LightingSystemData::createSystem(ork::ent::Simulation *pinst) const
 {
 	return new LightingSystem( *this, pinst );
 }
@@ -333,7 +333,7 @@ ork::ent::System* LightingSystemData::createSystem(ork::ent::SceneInst *pinst) c
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-LightingSystem::LightingSystem( const LightingSystemData& data, ork::ent::SceneInst *pinst )
+LightingSystem::LightingSystem( const LightingSystemData& data, ork::ent::Simulation *pinst )
 	: ork::ent::System( &data, pinst )
 	, mLightManager(data.Lmd())
 {

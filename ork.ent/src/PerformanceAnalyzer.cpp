@@ -62,7 +62,7 @@ PerfAnalyzerControllerInst::PerfAnalyzerControllerInst(const PerfAnalyzerControl
 		drwend[i] = 0.0f;
 	}
 }
-void PerfAnalyzerControllerInst::DoUpdate(ent::SceneInst* sinst)
+void PerfAnalyzerControllerInst::DoUpdate(ent::Simulation* sinst)
 {
 	bool bpopped = true;
 
@@ -159,7 +159,7 @@ void PerformanceAnalyzerArchetype::DoCompose(ork::ent::ArchComposer& composer)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerformanceAnalyzerArchetype::DoStartEntity(SceneInst* inst, const fmtx4 &world, Entity *pent) const
+void PerformanceAnalyzerArchetype::DoStartEntity(Simulation* inst, const fmtx4 &world, Entity *pent) const
 {
 	const PerfAnalyzerControllerInst* ssci = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
 	if( ssci )
@@ -178,13 +178,13 @@ void PerformanceAnalyzerArchetype::DoStartEntity(SceneInst* inst, const fmtx4 &w
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) const
+void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity *pent) const
 {
 	struct yo
 	{
 		const PerformanceAnalyzerArchetype* parch;
 		Entity *pent;
-		SceneInst* psi;
+		Simulation* psi;
 
 		static void doit( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren )
 		{
@@ -192,7 +192,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 
 			const PerformanceAnalyzerArchetype* parch = pyo->parch;
 			const Entity* pent = pyo->pent;
-			const SceneInst* pSI = pyo->psi;
+			const Simulation* pSI = pyo->psi;
 			const PerfAnalyzerControllerInst* ssci = pent->GetTypedComponent<PerfAnalyzerControllerInst>();
 			const PerfAnalyzerControllerData&	cd = ssci->GetCD();
 			ork::lev2::GfxTarget* pTARG = rcid.GetRenderer()->GetTarget();
@@ -243,7 +243,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(SceneInst* inst, Entity *pent) c
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void PerformanceAnalyzerArchetype::DoStopEntity(SceneInst* psi, Entity *pent) const
+void PerformanceAnalyzerArchetype::DoStopEntity(Simulation* psi, Entity *pent) const
 {
 	PerfMarkerDisable();
 }

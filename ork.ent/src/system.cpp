@@ -37,23 +37,23 @@ namespace ork::ent {
   void SystemData::Describe()
   {
   }
-  void System::Link( SceneInst* psi )
+  void System::Link( Simulation* psi )
   {
   	DoLink(psi);
   }
-  void System::UnLink( SceneInst* psi )
+  void System::UnLink( Simulation* psi )
   {
   	DoUnLink(psi);
   }
-  void System::Start( SceneInst* psi )
+  void System::Start( Simulation* psi )
   {
   	DoStart(psi);
   }
-  void System::Stop( SceneInst* psi )
+  void System::Stop( Simulation* psi )
   {
   	DoStop(psi);
   }
-  void System::Update( SceneInst* psi )
+  void System::Update( Simulation* psi )
   {
   	DoUpdate( psi );
   }

@@ -102,7 +102,7 @@ SequenceCamControllerInst::SequenceCamControllerInst(const SequenceCamController
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SequenceCamControllerInst::DoLink(SceneInst *psi)
+bool SequenceCamControllerInst::DoLink(Simulation *psi)
 {
 	//printf( "LINKING SpinnyCamControllerInst\n" );
 	return true;
@@ -110,7 +110,7 @@ bool SequenceCamControllerInst::DoLink(SceneInst *psi)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SequenceCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
+bool SequenceCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
 	if( GetEntity() )
 	{
@@ -139,7 +139,7 @@ bool SequenceCamControllerInst::DoStart(SceneInst *psi, const fmtx4 &world)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SequenceCamControllerInst::DoUpdate( SceneInst* psi )
+void SequenceCamControllerInst::DoUpdate( Simulation* psi )
 {
 	const PoolString& ps = mCD.GetCurrentItem();
 	orklut<PoolString,SeqCamItemInstBase*>::const_iterator it=mItemInsts.find(ps);
@@ -263,7 +263,7 @@ SpinnyCamControllerInst::SpinnyCamControllerInst(const SpinnyCamControllerData& 
 {
 }
 
-void SpinnyCamControllerInst::DoUpdate(ent::SceneInst* psi)
+void SpinnyCamControllerInst::DoUpdate(ent::Simulation* psi)
 {
 	mfPhase += mSCCD.GetSpinRate()*psi->GetDeltaTime();
 
@@ -338,7 +338,7 @@ CurvyCamControllerInst::CurvyCamControllerInst(const CurvyCamControllerData& cd,
 {
 }
 
-void CurvyCamControllerInst::DoUpdate(ent::SceneInst* psi)
+void CurvyCamControllerInst::DoUpdate(ent::Simulation* psi)
 {
 	mfPhase += mCCCD.GetAngle()*psi->GetDeltaTime();
 

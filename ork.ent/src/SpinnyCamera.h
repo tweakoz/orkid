@@ -27,7 +27,7 @@ class SequenceCamArchetype : public Archetype
 {
 	RttiDeclareConcrete( SequenceCamArchetype, Archetype );
 
-	void DoStartEntity(SceneInst* psi, const fmtx4 &world, Entity *pent ) const final {}
+	void DoStartEntity(Simulation* psi, const fmtx4 &world, Entity *pent ) const final {}
 	void DoCompose(ork::ent::ArchComposer& composer) final;
 
 public:
@@ -58,7 +58,7 @@ class SeqCamItemInstBase
 
 public:
 	
-	virtual void DoUpdate(ent::SceneInst* sinst) {}
+	virtual void DoUpdate(ent::Simulation* sinst) {}
 
 	const SeqCamItemDataBase&	GetCD() const { return mCD; }
 
@@ -105,9 +105,9 @@ public:
 	SequenceCamControllerInst( const SequenceCamControllerData& cd, ork::ent::Entity* pent );
 
 private:
-    void DoUpdate(ent::SceneInst* sinst) final;
-    bool DoLink(SceneInst *psi) final;
-    bool DoStart(SceneInst *psi, const fmtx4 &world) final;
+    void DoUpdate(ent::Simulation* sinst) final;
+    bool DoLink(Simulation *psi) final;
+    bool DoStart(Simulation *psi, const fmtx4 &world) final;
 	bool DoNotify(const ork::event::Event *event) final;
 	orklut<PoolString,SeqCamItemInstBase*>	mItemInsts;
 	SeqCamItemInstBase*						mpActiveItem;
@@ -158,7 +158,7 @@ private:
 	const SpinnyCamControllerData&			mSCCD;
 	float									mfPhase;
 	
-	void DoUpdate(ent::SceneInst* sinst) final;
+	void DoUpdate(ent::Simulation* sinst) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -208,7 +208,7 @@ private:
 	const CurvyCamControllerData&			mCCCD;
 	float									mfPhase;
 	
-	void DoUpdate(ent::SceneInst* sinst) final;
+	void DoUpdate(ent::Simulation* sinst) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

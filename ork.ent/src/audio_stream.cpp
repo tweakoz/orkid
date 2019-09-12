@@ -29,12 +29,12 @@ template class ork::orklut<ork::PoolString,ork::lev2::AudioStream*>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-bool AudioStreamComponentInst::DoStart(ork::ent::SceneInst *psi, const ork::fmtx4 &world)
+bool AudioStreamComponentInst::DoStart(ork::ent::Simulation *psi, const ork::fmtx4 &world)
 {
 	return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void AudioStreamComponentInst::DoStop(ork::ent::SceneInst *psi)
+void AudioStreamComponentInst::DoStop(ork::ent::Simulation *psi)
 {
 	for( ork::orklut<ork::PoolString,AudioStreamInstItem>::iterator it = mItems.begin(); it!=mItems.end(); it++ )
 	{
@@ -122,7 +122,7 @@ AudioStreamComponentInst::AudioStreamComponentInst( const AudioStreamComponentDa
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioStreamComponentInst::DoUpdate(ork::ent::SceneInst *inst)
+void AudioStreamComponentInst::DoUpdate(ork::ent::Simulation *inst)
 {
 	for( ork::orklut<ork::PoolString, AudioStreamInstItem>::iterator it=mItems.begin(); it!=mItems.end(); it++ )
 	{

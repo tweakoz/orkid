@@ -91,7 +91,7 @@ class SceneEditorBase : public ork::AutoConnector
 
 	//////////////////////////////////////////////////
 
-	void NewSceneInst();
+	void NewSimulation();
 
 public:
 
@@ -118,9 +118,9 @@ public:
 	ent::SceneData*					mpScene;
 
 
-	SceneInst* GetActiveSceneInst() const;
-	SceneInst* GetEditSceneInst() const;
-	SceneInst* GetExecSceneInst() const;
+	Simulation* GetActiveSimulation() const;
+	Simulation* GetEditSimulation() const;
+	Simulation* GetExecSimulation() const;
 	SceneData* GetSceneData() const { return mpScene; }
 
 	///////////////////////////////////////////////
@@ -217,8 +217,8 @@ private:
 	//ork::fvec3					mCursor;
 	ork::fmtx4					mSpawnMatrix;
 
-	SceneInst*						mpExecSceneInst;
-	SceneInst*						mpEditSceneInst;
+	Simulation*						mpExecSimulation;
+	Simulation*						mpEditSimulation;
 
 };
 

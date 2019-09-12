@@ -59,10 +59,10 @@ void BulletObjectArchetype::DoCompose(ork::ent::ArchComposer& composer)
 	composer.Register<BulletObjectControllerData>();
 	composer.Register<ork::ent::ModelComponentData>();
 }
-void BulletObjectArchetype::DoLinkEntity(ork::ent::SceneInst *inst, ork::ent::Entity *pent) const
+void BulletObjectArchetype::DoLinkEntity(ork::ent::Simulation *inst, ork::ent::Entity *pent) const
 {
 }
-void BulletObjectArchetype::DoStartEntity(ork::ent::SceneInst *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const
+void BulletObjectArchetype::DoStartEntity(ork::ent::Simulation *inst, const ork::fmtx4 &world, ork::ent::Entity *pent) const
 {
 }
 
@@ -153,7 +153,7 @@ BulletObjectControllerInst::BulletObjectControllerInst(const BulletObjectControl
 	if( mBOCD._disablePhysics )
 		return;
 
-	pent->GetSceneInst()->findSystem<BulletSystem>();
+	pent->GetSimulation()->findSystem<BulletSystem>();
 
 	const orkmap<PoolString,ork::Object*> forcecontrollers = data.GetForceControllerData();
 
@@ -187,7 +187,7 @@ BulletObjectForceControllerInst* BulletObjectControllerInst::getForceController(
 	return nullptr;
 }
 
-void BulletObjectControllerInst::DoStop(SceneInst* psi)
+void BulletObjectControllerInst::DoStop(Simulation* psi)
 {
 	if( mBOCD._disablePhysics )
 		return;
@@ -204,7 +204,7 @@ void BulletObjectControllerInst::DoStop(SceneInst* psi)
 			}
 	}
 }
-bool BulletObjectControllerInst::DoLink(SceneInst* psi)
+bool BulletObjectControllerInst::DoLink(Simulation* psi)
 {
 	if( mBOCD._disablePhysics )
 		return true;
@@ -271,7 +271,7 @@ bool BulletObjectControllerInst::DoLink(SceneInst* psi)
 	return true;
 }
 
-void BulletObjectControllerInst::DoUpdate(ork::ent::SceneInst* inst)
+void BulletObjectControllerInst::DoUpdate(ork::ent::Simulation* inst)
 {
 	if( mBOCD._disablePhysics )
 		return;
