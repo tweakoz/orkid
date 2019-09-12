@@ -121,10 +121,12 @@ BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
   _terrainShape =
       new btHeightfieldTerrainShape(idimx, idimz,  // w,h
                                     (void *)pdata, // data
-                                    ftoth,
+                                    ftoth, // heightScale
+                                    _heightmap.GetMinHeight(),
+                                    _heightmap.GetMaxHeight(),
                                     1,      // upAxis,
-                                    true,   // usefloat heightDataType,
-                                    false); // flipQuadEdges );
+                                    PHY_FLOAT,   // usefloat heightDataType,
+                                    true); // flipQuadEdges );
 
   _terrainShape->setUseDiamondSubdivision(true);
 
