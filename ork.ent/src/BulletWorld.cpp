@@ -75,7 +75,7 @@ System* BulletSystemData::createSystem(ork::ent::SceneInst* pinst) const { retur
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletSystem::BulletSystem(const BulletSystemData& data, ork::ent::SceneInst* psi)
-    : System(&data, psi), mDynamicsWorld(0), mBtConfig(0), mBroadPhase(0), mDispatcher(0), mSolver(0), mBWCBD(data),
+    : System(&data, psi), mDynamicsWorld(0), mBtConfig(0), mBroadPhase(0), mDispatcher(0), mSolver(0), _systemData(data),
       mMaxSubSteps(128), mNumSubStepsTaken(0), mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f) {
   AllocationLabel("BulletSystem::BulletSystem");
   InitWorld();
@@ -148,7 +148,7 @@ btRigidBody* BulletSystem::AddLocalRigidBody(ork::ent::Entity* pent, btScalar ma
 
   mDynamicsWorld->addRigidBody(body);
 
-  if (mBWCBD.GetGravity().MagSquared() == 0.0f) {
+  if (_systemData.GetGravity().MagSquared() == 0.0f) {
     body->setGravity(btVector3(0.0f, 0.0f, 0.0f));
   }
   return body;
@@ -190,31 +190,51 @@ void BulletSystem::InitWorld() {
   mDynamicsWorld = new btDiscreteDynamicsWorld(mDispatcher, mBroadPhase, mSolver, mBtConfig);
   mDynamicsWorld->getSolverInfo().m_solverMode &= ~SOLVER_RANDMIZE_ORDER;
 
-  mDynamicsWorld->setGravity(!mBWCBD.GetGravity());
+  mDynamicsWorld->setGravity(!_systemData.GetGravity());
   orkprintf("mDynamicsWorld<%p>\n", mDynamicsWorld);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::LinkPhysics(ork::ent::SceneInst* inst, ork::ent::Entity* pent) {
+bool BulletSystem::DoLink(SceneInst* psi) {
+
+  _dbgdrawlayername = AddPooledLiteral("Default");
+
+  _debugDrawable = new ork::ent::CallbackDrawable(nullptr);
+  _debugDrawable->SetSortKey(0x7fffffff);
+  _debugDrawable->SetQueueToLayerCallback(bulletDebugEnqueueToLayer);
+  _debugDrawable->SetRenderCallback(bulletDebugRender);
+  _debugDrawable->SetOwner(&_systemData);
+  _debugDrawable->SetSortKey(0x3fffffff);
+
+  auto pdata = new BulletDebugDrawDBData(this);
+  pdata->_debugger = &_debugger;
+  _debugDrawable->SetUserDataA(pdata);
+  pdata->_drawLayer = psi->GetLayer(_dbgdrawlayername);
+
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void BulletSystem::enqueueDrawables(DrawableBuffer& buffer) {
+
+  if( _debugger._enabled ){
+    auto buflayer = buffer.MergeLayer(_dbgdrawlayername);
+    _debugDrawable->QueueToLayer(_dbgdrawXF,*buflayer);
+  }
+  // do something with _debugDrawable
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void BulletSystem::LinkPhysicsObject(ork::ent::SceneInst* inst, ork::ent::Entity* pent) {
   mDynamicsWorld->setInternalTickCallback(BulletSystemInternalTickCallback, inst);
 
-  auto pdrw = new ork::ent::CallbackDrawable(pent);
-  pdrw->SetOwner(&pent->GetEntData());
-  pdrw->SetSortKey(0x7fffffff);
-  pent->AddDrawable(AddPooledLiteral("Default"), pdrw);
-  pdrw->SetQueueToLayerCallback(bulletDebugEnqueueToLayer);
-  pdrw->SetRenderCallback(bulletDebugRender);
-  pdrw->SetOwner(&pent->GetEntData());
-  pdrw->SetSortKey(0x3fffffff);
-
-  auto pdata = new BulletDebugDrawDBData(this, pent);
-  pdrw->SetUserDataA(pdata);
-
-  pdata->_debugger = &_debugger;
   mDynamicsWorld->setDebugDrawer(&_debugger);
 
-  btVector3 grav = !mBWCBD.GetGravity();
+  btVector3 grav = !_systemData.GetGravity();
   mDynamicsWorld->setGravity(grav);
 }
 
@@ -228,12 +248,14 @@ void BulletSystem::DoUpdate(ork::ent::SceneInst* inst) {
 
     float fps = 1.0f / fdtaccum;
 
-    float fdts = dt * mBWCBD.GetTimeScale();
-    float frate = mBWCBD.GetSimulationRate();
+    float fdts = dt * _systemData.GetTimeScale();
+    float frate = _systemData.GetSimulationRate();
 
     float ffts = 1.0f / frate;
 
-    _debugger.SetDebug(mBWCBD.IsDebug());
+    _debugger.SetDebug(_systemData.IsDebug());
+
+    _debugger.beginSimFrame(this);
 
     if (mMaxSubSteps > 0) {
 
@@ -242,6 +264,8 @@ void BulletSystem::DoUpdate(ork::ent::SceneInst* inst) {
       int m = std::min(a, b); // ? a : b; // ork::min()
       mNumSubStepsTaken += m;
     }
+
+    _debugger.endSimFrame(this);
   }
 }
 

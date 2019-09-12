@@ -943,6 +943,10 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 
   float t0 = ork::OldSchool::GetRef().GetLoResTime();
 
+  ////////////////////////////////////////////////////////////////
+  // per entity drawables
+  ////////////////////////////////////////////////////////////////
+
   for (const auto& it : mEntities) {
     const ork::ent::Entity* pent = it.second;
 
@@ -961,11 +965,9 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
       xfdata.mWorldMatrix = pent->GetEffectiveMatrix();
     }
 
-    // node3d.GetMatrix(xfdata.mWorldMatrix);
-
-    for (Entity::LayerMap::const_iterator itL = entlayers.begin(); itL != entlayers.end(); itL++) {
-      const PoolString& layer_name = itL->first;
-      const ent::Entity::DrawableVector* dv = itL->second;
+    for (auto L : entlayers ) {
+      const PoolString& layer_name = L.first;
+      const ent::Entity::DrawableVector* dv = L.second;
       DrawableBufLayer* buflayer = buffer.MergeLayer(layer_name);
       if (dv && buflayer) {
         size_t inumdv = dv->size();
@@ -979,6 +981,18 @@ void SceneInst::QueueAllDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
       }
     }
   }
+
+  ////////////////////////////////////////////////////////////////
+  // per system drawables
+  ////////////////////////////////////////////////////////////////
+
+  _systems.atomicOp([&](const SystemLut& syslut){
+    for( auto sys : syslut )
+      sys.second->enqueueDrawables(buffer);
+  });
+
+  ////////////////////////////////////////////////////////////////
+
 }
 
 ///////////////////////////////////////////////////////////////////////////

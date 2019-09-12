@@ -30,28 +30,29 @@ using namespace ork::lev2;
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-PhysicsDebugger::PhysicsDebugger()
-  : _mutex("bulletdebuggerlines") {
+PhysicsDebugger::PhysicsDebugger() {
+  //: _mutex("bulletdebuggerlines") {
 
-    for(int i=0; i<4; i++){
-      _lineqpool.push(new lineq_t);
-    }
-
+  for (int i = 0; i < 4; i++) {
+    _lineqpool.push(new lineq_t);
   }
 
-///////////////////////////////////////////////////////////////////////////////
-
-void PhysicsDebugger::Lock() { _mutex.Lock(); }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void PhysicsDebugger::UnLock() { _mutex.UnLock(); }
+  _curreadlq = nullptr;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BulletDebugDrawDBData::BulletDebugDrawDBData(BulletSystem* system, Entity* pent) : mpEntity(pent), _bulletSystem(system), _debugger(0) {
+// void PhysicsDebugger::Lock() { _mutex.Lock(); }
+
+///////////////////////////////////////////////////////////////////////////////
+
+// void PhysicsDebugger::UnLock() { _mutex.UnLock(); }
+
+///////////////////////////////////////////////////////////////////////////////
+
+BulletDebugDrawDBData::BulletDebugDrawDBData(BulletSystem* system)
+    : _bulletSystem(system), _debugger(0) {
   for (int i = 0; i < DrawableBuffer::kmaxbuffers; i++) {
-    mDBRecs[i].mpEntity = pent;
     mDBRecs[i]._bulletSystem = system;
   }
 }
@@ -77,8 +78,12 @@ void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
 
     if (system) {
 
-      dbger->_currentwritelq = nullptr;
-      /*
+      printf("physdbg enq\n");
+
+      prec->_lines = dbger->_curreadlq.exchange(nullptr);
+
+      /*dbger->_currentwritelq = nullptr;
+
       while( false == dbger->_lineqpool.try_pop(dbger->_currentwritelq) ){
         sched_yield();
       }
@@ -88,10 +93,8 @@ void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
       pdata->_debugger->Lock();
       dbger->_currentwritelq->clear();
       system->BulletWorld()->debugDrawWorld();
-      prec->_lines = dbger->_currentwritelq;
       pdata->_debugger->UnLock();
-      dbger->_currentwritelq = nullptr;
-      */
+      dbger->_currentwritelq = nullptr;*/
     }
   }
 }
@@ -101,45 +104,101 @@ void bulletDebugEnqueueToLayer(DrawableBufItem& cdb) {
 void bulletDebugRender(RenderContextInstData& rcid, GfxTarget* targ, const CallbackRenderable* pren) {
   AssertOnOpQ2(MainThreadOpQ());
 
+  if (targ->FBI()->IsPickState())
+    return;
+
   //////////////////////////////////////////
-  auto pyo = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
+  auto drawdata = pren->GetDrawableDataA().Get<BulletDebugDrawDBData*>();
 
-  if (pyo->_debugger->_enabled && pren->GetUserData1().IsA<BulletDebugDrawDBRec*>()) {
-    auto srec = pren->GetUserData1().Get<BulletDebugDrawDBRec*>();
+  auto debugger = drawdata->_debugger;
+
+  if (false == debugger->_enabled)
+    return;
+  //////////////////////////////////////////
+
+  if (auto as_rec = pren->GetUserData1().TryAs<BulletDebugDrawDBRec*>()) {
     //////////////////////////////////////////
-    if (false == targ->FBI()->IsPickState()) {
-      //////////////////////////////////////////
-      const Entity* pent = pyo->mpEntity;
-      const BulletSystem* pbwci = pyo->_bulletSystem;
-      if (0 == pbwci)
-        return;
-      //////////////////////////////////////////
-      const RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-      const ork::CameraData* cdata = framedata->GetCameraData();
 
-      pyo->_debugger->Lock();
-      //pyo->_debugger->render(rcid, targ, srec->_lines);
-      pyo->_debugger->UnLock();
+    const BulletSystem* system = drawdata->_bulletSystem;
 
-      ////////////////////////
-      // done rendering lines, return to pool
-      ////////////////////////
+    printf("physdbg begin render\n");
 
-    //  pyo->_debugger->_lineqpool.push(srec->_lines);
+    //////////////////////////////////////////
+    //const RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
+    //const ork::CameraData* cdata = framedata->GetCameraData();
+    //auto srec = ;
 
-      ////////////////////////
+    // drawdata->_debugger->Lock();
+    debugger->render(rcid, targ, as_rec.value()->_lines);
 
+    auto tmp = debugger->_curreadlq.exchange(as_rec.value()->_lines);
+
+    if( tmp == nullptr ){ //no new one posted yet, just put it back
+      // and since it was a fetch and fetch_and_store
+      //  it is alread back...
     }
+    else { // a new one was posted
+      // put back into the pool
+      debugger->_lineqpool.push(tmp);
+    }
+
+    printf("physdbg end render\n");
+
+    // drawdata->_debugger->UnLock();
+
+    ////////////////////////
+    // done rendering lines, return to pool
+    ////////////////////////
+
+    // drawdata->_debugger->_lineqpool.push(srec->_lines);
+
+    ////////////////////////
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PhysicsDebugger::beginSimFrame(BulletSystem* system) {
+  if (_enabled) {
+
+    _currentwritelq = nullptr;
+
+    bool got_one = _lineqpool.try_pop(_currentwritelq);
+    assert(got_one);
+    assert(_currentwritelq != nullptr);
+    _currentwritelq->clear();
+    printf("checked out _currentwritelq<%p>\n", _currentwritelq);
+  }
+}
+void PhysicsDebugger::endSimFrame(BulletSystem* system) {
+  if (_enabled and _currentwritelq) {
+    //system->BulletWorld()->debugDrawWorld();
+    printf("returning _currentwritelq<%p>\n", _currentwritelq);
+
+    auto prevread = _curreadlq.exchange(_currentwritelq);
+
+    if( prevread ) { //
+      _lineqpool.push(prevread);
+    }
+
+    _currentwritelq = nullptr;
+
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, lineqptr_t lines) {
+
   typedef SVtxV12C4T16 vtx_t;
+
+  if(nullptr == lines)
+    return;
 
   int inumlines = lines->size();
 
+
+  printf( "draw numlines<%d>\n", inumlines );
   const Renderer* prenderer = rcid.GetRenderer();
 
   const ork::CameraData* pcamdata = ptarg->GetRenderContextFrameData()->GetCameraData();
@@ -182,13 +241,16 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
     ptarg->PopModColor();
     ptarg->BindMaterial(0);
   }
+
+  printf( "draw done\n" );
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void PhysicsDebugger::addLine(const fvec3& from, const fvec3& to, const fvec3& color) {
-  assert(_currentwritelq!=nullptr);
-  //_currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
+  if(_currentwritelq!=nullptr);
+    _currentwritelq->push_back(PhysicsDebuggerLine(from, to, color));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -229,7 +291,7 @@ void PhysicsDebugger::setDebugMode(int debugMode) {}
 
 int PhysicsDebugger::getDebugMode() const {
   return _enabled ? (btIDebugDraw::DBG_DrawContactPoints | btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb)
-                 : (btIDebugDraw::DBG_NoDebug);
+                  : (btIDebugDraw::DBG_NoDebug);
 }
 
 } // namespace ork::ent
