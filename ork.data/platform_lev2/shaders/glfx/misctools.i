@@ -122,7 +122,7 @@ libblock lib_terrain {
       /////////////////////////////////
       float invBaseGridTexelDim = 1/(32.0*(8-vtxlod));
       float size = max(0.5, max2(abs(opos * 2.0 * invBaseGridTexelDim)));
-      float llod = max(log2(size) - 0.75, 0.0);
+      float llod = max(log2(size) - 2.75, 0.0);
       float hires_mip = floor(llod);
       float lores_mip = hires_mip+1;
       float lerpindex = (llod - hires_mip);

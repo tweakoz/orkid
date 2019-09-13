@@ -158,7 +158,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     lcam->BindGfxTarget(pTARG);
     FrameData.SetCameraData(lcam);
     _CPD._impl.Set<const CameraData*>(lcam);
-    _CPD._clearColor = fvec4(0, 0, .1, 1);
+    _CPD._clearColor = fvec4(0.61, 0.61, 0.71, 1);
 
     RtGroupRenderTarget rtL(_rtg_left);
     drawdata.mCompositingGroupStack.push(_CPD);
@@ -183,7 +183,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     rcam->BindGfxTarget(pTARG);
     FrameData.SetCameraData(rcam);
     _CPD._impl.Set<const CameraData*>(rcam);
-    _CPD._clearColor = fvec4(0, 0, .1, 1);
+    //_CPD._clearColor = fvec4(0, 0, .1, 1);
 
     drawdata.mCompositingGroupStack.push(_CPD);
     {
@@ -461,7 +461,7 @@ struct VRSYSTEMIMPL {
     fvec3 vvtrans = VVMTX.GetTranslation();
 
     fmtx4 wmtx;
-    wmtx.SetTranslation(vvtrans + fvec3(0, 0, 0));
+    wmtx.SetTranslation(vvtrans + fvec3(0, 1, 0));
     wmtx = _headingmatrix * wmtx;
 
     VVMTX.inverseOf(wmtx);
