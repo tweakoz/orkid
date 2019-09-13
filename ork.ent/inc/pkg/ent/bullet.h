@@ -392,7 +392,10 @@ public:
 
   void SetHeightMapName(file::Path const& lmap);
   void GetHeightMapName(file::Path& lmap) const;
+  void SetVizHeightMapName(file::Path const& lmap);
+  void GetVizHeightMapName(file::Path& lmap) const;
 
+  const file::Path& VizHeightMapPath() const { return mVizHeightMapName; }
   const file::Path& HeightMapPath() const { return mHeightMapName; }
   float WorldHeight() const { return mWorldHeight; }
   float WorldSize() const { return mWorldSize; }
@@ -407,6 +410,7 @@ private:
   bool PostDeserialize(reflect::IDeserializer&) final;
 
   file::Path mHeightMapName;
+  file::Path mVizHeightMapName;
   float mWorldHeight;
   float mWorldSize;
   fvec3 mVisualOffset;
