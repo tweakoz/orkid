@@ -9,7 +9,7 @@
 // Grpahics Environment (Driver/HAL)
 ///////////////////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,7 +25,7 @@
 #include <functional>
 
 namespace ork {
-	
+
 struct Frustum;
 class CameraData;
 class CPlacedGlyph;
@@ -66,6 +66,8 @@ class IRenderable : public ork::Object
 	RttiDeclareAbstract(IRenderable,ork::Object);
 public:
 
+	typedef svar16_t var_t;
+
 	IRenderable();
 
 	virtual void Render( const Renderer *renderer ) const = 0;
@@ -77,7 +79,7 @@ public:
 	/// Typically, a Renderable will use the IRenderer::ComposeSortKey() function as a helper when composing
 	/// its sort key.
 	virtual U32 ComposeSortKey( const Renderer *renderer ) const { return 0; }
-	
+
 	static const int kManipRenderableSortKey = 0x7fffffff;
 	static const int kLastRenderableSortKey = 0x7ffffffe;
 	static const int kFirstRenderableSortKey = 0;
@@ -97,25 +99,25 @@ public:
 
 	void SetObject( const ork::Object* o ) { mpObject = o; }
 	const ork::Object* GetObject() const { return mpObject; }
-		
+
 	inline const fcolor4& GetModColor() const { return mModColor; }
 	inline void SetModColor(const fcolor4& Color) { mModColor = Color; }
 
 	void SetMatrix( const fmtx4& mtx ) { mMatrix=mtx; }
 	const fmtx4& GetMatrix() const { return mMatrix; }
 
-	void SetDrawableDataA( const anyp& ap ) { mDrwDataA=ap; }
-	const anyp& GetDrawableDataA() const { return mDrwDataA; }
-	void SetDrawableDataB( const anyp& ap ) { mDrwDataB=ap; }
-	const anyp& GetDrawableDataB() const { return mDrwDataB; }
+	void SetDrawableDataA( const var_t& ap ) { mDrwDataA=ap; }
+	const var_t& GetDrawableDataA() const { return mDrwDataA; }
+	void SetDrawableDataB( const var_t& ap ) { mDrwDataB=ap; }
+	const var_t& GetDrawableDataB() const { return mDrwDataB; }
 
 protected:
 
 	fmtx4						mMatrix;
 	const ork::Object*				mpObject;
 	fcolor4							mModColor;
-	anyp							mDrwDataA;
-	anyp							mDrwDataB;
+	var_t							mDrwDataA;
+	var_t							mDrwDataB;
 
 };
 
@@ -133,7 +135,7 @@ public: //
 	}
 
 	int					GetPass( void ) const { return miPass; }
-	
+
 	void				SetPass( int ipass ) { miPass=ipass; }
 	void				SetBox( const fvec4 & box ) { mBox=box; }
 	void				SetColor( const fcolor4 & clr ) { mColor=clr; }
@@ -149,7 +151,7 @@ public: //
 private:
 
 	int						miPass;
-	
+
 	fvec4				mBox;
 	fcolor4					mColor;
 	U32						mDefSortKey;
@@ -168,11 +170,11 @@ public: //
 		, mpMaterial( 0 )
 	{
 	}
-	
+
 	void				SetSize( float sz ) { mSize=sz; }
 	float				GetSize( void ) const { return mSize; }
-	void				SetMaterial( const GfxMaterial *pmat ) { mpMaterial=pmat; } 
-	const GfxMaterial*	GetMaterial( void ) const { return mpMaterial; } 
+	void				SetMaterial( const GfxMaterial *pmat ) { mpMaterial=pmat; }
+	const GfxMaterial*	GetMaterial( void ) const { return mpMaterial; }
 
 
 	void Render( const Renderer *renderer ) const final;
@@ -195,7 +197,7 @@ public:
 	static const int kMaxEngineParamFloats = ork::lev2::RenderContextInstData::kMaxEngineParamFloats;
 
 	ModelRenderable(Renderer *renderer = NULL);
-	
+
 	inline void SetMaterialIndex( int idx ) { mMaterialIndex=idx; }
 	inline void SetMaterialPassIndex( int idx ) { mMaterialPassIndex=idx; }
 	inline void SetModelInst(const lev2::XgmModelInst* modelInst) { mModelInst = modelInst; }
@@ -214,7 +216,7 @@ public:
 	inline const lev2::XgmSubMesh* GetSubMesh( void ) const { return mSubMesh; }
 	inline const lev2::XgmCluster* GetCluster( void ) const { return mCluster; }
 	inline const lev2::XgmMesh* GetMesh( void ) const { return mMesh; }
-		
+
 	void SetSortKey( U32 skey ) { mSortKey=skey; }
 
 	void AddLight( Light* plight ) { mLightMask.AddLight(plight); }
@@ -267,13 +269,13 @@ public:
 	typedef std::function< void( lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const CallbackRenderable* pren ) > cbtype_t;
 
 	CallbackRenderable(Renderer *renderer = NULL);
-	
+
 	void SetSortKey( U32 skey ) { mSortKey=skey; }
 
-	void SetUserData0( anyp pdata ) { mUserData0=pdata; }
-	const anyp& GetUserData0() const { return mUserData0; }
-	void SetUserData1( anyp pdata ) { mUserData1=pdata; }
-	const anyp& GetUserData1() const { return mUserData1; }
+	void SetUserData0( var_t pdata ) { mUserData0=pdata; }
+	const var_t& GetUserData0() const { return mUserData0; }
+	void SetUserData1( var_t pdata ) { mUserData1=pdata; }
+	const var_t& GetUserData1() const { return mUserData1; }
 
 	void SetRenderCallback( cbtype_t cb ) { mRenderCallback=cb; }
 	cbtype_t GetRenderCallback() const { return mRenderCallback; }
@@ -281,13 +283,13 @@ public:
 private:
 
     void Render( const Renderer *renderer ) const final;
-    U32 ComposeSortKey( const Renderer *renderer ) const final { return mSortKey; }   
+    U32 ComposeSortKey( const Renderer *renderer ) const final { return mSortKey; }
 
 	U32								mSortKey;
 	int								mMaterialIndex;
 	int								mMaterialPassIndex;
-	anyp							mUserData0;	
-	anyp							mUserData1;	
+	var_t							mUserData0;
+	var_t							mUserData1;
 	cbtype_t						mRenderCallback;
 };
 
@@ -299,12 +301,12 @@ public:
 
 	static void ClassInit() {}
 
-	FrustumRenderable() 
+	FrustumRenderable()
 		: IRenderableDag()
 		, mObjSpace( false )
 	{
 	}
-	
+
 	const Frustum&		GetFrustum() const { return mFrustum; }
 	const fcolor4&		GetColor() const { return mColor; }
 
@@ -359,4 +361,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 
 }}
-

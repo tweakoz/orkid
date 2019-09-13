@@ -10,6 +10,7 @@
 #include <ork/application/application.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/rtti/downcast.h>
+#include "scene.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 

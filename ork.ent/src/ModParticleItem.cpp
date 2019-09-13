@@ -164,7 +164,7 @@ struct ModItemRenderData
 
 		ModItemBufferDataDB& db = mibd.GetDB(ibufindex);
 		{
-			cdb.mUserData1 = anyp( & db );
+			cdb.mUserData1 = ent::DrawableBufItem::var_t( & db );
 			ModularSystem& System = *pmird->mpSystem;
 			db.mfTimeElapsed = System.GetElapsed();
 
@@ -435,7 +435,7 @@ void ModularSystem::DoLinkSystem( ork::ent::Simulation* psi, ork::ent::Entity* p
 
 			mird->mMIBD.mpDrawable = pdrw;
 
-			anyp ap;
+			ent::Drawable::var_t ap;
 			ap.Set(mird);
 			pdrw->SetUserDataA(ap);
 			///////////////////////////////////////////////////////////

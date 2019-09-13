@@ -191,7 +191,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
     pyo->parch = this;
     pyo->pent = pent;
 
-    anyp ap;
+    Drawable::var_t ap;
     ap.Set<const yo*>( pyo );
     pdrw->SetUserDataA( ap );
 #endif

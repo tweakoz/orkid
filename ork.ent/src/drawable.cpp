@@ -348,7 +348,7 @@ void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst)
 	{
 		mpWorldPose = new ork::lev2::XgmWorldPose( Model->RefSkel(), mModelInst->RefLocalPose() );
 	}
-	anyp ap;
+	Drawable::var_t ap;
 	ap.Set( mpWorldPose );
 	SetUserDataA(ap);
 }

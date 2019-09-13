@@ -6,19 +6,18 @@
 #include <ork/math/cvector4.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork {
-namespace ent {
+namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef orkvector<lev2::CVtxBuffer<lev2::SVtxV12C4T16> *> TerVtxBuffersType;
+typedef orkvector<lev2::CVtxBuffer<lev2::SVtxV12C4T16>*> TerVtxBuffersType;
 
 struct HeightMap {
   HeightMap(int isx, int isz);
   ~HeightMap();
 
-  bool Load(const ork::file::Path &pth);
+  bool Load(const ork::file::Path& pth);
 
-  mutex &GetLock() { return mMutex; }
+  mutex& GetLock() { return mMutex; }
 
   void SetGridSize(int iw, int ih);
   void SetWorldSize(float fwsize, float fhsize) {
@@ -27,9 +26,7 @@ struct HeightMap {
   }
 
   void SetWorldHeight(float fh) { mWorldHeight = fh; }
-  inline int CalcAddress(int ix, int iz) const {
-    return (miGridSizeX * iz) + ix;
-  }
+  inline int CalcAddress(int ix, int iz) const { return (miGridSizeX * iz) + ix; }
   float GetMaxHeight() const { return mMax; }
   float GetMinHeight() const { return mMin; }
   float GetHeightRange() const { return mRange; }
@@ -42,20 +39,19 @@ struct HeightMap {
 
   float GetWorldHeight() const { return mWorldHeight; }
 
-  bool CalcClosestAddress(const fvec3 &to, float &outx, float &outz) const;
+  bool CalcClosestAddress(const fvec3& to, float& outx, float& outz) const;
 
   float GetHeight(int ix, int iz) const;
   void SetHeight(int ix, int iz, float fh);
 
-  const float *GetHeightData() const { return mHeightData.data(); }
+  const float* GetHeightData() const { return mHeightData.data(); }
 
   fvec3 Min() const;
   fvec3 Max() const;
   fvec3 Range() const;
   fvec3 XYZ(int iX, int iZ) const;
   fvec3 ComputeNormal(int iX, int iZ) const;
-  void ReadSurface(bool bfilter, const fvec3 &xyz, fvec3 &pos,
-                   fvec3 &nrm) const;
+  void ReadSurface(bool bfilter, const fvec3& xyz, fvec3& pos, fvec3& nrm) const;
 
   /////////////////////////////////////////////
 
@@ -79,18 +75,16 @@ struct HeightMap {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct GradientSet {
-  const orkmap<float, fvec4> *mGradientLo;
-  const orkmap<float, fvec4> *mGradientHi;
+  const orkmap<float, fvec4>* mGradientLo;
+  const orkmap<float, fvec4>* mGradientHi;
   float mHeightLo;
   float mHeightHi;
 
-  GradientSet()
-      : mGradientLo(0), mGradientHi(0), mHeightLo(0.0f), mHeightHi(0.0f) {}
+  GradientSet() : mGradientLo(0), mGradientHi(0), mHeightLo(0.0f), mHeightHi(0.0f) {}
 
   fvec4 Lerp(float fu, float fv) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace ent
-} // namespace ork
+} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////

@@ -17,7 +17,7 @@
 //     If you attempt to retrieve typed data that does not match
 //     what is currenty contained, you will get an assert.
 //  You can safely query if what you think is contained actually is.
-//	Upon destruction, or resetting of the variant, 
+//	Upon destruction, or resetting of the variant,
 //	   the contained object's destructor will be called to reclaim
 //	   any resources which might have been allocated by that object.
 //
@@ -32,6 +32,7 @@
 #include <typeinfo>
 #include <type_traits>
 #include <new>
+#include <memory>
 
 #include <ork/kernel/atomic.h>
 #include <ork/orkstd.h>
@@ -111,7 +112,7 @@ public:
 	{
 		mDestroyer=nullptr;
 		mCopier=nullptr;
-       	
+
 		auto c = oth.mCopier.load();
 		if( c )
 			c( *this, oth );
@@ -133,7 +134,7 @@ public:
 		static_assert(sizeof(T)<=ksize, "static_variant size violation");
 		memset(mbuffer,0,ksize);
 		T* pval = (T*) & mbuffer[0];
-		new (pval) T(value); 
+		new (pval) T(value);
 
 		AssignDestroyer<T>();
 		AssignCopier<T>();
@@ -150,7 +151,7 @@ public:
 	//////////////////////////////////////////////////////////////
 	// call the destroyer on contained object
 	//////////////////////////////////////////////////////////////
-	void Destroy() 
+	void Destroy()
 	{
 		destroyer_t pdestr = mDestroyer.exchange(nullptr);
 		if( pdestr ) pdestr( *this );
@@ -185,7 +186,7 @@ public:
 		static_assert(sizeof(T)<=ksize, "static_variant size violation");
 		Destroy();
 		T* pval = (T*) & mbuffer[0];
-		new (pval) T(value); 
+		new (pval) T(value);
 		mtinfo = & typeid( T );
 		AssignDestroyer<T>();
 		AssignCopier<T>();
@@ -211,34 +212,52 @@ public:
 		return *pval;
 	}
     //////////////////////////////////////////////////////////////
-    // make a T and return by reference
+    // construct a T and return by reference
     //////////////////////////////////////////////////////////////
     template <typename T, typename... A> T& Make(A&&... args)
     {
         static_assert(sizeof(T)<=ksize, "static_variant size violation");
         Destroy();
-        T* pval = (T*) & mbuffer[0];
-        new (pval) T(std::forward<A>(args)...); 
+        auto pval = (T*) & mbuffer[0];
+        new (pval) T(std::forward<A>(args)...);
         mtinfo = & typeid( T );
         AssignDestroyer<T>();
         AssignCopier<T>();
         assert( typeid(T) == *mtinfo );
         return *pval;
     }
+		//////////////////////////////////////////////////////////////
+    // construct and return a reference to a shared_ptr<T>
     //////////////////////////////////////////////////////////////
-    // 
+    template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args)
+    {
+				typedef std::shared_ptr<T> sharedptr_t;
+
+        static_assert(sizeof(sharedptr_t)<=ksize, "static_variant size violation");
+        Destroy();
+        auto pval = (sharedptr_t*) & mbuffer[0];
+				new (pval) sharedptr_t;
+        (*pval) = std::make_shared<T>(std::forward<A>(args)...);
+        mtinfo = & typeid( sharedptr_t );
+        AssignDestroyer<sharedptr_t>();
+        AssignCopier<sharedptr_t>();
+        assert( typeid(sharedptr_t) == *mtinfo );
+        return (*pval);
+    }
+    //////////////////////////////////////////////////////////////
+    //
     //////////////////////////////////////////////////////////////
     template <typename T> attempt_cast<T> TryAs()
-    {   
+    {
         static_assert(sizeof(T)<=ksize, "static_variant size violation");
         bool type_ok = ( typeid(T) == *mtinfo );
         return attempt_cast<T>((T*) (type_ok ? & mbuffer[0] : nullptr));
     }
     //////////////////////////////////////////////////////////////
-    // 
+    //
     //////////////////////////////////////////////////////////////
     template <typename T> attempt_cast_const<T> TryAs() const
-    {   
+    {
         static_assert(sizeof(T)<=ksize, "static_variant size violation");
         bool type_ok = ( typeid(T) == *mtinfo );
         return attempt_cast_const<T>((const T*) (type_ok ? & mbuffer[0] : nullptr)) ;
@@ -247,7 +266,7 @@ public:
 	// return true if the variant is capable of containing an object of type T
 	//////////////////////////////////////////////////////////////
 	template <typename T> static bool IsTypeOk()
-	{	
+	{
 		int isize = sizeof(T);
 		bool rval = (isize<=ksize);
 		return rval;
@@ -264,7 +283,7 @@ public:
 	// return true if the variant has been set to something
 	//////////////////////////////////////////////////////////////
 	bool IsSet() const { return (mtinfo!=0); }
-	
+
 	//////////////////////////////////////////////////////////////
 private:
 	char					 mbuffer[ksize];

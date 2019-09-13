@@ -236,7 +236,7 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity *pent) 
 	pyo->pent = pent;
 	pyo->psi = inst;
 
-	anyp ap;
+	Drawable::var_t ap;
 	ap.Set<const yo*>( pyo );
 	pdrw->SetUserDataA( ap );
 #endif

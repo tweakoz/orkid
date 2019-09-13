@@ -255,7 +255,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
   pdrw->SetRenderCallback(l_render_quad);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0);
-  anyp ap;
+  Drawable::var_t ap;
   ap.Set<const ProcTexOutputQuad*>(this);
   pdrw->SetUserDataA(ap);
   pdrw->SetUserDataB(ssci);
@@ -337,7 +337,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
   pdrw->SetRenderCallback(l_render_skybox);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0);
-  anyp ap;
+  Drawable::var_t ap;
   ap.Set<ProcTexOutputSkybox*>(this);
   pdrw->SetUserDataA(ap);
   pdrw->SetUserDataB(ssci);
@@ -445,7 +445,7 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
   pdrw->SetRenderCallback(l_compute);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0);
-  anyp ap;
+  Drawable::var_t ap;
   ap.Set<ProcTexOutputDynTex*>(this);
   pdrw->SetUserDataA(ap);
   pdrw->SetUserDataB(ssci);

@@ -460,7 +460,7 @@ static void ManipRenderCallback(ork::lev2::RenderContextInstData& rcid, ork::lev
 
 void ManipManager::Queue(ork::lev2::Renderer* prend) {
   if (mpCurrentInterface && mpCurrentObject) {
-    anyp ap;
+    CallbackRenderable::var_t ap;
     ap.Set<ManipManager*>(this);
 
     CallbackRenderable& rable = prend->QueueCallback();
