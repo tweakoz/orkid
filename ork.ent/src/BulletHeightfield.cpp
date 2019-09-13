@@ -52,18 +52,50 @@ struct Patch {
   int _x, _z;
 };
 
-struct PatchCount {
-  int lod0 = 0;
-  int othl = 0;
-};
-
-struct SectorInfo {
-  PatchCount _patchcount;
+struct SectorLodInfo {
   std::vector<Patch> _patches;
   size_t triangle_count = 0;
   size_t vertex_count = 0;
   VtxWriter<vertex_type> vwriter;
   TerVtxBuffersType* _vtxbuflist;
+
+  size_t countTriangles(){
+    triangle_count = 0;
+    for (auto p : _patches) {
+
+      // printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
+      switch (p._type) {
+        case PT_A: //
+          triangle_count += 8;
+          break;
+        case PT_BT:
+        case PT_BL:
+        case PT_BB:
+        case PT_BR:
+          triangle_count += 5;
+          break;
+        case PT_C:
+          triangle_count += 4;
+          break;
+      }
+    }
+    return triangle_count;
+  }
+  void createVB(){
+      vertex_count = _patches.size() * 6;
+      _vtxbuflist = new TerVtxBuffersType;
+      auto vbuf = new StaticVertexBuffer<vertex_type>(vertex_count, 0, EPRIM_POINTS);
+      vbuf->Reset();
+      _vtxbuflist->push_back(vbuf);
+
+      printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
+      printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
+  }
+};
+
+struct SectorInfo {
+  SectorLodInfo _lod0;
+  SectorLodInfo _lodX;
 };
 
 struct BulletHeightfieldImpl {
@@ -446,7 +478,10 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
       p._x = x;
       p._z = z;
       p._lod = lod;
-      _sector[sectorID(x, z)]._patches.push_back(p);
+      if( lod == 0)
+        _sector[sectorID(x, z)]._lod0._patches.push_back(p);
+      else
+        _sector[sectorID(x, z)]._lodX._patches.push_back(p);
     }
   };
 
@@ -460,7 +495,10 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
       p._x = x;
       p._z = z;
       p._lod = lod;
-      _sector[sectorID(x, z)]._patches.push_back(p);
+      if( lod == 0)
+        _sector[sectorID(x, z)]._lod0._patches.push_back(p);
+      else
+        _sector[sectorID(x, z)]._lodX._patches.push_back(p);
     }
   };
 
@@ -481,7 +519,10 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
         p._x = x;
         p._z = z;
         p._lod = lod;
-        _sector[sectorID(x, z)]._patches.push_back(p);
+        if( lod == 0)
+          _sector[sectorID(x, z)]._lod0._patches.push_back(p);
+        else
+          _sector[sectorID(x, z)]._lodX._patches.push_back(p);
       }
     }
   };
@@ -494,7 +535,10 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
     p._x = x;
     p._z = z;
     p._lod = lod;
-    _sector[sectorID(x, z)]._patches.push_back(p);
+    if( lod == 0)
+      _sector[sectorID(x, z)]._lod0._patches.push_back(p);
+    else
+      _sector[sectorID(x, z)]._lodX._patches.push_back(p);
   };
 
   ////////////////////////////////////////////
@@ -567,45 +611,16 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
     iprevouterd2 = newouterd2;
   }
 
-
-  for (int i = 0; i < 8; i++) {
-    auto& sector = _sector[i];
-    auto& sector_patches = sector._patches;
-    for (auto p : sector_patches) {
-
-      // printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
-      switch (p._type) {
-        case PT_A: //
-          sector.triangle_count += 8;
-          break;
-        case PT_BT:
-        case PT_BL:
-        case PT_BB:
-        case PT_BR:
-          sector.triangle_count += 5;
-          break;
-        case PT_C:
-          sector.triangle_count += 4;
-          break;
-      }
-    }
-  }
-
   ////////////////////////////////////////////////////////////////
   // create 1 vertex buffer per 45 degree arc
   ////////////////////////////////////////////////////////////////
 
   for (int i = 0; i < 8; i++) {
     auto& sector = _sector[i];
-    auto& sector_patches = sector._patches;
-    sector.vertex_count = sector_patches.size() * 6;
-    sector._vtxbuflist = new TerVtxBuffersType;
-    auto vbuf = new StaticVertexBuffer<vertex_type>(sector.vertex_count, 0, EPRIM_POINTS);
-    vbuf->Reset();
-    sector._vtxbuflist->push_back(vbuf);
-
-    printf("sector<%d> triangle_count<%zu>\n", i, sector.triangle_count);
-    printf("sector<%d> vertex_count<%zu>\n", i, sector.vertex_count);
+    sector._lod0.countTriangles();
+    sector._lodX.countTriangles();
+    sector._lod0.createVB();
+    sector._lodX.createVB();
   }
 
   ////////////////////////////////////////////
@@ -616,13 +631,13 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
   aab.BeginGrow();
 
   ////////////////////////////////////////////
-  for (int i = 0; i < 8; i++) {
-    auto& sector = _sector[i];
-    auto vbuf = (*sector._vtxbuflist)[0];
-    sector.vwriter.Lock(ptarg, vbuf, sector.vertex_count);
+
+  auto onlod = [&](SectorLodInfo& linfo){
+    auto vbuf = (*linfo._vtxbuflist)[0];
+    linfo.vwriter.Lock(ptarg, vbuf, linfo.vertex_count);
     ////////////////////////////////////////////
-    sector.triangle_count = 0;
-    auto& sector_patches = sector._patches;
+    linfo.triangle_count = 0;
+    auto& sector_patches = linfo._patches;
     for (auto p : sector_patches) {
       int x = p._x;
       int z = p._z;
@@ -646,7 +661,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
 
       switch (p._type) {
         case PT_A: //
-          sector.triangle_count += 8;
+          linfo.triangle_count += 8;
           c0 = 0xff0000ff;
           break;
         case PT_BT:
@@ -676,31 +691,38 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
 
       switch (p._type) {
         case PT_A: //
-          sector.triangle_count += 2;
-          sector.vwriter.AddVertex(v0);
-          sector.vwriter.AddVertex(v1);
-          sector.vwriter.AddVertex(v2);
-          sector.vwriter.AddVertex(v0);
-          sector.vwriter.AddVertex(v2);
-          sector.vwriter.AddVertex(v3);
+          linfo.triangle_count += 2;
+          linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(v1);
+          linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(v0);
+          linfo.vwriter.AddVertex(v2);
+          linfo.vwriter.AddVertex(v3);
           break;
         case PT_BT:
         case PT_BB:
-          sector.triangle_count += 5;
+          linfo.triangle_count += 5;
           break;
         case PT_BR:
-          sector.triangle_count += 5;
+          linfo.triangle_count += 5;
           break;
         case PT_BL:
           break;
         case PT_C:
-          sector.triangle_count += 4;
+          linfo.triangle_count += 4;
           break;
       }
     }
     ////////////////////////////////////////////
-    sector.vwriter.UnLock(ptarg);
-    ////////////////////////////////////////////
+    linfo.vwriter.UnLock(ptarg);
+
+  };
+
+  ////////////////////////////////////////////
+  for (int i = 0; i < 8; i++) {
+    auto& sector = _sector[i];
+    onlod(sector._lod0);
+    onlod(sector._lodX);
   } // for each sector
   aab.EndGrow();
   auto geomin = aab.Min();
@@ -795,10 +817,26 @@ void FastRender(const RenderContextInstData& rcidata, BulletHeightfieldImpl* htr
         if (bDRAW) {
 
           if( true ) { //abs(znormal.y) > 0.8 ){ // looking up or down
-            // so draw all sectors
+            ////////////////////////////////
+            // render L0
+            ////////////////////////////////
             for (int isector = 0; isector < 8; isector++) {
               auto& sector = htri->_sector[isector];
-              auto vbufs = sector._vtxbuflist;
+              auto L0 = sector._lod0;
+              auto vbufs = L0._vtxbuflist;
+              int inumvb = vbufs->size();
+              for (int ivb = 0; ivb < inumvb; ivb++) {
+                auto vertex_buf = (*vbufs)[ivb];
+                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+              }
+            }
+            ////////////////////////////////
+            // render LX
+            ////////////////////////////////
+            for (int isector = 0; isector < 8; isector++) {
+              auto& sector = htri->_sector[isector];
+              auto LX = sector._lodX;
+              auto vbufs = LX._vtxbuflist;
               int inumvb = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
@@ -806,6 +844,7 @@ void FastRender(const RenderContextInstData& rcidata, BulletHeightfieldImpl* htr
               }
             }
           }
+          /*
           else { // sector based culling (WIP)
             // todo - split sectors up by lod
             //  always draw lod0 for all sectors..
@@ -823,7 +862,7 @@ void FastRender(const RenderContextInstData& rcidata, BulletHeightfieldImpl* htr
                 ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
               }
             }
-          }
+          }*/
           htri->mTerrainMtl->EndPass(ptarg);
           htri->mTerrainMtl->EndBlock(ptarg);
         }
