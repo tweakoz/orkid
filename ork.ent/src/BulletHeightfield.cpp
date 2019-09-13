@@ -378,7 +378,22 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
     int _x, _z;
   };
 
-  int patch_counts[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  struct PatchCount {
+    int lod0 = 0;
+    int othl = 0;
+  };
+
+  typedef SVtxV12C4T16 vertex_type;
+
+  struct SectorInfo {
+    PatchCount _patchcount;
+    std::vector<Patch> _patches;
+    size_t triangle_count = 0;
+    size_t vertex_count = 0;
+    VtxWriter<vertex_type> vwriter;
+  };
+
+  SectorInfo _sector[8];
 
   auto sectorID = [&](int x, int z) -> int {
     int rval = 0;
@@ -424,8 +439,6 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
 
   ////////////////////////////////////////////
 
-  std::vector<Patch> _patches[8];
-
   auto patch_row = [&](PatchType t, int lod, int x1, int x2, int z) {
     int step = 1 << lod;
     for (int x = x1; x < x2; x += step) {
@@ -434,8 +447,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
       p._x = x;
       p._z = z;
       p._lod = lod;
-      int sector = sectorID(x, z);
-      _patches[sector].push_back(p);
+      _sector[sectorID(x, z)]._patches.push_back(p);
     }
   };
 
@@ -449,8 +461,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
       p._x = x;
       p._z = z;
       p._lod = lod;
-      int sector = sectorID(x, z);
-      _patches[sector].push_back(p);
+      _sector[sectorID(x, z)]._patches.push_back(p);
     }
   };
 
@@ -471,8 +482,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
         p._x = x;
         p._z = z;
         p._lod = lod;
-        int sector = sectorID(x, z);
-        _patches[sector].push_back(p);
+        _sector[sectorID(x, z)]._patches.push_back(p);
       }
     }
   };
@@ -485,8 +495,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
     p._x = x;
     p._z = z;
     p._lod = lod;
-    int sector = sectorID(x, z);
-    _patches[sector].push_back(p);
+    _sector[sectorID(x, z)]._patches.push_back(p);
   };
 
   ////////////////////////////////////////////
@@ -559,26 +568,25 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
     iprevouterd2 = newouterd2;
   }
 
-  size_t triangle_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-  size_t vertex_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
   for (int i = 0; i < 8; i++) {
-    auto& sector_patches = _patches[i];
+    auto& sector = _sector[i];
+    auto& sector_patches = sector._patches;
     for (auto p : sector_patches) {
 
       // printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
       switch (p._type) {
         case PT_A: //
-          triangle_count[i] += 8;
+          sector.triangle_count += 8;
           break;
         case PT_BT:
         case PT_BL:
         case PT_BB:
         case PT_BR:
-          triangle_count[i] += 5;
+          sector.triangle_count += 5;
           break;
         case PT_C:
-          triangle_count[i] += 4;
+          sector.triangle_count += 4;
           break;
       }
     }
@@ -587,18 +595,18 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
   ////////////////////////////////////////////////////////////////
   // create 1 vertex buffer per 45 degree arc
   ////////////////////////////////////////////////////////////////
-  typedef SVtxV12C4T16 vertex_type;
 
   for (int i = 0; i < 8; i++) {
-    auto& sector_patches = _patches[i];
-    vertex_count[i] = sector_patches.size() * 6;
+    auto& sector = _sector[i];
+    auto& sector_patches = sector._patches;
+    sector.vertex_count = sector_patches.size() * 6;
     _vtxbufs[i] = new TerVtxBuffersType;
-    auto vbuf = new StaticVertexBuffer<vertex_type>(vertex_count[i], 0, EPRIM_POINTS);
+    auto vbuf = new StaticVertexBuffer<vertex_type>(sector.vertex_count, 0, EPRIM_POINTS);
     vbuf->Reset();
     _vtxbufs[i]->push_back(vbuf);
 
-    printf("sector<%d> triangle_count<%zu>\n", i, triangle_count[i]);
-    printf("sector<%d> vertex_count<%zu>\n", i, vertex_count[i]);
+    printf("sector<%d> triangle_count<%zu>\n", i, sector.triangle_count);
+    printf("sector<%d> vertex_count<%zu>\n", i, sector.vertex_count);
   }
 
   assert(false);
@@ -611,13 +619,13 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
   aab.BeginGrow();
 
   ////////////////////////////////////////////
-  VtxWriter<vertex_type> vwriter[8];
   for (int i = 0; i < 8; i++) {
+    auto& sector = _sector[i];
     auto vbuf = (*_vtxbufs[i])[0];
-    vwriter[i].Lock(ptarg, vbuf, vertex_count[i]);
+    sector.vwriter.Lock(ptarg, vbuf, sector.vertex_count);
     ////////////////////////////////////////////
-    triangle_count[i] = 0;
-    auto& sector_patches = _patches[i];
+    sector.triangle_count = 0;
+    auto& sector_patches = sector._patches;
     for (auto p : sector_patches) {
       int x = p._x;
       int z = p._z;
@@ -641,7 +649,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
 
       switch (p._type) {
         case PT_A: //
-          triangle_count[i] += 8;
+          sector.triangle_count += 8;
           c0 = 0xff0000ff;
           break;
         case PT_BT:
@@ -671,32 +679,32 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
 
       switch (p._type) {
         case PT_A: //
-          triangle_count[i] += 2;
-          vwriter[i].AddVertex(v0);
-          vwriter[i].AddVertex(v1);
-          vwriter[i].AddVertex(v2);
-          vwriter[i].AddVertex(v0);
-          vwriter[i].AddVertex(v2);
-          vwriter[i].AddVertex(v3);
+          sector.triangle_count += 2;
+          sector.vwriter.AddVertex(v0);
+          sector.vwriter.AddVertex(v1);
+          sector.vwriter.AddVertex(v2);
+          sector.vwriter.AddVertex(v0);
+          sector.vwriter.AddVertex(v2);
+          sector.vwriter.AddVertex(v3);
           break;
         case PT_BT:
         case PT_BB:
-          triangle_count[i] += 5;
+          sector.triangle_count += 5;
           break;
         case PT_BR:
-          triangle_count[i] += 5;
+          sector.triangle_count += 5;
           break;
         case PT_BL:
           break;
         case PT_C:
-          triangle_count[i] += 4;
+          sector.triangle_count += 4;
           break;
       }
     }
     ////////////////////////////////////////////
-    vwriter[i].UnLock(ptarg);
+    sector.vwriter.UnLock(ptarg);
     ////////////////////////////////////////////
-  }
+  } // for each sector
   aab.EndGrow();
   auto geomin = aab.Min();
   auto geomax = aab.Max();
