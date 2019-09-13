@@ -15,27 +15,29 @@
 
 namespace ork { namespace lev2 {
 
+////////////////////////////////////////////////////////////////////////////////
+
 enum ERawTriggerNames {
   ETRIG_RAW_DISCONNECT = -1,
-  ETRIG_RAW_BEGIN = 0,
+  ETRIG_RAW_BEGIN      = 0,
 
   ///////////////////////////////
   // Raw Values
 
-  ETRIG_RAW_ALPHA_A = 'A',
-  ETRIG_RAW_ALPHA_B = 'B',
-  ETRIG_RAW_ALPHA_C = 'C',
-  ETRIG_RAW_ALPHA_D = 'D',
-  ETRIG_RAW_ALPHA_E = 'E',
-  ETRIG_RAW_ALPHA_S = 'S',
-  ETRIG_RAW_ALPHA_W = 'W',
-  ETRIG_RAW_ALPHA_Z = 'Z',
+  ETRIG_RAW_ALPHA_A  = 'A',
+  ETRIG_RAW_ALPHA_B  = 'B',
+  ETRIG_RAW_ALPHA_C  = 'C',
+  ETRIG_RAW_ALPHA_D  = 'D',
+  ETRIG_RAW_ALPHA_E  = 'E',
+  ETRIG_RAW_ALPHA_S  = 'S',
+  ETRIG_RAW_ALPHA_W  = 'W',
+  ETRIG_RAW_ALPHA_Z  = 'Z',
   ETRIG_RAW_NUMBER_0 = '0',
   ETRIG_RAW_NUMBER_1 = '1',
   ETRIG_RAW_NUMBER_2 = '2',
   ETRIG_RAW_NUMBER_9 = '9',
 
-  ETRIG_RAW_KEY_PLUS = '+',
+  ETRIG_RAW_KEY_PLUS  = '+',
   ETRIG_RAW_KEY_MINUS = '-',
 
   ETRIG_RAW_KEY_ALPHABASE = ETRIG_RAW_ALPHA_A,
@@ -79,7 +81,7 @@ enum ERawTriggerNames {
   ETRIG_RAW_KEY_RALT,
 
   //
-  ETRIG_RAW_JOY0 = 256,
+  ETRIG_RAW_JOY0         = 256,
   ETRIG_RAW_JOY0_LDIG_UP = 256,
   ETRIG_RAW_JOY0_LDIG_DOWN,
   ETRIG_RAW_JOY0_LDIG_LEFT,
@@ -122,7 +124,7 @@ enum ERawTriggerNames {
   ETRIG_RAW_JOY0_LANA_RIGHT,
 
   //
-  ETRIG_RAW_JOY1 = 512,
+  ETRIG_RAW_JOY1         = 512,
   ETRIG_RAW_JOY1_LDIG_UP = 512,
   ETRIG_RAW_JOY1_LDIG_DOWN,
   ETRIG_RAW_JOY1_LDIG_LEFT,
@@ -157,6 +159,8 @@ enum ERawTriggerNames {
 
   ETRIG_RAW_END = 1023
 };
+
+////////////////////////////////////////////////////////////////////////////////
 
 enum EMappedTriggerNames {
   ETRIG_BEGIN = 256,
@@ -193,9 +197,13 @@ enum EMappedTriggerNames {
   ETRIG_PLAYER1_ROT_RIGHT,
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 class InputManager;
 
 static const int KMAX_TRIGGERS = 1024;
+
+////////////////////////////////////////////////////////////////////////////////
 
 struct RawInputKey {
   uint32_t mKey;
@@ -203,11 +211,15 @@ struct RawInputKey {
   bool operator<(const RawInputKey& oth) const { return oth.mKey < mKey; }
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 struct MappedInputKey {
   uint32_t mKey;
   MappedInputKey(uint32_t v = ETRIG_BEGIN) { mKey = v; }
   bool operator<(const MappedInputKey& oth) const { return oth.mKey < mKey; }
 };
+
+////////////////////////////////////////////////////////////////////////////////
 
 class InputMap {
 public:
@@ -215,6 +227,8 @@ public:
   RawInputKey MapInput(const MappedInputKey& inkey) const;
   void Set(MappedInputKey inch, RawInputKey outch);
 };
+
+////////////////////////////////////////////////////////////////////////////////
 
 class InputState {
   static InputMap gInputMap;
@@ -318,7 +332,10 @@ protected:
   bool mRumbleEnabled;
   bool mMasterRumbleEnabled;
 
-  InputDevice() : mConnectionStatus(CONN_STATUS_UNKNOWN), mRumbleEnabled(true), mMasterRumbleEnabled(true) {}
+  InputDevice()
+      : mConnectionStatus(CONN_STATUS_UNKNOWN)
+      , mRumbleEnabled(true)
+      , mMasterRumbleEnabled(true) {}
 
   void SetInputMap(EMappedTriggerNames inch, ERawTriggerNames outch);
 
@@ -326,15 +343,19 @@ private:
   int mId;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 struct InputChannel {
   InputChannel() { _value.Set<float>(0.0f); }
   svar64_t _value;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 struct InputGroup {
   typedef std::map<std::string, InputChannel> channelmap_t;
   LockedResource<channelmap_t> _channels;
-
+  ///////////////////////////////////
   struct setter {
     std::string _channelname;
     InputGroup* _group = nullptr;
@@ -343,6 +364,7 @@ struct InputGroup {
       _group->setAs<T>(_channelname, value);
     }
   };
+  ///////////////////////////////////
   struct getter {
     ///////////////////////////////////
     template <typename T> attempt_cast<T> tryAs() {
@@ -364,40 +386,42 @@ struct InputGroup {
     std::string _channelname;
     InputGroup* _group = nullptr;
   };
-
+  ///////////////////////////////////
   setter setChannel(const std::string& channelname) {
     setter rval;
     rval._channelname = channelname;
-    rval._group = this;
+    rval._group       = this;
     return rval;
   }
+  ///////////////////////////////////
   getter getChannel(const std::string& channelname) {
     getter rval;
     rval._channelname = channelname;
-    rval._group = this;
+    rval._group       = this;
     return rval;
   }
-
+  ///////////////////////////////////
   template <typename T> void setAs(const std::string& chname, const T& value) {
     _channels.atomicOp([&](channelmap_t& chmap) { chmap[chname]._value.Set<T>(value); });
   }
+  ///////////////////////////////////
   template <typename T> T get(const std::string& chname) {
     T rval;
     _channels.atomicOp([&](channelmap_t& chmap) { rval = chmap[chname]._value.Get<T>(); });
     return rval;
   }
+  ///////////////////////////////////
   template <typename T> attempt_cast<T> tryAs(const std::string& chname) {
     attempt_cast<T> rval(nullptr);
-    _channels.atomicOp([&](channelmap_t& chmap) {
-      rval = chmap[chname]._value.TryAs<T>();
-    });
+    _channels.atomicOp([&](channelmap_t& chmap) { rval = chmap[chname]._value.TryAs<T>(); });
     return rval;
   }
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 struct InputManager : public NoRttiSingleton<InputManager> {
   typedef std::unordered_map<std::string, InputGroup*> inputgrp_map_t;
-  ;
 
   static void poll();
   static void clearAll();
