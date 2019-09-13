@@ -42,6 +42,8 @@ public: //
 	void SetTexture( Texture* pt );
 };
 
+typedef TextureAsset* textureassetptr_t; // prep for shared_ptr
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmModelAsset : public ork::asset::Asset
@@ -59,6 +61,8 @@ public: //
 
 };
 
+typedef XgmModelAsset* xgmmodelassetptr_t; // prep for shared_ptr
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class XgmAnimAsset : public ork::asset::Asset
@@ -73,6 +77,8 @@ public: //
 
 };
 
+typedef XgmAnimAsset* xgmanimassetptr_t; // prep for shared_ptr
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class FxShaderAsset : public ork::asset::Asset
@@ -86,6 +92,8 @@ public: //
 	FxShader* GetFxShader() { return & mData; }
 
 };
+
+typedef FxShaderAsset* fxshaderassetptr_t; // prep for shared_ptr
 
 ///////////////////////////////////////////////////////////////////////////////
 }}

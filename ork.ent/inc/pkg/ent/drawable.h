@@ -68,6 +68,9 @@ struct DrawQueueXfData {
 
 class DrawableBufItem {
 public:
+
+  typedef ork::lev2::IRenderable::var_t var_t;
+
   DrawableBufItem() : mpDrawable(0), miBufferIndex(0) {}
 
   ~DrawableBufItem() {}
@@ -76,8 +79,8 @@ public:
   void SetDrawable(const Drawable* pdrw) { mpDrawable = pdrw; }
 
   DrawQueueXfData mXfData;
-  anyp mUserData0;
-  anyp mUserData1;
+  var_t mUserData0;
+  var_t mUserData1;
   int miBufferIndex;
 
 private:
@@ -164,6 +167,9 @@ class Drawable : public ork::Object {
   RttiDeclareAbstract(Drawable, ork::Object);
 
 public:
+
+  typedef ork::lev2::IRenderable::var_t var_t;
+
   Drawable();
   virtual ~Drawable();
 
@@ -175,10 +181,10 @@ public:
   const ork::Object* GetOwner() const { return mOwner; }
   void SetOwner(const ork::Object* owner) { mOwner = owner; }
 
-  void SetUserDataA(anyp data) { mDataA = data; }
-  const anyp& GetUserDataA() const { return mDataA; }
-  void SetUserDataB(anyp data) { mDataB = data; }
-  const anyp& GetUserDataB() const { return mDataB; }
+  void SetUserDataA(var_t data) { mDataA = data; }
+  const var_t& GetUserDataA() const { return mDataA; }
+  void SetUserDataB(var_t data) { mDataB = data; }
+  const var_t& GetUserDataB() const { return mDataB; }
   bool IsEnabled() const { return mEnabled; }
   void Enable() { mEnabled = true; }
   void Disable() { mEnabled = false; }
@@ -186,8 +192,8 @@ public:
 protected:
   const ork::Object* mOwner;
   Layer* mpLayer;
-  anyp mDataA;
-  anyp mDataB;
+  var_t mDataA;
+  var_t mDataB;
   bool mEnabled;
 };
 

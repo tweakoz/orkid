@@ -401,7 +401,7 @@ public:
   float WorldSize() const { return mWorldSize; }
   const fvec3& GetVisualOffset() const { return mVisualOffset; }
 
-  ork::lev2::TextureAsset* GetSphereMap() const { return mSphereLightMap; }
+  ork::lev2::textureassetptr_t GetSphereMap() const { return _spherelightmap; }
 
 private:
   void SetTextureAccessor(ork::rtti::ICastable* const& tex);
@@ -414,7 +414,7 @@ private:
   float mWorldHeight;
   float mWorldSize;
   fvec3 mVisualOffset;
-  ork::lev2::TextureAsset* mSphereLightMap;
+  ork::lev2::textureassetptr_t _spherelightmap;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
