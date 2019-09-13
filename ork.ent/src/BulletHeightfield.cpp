@@ -50,6 +50,7 @@ struct BulletHeightfieldImpl {
 
   orkmap<int, TerVtxBuffersType *> vtxbufmap;
   HeightMap _heightmap;
+  HeightMap _vizheightmap;
   const BulletShapeHeightfieldData &_hfd;
   msgrouter::subscriber_t _subscriber;
 
@@ -65,7 +66,8 @@ struct BulletHeightfieldImpl {
 BulletHeightfieldImpl::BulletHeightfieldImpl(
     const BulletShapeHeightfieldData &data)
     : _hfd(data)
-    , _heightmap(0, 0){
+    , _heightmap(0, 0)
+    , _vizheightmap(0,0){
   _subscriber =
       msgrouter::channel("bshdchanged")->subscribe([=](msgrouter::content_t c) {
         // auto bshd = c.Get<BulletShapeHeightfieldData*>();
@@ -74,6 +76,7 @@ BulletHeightfieldImpl::BulletHeightfieldImpl(
         printf("Load Heightmap<%s>\n", _hfd.HeightMapPath().c_str());
 
         _loadok = _heightmap.Load(_hfd.HeightMapPath());
+        _loadok &= _vizheightmap.Load(_hfd.VizHeightMapPath());
 
         int idimx = _heightmap.GetGridSizeX();
         int idimz = _heightmap.GetGridSizeZ();
@@ -84,6 +87,8 @@ BulletHeightfieldImpl::BulletHeightfieldImpl(
 
         _heightmap.SetWorldSize(kworldsizeX, kworldsizeZ);
         _heightmap.SetWorldHeight(_hfd.WorldHeight());
+        _vizheightmap.SetWorldSize(kworldsizeX, kworldsizeZ);
+        _vizheightmap.SetWorldHeight(_hfd.WorldHeight());
       });
 
   _subscriber->_handler(nullptr);
@@ -175,18 +180,22 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
 
   vtxbufmap.clear();
 
-  const int iglX = _heightmap.GetGridSizeX();
-  const int iglZ = _heightmap.GetGridSizeZ();
 
   const float kworldsizeX = _heightmap.GetWorldSizeX();
   const float kworldsizeZ = _heightmap.GetWorldSizeZ();
 
-  const int terrain_ngrids = iglX * iglZ;
 
   ////////////////////////////////////////////////////////////////
   // create and fill in gpu texture
   ////////////////////////////////////////////////////////////////
 
+  const int iglX = _vizheightmap.GetGridSizeX();
+  const int iglZ = _vizheightmap.GetGridSizeZ();
+  const int terrain_ngrids = iglX * iglZ;
+
+  if( 0 == iglX )
+    return;
+    
   int MIPW = iglX;
   int MIPH = iglZ;
 
@@ -202,7 +211,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
 
   fvec2 origin(0,0);
 
-  auto heightdata = (float*) _heightmap.GetHeightData();
+  auto heightdata = (float*) _vizheightmap.GetHeightData();
 
   const bool debugmip = false;
 
@@ -706,8 +715,8 @@ void FastRender(const RenderContextInstData &rcidata,
   ptarg->MTXI()->PushVMatrix(VMTX);
   ptarg->MTXI()->PushMMatrix(follow);
   {
-    const int iglX = htri->_heightmap.GetGridSizeX();
-    const int iglZ = htri->_heightmap.GetGridSizeZ();
+    const int iglX = htri->_vizheightmap.GetGridSizeX();
+    const int iglZ = htri->_vizheightmap.GetGridSizeZ();
 
     const int terrain_ngrids = iglX * iglZ;
 
@@ -794,6 +803,9 @@ void BulletShapeHeightfieldData::Describe() {
   reflect::RegisterProperty("HeightMap",
                             &BulletShapeHeightfieldData::GetHeightMapName,
                             &BulletShapeHeightfieldData::SetHeightMapName);
+  reflect::RegisterProperty("VizHeightMap",
+                            &BulletShapeHeightfieldData::GetVizHeightMapName,
+                            &BulletShapeHeightfieldData::SetVizHeightMapName);
   reflect::RegisterProperty("WorldHeight",
                             &BulletShapeHeightfieldData::mWorldHeight);
   reflect::RegisterProperty("WorldSize",
@@ -808,6 +820,11 @@ void BulletShapeHeightfieldData::Describe() {
       "HeightMap", "editor.class", "ged.factory.filelist");
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
       "HeightMap", "editor.filetype", "png");
+
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
+      "VizHeightMap", "editor.class", "ged.factory.filelist");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
+      "VizHeightMap", "editor.filetype", "png");
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
       "WorldHeight", "editor.range.min", "0");
@@ -832,16 +849,14 @@ void BulletShapeHeightfieldData::SetTextureAccessor(
     ork::rtti::ICastable *const &tex) {
   mSphereLightMap = tex ? ork::rtti::autocast(tex) : 0;
 }
-///////////////////////////////////////////////////////////////////////////////
 void BulletShapeHeightfieldData::GetTextureAccessor(
     ork::rtti::ICastable *&tex) const {
   tex = mSphereLightMap;
 }
-
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletShapeHeightfieldData::BulletShapeHeightfieldData()
-    : mHeightMapName("none"), mWorldHeight(1000.0f), mWorldSize(1000.0f),
+    : mHeightMapName("none"), mVizHeightMapName("non"), mWorldHeight(1000.0f), mWorldSize(1000.0f),
       mSphereLightMap(nullptr) {
 
   mShapeFactory._createShape =
@@ -884,13 +899,15 @@ BulletShapeHeightfieldData::~BulletShapeHeightfieldData() {}
 
 void BulletShapeHeightfieldData::SetHeightMapName(file::Path const &lmap) {
   mHeightMapName = lmap;
-  // mbDirty = true;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
 void BulletShapeHeightfieldData::GetHeightMapName(file::Path &lmap) const {
   lmap = mHeightMapName;
+}
+void BulletShapeHeightfieldData::SetVizHeightMapName(file::Path const &lmap) {
+  mVizHeightMapName = lmap;
+}
+void BulletShapeHeightfieldData::GetVizHeightMapName(file::Path &lmap) const {
+  lmap = mVizHeightMapName;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

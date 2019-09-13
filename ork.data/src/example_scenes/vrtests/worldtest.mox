@@ -216,7 +216,7 @@
                                     <object type='EditorCamControllerData' id='18'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='19'>
-                                                <property name='Center'>946.182 -2069.59 1142.18</property>
+                                                <property name='Center'>-904.726 91.3887 1575.7</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>1000</property>
                                                 <property name='QuatC'>-0.0396523 -0.695862 0.717515 -0.00474034</property>
@@ -281,6 +281,7 @@
                                                         </reference>
                                                     </property>
                                                     <property name='VisualOffset'>0 4.25 0</property>
+                                                    <property name='VizHeightMap'>"data://terrain/testhmap2.png"</property>
                                                     <property name='WorldHeight'>1500</property>
                                                     <property name='WorldSize'>8192</property>
                                                 </object>
@@ -937,7 +938,7 @@
                 <reference category='SystemDataClass'>
                     <object type='BulletSystemData' id='109'>
                         <property name='Debug'>false</property>
-                        <property name='Gravity'>0 -4 0</property>
+                        <property name='Gravity'>0 -9 0</property>
                         <property name='SimulationRate'>120</property>
                         <property name='TimeScale'>1</property>
                     </object>
