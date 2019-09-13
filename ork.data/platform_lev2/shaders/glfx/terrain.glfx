@@ -76,11 +76,11 @@ fragment_shader ps_terrain1
   : iface_fdefault
   : lib_mmnoise {
 
-  //float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
+  float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
   //float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
   //float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
 
-  //const vec3 fogcolor = vec3(0.6, 0.6, 0.7);
+  const vec3 fogcolor = vec3(0.6, 0.6, 0.7);
   //const vec3 ambient = vec3(0.6, 0.6, 0.65);
   //const vec3 side = vec3(0.2, 0.2, 0.25);
   //const vec3 top = vec3(0.3, 0.3, 0.3);
@@ -106,8 +106,8 @@ fragment_shader ps_terrain1
       //   + rock2*pow(tpw.z,0.5);
 
   //vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
-  //c = lightcol*mix(fogcolor,c,ddd2);
-  out_clr = vec4(n,1);//+vec3(u*0.25,v*0.25,0),1);
+  vec3 c = mix(fogcolor,n,ddd1);
+  out_clr = vec4(c,1);//+vec3(u*0.25,v*0.25,0),1);
 }
 ///////////////////////////////////////////////////////////////
 // pick

@@ -173,7 +173,7 @@
                                                 "xgmodel" "data://actors/diver/diverphong"
                                             </reference>
                                         </property>
-                                        <property name='Offset'>0 -220 0</property>
+                                        <property name='Offset'>0 -200 0</property>
                                         <property name='Rotate'>0 0 0</property>
                                         <property name='Scale'>0.01</property>
                                         <property name='ShowBoundingSphere'>false</property>
@@ -216,7 +216,7 @@
                                     <object type='EditorCamControllerData' id='18'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='19'>
-                                                <property name='Center'>-904.726 91.3887 1575.7</property>
+                                                <property name='Center'>-267.081 29.9489 567.479</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>1000</property>
                                                 <property name='QuatC'>-0.0396523 -0.695862 0.717515 -0.00474034</property>
@@ -274,7 +274,7 @@
                                         <property name='Shape'>
                                             <reference category='ObjectClass'>
                                                 <object type='BulletShapeHeightfieldData' id='24'>
-                                                    <property name='HeightMap'>"data://terrain/testhmap2_1024.png"</property>
+                                                    <property name='HeightMap'>"data://terrain/testhmap2_2048.png"</property>
                                                     <property name='SphericalLightMap'>
                                                         <reference category='AssetClass'>
                                                             "lev2tex" "data://effect_textures/NoiseKern"
@@ -938,7 +938,7 @@
                 <reference category='SystemDataClass'>
                     <object type='BulletSystemData' id='109'>
                         <property name='Debug'>false</property>
-                        <property name='Gravity'>0 -9 0</property>
+                        <property name='Gravity'>0 -4 0</property>
                         <property name='SimulationRate'>120</property>
                         <property name='TimeScale'>1</property>
                     </object>
