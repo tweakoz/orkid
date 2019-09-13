@@ -51,7 +51,11 @@ void HeightMap::SetGridSize(int iw, int ih) {
   mMutex.UnLock();
 }
 ///////////////////////////////////////////////////////////////////////////////
-HeightMap::~HeightMap() {}
+HeightMap::~HeightMap() {
+  if( _pu16 ){
+    delete[] _pu16;
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 void HeightMap::SetHeight(int ix, int iz, float fh) {
   int iaddr = CalcAddress(ix, iz);
@@ -296,11 +300,11 @@ bool HeightMap::Load(const ork::file::Path &pth) {
     int xres = spec.width;
     int yres = spec.height;
     int num_channels = spec.nchannels;
-    auto pu16 = new uint16_t[xres * yres * num_channels];
+    _pu16 = new uint16_t[xres * yres * num_channels];
 
     printf("xres<%d> yres<%d> numch<%d>\n", xres, yres, num_channels);
 
-    bool read_ok = oiio_img->read_image(TypeDesc::UINT16, pu16);
+    bool read_ok = oiio_img->read_image(TypeDesc::UINT16, _pu16);
     oiio_img->close();
 
     OrkAssert(read_ok);
@@ -317,7 +321,7 @@ bool HeightMap::Load(const ork::file::Path &pth) {
     U16 umin = 0xffff;
     U16 umax = 0x0000;
     for (int ip = 0; ip < inumpix; ip++) {
-      U16 upix = pu16[ip];
+      U16 upix = _pu16[ip];
       ork::swapbytes_dynamic<U16>(upix);
       if (upix > umax)
         umax = upix;
@@ -338,7 +342,7 @@ bool HeightMap::Load(const ork::file::Path &pth) {
 
           int iaddr = (iz * xres) + ix;
 
-          U16 upix = (pu16[iaddr] - umin);
+          U16 upix = (_pu16[iaddr] - umin);
 
           if (upix < hfmin)
             hfmin = upix;

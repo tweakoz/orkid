@@ -140,7 +140,7 @@ void GetSceneReq::SetScene(SceneData* sd) {
 ///////////////////////////////////////////////////////////////////////////
 
 SceneEditorBase::SceneEditorBase()
-    : mbInit(true), mApplication(nullptr), mpScene(nullptr), mpEditSimulation(nullptr), mpExecSimulation(nullptr),
+    : mbInit(true), mApplication(nullptr), mpScene(nullptr), mpEditSimulation(nullptr),
       mpMdlChoices(new tool::ModelChoices), mpAnmChoices(new tool::AnimChoices), mpAudStreamChoices(new tool::AudioStreamChoices),
       mpAudBankChoices(new tool::AudioBankChoices), mpTexChoices(new tool::TextureChoices),
       mpScriptChoices(new tool::ScriptChoices), mpArchChoices(new ArchetypeChoices(*this)), mpChsmChoices(new tool::ChsmChoices),
@@ -1070,9 +1070,7 @@ void SceneEditorBase::ImplEnterRunLocalState() {
 ///////////////////////////////////////////////////////////////////////////
 Simulation* SceneEditorBase::GetEditSimulation() const { return mpEditSimulation; }
 ///////////////////////////////////////////////////////////////////////////
-Simulation* SceneEditorBase::GetExecSimulation() const { return mpExecSimulation; }
-///////////////////////////////////////////////////////////////////////////
-Simulation* SceneEditorBase::GetActiveSimulation() const { return (mpExecSimulation != nullptr) ? mpExecSimulation : mpEditSimulation; }
+Simulation* SceneEditorBase::GetActiveSimulation() const { return mpEditSimulation; }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterPauseState() {
   ////////////////////////////////////

@@ -35,8 +35,21 @@ GlTextureInterface::GlTextureInterface( GfxTargetGL& tgt )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlTextureInterface::DestroyTexture( Texture* ptex )
+bool GlTextureInterface::DestroyTexture( Texture* tex )
 {
+  auto glto = (GLTextureObject*) tex->_internalHandle;
+  tex->_internalHandle = nullptr;
+
+  void_lambda_t lamb = [=]()
+  {
+    if( glto ){
+        if( glto->mObject!=0)
+          glDeleteTextures(1,&glto->mObject);
+        delete glto;
+    }
+  };
+  //MainThreadOpQ().push(lamb,get_backtrace());
+  MainThreadOpQ().push(lamb);
 	return true;
 }
 
@@ -1208,6 +1221,7 @@ void GlTextureInterface::initTextureFromData( Texture *ptex, bool autogenmips ) 
 
 Texture* GlTextureInterface::createFromMipChain( MipChain* from_chain ){
   auto tex = new Texture;
+  tex->_creatingTarget = & mTargetGL;
   tex->_chain = from_chain;
   tex->_width = from_chain->_width;
   tex->_height = from_chain->_height;

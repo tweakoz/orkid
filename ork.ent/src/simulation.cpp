@@ -129,7 +129,6 @@ Simulation::~Simulation() {
   DrawableBuffer::BeginClearAndSyncReaders();
   for (orkmap<PoolString, Entity*>::iterator it = mEntities.begin(); it != mEntities.end(); it++) {
     Entity* pent = it->second;
-
     if (pent) {
       delete pent;
     }

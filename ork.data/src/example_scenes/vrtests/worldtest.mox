@@ -379,7 +379,7 @@
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
                                                 <object type='PerfAnalyzerControllerData' id='35'>
-                                                    <property name='EnableDisplay'>false</property>
+                                                    <property name='EnableDisplay'>true</property>
                                                 </object>
                                             </reference>
                                         </item>
@@ -831,7 +831,7 @@
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='42'/></property>
+                        <property name='Archetype'><backreference id='-1'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
@@ -971,7 +971,26 @@
                                                                 <object type='NodeCompositingTechnique' id='113'>
                                                                     <property name='RootNode'>
                                                                         <reference category='ObjectClass'>
-                                                                            <object type='VrCompositingNode' id='114'>
+                                                                            <object type='PassThroughCompositingNode' id='114'>
+                                                                                <property name='Group'>
+                                                                                    <reference category='ObjectClass'>
+                                                                                        <object type='CompositingGroup' id='115'>
+                                                                                            <property name='Camera'>"vrcam"</property>
+                                                                                            <property name='Effect'>
+                                                                                                <object type='CompositingGroupEffect' id='116'>
+                                                                                                    <property name='Amount'>0</property>
+                                                                                                    <property name='FbUvTexture'><backreference id='-1'/></property>
+                                                                                                    <property name='FeedbackAmount'>0</property>
+                                                                                                    <property name='FinalRezScale'>0.5</property>
+                                                                                                    <property name='FxRezScale'>0.5</property>
+                                                                                                    <property name='PostFxFeedback'>false</property>
+                                                                                                    <property name='Type'>"EFRAMEFX_NONE"</property>
+                                                                                                </object>
+                                                                                            </property>
+                                                                                            <property name='Layers'>"All"</property>
+                                                                                        </object>
+                                                                                    </reference>
+                                                                                </property>
                                                                             </object>
                                                                         </reference>
                                                                     </property>
@@ -991,13 +1010,13 @@
             </item>
             <item key='InputSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='InputSystemData' id='115'>
+                    <object type='InputSystemData' id='117'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='116'>
+                    <object type='ScriptSystemData' id='118'>
                     </object>
                 </reference>
             </item>
