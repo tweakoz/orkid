@@ -188,6 +188,7 @@ struct Texture
   void*							_data = nullptr;
   TextureAnimationBase*	_anim = nullptr;
   mutable void*			_internalHandle = nullptr;
+  GfxTarget*        _creatingTarget = nullptr;
 
 };
 

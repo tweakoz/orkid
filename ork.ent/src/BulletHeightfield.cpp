@@ -54,6 +54,7 @@ struct BulletHeightfieldImpl {
   msgrouter::subscriber_t _subscriber;
 
   BulletHeightfieldImpl(const BulletShapeHeightfieldData &data);
+  ~BulletHeightfieldImpl();
 
   void init_visgeom(GfxTarget *ptarg);
   btHeightfieldTerrainShape *init_bullet_shape(const ShapeCreateData &data);
@@ -88,6 +89,15 @@ BulletHeightfieldImpl::BulletHeightfieldImpl(
   _subscriber->_handler(nullptr);
 }
 
+BulletHeightfieldImpl::~BulletHeightfieldImpl(){
+
+  if( _heightmapTextureA ){
+    delete _heightmapTextureA;
+  }
+  if( _heightmapTextureB ){
+    delete _heightmapTextureB;
+  }
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 btHeightfieldTerrainShape *
@@ -341,6 +351,9 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
 
   _heightmapTextureA = ptarg->TXI()->createFromMipChain(chainA);
   _heightmapTextureB = ptarg->TXI()->createFromMipChain(chainB);
+
+  delete chainA;
+  delete chainB;
 
   ////////////////////////////////////////////////////////////////
 

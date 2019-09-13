@@ -73,6 +73,7 @@ struct HeightMap {
   mutex mMutex;
   float mIndexToUnitX;
   float mIndexToUnitZ;
+  uint16_t* _pu16 = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

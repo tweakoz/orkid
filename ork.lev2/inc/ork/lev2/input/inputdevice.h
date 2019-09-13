@@ -355,7 +355,6 @@ struct InputGroup {
       _group->_channels.atomicOp([&](channelmap_t& chmap) {
         if (chmap.find(_channelname) == chmap.end()) {
           printf("uhoh, cannot find channelname<%s>\n", _channelname.c_str());
-          assert(false);
         }
         rval = chmap[_channelname]._value;
       });

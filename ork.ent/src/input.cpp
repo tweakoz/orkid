@@ -39,7 +39,8 @@ namespace ork::ent {
 	{
   }
   svar64_t InputComponent::doQuery(const ComponentQuery& q) {
-    svar64_t rval;
+    svar64_t rval(nullptr);
+    
     if(q._eventID == "get.group"){
       auto grpname = q._eventData.Get<std::string>();
       auto grp = lev2::InputManager::inputGroup(grpname);
@@ -57,7 +58,11 @@ namespace ork::ent {
       auto grp = static_cast<lev2::InputGroup*>(itg->second._encoded.Get<void*>());
       assert(grp!=nullptr);
       auto channel_name = itch->second._encoded.Get<std::string>();
-      rval = grp->getChannel(channel_name).rawValue();
+      auto chval = grp->getChannel(channel_name).rawValue();
+
+      if(chval.IsSet() ){
+        rval = chval;
+      }
     }
     else{
       printf( "invalid evid<%s>\n", q._eventID.c_str() );

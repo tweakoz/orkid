@@ -145,7 +145,7 @@ public:
 	ReferenceArchetype* NewReferenceArchetype( const std::string& archassetname );
 	Archetype* EditorNewArchetype(const std::string& classname, const std::string& name);
     SystemData* EditorNewSystem(const std::string& classname);
-    
+
 	///////////////////////////////////////////////
 
 	void EditorLocateEntity(const fmtx4 &matrix);
@@ -214,10 +214,8 @@ private:
 	lev2::ManipManager				mManipManager;
 
 	ork::MpMcBoundedQueue<var_t>	mSerialQ;
-	//ork::fvec3					mCursor;
 	ork::fmtx4					mSpawnMatrix;
 
-	Simulation*						mpExecSimulation;
 	Simulation*						mpEditSimulation;
 
 };
