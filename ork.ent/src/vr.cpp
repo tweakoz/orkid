@@ -55,7 +55,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
                       CompositorSystemDrawData& drawdata,
                       CameraData* lcam,
                       CameraData* rcam,
-                      const std::map<int, openvr::ControllerState>& controllers) {
+                      const std::map<int, vr::ControllerState>& controllers) {
     RenderContextFrameData& FrameData = renderer.GetFrameData();
     GfxTarget* pTARG                  = FrameData.GetTarget();
 
@@ -185,8 +185,8 @@ struct VRSYSTEMIMPL {
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     _material.Init(pTARG);
-    int w     = openvr::get()._width;
-    int h     = openvr::get()._height;
+    int w     = vr::get()._width;
+    int h     = vr::get()._height;
     _frametek = new VrFrameTechnique(w, h);
     _frametek->Init(pTARG);
   }
@@ -196,9 +196,9 @@ struct VRSYSTEMIMPL {
     auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
     auto playermtx   = playerspawn->GetEffectiveMatrix();
 
-    auto& LCAM = openvr::get()._leftcamera;
-    auto& RCAM = openvr::get()._rightcamera;
-    auto& CONT = openvr::get()._controllers;
+    auto& LCAM = vr::get()._leftcamera;
+    auto& RCAM = vr::get()._rightcamera;
+    auto& CONT = vr::get()._controllers;
 
     _frametek->renderBothEyes(renderer, drawdata, &LCAM, &RCAM, CONT);
   }
@@ -231,7 +231,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
   auto vrimpl                 = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
   static PoolString vrcamname = AddPooledString("vrcam");
 
-  openvr::gpuUpdate(targ);
+  vr::gpuUpdate(targ);
 
   //////////////////////////////////////////////
   // find vr camera
@@ -272,7 +272,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
     auto texL = bufferL->GetTexture();
     auto texR = bufferR->GetTexture();
     if (texL && texR) {
-      openvr::composite(targ, texL, texR);
+      vr::composite(targ, texL, texR);
     }
 
     /////////////////////////////////////////////////////////////////////////////
