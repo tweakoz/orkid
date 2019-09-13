@@ -173,7 +173,7 @@
                                                 "xgmodel" "data://actors/diver/diverphong"
                                             </reference>
                                         </property>
-                                        <property name='Offset'>0 -200 0</property>
+                                        <property name='Offset'>0 -220 0</property>
                                         <property name='Rotate'>0 0 0</property>
                                         <property name='Scale'>0.01</property>
                                         <property name='ShowBoundingSphere'>false</property>

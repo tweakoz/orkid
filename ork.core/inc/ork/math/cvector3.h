@@ -75,7 +75,8 @@ public:
 	void				SetY(T _y) { y = _y; }
 	void				SetZ(T _z) { z = _z; }
 
-	Vector2<T>			GetXY( void ) const { return Vector2<T>(*this); }
+	Vector2<T>			GetXY( void ) const { return Vector2<T>(x,y); }
+	Vector2<T>			GetXZ( void ) const { return Vector2<T>(x,z); }
 
 	static	Vector3	Zero(void) { return Vector3(T(0), T(0), T(0)); }
 	static	Vector3	UnitX(void) { return Vector3(T(1), T(0), T(0)); }

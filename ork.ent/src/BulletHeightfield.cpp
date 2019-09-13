@@ -10,6 +10,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
+#include <ork/math/polar.h>
 #include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
@@ -27,8 +28,7 @@
 #include <pkg/ent/bullet.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletShapeHeightfieldData,
-                             "BulletShapeHeightfieldData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletShapeHeightfieldData, "BulletShapeHeightfieldData");
 
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,65 +48,60 @@ struct BulletHeightfieldImpl {
   fvec3 _aabbmin;
   fvec3 _aabbmax;
 
-  orkmap<int, TerVtxBuffersType *> vtxbufmap;
+  TerVtxBuffersType* _vtxbufs[8];
   HeightMap _heightmap;
   HeightMap _vizheightmap;
-  const BulletShapeHeightfieldData &_hfd;
+  const BulletShapeHeightfieldData& _hfd;
   msgrouter::subscriber_t _subscriber;
 
-  BulletHeightfieldImpl(const BulletShapeHeightfieldData &data);
+  BulletHeightfieldImpl(const BulletShapeHeightfieldData& data);
   ~BulletHeightfieldImpl();
 
-  void init_visgeom(GfxTarget *ptarg);
-  btHeightfieldTerrainShape *init_bullet_shape(const ShapeCreateData &data);
+  void init_visgeom(GfxTarget* ptarg);
+  btHeightfieldTerrainShape* init_bullet_shape(const ShapeCreateData& data);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BulletHeightfieldImpl::BulletHeightfieldImpl(
-    const BulletShapeHeightfieldData &data)
-    : _hfd(data)
-    , _heightmap(0, 0)
-    , _vizheightmap(0,0){
-  _subscriber =
-      msgrouter::channel("bshdchanged")->subscribe([=](msgrouter::content_t c) {
-        // auto bshd = c.Get<BulletShapeHeightfieldData*>();
-        this->_initViz = true;
+BulletHeightfieldImpl::BulletHeightfieldImpl(const BulletShapeHeightfieldData& data)
+    : _hfd(data), _heightmap(0, 0), _vizheightmap(0, 0) {
+  _subscriber = msgrouter::channel("bshdchanged")->subscribe([=](msgrouter::content_t c) {
+    // auto bshd = c.Get<BulletShapeHeightfieldData*>();
+    this->_initViz = true;
 
-        printf("Load Heightmap<%s>\n", _hfd.HeightMapPath().c_str());
+    printf("Load Heightmap<%s>\n", _hfd.HeightMapPath().c_str());
 
-        _loadok = _heightmap.Load(_hfd.HeightMapPath());
-        _loadok &= _vizheightmap.Load(_hfd.VizHeightMapPath());
+    _loadok = _heightmap.Load(_hfd.HeightMapPath());
+    _loadok &= _vizheightmap.Load(_hfd.VizHeightMapPath());
 
-        int idimx = _heightmap.GetGridSizeX();
-        int idimz = _heightmap.GetGridSizeZ();
-        printf("idimx<%d> idimz<%d>\n", idimx, idimz);
-        // float aspect = float(idimz)/float(idimx);
-        const float kworldsizeX = _hfd.WorldSize();
-        const float kworldsizeZ = kworldsizeX;
+    int idimx = _heightmap.GetGridSizeX();
+    int idimz = _heightmap.GetGridSizeZ();
+    printf("idimx<%d> idimz<%d>\n", idimx, idimz);
+    // float aspect = float(idimz)/float(idimx);
+    const float kworldsizeX = _hfd.WorldSize();
+    const float kworldsizeZ = kworldsizeX;
 
-        _heightmap.SetWorldSize(kworldsizeX, kworldsizeZ);
-        _heightmap.SetWorldHeight(_hfd.WorldHeight());
-        _vizheightmap.SetWorldSize(kworldsizeX, kworldsizeZ);
-        _vizheightmap.SetWorldHeight(_hfd.WorldHeight());
-      });
+    _heightmap.SetWorldSize(kworldsizeX, kworldsizeZ);
+    _heightmap.SetWorldHeight(_hfd.WorldHeight());
+    _vizheightmap.SetWorldSize(kworldsizeX, kworldsizeZ);
+    _vizheightmap.SetWorldHeight(_hfd.WorldHeight());
+  });
 
   _subscriber->_handler(nullptr);
 }
 
-BulletHeightfieldImpl::~BulletHeightfieldImpl(){
+BulletHeightfieldImpl::~BulletHeightfieldImpl() {
 
-  if( _heightmapTextureA ){
+  if (_heightmapTextureA) {
     delete _heightmapTextureA;
   }
-  if( _heightmapTextureB ){
+  if (_heightmapTextureB) {
     delete _heightmapTextureB;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-btHeightfieldTerrainShape *
-BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
+btHeightfieldTerrainShape* BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData& data) {
   _entity = data.mEntity;
 
   if (false == _loadok)
@@ -120,8 +115,7 @@ BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
   const float kworldsizeZ = kworldsizeX * aspect;
 
   auto world_controller = data.mWorld;
-  const BulletSystemData &world_data =
-      world_controller->GetWorldData();
+  const BulletSystemData& world_data = world_controller->GetWorldData();
 
   btVector3 grav = !world_data.GetGravity();
 
@@ -133,17 +127,16 @@ BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
 
   auto pdata = _heightmap.GetHeightData();
 
-  _terrainShape =
-      new btHeightfieldTerrainShape(idimx, idimz,  // w,h
-                                    (void *)pdata, // data
-                                    ftoth, // heightScale
-                                    _heightmap.GetMinHeight(),
-                                    _heightmap.GetMaxHeight(),
-                                    1,      // upAxis,
-                                    PHY_FLOAT,   // usefloat heightDataType,
-                                    true); // flipQuadEdges );
+  _terrainShape = new btHeightfieldTerrainShape(idimx, idimz, // w,h
+                                                (void*)pdata, // data
+                                                ftoth,        // heightScale
+                                                _heightmap.GetMinHeight(), _heightmap.GetMaxHeight(),
+                                                1,         // upAxis,
+                                                PHY_FLOAT, // usefloat heightDataType,
+                                                true);     // flipQuadEdges );
 
-  _terrainShape->setUseDiamondSubdivision(true);
+  //_terrainShape->setUseDiamondSubdivision(true);
+  _terrainShape->setUseZigzagSubdivision(true);
 
   float fworldsizeX = _heightmap.GetWorldSizeX();
   float fworldsizeZ = _heightmap.GetWorldSizeZ();
@@ -152,17 +145,16 @@ BulletHeightfieldImpl::init_bullet_shape(const ShapeCreateData &data) {
   float scalez = fworldsizeZ / float(idimz);
   float scaley = 1.0f;
 
-  _terrainShape->setLocalScaling(
-      btVector3(scalex, _heightmap.GetWorldHeight(), scalez));
+  _terrainShape->setLocalScaling(btVector3(scalex, _heightmap.GetWorldHeight(), scalez));
 
-  printf("_terrainShape<%p>\n", _terrainShape );
+  printf("_terrainShape<%p>\n", _terrainShape);
 
   return _terrainShape;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
+void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
   if (false == _initViz)
     return;
 
@@ -171,19 +163,16 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   auto sphmap = _hfd.GetSphereMap();
   auto sphmaptex = (sphmap != nullptr) ? sphmap->GetTexture() : nullptr;
 
-  mTerrainMtl =
-      new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain1");
+  mTerrainMtl = new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain1");
   mTerrainMtl->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
   mTerrainMtl->_enablePick = true;
 
   orkprintf("ComputingGeometry\n");
 
-  vtxbufmap.clear();
-
+  ////////////////////////////////////////////////////////////////
 
   const float kworldsizeX = _heightmap.GetWorldSizeX();
   const float kworldsizeZ = _heightmap.GetWorldSizeZ();
-
 
   ////////////////////////////////////////////////////////////////
   // create and fill in gpu texture
@@ -193,89 +182,88 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   const int iglZ = _vizheightmap.GetGridSizeZ();
   const int terrain_ngrids = iglX * iglZ;
 
-  if( 0 == iglX )
+  if (0 == iglX)
     return;
-    
+
   int MIPW = iglX;
   int MIPH = iglZ;
 
-  auto chainA = new MipChain(MIPW,MIPH,EBUFFMT_RGBA128,ETEXTYPE_2D);
-  auto chainB = new MipChain(MIPW,MIPH,EBUFFMT_RGBA128,ETEXTYPE_2D);
+  auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
+  auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
 
   auto mipA0 = chainA->_levels[0];
   auto mipB0 = chainB->_levels[0];
-  auto pfloattexA = (float*) mipA0->_data;
-  auto pfloattexB = (float*) mipB0->_data;
-  assert(pfloattexA!=nullptr);
-  assert(pfloattexB!=nullptr);
+  auto pfloattexA = (float*)mipA0->_data;
+  auto pfloattexB = (float*)mipB0->_data;
+  assert(pfloattexA != nullptr);
+  assert(pfloattexB != nullptr);
 
-  fvec2 origin(0,0);
+  fvec2 origin(0, 0);
 
-  auto heightdata = (float*) _vizheightmap.GetHeightData();
+  auto heightdata = (float*)_vizheightmap.GetHeightData();
 
   const bool debugmip = false;
 
   fvec3 mipdebugcolors[12] = {
 
-    fvec3(0,0,0), // 0
-    fvec3(0,0,1), // 1
-    fvec3(0,1,0), // 2
-    fvec3(0,1,1), // 3
-    fvec3(1,0,0), // 4
-    fvec3(1,0,1), // 5
-    fvec3(1,1,0), // 6
-    fvec3(1,1,1), //7
-    fvec3(0,0,0), // 0
-    fvec3(0,0,1), // 1
-    fvec3(0,1,0), // 2
-    fvec3(0,1,1), // 3
+      fvec3(0, 0, 0), // 0
+      fvec3(0, 0, 1), // 1
+      fvec3(0, 1, 0), // 2
+      fvec3(0, 1, 1), // 3
+      fvec3(1, 0, 0), // 4
+      fvec3(1, 0, 1), // 5
+      fvec3(1, 1, 0), // 6
+      fvec3(1, 1, 1), // 7
+      fvec3(0, 0, 0), // 0
+      fvec3(0, 0, 1), // 1
+      fvec3(0, 1, 0), // 2
+      fvec3(0, 1, 1), // 3
   };
 
-
-  for( ssize_t z=0; z<MIPH; z++ ){
-    ssize_t zz = z-(MIPH>>1);
-    float fzz = float(zz)/float(MIPH>>1); // -1 .. 1
-    for( ssize_t x=0; x<MIPW; x++ ){
-      ssize_t xx = x-(MIPW>>1);
-      float fxx = float(xx)/float(MIPW>>1);
-      fvec2 pos2d(fxx,fzz);
-      float d = (pos2d-origin).Mag();
-      float dpow = powf(d,3);
-      size_t index = z*MIPW+x;
+  for (ssize_t z = 0; z < MIPH; z++) {
+    ssize_t zz = z - (MIPH >> 1);
+    float fzz = float(zz) / float(MIPH >> 1); // -1 .. 1
+    for (ssize_t x = 0; x < MIPW; x++) {
+      ssize_t xx = x - (MIPW >> 1);
+      float fxx = float(xx) / float(MIPW >> 1);
+      fvec2 pos2d(fxx, fzz);
+      float d = (pos2d - origin).Mag();
+      float dpow = powf(d, 3);
+      size_t index = z * MIPW + x;
       float h = heightdata[index];
-      size_t pixelbase = index*4;
-      pfloattexA[pixelbase+0]=float(xx);
-      pfloattexA[pixelbase+1]=float(h);
-      pfloattexA[pixelbase+2]=float(zz);
-      pfloattexB[pixelbase+0]=float(h);
+      size_t pixelbase = index * 4;
+      pfloattexA[pixelbase + 0] = float(xx);
+      pfloattexA[pixelbase + 1] = float(h);
+      pfloattexA[pixelbase + 2] = float(zz);
+      pfloattexB[pixelbase + 0] = float(h);
       ///////////////////
       // compute normal
       ///////////////////
-      if(x>0 and z>0){
-          size_t xxm1 = x-1;
-          float fxxm1 = float(xxm1);
-          size_t zzm1 = z-1;
-          float fzzm1 = float(zzm1);
-          size_t index_dxm1 = (z*MIPW)+xxm1;
-          size_t index_dzm1 = (zzm1*MIPW)+x;
-          float hd0 = heightdata[index]*1500;
-          float hdx = heightdata[index_dxm1]*1500;
-          float hdz = heightdata[index_dzm1]*1500;
-          float fzz = float(zz);
-          fvec3 pos3d(x*2,hd0,z*2);
-          fvec3 pos3d_dx(xxm1*2,hdx,z*2);
-          fvec3 pos3d_dz(x*2,hdz,zzm1*2);
+      if (x > 0 and z > 0) {
+        size_t xxm1 = x - 1;
+        float fxxm1 = float(xxm1);
+        size_t zzm1 = z - 1;
+        float fzzm1 = float(zzm1);
+        size_t index_dxm1 = (z * MIPW) + xxm1;
+        size_t index_dzm1 = (zzm1 * MIPW) + x;
+        float hd0 = heightdata[index] * 1500;
+        float hdx = heightdata[index_dxm1] * 1500;
+        float hdz = heightdata[index_dzm1] * 1500;
+        float fzz = float(zz);
+        fvec3 pos3d(x * 2, hd0, z * 2);
+        fvec3 pos3d_dx(xxm1 * 2, hdx, z * 2);
+        fvec3 pos3d_dz(x * 2, hdz, zzm1 * 2);
 
-          fvec3 e01 = (pos3d_dx-pos3d).Normal();
-          fvec3 e02 = (pos3d_dz-pos3d).Normal();
-          auto n = e02.Cross(e01).Normal();
-          pfloattexB[pixelbase+1]=debugmip?0.0f:float(n.x);//r x
-          pfloattexB[pixelbase+2]=debugmip?0.0f:float(n.y);//g y
-          pfloattexB[pixelbase+3]=debugmip?0.0f:float(n.z);//b z
+        fvec3 e01 = (pos3d_dx - pos3d).Normal();
+        fvec3 e02 = (pos3d_dz - pos3d).Normal();
+        auto n = e02.Cross(e01).Normal();
+        pfloattexB[pixelbase + 1] = debugmip ? 0.0f : float(n.x); // r x
+        pfloattexB[pixelbase + 2] = debugmip ? 0.0f : float(n.y); // g y
+        pfloattexB[pixelbase + 3] = debugmip ? 0.0f : float(n.z); // b z
 
       } // if(x>0 and z>0){
-    } // for( size_t x=0; x<MIPW; x++ ){
-  } // for( size_t z=0; z<MIPH; z++ ){
+    }   // for( size_t x=0; x<MIPW; x++ ){
+  }     // for( size_t z=0; z<MIPH; z++ ){
 
   /////////////////////////////
   // compute mips
@@ -284,54 +272,54 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   int levindex = 0;
   MIPW >>= 1;
   MIPH >>= 1;
-  while(MIPW>=2 and MIPH>=2){
-    assert((levindex+1)<chainA->_levels.size());
+  while (MIPW >= 2 and MIPH >= 2) {
+    assert((levindex + 1) < chainA->_levels.size());
     auto prevlevA = chainA->_levels[levindex];
-    auto nextlevA = chainA->_levels[levindex+1];
+    auto nextlevA = chainA->_levels[levindex + 1];
     auto prevlevB = chainB->_levels[levindex];
-    auto nextlevB = chainB->_levels[levindex+1];
-    printf( "levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlevA.get(), nextlevA.get() );
-    auto prevbasA = (float*) prevlevA->_data;
-    auto nextbasA = (float*) nextlevA->_data;
-    auto prevbasB = (float*) prevlevB->_data;
-    auto nextbasB = (float*) nextlevB->_data;
+    auto nextlevB = chainB->_levels[levindex + 1];
+    printf("levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlevA.get(), nextlevA.get());
+    auto prevbasA = (float*)prevlevA->_data;
+    auto nextbasA = (float*)nextlevA->_data;
+    auto prevbasB = (float*)prevlevB->_data;
+    auto nextbasB = (float*)nextlevB->_data;
     ////////////////////////////////////////////////
-    constexpr float kdiv9 = 1.0f/9.0f;
-    int MAXW = (MIPW*2-1);
-    int MAXH = (MIPH*2-1);
-    for( int y=0; y<MIPH; y++ ){
-      for( int x=0; x<MIPW; x++ ){
+    constexpr float kdiv9 = 1.0f / 9.0f;
+    int MAXW = (MIPW * 2 - 1);
+    int MAXH = (MIPH * 2 - 1);
+    for (int y = 0; y < MIPH; y++) {
+      for (int x = 0; x < MIPW; x++) {
         ///////////////////////////////////////////
-        int plx = x*2;
-        int ply = y*2;
+        int plx = x * 2;
+        int ply = y * 2;
         ///////////////////////////////////////////
-        int plxm1 = std::clamp(plx-1,0,MAXW);
-        int plxp1 = std::clamp(plx+1,0,MAXW);
-        int plyp1 = std::clamp(ply+1,0,MAXH);
-        int plym1 = std::clamp(ply-1,0,MAXH);
+        int plxm1 = std::clamp(plx - 1, 0, MAXW);
+        int plxp1 = std::clamp(plx + 1, 0, MAXW);
+        int plyp1 = std::clamp(ply + 1, 0, MAXH);
+        int plym1 = std::clamp(ply - 1, 0, MAXH);
         ///////////////////////////////////////////
-        auto& dest_sampleA = nextlevA->sample<fvec4>(x,y);
-        auto& dest_sampleB = nextlevB->sample<fvec4>(x,y);
+        auto& dest_sampleA = nextlevA->sample<fvec4>(x, y);
+        auto& dest_sampleB = nextlevB->sample<fvec4>(x, y);
         ///////////////////////////////////////////
-        dest_sampleA  = prevlevA->sample<fvec4>(plxm1,plym1);
-        dest_sampleA += prevlevA->sample<fvec4>(plx,plym1);
-        dest_sampleA += prevlevA->sample<fvec4>(plxp1,plym1);
-        dest_sampleA += prevlevA->sample<fvec4>(plxm1,ply);
-        dest_sampleA += prevlevA->sample<fvec4>(plx,ply);
-        dest_sampleA += prevlevA->sample<fvec4>(plxp1,ply);
-        dest_sampleA += prevlevA->sample<fvec4>(plxm1,plyp1);
-        dest_sampleA += prevlevA->sample<fvec4>(plx,plyp1);
-        dest_sampleA += prevlevA->sample<fvec4>(plxp1,plyp1);
+        dest_sampleA = prevlevA->sample<fvec4>(plxm1, plym1);
+        dest_sampleA += prevlevA->sample<fvec4>(plx, plym1);
+        dest_sampleA += prevlevA->sample<fvec4>(plxp1, plym1);
+        dest_sampleA += prevlevA->sample<fvec4>(plxm1, ply);
+        dest_sampleA += prevlevA->sample<fvec4>(plx, ply);
+        dest_sampleA += prevlevA->sample<fvec4>(plxp1, ply);
+        dest_sampleA += prevlevA->sample<fvec4>(plxm1, plyp1);
+        dest_sampleA += prevlevA->sample<fvec4>(plx, plyp1);
+        dest_sampleA += prevlevA->sample<fvec4>(plxp1, plyp1);
         ///////////////////////////////////////////
-        dest_sampleB  = prevlevB->sample<fvec4>(plxm1,plym1);
-        dest_sampleB += prevlevB->sample<fvec4>(plx,plym1);
-        dest_sampleB += prevlevB->sample<fvec4>(plxp1,plym1);
-        dest_sampleB += prevlevB->sample<fvec4>(plxm1,ply);
-        dest_sampleB += prevlevB->sample<fvec4>(plx,ply);
-        dest_sampleB += prevlevB->sample<fvec4>(plxp1,ply);
-        dest_sampleB += prevlevB->sample<fvec4>(plxm1,plyp1);
-        dest_sampleB += prevlevB->sample<fvec4>(plx,plyp1);
-        dest_sampleB += prevlevB->sample<fvec4>(plxp1,plyp1);
+        dest_sampleB = prevlevB->sample<fvec4>(plxm1, plym1);
+        dest_sampleB += prevlevB->sample<fvec4>(plx, plym1);
+        dest_sampleB += prevlevB->sample<fvec4>(plxp1, plym1);
+        dest_sampleB += prevlevB->sample<fvec4>(plxm1, ply);
+        dest_sampleB += prevlevB->sample<fvec4>(plx, ply);
+        dest_sampleB += prevlevB->sample<fvec4>(plxp1, ply);
+        dest_sampleB += prevlevB->sample<fvec4>(plxm1, plyp1);
+        dest_sampleB += prevlevB->sample<fvec4>(plx, plyp1);
+        dest_sampleB += prevlevB->sample<fvec4>(plxp1, plyp1);
         ///////////////////////////////////////////
         dest_sampleA.x *= kdiv9;
         dest_sampleA.y *= kdiv9;
@@ -343,7 +331,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
         dest_sampleB.z *= kdiv9;
         dest_sampleB.w *= kdiv9;
         ///////////////////////////////////////////
-        if(debugmip){
+        if (debugmip) {
           auto& dm = mipdebugcolors[levindex];
           dest_sampleB.y = dm.x;
           dest_sampleB.z = dm.y;
@@ -369,17 +357,11 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   auto bbctr = (_aabbmin + _aabbmax) * 0.5f;
   auto bbdim = (_aabbmax - _aabbmin);
 
-  printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ, kworldsizeX,
-         kworldsizeZ);
-  printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(),
-         _aabbmin.GetZ());
-  printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(),
-         _aabbmax.GetZ());
+  printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ, kworldsizeX, kworldsizeZ);
+  printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(), _aabbmin.GetZ());
+  printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(), _aabbmax.GetZ());
   printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
   printf("bbdim<%f %f %f>\n", bbdim.GetX(), bbdim.GetY(), bbdim.GetZ());
-
-  AABox aab;
-  aab.BeginGrow();
 
   enum PatchType {
     PT_A = 0,
@@ -396,9 +378,53 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
     int _x, _z;
   };
 
-  std::vector<Patch> _patches;
+  int patch_counts[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+  auto sectorID = [&](int x, int z) -> int {
+    int rval = 0;
+    if (x >= 0) {
+      if (z >= 0) {
+        if (x >= z) {
+          // A
+          rval = 0;
+        } else {
+          // B
+          rval = 1;
+        }
+      } else {
+        if (x >= (-z)) {
+          // C
+          rval = 7;
+        } else {
+          // D
+          rval = 6;
+        }
+      }
+    } else { // x<0
+      if (z >= 0) {
+        if ((-x) > z) {
+          // E
+          rval = 3;
+        } else {
+          // F
+          rval = 2;
+        }
+      } else {
+        if ((-x) > (-z)) {
+          // G
+          rval = 4;
+        } else {
+          // H
+          rval = 5;
+        }
+      }
+    }
+    return rval;
+  };
 
   ////////////////////////////////////////////
+
+  std::vector<Patch> _patches[8];
 
   auto patch_row = [&](PatchType t, int lod, int x1, int x2, int z) {
     int step = 1 << lod;
@@ -408,7 +434,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
       p._x = x;
       p._z = z;
       p._lod = lod;
-      _patches.push_back(p);
+      int sector = sectorID(x, z);
+      _patches[sector].push_back(p);
     }
   };
 
@@ -422,7 +449,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
       p._x = x;
       p._z = z;
       p._lod = lod;
-      _patches.push_back(p);
+      int sector = sectorID(x, z);
+      _patches[sector].push_back(p);
     }
   };
 
@@ -443,7 +471,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
         p._x = x;
         p._z = z;
         p._lod = lod;
-        _patches.push_back(p);
+        int sector = sectorID(x, z);
+        _patches[sector].push_back(p);
       }
     }
   };
@@ -456,7 +485,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
     p._x = x;
     p._z = z;
     p._lod = lod;
-    _patches.push_back(p);
+    int sector = sectorID(x, z);
+    _patches[sector].push_back(p);
   };
 
   ////////////////////////////////////////////
@@ -468,15 +498,16 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
 
   std::vector<Iter> iters;
 
-  iters.push_back(Iter{0, 256});  // 256*2 = 512m
-  iters.push_back(Iter{1, 128});  // 128*4 = 512m   tot(1024m)
+  iters.push_back(Iter{0, 256}); // 256*2 = 512m
+  iters.push_back(Iter{1, 128}); // 128*4 = 512m   tot(1024m)
   iters.push_back(Iter{2, 64});  // 64*8 = 512  tot(1536)
   iters.push_back(Iter{3, 32});  // 32*16 = 512m tot(2048m) - 2.56mi
   iters.push_back(Iter{4, 16});  // 16*32 = 512m tot(2560m) - 2.56mi
-  iters.push_back(Iter{5, 8});  // 8*64 = 512m tot(3072m) - 2.56mi
-  //iters.push_back(Iter{4, 128});
-  //iters.push_back(Iter{5, 128});
+  iters.push_back(Iter{5, 8});   // 8*64 = 512m tot(3072m) - 2.56mi
+  // iters.push_back(Iter{4, 128});
+  // iters.push_back(Iter{5, 128});
 
+  printf( "Generating Patches..\n");
 
   int iprevouterd2 = 0;
 
@@ -498,24 +529,19 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
 
     if (0 == lod) {
       patch_block(PT_A, lod, // Full Sector
-                  -newouterd2+step, -newouterd2 + step,
-                  +newouterd2-step, +newouterd2 - step);
+                  -newouterd2 + step, -newouterd2 + step, +newouterd2 - step, +newouterd2 - step);
     } else {
       patch_block(PT_A, lod, // Top Sector
-                  -newouterd2 + step, -newouterd2 + step,
-                  +newouterd2-step, -iprevouterd2);
+                  -newouterd2 + step, -newouterd2 + step, +newouterd2 - step, -iprevouterd2);
 
       patch_block(PT_A, lod, // Left Sector
-                  -newouterd2 + step, -iprevouterd2,
-                  -iprevouterd2, +iprevouterd2);
+                  -newouterd2 + step, -iprevouterd2, -iprevouterd2, +iprevouterd2);
 
       patch_block(PT_A, lod, // Right Sector
-                  iprevouterd2, -iprevouterd2,
-                  newouterd2-step, +iprevouterd2);
+                  iprevouterd2, -iprevouterd2, newouterd2 - step, +iprevouterd2);
 
       patch_block(PT_A, lod, // Bottom Sector
-                  -newouterd2 + step, iprevouterd2,
-                  +newouterd2-step, newouterd2-step);
+                  -newouterd2 + step, iprevouterd2, +newouterd2 - step, newouterd2 - step);
     }
 
     int bx0 = -newouterd2;
@@ -533,141 +559,144 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
     iprevouterd2 = newouterd2;
   }
 
-  size_t triangle_count = 0;
+  size_t triangle_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  size_t vertex_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
-  for (auto p : _patches) {
+  for (int i = 0; i < 8; i++) {
+    auto& sector_patches = _patches[i];
+    for (auto p : sector_patches) {
 
-    //printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
-    switch (p._type) {
-    case PT_A: //
-      triangle_count += 8;
-      break;
-    case PT_BT:
-    case PT_BL:
-    case PT_BB:
-    case PT_BR:
-      triangle_count += 5;
-      break;
-    case PT_C:
-      triangle_count += 4;
-      break;
+      // printf("p<%d %d> t<%d>\n", p._x, p._z, p._type);
+      switch (p._type) {
+        case PT_A: //
+          triangle_count[i] += 8;
+          break;
+        case PT_BT:
+        case PT_BL:
+        case PT_BB:
+        case PT_BR:
+          triangle_count[i] += 5;
+          break;
+        case PT_C:
+          triangle_count[i] += 4;
+          break;
+      }
     }
   }
 
-  size_t vertex_count = _patches.size() * 6;
+  ////////////////////////////////////////////////////////////////
+  // create 1 vertex buffer per 45 degree arc
+  ////////////////////////////////////////////////////////////////
+  typedef SVtxV12C4T16 vertex_type;
 
-  printf("triangle_count<%zu>\n", triangle_count);
-  printf("vertex_count<%zu>\n", vertex_count);
+  for (int i = 0; i < 8; i++) {
+    auto& sector_patches = _patches[i];
+    vertex_count[i] = sector_patches.size() * 6;
+    _vtxbufs[i] = new TerVtxBuffersType;
+    auto vbuf = new StaticVertexBuffer<vertex_type>(vertex_count[i], 0, EPRIM_POINTS);
+    vbuf->Reset();
+    _vtxbufs[i]->push_back(vbuf);
+
+    printf("sector<%d> triangle_count<%zu>\n", i, triangle_count[i]);
+    printf("sector<%d> vertex_count<%zu>\n", i, vertex_count[i]);
+  }
+
+  assert(false);
 
   ////////////////////////////////////////////
   // find/create vertexbuffers
   ////////////////////////////////////////////
 
-  typedef SVtxV12C4T16 vertex_type;
+  AABox aab;
+  aab.BeginGrow();
 
-  TerVtxBuffersType *vertexbuffers = 0;
-
-  auto itv = vtxbufmap.find(terrain_ngrids);
-
-  if (itv == vtxbufmap.end()) // init index buffer for this terrain size
-  {
-    vertexbuffers = OrkNew TerVtxBuffersType;
-    vtxbufmap[terrain_ngrids] = vertexbuffers;
-
-    auto vbuf = new StaticVertexBuffer<vertex_type>(
-        vertex_count, 0, EPRIM_POINTS);
-    vertexbuffers->push_back(vbuf);
-  } else {
-    vertexbuffers = itv->second;
-  }
-
-  auto vbuf = (*vertexbuffers)[0];
-  vbuf->Reset();
   ////////////////////////////////////////////
-  VtxWriter<vertex_type> vwriter;
-  vwriter.Lock(ptarg, vbuf, vertex_count);
-  ////////////////////////////////////////////
-  triangle_count = 0;
-  for (auto p : _patches) {
-    int x = p._x;
-    int z = p._z;
-    int lod = p._lod;
-    int step = 1 << lod;
+  VtxWriter<vertex_type> vwriter[8];
+  for (int i = 0; i < 8; i++) {
+    auto vbuf = (*_vtxbufs[i])[0];
+    vwriter[i].Lock(ptarg, vbuf, vertex_count[i]);
+    ////////////////////////////////////////////
+    triangle_count[i] = 0;
+    auto& sector_patches = _patches[i];
+    for (auto p : sector_patches) {
+      int x = p._x;
+      int z = p._z;
+      int lod = p._lod;
+      int step = 1 << lod;
 
-    fvec3 p0(x, lod, z);
-    fvec3 p1(x + step, lod, z);
-    fvec3 p2(x + step, lod, z + step);
-    fvec3 p3(x, lod, z + step);
+      fvec3 p0(x, lod, z);
+      fvec3 p1(x + step, lod, z);
+      fvec3 p2(x + step, lod, z + step);
+      fvec3 p3(x, lod, z + step);
 
-    aab.Grow(p0);
-    aab.Grow(p1);
-    aab.Grow(p2);
-    aab.Grow(p3);
+      aab.Grow(p0);
+      aab.Grow(p1);
+      aab.Grow(p2);
+      aab.Grow(p3);
 
-    uint32_t c0 = 0xff000000;
-    uint32_t c1 = 0xff0000ff;
-    uint32_t c2 = 0xff00ffff;
-    uint32_t c3 = 0xff00ff00;
+      uint32_t c0 = 0xff000000;
+      uint32_t c1 = 0xff0000ff;
+      uint32_t c2 = 0xff00ffff;
+      uint32_t c3 = 0xff00ff00;
 
-    switch (p._type) {
-    case PT_A: //
-      triangle_count += 8;
-      c0 = 0xff0000ff;
-      break;
-    case PT_BT:
-    case PT_BB:
-      c0 = 0xff800080;
-      break;
-    case PT_BL:
-    case PT_BR:
-      c0 = 0xff00ff00;
-      break;
-      break;
-    case PT_C:
-      c0 = 0xff808080;
-      break;
+      switch (p._type) {
+        case PT_A: //
+          triangle_count[i] += 8;
+          c0 = 0xff0000ff;
+          break;
+        case PT_BT:
+        case PT_BB:
+          c0 = 0xff800080;
+          break;
+        case PT_BL:
+        case PT_BR:
+          c0 = 0xff00ff00;
+          break;
+          break;
+        case PT_C:
+          c0 = 0xff808080;
+          break;
+      }
+
+      p0.y = lod;
+      p1.y = lod;
+      p2.y = lod;
+      p3.y = lod;
+
+      auto v0 = vertex_type(p0, fvec2(), c0);
+      auto v1 = vertex_type(p1, fvec2(), c0);
+      auto v2 = vertex_type(p2, fvec2(), c0);
+      auto v3 = vertex_type(p3, fvec2(), c0);
+      auto vc = vertex_type((p0 + p1 + p2 + p3) * 0.25, fvec2(), c0);
+
+      switch (p._type) {
+        case PT_A: //
+          triangle_count[i] += 2;
+          vwriter[i].AddVertex(v0);
+          vwriter[i].AddVertex(v1);
+          vwriter[i].AddVertex(v2);
+          vwriter[i].AddVertex(v0);
+          vwriter[i].AddVertex(v2);
+          vwriter[i].AddVertex(v3);
+          break;
+        case PT_BT:
+        case PT_BB:
+          triangle_count[i] += 5;
+          break;
+        case PT_BR:
+          triangle_count[i] += 5;
+          break;
+        case PT_BL:
+          break;
+        case PT_C:
+          triangle_count[i] += 4;
+          break;
+      }
     }
-
-    p0.y = lod;
-    p1.y = lod;
-    p2.y = lod;
-    p3.y = lod;
-
-    auto v0 = vertex_type(p0, fvec2(), c0);
-    auto v1 = vertex_type(p1, fvec2(), c0);
-    auto v2 = vertex_type(p2, fvec2(), c0);
-    auto v3 = vertex_type(p3, fvec2(), c0);
-    auto vc = vertex_type((p0+p1+p2+p3)*0.25, fvec2(), c0);
-
-
-    switch (p._type) {
-    case PT_A: //
-      triangle_count += 2;
-      vwriter.AddVertex(v0);
-      vwriter.AddVertex(v1);
-      vwriter.AddVertex(v2);
-      vwriter.AddVertex(v0);
-      vwriter.AddVertex(v2);
-      vwriter.AddVertex(v3);
-      break;
-    case PT_BT:
-    case PT_BB:
-      triangle_count += 5;
-      break;
-    case PT_BR:
-      triangle_count += 5;
-      break;
-      case PT_BL:
-      break;
-    case PT_C:
-      triangle_count += 4;
-      break;
-    }
+    ////////////////////////////////////////////
+    vwriter[i].UnLock(ptarg);
+    ////////////////////////////////////////////
   }
-  ////////////////////////////////////////////
-  vwriter.UnLock(ptarg);
-  ////////////////////////////////////////////
-
   aab.EndGrow();
   auto geomin = aab.Min();
   auto geomax = aab.Max();
@@ -676,22 +705,20 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget *ptarg) {
   _aabbmin = geomin;
   _aabbmax = geomax;
 
-
   printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
   printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
   printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void FastRender(const RenderContextInstData &rcidata,
-                BulletHeightfieldImpl *htri) {
+void FastRender(const RenderContextInstData& rcidata, BulletHeightfieldImpl* htri) {
 
-  const Renderer *renderer = rcidata.GetRenderer();
-  const ent::Entity *pent = htri->_entity;
-  const auto &hfd = htri->_hfd;
+  const Renderer* renderer = rcidata.GetRenderer();
+  const ent::Entity* pent = htri->_entity;
+  const auto& hfd = htri->_hfd;
   auto sphmap = hfd.GetSphereMap();
 
-  GfxTarget *ptarg = renderer->GetTarget();
+  GfxTarget* ptarg = renderer->GetTarget();
 
   auto framedata = ptarg->GetRenderContextFrameData();
 
@@ -707,9 +734,10 @@ void FastRender(const RenderContextInstData &rcidata,
   fmtx4 inv_view;
   inv_view.inverseOf(VMTX);
   fvec3 campos = inv_view.GetTranslation();
+  auto znormal = inv_view.GetZNormal().Normal();
   campos.y = 0;
   fmtx4 follow;
-  follow.SetTranslation( hfd.GetVisualOffset() );
+  follow.SetTranslation(hfd.GetVisualOffset());
   //////////////////////////
   ptarg->MTXI()->PushPMatrix(PMTX);
   ptarg->MTXI()->PushVMatrix(VMTX);
@@ -721,64 +749,80 @@ void FastRender(const RenderContextInstData &rcidata,
     const int terrain_ngrids = iglX * iglZ;
 
     if (terrain_ngrids >= 1024) {
-      const auto &vb_map = htri->vtxbufmap;
-      const auto &itv = vb_map.find(terrain_ngrids);
 
-      if ((itv != vb_map.end())) {
-        auto vbsptr = itv->second;
-        auto &vertexbuffers = *vbsptr;
+      ///////////////////////////////////////////////////////////////////
+      // render
+      ///////////////////////////////////////////////////////////////////
 
-        ///////////////////////////////////////////////////////////////////
-        // render
-        ///////////////////////////////////////////////////////////////////
+      Texture* ColorTex = nullptr;
+      if (sphmap && sphmap->GetTexture())
+        ColorTex = sphmap->GetTexture();
 
-        Texture *ColorTex = nullptr;
-        if (sphmap && sphmap->GetTexture())
-          ColorTex = sphmap->GetTexture();
+      auto material = htri->mTerrainMtl;
 
-        auto material = htri->mTerrainMtl;
+      material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
+      material->SetTexture(ColorTex);
+      material->SetTexture2(htri->_heightmapTextureA);
+      material->SetTexture3(htri->_heightmapTextureB);
 
-        material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-        material->SetTexture(ColorTex);
-        material->SetTexture2(htri->_heightmapTextureA);
-        material->SetTexture3(htri->_heightmapTextureB);
+      auto range = htri->_aabbmax - htri->_aabbmin;
+      material->SetUser0(htri->_aabbmin);
+      material->SetUser1(range);
+      material->SetUser2(fvec4(hfd.WorldHeight(), 0, 0, 0));
+      material->mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+      ptarg->PushMaterial(material);
+      int ivbidx = 0;
 
-        auto range = htri->_aabbmax-htri->_aabbmin;
-        material->SetUser0(htri->_aabbmin);
-        material->SetUser1(range);
-        material->SetUser2(fvec4(hfd.WorldHeight(),0,0,0));
-        material->mRasterState.SetCullTest( ECULLTEST_PASS_BACK );
-        ptarg->PushMaterial(material);
-        int ivbidx = 0;
+      fvec4 color = fcolor4::White();
 
-        fvec4 color = fcolor4::White();
-
-        if (bpick) {
-          auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
-          uint64_t pickid = pickbuf->AssignPickId((Object *)&pent->GetEntData());
-          color.SetRGBAU64(pickid);
-        } else if (false) { // is_sel ){
-          color = fcolor4::Red();
-        }
-
-        ptarg->PushModColor(color);
-        {
-          int inumvb = vertexbuffers.size();
-          int inumpasses = htri->mTerrainMtl->BeginBlock(ptarg, rcidata);
-          bool bDRAW = htri->mTerrainMtl->BeginPass(ptarg, 0);
-          if (bDRAW) {
-            for (int ivb = 0; ivb < inumvb; ivb++) {
-              auto vertex_buf = vertexbuffers[ivb];
-              ptarg->GBI()->DrawPrimitiveEML(*vertex_buf,
-                                             EPRIM_TRIANGLES);
-            }
-            htri->mTerrainMtl->EndPass(ptarg);
-            htri->mTerrainMtl->EndBlock(ptarg);
-          }
-        }
-        ptarg->PopModColor();
-        ptarg->PopMaterial();
+      if (bpick) {
+        auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
+        uint64_t pickid = pickbuf->AssignPickId((Object*)&pent->GetEntData());
+        color.SetRGBAU64(pickid);
+      } else if (false) { // is_sel ){
+        color = fcolor4::Red();
       }
+
+      ptarg->PushModColor(color);
+      {
+        int inumpasses = htri->mTerrainMtl->BeginBlock(ptarg, rcidata);
+        bool bDRAW = htri->mTerrainMtl->BeginPass(ptarg, 0);
+        if (bDRAW) {
+
+          if( true ) { //abs(znormal.y) > 0.8 ){ // looking up or down
+            // so draw all sectors
+            for (int isector = 0; isector < 8; isector++) {
+              auto vbufs = htri->_vtxbufs[isector];
+              int inumvb = vbufs->size();
+              for (int ivb = 0; ivb < inumvb; ivb++) {
+                auto vertex_buf = (*vbufs)[ivb];
+                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+              }
+            }
+          }
+          else { // sector based culling (WIP)
+            // todo - split sectors up by lod
+            //  always draw lod0 for all sectors..
+            auto zn_xz = znormal.GetXZ().Normal();
+            float angle = 8.0*((PI*0.5)+rect2pol_ang(zn_xz.x, zn_xz.y))/(PI*2.0);
+            //printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
+            int basesector = int(floor(angle))+2;
+            for (int soff = 6; soff < 10; soff++) {
+              int sector = basesector+soff;
+              auto vbufs = htri->_vtxbufs[sector&7];
+              int inumvb = vbufs->size();
+              for (int ivb = 0; ivb < inumvb; ivb++) {
+                auto vertex_buf = (*vbufs)[ivb];
+                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+              }
+            }
+          }
+          htri->mTerrainMtl->EndPass(ptarg);
+          htri->mTerrainMtl->EndBlock(ptarg);
+        }
+      }
+      ptarg->PopModColor();
+      ptarg->PopMaterial();
     }
   }
   ptarg->MTXI()->PopMMatrix();
@@ -789,10 +833,8 @@ void FastRender(const RenderContextInstData &rcidata,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static void RenderHeightfield(RenderContextInstData &rcid,
-                              GfxTarget *targ,
-                              const CallbackRenderable *pren) {
-  auto data = pren->GetDrawableDataA().Get<BulletHeightfieldImpl *>();
+static void RenderHeightfield(RenderContextInstData& rcid, GfxTarget* targ, const CallbackRenderable* pren) {
+  auto data = pren->GetDrawableDataA().Get<BulletHeightfieldImpl*>();
   if (data)
     FastRender(rcid, data);
 }
@@ -800,67 +842,44 @@ static void RenderHeightfield(RenderContextInstData &rcid,
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletShapeHeightfieldData::Describe() {
-  reflect::RegisterProperty("HeightMap",
-                            &BulletShapeHeightfieldData::GetHeightMapName,
+  reflect::RegisterProperty("HeightMap", &BulletShapeHeightfieldData::GetHeightMapName,
                             &BulletShapeHeightfieldData::SetHeightMapName);
-  reflect::RegisterProperty("VizHeightMap",
-                            &BulletShapeHeightfieldData::GetVizHeightMapName,
+  reflect::RegisterProperty("VizHeightMap", &BulletShapeHeightfieldData::GetVizHeightMapName,
                             &BulletShapeHeightfieldData::SetVizHeightMapName);
-  reflect::RegisterProperty("WorldHeight",
-                            &BulletShapeHeightfieldData::mWorldHeight);
-  reflect::RegisterProperty("WorldSize",
-                            &BulletShapeHeightfieldData::mWorldSize);
-  reflect::RegisterProperty("SphericalLightMap",
-                            &BulletShapeHeightfieldData::GetTextureAccessor,
+  reflect::RegisterProperty("WorldHeight", &BulletShapeHeightfieldData::mWorldHeight);
+  reflect::RegisterProperty("WorldSize", &BulletShapeHeightfieldData::mWorldSize);
+  reflect::RegisterProperty("SphericalLightMap", &BulletShapeHeightfieldData::GetTextureAccessor,
                             &BulletShapeHeightfieldData::SetTextureAccessor);
-  reflect::RegisterProperty("VisualOffset",
-                            &BulletShapeHeightfieldData::mVisualOffset);
+  reflect::RegisterProperty("VisualOffset", &BulletShapeHeightfieldData::mVisualOffset);
 
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "HeightMap", "editor.class", "ged.factory.filelist");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "HeightMap", "editor.filetype", "png");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.class", "ged.factory.filelist");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.filetype", "png");
 
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "VizHeightMap", "editor.class", "ged.factory.filelist");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "VizHeightMap", "editor.filetype", "png");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("VizHeightMap", "editor.class", "ged.factory.filelist");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("VizHeightMap", "editor.filetype", "png");
 
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldHeight", "editor.range.min", "0");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldHeight", "editor.range.max", "10000");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.min", "0");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.max", "10000");
 
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldSize", "editor.range.min", "1.0f");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "WorldSize", "editor.range.max", "20000.0");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.min", "1.0f");
+  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.max", "20000.0");
 
-  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "SphericalLightMap", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "SphericalLightMap", "editor.assettype", "lev2tex");
-  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>(
-      "SphericalLightMap", "editor.assetclass", "lev2tex");
+  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("SphericalLightMap", "editor.class", "ged.factory.assetlist");
+  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("SphericalLightMap", "editor.assettype", "lev2tex");
+  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("SphericalLightMap", "editor.assetclass", "lev2tex");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void BulletShapeHeightfieldData::SetTextureAccessor(
-    ork::rtti::ICastable *const &tex) {
+void BulletShapeHeightfieldData::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
   mSphereLightMap = tex ? ork::rtti::autocast(tex) : 0;
 }
-void BulletShapeHeightfieldData::GetTextureAccessor(
-    ork::rtti::ICastable *&tex) const {
-  tex = mSphereLightMap;
-}
+void BulletShapeHeightfieldData::GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mSphereLightMap; }
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletShapeHeightfieldData::BulletShapeHeightfieldData()
-    : mHeightMapName("none"), mVizHeightMapName("non"), mWorldHeight(1000.0f), mWorldSize(1000.0f),
-      mSphereLightMap(nullptr) {
+    : mHeightMapName("none"), mVizHeightMapName("non"), mWorldHeight(1000.0f), mWorldSize(1000.0f), mSphereLightMap(nullptr) {
 
-  mShapeFactory._createShape =
-      [=](const ShapeCreateData &data) -> BulletShapeBaseInst * {
+  mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
     auto rval = new BulletShapeBaseInst(this);
     auto geo = std::make_shared<BulletHeightfieldImpl>(*this);
     rval->_impl.Set<std::shared_ptr<BulletHeightfieldImpl>>(geo);
@@ -872,7 +891,7 @@ BulletShapeHeightfieldData::BulletShapeHeightfieldData()
 
     pdrw->SetRenderCallback(RenderHeightfield);
     pdrw->SetOwner(&data.mEntity->GetEntData());
-    pdrw->SetUserDataA((BulletHeightfieldImpl *)geo.get());
+    pdrw->SetUserDataA((BulletHeightfieldImpl*)geo.get());
     pdrw->SetSortKey(1000);
 
     msgrouter::channel("bshdchanged")->post(this);
@@ -880,16 +899,14 @@ BulletShapeHeightfieldData::BulletShapeHeightfieldData()
     return rval;
   };
 
-  mShapeFactory._invalidate = [](BulletShapeBaseData *data) {
-    auto as_bshd = dynamic_cast<BulletShapeHeightfieldData *>(data);
+  mShapeFactory._invalidate = [](BulletShapeBaseData* data) {
+    auto as_bshd = dynamic_cast<BulletShapeHeightfieldData*>(data);
     assert(as_bshd != nullptr);
     msgrouter::channel("bshdchanged")->post(nullptr);
   };
 }
 
-bool BulletShapeHeightfieldData::PostDeserialize(reflect::IDeserializer &) {
-  return true;
-}
+bool BulletShapeHeightfieldData::PostDeserialize(reflect::IDeserializer&) { return true; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -897,18 +914,10 @@ BulletShapeHeightfieldData::~BulletShapeHeightfieldData() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletShapeHeightfieldData::SetHeightMapName(file::Path const &lmap) {
-  mHeightMapName = lmap;
-}
-void BulletShapeHeightfieldData::GetHeightMapName(file::Path &lmap) const {
-  lmap = mHeightMapName;
-}
-void BulletShapeHeightfieldData::SetVizHeightMapName(file::Path const &lmap) {
-  mVizHeightMapName = lmap;
-}
-void BulletShapeHeightfieldData::GetVizHeightMapName(file::Path &lmap) const {
-  lmap = mVizHeightMapName;
-}
+void BulletShapeHeightfieldData::SetHeightMapName(file::Path const& lmap) { mHeightMapName = lmap; }
+void BulletShapeHeightfieldData::GetHeightMapName(file::Path& lmap) const { lmap = mHeightMapName; }
+void BulletShapeHeightfieldData::SetVizHeightMapName(file::Path const& lmap) { mVizHeightMapName = lmap; }
+void BulletShapeHeightfieldData::GetVizHeightMapName(file::Path& lmap) const { lmap = mVizHeightMapName; }
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent
