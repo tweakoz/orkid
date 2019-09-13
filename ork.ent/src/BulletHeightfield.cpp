@@ -35,6 +35,37 @@ using namespace ork::lev2;
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef SVtxV12C4T16 vertex_type;
+
+enum PatchType {
+  PT_A = 0,
+  PT_BT,
+  PT_BB,
+  PT_BL,
+  PT_BR,
+  PT_C,
+};
+
+struct Patch {
+  PatchType _type;
+  int _lod;
+  int _x, _z;
+};
+
+struct PatchCount {
+  int lod0 = 0;
+  int othl = 0;
+};
+
+struct SectorInfo {
+  PatchCount _patchcount;
+  std::vector<Patch> _patches;
+  size_t triangle_count = 0;
+  size_t vertex_count = 0;
+  VtxWriter<vertex_type> vwriter;
+  TerVtxBuffersType* _vtxbuflist;
+};
+
 struct BulletHeightfieldImpl {
   int mGridSize = 0;
   bool _loadok = false;
@@ -48,11 +79,11 @@ struct BulletHeightfieldImpl {
   fvec3 _aabbmin;
   fvec3 _aabbmax;
 
-  TerVtxBuffersType* _vtxbufs[8];
   HeightMap _heightmap;
   HeightMap _vizheightmap;
   const BulletShapeHeightfieldData& _hfd;
   msgrouter::subscriber_t _subscriber;
+  SectorInfo _sector[8];
 
   BulletHeightfieldImpl(const BulletShapeHeightfieldData& data);
   ~BulletHeightfieldImpl();
@@ -363,38 +394,6 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
   printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
   printf("bbdim<%f %f %f>\n", bbdim.GetX(), bbdim.GetY(), bbdim.GetZ());
 
-  enum PatchType {
-    PT_A = 0,
-    PT_BT,
-    PT_BB,
-    PT_BL,
-    PT_BR,
-    PT_C,
-  };
-
-  struct Patch {
-    PatchType _type;
-    int _lod;
-    int _x, _z;
-  };
-
-  struct PatchCount {
-    int lod0 = 0;
-    int othl = 0;
-  };
-
-  typedef SVtxV12C4T16 vertex_type;
-
-  struct SectorInfo {
-    PatchCount _patchcount;
-    std::vector<Patch> _patches;
-    size_t triangle_count = 0;
-    size_t vertex_count = 0;
-    VtxWriter<vertex_type> vwriter;
-  };
-
-  SectorInfo _sector[8];
-
   auto sectorID = [&](int x, int z) -> int {
     int rval = 0;
     if (x >= 0) {
@@ -600,16 +599,14 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
     auto& sector = _sector[i];
     auto& sector_patches = sector._patches;
     sector.vertex_count = sector_patches.size() * 6;
-    _vtxbufs[i] = new TerVtxBuffersType;
+    sector._vtxbuflist = new TerVtxBuffersType;
     auto vbuf = new StaticVertexBuffer<vertex_type>(sector.vertex_count, 0, EPRIM_POINTS);
     vbuf->Reset();
-    _vtxbufs[i]->push_back(vbuf);
+    sector._vtxbuflist->push_back(vbuf);
 
     printf("sector<%d> triangle_count<%zu>\n", i, sector.triangle_count);
     printf("sector<%d> vertex_count<%zu>\n", i, sector.vertex_count);
   }
-
-  assert(false);
 
   ////////////////////////////////////////////
   // find/create vertexbuffers
@@ -621,7 +618,7 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
   ////////////////////////////////////////////
   for (int i = 0; i < 8; i++) {
     auto& sector = _sector[i];
-    auto vbuf = (*_vtxbufs[i])[0];
+    auto vbuf = (*sector._vtxbuflist)[0];
     sector.vwriter.Lock(ptarg, vbuf, sector.vertex_count);
     ////////////////////////////////////////////
     sector.triangle_count = 0;
@@ -800,7 +797,8 @@ void FastRender(const RenderContextInstData& rcidata, BulletHeightfieldImpl* htr
           if( true ) { //abs(znormal.y) > 0.8 ){ // looking up or down
             // so draw all sectors
             for (int isector = 0; isector < 8; isector++) {
-              auto vbufs = htri->_vtxbufs[isector];
+              auto& sector = htri->_sector[isector];
+              auto vbufs = sector._vtxbuflist;
               int inumvb = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
@@ -816,8 +814,9 @@ void FastRender(const RenderContextInstData& rcidata, BulletHeightfieldImpl* htr
             //printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
             int basesector = int(floor(angle))+2;
             for (int soff = 6; soff < 10; soff++) {
-              int sector = basesector+soff;
-              auto vbufs = htri->_vtxbufs[sector&7];
+              int sectID = basesector+soff;
+              auto& sector = htri->_sector[sectID];
+              auto vbufs = sector._vtxbuflist;
               int inumvb = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
