@@ -76,38 +76,38 @@ fragment_shader ps_terrain1
   : iface_fdefault
   : lib_mmnoise {
 
-  float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
-  float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
-  float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
+  //float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
+  //float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
+  //float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
 
-  const vec3 fogcolor = vec3(0.6, 0.6, 0.7);
-  const vec3 ambient = vec3(0.6, 0.6, 0.65);
-  const vec3 side = vec3(0.2, 0.2, 0.25);
-  const vec3 top = vec3(0.3, 0.3, 0.3);
+  //const vec3 fogcolor = vec3(0.6, 0.6, 0.7);
+  //const vec3 ambient = vec3(0.6, 0.6, 0.65);
+  //const vec3 side = vec3(0.2, 0.2, 0.25);
+  //const vec3 top = vec3(0.3, 0.3, 0.3);
 
   vec3 n = normalize(frg_nrm);
 
-  vec3 tpw = abs(n);
-  tpw /= (tpw.x + tpw.y + tpw.z);
+  //vec3 tpw = abs(n);
+  //tpw /= (tpw.x + tpw.y + tpw.z);
 
-  const vec3 grass = vec3(0,1,0);
-  const vec3 snow = vec3(1,1,1);
-  const vec3 rock1 = vec3(0.6,.6,0.8);
-  const vec3 rock2 = vec3(0.6,.6,0.7);
+  //const vec3 grass = vec3(0,1,0);
+  //const vec3 snow = vec3(1,1,1);
+  //const vec3 rock1 = vec3(0.6,.6,0.8);
+  //const vec3 rock2 = vec3(0.6,.6,0.7);
 
-  float gsblend = clamp(frg_wpos.y*0.5,0,1);
-  gsblend = smoothstep(0.6,0.61,gsblend);
-  vec3 hor = mix( grass,
-                  snow,
-                  gsblend );
+  //float gsblend = clamp(frg_wpos.y*0.5,0,1);
+  //gsblend = smoothstep(0.6,0.61,gsblend);
+  //vec3 hor = mix( grass,
+    //              snow,
+      //            gsblend );
 
-  vec3 c = hor*pow(tpw.y,0.5)
-         + rock1*pow(tpw.x,0.5)
-         + rock2*pow(tpw.z,0.5);
+  //vec3 c = hor*pow(tpw.y,0.5)
+    //     + rock1*pow(tpw.x,0.5)
+      //   + rock2*pow(tpw.z,0.5);
 
-  vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
-  c = lightcol*mix(fogcolor,c,ddd2);
-  out_clr = vec4(c,1);//+vec3(u*0.25,v*0.25,0),1);
+  //vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
+  //c = lightcol*mix(fogcolor,c,ddd2);
+  out_clr = vec4(n,1);//+vec3(u*0.25,v*0.25,0),1);
 }
 ///////////////////////////////////////////////////////////////
 // pick
