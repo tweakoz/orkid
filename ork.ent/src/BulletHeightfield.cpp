@@ -58,6 +58,7 @@ struct SectorLodInfo {
   size_t vertex_count = 0;
   VtxWriter<vertex_type> vwriter;
   TerVtxBuffersType* _vtxbuflist;
+  bool _islod0 = false;
 
   size_t countTriangles(){
     triangle_count = 0;
@@ -621,6 +622,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
     sector._lodX.countTriangles();
     sector._lod0.createVB();
     sector._lodX.createVB();
+    sector._lod0._islod0 = true;
+    sector._lodX._islod0 = false;
   }
 
   ////////////////////////////////////////////
@@ -632,7 +635,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
 
   ////////////////////////////////////////////
 
-  auto onlod = [&](SectorLodInfo& linfo){
+  auto onlod = [&](SectorInfo& info, bool do_lod0){
+    auto& linfo = do_lod0 ? info._lod0 : info._lodX;
     auto vbuf = (*linfo._vtxbuflist)[0];
     linfo.vwriter.Lock(ptarg, vbuf, linfo.vertex_count);
     ////////////////////////////////////////////
@@ -642,6 +646,12 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
       int x = p._x;
       int z = p._z;
       int lod = p._lod;
+
+      if( lod!=0 and do_lod0 )
+        continue;
+      if( lod==0 and (false==do_lod0) )
+        continue;
+
       int step = 1 << lod;
 
       fvec3 p0(x, lod, z);
@@ -721,8 +731,8 @@ void BulletHeightfieldImpl::init_visgeom(GfxTarget* ptarg) {
   ////////////////////////////////////////////
   for (int i = 0; i < 8; i++) {
     auto& sector = _sector[i];
-    onlod(sector._lod0);
-    onlod(sector._lodX);
+    onlod(sector,true);
+    onlod(sector,false);
   } // for each sector
   aab.EndGrow();
   auto geomin = aab.Min();
