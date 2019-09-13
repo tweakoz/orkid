@@ -173,7 +173,7 @@
                                                 "xgmodel" "data://actors/diver/diverphong"
                                             </reference>
                                         </property>
-                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Offset'>0 -200 0</property>
                                         <property name='Rotate'>0 0 0</property>
                                         <property name='Scale'>0.01</property>
                                         <property name='ShowBoundingSphere'>true</property>
@@ -940,7 +940,7 @@
             <item key='BulletSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='BulletSystemData' id='109'>
-                        <property name='Debug'>true</property>
+                        <property name='Debug'>false</property>
                         <property name='Gravity'>0 -9 0</property>
                         <property name='SimulationRate'>120</property>
                         <property name='TimeScale'>1</property>
