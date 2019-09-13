@@ -32,11 +32,14 @@ void VrCompositingNode::Describe() {}
 constexpr int NUMSAMPLES = 4;
 
 struct VrFrameTechnique final : public FrameTechniqueBase {
-  VrFrameTechnique(int w, int h) : FrameTechniqueBase(w, h), _rtg_left(nullptr), _rtg_right(nullptr) {}
+  VrFrameTechnique(int w, int h)
+      : FrameTechniqueBase(w, h)
+      , _rtg_left(nullptr)
+      , _rtg_right(nullptr) {}
 
   void DoInit(GfxTarget* pTARG) final {
     if (nullptr == _rtg_left) {
-      _rtg_left = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
+      _rtg_left  = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
       _rtg_right = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
 
       auto lbuf = new RtBuffer(_rtg_left, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
@@ -48,17 +51,20 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
   }
-  void renderBothEyes(FrameRenderer& renderer, CompositorSystemDrawData& drawdata, CameraData* lcam, CameraData* rcam,
+  void renderBothEyes(FrameRenderer& renderer,
+                      CompositorSystemDrawData& drawdata,
+                      CameraData* lcam,
+                      CameraData* rcam,
                       const std::map<int, openvr::ControllerState>& controllers) {
     RenderContextFrameData& FrameData = renderer.GetFrameData();
-    GfxTarget* pTARG = FrameData.GetTarget();
+    GfxTarget* pTARG                  = FrameData.GetTarget();
 
     SRect tgt_rect(0, 0, miW, miH);
 
     _CPD.mbDrawSource = true;
-    _CPD.mpFrameTek = this;
+    _CPD.mpFrameTek   = this;
     _CPD.mpCameraName = nullptr;
-    _CPD.mpLayerName = nullptr; // default == "All"
+    _CPD.mpLayerName  = nullptr; // default == "All"
 
     //////////////////////////////////////////////////////
     // render all controller poses
@@ -167,9 +173,9 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
 struct VRSYSTEMIMPL {
   ///////////////////////////////////////
   VRSYSTEMIMPL()
-      : _frametek(nullptr), _camname(AddPooledString("Camera")), _layers(AddPooledString("All")) {
-
-  }
+      : _frametek(nullptr)
+      , _camname(AddPooledString("Camera"))
+      , _layers(AddPooledString("All")) {}
   ///////////////////////////////////////
   ~VRSYSTEMIMPL() {
 
@@ -179,8 +185,8 @@ struct VRSYSTEMIMPL {
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     _material.Init(pTARG);
-    int w = openvr::get()._width;
-    int h = openvr::get()._height;
+    int w     = openvr::get()._width;
+    int h     = openvr::get()._height;
     _frametek = new VrFrameTechnique(w, h);
     _frametek->Init(pTARG);
   }
@@ -188,7 +194,7 @@ struct VRSYSTEMIMPL {
   void _myrender(Simulation* psi, FrameRenderer& renderer, CompositorSystemDrawData& drawdata, fmtx4 rootmatrix) {
 
     auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
-    auto playermtx = playerspawn->GetEffectiveMatrix();
+    auto playermtx   = playerspawn->GetEffectiveMatrix();
 
     auto& LCAM = openvr::get()._leftcamera;
     auto& RCAM = openvr::get()._rightcamera;
@@ -218,11 +224,11 @@ void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtua
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* compsys) // virtual
 {
-  lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
+  lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
-  auto targ = framedata.GetTarget();
+  auto targ                               = framedata.GetTarget();
 
-  auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+  auto vrimpl                 = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
   static PoolString vrcamname = AddPooledString("vrcam");
 
   openvr::gpuUpdate(targ);
@@ -231,7 +237,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
   // find vr camera
   //////////////////////////////////////////////
 
-  auto psi = compsys->simulation();
+  auto psi   = compsys->simulation();
   auto vrcam = psi->GetCameraData(vrcamname);
 
   fmtx4 rootmatrix;
@@ -239,7 +245,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
   if (vrcam != nullptr) {
     auto eye = vrcam->GetEye();
     auto tgt = vrcam->GetTarget();
-    auto up = vrcam->GetUp();
+    auto up  = vrcam->GetUp();
     rootmatrix.LookAt(eye, tgt, up);
   }
 
