@@ -854,25 +854,39 @@ void FastRender(const RenderContextInstData& rcidata, BulletHeightfieldImpl* htr
               }
             }
           }
-          /*
           else { // sector based culling (WIP)
-            // todo - split sectors up by lod
-            //  always draw lod0 for all sectors..
-            auto zn_xz = znormal.GetXZ().Normal();
-            float angle = 8.0*((PI*0.5)+rect2pol_ang(zn_xz.x, zn_xz.y))/(PI*2.0);
-            //printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
-            int basesector = int(floor(angle))+2;
-            for (int soff = 6; soff < 10; soff++) {
-              int sectID = basesector+soff;
+
+            // lod0 - inner sectors - draw all
+            for (int sectID=0; sectID<8; sectID++) {
               auto& sector = htri->_sector[sectID];
-              auto vbufs = sector._vtxbuflist;
+              auto L0 = sector._lod0;
+              auto vbufs = L0._vtxbuflist;
               int inumvb = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
                 ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
               }
+
             }
-          }*/
+
+            // lodXouter - inner sectors - draw visible
+            auto zn_xz = znormal.GetXZ().Normal();
+            float angle = 8.0*((PI*0.5)+rect2pol_ang(zn_xz.x, zn_xz.y))/(PI*2.0);
+            //printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
+            int basesector = int(floor(angle))+2;
+            for (int soff = 6; soff < 10; soff++) {
+              int sectID = (basesector+soff)&7;
+              auto& sector = htri->_sector[sectID];
+              auto LX = sector._lodX;
+              auto vbufs = LX._vtxbuflist;
+              int inumvb = vbufs->size();
+              for (int ivb = 0; ivb < inumvb; ivb++) {
+                auto vertex_buf = (*vbufs)[ivb];
+                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+              }
+
+            }
+          }
           htri->mTerrainMtl->EndPass(ptarg);
           htri->mTerrainMtl->EndBlock(ptarg);
         }
