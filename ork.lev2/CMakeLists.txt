@@ -45,6 +45,7 @@ file(GLOB_RECURSE src_gfx ${SRCD}/gfx/*.cpp)
 file(GLOB_RECURSE src_input ${SRCD}/input/*.cpp)
 file(GLOB_RECURSE src_qtui ${SRCD}/qtui/*.cpp)
 file(GLOB_RECURSE src_ui ${SRCD}/ui/*.cpp)
+file(GLOB_RECURSE src_ovr ${SRCD}/openvr/*.cpp)
 file(GLOB src_lev2 ${SRCD}/*.cpp)
 
 IF(${APPLE})
@@ -55,7 +56,7 @@ ENDIF()
 
 set( orksrcs ${src_aud} ${src_gfx} ${src_input} )
 list( APPEND orksrcs ${src_qtui} ${src_ui} ${src_lev2} )
-list( APPEND orksrcs ${src_apple} )
+list( APPEND orksrcs ${src_apple} ${src_ovr} )
 
 ###################################
 
@@ -76,7 +77,7 @@ IF(${APPLE})
     list(APPEND libs "-framework ApplicationServices" "-framework AppKit" )
     list(APPEND libs glfw.3 objc)
 ELSEIF(${UNIX})
-    list(APPEND libs rt dl pthread GL Qt5::X11Extras )
+    list(APPEND libs rt dl pthread GL Qt5::X11Extras openvr_api )
 ENDIF()
 
 list(APPEND libs Qt5::Widgets Qt5::Core Qt5::Gui)

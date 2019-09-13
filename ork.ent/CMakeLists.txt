@@ -28,7 +28,7 @@ IF(${APPLE})
     target_include_directories (ork_ecs PRIVATE /usr/local/include)
     list(APPEND libs m pthread )
 ELSEIF(${UNIX})
-    list(APPEND libs rt dl pthread GL openvr_api )
+    list(APPEND libs rt dl pthread GL )
 ENDIF()
 
 target_link_libraries(ork_ecs ${libs})
