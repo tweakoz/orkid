@@ -461,7 +461,7 @@ struct VRSYSTEMIMPL {
     fvec3 vvtrans = VVMTX.GetTranslation();
 
     fmtx4 wmtx;
-    wmtx.SetTranslation(vvtrans + fvec3(0, 2, 0));
+    wmtx.SetTranslation(vvtrans + fvec3(0, 0, 0));
     wmtx = _headingmatrix * wmtx;
 
     VVMTX.inverseOf(wmtx);

@@ -90,7 +90,7 @@ function Diver:OnEntityUpdate(dt)
     local mpos = self.ent.pos
     local del = (ppos-mpos)
     self.loco:notify("setDir",del:normal())
-    self.loco:notify("setWalkingForce",10)
+    self.loco:notify("setWalkingForce",15)
     --printf("ppos<%g %g %g>",ppos.x,ppos.y,ppos.z)
     --printf("mpos<%g %g %g>",mpos.x,mpos.y,mpos.z)
     --printf("del.mag<%g>", del:mag())

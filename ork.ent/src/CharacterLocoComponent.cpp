@@ -184,7 +184,7 @@ class CharacterLocoComponent : public ComponentInst {
   msgrouter::subscriber_t _subscriber;
   bool _arewalking = false;
   fvec3 _setDir;
-  float _walkingForce = 15.0f;
+  float _walkingForce = 20.0f;
 };
 
 void CharacterLocoComponent::Describe() {}

@@ -173,10 +173,10 @@
                                                 "xgmodel" "data://actors/diver/diverphong"
                                             </reference>
                                         </property>
-                                        <property name='Offset'>0 -200 0</property>
+                                        <property name='Offset'>0 -220 0</property>
                                         <property name='Rotate'>0 0 0</property>
                                         <property name='Scale'>0.01</property>
-                                        <property name='ShowBoundingSphere'>true</property>
+                                        <property name='ShowBoundingSphere'>false</property>
                                     </object>
                                 </reference>
                             </item>
@@ -218,7 +218,7 @@
                                             <object type='EzUiCam' id='19'>
                                                 <property name='Center'>946.182 -2069.59 1142.18</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>4321.98</property>
+                                                <property name='Loc'>1000</property>
                                                 <property name='QuatC'>-0.0396523 -0.695862 0.717515 -0.00474034</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
@@ -379,7 +379,7 @@
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
                                                 <object type='PerfAnalyzerControllerData' id='35'>
-                                                    <property name='EnableDisplay'>true</property>
+                                                    <property name='EnableDisplay'>false</property>
                                                 </object>
                                             </reference>
                                         </item>
@@ -783,11 +783,7 @@
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
                                         <property name='LayerFxMap'></property>
-                                        <property name='Model'>
-                                            <reference category='AssetClass'>
-                                                "xgmodel" "data://environ/objects/misc/sph1"
-                                            </reference>
-                                        </property>
+                                        <property name='Model'><backreference id='-1'/></property>
                                         <property name='Offset'>0 0 0</property>
                                         <property name='Rotate'>0 0 0</property>
                                         <property name='Scale'>1</property>
@@ -941,7 +937,7 @@
                 <reference category='SystemDataClass'>
                     <object type='BulletSystemData' id='109'>
                         <property name='Debug'>false</property>
-                        <property name='Gravity'>0 -9 0</property>
+                        <property name='Gravity'>0 -4 0</property>
                         <property name='SimulationRate'>120</property>
                         <property name='TimeScale'>1</property>
                     </object>
@@ -971,26 +967,7 @@
                                                                 <object type='NodeCompositingTechnique' id='113'>
                                                                     <property name='RootNode'>
                                                                         <reference category='ObjectClass'>
-                                                                            <object type='PassThroughCompositingNode' id='114'>
-                                                                                <property name='Group'>
-                                                                                    <reference category='ObjectClass'>
-                                                                                        <object type='CompositingGroup' id='115'>
-                                                                                            <property name='Camera'>"vrcam"</property>
-                                                                                            <property name='Effect'>
-                                                                                                <object type='CompositingGroupEffect' id='116'>
-                                                                                                    <property name='Amount'>0</property>
-                                                                                                    <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                                                                    <property name='FeedbackAmount'>0</property>
-                                                                                                    <property name='FinalRezScale'>0.5</property>
-                                                                                                    <property name='FxRezScale'>0.5</property>
-                                                                                                    <property name='PostFxFeedback'>false</property>
-                                                                                                    <property name='Type'>"EFRAMEFX_NONE"</property>
-                                                                                                </object>
-                                                                                            </property>
-                                                                                            <property name='Layers'>"All"</property>
-                                                                                        </object>
-                                                                                    </reference>
-                                                                                </property>
+                                                                            <object type='VrCompositingNode' id='114'>
                                                                             </object>
                                                                         </reference>
                                                                     </property>
@@ -1010,13 +987,13 @@
             </item>
             <item key='InputSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='InputSystemData' id='117'>
+                    <object type='InputSystemData' id='115'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='118'>
+                    <object type='ScriptSystemData' id='116'>
                     </object>
                 </reference>
             </item>
