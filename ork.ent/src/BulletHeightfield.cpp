@@ -22,7 +22,7 @@
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/pickbuffer.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/util/endian.h>
 #include <pkg/ent/bullet.h>
 #include <pkg/ent/HeightFieldDrawable.h>

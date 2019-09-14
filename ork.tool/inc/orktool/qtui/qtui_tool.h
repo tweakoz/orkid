@@ -12,7 +12,7 @@
 ///////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
-#include <ork/lev2/gfx/rendercontext.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/ui/ui.h>
 ///////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/qtui/qtui.h>

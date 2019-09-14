@@ -17,7 +17,7 @@
 #include <ork/kernel/fixedlut.h>
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/tempstring.h>
-#include <ork/lev2/gfx/renderable.h>
+#include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/object/Object.h>
 #include <ork/object/ObjectClass.h>

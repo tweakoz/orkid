@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <ork/lev2/gfx/renderable.h>
+#include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/gfxenv_enum.h> // For ETextureDest
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/rendercontext.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/gfxrasterstate.h>
 

@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/kernel/core/singleton.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/math/TransformNode.h>
 #include <ork/lev2/gfx/camera/cameraman.h>

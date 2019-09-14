@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 
 namespace ork { namespace ent {

@@ -21,7 +21,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
-#include <ork/lev2/gfx/rendercontext.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <functional>
 
 namespace ork {

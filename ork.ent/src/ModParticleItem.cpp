@@ -13,7 +13,7 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>

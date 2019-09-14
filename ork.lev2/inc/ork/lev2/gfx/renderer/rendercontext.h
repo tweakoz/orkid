@@ -9,7 +9,7 @@
 
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/renderer_base.h>
+#include "renderer_enum.h"
 
 namespace ork {
 class CameraData;

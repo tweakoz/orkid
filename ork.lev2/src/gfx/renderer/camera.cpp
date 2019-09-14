@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 
 #if defined(WII)
 #include <revolution/sc.h>

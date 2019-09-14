@@ -17,7 +17,7 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/kernel/orklut.hpp>
 #include <pkg/ent/drawable.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
 #include <pkg/ent/Lighting.h>
 #include <ork/lev2/gfx/gfxenv.h>
