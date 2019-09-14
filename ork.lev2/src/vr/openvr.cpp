@@ -2,7 +2,7 @@
 #include <ork/lev2/gfx/glheaders.h> // todo abstract somehow ?
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/lev2/openvr/openvr.h>
+#include <ork/lev2/vr/vr.h>
 
 #if defined(ENABLE_OPENVR)
 
