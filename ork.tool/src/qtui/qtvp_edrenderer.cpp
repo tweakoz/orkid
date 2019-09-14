@@ -22,7 +22,9 @@
 namespace ork { namespace tool {
 ///////////////////////////////////////////////////////////////////////////////
 
-Renderer::Renderer(ent::SceneEditorBase& ed, lev2::GfxTarget* ptarg) : lev2::Renderer(ptarg), mEditor(ed) {
+Renderer::Renderer(ent::SceneEditorBase& ed, lev2::GfxTarget* ptarg)
+    : lev2::IRenderer(ptarg)
+    , mEditor(ed) {
   mTopSkyEnvMap = 0;
   mBotSkyEnvMap = 0;
 }
@@ -47,8 +49,8 @@ void Renderer::RenderModelGroup(const ork::lev2::ModelRenderable** Renderables, 
 
   for (int i = 0; i < inumr; i++) {
     const ork::lev2::ModelRenderable& r = *Renderables[i];
-    const ork::lev2::XgmSubMesh* psub = r.GetSubMesh();
-    ork::lev2::GfxMaterial* pmtl = psub->GetMaterial();
+    const ork::lev2::XgmSubMesh* psub   = r.GetSubMesh();
+    ork::lev2::GfxMaterial* pmtl        = psub->GetMaterial();
     RenderModel(r);
   }
 }
@@ -61,7 +63,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   const auto& SelMgr = mEditor.selectionManager();
 
   const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
-  const lev2::XgmModel* model = minst->GetXgmModel();
+  const lev2::XgmModel* model     = minst->GetXgmModel();
 
   /////////////////////////////////////////////////////////////
 
@@ -97,15 +99,15 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   ///////////////////////////////////////
 
   auto owner = ModelRen.GetObject();
-  auto c = owner->GetClass();
+  auto c     = owner->GetClass();
 
   const ent::Entity* as_ent = rtti::autocast(owner);
   if (as_ent) {
     owner = &as_ent->GetEntData();
-    c = owner->GetClass();
+    c     = owner->GetClass();
   }
 
-  bool is_sel = (owner == nullptr) ? false : SelMgr.IsObjectSelected(owner);
+  bool is_sel        = (owner == nullptr) ? false : SelMgr.IsObjectSelected(owner);
   bool is_pick_state = target->FBI()->IsPickState();
 
   /////////////////////////////////////////////////////////////
@@ -126,9 +128,9 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   MatCtx.BindLightMap(ModelRen.GetSubMesh()->mLightMap);
   MatCtx.SetVertexLit(ModelRen.GetSubMesh()->mbVertexLit);
 
-  MdlCtx.mMesh = ModelRen.GetMesh();
-  MdlCtx.mSubMesh = ModelRen.GetSubMesh();
-  MdlCtx.mCluster = ModelRen.GetCluster();
+  MdlCtx.mMesh       = ModelRen.GetMesh();
+  MdlCtx.mSubMesh    = ModelRen.GetSubMesh();
+  MdlCtx.mCluster    = ModelRen.GetCluster();
   MdlCtx.mpWorldPose = ModelRen.GetWorldPose();
 
   MatCtx.SetMaterialIndex(0);
@@ -145,9 +147,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   fcolor4 ObjColor = ModelRen.GetModColor();
 
   if (is_pick_state) {
-    uint64_t pid = pickBuf
-		             ? pickBuf->AssignPickId((ork::Object*)ModelRen.GetObject())
-								 : 0;
+    uint64_t pid = pickBuf ? pickBuf->AssignPickId((ork::Object*)ModelRen.GetObject()) : 0;
     ObjColor.SetRGBAU64(pid);
   } else if (is_sel) {
     ObjColor = fcolor4::Red();
@@ -158,7 +158,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
   lev2::LightingGroup lgrp;
   lgrp.mLightManager = target->GetRenderContextFrameData()->GetLightManager();
-  lgrp.mLightMask = ModelRen.GetLightMask();
+  lgrp.mLightMask    = ModelRen.GetLightMask();
   MatCtx.SetLightingGroup(&lgrp);
 
   MdlCtx.SetSkinned(model->IsSkinned());

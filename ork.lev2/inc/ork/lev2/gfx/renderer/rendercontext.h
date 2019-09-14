@@ -16,7 +16,7 @@ class CameraData;
 }
 namespace ork::lev2 {
 
-class Renderer;
+class IRenderer;
 class Camera;
 class Texture;
 struct LightingGroup;
@@ -48,9 +48,9 @@ public:
   // renderer interface
   //////////////////////////////////////
 
-  void SetRenderer(const Renderer* rnd) { mpActiveRenderer = rnd; }
+  void SetRenderer(const IRenderer* rnd) { mpActiveRenderer = rnd; }
   void SetDagRenderable(const IRenderableDag* rnd) { mpDagRenderable = rnd; }
-  const Renderer* GetRenderer(void) const { return mpActiveRenderer; }
+  const IRenderer* GetRenderer(void) const { return mpActiveRenderer; }
   const IRenderableDag* GetDagRenderable(void) const { return mpDagRenderable; }
   const XgmMaterialStateInst* GetMaterialInst() const { return mMaterialInst; }
 
@@ -98,7 +98,7 @@ public:
 private:
   int miMaterialIndex;
   int miMaterialPassIndex;
-  const Renderer* mpActiveRenderer;
+  const IRenderer* mpActiveRenderer;
   const IRenderableDag* mpDagRenderable;
 
   const LightingGroup* mpLightingGroup;

@@ -11,24 +11,21 @@
 
 namespace ork::lev2 {
 
-class Renderer;
 class IRenderable;
 
 class RenderQueue {
 public:
   static const int krqmaxsize = 8192;
 
-  void QueueRenderable(const IRenderable* pRenderable, Renderer* pRenderer);
+  void QueueRenderable(const IRenderable* pRenderable);
   void Reset();
   size_t Size() { return mNodes.size(); }
   RenderQueue() { Reset(); }
   struct Node {
-    const IRenderable* mpRenderable;
-    const Object* mpContextObject;
+    const IRenderable* _renderable;
 
-    Node(const Object* object = 0, const IRenderable* renderable = 0)
-        : mpContextObject(object)
-        , mpRenderable(renderable) {}
+    Node(const IRenderable* renderable = 0)
+        : _renderable(renderable) {}
   };
   void ExportRenderableNodes(ork::fixedvector<const RenderQueue::Node*, krqmaxsize>& nodes);
 

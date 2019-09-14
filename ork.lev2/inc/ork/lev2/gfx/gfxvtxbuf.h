@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/math/cvector2.h>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>

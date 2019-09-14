@@ -41,7 +41,7 @@ namespace lev2 {
 class XgmModelInst;
 }
 namespace lev2 {
-class Renderer;
+class IRenderer;
 }
 namespace lev2 {
 class LightManager;
@@ -174,7 +174,7 @@ public:
   virtual ~Drawable();
 
   virtual void QueueToRenderer(const DrawableBufItem& item,
-                               lev2::Renderer* prenderer) const = 0; // 	AssertOnOpQ2( MainThreadOpQ() );
+                               lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( MainThreadOpQ() );
   virtual void QueueToLayer(const DrawQueueXfData& xfdata,
                             DrawableBufLayer& buffer) const = 0; // AssertOnOpQ2( UpdateSerialOpQ() );
 
@@ -224,7 +224,7 @@ public:
   void ShowBoundingSphere(bool bflg) { mbShowBoundingSphere = bflg; }
 
 private:
-  void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const override;
+  void QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
   void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const override;
 
   lev2::XgmModelInst* mModelInst;
@@ -264,7 +264,7 @@ public:
   void SetQueueToLayerCallback(Q2LCBType cb) { mQueueToLayerCallback = cb; }
   U32 GetSortKey() const { return mSortKey; }
   void SetSortKey(U32 uv) { mSortKey = uv; }
-  void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const final;
+  void QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
   void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
 private:

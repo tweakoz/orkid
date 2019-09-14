@@ -146,7 +146,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
 
 
   //printf( "draw numlines<%d>\n", inumlines );
-  const Renderer* prenderer = rcid.GetRenderer();
+  auto prenderer = rcid.GetRenderer();
 
   const ork::CameraData* pcamdata = ptarg->GetRenderContextFrameData()->GetCameraData();
 

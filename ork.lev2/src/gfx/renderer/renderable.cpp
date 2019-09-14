@@ -38,7 +38,7 @@ IRenderableDag::IRenderableDag()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CallbackRenderable::CallbackRenderable(Renderer *renderer)
+CallbackRenderable::CallbackRenderable(IRenderer *renderer)
 	: IRenderableDag()
 	, mSortKey( 0 )
 	, mMaterialIndex( 0 )
@@ -49,7 +49,7 @@ CallbackRenderable::CallbackRenderable(Renderer *renderer)
 {
 }
 
-void CallbackRenderable::Render(const Renderer *renderer) const
+void CallbackRenderable::Render(const IRenderer *renderer) const
 {
 	renderer->RenderCallback( *this );
 }
@@ -57,7 +57,7 @@ void CallbackRenderable::Render(const Renderer *renderer) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-ModelRenderable::ModelRenderable(Renderer *renderer)
+ModelRenderable::ModelRenderable(IRenderer *renderer)
 	: IRenderableDag()
 	, mModelInst( 0 )
 	, mSortKey( 0 )
@@ -96,7 +96,7 @@ float ModelRenderable::GetEngineParamFloat(int idx) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelRenderable::Render(const Renderer *renderer) const
+void ModelRenderable::Render(const IRenderer *renderer) const
 {
 	renderer->RenderModel( *this );
 }

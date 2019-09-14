@@ -39,7 +39,7 @@ namespace ork{ namespace lev2 {
 class GfxMaterialUITextured;
 class RenderContextFrameData;
 class FrameTechniqueBase;
-class Renderer;
+class IRenderer;
 class EzUiCam;
 class Camera_ortho;
 class Camera;
@@ -152,7 +152,7 @@ public:
 	SceneEditorBase& SceneEditor() { return mEditor; }
 	ork::ent::SceneEditorView& SceneEditorView() { return mSceneView; }
 	EditorMainWindow& MainWindow() const { return mMainWindow; }
-	ork::lev2::Renderer* GetRenderer() const { return mRenderer; }
+	ork::lev2::IRenderer* GetRenderer() const { return _renderer; }
 	lev2::ManipManager& ManipManager() { return mEditor.ManipManager(); }
 	lev2::Camera* getActiveCamera() const { return _editorCamera; }
 
@@ -185,7 +185,7 @@ protected:
 
 	int												mGridMode;
 	ork::ent::SceneEditorView						mSceneView;
-	lev2::Renderer*									mRenderer;
+	lev2::IRenderer*									_renderer;
 	lev2::Camera*									_editorCamera;
 	fvec3										mCursor;
 	PerformanceItem								mFramePerfItem;

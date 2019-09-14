@@ -996,7 +996,7 @@ void Simulation::enqueueDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::RenderDrawableBuffer(lev2::Renderer* renderer, const ork::ent::DrawableBuffer& dbuffer,
+void Simulation::RenderDrawableBuffer(lev2::IRenderer* renderer, const ork::ent::DrawableBuffer& dbuffer,
                                      const PoolString& LayerName) const {
   const ork::lev2::RenderContextFrameData* pfdata = renderer->GetTarget()->GetRenderContextFrameData();
   ork::lev2::RenderContextFrameData framedata = *pfdata;

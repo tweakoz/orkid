@@ -16,7 +16,7 @@ class SceneEditorBase;
 
 namespace ork { namespace tool {
 
-class Renderer : public lev2::Renderer
+class Renderer : public lev2::IRenderer
 {
 
 public:

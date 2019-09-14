@@ -112,7 +112,7 @@ public:
 	///////////////////////////////////////////////////
 
 	void enqueueDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const;
-	void RenderDrawableBuffer(lev2::Renderer *renderer,const ork::ent::DrawableBuffer& dbuffer, const PoolString& LayerName ) const;
+	void RenderDrawableBuffer(lev2::IRenderer *renderer,const ork::ent::DrawableBuffer& dbuffer, const PoolString& LayerName ) const;
 
 	///////////////////////////////////////////////////
 
