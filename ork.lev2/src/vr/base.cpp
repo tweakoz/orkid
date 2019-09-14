@@ -5,7 +5,7 @@
 #include <ork/lev2/vr/vr.h>
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace ork::lev2::vr {
+namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
 Device::Device()
@@ -43,9 +43,9 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
 
     hmd.DecomposeMatrix(hmdpos, hmdrot, hmdscl);
 
-    auto rotmtx = hmdrot.ToMatrix();
-    rotmtx      = _headingmatrix * rotmtx;
-    rotmtx.Transpose();
+    _rotMatrix = hmdrot.ToMatrix();
+    _rotMatrix      = _headingmatrix * _rotMatrix;
+    _rotMatrix.Transpose();
 
     ///////////////////////////////////////////////////////////
 
@@ -83,5 +83,5 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::vr
+} // namespace ork::lev2::orkidvr
 ////////////////////////////////////////////////////////////////////////////////

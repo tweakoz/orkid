@@ -18,7 +18,7 @@ class Texture;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace ork::lev2::vr {
+namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ControllerState {
@@ -42,6 +42,7 @@ struct Device {
   fmtx4 _offsetmatrix;
   fmtx4 _headingmatrix;
   fmtx4 _hmdMatrix;
+  fmtx4 _rotMatrix;
   fmtx4 _outputViewOffsetMatrix;
   bool _prevthumbL = false;
   bool _prevthumbR = false;
@@ -89,4 +90,4 @@ Device& device();
 void gpuUpdate(fmtx4 observermatrix);
 void composite(GfxTarget* targ, Texture* ltex, Texture* rtex);
 ////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::vr
+} // namespace ork::lev2::orkidvr

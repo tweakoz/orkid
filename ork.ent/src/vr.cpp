@@ -55,7 +55,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
                       CompositorSystemDrawData& drawdata,
                       CameraData* lcam,
                       CameraData* rcam,
-                      const std::map<int, vr::ControllerState>& controllers) {
+                      const std::map<int, orkidvr::ControllerState>& controllers) {
     RenderContextFrameData& FrameData = renderer.GetFrameData();
     GfxTarget* pTARG                  = FrameData.GetTarget();
 
@@ -185,8 +185,8 @@ struct VRSYSTEMIMPL {
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     _material.Init(pTARG);
-    int w     = vr::device()._width;
-    int h     = vr::device()._height;
+    int w     = orkidvr::device()._width;
+    int h     = orkidvr::device()._height;
     _frametek = new VrFrameTechnique(w, h);
     _frametek->Init(pTARG);
   }
@@ -196,11 +196,11 @@ struct VRSYSTEMIMPL {
     auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
     auto playermtx   = playerspawn->GetEffectiveMatrix();
 
-    vr::gpuUpdate(playermtx);
+    orkidvr::gpuUpdate(playermtx);
 
-    auto& LCAM = vr::device()._leftcamera;
-    auto& RCAM = vr::device()._rightcamera;
-    auto& CONT = vr::device()._controllers;
+    auto& LCAM = orkidvr::device()._leftcamera;
+    auto& RCAM = orkidvr::device()._rightcamera;
+    auto& CONT = orkidvr::device()._controllers;
 
     _frametek->renderBothEyes(renderer, drawdata, &LCAM, &RCAM, CONT);
   }
@@ -251,7 +251,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
 
   if (vrimpl->_frametek) {
 
-    vrimpl->_frametek->_viewOffsetMatrix = vr::device()._outputViewOffsetMatrix;
+    vrimpl->_frametek->_viewOffsetMatrix = orkidvr::device()._outputViewOffsetMatrix;
 
     /////////////////////////////////////////////////////////////////////////////
     // render eyes
@@ -274,7 +274,7 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
     auto texL = bufferL->GetTexture();
     auto texR = bufferR->GetTexture();
     if (texL && texR) {
-      vr::composite(targ, texL, texR);
+      orkidvr::composite(targ, texL, texR);
     }
 
     /////////////////////////////////////////////////////////////////////////////
