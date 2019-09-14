@@ -7,7 +7,7 @@
 #if defined(ENABLE_OPENVR)
 
 ////////////////////////////////////////////////////////////////////////////////
-namespace ork::lev2::vr {
+namespace ork::lev2::orkidvr {
 ////////////////////////////////////////////////////////////////////////////////
 
 fmtx4 steam34tofmtx4(const _ovr::HmdMatrix34_t& matPose) {
@@ -176,7 +176,7 @@ void OpenVrDevice::_processControllerEvents() {
       rx.SetRotateX(-PI * 0.5);
       ry.SetRotateY(PI * 0.5);
       rz.SetRotateZ(PI * 0.5);
-      ivomatrix.inverseOf(_frametek->_viewOffsetMatrix);
+      ivomatrix.inverseOf(_outputViewOffsetMatrix);
       fmtx4 lworld = (LCONTROLLER._matrix * ivomatrix);
       fmtx4 rworld = (RCONTROLLER._matrix * ivomatrix);
       handgroup.setChannel("left.matrix").as<fmtx4>(rx * ry * rz * lworld);
@@ -189,14 +189,14 @@ void OpenVrDevice::_processControllerEvents() {
 
       if (LCONTROLLER._button1down) {
         xlate.SetTranslation(0, xlaterate, 0);
-        auto trans = (xlate * rotmtx).GetTranslation();
+        auto trans = (xlate * _rotMatrix).GetTranslation();
         printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix * xlate;
       }
       if (LCONTROLLER._button2down) {
         xlate.SetTranslation(0, -xlaterate, 0);
-        auto trans = (xlate * rotmtx).GetTranslation();
+        auto trans = (xlate * _rotMatrix).GetTranslation();
         printf("trans<%g %g %g>\n", trans.x, trans.y, trans.z);
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix * xlate;
@@ -206,13 +206,13 @@ void OpenVrDevice::_processControllerEvents() {
       ///////////////////////////////////////////////////////////
       if (RCONTROLLER._button1down) {
         xlate.SetTranslation(0, 0, xlaterate);
-        auto trans = (xlate * rotmtx).GetTranslation();
+        auto trans = (xlate * _rotMatrix).GetTranslation();
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix * xlate;
       }
       if (RCONTROLLER._button2down) {
         xlate.SetTranslation(0, 0, -xlaterate);
-        auto trans = (xlate * rotmtx).GetTranslation();
+        auto trans = (xlate * _rotMatrix).GetTranslation();
         xlate.SetTranslation(trans);
         _offsetmatrix = _offsetmatrix * xlate;
       }
@@ -251,9 +251,7 @@ void OpenVrDevice::_processControllerEvents() {
 
 void composite(lev2::GfxTarget* targ, Texture* ltex, Texture* rtex) {
 
-  auto& mgr = get();
-
-  if (mgr._active) {
+  if (device()._active) {
 
     auto fbi = targ->FBI();
 
@@ -269,7 +267,7 @@ void composite(lev2::GfxTarget* targ, Texture* ltex, Texture* rtex) {
     //  since the texture contains the size of itself...
     //////////////////////////////////////////////////
 
-    SRect VPRect(0, 0, mgr._width, mgr._height);
+    SRect VPRect(0, 0, device()._width, device()._height);
     fbi->PushViewport(VPRect);
     fbi->PushScissor(VPRect);
 
@@ -291,7 +289,7 @@ void composite(lev2::GfxTarget* targ, Texture* ltex, Texture* rtex) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Manager::_updatePoses(fmtx4 observermatrix) {
+void OpenVrDevice::_updatePoses(fmtx4 observermatrix) {
 
   if (_active and _hmd->IsInputAvailable()) {
 
@@ -299,13 +297,13 @@ void Manager::_updatePoses(fmtx4 observermatrix) {
     // the vrcompositor needs the absolute latest pose
     // for the sake of reducing tracking latency
 
-    _ovr::VRCompositor()->WaitGetPoses(vrimpl->_trackedPoses, _ovr::k_unMaxTrackedDeviceCount, NULL, 0);
+    _ovr::VRCompositor()->WaitGetPoses(_trackedPoses, _ovr::k_unMaxTrackedDeviceCount, NULL, 0);
 
     int validposecount       = 0;
     std::string pose_classes = "";
 
     for (int dev_index = 0; dev_index < _ovr::k_unMaxTrackedDeviceCount; dev_index++) {
-      if (vrimpl->_trackedPoses[dev_index].bPoseIsValid) {
+      if (_trackedPoses[dev_index].bPoseIsValid) {
 
         ///////////////////////////////////////////////////////
         // discover left and right controller device indices
@@ -317,10 +315,10 @@ void Manager::_updatePoses(fmtx4 observermatrix) {
 
         switch (role) {
           case _ovr::ETrackedControllerRole::TrackedControllerRole_LeftHand:
-            vrimpl->_leftControllerDeviceIndex = dev_index;
+            _leftControllerDeviceIndex = dev_index;
             break;
           case _ovr::ETrackedControllerRole::TrackedControllerRole_RightHand:
-            vrimpl->_rightControllerDeviceIndex = dev_index;
+            _rightControllerDeviceIndex = dev_index;
             break;
         }
 
@@ -394,6 +392,6 @@ void gpuUpdate(fmtx4 observermatrix) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::vr
+} // namespace ork::lev2::orkidvr
 ////////////////////////////////////////////////////////////////////////////////
 #endif // #if defined(ENABLE_OPENVR)
