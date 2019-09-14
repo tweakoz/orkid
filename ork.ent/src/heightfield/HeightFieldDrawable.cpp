@@ -712,6 +712,14 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   // render
   ///////////////////////////////////////////////////////////////////
   bool stereo1pass = framedata->isStereoOnePass();
+  if( stereo1pass ){
+    if (auto try_lcam = framedata->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
+      printf("got LCAM<%p>\n", try_lcam.value() );
+    }
+    if (auto try_rcam = framedata->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
+      printf("got RCAM<%p>\n", try_rcam.value() );
+    }
+  }
   //////////////////////////
   // retrieve camera information
   //////////////////////////
@@ -763,10 +771,6 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   params._envTexture = ColorTex;
   params._hfTextureA = _heightmapTextureA;
   params._hfTextureB = _heightmapTextureB;
-  // targ->MTXI()->PushPMatrix(PMTX);
-  // targ->MTXI()->PushVMatrix(VMTX);
-  // targ->MTXI()->PushMMatrix(follow);
-  //////////////////////////
 
   ///////////////////////////////////////////////////////////////////
   // render
