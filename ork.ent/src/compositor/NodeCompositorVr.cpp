@@ -108,7 +108,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     _CPD.mpCameraName = nullptr;
     _CPD.mpLayerName  = nullptr; // default == "All"
 
-    framedata.setUserProperty("stereo1pass"_crc,true);
+    framedata.setStereoOnePass(true);
 
     //////////////////////////////////////////////////////
 
@@ -165,7 +165,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       }
     }
 
-    framedata.unSetUserProperty("stereo1pass"_crc);
+    framedata.setStereoOnePass(false);
   }
 
   RtGroup* _rtg_left;

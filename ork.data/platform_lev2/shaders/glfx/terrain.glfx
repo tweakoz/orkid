@@ -75,7 +75,7 @@ vertex_shader vs_terrain
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_terrain_stereo
-  : extension(NV_stereo_view_rendering)
+  : extension(GL_NV_stereo_view_rendering)
   : iface_vdefault
   : lib_terrain {
   vec3 campos = inverse(MatMV)[3].xyz;

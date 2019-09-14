@@ -123,7 +123,7 @@ rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
   return rval;
 }
 
-bool RenderContextFrameData::IsPickMode() const { return mpTarget ? mpTarget->FBI()->IsPickState() : false; }
+bool RenderContextFrameData::isPicking() const { return mpTarget ? mpTarget->FBI()->IsPickState() : false; }
 
 void RenderContextFrameData::SetTarget(GfxTarget* ptarg) {
   mpTarget = ptarg;
