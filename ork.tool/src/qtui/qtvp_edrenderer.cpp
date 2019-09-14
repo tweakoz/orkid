@@ -24,23 +24,7 @@ namespace ork { namespace tool {
 
 Renderer::Renderer(ent::SceneEditorBase& ed, lev2::GfxTarget* ptarg)
     : lev2::IRenderer(ptarg)
-    , mEditor(ed) {
-  mTopSkyEnvMap = 0;
-  mBotSkyEnvMap = 0;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Renderer::Init() {
-  if (0 == mTopSkyEnvMap) {
-    mTopSkyEnvMap = lev2::Texture::LoadUnManaged("data://yo_dualparamap_top.tga");
-    mBotSkyEnvMap = lev2::Texture::LoadUnManaged("data://yo_dualparamap_bot.tga");
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-U32 Renderer::ComposeSortKey(U32 texIndex, U32 depthIndex, U32 passIndex, U32 transIndex) const { return 0; }
+    , mEditor(ed) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -122,8 +106,6 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   for (int i = 0; i < ork::lev2::ModelRenderable::kMaxEngineParamFloats; i++)
     MatCtx.SetEngineParamFloat(i, ModelRen.GetEngineParamFloat(i));
 
-  MatCtx.SetTopEnvMap(mTopSkyEnvMap);
-  MatCtx.SetBotEnvMap(mBotSkyEnvMap);
   MatCtx.SetMaterialInst(&minst->RefMaterialInst());
   MatCtx.BindLightMap(ModelRen.GetSubMesh()->mLightMap);
   MatCtx.SetVertexLit(ModelRen.GetSubMesh()->mbVertexLit);
@@ -166,18 +148,6 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
     model->RenderSkinned(minst, ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   } else {
     model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void Renderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
-  lev2::RenderContextInstData MatCtx;
-  lev2::GfxTarget* pTARG = GetTarget();
-  MatCtx.SetRenderer(this);
-
-  if (cbren.GetRenderCallback()) {
-    cbren.GetRenderCallback()(MatCtx, pTARG, &cbren);
   }
 }
 

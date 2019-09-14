@@ -7,37 +7,25 @@
 
 #pragma once
 
-#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 
 namespace ork { namespace ent {
 class SceneEditorBase;
-}};
+}}; // namespace ork::ent
 
 namespace ork { namespace tool {
 
-class Renderer : public lev2::IRenderer
-{
+class Renderer : public lev2::IRenderer {
 
 public:
-
-	Renderer( ent::SceneEditorBase& editor, lev2::GfxTarget* ptarg=nullptr );
-	void Init();
+  Renderer(ent::SceneEditorBase& editor, lev2::GfxTarget* ptarg = nullptr);
 
 private:
+  void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::ERGST_NONE) const override;
+  void RenderModelGroup(const lev2::ModelRenderable** ModelRens, int inumr) const override;
 
-	void RenderModel( const lev2::ModelRenderable & ModelRen, ork::lev2::RenderGroupState rgs=ork::lev2::ERGST_NONE ) const override;
-	void RenderModelGroup( const lev2::ModelRenderable** ModelRens, int inumr ) const override;
-	void RenderCallback( const lev2::CallbackRenderable & cbren ) const override;
-
-
-	U32 ComposeSortKey( U32 texIndex, U32 depthIndex, U32 passIndex, U32 transIndex ) const override;
-
-
-	lev2::Texture*			mTopSkyEnvMap;
-	lev2::Texture*			mBotSkyEnvMap;
-	ent::SceneEditorBase& 	mEditor;
-
+  ent::SceneEditorBase& mEditor;
 };
 
-}} // namespace ork { namespace tool {
+}} // namespace ork::tool

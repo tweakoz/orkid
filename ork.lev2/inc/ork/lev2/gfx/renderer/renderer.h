@@ -52,7 +52,7 @@ public:
 
   virtual void RenderModel(const ModelRenderable& ModelRen, RenderGroupState rgs = ERGST_NONE) const = 0;
   virtual void RenderModelGroup(const ModelRenderable** Renderables, int inumr) const                = 0;
-  virtual void RenderCallback(const CallbackRenderable& cbren) const                                 = 0;
+  void RenderCallback(const CallbackRenderable& cbren) const;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Queued rendering

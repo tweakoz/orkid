@@ -69,11 +69,7 @@ namespace ent {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorView::Describe() {
-  reflect::RegisterFunctor("SlotModelDirty", &SceneEditorView::SlotModelDirty);
-  reflect::RegisterFunctor("SlotObjectSelected", &SceneEditorView::SlotObjectSelected);
-  reflect::RegisterFunctor("SlotObjectDeSelected", &SceneEditorView::SlotObjectDeSelected);
-}
+void SceneEditorView::Describe() { reflect::RegisterFunctor("SlotModelDirty", &SceneEditorView::SlotModelDirty); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -151,7 +147,6 @@ SceneEditorVP::~SceneEditorVP() {
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::Init() {
-  ((ork::tool::Renderer*)(_renderer))->Init();
 
   ///////////////////////////////////////////////////////////
   // INIT BUILT IN TOOL HANDLERS
@@ -160,8 +155,6 @@ void SceneEditorVP::Init() {
   RegisterToolHandler("0Default", new TestVPDefaultHandler(mEditor));
   RegisterToolHandler("1ManipTrans", new ManipTransHandler(mEditor));
   RegisterToolHandler("2ManipRot", new ManipRotHandler(mEditor));
-  // RegisterToolHandler( "3Collision", new PaintCollisionHandler( this, mEditor ) );
-  // RegisterToolHandler( "4Bsp", new BspToolHandler( this, mEditor ) );
 
   mpDefaultHandler = mToolHandlers["0Default"];
   bindToolHandler("0Default");
@@ -169,30 +162,13 @@ void SceneEditorVP::Init() {
   ///////////////////////////////////////////////////////////
   // INIT MODULAR TOOL HANDLERS
 
-  for (orkset<SceneEditorInitCb>::iterator it = mInitCallbacks.begin(); it != mInitCallbacks.end(); it++) {
-    (*it)(*this);
-  }
+  for (auto initcb : mInitCallbacks)
+    initcb(*this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::RegisterInitCallback(ork::ent::SceneEditorInitCb icb) { mInitCallbacks.insert(icb); }
-
-///////////////////////////////////////////////////////////////////////////////
-
-void SceneEditorView::SlotObjectSelected(ork::Object* pobj) {
-  EntData* pdata = rtti::autocast(pobj);
-  if (pdata) {
-    fvec3 pos = pdata->GetDagNode().GetTransformNode().GetTransform().GetPosition();
-    // if( mVP->GetCamera() )
-    //	mVP->GetCamera()->CamFocus = pos;
-    // mVP->mpPickBuffer->SetDirty(true);
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-void SceneEditorView::SlotObjectDeSelected(ork::Object* pobj) {}
 
 ///////////////////////////////////////////////////////////////////////////
 
