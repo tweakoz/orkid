@@ -185,8 +185,8 @@ struct VRSYSTEMIMPL {
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     _material.Init(pTARG);
-    int w     = vr::get()._width;
-    int h     = vr::get()._height;
+    int w     = vr::device()._width;
+    int h     = vr::device()._height;
     _frametek = new VrFrameTechnique(w, h);
     _frametek->Init(pTARG);
   }
@@ -196,9 +196,11 @@ struct VRSYSTEMIMPL {
     auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
     auto playermtx   = playerspawn->GetEffectiveMatrix();
 
-    auto& LCAM = vr::get()._leftcamera;
-    auto& RCAM = vr::get()._rightcamera;
-    auto& CONT = vr::get()._controllers;
+    vr::gpuUpdate(playermtx);
+
+    auto& LCAM = vr::device()._leftcamera;
+    auto& RCAM = vr::device()._rightcamera;
+    auto& CONT = vr::device()._controllers;
 
     _frametek->renderBothEyes(renderer, drawdata, &LCAM, &RCAM, CONT);
   }
@@ -231,8 +233,6 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
   auto vrimpl                 = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
   static PoolString vrcamname = AddPooledString("vrcam");
 
-  vr::gpuUpdate(targ);
-
   //////////////////////////////////////////////
   // find vr camera
   //////////////////////////////////////////////
@@ -250,6 +250,8 @@ void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, Compositing
   }
 
   if (vrimpl->_frametek) {
+
+    vrimpl->_frametek->_viewOffsetMatrix = vr::device()._outputViewOffsetMatrix;
 
     /////////////////////////////////////////////////////////////////////////////
     // render eyes

@@ -32,6 +32,56 @@ Device::~Device() {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void Device::_updatePosesCommon(fmtx4 observermatrix){
+    fmtx4 hmd  = _posemap["hmd"];
+    fmtx4 eyeL = _posemap["eyel"];
+    fmtx4 eyeR = _posemap["eyer"];
+
+    fvec3 hmdpos;
+    fquat hmdrot;
+    float hmdscl;
+
+    hmd.DecomposeMatrix(hmdpos, hmdrot, hmdscl);
+
+    auto rotmtx = hmdrot.ToMatrix();
+    rotmtx      = _headingmatrix * rotmtx;
+    rotmtx.Transpose();
+
+    ///////////////////////////////////////////////////////////
+
+    _hmdMatrix = hmd;
+
+    fmtx4 VVMTX = observermatrix;
+
+    fvec3 vvtrans = VVMTX.GetTranslation();
+
+    fmtx4 wmtx;
+    wmtx.SetTranslation(vvtrans + fvec3(0, 0.5, 0));
+    wmtx = _headingmatrix * wmtx;
+
+    VVMTX.inverseOf(wmtx);
+
+    _outputViewOffsetMatrix = VVMTX;
+
+    fmtx4 cmv = VVMTX * hmd;
+    fmtx4 lmv = VVMTX * hmd * eyeL;
+    fmtx4 rmv = VVMTX * hmd * eyeR;
+
+    msgrouter::content_t c;
+    c.Set<fmtx4>(cmv);
+
+    msgrouter::channel("eggytest")->post(c);
+
+    _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
+    _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
+
+    _leftcamera.SetView(lmv);
+    _leftcamera.setCustomProjection(_posemap["projl"]);
+    _rightcamera.SetView(rmv);
+    _rightcamera.setCustomProjection(_posemap["projr"]);
+    // printf( "pose_classes<%s>\n", pose_classes.c_str() );
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vr
 ////////////////////////////////////////////////////////////////////////////////

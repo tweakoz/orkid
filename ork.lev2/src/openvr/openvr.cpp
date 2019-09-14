@@ -81,7 +81,7 @@ OpenVrDevice::~OpenVrDevice() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void OpenVrDevice::_processControllerEvents(lev2::GfxTarget* targ) {
+void OpenVrDevice::_processControllerEvents() {
   _ovr::VREvent_t event;
   while (_active and _hmd->PollNextEvent(&event, sizeof(event))) {
     auto data  = event.data;
@@ -291,7 +291,7 @@ void composite(lev2::GfxTarget* targ, Texture* ltex, Texture* rtex) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Manager::_updatePoses(lev2::GfxTarget* targ) {
+void Manager::_updatePoses(fmtx4 observermatrix) {
 
   if (_active and _hmd->IsInputAvailable()) {
 
@@ -369,53 +369,7 @@ void Manager::_updatePoses(lev2::GfxTarget* targ) {
       _hmdinputgroup.setChannel("hmdmatrix").as<fmtx4>(hmdmatrix);
     }
 
-    fmtx4 hmd  = _posemap["hmd"];
-    fmtx4 eyeL = _posemap["eyel"];
-    fmtx4 eyeR = _posemap["eyer"];
-
-    fvec3 hmdpos;
-    fquat hmdrot;
-    float hmdscl;
-
-    hmd.DecomposeMatrix(hmdpos, hmdrot, hmdscl);
-
-    auto rotmtx = hmdrot.ToMatrix();
-    rotmtx      = open_ovr::get()._headingmatrix * rotmtx;
-    rotmtx.Transpose();
-
-    ///////////////////////////////////////////////////////////
-
-    _hmdMatrix = hmd;
-
-    fmtx4 VVMTX = playermtx;
-
-    fvec3 vvtrans = VVMTX.GetTranslation();
-
-    fmtx4 wmtx;
-    wmtx.SetTranslation(vvtrans + fvec3(0, 0.5, 0));
-    wmtx = _headingmatrix * wmtx;
-
-    VVMTX.inverseOf(wmtx);
-
-    _frametek->_viewOffsetMatrix = VVMTX;
-
-    fmtx4 cmv = VVMTX * hmd;
-    fmtx4 lmv = VVMTX * hmd * eyeL;
-    fmtx4 rmv = VVMTX * hmd * eyeR;
-
-    msgrouter::content_t c;
-    c.Set<fmtx4>(cmv);
-
-    msgrouter::channel("eggytest")->post(c);
-
-    _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
-    _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
-
-    _rightcamera.SetView(lmv);
-    _rightcamera.setCustomProjection(posemap["projl"]);
-    RCAM.SetView(rmv);
-    RCAM.setCustomProjection(posemap["projr"]);
-    // printf( "pose_classes<%s>\n", pose_classes.c_str() );
+    _updatePosesCommon(observermatrix);
   }
 }
 
@@ -424,19 +378,19 @@ OpenVrDevice& concrete_get() {
   static OpenVrDevice _device;
   return _device;
 }
-Device& get() {
+Device& device() {
   return concrete_get();
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-void gpuUpdate(lev2::GfxTarget* targ) {
+void gpuUpdate(fmtx4 observermatrix) {
   auto& mgr = concrete_get();
   if (mgr._active) {
     bool ovr_compositor_ok = (bool)_ovr::VRCompositor();
     assert(ovr_compositor_ok);
   }
-  mgr._processControllerEvents(targ);
-  mgr._updatePoses(targ);
+  mgr._processControllerEvents();
+  mgr._updatePoses(observermatrix);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
