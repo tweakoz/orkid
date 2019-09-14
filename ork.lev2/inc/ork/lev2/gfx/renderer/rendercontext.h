@@ -175,7 +175,8 @@ struct RenderContextFrameData {
   usermap_t& userProperties() { return _userProperties; }
 
   void setUserProperty(CrcString, rendervar_t data);
-  rendervar_t getUserProperty(CrcString prop);
+  void unSetUserProperty(CrcString);
+  rendervar_t getUserProperty(CrcString prop) const;
 
   orkstack<IRenderTarget*> mRenderTargetStack;
   usermap_t _userProperties;

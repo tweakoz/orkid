@@ -108,7 +108,13 @@ void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
   else
     it->second = val;
 }
-rendervar_t RenderContextFrameData::getUserProperty(CrcString key) {
+void RenderContextFrameData::unSetUserProperty(CrcString key){
+  auto it = _userProperties.find(key);
+  if (it == _userProperties.end())
+    _userProperties.erase(it);
+}
+
+rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
   auto it = _userProperties.find(key);
   if (it != _userProperties.end()) {
     return it->second;

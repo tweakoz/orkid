@@ -3,13 +3,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <ork/pch.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/rtti/downcast.h>
 #include <ork/math/polar.h>
+#include <ork/pch.h>
+#include <ork/rtti/downcast.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,12 +49,12 @@ struct Patch {
 struct SectorLodInfo {
   std::vector<Patch> _patches;
   size_t triangle_count = 0;
-  size_t vertex_count = 0;
+  size_t vertex_count   = 0;
   VtxWriter<vertex_type> vwriter;
   TerVtxBuffersType* _vtxbuflist;
   bool _islod0 = false;
 
-  size_t countTriangles(){
+  size_t countTriangles() {
     triangle_count = 0;
     for (auto p : _patches) {
 
@@ -76,15 +76,15 @@ struct SectorLodInfo {
     }
     return triangle_count;
   }
-  void createVB(){
-      vertex_count = _patches.size() * 6;
-      _vtxbuflist = new TerVtxBuffersType;
-      auto vbuf = new StaticVertexBuffer<vertex_type>(vertex_count, 0, EPRIM_POINTS);
-      vbuf->Reset();
-      _vtxbuflist->push_back(vbuf);
+  void createVB() {
+    vertex_count = _patches.size() * 6;
+    _vtxbuflist  = new TerVtxBuffersType;
+    auto vbuf    = new StaticVertexBuffer<vertex_type>(vertex_count, 0, EPRIM_POINTS);
+    vbuf->Reset();
+    _vtxbuflist->push_back(vbuf);
 
-      printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
-      printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
+    printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
+    printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
   }
 };
 
@@ -107,28 +107,26 @@ struct HeightfieldRenderImpl {
   HeightFieldDrawable* _hfdrawable;
   hfptr_t _heightfield;
 
-  bool _gpuDataDirty = true;
+  bool _gpuDataDirty                   = true;
   GfxMaterial3DSolid* _terrainMaterial = nullptr;
-  Texture* _heightmapTextureA = nullptr;
-  Texture* _heightmapTextureB = nullptr;
+  Texture* _heightmapTextureA          = nullptr;
+  Texture* _heightmapTextureB          = nullptr;
   fvec3 _aabbmin;
   fvec3 _aabbmax;
   SectorInfo _sector[8];
   lev2::textureassetptr_t _sphericalenvmap = nullptr;
-
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HeightfieldRenderImpl::HeightfieldRenderImpl(HeightFieldDrawable* hfdrw){
-  _hfdrawable = hfdrw;
-  _heightfield = std::make_shared<HeightMap>(0,0);
+HeightfieldRenderImpl::HeightfieldRenderImpl(HeightFieldDrawable* hfdrw) {
+  _hfdrawable  = hfdrw;
+  _heightfield = std::make_shared<HeightMap>(0, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HeightfieldRenderImpl::~HeightfieldRenderImpl(){
+HeightfieldRenderImpl::~HeightfieldRenderImpl() {
   if (_heightmapTextureA) {
     delete _heightmapTextureA;
   }
@@ -143,11 +141,10 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   if (false == _gpuDataDirty)
     return;
 
-  auto hmap = _heightfield;
+  auto hmap    = _heightfield;
   bool _loadok = hmap->Load(_hfdrawable->_hfpath);
   hmap->SetWorldSize(_hfdrawable->_worldSizeXZ, _hfdrawable->_worldSizeXZ);
   hmap->SetWorldHeight(_hfdrawable->_worldHeight);
-
 
   auto sphmaptex = (_hfdrawable->_sphericalenvmap != nullptr) ? _hfdrawable->_sphericalenvmap->GetTexture() : nullptr;
 
@@ -161,8 +158,8 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   // create and fill in gpu texture
   ////////////////////////////////////////////////////////////////
 
-  const int iglX = hmap->GetGridSizeX();
-  const int iglZ = hmap->GetGridSizeZ();
+  const int iglX           = hmap->GetGridSizeX();
+  const int iglZ           = hmap->GetGridSizeZ();
   const int terrain_ngrids = iglX * iglZ;
 
   if (0 == iglX)
@@ -174,8 +171,8 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
   auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
 
-  auto mipA0 = chainA->_levels[0];
-  auto mipB0 = chainB->_levels[0];
+  auto mipA0      = chainA->_levels[0];
+  auto mipB0      = chainB->_levels[0];
   auto pfloattexA = (float*)mipA0->_data;
   auto pfloattexB = (float*)mipB0->_data;
   assert(pfloattexA != nullptr);
@@ -205,16 +202,16 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
 
   for (ssize_t z = 0; z < MIPH; z++) {
     ssize_t zz = z - (MIPH >> 1);
-    float fzz = float(zz) / float(MIPH >> 1); // -1 .. 1
+    float fzz  = float(zz) / float(MIPH >> 1); // -1 .. 1
     for (ssize_t x = 0; x < MIPW; x++) {
       ssize_t xx = x - (MIPW >> 1);
-      float fxx = float(xx) / float(MIPW >> 1);
+      float fxx  = float(xx) / float(MIPW >> 1);
       fvec2 pos2d(fxx, fzz);
-      float d = (pos2d - origin).Mag();
-      float dpow = powf(d, 3);
-      size_t index = z * MIPW + x;
-      float h = heightdata[index];
-      size_t pixelbase = index * 4;
+      float d                   = (pos2d - origin).Mag();
+      float dpow                = powf(d, 3);
+      size_t index              = z * MIPW + x;
+      float h                   = heightdata[index];
+      size_t pixelbase          = index * 4;
       pfloattexA[pixelbase + 0] = float(xx);
       pfloattexA[pixelbase + 1] = float(h);
       pfloattexA[pixelbase + 2] = float(zz);
@@ -223,23 +220,23 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
       // compute normal
       ///////////////////
       if (x > 0 and z > 0) {
-        size_t xxm1 = x - 1;
-        float fxxm1 = float(xxm1);
-        size_t zzm1 = z - 1;
-        float fzzm1 = float(zzm1);
+        size_t xxm1       = x - 1;
+        float fxxm1       = float(xxm1);
+        size_t zzm1       = z - 1;
+        float fzzm1       = float(zzm1);
         size_t index_dxm1 = (z * MIPW) + xxm1;
         size_t index_dzm1 = (zzm1 * MIPW) + x;
-        float hd0 = heightdata[index] * 1500;
-        float hdx = heightdata[index_dxm1] * 1500;
-        float hdz = heightdata[index_dzm1] * 1500;
-        float fzz = float(zz);
+        float hd0         = heightdata[index] * 1500;
+        float hdx         = heightdata[index_dxm1] * 1500;
+        float hdz         = heightdata[index_dzm1] * 1500;
+        float fzz         = float(zz);
         fvec3 pos3d(x * 2, hd0, z * 2);
         fvec3 pos3d_dx(xxm1 * 2, hdx, z * 2);
         fvec3 pos3d_dz(x * 2, hdz, zzm1 * 2);
 
-        fvec3 e01 = (pos3d_dx - pos3d).Normal();
-        fvec3 e02 = (pos3d_dz - pos3d).Normal();
-        auto n = e02.Cross(e01).Normal();
+        fvec3 e01                 = (pos3d_dx - pos3d).Normal();
+        fvec3 e02                 = (pos3d_dz - pos3d).Normal();
+        auto n                    = e02.Cross(e01).Normal();
         pfloattexB[pixelbase + 1] = debugmip ? 0.0f : float(n.x); // r x
         pfloattexB[pixelbase + 2] = debugmip ? 0.0f : float(n.y); // g y
         pfloattexB[pixelbase + 3] = debugmip ? 0.0f : float(n.z); // b z
@@ -268,8 +265,8 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
     auto nextbasB = (float*)nextlevB->_data;
     ////////////////////////////////////////////////
     constexpr float kdiv9 = 1.0f / 9.0f;
-    int MAXW = (MIPW * 2 - 1);
-    int MAXH = (MIPH * 2 - 1);
+    int MAXW              = (MIPW * 2 - 1);
+    int MAXH              = (MIPH * 2 - 1);
     for (int y = 0; y < MIPH; y++) {
       for (int x = 0; x < MIPW; x++) {
         ///////////////////////////////////////////
@@ -315,7 +312,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
         dest_sampleB.w *= kdiv9;
         ///////////////////////////////////////////
         if (debugmip) {
-          auto& dm = mipdebugcolors[levindex];
+          auto& dm       = mipdebugcolors[levindex];
           dest_sampleB.y = dm.x;
           dest_sampleB.z = dm.y;
           dest_sampleB.w = dm.z;
@@ -340,7 +337,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   auto bbctr = (_aabbmin + _aabbmax) * 0.5f;
   auto bbdim = (_aabbmax - _aabbmin);
 
-  printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ );
+  printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ);
   printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(), _aabbmin.GetZ());
   printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(), _aabbmax.GetZ());
   printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
@@ -395,10 +392,10 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
     for (int x = x1; x < x2; x += step) {
       Patch p;
       p._type = t;
-      p._x = x;
-      p._z = z;
-      p._lod = lod;
-      if( lod == 0)
+      p._x    = x;
+      p._z    = z;
+      p._lod  = lod;
+      if (lod == 0)
         _sector[sectorID(x, z)]._lod0._patches.push_back(p);
       else
         _sector[sectorID(x, z)]._lodX._patches.push_back(p);
@@ -412,10 +409,10 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
     for (int z = z1; z < z2; z += step) {
       Patch p;
       p._type = t;
-      p._x = x;
-      p._z = z;
-      p._lod = lod;
-      if( lod == 0)
+      p._x    = x;
+      p._z    = z;
+      p._lod  = lod;
+      if (lod == 0)
         _sector[sectorID(x, z)]._lod0._patches.push_back(p);
       else
         _sector[sectorID(x, z)]._lodX._patches.push_back(p);
@@ -436,10 +433,10 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
       for (int z = z1; z < z2; z += step) {
         Patch p;
         p._type = t;
-        p._x = x;
-        p._z = z;
-        p._lod = lod;
-        if( lod == 0)
+        p._x    = x;
+        p._z    = z;
+        p._lod  = lod;
+        if (lod == 0)
           _sector[sectorID(x, z)]._lod0._patches.push_back(p);
         else
           _sector[sectorID(x, z)]._lodX._patches.push_back(p);
@@ -452,10 +449,10 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   auto single_patch = [&](PatchType t, int lod, int x, int z) {
     Patch p;
     p._type = t;
-    p._x = x;
-    p._z = z;
-    p._lod = lod;
-    if( lod == 0)
+    p._x    = x;
+    p._z    = z;
+    p._lod  = lod;
+    if (lod == 0)
       _sector[sectorID(x, z)]._lod0._patches.push_back(p);
     else
       _sector[sectorID(x, z)]._lodX._patches.push_back(p);
@@ -464,7 +461,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   ////////////////////////////////////////////
 
   struct Iter {
-    int _lod = -1;
+    int _lod    = -1;
     int _acount = 0;
   };
 
@@ -479,7 +476,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   // iters.push_back(Iter{4, 128});
   // iters.push_back(Iter{5, 128});
 
-  printf( "Generating Patches..\n");
+  printf("Generating Patches..\n");
 
   int iprevouterd2 = 0;
 
@@ -488,32 +485,52 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
     assert(iter._acount >= 4);       // at least one inner
     assert((iter._acount & 1) == 0); // must also be even
 
-    int lod = iter._lod;
+    int lod  = iter._lod;
     int step = 1 << lod;
 
     int newouterd2 = iprevouterd2 + (iter._acount * step / 2);
 
-    int sectdim = step;
+    int sectdim   = step;
     int sectdimp1 = sectdim + step;
-    int a_start = -(iter._acount << lod) / 2;
-    int a_end = a_start + (iter._acount - 1) * step;
-    int a_z = a_start;
+    int a_start   = -(iter._acount << lod) / 2;
+    int a_end     = a_start + (iter._acount - 1) * step;
+    int a_z       = a_start;
 
     if (0 == lod) {
-      patch_block(PT_A, lod, // Full Sector
-                  -newouterd2 + step, -newouterd2 + step, +newouterd2 - step, +newouterd2 - step);
+      patch_block(PT_A,
+                  lod, // Full Sector
+                  -newouterd2 + step,
+                  -newouterd2 + step,
+                  +newouterd2 - step,
+                  +newouterd2 - step);
     } else {
-      patch_block(PT_A, lod, // Top Sector
-                  -newouterd2 + step, -newouterd2 + step, +newouterd2 - step, -iprevouterd2);
+      patch_block(PT_A,
+                  lod, // Top Sector
+                  -newouterd2 + step,
+                  -newouterd2 + step,
+                  +newouterd2 - step,
+                  -iprevouterd2);
 
-      patch_block(PT_A, lod, // Left Sector
-                  -newouterd2 + step, -iprevouterd2, -iprevouterd2, +iprevouterd2);
+      patch_block(PT_A,
+                  lod, // Left Sector
+                  -newouterd2 + step,
+                  -iprevouterd2,
+                  -iprevouterd2,
+                  +iprevouterd2);
 
-      patch_block(PT_A, lod, // Right Sector
-                  iprevouterd2, -iprevouterd2, newouterd2 - step, +iprevouterd2);
+      patch_block(PT_A,
+                  lod, // Right Sector
+                  iprevouterd2,
+                  -iprevouterd2,
+                  newouterd2 - step,
+                  +iprevouterd2);
 
-      patch_block(PT_A, lod, // Bottom Sector
-                  -newouterd2 + step, iprevouterd2, +newouterd2 - step, newouterd2 - step);
+      patch_block(PT_A,
+                  lod, // Bottom Sector
+                  -newouterd2 + step,
+                  iprevouterd2,
+                  +newouterd2 - step,
+                  newouterd2 - step);
     }
 
     int bx0 = -newouterd2;
@@ -554,21 +571,21 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
 
   ////////////////////////////////////////////
 
-  auto onlod = [&](SectorInfo& info, bool do_lod0){
+  auto onlod = [&](SectorInfo& info, bool do_lod0) {
     auto& linfo = do_lod0 ? info._lod0 : info._lodX;
-    auto vbuf = (*linfo._vtxbuflist)[0];
+    auto vbuf   = (*linfo._vtxbuflist)[0];
     linfo.vwriter.Lock(ptarg, vbuf, linfo.vertex_count);
     ////////////////////////////////////////////
     linfo.triangle_count = 0;
     auto& sector_patches = linfo._patches;
     for (auto p : sector_patches) {
-      int x = p._x;
-      int z = p._z;
+      int x   = p._x;
+      int z   = p._z;
       int lod = p._lod;
 
-      if( lod!=0 and do_lod0 )
+      if (lod != 0 and do_lod0)
         continue;
-      if( lod==0 and (false==do_lod0) )
+      if (lod == 0 and (false == do_lod0))
         continue;
 
       int step = 1 << lod;
@@ -644,14 +661,13 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
     }
     ////////////////////////////////////////////
     linfo.vwriter.UnLock(ptarg);
-
   };
 
   ////////////////////////////////////////////
   for (int i = 0; i < 8; i++) {
     auto& sector = _sector[i];
-    onlod(sector,true);
-    onlod(sector,false);
+    onlod(sector, true);
+    onlod(sector, false);
   } // for each sector
   aab.EndGrow();
   auto geomin = aab.Min();
@@ -666,24 +682,26 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
 
   _gpuDataDirty = false;
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
 
-
-  auto raw_drawable = _hfdrawable->_rawdrawable;
+  auto raw_drawable         = _hfdrawable->_rawdrawable;
   const IRenderer* renderer = rcidata.GetRenderer();
-  GfxTarget* ptarg = renderer->GetTarget();
-  auto framedata = ptarg->GetRenderContextFrameData();
+  GfxTarget* ptarg          = renderer->GetTarget();
+  auto framedata            = ptarg->GetRenderContextFrameData();
 
-  assert(raw_drawable!=nullptr);
-  //auto pent = dynamic_cast<const ent::Entity*>(raw_drawable->GetOwner());
+  if (auto as_bool = framedata->getUserProperty("stereo1pass"_crc).TryAs<bool>()) {
+    //printf("stereo1pass enabled!\n");
+  }
+
+  assert(raw_drawable != nullptr);
+  // auto pent = dynamic_cast<const ent::Entity*>(raw_drawable->GetOwner());
   //////////////////////////
   const fmtx4& PMTX = framedata->GetCameraCalcCtx().mPMatrix;
   const fmtx4& VMTX = framedata->GetCameraCalcCtx().mVMatrix;
-  //auto MMTX = pent ? pent->GetEffectiveMatrix() : fmtx4();
+  // auto MMTX = pent ? pent->GetEffectiveMatrix() : fmtx4();
   auto MMTX = fmtx4();
   //////////////////////////
   gpuUpdate(ptarg);
@@ -693,7 +711,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
   inv_view.inverseOf(VMTX);
   fvec3 campos = inv_view.GetTranslation();
   auto znormal = inv_view.GetZNormal().Normal();
-  campos.y = 0;
+  campos.y     = 0;
   fmtx4 follow;
   follow.SetTranslation(_hfdrawable->_visualOffset);
   //////////////////////////
@@ -736,7 +754,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
       bool bpick = ptarg->FBI()->IsPickState();
       if (bpick) {
         auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
-        Object* pickobj = nullptr; //pent ? ((Object*) &pent->GetEntData()) : nullptr;
+        Object* pickobj = nullptr; // pent ? ((Object*) &pent->GetEntData()) : nullptr;
         uint64_t pickid = pickbuf->AssignPickId(pickobj);
         color.SetRGBAU64(pickid);
       } else if (false) { // is_sel ){
@@ -746,18 +764,18 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
       ptarg->PushModColor(color);
       {
         int inumpasses = _terrainMaterial->BeginBlock(ptarg, rcidata);
-        bool bDRAW = _terrainMaterial->BeginPass(ptarg, 0);
+        bool bDRAW     = _terrainMaterial->BeginPass(ptarg, 0);
         if (bDRAW) {
 
-          if( true ) { //abs(znormal.y) > 0.8 ){ // looking up or down
+          if (true) { // abs(znormal.y) > 0.8 ){ // looking up or down
             ////////////////////////////////
             // render L0
             ////////////////////////////////
             for (int isector = 0; isector < 8; isector++) {
               auto& sector = _sector[isector];
-              auto L0 = sector._lod0;
-              auto vbufs = L0._vtxbuflist;
-              int inumvb = vbufs->size();
+              auto L0      = sector._lod0;
+              auto vbufs   = L0._vtxbuflist;
+              int inumvb   = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
                 ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
@@ -768,46 +786,43 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
             ////////////////////////////////
             for (int isector = 0; isector < 8; isector++) {
               auto& sector = _sector[isector];
-              auto LX = sector._lodX;
-              auto vbufs = LX._vtxbuflist;
-              int inumvb = vbufs->size();
+              auto LX      = sector._lodX;
+              auto vbufs   = LX._vtxbuflist;
+              int inumvb   = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
                 ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
               }
             }
-          }
-          else { // sector based culling (WIP)
+          } else { // sector based culling (WIP)
 
             // lod0 - inner sectors - draw all
-            for (int sectID=0; sectID<8; sectID++) {
+            for (int sectID = 0; sectID < 8; sectID++) {
               auto& sector = _sector[sectID];
-              auto L0 = sector._lod0;
-              auto vbufs = L0._vtxbuflist;
-              int inumvb = vbufs->size();
+              auto L0      = sector._lod0;
+              auto vbufs   = L0._vtxbuflist;
+              int inumvb   = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
                 ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
               }
-
             }
 
             // lodXouter - inner sectors - draw visible
-            auto zn_xz = znormal.GetXZ().Normal();
-            float angle = 8.0*((PI*0.5)+rect2pol_ang(zn_xz.x, zn_xz.y))/(PI*2.0);
-            //printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
-            int basesector = int(floor(angle))+2;
+            auto zn_xz  = znormal.GetXZ().Normal();
+            float angle = 8.0 * ((PI * 0.5) + rect2pol_ang(zn_xz.x, zn_xz.y)) / (PI * 2.0);
+            // printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
+            int basesector = int(floor(angle)) + 2;
             for (int soff = 6; soff < 10; soff++) {
-              int sectID = (basesector+soff)&7;
+              int sectID   = (basesector + soff) & 7;
               auto& sector = _sector[sectID];
-              auto LX = sector._lodX;
-              auto vbufs = LX._vtxbuflist;
-              int inumvb = vbufs->size();
+              auto LX      = sector._lodX;
+              auto vbufs   = LX._vtxbuflist;
+              int inumvb   = vbufs->size();
               for (int ivb = 0; ivb < inumvb; ivb++) {
                 auto vertex_buf = (*vbufs)[ivb];
                 ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
               }
-
             }
           }
           _terrainMaterial->EndPass(ptarg);
@@ -832,9 +847,9 @@ static void _RenderHeightfield(RenderContextInstData& rcid, GfxTarget* targ, con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CallbackDrawable* HeightFieldDrawable::create(){
+CallbackDrawable* HeightFieldDrawable::create() {
 
-  auto impl = _impl.makeShared<HeightfieldRenderImpl>(this);
+  auto impl    = _impl.makeShared<HeightfieldRenderImpl>(this);
   _rawdrawable = new CallbackDrawable(nullptr);
   _rawdrawable->SetRenderCallback(_RenderHeightfield);
   _rawdrawable->SetUserDataA(impl);
@@ -842,11 +857,11 @@ CallbackDrawable* HeightFieldDrawable::create(){
   return _rawdrawable;
 }
 
-HeightFieldDrawable::~HeightFieldDrawable(){
+HeightFieldDrawable::~HeightFieldDrawable() {
   _rawdrawable->SetRenderCallback(nullptr);
   _rawdrawable->SetUserDataA(nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-} //namespace ork::ent {
+} // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////
