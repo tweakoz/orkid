@@ -52,7 +52,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     }
   }
   void renderBothEyes(FrameRenderer& renderer,
-                      CompositorSystemDrawData& drawdata,
+                      CompositorDrawData& drawdata,
                       CameraData* lcam,
                       CameraData* rcam,
                       const std::map<int, orkidvr::ControllerState>& controllers) {
@@ -178,7 +178,6 @@ struct VRSYSTEMIMPL {
       , _layers(AddPooledString("All")) {}
   ///////////////////////////////////////
   ~VRSYSTEMIMPL() {
-
     if (_frametek)
       delete _frametek;
   }
@@ -191,7 +190,7 @@ struct VRSYSTEMIMPL {
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
-  void _myrender(Simulation* psi, FrameRenderer& renderer, CompositorSystemDrawData& drawdata, fmtx4 rootmatrix) {
+  void _myrender(Simulation* psi, FrameRenderer& renderer, CompositorDrawData& drawdata, fmtx4 rootmatrix) {
 
     auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
     auto playermtx   = playerspawn->GetEffectiveMatrix();
@@ -224,7 +223,7 @@ void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtua
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* compsys) // virtual
+void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem* compsys) // virtual
 {
   lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();

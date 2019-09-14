@@ -103,7 +103,7 @@ void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH )
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI)
+void Fx3CompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingSystem* pCCI)
 {
 	const ent::CompositingGroup* pCGA = pCCI->GetGroup(mGroupA);
 	const ent::CompositingGroup* pCGB = pCCI->GetGroup(mGroupB);
@@ -111,7 +111,7 @@ void Fx3CompositingTechnique::Draw(CompositorSystemDrawData& drawdata, Compositi
 
 	struct yo
 	{
-		static void rend_lyr_2_comp_group(	CompositorSystemDrawData& drawdata,
+		static void rend_lyr_2_comp_group(	CompositorDrawData& drawdata,
 											const ent::CompositingGroup* pCG,
 											lev2::BuiltinFrameTechniques* pFT,
 											const char* LayerName )

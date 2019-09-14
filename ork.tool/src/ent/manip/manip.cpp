@@ -14,7 +14,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/lev2/gfx/lev2renderer.h>
+#include <ork/lev2/gfx/rendercontext.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/math/audiomath.h>

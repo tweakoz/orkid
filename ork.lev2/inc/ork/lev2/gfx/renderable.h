@@ -21,7 +21,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/gfx/gfxvtxbuf.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
-#include <ork/lev2/gfx/lev2renderer.h>
+#include <ork/lev2/gfx/rendercontext.h>
 #include <functional>
 
 namespace ork {
@@ -119,72 +119,6 @@ protected:
 	var_t							mDrwDataA;
 	var_t							mDrwDataB;
 
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class BoxRenderable : public IRenderableDag
-{
-public: //
-
-	BoxRenderable()
-		: IRenderableDag()
-		, miPass( -1 )
-		, mDefSortKey( 0 )
-	{
-	}
-
-	int					GetPass( void ) const { return miPass; }
-
-	void				SetPass( int ipass ) { miPass=ipass; }
-	void				SetBox( const fvec4 & box ) { mBox=box; }
-	void				SetColor( const fcolor4 & clr ) { mColor=clr; }
-	void				SetDefaultSortKey( U32 DefSortKey ) { mDefSortKey=DefSortKey; }
-
-	const fvec4 &	GetBox( void ) const { return mBox; }
-	const fcolor4 &		GetColor( void ) const { return mColor; }
-
-
-	void Render( const Renderer *renderer ) const final;
-	U32	ComposeSortKey( const Renderer *renderer ) const final;
-
-private:
-
-	int						miPass;
-
-	fvec4				mBox;
-	fcolor4					mColor;
-	U32						mDefSortKey;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class BillboardRenderable : public IRenderableDag
-{
-public: //
-
-	BillboardRenderable()
-		: IRenderableDag()
-		, mSize( 1.0f )
-		, mpMaterial( 0 )
-	{
-	}
-
-	void				SetSize( float sz ) { mSize=sz; }
-	float				GetSize( void ) const { return mSize; }
-	void				SetMaterial( const GfxMaterial *pmat ) { mpMaterial=pmat; }
-	const GfxMaterial*	GetMaterial( void ) const { return mpMaterial; }
-
-
-	void Render( const Renderer *renderer ) const final;
-	U32 ComposeSortKey( const Renderer *renderer ) const final;
-
-
-private:
-
-	const GfxMaterial*		mpMaterial;
-	float					mSize;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,71 +225,6 @@ private:
 	var_t							mUserData0;
 	var_t							mUserData1;
 	cbtype_t						mRenderCallback;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class FrustumRenderable : public IRenderableDag
-{
-public:
-
-	static void ClassInit() {}
-
-	FrustumRenderable()
-		: IRenderableDag()
-		, mObjSpace( false )
-	{
-	}
-
-	const Frustum&		GetFrustum() const { return mFrustum; }
-	const fcolor4&		GetColor() const { return mColor; }
-
-	void				SetFrustum( const Frustum& frus ) { mFrustum = frus; }
-	void				SetColor( const fcolor4& clr ) { mColor = clr; }
-
-
-	bool				IsObjSpace() const { return mObjSpace; }
-	void				SetObjSpace( bool bv ) { mObjSpace=bv; }
-
-private:
-
-    U32     ComposeSortKey( const Renderer *renderer ) const final { return kLastRenderableSortKey; }
-    void    Render( const Renderer *renderer ) const final;
-
-	Frustum			mFrustum;
-	fcolor4			mColor;
-	bool			mObjSpace;
-
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class SphereRenderable : public IRenderableDag
-{
-public: //
-
-	SphereRenderable()
-		: IRenderableDag()
-		, mRadius( 0.0f )
-	{
-	}
-
-	void				SetColor( const fcolor4& clr ) { mColor = clr; }
-	void				SetPosition( const fvec3& pos ) { mPosition=pos; }
-	void				SetRadius( float rad ) { mRadius=rad; }
-
-	const fcolor4&		GetColor() const { return mColor; }
-	const fvec3 &	GetPosition() const { return mPosition; }
-	float				GetRadius() const { return mRadius; }
-
-private:
-
-    void        Render( const Renderer *renderer ) const final;
-    U32         ComposeSortKey( const Renderer *renderer ) const final { return 0; }
-
-	fcolor4					mColor;
-	fvec3				mPosition;
-	float					mRadius;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

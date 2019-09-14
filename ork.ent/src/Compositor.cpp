@@ -78,7 +78,7 @@ void CompositingContext::Resize( int iW, int iH )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::Draw( lev2::GfxTarget* pTARG, CompositorSystemDrawData& drawdata, CompositingSystem* pCCI )
+void CompositingContext::Draw( lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingSystem* pCCI )
 {
 	Init(pTARG); // fixme lazy init
 	if( mCTEK )

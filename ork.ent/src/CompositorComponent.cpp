@@ -226,7 +226,7 @@ float CompositingSystem::GetCurrentFrameRate() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingSystem::Draw( CompositorSystemDrawData& drawdata ) {
+void CompositingSystem::Draw( CompositorDrawData& drawdata ) {
 	lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
 	lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
 	lev2::GfxTarget* pTARG = framedata.GetTarget();

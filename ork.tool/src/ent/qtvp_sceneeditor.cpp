@@ -273,7 +273,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       // render it
       /////////////////////////////
 
-      ent::CompositorSystemDrawData compositorDrawData(the_renderer);
+      ent::CompositorDrawData compositorDrawData(the_renderer);
       pCMCI->Draw(compositorDrawData);
 
       ////////////////////////////////////////////

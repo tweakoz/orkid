@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/lev2renderer.h>
+#include <ork/lev2/gfx/rendercontext.h>
 
 #if defined(ORK_OSX)
 #include <OpenGL/gl.h>
