@@ -143,7 +143,19 @@ void IRenderer::ResetQueue(void) {
   mModels.clear();
   mCallbacks.clear();
 }
+
 ///////////////////////////////////////////////////////////////////////////////
+
+void IRenderer::RenderCallback(const lev2::CallbackRenderable& cbren) const {
+  lev2::RenderContextInstData MatCtx;
+  lev2::GfxTarget* pTARG = GetTarget();
+  MatCtx.SetRenderer(this);
+
+  if (cbren.GetRenderCallback()) {
+    cbren.GetRenderCallback()(MatCtx, pTARG, &cbren);
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 }} // namespace ork::lev2
