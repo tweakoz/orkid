@@ -13,6 +13,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
+#include "HeightFieldMaterial.inl"
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/pickbuffer.h>
@@ -102,16 +103,15 @@ struct HeightfieldRenderImpl {
   HeightfieldRenderImpl(HeightFieldDrawable* hfdrw);
   ~HeightfieldRenderImpl();
   void gpuUpdate(GfxTarget* ptarg);
-  void render(const RenderContextInstData& rcidata);
+  void render(const RenderContextInstData& RCID);
 
   HeightFieldDrawable* _hfdrawable;
   hfptr_t _heightfield;
 
-  bool _gpuDataDirty                         = true;
-  GfxMaterial3DSolid* _terrainMaterial       = nullptr;
-  GfxMaterial3DSolid* _terrainMaterialStereo = nullptr;
-  Texture* _heightmapTextureA                = nullptr;
-  Texture* _heightmapTextureB                = nullptr;
+  bool _gpuDataDirty                = true;
+  TerrainMaterial* _terrainMaterial = nullptr;
+  Texture* _heightmapTextureA       = nullptr;
+  Texture* _heightmapTextureB       = nullptr;
   fvec3 _aabbmin;
   fvec3 _aabbmax;
   SectorInfo _sector[8];
@@ -149,13 +149,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
 
   auto sphmaptex = (_hfdrawable->_sphericalenvmap != nullptr) ? _hfdrawable->_sphericalenvmap->GetTexture() : nullptr;
 
-  _terrainMaterial = new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain");
-  _terrainMaterial->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-  _terrainMaterial->_enablePick = true;
-
-  _terrainMaterialStereo = new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain_stereo");
-  _terrainMaterialStereo->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-  _terrainMaterialStereo->_enablePick = false;
+  _terrainMaterial = new TerrainMaterial(ptarg);
 
   orkprintf("ComputingGeometry\n");
 
@@ -690,159 +684,160 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
+void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
 
   auto raw_drawable         = _hfdrawable->_rawdrawable;
-  const IRenderer* renderer = rcidata.GetRenderer();
-  GfxTarget* ptarg          = renderer->GetTarget();
-  auto framedata            = ptarg->GetRenderContextFrameData();
-
-  bool stereo1pass = framedata->isStereoOnePass();
-
+  const IRenderer* renderer = RCID.GetRenderer();
+  GfxTarget* targ           = renderer->GetTarget();
+  auto framedata            = targ->GetRenderContextFrameData();
+  bool bpick                = framedata->isPicking();
+  auto mtxi                 = targ->MTXI();
+  auto fxi                  = targ->FXI();
+  auto gbi                  = targ->GBI();
+  ///////////////////////////////////////////////////////////////////
+  if (bpick)
+    return;
   assert(raw_drawable != nullptr);
   // auto pent = dynamic_cast<const ent::Entity*>(raw_drawable->GetOwner());
+  ///////////////////////////////////////////////////////////////////
+  // update
+  ///////////////////////////////////////////////////////////////////
+  gpuUpdate(targ);
+  const int iglX           = _heightfield->GetGridSizeX();
+  const int iglZ           = _heightfield->GetGridSizeZ();
+  const int terrain_ngrids = iglX * iglZ;
+  if (terrain_ngrids < 1024)
+    return;
+  ///////////////////////////////////////////////////////////////////
+  // render
+  ///////////////////////////////////////////////////////////////////
+  bool stereo1pass = framedata->isStereoOnePass();
+  //////////////////////////
+  // retrieve camera information
   //////////////////////////
   const fmtx4& PMTX = framedata->GetCameraCalcCtx().mPMatrix;
   const fmtx4& VMTX = framedata->GetCameraCalcCtx().mVMatrix;
-  // auto MMTX = pent ? pent->GetEffectiveMatrix() : fmtx4();
-  auto MMTX = fmtx4();
+  auto MMTX         = fmtx4();
   //////////////////////////
-  gpuUpdate(ptarg);
-  //////////////////////////
+  // camera dependent calculation
   //////////////////////////
   fmtx4 inv_view;
   inv_view.inverseOf(VMTX);
-  fvec3 campos = inv_view.GetTranslation();
+  //fvec3 campos = inv_view.GetTranslation();
+  //campos.y     = 0;
   auto znormal = inv_view.GetZNormal().Normal();
-  campos.y     = 0;
   fmtx4 follow;
   follow.SetTranslation(_hfdrawable->_visualOffset);
   //////////////////////////
-  ptarg->MTXI()->PushPMatrix(PMTX);
-  ptarg->MTXI()->PushVMatrix(VMTX);
-  ptarg->MTXI()->PushMMatrix(follow);
-  {
-    const int iglX = _heightfield->GetGridSizeX();
-    const int iglZ = _heightfield->GetGridSizeZ();
-
-    const int terrain_ngrids = iglX * iglZ;
-
-    if (terrain_ngrids >= 1024) {
-
-      bool bpick = framedata->isPicking();
-
-      auto material = (stereo1pass and (!bpick))
-                    ? _terrainMaterialStereo
-                    : _terrainMaterial;
-
-      ///////////////////////////////////////////////////////////////////
-      // render
-      ///////////////////////////////////////////////////////////////////
-
-      Texture* ColorTex = nullptr;
-      if (_sphericalenvmap && _sphericalenvmap->GetTexture())
-        ColorTex = _sphericalenvmap->GetTexture();
-
-      material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-      material->SetTexture(ColorTex);
-      material->SetTexture2(_heightmapTextureA);
-      material->SetTexture3(_heightmapTextureB);
-
-      auto range = _aabbmax - _aabbmin;
-      material->SetUser0(_aabbmin);
-      material->SetUser1(range);
-      material->SetUser2(fvec4(_hfdrawable->_worldHeight, 0, 0, 0));
-      material->mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
-      ptarg->PushMaterial(material);
-      int ivbidx = 0;
-
-      fvec4 color = fcolor4::White();
-
-      if (bpick) {
-        auto pickbuf    = ptarg->FBI()->GetCurrentPickBuffer();
-        Object* pickobj = nullptr; // pent ? ((Object*) &pent->GetEntData()) : nullptr;
-        uint64_t pickid = pickbuf->AssignPickId(pickobj);
-        color.SetRGBAU64(pickid);
-      } else if (false) { // is_sel ){
-        color = fcolor4::Red();
-      }
-
-      ptarg->PushModColor(color);
-      {
-        int inumpasses = material->BeginBlock(ptarg, rcidata);
-        bool bDRAW     = material->BeginPass(ptarg, 0);
-        if (bDRAW) {
-
-          if (true) { // abs(znormal.y) > 0.8 ){ // looking up or down
-            ////////////////////////////////
-            // render L0
-            ////////////////////////////////
-            for (int isector = 0; isector < 8; isector++) {
-              auto& sector = _sector[isector];
-              auto L0      = sector._lod0;
-              auto vbufs   = L0._vtxbuflist;
-              int inumvb   = vbufs->size();
-              for (int ivb = 0; ivb < inumvb; ivb++) {
-                auto vertex_buf = (*vbufs)[ivb];
-                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-              }
-            }
-            ////////////////////////////////
-            // render LX
-            ////////////////////////////////
-            for (int isector = 0; isector < 8; isector++) {
-              auto& sector = _sector[isector];
-              auto LX      = sector._lodX;
-              auto vbufs   = LX._vtxbuflist;
-              int inumvb   = vbufs->size();
-              for (int ivb = 0; ivb < inumvb; ivb++) {
-                auto vertex_buf = (*vbufs)[ivb];
-                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-              }
-            }
-          } else { // sector based culling (WIP)
-
-            // lod0 - inner sectors - draw all
-            for (int sectID = 0; sectID < 8; sectID++) {
-              auto& sector = _sector[sectID];
-              auto L0      = sector._lod0;
-              auto vbufs   = L0._vtxbuflist;
-              int inumvb   = vbufs->size();
-              for (int ivb = 0; ivb < inumvb; ivb++) {
-                auto vertex_buf = (*vbufs)[ivb];
-                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-              }
-            }
-
-            // lodXouter - inner sectors - draw visible
-            auto zn_xz  = znormal.GetXZ().Normal();
-            float angle = 8.0 * ((PI * 0.5) + rect2pol_ang(zn_xz.x, zn_xz.y)) / (PI * 2.0);
-            // printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
-            int basesector = int(floor(angle)) + 2;
-            for (int soff = 6; soff < 10; soff++) {
-              int sectID   = (basesector + soff) & 7;
-              auto& sector = _sector[sectID];
-              auto LX      = sector._lodX;
-              auto vbufs   = LX._vtxbuflist;
-              int inumvb   = vbufs->size();
-              for (int ivb = 0; ivb < inumvb; ivb++) {
-                auto vertex_buf = (*vbufs)[ivb];
-                ptarg->GBI()->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
-              }
-            }
-          }
-          material->EndPass(ptarg);
-          material->EndBlock(ptarg);
-        }
-      }
-      ptarg->PopModColor();
-      ptarg->PopMaterial();
-    }
+  // color
+  //////////////////////////
+  fvec4 color = fcolor4::White();
+  if (bpick) {
+    auto pickbuf    = targ->FBI()->GetCurrentPickBuffer();
+    Object* pickobj = nullptr; // pent ? ((Object*) &pent->GetEntData()) : nullptr;
+    uint64_t pickid = pickbuf->AssignPickId(pickobj);
+    color.SetRGBAU64(pickid);
+  } else if (false) { // is_sel ){
+    color = fcolor4::Red();
   }
-  ptarg->MTXI()->PopMMatrix();
-  ptarg->MTXI()->PopVMatrix();
-  ptarg->MTXI()->PopPMatrix();
-  // htrc.UnLockVisMap();
+  //////////////////////////
+  // env texture
+  //////////////////////////
+  Texture* ColorTex = nullptr;
+  if (_sphericalenvmap && _sphericalenvmap->GetTexture())
+    ColorTex = _sphericalenvmap->GetTexture();
+  //////////////////////////
+  auto MV = (follow*VMTX);
+  auto MVP = (follow*VMTX)*PMTX;
+  fmtx4 IMV; IMV.inverseOf(MV);
+  auto campos = IMV.GetTranslation();
+  //////////////////////////
+  // fill out shader params
+  //////////////////////////
+  auto& params = _terrainMaterial->_paramVal;
+  params._matMVPL    = MVP;
+  params._matMVPC    = MVP;
+  params._matMVPR    = MVP;
+  params._camPos     = campos;
+  params._modcolor   = color;
+  params._envTexture = ColorTex;
+  params._hfTextureA = _heightmapTextureA;
+  params._hfTextureB = _heightmapTextureB;
+  // targ->MTXI()->PushPMatrix(PMTX);
+  // targ->MTXI()->PushVMatrix(VMTX);
+  // targ->MTXI()->PushMMatrix(follow);
+  //////////////////////////
+
+  ///////////////////////////////////////////////////////////////////
+  // render
+  ///////////////////////////////////////////////////////////////////
+
+  //auto range = _aabbmax - _aabbmin;
+
+  targ->PushMaterial(_terrainMaterial);
+  _terrainMaterial->begin(RCID);
+
+  if (true) { // abs(znormal.y) > 0.8 ){ // looking up or down
+    ////////////////////////////////
+    // render L0
+    ////////////////////////////////
+    for (int isector = 0; isector < 8; isector++) {
+      auto& sector = _sector[isector];
+      auto L0      = sector._lod0;
+      auto vbufs   = L0._vtxbuflist;
+      int inumvb   = vbufs->size();
+      for (int ivb = 0; ivb < inumvb; ivb++) {
+        auto vertex_buf = (*vbufs)[ivb];
+        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+      }
+    }
+    ////////////////////////////////
+    // render LX
+    ////////////////////////////////
+    for (int isector = 0; isector < 8; isector++) {
+      auto& sector = _sector[isector];
+      auto LX      = sector._lodX;
+      auto vbufs   = LX._vtxbuflist;
+      int inumvb   = vbufs->size();
+      for (int ivb = 0; ivb < inumvb; ivb++) {
+        auto vertex_buf = (*vbufs)[ivb];
+        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+      }
+    }
+  } else { // sector based culling (WIP)
+
+    // lod0 - inner sectors - draw all
+    for (int sectID = 0; sectID < 8; sectID++) {
+      auto& sector = _sector[sectID];
+      auto L0      = sector._lod0;
+      auto vbufs   = L0._vtxbuflist;
+      int inumvb   = vbufs->size();
+      for (int ivb = 0; ivb < inumvb; ivb++) {
+        auto vertex_buf = (*vbufs)[ivb];
+        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+      }
+    }
+
+    // lodXouter - inner sectors - draw visible
+    auto zn_xz  = znormal.GetXZ().Normal();
+    float angle = 8.0 * ((PI * 0.5) + rect2pol_ang(zn_xz.x, zn_xz.y)) / (PI * 2.0);
+    // printf( "znormal<%g %g> angle<%g>\n", zn_xz.x, zn_xz.y, angle );
+    int basesector = int(floor(angle)) + 2;
+    for (int soff = 6; soff < 10; soff++) {
+      int sectID   = (basesector + soff) & 7;
+      auto& sector = _sector[sectID];
+      auto LX      = sector._lodX;
+      auto vbufs   = LX._vtxbuflist;
+      int inumvb   = vbufs->size();
+      for (int ivb = 0; ivb < inumvb; ivb++) {
+        auto vertex_buf = (*vbufs)[ivb];
+        gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
+      }
+    }
+    _terrainMaterial->end(targ);
+  }
+
+  targ->PopMaterial();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

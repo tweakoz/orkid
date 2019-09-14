@@ -9,26 +9,18 @@ fxconfig fxcfg_default {
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_block ublock_vtx {
-  uniform mat4 MatMVP;
-  uniform mat4 MatMVP_L;
-  uniform mat4 MatMVP_R;
-  uniform mat4 MatMV;
-  uniform mat4 MatM;
-  uniform mat4 MatV;
-  uniform mat4 MatP;
-  uniform mat4 MatAux;
-  uniform vec4 modcolor;
+  uniform mat4 MatMVPL;
+  uniform mat4 MatMVPC;
+  uniform mat4 MatMVPR;
+  uniform vec3 CamPos;
+  uniform vec4 ModColor;
   uniform float Time;
-  uniform sampler2D ColorMap2; // technically a heightmap
-  uniform sampler2D ColorMap3; // technically a heightmap
-  uniform vec4 User0;          // aabbmin
-  uniform vec4 User1;          // aabbmax
-  uniform vec4 User2;          // aabbmax-aabmin
-  uniform mat3 MatRotW;
+  uniform sampler2D HFAMap; // technically a heightmap
+  uniform sampler2D HFBMap; // technically a heightmap
 }
 uniform_block ublock_frg {
   uniform vec4 modcolor;
-  uniform sampler2D ColorMap;
+  uniform sampler2D EnvMap;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ublock_vtx {
@@ -60,38 +52,37 @@ fragment_interface iface_fdefault : ublock_frg {
 vertex_shader vs_terrain
   : iface_vdefault
   : lib_terrain {
-  vec3 campos = inverse(MatMV)[3].xyz;
-  TerOut tero = computeTerrain(campos);
+  TerOut tero = computeTerrain(CamPos);
   ///////////////////////////
   // apply to GL
   ///////////////////////////
-  gl_Position = MatMVP * vec4(tero.wpos, 1);
   frg_nrm = tero.wnrm;
-  frg_camdist = distance(tero.wpos, campos);
+  frg_camdist = distance(tero.wpos, CamPos);
   frg_uvxp = tero.uvxplane;
   frg_uvyp = tero.uvyplane;
   frg_uvzp = tero.uvzplane;
   frg_wpos = tero.wpossh;
+  ///////////////////////////
+  gl_Position = MatMVPC * vec4(tero.wpos, 1);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_terrain_stereo
   : extension(GL_NV_stereo_view_rendering)
   : iface_vdefault
   : lib_terrain {
-  vec3 campos = inverse(MatMV)[3].xyz;
-  TerOut tero = computeTerrain(campos);
+  TerOut tero = computeTerrain(CamPos);
   ///////////////////////////
   // apply to GL
   ///////////////////////////
   frg_nrm = tero.wnrm;
-  frg_camdist = distance(tero.wpos, campos);
+  frg_camdist = distance(tero.wpos, CamPos);
   frg_uvxp = tero.uvxplane;
   frg_uvyp = tero.uvyplane;
   frg_uvzp = tero.uvzplane;
   frg_wpos = tero.wpossh;
   ///////////////////////////
-  gl_Position = MatMVP_L * vec4(tero.wpos, 1);
-  gl_SecondaryPositionNV = MatMVP_R * vec4(tero.wpos, 1);
+  gl_Position = MatMVPL * vec4(tero.wpos, 1);
+  gl_SecondaryPositionNV = MatMVPR * vec4(tero.wpos, 1);
   ///////////////////////////
 }
 ///////////////////////////////////////////////////////////////
@@ -126,16 +117,15 @@ fragment_interface iface_fpick : ublock_frg {
 vertex_shader vs_pick
   : iface_vpick
   : lib_terrain {
-  vec3 campos = inverse(MatMV)[3].xyz;
-  TerOut tero = computeTerrain(campos);
+  TerOut tero = computeTerrain(CamPos);
   ///////////////////////////
   // apply to GL
   ///////////////////////////
-  gl_Position = MatMVP * vec4(tero.wpos, 1);
-  frg_nrmd = vec4(tero.wnrm,distance(tero.wpos, campos));
+  gl_Position = MatMVPC * vec4(tero.wpos, 1);
+  frg_nrmd = vec4(tero.wnrm,distance(tero.wpos, CamPos));
 }
 fragment_shader ps_pick : iface_fpick {
-  out_clr = modcolor;
+  out_clr = ModColor;
   out_nrmd = frg_nrmd;
 }
 ///////////////////////////////////////////////////////////////

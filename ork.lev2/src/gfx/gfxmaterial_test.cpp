@@ -24,11 +24,36 @@ void GfxMaterial3DSolid::Describe() {}
 bool gearlyhack = true;
 
 GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
-    : meColorMode(EMODE_MOD_COLOR), hTekVertexColor(0), hTekVertexModColor(0), hTekTexColor(0), hTekTexModColor(0),
-      hTekTexTexModColor(0), hTekModColor(0), hTekTexVertexColor(0), hMatMVP(0), hMatMV(0), hMatM(0), hMatV(0), hMatP(0),
-      hParamModColor(0), mVolumeTexture(0), mCurrentTexture(0), mCurrentTexture2(0), mCurrentTexture3(0), mCurrentTexture4(0),
-      hVolumeMap(0), hColorMap(0), hColorMap2(0), hColorMap3(0), hColorMap4(0), hParamUser0(0), hParamTime(0), hParamNoiseShift(0),
-      hParamNoiseFreq(0), hParamNoiseAmp(0), hModFX(0) {
+    : meColorMode(EMODE_MOD_COLOR)
+    , hTekVertexColor(0)
+    , hTekVertexModColor(0)
+    , hTekTexColor(0)
+    , hTekTexModColor(0)
+    , hTekTexTexModColor(0)
+    , hTekModColor(0)
+    , hTekTexVertexColor(0)
+    , hMatMVP(0)
+    , hMatMV(0)
+    , hMatM(0)
+    , hMatV(0)
+    , hMatP(0)
+    , hParamModColor(0)
+    , mVolumeTexture(0)
+    , mCurrentTexture(0)
+    , mCurrentTexture2(0)
+    , mCurrentTexture3(0)
+    , mCurrentTexture4(0)
+    , hVolumeMap(0)
+    , hColorMap(0)
+    , hColorMap2(0)
+    , hColorMap3(0)
+    , hColorMap4(0)
+    , hParamUser0(0)
+    , hParamTime(0)
+    , hParamNoiseShift(0)
+    , hParamNoiseFreq(0)
+    , hParamNoiseAmp(0)
+    , hModFX(0) {
   mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
   mRasterState.SetAlphaTest(EALPHATEST_OFF);
   mRasterState.SetBlending(EBLENDING_OFF);
@@ -47,14 +72,45 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
   }
 }
 
-GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure,
-                                       bool unmanaged)
-    : meColorMode(EMODE_USER), hTekVertexColor(0), hTekVertexModColor(0), hTekTexColor(0), hTekTexModColor(0),
-      hTekTexTexModColor(0), hTekModColor(0), hTekTexVertexColor(0), hMatMVP(0), hMatMV(0), hMatM(0), hMatV(0), hMatP(0),
-      hParamModColor(0), mVolumeTexture(0), mCurrentTexture(0), mCurrentTexture2(0), mCurrentTexture3(0), mCurrentTexture4(0),
-      mUserFxName(puserfx), mUserTekName(pusertek), hVolumeMap(0), hColorMap(0), hColorMap2(0), hColorMap3(0), hColorMap4(0),
-      hParamUser0(0), hParamNoiseShift(0), hParamNoiseFreq(0), hParamNoiseAmp(0), hParamTime(0), hModFX(0), mUnManaged(unmanaged),
-      mAllowCompileFailure(allowcompilefailure) {
+GfxMaterial3DSolid::GfxMaterial3DSolid(
+    GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure, bool unmanaged)
+    : meColorMode(EMODE_USER)
+    , hTekVertexColor(0)
+    , hTekVertexModColor(0)
+    , hTekTexColor(0)
+    , hTekTexModColor(0)
+    , hTekTexTexModColor(0)
+    , hTekModColor(0)
+    , hTekTexVertexColor(0)
+    , hMatMVP(0)
+    , hMatMVPL(0)
+    , hMatMVPR(0)
+    , hMatMVPC(0)
+    , hMatMV(0)
+    , hMatM(0)
+    , hMatV(0)
+    , hMatP(0)
+    , hParamModColor(0)
+    , mVolumeTexture(0)
+    , mCurrentTexture(0)
+    , mCurrentTexture2(0)
+    , mCurrentTexture3(0)
+    , mCurrentTexture4(0)
+    , mUserFxName(puserfx)
+    , mUserTekName(pusertek)
+    , hVolumeMap(0)
+    , hColorMap(0)
+    , hColorMap2(0)
+    , hColorMap3(0)
+    , hColorMap4(0)
+    , hParamUser0(0)
+    , hParamNoiseShift(0)
+    , hParamNoiseFreq(0)
+    , hParamNoiseAmp(0)
+    , hParamTime(0)
+    , hModFX(0)
+    , mUnManaged(unmanaged)
+    , mAllowCompileFailure(allowcompilefailure) {
 
   mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
   mRasterState.SetAlphaTest(EALPHATEST_OFF);
@@ -110,11 +166,11 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
     hTekUser = pTarg->FXI()->GetTechnique(hModFX, mUserTekName.c_str());
   }
   if (meColorMode != EMODE_USER) {
-    hTekVertexColor = pTarg->FXI()->GetTechnique(hModFX, "vtxcolor");
+    hTekVertexColor    = pTarg->FXI()->GetTechnique(hModFX, "vtxcolor");
     hTekVertexModColor = pTarg->FXI()->GetTechnique(hModFX, "vtxmodcolor");
-    hTekModColor = pTarg->FXI()->GetTechnique(hModFX, "mmodcolor");
-    hTekTexColor = pTarg->FXI()->GetTechnique(hModFX, "texcolor");
-    hTekTexModColor = pTarg->FXI()->GetTechnique(hModFX, "texmodcolor");
+    hTekModColor       = pTarg->FXI()->GetTechnique(hModFX, "mmodcolor");
+    hTekTexColor       = pTarg->FXI()->GetTechnique(hModFX, "texcolor");
+    hTekTexModColor    = pTarg->FXI()->GetTechnique(hModFX, "texmodcolor");
     hTekTexTexModColor = pTarg->FXI()->GetTechnique(hModFX, "textexmodcolor");
     hTekTexVertexColor = pTarg->FXI()->GetTechnique(hModFX, "texvtxcolor");
   }
@@ -124,15 +180,18 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
   hMatAux = pTarg->FXI()->GetParameterH(hModFX, "MatAux");
   hMatRot = pTarg->FXI()->GetParameterH(hModFX, "MatRotW");
 
-  hMatMVP = pTarg->FXI()->GetParameterH(hModFX, "MatMVP");
-  hMatMV = pTarg->FXI()->GetParameterH(hModFX, "MatMV");
-  hMatV = pTarg->FXI()->GetParameterH(hModFX, "MatV");
-  hMatM = pTarg->FXI()->GetParameterH(hModFX, "MatM");
-  hMatP = pTarg->FXI()->GetParameterH(hModFX, "MatP");
+  hMatMVPL       = pTarg->FXI()->GetParameterH(hModFX, "MatMVPL");
+  hMatMVPR       = pTarg->FXI()->GetParameterH(hModFX, "MatMVPR");
+  hMatMVPC       = pTarg->FXI()->GetParameterH(hModFX, "MatMVPC");
+  hMatMVP        = pTarg->FXI()->GetParameterH(hModFX, "MatMVP");
+  hMatMV         = pTarg->FXI()->GetParameterH(hModFX, "MatMV");
+  hMatV          = pTarg->FXI()->GetParameterH(hModFX, "MatV");
+  hMatM          = pTarg->FXI()->GetParameterH(hModFX, "MatM");
+  hMatP          = pTarg->FXI()->GetParameterH(hModFX, "MatP");
   hParamModColor = pTarg->FXI()->GetParameterH(hModFX, "modcolor");
 
   hVolumeMap = pTarg->FXI()->GetParameterH(hModFX, "VolumeMap");
-  hColorMap = pTarg->FXI()->GetParameterH(hModFX, "ColorMap");
+  hColorMap  = pTarg->FXI()->GetParameterH(hModFX, "ColorMap");
   hColorMap2 = pTarg->FXI()->GetParameterH(hModFX, "ColorMap2");
   hColorMap3 = pTarg->FXI()->GetParameterH(hModFX, "ColorMap3");
   hColorMap4 = pTarg->FXI()->GetParameterH(hModFX, "ColorMap4");
@@ -144,8 +203,8 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
 
   hParamTime = pTarg->FXI()->GetParameterH(hModFX, "Time");
 
-  hParamNoiseAmp = pTarg->FXI()->GetParameterH(hModFX, "NoiseAmp");
-  hParamNoiseFreq = pTarg->FXI()->GetParameterH(hModFX, "NoiseFreq");
+  hParamNoiseAmp   = pTarg->FXI()->GetParameterH(hModFX, "NoiseAmp");
+  hParamNoiseFreq  = pTarg->FXI()->GetParameterH(hModFX, "NoiseFreq");
   hParamNoiseShift = pTarg->FXI()->GetParameterH(hModFX, "NoiseShift");
 }
 
@@ -161,10 +220,9 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 
 int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& MatCtx) {
 
-  if (pTarg->FBI()->IsPickState() and _enablePick and hTekPick){
+  if (pTarg->FBI()->IsPickState() and _enablePick and hTekPick) {
     pTarg->FXI()->BindTechnique(hModFX, hTekPick);
-  }
-  else
+  } else
     switch (meColorMode) {
       case EMODE_VERTEX_COLOR:
         pTarg->FXI()->BindTechnique(hModFX, hTekVertexColor);
@@ -210,10 +268,10 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   if (gbskip)
     return false;
 
-  const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
+  const RenderContextInstData* rdata   = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-  const CameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
-  bool bforcenoz = rdata->IsForceNoZWrite();
+  const CameraData* camdata            = rfdata ? rfdata->GetCameraData() : 0;
+  bool bforcenoz                       = rdata->IsForceNoZWrite();
 
   // mRasterState.SetZWriteMask( ! bforcenoz );
 
@@ -224,7 +282,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
     return false;
 
   auto MTXI = pTarg->MTXI();
-  auto FXI = pTarg->FXI();
+  auto FXI  = pTarg->FXI();
 
   FXI->BindParamMatrix(hModFX, hMatM, MTXI->RefMMatrix());
   FXI->BindParamMatrix(hModFX, hMatMV, MTXI->RefMVMatrix());
