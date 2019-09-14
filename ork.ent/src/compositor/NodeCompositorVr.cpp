@@ -32,11 +32,12 @@ void VrCompositingNode::Describe() {}
 constexpr int NUMSAMPLES = 16;
 
 struct VrFrameTechnique final : public FrameTechniqueBase {
+  //////////////////////////////////////////////////////////////////////////////
   VrFrameTechnique(int w, int h)
       : FrameTechniqueBase(w, h)
       , _rtg_left(nullptr)
       , _rtg_right(nullptr) {}
-
+  //////////////////////////////////////////////////////////////////////////////
   void DoInit(GfxTarget* pTARG) final {
     if (nullptr == _rtg_left) {
       _rtg_left  = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
@@ -51,6 +52,47 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
   }
+
+  //////////////////////////////////////////////////////////////////////////////
+  typedef const std::map<int, orkidvr::ControllerState>& controllermap_t;
+  void renderPoses(GfxTarget* targ, CameraData* camdat, controllermap_t controllers) {
+    fmtx4 rx;
+    fmtx4 ry;
+    fmtx4 rz;
+    rx.SetRotateX(-PI * 0.5);
+    ry.SetRotateY(PI * 0.5);
+    rz.SetRotateZ(PI * 0.5);
+
+    for (auto item : controllers) {
+
+      auto c = item.second;
+      fmtx4 ivomatrix;
+      ivomatrix.inverseOf(_viewOffsetMatrix);
+
+      fmtx4 scalemtx;
+      scalemtx.SetScale(c._button1down ? 0.05 : 0.025);
+
+      fmtx4 controller_worldspace = (c._matrix * ivomatrix);
+
+      fmtx4 mmtx = (scalemtx * rx * ry * rz * controller_worldspace);
+
+      targ->MTXI()->PushMMatrix(mmtx);
+      targ->MTXI()->PushVMatrix(camdat->GetVMatrix());
+      targ->MTXI()->PushPMatrix(camdat->GetPMatrix());
+      targ->PushModColor(fvec4::White());
+      {
+        if (c._button2down)
+          ork::lev2::GfxPrimitives::GetRef().RenderBox(targ);
+        else
+          ork::lev2::GfxPrimitives::GetRef().RenderAxis(targ);
+      }
+      targ->PopModColor();
+      targ->MTXI()->PopPMatrix();
+      targ->MTXI()->PopVMatrix();
+      targ->MTXI()->PopMMatrix();
+    }
+  }
+  //////////////////////////////////////////////////////////////////////////////
   void renderBothEyes(FrameRenderer& renderer,
                       CompositorDrawData& drawdata,
                       CameraData* lcam,
@@ -65,48 +107,6 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     _CPD.mpFrameTek   = this;
     _CPD.mpCameraName = nullptr;
     _CPD.mpLayerName  = nullptr; // default == "All"
-
-    //////////////////////////////////////////////////////
-    // render all controller poses
-    //////////////////////////////////////////////////////
-
-    auto renderposes = [&](CameraData* camdat) {
-      fmtx4 rx;
-      fmtx4 ry;
-      fmtx4 rz;
-      rx.SetRotateX(-PI * 0.5);
-      ry.SetRotateY(PI * 0.5);
-      rz.SetRotateZ(PI * 0.5);
-
-      for (auto item : controllers) {
-
-        auto c = item.second;
-        fmtx4 ivomatrix;
-        ivomatrix.inverseOf(_viewOffsetMatrix);
-
-        fmtx4 scalemtx;
-        scalemtx.SetScale(c._button1down ? 0.05 : 0.025);
-
-        fmtx4 controller_worldspace = (c._matrix * ivomatrix);
-
-        fmtx4 mmtx = (scalemtx * rx * ry * rz * controller_worldspace);
-
-        pTARG->MTXI()->PushMMatrix(mmtx);
-        pTARG->MTXI()->PushVMatrix(camdat->GetVMatrix());
-        pTARG->MTXI()->PushPMatrix(camdat->GetPMatrix());
-        pTARG->PushModColor(fvec4::White());
-        {
-          if (c._button2down)
-            ork::lev2::GfxPrimitives::GetRef().RenderBox(pTARG);
-          else
-            ork::lev2::GfxPrimitives::GetRef().RenderAxis(pTARG);
-        }
-        pTARG->PopModColor();
-        pTARG->MTXI()->PopPMatrix();
-        pTARG->MTXI()->PopVMatrix();
-        pTARG->MTXI()->PopMMatrix();
-      }
-    };
 
     //////////////////////////////////////////////////////
 
@@ -129,7 +129,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       pTARG->BeginFrame();
       FrameData.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
       renderer.Render();
-      renderposes(lcam);
+      renderPoses(pTARG, lcam, controllers);
       pTARG->EndFrame();
       pTARG->FBI()->PopRtGroup();
       FrameData.PopRenderTarget();
@@ -139,26 +139,28 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
 
     // draw right ///////////////////////////////////////
 
-    rcam->BindGfxTarget(pTARG);
-    FrameData.SetCameraData(rcam);
-    _CPD._impl.Set<const CameraData*>(rcam);
-    //_CPD._clearColor = fvec4(0, 0, .1, 1);
+    if( orkidvr::device()._active ){ // only do right eye if we are actually doing VR
+      rcam->BindGfxTarget(pTARG);
+      FrameData.SetCameraData(rcam);
+      _CPD._impl.Set<const CameraData*>(rcam);
+      //_CPD._clearColor = fvec4(0, 0, .1, 1);
 
-    drawdata.mCompositingGroupStack.push(_CPD);
-    {
-      RtGroupRenderTarget rtR(_rtg_right);
-      pTARG->SetRenderContextFrameData(&FrameData);
-      FrameData.SetDstRect(tgt_rect);
-      FrameData.PushRenderTarget(&rtR);
-      pTARG->FBI()->PushRtGroup(_rtg_right);
-      pTARG->BeginFrame();
-      FrameData.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-      renderer.Render();
-      renderposes(rcam);
-      pTARG->EndFrame();
-      pTARG->FBI()->PopRtGroup();
-      FrameData.PopRenderTarget();
-      pTARG->SetRenderContextFrameData(nullptr);
+      drawdata.mCompositingGroupStack.push(_CPD);
+      {
+        RtGroupRenderTarget rtR(_rtg_right);
+        pTARG->SetRenderContextFrameData(&FrameData);
+        FrameData.SetDstRect(tgt_rect);
+        FrameData.PushRenderTarget(&rtR);
+        pTARG->FBI()->PushRtGroup(_rtg_right);
+        pTARG->BeginFrame();
+        FrameData.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+        renderer.Render();
+        renderPoses(pTARG, rcam, controllers);
+        pTARG->EndFrame();
+        pTARG->FBI()->PopRtGroup();
+        FrameData.PopRenderTarget();
+        pTARG->SetRenderContextFrameData(nullptr);
+      }
     }
   }
 
@@ -170,14 +172,14 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-struct VRSYSTEMIMPL {
+struct VRIMPL {
   ///////////////////////////////////////
-  VRSYSTEMIMPL()
+  VRIMPL()
       : _frametek(nullptr)
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {}
   ///////////////////////////////////////
-  ~VRSYSTEMIMPL() {
+  ~VRIMPL() {
     if (_frametek)
       delete _frametek;
   }
@@ -210,13 +212,13 @@ struct VRSYSTEMIMPL {
   InputSystem* _inputsys = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
-VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRSYSTEMIMPL>(); }
+VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(); }
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::~VrCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
 {
-  auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+  auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
 
   if (nullptr == vrimpl->_frametek) {
     vrimpl->init(pTARG);
@@ -229,7 +231,7 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
   lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
   auto targ                               = framedata.GetTarget();
 
-  auto vrimpl                 = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+  auto vrimpl                 = _impl.Get<std::shared_ptr<VRIMPL>>();
   static PoolString vrcamname = AddPooledString("vrcam");
 
   //////////////////////////////////////////////
@@ -281,7 +283,7 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
 }
 ///////////////////////////////////////////////////////////////////////////////
 lev2::RtGroup* VrCompositingNode::GetOutput() const {
-  auto vrimpl = _impl.Get<std::shared_ptr<VRSYSTEMIMPL>>();
+  auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
   if (vrimpl->_frametek)
     return vrimpl->_frametek->_rtg_left;
   else
