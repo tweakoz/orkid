@@ -123,9 +123,9 @@ void Fx3CompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingSyst
 			ent::CompositingPassData node;
 			node.mbDrawSource = (pCG != 0);
 			pFT->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
-			anyp PassData;
-			PassData.Set<const char*>( LayerName );
-			the_renderer.GetFrameData().SetUserProperty( "pass", PassData );
+			lev2::rendervar_t passdata;
+			passdata.Set<const char*>( LayerName );
+			the_renderer.GetFrameData().setUserProperty( "pass"_crc, passdata );
 			node.mpGroup = pCG;
 			node.mpFrameTek = pFT;
 			node.mpCameraName = (pCG!=0) ? & pCG->GetCameraName() : 0;

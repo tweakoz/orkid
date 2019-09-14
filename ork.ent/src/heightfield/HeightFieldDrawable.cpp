@@ -826,12 +826,8 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef std::shared_ptr<HeightfieldRenderImpl> fhriptr_t;
-
-///////////////////////////////////////////////////////////////////////////////
-
 static void _RenderHeightfield(RenderContextInstData& rcid, GfxTarget* targ, const CallbackRenderable* pren) {
-  pren->GetDrawableDataA().Get<fhriptr_t>()->render(rcid);
+  pren->GetDrawableDataA().getShared<HeightfieldRenderImpl>()->render(rcid);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

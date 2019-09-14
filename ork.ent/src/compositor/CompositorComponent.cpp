@@ -235,9 +235,9 @@ void CompositingSystem::Draw( CompositorDrawData& drawdata ) {
 
 	SRect tgtrect = SRect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 
-	anyp PassData;
-	PassData.Set<orkstack<ent::CompositingPassData>*>( & cgSTACK );
-	the_renderer.GetFrameData().SetUserProperty( "nodes", PassData );
+	lev2::rendervar_t passdata;
+	passdata.Set<orkstack<ent::CompositingPassData>*>( & cgSTACK );
+	the_renderer.GetFrameData().setUserProperty( "nodes"_crc, passdata );
 
 	/////////////////////////////////////////////////////////////////////////////////
 
@@ -248,7 +248,7 @@ void CompositingSystem::Draw( CompositorDrawData& drawdata ) {
 	/////////////////////////////////
 
 	const DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7);//mDbLock.Aquire(7);
-	framedata.SetUserProperty( "DB", anyp(DB) );
+	framedata.setUserProperty( "DB"_crc, lev2::rendervar_t(DB) );
 
 	if( DB ) {
 		_compcontext.Draw(pTARG,drawdata,this);

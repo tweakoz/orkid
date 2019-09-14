@@ -48,10 +48,10 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     static auto d_buf = new ork::ent::DrawableBuffer(4);
     ork::lev2::RenderContextFrameData framedata; //
 
-    anyp db_var;
+    rendervar_t db_var;
     db_var.Set<const DrawableBuffer*>(d_buf);
 
-    framedata.SetUserProperty("DB", db_var);
+    framedata.setUserProperty("DB"_crc, db_var);
 
     auto lamb = [&]() {
       AssertOnOpQ2(UpdateSerialOpQ());
@@ -165,9 +165,9 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   ///////////////////////////////////////////////////////////////////////////
   frame_data->AddLayer(AddPooledLiteral("All"));
   ///////////////////////////////////////////////////////////////////////////
-  anyp PassData;
-  PassData.Set<orkstack<ent::CompositingPassData>*>(&mpViewport->mCompositingGroupStack);
-  frame_data->SetUserProperty("nodes", PassData);
+  rendervar_t passdata;
+  passdata.Set<orkstack<ent::CompositingPassData>*>(&mpViewport->mCompositingGroupStack);
+  frame_data->setUserProperty("nodes"_crc, passdata);
   ent::CompositingPassData compositor_node;
   ///////////////////////////////////////////////////////////////////////////
   int itx0 = GetContextX();

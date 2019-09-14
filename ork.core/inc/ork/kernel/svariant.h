@@ -27,12 +27,12 @@
 
 #pragma once
 
-#include <string.h>
 #include <assert.h>
-#include <typeinfo>
-#include <type_traits>
-#include <new>
 #include <memory>
+#include <new>
+#include <string.h>
+#include <type_traits>
+#include <typeinfo>
 
 #include <ork/kernel/atomic.h>
 #include <ork/orkstd.h>
@@ -46,269 +46,247 @@ template <int tsize> class static_variant;
 ///////////////////////////////////////////////////////////////////////////////
 // templatized destruction delegate for static_variants
 
-template <int tsize,typename T> struct static_variant_destroyer_t
-{
-	typedef T MyType;
+template <int tsize, typename T> struct static_variant_destroyer_t {
+  typedef T MyType;
 
-	static void destroy( static_variant<tsize>& var );
+  static void destroy(static_variant<tsize>& var);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <int tsize,typename T> struct static_variant_copier_t
-{
-	typedef T MyType;
+template <int tsize, typename T> struct static_variant_copier_t {
+  typedef T MyType;
 
-	static void copy( static_variant<tsize>& lhs, const static_variant<tsize>& rhs );
+  static void copy(static_variant<tsize>& lhs, const static_variant<tsize>& rhs);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> struct attempt_cast
-{
-    attempt_cast(T* d) : _data(d) {}
-    operator bool() const  { return (nullptr!=_data); }
-    T& value() const
-    {   OrkAssert(_data!=nullptr);
-        return *_data;
-    }
-    T* _data;
+template <typename T> struct attempt_cast {
+  attempt_cast(T* d)
+      : _data(d) {}
+  operator bool() const { return (nullptr != _data); }
+  T& value() const {
+    OrkAssert(_data != nullptr);
+    return *_data;
+  }
+  T* _data;
 };
 
-template <typename T> struct attempt_cast_const
-{
-    attempt_cast_const(const T* d) : _data(d) {}
-    operator bool() const  { return (nullptr!=_data); }
-    const T& value() const
-    {   OrkAssert(_data!=nullptr);
-        return *_data;
-    }
-    const T* _data;
+template <typename T> struct attempt_cast_const {
+  attempt_cast_const(const T* d)
+      : _data(d) {}
+  operator bool() const { return (nullptr != _data); }
+  const T& value() const {
+    OrkAssert(_data != nullptr);
+    return *_data;
+  }
+  const T* _data;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <int tsize> class static_variant
-{
+template <int tsize> class static_variant {
 public:
-	typedef void (*destroyer_t)( static_variant<tsize>& var );
-	typedef void (*copier_t)( static_variant<tsize>& lhs, const static_variant<tsize>& rhs );
-	static const int		ksize = tsize;
+  typedef void (*destroyer_t)(static_variant<tsize>& var);
+  typedef void (*copier_t)(static_variant<tsize>& lhs, const static_variant<tsize>& rhs);
+  static const int ksize = tsize;
 
-	//////////////////////////////////////////////////////////////
-	// default constuctor
-	//////////////////////////////////////////////////////////////
-	static_variant()
-		: mtinfo(nullptr)
-	{
-		mDestroyer=nullptr;
-		mCopier=nullptr;
-	}
-	//////////////////////////////////////////////////////////////
-	// copy constuctor
-	//////////////////////////////////////////////////////////////
-	static_variant( const static_variant& oth )
-		: mtinfo(nullptr)
-	{
-		mDestroyer=nullptr;
-		mCopier=nullptr;
+  //////////////////////////////////////////////////////////////
+  // default constuctor
+  //////////////////////////////////////////////////////////////
+  static_variant()
+      : mtinfo(nullptr) {
+    mDestroyer = nullptr;
+    mCopier    = nullptr;
+  }
+  //////////////////////////////////////////////////////////////
+  // copy constuctor
+  //////////////////////////////////////////////////////////////
+  static_variant(const static_variant& oth)
+      : mtinfo(nullptr) {
+    mDestroyer = nullptr;
+    mCopier    = nullptr;
 
-		auto c = oth.mCopier.load();
-		if( c )
-			c( *this, oth );
-	}
-	//////////////////////////////////////////////////////////////
-	static_variant& operator = ( const static_variant& oth )
-	{
-		auto c = oth.mCopier.load();
-		if( c )
-			c( *this, oth );
+    auto c = oth.mCopier.load();
+    if (c)
+      c(*this, oth);
+  }
+  //////////////////////////////////////////////////////////////
+  static_variant& operator=(const static_variant& oth) {
+    auto c = oth.mCopier.load();
+    if (c)
+      c(*this, oth);
 
-		return *this;
-	}
-	//////////////////////////////////////////////////////////////
-	// typed constructor
-	//////////////////////////////////////////////////////////////
-	template <typename T> static_variant( const T& value )
-	{
-		static_assert(sizeof(T)<=ksize, "static_variant size violation");
-		memset(mbuffer,0,ksize);
-		T* pval = (T*) & mbuffer[0];
-		new (pval) T(value);
+    return *this;
+  }
+  //////////////////////////////////////////////////////////////
+  // typed constructor
+  //////////////////////////////////////////////////////////////
+  template <typename T> static_variant(const T& value) {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    memset(mbuffer, 0, ksize);
+    T* pval = (T*)&mbuffer[0];
+    new (pval) T(value);
 
-		AssignDestroyer<T>();
-		AssignCopier<T>();
+    AssignDestroyer<T>();
+    AssignCopier<T>();
 
-		mtinfo = & typeid( T );
-	}
-	//////////////////////////////////////////////////////////////
-	// destructor, delegate destuction of the contained object to the destroyer
-	//////////////////////////////////////////////////////////////
-	~static_variant()
-	{
-		Destroy();
-	}
-	//////////////////////////////////////////////////////////////
-	// call the destroyer on contained object
-	//////////////////////////////////////////////////////////////
-	void Destroy()
-	{
-		destroyer_t pdestr = mDestroyer.exchange(nullptr);
-		if( pdestr ) pdestr( *this );
-	}
-	//////////////////////////////////////////////////////////////
-	//	assign a destroyer
-	//////////////////////////////////////////////////////////////
-	template <typename T> void AssignDestroyer()
-	{
-		mDestroyer.store(& static_variant_destroyer_t<tsize,T>::destroy);
-	}
-	//////////////////////////////////////////////////////////////
-	//	assign a copier
-	//////////////////////////////////////////////////////////////
-	template <typename T> void AssignCopier()
-	{
-		mCopier.store(& static_variant_copier_t<tsize,T>::copy);
-	}
-	//////////////////////////////////////////////////////////////
-	// return true if the contained object is a T
-	//////////////////////////////////////////////////////////////
-	template <typename T> bool IsA() const
-	{
-		static_assert(sizeof(T)<=ksize, "static_variant size violation");
-		return (mtinfo!=0) ? (*mtinfo)==typeid(T) : false;
-	}
-	//////////////////////////////////////////////////////////////
-	// assign an object to the variant, assert if it does not fit
-	//////////////////////////////////////////////////////////////
-	template <typename T> void Set( const T& value )
-	{
-		static_assert(sizeof(T)<=ksize, "static_variant size violation");
-		Destroy();
-		T* pval = (T*) & mbuffer[0];
-		new (pval) T(value);
-		mtinfo = & typeid( T );
-		AssignDestroyer<T>();
-		AssignCopier<T>();
-	}
-	//////////////////////////////////////////////////////////////
-	// return the type T object by reference, assert if the types dont match
-	//////////////////////////////////////////////////////////////
-	template <typename T> T& Get()
-	{
-		static_assert(sizeof(T)<=ksize, "static_variant size violation");
-		assert( typeid(T) == *mtinfo );
-		T* pval = (T*) & mbuffer[0];
-		return *pval;
-	}
-	//////////////////////////////////////////////////////////////
-	// return the type T object by const reference, assert if the types dont match
-	//////////////////////////////////////////////////////////////
-	template <typename T> const T& Get() const
-	{
-		static_assert(sizeof(T)<=ksize, "static_variant size violation");
-		assert( typeid(T) == *mtinfo );
-		const T* pval = (const T*) & mbuffer[0];
-		return *pval;
-	}
-    //////////////////////////////////////////////////////////////
-    // construct a T and return by reference
-    //////////////////////////////////////////////////////////////
-    template <typename T, typename... A> T& Make(A&&... args)
-    {
-        static_assert(sizeof(T)<=ksize, "static_variant size violation");
-        Destroy();
-        auto pval = (T*) & mbuffer[0];
-        new (pval) T(std::forward<A>(args)...);
-        mtinfo = & typeid( T );
-        AssignDestroyer<T>();
-        AssignCopier<T>();
-        assert( typeid(T) == *mtinfo );
-        return *pval;
-    }
-		//////////////////////////////////////////////////////////////
-    // construct and return a reference to a shared_ptr<T>
-    //////////////////////////////////////////////////////////////
-    template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args)
-    {
-				typedef std::shared_ptr<T> sharedptr_t;
+    mtinfo = &typeid(T);
+  }
+  //////////////////////////////////////////////////////////////
+  // destructor, delegate destuction of the contained object to the destroyer
+  //////////////////////////////////////////////////////////////
+  ~static_variant() { Destroy(); }
+  //////////////////////////////////////////////////////////////
+  // call the destroyer on contained object
+  //////////////////////////////////////////////////////////////
+  void Destroy() {
+    destroyer_t pdestr = mDestroyer.exchange(nullptr);
+    if (pdestr)
+      pdestr(*this);
+  }
+  //////////////////////////////////////////////////////////////
+  //	assign a destroyer
+  //////////////////////////////////////////////////////////////
+  template <typename T> void AssignDestroyer() { mDestroyer.store(&static_variant_destroyer_t<tsize, T>::destroy); }
+  //////////////////////////////////////////////////////////////
+  //	assign a copier
+  //////////////////////////////////////////////////////////////
+  template <typename T> void AssignCopier() { mCopier.store(&static_variant_copier_t<tsize, T>::copy); }
+  //////////////////////////////////////////////////////////////
+  // return true if the contained object is a T
+  //////////////////////////////////////////////////////////////
+  template <typename T> bool IsA() const {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    return (mtinfo != 0) ? (*mtinfo) == typeid(T) : false;
+  }
+  //////////////////////////////////////////////////////////////
+  // assign an object to the variant, assert if it does not fit
+  //////////////////////////////////////////////////////////////
+  template <typename T> void Set(const T& value) {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    Destroy();
+    T* pval = (T*)&mbuffer[0];
+    new (pval) T(value);
+    mtinfo = &typeid(T);
+    AssignDestroyer<T>();
+    AssignCopier<T>();
+  }
+  //////////////////////////////////////////////////////////////
+  // return the type T object by reference, assert if the types dont match
+  //////////////////////////////////////////////////////////////
+  template <typename T> T& Get() {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    assert(typeid(T) == *mtinfo);
+    T* pval = (T*)&mbuffer[0];
+    return *pval;
+  }
+  //////////////////////////////////////////////////////////////
+  // return the type T object by const reference, assert if the types dont match
+  //////////////////////////////////////////////////////////////
+  template <typename T> const T& Get() const {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    assert(typeid(T) == *mtinfo);
+    const T* pval = (const T*)&mbuffer[0];
+    return *pval;
+  }
+  //////////////////////////////////////////////////////////////
+  // return the type T object by const reference, assert if the types dont match
+  //////////////////////////////////////////////////////////////
+  template <typename T> std::shared_ptr<T>& getShared() const {
+    typedef std::shared_ptr<T> sharedptr_t;
+    static_assert(sizeof(sharedptr_t) <= ksize, "static_variant size violation");
+    assert(typeid(sharedptr_t) == *mtinfo);
+    auto pval = (sharedptr_t*)&mbuffer[0];
+    return (*pval);
+  }
+  //////////////////////////////////////////////////////////////
+  // construct a T and return by reference
+  //////////////////////////////////////////////////////////////
+  template <typename T, typename... A> T& Make(A&&... args) {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    Destroy();
+    auto pval = (T*)&mbuffer[0];
+    new (pval) T(std::forward<A>(args)...);
+    mtinfo = &typeid(T);
+    AssignDestroyer<T>();
+    AssignCopier<T>();
+    assert(typeid(T) == *mtinfo);
+    return *pval;
+  }
+  //////////////////////////////////////////////////////////////
+  // construct and return a reference to a shared_ptr<T>
+  //////////////////////////////////////////////////////////////
+  template <typename T, typename... A> std::shared_ptr<T>& makeShared(A&&... args) {
+    typedef std::shared_ptr<T> sharedptr_t;
 
-        static_assert(sizeof(sharedptr_t)<=ksize, "static_variant size violation");
-        Destroy();
-        auto pval = (sharedptr_t*) & mbuffer[0];
-				new (pval) sharedptr_t;
-        (*pval) = std::make_shared<T>(std::forward<A>(args)...);
-        mtinfo = & typeid( sharedptr_t );
-        AssignDestroyer<sharedptr_t>();
-        AssignCopier<sharedptr_t>();
-        assert( typeid(sharedptr_t) == *mtinfo );
-        return (*pval);
-    }
-    //////////////////////////////////////////////////////////////
-    //
-    //////////////////////////////////////////////////////////////
-    template <typename T> attempt_cast<T> TryAs()
-    {
-        static_assert(sizeof(T)<=ksize, "static_variant size violation");
-        bool type_ok = ( typeid(T) == *mtinfo );
-        return attempt_cast<T>((T*) (type_ok ? & mbuffer[0] : nullptr));
-    }
-    //////////////////////////////////////////////////////////////
-    //
-    //////////////////////////////////////////////////////////////
-    template <typename T> attempt_cast_const<T> TryAs() const
-    {
-        static_assert(sizeof(T)<=ksize, "static_variant size violation");
-        bool type_ok = ( typeid(T) == *mtinfo );
-        return attempt_cast_const<T>((const T*) (type_ok ? & mbuffer[0] : nullptr)) ;
-    }
-	//////////////////////////////////////////////////////////////
-	// return true if the variant is capable of containing an object of type T
-	//////////////////////////////////////////////////////////////
-	template <typename T> static bool IsTypeOk()
-	{
-		int isize = sizeof(T);
-		bool rval = (isize<=ksize);
-		return rval;
-	}
-	//////////////////////////////////////////////////////////////
-	const std::type_info* GetTypeInfo() const
-	{	return mtinfo;
-	}
-	//////////////////////////////////////////////////////////////
-    const char* GetTypeName() const
-	{	return mtinfo?mtinfo->name():"";
-	}
-	//////////////////////////////////////////////////////////////
-	// return true if the variant has been set to something
-	//////////////////////////////////////////////////////////////
-	bool IsSet() const { return (mtinfo!=0); }
+    static_assert(sizeof(sharedptr_t) <= ksize, "static_variant size violation");
+    Destroy();
+    auto pval = (sharedptr_t*)&mbuffer[0];
+    new (pval) sharedptr_t;
+    (*pval) = std::make_shared<T>(std::forward<A>(args)...);
+    mtinfo  = &typeid(sharedptr_t);
+    AssignDestroyer<sharedptr_t>();
+    AssignCopier<sharedptr_t>();
+    assert(typeid(sharedptr_t) == *mtinfo);
+    return (*pval);
+  }
+  //////////////////////////////////////////////////////////////
+  //
+  //////////////////////////////////////////////////////////////
+  template <typename T> attempt_cast<T> TryAs() {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    bool type_ok = (typeid(T) == *mtinfo);
+    return attempt_cast<T>((T*)(type_ok ? &mbuffer[0] : nullptr));
+  }
+  //////////////////////////////////////////////////////////////
+  //
+  //////////////////////////////////////////////////////////////
+  template <typename T> attempt_cast_const<T> TryAs() const {
+    static_assert(sizeof(T) <= ksize, "static_variant size violation");
+    bool type_ok = (typeid(T) == *mtinfo);
+    return attempt_cast_const<T>((const T*)(type_ok ? &mbuffer[0] : nullptr));
+  }
+  //////////////////////////////////////////////////////////////
+  // return true if the variant is capable of containing an object of type T
+  //////////////////////////////////////////////////////////////
+  template <typename T> static bool IsTypeOk() {
+    int isize = sizeof(T);
+    bool rval = (isize <= ksize);
+    return rval;
+  }
+  //////////////////////////////////////////////////////////////
+  const std::type_info* GetTypeInfo() const { return mtinfo; }
+  //////////////////////////////////////////////////////////////
+  const char* GetTypeName() const { return mtinfo ? mtinfo->name() : ""; }
+  //////////////////////////////////////////////////////////////
+  // return true if the variant has been set to something
+  //////////////////////////////////////////////////////////////
+  bool IsSet() const { return (mtinfo != 0); }
 
-	//////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////
 private:
-	char					 mbuffer[ksize];
-	ork::atomic<destroyer_t> mDestroyer;
-	ork::atomic<copier_t>    mCopier;
-	const std::type_info*	 mtinfo;
-	//////////////////////////////////////////////////////////////
+  char mbuffer[ksize];
+  ork::atomic<destroyer_t> mDestroyer;
+  ork::atomic<copier_t> mCopier;
+  const std::type_info* mtinfo;
+  //////////////////////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <int tsize,typename T>
-inline void static_variant_destroyer_t<tsize,T>::destroy(static_variant<tsize>& var)
-{
-	var.template Get<T>().~T();
-	// just call T's destructor, as opposed to delete
-	//	because the variant owns the memory.
-	//  aka 'placement delete'
+template <int tsize, typename T> inline void static_variant_destroyer_t<tsize, T>::destroy(static_variant<tsize>& var) {
+  var.template Get<T>().~T();
+  // just call T's destructor, as opposed to delete
+  //	because the variant owns the memory.
+  //  aka 'placement delete'
 };
 
-template <int tsize,typename T>
-inline void static_variant_copier_t<tsize,T>::copy(static_variant<tsize>& lhs, const static_variant<tsize>& rhs)
-{
-	const T& src = rhs.template Get<T>();
-	lhs.template Set<T>(src);
+template <int tsize, typename T>
+inline void static_variant_copier_t<tsize, T>::copy(static_variant<tsize>& lhs, const static_variant<tsize>& rhs) {
+  const T& src = rhs.template Get<T>();
+  lhs.template Set<T>(src);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -165,9 +165,9 @@ void PassThroughCompositingNode::DoRender(CompositorDrawData& drawdata, Composit
 
   if (mFTEK) {
     mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
-    anyp PassData;
-    PassData.Set<const char*>("All");
-    the_renderer.GetFrameData().SetUserProperty("pass", PassData);
+    lev2::rendervar_t passdata;
+    passdata.Set<const char*>("All");
+    the_renderer.GetFrameData().setUserProperty("pass"_crc, passdata);
     node.mpGroup = pCG;
     node.mpFrameTek = mFTEK;
     node.mpCameraName = (pCG != 0) ? &pCG->GetCameraName() : 0;
@@ -255,20 +255,6 @@ void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSy
     gbi->EndFrame();
     fbi->PopRtGroup();
   }
-
-  /*ent::CompositingPassData node;
-  node.mbDrawSource = (pCG != 0);
-  mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
-  anyp PassData;
-  PassData.Set<const char*>( "All" );
-  the_renderer.GetFrameData().SetUserProperty( "pass", PassData );
-  node.mpGroup = pCG;
-  node.mpFrameTek = mFTEK;
-  node.mpCameraName = (pCG!=0) ? & pCG->GetCameraName() : 0;
-  node.mpLayerName = (pCG!=0) ? & pCG->GetLayers() : 0;
-  cgSTACK.push(node);
-  mFTEK->Render( the_renderer );
-  cgSTACK.pop();*/
 }
 lev2::RtGroup* SeriesCompositingNode::GetOutput() const {
   lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;
@@ -419,20 +405,6 @@ void InsertCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSy
         fbi->PopRtGroup();
     }
   }
-
-  /*ent::CompositingPassData node;
-  node.mbDrawSource = (pCG != 0);
-  mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
-  anyp PassData;
-  PassData.Set<const char*>( "All" );
-  the_renderer.GetFrameData().SetUserProperty( "pass", PassData );
-  node.mpGroup = pCG;
-  node.mpFrameTek = mFTEK;
-  node.mpCameraName = (pCG!=0) ? & pCG->GetCameraName() : 0;
-  node.mpLayerName = (pCG!=0) ? & pCG->GetLayers() : 0;
-  cgSTACK.push(node);
-  mFTEK->Render( the_renderer );
-  cgSTACK.pop();*/
 }
 lev2::RtGroup* InsertCompositingNode::GetOutput() const {
   lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;

@@ -25,7 +25,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/viewport.h>
 
-template class ork::orklut<ork::PoolString, anyp>;
+template class ork::orklut<ork::CrcString, ork::lev2::rendervar_t>;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
@@ -101,21 +101,19 @@ RenderContextFrameData::RenderContextFrameData()
     , mLightManager(0)
     , mpTarget(0) {}
 
-void RenderContextFrameData::SetUserProperty(const char* prop, anyp val) {
-  PoolString PSprop                     = AddPooledString(prop);
-  orklut<PoolString, anyp>::iterator it = mUserProperties.find(PSprop);
-  if (it == mUserProperties.end())
-    mUserProperties.AddSorted(PSprop, val);
+void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
+  auto it = _userProperties.find(key);
+  if (it == _userProperties.end())
+    _userProperties.AddSorted(key, val);
   else
     it->second = val;
 }
-anyp RenderContextFrameData::GetUserProperty(const char* prop) {
-  PoolString PSprop                           = AddPooledString(prop);
-  orklut<PoolString, anyp>::const_iterator it = mUserProperties.find(PSprop);
-  if (it != mUserProperties.end()) {
+rendervar_t RenderContextFrameData::getUserProperty(CrcString key) {
+  auto it = _userProperties.find(key);
+  if (it != _userProperties.end()) {
     return it->second;
   }
-  anyp rval;
+  rendervar_t rval(nullptr);
   return rval;
 }
 

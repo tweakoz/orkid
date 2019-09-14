@@ -139,7 +139,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
 
     // draw right ///////////////////////////////////////
 
-    if( orkidvr::device()._active ){ // only do right eye if we are actually doing VR
+    if (orkidvr::device()._active) { // only do right eye if we are actually doing VR
       rcam->BindGfxTarget(pTARG);
       FrameData.SetCameraData(rcam);
       _CPD._impl.Set<const CameraData*>(rcam);
@@ -258,9 +258,9 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
     // render eyes
     /////////////////////////////////////////////////////////////////////////////
 
-    anyp PassData;
-    PassData.Set<const char*>("All");
-    the_renderer.GetFrameData().SetUserProperty("pass", PassData);
+    rendervar_t passdata;
+    passdata.Set<const char*>("All");
+    the_renderer.GetFrameData().setUserProperty("pass"_crc, passdata);
     vrimpl->_myrender(psi, the_renderer, drawdata, rootmatrix);
 
     /////////////////////////////////////////////////////////////////////////////
