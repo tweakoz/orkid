@@ -128,8 +128,8 @@ libblock lib_terrain {
       float lerpindex = (llod - hires_mip);
       lerpindex = pow(lerpindex,2);
       /////////////////////////////////
-      vec4 hires_sample = textureLod(ColorMap3,uvd,hires_mip);
-      vec4 lores_sample = textureLod(ColorMap3,uvd,lores_mip);
+      vec4 hires_sample = textureLod(HFBMap,uvd,hires_mip);
+      vec4 lores_sample = textureLod(HFBMap,uvd,lores_mip);
       /////////////////////////////////
       float h = mix(hires_sample.x,lores_sample.x,lerpindex);
       h = (h * hfHeightScale) + hfHeightBias;
