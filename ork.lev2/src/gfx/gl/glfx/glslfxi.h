@@ -41,7 +41,7 @@ struct GlslFxUniformInstance
 	GlslFxUniform*	mpUniform;
 	int 			mSubItemIndex;
 	svar16_t		mPrivData;
-	
+
 	GlslFxUniformInstance() : mLocation(-1), mpUniform(nullptr), mSubItemIndex(0) {}
 };
 
@@ -56,7 +56,7 @@ struct GlslFxAttribute
 	std::string		mComment;
 	int             mArraySize;
 
-	GlslFxAttribute(const std::string& nam,const std::string& sem="") 
+	GlslFxAttribute(const std::string& nam,const std::string& sem="")
 		: mName(nam)
 		, mSemantic(sem)
 		, meType(GL_ZERO)
@@ -102,7 +102,7 @@ struct GlslFxStateBlock
 	void AddStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
 
 };
-	
+
 struct GlslFxShader
 {
 	std::string				mName;
@@ -113,8 +113,9 @@ struct GlslFxShader
 	GLenum					mShaderType;
 	bool					mbCompiled;
 	bool					mbError;
+	std::set<std::string> _requiredExtensions;
 
-	GlslFxShader( const std::string& nam, GLenum etyp ) 
+	GlslFxShader( const std::string& nam, GLenum etyp )
 		: mName(nam)
 		, mShaderObjectId(0)
 		, mShaderType( etyp )
@@ -127,6 +128,7 @@ struct GlslFxShader
 
 	bool Compile();
 	bool IsCompiled() const;
+	void requireExtension(std::string ext) { _requiredExtensions.insert(ext); }
 };
 struct GlslFxShaderVtx : GlslFxShader
 {
@@ -265,7 +267,7 @@ struct GlslFxContainer
 	GlslFxStreamInterface* GetTessEvalInterface( const std::string& name ) const;
 	GlslFxStreamInterface* GetGeometryInterface( const std::string& name ) const;
 	GlslFxStreamInterface* GetFragmentInterface( const std::string& name ) const;
-	
+
 	GlslFxContainer(const std::string& nam);
 };
 

@@ -148,7 +148,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
 
   auto sphmaptex = (_hfdrawable->_sphericalenvmap != nullptr) ? _hfdrawable->_sphericalenvmap->GetTexture() : nullptr;
 
-  _terrainMaterial = new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain1");
+  _terrainMaterial = new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain");
   _terrainMaterial->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
   _terrainMaterial->_enablePick = true;
 
