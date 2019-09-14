@@ -107,19 +107,29 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     _CPD.mpFrameTek   = this;
     _CPD.mpCameraName = nullptr;
     _CPD.mpLayerName  = nullptr; // default == "All"
-
-    framedata.setStereoOnePass(true);
+    _CPD._clearColor = fvec4(0.61, 0.61, 0.71, 1);
 
     //////////////////////////////////////////////////////
+    // is stereo active ?stereo
+    //////////////////////////////////////////////////////
 
+    if (orkidvr::device()._active) {
+      framedata.setStereoOnePass(true);
+      framedata.setUserProperty("lcam"_crc,lcam);
+      framedata.setUserProperty("rcam"_crc,rcam);
+    } else {
+      lcam->BindGfxTarget(pTARG);
+      rcam->BindGfxTarget(pTARG);
+      framedata.SetCameraData(lcam);
+      _CPD._impl.Set<const CameraData*>(lcam);
+    }
+
+    //////////////////////////////////////////////////////
     pTARG->FBI()->SetAutoClear(false);
     // clear will occur via _CPD
-    // draw left ////////////////////////////////////////
+    //////////////////////////////////////////////////////
 
-    lcam->BindGfxTarget(pTARG);
-    framedata.SetCameraData(lcam);
-    _CPD._impl.Set<const CameraData*>(lcam);
-    _CPD._clearColor = fvec4(0.61, 0.61, 0.71, 1);
+    // draw left and right ///////////////////////////////
 
     RtGroupRenderTarget rtL(_rtg_left);
     drawdata.mCompositingGroupStack.push(_CPD);
@@ -131,7 +141,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       pTARG->BeginFrame();
       framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
       renderer.Render();
-      renderPoses(pTARG, lcam, controllers);
+      //renderPoses(pTARG, lcam, controllers);
       pTARG->EndFrame();
       pTARG->FBI()->PopRtGroup();
       framedata.PopRenderTarget();
@@ -139,31 +149,26 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       drawdata.mCompositingGroupStack.pop();
     }
 
-    // draw right ///////////////////////////////////////
+    //////////////////////////////////////////////////////
 
-    if (orkidvr::device()._active) { // only do right eye if we are actually doing VR
-      rcam->BindGfxTarget(pTARG);
-      framedata.SetCameraData(rcam);
-      _CPD._impl.Set<const CameraData*>(rcam);
-      //_CPD._clearColor = fvec4(0, 0, .1, 1);
-
-      drawdata.mCompositingGroupStack.push(_CPD);
-      {
-        RtGroupRenderTarget rtR(_rtg_right);
-        pTARG->SetRenderContextFrameData(&framedata);
-        framedata.SetDstRect(tgt_rect);
-        framedata.PushRenderTarget(&rtR);
-        pTARG->FBI()->PushRtGroup(_rtg_right);
-        pTARG->BeginFrame();
-        framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-        renderer.Render();
-        renderPoses(pTARG, rcam, controllers);
-        pTARG->EndFrame();
-        pTARG->FBI()->PopRtGroup();
-        framedata.PopRenderTarget();
-        pTARG->SetRenderContextFrameData(nullptr);
-      }
+    /*
+    drawdata.mCompositingGroupStack.push(_CPD);
+    {
+      RtGroupRenderTarget rtR(_rtg_right);
+      pTARG->SetRenderContextFrameData(&framedata);
+      framedata.SetDstRect(tgt_rect);
+      framedata.PushRenderTarget(&rtR);
+      pTARG->FBI()->PushRtGroup(_rtg_right);
+      pTARG->BeginFrame();
+      framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+      renderer.Render();
+      renderPoses(pTARG, rcam, controllers);
+      pTARG->EndFrame();
+      pTARG->FBI()->PopRtGroup();
+      framedata.PopRenderTarget();
+      pTARG->SetRenderContextFrameData(nullptr);
     }
+    */
 
     framedata.setStereoOnePass(false);
   }
