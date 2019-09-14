@@ -45,7 +45,7 @@ file(GLOB_RECURSE src_gfx ${SRCD}/gfx/*.cpp)
 file(GLOB_RECURSE src_input ${SRCD}/input/*.cpp)
 file(GLOB_RECURSE src_qtui ${SRCD}/qtui/*.cpp)
 file(GLOB_RECURSE src_ui ${SRCD}/ui/*.cpp)
-file(GLOB_RECURSE src_ovr ${SRCD}/openvr/*.cpp)
+file(GLOB_RECURSE src_ovr ${SRCD}/vr/*.cpp)
 file(GLOB src_lev2 ${SRCD}/*.cpp)
 
 IF(${APPLE})

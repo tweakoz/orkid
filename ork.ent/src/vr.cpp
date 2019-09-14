@@ -7,7 +7,7 @@
 
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/openvr/openvr.h>
+#include <ork/lev2/vr/vr.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/Compositor.h>
