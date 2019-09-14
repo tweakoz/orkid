@@ -9,7 +9,7 @@
 
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/rendercontext.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 
 namespace ork::lev2 {
 

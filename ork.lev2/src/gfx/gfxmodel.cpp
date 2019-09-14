@@ -11,7 +11,7 @@
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/kernel/prop.h>
 
 #define USE_XGM_DISPLAYLISTS 0

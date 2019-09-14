@@ -16,7 +16,7 @@
 #include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include "PerformanceAnalyzer.h"
 

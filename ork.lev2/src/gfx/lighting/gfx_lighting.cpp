@@ -9,8 +9,8 @@
 
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/kernel/fixedlut.hpp>
-#include <ork/lev2/gfx/renderable.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/math/collision_test.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/kernel/Array.hpp>

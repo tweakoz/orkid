@@ -20,7 +20,7 @@
 #include <ork/gfx/camera.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/RegisterProperty.h>

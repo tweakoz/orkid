@@ -8,7 +8,7 @@
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.hpp>
 #include <ork/lev2/gfx/shadman.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/file/file.h>
 #include <ork/kernel/orklut.hpp>

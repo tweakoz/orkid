@@ -16,7 +16,7 @@
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
-#include <ork/lev2/gfx/renderer.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/pch.h>
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>

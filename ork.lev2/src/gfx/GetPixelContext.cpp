@@ -16,7 +16,7 @@
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/pickbuffer.h>
-#include <ork/lev2/gfx/renderable.h>
+#include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/ui.h>
