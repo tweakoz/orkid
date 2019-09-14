@@ -29,7 +29,7 @@ void VrCompositingNode::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////
 
-constexpr int NUMSAMPLES = 4;
+constexpr int NUMSAMPLES = 16;
 
 struct VrFrameTechnique final : public FrameTechniqueBase {
   VrFrameTechnique(int w, int h)
