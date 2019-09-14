@@ -437,6 +437,8 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 	if( container->mShaderCompileFailed )
 		return false;
 
+	assert(container->mActiveTechnique!=nullptr);
+
 	container->mActivePass = container->mActiveTechnique->mPasses[ipass];
 	GlslFxPass* ppass = const_cast<GlslFxPass*>(container->mActivePass);
 
