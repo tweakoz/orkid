@@ -31,7 +31,7 @@ class CameraData;
 
 namespace lev2 { class XgmModel; class XgmModelAsset; }
 namespace lev2 { class XgmModelInst; }
-namespace lev2 { class Renderer; }
+namespace lev2 { class IRenderer; }
 namespace lev2 { class LightManager; }
 namespace lev2 { class GfxMaterialFx; }
 namespace lev2 { class GfxMaterialFxEffectInstance; }

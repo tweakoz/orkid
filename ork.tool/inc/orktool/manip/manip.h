@@ -406,8 +406,8 @@ public:
 	void ReleaseObject( void );
 	void DetachObject( void );
 
-	void Setup( Renderer* prend );
-	void Queue( Renderer* prend );
+	void Setup( IRenderer* prend );
+	void Queue( IRenderer* prend );
 
 	void DrawManip(Manip* manip, GfxTarget* pTARG);
 	void DrawCurrentManipSet(GfxTarget* pTARG);
@@ -444,10 +444,10 @@ public:
 
 	void				SetViewScale( float fvs ) { mfViewScale=fvs; }
 	float				CalcViewScale( float fW, float fH, const CameraData *camdat ) const;
-		
+
 	void				SetDrawMode(int imode) { miDrawMode=imode; }
 	int					GetDrawMode() const { return miDrawMode; }
-	
+
 private:
 
 	bool				mbWorldTrans;
@@ -500,4 +500,3 @@ private:
 };
 
 } }
-

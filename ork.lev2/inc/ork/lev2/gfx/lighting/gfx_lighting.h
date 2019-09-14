@@ -23,7 +23,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 
-class Renderer;
 class TextureAsset;
 class Texture;
 class RenderContextFrameData;

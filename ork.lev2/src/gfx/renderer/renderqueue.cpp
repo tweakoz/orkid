@@ -18,8 +18,8 @@ namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RenderQueue::QueueRenderable(const IRenderable* pRenderable, Renderer* pRenderer) {
-  new (&mNodes.create()) Node(pRenderer->GetCurrentObject(), pRenderable);
+void RenderQueue::QueueRenderable(const IRenderable* renderable) {
+  new (&mNodes.create()) Node(renderable);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

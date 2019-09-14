@@ -674,7 +674,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
 
 
   auto raw_drawable = _hfdrawable->_rawdrawable;
-  const Renderer* renderer = rcidata.GetRenderer();
+  const IRenderer* renderer = rcidata.GetRenderer();
   GfxTarget* ptarg = renderer->GetTarget();
   auto framedata = ptarg->GetRenderContextFrameData();
 
@@ -688,7 +688,6 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
   //////////////////////////
   gpuUpdate(ptarg);
   //////////////////////////
-  bool bpick = ptarg->FBI()->IsPickState();
   //////////////////////////
   fmtx4 inv_view;
   inv_view.inverseOf(VMTX);
@@ -734,6 +733,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
 
       fvec4 color = fcolor4::White();
 
+      bool bpick = ptarg->FBI()->IsPickState();
       if (bpick) {
         auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
         Object* pickobj = nullptr; //pent ? ((Object*) &pent->GetEntData()) : nullptr;

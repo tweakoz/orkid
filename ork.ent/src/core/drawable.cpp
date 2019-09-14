@@ -301,7 +301,7 @@ void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const {
+void ModelDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
 #if 1 // DRAWTHREADS
   AssertOnOpQ2(MainThreadOpQ());
   const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
@@ -528,7 +528,7 @@ void CallbackDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLa
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const {
+void CallbackDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   AssertOnOpQ2(MainThreadOpQ());
 
   lev2::CallbackRenderable& renderable = renderer->QueueCallback();

@@ -31,7 +31,7 @@ class Application;
 
 namespace lev2 { class XgmModel; }
 namespace lev2 { class XgmModelInst; }
-namespace lev2 { class Renderer; }
+namespace lev2 { class IRenderer; }
 namespace lev2 { class LightManager; }
 
 namespace ent {

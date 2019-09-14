@@ -25,7 +25,7 @@ namespace lev2 {
 class XgmModelInst;
 }
 namespace lev2 {
-class Renderer;
+class IRenderer;
 }
 namespace lev2 {
 class LightManager;
