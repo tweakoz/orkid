@@ -7,6 +7,7 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/gfx/frametek.h>
 
 namespace ork { namespace ui {
 
@@ -21,7 +22,7 @@ Surface::Surface( const std::string & name, int x, int y, int w, int h, CColor3 
 	, mNeedsSurfaceRepaint(true)
 	, mpPickBuffer( nullptr )
 {
-	
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -67,7 +68,7 @@ void Surface::OnResize( void )
 
 void Surface::RePaintSurface(ui::DrawEvent& ev )
 {
-	DoRePaintSurface(ev);	
+	DoRePaintSurface(ev);
 }
 
 void Surface::DoDraw(DrawEvent& drwev)
@@ -83,13 +84,13 @@ void Surface::DoDraw(DrawEvent& drwev)
 	if( nullptr == mRtGroup )
 	{
 		mRtGroup = new lev2::RtGroup(tgt,miW,miH,1);
-		auto mrt0 = new lev2::RtBuffer(	
+		auto mrt0 = new lev2::RtBuffer(
 			mRtGroup,
 			lev2::ETGTTYPE_MRT0,
 			lev2::EBUFFMT_RGBA32,
 			1280,720 );
-		mRtGroup->SetMrt( 0, mrt0 );		
-	}		
+		mRtGroup->SetMrt( 0, mrt0 );
+	}
 	if( mRtGroup )
 	{
 		int irtgw = mRtGroup->GetW();

@@ -56,7 +56,7 @@ void LightData::Describe()
 	ork::reflect::RegisterProperty( "ShadowSamples", & LightData::mShadowSamples );
 	ork::reflect::RegisterProperty( "ShadowBlur", & LightData::mShadowBlur );
 	ork::reflect::RegisterProperty( "ShadowBias", & LightData::mShadowBias );
-	ork::reflect::RegisterProperty( "ShadowCaster", & LightData::mbShadowCaster );	
+	ork::reflect::RegisterProperty( "ShadowCaster", & LightData::mbShadowCaster );
 
 	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowBias", "editor.range.min", "0.0" );
 	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowBias", "editor.range.max", "2.0" );
@@ -72,7 +72,7 @@ void LightData::Describe()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void PointLight::Describe() 
+void PointLight::Describe()
 {
 }
 
@@ -101,7 +101,7 @@ PointLight::PointLight( const fmtx4& mtx, const PointLightData* pld )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PointLight::IsInFrustum( const Frustum& frustum ) 
+bool PointLight::IsInFrustum( const Frustum& frustum )
 {
 	const fvec3& wpos = GetWorldPosition();
 
@@ -110,17 +110,6 @@ bool PointLight::IsInFrustum( const Frustum& frustum )
 	if( fd>200.0f ) return false;
 
 	return CollisionTester::FrustumSphereTest( frustum, Sphere( GetWorldPosition(), GetRadius() ) );
-}
-
-///////////////////////////////////////////////////////////
-
-void PointLight::ImmRender( Renderer& renderer )
-{
-	SphereRenderable myren;
-	myren.SetPosition(  GetWorldPosition() );
-	myren.SetRadius( GetRadius() );
-	myren.SetColor( GetColor() );
-	renderer.RenderSphere( myren );
 }
 
 ///////////////////////////////////////////////////////////
@@ -273,7 +262,7 @@ SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SpotLight::IsInFrustum( const Frustum& frustum ) 
+bool SpotLight::IsInFrustum( const Frustum& frustum )
 {
 	fvec3 pos = GetMatrix().GetTranslation();
 	fvec3 tgt = pos + GetMatrix().GetZNormal()*GetRange();
@@ -298,7 +287,7 @@ void SpotLight::Set( const fvec3& pos, const fvec3& tgt, const fvec3& up, float 
 	//mWorldSpaceDirection.Normalize();
 
 	mProjectionMatrix.Perspective( GetFovy(), 1.0, GetRange()/float(1000.0f), GetRange() );
-	mViewMatrix.LookAt(		pos.GetX(), pos.GetY(), pos.GetZ(), 
+	mViewMatrix.LookAt(		pos.GetX(), pos.GetY(), pos.GetZ(),
 							tgt.GetX(), tgt.GetY(), tgt.GetZ(),
 							up.GetX(), up.GetY(), up.GetZ() );
 	//mFovy = fovy;
@@ -307,16 +296,6 @@ void SpotLight::Set( const fvec3& pos, const fvec3& tgt, const fvec3& up, float 
 
 	//SetPosition( pos );
 
-}
-
-///////////////////////////////////////////////////////////
-
-void SpotLight::ImmRender( Renderer& renderer )
-{
-	FrustumRenderable myren;
-	myren.SetFrustum( mWorldSpaceLightFrustum );
-	myren.SetColor( GetColor() );
-	renderer.RenderFrustum( myren );
 }
 
 ///////////////////////////////////////////////////////////
@@ -361,7 +340,7 @@ void LightContainer::RemoveLight( Light* plight )
 	}
 }
 
-LightContainer::LightContainer() 
+LightContainer::LightContainer()
 	: mPrioritizedLights( EKEYPOLICY_MULTILUT )
 {
 }
@@ -390,7 +369,7 @@ void GlobalLightContainer::RemoveLight( Light* plight )
 	}
 }
 
-GlobalLightContainer::GlobalLightContainer() 
+GlobalLightContainer::GlobalLightContainer()
 	: mPrioritizedLights( EKEYPOLICY_MULTILUT )
 {
 }
@@ -558,7 +537,7 @@ void LightManager::Clear()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightMask::AddLight( const Light* plight ) 
+void LightMask::AddLight( const Light* plight )
 {
 	mMask |= plight->miInFrustumID;
 }
@@ -600,7 +579,7 @@ int LightingGroup::GetLightId( int idx ) const
 			ilightid = b;
 			idx--;
 			if( 0 == idx ) return ilightid;
-			
+
 		}
 		umask<<=1;
 	}
@@ -737,7 +716,7 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 					}
 					case lev2::ELIGHTTYPE_POINT:
 					{
-						
+
 						lev2::PointLight* ppointlight = (lev2::PointLight*) plight;
 
 						DirLightDirs[inumdl] = ppointlight->GetDirection();

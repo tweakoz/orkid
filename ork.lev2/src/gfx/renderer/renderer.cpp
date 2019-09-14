@@ -19,11 +19,7 @@
 template class ork::fixedvector<U32,ork::lev2::RenderQueue::krqmaxsize>;
 template class ork::fixedvector<const ork::lev2::RenderQueue::Node*,ork::lev2::RenderQueue::krqmaxsize>;
 
-template class ork::fixedvector<ork::lev2::BoxRenderable,ork::lev2::Renderer::kmaxrablessm>;
 template class ork::fixedvector<ork::lev2::ModelRenderable,ork::lev2::Renderer::kmaxrables>;
-template class ork::fixedvector<ork::lev2::FrustumRenderable,ork::lev2::Renderer::kmaxrablessm>;
-template class ork::fixedvector<ork::lev2::SphereRenderable,ork::lev2::Renderer::kmaxrablessm>;
-//template class ork::fixedvector<ork::lev2::CGlyphsRenderable,ork::lev2::Renderer::kmaxrables>;
 template class ork::fixedvector<ork::lev2::CallbackRenderable,ork::lev2::Renderer::kmaxrables>;
 
 namespace ork { namespace lev2 {
@@ -161,10 +157,7 @@ void Renderer::ResetQueue( void )
 	mpCurrentQueueObject = 0;
 	mRenderQueue.Reset();
 
-	mBoxes.clear();
 	mModels.clear();
-	mFrustums.clear();
-	mSpheres.clear();
 	mCallbacks.clear();
 }
 

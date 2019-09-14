@@ -8,8 +8,9 @@
 #pragma once
 
 #include <ork/lev2/gfx/renderer.h>
-#include <ork/lev2/gfx/lev2renderer.h>
+#include <ork/lev2/gfx/rendercontext.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/frametek.h>
 
 namespace ork { namespace lev2 {
 

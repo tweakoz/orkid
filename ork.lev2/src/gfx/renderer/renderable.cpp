@@ -38,28 +38,6 @@ IRenderableDag::IRenderableDag()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SphereRenderable::Render(const Renderer *renderer) const
-{
-	renderer->RenderSphere( *this );
-}
-
-void FrustumRenderable::Render(const Renderer *renderer) const
-{
-	renderer->RenderFrustum( *this );
-}
-
-void BoxRenderable::Render(const Renderer *renderer) const
-{
-	renderer->RenderBox( *this );
-}
-
-U32 BoxRenderable::ComposeSortKey( const Renderer *renderer ) const
-{
-	return 0x1ffffffe;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 CallbackRenderable::CallbackRenderable(Renderer *renderer)
 	: IRenderableDag()
 	, mSortKey( 0 )

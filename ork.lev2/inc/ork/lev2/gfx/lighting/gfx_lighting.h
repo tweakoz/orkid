@@ -72,7 +72,7 @@ public:
 	const fvec3& GetColor() const { return mColor; }
 	void SetColor(const fvec3&clr) { mColor=clr; }
 
-	LightData() 
+	LightData()
 		: mColor( 1.0f, 0.0f, 0.0f )
 		, mbSpecular(false)
 		, mbShadowCaster(false)
@@ -99,12 +99,11 @@ public:
 	bool		mbIsDynamic;
 
 	virtual bool IsInFrustum( const Frustum& frustum ) = 0;
-	virtual void ImmRender( Renderer& renderer ) = 0;
 	virtual bool AffectsSphere( const fvec3& center, float radius ) = 0;
 	virtual bool AffectsAABox( const AABox& aab ) = 0;
 	virtual bool AffectsCircleXZ( const Circle& cir ) = 0;
 	virtual ELightType LightType() const = 0;
-	
+
 	const fvec3& GetColor() const { return mLd->GetColor(); }
 	const fmtx4& GetMatrix() const { return mWorldMatrix; }
 	fvec3 GetWorldPosition() const { return mWorldMatrix.GetTranslation(); }
@@ -140,9 +139,8 @@ class  PointLight : public Light
 	const PointLightData* mPld;
 
 public:
-	
+
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
-	/*virtual*/ void ImmRender( Renderer& renderer ) override;
 	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override;
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
@@ -176,7 +174,6 @@ class  DirectionalLight : public Light
 public:
 
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum )override;
-	/*virtual*/ void ImmRender( Renderer& renderer ) override {}
 	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override { return true; }
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
@@ -214,7 +211,6 @@ class  AmbientLight : public Light
 public:
 
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
-	/*virtual*/ void ImmRender( Renderer& renderer ) override {}
 	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override { return true; }
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override { return true; }
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override { return true; }
@@ -265,7 +261,6 @@ public:
 
 
 	/*virtual*/ bool IsInFrustum( const Frustum& frustum ) override;
-	/*virtual*/ void ImmRender( Renderer& renderer ) override;
 	/*virtual*/ bool AffectsSphere( const fvec3& center, float radius ) override;
 	/*virtual*/ bool AffectsAABox( const AABox& aab ) override;
 	/*virtual*/ bool AffectsCircleXZ( const Circle& cir ) override;
@@ -336,7 +331,7 @@ struct  LightingGroup
 {
 	static const int kmaxinst = 32;
 
-	LightMask							mLightMask;	
+	LightMask							mLightMask;
 	ork::fixedvector<fmtx4,kmaxinst>	mInstances;
 	LightManager*						mLightManager;
 	Texture*							mLightMap;
@@ -368,7 +363,7 @@ public:
 
 	static const int	kmaxonscreengroups = 32;
 	static const int	kmaxflagwords = kmaxonscreengroups>>5;
-	
+
 private:
 
 	//typedef fixedmap<U32,LightingGroup*,kmaxonscreengroups>	ActiveMapType;
@@ -405,10 +400,10 @@ public:
 
 	GlobalLightContainer	mGlobalStationaryLights;	// non-moving, potentially animating color or texture (and => not lightmappable)
 	LightContainer			mGlobalMovingLights;		// moving lights
-	
+
 	//virtual void GetStationaryLights( const Frustum& frustum, LightContainer& container ) = 0;
 	//virtual void GetMovingLights( const Frustum& frustum, LightContainer& container ) = 0;
-	
+
 	void EnumerateInFrustum( const Frustum& frustum );
 
 	static const int kmaxinfrustum = 32;

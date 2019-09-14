@@ -200,21 +200,6 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-class CameraDrawable : public Drawable {
-  RttiDeclareAbstract(CameraDrawable, Drawable);
-
-public:
-  CameraDrawable(Entity* pent, const CameraData* camData);
-
-private:
-  void QueueToRenderer(const DrawableBufItem& item, lev2::Renderer* renderer) const override;
-  void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const override;
-  const CameraData* mCameraData;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 class ModelDrawable : public Drawable {
   RttiDeclareConcrete(ModelDrawable, Drawable);
 

@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/gfx/lev2renderer.h>
+#include <ork/lev2/gfx/rendercontext.h>
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////

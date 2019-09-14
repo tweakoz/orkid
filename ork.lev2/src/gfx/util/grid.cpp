@@ -9,7 +9,7 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/lev2/gfx/lev2renderer.h>
+#include <ork/lev2/gfx/rendercontext.h>
 #include <ork/lev2/gfx/util/grid.h>
 #include <ork/math/audiomath.h>
 #include <ork/math/misc_math.h>

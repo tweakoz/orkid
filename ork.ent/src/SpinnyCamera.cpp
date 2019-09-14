@@ -95,9 +95,6 @@ SequenceCamControllerInst::SequenceCamControllerInst(const SequenceCamController
 	, mCD( occd )
 	, mpActiveItem(0)
 {
-	CameraDrawable* pcamd = new CameraDrawable(pent, & mCameraData ); // deleted when entity deleted
-	pent->AddDrawable(AddPooledLiteral("Debug"),pcamd);
-	//pcamd->SetOwner(pent);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

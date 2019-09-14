@@ -100,14 +100,6 @@ EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& 
 	, mCD( occd )
 {
 	const lev2::Camera* pcam = mCD.GetCamera();
-	CameraDrawable* pcamd = new CameraDrawable(pent,& pcam->GetCameraData()); // deleted when entity deleted
-	//pent->AddDrawable(AddPooledLiteral("Debug"),pcamd);
-	pcamd->SetOwner(pent);
-
-//	CameraDrawable* pcamd = new CameraDrawable(pent,&mCameraData); // deleted when entity deleted
-//	pent->AddDrawable(pcamd);
-//	pcamd->SetOwner(pent);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////

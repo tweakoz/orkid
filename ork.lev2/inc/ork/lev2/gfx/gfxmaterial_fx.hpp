@@ -11,7 +11,7 @@
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/kernel/prop.h>
-#include <ork/lev2/gfx/lev2renderer.h>
+#include <ork/lev2/gfx/rendercontext.h>
 
 namespace ork {
 

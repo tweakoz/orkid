@@ -105,10 +105,6 @@ ObserverCamControllerInst::ObserverCamControllerInst(const ObserverCamController
 	, mpTarget(0)
 	, mpEye(0)
 {
-	CameraDrawable* pcamd = new CameraDrawable(pent,&mCameraData); // deleted when entity deleted
-	//pent->AddDrawable(AddPooledLiteral("Default"),pcamd);
-	pcamd->SetOwner(pent);
-
 	mCameraData.Persp( 0.1f, 1.0f, 45.0f );
 	mCameraData.Lookat( fvec3(0.0f,0.0f,0.0f), fvec3(0.0f,0.0f,1.0f), fvec3(0.0f,1.0f,0.0f) );
 

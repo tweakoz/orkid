@@ -16,7 +16,7 @@ namespace ork { namespace ent {
 
 class CompositingGroup;
 class CompositingSceneItem;
-struct CompositorSystemDrawData;
+struct CompositorDrawData;
 struct CompositingContext;
 struct CompositingSystem;
 struct CompositingSystemData;
@@ -154,7 +154,7 @@ class CompositingTechnique : public ork::Object {
 
 public:
   virtual void Init(lev2::GfxTarget* pTARG, int w, int h) = 0;
-  virtual void Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) = 0;
+  virtual void Draw(CompositorDrawData& drawdata, CompositingSystem* pCCI) = 0;
   virtual void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx) = 0;
 };
 
@@ -194,7 +194,7 @@ public:
 
 private:
   void Init(lev2::GfxTarget* pTARG, int w, int h) final;                                                     // virtual
-  void Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final;                              // virtual
+  void Draw(CompositorDrawData& drawdata, CompositingSystem* pCCI) final;                              // virtual
   void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx) final; // virtual
 };
 
@@ -206,12 +206,12 @@ public:
   CompositingNode();
   ~CompositingNode();
   void Init(lev2::GfxTarget* pTARG, int w, int h);
-  void Render(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI);
+  void Render(CompositorDrawData& drawdata, CompositingSystem* pCCI);
   virtual lev2::RtGroup* GetOutput() const { return nullptr; }
 
 private:
   virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
-  virtual void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 class CompositingBuffer : public ork::Object {
@@ -232,7 +232,7 @@ public:
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
+  void DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
   void GetGroup(ork::rtti::ICastable*& val) const;
   void SetGroup(ork::rtti::ICastable* const& val);
@@ -252,7 +252,7 @@ public:
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
+  void DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
   lev2::RtGroup* GetOutput() const final;
 
@@ -268,7 +268,7 @@ public:
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
+  void DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
   void GetNode(ork::rtti::ICastable*& val) const;
   void SetNode(ork::rtti::ICastable* const& val);
@@ -290,7 +290,7 @@ public:
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
+  void DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
   void GetNode(ork::rtti::ICastable*& val) const;
   void SetNode(ork::rtti::ICastable* const& val);
@@ -326,7 +326,7 @@ public:
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) override;                          // virtual
-  void DoRender(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) override; // virtual
+  void DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) override; // virtual
   void GetNodeA(ork::rtti::ICastable*& val) const;
   void SetNodeA(ork::rtti::ICastable* const& val);
   void GetNodeB(ork::rtti::ICastable*& val) const;
@@ -353,7 +353,7 @@ public:
 
 private:
   void Init(lev2::GfxTarget* pTARG, int w, int h) override;                                                     // virtual
-  void Draw(CompositorSystemDrawData& drawdata, CompositingSystem* pCCI) override;                              // virtual
+  void Draw(CompositorDrawData& drawdata, CompositingSystem* pCCI) override;                              // virtual
   void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx) override; // virtual
   //
   void GetRoot(ork::rtti::ICastable*& val) const;
@@ -374,7 +374,7 @@ struct CompositingContext {
   CompositingContext();
   ~CompositingContext();
   void Init(lev2::GfxTarget* pTARG);
-  void Draw(lev2::GfxTarget* pTARG, CompositorSystemDrawData& drawdata, CompositingSystem* pCCI);
+  void Draw(lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingSystem* pCCI);
   void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingSystem* pCCI);
   void Resize(int iW, int iH);
   void SetTechnique(CompositingTechnique* ptek) { mCTEK = ptek; }
@@ -398,11 +398,11 @@ struct CompositingPassData {
 
 ///////////////////////////////////////////////////////////////////////////
 
-struct CompositorSystemDrawData {
+struct CompositorDrawData {
   lev2::FrameRenderer& mFrameRenderer;
   orkstack<CompositingPassData> mCompositingGroupStack;
 
-  CompositorSystemDrawData(lev2::FrameRenderer& renderer) : mFrameRenderer(renderer) {}
+  CompositorDrawData(lev2::FrameRenderer& renderer) : mFrameRenderer(renderer) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -452,7 +452,7 @@ public:
   CompositingSystem(const CompositingSystemData& data, ork::ent::Simulation* pinst);
   ~CompositingSystem();
 
-  void Draw(CompositorSystemDrawData& drawdata);
+  void Draw(CompositorDrawData& drawdata);
   void composeToScreen(lev2::GfxTarget* pT);
 
   const CompositingSystemData& systemData() const { return _compositingData; }
