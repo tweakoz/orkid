@@ -1,3 +1,4 @@
+#if 0
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
 #include <ork/application/application.h>
@@ -182,3 +183,4 @@ TEST(ScriptCompTest)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+#endif

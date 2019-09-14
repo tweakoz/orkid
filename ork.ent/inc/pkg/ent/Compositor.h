@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/dataflow/dataflow.h>
-#include <ork/lev2/gfx/builtin_frameeffects.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/system.h>
 

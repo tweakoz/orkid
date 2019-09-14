@@ -11,7 +11,7 @@ set( LEV2INCD ${CMAKE_CURRENT_SOURCE_DIR}/../ork.lev2/inc )
 
 file(GLOB_RECURSE src_event ${SRCD}/event/*.cpp)
 file(GLOB_RECURSE src_luaintf ${SRCD}/LuaIntf/*.cpp)
-file(GLOB src_ent ${SRCD}/*.cpp)
+file(GLOB_RECURSE src_ent ${SRCD}/*.cpp)
 
 set( orksrcs ${src_event} ${src_luaintf} ${src_ent} )
 

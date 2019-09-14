@@ -10,7 +10,7 @@
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/gfx/frametek.h>
+#include <ork/lev2/gfx/renderer/frametek.h>
 
 namespace ork { namespace lev2 {
 

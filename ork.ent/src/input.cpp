@@ -1,6 +1,6 @@
 #include <pkg/ent/input.h>
 #include <ork/lev2/input/inputdevice.h>
-#include "LuaBindings.h"
+#include <pkg/ent/LuaBindings.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputSystemData, "InputSystemData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InputComponentData, "InputComponentData");
@@ -40,7 +40,7 @@ namespace ork::ent {
   }
   svar64_t InputComponent::doQuery(const ComponentQuery& q) {
     svar64_t rval(nullptr);
-    
+
     if(q._eventID == "get.group"){
       auto grpname = q._eventData.Get<std::string>();
       auto grp = lev2::InputManager::inputGroup(grpname);
