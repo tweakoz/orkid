@@ -1055,7 +1055,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
 
         static float fRSCALE = 1.0f;
 
-        if (fdata.IsPickMode()) {
+        if (fdata.isPicking()) {
           ManipManager().SetViewScale(fRSCALE);
         } else {
           float fW = float(pOutputTarget->GetW());

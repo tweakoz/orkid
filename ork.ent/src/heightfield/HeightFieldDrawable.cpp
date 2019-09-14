@@ -107,10 +107,11 @@ struct HeightfieldRenderImpl {
   HeightFieldDrawable* _hfdrawable;
   hfptr_t _heightfield;
 
-  bool _gpuDataDirty                   = true;
-  GfxMaterial3DSolid* _terrainMaterial = nullptr;
-  Texture* _heightmapTextureA          = nullptr;
-  Texture* _heightmapTextureB          = nullptr;
+  bool _gpuDataDirty                         = true;
+  GfxMaterial3DSolid* _terrainMaterial       = nullptr;
+  GfxMaterial3DSolid* _terrainMaterialStereo = nullptr;
+  Texture* _heightmapTextureA                = nullptr;
+  Texture* _heightmapTextureB                = nullptr;
   fvec3 _aabbmin;
   fvec3 _aabbmax;
   SectorInfo _sector[8];
@@ -151,6 +152,10 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   _terrainMaterial = new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain");
   _terrainMaterial->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
   _terrainMaterial->_enablePick = true;
+
+  _terrainMaterialStereo = new GfxMaterial3DSolid(ptarg, "orkshader://terrain", "terrain_stereo");
+  _terrainMaterialStereo->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
+  _terrainMaterialStereo->_enablePick = false;
 
   orkprintf("ComputingGeometry\n");
 
@@ -692,9 +697,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
   GfxTarget* ptarg          = renderer->GetTarget();
   auto framedata            = ptarg->GetRenderContextFrameData();
 
-  if (auto as_bool = framedata->getUserProperty("stereo1pass"_crc).TryAs<bool>()) {
-    //printf("stereo1pass enabled!\n");
-  }
+  bool stereo1pass = framedata->isStereoOnePass();
 
   assert(raw_drawable != nullptr);
   // auto pent = dynamic_cast<const ent::Entity*>(raw_drawable->GetOwner());
@@ -726,6 +729,12 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
 
     if (terrain_ngrids >= 1024) {
 
+      bool bpick = framedata->isPicking();
+
+      auto material = (stereo1pass and (!bpick))
+                    ? _terrainMaterialStereo
+                    : _terrainMaterial;
+
       ///////////////////////////////////////////////////////////////////
       // render
       ///////////////////////////////////////////////////////////////////
@@ -733,8 +742,6 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
       Texture* ColorTex = nullptr;
       if (_sphericalenvmap && _sphericalenvmap->GetTexture())
         ColorTex = _sphericalenvmap->GetTexture();
-
-      auto material = _terrainMaterial;
 
       material->SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       material->SetTexture(ColorTex);
@@ -751,9 +758,8 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
 
       fvec4 color = fcolor4::White();
 
-      bool bpick = ptarg->FBI()->IsPickState();
       if (bpick) {
-        auto pickbuf = ptarg->FBI()->GetCurrentPickBuffer();
+        auto pickbuf    = ptarg->FBI()->GetCurrentPickBuffer();
         Object* pickobj = nullptr; // pent ? ((Object*) &pent->GetEntData()) : nullptr;
         uint64_t pickid = pickbuf->AssignPickId(pickobj);
         color.SetRGBAU64(pickid);
@@ -763,8 +769,8 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
 
       ptarg->PushModColor(color);
       {
-        int inumpasses = _terrainMaterial->BeginBlock(ptarg, rcidata);
-        bool bDRAW     = _terrainMaterial->BeginPass(ptarg, 0);
+        int inumpasses = material->BeginBlock(ptarg, rcidata);
+        bool bDRAW     = material->BeginPass(ptarg, 0);
         if (bDRAW) {
 
           if (true) { // abs(znormal.y) > 0.8 ){ // looking up or down
@@ -825,8 +831,8 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& rcidata) {
               }
             }
           }
-          _terrainMaterial->EndPass(ptarg);
-          _terrainMaterial->EndBlock(ptarg);
+          material->EndPass(ptarg);
+          material->EndBlock(ptarg);
         }
       }
       ptarg->PopModColor();

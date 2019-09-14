@@ -662,9 +662,8 @@ struct GlSlFxParser {
 		////////////////////////////////////////////////////////////////////////////
 
 		for (auto extension : pshader->_requiredExtensions) {
-			shaderbody += "yo";
 			prline();
-			shaderbody += FormatString("#extension %s", extension.c_str() );
+			shaderbody += FormatString("#extension %s : enable\n", extension.c_str() );
 		}
 
 		////////////////////////////////////////////////////////////////////////////

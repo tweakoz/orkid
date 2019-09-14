@@ -157,8 +157,6 @@ struct RenderContextFrameData {
   void SetDstRect(const SRect& rect) { mDstRect = rect; }
   void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
 
-  bool IsPickMode() const; // { return mpTarget ? mpTarget->FBI()->IsPickMode() : false; }
-
   CameraCalcContext& GetCameraCalcCtx() { return mCameraCalcCtx; }
   const CameraCalcContext& GetCameraCalcCtx() const { return mCameraCalcCtx; }
 
@@ -178,6 +176,14 @@ struct RenderContextFrameData {
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
 
+  //////////////////////////////////////
+
+  bool isPicking() const;
+  bool isStereoOnePass() const { return _stereo1pass; }
+  void setStereoOnePass(bool ena) { _stereo1pass=ena; }
+
+  //////////////////////////////////////
+
   orkstack<IRenderTarget*> mRenderTargetStack;
   usermap_t _userProperties;
   LightManager* mLightManager;
@@ -190,6 +196,7 @@ struct RenderContextFrameData {
   SRect mDstRect;
   SRect mMrtRect;
   orkset<PoolString> mLayers;
+  bool _stereo1pass = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
