@@ -334,13 +334,13 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
       mRenderLock = 1;
 
-      the_renderer.GetFrameData().SetUserProperty("DB", anyp(DB));
+      the_renderer.GetFrameData().setUserProperty("DB", rendervar_t(DB));
 
       if (DB) {
 
-        anyp PassData;
-        PassData.Set<orkstack<ent::CompositingPassData>*>(&mCompositingGroupStack);
-        the_renderer.GetFrameData().SetUserProperty("nodes", PassData);
+        rendervar_t passdata;
+        passdata.Set<orkstack<ent::CompositingPassData>*>(&mCompositingGroupStack);
+        the_renderer.GetFrameData().setUserProperty("nodes"_crc, passdata);
         the_renderer.GetFrameData().PushRenderTarget(&rt);
         the_renderer.GetFrameData().SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
@@ -426,9 +426,9 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
   ///////////////////////////////////////////////////////////////////////////
   ent::SceneData* pscene = mEditor.mpScene;
 
-  anyp PassData                              = FrameData.GetUserProperty("nodes");
+  lev2::rendervar_t passdata                 = FrameData.getUserProperty("nodes"_crc);
   orkstack<ent::CompositingPassData>* cstack = 0;
-  cstack                                     = PassData.Get<orkstack<ent::CompositingPassData>*>();
+  cstack                                     = passdata.Get<orkstack<ent::CompositingPassData>*>();
   OrkAssert(cstack != 0);
 
   CompositingPassData node = cstack->top();
@@ -601,9 +601,9 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   // get the compositor if there is one
   ///////////////////////////////////////////////////////////////////////////
 
-  anyp PassData                              = FrameData.GetUserProperty("nodes");
+  lev2::rendervar_t passdata                 = FrameData.getUserProperty("nodes"_crc);
   orkstack<ent::CompositingPassData>* cstack = 0;
-  cstack                                     = PassData.Get<orkstack<ent::CompositingPassData>*>();
+  cstack                                     = passdata.Get<orkstack<ent::CompositingPassData>*>();
   OrkAssert(cstack != 0);
 
   CompositingPassData NODE = cstack->top();
@@ -617,7 +617,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   CameraData TempCamData, TempCullCamData;
   _editorCamera = 0;
 
-  anyp pvdb                = FrameData.GetUserProperty("DB");
+  lev2::rendervar_t pvdb   = FrameData.getUserProperty("DB"_crc);
   const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
   if (0 == DB)
     return;

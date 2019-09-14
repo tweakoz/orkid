@@ -10,6 +10,7 @@
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "renderer_enum.h"
+#include <ork/util/crc.h>
 
 namespace ork {
 class CameraData;
@@ -119,8 +120,11 @@ private:
 //  render modes, target, etc....
 ///////////////////////////////////////////////////////////////////////////////
 
-class RenderContextFrameData {
-public:
+typedef svar64_t rendervar_t;
+
+struct RenderContextFrameData {
+
+
   enum ERenderingMode {
     ERENDMODE_NONE = 0,
     ERENDMODE_PRERENDER,
@@ -166,15 +170,15 @@ public:
   IRenderTarget* GetRenderTarget();
   void PopRenderTarget();
 
-  const orklut<PoolString, anyp>& UserProperties() const { return mUserProperties; }
-  orklut<PoolString, anyp>& UserProperties() { return mUserProperties; }
+  typedef orklut<CrcString, rendervar_t> usermap_t;
+  const usermap_t& userProperties() const { return _userProperties; }
+  usermap_t& userProperties() { return _userProperties; }
 
-  void SetUserProperty(const char* prop, anyp data);
-  anyp GetUserProperty(const char* prop);
+  void setUserProperty(CrcString, rendervar_t data);
+  rendervar_t getUserProperty(CrcString prop);
 
-private:
   orkstack<IRenderTarget*> mRenderTargetStack;
-  orklut<PoolString, anyp> mUserProperties;
+  usermap_t _userProperties;
   LightManager* mLightManager;
   ERenderingMode meMode;
   GfxBuffer* mpShadowBuffer;

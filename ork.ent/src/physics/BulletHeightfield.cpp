@@ -24,8 +24,8 @@
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/util/endian.h>
-#include <pkg/ent/bullet.h>
 #include <pkg/ent/HeightFieldDrawable.h>
+#include <pkg/ent/bullet.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletShapeHeightfieldData, "BulletShapeHeightfieldData");
@@ -35,13 +35,12 @@ using namespace ork::lev2;
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-
-
 struct BulletHeightfieldImpl {
-  int mGridSize = 0;
-  bool _loadok = false;
-  Entity* _entity = nullptr;
+  int mGridSize                            = 0;
+  bool _loadok                             = false;
+  Entity* _entity                          = nullptr;
   btHeightfieldTerrainShape* _terrainShape = nullptr;
+  file::Path _curhfpath;
 
   std::shared_ptr<HeightMap> _phyheightmap;
   hfdrawableptr_t _drawable;
@@ -59,21 +58,17 @@ struct BulletHeightfieldImpl {
 BulletHeightfieldImpl::BulletHeightfieldImpl(const BulletShapeHeightfieldData& data)
     : _hfd(data) {
   _subscriber = msgrouter::channel("bshdchanged")->subscribe([=](msgrouter::content_t c) {
-
-    printf("Load Heightmap<%s>\n", _hfd.HeightMapPath().c_str());
-
-    _phyheightmap = std::make_shared<HeightMap>(0,0) ;
-
-    _loadok = _phyheightmap->Load(_hfd.HeightMapPath());
-
-    int idimx = _phyheightmap->GetGridSizeX();
-    int idimz = _phyheightmap->GetGridSizeZ();
-    printf("idimx<%d> idimz<%d>\n", idimx, idimz);
-    // float aspect = float(idimz)/float(idimx);
-    const float kworldsizeX = _hfd.WorldSize();
-    const float kworldsizeZ = kworldsizeX;
-
-    _phyheightmap->SetWorldSize(kworldsizeX, kworldsizeZ);
+    if (_curhfpath != _hfd.HeightMapPath()) {
+      printf("Load Heightmap<%s>\n", _hfd.HeightMapPath().c_str());
+      _phyheightmap = std::make_shared<HeightMap>(0, 0);
+      _loadok       = _phyheightmap->Load(_hfd.HeightMapPath());
+      _curhfpath    = _hfd.HeightMapPath();
+      int idimx = _phyheightmap->GetGridSizeX();
+      int idimz = _phyheightmap->GetGridSizeZ();
+      printf("idimx<%d> idimz<%d>\n", idimx, idimz);
+      assert(idimx==idimz);
+    }
+    _phyheightmap->SetWorldSize(_hfd.WorldSize(), _hfd.WorldSize());
     _phyheightmap->SetWorldHeight(_hfd.WorldHeight());
   });
 
@@ -82,9 +77,7 @@ BulletHeightfieldImpl::BulletHeightfieldImpl(const BulletShapeHeightfieldData& d
 
 ///////////////////////////////////////////////////////////////////////////////
 
-BulletHeightfieldImpl::~BulletHeightfieldImpl(){
-
-}
+BulletHeightfieldImpl::~BulletHeightfieldImpl() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -97,11 +90,11 @@ btHeightfieldTerrainShape* BulletHeightfieldImpl::init_bullet_shape(const ShapeC
   int idimx = _phyheightmap->GetGridSizeX();
   int idimz = _phyheightmap->GetGridSizeZ();
 
-  float aspect = float(idimz) / float(idimx);
+  float aspect            = float(idimz) / float(idimx);
   const float kworldsizeX = _hfd.WorldSize();
   const float kworldsizeZ = kworldsizeX * aspect;
 
-  auto world_controller = data.mWorld;
+  auto world_controller              = data.mWorld;
   const BulletSystemData& world_data = world_controller->GetWorldData();
 
   btVector3 grav = !world_data.GetGravity();
@@ -114,10 +107,12 @@ btHeightfieldTerrainShape* BulletHeightfieldImpl::init_bullet_shape(const ShapeC
 
   auto pdata = _phyheightmap->GetHeightData();
 
-  _terrainShape = new btHeightfieldTerrainShape(idimx, idimz, // w,h
+  _terrainShape = new btHeightfieldTerrainShape(idimx,
+                                                idimz,        // w,h
                                                 (void*)pdata, // data
                                                 ftoth,        // heightScale
-                                                _phyheightmap->GetMinHeight(), _phyheightmap->GetMaxHeight(),
+                                                _phyheightmap->GetMinHeight(),
+                                                _phyheightmap->GetMaxHeight(),
                                                 1,         // upAxis,
                                                 PHY_FLOAT, // usefloat heightDataType,
                                                 true);     // flipQuadEdges );
@@ -142,14 +137,14 @@ btHeightfieldTerrainShape* BulletHeightfieldImpl::init_bullet_shape(const ShapeC
 ///////////////////////////////////////////////////////////////////////////////
 
 void BulletShapeHeightfieldData::Describe() {
-  reflect::RegisterProperty("HeightMap", &BulletShapeHeightfieldData::GetHeightMapName,
-                            &BulletShapeHeightfieldData::SetHeightMapName);
-  reflect::RegisterProperty("VizHeightMap", &BulletShapeHeightfieldData::GetVizHeightMapName,
-                            &BulletShapeHeightfieldData::SetVizHeightMapName);
+  reflect::RegisterProperty(
+      "HeightMap", &BulletShapeHeightfieldData::GetHeightMapName, &BulletShapeHeightfieldData::SetHeightMapName);
+  reflect::RegisterProperty(
+      "VizHeightMap", &BulletShapeHeightfieldData::GetVizHeightMapName, &BulletShapeHeightfieldData::SetVizHeightMapName);
   reflect::RegisterProperty("WorldHeight", &BulletShapeHeightfieldData::mWorldHeight);
   reflect::RegisterProperty("WorldSize", &BulletShapeHeightfieldData::mWorldSize);
-  reflect::RegisterProperty("SphericalLightMap", &BulletShapeHeightfieldData::GetTextureAccessor,
-                            &BulletShapeHeightfieldData::SetTextureAccessor);
+  reflect::RegisterProperty(
+      "SphericalLightMap", &BulletShapeHeightfieldData::GetTextureAccessor, &BulletShapeHeightfieldData::SetTextureAccessor);
   reflect::RegisterProperty("VisualOffset", &BulletShapeHeightfieldData::mVisualOffset);
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.class", "ged.factory.filelist");
@@ -177,7 +172,11 @@ void BulletShapeHeightfieldData::GetTextureAccessor(ork::rtti::ICastable*& tex) 
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletShapeHeightfieldData::BulletShapeHeightfieldData()
-    : mHeightMapName("none"), mVizHeightMapName("non"), mWorldHeight(1000.0f), mWorldSize(1000.0f), _spherelightmap(nullptr) {
+    : mHeightMapName("none")
+    , mVizHeightMapName("non")
+    , mWorldHeight(1000.0f)
+    , mWorldSize(1000.0f)
+    , _spherelightmap(nullptr) {
 
   mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
     auto rval = new BulletShapeBaseInst(this);
@@ -190,11 +189,11 @@ BulletShapeHeightfieldData::BulletShapeHeightfieldData()
     // create drawable
     ////////////////////////////////////////////////////////////////////
 
-    impl->_drawable = std::make_shared<HeightFieldDrawable>();
-    impl->_drawable->_hfpath = this->VizHeightMapPath();
-    impl->_drawable->_visualOffset = mVisualOffset;
-    impl->_drawable->_worldHeight = this->WorldHeight();
-    impl->_drawable->_worldSizeXZ = this->WorldSize();
+    impl->_drawable                   = std::make_shared<HeightFieldDrawable>();
+    impl->_drawable->_hfpath          = this->VizHeightMapPath();
+    impl->_drawable->_visualOffset    = mVisualOffset;
+    impl->_drawable->_worldHeight     = this->WorldHeight();
+    impl->_drawable->_worldSizeXZ     = this->WorldSize();
     impl->_drawable->_sphericalenvmap = _spherelightmap;
 
     auto raw_drawable = impl->_drawable->create();
