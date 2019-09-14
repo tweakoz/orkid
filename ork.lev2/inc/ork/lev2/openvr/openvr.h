@@ -42,10 +42,12 @@ struct Device {
   fmtx4 _offsetmatrix;
   fmtx4 _headingmatrix;
   fmtx4 _hmdMatrix;
+  fmtx4 _outputViewOffsetMatrix;
   bool _prevthumbL = false;
   bool _prevthumbR = false;
   lev2::InputGroup& _hmdinputgroup;
   uint32_t _width, _height;
+  void _updatePosesCommon(fmtx4 observermatrix);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,16 +67,16 @@ struct OpenVrDevice : public Device {
   int _rightControllerDeviceIndex = -1;
   int _leftControllerDeviceIndex  = -1;
 
-  void _processControllerEvents(lev2::GfxTarget* targ);
-  void _updatePoses(lev2::GfxTarget* targ);
+  void _processControllerEvents();
+  void _updatePoses(fmtx4 observermatrix);
 };
 #else
 ////////////////////////////////////////////////////////////////////////////////
 struct NoVrDevice : public Device {
   NoVrDevice();
   ~NoVrDevice() final;
-  void _processControllerEvents(lev2::GfxTarget* targ);
-  void _updatePoses(lev2::GfxTarget* targ);
+  void _processControllerEvents();
+  void _updatePoses(fmtx4 observermatrix);
   msgrouter::subscriber_t _qtmousesubsc;
   msgrouter::subscriber_t _qtkbdownsubs;
   msgrouter::subscriber_t _qtkbupsubs;
@@ -82,9 +84,9 @@ struct NoVrDevice : public Device {
 };
 #endif
 ////////////////////////////////////////////////////////////////////////////////
-Device& get();
+Device& device();
 ////////////////////////////////////////////////////////////////////////////////
-void gpuUpdate(GfxTarget* targ);
+void gpuUpdate(fmtx4 observermatrix);
 void composite(GfxTarget* targ, Texture* ltex, Texture* rtex);
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::vr

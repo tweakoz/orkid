@@ -53,7 +53,7 @@ NoVrDevice::NoVrDevice() {
 }
 NoVrDevice::~NoVrDevice() {}
 ////////////////////////////////////////////////////////////////////////////////
-void NoVrDevice::_updatePoses(lev2::GfxTarget* targ) {
+void NoVrDevice::_updatePoses(fmtx4 observermatrix) {
   auto mpos = _qtmousepos;
   float r   = mpos.Mag();
   float z   = 1.0f - r;
@@ -62,9 +62,10 @@ void NoVrDevice::_updatePoses(lev2::GfxTarget* targ) {
   w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
   _posemap["hmd"] = w;
   // printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
+  _updatePosesCommon(observermatrix);
 }
 ////////////////////////////////////////////////////////////////////////////////
-void NoVrDevice::_processControllerEvents(lev2::GfxTarget* targ) {
+void NoVrDevice::_processControllerEvents() {
   auto handgroup = lev2::InputManager::inputGroup("hands");
   bool curthumbL = handgroup->tryAs<bool>("left.thumb").value();
   bool curthumbR = handgroup->tryAs<bool>("right.thumb").value();
@@ -90,14 +91,14 @@ NoVrDevice& concrete_get() {
   static NoVrDevice _device;
   return _device;
 }
-Device& get() {
+Device& device() {
   return concrete_get();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void gpuUpdate(GfxTarget* targ) {
+void gpuUpdate(fmtx4 observermatrix) {
   auto& mgr = concrete_get();
-  mgr._processControllerEvents(targ);
-  mgr._updatePoses(targ);
+  mgr._processControllerEvents();
+  mgr._updatePoses(observermatrix);
 }
 void composite(GfxTarget* targ, Texture* ltex, Texture* rtex) {}
 ////////////////////////////////////////////////////////////////////////////////
