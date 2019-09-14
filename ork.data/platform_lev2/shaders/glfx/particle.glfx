@@ -30,9 +30,9 @@ uniform_block ublock_vtx
 
 uniform_block ublock_geo
 {
-	uniform mat4 MatP;	
-	uniform mat4 MatV;	
-	uniform mat4 MatMVP;	
+	uniform mat4 MatP;
+	uniform mat4 MatV;
+	uniform mat4 MatMVP;
 	uniform vec4 User0;
 	uniform vec4 User1;
 	uniform vec4 User2;
@@ -46,14 +46,6 @@ uniform_block ublock_frg
 	uniform sampler3D VolumeMap;
 }
 
-///////////////////////////////////////////////////////////////
-geometry_interface gface_base
-	: ublock_geo
-{
-	layout (points) in;
-	layout (triangle_strip, max_vertices=4) out; 
-	//
-}
 ///////////////////////////////////////////////////////////////
 fragment_interface fface_minimal
 	: ublock_frg
@@ -104,7 +96,7 @@ state_block sb_alpadd
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_bill 
+vertex_interface vface_bill
 	: ublock_vtx
 {
 	in vec4 position : POSITION;
@@ -116,7 +108,7 @@ vertex_interface vface_bill
 	out vec4 geo_uv0;
 	out vec4 geo_uv1;
 }
-vertex_shader vs_vtxcolor 
+vertex_shader vs_vtxcolor
 	: vface_bill
 {
 	gl_Position = position;
@@ -133,8 +125,15 @@ vertex_shader vs_vtxtexcolor
 	geo_uv1 = uv1;
 }
 ///////////////////////////////////////////////////////////////
+geometry_interface gface_base
+	: ublock_geo
+{
+	layout (points) in;
+	layout (triangle_strip, max_vertices=4) out;
+	//
+}
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_bill 
+geometry_interface gface_bill
 	: gface_base
 	: vface_bill // import vtxshader outputs
 {
@@ -142,7 +141,8 @@ geometry_interface gface_bill
 	out vec4 frg_uv0;
 	out vec4 frg_uv1;
 }
-geometry_shader gs_identity 
+///////////////////////////////////////////////////////////////
+geometry_shader gs_identity
 	: gface_bill
 {
 	for( int n=0; n<gl_in.length(); n++ )
@@ -155,7 +155,8 @@ geometry_shader gs_identity
 	}
 	EndPrimitive();
 }
-geometry_shader gs_billboardquad 
+///////////////////////////////////////////////////////////////
+geometry_shader gs_billboardquad
 	: gface_bill
 {
 	frg_clr = geo_clr[0];
@@ -208,7 +209,7 @@ geometry_shader gs_billboardquad
 		uv0 = vec4( fu0, fv0, 0.0, 0.0 );
 		uv1 = vec4( fu1, fv0, 0.0, 0.0 );
 		uv2 = vec4( fu1, fv1, 0.0, 0.0 );
-		uv3 = vec4( fu0, fv1, 0.0, 0.0 );						
+		uv3 = vec4( fu0, fv1, 0.0, 0.0 );
 	}
 
 	gl_Position = pos0;
@@ -231,13 +232,14 @@ tessctrl_interface tcface_base
 {
 	layout (vertices=4) out;
 }
+///////////////////////////////////////////////////////////////
 tessctrl_shader tcs_passthru : tcface_base
 {
 	int invid = gl_InvocationID;
 	gl_out[invid].gl_Position = gl_in[invid].gl_Position;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_streak 
+vertex_interface vface_streak
 	: ublock_vtx
 {
 	in vec4 position : POSITION;
@@ -259,7 +261,7 @@ vertex_shader vs_streak : vface_streak
 	geo_vel = binormal;
 	geo_lw = uv0;
 }
-geometry_interface gface_streak 
+geometry_interface gface_streak
 	: gface_base
 	: vface_streak // import vtxshader outputs
 {
