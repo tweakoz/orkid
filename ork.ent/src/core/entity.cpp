@@ -43,16 +43,16 @@
 #include <pkg/ent/SimpleAnimatable.h>
 #include <pkg/ent/input.h>
 
-#include "GridComponent.h"
-#include "ObserverCamera.h"
-#include "PerformanceAnalyzer.h"
-#include "ProcTex.h"
-#include "QuartzComposerTest.h"
-#include "SimpleCharacterArchetype.h"
-#include "CharacterLocoComponent.h"
-#include "Skybox.h"
-#include "SpinnyCamera.h"
-#include "TetherCamera.h"
+#include "../GridComponent.h"
+#include "../camera/ObserverCamera.h"
+#include "../PerformanceAnalyzer.h"
+#include "../ProcTex.h"
+#include "../QuartzComposerTest.h"
+#include "../SimpleCharacterArchetype.h"
+#include "../CharacterLocoComponent.h"
+#include "../Skybox.h"
+#include "../camera/SpinnyCamera.h"
+#include "../camera/TetherCamera.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 

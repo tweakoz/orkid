@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#if 0
 #include <ork/pch.h>
 #include <ork/kernel/opq.h>
 #include <ork/application/application.h>
@@ -97,3 +98,4 @@ int main(int argc, char** argv)
 
     return iret;
 }
+#endif

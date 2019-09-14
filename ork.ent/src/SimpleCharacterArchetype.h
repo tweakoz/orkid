@@ -35,7 +35,7 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/gfx/camera.h>
-#include "LuaBindings.h"
+#include <pkg/ent/LuaBindings.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {

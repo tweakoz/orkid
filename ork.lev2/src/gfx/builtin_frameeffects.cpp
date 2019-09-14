@@ -8,7 +8,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial.h>
-#include <ork/lev2/gfx/builtin_frameeffects.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/ui/ui.h>

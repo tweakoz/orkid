@@ -19,7 +19,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "LuaBindings.h"
+#include <pkg/ent/LuaBindings.h>
 #include "LuaIntf/LuaIntf.h"
 
 using namespace LuaIntf;
