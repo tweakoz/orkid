@@ -53,15 +53,6 @@ QWidget * EditorMainWindow::NewCamView( bool bfloat )
 	viewnum++;
 
 	gpvp->Init();
-	//////////////////////////////////////////////
-
-	bool bconOK = object::Connect(	& mEditorBase.selectionManager(), AddPooledLiteral("SigObjectSelected"),
-									& gpvp->SceneEditorView(), AddPooledLiteral("SlotObjectSelected") );
-	OrkAssert(bconOK);
-
-	    bconOK = object::Connect(	& mEditorBase.selectionManager(), AddPooledLiteral("SigObjectDeSelected"),
-									& gpvp->SceneEditorView(), AddPooledLiteral("SlotObjectDeSelected") );
-	OrkAssert(bconOK);
 
 	//////////////////////////////////////////////
 
