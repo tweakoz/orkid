@@ -21,6 +21,7 @@ uniform_block ublock_vtx {
 uniform_block ublock_frg {
   uniform vec4 modcolor;
   uniform sampler2D EnvMap;
+  uniform float testxxx;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ublock_vtx {
@@ -81,18 +82,18 @@ vertex_shader vs_terrain_stereo
 fragment_shader ps_terrain
   : iface_fdefault
   : lib_mmnoise {
-  const vec3 fogcolor = vec3(0.6, 0.6, 0.7);
-  const vec3 ambient = vec3(0.3, 0.3, 0.3);
+  const vec3 fogcolor = vec3(1);
+  const vec3 ambient = vec3(0.4);
   const vec3 side = vec3(0.2, 0.2, 0.25);
   const vec3 top = vec3(0.3, 0.3, 0.3);
   vec3 n = normalize(frg_nrm);
-  float ddd1 = clamp(1.0 - frg_camdist * 0.0007, 0, 1);
+  float ddd1 = clamp(1.0 - frg_camdist * 0.0012, 0, 1);
   float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
   float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
   vec3 tpw = abs(n);
   tpw /= (tpw.x + tpw.y + tpw.z);
 
-  const vec3 grass = vec3(0,1,0);
+  const vec3 grass = vec3(0.5,0.5,0.7);
   const vec3 snow = vec3(1,1,1);
   const vec3 rock1 = vec3(0.6,.6,0.8);
   const vec3 rock2 = vec3(0.6,.6,0.7);
@@ -103,9 +104,9 @@ fragment_shader ps_terrain
                   snow,
                   gsblend );
 
-  vec3 c = hor*pow(tpw.y,0.5)
-         + rock1*pow(tpw.x,0.5)
-         + rock2*pow(tpw.z,0.5);
+  vec3 c = hor*pow(tpw.y,0.6)
+         + rock1*pow(tpw.x,0.6)
+         + rock2*pow(tpw.z,0.6);
 
   vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
   c = lightcol*mix(fogcolor,c,ddd1);

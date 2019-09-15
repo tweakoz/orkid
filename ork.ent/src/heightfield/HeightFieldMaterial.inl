@@ -24,6 +24,7 @@ struct TerrainMaterialParams {
   Texture* _hfTextureA = nullptr;
   Texture* _hfTextureB = nullptr;
   Texture* _envTexture = nullptr;
+  float _testxxx = 0.0f;
 };
 
 struct TerrainMaterial : public GfxMaterial {
@@ -62,6 +63,7 @@ struct TerrainMaterial : public GfxMaterial {
   const FxShaderParam* _parTexEnv   = nullptr;
   const FxShaderParam* _parModColor = nullptr;
   const FxShaderParam* _parTime     = nullptr;
+  const FxShaderParam* _parTestXXX  = nullptr;
 
   TerrainMaterialParams _paramVal;
 };
@@ -101,6 +103,7 @@ void TerrainMaterial::Init(GfxTarget* targ) {
   _parTexEnv   = fxi->GetParameterH(_shader, "EnvMap");
   _parModColor = fxi->GetParameterH(_shader, "ModColor");
   _parTime     = fxi->GetParameterH(_shader, "Time");
+  _parTestXXX  = fxi->GetParameterH(_shader, "testxxx");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,6 +123,7 @@ bool TerrainMaterial::BeginPass(GfxTarget* targ, int iPass) {
   fxi->BindParamVect3(_shader, _parCamPos, _paramVal._camPos);
   fxi->BindParamVect4(_shader, _parModColor, _paramVal._modcolor);
   fxi->BindParamFloat(_shader, _parTime, 0.0f);
+  fxi->BindParamFloat(_shader, _parTestXXX, _paramVal._testxxx );
   return true;
 }
 

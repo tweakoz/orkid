@@ -19,6 +19,8 @@ class HeightFieldDrawableData : public ork::Object {
   HeightFieldDrawableData();
   ~HeightFieldDrawableData() final;
 
+  float _testxxx = 0.0f;
+
 private:
 
   friend HeightFieldDrawable;

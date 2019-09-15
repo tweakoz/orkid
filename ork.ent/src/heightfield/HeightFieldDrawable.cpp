@@ -786,6 +786,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   params._envTexture = ColorTex;
   params._hfTextureA = _heightmapTextureA;
   params._hfTextureB = _heightmapTextureB;
+  params._testxxx = _hfdrawable->_data._testxxx;
 
   ///////////////////////////////////////////////////////////////////
   // render
@@ -876,6 +877,7 @@ void HeightFieldDrawableData::Describe() {
   reflect::RegisterProperty("SphericalEnvMap", &HeightFieldDrawableData::_readEnvMap, &HeightFieldDrawableData::_writeEnvMap);
   reflect::RegisterProperty(
       "HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath);
+  reflect::RegisterProperty("TestXXX", &HeightFieldDrawableData::_testxxx);
 
   ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.class", "ged.factory.assetlist");
   ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.assettype", "lev2tex");
@@ -883,6 +885,9 @@ void HeightFieldDrawableData::Describe() {
 
   reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("HeightMap", "editor.class", "ged.factory.filelist");
   reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("HeightMap", "editor.filetype", "png");
+
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("TestXXX", "editor.range.min", "-100");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("TestXXX", "editor.range.max", "100");
 }
 
 hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {
@@ -894,7 +899,8 @@ hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {
 }
 
 HeightFieldDrawableData::HeightFieldDrawableData()
-  : _hfpath("none"){
+  : _hfpath("none")
+  , _testxxx(0){
 
 }
 HeightFieldDrawableData::~HeightFieldDrawableData() {}
