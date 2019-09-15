@@ -88,6 +88,6 @@ struct NoVrDevice : public Device {
 Device& device();
 ////////////////////////////////////////////////////////////////////////////////
 void gpuUpdate(fmtx4 observermatrix);
-void composite(GfxTarget* targ, Texture* ltex, Texture* rtex);
+void composite(GfxTarget* targ, Texture* twoeyetex);
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr

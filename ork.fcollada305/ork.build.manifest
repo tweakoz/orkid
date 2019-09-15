@@ -1,3 +1,0 @@
-<project name="ork.fcollada">
-  <depends_on project="ork.build"/>
-</project>

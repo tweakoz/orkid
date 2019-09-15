@@ -249,25 +249,34 @@ void OpenVrDevice::_processControllerEvents() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void composite(lev2::GfxTarget* targ, Texture* ltex, Texture* rtex) {
+void composite(lev2::GfxTarget* targ, Texture* twoeyetex) {
 
   if (device()._active) {
 
     auto fbi = targ->FBI();
 
-    auto texobjL = ltex->getProperty<GLuint>("gltexobj");
-    auto texobjR = rtex->getProperty<GLuint>("gltexobj");
+    auto twoeyetexOBJ = twoeyetex->getProperty<GLuint>("gltexobj");
 
-    _ovr::Texture_t leftEyeTexture  = {(void*)(uintptr_t)texobjL, _ovr::TextureType_OpenGL, _ovr::ColorSpace_Gamma};
-    _ovr::Texture_t rightEyeTexture = {(void*)(uintptr_t)texobjR, _ovr::TextureType_OpenGL, _ovr::ColorSpace_Gamma};
+    _ovr::Texture_t twoEyeTexture  = {
+        (void*)(uintptr_t)twoeyetexOBJ,
+        _ovr::TextureType_OpenGL,
+        _ovr::ColorSpace_Gamma
+      };
+
+    _ovr::VRTextureBounds_t leftEyeBounds = {
+      0,0, // min
+      0.5,1 // max
+    };
+    _ovr::VRTextureBounds_t rightEyeBounds = {
+      0.5,0, // min
+      1,1 // max
+    };
 
     //////////////////////////////////////////////////
-    // odd that you need to set the viewport
-    //  before submitting to the vr compositor,
-    //  since the texture contains the size of itself...
-    //////////////////////////////////////////////////
 
-    SRect VPRect(0, 0, device()._width, device()._height);
+    int w = device()._width;
+    int h = device()._height;
+    SRect VPRect(0, 0, w*2, h);
     fbi->PushViewport(VPRect);
     fbi->PushScissor(VPRect);
 
@@ -275,8 +284,15 @@ void composite(lev2::GfxTarget* targ, Texture* ltex, Texture* rtex) {
     // submit to openvr compositor
     //////////////////////////////////////////////////
 
-    GLuint erl = _ovr::VRCompositor()->Submit(_ovr::Eye_Left, &leftEyeTexture);
-    GLuint err = _ovr::VRCompositor()->Submit(_ovr::Eye_Right, &rightEyeTexture);
+    GLuint erl = _ovr::VRCompositor()->Submit(
+      _ovr::Eye_Left,
+      &twoEyeTexture,
+      &leftEyeBounds);
+
+    GLuint err = _ovr::VRCompositor()->Submit(
+      _ovr::Eye_Right,
+      &twoEyeTexture,
+      &rightEyeBounds);
 
     //////////////////////////////////////////////////
     // undo above PushVp/Scissor
@@ -284,6 +300,7 @@ void composite(lev2::GfxTarget* targ, Texture* ltex, Texture* rtex) {
 
     fbi->PopViewport();
     fbi->PopScissor();
+
   }
 }
 

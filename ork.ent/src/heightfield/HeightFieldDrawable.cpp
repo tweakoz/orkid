@@ -712,30 +712,16 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   // render
   ///////////////////////////////////////////////////////////////////
   bool stereo1pass = framedata->isStereoOnePass();
-  if( stereo1pass ){
-    if (auto try_lcam = framedata->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
-      //printf("got LCAM<%p>\n", try_lcam.value() );
-    }
-    if (auto try_rcam = framedata->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
-      //printf("got RCAM<%p>\n", try_rcam.value() );
-    }
-  }
   //////////////////////////
   // retrieve camera information
   //////////////////////////
-  const fmtx4& PMTX = framedata->GetCameraCalcCtx().mPMatrix;
-  const fmtx4& VMTX = framedata->GetCameraCalcCtx().mVMatrix;
-  auto MMTX         = fmtx4();
+  const fmtx4& PMTX_mono = framedata->GetCameraCalcCtx().mPMatrix;
+  const fmtx4& VMTX_mono = framedata->GetCameraCalcCtx().mVMatrix;
   //////////////////////////
   // camera dependent calculation
   //////////////////////////
-  fmtx4 inv_view;
-  inv_view.inverseOf(VMTX);
-  //fvec3 campos = inv_view.GetTranslation();
-  //campos.y     = 0;
-  auto znormal = inv_view.GetZNormal().Normal();
-  fmtx4 follow;
-  follow.SetTranslation(_hfdrawable->_visualOffset);
+  fmtx4 viz_offset;
+  viz_offset.SetTranslation(_hfdrawable->_visualOffset);
   //////////////////////////
   // color
   //////////////////////////
@@ -755,18 +741,50 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   if (_sphericalenvmap && _sphericalenvmap->GetTexture())
     ColorTex = _sphericalenvmap->GetTexture();
   //////////////////////////
-  auto MV = (follow*VMTX);
-  auto MVP = (follow*VMTX)*PMTX;
-  fmtx4 IMV; IMV.inverseOf(MV);
-  auto campos = IMV.GetTranslation();
+  auto MV_mono = (viz_offset*VMTX_mono);
+  fmtx4 IMV_mono; IMV_mono.inverseOf(MV_mono);
+  auto campos_mono = IMV_mono.GetTranslation();
+  //////////////////////////
+  fmtx4 MVPL, MVPC, MVPR;
+  //////////////////////////
+  if( false) { //stereo1pass ){
+    fmtx4 VL, PL, VR, PR;
+    if (auto try_lcam = framedata->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
+      VL = try_lcam.value()->GetVMatrix();
+      PL = try_lcam.value()->GetPMatrix();
+      VL.dump("VL");
+      PL.dump("PL");
+      //printf("got LCAM<%p>\n", try_lcam.value() );
+    }
+    if (auto try_rcam = framedata->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
+      VR = try_rcam.value()->GetVMatrix();
+      PR = try_rcam.value()->GetPMatrix();
+      VR.dump("VR");
+      PR.dump("PR");
+      //printf("got RCAM<%p>\n", try_rcam.value() );
+    }
+    auto MVL = (viz_offset*VL);
+    auto MVR = (viz_offset*VR);
+    MVPL = MVL * PL;
+    MVPR = MVR * PR;
+    MVPL = MV_mono*PMTX_mono;
+    MVPR = MV_mono*PMTX_mono;
+  }
+  else {
+    auto MVP = MV_mono*PMTX_mono;
+    MVPL = MVP;
+    MVPC = MVP;
+    MVPR = MVP;
+  }
+
   //////////////////////////
   // fill out shader params
   //////////////////////////
   auto& params = _terrainMaterial->_paramVal;
-  params._matMVPL    = MVP;
-  params._matMVPC    = MVP;
-  params._matMVPR    = MVP;
-  params._camPos     = campos;
+  params._matMVPL    = MVPL;
+  params._matMVPC    = MVPC;
+  params._matMVPR    = MVPR;
+  params._camPos     = campos_mono;
   params._modcolor   = color;
   params._envTexture = ColorTex;
   params._hfTextureA = _heightmapTextureA;
@@ -780,6 +798,10 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
 
   targ->PushMaterial(_terrainMaterial);
   _terrainMaterial->begin(RCID);
+
+  fmtx4 inv_view_mono;
+  inv_view_mono.inverseOf(VMTX_mono);
+  auto znormal = inv_view_mono.GetZNormal().Normal();
 
   if (true) { // abs(znormal.y) > 0.8 ){ // looking up or down
     ////////////////////////////////
