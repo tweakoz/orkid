@@ -177,7 +177,7 @@ struct VRIMPL {
     _material.Init(pTARG);
     int w     = orkidvr::device()._width;
     int h     = orkidvr::device()._height;
-    _frametek = new VrFrameTechnique(w, h);
+    _frametek = new VrFrameTechnique(w*2, h);
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////

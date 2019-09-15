@@ -131,7 +131,9 @@ void TerrainMaterial::EndPass(GfxTarget* targ) { targ->FXI()->EndPass(_shader); 
 
 int TerrainMaterial::BeginBlock(GfxTarget* targ, const RenderContextInstData& RCID) {
   auto fxi = targ->FXI();
-  fxi->BindTechnique(_shader, _tekBasic);
+  auto framedata            = targ->GetRenderContextFrameData();
+  bool stereo1pass = framedata->isStereoOnePass();
+  fxi->BindTechnique(_shader, stereo1pass ? _tekStereo : _tekBasic);
   return fxi->BeginBlock(_shader, RCID);
 }
 
