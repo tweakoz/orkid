@@ -82,7 +82,7 @@ vertex_shader vs_terrain_stereo
 fragment_shader ps_terrain
   : iface_fdefault
   : lib_mmnoise {
-  const vec3 fogcolor = vec3(1);
+  vec3 fogcolor = vec3(0.9,0.9,1)*testxxx;
   const vec3 ambient = vec3(0.4);
   const vec3 side = vec3(0.2, 0.2, 0.25);
   const vec3 top = vec3(0.3, 0.3, 0.3);

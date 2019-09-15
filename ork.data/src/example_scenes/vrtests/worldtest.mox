@@ -219,7 +219,7 @@
                                                 <property name='Center'>-151.889 337.366 118.481</property>
                                                 <property name='Focus'>0 0 0</property>
                                                 <property name='Loc'>7.33475</property>
-                                                <property name='QuatC'>-0.0854347 -0.921956 0.347712 0.149892</property>
+                                                <property name='QuatC'>-0.117304 -0.97721 0.12715 0.125737</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -284,7 +284,7 @@
                                                                     "lev2tex" "data://effect_textures/NoiseKern"
                                                                 </reference>
                                                             </property>
-                                                            <property name='TestXXX'>0.6</property>
+                                                            <property name='TestXXX'>1.1</property>
                                                         </object>
                                                     </property>
                                                     <property name='WorldHeight'>1500</property>
