@@ -110,10 +110,6 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     //////////////////////////////////////////////////////
 
     if (orkidvr::device()._active) {
-
-      //lcam->CalcCameraData(framedata.GetCameraCalcCtx());
-      //rcam->CalcCameraData(framedata.GetCameraCalcCtx());
-
       framedata.setStereoOnePass(true);
       framedata.setUserProperty("lcam"_crc, lcam);
       framedata.setUserProperty("rcam"_crc, rcam);
@@ -256,15 +252,11 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
     // VR compositor
     /////////////////////////////////////////////////////////////////////////////
 
-    auto bufferL = vrimpl->_frametek->_rtg->GetMrt(0);
-    assert(bufferL != nullptr);
-    // auto bufferR = vrimpl->_frametek->_rtg_right->GetMrt(0);
-    // assert(bufferR != nullptr);
-
-    auto texL = bufferL->GetTexture();
-    // auto texR = bufferR->GetTexture();
-    if (texL) { //}&& texR) {
-      orkidvr::composite(targ, texL);
+    auto buffer = vrimpl->_frametek->_rtg->GetMrt(0);
+    assert(buffer != nullptr);
+    auto tex = buffer->GetTexture();
+    if (tex) {
+      orkidvr::composite(targ, tex);
     }
 
     /////////////////////////////////////////////////////////////////////////////

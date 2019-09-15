@@ -474,8 +474,8 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
   auto R           = RCID.GetRenderer();
   auto framedata   = pTARG->GetRenderContextFrameData();
   bool stereo1pass = framedata->isStereoOnePass();
-  if (stereo1pass)
-    return;
+  //if (stereo1pass)
+    //return;
 
   const XgmSkeleton& Skeleton = RefSkel();
 
@@ -612,8 +612,8 @@ void XgmModel::RenderMultipleSkinned(const XgmModelInst* minst,
   auto R           = RCID.GetRenderer();
   auto framedata   = pTARG->GetRenderContextFrameData();
   bool stereo1pass = framedata->isStereoOnePass();
-  if (stereo1pass)
-    return;
+  //if (stereo1pass)
+    //return;
 
   const XgmSkeleton& Skeleton   = RefSkel();
   const XgmLocalPose& LocalPose = minst->RefLocalPose();
