@@ -70,14 +70,8 @@ vertex_shader vs_terrain_stereo
   TerOut tero = computeTerrain(CamPos);
   applyTerrain(tero,CamPos);
   ///////////////////////////
-  vec4 posL = MatMVPL * vec4(tero.wpos, 1);
-  vec4 posR = MatMVPR * vec4(tero.wpos, 1);
-  // only x allowed to vary w/ stereo1pass
-  posR.y = posL.y;
-  posR.z = posL.z;
-  ///////////////////////////
-  gl_Position = posL;
-  gl_SecondaryPositionNV = posR;
+  gl_Position = MatMVPL * vec4(tero.wpos, 1);
+  gl_SecondaryPositionNV = MatMVPR * vec4(tero.wpos, 1);
   gl_Layer = 0;
   gl_ViewportMask[0] = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
