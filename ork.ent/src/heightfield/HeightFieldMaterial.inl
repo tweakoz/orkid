@@ -8,9 +8,9 @@
 #pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/lev2/gfx/renderer/renderer.h>
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,8 +142,8 @@ void TerrainMaterial::EndBlock(GfxTarget* targ) { targ->FXI()->EndBlock(_shader)
 ///////////////////////////////////////////////////////////////////////////////
 
 void TerrainMaterial::begin(const RenderContextInstData& RCID) {
-  auto R = RCID.GetRenderer();
-  auto targ = R->GetTarget();
+  auto R         = RCID.GetRenderer();
+  auto targ      = R->GetTarget();
   int inumpasses = BeginBlock(targ, RCID);
   assert(inumpasses == 1);
   bool bDRAW = BeginPass(targ, 0);
