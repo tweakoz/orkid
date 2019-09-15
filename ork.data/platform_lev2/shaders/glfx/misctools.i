@@ -149,6 +149,14 @@ libblock lib_terrain {
 
       return rval;
     }
+		void applyTerrain(TerOut tero,vec3 campos){
+			frg_nrm = tero.wnrm;
+		  frg_camdist = distance(tero.wpos, campos);
+		  frg_uvxp = tero.uvxplane;
+		  frg_uvyp = tero.uvyplane;
+		  frg_uvzp = tero.uvzplane;
+		  frg_wpos = tero.wpossh;
+		}
 
 
 }

@@ -35,19 +35,15 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
   //////////////////////////////////////////////////////////////////////////////
   VrFrameTechnique(int w, int h)
       : FrameTechniqueBase(w, h)
-      , _rtg_left(nullptr)
-      , _rtg_right(nullptr) {}
+      , _rtg(nullptr) {}
   //////////////////////////////////////////////////////////////////////////////
   void DoInit(GfxTarget* pTARG) final {
-    if (nullptr == _rtg_left) {
-      _rtg_left  = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
-      _rtg_right = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
+    if (nullptr == _rtg) {
+      _rtg = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
 
-      auto lbuf = new RtBuffer(_rtg_left, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
-      auto rbuf = new RtBuffer(_rtg_right, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
+      auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
 
-      _rtg_left->SetMrt(0, lbuf);
-      _rtg_right->SetMrt(0, rbuf);
+      _rtg->SetMrt(0, lbuf);
 
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
@@ -110,10 +106,14 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     _CPD._clearColor  = fvec4(0.61, 0.61, 0.71, 1);
 
     //////////////////////////////////////////////////////
-    // is stereo active ?stereo
+    // is stereo active
     //////////////////////////////////////////////////////
 
     if (orkidvr::device()._active) {
+
+      //lcam->CalcCameraData(framedata.GetCameraCalcCtx());
+      //rcam->CalcCameraData(framedata.GetCameraCalcCtx());
+
       framedata.setStereoOnePass(true);
       framedata.setUserProperty("lcam"_crc, lcam);
       framedata.setUserProperty("rcam"_crc, rcam);
@@ -133,13 +133,13 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
 
     // draw left and right ///////////////////////////////
 
-    RtGroupRenderTarget rtL(_rtg_left);
+    RtGroupRenderTarget rtL(_rtg);
     drawdata.mCompositingGroupStack.push(_CPD);
     {
       pTARG->SetRenderContextFrameData(&framedata);
       framedata.SetDstRect(tgt_rect);
       framedata.PushRenderTarget(&rtL);
-      pTARG->FBI()->PushRtGroup(_rtg_left);
+      pTARG->FBI()->PushRtGroup(_rtg);
       pTARG->BeginFrame();
       framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
       renderer.Render();
@@ -151,32 +151,10 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       drawdata.mCompositingGroupStack.pop();
     }
 
-    //////////////////////////////////////////////////////
-
-    if (orkidvr::device()._active) {
-      drawdata.mCompositingGroupStack.push(_CPD);
-      {
-        RtGroupRenderTarget rtR(_rtg_right);
-        pTARG->SetRenderContextFrameData(&framedata);
-        framedata.SetDstRect(tgt_rect);
-        framedata.PushRenderTarget(&rtR);
-        pTARG->FBI()->PushRtGroup(_rtg_right);
-        pTARG->BeginFrame();
-        framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-        // renderer.Render();
-        // renderPoses(pTARG, rcam, controllers);
-        pTARG->EndFrame();
-        pTARG->FBI()->PopRtGroup();
-        framedata.PopRenderTarget();
-        pTARG->SetRenderContextFrameData(nullptr);
-      }
-    }
-
     framedata.setStereoOnePass(false);
   }
 
-  RtGroup* _rtg_left;
-  RtGroup* _rtg_right;
+  RtGroup* _rtg;
   BuiltinFrameEffectMaterial _effect;
   ent::CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
@@ -278,15 +256,15 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
     // VR compositor
     /////////////////////////////////////////////////////////////////////////////
 
-    auto bufferL = vrimpl->_frametek->_rtg_left->GetMrt(0);
+    auto bufferL = vrimpl->_frametek->_rtg->GetMrt(0);
     assert(bufferL != nullptr);
-    auto bufferR = vrimpl->_frametek->_rtg_right->GetMrt(0);
-    assert(bufferR != nullptr);
+    // auto bufferR = vrimpl->_frametek->_rtg_right->GetMrt(0);
+    // assert(bufferR != nullptr);
 
     auto texL = bufferL->GetTexture();
-    auto texR = bufferR->GetTexture();
-    if (texL && texR) {
-      orkidvr::composite(targ, texL, texR);
+    // auto texR = bufferR->GetTexture();
+    if (texL) { //}&& texR) {
+      orkidvr::composite(targ, texL);
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -296,7 +274,7 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
 lev2::RtGroup* VrCompositingNode::GetOutput() const {
   auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
   if (vrimpl->_frametek)
-    return vrimpl->_frametek->_rtg_left;
+    return vrimpl->_frametek->_rtg;
   else
     return nullptr;
 }

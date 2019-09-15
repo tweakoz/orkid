@@ -1,3 +1,0 @@
-<project name="ork.ent">
-  <depends_on project="ork.build"/>
-</project>

@@ -596,6 +596,14 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   };
   ///////////////////////////////////////////////////////////////////////////
   ScopedSimFramer framescope(simulation());
+
+  ///////////////////////////////////////////////////////////////////////////
+
+  lev2::rendervar_t pvdb   = FrameData.getUserProperty("DB"_crc);
+  const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
+  if (0 == DB)
+    return;
+
   ///////////////////////////////////////////////////////////////////////////
   // get the compositor if there is one
   ///////////////////////////////////////////////////////////////////////////
@@ -615,11 +623,6 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
 
   CameraData TempCamData, TempCullCamData;
   _editorCamera = 0;
-
-  lev2::rendervar_t pvdb   = FrameData.getUserProperty("DB"_crc);
-  const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
-  if (0 == DB)
-    return;
 
   const CameraData* pcamdata     = DB->GetCameraData(miCameraIndex);
   const CameraData* pcullcamdata = DB->GetCameraData(miCullCameraIndex);

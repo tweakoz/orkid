@@ -268,7 +268,9 @@ void GlFrameBufferInterface::SetScissor(int iX, int iY, int iW, int iH) {
 
   // printf( "SetScissor<%d %d %d %d>\n", iX, iY, iW, iH );
   GL_ERRORCHECK();
+
   glScissor(iX, iY, iW, iH);
+
   GL_ERRORCHECK();
   glEnable(GL_SCISSOR_TEST);
 
@@ -294,8 +296,23 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
   miCurVPH = iH;
   // printf( "SetViewport<%d %d %d %d>\n", iX, iY, iW, iH );
 
+  auto framedata = mTargetGL.GetRenderContextFrameData();
+  bool stereo = false;
+  if( framedata ){
+      stereo = framedata->isStereoOnePass();
+  }
+
   GL_ERRORCHECK();
-  glViewport(iX, iY, iW, iH);
+
+  if( stereo ){
+    int wd2 = iW/2;
+    glViewportIndexedf(0, 0, 0, wd2, iH);
+    glViewportIndexedf(1, wd2, 0, wd2, iH);
+  }
+  else {
+    glViewport(iX, iY, iW, iH);
+  }
+
   GL_ERRORCHECK();
 }
 

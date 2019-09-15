@@ -53,36 +53,35 @@ vertex_shader vs_terrain
   : iface_vdefault
   : lib_terrain {
   TerOut tero = computeTerrain(CamPos);
-  ///////////////////////////
-  // apply to GL
-  ///////////////////////////
-  frg_nrm = tero.wnrm;
-  frg_camdist = distance(tero.wpos, CamPos);
-  frg_uvxp = tero.uvxplane;
-  frg_uvyp = tero.uvyplane;
-  frg_uvzp = tero.uvzplane;
-  frg_wpos = tero.wpossh;
-  ///////////////////////////
+  applyTerrain(tero,CamPos);
   gl_Position = MatMVPC * vec4(tero.wpos, 1);
 }
 ///////////////////////////////////////////////////////////////
+// stereo1pass
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vstereo : iface_vdefault {
+  layout(secondary_view_offset=1) out highp int gl_Layer;
+}
 vertex_shader vs_terrain_stereo
   : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2)
   : iface_vdefault
   : lib_terrain {
   TerOut tero = computeTerrain(CamPos);
+  applyTerrain(tero,CamPos);
   ///////////////////////////
-  // apply to GL
+  vec4 posL = MatMVPL * vec4(tero.wpos, 1);
+  vec4 posR = MatMVPR * vec4(tero.wpos, 1);
+  // only x allowed to vary w/ stereo1pass
+  posR.x += 0.5;
+  posR.y = posL.y;
+  posR.z = posL.z;
   ///////////////////////////
-  frg_nrm = tero.wnrm;
-  frg_camdist = distance(tero.wpos, CamPos);
-  frg_uvxp = tero.uvxplane;
-  frg_uvyp = tero.uvyplane;
-  frg_uvzp = tero.uvzplane;
-  frg_wpos = tero.wpossh;
-  ///////////////////////////
-  gl_Position = MatMVPL * vec4(tero.wpos, 1);
-  gl_SecondaryPositionNV = MatMVPR * vec4(tero.wpos, 1);
+  gl_Position = posL;
+  gl_SecondaryPositionNV = posR;
+  gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
   ///////////////////////////
 }
 ///////////////////////////////////////////////////////////////
