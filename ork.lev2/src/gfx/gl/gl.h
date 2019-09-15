@@ -12,14 +12,14 @@
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/lev2/gfx/glheaders.h>
-#include <ork/lev2/gfx/gfxenv.h>
-#include <ork/kernel/svariant.h>
-#include <string>
-#include <map>
-#include <set>
-#include <vector>
 #include <functional>
+#include <map>
+#include <ork/kernel/svariant.h>
+#include <ork/lev2/gfx/gfxenv.h>
+#include <ork/lev2/gfx/glheaders.h>
+#include <set>
+#include <string>
+#include <vector>
 ///////////////////////////////////////////////////////////////////////////////
 #include "glfx/glslfxi.h"
 /////////////////////////////
@@ -30,7 +30,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#if 1 //defined( _DEBUG )
+#if 1 // defined( _DEBUG )
 #define GL_ERRORCHECK()                                                                                                            \
   {                                                                                                                                \
     GLenum iErr = GetGlError();                                                                                                    \
@@ -141,11 +141,17 @@ private:
   void BindVertexDeclaration(EVtxStreamFormat efmt);
 
   void DrawPrimitive(const VertexBufferBase& VBuf, EPrimitiveType eType = EPRIM_NONE, int ivbase = 0, int ivcount = 0) final;
-  void DrawIndexedPrimitive(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType = EPRIM_NONE,
-                            int ivbase = 0, int ivcount = 0) final;
+  void DrawIndexedPrimitive(const VertexBufferBase& VBuf,
+                            const IndexBufferBase& IdxBuf,
+                            EPrimitiveType eType = EPRIM_NONE,
+                            int ivbase           = 0,
+                            int ivcount          = 0) final;
   void DrawPrimitiveEML(const VertexBufferBase& VBuf, EPrimitiveType eType = EPRIM_NONE, int ivbase = 0, int ivcount = 0) final;
-  void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf, const IndexBufferBase& IdxBuf, EPrimitiveType eType = EPRIM_NONE,
-                               int ivbase = 0, int ivcount = 0) final;
+  void DrawIndexedPrimitiveEML(const VertexBufferBase& VBuf,
+                               const IndexBufferBase& IdxBuf,
+                               EPrimitiveType eType = EPRIM_NONE,
+                               int ivbase           = 0,
+                               int ivcount          = 0) final;
 
   GfxTargetGL& mTargetGL;
 
@@ -162,46 +168,27 @@ public:
   GlFrameBufferInterface(GfxTargetGL& mTarget);
   ~GlFrameBufferInterface();
 
-  virtual void SetRtGroup(RtGroup* Base);
-  void SetAsRenderTarget();
-
-  void InitializeContext(GfxBuffer* pBuf);
-
   ///////////////////////////////////////////////////////
 
-  virtual void Clear(const fcolor4& rCol, float fdepth);
-
-  virtual void SetViewport(int iX, int iY, int iW, int iH);
-  virtual void SetScissor(int iX, int iY, int iW, int iH);
-
-  virtual void PushScissor(const SRect& rScissorRect);
-  virtual SRect& PopScissor(void);
-
-  //////////////////////////////////////////////
-  // Capture Interface
-
-  virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth);
-  virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) { return false; }
-  virtual void GetPixel(const fvec4& rAt, GetPixelContext& ctx);
+  void SetRtGroup(RtGroup* Base) final;
+  void Clear(const fcolor4& rCol, float fdepth) final;
+  void SetViewport(int iX, int iY, int iW, int iH) final;
+  void SetScissor(int iX, int iY, int iW, int iH) final;
+  void PushScissor(const SRect& rScissorRect) final;
+  void DoBeginFrame(void) final;
+  void DoEndFrame(void) final;
+  void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) final;
+  bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final { return false; }
+  void GetPixel(const fvec4& rAt, GetPixelContext& ctx) final;
+  SRect& PopScissor(void) final;
 
   //////////////////////////////////////////////
 
-  virtual void ForceFlush(void);
-  virtual void DoBeginFrame(void);
-  virtual void DoEndFrame(void);
-
-  //////////////////////////////////////////////
-
-  void SetColorFBObject(GLuint fbo) { muColorFBObject = fbo; }
-  GLuint GetColorFBObject() const { return muColorFBObject; }
-
-  void SetDepthFBObject(GLuint fbo) { muDepthFBObject = fbo; }
-  GLuint GetDepthFBObject() const { return muDepthFBObject; }
+  void _setAsRenderTarget();
+  void _initializeContext(GfxBuffer* pBuf);
 
 protected:
   GfxTargetGL& mTargetGL;
-  GLuint muColorFBObject;
-  GLuint muDepthFBObject;
   int miCurScissorX;
   int miCurScissorY;
   int miCurScissorW;
@@ -243,7 +230,11 @@ struct GLTextureObject {
   GLenum mTarget;
   int _maxmip = 0;
 
-  GLTextureObject() : mObject(0), mFbo(0), mDbo(0), mTarget(GL_NONE) {} //, mfQtzTime(0.0f) {}
+  GLTextureObject()
+      : mObject(0)
+      , mFbo(0)
+      , mDbo(0)
+      , mTarget(GL_NONE) {} //, mfQtzTime(0.0f) {}
 };
 
 class PboSet {

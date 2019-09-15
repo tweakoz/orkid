@@ -583,7 +583,6 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   const bool forgepickstate = false;
   if (forgepickstate)
     FrameData.GetTarget()->FBI()->EnterPickState(mpPickBuffer);
-  // FrameData.GetTarget()->FBI()->ForceFlush();
   GL_ERRORCHECK();
 
   ///////////////////////////////////////////////////////////////////////////
@@ -624,7 +623,6 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
 
   const CameraData* pcamdata     = DB->GetCameraData(miCameraIndex);
   const CameraData* pcullcamdata = DB->GetCameraData(miCullCameraIndex);
-  // FrameData.GetTarget()->FBI()->ForceFlush();
 
   if (nullptr == pcamdata)
     return;

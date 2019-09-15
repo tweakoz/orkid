@@ -21,10 +21,21 @@ bool GfxTargetGL::SetDisplayMode(DisplayMode *mode)
 
 /////////////////////////////////////////////////////////////////////////
 
+void GfxTargetGL::SetSize(int ix, int iy, int iw, int ih) {
+  miX = ix;
+  miY = iy;
+  miW = iw;
+  miH = ih;
+  mTargetDrawableSizeDirty = true;
+  // mFbI.DeviceReset(ix,iy,iw,ih );
+}
+
+/////////////////////////////////////////////////////////////////////////
+
 std::string GetGlErrorString( int iGLERR )
 {
 	std::string RVAL = (std::string) "GL_UNKNOWN_ERROR";
-	
+
 	switch( iGLERR )
 	{
 		case GL_NO_ERROR:
@@ -76,4 +87,3 @@ int GetGlError( void )
 ///////////////////////////////////////////////////////////////////////////////
 }} //namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-
