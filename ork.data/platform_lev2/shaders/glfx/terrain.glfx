@@ -82,7 +82,7 @@ fragment_shader ps_terrain
   : iface_fdefault
   : lib_mmnoise {
   const vec3 fogcolor = vec3(0.6, 0.6, 0.7);
-  const vec3 ambient = vec3(0.6, 0.6, 0.65);
+  const vec3 ambient = vec3(0.3, 0.3, 0.3);
   const vec3 side = vec3(0.2, 0.2, 0.25);
   const vec3 top = vec3(0.3, 0.3, 0.3);
   vec3 n = normalize(frg_nrm);
