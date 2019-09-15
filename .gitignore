@@ -10,6 +10,7 @@ hotkeys.ork
 *.cst
 *.swatch*
 *.moc
+*.ma
 mocs
 .mayaSwatches/*
 ork.build.ini
