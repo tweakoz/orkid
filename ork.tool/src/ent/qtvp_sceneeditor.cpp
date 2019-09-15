@@ -594,8 +594,13 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
     ~ScopedSimFramer() { _sim->endRenderFrame(); }
     const Simulation* _sim;
   };
+
+  auto sim = simulation();
+  if(nullptr==sim)
+    return;
+
   ///////////////////////////////////////////////////////////////////////////
-  ScopedSimFramer framescope(simulation());
+  ScopedSimFramer framescope(sim);
 
   ///////////////////////////////////////////////////////////////////////////
 
