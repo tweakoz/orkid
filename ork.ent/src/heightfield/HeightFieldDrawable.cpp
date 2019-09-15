@@ -21,7 +21,11 @@
 #include <ork/util/endian.h>
 #include <pkg/ent/HeightFieldDrawable.h>
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/DirectObjectPropertyType.hpp>
+///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -741,14 +745,15 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   if (_sphericalenvmap && _sphericalenvmap->GetTexture())
     ColorTex = _sphericalenvmap->GetTexture();
   //////////////////////////
-  auto MV_mono = (viz_offset*VMTX_mono);
-  fmtx4 IMV_mono; IMV_mono.inverseOf(MV_mono);
+  auto MV_mono = (viz_offset * VMTX_mono);
+  fmtx4 IMV_mono;
+  IMV_mono.inverseOf(MV_mono);
   auto campos_mono = IMV_mono.GetTranslation();
   //////////////////////////
   fmtx4 MVPL, MVPC, MVPR;
-  auto MVP = MV_mono*PMTX_mono;
+  auto MVP = MV_mono * PMTX_mono;
   //////////////////////////
-  if( stereo1pass ){
+  if (stereo1pass) {
     fmtx4 VL, PL, VR, PR;
     if (auto try_lcam = framedata->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
       VL = try_lcam.value()->GetVMatrix();
@@ -758,13 +763,12 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
       VR = try_rcam.value()->GetVMatrix();
       PR = try_rcam.value()->GetPMatrix();
     }
-    auto MVL = (viz_offset*VL);
-    auto MVR = (viz_offset*VR);
-    MVPL = MVL * PL;
-    MVPR = MVR * PR;
-    MVPC = MVP;
-  }
-  else {
+    auto MVL = (viz_offset * VL);
+    auto MVR = (viz_offset * VR);
+    MVPL     = MVL * PL;
+    MVPR     = MVR * PR;
+    MVPC     = MVP;
+  } else {
     MVPL = MVP;
     MVPC = MVP;
     MVPR = MVP;
@@ -773,7 +777,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   //////////////////////////
   // fill out shader params
   //////////////////////////
-  auto& params = _terrainMaterial->_paramVal;
+  auto& params       = _terrainMaterial->_paramVal;
   params._matMVPL    = MVPL;
   params._matMVPC    = MVPC;
   params._matMVPR    = MVPR;
@@ -787,7 +791,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   // render
   ///////////////////////////////////////////////////////////////////
 
-  //auto range = _aabbmax - _aabbmin;
+  // auto range = _aabbmax - _aabbmin;
 
   targ->PushMaterial(_terrainMaterial);
   _terrainMaterial->begin(RCID);
@@ -867,6 +871,53 @@ static void _RenderHeightfield(RenderContextInstData& rcid, GfxTarget* targ, con
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void HeightFieldDrawableData::Describe() {
+  reflect::RegisterProperty("Offset", &HeightFieldDrawableData::_visualOffset);
+  reflect::RegisterProperty("SphericalEnvMap", &HeightFieldDrawableData::_readEnvMap, &HeightFieldDrawableData::_writeEnvMap);
+  reflect::RegisterProperty(
+      "HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath);
+
+  ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.class", "ged.factory.assetlist");
+  ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.assettype", "lev2tex");
+  ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.assetclass", "lev2tex");
+
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("HeightMap", "editor.class", "ged.factory.filelist");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("HeightMap", "editor.filetype", "png");
+}
+
+hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {
+  auto drw = std::make_shared<HeightFieldDrawable>(*this);
+    drw->_visualOffset    = _visualOffset;
+    drw->_sphericalenvmap = _sphericalenvmap;
+    drw->_hfpath          = _hfpath;
+  return drw;
+}
+
+HeightFieldDrawableData::HeightFieldDrawableData()
+  : _hfpath("none"){
+
+}
+HeightFieldDrawableData::~HeightFieldDrawableData() {}
+
+///////////////////////////////////////////////////////////////////////////////
+void HeightFieldDrawableData::_writeEnvMap(ork::rtti::ICastable* const& tex) {
+  _sphericalenvmap = tex ? ork::rtti::autocast(tex) : nullptr;
+}
+void HeightFieldDrawableData::_readEnvMap(ork::rtti::ICastable*& tex) const { tex = _sphericalenvmap; }
+void HeightFieldDrawableData::_writeHmapPath(file::Path const& hmap){
+  _hfpath = hmap;
+}
+void HeightFieldDrawableData::_readHmapPath(file::Path& hmap) const{
+  hmap = _hfpath;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+HeightFieldDrawable::HeightFieldDrawable(const HeightFieldDrawableData& data)
+    : _data(data) {}
+
+///////////////////////////////////////////////////////////////////////////////
+
 CallbackDrawable* HeightFieldDrawable::create() {
 
   auto impl    = _impl.makeShared<HeightfieldRenderImpl>(this);
@@ -876,6 +927,8 @@ CallbackDrawable* HeightFieldDrawable::create() {
   _rawdrawable->SetSortKey(1000);
   return _rawdrawable;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 HeightFieldDrawable::~HeightFieldDrawable() {
   _rawdrawable->SetRenderCallback(nullptr);
