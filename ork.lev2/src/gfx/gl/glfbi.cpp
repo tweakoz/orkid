@@ -27,13 +27,15 @@ OIIO_NAMESPACE_USING
 
 namespace ork { namespace lev2 {
 
-GlFrameBufferInterface::GlFrameBufferInterface(GfxTargetGL& target) : FrameBufferInterface(target), mTargetGL(target) {}
+GlFrameBufferInterface::GlFrameBufferInterface(GfxTargetGL& target)
+    : FrameBufferInterface(target)
+    , mTargetGL(target) {}
 
 GlFrameBufferInterface::~GlFrameBufferInterface() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::SetAsRenderTarget(void) {
+void GlFrameBufferInterface::_setAsRenderTarget(void) {
   GL_ERRORCHECK();
   mTargetGL.MakeCurrentContext();
   GL_ERRORCHECK();
@@ -41,8 +43,6 @@ void GlFrameBufferInterface::SetAsRenderTarget(void) {
   GL_ERRORCHECK();
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   GL_ERRORCHECK();
-  // glDrawBuffer( GL_FRONT );
-  // glDrawBuffer( GL_BACK );
   GL_ERRORCHECK();
 }
 
@@ -82,7 +82,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
   /////////////////////////////////////////////////
   {
     GL_ERRORCHECK();
-    SetAsRenderTarget();
+    _setAsRenderTarget();
     GL_ERRORCHECK();
 
     glDepthRange(0.0, 1.0f);
@@ -134,7 +134,7 @@ void GlFrameBufferInterface::DoEndFrame(void) {
 
   if (rtg) {
     GlFboObject* FboObj = (GlFboObject*)rtg->GetInternalHandle();
-    int inumtargets = rtg->GetNumTargets();
+    int inumtargets     = rtg->GetNumTargets();
 
     for (int it = 0; it < inumtargets; it++) {
       auto b = rtg->GetMrt(it);
@@ -152,7 +152,7 @@ void GlFrameBufferInterface::DoEndFrame(void) {
     // printf( "ENDFRAME<RtGroup>\n" );
   } else if (IsOffscreenTarget()) {
     // printf( "ENDFRAME<OST>\n" );
-    GfxBuffer* pbuf = GetThisBuffer();
+    GfxBuffer* pbuf            = GetThisBuffer();
     pbuf->GetTexture()->_dirty = false;
     pbuf->SetDirty(false);
     // mTargetGL.EndContextFBO();
@@ -170,7 +170,7 @@ void GlFrameBufferInterface::DoEndFrame(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::InitializeContext(GfxBuffer* pBuf) {
+void GlFrameBufferInterface::_initializeContext(GfxBuffer* pBuf) {
   ///////////////////////////////////////////
   // create texture surface
 
@@ -195,12 +195,12 @@ void GlFrameBufferInterface::InitializeContext(GfxBuffer* pBuf) {
     case EBUFFMT_Z16:
       // efmt = D3DFMT_R16F;
       ibytesperpix = 2;
-      Zonly = true;
+      Zonly        = true;
       break;
     case EBUFFMT_Z32:
       // efmt = D3DFMT_R32F;
       ibytesperpix = 2;
-      Zonly = true;
+      Zonly        = true;
       break;
     default:
       OrkAssert(false);
@@ -211,7 +211,7 @@ void GlFrameBufferInterface::InitializeContext(GfxBuffer* pBuf) {
   // create orknum texture and link it
 
   Texture* ptexture = new Texture();
-  ptexture->_width = mTarget.GetW();
+  ptexture->_width  = mTarget.GetW();
   ptexture->_height = mTarget.GetH();
 
   SetBufferTexture(ptexture);
@@ -226,230 +226,14 @@ void GlFrameBufferInterface::InitializeContext(GfxBuffer* pBuf) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
-  mTargetGL.MakeCurrentContext();
-
-  if (0 == Base) {
-    if (mCurrentRtGroup) {
-      GlFboObject* FboObj = (GlFboObject*)mCurrentRtGroup->GetInternalHandle();
-      int inumtargets = mCurrentRtGroup->GetNumTargets();
-
-      for (int it = 0; it < inumtargets; it++) {
-        auto b = mCurrentRtGroup->GetMrt(it);
-
-        if (FboObj && b && b->mComputeMips) {
-          auto tex_obj = FboObj->mTEX[it];
-
-          // printf( "GENMIPS texobj<%p>\n", (void*) tex_obj );
-
-          // glBindTexture( GL_TEXTURE_2D, tex_obj );
-          // glGenerateMipmap( GL_TEXTURE_2D );
-        }
-      }
-    }
-
-    // printf( "SetRtg::disable rt\n" );
-
-    ////////////////////////////////////////////////
-    // disable mrt
-    //  pop viewport/scissor that was pushed by SetRtGroup( nonzero )
-    // on xbox, happens after resolve
-    ////////////////////////////////////////////////
-    SetAsRenderTarget();
-    mCurrentRtGroup = 0;
-    return;
-  }
-
-  //////////////////////////////////////////////////
-  // lazy create mrt's
-  //////////////////////////////////////////////////
-
-  int iw = Base->GetW();
-  int ih = Base->GetH();
-
-  iw = (iw < 16) ? 16 : iw;
-  ih = (ih < 16) ? 16 : ih;
-
-  GlFboObject* FboObj = (GlFboObject*)Base->GetInternalHandle();
-
-  int inumtargets = Base->GetNumTargets();
-
-  // D3DMULTISAMPLE_TYPE sampletype;
-  switch (Base->GetSamples()) {
-    case 2:
-      // sampletype = D3DMULTISAMPLE_2_SAMPLES;
-      break;
-    case 4:
-      // sampletype = D3DMULTISAMPLE_4_SAMPLES;
-      break;
-    default:
-      // sampletype = D3DMULTISAMPLE_NONE;
-      break;
-  }
-
-  GL_ERRORCHECK();
-
-  if (0 == FboObj) {
-    FboObj = new GlFboObject;
-
-    Base->SetInternalHandle(FboObj);
-
-    GL_ERRORCHECK();
-    glGenRenderbuffers(1, &FboObj->mDSBO);
-    GL_ERRORCHECK();
-    glGenFramebuffers(1, &FboObj->mFBOMaster);
-    GL_ERRORCHECK();
-    // printf( "GenFBO<%d>\n", int(FboObj->mFBOMaster) );
-
-    //////////////////////////////////////////
-
-    for (int it = 0; it < inumtargets; it++) {
-      RtBuffer* pB = Base->GetMrt(it);
-      pB->SetSizeDirty(true);
-      //////////////////////////////////////////
-      Texture* ptex = new Texture;
-      GLTextureObject* ptexOBJ = new GLTextureObject;
-      GL_ERRORCHECK();
-      glGenTextures(1, (GLuint*)&FboObj->mTEX[it]);
-      GL_ERRORCHECK();
-      ptexOBJ->mObject = FboObj->mTEX[it];
-      //////////////////////////////////////////
-      ptex->_width=iw;
-      ptex->_height=ih;
-      ptex->_internalHandle=(void*)ptexOBJ;
-
-      ptex->setProperty<GLuint>("gltexobj", FboObj->mTEX[it]);
-
-      mTargetGL.TXI()->ApplySamplingMode(ptex);
-      pB->SetTexture(ptex);
-      //////////////////////////////////////////
-      ork::lev2::GfxMaterialUITextured* pmtl = new ork::lev2::GfxMaterialUITextured(&mTarget);
-      pmtl->SetTexture(ETEXDEST_DIFFUSE, ptex);
-      pB->SetMaterial(pmtl);
-      //////////////////////////////////////////
-    }
-    Base->SetSizeDirty(true);
-  }
-  GL_ERRORCHECK();
-
-  if (Base->IsSizeDirty()) {
-    //////////////////////////////////////////
-    // initialize depth renderbuffer
-    GL_ERRORCHECK();
-    glBindRenderbuffer(GL_RENDERBUFFER, FboObj->mDSBO);
-    GL_ERRORCHECK();
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, iw, ih);
-    GL_ERRORCHECK();
-
-    // glRenderbufferStorageMultisampleEXT( GL_RENDERBUFFER_EXT, 1, GL_DEPTH_COMPONENT24, iw, ih );
-
-    //////
-    // attach it to the FBO
-    //////
-    glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
-    GL_ERRORCHECK();
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, FboObj->mDSBO);
-    GL_ERRORCHECK();
-
-    //////
-    for (int it = 0; it < inumtargets; it++) {
-      RtBuffer* pB = Base->GetMrt(it);
-      // D3DFORMAT efmt = D3DFMT_A8R8G8B8;
-      GLuint glinternalformat = 0;
-      GLuint glformat = GL_RGBA;
-      GLenum gltype = 0;
-
-      switch (pB->GetBufferFormat()) {
-        case EBUFFMT_RGBA32:
-          glinternalformat = GL_RGBA8;
-          gltype = GL_UNSIGNED_BYTE;
-          break;
-        case EBUFFMT_RGBA64:
-          glinternalformat = GL_RGBA16F;
-          gltype = GL_HALF_FLOAT;
-          break;
-        case EBUFFMT_RGBA128:
-          glinternalformat = GL_RGBA32F;
-          gltype = GL_FLOAT;
-          break;
-        default:
-          OrkAssert(false);
-          break;
-          // case EBUFFMT_RGBA128: glinternalformat = GL_RGBA32; break;
-      }
-      OrkAssert(glinternalformat != 0);
-
-      //////////////////////////////////////////
-      // initialize texture
-      //////////////////////////////////////////
-
-      glBindTexture(GL_TEXTURE_2D, FboObj->mTEX[it]);
-      GL_ERRORCHECK();
-      glTexImage2D(GL_TEXTURE_2D, 0, glinternalformat, iw, ih, 0, glformat, gltype, NULL);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-      GL_ERRORCHECK();
-
-      // printf( "SetRtg::gentex<%d> w<%d> h<%d>\n", int(FboObj->mTEX[it]), iw,ih );
-
-      //////////////////////////////////////////
-      //////////////////////////////////////////
-      // attach texture to framebuffercolor buffer
-
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + it, GL_TEXTURE_2D, FboObj->mTEX[it], 0);
-      GL_ERRORCHECK();
-
-      pB->SetSizeDirty(false);
-    }
-    Base->SetSizeDirty(false);
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-
-    OrkAssert(status == GL_FRAMEBUFFER_COMPLETE);
-  }
-  GL_ERRORCHECK();
-
-  //////////////////////////////////////////////////
-  // enable mrts
-  //////////////////////////////////////////////////
-
-  GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
-
-  // printf( "SetRtg::BindFBO<%d> numattachments<%d>\n", int(FboObj->mFBOMaster), inumtargets );
-
-  glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
-  glBindRenderbuffer(GL_RENDERBUFFER, FboObj->mDSBO);
-  glDrawBuffers(inumtargets, buffers);
-  GL_ERRORCHECK();
-
-  //////////////////////////////////////////
-
-  static const SRasterState defstate;
-  mTarget.RSI()->BindRasterState(defstate, true);
-
-  mCurrentRtGroup = Base;
-
-  if (GetAutoClear()) {
-    glClearColor(mcClearColor.GetX(), mcClearColor.GetY(), mcClearColor.GetZ(), mcClearColor.GetW());
-    // glClearColor( 1.0f,1.0f,0.0f,1.0f );
-    GL_ERRORCHECK();
-    glClearDepth(1.0f);
-    glDepthRange(0.0, 1.0f);
-    GL_ERRORCHECK();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    GL_ERRORCHECK();
-  }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void GlFrameBufferInterface::PushScissor(const SRect& rScissorRect) {
   SRect OldRect;
-  OldRect.miX = miCurScissorX;
-  OldRect.miY = miCurScissorY;
+  OldRect.miX  = miCurScissorX;
+  OldRect.miY  = miCurScissorY;
   OldRect.miX2 = miCurScissorX + miCurScissorW;
   OldRect.miY2 = miCurScissorY + miCurScissorH;
-  OldRect.miW = miCurScissorW;
-  OldRect.miH = miCurScissorH;
+  OldRect.miW  = miCurScissorW;
+  OldRect.miH  = miCurScissorH;
 
   maScissorStack[miScissorStackIndex] = OldRect;
 
@@ -465,8 +249,8 @@ SRect& GlFrameBufferInterface::PopScissor(void) {
   miScissorStackIndex--;
 
   SRect& OldRect = maScissorStack[miScissorStackIndex];
-  int W = OldRect.miX2 - OldRect.miX;
-  int H = OldRect.miY2 - OldRect.miY;
+  int W          = OldRect.miX2 - OldRect.miX;
+  int H          = OldRect.miY2 - OldRect.miY;
 
   SetScissor(OldRect.miX, OldRect.miY, W, H);
   GL_ERRORCHECK();
@@ -533,21 +317,6 @@ void GlFrameBufferInterface::Clear(const fcolor4& color, float fdepth) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::SetSize(int ix, int iy, int iw, int ih) {
-  miX = ix;
-  miY = iy;
-  miW = iw;
-  miH = ih;
-  mTargetDrawableSizeDirty = true;
-  // mFbI.DeviceReset(ix,iy,iw,ih );
-}
-
-void GlFrameBufferInterface::ForceFlush(void) {
-  GL_ERRORCHECK();
-  // glFlush();
-  GL_ERRORCHECK();
-}
-
 void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Path& pth) {
   auto FboObj = (GlFboObject*)rtg.GetInternalHandle();
 
@@ -556,8 +325,8 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
 
   auto tex_id = FboObj->mTEX[irt];
 
-  int iw = rtg.GetW();
-  int ih = rtg.GetH();
+  int iw        = rtg.GetW();
+  int ih        = rtg.GetH();
   RtBuffer* rtb = rtg.GetMrt(irt);
 
   printf("pth<%s> BUFW<%d> BUF<%d>\n", pth.c_str(), iw, ih);
@@ -582,7 +351,7 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
   GL_ERRORCHECK();
 
   for (int ipix = 0; ipix < (iw * ih); ipix++) {
-    int ibyt = ipix * 4;
+    int ibyt   = ipix * 4;
     uint8_t c0 = pu8[ibyt + 0];
     uint8_t c1 = pu8[ibyt + 1];
     uint8_t c2 = pu8[ibyt + 2];
@@ -668,7 +437,7 @@ void GlFrameBufferInterface::GetPixel(const fvec4& rAt, GetPixelContext& ctx) {
 
               glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_FLOAT, (void*)rgba);
               GL_ERRORCHECK();
-              fvec4 rv = fvec4(rgba[0], rgba[1], rgba[2], rgba[3]);
+              fvec4 rv                  = fvec4(rgba[0], rgba[1], rgba[2], rgba[3]);
               ctx.mPickColors[MrtIndex] = rv;
 
               printf("getpix MrtIndex<%d> rx<%d> ry<%d> <%g %g %g %g>\n", MrtIndex, sx, sy, rv.x, rv.y, rv.z, rv.w);
@@ -695,7 +464,7 @@ GlFboObject::GlFboObject() {
   for (int i = 0; i < kmaxrt; i++) {
     mTEX[i] = 0;
   }
-  mDSBO = 0;
+  mDSBO      = 0;
   mFBOMaster = 0;
 }
 

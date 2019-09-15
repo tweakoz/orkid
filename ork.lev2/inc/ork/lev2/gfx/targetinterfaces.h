@@ -464,8 +464,6 @@ public:
   // Capture Interface
 
   virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) {}
-  // virtual void	Capture( GfxBuffer& inpbuf, const file::Path& pth ) {}
-  // virtual void	Capture( GfxBuffer& inpbuf, CaptureBuffer& buffer ) {}
   virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) { return false; }
   virtual void GetPixel(const fvec4& rAt, GetPixelContext& ctx) = 0;
 
@@ -473,7 +471,6 @@ public:
 
   void BeginFrame(void);
   void EndFrame(void);
-  virtual void ForceFlush(void) {}
   virtual void DoBeginFrame(void) = 0;
   virtual void DoEndFrame(void)   = 0;
 

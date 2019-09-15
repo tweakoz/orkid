@@ -233,7 +233,6 @@ void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 		mMatView = fmtx4::Identity;
 	if( mpGfxTarget != 0 )
 	{
-		//mpGfxTarget->FBI()->ForceFlush();
 		if(!_explicitViewMatrix)
 		{
 			//float fmag0 = mEye.MagSquared();
@@ -246,8 +245,6 @@ void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 
 			mMatView = mpGfxTarget->MTXI()->LookAt( mEye, mTarget, mUp );
 		}
-		//mpGfxTarget->FBI()->ForceFlush();
-
 
 		if( _explicitProjectionMatrix ){
 
@@ -269,7 +266,6 @@ void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 		else{
 			mMatProj = fmtx4::Identity;
 		}
-	//	mpGfxTarget->FBI()->ForceFlush();
 	}
 
 	calcctx.mVMatrix = mMatView;
@@ -292,7 +288,6 @@ void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 
 	if( mpGfxTarget )
 	{
-		//mpGfxTarget->FBI()->ForceFlush();
 		matgp_proj.Perspective( mAper, mfAspect, mNear, mFar );
 
 		if(_explicitViewMatrix)
@@ -303,11 +298,7 @@ void CameraData::CalcCameraData(CameraCalcContext& calcctx)
 		fmtx4 matgp_vp = matgp_view*matgp_proj;
 		matgp_ivp.inverseOf(matgp_vp);
 		matgp_iv.inverseOf(matgp_view);
-
-		//mpGfxTarget->FBI()->ForceFlush();
 	}
-
-	//mMatViewSet = true;
 
 	///////////////////////////////
     // generate frustum (useful for many things, like billboarding, clipping, LOD, etc.. )
