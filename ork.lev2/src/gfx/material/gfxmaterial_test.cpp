@@ -24,36 +24,7 @@ void GfxMaterial3DSolid::Describe() {}
 bool gearlyhack = true;
 
 GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
-    : meColorMode(EMODE_MOD_COLOR)
-    , hTekVertexColor(0)
-    , hTekVertexModColor(0)
-    , hTekTexColor(0)
-    , hTekTexModColor(0)
-    , hTekTexTexModColor(0)
-    , hTekModColor(0)
-    , hTekTexVertexColor(0)
-    , hMatMVP(0)
-    , hMatMV(0)
-    , hMatM(0)
-    , hMatV(0)
-    , hMatP(0)
-    , hParamModColor(0)
-    , mVolumeTexture(0)
-    , mCurrentTexture(0)
-    , mCurrentTexture2(0)
-    , mCurrentTexture3(0)
-    , mCurrentTexture4(0)
-    , hVolumeMap(0)
-    , hColorMap(0)
-    , hColorMap2(0)
-    , hColorMap3(0)
-    , hColorMap4(0)
-    , hParamUser0(0)
-    , hParamTime(0)
-    , hParamNoiseShift(0)
-    , hParamNoiseFreq(0)
-    , hParamNoiseAmp(0)
-    , hModFX(0) {
+    : meColorMode(EMODE_MOD_COLOR) {
   mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
   mRasterState.SetAlphaTest(EALPHATEST_OFF);
   mRasterState.SetBlending(EBLENDING_OFF);
@@ -75,40 +46,8 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(GfxTarget* pTARG)
 GfxMaterial3DSolid::GfxMaterial3DSolid(
     GfxTarget* pTARG, const char* puserfx, const char* pusertek, bool allowcompilefailure, bool unmanaged)
     : meColorMode(EMODE_USER)
-    , hTekVertexColor(0)
-    , hTekVertexModColor(0)
-    , hTekTexColor(0)
-    , hTekTexModColor(0)
-    , hTekTexTexModColor(0)
-    , hTekModColor(0)
-    , hTekTexVertexColor(0)
-    , hMatMVP(0)
-    , hMatMVPL(0)
-    , hMatMVPR(0)
-    , hMatMVPC(0)
-    , hMatMV(0)
-    , hMatM(0)
-    , hMatV(0)
-    , hMatP(0)
-    , hParamModColor(0)
-    , mVolumeTexture(0)
-    , mCurrentTexture(0)
-    , mCurrentTexture2(0)
-    , mCurrentTexture3(0)
-    , mCurrentTexture4(0)
     , mUserFxName(puserfx)
     , mUserTekName(pusertek)
-    , hVolumeMap(0)
-    , hColorMap(0)
-    , hColorMap2(0)
-    , hColorMap3(0)
-    , hColorMap4(0)
-    , hParamUser0(0)
-    , hParamNoiseShift(0)
-    , hParamNoiseFreq(0)
-    , hParamNoiseAmp(0)
-    , hParamTime(0)
-    , hModFX(0)
     , mUnManaged(unmanaged)
     , mAllowCompileFailure(allowcompilefailure) {
 
@@ -142,6 +81,8 @@ GfxMaterial3DSolid::GfxMaterial3DSolid(
 
 void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
 
+  auto fxi = pTarg->FXI();
+
   if (mUserFxName.length()) {
     FxShaderAsset* passet = nullptr;
 
@@ -163,49 +104,50 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
     return;
   }
   if (mUserTekName.length()) {
-    hTekUser = pTarg->FXI()->GetTechnique(hModFX, mUserTekName.c_str());
+    hTekUser       = fxi->GetTechnique(hModFX, mUserTekName);
+    hTekUserStereo = fxi->GetTechnique(hModFX, mUserTekName + "_stereo");
   }
   if (meColorMode != EMODE_USER) {
-    hTekVertexColor    = pTarg->FXI()->GetTechnique(hModFX, "vtxcolor");
-    hTekVertexModColor = pTarg->FXI()->GetTechnique(hModFX, "vtxmodcolor");
-    hTekModColor       = pTarg->FXI()->GetTechnique(hModFX, "mmodcolor");
-    hTekTexColor       = pTarg->FXI()->GetTechnique(hModFX, "texcolor");
-    hTekTexModColor    = pTarg->FXI()->GetTechnique(hModFX, "texmodcolor");
-    hTekTexTexModColor = pTarg->FXI()->GetTechnique(hModFX, "textexmodcolor");
-    hTekTexVertexColor = pTarg->FXI()->GetTechnique(hModFX, "texvtxcolor");
+    hTekVertexColor    = fxi->GetTechnique(hModFX, "vtxcolor");
+    hTekVertexModColor = fxi->GetTechnique(hModFX, "vtxmodcolor");
+    hTekModColor       = fxi->GetTechnique(hModFX, "mmodcolor");
+    hTekTexColor       = fxi->GetTechnique(hModFX, "texcolor");
+    hTekTexModColor    = fxi->GetTechnique(hModFX, "texmodcolor");
+    hTekTexTexModColor = fxi->GetTechnique(hModFX, "textexmodcolor");
+    hTekTexVertexColor = fxi->GetTechnique(hModFX, "texvtxcolor");
   }
 
-  hTekPick = pTarg->FXI()->GetTechnique(hModFX, "tek_pick");
+  hTekPick = fxi->GetTechnique(hModFX, "tek_pick");
 
-  hMatAux = pTarg->FXI()->GetParameterH(hModFX, "MatAux");
-  hMatRot = pTarg->FXI()->GetParameterH(hModFX, "MatRotW");
+  hMatAux = fxi->GetParameterH(hModFX, "MatAux");
+  hMatRot = fxi->GetParameterH(hModFX, "MatRotW");
 
-  hMatMVPL       = pTarg->FXI()->GetParameterH(hModFX, "MatMVPL");
-  hMatMVPR       = pTarg->FXI()->GetParameterH(hModFX, "MatMVPR");
-  hMatMVPC       = pTarg->FXI()->GetParameterH(hModFX, "MatMVPC");
-  hMatMVP        = pTarg->FXI()->GetParameterH(hModFX, "MatMVP");
-  hMatMV         = pTarg->FXI()->GetParameterH(hModFX, "MatMV");
-  hMatV          = pTarg->FXI()->GetParameterH(hModFX, "MatV");
-  hMatM          = pTarg->FXI()->GetParameterH(hModFX, "MatM");
-  hMatP          = pTarg->FXI()->GetParameterH(hModFX, "MatP");
-  hParamModColor = pTarg->FXI()->GetParameterH(hModFX, "modcolor");
+  hMatMVPL       = fxi->GetParameterH(hModFX, "MatMVPL");
+  hMatMVPR       = fxi->GetParameterH(hModFX, "MatMVPR");
+  hMatMVPC       = fxi->GetParameterH(hModFX, "MatMVPC");
+  hMatMVP        = fxi->GetParameterH(hModFX, "MatMVP");
+  hMatMV         = fxi->GetParameterH(hModFX, "MatMV");
+  hMatV          = fxi->GetParameterH(hModFX, "MatV");
+  hMatM          = fxi->GetParameterH(hModFX, "MatM");
+  hMatP          = fxi->GetParameterH(hModFX, "MatP");
+  hParamModColor = fxi->GetParameterH(hModFX, "modcolor");
 
-  hVolumeMap = pTarg->FXI()->GetParameterH(hModFX, "VolumeMap");
-  hColorMap  = pTarg->FXI()->GetParameterH(hModFX, "ColorMap");
-  hColorMap2 = pTarg->FXI()->GetParameterH(hModFX, "ColorMap2");
-  hColorMap3 = pTarg->FXI()->GetParameterH(hModFX, "ColorMap3");
-  hColorMap4 = pTarg->FXI()->GetParameterH(hModFX, "ColorMap4");
+  hVolumeMap = fxi->GetParameterH(hModFX, "VolumeMap");
+  hColorMap  = fxi->GetParameterH(hModFX, "ColorMap");
+  hColorMap2 = fxi->GetParameterH(hModFX, "ColorMap2");
+  hColorMap3 = fxi->GetParameterH(hModFX, "ColorMap3");
+  hColorMap4 = fxi->GetParameterH(hModFX, "ColorMap4");
 
-  hParamUser0 = pTarg->FXI()->GetParameterH(hModFX, "User0");
-  hParamUser1 = pTarg->FXI()->GetParameterH(hModFX, "User1");
-  hParamUser2 = pTarg->FXI()->GetParameterH(hModFX, "User2");
-  hParamUser3 = pTarg->FXI()->GetParameterH(hModFX, "User3");
+  hParamUser0 = fxi->GetParameterH(hModFX, "User0");
+  hParamUser1 = fxi->GetParameterH(hModFX, "User1");
+  hParamUser2 = fxi->GetParameterH(hModFX, "User2");
+  hParamUser3 = fxi->GetParameterH(hModFX, "User3");
 
-  hParamTime = pTarg->FXI()->GetParameterH(hModFX, "Time");
+  hParamTime = fxi->GetParameterH(hModFX, "Time");
 
-  hParamNoiseAmp   = pTarg->FXI()->GetParameterH(hModFX, "NoiseAmp");
-  hParamNoiseFreq  = pTarg->FXI()->GetParameterH(hModFX, "NoiseFreq");
-  hParamNoiseShift = pTarg->FXI()->GetParameterH(hModFX, "NoiseShift");
+  hParamNoiseAmp   = fxi->GetParameterH(hModFX, "NoiseAmp");
+  hParamNoiseFreq  = fxi->GetParameterH(hModFX, "NoiseFreq");
+  hParamNoiseShift = fxi->GetParameterH(hModFX, "NoiseShift");
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -218,9 +160,14 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 
 /////////////////////////////////////////////////////////////////////////
 
-int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& MatCtx) {
+int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
 
-  if (pTarg->FBI()->IsPickState() and _enablePick and hTekPick) {
+  const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
+  const ork::CameraData* cdata       = RCFD->GetCameraData();
+  bool is_picking                    = RCFD->isPicking();
+  bool is_stereo                     = RCFD->isStereoOnePass();
+
+  if (is_picking and _enablePick and hTekPick) {
     pTarg->FXI()->BindTechnique(hModFX, hTekPick);
   } else
     switch (meColorMode) {
@@ -249,10 +196,10 @@ int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData
         pTarg->FXI()->BindTechnique(hModFX, hTekTexVertexColor);
         break;
       case EMODE_USER:
-        pTarg->FXI()->BindTechnique(hModFX, hTekUser);
+        pTarg->FXI()->BindTechnique(hModFX, is_stereo ? hTekUserStereo : hTekUser);
         break;
     }
-  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, MatCtx);
+  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, RCID);
   return inumpasses;
 }
 
@@ -268,12 +215,11 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   if (gbskip)
     return false;
 
-  const RenderContextInstData* rdata   = pTarg->GetRenderContextInstData();
-  const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-  const CameraData* camdata            = rfdata ? rfdata->GetCameraData() : 0;
-  bool bforcenoz                       = rdata->IsForceNoZWrite();
-
-  // mRasterState.SetZWriteMask( ! bforcenoz );
+  const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
+  const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
+  const CameraData* camdata          = RCFD ? RCFD->GetCameraData() : 0;
+  bool is_stereo                     = RCFD->isStereoOnePass();
+  bool is_forcenoz                   = RCID->IsForceNoZWrite();
 
   pTarg->RSI()->BindRasterState(mRasterState);
   pTarg->FXI()->BindPass(hModFX, iPass);
@@ -287,7 +233,24 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   FXI->BindParamMatrix(hModFX, hMatM, MTXI->RefMMatrix());
   FXI->BindParamMatrix(hModFX, hMatMV, MTXI->RefMVMatrix());
   FXI->BindParamMatrix(hModFX, hMatP, MTXI->RefPMatrix());
-  FXI->BindParamMatrix(hModFX, hMatMVP, MTXI->RefMVPMatrix());
+
+  if (is_stereo) {
+    fmtx4 VL, PL, VR, PR;
+    if (auto try_lcam = RCFD->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
+      VL = try_lcam.value()->GetVMatrix();
+      PL = try_lcam.value()->GetPMatrix();
+    }
+    if (auto try_rcam = RCFD->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
+      VR = try_rcam.value()->GetVMatrix();
+      PR = try_rcam.value()->GetPMatrix();
+    }
+    auto MVL = (MTXI->RefMMatrix() * VL);
+    auto MVR = (MTXI->RefMMatrix() * VR);
+    FXI->BindParamMatrix(hModFX, hMatMVPL, (MVL * PL));
+    FXI->BindParamMatrix(hModFX, hMatMVPR, (MVR * PR));
+  } else {
+    FXI->BindParamMatrix(hModFX, hMatMVP, MTXI->RefMVPMatrix());
+  }
 
   FXI->BindParamMatrix(hModFX, hMatAux, mMatAux);
 

@@ -1,398 +1,479 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default
-{
-	glsl_version = "330";
-}
+fxconfig fxcfg_default { glsl_version = "330"; }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-uniform_block ublock_vtx
-{
-	uniform mat4        MatM;
-	uniform mat4        MatV;
-	uniform mat4        MatP;
-	uniform mat4        MatMV;
-	uniform mat4        MatMVP;
-	uniform mat4        MatAux;
-	uniform vec4		modcolor;
-	uniform vec4        User0;
-	uniform vec4        User1;
-	uniform vec4        User2;
-	uniform vec4        User3;
-	uniform float		Time;
-	uniform vec4		NoiseShift;
-	uniform vec4		NoiseFreq;
-	uniform vec4		NoiseAmp;
+uniform_block ublock_vtx {
+  uniform mat4 MatM;
+  uniform mat4 MatV;
+  uniform mat4 MatP;
+  uniform mat4 MatMV;
+  uniform mat4 MatMVP;
+  uniform mat4 MatAux;
+  uniform vec4 modcolor;
+  uniform vec4 User0;
+  uniform vec4 User1;
+  uniform vec4 User2;
+  uniform vec4 User3;
+  uniform float Time;
+  uniform vec4 NoiseShift;
+  uniform vec4 NoiseFreq;
+  uniform vec4 NoiseAmp;
 }
 
-uniform_block ublock_geo
-{
-	uniform mat4 MatP;
-	uniform mat4 MatV;
-	uniform mat4 MatMVP;
-	uniform vec4 User0;
-	uniform vec4 User1;
-	uniform vec4 User2;
+uniform_block ublock_geo {
+  uniform mat4 MatP;
+  uniform mat4 MatV;
+  uniform mat4 MatMVP;
+  uniform mat4 MatMVPL;
+  uniform mat4 MatMVPR;
+  uniform vec4 User0;
+  uniform vec4 User1;
+  uniform vec4 User2;
 }
 
-uniform_block ublock_frg
-{
-	uniform vec4 modcolor;
-	uniform vec4 User0;
-	uniform sampler2D ColorMap;
-	uniform sampler3D VolumeMap;
+uniform_block ublock_frg {
+  uniform vec4 modcolor;
+  uniform vec4 User0;
+  uniform sampler2D ColorMap;
+  uniform sampler3D VolumeMap;
 }
 
 ///////////////////////////////////////////////////////////////
-fragment_interface fface_minimal
-	: ublock_frg
-{
-	in vec4 frg_clr;
-	in vec4 frg_uv0;
-	in vec4 frg_uv1;
-	//
-	out vec4 out_clr;
+fragment_interface fface_minimal : ublock_frg {
+  in vec4 frg_clr;
+  in vec4 frg_uv0;
+  in vec4 frg_uv1;
+  //
+  out vec4 out_clr;
 }
-fragment_interface fface_psys
-	: ublock_frg
-{
-	//
-	in vec4 frg_clr;
-	in vec4 frg_uv0;
-	in vec4 frg_uv1;
-	//
-	out vec4 out_clr;
+fragment_interface fface_psys : ublock_frg {
+  //
+  in vec4 frg_clr;
+  in vec4 frg_uv0;
+  in vec4 frg_uv1;
+  //
+  out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default
-{
-	inherits default;
-	//DepthTest=LEQUALS;
-	//DepthMask=true;
-	//CullTest=PASS_FRONT;
+state_block sb_default {
+  inherits default;
+  // DepthTest=LEQUALS;
+  // DepthMask=true;
+  // CullTest=PASS_FRONT;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend
-{
-	inherits sb_default;
-	BlendMode = ADDITIVE;
+state_block sb_lerpblend {
+  inherits sb_default;
+  BlendMode = ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_additive
-{
-	inherits sb_default;
-	BlendMode = ADDITIVE;
+state_block sb_additive {
+  inherits sb_default;
+  BlendMode = ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_alpadd
-{
-	inherits sb_default;
-	BlendMode = ALPHA_ADDITIVE;
+state_block sb_alpadd {
+  inherits sb_default;
+  BlendMode = ALPHA_ADDITIVE;
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_bill
-	: ublock_vtx
-{
-	in vec4 position : POSITION;
-	in vec4 vtxcolor : COLOR0;
-	in vec4 uv0 : TEXCOORD0;
-	in vec4 uv1 : TEXCOORD1;
-	//
-	out vec4 geo_clr;
-	out vec4 geo_uv0;
-	out vec4 geo_uv1;
+vertex_interface vface_bill : ublock_vtx {
+  in vec4 position : POSITION;
+  in vec4 vtxcolor : COLOR0;
+  in vec4 uv0 : TEXCOORD0;
+  in vec4 uv1 : TEXCOORD1;
+  //
+  out vec4 geo_clr;
+  out vec4 geo_uv0;
+  out vec4 geo_uv1;
 }
-vertex_shader vs_vtxcolor
-	: vface_bill
-{
-	gl_Position = position;
-	geo_clr = vtxcolor;
-	geo_uv0 = uv0;
-	geo_uv1 = uv1;
+vertex_shader vs_vtxcolor : vface_bill {
+  gl_Position = position;
+  geo_clr     = vtxcolor;
+  geo_uv0     = uv0;
+  geo_uv1     = uv1;
 }
-vertex_shader vs_vtxtexcolor
-	: vface_bill
-{
-	gl_Position = position;
-	geo_clr = vtxcolor.rgba;
-	geo_uv0 = uv0;
-	geo_uv1 = uv1;
+vertex_shader vs_vtxtexcolor : vface_bill {
+  gl_Position = position;
+  geo_clr     = vtxcolor.rgba;
+  geo_uv0     = uv0;
+  geo_uv1     = uv1;
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_base
-	: ublock_geo
-{
-	layout (points) in;
-	layout (triangle_strip, max_vertices=4) out;
-	//
+geometry_interface gface_base : ublock_geo {
+  layout(points) in;
+  layout(triangle_strip, max_vertices = 4) out;
+  //
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_bill
+geometry_interface gface_bill : gface_base : vface_bill // import vtxshader outputs
+{
+  out vec4 frg_clr;
+  out vec4 frg_uv0;
+  out vec4 frg_uv1;
+}
+///////////////////////////////////////////////////////////////
+geometry_shader gs_identity : gface_bill {
+  for (int n = 0; n < gl_in.length(); n++) {
+    gl_Position = gl_in[n].gl_Position;
+    frg_clr     = geo_clr[n];
+    frg_uv0     = geo_uv0[n];
+    frg_uv1     = geo_uv1[n];
+    EmitVertex();
+  }
+  EndPrimitive();
+}
+///////////////////////////////////////////////////////////////
+libblock lib_billboard {
+  struct Input {
+    vec4 inp_clr;
+    vec4 inp_uv1;
+    vec4 inp_ang_siz;
+    vec3 inp_pos;
+  };
+  struct Output {
+    vec4 pos0, pos1, pos2, pos3;
+    vec4 uv0, uv1, uv2, uv3;
+  };
+  Output Compute(Input inp, mat4 mvp) {
+    Output outp;
+    frg_clr = inp.inp_clr;
+    frg_uv1 = inp.inp_uv1;
+
+    float ftexanimdim = User2.x;
+    int texanimdim    = int(ftexanimdim);
+    int texcnt        = int(User2.y);
+
+    bool is_texanim = texanimdim > 1;
+
+    float ang = inp.inp_ang_siz.x;
+    float siz = inp.inp_ang_siz.y;
+
+    vec3 nxny = User0.xyz;
+    vec3 nxpy = User1.xyz;
+
+    float sinfr = sin(ang) * siz;
+    float cosfr = cos(ang) * siz;
+    vec3 rota   = (nxny * cosfr) + (nxpy * sinfr);
+    vec3 rotb   = (nxpy * cosfr) - (nxny * sinfr);
+
+    vec3 ctr = inp.inp_pos;
+    vec3 p0  = ctr + rota;
+    vec3 p1  = ctr + rotb;
+    vec3 p2  = ctr - rota;
+    vec3 p3  = ctr - rotb;
+
+    outp.pos0 = mvp * vec4(p0, 1.0);
+    outp.pos1 = mvp * vec4(p1, 1.0);
+    outp.pos2 = mvp * vec4(p2, 1.0);
+    outp.pos3 = mvp * vec4(p3, 1.0);
+
+    outp.uv0 = vec4(0.0, 0.0, 0.0, 0.0);
+    outp.uv1 = vec4(1.0, 0.0, 0.0, 0.0);
+    outp.uv2 = vec4(1.0, 1.0, 0.0, 0.0);
+    outp.uv3 = vec4(0.0, 1.0, 0.0, 0.0);
+
+    if (is_texanim) {
+      float ftexframe = frg_uv1.x;
+      int itexframe   = int(ftexframe) % texcnt;
+      int ifrX        = itexframe % texanimdim;
+      int ifrY        = itexframe / texanimdim;
+      float ftexs     = 1.0f / ftexanimdim;
+      float fu0       = float(ifrX) * ftexs;
+      float fu1       = float(ifrX + 1) * ftexs;
+      float fv0       = float(ifrY) * ftexs;
+      float fv1       = float(ifrY + 1) * ftexs;
+      outp.uv0        = vec4(fu0, fv0, 0.0, 0.0);
+      outp.uv1        = vec4(fu1, fv0, 0.0, 0.0);
+      outp.uv2        = vec4(fu1, fv1, 0.0, 0.0);
+      outp.uv3        = vec4(fu0, fv1, 0.0, 0.0);
+    }
+		return outp;
+  }
+}
+geometry_shader gs_billboardquad
+	: lib_billboard
+	: gface_bill {
+  Input inp;
+  inp.inp_clr     = geo_clr[0];
+  inp.inp_ang_siz = geo_uv0[0];
+  inp.inp_uv1     = geo_uv1[0];
+  inp.inp_pos     = gl_in[0].gl_Position.xyz;
+  Output outp     = Compute(inp, MatMVP);
+  gl_Position     = outp.pos0;
+  frg_uv0         = outp.uv0;
+  EmitVertex();
+  gl_Position = outp.pos1;
+  frg_uv0     = outp.uv1;
+  EmitVertex();
+  gl_Position = outp.pos3;
+  frg_uv0     = outp.uv3;
+  EmitVertex();
+  gl_Position = outp.pos2;
+  frg_uv0     = outp.uv2;
+  EmitVertex();
+  EndPrimitive();
+}
+///////////////////////////////////////////////////////////////
+geometry_interface gface_bill_stereo
 	: gface_base
 	: vface_bill // import vtxshader outputs
-{
-	out vec4 frg_clr;
-	out vec4 frg_uv0;
-	out vec4 frg_uv1;
+{	// TODO recursive walk up inheritance tree for attribute out->in inheritance
+  out vec4 frg_clr;
+  out vec4 frg_uv0;
+  out vec4 frg_uv1;
+	layout(secondary_view_offset = 1) out highp int gl_Layer;
+}
+geometry_shader gs_billboardquad_stereo
+		: gface_bill_stereo
+		: extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2)
+    : lib_billboard {
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  Input inp;
+  inp.inp_clr            = geo_clr[0];
+  inp.inp_ang_siz        = geo_uv0[0];
+  inp.inp_uv1            = geo_uv1[0];
+  inp.inp_pos            = gl_in[0].gl_Position.xyz;
+  Output outpL           = Compute(inp, MatMVPL);
+  Output outpR           = Compute(inp, MatMVPR);
+  gl_Position            = outpL.pos0;
+  gl_SecondaryPositionNV = outpR.pos0;
+  frg_uv0                = outpL.uv0;
+  EmitVertex();
+  gl_Position            = outpL.pos1;
+  gl_SecondaryPositionNV = outpR.pos1;
+  frg_uv0                = outpL.uv1;
+  EmitVertex();
+  gl_Position            = outpL.pos3;
+  gl_SecondaryPositionNV = outpR.pos3;
+  frg_uv0                = outpL.uv3;
+  EmitVertex();
+  gl_Position            = outpL.pos2;
+  gl_SecondaryPositionNV = outpR.pos2;
+  frg_uv0                = outpL.uv2;
+  EmitVertex();
+  EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-geometry_shader gs_identity
-	: gface_bill
-{
-	for( int n=0; n<gl_in.length(); n++ )
-	{
-		gl_Position = gl_in[n].gl_Position;
-		frg_clr = geo_clr[n];
-		frg_uv0 = geo_uv0[n];
-		frg_uv1 = geo_uv1[n];
-		EmitVertex();
-	}
-	EndPrimitive();
+tessctrl_interface tcface_base { layout(vertices = 4) out; }
+///////////////////////////////////////////////////////////////
+tessctrl_shader tcs_passthru : tcface_base {
+  int invid                 = gl_InvocationID;
+  gl_out[invid].gl_Position = gl_in[invid].gl_Position;
 }
 ///////////////////////////////////////////////////////////////
-geometry_shader gs_billboardquad
-	: gface_bill
-{
-	frg_clr = geo_clr[0];
-	frg_uv1 = geo_uv1[0];
-
-	float ftexanimdim = User2.x;
-	int texanimdim = int(ftexanimdim);
-	int texcnt = int(User2.y);
-
-    bool is_texanim = texanimdim>1;
-
-	float ang = geo_uv0[0].x;
-	float siz = geo_uv0[0].y;
-
-	vec3 nxny = User0.xyz;
-	vec3 nxpy = User1.xyz;
-
-	float sinfr = sin(ang)*siz;
-	float cosfr = cos(ang)*siz;
-	vec3 rota = (nxny*cosfr)+(nxpy*sinfr);
-	vec3 rotb = (nxpy*cosfr)-(nxny*sinfr);
-
-	vec3 ctr = gl_in[0].gl_Position.xyz;
-	vec3 p0 = ctr+rota;
-	vec3 p1 = ctr+rotb;
-	vec3 p2 = ctr-rota;
-	vec3 p3 = ctr-rotb;
-
-	vec4 pos0 = MatMVP * vec4(p0,1.0);
-	vec4 pos1 = MatMVP * vec4(p1,1.0);
-	vec4 pos2 = MatMVP * vec4(p2,1.0);
-	vec4 pos3 = MatMVP * vec4(p3,1.0);
-
-	vec4 uv0 = vec4(0.0,0.0,0.0,0.0);
-	vec4 uv1 = vec4(1.0,0.0,0.0,0.0);
-	vec4 uv2 = vec4(1.0,1.0,0.0,0.0);
-	vec4 uv3 = vec4(0.0,1.0,0.0,0.0);
-
-	if( is_texanim )
-	{
-		float ftexframe = frg_uv1.x;
-		int itexframe = int(ftexframe)%texcnt;
-		int ifrX = itexframe%texanimdim;
-		int ifrY = itexframe/texanimdim;
-		float ftexs = 1.0f/ftexanimdim;
-		float fu0 = float(ifrX)*ftexs;
-		float fu1 = float(ifrX+1)*ftexs;
-		float fv0 = float(ifrY)*ftexs;
-		float fv1 = float(ifrY+1)*ftexs;
-		uv0 = vec4( fu0, fv0, 0.0, 0.0 );
-		uv1 = vec4( fu1, fv0, 0.0, 0.0 );
-		uv2 = vec4( fu1, fv1, 0.0, 0.0 );
-		uv3 = vec4( fu0, fv1, 0.0, 0.0 );
-	}
-
-	gl_Position = pos0;
-	frg_uv0 = uv0;
-	EmitVertex();
-	gl_Position = pos1;
-	frg_uv0 = uv1;
-	EmitVertex();
-	gl_Position = pos3;
-	frg_uv0 = uv3;
-	EmitVertex();
-	gl_Position = pos2;
-	frg_uv0 = uv2;
-	EmitVertex();
-
-	EndPrimitive();
+vertex_interface vface_streak : ublock_vtx {
+  in vec4 position : POSITION;
+  in vec4 normal : NORMAL;
+  in vec4 binormal : BINORMAL;
+  in vec4 vtxcolor : COLOR0;
+  in vec4 uv0 : TEXCOORD0;
+  //
+  out vec4 geo_cnrm;
+  out vec4 geo_vel;
+  out vec4 geo_clr;
+  out vec4 geo_lw;
 }
 ///////////////////////////////////////////////////////////////
-tessctrl_interface tcface_base
-{
-	layout (vertices=4) out;
+vertex_shader vs_streak : vface_streak {
+  gl_Position = position;
+  geo_clr     = vtxcolor.rgba;
+  geo_cnrm    = normal;
+  geo_vel     = binormal;
+  geo_lw      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-tessctrl_shader tcs_passthru : tcface_base
+geometry_interface gface_streak : gface_base : vface_streak // import vtxshader outputs
 {
-	int invid = gl_InvocationID;
-	gl_out[invid].gl_Position = gl_in[invid].gl_Position;
+  out vec4 frg_clr;
+  out vec4 frg_uv0;
+}
+libblock lib_streak {
+  struct Output {
+    vec4 pos0, pos1, pos2, pos3;
+  };
+  Output Compute(mat4 mvp) {
+    Output outp;
+    vec3 vel  = geo_vel[0].xyz;
+    vec3 cnrm = geo_cnrm[0].xyz;
+    float wid = geo_lw[0].x;
+    float len = geo_lw[0].y;
+
+    vec3 pos = gl_in[0].gl_Position.xyz;
+
+    vec3 lpos = pos - vel * len;
+    vec3 crs  = wid * normalize(cross(vel, cnrm));
+
+    vec3 p0 = pos + crs;
+    vec3 p1 = pos - crs;
+    vec3 p2 = lpos - crs;
+    vec3 p3 = lpos + crs;
+
+    outp.pos0 = mvp * vec4(p0, 1.0);
+    outp.pos1 = mvp * vec4(p1, 1.0);
+    outp.pos2 = mvp * vec4(p2, 1.0);
+    outp.pos3 = mvp * vec4(p3, 1.0);
+
+    return outp;
+  }
+}
+geometry_shader gs_streak
+	: gface_streak
+	: lib_streak {
+  Output outp = Compute(MatMVP);
+  frg_clr     = geo_clr[0];
+  gl_Position = outp.pos0;
+  frg_uv0     = vec4(0.0, 0.0, 0.0, 0.0);
+  EmitVertex();
+  gl_Position = outp.pos1;
+  frg_uv0     = vec4(1.0, 0.0, 0.0, 0.0);
+  EmitVertex();
+  gl_Position = outp.pos3;
+  frg_uv0     = vec4(0.0, 1.0, 0.0, 0.0);
+  EmitVertex();
+  gl_Position = outp.pos2;
+  frg_uv0     = vec4(1.0, 1.0, 0.0, 0.0);
+  EmitVertex();
+  EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface vface_streak
-	: ublock_vtx
-{
-	in vec4 position : POSITION;
-	in vec4 normal : NORMAL;
-	in vec4 binormal : BINORMAL;
-	in vec4 vtxcolor : COLOR0;
-	in vec4 uv0 : TEXCOORD0;
-	//
-	out vec4 geo_cnrm;
-	out vec4 geo_vel;
-	out vec4 geo_clr;
-	out vec4 geo_lw;
-}
-vertex_shader vs_streak : vface_streak
-{
-	gl_Position = position;
-	geo_clr = vtxcolor.rgba;
-	geo_cnrm = normal;
-	geo_vel = binormal;
-	geo_lw = uv0;
-}
-geometry_interface gface_streak
+geometry_interface gface_streak_stereo
 	: gface_base
 	: vface_streak // import vtxshader outputs
-{
+{	// TODO recursive walk up inheritance tree for attribute out->in inheritance
 	out vec4 frg_clr;
-	out vec4 frg_uv0;
+  out vec4 frg_uv0;
+	layout(secondary_view_offset = 1) out highp int gl_Layer;
 }
-geometry_shader gs_streak : gface_streak
-{
-	frg_clr = geo_clr[0];
-	vec3 vel = geo_vel[0].xyz;
-	vec3 cnrm = geo_cnrm[0].xyz;
-	float wid = geo_lw[0].x;
-	float len = geo_lw[0].y;
-
-	vec3 pos = gl_in[0].gl_Position.xyz;
-
-	vec3 lpos = pos-vel*len;
-	vec3 crs = wid*normalize(cross(vel,cnrm));
-
-	vec3 p0 = pos+crs;
-	vec3 p1 = pos-crs;
-	vec3 p2 = lpos-crs;
-	vec3 p3 = lpos+crs;
-
-	vec4 pos0 = MatMVP * vec4(p0,1.0);
-	vec4 pos1 = MatMVP * vec4(p1,1.0);
-	vec4 pos2 = MatMVP * vec4(p2,1.0);
-	vec4 pos3 = MatMVP * vec4(p3,1.0);
-
-	vec4 uv0 = vec4(0.0,0.0,0.0,0.0);
-	vec4 uv1 = vec4(1.0,0.0,0.0,0.0);
-	vec4 uv2 = vec4(1.0,1.0,0.0,0.0);
-	vec4 uv3 = vec4(0.0,1.0,0.0,0.0);
-
-	gl_Position = pos0;
-	frg_uv0 = uv0;
-	EmitVertex();
-	gl_Position = pos1;
-	frg_uv0 = uv1;
-	EmitVertex();
-	gl_Position = pos3;
-	frg_uv0 = uv3;
-	EmitVertex();
-	gl_Position = pos2;
-	frg_uv0 = uv2;
-	EmitVertex();
-
-	EndPrimitive();
-
+geometry_shader gs_streak_stereo
+		: extension(GL_NV_stereo_view_rendering)
+    : extension(GL_NV_viewport_array2)
+    : gface_streak_stereo
+		: lib_streak {
+  gl_Layer                      = 0;
+  gl_ViewportMask[0]            = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  Output outpL                  = Compute(MatMVPL);
+  Output outpR                  = Compute(MatMVPR);
+  frg_clr                       = geo_clr[0];
+  gl_Position                   = outpL.pos0;
+  gl_SecondaryPositionNV        = outpR.pos0;
+  frg_uv0                       = vec4(0.0, 0.0, 0.0, 0.0);
+  EmitVertex();
+  gl_Position            = outpL.pos1;
+  gl_SecondaryPositionNV = outpR.pos1;
+  frg_uv0                = vec4(1.0, 0.0, 0.0, 0.0);
+  EmitVertex();
+  gl_Position            = outpL.pos3;
+  gl_SecondaryPositionNV = outpR.pos3;
+  frg_uv0                = vec4(0.0, 1.0, 0.0, 0.0);
+  EmitVertex();
+  gl_Position            = outpL.pos2;
+  gl_SecondaryPositionNV = outpR.pos2;
+  frg_uv0                = vec4(1.0, 1.0, 0.0, 0.0);
+  EmitVertex();
+  EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr : fface_psys
-{
-	out_clr = modcolor;
+fragment_shader ps_modclr : fface_psys { out_clr = modcolor; }
+fragment_shader ps_fragclr : fface_minimal { out_clr = frg_clr; }
+fragment_shader ps_modtex : fface_psys {
+  vec4 texc = texture(ColorMap, frg_uv0.xy);
+  out_clr   = texc * modcolor;
+  if (out_clr.a == 0.0f)
+    discard;
 }
-fragment_shader ps_fragclr : fface_minimal
-{
-	out_clr = frg_clr;
-}
-fragment_shader ps_modtex : fface_psys
-{
-	vec4 texc = texture( ColorMap, frg_uv0.xy );
-	out_clr = texc*modcolor;
-	if( out_clr.a==0.0f ) discard;
-}
-fragment_shader ps_modtexclr : fface_psys
-{
-	vec4 texc = texture( ColorMap, frg_uv0.xy );
-	out_clr = texc*modcolor*frg_clr;
+fragment_shader ps_modtexclr : fface_psys {
+  vec4 texc = texture(ColorMap, frg_uv0.xy);
+  out_clr   = texc * modcolor * frg_clr;
 
-	float alp = out_clr.r*User0.r
-	          + out_clr.g*User0.g
-	          + out_clr.b*User0.b
-	          + out_clr.a*User0.a;
+  float alp = out_clr.r * User0.r + out_clr.g * User0.g + out_clr.b * User0.b + out_clr.a * User0.a;
 
-	out_clr.a = alp;
+  out_clr.a = alp;
 
-	if( alp==0.0f ) discard;
+  if (alp == 0.0f)
+    discard;
 }
-fragment_shader ps_volume : fface_psys
-{
-	vec2 uv = frg_uv0.xy;
-	float w = frg_uv1.x;
-	vec3 uvw = vec3(uv,w);
-    vec4 TexInp0 = texture( VolumeMap, uvw ).xyzw;
-	out_clr = TexInp0.bgra*modcolor*frg_clr.bgra;
+fragment_shader ps_volume : fface_psys {
+  vec2 uv      = frg_uv0.xy;
+  float w      = frg_uv1.x;
+  vec3 uvw     = vec3(uv, w);
+  vec4 TexInp0 = texture(VolumeMap, uvw).xyzw;
+  out_clr      = TexInp0.bgra * modcolor * frg_clr.bgra;
 }
 ///////////////////////////////////////////////////////////////
-technique tbasicparticle
-{	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_vtxtexcolor;
-		geometry_shader=gs_billboardquad;
-		fragment_shader=ps_modtexclr;
-		state_block=sb_default;
-	}
+technique tbasicparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolor;
+    geometry_shader = gs_billboardquad;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
 }
-technique tstreakparticle
-{	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_streak;
-		geometry_shader=gs_streak;
-		fragment_shader=ps_modtexclr;
-		state_block=sb_default;
-	}
+technique tbasicparticle_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxtexcolor;
+    geometry_shader = gs_billboardquad_stereo;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
 }
-technique tbasicparticle_pick
-{	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_vtxcolor;
-		geometry_shader=gs_billboardquad;
-		fragment_shader=ps_modtex;
-		state_block=sb_default;
-	}
+technique tstreakparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak;
+    geometry_shader = gs_streak;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
 }
-technique tvolnoiseparticle
-{	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_vtxcolor;
-		geometry_shader=gs_billboardquad;
-		fragment_shader=ps_modtex;
-		state_block=sb_default;
-	}
+technique tstreakparticle_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_streak;
+    geometry_shader = gs_streak_stereo;
+    fragment_shader = ps_modtexclr;
+    state_block     = sb_default;
+  }
 }
-technique tvolumeparticle
-{	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_vtxcolor;
-		geometry_shader=gs_billboardquad;
-		fragment_shader=ps_volume;
-		state_block=sb_alpadd;
-	}
+///////////////////////////////////////////////////////////////
+technique tbasicparticle_pick {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    geometry_shader = gs_billboardquad;
+    fragment_shader = ps_modtex;
+    state_block     = sb_default;
+  }
+}
+technique tvolnoiseparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    geometry_shader = gs_billboardquad;
+    fragment_shader = ps_modtex;
+    state_block     = sb_default;
+  }
+}
+technique tvolumeparticle {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    geometry_shader = gs_billboardquad;
+    fragment_shader = ps_volume;
+    state_block     = sb_alpadd;
+  }
 }
 ///////////////////////////////////////////////////////////////
