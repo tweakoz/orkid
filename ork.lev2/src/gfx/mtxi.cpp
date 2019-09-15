@@ -11,9 +11,6 @@
 
 #if defined(ORK_OSX)
 #include <OpenGL/gl.h>
-#elif defined(_IOS)
-#include <OpenGLES/ES2/gl.h>
-//#include <OpenGLES/glu.h>
 #elif defined(IX)
 #include <GL/gl.h>
 #include <GL/glu.h>

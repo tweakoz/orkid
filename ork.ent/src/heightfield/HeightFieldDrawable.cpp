@@ -714,10 +714,10 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   bool stereo1pass = framedata->isStereoOnePass();
   if( stereo1pass ){
     if (auto try_lcam = framedata->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
-      printf("got LCAM<%p>\n", try_lcam.value() );
+      //printf("got LCAM<%p>\n", try_lcam.value() );
     }
     if (auto try_rcam = framedata->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
-      printf("got RCAM<%p>\n", try_rcam.value() );
+      //printf("got RCAM<%p>\n", try_rcam.value() );
     }
   }
   //////////////////////////
