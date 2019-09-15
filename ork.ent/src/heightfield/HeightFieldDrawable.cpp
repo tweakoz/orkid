@@ -746,32 +746,33 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   auto campos_mono = IMV_mono.GetTranslation();
   //////////////////////////
   fmtx4 MVPL, MVPC, MVPR;
+  auto MVP = MV_mono*PMTX_mono;
+  //VMTX_mono.dump("VM");
+  //PMTX_mono.dump("PM");
   //////////////////////////
-  if( false) { //stereo1pass ){
+  if( stereo1pass ){
     fmtx4 VL, PL, VR, PR;
     if (auto try_lcam = framedata->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
       VL = try_lcam.value()->GetVMatrix();
       PL = try_lcam.value()->GetPMatrix();
-      VL.dump("VL");
-      PL.dump("PL");
+      //VL.dump("VL");
+      //PL.dump("PL");
       //printf("got LCAM<%p>\n", try_lcam.value() );
     }
     if (auto try_rcam = framedata->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
       VR = try_rcam.value()->GetVMatrix();
       PR = try_rcam.value()->GetPMatrix();
-      VR.dump("VR");
-      PR.dump("PR");
+      //VR.dump("VR");
+      //PR.dump("PR");
       //printf("got RCAM<%p>\n", try_rcam.value() );
     }
     auto MVL = (viz_offset*VL);
     auto MVR = (viz_offset*VR);
     MVPL = MVL * PL;
     MVPR = MVR * PR;
-    MVPL = MV_mono*PMTX_mono;
-    MVPR = MV_mono*PMTX_mono;
+    MVPC = MVP;
   }
   else {
-    auto MVP = MV_mono*PMTX_mono;
     MVPL = MVP;
     MVPC = MVP;
     MVPR = MVP;

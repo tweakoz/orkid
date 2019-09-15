@@ -73,7 +73,6 @@ vertex_shader vs_terrain_stereo
   vec4 posL = MatMVPL * vec4(tero.wpos, 1);
   vec4 posR = MatMVPR * vec4(tero.wpos, 1);
   // only x allowed to vary w/ stereo1pass
-  posR.x += 0.5;
   posR.y = posL.y;
   posR.z = posL.z;
   ///////////////////////////
