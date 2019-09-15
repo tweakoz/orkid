@@ -17,6 +17,7 @@
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
+#include <ork/reflect/DirectObjectPropertyType.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <ork/kernel/msgrouter.inl>
@@ -139,44 +140,27 @@ btHeightfieldTerrainShape* BulletHeightfieldImpl::init_bullet_shape(const ShapeC
 void BulletShapeHeightfieldData::Describe() {
   reflect::RegisterProperty(
       "HeightMap", &BulletShapeHeightfieldData::GetHeightMapName, &BulletShapeHeightfieldData::SetHeightMapName);
-  reflect::RegisterProperty(
-      "VizHeightMap", &BulletShapeHeightfieldData::GetVizHeightMapName, &BulletShapeHeightfieldData::SetVizHeightMapName);
   reflect::RegisterProperty("WorldHeight", &BulletShapeHeightfieldData::mWorldHeight);
   reflect::RegisterProperty("WorldSize", &BulletShapeHeightfieldData::mWorldSize);
-  reflect::RegisterProperty(
-      "SphericalLightMap", &BulletShapeHeightfieldData::GetTextureAccessor, &BulletShapeHeightfieldData::SetTextureAccessor);
-  reflect::RegisterProperty("VisualOffset", &BulletShapeHeightfieldData::mVisualOffset);
+
+  reflect::RegisterProperty("VisualData",&BulletShapeHeightfieldData::_visualDataAccessor);
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.class", "ged.factory.filelist");
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("HeightMap", "editor.filetype", "png");
-
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("VizHeightMap", "editor.class", "ged.factory.filelist");
-  reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("VizHeightMap", "editor.filetype", "png");
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.min", "0");
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldHeight", "editor.range.max", "10000");
 
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.min", "1.0f");
   reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("WorldSize", "editor.range.max", "20000.0");
-
-  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("SphericalLightMap", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("SphericalLightMap", "editor.assettype", "lev2tex");
-  ork::reflect::AnnotatePropertyForEditor<BulletShapeHeightfieldData>("SphericalLightMap", "editor.assetclass", "lev2tex");
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void BulletShapeHeightfieldData::SetTextureAccessor(ork::rtti::ICastable* const& tex) {
-  _spherelightmap = tex ? ork::rtti::autocast(tex) : 0;
-}
-void BulletShapeHeightfieldData::GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = _spherelightmap; }
 ///////////////////////////////////////////////////////////////////////////////
 
 BulletShapeHeightfieldData::BulletShapeHeightfieldData()
     : mHeightMapName("none")
-    , mVizHeightMapName("non")
     , mWorldHeight(1000.0f)
-    , mWorldSize(1000.0f)
-    , _spherelightmap(nullptr) {
+    , mWorldSize(1000.0f) {
 
   mShapeFactory._createShape = [=](const ShapeCreateData& data) -> BulletShapeBaseInst* {
     auto rval = new BulletShapeBaseInst(this);
@@ -189,12 +173,9 @@ BulletShapeHeightfieldData::BulletShapeHeightfieldData()
     // create drawable
     ////////////////////////////////////////////////////////////////////
 
-    impl->_drawable                   = std::make_shared<HeightFieldDrawable>();
-    impl->_drawable->_hfpath          = this->VizHeightMapPath();
-    impl->_drawable->_visualOffset    = mVisualOffset;
+    impl->_drawable                   = _visualData.createDrawable();
     impl->_drawable->_worldHeight     = this->WorldHeight();
     impl->_drawable->_worldSizeXZ     = this->WorldSize();
-    impl->_drawable->_sphericalenvmap = _spherelightmap;
 
     auto raw_drawable = impl->_drawable->create();
     raw_drawable->SetOwner(data.mEntity);
@@ -224,8 +205,6 @@ BulletShapeHeightfieldData::~BulletShapeHeightfieldData() {}
 
 void BulletShapeHeightfieldData::SetHeightMapName(file::Path const& lmap) { mHeightMapName = lmap; }
 void BulletShapeHeightfieldData::GetHeightMapName(file::Path& lmap) const { lmap = mHeightMapName; }
-void BulletShapeHeightfieldData::SetVizHeightMapName(file::Path const& lmap) { mVizHeightMapName = lmap; }
-void BulletShapeHeightfieldData::GetVizHeightMapName(file::Path& lmap) const { lmap = mVizHeightMapName; }
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent

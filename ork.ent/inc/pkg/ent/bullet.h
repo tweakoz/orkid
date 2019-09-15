@@ -23,6 +23,7 @@
 #include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/heightmap.h>
+#include <pkg/ent/HeightFieldDrawable.h>
 #include <pkg/ent/scene.h>
 #include <ork/kernel/concurrent_queue.h>
 
@@ -392,29 +393,20 @@ public:
 
   void SetHeightMapName(file::Path const& lmap);
   void GetHeightMapName(file::Path& lmap) const;
-  void SetVizHeightMapName(file::Path const& lmap);
-  void GetVizHeightMapName(file::Path& lmap) const;
 
-  const file::Path& VizHeightMapPath() const { return mVizHeightMapName; }
   const file::Path& HeightMapPath() const { return mHeightMapName; }
   float WorldHeight() const { return mWorldHeight; }
   float WorldSize() const { return mWorldSize; }
-  const fvec3& GetVisualOffset() const { return mVisualOffset; }
-
-  ork::lev2::textureassetptr_t GetSphereMap() const { return _spherelightmap; }
 
 private:
-  void SetTextureAccessor(ork::rtti::ICastable* const& tex);
-  void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
+	ork::Object* _visualDataAccessor() { return & _visualData; }
 
   bool PostDeserialize(reflect::IDeserializer&) final;
 
   file::Path mHeightMapName;
-  file::Path mVizHeightMapName;
   float mWorldHeight;
   float mWorldSize;
-  fvec3 mVisualOffset;
-  ork::lev2::textureassetptr_t _spherelightmap;
+  HeightFieldDrawableData _visualData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
