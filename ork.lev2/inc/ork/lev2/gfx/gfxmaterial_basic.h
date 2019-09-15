@@ -94,11 +94,14 @@ protected:
 
 	FxShader*					hModFX;
 	const FxShaderTechnique*	hTekModVtxTex;
+	const FxShaderTechnique*	hTekModVtxTexStereo;
 	const FxShaderTechnique*	hTekMod;
 
 	const FxShaderParam*	hMatMV;
 	const FxShaderParam*	hMatP;
 	const FxShaderParam*	hWVPMatrix;
+	const FxShaderParam*	hWVPLMatrix;
+	const FxShaderParam*	hWVPRMatrix;
 	const FxShaderParam*	hVPMatrix;
 	const FxShaderParam*	hWMatrix;
 

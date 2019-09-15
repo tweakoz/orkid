@@ -33,13 +33,39 @@ static bool gbenable = true; // disable since wii port is gone
 /////////////////////////////////////////////////////////////////////////
 
 GfxMaterialWiiBasic::GfxMaterialWiiBasic(const char* bastek)
-    : mSpecularPower(1.0f), mBasicTechName(bastek), mEmissiveColor(0.0f, 0.0f, 0.0f, 0.0f), hTekModVtxTex(0), hTekMod(0), hMatMV(0),
-      hMatP(0), hWVPMatrix(0), hVPMatrix(0), hWMatrix(0), hIWMatrix(0), hVMatrix(0), hWRotMatrix(0), hDiffuseMapMatrix(0),
-      hNormalMapMatrix(0), hSpecularMapMatrix(0), hBoneMatrices(0), hDiffuseTEX(0), hSpecularTEX(0), hAmbientTEX(0), hNormalTEX(0),
-      hEmissiveColor(0), hWCamLoc(0), hSpecularPower(0), hMODCOLOR(0), hTIME(0), hTopEnvTEX(0), hBotEnvTEX(0) {
+    : mSpecularPower(1.0f)
+    , mBasicTechName(bastek)
+    , mEmissiveColor(0.0f, 0.0f, 0.0f, 0.0f)
+    , hTekModVtxTex(nullptr)
+    , hTekModVtxTexStereo(nullptr)
+    , hTekMod(nullptr)
+    , hMatMV(nullptr)
+    , hMatP(nullptr)
+    , hWVPMatrix(nullptr)
+    , hWVPLMatrix(nullptr)
+    , hWVPRMatrix(nullptr)
+    , hVPMatrix(nullptr)
+    , hWMatrix(nullptr)
+    , hIWMatrix(nullptr)
+    , hVMatrix(nullptr)
+    , hWRotMatrix(nullptr)
+    , hDiffuseMapMatrix(nullptr)
+    , hNormalMapMatrix(nullptr)
+    , hSpecularMapMatrix(nullptr)
+    , hBoneMatrices(nullptr)
+    , hDiffuseTEX(nullptr)
+    , hSpecularTEX(nullptr)
+    , hAmbientTEX(nullptr)
+    , hNormalTEX(nullptr)
+    , hEmissiveColor(nullptr)
+    , hWCamLoc(nullptr)
+    , hSpecularPower(nullptr)
+    , hMODCOLOR(nullptr)
+    , hTIME(nullptr)
+    , hTopEnvTEX(nullptr)
+    , hBotEnvTEX(nullptr) {
   if (gbenable) {
     miNumPasses = 1;
-
     mRasterState.SetShadeModel(ESHADEMODEL_SMOOTH);
     mRasterState.SetAlphaTest(EALPHATEST_GREATER, 0.5f);
     mRasterState.SetBlending(EBLENDING_OFF);
@@ -57,19 +83,21 @@ const orkmap<std::string, std::string> GfxMaterialWiiBasic::mPickTekMap;
 void GfxMaterialWiiBasic::StaticInit() {
   if (gbenable) {
     orkmap<std::string, std::string>& BasicTekMap = const_cast<orkmap<std::string, std::string>&>(mBasicTekMap);
-    orkmap<std::string, std::string>& PickTekMap = const_cast<orkmap<std::string, std::string>&>(mPickTekMap);
+    orkmap<std::string, std::string>& PickTekMap  = const_cast<orkmap<std::string, std::string>&>(mPickTekMap);
 
-    BasicTekMap["/pick"] = "tek_modcolor";
-    BasicTekMap["/modvtx"] = "tek_wnormal";
-    BasicTekMap["/modvtx/skinned"] = "tek_wnormal_skinned";
-    BasicTekMap["/lambert/tex"] = "tek_lamberttex";
-    BasicTekMap["/lambert/tex/skinned"] = "tek_lamberttex_skinned";
-    BasicTekMap["/phong/tex/bump/skinned"] = "tek_lamberttex_skinned";
+    BasicTekMap["/pick"]                          = "tek_modcolor";
+    BasicTekMap["/modvtx"]                        = "tek_wnormal";
+    BasicTekMap["/modvtx/skinned"]                = "tek_wnormal_skinned";
+    BasicTekMap["/lambert/tex"]                   = "tek_lamberttex";
+    BasicTekMap["/lambert/tex/skinned"]           = "tek_lamberttex_skinned";
+    BasicTekMap["/phong/tex/bump/skinned"]        = "tek_lamberttex_skinned";
+    BasicTekMap["/lambert/tex/skinned/stereo"]    = "tek_lamberttex_skinned_stereo";
+    BasicTekMap["/phong/tex/bump/skinned/stereo"] = "tek_lamberttex_skinned_stereo";
 
-    PickTekMap["/modvtx"] = "tek_pick";
-    PickTekMap["/modvtx/skinned"] = "tek_pick";
-    PickTekMap["/lambert/tex"] = "tek_pick";
-    PickTekMap["/lambert/tex/skinned"] = "tek_pick";
+    PickTekMap["/modvtx"]                 = "tek_pick";
+    PickTekMap["/modvtx/skinned"]         = "tek_pick";
+    PickTekMap["/lambert/tex"]            = "tek_pick";
+    PickTekMap["/lambert/tex/skinned"]    = "tek_pick";
     PickTekMap["/phong/tex/bump/skinned"] = "tek_pick";
   }
 }
@@ -84,7 +112,7 @@ void GfxMaterialWiiBasic::Init(ork::lev2::GfxTarget* pTarg) {
 
     if (mBasicTechName == "") {
       std::string& btek = const_cast<std::string&>(mBasicTechName);
-      btek = "/modvtx";
+      btek              = "/modvtx";
     }
 
     printf("GfxMaterialWiiBasic<%p> mBasicTechName<%s>\n", this, mBasicTechName.c_str());
@@ -97,25 +125,27 @@ void GfxMaterialWiiBasic::Init(ork::lev2::GfxTarget* pTarg) {
 
     printf("GfxMaterialWiiBasic<%p> btek<%s> ptek<%s>\n", this, itb->second.c_str(), itp->second.c_str());
 
-    hTekModVtxTex = pTarg->FXI()->GetTechnique(hModFX, itb->second.c_str());
-    hTekMod = pTarg->FXI()->GetTechnique(hModFX, itp->second.c_str());
+    hTekModVtxTex       = pTarg->FXI()->GetTechnique(hModFX, itb->second);
+    hTekModVtxTexStereo = pTarg->FXI()->GetTechnique(hModFX, (itb->second + "_stereo"));
+    hTekMod             = pTarg->FXI()->GetTechnique(hModFX, itp->second);
 
     //////////////////////////////////////////
     // matrices
 
-    hMatMV = pTarg->FXI()->GetParameterH(hModFX, "WVMatrix");
-    hMatP = pTarg->FXI()->GetParameterH(hModFX, "PMatrix");
-
-    hWVPMatrix = pTarg->FXI()->GetParameterH(hModFX, "WVPMatrix");
+    hWMatrix  = pTarg->FXI()->GetParameterH(hModFX, "WMatrix");
+    hIWMatrix = pTarg->FXI()->GetParameterH(hModFX, "IWMatrix");
+    hVMatrix  = pTarg->FXI()->GetParameterH(hModFX, "VMatrix");
+    hMatP     = pTarg->FXI()->GetParameterH(hModFX, "PMatrix");
+    hMatMV    = pTarg->FXI()->GetParameterH(hModFX, "WVMatrix");
     hVPMatrix = pTarg->FXI()->GetParameterH(hModFX, "VPMatrix");
 
-    hWMatrix = pTarg->FXI()->GetParameterH(hModFX, "WMatrix");
-    hIWMatrix = pTarg->FXI()->GetParameterH(hModFX, "IWMatrix");
+    hWVPMatrix  = pTarg->FXI()->GetParameterH(hModFX, "WVPMatrix");
+    hWVPLMatrix = pTarg->FXI()->GetParameterH(hModFX, "WVPMatrixL");
+    hWVPRMatrix = pTarg->FXI()->GetParameterH(hModFX, "WVPMatrixR");
 
-    hVMatrix = pTarg->FXI()->GetParameterH(hModFX, "VMatrix");
-    hWRotMatrix = pTarg->FXI()->GetParameterH(hModFX, "WRotMatrix");
-    hDiffuseMapMatrix = pTarg->FXI()->GetParameterH(hModFX, "DiffuseMapMatrix");
-    hNormalMapMatrix = pTarg->FXI()->GetParameterH(hModFX, "NormalMapMatrix");
+    hWRotMatrix        = pTarg->FXI()->GetParameterH(hModFX, "WRotMatrix");
+    hDiffuseMapMatrix  = pTarg->FXI()->GetParameterH(hModFX, "DiffuseMapMatrix");
+    hNormalMapMatrix   = pTarg->FXI()->GetParameterH(hModFX, "NormalMapMatrix");
     hSpecularMapMatrix = pTarg->FXI()->GetParameterH(hModFX, "SpecularMapMatrix");
 
     hBoneMatrices = pTarg->FXI()->GetParameterH(hModFX, "BoneMatrices");
@@ -123,10 +153,10 @@ void GfxMaterialWiiBasic::Init(ork::lev2::GfxTarget* pTarg) {
     //////////////////////////////////////////
     // Textures
 
-    hDiffuseTEX = pTarg->FXI()->GetParameterH(hModFX, "DiffuseMap");
+    hDiffuseTEX  = pTarg->FXI()->GetParameterH(hModFX, "DiffuseMap");
     hSpecularTEX = pTarg->FXI()->GetParameterH(hModFX, "SpecularMap");
-    hAmbientTEX = pTarg->FXI()->GetParameterH(hModFX, "AmbientMap");
-    hNormalTEX = pTarg->FXI()->GetParameterH(hModFX, "NormalMap");
+    hAmbientTEX  = pTarg->FXI()->GetParameterH(hModFX, "AmbientMap");
+    hNormalTEX   = pTarg->FXI()->GetParameterH(hModFX, "NormalMap");
 
     hTopEnvTEX = pTarg->FXI()->GetParameterH(hModFX, "TopEnvMap");
     hBotEnvTEX = pTarg->FXI()->GetParameterH(hModFX, "BotEnvMap");
@@ -139,10 +169,10 @@ void GfxMaterialWiiBasic::Init(ork::lev2::GfxTarget* pTarg) {
     //////////////////////////////////////////
     // misc
 
-    hWCamLoc = pTarg->FXI()->GetParameterH(hModFX, "WCamLoc");
+    hWCamLoc       = pTarg->FXI()->GetParameterH(hModFX, "WCamLoc");
     hSpecularPower = pTarg->FXI()->GetParameterH(hModFX, "SpecularPower");
-    hMODCOLOR = pTarg->FXI()->GetParameterH(hModFX, "modcolor");
-    hTIME = pTarg->FXI()->GetParameterH(hModFX, "time");
+    hMODCOLOR      = pTarg->FXI()->GetParameterH(hModFX, "modcolor");
+    hTIME          = pTarg->FXI()->GetParameterH(hModFX, "time");
 
     mLightingInterface.Init(hModFX);
   }
@@ -166,35 +196,39 @@ static ork::fixed_pool<WiiMatrixApplicator, 256> MtxApplicators;
 ///////////////////////////////////////////////////////////////////////////////
 
 WiiMatrixBlockApplicator::WiiMatrixBlockApplicator(MaterialInstItemMatrixBlock* mtxblockitem, const GfxMaterialWiiBasic* pmat)
-    : mMatrixBlockItem(mtxblockitem), mMaterial(pmat) {}
+    : mMatrixBlockItem(mtxblockitem)
+    , mMaterial(pmat) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void WiiMatrixBlockApplicator::ApplyToTarget(GfxTarget* pTARG) // virtual
 {
-  size_t inumbones = mMatrixBlockItem->GetNumMatrices();
-  const fmtx4* Matrices = mMatrixBlockItem->GetMatrices();
-  FxShader* hshader = mMaterial->hModFX;
+  auto fxi  = pTARG->FXI();
+  auto mtxi = pTARG->MTXI();
 
-  pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hMatMV, pTARG->MTXI()->RefMVMatrix());
-  pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hWVPMatrix, pTARG->MTXI()->RefMVPMatrix());
-  pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hWMatrix, pTARG->MTXI()->RefMMatrix());
+  size_t inumbones      = mMatrixBlockItem->GetNumMatrices();
+  const fmtx4* Matrices = mMatrixBlockItem->GetMatrices();
+  FxShader* hshader     = mMaterial->hModFX;
+
+  fxi->BindParamMatrix(hshader, mMaterial->hMatMV, mtxi->RefMVMatrix());
+  fxi->BindParamMatrix(hshader, mMaterial->hWVPMatrix, mtxi->RefMVPMatrix());
+  fxi->BindParamMatrix(hshader, mMaterial->hWMatrix, mtxi->RefMMatrix());
 
   fmtx4 iwmat;
-  iwmat.inverseOf(pTARG->MTXI()->RefMVMatrix());
-  pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hIWMatrix, iwmat);
-
-  pTARG->FXI()->BindParamMatrixArray(hshader, mMaterial->hBoneMatrices, Matrices, (int)inumbones);
-  pTARG->FXI()->CommitParams();
+  iwmat.inverseOf(mtxi->RefMVMatrix());
+  fxi->BindParamMatrix(hshader, mMaterial->hIWMatrix, iwmat);
+  fxi->BindParamMatrixArray(hshader, mMaterial->hBoneMatrices, Matrices, (int)inumbones);
+  fxi->CommitParams();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 WiiMatrixApplicator::WiiMatrixApplicator(MaterialInstItemMatrix* mtxitem, const GfxMaterialWiiBasic* pmat)
-    : mMatrixItem(mtxitem), mMaterial(pmat) {}
+    : mMatrixItem(mtxitem)
+    , mMaterial(pmat) {}
 
 void WiiMatrixApplicator::ApplyToTarget(GfxTarget* pTARG) {
-  const fmtx4& mtx = mMatrixItem->GetMatrix();
+  const fmtx4& mtx  = mMatrixItem->GetMatrix();
   FxShader* hshader = mMaterial->hModFX;
   pTARG->FXI()->BindParamMatrix(hshader, mMaterial->hDiffuseMapMatrix, mtx);
 }
@@ -264,44 +298,43 @@ void GfxMaterialWiiBasic::UnBindMaterialInstItem(MaterialInstItem* pitem) const 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
-void GfxMaterialWiiBasic::UpdateMVPMatrix(GfxTarget* pTARG) {
-  pTARG->FXI()->BindParamMatrix(hModFX, hMatMV, pTARG->MTXI()->RefMVMatrix());
-  // pTarg->FXI()->BindParamMatrix( hModFX, hMatP, pTarg->MTXI()->RefPMatrix() );
-  pTARG->FXI()->BindParamMatrix(hModFX, hWVPMatrix, pTARG->MTXI()->RefMVPMatrix());
-  // pTarg->FXI()->BindParamMatrix( hModFX, hVPMatrix, pTarg->MTXI()->RefVPMatrix() );
-  // pTarg->FXI()->BindParamMatrix( hModFX, hVMatrix, pTarg->MTXI()->RefVMatrix() );
-  pTARG->FXI()->BindParamMatrix(hModFX, hWMatrix, pTARG->MTXI()->RefMMatrix());
-  pTARG->FXI()->BindParamMatrix(hModFX, hWRotMatrix, pTARG->MTXI()->RefR3Matrix());
-  pTARG->FXI()->CommitParams();
+void GfxMaterialWiiBasic::UpdateMVPMatrix(GfxTarget* pTarg) {
+  auto fxi  = pTarg->FXI();
+  auto mtxi = pTarg->MTXI();
+  fxi->BindParamMatrix(hModFX, hMatMV, mtxi->RefMVMatrix());
+  fxi->BindParamMatrix(hModFX, hWVPMatrix, mtxi->RefMVPMatrix());
+  fxi->BindParamMatrix(hModFX, hWMatrix, mtxi->RefMMatrix());
+  fxi->BindParamMatrix(hModFX, hWRotMatrix, mtxi->RefR3Matrix());
+  fxi->CommitParams();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
-  // if( 0 ) return false;
 
-  const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
-  const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-  const CameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
+  auto fxi  = pTarg->FXI();
+  auto mtxi = pTarg->MTXI();
 
-  bool bforcenoz = rdata->IsForceNoZWrite();
+  const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
+  const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
+  const CameraData* camdata          = RCFD ? RCFD->GetCameraData() : nullptr;
 
-  const ork::lev2::XgmMaterialStateInst* matinst = rdata->GetMaterialInst();
+  bool bforcenoz = RCID->IsForceNoZWrite();
 
-  bool bpick = pTarg->FBI()->IsPickState();
+  const ork::lev2::XgmMaterialStateInst* matinst = RCID->GetMaterialInst();
 
+  bool is_picking                  = RCFD->isPicking();
+  bool is_stereo                   = RCFD->isStereoOnePass();
   const TextureContext& DiffuseCtx = GetTexture(ETEXDEST_DIFFUSE);
 
   const Texture* diftexture = DiffuseCtx.mpTexture;
-
-  // fmtx4 ivmat = pTarg->MTXI()->RefVMatrix();
 
   fcolor4 ModColor = pTarg->RefModColor();
 
   mRasterState.SetZWriteMask(!bforcenoz);
 
-  if( bpick ){
+  if (is_picking) {
     auto copyofrasterstate = mRasterState;
     copyofrasterstate.SetZWriteMask(true);
     copyofrasterstate.SetDepthTest(EDEPTHTEST_LEQUALS);
@@ -309,26 +342,41 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
     copyofrasterstate.SetBlending(EBLENDING_OFF);
     copyofrasterstate.SetAlphaTest(EALPHATEST_OFF);
     pTarg->RSI()->BindRasterState(copyofrasterstate);
-  }
-  else {
+  } else {
     pTarg->RSI()->BindRasterState(mRasterState);
   }
 
-  pTarg->FXI()->BindPass(hModFX, iPass);
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatMV, pTarg->MTXI()->RefMVMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hMatP, pTarg->MTXI()->RefPMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hWVPMatrix, pTarg->MTXI()->RefMVPMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hVPMatrix, pTarg->MTXI()->RefVPMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hVMatrix, pTarg->MTXI()->RefVMatrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hWMatrix, pTarg->MTXI()->RefMMatrix());
+  fxi->BindPass(hModFX, iPass);
+  fxi->BindParamMatrix(hModFX, hMatMV, mtxi->RefMVMatrix());
+  fxi->BindParamMatrix(hModFX, hMatP, mtxi->RefPMatrix());
+  fxi->BindParamMatrix(hModFX, hVPMatrix, mtxi->RefVPMatrix());
+  fxi->BindParamMatrix(hModFX, hVMatrix, mtxi->RefVMatrix());
+  fxi->BindParamMatrix(hModFX, hWMatrix, mtxi->RefMMatrix());
 
-  pTarg->FXI()->BindParamMatrix(hModFX, hWRotMatrix, pTarg->MTXI()->RefR3Matrix());
-  pTarg->FXI()->BindParamMatrix(hModFX, hDiffuseMapMatrix, BuildTextureMatrix(DiffuseCtx));
+  fxi->BindParamMatrix(hModFX, hWRotMatrix, mtxi->RefR3Matrix());
+  fxi->BindParamMatrix(hModFX, hDiffuseMapMatrix, BuildTextureMatrix(DiffuseCtx));
 
-  pTarg->FXI()->BindParamVect4(hModFX, hMODCOLOR, ModColor);
+  fxi->BindParamVect4(hModFX, hMODCOLOR, ModColor);
 
-  pTarg->FXI()->BindParamCTex(hModFX, hDiffuseTEX, diftexture);
+  fxi->BindParamCTex(hModFX, hDiffuseTEX, diftexture);
 
+  if (is_stereo) {
+    fmtx4 VL, PL, VR, PR;
+    if (auto try_lcam = RCFD->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
+      VL = try_lcam.value()->GetVMatrix();
+      PL = try_lcam.value()->GetPMatrix();
+    }
+    if (auto try_rcam = RCFD->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
+      VR = try_rcam.value()->GetVMatrix();
+      PR = try_rcam.value()->GetPMatrix();
+    }
+    auto MVL = (mtxi->RefMMatrix() * VL);
+    auto MVR = (mtxi->RefMMatrix() * VR);
+    fxi->BindParamMatrix(hModFX, hWVPLMatrix, (MVL * PL));
+    fxi->BindParamMatrix(hModFX, hWVPRMatrix, (MVR * PR));
+  } else {
+    fxi->BindParamMatrix(hModFX, hWVPMatrix, mtxi->RefMVPMatrix());
+  }
   ////////////////////////////////////////////////////////////
 
   if (matinst) {
@@ -336,7 +384,7 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
     if (inumitems) {
       for (int ii = 0; ii < inumitems; ii++) {
-        MaterialInstItem* item = matinst->GetItem(ii);
+        MaterialInstItem* item       = matinst->GetItem(ii);
         MaterialInstApplicator* appl = item->mApplicator;
         if (appl) {
           appl->ApplyToTarget(pTarg);
@@ -349,7 +397,7 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   mLightingInterface.ApplyLighting(pTarg, iPass);
 
-  pTarg->FXI()->CommitParams();
+  fxi->CommitParams();
 
   return true;
 }
@@ -360,16 +408,23 @@ void GfxMaterialWiiBasic::EndPass(GfxTarget* pTarg) { pTarg->FXI()->EndPass(hMod
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& MatCtx) {
-  bool bpick = pTarg->FBI()->IsPickState();
+int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
+  mRenderContexInstData              = &RCID;
+  const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
+  const ork::CameraData* cdata       = RCFD->GetCameraData();
+  bool is_picking                    = RCFD->isPicking();
+  bool is_stereo                     = RCFD->isStereoOnePass();
 
-  pTarg->FXI()->BindTechnique(hModFX, bpick ? hTekMod : hTekModVtxTex);
-  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, MatCtx);
+  const FxShaderTechnique* tek = hTekModVtxTex;
 
-  mRenderContexInstData = &MatCtx;
+  if (is_picking)
+    tek = hTekMod;
+  else if (is_stereo) {
+    tek = hTekModVtxTexStereo;
+  }
 
-  const ork::lev2::RenderContextFrameData* framedata = pTarg->GetRenderContextFrameData();
-  const ork::CameraData* cdata = framedata->GetCameraData();
+  pTarg->FXI()->BindTechnique(hModFX, tek);
+  int inumpasses = pTarg->FXI()->BeginBlock(hModFX, RCID);
 
   mScreenZDir = cdata->GetZNormal();
 
