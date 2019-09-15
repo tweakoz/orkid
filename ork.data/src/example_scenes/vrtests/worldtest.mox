@@ -163,7 +163,23 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='13'>
+                                    <object type='SimpleCharControllerData' id='13'>
+                                        <property name='RunSpeed'>350</property>
+                                        <property name='SpeedLerpRate'>10</property>
+                                        <property name='WalkSpeed'>135</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ScriptComponentData' id='14'>
+                                        <property name='ScriptFile'>"src://scripts/arch/diver.lua"</property>
+                                    </object>
+                                </reference>
+                            </item>
+                            <item key='control'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='ModelComponentData' id='15'>
                                         <property name='AlwaysVisible'>true</property>
                                         <property name='BlenderZup'>false</property>
                                         <property name='EditorDagDebug'>false</property>
@@ -177,22 +193,6 @@
                                         <property name='Rotate'>0 0 0</property>
                                         <property name='Scale'>0.01</property>
                                         <property name='ShowBoundingSphere'>false</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='ScriptComponentData' id='14'>
-                                        <property name='ScriptFile'>"src://scripts/arch/diver.lua"</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='control'>
-                                <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='15'>
-                                        <property name='RunSpeed'>350</property>
-                                        <property name='SpeedLerpRate'>10</property>
-                                        <property name='WalkSpeed'>135</property>
                                     </object>
                                 </reference>
                             </item>
@@ -779,16 +779,10 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='ModelComponentData' id='91'>
-                                        <property name='AlwaysVisible'>false</property>
-                                        <property name='BlenderZup'>false</property>
-                                        <property name='EditorDagDebug'>false</property>
-                                        <property name='LayerFxMap'></property>
-                                        <property name='Model'><backreference id='-1'/></property>
-                                        <property name='Offset'>0 0 0</property>
-                                        <property name='Rotate'>0 0 0</property>
-                                        <property name='Scale'>1</property>
-                                        <property name='ShowBoundingSphere'>false</property>
+                                    <object type='SimpleCharControllerData' id='91'>
+                                        <property name='RunSpeed'>50</property>
+                                        <property name='SpeedLerpRate'>1</property>
+                                        <property name='WalkSpeed'>30</property>
                                     </object>
                                 </reference>
                             </item>
@@ -801,10 +795,16 @@
                             </item>
                             <item key='control'>
                                 <reference category='ComponentDataClass'>
-                                    <object type='SimpleCharControllerData' id='93'>
-                                        <property name='RunSpeed'>50</property>
-                                        <property name='SpeedLerpRate'>1</property>
-                                        <property name='WalkSpeed'>30</property>
+                                    <object type='ModelComponentData' id='93'>
+                                        <property name='AlwaysVisible'>false</property>
+                                        <property name='BlenderZup'>false</property>
+                                        <property name='EditorDagDebug'>false</property>
+                                        <property name='LayerFxMap'></property>
+                                        <property name='Model'><backreference id='-1'/></property>
+                                        <property name='Offset'>0 0 0</property>
+                                        <property name='Rotate'>0 0 0</property>
+                                        <property name='Scale'>1</property>
+                                        <property name='ShowBoundingSphere'>false</property>
                                     </object>
                                 </reference>
                             </item>
@@ -939,7 +939,7 @@
                     <object type='BulletSystemData' id='109'>
                         <property name='Debug'>false</property>
                         <property name='Gravity'>0 -4 0</property>
-                        <property name='SimulationRate'>120</property>
+                        <property name='SimulationRate'>240</property>
                         <property name='TimeScale'>1</property>
                     </object>
                 </reference>
