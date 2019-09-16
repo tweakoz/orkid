@@ -25,6 +25,12 @@ struct TerrainMaterialParams {
   Texture* _hfTextureB = nullptr;
   Texture* _envTexture = nullptr;
   float _testxxx = 0.0f;
+  fvec3 _fogcolor;
+  fvec3 _grass, _snow, _rock1, _rock2;
+  float _gblend_yscale = 1.0f;
+  float _gblend_ybias = 0.0f;
+  float _gblend_steplo = 0.5f;
+  float _gblend_stephi = 0.6f;
 };
 
 struct TerrainMaterial : public GfxMaterial {
@@ -64,6 +70,15 @@ struct TerrainMaterial : public GfxMaterial {
   const FxShaderParam* _parModColor = nullptr;
   const FxShaderParam* _parTime     = nullptr;
   const FxShaderParam* _parTestXXX  = nullptr;
+  const FxShaderParam* _parFogColor  = nullptr;
+  const FxShaderParam* _parGrass  = nullptr;
+  const FxShaderParam* _parSnow  = nullptr;
+  const FxShaderParam* _parRock1  = nullptr;
+  const FxShaderParam* _parRock2  = nullptr;
+  const FxShaderParam* _parGblendYscale  = nullptr;
+  const FxShaderParam* _parGblendYbias  = nullptr;
+  const FxShaderParam* _parGblendStepLo  = nullptr;
+  const FxShaderParam* _parGblendStepHi  = nullptr;
 
   TerrainMaterialParams _paramVal;
 };
@@ -104,6 +119,18 @@ void TerrainMaterial::Init(GfxTarget* targ) {
   _parModColor = fxi->GetParameterH(_shader, "ModColor");
   _parTime     = fxi->GetParameterH(_shader, "Time");
   _parTestXXX  = fxi->GetParameterH(_shader, "testxxx");
+
+  _parFogColor  = fxi->GetParameterH(_shader, "FogColor");
+  _parGrass  = fxi->GetParameterH(_shader, "GrassColor");
+  _parSnow  = fxi->GetParameterH(_shader, "SnowColor");
+  _parRock1  = fxi->GetParameterH(_shader, "Rock1Color");
+  _parRock2  = fxi->GetParameterH(_shader, "Rock2Color");
+  _parGblendYscale  = fxi->GetParameterH(_shader, "GBlendYScale");
+  _parGblendYbias  = fxi->GetParameterH(_shader, "GBlendYBias");
+  _parGblendStepLo  = fxi->GetParameterH(_shader, "GBlendStepLo");
+  _parGblendStepHi  = fxi->GetParameterH(_shader, "GBlendStepHi");
+
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -124,6 +151,17 @@ bool TerrainMaterial::BeginPass(GfxTarget* targ, int iPass) {
   fxi->BindParamVect4(_shader, _parModColor, _paramVal._modcolor);
   fxi->BindParamFloat(_shader, _parTime, 0.0f);
   fxi->BindParamFloat(_shader, _parTestXXX, _paramVal._testxxx );
+
+  fxi->BindParamVect3(_shader, _parFogColor, _paramVal._fogcolor );
+  fxi->BindParamVect3(_shader, _parGrass, _paramVal._grass );
+  fxi->BindParamVect3(_shader, _parSnow, _paramVal._snow );
+  fxi->BindParamVect3(_shader, _parRock1, _paramVal._rock1 );
+  fxi->BindParamVect3(_shader, _parRock2, _paramVal._rock2 );
+
+  fxi->BindParamFloat(_shader, _parGblendYscale, _paramVal._gblend_yscale );
+  fxi->BindParamFloat(_shader, _parGblendYbias, _paramVal._gblend_ybias );
+  fxi->BindParamFloat(_shader, _parGblendStepLo, _paramVal._gblend_steplo );
+  fxi->BindParamFloat(_shader, _parGblendStepHi, _paramVal._gblend_stephi );
   return true;
 }
 
