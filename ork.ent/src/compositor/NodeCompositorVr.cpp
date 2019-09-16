@@ -103,7 +103,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
     _CPD.mpFrameTek   = this;
     _CPD.mpCameraName = nullptr;
     _CPD.mpLayerName  = nullptr; // default == "All"
-    _CPD._clearColor  = fvec4(0.61, 0.61, 0.71, 1);
+    _CPD._clearColor  = fvec4(0.61, 0.61, 0.75, 1);
 
     //////////////////////////////////////////////////////
     // is stereo active

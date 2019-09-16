@@ -787,6 +787,15 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   params._hfTextureA = _heightmapTextureA;
   params._hfTextureB = _heightmapTextureB;
   params._testxxx = _hfdrawable->_data._testxxx;
+  params._fogcolor = _hfdrawable->_data._fogcolor;
+  params._grass = _hfdrawable->_data._grass;
+  params._snow = _hfdrawable->_data._snow;
+  params._rock1 = _hfdrawable->_data._rock1;
+  params._rock2 = _hfdrawable->_data._rock2;
+  params._gblend_yscale = _hfdrawable->_data._gblend_yscale;
+  params._gblend_ybias = _hfdrawable->_data._gblend_ybias;
+  params._gblend_steplo = _hfdrawable->_data._gblend_steplo;
+  params._gblend_stephi = _hfdrawable->_data._gblend_stephi;
 
   ///////////////////////////////////////////////////////////////////
   // render
@@ -879,6 +888,17 @@ void HeightFieldDrawableData::Describe() {
       "HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath);
   reflect::RegisterProperty("TestXXX", &HeightFieldDrawableData::_testxxx);
 
+  reflect::RegisterProperty("FogColor", &HeightFieldDrawableData::_fogcolor);
+  reflect::RegisterProperty("GrassColor", &HeightFieldDrawableData::_grass);
+  reflect::RegisterProperty("SnowColor", &HeightFieldDrawableData::_snow);
+  reflect::RegisterProperty("Rock1Color", &HeightFieldDrawableData::_rock1);
+  reflect::RegisterProperty("Rock2Color", &HeightFieldDrawableData::_rock2);
+
+  reflect::RegisterProperty("GBlendYScale", &HeightFieldDrawableData::_gblend_yscale);
+  reflect::RegisterProperty("GBlendYBias", &HeightFieldDrawableData::_gblend_ybias);
+  reflect::RegisterProperty("GBlendStepLo", &HeightFieldDrawableData::_gblend_steplo);
+  reflect::RegisterProperty("GBlendStepHi", &HeightFieldDrawableData::_gblend_stephi);
+
   ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.class", "ged.factory.assetlist");
   ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.assettype", "lev2tex");
   ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.assetclass", "lev2tex");
@@ -888,6 +908,16 @@ void HeightFieldDrawableData::Describe() {
 
   reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("TestXXX", "editor.range.min", "-100");
   reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("TestXXX", "editor.range.max", "100");
+
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYScale", "editor.range.min", "-1");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYScale", "editor.range.max", "1");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYBias", "editor.range.min", "-5000");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYBias", "editor.range.max", "5000");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepLo", "editor.range.min", "0");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepLo", "editor.range.max", "1");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepHi", "editor.range.min", "0");
+  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepHi", "editor.range.max", "1");
+
 }
 
 hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {

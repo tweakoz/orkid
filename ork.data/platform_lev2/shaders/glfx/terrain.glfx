@@ -22,6 +22,15 @@ uniform_block ublock_frg {
   uniform vec4 modcolor;
   uniform sampler2D EnvMap;
   uniform float testxxx;
+  uniform vec3 FogColor;
+uniform vec3 GrassColor;
+uniform vec3 SnowColor;
+uniform vec3 Rock1Color;
+uniform vec3 Rock2Color;
+uniform float GBlendYScale;
+uniform float GBlendYBias;
+uniform float GBlendStepLo;
+uniform float GBlendStepHi;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ublock_vtx {
@@ -82,7 +91,6 @@ vertex_shader vs_terrain_stereo
 fragment_shader ps_terrain
   : iface_fdefault
   : lib_mmnoise {
-  vec3 fogcolor = vec3(0.9,0.9,1)*testxxx;
   const vec3 ambient = vec3(0.4);
   const vec3 side = vec3(0.2, 0.2, 0.25);
   const vec3 top = vec3(0.3, 0.3, 0.3);
@@ -98,18 +106,18 @@ fragment_shader ps_terrain
   const vec3 rock1 = vec3(0.6,.6,0.8);
   const vec3 rock2 = vec3(0.6,.6,0.7);
 
-  float gsblend = clamp(frg_wpos.y*0.5,0,1);
-  gsblend = smoothstep(0.6,0.61,gsblend);
-  vec3 hor = mix( grass,
-                  snow,
+  float gsblend = clamp(GBlendYBias+frg_wpos.y*GBlendYScale,0,1);
+  gsblend = smoothstep(GBlendStepLo,GBlendStepHi,gsblend);
+  vec3 hor = mix( GrassColor,
+                  SnowColor,
                   gsblend );
 
-  vec3 c = hor*pow(tpw.y,0.6)
-         + rock1*pow(tpw.x,0.6)
-         + rock2*pow(tpw.z,0.6);
+  vec3 c = hor*pow(tpw.y,testxxx)
+         + Rock1Color*pow(tpw.x,testxxx)
+         + Rock2Color*pow(tpw.z,testxxx);
 
   vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
-  c = lightcol*mix(fogcolor,c,ddd1);
+  c = lightcol*mix(FogColor,c,ddd1);
   out_clr = vec4(c,1);
 }
 ///////////////////////////////////////////////////////////////

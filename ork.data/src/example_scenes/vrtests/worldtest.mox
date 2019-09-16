@@ -216,10 +216,10 @@
                                     <object type='EditorCamControllerData' id='18'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='19'>
-                                                <property name='Center'>-151.889 337.366 118.481</property>
+                                                <property name='Center'>-1230.82 -676.369 781.237</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>7.33475</property>
-                                                <property name='QuatC'>-0.117304 -0.97721 0.12715 0.125737</property>
+                                                <property name='Loc'>1231.99</property>
+                                                <property name='QuatC'>-0.0181094 -0.974133 0.18371 0.132999</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -277,14 +277,23 @@
                                                     <property name='HeightMap'>"data://terrain/testhmap2_2048.png"</property>
                                                     <property name='VisualData'>
                                                         <object type='HeightFieldDrawableData' id='25'>
+                                                            <property name='FogColor'>0.9 0.9 1.05</property>
+                                                            <property name='GBlendStepHi'>0.8</property>
+                                                            <property name='GBlendStepLo'>0.2</property>
+                                                            <property name='GBlendYBias'>20</property>
+                                                            <property name='GBlendYScale'>0.03</property>
+                                                            <property name='GrassColor'>0.5 0.5 0.7</property>
                                                             <property name='HeightMap'>"data://terrain/testhmap2.png"</property>
                                                             <property name='Offset'>0 4.25 0</property>
+                                                            <property name='Rock1Color'>0.2 0.2 0.3</property>
+                                                            <property name='Rock2Color'>0.2 0.2 0.35</property>
+                                                            <property name='SnowColor'>1 1 1.2</property>
                                                             <property name='SphericalEnvMap'>
                                                                 <reference category='AssetClass'>
                                                                     "lev2tex" "data://effect_textures/NoiseKern"
                                                                 </reference>
                                                             </property>
-                                                            <property name='TestXXX'>1.1</property>
+                                                            <property name='TestXXX'>0.2</property>
                                                         </object>
                                                     </property>
                                                     <property name='WorldHeight'>1500</property>

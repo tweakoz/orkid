@@ -20,6 +20,12 @@ class HeightFieldDrawableData : public ork::Object {
   ~HeightFieldDrawableData() final;
 
   float _testxxx = 0.0f;
+  fvec3 _fogcolor;
+  fvec3 _grass, _snow, _rock1, _rock2;
+  float _gblend_yscale = 1.0f;
+  float _gblend_ybias = 0.0f;
+  float _gblend_steplo = 0.5f;
+  float _gblend_stephi = 0.6f;
 
 private:
 
