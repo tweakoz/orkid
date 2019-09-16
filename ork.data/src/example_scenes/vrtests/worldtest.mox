@@ -277,7 +277,7 @@
                                                     <property name='HeightMap'>"data://terrain/testhmap2_2048.png"</property>
                                                     <property name='VisualData'>
                                                         <object type='HeightFieldDrawableData' id='25'>
-                                                            <property name='FogColor'>0.9 0.9 1.05</property>
+                                                            <property name='FogColor'>0.92 0.92 1.1</property>
                                                             <property name='GBlendStepHi'>0.8</property>
                                                             <property name='GBlendStepLo'>0.2</property>
                                                             <property name='GBlendYBias'>20</property>
