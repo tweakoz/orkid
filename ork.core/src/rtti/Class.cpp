@@ -50,13 +50,12 @@ void Class::Initialize()
 	}
 }
 
-void Class::InitializeClasses()
-{
-	for(Class* clazz = sLastClass; clazz != nullptr; clazz = clazz->mNextClass){
-		clazz->Initialize();
-		orkprintf( "InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass );
-	}
-	sLastClass = NULL;
+void Class::InitializeClasses() {
+  for (Class* clazz = sLastClass; clazz != nullptr; clazz = clazz->mNextClass) {
+    clazz->Initialize();
+    orkprintf("InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass);
+  }
+  sLastClass = NULL;
 }
 
 void Class::SetName(ConstString name,bool badd2map)

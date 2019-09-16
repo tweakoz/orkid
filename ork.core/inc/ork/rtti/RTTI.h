@@ -15,6 +15,9 @@
 
 #include <ork/config/config.h>
 
+namespace ork::object {
+class ObjectClass;
+}
 namespace ork::rtti {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -56,8 +59,10 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename ClassType, typename BaseType = ICastable, template <typename> class Policy = DefaultPolicy,
-          typename Category = typename BaseType::RTTIType::RTTICategory>
+template <typename ClassType,
+          typename BaseType                = ICastable,
+          template <typename> class Policy = DefaultPolicy,
+          typename Category                = typename BaseType::RTTIType::RTTICategory>
 
 class RTTI : public BaseType {
 public:
@@ -67,7 +72,7 @@ public:
   static RTTIData ClassRTTI() { return RTTIData(BaseType::GetClassStatic(), &RTTI::ClassInitializer); }
 
   static RTTICategory* GetClassStatic() { return &sClass; }
-  /*virtual*/ RTTICategory* GetClass() const { return GetClassStatic(); }
+  RTTICategory* GetClass() const override { return GetClassStatic(); }
 
   static void Describe();                // overridden by users of RTTI.
   static ConstString DesignNameStatic(); // implemented (or overridden) by users of RTTI, as needed by policy.
@@ -184,6 +189,19 @@ private:                                                                        
 
 ////////////////
 
+#define DeclareConcreteX(ClassType, BaseType)\
+public:\
+typedef ::ork::object::ObjectClass class_t;\
+static ::ork::ConstString DesignNameStatic();\
+static void describeX(class_t* clazz);\
+static void Describe(){ describeX(GetClassStatic()); } \
+static class_t* GetClassStatic();\
+class_t* GetClass() const override;\
+private:\
+static class_t sClass;
+
+////////////////
+
 #define RttiDeclareConcretePublic(ClassType, BaseType)                                                                             \
   __INTERNAL_RTTI_DECLARE_TRANSPARENT__(ClassType, RTTI_2_ARG__(::ork::rtti::RTTI<ClassType, BaseType>))                           \
 public:
@@ -292,6 +310,17 @@ Class* ForceLink(Class*);
   ClassName::RTTIType::RTTICategory ClassName::sClass(ClassName::RTTIType::ClassRTTI());                                           \
   ClassName::RTTIType::RTTICategory* ClassName::GetClassStatic() { return &sClass; }                                               \
   ClassName::RTTIType::RTTICategory* ClassName::GetClass() const { return GetClassStatic(); }                                      \
+  INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
+  INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
+  INSTANTIATE_LINK_FUNCTION(ClassName)
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define ImplementReflectionX(ClassName, TheDesignName)                                                                     \
+  ::ork::ConstString ClassName::DesignNameStatic() { return TheDesignName; }                                                       \
+  ::ork::object::ObjectClass ClassName::sClass(ClassName::RTTIType::ClassRTTI());                                           \
+  ::ork::object::ObjectClass* ClassName::GetClassStatic() { return &sClass; }                                               \
+  ::ork::object::ObjectClass* ClassName::GetClass() const { return GetClassStatic(); }                                      \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
   INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
   INSTANTIATE_LINK_FUNCTION(ClassName)
