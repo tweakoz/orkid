@@ -151,8 +151,6 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   hmap->SetWorldSize(_hfdrawable->_worldSizeXZ, _hfdrawable->_worldSizeXZ);
   hmap->SetWorldHeight(_hfdrawable->_worldHeight);
 
-  auto sphmaptex = (_hfdrawable->_sphericalenvmap != nullptr) ? _hfdrawable->_sphericalenvmap->GetTexture() : nullptr;
-
   _terrainMaterial = new TerrainMaterial(ptarg);
 
   orkprintf("ComputingGeometry\n");
@@ -777,25 +775,14 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   //////////////////////////
   // fill out shader params
   //////////////////////////
-  auto& params       = _terrainMaterial->_paramVal;
-  params._matMVPL    = MVPL;
-  params._matMVPC    = MVPC;
-  params._matMVPR    = MVPR;
-  params._camPos     = campos_mono;
-  params._modcolor   = color;
-  params._envTexture = ColorTex;
-  params._hfTextureA = _heightmapTextureA;
-  params._hfTextureB = _heightmapTextureB;
-  params._testxxx = _hfdrawable->_data._testxxx;
-  params._fogcolor = _hfdrawable->_data._fogcolor;
-  params._grass = _hfdrawable->_data._grass;
-  params._snow = _hfdrawable->_data._snow;
-  params._rock1 = _hfdrawable->_data._rock1;
-  params._rock2 = _hfdrawable->_data._rock2;
-  params._gblend_yscale = _hfdrawable->_data._gblend_yscale;
-  params._gblend_ybias = _hfdrawable->_data._gblend_ybias;
-  params._gblend_steplo = _hfdrawable->_data._gblend_steplo;
-  params._gblend_stephi = _hfdrawable->_data._gblend_stephi;
+  TerrainMaterialValues shadervals(_hfdrawable->_data);
+  shadervals._matMVPL    = MVPL;
+  shadervals._matMVPC    = MVPC;
+  shadervals._matMVPR    = MVPR;
+  shadervals._camPos     = campos_mono;
+  shadervals._modcolor   = color;
+  shadervals._hfTextureA = _heightmapTextureA;
+  shadervals._hfTextureB = _heightmapTextureB;
 
   ///////////////////////////////////////////////////////////////////
   // render
@@ -804,7 +791,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   // auto range = _aabbmax - _aabbmin;
 
   targ->PushMaterial(_terrainMaterial);
-  _terrainMaterial->begin(RCID);
+  _terrainMaterial->begin(RCID,shadervals);
 
   fmtx4 inv_view_mono;
   inv_view_mono.inverseOf(VMTX_mono);
@@ -867,7 +854,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
         gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
       }
     }
-    _terrainMaterial->end(targ);
+    _terrainMaterial->end(RCID);
   }
 
   targ->PopMaterial();
@@ -923,7 +910,6 @@ void HeightFieldDrawableData::Describe() {
 hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {
   auto drw = std::make_shared<HeightFieldDrawable>(*this);
     drw->_visualOffset    = _visualOffset;
-    drw->_sphericalenvmap = _sphericalenvmap;
     drw->_hfpath          = _hfpath;
   return drw;
 }

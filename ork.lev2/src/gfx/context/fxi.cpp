@@ -12,6 +12,7 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/lev2/lev2_asset.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -26,6 +27,13 @@ FxInterface::FxInterface()
 	, mpGroupMaterial(0)
 {
 
+}
+
+void FxInterface::BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* texasset)
+{
+  auto texture = (texasset != nullptr) ? texasset->GetTexture() : nullptr;
+  if(texture)
+    BindParamCTex(hfx,hpar,texture);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

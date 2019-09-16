@@ -44,6 +44,7 @@ class TextureAnimationInst;
 class PickBufferBase;
 class RtGroup;
 class RtBuffer;
+class TextureAsset;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -158,6 +159,8 @@ public:
   virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) = 0;
   virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval)                                  = 0;
   virtual void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex)                      = 0;
+
+  void BindParamTex(FxShader* hfx, const FxShaderParam* hpar, const lev2::TextureAsset* tex);
 
   void BeginMaterialGroup(GfxMaterial* pmtl);
   void EndMaterialGroup();

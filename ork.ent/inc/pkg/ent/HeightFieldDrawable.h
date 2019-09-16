@@ -26,6 +26,7 @@ class HeightFieldDrawableData : public ork::Object {
   float _gblend_ybias = 0.0f;
   float _gblend_steplo = 0.5f;
   float _gblend_stephi = 0.6f;
+  ork::lev2::textureassetptr_t _sphericalenvmap = nullptr;
 
 private:
 
@@ -38,7 +39,6 @@ private:
 
   file::Path _hfpath;
   fvec3 _visualOffset;
-  ork::lev2::textureassetptr_t _sphericalenvmap = nullptr;
 
 };
 
@@ -53,7 +53,6 @@ struct HeightFieldDrawable {
   fvec3 _visualOffset;
   float _worldHeight = 0.0f;
   float _worldSizeXZ = 0.0f;
-  ork::lev2::textureassetptr_t _sphericalenvmap = nullptr;
   CallbackDrawable* _rawdrawable = nullptr;
   ork::svar16_t _impl;
 };
