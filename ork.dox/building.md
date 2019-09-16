@@ -14,7 +14,7 @@ To build on Osx Mojave (10.14)+
 * install homebrew, and with install deps listed in ork.installdeps.ubuntu19.py
 * ```git clone https://github.com/tweakoz/orkid```
 * ```cd orkid```
-* ```/ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
+* ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging 'container' folder and launches an environment
 * ```./build.py``` <- builds deps and orkid (into staging folder)
 * ```ork.asset.buildall.py``` <- builds assets (using built orkid executable)
 
@@ -22,7 +22,7 @@ To build on Ubuntu19.04 x86/64
 ==================================
 * ```git clone https://github.com/tweakoz/orkid```
 * ```cd orkid```
-* ```/ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
+* ```./ork.build/bin/init_env.py --create .stage``` <- this creates a staging folder and launches an environment
 * ```ork.installdeps.ubuntu19.py``` <- install system deps
 * build and install openvr sdk from https://github.com/ValveSoftware/openvr
 * ```./build.py``` <- builds deps and orkid (into staging folder)
