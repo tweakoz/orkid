@@ -4,7 +4,7 @@ import os
 
 deplist =  ["qtbase5-private-dev","libopenimageio-dev","libboost-dev"]
 deplist += ["libglfw3-dev","libflac++-dev","cmake","scons","git"]
-deplist += ["rapidjson-dev","graphviz","doxygen","clang"]
+deplist += ["rapidjson-dev","graphviz","doxygen","clang","libtiff-dev"]
 deplist += ["libboost-filesystem-dev","libboost-system-dev","libboost-thread-dev"]
 for item in deplist:
     os.system("sudo apt install %s" % item)
