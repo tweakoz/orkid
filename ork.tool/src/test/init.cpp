@@ -68,8 +68,6 @@ void init(char** argp) {
 
   ork::ent::Init();
   ork::rtti::Class::InitializeClasses();
-  ork::ent::Init2();
-  ork::rtti::Class::InitializeClasses();
 
   ork::lev2::GfxTargetCreationParams CreationParams;
   CreationParams.miNumSharedVerts = 4 << 10;
