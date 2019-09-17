@@ -140,7 +140,7 @@ CompositingSystem::~CompositingSystem()
 const CompositingSceneItem* CompositingSystem::compositingItem(int isceneidx,int itemidx) const {
 	const ent::CompositingSceneItem* rval = nullptr;
 	const ent::CompositingScene* pscene = nullptr;
-	const auto& CCD = systemData();
+	const auto& CCD = compositingSystemData();
 	const orklut<PoolString,ork::Object*>& Groups = CCD.GetGroups();
 	const orklut<PoolString,ork::Object*>& Scenes = CCD.GetScenes();
 	int inumgroups = Groups.size();
@@ -176,16 +176,16 @@ bool CompositingSystem::IsEnabled() const {
     return _compositingData.IsEnabled();
 }
 
-EOutputTimeStep CompositingSystem::GetCurrentFrameRateEnum() const
+EOutputTimeStep CompositingSystem::currentFrameRateEnum() const
 {
 	return   IsEnabled()
            ? _compositingData.OutputFrameRate()
            : EOutputTimeStep_RealTime;
 }
 
-float CompositingSystem::GetCurrentFrameRate() const
+float CompositingSystem::currentFrameRate() const
 {
-	EOutputTimeStep time_step = GetCurrentFrameRateEnum();
+	EOutputTimeStep time_step = currentFrameRateEnum();
 	float framerate = 0.0f;
 	switch( time_step )
 	{
@@ -270,7 +270,7 @@ void CompositingSystem::composeToScreen( lev2::GfxTarget* pT ){
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const CompositingGroup* CompositingSystem::GetGroup(const PoolString& grpname) const {
+const CompositingGroup* CompositingSystem::compositingGroup(const PoolString& grpname) const {
 	const CompositingGroup* rval = 0;
 	if( auto sceneitem = compositingItem(0,miActiveSceneItem) ){
         auto itA = _compositingData.GetGroups().find(grpname);
@@ -300,13 +300,13 @@ void CompositingSystem::DoUpdate(Simulation *inst) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CompositingContext& CompositingSystem::GetCCtx() const {
+const CompositingContext& CompositingSystem::compositingContext() const {
     return _compcontext;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingContext& CompositingSystem::GetCCtx(){
+CompositingContext& CompositingSystem::compositingContext(){
     return _compcontext;
 }
 

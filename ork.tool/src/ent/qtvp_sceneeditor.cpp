@@ -245,7 +245,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     /////////////////////////////////
 
     if (bFX && pCMCI) {
-      float frame_rate           = pCMCI ? pCMCI->GetCurrentFrameRate() : 0.0f;
+      float frame_rate           = pCMCI ? pCMCI->currentFrameRate() : 0.0f;
       bool externally_fixed_rate = (frame_rate != 0.0f);
       const ent::Simulation* psi = this->simulation();
 
@@ -539,7 +539,7 @@ void SceneEditorVP::enqueueSimulationDrawables(ent::DrawableBuffer* pDB) {
 const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp) {
   const CompositingGroup* pCG = 0;
   if (ent::CompositingSystem* pCMCI = compositingSystem()) {
-    const CompositingSystemData& CCD = pCMCI->systemData();
+    const CompositingSystemData& CCD = pCMCI->compositingSystemData();
     auto& Groups                     = CCD.GetGroups();
     int inumgroups                   = Groups.size();
     if (inumgroups && igrp >= 0) {

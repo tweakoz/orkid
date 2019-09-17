@@ -99,7 +99,7 @@ void UpdateThread::run() // virtual
           auto psi = (ent::Simulation*)mpVP->simulation();
           if (psi) {
             auto cmci = psi->compositingSystem();
-            float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
+            float frame_rate = cmci ? cmci->currentFrameRate() : 0.0f;
             bool externally_fixed_rate = (frame_rate != 0.0f);
 
             if (externally_fixed_rate) {

@@ -173,7 +173,7 @@ float Simulation::random(float mmin, float mmax) {
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::ComputeDeltaTime() {
   auto cmci = compositingSystem();
-  float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
+  float frame_rate = cmci ? cmci->currentFrameRate() : 0.0f;
 
   AssertOnOpQ2(UpdateSerialOpQ());
   float systime = float(OldSchool::GetRef().GetLoResTime());
@@ -1177,7 +1177,7 @@ void Simulation::Update() {
       ///////////////////////////////
 
       auto cmci = compositingSystem();
-      float frame_rate = cmci ? cmci->GetCurrentFrameRate() : 0.0f;
+      float frame_rate = cmci ? cmci->currentFrameRate() : 0.0f;
       bool externally_fixed_rate = (frame_rate != 0.0f);
 
       // float fdelta = 1.0f/60.0f; //GetDeltaTime();

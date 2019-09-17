@@ -14,6 +14,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
+#include <ork/rtti/RTTI.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <ork/asset/DynamicAssetLoader.h>
@@ -41,8 +42,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::NodeCompositingTechnique, "NodeCompositin
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingNode, "CompositingNode");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SeriesCompositingNode, "SeriesCompositingNode");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InsertCompositingNode, "InsertCompositingNode");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::PassThroughCompositingNode, "PassThroughCompositingNode");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::Op2CompositingNode, "Op2CompositingNode");
+ImplementReflectionX(ork::ent::PassThroughCompositingNode, "PassThroughCompositingNode");
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -121,9 +122,9 @@ void CompositingNode::Render(CompositorDrawData& drawdata, CompositingSystem* pC
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void PassThroughCompositingNode::Describe() {
-  ork::reflect::RegisterProperty("Group", &PassThroughCompositingNode::GetGroup, &PassThroughCompositingNode::SetGroup);
-  ork::reflect::AnnotatePropertyForEditor<PassThroughCompositingNode>("Group", "editor.factorylistbase", "CompositingGroup");
+void PassThroughCompositingNode::describeX(class_t*c) {
+  c->accessorProperty("Group", &PassThroughCompositingNode::_readGroup, &PassThroughCompositingNode::_writeGroup)
+   ->annotate<ConstString>("editor.factorylistbase", "CompositingGroup");
 }
 ///////////////////////////////////////////////////////////////////////////////
 PassThroughCompositingNode::PassThroughCompositingNode() : mFTEK(nullptr), mGroup(nullptr) {}
@@ -133,12 +134,12 @@ PassThroughCompositingNode::~PassThroughCompositingNode() {
     delete mFTEK;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PassThroughCompositingNode::GetGroup(ork::rtti::ICastable*& val) const {
+void PassThroughCompositingNode::_readGroup(ork::rtti::ICastable*& val) const {
   CompositingGroup* nonconst = const_cast<CompositingGroup*>(mGroup);
   val = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PassThroughCompositingNode::SetGroup(ork::rtti::ICastable* const& val) {
+void PassThroughCompositingNode::_writeGroup(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
   mGroup = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingGroup*>(ptr));
 }

@@ -224,7 +224,7 @@ class CompositingBuffer : public ork::Object {
 };
 ///////////////////////////////////////////////////////////////////////////////
 class PassThroughCompositingNode : public CompositingNode {
-  RttiDeclareConcrete(PassThroughCompositingNode, CompositingNode);
+  DeclareConcreteX(PassThroughCompositingNode, CompositingNode);
 
 public:
   PassThroughCompositingNode();
@@ -234,8 +234,8 @@ private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) final; // virtual
 
-  void GetGroup(ork::rtti::ICastable*& val) const;
-  void SetGroup(ork::rtti::ICastable* const& val);
+  void _readGroup(ork::rtti::ICastable*& val) const;
+  void _writeGroup(ork::rtti::ICastable* const& val);
   lev2::RtGroup* GetOutput() const final;
 
   CompositingMaterial mCompositingMaterial;
@@ -455,19 +455,19 @@ public:
   void Draw(CompositorDrawData& drawdata);
   void composeToScreen(lev2::GfxTarget* pT);
 
-  const CompositingSystemData& systemData() const { return _compositingData; }
+  const CompositingSystemData& compositingSystemData() const { return _compositingData; }
 
   bool IsEnabled() const;
 
-  EOutputTimeStep GetCurrentFrameRateEnum() const;
-  float GetCurrentFrameRate() const;
+  EOutputTimeStep currentFrameRateEnum() const;
+  float currentFrameRate() const;
 
-  const CompositingContext& GetCCtx() const;
-  CompositingContext& GetCCtx();
+  const CompositingContext& compositingContext() const;
+  CompositingContext& compositingContext();
 
   const CompositingSceneItem* compositingItem(int isceneidx, int itemidx) const;
 
-  const CompositingGroup* GetGroup(const PoolString& grpname) const;
+  const CompositingGroup* compositingGroup(const PoolString& grpname) const;
 
 private:
   const CompositingSystemData& _compositingData;

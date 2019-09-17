@@ -415,7 +415,7 @@ public:
 	size_t GetNumLightGroups() const;
 	void Clear();
 
-	//const LightingGroup& GetGroup( int igroupindex ) const;
+	//const LightingGroup& compositingGroup( int igroupindex ) const;
 };
 
 struct HeadLightManager
