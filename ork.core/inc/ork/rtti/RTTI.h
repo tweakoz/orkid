@@ -15,6 +15,12 @@
 
 #include <ork/config/config.h>
 
+namespace ork {
+struct float_range {
+  float _min = 0.0f;
+  float _max = 0.0f;
+};
+}
 namespace ork::object {
 class ObjectClass;
 }

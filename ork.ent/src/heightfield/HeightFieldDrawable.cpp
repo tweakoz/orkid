@@ -886,24 +886,19 @@ void HeightFieldDrawableData::describeX(class_t*c) {
    ->annotate<ConstString>("editor.assetclass", "lev2tex");
   ////////////////////////////////////////////////////////////////////////
   c->memberProperty("TestXXX", &HeightFieldDrawableData::_testxxx)
-   ->annotate<float>("editor.range.min",-100)
-   ->annotate<float>("editor.range.max",100);
+   ->annotate("editor.range",float_range{-100,100});
   ////////////////////////////////////////////////////////////////////////
   c->memberProperty("GBlendYScale", &HeightFieldDrawableData::_gblend_yscale)
-   ->annotate<float>("editor.range.min",-1)
-   ->annotate<float>("editor.range.max",1);
+   ->annotate("editor.range",float_range{-1,1});
   ////////////////////////////////////////////////////////////////////////
   c->memberProperty("GBlendYBias", &HeightFieldDrawableData::_gblend_ybias)
-   ->annotate<float>("editor.range.min",-5000)
-   ->annotate<float>("editor.range.max",5000);
+   ->annotate("editor.range",float_range{-5000,5000});
   ////////////////////////////////////////////////////////////////////////
   c->memberProperty("GBlendStepLo", &HeightFieldDrawableData::_gblend_steplo)
-   ->annotate<float>("editor.range.min",0)
-   ->annotate<float>("editor.range.max",1);
+   ->annotate("editor.range",float_range{0,1});
   ////////////////////////////////////////////////////////////////////////
   c->memberProperty("GBlendStepHi", &HeightFieldDrawableData::_gblend_stephi)
-   ->annotate<float>("editor.range.min",0)
-   ->annotate<float>("editor.range.max",1);
+   ->annotate("editor.range",float_range{0,1});
   ////////////////////////////////////////////////////////////////////////
 }
 
