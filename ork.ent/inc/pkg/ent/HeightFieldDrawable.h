@@ -12,7 +12,7 @@ typedef std::shared_ptr<HeightFieldDrawable> hfdrawableptr_t;
 
 class HeightFieldDrawableData : public ork::Object {
 
-	RttiDeclareConcrete( HeightFieldDrawableData, ork::Object );
+	DeclareConcreteX( HeightFieldDrawableData, ork::Object );
 
  public:
    hfdrawableptr_t createDrawable() const ;

@@ -531,6 +531,8 @@ void Init() {
 
   SceneDagObjectManipInterface::GetClassStatic();
 
+  RegisterClassX(HeightFieldDrawableData);
+
 #if defined(ORK_OSXX)
   AudioAnalysisSystemData::GetClassStatic();
   AudioAnalysisSystem::GetClassStatic();
@@ -579,6 +581,11 @@ void Init() {
 
   RegisterFamily<BulletSystemData>(ork::AddPooledLiteral("physics"));
 }
+
+void Init2() {
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////

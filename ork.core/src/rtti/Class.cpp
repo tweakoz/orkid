@@ -5,13 +5,12 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
 #include <ork/pch.h>
 
-#include <ork/rtti/Class.h>
 #include <ork/kernel/string/StringPool.h>
-#include <ork/rtti/RTTI.h>
 #include <ork/rtti/Category.h>
+#include <ork/rtti/Class.h>
+#include <ork/rtti/RTTI.h>
 
 #include <ork/kernel/orklut.hpp>
 
@@ -20,202 +19,187 @@
 #include <ork/application/application.h>
 
 namespace ork {
-	template class orklut<PoolString, rtti::Class *>;
+template class orklut<PoolString, rtti::Class*>;
 }
 
 namespace ork { namespace rtti {
 
-Class::Class(const RTTIData &rtti)
-	: mParentClass(rtti.ParentClass())
-	, mClassInitializer(rtti.ClassInitializer())
-	, mFactory(0)
+std::set<Class*> Class::_explicitLinkClasses;
+static int counter = 0;
 
-	, mNextClass(sLastClass)
-	, mNextSiblingClass(this)
-	, mPrevSiblingClass(this)
-	, mChildClass(NULL)
-{
-	sLastClass = this;
+Class::Class(const RTTIData& rtti)
+    : mParentClass(rtti.ParentClass())
+    , mClassInitializer(rtti.ClassInitializer())
+    , mFactory(0)
+
+    , mNextClass(sLastClass)
+    , mNextSiblingClass(this)
+    , mPrevSiblingClass(this)
+    , mChildClass(NULL) {
+
+  assert(not(mParentClass==nullptr and counter==2));
+
+  sLastClass = this;
 }
 
+void Class::Initialize() {
+  _initialized = true;
+  if (mParentClass)
+    mParentClass->AddChild(this);
 
-void Class::Initialize()
-{
-	if(mParentClass)
-		mParentClass->AddChild(this);
-
-	if(mClassInitializer != NULL)
-	{
-		(*mClassInitializer)();
-	}
+  if (mClassInitializer != NULL) {
+    (*mClassInitializer)();
+  }
 }
 
-void Class::InitializeClasses()
-{
-	for(Class* clazz = sLastClass; clazz != nullptr; clazz = clazz->mNextClass){
-		clazz->Initialize();
-		orkprintf( "InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass );
-	}
-	sLastClass = NULL;
+void Class::InitializeClasses() {
+  counter++;
+  std::set<Class*> _pendingclasses;
+  for (Class* clazz = sLastClass; clazz != nullptr; clazz = clazz->mNextClass) {
+    if( clazz )
+      _pendingclasses.insert(clazz);
+    // clazz->Initialize();
+    // orkprintf("InitClass class<%p:%s> next<%p>\n", clazz, clazz->Name().c_str(), clazz->mNextClass);
+  }
+  sLastClass = NULL;
+  for (auto clazz : _explicitLinkClasses) {
+    if(clazz)
+      _pendingclasses.insert(clazz);
+  }
+
+  for (auto itc : _pendingclasses) {
+    auto clazz = itc;
+
+    if (false==clazz->_initialized) {
+      if(counter==2){
+        //__asm__ volatile("int $0x03");
+      }
+      orkprintf("InitClass class<%p:%s>\n", clazz, clazz->Name().c_str());
+      clazz->Initialize();
+    }
+  }
+
+
 }
 
-void Class::SetName(ConstString name,bool badd2map)
-{
-	if(name.length())
-	{
-		mClassName = AddPooledString(name.c_str());
+void Class::SetName(ConstString name, bool badd2map) {
+  if (name.length()) {
+    mClassName = AddPooledString(name.c_str());
 
-		if( badd2map )
-		{
-			ClassMapType::iterator it = mClassMap.find(mClassName);
-			if(it != mClassMap.end())
-			{
-				if(it->second != this)
-				{
-					Class *previous = it->second;
+    if (badd2map) {
+      ClassMapType::iterator it = mClassMap.find(mClassName);
+      if (it != mClassMap.end()) {
+        if (it->second != this) {
+          Class* previous = it->second;
 
-					orkprintf("ERROR: Duplicate class name %s! previous class %p\n", mClassName.c_str(), previous);
-					OrkAssert(false);
-				}
-			}
-			else
-			{
-				mClassMap.AddSorted(mClassName, this);
-			}
-		}
-	}
+          orkprintf("ERROR: Duplicate class name %s! previous class %p\n", mClassName.c_str(), previous);
+          OrkAssert(false);
+        }
+      } else {
+        mClassMap.AddSorted(mClassName, this);
+      }
+    }
+  }
 }
 
-void Class::SetFactory(rtti::ICastable *(*factory)())
-{
-	mFactory = factory;
+void Class::SetFactory(rtti::ICastable* (*factory)()) { mFactory = factory; }
+
+Class* Class::Parent() { return mParentClass; }
+
+const Class* Class::Parent() const { return mParentClass; }
+
+Class* Class::FirstChild() { return mChildClass; }
+
+Class* Class::NextSibling() { return mNextSiblingClass; }
+
+Class* Class::PrevSibling() { return mPrevSiblingClass; }
+
+void Class::AddChild(Class* pClass) {
+  if (mChildClass) {
+    pClass->mNextSiblingClass = mChildClass->mNextSiblingClass;
+    pClass->mPrevSiblingClass = mChildClass;
+    pClass->FixSiblingLinks();
+  }
+
+  mChildClass = pClass;
 }
 
-Class *Class::Parent()
-{
-	return mParentClass;
+void Class::FixSiblingLinks() {
+  mNextSiblingClass->mPrevSiblingClass = this;
+  mPrevSiblingClass->mNextSiblingClass = this;
 }
 
-const Class *Class::Parent() const
-{
-	return mParentClass;
+void Class::RemoveFromHierarchy() {
+  mNextSiblingClass->mPrevSiblingClass = mPrevSiblingClass;
+  mPrevSiblingClass->mNextSiblingClass = mNextSiblingClass;
+
+  if (mParentClass->mChildClass == this)
+    mParentClass->mChildClass = mNextSiblingClass;
+
+  if (mParentClass->mChildClass == this)
+    mParentClass->mChildClass = NULL;
+
+  mNextSiblingClass = mPrevSiblingClass = this;
 }
 
-Class *Class::FirstChild()
-{
-	return mChildClass;
+const PoolString& Class::Name() const { return mClassName; }
+
+Class* Class::FindClass(const ConstString& name) {
+  return OldStlSchoolFindValFromKey(mClassMap, FindPooledString(name.c_str()), NULL);
 }
 
-Class *Class::NextSibling()
-{
-	return mNextSiblingClass;
+Class* Class::FindClassNoCase(const ConstString& name) {
+  std::string nocasename = name.c_str();
+  std::transform(nocasename.begin(), nocasename.end(), nocasename.begin(), ::tolower);
+  for (const auto& it : mClassMap) {
+    if (0 == strcasecmp(it.first.c_str(), nocasename.c_str()))
+      return it.second;
+  }
+  return nullptr;
 }
 
-Class *Class::PrevSibling()
-{
-	return mPrevSiblingClass;
+rtti::ICastable* Class::CreateObject() const { return (*mFactory)(); }
+
+bool Class::IsSubclassOf(const Class* other) const {
+  const Class* this_class = this;
+
+  for (;;) {
+    if (this_class == other)
+      return true;
+    if (this_class == NULL)
+      return false;
+    this_class = this_class->Parent();
+  }
 }
 
-void Class::AddChild(Class *pClass)
-{
-	if(mChildClass)
-	{
-		pClass->mNextSiblingClass = mChildClass->mNextSiblingClass;
-		pClass->mPrevSiblingClass = mChildClass;
-		pClass->FixSiblingLinks();
-	}
-
-	mChildClass = pClass;
+const ICastable* Class::Cast(const ICastable* other) const {
+  if (NULL == other || other->GetClass()->IsSubclassOf(this))
+    return other;
+  return NULL;
 }
 
-void Class::FixSiblingLinks()
-{
-	mNextSiblingClass->mPrevSiblingClass = this;
-	mPrevSiblingClass->mNextSiblingClass = this;
+ICastable* Class::Cast(ICastable* other) const {
+  if (NULL == other || other->GetClass()->IsSubclassOf(this))
+    return other;
+  return NULL;
 }
 
-void Class::RemoveFromHierarchy()
-{
-	mNextSiblingClass->mPrevSiblingClass = mPrevSiblingClass;
-	mPrevSiblingClass->mNextSiblingClass = mNextSiblingClass;
+void Class::CreateClassAlias(ConstString name, Class* pclass) {
+  PoolString ClassName = AddPooledString(name.c_str());
 
-	if(mParentClass->mChildClass == this)
-		mParentClass->mChildClass = mNextSiblingClass;
-
-	if(mParentClass->mChildClass == this)
-		mParentClass->mChildClass = NULL;
-
-	mNextSiblingClass = mPrevSiblingClass = this;
+  ClassMapType::iterator it = mClassMap.find(ClassName);
+  OrkAssert(it == mClassMap.end());
+  mClassMap.AddSorted(ClassName, pclass);
 }
 
-const PoolString &Class::Name() const
-{
-	return mClassName;
-}
-
-Class *Class::FindClass(const ConstString &name)
-{
-	return OldStlSchoolFindValFromKey(mClassMap, FindPooledString(name.c_str()), NULL);
-}
-
-Class *Class::FindClassNoCase(const ConstString &name)
-{
-	std::string nocasename = name.c_str();
-	std::transform(nocasename.begin(), nocasename.end(), nocasename.begin(), ::tolower);
-	for( const auto& it : mClassMap )
-	{
-		if( 0 == strcasecmp(it.first.c_str(),nocasename.c_str() ) )
-			return it.second;
-	}
-    return nullptr;
-}
-
-rtti::ICastable *Class::CreateObject() const
-{
-	return (*mFactory)();
-}
-
-bool Class::IsSubclassOf(const Class *other) const
-{
-	const Class *this_class = this;
-
-	for(;;)
-	{
-		if(this_class == other) return true;
-		if(this_class == NULL) return false;
-		this_class = this_class->Parent();
-	}
-}
-
-const ICastable *Class::Cast(const ICastable *other) const
-{
-	if(NULL == other || other->GetClass()->IsSubclassOf(this)) return other;
-	return NULL;
-}
-
-ICastable *Class::Cast(ICastable *other) const
-{
-	if(NULL == other || other->GetClass()->IsSubclassOf(this)) return other;
-	return NULL;
-}
-
-void Class::CreateClassAlias( ConstString name , Class *pclass )
-{
-	PoolString ClassName = AddPooledString(name.c_str());
-
-	ClassMapType::iterator it = mClassMap.find(ClassName);
-	OrkAssert( it == mClassMap.end() );
-	mClassMap.AddSorted( ClassName, pclass );
-}
-
-Class *Class::sLastClass = NULL;
+Class* Class::sLastClass = NULL;
 Class::ClassMapType Class::mClassMap;
 
-Category *Class::category() {
-	static Category s_category(RTTI<Class, ICastable, NamePolicy, Category>::ClassRTTI());
-	return &s_category;
+Category* Class::category() {
+  static Category s_category(RTTI<Class, ICastable, NamePolicy, Category>::ClassRTTI());
+  return &s_category;
 }
 
-Class *Class::GetClass() const { return Class::GetClassStatic(); }
+Class* Class::GetClass() const { return Class::GetClassStatic(); }
 ConstString Class::DesignNameStatic() { return "Class"; }
-} }
+}} // namespace ork::rtti
