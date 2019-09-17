@@ -579,6 +579,14 @@ void Init() {
 
   RegisterFamily<BulletSystemData>(ork::AddPooledLiteral("physics"));
 }
+
+void Init2() {
+  auto hfc = HeightFieldDrawableData::GetClassStatic();
+  printf("hfc<%p:%s>\n", hfc, hfc->Name().c_str() );
+  rtti::Class::registerX(hfc);
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent
 ///////////////////////////////////////////////////////////////////////////////

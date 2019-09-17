@@ -60,6 +60,10 @@ public:
 
 	static void CreateClassAlias( ConstString name , Class * );
 
+  static inline void registerX(Class*clazz){_explicitLinkClasses.insert(clazz);}
+
+  bool _initialized = false;
+
 private:
 	void AddChild(Class *pClass);
 	void FixSiblingLinks();
@@ -78,8 +82,11 @@ private:
 
     static Class *sLastClass;
 
+
 	typedef orklut<PoolString, Class *> ClassMapType;
+  static std::set<Class *> _explicitLinkClasses;
 	static ClassMapType mClassMap;
+
 };
 
 } }

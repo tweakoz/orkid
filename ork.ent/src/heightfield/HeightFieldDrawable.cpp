@@ -25,7 +25,18 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
-ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
+//ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
+::ork::ConstString ork::ent::HeightFieldDrawableData::DesignNameStatic() { return "HeightFieldDrawableData"; }
+void ork::ent::HeightFieldDrawableData::Describe() { describeX(GetClassStatic()); }
+ork::ent::HeightFieldDrawableData::class_t* ork::ent::HeightFieldDrawableData::GetClassStatic() {
+   //__asm__ volatile("int $0x03");
+  static ork::ent::HeightFieldDrawableData::class_t _clazz(ork::rtti::RTTI<ork::ent::HeightFieldDrawableData,ork::Object, ork::rtti::DefaultPolicy, ork::object::ObjectClass>::ClassRTTI());
+  return &_clazz;
+}
+ork::ent::HeightFieldDrawableData::class_t* ork::ent::HeightFieldDrawableData::GetClass() const { return GetClassStatic(); }
+INSTANTIATE_CASTABLE_SERIALIZE(ork::ent::HeightFieldDrawableData)
+INSTANTIATE_CASTABLE_SERIALIZE(const ork::ent::HeightFieldDrawableData)
+INSTANTIATE_LINK_FUNCTION(ork::ent::HeightFieldDrawableData)
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -877,13 +888,13 @@ void HeightFieldDrawableData::describeX(class_t*c) {
   c->memberProperty("Rock2Color", &HeightFieldDrawableData::_rock2);
   ////////////////////////////////////////////////////////////////////////
   c->accessorProperty("HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath)
-   ->annotate<std::string>("editor.class","ged.factory.assetlist")
-   ->annotate<std::string>("editor.filetype", "png");
+   ->annotate<ConstString>("editor.class","ged.factory.assetlist")
+   ->annotate<ConstString>("editor.filetype", "png");
   ////////////////////////////////////////////////////////////////////////
   c->accessorProperty("SphericalEnvMap", &HeightFieldDrawableData::_readEnvMap, &HeightFieldDrawableData::_writeEnvMap)
-   ->annotate<std::string>("editor.class", "ged.factory.assetlist")
-   ->annotate<std::string>("editor.assettype", "lev2tex")
-   ->annotate<std::string>("editor.assetclass", "lev2tex");
+   ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+   ->annotate<ConstString>("editor.assettype", "lev2tex")
+   ->annotate<ConstString>("editor.assetclass", "lev2tex");
   ////////////////////////////////////////////////////////////////////////
   c->memberProperty("TestXXX", &HeightFieldDrawableData::_testxxx)
    ->annotate<float>("editor.range.min",-100)
@@ -905,7 +916,6 @@ void HeightFieldDrawableData::describeX(class_t*c) {
    ->annotate<float>("editor.range.min",0)
    ->annotate<float>("editor.range.max",1);
   ////////////////////////////////////////////////////////////////////////
-  assert(false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

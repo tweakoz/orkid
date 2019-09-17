@@ -41,6 +41,7 @@ void Init();
 }} // namespace ork::lev2
 namespace ork { namespace ent {
 void Init();
+void Init2();
 }} // namespace ork::ent
 
 ////////////////////////////////////////////////////////////////
@@ -65,8 +66,10 @@ void init(char** argp) {
   //	XInitThreads();
   #endif
 
-  ork::rtti::Class::InitializeClasses();
   ork::ent::Init();
+  ork::rtti::Class::InitializeClasses();
+  ork::ent::Init2();
+  ork::rtti::Class::InitializeClasses();
 
   ork::lev2::GfxTargetCreationParams CreationParams;
   CreationParams.miNumSharedVerts = 4 << 10;

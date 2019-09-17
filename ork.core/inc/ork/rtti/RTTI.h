@@ -189,16 +189,17 @@ private:                                                                        
 
 ////////////////
 
-#define DeclareConcreteX(ClassType, BaseType)\
-public:\
-typedef ::ork::object::ObjectClass class_t;\
-static ::ork::ConstString DesignNameStatic();\
-static void describeX(class_t* clazz);\
-static void Describe(){ describeX(GetClassStatic()); } \
-static class_t* GetClassStatic();\
-class_t* GetClass() const override;\
-private:\
-static class_t sClass;
+#define DeclareConcreteX(ClassType, BaseType)                                                                                      \
+public:                                                                                                                            \
+  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::DefaultPolicy> rttiimpl_t;                                           \
+  typedef rttiimpl_t::RTTICategory class_t;                                                                                        \
+  static void describeX(class_t* clazz);                                                                                           \
+  static void Describe();                                                                                                          \
+  static ::ork::ConstString DesignNameStatic();                                                                                    \
+  static class_t* GetClassStatic();                                                                                                \
+  inline class_t* GetClass() const;                                                                                                \
+                                                                                                                                   \
+private:
 
 ////////////////
 
@@ -316,17 +317,6 @@ Class* ForceLink(Class*);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define ImplementReflectionX(ClassName, TheDesignName)                                                                     \
-  ::ork::ConstString ClassName::DesignNameStatic() { return TheDesignName; }                                                       \
-  ::ork::object::ObjectClass ClassName::sClass(ClassName::RTTIType::ClassRTTI());                                           \
-  ::ork::object::ObjectClass* ClassName::GetClassStatic() { return &sClass; }                                               \
-  ::ork::object::ObjectClass* ClassName::GetClass() const { return GetClassStatic(); }                                      \
-  INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
-  INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
-  INSTANTIATE_LINK_FUNCTION(ClassName)
-
-////////////////////////////////////////////////////////////////////////////////
-
 #define INSTANTIATE_CASTABLE(ClassName)                                                                                            \
   template <> ClassName::RTTIType::RTTICategory ClassName::RTTIType::sClass(ClassName::ClassRTTI());                               \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
@@ -349,6 +339,22 @@ Class* ForceLink(Class*);
   ClassName::RTTIType::RTTICategory ClassName::sClass(ClassName::RTTIType::ClassRTTI());                                           \
   ClassName::RTTIType::RTTICategory* ClassName::GetClassStatic() { return &sClass; }                                               \
   ClassName::RTTIType::RTTICategory* ClassName::GetClass() const { return GetClassStatic(); }                                      \
+  INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
+  INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
+  INSTANTIATE_LINK_FUNCTION(ClassName)
+
+////////////////////////////////////////////////////////////////////////////////
+// NewStyle
+////////////////////////////////////////////////////////////////////////////////
+
+#define ImplementReflectionX(ClassName, TheDesignName)                                                                             \
+  ::ork::ConstString ClassName::DesignNameStatic() { return TheDesignName; }                                                       \
+  void ClassName::Describe() { describeX(GetClassStatic()); }                                                                      \
+  ClassName::class_t* ClassName::GetClassStatic() {                                                                                \
+    static ClassName::class_t _clazz(ClassName::RTTIType::ClassRTTI());                                                            \
+    return &_clazz;                                                                                                                \
+  }                                                                                                                                \
+  ClassName::class_t* ClassName::GetClass() const { return GetClassStatic(); }                                                     \
   INSTANTIATE_CASTABLE_SERIALIZE(ClassName)                                                                                        \
   INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
   INSTANTIATE_LINK_FUNCTION(ClassName)
