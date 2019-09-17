@@ -191,7 +191,8 @@ private:                                                                        
 
 #define DeclareConcreteX(ClassType, BaseType)                                                                                      \
 public:                                                                                                                            \
-  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::DefaultPolicy> rttiimpl_t;                                           \
+  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::DefaultPolicy, ork::object::ObjectClass> rttiimpl_t;                                           \
+  typedef rttiimpl_t RTTIType;                                                                                             \
   typedef rttiimpl_t::RTTICategory class_t;                                                                                        \
   static void describeX(class_t* clazz);                                                                                           \
   static void Describe();                                                                                                          \

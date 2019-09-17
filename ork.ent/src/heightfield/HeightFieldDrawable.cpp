@@ -25,18 +25,7 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
-//ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
-::ork::ConstString ork::ent::HeightFieldDrawableData::DesignNameStatic() { return "HeightFieldDrawableData"; }
-void ork::ent::HeightFieldDrawableData::Describe() { describeX(GetClassStatic()); }
-ork::ent::HeightFieldDrawableData::class_t* ork::ent::HeightFieldDrawableData::GetClassStatic() {
-   //__asm__ volatile("int $0x03");
-  static ork::ent::HeightFieldDrawableData::class_t _clazz(ork::rtti::RTTI<ork::ent::HeightFieldDrawableData,ork::Object, ork::rtti::DefaultPolicy, ork::object::ObjectClass>::ClassRTTI());
-  return &_clazz;
-}
-ork::ent::HeightFieldDrawableData::class_t* ork::ent::HeightFieldDrawableData::GetClass() const { return GetClassStatic(); }
-INSTANTIATE_CASTABLE_SERIALIZE(ork::ent::HeightFieldDrawableData)
-INSTANTIATE_CASTABLE_SERIALIZE(const ork::ent::HeightFieldDrawableData)
-INSTANTIATE_LINK_FUNCTION(ork::ent::HeightFieldDrawableData)
+ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
