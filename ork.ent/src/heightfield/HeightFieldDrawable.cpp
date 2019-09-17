@@ -25,7 +25,7 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
+ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -868,44 +868,46 @@ static void _RenderHeightfield(RenderContextInstData& rcid, GfxTarget* targ, con
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void HeightFieldDrawableData::Describe() {
-  reflect::RegisterProperty("Offset", &HeightFieldDrawableData::_visualOffset);
-  reflect::RegisterProperty("SphericalEnvMap", &HeightFieldDrawableData::_readEnvMap, &HeightFieldDrawableData::_writeEnvMap);
-  reflect::RegisterProperty(
-      "HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath);
-  reflect::RegisterProperty("TestXXX", &HeightFieldDrawableData::_testxxx);
-
-  reflect::RegisterProperty("FogColor", &HeightFieldDrawableData::_fogcolor);
-  reflect::RegisterProperty("GrassColor", &HeightFieldDrawableData::_grass);
-  reflect::RegisterProperty("SnowColor", &HeightFieldDrawableData::_snow);
-  reflect::RegisterProperty("Rock1Color", &HeightFieldDrawableData::_rock1);
-  reflect::RegisterProperty("Rock2Color", &HeightFieldDrawableData::_rock2);
-
-  reflect::RegisterProperty("GBlendYScale", &HeightFieldDrawableData::_gblend_yscale);
-  reflect::RegisterProperty("GBlendYBias", &HeightFieldDrawableData::_gblend_ybias);
-  reflect::RegisterProperty("GBlendStepLo", &HeightFieldDrawableData::_gblend_steplo);
-  reflect::RegisterProperty("GBlendStepHi", &HeightFieldDrawableData::_gblend_stephi);
-
-  ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.class", "ged.factory.assetlist");
-  ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.assettype", "lev2tex");
-  ork::reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("SphericalEnvMap", "editor.assetclass", "lev2tex");
-
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("HeightMap", "editor.class", "ged.factory.filelist");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("HeightMap", "editor.filetype", "png");
-
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("TestXXX", "editor.range.min", "-100");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("TestXXX", "editor.range.max", "100");
-
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYScale", "editor.range.min", "-1");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYScale", "editor.range.max", "1");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYBias", "editor.range.min", "-5000");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendYBias", "editor.range.max", "5000");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepLo", "editor.range.min", "0");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepLo", "editor.range.max", "1");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepHi", "editor.range.min", "0");
-  reflect::AnnotatePropertyForEditor<HeightFieldDrawableData>("GBlendStepHi", "editor.range.max", "1");
-
+void HeightFieldDrawableData::describeX(class_t*c) {
+  c->memberProperty("Offset", &HeightFieldDrawableData::_visualOffset);
+  c->memberProperty("FogColor", &HeightFieldDrawableData::_fogcolor);
+  c->memberProperty("GrassColor", &HeightFieldDrawableData::_grass);
+  c->memberProperty("SnowColor", &HeightFieldDrawableData::_snow);
+  c->memberProperty("rock1Color", &HeightFieldDrawableData::_rock1);
+  c->memberProperty("Rock2Color", &HeightFieldDrawableData::_rock2);
+  ////////////////////////////////////////////////////////////////////////
+  c->accessorProperty("HeightMap", &HeightFieldDrawableData::_readHmapPath, &HeightFieldDrawableData::_writeHmapPath)
+   ->annotate<ConstString>("editor.class","ged.factory.assetlist")
+   ->annotate<ConstString>("editor.filetype", "png");
+  ////////////////////////////////////////////////////////////////////////
+  c->accessorProperty("SphericalEnvMap", &HeightFieldDrawableData::_readEnvMap, &HeightFieldDrawableData::_writeEnvMap)
+   ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+   ->annotate<ConstString>("editor.assettype", "lev2tex")
+   ->annotate<ConstString>("editor.assetclass", "lev2tex");
+  ////////////////////////////////////////////////////////////////////////
+  c->memberProperty("TestXXX", &HeightFieldDrawableData::_testxxx)
+   ->annotate<float>("editor.range.min",-100)
+   ->annotate<float>("editor.range.max",100);
+  ////////////////////////////////////////////////////////////////////////
+  c->memberProperty("GBlendYScale", &HeightFieldDrawableData::_gblend_yscale)
+   ->annotate<float>("editor.range.min",-1)
+   ->annotate<float>("editor.range.max",1);
+  ////////////////////////////////////////////////////////////////////////
+  c->memberProperty("GBlendYBias", &HeightFieldDrawableData::_gblend_ybias)
+   ->annotate<float>("editor.range.min",-5000)
+   ->annotate<float>("editor.range.max",5000);
+  ////////////////////////////////////////////////////////////////////////
+  c->memberProperty("GBlendStepLo", &HeightFieldDrawableData::_gblend_steplo)
+   ->annotate<float>("editor.range.min",0)
+   ->annotate<float>("editor.range.max",1);
+  ////////////////////////////////////////////////////////////////////////
+  c->memberProperty("GBlendStepHi", &HeightFieldDrawableData::_gblend_stephi)
+   ->annotate<float>("editor.range.min",0)
+   ->annotate<float>("editor.range.max",1);
+  ////////////////////////////////////////////////////////////////////////
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 hfdrawableptr_t HeightFieldDrawableData::createDrawable() const {
   auto drw = std::make_shared<HeightFieldDrawable>(*this);
