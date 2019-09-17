@@ -360,6 +360,10 @@ Class* ForceLink(Class*);
   INSTANTIATE_CASTABLE_SERIALIZE(const ClassName)                                                                                  \
   INSTANTIATE_LINK_FUNCTION(ClassName)
 
+
+
+#define RegisterClassX(ClassName) ::ork::rtti::Class::registerX(ClassName::GetClassStatic());
+
 } // namespace ork::rtti
 
 // For TransparentRTTI
