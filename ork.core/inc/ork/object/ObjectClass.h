@@ -44,7 +44,7 @@ class ObjectClass : public rtti::Class {
   accessorProperty(const char* name, void (ClassType::*getter)(MemberType&) const, void (ClassType::*setter)(const MemberType&));
 
   template <typename ClassType>
-  inline PropertyModifier floatProperty(const char* name, float ClassType::*member, float_range range = float_range{0, 1});
+  inline PropertyModifier floatProperty(const char* name, float_range range, float ClassType::*member);
 
 private:
   reflect::Description mDescription;
