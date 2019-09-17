@@ -105,9 +105,9 @@ void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH )
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingSystem* pCCI)
 {
-	const ent::CompositingGroup* pCGA = pCCI->GetGroup(mGroupA);
-	const ent::CompositingGroup* pCGB = pCCI->GetGroup(mGroupB);
-	const ent::CompositingGroup* pCGC = pCCI->GetGroup(mGroupC);
+	const ent::CompositingGroup* pCGA = pCCI->compositingGroup(mGroupA);
+	const ent::CompositingGroup* pCGB = pCCI->compositingGroup(mGroupB);
+	const ent::CompositingGroup* pCGC = pCCI->compositingGroup(mGroupC);
 
 	struct yo
 	{

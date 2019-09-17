@@ -109,7 +109,7 @@ void run() // virtual
 	//kernel::ProfileGroup* prof_grp = nullptr;
 	//if( kernel::gprof )
 	//{
-	//	prof_grp = kernel::gprof->GetGroup(channam.c_str());
+	//	prof_grp = kernel::gprof->compositingGroup(channam.c_str());
 	//	prof_grp->miChannelIndex = thid;
 	//}
 

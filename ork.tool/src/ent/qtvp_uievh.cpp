@@ -233,7 +233,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
         case ' ': {
           auto compsys = compositingSystem();
           if( compsys ){
-            const auto& CDATA = compsys->systemData();
+            const auto& CDATA = compsys->compositingSystemData();
             CDATA.Toggle();
           }
           break;

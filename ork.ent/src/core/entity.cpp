@@ -532,6 +532,7 @@ void Init() {
   SceneDagObjectManipInterface::GetClassStatic();
 
   RegisterClassX(HeightFieldDrawableData);
+  RegisterClassX(PassThroughCompositingNode);
 
 #if defined(ORK_OSXX)
   AudioAnalysisSystemData::GetClassStatic();
