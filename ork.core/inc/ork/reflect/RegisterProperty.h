@@ -317,6 +317,14 @@ inline object::PropertyModifier object::ObjectClass::accessorProperty(const char
   return modder;
 }
 
+
+template <typename ClassType>
+inline PropertyModifier object::ObjectClass::floatProperty(const char* name,float ClassType::*member,float_range rng){
+  auto rval = memberProperty<ClassType,float>(name,member);
+       rval->annotate("editor.range",rng);
+  return rval;
+}
+
 } // namespace object
 
 } // namespace ork

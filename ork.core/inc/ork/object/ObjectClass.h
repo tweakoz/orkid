@@ -13,7 +13,7 @@
 #include <ork/config/config.h>
 
 namespace ork::reflect {
-  class IObjectProperty;
+class IObjectProperty;
 }
 namespace ork { namespace object {
 
@@ -22,9 +22,9 @@ class ObjectCategory;
 struct PropertyModifier;
 
 struct PropertyModifier {
-  template <typename T> inline PropertyModifier* annotate( const ConstString &key, T value );
-  inline PropertyModifier* Annotate( const ConstString &key, ConstString value );
-  inline PropertyModifier* operator -> ();
+  template <typename T> inline PropertyModifier* annotate(const ConstString& key, T value);
+  inline PropertyModifier* Annotate(const ConstString& key, ConstString value);
+  inline PropertyModifier* operator->();
   reflect::IObjectProperty* _property = nullptr;
 };
 
@@ -37,15 +37,14 @@ class ObjectClass : public rtti::Class {
   template <typename ClassType> static void InitializeType() { ClassType::Describe(); }
 
   template <typename ClassType, typename MemberType>
-  inline PropertyModifier
-  memberProperty(const char* name, MemberType ClassType::*member);
+  inline PropertyModifier memberProperty(const char* name, MemberType ClassType::*member);
 
   template <typename ClassType, typename MemberType>
   inline PropertyModifier
-  accessorProperty(const char* name,
-                   void (ClassType::*getter)(MemberType&) const,
-                   void (ClassType::*setter)(const MemberType&));
+  accessorProperty(const char* name, void (ClassType::*getter)(MemberType&) const, void (ClassType::*setter)(const MemberType&));
 
+  template <typename ClassType>
+  inline PropertyModifier floatProperty(const char* name, float ClassType::*member, float_range range = float_range{0, 1});
 
 private:
   reflect::Description mDescription;
