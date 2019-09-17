@@ -290,6 +290,7 @@ GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const refl
   auto annomin = prop->annotation("editor.range.min");
   auto annomax = prop->annotation("editor.range.max");
   auto annolog = prop->annotation("editor.range.log");
+  auto annorange = prop->annotation("editor.range");
 
   float fval = -1.0f;
 
@@ -298,19 +299,25 @@ GedFloatNode<IODriver>::GedFloatNode(ObjModel& mdl, const char* name, const refl
   float fmin = 0.0f;
   float fmax = 1.0f;
 
-  if (auto as_float = annomin.TryAs<float>())
-    fmin = as_float.value();
-  else if (auto as_str = annomin.TryAs<ConstString>())
-    sscanf(as_str.value().c_str(), "%f", &fmin);
+  if (auto as_floatrange = annorange.TryAs<float_range>()) {
+    fmin = as_floatrange.value()._min;
+    fmax = as_floatrange.value()._max;
+  } else {
 
-  if (auto as_float = annomax.TryAs<float>())
-    fmax = as_float.value();
-  else if (auto as_str = annomax.TryAs<ConstString>())
-    sscanf(as_str.value().c_str(), "%f", &fmax);
+    if (auto as_float = annomin.TryAs<float>())
+      fmin = as_float.value();
+    else if (auto as_str = annomin.TryAs<ConstString>())
+      sscanf(as_str.value().c_str(), "%f", &fmin);
 
-  else if (auto as_str = annolog.TryAs<ConstString>()) {
-    if (as_str.value() == "true") {
-      mLogMode = true;
+    if (auto as_float = annomax.TryAs<float>())
+      fmax = as_float.value();
+    else if (auto as_str = annomax.TryAs<ConstString>())
+      sscanf(as_str.value().c_str(), "%f", &fmax);
+
+    else if (auto as_str = annolog.TryAs<ConstString>()) {
+      if (as_str.value() == "true") {
+        mLogMode = true;
+      }
     }
   }
 
