@@ -114,7 +114,7 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
     , mCompositorSceneIndex(0)
     , mCompositorSceneItemIndex(0)
     , mbSceneDisplayEnable(false)
-    , mUpdateThread(nullptr) {
+    , _updateThread(nullptr) {
   mRenderLock                      = 0;
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   bcaster.AddListenerOnChannel(this, ork::ent::Simulation::EventChannel());
@@ -129,16 +129,14 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
 
   PushFrameTechnique(mpBasicFrameTek);
 
-#if defined(_THREADED_RENDERER)
-  mUpdateThread = new UpdateThread(this);
-  mUpdateThread->start();
-#endif
+  _updateThread = new UpdateThread(this);
+  _updateThread->start();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 SceneEditorVP::~SceneEditorVP() {
-  delete mUpdateThread;
+  delete _updateThread;
 
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   bcaster.RemoveListenerOnChannel(this, ork::ent::Simulation::EventChannel());
