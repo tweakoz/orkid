@@ -31,6 +31,15 @@ template class ork::orklut<ork::PoolString, anyp>;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD,rendercb_t cb)
+  : _framedata(RCFD)
+  , _rendercb(cb){
+}
+///////////////////////////////////////////
+void FrameRenderer::Render() {
+  _rendercb();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 IRenderTarget::IRenderTarget() {}

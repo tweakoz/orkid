@@ -17,11 +17,13 @@ namespace ork::lev2 {
 
   struct FrameRenderer {
     typedef std::function<void()> rendercb_t;
-    RenderContextFrameData _framedata;
-    FrameRenderer() { _render=[](){}; }
-    void Render() { _render(); }
-    rendercb_t _render;
+    /////////////////////////////////////////////
+    FrameRenderer(RenderContextFrameData& RCFD,rendercb_t cb);
+    void Render();
     RenderContextFrameData& framedata() { return _framedata; }
+    /////////////////////////////////////////////
+    RenderContextFrameData& _framedata;
+    rendercb_t _rendercb;
   };
 
   class IRenderTarget {

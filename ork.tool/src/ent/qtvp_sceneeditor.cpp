@@ -201,21 +201,22 @@ void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
 void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   bool update_running = gUpdateStatus.GetState() == EUPD_RUNNING;
 
-  // printf( "SceneEditorVP::DoDraw() updrun<%d>\n", int(update_running) );
-
-  // if( false == update_running ) return;
-
   const SRect tgtrect = SRect(0, 0, mpTarget->GetW(), mpTarget->GetH());
-  lev2::FrameRenderer framerenderer;
-
-  framerenderer._render = [&](){
-    Draw3dContent(framerenderer._framedata);
-  };
 
   lev2::UiViewportRenderTarget rt(this);
-  framerenderer.framedata().SetDstRect(tgtrect);
+  ////////////////////////////////////////////////
+  lev2::RenderContextFrameData RCFD;
+  RCFD.SetDstRect(tgtrect);
+  RCFD.SetTarget(mpTarget);
+
+
+
+  lev2::FrameRenderer framerenderer(RCFD,[&](){
+    this->Draw3dContent(RCFD);
+  });
+  ////////////////////////////////////////////////
+
   _renderer->SetTarget(mpTarget);
-  framerenderer.framedata().SetTarget(mpTarget);
 
   /////////////////////////////////////////////////////////////////////////////////
 
@@ -241,7 +242,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
   /////////////////////////////////////////////////////////////////////////////////
 
-  framerenderer.framedata().PushRenderTarget(&rt);
+  RCFD.PushRenderTarget(&rt);
   {
     /////////////////////////////////
     // Compositor ?
@@ -273,7 +274,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       ////////////////////////////////////////////
       // FrameTechnique FinalMRT + HUD -> screen
       ////////////////////////////////////////////
-      framerenderer.framedata().PushRenderTarget(&rt);
+      RCFD.PushRenderTarget(&rt);
       if (externally_fixed_rate && have_token) {
         ////////////////////////////////////////
         // setup destination buffer as offscreen buffer
@@ -283,9 +284,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         int itw = mpTarget->GetW();
         int ith = mpTarget->GetH();
 
-        framerenderer.framedata().SetTarget(mpTarget);
+        RCFD.SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
-        framerenderer.framedata().SetDstRect(tgtrect);
+        RCFD.SetDstRect(tgtrect);
         mpTarget->FBI()->SetAutoClear(true);
         mpTarget->BeginFrame();
         compsys->_impl.composeToScreen(mpTarget);
@@ -306,9 +307,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         lev2::DrawableBuffer::mOfflineUpdateSynchro.push(syntok);
 
       } else {
-        framerenderer.framedata().SetTarget(mpTarget);
+        RCFD.SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
-        framerenderer.framedata().SetDstRect(tgtrect);
+        RCFD.SetDstRect(tgtrect);
         mpTarget->FBI()->SetAutoClear(true);
 
         mpTarget->FBI()->SetViewport(0, 0, mpTarget->GetW(), mpTarget->GetH());
@@ -320,14 +321,14 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         /////////////////////////////////////////////////////////////////////
 
         if (gtoggle_hud) {
-          DrawHUD(framerenderer.framedata());
+          DrawHUD(RCFD);
           DrawChildren(drwev);
         }
 
         /////////////////////////////////////////////////////////////////////
         mpTarget->EndFrame();
       }
-      framerenderer.framedata().PopRenderTarget();
+      RCFD.PopRenderTarget();
     }
     /////////////////////////////////
     else // No Compositor
@@ -337,17 +338,17 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
       mRenderLock = 1;
 
-      framerenderer.framedata().setUserProperty("DB", rendervar_t(DB));
+      RCFD.setUserProperty("DB", rendervar_t(DB));
 
       if (DB) {
 
         rendervar_t passdata;
         passdata.Set<orkstack<lev2::CompositingPassData>*>(&mCompositingGroupStack);
-        framerenderer.framedata().setUserProperty("nodes"_crc, passdata);
-        framerenderer.framedata().PushRenderTarget(&rt);
-        framerenderer.framedata().SetTarget(mpTarget);
+        RCFD.setUserProperty("nodes"_crc, passdata);
+        RCFD.PushRenderTarget(&rt);
+        RCFD.SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
-        framerenderer.framedata().SetDstRect(tgtrect);
+        RCFD.SetDstRect(tgtrect);
         mpTarget->FBI()->SetAutoClear(true);
         mpTarget->FBI()->SetViewport(0, 0, mpTarget->GetW(), mpTarget->GetH());
         mpTarget->FBI()->SetScissor(0, 0, mpTarget->GetW(), mpTarget->GetH());
@@ -362,12 +363,12 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
           mCompositingGroupStack.pop();
 
           if (gtoggle_hud) {
-            DrawHUD(framerenderer.framedata());
+            DrawHUD(RCFD);
             DrawChildren(drwev);
           }
         }
         mpTarget->EndFrame();
-        framerenderer.framedata().PopRenderTarget();
+        RCFD.PopRenderTarget();
 
         lev2::DrawableBuffer::EndDbRead(DB);
       }
@@ -375,9 +376,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       mRenderLock = 0;
     }
   }
-  framerenderer.framedata().PopRenderTarget();
+  RCFD.PopRenderTarget();
 
-  framerenderer.framedata().SetDstRect(tgtrect);
+  RCFD.SetDstRect(tgtrect);
 }
 
 ///////////////////////////////////////////////////////////////////////////
