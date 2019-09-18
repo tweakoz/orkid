@@ -55,7 +55,7 @@ struct DrawableOwner : public ork::Object {
   ~DrawableOwner();
 
   void _addDrawable( const PoolString& layername, Drawable* pdrw );
-  
+
 	DrawableVector* GetDrawables( const PoolString& layer );
 	const DrawableVector* GetDrawables( const PoolString& layer ) const;
 
@@ -122,7 +122,8 @@ struct DrawableBufLayer {
 ///////////////////////////////////////////////////////////////////////////
 
 struct RenderSyncToken {
-  RenderSyncToken() : mFrameIndex(0) {}
+  RenderSyncToken() : mFrameIndex(-1) {}
+  bool valid() const { return mFrameIndex!=-1; }
   int mFrameIndex;
 };
 
@@ -140,6 +141,7 @@ public:
   int miBufferIndex;
   int miReadCount;
   orkset<PoolString> mLayers;
+
   static ork::MpMcBoundedQueue<RenderSyncToken> mOfflineRenderSynchro;
   static ork::MpMcBoundedQueue<RenderSyncToken> mOfflineUpdateSynchro;
   static ork::atomic<bool> gbInsideClearAndSync;
@@ -155,6 +157,8 @@ public:
 
   static DrawableBuffer* LockWriteBuffer(int lid);
   static void UnLockWriteBuffer(DrawableBuffer* db);
+
+  static RenderSyncToken acquireRenderToken();
 
   static void BeginClearAndSyncWriters();
   static void EndClearAndSyncWriters();
