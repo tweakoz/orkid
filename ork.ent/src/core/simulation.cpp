@@ -80,6 +80,7 @@ static ork::PoolString sAnimateFamily;
 static ork::PoolString sParticleFamily;
 static ork::PoolString sLightFamily;
 static ork::PoolString sInputFamily;
+static ork::PoolString sPreRenderFamily;
 
 void SimulationEvent::Describe() { sSimulationEvChanName = ork::AddPooledLiteral("SimulationEvChannel"); }
 const ork::PoolString& Simulation::EventChannel() { return sSimulationEvChanName; }
@@ -97,6 +98,7 @@ void Simulation::Describe() {
   sAnimateFamily  = ork::AddPooledLiteral("animate");
   sParticleFamily = ork::AddPooledLiteral("particle");
   sLightFamily    = ork::AddPooledLiteral("lighting");
+  sPreRenderFamily    = ork::AddPooledLiteral("PreRender");
 }
 ///////////////////////////////////////////////////////////////////////////////
 Simulation::Simulation(const SceneData* sdata, Application* application)

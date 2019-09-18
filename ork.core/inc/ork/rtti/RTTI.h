@@ -204,9 +204,25 @@ public:                                                                         
   static void Describe();                                                                                                          \
   static ::ork::ConstString DesignNameStatic();                                                                                    \
   static class_t* GetClassStatic();                                                                                                \
-  inline class_t* GetClass() const;                                                                                                \
+  class_t* GetClass() const override;                                                                                                \
                                                                                                                                    \
 private:
+
+////////////////
+
+#define DeclareAbstractX(ClassType, BaseType)                                                                                      \
+public:                                                                                                                            \
+  typedef ::ork::rtti::RTTI<ClassType, BaseType, ::ork::rtti::AbstractPolicy, ork::object::ObjectClass> rttiimpl_t;                                           \
+  typedef rttiimpl_t RTTIType;                                                                                             \
+  typedef rttiimpl_t::RTTICategory class_t;                                                                                        \
+  static void describeX(class_t* clazz);                                                                                           \
+  static void Describe();                                                                                                          \
+  static ::ork::ConstString DesignNameStatic();                                                                                    \
+  static class_t* GetClassStatic();                                                                                                \
+  class_t* GetClass() const override;                                                                                                \
+                                                                                                                                   \
+private:
+
 
 ////////////////
 

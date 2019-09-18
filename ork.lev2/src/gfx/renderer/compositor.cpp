@@ -17,6 +17,7 @@
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingGroup, "CompositingGroup");
