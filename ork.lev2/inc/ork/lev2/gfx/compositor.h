@@ -450,7 +450,7 @@ public:
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
-  void Draw(CompositorDrawData& drawdata);
+  void renderContent(lev2::FrameRenderer& framerenderer);
   void composeToScreen(lev2::GfxTarget* pT);
 
   const CompositingData& compositingData() const { return _compositingData; }
