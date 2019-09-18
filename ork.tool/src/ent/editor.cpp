@@ -10,7 +10,7 @@
 
 #include <ork/lev2/gfx/texman.h>
 #include <orktool/toolcore/selection.h>
-//#include "builtincommands.h"
+#include <ork/kernel/msgrouter.inl>
 #include <orktool/toolcore/dataflow.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
@@ -1004,30 +1004,26 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj) {
 void SceneEditorBase::DisableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  SimulationEvent disviewev(0, SimulationEvent::ESIEV_DISABLE_UPDATE);
-  bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
+  SimulationEvent disupdev(0, SimulationEvent::ESIEV_DISABLE_UPDATE);
+  msgrouter::channel("Simulation")->post(&disupdev);
 }
 void SceneEditorBase::EnableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  SimulationEvent disviewev(0, SimulationEvent::ESIEV_ENABLE_UPDATE);
-  bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
+  SimulationEvent enaupdev(0, SimulationEvent::ESIEV_ENABLE_UPDATE);
+  msgrouter::channel("Simulation")->post(&enaupdev);
 }
 void SceneEditorBase::DisableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   SimulationEvent disviewev(0, SimulationEvent::ESIEV_DISABLE_VIEW);
-  bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
+  msgrouter::channel("Simulation")->post(&disviewev);
 }
 void SceneEditorBase::EnableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   SimulationEvent enaviewev(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
-  bcaster.BroadcastNotifyOnChannel(&enaviewev, Simulation::EventChannel());
+  msgrouter::channel("Simulation")->post(&enaviewev);
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterRunLocalState() {

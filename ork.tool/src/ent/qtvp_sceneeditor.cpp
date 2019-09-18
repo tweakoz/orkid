@@ -116,8 +116,55 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
     , mbSceneDisplayEnable(false)
     , _updateThread(nullptr) {
   mRenderLock                      = 0;
-  ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  bcaster.AddListenerOnChannel(this, ork::ent::Simulation::EventChannel());
+
+  ///////////////////////////////////////////////////////////
+
+  _simchannelsubscriber = msgrouter::channel("Simulation")->subscribe([=](msgrouter::content_t c){
+  if (auto as_sei = c.TryAs<ork::ent::SimulationEvent*>()) {
+    auto sei = as_sei.value();
+    switch (sei->GetEvent()) {
+      case ork::ent::SimulationEvent::ESIEV_DISABLE_UPDATE: {
+        auto lamb = [=]() { gUpdateStatus.SetState(EUPD_STOP); };
+        Op(lamb).QueueASync(UpdateSerialOpQ());
+        break;
+      }
+      case ork::ent::SimulationEvent::ESIEV_ENABLE_UPDATE: {
+        auto lamb = [=]() { gUpdateStatus.SetState(EUPD_START); };
+        Op(lamb).QueueASync(UpdateSerialOpQ());
+        break;
+      }
+      case ork::ent::SimulationEvent::ESIEV_DISABLE_VIEW: {
+        auto lamb = [=]() {
+          this->DisableSceneDisplay();
+          //#disable path that would lead to gfx globallock
+          //# maybe show a "loading" screen or something
+        };
+        Op(lamb).QueueASync(MainThreadOpQ());
+        // mDbLock.ReleaseCurrent();
+        break;
+      }
+      case ork::ent::SimulationEvent::ESIEV_ENABLE_VIEW: {
+        auto lamb = [=]() {
+          this->EnableSceneDisplay();
+          //#disable path that would lead to gfx globallock
+          //# maybe show a "loading" screen or something
+        };
+        Op(lamb).QueueASync(MainThreadOpQ());
+        // mDbLock.ReleaseCurrent();
+        break;
+      }
+      case ork::ent::SimulationEvent::ESIEV_BIND:
+        // mDbLock.ReleaseCurrent();
+        break;
+      case ork::ent::SimulationEvent::ESIEV_START:
+        break;
+      case ork::ent::SimulationEvent::ESIEV_STOP:
+        break;
+      case ork::ent::SimulationEvent::ESIEV_USER:
+        break;
+    }
+  }
+  });
 
   ///////////////////////////////////////////////////////////
 
@@ -137,9 +184,6 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
 
 SceneEditorVP::~SceneEditorVP() {
   delete _updateThread;
-
-  ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
-  bcaster.RemoveListenerOnChannel(this, ork::ent::Simulation::EventChannel());
 }
 
 ///////////////////////////////////////////////////////////////////////////

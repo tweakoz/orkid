@@ -7,7 +7,6 @@
 
 #include <ork/application/application.h>
 #include <ork/asset/AssetManager.h>
-#include <ork/event/EventListener.h>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/string.h>
@@ -397,7 +396,8 @@ void Simulation::EnterEditState() {
 
   SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
 
-  ork::event::Broadcaster::GetRef().BroadcastNotifyOnChannel(&bindev, EventChannel());
+  msgrouter::channel("Simulation")->post(&bindev);
+  //ork::event::Broadcaster::GetRef().BroadcastNotifyOnChannel(&bindev, EventChannel());
 
   LeaveRunMode();
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();

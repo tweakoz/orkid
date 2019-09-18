@@ -11,7 +11,6 @@
 
 #include "componentfamily.h"
 #include "types.h"
-#include <ork/event/EventListener.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/object/Object.h>
 
