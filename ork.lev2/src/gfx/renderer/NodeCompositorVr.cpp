@@ -175,9 +175,8 @@ struct VRIMPL {
   void _myrender(FrameRenderer& renderer, CompositorDrawData& drawdata, fmtx4 rootmatrix) {
 
     RenderContextFrameData& framedata = renderer.GetFrameData();
-    auto vrroot = framedata.getUserProperty("vroot"_crc);
+    auto vrroot = framedata.getUserProperty("vrroot"_crc);
     if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
-      as_mtx.value().dump("vrroot");
       orkidvr::gpuUpdate(as_mtx.value());
     }
     else{
@@ -220,6 +219,7 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
   //////////////////////////////////////////////
   // find vr camera
   //////////////////////////////////////////////
+
 
   auto vrcamprop = framedata.getUserProperty("vrcam"_crc);
   fmtx4 rootmatrix;

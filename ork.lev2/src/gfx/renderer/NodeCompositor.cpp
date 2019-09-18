@@ -34,7 +34,7 @@ END_ENUM_SERIALIZER()
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::NodeCompositingTechnique, "NodeCompositingTechnique");
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CompositingNode, "CompositingNode");
+ImplementReflectionX(ork::lev2::CompositingNode, "CompositingNode");
 ImplementReflectionX(ork::lev2::SeriesCompositingNode, "SeriesCompositingNode");
 ImplementReflectionX(ork::lev2::InsertCompositingNode, "InsertCompositingNode");
 ImplementReflectionX(ork::lev2::Op2CompositingNode, "Op2CompositingNode");
@@ -107,7 +107,7 @@ CompositingBuffer::CompositingBuffer() {}
 ///////////////////////////////////////////////////////////////////////////////
 CompositingBuffer::~CompositingBuffer() {}
 ///////////////////////////////////////////////////////////////////////////////
-void CompositingNode::Describe() {}
+void CompositingNode::describeX(class_t*c) {}
 ///////////////////////////////////////////////////////////////////////////////
 CompositingNode::CompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////

@@ -17,6 +17,7 @@
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
@@ -208,12 +209,17 @@ void CompositingImpl::Draw(CompositorDrawData& drawdata) {
   passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
   the_renderer.GetFrameData().setUserProperty("nodes"_crc, passdata);
 
+
   /////////////////////////////////
   // Lock Drawable Buffer
   /////////////////////////////////
 
   const DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7); // mDbLock.Aquire(7);
   framedata.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+
+  for( auto item : _prerendercallbacks ){
+    item.second(pTARG);
+  }
 
   if (DB) {
     _compcontext.Draw(pTARG, drawdata, this);

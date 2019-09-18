@@ -198,7 +198,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 class CompositingNode : public ork::Object {
-  RttiDeclareAbstract(CompositingNode, ork::Object);
+  DeclareAbstractX(CompositingNode, ork::Object);
 
 public:
   CompositingNode();
@@ -445,6 +445,8 @@ private:
 class CompositingImpl {
 public:
 
+  typedef std::function<void(lev2::GfxTarget* targ)> prerendercallback_t;
+
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
@@ -467,6 +469,10 @@ public:
 
   void update(float dt);
 
+  inline void setPrerenderCallback(int key,prerendercallback_t cb){
+    _prerendercallbacks[key]=cb;
+  }
+
 private:
   const CompositingData& _compositingData;
 
@@ -475,6 +481,8 @@ private:
   float mfLastTime;
 
   CompositingMorphable _morphable;
+
+  std::map<int,prerendercallback_t> _prerendercallbacks;
 
   int miActiveSceneItem;
   CompositingContext _compcontext;

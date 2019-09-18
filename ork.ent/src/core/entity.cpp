@@ -525,6 +525,8 @@ void Init() {
   RegisterFamily<SequenceCamControllerData>(ork::AddPooledLiteral("camera"));
   RegisterFamily<TetherCamControllerData>(ork::AddPooledLiteral("camera"));
 
+  RegisterFamily<CompositingSystemData>(AddPooledLiteral("prerender"));
+
   RegisterFamily<SimpleCharControllerData>(AddPooledLiteral("control"));
   RegisterFamily<ScriptComponentData>(ork::AddPooledLiteral("control"));
   RegisterFamily<CompositingSystemData>(ork::AddPooledLiteral("control"));
