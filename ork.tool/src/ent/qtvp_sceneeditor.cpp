@@ -120,9 +120,9 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
   ///////////////////////////////////////////////////////////
 
   _simchannelsubscriber = msgrouter::channel("Simulation")->subscribe([=](msgrouter::content_t c){
-  if (auto as_sei = c.TryAs<ork::ent::SimulationEvent*>()) {
-    auto sei = as_sei.value();
-    switch (sei->GetEvent()) {
+  if (auto as_sei = c.TryAs<ork::ent::SimulationEvent>()) {
+    auto& sei = as_sei.value();
+    switch (sei.GetEvent()) {
       case ork::ent::SimulationEvent::ESIEV_DISABLE_UPDATE: {
         auto lamb = [=]() { gUpdateStatus.SetState(EUPD_STOP); };
         Op(lamb).QueueASync(UpdateSerialOpQ());
