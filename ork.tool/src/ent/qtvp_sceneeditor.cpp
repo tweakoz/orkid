@@ -103,12 +103,10 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
     , mEditor(the_ed)
     , mpBasicFrameTek(0)
     , mpCurrentHandler(0)
-    , mpCurrentToolIcon(0)
     , mGridMode(0)
     , _renderer(new ork::tool::Renderer(the_ed))
     , mSceneView(this)
     , _editorCamera(0)
-    , mFramePerfItem("SceneEditorVP::Draw()")
     , miCullCameraIndex(-1)
     , miCameraIndex(0)
     , mCompositorSceneIndex(0)
@@ -302,6 +300,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////
   // Compositor ?
   /////////////////////////////////
+  RCFD.PushRenderTarget(&rt);
   if (compositor_enabled) {
     auto compsys = compositingSystem();
     compsys->_impl.renderContent(framerenderer);
@@ -332,6 +331,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mRenderLock = 0;
   }
   RCFD.SetDstRect(tgtrect);
+  RCFD.PopRenderTarget();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -352,8 +352,6 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
     return;
 
   lev2::GfxTarget* pTARG = FrameData.GetTarget();
-  ///////////////////////////////////////////////////////////////////////////
-  mFramePerfItem.Enter();
   ///////////////////////////////////////////////////////////////////////////
   lev2::IRenderTarget* pIT = FrameData.GetRenderTarget();
   ///////////////////////////////////////////////////////////////////////////
@@ -389,7 +387,7 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
     bool bpostfxfb          = false;
 
     if (node.mpGroup) {
-      const lev2::CompositingGroupEffect& effect = node.mpGroup->GetEffect();
+      const lev2::CompositingGroupEffect& effect = node.mpGroup->_effect;
       EffectName                                 = effect.GetEffectName();
       fFxAmt                                     = effect.GetEffectAmount();
       fFbAmt                                     = effect.GetFeedbackAmount();
@@ -465,8 +463,6 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
       miPickDirtyCount--;
     }
   }
-  ///////////////////////////////////////////////////////
-  mFramePerfItem.Exit();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

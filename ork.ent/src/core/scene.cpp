@@ -19,8 +19,9 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <pkg/ent/entity.h>
+#include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
+#include <pkg/ent/CompositingSystem.h>
 
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
@@ -31,6 +32,10 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/math/basicfilters.h>
+
+#include <pkg/ent/EditorCamera.h>
+#include <pkg/ent/ModelArchetype.h>
+#include <pkg/ent/ModelComponent.h>
 
 template class ork::orklut<const ork::object::ObjectClass *,
                            ork::ent::SystemData *>;
@@ -401,6 +406,12 @@ void SceneData::EnterInitState() { OnSceneDataMode(ESCENEDATAMODE_INIT); }
 void SceneData::EnterRunState() { OnSceneDataMode(ESCENEDATAMODE_RUN); }
 ///////////////////////////////////////////////////////////////////////////////
 bool SceneData::PostDeserialize(reflect::IDeserializer &) {
+  cleanup();
+  EnterEditState();
+  return true;
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneData::cleanup(){
   //////////////////////////////////////////
   // clean up dead systems
   //////////////////////////////////////////
@@ -417,8 +428,65 @@ bool SceneData::PostDeserialize(reflect::IDeserializer &) {
     _systemDatas.erase(ite);
   }
   //////////////////////////////////////////
-  EnterEditState();
-  return true;
+  // create always required systems
+  //////////////////////////////////////////
+  auto csdname = "CompositingSystemData"_pool;
+  auto its = _systemDatas.find(csdname);
+  if( its == _systemDatas.end() ){
+      auto csd = new CompositingSystemData;
+      csd->defaultSetup();
+      _systemDatas[csdname]=csd;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void SceneData::defaultSetup(Opq& editopq){
+  //////////////////////////////////////////
+  // do required stuff
+  //////////////////////////////////////////
+  cleanup();
+  auto composer = std::make_shared<SceneComposer>(this);
+  //////////////////////////////////////////
+  // add a few basic ents
+  //////////////////////////////////////////
+  auto edcamname = "edcam"_pool;
+  auto edcamarchname = "/arch/edcam"_pool;
+  auto ite = _sceneObjects.find(edcamname);
+  auto ita = _sceneObjects.find(edcamarchname);
+  if( ite == _sceneObjects.end() and ita == _sceneObjects.end() ){
+    auto arch = new EditorCamArchetype;
+    _sceneObjects[edcamarchname] = arch;
+    auto ent = new EntData;
+    ent->SetArchetype(arch);
+    _sceneObjects[edcamname] = ent;
+    editopq.push([=,&editopq](){
+      arch->Compose(*composer);
+      auto ecd = arch->GetTypedComponent<EditorCamControllerData>();
+      ecd->_camera->mfLoc = 5.0f;
+    });
+  }
+  //////////////////////////////////////////
+  auto objectname = "object"_pool;
+  auto objectarchname = "/arch/object"_pool;
+  ite = _sceneObjects.find(objectname);
+  ita = _sceneObjects.find(objectarchname);
+  if( ite == _sceneObjects.end() and ita == _sceneObjects.end() ){
+    auto arch = new ModelArchetype;
+    _sceneObjects[objectarchname] = arch;
+    auto ent = new EntData;
+    ent->SetArchetype(arch);
+    _sceneObjects[objectname] = ent;
+
+    MainThreadOpQ().push([=,&editopq]() {
+      auto asset = asset::AssetManager<lev2::XgmModelAsset>::Load( "data://environ/objects/misc/headwalker" );
+      editopq.push([=](){
+        arch->Compose(*composer);
+        auto mcd = arch->GetTypedComponent<ModelComponentData>();
+        mcd->SetModel(asset);
+      });
+    });
+  }
+  //////////////////////////////////////////
+  AutoLoadAssets();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneData::addSystemData(SystemData *pcomp) {

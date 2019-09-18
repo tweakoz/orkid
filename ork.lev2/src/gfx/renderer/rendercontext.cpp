@@ -145,5 +145,11 @@ IRenderTarget* RenderContextFrameData::GetRenderTarget() {
 }
 void RenderContextFrameData::PopRenderTarget() { mRenderTargetStack.pop(); }
 
+void RenderContextFrameData::setLayerName(const char* layername){
+  lev2::rendervar_t passdata;
+  passdata.Set<const char*>(layername);
+  setUserProperty("pass"_crc, passdata);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

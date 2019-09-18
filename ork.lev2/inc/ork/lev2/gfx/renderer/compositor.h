@@ -8,7 +8,10 @@
 #pragma once
 
 #include <ork/dataflow/dataflow.h>
-#include "renderer/builtin_frameeffects.h"
+#include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/renderer/frametek.h>
 
 namespace ork { namespace lev2 {
 
@@ -19,49 +22,7 @@ struct CompositingContext;
 struct CompositingImpl;
 struct CompositingData;
 struct CompositingMorphable;
-
-///////////////////////////////////////////////////////////////////////////////
-
-enum EOutputTimeStep {
-  EOutputTimeStep_RealTime = 0,
-  EOutputTimeStep_15fps,
-  EOutputTimeStep_24fps,
-  EOutputTimeStep_30fps,
-  EOutputTimeStep_48fps,
-  EOutputTimeStep_60fps,
-  EOutputTimeStep_72fps,
-  EOutputTimeStep_96fps,
-  EOutputTimeStep_120fps,
-  EOutputTimeStep_240fps,
-};
-
-enum EOutputRes {
-  EOutputRes_640x480 = 0,
-  EOutputRes_960x640,
-  EOutputRes_1024x1024,
-  EOutputRes_1280x720,
-  EOutputRes_1600x1200,
-  EOutputRes_1920x1080,
-};
-
-enum EOutputResMult {
-  EOutputResMult_Quarter = 0,
-  EOutputResMult_Half,
-  EOutputResMult_Full,
-  EOutputResMult_Double,
-  EOutputResMult_Quadruple,
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-enum ECOMPOSITEBlend {
-  BoverAplusC = 0,
-  AplusBplusC,
-  AlerpBwithC,
-  Asolo,
-  Bsolo,
-  Csolo,
-};
+class BuiltinFrameTechniques;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -71,10 +32,11 @@ class CompositingScene : public ork::Object {
 public:
   CompositingScene();
 
-  const orklut<PoolString, ork::Object*>& GetItems() const { return mItems; }
+  const orklut<PoolString, ork::Object*>& items() const { return _items; }
+  orklut<PoolString, ork::Object*>& items() { return _items; }
 
 private:
-  orklut<PoolString, ork::Object*> mItems;
+  orklut<PoolString, ork::Object*> _items;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -228,12 +190,12 @@ public:
   PassThroughCompositingNode();
   ~PassThroughCompositingNode();
 
-private:
+  void _readGroup(ork::rtti::ICastable*& val) const;
+  void _writeGroup(ork::rtti::ICastable* const& val);
+
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
 
-  void _readGroup(ork::rtti::ICastable*& val) const;
-  void _writeGroup(ork::rtti::ICastable* const& val);
   lev2::RtGroup* GetOutput() const final;
 
   CompositingMaterial mCompositingMaterial;
@@ -306,15 +268,6 @@ private:
   ork::PoolString mDynTexPath;
 };
 ///////////////////////////////////////////////////////////////////////////////
-enum EOp2CompositeMode {
-  Op2AsumB = 0,
-  Op2AmulB,
-  Op2AdivB,
-  Op2BoverA,
-  Op2AoverB,
-  Op2Asolo,
-  Op2Bsolo,
-};
 class Op2CompositingNode : public CompositingNode {
   DeclareConcreteX(Op2CompositingNode, CompositingNode);
 
@@ -349,13 +302,14 @@ public:
   NodeCompositingTechnique();
   ~NodeCompositingTechnique();
 
+  void _readRoot(ork::rtti::ICastable*& val) const;
+  void _writeRoot(ork::rtti::ICastable* const& val);
+
 private:
   void Init(lev2::GfxTarget* pTARG, int w, int h) override;                                                     // virtual
   void Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;                              // virtual
   void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) override; // virtual
   //
-  void GetRoot(ork::rtti::ICastable*& val) const;
-  void SetRoot(ork::rtti::ICastable* const& val);
 
   ork::ObjectMap mBufferMap;
   CompositingNode* mpRootNode;
@@ -415,11 +369,13 @@ public:
   CompositingData();
   ///////////////////////////////////////////////////////
 
-  const orklut<PoolString, ork::Object*>& GetGroups() const { return mCompositingGroups; }
-  const orklut<PoolString, ork::Object*>& GetScenes() const { return mScenes; }
+  void defaultSetup();
 
-  PoolString& GetActiveScene() const { return mActiveScene; }
-  PoolString& GetActiveItem() const { return mActiveItem; }
+  const orklut<PoolString, ork::Object*>& GetGroups() const { return _groups; }
+  const orklut<PoolString, ork::Object*>& GetScenes() const { return _scenes; }
+
+  PoolString& GetActiveScene() const { return _activeScene; }
+  PoolString& GetActiveItem() const { return _activeItem; }
 
   bool IsEnabled() const { return mbEnable && mToggle; }
   bool IsOutputFramesEnabled() const { return mbOutputFrames; }
@@ -427,11 +383,10 @@ public:
 
   void Toggle() const { mToggle = !mToggle; }
 
-private:
-  orklut<PoolString, ork::Object*> mCompositingGroups;
-  orklut<PoolString, ork::Object*> mScenes;
-  mutable PoolString mActiveScene;
-  mutable PoolString mActiveItem;
+  orklut<PoolString, ork::Object*> _groups;
+  orklut<PoolString, ork::Object*> _scenes;
+  mutable PoolString _activeScene;
+  mutable PoolString _activeItem;
   mutable bool mToggle;
   bool mbEnable;
   bool mbOutputFrames;
@@ -499,46 +454,42 @@ public:
   ///////////////////////////////////////////////////////
   CompositingGroupEffect();
 
-  EFrameEffect GetFrameEffect() const { return meFrameEffect; }
-  float GetEffectAmount() const { return mfEffectAmount; }
-  float GetFeedbackAmount() const { return mfFeedbackAmount; }
-  float GetFinalRezScale() const { return mfFinalResMult; }
-  float GetFxRezScale() const { return mfFxResMult; }
+  EFrameEffect GetFrameEffect() const { return _effectID; }
+  float GetEffectAmount() const { return _effectAmount; }
+  float GetFeedbackAmount() const { return _feedbackLevel; }
+  float GetFinalRezScale() const { return _finalResolution; }
+  float GetFxRezScale() const { return _fxResolution; }
   const char* GetEffectName() const;
   Texture* GetFbUvMap() const;
-  bool IsPostFxFeedback() const { return mbPostFxFeedback; }
+  bool IsPostFxFeedback() const { return _postFxFeedback; }
 
-private:
+  EFrameEffect _effectID;
+  TextureAsset* _texture;
+  float _feedbackLevel;
+  float _fxResolution;
+  float _finalResolution;
+  bool _postFxFeedback;
+  float _effectAmount;
+
   void _writeTex(rtti::ICastable* const& tex);
+private:
   void _readTex(rtti::ICastable*& tex) const;
 
-  EFrameEffect meFrameEffect;
-  TextureAsset* mTexture;
-  float mfEffectAmount;
-  float mfFeedbackAmount;
-  float mfFxResMult;
-  float mfFinalResMult;
-  bool mbPostFxFeedback;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingGroup : public ork::Object {
+struct CompositingGroup : public ork::Object {
   DeclareConcreteX(CompositingGroup, ork::Object);
 
 public:
   CompositingGroup();
 
-  const PoolString& GetCameraName() const { return mCameraName; }
-  const PoolString& GetLayers() const { return mLayers; }
-  const CompositingGroupEffect& GetEffect() const { return mEffect; }
+  PoolString _cameraName;
+  PoolString _layers;
+  CompositingGroupEffect _effect;
 
-private:
-  PoolString mCameraName;
-  PoolString mLayers;
-  CompositingGroupEffect mEffect;
-
-  ork::Object* EffectAccessor() { return &mEffect; }
+  ork::Object* _accessEffect() { return &_effect; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -550,10 +501,9 @@ public:
   CompositingSceneItem();
 
   CompositingTechnique* GetTechnique() const { return mpTechnique; }
+  void _readTech(ork::rtti::ICastable*& val) const;
+  void _writeTech(ork::rtti::ICastable* const& val);
 
-private:
-  void GetTech(ork::rtti::ICastable*& val) const;
-  void SetTech(ork::rtti::ICastable* const& val);
 
   CompositingTechnique* mpTechnique;
 };

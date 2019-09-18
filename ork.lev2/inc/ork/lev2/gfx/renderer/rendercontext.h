@@ -156,7 +156,7 @@ struct RenderContextFrameData {
   void SetTarget(GfxTarget* ptarg);
   void SetDstRect(const SRect& rect) { mDstRect = rect; }
   void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
-
+  void setLayerName(const char* layername);
   CameraCalcContext& GetCameraCalcCtx() { return mCameraCalcCtx; }
   const CameraCalcContext& GetCameraCalcCtx() const { return mCameraCalcCtx; }
 

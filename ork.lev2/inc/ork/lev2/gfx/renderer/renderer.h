@@ -16,6 +16,7 @@
 #include "renderable.h"
 #include "rendercontext.h"
 #include "renderqueue.h"
+#include "renderer_enum.h"
 #include <ork/gfx/radixsort.h>
 
 ///////////////////////////////////////////////////////////////////////////////

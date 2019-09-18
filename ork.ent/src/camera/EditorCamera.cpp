@@ -26,7 +26,7 @@
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/gfx/camera.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include "EditorCamera.h"
+#include <pkg/ent/EditorCamera.h>
 #include <ork/kernel/string/string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,31 +59,26 @@ EditorCamArchetype::EditorCamArchetype()
 void EditorCamControllerData::Describe()
 {
 	ork::ent::RegisterFamily<EditorCamControllerData>(ork::AddPooledLiteral("camera"));
-
 	ork::reflect::RegisterProperty( "Camera", & EditorCamControllerData::CameraAccessor );
 
-//	ork::reflect::RegisterProperty( "Target", &EditorCamControllerData::mTarget );
-//	ork::reflect::RegisterProperty( "Eye", &EditorCamControllerData::mEye );
-//	ork::reflect::RegisterProperty( "EyeOffset", &EditorCamControllerData::mEyeOffset );
-//	ork::reflect::RegisterProperty( "TargetOffset", &EditorCamControllerData::mTgtOffset );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 EditorCamControllerData::EditorCamControllerData()
 {
-	mPerspCam = new lev2::EzUiCam;
+	_camera = new lev2::EzUiCam;
 
-	mPerspCam->mfLoc = 1.0f;
+	_camera->mfLoc = 1.0f;
 
-	mPerspCam->SetName( "persp" );
+	_camera->SetName( "persp" );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 ent::ComponentInst* EditorCamControllerData::createComponent(ent::Entity* pent) const
 {
-	mPerspCam->SetName( pent->GetEntData().GetName().c_str() );
+	_camera->SetName( pent->GetEntData().GetName().c_str() );
 	return new EditorCamControllerInst( *this, pent );
 }
 
