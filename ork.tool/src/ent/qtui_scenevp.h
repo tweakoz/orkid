@@ -190,7 +190,6 @@ protected:
   int mCompositorSceneIndex;
   int mCompositorSceneItemIndex;
   orkstack<lev2::CompositingPassData> mCompositingGroupStack;
-  // DrawableBufferLock								mDbLock;
   bool mbSceneDisplayEnable;
 
 private:
@@ -199,15 +198,6 @@ private:
   void DisableSceneDisplay();
   void EnableSceneDisplay();
 
-  ////////////////////////////////////////////
-  class FrameRenderer : public ork::lev2::FrameRenderer {
-    SceneEditorVP* mpViewport;
-    virtual void Render();
-
-  public:
-    FrameRenderer(SceneEditorVP* pvp)
-        : mpViewport(pvp) {}
-  };
   ////////////////////////////////////////////
 
   void DoInit(ork::lev2::GfxTarget* pTARG) override;

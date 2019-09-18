@@ -208,11 +208,16 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   // if( false == update_running ) return;
 
   const SRect tgtrect = SRect(0, 0, mpTarget->GetW(), mpTarget->GetH());
-  FrameRenderer the_renderer(this);
+  lev2::FrameRenderer framerenderer;
+
+  framerenderer._render = [&](){
+    Draw3dContent(framerenderer._framedata);
+  };
+
   lev2::UiViewportRenderTarget rt(this);
-  the_renderer.GetFrameData().SetDstRect(tgtrect);
+  framerenderer.framedata().SetDstRect(tgtrect);
   _renderer->SetTarget(mpTarget);
-  the_renderer.GetFrameData().SetTarget(mpTarget);
+  framerenderer.framedata().SetTarget(mpTarget);
 
   /////////////////////////////////////////////////////////////////////////////////
 
@@ -238,7 +243,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
   /////////////////////////////////////////////////////////////////////////////////
 
-  the_renderer.GetFrameData().PushRenderTarget(&rt);
+  framerenderer.framedata().PushRenderTarget(&rt);
   {
     /////////////////////////////////
     // Compositor ?
@@ -264,13 +269,13 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       // render it
       /////////////////////////////
 
-      lev2::CompositorDrawData compositorDrawData(the_renderer);
+      lev2::CompositorDrawData compositorDrawData(framerenderer);
       compsys->_impl.Draw(compositorDrawData);
 
       ////////////////////////////////////////////
       // FrameTechnique FinalMRT + HUD -> screen
       ////////////////////////////////////////////
-      the_renderer.GetFrameData().PushRenderTarget(&rt);
+      framerenderer.framedata().PushRenderTarget(&rt);
       if (externally_fixed_rate && have_token) {
         ////////////////////////////////////////
         // setup destination buffer as offscreen buffer
@@ -280,13 +285,13 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         int itw = mpTarget->GetW();
         int ith = mpTarget->GetH();
 
-        the_renderer.GetFrameData().SetTarget(mpTarget);
+        framerenderer.framedata().SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
-        the_renderer.GetFrameData().SetDstRect(tgtrect);
+        framerenderer.framedata().SetDstRect(tgtrect);
         mpTarget->FBI()->SetAutoClear(true);
         mpTarget->BeginFrame();
         compsys->_impl.composeToScreen(mpTarget);
-        mpTarget->EndFrame(); // the_renderer );
+        mpTarget->EndFrame();
         ////////////////////////////////////////
         // write to disk
         ////////////////////////////////////////
@@ -303,9 +308,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         lev2::DrawableBuffer::mOfflineUpdateSynchro.push(syntok);
 
       } else {
-        the_renderer.GetFrameData().SetTarget(mpTarget);
+        framerenderer.framedata().SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
-        the_renderer.GetFrameData().SetDstRect(tgtrect);
+        framerenderer.framedata().SetDstRect(tgtrect);
         mpTarget->FBI()->SetAutoClear(true);
 
         mpTarget->FBI()->SetViewport(0, 0, mpTarget->GetW(), mpTarget->GetH());
@@ -317,14 +322,14 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         /////////////////////////////////////////////////////////////////////
 
         if (gtoggle_hud) {
-          DrawHUD(the_renderer.GetFrameData());
+          DrawHUD(framerenderer.framedata());
           DrawChildren(drwev);
         }
 
         /////////////////////////////////////////////////////////////////////
-        mpTarget->EndFrame(); // the_renderer );
+        mpTarget->EndFrame();
       }
-      the_renderer.GetFrameData().PopRenderTarget();
+      framerenderer.framedata().PopRenderTarget();
     }
     /////////////////////////////////
     else // No Compositor
@@ -334,17 +339,17 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
       mRenderLock = 1;
 
-      the_renderer.GetFrameData().setUserProperty("DB", rendervar_t(DB));
+      framerenderer.framedata().setUserProperty("DB", rendervar_t(DB));
 
       if (DB) {
 
         rendervar_t passdata;
         passdata.Set<orkstack<lev2::CompositingPassData>*>(&mCompositingGroupStack);
-        the_renderer.GetFrameData().setUserProperty("nodes"_crc, passdata);
-        the_renderer.GetFrameData().PushRenderTarget(&rt);
-        the_renderer.GetFrameData().SetTarget(mpTarget);
+        framerenderer.framedata().setUserProperty("nodes"_crc, passdata);
+        framerenderer.framedata().PushRenderTarget(&rt);
+        framerenderer.framedata().SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
-        the_renderer.GetFrameData().SetDstRect(tgtrect);
+        framerenderer.framedata().SetDstRect(tgtrect);
         mpTarget->FBI()->SetAutoClear(true);
         mpTarget->FBI()->SetViewport(0, 0, mpTarget->GetW(), mpTarget->GetH());
         mpTarget->FBI()->SetScissor(0, 0, mpTarget->GetW(), mpTarget->GetH());
@@ -355,16 +360,16 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
           node.mpFrameTek = nullptr;
           mCompositingGroupStack.push(node);
           mpBasicFrameTek->mbDoBeginEndFrame = false;
-          mpBasicFrameTek->Render(the_renderer);
+          mpBasicFrameTek->Render(framerenderer);
           mCompositingGroupStack.pop();
 
           if (gtoggle_hud) {
-            DrawHUD(the_renderer.GetFrameData());
+            DrawHUD(framerenderer.framedata());
             DrawChildren(drwev);
           }
         }
-        mpTarget->EndFrame(); // the_renderer );
-        the_renderer.GetFrameData().PopRenderTarget();
+        mpTarget->EndFrame();
+        framerenderer.framedata().PopRenderTarget();
 
         lev2::DrawableBuffer::EndDbRead(DB);
       }
@@ -372,22 +377,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       mRenderLock = 0;
     }
   }
-  the_renderer.GetFrameData().PopRenderTarget();
+  framerenderer.framedata().PopRenderTarget();
 
-  the_renderer.GetFrameData().SetDstRect(tgtrect);
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-void SceneEditorVP::FrameRenderer::Render() {
-  switch (GetFrameData().GetRenderingMode()) {
-    case ork::lev2::RenderContextFrameData::ERENDMODE_STANDARD:
-    case ork::lev2::RenderContextFrameData::ERENDMODE_LIGHTPREPASS:
-      mpViewport->Draw3dContent(GetFrameData());
-      break;
-    default:
-      break;
-  }
+  framerenderer.framedata().SetDstRect(tgtrect);
 }
 
 ///////////////////////////////////////////////////////////////////////////
