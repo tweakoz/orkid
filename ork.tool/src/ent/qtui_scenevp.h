@@ -145,6 +145,8 @@ public:
   lev2::Camera* getActiveCamera() const { return _editorCamera; }
 
   ///////////////////////////////////////////////////
+  bool isCompositorEnabled();
+  ///////////////////////////////////////////////////
 
   static void RegisterInitCallback(SceneEditorInitCb icb);
 

@@ -195,34 +195,10 @@ void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// Draw INTO the onscreen target
-///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
-  bool update_running = gUpdateStatus.GetState() == EUPD_RUNNING;
-
-  const SRect tgtrect = SRect(0, 0, mpTarget->GetW(), mpTarget->GetH());
-
-  lev2::UiViewportRenderTarget rt(this);
-  ////////////////////////////////////////////////
-  lev2::RenderContextFrameData RCFD;
-  RCFD.SetDstRect(tgtrect);
-  RCFD.SetTarget(mpTarget);
-
-
-
-  lev2::FrameRenderer framerenderer(RCFD,[&](){
-    this->Draw3dContent(RCFD);
-  });
-  ////////////////////////////////////////////////
-
-  _renderer->SetTarget(mpTarget);
-
-  /////////////////////////////////////////////////////////////////////////////////
-
+bool SceneEditorVP::isCompositorEnabled(){
   mRenderLock = 1;
-
-  bool bFX     = false;
+  bool compositor_enabled = false;
   auto compsys = compositingSystem();
   if (simulation()) {
     ent::ESimulationMode emode = simulation()->GetSimulationMode();
@@ -230,154 +206,106 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       switch (emode) {
         case ent::ESCENEMODE_RUN:
         case ent::ESCENEMODE_SINGLESTEP: {
-          bFX = compsys->enabled();
+          compositor_enabled = compsys->enabled();
           break;
         }
         default:
           break;
       }
   }
-
   mRenderLock = 0;
+  return compositor_enabled;
+}
 
+///////////////////////////////////////////////////////////////////////////
+// Draw INTO the onscreen target
+///////////////////////////////////////////////////////////////////////////
+
+void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
+  int TARGW = mpTarget->GetW();
+  int TARGH = mpTarget->GetH();
+  const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
+  _renderer->SetTarget(mpTarget);
+  ////////////////////////////////////////////////
+  lev2::RenderContextFrameData RCFD;
+  RCFD.SetDstRect(tgtrect);
+  RCFD.SetTarget(mpTarget);
+  ////////////////////////////////////////////////
+  // FrameRenderer (and content)
+  ////////////////////////////////////////////////
+  lev2::FrameRenderer framerenderer(RCFD, [&]() {
+    this->Draw3dContent(RCFD);
+  });
   /////////////////////////////////////////////////////////////////////////////////
-
-  RCFD.PushRenderTarget(&rt);
-  {
-    /////////////////////////////////
-    // Compositor ?
-    /////////////////////////////////
-
-    if (bFX && compsys) {
-      float frame_rate           = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
-      bool externally_fixed_rate = (frame_rate != 0.0f);
-      const ent::Simulation* psi = this->simulation();
-
-      lev2::RenderSyncToken syntok;
-      /////////////////////////////
-      bool have_token = false;
-      if (externally_fixed_rate) {
-        Timer totim;
-        totim.Start();
-        while (false == have_token && (totim.SecsSinceStart() < 2.0f)) {
-          have_token = lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
-          usleep(1000);
-        }
+  bool compositor_enabled = isCompositorEnabled();
+  /////////////////////////////////////////////////////////////////////////////////
+  lev2::UiViewportRenderTarget rt(this);
+  auto FBI = mpTarget->FBI();
+  auto DRAWHUD = [&](){
+      if (gtoggle_hud) {
+        DrawHUD(RCFD);
+        DrawChildren(drwev);
       }
-      /////////////////////////////
-      // render it
-      /////////////////////////////
-
-      lev2::CompositorDrawData compositorDrawData(framerenderer);
-      compsys->_impl.Draw(compositorDrawData);
-
-      ////////////////////////////////////////////
-      // FrameTechnique FinalMRT + HUD -> screen
-      ////////////////////////////////////////////
-      RCFD.PushRenderTarget(&rt);
-      if (externally_fixed_rate && have_token) {
-        ////////////////////////////////////////
-        // setup destination buffer as offscreen buffer
-        //  (for write to disk)
-        ////////////////////////////////////////
-
-        int itw = mpTarget->GetW();
-        int ith = mpTarget->GetH();
-
+  };
+  /////////////////////////////////
+  // Compositor ?
+  /////////////////////////////////
+  if (compositor_enabled) {
+    auto compsys = compositingSystem();
+    /////////////////////////////
+    // render it
+    /////////////////////////////
+    lev2::CompositorDrawData compositorDrawData(framerenderer);
+    compsys->_impl.Draw(compositorDrawData);
+    ////////////////////////////////////////////
+    // FrameTechnique FinalMRT + HUD -> screen
+    ////////////////////////////////////////////
+    RCFD.PushRenderTarget(&rt);{
         RCFD.SetTarget(mpTarget);
         _renderer->SetTarget(mpTarget);
         RCFD.SetDstRect(tgtrect);
-        mpTarget->FBI()->SetAutoClear(true);
+        FBI->SetAutoClear(true);
+        FBI->SetViewport(0, 0, TARGW, TARGH);
+        FBI->SetScissor(0, 0, TARGW, TARGH);
         mpTarget->BeginFrame();
-        compsys->_impl.composeToScreen(mpTarget);
+          compsys->_impl.composeToScreen(mpTarget);
+          DRAWHUD();
         mpTarget->EndFrame();
-        ////////////////////////////////////////
-        // write to disk
-        ////////////////////////////////////////
-        auto buf = mpTarget->FBI()->GetThisBuffer();
-        file::Path::NameType fnamesyn;
-        fnamesyn.format("outputframes/frame%04d.tga", syntok.mFrameIndex);
-        // mpTarget->FBI()->Capture( *buf, file::Path(fnamesyn.c_str()) );
-        ////////////////////////////////////////
-
-        ////////////////////////////////////////
-        // return the token
-        ////////////////////////////////////////
-
-        lev2::DrawableBuffer::mOfflineUpdateSynchro.push(syntok);
-
-      } else {
-        RCFD.SetTarget(mpTarget);
-        _renderer->SetTarget(mpTarget);
-        RCFD.SetDstRect(tgtrect);
-        mpTarget->FBI()->SetAutoClear(true);
-
-        mpTarget->FBI()->SetViewport(0, 0, mpTarget->GetW(), mpTarget->GetH());
-        mpTarget->FBI()->SetScissor(0, 0, mpTarget->GetW(), mpTarget->GetH());
-        mpTarget->BeginFrame();
-        compsys->_impl.composeToScreen(mpTarget);
-        /////////////////////////////////////////////////////////////////////
-        // HUD
-        /////////////////////////////////////////////////////////////////////
-
-        if (gtoggle_hud) {
-          DrawHUD(RCFD);
-          DrawChildren(drwev);
-        }
-
-        /////////////////////////////////////////////////////////////////////
-        mpTarget->EndFrame();
-      }
-      RCFD.PopRenderTarget();
     }
-    /////////////////////////////////
-    else // No Compositor
-    /////////////////////////////////
-    {
-      auto DB = lev2::DrawableBuffer::BeginDbRead(7); // mDbLock.Aquire(7);
-
-      mRenderLock = 1;
-
-      RCFD.setUserProperty("DB", rendervar_t(DB));
-
-      if (DB) {
-
-        rendervar_t passdata;
-        passdata.Set<orkstack<lev2::CompositingPassData>*>(&mCompositingGroupStack);
-        RCFD.setUserProperty("nodes"_crc, passdata);
-        RCFD.PushRenderTarget(&rt);
-        RCFD.SetTarget(mpTarget);
-        _renderer->SetTarget(mpTarget);
-        RCFD.SetDstRect(tgtrect);
-        mpTarget->FBI()->SetAutoClear(true);
-        mpTarget->FBI()->SetViewport(0, 0, mpTarget->GetW(), mpTarget->GetH());
-        mpTarget->FBI()->SetScissor(0, 0, mpTarget->GetW(), mpTarget->GetH());
-        mpTarget->BeginFrame();
-        {
-          lev2::CompositingPassData node;
-          node.mpGroup    = nullptr;
-          node.mpFrameTek = nullptr;
-          mCompositingGroupStack.push(node);
-          mpBasicFrameTek->mbDoBeginEndFrame = false;
-          mpBasicFrameTek->Render(framerenderer);
-          mCompositingGroupStack.pop();
-
-          if (gtoggle_hud) {
-            DrawHUD(RCFD);
-            DrawChildren(drwev);
-          }
-        }
-        mpTarget->EndFrame();
-        RCFD.PopRenderTarget();
-
-        lev2::DrawableBuffer::EndDbRead(DB);
-      }
-
-      mRenderLock = 0;
-    }
+    RCFD.PopRenderTarget();
   }
-  RCFD.PopRenderTarget();
-
+  /////////////////////////////////
+  else // No Compositor
+  /////////////////////////////////
+  { auto DB = lev2::DrawableBuffer::BeginDbRead(7);
+    mRenderLock = 1;
+    RCFD.setUserProperty("DB", rendervar_t(DB));
+    if (DB) {
+      rendervar_t passdata;
+      passdata.Set<orkstack<lev2::CompositingPassData>*>(&mCompositingGroupStack);
+      RCFD.setUserProperty("nodes"_crc, passdata);
+      RCFD.PushRenderTarget(&rt);
+          RCFD.SetTarget(mpTarget);
+          _renderer->SetTarget(mpTarget);
+          RCFD.SetDstRect(tgtrect);
+          FBI->SetAutoClear(true);
+          FBI->SetViewport(0, 0, TARGW, TARGH);
+          FBI->SetScissor(0, 0, TARGW, TARGH);
+          mpTarget->BeginFrame();
+              lev2::CompositingPassData node;
+              node.mpGroup    = nullptr;
+              node.mpFrameTek = nullptr;
+              mCompositingGroupStack.push(node);
+              mpBasicFrameTek->mbDoBeginEndFrame = false;
+              mpBasicFrameTek->Render(framerenderer);
+              mCompositingGroupStack.pop();
+              DRAWHUD();
+          mpTarget->EndFrame();
+      RCFD.PopRenderTarget();
+      lev2::DrawableBuffer::EndDbRead(DB);
+    }
+    mRenderLock = 0;
+  }
   RCFD.SetDstRect(tgtrect);
 }
 
@@ -423,7 +351,7 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
   OrkAssert(cstack != 0);
 
   lev2::CompositingPassData node = cstack->top();
-  auto pFTEK               = dynamic_cast<lev2::BuiltinFrameTechniques*>(node.mpFrameTek);
+  auto pFTEK                     = dynamic_cast<lev2::BuiltinFrameTechniques*>(node.mpFrameTek);
   ///////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////
   if (pFTEK) {
@@ -437,13 +365,13 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
 
     if (node.mpGroup) {
       const lev2::CompositingGroupEffect& effect = node.mpGroup->GetEffect();
-      EffectName                           = effect.GetEffectName();
-      fFxAmt                               = effect.GetEffectAmount();
-      fFbAmt                               = effect.GetFeedbackAmount();
-      pFbUvMap                             = effect.GetFbUvMap();
-      bpostfxfb                            = effect.IsPostFxFeedback();
-      fFinResMult                          = effect.GetFinalRezScale();
-      fFxResMult                           = effect.GetFxRezScale();
+      EffectName                                 = effect.GetEffectName();
+      fFxAmt                                     = effect.GetEffectAmount();
+      fFbAmt                                     = effect.GetFeedbackAmount();
+      pFbUvMap                                   = effect.GetFbUvMap();
+      bpostfxfb                                  = effect.IsPostFxFeedback();
+      fFinResMult                                = effect.GetFinalRezScale();
+      fFxResMult                                 = effect.GetFxRezScale();
     }
 
     ////////////////////////////////////////
@@ -604,9 +532,9 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   // get the compositor if there is one
   ///////////////////////////////////////////////////////////////////////////
 
-  lev2::rendervar_t passdata                 = FrameData.getUserProperty("nodes"_crc);
+  lev2::rendervar_t passdata                  = FrameData.getUserProperty("nodes"_crc);
   orkstack<lev2::CompositingPassData>* cstack = 0;
-  cstack                                     = passdata.Get<orkstack<lev2::CompositingPassData>*>();
+  cstack                                      = passdata.Get<orkstack<lev2::CompositingPassData>*>();
   OrkAssert(cstack != 0);
 
   lev2::CompositingPassData NODE = cstack->top();

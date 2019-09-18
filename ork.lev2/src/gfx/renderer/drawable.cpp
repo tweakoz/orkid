@@ -48,6 +48,20 @@ void CallbackDrawable::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
+RenderSyncToken DrawableBuffer::acquireRenderToken(){
+    lev2::RenderSyncToken syntok;
+    bool have_token = false;
+    Timer totim;
+    totim.Start();
+    while (false == have_token && (totim.SecsSinceStart() < 2.0f)) {
+      have_token = lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
+      usleep(1000);
+    }
+    return syntok;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void DrawableBuffer::Reset() {
   // AssertOnOpQ2( UpdateSerialOpQ() );
 
