@@ -89,7 +89,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
                       CameraData* lcam,
                       CameraData* rcam,
                       const std::map<int, orkidvr::ControllerState>& controllers) {
-    RenderContextFrameData& framedata = renderer.GetFrameData();
+    RenderContextFrameData& framedata = renderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
 
     SRect tgt_rect(0, 0, miW, miH);
@@ -174,7 +174,7 @@ struct VRIMPL {
   ///////////////////////////////////////
   void _myrender(FrameRenderer& renderer, CompositorDrawData& drawdata, fmtx4 rootmatrix) {
 
-    RenderContextFrameData& framedata = renderer.GetFrameData();
+    RenderContextFrameData& framedata = renderer.framedata();
     auto vrroot = framedata.getUserProperty("vrroot"_crc);
     if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
       orkidvr::gpuUpdate(as_mtx.value());
@@ -211,7 +211,7 @@ void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtua
 void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* impl) // virtual
 {
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = the_renderer.GetFrameData();
+  RenderContextFrameData& framedata = the_renderer.framedata();
   auto targ                               = framedata.GetTarget();
 
   auto vrimpl                 = _impl.Get<std::shared_ptr<VRIMPL>>();

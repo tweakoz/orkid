@@ -101,7 +101,7 @@ void Fx3CompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImpl
                                       lev2::BuiltinFrameTechniques* pFT,
                                       const char* LayerName) {
       lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-      lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
+      lev2::RenderContextFrameData& framedata = the_renderer.framedata();
       orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
 
       lev2::CompositingPassData node;
@@ -109,7 +109,7 @@ void Fx3CompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImpl
       pFT->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
       lev2::rendervar_t passdata;
       passdata.Set<const char*>(LayerName);
-      the_renderer.GetFrameData().setUserProperty("pass"_crc, passdata);
+      the_renderer.framedata().setUserProperty("pass"_crc, passdata);
       node.mpGroup      = pCG;
       node.mpFrameTek   = pFT;
       node.mpCameraName = (pCG != 0) ? &pCG->GetCameraName() : 0;

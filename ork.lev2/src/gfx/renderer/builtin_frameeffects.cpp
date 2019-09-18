@@ -504,7 +504,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 {
 	const ork::lev2::GfxTargetCreationParams& CreationParams = ork::lev2::GfxEnv::GetRef().GetCreationParams();
 
-	RenderContextFrameData&	FrameData = frenderer.GetFrameData();
+	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 
 	if( false == pTARG->IsDeviceAvailable() ) return;
@@ -883,7 +883,7 @@ BasicFrameTechnique::BasicFrameTechnique( )
 
 void BasicFrameTechnique::Render( FrameRenderer & frenderer )
 {
-	RenderContextFrameData&	FrameData = frenderer.GetFrameData();
+	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 	FrameData.SetDstRect( tgt_rect );
@@ -910,7 +910,7 @@ PickFrameTechnique::PickFrameTechnique( )
 
 void PickFrameTechnique::Render( FrameRenderer & frenderer )
 {
-	RenderContextFrameData&	FrameData = frenderer.GetFrameData();
+	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 	FrameData.SetDstRect( tgt_rect );
@@ -933,7 +933,7 @@ ShadowFrameTechnique::ShadowFrameTechnique(  GfxWindow* Parent, ui::Viewport* pv
 
 void ShadowFrameTechnique::Render( FrameRenderer & frenderer )
 {
-	RenderContextFrameData& FrameData = frenderer.GetFrameData();
+	RenderContextFrameData& FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	/////////////////////////////////////////////////
 	int itx0 = pTARG->GetX();

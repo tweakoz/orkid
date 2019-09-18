@@ -220,13 +220,13 @@ lev2::FrameTechniqueBase* Surface::GetFrameTechnique( ) const
 
 void Surface::BeginSurface(lev2::FrameRenderer&frenderer)
 {
-	lev2::RenderContextFrameData& FrameData = frenderer.GetFrameData();
+	lev2::RenderContextFrameData& FrameData = frenderer.framedata();
 	lev2::GfxTarget *pTARG = FrameData.GetTarget();
 
 }
 void Surface::EndSurface(lev2::FrameRenderer&frenderer)
 {
-	lev2::RenderContextFrameData& FrameData = frenderer.GetFrameData();
+	lev2::RenderContextFrameData& FrameData = frenderer.framedata();
 	lev2::GfxTarget *pTARG = FrameData.GetTarget();
 
 }

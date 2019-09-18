@@ -54,12 +54,12 @@ UiViewportRenderTarget::UiViewportRenderTarget(ui::Viewport* pVP)
 int UiViewportRenderTarget::GetW() { return mpViewport->GetW(); }
 int UiViewportRenderTarget::GetH() { return mpViewport->GetH(); }
 void UiViewportRenderTarget::BeginFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.GetFrameData();
+  RenderContextFrameData& FrameData = frenderer.framedata();
   GfxTarget* pTARG                  = FrameData.GetTarget();
   mpViewport->BeginFrame(pTARG);
 }
 void UiViewportRenderTarget::EndFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.GetFrameData();
+  RenderContextFrameData& FrameData = frenderer.framedata();
   GfxTarget* pTARG                  = FrameData.GetTarget();
   mpViewport->EndFrame(pTARG);
 }

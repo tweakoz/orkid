@@ -153,7 +153,7 @@ void PassThroughCompositingNode::DoRender(CompositorDrawData& drawdata, Composit
 {
   const CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
+  lev2::RenderContextFrameData& framedata = the_renderer.framedata();
   orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
 
   CompositingPassData node;
@@ -163,7 +163,7 @@ void PassThroughCompositingNode::DoRender(CompositorDrawData& drawdata, Composit
     mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
     lev2::rendervar_t passdata;
     passdata.Set<const char*>("All");
-    the_renderer.GetFrameData().setUserProperty("pass"_crc, passdata);
+    the_renderer.framedata().setUserProperty("pass"_crc, passdata);
     node.mpGroup = pCG;
     node.mpFrameTek = mFTEK;
     node.mpCameraName = (pCG != 0) ? &pCG->GetCameraName() : 0;
@@ -223,7 +223,7 @@ void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingIm
 {
   // const ent::CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
+  lev2::RenderContextFrameData& framedata = the_renderer.framedata();
   orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
   auto target = framedata.GetTarget();
   auto fbi = target->FBI();
@@ -361,7 +361,7 @@ void InsertCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingIm
 {
   // const ent::CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
+  lev2::RenderContextFrameData& framedata = the_renderer.framedata();
   orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
   auto target = framedata.GetTarget();
   auto fbi = target->FBI();
@@ -475,7 +475,7 @@ void Op2CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
 void Op2CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
 {
   auto& the_renderer = drawdata.mFrameRenderer;
-  auto& framedata = the_renderer.GetFrameData();
+  auto& framedata = the_renderer.framedata();
   auto& cgSTACK = drawdata.mCompositingGroupStack;
   auto target = framedata.GetTarget();
   auto fbi = target->FBI();
