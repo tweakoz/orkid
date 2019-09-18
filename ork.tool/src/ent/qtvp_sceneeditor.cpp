@@ -167,11 +167,7 @@ void SceneEditorVP::Init() {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::RegisterInitCallback(ork::ent::SceneEditorInitCb icb) { mInitCallbacks.insert(icb); }
-
-///////////////////////////////////////////////////////////////////////////
-
 void SceneEditorVP::IncPickDirtyCount(int icount) { mpPickBuffer->SetDirty(true); }
-
 void SceneEditorView::SlotModelDirty() { mVP->IncPickDirtyCount(1); }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -713,6 +709,8 @@ void SceneEditorView::UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameDat
 
 void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   lev2::GfxTarget* pTARG = FrameData.GetTarget();
+  auto MTXI = pTARG->MTXI();
+  auto GBI = pTARG->GBI();
 
   const SRect& frame_rect = FrameData.GetDstRect();
 
@@ -726,9 +724,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
   /////////////////////////////////////////////////
   lev2::GfxMaterialUI UiMat(pTARG);
-  pTARG->MTXI()->PushPMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushVMatrix(fmtx4::Identity);
-  pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
+  MTXI->PushPMatrix(fmtx4::Identity);
+  MTXI->PushVMatrix(fmtx4::Identity);
+  MTXI->PushMMatrix(fmtx4::Identity);
 
   static SRasterState defstate;
   pTARG->RSI()->BindRasterState(defstate);
@@ -761,11 +759,11 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         vw.AddVertex(v1);
       }
       vw.UnLock(pTARG);
-      pTARG->MTXI()->PushUIMatrix();
+      MTXI->PushUIMatrix();
       pTARG->BindMaterial(&UiMat);
-      pTARG->GBI()->DrawPrimitive(vw, lev2::EPRIM_LINES, 2);
+      GBI->DrawPrimitive(vw, lev2::EPRIM_LINES, 2);
       pTARG->BindMaterial(0);
-      pTARG->MTXI()->PopUIMatrix();
+      MTXI->PopUIMatrix();
       gfspinner += (PI2 / 60.0f);
     }
     pTARG->PopModColor();
@@ -795,11 +793,11 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
         vw.AddVertex(v1);
       }
       vw.UnLock(pTARG);
-      pTARG->MTXI()->PushUIMatrix();
+      MTXI->PushUIMatrix();
       pTARG->BindMaterial(&UiMat);
-      pTARG->GBI()->DrawPrimitive(vw, lev2::EPRIM_LINES, 2);
+      GBI->DrawPrimitive(vw, lev2::EPRIM_LINES, 2);
       pTARG->BindMaterial(0);
-      pTARG->MTXI()->PopUIMatrix();
+      MTXI->PopUIMatrix();
     }
     pTARG->PopModColor();
     /////////////////////////////////////////////////
@@ -863,9 +861,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
           vw.AddVertex(v0);
         }
         vw.UnLock(pTARG);
-        pTARG->MTXI()->PushUIMatrix();
-        pTARG->GBI()->DrawPrimitive(vw, lev2::EPRIM_TRIANGLES, 6);
-        pTARG->MTXI()->PopUIMatrix();
+        MTXI->PushUIMatrix();
+        GBI->DrawPrimitive(vw, lev2::EPRIM_TRIANGLES, 6);
+        MTXI->PopUIMatrix();
       }
       pTARG->PopModColor();
       pTARG->BindMaterial(0);
@@ -895,9 +893,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
     /////////////////////////////////////////////////
   }
 
-  pTARG->MTXI()->PopPMatrix(); // back to ortho
-  pTARG->MTXI()->PopVMatrix(); // back to ortho
-  pTARG->MTXI()->PopMMatrix(); // back to ortho
+  MTXI->PopPMatrix(); // back to ortho
+  MTXI->PopVMatrix(); // back to ortho
+  MTXI->PopMMatrix(); // back to ortho
 
   if (_editorCamera) {
     _editorCamera->draw(pTARG);
@@ -907,20 +905,21 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
+  auto& GRID = ManipManager().Grid();
   switch (mGridMode) {
     case 0:
-      ManipManager().Grid().SetGridMode(lev2::Grid3d::EGRID_XZ);
-      ManipManager().Grid().Calc(*fdata.GetCameraData());
+      GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
+      GRID.Calc(*fdata.GetCameraData());
       break;
     case 1:
-      ManipManager().Grid().SetGridMode(lev2::Grid3d::EGRID_XZ);
-      ManipManager().Grid().Calc(*fdata.GetCameraData());
-      ManipManager().Grid().Render(fdata);
+      GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
+      GRID.Calc(*fdata.GetCameraData());
+      GRID.Render(fdata);
       break;
     case 2:
-      ManipManager().Grid().SetGridMode(lev2::Grid3d::EGRID_XY);
-      ManipManager().Grid().Calc(*fdata.GetCameraData());
-      ManipManager().Grid().Render(fdata);
+      GRID.SetGridMode(lev2::Grid3d::EGRID_XY);
+      GRID.Calc(*fdata.GetCameraData());
+      GRID.Render(fdata);
       break;
   }
 }
@@ -1018,54 +1017,55 @@ void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& FrameData) {
   bool bhasfocus  = HasKeyboardFocus();
   float fw        = FrameData.GetDstRect().miW;
   float fh        = FrameData.GetDstRect().miH;
-  ork::fmtx4 mtxP = FrameData.GetTarget()->MTXI()->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
-  // GfxEnv::SetUIColorMode( ork::lev2::EUICOLOR_MOD );
+  auto TGT        = FrameData.GetTarget();
+  auto MTXI       = TGT->MTXI();
+  ork::fmtx4 mtxP = MTXI->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   GfxMaterialUI matui(FrameData.GetTarget());
-  FrameData.GetTarget()->BindMaterial(&matui);
-  FrameData.GetTarget()->PushModColor(bhasfocus ? ork::fcolor4::Red() : ork::fcolor4::Black());
-  FrameData.GetTarget()->MTXI()->PushPMatrix(mtxP);
-  FrameData.GetTarget()->MTXI()->PushVMatrix(ork::fmtx4::Identity);
-  FrameData.GetTarget()->MTXI()->PushMMatrix(ork::fmtx4::Identity);
+  TGT->BindMaterial(&matui);
+  TGT->PushModColor(bhasfocus ? ork::fcolor4::Red() : ork::fcolor4::Black());
+  MTXI->PushPMatrix(mtxP);
+  MTXI->PushVMatrix(ork::fmtx4::Identity);
+  MTXI->PushMMatrix(ork::fmtx4::Identity);
   {
-    DynamicVertexBuffer<SVtxV12C4T16>& vb = GfxEnv::GetSharedDynamicVB();
+    typedef SVtxV12C4T16 vtx_t;
+    DynamicVertexBuffer<vtx_t>& vb = GfxEnv::GetSharedDynamicVB();
 
     int ivcount = 16;
 
-    VtxWriter<SVtxV12C4T16> vwriter;
-    vwriter.Lock(FrameData.GetTarget(), &vb, ivcount);
+    VtxWriter<vtx_t> vwriter;
+    vwriter.Lock(TGT, &vb, ivcount);
 
     float fx1 = fw - 1.0f;
     float fy1 = fh - 1.0f;
+    vwriter.AddVertex(vtx_t(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1, 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
 
-    vwriter.AddVertex(SVtxV12C4T16(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(fx1, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(fx1, 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1 - 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1 - 1.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
 
-    vwriter.AddVertex(SVtxV12C4T16(fx1, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(fx1 - 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(fx1 - 1.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(0.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(fx1, fy1 - 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(0.0f, fy1 - 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
 
-    vwriter.AddVertex(SVtxV12C4T16(fx1, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(0.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(fx1, fy1 - 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(0.0f, fy1 - 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(0.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(0.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.AddVertex(vtx_t(1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
 
-    vwriter.AddVertex(SVtxV12C4T16(0.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(0.0f, fy1, 0.0f, 0.0f, 0.0f, 0xffffffff));
-    vwriter.AddVertex(SVtxV12C4T16(1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0xffffffff));
+    vwriter.UnLock(TGT);
 
-    vwriter.UnLock(FrameData.GetTarget());
-
-    FrameData.GetTarget()->GBI()->DrawPrimitive(vwriter, ork::lev2::EPRIM_LINES);
+    TGT->GBI()->DrawPrimitive(vwriter, ork::lev2::EPRIM_LINES);
   }
-  FrameData.GetTarget()->MTXI()->PopPMatrix(); // back to ortho
-  FrameData.GetTarget()->MTXI()->PopVMatrix(); // back to ortho
-  FrameData.GetTarget()->MTXI()->PopMMatrix(); // back to ortho
-  FrameData.GetTarget()->PopModColor();
-  FrameData.GetTarget()->BindMaterial(0);
+  MTXI->PopPMatrix(); // back to ortho
+  MTXI->PopVMatrix(); // back to ortho
+  MTXI->PopMMatrix(); // back to ortho
+  TGT->PopModColor();
+  TGT->BindMaterial(0);
 }
 
 } // namespace ent
