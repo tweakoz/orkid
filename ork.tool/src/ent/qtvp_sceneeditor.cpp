@@ -196,10 +196,10 @@ void SceneEditorVP::DoInit(ork::lev2::GfxTarget* pTARG) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-bool SceneEditorVP::isCompositorEnabled(){
-  mRenderLock = 1;
+bool SceneEditorVP::isCompositorEnabled() {
+  mRenderLock             = 1;
   bool compositor_enabled = false;
-  auto compsys = compositingSystem();
+  auto compsys            = compositingSystem();
   if (simulation()) {
     ent::ESimulationMode emode = simulation()->GetSimulationMode();
     if (compsys)
@@ -222,8 +222,8 @@ bool SceneEditorVP::isCompositorEnabled(){
 ///////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
-  int TARGW = mpTarget->GetW();
-  int TARGH = mpTarget->GetH();
+  int TARGW           = mpTarget->GetW();
+  int TARGH           = mpTarget->GetH();
   const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
   _renderer->SetTarget(mpTarget);
   ////////////////////////////////////////////////
@@ -233,27 +233,25 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   ////////////////////////////////////////////////
   // FrameRenderer (and content)
   ////////////////////////////////////////////////
-  lev2::FrameRenderer framerenderer(RCFD, [&]() {
-    this->Draw3dContent(RCFD);
-  });
+  lev2::FrameRenderer framerenderer(RCFD, [&]() { this->Draw3dContent(RCFD); });
   /////////////////////////////////////////////////////////////////////////////////
   bool compositor_enabled = isCompositorEnabled();
   /////////////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(this);
   auto FBI = mpTarget->FBI();
   /////////////////////////////////
-  auto DRAWBEGIN=[&](){
-      RCFD.PushRenderTarget(&rt);
-          RCFD.SetTarget(mpTarget);
-          _renderer->SetTarget(mpTarget);
-          RCFD.SetDstRect(tgtrect);
-          FBI->SetAutoClear(true);
-          FBI->SetViewport(0, 0, TARGW, TARGH);
-          FBI->SetScissor(0, 0, TARGW, TARGH);
-          mpTarget->BeginFrame();
+  auto DRAWBEGIN = [&]() {
+    RCFD.PushRenderTarget(&rt);
+    RCFD.SetTarget(mpTarget);
+    _renderer->SetTarget(mpTarget);
+    RCFD.SetDstRect(tgtrect);
+    FBI->SetAutoClear(true);
+    FBI->SetViewport(0, 0, TARGW, TARGH);
+    FBI->SetScissor(0, 0, TARGW, TARGH);
+    mpTarget->BeginFrame();
   };
   /////////////////////////////////
-  auto DRAWEND=[&](){
+  auto DRAWEND = [&]() {
     if (gtoggle_hud) {
       DrawHUD(RCFD);
       DrawChildren(drwev);
@@ -266,13 +264,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////
   if (compositor_enabled) {
     auto compsys = compositingSystem();
-    /////////////////////////////
-    // render content
-    /////////////////////////////
     compsys->_impl.renderContent(framerenderer);
-    ////////////////////////////////////////////
-    // compose to screen
-    ////////////////////////////////////////////
     DRAWBEGIN();
       compsys->_impl.composeToScreen(mpTarget);
     DRAWEND();
@@ -280,24 +272,20 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////
   else // No Compositor
   /////////////////////////////////
-  { auto DB = lev2::DrawableBuffer::BeginDbRead(7);
+  {
+    auto DB     = lev2::DrawableBuffer::BeginDbRead(7);
     mRenderLock = 1;
     RCFD.setUserProperty("DB", rendervar_t(DB));
     if (DB) {
-      rendervar_t passdata;
-      passdata.Set<orkstack<lev2::CompositingPassData>*>(&mCompositingGroupStack);
-      RCFD.setUserProperty("nodes"_crc, passdata);
       DRAWBEGIN();
-        lev2::CompositingPassData node;
-        node.mpGroup    = nullptr;
-        node.mpFrameTek = nullptr;
-        mCompositingGroupStack.push(node);
-          mpBasicFrameTek->mbDoBeginEndFrame = false;
-          /////////////////////////////
-          // render content direct to screen
-          /////////////////////////////
-          mpBasicFrameTek->Render(framerenderer);
-        mCompositingGroupStack.pop();
+      rendervar_t passdata;
+      passdata.Set<compositingpassdatastack_t*>(&mCompositingGroupStack);
+      RCFD.setUserProperty("nodes"_crc, passdata);
+      lev2::CompositingPassData node;
+      mCompositingGroupStack.push(node);
+        mpBasicFrameTek->_shouldBeginAndEndFrame = false;
+        mpBasicFrameTek->Render(framerenderer);
+      mCompositingGroupStack.pop();
       DRAWEND();
       lev2::DrawableBuffer::EndDbRead(DB);
     }
@@ -342,9 +330,9 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
   ///////////////////////////////////////////////////////////////////////////
   ent::SceneData* pscene = mEditor.mpScene;
 
-  lev2::rendervar_t passdata                  = FrameData.getUserProperty("nodes"_crc);
-  orkstack<lev2::CompositingPassData>* cstack = 0;
-  cstack                                      = passdata.Get<orkstack<lev2::CompositingPassData>*>();
+  lev2::rendervar_t passdata         = FrameData.getUserProperty("nodes"_crc);
+  compositingpassdatastack_t* cstack = 0;
+  cstack                             = passdata.Get<compositingpassdatastack_t*>();
   OrkAssert(cstack != 0);
 
   lev2::CompositingPassData node = cstack->top();
@@ -529,9 +517,9 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   // get the compositor if there is one
   ///////////////////////////////////////////////////////////////////////////
 
-  lev2::rendervar_t passdata                  = FrameData.getUserProperty("nodes"_crc);
-  orkstack<lev2::CompositingPassData>* cstack = 0;
-  cstack                                      = passdata.Get<orkstack<lev2::CompositingPassData>*>();
+  lev2::rendervar_t passdata         = FrameData.getUserProperty("nodes"_crc);
+  compositingpassdatastack_t* cstack = nullptr;
+  cstack                             = passdata.Get<compositingpassdatastack_t*>();
   OrkAssert(cstack != 0);
 
   lev2::CompositingPassData NODE = cstack->top();

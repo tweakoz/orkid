@@ -381,18 +381,20 @@ struct CompositingContext {
 ///////////////////////////////////////////////////////////////////////////
 
 struct CompositingPassData {
-  const CompositingGroup* mpGroup;
-  lev2::FrameTechniqueBase* mpFrameTek;
-  bool mbDrawSource;
-  const PoolString* mpCameraName;
-  const PoolString* mpLayerName;
+  const CompositingGroup* mpGroup = nullptr;
+  lev2::FrameTechniqueBase* mpFrameTek = nullptr;
+  bool mbDrawSource = true;
+  const PoolString* mpCameraName = nullptr;
+  const PoolString* mpLayerName = nullptr;
   ork::svarp_t _impl;
   ork::fvec4 _clearColor;
 
-  CompositingPassData() : mpGroup(0), mpFrameTek(0), mbDrawSource(true), mpCameraName(0), mpLayerName(0) {
+  CompositingPassData() {
     _impl.Set<void*>(nullptr);
   }
 };
+
+typedef orkstack<lev2::CompositingPassData> compositingpassdatastack_t;
 
 ///////////////////////////////////////////////////////////////////////////
 

@@ -46,7 +46,7 @@ public:
 
 	virtual void Render( ork::lev2::FrameRenderer & ContextData );
 
-	bool mbDoBeginEndFrame;
+	bool _shouldBeginAndEndFrame;
 };
 
 class PickFrameTechnique : public FrameTechniqueBase

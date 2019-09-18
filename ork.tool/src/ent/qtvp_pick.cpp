@@ -166,7 +166,7 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   frame_data->AddLayer(AddPooledLiteral("All"));
   ///////////////////////////////////////////////////////////////////////////
   rendervar_t passdata;
-  passdata.Set<orkstack<lev2::CompositingPassData>*>(&mpViewport->mCompositingGroupStack);
+  passdata.Set<compositingpassdatastack_t*>(&mpViewport->mCompositingGroupStack);
   frame_data->setUserProperty("nodes"_crc, passdata);
   lev2::CompositingPassData compositor_node;
   ///////////////////////////////////////////////////////////////////////////
@@ -187,14 +187,9 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   BeginFrame();
   {
     SRect VPRect(itx0, ity0, itx1, ity1);
-    // printf( "itx0<%d> ity0<%d> itx1<%d> ity1<%d> fW<%f> fH<%f>\n", itx0, ity0, itx1, ity1, fW, fH );
     ///////////////////////////////////////////////////////////////////////////
     pTEXTARG->FBI()->PushRtGroup(mpPickRtGroup); // Enable Mrt
     pTEXTARG->FBI()->EnterPickState(this);
-    // pTEXTARG->RSI()->SetOverrideBlending(true);
-    // pTEXTARG->RSI()->GetOverrideRasterState().muBlending = EBLENDING_OFF;
-    // pTEXTARG->RSI()->SetOverrideAlphaTest(true);
-    // EXTARG->RSI()->GetOverrideRasterState().muAlphaTest = EALPHATEST_OFF;
     pTEXTARG->FBI()->PushViewport(VPRect);
     pTEXTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     pTEXTARG->PushModColor(fcolor4::Yellow());
@@ -204,7 +199,6 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
     pTEXTARG->PopModColor();
     pTEXTARG->FBI()->PopRtGroup();
     pTEXTARG->FBI()->PopViewport();
-    // pTEXTARG->RSI()->ClearOverrides();
     pTEXTARG->FBI()->LeavePickState();
   }
   EndFrame();
