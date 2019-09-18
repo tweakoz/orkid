@@ -18,7 +18,7 @@
 #include <ork/rtti/downcast.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/event/MeshEvent.h>
@@ -250,12 +250,12 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
   ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
 
-  CallbackDrawable* pdrw = new CallbackDrawable(pent);
-  pent->AddDrawable(AddPooledLiteral("Default"), pdrw);
+  auto pdrw = new lev2::CallbackDrawable(pent);
+  pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_quad);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0);
-  Drawable::var_t ap;
+  lev2::Drawable::var_t ap;
   ap.Set<const ProcTexOutputQuad*>(this);
   pdrw->SetUserDataA(ap);
   pdrw->SetUserDataB(ssci);
@@ -319,7 +319,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
         ssci->mContext.mWritePath = ""; // cd.GetWritePath();
         templ.compute(ssci->mContext);
         cd.DidRefresh();
-        ork::lev2::Texture* ptx = templ.ResultTexture();
+        lev2::Texture* ptx = templ.ResultTexture();
         mtl->SetTexture(ptx);
         targ->PushMaterial(mtl);
         targ->MTXI()->PushMMatrix(mtxSKY);
@@ -332,12 +332,12 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
   ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
   const ProcTexControllerData& cd = ssci->GetCD();
 
-  CallbackDrawable* pdrw = new CallbackDrawable(pent);
-  pent->AddDrawable(AddPooledLiteral("Default"), pdrw);
+  auto pdrw = new lev2::CallbackDrawable(pent);
+  pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_skybox);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0);
-  Drawable::var_t ap;
+  lev2::Drawable::var_t ap;
   ap.Set<ProcTexOutputSkybox*>(this);
   pdrw->SetUserDataA(ap);
   pdrw->SetUserDataB(ssci);
@@ -440,12 +440,12 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
 
   ProcTexControllerInst* ssci = pent->GetTypedComponent<ProcTexControllerInst>();
 
-  CallbackDrawable* pdrw = new CallbackDrawable(pent);
-  pent->AddDrawable(AddPooledLiteral("Default"), pdrw);
+  auto pdrw = new lev2::CallbackDrawable(pent);
+  pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_compute);
   pdrw->SetOwner(&pent->GetEntData());
   pdrw->SetSortKey(0);
-  Drawable::var_t ap;
+  lev2::Drawable::var_t ap;
   ap.Set<ProcTexOutputDynTex*>(this);
   pdrw->SetUserDataA(ap);
   pdrw->SetUserDataB(ssci);

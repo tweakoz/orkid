@@ -22,7 +22,7 @@
 
 #include <ork/reflect/RegisterProperty.h>
 #include <orktool/qtui/qtvp_edrenderer.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
@@ -32,7 +32,7 @@
 
 #include "qtui_scenevp.h"
 #include "qtvp_uievh.h"
-#include <pkg/ent/Compositor.h>
+#include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/editor/edmainwin.h>
 
 #include <ork/gfx/camera.h>
@@ -92,29 +92,29 @@ void UpdateThread::run() // virtual
         break;
       case EUPD_RUNNING: {
         // ork::PerfMarkerPush( "ork.begin_update" );
-        ent::DrawableBuffer* dbuf = ork::ent::DrawableBuffer::LockWriteBuffer(7);
+        auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
         {
           OrkAssert(dbuf);
 
-          auto psi = (ent::Simulation*)mpVP->simulation();
+          auto psi = (ent::Simulation*) mpVP->simulation();
           if (psi) {
-            auto cmci = psi->compositingSystem();
-            float frame_rate = cmci ? cmci->currentFrameRate() : 0.0f;
+            auto compsys = psi->compositingSystem();
+            float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
             bool externally_fixed_rate = (frame_rate != 0.0f);
 
             if (externally_fixed_rate) {
-              RenderSyncToken syntok;
-              if (DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
+              lev2::RenderSyncToken syntok;
+              if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
                 syntok.mFrameIndex++;
                 psi->Update();
-                DrawableBuffer::mOfflineRenderSynchro.push(syntok);
+                lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
               }
             } else
               psi->Update();
           }
           mpVP->enqueueSimulationDrawables(dbuf);
         }
-        ork::ent::DrawableBuffer::UnLockWriteBuffer(dbuf);
+        ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
         // ork::PerfMarkerPush( "ork.end_update" );
         break;
       }

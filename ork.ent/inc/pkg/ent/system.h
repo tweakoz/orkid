@@ -73,7 +73,7 @@ private:
   virtual bool DoLink(Simulation* psi) { return true; }
   virtual void DoUnLink(Simulation* psi) {}
   virtual void DoStop(Simulation* psi) {}
-  virtual void enqueueDrawables(DrawableBuffer& buffer) {}
+  virtual void enqueueDrawables(lev2::DrawableBuffer& buffer) {}
   virtual void beginRenderFrame(const Simulation* psi) {}
   virtual void endRenderFrame(const Simulation* psi) {}
 

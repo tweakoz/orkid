@@ -13,7 +13,7 @@
 #include <ork/application/application.h>
 #include <ork/kernel/string/string.h>
 #include <pkg/ent/scene.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/renderer.h>
@@ -217,15 +217,14 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity *pent) 
 				pTARG->MTXI()->PopUIMatrix();
 			}
 		}
-		static void BufferCB(ork::ent::DrawableBufItem&cdb)
+		static void BufferCB(ork::lev2::DrawableBufItem&cdb)
 		{
 
 		}
 	};
 
-	#if 1 //DRAWTHREADS
-	CallbackDrawable* pdrw = new CallbackDrawable(pent);
-	pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
+	auto pdrw = new lev2::CallbackDrawable(pent);
+	pent->addDrawableToDefaultLayer(pdrw);
 	pdrw->SetRenderCallback( yo::doit );
 	pdrw->SetQueueToLayerCallback( yo::BufferCB );
 	pdrw->SetOwner(  & pent->GetEntData() );
@@ -236,10 +235,10 @@ void PerformanceAnalyzerArchetype::DoLinkEntity(Simulation* inst, Entity *pent) 
 	pyo->pent = pent;
 	pyo->psi = inst;
 
-	Drawable::var_t ap;
+	lev2::Drawable::var_t ap;
 	ap.Set<const yo*>( pyo );
 	pdrw->SetUserDataA( ap );
-#endif
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

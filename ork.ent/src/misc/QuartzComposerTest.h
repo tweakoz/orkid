@@ -22,7 +22,7 @@
 #include <ork/kernel/any.h>
 #include <pkg/ent/componentfamily.h>
 #include <pkg/ent/component.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/gfx/camera.h>
 #include <ork/kernel/objc.h>
 

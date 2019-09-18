@@ -16,7 +16,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 
 #include <pkg/ent/SimpleAnimatable.h>
 
@@ -229,7 +229,7 @@ bool SimpleAnimatableInst::DoLink(ork::ent::Simulation *psi)
 
 	if( nullptr == modelcinst) return false;
 
-	auto& mdraw = modelcinst->GetModelDrawable();
+	auto& mdraw = modelcinst->modelDrawable();
 	mModelInst = mdraw.GetModelInst();
 
 	if(mModelInst)

@@ -5,27 +5,22 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/gfx/compositor.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <pkg/ent/Compositor.h>
-#include <pkg/ent/drawable.h>
-#include <pkg/ent/entity.h>
-#include <pkg/ent/entity.hpp>
-#include <pkg/ent/input.h>
-#include <pkg/ent/scene.h>
-#include <pkg/ent/scene.hpp>
+#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/application/application.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::VrCompositingNode, "VrCompositingNode");
-
-using namespace ork::lev2;
+ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace ent {
+namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::Describe() {}
+void VrCompositingNode::describeX(class_t*c) {}
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -152,7 +147,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
 
   RtGroup* _rtg;
   BuiltinFrameEffectMaterial _effect;
-  ent::CompositingPassData _CPD;
+  CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
 };
 
@@ -177,12 +172,13 @@ struct VRIMPL {
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
-  void _myrender(Simulation* psi, FrameRenderer& renderer, CompositorDrawData& drawdata, fmtx4 rootmatrix) {
+  void _myrender(FrameRenderer& renderer, CompositorDrawData& drawdata, fmtx4 rootmatrix) {
 
-    auto playerspawn = psi->FindEntity(AddPooledString("playerspawn"));
-    auto playermtx   = playerspawn->GetEffectiveMatrix();
-
-    orkidvr::gpuUpdate(playermtx);
+    RenderContextFrameData& framedata = renderer.GetFrameData();
+    auto vrroot = framedata.getUserProperty("vroot"_crc);
+    if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
+      orkidvr::gpuUpdate(as_mtx.value());
+    }
 
     auto& LCAM = orkidvr::device()._leftcamera;
     auto& RCAM = orkidvr::device()._rightcamera;
@@ -194,7 +190,6 @@ struct VRIMPL {
   PoolString _camname, _layers;
   CompositingMaterial _material;
   VrFrameTechnique* _frametek;
-  InputSystem* _inputsys = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(); }
@@ -210,10 +205,10 @@ void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtua
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem* compsys) // virtual
+void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* impl) // virtual
 {
-  lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
+  FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
+  RenderContextFrameData& framedata = the_renderer.GetFrameData();
   auto targ                               = framedata.GetTarget();
 
   auto vrimpl                 = _impl.Get<std::shared_ptr<VRIMPL>>();
@@ -223,12 +218,10 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
   // find vr camera
   //////////////////////////////////////////////
 
-  auto psi   = compsys->simulation();
-  auto vrcam = psi->GetCameraData(vrcamname);
-
+  auto vrcamprop = framedata.getUserProperty("vrcam"_crc);
   fmtx4 rootmatrix;
-
-  if (vrcam != nullptr) {
+  if( auto as_cam = vrcamprop.TryAs<CameraData*>() ){
+    auto vrcam = as_cam.value();
     auto eye = vrcam->GetEye();
     auto tgt = vrcam->GetTarget();
     auto up  = vrcam->GetUp();
@@ -245,8 +238,8 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
 
     rendervar_t passdata;
     passdata.Set<const char*>("All");
-    the_renderer.GetFrameData().setUserProperty("pass"_crc, passdata);
-    vrimpl->_myrender(psi, the_renderer, drawdata, rootmatrix);
+    framedata.setUserProperty("pass"_crc, passdata);
+    vrimpl->_myrender(the_renderer, drawdata, rootmatrix);
 
     /////////////////////////////////////////////////////////////////////////////
     // VR compositor
@@ -263,7 +256,7 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::RtGroup* VrCompositingNode::GetOutput() const {
+RtGroup* VrCompositingNode::GetOutput() const {
   auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
   if (vrimpl->_frametek)
     return vrimpl->_frametek->_rtg;
@@ -271,4 +264,4 @@ lev2::RtGroup* VrCompositingNode::GetOutput() const {
     return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::ent
+}} // namespace ork::lev2

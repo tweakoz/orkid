@@ -15,7 +15,7 @@
 
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
 #include <pkg/ent/Lighting.h>
@@ -258,7 +258,7 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 
     #if 0 //DRAWTHREADS
     CallbackDrawable* pdrw = new CallbackDrawable(pent);
-    pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
+    pent->addDrawableToDefaultLayer(pdrw);
     pdrw->SetCallback( yo::doit );
     pdrw->SetOwner(  & pent->GetEntData() );
     pdrw->SetSortKey(0);

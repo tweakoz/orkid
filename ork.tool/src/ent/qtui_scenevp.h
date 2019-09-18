@@ -14,7 +14,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtmainwin.h>
 #include <pkg/ent/Lighting.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/scene.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -24,7 +24,7 @@
 //#include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/pickbuffer.h>
-#include <pkg/ent/Compositor.h>
+#include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/Lighting.h>
 //#include <pkg/ent/FullscreenEffects.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,6 +44,8 @@ class IRenderer;
 class EzUiCam;
 class Camera_ortho;
 class Camera;
+class CompositingGroup;
+class CompositingSceneItem;
 
 } // namespace lev2
 
@@ -54,9 +56,6 @@ template <typename T> class PickBuffer;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
-class CompositingGroup;
-class CompositingSceneItem;
-class CompositingComponentInst;
 class SceneEditorVP;
 class EditorSimulation;
 class EditorMainWindow;
@@ -112,7 +111,7 @@ public:
   //////////////////////
   ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
   //////////////////////
-  void enqueueSimulationDrawables(ent::DrawableBuffer* pDB);
+  void enqueueSimulationDrawables(lev2::DrawableBuffer* pDB);
   void RenderQueuedScene(ork::lev2::RenderContextFrameData& ContextData);
   //////////////////////
   // lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
@@ -121,8 +120,7 @@ public:
   ork::Object* GetObject(lev2::GetPixelContext& ctx, int ichan);
   //////////////////////
   ent::CompositingSystem* compositingSystem();
-  const ent::CompositingGroup* GetCompositingGroup(int igrp);
-  ent::CompositingComponentInst* GetCompositingComponentInst(int icidx);
+  const lev2::CompositingGroup* GetCompositingGroup(int igrp);
   //////////////////////
   void bindToolHandler(SceneEditorVPToolHandler* handler);
   void bindToolHandler(const std::string& ToolName);
@@ -131,7 +129,7 @@ public:
   void SetHeadLightMode(bool bv) { mbHeadLight = bv; }
   void SaveCubeMap();
   void SetCursor(const fvec3& c) { mCursor = c; }
-  void UpdateScene(ent::DrawableBuffer* pdb);
+  void UpdateScene(lev2::DrawableBuffer* pdb);
 
   ///////////////////////////////////////////////////
   void SetupLighting(lev2::HeadLightManager& hlmgr, lev2::RenderContextFrameData& fdata);
@@ -191,7 +189,7 @@ protected:
   int miCullCameraIndex;
   int mCompositorSceneIndex;
   int mCompositorSceneItemIndex;
-  orkstack<ent::CompositingPassData> mCompositingGroupStack;
+  orkstack<lev2::CompositingPassData> mCompositingGroupStack;
   // DrawableBufferLock								mDbLock;
   bool mbSceneDisplayEnable;
 

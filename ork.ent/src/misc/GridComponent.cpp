@@ -18,7 +18,7 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
@@ -172,16 +172,15 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
                             );
             }
         }
-        static void QueueToLayerCallback(ork::ent::DrawableBufItem&cdb)
+        static void QueueToLayerCallback(ork::lev2::DrawableBufItem&cdb)
         {
             //AssertOnOpQ2( UpdateSerialOpQ() );
 
         }
     };
 
-    #if 1 //DRAWTHREADS
-    CallbackDrawable* pdrw = new CallbackDrawable(pent);
-    pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
+    auto pdrw = new lev2::CallbackDrawable(pent);
+    pent->addDrawableToDefaultLayer(pdrw);
     pdrw->SetRenderCallback( yo::RenderCallback );
     pdrw->SetQueueToLayerCallback( yo::QueueToLayerCallback );
     pdrw->SetOwner(  & pent->GetEntData() );
@@ -191,10 +190,9 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
     pyo->parch = this;
     pyo->pent = pent;
 
-    Drawable::var_t ap;
+    lev2::Drawable::var_t ap;
     ap.Set<const yo*>( pyo );
     pdrw->SetUserDataA( ap );
-#endif
 
 }
 

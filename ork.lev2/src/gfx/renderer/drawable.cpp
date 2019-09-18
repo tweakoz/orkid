@@ -16,21 +16,19 @@
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/RegisterProperty.h>
-#include <pkg/ent/ReferenceArchetype.h>
-#include <pkg/ent/drawable.h>
-#include <pkg/ent/entity.h>
-#include <pkg/ent/scene.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 
 #include <ork/gfx/camera.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/collision_test.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::Drawable, "Drawable");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ModelDrawable, "ModelDrawable");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CallbackDrawable, "CallbackDrawable");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Drawable, "Drawable");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::ModelDrawable, "ModelDrawable");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CallbackDrawable, "CallbackDrawable");
 
-namespace ork::ent {
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DrawableOwner, "DrawableOwner");
+namespace ork::lev2 {
 
 ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineRenderSynchro;
 ork::MpMcBoundedQueue<RenderSyncToken> DrawableBuffer::mOfflineUpdateSynchro;
@@ -211,9 +209,7 @@ Drawable::Drawable()
     , mDataB(nullptr)
     , mEnabled(true) {
   AssertOnOpQ2(UpdateSerialOpQ());
-  // printf( "Drawable<%p>::Drawable(Entity<%p>)\n", this, pent );
   fflush(stdout);
-  // OrkAssert(mEntity);
 }
 Drawable::~Drawable() {
   AssertOnOpQ2(UpdateSerialOpQ());
@@ -221,7 +217,7 @@ Drawable::~Drawable() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-ModelDrawable::ModelDrawable(Entity* pent)
+ModelDrawable::ModelDrawable(DrawableOwner* pent)
     : Drawable()
     , mModelInst(NULL)
     , mfScale(1.0f)
@@ -270,7 +266,6 @@ void ModelDrawable::SetModelInst(lev2::XgmModelInst* pModelInst) {
 void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const {
   AssertOnOpQ2(UpdateSerialOpQ());
 
-#if 1 // DRAWTHREADS
   const lev2::XgmModel* Model = mModelInst->GetXgmModel();
   bool IsSkinned              = Model->IsSkinned();
 
@@ -296,13 +291,11 @@ void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer
       }
     }
   }
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void ModelDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
-#if 1 // DRAWTHREADS
   AssertOnOpQ2(MainThreadOpQ());
   const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
   const lev2::XgmModel* Model                    = mModelInst->GetXgmModel();
@@ -491,14 +484,11 @@ void ModelDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer
       }
     }
   }
-
-#endif
-  // orkprintf( "numacc %d numrej %d\n", inumacc, inumrej );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-CallbackDrawable::CallbackDrawable(Entity* pent)
+CallbackDrawable::CallbackDrawable(DrawableOwner* pent)
     : Drawable()
     , mSortKey(4)
     , mRenderCallback(0)
@@ -544,7 +534,52 @@ void CallbackDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRende
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void DrawableOwner::Describe(){
+
+}
+DrawableOwner::DrawableOwner() {}
+DrawableOwner::~DrawableOwner() {
+  for (LayerMap::const_iterator itL = mLayerMap.begin(); itL != mLayerMap.end(); itL++) {
+    DrawableVector* pldrawables = itL->second;
+
+    for (DrawableVector::const_iterator it = pldrawables->begin(); it != pldrawables->end(); it++) {
+      Drawable* pdrw = *it;
+      delete pdrw;
+    }
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void DrawableOwner::_addDrawable(const PoolString& layername, Drawable* pdrw) {
+  DrawableVector* pldrawables = GetDrawables(layername);
+  if (nullptr == pldrawables) {
+    pldrawables = new DrawableVector;
+    mLayerMap.AddSorted(layername, pldrawables);
+  }
+  pldrawables->push_back(pdrw);
+}
+
+DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const PoolString& layer) {
+  DrawableVector* pldrawables = 0;
+
+  LayerMap::const_iterator itL = mLayerMap.find(layer);
+  if (itL != mLayerMap.end()) {
+    pldrawables = itL->second;
+  }
+  return pldrawables;
+}
+const DrawableOwner::DrawableVector* DrawableOwner::GetDrawables(const PoolString& layer) const {
+  const DrawableVector* pldrawables = 0;
+
+  LayerMap::const_iterator itL = mLayerMap.find(layer);
+  if (itL != mLayerMap.end()) {
+    pldrawables = itL->second;
+  }
+  return pldrawables;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork::ent
+} // namespace ork::lev2

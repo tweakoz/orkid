@@ -12,7 +12,7 @@
 #include <orktool/toolcore/selection.h>
 //#include "builtincommands.h"
 #include <orktool/toolcore/dataflow.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 ///////////////////////////////////////////////////////////////////////////
 #include <pkg/ent/ReferenceArchetype.h>
@@ -960,7 +960,7 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj) {
     if (nullptr == psobj)
       return;
 
-    ork::ent::DrawableBuffer::ClearAndSyncReaders();
+    ork::lev2::DrawableBuffer::ClearAndSyncReaders();
 
     OrkAssert(psobj);
     mpScene->RemoveSceneObject(psobj);
@@ -1003,28 +1003,28 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj) {
 }
 void SceneEditorBase::DisableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
-  ork::ent::DrawableBuffer::ClearAndSyncReaders();
+  ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   SimulationEvent disviewev(0, SimulationEvent::ESIEV_DISABLE_UPDATE);
   bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
 }
 void SceneEditorBase::EnableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
-  ork::ent::DrawableBuffer::ClearAndSyncReaders();
+  ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   SimulationEvent disviewev(0, SimulationEvent::ESIEV_ENABLE_UPDATE);
   bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
 }
 void SceneEditorBase::DisableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
-  ork::ent::DrawableBuffer::ClearAndSyncReaders();
+  ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   SimulationEvent disviewev(0, SimulationEvent::ESIEV_DISABLE_VIEW);
   bcaster.BroadcastNotifyOnChannel(&disviewev, Simulation::EventChannel());
 }
 void SceneEditorBase::EnableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
-  ork::ent::DrawableBuffer::ClearAndSyncReaders();
+  ork::lev2::DrawableBuffer::ClearAndSyncReaders();
   ork::event::Broadcaster& bcaster = ork::event::Broadcaster::GetRef();
   SimulationEvent enaviewev(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
   bcaster.BroadcastNotifyOnChannel(&enaviewev, Simulation::EventChannel());
@@ -1039,7 +1039,7 @@ void SceneEditorBase::ImplEnterRunLocalState() {
   auto lamb = [&]() {
     DisableViews();
     tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
-    ork::ent::DrawableBuffer::ClearAndSyncReaders();
+    ork::lev2::DrawableBuffer::ClearAndSyncReaders();
     NewSimulation();
 
     if (mpEditSimulation) {
@@ -1061,7 +1061,7 @@ void SceneEditorBase::ImplEnterRunLocalState() {
 
       mpEditSimulation->SetSimulationMode(ent::ESCENEMODE_RUN);
     }
-    ork::ent::DrawableBuffer::ClearAndSyncReaders();
+    ork::lev2::DrawableBuffer::ClearAndSyncReaders();
     tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
     EnableViews();
   };
@@ -1096,7 +1096,7 @@ void SceneEditorBase::ImplEnterEditState() {
     DisableViews();
 
     tool::GetGlobalDataFlowScheduler()->GraphSet().LockForWrite().clear();
-    ork::ent::DrawableBuffer::ClearAndSyncReaders();
+    ork::lev2::DrawableBuffer::ClearAndSyncReaders();
     NewSimulation();
 
     if (mpEditSimulation) {
@@ -1112,7 +1112,7 @@ void SceneEditorBase::ImplEnterEditState() {
 
       mpEditSimulation->SetSimulationMode(ent::ESCENEMODE_EDIT);
     }
-    ork::ent::DrawableBuffer::ClearAndSyncReaders();
+    ork::lev2::DrawableBuffer::ClearAndSyncReaders();
     tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
 
     EnableViews();
@@ -1200,7 +1200,7 @@ SystemData* SceneEditorBase::ImplNewSystem(const std::string& classname) { /////
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::SigSceneTopoChanged() {
-  auto lamb = [=]() { ork::ent::DrawableBuffer::ClearAndSyncReaders(); };
+  auto lamb = [=]() { ork::lev2::DrawableBuffer::ClearAndSyncReaders(); };
 
   if (OpqTest::GetContext()->mOPQ == &UpdateSerialOpQ())
     lamb();
