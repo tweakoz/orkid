@@ -874,7 +874,7 @@ void BuiltinFrameTechniques::PostProcess( RenderContextFrameData& FrameData )
 
 BasicFrameTechnique::BasicFrameTechnique( )
 	: FrameTechniqueBase( 0, 0 )
-	, mbDoBeginEndFrame(true)
+	, _shouldBeginAndEndFrame(true)
 {
 
 }
@@ -888,13 +888,13 @@ void BasicFrameTechnique::Render( FrameRenderer & frenderer )
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 	FrameData.SetDstRect( tgt_rect );
 	IRenderTarget* pTopRenderTarget = FrameData.GetRenderTarget();
-	if( mbDoBeginEndFrame )
+	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->BeginFrame( frenderer );
 	{
 		FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
 		frenderer.Render();
 	}
-	if( mbDoBeginEndFrame )
+	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->EndFrame( frenderer );
 }
 
