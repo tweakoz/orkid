@@ -241,11 +241,25 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(this);
   auto FBI = mpTarget->FBI();
-  auto DRAWHUD = [&](){
-      if (gtoggle_hud) {
-        DrawHUD(RCFD);
-        DrawChildren(drwev);
-      }
+  /////////////////////////////////
+  auto DRAWBEGIN=[&](){
+      RCFD.PushRenderTarget(&rt);
+          RCFD.SetTarget(mpTarget);
+          _renderer->SetTarget(mpTarget);
+          RCFD.SetDstRect(tgtrect);
+          FBI->SetAutoClear(true);
+          FBI->SetViewport(0, 0, TARGW, TARGH);
+          FBI->SetScissor(0, 0, TARGW, TARGH);
+          mpTarget->BeginFrame();
+  };
+  /////////////////////////////////
+  auto DRAWEND=[&](){
+    if (gtoggle_hud) {
+      DrawHUD(RCFD);
+      DrawChildren(drwev);
+    }
+    mpTarget->EndFrame();
+    RCFD.PopRenderTarget();
   };
   /////////////////////////////////
   // Compositor ?
@@ -253,26 +267,15 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if (compositor_enabled) {
     auto compsys = compositingSystem();
     /////////////////////////////
-    // render it
+    // render content
     /////////////////////////////
-    lev2::CompositorDrawData compositorDrawData(framerenderer);
-    compsys->_impl.Draw(compositorDrawData);
+    compsys->_impl.renderContent(framerenderer);
     ////////////////////////////////////////////
-    // FrameTechnique FinalMRT + HUD -> screen
+    // compose to screen
     ////////////////////////////////////////////
-    RCFD.PushRenderTarget(&rt);{
-        RCFD.SetTarget(mpTarget);
-        _renderer->SetTarget(mpTarget);
-        RCFD.SetDstRect(tgtrect);
-        FBI->SetAutoClear(true);
-        FBI->SetViewport(0, 0, TARGW, TARGH);
-        FBI->SetScissor(0, 0, TARGW, TARGH);
-        mpTarget->BeginFrame();
-          compsys->_impl.composeToScreen(mpTarget);
-          DRAWHUD();
-        mpTarget->EndFrame();
-    }
-    RCFD.PopRenderTarget();
+    DRAWBEGIN();
+      compsys->_impl.composeToScreen(mpTarget);
+    DRAWEND();
   }
   /////////////////////////////////
   else // No Compositor
@@ -284,24 +287,18 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       rendervar_t passdata;
       passdata.Set<orkstack<lev2::CompositingPassData>*>(&mCompositingGroupStack);
       RCFD.setUserProperty("nodes"_crc, passdata);
-      RCFD.PushRenderTarget(&rt);
-          RCFD.SetTarget(mpTarget);
-          _renderer->SetTarget(mpTarget);
-          RCFD.SetDstRect(tgtrect);
-          FBI->SetAutoClear(true);
-          FBI->SetViewport(0, 0, TARGW, TARGH);
-          FBI->SetScissor(0, 0, TARGW, TARGH);
-          mpTarget->BeginFrame();
-              lev2::CompositingPassData node;
-              node.mpGroup    = nullptr;
-              node.mpFrameTek = nullptr;
-              mCompositingGroupStack.push(node);
-              mpBasicFrameTek->mbDoBeginEndFrame = false;
-              mpBasicFrameTek->Render(framerenderer);
-              mCompositingGroupStack.pop();
-              DRAWHUD();
-          mpTarget->EndFrame();
-      RCFD.PopRenderTarget();
+      DRAWBEGIN();
+        lev2::CompositingPassData node;
+        node.mpGroup    = nullptr;
+        node.mpFrameTek = nullptr;
+        mCompositingGroupStack.push(node);
+          mpBasicFrameTek->mbDoBeginEndFrame = false;
+          /////////////////////////////
+          // render content direct to screen
+          /////////////////////////////
+          mpBasicFrameTek->Render(framerenderer);
+        mCompositingGroupStack.pop();
+      DRAWEND();
       lev2::DrawableBuffer::EndDbRead(DB);
     }
     mRenderLock = 0;

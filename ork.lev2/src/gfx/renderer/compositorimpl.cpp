@@ -196,8 +196,8 @@ float CompositingImpl::currentFrameRate() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingImpl::Draw(CompositorDrawData& drawdata) {
-  lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
+void CompositingImpl::renderContent(lev2::FrameRenderer& the_renderer) {
+  lev2::CompositorDrawData drawdata(the_renderer);
   lev2::RenderContextFrameData& framedata = the_renderer.framedata();
   lev2::GfxTarget* pTARG                  = framedata.GetTarget();
   orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
