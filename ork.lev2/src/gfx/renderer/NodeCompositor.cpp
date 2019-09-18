@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -22,6 +22,7 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 
 BEGIN_ENUM_SERIALIZER(ork::lev2, EOp2CompositeMode)
 DECLARE_ENUM(Op2AsumB)
@@ -45,7 +46,7 @@ ImplementReflectionX(ork::lev2::PassThroughCompositingNode, "PassThroughComposit
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::describeX(class_t*c) {
-  ork::reflect::RegisterProperty("RootNode", &NodeCompositingTechnique::GetRoot, &NodeCompositingTechnique::SetRoot);
+  ork::reflect::RegisterProperty("RootNode", &NodeCompositingTechnique::_readRoot, &NodeCompositingTechnique::_writeRoot);
   ork::reflect::AnnotatePropertyForEditor<NodeCompositingTechnique>("RootNode", "editor.factorylistbase", "CompositingNode");
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -56,12 +57,12 @@ NodeCompositingTechnique::~NodeCompositingTechnique() {
     delete mpRootNode;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::GetRoot(ork::rtti::ICastable*& val) const {
+void NodeCompositingTechnique::_readRoot(ork::rtti::ICastable*& val) const {
   CompositingNode* nonconst = const_cast<CompositingNode*>(mpRootNode);
   val = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::SetRoot(ork::rtti::ICastable* const& val) {
+void NodeCompositingTechnique::_writeRoot(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
   mpRootNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
 }
@@ -157,17 +158,11 @@ void PassThroughCompositingNode::DoRender(CompositorDrawData& drawdata, Composit
   orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
 
   CompositingPassData node;
-  node.mbDrawSource = (pCG != 0);
+  node.mbDrawSource = (pCG != nullptr);
 
   if (mFTEK) {
-    mFTEK->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
-    lev2::rendervar_t passdata;
-    passdata.Set<const char*>("All");
-    the_renderer.framedata().setUserProperty("pass"_crc, passdata);
-    node.mpGroup = pCG;
-    node.mpFrameTek = mFTEK;
-    node.mpCameraName = (pCG != 0) ? &pCG->GetCameraName() : 0;
-    node.mpLayerName = (pCG != 0) ? &pCG->GetLayers() : 0;
+    framedata.setLayerName("All");
+    auto node = mFTEK->createPassData(pCG);
     cgSTACK.push(node);
     mFTEK->Render(the_renderer);
     cgSTACK.pop();

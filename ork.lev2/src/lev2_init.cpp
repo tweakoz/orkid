@@ -20,7 +20,7 @@
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/dataflow/dataflow.h>
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////

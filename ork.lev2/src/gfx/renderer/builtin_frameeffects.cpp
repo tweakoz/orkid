@@ -44,6 +44,19 @@ TexBuffer::TexBuffer(	GfxBuffer *parent,
 	lev2::GfxEnv::GetRef().PopCreationParams();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+CompositingPassData BuiltinFrameTechniques::createPassData( const lev2::CompositingGroup* group ) {
+  lev2::CompositingPassData node;
+  node.mbDrawSource      = (group != nullptr);
+  this->mfSourceAmplitude = group ? 1.0f : 0.0f; // yuk....
+  node.mpGroup      = group;
+  node.mpFrameTek   = this;
+  node.mpCameraName = (group != nullptr) ? &group->_cameraName : nullptr;
+  node.mpLayerName  = (group != nullptr) ? &group->_layers : nullptr;
+  return node;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 static const int kGLOWBUFSIZE = 256;

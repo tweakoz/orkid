@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -19,6 +19,7 @@
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
+#include <ork/application/application.h>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,14 +64,14 @@ void CompositingData::describeX(class_t* c) {
   RegisterProperty("Enable", &CompositingData::mbEnable);
   RegisterProperty("OutputFrames", &CompositingData::mbOutputFrames);
 
-  RegisterMapProperty("Groups", &CompositingData::mCompositingGroups);
+  RegisterMapProperty("Groups", &CompositingData::_groups);
 	AnnotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
 
-  RegisterMapProperty("Scenes", &CompositingData::mScenes);
+  RegisterMapProperty("Scenes", &CompositingData::_scenes);
 	AnnotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
 
-  RegisterProperty("ActiveScene", &CompositingData::mActiveScene);
-  RegisterProperty("ActiveItem", &CompositingData::mActiveItem);
+  RegisterProperty("ActiveScene", &CompositingData::_activeScene);
+  RegisterProperty("ActiveItem", &CompositingData::_activeItem);
 
   RegisterProperty("OutputResBase", &CompositingData::mOutputBaseResolution);
   RegisterProperty("OutputResMult", &CompositingData::mOutputResMult);
@@ -95,6 +96,29 @@ CompositingData::CompositingData()
     , mOutputFrameRate(EOutputTimeStep_RealTime)
     , mOutputBaseResolution(EOutputRes_1280x720)
     , mOutputResMult(EOutputResMult_Full) {}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void CompositingData::defaultSetup(){
+
+  auto s1 = new CompositingScene;
+  auto i1 = new CompositingSceneItem;
+  auto t1 = new NodeCompositingTechnique;
+  auto r1 = new PassThroughCompositingNode;
+  auto g1 = new CompositingGroup;
+  g1->_cameraName = "edcam"_pool;
+  g1->_layers = "All"_pool;
+  g1->_effect._effectAmount = 1.0f;
+  g1->_effect._effectID = EFRAMEFX_GHOSTLY;
+
+  r1->_writeGroup(g1);
+  t1->_writeRoot(r1);
+  i1->_writeTech(t1);
+  s1->items().AddSorted("item1"_pool,i1);
+  _activeScene = "scene1"_pool;
+  _activeItem = "item1"_pool;
+  _scenes.AddSorted("scene1"_pool,s1);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -136,7 +160,7 @@ const CompositingSceneItem* CompositingImpl::compositingItem(int isceneidx, int 
     }
   }
   if (pscene && itemidx >= 0) {
-    const auto& Items = pscene->GetItems();
+    const auto& Items = pscene->items();
     auto it           = Items.find(CDATA.GetActiveItem());
     if (it != Items.end()) {
       ork::Object* pOBJ = it->second;

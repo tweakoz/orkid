@@ -26,6 +26,7 @@
 
 namespace ork {
 
+class Opq;
 class CameraData;
 class Application;
 
@@ -97,6 +98,9 @@ public:
 	void AutoLoadAssets() const;
 
 	PoolString NewObjectName() const;
+
+	void cleanup();
+	void defaultSetup(Opq&editopq);
 
 	//////////////////////////////////////////////////////////
 

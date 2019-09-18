@@ -5,15 +5,16 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/application/application.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 
@@ -242,9 +243,7 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
     // render eyes
     /////////////////////////////////////////////////////////////////////////////
 
-    rendervar_t passdata;
-    passdata.Set<const char*>("All");
-    framedata.setUserProperty("pass"_crc, passdata);
+    framedata.setLayerName("All");
     vrimpl->_myrender(the_renderer, drawdata, rootmatrix);
 
     /////////////////////////////////////////////////////////////////////////////

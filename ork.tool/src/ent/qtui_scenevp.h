@@ -14,18 +14,20 @@
 #include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <orktool/qtui/qtmainwin.h>
-#include <pkg/ent/Lighting.h>
-#include <pkg/ent/editor/editor.h>
-#include <pkg/ent/scene.h>
-///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <pkg/ent/Lighting.h>
+#include <pkg/ent/editor/editor.h>
+#include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/Lighting.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <orktool/qtui/qtmainwin.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 class QWidget;
@@ -175,14 +177,12 @@ protected:
   orkmap<std::string, SceneEditorVPToolHandler*> mToolHandlers;
   SceneEditorVPToolHandler* mpCurrentHandler;
   SceneEditorVPToolHandler* mpDefaultHandler;
-  lev2::Texture* mpCurrentToolIcon;
 
   int mGridMode;
   ork::ent::SceneEditorView mSceneView;
   lev2::IRenderer* _renderer;
   lev2::Camera* _editorCamera;
   fvec3 mCursor;
-  PerformanceItem mFramePerfItem;
   int miCameraIndex;
   int miCullCameraIndex;
   int mCompositorSceneIndex;

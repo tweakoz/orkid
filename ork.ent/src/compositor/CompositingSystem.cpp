@@ -46,6 +46,10 @@ CompositingSystemData::CompositingSystemData()
 {
 }
 
+void CompositingSystemData::defaultSetup(){
+  _compositingData.defaultSetup();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 ork::ent::System* CompositingSystemData::createSystem(ork::ent::Simulation *pinst) const
@@ -83,14 +87,16 @@ void CompositingSystem::DoUpdate(Simulation* psim) {
     _vrstate++;
   }
   if( _vrstate==2 and _prv_vrstate<2 ){
-    _impl.setPrerenderCallback(0,[=](lev2::GfxTarget*targ){
-          fmtx4 playermtx = _playerspawn->GetEffectiveMatrix();
-          auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
-          if( frame_data ){
-            frame_data->setUserProperty("vrroot"_crc,playermtx);
-            frame_data->setUserProperty("vrcam"_crc,_vrcam);
-          }
-    });
+    if( _playerspawn and _vrcam ){
+      _impl.setPrerenderCallback(0,[=](lev2::GfxTarget*targ){
+            fmtx4 playermtx = _playerspawn->GetEffectiveMatrix();
+            auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
+            if( frame_data ){
+              frame_data->setUserProperty("vrroot"_crc,playermtx);
+              frame_data->setUserProperty("vrcam"_crc,_vrcam);
+            }
+      });
+    }
   }
 
   _prv_vrstate =   _vrstate;

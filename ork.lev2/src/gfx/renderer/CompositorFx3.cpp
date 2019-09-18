@@ -5,13 +5,14 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
@@ -99,21 +100,12 @@ void Fx3CompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImpl
     static void rend_lyr_2_comp_group(CompositorDrawData& drawdata,
                                       const lev2::CompositingGroup* pCG,
                                       lev2::BuiltinFrameTechniques* pFT,
-                                      const char* LayerName) {
+                                      const char* layername) {
       lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
       lev2::RenderContextFrameData& framedata = the_renderer.framedata();
       orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
-
-      lev2::CompositingPassData node;
-      node.mbDrawSource      = (pCG != 0);
-      pFT->mfSourceAmplitude = pCG ? 1.0f : 0.0f;
-      lev2::rendervar_t passdata;
-      passdata.Set<const char*>(LayerName);
-      the_renderer.framedata().setUserProperty("pass"_crc, passdata);
-      node.mpGroup      = pCG;
-      node.mpFrameTek   = pFT;
-      node.mpCameraName = (pCG != 0) ? &pCG->GetCameraName() : 0;
-      node.mpLayerName  = (pCG != 0) ? &pCG->GetLayers() : 0;
+      auto node = pFT->createPassData(pCG);
+      the_renderer.framedata().setLayerName(layername);
       cgSTACK.push(node);
       pFT->Render(the_renderer);
       cgSTACK.pop();
