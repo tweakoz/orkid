@@ -218,7 +218,7 @@
                                             <object type='EzUiCam' id='19'>
                                                 <property name='Center'>-1230.82 -676.369 781.237</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>1231.99</property>
+                                                <property name='Loc'>1246.39</property>
                                                 <property name='QuatC'>-0.0181094 -0.974133 0.18371 0.132999</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
@@ -285,7 +285,6 @@
                                                             <property name='GrassColor'>0.5 0.5 0.7</property>
                                                             <property name='HeightMap'>"data://terrain/testhmap2.png"</property>
                                                             <property name='Offset'>0 4.25 0</property>
-                                                            <property name='Rock1Color'>0.2 0.2 0.3</property>
                                                             <property name='Rock2Color'>0.2 0.2 0.35</property>
                                                             <property name='SnowColor'>1 1 1.2</property>
                                                             <property name='SphericalEnvMap'>
@@ -294,6 +293,7 @@
                                                                 </reference>
                                                             </property>
                                                             <property name='TestXXX'>0.2</property>
+                                                            <property name='rock1Color'>0 0 0</property>
                                                         </object>
                                                     </property>
                                                     <property name='WorldHeight'>1500</property>
@@ -961,54 +961,58 @@
             <item key='CompositingSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='CompositingSystemData' id='111'>
-                        <property name='ActiveItem'>"i1"</property>
-                        <property name='ActiveScene'>"s1"</property>
-                        <property name='Enable'>true</property>
-                        <property name='Groups'></property>
-                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
-                        <property name='OutputFrames'>false</property>
-                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
-                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
-                        <property name='Scenes'>
-                            <item key='s1'>
-                                <reference category='ObjectClass'>
-                                    <object type='CompositingScene' id='112'>
-                                        <property name='Items'>
-                                            <item key='i1'>
-                                                <reference category='ObjectClass'>
-                                                    <object type='CompositingSceneItem' id='113'>
-                                                        <property name='Technique'>
-                                                            <reference category='ObjectClass'>
-                                                                <object type='NodeCompositingTechnique' id='114'>
-                                                                    <property name='RootNode'>
-                                                                        <reference category='ObjectClass'>
-                                                                            <object type='VrCompositingNode' id='115'>
-                                                                            </object>
-                                                                        </reference>
-                                                                    </property>
-                                                                </object>
-                                                            </reference>
-                                                        </property>
-                                                    </object>
-                                                </reference>
-                                            </item>
-                                        </property>
-                                    </object>
-                                </reference>
-                            </item>
+                        <property name='CompositorData'>
+                            <object type='CompositingData' id='112'>
+                                <property name='ActiveItem'>"i1"</property>
+                                <property name='ActiveScene'>"s1"</property>
+                                <property name='Enable'>true</property>
+                                <property name='Groups'></property>
+                                <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
+                                <property name='OutputFrames'>false</property>
+                                <property name='OutputResBase'>"EOutputRes_1280x720"</property>
+                                <property name='OutputResMult'>"EOutputResMult_Full"</property>
+                                <property name='Scenes'>
+                                    <item key='s1'>
+                                        <reference category='ObjectClass'>
+                                            <object type='CompositingScene' id='113'>
+                                                <property name='Items'>
+                                                    <item key='i1'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='CompositingSceneItem' id='114'>
+                                                                <property name='Technique'>
+                                                                    <reference category='ObjectClass'>
+                                                                        <object type='NodeCompositingTechnique' id='115'>
+                                                                            <property name='RootNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='VrCompositingNode' id='116'>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                        </object>
+                                                                    </reference>
+                                                                </property>
+                                                            </object>
+                                                        </reference>
+                                                    </item>
+                                                </property>
+                                            </object>
+                                        </reference>
+                                    </item>
+                                </property>
+                            </object>
                         </property>
                     </object>
                 </reference>
             </item>
             <item key='InputSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='InputSystemData' id='116'>
+                    <object type='InputSystemData' id='117'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='117'>
+                    <object type='ScriptSystemData' id='118'>
                     </object>
                 </reference>
             </item>

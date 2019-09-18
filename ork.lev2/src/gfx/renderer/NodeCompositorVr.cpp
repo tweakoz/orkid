@@ -177,7 +177,11 @@ struct VRIMPL {
     RenderContextFrameData& framedata = renderer.GetFrameData();
     auto vrroot = framedata.getUserProperty("vroot"_crc);
     if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
+      as_mtx.value().dump("vrroot");
       orkidvr::gpuUpdate(as_mtx.value());
+    }
+    else{
+      printf("vrroottype<%s>\n", vrroot.GetTypeName() );
     }
 
     auto& LCAM = orkidvr::device()._leftcamera;
@@ -212,7 +216,6 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
   auto targ                               = framedata.GetTarget();
 
   auto vrimpl                 = _impl.Get<std::shared_ptr<VRIMPL>>();
-  static PoolString vrcamname = AddPooledString("vrcam");
 
   //////////////////////////////////////////////
   // find vr camera
@@ -220,12 +223,15 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
 
   auto vrcamprop = framedata.getUserProperty("vrcam"_crc);
   fmtx4 rootmatrix;
-  if( auto as_cam = vrcamprop.TryAs<CameraData*>() ){
+  if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
     auto vrcam = as_cam.value();
     auto eye = vrcam->GetEye();
     auto tgt = vrcam->GetTarget();
     auto up  = vrcam->GetUp();
     rootmatrix.LookAt(eye, tgt, up);
+  }
+  else{
+    printf("vrcamtype<%s>\n", vrcamprop.GetTypeName() );
   }
 
   if (vrimpl->_frametek) {

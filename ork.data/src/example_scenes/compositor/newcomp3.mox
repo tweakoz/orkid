@@ -364,8 +364,8 @@
                     <object type='CompositingSystemData' id='48'>
                         <property name='CompositorData'>
                             <object type='CompositingData' id='49'>
-                                <property name='ActiveItem'>""</property>
-                                <property name='ActiveScene'>""</property>
+                                <property name='ActiveItem'>"i1"</property>
+                                <property name='ActiveScene'>"s1"</property>
                                 <property name='Enable'>true</property>
                                 <property name='Groups'></property>
                                 <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
@@ -392,13 +392,13 @@
                                                                                                     <property name='Camera'>"edcam"</property>
                                                                                                     <property name='Effect'>
                                                                                                         <object type='CompositingGroupEffect' id='55'>
-                                                                                                            <property name='Amount'>0</property>
+                                                                                                            <property name='Amount'>0.3</property>
                                                                                                             <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                                                                            <property name='FeedbackAmount'>0</property>
-                                                                                                            <property name='FinalRezScale'>0.5</property>
-                                                                                                            <property name='FxRezScale'>0.5</property>
-                                                                                                            <property name='PostFxFeedback'>false</property>
-                                                                                                            <property name='Type'>"EFRAMEFX_NONE"</property>
+                                                                                                            <property name='FeedbackAmount'>0.8</property>
+                                                                                                            <property name='FinalRezScale'>1</property>
+                                                                                                            <property name='FxRezScale'>1</property>
+                                                                                                            <property name='PostFxFeedback'>true</property>
+                                                                                                            <property name='Type'>"EFRAMEFX_GHOSTLY"</property>
                                                                                                         </object>
                                                                                                     </property>
                                                                                                     <property name='Layers'>"All"</property>

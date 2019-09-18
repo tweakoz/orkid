@@ -63,27 +63,7 @@ CompositingSystem::CompositingSystem( const CompositingSystemData& data, Simulat
 {
   // todo - find a better way..
 
-  auto playerspawn = psim->FindEntity(AddPooledString("playerspawn"));
-  auto vrcam = psim->GetCameraData(AddPooledString("vrcam"));
 
-  if( playerspawn and vrcam ){
-    assert(false);
-    auto l_grab_vrdata = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
-        fmtx4 playermtx = playerspawn->GetEffectiveMatrix();
-        auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
-        if( frame_data ){
-          frame_data->setUserProperty("vrroot"_crc,playermtx);
-          frame_data->setUserProperty("vrcam"_crc,vrcam);
-        }
-    };
-
-
-
-    auto drawable = new lev2::CallbackDrawable(nullptr);
-    drawable->SetRenderCallback(l_grab_vrdata);
-    drawable->SetSortKey(0);
-
-  }
 }
 
 bool CompositingSystem::enabled() const {
@@ -96,8 +76,30 @@ CompositingSystem::~CompositingSystem()
 
 void CompositingSystem::DoUpdate(Simulation* psim) {
 
+  if( nullptr == _playerspawn ){
+    _playerspawn = psim->FindEntity(AddPooledString("playerspawn"));
+    _vrstate++;
+  }
+  if( nullptr == _vrcam ){
+    _vrcam = psim->GetCameraData(AddPooledString("vrcam"));
+    _vrstate++;
+  }
+  if( _vrstate==2 and _prv_vrstate<2 ){
+      auto l_grab_vrdata = [=](lev2::RenderContextInstData& rcid, lev2::GfxTarget* targ, const lev2::CallbackRenderable* pren) {
+          fmtx4 playermtx = _playerspawn->GetEffectiveMatrix();
+          auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
+          if( frame_data ){
+            frame_data->setUserProperty("vrroot"_crc,playermtx);
+            frame_data->setUserProperty("vrcam"_crc,_vrcam);
+          }
+      };
+      // TODO - this needs to be a pre-render callback
+      auto drawable = new lev2::CallbackDrawable(nullptr);
+      drawable->SetRenderCallback(l_grab_vrdata);
+      drawable->SetSortKey(0);
+    }
 
-
+  _prv_vrstate =   _vrstate;
 
 
 }
