@@ -118,16 +118,19 @@ void Init(const std::string& gfxlayer)
 	proctex::UvMap::GetClassStatic();
 	proctex::Kaled::GetClassStatic();
 
-	RegisterClassX(CompositingGroup);
 	RegisterClassX(CompositingScene);
-	RegisterClassX(CompositingSceneItem);
-	RegisterClassX(CompositingGroupEffect);
-
-	RegisterClassX(CompositingData);
-	RegisterClassX(CompositingNode);
-  RegisterClassX(NodeCompositingTechnique);
-  RegisterClassX(Fx3CompositingTechnique);
+	RegisterClassX(Fx3CompositingTechnique);
 	RegisterClassX(PassThroughCompositingNode);
+	RegisterClassX(VrCompositingNode);
+	RegisterClassX(SeriesCompositingNode);
+	RegisterClassX(InsertCompositingNode);
+	RegisterClassX(Op2CompositingNode);
+	RegisterClassX(NodeCompositingTechnique);
+	RegisterClassX(CompositingData);
+	RegisterClassX(CompositingGroupEffect);
+	RegisterClassX(CompositingGroup);
+	RegisterClassX(CompositingSceneItem);
+	RegisterClassX(CompositingNode);
 
 	//////////////////////////////////////////
 	// register lev2 graphics target classes
