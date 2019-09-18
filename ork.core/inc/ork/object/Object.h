@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -26,14 +26,14 @@ class Signal;
 namespace reflect { class ISerializer; class IDeserializer; class BidirectionalSerializer; }
 
 //typedef rtti::RTTI<Object, rtti::ICastable, rtti::DefaultPolicy, object::ObjectClass> ObjectBase;
-        
+
 struct  Object : public rtti::ICastable
 {
 private:
     RttiDeclareAbstractWithCategory( Object, rtti::ICastable, object::ObjectClass );
 
     //RttiDeclareConcrete( Object, ObjectBase );
-    
+
 public:
 	virtual ~Object() {}
 
@@ -51,10 +51,10 @@ public:
 
 	virtual Object* Clone() const;
 	Md5Sum CalcMd5() const;
-	
+
 	bool Notify(const event::Event* pEV) { return DoNotify(pEV); }
 	bool Query(event::Event* pEV) const { return DoQuery(pEV); }
-	
+
 private:
 
 	virtual bool DoNotify(const event::Event* pEV) { return false; }
@@ -77,6 +77,3 @@ inline bool DeserializeUnknownObject(ork::reflect::IDeserializer &deser, T *&val
 Object *DeserializeObject(PieceString file);
 
 }
-
-#include <ork/event/EventListener.h>
-

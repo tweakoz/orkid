@@ -11,6 +11,7 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/timer.h>
 #include <ork/object/Object.h>
+#include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <orktool/qtui/qtmainwin.h>
@@ -162,6 +163,7 @@ protected:
 
   ork::atomic<int> mRenderLock;
 
+  msgrouter::subscriber_t _simchannelsubscriber;
   // lev2::PickBuffer<SceneEditorVP>*				mpPickBuffer;
   int miPickDirtyCount;
   bool mbHeadLight;
@@ -197,7 +199,6 @@ private:
   ////////////////////////////////////////////
 
   void DoInit(ork::lev2::GfxTarget* pTARG) override;
-  bool DoNotify(const ork::event::Event* pev) override;
 
   static orkset<SceneEditorInitCb> mInitCallbacks;
 };
