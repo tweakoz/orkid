@@ -12,26 +12,22 @@
 #include <ork/kernel/timer.h>
 #include <ork/object/Object.h>
 ///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <orktool/qtui/qtmainwin.h>
 #include <pkg/ent/Lighting.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/scene.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/ui/ui.h>
-#include <ork/lev2/ui/viewport.h>
-//#include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/Lighting.h>
-//#include <pkg/ent/FullscreenEffects.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 class QWidget;
-
-#define _THREADED_RENDERER
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -66,7 +62,6 @@ typedef void (*SceneEditorInitCb)(ork::ent::SceneEditorVP& vped);
 class SceneEditorVPToolHandler; // : public SceneEditorVPToolHandlerBase;
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_THREADED_RENDERER)
 class UpdateThread : public ork::Thread {
 public:
   UpdateThread(SceneEditorVP* pVP);
@@ -78,7 +73,6 @@ private:
   bool mbOKTOEXIT;
   bool mbEXITING;
 };
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 class SceneEditorView : public ork::Object {
@@ -193,7 +187,7 @@ protected:
   bool mbSceneDisplayEnable;
 
 private:
-  UpdateThread* mUpdateThread;
+  UpdateThread* _updateThread;
 
   void DisableSceneDisplay();
   void EnableSceneDisplay();
