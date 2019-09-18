@@ -1004,26 +1004,22 @@ void SceneEditorBase::ImplDeleteObject(ork::Object* pobj) {
 void SceneEditorBase::DisableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  SimulationEvent disupdev(0, SimulationEvent::ESIEV_DISABLE_UPDATE);
-  msgrouter::channel("Simulation")->post(&disupdev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(nullptr, SimulationEvent::ESIEV_DISABLE_UPDATE);
 }
 void SceneEditorBase::EnableUpdates() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  SimulationEvent enaupdev(0, SimulationEvent::ESIEV_ENABLE_UPDATE);
-  msgrouter::channel("Simulation")->post(&enaupdev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(nullptr, SimulationEvent::ESIEV_ENABLE_UPDATE);
 }
 void SceneEditorBase::DisableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  SimulationEvent disviewev(0, SimulationEvent::ESIEV_DISABLE_VIEW);
-  msgrouter::channel("Simulation")->post(&disviewev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(nullptr, SimulationEvent::ESIEV_DISABLE_VIEW);
 }
 void SceneEditorBase::EnableViews() {
   ork::AssertOnOpQ2(UpdateSerialOpQ());
   ork::lev2::DrawableBuffer::ClearAndSyncReaders();
-  SimulationEvent enaviewev(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
-  msgrouter::channel("Simulation")->post(&enaviewev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
 }
 ///////////////////////////////////////////////////////////////////////////
 void SceneEditorBase::ImplEnterRunLocalState() {

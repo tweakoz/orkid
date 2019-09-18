@@ -350,8 +350,7 @@ void Simulation::_stage() {
 
   ServiceDeactivateQueue();
 
-  SimulationEvent outev(this, SimulationEvent::ESIEV_START);
-  ork::Application::GetContext()->Notify(&outev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(this, SimulationEvent::ESIEV_START);
   lev2::DrawableBuffer::EndClearAndSyncReaders();
 
   lev2::RenderSyncToken rentok;
@@ -394,10 +393,7 @@ void Simulation::EnterEditState() {
   lev2::DrawableBuffer::BeginClearAndSyncReaders();
   AssertOnOpQ2(UpdateSerialOpQ());
 
-  SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
-
-  msgrouter::channel("Simulation")->post(&bindev);
-  //ork::event::Broadcaster::GetRef().BroadcastNotifyOnChannel(&bindev, EventChannel());
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(this, SimulationEvent::ESIEV_BIND);
 
   LeaveRunMode();
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
@@ -435,8 +431,7 @@ void Simulation::EnterRunState() {
 
   AllocationLabel label("Simulation::EnterRunState::255");
 
-  SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
-  ork::Application::GetContext()->Notify(&bindev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(this, SimulationEvent::ESIEV_BIND);
 
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
 
