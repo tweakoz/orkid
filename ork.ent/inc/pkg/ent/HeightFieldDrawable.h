@@ -1,6 +1,6 @@
 #pragma once
 #include "heightmap.h"
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
@@ -46,14 +46,14 @@ struct HeightFieldDrawable {
 
   HeightFieldDrawable(const HeightFieldDrawableData& data);
   ~HeightFieldDrawable();
-  CallbackDrawable* create();
+  lev2::CallbackDrawable* create();
 
   const HeightFieldDrawableData& _data;
   file::Path _hfpath;
   fvec3 _visualOffset;
   float _worldHeight = 0.0f;
   float _worldSizeXZ = 0.0f;
-  CallbackDrawable* _rawdrawable = nullptr;
+  lev2::CallbackDrawable* _rawdrawable = nullptr;
   ork::svar16_t _impl;
 };
 

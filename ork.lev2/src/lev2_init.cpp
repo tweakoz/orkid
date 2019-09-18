@@ -20,6 +20,7 @@
 #include <ork/lev2/gfx/targetinterfaces.h>
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/dataflow/dataflow.h>
+#include <ork/lev2/gfx/compositor.h>
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
@@ -59,7 +60,7 @@ void Init(const std::string& gfxlayer)
 	GfxMaterialWiiBasic::StaticInit();
 
 	//////////////////////////////////////////
-	// touch of class 
+	// touch of class
 
 	particle::ParticleModule::GetClassStatic();
 	particle::ParticlePool::GetClassStatic();
@@ -74,7 +75,7 @@ void Init(const std::string& gfxlayer)
 
 	particle::RingEmitter::GetClassStatic();
 	particle::ReEmitter::GetClassStatic();
-	
+
 	particle::GravityModule::GetClassStatic();
 	particle::TurbulenceModule::GetClassStatic();
 	particle::VortexModule::GetClassStatic();
@@ -85,7 +86,7 @@ void Init(const std::string& gfxlayer)
 
 	ork::dataflow::floatxfitembase::GetClassStatic();
 	ork::dataflow::floatxfmsbcurve::GetClassStatic();
-	
+
 	dataflow::outplug<proctex::ImgBase>::GetClassStatic();
 	dataflow::inplug<proctex::ImgBase>::GetClassStatic();
 
@@ -117,6 +118,16 @@ void Init(const std::string& gfxlayer)
 	proctex::UvMap::GetClassStatic();
 	proctex::Kaled::GetClassStatic();
 
+	RegisterClassX(CompositingGroup);
+	RegisterClassX(CompositingScene);
+	RegisterClassX(CompositingSceneItem);
+	RegisterClassX(CompositingGroupEffect);
+
+	RegisterClassX(CompositingData);
+	RegisterClassX(CompositingNode);
+  RegisterClassX(NodeCompositingTechnique);
+  RegisterClassX(Fx3CompositingTechnique);
+	RegisterClassX(PassThroughCompositingNode);
 
 	//////////////////////////////////////////
 	// register lev2 graphics target classes
@@ -125,20 +136,11 @@ void Init(const std::string& gfxlayer)
 
 	if( gfxlayer != "dummy" )
 	{
-		#if defined(WII) || defined(WIIEMU)
-		WiiGfxTargetInit();
-		#endif
 		#if defined(ORK_CONFIG_OPENGL)
 		OpenGlGfxTargetInit();
 		#endif
-		#if defined(ORK_CONFIG_DIRECT3D)
-		if( false == gbPREFEROPENGL )
-		{
-			Direct3dGfxTargetInit();
-		}
-		#endif
 	}
-	
+
 	//////////////////////////////////////////
 }
 
@@ -154,7 +156,7 @@ public:
 	bool operator()( const PerformanceItem* t1, const PerformanceItem* t2 ) const // comparison predicate for map sorting
 	{
 		bool bval = true;
-			
+
 		const PerformanceItem* RootU = PerformanceTracker::GetRef().mRoots[ PerformanceTracker::EPS_UPDTHREAD];
 		const PerformanceItem* RootG = PerformanceTracker::GetRef().mRoots[ PerformanceTracker::EPS_GFXTHREAD];
 
@@ -168,7 +170,7 @@ public:
 			return false;
 		}
 
-		if( t1->miAvgCycle <= t2->miAvgCycle ) 
+		if( t1->miAvgCycle <= t2->miAvgCycle )
 		{
 			bval = false;
 		}
@@ -222,7 +224,7 @@ void PerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
 			PerfItemStack.push(*itc);
 		}
 	}
-		
+
 	std::sort( SortedPerfVect.begin(), SortedPerfVect.end(), sortperfpred() );
 
 	//////////////////////////////////////////////////////////////////////

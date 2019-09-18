@@ -18,7 +18,7 @@
 #include <pkg/ent/scene.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/event/MeshEvent.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -372,7 +372,7 @@ bool QuartzComposerInst::DoLink(ork::ent::Simulation *psi)
 {
 	Entity* pent = GetEntity();
 	CallbackDrawable* pdrw = new CallbackDrawable(pent);
-	pent->AddDrawable( AddPooledLiteral("Default"), pdrw );
+	pent->addDrawableToDefaultLayer(pdrw);
 	pdrw->SetCallback( QuartzComposerDrawable::doit );
 	pdrw->SetBufferCallback( QuartzComposerDrawable::BufferCB );
 	pdrw->SetOwner(  & pent->GetEntData() );

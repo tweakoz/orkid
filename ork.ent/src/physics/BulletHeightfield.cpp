@@ -10,7 +10,7 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
@@ -179,7 +179,7 @@ BulletShapeHeightfieldData::BulletShapeHeightfieldData()
 
     auto raw_drawable = impl->_drawable->create();
     raw_drawable->SetOwner(data.mEntity);
-    data.mEntity->AddDrawable(AddPooledLiteral("Default"), raw_drawable);
+    data.mEntity->addDrawableToDefaultLayer(raw_drawable);
 
     ////////////////////////////////////////////////////////////////////
 

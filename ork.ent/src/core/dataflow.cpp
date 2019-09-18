@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <pkg/ent/scene.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/dataflow.h>

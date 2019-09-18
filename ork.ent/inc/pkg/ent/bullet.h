@@ -20,7 +20,7 @@
 #include <ork/math/cvector3.h>
 #include <ork/object/Object.h>
 #include <pkg/ent/component.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/heightmap.h>
 #include <pkg/ent/HeightFieldDrawable.h>
@@ -144,8 +144,8 @@ struct BulletDebugDrawDBRec {};
 
 struct BulletDebugDrawDBData {
   BulletSystem* _bulletSystem;
-  Layer* _drawLayer = nullptr;
-  BulletDebugDrawDBRec mDBRecs[ork::ent::DrawableBuffer::kmaxbuffers];
+  lev2::Layer* _drawLayer = nullptr;
+  BulletDebugDrawDBRec mDBRecs[lev2::DrawableBuffer::kmaxbuffers];
   PhysicsDebugger* _debugger;
   BulletDebugDrawDBData(BulletSystem* psi);
   ~BulletDebugDrawDBData();
@@ -192,7 +192,7 @@ public:
 
   bool DoLink(Simulation* psi) final;
   void LinkPhysicsObject(ork::ent::Simulation* inst, ork::ent::Entity* entity);
-  void enqueueDrawables(DrawableBuffer& buffer) final;
+  void enqueueDrawables(lev2::DrawableBuffer& buffer) final;
 
   void InitWorld();
 
@@ -210,7 +210,7 @@ public:
 
 private:
 
-  CallbackDrawable* _debugDrawable = nullptr;
+  lev2::CallbackDrawable* _debugDrawable = nullptr;
   btDiscreteDynamicsWorld* mDynamicsWorld;
   btDefaultCollisionConfiguration* mBtConfig;
   btBroadphaseInterface* mBroadPhase;
@@ -218,7 +218,7 @@ private:
   btSequentialImpulseConstraintSolver* mSolver;
   const BulletSystemData& _systemData;
   PoolString _dbgdrawlayername;
-  DrawQueueXfData _dbgdrawXF;
+  lev2::DrawQueueXfData _dbgdrawXF;
   PhysicsDebugger _debugger;
   int mMaxSubSteps;
   int mNumSubStepsTaken;
@@ -325,7 +325,7 @@ struct BulletShapeBaseInst {
   const BulletShapeBaseData* _shapeData;
   btCollisionShape* mCollisionShape;
   AABox mBoundingBox;
-  CallbackDrawable* _drawable = nullptr;
+  lev2::CallbackDrawable* _drawable = nullptr;
   svar16_t _impl;
 };
 

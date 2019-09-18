@@ -5,6 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/lev2/gfx/compositor.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -20,15 +21,9 @@
 #include <ork/asset/DynamicAssetLoader.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
-#include <pkg/ent/Compositor.h>
-#include <pkg/ent/PerfController.h>
-#include <pkg/ent/drawable.h>
-#include <pkg/ent/entity.h>
-#include <pkg/ent/entity.hpp>
-#include <pkg/ent/scene.h>
-#include <pkg/ent/scene.hpp>
+#include <ork/lev2/gfx/renderer/drawable.h>
 
-BEGIN_ENUM_SERIALIZER(ork::ent, EOp2CompositeMode)
+BEGIN_ENUM_SERIALIZER(ork::lev2, EOp2CompositeMode)
 DECLARE_ENUM(Op2AsumB)
 DECLARE_ENUM(Op2AmulB)
 DECLARE_ENUM(Op2AdivB)
@@ -38,18 +33,18 @@ DECLARE_ENUM(Op2Bsolo)
 END_ENUM_SERIALIZER()
 
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::NodeCompositingTechnique, "NodeCompositingTechnique");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingNode, "CompositingNode");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::SeriesCompositingNode, "SeriesCompositingNode");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::InsertCompositingNode, "InsertCompositingNode");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::Op2CompositingNode, "Op2CompositingNode");
-ImplementReflectionX(ork::ent::PassThroughCompositingNode, "PassThroughCompositingNode");
+ImplementReflectionX(ork::lev2::NodeCompositingTechnique, "NodeCompositingTechnique");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CompositingNode, "CompositingNode");
+ImplementReflectionX(ork::lev2::SeriesCompositingNode, "SeriesCompositingNode");
+ImplementReflectionX(ork::lev2::InsertCompositingNode, "InsertCompositingNode");
+ImplementReflectionX(ork::lev2::Op2CompositingNode, "Op2CompositingNode");
+ImplementReflectionX(ork::lev2::PassThroughCompositingNode, "PassThroughCompositingNode");
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace ent {
+namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::Describe() {
+void NodeCompositingTechnique::describeX(class_t*c) {
   ork::reflect::RegisterProperty("RootNode", &NodeCompositingTechnique::GetRoot, &NodeCompositingTechnique::SetRoot);
   ork::reflect::AnnotatePropertyForEditor<NodeCompositingTechnique>("RootNode", "editor.factorylistbase", "CompositingNode");
 }
@@ -78,13 +73,13 @@ void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingSystem* pCCI) {
+void NodeCompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
   if (mpRootNode) {
     mpRootNode->Render(drawdata, pCCI);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingSystem* pCCI, CompositingContext& cctx) {
+void NodeCompositingTechnique::CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
   if (mpRootNode) {
     auto output = mpRootNode->GetOutput();
     if (output) {
@@ -118,7 +113,7 @@ CompositingNode::CompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
 CompositingNode::~CompositingNode() {}
 void CompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
-void CompositingNode::Render(CompositorDrawData& drawdata, CompositingSystem* pCCI) { DoRender(drawdata, pCCI); }
+void CompositingNode::Render(CompositorDrawData& drawdata, CompositingImpl* pCCI) { DoRender(drawdata, pCCI); }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,14 +149,14 @@ void PassThroughCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) 
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void PassThroughCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) // virtual
+void PassThroughCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
 {
-  const ent::CompositingGroup* pCG = mGroup;
+  const CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
   orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
 
-  ent::CompositingPassData node;
+  CompositingPassData node;
   node.mbDrawSource = (pCG != 0);
 
   if (mFTEK) {
@@ -186,7 +181,7 @@ lev2::RtGroup* PassThroughCompositingNode::GetOutput() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::Describe() {
+void SeriesCompositingNode::describeX(class_t*c) {
   ork::reflect::RegisterProperty("Node", &SeriesCompositingNode::GetNode, &SeriesCompositingNode::SetNode);
 
   auto anno = [&](const char* p, const char* k, const char* v) {
@@ -224,7 +219,7 @@ void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // vi
       mNode->Init(pTARG, iW, iH);
   }
 }
-void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) // virtual
+void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
 {
   // const ent::CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
@@ -266,7 +261,7 @@ lev2::RtGroup* SeriesCompositingNode::GetOutput() const {
 typedef std::set<InsertCompositingNode*> instex_set_t;
 ork::LockedResource<instex_set_t> ginstexset;
 ///////////////////////////////////////////////////////////////////////////////
-void InsertCompositingNode::Describe() {
+void InsertCompositingNode::describeX(class_t*c) {
   ork::reflect::RegisterProperty("InputNode", &InsertCompositingNode::GetNode, &InsertCompositingNode::SetNode);
 
   auto anno = [&](const char* p, const char* k, const char* v) {
@@ -362,7 +357,7 @@ void InsertCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // vi
       mNode->Init(pTARG, iW, iH);
   }
 }
-void InsertCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) // virtual
+void InsertCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
 {
   // const ent::CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
@@ -414,7 +409,7 @@ lev2::RtGroup* InsertCompositingNode::GetOutput() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Op2CompositingNode::Describe() {
+void Op2CompositingNode::describeX(class_t*c) {
   ork::reflect::RegisterProperty("Mode", &Op2CompositingNode::mMode);
   ork::reflect::RegisterProperty("LevelA", &Op2CompositingNode::mLevelA);
   ork::reflect::RegisterProperty("LevelB", &Op2CompositingNode::mLevelB);
@@ -477,7 +472,7 @@ void Op2CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Op2CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSystem* pCCI) // virtual
+void Op2CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
 {
   auto& the_renderer = drawdata.mFrameRenderer;
   auto& framedata = the_renderer.GetFrameData();
@@ -545,5 +540,5 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingSyste
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::ent
+}} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

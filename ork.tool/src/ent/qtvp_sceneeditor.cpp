@@ -21,9 +21,9 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
 
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <orktool/qtui/qtvp_edrenderer.h>
-#include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
@@ -33,7 +33,7 @@
 
 #include "qtui_scenevp.h"
 #include "qtvp_uievh.h"
-#include <pkg/ent/Compositor.h>
+#include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/editor/edmainwin.h>
 
 #include <ork/gfx/camera.h>
@@ -121,7 +121,7 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
 
   ///////////////////////////////////////////////////////////
 
-  ent::DrawableBuffer::ClearAndSyncWriters();
+  lev2::DrawableBuffer::ClearAndSyncWriters();
 
   ///////////////////////////////////////////////////////////
 
@@ -218,15 +218,15 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 
   mRenderLock = 1;
 
-  bool bFX   = false;
-  auto pCMCI = compositingSystem();
+  bool bFX     = false;
+  auto compsys = compositingSystem();
   if (simulation()) {
     ent::ESimulationMode emode = simulation()->GetSimulationMode();
-    if (pCMCI)
+    if (compsys)
       switch (emode) {
         case ent::ESCENEMODE_RUN:
         case ent::ESCENEMODE_SINGLESTEP: {
-          bFX = pCMCI->IsEnabled();
+          bFX = compsys->enabled();
           break;
         }
         default:
@@ -244,19 +244,19 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     // Compositor ?
     /////////////////////////////////
 
-    if (bFX && pCMCI) {
-      float frame_rate           = pCMCI ? pCMCI->currentFrameRate() : 0.0f;
+    if (bFX && compsys) {
+      float frame_rate           = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
       bool externally_fixed_rate = (frame_rate != 0.0f);
       const ent::Simulation* psi = this->simulation();
 
-      RenderSyncToken syntok;
+      lev2::RenderSyncToken syntok;
       /////////////////////////////
       bool have_token = false;
       if (externally_fixed_rate) {
         Timer totim;
         totim.Start();
         while (false == have_token && (totim.SecsSinceStart() < 2.0f)) {
-          have_token = ent::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
+          have_token = lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
           usleep(1000);
         }
       }
@@ -264,8 +264,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       // render it
       /////////////////////////////
 
-      ent::CompositorDrawData compositorDrawData(the_renderer);
-      pCMCI->Draw(compositorDrawData);
+      lev2::CompositorDrawData compositorDrawData(the_renderer);
+      compsys->_impl.Draw(compositorDrawData);
 
       ////////////////////////////////////////////
       // FrameTechnique FinalMRT + HUD -> screen
@@ -285,7 +285,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         the_renderer.GetFrameData().SetDstRect(tgtrect);
         mpTarget->FBI()->SetAutoClear(true);
         mpTarget->BeginFrame();
-        pCMCI->composeToScreen(mpTarget);
+        compsys->_impl.composeToScreen(mpTarget);
         mpTarget->EndFrame(); // the_renderer );
         ////////////////////////////////////////
         // write to disk
@@ -300,7 +300,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         // return the token
         ////////////////////////////////////////
 
-        DrawableBuffer::mOfflineUpdateSynchro.push(syntok);
+        lev2::DrawableBuffer::mOfflineUpdateSynchro.push(syntok);
 
       } else {
         the_renderer.GetFrameData().SetTarget(mpTarget);
@@ -311,7 +311,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         mpTarget->FBI()->SetViewport(0, 0, mpTarget->GetW(), mpTarget->GetH());
         mpTarget->FBI()->SetScissor(0, 0, mpTarget->GetW(), mpTarget->GetH());
         mpTarget->BeginFrame();
-        pCMCI->composeToScreen(mpTarget);
+        compsys->_impl.composeToScreen(mpTarget);
         /////////////////////////////////////////////////////////////////////
         // HUD
         /////////////////////////////////////////////////////////////////////
@@ -330,7 +330,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     else // No Compositor
     /////////////////////////////////
     {
-      const ent::DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7); // mDbLock.Aquire(7);
+      auto DB = lev2::DrawableBuffer::BeginDbRead(7); // mDbLock.Aquire(7);
 
       mRenderLock = 1;
 
@@ -339,7 +339,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       if (DB) {
 
         rendervar_t passdata;
-        passdata.Set<orkstack<ent::CompositingPassData>*>(&mCompositingGroupStack);
+        passdata.Set<orkstack<lev2::CompositingPassData>*>(&mCompositingGroupStack);
         the_renderer.GetFrameData().setUserProperty("nodes"_crc, passdata);
         the_renderer.GetFrameData().PushRenderTarget(&rt);
         the_renderer.GetFrameData().SetTarget(mpTarget);
@@ -350,7 +350,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         mpTarget->FBI()->SetScissor(0, 0, mpTarget->GetW(), mpTarget->GetH());
         mpTarget->BeginFrame();
         {
-          CompositingPassData node;
+          lev2::CompositingPassData node;
           node.mpGroup    = nullptr;
           node.mpFrameTek = nullptr;
           mCompositingGroupStack.push(node);
@@ -366,7 +366,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         mpTarget->EndFrame(); // the_renderer );
         the_renderer.GetFrameData().PopRenderTarget();
 
-        DrawableBuffer::EndDbRead(DB);
+        lev2::DrawableBuffer::EndDbRead(DB);
       }
 
       mRenderLock = 0;
@@ -426,12 +426,12 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
   ///////////////////////////////////////////////////////////////////////////
   ent::SceneData* pscene = mEditor.mpScene;
 
-  lev2::rendervar_t passdata                 = FrameData.getUserProperty("nodes"_crc);
-  orkstack<ent::CompositingPassData>* cstack = 0;
-  cstack                                     = passdata.Get<orkstack<ent::CompositingPassData>*>();
+  lev2::rendervar_t passdata                  = FrameData.getUserProperty("nodes"_crc);
+  orkstack<lev2::CompositingPassData>* cstack = 0;
+  cstack                                      = passdata.Get<orkstack<lev2::CompositingPassData>*>();
   OrkAssert(cstack != 0);
 
-  CompositingPassData node = cstack->top();
+  lev2::CompositingPassData node = cstack->top();
   auto pFTEK               = dynamic_cast<lev2::BuiltinFrameTechniques*>(node.mpFrameTek);
   ///////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////
@@ -445,7 +445,7 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
     bool bpostfxfb          = false;
 
     if (node.mpGroup) {
-      const CompositingGroupEffect& effect = node.mpGroup->GetEffect();
+      const lev2::CompositingGroupEffect& effect = node.mpGroup->GetEffect();
       EffectName                           = effect.GetEffectName();
       fFxAmt                               = effect.GetEffectAmount();
       fFbAmt                               = effect.GetFeedbackAmount();
@@ -527,7 +527,7 @@ void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::enqueueSimulationDrawables(ent::DrawableBuffer* pDB) {
+void SceneEditorVP::enqueueSimulationDrawables(lev2::DrawableBuffer* pDB) {
   AssertOnOpQ2(UpdateSerialOpQ());
   auto sim = simulation();
   if (sim)
@@ -536,12 +536,12 @@ void SceneEditorVP::enqueueSimulationDrawables(ent::DrawableBuffer* pDB) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp) {
-  const CompositingGroup* pCG = 0;
-  if (ent::CompositingSystem* pCMCI = compositingSystem()) {
-    const CompositingSystemData& CCD = pCMCI->compositingSystemData();
-    auto& Groups                     = CCD.GetGroups();
-    int inumgroups                   = Groups.size();
+const lev2::CompositingGroup* SceneEditorVP::GetCompositingGroup(int igrp) {
+  const lev2::CompositingGroup* pCG = 0;
+  if (auto compsys = compositingSystem()) {
+    const CompositingData& CDATA = compsys->_impl.compositingData();
+    auto& Groups                 = CDATA.GetGroups();
+    int inumgroups               = Groups.size();
     if (inumgroups && igrp >= 0) {
       int idx           = igrp % inumgroups;
       ork::Object* pOBJ = Groups.GetItemAtIndex(idx).second;
@@ -596,7 +596,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   };
 
   auto sim = simulation();
-  if(nullptr==sim)
+  if (nullptr == sim)
     return;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -614,13 +614,11 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
   ///////////////////////////////////////////////////////////////////////////
 
   lev2::rendervar_t passdata                 = FrameData.getUserProperty("nodes"_crc);
-  orkstack<ent::CompositingPassData>* cstack = 0;
-  cstack                                     = passdata.Get<orkstack<ent::CompositingPassData>*>();
+  orkstack<lev2::CompositingPassData>* cstack = 0;
+  cstack                                     = passdata.Get<orkstack<lev2::CompositingPassData>*>();
   OrkAssert(cstack != 0);
 
-  CompositingPassData NODE = cstack->top();
-
-  ent::CompositingSystem* pCMCI = compositingSystem();
+  lev2::CompositingPassData NODE = cstack->top();
 
   ///////////////////////////////////////////////////////////////////////////
   // camera setup

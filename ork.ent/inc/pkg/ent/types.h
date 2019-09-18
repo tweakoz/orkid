@@ -1,5 +1,11 @@
 #pragma once
 
+namespace ork::lev2 {
+  class Drawable;
+  class DrawableBuffer;
+  class Layer;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::ent {
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,10 +25,6 @@ class ComponentInst;
 class SystemData;
 class System;
 
-class Drawable;
-class DrawableBuffer;
-
-class Layer;
 class CompositingSystem;
 
 class AudioSystem;

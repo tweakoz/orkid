@@ -18,7 +18,7 @@
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/ReferenceArchetype.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 

@@ -10,7 +10,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/texman.h>

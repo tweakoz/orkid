@@ -40,7 +40,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::BulletSystemData, "BulletSystemData");
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 
-void bulletDebugEnqueueToLayer(ork::ent::DrawableBufItem& cdb);
+void bulletDebugEnqueueToLayer(ork::lev2::DrawableBufItem& cdb);
 void bulletDebugRender(ork::lev2::RenderContextInstData& rcid, ork::lev2::GfxTarget* targ,
                                const ork::lev2::CallbackRenderable* pren);
 
@@ -200,7 +200,7 @@ bool BulletSystem::DoLink(Simulation* psi) {
 
   _dbgdrawlayername = AddPooledLiteral("Default");
 
-  _debugDrawable = new ork::ent::CallbackDrawable(nullptr);
+  _debugDrawable = new ork::lev2::CallbackDrawable(nullptr);
   _debugDrawable->SetSortKey(0x7fffffff);
   _debugDrawable->SetQueueToLayerCallback(bulletDebugEnqueueToLayer);
   _debugDrawable->SetRenderCallback(bulletDebugRender);
@@ -217,7 +217,7 @@ bool BulletSystem::DoLink(Simulation* psi) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void BulletSystem::enqueueDrawables(DrawableBuffer& buffer) {
+void BulletSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
 
   if( _debugger._enabled ){
     auto buflayer = buffer.MergeLayer(_dbgdrawlayername);

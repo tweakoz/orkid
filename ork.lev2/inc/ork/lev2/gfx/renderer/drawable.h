@@ -9,8 +9,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "component.h"
-#include "componentfamily.h"
 #include <ork/gfx/camera.h>
 #include <ork/kernel/any.h>
 #include <ork/kernel/concurrent_queue.h>
@@ -31,32 +29,44 @@ namespace ork {
 
 typedef fixedlut<PoolString, CameraData, 16> CameraLut;
 
-class Drawable;
 
 namespace lev2 {
-class XgmModel;
-class XgmModelAsset;
-} // namespace lev2
-namespace lev2 {
-class XgmModelInst;
-}
-namespace lev2 {
-class IRenderer;
-}
-namespace lev2 {
-class LightManager;
-}
-namespace lev2 {
-class GfxMaterialFx;
-}
-namespace lev2 {
-class GfxMaterialFxEffectInstance;
-}
-
-namespace ent {
 
 class Simulation;
 class DrawableBuffer;
+class Drawable;
+class XgmModel;
+class XgmModelAsset;
+class XgmModelInst;
+class IRenderer;
+class LightManager;
+class GfxMaterialFx;
+class GfxMaterialFxEffectInstance;
+
+///////////////////////////////////////////////////////////////////////////
+// todo find a better name
+///////////////////////////////////////////////////////////////////////////
+
+struct DrawableOwner : public ork::Object {
+  typedef orkvector<Drawable *> DrawableVector;
+	typedef orklut<PoolString,DrawableVector*> LayerMap;
+
+  DrawableOwner();
+  ~DrawableOwner();
+
+  void _addDrawable( const PoolString& layername, Drawable* pdrw );
+  
+	DrawableVector* GetDrawables( const PoolString& layer );
+	const DrawableVector* GetDrawables( const PoolString& layer ) const;
+
+	const LayerMap& GetLayers() const { return mLayerMap; }
+
+  LayerMap								mLayerMap;
+
+private:
+
+  RttiDeclareAbstract( DrawableOwner, ork::Object );
+};
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -204,7 +214,7 @@ class ModelDrawable : public Drawable {
   RttiDeclareConcrete(ModelDrawable, Drawable);
 
 public:
-  ModelDrawable(Entity* pent = NULL);
+  ModelDrawable(DrawableOwner* owner = NULL);
   ~ModelDrawable();
 
   void SetModelInst(lev2::XgmModelInst* pModelInst); // { mModelInst = pModelInst; }
@@ -256,7 +266,7 @@ class CallbackDrawable : public Drawable {
   typedef void (*Q2LCBType)(DrawableBufItem& cdb);
 
 public:
-  CallbackDrawable(Entity* pent);
+  CallbackDrawable(DrawableOwner* owner);
   ~CallbackDrawable();
 
   void SetDataDestroyer(ICallbackDrawableDataDestroyer* pdestroyer) { mDataDestroyer = pdestroyer; }

@@ -13,17 +13,17 @@
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/aud/audiobank.h>
 #include <ork/lev2/aud/audiodevice.h>
-#include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/input/inputdevice.h>
 #include <ork/pch.h>
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/RegisterProperty.h>
-#include <pkg/ent/Compositor.h>
+#include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/ReferenceArchetype.h>
-#include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
@@ -88,47 +88,59 @@ const ork::PoolString& Simulation::EventChannel() { return sSimulationEvChanName
 void Simulation::Describe() {
   reflect::RegisterFunctor("SlotSceneTopoChanged", &Simulation::SlotSceneTopoChanged);
 
-  sInputFamily = ork::AddPooledLiteral("input");
-  sAudioFamily = ork::AddPooledLiteral("audio");
-  sCameraFamily = ork::AddPooledLiteral("camera");
-  sControlFamily = ork::AddPooledLiteral("control");
-  sPhysicsFamily = ork::AddPooledLiteral("physics");
-  sFrustumFamily = ork::AddPooledLiteral("frustum");
-  sAnimateFamily = ork::AddPooledLiteral("animate");
+  sInputFamily    = ork::AddPooledLiteral("input");
+  sAudioFamily    = ork::AddPooledLiteral("audio");
+  sCameraFamily   = ork::AddPooledLiteral("camera");
+  sControlFamily  = ork::AddPooledLiteral("control");
+  sPhysicsFamily  = ork::AddPooledLiteral("physics");
+  sFrustumFamily  = ork::AddPooledLiteral("frustum");
+  sAnimateFamily  = ork::AddPooledLiteral("animate");
   sParticleFamily = ork::AddPooledLiteral("particle");
-  sLightFamily = ork::AddPooledLiteral("lighting");
+  sLightFamily    = ork::AddPooledLiteral("lighting");
 }
 ///////////////////////////////////////////////////////////////////////////////
 Simulation::Simulation(const SceneData* sdata, Application* application)
-    : mSceneData(sdata), meSimulationMode(ESCENEMODE_ATTACHED), mApplication(application), mUpTime(0.0f), mDeltaTime(0.0f),
-      mPrevDeltaTime(0.0f), mLastGameTime(0.0f), mStartTime(0.0f), mUpDeltaTime(0.0f), mGameTime(0.0f), mDeltaTimeAccum(0.0f),
-      mfAvgDtAcc(0.0f), mfAvgDtCtr(0.0f), mEntityUpdateCount(0), _cachedComSys(nullptr) {
+    : mSceneData(sdata)
+    , meSimulationMode(ESCENEMODE_ATTACHED)
+    , mApplication(application)
+    , mUpTime(0.0f)
+    , mDeltaTime(0.0f)
+    , mPrevDeltaTime(0.0f)
+    , mLastGameTime(0.0f)
+    , mStartTime(0.0f)
+    , mUpDeltaTime(0.0f)
+    , mGameTime(0.0f)
+    , mDeltaTimeAccum(0.0f)
+    , mfAvgDtAcc(0.0f)
+    , mfAvgDtCtr(0.0f)
+    , mEntityUpdateCount(0)
+    , _cachedComSys(nullptr) {
   printf("new simulation <%p>\n", this);
 
   AssertOnOpQ2(UpdateSerialOpQ());
   OrkAssertI(mApplication, "Simulation must be constructed with a non-NULL Application!");
 
-  Layer* player = new Layer;
+  auto player = new lev2::Layer;
   AddLayer(AddPooledLiteral("Default"), player);
 
   ////////////////////////////
   // create one token
   ////////////////////////////
-  RenderSyncToken rentok;
-  while (DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
+  lev2::RenderSyncToken rentok;
+  while (lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
   }
-  while (DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
+  while (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
   }
   rentok.mFrameIndex = 0;
-  DrawableBuffer::mOfflineUpdateSynchro.push(rentok); // push 1 token
+  lev2::DrawableBuffer::mOfflineUpdateSynchro.push(rentok); // push 1 token
 }
 ///////////////////////////////////////////////////////////////////////////////
 Simulation::~Simulation() {
   printf("deleting simulation <%p>\n", this);
   AssertOnOpQ2(UpdateSerialOpQ());
-  DrawableBuffer::BeginClearAndSyncReaders();
-  for (orkmap<PoolString, Entity*>::iterator it = mEntities.begin(); it != mEntities.end(); it++) {
-    Entity* pent = it->second;
+  lev2::DrawableBuffer::BeginClearAndSyncReaders();
+  for (auto it : mEntities) {
+    Entity* pent = it.second;
     if (pent) {
       delete pent;
     }
@@ -142,15 +154,15 @@ Simulation::~Simulation() {
       }
     }
   });
-  DrawableBuffer::EndClearAndSyncReaders();
+  lev2::DrawableBuffer::EndClearAndSyncReaders();
 
   ////////////////////////////
   // steal all RenderSyncToken's
   ////////////////////////////
-  RenderSyncToken rentok;
-  while (DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
+  lev2::RenderSyncToken rentok;
+  while (lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
   }
-  while (DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
+  while (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
   }
   ////////////////////////////
 }
@@ -172,19 +184,19 @@ float Simulation::random(float mmin, float mmax) {
 
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::ComputeDeltaTime() {
-  auto cmci = compositingSystem();
-  float frame_rate = cmci ? cmci->currentFrameRate() : 0.0f;
+  auto compsys = compositingSystem();
+  float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
 
   AssertOnOpQ2(UpdateSerialOpQ());
   float systime = float(OldSchool::GetRef().GetLoResTime());
-  float fdelta = (frame_rate != 0.0f) ? (1.0f / frame_rate) : (systime - mUpTime);
+  float fdelta  = (frame_rate != 0.0f) ? (1.0f / frame_rate) : (systime - mUpTime);
 
   static float fbasetime = systime;
 
   if (fdelta == 0.0f)
     return 0.0f;
 
-  mUpTime = systime;
+  mUpTime      = systime;
   mUpDeltaTime = fdelta;
 
   ////////////////////////////////////////////
@@ -193,9 +205,9 @@ float Simulation::ComputeDeltaTime() {
   if (fdelta < 0.00001f) {
     // orkprintf( "FPS is over 10000HZ!!!! you need to reset valid fps range\n"
     // ); fdelta=0.001f; ork::msleep(1);
-    systime = float(OldSchool::GetRef().GetLoResTime());
-    fdelta = 0.00001f;
-    mUpTime = systime;
+    systime      = float(OldSchool::GetRef().GetLoResTime());
+    fdelta       = 0.00001f;
+    mUpTime      = systime;
     mUpDeltaTime = fdelta;
   } else if (fdelta > 0.1f) {
     // orkprintf( "FPS is less than 10HZ!!!! you need to reset valid fps
@@ -222,9 +234,9 @@ float Simulation::ComputeDeltaTime() {
       // update clock
       ///////////////////////////////
 
-      mDeltaTime = (mPrevDeltaTime + fdelta) / 2;
+      mDeltaTime     = (mPrevDeltaTime + fdelta) / 2;
       mPrevDeltaTime = fdelta;
-      mLastGameTime = mGameTime;
+      mLastGameTime  = mGameTime;
       mGameTime += mDeltaTime;
     }
   }
@@ -281,7 +293,7 @@ void Simulation::UpdateEntityComponents(const Simulation::ComponentList& compone
 ///////////////////////////////////////////////////////////////////////////
 ent::Entity* Simulation::GetEntity(const ent::EntData* pdata) const {
   const PoolString& name = pdata->GetName();
-  ent::Entity* pent = FindEntity(name);
+  ent::Entity* pent      = FindEntity(name);
   return pent;
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -293,14 +305,14 @@ void Simulation::SetEntity(const ent::EntData* pentdata, ent::Entity* pent) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_compose(){
+void Simulation::_compose() {
   ComposeEntities();
   composeSystems();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_decompose(){
+void Simulation::_decompose() {
   DecomposeEntities();
   decomposeSystems();
   mActiveEntityComponents.clear();
@@ -310,56 +322,53 @@ void Simulation::_decompose(){
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_link(){
+void Simulation::_link() {
   LinkEntities();
   LinkSystems();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_unlink(){
+void Simulation::_unlink() {
   UnLinkEntities();
   UnLinkSystems();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_stage(){
+void Simulation::_stage() {
   StartEntities();
-  mStartTime = float(OldSchool::GetRef().GetLoResTime());
-  mGameTime = 0.0f;
-  mUpDeltaTime = 0.0f;
-  mPrevDeltaTime = 1.0f / 30.0f;
-  mDeltaTime = 1.0f / 30.0f;
+  mStartTime      = float(OldSchool::GetRef().GetLoResTime());
+  mGameTime       = 0.0f;
+  mUpDeltaTime    = 0.0f;
+  mPrevDeltaTime  = 1.0f / 30.0f;
+  mDeltaTime      = 1.0f / 30.0f;
   mDeltaTimeAccum = 0.0f;
-  mUpTime = mStartTime;
-  mLastGameTime = 0.0f;
+  mUpTime         = mStartTime;
+  mLastGameTime   = 0.0f;
 
   ServiceDeactivateQueue();
 
   SimulationEvent outev(this, SimulationEvent::ESIEV_START);
   ork::Application::GetContext()->Notify(&outev);
-  DrawableBuffer::EndClearAndSyncReaders();
+  lev2::DrawableBuffer::EndClearAndSyncReaders();
 
-  RenderSyncToken rentok;
-  while (DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
+  lev2::RenderSyncToken rentok;
+  while (lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(rentok)) {
   }
-  while (DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
+  while (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(rentok)) {
   }
   rentok.mFrameIndex = 0;
-  DrawableBuffer::mOfflineUpdateSynchro.push(rentok);
-
+  lev2::DrawableBuffer::mOfflineUpdateSynchro.push(rentok);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_unstage(){
-  StopEntities();
-}
+void Simulation::_unstage() { StopEntities(); }
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_activate(){
+void Simulation::_activate() {
   for (const auto& item : mEntities) {
     auto pent = item.second;
     ActivateEntity(pent);
@@ -368,9 +377,7 @@ void Simulation::_activate(){
 
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::_deactivate(){
-
-}
+void Simulation::_deactivate() {}
 
 ///////////////////////////////////////////////////////////////////////////
 #define ANSI_COLOR_RED "\x1b[31m"
@@ -383,7 +390,7 @@ void Simulation::EnterEditState() {
   printf("Simulation<%p> EnterEditState\n", this);
   printf("////////////////////////\n");
   printf("%s", ANSI_COLOR_GREEN);
-  DrawableBuffer::BeginClearAndSyncReaders();
+  lev2::DrawableBuffer::BeginClearAndSyncReaders();
   AssertOnOpQ2(UpdateSerialOpQ());
 
   SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
@@ -420,7 +427,7 @@ void Simulation::EnterRunState() {
   printf("////////////////////////\n");
   printf("%s", ANSI_COLOR_GREEN);
 
-  DrawableBuffer::BeginClearAndSyncReaders();
+  lev2::DrawableBuffer::BeginClearAndSyncReaders();
   AssertOnOpQ2(UpdateSerialOpQ());
   EnterRunMode();
 
@@ -450,7 +457,6 @@ void Simulation::EnterRunState() {
   _activate();
 
   ///////////////////////////////////
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::OnSimulationMode(ESimulationMode emode) {
@@ -498,7 +504,7 @@ void Simulation::DecomposeEntities() {
   AssertOnOpQ2(UpdateSerialOpQ());
   for (auto item : mEntities) {
     const ork::PoolString& name = item.first;
-    ork::ent::Entity* pent = item.second;
+    ork::ent::Entity* pent      = item.second;
 
     // ork::ent::Archetype* arch = pent->GetArchetype();
 
@@ -527,7 +533,8 @@ void Simulation::ComposeEntities() {
   // orkprintf( "beg si<%p> Compose Entities..\n", this );
 
   for (orkmap<ork::PoolString, ork::ent::SceneObject*>::const_iterator it = mSceneData->GetSceneObjects().begin();
-       it != mSceneData->GetSceneObjects().end(); it++) {
+       it != mSceneData->GetSceneObjects().end();
+       it++) {
     ork::ent::SceneObject* sobj = (*it).second;
     if (ork::ent::EntData* pentdata = ork::rtti::autocast(sobj)) {
       const ork::ent::Archetype* arch = pentdata->GetArchetype();
@@ -541,9 +548,9 @@ void Simulation::ComposeEntities() {
         actualLayerName = AddPooledString(layer_name.c_str());
       }
 
-      Layer* player = GetLayer(actualLayerName);
+      lev2::Layer* player = GetLayer(actualLayerName);
       if (0 == player) {
-        player = new Layer;
+        player = new lev2::Layer;
         AddLayer(actualLayerName, player);
       }
       ////////////////////////////////////////////////////////////////
@@ -572,7 +579,7 @@ void Simulation::LinkEntities() {
 
   // orkprintf( "Link Entities..\n" );
   for (auto item : mEntities) {
-    ork::ent::Entity* pent = item.second;
+    ork::ent::Entity* pent         = item.second;
     const ork::ent::EntData& edata = pent->GetEntData();
 
     OrkAssert(pent);
@@ -597,7 +604,7 @@ void Simulation::UnLinkEntities() {
 
   // orkprintf( "Link Entities..\n" );
   for (auto item : mEntities) {
-    ork::ent::Entity* pent = item.second;
+    ork::ent::Entity* pent         = item.second;
     const ork::ent::EntData& edata = pent->GetEntData();
 
     OrkAssert(pent);
@@ -709,7 +716,7 @@ void Simulation::StartEntities() {
 
   // orkprintf( "Start Entities..\n" );
   for (orkmap<ork::PoolString, ork::ent::Entity*>::const_iterator it = mEntities.begin(); it != mEntities.end(); it++) {
-    ork::ent::Entity* pent = it->second;
+    ork::ent::Entity* pent         = it->second;
     const ork::ent::EntData& edata = pent->GetEntData();
 
     OrkAssert(pent);
@@ -728,7 +735,7 @@ void Simulation::StopEntities() {
   ///////////////////////////////////
 
   for (orkmap<ork::PoolString, ork::ent::Entity*>::const_iterator it = mEntities.begin(); it != mEntities.end(); it++) {
-    ork::ent::Entity* pent = it->second;
+    ork::ent::Entity* pent         = it->second;
     const ork::ent::EntData& edata = pent->GetEntData();
 
     OrkAssert(pent);
@@ -775,7 +782,6 @@ void Simulation::ActivateEntity(ent::Entity* pent) {
       // Don't add components that don't do anything to the active components
       // list
 
-
       if (fam.empty())
         continue;
 
@@ -785,7 +791,6 @@ void Simulation::ActivateEntity(ent::Entity* pent) {
       itl = mActiveEntityComponents.find(fam);
 
       (itl->second).push_back(cinst);
-
     }
   } else {
     orkprintf("WARNING, activating an already active entity <%p>\n", pent);
@@ -802,11 +807,13 @@ void Simulation::DeActivateEntity(ent::Entity* pent) {
   const Archetype* parch = pent->GetEntData().GetArchetype();
   if (listit == mActiveEntities.end()) {
     PoolString parchname = (parch != 0) ? parch->GetName() : AddPooledLiteral("none");
-    PoolString pentname = pent->GetEntData().GetName();
+    PoolString pentname  = pent->GetEntData().GetName();
 
     orkprintf("uhoh, someone is deactivating an entity<%p:%s> of arch<%s> that "
               "is not active!!!\n",
-              pent, pentname.c_str(), parchname.c_str());
+              pent,
+              pentname.c_str(),
+              parchname.c_str());
     return;
   }
   OrkAssert(listit != mActiveEntities.end());
@@ -871,8 +878,8 @@ void Simulation::ServiceActivateQueue() {
 
   for (orkvector<EntityActivationQueueItem>::const_iterator it = activate_queue.begin(); it != activate_queue.end(); it++) {
     const EntityActivationQueueItem& item = (*it);
-    ent::Entity* pent = item.mpEntity;
-    const fmtx4& mtx = item.mMatrix;
+    ent::Entity* pent                     = item.mpEntity;
+    const fmtx4& mtx                      = item.mMatrix;
     OrkAssert(pent);
 
     // printf( "Activating Entity (Q) : ent<%p>\n", pent );
@@ -892,7 +899,7 @@ void Simulation::ServiceActivateQueue() {
 Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
   // printf( "SpawnDynamicEntity ed<%p>\n", spawn_rec );
   auto newent = new Entity(*spawn_rec, this);
-  auto arch = spawn_rec->GetArchetype();
+  auto arch   = spawn_rec->GetArchetype();
   arch->ComposeEntity(newent);
   arch->LinkEntity(this, newent);
   EntityActivationQueueItem qi(fmtx4::Identity, newent);
@@ -910,9 +917,9 @@ static void CopyCameraData(const Simulation::CameraLut& srclut, CameraLut& dstlu
   int idx = 0;
   // printf( "Copying CameraData\n" );
   for (Simulation::CameraLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
-    const PoolString& CameraName = itCAM->first;
+    const PoolString& CameraName  = itCAM->first;
     const CameraData* pcameradata = itCAM->second;
-    const lev2::Camera* pcam = pcameradata ? pcameradata->getEditorCamera() : 0;
+    const lev2::Camera* pcam      = pcameradata ? pcameradata->getEditorCamera() : 0;
     // printf( "CopyCameraData Idx<%d> CamName<%s> pcamdata<%p> pcam<%p>\n",
     // idx, CameraName.c_str(), pcameradata, pcam );
     if (pcameradata) {
@@ -926,7 +933,7 @@ static void CopyCameraData(const Simulation::CameraLut& srclut, CameraLut& dstlu
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::enqueueDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const {
+void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) const {
   // orkprintf( "beg si<%p> qad2b..\n", this );
   AssertOnOpQ2(UpdateSerialOpQ());
 
@@ -955,23 +962,22 @@ void Simulation::enqueueDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
 
     // NOTE: No culling! May need "was visible last frame" hack to be fast
 
-    DrawQueueXfData xfdata;
+    lev2::DrawQueueXfData xfdata;
 
-    if( pent->_renderMtxProvider!=nullptr ){
+    if (pent->_renderMtxProvider != nullptr) {
       xfdata.mWorldMatrix = pent->_renderMtxProvider();
-    }
-    else {
+    } else {
       xfdata.mWorldMatrix = pent->GetEffectiveMatrix();
     }
 
-    for (auto L : entlayers ) {
-      const PoolString& layer_name = L.first;
+    for (auto L : entlayers) {
+      const PoolString& layer_name          = L.first;
       const ent::Entity::DrawableVector* dv = L.second;
-      DrawableBufLayer* buflayer = buffer.MergeLayer(layer_name);
+      lev2::DrawableBufLayer* buflayer            = buffer.MergeLayer(layer_name);
       if (dv && buflayer) {
         size_t inumdv = dv->size();
         for (size_t i = 0; i < inumdv; i++) {
-          Drawable* pdrw = dv->operator[](i);
+          lev2::Drawable* pdrw = dv->operator[](i);
           if (pdrw && pdrw->IsEnabled()) {
             // printf( "queue drw<%p>\n", pdrw );
             pdrw->QueueToLayer(xfdata, *buflayer);
@@ -985,22 +991,22 @@ void Simulation::enqueueDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) cons
   // per system drawables
   ////////////////////////////////////////////////////////////////
 
-  for( auto sys : _updsyslutcopy )
+  for (auto sys : _updsyslutcopy)
     sys.second->enqueueDrawables(buffer);
 
   ////////////////////////////////////////////////////////////////
-
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void Simulation::RenderDrawableBuffer(lev2::IRenderer* renderer, const ork::ent::DrawableBuffer& dbuffer,
-                                     const PoolString& LayerName) const {
+void Simulation::RenderDrawableBuffer(lev2::IRenderer* renderer,
+                                      const ork::lev2::DrawableBuffer& dbuffer,
+                                      const PoolString& LayerName) const {
   const ork::lev2::RenderContextFrameData* pfdata = renderer->GetTarget()->GetRenderContextFrameData();
-  ork::lev2::RenderContextFrameData framedata = *pfdata;
-  lev2::GfxTarget* pTARG = renderer->GetTarget();
+  ork::lev2::RenderContextFrameData framedata     = *pfdata;
+  lev2::GfxTarget* pTARG                          = renderer->GetTarget();
   /////////////////////////////////
   // push temporary mutable framedata
   /////////////////////////////////
@@ -1011,14 +1017,14 @@ void Simulation::RenderDrawableBuffer(lev2::IRenderer* renderer, const ork::ent:
 
       for (const auto& layer_item : dbuffer.mLayerLut) {
         const PoolString& TestLayerName = layer_item.first;
-        const DrawableBufLayer* player = layer_item.second;
+        const lev2::DrawableBufLayer* player  = layer_item.second;
 
         bool Match = (LayerName == TestLayerName);
 
         if (DoAll || (Match && pfdata->HasLayer(TestLayerName))) {
           for (int id = 0; id <= player->miItemIndex; id++) {
-            const DrawableBufItem& item = player->mDrawBufItems[id];
-            const ork::ent::Drawable* pdrw = item.GetDrawable();
+            const lev2::DrawableBufItem& item    = player->mDrawBufItems[id];
+            const lev2::Drawable* pdrw = item.GetDrawable();
             if (pdrw)
               pdrw->QueueToRenderer(item, renderer);
           }
@@ -1032,14 +1038,14 @@ void Simulation::RenderDrawableBuffer(lev2::IRenderer* renderer, const ork::ent:
   pTARG->SetRenderContextFrameData(pfdata);
 
   ////////////////////////////////////////////////
-  static int ictr = 0;
-  float fcurtime = ork::OldSchool::GetRef().GetLoResTime();
+  static int ictr     = 0;
+  float fcurtime      = ork::OldSchool::GetRef().GetLoResTime();
   static float lltime = fcurtime;
-  float fdelta = fcurtime - lltime;
+  float fdelta        = fcurtime - lltime;
   if (fdelta > 1.0f) {
     float fps = float(ictr) / fdelta;
     // orkprintf( "QDPS<%f>\n", fps );
-    ictr = 0;
+    ictr   = 0;
     lltime = fcurtime;
   }
   ictr++;
@@ -1080,7 +1086,7 @@ ent::Entity* Simulation::FindEntityLoose(PoolString entity) const {
       name_attempt = basestr;
       name_attempt += CreateFormattedString("%d", ++counter).c_str();
       pooled_name = AddPooledString(name_attempt);
-      it = mEntities.find(entity);
+      it          = mEntities.find(entity);
     }
   }
 
@@ -1108,22 +1114,22 @@ Simulation::ComponentList& Simulation::GetActiveComponents(ork::PoolString famil
 ///////////////////////////////////////////////////////////////////////////
 void Simulation::UpdateActiveComponents(ork::PoolString family) { UpdateEntityComponents(GetActiveComponents(family)); }
 ///////////////////////////////////////////////////////////////////////////
-void Simulation::AddLayer(const PoolString& name, Layer* player) {
-  orkmap<PoolString, Layer*>::const_iterator it = mLayers.find(name);
+void Simulation::AddLayer(const PoolString& name, lev2::Layer* player) {
+  auto it = mLayers.find(name);
   OrkAssert(it == mLayers.end());
-  mLayers[name] = player;
+  mLayers[name]      = player;
   player->mLayerName = name;
 }
-Layer* Simulation::GetLayer(const PoolString& name) {
-  Layer* rval = 0;
-  orkmap<PoolString, Layer*>::const_iterator it = mLayers.find(name);
+lev2::Layer* Simulation::GetLayer(const PoolString& name) {
+  lev2::Layer* rval                                   = 0;
+  auto it = mLayers.find(name);
   if (it != mLayers.end())
     rval = it->second;
   return rval;
 }
-const Layer* Simulation::GetLayer(const PoolString& name) const {
-  const Layer* rval = 0;
-  orkmap<PoolString, Layer*>::const_iterator it = mLayers.find(name);
+const lev2::Layer* Simulation::GetLayer(const PoolString& name) const {
+  const lev2::Layer* rval                             = 0;
+  auto it = mLayers.find(name);
   if (it != mLayers.end())
     rval = it->second;
   return rval;
@@ -1137,7 +1143,12 @@ struct MyTimer {
   int miCounter;
   std::string mName;
 
-  MyTimer(const char* name) : mfTimeStart(0.0f), mfTimeEnd(0.0f), mfTimeAcc(0.0f), miCounter(0), mName(name) {}
+  MyTimer(const char* name)
+      : mfTimeStart(0.0f)
+      , mfTimeEnd(0.0f)
+      , mfTimeAcc(0.0f)
+      , miCounter(0)
+      , mName(name) {}
   void Start() { mfTimeStart = ork::OldSchool::GetRef().GetLoResTime(); }
   void Stop() {
     mfTimeEnd = ork::OldSchool::GetRef().GetLoResTime();
@@ -1176,8 +1187,8 @@ void Simulation::Update() {
       // Update Components
       ///////////////////////////////
 
-      auto cmci = compositingSystem();
-      float frame_rate = cmci ? cmci->currentFrameRate() : 0.0f;
+      auto cmci                  = compositingSystem();
+      float frame_rate           = cmci ? cmci->_impl.currentFrameRate() : 0.0f;
       bool externally_fixed_rate = (frame_rate != 0.0f);
 
       // float fdelta = 1.0f/60.0f; //GetDeltaTime();
@@ -1187,8 +1198,8 @@ void Simulation::Update() {
 
       if (externally_fixed_rate) {
         mDeltaTimeAccum = fdelta;
-        step = fdelta; //(1.0f/120.0f); // ideally should be (1.0f/vsync rate) /
-                       // some integer
+        step            = fdelta; //(1.0f/120.0f); // ideally should be (1.0f/vsync rate) /
+                                  // some integer
       } else {
         mDeltaTimeAccum += fdelta;
         step = 1.0f / 60.0f; //(1.0f/120.0f); // ideally should be (1.0f/vsync
@@ -1202,7 +1213,7 @@ void Simulation::Update() {
       // our own accumulator. 1-30-09.
 
       mDeltaTimeAccum = fdelta;
-      step = fdelta;
+      step            = fdelta;
 
       while (mDeltaTimeAccum >= step) {
         mDeltaTimeAccum -= step;
@@ -1250,11 +1261,9 @@ void Simulation::Update() {
 
       // todo this atomic will go away when we
       //  complete opq refactor
-      _systems.atomicOp([&](const SystemLut& syslut){
-        _updsyslutcopy = syslut;
-      });
-      for( auto sys : _updsyslutcopy )
-          sys.second->Update(this);
+      _systems.atomicOp([&](const SystemLut& syslut) { _updsyslutcopy = syslut; });
+      for (auto sys : _updsyslutcopy)
+        sys.second->Update(this);
 
       ork::PerfMarkerPush("ork.simulation.update.end");
 
@@ -1277,16 +1286,14 @@ void Simulation::addSystem(systemkey_t key, System* system) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::beginRenderFrame() const {
-  _systems.atomicOp([&](const SystemLut& syslut){
-    _rensyslutcopy = syslut;
-  });
-  for( auto sys : _rensyslutcopy )
-      sys.second->beginRenderFrame(this);
+  _systems.atomicOp([&](const SystemLut& syslut) { _rensyslutcopy = syslut; });
+  for (auto sys : _rensyslutcopy)
+    sys.second->beginRenderFrame(this);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::endRenderFrame() const {
-  for( auto sys : _rensyslutcopy )
-      sys.second->beginRenderFrame(this);
+  for (auto sys : _rensyslutcopy)
+    sys.second->beginRenderFrame(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

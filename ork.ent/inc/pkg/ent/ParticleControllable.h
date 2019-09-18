@@ -29,7 +29,7 @@ class NovaParticleSystem;
 class NovaParticleItemBase : public ork::lev2::particle::ParticleItemBase
 {
 	RttiDeclareAbstract(NovaParticleItemBase, ork::lev2::particle::ParticleItemBase);
-	
+
 public:
 
 	virtual NovaParticleSystem* CreateSystem( ork::ent::Entity* pent ) const { return 0; }
@@ -45,17 +45,17 @@ class NovaParticleSystem : public ParticleSystemBase
 public:
 
 	NovaParticleSystem(const NovaParticleItemBase&pib) : ParticleSystemBase(pib), mDrawable(0) {}
-	ork::ent::Drawable* GetDrawable() const { return mDrawable; }
+	lev2::Drawable* GetDrawable() const { return mDrawable; }
 	void LinkSystem( ork::ent::Simulation* psi, ork::ent::Entity* pent ) { DoLinkSystem(psi,pent); }
 
 	void StartSystem( const ork::ent::Simulation* psi, ork::ent::Entity*pent);
 
 	void SetName( const ork::PoolString& n ) { mName=n; }
 	ork::PoolString GetName() const { return mName; }
-	
+
 protected:
-	
-	ork::ent::Drawable*	mDrawable;
+
+	lev2::Drawable*	mDrawable;
 	ork::PoolString mName;
 
 private:
@@ -79,7 +79,7 @@ public:
 	ork::ent::ComponentInst *createComponent(ork::ent::Entity *pent) const override;
 	const ork::orklut<ork::PoolString,ParticleItemBase*>& GetItems() const { return mItems; }
 	ork::PoolString GetEntAttachment() const { return mEntAttachment; }
-	
+
 	bool IsDefaultEnable() const { return mDefaultEnable; }
 	void SetDefaultEnable(bool enable) { mDefaultEnable = enable; }
 private:
@@ -88,7 +88,7 @@ private:
 	bool mDefaultEnable;
 	ork::PoolString mEntAttachment;
 
-	const char* GetShortSelector() const final { return "psys"; } 
+	const char* GetShortSelector() const final { return "psys"; }
 
 };
 
@@ -104,7 +104,7 @@ public:
 
 	ParticleControllableInst(const ParticleControllableData &data, ork::ent::Entity *pent);
 	~ParticleControllableInst();
-	
+
 	bool IsEnabled() const { return mbEnable; }
 	void SetEnable(bool enable) { mbEnable = enable; }
 
@@ -151,7 +151,7 @@ public:
 	ModParticleItem();
 	psys_graph_pool& GetGraphPool() const { return mpgraphpool; }
 	psys_graph& GetTemplate() const { return mTemplate; }
-};	
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -166,13 +166,13 @@ public:
 	ModularSystem( const ModParticleItem& item );
 	~ModularSystem();
 
-	void DoReset() override; 
+	void DoReset() override;
 	void DoUpdate(float fdt) override;
 	psys_graph* GraphInstance() { return mGraphInstance; }
 	int GetNumRenderers() const { return int(mRenderers.size()); }
 	RendererModule* GetRenderer(int idx) { return mRenderers[idx]; }
-	
-	ork::lev2::particle::Context* GetParticleContext() 
+
+	ork::lev2::particle::Context* GetParticleContext()
 	{
 		ork::lev2::particle::Context* pctx =  mParticleControllerInst ? (&mParticleControllerInst->GetParticleContext()) : 0;
 		return pctx;
@@ -198,9 +198,9 @@ class ParticleArchetype : public ork::ent::Archetype
 	RttiDeclareConcrete(ParticleArchetype, ork::ent::Archetype);
 public:
 	ParticleArchetype();
-	
+
 private:
-	void DoCompose(ork::ent::ArchComposer& composer) override; 
+	void DoCompose(ork::ent::ArchComposer& composer) override;
 	void DoStartEntity(ork::ent::Simulation*, const ork::fmtx4& mtx, ork::ent::Entity* pent ) const override;
 	void DoLinkEntity(ork::ent::Simulation* inst, ork::ent::Entity *pent) const override;
 };

@@ -111,8 +111,8 @@ public:
 
 	///////////////////////////////////////////////////
 
-	void enqueueDrawablesToBuffer(ork::ent::DrawableBuffer& buffer) const;
-	void RenderDrawableBuffer(lev2::IRenderer *renderer,const ork::ent::DrawableBuffer& dbuffer, const PoolString& LayerName ) const;
+	void enqueueDrawablesToBuffer(lev2::DrawableBuffer& buffer) const;
+	void RenderDrawableBuffer(lev2::IRenderer *renderer,const lev2::DrawableBuffer& dbuffer, const PoolString& LayerName ) const;
 
 	///////////////////////////////////////////////////
 
@@ -166,9 +166,9 @@ public:
 
 	typedef orklut<PoolString,const CameraData*> CameraLut;
 
-	void AddLayer( const PoolString& name, Layer*player );
-	Layer* GetLayer( const PoolString& name );
-	const Layer* GetLayer( const PoolString& name ) const;
+	void AddLayer( const PoolString& name, lev2::Layer*player );
+	lev2::Layer* GetLayer( const PoolString& name );
+	const lev2::Layer* GetLayer( const PoolString& name ) const;
 
 	static const ork::PoolString& EventChannel();
 
@@ -209,7 +209,7 @@ protected:
 
 	orkmap<PoolString, Archetype*>			mDynamicArchetypes;
 
-	orkmap<PoolString,Layer*>				mLayers;
+	orkmap<PoolString,lev2::Layer*>				mLayers;
 	orkmap<PoolString,Entity*>				mEntities;
 	EntitySet								mActiveEntities;
 	float									mGameTime;			// current game clock time (stops on pause)

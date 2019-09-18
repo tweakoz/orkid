@@ -25,7 +25,7 @@
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.hpp>
 #include <pkg/ent/entity.hpp>
-#include <pkg/ent/drawable.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/AudioAnalyzer.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>

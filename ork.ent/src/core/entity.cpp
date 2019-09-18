@@ -9,6 +9,7 @@
 #include <pkg/ent/AudioComponent.h>
 
 #include <ork/application/application.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
@@ -18,7 +19,6 @@
 #include <ork/rtti/RTTI.h>
 #include <ork/rtti/downcast.h>
 #include <pkg/ent/bullet.h>
-#include <pkg/ent/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
@@ -33,7 +33,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <pkg/ent/AudioAnalyzer.h>
-#include <pkg/ent/Compositor.h>
+#include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/Lighting.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/ModelComponent.h>
@@ -43,16 +43,16 @@
 #include <pkg/ent/SimpleAnimatable.h>
 #include <pkg/ent/input.h>
 
-#include "../core/PerformanceAnalyzer.h"
 #include "../camera/ObserverCamera.h"
 #include "../camera/SpinnyCamera.h"
 #include "../camera/TetherCamera.h"
-#include "../character/SimpleCharacterArchetype.h"
 #include "../character/CharacterLocoComponent.h"
+#include "../character/SimpleCharacterArchetype.h"
+#include "../core/PerformanceAnalyzer.h"
 #include "../misc/GridComponent.h"
 #include "../misc/ProcTex.h"
-#include "../misc/Skybox.h"
 #include "../misc/QuartzComposerTest.h"
+#include "../misc/Skybox.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -79,7 +79,7 @@ public:
     return pdago->GetDagNode().GetTransformNode();
   }
   void SetTransform(rtti::ICastable* pobj, const TransformNode& node) final {
-    SceneDagObject* pdago = rtti::autocast(pobj);
+    SceneDagObject* pdago                  = rtti::autocast(pobj);
     pdago->GetDagNode().GetTransformNode() = node;
   }
 };
@@ -133,13 +133,14 @@ void EntData::SlotArchetypeDeleted(const ork::ent::Archetype* parch) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-EntData::EntData() : mArchetype(0) {}
+EntData::EntData()
+    : mArchetype(0) {}
 ///////////////////////////////////////////////////////////////////////////////
 EntData::~EntData() {}
 ///////////////////////////////////////////////////////////////////////////////
 void EntData::ArchetypeGetter(ork::rtti::ICastable*& val) const {
   Archetype* nonconst = const_cast<Archetype*>(mArchetype);
-  val = nonconst;
+  val                 = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void EntData::ArchetypeSetter(ork::rtti::ICastable* const& val) {
@@ -188,14 +189,16 @@ ComponentInst* Entity::GetComponentByClassName(ork::PoolString classname) {
 ///////////////////////////////////////////////////////////////////////////////
 void Entity::EntDataGetter(ork::rtti::ICastable*& ptr) const {
   EntData* pdata = const_cast<EntData*>(&mEntData);
-  ptr = static_cast<ork::rtti::ICastable*>(pdata);
+  ptr            = static_cast<ork::rtti::ICastable*>(pdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 Entity::Entity(const EntData& edata, Simulation* inst)
-    : _components(EKEYPOLICY_MULTILUT), mEntData(edata), mDagNode(edata.GetDagNode())
-      //, mDrawable( 0 )
-      ,
-      mComponentTable(_components), mSimulation(inst) {
+    : _components(EKEYPOLICY_MULTILUT)
+    , mEntData(edata)
+    , mDagNode(edata.GetDagNode())
+    //, mDrawable( 0 )
+    , mComponentTable(_components)
+    , mSimulation(inst) {
   // mDrawable.reserve(4);
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -206,14 +209,14 @@ fmtx4 Entity::GetEffectiveMatrix() const {
     case ESCENEMODE_SINGLESTEP:
     case ESCENEMODE_PAUSE: {
       const DagNode& dagn = this->GetDagNode();
-      const auto& xf = dagn.GetTransformNode().GetTransform();
-      rval = xf.GetMatrix();
+      const auto& xf      = dagn.GetTransformNode().GetTransform();
+      rval                = xf.GetMatrix();
       break;
     }
     default: {
       const DagNode& dagn = this->GetEntData().GetDagNode();
-      const auto& xf = dagn.GetTransformNode().GetTransform();
-      rval = xf.GetMatrix();
+      const auto& xf      = dagn.GetTransformNode().GetTransform();
+      rval                = xf.GetMatrix();
       break;
     }
   }
@@ -225,14 +228,6 @@ void Entity::SetDynMatrix(const fmtx4& mtx) { this->GetDagNode().SetTransformMat
 ///////////////////////////////////////////////////////////////////////////////
 Entity::~Entity() {
   // printf( "Delete Entity<%p>\n", this );
-  for (LayerMap::const_iterator itL = mLayerMap.begin(); itL != mLayerMap.end(); itL++) {
-    DrawableVector* pldrawables = itL->second;
-
-    for (DrawableVector::const_iterator it = pldrawables->begin(); it != pldrawables->end(); it++) {
-      Drawable* pdrw = *it;
-      delete pdrw;
-    }
-  }
   for (ComponentTable::LutType::const_iterator it = _components.begin(); it != _components.end(); it++) {
     ComponentInst* pinst = it->second;
     delete pinst;
@@ -255,7 +250,7 @@ bool Entity::DoNotify(const ork::event::Event* event) {
   } else if (const PerfSnapShotEvent* psse = rtti::autocast(event)) {
     ComponentTable::LutType& lut = mComponentTable.GetComponents();
     for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
-      ComponentInst* inst = (*it).second;
+      ComponentInst* inst    = (*it).second;
       const char* pshortname = inst->GetShortSelector();
       if (pshortname) {
         printf(" ent<%p>.component<%s>\n", this, pshortname);
@@ -269,15 +264,15 @@ bool Entity::DoNotify(const ork::event::Event* event) {
     //		const FixedString<256>& tgt = pce->mTarget;
     //		const FixedString<32>& val = pce->mValue;
 
-    PerfControlEvent pce2 = *pce;
+    PerfControlEvent pce2     = *pce;
     std::string ComponentName = pce2.PopTargetNode();
-    std::string KeyName = pce2.mTarget.c_str();
+    std::string KeyName       = pce2.mTarget.c_str();
 
     printf("Entity<%p> PerfControlEvent<%p> cname<%s> keyname<%s>\n", this, pce, ComponentName.c_str(), KeyName.c_str());
 
     ComponentTable::LutType& lut = mComponentTable.GetComponents();
     for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
-      ComponentInst* inst = (*it).second;
+      ComponentInst* inst    = (*it).second;
       const char* pshortname = inst->GetShortSelector();
       if (pshortname) {
         printf("testing shortname<%s>\n", pshortname);
@@ -290,7 +285,7 @@ bool Entity::DoNotify(const ork::event::Event* event) {
     ComponentTable::LutType& lut = mComponentTable.GetComponents();
     for (ComponentTable::LutType::const_iterator it = lut.begin(); it != lut.end(); it++) {
       ComponentInst* inst = (*it).second;
-      result = static_cast<ork::Object*>(inst)->Notify(event) || result;
+      result              = static_cast<ork::Object*>(inst)->Notify(event) || result;
     }
   }
 
@@ -299,54 +294,21 @@ bool Entity::DoNotify(const ork::event::Event* event) {
 ///////////////////////////////////////////////////////////////////////////////
 ComponentTable& Entity::GetComponents() { return mComponentTable; }
 ///////////////////////////////////////////////////////////////////////////////
-const ComponentTable& Entity::GetComponents() const { return mComponentTable; }
+void Entity::addDrawableToDefaultLayer( lev2::Drawable* pdrw ){
+  auto layername = AddPooledString("Default");
+  const ent::EntData& ED = GetEntData();
+  ConstString layer      = ED.GetUserProperty("DrawLayer");
+  if (strlen(layer.c_str()) != 0) {
+    layername = AddPooledString(layer.c_str());
+  }
+  _addDrawable(layername, pdrw);
+}
 ///////////////////////////////////////////////////////////////////////////////
-void Entity::AddDrawable(const PoolString& layername, Drawable* pdrw) {
-  bool bDEFAULT = (0 == strcmp(layername.c_str(), "Default"));
-
-  PoolString actualLayerName = layername;
-
-  if (bDEFAULT) {
-    const ent::EntData& ED = GetEntData();
-    ConstString layer = ED.GetUserProperty("DrawLayer");
-    if (strlen(layer.c_str()) != 0) {
-      actualLayerName = AddPooledString(layer.c_str());
-    }
-  }
-
-  Simulation* psi = simulation();
-  OrkAssert(psi);
-  Layer* player = psi->GetLayer(actualLayerName);
-
-  DrawableVector* pldrawables = GetDrawables(actualLayerName);
-
-  if (0 == pldrawables) {
-    pldrawables = new DrawableVector;
-    mLayerMap.AddSorted(actualLayerName, pldrawables);
-  }
-
-  pldrawables->push_back(pdrw);
+void Entity::addDrawableToLayer( lev2::Drawable* pdrw, const PoolString& layername ){
+  _addDrawable(layername, pdrw);
 }
-
-Entity::DrawableVector* Entity::GetDrawables(const PoolString& layer) {
-  DrawableVector* pldrawables = 0;
-
-  LayerMap::const_iterator itL = mLayerMap.find(layer);
-  if (itL != mLayerMap.end()) {
-    pldrawables = itL->second;
-  }
-  return pldrawables;
-}
-const Entity::DrawableVector* Entity::GetDrawables(const PoolString& layer) const {
-  const DrawableVector* pldrawables = 0;
-
-  LayerMap::const_iterator itL = mLayerMap.find(layer);
-  if (itL != mLayerMap.end()) {
-    pldrawables = itL->second;
-  }
-  return pldrawables;
-}
-
+///////////////////////////////////////////////////////////////////////////////
+const ComponentTable& Entity::GetComponents() const { return mComponentTable; }
 ///////////////////////////////////////////////////////////////////////////////
 void ArchComposer::Register(ork::ent::ComponentData* pdata) {
   if (pdata) {
@@ -354,16 +316,18 @@ void ArchComposer::Register(ork::ent::ComponentData* pdata) {
     _components.AddSorted(pclass, pdata);
   }
 }
-
+///////////////////////////////////////////////////////////////////////////////
 ArchComposer::ArchComposer(ork::ent::Archetype* parch, SceneComposer& scene_composer)
-    : mpArchetype(parch), _components(ork::EKEYPOLICY_MULTILUT), mSceneComposer(scene_composer) {}
-
+    : mpArchetype(parch)
+    , _components(ork::EKEYPOLICY_MULTILUT)
+    , mSceneComposer(scene_composer) {}
+///////////////////////////////////////////////////////////////////////////////
 ArchComposer::~ArchComposer() {
   mpArchetype->GetComponentDataTable().Clear();
   for (ork::orklut<ork::object::ObjectClass*, ork::Object*>::const_iterator it = _components.begin(); it != _components.end();
        it++) {
     ork::object::ObjectClass* pclass = it->first;
-    ork::ent::ComponentData* pdata = ork::rtti::autocast(it->second);
+    ork::ent::ComponentData* pdata   = ork::rtti::autocast(it->second);
     if (0 == pdata) {
       OrkAssert(pclass->IsSubclassOf(ork::ent::ComponentData::GetClassStatic()));
       pdata = ork::rtti::autocast(pclass->CreateObject());
@@ -382,7 +346,10 @@ void Archetype::Describe() {
   reflect::AnnotatePropertyForEditor<Archetype>("Components", "editor.map.policy.const", "true");
 }
 ///////////////////////////////////////////////////////////////////////////////
-Archetype::Archetype() : mComponentDatas(EKEYPOLICY_MULTILUT), mComponentDataTable(mComponentDatas), mpSceneData(0) {}
+Archetype::Archetype()
+    : mComponentDatas(EKEYPOLICY_MULTILUT)
+    , mComponentDataTable(mComponentDatas)
+    , mpSceneData(0) {}
 ///////////////////////////////////////////////////////////////////////////////
 bool Archetype::PostDeserialize(reflect::IDeserializer&) {
   // Compose();
@@ -516,9 +483,6 @@ void Init() {
   ScriptComponentInst::GetClassStatic();
 
   CompositingSystemData::GetClassStatic();
-  CompositingNode::GetClassStatic();
-  NodeCompositingTechnique::GetClassStatic();
-  Fx3CompositingTechnique::GetClassStatic();
 
   ork::psys::ParticleControllableData::GetClassStatic();
   ork::psys::ParticleControllableInst::GetClassStatic();
@@ -532,7 +496,6 @@ void Init() {
   SceneDagObjectManipInterface::GetClassStatic();
 
   RegisterClassX(HeightFieldDrawableData);
-  RegisterClassX(PassThroughCompositingNode);
 
 #if defined(ORK_OSXX)
   AudioAnalysisSystemData::GetClassStatic();
@@ -583,9 +546,7 @@ void Init() {
   RegisterFamily<BulletSystemData>(ork::AddPooledLiteral("physics"));
 }
 
-void Init2() {
-
-}
+void Init2() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::ent
