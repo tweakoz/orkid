@@ -113,6 +113,8 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mModelDrawable->SetModelInst(mXgmModelInst);
     mModelDrawable->SetScale(mData.GetScale());
 
+    const auto& ED = GetEntity()->GetEntData();
+
     pent->addDrawableToDefaultLayer(mModelDrawable);
     mModelDrawable->SetOwner(pent);
 

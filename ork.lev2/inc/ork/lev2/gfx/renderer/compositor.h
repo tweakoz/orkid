@@ -221,6 +221,23 @@ private:
   svar256_t _impl;
 };
 ///////////////////////////////////////////////////////////////////////////////
+class IdentityCompositingNode : public CompositingNode {
+  DeclareConcreteX(IdentityCompositingNode, CompositingNode);
+
+public:
+  IdentityCompositingNode();
+  ~IdentityCompositingNode();
+
+  PoolString _layername;
+
+private:
+  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
+  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
+
+  lev2::RtGroup* GetOutput() const final;
+  svar256_t _impl;
+};
+///////////////////////////////////////////////////////////////////////////////
 class SeriesCompositingNode : public CompositingNode {
   DeclareConcreteX(SeriesCompositingNode, CompositingNode);
 
@@ -304,8 +321,12 @@ public:
   NodeCompositingTechnique();
   ~NodeCompositingTechnique();
 
-  void _readRoot(ork::rtti::ICastable*& val) const;
-  void _writeRoot(ork::rtti::ICastable* const& val);
+  void _readFrameNode(ork::rtti::ICastable*& val) const;
+  void _writeFrameNode(ork::rtti::ICastable* const& val);
+  void _readPostFxNode(ork::rtti::ICastable*& val) const;
+  void _writePostFxNode(ork::rtti::ICastable* const& val);
+  void _readOutputNode(ork::rtti::ICastable*& val) const;
+  void _writeOutputNode(ork::rtti::ICastable* const& val);
 
 private:
   void Init(lev2::GfxTarget* pTARG, int w, int h) override;                                                     // virtual
@@ -314,7 +335,9 @@ private:
   //
 
   ork::ObjectMap mBufferMap;
-  CompositingNode* mpRootNode;
+  CompositingNode* _frameNode;
+  CompositingNode* _postfxNode;
+  CompositingNode* _outputNode;
   CompositingMaterial mCompositingMaterial;
 };
 ///////////////////////////////////////////////////////////////////////////////
