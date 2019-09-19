@@ -18,13 +18,13 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <orktool/qtui/qtui_tool.h>
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>

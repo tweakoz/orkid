@@ -34,7 +34,7 @@
 
 #include <pkg/ent/AudioAnalyzer.h>
 #include <pkg/ent/CompositingSystem.h>
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/ParticleControllable.h>
@@ -42,6 +42,7 @@
 #include <pkg/ent/ScriptComponent.h>
 #include <pkg/ent/SimpleAnimatable.h>
 #include <pkg/ent/input.h>
+#include <pkg/ent/EditorCamera.h>
 
 #include "../camera/ObserverCamera.h"
 #include "../camera/SpinnyCamera.h"
@@ -494,6 +495,10 @@ void Init() {
   ork::psys::NovaParticleItemBase::GetClassStatic();
 
   SceneDagObjectManipInterface::GetClassStatic();
+
+  EditorCamArchetype::GetClassStatic();
+  EditorCamControllerData::GetClassStatic();
+  EditorCamControllerInst::GetClassStatic();
 
   RegisterClassX(HeightFieldDrawableData);
 

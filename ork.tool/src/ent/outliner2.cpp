@@ -9,8 +9,8 @@
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <orktool/ged/ged.h>
 #include <pkg/ent/editor/editor.h>
+#include <pkg/ent/EditorCamera.h>
 
-#include "EditorCamera.h"
 #include "outliner2.h"
 
 ///////////////////////////////////////////////////////////////////////////////

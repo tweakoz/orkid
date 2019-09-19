@@ -16,6 +16,7 @@
 #include "renderable.h"
 #include "rendercontext.h"
 #include "renderqueue.h"
+#include "renderer_enum.h"
 #include <ork/gfx/radixsort.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,7 +77,7 @@ public:
 
   virtual U32 ComposeSortKey(U32 texIndex, U32 depthIndex, U32 passIndex, U32 transIndex) const { return 0; }
 
-  void DrawQueuedRenderables();
+  void drawEnqueuedRenderables();
 
   inline void SetPerformanceItem(PerformanceItem* perfitem) { mPerformanceItem = perfitem; }
 

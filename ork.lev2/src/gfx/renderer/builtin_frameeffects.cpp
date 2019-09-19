@@ -16,7 +16,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 
 BEGIN_ENUM_SERIALIZER(ork::lev2, EFrameEffect)
 	DECLARE_ENUM(EFRAMEFX_NONE)
@@ -42,6 +42,19 @@ TexBuffer::TexBuffer(	GfxBuffer *parent,
 	lev2::GfxEnv::GetRef().PushCreationParams( params );
 	this->CreateContext();
 	lev2::GfxEnv::GetRef().PopCreationParams();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+CompositingPassData BuiltinFrameTechniques::createPassData( const lev2::CompositingGroup* group ) {
+  lev2::CompositingPassData node;
+  node.mbDrawSource      = (group != nullptr);
+  this->mfSourceAmplitude = group ? 1.0f : 0.0f; // yuk....
+  node.mpGroup      = group;
+  node.mpFrameTek   = this;
+  node.mpCameraName = (group != nullptr) ? &group->_cameraName : nullptr;
+  node.mpLayerName  = (group != nullptr) ? &group->_layers : nullptr;
+  return node;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -504,7 +517,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 {
 	const ork::lev2::GfxTargetCreationParams& CreationParams = ork::lev2::GfxEnv::GetRef().GetCreationParams();
 
-	RenderContextFrameData&	FrameData = frenderer.GetFrameData();
+	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 
 	if( false == pTARG->IsDeviceAvailable() ) return;
@@ -872,9 +885,50 @@ void BuiltinFrameTechniques::PostProcess( RenderContextFrameData& FrameData )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void BuiltinFrameTechniques::update(const CompositingPassData& CPD, int itargw, int itargh){
+	const char* EffectName  = "none";
+	float fFxAmt            = 0.0f;
+	float fFbAmt            = 0.0f;
+	float fFinResMult       = 0.5f;
+	float fFxResMult        = 0.5f;
+	lev2::Texture* pFbUvMap = nullptr;
+	bool bpostfxfb          = false;
+
+	if (CPD.mpGroup) {
+		const lev2::CompositingGroupEffect& effect = CPD.mpGroup->_effect;
+		EffectName                                 = effect.GetEffectName();
+		fFxAmt                                     = effect.GetEffectAmount();
+		fFbAmt                                     = effect.GetFeedbackAmount();
+		pFbUvMap                                   = effect.GetFbUvMap();
+		bpostfxfb                                  = effect.IsPostFxFeedback();
+		fFinResMult                                = effect.GetFinalRezScale();
+		fFxResMult                                 = effect.GetFxRezScale();
+	}
+
+	////////////////////////////////////////
+
+	this->SetEffect(EffectName, fFxAmt, fFbAmt);
+	this->SetFbUvMap(pFbUvMap);
+	this->SetPostFxFb(bpostfxfb);
+
+	////////////////////////////////////////
+	// set buffer sizes
+	////////////////////////////////////////
+	float fW = itargw;
+	float fH = itargh;
+	int ifxW    = int(fFxResMult * fW);
+	int ifxH    = int(fFxResMult * fH);
+	int ifinalW = int(fFinResMult * fW);
+	int ifinalH = int(fFinResMult * fH);
+	this->ResizeFinalBuffer(ifinalW, ifinalH);
+	this->ResizeFxBuffer(ifxW, ifxH);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 BasicFrameTechnique::BasicFrameTechnique( )
 	: FrameTechniqueBase( 0, 0 )
-	, mbDoBeginEndFrame(true)
+	, _shouldBeginAndEndFrame(true)
 {
 
 }
@@ -883,18 +937,18 @@ BasicFrameTechnique::BasicFrameTechnique( )
 
 void BasicFrameTechnique::Render( FrameRenderer & frenderer )
 {
-	RenderContextFrameData&	FrameData = frenderer.GetFrameData();
+	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 	FrameData.SetDstRect( tgt_rect );
 	IRenderTarget* pTopRenderTarget = FrameData.GetRenderTarget();
-	if( mbDoBeginEndFrame )
+	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->BeginFrame( frenderer );
 	{
 		FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
 		frenderer.Render();
 	}
-	if( mbDoBeginEndFrame )
+	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->EndFrame( frenderer );
 }
 
@@ -910,7 +964,7 @@ PickFrameTechnique::PickFrameTechnique( )
 
 void PickFrameTechnique::Render( FrameRenderer & frenderer )
 {
-	RenderContextFrameData&	FrameData = frenderer.GetFrameData();
+	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 	FrameData.SetDstRect( tgt_rect );
@@ -933,7 +987,7 @@ ShadowFrameTechnique::ShadowFrameTechnique(  GfxWindow* Parent, ui::Viewport* pv
 
 void ShadowFrameTechnique::Render( FrameRenderer & frenderer )
 {
-	RenderContextFrameData& FrameData = frenderer.GetFrameData();
+	RenderContextFrameData& FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	/////////////////////////////////////////////////
 	int itx0 = pTARG->GetX();
@@ -960,7 +1014,7 @@ void ShadowFrameTechnique::Render( FrameRenderer & frenderer )
 		ContextData.GetRenderer().SetTarget(mpShadowBuffer->GetContext());
 		ContextData.GetRenderer().SetCamera( & ContextData.GetCamera()->mCameraData );
 		ContextData.GetScene()->SendToRenderer( & ContextData.GetRenderer(), 1 );
-		ContextData.GetRenderer().DrawQueuedRenderables();
+		ContextData.GetRenderer().drawEnqueuedRenderables();
 	}
 	mpShadowBuffer->GetContext()->PopCamera();
 	mpShadowBuffer->GetContext()->MTXI()->PopPMatrix();

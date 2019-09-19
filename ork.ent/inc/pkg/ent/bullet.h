@@ -10,7 +10,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "componentfamily.h"
-#include <ork/event/EventListener.h>
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/orkpool.h>
 #include <ork/math/PIDController.h>

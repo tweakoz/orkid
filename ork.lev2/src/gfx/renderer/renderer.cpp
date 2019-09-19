@@ -38,7 +38,7 @@ void IRenderer::QueueRenderable(IRenderable* pRenderable) { mRenderQueue.QueueRe
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::DrawQueuedRenderables() {
+void IRenderer::drawEnqueuedRenderables() {
 
   if (mPerformanceItem)
     mPerformanceItem->Enter();

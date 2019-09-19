@@ -8,7 +8,7 @@
 #pragma once
 
 #include <ork/dataflow/dataflow.h>
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/system.h>
 
@@ -21,6 +21,8 @@ class CompositingSystemData : public ork::ent::SystemData {
 public:
   lev2::CompositingData _compositingData;
   CompositingSystemData();
+
+  void defaultSetup();
 
 private:
   ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
@@ -41,6 +43,8 @@ public:
 
   const CompositingSystemData& compositingSystemData() const { return _compositingSystemData; }
   lev2::CompositingImpl _impl;
+  const lev2::CompositingGroup* compositingGroup(int igrp) const;
+  bool DoLink(Simulation* psi) final;
 
   bool enabled() const;
 

@@ -105,6 +105,9 @@ void Application::Describe()
 {
 }
 
+PoolString operator"" _pool(const char* s, size_t len) {
+  return AddPooledString(s);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork

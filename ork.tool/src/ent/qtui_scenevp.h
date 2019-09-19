@@ -11,27 +11,24 @@
 #include <ork/kernel/thread.h>
 #include <ork/kernel/timer.h>
 #include <ork/object/Object.h>
+#include <ork/kernel/msgrouter.inl>
 ///////////////////////////////////////////////////////////////////////////////
-#include <orktool/qtui/qtmainwin.h>
-#include <pkg/ent/Lighting.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <pkg/ent/editor/editor.h>
-#include <pkg/ent/scene.h>
-///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/ui/ui.h>
-#include <ork/lev2/ui/viewport.h>
-//#include <ork/lev2/gfx/builtin_frameeffects.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/pickbuffer.h>
+#include <ork/lev2/ui/ui.h>
+#include <ork/lev2/ui/viewport.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <pkg/ent/editor/editor.h>
+#include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
-#include <pkg/ent/Lighting.h>
-//#include <pkg/ent/FullscreenEffects.h>
+///////////////////////////////////////////////////////////////////////////////
+#include <orktool/qtui/qtmainwin.h>
 ///////////////////////////////////////////////////////////////////////////////
 
 class QWidget;
-
-#define _THREADED_RENDERER
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -66,7 +63,6 @@ typedef void (*SceneEditorInitCb)(ork::ent::SceneEditorVP& vped);
 class SceneEditorVPToolHandler; // : public SceneEditorVPToolHandlerBase;
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(_THREADED_RENDERER)
 class UpdateThread : public ork::Thread {
 public:
   UpdateThread(SceneEditorVP* pVP);
@@ -78,7 +74,6 @@ private:
   bool mbOKTOEXIT;
   bool mbEXITING;
 };
-#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 class SceneEditorView : public ork::Object {
@@ -111,8 +106,7 @@ public:
   //////////////////////
   ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
   //////////////////////
-  void enqueueSimulationDrawables(lev2::DrawableBuffer* pDB);
-  void RenderQueuedScene(ork::lev2::RenderContextFrameData& ContextData);
+  void renderEnqueuedScene(ork::lev2::RenderContextFrameData& ContextData);
   //////////////////////
   // lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
   void IncPickDirtyCount(int icount);
@@ -126,17 +120,13 @@ public:
   void bindToolHandler(const std::string& ToolName);
   void RegisterToolHandler(const std::string& ToolName, SceneEditorVPToolHandler* handler);
   //////////////////////
-  void SetHeadLightMode(bool bv) { mbHeadLight = bv; }
   void SaveCubeMap();
   void SetCursor(const fvec3& c) { mCursor = c; }
   void UpdateScene(lev2::DrawableBuffer* pdb);
 
   ///////////////////////////////////////////////////
-  void SetupLighting(lev2::HeadLightManager& hlmgr, lev2::RenderContextFrameData& fdata);
-  ///////////////////////////////////////////////////
   void DrawManip(lev2::RenderContextFrameData& fdata, lev2::GfxTarget* pProxyTarg);
   void DrawGrid(lev2::RenderContextFrameData& fdata);
-  void Draw3dContent(lev2::RenderContextFrameData& FrameData);
   void DrawHUD(lev2::RenderContextFrameData& FrameData);
   void DrawSpinner(lev2::RenderContextFrameData& FrameData);
   void Init();
@@ -150,6 +140,8 @@ public:
   lev2::ManipManager& ManipManager() { return mEditor.ManipManager(); }
   lev2::Camera* getActiveCamera() const { return _editorCamera; }
 
+  ///////////////////////////////////////////////////
+  bool isCompositorEnabled();
   ///////////////////////////////////////////////////
 
   static void RegisterInitCallback(SceneEditorInitCb icb);
@@ -166,9 +158,9 @@ protected:
 
   ork::atomic<int> mRenderLock;
 
+  msgrouter::subscriber_t _simchannelsubscriber;
   // lev2::PickBuffer<SceneEditorVP>*				mpPickBuffer;
   int miPickDirtyCount;
-  bool mbHeadLight;
   SceneEditorBase& mEditor;
 
   lev2::BasicFrameTechnique* mpBasicFrameTek;
@@ -177,41 +169,28 @@ protected:
   orkmap<std::string, SceneEditorVPToolHandler*> mToolHandlers;
   SceneEditorVPToolHandler* mpCurrentHandler;
   SceneEditorVPToolHandler* mpDefaultHandler;
-  lev2::Texture* mpCurrentToolIcon;
 
   int mGridMode;
   ork::ent::SceneEditorView mSceneView;
   lev2::IRenderer* _renderer;
   lev2::Camera* _editorCamera;
   fvec3 mCursor;
-  PerformanceItem mFramePerfItem;
   int miCameraIndex;
   int miCullCameraIndex;
   int mCompositorSceneIndex;
   int mCompositorSceneItemIndex;
   orkstack<lev2::CompositingPassData> mCompositingGroupStack;
-  // DrawableBufferLock								mDbLock;
   bool mbSceneDisplayEnable;
 
 private:
-  UpdateThread* mUpdateThread;
+  UpdateThread* _updateThread;
 
   void DisableSceneDisplay();
   void EnableSceneDisplay();
 
   ////////////////////////////////////////////
-  class FrameRenderer : public ork::lev2::FrameRenderer {
-    SceneEditorVP* mpViewport;
-    virtual void Render();
-
-  public:
-    FrameRenderer(SceneEditorVP* pvp)
-        : mpViewport(pvp) {}
-  };
-  ////////////////////////////////////////////
 
   void DoInit(ork::lev2::GfxTarget* pTARG) override;
-  bool DoNotify(const ork::event::Event* pev) override;
 
   static orkset<SceneEditorInitCb> mInitCallbacks;
 };

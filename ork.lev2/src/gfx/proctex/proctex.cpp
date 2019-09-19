@@ -10,13 +10,13 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/reflect/AccessorObjectPropertyObject.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/file/file.h>
 #include <ork/stream/FileInputStream.h>
 #include <ork/stream/FileOutputStream.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
 #include <ork/reflect/serialize/XMLDeserializer.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/asset/AssetManager.h>
 
 BEGIN_ENUM_SERIALIZER(ork::proctex,EPTEX_TYPE)

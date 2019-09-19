@@ -18,15 +18,15 @@
 namespace ork {
 
 /**
- * Very high-level application code. 
+ * Very high-level application code.
  */
-        
+
 class Application;
 
 class Application : public Object
 {
     RttiDeclareAbstract( Application, Object );
-    
+
 public:
 
 	static PoolString AddPooledString(const PieceString &);
@@ -59,7 +59,7 @@ protected:
 	virtual void DoUpdate() {}
 	virtual void DoPostUpdate() {}
     virtual void DoDraw() {}
-    
+
 	StringPool mStringPool;
     orkmap<std::string,anyp> mAppPropertyMap;
 
@@ -70,9 +70,11 @@ private:
 };
 
 
-PoolString AddPooledString(const PieceString &ps); 
+PoolString AddPooledString(const PieceString &ps);
 PoolString AddPooledLiteral(const ConstString &cs);
 PoolString FindPooledString(const PieceString &ps);
+
+PoolString operator"" _pool(const char* s, size_t len);
 
 }
 

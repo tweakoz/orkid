@@ -15,7 +15,7 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <pkg/ent/ParticleControllable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
@@ -161,7 +161,7 @@ struct ModItemRenderData {
       }
     }
   }
-  static void QueueToRendererCallback(ork::lev2::RenderContextInstData& rcid,
+  static void enqueueToRenderQueueCallback(ork::lev2::RenderContextInstData& rcid,
                                       ork::lev2::GfxTarget* targ,
                                       const ork::lev2::CallbackRenderable* pren) {
     AssertOnOpQ2(MainThreadOpQ());
@@ -353,7 +353,7 @@ void ModularSystem::DoLinkSystem(ork::ent::Simulation* psi, ork::ent::Entity* pe
       RendererModule* renderer = GetRenderer(ir);
 
       auto pdrw = new lev2::CallbackDrawable(pent);
-      pdrw->SetRenderCallback(ModItemRenderData::QueueToRendererCallback);
+      pdrw->SetRenderCallback(ModItemRenderData::enqueueToRenderQueueCallback);
       pdrw->SetQueueToLayerCallback(ModItemRenderData::QueueToLayerCallback);
       pdrw->SetOwner(&pent->GetEntData());
       pdrw->SetSortKey(isort);

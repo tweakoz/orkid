@@ -11,8 +11,6 @@
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/kernel/orklut.hpp>
 
-#include <ork/event/EventListener.h>
-
 #include <pkg/ent/entity.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>

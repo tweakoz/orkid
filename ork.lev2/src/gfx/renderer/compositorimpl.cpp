@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/compositor.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
@@ -18,7 +18,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
+#include <ork/application/application.h>
+#include "NodeCompositorFx3.h"
+#include "NodeCompositorScreen.h"
+#include "NodeCompositorForward.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,14 +68,14 @@ void CompositingData::describeX(class_t* c) {
   RegisterProperty("Enable", &CompositingData::mbEnable);
   RegisterProperty("OutputFrames", &CompositingData::mbOutputFrames);
 
-  RegisterMapProperty("Groups", &CompositingData::mCompositingGroups);
+  RegisterMapProperty("Groups", &CompositingData::_groups);
 	AnnotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
 
-  RegisterMapProperty("Scenes", &CompositingData::mScenes);
+  RegisterMapProperty("Scenes", &CompositingData::_scenes);
 	AnnotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
 
-  RegisterProperty("ActiveScene", &CompositingData::mActiveScene);
-  RegisterProperty("ActiveItem", &CompositingData::mActiveItem);
+  RegisterProperty("ActiveScene", &CompositingData::_activeScene);
+  RegisterProperty("ActiveItem", &CompositingData::_activeItem);
 
   RegisterProperty("OutputResBase", &CompositingData::mOutputBaseResolution);
   RegisterProperty("OutputResMult", &CompositingData::mOutputResMult);
@@ -95,6 +100,34 @@ CompositingData::CompositingData()
     , mOutputFrameRate(EOutputTimeStep_RealTime)
     , mOutputBaseResolution(EOutputRes_1280x720)
     , mOutputResMult(EOutputResMult_Full) {}
+
+//////////////////////////////////////////////////////////////////////////////
+
+void CompositingData::defaultSetup(){
+
+  auto p1 = new Fx3CompositingNode;
+  auto g1 = new CompositingGroup;
+  g1->_cameraName = "edcam"_pool;
+  g1->_layers = "All"_pool;
+  g1->_effect._effectAmount = 1.0f;
+  g1->_effect._effectID = EFRAMEFX_GHOSTLY;
+  p1->_writeGroup(g1);
+
+  auto t1 = new NodeCompositingTechnique;
+  auto o1 = new ScreenOutputCompositingNode;
+  auto r1 = new ForwardCompositingNode;
+  t1->_writeOutputNode(o1);
+  t1->_writeRenderNode(r1);
+  t1->_writePostFxNode(p1);
+
+  auto s1 = new CompositingScene;
+  auto i1 = new CompositingSceneItem;
+  i1->_writeTech(t1);
+  s1->items().AddSorted("item1"_pool,i1);
+  _activeScene = "scene1"_pool;
+  _activeItem = "item1"_pool;
+  _scenes.AddSorted("scene1"_pool,s1);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -136,7 +169,7 @@ const CompositingSceneItem* CompositingImpl::compositingItem(int isceneidx, int 
     }
   }
   if (pscene && itemidx >= 0) {
-    const auto& Items = pscene->GetItems();
+    const auto& Items = pscene->items();
     auto it           = Items.find(CDATA.GetActiveItem());
     if (it != Items.end()) {
       ork::Object* pOBJ = it->second;
@@ -196,10 +229,10 @@ float CompositingImpl::currentFrameRate() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingImpl::Draw(CompositorDrawData& drawdata) {
-  lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& framedata = the_renderer.GetFrameData();
-  lev2::GfxTarget* pTARG                  = framedata.GetTarget();
+void CompositingImpl::renderContent(lev2::FrameRenderer& the_renderer) {
+  lev2::CompositorDrawData drawdata(the_renderer);
+  lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
+  lev2::GfxTarget* pTARG                  = RCFD.GetTarget();
   orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
   CompositingImpl* pCMCI                  = this;
 
@@ -207,15 +240,26 @@ void CompositingImpl::Draw(CompositorDrawData& drawdata) {
 
   lev2::rendervar_t passdata;
   passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
-  the_renderer.GetFrameData().setUserProperty("nodes"_crc, passdata);
+  RCFD.setUserProperty("nodes"_crc, passdata);
 
+  /////////////////////////////////
+  // bind lighting
+  /////////////////////////////////
+
+  if( _lightmgr ){ // WIP
+      const CameraData* cdata = RCFD.GetCameraData();
+      _lightmgr->EnumerateInFrustum(cdata->GetFrustum());
+      if (_lightmgr->mLightsInFrustum.size()) {
+        RCFD.SetLightManager(_lightmgr);
+      }
+  }
 
   /////////////////////////////////
   // Lock Drawable Buffer
   /////////////////////////////////
 
   const DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7); // mDbLock.Aquire(7);
-  framedata.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+  RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
 
   for( auto item : _prerendercallbacks ){
     item.second(pTARG);
