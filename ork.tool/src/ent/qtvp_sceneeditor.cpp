@@ -515,197 +515,91 @@ const ent::Simulation* SceneEditorVP::simulation() {
     OrkAssert(iErr == 0);                                                                                                          \
   }
 
-void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& FrameData) {
+///////////////////////////////////////////////////////////////////////////
 
-  GL_ERRORCHECK();
-  lev2::IRenderTarget* pIRT = FrameData.GetRenderTarget();
-  bool IsPickState          = FrameData.GetTarget()->FBI()->IsPickState();
-  const bool forgepickstate = false;
-  if (forgepickstate)
-    FrameData.GetTarget()->FBI()->EnterPickState(mpPickBuffer);
-  GL_ERRORCHECK();
+struct ScopedSimFramer {
+  ScopedSimFramer(const Simulation* sim)
+      : _sim(sim) {
+    sim->beginRenderFrame();
+  }
+  ~ScopedSimFramer() { _sim->endRenderFrame(); }
+  const Simulation* _sim;
+};
 
+///////////////////////////////////////////////////////////////////////////
+
+void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& RCFD) {
   ///////////////////////////////////////////////////////////////////////////
-  struct ScopedSimFramer {
-    ScopedSimFramer(const Simulation* sim)
-        : _sim(sim) {
-      sim->beginRenderFrame();
-    }
-    ~ScopedSimFramer() { _sim->endRenderFrame(); }
-    const Simulation* _sim;
-  };
-
   auto sim = simulation();
   if (nullptr == sim)
     return;
-
   ///////////////////////////////////////////////////////////////////////////
   ScopedSimFramer framescope(sim);
-
   ///////////////////////////////////////////////////////////////////////////
-
-  lev2::rendervar_t pvdb   = FrameData.getUserProperty("DB"_crc);
-  const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
+  auto DB = RCFD.GetDB();
   if (0 == DB)
     return;
-
   ///////////////////////////////////////////////////////////////////////////
-  // get the compositor if there is one
+  lev2::IRenderTarget* pIRT = RCFD.GetRenderTarget();
+  auto gfxtarg              = RCFD.GetTarget();
+  auto FBI                  = gfxtarg->FBI();
+  auto MTXI                 = gfxtarg->MTXI();
+  bool IsPickState          = FBI->IsPickState();
   ///////////////////////////////////////////////////////////////////////////
-
-  lev2::rendervar_t passdata         = FrameData.getUserProperty("nodes"_crc);
-  compositingpassdatastack_t* cstack = nullptr;
-  cstack                             = passdata.Get<compositingpassdatastack_t*>();
-  OrkAssert(cstack != 0);
-
-  lev2::CompositingPassData NODE = cstack->top();
-
-  ///////////////////////////////////////////////////////////////////////////
-  // camera setup
-  ///////////////////////////////////////////////////////////////////////////
-
-  CameraData TempCamData, TempCullCamData;
-  _editorCamera = 0;
-
-  const CameraData* pcamdata     = DB->GetCameraData(miCameraIndex);
-  const CameraData* pcullcamdata = DB->GetCameraData(miCullCameraIndex);
-
-  if (nullptr == pcamdata)
+  auto NODE = CompositingPassData::FromRCFD(RCFD);
+  auto CAMDAT = NODE.getCamera(RCFD,miCameraIndex,miCullCameraIndex);
+  auto& CAMCCTX = RCFD.GetCameraCalcCtx();
+  CameraData TempCamData;
+  if (CAMDAT) {
+    TempCamData = *CAMDAT;
+    TempCamData.BindGfxTarget(gfxtarg);
+    TempCamData.CalcCameraData(CAMCCTX);
+    RCFD.SetCameraData(&TempCamData);
+  }
+  else
     return;
-
-  /////////////////////////////////////////
-  // Culling camera ? (for debug)
-  /////////////////////////////////////////
-
-  if (pcullcamdata) {
-    TempCullCamData = *pcullcamdata;
-    TempCullCamData.BindGfxTarget(FrameData.GetTarget());
-    TempCullCamData.CalcCameraData(FrameData.GetCameraCalcCtx());
-    TempCamData.SetVisibilityCamDat(&TempCullCamData);
-  }
-
-  /////////////////////////////////////////
-  // try named CameraData from NODE
-  /////////////////////////////////////////
-
-  if (NODE.mpCameraName) {
-    const CameraData* pcamdataNAMED = DB->GetCameraData(*NODE.mpCameraName);
-    if (pcamdataNAMED)
-      pcamdata = pcamdataNAMED;
-  }
-
-  /////////////////////////////////////////
-  // try direct CameraData from NODE
-  /////////////////////////////////////////
-
-  if (auto from_node = NODE._impl.TryAs<const CameraData*>()) {
-    pcamdata = from_node.value();
-    // printf( "from node\n");
-  }
-
-  /////////////////////////////////////////
-  // generate temporary CamData from input
-  //  bind to FrameData target
-  /////////////////////////////////////////
-
-  if (pcamdata) {
-    TempCamData = *pcamdata;
-    TempCamData.BindGfxTarget(FrameData.GetTarget());
-    TempCamData.CalcCameraData(FrameData.GetCameraCalcCtx());
-  }
-  FrameData.SetCameraData(&TempCamData);
-
-  /////////////////////////////////////////
-  // editor camera renderupdate
-  /////////////////////////////////////////
-  if (pcamdata)
-    _editorCamera = pcamdata->getEditorCamera();
+  ///////////////////////////////////////////////////////////////////////////
+  _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
   if (_editorCamera) {
-    _editorCamera->AttachViewport(this);
-    _editorCamera->RenderUpdate();
+      _editorCamera->AttachViewport(this);
+      _editorCamera->RenderUpdate();
   }
   ManipManager().SetActiveCamera(_editorCamera);
-  /////////////////////////////////////////
-
-  if (0 == pcamdata)
-    return;
-
   ///////////////////////////////////////////////////////////////////////////
-  lev2::HeadLightManager hlmgr(FrameData);
-  SetupLighting(hlmgr, FrameData);
+  lev2::HeadLightManager hlmgr(RCFD);
+  SetupLighting(hlmgr, RCFD);
   ///////////////////////////////////////////////////////////////////////////
-  auto gfxtarg = FrameData.GetTarget();
-  auto MTXI    = gfxtarg->MTXI();
-  auto FBI     = gfxtarg->FBI();
+  // DrawableBuffer -> RenderQueue enqueue
+  ///////////////////////////////////////////////////////////////////////////
+  auto rend = GetRenderer();
+  for (const PoolString& layer_name : NODE.getLayerNames())
+      sim->enqueueBufferToRQ(rend, *DB, layer_name);
+  ///////////////////////////////////////////////////////////////////////////
+  // RENDER!
   ///////////////////////////////////////////////////////////////////////////
   FBI->GetThisBuffer()->SetDirty(false);
-  ///////////////////////////////////////////////////////////////////////////
   gfxtarg->BindMaterial(lev2::GfxEnv::GetDefault3DMaterial());
-  GL_ERRORCHECK();
-  /////////////////////////////////////////////////////////////////////////////
-  const fmtx4& PMTX = FrameData.GetCameraCalcCtx().mPMatrix;
-  const fmtx4& VMTX = FrameData.GetCameraCalcCtx().mVMatrix;
-  /////////////////////////////////////////////////////////////////////////////
-  // Main Renderer
-  {
     static lev2::SRasterState defstate;
     gfxtarg->RSI()->BindRasterState(defstate, true);
-
-    // VMTX.dump("VMTX");
-
-    MTXI->PushPMatrix(PMTX);
-    MTXI->PushVMatrix(VMTX);
+    MTXI->PushPMatrix(CAMCCTX.mPMatrix);
+    MTXI->PushVMatrix(CAMCCTX.mVMatrix);
     MTXI->PushMMatrix(fmtx4::Identity);
-    { /////////////////////////////////////////
-      // manip
-      /////////////////////////////////////////
-      if (mEditor.mpScene)
-        DrawManip(FrameData, gfxtarg);
-      /////////////////////////////////////////
-      // grid
-      /////////////////////////////////////////
-      if (false == IsPickState)
-        DrawGrid(FrameData);
-      /////////////////////////////////////////
-      // RenderQueue
-      /////////////////////////////////////////
-      std::vector<PoolString> LayerNames;
-      if (NODE.mpLayerName) {
-        const char* playersstr = NODE.mpLayerName->c_str();
-        if (playersstr) {
-          char temp_buf[256];
-          strncpy(&temp_buf[0], playersstr, sizeof(temp_buf));
-          char* tok = strtok(&temp_buf[0], ",");
-          while (tok != 0) {
-            LayerNames.push_back(AddPooledString(tok));
-            tok = strtok(0, ",");
-          }
-        }
-      } else {
-        LayerNames.push_back(AddPooledLiteral("All"));
-      }
-      // printf( "USING LAYERNAME<%s>\n", LayerName.c_str() );
-      // const DrawableBuffer& DB = DrawableBuffer::GetLockedReadBuffer(0);
-      auto rend = GetRenderer();
-      auto sim  = simulation();
-      for (const PoolString& layer_name : LayerNames)
-        sim->RenderDrawableBuffer(rend, *DB, layer_name);
-      rend->DrawQueuedRenderables();
-      /////////////////////////////////////////
-    }
+        /////////////////////////////////////////
+        rend->DrawQueuedRenderables();
+        /////////////////////////////////////////
+        if (mEditor.mpScene)
+          DrawManip(RCFD, gfxtarg);
+        /////////////////////////////////////////
+        if (false == IsPickState)
+          DrawGrid(RCFD);
+        /////////////////////////////////////////
     MTXI->PopPMatrix(); // back to ortho
     MTXI->PopVMatrix(); // back to ortho
     MTXI->PopMMatrix(); // back to ortho
-    /////////////////////////////////////////
-    // draw Spinner
-    /////////////////////////////////////////
     if (false == IsPickState)
-      DrawSpinner(FrameData);
-  }
-  if (forgepickstate)
-    FBI->EnterPickState(mpPickBuffer);
-  // FrameData.GetTarget()->SetRenderContextFrameData( 0 );
-  FrameData.SetLightManager(0);
+      DrawSpinner(RCFD);
+  ///////////////////////////////////////////////////////////////////////////
+  RCFD.SetLightManager(nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////

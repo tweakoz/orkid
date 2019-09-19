@@ -5,19 +5,21 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/renderer/compositor.h>
+#include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/enum_serializer.h>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingGroup, "CompositingGroup");
@@ -28,6 +30,72 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CompositingTechnique, "CompositingTechni
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& framedata, int icamindex, int icullcamindex) {
+  auto DB      = framedata.GetDB();
+  auto gfxtarg = framedata.GetTarget();
+  CameraData TempCamData, TempCullCamData;
+  const CameraData* pcamdata     = DB->GetCameraData(icamindex);
+  const CameraData* pcullcamdata = DB->GetCameraData(icullcamindex);
+  if (nullptr == pcamdata)
+    return nullptr;
+  /////////////////////////////////////////
+  // Culling camera ? (for debug)
+  /////////////////////////////////////////
+  if (pcullcamdata) {
+    TempCullCamData = *pcullcamdata;
+    TempCullCamData.BindGfxTarget(gfxtarg);
+    TempCullCamData.CalcCameraData(framedata.GetCameraCalcCtx());
+    TempCamData.SetVisibilityCamDat(&TempCullCamData);
+  }
+  /////////////////////////////////////////
+  // try named CameraData from NODE
+  /////////////////////////////////////////
+  if (mpCameraName) {
+    const CameraData* pcamdataNAMED = DB->GetCameraData(*mpCameraName);
+    if (pcamdataNAMED)
+      pcamdata = pcamdataNAMED;
+  }
+  /////////////////////////////////////////
+  // try direct CameraData from NODE
+  /////////////////////////////////////////
+  if (auto from_node = _impl.TryAs<const CameraData*>()) {
+    pcamdata = from_node.value();
+    // printf( "from node\n");
+  }
+  /////////////////////////////////////////
+  return pcamdata;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+std::vector<PoolString> CompositingPassData::getLayerNames() const {
+  std::vector<PoolString> LayerNames;
+  if (mpLayerName) {
+    const char* layername = mpLayerName->c_str();
+    if (layername) {
+      char temp_buf[256];
+      strncpy(&temp_buf[0], layername, sizeof(temp_buf));
+      char* tok = strtok(&temp_buf[0], ",");
+      while (tok != 0) {
+        LayerNames.push_back(AddPooledString(tok));
+        tok = strtok(0, ",");
+      }
+    }
+  } else {
+    LayerNames.push_back(AddPooledLiteral("All"));
+  }
+  return LayerNames;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& RCFD) {
+  lev2::rendervar_t passdata = RCFD.getUserProperty("nodes"_crc);
+  auto cstack                = passdata.Get<compositingpassdatastack_t*>();
+  OrkAssert(cstack != nullptr);
+  return cstack->top();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

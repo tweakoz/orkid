@@ -18,12 +18,14 @@
 #include <ork/kernel/any.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/lev2/gfx/renderer/frametek.h>
-#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/viewport.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 
 template class ork::orklut<ork::CrcString, ork::lev2::rendervar_t>;
 
@@ -108,7 +110,7 @@ void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
   else
     it->second = val;
 }
-void RenderContextFrameData::unSetUserProperty(CrcString key){
+void RenderContextFrameData::unSetUserProperty(CrcString key) {
   auto it = _userProperties.find(key);
   if (it == _userProperties.end())
     _userProperties.erase(it);
@@ -145,10 +147,16 @@ IRenderTarget* RenderContextFrameData::GetRenderTarget() {
 }
 void RenderContextFrameData::PopRenderTarget() { mRenderTargetStack.pop(); }
 
-void RenderContextFrameData::setLayerName(const char* layername){
+void RenderContextFrameData::setLayerName(const char* layername) {
   lev2::rendervar_t passdata;
   passdata.Set<const char*>(layername);
   setUserProperty("pass"_crc, passdata);
+}
+
+const DrawableBuffer* RenderContextFrameData::GetDB() const{
+  lev2::rendervar_t pvdb   = getUserProperty("DB"_crc);
+  const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
+  return DB;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
