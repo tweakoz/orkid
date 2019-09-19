@@ -51,7 +51,7 @@ void NodeCompositingTechnique::describeX(class_t*c) {
   c->accessorProperty("PostFxNode", &NodeCompositingTechnique::_readPostFxNode, &NodeCompositingTechnique::_writePostFxNode)
    ->annotate<ConstString>("editor.factorylistbase", "CompositingNode");
   c->accessorProperty("OutputNode", &NodeCompositingTechnique::_readOutputNode, &NodeCompositingTechnique::_writeOutputNode)
-   ->annotate<ConstString>("editor.factorylistbase", "CompositingNode");
+   ->annotate<ConstString>("editor.factorylistbase", "ChainCompositingNode");
 }
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::NodeCompositingTechnique()
@@ -75,7 +75,7 @@ void NodeCompositingTechnique::_readFrameNode(ork::rtti::ICastable*& val) const 
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_writeFrameNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  _frameNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
+  _frameNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<CompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_readPostFxNode(ork::rtti::ICastable*& val) const {
@@ -85,17 +85,17 @@ void NodeCompositingTechnique::_readPostFxNode(ork::rtti::ICastable*& val) const
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_writePostFxNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  _postfxNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
+  _postfxNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<CompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_readOutputNode(ork::rtti::ICastable*& val) const {
-  CompositingNode* nonconst = const_cast<CompositingNode*>(_outputNode);
+  auto nonconst = const_cast<ChainCompositingNode*>(_outputNode);
   val = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  _outputNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
+  _outputNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<ChainCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {

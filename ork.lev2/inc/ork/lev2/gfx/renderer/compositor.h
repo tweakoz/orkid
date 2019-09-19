@@ -176,6 +176,10 @@ private:
   virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
+class ChainCompositingNode : public CompositingNode {
+  DeclareAbstractX(ChainCompositingNode, CompositingNode);
+};
+///////////////////////////////////////////////////////////////////////////////
 class CompositingBuffer : public ork::Object {
   int miWidth;
   int miHeight;
@@ -205,20 +209,24 @@ public:
   lev2::BuiltinFrameTechniques* mFTEK;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class VrCompositingNode : public CompositingNode {
-  DeclareConcreteX(VrCompositingNode, CompositingNode);
+class VrCompositingNode : public ChainCompositingNode {
+  DeclareConcreteX(VrCompositingNode, ChainCompositingNode);
 
 public:
   VrCompositingNode();
   ~VrCompositingNode();
+  CompositingNode* _nextNode = nullptr;
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
+  void _readNext(ork::rtti::ICastable*& val) const;
+  void _writeNext(ork::rtti::ICastable* const& val);
 
   lev2::RtGroup* GetOutput() const final;
 
   svar256_t _impl;
+
 };
 ///////////////////////////////////////////////////////////////////////////////
 class IdentityCompositingNode : public CompositingNode {
@@ -337,7 +345,7 @@ private:
   ork::ObjectMap mBufferMap;
   CompositingNode* _frameNode;
   CompositingNode* _postfxNode;
-  CompositingNode* _outputNode;
+  ChainCompositingNode* _outputNode;
   CompositingMaterial mCompositingMaterial;
 };
 ///////////////////////////////////////////////////////////////////////////////
