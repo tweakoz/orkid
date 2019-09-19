@@ -39,7 +39,7 @@
 #include <ork/kernel/future.hpp>
 #include <ork/lev2/lev2_asset.h>
 
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 

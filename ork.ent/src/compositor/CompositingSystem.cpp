@@ -25,6 +25,7 @@
 #include <ork/reflect/enum_serializer.h>
 #include <pkg/ent/PerfController.h>
 #include <pkg/ent/CompositingSystem.h>
+#include <pkg/ent/LightingSystem.h>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSystemData, "CompositingSystemData");
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,7 +102,13 @@ void CompositingSystem::DoUpdate(Simulation* psim) {
 
   _prv_vrstate =   _vrstate;
 
+}
 
+bool CompositingSystem::DoLink(Simulation* psi) {
+  if( auto lsys = psi->findSystem<LightingSystem>() ){
+    _impl.bindLighting(&lsys->GetLightManager());
+  }
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

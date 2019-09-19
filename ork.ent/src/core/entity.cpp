@@ -34,7 +34,7 @@
 
 #include <pkg/ent/AudioAnalyzer.h>
 #include <pkg/ent/CompositingSystem.h>
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/ModelComponent.h>
 #include <pkg/ent/ParticleControllable.h>

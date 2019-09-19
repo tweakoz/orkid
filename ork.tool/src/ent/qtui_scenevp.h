@@ -21,11 +21,11 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtmainwin.h>
 ///////////////////////////////////////////////////////////////////////////////
