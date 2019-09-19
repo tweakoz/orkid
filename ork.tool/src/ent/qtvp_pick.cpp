@@ -56,7 +56,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
     auto lamb = [&]() {
       AssertOnOpQ2(UpdateSerialOpQ());
       d_buf->miBufferIndex = 0;
-      viewport->enqueueSimulationDrawables(d_buf);
+      psi->enqueueDrawablesToBuffer(*d_buf);
       ////////////
       MainThreadOpQ().sync();
       ////////////
@@ -194,7 +194,7 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
     pTEXTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     pTEXTARG->PushModColor(fcolor4::Yellow());
     mpViewport->mCompositingGroupStack.push(compositor_node);
-    { mpViewport->RenderQueuedScene(*frame_data); }
+    { mpViewport->renderEnqueuedScene(*frame_data); }
     mpViewport->mCompositingGroupStack.pop();
     pTEXTARG->PopModColor();
     pTEXTARG->FBI()->PopRtGroup();

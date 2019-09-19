@@ -23,7 +23,7 @@ public:
   CompositingSystemData();
 
   void defaultSetup();
-  
+
 private:
   ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
   ork::Object* _accessor() { return & _compositingData; }
@@ -43,6 +43,7 @@ public:
 
   const CompositingSystemData& compositingSystemData() const { return _compositingSystemData; }
   lev2::CompositingImpl _impl;
+  const lev2::CompositingGroup* compositingGroup(int igrp) const;
 
   bool enabled() const;
 

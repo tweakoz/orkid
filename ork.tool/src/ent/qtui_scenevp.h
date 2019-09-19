@@ -108,8 +108,7 @@ public:
   //////////////////////
   ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
   //////////////////////
-  void enqueueSimulationDrawables(lev2::DrawableBuffer* pDB);
-  void RenderQueuedScene(ork::lev2::RenderContextFrameData& ContextData);
+  void renderEnqueuedScene(ork::lev2::RenderContextFrameData& ContextData);
   //////////////////////
   // lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
   void IncPickDirtyCount(int icount);

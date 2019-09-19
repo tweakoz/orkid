@@ -885,6 +885,47 @@ void BuiltinFrameTechniques::PostProcess( RenderContextFrameData& FrameData )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void BuiltinFrameTechniques::update(const CompositingPassData& CPD, int itargw, int itargh){
+	const char* EffectName  = "none";
+	float fFxAmt            = 0.0f;
+	float fFbAmt            = 0.0f;
+	float fFinResMult       = 0.5f;
+	float fFxResMult        = 0.5f;
+	lev2::Texture* pFbUvMap = nullptr;
+	bool bpostfxfb          = false;
+
+	if (CPD.mpGroup) {
+		const lev2::CompositingGroupEffect& effect = CPD.mpGroup->_effect;
+		EffectName                                 = effect.GetEffectName();
+		fFxAmt                                     = effect.GetEffectAmount();
+		fFbAmt                                     = effect.GetFeedbackAmount();
+		pFbUvMap                                   = effect.GetFbUvMap();
+		bpostfxfb                                  = effect.IsPostFxFeedback();
+		fFinResMult                                = effect.GetFinalRezScale();
+		fFxResMult                                 = effect.GetFxRezScale();
+	}
+
+	////////////////////////////////////////
+
+	this->SetEffect(EffectName, fFxAmt, fFbAmt);
+	this->SetFbUvMap(pFbUvMap);
+	this->SetPostFxFb(bpostfxfb);
+
+	////////////////////////////////////////
+	// set buffer sizes
+	////////////////////////////////////////
+	float fW = itargw;
+	float fH = itargh;
+	int ifxW    = int(fFxResMult * fW);
+	int ifxH    = int(fFxResMult * fH);
+	int ifinalW = int(fFinResMult * fW);
+	int ifinalH = int(fFinResMult * fH);
+	this->ResizeFinalBuffer(ifinalW, ifinalH);
+	this->ResizeFxBuffer(ifxW, ifxH);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 BasicFrameTechnique::BasicFrameTechnique( )
 	: FrameTechniqueBase( 0, 0 )
 	, _shouldBeginAndEndFrame(true)

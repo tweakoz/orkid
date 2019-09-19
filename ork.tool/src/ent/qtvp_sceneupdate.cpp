@@ -89,31 +89,25 @@ void UpdateThread::run() // virtual
         gUpdateStatus.SetState(EUPD_RUNNING);
         break;
       case EUPD_RUNNING: {
-        // ork::PerfMarkerPush( "ork.begin_update" );
         auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
-        {
-          OrkAssert(dbuf);
-
-          auto psi = (ent::Simulation*) mpVP->simulation();
-          if (psi) {
-            auto compsys = psi->compositingSystem();
-            float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
-            bool externally_fixed_rate = (frame_rate != 0.0f);
-
-            if (externally_fixed_rate) {
-              lev2::RenderSyncToken syntok;
-              if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
-                syntok.mFrameIndex++;
-                psi->Update();
-                lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
-              }
-            } else
-              psi->Update();
-          }
-          mpVP->enqueueSimulationDrawables(dbuf);
-        }
+            OrkAssert(dbuf);
+            auto simulation = (ent::Simulation*) mpVP->simulation();
+            if (simulation) {
+              auto compsys = simulation->compositingSystem();
+              float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
+              bool externally_fixed_rate = (frame_rate != 0.0f);
+              if (externally_fixed_rate) {
+                lev2::RenderSyncToken syntok;
+                if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
+                  syntok.mFrameIndex++;
+                  simulation->Update();
+                  lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
+                }
+              } else
+              simulation->Update();
+              simulation->enqueueDrawablesToBuffer(*dbuf);
+            }
         ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
-        // ork::PerfMarkerPush( "ork.end_update" );
         break;
       }
       case EUPD_STOP:
