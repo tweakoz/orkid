@@ -18,8 +18,12 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/application/application.h>
+#include "NodeCompositorFx3.h"
+#include "NodeCompositorScreen.h"
+#include "NodeCompositorForward.h"
+
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,18 +105,23 @@ CompositingData::CompositingData()
 
 void CompositingData::defaultSetup(){
 
-  auto s1 = new CompositingScene;
-  auto i1 = new CompositingSceneItem;
-  auto t1 = new NodeCompositingTechnique;
-  auto r1 = new PassThroughCompositingNode;
+  auto p1 = new Fx3CompositingNode;
   auto g1 = new CompositingGroup;
   g1->_cameraName = "edcam"_pool;
   g1->_layers = "All"_pool;
   g1->_effect._effectAmount = 1.0f;
   g1->_effect._effectID = EFRAMEFX_GHOSTLY;
+  p1->_writeGroup(g1);
 
-  r1->_writeGroup(g1);
-  t1->_writeOutputNode(r1);
+  auto t1 = new NodeCompositingTechnique;
+  auto o1 = new ScreenOutputCompositingNode;
+  auto r1 = new ForwardCompositingNode;
+  t1->_writeOutputNode(o1);
+  t1->_writeRenderNode(r1);
+  t1->_writePostFxNode(p1);
+
+  auto s1 = new CompositingScene;
+  auto i1 = new CompositingSceneItem;
   i1->_writeTech(t1);
   s1->items().AddSorted("item1"_pool,i1);
   _activeScene = "scene1"_pool;

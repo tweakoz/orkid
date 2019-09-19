@@ -13,7 +13,7 @@
 #include <ork/gfx/camera.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>

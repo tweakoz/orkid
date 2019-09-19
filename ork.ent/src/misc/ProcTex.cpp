@@ -29,7 +29,7 @@
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 #include "ProcTex.h"
 ///////////////////////////////////////////////////////////////////////////////

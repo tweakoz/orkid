@@ -17,7 +17,7 @@
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/core_interface.h>
 #include <pkg/ent/event/StartAudioEffectEvent.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/application/application.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::AudioSystemData, "AudioSystemData");

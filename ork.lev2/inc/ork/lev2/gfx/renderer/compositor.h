@@ -13,7 +13,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/renderer/frametek.h>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 class CompositingGroup;
 class CompositingSceneItem;
@@ -121,65 +121,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-class Fx3CompositingTechnique : public CompositingTechnique {
-  DeclareConcreteX(Fx3CompositingTechnique, CompositingTechnique);
-
-public:
-  Fx3CompositingTechnique();
-  ~Fx3CompositingTechnique();
-
-  void CompositeLayerToScreen(lev2::GfxTarget* pT, CompositingContext& cctx, ECOMPOSITEBlend eblend, lev2::RtGroup* psrcgroupA,
-                              lev2::RtGroup* psrcgroupB, lev2::RtGroup* psrcgroupC, float levA, float levB, float levC);
-
-  const PoolString& GetGroupA() const { return mGroupA; }
-  const PoolString& GetGroupB() const { return mGroupB; }
-  const PoolString& GetGroupC() const { return mGroupC; }
-
-  float GetLevelA() const { return mfLevelA; }
-  float GetLevelB() const { return mfLevelB; }
-  float GetLevelC() const { return mfLevelC; }
-
-  ECOMPOSITEBlend GetBlendMode() const { return meBlendMode; }
-
-  lev2::BuiltinFrameTechniques* mpBuiltinFrameTekA;
-  lev2::BuiltinFrameTechniques* mpBuiltinFrameTekB;
-  lev2::BuiltinFrameTechniques* mpBuiltinFrameTekC;
-  ECOMPOSITEBlend meBlendMode;
-  PoolString mGroupA;
-  PoolString mGroupB;
-  PoolString mGroupC;
-  float mfLevelA;
-  float mfLevelB;
-  float mfLevelC;
-  CompositingMaterial mCompositingMaterial;
-
-private:
-  void Init(lev2::GfxTarget* pTARG, int w, int h) final;                                                     // virtual
-  void Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;                              // virtual
-  void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) final; // virtual
-};
-
-///////////////////////////////////////////////////////////////////////////////
-class CompositingNode : public ork::Object {
-  DeclareAbstractX(CompositingNode, ork::Object);
-
-public:
-  CompositingNode();
-  ~CompositingNode();
-  void Init(lev2::GfxTarget* pTARG, int w, int h);
-  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
-  virtual lev2::RtGroup* GetOutput() const { return nullptr; }
-
-private:
-  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
-  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
-};
-///////////////////////////////////////////////////////////////////////////////
-class ChainCompositingNode : public CompositingNode {
-  DeclareAbstractX(ChainCompositingNode, CompositingNode);
-};
-///////////////////////////////////////////////////////////////////////////////
 class CompositingBuffer : public ork::Object {
   int miWidth;
   int miHeight;
@@ -189,65 +130,56 @@ class CompositingBuffer : public ork::Object {
   ~CompositingBuffer();
 };
 ///////////////////////////////////////////////////////////////////////////////
-class PassThroughCompositingNode : public CompositingNode {
-  DeclareConcreteX(PassThroughCompositingNode, CompositingNode);
+class OutputCompositingNode : public ork::Object {
+  DeclareAbstractX(OutputCompositingNode, ork::Object);
 
 public:
-  PassThroughCompositingNode();
-  ~PassThroughCompositingNode();
-
-  void _readGroup(ork::rtti::ICastable*& val) const;
-  void _writeGroup(ork::rtti::ICastable* const& val);
-
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
-
-  lev2::RtGroup* GetOutput() const final;
-
-  CompositingMaterial mCompositingMaterial;
-  CompositingGroup* mGroup;
-  lev2::BuiltinFrameTechniques* mFTEK;
-};
-///////////////////////////////////////////////////////////////////////////////
-class VrCompositingNode : public ChainCompositingNode {
-  DeclareConcreteX(VrCompositingNode, ChainCompositingNode);
-
-public:
-  VrCompositingNode();
-  ~VrCompositingNode();
-  CompositingNode* _nextNode = nullptr;
+  OutputCompositingNode();
+  ~OutputCompositingNode();
+  void Init(lev2::GfxTarget* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
-  void _readNext(ork::rtti::ICastable*& val) const;
-  void _writeNext(ork::rtti::ICastable* const& val);
-
-  lev2::RtGroup* GetOutput() const final;
-
-  svar256_t _impl;
-
+  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class IdentityCompositingNode : public CompositingNode {
-  DeclareConcreteX(IdentityCompositingNode, CompositingNode);
+class RenderCompositingNode : public ork::Object {
+  DeclareAbstractX(RenderCompositingNode, ork::Object);
 
 public:
-  IdentityCompositingNode();
-  ~IdentityCompositingNode();
-
-  PoolString _layername;
+  RenderCompositingNode();
+  ~RenderCompositingNode();
+  void Init(lev2::GfxTarget* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
+  virtual lev2::RtGroup* GetOutput() const { return nullptr; }
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
-
-  lev2::RtGroup* GetOutput() const final;
-  svar256_t _impl;
+  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class SeriesCompositingNode : public CompositingNode {
-  DeclareConcreteX(SeriesCompositingNode, CompositingNode);
+class PostCompositingNode : public ork::Object {
+  DeclareAbstractX(PostCompositingNode, ork::Object);
+
+public:
+  PostCompositingNode();
+  ~PostCompositingNode();
+  void Init(lev2::GfxTarget* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
+  virtual lev2::RtGroup* GetOutput() const { return nullptr; }
+
+private:
+  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+class ChainCompositingNode : public PostCompositingNode {
+  DeclareAbstractX(ChainCompositingNode, PostCompositingNode);
+};
+///////////////////////////////////////////////////////////////////////////////
+class SeriesCompositingNode : public PostCompositingNode {
+  DeclareConcreteX(SeriesCompositingNode, PostCompositingNode);
 
 public:
   SeriesCompositingNode();
@@ -263,40 +195,13 @@ private:
   lev2::RtGroup* GetOutput() const final;
 
   CompositingMaterial mCompositingMaterial;
-  CompositingNode* mNode;
+  PostCompositingNode* mNode;
   lev2::RtGroup* mOutput;
   lev2::BuiltinFrameTechniques* mFTEK;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class InsertCompositingNode : public CompositingNode {
-  DeclareConcreteX(InsertCompositingNode, CompositingNode);
-
-public:
-  InsertCompositingNode();
-  ~InsertCompositingNode();
-
-private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
-
-  void GetNode(ork::rtti::ICastable*& val) const;
-  void SetNode(ork::rtti::ICastable* const& val);
-  void SetTextureAccessor(ork::rtti::ICastable* const& tex);
-  void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
-
-  lev2::RtGroup* GetOutput() const final;
-
-  CompositingMaterial mCompositingMaterial;
-  CompositingNode* mNode;
-  lev2::RtGroup* mOutput;
-  lev2::BuiltinFrameTechniques* mFTEK;
-  ork::lev2::TextureAsset* mReturnTexture;
-  ork::lev2::TextureAsset* mSendTexture;
-  ork::PoolString mDynTexPath;
-};
-///////////////////////////////////////////////////////////////////////////////
-class Op2CompositingNode : public CompositingNode {
-  DeclareConcreteX(Op2CompositingNode, CompositingNode);
+class Op2CompositingNode : public PostCompositingNode {
+  DeclareConcreteX(Op2CompositingNode, PostCompositingNode);
 
 public:
   Op2CompositingNode();
@@ -311,8 +216,8 @@ private:
   void SetNodeB(ork::rtti::ICastable* const& val);
   lev2::RtGroup* GetOutput() const override { return mOutput; }
 
-  CompositingNode* mSubA;
-  CompositingNode* mSubB;
+  PostCompositingNode* mSubA;
+  PostCompositingNode* mSubB;
   CompositingMaterial mCompositingMaterial;
   lev2::RtGroup* mOutput;
   EOp2CompositeMode mMode;
@@ -329,8 +234,8 @@ public:
   NodeCompositingTechnique();
   ~NodeCompositingTechnique();
 
-  void _readFrameNode(ork::rtti::ICastable*& val) const;
-  void _writeFrameNode(ork::rtti::ICastable* const& val);
+  void _readRenderNode(ork::rtti::ICastable*& val) const;
+  void _writeRenderNode(ork::rtti::ICastable* const& val);
   void _readPostFxNode(ork::rtti::ICastable*& val) const;
   void _writePostFxNode(ork::rtti::ICastable* const& val);
   void _readOutputNode(ork::rtti::ICastable*& val) const;
@@ -343,9 +248,9 @@ private:
   //
 
   ork::ObjectMap mBufferMap;
-  CompositingNode* _frameNode;
-  CompositingNode* _postfxNode;
-  CompositingNode* _outputNode;
+  RenderCompositingNode* _renderNode;
+  PostCompositingNode* _postfxNode;
+  OutputCompositingNode* _outputNode;
   CompositingMaterial mCompositingMaterial;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -548,4 +453,4 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::ent
+} // namespace ork::lev2 {

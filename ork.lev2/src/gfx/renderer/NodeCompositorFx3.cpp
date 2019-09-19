@@ -5,28 +5,11 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/gfxmaterial_fx.h>
-#include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/gfx/texman.h>
+#include "NodeCompositorFx3.h"
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
-#include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/rtti/downcast.h>
-///////////////////////////////////////////////////////////////////////////////
+#include <ork/lev2/gfx/rtgroup.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
-///////////////////////
-// (b over a)+c		BoverAplusC
-// (a over b)+c		AoverBplusC
-// (a+b+c)			AplusBplusC
-// (a+b-c)			AplusBminusC
-// (a-b-c)			AminusBplusC
-// lerp(a,b,c)		AlerpBwithC
-///////////////////////////////////////////////////////////////////////////////
+#include <ork/reflect/enum_serializer.inl>
 
 BEGIN_ENUM_SERIALIZER(ork::lev2, ECOMPOSITEBlend)
 DECLARE_ENUM(BoverAplusC)
@@ -39,25 +22,19 @@ END_ENUM_SERIALIZER()
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::Fx3CompositingTechnique, "Fx3CompositingTechnique");
+ImplementReflectionX(ork::lev2::Fx3CompositingNode, "Fx3CompositingNode");
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::describeX(class_t* c) {
-  ork::reflect::RegisterProperty("Mode", &Fx3CompositingTechnique::meBlendMode);
-
-  ork::reflect::RegisterProperty("GroupA", &Fx3CompositingTechnique::mGroupA);
-  ork::reflect::RegisterProperty("GroupB", &Fx3CompositingTechnique::mGroupB);
-  ork::reflect::RegisterProperty("GroupC", &Fx3CompositingTechnique::mGroupC);
-  ork::reflect::RegisterProperty("LevelA", &Fx3CompositingTechnique::mfLevelA);
-  ork::reflect::RegisterProperty("LevelB", &Fx3CompositingTechnique::mfLevelB);
-  ork::reflect::RegisterProperty("LevelC", &Fx3CompositingTechnique::mfLevelC);
-  reflect::AnnotatePropertyForEditor<Fx3CompositingTechnique>("Mode", "editor.class", "ged.factory.enum");
-  reflect::AnnotatePropertyForEditor<Fx3CompositingTechnique>("LevelA", "editor.range.min", "-10.0");
-  reflect::AnnotatePropertyForEditor<Fx3CompositingTechnique>("LevelA", "editor.range.max", "10.0");
-  reflect::AnnotatePropertyForEditor<Fx3CompositingTechnique>("LevelB", "editor.range.min", "-10.0");
-  reflect::AnnotatePropertyForEditor<Fx3CompositingTechnique>("LevelB", "editor.range.max", "10.0");
-  reflect::AnnotatePropertyForEditor<Fx3CompositingTechnique>("LevelC", "editor.range.min", "-10.0");
-  reflect::AnnotatePropertyForEditor<Fx3CompositingTechnique>("LevelC", "editor.range.max", "10.0");
+  c->memberProperty("Mode", &Fx3CompositingTechnique::meBlendMode)
+   ->annotate<ConstString>("editor.class", "ged.factory.enum");
+  c->floatProperty("LevelA", float_range{-10,10}, &Fx3CompositingTechnique::mfLevelA);
+  c->floatProperty("LevelB", float_range{-10,10}, &Fx3CompositingTechnique::mfLevelB);
+  c->floatProperty("LevelC", float_range{-10,10}, &Fx3CompositingTechnique::mfLevelC);
+  c->memberProperty("GroupA", &Fx3CompositingTechnique::mGroupA);
+  c->memberProperty("GroupB", &Fx3CompositingTechnique::mGroupB);
+  c->memberProperty("GroupC", &Fx3CompositingTechnique::mGroupC);
 }
 ///////////////////////////////////////////////////////////////////////////////
 Fx3CompositingTechnique::Fx3CompositingTechnique()
@@ -225,5 +202,62 @@ void Fx3CompositingTechnique::CompositeToScreen(ork::lev2::GfxTarget* pT, Compos
   /////////////////////////////////////////////////////////////////////
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::lev2
+void Fx3CompositingNode::describeX(class_t*c) {
+  c->accessorProperty("Group", &Fx3CompositingNode::_readGroup, &Fx3CompositingNode::_writeGroup)
+   ->annotate<ConstString>("editor.factorylistbase", "CompositingGroup");
+}
+///////////////////////////////////////////////////////////////////////////////
+Fx3CompositingNode::Fx3CompositingNode() : mFTEK(nullptr), mGroup(nullptr) {}
+///////////////////////////////////////////////////////////////////////////////
+Fx3CompositingNode::~Fx3CompositingNode() {
+  if (mFTEK)
+    delete mFTEK;
+}
+///////////////////////////////////////////////////////////////////////////////
+void Fx3CompositingNode::_readGroup(ork::rtti::ICastable*& val) const {
+  CompositingGroup* nonconst = const_cast<CompositingGroup*>(mGroup);
+  val = nonconst;
+}
+///////////////////////////////////////////////////////////////////////////////
+void Fx3CompositingNode::_writeGroup(ork::rtti::ICastable* const& val) {
+  ork::rtti::ICastable* ptr = val;
+  mGroup = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingGroup*>(ptr));
+}
+///////////////////////////////////////////////////////////////////////////////
+void Fx3CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
+{
+  if (nullptr == mFTEK) {
+    mCompositingMaterial.Init(pTARG);
+
+    mFTEK = new lev2::BuiltinFrameTechniques(iW, iH);
+    mFTEK->Init(pTARG);
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
+{
+  const CompositingGroup* pCG = mGroup;
+  lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
+  lev2::RenderContextFrameData& framedata = the_renderer.framedata();
+  orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
+
+  CompositingPassData node;
+  node.mbDrawSource = (pCG != nullptr);
+
+  if (mFTEK) {
+    framedata.setLayerName("All");
+    auto node = mFTEK->createPassData(pCG);
+    cgSTACK.push(node);
+    mFTEK->Render(the_renderer);
+    cgSTACK.pop();
+  }
+}
+
+lev2::RtGroup* Fx3CompositingNode::GetOutput() const {
+  lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;
+  return pRT;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+} // namespace ork::lev2
 ///////////////////////////////////////////////////////////////////////////////

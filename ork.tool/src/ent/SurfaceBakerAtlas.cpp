@@ -24,7 +24,7 @@
 #include <orktool/qtui/qtui_tool.h>
 #include <orktool/ged/ged.h>
 #include <orktool/ged/ged_delegate.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <orktool/filter/gfx/meshutil/meshutil.h>
 #include <orktool/filter/gfx/collada/collada.h>
 #include <orktool/filter/gfx/meshutil/meshutil_fixedgrid.h>

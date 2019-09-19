@@ -13,7 +13,7 @@
 #include <ork/math/gradient.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/reflect/DirectObjectPropertyType.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>

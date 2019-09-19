@@ -5,39 +5,19 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
-#include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/vr/vr.h>
-#include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/lev2/gfx/renderer/compositor.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
+#include "NodeCompositorVr.h"
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/vr/vr.h>
+#include <ork/lev2/gfx/gfxprimitives.h>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
-ImplementReflectionX(ork::lev2::ChainCompositingNode, "ChainCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void ChainCompositingNode::describeX(class_t*c) {}
-///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::describeX(class_t*c) {
-  c->accessorProperty("Next",&VrCompositingNode::_readNext,&VrCompositingNode::_writeNext)
-   ->annotate<ConstString>("editor.factorylistbase", "CompositingNode");
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::_readNext(ork::rtti::ICastable*& val) const {
-  CompositingNode* nonconst = const_cast<CompositingNode*>(_nextNode);
-  val = nonconst;
-}
-///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::_writeNext(ork::rtti::ICastable* const& val) {
-  ork::rtti::ICastable* ptr = val;
-  _nextNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -275,19 +255,6 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
     assert(buffer != nullptr);
 
     /////////////////////////////////////////////////////////////////////////////
-    // if node chained, run chained node and use that output..
-    /////////////////////////////////////////////////////////////////////////////
-
-    if( _nextNode ){
-      _nextNode->Render(drawdata, impl);
-      auto rto = _nextNode->GetOutput();
-      if( rto ){
-        buffer = rto->GetMrt(0);
-        assert(false);
-     }
-    }
-
-    /////////////////////////////////////////////////////////////////////////////
 
     auto tex = buffer->GetTexture();
     if (tex) {
@@ -296,20 +263,6 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
 
     /////////////////////////////////////////////////////////////////////////////
   }
-}
-///////////////////////////////////////////////////////////////////////////////
-RtGroup* VrCompositingNode::GetOutput() const {
-  auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
-  if (vrimpl->_frametek){
-    if( _nextNode ){
-      auto rto = _nextNode->GetOutput();
-      return rto;
-    }
-    else
-      return vrimpl->_frametek->_rtg;
-  }
-  else
-    return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
