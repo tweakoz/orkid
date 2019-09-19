@@ -89,13 +89,13 @@ void NodeCompositingTechnique::_writePostFxNode(ork::rtti::ICastable* const& val
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_readOutputNode(ork::rtti::ICastable*& val) const {
-  auto nonconst = const_cast<ChainCompositingNode*>(_outputNode);
+  auto nonconst = const_cast<CompositingNode*>(_outputNode);
   val = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  _outputNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<ChainCompositingNode*>(ptr));
+  _outputNode = ((ptr == nullptr) ? nullptr : rtti::safe_downcast<CompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
