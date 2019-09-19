@@ -173,6 +173,8 @@ public:
 
   DrawableBufLayer* MergeLayer(const PoolString& layername);
 
+  void enqueueLayerToRenderQueue(const PoolString& LayerName,lev2::IRenderer* renderer) const;
+
 }; // ~1MiB
 
 ///////////////////////////////////////////////////////////////////////////
@@ -187,7 +189,7 @@ public:
   Drawable();
   virtual ~Drawable();
 
-  virtual void QueueToRenderer(const DrawableBufItem& item,
+  virtual void enqueueToRenderQueue(const DrawableBufItem& item,
                                lev2::IRenderer* prenderer) const = 0; // 	AssertOnOpQ2( MainThreadOpQ() );
   virtual void QueueToLayer(const DrawQueueXfData& xfdata,
                             DrawableBufLayer& buffer) const = 0; // AssertOnOpQ2( UpdateSerialOpQ() );
@@ -238,7 +240,7 @@ public:
   void ShowBoundingSphere(bool bflg) { mbShowBoundingSphere = bflg; }
 
 private:
-  void QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
+  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const override;
   void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const override;
 
   lev2::XgmModelInst* mModelInst;
@@ -278,7 +280,7 @@ public:
   void SetQueueToLayerCallback(Q2LCBType cb) { mQueueToLayerCallback = cb; }
   U32 GetSortKey() const { return mSortKey; }
   void SetSortKey(U32 uv) { mSortKey = uv; }
-  void QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
+  void enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const final;
   void QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer& buffer) const final;
 
 private:
