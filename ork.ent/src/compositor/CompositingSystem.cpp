@@ -105,5 +105,22 @@ void CompositingSystem::DoUpdate(Simulation* psim) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+const lev2::CompositingGroup* CompositingSystem::compositingGroup(int igrp) const {
+  const lev2::CompositingGroup* pCG = 0;
+  const lev2::CompositingData& CDATA = _impl.compositingData();
+  auto& Groups                 = CDATA.GetGroups();
+  int inumgroups               = Groups.size();
+  if (inumgroups && igrp >= 0) {
+    int idx           = igrp % inumgroups;
+    ork::Object* pOBJ = Groups.GetItemAtIndex(idx).second;
+    if (pOBJ)
+      pCG = rtti::autocast(pOBJ);
+  }
+  return pCG;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////

@@ -160,4 +160,28 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+void RenderContextFrameData::addStandardLayers() {
+  AddLayer("Default"_pool);
+  AddLayer("A"_pool);
+  AddLayer("B"_pool);
+  AddLayer("C"_pool);
+  AddLayer("D"_pool);
+  AddLayer("E"_pool);
+  AddLayer("F"_pool);
+  AddLayer("G"_pool);
+  AddLayer("H"_pool);
+  AddLayer("I"_pool);
+  AddLayer("J"_pool);
+  AddLayer("K"_pool);
+  AddLayer("L"_pool);
+  AddLayer("M"_pool);
+  AddLayer("N"_pool);
+  AddLayer("O"_pool);
+  AddLayer("P"_pool);
+  AddLayer("Q"_pool);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

@@ -142,6 +142,8 @@ class BuiltinFrameTechniques : public FrameTechniqueBase
 
 public:
 
+	void update(const CompositingPassData& CPD, int itargw, int itargh);
+
 	CompositingPassData createPassData(const lev2::CompositingGroup* group);
 
 	RtGroup* GetNextWriteRtGroup() const;

@@ -180,6 +180,8 @@ struct RenderContextFrameData {
 
   const DrawableBuffer* GetDB() const;
 
+  void addStandardLayers();
+  
   //////////////////////////////////////
 
   bool isPicking() const;

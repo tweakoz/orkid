@@ -343,14 +343,13 @@ struct CompositingPassData {
   const PoolString* mpLayerName = nullptr;
   ork::svarp_t _impl;
   ork::fvec4 _clearColor;
-
   CompositingPassData() {
     _impl.Set<void*>(nullptr);
   }
   static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
-
   std::vector<PoolString> getLayerNames() const;
   const CameraData* getCamera(lev2::RenderContextFrameData& FrameData, int icamindex, int icullcamindex);
+  void updateCompositingSize(int w, int h);
 };
 
 typedef orkstack<lev2::CompositingPassData> compositingpassdatastack_t;
