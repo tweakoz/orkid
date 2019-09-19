@@ -7,8 +7,8 @@ import os, string, pathlib
 
 from pathlib import Path
 
-base = Path(os.environ["ORKDOTBUILD_WORKSPACE_DIR"])
-stage = Path(os.environ["ORKDOTBUILD_STAGE_DIR"])
+base = Path(os.environ["ORKID_WORKSPACE_DIR"])
+stage = Path(os.environ["OBT_STAGE"])
 doxyoutput = stage/"doxygen"
 doxyfile = base/"ork.dox"/"Doxyfile"
 
