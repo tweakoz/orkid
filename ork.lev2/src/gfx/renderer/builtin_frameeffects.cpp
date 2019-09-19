@@ -16,7 +16,7 @@
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 
 BEGIN_ENUM_SERIALIZER(ork::lev2, EFrameEffect)
 	DECLARE_ENUM(EFRAMEFX_NONE)

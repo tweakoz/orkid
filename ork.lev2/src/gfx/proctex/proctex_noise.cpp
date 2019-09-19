@@ -11,7 +11,7 @@
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/math/polar.h>
 #include <ork/math/plane.hpp>
 

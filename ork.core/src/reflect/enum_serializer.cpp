@@ -7,7 +7,7 @@
 
 
 #include <ork/pch.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 
 namespace ork { namespace reflect {
 

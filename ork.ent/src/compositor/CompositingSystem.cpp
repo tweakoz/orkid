@@ -22,7 +22,7 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <pkg/ent/PerfController.h>
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/LightingSystem.h>

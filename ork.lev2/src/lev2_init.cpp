@@ -21,6 +21,13 @@
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
+#include "gfx/renderer/NodeCompositorVr.h"
+#include "gfx/renderer/NodeCompositorFx3.h"
+#include "gfx/renderer/NodeCompositorPtx.h"
+#include "gfx/renderer/NodeCompositorScaleBias.h"
+#include "gfx/renderer/NodeCompositorScreen.h"
+#include "gfx/renderer/NodeCompositorForward.h"
+#include "gfx/renderer/NodeCompositorDeferred.h"
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,20 +125,29 @@ void Init(const std::string& gfxlayer)
 	proctex::UvMap::GetClassStatic();
 	proctex::Kaled::GetClassStatic();
 
-	RegisterClassX(CompositingScene);
-	RegisterClassX(Fx3CompositingTechnique);
-	RegisterClassX(PassThroughCompositingNode);
+	RegisterClassX(OutputCompositingNode);
 	RegisterClassX(VrCompositingNode);
-	RegisterClassX(IdentityCompositingNode);
-	RegisterClassX(SeriesCompositingNode);
-	RegisterClassX(InsertCompositingNode);
-	RegisterClassX(Op2CompositingNode);
-	RegisterClassX(NodeCompositingTechnique);
+	RegisterClassX(ScreenOutputCompositingNode);
+
+	RegisterClassX(RenderCompositingNode);
+	RegisterClassX(ForwardCompositingNode);
+	RegisterClassX(DeferredCompositingNode);
+
+	RegisterClassX(CompositingScene);
 	RegisterClassX(CompositingData);
 	RegisterClassX(CompositingGroupEffect);
 	RegisterClassX(CompositingGroup);
 	RegisterClassX(CompositingSceneItem);
-	RegisterClassX(CompositingNode);
+
+	RegisterClassX(PostCompositingNode);
+	RegisterClassX(Fx3CompositingTechnique);
+	RegisterClassX(Fx3CompositingNode);
+	RegisterClassX(ScaleBiasCompositingNode);
+	RegisterClassX(SeriesCompositingNode);
+	RegisterClassX(PtxCompositingNode);
+	RegisterClassX(Op2CompositingNode);
+	RegisterClassX(NodeCompositingTechnique);
+
 
 	//////////////////////////////////////////
 	// register lev2 graphics target classes

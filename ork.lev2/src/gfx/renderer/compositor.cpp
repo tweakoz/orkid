@@ -21,7 +21,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingGroup, "CompositingGroup");
 ImplementReflectionX(ork::lev2::CompositingScene, "CompositingScene");

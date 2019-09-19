@@ -5,29 +5,30 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include "NodeCompositorForward.h"
+
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/vr/vr.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 
-ImplementReflectionX(ork::lev2::IdentityCompositingNode, "IdentityCompositingNode");
+ImplementReflectionX(ork::lev2::ForwardCompositingNode, "ForwardCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void IdentityCompositingNode::describeX(class_t* c) {
-  c->memberProperty("Layer",&IdentityCompositingNode::_layername);
+void ForwardCompositingNode::describeX(class_t* c) {
+  c->memberProperty("Layer",&ForwardCompositingNode::_layername);
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
-struct IdentityTechnique final : public FrameTechniqueBase {
+struct ForwardTechnique final : public FrameTechniqueBase {
   //////////////////////////////////////////////////////////////////////////////
-  IdentityTechnique(int w, int h)
+  ForwardTechnique(int w, int h)
       : FrameTechniqueBase(w, h)
       , _rtg(nullptr) {}
   //////////////////////////////////////////////////////////////////////////////
@@ -42,7 +43,7 @@ struct IdentityTechnique final : public FrameTechniqueBase {
   //////////////////////////////////////////////////////////////////////////////
   void render(FrameRenderer& renderer,
               CompositorDrawData& drawdata,
-              IdentityCompositingNode& node ) {
+              ForwardCompositingNode& node ) {
     RenderContextFrameData& framedata = renderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
 
@@ -101,26 +102,24 @@ struct IMPL {
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     _material.Init(pTARG);
-    int w     = orkidvr::device()._width;
-    int h     = orkidvr::device()._height;
-    _frametek = new IdentityTechnique(w, h);
+    _frametek = new ForwardTechnique(pTARG->GetW(),pTARG->GetH());
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
-  void _myrender(IdentityCompositingNode* node, FrameRenderer& renderer, CompositorDrawData& drawdata) {
+  void _myrender(ForwardCompositingNode* node, FrameRenderer& renderer, CompositorDrawData& drawdata) {
     _frametek->render(renderer, drawdata,*node);
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;
   CompositingMaterial _material;
-  IdentityTechnique* _frametek;
+  ForwardTechnique* _frametek;
 };
 ///////////////////////////////////////////////////////////////////////////////
-IdentityCompositingNode::IdentityCompositingNode() { _impl = std::make_shared<IMPL>(); }
+ForwardCompositingNode::ForwardCompositingNode() { _impl = std::make_shared<IMPL>(); }
 ///////////////////////////////////////////////////////////////////////////////
-IdentityCompositingNode::~IdentityCompositingNode() {}
+ForwardCompositingNode::~ForwardCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
-void IdentityCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
+void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
 {
   auto impl = _impl.Get<std::shared_ptr<IMPL>>();
   if (nullptr == impl->_frametek) {
@@ -128,7 +127,7 @@ void IdentityCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // 
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void IdentityCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* cimpl) // virtual
+void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* cimpl) // virtual
 {
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = the_renderer.framedata();
@@ -141,7 +140,7 @@ void IdentityCompositingNode::DoRender(CompositorDrawData& drawdata, Compositing
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtGroup* IdentityCompositingNode::GetOutput() const {
+RtGroup* ForwardCompositingNode::GetOutput() const {
   auto impl = _impl.Get<std::shared_ptr<IMPL>>();
   if (impl->_frametek)
     return impl->_frametek->_rtg;
