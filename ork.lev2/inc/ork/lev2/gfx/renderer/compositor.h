@@ -350,6 +350,7 @@ struct CompositingPassData {
   std::vector<PoolString> getLayerNames() const;
   const CameraData* getCamera(lev2::RenderContextFrameData& FrameData, int icamindex, int icullcamindex);
   void updateCompositingSize(int w, int h);
+  void renderPass(lev2::RenderContextFrameData& RCFD,void_lambda_t CALLBACK);
 };
 
 typedef orkstack<lev2::CompositingPassData> compositingpassdatastack_t;

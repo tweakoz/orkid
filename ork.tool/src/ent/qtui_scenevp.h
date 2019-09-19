@@ -128,8 +128,6 @@ public:
   void UpdateScene(lev2::DrawableBuffer* pdb);
 
   ///////////////////////////////////////////////////
-  void SetupLighting(lev2::HeadLightManager& hlmgr, lev2::RenderContextFrameData& fdata);
-  ///////////////////////////////////////////////////
   void DrawManip(lev2::RenderContextFrameData& fdata, lev2::GfxTarget* pProxyTarg);
   void DrawGrid(lev2::RenderContextFrameData& fdata);
   void Draw3dContent(lev2::RenderContextFrameData& FrameData);

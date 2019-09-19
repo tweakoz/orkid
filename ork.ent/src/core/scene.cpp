@@ -22,6 +22,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
+#include <pkg/ent/Lighting.h>
 
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/reflect/serialize/XMLSerializer.h>
@@ -436,6 +437,12 @@ void SceneData::cleanup(){
       auto csd = new CompositingSystemData;
       csd->defaultSetup();
       _systemDatas[csdname]=csd;
+  }
+  auto lsdname = "LightingSystemData"_pool;
+  its = _systemDatas.find(lsdname);
+  if( its == _systemDatas.end() ){
+      auto lsd = new LightingSystemData;
+      _systemDatas[lsdname]=lsd;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
