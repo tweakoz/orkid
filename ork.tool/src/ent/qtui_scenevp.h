@@ -21,11 +21,9 @@
 #include <ork/lev2/ui/ui.h>
 #include <ork/lev2/ui/viewport.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <pkg/ent/LightingSystem.h>
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
-#include <pkg/ent/LightingSystem.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <orktool/qtui/qtmainwin.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +120,6 @@ public:
   void bindToolHandler(const std::string& ToolName);
   void RegisterToolHandler(const std::string& ToolName, SceneEditorVPToolHandler* handler);
   //////////////////////
-  void SetHeadLightMode(bool bv) { mbHeadLight = bv; }
   void SaveCubeMap();
   void SetCursor(const fvec3& c) { mCursor = c; }
   void UpdateScene(lev2::DrawableBuffer* pdb);
@@ -130,7 +127,6 @@ public:
   ///////////////////////////////////////////////////
   void DrawManip(lev2::RenderContextFrameData& fdata, lev2::GfxTarget* pProxyTarg);
   void DrawGrid(lev2::RenderContextFrameData& fdata);
-  void Draw3dContent(lev2::RenderContextFrameData& FrameData);
   void DrawHUD(lev2::RenderContextFrameData& FrameData);
   void DrawSpinner(lev2::RenderContextFrameData& FrameData);
   void Init();
@@ -165,7 +161,6 @@ protected:
   msgrouter::subscriber_t _simchannelsubscriber;
   // lev2::PickBuffer<SceneEditorVP>*				mpPickBuffer;
   int miPickDirtyCount;
-  bool mbHeadLight;
   SceneEditorBase& mEditor;
 
   lev2::BasicFrameTechnique* mpBasicFrameTek;

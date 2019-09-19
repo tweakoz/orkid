@@ -99,7 +99,6 @@ SceneEditorVP::SceneEditorVP(const std::string& name, SceneEditorBase& the_ed, E
     : ui::Viewport(name, 1, 1, 1, 1, CColor3(0.0f, 0.0f, 0.0f), 1.0f)
     , mMainWindow(MainWin)
     , miPickDirtyCount(0)
-    , mbHeadLight(true)
     , mEditor(the_ed)
     , mpBasicFrameTek(0)
     , mpCurrentHandler(0)
@@ -266,10 +265,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   lev2::RenderContextFrameData RCFD;
   RCFD.SetDstRect(tgtrect);
   RCFD.SetTarget(mpTarget);
-  ////////////////////////////////////////////////
-  // FrameRenderer (and content)
-  ////////////////////////////////////////////////
-  lev2::FrameRenderer framerenderer(RCFD, [&]() { this->Draw3dContent(RCFD); });
   /////////////////////////////////////////////////////////////////////////////////
   bool compositor_enabled = isCompositorEnabled();
   /////////////////////////////////////////////////////////////////////////////////
@@ -295,6 +290,36 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->EndFrame();
     RCFD.PopRenderTarget();
   };
+  ////////////////////////////////////////////////
+  // FrameRenderer (and content)
+  ////////////////////////////////////////////////
+  lev2::FrameRenderer framerenderer(RCFD, [&]() {
+    if (false == mbSceneDisplayEnable)
+      return;
+    ///////////////////////////////////////////////////////////////////////////
+    _renderer->SetTarget(mpTarget);
+    SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
+    ///////////////////////////////////////////////////////////////////////////
+    auto NODE              = CompositingPassData::FromRCFD(RCFD);
+    NODE.updateCompositingSize(mpTarget->GetW(),mpTarget->GetH());
+    GetClearColorRef() = NODE._clearColor.xyz();
+    this->Clear();
+    if (NODE.mbDrawSource)
+      NODE.renderPass(RCFD,[&](){
+        mSceneView.UpdateRefreshPolicy(RCFD, simulation());
+        renderEnqueuedScene(RCFD);
+      });
+    ///////////////////////////////////////////////////////
+    // filth up the pick buffer
+    ///////////////////////////////////////////////////////
+    if (miPickDirtyCount > 0) {
+      if (mpPickBuffer) {
+        mpPickBuffer->SetDirty(true);
+        miPickDirtyCount--;
+      }
+    }
+    ///////////////////////////////////////////////////////
+  });
   /////////////////////////////////
   // Compositor ?
   /////////////////////////////////
@@ -337,37 +362,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
 ent::CompositingSystem* SceneEditorVP::compositingSystem() {
   auto psi = mEditor.GetActiveSimulation();
   return (psi != nullptr) ? psi->compositingSystem() : nullptr;
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& RCFD) {
-  if (false == mbSceneDisplayEnable)
-    return;
-  ///////////////////////////////////////////////////////////////////////////
-  lev2::GfxTarget* pTARG = RCFD.GetTarget();
-  _renderer->SetTarget(pTARG);
-  SetRect(pTARG->GetX(), pTARG->GetY(), pTARG->GetW(), pTARG->GetH());
-  ///////////////////////////////////////////////////////////////////////////
-  auto NODE              = CompositingPassData::FromRCFD(RCFD);
-  NODE.updateCompositingSize(pTARG->GetW(),pTARG->GetH());
-  GetClearColorRef() = NODE._clearColor.xyz();
-  this->Clear();
-  if (NODE.mbDrawSource)
-    NODE.renderPass(RCFD,[&](){
-      mSceneView.UpdateRefreshPolicy(RCFD, simulation());
-      renderEnqueuedScene(RCFD);
-    });
-  ///////////////////////////////////////////////////////
-  // filth up the pick buffer
-  ///////////////////////////////////////////////////////
-  if (miPickDirtyCount > 0) {
-    if (mpPickBuffer) {
-      mpPickBuffer->SetDirty(true);
-      miPickDirtyCount--;
-    }
-  }
-  ///////////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -472,7 +466,6 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
   if (false == FBI->IsPickState())
     DrawSpinner(RCFD);
   ///////////////////////////////////////////////////////////////////////////
-  RCFD.SetLightManager(nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////////////
