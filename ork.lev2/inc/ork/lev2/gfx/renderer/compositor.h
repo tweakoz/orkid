@@ -23,6 +23,7 @@ struct CompositingImpl;
 struct CompositingData;
 struct CompositingMorphable;
 class BuiltinFrameTechniques;
+class DrawableBuffer;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -346,6 +347,10 @@ struct CompositingPassData {
   CompositingPassData() {
     _impl.Set<void*>(nullptr);
   }
+  static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
+
+  std::vector<PoolString> getLayerNames() const;
+  const CameraData* getCamera(lev2::RenderContextFrameData& FrameData, int icamindex, int icullcamindex);
 };
 
 typedef orkstack<lev2::CompositingPassData> compositingpassdatastack_t;

@@ -29,6 +29,7 @@ class GfxWindow;
 class XgmMaterialStateInst;
 class IRenderableDag;
 class IRenderTarget;
+class DrawableBuffer;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Rendering Context Data that can change per draw instance
@@ -95,6 +96,7 @@ public:
   Texture* GetLightMap() const { return mLightMap; }
   bool IsLightMapped() const { return (mLightMap != 0); }
   bool IsVertexLit() const { return mbVertexLit; }
+
 
 private:
   int miMaterialIndex;
@@ -175,6 +177,8 @@ struct RenderContextFrameData {
   void setUserProperty(CrcString, rendervar_t data);
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
+
+  const DrawableBuffer* GetDB() const;
 
   //////////////////////////////////////
 
