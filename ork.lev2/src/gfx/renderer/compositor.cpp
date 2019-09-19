@@ -102,6 +102,22 @@ void CompositingPassData::updateCompositingSize(int w, int h) {
       ftek->update(*this,w,h);
 }
 ///////////////////////////////////////////////////////////////////////////////
+void CompositingPassData::renderPass(lev2::RenderContextFrameData& RCFD,void_lambda_t CALLBACK) {
+  lev2::GfxTarget* pTARG = RCFD.GetTarget();
+  lev2::IRenderTarget* pIT = RCFD.GetRenderTarget();
+  auto FBI = pTARG->FBI();
+  ///////////////////////////////////////////////////////////////////////////
+  RCFD.GetCameraCalcCtx().mfAspectRatio = float(pTARG->GetW()) / float(pTARG->GetH());
+  ///////////////////////////////////////////////////////////////////////////
+  SRect VPRect(0, 0, pIT->GetW(), pIT->GetH());
+  FBI->PushViewport(VPRect);
+  FBI->PushScissor(VPRect);
+      RCFD.addStandardLayers();
+      CALLBACK();
+  FBI->PopScissor();
+  FBI->PopViewport();
+}
+///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 void CompositingTechnique::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////

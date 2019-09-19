@@ -341,33 +341,23 @@ ent::CompositingSystem* SceneEditorVP::compositingSystem() {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& FrameData) {
+void SceneEditorVP::Draw3dContent(lev2::RenderContextFrameData& RCFD) {
   if (false == mbSceneDisplayEnable)
     return;
   ///////////////////////////////////////////////////////////////////////////
-  lev2::GfxTarget* pTARG = FrameData.GetTarget();
-  lev2::IRenderTarget* pIT = FrameData.GetRenderTarget();
-  auto FBI = pTARG->FBI();
-  ///////////////////////////////////////////////////////////////////////////
+  lev2::GfxTarget* pTARG = RCFD.GetTarget();
+  _renderer->SetTarget(pTARG);
   SetRect(pTARG->GetX(), pTARG->GetY(), pTARG->GetW(), pTARG->GetH());
-  FrameData.GetCameraCalcCtx().mfAspectRatio = float(pTARG->GetW()) / float(pTARG->GetH());
   ///////////////////////////////////////////////////////////////////////////
-  auto NODE              = CompositingPassData::FromRCFD(FrameData);
+  auto NODE              = CompositingPassData::FromRCFD(RCFD);
   NODE.updateCompositingSize(pTARG->GetW(),pTARG->GetH());
-  ///////////////////////////////////////////////////////////////////////////
-  SRect VPRect(0, 0, pIT->GetW(), pIT->GetH());
-  FBI->PushViewport(VPRect);
-  FBI->PushScissor(VPRect);
-      _renderer->SetTarget(pTARG);
-      FrameData.addStandardLayers();
-      const ent::Simulation* psi = simulation();
-      mSceneView.UpdateRefreshPolicy(FrameData, psi);
-      this->GetClearColorRef() = NODE._clearColor.xyz();
-      this->Clear();
-      if (NODE.mbDrawSource)
-        renderEnqueuedScene(FrameData);
-  FBI->PopScissor();
-  FBI->PopViewport();
+  GetClearColorRef() = NODE._clearColor.xyz();
+  this->Clear();
+  if (NODE.mbDrawSource)
+    NODE.renderPass(RCFD,[&](){
+      mSceneView.UpdateRefreshPolicy(RCFD, simulation());
+      renderEnqueuedScene(RCFD);
+    });
   ///////////////////////////////////////////////////////
   // filth up the pick buffer
   ///////////////////////////////////////////////////////
@@ -452,9 +442,17 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
     _editorCamera->RenderUpdate();
   }
   ManipManager().SetActiveCamera(_editorCamera);
-  ///////////////////////////////////////////////////////////////////////////
-  lev2::HeadLightManager hlmgr(RCFD);
-  SetupLighting(hlmgr, RCFD);
+  ///////////////////////////////////////////////////////////
+  // setup lighting
+  ///////////////////////////////////////////////////////////
+  if (auto lmi = sim->findSystem<ent::LightingSystem>()) {
+    ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
+    const CameraData* cdata               = RCFD.GetCameraData();
+    lightmanager.EnumerateInFrustum(cdata->GetFrustum());
+    if (lightmanager.mLightsInFrustum.size()) {
+      RCFD.SetLightManager(&lightmanager);
+    }
+  }
   ///////////////////////////////////////////////////////////////////////////
   // DrawableBuffer -> RenderQueue enqueue
   ///////////////////////////////////////////////////////////////////////////
@@ -806,30 +804,6 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
   MTXI->PopPMatrix();
   MTXI->PopVMatrix();
   MTXI->PopMMatrix();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void SceneEditorVP::SetupLighting(lev2::HeadLightManager& hlmgr, lev2::RenderContextFrameData& FrameData) {
-  ///////////////////////////////////////////////////////////
-  // setup headlight
-  ///////////////////////////////////////////////////////////
-  FrameData.SetLightManager(&hlmgr.mHeadLightManager);
-  ///////////////////////////////////////////////////////////
-  // override with lightmanager in scene if one exists
-  ///////////////////////////////////////////////////////////
-  if (mEditor.mpScene) {
-    if (mEditor.GetActiveSimulation()) {
-      if (auto lmi = mEditor.GetActiveSimulation()->findSystem<ent::LightingSystem>()) {
-        ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
-        const CameraData* cdata               = FrameData.GetCameraData();
-        lightmanager.EnumerateInFrustum(cdata->GetFrustum());
-        if (lightmanager.mLightsInFrustum.size()) {
-          FrameData.SetLightManager(&lightmanager);
-        }
-      }
-    }
-  }
 }
 
 ///////////////////////////////////////////////////////////////////////////
