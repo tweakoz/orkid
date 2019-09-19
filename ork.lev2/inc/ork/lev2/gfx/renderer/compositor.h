@@ -345,7 +345,7 @@ private:
   ork::ObjectMap mBufferMap;
   CompositingNode* _frameNode;
   CompositingNode* _postfxNode;
-  ChainCompositingNode* _outputNode;
+  CompositingNode* _outputNode;
   CompositingMaterial mCompositingMaterial;
 };
 ///////////////////////////////////////////////////////////////////////////////
