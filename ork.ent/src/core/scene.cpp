@@ -22,7 +22,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 
 #include <ork/reflect/serialize/XMLDeserializer.h>
 #include <ork/reflect/serialize/XMLSerializer.h>

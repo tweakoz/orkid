@@ -24,6 +24,7 @@ struct CompositingData;
 struct CompositingMorphable;
 class BuiltinFrameTechniques;
 class DrawableBuffer;
+class LightManager;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -434,6 +435,7 @@ public:
   inline void setPrerenderCallback(int key,prerendercallback_t cb){
     _prerendercallbacks[key]=cb;
   }
+  void bindLighting(LightManager* lmgr) { _lightmgr=lmgr; }
 
 private:
   const CompositingData& _compositingData;
@@ -441,6 +443,7 @@ private:
 
   float mfTimeAccum;
   float mfLastTime;
+  LightManager* _lightmgr = nullptr;
 
   CompositingMorphable _morphable;
 

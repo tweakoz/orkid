@@ -222,8 +222,8 @@ float CompositingImpl::currentFrameRate() const {
 
 void CompositingImpl::renderContent(lev2::FrameRenderer& the_renderer) {
   lev2::CompositorDrawData drawdata(the_renderer);
-  lev2::RenderContextFrameData& framedata = the_renderer.framedata();
-  lev2::GfxTarget* pTARG                  = framedata.GetTarget();
+  lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
+  lev2::GfxTarget* pTARG                  = RCFD.GetTarget();
   orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
   CompositingImpl* pCMCI                  = this;
 
@@ -231,15 +231,26 @@ void CompositingImpl::renderContent(lev2::FrameRenderer& the_renderer) {
 
   lev2::rendervar_t passdata;
   passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
-  the_renderer.framedata().setUserProperty("nodes"_crc, passdata);
+  RCFD.setUserProperty("nodes"_crc, passdata);
 
+  /////////////////////////////////
+  // bind lighting
+  /////////////////////////////////
+
+  if( _lightmgr ){ // WIP
+      const CameraData* cdata = RCFD.GetCameraData();
+      _lightmgr->EnumerateInFrustum(cdata->GetFrustum());
+      if (_lightmgr->mLightsInFrustum.size()) {
+        RCFD.SetLightManager(_lightmgr);
+      }
+  }
 
   /////////////////////////////////
   // Lock Drawable Buffer
   /////////////////////////////////
 
   const DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7); // mDbLock.Aquire(7);
-  framedata.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
+  RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
 
   for( auto item : _prerendercallbacks ){
     item.second(pTARG);

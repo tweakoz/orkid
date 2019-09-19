@@ -40,7 +40,7 @@
 #include <ork/kernel/future.hpp>
 #include <ork/lev2/lev2_asset.h>
 
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 #include <pkg/ent/scene.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -422,7 +422,6 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
   auto gfxtarg              = RCFD.GetTarget();
   auto FBI                  = gfxtarg->FBI();
   auto MTXI                 = gfxtarg->MTXI();
-  bool IsPickState          = FBI->IsPickState();
   ///////////////////////////////////////////////////////////////////////////
   auto NODE     = CompositingPassData::FromRCFD(RCFD);
   auto CAMDAT   = NODE.getCamera(RCFD, miCameraIndex, miCullCameraIndex);
@@ -442,17 +441,6 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
     _editorCamera->RenderUpdate();
   }
   ManipManager().SetActiveCamera(_editorCamera);
-  ///////////////////////////////////////////////////////////
-  // setup lighting
-  ///////////////////////////////////////////////////////////
-  if (auto lmi = sim->findSystem<ent::LightingSystem>()) {
-    ork::lev2::LightManager& lightmanager = lmi->GetLightManager();
-    const CameraData* cdata               = RCFD.GetCameraData();
-    lightmanager.EnumerateInFrustum(cdata->GetFrustum());
-    if (lightmanager.mLightsInFrustum.size()) {
-      RCFD.SetLightManager(&lightmanager);
-    }
-  }
   ///////////////////////////////////////////////////////////////////////////
   // DrawableBuffer -> RenderQueue enqueue
   ///////////////////////////////////////////////////////////////////////////
@@ -475,13 +463,13 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
   if (mEditor.mpScene)
     DrawManip(RCFD, gfxtarg);
   /////////////////////////////////////////
-  if (false == IsPickState)
+  if (false == FBI->IsPickState())
     DrawGrid(RCFD);
   /////////////////////////////////////////
   MTXI->PopPMatrix(); // back to ortho
   MTXI->PopVMatrix(); // back to ortho
   MTXI->PopMMatrix(); // back to ortho
-  if (false == IsPickState)
+  if (false == FBI->IsPickState())
     DrawSpinner(RCFD);
   ///////////////////////////////////////////////////////////////////////////
   RCFD.SetLightManager(nullptr);
