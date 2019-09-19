@@ -973,7 +973,7 @@ void ShadowFrameTechnique::Render( FrameRenderer & frenderer )
 		ContextData.GetRenderer().SetTarget(mpShadowBuffer->GetContext());
 		ContextData.GetRenderer().SetCamera( & ContextData.GetCamera()->mCameraData );
 		ContextData.GetScene()->SendToRenderer( & ContextData.GetRenderer(), 1 );
-		ContextData.GetRenderer().DrawQueuedRenderables();
+		ContextData.GetRenderer().drawEnqueuedRenderables();
 	}
 	mpShadowBuffer->GetContext()->PopCamera();
 	mpShadowBuffer->GetContext()->MTXI()->PopPMatrix();

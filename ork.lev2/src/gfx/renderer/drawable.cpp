@@ -62,6 +62,44 @@ RenderSyncToken DrawableBuffer::acquireRenderToken(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName,lev2::IRenderer* renderer) const {
+  lev2::GfxTarget* target                            = renderer->GetTarget();
+  const ork::lev2::RenderContextFrameData* RCFD_PREV = target->GetRenderContextFrameData();
+  ork::lev2::RenderContextFrameData RCFD_TEMP        = *RCFD_PREV;
+  /////////////////////////////////
+  // push temporary mutable framedata
+  /////////////////////////////////
+  target->SetRenderContextFrameData(&RCFD_TEMP);
+  {
+    if (RCFD_TEMP.GetCameraData()) {
+      bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
+
+      for (const auto& layer_item : mLayerLut) {
+        const PoolString& TestLayerName = layer_item.first;
+        const lev2::DrawableBufLayer* player  = layer_item.second;
+
+        bool Match = (LayerName == TestLayerName);
+
+        if (DoAll || (Match && RCFD_PREV->HasLayer(TestLayerName))) {
+          for (int id = 0; id <= player->miItemIndex; id++) {
+            const lev2::DrawableBufItem& item    = player->mDrawBufItems[id];
+            const lev2::Drawable* pdrw = item.GetDrawable();
+            if (pdrw)
+              pdrw->enqueueToRenderQueue(item, renderer);
+          }
+        }
+      }
+    }
+  }
+  /////////////////////////////////
+  // pop previous framedata
+  /////////////////////////////////
+  target->SetRenderContextFrameData(RCFD_PREV);
+  ////////////////////////////////////////////////
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void DrawableBuffer::Reset() {
   // AssertOnOpQ2( UpdateSerialOpQ() );
 
@@ -309,7 +347,7 @@ void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void ModelDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
+void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   AssertOnOpQ2(MainThreadOpQ());
   const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
   const lev2::XgmModel* Model                    = mModelInst->GetXgmModel();
@@ -488,7 +526,7 @@ void ModelDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer
             int isortkey = (isortpass << 24) | (isortoffs << 16) | imtl;
 
             renderable.SetSortKey(isortkey);
-            // orkprintf( " ModelDrawable::QueueToRenderer() rable<%p> \n", & renderable );
+            // orkprintf( " ModelDrawable::enqueueToRenderQueue() rable<%p> \n", & renderable );
 
             inumacc++;
           } else {
@@ -532,7 +570,7 @@ void CallbackDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLa
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
-void CallbackDrawable::QueueToRenderer(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
+void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   AssertOnOpQ2(MainThreadOpQ());
 
   lev2::CallbackRenderable& renderable = renderer->QueueCallback();

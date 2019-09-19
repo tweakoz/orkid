@@ -573,7 +573,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& RCFD) {
   ///////////////////////////////////////////////////////////////////////////
   auto rend = GetRenderer();
   for (const PoolString& layer_name : NODE.getLayerNames())
-      sim->enqueueBufferToRQ(rend, *DB, layer_name);
+      DB->enqueueLayerToRenderQueue( layer_name, rend );
   ///////////////////////////////////////////////////////////////////////////
   // RENDER!
   ///////////////////////////////////////////////////////////////////////////
@@ -585,7 +585,7 @@ void SceneEditorVP::RenderQueuedScene(lev2::RenderContextFrameData& RCFD) {
     MTXI->PushVMatrix(CAMCCTX.mVMatrix);
     MTXI->PushMMatrix(fmtx4::Identity);
         /////////////////////////////////////////
-        rend->DrawQueuedRenderables();
+        rend->drawEnqueuedRenderables();
         /////////////////////////////////////////
         if (mEditor.mpScene)
           DrawManip(RCFD, gfxtarg);

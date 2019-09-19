@@ -996,61 +996,6 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
-void Simulation::enqueueBufferToRQ(lev2::IRenderer* renderer,
-                                   const ork::lev2::DrawableBuffer& dbuffer,
-                                   const PoolString& LayerName) const {
-  const ork::lev2::RenderContextFrameData* pfdata = renderer->GetTarget()->GetRenderContextFrameData();
-  ork::lev2::RenderContextFrameData framedata     = *pfdata;
-  lev2::GfxTarget* pTARG                          = renderer->GetTarget();
-  /////////////////////////////////
-  // push temporary mutable framedata
-  /////////////////////////////////
-  pTARG->SetRenderContextFrameData(&framedata);
-  {
-    if (framedata.GetCameraData()) {
-      bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
-
-      for (const auto& layer_item : dbuffer.mLayerLut) {
-        const PoolString& TestLayerName = layer_item.first;
-        const lev2::DrawableBufLayer* player  = layer_item.second;
-
-        bool Match = (LayerName == TestLayerName);
-
-        if (DoAll || (Match && pfdata->HasLayer(TestLayerName))) {
-          for (int id = 0; id <= player->miItemIndex; id++) {
-            const lev2::DrawableBufItem& item    = player->mDrawBufItems[id];
-            const lev2::Drawable* pdrw = item.GetDrawable();
-            if (pdrw)
-              pdrw->QueueToRenderer(item, renderer);
-          }
-        }
-      }
-    }
-  }
-  /////////////////////////////////
-  // pop previous framedata
-  /////////////////////////////////
-  pTARG->SetRenderContextFrameData(pfdata);
-
-  ////////////////////////////////////////////////
-  static int ictr     = 0;
-  float fcurtime      = ork::OldSchool::GetRef().GetLoResTime();
-  static float lltime = fcurtime;
-  float fdelta        = fcurtime - lltime;
-  if (fdelta > 1.0f) {
-    float fps = float(ictr) / fdelta;
-    // orkprintf( "QDPS<%f>\n", fps );
-    ictr   = 0;
-    lltime = fcurtime;
-  }
-  ictr++;
-  ////////////////////////////////////////////////
-}
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ent::Entity* Simulation::FindEntity(PoolString entity) const {
   orkmap<PoolString, Entity*>::const_iterator it = mEntities.find(entity);
