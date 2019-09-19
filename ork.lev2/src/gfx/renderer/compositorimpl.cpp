@@ -112,7 +112,7 @@ void CompositingData::defaultSetup(){
   g1->_effect._effectID = EFRAMEFX_GHOSTLY;
 
   r1->_writeGroup(g1);
-  t1->_writeRoot(r1);
+  t1->_writeOutputNode(r1);
   i1->_writeTech(t1);
   s1->items().AddSorted("item1"_pool,i1);
   _activeScene = "scene1"_pool;

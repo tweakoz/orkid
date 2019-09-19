@@ -46,43 +46,81 @@ ImplementReflectionX(ork::lev2::PassThroughCompositingNode, "PassThroughComposit
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::describeX(class_t*c) {
-  ork::reflect::RegisterProperty("RootNode", &NodeCompositingTechnique::_readRoot, &NodeCompositingTechnique::_writeRoot);
-  ork::reflect::AnnotatePropertyForEditor<NodeCompositingTechnique>("RootNode", "editor.factorylistbase", "CompositingNode");
+  c->accessorProperty("FrameNode", &NodeCompositingTechnique::_readFrameNode, &NodeCompositingTechnique::_writeFrameNode)
+   ->annotate<ConstString>("editor.factorylistbase", "CompositingNode");
+  c->accessorProperty("PostFxNode", &NodeCompositingTechnique::_readPostFxNode, &NodeCompositingTechnique::_writePostFxNode)
+   ->annotate<ConstString>("editor.factorylistbase", "CompositingNode");
+  c->accessorProperty("OutputNode", &NodeCompositingTechnique::_readOutputNode, &NodeCompositingTechnique::_writeOutputNode)
+   ->annotate<ConstString>("editor.factorylistbase", "CompositingNode");
 }
 ///////////////////////////////////////////////////////////////////////////////
-NodeCompositingTechnique::NodeCompositingTechnique() : mpRootNode(nullptr) {}
+NodeCompositingTechnique::NodeCompositingTechnique()
+  : _frameNode(nullptr)
+  , _postfxNode(nullptr)
+  , _outputNode(nullptr) {}
 ///////////////////////////////////////////////////////////////////////////////
 NodeCompositingTechnique::~NodeCompositingTechnique() {
-  if (mpRootNode)
-    delete mpRootNode;
+  if (_frameNode)
+    delete _frameNode;
+  if (_postfxNode)
+    delete _postfxNode;
+  if (_outputNode)
+    delete _outputNode;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_readRoot(ork::rtti::ICastable*& val) const {
-  CompositingNode* nonconst = const_cast<CompositingNode*>(mpRootNode);
+void NodeCompositingTechnique::_readFrameNode(ork::rtti::ICastable*& val) const {
+  CompositingNode* nonconst = const_cast<CompositingNode*>(_frameNode);
   val = nonconst;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::_writeRoot(ork::rtti::ICastable* const& val) {
+void NodeCompositingTechnique::_writeFrameNode(ork::rtti::ICastable* const& val) {
   ork::rtti::ICastable* ptr = val;
-  mpRootNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
+  _frameNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
+}
+///////////////////////////////////////////////////////////////////////////////
+void NodeCompositingTechnique::_readPostFxNode(ork::rtti::ICastable*& val) const {
+  CompositingNode* nonconst = const_cast<CompositingNode*>(_postfxNode);
+  val = nonconst;
+}
+///////////////////////////////////////////////////////////////////////////////
+void NodeCompositingTechnique::_writePostFxNode(ork::rtti::ICastable* const& val) {
+  ork::rtti::ICastable* ptr = val;
+  _postfxNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
+}
+///////////////////////////////////////////////////////////////////////////////
+void NodeCompositingTechnique::_readOutputNode(ork::rtti::ICastable*& val) const {
+  CompositingNode* nonconst = const_cast<CompositingNode*>(_outputNode);
+  val = nonconst;
+}
+///////////////////////////////////////////////////////////////////////////////
+void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val) {
+  ork::rtti::ICastable* ptr = val;
+  _outputNode = ((ptr == 0) ? 0 : rtti::safe_downcast<CompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
-  if (mpRootNode) {
-    mpRootNode->Init(pTARG, w, h);
-    mCompositingMaterial.Init(pTARG);
-  }
+  if (_frameNode)
+    _frameNode->Init(pTARG, w, h);
+  if (_postfxNode)
+    _postfxNode->Init(pTARG, w, h);
+  if (_outputNode)
+    _outputNode->Init(pTARG, w, h);
+
+  mCompositingMaterial.Init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
-  if (mpRootNode) {
-    mpRootNode->Render(drawdata, pCCI);
-  }
+  if (_frameNode)
+    _frameNode->Render(drawdata, pCCI);
+  if (_postfxNode)
+    _postfxNode->Render(drawdata, pCCI);
+  if (_outputNode)
+    _outputNode->Render(drawdata, pCCI);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
-  if (mpRootNode) {
-    auto output = mpRootNode->GetOutput();
+  if (_outputNode) {
+    auto output = _outputNode->GetOutput();
     if (output) {
       auto ptex = output->GetMrt(0)->GetTexture();
       auto fbi = pT->FBI();

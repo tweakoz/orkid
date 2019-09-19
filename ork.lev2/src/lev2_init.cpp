@@ -122,6 +122,7 @@ void Init(const std::string& gfxlayer)
 	RegisterClassX(Fx3CompositingTechnique);
 	RegisterClassX(PassThroughCompositingNode);
 	RegisterClassX(VrCompositingNode);
+	RegisterClassX(IdentityCompositingNode);
 	RegisterClassX(SeriesCompositingNode);
 	RegisterClassX(InsertCompositingNode);
 	RegisterClassX(Op2CompositingNode);

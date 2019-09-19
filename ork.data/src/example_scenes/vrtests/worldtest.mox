@@ -982,12 +982,14 @@
                                                                 <property name='Technique'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='NodeCompositingTechnique' id='115'>
-                                                                            <property name='RootNode'>
+                                                                            <property name='FrameNode'><backreference id='-1'/></property>
+                                                                            <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='VrCompositingNode' id='116'>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
+                                                                            <property name='PostFxNode'><backreference id='-1'/></property>
                                                                         </object>
                                                                     </reference>
                                                                 </property>
@@ -1010,9 +1012,15 @@
                     </object>
                 </reference>
             </item>
+            <item key='LightingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='LightingSystemSystemData' id='118'>
+                    </object>
+                </reference>
+            </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='118'>
+                    <object type='ScriptSystemData' id='119'>
                     </object>
                 </reference>
             </item>
