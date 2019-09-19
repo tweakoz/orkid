@@ -134,7 +134,7 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	auto tgt = drwev.GetTarget();
 	auto mtxi = tgt->MTXI();
 	auto fbi = tgt->FBI();
-	//bool bispick = GetFrameData().IsPickMode();
+	//bool bispick = framedata().IsPickMode();
 
 	//////////////////////////////////////////////////
 	// Compute Scoll Transform

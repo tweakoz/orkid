@@ -303,7 +303,7 @@ void SceneEditorVP::SaveCubeMap()
 				pTEXTARG->BindMaterial( lev2::GfxEnv::GetDefault3DMaterial() );
 				pTEXTARG->PushModColor( fcolor4::White() );
 				{
-					mRenderer->DrawQueuedRenderables();
+					mRenderer->drawEnqueuedRenderables();
 					//ContextData.GetCamera()->AttachViewport( this );
 					//mPerspCam->draw( pTEXTARG );
 				}

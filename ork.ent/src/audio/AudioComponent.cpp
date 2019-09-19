@@ -18,7 +18,7 @@
 #include <ork/kernel/core_interface.h>
 #include <pkg/ent/event/StartAudioEffectEvent.h>
 #include <pkg/ent/event/StopSoundEvent.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 //#include <common/archetypes/player.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <ork/kernel/Array.h>

@@ -218,7 +218,7 @@
                                             <object type='EzUiCam' id='19'>
                                                 <property name='Center'>-1230.82 -676.369 781.237</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>1246.39</property>
+                                                <property name='Loc'>1245.52</property>
                                                 <property name='QuatC'>-0.0181094 -0.974133 0.18371 0.132999</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
@@ -286,7 +286,7 @@
                                                             <property name='HeightMap'>"data://terrain/testhmap2.png"</property>
                                                             <property name='Offset'>0 4.25 0</property>
                                                             <property name='Rock2Color'>0.2 0.2 0.35</property>
-                                                            <property name='SnowColor'>1 1 1.2</property>
+                                                            <property name='SnowColor'>1 1 1.5</property>
                                                             <property name='SphericalEnvMap'>
                                                                 <reference category='AssetClass'>
                                                                     "lev2tex" "data://effect_textures/NoiseKern"
@@ -982,12 +982,14 @@
                                                                 <property name='Technique'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='NodeCompositingTechnique' id='115'>
-                                                                            <property name='RootNode'>
+                                                                            <property name='FrameNode'><backreference id='-1'/></property>
+                                                                            <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='VrCompositingNode' id='116'>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
+                                                                            <property name='PostFxNode'><backreference id='-1'/></property>
                                                                         </object>
                                                                     </reference>
                                                                 </property>
@@ -1010,9 +1012,15 @@
                     </object>
                 </reference>
             </item>
+            <item key='LightingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='LightingSystemSystemData' id='118'>
+                    </object>
+                </reference>
+            </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='118'>
+                    <object type='ScriptSystemData' id='119'>
                     </object>
                 </reference>
             </item>

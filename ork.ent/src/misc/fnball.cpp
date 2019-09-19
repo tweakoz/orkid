@@ -18,7 +18,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/kernel/opq.h>

@@ -31,6 +31,15 @@ template class ork::orklut<ork::PoolString, anyp>;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD,rendercb_t cb)
+  : _framedata(RCFD)
+  , _rendercb(cb){
+}
+///////////////////////////////////////////
+void FrameRenderer::Render() {
+  _rendercb();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 IRenderTarget::IRenderTarget() {}
@@ -54,12 +63,12 @@ UiViewportRenderTarget::UiViewportRenderTarget(ui::Viewport* pVP)
 int UiViewportRenderTarget::GetW() { return mpViewport->GetW(); }
 int UiViewportRenderTarget::GetH() { return mpViewport->GetH(); }
 void UiViewportRenderTarget::BeginFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.GetFrameData();
+  RenderContextFrameData& FrameData = frenderer.framedata();
   GfxTarget* pTARG                  = FrameData.GetTarget();
   mpViewport->BeginFrame(pTARG);
 }
 void UiViewportRenderTarget::EndFrame(FrameRenderer& frenderer) {
-  RenderContextFrameData& FrameData = frenderer.GetFrameData();
+  RenderContextFrameData& FrameData = frenderer.framedata();
   GfxTarget* pTARG                  = FrameData.GetTarget();
   mpViewport->EndFrame(pTARG);
 }

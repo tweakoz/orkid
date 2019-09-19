@@ -29,6 +29,7 @@ class GfxWindow;
 class XgmMaterialStateInst;
 class IRenderableDag;
 class IRenderTarget;
+class DrawableBuffer;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Rendering Context Data that can change per draw instance
@@ -96,6 +97,7 @@ public:
   bool IsLightMapped() const { return (mLightMap != 0); }
   bool IsVertexLit() const { return mbVertexLit; }
 
+
 private:
   int miMaterialIndex;
   int miMaterialPassIndex;
@@ -156,7 +158,7 @@ struct RenderContextFrameData {
   void SetTarget(GfxTarget* ptarg);
   void SetDstRect(const SRect& rect) { mDstRect = rect; }
   void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
-
+  void setLayerName(const char* layername);
   CameraCalcContext& GetCameraCalcCtx() { return mCameraCalcCtx; }
   const CameraCalcContext& GetCameraCalcCtx() const { return mCameraCalcCtx; }
 
@@ -176,6 +178,10 @@ struct RenderContextFrameData {
   void unSetUserProperty(CrcString);
   rendervar_t getUserProperty(CrcString prop) const;
 
+  const DrawableBuffer* GetDB() const;
+
+  void addStandardLayers();
+  
   //////////////////////////////////////
 
   bool isPicking() const;

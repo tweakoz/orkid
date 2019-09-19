@@ -1271,42 +1271,52 @@
             <item key='CompositingSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='CompositingSystemData' id='221'>
-                        <property name='ActiveItem'>"i1"</property>
-                        <property name='ActiveScene'>"s1"</property>
-                        <property name='Enable'>true</property>
-                        <property name='Groups'></property>
-                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
-                        <property name='OutputFrames'>false</property>
-                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
-                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
-                        <property name='Scenes'>
-                            <item key='s1'>
-                                <reference category='ObjectClass'>
-                                    <object type='CompositingScene' id='222'>
-                                        <property name='Items'>
-                                            <item key='i1'>
-                                                <reference category='ObjectClass'>
-                                                    <object type='CompositingSceneItem' id='223'>
-                                                        <property name='Technique'>
-                                                            <reference category='ObjectClass'>
-                                                                <object type='NodeCompositingTechnique' id='224'>
-                                                                    <property name='RootNode'>
-                                                                        <reference category='ObjectClass'>
-                                                                            <object type='VrCompositingNode' id='225'>
-                                                                            </object>
-                                                                        </reference>
-                                                                    </property>
-                                                                </object>
-                                                            </reference>
-                                                        </property>
-                                                    </object>
-                                                </reference>
-                                            </item>
-                                        </property>
-                                    </object>
-                                </reference>
-                            </item>
+                        <property name='CompositorData'>
+                            <object type='CompositingData' id='222'>
+                                <property name='ActiveItem'>"i1"</property>
+                                <property name='ActiveScene'>"s1"</property>
+                                <property name='Enable'>true</property>
+                                <property name='Groups'></property>
+                                <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
+                                <property name='OutputFrames'>false</property>
+                                <property name='OutputResBase'>"EOutputRes_1280x720"</property>
+                                <property name='OutputResMult'>"EOutputResMult_Full"</property>
+                                <property name='Scenes'>
+                                    <item key='s1'>
+                                        <reference category='ObjectClass'>
+                                            <object type='CompositingScene' id='223'>
+                                                <property name='Items'>
+                                                    <item key='i1'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='CompositingSceneItem' id='224'>
+                                                                <property name='Technique'>
+                                                                    <reference category='ObjectClass'>
+                                                                        <object type='NodeCompositingTechnique' id='225'>
+                                                                            <property name='RootNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='VrCompositingNode' id='226'>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                        </object>
+                                                                    </reference>
+                                                                </property>
+                                                            </object>
+                                                        </reference>
+                                                    </item>
+                                                </property>
+                                            </object>
+                                        </reference>
+                                    </item>
+                                </property>
+                            </object>
                         </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='LightingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='LightingSystemSystemData' id='227'>
                     </object>
                 </reference>
             </item>

@@ -14,8 +14,6 @@
 #include <orktool/toolcore/choiceman.h>
 #include <orktool/toolcore/selection.h>
 
-#include "EditorCamera.h"
-
 //#include <boost/python.hpp>
 
 // extern "C" void xmlInitParser(); // must init libxml in main thread
@@ -60,9 +58,6 @@ void LinkMe() {
   ork::rtti::Link<ork::ent::EntArchReRef>();
   ork::rtti::Link<ork::ent::EntArchSplit>();
 
-  ent::EditorCamArchetype::GetClassStatic();
-  ent::EditorCamControllerData::GetClassStatic();
-  ent::EditorCamControllerInst::GetClassStatic();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -8,9 +8,12 @@
 #pragma once
 
 #include <ork/dataflow/dataflow.h>
-#include "renderer/builtin_frameeffects.h"
+#include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
+#include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/renderer/frametek.h>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 
 class CompositingGroup;
 class CompositingSceneItem;
@@ -19,49 +22,9 @@ struct CompositingContext;
 struct CompositingImpl;
 struct CompositingData;
 struct CompositingMorphable;
-
-///////////////////////////////////////////////////////////////////////////////
-
-enum EOutputTimeStep {
-  EOutputTimeStep_RealTime = 0,
-  EOutputTimeStep_15fps,
-  EOutputTimeStep_24fps,
-  EOutputTimeStep_30fps,
-  EOutputTimeStep_48fps,
-  EOutputTimeStep_60fps,
-  EOutputTimeStep_72fps,
-  EOutputTimeStep_96fps,
-  EOutputTimeStep_120fps,
-  EOutputTimeStep_240fps,
-};
-
-enum EOutputRes {
-  EOutputRes_640x480 = 0,
-  EOutputRes_960x640,
-  EOutputRes_1024x1024,
-  EOutputRes_1280x720,
-  EOutputRes_1600x1200,
-  EOutputRes_1920x1080,
-};
-
-enum EOutputResMult {
-  EOutputResMult_Quarter = 0,
-  EOutputResMult_Half,
-  EOutputResMult_Full,
-  EOutputResMult_Double,
-  EOutputResMult_Quadruple,
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-enum ECOMPOSITEBlend {
-  BoverAplusC = 0,
-  AplusBplusC,
-  AlerpBwithC,
-  Asolo,
-  Bsolo,
-  Csolo,
-};
+class BuiltinFrameTechniques;
+class DrawableBuffer;
+class LightManager;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -71,10 +34,11 @@ class CompositingScene : public ork::Object {
 public:
   CompositingScene();
 
-  const orklut<PoolString, ork::Object*>& GetItems() const { return mItems; }
+  const orklut<PoolString, ork::Object*>& items() const { return _items; }
+  orklut<PoolString, ork::Object*>& items() { return _items; }
 
 private:
-  orklut<PoolString, ork::Object*> mItems;
+  orklut<PoolString, ork::Object*> _items;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -157,61 +121,6 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
-class Fx3CompositingTechnique : public CompositingTechnique {
-  DeclareConcreteX(Fx3CompositingTechnique, CompositingTechnique);
-
-public:
-  Fx3CompositingTechnique();
-  ~Fx3CompositingTechnique();
-
-  void CompositeLayerToScreen(lev2::GfxTarget* pT, CompositingContext& cctx, ECOMPOSITEBlend eblend, lev2::RtGroup* psrcgroupA,
-                              lev2::RtGroup* psrcgroupB, lev2::RtGroup* psrcgroupC, float levA, float levB, float levC);
-
-  const PoolString& GetGroupA() const { return mGroupA; }
-  const PoolString& GetGroupB() const { return mGroupB; }
-  const PoolString& GetGroupC() const { return mGroupC; }
-
-  float GetLevelA() const { return mfLevelA; }
-  float GetLevelB() const { return mfLevelB; }
-  float GetLevelC() const { return mfLevelC; }
-
-  ECOMPOSITEBlend GetBlendMode() const { return meBlendMode; }
-
-  lev2::BuiltinFrameTechniques* mpBuiltinFrameTekA;
-  lev2::BuiltinFrameTechniques* mpBuiltinFrameTekB;
-  lev2::BuiltinFrameTechniques* mpBuiltinFrameTekC;
-  ECOMPOSITEBlend meBlendMode;
-  PoolString mGroupA;
-  PoolString mGroupB;
-  PoolString mGroupC;
-  float mfLevelA;
-  float mfLevelB;
-  float mfLevelC;
-  CompositingMaterial mCompositingMaterial;
-
-private:
-  void Init(lev2::GfxTarget* pTARG, int w, int h) final;                                                     // virtual
-  void Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;                              // virtual
-  void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) final; // virtual
-};
-
-///////////////////////////////////////////////////////////////////////////////
-class CompositingNode : public ork::Object {
-  DeclareAbstractX(CompositingNode, ork::Object);
-
-public:
-  CompositingNode();
-  ~CompositingNode();
-  void Init(lev2::GfxTarget* pTARG, int w, int h);
-  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
-  virtual lev2::RtGroup* GetOutput() const { return nullptr; }
-
-private:
-  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
-  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
-};
-///////////////////////////////////////////////////////////////////////////////
 class CompositingBuffer : public ork::Object {
   int miWidth;
   int miHeight;
@@ -221,44 +130,56 @@ class CompositingBuffer : public ork::Object {
   ~CompositingBuffer();
 };
 ///////////////////////////////////////////////////////////////////////////////
-class PassThroughCompositingNode : public CompositingNode {
-  DeclareConcreteX(PassThroughCompositingNode, CompositingNode);
+class OutputCompositingNode : public ork::Object {
+  DeclareAbstractX(OutputCompositingNode, ork::Object);
 
 public:
-  PassThroughCompositingNode();
-  ~PassThroughCompositingNode();
+  OutputCompositingNode();
+  ~OutputCompositingNode();
+  void Init(lev2::GfxTarget* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
-
-  void _readGroup(ork::rtti::ICastable*& val) const;
-  void _writeGroup(ork::rtti::ICastable* const& val);
-  lev2::RtGroup* GetOutput() const final;
-
-  CompositingMaterial mCompositingMaterial;
-  CompositingGroup* mGroup;
-  lev2::BuiltinFrameTechniques* mFTEK;
+  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class VrCompositingNode : public CompositingNode {
-  DeclareConcreteX(VrCompositingNode, CompositingNode);
+class RenderCompositingNode : public ork::Object {
+  DeclareAbstractX(RenderCompositingNode, ork::Object);
 
 public:
-  VrCompositingNode();
-  ~VrCompositingNode();
+  RenderCompositingNode();
+  ~RenderCompositingNode();
+  void Init(lev2::GfxTarget* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
+  virtual lev2::RtGroup* GetOutput() const { return nullptr; }
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
-
-  lev2::RtGroup* GetOutput() const final;
-
-  svar256_t _impl;
+  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class SeriesCompositingNode : public CompositingNode {
-  DeclareConcreteX(SeriesCompositingNode, CompositingNode);
+class PostCompositingNode : public ork::Object {
+  DeclareAbstractX(PostCompositingNode, ork::Object);
+
+public:
+  PostCompositingNode();
+  ~PostCompositingNode();
+  void Init(lev2::GfxTarget* pTARG, int w, int h);
+  void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
+  virtual lev2::RtGroup* GetOutput() const { return nullptr; }
+
+private:
+  virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
+  virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
+};
+///////////////////////////////////////////////////////////////////////////////
+class ChainCompositingNode : public PostCompositingNode {
+  DeclareAbstractX(ChainCompositingNode, PostCompositingNode);
+};
+///////////////////////////////////////////////////////////////////////////////
+class SeriesCompositingNode : public PostCompositingNode {
+  DeclareConcreteX(SeriesCompositingNode, PostCompositingNode);
 
 public:
   SeriesCompositingNode();
@@ -274,49 +195,13 @@ private:
   lev2::RtGroup* GetOutput() const final;
 
   CompositingMaterial mCompositingMaterial;
-  CompositingNode* mNode;
+  PostCompositingNode* mNode;
   lev2::RtGroup* mOutput;
   lev2::BuiltinFrameTechniques* mFTEK;
 };
 ///////////////////////////////////////////////////////////////////////////////
-class InsertCompositingNode : public CompositingNode {
-  DeclareConcreteX(InsertCompositingNode, CompositingNode);
-
-public:
-  InsertCompositingNode();
-  ~InsertCompositingNode();
-
-private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
-
-  void GetNode(ork::rtti::ICastable*& val) const;
-  void SetNode(ork::rtti::ICastable* const& val);
-  void SetTextureAccessor(ork::rtti::ICastable* const& tex);
-  void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
-
-  lev2::RtGroup* GetOutput() const final;
-
-  CompositingMaterial mCompositingMaterial;
-  CompositingNode* mNode;
-  lev2::RtGroup* mOutput;
-  lev2::BuiltinFrameTechniques* mFTEK;
-  ork::lev2::TextureAsset* mReturnTexture;
-  ork::lev2::TextureAsset* mSendTexture;
-  ork::PoolString mDynTexPath;
-};
-///////////////////////////////////////////////////////////////////////////////
-enum EOp2CompositeMode {
-  Op2AsumB = 0,
-  Op2AmulB,
-  Op2AdivB,
-  Op2BoverA,
-  Op2AoverB,
-  Op2Asolo,
-  Op2Bsolo,
-};
-class Op2CompositingNode : public CompositingNode {
-  DeclareConcreteX(Op2CompositingNode, CompositingNode);
+class Op2CompositingNode : public PostCompositingNode {
+  DeclareConcreteX(Op2CompositingNode, PostCompositingNode);
 
 public:
   Op2CompositingNode();
@@ -331,8 +216,8 @@ private:
   void SetNodeB(ork::rtti::ICastable* const& val);
   lev2::RtGroup* GetOutput() const override { return mOutput; }
 
-  CompositingNode* mSubA;
-  CompositingNode* mSubB;
+  PostCompositingNode* mSubA;
+  PostCompositingNode* mSubB;
   CompositingMaterial mCompositingMaterial;
   lev2::RtGroup* mOutput;
   EOp2CompositeMode mMode;
@@ -349,16 +234,23 @@ public:
   NodeCompositingTechnique();
   ~NodeCompositingTechnique();
 
+  void _readRenderNode(ork::rtti::ICastable*& val) const;
+  void _writeRenderNode(ork::rtti::ICastable* const& val);
+  void _readPostFxNode(ork::rtti::ICastable*& val) const;
+  void _writePostFxNode(ork::rtti::ICastable* const& val);
+  void _readOutputNode(ork::rtti::ICastable*& val) const;
+  void _writeOutputNode(ork::rtti::ICastable* const& val);
+
 private:
   void Init(lev2::GfxTarget* pTARG, int w, int h) override;                                                     // virtual
   void Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;                              // virtual
   void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) override; // virtual
   //
-  void GetRoot(ork::rtti::ICastable*& val) const;
-  void SetRoot(ork::rtti::ICastable* const& val);
 
   ork::ObjectMap mBufferMap;
-  CompositingNode* mpRootNode;
+  RenderCompositingNode* _renderNode;
+  PostCompositingNode* _postfxNode;
+  OutputCompositingNode* _outputNode;
   CompositingMaterial mCompositingMaterial;
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -381,18 +273,24 @@ struct CompositingContext {
 ///////////////////////////////////////////////////////////////////////////
 
 struct CompositingPassData {
-  const CompositingGroup* mpGroup;
-  lev2::FrameTechniqueBase* mpFrameTek;
-  bool mbDrawSource;
-  const PoolString* mpCameraName;
-  const PoolString* mpLayerName;
+  const CompositingGroup* mpGroup = nullptr;
+  lev2::FrameTechniqueBase* mpFrameTek = nullptr;
+  bool mbDrawSource = true;
+  const PoolString* mpCameraName = nullptr;
+  const PoolString* mpLayerName = nullptr;
   ork::svarp_t _impl;
   ork::fvec4 _clearColor;
-
-  CompositingPassData() : mpGroup(0), mpFrameTek(0), mbDrawSource(true), mpCameraName(0), mpLayerName(0) {
+  CompositingPassData() {
     _impl.Set<void*>(nullptr);
   }
+  static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
+  std::vector<PoolString> getLayerNames() const;
+  const CameraData* getCamera(lev2::RenderContextFrameData& FrameData, int icamindex, int icullcamindex);
+  void updateCompositingSize(int w, int h);
+  void renderPass(lev2::RenderContextFrameData& RCFD,void_lambda_t CALLBACK);
 };
+
+typedef orkstack<lev2::CompositingPassData> compositingpassdatastack_t;
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -413,11 +311,13 @@ public:
   CompositingData();
   ///////////////////////////////////////////////////////
 
-  const orklut<PoolString, ork::Object*>& GetGroups() const { return mCompositingGroups; }
-  const orklut<PoolString, ork::Object*>& GetScenes() const { return mScenes; }
+  void defaultSetup();
 
-  PoolString& GetActiveScene() const { return mActiveScene; }
-  PoolString& GetActiveItem() const { return mActiveItem; }
+  const orklut<PoolString, ork::Object*>& GetGroups() const { return _groups; }
+  const orklut<PoolString, ork::Object*>& GetScenes() const { return _scenes; }
+
+  PoolString& GetActiveScene() const { return _activeScene; }
+  PoolString& GetActiveItem() const { return _activeItem; }
 
   bool IsEnabled() const { return mbEnable && mToggle; }
   bool IsOutputFramesEnabled() const { return mbOutputFrames; }
@@ -425,11 +325,10 @@ public:
 
   void Toggle() const { mToggle = !mToggle; }
 
-private:
-  orklut<PoolString, ork::Object*> mCompositingGroups;
-  orklut<PoolString, ork::Object*> mScenes;
-  mutable PoolString mActiveScene;
-  mutable PoolString mActiveItem;
+  orklut<PoolString, ork::Object*> _groups;
+  orklut<PoolString, ork::Object*> _scenes;
+  mutable PoolString _activeScene;
+  mutable PoolString _activeItem;
   mutable bool mToggle;
   bool mbEnable;
   bool mbOutputFrames;
@@ -450,7 +349,7 @@ public:
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
-  void Draw(CompositorDrawData& drawdata);
+  void renderContent(lev2::FrameRenderer& framerenderer);
   void composeToScreen(lev2::GfxTarget* pT);
 
   const CompositingData& compositingData() const { return _compositingData; }
@@ -472,6 +371,7 @@ public:
   inline void setPrerenderCallback(int key,prerendercallback_t cb){
     _prerendercallbacks[key]=cb;
   }
+  void bindLighting(LightManager* lmgr) { _lightmgr=lmgr; }
 
 private:
   const CompositingData& _compositingData;
@@ -479,6 +379,7 @@ private:
 
   float mfTimeAccum;
   float mfLastTime;
+  LightManager* _lightmgr = nullptr;
 
   CompositingMorphable _morphable;
 
@@ -497,46 +398,42 @@ public:
   ///////////////////////////////////////////////////////
   CompositingGroupEffect();
 
-  EFrameEffect GetFrameEffect() const { return meFrameEffect; }
-  float GetEffectAmount() const { return mfEffectAmount; }
-  float GetFeedbackAmount() const { return mfFeedbackAmount; }
-  float GetFinalRezScale() const { return mfFinalResMult; }
-  float GetFxRezScale() const { return mfFxResMult; }
+  EFrameEffect GetFrameEffect() const { return _effectID; }
+  float GetEffectAmount() const { return _effectAmount; }
+  float GetFeedbackAmount() const { return _feedbackLevel; }
+  float GetFinalRezScale() const { return _finalResolution; }
+  float GetFxRezScale() const { return _fxResolution; }
   const char* GetEffectName() const;
   Texture* GetFbUvMap() const;
-  bool IsPostFxFeedback() const { return mbPostFxFeedback; }
+  bool IsPostFxFeedback() const { return _postFxFeedback; }
 
-private:
+  EFrameEffect _effectID;
+  TextureAsset* _texture;
+  float _feedbackLevel;
+  float _fxResolution;
+  float _finalResolution;
+  bool _postFxFeedback;
+  float _effectAmount;
+
   void _writeTex(rtti::ICastable* const& tex);
+private:
   void _readTex(rtti::ICastable*& tex) const;
 
-  EFrameEffect meFrameEffect;
-  TextureAsset* mTexture;
-  float mfEffectAmount;
-  float mfFeedbackAmount;
-  float mfFxResMult;
-  float mfFinalResMult;
-  bool mbPostFxFeedback;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CompositingGroup : public ork::Object {
+struct CompositingGroup : public ork::Object {
   DeclareConcreteX(CompositingGroup, ork::Object);
 
 public:
   CompositingGroup();
 
-  const PoolString& GetCameraName() const { return mCameraName; }
-  const PoolString& GetLayers() const { return mLayers; }
-  const CompositingGroupEffect& GetEffect() const { return mEffect; }
+  PoolString _cameraName;
+  PoolString _layers;
+  CompositingGroupEffect _effect;
 
-private:
-  PoolString mCameraName;
-  PoolString mLayers;
-  CompositingGroupEffect mEffect;
-
-  ork::Object* EffectAccessor() { return &mEffect; }
+  ork::Object* _accessEffect() { return &_effect; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -548,13 +445,12 @@ public:
   CompositingSceneItem();
 
   CompositingTechnique* GetTechnique() const { return mpTechnique; }
+  void _readTech(ork::rtti::ICastable*& val) const;
+  void _writeTech(ork::rtti::ICastable* const& val);
 
-private:
-  void GetTech(ork::rtti::ICastable*& val) const;
-  void SetTech(ork::rtti::ICastable* const& val);
 
   CompositingTechnique* mpTechnique;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::ent
+} // namespace ork::lev2 {

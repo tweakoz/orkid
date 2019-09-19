@@ -14,7 +14,7 @@
 #include <ork/reflect/IObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <ork/kernel/orklut.hpp>
 #include <ork/kernel/fixedlut.hpp>
 

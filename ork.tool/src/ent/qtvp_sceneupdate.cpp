@@ -39,7 +39,7 @@
 #include <ork/kernel/future.hpp>
 #include <ork/lev2/lev2_asset.h>
 
-#include <pkg/ent/Lighting.h>
+#include <pkg/ent/LightingSystem.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -48,8 +48,6 @@ using namespace ork::lev2;
 namespace ork { namespace ent {
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(_THREADED_RENDERER)
 
 UpdateThread::UpdateThread(SceneEditorVP* pVP) : mpVP(pVP), mbEXITING(false) {}
 
@@ -91,31 +89,25 @@ void UpdateThread::run() // virtual
         gUpdateStatus.SetState(EUPD_RUNNING);
         break;
       case EUPD_RUNNING: {
-        // ork::PerfMarkerPush( "ork.begin_update" );
         auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
-        {
-          OrkAssert(dbuf);
-
-          auto psi = (ent::Simulation*) mpVP->simulation();
-          if (psi) {
-            auto compsys = psi->compositingSystem();
-            float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
-            bool externally_fixed_rate = (frame_rate != 0.0f);
-
-            if (externally_fixed_rate) {
-              lev2::RenderSyncToken syntok;
-              if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
-                syntok.mFrameIndex++;
-                psi->Update();
-                lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
-              }
-            } else
-              psi->Update();
-          }
-          mpVP->enqueueSimulationDrawables(dbuf);
-        }
+            OrkAssert(dbuf);
+            auto simulation = (ent::Simulation*) mpVP->simulation();
+            if (simulation) {
+              auto compsys = simulation->compositingSystem();
+              float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
+              bool externally_fixed_rate = (frame_rate != 0.0f);
+              if (externally_fixed_rate) {
+                lev2::RenderSyncToken syntok;
+                if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
+                  syntok.mFrameIndex++;
+                  simulation->Update();
+                  lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
+                }
+              } else
+              simulation->Update();
+              simulation->enqueueDrawablesToBuffer(*dbuf);
+            }
         ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
-        // ork::PerfMarkerPush( "ork.end_update" );
         break;
       }
       case EUPD_STOP:
@@ -132,58 +124,6 @@ void UpdateThread::run() // virtual
     ////////////////////////////////////////////////
     ork::msleep(1);
   }
-}
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool SceneEditorVP::DoNotify(const ork::event::Event* pev) {
-  const ork::ent::SimulationEvent* sei = ork::rtti::autocast(pev);
-
-  if (sei) {
-    switch (sei->GetEvent()) {
-      case ork::ent::SimulationEvent::ESIEV_DISABLE_UPDATE: {
-        auto lamb = [=]() { gUpdateStatus.SetState(EUPD_STOP); };
-        Op(lamb).QueueASync(UpdateSerialOpQ());
-        break;
-      }
-      case ork::ent::SimulationEvent::ESIEV_ENABLE_UPDATE: {
-        auto lamb = [=]() { gUpdateStatus.SetState(EUPD_START); };
-        Op(lamb).QueueASync(UpdateSerialOpQ());
-        break;
-      }
-      case ork::ent::SimulationEvent::ESIEV_DISABLE_VIEW: {
-        auto lamb = [=]() {
-          this->DisableSceneDisplay();
-          //#disable path that would lead to gfx globallock
-          //# maybe show a "loading" screen or something
-        };
-        Op(lamb).QueueASync(MainThreadOpQ());
-        // mDbLock.ReleaseCurrent();
-        break;
-      }
-      case ork::ent::SimulationEvent::ESIEV_ENABLE_VIEW: {
-        auto lamb = [=]() {
-          this->EnableSceneDisplay();
-          //#disable path that would lead to gfx globallock
-          //# maybe show a "loading" screen or something
-        };
-        Op(lamb).QueueASync(MainThreadOpQ());
-        // mDbLock.ReleaseCurrent();
-        break;
-      }
-      case ork::ent::SimulationEvent::ESIEV_BIND:
-        // mDbLock.ReleaseCurrent();
-        break;
-      case ork::ent::SimulationEvent::ESIEV_START:
-        break;
-      case ork::ent::SimulationEvent::ESIEV_STOP:
-        break;
-      case ork::ent::SimulationEvent::ESIEV_USER:
-        break;
-    }
-  }
-  return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

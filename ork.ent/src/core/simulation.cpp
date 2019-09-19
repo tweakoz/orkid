@@ -7,7 +7,6 @@
 
 #include <ork/application/application.h>
 #include <ork/asset/AssetManager.h>
-#include <ork/event/EventListener.h>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/string/string.h>
@@ -351,8 +350,7 @@ void Simulation::_stage() {
 
   ServiceDeactivateQueue();
 
-  SimulationEvent outev(this, SimulationEvent::ESIEV_START);
-  ork::Application::GetContext()->Notify(&outev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(this, SimulationEvent::ESIEV_START);
   lev2::DrawableBuffer::EndClearAndSyncReaders();
 
   lev2::RenderSyncToken rentok;
@@ -395,9 +393,7 @@ void Simulation::EnterEditState() {
   lev2::DrawableBuffer::BeginClearAndSyncReaders();
   AssertOnOpQ2(UpdateSerialOpQ());
 
-  SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
-
-  ork::event::Broadcaster::GetRef().BroadcastNotifyOnChannel(&bindev, EventChannel());
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(this, SimulationEvent::ESIEV_BIND);
 
   LeaveRunMode();
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
@@ -435,8 +431,7 @@ void Simulation::EnterRunState() {
 
   AllocationLabel label("Simulation::EnterRunState::255");
 
-  SimulationEvent bindev(this, SimulationEvent::ESIEV_BIND);
-  ork::Application::GetContext()->Notify(&bindev);
+  msgrouter::channel("Simulation")->postType<SimulationEvent>(this, SimulationEvent::ESIEV_BIND);
 
   ork::lev2::AudioDevice::GetDevice()->StopAllVoices();
 
@@ -997,61 +992,6 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
     sys.second->enqueueDrawables(buffer);
 
   ////////////////////////////////////////////////////////////////
-}
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
-void Simulation::RenderDrawableBuffer(lev2::IRenderer* renderer,
-                                      const ork::lev2::DrawableBuffer& dbuffer,
-                                      const PoolString& LayerName) const {
-  const ork::lev2::RenderContextFrameData* pfdata = renderer->GetTarget()->GetRenderContextFrameData();
-  ork::lev2::RenderContextFrameData framedata     = *pfdata;
-  lev2::GfxTarget* pTARG                          = renderer->GetTarget();
-  /////////////////////////////////
-  // push temporary mutable framedata
-  /////////////////////////////////
-  pTARG->SetRenderContextFrameData(&framedata);
-  {
-    if (framedata.GetCameraData()) {
-      bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
-
-      for (const auto& layer_item : dbuffer.mLayerLut) {
-        const PoolString& TestLayerName = layer_item.first;
-        const lev2::DrawableBufLayer* player  = layer_item.second;
-
-        bool Match = (LayerName == TestLayerName);
-
-        if (DoAll || (Match && pfdata->HasLayer(TestLayerName))) {
-          for (int id = 0; id <= player->miItemIndex; id++) {
-            const lev2::DrawableBufItem& item    = player->mDrawBufItems[id];
-            const lev2::Drawable* pdrw = item.GetDrawable();
-            if (pdrw)
-              pdrw->QueueToRenderer(item, renderer);
-          }
-        }
-      }
-    }
-  }
-  /////////////////////////////////
-  // pop previous framedata
-  /////////////////////////////////
-  pTARG->SetRenderContextFrameData(pfdata);
-
-  ////////////////////////////////////////////////
-  static int ictr     = 0;
-  float fcurtime      = ork::OldSchool::GetRef().GetLoResTime();
-  static float lltime = fcurtime;
-  float fdelta        = fcurtime - lltime;
-  if (fdelta > 1.0f) {
-    float fps = float(ictr) / fdelta;
-    // orkprintf( "QDPS<%f>\n", fps );
-    ictr   = 0;
-    lltime = fcurtime;
-  }
-  ictr++;
-  ////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////

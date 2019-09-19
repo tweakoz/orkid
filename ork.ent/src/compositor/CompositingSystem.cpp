@@ -22,9 +22,10 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <pkg/ent/PerfController.h>
 #include <pkg/ent/CompositingSystem.h>
+#include <pkg/ent/LightingSystem.h>
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSystemData, "CompositingSystemData");
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,6 +45,10 @@ void CompositingSystemData::Describe()
 
 CompositingSystemData::CompositingSystemData()
 {
+}
+
+void CompositingSystemData::defaultSetup(){
+  _compositingData.defaultSetup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,20 +88,45 @@ void CompositingSystem::DoUpdate(Simulation* psim) {
     _vrstate++;
   }
   if( _vrstate==2 and _prv_vrstate<2 ){
-    _impl.setPrerenderCallback(0,[=](lev2::GfxTarget*targ){
-          fmtx4 playermtx = _playerspawn->GetEffectiveMatrix();
-          auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
-          if( frame_data ){
-            frame_data->setUserProperty("vrroot"_crc,playermtx);
-            frame_data->setUserProperty("vrcam"_crc,_vrcam);
-          }
-    });
+    if( _playerspawn and _vrcam ){
+      _impl.setPrerenderCallback(0,[=](lev2::GfxTarget*targ){
+            fmtx4 playermtx = _playerspawn->GetEffectiveMatrix();
+            auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
+            if( frame_data ){
+              frame_data->setUserProperty("vrroot"_crc,playermtx);
+              frame_data->setUserProperty("vrcam"_crc,_vrcam);
+            }
+      });
+    }
   }
 
   _prv_vrstate =   _vrstate;
 
-
 }
+
+bool CompositingSystem::DoLink(Simulation* psi) {
+  if( auto lsys = psi->findSystem<LightingSystem>() ){
+    _impl.bindLighting(&lsys->GetLightManager());
+  }
+  return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const lev2::CompositingGroup* CompositingSystem::compositingGroup(int igrp) const {
+  const lev2::CompositingGroup* pCG = 0;
+  const lev2::CompositingData& CDATA = _impl.compositingData();
+  auto& Groups                 = CDATA.GetGroups();
+  int inumgroups               = Groups.size();
+  if (inumgroups && igrp >= 0) {
+    int idx           = igrp % inumgroups;
+    ork::Object* pOBJ = Groups.GetItemAtIndex(idx).second;
+    if (pOBJ)
+      pCG = rtti::autocast(pOBJ);
+  }
+  return pCG;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork { namespace ent {

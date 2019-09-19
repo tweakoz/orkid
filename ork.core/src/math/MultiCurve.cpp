@@ -12,7 +12,7 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/DirectObjectVectorPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include <math.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::MultiCurve1D,"MultiCurve1D");

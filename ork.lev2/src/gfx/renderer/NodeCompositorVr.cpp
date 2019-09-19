@@ -5,22 +5,20 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/compositor.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
+#include "NodeCompositorVr.h"
+#include <ork/application/application.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/vr/vr.h>
-#include <ork/pch.h>
-#include <ork/reflect/RegisterProperty.h>
-#include <ork/lev2/gfx/compositor.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/application/application.h>
+#include <ork/lev2/gfx/gfxprimitives.h>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::describeX(class_t*c) {}
+void VrCompositingNode::describeX(class_t*c) {
+}
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -28,9 +26,10 @@ constexpr int NUMSAMPLES = 1;
 
 struct VrFrameTechnique final : public FrameTechniqueBase {
   //////////////////////////////////////////////////////////////////////////////
-  VrFrameTechnique(int w, int h)
+  VrFrameTechnique(VrCompositingNode* node, int w, int h)
       : FrameTechniqueBase(w, h)
-      , _rtg(nullptr) {}
+      , _rtg(nullptr)
+      , _vrcnode(node){}
   //////////////////////////////////////////////////////////////////////////////
   void DoInit(GfxTarget* pTARG) final {
     if (nullptr == _rtg) {
@@ -89,7 +88,7 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
                       CameraData* lcam,
                       CameraData* rcam,
                       const std::map<int, orkidvr::ControllerState>& controllers) {
-    RenderContextFrameData& framedata = renderer.GetFrameData();
+    RenderContextFrameData& framedata = renderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
 
     SRect tgt_rect(0, 0, miW, miH);
@@ -149,13 +148,15 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
   BuiltinFrameEffectMaterial _effect;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
+  VrCompositingNode* _vrcnode = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 struct VRIMPL {
   ///////////////////////////////////////
-  VRIMPL()
-      : _frametek(nullptr)
+  VRIMPL(VrCompositingNode*node)
+      : _vrnode(node)
+      , _frametek(nullptr)
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {}
   ///////////////////////////////////////
@@ -168,13 +169,13 @@ struct VRIMPL {
     _material.Init(pTARG);
     int w     = orkidvr::device()._width;
     int h     = orkidvr::device()._height;
-    _frametek = new VrFrameTechnique(w*2, h);
+    _frametek = new VrFrameTechnique(_vrnode,w*2, h);
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
   void _myrender(FrameRenderer& renderer, CompositorDrawData& drawdata, fmtx4 rootmatrix) {
 
-    RenderContextFrameData& framedata = renderer.GetFrameData();
+    RenderContextFrameData& framedata = renderer.framedata();
     auto vrroot = framedata.getUserProperty("vrroot"_crc);
     if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
       orkidvr::gpuUpdate(as_mtx.value());
@@ -193,9 +194,10 @@ struct VRIMPL {
   PoolString _camname, _layers;
   CompositingMaterial _material;
   VrFrameTechnique* _frametek;
+  VrCompositingNode* _vrnode = nullptr;
 };
 ///////////////////////////////////////////////////////////////////////////////
-VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(); }
+VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(this); }
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::~VrCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
@@ -211,7 +213,7 @@ void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtua
 void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* impl) // virtual
 {
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = the_renderer.GetFrameData();
+  RenderContextFrameData& framedata = the_renderer.framedata();
   auto targ                               = framedata.GetTarget();
 
   auto vrimpl                 = _impl.Get<std::shared_ptr<VRIMPL>>();
@@ -242,9 +244,7 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
     // render eyes
     /////////////////////////////////////////////////////////////////////////////
 
-    rendervar_t passdata;
-    passdata.Set<const char*>("All");
-    framedata.setUserProperty("pass"_crc, passdata);
+    framedata.setLayerName("All");
     vrimpl->_myrender(the_renderer, drawdata, rootmatrix);
 
     /////////////////////////////////////////////////////////////////////////////
@@ -253,6 +253,9 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
 
     auto buffer = vrimpl->_frametek->_rtg->GetMrt(0);
     assert(buffer != nullptr);
+
+    /////////////////////////////////////////////////////////////////////////////
+
     auto tex = buffer->GetTexture();
     if (tex) {
       orkidvr::composite(targ, tex);
@@ -260,14 +263,6 @@ void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* 
 
     /////////////////////////////////////////////////////////////////////////////
   }
-}
-///////////////////////////////////////////////////////////////////////////////
-RtGroup* VrCompositingNode::GetOutput() const {
-  auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
-  if (vrimpl->_frametek)
-    return vrimpl->_frametek->_rtg;
-  else
-    return nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

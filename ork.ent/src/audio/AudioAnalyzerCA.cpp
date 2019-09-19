@@ -28,7 +28,7 @@
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/AudioAnalyzer.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 #include "CARingBuffer.h"
 #include "CAStreamBasicDescription.h"
 #include <libkern/OSAtomic.h>

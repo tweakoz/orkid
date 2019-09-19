@@ -7,22 +7,12 @@
 
 #pragma once
 
-#include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/gfx/renderer/rendercontext.h>
-#include <ork/lev2/gfx/gfxmaterial_test.h>
-#include <ork/lev2/gfx/renderer/frametek.h>
+#include "renderer.h"
+#include "../gfxmaterial_test.h"
+#include "frametek.h"
+#include "compositor.h"
 
 namespace ork { namespace lev2 {
-
-enum EFrameEffect
-{
-	EFRAMEFX_NONE = 0,
-	EFRAMEFX_STANDARD,
-	EFRAMEFX_COMIC,
-	EFRAMEFX_GLOW,
-	EFRAMEFX_GHOSTLY,
-	EFRAMEFX_AFTERLIFE,
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,7 +36,7 @@ public:
 
 	virtual void Render( ork::lev2::FrameRenderer & ContextData );
 
-	bool mbDoBeginEndFrame;
+	bool _shouldBeginAndEndFrame;
 };
 
 class PickFrameTechnique : public FrameTechniqueBase
@@ -151,6 +141,10 @@ class BuiltinFrameTechniques : public FrameTechniqueBase
 	void PostProcess( RenderContextFrameData& FrameData );
 
 public:
+
+	void update(const CompositingPassData& CPD, int itargw, int itargh);
+
+	CompositingPassData createPassData(const lev2::CompositingGroup* group);
 
 	RtGroup* GetNextWriteRtGroup() const;
 	void SetReadRtGroup( RtGroup* pgrp ) { mpReadRtGroup=pgrp; }

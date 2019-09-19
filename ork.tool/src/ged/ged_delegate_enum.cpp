@@ -20,7 +20,7 @@
 #include <ork/reflect/serialize/ShallowSerializer.h>
 #include <ork/reflect/serialize/NullSerializer.h>
 #include <ork/reflect/serialize/NullDeserializer.h>
-#include <ork/reflect/enum_serializer.h>
+#include <ork/reflect/enum_serializer.inl>
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool { namespace ged {
 ///////////////////////////////////////////////////////////////////////////////

@@ -112,7 +112,6 @@ public:
 	///////////////////////////////////////////////////
 
 	void enqueueDrawablesToBuffer(lev2::DrawableBuffer& buffer) const;
-	void RenderDrawableBuffer(lev2::IRenderer *renderer,const lev2::DrawableBuffer& dbuffer, const PoolString& LayerName ) const;
 
 	///////////////////////////////////////////////////
 
