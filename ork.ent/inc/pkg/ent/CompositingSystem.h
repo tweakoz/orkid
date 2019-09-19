@@ -43,7 +43,6 @@ public:
 
   const CompositingSystemData& compositingSystemData() const { return _compositingSystemData; }
   lev2::CompositingImpl _impl;
-  const lev2::CompositingGroup* compositingGroup(int igrp) const;
   bool DoLink(Simulation* psi) final;
 
   bool enabled() const;

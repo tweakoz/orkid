@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/lev2/gfx/renderer/compositor.h>
+#include "NodeCompositor.h"
 
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////

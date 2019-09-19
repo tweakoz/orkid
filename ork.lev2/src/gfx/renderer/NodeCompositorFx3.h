@@ -7,9 +7,56 @@
 
 #pragma once
 
-#include <ork/lev2/gfx/renderer/compositor.h>
+#include "NodeCompositor.h"
 
 namespace ork::lev2 {
+
+  ///////////////////////////////////////////////////////////////////////////////
+
+  class CompositingGroupEffect : public ork::Object {
+    DeclareConcreteX(CompositingGroupEffect, ork::Object);
+
+  public:
+    ///////////////////////////////////////////////////////
+    CompositingGroupEffect();
+
+    EFrameEffect GetFrameEffect() const { return _effectID; }
+    float GetEffectAmount() const { return _effectAmount; }
+    float GetFeedbackAmount() const { return _feedbackLevel; }
+    float GetFinalRezScale() const { return _finalResolution; }
+    float GetFxRezScale() const { return _fxResolution; }
+    const char* GetEffectName() const;
+    Texture* GetFbUvMap() const;
+    bool IsPostFxFeedback() const { return _postFxFeedback; }
+
+    EFrameEffect _effectID;
+    TextureAsset* _texture;
+    float _feedbackLevel;
+    float _fxResolution;
+    float _finalResolution;
+    bool _postFxFeedback;
+    float _effectAmount;
+
+    void _writeTex(rtti::ICastable* const& tex);
+  private:
+    void _readTex(rtti::ICastable*& tex) const;
+
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////
+
+  struct CompositingGroup : public ork::Object {
+    DeclareConcreteX(CompositingGroup, ork::Object);
+
+  public:
+    CompositingGroup();
+
+    PoolString _cameraName;
+    PoolString _layers;
+    CompositingGroupEffect _effect;
+
+    ork::Object* _accessEffect() { return &_effect; }
+  };
 
   ///////////////////////////////////////////////////////////////////////////////
 

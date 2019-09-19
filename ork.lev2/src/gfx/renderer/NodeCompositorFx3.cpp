@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/enum_serializer.inl>
+#include <ork/lev2/lev2_asset.h>
 
 BEGIN_ENUM_SERIALIZER(ork::lev2, ECOMPOSITEBlend)
 DECLARE_ENUM(BoverAplusC)
@@ -23,6 +24,8 @@ END_ENUM_SERIALIZER()
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::Fx3CompositingTechnique, "Fx3CompositingTechnique");
 ImplementReflectionX(ork::lev2::Fx3CompositingNode, "Fx3CompositingNode");
+ImplementReflectionX(ork::lev2::CompositingGroup, "CompositingGroup");
+ImplementReflectionX(ork::lev2::CompositingGroupEffect, "CompositingGroupEffect");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -257,6 +260,94 @@ lev2::RtGroup* Fx3CompositingNode::GetOutput() const {
   lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;
   return pRT;
 }
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void CompositingGroupEffect::describeX(class_t* c) {
+  c->memberProperty("Type", &CompositingGroupEffect::_effectID)->annotate<ConstString>("editor.class", "ged.factory.enum");
+
+  c->accessorProperty("FbUvTexture", &CompositingGroupEffect::_readTex, &CompositingGroupEffect::_writeTex)
+      ->annotate<ConstString>("editor.class", "ged.factory.assetlist")
+      ->annotate<ConstString>("editor.assettype", "lev2tex")
+      ->annotate<ConstString>("editor.assetclass", "lev2tex");
+
+  c->floatProperty("FinalRezScale", float_range{0.025, 1.0}, &CompositingGroupEffect::_finalResolution);
+  c->floatProperty("FxRezScale", float_range{0.025, 1.0}, &CompositingGroupEffect::_fxResolution);
+
+  c->memberProperty("Amount", &CompositingGroupEffect::_effectAmount);
+  c->memberProperty("FeedbackAmount", &CompositingGroupEffect::_feedbackLevel);
+  c->memberProperty("PostFxFeedback", &CompositingGroupEffect::_postFxFeedback);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+CompositingGroupEffect::CompositingGroupEffect()
+    : _effectID(lev2::EFRAMEFX_NONE)
+    , _effectAmount(0.0f)
+    , _feedbackLevel(0.0f)
+    , _finalResolution(0.5f)
+    , _fxResolution(0.5f)
+    , _texture(nullptr)
+    , _postFxFeedback(false) {}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompositingGroupEffect::_writeTex(rtti::ICastable* const& tex) { _texture = tex ? rtti::autocast(tex) : nullptr; }
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompositingGroupEffect::_readTex(rtti::ICastable*& tex) const { tex = _texture; }
+
+Texture* CompositingGroupEffect::GetFbUvMap() const { return (_texture == 0) ? 0 : _texture->GetTexture(); }
+
+///////////////////////////////////////////////////////////////////////////////
+
+const char* CompositingGroupEffect::GetEffectName() const {
+  static const char* None      = "none";
+  static const char* Std       = "standard";
+  static const char* Comic     = "comic";
+  static const char* Glow      = "glow";
+  static const char* Ghostly   = "ghostly";
+  static const char* AfterLife = "afterlife";
+
+  const char* EffectName = None;
+  switch (_effectID) {
+    case lev2::EFRAMEFX_NONE:
+      EffectName = None;
+      break;
+    case lev2::EFRAMEFX_STANDARD:
+      EffectName = Std;
+      break;
+    case lev2::EFRAMEFX_COMIC:
+      EffectName = Comic;
+      break;
+    case lev2::EFRAMEFX_GLOW:
+      EffectName = Glow;
+      break;
+    case lev2::EFRAMEFX_GHOSTLY:
+      EffectName = Ghostly;
+      break;
+    case lev2::EFRAMEFX_AFTERLIFE:
+      EffectName = AfterLife;
+      break;
+    default:
+      break;
+  }
+  return EffectName;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+void CompositingGroup::describeX(class_t* c) {
+  ork::reflect::RegisterProperty("Camera", &CompositingGroup::_cameraName);
+  ork::reflect::RegisterProperty("Layers", &CompositingGroup::_layers);
+  ork::reflect::RegisterProperty("Effect", &CompositingGroup::_accessEffect);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+CompositingGroup::CompositingGroup() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2
