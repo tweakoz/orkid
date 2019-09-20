@@ -80,11 +80,11 @@ CompositingSystem::~CompositingSystem()
 void CompositingSystem::DoUpdate(Simulation* psim) {
 
   if( nullptr == _playerspawn ){
-    _playerspawn = psim->FindEntity(AddPooledString("playerspawn"));
+    _playerspawn = psim->FindEntity(AddPooledString("spawnloc"));
     _vrstate++;
   }
   if( nullptr == _vrcam ){
-    _vrcam = psim->GetCameraData(AddPooledString("vrcam"));
+    _vrcam = psim->GetCameraData(AddPooledString("spawncam"));
     _vrstate++;
   }
   if( _vrstate==2 and _prv_vrstate<2 ){

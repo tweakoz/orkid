@@ -22,6 +22,7 @@
 #include <ork/application/application.h>
 #include "NodeCompositor/NodeCompositorFx3.h"
 #include "NodeCompositor/NodeCompositorScreen.h"
+#include "NodeCompositor/NodeCompositorVr.h"
 #include "NodeCompositor/NodeCompositorForward.h"
 #include "NodeCompositor/NodeCompositorDeferred.h"
 
@@ -108,14 +109,15 @@ void CompositingData::defaultSetup(){
 
   auto p1 = new Fx3CompositingNode;
   auto g1 = new CompositingGroup;
-  g1->_cameraName = "edcam"_pool;
+  g1->_cameraName = "spawncam"_pool;
   g1->_layers = "All"_pool;
   g1->_effect._effectAmount = 1.0f;
   g1->_effect._effectID = EFRAMEFX_GHOSTLY;
   p1->_writeGroup(g1);
 
   auto t1 = new NodeCompositingTechnique;
-  auto o1 = new ScreenOutputCompositingNode;
+  //auto o1 = new ScreenOutputCompositingNode;
+  auto o1 = new VrCompositingNode;
   auto r1 = new DeferredCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);

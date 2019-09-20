@@ -5,6 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
+#include <ork/pch.h>
+
 #include <ork/application/application.h>
 #include <ork/asset/AssetManager.h>
 #include <ork/kernel/string/string.h>
@@ -13,12 +15,13 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/pch.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/lev2_asset.h>
+
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/ReferenceArchetype.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/CompositingSystem.h>
@@ -31,7 +34,6 @@
 
 #include <ork/kernel/opq.h>
 #include <ork/kernel/orklut.hpp>
-#include <ork/lev2/lev2_asset.h>
 #include <ork/math/basicfilters.h>
 
 #include <pkg/ent/EditorCamera.h>
@@ -455,7 +457,7 @@ void SceneData::defaultSetup(Opq& editopq){
   //////////////////////////////////////////
   // add a few basic ents
   //////////////////////////////////////////
-  auto edcamname = "edcam"_pool;
+  auto edcamname = "spawncam"_pool;
   auto edcamarchname = "/arch/edcam"_pool;
   auto ite = _sceneObjects.find(edcamname);
   auto ita = _sceneObjects.find(edcamarchname);
@@ -472,7 +474,7 @@ void SceneData::defaultSetup(Opq& editopq){
     });
   }
   //////////////////////////////////////////
-  auto objectname = "object"_pool;
+  auto objectname = "spawnloc"_pool;
   auto objectarchname = "/arch/object"_pool;
   ite = _sceneObjects.find(objectname);
   ita = _sceneObjects.find(objectarchname);
