@@ -132,6 +132,7 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	//orkprintf( "GedVP::DoDraw()\n" );
 
 	auto tgt = drwev.GetTarget();
+  tgt->debugPushGroup(FormatString("GedVP::repaint"));
 	auto mtxi = tgt->MTXI();
 	auto fbi = tgt->FBI();
 	//bool bispick = framedata().IsPickMode();
@@ -163,6 +164,8 @@ void GedVP::DoRePaintSurface(ui::DrawEvent& drwev)
 	mtxi->PopMMatrix();
 	fbi->PopViewport();
 	fbi->PopScissor();
+  tgt->debugPopGroup();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////

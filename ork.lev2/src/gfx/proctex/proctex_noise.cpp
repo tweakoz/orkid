@@ -86,6 +86,7 @@ dataflow::inplugbase* Octaves::GetInput(int idx)
 void Octaves::compute( ProcTex& ptex )
 {	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::Octaves::compute"));
 	Buffer& buffer = GetWriteBuffer(ptex);
 	//printf( "Octaves wrbuf<%p> wrtex<%p>\n", & buffer, buffer.OutputTexture() );
 	const ImgOutPlug* conplug = rtti::autocast(mPlugInpInput.GetExternalOutput());
@@ -123,7 +124,7 @@ void Octaves::compute( ProcTex& ptex )
 			mtxT.SetTranslation(offx,offy,0.0f);
 			mtxS.Scale( ffrq, ffrq, famp );
 			mtxR.SetRotateZ( 0.0f );
-			
+
 			mOctMaterial.SetAuxMatrix( mtxS*mtxT );
 			{
 				//printf( "DrawUnitTexQuad oct<%d>\n", i );
@@ -139,6 +140,7 @@ void Octaves::compute( ProcTex& ptex )
 		pTARG->BindMaterial( 0 );
 	}
 	MarkClean();
+  pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Cells::Describe()
@@ -233,7 +235,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 	{	for( int iy=0; iy<miDimV; iy++ )
 		{	float ifx = float(rand()%miDiv)/float(miDiv);
 			float fx = float(ix)+ifx*mPlugInpDispersion.GetValue();
-			float ify = float(rand()%miDiv)/float(miDiv);	
+			float ify = float(rand()%miDiv)/float(miDiv);
 			float fy = float(iy)+ify*mPlugInpDispersion.GetValue();
 			mSitesA[site_index(ix,iy)] = fvec3(fx,fy,0.0f);
 		}
@@ -243,7 +245,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 	{	for( int iy=0; iy<miDimV; iy++ )
 		{	float ifx = float(rand()%miDiv)/float(miDiv);
 			float fx = float(ix)+ifx*mPlugInpDispersion.GetValue();
-			float ify = float(rand()%miDiv)/float(miDiv);	
+			float ify = float(rand()%miDiv)/float(miDiv);
 			float fy = float(iy)+ify*mPlugInpDispersion.GetValue();
 			mSitesB[site_index(ix,iy)] = fvec3(fx,fy,0.0f);
 		}
@@ -296,10 +298,10 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 				}
 			}
 			OrkAssert(polychi<kmaxpc);
-			const CellPoly& outpoly = polychain[polychi]; 
+			const CellPoly& outpoly = polychain[polychi];
 			fvec3 vctr;
 			vctr.Lerp( Site0A,Site0B, flerp );
-			
+
 			////////////////////////////////////////////////
 			if( miSmoothing )
 			{
@@ -311,7 +313,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 					fvec3 p0; p0.Lerp( vctr, outpoly.GetVertex(iv).Pos(), smoothrad );
 					fvec3 pp; pp.Lerp( vctr, outpoly.GetVertex(ivp).Pos(), smoothrad );
 					fvec3 pn; pn.Lerp( vctr, outpoly.GetVertex(ivn).Pos(), smoothrad );
-					
+
 					for( int is=0; is<miSmoothing; is++ )
 					{
 						float fu0 = (float(is)/float(miSmoothing));
@@ -337,7 +339,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 			}
 			else
 			for( int iv=0; iv<outpoly.GetNumVertices(); iv++ )
-			{	
+			{
 				float fi = float(iv)/float(outpoly.GetNumVertices()-1);
 				fvec4 clr(fi,fi,fi,fi);
 				int ivi = (iv+1)%outpoly.GetNumVertices();
@@ -355,6 +357,7 @@ void Cells::ComputeVB( lev2::GfxTarget* pTARG )
 void Cells::compute( ProcTex& ptex )
 {	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::Cells::compute"));
 	Buffer& buffer = GetWriteBuffer(ptex);
 	////////////////////////////////////////////////////////////////
 	dataflow::node_hash testhash;
@@ -382,8 +385,8 @@ void Cells::compute( ProcTex& ptex )
 			for( int iw=0; iw<9; iw++ )
 			{	int ix = (iw%3)-1;
 				int iy = (iw/3)-1;
-				fvec3 wpu = (ix>0) ? wrapu : (ix<0) ? -wrapu : fvec3::Zero(); 
-				fvec3 wpv = (iy>0) ? wrapv : (iy<0) ? -wrapv : fvec3::Zero(); 
+				fvec3 wpu = (ix>0) ? wrapu : (ix<0) ? -wrapu : fvec3::Zero();
+				fvec3 wpv = (iy>0) ? wrapv : (iy<0) ? -wrapv : fvec3::Zero();
 				fmtx4 mtx;
 				mtx.SetTranslation( wpu+wpv );
 				mPTX.GetTarget()->MTXI()->PushMMatrix( mtx );
@@ -422,6 +425,8 @@ void Cells::compute( ProcTex& ptex )
 
 	AA16RenderCells renderer( ptex, buffer, mVW, miDimU, miDimV );
 	renderer.Render( mbAA );
+
+  pTARG->debugPopGroup();
 
 	//MarkClean();
 }

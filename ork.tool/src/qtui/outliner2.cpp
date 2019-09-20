@@ -347,6 +347,7 @@ void Outliner2View::DoInit( lev2::GfxTarget* pt )
 void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 {
 	auto tgt = drwev.GetTarget();
+  tgt->debugPushGroup(FormatString("Outliner2View::repaint"));
 	auto mtxi = tgt->MTXI();
 	auto fbi = tgt->FBI();
 	auto fxi = tgt->FXI();
@@ -483,6 +484,7 @@ void Outliner2View::DoRePaintSurface(ui::DrawEvent& drwev)
 	}
 	fbi->PopViewport();
 	fbi->PopScissor();
+  tgt->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Outliner2View::SetNameOfSelectedItem()

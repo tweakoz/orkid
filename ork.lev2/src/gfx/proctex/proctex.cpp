@@ -123,6 +123,7 @@ lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
 			lev2::EBUFFMT_RGBA32,
 			miW, miH );
 
+    mrt->_debugName = FormatString("ptx::Reg32");
 		mrt->mComputeMips = true;
 		mRtGroup->SetMrt( 0, mrt );
 

@@ -306,6 +306,7 @@ void RotSolid::compute( ProcTex& ptex )
 
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::RotSolid::compute"));
 
 	//////////////////////////////////////
 	dataflow::node_hash testhash;
@@ -360,6 +361,8 @@ void RotSolid::compute( ProcTex& ptex )
 
 	//buffer.mHash = testhash;
 	MarkClean();
+  pTARG->debugPopGroup();
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -388,6 +391,7 @@ void ImgOp2::compute( ProcTex& ptex )
 {
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::ImgOp2::compute"));
 
 	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
@@ -429,6 +433,7 @@ void ImgOp2::compute( ProcTex& ptex )
 
 	}
 	MarkClean();
+  pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -467,6 +472,7 @@ void ImgOp3::compute( ProcTex& ptex )
 {
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::ImgOp3::compute"));
 
 	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplugA = rtti::autocast(mPlugInpInputA.GetExternalOutput());
@@ -546,6 +552,7 @@ void ImgOp3::compute( ProcTex& ptex )
 		buffer.PtexEnd(true);
 		////////////////////////////////////////////////////////////////
 		MarkClean();
+  pTARG->debugPopGroup();
 	}
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -589,6 +596,7 @@ Transform::Transform()
 void Transform::compute( ProcTex& ptex )
 {	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::Transform::compute"));
 
 	Buffer& buffer = GetWriteBuffer(ptex);
 	const ImgOutPlug* conplug = rtti::autocast(mPlugInpInput.GetExternalOutput());
@@ -627,15 +635,17 @@ void Transform::compute( ProcTex& ptex )
 		buffer.PtexEnd(true);
 	}
 	MarkClean();
+  pTARG->debugPopGroup();
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void Texture::Describe()
-{	ork::reflect::RegisterProperty( "Input", & Texture::GetTextureAccessor, & Texture::SetTextureAccessor );
-	ork::reflect::AnnotatePropertyForEditor<Texture>( "Input", "editor.class", "ged.factory.assetlist" );
-	ork::reflect::AnnotatePropertyForEditor<Texture>( "Input", "editor.assettype", "lev2tex" );
-	ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
+void Texture::Describe() {
+  ork::reflect::RegisterProperty("Input", &Texture::GetTextureAccessor, &Texture::SetTextureAccessor);
+  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.class", "ged.factory.assetlist");
+  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.assettype", "lev2tex");
+  ork::reflect::AnnotatePropertyForEditor<Texture>("Input", "editor.assetclass", "lev2tex");
 }
 Texture::Texture()
 	: mpTexture( 0 )
@@ -649,6 +659,7 @@ void Texture::compute( ProcTex& ptex )
 	Buffer& buffer = GetWriteBuffer(ptex);
 	buffer.PtexBegin(pTARG,true,false);
 
+  pTARG->debugPushGroup(FormatString("ptx::Texture::compute"));
 	lev2::GfxMaterial3DSolid gridmat( pTARG, "orkshader://proctex", "ttex" );
 	gridmat.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_USER );
 	gridmat.mRasterState.SetAlphaTest( ork::lev2::EALPHATEST_OFF );
@@ -680,6 +691,7 @@ void Texture::compute( ProcTex& ptex )
 	//pTARG->PopModColor();
 	MarkClean();
 	buffer.PtexEnd(true);
+  pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -844,6 +856,8 @@ void SolidColor::compute( ProcTex& ptex )
 {
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::SolidColor::compute"));
+
 	Buffer& buffer = GetWriteBuffer(ptex);
 	buffer.PtexBegin(pTARG,true,false);
 
@@ -874,6 +888,8 @@ void SolidColor::compute( ProcTex& ptex )
 	pTARG->PopModColor();
 	MarkClean();
 	buffer.PtexEnd(true);
+  pTARG->debugPopGroup();
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -914,6 +930,7 @@ void Gradient::compute( ProcTex& ptex )
 {
 	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::Gradient::compute"));
 
 	Buffer& buffer = GetWriteBuffer(ptex);
 
@@ -1145,6 +1162,8 @@ void Gradient::compute( ProcTex& ptex )
 	AA16RenderGrad renderer( ptex, buffer, mVertexBuffer, mMtl );
 	renderer.Render( mbAA );
 
+  pTARG->debugPopGroup();
+
 	////////////////////////////////////////////////////////////////
 	//F32 fVPW = (F32) pTARG->GetVPW();
 	//F32 fVPH = (F32) pTARG->GetVPH();
@@ -1167,6 +1186,7 @@ Group::Group()
 void Group::compute( ProcTex& ptex )
 {	auto proc_ctx = ptex.GetPTC();
 	auto pTARG = ptex.GetTarget();
+  pTARG->debugPushGroup(FormatString("ptx::Group::compute"));
 
 	Buffer& computebuffer = GetWriteBuffer(ptex);
 	if( mpProcTex )
@@ -1206,6 +1226,8 @@ void Group::compute( ProcTex& ptex )
 		computebuffer.PtexEnd(true);
 		//////////////////////////
 	}
+  pTARG->debugPopGroup();
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 }}
