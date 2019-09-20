@@ -37,7 +37,7 @@ struct VRIMPL {
     _height     = orkidvr::device()._height;
     if (nullptr == _rtg) {
       _rtg = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
-
+      _vrrendertarget = new RtGroupRenderTarget(_rtg);
       auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height);
 
       _rtg->SetMrt(0, lbuf);
@@ -162,11 +162,10 @@ struct VRIMPL {
 
     // draw left and right ///////////////////////////////
 
-    RtGroupRenderTarget vrrendertarget(_rtg);
     drawdata.mCompositingGroupStack.push(_CPD);
       pTARG->SetRenderContextFrameData(&framedata);
       framedata.SetDstRect(tgt_rect);
-      framedata.PushRenderTarget(&vrrendertarget);
+      framedata.PushRenderTarget(_vrrendertarget);
       pTARG->FBI()->PushRtGroup(_rtg);
       pTARG->BeginFrame();
       framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
@@ -188,6 +187,7 @@ struct VRIMPL {
   CompositingMaterial _material;
   VrCompositingNode* _vrnode = nullptr;
   RtGroup* _rtg = nullptr;
+  RtGroupRenderTarget* _vrrendertarget;
   BuiltinFrameEffectMaterial _effect;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;

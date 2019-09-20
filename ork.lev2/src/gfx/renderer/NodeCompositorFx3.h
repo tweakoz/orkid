@@ -94,7 +94,7 @@ namespace ork::lev2 {
 
   private:
     void Init(lev2::GfxTarget* pTARG, int w, int h) final;
-    void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
+    bool assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
     void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
   };
   ///////////////////////////////////////////////////////////////////////////////

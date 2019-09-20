@@ -230,7 +230,8 @@ float CompositingImpl::currentFrameRate() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
+bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
+  bool rval = false;
   auto the_renderer = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
   lev2::GfxTarget* pTARG                  = RCFD.GetTarget();
@@ -267,9 +268,10 @@ void CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   }
 
   if (DB) {
-    _compcontext.assemble(drawdata, this);
+    rval = _compcontext.assemble(drawdata, this);
     DrawableBuffer::EndDbRead(DB); // mDbLock.Aquire(7);
   }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

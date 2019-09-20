@@ -71,7 +71,7 @@ void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH) 
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
   const lev2::CompositingGroup* pCGA = pCCI->compositingGroup(mGroupA);
   const lev2::CompositingGroup* pCGB = pCCI->compositingGroup(mGroupB);
   const lev2::CompositingGroup* pCGC = pCCI->compositingGroup(mGroupC);
@@ -99,6 +99,7 @@ void Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata, Compositing
     yo::rend_lyr_2_comp_group(drawdata, pCGB, mpBuiltinFrameTekB, "B");
   if (mpBuiltinFrameTekC) // render layerC
     yo::rend_lyr_2_comp_group(drawdata, pCGC, mpBuiltinFrameTekC, "C");
+  return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,

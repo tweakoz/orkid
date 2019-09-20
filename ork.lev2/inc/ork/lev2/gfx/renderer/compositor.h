@@ -115,7 +115,7 @@ class CompositingTechnique : public ork::Object {
 
 public:
   virtual void Init(lev2::GfxTarget* pTARG, int w, int h) = 0;
-  virtual void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
+  virtual bool assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
   virtual void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
 };
 
@@ -140,7 +140,7 @@ struct CompositingContext {
   CompositingContext();
   ~CompositingContext();
   void Init(lev2::GfxTarget* pTARG);
-  void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI);
+  bool assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI);
   void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI);
   void Resize(int iW, int iH);
 };
@@ -226,7 +226,7 @@ public:
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
-  void assemble(lev2::CompositorDrawData& drawdata);
+  bool assemble(lev2::CompositorDrawData& drawdata);
   void composite(lev2::CompositorDrawData& drawdata);
 
   const CompositingData& compositingData() const { return _compositingData; }

@@ -128,7 +128,7 @@ namespace ork::lev2 {
 
   private:
     void Init(lev2::GfxTarget* pTARG, int w, int h) override;
-    void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;
+    bool assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;
     void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;
     //
 

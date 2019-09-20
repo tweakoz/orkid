@@ -328,9 +328,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if (compositor_enabled) {
     auto compsys = compositingSystem();
     lev2::CompositorDrawData drawdata(framerenderer);
-    compsys->_impl.assemble(drawdata);
+    bool aok = compsys->_impl.assemble(drawdata);
     DRAWBEGIN();
-    compsys->_impl.composite(drawdata);
+    if( aok ) compsys->_impl.composite(drawdata);
     DRAWEND();
   }
   /////////////////////////////////

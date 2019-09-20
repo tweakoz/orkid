@@ -112,13 +112,16 @@ void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
   mCompositingMaterial.Init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
+bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
+  bool rval = false;
   if (_outputNode and _renderNode) {
     _outputNode->beginFrame(drawdata, cimpl);
+    rval = true;
     _renderNode->Render(drawdata, cimpl);
     if (_postfxNode)
       _postfxNode->Render(drawdata, cimpl);
   }
+  return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::composite(CompositorDrawData& drawdata, CompositingImpl* cimpl) {

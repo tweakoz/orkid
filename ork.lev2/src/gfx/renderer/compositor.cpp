@@ -149,12 +149,14 @@ void CompositingContext::Resize(int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+bool CompositingContext::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+  bool rval = false;
   Init(drawdata.target()); // fixme lazy init
   if (_compositingTechnique) {
     _compositingTechnique->Init(drawdata.target(), miWidth, miHeight);
-    _compositingTechnique->assemble(drawdata, pCCI);
+    rval = _compositingTechnique->assemble(drawdata, pCCI);
   }
+  return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
