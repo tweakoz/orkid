@@ -328,10 +328,19 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if (compositor_enabled) {
     auto compsys = compositingSystem();
     lev2::CompositorDrawData drawdata(framerenderer);
+    mpTarget->debugPushGroup("toolvp::assemble");
     bool aok = compsys->_impl.assemble(drawdata);
+    //printf( "aok<%d>\n", int(aok));
+    mpTarget->debugPopGroup();
+    mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
     DRAWBEGIN();
+    mpTarget->debugPopGroup();
+    mpTarget->debugPushGroup("toolvp::composite");
     if( aok ) compsys->_impl.composite(drawdata);
+    mpTarget->debugPopGroup();
+    mpTarget->debugPushGroup("toolvp::DRAWEND");
     DRAWEND();
+    mpTarget->debugPopGroup();
   }
   /////////////////////////////////
   else // No Compositor
@@ -454,13 +463,19 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
   MTXI->PushVMatrix(CAMCCTX.mVMatrix);
   MTXI->PushMMatrix(fmtx4::Identity);
   /////////////////////////////////////////
+  gfxtarg->debugPushGroup("toolvp::DrawEnqRenderables");
   rend->drawEnqueuedRenderables();
+  gfxtarg->debugPopGroup();
   /////////////////////////////////////////
+  gfxtarg->debugPushGroup("toolvp::DrawManip");
   if (mEditor.mpScene)
     DrawManip(RCFD, gfxtarg);
+  gfxtarg->debugPopGroup();
   /////////////////////////////////////////
+  gfxtarg->debugPushGroup("toolvp::DrawGrid");
   if (false == FBI->IsPickState())
     DrawGrid(RCFD);
+  gfxtarg->debugPopGroup();
   /////////////////////////////////////////
   MTXI->PopPMatrix(); // back to ortho
   MTXI->PopVMatrix(); // back to ortho

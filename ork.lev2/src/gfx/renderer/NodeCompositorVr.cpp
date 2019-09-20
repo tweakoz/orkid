@@ -39,9 +39,8 @@ struct VRIMPL {
       _rtg = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
       _vrrendertarget = new RtGroupRenderTarget(_rtg);
       auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height);
-
+      lbuf->_debugName = "VrRt";
       _rtg->SetMrt(0, lbuf);
-
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
   }
@@ -91,6 +90,7 @@ struct VRIMPL {
     RenderContextFrameData& framedata = framerenderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
 
+    pTARG->debugMarker("Vr::beginFrame");
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
@@ -175,6 +175,7 @@ struct VRIMPL {
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = framerenderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
+    pTARG->debugMarker("Vr::endFrame");
     pTARG->EndFrame();
     pTARG->FBI()->PopRtGroup();
     framedata.PopRenderTarget();

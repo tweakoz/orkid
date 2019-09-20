@@ -42,8 +42,9 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.Init(pTARG);
       _rtg = new RtGroup(pTARG, pTARG->GetW(), pTARG->GetH(), NUMSAMPLES);
-      auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, pTARG->GetW(), pTARG->GetH());
-      _rtg->SetMrt(0, lbuf);
+      auto buf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, pTARG->GetW(), pTARG->GetH());
+      buf->_debugName = "DeferredRt";
+      _rtg->SetMrt(0, buf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
   }
@@ -67,6 +68,8 @@ struct IMPL {
     //////////////////////////////////////////////////////
 
     auto outerRT = framedata.GetRenderTarget();
+
+    pTARG->debugMarker("Deferred::render");
 
     RtGroupRenderTarget rt(_rtg);
     drawdata.mCompositingGroupStack.push(_CPD);

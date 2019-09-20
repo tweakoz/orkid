@@ -244,6 +244,13 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
   RCFD.setUserProperty("nodes"_crc, passdata);
 
+  /////////////////////////////////////////////////////////
+  // bind compositing technique
+  /////////////////////////////////////////////////////////
+  int scene_item = 0;
+  if (auto item = compositingItem(0, scene_item)) {
+    _compcontext._compositingTechnique = item->GetTechnique();
+  }
   /////////////////////////////////
   // bind lighting
   /////////////////////////////////

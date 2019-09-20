@@ -189,6 +189,7 @@ struct Texture
   TextureAnimationBase*	_anim = nullptr;
   mutable void*			_internalHandle = nullptr;
   GfxTarget*        _creatingTarget = nullptr;
+  std::string       _debugName;
 
 };
 

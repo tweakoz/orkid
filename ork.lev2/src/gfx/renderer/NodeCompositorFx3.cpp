@@ -117,18 +117,9 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,
   auto this_buf            = fbi->GetThisBuffer();
   int itw                  = pT->GetW();
   int ith                  = pT->GetH();
-#if 0
-	auto cur_rtg = fbi->GetRtGroup();
-	int iw = cur_rtg ? cur_rtg->GetW() : itw;
-	int ih = cur_rtg ? cur_rtg->GetH() : ith;
-	auto out_buf = cur_rtg ? cur_rtg->GetMrt(0) : this_buf;
-	SRect vprect = (0,0,iw-1,ih-1);
-	SRect quadrect(0,ih-1,iw-1,0);
-#else
   SRect vprect(0, 0, itw, ith - 1);
   SRect quadrect(0, ith - 1, itw - 1, 0);
   auto out_buf = this_buf;
-#endif
 
   if (psrcgroupA) {
     lev2::Texture* ptexA = (psrcgroupA != 0) ? psrcgroupA->GetMrt(0)->GetTexture() : 0;

@@ -3,7 +3,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/vr/vr.h>
-
+#include <ork/lev2/gfx/renderer/compositor.h>
 #if !defined(ENABLE_OPENVR)
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::orkidvr {
@@ -100,7 +100,30 @@ void gpuUpdate(fmtx4 observermatrix) {
   mgr._processControllerEvents();
   mgr._updatePoses(observermatrix);
 }
-void composite(GfxTarget* targ, Texture* twoeyetex) {}
+
+void composite(GfxTarget* targ, Texture* twoeyetex) {
+  auto& mgr = concrete_get();
+   auto fbi = targ->FBI();
+   auto buf = fbi->GetThisBuffer();
+   int w = targ->GetW();
+   int h = targ->GetH();
+   SRect vprect(0, 0, w - 1, h - 1);
+   SRect quadrect(0, h - 1, w - 1, 0);
+  if( false == mgr._private.IsA<CompositingMaterial>() ){
+    auto& mtl = mgr._private.Make<CompositingMaterial>();
+    mtl.Init(targ);
+  }
+  auto& mtl = mgr._private.Get<CompositingMaterial>();
+   mtl.SetTextureA(twoeyetex);
+   mtl.SetLevelA(fvec4::White());
+   mtl.SetLevelB(fvec4::Black());
+   mtl.SetLevelC(fvec4::Black());
+   mtl.SetTechnique("Asolo");
+   // TODO - apply post
+   buf->RenderMatOrthoQuad(vprect, quadrect, &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
+
+
+}
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr
 ////////////////////////////////////////////////////////////////////////////////

@@ -346,6 +346,9 @@ protected:
   void InitializeContext(GfxWindow* pWin, CTXBASE* pctxbase) final; // make a window
   void* DoBeginLoad() final;
   void DoEndLoad(void* ploadtok) final; // virtual
+  void debugPushGroup(const std::string str) final;
+  void debugPopGroup() final;
+  void debugMarker(const std::string str) final;
 
   void* mhHWND;
   void* mGLXContext;

@@ -125,30 +125,9 @@ bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, Compositin
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::composite(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
-  auto pT = drawdata.target();
-  auto fbi = pT->FBI();
-  auto buf = fbi->GetThisBuffer();
-  int w = pT->GetW();
-  int h = pT->GetH();
-  SRect vprect(0, 0, w - 1, h - 1);
-  SRect quadrect(0, h - 1, w - 1, 0);
-
-  /////////////////////////////////////////////////////////
-  // composite to screen
-  /////////////////////////////////////////////////////////
-
   if (_outputNode and _renderNode) {
     auto render = _renderNode->GetOutput();
     if (render) {
-      auto rendertex = render->GetMrt(0)->GetTexture();
-      mCompositingMaterial.SetTextureA(rendertex);
-      mCompositingMaterial.SetLevelA(fvec4::White());
-      mCompositingMaterial.SetLevelB(fvec4::Black());
-      mCompositingMaterial.SetLevelC(fvec4::Black());
-      mCompositingMaterial.SetTechnique("Asolo");
-      // TODO - apply post
-      buf->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
-
       _outputNode->endFrame(drawdata, cimpl,render);
     }
   }

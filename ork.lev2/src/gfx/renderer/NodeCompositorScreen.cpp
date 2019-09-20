@@ -43,8 +43,10 @@ struct IMPL {
     RenderContextFrameData& framedata = fr_renderer.framedata();
     auto targ                         = framedata.GetTarget();
     framedata.setLayerName(_node->_layername.c_str());
+    targ->debugMarker("Screen::beginFrame");
   }
   void endFrame(CompositorDrawData& drawdata,RtGroup* final) {
+    drawdata.target()->debugMarker("Screen::endFrame");
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;

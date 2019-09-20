@@ -14,6 +14,16 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+void GfxTargetGL::debugPushGroup(const std::string str) {
+  glPushGroupMarkerEXT(str.length(),str.c_str());
+}
+void GfxTargetGL::debugPopGroup() {
+  glPopGroupMarkerEXT();
+}
+void GfxTargetGL::debugMarker(const std::string str) {
+  glInsertEventMarkerEXT(str.length(),str.c_str());
+}
+
 bool GfxTargetGL::SetDisplayMode(DisplayMode *mode)
 {
 	return false;

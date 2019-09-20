@@ -853,6 +853,9 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	glGenTextures( 1, & pTEXOBJ->mObject );
 	glBindTexture( TARGET, pTEXOBJ->mObject );
 	GL_ERRORCHECK();
+  if( ptex->_debugName.length() ){
+    glLabelObjectEXT(GL_TEXTURE,pTEXOBJ->mObject, ptex->_debugName.length(), ptex->_debugName.c_str() );
+  }
 
 	auto infname = TextureFile.msFileName;
 
@@ -999,6 +1002,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 bool GlTextureInterface::LoadDDSTexture( const AssetPath& infname, Texture *ptex )
 {
 	AssetPath Filename = infname;
+  ptex->_debugName = infname.c_str();
 	///////////////////////////////////////////////
 	File* TextureFile = new File( Filename, EFM_READ );
 	if( false == TextureFile->IsOpen() )

@@ -143,11 +143,17 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 	for( int i=0; i<knumpingpongbufs; i++ )
 	{
 		auto grp = new RtGroup( pTARG, miW, miH, kmultisamplesH );
-		mpHDRRtGroup[i] = grp;
-		mpHDRRtGroup[i]->SetMrt( 0, new RtBuffer( grp,
+    auto buf = new RtBuffer( grp,
 												  lev2::ETGTTYPE_MRT0,
 												  lev2::EBUFFMT_RGBA64,
-												   miW, miH ) );
+												   miW, miH );
+
+    buf->_debugName = FormatString("BFTEK::PingPongBuf%d",i);
+    mpHDRRtGroup[i] = grp;
+
+		mpHDRRtGroup[i]->SetMrt( 0, buf );
+
+
 		//mpHDRRtGroup[i]->GetMrt(0)->RefClearColor() = clear_color;
 		//mpHDRRtGroup[i]->GetMrt(0)->SetContext(pTARG);
 	}
@@ -155,16 +161,20 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 	mpMrtAux0 = new RtGroup( pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1 );
 	mpMrtAux1 = new RtGroup( pTARG, kGLOWBUFSIZE, kGLOWBUFSIZE, 1 );
 
-
-	mpMrtAux0->SetMrt( 0, new RtBuffer(		mpMrtAux0,
+  auto bufa = new RtBuffer(		mpMrtAux0,
 											lev2::ETGTTYPE_MRT0,
 											lev2::EBUFFMT_RGBA64,
-											kGLOWBUFSIZE, kGLOWBUFSIZE ) );
+											kGLOWBUFSIZE, kGLOWBUFSIZE );
 
-	mpMrtAux1->SetMrt( 0, new RtBuffer(		mpMrtAux1,
+  auto bufb = new RtBuffer(		mpMrtAux1,
 											lev2::ETGTTYPE_MRT0,
 											lev2::EBUFFMT_RGBA64,
-											kGLOWBUFSIZE, kGLOWBUFSIZE ) );
+											kGLOWBUFSIZE, kGLOWBUFSIZE );
+
+  bufa->_debugName = FormatString("BFTEK::Aux0");
+  bufb->_debugName = FormatString("BFTEK::Aux1");
+	mpMrtAux0->SetMrt( 0, bufa );
+	mpMrtAux1->SetMrt( 0, bufb );
 
 
 	//mpMrtAux0->GetMrt(0)->RefClearColor() = clear_color;
@@ -181,14 +191,14 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
 	mpMrtFinalHD = new RtGroup( pTARG, kFINALHDW, kFINALHDH, kmultisamplesH );
 
-	mpMrtFinalHD->SetMrt( 0, new RtBuffer(	mpMrtFinalHD,
+  auto buff = new RtBuffer(	mpMrtFinalHD,
 											lev2::ETGTTYPE_MRT0,
 											lev2::EBUFFMT_RGBA64,
-											kFINALHDW, kFINALHDH ) );
+											kFINALHDW, kFINALHDH );
 
-	//mpMrtFinalHD->GetMrt(0)->RefClearColor() = clear_color;
+	mpMrtFinalHD->SetMrt( 0, buff );
 
-	//mpMrtFinalHD->GetMrt(0)->SetContext(pTARG);
+  buff->_debugName = FormatString("BFTEK::Final");
 
 	mOutputRt = mpMrtFinalHD;
 

@@ -49,6 +49,7 @@ struct Device {
   lev2::InputGroup& _hmdinputgroup;
   uint32_t _width, _height;
   void _updatePosesCommon(fmtx4 observermatrix);
+  svar512_t _private;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

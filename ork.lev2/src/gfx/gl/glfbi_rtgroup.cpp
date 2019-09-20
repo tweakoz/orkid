@@ -102,6 +102,11 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       GLTextureObject* ptexOBJ = new GLTextureObject;
       GL_ERRORCHECK();
       glGenTextures(1, (GLuint*)&FboObj->mTEX[it]);
+      glBindTexture(GL_TEXTURE_2D,FboObj->mTEX[it]);
+      if( pB->_debugName.length() ){
+        glLabelObjectEXT(GL_TEXTURE,FboObj->mTEX[it], pB->_debugName.length(), pB->_debugName.c_str() );
+      }
+      glBindTexture(GL_TEXTURE_2D,0);
       GL_ERRORCHECK();
       ptexOBJ->mObject = FboObj->mTEX[it];
       //////////////////////////////////////////
