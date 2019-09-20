@@ -210,7 +210,7 @@ void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtua
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* impl) // virtual
+void VrCompositingNode::_produce(CompositorDrawData& drawdata, CompositingImpl* impl,innerl_t lambda) // virtual
 {
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = the_renderer.framedata();

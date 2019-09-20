@@ -22,14 +22,17 @@ namespace ork::lev2 {
     DeclareAbstractX(OutputCompositingNode, ork::Object);
 
   public:
+    typedef std::function<void()> innerl_t;
     OutputCompositingNode();
     ~OutputCompositingNode();
     void Init(lev2::GfxTarget* pTARG, int w, int h);
-    void Render(CompositorDrawData& drawdata, CompositingImpl* pCCI);
+    void produce(CompositorDrawData& drawdata, CompositingImpl* pCCI,innerl_t lambda);
 
   private:
     virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
-    virtual void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
+    virtual void _produce(CompositorDrawData& drawdata,
+                         CompositingImpl* pCCI,
+                         innerl_t lambda) = 0;
   };
   ///////////////////////////////////////////////////////////////////////////////
   class RenderCompositingNode : public ork::Object {

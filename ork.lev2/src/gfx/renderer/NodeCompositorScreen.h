@@ -23,7 +23,7 @@ public:
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
+  void _produce(CompositorDrawData& drawdata, CompositingImpl* pCCI,innerl_t lambda) final; // virtual
 
   svar256_t _impl;
 

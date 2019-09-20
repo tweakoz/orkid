@@ -112,13 +112,16 @@ void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
   mCompositingMaterial.Init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
-  if (_renderNode)
-    _renderNode->Render(drawdata, pCCI);
-  if (_postfxNode)
-    _postfxNode->Render(drawdata, pCCI);
+void NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
+  OutputCompositingNode::innerl_t L = [&](){
+    if (_renderNode)
+      _renderNode->Render(drawdata, cimpl);
+    if (_postfxNode)
+      _postfxNode->Render(drawdata, cimpl);
+  };
   if (_outputNode)
-    _outputNode->Render(drawdata, pCCI);
+      _outputNode->produce(drawdata, cimpl,L);
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
@@ -170,7 +173,7 @@ void OutputCompositingNode::describeX(class_t*c) {}
 OutputCompositingNode::OutputCompositingNode() {}
 OutputCompositingNode::~OutputCompositingNode() {}
 void OutputCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
-void OutputCompositingNode::Render(CompositorDrawData& drawdata, CompositingImpl* pCCI) { DoRender(drawdata, pCCI); }
+void OutputCompositingNode::produce(CompositorDrawData& drawdata, CompositingImpl* pCCI,innerl_t lambda) { _produce(drawdata, pCCI,lambda); }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void SeriesCompositingNode::describeX(class_t*c) {
