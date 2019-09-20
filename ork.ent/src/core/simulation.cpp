@@ -954,10 +954,6 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
     const ork::ent::Entity* pent = it.second;
 
     const Entity::LayerMap& entlayers = pent->GetLayers();
-    // const ork::TransformNode3D& node3d =
-    // pent->GetDagNode().GetTransformNode();
-
-    // NOTE: No culling! May need "was visible last frame" hack to be fast
 
     lev2::DrawQueueXfData xfdata;
 
@@ -969,10 +965,14 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
 
     for (auto L : entlayers) {
       const PoolString& layer_name          = L.first;
+
+     printf( "sim::enqueue layer_name<%s>\n", layer_name.c_str() );
+
       const ent::Entity::DrawableVector* dv = L.second;
       lev2::DrawableBufLayer* buflayer            = buffer.MergeLayer(layer_name);
       if (dv && buflayer) {
         size_t inumdv = dv->size();
+        printf( "sim::enqueue buflayer<%p> inumdv<%d>\n", buflayer, inumdv );
         for (size_t i = 0; i < inumdv; i++) {
           lev2::Drawable* pdrw = dv->operator[](i);
           if (pdrw && pdrw->IsEnabled()) {

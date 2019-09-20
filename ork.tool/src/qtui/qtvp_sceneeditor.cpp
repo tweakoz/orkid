@@ -297,6 +297,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   lev2::FrameRenderer framerenderer(RCFD, [&]() {
     if (false == mbSceneDisplayEnable)
       return;
+    mpTarget->debugPushGroup("toolvp::framerenderer");
     ///////////////////////////////////////////////////////////////////////////
     _renderer->SetTarget(mpTarget);
     SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
@@ -305,6 +306,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     NODE.updateCompositingSize(mpTarget->GetW(),mpTarget->GetH());
     GetClearColorRef() = NODE._clearColor.xyz();
     this->Clear();
+    mpTarget->debugMarker(FormatString("toolvp::framerenderer::NODE.mbDrawSource<%d>", int(NODE.mbDrawSource)));
     if (NODE.mbDrawSource)
       NODE.renderPass(RCFD,[&](){
         mSceneView.UpdateRefreshPolicy(RCFD, simulation());
@@ -320,6 +322,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       }
     }
     ///////////////////////////////////////////////////////
+    mpTarget->debugPopGroup();
   });
   /////////////////////////////////
   // Compositor ?
@@ -438,6 +441,8 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
   auto CAMDAT   = NODE.getCamera(RCFD, miCameraIndex, miCullCameraIndex);
   auto& CAMCCTX = RCFD.GetCameraCalcCtx();
   CameraData TempCamData;
+  ///////////////////////////////////////////////////////////////////////////
+  gfxtarg->debugMarker(FormatString("toolvp::renderEnqueuedScene::CAMDAT<%p>", CAMDAT));
   if (CAMDAT) {
     TempCamData = *CAMDAT;
     TempCamData.BindGfxTarget(gfxtarg);
@@ -452,12 +457,15 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
     _editorCamera->RenderUpdate();
   }
   ManipManager().SetActiveCamera(_editorCamera);
+  gfxtarg->debugMarker(FormatString("toolvp::renderEnqueuedScene::_editorCamera<%p>", _editorCamera));
   ///////////////////////////////////////////////////////////////////////////
   // DrawableBuffer -> RenderQueue enqueue
   ///////////////////////////////////////////////////////////////////////////
   auto rend = GetRenderer();
-  for (const PoolString& layer_name : NODE.getLayerNames())
+  for (const PoolString& layer_name : NODE.getLayerNames()){
+    gfxtarg->debugMarker(FormatString("toolvp::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
     DB->enqueueLayerToRenderQueue(layer_name, rend);
+  }
   ///////////////////////////////////////////////////////////////////////////
   // RENDER!
   ///////////////////////////////////////////////////////////////////////////
