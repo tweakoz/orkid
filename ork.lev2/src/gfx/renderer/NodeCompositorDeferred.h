@@ -18,6 +18,7 @@ class DeferredCompositingNode : public RenderCompositingNode {
 public:
   DeferredCompositingNode();
   ~DeferredCompositingNode();
+  fvec4 _clearColor;
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual

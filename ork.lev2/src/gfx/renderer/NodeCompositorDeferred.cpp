@@ -22,6 +22,7 @@ ImplementReflectionX(ork::lev2::DeferredCompositingNode, "DeferredCompositingNod
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::describeX(class_t* c) {
+  c->memberProperty("ClearColor",&DeferredCompositingNode::_clearColor);
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
@@ -57,7 +58,7 @@ struct IMPL {
     _CPD.mpFrameTek   = nullptr;
     _CPD.mpCameraName = nullptr;
     _CPD.mpLayerName  = &_layername;
-    _CPD._clearColor  = fvec4(0.61, 0.61, 0.75, 1);
+    _CPD._clearColor  = node->_clearColor;
     //_CPD._impl.Set<const CameraData*>(lcam);
 
     //////////////////////////////////////////////////////

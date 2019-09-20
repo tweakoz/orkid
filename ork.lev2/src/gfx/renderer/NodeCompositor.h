@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/renderer/frametek.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 
 namespace ork::lev2 {
 
@@ -130,8 +131,8 @@ namespace ork::lev2 {
 
   private:
     void Init(lev2::GfxTarget* pTARG, int w, int h) override;                                                     // virtual
-    void Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;                              // virtual
-    void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) override; // virtual
+    void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;                              // virtual
+    void composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) override; // virtual
     //
 
     ork::ObjectMap mBufferMap;

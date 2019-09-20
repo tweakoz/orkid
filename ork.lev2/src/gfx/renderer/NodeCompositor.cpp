@@ -112,7 +112,7 @@ void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
   mCompositingMaterial.Init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+void NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
   if (_renderNode)
     _renderNode->Render(drawdata, pCCI);
   if (_postfxNode)
@@ -121,7 +121,7 @@ void NodeCompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImp
     _outputNode->Render(drawdata, pCCI);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
+void NodeCompositingTechnique::composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
   auto fbi = pT->FBI();
   auto buf = fbi->GetThisBuffer();
   int w = pT->GetW();

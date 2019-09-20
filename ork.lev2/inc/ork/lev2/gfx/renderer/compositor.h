@@ -22,7 +22,6 @@ struct CompositingContext;
 struct CompositingImpl;
 struct CompositingData;
 struct CompositingMorphable;
-class BuiltinFrameTechniques;
 class DrawableBuffer;
 class LightManager;
 
@@ -116,8 +115,8 @@ class CompositingTechnique : public ork::Object {
 
 public:
   virtual void Init(lev2::GfxTarget* pTARG, int w, int h) = 0;
-  virtual void Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
-  virtual void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) = 0;
+  virtual void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
+  virtual void composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,15 +135,14 @@ struct CompositingContext {
   int miWidth;
   int miHeight;
   lev2::GfxMaterial3DSolid mUtilMaterial;
-  CompositingTechnique* mCTEK = nullptr;
+  CompositingTechnique* _compositingTechnique = nullptr;
 
   CompositingContext();
   ~CompositingContext();
   void Init(lev2::GfxTarget* pTARG);
-  void Draw(lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingImpl* pCCI);
-  void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI);
+  void assemble(lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingImpl* pCCI);
+  void composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI);
   void Resize(int iW, int iH);
-  void SetTechnique(CompositingTechnique* ptek) { mCTEK = ptek; }
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -226,8 +224,8 @@ public:
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
-  void renderContent(lev2::FrameRenderer& framerenderer);
-  void composeToScreen(lev2::GfxTarget* pT);
+  void assemble(lev2::FrameRenderer& framerenderer);
+  void composite(lev2::GfxTarget* pT);
 
   const CompositingData& compositingData() const { return _compositingData; }
 

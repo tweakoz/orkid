@@ -124,7 +124,7 @@ void CompositingTechnique::Describe() {}
 CompositingContext::CompositingContext()
     : miWidth(0)
     , miHeight(0)
-    , mCTEK(nullptr) {}
+    , _compositingTechnique(nullptr) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -149,20 +149,20 @@ void CompositingContext::Resize(int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::Draw(lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+void CompositingContext::assemble(lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingImpl* pCCI) {
   Init(pTARG); // fixme lazy init
-  if (mCTEK) {
-    mCTEK->Init(pTARG, miWidth, miHeight);
-    mCTEK->Draw(drawdata, pCCI);
+  if (_compositingTechnique) {
+    _compositingTechnique->Init(pTARG, miWidth, miHeight);
+    _compositingTechnique->assemble(drawdata, pCCI);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI) {
+void CompositingContext::composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI) {
   Init(pT);
-  if (mCTEK)
-    mCTEK->CompositeToScreen(pT, pCCI, *this);
+  if (_compositingTechnique)
+    _compositingTechnique->composite(pT, pCCI, *this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -23,6 +23,7 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::describeX(class_t* c) {
   c->memberProperty("Layer",&ForwardCompositingNode::_layername);
+  c->memberProperty("ClearColor",&ForwardCompositingNode::_clearColor);
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
@@ -98,7 +99,6 @@ struct IMPL {
       , _layers("All"_pool) {}
   ///////////////////////////////////////
   ~IMPL() {
-    assert(false);
     if (_frametek){
       delete _frametek;
       _frametek = nullptr;
@@ -127,7 +127,6 @@ typedef std::shared_ptr<IMPL> implptr_t;
 ForwardCompositingNode::ForwardCompositingNode() : _layername("All"_pool) { _impl = std::make_shared<forwardnode::IMPL>(this); }
 ///////////////////////////////////////////////////////////////////////////////
 ForwardCompositingNode::~ForwardCompositingNode() {
-  assert(false);
   _impl = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////

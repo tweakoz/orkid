@@ -327,9 +327,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   RCFD.PushRenderTarget(&rt);
   if (compositor_enabled) {
     auto compsys = compositingSystem();
-    compsys->_impl.renderContent(framerenderer);
+    compsys->_impl.assemble(framerenderer);
     DRAWBEGIN();
-    compsys->_impl.composeToScreen(mpTarget);
+    compsys->_impl.composite(mpTarget);
     DRAWEND();
   }
   /////////////////////////////////

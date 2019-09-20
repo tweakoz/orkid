@@ -20,7 +20,8 @@ public:
   ~ForwardCompositingNode();
 
   PoolString _layername;
-
+  fvec4 _clearColor;
+  
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual

@@ -23,6 +23,7 @@
 #include "NodeCompositorFx3.h"
 #include "NodeCompositorScreen.h"
 #include "NodeCompositorForward.h"
+#include "NodeCompositorDeferred.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
@@ -115,7 +116,7 @@ void CompositingData::defaultSetup(){
 
   auto t1 = new NodeCompositingTechnique;
   auto o1 = new ScreenOutputCompositingNode;
-  auto r1 = new ForwardCompositingNode;
+  auto r1 = new DeferredCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
   t1->_writePostFxNode(p1);
@@ -229,7 +230,7 @@ float CompositingImpl::currentFrameRate() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingImpl::renderContent(lev2::FrameRenderer& the_renderer) {
+void CompositingImpl::assemble(lev2::FrameRenderer& the_renderer) {
   lev2::CompositorDrawData drawdata(the_renderer);
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
   lev2::GfxTarget* pTARG                  = RCFD.GetTarget();
@@ -266,18 +267,18 @@ void CompositingImpl::renderContent(lev2::FrameRenderer& the_renderer) {
   }
 
   if (DB) {
-    _compcontext.Draw(pTARG, drawdata, this);
+    _compcontext.assemble(pTARG, drawdata, this);
     DrawableBuffer::EndDbRead(DB); // mDbLock.Aquire(7);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingImpl::composeToScreen(lev2::GfxTarget* pT) {
+void CompositingImpl::composite(lev2::GfxTarget* pT) {
   int scene_item = 0;
   if (auto pCSI = compositingItem(0, scene_item)) {
-    _compcontext.SetTechnique(pCSI->GetTechnique());
-    _compcontext.CompositeToScreen(pT, this);
+    _compcontext._compositingTechnique = pCSI->GetTechnique();
+    _compcontext.composite(pT, this);
   }
 }
 

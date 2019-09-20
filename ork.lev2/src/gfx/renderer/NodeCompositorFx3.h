@@ -94,8 +94,8 @@ namespace ork::lev2 {
 
   private:
     void Init(lev2::GfxTarget* pTARG, int w, int h) final;                                                     // virtual
-    void Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;                              // virtual
-    void CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) final; // virtual
+    void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;                              // virtual
+    void composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) final; // virtual
   };
   ///////////////////////////////////////////////////////////////////////////////
   class Fx3CompositingNode : public PostCompositingNode {

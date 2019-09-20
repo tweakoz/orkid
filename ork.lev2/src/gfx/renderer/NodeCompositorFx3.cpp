@@ -71,7 +71,7 @@ void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH) 
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::Draw(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+void Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
   const lev2::CompositingGroup* pCGA = pCCI->compositingGroup(mGroupA);
   const lev2::CompositingGroup* pCGB = pCCI->compositingGroup(mGroupB);
   const lev2::CompositingGroup* pCGC = pCCI->compositingGroup(mGroupC);
@@ -170,7 +170,7 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::CompositeToScreen(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
+void Fx3CompositingTechnique::composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
   /////////////////////////////////////////////////////////////////////
   int iCSitem     = 0;
   float levAA     = 0.5f;
