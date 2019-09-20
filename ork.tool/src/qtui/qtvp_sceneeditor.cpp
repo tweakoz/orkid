@@ -327,9 +327,10 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   RCFD.PushRenderTarget(&rt);
   if (compositor_enabled) {
     auto compsys = compositingSystem();
-    compsys->_impl.assemble(framerenderer);
+    lev2::CompositorDrawData drawdata(framerenderer);
+    compsys->_impl.assemble(drawdata);
     DRAWBEGIN();
-    compsys->_impl.composite(mpTarget);
+    compsys->_impl.composite(drawdata);
     DRAWEND();
   }
   /////////////////////////////////
@@ -698,9 +699,9 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   MTXI->PopVMatrix(); // back to ortho
   MTXI->PopMMatrix(); // back to ortho
 
-  if (_editorCamera) {
-    _editorCamera->draw(pTARG);
-  }
+  //if (_editorCamera) {
+    //_editorCamera->draw(pTARG);
+  //}
 }
 
 ///////////////////////////////////////////////////////////////////////////////

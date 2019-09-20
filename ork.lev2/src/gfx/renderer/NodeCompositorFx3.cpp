@@ -102,7 +102,6 @@ void Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata, Compositing
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,
-                                                     CompositingContext& cctx,
                                                      ECOMPOSITEBlend eblend,
                                                      lev2::RtGroup* psrcgroupA,
                                                      lev2::RtGroup* psrcgroupB,
@@ -170,7 +169,8 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
+void Fx3CompositingTechnique::composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+  auto pT = drawdata.target();
   /////////////////////////////////////////////////////////////////////
   int iCSitem     = 0;
   float levAA     = 0.5f;
@@ -200,7 +200,7 @@ void Fx3CompositingTechnique::composite(ork::lev2::GfxTarget* pT, CompositingImp
   lev2::RtGroup* pRTB                  = pFTEKB ? pFTEKB->GetFinalRenderTarget() : 0;
   lev2::RtGroup* pRTC                  = pFTEKC ? pFTEKC->GetFinalRenderTarget() : 0;
   if (pRTA || pRTB || pRTC) {
-    CompositeLayerToScreen(pT, cctx, meBlendMode, pRTA, pRTB, pRTC, levA, levB, levC);
+    CompositeLayerToScreen(pT, meBlendMode, pRTA, pRTB, pRTC, levA, levB, levC);
   }
   /////////////////////////////////////////////////////////////////////
 }

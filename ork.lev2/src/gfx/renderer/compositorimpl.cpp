@@ -230,8 +230,8 @@ float CompositingImpl::currentFrameRate() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingImpl::assemble(lev2::FrameRenderer& the_renderer) {
-  lev2::CompositorDrawData drawdata(the_renderer);
+void CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
+  auto the_renderer = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
   lev2::GfxTarget* pTARG                  = RCFD.GetTarget();
   orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
@@ -267,18 +267,18 @@ void CompositingImpl::assemble(lev2::FrameRenderer& the_renderer) {
   }
 
   if (DB) {
-    _compcontext.assemble(pTARG, drawdata, this);
+    _compcontext.assemble(drawdata, this);
     DrawableBuffer::EndDbRead(DB); // mDbLock.Aquire(7);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingImpl::composite(lev2::GfxTarget* pT) {
+void CompositingImpl::composite(lev2::CompositorDrawData& drawdata) {
   int scene_item = 0;
   if (auto pCSI = compositingItem(0, scene_item)) {
     _compcontext._compositingTechnique = pCSI->GetTechnique();
-    _compcontext.composite(pT, this);
+    _compcontext.composite(drawdata, this);
   }
 }
 

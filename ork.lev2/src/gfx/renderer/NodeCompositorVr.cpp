@@ -19,31 +19,33 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::describeX(class_t*c) {
 }
-
 ///////////////////////////////////////////////////////////////////////////
-
 constexpr int NUMSAMPLES = 1;
-
-struct VrFrameTechnique final : public FrameTechniqueBase {
-  //////////////////////////////////////////////////////////////////////////////
-  VrFrameTechnique(VrCompositingNode* node, int w, int h)
-      : FrameTechniqueBase(w, h)
-      , _rtg(nullptr)
-      , _vrcnode(node){}
-  //////////////////////////////////////////////////////////////////////////////
-  void DoInit(GfxTarget* pTARG) final {
+///////////////////////////////////////////////////////////////////////////////
+struct VRIMPL {
+  ///////////////////////////////////////
+  VRIMPL(VrCompositingNode*node)
+      : _vrnode(node)
+      , _camname(AddPooledString("Camera"))
+      , _layers(AddPooledString("All")){}
+  ///////////////////////////////////////
+  ~VRIMPL() {}
+  ///////////////////////////////////////
+  void gpuInit(lev2::GfxTarget* pTARG) {
+    _material.Init(pTARG);
+    _width     = orkidvr::device()._width*2;
+    _height     = orkidvr::device()._height;
     if (nullptr == _rtg) {
-      _rtg = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
+      _rtg = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
 
-      auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
+      auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height);
 
       _rtg->SetMrt(0, lbuf);
 
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
   }
-
-  //////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////
   typedef const std::map<int, orkidvr::ControllerState>& controllermap_t;
   void renderPoses(GfxTarget* targ, CameraData* camdat, controllermap_t controllers) {
     fmtx4 rx;
@@ -82,100 +84,38 @@ struct VrFrameTechnique final : public FrameTechniqueBase {
       targ->MTXI()->PopMMatrix();
     }
   }
-  //////////////////////////////////////////////////////////////////////////////
-  void renderBothEyes(FrameRenderer& renderer,
-                      CompositorDrawData& drawdata,
-                      CameraData* lcam,
-                      CameraData* rcam,
-                      const std::map<int, orkidvr::ControllerState>& controllers) {
-    RenderContextFrameData& framedata = renderer.framedata();
+  ///////////////////////////////////////
+  void beginFrame(CompositorDrawData& drawdata){
+
+    FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
+    RenderContextFrameData& framedata = framerenderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
 
-    SRect tgt_rect(0, 0, miW, miH);
+    /////////////////////////////////////////////////////////////////////////////
+    // get VR camera
+    /////////////////////////////////////////////////////////////////////////////
 
-    _CPD.mbDrawSource = true;
-    _CPD.mpFrameTek   = this;
-    _CPD.mpCameraName = nullptr;
-    _CPD.mpLayerName  = nullptr; // default == "All"
-    _CPD._clearColor  = fvec4(0.61, 0.61, 0.75, 1);
-
-    //////////////////////////////////////////////////////
-    // is stereo active
-    //////////////////////////////////////////////////////
-
-    if (orkidvr::device()._active) {
-      framedata.setStereoOnePass(true);
-      framedata.setUserProperty("lcam"_crc, lcam);
-      framedata.setUserProperty("rcam"_crc, rcam);
-      framedata.SetCameraData(lcam);
-      _CPD._impl.Set<const CameraData*>(lcam);
-    } else {
-      lcam->BindGfxTarget(pTARG);
-      rcam->BindGfxTarget(pTARG);
-      framedata.SetCameraData(lcam);
-      _CPD._impl.Set<const CameraData*>(lcam);
+    auto vrcamprop = framedata.getUserProperty("vrcam"_crc);
+    fmtx4 rootmatrix;
+    if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
+      auto vrcam = as_cam.value();
+      auto eye = vrcam->GetEye();
+      auto tgt = vrcam->GetTarget();
+      auto up  = vrcam->GetUp();
+      rootmatrix.LookAt(eye, tgt, up);
+    }
+    else{
+      printf("vrcamtype<%s>\n", vrcamprop.GetTypeName() );
     }
 
-    //////////////////////////////////////////////////////
-    pTARG->FBI()->SetAutoClear(false);
-    // clear will occur via _CPD
-    //////////////////////////////////////////////////////
+    _viewOffsetMatrix = orkidvr::device()._outputViewOffsetMatrix;
 
-    // draw left and right ///////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////
+    // render eyes
+    /////////////////////////////////////////////////////////////////////////////
 
-    RtGroupRenderTarget rtL(_rtg);
-    drawdata.mCompositingGroupStack.push(_CPD);
-    {
-      pTARG->SetRenderContextFrameData(&framedata);
-      framedata.SetDstRect(tgt_rect);
-      framedata.PushRenderTarget(&rtL);
-      pTARG->FBI()->PushRtGroup(_rtg);
-      pTARG->BeginFrame();
-      framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-      renderer.Render();
-      // renderPoses(pTARG, lcam, controllers);
-      pTARG->EndFrame();
-      pTARG->FBI()->PopRtGroup();
-      framedata.PopRenderTarget();
-      pTARG->SetRenderContextFrameData(nullptr);
-      drawdata.mCompositingGroupStack.pop();
-    }
+    framedata.setLayerName("All");
 
-    framedata.setStereoOnePass(false);
-  }
-
-  RtGroup* _rtg;
-  BuiltinFrameEffectMaterial _effect;
-  CompositingPassData _CPD;
-  fmtx4 _viewOffsetMatrix;
-  VrCompositingNode* _vrcnode = nullptr;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-struct VRIMPL {
-  ///////////////////////////////////////
-  VRIMPL(VrCompositingNode*node)
-      : _vrnode(node)
-      , _frametek(nullptr)
-      , _camname(AddPooledString("Camera"))
-      , _layers(AddPooledString("All")) {}
-  ///////////////////////////////////////
-  ~VRIMPL() {
-    if (_frametek)
-      delete _frametek;
-  }
-  ///////////////////////////////////////
-  void init(lev2::GfxTarget* pTARG) {
-    _material.Init(pTARG);
-    int w     = orkidvr::device()._width;
-    int h     = orkidvr::device()._height;
-    _frametek = new VrFrameTechnique(_vrnode,w*2, h);
-    _frametek->Init(pTARG);
-  }
-  ///////////////////////////////////////
-  void _myrender(FrameRenderer& renderer, CompositorDrawData& drawdata, fmtx4 rootmatrix) {
-
-    RenderContextFrameData& framedata = renderer.framedata();
     auto vrroot = framedata.getUserProperty("vrroot"_crc);
     if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
       orkidvr::gpuUpdate(as_mtx.value());
@@ -188,80 +128,102 @@ struct VRIMPL {
     auto& RCAM = orkidvr::device()._rightcamera;
     auto& CONT = orkidvr::device()._controllers;
 
-    _frametek->renderBothEyes(renderer, drawdata, &LCAM, &RCAM, CONT);
+    ///////////////////////////////////
+
+    SRect tgt_rect(0, 0, _width, _height);
+
+    _CPD.mbDrawSource = true;
+    _CPD.mpFrameTek   = nullptr;
+    _CPD.mpCameraName = nullptr;
+    _CPD.mpLayerName  = nullptr; // default == "All"
+    _CPD._clearColor  = fvec4(0.61,0,0, 1);
+
+    //////////////////////////////////////////////////////
+    // is stereo active
+    //////////////////////////////////////////////////////
+
+    if (orkidvr::device()._active) {
+      framedata.setStereoOnePass(true);
+      framedata.setUserProperty("lcam"_crc, (const CameraData*) &LCAM);
+      framedata.setUserProperty("rcam"_crc, (const CameraData*) &RCAM);
+      framedata.SetCameraData(&LCAM);
+      _CPD._impl.Set<const CameraData*>(&LCAM);
+    } else {
+      LCAM.BindGfxTarget(pTARG);
+      RCAM.BindGfxTarget(pTARG);
+      framedata.SetCameraData(&LCAM);
+      _CPD._impl.Set<const CameraData*>(&LCAM);
+    }
+
+    //////////////////////////////////////////////////////
+    pTARG->FBI()->SetAutoClear(false);
+    // clear will occur via _CPD
+    //////////////////////////////////////////////////////
+
+    // draw left and right ///////////////////////////////
+
+    RtGroupRenderTarget vrrendertarget(_rtg);
+    drawdata.mCompositingGroupStack.push(_CPD);
+      pTARG->SetRenderContextFrameData(&framedata);
+      framedata.SetDstRect(tgt_rect);
+      framedata.PushRenderTarget(&vrrendertarget);
+      pTARG->FBI()->PushRtGroup(_rtg);
+      pTARG->BeginFrame();
+      framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+  }
+  ///////////////////////////////////////
+  void endFrame( CompositorDrawData& drawdata, RtGroup* final){
+    FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
+    RenderContextFrameData& framedata = framerenderer.framedata();
+    GfxTarget* pTARG                  = framedata.GetTarget();
+    pTARG->EndFrame();
+    pTARG->FBI()->PopRtGroup();
+    framedata.PopRenderTarget();
+    pTARG->SetRenderContextFrameData(nullptr);
+    drawdata.mCompositingGroupStack.pop();
+    framedata.setStereoOnePass(false);
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;
   CompositingMaterial _material;
-  VrFrameTechnique* _frametek;
   VrCompositingNode* _vrnode = nullptr;
+  RtGroup* _rtg = nullptr;
+  BuiltinFrameEffectMaterial _effect;
+  CompositingPassData _CPD;
+  fmtx4 _viewOffsetMatrix;
+  int _width = 0;
+  int _height = 0;
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(this); }
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::~VrCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
-{
-  auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
-
-  if (nullptr == vrimpl->_frametek) {
-    vrimpl->init(pTARG);
-  }
+void VrCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH)
+{ _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::_produce(CompositorDrawData& drawdata, CompositingImpl* impl,innerl_t lambda) // virtual
-{
-  FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = the_renderer.framedata();
-  auto targ                               = framedata.GetTarget();
-
-  auto vrimpl                 = _impl.Get<std::shared_ptr<VRIMPL>>();
-
-  //////////////////////////////////////////////
-  // find vr camera
-  //////////////////////////////////////////////
-
-
-  auto vrcamprop = framedata.getUserProperty("vrcam"_crc);
-  fmtx4 rootmatrix;
-  if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
-    auto vrcam = as_cam.value();
-    auto eye = vrcam->GetEye();
-    auto tgt = vrcam->GetTarget();
-    auto up  = vrcam->GetUp();
-    rootmatrix.LookAt(eye, tgt, up);
-  }
-  else{
-    printf("vrcamtype<%s>\n", vrcamprop.GetTypeName() );
-  }
-
-  if (vrimpl->_frametek) {
-
-    vrimpl->_frametek->_viewOffsetMatrix = orkidvr::device()._outputViewOffsetMatrix;
-
-    /////////////////////////////////////////////////////////////////////////////
-    // render eyes
-    /////////////////////////////////////////////////////////////////////////////
-
-    framedata.setLayerName("All");
-    vrimpl->_myrender(the_renderer, drawdata, rootmatrix);
-
-    /////////////////////////////////////////////////////////////////////////////
-    // VR compositor
-    /////////////////////////////////////////////////////////////////////////////
-
-    auto buffer = vrimpl->_frametek->_rtg->GetMrt(0);
-    assert(buffer != nullptr);
-
-    /////////////////////////////////////////////////////////////////////////////
-
-    auto tex = buffer->GetTexture();
-    if (tex) {
-      orkidvr::composite(targ, tex);
+void VrCompositingNode::beginFrame(CompositorDrawData& drawdata, CompositingImpl* cimpl)
+{ auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
+  vrimpl->beginFrame(drawdata);
+}
+void VrCompositingNode::endFrame(CompositorDrawData& drawdata, CompositingImpl* impl,RtGroup* final){
+  _impl.Get<std::shared_ptr<VRIMPL>>()->endFrame(drawdata,final);
+  /////////////////////////////////////////////////////////////////////////////
+  // VR compositor
+  /////////////////////////////////////////////////////////////////////////////
+  FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
+  RenderContextFrameData& framedata  = framerenderer.framedata();
+  GfxTarget* targ                    = framedata.GetTarget();
+  if( final ){
+    auto buffer = final->GetMrt(0);
+    if( buffer ){
+      assert(buffer != nullptr);
+      auto tex = buffer->GetTexture();
+      if (tex) {
+        orkidvr::composite(targ, tex);
+      }
     }
-
-    /////////////////////////////////////////////////////////////////////////////
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

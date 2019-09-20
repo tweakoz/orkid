@@ -35,15 +35,16 @@ struct IMPL {
   ~IMPL() {
   }
   ///////////////////////////////////////
-  void init(lev2::GfxTarget* pTARG) {
+  void gpuInit(lev2::GfxTarget* pTARG) {
   }
   ///////////////////////////////////////
-  void _produce(CompositorDrawData& drawdata,OutputCompositingNode::innerl_t lambda) {
+  void beginFrame(CompositorDrawData& drawdata) {
     FrameRenderer& fr_renderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = fr_renderer.framedata();
     auto targ                         = framedata.GetTarget();
     framedata.setLayerName(_node->_layername.c_str());
-    lambda();
+  }
+  void endFrame(CompositorDrawData& drawdata,RtGroup* final) {
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;
@@ -52,11 +53,14 @@ struct IMPL {
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode() { _impl = std::make_shared<IMPL>(this); }
 ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {}
-void ScreenOutputCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
-{ _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
+void ScreenOutputCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH)
+{ _impl.Get<std::shared_ptr<IMPL>>()->gpuInit(pTARG);
 }
-void ScreenOutputCompositingNode::_produce(CompositorDrawData& drawdata, CompositingImpl* cimpl,innerl_t lambda)
-{ _impl.Get<std::shared_ptr<IMPL>>()->_produce(drawdata,lambda);
+void ScreenOutputCompositingNode::beginFrame(CompositorDrawData& drawdata, CompositingImpl* cimpl)
+{ _impl.Get<std::shared_ptr<IMPL>>()->beginFrame(drawdata);
+}
+void ScreenOutputCompositingNode::endFrame(CompositorDrawData& drawdata, CompositingImpl* cimpl, RtGroup* final)
+{ _impl.Get<std::shared_ptr<IMPL>>()->endFrame(drawdata,final);
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

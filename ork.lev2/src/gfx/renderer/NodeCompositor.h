@@ -22,17 +22,11 @@ namespace ork::lev2 {
     DeclareAbstractX(OutputCompositingNode, ork::Object);
 
   public:
-    typedef std::function<void()> innerl_t;
     OutputCompositingNode();
     ~OutputCompositingNode();
-    void Init(lev2::GfxTarget* pTARG, int w, int h);
-    void produce(CompositorDrawData& drawdata, CompositingImpl* pCCI,innerl_t lambda);
-
-  private:
-    virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
-    virtual void _produce(CompositorDrawData& drawdata,
-                         CompositingImpl* pCCI,
-                         innerl_t lambda) = 0;
+    virtual void gpuInit(lev2::GfxTarget* pTARG, int w, int h) {}
+    virtual void beginFrame(CompositorDrawData& drawdata, CompositingImpl* pCCI) {}
+    virtual void endFrame(CompositorDrawData& drawdata, CompositingImpl* pCCI,RtGroup* final) {}
   };
   ///////////////////////////////////////////////////////////////////////////////
   class RenderCompositingNode : public ork::Object {
@@ -133,9 +127,9 @@ namespace ork::lev2 {
     void _writeOutputNode(ork::rtti::ICastable* const& val);
 
   private:
-    void Init(lev2::GfxTarget* pTARG, int w, int h) override;                                                     // virtual
-    void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;                              // virtual
-    void composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) override; // virtual
+    void Init(lev2::GfxTarget* pTARG, int w, int h) override;
+    void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;
+    void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) override;
     //
 
     ork::ObjectMap mBufferMap;

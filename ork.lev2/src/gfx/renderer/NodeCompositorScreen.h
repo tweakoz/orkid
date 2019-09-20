@@ -22,8 +22,9 @@ public:
   PoolString _layername;
 
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void _produce(CompositorDrawData& drawdata, CompositingImpl* pCCI,innerl_t lambda) final; // virtual
+  void gpuInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void beginFrame(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
+  void endFrame(CompositorDrawData& drawdata, CompositingImpl* pCCI,RtGroup* final) final;
 
   svar256_t _impl;
 

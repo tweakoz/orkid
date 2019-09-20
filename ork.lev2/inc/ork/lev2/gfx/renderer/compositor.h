@@ -116,7 +116,7 @@ class CompositingTechnique : public ork::Object {
 public:
   virtual void Init(lev2::GfxTarget* pTARG, int w, int h) = 0;
   virtual void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
-  virtual void composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) = 0;
+  virtual void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,8 +140,8 @@ struct CompositingContext {
   CompositingContext();
   ~CompositingContext();
   void Init(lev2::GfxTarget* pTARG);
-  void assemble(lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingImpl* pCCI);
-  void composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI);
+  void assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI);
+  void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI);
   void Resize(int iW, int iH);
 };
 
@@ -170,6 +170,8 @@ typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
 ///////////////////////////////////////////////////////////////////////////
 
 struct CompositorDrawData {
+  GfxTarget* target() const;
+
   lev2::FrameRenderer& mFrameRenderer;
   orkstack<CompositingPassData> mCompositingGroupStack;
 
@@ -224,8 +226,8 @@ public:
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
-  void assemble(lev2::FrameRenderer& framerenderer);
-  void composite(lev2::GfxTarget* pT);
+  void assemble(lev2::CompositorDrawData& drawdata);
+  void composite(lev2::CompositorDrawData& drawdata);
 
   const CompositingData& compositingData() const { return _compositingData; }
 

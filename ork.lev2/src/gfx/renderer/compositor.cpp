@@ -149,20 +149,26 @@ void CompositingContext::Resize(int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::assemble(lev2::GfxTarget* pTARG, CompositorDrawData& drawdata, CompositingImpl* pCCI) {
-  Init(pTARG); // fixme lazy init
+void CompositingContext::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+  Init(drawdata.target()); // fixme lazy init
   if (_compositingTechnique) {
-    _compositingTechnique->Init(pTARG, miWidth, miHeight);
+    _compositingTechnique->Init(drawdata.target(), miWidth, miHeight);
     _compositingTechnique->assemble(drawdata, pCCI);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI) {
-  Init(pT);
+GfxTarget* CompositorDrawData::target() const {
+  return mFrameRenderer.framedata().GetTarget();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompositingContext::composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+  Init(drawdata.target());
   if (_compositingTechnique)
-    _compositingTechnique->composite(pT, pCCI, *this);
+    _compositingTechnique->composite(drawdata, pCCI);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -107,24 +107,22 @@ void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
   if (_postfxNode)
     _postfxNode->Init(pTARG, w, h);
   if (_outputNode)
-    _outputNode->Init(pTARG, w, h);
+    _outputNode->gpuInit(pTARG, w, h);
 
   mCompositingMaterial.Init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
-  OutputCompositingNode::innerl_t L = [&](){
-    if (_renderNode)
-      _renderNode->Render(drawdata, cimpl);
+  if (_outputNode and _renderNode) {
+    _outputNode->beginFrame(drawdata, cimpl);
+    _renderNode->Render(drawdata, cimpl);
     if (_postfxNode)
       _postfxNode->Render(drawdata, cimpl);
-  };
-  if (_outputNode)
-      _outputNode->produce(drawdata, cimpl,L);
-
+  }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::composite(ork::lev2::GfxTarget* pT, CompositingImpl* pCCI, CompositingContext& cctx) {
+void NodeCompositingTechnique::composite(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
+  auto pT = drawdata.target();
   auto fbi = pT->FBI();
   auto buf = fbi->GetThisBuffer();
   int w = pT->GetW();
@@ -147,6 +145,8 @@ void NodeCompositingTechnique::composite(ork::lev2::GfxTarget* pT, CompositingIm
       mCompositingMaterial.SetTechnique("Asolo");
       // TODO - apply post
       buf->RenderMatOrthoQuad(vprect, quadrect, &mCompositingMaterial, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
+
+      _outputNode->endFrame(drawdata, cimpl,render);
     }
   }
 }
@@ -172,8 +172,6 @@ void PostCompositingNode::Render(CompositorDrawData& drawdata, CompositingImpl* 
 void OutputCompositingNode::describeX(class_t*c) {}
 OutputCompositingNode::OutputCompositingNode() {}
 OutputCompositingNode::~OutputCompositingNode() {}
-void OutputCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
-void OutputCompositingNode::produce(CompositorDrawData& drawdata, CompositingImpl* pCCI,innerl_t lambda) { _produce(drawdata, pCCI,lambda); }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 void SeriesCompositingNode::describeX(class_t*c) {

@@ -66,6 +66,8 @@ struct IMPL {
     // clear will occur via _CPD
     //////////////////////////////////////////////////////
 
+    auto outerRT = framedata.GetRenderTarget();
+
     RtGroupRenderTarget rt(_rtg);
     drawdata.mCompositingGroupStack.push(_CPD);
     {
@@ -83,13 +85,11 @@ struct IMPL {
       drawdata.mCompositingGroupStack.pop();
     }
 
-    framedata.setStereoOnePass(false);
-    //_frametek->render(renderer, drawdata,*node);
   }
   ///////////////////////////////////////
   PoolString _camname, _layername;
   CompositingMaterial _material;
-  RtGroup* _rtg;
+  RtGroup* _rtg = nullptr;
   BuiltinFrameEffectMaterial _effect;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
