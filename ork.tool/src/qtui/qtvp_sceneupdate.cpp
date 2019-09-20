@@ -21,7 +21,6 @@
 #include <ork/lev2/gfx/texman.h>
 
 #include <ork/reflect/RegisterProperty.h>
-#include <orktool/qtui/qtvp_edrenderer.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
@@ -30,8 +29,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "qtui_scenevp.h"
-#include "qtvp_uievh.h"
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/editor/edmainwin.h>
 
@@ -40,6 +37,10 @@
 #include <ork/lev2/lev2_asset.h>
 
 #include <pkg/ent/LightingSystem.h>
+
+#include "qtui_scenevp.h"
+#include "qtvp_uievh.h"
+#include "qtvp_edrenderer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 

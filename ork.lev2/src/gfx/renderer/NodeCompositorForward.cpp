@@ -49,6 +49,8 @@ struct ForwardTechnique final : public FrameTechniqueBase {
 
     SRect tgt_rect(0, 0, miW, miH);
 
+    CompositingPassData _CPD;
+
     _CPD.mbDrawSource = true;
     _CPD.mpFrameTek   = this;
     _CPD.mpCameraName = nullptr;
@@ -83,21 +85,24 @@ struct ForwardTechnique final : public FrameTechniqueBase {
 
   RtGroup* _rtg;
   BuiltinFrameEffectMaterial _effect;
-  CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+namespace forwardnode {
 struct IMPL {
   ///////////////////////////////////////
-  IMPL()
-      : _frametek(nullptr)
-      , _camname(AddPooledString("Camera"))
-      , _layers(AddPooledString("All")) {}
+  IMPL(ForwardCompositingNode*node)
+      : _node(node)
+      , _camname("Camera"_pool)
+      , _layers("All"_pool) {}
   ///////////////////////////////////////
   ~IMPL() {
-    if (_frametek)
+    assert(false);
+    if (_frametek){
       delete _frametek;
+      _frametek = nullptr;
+    }
   }
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
@@ -106,22 +111,29 @@ struct IMPL {
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
-  void _myrender(ForwardCompositingNode* node, FrameRenderer& renderer, CompositorDrawData& drawdata) {
-    _frametek->render(renderer, drawdata,*node);
+  void _render(FrameRenderer& renderer, CompositorDrawData& drawdata) {
+    _frametek->render(renderer, drawdata,*_node);
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;
   CompositingMaterial _material;
-  ForwardTechnique* _frametek;
+  ForwardTechnique* _frametek = nullptr;
+  ForwardCompositingNode* _node;
 };
+typedef std::shared_ptr<IMPL> implptr_t;
+} //namespace forwardnode {
+
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::ForwardCompositingNode() { _impl = std::make_shared<IMPL>(); }
+ForwardCompositingNode::ForwardCompositingNode() : _layername("All"_pool) { _impl = std::make_shared<forwardnode::IMPL>(this); }
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::~ForwardCompositingNode() {}
+ForwardCompositingNode::~ForwardCompositingNode() {
+  assert(false);
+  _impl = nullptr;
+}
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
 {
-  auto impl = _impl.Get<std::shared_ptr<IMPL>>();
+  auto impl = _impl.Get<forwardnode::implptr_t>();
   if (nullptr == impl->_frametek) {
     impl->init(pTARG);
   }
@@ -132,16 +144,16 @@ void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingI
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = the_renderer.framedata();
   auto targ                         = framedata.GetTarget();
-  auto impl                         = _impl.Get<std::shared_ptr<IMPL>>();
+  auto impl                         = _impl.Get<forwardnode::implptr_t>();
   impl->_layers = _layername;
   if (impl->_frametek) {
     framedata.setLayerName(_layername.c_str());
-    impl->_myrender(this,the_renderer, drawdata);
+    impl->_render(the_renderer, drawdata);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtGroup* ForwardCompositingNode::GetOutput() const {
-  auto impl = _impl.Get<std::shared_ptr<IMPL>>();
+  auto impl = _impl.Get<forwardnode::implptr_t>();
   if (impl->_frametek)
     return impl->_frametek->_rtg;
   else

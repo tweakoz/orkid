@@ -77,6 +77,8 @@ namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+class CompositingPassData;
+
 class FrameTechniqueBase {
 public:
   FrameTechniqueBase(int iW, int iH);
@@ -85,6 +87,8 @@ public:
   virtual void Render(FrameRenderer& ContextData) {}
   virtual RtGroup* GetFinalRenderTarget() const { return mpMrtFinal; }
   void Init(GfxTarget* targ);
+
+  virtual void update(const CompositingPassData& CPD, int itargw, int itargh) {}
 
 protected:
   int miW;

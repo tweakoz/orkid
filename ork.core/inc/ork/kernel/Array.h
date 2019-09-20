@@ -130,7 +130,7 @@ public:
 	size_t size() const;
 	void push_back( const T& val );
 	void pop_back();
-
+	const T* data() { return mArray; }
 	iterator end();
 	iterator begin();
 	iterator rbegin();

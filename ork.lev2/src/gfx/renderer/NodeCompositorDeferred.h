@@ -19,8 +19,6 @@ public:
   DeferredCompositingNode();
   ~DeferredCompositingNode();
 
-  PoolString _layername;
-
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual

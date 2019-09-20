@@ -9,14 +9,14 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <orktool/qtui/qtvp_edrenderer.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <orktool/toolcore/selection.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include "qtui_scenevp.h"
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/texman.h>
+#include "qtvp_edrenderer.h"
+#include "qtui_scenevp.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
@@ -31,7 +31,7 @@ struct NormalToSphereCoordMapper
 		NormalToSphMapMtx.SetElemYX( 0,0,  0.5f );
 		NormalToSphMapMtx.SetElemYX( 1,1, -0.5f );
 		NormalToSphMapMtx.SetElemYX( 2,2,  0.0f );
-		
+
 		NormalToSphMapMtx.SetElemYX( 0,3,  0.5f );
 		NormalToSphMapMtx.SetElemYX( 1,3, -0.5f );
 	}
@@ -85,7 +85,7 @@ static void RenderFace( lev2::GfxTarget* pTARG, const fcolor4 & clr, lev2::Textu
 
 	static NormalToSphereCoordMapper Mapper;
 
-	
+
 	static lev2::GfxMaterial3DSolid MyMaterial( pTARG );
 
 	static ork::lev2::CVtxBuffer<ork::lev2::SVtxV12C4T16> WarpVtxBuffer( 32768, 0, lev2::EPRIM_TRIANGLES );
@@ -104,11 +104,11 @@ static void RenderFace( lev2::GfxTarget* pTARG, const fcolor4 & clr, lev2::Textu
 	pTARG->GBI()->LockVB( WarpVtxBuffer );
 
 	for( float fu=fumin; fu<fumax; fu+=fstep )
-	{	
+	{
 		float fu2 = fu+fstep;
 
 		for( float fv=fvmin; fv<fvmax; fv+=fstep )
-		{	
+		{
 			float fv2 = fv+fstep;
 
 			fvec3 vface00;
@@ -283,7 +283,7 @@ void SceneEditorVP::SaveCubeMap()
 		pTEXTARG->BeginFrame();
 		{
 			ent::SceneData *pscene = mEditor.mpScene;
-			
+
 			///////////////////////////////////////////////////////////////////////////
 			mRenderer->SetTarget( pTEXTARG );
 			lev2::RenderContextFrameData ContextData( *mRenderer, & CardinalCameras[icam] );
@@ -326,7 +326,7 @@ void SceneEditorVP::SaveCubeMap()
 
 		pTEXTARG->Capture( TexPath );
 
-		FaceTextures[icam] = lev2::Texture::LoadUnManaged( TexPath ); 
+		FaceTextures[icam] = lev2::Texture::LoadUnManaged( TexPath );
 
 	}
 
@@ -377,7 +377,7 @@ void SceneEditorVP::SaveCubeMap()
 			pTEXTARG->BindMaterial( & tmat );
 			{
 				RenderFace( pTEXTARG, fcolor4::Green(),	FaceTextures[0], 0, fstep, -1.0f, 1.0f, -1.0f, 1.0f, TexMatrix[0], true );
-				
+
 				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[2], 2, fstep, -1.0f, 1.0f, 0.0f, 1.0f, TexMatrix[2], true );
 				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[3], 3, fstep, -1.0f, 1.0f, 0.0f, 1.0f, TexMatrix[3], true );
 
@@ -417,7 +417,7 @@ void SceneEditorVP::SaveCubeMap()
 			fmtx4 TexMatrix[6];
 
 			TexMatrix[1] = (MatInvY*MatInvX)*(MatBiasY*MatBiasX);
-			
+
 			TexMatrix[2] = (MatInvY)*(MatBiasY);
 			TexMatrix[3] = (MatInvY*MatInvX)*(MatBiasY*MatBiasX);
 
@@ -427,7 +427,7 @@ void SceneEditorVP::SaveCubeMap()
 			pTEXTARG->BindMaterial( & tmat );
 			{
 				RenderFace( pTEXTARG, fcolor4::Green(),	FaceTextures[1], 1, fstep, -1.0f, 1.0f, -1.0f, 1.0f, TexMatrix[0], false );
-				
+
 				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[2], 2, fstep, -1.0f, 1.0f, -1.0f, 0.0f, TexMatrix[2], false );
 				RenderFace( pTEXTARG, fcolor4::Blue(),	FaceTextures[3], 3, fstep, -1.0f, 1.0f, -1.0f, 0.0f, TexMatrix[3], false );
 

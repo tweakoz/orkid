@@ -22,8 +22,8 @@ public:
   Renderer(ent::SceneEditorBase& editor, lev2::GfxTarget* ptarg = nullptr);
 
 private:
-  void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::ERGST_NONE) const override;
-  void RenderModelGroup(const lev2::ModelRenderable** ModelRens, int inumr) const override;
+  void RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::RenderGroupState rgs = ork::lev2::ERGST_NONE) const final;
+  void RenderModelGroup(const lev2::IRenderer::modelgroup_t&) const final;
 
   ent::SceneEditorBase& mEditor;
 };

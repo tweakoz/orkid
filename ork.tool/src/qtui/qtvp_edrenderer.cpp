@@ -14,9 +14,9 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/texman.h>
-#include <orktool/qtui/qtvp_edrenderer.h>
 #include <orktool/toolcore/selection.h>
 #include <pkg/ent/editor/editor.h>
+#include "qtvp_edrenderer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {
@@ -28,15 +28,9 @@ Renderer::Renderer(ent::SceneEditorBase& ed, lev2::GfxTarget* ptarg)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Renderer::RenderModelGroup(const ork::lev2::ModelRenderable** Renderables, int inumr) const {
-  // printf( "Renderer::RenderModelGroup() numr<%d>\n", inumr );
-
-  for (int i = 0; i < inumr; i++) {
-    const ork::lev2::ModelRenderable& r = *Renderables[i];
-    const ork::lev2::XgmSubMesh* psub   = r.GetSubMesh();
-    ork::lev2::GfxMaterial* pmtl        = psub->GetMaterial();
-    RenderModel(r);
-  }
+void Renderer::RenderModelGroup(const modelgroup_t& mdlgroup) const {
+  for (auto r : mdlgroup)
+    RenderModel(*r);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

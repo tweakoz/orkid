@@ -179,8 +179,8 @@ protected:
   int miCullCameraIndex;
   int mCompositorSceneIndex;
   int mCompositorSceneItemIndex;
-  orkstack<lev2::CompositingPassData> mCompositingGroupStack;
   bool mbSceneDisplayEnable;
+  orkstack<lev2::CompositingPassData> _compositingGroupStack;
 
 private:
   UpdateThread* _updateThread;
