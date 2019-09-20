@@ -89,7 +89,6 @@ struct ForwardTechnique final : public FrameTechniqueBase {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace forwardnode {
 struct IMPL {
   ///////////////////////////////////////
   IMPL(ForwardCompositingNode*node)
@@ -121,10 +120,9 @@ struct IMPL {
   ForwardCompositingNode* _node;
 };
 typedef std::shared_ptr<IMPL> implptr_t;
-} //namespace forwardnode {
 
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::ForwardCompositingNode() : _layername("All"_pool) { _impl = std::make_shared<forwardnode::IMPL>(this); }
+ForwardCompositingNode::ForwardCompositingNode() : _layername("All"_pool) { _impl = std::make_shared<IMPL>(this); }
 ///////////////////////////////////////////////////////////////////////////////
 ForwardCompositingNode::~ForwardCompositingNode() {
   assert(false);
@@ -133,7 +131,7 @@ ForwardCompositingNode::~ForwardCompositingNode() {
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
 {
-  auto impl = _impl.Get<forwardnode::implptr_t>();
+  auto impl = _impl.Get<implptr_t>();
   if (nullptr == impl->_frametek) {
     impl->init(pTARG);
   }
@@ -144,7 +142,7 @@ void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingI
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = the_renderer.framedata();
   auto targ                         = framedata.GetTarget();
-  auto impl                         = _impl.Get<forwardnode::implptr_t>();
+  auto impl                         = _impl.Get<implptr_t>();
   impl->_layers = _layername;
   if (impl->_frametek) {
     framedata.setLayerName(_layername.c_str());
@@ -153,7 +151,7 @@ void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingI
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtGroup* ForwardCompositingNode::GetOutput() const {
-  auto impl = _impl.Get<forwardnode::implptr_t>();
+  auto impl = _impl.Get<implptr_t>();
   if (impl->_frametek)
     return impl->_frametek->_rtg;
   else

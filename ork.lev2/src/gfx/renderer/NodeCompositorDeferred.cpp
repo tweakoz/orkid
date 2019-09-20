@@ -26,7 +26,6 @@ void DeferredCompositingNode::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
-namespace deferrednode {
 struct IMPL {
   ///////////////////////////////////////
   IMPL()
@@ -93,15 +92,14 @@ struct IMPL {
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
 };
-} //namespace deferrednode {
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNode::DeferredCompositingNode() { _impl = std::make_shared<deferrednode::IMPL>(); }
+DeferredCompositingNode::DeferredCompositingNode() { _impl = std::make_shared<IMPL>(); }
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::~DeferredCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
-{  _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->init(pTARG);
+{  _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* cimpl) // virtual
@@ -109,12 +107,12 @@ void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata, Compositing
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = the_renderer.framedata();
   auto targ                         = framedata.GetTarget();
-  auto impl                         = _impl.Get<std::shared_ptr<deferrednode::IMPL>>();
+  auto impl                         = _impl.Get<std::shared_ptr<IMPL>>();
   impl->_render(this,the_renderer, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtGroup* DeferredCompositingNode::GetOutput() const {
-  return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg;
+  return _impl.Get<std::shared_ptr<IMPL>>()->_rtg;
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
