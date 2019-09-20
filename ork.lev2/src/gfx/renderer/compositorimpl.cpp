@@ -20,10 +20,10 @@
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/application/application.h>
-#include "NodeCompositorFx3.h"
-#include "NodeCompositorScreen.h"
-#include "NodeCompositorForward.h"
-#include "NodeCompositorDeferred.h"
+#include "NodeCompositor/NodeCompositorFx3.h"
+#include "NodeCompositor/NodeCompositorScreen.h"
+#include "NodeCompositor/NodeCompositorForward.h"
+#include "NodeCompositor/NodeCompositorDeferred.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");

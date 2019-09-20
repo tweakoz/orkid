@@ -21,13 +21,13 @@
 #include <ork/lev2/gfx/particle/modular_particles.h>
 #include <ork/dataflow/dataflow.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
-#include "gfx/renderer/NodeCompositorVr.h"
-#include "gfx/renderer/NodeCompositorFx3.h"
-#include "gfx/renderer/NodeCompositorPtx.h"
-#include "gfx/renderer/NodeCompositorScaleBias.h"
-#include "gfx/renderer/NodeCompositorScreen.h"
-#include "gfx/renderer/NodeCompositorForward.h"
-#include "gfx/renderer/NodeCompositorDeferred.h"
+#include "gfx/renderer/NodeCompositor/NodeCompositorVr.h"
+#include "gfx/renderer/NodeCompositor/NodeCompositorFx3.h"
+#include "gfx/renderer/NodeCompositor/NodeCompositorPtx.h"
+#include "gfx/renderer/NodeCompositor/NodeCompositorScaleBias.h"
+#include "gfx/renderer/NodeCompositor/NodeCompositorScreen.h"
+#include "gfx/renderer/NodeCompositor/NodeCompositorForward.h"
+#include "gfx/renderer/NodeCompositor/NodeCompositorDeferred.h"
 ///////////////////////////////////////////////////////////////////////////////
 //#define WIIEMU
 ///////////////////////////////////////////////////////////////////////////////
