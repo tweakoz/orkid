@@ -81,12 +81,12 @@ private:
 	Outliner2View&						mVP;
 	std::vector<Outliner2Item>			mItems;
 	std::set<ork::Object*>				mSelected;
-	int mLastSelection;
-	bool mShowEnts;
-	bool mShowArchs;
-	bool mShowComps;
-	bool mShowSystems;
-	bool mShowGlobals;
+	int mLastSelection = 0;
+	bool mShowEnts = true;
+	bool mShowArchs = true;
+	bool mShowComps = true;
+	bool mShowSystems = true;
+	bool mShowGlobals = true;
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct Outliner2View : public ui::Surface
@@ -112,14 +112,14 @@ private:
 	ui::HandlerResult DoOnUiEvent( const ui::Event& EV ) override;
 	void SetNameOfSelectedItem();
 
-	bool mBlockUser;
+	bool mBlockUser = true;
 	bool mInSlotFromselectionManager;
-	ork::lev2::Font* mFont;
-	int mCharW, mCharH;
-	int miScrollY;
-	int mContentH;
-	bool mDark;
-	ork::lev2::CTXBASE* mCtxBase;
+	ork::lev2::Font* mFont = nullptr;
+	int mCharW = 0, mCharH = 0;
+	int miScrollY = 0;
+	int mContentH = 0;
+	bool mDark = true;
+	ork::lev2::CTXBASE* mCtxBase = nullptr;
 
 };
 ///////////////////////////////////////////////////////////////////////////////

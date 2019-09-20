@@ -36,7 +36,7 @@ public:
   static const int kmaxrablesmed = 1024;
   static const int kmaxrablessm  = 64;
 
-private:
+protected:
   GfxTarget* mpTarget;
 
   ork::fixedvector<U32, RenderQueue::krqmaxsize> mQueueSortKeys;
@@ -45,13 +45,18 @@ private:
   ork::fixedvector<ModelRenderable, kmaxrables> mModels;
   ork::fixedvector<CallbackRenderable, kmaxrablesmed> mCallbacks;
 
+  typedef ork::fixedvector<const ModelRenderable*,kmaxrablesmed> modelgroup_t;
+  modelgroup_t _groupedModels;
+
 public:
+
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Immediate Rendering (sort of, actually just submit the renderable to the target, which might itself place into a display list)
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   virtual void RenderModel(const ModelRenderable& ModelRen, RenderGroupState rgs = ERGST_NONE) const = 0;
-  virtual void RenderModelGroup(const ModelRenderable** Renderables, int inumr) const                = 0;
+  virtual void RenderModelGroup(const modelgroup_t& group) const                = 0;
   void RenderCallback(const CallbackRenderable& cbren) const;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

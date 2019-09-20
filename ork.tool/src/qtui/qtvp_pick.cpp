@@ -1,3 +1,4 @@
+#include <ork/application/application.h>
 #include "qtui_scenevp.h"
 #include "qtvp_uievh.h"
 #include <ork/kernel/future.hpp>
@@ -163,10 +164,10 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   ///////////////////////////////////////////////////////////////////////////
   // use source viewport's W/H for camera matrix computation
   ///////////////////////////////////////////////////////////////////////////
-  frame_data->AddLayer(AddPooledLiteral("All"));
+  frame_data->AddLayer("All"_pool);
   ///////////////////////////////////////////////////////////////////////////
   rendervar_t passdata;
-  passdata.Set<compositingpassdatastack_t*>(&mpViewport->mCompositingGroupStack);
+  passdata.Set<compositingpassdatastack_t*>(&mpViewport->_compositingGroupStack);
   frame_data->setUserProperty("nodes"_crc, passdata);
   lev2::CompositingPassData compositor_node;
   ///////////////////////////////////////////////////////////////////////////
@@ -193,9 +194,9 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
     pTEXTARG->FBI()->PushViewport(VPRect);
     pTEXTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     pTEXTARG->PushModColor(fcolor4::Yellow());
-    mpViewport->mCompositingGroupStack.push(compositor_node);
+    mpViewport->_compositingGroupStack.push(compositor_node);
     { mpViewport->renderEnqueuedScene(*frame_data); }
-    mpViewport->mCompositingGroupStack.pop();
+    mpViewport->_compositingGroupStack.pop();
     pTEXTARG->PopModColor();
     pTEXTARG->FBI()->PopRtGroup();
     pTEXTARG->FBI()->PopViewport();

@@ -136,7 +136,7 @@ struct CompositingContext {
   int miWidth;
   int miHeight;
   lev2::GfxMaterial3DSolid mUtilMaterial;
-  CompositingTechnique* mCTEK;
+  CompositingTechnique* mCTEK = nullptr;
 
   CompositingContext();
   ~CompositingContext();
@@ -167,7 +167,7 @@ struct CompositingPassData {
   void renderPass(lev2::RenderContextFrameData& RCFD,void_lambda_t CALLBACK);
 };
 
-typedef orkstack<lev2::CompositingPassData> compositingpassdatastack_t;
+typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
 
 ///////////////////////////////////////////////////////////////////////////
 

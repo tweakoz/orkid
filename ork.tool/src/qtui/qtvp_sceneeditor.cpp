@@ -23,7 +23,6 @@
 
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <orktool/qtui/qtvp_edrenderer.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
 
@@ -31,8 +30,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "qtui_scenevp.h"
-#include "qtvp_uievh.h"
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/editor/edmainwin.h>
 
@@ -42,6 +39,10 @@
 
 #include <pkg/ent/LightingSystem.h>
 #include <pkg/ent/scene.hpp>
+
+#include "qtvp_uievh.h"
+#include "qtvp_edrenderer.h"
+#include "qtui_scenevp.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -341,13 +342,13 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     if (DB) {
       DRAWBEGIN();
       rendervar_t passdata;
-      passdata.Set<compositingpassdatastack_t*>(&mCompositingGroupStack);
+      passdata.Set<compositingpassdatastack_t*>(&_compositingGroupStack);
       RCFD.setUserProperty("nodes"_crc, passdata);
       lev2::CompositingPassData node;
-      mCompositingGroupStack.push(node);
-      mpBasicFrameTek->_shouldBeginAndEndFrame = false;
-      mpBasicFrameTek->Render(framerenderer);
-      mCompositingGroupStack.pop();
+      _compositingGroupStack.push(node);
+          mpBasicFrameTek->_shouldBeginAndEndFrame = false;
+          mpBasicFrameTek->Render(framerenderer);
+      _compositingGroupStack.pop();
       DRAWEND();
       lev2::DrawableBuffer::EndDbRead(DB);
     }

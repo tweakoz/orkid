@@ -29,8 +29,7 @@ static const int kRenderbufferSize = 1024 << 10;
 IRenderer::IRenderer(GfxTarget* pTARG)
     : mPerformanceItem(0)
     , mpTarget(pTARG)
-    , mRenderQueue()
-{}
+    , mRenderQueue() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -43,14 +42,14 @@ void IRenderer::drawEnqueuedRenderables() {
   if (mPerformanceItem)
     mPerformanceItem->Enter();
 
-	///////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////
   size_t renderQueueSize = mRenderQueue.Size();
 
   if (renderQueueSize == 0) {
     return;
   }
 
-	///////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////
   mQueueSortKeys.clear();
 
   mRenderQueue.ExportRenderableNodes(mQueueSortNodes);
@@ -60,7 +59,7 @@ void IRenderer::drawEnqueuedRenderables() {
     mQueueSortKeys[i] = mQueueSortNodes[i]->_renderable->ComposeSortKey(this);
   }
 
-	///////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////
   // orkprintf( "rqsize<%d>\n", renderQueueSize );
 
   U32& first = (*mQueueSortKeys.begin());
@@ -69,68 +68,28 @@ void IRenderer::drawEnqueuedRenderables() {
 
   U32* sortedRenderQueueIndices = mRadixSorter.GetIndices();
 
-  int irun      = 0;
   int imdlcount = 0;
 
   float fruntot = 0.0f;
 
-	///////////////////////////////////////////////////////
-  static const ork::lev2::ModelRenderable* spGroupedModels[RenderQueue::krqmaxsize];
+  ///////////////////////////////////////////////////////
+  // attempt renderable grouping...
+  ///////////////////////////////////////////////////////
+
+  _groupedModels.clear();
+
   for (size_t i = 0; i < renderQueueSize; i++) {
-    OrkAssert(sortedRenderQueueIndices[i] < U32(renderQueueSize));
-    const RenderQueue::Node* pnode = mQueueSortNodes[sortedRenderQueueIndices[i]];
-    OrkAssert(pnode);
-    int igroupsize = 0;
-    bool bren      = true;
-    bool islast    = (i + 1 == renderQueueSize);
-
-    // if( pnode )
-    //{
-    // u32 ukey = pnode->_renderable->ComposeSortKey( this );
-    // printf( "ukek<0x%x>\n", ukey );
-    //}
-    if (i < renderQueueSize) {
-      int sortedindex                        = sortedRenderQueueIndices[i + 1];
-      const RenderQueue::Node* pnext         = islast ? 0 : mQueueSortNodes[sortedindex];
-      const ork::lev2::ModelRenderable* pmdl = rtti::autocast(pnode->_renderable);
-
-      if (pmdl) {
-        imdlcount++;
-      }
-      if (pnext && pnode->_renderable->CanGroup(pnext->_renderable)) {
-        spGroupedModels[irun] = pmdl;
-        bren                  = false;
-        irun++;
-        fruntot += 1.0f;
-      } else {
-        if (irun > 0) {
-          const ork::lev2::ModelRenderable* pmdl = rtti::autocast(pnode->_renderable);
-          spGroupedModels[irun]                  = pmdl;
-          igroupsize                             = (irun + 1);
-        }
-        irun = 0;
-      }
-    }
-    // orkprintf( "rq <%d:%p> irun<%d> igroupsize<%d>\n", i, pnode->_renderable, irun, igroupsize );
-    // orkprintf( "//////////////////////////\n" );
-    if (bren) {
-      if (igroupsize) {
-        // render renderables as a group to amortize state setup costs
-        // orkprintf( "rq<%d> Rendering Group size<%d>\n", i, igroupsize );
-        // OrkAssert( mpTarget->FBI()->IsPickState() == false );
-
-        this->RenderModelGroup(spGroupedModels, igroupsize);
-      } else {
-        pnode->_renderable->Render(this);
-      }
-    }
-    // orkprintf( "//////////////////////////\n" );
+    int sorted = sortedRenderQueueIndices[i];
+    OrkAssert(sorted < U32(renderQueueSize));
+    const RenderQueue::Node* pnode = mQueueSortNodes[sorted];
+    pnode->_renderable->Render(this);
   }
+
   float favgrun = fruntot / float(imdlcount);
-	///////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////
 
   ResetQueue();
-	///////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////
 
   if (mPerformanceItem)
     mPerformanceItem->Exit();

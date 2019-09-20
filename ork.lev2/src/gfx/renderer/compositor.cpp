@@ -96,8 +96,9 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingPassData::updateCompositingSize(int w, int h) {
-  if( auto ftek = dynamic_cast<BuiltinFrameTechniques*>(mpFrameTek) )
-      ftek->update(*this,w,h);
+  if( mpFrameTek )
+    if( auto ftek = dynamic_cast<FrameTechniqueBase*>(mpFrameTek) )
+        ftek->update(*this,w,h);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingPassData::renderPass(lev2::RenderContextFrameData& RCFD,void_lambda_t CALLBACK) {
