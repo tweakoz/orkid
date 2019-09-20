@@ -26,6 +26,9 @@ void DummyGfxTargetInit()
 	GfxEnv::SetTargetClass(GfxTargetDummy::GetClassStatic());
 }
 
+DuRasterStateInterface::DuRasterStateInterface(GfxTarget& target)
+	: RasterStateInterface(target){}
+
 /////////////////////////////////////////////////////////////////////////
 
 bool DummyFxInterface::LoadFxShader( const AssetPath& pth, FxShader *pfxshader  )
@@ -72,6 +75,7 @@ GfxTargetDummy::GfxTargetDummy()
 	: GfxTarget()
 	, mFbI( *this )
 	, mMtxI( *this )
+	, mRsI( *this )
 {
 	DummyGfxTargetInit();
 	static bool binit = true;

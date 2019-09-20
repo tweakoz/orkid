@@ -53,7 +53,8 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class DuRasterStateInterface : public RasterStateInterface {
+struct DuRasterStateInterface : public RasterStateInterface {
+  DuRasterStateInterface(GfxTarget& target);
   void BindRasterState(const SRasterState& rState, bool bForce = false) override {}
   void SetZWriteMask(bool bv) override {}
   void SetRGBAWriteMask(bool rgb, bool a) override {}

@@ -98,8 +98,8 @@ namespace ork::lev2 {
     void composite(CompositorDrawData& drawdata) final;
   };
   ///////////////////////////////////////////////////////////////////////////////
-  class Fx3CompositingNode : public PostCompositingNode {
-    DeclareConcreteX(Fx3CompositingNode, PostCompositingNode);
+  class Fx3CompositingNode : public RenderCompositingNode {
+    DeclareConcreteX(Fx3CompositingNode, RenderCompositingNode);
 
   public:
     Fx3CompositingNode();

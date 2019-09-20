@@ -18,13 +18,16 @@
 
 namespace ork { namespace lev2 {
 
+GlRasterStateInterface::GlRasterStateInterface( GfxTarget& target )
+	: RasterStateInterface(target) {}
+
 void GlRasterStateInterface::SetZWriteMask( bool bv )
-{	
+{
 	GLenum zmask = bv ? GL_TRUE : GL_FALSE;
 	glDepthMask( zmask );
 }
 void GlRasterStateInterface::SetRGBAWriteMask( bool rgb, bool a )
-{	
+{
 	GLenum rgbmask = rgb ? GL_TRUE : GL_FALSE;
 	GLenum amask = a ? GL_TRUE : GL_FALSE;
 	glColorMask( rgbmask,
@@ -81,10 +84,10 @@ void GlRasterStateInterface::SetBlending( EBlending eVal )
 	}
 }
 void GlRasterStateInterface::SetDepthTest( EDepthTest eVal )
-{	
+{
 	GL_ERRORCHECK();
 	switch( eVal )
-	{	
+	{
 		case EDEPTHTEST_OFF:
 			glDisable( GL_DEPTH_TEST );
 			break;
@@ -119,7 +122,7 @@ void GlRasterStateInterface::SetDepthTest( EDepthTest eVal )
 	GL_ERRORCHECK();
 }
 void GlRasterStateInterface::SetCullTest( ECullTest eVal )
-{	
+{
 	GL_ERRORCHECK();
 	switch( eVal )
 	{
@@ -156,8 +159,8 @@ void GlRasterStateInterface::SetScissorTest( EScissorTest eVal )
 
 void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool bForce )
 {
+	_target.debugPushGroup("GlRasterStateInterface::BindRasterState");
 	bForce = true;
-	
 	bool bAlphaTestChanged =	(newstate.GetAlphaTest()	!=	mLastState.GetAlphaTest()		);
 //	bool bTextureModeChanged =	(newstate.GetTextureMode()	!=	rLast.GetTextureMode()		);
 //	bool bTextureActiveChanged =(newstate.GetTextureActive()!=	rLast.GetTextureActive()	);
@@ -167,7 +170,7 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 	bool bShadeModelChanged =	(newstate.GetShadeModel()	!=	mLastState.GetShadeModel()		);
 	bool bCullTestChanged =		(newstate.GetCullTest()		!=	mLastState.GetCullTest()			);
 	bool bScissorTestChanged =	(newstate.GetScissorTest()	!=	mLastState.GetScissorTest()		);
-	
+
 	GL_ERRORCHECK();
 
 	if( bCullTestChanged || bForce )
@@ -189,13 +192,13 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 
 	/////////////////////////////////////////////////
 	//	Win32 GL Alpha
-	
+
 	if( false )
 	{
 	//	glDisable( GL_ALPHA_TEST );
 	}
 	else if( bAlphaTestChanged || bForce )
-	{	
+	{
 		static const F32 frecip = 1.0f / 15.0f;
 
 		F32 fAlphaRef = frecip * (F32) newstate.muAlphaRef;
@@ -217,7 +220,7 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 				break;
 		}
 	}
-		
+
 	/////////////////////////////////////////////////
 	//	Win32 GL Depth
 
@@ -230,16 +233,16 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 	{
 		SetScissorTest( newstate.GetScissorTest() );
 	}
-	
+
 	/////////////////////////////////////////////////
 
 	if( bBlendingChanged || bForce )
 	{
 		SetBlending( newstate.GetBlending() );
 	}
-	
+
 	GL_ERRORCHECK();
-	
+
 	if( false )
 	{
 		//glShadeModel( GL_FLAT );
@@ -259,6 +262,7 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 		}
 	}
 	GL_ERRORCHECK();
+	_target.debugPopGroup();
 
 }
 

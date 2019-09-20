@@ -149,13 +149,21 @@ void RenderCompositingNode::describeX(class_t*c) {}
 RenderCompositingNode::RenderCompositingNode() {}
 RenderCompositingNode::~RenderCompositingNode() {}
 void RenderCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
-void RenderCompositingNode::Render(CompositorDrawData& drawdata) { DoRender(drawdata); }
+void RenderCompositingNode::Render(CompositorDrawData& drawdata) {
+  drawdata.target()->debugPushGroup("RenderCompositingNode::Render");
+  DoRender(drawdata);
+  drawdata.target()->debugPopGroup();
+}
 
 void PostCompositingNode::describeX(class_t*c) {}
 PostCompositingNode::PostCompositingNode() {}
 PostCompositingNode::~PostCompositingNode() {}
 void PostCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
-void PostCompositingNode::Render(CompositorDrawData& drawdata) { DoRender(drawdata); }
+void PostCompositingNode::Render(CompositorDrawData& drawdata) {
+  drawdata.target()->debugPushGroup("PostCompositingNode::Render");
+  DoRender(drawdata);
+  drawdata.target()->debugPopGroup();
+}
 
 void OutputCompositingNode::describeX(class_t*c) {}
 OutputCompositingNode::OutputCompositingNode() {}

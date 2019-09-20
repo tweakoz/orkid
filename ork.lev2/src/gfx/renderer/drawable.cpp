@@ -73,10 +73,13 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName,lev2:
   {
     if (RCFD_TEMP.GetCameraData()) {
       bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
+      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
+      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
       for (const auto& layer_item : mLayerLut) {
         const PoolString& TestLayerName = layer_item.first;
         const lev2::DrawableBufLayer* player  = layer_item.second;
+        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p>", TestLayerName.c_str(),player));
 
         bool Match = (LayerName == TestLayerName);
 

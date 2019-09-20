@@ -19,8 +19,6 @@ public:
   ScaleBiasCompositingNode();
   ~ScaleBiasCompositingNode();
 
-  PoolString _layername;
-
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata) final; // virtual

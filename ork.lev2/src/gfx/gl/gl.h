@@ -84,7 +84,9 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class GlRasterStateInterface : public RasterStateInterface {
+struct GlRasterStateInterface : public RasterStateInterface {
+
+  GlRasterStateInterface(GfxTarget& target);
   void BindRasterState(const SRasterState& rState, bool bForce) override;
 
   void SetZWriteMask(bool bv) override;

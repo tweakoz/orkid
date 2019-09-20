@@ -25,6 +25,7 @@
 #include "NodeCompositor/NodeCompositorVr.h"
 #include "NodeCompositor/NodeCompositorForward.h"
 #include "NodeCompositor/NodeCompositorDeferred.h"
+#include "NodeCompositor/NodeCompositorScaleBias.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
@@ -107,13 +108,7 @@ CompositingData::CompositingData()
 
 void CompositingData::defaultSetup(){
 
-  auto p1 = new Fx3CompositingNode;
-  auto g1 = new CompositingGroup;
-  g1->_cameraName = "spawncam"_pool;
-  g1->_layers = "All"_pool;
-  g1->_effect._effectAmount = 1.0f;
-  g1->_effect._effectID = EFRAMEFX_GHOSTLY;
-  p1->_writeGroup(g1);
+  auto p1 = new ScaleBiasCompositingNode;
 
   auto t1 = new NodeCompositingTechnique;
   //auto o1 = new ScreenOutputCompositingNode;
@@ -121,7 +116,7 @@ void CompositingData::defaultSetup(){
   auto r1 = new DeferredCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
-  t1->_writePostFxNode(p1);
+  //t1->_writePostFxNode(p1);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;

@@ -59,6 +59,7 @@ Fx3CompositingTechnique::~Fx3CompositingTechnique() {
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH) {
+  pTARG->debugPushGroup("Fx3CompositingNode::Init");
   if (nullptr == mpBuiltinFrameTekA) {
     mCompositingMaterial.Init(pTARG);
 
@@ -69,10 +70,12 @@ void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH) 
     mpBuiltinFrameTekC = new lev2::BuiltinFrameTechniques(iW, iH);
     mpBuiltinFrameTekC->Init(pTARG);
   }
+  pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
 
+  drawdata.target()->debugPushGroup("Fx3CompositingNode::assemble");
   const lev2::CompositingGroup* pCGA = drawdata._cimpl->compositingGroup(mGroupA);
   const lev2::CompositingGroup* pCGB = drawdata._cimpl->compositingGroup(mGroupB);
   const lev2::CompositingGroup* pCGC = drawdata._cimpl->compositingGroup(mGroupC);
@@ -82,6 +85,7 @@ bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
                                       const lev2::CompositingGroup* pCG,
                                       lev2::BuiltinFrameTechniques* pFT,
                                       const char* layername) {
+      drawdata.target()->debugPushGroup(FormatString("Fx3CompositingNode::rend_lyr_2_comp_group layer<%s>",layername));
       lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
       lev2::RenderContextFrameData& framedata = the_renderer.framedata();
       orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
@@ -90,6 +94,7 @@ bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
       cgSTACK.push(node);
       pFT->Render(the_renderer);
       cgSTACK.pop();
+      drawdata.target()->debugPopGroup();
     }
   };
 
@@ -100,6 +105,8 @@ bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
     yo::rend_lyr_2_comp_group(drawdata, pCGB, mpBuiltinFrameTekB, "B");
   if (mpBuiltinFrameTekC) // render layerC
     yo::rend_lyr_2_comp_group(drawdata, pCGC, mpBuiltinFrameTekC, "C");
+
+  drawdata.target()->debugPopGroup();
   return true;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,6 +171,7 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingTechnique::composite(CompositorDrawData& drawdata) {
   auto pT = drawdata.target();
+  drawdata.target()->debugPushGroup("Fx3CompositingNode::composite");
   /////////////////////////////////////////////////////////////////////
   int iCSitem     = 0;
   float levAA     = 0.5f;
@@ -196,6 +204,7 @@ void Fx3CompositingTechnique::composite(CompositorDrawData& drawdata) {
     CompositeLayerToScreen(pT, meBlendMode, pRTA, pRTB, pRTC, levA, levB, levC);
   }
   /////////////////////////////////////////////////////////////////////
+  drawdata.target()->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingNode::describeX(class_t*c) {
@@ -232,6 +241,7 @@ void Fx3CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
 ///////////////////////////////////////////////////////////////////////////////
 void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
+  drawdata.target()->debugPushGroup("Fx3CompositingNode::DoRender");
   const CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.framedata();
@@ -247,6 +257,7 @@ void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
     mFTEK->Render(the_renderer);
     cgSTACK.pop();
   }
+  drawdata.target()->debugPopGroup();
 }
 
 lev2::RtGroup* Fx3CompositingNode::GetOutput() const {
