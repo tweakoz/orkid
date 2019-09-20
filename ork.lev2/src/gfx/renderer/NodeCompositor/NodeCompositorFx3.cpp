@@ -71,10 +71,11 @@ void Fx3CompositingTechnique::Init(ork::lev2::GfxTarget* pTARG, int iW, int iH) 
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
-  const lev2::CompositingGroup* pCGA = pCCI->compositingGroup(mGroupA);
-  const lev2::CompositingGroup* pCGB = pCCI->compositingGroup(mGroupB);
-  const lev2::CompositingGroup* pCGC = pCCI->compositingGroup(mGroupC);
+bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
+
+  const lev2::CompositingGroup* pCGA = drawdata._cimpl->compositingGroup(mGroupA);
+  const lev2::CompositingGroup* pCGB = drawdata._cimpl->compositingGroup(mGroupB);
+  const lev2::CompositingGroup* pCGC = drawdata._cimpl->compositingGroup(mGroupC);
 
   struct yo {
     static void rend_lyr_2_comp_group(CompositorDrawData& drawdata,
@@ -161,7 +162,7 @@ void Fx3CompositingTechnique::CompositeLayerToScreen(lev2::GfxTarget* pT,
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingTechnique::composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+void Fx3CompositingTechnique::composite(CompositorDrawData& drawdata) {
   auto pT = drawdata.target();
   /////////////////////////////////////////////////////////////////////
   int iCSitem     = 0;
@@ -175,8 +176,8 @@ void Fx3CompositingTechnique::composite(CompositorDrawData& drawdata, Compositin
   // ECOMPOSITEBlend eblend = AplusBplusC;
   /////////////////////////////////////////////////////////////////////
   const lev2::CompositingSceneItem* pCSI = 0;
-  if (pCCI) {
-    pCSI = pCCI->compositingItem(0, iCSitem);
+  if (drawdata._cimpl) {
+    pCSI = drawdata._cimpl->compositingItem(0, iCSitem);
   }
   /////////////////////////////////////////////////////////////////////
   if (pCSI) {
@@ -229,7 +230,7 @@ void Fx3CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
+void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   const CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;

@@ -21,10 +21,10 @@ public:
 
   PoolString _layername;
   fvec4 _clearColor;
-  
+
 private:
-  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-  void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
+  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoRender(CompositorDrawData& drawdata) final;
 
   lev2::RtGroup* GetOutput() const final;
   svar256_t _impl;

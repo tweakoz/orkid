@@ -21,9 +21,7 @@ ImplementReflectionX(ork::lev2::DeferredCompositingNode, "DeferredCompositingNod
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::describeX(class_t* c) {
-  c->memberProperty("ClearColor",&DeferredCompositingNode::_clearColor);
-}
+void DeferredCompositingNode::describeX(class_t* c) { c->memberProperty("ClearColor", &DeferredCompositingNode::_clearColor); }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,28 +30,30 @@ struct IMPL {
   ///////////////////////////////////////
   IMPL()
       : _camname(AddPooledString("Camera")) {
-        _layername = "All"_pool;
-      }
-  ///////////////////////////////////////
-  ~IMPL() {
+    _layername = "All"_pool;
   }
   ///////////////////////////////////////
+  ~IMPL() {}
+  ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
+    pTARG->debugPushGroup("Deferred::rendeinitr");
     if (nullptr == _rtg) {
       _material.Init(pTARG);
-      _rtg = new RtGroup(pTARG, pTARG->GetW(), pTARG->GetH(), NUMSAMPLES);
-      auto buf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, pTARG->GetW(), pTARG->GetH());
+      _rtg            = new RtGroup(pTARG, pTARG->GetW(), pTARG->GetH(), NUMSAMPLES);
+      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, pTARG->GetW(), pTARG->GetH());
       buf->_debugName = "DeferredRt";
       _rtg->SetMrt(0, buf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
+    pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
-  void _render(DeferredCompositingNode* node, FrameRenderer& renderer, CompositorDrawData& drawdata) {
-    RenderContextFrameData& framedata = renderer.framedata();
-    GfxTarget* pTARG                  = framedata.GetTarget();
-
-    SRect tgt_rect(0, 0, pTARG->GetW(), pTARG->GetH());
+  void _render(DeferredCompositingNode* node, CompositorDrawData& drawdata) {
+    FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
+    RenderContextFrameData& framedata = framerenderer.framedata();
+    auto targ                         = framedata.GetTarget();
+    auto onode                        = drawdata._properties["final"_crcu].Get<const OutputCompositingNode*>();
+    SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
 
     _CPD.mbDrawSource = true;
     _CPD.mpFrameTek   = nullptr;
@@ -63,31 +63,31 @@ struct IMPL {
     //_CPD._impl.Set<const CameraData*>(lcam);
 
     //////////////////////////////////////////////////////
-    pTARG->FBI()->SetAutoClear(false);
+    targ->FBI()->SetAutoClear(false);
     // clear will occur via _CPD
     //////////////////////////////////////////////////////
 
     auto outerRT = framedata.GetRenderTarget();
 
-    pTARG->debugMarker("Deferred::render");
+    targ->debugPushGroup("Deferred::render");
 
     RtGroupRenderTarget rt(_rtg);
     drawdata.mCompositingGroupStack.push(_CPD);
     {
-      pTARG->SetRenderContextFrameData(&framedata);
+      targ->SetRenderContextFrameData(&framedata);
       framedata.SetDstRect(tgt_rect);
       framedata.PushRenderTarget(&rt);
-      pTARG->FBI()->PushRtGroup(_rtg);
-      pTARG->BeginFrame();
+      targ->FBI()->PushRtGroup(_rtg);
+      targ->BeginFrame();
       framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-      renderer.Render();
-      pTARG->EndFrame();
-      pTARG->FBI()->PopRtGroup();
+      framerenderer.Render();
+      targ->EndFrame();
+      targ->FBI()->PopRtGroup();
       framedata.PopRenderTarget();
-      pTARG->SetRenderContextFrameData(nullptr);
+      targ->SetRenderContextFrameData(nullptr);
       drawdata.mCompositingGroupStack.pop();
     }
-
+    targ->debugPopGroup();
   }
   ///////////////////////////////////////
   PoolString _camname, _layername;
@@ -97,28 +97,22 @@ struct IMPL {
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
 };
-} //namespace deferrednode {
+} // namespace deferrednode
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::DeferredCompositingNode() { _impl = std::make_shared<deferrednode::IMPL>(); }
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::~DeferredCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
-{  _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->init(pTARG);
+void DeferredCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+  _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* cimpl) // virtual
-{
-  FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = the_renderer.framedata();
-  auto targ                         = framedata.GetTarget();
-  auto impl                         = _impl.Get<std::shared_ptr<deferrednode::IMPL>>();
-  impl->_render(this,the_renderer, drawdata);
+void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
+  auto impl = _impl.Get<std::shared_ptr<deferrednode::IMPL>>();
+  impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtGroup* DeferredCompositingNode::GetOutput() const {
-  return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg;
-}
+RtGroup* DeferredCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg; }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

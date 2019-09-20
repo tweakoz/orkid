@@ -149,12 +149,12 @@ void CompositingContext::Resize(int iW, int iH) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool CompositingContext::assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+bool CompositingContext::assemble(CompositorDrawData& drawdata) {
   bool rval = false;
   Init(drawdata.target()); // fixme lazy init
   if (_compositingTechnique) {
     _compositingTechnique->Init(drawdata.target(), miWidth, miHeight);
-    rval = _compositingTechnique->assemble(drawdata, pCCI);
+    rval = _compositingTechnique->assemble(drawdata);
   }
   return rval;
 }
@@ -167,10 +167,10 @@ GfxTarget* CompositorDrawData::target() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingContext::composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) {
+void CompositingContext::composite(CompositorDrawData& drawdata) {
   Init(drawdata.target());
   if (_compositingTechnique)
-    _compositingTechnique->composite(drawdata, pCCI);
+    _compositingTechnique->composite(drawdata);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

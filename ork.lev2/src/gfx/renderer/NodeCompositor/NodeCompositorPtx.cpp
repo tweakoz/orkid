@@ -116,7 +116,7 @@ void PtxCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
       mNode->Init(pTARG, iW, iH);
   }
 }
-void PtxCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
+void PtxCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.framedata();
@@ -128,7 +128,7 @@ void PtxCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl*
   int ih                                  = target->GetH();
 
   if (mNode)
-    mNode->Render(drawdata, pCCI);
+    mNode->Render(drawdata);
 
   SRect vprect(0, 0, iw - 1, ih - 1);
   SRect quadrect(0, ih - 1, iw - 1, 0);

@@ -38,14 +38,18 @@ struct IMPL {
   void gpuInit(lev2::GfxTarget* pTARG) {
   }
   ///////////////////////////////////////
-  void beginFrame(CompositorDrawData& drawdata) {
+  void beginAssemble(CompositorDrawData& drawdata) {
     FrameRenderer& fr_renderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = fr_renderer.framedata();
     auto targ                         = framedata.GetTarget();
     framedata.setLayerName(_node->_layername.c_str());
     targ->debugMarker("Screen::beginFrame");
   }
-  void endFrame(CompositorDrawData& drawdata,RtGroup* final) {
+  void endAssemble(CompositorDrawData& drawdata) {
+    drawdata.target()->debugMarker("Screen::endFrame");
+  }
+  void composite(CompositorDrawData& drawdata) {
+    auto final = drawdata._properties["final"_crcu].Get<RtGroup*>();
     drawdata.target()->debugMarker("Screen::endFrame");
   }
   ///////////////////////////////////////
@@ -58,11 +62,14 @@ ScreenOutputCompositingNode::~ScreenOutputCompositingNode() {}
 void ScreenOutputCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH)
 { _impl.Get<std::shared_ptr<IMPL>>()->gpuInit(pTARG);
 }
-void ScreenOutputCompositingNode::beginFrame(CompositorDrawData& drawdata, CompositingImpl* cimpl)
-{ _impl.Get<std::shared_ptr<IMPL>>()->beginFrame(drawdata);
+void ScreenOutputCompositingNode::beginAssemble(CompositorDrawData& drawdata)
+{ _impl.Get<std::shared_ptr<IMPL>>()->beginAssemble(drawdata);
 }
-void ScreenOutputCompositingNode::endFrame(CompositorDrawData& drawdata, CompositingImpl* cimpl, RtGroup* final)
-{ _impl.Get<std::shared_ptr<IMPL>>()->endFrame(drawdata,final);
+void ScreenOutputCompositingNode::endAssemble(CompositorDrawData& drawdata)
+{ _impl.Get<std::shared_ptr<IMPL>>()->endAssemble(drawdata);
+}
+void ScreenOutputCompositingNode::composite(CompositorDrawData& drawdata)
+{  _impl.Get<std::shared_ptr<IMPL>>()->composite(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

@@ -32,6 +32,7 @@ struct VRIMPL {
   ~VRIMPL() {}
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
+    pTARG->debugPushGroup("VRIMPL::gpuInit");
     _material.Init(pTARG);
     _width     = orkidvr::device()._width*2;
     _height     = orkidvr::device()._height;
@@ -43,6 +44,7 @@ struct VRIMPL {
       _rtg->SetMrt(0, lbuf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
+    pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
   typedef const std::map<int, orkidvr::ControllerState>& controllermap_t;
@@ -84,13 +86,12 @@ struct VRIMPL {
     }
   }
   ///////////////////////////////////////
-  void beginFrame(CompositorDrawData& drawdata){
+  void beginAssemble(CompositorDrawData& drawdata){
 
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = framerenderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
 
-    pTARG->debugMarker("Vr::beginFrame");
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
@@ -98,6 +99,7 @@ struct VRIMPL {
     auto vrcamprop = framedata.getUserProperty("vrcam"_crc);
     fmtx4 rootmatrix;
     if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
+      pTARG->debugMarker("Vr::gotcamera");
       auto vrcam = as_cam.value();
       auto eye = vrcam->GetEye();
       auto tgt = vrcam->GetTarget();
@@ -105,6 +107,7 @@ struct VRIMPL {
       rootmatrix.LookAt(eye, tgt, up);
     }
     else{
+      pTARG->debugMarker("Vr::nocamera");
       printf("vrcamtype<%s>\n", vrcamprop.GetTypeName() );
     }
 
@@ -171,11 +174,13 @@ struct VRIMPL {
       framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
   }
   ///////////////////////////////////////
-  void endFrame( CompositorDrawData& drawdata, RtGroup* final){
+  void endAssemble( CompositorDrawData& drawdata){
+  }
+  ///////////////////////////////////////
+  void composite( CompositorDrawData& drawdata){
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = framerenderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
-    pTARG->debugMarker("Vr::endFrame");
     pTARG->EndFrame();
     pTARG->FBI()->PopRtGroup();
     framedata.PopRenderTarget();
@@ -204,20 +209,28 @@ void VrCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH)
 { _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::beginFrame(CompositorDrawData& drawdata, CompositingImpl* cimpl)
-{ auto vrimpl = _impl.Get<std::shared_ptr<VRIMPL>>();
-  vrimpl->beginFrame(drawdata);
+void VrCompositingNode::beginAssemble(CompositorDrawData& drawdata){
+  drawdata.target()->debugPushGroup("VrCompositingNode::beginAssemble");
+  _impl.Get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
+  drawdata.target()->debugPopGroup();
 }
-void VrCompositingNode::endFrame(CompositorDrawData& drawdata, CompositingImpl* impl,RtGroup* final){
-  _impl.Get<std::shared_ptr<VRIMPL>>()->endFrame(drawdata,final);
+void VrCompositingNode::endAssemble(CompositorDrawData& drawdata) {
+  drawdata.target()->debugPushGroup("VrCompositingNode::endAssemble");
+  _impl.Get<std::shared_ptr<VRIMPL>>()->endAssemble(drawdata);
+  drawdata.target()->debugPopGroup();
+}
+
+void VrCompositingNode::composite(CompositorDrawData& drawdata){
+  drawdata.target()->debugPushGroup("VrCompositingNode::composite");
+  _impl.Get<std::shared_ptr<VRIMPL>>()->composite(drawdata);
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
   FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata  = framerenderer.framedata();
   GfxTarget* targ                    = framedata.GetTarget();
-  if( final ){
-    auto buffer = final->GetMrt(0);
+  if( auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtGroup*>() ){
+    auto buffer = try_final.value()->GetMrt(0);
     if( buffer ){
       assert(buffer != nullptr);
       auto tex = buffer->GetTexture();
@@ -226,6 +239,7 @@ void VrCompositingNode::endFrame(CompositorDrawData& drawdata, CompositingImpl* 
       }
     }
   }
+  drawdata.target()->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

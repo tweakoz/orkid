@@ -128,7 +128,7 @@ void ScaleBiasCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) //
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ScaleBiasCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* cimpl) // virtual
+void ScaleBiasCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = the_renderer.framedata();

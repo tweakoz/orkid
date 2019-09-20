@@ -328,16 +328,20 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if (compositor_enabled) {
     auto compsys = compositingSystem();
     lev2::CompositorDrawData drawdata(framerenderer);
+
     mpTarget->debugPushGroup("toolvp::assemble");
     bool aok = compsys->_impl.assemble(drawdata);
-    //printf( "aok<%d>\n", int(aok));
+    mpTarget->debugMarker(FormatString("toolvp::aok<%d>",int(aok)));
     mpTarget->debugPopGroup();
+
     mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
     DRAWBEGIN();
     mpTarget->debugPopGroup();
+
     mpTarget->debugPushGroup("toolvp::composite");
     if( aok ) compsys->_impl.composite(drawdata);
     mpTarget->debugPopGroup();
+
     mpTarget->debugPushGroup("toolvp::DRAWEND");
     DRAWEND();
     mpTarget->debugPopGroup();
@@ -346,6 +350,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   else // No Compositor
   /////////////////////////////////
   {
+    mpTarget->debugPushGroup("toolvp::nocomposite");
     auto DB     = lev2::DrawableBuffer::BeginDbRead(7);
     mRenderLock = 1;
     RCFD.setUserProperty("DB", rendervar_t(DB));
@@ -363,6 +368,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       lev2::DrawableBuffer::EndDbRead(DB);
     }
     mRenderLock = 0;
+    mpTarget->debugPopGroup();
   }
   RCFD.SetDstRect(tgtrect);
   RCFD.PopRenderTarget();

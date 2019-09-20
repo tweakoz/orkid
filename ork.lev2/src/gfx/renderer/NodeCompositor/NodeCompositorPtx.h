@@ -19,8 +19,8 @@ namespace ork::lev2 {
     ~PtxCompositingNode();
 
   private:
-    void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                     
-    void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
+    void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+    void DoRender(CompositorDrawData& drawdata) final;
 
     void GetNode(ork::rtti::ICastable*& val) const;
     void SetNode(ork::rtti::ICastable* const& val);

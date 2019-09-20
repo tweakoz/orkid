@@ -94,8 +94,8 @@ namespace ork::lev2 {
 
   private:
     void Init(lev2::GfxTarget* pTARG, int w, int h) final;
-    bool assemble(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
-    void composite(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
+    bool assemble(CompositorDrawData& drawdata) final;
+    void composite(CompositorDrawData& drawdata) final;
   };
   ///////////////////////////////////////////////////////////////////////////////
   class Fx3CompositingNode : public PostCompositingNode {
@@ -109,7 +109,7 @@ namespace ork::lev2 {
     void _writeGroup(ork::rtti::ICastable* const& val);
 
     void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-    void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
+    void DoRender(CompositorDrawData& drawdata) final; // virtual
 
     lev2::RtGroup* GetOutput() const final;
 

@@ -96,8 +96,7 @@ struct IMPL {
   ///////////////////////////////////////
   IMPL(ForwardCompositingNode*node)
       : _node(node)
-      , _camname("Camera"_pool)
-      , _layers("All"_pool) {}
+      , _camname("Camera"_pool){}
   ///////////////////////////////////////
   ~IMPL() {
     if (_frametek){
@@ -112,11 +111,18 @@ struct IMPL {
     _frametek->Init(pTARG);
   }
   ///////////////////////////////////////
-  void _render(FrameRenderer& renderer, CompositorDrawData& drawdata) {
-    _frametek->render(renderer, drawdata,*_node);
+  void _render(CompositorDrawData& drawdata) {
+    FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
+    RenderContextFrameData& framedata = the_renderer.framedata();
+    auto targ                         = framedata.GetTarget();
+    auto onode = drawdata._properties["final"_crcu].Get<const OutputCompositingNode*>();
+    if (_frametek) {
+      framedata.setLayerName(_node->_layername.c_str());
+      _frametek->render(the_renderer, drawdata,*_node);
+    }
   }
   ///////////////////////////////////////
-  PoolString _camname, _layers;
+  PoolString _camname;
   CompositingMaterial _material;
   ForwardTechnique* _frametek = nullptr;
   ForwardCompositingNode* _node;
@@ -131,25 +137,15 @@ ForwardCompositingNode::~ForwardCompositingNode() {
   _impl = nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
-{
-  auto impl = _impl.Get<forwardnode::implptr_t>();
+void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
+{ auto impl = _impl.Get<forwardnode::implptr_t>();
   if (nullptr == impl->_frametek) {
     impl->init(pTARG);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* cimpl) // virtual
-{
-  FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata = the_renderer.framedata();
-  auto targ                         = framedata.GetTarget();
-  auto impl                         = _impl.Get<forwardnode::implptr_t>();
-  impl->_layers = _layername;
-  if (impl->_frametek) {
-    framedata.setLayerName(_layername.c_str());
-    impl->_render(the_renderer, drawdata);
-  }
+void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata) {
+  _impl.Get<forwardnode::implptr_t>()->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtGroup* ForwardCompositingNode::GetOutput() const {

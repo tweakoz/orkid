@@ -21,8 +21,9 @@ public:
 
 private:
   void gpuInit(lev2::GfxTarget* pTARG, int w, int h) final;
-  void beginFrame(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
-  void endFrame(CompositorDrawData& drawdata, CompositingImpl* pCCI,RtGroup* final) final;
+  void beginAssemble(CompositorDrawData& drawdata) final;
+  void endAssemble(CompositorDrawData& drawdata) final;
+  void composite(CompositorDrawData& drawdata) final;
 
   svar256_t _impl;
 

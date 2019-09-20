@@ -104,7 +104,7 @@ void Op2CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Op2CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
+void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   auto& the_renderer = drawdata.mFrameRenderer;
   auto& framedata = the_renderer.framedata();
@@ -116,10 +116,10 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl*
   int ih = target->GetH();
 
   if (mSubA) {
-    mSubA->Render(drawdata, pCCI);
+    mSubA->Render(drawdata);
   }
   if (mSubB) {
-    mSubB->Render(drawdata, pCCI);
+    mSubB->Render(drawdata);
   }
 
   fbi->SetAutoClear(false);

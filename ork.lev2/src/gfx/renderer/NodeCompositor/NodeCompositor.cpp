@@ -91,6 +91,7 @@ void NodeCompositingTechnique::_writeOutputNode(ork::rtti::ICastable* const& val
 }
 ///////////////////////////////////////////////////////////////////////////////
 void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
+  pTARG->debugPushGroup("NodeCompositingTechnique::init");
   if (_renderNode)
     _renderNode->Init(pTARG, w, h);
   if (_postfxNode)
@@ -99,25 +100,41 @@ void NodeCompositingTechnique::Init(lev2::GfxTarget* pTARG, int w, int h) {
     _outputNode->gpuInit(pTARG, w, h);
 
   mCompositingMaterial.Init(pTARG);
+  pTARG->debugPopGroup();
 }
 ///////////////////////////////////////////////////////////////////////////////
-bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
+bool NodeCompositingTechnique::assemble(CompositorDrawData& drawdata) {
   bool rval = false;
+  drawdata.target()->debugPushGroup("NodeCompositingTechnique::assemble");
   if (_outputNode and _renderNode) {
-    _outputNode->beginFrame(drawdata, cimpl);
     rval = true;
-    _renderNode->Render(drawdata, cimpl);
-    if (_postfxNode)
-      _postfxNode->Render(drawdata, cimpl);
+    ////////////////////////////////////////////////////////////////////////////
+    // if we have a postfx_out, then that is the "final" output
+    //  otherwise it is render_out
+    ////////////////////////////////////////////////////////////////////////////
+    RtGroup* render_out = _renderNode ? _renderNode->GetOutput() : nullptr;
+    RtGroup* postfx_out = _postfxNode ? _postfxNode->GetOutput() : nullptr;
+    RtGroup*  final_out = postfx_out ? postfx_out : render_out;
+    drawdata._properties["render_out"_crcu].Set<RtGroup*>(render_out);
+    // todo - techinically only the 'root' postfx node should get input
+    //  from the render out... we need to isolate the root node somehow..
+    drawdata._properties["postfx_out"_crcu].Set<RtGroup*>(postfx_out);
+    drawdata._properties["final_out"_crcu].Set<RtGroup*>(final_out);
+    ////////////////////////////////////////////////////////////////////////////
+    _outputNode->beginAssemble(drawdata);
+        _renderNode->Render(drawdata);
+        if (_postfxNode) _postfxNode->Render(drawdata);
+    _outputNode->endAssemble(drawdata);
   }
+  drawdata.target()->debugPopGroup();
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void NodeCompositingTechnique::composite(CompositorDrawData& drawdata, CompositingImpl* cimpl) {
+void NodeCompositingTechnique::composite(CompositorDrawData& drawdata) {
   if (_outputNode and _renderNode) {
     auto render = _renderNode->GetOutput();
-    if (render) {
-      _outputNode->endFrame(drawdata, cimpl,render);
+    if (render) { // todo get post...
+      _outputNode->composite(drawdata);
     }
   }
 }
@@ -132,13 +149,13 @@ void RenderCompositingNode::describeX(class_t*c) {}
 RenderCompositingNode::RenderCompositingNode() {}
 RenderCompositingNode::~RenderCompositingNode() {}
 void RenderCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
-void RenderCompositingNode::Render(CompositorDrawData& drawdata, CompositingImpl* pCCI) { DoRender(drawdata, pCCI); }
+void RenderCompositingNode::Render(CompositorDrawData& drawdata) { DoRender(drawdata); }
 
 void PostCompositingNode::describeX(class_t*c) {}
 PostCompositingNode::PostCompositingNode() {}
 PostCompositingNode::~PostCompositingNode() {}
 void PostCompositingNode::Init(lev2::GfxTarget* pTARG, int w, int h) { DoInit(pTARG, w, h); }
-void PostCompositingNode::Render(CompositorDrawData& drawdata, CompositingImpl* pCCI) { DoRender(drawdata, pCCI); }
+void PostCompositingNode::Render(CompositorDrawData& drawdata) { DoRender(drawdata); }
 
 void OutputCompositingNode::describeX(class_t*c) {}
 OutputCompositingNode::OutputCompositingNode() {}

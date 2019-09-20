@@ -55,7 +55,7 @@ void SeriesCompositingNode::SetNode(ork::rtti::ICastable* const& val) {
   mNode = ((ptr == 0) ? 0 : rtti::safe_downcast<PostCompositingNode*>(ptr));
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
+void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
 {
   if (nullptr == mOutput) {
     mCompositingMaterial.Init(pTARG);
@@ -73,9 +73,8 @@ void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // vi
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) // virtual
+void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata)
 {
-  // const ent::CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.framedata();
   orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
@@ -86,7 +85,7 @@ void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata, CompositingIm
   int ih = target->GetH();
 
   if (mNode)
-    mNode->Render(drawdata, pCCI);
+    mNode->Render(drawdata);
 
   SRect vprect(0, 0, iw - 1, ih - 1);
   SRect quadrect(0, ih - 1, iw - 1, 0);

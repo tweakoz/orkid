@@ -238,7 +238,8 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
   lev2::GfxTarget* pTARG                  = RCFD.GetTarget();
   orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
-  CompositingImpl* pCMCI                  = this;
+  drawdata._cimpl = this;
+
 
   SRect tgtrect = SRect(0, 0, pTARG->GetW(), pTARG->GetH());
 
@@ -277,7 +278,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   }
 
   if (DB) {
-    rval = _compcontext.assemble(drawdata, this);
+    rval = _compcontext.assemble(drawdata);
     DrawableBuffer::EndDbRead(DB); // mDbLock.Aquire(7);
   }
   return rval;
@@ -289,11 +290,10 @@ void CompositingImpl::composite(lev2::CompositorDrawData& drawdata) {
   int scene_item = 0;
   if (auto pCSI = compositingItem(0, scene_item)) {
     _compcontext._compositingTechnique = pCSI->GetTechnique();
-    _compcontext.composite(drawdata, this);
+    _compcontext.composite(drawdata);
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
 const CompositingGroup* CompositingImpl::compositingGroup(const PoolString& grpname) const {
