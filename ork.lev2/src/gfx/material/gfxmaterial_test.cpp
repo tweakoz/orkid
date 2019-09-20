@@ -163,9 +163,9 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
 
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  const ork::CameraData* cdata       = RCFD->GetCameraData();
-  bool is_picking                    = RCFD->isPicking();
-  bool is_stereo                     = RCFD->isStereoOnePass();
+  const ork::CameraData* cdata       = RCFD ? RCFD->GetCameraData() : nullptr;
+  bool is_picking                    = RCFD ? RCFD->isPicking() : false;
+  bool is_stereo                     = RCFD ? RCFD->isStereoOnePass() : false;
 
   if (is_picking and _enablePick and hTekPick) {
     pTarg->FXI()->BindTechnique(hModFX, hTekPick);
@@ -217,9 +217,9 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  const CameraData* camdata          = RCFD ? RCFD->GetCameraData() : 0;
-  bool is_stereo                     = RCFD->isStereoOnePass();
-  bool is_forcenoz                   = RCID->IsForceNoZWrite();
+  const CameraData* camdata          = RCFD ? RCFD->GetCameraData() : nullptr;
+  bool is_stereo                     = RCFD ? RCFD->isStereoOnePass() : false;
+  bool is_forcenoz                   = RCFD ? RCID->IsForceNoZWrite() : false;
 
   pTarg->RSI()->BindRasterState(mRasterState);
   pTarg->FXI()->BindPass(hModFX, iPass);

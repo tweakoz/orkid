@@ -19,8 +19,8 @@ namespace ork::lev2 {
     ~PtxCompositingNode();
 
   private:
-    void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
-    void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final; // virtual
+    void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                     
+    void DoRender(CompositorDrawData& drawdata, CompositingImpl* pCCI) final;
 
     void GetNode(ork::rtti::ICastable*& val) const;
     void SetNode(ork::rtti::ICastable* const& val);
@@ -30,11 +30,11 @@ namespace ork::lev2 {
     lev2::RtGroup* GetOutput() const final;
 
     CompositingMaterial mCompositingMaterial;
-    PostCompositingNode* mNode;
-    lev2::RtGroup* mOutput;
-    lev2::BuiltinFrameTechniques* mFTEK;
-    ork::lev2::TextureAsset* mReturnTexture;
-    ork::lev2::TextureAsset* mSendTexture;
+    PostCompositingNode* mNode = nullptr;
+    lev2::RtGroup* mOutput = nullptr;
+    lev2::BuiltinFrameTechniques* mFTEK = nullptr;
+    ork::lev2::TextureAsset* mReturnTexture = nullptr;
+    ork::lev2::TextureAsset* mSendTexture = nullptr;
     ork::PoolString mDynTexPath;
   };
 

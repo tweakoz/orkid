@@ -36,8 +36,9 @@ struct ForwardTechnique final : public FrameTechniqueBase {
   void DoInit(GfxTarget* pTARG) final {
     if (nullptr == _rtg) {
       _rtg = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
-      auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
-      _rtg->SetMrt(0, lbuf);
+      auto buf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
+      buf->_debugName = FormatString("ForwardCompositingNode::output");
+      _rtg->SetMrt(0,buf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
   }
@@ -66,6 +67,7 @@ struct ForwardTechnique final : public FrameTechniqueBase {
 
     RtGroupRenderTarget rt(_rtg);
     drawdata.mCompositingGroupStack.push(_CPD);
+    pTARG->debugPushGroup("ForwardCompositingNode::render");
     {
       pTARG->SetRenderContextFrameData(&framedata);
       framedata.SetDstRect(tgt_rect);
@@ -80,8 +82,7 @@ struct ForwardTechnique final : public FrameTechniqueBase {
       pTARG->SetRenderContextFrameData(nullptr);
       drawdata.mCompositingGroupStack.pop();
     }
-
-    framedata.setStereoOnePass(false);
+    pTARG->debugPopGroup();
   }
 
   RtGroup* _rtg;

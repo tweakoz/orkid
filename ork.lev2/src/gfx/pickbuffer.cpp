@@ -34,21 +34,23 @@ PickBufferBase::PickBufferBase(lev2::GfxBuffer* Parent, int iX, int iY, int iW, 
 
 uint64_t PickBufferBase::AssignPickId(ork::Object* pobj) {
 	uint64_t pid = uint64_t(pobj);
-	//printf( "assign pickid<%p>\n", pobj );
   mPickIds[pid] = pobj;
   return pid;
 }
 ork::Object* PickBufferBase::GetObjectFromPickId(uint64_t pid) {
-  printf("pickid <0x%zx>\n", pid);
+  printf("pickid <0x%llx>\n", pid);
   auto it = mPickIds.find(pid);
   ork::Object* pobj = (it == mPickIds.end()) ? nullptr : it->second;
   return pobj;
 }
 
 void PickBufferBase::Init() {
-  mpPickRtGroup->SetMrt(0, new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA128, miWidth, miHeight));
-
-  mpPickRtGroup->SetMrt(1, new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA128, miWidth, miHeight));
+  auto buf0 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA128, miWidth, miHeight);
+  auto buf1 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA128, miWidth, miHeight);
+  buf0->_debugName = FormatString("Pickbuf::mrt0");
+  buf0->_debugName = FormatString("Pickbuf::mrt1");
+  mpPickRtGroup->SetMrt(0,buf0);
+  mpPickRtGroup->SetMrt(1,buf1);
 }
 
 }} // namespace ork::lev2

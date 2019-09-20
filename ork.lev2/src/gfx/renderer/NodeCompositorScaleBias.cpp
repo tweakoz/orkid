@@ -35,8 +35,9 @@ struct ScaleBiasTechnique final : public FrameTechniqueBase {
   void DoInit(GfxTarget* pTARG) final {
     if (nullptr == _rtg) {
       _rtg = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
-      auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
-      _rtg->SetMrt(0, lbuf);
+      auto buf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
+      buf->_debugName = FormatString("ScaleBiasCompositingNode::output");
+      _rtg->SetMrt(0,buf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
   }
@@ -61,6 +62,7 @@ struct ScaleBiasTechnique final : public FrameTechniqueBase {
     // clear will occur via _CPD
     //////////////////////////////////////////////////////
 
+    pTARG->debugPushGroup("ScaleBiasCompositingNode::render");
     RtGroupRenderTarget rt(_rtg);
     drawdata.mCompositingGroupStack.push(_CPD);
     {
@@ -77,8 +79,7 @@ struct ScaleBiasTechnique final : public FrameTechniqueBase {
       pTARG->SetRenderContextFrameData(nullptr);
       drawdata.mCompositingGroupStack.pop();
     }
-
-    framedata.setStereoOnePass(false);
+    pTARG->debugPopGroup();
   }
 
   RtGroup* _rtg;
