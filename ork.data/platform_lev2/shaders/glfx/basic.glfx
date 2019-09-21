@@ -118,11 +118,35 @@ vertex_shader vs_vtxtexcolor : iface_rigid {
 vertex_shader vs_wnormal : iface_rigid {
   vec4 cpos  = WVMatrix * position;
   vec3 wnorm = normalize(WRotMatrix * normal);
-
-  gl_Position = WVPMatrix * position;
+  ///////////////////////////
   frg_clr     = vec4(wnorm.xyz, 1.0);
   frg_uv0     = uv0;
   frg_nrmd    = vec4(wnorm, -cpos.z);
+  gl_Position = WVPMatrix * position;
+  ///////////////////////////
+}
+
+///////////////////////////////////////////////////////////////
+vertex_interface iface_rigid_stereo : iface_rigid {
+  layout(secondary_view_offset=1) out highp int gl_Layer;
+}
+vertex_shader vs_wnormal_stereo
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2)
+  : iface_rigid_stereo {
+  vec4 cpos  = WVMatrix * position;
+  vec3 wnorm = normalize(WRotMatrix * normal);
+  ///////////////////////////
+  frg_clr     = vec4(wnorm.xyz, 1.0);
+  frg_uv0     = uv0;
+  frg_nrmd    = vec4(wnorm, -cpos.z);
+  ///////////////////////////
+  gl_Position            = WVPMatrixL * position;
+  gl_SecondaryPositionNV = WVPMatrixR * position;
+  gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  ///////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////
@@ -219,6 +243,14 @@ technique tek_wnormal {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_wnormal;
+    fragment_shader = ps_fragclr;
+    state_block     = sb_default;
+  }
+}
+technique tek_wnormal_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_wnormal_stereo;
     fragment_shader = ps_fragclr;
     state_block     = sb_default;
   }

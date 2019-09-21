@@ -39,8 +39,8 @@ struct IMPL {
     pTARG->debugPushGroup("Deferred::rendeinitr");
     if (nullptr == _rtg) {
       _material.Init(pTARG);
-      _rtg            = new RtGroup(pTARG, pTARG->GetW(), pTARG->GetH(), NUMSAMPLES);
-      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, pTARG->GetW(), pTARG->GetH());
+      _rtg            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
+      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8 );
       buf->_debugName = "DeferredRt";
       _rtg->SetMrt(0, buf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
@@ -54,6 +54,19 @@ struct IMPL {
     auto targ                         = framedata.GetTarget();
     auto onode                        = drawdata._properties["final"_crcu].Get<const OutputCompositingNode*>();
     SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
+
+    //////////////////////////////////////////////////////
+    // Resize RenderTargets
+    //////////////////////////////////////////////////////
+
+    int newwidth = drawdata._properties["OutputWidth"_crcu].Get<int>();
+    int newheight = drawdata._properties["OutputHeight"_crcu].Get<int>();
+
+    if( _rtg->GetW()!=newwidth or _rtg->GetH()!=newheight ){
+      _rtg->Resize(newwidth,newheight);
+    }
+
+    //////////////////////////////////////////////////////
 
     _CPD.mbDrawSource = true;
     _CPD.mpFrameTek   = nullptr;

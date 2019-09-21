@@ -124,6 +124,21 @@ private:
 
 typedef svar64_t rendervar_t;
 
+struct StereoCamera {
+  const CameraData* _left = nullptr;
+  const CameraData* _right = nullptr;
+  const CameraData* _mono = nullptr;
+  fmtx4 VL() const;
+  fmtx4 VR() const;
+  fmtx4 PL() const;
+  fmtx4 PR() const;
+  fmtx4 VPL() const;
+  fmtx4 VPR() const;
+  fmtx4 VMONO() const;
+  fmtx4 PMONO() const;
+  fmtx4 VPMONO() const;
+};
+
 struct RenderContextFrameData {
 
 
@@ -181,7 +196,7 @@ struct RenderContextFrameData {
   const DrawableBuffer* GetDB() const;
 
   void addStandardLayers();
-  
+
   //////////////////////////////////////
 
   bool isPicking() const;
@@ -190,6 +205,7 @@ struct RenderContextFrameData {
 
   //////////////////////////////////////
 
+  StereoCamera _stereoCamera;
   orkstack<IRenderTarget*> mRenderTargetStack;
   usermap_t _userProperties;
   LightManager* mLightManager;

@@ -17,7 +17,7 @@ function Diver:OnEntityLink()
     printf( "DIVER::OnEntityLink() end" )
 
     self.mdlc:notify("yo",nil);
-    self.playerent = scene:findEntity("playerspawn")
+    self.playerent = scene:findEntity("spawnloc")
 end
 -------------------------------------------------------------------------------
 function Diver:OnEntityActivate()

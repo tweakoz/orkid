@@ -37,6 +37,36 @@ const RenderContextInstData RenderContextInstData::Default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fmtx4 StereoCamera::VL() const {
+  return _left->GetVMatrix();
+}
+fmtx4 StereoCamera::VR() const {
+  return _right->GetVMatrix();
+}
+fmtx4 StereoCamera::PL() const {
+  return _left->GetPMatrix();
+}
+fmtx4 StereoCamera::PR() const {
+  return _right->GetPMatrix();
+}
+fmtx4 StereoCamera::VPL() const {
+  return _left->GetVMatrix()*_left->GetPMatrix();
+}
+fmtx4 StereoCamera::VPR() const {
+  return _right->GetVMatrix()*_right->GetPMatrix();
+}
+fmtx4 StereoCamera::VMONO() const {
+  return _mono->GetVMatrix();
+}
+fmtx4 StereoCamera::PMONO() const {
+  return _mono->GetPMatrix();
+}
+fmtx4 StereoCamera::VPMONO() const {
+  return _mono->GetVMatrix()*_mono->GetPMatrix();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 RenderContextInstData::RenderContextInstData()
     : miMaterialIndex(0)
     , miMaterialPassIndex(0)

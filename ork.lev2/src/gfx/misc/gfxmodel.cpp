@@ -246,34 +246,28 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
   auto R           = RCID.GetRenderer();
   auto framedata   = pTARG->GetRenderContextFrameData();
   bool stereo1pass = framedata->isStereoOnePass();
+  const XgmMesh& XgmMesh         = *mdlctx.mMesh;
+  const XgmCluster& XgmClus      = *mdlctx.mCluster;
+  const XgmSubMesh& XgmClusSet   = *mdlctx.mSubMesh;
+  const Texture* LightMapTexture = XgmClusSet.mLightMap;
+  int inummesh    = GetNumMeshes();
+  int inumclusset = XgmMesh.GetNumSubMeshes();
+  int imat        = RCID.GetMaterialIndex();
+  OrkAssert(imat < inumclusset);
+  GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
 
-  pTARG->debugPushGroup(FormatString("XgmModel::RenderRigid stereo1pass<%d>", int(stereo1pass)));
-
-  if (stereo1pass){
-    pTARG->debugPopGroup();
-    return;
-  }
+  pTARG->debugPushGroup(FormatString("XgmModel::RenderRigid stereo1pass<%d> inummesh<%d> inumclusset<%d> imat<%d>", int(stereo1pass), inummesh, inumclusset, imat ));
 
   ork::lev2::RenderGroupState rgs = RCID.GetRenderGroupState();
 
   pTARG->MTXI()->SetMMatrix(WorldMat);
   pTARG->PushModColor(ModColor);
   {
-    const XgmMesh& XgmMesh         = *mdlctx.mMesh;
-    const XgmCluster& XgmClus      = *mdlctx.mCluster;
-    const XgmSubMesh& XgmClusSet   = *mdlctx.mSubMesh;
-    const Texture* LightMapTexture = XgmClusSet.mLightMap;
 
     // if( 0 == strcmp(XgmMesh.GetMeshName().c_str(),"fg_2_1_3_ground_SG_ground_GeoDaeId") )
     //{
     //	orkprintf( "yo\n" );
     //}
-
-    int inummesh    = GetNumMeshes();
-    int inumclusset = XgmMesh.GetNumSubMeshes();
-    int imat        = RCID.GetMaterialIndex();
-    OrkAssert(imat < inumclusset);
-    GfxMaterial* __restrict pmat = XgmClusSet.GetMaterial();
 
     if (mdlctx.GetModelInst()) {
       if (mdlctx.GetModelInst()->GetLayerFxMaterial() != 0) {

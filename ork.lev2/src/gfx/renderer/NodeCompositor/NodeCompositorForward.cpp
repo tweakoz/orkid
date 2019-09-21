@@ -49,6 +49,21 @@ struct ForwardTechnique final : public FrameTechniqueBase {
     RenderContextFrameData& framedata = renderer.framedata();
     GfxTarget* pTARG                  = framedata.GetTarget();
 
+    //////////////////////////////////////////////////////
+    // Resize RenderTargets
+    //////////////////////////////////////////////////////
+
+    int newwidth = drawdata._properties["OutputWidth"_crcu].Get<int>();
+    int newheight = drawdata._properties["OutputHeight"_crcu].Get<int>();
+
+    if( _rtg->GetW()!=newwidth or _rtg->GetH()!=newheight ){
+      _rtg->Resize(newwidth,newheight);
+      miW = newwidth;
+      miH = newheight;
+    }
+
+    //////////////////////////////////////////////////////
+
     SRect tgt_rect(0, 0, miW, miH);
 
     CompositingPassData _CPD;

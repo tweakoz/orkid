@@ -33,17 +33,8 @@ struct VRIMPL {
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
     pTARG->debugPushGroup("VRIMPL::gpuInit");
-    _material.Init(pTARG);
     _width     = orkidvr::device()._width*2;
     _height     = orkidvr::device()._height;
-    if (nullptr == _rtg) {
-      _rtg = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
-      _vrrendertarget = new RtGroupRenderTarget(_rtg);
-      auto lbuf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height);
-      lbuf->_debugName = "VrRt";
-      _rtg->SetMrt(0, lbuf);
-      _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
-    }
     pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
@@ -90,7 +81,7 @@ struct VRIMPL {
 
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = framerenderer.framedata();
-    GfxTarget* pTARG                  = framedata.GetTarget();
+    GfxTarget* pTARG                  = drawdata.target();
 
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
@@ -146,10 +137,14 @@ struct VRIMPL {
     //////////////////////////////////////////////////////
 
     if (orkidvr::device()._active) {
+      LCAM.BindGfxTarget(pTARG);
+      RCAM.BindGfxTarget(pTARG);
       framedata.setStereoOnePass(true);
-      framedata.setUserProperty("lcam"_crc, (const CameraData*) &LCAM);
-      framedata.setUserProperty("rcam"_crc, (const CameraData*) &RCAM);
       framedata.SetCameraData(&LCAM);
+      framedata._stereoCamera._left = &LCAM;
+      framedata._stereoCamera._right = &RCAM;
+      framedata._stereoCamera._mono = &LCAM; // todo - blend l&r
+      framedata.SetCameraData(framedata._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(&LCAM);
     } else {
       LCAM.BindGfxTarget(pTARG);
@@ -159,42 +154,25 @@ struct VRIMPL {
     }
 
     //////////////////////////////////////////////////////
-    pTARG->FBI()->SetAutoClear(false);
-    // clear will occur via _CPD
-    //////////////////////////////////////////////////////
-
-    // draw left and right ///////////////////////////////
 
     drawdata.mCompositingGroupStack.push(_CPD);
-      pTARG->SetRenderContextFrameData(&framedata);
-      framedata.SetDstRect(tgt_rect);
-      framedata.PushRenderTarget(_vrrendertarget);
-      pTARG->FBI()->PushRtGroup(_rtg);
-      pTARG->BeginFrame();
-      framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+    pTARG->SetRenderContextFrameData(&framedata);
+    framedata.SetDstRect(tgt_rect);
+    framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+    drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
+    drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
   }
   ///////////////////////////////////////
   void endAssemble( CompositorDrawData& drawdata){
-  }
-  ///////////////////////////////////////
-  void composite( CompositorDrawData& drawdata){
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = framerenderer.framedata();
-    GfxTarget* pTARG                  = framedata.GetTarget();
-    pTARG->EndFrame();
-    pTARG->FBI()->PopRtGroup();
-    framedata.PopRenderTarget();
-    pTARG->SetRenderContextFrameData(nullptr);
+    drawdata.target()->SetRenderContextFrameData(nullptr);
     drawdata.mCompositingGroupStack.pop();
     framedata.setStereoOnePass(false);
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;
-  CompositingMaterial _material;
   VrCompositingNode* _vrnode = nullptr;
-  RtGroup* _rtg = nullptr;
-  RtGroupRenderTarget* _vrrendertarget;
-  BuiltinFrameEffectMaterial _effect;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
   int _width = 0;
@@ -222,7 +200,6 @@ void VrCompositingNode::endAssemble(CompositorDrawData& drawdata) {
 
 void VrCompositingNode::composite(CompositorDrawData& drawdata){
   drawdata.target()->debugPushGroup("VrCompositingNode::composite");
-  _impl.Get<std::shared_ptr<VRIMPL>>()->composite(drawdata);
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////

@@ -44,6 +44,8 @@ struct IMPL {
     auto targ                         = framedata.GetTarget();
     framedata.setLayerName(_node->_layername.c_str());
     targ->debugMarker("Screen::beginFrame");
+    drawdata._properties["OutputWidth"_crcu].Set<int>(targ->GetW());
+    drawdata._properties["OutputHeight"_crcu].Set<int>(targ->GetH());
   }
   void endAssemble(CompositorDrawData& drawdata) {
     drawdata.target()->debugMarker("Screen::endFrame");

@@ -361,17 +361,13 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
   fxi->BindParamCTex(hModFX, hDiffuseTEX, diftexture);
 
   if (is_stereo) {
-    fmtx4 VL, PL, VR, PR;
-    if (auto try_lcam = RCFD->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
-      VL = try_lcam.value()->GetVMatrix();
-      PL = try_lcam.value()->GetPMatrix();
-    }
-    if (auto try_rcam = RCFD->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
-      VR = try_rcam.value()->GetVMatrix();
-      PR = try_rcam.value()->GetPMatrix();
-    }
+    fmtx4 VL = RCFD->_stereoCamera.VL();
+    fmtx4 PL = RCFD->_stereoCamera.PL();
+    fmtx4 VR = RCFD->_stereoCamera.VR();
+    fmtx4 PR = RCFD->_stereoCamera.PR();
     auto MVL = (mtxi->RefMMatrix() * VL);
     auto MVR = (mtxi->RefMMatrix() * VR);
+
     fxi->BindParamMatrix(hModFX, hWVPLMatrix, (MVL * PL));
     fxi->BindParamMatrix(hModFX, hWVPRMatrix, (MVR * PR));
   } else {

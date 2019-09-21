@@ -218,7 +218,7 @@
                                             <object type='EzUiCam' id='19'>
                                                 <property name='Center'>-1230.82 -676.369 781.237</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>1245.52</property>
+                                                <property name='Loc'>1000</property>
                                                 <property name='QuatC'>-0.0181094 -0.974133 0.18371 0.132999</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
@@ -895,32 +895,32 @@
                     </object>
                 </reference>
             </item>
-            <item key='playerspawn'>
+            <item key='spawncam'>
                 <reference category='SceneObjectClass'>
                     <object type='Ent3dEntData' id='104'>
-                        <property name='Name'>"playerspawn"</property>
+                        <property name='Name'>"spawncam"</property>
                         <property name='DagNode'>
                             <object type='Ent3dDagNode' id='105'>
-                                <property name='TransformNode'>0.980777 -0.183289 -0.0669268 0 0.1869 0.980982 0.0523524 0 0.0560584 -0.0638547 0.996382 0 -54.5493 199.323 465.812 1</property>
-                            </object>
-                        </property>
-                        <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='84'/></property>
-                        <property name='UserProperties'></property>
-                    </object>
-                </reference>
-            </item>
-            <item key='vrcam'>
-                <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='106'>
-                        <property name='Name'>"vrcam"</property>
-                        <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='107'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
                         <property name='Archetype'><backreference id='17'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
+            <item key='spawnloc'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='106'>
+                        <property name='Name'>"spawnloc"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='107'>
+                                <property name='TransformNode'>0.980777 -0.183289 -0.0669268 0 0.1869 0.980982 0.0523524 0 0.0560584 -0.0638547 0.996382 0 -54.5493 199.323 465.812 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='84'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
@@ -982,7 +982,6 @@
                                                                 <property name='Technique'>
                                                                     <reference category='ObjectClass'>
                                                                         <object type='NodeCompositingTechnique' id='115'>
-                                                                            <property name='FrameNode'><backreference id='-1'/></property>
                                                                             <property name='OutputNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='VrCompositingNode' id='116'>
@@ -990,6 +989,13 @@
                                                                                 </reference>
                                                                             </property>
                                                                             <property name='PostFxNode'><backreference id='-1'/></property>
+                                                                            <property name='RenderNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='DeferredCompositingNode' id='117'>
+                                                                                        <property name='ClearColor'>0.6 0.6 0.75 1</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
                                                                         </object>
                                                                     </reference>
                                                                 </property>
@@ -1008,19 +1014,19 @@
             </item>
             <item key='InputSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='InputSystemData' id='117'>
+                    <object type='InputSystemData' id='118'>
                     </object>
                 </reference>
             </item>
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='LightingSystemSystemData' id='118'>
+                    <object type='LightingSystemSystemData' id='119'>
                     </object>
                 </reference>
             </item>
             <item key='ScriptSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='ScriptSystemData' id='119'>
+                    <object type='ScriptSystemData' id='120'>
                     </object>
                 </reference>
             </item>
