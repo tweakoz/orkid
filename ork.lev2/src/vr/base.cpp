@@ -47,9 +47,11 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
     _rotMatrix      = _headingmatrix * _rotMatrix;
     _rotMatrix.Transpose();
 
+    //_rotMatrix.dump("rotmtx");
     ///////////////////////////////////////////////////////////
 
     _hmdMatrix = hmd;
+    //_hmdMatrix.dump("hmdmtx");
 
     fmtx4 VVMTX = observermatrix;
 

@@ -61,7 +61,7 @@ void NoVrDevice::_updatePoses(fmtx4 observermatrix) {
   fmtx4 w;
   w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
   _posemap["hmd"] = w;
-  // printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
+   printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
   _updatePosesCommon(observermatrix);
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -102,27 +102,6 @@ void gpuUpdate(fmtx4 observermatrix) {
 }
 
 void composite(GfxTarget* targ, Texture* twoeyetex) {
-  auto& mgr = concrete_get();
-   auto fbi = targ->FBI();
-   auto buf = fbi->GetThisBuffer();
-   int w = targ->GetW();
-   int h = targ->GetH();
-   SRect vprect(0, 0, w - 1, h - 1);
-   SRect quadrect(0, h - 1, w - 1, 0);
-  if( false == mgr._private.IsA<CompositingMaterial>() ){
-    auto& mtl = mgr._private.Make<CompositingMaterial>();
-    mtl.Init(targ);
-  }
-  auto& mtl = mgr._private.Get<CompositingMaterial>();
-   mtl.SetTextureA(twoeyetex);
-   mtl.SetLevelA(fvec4::White());
-   mtl.SetLevelB(fvec4::Black());
-   mtl.SetLevelC(fvec4::Black());
-   mtl.SetTechnique("Asolo");
-   // TODO - apply post
-   buf->RenderMatOrthoQuad(vprect, quadrect, &mtl, 0.0f, 0.0f, 1.0f, 1.0f, 0, fvec4::White());
-
-
 }
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr

@@ -992,7 +992,7 @@
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='DeferredCompositingNode' id='117'>
-                                                                                        <property name='ClearColor'>0.6 0.6 0.75 1</property>
+                                                                                        <property name='ClearColor'>0.62 0.62 0.75 1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

@@ -26,6 +26,7 @@ void ScaleBiasCompositingNode::describeX(class_t* c) {
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
+namespace scaleandbias {
 struct IMPL {
   ///////////////////////////////////////
   IMPL(ScaleBiasCompositingNode*node)
@@ -66,24 +67,25 @@ struct IMPL {
   }
   ///////////////////////////////////////
   CompositingMaterial _material;
-  ScaleBiasCompositingNode* _node;
-  RtGroup* _rtg;
+  ScaleBiasCompositingNode* _node = nullptr;
+  RtGroup* _rtg = nullptr;
 };
+} //namespace scaleandbias {
 ///////////////////////////////////////////////////////////////////////////////
-ScaleBiasCompositingNode::ScaleBiasCompositingNode() { _impl = std::make_shared<IMPL>(this); }
+ScaleBiasCompositingNode::ScaleBiasCompositingNode() { _impl = std::make_shared<scaleandbias::IMPL>(this); }
 ///////////////////////////////////////////////////////////////////////////////
 ScaleBiasCompositingNode::~ScaleBiasCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
 void ScaleBiasCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtual
-{ _impl.Get<std::shared_ptr<IMPL>>()->init(pTARG);
+{ _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ScaleBiasCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
-{ _impl.Get<std::shared_ptr<IMPL>>()->_render(drawdata);
+{ _impl.Get<std::shared_ptr<scaleandbias::IMPL>>()->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtGroup* ScaleBiasCompositingNode::GetOutput() const {
-  auto impl = _impl.Get<std::shared_ptr<IMPL>>();
+  auto impl = _impl.Get<std::shared_ptr<scaleandbias::IMPL>>();
   return (impl->_rtg) ? impl->_rtg : nullptr;
 }
 ///////////////////////////////////////////////////////////////////////////////

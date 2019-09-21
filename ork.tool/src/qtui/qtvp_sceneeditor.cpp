@@ -459,6 +459,8 @@ void SceneEditorVP::renderEnqueuedScene(lev2::RenderContextFrameData& RCFD) {
   ManipManager().SetActiveCamera(_editorCamera);
   gfxtarg->debugMarker(FormatString("toolvp::renderEnqueuedScene::_editorCamera<%p>", _editorCamera));
   ///////////////////////////////////////////////////////////////////////////
+  TempCamData.GetVMatrix().dump("WTF");
+  ///////////////////////////////////////////////////////////////////////////
   // DrawableBuffer -> RenderQueue enqueue
   ///////////////////////////////////////////////////////////////////////////
   auto rend = GetRenderer();

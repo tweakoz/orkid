@@ -162,9 +162,13 @@ struct VRIMPL {
       framedata.SetCameraData(framedata._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(&LCAM);
     } else {
+      framedata.setStereoOnePass(false);
       LCAM.BindGfxTarget(pTARG);
       RCAM.BindGfxTarget(pTARG);
       framedata.SetCameraData(&LCAM);
+      framedata._stereoCamera._left = &LCAM;
+      framedata._stereoCamera._right = &RCAM;
+      framedata._stereoCamera._mono = &LCAM; // todo - blend l&r
       _CPD._impl.Set<const CameraData*>(&LCAM);
     }
 
