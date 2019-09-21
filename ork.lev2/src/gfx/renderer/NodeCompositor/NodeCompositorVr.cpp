@@ -32,10 +32,25 @@ struct VRIMPL {
   ~VRIMPL() {}
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
-    pTARG->debugPushGroup("VRIMPL::gpuInit");
-    _width     = orkidvr::device()._width*2;
-    _height     = orkidvr::device()._height;
-    pTARG->debugPopGroup();
+    if( _doinit ){
+      pTARG->debugPushGroup("VRIMPL::gpuInit");
+      _width     = orkidvr::device()._width*2;
+      _height     = orkidvr::device()._height;
+      _blit2screenmtl.SetUserFx( "orkshader://solid", "texcolor" );
+      _blit2screenmtl.Init(pTARG);
+
+      _rtg            = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
+      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height );
+      buf->_debugName = "WtfVrRt";
+      _rtg->SetMrt(0, buf);
+
+
+      pTARG->debugPopGroup();
+
+
+
+      _doinit = false;
+    }
   }
   ///////////////////////////////////////
   typedef const std::map<int, orkidvr::ControllerState>& controllermap_t;
@@ -175,8 +190,12 @@ struct VRIMPL {
   VrCompositingNode* _vrnode = nullptr;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
+  RtGroup* _rtg = nullptr;
   int _width = 0;
   int _height = 0;
+  bool _doinit = true;
+  ork::lev2::GfxMaterial3DSolid	_blit2screenmtl;
+
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(this); }
@@ -200,6 +219,7 @@ void VrCompositingNode::endAssemble(CompositorDrawData& drawdata) {
 
 void VrCompositingNode::composite(CompositorDrawData& drawdata){
   drawdata.target()->debugPushGroup("VrCompositingNode::composite");
+  auto impl = _impl.Get<std::shared_ptr<VRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
@@ -212,7 +232,34 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata){
       assert(buffer != nullptr);
       auto tex = buffer->GetTexture();
       if (tex) {
+        drawdata.target()->debugPushGroup("VrCompositingNode::to_hmd");
+        targ->FBI()->PushRtGroup(impl->_rtg);
         orkidvr::composite(targ, tex);
+        targ->FBI()->PopRtGroup();
+        drawdata.target()->debugPopGroup();
+        /////////////////////////////////////////////////////////////////////////////
+        // be nice and composite to main screen as well...
+        /////////////////////////////////////////////////////////////////////////////
+        drawdata.target()->debugPushGroup("VrCompositingNode::to_screen");
+        auto this_buf = targ->FBI()->GetThisBuffer();
+        auto& mtl = impl->_blit2screenmtl;
+        int iw = targ->GetW();
+        int ih = targ->GetH();
+        SRect vprect(0,0,iw,ih);
+        SRect quadrect(0,ih,iw,0);
+        fvec4 color( 1.0f, 1.0f, 1.0f, 1.0f );
+        mtl.SetAuxMatrix( fmtx4::Identity );
+        mtl.SetTexture( tex );
+        mtl.SetTexture2( nullptr );
+        mtl.SetColorMode( GfxMaterial3DSolid::EMODE_USER );
+        mtl.mRasterState.SetBlending( EBLENDING_OFF );
+        this_buf->RenderMatOrthoQuad( vprect,
+                                      quadrect,
+                                      & mtl,
+                                      0.0f, 0.0f, // u0 v0
+                                      1.0f, 1.0f, // u1 v1
+                                      nullptr, color );
+        drawdata.target()->debugPopGroup();
       }
     }
   }

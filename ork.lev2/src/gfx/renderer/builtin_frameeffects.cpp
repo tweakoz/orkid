@@ -460,70 +460,6 @@ void BuiltinFrameEffectMaterial::EndBlock( GfxTarget* pTarg )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RenderMatOrthoQuad(	GfxTarget* pTARG,
-							MatrixStackInterface* MTXIO,
-							const SRect& ViewportRect,
-							const SRect& QuadRect,
-							GfxMaterial *pmat,
-							float fu0=0.0f, float fv0=0.0f,
-							float fu1=1.0f, float fv1=1.0f,
-							float *uv2=0, const fcolor4& clr=fcolor4::White() )
-{
-	static SRasterState DefaultRasterState;
-
-	// align source pixels to target pixels if sizes match
-	float fx0 = float(QuadRect.miX);
-	float fy0 = float(QuadRect.miY);
-	float fx1 = float(QuadRect.miX2);
-	float fy1 = float(QuadRect.miY2);
-
-	float zeros[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-	if (NULL == uv2)
-		uv2 = zeros;
-
-	MTXIO = pTARG->MTXI();
-	auto fbi = pTARG->FBI();
-	auto fxi = pTARG->FXI();
-	auto gbi = pTARG->GBI();
-
-	MTXIO->PushPMatrix( MTXIO->Ortho(fx0,fx1,fy0,fy1,0.0f,1.0f) );
-	MTXIO->PushVMatrix( fmtx4::Identity );
-	MTXIO->PushMMatrix( fmtx4::Identity );
-	pTARG->RSI()->BindRasterState( DefaultRasterState, true );
-	fbi->PushViewport( ViewportRect );
-	fbi->PushScissor( ViewportRect );
-	{	// Draw Full Screen Quad with specified material
-		pTARG->BindMaterial( pmat );
-		fxi->InvalidateStateBlock();
-		pTARG->PushModColor( clr );
-		{
-			ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> &vb = lev2::GfxEnv::GetSharedDynamicVB();
-
-			U32 uc = 0xffffffff;
-			ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;
-			vw.Lock( pTARG, &vb, 6 );
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy0, 0.0f, fu1, fv0, uv2[2], uv2[3], uc));
-
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy1, 0.0f, fu0, fv1, uv2[6], uv2[7], uc));
-				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
-			vw.UnLock(pTARG);
-
-			gbi->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
-		}
-		pTARG->PopModColor();
-	}
-	fbi->PopScissor();
-	fbi->PopViewport();
-	MTXIO->PopPMatrix();
-	MTXIO->PopVMatrix();
-	MTXIO->PopMMatrix();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 {
 	const ork::lev2::GfxTargetCreationParams& CreationParams = ork::lev2::GfxEnv::GetRef().GetCreationParams();
@@ -732,6 +668,70 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GlowRenderMatOrthoQuad(	GfxTarget* pTARG,
+							MatrixStackInterface* MTXIO,
+							const SRect& ViewportRect,
+							const SRect& QuadRect,
+							GfxMaterial *pmat,
+							float fu0=0.0f, float fv0=0.0f,
+							float fu1=1.0f, float fv1=1.0f,
+							float *uv2=0, const fcolor4& clr=fcolor4::White() )
+{
+	static SRasterState DefaultRasterState;
+
+	// align source pixels to target pixels if sizes match
+	float fx0 = float(QuadRect.miX);
+	float fy0 = float(QuadRect.miY);
+	float fx1 = float(QuadRect.miX2);
+	float fy1 = float(QuadRect.miY2);
+
+	float zeros[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	if (NULL == uv2)
+		uv2 = zeros;
+
+	MTXIO = pTARG->MTXI();
+	auto fbi = pTARG->FBI();
+	auto fxi = pTARG->FXI();
+	auto gbi = pTARG->GBI();
+
+	MTXIO->PushPMatrix( MTXIO->Ortho(fx0,fx1,fy0,fy1,0.0f,1.0f) );
+	MTXIO->PushVMatrix( fmtx4::Identity );
+	MTXIO->PushMMatrix( fmtx4::Identity );
+	pTARG->RSI()->BindRasterState( DefaultRasterState, true );
+	fbi->PushViewport( ViewportRect );
+	fbi->PushScissor( ViewportRect );
+	{	// Draw Full Screen Quad with specified material
+		pTARG->BindMaterial( pmat );
+		fxi->InvalidateStateBlock();
+		pTARG->PushModColor( clr );
+		{
+			ork::lev2::DynamicVertexBuffer<ork::lev2::SVtxV12C4T16> &vb = lev2::GfxEnv::GetSharedDynamicVB();
+
+			U32 uc = 0xffffffff;
+			ork::lev2::VtxWriter<ork::lev2::SVtxV12C4T16> vw;
+			vw.Lock( pTARG, &vb, 6 );
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy0, 0.0f, fu1, fv0, uv2[2], uv2[3], uc));
+
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy0, 0.0f, fu0, fv0, uv2[0], uv2[1], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx0, fy1, 0.0f, fu0, fv1, uv2[6], uv2[7], uc));
+				vw.AddVertex(ork::lev2::SVtxV12C4T16(fx1, fy1, 0.0f, fu1, fv1, uv2[4], uv2[5], uc));
+			vw.UnLock(pTARG);
+
+			gbi->DrawPrimitive(vw, ork::lev2::EPRIM_TRIANGLES);
+		}
+		pTARG->PopModColor();
+	}
+	fbi->PopScissor();
+	fbi->PopViewport();
+	MTXIO->PopPMatrix();
+	MTXIO->PopVMatrix();
+	MTXIO->PopMMatrix();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 {
 	GfxTarget *pTARG = FrameData.GetTarget();
@@ -756,7 +756,7 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		pTARG->FBI()->PushRtGroup( mpMrtAux0 );
 		pTARG->GBI()->BeginFrame();
 		pTARG->FXI()->BeginFrame();
-		RenderMatOrthoQuad( pTARG,
+		GlowRenderMatOrthoQuad( pTARG,
                             MTXI0,
                             SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE),
                             SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE),
@@ -778,7 +778,7 @@ void BuiltinFrameTechniques::PreProcess( RenderContextFrameData& FrameData )
 		pTARG->FBI()->PushRtGroup( mpMrtAux1 );
 		pTARG->GBI()->BeginFrame();
 		pTARG->FXI()->BeginFrame();
-		RenderMatOrthoQuad( pTARG,
+		GlowRenderMatOrthoQuad( pTARG,
                             MTXI1,
                             SRect(0,0,kGLOWBUFSIZE,kGLOWBUFSIZE),
                             SRect(kGLOWBUFSIZE,0,0,kGLOWBUFSIZE),
