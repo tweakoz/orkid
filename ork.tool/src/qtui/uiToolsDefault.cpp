@@ -20,8 +20,8 @@
 
 #include <orktool/toolcore/dataflow.h>
 
-#include "qtui_scenevp.h"
-#include "qtvp_uievh.h"
+#include "vpSceneEditor.h"
+#include "uiToolsDefault.h"
 #include <QtCore/QSettings>
 #include <QtGui/qclipboard.h>
 #include <pkg/ent/editor/edmainwin.h>
@@ -29,7 +29,7 @@
 
 #include <ork/lev2/gfx/camera/cameraman.h>
 
-#include "uitoolhandler.inl"
+#include "uiToolHandler.inl"
 
 using namespace ork::lev2;
 ///////////////////////////////////////////////////////////////////////////////

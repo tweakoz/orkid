@@ -15,8 +15,8 @@
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/texman.h>
-#include "qtvp_edrenderer.h"
-#include "qtui_scenevp.h"
+#include "vpRenderer.h"
+#include "vpSceneEditor.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace tool {

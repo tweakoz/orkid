@@ -11,11 +11,11 @@
 #include <orktool/toolcore/dataflow.h>
 #include <orktool/qtui/qtdataflow.h>
 
-#include "qtui_scenevp.h"
+#include "vpSceneEditor.h"
 #include <pkg/ent/editor/edmainwin.h>
 #include <ork/lev2/ui/panel.h>
 #include <ork/lev2/ui/split_panel.h>
-#include "outliner2.h"
+#include "uiOutliner2.h"
 #include <QtWidgets/QDockWidget>
 #include <QtCore/QProcess>
 

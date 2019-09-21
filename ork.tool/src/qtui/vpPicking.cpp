@@ -1,6 +1,6 @@
 #include <ork/application/application.h>
-#include "qtui_scenevp.h"
-#include "qtvp_uievh.h"
+#include "vpSceneEditor.h"
+#include "uiToolsDefault.h"
 #include <ork/kernel/future.hpp>
 #include <ork/kernel/opq.h>
 #include <orktool/qtui/qtui_tool.h>

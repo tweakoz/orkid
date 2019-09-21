@@ -27,7 +27,7 @@
 #include <ork/kernel/opq.h>
 #include <orktool/toolcore/FunctionManager.h>
 #include <pkg/ent/editor/edmainwin.h>
-#include "qtui_scenevp.h"
+#include "vpSceneEditor.h"
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 namespace ent {

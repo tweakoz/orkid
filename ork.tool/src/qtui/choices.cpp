@@ -25,8 +25,8 @@
 #include <orktool/toolcore/dataflow.h>
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "qtui_scenevp.h"
-#include "qtvp_uievh.h"
+#include "vpSceneEditor.h"
+#include "uiToolsDefault.h"
 #include <pkg/ent/editor/edmainwin.h>
 
 #include <pkg/ent/scene.h>

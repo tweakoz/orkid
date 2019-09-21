@@ -19,8 +19,8 @@
 
 #include <orktool/toolcore/dataflow.h>
 
-#include "qtui_scenevp.h"
-#include "qtvp_uievh.h"
+#include "vpSceneEditor.h"
+#include "uiToolsDefault.h"
 #include <QtCore/QSettings>
 #include <QtGui/qclipboard.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
@@ -29,7 +29,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "uitoolhandler.inl"
+#include "uiToolHandler.inl"
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.hpp>

@@ -40,9 +40,9 @@
 #include <pkg/ent/LightingSystem.h>
 #include <pkg/ent/scene.hpp>
 
-#include "qtvp_uievh.h"
-#include "qtvp_edrenderer.h"
-#include "qtui_scenevp.h"
+#include "uiToolsDefault.h"
+#include "vpRenderer.h"
+#include "vpSceneEditor.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 

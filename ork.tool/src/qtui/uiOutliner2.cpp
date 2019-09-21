@@ -11,7 +11,7 @@
 #include <pkg/ent/editor/editor.h>
 #include <pkg/ent/EditorCamera.h>
 
-#include "outliner2.h"
+#include "uiOutliner2.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
