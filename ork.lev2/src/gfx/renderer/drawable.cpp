@@ -79,14 +79,17 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName,lev2:
       for (const auto& layer_item : mLayerLut) {
         const PoolString& TestLayerName = layer_item.first;
         const lev2::DrawableBufLayer* player  = layer_item.second;
-        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p>", TestLayerName.c_str(),player));
 
         bool Match = (LayerName == TestLayerName);
 
+        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>", TestLayerName.c_str(),player, int(Match)));
+
         if (DoAll || (Match && RCFD_PREV->HasLayer(TestLayerName))) {
+          target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->miItemIndex+1 ));
           for (int id = 0; id <= player->miItemIndex; id++) {
             const lev2::DrawableBufItem& item    = player->mDrawBufItems[id];
             const lev2::Drawable* pdrw = item.GetDrawable();
+            target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw ));
             if (pdrw)
               pdrw->enqueueToRenderQueue(item, renderer);
           }

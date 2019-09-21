@@ -18,6 +18,8 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
+  mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
+
   mTargetGL.MakeCurrentContext();
 
   if (0 == Base) {
@@ -48,6 +50,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     ////////////////////////////////////////////////
     _setAsRenderTarget();
     mCurrentRtGroup = 0;
+    mTargetGL.debugPopGroup();
     return;
   }
 
@@ -81,6 +84,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   GL_ERRORCHECK();
 
   if (0 == FboObj) {
+    mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::newFbo");
     FboObj = new GlFboObject;
 
     Base->SetInternalHandle(FboObj);
@@ -125,10 +129,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       //////////////////////////////////////////
     }
     Base->SetSizeDirty(true);
+    mTargetGL.debugPopGroup();
   }
   GL_ERRORCHECK();
 
   if (Base->IsSizeDirty()) {
+    mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::SizeDirty");
     //////////////////////////////////////////
     // initialize depth renderbuffer
     GL_ERRORCHECK();
@@ -196,6 +202,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       GL_ERRORCHECK();
 
       pB->SetSizeDirty(false);
+      mTargetGL.debugPopGroup();
     }
     Base->SetSizeDirty(false);
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -234,6 +241,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     GL_ERRORCHECK();
   }
+  mTargetGL.debugPopGroup();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

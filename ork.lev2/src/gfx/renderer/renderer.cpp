@@ -44,8 +44,10 @@ void IRenderer::drawEnqueuedRenderables() {
 
   ///////////////////////////////////////////////////////
   size_t renderQueueSize = mRenderQueue.Size();
+  mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables renderQueueSize<%zu>",renderQueueSize));
 
   if (renderQueueSize == 0) {
+    mpTarget->debugPopGroup();
     return;
   }
 
@@ -82,7 +84,9 @@ void IRenderer::drawEnqueuedRenderables() {
     int sorted = sortedRenderQueueIndices[i];
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = mQueueSortNodes[sorted];
+    mpTarget->debugPushGroup(FormatString("IRenderer::drawEnqueuedRenderables render item<%zu> node<%p>",i,pnode));
     pnode->_renderable->Render(this);
+    mpTarget->debugPopGroup();
   }
 
   float favgrun = fruntot / float(imdlcount);
@@ -93,6 +97,8 @@ void IRenderer::drawEnqueuedRenderables() {
 
   if (mPerformanceItem)
     mPerformanceItem->Exit();
+
+  mpTarget->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

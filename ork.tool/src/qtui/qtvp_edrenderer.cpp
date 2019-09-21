@@ -43,6 +43,8 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   const lev2::XgmModelInst* minst = ModelRen.GetModelInst();
   const lev2::XgmModel* model     = minst->GetXgmModel();
 
+  target->debugPushGroup(FormatString("toolrenderer::RenderModel model<%p> minst<%p>", model, minst));
+
   /////////////////////////////////////////////////////////////
 
   float fscale = ModelRen.GetScale();
@@ -129,6 +131,8 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
     ObjColor = fcolor4::Red();
   }
 
+  target->debugMarker(FormatString("toolrenderer::RenderModel isskinned<%d> owner_as_ent<%p>", int(model->IsSkinned()), as_ent ));
+
   ///////////////////////////////////////
 
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
@@ -143,6 +147,8 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
   } else {
     model->RenderRigid(ObjColor, nmat, GetTarget(), MatCtx, MdlCtx);
   }
+
+  target->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

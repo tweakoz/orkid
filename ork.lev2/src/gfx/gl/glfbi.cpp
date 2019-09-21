@@ -36,6 +36,7 @@ GlFrameBufferInterface::~GlFrameBufferInterface() {}
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::_setAsRenderTarget(void) {
+  mTargetGL.debugPushGroup("GlFrameBufferInterface::_setAsRenderTarget");
   GL_ERRORCHECK();
   mTargetGL.MakeCurrentContext();
   GL_ERRORCHECK();
@@ -44,14 +45,16 @@ void GlFrameBufferInterface::_setAsRenderTarget(void) {
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   GL_ERRORCHECK();
   GL_ERRORCHECK();
+  mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::DoBeginFrame(void) {
+  mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrame");
+
   mTargetGL.MakeCurrentContext();
   // glFinish();
-
   GL_ERRORCHECK();
 
   if (mTargetGL.FBI()->GetRtGroup()) {
@@ -116,11 +119,13 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
 
   const SRasterState defstate;
   mTarget.RSI()->BindRasterState(defstate, true);
+  mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::DoEndFrame(void) {
+  mTargetGL.debugPushGroup("GlFrameBufferInterface::DoEndFrame");
   GL_ERRORCHECK();
 
   ///////////////////////////////////////////
@@ -166,6 +171,7 @@ void GlFrameBufferInterface::DoEndFrame(void) {
   GL_ERRORCHECK();
   ////////////////////////////////
   glBindTexture(GL_TEXTURE_2D, 0);
+  mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

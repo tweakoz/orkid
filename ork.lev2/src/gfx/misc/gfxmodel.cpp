@@ -246,8 +246,13 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
   auto R           = RCID.GetRenderer();
   auto framedata   = pTARG->GetRenderContextFrameData();
   bool stereo1pass = framedata->isStereoOnePass();
-  if (stereo1pass)
+
+  pTARG->debugPushGroup(FormatString("XgmModel::RenderRigid stereo1pass<%d>", int(stereo1pass)));
+
+  if (stereo1pass){
+    pTARG->debugPopGroup();
     return;
+  }
 
   ork::lev2::RenderGroupState rgs = RCID.GetRenderGroupState();
 
@@ -390,6 +395,7 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
     }
   }
   pTARG->PopModColor();
+  pTARG->debugPopGroup();
   // pTARG->MTXI()->PopMMatrix();
 }
 
