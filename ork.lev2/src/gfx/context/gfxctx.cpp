@@ -41,7 +41,16 @@ CTXBASE::CTXBASE( GfxWindow* pwin )
 
 {
 	SetupSignalsAndSlots();
-    mpGfxWindow->mpCTXBASE = this;
+  mpGfxWindow->mpCTXBASE = this;
+}
+
+void CTXBASE::pushRefreshPolicy(RefreshPolicyItem policy) {
+	_policyStack.push(_curpolicy);
+	_setRefreshPolicy(policy);
+}
+void CTXBASE::popRefreshPolicy() {
+	auto prev = _policyStack.top();
+	_setRefreshPolicy(prev);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -94,12 +94,9 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
   switch (EV.miEventCode) {
     case ui::UIEV_GOT_KEYFOCUS: {
-      // bool brunning = psimulation ? psimulation->GetSimulationMode()==ork::ent::ESCENEMODE_RUN : false;
-      // CtxBase->SetRefreshPolicy( brunning ? lev2::CTXBASE::EREFRESH_FASTEST : lev2::CTXBASE::EREFRESH_WHENDIRTY );
       break;
     }
     case ui::UIEV_LOST_KEYFOCUS: {
-      // CtxBase->SetRefreshPolicy( lev2::CTXBASE::EREFRESH_WHENDIRTY);
       break;
     }
     case ui::UIEV_MULTITOUCH:

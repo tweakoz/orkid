@@ -219,6 +219,7 @@ struct RenderContextFrameData {
   SRect mMrtRect;
   orkset<PoolString> mLayers;
   bool _stereo1pass = false;
+  const IRenderer* _renderer;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

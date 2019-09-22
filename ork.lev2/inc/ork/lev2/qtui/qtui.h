@@ -130,9 +130,6 @@ class CTQT : public CTXBASE
 	friend class QCtxWidget;
 
 	bool			mbAlwaysRun;
-	int				miUserMillis;
-	int				miQtMillis;
-	int				miLastMillis;
 	QCtxWidget*		mpQtWidget;
 	int				mix, miy, miw, mih;
 	QWidget*		mParent;
@@ -144,8 +141,8 @@ public:
 
     void Show() final;
     void Hide() final;
-    void SetRefreshPolicy( ERefreshPolicy epolicy ) final;
-    void SetRefreshRate( int ihz ) final;
+
+    void _setRefreshPolicy( RefreshPolicyItem epolicy ) final;
 
 	QTimer& Timer() const;
 	CTQT( GfxWindow* pwin, QWidget* parent=0 );

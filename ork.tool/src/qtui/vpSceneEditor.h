@@ -89,9 +89,6 @@ class SceneEditorView : public ork::Object {
 
 public:
   SceneEditorView(SceneEditorVP* vp);
-
-  //////////////////////////////////////////////////////////
-  void UpdateRefreshPolicy(lev2::RenderContextFrameData& FrameData, const Simulation* sinst);
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -102,11 +99,12 @@ class SceneEditorVP : public ui::Viewport {
 public:
   SceneEditorVP(const std::string& name, SceneEditorBase& Editor, EditorMainWindow& MainWin);
   ~SceneEditorVP();
+  void UpdateRefreshPolicy();
 
   //////////////////////
   ui::HandlerResult DoOnUiEvent(const ui::Event& EV) override;
   //////////////////////
-  void renderEnqueuedScene(ork::lev2::RenderContextFrameData& ContextData);
+  void renderMisc(ork::lev2::RenderContextFrameData& RCFD);
   //////////////////////
   // lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
   void IncPickDirtyCount(int icount);
@@ -181,6 +179,7 @@ protected:
   int mCompositorSceneItemIndex;
   bool mbSceneDisplayEnable;
   orkstack<lev2::CompositingPassData> _compositingGroupStack;
+  lev2::CTXBASE* _ctxbase = nullptr;
 
 private:
   UpdateThread* _updateThread;

@@ -90,7 +90,7 @@ struct ForwardTechnique final : public FrameTechniqueBase {
       pTARG->FBI()->PushRtGroup(_rtg);
       pTARG->BeginFrame();
       framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-      renderer.Render();
+      renderer.renderMisc();
       pTARG->EndFrame();
       pTARG->FBI()->PopRtGroup();
       framedata.PopRenderTarget();

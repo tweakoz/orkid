@@ -180,8 +180,10 @@ void ork::tool::vp_cons::BindCTQT(ork::lev2::CTQT* pctqt)
 	mBaseMaterial.Init( mCTQT->GetTarget() );
 	Register();
 
-	mCTQT->SetRefreshPolicy( ork::lev2::CTXBASE::EREFRESH_FIXEDFPS );
-	mCTQT->SetRefreshRate(8);
+  lev2::RefreshPolicyItem item;
+  item._policy = lev2::EREFRESH_FIXEDFPS;
+  item._fps = 8;
+	mCTQT->pushRefreshPolicy( item );
 }
 ///////////////////////////////////////////////////////////////////////////////
 ui::HandlerResult vp_cons::DoOnUiEvent( const ui::Event& EV )

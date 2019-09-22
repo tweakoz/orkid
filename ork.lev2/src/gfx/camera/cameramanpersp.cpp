@@ -858,12 +858,12 @@ void EzUiCam::RenderUpdate(void) {
   mCameraData.GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
   float CameraMotionThresh = RightVector.Mag() / float(1000.0f);
 
-  static ork::lev2::CTXBASE::ERefreshPolicy glastpolicy = CTXBASE::EREFRESH_WHENDIRTY;
+  static auto glastpolicy = EREFRESH_WHENDIRTY;
   if (mbInMotion) {
     if (CurVelMag < CameraMotionThresh) // start motion
     {
       if (GetViewport() && GetViewport()->GetTarget()) {
-        GetViewport()->GetTarget()->GetCtxBase()->SetRefreshPolicy(glastpolicy);
+        //GetViewport()->GetTarget()->GetCtxBase()->SetRefreshPolicy(glastpolicy);
         mbInMotion = false;
       }
     }
@@ -871,9 +871,9 @@ void EzUiCam::RenderUpdate(void) {
     if ((LastVelMag < CameraMotionThresh) && (CurVelMag > CameraMotionThresh)) // start motion
     {
       if (GetViewport() && GetViewport()->GetTarget()) {
-        glastpolicy = GetViewport()->GetTarget()->GetCtxBase()->GetRefreshPolicy();
+        //glastpolicy = GetViewport()->GetTarget()->GetCtxBase()->GetRefreshPolicy();
         mbInMotion = true;
-        GetViewport()->GetTarget()->GetCtxBase()->SetRefreshPolicy(CTXBASE::EREFRESH_FASTEST);
+        //GetViewport()->GetTarget()->GetCtxBase()->SetRefreshPolicy(CTXBASE::EREFRESH_FASTEST);
       }
     }
   }

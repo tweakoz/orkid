@@ -242,7 +242,7 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast<T> TryAs() {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    bool type_ok = (typeid(T) == *mtinfo);
+    bool type_ok = (mtinfo!=nullptr) ? (typeid(T) == *mtinfo) : false;
     return attempt_cast<T>((T*)(type_ok ? &mbuffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////
@@ -250,7 +250,7 @@ public:
   //////////////////////////////////////////////////////////////
   template <typename T> attempt_cast_const<T> TryAs() const {
     static_assert(sizeof(T) <= ksize, "static_variant size violation");
-    bool type_ok = (typeid(T) == *mtinfo);
+    bool type_ok = (mtinfo!=nullptr) ? (typeid(T) == *mtinfo) : false;
     return attempt_cast_const<T>((const T*)(type_ok ? &mbuffer[0] : nullptr));
   }
   //////////////////////////////////////////////////////////////

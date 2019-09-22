@@ -202,12 +202,11 @@ int BootQtThreadImpl(void* arg_opaq )
 	ork::lev2::AudioDevice* paudio = ork::lev2::AudioDevice::GetDevice();
     ork::lev2::InputManager::poll();
 
-	ent::EditorMainWindow MainWin(0, AppClassName, *gpQtApplication );
-	ent::gEditorMainWindow = &MainWin;
-	MainWin.showMaximized();
-    MainWin.raise();  // for MacOS
+	ent::gEditorMainWindow = new ent::EditorMainWindow(0, AppClassName, *gpQtApplication );
+	ent::gEditorMainWindow->showMaximized();
+    ent::gEditorMainWindow->raise();  // for MacOS
 
-	gpQtApplication->mpMainWindow = & MainWin;
+	gpQtApplication->mpMainWindow = ent::gEditorMainWindow;
 
     file::Path fname;
 
@@ -216,15 +215,14 @@ int BootQtThreadImpl(void* arg_opaq )
             fname = args->argv[++i];
 
     if( fname.IsFile() )
-        MainWin.QueueLoadScene( fname.c_str() );
+        ent::gEditorMainWindow->QueueLoadScene( fname.c_str() );
 
 	iret = gpQtApplication->exec();
 
 	lev2::DrawableBuffer::ClearAndSyncWriters();
 
-	delete paudio;
-
-	delete gpQtApplication;
+	//delete paudio;
+	//delete gpQtApplication;
 
   gpQtApplication = nullptr;
 

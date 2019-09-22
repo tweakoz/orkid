@@ -34,6 +34,19 @@ namespace ork { namespace lev2 {
 
  typedef void* CTFLXID;
 
+ enum ERefreshPolicy
+ {
+   EREFRESH_FASTEST = 0,	// refresh as fast as the update loop can go
+   EREFRESH_WHENDIRTY,		// refresh whenever dirty
+   EREFRESH_FIXEDFPS,		// refresh at a fixed frame rate
+   EREFRESH_END,
+ };
+
+ struct RefreshPolicyItem {
+ 		ERefreshPolicy _policy = EREFRESH_END;
+ 		int _fps = -1;
+ };
+
  class CTXBASE : public ork::AutoConnector
 {
 	RttiDeclareAbstract( CTXBASE, ork::AutoConnector );
@@ -42,25 +55,21 @@ namespace ork { namespace lev2 {
 
 public:
 
-	enum ERefreshPolicy
-	{
-		EREFRESH_FASTEST = 0,	// refresh as fast as the update loop can go
-		EREFRESH_WHENDIRTY,		// refresh whenever dirty
-		EREFRESH_FIXEDFPS,		// refresh at a fixed frame rate
-	};
 
 
 	CTFLXID GetThisXID( void ) const { return mxidThis; }
 	CTFLXID GetTopXID( void ) const { return mxidTopLevel; }
 	void SetThisXID( CTFLXID xid ) { mxidThis=xid; }
 	void SetTopXID( CTFLXID xid ) { mxidTopLevel=xid; }
-	ERefreshPolicy GetRefreshPolicy() const { return meRefreshPolicy; }
 
 	CTXBASE( GfxWindow* pwin );
 
 	virtual void SlotRepaint( void ) {}
-	virtual void SetRefreshRate( int ihz ) {}
-	virtual void SetRefreshPolicy( ERefreshPolicy epolicy ) { meRefreshPolicy=epolicy; }
+
+  void pushRefreshPolicy(RefreshPolicyItem policy);
+  void popRefreshPolicy();
+
+	virtual void _setRefreshPolicy( RefreshPolicyItem policy ) { _curpolicy=policy; }
 
 	virtual void Show() {}
 	virtual void Hide() {}
@@ -74,6 +83,8 @@ public:
 
 protected:
 
+  std::stack<RefreshPolicyItem> _policyStack;
+
 	GfxTarget*					mpTarget;
 	GfxWindow*					mpGfxWindow;
 
@@ -81,7 +92,8 @@ protected:
 	CTFLXID						mxidThis;
 	CTFLXID						mxidTopLevel;
 	bool						mbInitialize;
-	ERefreshPolicy				meRefreshPolicy;
+
+  RefreshPolicyItem _curpolicy;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

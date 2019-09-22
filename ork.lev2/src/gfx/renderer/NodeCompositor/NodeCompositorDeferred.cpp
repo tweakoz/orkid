@@ -50,55 +50,91 @@ struct IMPL {
   ///////////////////////////////////////
   void _render(DeferredCompositingNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
-    RenderContextFrameData& framedata = framerenderer.framedata();
-    auto targ                         = framedata.GetTarget();
-    auto onode                        = drawdata._properties["final"_crcu].Get<const OutputCompositingNode*>();
+    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto targ                         = RCFD.GetTarget();
+    auto& ddprops                       = drawdata._properties;
+    //auto onode                        = ddprops["final"_crcu].Get<const OutputCompositingNode*>();
     SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
 
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
 
-    int newwidth = drawdata._properties["OutputWidth"_crcu].Get<int>();
-    int newheight = drawdata._properties["OutputHeight"_crcu].Get<int>();
-
+    int newwidth = ddprops["OutputWidth"_crcu].Get<int>();
+    int newheight = ddprops["OutputHeight"_crcu].Get<int>();
     if( _rtg->GetW()!=newwidth or _rtg->GetH()!=newheight ){
       _rtg->Resize(newwidth,newheight);
     }
 
     //////////////////////////////////////////////////////
 
-    _CPD.mbDrawSource = true;
-    _CPD.mpFrameTek   = nullptr;
-    _CPD.mpCameraName = nullptr;
-    _CPD.mpLayerName  = &_layername;
-    _CPD._clearColor  = node->_clearColor;
-    //_CPD._impl.Set<const CameraData*>(lcam);
+    int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
+    int cullcamindex = ddprops["cullcamindex"_crcu].Get<int>();
+    auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+    //////////////////////////////////////////////////////
+
 
     //////////////////////////////////////////////////////
     targ->FBI()->SetAutoClear(false);
     // clear will occur via _CPD
     //////////////////////////////////////////////////////
 
-    auto outerRT = framedata.GetRenderTarget();
+    auto outerRT = RCFD.GetRenderTarget();
 
     targ->debugPushGroup("Deferred::render");
 
     RtGroupRenderTarget rt(_rtg);
-    drawdata.mCompositingGroupStack.push(_CPD);
     {
-      targ->SetRenderContextFrameData(&framedata);
-      framedata.SetDstRect(tgt_rect);
-      framedata.PushRenderTarget(&rt);
-      targ->FBI()->PushRtGroup(_rtg);
       targ->BeginFrame();
-      framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
-      framerenderer.Render();
-      targ->EndFrame();
+      targ->SetRenderContextFrameData(&RCFD);
+      RCFD.SetDstRect(tgt_rect);
+      RCFD.PushRenderTarget(&rt);
+      targ->FBI()->PushRtGroup(_rtg);
+      RCFD.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+      /////////////////////////////////////////////////////////////////////////////////////////
+      auto DB = RCFD.GetDB();
+      auto CPD = CompositingPassData::FromRCFD(RCFD);
+      CPD._clearColor = node->_clearColor;
+      CPD.mpLayerName  = &_layername;
+      auto CAMDAT   = CPD.getCamera(RCFD, primarycamindex, cullcamindex);
+      auto& CAMCCTX = RCFD.GetCameraCalcCtx();
+      ///////////////////////////////////////////////////////////////////////////
+      targ->debugMarker(FormatString("Deferred::CAMDAT<%p>", CAMDAT));
+      if (CAMDAT and DB) {
+        _tempcamdat = *CAMDAT;
+        _tempcamdat.BindGfxTarget(targ);
+        _tempcamdat.CalcCameraData(CAMCCTX);
+        RCFD.SetCameraData(&_tempcamdat);
+        ///////////////////////////////////////////////////////////////////////////
+        _tempcamdat.GetVMatrix().dump("WTF");
+        ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
+        // DrawableBuffer -> RenderQueue enqueue
+        for (const PoolString& layer_name : CPD.getLayerNames()){
+          targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
+          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
+        }
+        /////////////////////////////////////////////////
+        auto MTXI = targ->MTXI();
+        drawdata.mCompositingGroupStack.push(CPD);
+        MTXI->PushPMatrix(CAMCCTX.mPMatrix);
+        MTXI->PushVMatrix(CAMCCTX.mVMatrix);
+        MTXI->PushMMatrix(fmtx4::Identity);
+          targ->debugPushGroup("toolvp::DrawEnqRenderables");
+              irenderer->drawEnqueuedRenderables();
+              framerenderer.renderMisc();
+          targ->debugPopGroup();
+        MTXI->PopPMatrix();
+        MTXI->PopVMatrix();
+        MTXI->PopMMatrix();
+        drawdata.mCompositingGroupStack.pop();
+        /////////////////////////////////////////////////
+
+      }
+      /////////////////////////////////////////////////////////////////////////////////////////
       targ->FBI()->PopRtGroup();
-      framedata.PopRenderTarget();
+      RCFD.PopRenderTarget();
+      targ->EndFrame();
       targ->SetRenderContextFrameData(nullptr);
-      drawdata.mCompositingGroupStack.pop();
     }
     targ->debugPopGroup();
   }
@@ -107,7 +143,7 @@ struct IMPL {
   CompositingMaterial _material;
   RtGroup* _rtg = nullptr;
   BuiltinFrameEffectMaterial _effect;
-  CompositingPassData _CPD;
+  CameraData _tempcamdat;
   fmtx4 _viewOffsetMatrix;
 };
 } // namespace deferrednode

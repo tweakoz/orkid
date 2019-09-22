@@ -117,7 +117,7 @@ ui::HandlerResult TestVPDefaultHandler::DoOnUiEvent(const ui::Event& EV) {
       if (GetViewport()->GetTarget()) {
         GfxTarget* pTARG = GetViewport()->GetTarget();
         lev2::CTXBASE* CtxBase = pTARG->GetCtxBase();
-        CtxBase->SetRefreshRate(0);
+        //CtxBase->SetRefreshRate(0);
       }
       break;
     }

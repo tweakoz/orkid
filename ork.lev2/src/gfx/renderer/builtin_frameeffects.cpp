@@ -495,7 +495,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 		pTARG->FBI()->PushRtGroup( mpMrtFinalHD );
 		pTARG->BeginFrame();
 			FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
-			frenderer.Render();
+			frenderer.renderMisc();
 		pTARG->EndFrame();
 		pTARG->FBI()->PopRtGroup();
 		FrameData.PopRenderTarget();
@@ -525,7 +525,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 				//////////////////////////////////////////
 
 				FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
-				frenderer.Render();
+				frenderer.renderMisc();
 
 				//////////////////////////////////////////
 				// render feedback->Mrt0
@@ -957,7 +957,7 @@ void BasicFrameTechnique::Render( FrameRenderer & frenderer )
 		pTopRenderTarget->BeginFrame( frenderer );
 	{
 		FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
-		frenderer.Render();
+		frenderer.renderMisc();
 	}
 	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->EndFrame( frenderer );
@@ -980,7 +980,7 @@ void PickFrameTechnique::Render( FrameRenderer & frenderer )
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
 	FrameData.SetDstRect( tgt_rect );
 	{
-		frenderer.Render();
+		frenderer.renderMisc();
 	}
 }
 

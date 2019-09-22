@@ -243,6 +243,9 @@ void SceneEditorBase::RunLoop() {
 
   auto do_it = [&]() {
     while (this->mSerialQ.try_pop(event)) {
+
+      printf( "SceneEditorBase::mSerialQ gotevent\n");
+
       if (event.IsA<BarrierSyncReq>()) {
         auto& R = event.Get<BarrierSyncReq>();
         R.mFuture.Signal<bool>(true);
@@ -1068,6 +1071,7 @@ void SceneEditorBase::ImplEnterRunLocalState() {
     ork::lev2::DrawableBuffer::ClearAndSyncReaders();
     tool::GetGlobalDataFlowScheduler()->GraphSet().UnLock();
     EnableViews();
+    msgrouter::channel("Simulation")->postType<SimulationEvent>(mpEditSimulation, SimulationEvent::ESIEV_ENABLE_VIEW);
   };
   Op(lamb).QueueSync(UpdateSerialOpQ());
 }

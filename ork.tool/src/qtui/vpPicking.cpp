@@ -195,7 +195,7 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
     pTEXTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     pTEXTARG->PushModColor(fcolor4::Yellow());
     mpViewport->_compositingGroupStack.push(compositor_node);
-    { mpViewport->renderEnqueuedScene(*frame_data); }
+    //{ mpViewport->renderEnqueuedScene(*frame_data); }
     mpViewport->_compositingGroupStack.pop();
     pTEXTARG->PopModColor();
     pTEXTARG->FBI()->PopRtGroup();

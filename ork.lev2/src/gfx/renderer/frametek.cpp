@@ -31,13 +31,13 @@ template class ork::orklut<ork::PoolString, anyp>;
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD,rendercb_t cb)
+FrameRenderer::FrameRenderer(RenderContextFrameData& RCFD,rendermisccb_t cb)
   : _framedata(RCFD)
-  , _rendercb(cb){
+  , _rendermisccb(cb){
 }
 ///////////////////////////////////////////
-void FrameRenderer::Render() {
-  _rendercb();
+void FrameRenderer::renderMisc() {
+  _rendermisccb();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
