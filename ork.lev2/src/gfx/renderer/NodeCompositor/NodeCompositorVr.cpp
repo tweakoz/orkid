@@ -11,6 +11,7 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/camera/cameraman.h>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 
@@ -19,8 +20,6 @@ namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void VrCompositingNode::describeX(class_t*c) {
 }
-///////////////////////////////////////////////////////////////////////////
-constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
 struct VRIMPL {
   ///////////////////////////////////////
@@ -39,7 +38,7 @@ struct VRIMPL {
       _blit2screenmtl.SetUserFx( "orkshader://solid", "texcolor" );
       _blit2screenmtl.Init(pTARG);
 
-      _rtg            = new RtGroup(pTARG, _width, _height, NUMSAMPLES);
+      _rtg            = new RtGroup(pTARG, _width, _height, 1);
       auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height );
       buf->_debugName = "WtfVrRt";
       _rtg->SetMrt(0, buf);
@@ -93,19 +92,41 @@ struct VRIMPL {
   }
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata){
-
+    auto& ddprops                = drawdata._properties;
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
-    RenderContextFrameData& framedata = framerenderer.framedata();
-    GfxTarget* pTARG                  = drawdata.target();
+    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto DB         = RCFD.GetDB();
+    GfxTarget* targ                  = drawdata.target();
 
+    bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
+
+    /////////////////////////////////////////////////////////////////////////////
+    // default camera selection (todo: hoist to cimpl so it can be shared across output nodes)
+    /////////////////////////////////////////////////////////////////////////////
+    int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
+    int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
+    auto CAMDAT     = _CPD.getCamera(RCFD, primarycamindex, cullcamindex);
+    auto& CAMCCTX   = RCFD.GetCameraCalcCtx();
+    ///////////////////////////////////////////////////////////////////////////
+    targ->debugMarker(FormatString("NodeVr::CAMDAT<%p>", CAMDAT));
+    if (CAMDAT and DB) {
+      _tempcamdat = *CAMDAT;
+      _tempcamdat.BindGfxTarget(targ);
+      _tempcamdat.CalcCameraData(CAMCCTX);
+      RCFD.SetCameraData(&_tempcamdat);
+      ///////////////////////////////////////////////////////////////////////////
+      ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
+      auto l2cam = _tempcamdat.getEditorCamera();
+      if (l2cam)
+        l2cam->RenderUpdate();
+    }
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
-
-    auto vrcamprop = framedata.getUserProperty("vrcam"_crc);
+    auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
     fmtx4 rootmatrix;
     if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
-      pTARG->debugMarker("Vr::gotcamera");
+      targ->debugMarker("Vr::gotcamera");
       auto vrcam = as_cam.value();
       auto eye = vrcam->GetEye();
       auto tgt = vrcam->GetTarget();
@@ -113,7 +134,7 @@ struct VRIMPL {
       rootmatrix.LookAt(eye, tgt, up);
     }
     else{
-      pTARG->debugMarker("Vr::nocamera");
+      targ->debugMarker("Vr::nocamera");
       printf("vrcamtype<%s>\n", vrcamprop.GetTypeName() );
     }
 
@@ -123,9 +144,9 @@ struct VRIMPL {
     // render eyes
     /////////////////////////////////////////////////////////////////////////////
 
-    framedata.setLayerName("All");
+    RCFD.setLayerName("All");
 
-    auto vrroot = framedata.getUserProperty("vrroot"_crc);
+    auto vrroot = RCFD.getUserProperty("vrroot"_crc);
     if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
       orkidvr::gpuUpdate(as_mtx.value());
     }
@@ -151,43 +172,53 @@ struct VRIMPL {
     // is stereo active
     //////////////////////////////////////////////////////
 
-    if (orkidvr::device()._active) {
-      LCAM.BindGfxTarget(pTARG);
-      RCAM.BindGfxTarget(pTARG);
-      framedata.setStereoOnePass(true);
-      framedata.SetCameraData(&LCAM);
-      framedata._stereoCamera._left = &LCAM;
-      framedata._stereoCamera._right = &RCAM;
-      framedata._stereoCamera._mono = &LCAM; // todo - blend l&r
-      framedata.SetCameraData(framedata._stereoCamera._mono);
+    if (orkidvr::device()._active and simrunning) {
+      LCAM.BindGfxTarget(targ);
+      RCAM.BindGfxTarget(targ);
+      RCFD.setStereoOnePass(true);
+      RCFD.SetCameraData(&LCAM);
+      RCFD._stereoCamera._left = &LCAM;
+      RCFD._stereoCamera._right = &RCAM;
+      RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
+      RCFD.SetCameraData(RCFD._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(&LCAM);
     } else {
-      framedata.setStereoOnePass(false);
-      LCAM.BindGfxTarget(pTARG);
-      RCAM.BindGfxTarget(pTARG);
-      framedata.SetCameraData(&LCAM);
-      framedata._stereoCamera._left = &LCAM;
-      framedata._stereoCamera._right = &RCAM;
-      framedata._stereoCamera._mono = &LCAM; // todo - blend l&r
-      _CPD._impl.Set<const CameraData*>(&LCAM);
+      RCFD.setStereoOnePass(false);
+      LCAM.BindGfxTarget(targ);
+      RCAM.BindGfxTarget(targ);
+      if( simrunning ){
+        RCFD.SetCameraData(&LCAM);
+        RCFD._stereoCamera._left = &LCAM;
+        RCFD._stereoCamera._right = &RCAM;
+        RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
+        _CPD._impl.Set<const CameraData*>(simrunning?(&LCAM):nullptr);
+      }
+      else {
+        RCFD.SetCameraData(&LCAM);
+        RCFD._stereoCamera._left = &LCAM;
+        RCFD._stereoCamera._right = &RCAM;
+        RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
+        _CPD._impl.Set<const CameraData*>(simrunning?(&LCAM):nullptr);
+
+      }
     }
 
     //////////////////////////////////////////////////////
 
     drawdata.mCompositingGroupStack.push(_CPD);
-    pTARG->SetRenderContextFrameData(&framedata);
-    framedata.SetDstRect(tgt_rect);
-    framedata.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
+    targ->SetRenderContextFrameData(&RCFD);
+    RCFD.SetDstRect(tgt_rect);
+    RCFD.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
     drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
   }
   ///////////////////////////////////////
   void endAssemble( CompositorDrawData& drawdata){
     FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
-    RenderContextFrameData& framedata = framerenderer.framedata();
+    RenderContextFrameData& RCFD = framerenderer.framedata();
     drawdata.target()->SetRenderContextFrameData(nullptr);
     drawdata.mCompositingGroupStack.pop();
-    framedata.setStereoOnePass(false);
+    RCFD.setStereoOnePass(false);
   }
   ///////////////////////////////////////
   PoolString _camname, _layers;
@@ -198,6 +229,7 @@ struct VRIMPL {
   int _width = 0;
   int _height = 0;
   bool _doinit = true;
+  CameraData _tempcamdat;
   ork::lev2::GfxMaterial3DSolid	_blit2screenmtl;
 
 };

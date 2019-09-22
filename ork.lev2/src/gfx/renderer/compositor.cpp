@@ -29,12 +29,20 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::CompositingTechnique, "CompositingTechni
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
+CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& RCFD) {
+    lev2::rendervar_t passdata = RCFD.getUserProperty("nodes"_crc);
+    auto cstack                = passdata.Get<compositingpassdatastack_t*>();
+    OrkAssert(cstack != nullptr);
+    return cstack->top();
+}
+///////////////////////////////////////////////////////////////////////////////
 const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& framedata, int icamindex, int icullcamindex) {
   auto DB      = framedata.GetDB();
   auto gfxtarg = framedata.GetTarget();
   CameraData TempCamData, TempCullCamData;
   const CameraData* pcamdata     = DB->GetCameraData(icamindex);
   const CameraData* pcullcamdata = DB->GetCameraData(icullcamindex);
+  gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera icam<%d> icullcam<%d>", icamindex,icullcamindex));
   if (nullptr == pcamdata)
     return nullptr;
   /////////////////////////////////////////
@@ -45,6 +53,7 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
     TempCullCamData.BindGfxTarget(gfxtarg);
     TempCullCamData.CalcCameraData(framedata.GetCameraCalcCtx());
     TempCamData.SetVisibilityCamDat(&TempCullCamData);
+    gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcullcamdata<%p>", pcullcamdata));
   }
   /////////////////////////////////////////
   // try named CameraData from NODE
@@ -53,12 +62,14 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
     const CameraData* pcamdataNAMED = DB->GetCameraData(*mpCameraName);
     if (pcamdataNAMED)
       pcamdata = pcamdataNAMED;
+      gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcamdataNAMED<%p>", pcamdataNAMED));
   }
   /////////////////////////////////////////
   // try direct CameraData from NODE
   /////////////////////////////////////////
   if (auto from_node = _impl.TryAs<const CameraData*>()) {
     pcamdata = from_node.value();
+    gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera from_node<%p>", pcamdata));
     // printf( "from node\n");
   }
   /////////////////////////////////////////
@@ -86,14 +97,6 @@ std::vector<PoolString> CompositingPassData::getLayerNames() const {
   return LayerNames;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-
-CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& RCFD) {
-  lev2::rendervar_t passdata = RCFD.getUserProperty("nodes"_crc);
-  auto cstack                = passdata.Get<compositingpassdatastack_t*>();
-  OrkAssert(cstack != nullptr);
-  return cstack->top();
-}
 ///////////////////////////////////////////////////////////////////////////////
 void CompositingPassData::updateCompositingSize(int w, int h) {
   if( mpFrameTek )

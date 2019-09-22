@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/application/application.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
@@ -68,8 +67,6 @@ struct IMPL {
 
     //////////////////////////////////////////////////////
 
-    int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
-    int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
     auto irenderer      = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
 
@@ -92,27 +89,17 @@ struct IMPL {
       RCFD.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB         = RCFD.GetDB();
-      auto CPD        = CompositingPassData::FromRCFD(RCFD);
+      //auto CPD        = CompositingPassData::FromRCFD(RCFD);
+
+      auto CPD = drawdata.mCompositingGroupStack.top();
       CPD._clearColor = node->_clearColor;
       CPD.mpLayerName = &_layername;
-      auto CAMDAT     = CPD.getCamera(RCFD, primarycamindex, cullcamindex);
       auto& CAMCCTX   = RCFD.GetCameraCalcCtx();
       ///////////////////////////////////////////////////////////////////////////
-      targ->debugMarker(FormatString("Deferred::CAMDAT<%p>", CAMDAT));
-      if (CAMDAT and DB) {
-        _tempcamdat = *CAMDAT;
-        _tempcamdat.BindGfxTarget(targ);
-        _tempcamdat.CalcCameraData(CAMCCTX);
-        RCFD.SetCameraData(&_tempcamdat);
+      if (DB) {
         ///////////////////////////////////////////////////////////////////////////
-        //_tempcamdat.GetVMatrix().dump("WTF");
-        ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
-
-        auto l2cam = _tempcamdat.getEditorCamera();
-        if (l2cam)
-          l2cam->RenderUpdate();
-
         // DrawableBuffer -> RenderQueue enqueue
+        ///////////////////////////////////////////////////////////////////////////
         for (const PoolString& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
@@ -147,7 +134,6 @@ struct IMPL {
   CompositingMaterial _material;
   RtGroup* _rtg = nullptr;
   BuiltinFrameEffectMaterial _effect;
-  CameraData _tempcamdat;
   fmtx4 _viewOffsetMatrix;
 };
 } // namespace deferrednode

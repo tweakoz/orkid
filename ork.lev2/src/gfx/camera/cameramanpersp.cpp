@@ -817,12 +817,9 @@ void EzUiCam::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void EzUiCam::RenderUpdate(void) {
-  OrkAssert(GetViewport());
-  //////////////////////////////////////
-  //////////////////////////////////////
-  //////////////////////////////////////
-
   auto pVP = GetViewport();
+  if( nullptr == pVP )
+    return;
 
   bool isctrl = false;  // pVP->IsKeyDepressed( VK_CONTROL );
   bool isshift = false; // pVP->IsKeyDepressed( VK_SHIFT );

@@ -282,6 +282,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////
   // We must have a compositor to continue...
   /////////////////////////////////
+
   auto compsys = compositingSystem();
   if( nullptr == compsys ){
     // still want to draw something so we know the editor is alive..
@@ -298,6 +299,11 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->EndFrame();
     return;
   }
+
+  auto sim = simulation();
+  auto simmode = sim->GetSimulationMode();
+  bool running = (simmode==ent::ESCENEMODE_RUN);
+
   ////////////////////////////////////////////////
   // FrameRenderer (and content)
   // rendering callback will be invoked from within compositor
@@ -330,6 +336,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   drawdata._properties["primarycamindex"_crcu].Set<int>(miCameraIndex);
   drawdata._properties["cullcamindex"_crcu].Set<int>(miCullCameraIndex);
   drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(GetRenderer());
+  drawdata._properties["simrunning"_crcu].Set<bool>(running);
+
   //////////////////////////////////////////////////
   // composite assembly:
   //   render (or assemble) content into pre-compositing buffers
