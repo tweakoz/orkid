@@ -449,6 +449,8 @@ void SceneData::cleanup(){
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneData::defaultSetup(Opq& editopq){
+  Op editOP( [=](){
+  auto updlock = UpdateSerialOpQ().scopedLock();
   //////////////////////////////////////////
   // do required stuff
   //////////////////////////////////////////
@@ -467,11 +469,9 @@ void SceneData::defaultSetup(Opq& editopq){
     auto ent = new EntData;
     ent->SetArchetype(arch);
     _sceneObjects[edcamname] = ent;
-    editopq.push([=,&editopq](){
-      arch->Compose(*composer);
-      auto ecd = arch->GetTypedComponent<EditorCamControllerData>();
-      ecd->_camera->mfLoc = 5.0f;
-    });
+    arch->Compose(*composer);
+    auto ecd = arch->GetTypedComponent<EditorCamControllerData>();
+    ecd->_camera->mfLoc = 5.0f;
   }
   //////////////////////////////////////////
   auto objectname = "spawnloc"_pool;
@@ -484,18 +484,27 @@ void SceneData::defaultSetup(Opq& editopq){
     auto ent = new EntData;
     ent->SetArchetype(arch);
     _sceneObjects[objectname] = ent;
-
-    MainThreadOpQ().push([=,&editopq]() {
-      auto asset = asset::AssetManager<lev2::XgmModelAsset>::Load( "data://environ/objects/misc/headwalker" );
-      editopq.push([=](){
-        arch->Compose(*composer);
-        auto mcd = arch->GetTypedComponent<ModelComponentData>();
-        mcd->SetModel(asset);
-      });
-    });
+    ////////////////////////////////////////////
+    // load model asset
+    ////////////////////////////////////////////
+    lev2::XgmModelAsset* asset = nullptr;
+    Op([&asset]() {
+      asset = asset::AssetManager<lev2::XgmModelAsset>::Load( "data://environ/objects/misc/headwalker" );
+    }).QueueSync(MainThreadOpQ());
+    ////////////////////////////////////////////
+    // perform edit
+    ////////////////////////////////////////////
+    arch->Compose(*composer);
+    auto mcd = arch->GetTypedComponent<ModelComponentData>();
+    mcd->SetModel(asset);
+    ////////////////////////////////////////////
   }
   //////////////////////////////////////////
   AutoLoadAssets();
+  cleanup();
+  EnterEditState();
+  });
+  editOP.QueueASync(editopq);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SceneData::addSystemData(SystemData *pcomp) {

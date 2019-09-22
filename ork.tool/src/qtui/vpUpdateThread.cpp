@@ -84,40 +84,28 @@ void UpdateThread::run() // virtual
     ////////////////////////////////////////////////
     // update scene
     ////////////////////////////////////////////////
+
+    auto simulation = (ent::Simulation*) mpVP->simulation();
+    if (simulation)
+      simulation->updateThreadTick();
+
     switch (gUpdateStatus.meStatus) {
       case EUPD_START:
         mpVP->NotInDrawSync();
         gUpdateStatus.SetState(EUPD_RUNNING);
         break;
       case EUPD_RUNNING: {
-        auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
-            OrkAssert(dbuf);
-            auto simulation = (ent::Simulation*) mpVP->simulation();
-            if (simulation) {
-              auto compsys = simulation->compositingSystem();
-              float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
-              bool externally_fixed_rate = (frame_rate != 0.0f);
-              if (externally_fixed_rate) {
-                lev2::RenderSyncToken syntok;
-                if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
-                  syntok.mFrameIndex++;
-                  simulation->Update();
-                  lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
-                }
-              } else
-              simulation->Update();
-              simulation->enqueueDrawablesToBuffer(*dbuf);
-            }
-        ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
         break;
       }
       case EUPD_STOP:
         mpVP->NotInDrawSync();
         gUpdateStatus.SetState(EUPD_STOPPED);
         break;
-      case EUPD_STOPPED:
+      case EUPD_STOPPED:{
+        usleep(100);
         mpVP->NotInDrawSync();
         break;
+      }
       default:
         assert(false);
         break;

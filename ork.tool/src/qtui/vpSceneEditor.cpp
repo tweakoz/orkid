@@ -287,14 +287,14 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     // still want to draw something so we know the editor is alive..
     mpTarget->BeginFrame();
     // we must still consume DrawableBuffers (since the compositor cannot)
-    const DrawableBuffer* DB = DrawableBuffer::BeginDbRead(7);
+    const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7);
     FBI->SetAutoClear(true);
     FBI->SetViewport(0, 0, TARGW, TARGH);
     FBI->SetScissor(0, 0, TARGW, TARGH);
     this->Clear();
     DrawHUD(RCFD);
     DrawSpinner(RCFD);
-    if (DB) { DrawableBuffer::EndDbRead(DB); }  // release consumed DB
+    if (DB) { DrawableBuffer::releaseReadDB(DB); }  // release consumed DB
     mpTarget->EndFrame();
     return;
   }
@@ -304,28 +304,26 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //  assembly pass(es)
   ////////////////////////////////////////////////
 
-  RCFD.PushRenderTarget(&rt);
-  _renderer->SetTarget(mpTarget);
-  SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
-
-  mpTarget->BeginFrame();
-  FBI->SetViewport(0, 0, TARGW, TARGH);
-  FBI->SetScissor(0, 0, TARGW, TARGH);
-  this->Clear();
-
+  //////////////////////////////////////////////////
+  // setup viewport (main) rendertarget at top of stack
+  //  so we can composite into it..
+  //////////////////////////////////////////////////
+  mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
+      RCFD.PushRenderTarget(&rt);
+      RCFD.SetTarget(mpTarget);
+      _renderer->SetTarget(mpTarget);
+      SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
+      RCFD.SetDstRect(tgtrect);
+      FBI->SetAutoClear(true);
+      FBI->SetViewport(0, 0, TARGW, TARGH);
+      FBI->SetScissor(0, 0, TARGW, TARGH);
+      mpTarget->BeginFrame();
+      this->Clear();
+  mpTarget->debugPopGroup();
+  //////////////////////////////////////////////////
 
   lev2::FrameRenderer framerenderer(RCFD, [&]() {
-  //mpTarget->debugPushGroup("toolvp::framerenderer");
-      //auto NODE              = CompositingPassData::FromRCFD(RCFD);
-      //NODE.updateCompositingSize(mpTarget->GetW(),mpTarget->GetH());
-      //GetClearColorRef() = NODE._clearColor.xyz();
-      //this->Clear();
-      //mpTarget->debugMarker(FormatString("toolvp::framerenderer::NODE.mbDrawSource<%d>", int(NODE.mbDrawSource)));
-      //if (NODE.mbDrawSource)
-        //NODE.renderPass(RCFD,[&](){
-          renderMisc(RCFD);
-        //});
-  //mpTarget->debugPopGroup();
+      renderMisc(RCFD);
   });
 
   lev2::CompositorDrawData drawdata(framerenderer);
@@ -343,22 +341,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
 
   //////////////////////////////////////////////////
-  // setup viewport (main) rendertarget at top of stack
-  //  so we can composite into it..
-  //////////////////////////////////////////////////
-  mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
-      RCFD.PushRenderTarget(&rt);
-      RCFD.SetTarget(mpTarget);
-      _renderer->SetTarget(mpTarget);
-      RCFD.SetDstRect(tgtrect);
-      FBI->SetAutoClear(true);
-      FBI->SetViewport(0, 0, TARGW, TARGH);
-      FBI->SetScissor(0, 0, TARGW, TARGH);
-      mpTarget->BeginFrame();
-  mpTarget->debugPopGroup();
-  //////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////
   // final compositing :
   //   combine previously assembled content
   //   into final image
@@ -369,6 +351,26 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
 
   //////////////////////////////////////////////////
+  // after composite:
+  //  render hud and other 2d non-content layers
+  //////////////////////////////////////////////////
+
+  mpTarget->debugPushGroup("toolvp::DRAWEND");
+      if (gtoggle_hud) {
+        DrawHUD(RCFD);
+        mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
+        DrawChildren(drwev);
+        mpTarget->debugPopGroup();
+
+        if (false == FBI->IsPickState())
+          DrawSpinner(RCFD);
+      }
+      mpTarget->EndFrame();
+      RCFD.SetDstRect(tgtrect);
+      RCFD.PopRenderTarget();
+  mpTarget->debugPopGroup();
+
+  //////////////////////////////////////////////////
   // update editor camera (TODO - move to engine)
   //////////////////////////////////////////////////
 
@@ -377,27 +379,13 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
       if (_editorCamera) {
         _editorCamera->AttachViewport(this);
-        _editorCamera->RenderUpdate();
+        //_editorCamera->RenderUpdate();
+// assert(false);
       }
       ManipManager().SetActiveCamera(_editorCamera);
       mpTarget->debugMarker(FormatString("toolvp::_editorCamera<%p>", _editorCamera));
   }
 
-  //////////////////////////////////////////////////
-  // after composite:
-  //  render hud and other 2d non-content layers
-  //////////////////////////////////////////////////
-
-  mpTarget->debugPushGroup("toolvp::DRAWEND");
-      if (gtoggle_hud) {
-        DrawHUD(RCFD);
-        DrawChildren(drwev);
-        if (false == FBI->IsPickState())
-          DrawSpinner(RCFD);
-      }
-      mpTarget->EndFrame();
-      RCFD.PopRenderTarget();
-  mpTarget->debugPopGroup();
   ///////////////////////////////////////////////////////
   // filth up the pick buffer
   ///////////////////////////////////////////////////////
@@ -407,10 +395,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       miPickDirtyCount--;
     }
   }
-  ///////////////////////////////////////////////////////
-  mpTarget->EndFrame();
-  RCFD.SetDstRect(tgtrect);
-  RCFD.PopRenderTarget();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -539,6 +523,7 @@ void SceneEditorVP::UpdateRefreshPolicy() {
 
 void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   lev2::GfxTarget* pTARG = FrameData.GetTarget();
+  mpTarget->debugPushGroup("toolvp::DrawHUD");
   auto MTXI              = pTARG->MTXI();
   auto GBI               = pTARG->GBI();
 
@@ -730,11 +715,14 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   //if (_editorCamera) {
     //_editorCamera->draw(pTARG);
   //}
+  mpTarget->debugPopGroup();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
+  mpTarget->debugPushGroup("toolvp::DrawGrid");
   auto& GRID = ManipManager().Grid();
   switch (mGridMode) {
     case 0:
@@ -752,6 +740,7 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
       GRID.Render(fdata);
       break;
   }
+  mpTarget->debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -824,6 +813,10 @@ void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& FrameData) {
   float fw        = FrameData.GetDstRect().miW;
   float fh        = FrameData.GetDstRect().miH;
   auto TGT        = FrameData.GetTarget();
+
+  mpTarget->debugPushGroup("toolvp::DrawSpinner");
+
+
   auto MTXI       = TGT->MTXI();
   ork::fmtx4 mtxP = MTXI->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
   GfxMaterialUI matui(FrameData.GetTarget());
@@ -872,6 +865,9 @@ void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& FrameData) {
   MTXI->PopMMatrix(); // back to ortho
   TGT->PopModColor();
   TGT->BindMaterial(0);
+
+  mpTarget->debugPopGroup();
+
 }
 
 } // namespace ent

@@ -104,6 +104,7 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     : ComponentInst(&data, pent)
     , mData(data)
     , mXgmModelInst(0) {
+
   mModelDrawable        = new lev2::ModelDrawable(pent); // deleted when entity deleted
   lev2::XgmModel* model = data.GetModel();
 
@@ -114,7 +115,6 @@ ModelComponentInst::ModelComponentInst(const ModelComponentData& data, Entity* p
     mModelDrawable->SetScale(mData.GetScale());
 
     const auto& ED = GetEntity()->GetEntData();
-
     pent->addDrawableToDefaultLayer(mModelDrawable);
     mModelDrawable->SetOwner(pent);
 

@@ -263,12 +263,6 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
   pTARG->MTXI()->SetMMatrix(WorldMat);
   pTARG->PushModColor(ModColor);
   {
-
-    // if( 0 == strcmp(XgmMesh.GetMeshName().c_str(),"fg_2_1_3_ground_SG_ground_GeoDaeId") )
-    //{
-    //	orkprintf( "yo\n" );
-    //}
-
     if (mdlctx.GetModelInst()) {
       if (mdlctx.GetModelInst()->GetLayerFxMaterial() != 0) {
         pmat = mdlctx.GetModelInst()->GetLayerFxMaterial();
@@ -311,11 +305,13 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
       switch (rgs) {
         /////////////////////////////////////////////////////
         case ork::lev2::ERGST_NONE: {
+          pTARG->debugPushGroup("XgmModel::RenderRigid::ERGST_NONE");
           pTARG->BindMaterial(pmat);
           int inumpasses = pmat->BeginBlock(pTARG, RCID);
           { RenderClus::RenderStd(pTARG, pmat, XgmClus, inumpasses); }
           pmat->EndBlock(pTARG);
           gbGROUPENABLED = false;
+          pTARG->debugPopGroup();
           break;
         }
         /////////////////////////////////////////////////////
@@ -327,13 +323,9 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
             gbDRAW         = pmat->BeginPass(pTARG, 0);
             if (gbDRAW) {
               RenderClus::RenderPrim(pTARG, XgmClus);
-              // pmat->EndPass(pTARG);
             }
-            // pmat->EndBlock(pTARG);
           } else {
             gbGROUPENABLED = false;
-            // pTARG->BindMaterial( pmat );
-            // int inumpasses = pmat->BeginBlock(pTARG,RCID);
             {
               RenderClus::RenderStd(pTARG, pmat, XgmClus, giNUMPASSES); // inumpasses );
             }
@@ -345,15 +337,10 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
         case ork::lev2::ERGST_CONTINUE: {
           OrkAssert((gLASTSTATE == ork::lev2::ERGST_FIRST) || (gLASTSTATE == ork::lev2::ERGST_CONTINUE));
           if (gbGROUPENABLED) {
-            // pTARG->BindMaterial( pmat );
-            // giNUMPASSES = pmat->BeginBlock(pTARG,RCID);
-            // bool bDRAW = pmat->BeginPass( pTARG,0 );
             if (gbDRAW) {
               pmat->UpdateMVPMatrix(pTARG);
               RenderClus::RenderPrim(pTARG, XgmClus);
-              // pmat->EndPass(pTARG);
             }
-            // pmat->EndBlock(pTARG);
           } else {
             pTARG->BindMaterial(pmat);
             int inumpasses = pmat->BeginBlock(pTARG, RCID);
@@ -367,9 +354,6 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
           OrkAssert((gLASTSTATE == ork::lev2::ERGST_CONTINUE) || (gLASTSTATE == ork::lev2::ERGST_FIRST));
 
           if (gbGROUPENABLED) {
-            // pTARG->BindMaterial( pmat );
-            // giNUMPASSES = pmat->BeginBlock(pTARG,RCID);
-            // bool bDRAW = pmat->BeginPass( pTARG,0 );
             if (gbDRAW) {
               pmat->UpdateMVPMatrix(pTARG);
               RenderClus::RenderPrim(pTARG, XgmClus);
@@ -390,7 +374,6 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
   }
   pTARG->PopModColor();
   pTARG->debugPopGroup();
-  // pTARG->MTXI()->PopMMatrix();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

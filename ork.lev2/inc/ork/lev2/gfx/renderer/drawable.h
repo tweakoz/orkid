@@ -152,8 +152,8 @@ public:
 
   static const int kmaxbuffers = 6;
 
-  static const DrawableBuffer* BeginDbRead(int lid);
-  static void EndDbRead(const DrawableBuffer* db);
+  static const DrawableBuffer* acquireReadDB(int lid);
+  static void releaseReadDB(const DrawableBuffer* db);
 
   static DrawableBuffer* LockWriteBuffer(int lid);
   static void UnLockWriteBuffer(DrawableBuffer* db);

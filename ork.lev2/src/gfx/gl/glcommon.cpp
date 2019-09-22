@@ -14,19 +14,31 @@
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
+std::string indent(int count){
+  std::string rval = "";
+  for( int i=0; i<count; i++ )
+   rval += "  ";
+  return rval;
+}
+
 static std::string _prevgroup;
+static int _dbglevel = 0;
 void GfxTargetGL::debugPushGroup(const std::string str) {
-  _prevgroup = str;
-  //printf( "BEGIN:: %s\n", _prevgroup.c_str() );
-  glPushGroupMarkerEXT(str.length(),str.c_str());
+ auto mstr = indent(_dbglevel++) + str;
+  _prevgroup = mstr;
+  printf( "Group:: %s\n", _prevgroup.c_str() );
+  glPushGroupMarkerEXT(mstr.length(),mstr.c_str());
 }
 void GfxTargetGL::debugPopGroup() {
+ //auto mstr = indent(_dbglevel--) + _prevgroup;
   //printf( "END:: %s\n", _prevgroup.c_str() );
   glPopGroupMarkerEXT();
+  _dbglevel--;
 }
 void GfxTargetGL::debugMarker(const std::string str) {
-  //printf( "MKR:: %s\n", str.c_str() );
-  glInsertEventMarkerEXT(str.length(),str.c_str());
+  auto mstr = indent(_dbglevel) + str;
+  printf( "Marker:: %s\n", mstr.c_str() );
+  glInsertEventMarkerEXT(mstr.length(),mstr.c_str());
 }
 
 bool GfxTargetGL::SetDisplayMode(DisplayMode *mode)

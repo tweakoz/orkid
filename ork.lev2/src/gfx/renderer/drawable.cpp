@@ -202,9 +202,9 @@ const CameraData* DrawableBuffer::GetCameraData(const PoolString& named) const {
 /////////////////////////////////////////////////////////////////////
 static concurrent_multi_buffer<DrawableBuffer, 2> gBuffers;
 /////////////////////////////////////////////////////////////////////
-const DrawableBuffer* DrawableBuffer::BeginDbRead(int lid) { return gBuffers.BeginRead(); }
+const DrawableBuffer* DrawableBuffer::acquireReadDB(int lid) { return gBuffers.BeginRead(); }
 /////////////////////
-void DrawableBuffer::EndDbRead(const DrawableBuffer* db) { gBuffers.EndRead(db); }
+void DrawableBuffer::releaseReadDB(const DrawableBuffer* db) { gBuffers.EndRead(db); }
 /////////////////////////////////////////////////////////////////////
 DrawableBuffer* DrawableBuffer::LockWriteBuffer(int lid) {
   AssertOnOpQ2(UpdateSerialOpQ());

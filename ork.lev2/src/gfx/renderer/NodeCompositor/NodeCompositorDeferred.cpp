@@ -5,9 +5,8 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "NodeCompositorDeferred.h"
-
 #include <ork/application/application.h>
+#include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
@@ -15,6 +14,8 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
+
+#include "NodeCompositorDeferred.h"
 
 ImplementReflectionX(ork::lev2::DeferredCompositingNode, "DeferredCompositingNode");
 
@@ -40,7 +41,7 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.Init(pTARG);
       _rtg            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8 );
+      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8);
       buf->_debugName = "DeferredRt";
       _rtg->SetMrt(0, buf);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
@@ -49,30 +50,28 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void _render(DeferredCompositingNode* node, CompositorDrawData& drawdata) {
-    FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
+    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto targ                         = RCFD.GetTarget();
-    auto& ddprops                       = drawdata._properties;
-    //auto onode                        = ddprops["final"_crcu].Get<const OutputCompositingNode*>();
+    auto targ                    = RCFD.GetTarget();
+    auto& ddprops                = drawdata._properties;
     SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
 
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
 
-    int newwidth = ddprops["OutputWidth"_crcu].Get<int>();
+    int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
     int newheight = ddprops["OutputHeight"_crcu].Get<int>();
-    if( _rtg->GetW()!=newwidth or _rtg->GetH()!=newheight ){
-      _rtg->Resize(newwidth,newheight);
+    if (_rtg->GetW() != newwidth or _rtg->GetH() != newheight) {
+      _rtg->Resize(newwidth, newheight);
     }
 
     //////////////////////////////////////////////////////
 
     int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
-    int cullcamindex = ddprops["cullcamindex"_crcu].Get<int>();
-    auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+    int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
+    auto irenderer      = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
-
 
     //////////////////////////////////////////////////////
     targ->FBI()->SetAutoClear(false);
@@ -85,19 +84,19 @@ struct IMPL {
 
     RtGroupRenderTarget rt(_rtg);
     {
-      targ->BeginFrame();
       targ->SetRenderContextFrameData(&RCFD);
       RCFD.SetDstRect(tgt_rect);
       RCFD.PushRenderTarget(&rt);
       targ->FBI()->PushRtGroup(_rtg);
+      targ->BeginFrame();
       RCFD.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB = RCFD.GetDB();
-      auto CPD = CompositingPassData::FromRCFD(RCFD);
+      auto DB         = RCFD.GetDB();
+      auto CPD        = CompositingPassData::FromRCFD(RCFD);
       CPD._clearColor = node->_clearColor;
-      CPD.mpLayerName  = &_layername;
-      auto CAMDAT   = CPD.getCamera(RCFD, primarycamindex, cullcamindex);
-      auto& CAMCCTX = RCFD.GetCameraCalcCtx();
+      CPD.mpLayerName = &_layername;
+      auto CAMDAT     = CPD.getCamera(RCFD, primarycamindex, cullcamindex);
+      auto& CAMCCTX   = RCFD.GetCameraCalcCtx();
       ///////////////////////////////////////////////////////////////////////////
       targ->debugMarker(FormatString("Deferred::CAMDAT<%p>", CAMDAT));
       if (CAMDAT and DB) {
@@ -108,8 +107,13 @@ struct IMPL {
         ///////////////////////////////////////////////////////////////////////////
         //_tempcamdat.GetVMatrix().dump("WTF");
         ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
+
+        auto l2cam = _tempcamdat.getEditorCamera();
+        if (l2cam)
+          l2cam->RenderUpdate();
+
         // DrawableBuffer -> RenderQueue enqueue
-        for (const PoolString& layer_name : CPD.getLayerNames()){
+        for (const PoolString& layer_name : CPD.getLayerNames()) {
           targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
@@ -119,22 +123,21 @@ struct IMPL {
         MTXI->PushPMatrix(CAMCCTX.mPMatrix);
         MTXI->PushVMatrix(CAMCCTX.mVMatrix);
         MTXI->PushMMatrix(fmtx4::Identity);
-          targ->debugPushGroup("toolvp::DrawEnqRenderables");
-              targ->FBI()->Clear(node->_clearColor,1.0f);
-              irenderer->drawEnqueuedRenderables();
-              framerenderer.renderMisc();
-          targ->debugPopGroup();
+        targ->debugPushGroup("toolvp::DrawEnqRenderables");
+        targ->FBI()->Clear(node->_clearColor, 1.0f);
+        irenderer->drawEnqueuedRenderables();
+        framerenderer.renderMisc();
+        targ->debugPopGroup();
         MTXI->PopPMatrix();
         MTXI->PopVMatrix();
         MTXI->PopMMatrix();
         drawdata.mCompositingGroupStack.pop();
         /////////////////////////////////////////////////
-
       }
       /////////////////////////////////////////////////////////////////////////////////////////
+      targ->EndFrame();
       targ->FBI()->PopRtGroup();
       RCFD.PopRenderTarget();
-      targ->EndFrame();
       targ->SetRenderContextFrameData(nullptr);
     }
     targ->debugPopGroup();

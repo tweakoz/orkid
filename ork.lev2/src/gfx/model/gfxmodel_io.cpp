@@ -134,7 +134,6 @@ EVtxStreamFormat GetVersion0VertexStreamFormat(const char* fmtstr) {
 
 bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
   GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
-
   bool rval = true;
 
   int XGMVERSIONCODE           = 0;

@@ -41,6 +41,7 @@ void Viewport::BeginFrame( lev2::GfxTarget* pTARG )
 	//////////////////////////////////////////////////////////
 	//GfxEnv::GetRef().GetGlobalLock().Lock(); // InterThreadLock
 	//////////////////////////////////////////////////////////
+  pTARG->debugPushGroup("Viewport::BeginFrame");
 
 	pTARG->BeginFrame();
 
@@ -59,12 +60,15 @@ void Viewport::BeginFrame( lev2::GfxTarget* pTARG )
 		pTARG->MTXI()->PushPMatrix( pTARG->MTXI()->GetOrthoMatrix() );
 		pTARG->BindMaterial( lev2::GfxEnv::GetRef().GetDefaultUIMaterial() );
 	}
+  pTARG->debugPopGroup();
+
 }
 
 /////////////////////////////////////////////////////////////////////////
 
 void Viewport::EndFrame( lev2::GfxTarget* pTARG )
 {
+  pTARG->debugPushGroup("Viewport::EndFrame");
 	if( mbDrawOK )
 	{
 		//orkprintf( "END Viewport::BeginFrame::mbDrawOK\n" );
@@ -78,6 +82,7 @@ void Viewport::EndFrame( lev2::GfxTarget* pTARG )
 	//////////////////////////////////////////////////////////
 
 	mbDrawOK = false;
+  pTARG->debugPopGroup();
 }
 
 /////////////////////////////////////////////////////////////////////////

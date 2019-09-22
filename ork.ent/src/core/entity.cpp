@@ -363,8 +363,8 @@ void Archetype::ComposeEntity(Entity* pent) const {
 }
 
 void Archetype::DoComposeEntity(Entity* pent) const {
-  // printf( "Archetype::DoComposeEntity pent<%p>\n", pent );
-  const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
+   printf( "Archetype::DoComposeEntity pent<%p>\n", pent );
+const ent::ComponentDataTable::LutType& clut = GetComponentDataTable().GetComponents();
   for (ent::ComponentDataTable::LutType::const_iterator it = clut.begin(); it != clut.end(); it++) {
     ent::ComponentData* pcompdata = it->second;
     if (pcompdata) {

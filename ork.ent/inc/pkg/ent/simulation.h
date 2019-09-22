@@ -113,6 +113,8 @@ public:
 
 	void enqueueDrawablesToBuffer(lev2::DrawableBuffer& buffer) const;
 
+  void updateThreadTick();
+
 	///////////////////////////////////////////////////
 
 	CompositingSystem* compositingSystem();

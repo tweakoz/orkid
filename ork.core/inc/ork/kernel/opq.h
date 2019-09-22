@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Orkid - Copyright 2012 Michael T. Mayers 
+// Orkid - Copyright 2012 Michael T. Mayers
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 ///////////////////////////////////////////////////////////////////////////////
@@ -8,6 +8,7 @@
 #define _DEBUG_OPQ
 #include <ork/orkstl.h>
 #include <ork/util/Context.h>
+#include <ork/kernel/thread.h>
 
 
 #include <ork/kernel/atomic.h>
@@ -40,7 +41,7 @@ struct BarrierSyncReq
 
 struct Op
 {
-	op_wrap_t mWrapped;	
+	op_wrap_t mWrapped;
 	std::string mName;
 
 	Op(const Op& oth);
@@ -113,12 +114,42 @@ struct OpGroup
 	int 							mLimitMaxOpsQueued;
 };
 
+///////////////////////////////////////////////////////////////////////////
+struct OpqThreadData {
+  Opq* _opq = nullptr;
+  int _threadID = 0;
+};
+enum OpqThreadState {
+  EPOQSTATE_NEW = 0,
+  EPOQSTATE_RUNNING,
+  EPOQSTATE_ENTERLOCK,
+  EPOQSTATE_LOCKED,
+  EPOQSTATE_EXITLOCK,
+  EPOQSTATE_OK2KILL,
+  EPOQSTATE_DEAD
+};
+struct OpqThread : public ork::Thread {
+  OpqThreadData _data;
+  std::atomic<int> _state;
+  OpqThread(Opq* popq, int thid);
+  ~OpqThread();
+  void run() final;
+};
 //////////////////////////////////////////////////////////////////////
 
 struct Opq
 {
 	Opq(int inumthreads, const char* name = "DefOpQ");
 	~Opq();
+
+  struct InternalLock {
+
+    InternalLock(Opq& opq);
+    ~InternalLock();
+    Opq& _opq;
+  };
+
+  std::shared_ptr<InternalLock> scopedLock();
 
 	void push(const Op& the_op);
 	void push(const void_lambda_t& l,const std::string& name="");
@@ -127,6 +158,9 @@ struct Opq
 	void sync();
 	void drain();
 
+  void _internalBeginLock();
+  void _internalEndLock();
+
 	OpGroup* CreateOpGroup(const char* pname);
 
 	static Opq* GlobalConQ();
@@ -134,19 +168,20 @@ struct Opq
 
 	bool Process();
 
-	OpGroup* 					mDefaultGroup;
-	//ork::atomic<int>			 mOpCounter;
-	ork::atomic<int>			 mGroupCounter;
+  typedef std::set<OpqThread*> threadset_t;
 
+	OpGroup* 					mDefaultGroup;
+	ork::atomic<int>			 mGroupCounter;
+  LockedResource<threadset_t> _threads;
 	OpqSynchro						mSynchro;
 
 	std::set<OpGroup*> 			mOpGroups;
 
 	ork::semaphore mSemaphore;
 
-	bool mbGoingDown;
-	ork::atomic<int> mThreadsRunning;
-	std::string mName;
+  std::atomic<bool> _lock;
+	std::atomic<int> _numThreadsRunning;
+	std::string _name;
 };
 
 //////////////////////////////////////////////////////////////////////

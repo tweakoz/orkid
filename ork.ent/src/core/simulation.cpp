@@ -34,6 +34,7 @@
 #include <ork/kernel/debug.h>
 #include <ork/kernel/orklut.hpp>
 //
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/math/basicfilters.h>
 #include <pkg/ent/scene.hpp>
@@ -88,16 +89,16 @@ const ork::PoolString& Simulation::EventChannel() { return sSimulationEvChanName
 void Simulation::Describe() {
   reflect::RegisterFunctor("SlotSceneTopoChanged", &Simulation::SlotSceneTopoChanged);
 
-  sInputFamily    = ork::AddPooledLiteral("input");
-  sAudioFamily    = ork::AddPooledLiteral("audio");
-  sCameraFamily   = ork::AddPooledLiteral("camera");
-  sControlFamily  = ork::AddPooledLiteral("control");
-  sPhysicsFamily  = ork::AddPooledLiteral("physics");
-  sFrustumFamily  = ork::AddPooledLiteral("frustum");
-  sAnimateFamily  = ork::AddPooledLiteral("animate");
-  sParticleFamily = ork::AddPooledLiteral("particle");
-  sLightFamily    = ork::AddPooledLiteral("lighting");
-  sPreRenderFamily    = ork::AddPooledLiteral("PreRender");
+  sInputFamily     = ork::AddPooledLiteral("input");
+  sAudioFamily     = ork::AddPooledLiteral("audio");
+  sCameraFamily    = ork::AddPooledLiteral("camera");
+  sControlFamily   = ork::AddPooledLiteral("control");
+  sPhysicsFamily   = ork::AddPooledLiteral("physics");
+  sFrustumFamily   = ork::AddPooledLiteral("frustum");
+  sAnimateFamily   = ork::AddPooledLiteral("animate");
+  sParticleFamily  = ork::AddPooledLiteral("particle");
+  sLightFamily     = ork::AddPooledLiteral("lighting");
+  sPreRenderFamily = ork::AddPooledLiteral("PreRender");
 }
 ///////////////////////////////////////////////////////////////////////////////
 Simulation::Simulation(const SceneData* sdata, Application* application)
@@ -185,7 +186,7 @@ float Simulation::random(float mmin, float mmax) {
 
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::ComputeDeltaTime() {
-  auto compsys = compositingSystem();
+  auto compsys     = compositingSystem();
   float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
 
   AssertOnOpQ2(UpdateSerialOpQ());
@@ -928,10 +929,31 @@ static void CopyCameraData(const Simulation::CameraLut& srclut, CameraLut& dstlu
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
+
+void Simulation::updateThreadTick() {
+  auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
+  OrkAssert(dbuf);
+  auto compsys               = this->compositingSystem();
+  float frame_rate           = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
+  bool externally_fixed_rate = (frame_rate != 0.0f);
+  if (externally_fixed_rate) {
+    lev2::RenderSyncToken syntok;
+    if (lev2::DrawableBuffer::mOfflineUpdateSynchro.try_pop(syntok)) {
+      syntok.mFrameIndex++;
+      this->Update();
+      lev2::DrawableBuffer::mOfflineRenderSynchro.push(syntok);
+    }
+  } else {
+    this->Update();
+    this->enqueueDrawablesToBuffer(*dbuf);
+  }
+  ork::lev2::DrawableBuffer::UnLockWriteBuffer(dbuf);
+}
+
+///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
 void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) const {
-  // orkprintf( "beg si<%p> qad2b..\n", this );
   AssertOnOpQ2(UpdateSerialOpQ());
 
   buffer.Reset();
@@ -952,6 +974,7 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
 
   for (const auto& it : mEntities) {
     const ork::ent::Entity* pent = it.second;
+      printf("sim::enqueue ent<%p>\n", pent);
 
     const Entity::LayerMap& entlayers = pent->GetLayers();
 
@@ -964,19 +987,19 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
     }
 
     for (auto L : entlayers) {
-      const PoolString& layer_name          = L.first;
+      const PoolString& layer_name = L.first;
 
-     //printf( "sim::enqueue layer_name<%s>\n", layer_name.c_str() );
+      printf("sim::enqueue layer_name<%s>\n", layer_name.c_str());
 
       const ent::Entity::DrawableVector* dv = L.second;
-      lev2::DrawableBufLayer* buflayer            = buffer.MergeLayer(layer_name);
+      lev2::DrawableBufLayer* buflayer      = buffer.MergeLayer(layer_name);
       if (dv && buflayer) {
         size_t inumdv = dv->size();
-        //printf( "sim::enqueue buflayer<%p> inumdv<%d>\n", buflayer, inumdv );
+        printf("sim::enqueue buflayer<%p> inumdv<%zu>\n", buflayer, inumdv);
         for (size_t i = 0; i < inumdv; i++) {
           lev2::Drawable* pdrw = dv->operator[](i);
           if (pdrw && pdrw->IsEnabled()) {
-            // printf( "queue drw<%p>\n", pdrw );
+            printf("queue drw<%p>\n", pdrw);
             pdrw->QueueToLayer(xfdata, *buflayer);
           }
         }
@@ -1063,15 +1086,15 @@ void Simulation::AddLayer(const PoolString& name, lev2::Layer* player) {
   player->mLayerName = name;
 }
 lev2::Layer* Simulation::GetLayer(const PoolString& name) {
-  lev2::Layer* rval                                   = 0;
-  auto it = mLayers.find(name);
+  lev2::Layer* rval = 0;
+  auto it           = mLayers.find(name);
   if (it != mLayers.end())
     rval = it->second;
   return rval;
 }
 const lev2::Layer* Simulation::GetLayer(const PoolString& name) const {
-  const lev2::Layer* rval                             = 0;
-  auto it = mLayers.find(name);
+  const lev2::Layer* rval = 0;
+  auto it                 = mLayers.find(name);
   if (it != mLayers.end())
     rval = it->second;
   return rval;
