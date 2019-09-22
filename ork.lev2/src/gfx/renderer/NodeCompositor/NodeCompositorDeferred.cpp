@@ -106,7 +106,7 @@ struct IMPL {
         _tempcamdat.CalcCameraData(CAMCCTX);
         RCFD.SetCameraData(&_tempcamdat);
         ///////////////////////////////////////////////////////////////////////////
-        _tempcamdat.GetVMatrix().dump("WTF");
+        //_tempcamdat.GetVMatrix().dump("WTF");
         ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
         // DrawableBuffer -> RenderQueue enqueue
         for (const PoolString& layer_name : CPD.getLayerNames()){
@@ -120,6 +120,7 @@ struct IMPL {
         MTXI->PushVMatrix(CAMCCTX.mVMatrix);
         MTXI->PushMMatrix(fmtx4::Identity);
           targ->debugPushGroup("toolvp::DrawEnqRenderables");
+              targ->FBI()->Clear(node->_clearColor,1.0f);
               irenderer->drawEnqueuedRenderables();
               framerenderer.renderMisc();
           targ->debugPopGroup();
