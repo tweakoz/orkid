@@ -118,7 +118,8 @@ struct VRIMPL {
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
 
-    if( use_vr ){
+    //if( use_vr )
+    {
       auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
       fmtx4 rootmatrix;
       if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
@@ -140,7 +141,8 @@ struct VRIMPL {
 
     RCFD.setLayerName("All");
 
-    if( use_vr ){
+    //if( use_vr )
+    {
       auto vrroot = RCFD.getUserProperty("vrroot"_crc);
       if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
         orkidvr::gpuUpdate(as_mtx.value());
@@ -181,18 +183,27 @@ struct VRIMPL {
       RCFD.SetCameraData(RCFD._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(&LCAM);
     } else {
+      ////////////////////////////////////////////////
+      CAMCCTX.mfAspectRatio = float(targ->GetW())/float(targ->GetH());
+      //CAMCCTX.mfAspectRatio = float(_width)/float(_height);
+      ////////////////////////////////////////////////
       auto spncam =(CameraData*) DB->GetCameraData("spawncam"_pool);
-      ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
       auto l2cam = spncam->getEditorCamera();
       if (l2cam){
         spncam->BindGfxTarget(targ);
         l2cam->RenderUpdate();
-        CAMCCTX.mfAspectRatio = float(targ->GetW())/float(targ->GetH());
-        //CAMCCTX.mfAspectRatio = float(_width)/float(_height);
         spncam->CalcCameraMatrices(CAMCCTX);
         _tempcamdat = l2cam->mCameraData;
+        ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
       }
-      float w = targ->GetW(); float h = targ->GetH();
+      if( simrunning ){
+        auto& LCAM = orkidvr::device()._leftcamera;
+        _tempcamdat = LCAM;
+        _tempcamdat.BindGfxTarget(targ);
+        _tempcamdat.CalcCameraMatrices(CAMCCTX);
+        ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
+      }
+
       RCFD.setStereoOnePass(false);
       RCFD.SetCameraData(&_tempcamdat);
       RCFD._stereoCamera._left = &_tempcamdat;
