@@ -138,7 +138,7 @@ void CameraData::GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3&
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) const {
+void CameraData::CalcCameraMatrices(CameraMatrices& ctx, float faspect) const {
   ///////////////////////////////
   // gameplay calculation
   ///////////////////////////////
@@ -173,7 +173,7 @@ void CameraData::CalcCameraMatrices(CameraCalcContext& ctx, float faspect) const
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CameraData::CalcCameraData(CameraCalcContext& calcctx) {
+void CameraData::CalcCameraMatrices(CameraMatrices& calcctx) {
 
   // orkprintf( "ccd camEYE <%f %f %f>\n", mEye.GetX(), mEye.GetY(), mEye.GetZ() );
   // orkprintf( "ccd camTGT <%f %f %f>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetZ() );

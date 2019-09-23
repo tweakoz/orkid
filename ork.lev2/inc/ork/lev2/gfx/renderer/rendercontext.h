@@ -174,8 +174,8 @@ struct RenderContextFrameData {
   void SetDstRect(const SRect& rect) { mDstRect = rect; }
   void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
   void setLayerName(const char* layername);
-  CameraCalcContext& GetCameraCalcCtx() { return mCameraCalcCtx; }
-  const CameraCalcContext& GetCameraCalcCtx() const { return mCameraCalcCtx; }
+  CameraMatrices& GetCameraCalcCtx() { return mCameraCalcCtx; }
+  const CameraMatrices& GetCameraCalcCtx() const { return mCameraCalcCtx; }
 
   void ClearLayers();
   void AddLayer(const PoolString& layername);
@@ -214,7 +214,7 @@ struct RenderContextFrameData {
   GfxTarget* mpTarget;
   const CameraData* mCameraData;
   const CameraData* mPickCameraData;
-  CameraCalcContext mCameraCalcCtx;
+  CameraMatrices mCameraCalcCtx;
   SRect mDstRect;
   SRect mMrtRect;
   orkset<PoolString> mLayers;

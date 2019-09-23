@@ -360,7 +360,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   const CameraData* camdat                       = fdata->GetCameraData();
   OrkAssert(camdat != 0);
 
-  const CameraCalcContext& ccctx = fdata->GetCameraCalcCtx();
+  const CameraMatrices& ccctx = fdata->GetCameraCalcCtx();
   bool bvisicd                   = camdat->GetVisibilityCamDat() != 0;
   if (bvisicd) {
     camdat = camdat->GetVisibilityCamDat();

@@ -151,8 +151,8 @@ void EzUiCam::draw(GfxTarget* pT) {
   CameraData camdat = mCameraData;
   camdat.BindGfxTarget(pT);
   camdat.SetVisibilityCamDat(0);
-  CameraCalcContext ctx;
-  camdat.CalcCameraData(ctx);
+  CameraMatrices ctx;
+  camdat.CalcCameraMatrices(ctx);
   //////////////////////////////////////////
   // this is necessary to get UI based rotations working correctly
   //////////////////////////////////////////
@@ -1131,8 +1131,8 @@ void EzUiCam::updateMatrices(void) {
   mCameraData.Lookat(veye, vtarget, vup);
 
   ///////////////////////////////////////////////////////////////
-  CameraCalcContext ctx;
-  mCameraData.CalcCameraData(ctx);
+  CameraMatrices ctx;
+  mCameraData.CalcCameraMatrices(ctx);
   ///////////////////////////////////////////////////////////////
   CommonPostSetup();
 }

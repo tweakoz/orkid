@@ -9,6 +9,7 @@
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
@@ -99,65 +100,58 @@ struct VRIMPL {
     GfxTarget* targ                  = drawdata.target();
 
     bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
-
+    bool use_vr = (orkidvr::device()._active and simrunning);
     /////////////////////////////////////////////////////////////////////////////
     // default camera selection (todo: hoist to cimpl so it can be shared across output nodes)
     /////////////////////////////////////////////////////////////////////////////
     int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
     int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
-    auto CAMDAT     = _CPD.getCamera(RCFD, primarycamindex, cullcamindex);
+   // auto CAMDAT     = _CPD.getCamera(RCFD, primarycamindex, cullcamindex);
     auto& CAMCCTX   = RCFD.GetCameraCalcCtx();
     ///////////////////////////////////////////////////////////////////////////
-    targ->debugMarker(FormatString("NodeVr::CAMDAT<%p>", CAMDAT));
-    if (CAMDAT and DB) {
-      _tempcamdat = *CAMDAT;
-      _tempcamdat.BindGfxTarget(targ);
-      _tempcamdat.CalcCameraData(CAMCCTX);
-      RCFD.SetCameraData(&_tempcamdat);
+    //targ->debugMarker(FormatString("NodeVr::CAMDAT<%p>", CAMDAT));
+    //if (CAMDAT and DB) {
+      //_tempcamdat = *CAMDAT;
       ///////////////////////////////////////////////////////////////////////////
-      ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
-      auto l2cam = _tempcamdat.getEditorCamera();
-      if (l2cam)
-        l2cam->RenderUpdate();
-    }
+    //}
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
-    auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
-    fmtx4 rootmatrix;
-    if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
-      targ->debugMarker("Vr::gotcamera");
-      auto vrcam = as_cam.value();
-      auto eye = vrcam->GetEye();
-      auto tgt = vrcam->GetTarget();
-      auto up  = vrcam->GetUp();
-      rootmatrix.LookAt(eye, tgt, up);
-    }
-    else{
-      targ->debugMarker("Vr::nocamera");
-      printf("vrcamtype<%s>\n", vrcamprop.GetTypeName() );
+
+    if( use_vr ){
+      auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
+      fmtx4 rootmatrix;
+      if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
+        targ->debugMarker("Vr::gotcamera");
+        auto vrcam = as_cam.value();
+        auto eye = vrcam->GetEye();
+        auto tgt = vrcam->GetTarget();
+        auto up  = vrcam->GetUp();
+        rootmatrix.LookAt(eye, tgt, up);
+      }
+      else{
+        targ->debugMarker("Vr::nocamera");
+      }
+
+      _viewOffsetMatrix = orkidvr::device()._outputViewOffsetMatrix;
     }
 
-    _viewOffsetMatrix = orkidvr::device()._outputViewOffsetMatrix;
-
-    /////////////////////////////////////////////////////////////////////////////
-    // render eyes
     /////////////////////////////////////////////////////////////////////////////
 
     RCFD.setLayerName("All");
 
-    auto vrroot = RCFD.getUserProperty("vrroot"_crc);
-    if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
-      orkidvr::gpuUpdate(as_mtx.value());
+    if( use_vr ){
+      auto vrroot = RCFD.getUserProperty("vrroot"_crc);
+      if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
+        orkidvr::gpuUpdate(as_mtx.value());
+      }
+      else{
+        printf("vrroottype<%s>\n", vrroot.GetTypeName() );
+      }
     }
-    else{
-      printf("vrroottype<%s>\n", vrroot.GetTypeName() );
-    }
-
-    auto& LCAM = orkidvr::device()._leftcamera;
-    auto& RCAM = orkidvr::device()._rightcamera;
-    auto& CONT = orkidvr::device()._controllers;
-
+    ///////////////////////////////////
+    ///////////////////////////////////
+    //float w = _rtg->GetW(); float h = _rtg->GetH();
     ///////////////////////////////////
 
     SRect tgt_rect(0, 0, _width, _height);
@@ -172,35 +166,39 @@ struct VRIMPL {
     // is stereo active
     //////////////////////////////////////////////////////
 
-    if (orkidvr::device()._active and simrunning) {
+    if (use_vr) {
+      auto& LCAM = orkidvr::device()._leftcamera;
+      auto& RCAM = orkidvr::device()._rightcamera;
+      auto& CONT = orkidvr::device()._controllers;
       LCAM.BindGfxTarget(targ);
       RCAM.BindGfxTarget(targ);
-      RCFD.setStereoOnePass(true);
+      LCAM.CalcCameraMatrices(CAMCCTX);
       RCFD.SetCameraData(&LCAM);
+      RCFD.setStereoOnePass(true);
       RCFD._stereoCamera._left = &LCAM;
       RCFD._stereoCamera._right = &RCAM;
       RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
       RCFD.SetCameraData(RCFD._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(&LCAM);
     } else {
+      auto spncam =(CameraData*) DB->GetCameraData("spawncam"_pool);
+      ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
+      auto l2cam = spncam->getEditorCamera();
+      if (l2cam){
+        spncam->BindGfxTarget(targ);
+        l2cam->RenderUpdate();
+        CAMCCTX.mfAspectRatio = float(targ->GetW())/float(targ->GetH());
+        //CAMCCTX.mfAspectRatio = float(_width)/float(_height);
+        spncam->CalcCameraMatrices(CAMCCTX);
+        _tempcamdat = l2cam->mCameraData;
+      }
+      float w = targ->GetW(); float h = targ->GetH();
       RCFD.setStereoOnePass(false);
-      LCAM.BindGfxTarget(targ);
-      RCAM.BindGfxTarget(targ);
-      if( simrunning ){
-        RCFD.SetCameraData(&LCAM);
-        RCFD._stereoCamera._left = &LCAM;
-        RCFD._stereoCamera._right = &RCAM;
-        RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
-        _CPD._impl.Set<const CameraData*>(simrunning?(&LCAM):nullptr);
-      }
-      else {
-        RCFD.SetCameraData(&LCAM);
-        RCFD._stereoCamera._left = &LCAM;
-        RCFD._stereoCamera._right = &RCAM;
-        RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
-        _CPD._impl.Set<const CameraData*>(simrunning?(&LCAM):nullptr);
-
-      }
+      RCFD.SetCameraData(&_tempcamdat);
+      RCFD._stereoCamera._left = &_tempcamdat;
+      RCFD._stereoCamera._right = &_tempcamdat;
+      RCFD._stereoCamera._mono = &_tempcamdat; // todo - blend l&r
+      _CPD._impl.Set<const CameraData*>(&_tempcamdat);
     }
 
     //////////////////////////////////////////////////////

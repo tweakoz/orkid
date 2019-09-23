@@ -51,7 +51,7 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
   if (pcullcamdata) {
     TempCullCamData = *pcullcamdata;
     TempCullCamData.BindGfxTarget(gfxtarg);
-    TempCullCamData.CalcCameraData(framedata.GetCameraCalcCtx());
+    TempCullCamData.CalcCameraMatrices(framedata.GetCameraCalcCtx());
     TempCamData.SetVisibilityCamDat(&TempCullCamData);
     gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcullcamdata<%p>", pcullcamdata));
   }
@@ -68,9 +68,10 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
   // try direct CameraData from NODE
   /////////////////////////////////////////
   if (auto from_node = _impl.TryAs<const CameraData*>()) {
+    if( from_node.value() != nullptr ){
     pcamdata = from_node.value();
     gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera from_node<%p>", pcamdata));
-    // printf( "from node\n");
+    }
   }
   /////////////////////////////////////////
   return pcamdata;

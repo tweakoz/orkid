@@ -250,26 +250,28 @@ Opq::Opq(int inumthreads, const char* name)
 }
 ///////////////////////////////////////////////////////////////////////////
 Opq::~Opq() {
-  // drain();
-  // sync();
 
   /////////////////////////////////
   // signal to thread we are going down, then wait for it to go down
   /////////////////////////////////
 
+  printf( "Opq<%s> signalling OK2KILL\n", _name.c_str());
   _threads.atomicOp([=](threadset_t& thset){
     for( auto thread : thset )
       thread->_state.store(EPOQSTATE_OK2KILL);
   });
 
-  _threads.atomicOp([=](threadset_t& thset){
-    for( auto thread : thset ){
-      thread->join();
-      mSemaphore.notify();
-    }
-  });
-
-  while (_numThreadsRunning.load() != 0) {
+  printf( "Opq<%s> joining\n", _name.c_str());
+  bool done = false;
+  while( false == done ){
+    _threads.atomicOp([=,&done](threadset_t& thset){
+      done = thset.empty();
+      for( auto thread : thset ){
+        mSemaphore.notify();
+        thread->join();
+        thset.erase(thread);
+      }
+    });
     usleep(10);
   }
 

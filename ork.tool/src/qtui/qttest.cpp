@@ -221,8 +221,10 @@ int BootQtThreadImpl(void* arg_opaq )
 
 	lev2::DrawableBuffer::ClearAndSyncWriters();
 
-	//delete paudio;
-	//delete gpQtApplication;
+
+
+	delete paudio;
+	delete gpQtApplication;
 
   gpQtApplication = nullptr;
 

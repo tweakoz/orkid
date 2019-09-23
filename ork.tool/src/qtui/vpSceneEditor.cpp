@@ -279,6 +279,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(this);
   auto FBI = mpTarget->FBI();
+
   /////////////////////////////////
   // We must have a compositor to continue...
   /////////////////////////////////
@@ -387,8 +388,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
       if (_editorCamera) {
         _editorCamera->AttachViewport(this);
-        //_editorCamera->RenderUpdate();
-// assert(false);
       }
       ManipManager().SetActiveCamera(_editorCamera);
       mpTarget->debugMarker(FormatString("toolvp::_editorCamera<%p>", _editorCamera));
@@ -757,7 +756,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
   const CameraData* pcamdata = fdata.GetCameraData();
   if (0 == pcamdata)
     return;
-  const CameraCalcContext& ccctx = fdata.GetCameraCalcCtx();
+  const CameraMatrices& ccctx = fdata.GetCameraCalcCtx();
 
   ork::lev2::GfxTarget* pOutputTarget = fdata.GetTarget();
   auto MTXI                           = pOutputTarget->MTXI();

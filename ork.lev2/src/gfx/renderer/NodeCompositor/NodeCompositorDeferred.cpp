@@ -67,13 +67,9 @@ struct IMPL {
 
     //////////////////////////////////////////////////////
 
-    auto irenderer      = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+    auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
 
-    //////////////////////////////////////////////////////
-    targ->FBI()->SetAutoClear(false);
-    // clear will occur via _CPD
-    //////////////////////////////////////////////////////
 
     auto outerRT = RCFD.GetRenderTarget();
 
@@ -85,12 +81,11 @@ struct IMPL {
       RCFD.SetDstRect(tgt_rect);
       RCFD.PushRenderTarget(&rt);
       targ->FBI()->PushRtGroup(_rtg);
+      targ->FBI()->SetAutoClear(false); // explicit clear
       targ->BeginFrame();
       RCFD.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB         = RCFD.GetDB();
-      //auto CPD        = CompositingPassData::FromRCFD(RCFD);
-
       auto CPD = drawdata.mCompositingGroupStack.top();
       CPD._clearColor = node->_clearColor;
       CPD.mpLayerName = &_layername;
