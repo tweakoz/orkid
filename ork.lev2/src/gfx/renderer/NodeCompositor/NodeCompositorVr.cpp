@@ -174,25 +174,25 @@ struct VRIMPL {
       auto& CONT = orkidvr::device()._controllers;
       LCAM.BindGfxTarget(targ);
       RCAM.BindGfxTarget(targ);
-      LCAM.CalcCameraMatrices(CAMCCTX);
-      RCFD.SetCameraData(&LCAM);
+      LCAM.computeMatrices(CAMCCTX);
+      RCFD.setCameraData(&LCAM);
       RCFD.setStereoOnePass(true);
       RCFD._stereoCamera._left = &LCAM;
       RCFD._stereoCamera._right = &RCAM;
       RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
-      RCFD.SetCameraData(RCFD._stereoCamera._mono);
+      RCFD.setCameraData(RCFD._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(&LCAM);
     } else {
       ////////////////////////////////////////////////
       CAMCCTX.mfAspectRatio = float(targ->GetW())/float(targ->GetH());
       //CAMCCTX.mfAspectRatio = float(_width)/float(_height);
       ////////////////////////////////////////////////
-      auto spncam =(CameraData*) DB->GetCameraData("spawncam"_pool);
+      auto spncam =(CameraData*) DB->cameraData("spawncam"_pool);
       auto l2cam = spncam->getEditorCamera();
       if (l2cam){
         spncam->BindGfxTarget(targ);
         l2cam->RenderUpdate();
-        spncam->CalcCameraMatrices(CAMCCTX);
+        spncam->computeMatrices(CAMCCTX);
         _tempcamdat = l2cam->mCameraData;
         ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
       }
@@ -200,12 +200,12 @@ struct VRIMPL {
         auto& LCAM = orkidvr::device()._leftcamera;
         _tempcamdat = LCAM;
         _tempcamdat.BindGfxTarget(targ);
-        _tempcamdat.CalcCameraMatrices(CAMCCTX);
+        _tempcamdat.computeMatrices(CAMCCTX);
         ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
       }
 
       RCFD.setStereoOnePass(false);
-      RCFD.SetCameraData(&_tempcamdat);
+      RCFD.setCameraData(&_tempcamdat);
       RCFD._stereoCamera._left = &_tempcamdat;
       RCFD._stereoCamera._right = &_tempcamdat;
       RCFD._stereoCamera._mono = &_tempcamdat; // todo - blend l&r

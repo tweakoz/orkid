@@ -40,8 +40,8 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
   auto DB      = framedata.GetDB();
   auto gfxtarg = framedata.GetTarget();
   CameraData TempCamData, TempCullCamData;
-  const CameraData* pcamdata     = DB->GetCameraData(icamindex);
-  const CameraData* pcullcamdata = DB->GetCameraData(icullcamindex);
+  const CameraData* pcamdata     = DB->cameraData(icamindex);
+  const CameraData* pcullcamdata = DB->cameraData(icullcamindex);
   gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera icam<%d> icullcam<%d>", icamindex,icullcamindex));
   if (nullptr == pcamdata)
     return nullptr;
@@ -51,7 +51,7 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
   if (pcullcamdata) {
     TempCullCamData = *pcullcamdata;
     TempCullCamData.BindGfxTarget(gfxtarg);
-    TempCullCamData.CalcCameraMatrices(framedata.GetCameraCalcCtx());
+    TempCullCamData.computeMatrices(framedata.GetCameraCalcCtx());
     TempCamData.SetVisibilityCamDat(&TempCullCamData);
     gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcullcamdata<%p>", pcullcamdata));
   }
@@ -59,7 +59,7 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
   // try named CameraData from NODE
   /////////////////////////////////////////
   if (mpCameraName) {
-    const CameraData* pcamdataNAMED = DB->GetCameraData(*mpCameraName);
+    const CameraData* pcamdataNAMED = DB->cameraData(*mpCameraName);
     if (pcamdataNAMED)
       pcamdata = pcamdataNAMED;
       gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcamdataNAMED<%p>", pcamdataNAMED));

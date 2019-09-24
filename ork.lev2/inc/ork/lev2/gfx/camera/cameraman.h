@@ -143,8 +143,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  CameraData& GetCameraData() { return mCameraData; }
-  const CameraData& GetCameraData() const { return mCameraData; }
+  CameraData& cameraData() { return mCameraData; }
+  const CameraData& cameraData() const { return mCameraData; }
 
   //////////////////////////////////////////////////////////////////////////////
 

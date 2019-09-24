@@ -134,7 +134,7 @@ public:
   static const int kmaxlayers = 8;
   typedef ork::fixedlut<PoolString, DrawableBufLayer*, kmaxlayers> LayerLut;
 
-  CameraLut mCameraDataLUT;
+  CameraLut _cameraDataLUT;
   DrawableBufLayer mRawLayers[kmaxlayers];
   int miNumLayersUsed;
   LayerLut mLayerLut;
@@ -168,8 +168,8 @@ public:
   static void ClearAndSyncReaders();
   static void ClearAndSyncWriters();
 
-  const CameraData* GetCameraData(int icam) const;
-  const CameraData* GetCameraData(const PoolString& named) const;
+  const CameraData* cameraData(int icam) const;
+  const CameraData* cameraData(const PoolString& named) const;
 
   DrawableBufLayer* MergeLayer(const PoolString& layername);
 

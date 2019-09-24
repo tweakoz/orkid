@@ -254,7 +254,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   /////////////////////////////////
 
   if( _lightmgr ){ // WIP
-      const CameraData* cdata = RCFD.GetCameraData();
+      const CameraData* cdata = RCFD.cameraData();
       _lightmgr->EnumerateInFrustum(cdata->GetFrustum());
       if (_lightmgr->mLightsInFrustum.size()) {
         RCFD.SetLightManager(_lightmgr);

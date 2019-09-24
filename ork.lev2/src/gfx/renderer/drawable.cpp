@@ -71,7 +71,7 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName,lev2:
   /////////////////////////////////
   target->SetRenderContextFrameData(&RCFD_TEMP);
   {
-    if (RCFD_TEMP.GetCameraData()) {
+    if (RCFD_TEMP.cameraData()) {
       bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
       target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
       target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
@@ -173,12 +173,12 @@ DrawableBuffer::~DrawableBuffer() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CameraData* DrawableBuffer::GetCameraData(int icam) const {
-  int inumscenecameras = mCameraDataLUT.size();
+const CameraData* DrawableBuffer::cameraData(int icam) const {
+  int inumscenecameras = _cameraDataLUT.size();
   // printf( "NumSceneCameras<%d>\n", inumscenecameras );
   if (icam >= 0 && inumscenecameras) {
     icam                     = icam % inumscenecameras;
-    auto& itCAM              = mCameraDataLUT.GetItemAtIndex(icam);
+    auto& itCAM              = _cameraDataLUT.GetItemAtIndex(icam);
     const CameraData* pdata  = &itCAM.second;
     const lev2::Camera* pcam = pdata->getEditorCamera();
     // printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
@@ -189,10 +189,10 @@ const CameraData* DrawableBuffer::GetCameraData(int icam) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const CameraData* DrawableBuffer::GetCameraData(const PoolString& named) const {
-  int inumscenecameras = mCameraDataLUT.size();
-  auto itCAM           = mCameraDataLUT.find(named);
-  if (itCAM != mCameraDataLUT.end()) {
+const CameraData* DrawableBuffer::cameraData(const PoolString& named) const {
+  int inumscenecameras = _cameraDataLUT.size();
+  auto itCAM           = _cameraDataLUT.find(named);
+  if (itCAM != _cameraDataLUT.end()) {
     const CameraData* pdata = &itCAM->second;
     return pdata;
   }
@@ -357,7 +357,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   AssertOnOpQ2(MainThreadOpQ());
   const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
   const lev2::XgmModel* Model                    = mModelInst->GetXgmModel();
-  const CameraData* camdat                       = fdata->GetCameraData();
+  const CameraData* camdat                       = fdata->cameraData();
   OrkAssert(camdat != 0);
 
   const CameraMatrices& ccctx = fdata->GetCameraCalcCtx();

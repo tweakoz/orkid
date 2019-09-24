@@ -22,67 +22,85 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/enum_serializer.inl>
-#include <pkg/ent/PerfController.h>
-#include <pkg/ent/CompositingSystem.h>
-#include <pkg/ent/LightingSystem.h>
+#include "VrSystem.h
+
 ///////////////////////////////////////////////////////////////////////////////
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::CompositingSystemData, "CompositingSystemData");
+INSTANTIATE_TRANSPARENT_RTTI(ork::ent::VrSystemData, "VrSystemData");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace ent {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void CompositingSystemData::Describe()
+void VrSystemData::Describe()
 {
     using namespace ork::reflect;
-    reflect::RegisterProperty("CompositorData",&CompositingSystemData::_accessor);
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingSystemData::CompositingSystemData()
+VrSystemData::VrSystemData()
 {
 }
 
-void CompositingSystemData::defaultSetup(){
-  _compositingData.defaultSetup();
-}
+void VrSystemData::defaultSetup(){
 
+}
 ///////////////////////////////////////////////////////////////////////////////
 
-ork::ent::System* CompositingSystemData::createSystem(ork::ent::Simulation *pinst) const
+ork::ent::System* VrSystemData::createSystem(ork::ent::Simulation *pinst) const
 {
-	return new CompositingSystem( *this, pinst );
+	return new VrSystem( *this, pinst );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-CompositingSystem::CompositingSystem( const CompositingSystemData& data, Simulation *psim )
+VrSystem::VrSystem( const VrSystemData& data, Simulation *psim )
 	: ork::ent::System( &data, psim )
 	, _compositingSystemData(data)
   , _impl(data._compositingData)
 {
+  _vrstate=0;
 }
 
-bool CompositingSystem::enabled() const {
+bool VrSystem::enabled() const {
   return _impl.IsEnabled();
 }
 
-CompositingSystem::~CompositingSystem()
+VrSystem::~VrSystem()
 {
 }
 
-void CompositingSystem::DoUpdate(Simulation* psim) {
+void VrSystem::DoUpdate(Simulation* psim) {
+
+  if( nullptr == _playerspawn ){
+    _playerspawn = psim->FindEntity(AddPooledString("spawnloc"));
+    _vrstate++;
+  }
+  if( nullptr == _vrcam ){
+    _vrcam = psim->cameraData(AddPooledString("spawncam"));
+    _vrstate++;
+  }
+  if( _vrstate==2 and _prv_vrstate<2 ){
+    if( _playerspawn and _vrcam ){
+      _impl.setPrerenderCallback(0,[=](lev2::GfxTarget*targ){
+            fmtx4 playermtx = _playerspawn->GetEffectiveMatrix();
+            auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
+            if( frame_data ){
+              frame_data->setUserProperty("vrroot"_crc,playermtx);
+              frame_data->setUserProperty("vrcam"_crc,_vrcam);
+            }
+      });
+    }
+  }
+
+  _prv_vrstate =   _vrstate;
+
 }
 
-bool CompositingSystem::DoLink(Simulation* psi) {
-  if( auto lsys = psi->findSystem<LightingSystem>() ){
-    _impl.bindLighting(&lsys->GetLightManager());
-  }
+bool VrSystem::DoLink(Simulation* psi) {
   return true;
 }
 

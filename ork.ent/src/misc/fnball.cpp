@@ -223,7 +223,7 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
                 ////////////////////////////////////////
                 auto mtx = fmtx4::Identity;
                 auto framedata = targ->GetRenderContextFrameData();
-                auto cdata = framedata->GetCameraData();
+                auto cdata = framedata->cameraData();
                 fmtx4 matrs( mtx );
                 matrs.SetTranslation( 0.0f, 0.0f, 0.0f );
                 matrs.Transpose();

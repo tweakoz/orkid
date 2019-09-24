@@ -118,8 +118,8 @@ void Grid3d::Calc(const CameraData& camdat) {
 void Grid3d::Render(RenderContextFrameData& FrameData) const {
   GfxTarget* pTARG = FrameData.GetTarget();
 
-  // pTARG->MTXI()->PushPMatrix( FrameData.GetCameraData()->GetPMatrix() );
-  // pTARG->MTXI()->PushVMatrix( FrameData.GetCameraData()->GetVMatrix() );
+  // pTARG->MTXI()->PushPMatrix( FrameData.cameraData()->GetPMatrix() );
+  // pTARG->MTXI()->PushVMatrix( FrameData.cameraData()->GetVMatrix() );
   pTARG->MTXI()->PushMMatrix(fmtx4::Identity);
   {
     static GfxMaterial3DSolid gridmat(pTARG);

@@ -602,7 +602,7 @@ HeadLightManager::HeadLightManager( RenderContextFrameData & FrameData )
 	: mHeadLight( mHeadLightMatrix, & mHeadLightData )
 	, mHeadLightManager( mHeadLightManagerData )
 {
-	const CameraData* cdata = FrameData.GetCameraData();
+	const CameraData* cdata = FrameData.cameraData();
 	ork::fvec3 vZ = cdata->GetZNormal();
 	ork::fvec3 vY = cdata->GetYNormal();
 	ork::fvec3 vP = cdata->GetFrustum().mNearCorners[0];
@@ -646,7 +646,7 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 
 	const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
 	const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-	const CameraData* camdata = rfdata ? rfdata->GetCameraData() : 0;
+	const CameraData* camdata = rfdata ? rfdata->cameraData() : 0;
 
 	const lev2::LightingGroup* lgroup = rdata->GetLightingGroup();
 

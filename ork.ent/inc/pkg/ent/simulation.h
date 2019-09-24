@@ -106,8 +106,8 @@ public:
 
 	///////////////////////////////////////////////////
 
-	void SetCameraData(const PoolString& name, const CameraData*camdat);
-	const CameraData* GetCameraData(const PoolString& name ) const;
+	void setCameraData(const PoolString& name, const CameraData*camdat);
+	const CameraData* cameraData(const PoolString& name ) const;
 
 	///////////////////////////////////////////////////
 
@@ -229,7 +229,7 @@ protected:
 	float									mfAvgDtCtr;
 	size_t 									mEntityUpdateCount;
 
-	CameraLut								mCameraLut;		// camera list
+	CameraLut								_cameraDataLUT;		// camera list
 	CompositingSystem*    _cachedComSys;
 	//////////////////////////////////////////////////////////
 	ActiveComponentType						mActiveEntityComponents;

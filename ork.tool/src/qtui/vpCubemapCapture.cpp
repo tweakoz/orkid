@@ -270,7 +270,7 @@ void SceneEditorVP::SaveCubeMap()
 		CardinalCameras[icam].mNear = fnear;
 		CardinalCameras[icam].mFar = ffar;
 
-		CardinalCameras[icam].CalcCameraMatrices();
+		CardinalCameras[icam].computeMatrices();
 	}
 
 	lev2::Texture* FaceTextures[6];
@@ -292,7 +292,7 @@ void SceneEditorVP::SaveCubeMap()
 			if( pscene )
 			{
 				mRenderer->SetActiveDisplayLayer( 0 );
-				mRenderer->SetCameraData( & CardinalCameras[icam] );
+				mRenderer->setCameraData( & CardinalCameras[icam] );
 				mSceneView.Render( ContextData, mEditor.mpSimulation );
 			}
 

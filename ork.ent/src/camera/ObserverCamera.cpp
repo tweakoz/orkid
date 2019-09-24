@@ -127,7 +127,7 @@ bool ObserverCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 		const ent::EntData& ED = GetEntity()->GetEntData();
 		PoolString name = ED.GetName();
 		std::string Name = CreateFormattedString( "%s", name.c_str() );
- 		psi->SetCameraData( AddPooledString(Name.c_str()), & mCameraData );
+ 		psi->setCameraData( AddPooledString(Name.c_str()), & mCameraData );
 
 
 	}
@@ -181,7 +181,7 @@ void ObserverCamControllerInst::DoUpdate( Simulation* psi )
 		//orkprintf( "ocam tgt<%f %f %f>\n", cam_TGT.GetX(), cam_TGT.GetY(), cam_TGT.GetZ() );
 		//orkprintf( "ocam dir<%f %f %f>\n", N.GetX(), N.GetY(), N.GetZ() );
 
-		//psi->SetCameraData( AddPooledLiteral("game1"), & mCameraData );
+		//psi->setCameraData( AddPooledLiteral("game1"), & mCameraData );
 	}
 }
 

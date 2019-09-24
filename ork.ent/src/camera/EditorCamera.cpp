@@ -91,7 +91,7 @@ bool EditorCamControllerInst::DoLink(Simulation* psi) {
     const ent::EntData& ED = GetEntity()->GetEntData();
     PoolString name        = ED.GetName();
     std::string Name       = CreateFormattedString("%s", name.c_str());
-    psi->SetCameraData(AddPooledString(Name.c_str()), &pcam->GetCameraData());
+    psi->setCameraData(AddPooledString(Name.c_str()), &pcam->cameraData());
   }
   return true;
 }

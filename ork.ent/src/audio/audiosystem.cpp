@@ -80,8 +80,8 @@ AudioSystem::~AudioSystem(){
 void AudioSystem::DoUpdate(ork::ent::Simulation* inst){
 	auto pdev = ork::lev2::AudioDevice::GetDevice();
 
-	auto camdat1 = inst->GetCameraData(ork::AddPooledLiteral("game1"));
-	auto camdat2 = inst->GetCameraData(ork::AddPooledLiteral("game2"));
+	auto camdat1 = inst->cameraData(ork::AddPooledLiteral("game1"));
+	auto camdat2 = inst->cameraData(ork::AddPooledLiteral("game2"));
 
 	for( auto emitter : mEmitters )
 		emitter->UpdateEmitter( camdat1, camdat2 );

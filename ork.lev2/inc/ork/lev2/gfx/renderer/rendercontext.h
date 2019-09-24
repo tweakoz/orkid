@@ -156,7 +156,7 @@ struct RenderContextFrameData {
   RenderContextFrameData();
 
   GfxTarget* GetTarget(void) const { return mpTarget; }
-  const CameraData* GetCameraData() const { return mCameraData; }
+  const CameraData* cameraData() const { return mCameraData; }
   const CameraData* GetPickCameraData() const { return mPickCameraData; }
   LightManager* GetLightManager() const { return mLightManager; }
 
@@ -167,7 +167,7 @@ struct RenderContextFrameData {
 
   void SetRenderingMode(ERenderingMode emode) { meMode = emode; }
   void SetShadowBuffer(GfxBuffer* ShadowBuffer) { mpShadowBuffer = ShadowBuffer; }
-  void SetCameraData(const CameraData* data) { mCameraData = data; }
+  void setCameraData(const CameraData* data) { mCameraData = data; }
   void SetPickCameraData(const CameraData* data) { mPickCameraData = data; }
   void SetLightManager(LightManager* lmgr) { mLightManager = lmgr; }
   void SetTarget(GfxTarget* ptarg);

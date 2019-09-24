@@ -248,16 +248,16 @@ float Simulation::ComputeDeltaTime() {
   return fdelta;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Simulation::SetCameraData(const PoolString& name, const CameraData* camdat) {
-  CameraLut::iterator it = mCameraLut.find(name);
+void Simulation::setCameraData(const PoolString& name, const CameraData* camdat) {
+  CameraLut::iterator it = _cameraDataLUT.find(name);
 
-  if (it == mCameraLut.end()) {
+  if (it == _cameraDataLUT.end()) {
     if (camdat != 0) {
-      mCameraLut.AddSorted(name, camdat);
+      _cameraDataLUT.AddSorted(name, camdat);
     }
   } else {
     if (camdat == 0) {
-      mCameraLut.erase(it);
+      _cameraDataLUT.erase(it);
     } else {
       it->second = camdat;
     }
@@ -265,14 +265,14 @@ void Simulation::SetCameraData(const PoolString& name, const CameraData* camdat)
 
   lev2::Camera* pcam = (camdat != 0) ? camdat->getEditorCamera() : 0;
 
-  // orkprintf( "Simulation::SetCameraData() name<%s> camdat<%p> l2cam<%p>\n",
+  // orkprintf( "Simulation::setCameraData() name<%s> camdat<%p> l2cam<%p>\n",
   // name.c_str(), camdat, pcam );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const CameraData* Simulation::GetCameraData(const PoolString& name) const {
-  CameraLut::const_iterator it = mCameraLut.find(name);
-  return (it == mCameraLut.end()) ? 0 : it->second;
+const CameraData* Simulation::cameraData(const PoolString& name) const {
+  CameraLut::const_iterator it = _cameraDataLUT.find(name);
+  return (it == _cameraDataLUT.end()) ? 0 : it->second;
 }
 ///////////////////////////////////////////////////////////////////////////////
 void Simulation::SlotSceneTopoChanged() {
@@ -467,7 +467,7 @@ void Simulation::OnSimulationMode(ESimulationMode emode) {
     case ork::ent::ESCENEMODE_PAUSE:
       break;
     case ESCENEMODE_RUN: // leaving runstate
-      // SetCameraData( ork::AddPooledLiteral("game1"), 0 );
+      // setCameraData( ork::AddPooledLiteral("game1"), 0 );
       break;
   }
 
@@ -522,7 +522,7 @@ void Simulation::ComposeEntities() {
   ///////////////////////////////////
 
   mEntities.clear();
-  mCameraLut.clear();
+  _cameraDataLUT.clear();
 
   ///////////////////////////////////
   // Compose Entities
@@ -962,7 +962,7 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
   // copy camera data from simulation to dbuffer
   ////////////////////////////////////////////////////////////////
 
-  CopyCameraData(mCameraLut, buffer.mCameraDataLUT);
+  CopyCameraData(_cameraDataLUT, buffer._cameraDataLUT);
 
   ////////////////////////////////////////////////////////////////
 

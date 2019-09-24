@@ -294,7 +294,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
         auto frame_data = targ->GetRenderContextFrameData();
         float fscale = skybox->mScale;
         float fphase = 0.0f;
-        fvec3 pos = frame_data->GetCameraData()->GetEye();
+        fvec3 pos = frame_data->cameraData()->GetEye();
         pos.SetY(pos.GetY() + skybox->mVerticalAdjust);
         fmtx4 mtxSPIN;
         mtxSPIN.RotateY(fphase);

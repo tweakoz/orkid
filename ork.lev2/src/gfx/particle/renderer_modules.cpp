@@ -369,7 +369,7 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 	gtarg = targ;
 
 	const ork::lev2::RenderContextFrameData* __restrict framedata = targ->GetRenderContextFrameData();
-	const ork::CameraData* __restrict cdata = framedata->GetCameraData();
+	const ork::CameraData* __restrict cdata = framedata->cameraData();
 	MaterialBase* pMTLBASE = 0;
 	//////////////////////////////////////////
 	mpVB = & GfxEnv::GetSharedDynamicVB();
@@ -661,7 +661,7 @@ dataflow::outplugbase* StreakRenderer::GetOutput(int idx)
 ///////////////////////////////////////////////////////////////////////////////
 void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-	const ork::CameraData* cdata = framedata->GetCameraData();
+	const ork::CameraData* cdata = framedata->cameraData();
 	//////////////////////////////////////////
 	ork::lev2::CVtxBuffer<ork::lev2::SVtxV12N12B12T8C4>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2();
 	float Scale = 1.0f;
@@ -837,7 +837,7 @@ dataflow::outplugbase* ModelRenderer::GetOutput(int idx)
 void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	if( 0 == GetModel() ) return;
 	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-	const ork::CameraData* cdata = framedata->GetCameraData();
+	const ork::CameraData* cdata = framedata->cameraData();
 	int icnt = buffer.miNumParticles;
 	static const int kmaxinstances = 1024;
 	static fmtx4 gmatrixblock[ kmaxinstances ];
@@ -908,7 +908,7 @@ void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& r
 		HeadLightGroup.mLightMask.AddLight( & HeadLight );
 		HeadLightGroup.mLightManager = & HeadLightManager;
 		const RenderContextFrameData& FrameData = *targ->GetRenderContextFrameData();
-		HeadLightMatrix = FrameData.GetCameraData()->GetIVMatrix();
+		HeadLightMatrix = FrameData.cameraData()->GetIVMatrix();
 		HeadLightManager.mGlobalMovingLights.AddLight( & HeadLight );
 		HeadLightManager.mLightsInFrustum.push_back(& HeadLight);
 		MatCtx.SetLightingGroup( & HeadLightGroup );

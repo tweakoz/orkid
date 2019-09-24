@@ -63,7 +63,7 @@ public:
 	const SeqCamItemDataBase&	GetCD() const { return mCD; }
 
 	SeqCamItemInstBase( const SeqCamItemDataBase& cd );
-	const CameraData& GetCameraData() const { return mCameraData; }
+	const CameraData& cameraData() const { return mCameraData; }
 
 protected:
 	const SeqCamItemDataBase&				mCD;

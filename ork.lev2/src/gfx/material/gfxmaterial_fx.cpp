@@ -1079,7 +1079,7 @@ int GfxMaterialFx::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &Ma
 		//////////////////////////////
 
 		const ork::lev2::RenderContextFrameData* framedata = pTarg->GetRenderContextFrameData();
-		const ork::CameraData* cdata = framedata->GetCameraData();
+		const ork::CameraData* cdata = framedata->cameraData();
 
 		mScreenZDir = cdata->GetZNormal();
 

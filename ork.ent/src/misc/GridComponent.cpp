@@ -90,7 +90,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 
             const auto& RCFD = targ->GetRenderContextFrameData();
             const auto& CCC = RCFD->GetCameraCalcCtx();
-            const auto CAMDAT = RCFD->GetCameraData();
+            const auto CAMDAT = RCFD->cameraData();
             const auto& FRUS = CAMDAT->GetFrustum();
 
             fvec2 topl(-1,-1), topr(+1,-1);

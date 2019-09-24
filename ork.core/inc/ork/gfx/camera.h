@@ -33,8 +33,8 @@ class CameraData {
 public:
   CameraData();
 
-  void CalcCameraMatrices(CameraMatrices& ctx);
-  void CalcCameraMatrices(CameraMatrices& ctx, float faspect = 1.0f) const;
+  void computeMatrices(CameraMatrices& ctx);
+  void computeMatrices(CameraMatrices& ctx, float faspect = 1.0f) const;
 
   ////////////////////////////////////////////////////////////////////
   // Get vectors whos length equals one pixel
