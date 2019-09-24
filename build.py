@@ -15,7 +15,7 @@ _args = vars(parser.parse_args())
 
 print(ork.host.SYSTEM)
 
-ork.dep.require(["bullet","luajit","openexr","oiio"])
+ork.dep.require(["yarl","bullet","luajit","openexr","oiio"])
 
 
 build_dest = ork.path.stage()/"orkid"
