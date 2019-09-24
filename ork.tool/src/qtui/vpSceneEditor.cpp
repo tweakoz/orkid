@@ -756,7 +756,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
   const CameraData* pcamdata = fdata.cameraData();
   if (0 == pcamdata)
     return;
-  const CameraMatrices& ccctx = fdata.GetCameraCalcCtx();
+  const CameraMatrices& ccctx = fdata.cameraMatrices();
 
   ork::lev2::GfxTarget* pOutputTarget = fdata.GetTarget();
   auto MTXI                           = pOutputTarget->MTXI();

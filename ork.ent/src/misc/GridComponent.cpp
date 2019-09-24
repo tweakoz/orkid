@@ -89,7 +89,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
             float fphase = ssci->GetPhase();
 
             const auto& RCFD = targ->GetRenderContextFrameData();
-            const auto& CCC = RCFD->GetCameraCalcCtx();
+            const auto& CCC = RCFD->cameraMatrices();
             const auto CAMDAT = RCFD->cameraData();
             const auto& FRUS = CAMDAT->GetFrustum();
 

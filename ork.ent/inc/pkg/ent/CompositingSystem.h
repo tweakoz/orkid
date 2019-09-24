@@ -49,10 +49,6 @@ public:
 
 private:
   const CompositingSystemData& _compositingSystemData;
-  Entity* _playerspawn = nullptr;
-  const CameraData* _vrcam = nullptr; // todo clean this up..
-  int _vrstate = 0;
-  int _prv_vrstate = 0;
   void DoUpdate(Simulation* psi) final;
 };
 

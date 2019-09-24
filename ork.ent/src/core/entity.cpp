@@ -54,6 +54,7 @@
 #include "../misc/ProcTex.h"
 #include "../misc/QuartzComposerTest.h"
 #include "../misc/Skybox.h"
+#include "../misc/VrSystem.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -501,6 +502,7 @@ void Init() {
   EditorCamControllerInst::GetClassStatic();
 
   RegisterClassX(HeightFieldDrawableData);
+  VrSystemData::GetClassStatic();
 
 #if defined(ORK_OSXX)
   AudioAnalysisSystemData::GetClassStatic();

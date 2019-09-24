@@ -107,7 +107,7 @@ struct VRIMPL {
     int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
     int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
    // auto CAMDAT     = _CPD.getCamera(RCFD, primarycamindex, cullcamindex);
-    auto& CAMCCTX   = RCFD.GetCameraCalcCtx();
+    auto& CAMCCTX   = RCFD.cameraMatrices();
     ///////////////////////////////////////////////////////////////////////////
     //targ->debugMarker(FormatString("NodeVr::CAMDAT<%p>", CAMDAT));
     //if (CAMDAT and DB) {

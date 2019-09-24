@@ -174,8 +174,8 @@ struct RenderContextFrameData {
   void SetDstRect(const SRect& rect) { mDstRect = rect; }
   void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
   void setLayerName(const char* layername);
-  CameraMatrices& GetCameraCalcCtx() { return mCameraCalcCtx; }
-  const CameraMatrices& GetCameraCalcCtx() const { return mCameraCalcCtx; }
+  CameraMatrices& cameraMatrices() { return _cameraMatrices; }
+  const CameraMatrices& cameraMatrices() const { return _cameraMatrices; }
 
   void ClearLayers();
   void AddLayer(const PoolString& layername);
@@ -214,13 +214,15 @@ struct RenderContextFrameData {
   GfxTarget* mpTarget;
   const CameraData* mCameraData;
   const CameraData* mPickCameraData;
-  CameraMatrices mCameraCalcCtx;
+  CameraMatrices _cameraMatrices;
   SRect mDstRect;
   SRect mMrtRect;
   orkset<PoolString> mLayers;
   bool _stereo1pass = false;
   const IRenderer* _renderer;
 };
+
+typedef std::function<void(RenderContextFrameData&)> PreRenderCallback_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 

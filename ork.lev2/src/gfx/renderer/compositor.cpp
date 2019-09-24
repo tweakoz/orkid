@@ -51,7 +51,7 @@ const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& f
   if (pcullcamdata) {
     TempCullCamData = *pcullcamdata;
     TempCullCamData.BindGfxTarget(gfxtarg);
-    TempCullCamData.computeMatrices(framedata.GetCameraCalcCtx());
+    TempCullCamData.computeMatrices(framedata.cameraMatrices());
     TempCamData.SetVisibilityCamDat(&TempCullCamData);
     gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcullcamdata<%p>", pcullcamdata));
   }
@@ -110,7 +110,7 @@ void CompositingPassData::renderPass(lev2::RenderContextFrameData& RCFD,void_lam
   lev2::IRenderTarget* pIT = RCFD.GetRenderTarget();
   auto FBI = pTARG->FBI();
   ///////////////////////////////////////////////////////////////////////////
-  RCFD.GetCameraCalcCtx().mfAspectRatio = float(pTARG->GetW()) / float(pTARG->GetH());
+  RCFD.cameraMatrices().mfAspectRatio = float(pTARG->GetW()) / float(pTARG->GetH());
   ///////////////////////////////////////////////////////////////////////////
   SRect VPRect(0, 0, pIT->GetW(), pIT->GetH());
   FBI->PushViewport(VPRect);

@@ -39,6 +39,7 @@
 #include <pkg/ent/EditorCamera.h>
 #include <pkg/ent/ModelArchetype.h>
 #include <pkg/ent/ModelComponent.h>
+#include "../misc/VrSystem.h"
 
 template class ork::orklut<const ork::object::ObjectClass *,
                            ork::ent::SystemData *>;
@@ -445,6 +446,12 @@ void SceneData::cleanup(){
   if( its == _systemDatas.end() ){
       auto lsd = new LightingSystemData;
       _systemDatas[lsdname]=lsd;
+  }
+  auto vsdname = "VrSystemData"_pool;
+  its = _systemDatas.find(vsdname);
+  if( its == _systemDatas.end() ){
+      auto vsd = new VrSystemData;
+      _systemDatas[lsdname]=vsd;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

@@ -41,15 +41,15 @@ public:
   VrSystem(const VrSystemData& data, ork::ent::Simulation* pinst);
   ~VrSystem();
 
-  const VrSystemData& vrSystemData() const { return _compositingSystemData; }
+  const VrSystemData& vrSystemData() const { return _vrSystemData; }
   bool DoLink(Simulation* psi) final;
 
   bool enabled() const;
 
 private:
-  const VrSystemData& _compositingSystemData;
-  Entity* _playerspawn = nullptr;
-  const CameraData* _vrcam = nullptr; // todo clean this up..
+  const VrSystemData& _vrSystemData;
+  Entity* _spawnloc = nullptr;
+  const CameraData* _spawncam = nullptr; // todo clean this up..
   int _vrstate = 0;
   int _prv_vrstate = 0;
   void DoUpdate(Simulation* psi) final;

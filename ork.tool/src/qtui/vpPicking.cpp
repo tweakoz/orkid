@@ -181,7 +181,7 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   ///////////////////////////////////////////////////////////////////////////
   float fW = mpViewport->GetW();
   float fH = mpViewport->GetH();
-  frame_data->GetCameraCalcCtx().mfAspectRatio = fW / fH;
+  frame_data->cameraMatrices().mfAspectRatio = fW / fH;
   ///////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(mpViewport);
   frame_data->PushRenderTarget(&rt);

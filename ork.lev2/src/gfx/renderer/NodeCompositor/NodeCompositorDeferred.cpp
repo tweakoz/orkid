@@ -89,7 +89,7 @@ struct IMPL {
       auto CPD = drawdata.mCompositingGroupStack.top();
       CPD._clearColor = node->_clearColor;
       CPD.mpLayerName = &_layername;
-      auto& CAMCCTX   = RCFD.GetCameraCalcCtx();
+      auto& CAMCCTX   = RCFD.cameraMatrices();
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////

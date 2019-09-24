@@ -59,7 +59,7 @@ ork::ent::System* VrSystemData::createSystem(ork::ent::Simulation *pinst) const
 
 VrSystem::VrSystem( const VrSystemData& data, Simulation *psim )
 	: ork::ent::System( &data, psim )
-	, _compositingSystemData(data)
+	, _vrSystemData(data)
   , _impl(data._compositingData)
 {
   _vrstate=0;
@@ -75,22 +75,23 @@ VrSystem::~VrSystem()
 
 void VrSystem::DoUpdate(Simulation* psim) {
 
-  if( nullptr == _playerspawn ){
-    _playerspawn = psim->FindEntity(AddPooledString("spawnloc"));
+  if( nullptr == _spawnloc ){
+    _spawnloc = psim->FindEntity(AddPooledString("spawnloc"));
     _vrstate++;
   }
-  if( nullptr == _vrcam ){
-    _vrcam = psim->cameraData(AddPooledString("spawncam"));
+  if( nullptr == _spawncam ){
+    _spawncam = psim->cameraData(AddPooledString("spawncam"));
     _vrstate++;
   }
   if( _vrstate==2 and _prv_vrstate<2 ){
-    if( _playerspawn and _vrcam ){
+    if( _spawnloc and _spawncam ){
       _impl.setPrerenderCallback(0,[=](lev2::GfxTarget*targ){
-            fmtx4 playermtx = _playerspawn->GetEffectiveMatrix();
+            // todo - somehow connect to renderthread spawnloc and spawncam
+            fmtx4 vrmtx = _spawnloc->GetEffectiveMatrix();
             auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
             if( frame_data ){
-              frame_data->setUserProperty("vrroot"_crc,playermtx);
-              frame_data->setUserProperty("vrcam"_crc,_vrcam);
+              frame_data->setUserProperty("vrroot"_crc,vrmtx);
+              frame_data->setUserProperty("vrcam"_crc,_spawncam);
             }
       });
     }

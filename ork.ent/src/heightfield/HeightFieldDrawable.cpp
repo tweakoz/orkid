@@ -761,8 +761,8 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
     inv_view_mono.inverseOf(V_mono);
     znormal = inv_view_mono.GetZNormal().Normal();
   } else {
-    const fmtx4& PMTX_mono = RCFD->GetCameraCalcCtx().mPMatrix;
-    const fmtx4& VMTX_mono = RCFD->GetCameraCalcCtx().mVMatrix;
+    const fmtx4& PMTX_mono = RCFD->cameraMatrices().mPMatrix;
+    const fmtx4& VMTX_mono = RCFD->cameraMatrices().mVMatrix;
     auto MV_mono = (viz_offset * VMTX_mono);
     auto MVP = MV_mono * PMTX_mono;
     MVPL = MVP;
