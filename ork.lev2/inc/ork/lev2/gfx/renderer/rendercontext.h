@@ -128,6 +128,7 @@ struct StereoCamera {
   const CameraData* _left = nullptr;
   const CameraData* _right = nullptr;
   const CameraData* _mono = nullptr;
+
   fmtx4 VL() const;
   fmtx4 VR() const;
   fmtx4 PL() const;
@@ -137,6 +138,11 @@ struct StereoCamera {
   fmtx4 VMONO() const;
   fmtx4 PMONO() const;
   fmtx4 VPMONO() const;
+
+  fmtx4 MVPL(const fmtx4& M) const;
+  fmtx4 MVPR(const fmtx4& M) const;
+  fmtx4 MVPMONO(const fmtx4& M) const;
+
 };
 
 struct RenderContextFrameData {

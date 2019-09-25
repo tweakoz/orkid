@@ -300,21 +300,22 @@ void GfxMaterialWiiBasic::UnBindMaterialInstItem(MaterialInstItem* pitem) const 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GfxMaterialWiiBasic::UpdateMVPMatrix(GfxTarget* pTarg) {
-  auto fxi  = pTarg->FXI();
-  auto mtxi = pTarg->MTXI();
-  fxi->BindParamMatrix(hModFX, hMatMV, mtxi->RefMVMatrix());
-  fxi->BindParamMatrix(hModFX, hWVPMatrix, mtxi->RefMVPMatrix());
-  fxi->BindParamMatrix(hModFX, hWMatrix, mtxi->RefMMatrix());
-  fxi->BindParamMatrix(hModFX, hWRotMatrix, mtxi->RefR3Matrix());
-  fxi->CommitParams();
+  auto FXI  = pTarg->FXI();
+  auto MTXI = pTarg->MTXI();
+  FXI->BindParamMatrix(hModFX, hMatMV, MTXI->RefMVMatrix());
+  FXI->BindParamMatrix(hModFX, hWVPMatrix, MTXI->RefMVPMatrix());
+  FXI->BindParamMatrix(hModFX, hWMatrix, MTXI->RefMMatrix());
+  FXI->BindParamMatrix(hModFX, hWRotMatrix, MTXI->RefR3Matrix());
+  FXI->CommitParams();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
-  auto fxi  = pTarg->FXI();
-  auto mtxi = pTarg->MTXI();
+  auto FXI  = pTarg->FXI();
+  auto RSI  = pTarg->RSI();
+  auto MTXI = pTarg->MTXI();
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
@@ -341,37 +342,32 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
     copyofrasterstate.SetCullTest(ECULLTEST_PASS_BACK);
     copyofrasterstate.SetBlending(EBLENDING_OFF);
     copyofrasterstate.SetAlphaTest(EALPHATEST_OFF);
-    pTarg->RSI()->BindRasterState(copyofrasterstate);
+    RSI->BindRasterState(copyofrasterstate);
   } else {
-    pTarg->RSI()->BindRasterState(mRasterState);
+    RSI->BindRasterState(mRasterState);
   }
 
-  fxi->BindPass(hModFX, iPass);
-  fxi->BindParamMatrix(hModFX, hMatMV, mtxi->RefMVMatrix());
-  fxi->BindParamMatrix(hModFX, hMatP, mtxi->RefPMatrix());
-  fxi->BindParamMatrix(hModFX, hVPMatrix, mtxi->RefVPMatrix());
-  fxi->BindParamMatrix(hModFX, hVMatrix, mtxi->RefVMatrix());
-  fxi->BindParamMatrix(hModFX, hWMatrix, mtxi->RefMMatrix());
+  FXI->BindPass(hModFX, iPass);
+  FXI->BindParamMatrix(hModFX, hMatMV, MTXI->RefMVMatrix());
+  FXI->BindParamMatrix(hModFX, hMatP, MTXI->RefPMatrix());
+  FXI->BindParamMatrix(hModFX, hVPMatrix, MTXI->RefVPMatrix());
+  FXI->BindParamMatrix(hModFX, hVMatrix, MTXI->RefVMatrix());
+  FXI->BindParamMatrix(hModFX, hWMatrix, MTXI->RefMMatrix());
 
-  fxi->BindParamMatrix(hModFX, hWRotMatrix, mtxi->RefR3Matrix());
-  fxi->BindParamMatrix(hModFX, hDiffuseMapMatrix, BuildTextureMatrix(DiffuseCtx));
+  FXI->BindParamMatrix(hModFX, hWRotMatrix, MTXI->RefR3Matrix());
+  FXI->BindParamMatrix(hModFX, hDiffuseMapMatrix, BuildTextureMatrix(DiffuseCtx));
 
-  fxi->BindParamVect4(hModFX, hMODCOLOR, ModColor);
+  FXI->BindParamVect4(hModFX, hMODCOLOR, ModColor);
 
-  fxi->BindParamCTex(hModFX, hDiffuseTEX, diftexture);
+  FXI->BindParamCTex(hModFX, hDiffuseTEX, diftexture);
 
   if (is_stereo) {
-    fmtx4 VL = RCFD->_stereoCamera.VL();
-    fmtx4 PL = RCFD->_stereoCamera.PL();
-    fmtx4 VR = RCFD->_stereoCamera.VR();
-    fmtx4 PR = RCFD->_stereoCamera.PR();
-    auto MVL = (mtxi->RefMMatrix() * VL);
-    auto MVR = (mtxi->RefMMatrix() * VR);
-
-    fxi->BindParamMatrix(hModFX, hWVPLMatrix, (MVL * PL));
-    fxi->BindParamMatrix(hModFX, hWVPRMatrix, (MVR * PR));
+    auto MVPL = RCFD->_stereoCamera.MVPL(MTXI->RefMMatrix());
+    auto MVPR = RCFD->_stereoCamera.MVPR(MTXI->RefMMatrix());
+    FXI->BindParamMatrix(hModFX, hWVPLMatrix, MVPL);
+    FXI->BindParamMatrix(hModFX, hWVPRMatrix, MVPR);
   } else {
-    fxi->BindParamMatrix(hModFX, hWVPMatrix, mtxi->RefMVPMatrix());
+    FXI->BindParamMatrix(hModFX, hWVPMatrix, MTXI->RefMVPMatrix());
   }
   ////////////////////////////////////////////////////////////
 
@@ -393,7 +389,7 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   mLightingInterface.ApplyLighting(pTarg, iPass);
 
-  fxi->CommitParams();
+  FXI->CommitParams();
 
   return true;
 }

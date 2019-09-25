@@ -742,21 +742,14 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   fvec3 znormal;
   //////////////////////////
   if (stereo1pass) {
-    fmtx4 VL = RCFD->_stereoCamera.VL();
-    fmtx4 PL = RCFD->_stereoCamera.PL();
-    fmtx4 VR = RCFD->_stereoCamera.VR();
-    fmtx4 PR = RCFD->_stereoCamera.PR();
-    auto MVL = (viz_offset * VL);
-    auto MVR = (viz_offset * VR);
-    MVPL     = MVL * PL;
-    MVPR     = MVR * PR;
+    MVPL     = RCFD->_stereoCamera.MVPL(viz_offset);
+    MVPR     = RCFD->_stereoCamera.MVPR(viz_offset);
+    MVPC = RCFD->_stereoCamera.MVPMONO(viz_offset);
     auto V_mono = RCFD->_stereoCamera.VMONO();
     auto MV_mono = (viz_offset * V_mono);
-    auto MVP = MV_mono * RCFD->_stereoCamera.PMONO();
     fmtx4 IMV_mono;
     IMV_mono.inverseOf(MV_mono);
     campos_mono = IMV_mono.GetTranslation();
-    MVPC     = MVP;
     fmtx4 inv_view_mono;
     inv_view_mono.inverseOf(V_mono);
     znormal = inv_view_mono.GetZNormal().Normal();

@@ -235,19 +235,10 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   FXI->BindParamMatrix(hModFX, hMatP, MTXI->RefPMatrix());
 
   if (is_stereo) {
-    fmtx4 VL, PL, VR, PR;
-    if (auto try_lcam = RCFD->getUserProperty("lcam"_crc).TryAs<CameraData*>()) {
-      VL = try_lcam.value()->GetVMatrix();
-      PL = try_lcam.value()->GetPMatrix();
-    }
-    if (auto try_rcam = RCFD->getUserProperty("rcam"_crc).TryAs<CameraData*>()) {
-      VR = try_rcam.value()->GetVMatrix();
-      PR = try_rcam.value()->GetPMatrix();
-    }
-    auto MVL = (MTXI->RefMMatrix() * VL);
-    auto MVR = (MTXI->RefMMatrix() * VR);
-    FXI->BindParamMatrix(hModFX, hMatMVPL, (MVL * PL));
-    FXI->BindParamMatrix(hModFX, hMatMVPR, (MVR * PR));
+    auto MVPL = RCFD->_stereoCamera.MVPL(MTXI->RefMMatrix());
+    auto MVPR = RCFD->_stereoCamera.MVPR(MTXI->RefMMatrix());
+    FXI->BindParamMatrix(hModFX, hMatMVPL, MVPL);
+    FXI->BindParamMatrix(hModFX, hMatMVPR, MVPR);
   } else {
     FXI->BindParamMatrix(hModFX, hMatMVP, MTXI->RefMVPMatrix());
   }

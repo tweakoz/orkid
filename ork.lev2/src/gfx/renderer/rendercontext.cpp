@@ -65,6 +65,16 @@ fmtx4 StereoCamera::VPMONO() const {
   return _mono->GetVMatrix()*_mono->GetPMatrix();
 }
 
+fmtx4 StereoCamera::MVPL(const fmtx4& M) const {
+  return (M*VL())*PL();
+}
+fmtx4 StereoCamera::MVPR(const fmtx4& M) const {
+  return (M*VR())*PR();
+}
+fmtx4 StereoCamera::MVPMONO(const fmtx4& M) const {
+  return (M*VMONO())*PMONO();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 RenderContextInstData::RenderContextInstData()
