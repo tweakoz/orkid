@@ -171,15 +171,15 @@ struct VRIMPL {
     if (use_vr) {
       auto& LCAM = orkidvr::device()._leftcamera;
       auto& RCAM = orkidvr::device()._rightcamera;
+      auto& CCAM = orkidvr::device()._centercamera;
       auto& CONT = orkidvr::device()._controllers;
       LCAM.BindGfxTarget(targ);
       RCAM.BindGfxTarget(targ);
       LCAM.computeMatrices(CAMCCTX);
-      RCFD.setCameraData(&LCAM);
       RCFD.setStereoOnePass(true);
       RCFD._stereoCamera._left = &LCAM;
       RCFD._stereoCamera._right = &RCAM;
-      RCFD._stereoCamera._mono = &LCAM; // todo - blend l&r
+      RCFD._stereoCamera._mono = &CCAM;
       RCFD.setCameraData(RCFD._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(&LCAM);
     } else {

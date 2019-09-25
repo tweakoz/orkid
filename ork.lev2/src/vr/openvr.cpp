@@ -25,8 +25,9 @@ fmtx4 steam44tofmtx4(const _ovr::HmdMatrix44_t& matPose) {
   return orkmtx;
 }
 
-std::string
-trackedDeviceString(_ovr::TrackedDeviceIndex_t unDevice, _ovr::TrackedDeviceProperty prop, _ovr::TrackedPropertyError* peError = NULL) {
+std::string trackedDeviceString(_ovr::TrackedDeviceIndex_t unDevice,
+                                _ovr::TrackedDeviceProperty prop,
+                                _ovr::TrackedPropertyError* peError = NULL) {
   uint32_t unRequiredBufferLen = _ovr::VRSystem()->GetStringTrackedDeviceProperty(unDevice, prop, NULL, 0, peError);
   if (unRequiredBufferLen == 0)
     return "";
@@ -37,13 +38,34 @@ trackedDeviceString(_ovr::TrackedDeviceIndex_t unDevice, _ovr::TrackedDeviceProp
   delete[] pchBuffer;
   return sResult;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+fmtx4 VrProjFrustumPar::composeProjection() const
+{
+    fmtx4 rval;
+    float idx = 1.0f / (_right - _left);
+    float idy = 1.0f / (_bottom - _top);
+    float idz = 1.0f / (_far - _near);
+    float sx = _right + _left;
+    float sy = _bottom + _top;
+
+    auto& p = rval.elements;
+    p[0][0] = 2*idx; p[0][1] = 0;     p[0][2] = sx*idx;    p[0][3] = 0;
+    p[1][0] = 0;     p[1][1] = 2*idy; p[1][2] = sy*idy;    p[1][3] = 0;
+    p[2][0] = 0;     p[2][1] = 0;     p[2][2] = -_far*idz; p[2][3] = -_far*_near*idz;
+    p[3][0] = 0;     p[3][1] = 0;     p[3][2] = -1.0f;     p[3][3] = 0;
+    rval.Transpose();
+    return rval;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 OpenVrDevice::OpenVrDevice() {
 
   _ovr::EVRInitError error = _ovr::VRInitError_None;
-  _hmd                   = _ovr::VR_Init(&error, _ovr::VRApplication_Scene);
-  _active                = (error == _ovr::VRInitError_None);
+  _hmd                     = _ovr::VR_Init(&error, _ovr::VRApplication_Scene);
+  _active                  = (error == _ovr::VRInitError_None);
 
   if (_active) {
     _hmd->GetRecommendedRenderTargetSize(&_width, &_height);
@@ -52,13 +74,27 @@ OpenVrDevice::OpenVrDevice() {
     auto str_display = trackedDeviceString(_ovr::k_unTrackedDeviceIndex_Hmd, _ovr::Prop_SerialNumber_String);
     printf("str_driver<%s>\n", str_driver.c_str());
     printf("str_driver<%s>\n", str_display.c_str());
-    auto proj_mtx_l = steam44tofmtx4(_hmd->GetProjectionMatrix(_ovr::Eye_Left, .1, 50000.0f));
-    auto proj_mtx_r = steam44tofmtx4(_hmd->GetProjectionMatrix(_ovr::Eye_Right, .1, 50000.0f));
+
+    _hmd->GetProjectionRaw(_ovr::Eye_Left, &_frustumLeft._left, &_frustumLeft._right, &_frustumLeft._top, &_frustumLeft._bottom);
+
+    _hmd->GetProjectionRaw(
+        _ovr::Eye_Right, &_frustumRight._left, &_frustumRight._right, &_frustumRight._top, &_frustumRight._bottom);
+
+    _frustumCenter._left = (_frustumLeft._left + _frustumRight._left) * 0.5f;
+    _frustumCenter._right = (_frustumLeft._right + _frustumRight._right) * 0.5f;
+    _frustumCenter._top = (_frustumLeft._top + _frustumRight._top) * 0.5f;
+    _frustumCenter._bottom = (_frustumLeft._bottom + _frustumRight._bottom) * 0.5f;
+
+    auto proj_mtx_l = _frustumLeft.composeProjection();
+    auto proj_mtx_r = _frustumRight.composeProjection();
+    auto proj_mtx_c = _frustumCenter.composeProjection();
+
     auto eyep_mtx_l = steam34tofmtx4(_hmd->GetEyeToHeadTransform(_ovr::Eye_Left));
     auto eyep_mtx_r = steam34tofmtx4(_hmd->GetEyeToHeadTransform(_ovr::Eye_Right));
 
     _posemap["projl"] = proj_mtx_l;
     _posemap["projr"] = proj_mtx_r;
+    _posemap["projc"] = proj_mtx_c;
     _posemap["eyel"].inverseOf(eyep_mtx_l);
     _posemap["eyer"].inverseOf(eyep_mtx_r);
 
@@ -241,7 +277,7 @@ void OpenVrDevice::_processControllerEvents() {
   if (_active) {
     _ovr::VRActionSetHandle_t actset_demo = _ovr::k_ulInvalidActionSetHandle;
     _ovr::VRActiveActionSet_t actionSet   = {0};
-    actionSet.ulActionSet               = actset_demo;
+    actionSet.ulActionSet                 = actset_demo;
     // _ovr::VRInput()->UpdateActionState( &actionSet, sizeof(actionSet), 1 );
   }
   //////////////////////////////////////////////
@@ -257,26 +293,26 @@ void composite(lev2::GfxTarget* targ, Texture* twoeyetex) {
 
     auto twoeyetexOBJ = twoeyetex->getProperty<GLuint>("gltexobj");
 
-    _ovr::Texture_t twoEyeTexture  = {
-        (void*)(uintptr_t)twoeyetexOBJ,
-        _ovr::TextureType_OpenGL,
-        _ovr::ColorSpace_Gamma
-      };
+    _ovr::Texture_t twoEyeTexture = {(void*)(uintptr_t)twoeyetexOBJ, _ovr::TextureType_OpenGL, _ovr::ColorSpace_Gamma};
 
     _ovr::VRTextureBounds_t leftEyeBounds = {
-      0,0, // min
-      0.5,1 // max
+        0,
+        0, // min
+        0.5,
+        1 // max
     };
     _ovr::VRTextureBounds_t rightEyeBounds = {
-      0.5,0, // min
-      1,1 // max
+        0.5,
+        0, // min
+        1,
+        1 // max
     };
 
     //////////////////////////////////////////////////
 
     int w = device()._width;
     int h = device()._height;
-    SRect VPRect(0, 0, w*2, h);
+    SRect VPRect(0, 0, w * 2, h);
     fbi->PushViewport(VPRect);
     fbi->PushScissor(VPRect);
 
@@ -284,15 +320,9 @@ void composite(lev2::GfxTarget* targ, Texture* twoeyetex) {
     // submit to openvr compositor
     //////////////////////////////////////////////////
 
-    GLuint erl = _ovr::VRCompositor()->Submit(
-      _ovr::Eye_Left,
-      &twoEyeTexture,
-      &leftEyeBounds);
+    GLuint erl = _ovr::VRCompositor()->Submit(_ovr::Eye_Left, &twoEyeTexture, &leftEyeBounds);
 
-    GLuint err = _ovr::VRCompositor()->Submit(
-      _ovr::Eye_Right,
-      &twoEyeTexture,
-      &rightEyeBounds);
+    GLuint err = _ovr::VRCompositor()->Submit(_ovr::Eye_Right, &twoEyeTexture, &rightEyeBounds);
 
     //////////////////////////////////////////////////
     // undo above PushVp/Scissor
@@ -300,7 +330,6 @@ void composite(lev2::GfxTarget* targ, Texture* twoeyetex) {
 
     fbi->PopViewport();
     fbi->PopScissor();
-
   }
 }
 
@@ -393,9 +422,7 @@ OpenVrDevice& concrete_get() {
   static OpenVrDevice _device;
   return _device;
 }
-Device& device() {
-  return concrete_get();
-}
+Device& device() { return concrete_get(); }
 ////////////////////////////////////////////////////////////////////////////////
 
 void gpuUpdate(fmtx4 observermatrix) {

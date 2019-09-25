@@ -75,12 +75,15 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
     msgrouter::channel("eggytest")->post(c);
 
     _hmdinputgroup.setChannel("leye.matrix").as<fmtx4>(lmv);
+    _hmdinputgroup.setChannel("ceye.matrix").as<fmtx4>(cmv);
     _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
 
     _leftcamera.SetView(lmv);
     _leftcamera.setCustomProjection(_posemap["projl"]);
     _rightcamera.SetView(rmv);
     _rightcamera.setCustomProjection(_posemap["projr"]);
+    _centercamera.SetView(cmv);
+    _centercamera.setCustomProjection(_posemap["projc"]);
     // printf( "pose_classes<%s>\n", pose_classes.c_str() );
 }
 

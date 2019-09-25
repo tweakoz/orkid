@@ -77,13 +77,13 @@ void VrSystem::DoUpdate(Simulation* psim) {
 
 
 void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
-  if( _vrstate != 0 )
-  buffer.setPreRenderCallback(0,[=](lev2::RenderContextFrameData&RCFD){
-        // todo - somehow connect to renderthread spawnloc and spawncam
-        fmtx4 vrmtx = this->_spawnloc->GetEffectiveMatrix();
-        RCFD.setUserProperty("vrroot"_crc,vrmtx);
-        RCFD.setUserProperty("vrcam"_crc,this->_spawncam);
-  });
+  if( _vrstate != 0 ){
+    fmtx4 vrmtx = this->_spawnloc->GetEffectiveMatrix(); // copy (updthread->renderthread)
+    buffer.setPreRenderCallback(0,[=](lev2::RenderContextFrameData&RCFD){
+          RCFD.setUserProperty("vrroot"_crc,vrmtx);
+          RCFD.setUserProperty("vrcam"_crc,this->_spawncam);
+    });
+  }
 }
 
 bool VrSystem::DoLink(Simulation* psim) {

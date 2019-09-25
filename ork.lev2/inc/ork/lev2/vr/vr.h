@@ -31,11 +31,25 @@ struct ControllerState {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+struct VrProjFrustumPar {
+
+  fmtx4 composeProjection() const;
+
+  float _left = -1.0f;
+  float _right = 1.0f;
+  float _top = -1.0f;
+  float _bottom = 1.0f;
+  float _near = .1f;
+  float _far = 50000.0f;
+};
+////////////////////////////////////////////////////////////////////////////////
+
 struct Device {
   Device();
   virtual ~Device();
   std::map<std::string, fmtx4> _posemap;
   CameraData _leftcamera;
+  CameraData _centercamera;
   CameraData _rightcamera;
   std::map<int, ControllerState> _controllers;
   bool _active;
@@ -43,6 +57,11 @@ struct Device {
   fmtx4 _headingmatrix;
   fmtx4 _hmdMatrix;
   fmtx4 _rotMatrix;
+
+  VrProjFrustumPar _frustumLeft;
+  VrProjFrustumPar _frustumCenter;
+  VrProjFrustumPar _frustumRight;
+
   fmtx4 _outputViewOffsetMatrix;
   bool _prevthumbL = false;
   bool _prevthumbR = false;
