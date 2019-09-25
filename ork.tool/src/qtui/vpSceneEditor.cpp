@@ -285,7 +285,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////
 
   auto compsys = compositingSystem();
-  if( nullptr == compsys ){
+  auto sim = simulation();
+  if( nullptr == compsys or nullptr==sim){
     // still want to draw something so we know the editor is alive..
     mpTarget->BeginFrame();
     // we must still consume DrawableBuffers (since the compositor cannot)
@@ -301,7 +302,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     return;
   }
 
-  auto sim = simulation();
   auto simmode = sim->GetSimulationMode();
   bool running = (simmode==ent::ESCENEMODE_RUN);
 

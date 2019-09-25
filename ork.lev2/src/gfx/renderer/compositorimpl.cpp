@@ -268,11 +268,9 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
   RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
 
-  for( auto item : _prerendercallbacks ){
-    item.second(pTARG);
-  }
 
   if (DB) {
+    DB->invokePreRenderCallbacks(RCFD);
     rval = _compcontext.assemble(drawdata);
     DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
   }

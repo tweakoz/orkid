@@ -62,6 +62,19 @@ RenderSyncToken DrawableBuffer::acquireRenderToken(){
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void DrawableBuffer::setPreRenderCallback(int key,prerendercallback_t cb){
+  _preRenderCallbacks.AddSorted(key,cb);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData&RCFD) const {
+  for( auto item : _preRenderCallbacks )
+    item.second(RCFD);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName,lev2::IRenderer* renderer) const {
   lev2::GfxTarget* target                            = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD_PREV = target->GetRenderContextFrameData();
@@ -114,6 +127,8 @@ void DrawableBuffer::Reset() {
   for (int il = 0; il < kmaxlayers; il++) {
     mRawLayers[il].Reset(*this);
   }
+  _preRenderCallbacks.clear();
+  _cameraDataLUT.clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

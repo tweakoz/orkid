@@ -222,8 +222,6 @@ public:
 class CompositingImpl {
 public:
 
-  typedef std::function<void(lev2::GfxTarget* targ)> prerendercallback_t;
-
   CompositingImpl(const CompositingData& data);
   ~CompositingImpl();
 
@@ -246,9 +244,6 @@ public:
 
   void update(float dt);
 
-  inline void setPrerenderCallback(int key,prerendercallback_t cb){
-    _prerendercallbacks[key]=cb;
-  }
   void bindLighting(LightManager* lmgr) { _lightmgr=lmgr; }
 
 private:
@@ -260,8 +255,6 @@ private:
   LightManager* _lightmgr = nullptr;
 
   CompositingMorphable _morphable;
-
-  std::map<int,prerendercallback_t> _prerendercallbacks;
 
   int miActiveSceneItem;
   CompositingContext _compcontext;

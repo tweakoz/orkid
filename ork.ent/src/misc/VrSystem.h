@@ -19,14 +19,12 @@ namespace ork { namespace ent {
 class VrSystemData : public ork::ent::SystemData {
   RttiDeclareConcrete(VrSystemData, ork::ent::SystemData);
 public:
-  lev2::VrData _compositingData;
   VrSystemData();
 
   void defaultSetup();
 
 private:
   ork::ent::System* createSystem(ork::ent::Simulation* pinst) const final;
-  ork::Object* _accessor() { return & _compositingData; }
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -45,6 +43,7 @@ public:
   bool DoLink(Simulation* psi) final;
 
   bool enabled() const;
+  void enqueueDrawables(lev2::DrawableBuffer& buffer) final;
 
 private:
   const VrSystemData& _vrSystemData;

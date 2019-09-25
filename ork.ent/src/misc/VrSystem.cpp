@@ -22,7 +22,7 @@
 #include <pkg/ent/entity.hpp>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
-#include "VrSystem.h
+#include "VrSystem.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::VrSystemData, "VrSystemData");
@@ -60,13 +60,12 @@ ork::ent::System* VrSystemData::createSystem(ork::ent::Simulation *pinst) const
 VrSystem::VrSystem( const VrSystemData& data, Simulation *psim )
 	: ork::ent::System( &data, psim )
 	, _vrSystemData(data)
-  , _impl(data._compositingData)
 {
   _vrstate=0;
 }
 
 bool VrSystem::enabled() const {
-  return _impl.IsEnabled();
+  return true;
 }
 
 VrSystem::~VrSystem()
@@ -74,35 +73,25 @@ VrSystem::~VrSystem()
 }
 
 void VrSystem::DoUpdate(Simulation* psim) {
-
-  if( nullptr == _spawnloc ){
-    _spawnloc = psim->FindEntity(AddPooledString("spawnloc"));
-    _vrstate++;
-  }
-  if( nullptr == _spawncam ){
-    _spawncam = psim->cameraData(AddPooledString("spawncam"));
-    _vrstate++;
-  }
-  if( _vrstate==2 and _prv_vrstate<2 ){
-    if( _spawnloc and _spawncam ){
-      _impl.setPrerenderCallback(0,[=](lev2::GfxTarget*targ){
-            // todo - somehow connect to renderthread spawnloc and spawncam
-            fmtx4 vrmtx = _spawnloc->GetEffectiveMatrix();
-            auto frame_data = (lev2::RenderContextFrameData*) targ->GetRenderContextFrameData();
-            if( frame_data ){
-              frame_data->setUserProperty("vrroot"_crc,vrmtx);
-              frame_data->setUserProperty("vrcam"_crc,_spawncam);
-            }
-      });
-    }
-  }
-
-  _prv_vrstate =   _vrstate;
-
 }
 
-bool VrSystem::DoLink(Simulation* psi) {
-  return true;
+
+void VrSystem::enqueueDrawables(lev2::DrawableBuffer& buffer) {
+  if( _vrstate != 0 )
+  buffer.setPreRenderCallback(0,[=](lev2::RenderContextFrameData&RCFD){
+        // todo - somehow connect to renderthread spawnloc and spawncam
+        fmtx4 vrmtx = this->_spawnloc->GetEffectiveMatrix();
+        RCFD.setUserProperty("vrroot"_crc,vrmtx);
+        RCFD.setUserProperty("vrcam"_crc,this->_spawncam);
+  });
+}
+
+bool VrSystem::DoLink(Simulation* psim) {
+  _spawnloc = psim->FindEntity(AddPooledString("spawnloc"));
+  _spawncam = psim->cameraData(AddPooledString("spawncam"));
+  bool good2go = (_spawnloc!=nullptr) and (_spawncam!=nullptr);
+  _vrstate = int(good2go);
+  return good2go or (false==enabled());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

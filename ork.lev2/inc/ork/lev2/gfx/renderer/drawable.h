@@ -129,10 +129,13 @@ struct RenderSyncToken {
 
 ///////////////////////////////////////////////////////////////////////////
 
+typedef std::function<void(lev2::RenderContextFrameData&RCFD)> prerendercallback_t;
+
 class DrawableBuffer {
 public:
   static const int kmaxlayers = 8;
   typedef ork::fixedlut<PoolString, DrawableBufLayer*, kmaxlayers> LayerLut;
+  typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
 
   CameraLut _cameraDataLUT;
   DrawableBufLayer mRawLayers[kmaxlayers];
@@ -141,14 +144,19 @@ public:
   int miBufferIndex;
   int miReadCount;
   orkset<PoolString> mLayers;
+  CallbackLut_t _preRenderCallbacks;
 
   static ork::MpMcBoundedQueue<RenderSyncToken> mOfflineRenderSynchro;
   static ork::MpMcBoundedQueue<RenderSyncToken> mOfflineUpdateSynchro;
   static ork::atomic<bool> gbInsideClearAndSync;
 
+
   void Reset();
   DrawableBuffer(int ibidx);
   ~DrawableBuffer();
+
+  void setPreRenderCallback(int key,prerendercallback_t cb);
+  void invokePreRenderCallbacks(lev2::RenderContextFrameData&RCFD) const;
 
   static const int kmaxbuffers = 6;
 
