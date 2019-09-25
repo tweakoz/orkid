@@ -8,6 +8,7 @@
 #include <cmath>
 #include <ork/math/cvector3.h>
 #include <ork/math/cvector4.h>
+#include <ork/math/cmatrix3.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
 #include <pmmintrin.h>
@@ -18,6 +19,26 @@ namespace ork {
 template <typename T> const Matrix44<T> Matrix44<T>::Identity;
 
 ///////////////////////////////////////////////////////////////////////////////
+
+template <typename T> Matrix33<T> Matrix44<T>::rotMatrix33(void) const {
+    Matrix33<T> rval;
+    rval.fromNormalVectors(
+  		GetXNormal().Normal(),
+  		GetYNormal().Normal(),
+  		GetZNormal().Normal()
+  	);
+    return rval;
+}
+template <typename T> Matrix44<T> Matrix44<T>::rotMatrix44(void) const {
+  Matrix44<T> rval;
+  rval.fromNormalVectors(
+    GetXNormal().Normal(),
+    GetYNormal().Normal(),
+    GetZNormal().Normal()
+  );
+  return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Matrix44<T>::SetToIdentity(void) {

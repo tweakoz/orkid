@@ -19,6 +19,7 @@ namespace ork {
 template <typename T> class Vector4;
 template <typename T> class Vector3;
 template <typename T> class Quaternion;
+template <typename T> class Matrix33;
 
 template <typename T> class Matrix44 {
   friend class Vector4<T>;
@@ -79,6 +80,9 @@ public:
   void CreateBillboard(Vector3<T> objectPos, Vector3<T> viewPos, Vector3<T> upVec);
 
   /////////
+
+  Matrix33<T> rotMatrix33() const;
+  Matrix44<T> rotMatrix44() const;
 
   Matrix44<T> Mult(T scalar) const;
   Matrix44<T> MatrixMult(const Matrix44<T>& mat1) const;

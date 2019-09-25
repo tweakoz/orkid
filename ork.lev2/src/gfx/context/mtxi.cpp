@@ -69,23 +69,12 @@ void MatrixStackInterface::PopUIMatrix()
 void MatrixStackInterface::OnMMatrixDirty( void )
 {
 	const fmtx4& wmat = RefMMatrix();
-	//mmR3Matrix.SetToIdentity();
-	mmR3Matrix.fromNormalVectors(
-		wmat.GetXNormal().Normal(),
-		wmat.GetYNormal().Normal(),
-		wmat.GetZNormal().Normal()
-		);
-	//mmR4Matrix.SetToIdentity();
-	mmR4Matrix.fromNormalVectors(
-		wmat.GetXNormal().Normal(),
-		wmat.GetYNormal().Normal(),
-		wmat.GetZNormal().Normal()
-		);
+	mmR3Matrix = wmat.rotMatrix33();
+	mmR4Matrix = wmat.rotMatrix44();
 	//
 	mmMVMatrix = wmat * RefVMatrix();
 	mmMVPMatrix = wmat * mmVPMatrix;
 	//mmMVPMatrix.Transpose();
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
