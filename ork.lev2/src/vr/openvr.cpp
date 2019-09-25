@@ -428,14 +428,17 @@ OpenVrDevice& concrete_get() {
 Device& device() { return concrete_get(); }
 ////////////////////////////////////////////////////////////////////////////////
 
-void gpuUpdate(fmtx4 observermatrix) {
+void gpuUpdate(RenderContextFrameData& RCFD) {
   auto& mgr = concrete_get();
   if (mgr._active) {
     bool ovr_compositor_ok = (bool)_ovr::VRCompositor();
     assert(ovr_compositor_ok);
   }
   mgr._processControllerEvents();
-  mgr._updatePoses(observermatrix);
+  auto vrroot = RCFD.getUserProperty("vrroot"_crc);
+  if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
+    mgr._updatePoses(as_mtx.value());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

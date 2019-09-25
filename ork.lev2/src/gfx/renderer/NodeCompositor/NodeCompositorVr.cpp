@@ -126,15 +126,9 @@ struct VRIMPL {
 
     RCFD.setLayerName("All");
 
-    if (use_vr) {
-      auto vrroot = RCFD.getUserProperty("vrroot"_crc);
-      if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
-        orkidvr::gpuUpdate(as_mtx.value());
-      } else {
-        printf("vrroottype<%s>\n", vrroot.GetTypeName());
-      }
-    }
-    ///////////////////////////////////
+    if (use_vr)
+      orkidvr::gpuUpdate(RCFD);
+
     ///////////////////////////////////
     // float w = _rtg->GetW(); float h = _rtg->GetH();
     ///////////////////////////////////

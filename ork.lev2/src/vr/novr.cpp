@@ -63,7 +63,7 @@ NoVrDevice::NoVrDevice() {
 }
 NoVrDevice::~NoVrDevice() {}
 ////////////////////////////////////////////////////////////////////////////////
-void NoVrDevice::_updatePoses(fmtx4 observermatrix) {
+void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   auto mpos = _qtmousepos;
   float r   = mpos.Mag();
   float z   = 1.0f - r;
@@ -72,7 +72,15 @@ void NoVrDevice::_updatePoses(fmtx4 observermatrix) {
   w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
   _posemap["hmd"] = w;
    printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
-  _updatePosesCommon(observermatrix);
+  auto vrroot = RCFD.getUserProperty("vrroot"_crc);
+  if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
+    auto rt = RCFD.GetRenderTarget();
+    float aspect = float(rt->GetW())/float(rt->GetH());
+    _posemap["projl"].Perspective(45, aspect, .1, 100000);
+    _posemap["projr"].Perspective(45, aspect, .1, 100000);
+    _posemap["projc"].Perspective(45, aspect, .1, 100000);
+    _updatePosesCommon(as_mtx.value());
+  }
 }
 ////////////////////////////////////////////////////////////////////////////////
 void NoVrDevice::_processControllerEvents() {
@@ -105,10 +113,10 @@ Device& device() {
   return concrete_get();
 }
 ////////////////////////////////////////////////////////////////////////////////
-void gpuUpdate(fmtx4 observermatrix) {
+void gpuUpdate(RenderContextFrameData& RCFD) {
   auto& mgr = concrete_get();
   mgr._processControllerEvents();
-  mgr._updatePoses(observermatrix);
+  mgr._updatePoses(RCFD);
 }
 
 void composite(GfxTarget* targ, Texture* twoeyetex) {

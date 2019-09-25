@@ -98,7 +98,7 @@ struct NoVrDevice : public Device {
   NoVrDevice();
   ~NoVrDevice() final;
   void _processControllerEvents();
-  void _updatePoses(fmtx4 observermatrix);
+  void _updatePoses(RenderContextFrameData& RCFD);
   msgrouter::subscriber_t _qtmousesubsc;
   msgrouter::subscriber_t _qtkbdownsubs;
   msgrouter::subscriber_t _qtkbupsubs;
@@ -108,7 +108,7 @@ struct NoVrDevice : public Device {
 ////////////////////////////////////////////////////////////////////////////////
 Device& device();
 ////////////////////////////////////////////////////////////////////////////////
-void gpuUpdate(fmtx4 observermatrix);
+void gpuUpdate(RenderContextFrameData& RCFD);
 void composite(GfxTarget* targ, Texture* twoeyetex);
 ////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::orkidvr
