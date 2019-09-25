@@ -136,9 +136,7 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
 }*/
 
 RenderContextFrameData::RenderContextFrameData()
-    : mpShadowBuffer(0)
-    , meMode(ERENDMODE_STANDARD)
-    , mCameraData(0)
+    : mCameraData(0)
     , mPickCameraData(0)
     , mLightManager(0)
     , mpTarget(0) {}

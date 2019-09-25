@@ -147,18 +147,6 @@ struct StereoCamera {
 
 struct RenderContextFrameData {
 
-
-  enum ERenderingMode {
-    ERENDMODE_NONE = 0,
-    ERENDMODE_PRERENDER,
-    ERENDMODE_STANDARD,
-    ERENDMODE_SHADOWED,
-    ERENDMODE_SHADOWMAP,
-    ERENDMODE_LIGHTPREPASS,
-    ERENDMODE_HDRJOIN,
-    ERENDMODE_HUD,
-  };
-
   RenderContextFrameData();
 
   GfxTarget* GetTarget(void) const { return mpTarget; }
@@ -166,13 +154,9 @@ struct RenderContextFrameData {
   const CameraData* GetPickCameraData() const { return mPickCameraData; }
   LightManager* GetLightManager() const { return mLightManager; }
 
-  ERenderingMode GetRenderingMode(void) const { return meMode; }
-  GfxBuffer* GetShadowBuffer(void) const { return mpShadowBuffer; }
   const SRect& GetDstRect() const { return mDstRect; }
   const SRect& GetMrtRect() const { return mMrtRect; }
 
-  void SetRenderingMode(ERenderingMode emode) { meMode = emode; }
-  void SetShadowBuffer(GfxBuffer* ShadowBuffer) { mpShadowBuffer = ShadowBuffer; }
   void setCameraData(const CameraData* data) { mCameraData = data; }
   void SetPickCameraData(const CameraData* data) { mPickCameraData = data; }
   void SetLightManager(LightManager* lmgr) { mLightManager = lmgr; }
@@ -215,8 +199,6 @@ struct RenderContextFrameData {
   orkstack<IRenderTarget*> mRenderTargetStack;
   usermap_t _userProperties;
   LightManager* mLightManager;
-  ERenderingMode meMode;
-  GfxBuffer* mpShadowBuffer;
   GfxTarget* mpTarget;
   const CameraData* mCameraData;
   const CameraData* mPickCameraData;

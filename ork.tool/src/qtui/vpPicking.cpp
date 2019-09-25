@@ -153,7 +153,6 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   GfxTarget* pTEXTARG = GetContext();
   GfxTarget* pPARENTTARG = GetParent()->GetContext();
   pTEXTARG->SetRenderContextFrameData(frame_data);
-  frame_data->SetRenderingMode(ork::lev2::RenderContextFrameData::ERENDMODE_STANDARD);
   frame_data->SetTarget(pTEXTARG);
   SRect tgt_rect(0, 0, mpViewport->GetW(), mpViewport->GetH());
   frame_data->SetDstRect(tgt_rect);

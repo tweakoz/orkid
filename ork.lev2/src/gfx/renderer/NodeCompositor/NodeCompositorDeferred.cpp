@@ -83,7 +83,6 @@ struct IMPL {
       targ->FBI()->PushRtGroup(_rtg);
       targ->FBI()->SetAutoClear(false); // explicit clear
       targ->BeginFrame();
-      RCFD.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB         = RCFD.GetDB();
       auto CPD = drawdata.mCompositingGroupStack.top();

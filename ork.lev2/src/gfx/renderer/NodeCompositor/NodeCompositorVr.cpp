@@ -184,7 +184,6 @@ struct VRIMPL {
     drawdata.mCompositingGroupStack.push(_CPD);
     targ->SetRenderContextFrameData(&RCFD);
     RCFD.SetDstRect(tgt_rect);
-    RCFD.SetRenderingMode(RenderContextFrameData::ERENDMODE_STANDARD);
     drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
   }

@@ -494,7 +494,6 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 		FrameData.PushRenderTarget(&rt);
 		pTARG->FBI()->PushRtGroup( mpMrtFinalHD );
 		pTARG->BeginFrame();
-			FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
 			frenderer.renderMisc();
 		pTARG->EndFrame();
 		pTARG->FBI()->PopRtGroup();
@@ -524,7 +523,6 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 				// render scene into Mrt0
 				//////////////////////////////////////////
 
-				FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
 				frenderer.renderMisc();
 
 				//////////////////////////////////////////
@@ -956,7 +954,6 @@ void BasicFrameTechnique::Render( FrameRenderer & frenderer )
 	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->BeginFrame( frenderer );
 	{
-		FrameData.SetRenderingMode( RenderContextFrameData::ERENDMODE_STANDARD );
 		frenderer.renderMisc();
 	}
 	if( _shouldBeginAndEndFrame )
