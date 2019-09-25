@@ -161,7 +161,7 @@ struct VRIMPL {
     // is stereo active
     //////////////////////////////////////////////////////
 
-    if (use_vr) {
+    if (use_vr and orkidvr::device()._supportsStereo) {
       RCFD.setStereoOnePass(true);
       RCFD._stereoCamera._left = &orkidvr::device()._leftcamera;
       RCFD._stereoCamera._right = &orkidvr::device()._rightcamera;

@@ -12,6 +12,7 @@ Device::Device()
     : _width(1024)
     , _height(1024)
     , _active(false)
+    , _supportsStereo(false)
     , _hmdinputgroup(*lev2::InputManager::inputGroup("hmd")) {
 
   auto handgroup = lev2::InputManager::inputGroup("hands");
@@ -51,7 +52,7 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
     ///////////////////////////////////////////////////////////
 
     _hmdMatrix = hmd;
-    //_hmdMatrix.dump("hmdmtx");
+    _hmdMatrix.dump("hmdmtx");
 
     fmtx4 VVMTX = observermatrix;
 

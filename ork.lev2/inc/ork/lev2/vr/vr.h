@@ -53,6 +53,7 @@ struct Device {
   CameraData _rightcamera;
   std::map<int, ControllerState> _controllers;
   bool _active;
+  bool _supportsStereo;
   fmtx4 _offsetmatrix;
   fmtx4 _headingmatrix;
   fmtx4 _hmdMatrix;

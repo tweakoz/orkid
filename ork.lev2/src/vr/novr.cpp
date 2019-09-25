@@ -13,6 +13,7 @@ NoVrDevice::NoVrDevice() {
   auto handgroup = lev2::InputManager::inputGroup("hands");
   _qtmousesubsc  = msgrouter::channel("qtmousepos")->subscribe([this](msgrouter::content_t c) { _qtmousepos = c.Get<fvec2>(); });
 
+  _active = true;
   _qtkbdownsubs = msgrouter::channel("qtkeyboard.down")->subscribe([this, handgroup](msgrouter::content_t c) {
     int key = c.Get<int>();
     switch (key) {
@@ -48,8 +49,17 @@ NoVrDevice::NoVrDevice() {
 
   _posemap["projl"].Perspective(45, 16.0 / 9.0, .1, 100000);
   _posemap["projr"].Perspective(45, 16.0 / 9.0, .1, 100000);
+  _posemap["projc"].Perspective(45, 16.0 / 9.0, .1, 100000);
   _posemap["eyel"] = fmtx4::Identity;
   _posemap["eyer"] = fmtx4::Identity;
+
+  _leftcamera.SetWidth(1440);
+  _centercamera.SetWidth(1440);
+  _rightcamera.SetWidth(1440);
+
+  _leftcamera.SetHeight(900);
+  _centercamera.SetHeight(900);
+  _rightcamera.SetHeight(900);
 }
 NoVrDevice::~NoVrDevice() {}
 ////////////////////////////////////////////////////////////////////////////////

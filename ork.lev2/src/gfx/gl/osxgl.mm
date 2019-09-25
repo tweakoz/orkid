@@ -362,7 +362,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 
 	plato->mNSOpenGLContext = GlOsxPlatformObject::gShareMaster;
 	plato->mOsxView = nullptr;
-	plato->mbNSOpenGlView = nullptr;
+	plato->mbNSOpenGlView = false;
 	plato->mbInit = false;
 
 	FBI()->SetOffscreenTarget( true );

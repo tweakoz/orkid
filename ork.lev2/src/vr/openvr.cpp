@@ -68,6 +68,7 @@ OpenVrDevice::OpenVrDevice() {
   _active                  = (error == _ovr::VRInitError_None);
 
   if (_active) {
+    _supportsStereo = true;
     _hmd->GetRecommendedRenderTargetSize(&_width, &_height);
     printf("RECOMMENDED WH<%d %d>\n", _width, _height);
     auto str_driver  = trackedDeviceString(_ovr::k_unTrackedDeviceIndex_Hmd, _ovr::Prop_TrackingSystemName_String);
@@ -106,6 +107,8 @@ OpenVrDevice::OpenVrDevice() {
   _leftcamera.SetHeight(_height);
   _rightcamera.SetWidth(_width);
   _rightcamera.SetHeight(_height);
+  _centercamera.SetWidth(_width);
+  _centercamera.SetHeight(_height);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
