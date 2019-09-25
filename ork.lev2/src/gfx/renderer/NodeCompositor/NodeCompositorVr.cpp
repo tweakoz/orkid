@@ -7,47 +7,46 @@
 
 #include "NodeCompositorVr.h"
 #include <ork/application/application.h>
-#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
-#include <ork/lev2/gfx/rtgroup.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/lev2/vr/vr.h>
-#include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/vr/vr.h>
 
 ImplementReflectionX(ork::lev2::VrCompositingNode, "VrCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::describeX(class_t*c) {
-}
+void VrCompositingNode::describeX(class_t* c) {}
 ///////////////////////////////////////////////////////////////////////////////
 struct VRIMPL {
   ///////////////////////////////////////
-  VRIMPL(VrCompositingNode*node)
+  VRIMPL(VrCompositingNode* node)
       : _vrnode(node)
       , _camname(AddPooledString("Camera"))
-      , _layers(AddPooledString("All")){}
+      , _layers(AddPooledString("All")) {
+
+    _tempcamdat = new CameraData;
+  }
   ///////////////////////////////////////
-  ~VRIMPL() {}
+  ~VRIMPL() { delete _tempcamdat; }
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
-    if( _doinit ){
+    if (_doinit) {
       pTARG->debugPushGroup("VRIMPL::gpuInit");
-      _width     = orkidvr::device()._width*2;
-      _height     = orkidvr::device()._height;
-      _blit2screenmtl.SetUserFx( "orkshader://solid", "texcolor" );
+      _width  = orkidvr::device()._width * 2;
+      _height = orkidvr::device()._height;
+      _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
       _blit2screenmtl.Init(pTARG);
 
       _rtg            = new RtGroup(pTARG, _width, _height, 1);
-      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height );
+      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, _width, _height);
       buf->_debugName = "WtfVrRt";
       _rtg->SetMrt(0, buf);
 
-
       pTARG->debugPopGroup();
-
-
 
       _doinit = false;
     }
@@ -92,38 +91,31 @@ struct VRIMPL {
     }
   }
   ///////////////////////////////////////
-  void beginAssemble(CompositorDrawData& drawdata){
+  void beginAssemble(CompositorDrawData& drawdata) {
     auto& ddprops                = drawdata._properties;
-    FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
+    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto DB         = RCFD.GetDB();
-    GfxTarget* targ                  = drawdata.target();
+    auto DB                      = RCFD.GetDB();
+    GfxTarget* targ              = drawdata.target();
 
     bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
-    bool use_vr = (orkidvr::device()._active and simrunning);
-    /////////////////////////////////////////////////////////////////////////////
-    // default camera selection (todo: hoist to cimpl so it can be shared across output nodes)
-    /////////////////////////////////////////////////////////////////////////////
-    int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
-    int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
+    bool use_vr     = (orkidvr::device()._active and simrunning);
     auto& CAMCCTX   = RCFD.cameraMatrices();
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
 
-    if( use_vr )
-    {
+    if (use_vr) {
       auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
       fmtx4 rootmatrix;
-      if( auto as_cam = vrcamprop.TryAs<const CameraData*>() ){
+      if (auto as_cam = vrcamprop.TryAs<const CameraData*>()) {
         targ->debugMarker("Vr::gotcamera");
         auto vrcam = as_cam.value();
-        auto eye = vrcam->GetEye();
-        auto tgt = vrcam->GetTarget();
-        auto up  = vrcam->GetUp();
+        auto eye   = vrcam->GetEye();
+        auto tgt   = vrcam->GetTarget();
+        auto up    = vrcam->GetUp();
         rootmatrix.LookAt(eye, tgt, up);
-      }
-      else{
+      } else {
         targ->debugMarker("Vr::nocamera");
       }
 
@@ -134,19 +126,17 @@ struct VRIMPL {
 
     RCFD.setLayerName("All");
 
-    if( use_vr )
-    {
+    if (use_vr) {
       auto vrroot = RCFD.getUserProperty("vrroot"_crc);
-      if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
+      if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
         orkidvr::gpuUpdate(as_mtx.value());
-      }
-      else{
-        printf("vrroottype<%s>\n", vrroot.GetTypeName() );
+      } else {
+        printf("vrroottype<%s>\n", vrroot.GetTypeName());
       }
     }
     ///////////////////////////////////
     ///////////////////////////////////
-    //float w = _rtg->GetW(); float h = _rtg->GetH();
+    // float w = _rtg->GetW(); float h = _rtg->GetH();
     ///////////////////////////////////
 
     SRect tgt_rect(0, 0, _width, _height);
@@ -155,7 +145,7 @@ struct VRIMPL {
     _CPD.mpFrameTek   = nullptr;
     _CPD.mpCameraName = nullptr;
     _CPD.mpLayerName  = nullptr; // default == "All"
-    _CPD._clearColor  = fvec4(0.61,0,0, 1);
+    _CPD._clearColor  = fvec4(0.61, 0, 0, 1);
 
     //////////////////////////////////////////////////////
     // is stereo active
@@ -163,39 +153,30 @@ struct VRIMPL {
 
     if (use_vr and orkidvr::device()._supportsStereo) {
       RCFD.setStereoOnePass(true);
-      RCFD._stereoCamera._left = &orkidvr::device()._leftcamera;
-      RCFD._stereoCamera._right = &orkidvr::device()._rightcamera;
-      RCFD._stereoCamera._mono = &orkidvr::device()._centercamera;
+      RCFD._stereoCamera._left  = orkidvr::device()._leftcamera;
+      RCFD._stereoCamera._right = orkidvr::device()._rightcamera;
+      RCFD._stereoCamera._mono  = orkidvr::device()._centercamera;
       RCFD.setCameraData(RCFD._stereoCamera._mono);
       _CPD._impl.Set<const CameraData*>(RCFD._stereoCamera._mono);
     } else {
       ////////////////////////////////////////////////
-      CAMCCTX.mfAspectRatio = float(targ->GetW())/float(targ->GetH());
-      //CAMCCTX.mfAspectRatio = float(_width)/float(_height);
+      // no stereo cam support, override cam with left side of stereocam
+      //  eg. when using mac VR emulation
       ////////////////////////////////////////////////
-      auto spncam =(CameraData*) DB->cameraData("spawncam"_pool);
-      auto l2cam = spncam->getEditorCamera();
-      if (l2cam){
-        spncam->BindGfxTarget(targ);
-        l2cam->RenderUpdate();
-        spncam->computeMatrices(CAMCCTX);
-        _tempcamdat = l2cam->mCameraData;
-        ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
+      if (simrunning) {
+        auto LCAM   = orkidvr::device()._leftcamera;
+        *_tempcamdat = *LCAM;
+        _tempcamdat->BindGfxTarget(targ);
+        _tempcamdat->computeMatrices(CAMCCTX);
+        ddprops["selcamdat"_crcu].Set<const CameraData*>(_tempcamdat);
       }
-      if( simrunning ){
-        auto& LCAM = orkidvr::device()._leftcamera;
-        _tempcamdat = LCAM;
-        _tempcamdat.BindGfxTarget(targ);
-        _tempcamdat.computeMatrices(CAMCCTX);
-        ddprops["selcamdat"_crcu].Set<const CameraData*>(&_tempcamdat);
-      }
-
+      ////////////////////////////////////////////////
       RCFD.setStereoOnePass(false);
-      RCFD.setCameraData(&_tempcamdat);
-      RCFD._stereoCamera._left = &_tempcamdat;
-      RCFD._stereoCamera._right = &_tempcamdat;
-      RCFD._stereoCamera._mono = &_tempcamdat; // todo - blend l&r
-      _CPD._impl.Set<const CameraData*>(&_tempcamdat);
+      RCFD.setCameraData(_tempcamdat);
+      RCFD._stereoCamera._left  = _tempcamdat;
+      RCFD._stereoCamera._right = _tempcamdat;
+      RCFD._stereoCamera._mono  = _tempcamdat; // todo - blend l&r
+      _CPD._impl.Set<const CameraData*>(_tempcamdat);
     }
 
     //////////////////////////////////////////////////////
@@ -208,8 +189,8 @@ struct VRIMPL {
     drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
   }
   ///////////////////////////////////////
-  void endAssemble( CompositorDrawData& drawdata){
-    FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
+  void endAssemble(CompositorDrawData& drawdata) {
+    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     drawdata.target()->SetRenderContextFrameData(nullptr);
     drawdata.mCompositingGroupStack.pop();
@@ -220,24 +201,21 @@ struct VRIMPL {
   VrCompositingNode* _vrnode = nullptr;
   CompositingPassData _CPD;
   fmtx4 _viewOffsetMatrix;
-  RtGroup* _rtg = nullptr;
-  int _width = 0;
-  int _height = 0;
-  bool _doinit = true;
-  CameraData _tempcamdat;
-  ork::lev2::GfxMaterial3DSolid	_blit2screenmtl;
-
+  RtGroup* _rtg           = nullptr;
+  int _width              = 0;
+  int _height             = 0;
+  bool _doinit            = true;
+  CameraData* _tempcamdat = nullptr;
+  ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
 };
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::VrCompositingNode() { _impl = std::make_shared<VRIMPL>(this); }
 ///////////////////////////////////////////////////////////////////////////////
 VrCompositingNode::~VrCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH)
-{ _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG);
-}
+void VrCompositingNode::gpuInit(lev2::GfxTarget* pTARG, int iW, int iH) { _impl.Get<std::shared_ptr<VRIMPL>>()->gpuInit(pTARG); }
 ///////////////////////////////////////////////////////////////////////////////
-void VrCompositingNode::beginAssemble(CompositorDrawData& drawdata){
+void VrCompositingNode::beginAssemble(CompositorDrawData& drawdata) {
   drawdata.target()->debugPushGroup("VrCompositingNode::beginAssemble");
   _impl.Get<std::shared_ptr<VRIMPL>>()->beginAssemble(drawdata);
   drawdata.target()->debugPopGroup();
@@ -248,18 +226,18 @@ void VrCompositingNode::endAssemble(CompositorDrawData& drawdata) {
   drawdata.target()->debugPopGroup();
 }
 
-void VrCompositingNode::composite(CompositorDrawData& drawdata){
+void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   drawdata.target()->debugPushGroup("VrCompositingNode::composite");
   auto impl = _impl.Get<std::shared_ptr<VRIMPL>>();
   /////////////////////////////////////////////////////////////////////////////
   // VR compositor
   /////////////////////////////////////////////////////////////////////////////
-  FrameRenderer& framerenderer       = drawdata.mFrameRenderer;
-  RenderContextFrameData& framedata  = framerenderer.framedata();
-  GfxTarget* targ                    = framedata.GetTarget();
-  if( auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtGroup*>() ){
+  FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
+  RenderContextFrameData& framedata = framerenderer.framedata();
+  GfxTarget* targ                   = framedata.GetTarget();
+  if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtGroup*>()) {
     auto buffer = try_final.value()->GetMrt(0);
-    if( buffer ){
+    if (buffer) {
       assert(buffer != nullptr);
       auto tex = buffer->GetTexture();
       if (tex) {
@@ -273,23 +251,26 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata){
         /////////////////////////////////////////////////////////////////////////////
         drawdata.target()->debugPushGroup("VrCompositingNode::to_screen");
         auto this_buf = targ->FBI()->GetThisBuffer();
-        auto& mtl = impl->_blit2screenmtl;
-        int iw = targ->GetW();
-        int ih = targ->GetH();
-        SRect vprect(0,0,iw,ih);
-        SRect quadrect(0,ih,iw,0);
-        fvec4 color( 1.0f, 1.0f, 1.0f, 1.0f );
-        mtl.SetAuxMatrix( fmtx4::Identity );
-        mtl.SetTexture( tex );
-        mtl.SetTexture2( nullptr );
-        mtl.SetColorMode( GfxMaterial3DSolid::EMODE_USER );
-        mtl.mRasterState.SetBlending( EBLENDING_OFF );
-        this_buf->RenderMatOrthoQuad( vprect,
-                                      quadrect,
-                                      & mtl,
-                                      0.0f, 0.0f, // u0 v0
-                                      1.0f, 1.0f, // u1 v1
-                                      nullptr, color );
+        auto& mtl     = impl->_blit2screenmtl;
+        int iw        = targ->GetW();
+        int ih        = targ->GetH();
+        SRect vprect(0, 0, iw, ih);
+        SRect quadrect(0, ih, iw, 0);
+        fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
+        mtl.SetAuxMatrix(fmtx4::Identity);
+        mtl.SetTexture(tex);
+        mtl.SetTexture2(nullptr);
+        mtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
+        mtl.mRasterState.SetBlending(EBLENDING_OFF);
+        this_buf->RenderMatOrthoQuad(vprect,
+                                     quadrect,
+                                     &mtl,
+                                     0.0f,
+                                     0.0f, // u0 v0
+                                     1.0f,
+                                     1.0f, // u1 v1
+                                     nullptr,
+                                     color);
         drawdata.target()->debugPopGroup();
       }
     }

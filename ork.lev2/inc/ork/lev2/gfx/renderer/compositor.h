@@ -252,7 +252,7 @@ private:
   float mfTimeAccum;
   float mfLastTime;
   LightManager* _lightmgr = nullptr;
-
+  CameraData* _cimplcamdat = nullptr;
   CompositingMorphable _morphable;
 
   int miActiveSceneItem;

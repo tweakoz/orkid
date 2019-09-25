@@ -53,13 +53,13 @@ NoVrDevice::NoVrDevice() {
   _posemap["eyel"] = fmtx4::Identity;
   _posemap["eyer"] = fmtx4::Identity;
 
-  _leftcamera.SetWidth(1440);
-  _centercamera.SetWidth(1440);
-  _rightcamera.SetWidth(1440);
+  _leftcamera->SetWidth(1440);
+  _centercamera->SetWidth(1440);
+  _rightcamera->SetWidth(1440);
 
-  _leftcamera.SetHeight(900);
-  _centercamera.SetHeight(900);
-  _rightcamera.SetHeight(900);
+  _leftcamera->SetHeight(900);
+  _centercamera->SetHeight(900);
+  _rightcamera->SetHeight(900);
 }
 NoVrDevice::~NoVrDevice() {}
 ////////////////////////////////////////////////////////////////////////////////

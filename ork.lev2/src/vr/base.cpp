@@ -15,6 +15,10 @@ Device::Device()
     , _supportsStereo(false)
     , _hmdinputgroup(*lev2::InputManager::inputGroup("hmd")) {
 
+  _leftcamera = new CameraData;
+  _centercamera = new CameraData;
+  _rightcamera = new CameraData;
+
   auto handgroup = lev2::InputManager::inputGroup("hands");
   handgroup->setChannel("left.button1").as<bool>(false);
   handgroup->setChannel("left.button2").as<bool>(false);
@@ -29,7 +33,11 @@ Device::Device()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-Device::~Device() {}
+Device::~Device() {
+  delete _leftcamera;
+  delete _centercamera;
+  delete _rightcamera;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -79,12 +87,12 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
     _hmdinputgroup.setChannel("ceye.matrix").as<fmtx4>(cmv);
     _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
 
-    _leftcamera.SetView(lmv);
-    _leftcamera.setCustomProjection(_posemap["projl"]);
-    _rightcamera.SetView(rmv);
-    _rightcamera.setCustomProjection(_posemap["projr"]);
-    _centercamera.SetView(cmv);
-    _centercamera.setCustomProjection(_posemap["projc"]);
+    _leftcamera->SetView(lmv);
+    _leftcamera->setCustomProjection(_posemap["projl"]);
+    _rightcamera->SetView(rmv);
+    _rightcamera->setCustomProjection(_posemap["projr"]);
+    _centercamera->SetView(cmv);
+    _centercamera->setCustomProjection(_posemap["projc"]);
     // printf( "pose_classes<%s>\n", pose_classes.c_str() );
 }
 

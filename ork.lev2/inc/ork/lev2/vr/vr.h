@@ -48,9 +48,9 @@ struct Device {
   Device();
   virtual ~Device();
   std::map<std::string, fmtx4> _posemap;
-  CameraData _leftcamera;
-  CameraData _centercamera;
-  CameraData _rightcamera;
+  CameraData* _leftcamera = nullptr;
+  CameraData* _centercamera = nullptr;
+  CameraData* _rightcamera = nullptr;
   std::map<int, ControllerState> _controllers;
   bool _active;
   bool _supportsStereo;

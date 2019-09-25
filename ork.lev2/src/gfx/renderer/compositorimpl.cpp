@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
@@ -143,6 +144,8 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
   mfTimeAccum       = 0.0f;
   mfLastTime        = 0.0f;
   miActiveSceneItem = 0;
+
+  _cimplcamdat = new CameraData;
 }
 
 CompositingImpl::~CompositingImpl() {}
@@ -229,14 +232,18 @@ float CompositingImpl::currentFrameRate() const {
 
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   bool rval = false;
+  auto& ddprops                = drawdata._properties;
   auto the_renderer = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-  lev2::GfxTarget* pTARG                  = RCFD.GetTarget();
+  lev2::GfxTarget* target                  = RCFD.GetTarget();
   orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
   drawdata._cimpl = this;
 
+  auto& CAMCCTX   = RCFD.cameraMatrices();
 
-  SRect tgtrect = SRect(0, 0, pTARG->GetW(), pTARG->GetH());
+  CAMCCTX.mfAspectRatio = float(target->GetW())/float(target->GetH());
+
+  SRect tgtrect = SRect(0, 0, target->GetW(), target->GetH());
 
   lev2::rendervar_t passdata;
   passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
@@ -268,8 +275,27 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7); // mDbLock.Aquire(7);
   RCFD.setUserProperty("DB"_crc, lev2::rendervar_t(DB));
 
+  int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
+  int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
 
   if (DB) {
+
+    /////////////////////////////////////////////////////////////////////////////
+    // default camera selection (todo: hoist to cimpl so it can be shared across output nodes)
+    /////////////////////////////////////////////////////////////////////////////
+
+    auto spncam =(CameraData*) DB->cameraData("spawncam"_pool);
+    auto l2cam = spncam->getEditorCamera();
+    if (l2cam){
+      spncam->BindGfxTarget(target);
+      l2cam->RenderUpdate();
+      spncam->computeMatrices(CAMCCTX);
+      //_tempcamdat = l2cam->mCameraData;
+      ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+
     DB->invokePreRenderCallbacks(RCFD);
     rval = _compcontext.assemble(drawdata);
     DrawableBuffer::releaseReadDB(DB); // mDbLock.Aquire(7);
