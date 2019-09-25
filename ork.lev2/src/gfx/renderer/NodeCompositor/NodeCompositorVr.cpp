@@ -106,19 +106,12 @@ struct VRIMPL {
     /////////////////////////////////////////////////////////////////////////////
     int primarycamindex = ddprops["primarycamindex"_crcu].Get<int>();
     int cullcamindex    = ddprops["cullcamindex"_crcu].Get<int>();
-   // auto CAMDAT     = _CPD.getCamera(RCFD, primarycamindex, cullcamindex);
     auto& CAMCCTX   = RCFD.cameraMatrices();
-    ///////////////////////////////////////////////////////////////////////////
-    //targ->debugMarker(FormatString("NodeVr::CAMDAT<%p>", CAMDAT));
-    //if (CAMDAT and DB) {
-      //_tempcamdat = *CAMDAT;
-      ///////////////////////////////////////////////////////////////////////////
-    //}
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
 
-    //if( use_vr )
+    if( use_vr )
     {
       auto vrcamprop = RCFD.getUserProperty("vrcam"_crc);
       fmtx4 rootmatrix;
@@ -141,7 +134,7 @@ struct VRIMPL {
 
     RCFD.setLayerName("All");
 
-    //if( use_vr )
+    if( use_vr )
     {
       auto vrroot = RCFD.getUserProperty("vrroot"_crc);
       if( auto as_mtx = vrroot.TryAs<fmtx4>() ){
@@ -169,19 +162,12 @@ struct VRIMPL {
     //////////////////////////////////////////////////////
 
     if (use_vr) {
-      auto& LCAM = orkidvr::device()._leftcamera;
-      auto& RCAM = orkidvr::device()._rightcamera;
-      auto& CCAM = orkidvr::device()._centercamera;
-      auto& CONT = orkidvr::device()._controllers;
-      LCAM.BindGfxTarget(targ);
-      RCAM.BindGfxTarget(targ);
-      LCAM.computeMatrices(CAMCCTX);
       RCFD.setStereoOnePass(true);
-      RCFD._stereoCamera._left = &LCAM;
-      RCFD._stereoCamera._right = &RCAM;
-      RCFD._stereoCamera._mono = &CCAM;
+      RCFD._stereoCamera._left = &orkidvr::device()._leftcamera;
+      RCFD._stereoCamera._right = &orkidvr::device()._rightcamera;
+      RCFD._stereoCamera._mono = &orkidvr::device()._centercamera;
       RCFD.setCameraData(RCFD._stereoCamera._mono);
-      _CPD._impl.Set<const CameraData*>(&LCAM);
+      _CPD._impl.Set<const CameraData*>(RCFD._stereoCamera._mono);
     } else {
       ////////////////////////////////////////////////
       CAMCCTX.mfAspectRatio = float(targ->GetW())/float(targ->GetH());
