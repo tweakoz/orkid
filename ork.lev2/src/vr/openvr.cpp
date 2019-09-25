@@ -103,12 +103,12 @@ OpenVrDevice::OpenVrDevice() {
     printf("VR NOT INITIALIZED for some reason...\n");
   }
 
-  _leftcamera.SetWidth(_width);
-  _leftcamera.SetHeight(_height);
-  _rightcamera.SetWidth(_width);
-  _rightcamera.SetHeight(_height);
-  _centercamera.SetWidth(_width);
-  _centercamera.SetHeight(_height);
+  _leftcamera->SetWidth(_width);
+  _leftcamera->SetHeight(_height);
+  _rightcamera->SetWidth(_width);
+  _rightcamera->SetHeight(_height);
+  _centercamera->SetWidth(_width);
+  _centercamera->SetHeight(_height);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

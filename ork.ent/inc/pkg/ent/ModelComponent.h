@@ -11,7 +11,7 @@
 
 #include "component.h"
 #include "componentfamily.h"
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/any.h>
 #include <ork/kernel/mutex.h>
 #include <ork/kernel/tempstring.h>

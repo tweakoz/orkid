@@ -8,7 +8,7 @@
 #ifndef _ORK_LEV2_GRID_H
 #define _ORK_LEV2_GRID_H
 
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////

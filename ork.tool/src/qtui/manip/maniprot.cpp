@@ -201,7 +201,7 @@ bool ManipRot::UIEventHandler( const ui::Event& EV )
 	{
 		case ui::UIEV_PUSH:
 		{
-			mManager.mManipHandler.Init(posubp, pcam->mCameraData.GetIVPMatrix(), pcam->QuatC );
+			mManager.mManipHandler.Init(posubp, pcam->_camcamdata.GetIVPMatrix(), pcam->QuatC );
 			mBaseTransform = mManager.mCurTransform;
 
 			SelectBestPlane(posubp);

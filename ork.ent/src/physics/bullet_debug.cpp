@@ -17,7 +17,7 @@
 #include <pkg/ent/scene.h>
 
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/lev2/gfx/renderer/renderer.h>

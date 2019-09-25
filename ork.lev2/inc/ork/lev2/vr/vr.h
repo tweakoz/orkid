@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/math/cmatrix4.h>

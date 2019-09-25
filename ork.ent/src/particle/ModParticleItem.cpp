@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <ork/application/application.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>

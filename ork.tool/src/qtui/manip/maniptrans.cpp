@@ -120,7 +120,7 @@ void ManipTrans::HandleMouseDown(const ork::fvec2& pos)
 	//printf( "ManipTrans::HandleMouseDown() pcam<%p>\n", pcam );
 	if( pcam )
 	{
-		mManager.mManipHandler.Init( pos, pcam->mCameraData.GetIVPMatrix(), pcam->QuatC );
+		mManager.mManipHandler.Init( pos, pcam->_camcamdata.GetIVPMatrix(), pcam->QuatC );
 		mBaseTransform = mManager.mCurTransform;
 		SelectBestPlane(pos);
 	}
@@ -323,7 +323,7 @@ void ManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 
 		fvec3 isect_wld = isect_loc.Transform(mtx_bas);
 
-		if(pcam->mCameraData.GetFrustum().Contains(isect_wld))
+		if(pcam->_camcamdata.GetFrustum().Contains(isect_wld))
 		{
 			mManager.mCurTransform.Translate(TransformNode::EMODE_ABSOLUTE, isect_wld);
 			mManager.ApplyTransform(mManager.mCurTransform);

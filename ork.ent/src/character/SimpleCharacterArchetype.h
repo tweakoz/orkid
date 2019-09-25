@@ -34,7 +34,7 @@
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <pkg/ent/LuaBindings.h>
 
 ///////////////////////////////////////////////////////////////////////////////

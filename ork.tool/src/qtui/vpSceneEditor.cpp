@@ -33,7 +33,7 @@
 #include <pkg/ent/CompositingSystem.h>
 #include <pkg/ent/editor/edmainwin.h>
 
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/future.hpp>
 #include <ork/lev2/lev2_asset.h>
 
@@ -386,9 +386,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   if( auto trycam = drawdata._properties["selcamdat"_crcu].TryAs<const CameraData*>() ){
       auto CAMDAT = trycam.value();
       _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
-      if (_editorCamera) {
-        _editorCamera->AttachViewport(this);
-      }
       ManipManager().SetActiveCamera(_editorCamera);
       mpTarget->debugMarker(FormatString("toolvp::_editorCamera<%p>", _editorCamera));
   }

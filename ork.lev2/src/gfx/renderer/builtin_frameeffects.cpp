@@ -12,7 +12,7 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/ui/ui.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/string/string.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
@@ -1016,7 +1016,6 @@ void ShadowFrameTechnique::Render( FrameRenderer & frenderer )
 	mpShadowBuffer->GetContext()->MTXI()->PushPMatrix( lpmat );
 	mpShadowBuffer->GetContext()->MTXI()->PushVMatrix( lvmat );
 	mpShadowBuffer->GetContext()->MTXI()->PushMMatrix( fmtx4::Identity );
-	ContextData.GetCamera()->RenderUpdate();
 	{
 		ContextData.SetRenderingMode( RenderContextFrameData::ERENDMODE_SHADOWMAP );
 		ContextData.GetRenderer().SetTarget(mpShadowBuffer->GetContext());

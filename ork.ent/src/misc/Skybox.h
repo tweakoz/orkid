@@ -12,7 +12,7 @@
 #include <ork/math/TransformNode.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 { class XgmModel; class GfxMaterial3DSolid; } }

@@ -17,7 +17,7 @@ static Widget* gFastPath = nullptr;
 
 /////////////////////////////////////////////////////////////////////////
 
-HandlerResult::HandlerResult(Widget* ph) 
+HandlerResult::HandlerResult(Widget* ph)
 	: mHandler(ph)
 	, mHoldFocus(false)
 {}
@@ -80,7 +80,7 @@ HandlerResult Widget::HandleUiEvent( const Event& Ev )
 	{
 		bool binside = IsEventInside(Ev);
 		//printf( "Widget::HandleUiEvent::SLOWPATH ev<%d,%d> widget<%p:%s> dim<%d %d %d %d> inside<%d>\n", Ev.miX, Ev.miY, this, msName.c_str(), miX, miY, miW, miH, int(binside) );
-	
+
 		if( binside )
 		{
 			ret = RouteUiEvent(Ev);
@@ -197,7 +197,7 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 	fev.mAction = "none";
 
 	switch( Ev.miEventCode )
-	{	
+	{
 		case ui::UIEV_KEY:
 		{	float kt = mKeyTimer.SecsSinceStart();
 			float dt = mDoubleTimer.SecsSinceStart();
@@ -210,13 +210,13 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 							&& (mLastKeyCode==Ev.miKeyCode);
 
 			//printf( "keydown<%d> lk<%d> kt<%f> dt<%f> mt<%f>\n", mLastKeyCode, Ev.miKeyCode, kt, dt, mt );
-			
+
 
 			auto evc = bdouble ? ui::UIEV_DOUBLECLICK : ui::UIEV_PUSH;
 
 			mKeyTimer.Start();
 			switch( Ev.miKeyCode )
-			{	
+			{
 				case 'z': // synthetic left button
 					fev.miEventCode = evc;
 					if( fev.miEventCode == ui::UIEV_DOUBLECLICK )
@@ -348,7 +348,7 @@ void WidgetEventFilter1::DoFilter( const Event& Ev )
 		case ui::UIEV_DRAG:
 		default:
 			break;
-	}	
+	}
 }
 
 void Widget::UpdateMouseFocus(const HandlerResult& r, const Event& Ev)
@@ -408,7 +408,7 @@ HandlerResult Widget::DoOnUiEvent( const Event& Ev )
 }
 
 bool Widget::IsEventInside( const Event& Ev ) const
-{	
+{
 	int rx = Ev.miX;
 	int ry = Ev.miY;
 	int ix = 0;

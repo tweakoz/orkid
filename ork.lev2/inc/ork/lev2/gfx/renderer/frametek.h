@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "rendercontext.h"
 #include "irendertarget.h"

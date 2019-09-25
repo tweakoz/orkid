@@ -11,7 +11,7 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.h>
 #include <pkg/ent/scene.hpp>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>

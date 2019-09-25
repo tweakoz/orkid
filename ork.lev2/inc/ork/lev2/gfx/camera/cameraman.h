@@ -8,7 +8,7 @@
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/core/singleton.h>
 #include <ork/lev2/ui/ui.h>
 #include <ork/util/hotkey.h>
@@ -96,7 +96,7 @@ public:
   Camera();
   /////////////////////////////////////////////////////////////////////
 
-  CameraData mCameraData;
+  CameraData _camcamdata;
 
   float mfWorldSizeAtLocator;
 
@@ -126,8 +126,6 @@ public:
 
   float locscale;
 
-  ui::Viewport* mpViewport;
-
   ManipHandler _manipHandler;
 
   bool mbInMotion;
@@ -143,15 +141,13 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  CameraData& cameraData() { return mCameraData; }
-  const CameraData& cameraData() const { return mCameraData; }
+  CameraData& cameraData() { return _camcamdata; }
+  const CameraData& cameraData() const { return _camcamdata; }
 
   //////////////////////////////////////////////////////////////////////////////
 
   virtual bool UIEventHandler(const ui::Event& EV) = 0;
   virtual void draw(GfxTarget* pT) = 0;
-
-  virtual void RenderUpdate(void) = 0;
 
   virtual void SetFromWorldSpaceMatrix(const fmtx4&) = 0;
 
@@ -162,13 +158,8 @@ public:
 
   void CommonPostSetup(void);
 
-  void AttachViewport(ui::Viewport* pVP) { mpViewport = pVP; }
-  ui::Viewport* GetViewport(void) const { return mpViewport; }
-
   void SetName(const std::string& Name) { instance_name = Name; }
   const std::string& GetName() const { return instance_name; }
-
-  bool CheckMotion();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -213,27 +204,17 @@ public: //
 
   fvec4 CamBaseLoc;
 
-  HotKey mHK_In, mHK_Out;
-  HotKey mHK_ReAlign, mHK_Origin;
-  HotKey mHK_Pik2Foc, mHK_Foc2Pik;
-
-  HotKey mHK_RotL, mHK_RotR, mHK_RotU, mHK_RotD, mHK_RotZ;
-  HotKey mHK_MovL, mHK_MovR, mHK_MovU, mHK_MovD, mHK_MovF, mHK_MovB;
-  HotKey mHK_AperMinus, mHK_AperPlus;
-
-  HotKey mHK_MouseRot, mHK_MouseDolly;
-
   int beginx, beginy;
   int leftbutton, middlebutton, rightbutton;
 
   bool mDoRotate;
   bool mDoDolly;
   bool mDoPan;
+  fvec2 _vpdim;
 
-  bool UIEventHandler(const ui::Event& EV) override;
-  void draw(GfxTarget* pT) override;
+  bool UIEventHandler(const ui::Event& EV) final;
+  void draw(GfxTarget* pT) final;
 
-  void RenderUpdate(void) final;
   void SetFromWorldSpaceMatrix(const fmtx4& matrix) final;
 
   float ViewLengthToWorldLength(const fvec4& pos, float ViewLength) final;
@@ -248,11 +229,9 @@ public: //
   void PanEnd();
 
   void RotBegin(const CamEvTrackData& ed);
-  void RotUpdate(const CamEvTrackData& ed);
   void RotEnd();
 
   void DollyBegin(const CamEvTrackData& ed);
-  void DollyUpdate(const CamEvTrackData& ed);
   void DollyEnd();
 
   EzUiCam();

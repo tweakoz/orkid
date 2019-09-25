@@ -10,7 +10,7 @@
 #include <ork/lev2/aud/audiobank.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>

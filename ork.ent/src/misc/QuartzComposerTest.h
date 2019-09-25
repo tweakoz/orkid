@@ -23,7 +23,7 @@
 #include <pkg/ent/componentfamily.h>
 #include <pkg/ent/component.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/objc.h>
 
 //#define GLEW_STATIC

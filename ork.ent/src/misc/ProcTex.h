@@ -12,7 +12,7 @@
 #include <ork/math/TransformNode.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/proctex/proctex.h>
 #include <ork/kernel/timer.h>
 

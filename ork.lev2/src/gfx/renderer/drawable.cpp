@@ -18,7 +18,7 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/math/collision_test.h>
 #include <ork/stream/ResizableStringOutputStream.h>

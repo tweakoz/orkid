@@ -22,46 +22,11 @@
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>
 
-#if defined(_DARWIN)
-//#define USE_MTOUCH
-#include "touch.h"
-#include <dispatch/dispatch.h>
-#elif defined(IX)
-//#include <dispatch/dispatch.h>
-#endif
-
-#if !defined(_CYGWIN)
-
 extern "C" void StartTouchReciever(void* tr);
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork { namespace lev2 {
-
-///////////////////////////////////////////////////////////////////////////////
-#if defined(USE_MTOUCH)
-struct QCtxWidgetTR : public ::ITouchReciever {
-
-  QCtxWidgetTR(QCtxWidget* pw)
-      : ITouchReciever((void*)pw) {}
-
-  void OnTouchBegin(const MtFinger* finger) // virtual
-  {
-    QCtxWidget* pW = (QCtxWidget*)mpCTX;
-    pW->OnTouchBegin(finger);
-  }
-  void OnTouchEnd(const MtFinger* finger) // virtual
-  {
-    QCtxWidget* pW = (QCtxWidget*)mpCTX;
-    pW->OnTouchEnd(finger);
-  }
-  void OnTouchUpdate(const MtFinger* finger) // virtual
-  {
-    QCtxWidget* pW = (QCtxWidget*)mpCTX;
-    pW->OnTouchUpdate(finger);
-  }
-};
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -72,8 +37,7 @@ QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
     , mQtTimer(this)
     , mbEnabled(false)
     , miWidth(1)
-    , miHeight(1)
-    , mTouchReciver(nullptr) {
+    , miHeight(1) {
   setMouseTracking(true);
   setAutoFillBackground(false);
   setAttribute(Qt::WA_PaintOnScreen);
@@ -85,15 +49,10 @@ QCtxWidget::QCtxWidget(CTQT* pctxbase, QWidget* parent)
   activateWindow();
   setAttribute(Qt::WA_DeleteOnClose);
   // setAttribute( Qt::WA_AcceptTouchEvents );
-
   // grabGesture(Qt::PanGesture);
-
-#if defined(USE_MTOUCH)
-  QCtxWidgetTR* ptr = new QCtxWidgetTR(this);
-  mTouchReciver     = (void*)ptr;
-  StartTouchReciever(mTouchReciver);
-#endif
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 QCtxWidget::~QCtxWidget() {
   if (mpCtxBase) {
@@ -102,326 +61,18 @@ QCtxWidget::~QCtxWidget() {
   }
 }
 
-int ginump = 0;
-std::map<int, int> gId2Idx;
+///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::SendOrkUiEvent() {
-  if (UIEvent().mpGfxWin)
+  if (UIEvent().mpGfxWin){
+    UIEvent()._vpdim = fvec2(miWidth,miHeight);
     UIEvent().mpGfxWin->GetRootWidget()->HandleUiEvent(UIEvent());
-}
-
-void QCtxWidget::OnTouchBegin(const MtFinger* pfinger) {
-#if defined(USE_MTOUCH)
-  int ID      = pfinger->identifier;
-  int idx     = ginump++;
-  gId2Idx[ID] = idx;
-
-  float fW                    = float(width());
-  float fH                    = float(height());
-  ui::Event& outev            = UIEvent();
-  outev.miEventCode           = UIEV_MULTITOUCH;
-  outev.miNumMultiTouchPoints = ginump;
-  outev.mfX                   = pfinger->normalized.pos.x * fW;
-  outev.mfY                   = pfinger->normalized.pos.y * fH;
-
-  outev.mMultiTouchPoints[idx].mfOrigX = outev.mfX;
-  outev.mMultiTouchPoints[idx].mfOrigY = outev.mfY;
-  outev.mMultiTouchPoints[idx].mfCurrX = outev.mfX;
-  outev.mMultiTouchPoints[idx].mfCurrY = outev.mfY;
-  outev.mMultiTouchPoints[idx].mState  = MultiTouchPoint::PS_PUSHED;
-  outev.mMultiTouchPoints[idx].mID     = ID;
-
-  printf("pW<%p> ginump<%d> TB<%d> fx<%f> fy<%f>\n", this, ginump, ID, outev.mfX, outev.mfY);
-  // MultiTouchPoint& opnt = mMultiTouchTrackPoints[ipointidx];
-
-  SendOrkUiEvent();
-
-  if (mpCtxBase)
-    mpCtxBase->SlotRepaint();
-#endif
-}
-
-int ilastnpoints = 0;
-
-void QCtxWidget::OnTouchUpdate(const MtFinger* pfinger) {
-#if defined(USE_MTOUCH)
-  int ID  = pfinger->identifier;
-  int idx = gId2Idx[ID];
-
-  float fW                             = float(width());
-  float fH                             = float(height());
-  ui::Event& outev                     = UIEvent();
-  outev.miEventCode                    = UIEV_MULTITOUCH;
-  outev.miNumMultiTouchPoints          = ginump;
-  outev.mfX                            = pfinger->normalized.pos.x * fW;
-  outev.mfY                            = pfinger->normalized.pos.y * fH;
-  outev.mMultiTouchPoints[idx].mfPrevX = outev.mMultiTouchPoints[idx].mfCurrX;
-  outev.mMultiTouchPoints[idx].mfPrevY = outev.mMultiTouchPoints[idx].mfCurrY;
-  outev.mMultiTouchPoints[idx].mfCurrX = outev.mfX;
-  outev.mMultiTouchPoints[idx].mfCurrY = outev.mfY;
-  outev.mMultiTouchPoints[idx].mState  = MultiTouchPoint::PS_DOWN;
-
-  outev.mMultiTouchPoints[idx].mID = ID;
-  // mMultiTouchTrackPoints
-
-  bool bupdate = false;
-
-  if (ilastnpoints != ginump)
-    bupdate = true;
-  ilastnpoints = ginump;
-
-  for (int i = 0; i < ilastnpoints; i++) {
-    if (outev.mMultiTouchPoints[i].mfPrevX != outev.mMultiTouchPoints[i].mfCurrX)
-      bupdate = true;
-    if (outev.mMultiTouchPoints[i].mfPrevY != outev.mMultiTouchPoints[i].mfCurrY)
-      bupdate = true;
   }
-
-  // printf( "pW<%p> ginump<%d> TU<%d> fx<%f> fy<%f>\n", this, ginump, ID, poutev->mfX, poutev->mfY );
-
-  if (bupdate)
-    SendOrkUiEvent();
-
-    // if( mpCtxBase ) mpCtxBase->SlotRepaint();
-
-#endif
-}
-
-void QCtxWidget::OnTouchEnd(const MtFinger* pfinger) {
-#if defined(USE_MTOUCH)
-  int ID  = pfinger->identifier;
-  int idx = gId2Idx[ID];
-  gId2Idx.erase(ID);
-  ginump--;
-  float fW                            = float(width());
-  float fH                            = float(height());
-  ui::Event& outev                    = UIEvent();
-  outev.miEventCode                   = UIEV_MULTITOUCH;
-  outev.miNumMultiTouchPoints         = ginump;
-  outev.mfX                           = pfinger->normalized.pos.x * fW;
-  outev.mfY                           = pfinger->normalized.pos.y * fH;
-  outev.mMultiTouchPoints[idx].mState = MultiTouchPoint::PS_RELEASED;
-  outev.mMultiTouchPoints[idx].mID    = ID;
-
-  printf("pW<%p> ginump<%d> TE<%d> fx<%f> fy<%f>\n", this, ginump, ID, outev.mfX, outev.mfY);
-
-  SendOrkUiEvent();
-
-  if (mpCtxBase)
-    mpCtxBase->SlotRepaint();
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool QCtxWidget::event(QEvent* event) { return QWidget::event(event); }
-///////////////////////////////////////////////////////////////
-static uint64_t uevhash = 0;
-
-/*void QCtxWidget::multiTouchEventCommon(QTouchEvent* ptev)
-{
-    bool is_end_event = (ptev->type() == QEvent::TouchEnd);
-
-    ui::Event& outev = UIEvent();
-
-    Qt::KeyboardModifiers modifiers = ptev->modifiers();
-
-    poutev->mpBlindEventData = (void*) ptev;
-
-    poutev->mbALT = (modifiers&Qt::AltModifier);
-    poutev->mbCTRL = (modifiers&Qt::ControlModifier);
-    poutev->mbSHIFT = (modifiers&Qt::ShiftModifier);
-    poutev->mbMETA = (modifiers&Qt::MetaModifier);
-
-    poutev->miEventCode = UIEV_MULTITOUCH;
-    poutev->mfX = 0.0f;
-    poutev->mfY = 0.0f;
-
-    const tpointlist& points = ptev->touchPoints();
-
-    int inumpnts = 0;
-    std::map<int,const QTouchEvent::TouchPoint*> downpoints;
-    for( tpointlist::const_iterator it=points.begin(); it!=points.end(); it++ )
-    {
-        const QTouchEvent::TouchPoint& point = *it;
-        int id = point.id();
-        downpoints[id] = &point;
-        switch( point.state() )
-        {
-            case Qt::TouchPointPressed:
-                printf( "point<%d> pressed\n", id );
-                break;
-            case Qt::TouchPointMoved:
-                //printf( "point<%d> moved\n", id );
-                break;
-            case Qt::TouchPointReleased:
-                printf( "point<%d> released\n", id );
-                break;
-        }
-    }
-    //QPointF vpPOS = mapToGlobal(QPoint(0,0));
-    float fW = float(width());
-    float fH = float(height());
-    int ipointidx = 0;
-    for( std::map<int,const QTouchEvent::TouchPoint*>::const_iterator itf=downpoints.begin(); itf!=downpoints.end(); itf++ )
-    {
-        if( ipointidx>=ui::Event::kmaxmtpoints ) continue;
-
-        MultiTouchPoint& opnt = mMultiTouchTrackPoints[ipointidx];
-        opnt.mfPrevX = opnt.mfCurrX;
-        opnt.mfPrevY = opnt.mfCurrY;
-        bool iscurrentlydown = (false==is_end_event);
-        if( iscurrentlydown )
-        {
-            const QTouchEvent::TouchPoint& point = *(itf->second);
-            int id = point.id();
-            bool breleased = (point.state()==Qt::TouchPointReleased);
-
-            QPointF pnt = point.normalizedPos();
-            QRectF rec = point.rect();
-            opnt.mfCurrX = pnt.x()*fW;
-            opnt.mfCurrY = pnt.y()*fH;
-            opnt.mfPressure = point.pressure();
-            opnt.mID = id;
-            switch( opnt.mState )
-            {
-                case MultiTouchPoint::PS_UP:
-                case MultiTouchPoint::PS_RELEASED:
-                    opnt.mState = MultiTouchPoint::PS_PUSHED;
-                    opnt.mfOrigX = opnt.mfCurrX;
-                    opnt.mfOrigY = opnt.mfCurrY;
-                    opnt.mfPrevX = opnt.mfCurrX;
-                    opnt.mfPrevY = opnt.mfCurrY;
-                    break;
-                case MultiTouchPoint::PS_PUSHED:
-                    opnt.mState = MultiTouchPoint::PS_DOWN;
-                    break;
-                case MultiTouchPoint::PS_DOWN:
-                    if( breleased )
-                        opnt.mState = MultiTouchPoint::PS_RELEASED;
-                    break;
-            }
-            inumpnts++;
-        }
-        else
-        {
-            switch( opnt.mState )
-            {
-                case MultiTouchPoint::PS_PUSHED:
-                case MultiTouchPoint::PS_DOWN:
-                    opnt.mState = MultiTouchPoint::PS_RELEASED;
-                    break;
-                case MultiTouchPoint::PS_RELEASED:
-                    opnt.mState = MultiTouchPoint::PS_UP;
-                    break;
-                case MultiTouchPoint::PS_UP:
-                    break;
-            }
-        }
-        ipointidx++;
-    }
-
-    for( int i=0; i<ui::Event::kmaxmtpoints; i++ )
-    {
-        const MultiTouchPoint& ipnt = mMultiTouchTrackPoints[i];
-        MultiTouchPoint& opnt = poutev->mMultiTouchPoints[i];
-        opnt = ipnt;
-    }
-
-    poutev->miNumMultiTouchPoints = inumpnts;
-
-}*/
-
-///////////////////////////////////////////////////////////////
-/*static bool gINMTEV = false;
-
-bool QCtxWidget::multiTouchBeginEvent(QTouchEvent* ptev)
-{
-    uevhash = 0;
-    //printf( "MTBEG\n" );
-    gINMTEV=true;
-    for( int i=0; i<ui::Event::kmaxmtpoints; i++ )
-    {
-        new (&mMultiTouchTrackPoints[i]) MultiTouchPoint();
-    }
-
-    multiTouchEventCommon( ptev );
-
-    if( UIEVENT().mpGfxWin )
-        UIEVENT().mpGfxWin->GetRootWidget()->HandleUiEvent( UIEvent() );
-
-    if( mpCtxBase ) mpCtxBase->SlotRepaint();
-
-    return true; //QWidget::event(ptev);
-}
-///////////////////////////////////////////////////////////////
-bool QCtxWidget::multiTouchUpdateEvent(QTouchEvent* ptev)
-{
-    multiTouchEventCommon( ptev );
-
-    //boost::Crc64 crc64;
-    //crc64_init(crc64);
-    //for( int i=0; i<ui::Event::kmaxmtpoints; i++ )
-    //{
-    //    const MultiTouchPoint& pnt = mMultiTouchTrackPoints[i];
-    //	crc64_compute(crc64, &pnt.mfCurrX, sizeof(pnt.mfCurrX));
-    //	crc64_compute(crc64, &pnt.mfCurrY, sizeof(pnt.mfCurrY));
-    //	crc64_compute(crc64, &pnt.mState, sizeof(pnt.mState));
-    //}
-    //crc64_fin(crc64);
-
-    static qint64 glastupd = QDateTime::currentMSecsSinceEpoch();
-    static int gmtepd = 0;
-
-    qint64 curupd = QDateTime::currentMSecsSinceEpoch();
-
-//    if( uevhash!=crc64.crc0 )
-    {
-        if( UIEVENT().mpGfxWin )
-            UIEVENT().mpGfxWin->GetRootWidget()->HandleUiEvent( UIEvent() );
-        //uevhash=crc64.crc0;
-    }
-
-    gmtepd++;
-
-    if( (curupd-glastupd)>66 )
-    {
-        dispatch_async( dispatch_get_main_queue(),
-        ^{
-            if( mpCtxBase )
-                  mpCtxBase->SlotRepaint();
-        });
-        glastupd=curupd;
-    }
-    //try some sort of queued and throttled repaint (using GCD?)
-
-    return true; //QWidget::event(ptev);
-}
-///////////////////////////////////////////////////////////////
-bool QCtxWidget::multiTouchEndEvent(QTouchEvent* ptev)
-{
-    printf( "MTEND\n" );
-    gINMTEV=false;
-
-    multiTouchEventCommon( ptev );
-
-    UIEVENT().miNumMultiTouchPoints = 0;
-
-    if( UIEVENT().mpGfxWin )
-        UIEVENT().mpGfxWin->GetRootWidget()->HandleUiEvent( UIEvent() );
-
-    if( mpCtxBase ) mpCtxBase->SlotRepaint();
-
-    //bool rv = QWidget::event(ptev);
-
-    for( int i=0; i<ui::Event::kmaxmtpoints; i++ )
-    {
-        new (&mMultiTouchTrackPoints[i]) MultiTouchPoint();
-    }
-
-    return true;
-}
- */
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -429,7 +80,6 @@ void QCtxWidget::showEvent(QShowEvent* event) {
   UIEvent().mpBlindEventData = (void*)event;
   QWidget::showEvent(event);
   parentWidget()->show();
-  // mpCtxBase->Show();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -448,6 +98,8 @@ void QCtxWidget::resizeEvent(QResizeEvent* event) {
   if (mpCtxBase)
     mpCtxBase->Resize(X, Y, W, H);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 void QCtxWidget::paintEvent(QPaintEvent* event) {
   static int gistackctr = 0;
@@ -522,9 +174,10 @@ void QCtxWidget::mouseMoveEvent(QMouseEvent* event) {
 
   uiev.miEventCode = (Buttons == Qt::NoButton) ? ork::ui::UIEV_MOVE : ork::ui::UIEV_DRAG;
 
-  if (vp)
+  if (vp){
+    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
     vp->HandleUiEvent(uiev);
-
+  }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
@@ -537,9 +190,10 @@ void QCtxWidget::mousePressEvent(QMouseEvent* event) {
   auto gfxwin      = uiev.mpGfxWin;
   auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev.miEventCode = ork::ui::UIEV_PUSH;
-  if (vp)
+  if (vp){
+    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
     vp->HandleUiEvent(uiev);
-
+  }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
@@ -552,9 +206,11 @@ void QCtxWidget::mouseDoubleClickEvent(QMouseEvent* event) {
   auto gfxwin      = uiev.mpGfxWin;
   auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev.miEventCode = ork::ui::UIEV_DOUBLECLICK;
-  if (vp)
-    vp->HandleUiEvent(uiev);
 
+  if (vp){
+    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
+    vp->HandleUiEvent(uiev);
+  }
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
 }
@@ -567,8 +223,11 @@ void QCtxWidget::mouseReleaseEvent(QMouseEvent* event) {
   auto gfxwin      = uiev.mpGfxWin;
   auto vp          = gfxwin ? gfxwin->GetRootWidget() : nullptr;
   uiev.miEventCode = ork::ui::UIEV_RELEASE;
-  if (vp)
+
+  if (vp){
+    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
     vp->HandleUiEvent(uiev);
+  }
 
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -601,8 +260,11 @@ void QCtxWidget::wheelEvent(QWheelEvent* qem) {
   uiev.miEventCode = ork::ui::UIEV_MOUSEWHEEL;
 
   uiev.miMWY = idelta;
-  if (vp && idelta != 0)
+
+  if (vp && idelta != 0){
+    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
     vp->HandleUiEvent(uiev);
+  }
 
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -643,8 +305,10 @@ void QCtxWidget::keyPressEvent(QKeyEvent* event) {
     uiev.miKeyCode = 13;
   }
 
-  if (vp)
+  if (vp){
+    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
     vp->HandleUiEvent(uiev);
+  }
 
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -679,8 +343,10 @@ void QCtxWidget::keyReleaseEvent(QKeyEvent* event) {
     uiev.miKeyCode = 13;
   }
 
-  if (vp)
+  if (vp){
+    uiev._vpdim = fvec2(vp->GetW(),vp->GetH());
     vp->HandleUiEvent(uiev);
+  }
 
   if (mpCtxBase)
     mpCtxBase->SlotRepaint();
@@ -917,5 +583,3 @@ void CTQT::SlotRepaint() {
 }
 
 }} // namespace ork::lev2
-
-#endif

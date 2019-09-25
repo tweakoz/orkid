@@ -9,34 +9,34 @@
 
 #pragma once
 
-#if defined( ORK_CONFIG_QT )
+#if defined(ORK_CONFIG_QT)
 
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/gfxenv.h>
 ///////////////////////////////////////////////////////////////////////////////
 
-extern int QtTest( int argc, char **argv );
+extern int QtTest(int argc, char** argv);
 #define register
 
 ///////////////////////////////////////////////////////////////////////////////
-#include <QtWidgets/QApplication>
-#include <QtCore/QMetaObject>
-#include <QtCore/qmetatype.h>
-#include <QtCore/qdatastream.h>
 #include <QtCore/QMetaMethod>
+#include <QtCore/QMetaObject>
 #include <QtCore/QSize>
 #include <QtCore/QTimer>
+#include <QtCore/qdatastream.h>
+#include <QtCore/qmetatype.h>
+#include <QtGui/QMouseEvent>
+#include <QtGui/QPaintEvent>
+#include <QtGui/QPainter>
 #include <QtGui/QResizeEvent>
 #include <QtGui/QShowEvent>
-#include <QtGui/QPaintEvent>
-#include <QtGui/QMouseEvent>
-#include <QtGui/QPainter>
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QCheckBox>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QSplashScreen>
-#include <QtWidgets/QInputDialog>
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QInputDialog>
 #include <QtWidgets/QOpenGLWidget>
+#include <QtWidgets/QSplashScreen>
+#include <QtWidgets/QWidget>
 
 #undef register
 
@@ -51,138 +51,116 @@ typedef struct SmtFinger MtFinger;
 
 namespace ork {
 
-std::string TypeIdNameStrip( const char * name );
-std::string TypeIdName(const std::type_info*ti);
+std::string TypeIdNameStrip(const char* name);
+std::string TypeIdName(const std::type_info* ti);
 
-namespace lev2
-{
+namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
 class CTQT;
 
-typedef void* TouchRecieverIMPL;
-
-class QCtxWidget : public QWidget
-{
-	friend class CTQT;
+class QCtxWidget : public QWidget {
+  friend class CTQT;
 
 protected:
-
-	QTimer	mQtTimer;
-	bool	mbSignalConnected;
-	CTQT*	mpCtxBase;
-	bool	mbEnabled;
-	int		miWidth;
-	int		miHeight;
-	TouchRecieverIMPL	mTouchReciver;
+  QTimer mQtTimer;
+  bool mbSignalConnected;
+  CTQT* mpCtxBase;
+  bool mbEnabled;
+  int miWidth;
+  int miHeight;
 
 public:
+  void Enable() { mbEnabled = true; }
+  bool IsEnabled() const { return mbEnabled; }
 
-	void Enable() { mbEnabled=true; }
-	bool IsEnabled() const { return mbEnabled; }
+  bool event(QEvent* event) final;
 
-    virtual bool event(QEvent* event);
+  void focusInEvent(QFocusEvent* event) final;
+  void focusOutEvent(QFocusEvent* event) final;
+  void showEvent(QShowEvent* event) final;
 
-	void OnTouchBegin( const MtFinger* pfinger );
-	void OnTouchUpdate( const MtFinger* pfinger );
-	void OnTouchEnd( const MtFinger* pfinger );
+  void mouseMoveEvent(QMouseEvent* event) final;
+  void mousePressEvent(QMouseEvent* event) final;
+  void mouseReleaseEvent(QMouseEvent* event) final;
+  void mouseDoubleClickEvent(QMouseEvent* event) final;
 
-	virtual void focusInEvent ( QFocusEvent * event );
-	virtual void focusOutEvent ( QFocusEvent * event );
-	virtual void showEvent ( QShowEvent * event );
+  void keyPressEvent(QKeyEvent* event) final;
+  void keyReleaseEvent(QKeyEvent* event) final;
+  void wheelEvent(QWheelEvent* event) final;
+  void resizeEvent(QResizeEvent* event) final;
+  void paintEvent(QPaintEvent* event) final;
 
-	virtual void mouseMoveEvent ( QMouseEvent * event );
-	virtual void mousePressEvent ( QMouseEvent * event );
-	virtual void mouseReleaseEvent ( QMouseEvent * event );
-	virtual void mouseDoubleClickEvent( QMouseEvent * event );
+  void MouseEventCommon(QMouseEvent* event);
 
-	virtual void keyPressEvent ( QKeyEvent * event );
-	virtual void keyReleaseEvent ( QKeyEvent * event );
-	virtual void wheelEvent ( QWheelEvent * event );
-	virtual void resizeEvent ( QResizeEvent * event );
-	virtual void paintEvent ( QPaintEvent * event );
+  const ui::Event& UIEvent() const;
+  ui::Event& UIEvent();
+  GfxTarget* Target() const;
+  GfxWindow* GetGfxWindow() const;
+  bool AlwaysRun() const;
 
-	void MouseEventCommon( QMouseEvent * event );
+  QPaintEngine* paintEngine() const final { return nullptr; }
 
-	const ui::Event& UIEvent() const;
-	ui::Event& UIEvent();
-	GfxTarget*	Target() const;
-	GfxWindow* GetGfxWindow() const;
-	bool AlwaysRun() const;
-
-	QPaintEngine * paintEngine () const { return 0; } // virtual
-
-	QCtxWidget( CTQT* pctxbase, QWidget* parent );
-	~QCtxWidget();
-
-	ui::MultiTouchPoint mMultiTouchTrackPoints[ui::Event::kmaxmtpoints];
-
+  QCtxWidget(CTQT* pctxbase, QWidget* parent);
+  ~QCtxWidget();
 
 private:
-
-	void SendOrkUiEvent();
-
+  void SendOrkUiEvent();
 };
 
-class CTQT : public CTXBASE
-{
-	friend class QCtxWidget;
+class CTQT : public CTXBASE {
+  friend class QCtxWidget;
 
-	bool			mbAlwaysRun;
-	QCtxWidget*		mpQtWidget;
-	int				mix, miy, miw, mih;
-	QWidget*		mParent;
-	int				mDrawLock;
+  bool mbAlwaysRun;
+  QCtxWidget* mpQtWidget;
+  int mix, miy, miw, mih;
+  QWidget* mParent;
+  int mDrawLock;
 
-    void SlotRepaint() final;
+  void SlotRepaint() final;
 
 public:
+  void Show() final;
+  void Hide() final;
 
-    void Show() final;
-    void Hide() final;
+  void _setRefreshPolicy(RefreshPolicyItem epolicy) final;
 
-    void _setRefreshPolicy( RefreshPolicyItem epolicy ) final;
+  QTimer& Timer() const;
+  CTQT(GfxWindow* pwin, QWidget* parent = 0);
+  ~CTQT();
 
-	QTimer& Timer() const;
-	CTQT( GfxWindow* pwin, QWidget* parent=0 );
-	~CTQT();
+  void Resize(int X, int Y, int W, int H);
+  void SetParent(QWidget* pw);
+  void SetAlwaysRun(bool brun) { mbAlwaysRun = brun; }
+  void* winId() const { return (void*)mpQtWidget->winId(); }
+  QCtxWidget* GetQWidget() const { return mpQtWidget; }
+  QWidget* GetParent() const { return mParent; }
 
-
-    void Resize(int X, int Y, int W, int H);
-	void SetParent( QWidget* pw );
-	void SetAlwaysRun( bool brun ) {  mbAlwaysRun=brun; }
-	void* winId() const { return (void*)mpQtWidget->winId(); }
-	QCtxWidget* GetQWidget() const { return mpQtWidget; }
-	QWidget* GetParent() const { return mParent; }
-
-	fvec2 MapCoordToGlobal( const fvec2& v ) const override;
-
+  fvec2 MapCoordToGlobal(const fvec2& v) const override;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class CQtGfxWindow : public ork::lev2::GfxWindow
-{
-	public:
+class CQtGfxWindow : public ork::lev2::GfxWindow {
+public:
+  bool mbinit;
+  ui::Widget* mRootWidget;
 
-	bool			mbinit;
-	ui::Widget*	    mRootWidget;
+  CQtGfxWindow(ui::Widget* root_widget);
+  ~CQtGfxWindow();
 
-	CQtGfxWindow( ui::Widget* root_widget );
-	~CQtGfxWindow();
-
-	virtual void Draw( void );
-	//virtual void Show( void );
-	virtual void GotFocus( void );
-	virtual void LostFocus( void );
-	virtual void Hide( void ) {	}
-	/*virtual*/ void OnShow();
+  virtual void Draw(void);
+  // virtual void Show( void );
+  virtual void GotFocus(void);
+  virtual void LostFocus(void);
+  virtual void Hide(void) {}
+  /*virtual*/ void OnShow();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} // namespace tool
+} // namespace lev2
 } // namespace ork
 
 ///////////////////////////////////////////////////////////////////////////////

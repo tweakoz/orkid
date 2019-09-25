@@ -288,8 +288,8 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
     auto l2cam = spncam->getEditorCamera();
     if (l2cam){
       spncam->BindGfxTarget(target);
-      l2cam->RenderUpdate();
       spncam->computeMatrices(CAMCCTX);
+      l2cam->_camcamdata.BindGfxTarget(target);
       //_tempcamdat = l2cam->mCameraData;
       ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
     }

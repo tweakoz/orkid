@@ -15,7 +15,7 @@
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/kernel/Array.hpp>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Light, "Light");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PointLight, "PointLight");

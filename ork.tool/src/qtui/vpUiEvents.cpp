@@ -84,8 +84,6 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
   ////////////////////////////////////////////////////////////////
 
-  ////////////////////////////////////////////////////////////////
-
   bool isshift = EV.mbSHIFT;
   bool isalt = EV.mbALT;
   bool isctrl = EV.mbCTRL;
@@ -310,7 +308,7 @@ void SceneEditorVPToolHandler::setSpawnLoc(const lev2::GetPixelContext& ctx, flo
 
   if (auto cam = GetViewport()->getActiveCamera()) {
 
-    auto& camdat = cam->mCameraData;
+    auto& camdat = cam->_camcamdata;
 
     /////////////////////////////////////////////////////////
 

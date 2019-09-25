@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/pch.h>

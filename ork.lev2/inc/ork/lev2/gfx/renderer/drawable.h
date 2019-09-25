@@ -9,7 +9,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <ork/gfx/camera.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/any.h>
 #include <ork/kernel/concurrent_queue.h>
 #include <ork/kernel/fixedlut.h>
