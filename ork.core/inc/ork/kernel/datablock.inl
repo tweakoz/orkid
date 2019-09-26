@@ -7,6 +7,7 @@ namespace ork {
 
 struct DataBlock {
   chunkfile::OutputStream _data;
+	void reserve(size_t len) { _data.reserve(len); }
 	template<typename T> void addItem(const T& item) { _data.AddItem<T>(item); }
 	void addData(const void* data, size_t length) { _data.AddData(data,length); }
 };

@@ -87,11 +87,8 @@ void OutputStream::AddItem( const fvec2& data )
 
 bool OutputStream::Write(const unsigned char *buffer, size_type bufmax)  // virtual
 {
-	for( int i=0; i<int(bufmax); i++ )
-	{
-		mData.push_back( *(buffer+i) );
-	}
-	//mData.insert( mData.end(), buffer, buffer+bufmax );
+  if( bufmax!=0 )
+	 _data.insert( _data.end(), buffer, buffer+bufmax );
 	return true;
 }
 
@@ -104,7 +101,7 @@ OutputStream::OutputStream()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-InputStream::InputStream( const void*pb, int ilength )
+InputStream::InputStream( const void*pb, size_t ilength )
     : mpbase(pb)
     , midx(0)
     , milength(ilength)
@@ -117,7 +114,7 @@ const void * InputStream::GetCurrent()
     return (const void*) & pchbase[ midx ];
 }
 
-void* InputStream::GetDataAt( int idx )
+void* InputStream::GetDataAt( size_t idx )
 {
     OrkAssert(idx<milength);
     const char *pchbase = (const char*) mpbase;

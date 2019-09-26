@@ -33,6 +33,8 @@ public:
 
 	OutputStream();
 
+	void reserve(size_t len) { _data.reserve(len); }
+
 	/////////////////////////////////////////////
 	template <typename T> void AddItem( const T& data );
 	void AddItem( const bool& data );
@@ -47,13 +49,13 @@ public:
 	void AddData( const void* ptr, size_t length );
 	/////////////////////////////////////////////
 
-	size_t GetSize() const { return mData.size(); }
-	const void* GetData() const { return GetSize() ? & mData[0] : 0; }
+	size_t GetSize() const { return _data.size(); }
+	const void* GetData() const { return GetSize() ? & _data[0] : 0; }
 
 	/////////////////////////////////////////////
 
 private:
-	orkvector<uint8_t>	mData;
+	std::vector<uint8_t>	_data;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,13 +82,13 @@ private:
 
 struct InputStream
 {
-	InputStream( const void*pb=0, int ilength=0 );
+	InputStream( const void*pb=0, size_t ilength=0 );
 	template< typename T > void GetItem( T &item );
 	template< typename T > void RefItem( T* &item );
 
 	const void * GetCurrent();
-	void * GetDataAt( int idx );
-	int GetLength() const { return milength; }
+	void * GetDataAt( size_t idx );
+	size_t GetLength() const { return milength; }
 	void advance(size_t l) { midx+=l;}
 	const void*	mpbase;
 	size_t			midx;

@@ -192,6 +192,10 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
       fvec3(0, 1, 1), // 3
   };
 
+  size_t miplen = sizeof(fvec4)*MIPW*MIPH;
+
+  dblock->reserve(miplen*2);
+
   for (ssize_t z = 0; z < MIPH; z++) {
     ssize_t zz = z - (MIPH >> 1);
     float fzz  = float(zz) / float(MIPH >> 1); // -1 .. 1
@@ -237,8 +241,8 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
     }   // for( size_t x=0; x<MIPW; x++ ){
   }     // for( size_t z=0; z<MIPH; z++ ){
 
-  dblock->addData(pfloattexA,sizeof(float)*MIPW*MIPH);
-  dblock->addData(pfloattexB,sizeof(float)*MIPW*MIPH);
+  dblock->addData(pfloattexA,miplen);
+  dblock->addData(pfloattexB,miplen);
 
   /////////////////////////////
   // compute mips
@@ -248,6 +252,7 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
   MIPW >>= 1;
   MIPH >>= 1;
   while (MIPW >= 2 and MIPH >= 2) {
+    size_t miplen = sizeof(fvec4)*MIPW*MIPH;
     assert((levindex + 1) < chainA->_levels.size());
     auto prevlevA = chainA->_levels[levindex];
     auto nextlevA = chainA->_levels[levindex + 1];
@@ -315,8 +320,8 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
       }
     }
     ////////////////////////////////////////////////
-    dblock->addData(nextbasA,sizeof(float)*MIPW*MIPH);
-    dblock->addData(nextbasB,sizeof(float)*MIPW*MIPH);
+    dblock->addData(nextbasA,miplen);
+    dblock->addData(nextbasB,miplen);
     ////////////////////////////////////////////////
     MIPW >>= 1;
     MIPH >>= 1;
@@ -348,19 +353,31 @@ void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t
   istr.GetItem<int>(MIPH);
   assert(MIPW==_heightfield->GetGridSizeX());
   assert(MIPH==_heightfield->GetGridSizeZ());
+  auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
+  auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
+  printf( "reloadCachedTextures ostr.len<%zu> nmips<%zu>\n", ostr.GetSize(), chainA->_levels.size() );
   int levindex = 0;
   while (MIPW >= 2 and MIPH >= 2) {
     int CHECKMIPW, CHECKMIPH;
+    size_t levlen = sizeof(fvec4)*MIPW*MIPH;
     auto pa = (const float*) istr.GetCurrent();
-    istr.advance(sizeof(float)*MIPW*MIPH);
+    auto leva = chainA->_levels[levindex];
+    auto levb = chainB->_levels[levindex];
+    memcpy(leva->_data,pa,levlen);
+    istr.advance(levlen);
     auto pb = (const float*) istr.GetCurrent();
-    istr.advance(sizeof(float)*MIPW*MIPH);
+    memcpy(levb->_data,pb,levlen);
+    istr.advance(levlen);
     printf( "reloadmip lev<%d> w<%d> h<%d> pa<%p> pb<%p>\n", levindex, MIPW, MIPH, pa, pb );
     MIPW >>= 1;
     MIPH >>= 1;
     levindex++;
   }
-  assert(false);
+  assert(istr.midx==istr.GetLength());
+  _heightmapTextureA = ptarg->TXI()->createFromMipChain(chainA);
+  _heightmapTextureB = ptarg->TXI()->createFromMipChain(chainB);
+  delete chainA;
+  delete chainB;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
