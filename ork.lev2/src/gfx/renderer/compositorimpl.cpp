@@ -5,27 +5,27 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/renderer/compositor.h>
+#include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/lev2/gfx/gfxmaterial_test.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
+#include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/texman.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/rtti/downcast.h>
 ///////////////////////////////////////////////////////////////////////////////
-#include <ork/reflect/DirectObjectPropertyType.hpp>
-#include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/application/application.h>
+#include "NodeCompositor/NodeCompositorDeferred.h"
+#include "NodeCompositor/NodeCompositorForward.h"
 #include "NodeCompositor/NodeCompositorFx3.h"
+#include "NodeCompositor/NodeCompositorScaleBias.h"
 #include "NodeCompositor/NodeCompositorScreen.h"
 #include "NodeCompositor/NodeCompositorVr.h"
-#include "NodeCompositor/NodeCompositorForward.h"
-#include "NodeCompositor/NodeCompositorDeferred.h"
-#include "NodeCompositor/NodeCompositorScaleBias.h"
+#include <ork/application/application.h>
+#include <ork/reflect/DirectObjectMapPropertyType.hpp>
+#include <ork/reflect/DirectObjectPropertyType.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
@@ -41,14 +41,13 @@ void CompositingData::describeX(class_t* c) {
   RegisterProperty("Enable", &CompositingData::mbEnable);
 
   RegisterMapProperty("Groups", &CompositingData::_groups);
-	AnnotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
+  AnnotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
 
   RegisterMapProperty("Scenes", &CompositingData::_scenes);
-	AnnotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
+  AnnotatePropertyForEditor<CompositingData>("Scenes", "editor.factorylistbase", "CompositingScene");
 
   RegisterProperty("ActiveScene", &CompositingData::_activeScene);
   RegisterProperty("ActiveItem", &CompositingData::_activeItem);
-
 
   static const char* EdGrpStr = "grp://Main Enable ActiveScene ActiveItem "
                                 "grp://Data Groups Scenes ";
@@ -59,30 +58,29 @@ void CompositingData::describeX(class_t* c) {
 
 CompositingData::CompositingData()
     : mbEnable(true)
-    , mToggle(true)
-{}
+    , mToggle(true) {}
 
 //////////////////////////////////////////////////////////////////////////////
 
-void CompositingData::defaultSetup(){
+void CompositingData::defaultSetup() {
 
   auto p1 = new ScaleBiasCompositingNode;
 
   auto t1 = new NodeCompositingTechnique;
-  //auto o1 = new ScreenOutputCompositingNode;
+  // auto o1 = new ScreenOutputCompositingNode;
   auto o1 = new VrCompositingNode;
   auto r1 = new DeferredCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
-  //t1->_writePostFxNode(p1);
+  // t1->_writePostFxNode(p1);
 
   auto s1 = new CompositingScene;
   auto i1 = new CompositingSceneItem;
   i1->_writeTech(t1);
-  s1->items().AddSorted("item1"_pool,i1);
+  s1->items().AddSorted("item1"_pool, i1);
   _activeScene = "scene1"_pool;
-  _activeItem = "item1"_pool;
-  _scenes.AddSorted("scene1"_pool,s1);
+  _activeItem  = "item1"_pool;
+  _scenes.AddSorted("scene1"_pool, s1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -145,17 +143,17 @@ bool CompositingImpl::IsEnabled() const { return _compositingData.IsEnabled(); }
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
-  bool rval = false;
-  auto& ddprops                = drawdata._properties;
-  auto the_renderer = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
-  lev2::GfxTarget* target                  = RCFD.GetTarget();
-  orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
-  drawdata._cimpl = this;
+  bool rval                              = false;
+  auto& ddprops                          = drawdata._properties;
+  auto the_renderer                      = drawdata.mFrameRenderer;
+  lev2::RenderContextFrameData& RCFD     = the_renderer.framedata();
+  lev2::GfxTarget* target                = RCFD.GetTarget();
+  orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
+  drawdata._cimpl                        = this;
 
-  float aspectratio = float(target->GetW())/float(target->GetH());
+  float aspectratio = float(target->GetW()) / float(target->GetH());
   // todo - compute CameraMatrices per rendertarget/pass !
-  auto& CAMCCTX   = RCFD.cameraMatrices();
+  auto& CAMCCTX = RCFD.cameraMatrices();
 
   CAMCCTX._aspectRatio = aspectratio;
 
@@ -176,12 +174,12 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   // bind lighting
   /////////////////////////////////
 
-  if( _lightmgr ){ // WIP
-      auto cdata = RCFD.cameraData();
-      _lightmgr->EnumerateInFrustum(cdata->GetFrustum());
-      if (_lightmgr->mLightsInFrustum.size()) {
-        RCFD.SetLightManager(_lightmgr);
-      }
+  if (_lightmgr) { // WIP
+    const auto& cmatrices = RCFD.cameraMatrices();
+    _lightmgr->EnumerateInFrustum(cmatrices.GetFrustum());
+    if (_lightmgr->mLightsInFrustum.size()) {
+      RCFD.SetLightManager(_lightmgr);
+    }
   }
 
   /////////////////////////////////
@@ -200,10 +198,9 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
     // default camera selection (todo: hoist to cimpl so it can be shared across output nodes)
     /////////////////////////////////////////////////////////////////////////////
 
-    auto spncam =(CameraData*) DB->cameraData("spawncam"_pool);
-    auto l2cam = spncam->getEditorCamera();
-    if (l2cam){
-      spncam->BindGfxTarget(target);
+    auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
+    auto l2cam  = spncam->getEditorCamera();
+    if (l2cam) {
       spncam->computeMatrices(CAMCCTX);
       l2cam->_camcamdata.BindGfxTarget(target);
       //_tempcamdat = l2cam->mCameraData;

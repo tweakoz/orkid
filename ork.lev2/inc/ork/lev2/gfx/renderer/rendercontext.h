@@ -149,7 +149,6 @@ struct RenderContextFrameData {
   RenderContextFrameData();
 
   GfxTarget* GetTarget(void) const { return mpTarget; }
-  const CameraMatrices* cameraData() const { return mCameraData; }
   LightManager* GetLightManager() const { return mLightManager; }
 
   const SRect& GetDstRect() const { return mDstRect; }

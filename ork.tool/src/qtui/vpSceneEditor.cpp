@@ -731,16 +731,16 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
   switch (mGridMode) {
     case 0:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
-      GRID.Calc(*fdata.cameraData());
+      GRID.Calc(*fdata.cameraMatrices());
       break;
     case 1:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
-      GRID.Calc(*fdata.cameraData());
+      GRID.Calc(*fdata.cameraMatrices());
       GRID.Render(fdata);
       break;
     case 2:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XY);
-      GRID.Calc(*fdata.cameraData());
+      GRID.Calc(*fdata.cameraMatrices());
       GRID.Render(fdata);
       break;
   }
@@ -750,7 +750,7 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev2::GfxTarget* pProxyTarg) {
-  const CameraData* pcamdata = fdata.cameraData();
+  const CameraData* pcamdata = fdata.cameraMatrices();
   if (0 == pcamdata)
     return;
   const CameraMatrices& ccctx = fdata.cameraMatrices();
@@ -775,7 +775,7 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
         const fvec4 V0 = MatW.GetTranslation();
         const fvec4 V1 = V0 + ScreenXNorm * float(30.0f);
         fvec2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
-        const CameraData* camdat = pProxyTarg->GetRenderContextFrameData()->cameraData();
+        const CameraData* camdat = pProxyTarg->GetRenderContextFrameData()->cameraMatrices();
         fvec3 Pos                = MatW.GetTranslation();
         fvec3 UpVector;
         fvec3 RightVector;

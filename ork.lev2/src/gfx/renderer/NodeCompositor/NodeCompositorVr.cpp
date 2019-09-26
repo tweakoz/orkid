@@ -28,10 +28,10 @@ struct VRIMPL {
       , _camname(AddPooledString("Camera"))
       , _layers(AddPooledString("All")) {
 
-    _tempcamdat = new CameraData;
+    _tmpcameramatrices = new CameraMatrices;
   }
   ///////////////////////////////////////
-  ~VRIMPL() { delete _tempcamdat; }
+  ~VRIMPL() { delete _tmpcameramatrices; }
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
     if (_doinit) {
@@ -100,7 +100,7 @@ struct VRIMPL {
 
     bool simrunning = drawdata._properties["simrunning"_crcu].Get<bool>();
     bool use_vr     = (orkidvr::device()._active and simrunning);
-    auto& CAMCCTX   = RCFD.cameraMatrices();
+
     /////////////////////////////////////////////////////////////////////////////
     // get VR camera
     /////////////////////////////////////////////////////////////////////////////
@@ -145,32 +145,30 @@ struct VRIMPL {
     // is stereo active
     //////////////////////////////////////////////////////
 
-    if (use_vr and orkidvr::device()._supportsStereo) {
+    auto& VRDEV = orkidvr::device();
+
+    if (use_vr and VRDEV._supportsStereo) {
       RCFD.setStereoOnePass(true);
-      RCFD._stereoCamera._left  = orkidvr::device()._leftcamera;
-      RCFD._stereoCamera._right = orkidvr::device()._rightcamera;
-      RCFD._stereoCamera._mono  = orkidvr::device()._centercamera;
+      RCFD._stereoCamera._left  = VRDEV._leftcamera;
+      RCFD._stereoCamera._right = VRDEV._rightcamera;
+      RCFD._stereoCamera._mono  = VRDEV._centercamera;
       RCFD.setCameraData(RCFD._stereoCamera._mono);
-      _CPD._impl.Set<const CameraData*>(RCFD._stereoCamera._mono);
+      _CPD._impl.Set<const CameraMatrices*>(RCFD._stereoCamera._mono);
     } else {
       ////////////////////////////////////////////////
-      // no stereo cam support, override cam with left side of stereocam
+      // no stereo cam support, override cam with center side of stereocam
       //  eg. when using mac VR emulation
       ////////////////////////////////////////////////
       if (simrunning) {
-        auto LCAM   = orkidvr::device()._leftcamera;
-        *_tempcamdat = *LCAM;
-        _tempcamdat->BindGfxTarget(targ);
-        _tempcamdat->computeMatrices(CAMCCTX);
-        ddprops["selcamdat"_crcu].Set<const CameraData*>(_tempcamdat);
+        ddprops["selcamdat"_crcu].Set<const CameraMatrices*>(VRDEV._centercamera);
       }
       ////////////////////////////////////////////////
       RCFD.setStereoOnePass(false);
-      RCFD.setCameraData(_tempcamdat);
-      RCFD._stereoCamera._left  = _tempcamdat;
-      RCFD._stereoCamera._right = _tempcamdat;
-      RCFD._stereoCamera._mono  = _tempcamdat; // todo - blend l&r
-      _CPD._impl.Set<const CameraData*>(_tempcamdat);
+      RCFD.setCameraData(_tmpcameramatrices);
+      RCFD._stereoCamera._left  = _tmpcameramatrices;
+      RCFD._stereoCamera._right = _tmpcameramatrices;
+      RCFD._stereoCamera._mono  = _tmpcameramatrices;
+      _CPD._impl.Set<const CameraMatrices*>(_tmpcameramatrices);
     }
 
     //////////////////////////////////////////////////////
@@ -198,7 +196,7 @@ struct VRIMPL {
   int _width              = 0;
   int _height             = 0;
   bool _doinit            = true;
-  CameraData* _tempcamdat = nullptr;
+  CameraMatrices* _tmpcameramatrices = nullptr;
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
 };
 ///////////////////////////////////////////////////////////////////////////////

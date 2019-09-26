@@ -163,7 +163,6 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
 
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  auto cdata       = RCFD ? RCFD->cameraData() : nullptr;
   bool is_picking                    = RCFD ? RCFD->isPicking() : false;
   bool is_stereo                     = RCFD ? RCFD->isStereoOnePass() : false;
 
@@ -217,7 +216,6 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  const CameraData* camdata          = RCFD ? RCFD->cameraData() : nullptr;
   bool is_stereo                     = RCFD ? RCFD->isStereoOnePass() : false;
   bool is_forcenoz                   = RCFD ? RCID->IsForceNoZWrite() : false;
 

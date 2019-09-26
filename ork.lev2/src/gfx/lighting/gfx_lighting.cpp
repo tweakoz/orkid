@@ -7,15 +7,15 @@
 
 #include <ork/pch.h>
 
-#include <ork/lev2/gfx/lighting/gfx_lighting.h>
+#include <ork/kernel/Array.hpp>
 #include <ork/kernel/fixedlut.hpp>
+#include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/lighting/gfx_lighting.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/lev2_asset.h>
 #include <ork/math/collision_test.h>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/kernel/Array.hpp>
-#include <ork/lev2/lev2_asset.h>
-#include <ork/lev2/gfx/camera/cameradata.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Light, "Light");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::PointLight, "PointLight");
@@ -30,594 +30,480 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::DirectionalLightData, "DirectionalLightD
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::AmbientLightData, "AmbientLightData");
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::SpotLightData, "SpotLightData");
 
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
-template class fixedlut<float,lev2::Light*,lev2::LightContainer::kmaxlights>;
-template class fixedlut<float,lev2::Light*,lev2::GlobalLightContainer::kmaxlights>;
-template class ork::fixedvector<std::pair<U32,lev2::LightingGroup*>,lev2::LightCollector::kmaxonscreengroups>;
-template class ork::fixedvector<lev2::LightingGroup,lev2::LightCollector::kmaxonscreengroups>;
-template class ork::fixedvector<lev2::Light*,lev2::LightManager::kmaxinfrustum>;
+template class fixedlut<float, lev2::Light*, lev2::LightContainer::kmaxlights>;
+template class fixedlut<float, lev2::Light*, lev2::GlobalLightContainer::kmaxlights>;
+template class ork::fixedvector<std::pair<U32, lev2::LightingGroup*>, lev2::LightCollector::kmaxonscreengroups>;
+template class ork::fixedvector<lev2::LightingGroup, lev2::LightCollector::kmaxonscreengroups>;
+template class ork::fixedvector<lev2::Light*, lev2::LightManager::kmaxinfrustum>;
 
 namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
-void Light::Describe()
-{
-}
+void Light::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightData::Describe()
-{
-	ork::reflect::RegisterProperty( "Color", & LightData::mColor );
-	ork::reflect::RegisterProperty( "AffectsSpecular", & LightData::mbSpecular );
-	ork::reflect::RegisterProperty( "ShadowSamples", & LightData::mShadowSamples );
-	ork::reflect::RegisterProperty( "ShadowBlur", & LightData::mShadowBlur );
-	ork::reflect::RegisterProperty( "ShadowBias", & LightData::mShadowBias );
-	ork::reflect::RegisterProperty( "ShadowCaster", & LightData::mbShadowCaster );
+void LightData::Describe() {
+  ork::reflect::RegisterProperty("Color", &LightData::mColor);
+  ork::reflect::RegisterProperty("AffectsSpecular", &LightData::mbSpecular);
+  ork::reflect::RegisterProperty("ShadowSamples", &LightData::mShadowSamples);
+  ork::reflect::RegisterProperty("ShadowBlur", &LightData::mShadowBlur);
+  ork::reflect::RegisterProperty("ShadowBias", &LightData::mShadowBias);
+  ork::reflect::RegisterProperty("ShadowCaster", &LightData::mbShadowCaster);
 
-	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowBias", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowBias", "editor.range.max", "2.0" );
-	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowBias", "editor.range.log", "true" );
-	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowSamples", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowSamples", "editor.range.max", "256.0" );
-	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowBlur", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor<LightData>( "ShadowBlur", "editor.range.max", "1.0" );
-
+  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBias", "editor.range.min", "0.0");
+  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBias", "editor.range.max", "2.0");
+  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBias", "editor.range.log", "true");
+  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.min", "1");
+  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowSamples", "editor.range.max", "256.0");
+  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.min", "0");
+  ork::reflect::AnnotatePropertyForEditor<LightData>("ShadowBlur", "editor.range.max", "1.0");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void PointLight::Describe()
-{
+void PointLight::Describe() {}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void PointLightData::Describe() {
+  ork::reflect::RegisterProperty("Radius", &PointLightData::mRadius);
+  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.min", "1");
+  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.max", "3000.00");
+  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.log", "true");
+
+  ork::reflect::RegisterProperty("Falloff", &PointLightData::mFalloff);
+  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.min", "0");
+  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.max", "10.00");
+  ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.log", "true");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void PointLightData::Describe()
-{
-	ork::reflect::RegisterProperty( "Radius", & PointLightData::mRadius );
-	ork::reflect::AnnotatePropertyForEditor<PointLightData>( "Radius", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor<PointLightData>( "Radius", "editor.range.max", "3000.00" );
-	ork::reflect::AnnotatePropertyForEditor<PointLightData>( "Radius", "editor.range.log", "true" );
-
-	ork::reflect::RegisterProperty( "Falloff", & PointLightData::mFalloff );
-	ork::reflect::AnnotatePropertyForEditor<PointLightData>( "Falloff", "editor.range.min", "0" );
-	ork::reflect::AnnotatePropertyForEditor<PointLightData>( "Falloff", "editor.range.max", "10.00" );
-	ork::reflect::AnnotatePropertyForEditor<PointLightData>( "Falloff", "editor.range.log", "true" );
-}
+PointLight::PointLight(const fmtx4& mtx, const PointLightData* pld)
+    : Light(mtx, pld)
+    , mPld(pld) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PointLight::PointLight( const fmtx4& mtx, const PointLightData* pld )
-	: Light(mtx,pld)
-	, mPld( pld )
-{
-}
+bool PointLight::IsInFrustum(const Frustum& frustum) {
+  const fvec3& wpos = GetWorldPosition();
 
-///////////////////////////////////////////////////////////////////////////////
+  float fd = frustum.mNearPlane.GetPointDistance(wpos);
 
-bool PointLight::IsInFrustum( const Frustum& frustum )
-{
-	const fvec3& wpos = GetWorldPosition();
+  if (fd > 200.0f)
+    return false;
 
-	float fd = frustum.mNearPlane.GetPointDistance(wpos);
-
-	if( fd>200.0f ) return false;
-
-	return CollisionTester::FrustumSphereTest( frustum, Sphere( GetWorldPosition(), GetRadius() ) );
+  return CollisionTester::FrustumSphereTest(frustum, Sphere(GetWorldPosition(), GetRadius()));
 }
 
 ///////////////////////////////////////////////////////////
 
-bool PointLight::AffectsSphere( const fvec3& center, float radius )
-{
-	float dist = ( GetWorldPosition()-center).Mag();
-	float combinedradii = (radius+GetRadius());
+bool PointLight::AffectsSphere(const fvec3& center, float radius) {
+  float dist          = (GetWorldPosition() - center).Mag();
+  float combinedradii = (radius + GetRadius());
 
-//	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
-//				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
-//				center.GetX(), center.GetY(), center.GetZ() );
+  //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
+  //				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
+  //				center.GetX(), center.GetY(), center.GetZ() );
 
-	//float crsq = combinedradii; //(combinedradii*combinedradii);
-	return (dist<combinedradii);
+  // float crsq = combinedradii; //(combinedradii*combinedradii);
+  return (dist < combinedradii);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PointLight::AffectsAABox( const AABox& aab )
-{
-	return CollisionTester::SphereAABoxTest( Sphere( GetWorldPosition(),GetRadius()), aab );
+bool PointLight::AffectsAABox(const AABox& aab) {
+  return CollisionTester::SphereAABoxTest(Sphere(GetWorldPosition(), GetRadius()), aab);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool PointLight::AffectsCircleXZ( const Circle& cirXZ )
-{
-	fvec3 center( cirXZ.mCenter.GetX(),  GetWorldPosition().GetY(), cirXZ.mCenter.GetY() );
-	float dist = ( GetWorldPosition()-center).Mag();
-	float combinedradii = (cirXZ.mRadius+GetRadius());
+bool PointLight::AffectsCircleXZ(const Circle& cirXZ) {
+  fvec3 center(cirXZ.mCenter.GetX(), GetWorldPosition().GetY(), cirXZ.mCenter.GetY());
+  float dist          = (GetWorldPosition() - center).Mag();
+  float combinedradii = (cirXZ.mRadius + GetRadius());
 
-//	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
-//				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
-//				center.GetX(), center.GetY(), center.GetZ() );
+  //	orkprintf( "PointLight::AffectsSphere point<%f %f %f> center<%f %f %f>\n",
+  //				mWorldPosition.GetX(), mWorldPosition.GetY(), mWorldPosition.GetZ(),
+  //				center.GetX(), center.GetY(), center.GetZ() );
 
-	//float crsq = combinedradii; //(combinedradii*combinedradii);
-	return (dist<combinedradii);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-void DirectionalLight::Describe()
-{
-
-}
-
-DirectionalLight::DirectionalLight( const fmtx4& mtx, const DirectionalLightData* dld )
-	: Light(mtx,dld)
-{
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void DirectionalLightData::Describe()
-{
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool DirectionalLight::IsInFrustum( const Frustum& frustum )
-{
-	return true; // directional lights are unbounded, hence always true
+  // float crsq = combinedradii; //(combinedradii*combinedradii);
+  return (dist < combinedradii);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void AmbientLight::Describe()
-{
-}
+void DirectionalLight::Describe() {}
 
-AmbientLight::AmbientLight( const fmtx4& mtx, const AmbientLightData* dld )
-	: Light(mtx,dld)
-	, mAld(dld)
-{
-}
+DirectionalLight::DirectionalLight(const fmtx4& mtx, const DirectionalLightData* dld)
+    : Light(mtx, dld) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AmbientLightData::Describe()
-{
-	ork::reflect::RegisterProperty( "AmbientShade", & AmbientLightData::mfAmbientShade );
-	ork::reflect::AnnotatePropertyForEditor<AmbientLightData>(	"AmbientShade", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor<AmbientLightData>(	"AmbientShade", "editor.range.max", "1.0" );
-	ork::reflect::RegisterProperty( "HeadlightDir", & AmbientLightData::mvHeadlightDir );
-}
+void DirectionalLightData::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool AmbientLight::IsInFrustum( const Frustum& frustum )
-{
-	return true; // ambient lights are unbounded, hence always true
+bool DirectionalLight::IsInFrustum(const Frustum& frustum) {
+  return true; // directional lights are unbounded, hence always true
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLight::Describe()
-{
+void AmbientLight::Describe() {}
 
+AmbientLight::AmbientLight(const fmtx4& mtx, const AmbientLightData* dld)
+    : Light(mtx, dld)
+    , mAld(dld) {}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void AmbientLightData::Describe() {
+  ork::reflect::RegisterProperty("AmbientShade", &AmbientLightData::mfAmbientShade);
+  ork::reflect::AnnotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.min", "0.0");
+  ork::reflect::AnnotatePropertyForEditor<AmbientLightData>("AmbientShade", "editor.range.max", "1.0");
+  ork::reflect::RegisterProperty("HeadlightDir", &AmbientLightData::mvHeadlightDir);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::Describe()
-{
-	ork::reflect::RegisterProperty( "Fovy", & SpotLightData::mFovy );
-	ork::reflect::RegisterProperty( "Range", & SpotLightData::mRange );
-	ork::reflect::RegisterProperty( "Texture", & SpotLightData::GetTextureAccessor, & SpotLightData::SetTextureAccessor );
+bool AmbientLight::IsInFrustum(const Frustum& frustum) {
+  return true; // ambient lights are unbounded, hence always true
+}
 
-	ork::reflect::AnnotatePropertyForEditor<SpotLightData>( "Texture", "editor.class", "ged.factory.assetlist" );
-	ork::reflect::AnnotatePropertyForEditor<SpotLightData>( "Texture", "editor.assettype", "lev2tex" );
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
-	ork::reflect::AnnotatePropertyForEditor<SpotLightData>(	"Fovy", "editor.range.min", "0.0" );
-	ork::reflect::AnnotatePropertyForEditor<SpotLightData>(	"Fovy", "editor.range.max", "180.0" );
+void SpotLight::Describe() {}
 
-	ork::reflect::AnnotatePropertyForEditor<SpotLightData>(	"Range", "editor.range.min", "1" );
-	ork::reflect::AnnotatePropertyForEditor<SpotLightData>(	"Range", "editor.range.max", "1000.00" );
-	ork::reflect::AnnotatePropertyForEditor<SpotLightData>(	"Range", "editor.range.log", "true" );
+///////////////////////////////////////////////////////////////////////////////
+
+void SpotLightData::Describe() {
+  ork::reflect::RegisterProperty("Fovy", &SpotLightData::mFovy);
+  ork::reflect::RegisterProperty("Range", &SpotLightData::mRange);
+  ork::reflect::RegisterProperty("Texture", &SpotLightData::GetTextureAccessor, &SpotLightData::SetTextureAccessor);
+
+  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Texture", "editor.class", "ged.factory.assetlist");
+  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Texture", "editor.assettype", "lev2tex");
+
+  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.min", "0.0");
+  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Fovy", "editor.range.max", "180.0");
+
+  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Range", "editor.range.min", "1");
+  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Range", "editor.range.max", "1000.00");
+  ork::reflect::AnnotatePropertyForEditor<SpotLightData>("Range", "editor.range.log", "true");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::SetTextureAccessor( ork::rtti::ICastable* const & tex)
-{
-	mTexture = tex ? ork::rtti::autocast( tex ) : 0;
-}
+void SpotLightData::SetTextureAccessor(ork::rtti::ICastable* const& tex) { mTexture = tex ? ork::rtti::autocast(tex) : 0; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SpotLightData::GetTextureAccessor( ork::rtti::ICastable* & tex) const
-{
-	tex = mTexture;
-}
+void SpotLightData::GetTextureAccessor(ork::rtti::ICastable*& tex) const { tex = mTexture; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld )
-	: Light(mtx,sld)
-	, mSld(sld)
-	, mTexture(0)
-{
-}
+SpotLight::SpotLight(const fmtx4& mtx, const SpotLightData* sld)
+    : Light(mtx, sld)
+    , mSld(sld)
+    , mTexture(0) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SpotLight::IsInFrustum( const Frustum& frustum )
-{
-	fvec3 pos = GetMatrix().GetTranslation();
-	fvec3 tgt = pos + GetMatrix().GetZNormal()*GetRange();
-	fvec3 up = GetMatrix().GetYNormal();
-	float fovy = 15.0f;
+bool SpotLight::IsInFrustum(const Frustum& frustum) {
+  fvec3 pos  = GetMatrix().GetTranslation();
+  fvec3 tgt  = pos + GetMatrix().GetZNormal() * GetRange();
+  fvec3 up   = GetMatrix().GetYNormal();
+  float fovy = 15.0f;
 
-	Set( pos, tgt, up, fovy );
+  Set(pos, tgt, up, fovy);
 
-	return false; //CollisionTester::FrustumFrustumTest( frustum, mWorldSpaceLightFrustum );
+  return false; // CollisionTester::FrustumFrustumTest( frustum, mWorldSpaceLightFrustum );
 }
 
 ///////////////////////////////////////////////////////////
 
-void SpotLight::Set( const fvec3& pos, const fvec3& tgt, const fvec3& up, float fovy )
-{
-	//mFovy = fovy;
+void SpotLight::Set(const fvec3& pos, const fvec3& tgt, const fvec3& up, float fovy) {
+  // mFovy = fovy;
 
-	//mWorldSpaceDirection = (tgt-pos);
+  // mWorldSpaceDirection = (tgt-pos);
 
-	//mRange = mWorldSpaceDirection.Mag();
+  // mRange = mWorldSpaceDirection.Mag();
 
-	//mWorldSpaceDirection.Normalize();
+  // mWorldSpaceDirection.Normalize();
 
-	mProjectionMatrix.Perspective( GetFovy(), 1.0, GetRange()/float(1000.0f), GetRange() );
-	mViewMatrix.LookAt(		pos.GetX(), pos.GetY(), pos.GetZ(),
-							tgt.GetX(), tgt.GetY(), tgt.GetZ(),
-							up.GetX(), up.GetY(), up.GetZ() );
-	//mFovy = fovy;
+  mProjectionMatrix.Perspective(GetFovy(), 1.0, GetRange() / float(1000.0f), GetRange());
+  mViewMatrix.LookAt(pos.GetX(), pos.GetY(), pos.GetZ(), tgt.GetX(), tgt.GetY(), tgt.GetZ(), up.GetX(), up.GetY(), up.GetZ());
+  // mFovy = fovy;
 
-	mWorldSpaceLightFrustum.Set( mViewMatrix, mProjectionMatrix );
+  mWorldSpaceLightFrustum.Set(mViewMatrix, mProjectionMatrix);
 
-	//SetPosition( pos );
-
+  // SetPosition( pos );
 }
 
 ///////////////////////////////////////////////////////////
 
-bool SpotLight::AffectsSphere( const fvec3& center, float radius )
-{
-	return CollisionTester::FrustumSphereTest( mWorldSpaceLightFrustum, Sphere( center, radius ) );
+bool SpotLight::AffectsSphere(const fvec3& center, float radius) {
+  return CollisionTester::FrustumSphereTest(mWorldSpaceLightFrustum, Sphere(center, radius));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SpotLight::AffectsAABox( const AABox& aab )
-{
-	return CollisionTester::FrustumAABoxTest( mWorldSpaceLightFrustum, aab );
-}
+bool SpotLight::AffectsAABox(const AABox& aab) { return CollisionTester::FrustumAABoxTest(mWorldSpaceLightFrustum, aab); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool SpotLight::AffectsCircleXZ( const Circle& cirXZ )
-{
-	return CollisionTester::FrustumCircleXZTest( mWorldSpaceLightFrustum, cirXZ );
+bool SpotLight::AffectsCircleXZ(const Circle& cirXZ) {
+  return CollisionTester::FrustumCircleXZTest(mWorldSpaceLightFrustum, cirXZ);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightContainer::AddLight( Light* plight )
-{
-	if( mPrioritizedLights.size() < map_type::kimax )
-	{
-		mPrioritizedLights.AddSorted( plight->mPriority, plight );
-	}
+void LightContainer::AddLight(Light* plight) {
+  if (mPrioritizedLights.size() < map_type::kimax) {
+    mPrioritizedLights.AddSorted(plight->mPriority, plight);
+  }
 }
 
-void LightContainer::RemoveLight( Light* plight )
-{
-	map_type::iterator it = mPrioritizedLights.find( plight->mPriority );
-	if( it != mPrioritizedLights.end() )
-	{
-		mPrioritizedLights.erase( it );
-	}
+void LightContainer::RemoveLight(Light* plight) {
+  map_type::iterator it = mPrioritizedLights.find(plight->mPriority);
+  if (it != mPrioritizedLights.end()) {
+    mPrioritizedLights.erase(it);
+  }
 }
 
 LightContainer::LightContainer()
-	: mPrioritizedLights( EKEYPOLICY_MULTILUT )
-{
-}
+    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {}
 
-void LightContainer::Clear()
-{
-	mPrioritizedLights.clear();
-}
+void LightContainer::Clear() { mPrioritizedLights.clear(); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlobalLightContainer::AddLight( Light* plight )
-{
-	if( mPrioritizedLights.size() < map_type::kimax )
-	{
-		mPrioritizedLights.AddSorted( plight->mPriority, plight );
-	}
+void GlobalLightContainer::AddLight(Light* plight) {
+  if (mPrioritizedLights.size() < map_type::kimax) {
+    mPrioritizedLights.AddSorted(plight->mPriority, plight);
+  }
 }
 
-void GlobalLightContainer::RemoveLight( Light* plight )
-{
-	map_type::iterator it = mPrioritizedLights.find( plight->mPriority );
-	if( it != mPrioritizedLights.end() )
-	{
-		mPrioritizedLights.erase( it );
-	}
+void GlobalLightContainer::RemoveLight(Light* plight) {
+  map_type::iterator it = mPrioritizedLights.find(plight->mPriority);
+  if (it != mPrioritizedLights.end()) {
+    mPrioritizedLights.erase(it);
+  }
 }
 
 GlobalLightContainer::GlobalLightContainer()
-	: mPrioritizedLights( EKEYPOLICY_MULTILUT )
-{
-}
+    : mPrioritizedLights(EKEYPOLICY_MULTILUT) {}
 
-void GlobalLightContainer::Clear()
-{
-	mPrioritizedLights.clear();
-}
+void GlobalLightContainer::Clear() { mPrioritizedLights.clear(); }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-//const LightingGroup& LightCollector::GetActiveGroup( int idx ) const
+// const LightingGroup& LightCollector::GetActiveGroup( int idx ) const
 //{
 //	return mGroups[ idx ];
 //}
 
 size_t LightCollector::GetNumGroups() const { return mGroups.size(); }
 
-void LightCollector::SetManager( LightManager*mgr ) { mManager=mgr; }
+void LightCollector::SetManager(LightManager* mgr) { mManager = mgr; }
 
-void LightCollector::Clear()
-{
-	mGroups.clear();
-	/*for( int i=0; i<kmaxonscreengroups; i++ )
-	{
-		mGroups[i].mLightManager = mManager;
-		mGroups[i].mInstances.clear();
-	}*/
-	mActiveMap.clear();
+void LightCollector::Clear() {
+  mGroups.clear();
+  /*for( int i=0; i<kmaxonscreengroups; i++ )
+  {
+      mGroups[i].mLightManager = mManager;
+      mGroups[i].mInstances.clear();
+  }*/
+  mActiveMap.clear();
 }
 
-LightCollector::LightCollector() : mManager(0)
-{
-	//for( int i=0; i<kmaxonscreengroups; i++ )
-	//{
-	//	mGroups[i].mLightMask.SetMask(i);
-	//}
+LightCollector::LightCollector()
+    : mManager(0) {
+  // for( int i=0; i<kmaxonscreengroups; i++ )
+  //{
+  //	mGroups[i].mLightMask.SetMask(i);
+  //}
 }
 
-LightCollector::~LightCollector()
-{
-	static size_t imax = 0;
+LightCollector::~LightCollector() {
+  static size_t imax = 0;
 
-	size_t isize = mActiveMap.size();
+  size_t isize = mActiveMap.size();
 
-	if( isize > imax )
-	{
-		imax = isize;
-	}
+  if (isize > imax) {
+    imax = isize;
+  }
 
-	///printf( "lc maxgroups<%d>\n", imax );
+  /// printf( "lc maxgroups<%d>\n", imax );
 }
 
-void LightCollector::QueueInstance( const LightMask& lmask, const fmtx4& mtx )
-{
-	U32 uval = lmask.mMask;
+void LightCollector::QueueInstance(const LightMask& lmask, const fmtx4& mtx) {
+  U32 uval = lmask.mMask;
 
-	ActiveMapType::const_iterator it=mActiveMap.find(uval);
+  ActiveMapType::const_iterator it = mActiveMap.find(uval);
 
-	if( it != mActiveMap.end() )
-	{
-		LightingGroup* pgrp = it->second;
+  if (it != mActiveMap.end()) {
+    LightingGroup* pgrp = it->second;
 
-		pgrp->mInstances.push_back( mtx );
-	}
-	else
-	{
-		size_t index = mGroups.size();
-		LightingGroup* pgrp = mGroups.allocate();
+    pgrp->mInstances.push_back(mtx);
+  } else {
+    size_t index        = mGroups.size();
+    LightingGroup* pgrp = mGroups.allocate();
 
-		pgrp->mLightMask.SetMask( uval );
-		mActiveMap.AddSorted(uval,pgrp);
+    pgrp->mLightMask.SetMask(uval);
+    mActiveMap.AddSorted(uval, pgrp);
 
-		pgrp->mInstances.push_back( mtx );
-	}
-
+    pgrp->mInstances.push_back(mtx);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManagerData::Describe()
-{
-
-}
+void LightManagerData::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManager::EnumerateInFrustum( const Frustum& frustum )
-{
-	mLightsInFrustum.clear();
-	////////////////////////////////////////////////////////////
-	for( GlobalLightContainer::map_type::const_iterator	it=mGlobalStationaryLights.mPrioritizedLights.begin();
-														it!=mGlobalStationaryLights.mPrioritizedLights.end();
-														it++ )
-	{
-		Light* plight = it->second;
+void LightManager::EnumerateInFrustum(const Frustum& frustum) {
+  mLightsInFrustum.clear();
+  ////////////////////////////////////////////////////////////
+  for (GlobalLightContainer::map_type::const_iterator it = mGlobalStationaryLights.mPrioritizedLights.begin();
+       it != mGlobalStationaryLights.mPrioritizedLights.end();
+       it++) {
+    Light* plight = it->second;
 
-		if( plight->IsInFrustum( frustum ) )
-		{
-			size_t idx = mLightsInFrustum.size();
+    if (plight->IsInFrustum(frustum)) {
+      size_t idx = mLightsInFrustum.size();
 
-			plight->miInFrustumID = 1<<idx;
-			mLightsInFrustum.push_back(plight);
-		}
-		else
-		{
-			plight->miInFrustumID = -1;
-		}
-	}
-	////////////////////////////////////////////////////////////
-	for( LightContainer::map_type::const_iterator	it=mGlobalMovingLights.mPrioritizedLights.begin();
-													it!=mGlobalMovingLights.mPrioritizedLights.end();
-													it++ )
-	{
-		Light* plight = it->second;
+      plight->miInFrustumID = 1 << idx;
+      mLightsInFrustum.push_back(plight);
+    } else {
+      plight->miInFrustumID = -1;
+    }
+  }
+  ////////////////////////////////////////////////////////////
+  for (LightContainer::map_type::const_iterator it = mGlobalMovingLights.mPrioritizedLights.begin();
+       it != mGlobalMovingLights.mPrioritizedLights.end();
+       it++) {
+    Light* plight = it->second;
 
-		if( plight->IsInFrustum( frustum ) )
-		{
-			size_t idx = mLightsInFrustum.size();
+    if (plight->IsInFrustum(frustum)) {
+      size_t idx = mLightsInFrustum.size();
 
-			plight->miInFrustumID = 1<<idx;
-			mLightsInFrustum.push_back(plight);
-		}
-		else
-		{
-			plight->miInFrustumID = -1;
-		}
-	}
-	////////////////////////////////////////////////////////////
-	mcollector.SetManager(this);
-	mcollector.Clear();
-
+      plight->miInFrustumID = 1 << idx;
+      mLightsInFrustum.push_back(plight);
+    } else {
+      plight->miInFrustumID = -1;
+    }
+  }
+  ////////////////////////////////////////////////////////////
+  mcollector.SetManager(this);
+  mcollector.Clear();
 }
 
 ///////////////////////////////////////////////////////////
 
-void LightManager::QueueInstance( const LightMask& lmask, const fmtx4& mtx )
-{
-	mcollector.QueueInstance( lmask, mtx );
-}
+void LightManager::QueueInstance(const LightMask& lmask, const fmtx4& mtx) { mcollector.QueueInstance(lmask, mtx); }
 
 ///////////////////////////////////////////////////////////
 
-size_t LightManager::GetNumLightGroups() const
-{
-	return mcollector.GetNumGroups();
-}
+size_t LightManager::GetNumLightGroups() const { return mcollector.GetNumGroups(); }
 
 ///////////////////////////////////////////////////////////
 
-void LightManager::Clear()
-{
-	//mGlobalStationaryLights.Clear();
-	mGlobalMovingLights.Clear();
-	mLightsInFrustum.clear();
+void LightManager::Clear() {
+  // mGlobalStationaryLights.Clear();
+  mGlobalMovingLights.Clear();
+  mLightsInFrustum.clear();
 
-	mcollector.Clear();
+  mcollector.Clear();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightMask::AddLight( const Light* plight )
-{
-	mMask |= plight->miInFrustumID;
-}
+void LightMask::AddLight(const Light* plight) { mMask |= plight->miInFrustumID; }
 
 ///////////////////////////////////////////////////////////
 
-size_t LightingGroup::GetNumLights() const
-{
-	return size_t(countbits( mLightMask.mMask ));
-}
+size_t LightingGroup::GetNumLights() const { return size_t(countbits(mLightMask.mMask)); }
 
 ///////////////////////////////////////////////////////////
 
-size_t LightingGroup::GetNumMatrices() const
-{
-	return mInstances.size();
-}
+size_t LightingGroup::GetNumMatrices() const { return mInstances.size(); }
 
 ///////////////////////////////////////////////////////////
 
-const fmtx4* LightingGroup::GetMatrices() const
-{
-	return & mInstances[0];
-}
+const fmtx4* LightingGroup::GetMatrices() const { return &mInstances[0]; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int LightingGroup::GetLightId( int idx ) const
-{
-	U32 mask = mLightMask.mMask;
+int LightingGroup::GetLightId(int idx) const {
+  U32 mask = mLightMask.mMask;
 
-	int ilightid = -1;
+  int ilightid = -1;
 
-	U32 umask = 1;
-	for( int b=0; b<32; b++ )
-	{
-		if( mask & umask )
-		{
-			ilightid = b;
-			idx--;
-			if( 0 == idx ) return ilightid;
+  U32 umask = 1;
+  for (int b = 0; b < 32; b++) {
+    if (mask & umask) {
+      ilightid = b;
+      idx--;
+      if (0 == idx)
+        return ilightid;
+    }
+    umask <<= 1;
+  }
 
-		}
-		umask<<=1;
-	}
-
-	return ilightid;
+  return ilightid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 LightingGroup::LightingGroup()
-	: mLightManager(0)
-	, mLightMap( 0 )
-	, mDPEnvMap( 0 )
-{
-}
+    : mLightManager(0)
+    , mLightMap(0)
+    , mDPEnvMap(0) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-HeadLightManager::HeadLightManager( RenderContextFrameData & FrameData )
-	: mHeadLight( mHeadLightMatrix, & mHeadLightData )
-	, mHeadLightManager( mHeadLightManagerData )
-{
-	auto cdata = FrameData.cameraData();
+HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
+    : mHeadLight(mHeadLightMatrix, &mHeadLightData)
+    , mHeadLightManager(mHeadLightManagerData) {
+  auto cdata = FrameData.cameraMatrices();
   /*
   auto camvd = cdata->computeMatrices();
-	ork::fvec3 vZ = cdata->xNormal();
-	ork::fvec3 vY = cdata->yNormal();
-	ork::fvec3 vP = cdata->GetFrustum().mNearCorners[0];
-	mHeadLightMatrix = cdata->GetIVMatrix();
-	mHeadLightData.SetColor( fvec3(1.3f,1.3f,1.5f) );
-	mHeadLightData.SetAmbientShade(0.757f);
-	mHeadLightData.SetHeadlightDir(fvec3(0.0f,0.5f,1.0f));
-	mHeadLight.miInFrustumID = 1;
-	mHeadLightGroup.mLightMask.AddLight( & mHeadLight );
-	mHeadLightGroup.mLightManager = FrameData.GetLightManager();
-	mHeadLightMatrix.SetTranslation( vP );
-	mHeadLightManager.mGlobalMovingLights.AddLight( & mHeadLight );
-	mHeadLightManager.mLightsInFrustum.push_back(& mHeadLight);*/
+    ork::fvec3 vZ = cdata->xNormal();
+    ork::fvec3 vY = cdata->yNormal();
+    ork::fvec3 vP = cdata->GetFrustum().mNearCorners[0];
+    mHeadLightMatrix = cdata->GetIVMatrix();
+    mHeadLightData.SetColor( fvec3(1.3f,1.3f,1.5f) );
+    mHeadLightData.SetAmbientShade(0.757f);
+    mHeadLightData.SetHeadlightDir(fvec3(0.0f,0.5f,1.0f));
+    mHeadLight.miInFrustumID = 1;
+    mHeadLightGroup.mLightMask.AddLight( & mHeadLight );
+    mHeadLightGroup.mLightManager = FrameData.GetLightManager();
+    mHeadLightMatrix.SetTranslation( vP );
+    mHeadLightManager.mGlobalMovingLights.AddLight( & mHeadLight );
+    mHeadLightManager.mLightsInFrustum.push_back(& mHeadLight);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -625,215 +511,210 @@ HeadLightManager::HeadLightManager( RenderContextFrameData & FrameData )
 ///////////////////////////////////////////////////////////////////////////////
 
 LightingFxInterface::LightingFxInterface()
-	: mbHasLightingInterface(false)
-	, mpShader( 0 )
-	, hAmbientLight( 0 )
-	, hNumDirectionalLights( 0 )
-	, hDirectionalLightDirs( 0 )
-	, hDirectionalLightColors( 0 )
-	, hDirectionalLightPos( 0 )
-	, hDirectionalAttenA( 0 )
-	, hDirectionalAttenK( 0 )
-	, hLightMode( 0 )
-{
-	mCurrentLightingGroup = 0;
-
+    : mbHasLightingInterface(false)
+    , mpShader(0)
+    , hAmbientLight(0)
+    , hNumDirectionalLights(0)
+    , hDirectionalLightDirs(0)
+    , hDirectionalLightColors(0)
+    , hDirectionalLightPos(0)
+    , hDirectionalAttenA(0)
+    , hDirectionalAttenK(0)
+    , hLightMode(0) {
+  mCurrentLightingGroup = 0;
 }
 
-void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
-{
-	////////////////////////////////
-	if( false == mbHasLightingInterface ) {	return;	}
-	if( nullptr == mpShader ) { return; }
+void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
+  ////////////////////////////////
+  if (false == mbHasLightingInterface) {
+    return;
+  }
+  if (nullptr == mpShader) {
+    return;
+  }
 
-	const RenderContextInstData* rdata = pTarg->GetRenderContextInstData();
-	const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-	auto camdata = rfdata ? rfdata->cameraData() : nullptr;
+  const RenderContextInstData* rdata   = pTarg->GetRenderContextInstData();
+  const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
+  auto cammatrices                     = rfdata->cameraMatrices();
 
-	const lev2::LightingGroup* lgroup = rdata->GetLightingGroup();
+  const lev2::LightingGroup* lgroup = rdata->GetLightingGroup();
 
-	if( lgroup )
-	{
-		static int gLightStateChanged = 0;
-		static int gLightStateNotChanged = 0;
+  if (lgroup) {
+    static int gLightStateChanged    = 0;
+    static int gLightStateNotChanged = 0;
 
-		if( lgroup!=mCurrentLightingGroup )
-		{
-			gLightStateChanged++;
+    if (lgroup != mCurrentLightingGroup) {
+      gLightStateChanged++;
 
-			static const int kmaxl = 8;
+      static const int kmaxl = 8;
 
-			static fvec4 DirLightColors[kmaxl];
-			static fvec4 DirLightDirs[kmaxl];
-			static fvec4 DirLightPos[kmaxl];
-			static fvec4 DirLightAtnA[kmaxl];
-			static fvec4 DirLightAtnK[kmaxl];
-			static float LightMode[kmaxl];
+      static fvec4 DirLightColors[kmaxl];
+      static fvec4 DirLightDirs[kmaxl];
+      static fvec4 DirLightPos[kmaxl];
+      static fvec4 DirLightAtnA[kmaxl];
+      static fvec4 DirLightAtnK[kmaxl];
+      static float LightMode[kmaxl];
 
-			int inumdl = 0;
+      int inumdl = 0;
 
-			int inuml = (int) lgroup->GetNumLights();
+      int inuml = (int)lgroup->GetNumLights();
 
-			inuml = std::min( inuml, kmaxl );
+      inuml = std::min(inuml, kmaxl);
 
-			for( int il=0; il<kmaxl; il++ )
-			{
-				LightMode[il] = 0.0f;
-			}
+      for (int il = 0; il < kmaxl; il++) {
+        LightMode[il] = 0.0f;
+      }
 
-			for( int il=0; il<inuml; il++ )
-			{
-				int ilightid = lgroup->GetLightId(il);
+      for (int il = 0; il < inuml; il++) {
+        int ilightid = lgroup->GetLightId(il);
 
-				Light* plight = lgroup->mLightManager->mLightsInFrustum[ ilightid ];
+        Light* plight = lgroup->mLightManager->mLightsInFrustum[ilightid];
 
-				fvec3 LightColor = plight->GetColor();
-				//float fimag = 1.0f;
-				//if( (LightColor.GetX()<0.0f) || (LightColor.GetY()<0.0f) || (LightColor.GetZ()<0.0f) )
-				//{
-				//	fimag = -1.0f;
-				//}
-				//float fmag = LightColor.Mag();
-				//LightColor = LightColor*(1.0f/fmag);
-				//fmag *= fimag;
+        fvec3 LightColor = plight->GetColor();
+        // float fimag = 1.0f;
+        // if( (LightColor.GetX()<0.0f) || (LightColor.GetY()<0.0f) || (LightColor.GetZ()<0.0f) )
+        //{
+        //	fimag = -1.0f;
+        //}
+        // float fmag = LightColor.Mag();
+        // LightColor = LightColor*(1.0f/fmag);
+        // fmag *= fimag;
 
-				if( (kmaxl-inumdl)>0 )
-				switch( plight->LightType() )
-				{
-					case lev2::ELIGHTTYPE_SPOT:
-					{
-						lev2::SpotLight* pspotlight = (lev2::SpotLight*) plight;
+        if ((kmaxl - inumdl) > 0)
+          switch (plight->LightType()) {
+            case lev2::ELIGHTTYPE_SPOT: {
+              lev2::SpotLight* pspotlight = (lev2::SpotLight*)plight;
 
-						DirLightDirs[inumdl] = pspotlight->GetDirection();
-						DirLightColors[inumdl] = LightColor;
-						DirLightPos[inumdl] = pspotlight->GetWorldPosition();
+              DirLightDirs[inumdl]   = pspotlight->GetDirection();
+              DirLightColors[inumdl] = LightColor;
+              DirLightPos[inumdl]    = pspotlight->GetWorldPosition();
 
-						float frang = pspotlight->GetRange();
-						float fovy = pspotlight->GetFovy()*DTOR;
+              float frang = pspotlight->GetRange();
+              float fovy  = pspotlight->GetFovy() * DTOR;
 
-						DirLightAtnA[inumdl] = fvec3( 0.0f, 0.0f, fovy );
-						DirLightAtnK[inumdl] = fvec3( 0.0f, 0.0f, 10.0f/frang );
-						inumdl++;
-						break;
-					}
-					case lev2::ELIGHTTYPE_POINT:
-					{
+              DirLightAtnA[inumdl] = fvec3(0.0f, 0.0f, fovy);
+              DirLightAtnK[inumdl] = fvec3(0.0f, 0.0f, 10.0f / frang);
+              inumdl++;
+              break;
+            }
+            case lev2::ELIGHTTYPE_POINT: {
 
-						lev2::PointLight* ppointlight = (lev2::PointLight*) plight;
+              lev2::PointLight* ppointlight = (lev2::PointLight*)plight;
 
-						DirLightDirs[inumdl] = ppointlight->GetDirection();
-						DirLightColors[inumdl] = LightColor;
-						DirLightPos[inumdl] = ppointlight->GetWorldPosition();
+              DirLightDirs[inumdl]   = ppointlight->GetDirection();
+              DirLightColors[inumdl] = LightColor;
+              DirLightPos[inumdl]    = ppointlight->GetWorldPosition();
 
-						float frang = ppointlight->GetRadius();
-						float falloff = ppointlight->GetFalloff();
+              float frang   = ppointlight->GetRadius();
+              float falloff = ppointlight->GetFalloff();
 
-						//float flin = 2.0ffalloff
+              // float flin = 2.0ffalloff
 
-						DirLightAtnA[inumdl] = fvec3( 0.0f, 1.0f, 0.0f );
-						DirLightAtnK[inumdl] = fvec3( 1.0f, 0.0f, falloff );
+              DirLightAtnA[inumdl] = fvec3(0.0f, 1.0f, 0.0f);
+              DirLightAtnK[inumdl] = fvec3(1.0f, 0.0f, falloff);
 
-						LightMode[inumdl] = 1.0f;
+              LightMode[inumdl] = 1.0f;
 
-						inumdl++;
+              inumdl++;
 
-						break;
-					}
-					case lev2::ELIGHTTYPE_DIRECTIONAL:
-					{
-						lev2::DirectionalLight* pdirlight = (lev2::DirectionalLight*) plight;
+              break;
+            }
+            case lev2::ELIGHTTYPE_DIRECTIONAL: {
+              lev2::DirectionalLight* pdirlight = (lev2::DirectionalLight*)plight;
 
-						DirLightDirs[inumdl] = pdirlight->GetDirection();
-						DirLightColors[inumdl] = LightColor;
-						DirLightPos[inumdl] = pdirlight->GetWorldPosition();
+              DirLightDirs[inumdl]   = pdirlight->GetDirection();
+              DirLightColors[inumdl] = LightColor;
+              DirLightPos[inumdl]    = pdirlight->GetWorldPosition();
 
-						DirLightAtnA[inumdl] = fvec3( 0.0f, 1.0f, 0.0f );
-						DirLightAtnK[inumdl] = fvec3( 1.0f, 0.0f, 0.0f );
+              DirLightAtnA[inumdl] = fvec3(0.0f, 1.0f, 0.0f);
+              DirLightAtnK[inumdl] = fvec3(1.0f, 0.0f, 0.0f);
 
-						inumdl++;
-						break;
-					}
-					case lev2::ELIGHTTYPE_AMBIENT:
-					{
-						lev2::AmbientLight* phedlight = (lev2::AmbientLight*) plight;
-						const ork::fmtx4&  mativ = pTarg->MTXI()->RefVITGMatrix();
+              inumdl++;
+              break;
+            }
+            case lev2::ELIGHTTYPE_AMBIENT: {
+              lev2::AmbientLight* phedlight = (lev2::AmbientLight*)plight;
+              const ork::fmtx4& mativ       = pTarg->MTXI()->RefVITGMatrix();
 
-						ork::fvec4 veye = camdata ? ork::fvec4(camdata->GetEye()) : ork::fvec4::Zero();
+              const auto& camdat = cammatrices._camdat;
 
-						ork::fvec3 vzdir;
+              ork::fvec4 veye = ork::fvec4(cammatrices._camdat.GetEye());
 
-						if( camdata )
-						{
-							vzdir = phedlight->GetHeadlightDir().GetX()*camdata->xNormal()
-							      + phedlight->GetHeadlightDir().GetY()*camdata->yNormal()
-							      + phedlight->GetHeadlightDir().GetZ()*camdata->zNormal();
-							vzdir.Normalize();
-						}
+              auto hldir = phedlight->GetHeadlightDir();
 
-						DirLightDirs[inumdl] = vzdir;
-						DirLightColors[inumdl] = LightColor;
-						DirLightPos[inumdl] = veye;
+              ork::fvec3 vzdir = hldir.x * camdat.xNormal() + hldir.y * camdat.yNormal() + hldir.z * camdat.zNormal();
 
-						ork::fvec4 vzn = vzdir; vzn.SetW(0.0f);
-						fvec3 viewz = vzn.Transform(pTarg->MTXI()->RefVMatrix());
+              vzdir.Normalize();
 
-						float fambientshade = phedlight->GetAmbientShade();
-						float fa0 = (1.0f-fambientshade);
-						float fa1 = fambientshade;
+              DirLightDirs[inumdl]   = vzdir;
+              DirLightColors[inumdl] = LightColor;
+              DirLightPos[inumdl]    = veye;
 
-						//orkprintf( "veye<%f %f %f> veyev<%f %f %f>\n", veye.GetX(), veye.GetY(), veye.GetZ(), veyev.GetX(), veyev.GetY(), veyev.GetZ() );
-						DirLightAtnA[inumdl] = fvec3( fa0, fa1, 0.0f );
-						DirLightAtnK[inumdl] = fvec3( 1.0f, 0.0f, 0.0f );
+              ork::fvec4 vzn = vzdir;
+              vzn.SetW(0.0f);
+              fvec3 viewz = vzn.Transform(pTarg->MTXI()->RefVMatrix());
 
-						inumdl++;
-						break;
-					}
-				}
-			}
+              float fambientshade = phedlight->GetAmbientShade();
+              float fa0           = (1.0f - fambientshade);
+              float fa1           = fambientshade;
 
-			pTarg->FXI()->BindParamInt( mpShader, hNumDirectionalLights, inumdl );
-			pTarg->FXI()->BindParamVect4Array( mpShader, hDirectionalLightColors, DirLightColors, inumdl );
-			pTarg->FXI()->BindParamVect4Array( mpShader, hDirectionalLightDirs, DirLightDirs, inumdl );
-			pTarg->FXI()->BindParamVect4Array( mpShader, hDirectionalLightPos, DirLightPos, inumdl );
-			pTarg->FXI()->BindParamVect4Array( mpShader, hDirectionalAttenA, DirLightAtnA, inumdl );
-			pTarg->FXI()->BindParamVect4Array( mpShader, hDirectionalAttenK, DirLightAtnK, inumdl );
-			pTarg->FXI()->BindParamFloatArray( mpShader, hLightMode, LightMode, inumdl );
-		}
-		else
-		{
-			gLightStateNotChanged++;
-		}
-	}
-	else
-	{
-		pTarg->FXI()->BindParamInt( mpShader, hNumDirectionalLights, 0 );
-	}
+              // orkprintf( "veye<%f %f %f> veyev<%f %f %f>\n", veye.GetX(), veye.GetY(), veye.GetZ(), veyev.GetX(), veyev.GetY(),
+              // veyev.GetZ() );
+              DirLightAtnA[inumdl] = fvec3(fa0, fa1, 0.0f);
+              DirLightAtnK[inumdl] = fvec3(1.0f, 0.0f, 0.0f);
+
+              inumdl++;
+              break;
+            }
+          }
+      }
+
+      pTarg->FXI()->BindParamInt(mpShader, hNumDirectionalLights, inumdl);
+      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalLightColors, DirLightColors, inumdl);
+      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalLightDirs, DirLightDirs, inumdl);
+      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalLightPos, DirLightPos, inumdl);
+      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalAttenA, DirLightAtnA, inumdl);
+      pTarg->FXI()->BindParamVect4Array(mpShader, hDirectionalAttenK, DirLightAtnK, inumdl);
+      pTarg->FXI()->BindParamFloatArray(mpShader, hLightMode, LightMode, inumdl);
+    } else {
+      gLightStateNotChanged++;
+    }
+  } else {
+    pTarg->FXI()->BindParamInt(mpShader, hNumDirectionalLights, 0);
+  }
 }
 
-void LightingFxInterface::Init( FxShader* pshader )
-{
-	mpShader = pshader;
+void LightingFxInterface::Init(FxShader* pshader) {
+  mpShader = pshader;
 
-	FxInterface* pfxi = GfxEnv::GetRef().GetLoaderTarget()->FXI();
-	hAmbientLight = pfxi->GetParameterH( pshader, "AmbientLight" );
-	hNumDirectionalLights = pfxi->GetParameterH( pshader, "NumDirectionalLights" );
-	hDirectionalLightDirs = pfxi->GetParameterH( pshader, "DirectionalLightDir" );
-	hDirectionalLightColors = pfxi->GetParameterH( pshader, "DirectionalLightColor" );
-	hDirectionalLightPos = pfxi->GetParameterH( pshader, "DirectionalLightPos" );
-	hDirectionalAttenA = pfxi->GetParameterH( pshader, "DirectionalAttenA" );
-	hDirectionalAttenK = pfxi->GetParameterH( pshader, "DirectionalAttenK" );
-	hLightMode = pfxi->GetParameterH( pshader, "LightMode" );
+  FxInterface* pfxi       = GfxEnv::GetRef().GetLoaderTarget()->FXI();
+  hAmbientLight           = pfxi->GetParameterH(pshader, "AmbientLight");
+  hNumDirectionalLights   = pfxi->GetParameterH(pshader, "NumDirectionalLights");
+  hDirectionalLightDirs   = pfxi->GetParameterH(pshader, "DirectionalLightDir");
+  hDirectionalLightColors = pfxi->GetParameterH(pshader, "DirectionalLightColor");
+  hDirectionalLightPos    = pfxi->GetParameterH(pshader, "DirectionalLightPos");
+  hDirectionalAttenA      = pfxi->GetParameterH(pshader, "DirectionalAttenA");
+  hDirectionalAttenK      = pfxi->GetParameterH(pshader, "DirectionalAttenK");
+  hLightMode              = pfxi->GetParameterH(pshader, "LightMode");
 
-	mbHasLightingInterface = true;
+  mbHasLightingInterface = true;
 
-	if( 0 == hAmbientLight ) mbHasLightingInterface=false;
-	if( 0 == hNumDirectionalLights ) mbHasLightingInterface=false;
-	if( 0 == hDirectionalLightDirs ) mbHasLightingInterface=false;
-	if( 0 == hDirectionalLightColors ) mbHasLightingInterface=false;
-	if( 0 == hDirectionalLightPos ) mbHasLightingInterface=false;
-	if( 0 == hDirectionalAttenA ) mbHasLightingInterface=false;
-	if( 0 == hDirectionalAttenK ) mbHasLightingInterface=false;
-	if( 0 == hLightMode ) mbHasLightingInterface=false;
+  if (0 == hAmbientLight)
+    mbHasLightingInterface = false;
+  if (0 == hNumDirectionalLights)
+    mbHasLightingInterface = false;
+  if (0 == hDirectionalLightDirs)
+    mbHasLightingInterface = false;
+  if (0 == hDirectionalLightColors)
+    mbHasLightingInterface = false;
+  if (0 == hDirectionalLightPos)
+    mbHasLightingInterface = false;
+  if (0 == hDirectionalAttenA)
+    mbHasLightingInterface = false;
+  if (0 == hDirectionalAttenK)
+    mbHasLightingInterface = false;
+  if (0 == hLightMode)
+    mbHasLightingInterface = false;
 }
 
 /////////////////////////////////////
@@ -857,4 +738,5 @@ void LightingFxInterface::Init( FxShader* pshader )
 // .	   render the renderable
 //////////////
 
-} }
+} // namespace lev2
+} // namespace ork

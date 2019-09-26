@@ -148,7 +148,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
   //printf( "draw numlines<%d>\n", inumlines );
   auto prenderer = rcid.GetRenderer();
 
-  const ork::CameraData* pcamdata = ptarg->GetRenderContextFrameData()->cameraData();
+  const ork::CameraData* pcamdata = ptarg->GetRenderContextFrameData()->cameraMatrices();
 
   fvec3 szn = 0;
 

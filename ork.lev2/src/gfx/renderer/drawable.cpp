@@ -84,7 +84,7 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName,lev2:
   /////////////////////////////////
   target->SetRenderContextFrameData(&RCFD_TEMP);
   {
-    if (RCFD_TEMP.cameraData()) {
+    if (RCFD_TEMP.cameraMatrices()) {
       bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
       target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
       target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
@@ -372,7 +372,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   AssertOnOpQ2(MainThreadOpQ());
   const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
   const lev2::XgmModel* Model                    = mModelInst->GetXgmModel();
-  const CameraData* camdat                       = fdata->cameraData();
+  const CameraData* camdat                       = fdata->cameraMatrices();
   OrkAssert(camdat != 0);
 
   const CameraMatrices& ccctx = fdata->cameraMatrices();

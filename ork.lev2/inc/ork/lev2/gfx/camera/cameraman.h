@@ -144,8 +144,8 @@ public:
 
   //////////////////////////////////////////////////////////////////////////////
 
-  CameraData& cameraData() { return _camcamdata; }
-  const CameraData& cameraData() const { return _camcamdata; }
+  CameraData& cameraMatrices() { return _camcamdata; }
+  const CameraData& cameraMatrices() const { return _camcamdata; }
 
   //////////////////////////////////////////////////////////////////////////////
 

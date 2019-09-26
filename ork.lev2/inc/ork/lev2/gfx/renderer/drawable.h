@@ -27,7 +27,8 @@
 
 namespace ork::lev2{
 
-typedef fixedlut<PoolString, CameraData, 16> CameraLut;
+typedef fixedlut<PoolString, CameraData, 16> CameraDataLut;
+typedef fixedlut<PoolString, CameraMatrices, 16> CameraMatricesLut;
 class Simulation;
 class DrawableBuffer;
 class Drawable;
@@ -133,7 +134,7 @@ public:
   typedef ork::fixedlut<PoolString, DrawableBufLayer*, kmaxlayers> LayerLut;
   typedef ork::fixedlut<int, prerendercallback_t, 32> CallbackLut_t;
 
-  CameraLut _cameraDataLUT;
+  CameraDataLut _cameraDataLUT;
   DrawableBufLayer mRawLayers[kmaxlayers];
   int miNumLayersUsed;
   LayerLut mLayerLut;

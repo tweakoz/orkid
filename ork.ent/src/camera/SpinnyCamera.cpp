@@ -150,7 +150,7 @@ void SequenceCamControllerInst::DoUpdate( Simulation* psi )
 	{
 		//printf( "SequenceCamControllerInst<%p> ActiveItem<%s:%p>\n", this, ps.c_str(), mpActiveItem );
 		mpActiveItem->DoUpdate(psi);
-		mCameraData = mpActiveItem->cameraData();
+		mCameraData = mpActiveItem->cameraMatrices();
 	}
 }
 

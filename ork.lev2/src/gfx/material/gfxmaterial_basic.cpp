@@ -319,7 +319,6 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  const CameraData* camdata          = RCFD ? RCFD->cameraData() : nullptr;
 
   bool bforcenoz = RCID->IsForceNoZWrite();
 
@@ -403,7 +402,7 @@ void GfxMaterialWiiBasic::EndPass(GfxTarget* pTarg) { pTarg->FXI()->EndPass(hMod
 int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
   mRenderContexInstData              = &RCID;
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  auto cdata                         = RCFD->cameraData();
+  const auto& cdata                  = RCFD->cameraMatrices()._camdat;
   bool is_picking                    = RCFD->isPicking();
   bool is_stereo                     = RCFD->isStereoOnePass();
 
@@ -418,7 +417,7 @@ int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstDat
   pTarg->FXI()->BindTechnique(hModFX, tek);
   int inumpasses = pTarg->FXI()->BeginBlock(hModFX, RCID);
 
-  mScreenZDir = cdata->zNormal();
+  mScreenZDir = cdata.zNormal();
 
   return inumpasses;
 }
