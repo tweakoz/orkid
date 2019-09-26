@@ -27,10 +27,10 @@
 namespace ork {
 
 struct Frustum;
-class CameraData;
 
 namespace lev2 {
 
+class CameraData;
 class XgmCluster;
 class XgmSubMesh;
 class XgmModel;

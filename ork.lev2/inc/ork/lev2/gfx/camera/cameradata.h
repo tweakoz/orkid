@@ -11,126 +11,104 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-namespace ork {
-
-namespace lev2 {
+namespace ork::lev2 {
 class GfxTarget;
 class Camera;
-} // namespace lev2
+struct CameraVpData;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct CameraMatrices {
-  float mfAspectRatio = 1.0f;
-  fmtx4 mVMatrix;
-  fmtx4 mPMatrix;
-  Frustum mFrustum;
-};
+struct CameraData {
 
-////////////////////////////////////////////////////////////////////////////////
-
-class CameraData {
-public:
   CameraData();
 
-  void computeMatrices(CameraMatrices& ctx);
-  void computeMatrices(CameraMatrices& ctx, float faspect = 1.0f) const;
-
-  ////////////////////////////////////////////////////////////////////
-  // Get vectors whos length equals one pixel
-  //  given a worldpos (hopefully within the camera's frustum)
-  //  given viewport dimensions in
-  void GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const;
-  ////////////////////////////////////////////////////////////////////
-
-  ////////////////////////////////////////////////////////////////////
-  // generate direction vector/origin (from 2d normalized screen coordinate)
-
-  void projectDepthRay(const fvec2& v2d, fvec3& vdir, fvec3& vori) const;
-  void projectDepthRay(const fvec2& v2d, fray3& ray_out) const;
-
-  void SetWidth(float fv) { mfWidth = fv; }
-  void SetHeight(float fv) { mfHeight = fv; }
-  void SetOverrideWidth(float fv) { mfOverrideWidth = fv; }
-  void SetOverrideHeight(float fv) { mfOverrideHeight = fv; }
-  void SetTimeStamp(float ft) { mfTimeStamp = ft; }
+  //CameraVpData computeViewData() const;
+  CameraVpData computeViewData(float faspect = 1.0f) const;
 
   const fvec3& GetEye() const { return mEye; }
   const fvec3& GetTarget() const { return mTarget; }
   const fvec3& GetUp() const { return mUp; }
-  void BindGfxTarget(ork::lev2::GfxTarget* ptarg) { mpGfxTarget = ptarg; }
 
   float GetNear() const { return mNear; }
   float GetFar() const { return mFar; }
   float GetAperature() const { return mAper; }
-  float GetAspect() const { return mfAspect; }
-  float GetTimeStamp() const { return mfTimeStamp; }
 
-  const fmtx4& GetPMatrix() const { return mMatProj; }
-  const fmtx4& GetVMatrix() const { return mMatView; }
-  const fmtx4& GetIVPMatrix() const { return mIVPMatrix; }
-  const fmtx4& GetIVMatrix() const { return mIVMatrix; }
-  const fmtx4& GetVPMatrix() const { return mVPMatrix; }
+  const fvec3& xNormal() const { return _xnormal; }
+  const fvec3& yNormal() const { return _ynormal; }
+  const fvec3& zNormal() const { return _znormal; }
+  void setXNormal(fvec3& n) { _xnormal = n; }
+  void setYNormal(fvec3& n) { _ynormal = n; }
+  void setZNormal(fvec3& n) { _znormal = n; }
 
-  const fvec3& GetXNormal() const { return mCamXNormal; }
-  const fvec3& GetYNormal() const { return mCamYNormal; }
-  const fvec3& GetZNormal() const { return mCamZNormal; }
-  void SetXNormal(fvec3& n) { mCamXNormal = n; }
-  void SetYNormal(fvec3& n) { mCamYNormal = n; }
-  void SetZNormal(fvec3& n) { mCamZNormal = n; }
+  void Lookat(const fvec3& eye, const fvec3& tgt, const fvec3& up);
 
-  const Frustum& GetFrustum() const { return mFrustum; }
-  Frustum& GetFrustum() { return mFrustum; }
+  lev2::Camera* getEditorCamera() const { return mpLev2Camera; }
+  void SetLev2Camera(lev2::Camera* pcam);
 
   void Persp(float fnear, float ffar, float faper);
   void PerspH(float fnear, float ffar, float faperh);
-  void Lookat(const fvec3& eye, const fvec3& tgt, const fvec3& up);
-  void SetView(const ork::fmtx4& view);
-  void setCustomProjection(const ork::fmtx4& proj);
 
-  void SetVisibilityCamDat(const CameraData* pvcd) { mpVisibilityCamDat = pvcd; }
-  const CameraData* GetVisibilityCamDat() const { return mpVisibilityCamDat; }
-
-  lev2::Camera* getEditorCamera() const { return mpLev2Camera; }
-  void SetLev2Camera(lev2::Camera* pcam); // { mpLev2Camera=pcam; }
-
-private:
-  const CameraData* mpVisibilityCamDat;
-  lev2::Camera* mpLev2Camera;
-
-  bool _explicitViewMatrix;
-  bool _explicitProjectionMatrix;
-
-  Frustum mFrustum;
-
-  fvec3 mCamXNormal;
-  fvec3 mCamYNormal;
-  fvec3 mCamZNormal;
-
-  fmtx4 mMatProj;
-  fmtx4 mMatProjID;
-  fmtx4 mMatView;
-  fmtx4 mIVMatrix;
-  fmtx4 mIVPMatrix;
-  fmtx4 mVPMatrix;
-
-  float mfWidth;
-  float mfHeight;
-  float mfOverrideWidth;
-  float mfOverrideHeight;
-  float mfAspect;
-  float mfTimeStamp;
   fvec3 mEye;
   fvec3 mTarget;
   fvec3 mUp;
-  float mAper;
-  float mHorizAper;
-  float mNear;
-  float mFar;
 
-  ork::lev2::GfxTarget* mpGfxTarget;
+  fvec3 _xnormal;
+  fvec3 _ynormal;
+  fvec3 _znormal;
+
+  lev2::Camera* mpLev2Camera = nullptr;
+  float mAper = 0.0f;
+  float mHorizAper = 0.0f;
+  float mNear = 0.0f;
+  float mFar = 0.0f;
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-} // namespace ork
+struct CameraVpData {
+  CameraData _camdat;
+  bool _explicitProjectionMatrix = false;
+  bool _explicitViewMatrix = false;
+  fmtx4 _vmatrix;
+  fmtx4 _ivmatrix;
+  fmtx4 _pmatrix;
+  fmtx4 _vpmatrix;
+  fmtx4 _ivpmatrix;
+  Frustum _frustum;
+  float _width = 1.0f;
+  float _height = 1.0f;
+  float _aspectRatio = 1.0f;
+  ////////////////////////////////////////////////////////////////////
+  void SetWidth(float fv) { _width = fv; }
+  void SetHeight(float fv) { _height = fv; }
+  ////////////////////////////////////////////////////////////////////
+  const Frustum& GetFrustum() const { return _frustum; }
+  Frustum& GetFrustum() { return _frustum; }
+  ////////////////////////////////////////////////////////////////////
+  // Get vectors whos length equals one pixel
+  //  given a worldpos (hopefully within the camera's frustum)
+  //  given viewport dimensions in
+  ////////////////////////////////////////////////////////////////////
+  void GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const;
+  ////////////////////////////////////////////////////////////////////
+  // generate direction vector/origin (from 2d normalized screen coordinate)
+  ////////////////////////////////////////////////////////////////////
+  void projectDepthRay(const fvec2& v2d, fvec3& vdir, fvec3& vori) const;
+  void projectDepthRay(const fvec2& v2d, fray3& ray_out) const;
+  ////////////////////////////////////////////////////////////////////
+  const fmtx4& GetVMatrix() const { return _vmatrix; }
+  const fmtx4& GetPMatrix() const { return _pmatrix; }
+  const fmtx4& GetIVPMatrix() const { return _ivpmatrix; }
+  const fmtx4& GetVPMatrix() const { return _vpmatrix; }
+  float GetAspect() const { return _aspectRatio; }
+ //void (ork::lev2::GfxTarget* ptarg) { mpGfxTarget = ptarg; }
+  ////////////////////////////////////////////////////////////////////
+  void setCustomView(const ork::fmtx4& view);
+  void setCustomProjection(const ork::fmtx4& proj);
+  //ork::lev2::GfxTarget* mpGfxTarget;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+} // namespace ork::lev2

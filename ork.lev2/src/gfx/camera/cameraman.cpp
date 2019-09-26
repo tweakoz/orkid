@@ -54,19 +54,19 @@ std::string Camera::get_full_name(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Camera::IsXVertical() const {
-  const fvec3& yn = _camcamdata.GetYNormal();
+  const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(1.0f, 0.0f, 0.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
 
 bool Camera::IsYVertical() const {
-  const fvec3& yn = _camcamdata.GetYNormal();
+  const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(0.0f, 1.0f, 0.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
 
 bool Camera::IsZVertical() const {
-  const fvec3& yn = _camcamdata.GetYNormal();
+  const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(0.0f, 0.0f, 1.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
@@ -78,7 +78,7 @@ fquat Camera::VerticalRot(float amt) const {
     fvec4 aarot(1.0f, 0.0f, 0.0f, amt);
     qrot.FromAxisAngle(aarot);
   } else if (IsYVertical()) {
-    const fvec3& yn = _camcamdata.GetYNormal();
+    const fvec3& yn = _camcamdata.yNormal();
     float dotY      = yn.Dot(fvec3(0.0f, 1.0f, 0.0f));
     float fsign     = (dotY > 0.0f) ? 1.0f : (dotY < 0.0f) ? -1.0f : 0.0f;
 
@@ -123,19 +123,21 @@ void Camera::CommonPostSetup(void) {
   vec_billboardUp    = fvec4(UpX, UpY, UpZ);
   vec_billboardRight = fvec4(RightX, RightY, RightZ);
 
+  auto v3up = vec_billboardUp.xyz();
+  auto v3rt = vec_billboardRight.xyz();
+  auto v3in = v3up.Cross(v3rt);
+
   ///////////////////////////////
   // generate frustum (useful for many things, like billboarding, clipping, LOD, etc.. )
   // we generate the frustum points, we should also generate plane eqns
 
-  Frustum& frus = _camcamdata.GetFrustum();
-  frus.Set(_camcamdata.GetIVPMatrix());
-  _camcamdata.SetXNormal(frus.mXNormal);
-  _camcamdata.SetYNormal(frus.mYNormal);
-  _camcamdata.SetZNormal(frus.mZNormal);
+  _camcamdata.setXNormal(v3up);
+  _camcamdata.setYNormal(v3rt);
+  _camcamdata.setZNormal(v3in);
 
   ///////////////////////////////
 
-  CamLoc = mvCenter + (_camcamdata.GetZNormal() * (-mfLoc));
+  CamLoc = mvCenter + (_camcamdata.zNormal() * (-mfLoc));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

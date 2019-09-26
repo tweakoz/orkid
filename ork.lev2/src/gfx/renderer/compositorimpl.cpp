@@ -153,9 +153,11 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
   drawdata._cimpl = this;
 
+  float aspectratio = float(target->GetW())/float(target->GetH());
+  // todo - compute CameraVpData per rendertarget/pass !
   auto& CAMCCTX   = RCFD.cameraMatrices();
 
-  CAMCCTX.mfAspectRatio = float(target->GetW())/float(target->GetH());
+  CAMCCTX._aspectRatio = aspectratio;
 
   SRect tgtrect = SRect(0, 0, target->GetW(), target->GetH());
 
@@ -175,7 +177,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   /////////////////////////////////
 
   if( _lightmgr ){ // WIP
-      const CameraData* cdata = RCFD.cameraData();
+      auto cdata = RCFD.cameraData();
       _lightmgr->EnumerateInFrustum(cdata->GetFrustum());
       if (_lightmgr->mLightsInFrustum.size()) {
         RCFD.SetLightManager(_lightmgr);
@@ -202,7 +204,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
     auto l2cam = spncam->getEditorCamera();
     if (l2cam){
       spncam->BindGfxTarget(target);
-      spncam->computeMatrices(CAMCCTX);
+      spncam->computeViewData(CAMCCTX);
       l2cam->_camcamdata.BindGfxTarget(target);
       //_tempcamdat = l2cam->mCameraData;
       ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);

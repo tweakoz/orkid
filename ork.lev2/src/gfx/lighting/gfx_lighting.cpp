@@ -603,8 +603,10 @@ HeadLightManager::HeadLightManager( RenderContextFrameData & FrameData )
 	, mHeadLightManager( mHeadLightManagerData )
 {
 	const CameraData* cdata = FrameData.cameraData();
-	ork::fvec3 vZ = cdata->GetZNormal();
-	ork::fvec3 vY = cdata->GetYNormal();
+  /*
+  auto camvd = cdata->computeViewData();
+	ork::fvec3 vZ = cdata->xNormal();
+	ork::fvec3 vY = cdata->yNormal();
 	ork::fvec3 vP = cdata->GetFrustum().mNearCorners[0];
 	mHeadLightMatrix = cdata->GetIVMatrix();
 	mHeadLightData.SetColor( fvec3(1.3f,1.3f,1.5f) );
@@ -615,7 +617,7 @@ HeadLightManager::HeadLightManager( RenderContextFrameData & FrameData )
 	mHeadLightGroup.mLightManager = FrameData.GetLightManager();
 	mHeadLightMatrix.SetTranslation( vP );
 	mHeadLightManager.mGlobalMovingLights.AddLight( & mHeadLight );
-	mHeadLightManager.mLightsInFrustum.push_back(& mHeadLight);
+	mHeadLightManager.mLightsInFrustum.push_back(& mHeadLight);*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -762,9 +764,9 @@ void LightingFxInterface::ApplyLighting( GfxTarget *pTarg, int iPass )
 
 						if( camdata )
 						{
-							vzdir = phedlight->GetHeadlightDir().GetX()*camdata->GetXNormal()
-							      + phedlight->GetHeadlightDir().GetY()*camdata->GetYNormal()
-							      + phedlight->GetHeadlightDir().GetZ()*camdata->GetZNormal();
+							vzdir = phedlight->GetHeadlightDir().GetX()*camdata->xNormal()
+							      + phedlight->GetHeadlightDir().GetY()*camdata->yNormal()
+							      + phedlight->GetHeadlightDir().GetZ()*camdata->zNormal();
 							vzdir.Normalize();
 						}
 

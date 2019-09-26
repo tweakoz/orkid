@@ -369,7 +369,7 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 	gtarg = targ;
 
 	const ork::lev2::RenderContextFrameData* __restrict framedata = targ->GetRenderContextFrameData();
-	const ork::CameraData* __restrict cdata = framedata->cameraData();
+	auto cdata = framedata->cameraData();
 	MaterialBase* pMTLBASE = 0;
 	//////////////////////////////////////////
 	mpVB = & GfxEnv::GetSharedDynamicVB();
@@ -394,8 +394,8 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 				{	ork::fmtx4 matrs( mtx );
 					matrs.SetTranslation( 0.0f, 0.0f, 0.0f );
 					matrs.Transpose();
-					ork::fvec3 nx = cdata->GetXNormal().Transform( matrs );
-					ork::fvec3 ny = cdata->GetYNormal().Transform( matrs );
+					ork::fvec3 nx = cdata->xNormal().Transform( matrs );
+					ork::fvec3 ny = cdata->yNormal().Transform( matrs );
 					ork::fvec3 NX = nx*-1.0f;
 					ork::fvec3 PX = nx;
 					ork::fvec3 NY = ny*-1.0f;
@@ -661,7 +661,7 @@ dataflow::outplugbase* StreakRenderer::GetOutput(int idx)
 ///////////////////////////////////////////////////////////////////////////////
 void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-	const ork::CameraData* cdata = framedata->cameraData();
+	auto cdata = framedata->cameraData();
 	//////////////////////////////////////////
 	ork::lev2::CVtxBuffer<ork::lev2::SVtxV12N12B12T8C4>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2();
 	float Scale = 1.0f;
@@ -677,7 +677,7 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 	{	////////////////////////////////////////////////////////////////////////////
 		ork::fmtx4 mtx_iw;
 		mtx_iw.inverseOf(mtx);
-		fvec3 obj_nrmz = fvec4(cdata->GetZNormal(),0.0f).Transform(mtx_iw).Normal();
+		fvec3 obj_nrmz = fvec4(cdata->zNormal(),0.0f).Transform(mtx_iw).Normal();
 		////////////////////////////////////////////////////////////////////////////
 		lev2::VtxWriter<SVtxV12N12B12T8C4> vw;
 		vw.Lock( targ, &vtxbuf, icnt );
@@ -837,7 +837,7 @@ dataflow::outplugbase* ModelRenderer::GetOutput(int idx)
 void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	if( 0 == GetModel() ) return;
 	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-	const ork::CameraData* cdata = framedata->cameraData();
+	auto cdata = framedata->cameraData();
 	int icnt = buffer.miNumParticles;
 	static const int kmaxinstances = 1024;
 	static fmtx4 gmatrixblock[ kmaxinstances ];

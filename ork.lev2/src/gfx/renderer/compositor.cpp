@@ -35,47 +35,6 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
     OrkAssert(cstack != nullptr);
     return cstack->top();
 }
-///////////////////////////////////////////////////////////////////////////////
-const CameraData* CompositingPassData::getCamera(lev2::RenderContextFrameData& framedata, int icamindex, int icullcamindex) {
-  auto DB      = framedata.GetDB();
-  auto gfxtarg = framedata.GetTarget();
-  CameraData TempCamData, TempCullCamData;
-  const CameraData* pcamdata     = DB->cameraData(icamindex);
-  const CameraData* pcullcamdata = DB->cameraData(icullcamindex);
-  gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera icam<%d> icullcam<%d>", icamindex,icullcamindex));
-  if (nullptr == pcamdata)
-    return nullptr;
-  /////////////////////////////////////////
-  // Culling camera ? (for debug)
-  /////////////////////////////////////////
-  if (pcullcamdata) {
-    TempCullCamData = *pcullcamdata;
-    TempCullCamData.BindGfxTarget(gfxtarg);
-    TempCullCamData.computeMatrices(framedata.cameraMatrices());
-    TempCamData.SetVisibilityCamDat(&TempCullCamData);
-    gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcullcamdata<%p>", pcullcamdata));
-  }
-  /////////////////////////////////////////
-  // try named CameraData from NODE
-  /////////////////////////////////////////
-  if (mpCameraName) {
-    const CameraData* pcamdataNAMED = DB->cameraData(*mpCameraName);
-    if (pcamdataNAMED)
-      pcamdata = pcamdataNAMED;
-      gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera pcamdataNAMED<%p>", pcamdataNAMED));
-  }
-  /////////////////////////////////////////
-  // try direct CameraData from NODE
-  /////////////////////////////////////////
-  if (auto from_node = _impl.TryAs<const CameraData*>()) {
-    if( from_node.value() != nullptr ){
-    pcamdata = from_node.value();
-    gfxtarg->debugMarker(FormatString("CompositingPassData::getCamera from_node<%p>", pcamdata));
-    }
-  }
-  /////////////////////////////////////////
-  return pcamdata;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

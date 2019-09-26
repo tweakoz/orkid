@@ -375,12 +375,9 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   const CameraData* camdat                       = fdata->cameraData();
   OrkAssert(camdat != 0);
 
-  const CameraMatrices& ccctx = fdata->cameraMatrices();
-  bool bvisicd                   = camdat->GetVisibilityCamDat() != 0;
-  if (bvisicd) {
-    camdat = camdat->GetVisibilityCamDat();
-  }
-  const Frustum& frus = bvisicd ? camdat->GetFrustum() : ccctx.mFrustum; // camdat->GetFrustum();
+  const CameraVpData& ccctx = fdata->cameraMatrices();
+
+  const Frustum& frus = ccctx.mFrustum;
 
   const ork::fmtx4& matw = item.mXfData.mWorldMatrix;
 

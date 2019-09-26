@@ -5,9 +5,9 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/Array.hpp>
 #include <ork/kernel/orkpool.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/camera/cameraman.h>
 #include <ork/lev2/gfx/gfxanim.h>
 #include <ork/lev2/gfx/gfxenv.h>
@@ -403,7 +403,7 @@ void GfxMaterialWiiBasic::EndPass(GfxTarget* pTarg) { pTarg->FXI()->EndPass(hMod
 int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
   mRenderContexInstData              = &RCID;
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  const ork::CameraData* cdata       = RCFD->cameraData();
+  auto cdata                         = RCFD->cameraData();
   bool is_picking                    = RCFD->isPicking();
   bool is_stereo                     = RCFD->isStereoOnePass();
 
@@ -418,7 +418,7 @@ int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstDat
   pTarg->FXI()->BindTechnique(hModFX, tek);
   int inumpasses = pTarg->FXI()->BeginBlock(hModFX, RCID);
 
-  mScreenZDir = cdata->GetZNormal();
+  mScreenZDir = cdata->zNormal();
 
   return inumpasses;
 }

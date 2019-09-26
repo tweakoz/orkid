@@ -270,7 +270,7 @@ void SceneEditorVP::SaveCubeMap()
 		CardinalCameras[icam].mNear = fnear;
 		CardinalCameras[icam].mFar = ffar;
 
-		CardinalCameras[icam].computeMatrices();
+		CardinalCameras[icam].computeViewData();
 	}
 
 	lev2::Texture* FaceTextures[6];

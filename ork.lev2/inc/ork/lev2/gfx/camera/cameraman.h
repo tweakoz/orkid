@@ -130,6 +130,8 @@ public:
 
   bool mbInMotion;
 
+  CameraVpData _curViewData;
+
   //////////////////////////////////////////////////////////////////////////////
 
   bool IsXVertical() const;

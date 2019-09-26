@@ -160,7 +160,6 @@ struct CompositingPassData {
   }
   static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
   std::vector<PoolString> getLayerNames() const;
-  const CameraData* getCamera(lev2::RenderContextFrameData& FrameData, int icamindex, int icullcamindex);
   void updateCompositingSize(int w, int h);
 };
 

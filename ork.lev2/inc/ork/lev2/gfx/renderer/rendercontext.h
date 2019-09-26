@@ -12,11 +12,9 @@
 #include "renderer_enum.h"
 #include <ork/util/crc.h>
 
-namespace ork {
-class CameraData;
-}
 namespace ork::lev2 {
 
+class CameraData;
 class IRenderer;
 class Camera;
 class Texture;
@@ -125,9 +123,9 @@ private:
 typedef svar64_t rendervar_t;
 
 struct StereoCamera {
-  const CameraData* _left = nullptr;
-  const CameraData* _right = nullptr;
-  const CameraData* _mono = nullptr;
+  const CameraVpData* _left = nullptr;
+  const CameraVpData* _right = nullptr;
+  const CameraVpData* _mono = nullptr;
 
   fmtx4 VL() const;
   fmtx4 VR() const;
@@ -164,8 +162,8 @@ struct RenderContextFrameData {
   void SetDstRect(const SRect& rect) { mDstRect = rect; }
   void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
   void setLayerName(const char* layername);
-  CameraMatrices& cameraMatrices() { return _cameraMatrices; }
-  const CameraMatrices& cameraMatrices() const { return _cameraMatrices; }
+  CameraVpData& cameraMatrices() { return _cameraMatrices; }
+  const CameraVpData& cameraMatrices() const { return _cameraMatrices; }
 
   void ClearLayers();
   void AddLayer(const PoolString& layername);
@@ -202,7 +200,7 @@ struct RenderContextFrameData {
   GfxTarget* mpTarget;
   const CameraData* mCameraData;
   const CameraData* mPickCameraData;
-  CameraMatrices _cameraMatrices;
+  CameraVpData _cameraMatrices;
   SRect mDstRect;
   SRect mMrtRect;
   orkset<PoolString> mLayers;

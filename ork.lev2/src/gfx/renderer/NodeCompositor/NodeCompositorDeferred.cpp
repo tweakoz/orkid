@@ -101,8 +101,9 @@ struct IMPL {
         /////////////////////////////////////////////////
         auto MTXI = targ->MTXI();
         drawdata.mCompositingGroupStack.push(CPD);
-        MTXI->PushPMatrix(CAMCCTX.mPMatrix);
-        MTXI->PushVMatrix(CAMCCTX.mVMatrix);
+
+        MTXI->PushPMatrix(CAMCCTX._pmatrix);
+        MTXI->PushVMatrix(CAMCCTX._vmatrix);
         MTXI->PushMMatrix(fmtx4::Identity);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
         targ->FBI()->Clear(node->_clearColor, 1.0f);

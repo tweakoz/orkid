@@ -53,7 +53,7 @@ struct VRIMPL {
   }
   ///////////////////////////////////////
   typedef const std::map<int, orkidvr::ControllerState>& controllermap_t;
-  void renderPoses(GfxTarget* targ, CameraData* camdat, controllermap_t controllers) {
+  void renderPoses(GfxTarget* targ, CameraVpData* camdat, controllermap_t controllers) {
     fmtx4 rx;
     fmtx4 ry;
     fmtx4 rz;
@@ -161,7 +161,7 @@ struct VRIMPL {
         auto LCAM   = orkidvr::device()._leftcamera;
         *_tempcamdat = *LCAM;
         _tempcamdat->BindGfxTarget(targ);
-        _tempcamdat->computeMatrices(CAMCCTX);
+        _tempcamdat->computeViewData(CAMCCTX);
         ddprops["selcamdat"_crcu].Set<const CameraData*>(_tempcamdat);
       }
       ////////////////////////////////////////////////

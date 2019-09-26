@@ -1071,17 +1071,11 @@ int GfxMaterialFx::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &Ma
 		OrkAssert( htek != 0 );
 		pTarg->FXI()->BindTechnique( mEffectInstance.mpEffect, htek );
 		inumpasses = pTarg->FXI()->BeginBlock( mEffectInstance.mpEffect, MatCtx );
-		//////////////////////////////
-		//pTarg->FXI()->BindParamBool( mEffectInstance.mpEffect, mIsShadowCasterParam, bisshadowcaster );
-		//pTarg->FXI()->BindParamBool( mEffectInstance.mpEffect, mIsShadowRecieverParam, bisshadowreciever );
-		//pTarg->FXI()->BindParamBool( mEffectInstance.mpEffect, mIsSkinnedParam, bisskinned );
-		//pTarg->FXI()->BindParamBool( mEffectInstance.mpEffect, mIsPickParam, bpick );
-		//////////////////////////////
 
 		const ork::lev2::RenderContextFrameData* framedata = pTarg->GetRenderContextFrameData();
-		const ork::CameraData* cdata = framedata->cameraData();
+		auto cdata = framedata->cameraData();
 
-		mScreenZDir = cdata->GetZNormal();
+		mScreenZDir = cdata->zNormal();
 
 	}
 
