@@ -97,6 +97,8 @@ public:
   /////////////////////////////////////////////////////////////////////
 
   CameraData _camcamdata;
+  CameraMatrices _curMatrices;
+  fvec2 _vpdim;
 
   float mfWorldSizeAtLocator;
 
@@ -130,7 +132,6 @@ public:
 
   bool mbInMotion;
 
-  CameraVpData _curViewData;
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -212,7 +213,6 @@ public: //
   bool mDoRotate;
   bool mDoDolly;
   bool mDoPan;
-  fvec2 _vpdim;
 
   bool UIEventHandler(const ui::Event& EV) final;
   void draw(GfxTarget* pT) final;

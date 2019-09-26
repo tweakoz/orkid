@@ -907,8 +907,8 @@ void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& r
 		HeadLight.miInFrustumID = 1;
 		HeadLightGroup.mLightMask.AddLight( & HeadLight );
 		HeadLightGroup.mLightManager = & HeadLightManager;
-		const RenderContextFrameData& FrameData = *targ->GetRenderContextFrameData();
-		HeadLightMatrix = FrameData.cameraData()->GetIVMatrix();
+		const RenderContextFrameData& RCFD = *targ->GetRenderContextFrameData();
+		HeadLightMatrix = RCFD.cameraMatrices().GetIVMatrix();
 		HeadLightManager.mGlobalMovingLights.AddLight( & HeadLight );
 		HeadLightManager.mLightsInFrustum.push_back(& HeadLight);
 		MatCtx.SetLightingGroup( & HeadLightGroup );

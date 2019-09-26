@@ -15,6 +15,7 @@
 namespace ork::lev2 {
 
 class CameraData;
+class CameraMatrices;
 class IRenderer;
 class Camera;
 class Texture;
@@ -123,9 +124,9 @@ private:
 typedef svar64_t rendervar_t;
 
 struct StereoCamera {
-  const CameraVpData* _left = nullptr;
-  const CameraVpData* _right = nullptr;
-  const CameraVpData* _mono = nullptr;
+  const CameraMatrices* _left = nullptr;
+  const CameraMatrices* _right = nullptr;
+  const CameraMatrices* _mono = nullptr;
 
   fmtx4 VL() const;
   fmtx4 VR() const;
@@ -148,22 +149,20 @@ struct RenderContextFrameData {
   RenderContextFrameData();
 
   GfxTarget* GetTarget(void) const { return mpTarget; }
-  const CameraData* cameraData() const { return mCameraData; }
-  const CameraData* GetPickCameraData() const { return mPickCameraData; }
+  const CameraMatrices* cameraData() const { return mCameraData; }
   LightManager* GetLightManager() const { return mLightManager; }
 
   const SRect& GetDstRect() const { return mDstRect; }
   const SRect& GetMrtRect() const { return mMrtRect; }
 
-  void setCameraData(const CameraData* data) { mCameraData = data; }
-  void SetPickCameraData(const CameraData* data) { mPickCameraData = data; }
+  void setCameraData(const CameraMatrices* data) { mCameraData = data; }
   void SetLightManager(LightManager* lmgr) { mLightManager = lmgr; }
   void SetTarget(GfxTarget* ptarg);
   void SetDstRect(const SRect& rect) { mDstRect = rect; }
   void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
   void setLayerName(const char* layername);
-  CameraVpData& cameraMatrices() { return _cameraMatrices; }
-  const CameraVpData& cameraMatrices() const { return _cameraMatrices; }
+  CameraMatrices& cameraMatrices() { return _cameraMatrices; }
+  const CameraMatrices& cameraMatrices() const { return _cameraMatrices; }
 
   void ClearLayers();
   void AddLayer(const PoolString& layername);
@@ -196,11 +195,10 @@ struct RenderContextFrameData {
   StereoCamera _stereoCamera;
   orkstack<IRenderTarget*> mRenderTargetStack;
   usermap_t _userProperties;
-  LightManager* mLightManager;
-  GfxTarget* mpTarget;
-  const CameraData* mCameraData;
-  const CameraData* mPickCameraData;
-  CameraVpData _cameraMatrices;
+  LightManager* mLightManager = nullptr;
+  GfxTarget* mpTarget = nullptr;
+  const CameraMatrices* mCameraData = nullptr;
+  CameraMatrices _cameraMatrices;
   SRect mDstRect;
   SRect mMrtRect;
   orkset<PoolString> mLayers;

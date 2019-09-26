@@ -110,15 +110,21 @@ fquat Camera::HorizontalRot(float amt) const {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Camera::CommonPostSetup(void) {
+
+  float aspect = _vpdim.x/_vpdim.y;
+  _curMatrices = _camcamdata.computeMatrices(aspect);
+
+  fmtx4 ivmtx = _curMatrices.GetIVMatrix();
+
   ///////////////////////////////
   // billboard support
 
-  float UpX    = _camcamdata.GetIVMatrix().GetElemXY(0, 0);
-  float UpY    = _camcamdata.GetIVMatrix().GetElemXY(0, 1);
-  float UpZ    = _camcamdata.GetIVMatrix().GetElemXY(0, 2);
-  float RightX = _camcamdata.GetIVMatrix().GetElemXY(1, 0);
-  float RightY = _camcamdata.GetIVMatrix().GetElemXY(1, 1);
-  float RightZ = _camcamdata.GetIVMatrix().GetElemXY(1, 2);
+  float UpX    = ivmtx.GetElemXY(0, 0);
+  float UpY    = ivmtx.GetElemXY(0, 1);
+  float UpZ    = ivmtx.GetElemXY(0, 2);
+  float RightX = ivmtx.GetElemXY(1, 0);
+  float RightY = ivmtx.GetElemXY(1, 1);
+  float RightZ = ivmtx.GetElemXY(1, 2);
 
   vec_billboardUp    = fvec4(UpX, UpY, UpZ);
   vec_billboardRight = fvec4(RightX, RightY, RightZ);

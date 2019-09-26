@@ -375,7 +375,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   const CameraData* camdat                       = fdata->cameraData();
   OrkAssert(camdat != 0);
 
-  const CameraVpData& ccctx = fdata->cameraMatrices();
+  const CameraMatrices& ccctx = fdata->cameraMatrices();
 
   const Frustum& frus = ccctx.mFrustum;
 

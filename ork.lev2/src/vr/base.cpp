@@ -15,9 +15,9 @@ Device::Device()
     , _supportsStereo(false)
     , _hmdinputgroup(*lev2::InputManager::inputGroup("hmd")) {
 
-  _leftcamera = new CameraVpData;
-  _centercamera = new CameraVpData;
-  _rightcamera = new CameraVpData;
+  _leftcamera = new CameraMatrices;
+  _centercamera = new CameraMatrices;
+  _rightcamera = new CameraMatrices;
 
   auto handgroup = lev2::InputManager::inputGroup("hands");
   handgroup->setChannel("left.button1").as<bool>(false);

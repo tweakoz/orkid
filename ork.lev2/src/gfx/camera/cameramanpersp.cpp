@@ -122,13 +122,8 @@ void EzUiCam::draw(GfxTarget* pT) {
   pT->MTXI()->PopUIMatrix();
   ///////////////////////////////////////////////////////////////
   // printf( "CAMHUD\n" );
-  CameraData camdat = _camcamdata;
   float aspect = float(pT->GetW())/float(pT->GetH());
-  _curViewData = camdat.computeViewData(aspect);
-  //////////////////////////////////////////
-  // this is necessary to get UI based rotations working correctly
-  //////////////////////////////////////////
-  _camcamdata = camdat;
+  _curMatrices = _camcamdata.computeMatrices(aspect);
   ///////////////////////////////////////////////////////////////
 
   pT->BindMaterial(GfxEnv::GetDefault3DMaterial());
@@ -176,7 +171,7 @@ void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
 
   fvec3 outx, outy;
 
-  _curViewData.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
+  _curMatrices.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
 
   float fvl = ViewLengthToWorldLength(mvCenter, 1.0f);
   float fdx = float(esx - ipushx);
@@ -286,14 +281,14 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
       fvec3 vrn, vrf;
 
-      GenerateDepthRay(pos2D, vrn, vrf, _curViewData.GetIVPMatrix());
+      GenerateDepthRay(pos2D, vrn, vrf, _curMatrices.GetIVPMatrix());
 
       if (isleft || isright) {
         ////////////////////////////////////////////////////////
         // calculate planes with world rotation, but current view target as origin
 
         fvec4 Origin = mvCenter;
-        _manipHandler.Init(pos2D, _curViewData.GetIVPMatrix(), QuatC);
+        _manipHandler.Init(pos2D, _curMatrices.GetIVPMatrix(), QuatC);
       }
       //////////////////////////////////////////////////
 
@@ -449,7 +444,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
         fvec3 outx, outy;
 
-        _curViewData.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
+        _curMatrices.GetPixelLengthVectors(mvCenter, _vpdim, outx, outy);
 
         float fvl = ViewLengthToWorldLength(mvCenter, 1.0f);
         float fdx = float(esx - beginx);
@@ -497,7 +492,7 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
         fvec3 Pos = mvCenter;
         fvec3 UpVector;
         fvec3 RightVector;
-        _curViewData.GetPixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
+        _curMatrices.GetPixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
         float CameraFactor = RightVector.Mag() * 20.0f; // 20 pixels of movement
         constexpr float kmin = 0.1f;
         constexpr float kmax = 20000.0f;
@@ -513,7 +508,6 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
   }
 
   updateMatrices();
-  // CommonPostSetup();
 
   return (mDoPan || mDoRotate || mDoDolly);
 }
@@ -593,7 +587,7 @@ void EzUiCam::updateMatrices(void) {
   _camcamdata.Lookat(veye, vtarget, vup);
 
   ///////////////////////////////////////////////////////////////
-  //CameraVpData ctx = _camcamdata.computeViewData(ctx);
+  //CameraMatrices ctx = _camcamdata.computeMatrices(ctx);
   ///////////////////////////////////////////////////////////////
   CommonPostSetup();
 }
@@ -604,7 +598,7 @@ void EzUiCam::updateMatrices(void) {
 float EzUiCam::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
   float rval = 1.0f;
 
-  const auto& frustum = _curViewData.GetFrustum();
+  const auto& frustum = _curMatrices.GetFrustum();
   float distATnear = (frustum.mNearCorners[1] - frustum.mNearCorners[0]).Mag();
   float distATfar = (frustum.mFarCorners[1] - frustum.mFarCorners[0]).Mag();
   float depthscaler = distATfar / distATnear;
@@ -631,8 +625,8 @@ void EzUiCam::GenerateDepthRay(const fvec2& pos2D, fvec3& rayN, fvec3& rayF, con
   //////////////////////////////////////////
   fvec4 vWinN(fx, fy, 0.0f);
   fvec4 vWinF(fx, fy, 1.0f);
-  fmtx4::UnProject(_curViewData.GetIVPMatrix(), vWinN, rayN);
-  fmtx4::UnProject(_curViewData.GetIVPMatrix(), vWinF, rayF);
+  fmtx4::UnProject(_curMatrices.GetIVPMatrix(), vWinN, rayN);
+  fmtx4::UnProject(_curMatrices.GetIVPMatrix(), vWinF, rayF);
   //////////////////////////////////////////
 }
 

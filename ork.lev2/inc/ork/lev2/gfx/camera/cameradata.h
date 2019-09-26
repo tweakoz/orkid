@@ -14,7 +14,7 @@
 namespace ork::lev2 {
 class GfxTarget;
 class Camera;
-struct CameraVpData;
+struct CameraMatrices;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -22,8 +22,7 @@ struct CameraData {
 
   CameraData();
 
-  //CameraVpData computeViewData() const;
-  CameraVpData computeViewData(float faspect = 1.0f) const;
+  CameraMatrices computeMatrices(float faspect = 1.0f) const;
 
   const fvec3& GetEye() const { return mEye; }
   const fvec3& GetTarget() const { return mTarget; }
@@ -66,7 +65,7 @@ struct CameraData {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct CameraVpData {
+struct CameraMatrices {
   CameraData _camdat;
   bool _explicitProjectionMatrix = false;
   bool _explicitViewMatrix = false;
@@ -97,6 +96,7 @@ struct CameraVpData {
   void projectDepthRay(const fvec2& v2d, fvec3& vdir, fvec3& vori) const;
   void projectDepthRay(const fvec2& v2d, fray3& ray_out) const;
   ////////////////////////////////////////////////////////////////////
+  const fmtx4& GetIVMatrix() const { return _ivmatrix; }
   const fmtx4& GetVMatrix() const { return _vmatrix; }
   const fmtx4& GetPMatrix() const { return _pmatrix; }
   const fmtx4& GetIVPMatrix() const { return _ivpmatrix; }

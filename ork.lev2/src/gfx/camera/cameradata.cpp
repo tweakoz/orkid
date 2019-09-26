@@ -54,13 +54,13 @@ void CameraData::Lookat(const fvec3& eye, const fvec3& tgt, const fvec3& up) {
   mUp     = up;
 }
 
-void CameraVpData::setCustomView(const ork::fmtx4& view) {
+void CameraMatrices::setCustomView(const ork::fmtx4& view) {
   _vmatrix = view;
   // view.dump("setview");
   _explicitViewMatrix = true;
 }
 
-void CameraVpData::setCustomProjection(const ork::fmtx4& proj) {
+void CameraMatrices::setCustomProjection(const ork::fmtx4& proj) {
   // proj.dump("setproj");
   _pmatrix                  = proj;
   _explicitProjectionMatrix = true;
@@ -72,7 +72,7 @@ void CameraVpData::setCustomProjection(const ork::fmtx4& proj) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CameraVpData::projectDepthRay(const fvec2& v2d, fvec3& vdir, fvec3& vori) const {
+void CameraMatrices::projectDepthRay(const fvec2& v2d, fvec3& vdir, fvec3& vori) const {
   fvec3 near_xt_lerp;
   near_xt_lerp.Lerp(_frustum.mNearCorners[0], _frustum.mNearCorners[1], v2d.GetX());
   fvec3 near_xb_lerp;
@@ -89,7 +89,7 @@ void CameraVpData::projectDepthRay(const fvec2& v2d, fvec3& vdir, fvec3& vori) c
   vori = near_lerp;
 }
 
-void CameraVpData::projectDepthRay(const fvec2& v2d, fray3& ray_out) const {
+void CameraMatrices::projectDepthRay(const fvec2& v2d, fray3& ray_out) const {
   fvec3 dir, ori;
   projectDepthRay(v2d, dir, ori);
   ray_out = fray3(ori, dir);
@@ -97,7 +97,7 @@ void CameraVpData::projectDepthRay(const fvec2& v2d, fray3& ray_out) const {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CameraVpData::GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const {
+void CameraMatrices::GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec3& OutX, fvec3& OutY) const {
   /////////////////////////////////////////////////////////////////
   int ivpw = int(vp.x);
   int ivph = int(vp.y);
@@ -126,8 +126,8 @@ void CameraVpData::GetPixelLengthVectors(const fvec3& Pos, const fvec2& vp, fvec
 
 ////////////////////////////////////////////////////////////////////////////////
 
-CameraVpData CameraData::computeViewData(float faspect) const {
-  CameraVpData rval;
+CameraMatrices CameraData::computeMatrices(float faspect) const {
+  CameraMatrices rval;
   ///////////////////////////////
   // gameplay calculation
   ///////////////////////////////
@@ -166,7 +166,7 @@ CameraVpData CameraData::computeViewData(float faspect) const {
 ////////////////////////////////////////////////////////////////////////////////
 
 #if 0
-CameraVpData CameraData::computeViewData(& calcctx) {
+CameraMatrices CameraData::computeMatrices(& calcctx) {
 
   // orkprintf( "ccd camEYE <%f %f %f>\n", mEye.GetX(), mEye.GetY(), mEye.GetZ() );
   // orkprintf( "ccd camTGT <%f %f %f>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetZ() );
