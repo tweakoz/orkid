@@ -1,7 +1,10 @@
 #pragma once
 #include "../file/chunkfile.inl"
+#include "../file/fileenv.h"
 #include "../util/crc64.h"
+#include "environment.h"
 #include "mutex.h"
+#include <boost/filesystem.hpp>
 
 namespace ork {
 
@@ -20,12 +23,41 @@ struct DataBlockMgr {
   DataBlockMgr() {}
   ~DataBlockMgr() {}
 	//////////////////////////////////////////////////////////////////////////////
+	static std::string _generateCachePath(uint64_t key) {
+		using namespace boost::filesystem;
+		std::string cache_dir;
+		genviron.get("OBT_STAGE",cache_dir);
+		cache_dir = cache_dir+"/dblockcache";
+		if(false == exists(cache_dir)){
+			printf( "Making cache_dir folder<%s>\n", cache_dir.c_str() );
+			create_directory( cache_dir );
+		}
+		auto cache_path = cache_dir+"/"+FormatString("%zx.bin",key);
+		return cache_path;
+	}
+	//////////////////////////////////////////////////////////////////////////////
   static inline datablockptr_t findDataBlock(uint64_t key) {
     auto& inst          = instance();
     datablockptr_t rval = nullptr;
-    inst._blockmap.atomicOp([&rval,key](datablockmap_t& m) {
+		auto cache_path = _generateCachePath(key);
+    inst._blockmap.atomicOp([&rval,key,cache_path](datablockmap_t& m) {
       auto it = m.find(key);
-      if (it != m.end()) {
+      if (it == m.end()) {
+				using namespace boost::filesystem;
+				if( exists(cache_path) ){
+					rval = std::make_shared<DataBlock>();
+					size_t len = file_size(cache_path);
+					rval->reserve(len);
+					FILE* fin = fopen(cache_path.c_str(), "rb");
+					void* pdata = malloc(len);
+					fread(pdata,len,1,fin);
+					fclose(fin);
+					rval->addData(pdata,len);
+					free(pdata);
+					m[key] = rval;
+				}
+			}
+			else {
         rval = it->second;
       }
     });
@@ -34,10 +66,18 @@ struct DataBlockMgr {
 	//////////////////////////////////////////////////////////////////////////////
   static inline void setDataBlock(uint64_t key, datablockptr_t item) {
     auto& inst = instance();
-    inst._blockmap.atomicOp([item,key](datablockmap_t& m) {
+		auto cache_path = _generateCachePath(key);
+    inst._blockmap.atomicOp([item,key,cache_path](datablockmap_t& m) {
       auto it = m.find(key);
       assert(it == m.end());
       m[key] = item;
+			using namespace boost::filesystem;
+			if( false == exists(cache_path) ){
+				FILE* fout = fopen(cache_path.c_str(), "wb");
+				fwrite(item->_data.GetData(), item->_data.GetSize(), 1, fout );
+				fclose(fout);
+			}
+
     });
   }
 	//////////////////////////////////////////////////////////////////////////////
