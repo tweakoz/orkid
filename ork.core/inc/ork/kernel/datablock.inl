@@ -64,15 +64,15 @@ struct DataBlockMgr {
     return rval;
   }
 	//////////////////////////////////////////////////////////////////////////////
-  static inline void setDataBlock(uint64_t key, datablockptr_t item) {
+  static inline void setDataBlock(uint64_t key, datablockptr_t item, bool cacheable=true) {
     auto& inst = instance();
 		auto cache_path = _generateCachePath(key);
-    inst._blockmap.atomicOp([item,key,cache_path](datablockmap_t& m) {
+    inst._blockmap.atomicOp([item,key,cache_path,cacheable](datablockmap_t& m) {
       auto it = m.find(key);
       assert(it == m.end());
       m[key] = item;
 			using namespace boost::filesystem;
-			if( false == exists(cache_path) ){
+			if( false == exists(cache_path) and cacheable ){
 				FILE* fout = fopen(cache_path.c_str(), "wb");
 				fwrite(item->_data.GetData(), item->_data.GetSize(), 1, fout );
 				fclose(fout);
