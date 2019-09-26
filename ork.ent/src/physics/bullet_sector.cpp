@@ -7,7 +7,7 @@
 
 #include <ork/pch.h>
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 #include <pkg/ent/bullet.h>
 #include <pkg/ent/bullet_sector.h>
 #include <pkg/ent/RacingLineData.h>

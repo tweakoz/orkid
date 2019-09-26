@@ -145,12 +145,11 @@ void GedWidget::ComputeStackHash()
 
 	U64 rval = 0;
 	boost::Crc64 the_hash;
-	boost::crc64_init( the_hash );
 
 	int isize = (int) mItemStack.size();
 
-	crc64_compute( the_hash, & mModel, sizeof(ObjModel*) );
-	crc64_compute( the_hash, & isize, sizeof(isize) );
+	the_hash.accumulateItem<ObjModel*>( &mModel );
+	the_hash.accumulateItem<int>( isize );
 
 	int idx = 0;
 	for( std::deque<GedItemNode*>::const_iterator it=mItemStack.begin(); it!=mItemStack.end(); it++ )
@@ -163,16 +162,14 @@ void GedWidget::ComputeStackHash()
 
 		int ilen = (int)strlen( pname );
 
-		crc64_compute( the_hash, pname, ilen );
-		crc64_compute( the_hash, & idx, sizeof(idx) );
+		the_hash.accumulate(pname,ilen);
+		the_hash.accumulateItem<int>( idx );
 
 		idx++;
 
 	}
-	//for( 		mItemStack
-	boost::crc64_fin(the_hash);
-
-	mStackHash = the_hash.crc0;// | (the_hash.crc1<<32);
+	the_hash.finish();
+	mStackHash = the_hash.result();// | (the_hash.crc1<<32);
 }
 
 //////////////////////////////////////////////////////////////////////////////

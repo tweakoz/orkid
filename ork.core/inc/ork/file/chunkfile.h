@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -22,7 +22,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
-	
+
 namespace chunkfile {
 
 class OutputStream : public ork::stream::IOutputStream
@@ -30,9 +30,9 @@ class OutputStream : public ork::stream::IOutputStream
 public:
 
 	bool Write(const unsigned char *buffer, size_type bufmax);  // virtual
-	
+
 	OutputStream();
-	
+
 	/////////////////////////////////////////////
 	template <typename T> void AddItem( const T& data );
 	void AddItem( const bool& data );
@@ -44,15 +44,16 @@ public:
 	void AddItem( const fvec4& data );
 	void AddItem( const fvec3& data );
 	void AddItem( const fvec2& data );
+	void AddData( const void* ptr, size_t length );
 	/////////////////////////////////////////////
 
-	int GetSize() const { return int(mData.size()); }
+	size_t GetSize() const { return mData.size(); }
 	const void* GetData() const { return GetSize() ? & mData[0] : 0; }
 
 	/////////////////////////////////////////////
 
 private:
-	orkvector<unsigned char>	mData;
+	orkvector<uint8_t>	mData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,12 +85,12 @@ struct InputStream
 	template< typename T > void RefItem( T* &item );
 
 	const void * GetCurrent();
-	void * GetDataAt( int idx ); 
+	void * GetDataAt( int idx );
 	int GetLength() const { return milength; }
-
+	void advance(size_t l) { midx+=l;}
 	const void*	mpbase;
-	int			midx;
-	int			milength;
+	size_t			midx;
+	size_t			milength;
 
 };
 
@@ -104,17 +105,17 @@ template <typename Allocator> class Reader
 	Allocator mAllocator;
 
 public:
-	
+
 	Reader( const file::Path& inpath, const char* ptype );
 	~Reader();
 
 	InputStream* GetStream( const char* streamname );
-	const char* GetString( int index );	
+	const char* GetString( int index );
 
 	bool IsOk() const { return mbOk; }
 
 private:
-	
+
 	int	mistrtablen;
 	const char* mpstrtab;
 	bool mbOk;
@@ -125,7 +126,3 @@ private:
 ///////////////////////////////////////////////////////////////////////////////
 } } // namespace ork/chunkfile
 ///////////////////////////////////////////////////////////////////////////////
-
-
-
-

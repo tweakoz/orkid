@@ -10,37 +10,6 @@ namespace ork::lev2 {
     ERGST_LAST,
   };
 
-
-    enum EOutputTimeStep {
-      EOutputTimeStep_RealTime = 0,
-      EOutputTimeStep_15fps,
-      EOutputTimeStep_24fps,
-      EOutputTimeStep_30fps,
-      EOutputTimeStep_48fps,
-      EOutputTimeStep_60fps,
-      EOutputTimeStep_72fps,
-      EOutputTimeStep_96fps,
-      EOutputTimeStep_120fps,
-      EOutputTimeStep_240fps,
-    };
-
-    enum EOutputRes {
-      EOutputRes_640x480 = 0,
-      EOutputRes_960x640,
-      EOutputRes_1024x1024,
-      EOutputRes_1280x720,
-      EOutputRes_1600x1200,
-      EOutputRes_1920x1080,
-    };
-
-    enum EOutputResMult {
-      EOutputResMult_Quarter = 0,
-      EOutputResMult_Half,
-      EOutputResMult_Full,
-      EOutputResMult_Double,
-      EOutputResMult_Quadruple,
-    };
-
     ///////////////////////////////////////////////////////////////////////////////
 
     enum ECOMPOSITEBlend {

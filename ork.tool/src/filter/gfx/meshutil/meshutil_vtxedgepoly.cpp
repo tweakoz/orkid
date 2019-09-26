@@ -19,7 +19,7 @@ void AnnoMap::SetAnnotation( const std::string& key, const std::string& val )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-AnnoMap* AnnoMap::Fork() const 
+AnnoMap* AnnoMap::Fork() const
 {	AnnoMap* newannomap = new AnnoMap;
 	newannomap->mAnnotations = mAnnotations;
 	return newannomap;
@@ -42,7 +42,7 @@ orkset<AnnoMap*> AnnoMap::gAllAnnoSets;
 ///////////////////////////////////////////////////////////////////////////////
 
 /*void vertex::ConnectToPoly( int ipoly )
-{	
+{
 	bool bpres = false;
 
 	for( int i=0; i<miNumConPoly; i++ )
@@ -53,7 +53,7 @@ orkset<AnnoMap*> AnnoMap::gAllAnnoSets;
 			bpres = true;
 		}
 	}
-	
+
 	if( false == bpres )
 	{
 		mConnectedPolys[miNumConPoly] = ipoly;
@@ -118,23 +118,22 @@ void vertex::Center( const vertex** pverts, int icnt )
 
 U64 vertex::Hash() const
 {	boost::Crc64 crc64;
-	crc64_init(crc64);
-	crc64_compute(crc64, &miNumWeights, sizeof(miNumWeights));
-	crc64_compute(crc64, &miNumColors, sizeof(miNumColors));
-	crc64_compute(crc64, &miNumUvs, sizeof(miNumUvs));
+	crc64.accumulateItem(miNumWeights);
+	crc64.accumulateItem(miNumColors);
+	crc64.accumulateItem(miNumUvs);
 	for(int i = 0; i < vertex::kmaxinfluences; i++)
 	{	int ilen = (int) mJointNames[i].length();
 		if( ilen )
-		{	crc64_compute(crc64, mJointNames[i].c_str(), mJointNames[i].length());
+		{	crc64.accumulateString(mJointNames[i]);
 		}
 	}
-	crc64_compute(crc64, &mCol, sizeof(mCol));
-	crc64_compute(crc64, &mUV, sizeof(mUV));
-	crc64_compute(crc64, &mJointWeights, sizeof(mJointWeights));
-	crc64_compute(crc64, &mNrm, sizeof(mNrm));
-	crc64_compute(crc64, &mPos, sizeof(mPos));
-	crc64_fin(crc64);
-	return crc64.crc0;
+	crc64.accumulateItem(mCol);
+	crc64.accumulateItem(mUV);
+	crc64.accumulateItem(mJointWeights);
+	crc64.accumulateItem(mNrm);
+	crc64.accumulateItem(mPos);
+	crc64.finish();
+	return crc64.result();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -148,7 +147,7 @@ void edge::ConnectToPoly( int ipoly )
 
 U64 edge::GetHashKey( void ) const
 {	u64 uv = (miVertexA<miVertexB)
-		? u64(miVertexA)|(u64(miVertexB)<<32) 
+		? u64(miVertexA)|(u64(miVertexB)<<32)
 		: u64(miVertexB)|(u64(miVertexA)<<32);
 	return uv;
 }
@@ -217,7 +216,7 @@ float poly::ComputeArea( const vertexpool & vpool, const fmtx4 & MatRange ) cons
 	ork::fvec3 base = vpool.GetVertex(miVertices[0]).mPos.Transform(MatRange);
 	ork::fvec3 prev = vpool.GetVertex(miVertices[1]).mPos.Transform(MatRange);
 	// compute area polygon as area of triangle fan
-	for(int i=2 ; i<miNumSides ; i++) 
+	for(int i=2 ; i<miNumSides ; i++)
 	{	ork::fvec3 next = vpool.GetVertex(miVertices[i]).mPos.Transform(MatRange);
 		// area of triangle 1/2 length of cross product the vector of any two edges
 		farea += (prev-base).Cross(next-base).Mag() * 0.5f;
@@ -267,7 +266,7 @@ U64 poly::HashIndices( void ) const
 						array[j+1] = temp;
 						test=1;
 					}
-				} 
+				}
 				if(test==0) break; //will exit if the list is sorted!
 			}
 		}
@@ -281,8 +280,9 @@ U64 poly::HashIndices( void ) const
 	{	myarray[i] = 0;
 	}
 	bubblesort::doit(myarray,inumv);
-	boost::Crc64 crc64 = boost::crc64( (const void *) & myarray[0], sizeof(int)*inumv );
-	U64 ucrc = crc64.crc0;
+	boost::Crc64 crc64;
+	crc64.accumulate( (const void *) & myarray[0], sizeof(int)*inumv );
+	U64 ucrc = crc64.result();
 	return ucrc;
 }
 

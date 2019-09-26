@@ -39,8 +39,6 @@ struct HeightMap {
 
   float GetWorldHeight() const { return mWorldHeight; }
 
-  bool CalcClosestAddress(const fvec3& to, float& outx, float& outz) const;
-
   float GetHeight(int ix, int iz) const;
   void SetHeight(int ix, int iz, float fh);
 
@@ -70,6 +68,7 @@ struct HeightMap {
   float mIndexToUnitX;
   float mIndexToUnitZ;
   uint16_t* _pu16 = nullptr;
+  uint64_t _hash = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

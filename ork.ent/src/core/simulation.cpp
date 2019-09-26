@@ -115,8 +115,7 @@ Simulation::Simulation(const SceneData* sdata, Application* application)
     , mDeltaTimeAccum(0.0f)
     , mfAvgDtAcc(0.0f)
     , mfAvgDtCtr(0.0f)
-    , mEntityUpdateCount(0)
-    , _cachedComSys(nullptr) {
+    , mEntityUpdateCount(0) {
   printf("new simulation <%p>\n", this);
 
   AssertOnOpQ2(UpdateSerialOpQ());
@@ -171,10 +170,10 @@ Simulation::~Simulation() {
 ///////////////////////////////////////////////////////////////////////////
 
 CompositingSystem* Simulation::compositingSystem() {
-  if (nullptr == _cachedComSys) {
-    _cachedComSys = findSystem<CompositingSystem>();
-  }
-  return _cachedComSys;
+    return findSystem<CompositingSystem>();
+}
+const CompositingSystem* Simulation::compositingSystem() const {
+  return findSystem<CompositingSystem>();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,7 +186,7 @@ float Simulation::random(float mmin, float mmax) {
 ///////////////////////////////////////////////////////////////////////////////
 float Simulation::ComputeDeltaTime() {
   auto compsys     = compositingSystem();
-  float frame_rate = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
+  float frame_rate = 0.0f;
 
   AssertOnOpQ2(UpdateSerialOpQ());
   float systime = float(OldSchool::GetRef().GetLoResTime());
@@ -644,7 +643,6 @@ void Simulation::decomposeSystems() {
       delete comp;
     }
     syslut.clear();
-    _cachedComSys = nullptr;
   });
 }
 ///////////////////////////////////////////////////////////////////////////
@@ -933,8 +931,7 @@ static void CopyCameraData(const Simulation::CameraLut& srclut, CameraLut& dstlu
 void Simulation::updateThreadTick() {
   auto dbuf = ork::lev2::DrawableBuffer::LockWriteBuffer(7);
   OrkAssert(dbuf);
-  auto compsys               = this->compositingSystem();
-  float frame_rate           = compsys ? compsys->_impl.currentFrameRate() : 0.0f;
+  float frame_rate           = desiredFrameRate();
   bool externally_fixed_rate = (frame_rate != 0.0f);
   if (externally_fixed_rate) {
     lev2::RenderSyncToken syntok;
@@ -1127,6 +1124,14 @@ struct MyTimer {
   }
 };
 
+float Simulation::desiredFrameRate() const {
+  auto cmci                  = compositingSystem();
+  float frame_rate           = 0.0f;
+  bool externally_fixed_rate = (frame_rate != 0.0f);
+  // todo:  hook into new NodeCompositorFile node
+  return frame_rate;
+}
+
 void Simulation::Update() {
   AssertOnOpQ2(UpdateSerialOpQ());
   // ork::msleep(1);
@@ -1152,8 +1157,7 @@ void Simulation::Update() {
       // Update Components
       ///////////////////////////////
 
-      auto cmci                  = compositingSystem();
-      float frame_rate           = cmci ? cmci->_impl.currentFrameRate() : 0.0f;
+      float frame_rate           = desiredFrameRate();
       bool externally_fixed_rate = (frame_rate != 0.0f);
 
       // float fdelta = 1.0f/60.0f; //GetDeltaTime();

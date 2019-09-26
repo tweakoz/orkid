@@ -3,44 +3,49 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
 
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 #include <ork/kernel/string/string.h>
 
 namespace ork { namespace chunkfile {
 
 ///////////////////////////////////////////////////////////////////////////////
+void OutputStream::AddData( const void* ptr, size_t length )
+{
+  Write( (unsigned char*) ptr, length );
+}
+///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const bool& data )
 {	bool temp = data;
     swapbytes_dynamic(temp);
-    Write( (unsigned char*) & temp, sizeof(temp) );			
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const unsigned char& data )
-{	Write(&data, sizeof(data));		
+{	Write(&data, sizeof(data));
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const unsigned short& data )
 {	unsigned short temp = data;
     swapbytes_dynamic(temp);
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const int& data )
 {	int temp = data;
     swapbytes_dynamic(temp);
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const float& data )
 {	float temp = data;
     swapbytes_dynamic(temp);
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const fmtx4& data )
@@ -49,7 +54,7 @@ void OutputStream::AddItem( const fmtx4& data )
     {
         swapbytes_dynamic( temp.GetArray()[i] );
     }
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const fvec4& data )
@@ -58,7 +63,7 @@ void OutputStream::AddItem( const fvec4& data )
     {
         swapbytes_dynamic( temp.GetArray()[i] );
     }
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const fvec3& data )
@@ -67,7 +72,7 @@ void OutputStream::AddItem( const fvec3& data )
     {
         swapbytes_dynamic( temp.GetArray()[i] );
     }
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 void OutputStream::AddItem( const fvec2& data )
@@ -76,12 +81,12 @@ void OutputStream::AddItem( const fvec2& data )
     {
         swapbytes_dynamic( temp.GetArray()[i] );
     }
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 
 bool OutputStream::Write(const unsigned char *buffer, size_type bufmax)  // virtual
-{	
+{
 	for( int i=0; i<int(bufmax); i++ )
 	{
 		mData.push_back( *(buffer+i) );
@@ -99,20 +104,20 @@ OutputStream::OutputStream()
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-InputStream::InputStream( const void*pb, int ilength ) 
+InputStream::InputStream( const void*pb, int ilength )
     : mpbase(pb)
     , midx(0)
     , milength(ilength)
 {
 }
 
-const void * InputStream::GetCurrent() 
+const void * InputStream::GetCurrent()
 {
     const char *pchbase = (const char*) mpbase;
     return (const void*) & pchbase[ midx ];
 }
 
-void* InputStream::GetDataAt( int idx ) 
+void* InputStream::GetDataAt( int idx )
 {
     OrkAssert(idx<milength);
     const char *pchbase = (const char*) mpbase;

@@ -12,7 +12,7 @@
 #include <ork/lev2/gfx/gfxmaterial_fx.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 #include <ork/application/application.h>
 
 INSTANTIATE_TRANSPARENT_RTTI( ork::lev2::XgmAnimChannel,"XgmAnimChannel");

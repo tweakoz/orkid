@@ -117,6 +117,7 @@ public:
 
 	///////////////////////////////////////////////////
 
+	const CompositingSystem* compositingSystem() const;
 	CompositingSystem* compositingSystem();
 
 	///////////////////////////////////////////////////
@@ -144,7 +145,7 @@ public:
 
   void beginRenderFrame() const;
   void endRenderFrame() const;
-
+	float desiredFrameRate() const;
 	//////////////////////////////////////////////////////////
 
 	Entity* SpawnDynamicEntity( const ent::EntData* spawn_rec );
@@ -230,7 +231,6 @@ protected:
 	size_t 									mEntityUpdateCount;
 
 	CameraLut								_cameraDataLUT;		// camera list
-	CompositingSystem*    _cachedComSys;
 	//////////////////////////////////////////////////////////
 	ActiveComponentType						mActiveEntityComponents;
 	orkvector<EntityActivationQueueItem>	mEntityActivateQueue;

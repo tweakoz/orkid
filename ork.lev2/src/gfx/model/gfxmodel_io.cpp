@@ -7,7 +7,7 @@
 
 #include <ork/application/application.h>
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/kernel/string/string.h>

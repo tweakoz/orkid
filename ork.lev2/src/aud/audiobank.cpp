@@ -11,7 +11,7 @@
 #include <ork/file/file.h>
 #include <ork/file/path.h>
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 #include <ork/kernel/string/StringBlock.h>
 #include <ork/kernel/orklut.hpp>
 #include <ork/asset/FileAssetLoader.h>

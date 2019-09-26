@@ -19,7 +19,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
-#include <ork/reflect/enum_serializer.inl>
 #include <ork/application/application.h>
 #include "NodeCompositor/NodeCompositorFx3.h"
 #include "NodeCompositor/NodeCompositorScreen.h"
@@ -31,36 +30,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::CompositingData, "CompositingData");
 ///////////////////////////////////////////////////////////////////////////////
-BEGIN_ENUM_SERIALIZER(ork::lev2, EOutputRes)
-DECLARE_ENUM(EOutputRes_640x480)
-DECLARE_ENUM(EOutputRes_960x640)
-DECLARE_ENUM(EOutputRes_1024x1024)
-DECLARE_ENUM(EOutputRes_1280x720)
-DECLARE_ENUM(EOutputRes_1600x1200)
-DECLARE_ENUM(EOutputRes_1920x1080)
-END_ENUM_SERIALIZER()
-///////////////////////////////////////////////////////////////////////////////
-BEGIN_ENUM_SERIALIZER(ork::lev2, EOutputResMult)
-DECLARE_ENUM(EOutputResMult_Quarter)
-DECLARE_ENUM(EOutputResMult_Half)
-DECLARE_ENUM(EOutputResMult_Full)
-DECLARE_ENUM(EOutputResMult_Double)
-DECLARE_ENUM(EOutputResMult_Quadruple)
-END_ENUM_SERIALIZER()
-///////////////////////////////////////////////////////////////////////////////
-BEGIN_ENUM_SERIALIZER(ork::lev2, EOutputTimeStep)
-DECLARE_ENUM(EOutputTimeStep_RealTime)
-DECLARE_ENUM(EOutputTimeStep_15fps)
-DECLARE_ENUM(EOutputTimeStep_24fps)
-DECLARE_ENUM(EOutputTimeStep_30fps)
-DECLARE_ENUM(EOutputTimeStep_48fps)
-DECLARE_ENUM(EOutputTimeStep_60fps)
-DECLARE_ENUM(EOutputTimeStep_72fps)
-DECLARE_ENUM(EOutputTimeStep_96fps)
-DECLARE_ENUM(EOutputTimeStep_120fps)
-DECLARE_ENUM(EOutputTimeStep_240fps)
-END_ENUM_SERIALIZER()
-///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,7 +39,6 @@ void CompositingData::describeX(class_t* c) {
   using namespace ork::reflect;
 
   RegisterProperty("Enable", &CompositingData::mbEnable);
-  RegisterProperty("OutputFrames", &CompositingData::mbOutputFrames);
 
   RegisterMapProperty("Groups", &CompositingData::_groups);
 	AnnotatePropertyForEditor<CompositingData>("Groups", "editor.factorylistbase", "CompositingGroup");
@@ -81,16 +49,8 @@ void CompositingData::describeX(class_t* c) {
   RegisterProperty("ActiveScene", &CompositingData::_activeScene);
   RegisterProperty("ActiveItem", &CompositingData::_activeItem);
 
-  RegisterProperty("OutputResBase", &CompositingData::mOutputBaseResolution);
-  RegisterProperty("OutputResMult", &CompositingData::mOutputResMult);
-  RegisterProperty("OutputFrameRate", &CompositingData::mOutputFrameRate);
-
-  AnnotatePropertyForEditor<CompositingData>("OutputResBase", "editor.class", "ged.factory.enum");
-  AnnotatePropertyForEditor<CompositingData>("OutputResMult", "editor.class", "ged.factory.enum");
-  AnnotatePropertyForEditor<CompositingData>("OutputFrameRate", "editor.class", "ged.factory.enum");
 
   static const char* EdGrpStr = "grp://Main Enable ActiveScene ActiveItem "
-                                "grp://Output OutputFrames OutputResBase OutputResMult OutputFrameRate "
                                 "grp://Data Groups Scenes ";
   reflect::AnnotateClassForEditor<CompositingData>("editor.prop.groups", EdGrpStr);
 }
@@ -100,10 +60,7 @@ void CompositingData::describeX(class_t* c) {
 CompositingData::CompositingData()
     : mbEnable(true)
     , mToggle(true)
-    , mbOutputFrames(false)
-    , mOutputFrameRate(EOutputTimeStep_RealTime)
-    , mOutputBaseResolution(EOutputRes_1280x720)
-    , mOutputResMult(EOutputResMult_Full) {}
+{}
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -184,49 +141,6 @@ const CompositingSceneItem* CompositingImpl::compositingItem(int isceneidx, int 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool CompositingImpl::IsEnabled() const { return _compositingData.IsEnabled(); }
-
-EOutputTimeStep CompositingImpl::currentFrameRateEnum() const {
-  return IsEnabled() ? _compositingData.OutputFrameRate() : EOutputTimeStep_RealTime;
-}
-
-float CompositingImpl::currentFrameRate() const {
-  EOutputTimeStep time_step = currentFrameRateEnum();
-  float framerate           = 0.0f;
-  switch (time_step) {
-    case EOutputTimeStep_15fps:
-      framerate = 1.0f / 15.0f;
-      break;
-    case EOutputTimeStep_24fps:
-      framerate = 24.0f;
-      break;
-    case EOutputTimeStep_30fps:
-      framerate = 30.0f;
-      break;
-    case EOutputTimeStep_48fps:
-      framerate = 48.0f;
-      break;
-    case EOutputTimeStep_60fps:
-      framerate = 60.0f;
-      break;
-    case EOutputTimeStep_72fps:
-      framerate = 72.0f;
-      break;
-    case EOutputTimeStep_96fps:
-      framerate = 96.0f;
-      break;
-    case EOutputTimeStep_120fps:
-      framerate = 120.0f;
-      break;
-    case EOutputTimeStep_240fps:
-      framerate = 240.0f;
-      break;
-    case EOutputTimeStep_RealTime:
-    default:
-      break;
-  }
-
-  return framerate;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -14,7 +14,7 @@
 #include <ork/math/cmatrix4.h>
 #include <ork/math/frustum.h>
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 
 namespace ork {
 

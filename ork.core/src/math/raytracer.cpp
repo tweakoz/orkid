@@ -20,7 +20,7 @@
 #include <ork/kernel/Array.hpp>
 #include <ork/kernel/gstack.h>
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 #include <queue>
 //#include <boost/gil/typedefs.hpp>
 //#include <boost/cast.hpp>

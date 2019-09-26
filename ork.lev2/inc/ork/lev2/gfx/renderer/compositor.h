@@ -197,8 +197,6 @@ public:
   PoolString& GetActiveItem() const { return _activeItem; }
 
   bool IsEnabled() const { return mbEnable && mToggle; }
-  bool IsOutputFramesEnabled() const { return mbOutputFrames; }
-  EOutputTimeStep OutputFrameRate() const { return mOutputFrameRate; }
 
   void Toggle() const { mToggle = !mToggle; }
 
@@ -208,10 +206,6 @@ public:
   mutable PoolString _activeItem;
   mutable bool mToggle;
   bool mbEnable;
-  bool mbOutputFrames;
-  EOutputRes mOutputBaseResolution;
-  EOutputResMult mOutputResMult;
-  EOutputTimeStep mOutputFrameRate;
 
   CompositingImpl* createImpl() const;
 };
@@ -230,9 +224,6 @@ public:
   const CompositingData& compositingData() const { return _compositingData; }
 
   bool IsEnabled() const;
-
-  EOutputTimeStep currentFrameRateEnum() const;
-  float currentFrameRate() const;
 
   const CompositingContext& compositingContext() const;
   CompositingContext& compositingContext();

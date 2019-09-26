@@ -7,6 +7,7 @@
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/util/crc64.h>
 #include <ork/math/polar.h>
 #include <ork/pch.h>
 #include <ork/rtti/downcast.h>
@@ -23,6 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/reflect/AccessorObjectPropertyType.hpp>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
+#include <ork/kernel/datablock.inl>
 ///////////////////////////////////////////////////////////////////////////////
 using namespace ork::lev2;
 ImplementReflectionX(ork::ent::HeightFieldDrawableData, "HeightFieldDrawableData");
@@ -109,6 +111,9 @@ struct HeightfieldRenderImpl {
   void gpuUpdate(GfxTarget* ptarg);
   void render(const RenderContextInstData& RCID);
 
+  datablockptr_t recomputeTextures(GfxTarget* ptarg);
+  void reloadCachedTextures(GfxTarget* ptarg,datablockptr_t dblock);
+
   HeightFieldDrawable* _hfdrawable;
   hfptr_t _heightfield;
 
@@ -140,34 +145,20 @@ HeightfieldRenderImpl::~HeightfieldRenderImpl() {
   }
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
+datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
 
-void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
-  if (false == _gpuDataDirty)
-    return;
+  ork::Timer timer;
+  timer.Start();
 
-  auto hmap    = _heightfield;
-  bool _loadok = hmap->Load(_hfdrawable->_hfpath);
-  hmap->SetWorldSize(_hfdrawable->_worldSizeXZ, _hfdrawable->_worldSizeXZ);
-  hmap->SetWorldHeight(_hfdrawable->_worldHeight);
+  datablockptr_t dblock = std::make_shared<DataBlock>();
 
-  _terrainMaterial = new TerrainMaterial(ptarg);
+  int MIPW = _heightfield->GetGridSizeX();
+  int MIPH = _heightfield->GetGridSizeZ();
 
-  orkprintf("ComputingGeometry\n");
-
-  ////////////////////////////////////////////////////////////////
-  // create and fill in gpu texture
-  ////////////////////////////////////////////////////////////////
-
-  const int iglX           = hmap->GetGridSizeX();
-  const int iglZ           = hmap->GetGridSizeZ();
-  const int terrain_ngrids = iglX * iglZ;
-
-  if (0 == iglX)
-    return;
-
-  int MIPW = iglX;
-  int MIPH = iglZ;
+  dblock->addItem<int>(MIPW);
+  dblock->addItem<int>(MIPH);
 
   auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
   auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
@@ -181,7 +172,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
 
   fvec2 origin(0, 0);
 
-  auto heightdata = (float*)hmap->GetHeightData();
+  auto heightdata = (float*) _heightfield->GetHeightData();
 
   const bool debugmip = false;
 
@@ -245,6 +236,9 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
       } // if(x>0 and z>0){
     }   // for( size_t x=0; x<MIPW; x++ ){
   }     // for( size_t z=0; z<MIPH; z++ ){
+
+  dblock->addData(pfloattexA,sizeof(float)*MIPW*MIPH);
+  dblock->addData(pfloattexB,sizeof(float)*MIPW*MIPH);
 
   /////////////////////////////
   // compute mips
@@ -321,10 +315,14 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
       }
     }
     ////////////////////////////////////////////////
+    dblock->addData(nextbasA,sizeof(float)*MIPW*MIPH);
+    dblock->addData(nextbasB,sizeof(float)*MIPW*MIPH);
+    ////////////////////////////////////////////////
     MIPW >>= 1;
     MIPH >>= 1;
     levindex++;
   }
+
   ////////////////////////////////////////////////////////////////
 
   _heightmapTextureA = ptarg->TXI()->createFromMipChain(chainA);
@@ -332,6 +330,85 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
 
   delete chainA;
   delete chainB;
+
+  float runtime = timer.SecsSinceStart();
+  printf( "recomputeTextures runtime<%g>\n", runtime );
+  printf( "recomputeTextures dblocklen<%zu>\n", dblock->_data.GetSize() );
+
+  return dblock;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t dblock) {
+  const auto& ostr = dblock->_data;
+  chunkfile::InputStream istr(ostr.GetData(),ostr.GetSize());
+  int MIPW, MIPH;
+  istr.GetItem<int>(MIPW);
+  istr.GetItem<int>(MIPH);
+  assert(MIPW==_heightfield->GetGridSizeX());
+  assert(MIPH==_heightfield->GetGridSizeZ());
+  int levindex = 0;
+  while (MIPW >= 2 and MIPH >= 2) {
+    int CHECKMIPW, CHECKMIPH;
+    auto pa = (const float*) istr.GetCurrent();
+    istr.advance(sizeof(float)*MIPW*MIPH);
+    auto pb = (const float*) istr.GetCurrent();
+    istr.advance(sizeof(float)*MIPW*MIPH);
+    printf( "reloadmip lev<%d> w<%d> h<%d> pa<%p> pb<%p>\n", levindex, MIPW, MIPH, pa, pb );
+    MIPW >>= 1;
+    MIPH >>= 1;
+    levindex++;
+  }
+  assert(false);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
+  if (false == _gpuDataDirty)
+    return;
+
+    _terrainMaterial = new TerrainMaterial(ptarg);
+
+  auto hmap    = _heightfield;
+  bool _loadok = hmap->Load(_hfdrawable->_hfpath);
+  hmap->SetWorldSize(_hfdrawable->_worldSizeXZ, _hfdrawable->_worldSizeXZ);
+  hmap->SetWorldHeight(_hfdrawable->_worldHeight);
+
+  boost::Crc64 basehasher;
+  basehasher.accumulateItem<uint64_t>(hmap->_hash);
+  basehasher.accumulateItem<float>(_hfdrawable->_worldSizeXZ);
+  basehasher.accumulateItem<float>(_hfdrawable->_worldHeight);
+  basehasher.finish();
+  uint64_t hashkey = basehasher.result();
+
+  ork::Timer timer;
+  timer.Start();
+
+  orkprintf("ComputingGeometry hashkey<0x%llx>\n", hashkey );
+
+  ////////////////////////////////////////////////////////////////
+  // create and fill in gpu texture
+  ////////////////////////////////////////////////////////////////
+
+  const int iglX           = hmap->GetGridSizeX();
+  const int iglZ           = hmap->GetGridSizeZ();
+  const int terrain_ngrids = iglX * iglZ;
+
+  if (0 == iglX)
+    return;
+
+  auto dblock = DataBlockMgr::findDataBlock(hashkey);
+
+  if( dblock ){
+    reloadCachedTextures(ptarg,dblock);
+  }
+  else {
+    dblock = recomputeTextures(ptarg);
+    DataBlockMgr::setDataBlock(hashkey,dblock);
+  }
+
 
   ////////////////////////////////////////////////////////////////
 
@@ -681,6 +758,9 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
   printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
   printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
+
+  float runtime = timer.SecsSinceStart();
+  printf( "runtime<%g>\n", runtime );
 
   _gpuDataDirty = false;
 }

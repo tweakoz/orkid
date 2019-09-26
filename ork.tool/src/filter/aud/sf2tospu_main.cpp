@@ -12,7 +12,7 @@
 #include "sf2tospu.h"
 #include <ork/file/riff.h>
 #include <ork/file/chunkfile.h>
-#include <ork/file/chunkfile.hpp>
+#include <ork/file/chunkfile.inl>
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/aud/audiobank.h>
 

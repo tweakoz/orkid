@@ -3,26 +3,16 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 #pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#include <ork/file/file.h>
-#include <ork/util/endian.h>
-#include <ork/stream/IOutputStream.h>
-#include <ork/kernel/string/StringBlock.h>
-#include <ork/math/cmatrix4.h>
-#include <ork/math/cvector4.h>
-#include <ork/math/cvector3.h>
-#include <ork/math/cvector2.h>
-#include <ork/kernel/fixedlut.h>
-#include <ork/kernel/fixedlut.hpp>
-#include <ork/kernel/string/PoolString.h>
+#include <ork/file/chunkfile.h>
 
 ///
-namespace ork { 
+namespace ork {
 PoolString AddPooledString(const PieceString &ps);
 PoolString AddPooledLiteral(const ConstString &cs);
 PoolString FindPooledString(const PieceString &ps);
@@ -33,8 +23,7 @@ namespace chunkfile {
 template <typename T> void OutputStream::AddItem( const T& data )
 {
     T temp = data;
-    temp.EndianSwap();
-    Write( (unsigned char*) & temp, sizeof(temp) );		
+    Write( (unsigned char*) & temp, sizeof(temp) );
 }
 ///////////////////////////////////////////////////////////////////////////////
 template< typename T > void InputStream::GetItem( T &item )
@@ -71,7 +60,7 @@ Reader<Allocator>::~Reader()
     }
 }
 ///////////////////////////////////////////////////////////////////////////////
-template <typename Allocator> 
+template <typename Allocator>
 Reader<Allocator>::Reader( const file::Path& inpath, const char* ptype )
     : mpstrtab( 0 )
     , mistrtablen( 0 )
