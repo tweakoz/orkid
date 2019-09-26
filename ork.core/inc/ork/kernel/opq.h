@@ -180,6 +180,7 @@ struct Opq
 	ork::semaphore mSemaphore;
 
   std::atomic<bool> _lock;
+  std::atomic<bool> _goingdown;
 	std::atomic<int> _numThreadsRunning;
 	std::string _name;
 };

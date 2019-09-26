@@ -198,9 +198,18 @@ bool Opq::Process() {
   return rval;
 }
 ///////////////////////////////////////////////////////////////////////////
-void Opq::push(const Op& the_op) { mDefaultGroup->push(the_op); }
-void Opq::push(const void_lambda_t& l, const std::string& name) { mDefaultGroup->push(Op(l, name)); }
-void Opq::push(const BarrierSyncReq& s) { mDefaultGroup->push(Op(s)); }
+void Opq::push(const Op& the_op) {
+  if(false==_goingdown)
+    mDefaultGroup->push(the_op);
+}
+void Opq::push(const void_lambda_t& l, const std::string& name) {
+  if(false==_goingdown)
+    mDefaultGroup->push(Op(l, name));
+}
+void Opq::push(const BarrierSyncReq& s) {
+  if(false==_goingdown)
+    mDefaultGroup->push(Op(s));
+}
 ///////////////////////////////////////////////////////////////////////////
 void Opq::push_sync(const Op& the_op) {
   AssertNotOnOpQ(*this);
@@ -235,6 +244,7 @@ Opq::Opq(int inumthreads, const char* name)
     : _name(name)
     , mSemaphore(name) {
   _lock = false;
+  _goingdown = false;
   mGroupCounter   = 0;
   _numThreadsRunning = 0;
 
@@ -251,6 +261,9 @@ Opq::Opq(int inumthreads, const char* name)
 ///////////////////////////////////////////////////////////////////////////
 Opq::~Opq() {
 
+_lock = true;
+_goingdown = true;
+
   /////////////////////////////////
   // signal to thread we are going down, then wait for it to go down
   /////////////////////////////////
@@ -266,14 +279,17 @@ Opq::~Opq() {
   while( false == done ){
     _threads.atomicOp([=,&done](threadset_t& thset){
       done = thset.empty();
-      for( auto thread : thset ){
-        mSemaphore.notify();
+      if( false == done ) {
+        this->mSemaphore.notify();
+        auto thread = *thset.begin();
         thread->join();
         thset.erase(thread);
       }
     });
     usleep(10);
   }
+
+  printf( "Opq<%s> joined\n", _name.c_str());
 
   /////////////////////////////////
   // trash the groups
