@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <ork/pch.h>
@@ -43,17 +43,17 @@ template<> fquat PropType<fquat>::FromString(const PropTypeString& String)
 	sscanf(String.c_str(), "%g %g %g %g",
 		&m[0], &m[1], &m[2], &m[3] );
 	fquat result;
-	result.SetX( m[0] );
-	result.SetY( m[1] );
-	result.SetZ( m[2] );
-	result.SetW( m[3] );
+	result.x = ( m[0] );
+	result.y = ( m[1] );
+	result.z = ( m[2] );
+	result.w = ( m[3] );
 	return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace reflect {
-	
+
 	template<> void Serialize( const fquat*in, fquat*out, reflect::BidirectionalSerializer& bidi )
 	{
 		if( bidi.Serializing() )
@@ -71,10 +71,10 @@ namespace reflect {
 			{
 				bidi | m[i];
 			}
-			out->SetX( m[0] );
-			out->SetY( m[1] );
-			out->SetZ( m[2] );
-			out->SetW( m[3] );
+			out->x = ( m[0] );
+			out->y = ( m[1] );
+			out->z = ( m[2] );
+			out->w = ( m[3] );
 		}
 	}
 }

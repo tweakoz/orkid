@@ -300,10 +300,10 @@ void DecompMtx44::EndianSwap()
 
 	swapbytes_dynamic(fs);
 
-	mRot.SetX( fqx );
-	mRot.SetY( fqy );
-	mRot.SetZ( fqz );
-	mRot.SetW( fqw );
+	mRot.x = ( fqx );
+	mRot.y = ( fqy );
+	mRot.z = ( fqz );
+	mRot.w = ( fqw );
 
 	mTrans.SetX( ftx );
 	mTrans.SetY( fty );

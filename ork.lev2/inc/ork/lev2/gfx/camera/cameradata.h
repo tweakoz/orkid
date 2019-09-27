@@ -35,9 +35,9 @@ struct CameraData {
   const fvec3& xNormal() const { return _xnormal; }
   const fvec3& yNormal() const { return _ynormal; }
   const fvec3& zNormal() const { return _znormal; }
-  void setXNormal(fvec3& n) { _xnormal = n; }
-  void setYNormal(fvec3& n) { _ynormal = n; }
-  void setZNormal(fvec3& n) { _znormal = n; }
+  void setXNormal(const fvec3& n) { _xnormal = n; }
+  void setYNormal(const fvec3& n) { _ynormal = n; }
+  void setZNormal(const fvec3& n) { _znormal = n; }
 
   void Lookat(const fvec3& eye, const fvec3& tgt, const fvec3& up);
 

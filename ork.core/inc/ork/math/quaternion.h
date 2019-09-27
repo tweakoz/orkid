@@ -5,25 +5,27 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-
-#ifndef __QUATERNION_H__
-#define __QUATERNION_H__
+#pragma once
 
 #include <ork/config/config.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork{
+namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-struct QuatCodec
-{
-	unsigned int	milargest : 2;
-	unsigned int	miwsign	  : 1;
-	int				miElem0   : 16;
-	int				miElem1   : 16;
-	int				miElem2   : 16;
+struct QuatCodec {
+  unsigned int milargest : 2;
+  unsigned int miwsign : 1;
+  int miElem0 : 16;
+  int miElem1 : 16;
+  int miElem2 : 16;
 
-	QuatCodec() : milargest(0), miElem0(0), miElem1(0), miElem2( 0 ), miwsign( 0 ) {}
+  QuatCodec()
+      : milargest(0)
+      , miElem0(0)
+      , miElem1(0)
+      , miElem2(0)
+      , miwsign(0) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,80 +34,62 @@ template <typename T> class Matrix33;
 template <typename T> class Vector4;
 template <typename T> class Vector3;
 
-template <typename T> class  Quaternion
-{
-	public:
+template <typename T> struct Quaternion {
+  /////////
 
-		/////////
+  Quaternion(void) { Identity(); }
 
-	Quaternion(void)
-	{
-		Identity();
-	}
+  Quaternion(T _x, T _y, T _z, T _w);
 
-	Quaternion(T x, T y, T z, T w);
+  Quaternion(const Matrix44<T>& matrix);
 
-	Quaternion(const Matrix44<T> &matrix);
+  ~Quaternion() {}
 
-	~Quaternion()
-	{
-	}
+  /////////
 
-	/////////
+  const T& GetX() const { return x; }
+  const T& GetY() const { return y; }
+  const T& GetZ() const { return z; }
+  const T& GetW() const { return w; }
 
-	const T& GetX() const { return (m_v[0]); }
-	const T& GetY() const { return (m_v[1]); }
-	const T& GetZ() const { return (m_v[2]); }
-	const T& GetW() const { return (m_v[3]); }
+  /////////
 
-	/////////
+  void FromMatrix(const Matrix44<T>& matrix);
+  Matrix44<T> ToMatrix(void) const;
 
-	void SetX(T x) { m_v[0]=x; }
-	void SetY(T y) { m_v[1]=y; }
-	void SetZ(T z) { m_v[2]=z; }
-	void SetW(T w) { m_v[3]=w; }
+  void FromMatrix3(const Matrix33<T>& matrix);
+  Matrix33<T> ToMatrix3(void) const;
 
-	/////////
+  void Scale(T scalar);
+  Quaternion Multiply(const Quaternion& q) const;
+  void Divide(Quaternion& a);
+  void Sub(Quaternion& a);
+  void Add(Quaternion& a);
 
-	void			FromMatrix(const Matrix44<T> &matrix);
-	Matrix44<T>		ToMatrix(void) const;
+  Vector4<T> ToAxisAngle(void) const;
+  void FromAxisAngle(const Vector4<T>& v);
 
-	void			FromMatrix3(const Matrix33<T> &matrix);
-	Matrix33<T>		ToMatrix3(void) const;
+  T Magnitude(void);
+  Quaternion Conjugate(Quaternion& a);
+  Quaternion Square(void);
+  Quaternion Negate(void);
 
-	void			Scale(T scalar);
-	Quaternion		Multiply(const Quaternion &q) const;
-	void			Divide(Quaternion &a);
-	void			Sub(Quaternion &a);
-	void			Add(Quaternion &a);
+  void Normalize();
 
-	Vector4<T>		ToAxisAngle(void) const;
-	void			FromAxisAngle( const Vector4<T> &v );
+  static Quaternion Lerp(const Quaternion& a, const Quaternion& b, T alpha);
+  static Quaternion Slerp(const Quaternion& a, const Quaternion& b, T alpha);
 
-	T				Magnitude(void);
-	Quaternion		Conjugate(Quaternion &a);
-	Quaternion		Square(void);
-	Quaternion		Negate(void);
+  void Identity(void);
+  void ShortestRotationArc(Vector4<T> v0, Vector4<T> v1);
 
-	void Normalize();
+  /////////
 
-	static Quaternion Lerp(  const Quaternion &a , const Quaternion &b, T alpha );
-	static Quaternion Slerp( const Quaternion &a , const Quaternion &b, T alpha );
+  void dump(void);
 
-	void			Identity(void);
-	void			ShortestRotationArc( Vector4<T> v0, Vector4<T> v1 );
+  QuatCodec Compress(void) const;
+  void DeCompress(QuatCodec qc);
 
-	/////////
-
-	void			dump( void );
-
-	QuatCodec		Compress( void ) const ;
-	void			DeCompress( QuatCodec qc );
-
-	protected:
-
-	T	m_v[4];	// x,y,z,w component of this quaternion
-
+  T x, y, z, w;
 };
 
 typedef Quaternion<float> fquat;
@@ -113,4 +97,3 @@ typedef Quaternion<float> fquat;
 ///////////////////////////////////////////////////////////////////////////////
 
 } // namespace ork
-#endif

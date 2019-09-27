@@ -39,12 +39,13 @@ Camera::Camera()
     , LastMeasuredCameraVelocity(0.0f, 0.0f, 0.0f)
     , MeasuredCameraVelocity(0.0f, 0.0f, 0.0f)
     , mbInMotion(false)
-    , mfWorldSizeAtLocator(1.0f)
-{
+    , mfWorldSizeAtLocator(1.0f) {
   other_info = (std::string) "";
   _camcamdata.SetLev2Camera(this);
   printf("SETLEV2CAM<%p>\n", this);
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 std::string Camera::get_full_name(void) {
   std::string rval = type_name + (std::string) ":" + instance_name + (std::string) ":" + other_info;
@@ -59,17 +60,23 @@ bool Camera::IsXVertical() const {
   return (float(fabs(dotY)) > float(0.707f));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool Camera::IsYVertical() const {
   const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(0.0f, 1.0f, 0.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 bool Camera::IsZVertical() const {
   const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(0.0f, 0.0f, 1.0f));
   return (float(fabs(dotY)) > float(0.707f));
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 fquat Camera::VerticalRot(float amt) const {
   fquat qrot;
@@ -91,6 +98,8 @@ fquat Camera::VerticalRot(float amt) const {
   return qrot;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 fquat Camera::HorizontalRot(float amt) const {
   fquat qrot;
 
@@ -111,7 +120,7 @@ fquat Camera::HorizontalRot(float amt) const {
 
 void Camera::CommonPostSetup(void) {
 
-  float aspect = _vpdim.x/_vpdim.y;
+  float aspect = _vpdim.x / _vpdim.y;
   _curMatrices = _camcamdata.computeMatrices(aspect);
 
   fmtx4 ivmtx = _curMatrices.GetIVMatrix();
@@ -133,6 +142,11 @@ void Camera::CommonPostSetup(void) {
   auto v3rt = vec_billboardRight.xyz();
   auto v3in = v3up.Cross(v3rt);
 
+  printf( "CPS: aspect<%g>\n", aspect );
+  printf( "CPS: v3up<%g %g %g>\n", v3up.x, v3up.y, v3up.z );
+  printf( "CPS: v3rt<%g %g %g>\n", v3rt.x, v3rt.y, v3rt.z );
+  printf( "CPS: v3in<%g %g %g>\n", v3in.x, v3in.y, v3in.z );
+
   ///////////////////////////////
   // generate frustum (useful for many things, like billboarding, clipping, LOD, etc.. )
   // we generate the frustum points, we should also generate plane eqns
@@ -149,137 +163,5 @@ void Camera::CommonPostSetup(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 float Camera::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) { return float(0.0f); }
-
-///////////////////////////////////////////////////////////////////////////////
-
-ManipHandler::ManipHandler() // const Camera& pcam)
-    : Origin(float(0.0f), float(0.0f), float(0.0f))
-//	, mParentCamera(pcam)
-{}
-
-void ManipHandler::Init(const ork::fvec2& posubp, const fmtx4& RCurIMVPMat, const fquat& RCurQuat) {
-  IMVPMat = RCurIMVPMat;
-  Quat    = RCurQuat;
-
-  ///////////////////////////////////////
-
-  mFrustum.Set(RCurIMVPMat);
-
-  CamXNormal = mFrustum.mXNormal;
-  CamYNormal = mFrustum.mYNormal;
-  CamZNormal = mFrustum.mZNormal;
-
-  ///////////////////////////////////////
-
-  IntersectXZ(posubp, XZIntersectBase, XZAngleBase);
-  IntersectYZ(posubp, YZIntersectBase, YZAngleBase);
-  IntersectXY(posubp, XYIntersectBase, XYAngleBase);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool ManipHandler::IntersectXZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
-  fvec3 RayZNormal;
-  GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  YNormal = fmtx4::Identity.GetYNormal();
-  XZPlane.CalcFromNormalAndOrigin(YNormal, Origin);
-  float isect_dist;
-  fray3 ray;
-  ray.mOrigin     = RayNear;
-  ray.mDirection  = RayZNormal;
-  DoesIntersectXZ = XZPlane.Intersect(ray, isect_dist, Intersection);
-
-  if (DoesIntersectXZ)
-    XZAngle = rect2pol_ang(Intersection.GetX(), Intersection.GetZ());
-
-  Angle = XZAngle;
-
-  return DoesIntersectXZ;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool ManipHandler::IntersectYZ(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
-  fvec3 RayZNormal;
-  GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  XNormal = fmtx4::Identity.GetXNormal();
-  YZPlane.CalcFromNormalAndOrigin(XNormal, Origin);
-
-  float isect_dist;
-  fray3 ray;
-  ray.mOrigin     = RayNear;
-  ray.mDirection  = RayZNormal;
-  DoesIntersectYZ = YZPlane.Intersect(ray, isect_dist, Intersection);
-
-  if (DoesIntersectYZ)
-    YZAngle = rect2pol_ang(Intersection.GetY(), Intersection.GetZ());
-
-  Angle = YZAngle;
-
-  return DoesIntersectYZ;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool ManipHandler::IntersectXY(const ork::fvec2& posubp, fvec3& Intersection, float& Angle) {
-  fvec3 RayZNormal;
-  GenerateIntersectionRays(posubp, RayZNormal, RayNear);
-  ZNormal = fmtx4::Identity.GetZNormal();
-  XYPlane.CalcFromNormalAndOrigin(ZNormal, Origin);
-  float isect_dist;
-  fray3 ray;
-  ray.mOrigin     = RayNear;
-  ray.mDirection  = RayZNormal;
-  DoesIntersectXY = XYPlane.Intersect(ray, isect_dist, Intersection);
-
-  if (DoesIntersectXY)
-    XYAngle = rect2pol_ang(Intersection.GetX(), Intersection.GetY());
-
-  Angle = XYAngle;
-
-  return DoesIntersectXY;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void ManipHandler::Intersect(const ork::fvec2& posubp) {
-  fvec3 Intersection;
-  float Angle;
-  IntersectXZ(posubp, Intersection, Angle);
-  IntersectXY(posubp, Intersection, Angle);
-  IntersectYZ(posubp, Intersection, Angle);
-  // Intersection.dump( "manipisec isXZ" );
-  // Intersection.dump( "manipisec isYZ" );
-  // Intersection.dump( "manipisec isXY" );
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-fvec4 TRayN;
-fvec4 TRayF;
-
-void ManipHandler::GenerateIntersectionRays(const ork::fvec2& posubp, fvec3& RayZNormal, fvec3& RayNear) {
-  fvec3 RayFar;
-  ///////////////////////////////////////////
-  fvec3 vWinN(posubp.GetX(), posubp.GetY(), 0.0f);
-  fvec3 vWinF(posubp.GetX(), posubp.GetY(), 1.0f);
-  fmtx4::UnProject(IMVPMat, vWinN, RayNear);
-  fmtx4::UnProject(IMVPMat, vWinF, RayFar);
-  TRayN = RayNear;
-  TRayF = RayFar;
-  ///////////////////////////////////////////
-  fvec3 RayD = (RayFar - RayNear);
-  ///////////////////////////////////////////
-  double draydX = (double)RayD.GetX();
-  double draydY = (double)RayD.GetY();
-  double draydZ = (double)RayD.GetZ();
-  double drayD  = 1.0f / sqrt((draydX * draydX) + (draydY * draydY) + (draydZ * draydZ));
-  draydX *= drayD;
-  draydY *= drayD;
-  draydZ *= drayD;
-  ///////////////////////////////////////////
-  RayZNormal.SetXYZ((f32)draydX, (f32)draydY, (f32)draydZ);
-  ///////////////////////////////////////////
-}
 
 }} // namespace ork::lev2

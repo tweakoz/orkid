@@ -51,28 +51,32 @@ void EzUiCam::Describe() {
   ork::reflect::AnnotatePropertyForEditor<EzUiCam>("MinNear", "editor.range.max", "10000.0f");
 
   // temporary until old mox files converted
-  ork::rtti::Class::CreateClassAlias("Camera_persp",GetClassStatic());
+  ork::rtti::Class::CreateClassAlias("Camera_persp", GetClassStatic());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 EzUiCam::EzUiCam()
-    : Camera(), aper(40.0f), far_max(10000.0f), near_min(0.1f), tx(0.0f), ty(0.0f), tz(0.0f), player_rx(0.0f), player_ry(0.0f),
-      player_rz(0.0f), move_vel(0.0f), mMoveVelocity(0.0f, 0.0f, 0.0f), meRotMode(EROT_SCREENXY), mDoDolly(false), mDoRotate(false),
-      mDoPan(false) {
-  // InitInstance(EzUiCam::GetClassStatic());
+    : Camera()
+    , aper(40.0f)
+    , far_max(10000.0f)
+    , near_min(0.1f)
+    , tx(0.0f)
+    , ty(0.0f)
+    , tz(0.0f)
+    , meRotMode(EROT_SCREENXY)
+    , mDoDolly(false)
+    , mDoRotate(false)
+    , mDoPan(false) {
   _camcamdata.Persp(1.0f, 1000.0f, 70.0f);
   _camcamdata.Lookat(fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f), fvec3(0.0f, 1.0f, 0.0f));
-  // _camcamdata.SetFar( 1000.0f );
-  type_name = "Perspective";
+  type_name     = "Perspective";
   instance_name = "Default";
-
-  leftbutton = false;
-  middlebutton = false;
-  rightbutton = false;
+  leftbutton    = false;
+  middlebutton  = false;
+  rightbutton   = false;
 
   mfWorldSizeAtLocator = 150.0f;
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +126,7 @@ void EzUiCam::draw(GfxTarget* pT) {
   pT->MTXI()->PopUIMatrix();
   ///////////////////////////////////////////////////////////////
   // printf( "CAMHUD\n" );
-  float aspect = float(pT->GetW())/float(pT->GetH());
+  float aspect = float(pT->GetW()) / float(pT->GetH());
   _curMatrices = _camcamdata.computeMatrices(aspect);
   ///////////////////////////////////////////////////////////////
 
@@ -164,8 +168,8 @@ void EzUiCam::PanBegin(const CamEvTrackData& ed) {
 void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
   assert(mDoPan);
 
-  int esx = ed.icurX;
-  int esy = ed.icurY;
+  int esx    = ed.icurX;
+  int esy    = ed.icurY;
   int ipushx = ed.ipushX;
   int ipushy = ed.ipushY;
 
@@ -193,15 +197,10 @@ void EzUiCam::PanEnd() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static fvec4 vPushNZ, vPushNX, vPushNY;
-
 void EzUiCam::RotBegin(const CamEvTrackData& ed) {
   printf("BeginRot\n");
-  vPushNX = _camcamdata.xNormal();
-  vPushNY = _camcamdata.yNormal();
-  vPushNZ = _camcamdata.zNormal();
 
-  //printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
+  // printf( "Rot: vPushNZ<%g %g %g>\n", vPushNZ.x, vPushNZ.y, vPushNZ.z );
 
   pmousepos = QCursor::pos();
   // OrkGlobalDisableMousePointer();
@@ -240,44 +239,48 @@ void EzUiCam::DollyEnd() {
 bool EzUiCam::UIEventHandler(const ui::Event& EV) {
   const ui::EventCooked& filtev = EV.mFilteredEvent;
 
-  int esx = filtev.miX;
-  int esy = filtev.miY;
-  float fux = filtev.mUnitX;
-  float fuy = filtev.mUnitY;
+  int esx    = filtev.miX;
+  int esy    = filtev.miY;
+  float fux  = filtev.mUnitX;
+  float fuy  = filtev.mUnitY;
   float fpux = (fux * 2.0f) - 1.0f;
   float fpuy = (fuy * 2.0f) - 1.0f;
 
   fvec2 pos2D(fpux, fpuy);
 
-  int state = 0;
-  bool isctrl = filtev.mCTRL;
-  bool isalt = filtev.mALT;
+  int state    = 0;
+  bool isctrl  = filtev.mCTRL;
+  bool isalt   = filtev.mALT;
   bool isshift = filtev.mSHIFT;
-  bool ismeta = filtev.mMETA;
-  bool isleft = filtev.mBut0;
-  bool ismid = filtev.mBut1;
+  bool ismeta  = filtev.mMETA;
+  bool isleft  = filtev.mBut0;
+  bool ismid   = filtev.mBut1;
   bool isright = filtev.mBut2;
 
   static int ipushx = 0;
   static int ipushy = 0;
-  static f32 flerp = 0.0f;
-
-  fvec4 RotX = _camcamdata.xNormal();
-  fvec4 RotY = _camcamdata.yNormal();
-  fvec4 RotZ = _camcamdata.zNormal();
+  static f32 flerp  = 0.0f;
 
   _vpdim = EV._vpdim;
 
   switch (filtev.miEventCode) {
     case UIEV_PUSH: {
 
-      float fx = float(esx) / _vpdim.x - 0.5f;
-      float fy = float(esy) / _vpdim.y - 0.5f;
+      float fx   = float(esx) / _vpdim.x - 0.5f;
+      float fy   = float(esy) / _vpdim.y - 0.5f;
       float frad = sqrtf((fx * fx) + (fy * fy));
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
 
       CommonPostSetup();
+
+      _pushNX = _camcamdata.xNormal();
+      _pushNY = _camcamdata.yNormal();
+      _pushNZ = _camcamdata.zNormal();
+
+      printf( "nx <%g %g %g>\n", _pushNX.x, _pushNX.y, _pushNX.z );
+      printf( "ny <%g %g %g>\n", _pushNY.x, _pushNY.y, _pushNY.z );
+      printf( "nz <%g %g %g>\n", _pushNZ.x, _pushNZ.y, _pushNZ.z );
 
       fvec3 vrn, vrf;
 
@@ -297,13 +300,9 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       ipushx = esx;
       ipushy = esy;
 
-      leftbutton = filtev.mBut0;
+      leftbutton   = filtev.mBut0;
       middlebutton = filtev.mBut1;
-      rightbutton = filtev.mBut2;
-
-      vPushNX = _camcamdata.xNormal();
-      vPushNY = _camcamdata.yNormal();
-      vPushNZ = _camcamdata.zNormal();
+      rightbutton  = filtev.mBut2;
 
       bool filt_kpush = (filtev.mAction == "keypush");
 
@@ -312,13 +311,13 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
       if (do_rot) {
         mEvTrackData.vPushCenter = mvCenter;
-        mEvTrackData.ipushX = ipushx;
-        mEvTrackData.ipushY = ipushy;
+        mEvTrackData.ipushX      = ipushx;
+        mEvTrackData.ipushY      = ipushy;
         RotBegin(mEvTrackData);
       } else if (do_pan) {
         mEvTrackData.vPushCenter = mvCenter;
-        mEvTrackData.ipushX = ipushx;
-        mEvTrackData.ipushY = ipushy;
+        mEvTrackData.ipushX      = ipushx;
+        mEvTrackData.ipushY      = ipushy;
         PanBegin(mEvTrackData);
       }
 
@@ -327,9 +326,9 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
     case UIEV_RELEASE: {
       CommonPostSetup();
       // could do fall-through or maybe even but this outside of switch
-      leftbutton = filtev.mBut0;
+      leftbutton   = filtev.mBut0;
       middlebutton = filtev.mBut1;
-      rightbutton = filtev.mBut2;
+      rightbutton  = filtev.mBut2;
 
       if (mDoDolly)
         DollyEnd();
@@ -338,16 +337,16 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
       if (mDoRotate)
         RotEnd();
 
-      mDoPan = false;
-      mDoDolly = false;
+      mDoPan    = false;
+      mDoDolly  = false;
       mDoRotate = false;
 
       break;
     }
     case UIEV_MOVE: {
 
-      float fx = float(esx) / _vpdim.x - 0.5f;
-      float fy = float(esy) / _vpdim.y - 0.5f;
+      float fx   = float(esx) / _vpdim.x - 0.5f;
+      float fy   = float(esy) / _vpdim.y - 0.5f;
       float frad = sqrtf((fx * fx) + (fy * fy));
 
       meRotMode = (frad > 0.35f) ? EROT_SCREENZ : EROT_SCREENXY;
@@ -394,14 +393,14 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
         switch (meRotMode) {
           case EROT_SCREENZ: {
-            float fvpx = _vpdim.x;
-            float fvpy = _vpdim.y;
-            float fvpwd2 = fvpx*0.5f;
-            float fvphd2 = fvpy*0.5f;
-            float fipx = float(ipushx);
-            float fipy = float(ipushy);
-            float fesx = float(esx);
-            float fesy = float(esy);
+            float fvpx   = _vpdim.x;
+            float fvpy   = _vpdim.y;
+            float fvpwd2 = fvpx * 0.5f;
+            float fvphd2 = fvpy * 0.5f;
+            float fipx   = float(ipushx);
+            float fipy   = float(ipushy);
+            float fesx   = float(esx);
+            float fesy   = float(esy);
 
             float fx0 = (fipx - fvpx) - fvpwd2;
             float fy0 = (fipy - fvpy) - fvphd2;
@@ -411,26 +410,31 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
             fvec4 v1(fx1, fy1, 0.0f);
             v0.Normalize();
             v1.Normalize();
-            float ang0 = rect2pol_ang(v0.GetX(), v0.GetY());
-            float ang1 = rect2pol_ang(v1.GetX(), v1.GetY());
+            float ang0   = rect2pol_ang(v0.GetX(), v0.GetY());
+            float ang1   = rect2pol_ang(v1.GetX(), v1.GetY());
             float dangle = (ang1 - ang0);
+            fvec4 rotz = fvec4(_pushNZ,dangle);
             fquat QuatZ;
-            vPushNZ.SetW(dangle);
-            QuatZ.FromAxisAngle(vPushNZ);
-            QuatC = QuatZ.Multiply(_manipHandler.Quat);
+            QuatZ.FromAxisAngle(rotz);
+            QuatC = QuatZ.Multiply(QuatC);
+            printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
+            printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
+            printf( "QuatZ <%g %g %g %g>\n", QuatZ.x, QuatZ.y, QuatZ.z, QuatZ.w );
+            printf( "QuatC <%g %g %g %g>\n", QuatC.x, QuatC.y, QuatC.z, QuatC.w );
 
             break;
           }
           case EROT_SCREENXY: {
 
-            RotY.SetW(-dx);
-            fquat QuatY;
-            QuatY.FromAxisAngle(RotY);
-            QuatC = QuatY.Multiply(QuatC);
+            fvec4 rotx = fvec4(_pushNX,dy);
+            fvec4 roty = fvec4(_pushNY,-dx);
 
-            RotX.SetW(dy);
-            fquat QuatX;
-            QuatX.FromAxisAngle(RotX);
+            fquat QuatX, QuatY;
+
+            QuatX.FromAxisAngle(rotx);
+            QuatY.FromAxisAngle(roty);
+
+            QuatC = QuatY.Multiply(QuatC);
             QuatC = QuatX.Multiply(QuatC);
 
             break;
@@ -460,12 +464,12 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
           fdolly *= 0.3f;
         }
 
-        fvec4 MoveVec = RotZ * fdolly;
+        fvec4 MoveVec = _pushNZ * fdolly;
 
         if (HotKeyManager::IsDepressed("camera_y"))
-          MoveVec = RotY * fdolly;
+          MoveVec = _pushNY * fdolly;
         else if (HotKeyManager::IsDepressed("camera_x"))
-          MoveVec = RotX * fdolly;
+          MoveVec = _pushNX * fdolly;
 
         mvCenter += MoveVec;
 
@@ -486,22 +490,20 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
         zmoveamt *= 5.0f;
       if (isalt) {
         fvec4 Center = mvCenter;
-        fvec4 Delta = RotZ * zmoveamt * EV.miMWY;
+        fvec4 Delta  = _pushNZ * zmoveamt * EV.miMWY;
         mvCenter += Delta;
       } else {
         fvec3 Pos = mvCenter;
         fvec3 UpVector;
         fvec3 RightVector;
         _curMatrices.GetPixelLengthVectors(Pos, _vpdim, UpVector, RightVector);
-        float CameraFactor = RightVector.Mag() * 20.0f; // 20 pixels of movement
+        float CameraFactor   = RightVector.Mag() * 20.0f; // 20 pixels of movement
         constexpr float kmin = 0.1f;
         constexpr float kmax = 20000.0f;
-        mfLoc = std::clamp(mfLoc,kmin,kmax);
-        float DeltaInMeters = float(-EV.miMWY)
-                            * CameraFactor
-                            * zmoveamt;
+        mfLoc                = std::clamp(mfLoc, kmin, kmax);
+        float DeltaInMeters  = float(-EV.miMWY) * CameraFactor * zmoveamt;
         mfLoc += DeltaInMeters;
-        mfLoc = std::clamp(mfLoc,kmin,kmax);
+        mfLoc = std::clamp(mfLoc, kmin, kmax);
       }
       break;
     }
@@ -529,7 +531,7 @@ void EzUiCam::SetFromWorldSpaceMatrix(const fmtx4& matrix) {
   fvec3 pos = matrix.GetTranslation();
 
   printf("SetQuatc:1\n");
-  QuatC = quat;
+  QuatC    = quat;
   mvCenter = pos + fvec3(0.0f, 0.0f, mfLoc).Transform3x3(matrot);
 
   updateMatrices();
@@ -555,15 +557,15 @@ void EzUiCam::updateMatrices(void) {
   //	10000.0		4		1000.0		1000000.0	1000.0
   //	100000.0	5		10000.0		10000000.0	1000.0
 
-  float flog10 = log10(mfLoc);
-  float flerpidx = (flog10 + 1.0f) / 6.0f;
+  float flog10      = log10(mfLoc);
+  float flerpidx    = (flog10 + 1.0f) / 6.0f;
   float finvlerpidx = float(1.0f) - flerpidx;
 
   float neardiv = (0.5f * finvlerpidx + 100.0f) * flerpidx;
-  float farmul = (500.0f * finvlerpidx + 0.5f) * flerpidx;
+  float farmul  = (500.0f * finvlerpidx + 0.5f) * flerpidx;
 
   float fnear = mfLoc / neardiv;
-  float ffar = mfLoc * farmul;
+  float ffar  = mfLoc * farmul;
 
   if (fnear < near_min)
     fnear = near_min;
@@ -579,15 +581,15 @@ void EzUiCam::updateMatrices(void) {
   fmtx4 matixf;
   matxf.inverseOf(matxf);
 
-  fvec3 veye = fvec3(0.0f, 0.0f, -mfLoc).Transform(matxf);
+  fvec3 veye    = fvec3(0.0f, 0.0f, -mfLoc).Transform(matxf);
   fvec3 vtarget = fvec3(0.0f, 0.0f, 0.0f).Transform(matxf);
-  fvec3 vup = fvec4(0.0f, 1.0f, 0.0f, 0.0f).Transform(matxf).xyz();
+  fvec3 vup     = fvec4(0.0f, 1.0f, 0.0f, 0.0f).Transform(matxf).xyz();
 
   _camcamdata.Persp(fnear, ffar, aper);
   _camcamdata.Lookat(veye, vtarget, vup);
 
   ///////////////////////////////////////////////////////////////
-  //CameraMatrices ctx = _camcamdata.computeMatrices(ctx);
+  // CameraMatrices ctx = _camcamdata.computeMatrices(ctx);
   ///////////////////////////////////////////////////////////////
   CommonPostSetup();
 }
@@ -599,18 +601,18 @@ float EzUiCam::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) {
   float rval = 1.0f;
 
   const auto& frustum = _curMatrices.GetFrustum();
-  float distATnear = (frustum.mNearCorners[1] - frustum.mNearCorners[0]).Mag();
-  float distATfar = (frustum.mFarCorners[1] - frustum.mFarCorners[0]).Mag();
-  float depthscaler = distATfar / distATnear;
+  float distATnear    = (frustum.mNearCorners[1] - frustum.mNearCorners[0]).Mag();
+  float distATfar     = (frustum.mFarCorners[1] - frustum.mFarCorners[0]).Mag();
+  float depthscaler   = distATfar / distATnear;
 
   // get pos as a lerp from near to far
-  float depthN = frustum.mNearPlane.GetPointDistance(pos);
-  float depthF = frustum.mFarPlane.GetPointDistance(pos);
+  float depthN     = frustum.mNearPlane.GetPointDistance(pos);
+  float depthF     = frustum.mFarPlane.GetPointDistance(pos);
   float depthRange = (camrayF - camrayN).Mag();
   if ((depthN >= float(0.0f)) && (depthF >= float(0.0f))) { // better be between near and far planes
-    float lerpV = depthN / depthRange;
+    float lerpV  = depthN / depthRange;
     float ilerpV = float(1.0f) - lerpV;
-    rval = ((ilerpV) + (lerpV * depthscaler));
+    rval         = ((ilerpV) + (lerpV * depthscaler));
     // orkprintf( "lerpV %f dan %f daf %f dscaler %f rval %f\n", lerpV, distATnear, distATfar, depthscaler, rval );
   }
 

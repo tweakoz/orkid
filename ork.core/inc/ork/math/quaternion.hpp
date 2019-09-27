@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 #include <cmath>
@@ -26,9 +26,12 @@ using sinf;
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-template <typename T> Quaternion<T>::Quaternion(T x, T y, T z, T w)
+template <typename T> Quaternion<T>::Quaternion(T _x, T _y, T _z, T _w)
 {
-	SetX(x), SetY(y), SetZ(z), SetW(w);
+	x = (_x);
+	y = (_y);
+	z = (_z);
+	w = (_w);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,7 +42,7 @@ template <typename T> Quaternion<T> Quaternion<T>::Lerp( const Quaternion<T> &a 
 
     Quaternion q;
 
-    T cos_t = a.GetX()*b.GetX() + a.GetY()*b.GetY() + a.GetZ()*b.GetZ() + a.GetW()*b.GetW();
+    T cos_t = a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
 
     /* if B is on opposite hemisphere from A, use -B instead */
     if(cos_t < T(0.0f))
@@ -59,10 +62,10 @@ template <typename T> Quaternion<T> Quaternion<T>::Lerp( const Quaternion<T> &a 
 		alpha2=-alpha2;
 	}
 
-    q.SetX( beta*a.GetX()+alpha2*b.GetX() );
-    q.SetY( beta*a.GetY()+alpha2*b.GetY() );
-    q.SetZ( beta*a.GetZ()+alpha2*b.GetZ() );
-    q.SetW( beta*a.GetW()+alpha2*b.GetW() );
+    q.x = ( beta*a.x+alpha2*b.x );
+    q.y = ( beta*a.y+alpha2*b.y );
+    q.z = ( beta*a.z+alpha2*b.z );
+    q.w = ( beta*a.w+alpha2*b.w );
 
     return q;
 
@@ -114,10 +117,10 @@ template <typename T> void Quaternion<T>::FromMatrix(const Matrix44<T> &M)
 		}
 	}
 
-	SetX(q[0]);
-	SetY(q[1]);
-	SetZ(q[2]);
-	SetW(q[3]);
+	x = q[0];
+	y = q[1];
+	z = q[2];
+	w = q[3];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,10 +164,10 @@ template <typename T> void Quaternion<T>::FromMatrix3(const Matrix33<T> &M)
 		}
 	}
 
-	SetX(q[0]);
-	SetY(q[1]);
-	SetZ(q[2]);
-	SetW(q[3]);
+	x = q[0];
+	y = q[1];
+	z = q[2];
+	w = q[3];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -175,7 +178,7 @@ template <typename T> Matrix44<T> Quaternion<T>::ToMatrix(void) const
 
 	T s,xs,ys,zs,wx,wy,wz,xx,xy,xz,yy,yz,zz,l;
 
-	l=GetX()*GetX() + GetY()*GetY() + GetZ()*GetZ() + GetW()*GetW();
+	l=x*x + y*y + z*z + w*w;
 
 	// should this be T::Epsilon() ?
 	if(fabs(l)<T(EPSILON))
@@ -187,10 +190,10 @@ template <typename T> Matrix44<T> Quaternion<T>::ToMatrix(void) const
 		s=T(2.0f)/l;
 	}
 
-	xs = GetX() * s;   ys = GetY() * s;  zs = GetZ() * s;
-	wx = GetW() * xs;  wy = GetW() * ys; wz = GetW() * zs;
-	xx = GetX() * xs;  xy = GetX() * ys; xz = GetX() * zs;
-	yy = GetY() * ys;  yz = GetY() * zs; zz = GetZ() * zs;
+	xs = x * s;   ys = y * s;  zs = z * s;
+	wx = w * xs;  wy = w * ys; wz = w * zs;
+	xx = x * xs;  xy = x * ys; xz = x * zs;
+	yy = y * ys;  yz = y * zs; zz = z * zs;
 
 	result.SetElemYX( 0,0,	T(1.0f) - (yy +zz) );
 	result.SetElemYX( 1,0,	xy - wz);
@@ -214,7 +217,7 @@ template <typename T> Matrix33<T> Quaternion<T>::ToMatrix3(void) const
 
 	T s,xs,ys,zs,wx,wy,wz,xx,xy,xz,yy,yz,zz,l;
 
-	l=GetX()*GetX() + GetY()*GetY() + GetZ()*GetZ() + GetW()*GetW();
+	l=x*x + y*y + z*z + w*w;
 
 	// should this be T::Epsilon() ?
 	if(fabs(l)<T(EPSILON))
@@ -226,10 +229,10 @@ template <typename T> Matrix33<T> Quaternion<T>::ToMatrix3(void) const
 		s=T(2.0f)/l;
 	}
 
-	xs = GetX() * s;   ys = GetY() * s;  zs = GetZ() * s;
-	wx = GetW() * xs;  wy = GetW() * ys; wz = GetW() * zs;
-	xx = GetX() * xs;  xy = GetX() * ys; xz = GetX() * zs;
-	yy = GetY() * ys;  yz = GetY() * zs; zz = GetZ() * zs;
+	xs = x * s;   ys = y * s;  zs = z * s;
+	wx = w * xs;  wy = w * ys; wz = w * zs;
+	xx = x * xs;  xy = x * ys; xz = x * zs;
+	yy = y * ys;  yz = y * zs; zz = z * zs;
 
 	result.SetColumn( 0, Vector3<T>( T(1.0f) - (yy +zz), xy - wz, xz + wy ) );
 	result.SetColumn( 1, Vector3<T>( xy + wz, T(1.0f) - (xx +zz), yz - wx ) );
@@ -243,10 +246,10 @@ template <typename T> Matrix33<T> Quaternion<T>::ToMatrix3(void) const
 
 template <typename T> void Quaternion<T>::Scale(T scalar)
 {
-	m_v[0] *= scalar;
-	m_v[1] *= scalar;
-	m_v[2] *= scalar;
-	m_v[3] *= scalar;
+	x *= scalar;
+	y *= scalar;
+	z *= scalar;
+	w *= scalar;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -265,17 +268,17 @@ template <typename T> Quaternion<T> Quaternion<T>::Slerp( const Quaternion<T> &a
 	//const F32 PI=3.14159254f;
 	Quaternion<T> q;
 
-	if((a.GetX() == b.GetX()) && (a.GetY() == b.GetY()) && (a.GetZ() == b.GetZ()) && (a.GetW() == b.GetW()))
+	if((a.x == b.x) && (a.y == b.y) && (a.z == b.z) && (a.w == b.w))
 	{
-		q.SetX(a.GetX());
-		q.SetY(a.GetY());
-		q.SetZ(a.GetZ());
-		q.SetW(a.GetW());
+		q.x = (a.x);
+		q.y = (a.y);
+		q.z = (a.z);
+		q.w = (a.w);
 		return(q);
 	}
 
 	/* cosine theta = dot product of A and B */
-	cos_t = a.GetX()*b.GetX() + a.GetY()*b.GetY() + a.GetZ()*b.GetZ() + a.GetW()*b.GetW();
+	cos_t = a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
 
 	/* if B is on opposite hemisphere from A, use -B instead */
 	if (cos_t < T(0.0f))
@@ -308,10 +311,10 @@ template <typename T> Quaternion<T> Quaternion<T>::Slerp( const Quaternion<T> &a
 		alpha=-alpha;
 
 	/* interpolate */
-	q.SetX(beta*a.GetX()+alpha*b.GetX());
- 	q.SetY(beta*a.GetY()+alpha*b.GetY());
-	q.SetZ(beta*a.GetZ()+alpha*b.GetZ());
-	q.SetW(beta*a.GetW()+alpha*b.GetW());
+	q.x = (beta*a.x+alpha*b.x);
+ 	q.y = (beta*a.y+alpha*b.y);
+	q.z = (beta*a.z+alpha*b.z);
+	q.w = (beta*a.w+alpha*b.w);
 
 	return(q);
 }
@@ -322,10 +325,10 @@ template <typename T> Quaternion<T> Quaternion<T>::Negate(void)
 {
 	Quaternion<T> result;
 
-	result.SetX(-GetX());
-	result.SetY(-GetY());
-	result.SetZ(-GetZ());
-	result.SetW(-GetW());
+	result.x = (-x);
+	result.y = (-y);
+	result.z = (-z);
+	result.w = (-w);
 
 	return(result);
 }
@@ -334,13 +337,13 @@ template <typename T> Quaternion<T> Quaternion<T>::Negate(void)
 
 template <typename T> Quaternion<T> Quaternion<T>::Square(void)
 {
-	T temp=T(2)*GetW();
+	T temp=T(2)*w;
 	Quaternion<T> result;
 
-	result.SetX(GetX()*temp);
-	result.SetY(GetY()*temp);
-	result.SetZ(GetZ()*temp);
-	result.SetW(GetW()*GetW()-(GetX()*GetX() + GetY()*GetY() + GetZ()*GetZ()));
+	result.x = (x*temp);
+	result.y = (y*temp);
+	result.z = (z*temp);
+	result.w = (w*w-(x*x + y*y + z*z));
 
 	return(result);
 }
@@ -351,10 +354,10 @@ template <typename T> Quaternion<T> Quaternion<T>::Conjugate(Quaternion<T> &a)
 {
 	Quaternion<T> result;
 
-	result.SetX(-GetX());
-	result.SetY(-GetY());
-	result.SetZ(-GetZ());
-	result.SetW(GetW());
+	result.x = (-x);
+	result.y = (-y);
+	result.z = (-z);
+	result.w = (w);
 
 	return(result);
 }
@@ -363,7 +366,7 @@ template <typename T> Quaternion<T> Quaternion<T>::Conjugate(Quaternion<T> &a)
 
 template <typename T> T Quaternion<T>::Magnitude(void)
 {
-	return(GetW()*GetW() + GetX()*GetX() + GetY()*GetY() + GetZ()*GetZ());
+	return(w*w + x*x + y*y + z*z);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -375,17 +378,17 @@ template <typename T> void Quaternion<T>::FromAxisAngle( const Vector4<T> &v )
 
 	if(l<Float::Epsilon())
 	{
-		m_v[0]=m_v[1]=m_v[2]=T(0.0f);
-		m_v[3]=T(1.0f);
+		x=y=z=T(0.0f);
+		w=T(1.0f);
 		return;
 	}
 
-	T omega=-T(0.5f)*v.GetW();
+	T omega=-T(0.5f)*v.w;
 	T s=sinf(omega)/l;
-	SetX(s*v.GetX());
-	SetY(s*v.GetY());
-	SetZ(s*v.GetZ());
-	SetW(cosf(omega));
+	x = (s*v.x);
+	y = (s*v.y);
+	z = (s*v.z);
+	w = (cosf(omega));
 
 }
 
@@ -394,12 +397,12 @@ template <typename T> void Quaternion<T>::FromAxisAngle( const Vector4<T> &v )
 template <typename T> Vector4<T> Quaternion<T>::ToAxisAngle(void) const
 {
 	static const double kAAC = (114.591559026*DTOR);
-	T tr = acosf(GetW());
+	T tr = acosf(w);
 	T dsin = sinf(tr);
 	T invscale = (dsin==T(0.0f)) ? T(1.0f) : T(1.0f) / dsin;
-	T vx = GetX() * invscale;
-	T vy = GetY() * invscale;
-	T vz = GetZ() * invscale;
+	T vx = x * invscale;
+	T vy = y * invscale;
+	T vz = z * invscale;
 	T ang = tr * T((float)kAAC);
 	return Vector4<T>( vx, vy, vz, -ang );
 }
@@ -408,20 +411,20 @@ template <typename T> Vector4<T> Quaternion<T>::ToAxisAngle(void) const
 
 template <typename T> void Quaternion<T>::Add(Quaternion<T> &a)
 {
-	m_v[0]+=a.GetX();
-	m_v[1]+=a.GetY();
-	m_v[2]+=a.GetZ();
-	m_v[3]+=a.GetW();
+	x+=a.x;
+	y+=a.y;
+	z+=a.z;
+	w+=a.w;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Quaternion<T>::Sub(Quaternion<T> &a)
 {
-	m_v[0]-=a.GetX();
-	m_v[1]-=a.GetY();
-	m_v[2]-=a.GetZ();
-	m_v[3]-=a.GetW();
+	x-=a.x;
+	y-=a.y;
+	z-=a.z;
+	w-=a.w;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -430,10 +433,10 @@ template <typename T> Quaternion<T> Quaternion<T>::Multiply(const Quaternion<T> 
 {
 	Quaternion<T> a;
 
-    a.SetX(GetX()*b.GetW() + GetY()*b.GetZ() - GetZ()*b.GetY() + GetW()*b.GetX());
-    a.SetY(-GetX()*b.GetZ() + GetY()*b.GetW() + GetZ()*b.GetX() + GetW()*b.GetY());
-    a.SetZ(GetX()*b.GetY() - GetY()*b.GetX() + GetZ()*b.GetW() + GetW()*b.GetZ());
-    a.SetW(-GetX()*b.GetX() - GetY()*b.GetY() - GetZ()*b.GetZ() + GetW()*b.GetW());
+    a.x = (x*b.w + y*b.z - z*b.y + w*b.x);
+    a.y = (-x*b.z + y*b.w + z*b.x + w*b.y);
+    a.z = (x*b.y - y*b.x + z*b.w + w*b.z);
+    a.w = (-x*b.x - y*b.y - z*b.z + w*b.w);
 
 	return(a);
 }
@@ -442,20 +445,20 @@ template <typename T> Quaternion<T> Quaternion<T>::Multiply(const Quaternion<T> 
 
 template <typename T> void Quaternion<T>::Divide(Quaternion<T> &a)
 {
-	m_v[0]/=a.GetX();
-	m_v[1]/=a.GetY();
-	m_v[2]/=a.GetZ();
-	m_v[3]/=a.GetW();
+	x/=a.x;
+	y/=a.y;
+	z/=a.z;
+	w/=a.w;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T> void Quaternion<T>::Identity(void)
 {
-	SetW(T(1.0f));
-	SetX(T(0.0f));
-	SetY(T(0.0f));
-	SetZ(T(0.0f));
+	w = (T(1.0f));
+	x = (T(0.0f));
+	y = (T(0.0f));
+	z = (T(0.0f));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -469,10 +472,10 @@ template <typename T> void Quaternion<T>:: ShortestRotationArc( Vector4<T> v0, V
 	T dot = v1.Dot( v0 );
 	T s = sqrtf( (T(1.0f)+dot)*T(2.0f));
 
-	SetX( cross.GetX() / s );
-	SetY( cross.GetY() / s );
-	SetZ( cross.GetZ() / s );
-	SetW( s / T(2.0f) );
+	x = ( cross.x / s );
+	y = ( cross.y / s );
+	z = ( cross.z / s );
+	w = ( s / T(2.0f) );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -480,10 +483,10 @@ template <typename T> void Quaternion<T>:: ShortestRotationArc( Vector4<T> v0, V
 template <typename T> void Quaternion<T>::dump( void )
 {
 	orkprintf( "quat %f %f %f %f\n",
-		GetX(),
-		GetY(),
-		GetZ(),
-		GetW());
+		x,
+		y,
+		z,
+		w);
 
 }
 
@@ -494,15 +497,15 @@ template <typename T> void Quaternion<T>::dump( void )
 template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 {
 	static const T frange = T( (1<<9)-1 );
-	
+
 	QuatCodec uquat;
 
 	T qf[4];
 	T fqmax(-2.0f);
-	qf[0] = GetX();
-	qf[1] = GetY();
-	qf[2] = GetZ();
-	qf[3] = GetW();
+	qf[0] = x;
+	qf[1] = y;
+	qf[2] = z;
+	qf[3] = w;
 
 	////////////////////////////////////////
 	// normalize quaternion
@@ -518,7 +521,7 @@ template <typename T> QuatCodec Quaternion<T>::Compress( void ) const
 	// find smallest 3
 
 	int iqlargest = -1;
-	
+
 	for( int i=0; i<4; i++ )
 	{
 		T fqi = fabs( qf[i] );
@@ -607,8 +610,8 @@ template <typename T> void Quaternion<T>::DeCompress( QuatCodec uquat )
 	int iqlargest = int(uquat.milargest);
 	int iqlsign	  = int(uquat.miwsign);
 
-	T *pfq = (T *) & GetX();
-	
+	T *pfq = (T *) & x;
+
 	int iidx = 0;
 
 	iidx = (iidx==iqlargest) ? iidx+1 : iidx; pfq[iidx] = T(int(uquat.miElem0))*firange; T fq0 = pfq[ iidx++ ];
@@ -625,17 +628,17 @@ template <typename T> void Quaternion<T>::DeCompress( QuatCodec uquat )
 
 template <typename T> void Quaternion<T>::Normalize()
 {
-	float x2 = m_v[0]*m_v[0];
-	float y2 = m_v[1]*m_v[1];
-	float z2 = m_v[2]*m_v[2];
-	float w2 = m_v[3]*m_v[3];
+	float x2 = x*x;
+	float y2 = y*y;
+	float z2 = z*z;
+	float w2 = w*w;
 
 	float sq = sqrtf(w2 + x2 + y2 + z2);
 
-	m_v[0] /= sq;
-	m_v[1] /= sq;
-	m_v[2] /= sq;
-	m_v[3] /= sq;
+	x /= sq;
+	y /= sq;
+	z /= sq;
+	w /= sq;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -193,17 +193,10 @@ public: //
 
   float aper;
   float tx, ty, tz;
-  float player_rx, player_ry, player_rz;
-  float move_vel;
   float far_max;
   float near_min;
 
-  float curquat[4];
-  float lastquat[4];
-
   fmtx4 mRot, mTrans;
-
-  fvec4 mMoveVelocity;
 
   fvec4 CamBaseLoc;
 
@@ -213,6 +206,8 @@ public: //
   bool mDoRotate;
   bool mDoDolly;
   bool mDoPan;
+
+  fvec3 _pushNZ, _pushNX, _pushNY;
 
   bool UIEventHandler(const ui::Event& EV) final;
   void draw(GfxTarget* pT) final;

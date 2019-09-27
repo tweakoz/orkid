@@ -378,7 +378,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //////////////////////////////////////////////////
   // update editor camera (TODO - move to engine)
   //////////////////////////////////////////////////
-  if( auto trycam = drawdata._properties["selcamdat"_crcu].TryAs<const CameraData*>() ){
+  if( auto trycam = drawdata._properties["seleditcam"_crcu].TryAs<const CameraData*>() ){
       auto CAMDAT = trycam.value();
       _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
       ManipManager().SetActiveCamera(_editorCamera);
