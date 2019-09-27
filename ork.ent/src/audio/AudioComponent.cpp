@@ -19,7 +19,7 @@
 #include <pkg/ent/event/StartAudioEffectEvent.h>
 #include <pkg/ent/event/StopSoundEvent.h>
 #include <ork/reflect/enum_serializer.inl>
-//#include <common/archetypes/player.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <pkg/ent/ReferenceArchetype.h>
 #include <ork/kernel/Array.h>
 #include <ork/kernel/Array.hpp>
@@ -670,7 +670,7 @@ void AudioEffectComponentInst::DoUpdate(ork::ent::Simulation *inst)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void AudioEffectComponentInst::UpdateEmitter( const ork::CameraData* camdat1, const ork::CameraData* camdat2 )
+void AudioEffectComponentInst::UpdateEmitter( const lev2::CameraData* camdat1, const lev2::CameraData* camdat2 )
 {
 	int inumemitters = mEmitters.size();
 

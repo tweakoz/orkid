@@ -144,7 +144,6 @@ struct RenderContextFrameData {
   const DrawableBuffer* GetDB() const;
 
   const CompositingPassData& topCPD() const;
-  CompositingPassData& topCPD();
 
   //////////////////////////////////////
 

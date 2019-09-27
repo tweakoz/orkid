@@ -5,6 +5,7 @@
 #include <ork/kernel/opq.h>
 #include <orktool/qtui/qtui_tool.h>
 #include <pkg/ent/scene.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 using namespace ork::lev2;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -140,7 +141,7 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   if (false == ctx.mUserData.IsA<ork::lev2::RenderContextFrameData*>())
     return;
 
-  auto frame_data = ctx.mUserData.Get<ork::lev2::RenderContextFrameData*>();
+  auto RCFD = ctx.mUserData.Get<ork::lev2::RenderContextFrameData*>();
 
   ///////////////////////////////////////////////////////////////////////////
 
@@ -152,23 +153,23 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   mpViewport->PushFrameTechnique(&pktek);
   GfxTarget* pTEXTARG = GetContext();
   GfxTarget* pPARENTTARG = GetParent()->GetContext();
-  pTEXTARG->SetRenderContextFrameData(frame_data);
-  frame_data->SetTarget(pTEXTARG);
+  pTEXTARG->SetRenderContextFrameData(RCFD);
+  RCFD->SetTarget(pTEXTARG);
   SRect tgt_rect(0, 0, mpViewport->GetW(), mpViewport->GetH());
-  frame_data->SetDstRect(tgt_rect);
-  pTEXTARG->SetRenderContextFrameData(frame_data);
+  pTEXTARG->SetRenderContextFrameData(RCFD);
   ///////////////////////////////////////////////////////////////////////////
   mpViewport->GetRenderer()->SetTarget(pTEXTARG);
-  frame_data->SetLightManager(nullptr);
+  RCFD->SetLightManager(nullptr);
   ///////////////////////////////////////////////////////////////////////////
   // use source viewport's W/H for camera matrix computation
   ///////////////////////////////////////////////////////////////////////////
-  frame_data->AddLayer("All"_pool);
   ///////////////////////////////////////////////////////////////////////////
   rendervar_t passdata;
   passdata.Set<compositingpassdatastack_t*>(&mpViewport->_compositingGroupStack);
-  frame_data->setUserProperty("nodes"_crc, passdata);
+  RCFD->setUserProperty("nodes"_crc, passdata);
   lev2::CompositingPassData compositor_node;
+  compositor_node.AddLayer("All"_pool);
+  compositor_node.SetDstRect(tgt_rect);
   ///////////////////////////////////////////////////////////////////////////
   int itx0 = GetContextX();
   int itx1 = GetContextX() + GetContextW();
@@ -180,10 +181,10 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
   ///////////////////////////////////////////////////////////////////////////
   float fW = mpViewport->GetW();
   float fH = mpViewport->GetH();
-  frame_data->cameraMatrices().mfAspectRatio = fW / fH;
+  //compositor_node.cameraMatrices()->_aspectRatio = fW / fH;
   ///////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(mpViewport);
-  frame_data->PushRenderTarget(&rt);
+  compositor_node._irendertarget = &rt;
   BeginFrame();
   {
     SRect VPRect(itx0, ity0, itx1, ity1);
@@ -193,9 +194,9 @@ template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetP
     pTEXTARG->FBI()->PushViewport(VPRect);
     pTEXTARG->BindMaterial(GfxEnv::GetDefault3DMaterial());
     pTEXTARG->PushModColor(fcolor4::Yellow());
-    mpViewport->_compositingGroupStack.push(compositor_node);
-    //{ mpViewport->renderEnqueuedScene(*frame_data); }
-    mpViewport->_compositingGroupStack.pop();
+
+    //{ mpViewport->renderEnqueuedScene(*RCFD); }
+
     pTEXTARG->PopModColor();
     pTEXTARG->FBI()->PopRtGroup();
     pTEXTARG->FBI()->PopViewport();

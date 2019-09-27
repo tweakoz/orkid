@@ -144,8 +144,9 @@ void TerrainMaterial::begin(const RenderContextInstData& RCID, const TerrainMate
   const auto& HFDD = TMV._data;
   auto R           = RCID.GetRenderer();
   auto targ        = R->GetTarget();
-  auto framedata   = targ->GetRenderContextFrameData();
-  bool stereo1pass = framedata->isStereoOnePass();
+  auto RCFD   = targ->GetRenderContextFrameData();
+  const auto& CPD = RCFD->topCPD();
+  bool stereo1pass = CPD.isStereoOnePass();
   auto mtxi = targ->MTXI();
   auto fxi  = targ->FXI();
   auto rsi  = targ->RSI();

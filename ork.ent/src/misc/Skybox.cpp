@@ -87,8 +87,9 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         HeadLight.miInFrustumID = 1;
         HeadLightGroup.mLightMask.AddLight(&HeadLight);
         HeadLightGroup.mLightManager                  = &HeadLightManager;
-        const lev2::RenderContextFrameData& FrameData = *targ->GetRenderContextFrameData();
-        HeadLightMatrix                               = FrameData.cameraMatrices()->GetIVMatrix();
+        auto RCFD = targ->GetRenderContextFrameData();
+        const auto& CPD = RCFD->topCPD();
+        HeadLightMatrix                               = CPD.cameraMatrices()->GetIVMatrix();
         HeadLightManager.mGlobalMovingLights.AddLight(&HeadLight);
         HeadLightManager.mLightsInFrustum.push_back(&HeadLight);
         MatCtx.SetLightingGroup(&HeadLightGroup);
@@ -97,7 +98,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         ///////////////////////////////////////////////////////////
 
         float fscale = cd.GetScale();
-        fvec3 pos    = FrameData.cameraMatrices()->GetEye();
+        fvec3 pos    = CPD.cameraMatrices()->_camdat.GetEye();
         fmtx4 mtxSPIN;
         mtxSPIN.RotateY(fphase);
         fmtx4 mtxSKY;

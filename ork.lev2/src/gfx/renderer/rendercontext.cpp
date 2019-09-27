@@ -138,4 +138,10 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+const CompositingPassData& RenderContextFrameData::topCPD() const{
+  return _cimpl->topCPD();
+}
+
+
 } // namespace ork::lev2

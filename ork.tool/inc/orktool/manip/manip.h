@@ -443,7 +443,7 @@ public:
 	Grid3d&				Grid() { return mGrid; }
 
 	void				SetViewScale( float fvs ) { mfViewScale=fvs; }
-	float				CalcViewScale( float fW, float fH, const CameraData *camdat ) const;
+	float				CalcViewScale( float fW, float fH, const CameraMatrices *camdat ) const;
 
 	void				SetDrawMode(int imode) { miDrawMode=imode; }
 	int					GetDrawMode() const { return miDrawMode; }

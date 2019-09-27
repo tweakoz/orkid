@@ -247,8 +247,8 @@ float Simulation::ComputeDeltaTime() {
   return fdelta;
 }
 ///////////////////////////////////////////////////////////////////////////////
-void Simulation::setCameraData(const PoolString& name, const CameraData* camdat) {
-  CameraLut::iterator it = _cameraDataLUT.find(name);
+void Simulation::setCameraData(const PoolString& name, const lev2::CameraData* camdat) {
+  CameraDataLut::iterator it = _cameraDataLUT.find(name);
 
   if (it == _cameraDataLUT.end()) {
     if (camdat != 0) {
@@ -269,8 +269,8 @@ void Simulation::setCameraData(const PoolString& name, const CameraData* camdat)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const CameraData* Simulation::cameraData(const PoolString& name) const {
-  CameraLut::const_iterator it = _cameraDataLUT.find(name);
+const lev2::CameraData* Simulation::cameraData(const PoolString& name) const {
+  CameraDataLut::const_iterator it = _cameraDataLUT.find(name);
   return (it == _cameraDataLUT.end()) ? 0 : it->second;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -908,18 +908,19 @@ Entity* Simulation::SpawnDynamicEntity(const ent::EntData* spawn_rec) {
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-static void CopyCameraData(const Simulation::CameraLut& srclut, CameraLut& dstlut) {
+static void CopyCameraData(const Simulation::CameraDataLut& srclut,
+                           Simulation::CameraDataLut& dstlut) {
   dstlut.clear();
   int idx = 0;
   // printf( "Copying CameraData\n" );
-  for (Simulation::CameraLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
+  for (Simulation::CameraDataLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
     const PoolString& CameraName  = itCAM->first;
-    const CameraData* pcameradata = itCAM->second;
+    const lev2::CameraData* pcameradata = itCAM->second;
     const lev2::Camera* pcam      = pcameradata ? pcameradata->getEditorCamera() : 0;
     // printf( "CopyCameraData Idx<%d> CamName<%s> pcamdata<%p> pcam<%p>\n",
     // idx, CameraName.c_str(), pcameradata, pcam );
     if (pcameradata) {
-      dstlut.AddSorted(CameraName, *pcameradata);
+      dstlut.AddSorted(CameraName, pcameradata);
     }
     idx++;
   }

@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 #include <pkg/ent/component.h>
 #include <pkg/ent/componenttable.h>
@@ -53,21 +53,21 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class SeqCamItemInstBase 
+struct SeqCamItemInstBase
 {
+	SeqCamItemInstBase( const SeqCamItemDataBase& cd );
+  virtual ~SeqCamItemInstBase();
 
-public:
-	
+
 	virtual void DoUpdate(ent::Simulation* sinst) {}
 
 	const SeqCamItemDataBase&	GetCD() const { return mCD; }
 
-	SeqCamItemInstBase( const SeqCamItemDataBase& cd );
-	const CameraData& cameraMatrices() const { return mCameraData; }
 
-protected:
+	lev2::CameraData* cameraData() const { return _cameraData; }
+
 	const SeqCamItemDataBase&				mCD;
-	CameraData								mCameraData;
+	lev2::CameraData*				_cameraData = nullptr;
 
 };
 
@@ -90,7 +90,7 @@ private:
 	orklut<PoolString,ork::Object*>	mItemDatas;
 	mutable PoolString				mCurrentItem;
 
-	const char* GetShortSelector() const final { return "sccd"; } 
+	const char* GetShortSelector() const final { return "sccd"; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,6 +103,7 @@ public:
 
 	const SequenceCamControllerData&	GetCD() const { return mCD; }
 	SequenceCamControllerInst( const SequenceCamControllerData& cd, ork::ent::Entity* pent );
+  ~SequenceCamControllerInst();
 
 private:
     void DoUpdate(ent::Simulation* sinst) final;
@@ -112,7 +113,7 @@ private:
 	orklut<PoolString,SeqCamItemInstBase*>	mItemInsts;
 	SeqCamItemInstBase*						mpActiveItem;
 	const SequenceCamControllerData&		mCD;
-	CameraData								mCameraData;
+	lev2::CameraData*								_cameraData;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,7 +131,7 @@ public:
 	float GetNear() const { return mfNear; }
 	float GetFar() const { return mfFar; }
 	float GetAper() const { return mfAper; }
-	
+
 private:
 
     SeqCamItemInstBase* CreateInst( ork::ent::Entity* pent ) const final;
@@ -152,12 +153,13 @@ public:
 	const SpinnyCamControllerData&	GetSCCD() const { return mSCCD; }
 
 	SpinnyCamControllerInst( const SpinnyCamControllerData& cd, ork::ent::Entity* pent );
+  ~SpinnyCamControllerInst();
 
 private:
 
 	const SpinnyCamControllerData&			mSCCD;
 	float									mfPhase;
-	
+
 	void DoUpdate(ent::Simulation* sinst) final;
 };
 
@@ -170,13 +172,13 @@ class CurvyCamControllerData : public SeqCamItemDataBase
 public:
 
 	CurvyCamControllerData();
-	float GetAngle() const { return mfAngle; }
+  float GetAngle() const { return mfAngle; }
 	float GetElevation() const { return mfElevation; }
 	float GetRadius() const { return mfRadius; }
 	float GetNear() const { return mfNear; }
 	float GetFar() const { return mfFar; }
 	float GetAper() const { return mfAper; }
-	
+
 	const ork::MultiCurve1D& GetRadiusCurve() const { return mRadiusCurve; }
 
 private:
@@ -202,16 +204,16 @@ public:
 	const CurvyCamControllerData&	GetCCCD() const { return mCCCD; }
 
 	CurvyCamControllerInst( const CurvyCamControllerData& cd, ork::ent::Entity* pent );
+  ~CurvyCamControllerInst();
 
 private:
 
 	const CurvyCamControllerData&			mCCCD;
 	float									mfPhase;
-	
+
 	void DoUpdate(ent::Simulation* sinst) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 } }
-

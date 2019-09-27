@@ -27,7 +27,7 @@
 
 namespace ork::lev2{
 
-typedef fixedlut<PoolString, CameraData, 16> CameraDataLut;
+typedef fixedlut<PoolString, const CameraData*, 16> CameraDataLut;
 typedef fixedlut<PoolString, CameraMatrices, 16> CameraMatricesLut;
 class Simulation;
 class DrawableBuffer;

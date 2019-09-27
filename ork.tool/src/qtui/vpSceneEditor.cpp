@@ -22,6 +22,8 @@
 #include <ork/lev2/gfx/texman.h>
 
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <pkg/ent/entity.h>
 #include <pkg/ent/scene.h>
@@ -271,13 +273,17 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   _renderer->SetTarget(mpTarget);
   ////////////////////////////////////////////////
   lev2::RenderContextFrameData RCFD;
-  RCFD.SetDstRect(tgtrect);
   RCFD.SetTarget(mpTarget);
   /////////////////////////////////////////////////////////////////////////////////
   bool compositor_enabled = isCompositorEnabled();
   /////////////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(this);
   auto FBI = mpTarget->FBI();
+  /////////////////////////////////
+  lev2::CompositingPassData TOPCPD;
+  TOPCPD.SetDstRect(tgtrect);
+  TOPCPD._irendertarget = & rt;
+  TOPCPD.SetDstRect(tgtrect);
   /////////////////////////////////
   // We must have a compositor to continue...
   /////////////////////////////////
@@ -298,7 +304,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->EndFrame();
     return;
   }
-  RCFD._cimpl = & compsys->_cimpl;
+  RCFD._cimpl = & compsys->_impl;
   auto simmode = sim->GetSimulationMode();
   bool running = (simmode==ent::ESCENEMODE_RUN);
   ////////////////////////////////////////////////
@@ -311,11 +317,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   //  so we can composite into it..
   //////////////////////////////////////////////////
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
-      RCFD.PushRenderTarget(&rt);
-      RCFD.SetTarget(mpTarget);
       _renderer->SetTarget(mpTarget);
       SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
-      RCFD.SetDstRect(tgtrect);
       FBI->SetAutoClear(true);
       FBI->SetViewport(0, 0, TARGW, TARGH);
       FBI->SetScissor(0, 0, TARGW, TARGH);
@@ -357,13 +360,10 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
         mpTarget->debugPushGroup("toolvp::DRAWEND::Children");
         DrawChildren(drwev);
         mpTarget->debugPopGroup();
-
         if (false == FBI->IsPickState())
           DrawSpinner(RCFD);
       }
       mpTarget->EndFrame();
-      RCFD.SetDstRect(tgtrect);
-      RCFD.PopRenderTarget();
   mpTarget->debugPopGroup();
   //////////////////////////////////////////////////
   // update editor camera (TODO - move to engine)
@@ -436,7 +436,8 @@ void SceneEditorVP::renderMisc(lev2::RenderContextFrameData& RCFD) {
   ///////////////////////////////////////////////////////////////////////////
   //ScopedSimFramer framescope(sim);
   ///////////////////////////////////////////////////////////////////////////
-  lev2::IRenderTarget* pIRT = RCFD.GetRenderTarget();
+  const auto& topCPD = RCFD.topCPD();
+  lev2::IRenderTarget* pIRT = topCPD._irendertarget;
   auto gfxtarg              = RCFD.GetTarget();
   auto FBI                  = gfxtarg->FBI();
   auto MTXI                 = gfxtarg->MTXI();
@@ -514,8 +515,8 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
   mpTarget->debugPushGroup("toolvp::DrawHUD");
   auto MTXI              = pTARG->MTXI();
   auto GBI               = pTARG->GBI();
-
-  const SRect& frame_rect = FrameData.GetDstRect();
+  const auto& topCPD = FrameData.topCPD();
+  const SRect& frame_rect = topCPD.GetDstRect();
 
   int itx0 = frame_rect.miX;
   int itx1 = frame_rect.miX2;
@@ -711,20 +712,21 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
 void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
   mpTarget->debugPushGroup("toolvp::DrawGrid");
+  const auto& topCPD = fdata.topCPD();
   auto& GRID = ManipManager().Grid();
   switch (mGridMode) {
     case 0:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
-      GRID.Calc(*fdata.cameraMatrices());
+      GRID.Calc(*topCPD.cameraMatrices());
       break;
     case 1:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
-      GRID.Calc(*fdata.cameraMatrices());
+      GRID.Calc(*topCPD.cameraMatrices());
       GRID.Render(fdata);
       break;
     case 2:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XY);
-      GRID.Calc(*fdata.cameraMatrices());
+      GRID.Calc(*topCPD.cameraMatrices());
       GRID.Render(fdata);
       break;
   }
@@ -733,23 +735,21 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev2::GfxTarget* pProxyTarg) {
-  const CameraData* pcamdata = fdata.cameraMatrices();
-  if (0 == pcamdata)
-    return;
-  const CameraMatrices& ccctx = fdata.cameraMatrices();
+void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2::GfxTarget* pProxyTarg) {
+  const auto& topCPD = RCFD.topCPD();
+  auto cammatrices = topCPD.cameraMatrices();
 
-  ork::lev2::GfxTarget* pOutputTarget = fdata.GetTarget();
+  ork::lev2::GfxTarget* pOutputTarget = RCFD.GetTarget();
   auto MTXI                           = pOutputTarget->MTXI();
-  MTXI->PushPMatrix(ccctx.mPMatrix);
-  MTXI->PushVMatrix(ccctx.mVMatrix);
+  MTXI->PushPMatrix(cammatrices->_pmatrix);
+  MTXI->PushVMatrix(cammatrices->_vmatrix);
   MTXI->PushMMatrix(fmtx4::Identity);
   {
     switch (ManipManager().GetUIMode()) {
       case ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
       case ManipManager::EUIMODE_MANIP_LOCAL_ROTATE: {
         GetRenderer()->SetTarget(pProxyTarg);
-        fdata.SetTarget(pProxyTarg);
+        RCFD.SetTarget(pProxyTarg);
 
         ///////////////////////////////////////
         const fvec4& ScreenXNorm = pProxyTarg->MTXI()->GetScreenRightNormal();
@@ -759,22 +759,21 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
         const fvec4 V0 = MatW.GetTranslation();
         const fvec4 V1 = V0 + ScreenXNorm * float(30.0f);
         fvec2 VP(float(pProxyTarg->GetW()), float(pProxyTarg->GetH()));
-        const CameraData* camdat = pProxyTarg->GetRenderContextFrameData()->cameraMatrices();
         fvec3 Pos                = MatW.GetTranslation();
         fvec3 UpVector;
         fvec3 RightVector;
-        camdat->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
+        cammatrices->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
         float rscale = RightVector.Mag(); // float(100.0f);
         // printf( "OUTERmanip rscale<%f>\n", rscale );
 
         static float fRSCALE = 1.0f;
 
-        if (fdata.isPicking()) {
+        if (topCPD.isPicking()) {
           ManipManager().SetViewScale(fRSCALE);
         } else {
           float fW = float(pOutputTarget->GetW());
           float fH = float(pOutputTarget->GetH());
-          fRSCALE  = ManipManager().CalcViewScale(fW, fH, camdat);
+          fRSCALE  = ManipManager().CalcViewScale(fW, fH, cammatrices);
           ManipManager().SetViewScale(fRSCALE);
         }
 
@@ -796,18 +795,19 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& fdata, ork::lev
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& FrameData) {
+void SceneEditorVP::DrawSpinner(lev2::RenderContextFrameData& RCFD) {
+  const auto& topCPD = RCFD.topCPD();
   bool bhasfocus  = HasKeyboardFocus();
-  float fw        = FrameData.GetDstRect().miW;
-  float fh        = FrameData.GetDstRect().miH;
-  auto TGT        = FrameData.GetTarget();
+  float fw        = topCPD.GetDstRect().miW;
+  float fh        = topCPD.GetDstRect().miH;
+  auto TGT        = RCFD.GetTarget();
 
   mpTarget->debugPushGroup("toolvp::DrawSpinner");
 
 
   auto MTXI       = TGT->MTXI();
   ork::fmtx4 mtxP = MTXI->Ortho(0.0f, fw, 0.0f, fh, 0.0f, 1.0f);
-  GfxMaterialUI matui(FrameData.GetTarget());
+  GfxMaterialUI matui(TGT);
   TGT->BindMaterial(&matui);
   TGT->PushModColor(bhasfocus ? ork::fcolor4::Red() : ork::fcolor4::Black());
   MTXI->PushPMatrix(mtxP);

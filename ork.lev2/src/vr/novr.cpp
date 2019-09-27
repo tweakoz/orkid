@@ -1,6 +1,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/glheaders.h> // todo abstract somehow ?
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/vr/vr.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
@@ -74,7 +75,8 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
    printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
   auto vrroot = RCFD.getUserProperty("vrroot"_crc);
   if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
-    auto rt = RCFD.GetRenderTarget();
+    auto& CPD = RCFD.topCPD();
+    auto rt = CPD._irendertarget;
     float aspect = float(rt->GetW())/float(rt->GetH());
     _posemap["projl"].Perspective(45, aspect, .1, 100000);
     _posemap["projr"].Perspective(45, aspect, .1, 100000);

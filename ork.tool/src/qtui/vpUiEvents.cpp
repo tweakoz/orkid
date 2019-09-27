@@ -308,7 +308,7 @@ void SceneEditorVPToolHandler::setSpawnLoc(const lev2::GetPixelContext& ctx, flo
 
   if (auto cam = GetViewport()->getActiveCamera()) {
 
-    auto& camdat = cam->_camcamdata;
+    auto& camdat = cam->_curMatrices;
 
     /////////////////////////////////////////////////////////
 

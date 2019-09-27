@@ -88,19 +88,19 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
             bool IsPickState = targ->FBI()->IsPickState();
             float fphase = ssci->GetPhase();
 
-            const auto& RCFD = targ->GetRenderContextFrameData();
-            const auto& CCC = RCFD->cameraMatrices();
-            const auto CAMDAT = RCFD->cameraMatrices();
-            const auto& FRUS = CAMDAT->GetFrustum();
+            auto RCFD = targ->GetRenderContextFrameData();
+            const auto& CPD = RCFD->topCPD();
+            auto cammatrices = CPD.cameraMatrices();
+            const auto& FRUS = cammatrices->GetFrustum();
 
             fvec2 topl(-1,-1), topr(+1,-1);
             fvec2 botl(-1,+1), botr(+1,+1);
             fray3 ray_topl, ray_topr, ray_botl, ray_botr;
 
-            CAMDAT->projectDepthRay(topl,ray_topl);
-            CAMDAT->projectDepthRay(topr,ray_topr);
-            CAMDAT->projectDepthRay(botr,ray_botr);
-            CAMDAT->projectDepthRay(botl,ray_botl);
+            cammatrices->projectDepthRay(topl,ray_topl);
+            cammatrices->projectDepthRay(topr,ray_topr);
+            cammatrices->projectDepthRay(botr,ray_botr);
+            cammatrices->projectDepthRay(botl,ray_botl);
             fplane3 groundplane(0,1,0,0);
 
             float dtl, dtr, dbl, dbr;
@@ -145,8 +145,8 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 
                 vw.UnLock(targ);
 
-                const fmtx4& PMTX = CCC.mPMatrix;
-                const fmtx4& VMTX = CCC.mVMatrix;
+                const fmtx4& PMTX = cammatrices->_pmatrix;
+                const fmtx4& VMTX = cammatrices->_vmatrix;
 
                 auto mtxi = targ->MTXI();
                 auto gbi = targ->GBI();

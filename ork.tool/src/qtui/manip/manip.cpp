@@ -350,7 +350,7 @@ void ManipManager::ReleaseObject(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float ManipManager::CalcViewScale(float fW, float fH, const CameraData* camdat) const {
+float ManipManager::CalcViewScale(float fW, float fH, const CameraMatrices* cammatrices) const {
   fmtx4 MatW;
   mCurTransform.GetMatrix(MatW);
 
@@ -362,7 +362,7 @@ float ManipManager::CalcViewScale(float fW, float fH, const CameraData* camdat) 
   fvec3 Pos = MatW.GetTranslation();
   fvec3 UpVector;
   fvec3 RightVector;
-  camdat->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
+  cammatrices->GetPixelLengthVectors(Pos, VP, UpVector, RightVector);
 
   float rscale = RightVector.Mag();
 

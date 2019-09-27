@@ -51,7 +51,7 @@ class TetherCamControllerData : public ent::ComponentData
 	float		mfNear;
 	float		mfFar;
 	float 		mApproachSpeed;
-	
+
 public:
 
 	ent::ComponentInst* createComponent(ent::Entity* pent) const override;
@@ -76,9 +76,9 @@ class TetherCamControllerInst : public ent::ComponentInst
 	RttiDeclareAbstract( TetherCamControllerInst, ent::ComponentInst );
 
 	const TetherCamControllerData&			mCD;
-	Entity*									mpTarget;
-	CameraData								mCameraData;
-	
+	Entity*									mpTarget = nullptr;
+	lev2::CameraData*				_cameraData = nullptr;
+
 	void DoUpdate(ent::Simulation* sinst) final;
     bool DoLink(Simulation *psi) final;
     bool DoStart(Simulation *psi, const fmtx4 &world) final;
@@ -87,6 +87,7 @@ public:
 	const TetherCamControllerData&	GetCD() const { return mCD; }
 
 	TetherCamControllerInst( const TetherCamControllerData& cd, ork::ent::Entity* pent );
+  ~TetherCamControllerInst();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

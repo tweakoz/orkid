@@ -15,19 +15,11 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork {
-
-class CameraData;
-
 namespace lev2 {
 class XgmModel;
-}
-namespace lev2 {
+class CameraData;
 class XgmModelInst;
-}
-namespace lev2 {
 class IRenderer;
-}
-namespace lev2 {
 class LightManager;
 }
 

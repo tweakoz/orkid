@@ -789,7 +789,9 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   const IRenderer* renderer = RCID.GetRenderer();
   GfxTarget* targ           = renderer->GetTarget();
   auto RCFD                 = targ->GetRenderContextFrameData();
-  bool bpick                = RCFD->isPicking();
+  const auto& CPD = RCFD->topCPD();
+  bool stereo1pass = CPD.isStereoOnePass();
+  bool bpick                = CPD.isPicking();
   auto mtxi                 = targ->MTXI();
   auto fxi                  = targ->FXI();
   auto gbi                  = targ->GBI();
@@ -810,7 +812,6 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   ///////////////////////////////////////////////////////////////////
   // render
   ///////////////////////////////////////////////////////////////////
-  bool stereo1pass = RCFD->isStereoOnePass();
   //////////////////////////
   fmtx4 viz_offset;
   viz_offset.SetTranslation(_hfdrawable->_visualOffset);
@@ -839,10 +840,11 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   fvec3 znormal;
   //////////////////////////
   if (stereo1pass) {
-    MVPL     = RCFD->_stereoCamera.MVPL(viz_offset);
-    MVPR     = RCFD->_stereoCamera.MVPR(viz_offset);
-    MVPC = RCFD->_stereoCamera.MVPMONO(viz_offset);
-    auto V_mono = RCFD->_stereoCamera.VMONO();
+    auto stcams = CPD._stereoCameraMatrices;
+    MVPL     = stcams->MVPL(viz_offset);
+    MVPR     = stcams->MVPR(viz_offset);
+    MVPC = stcams->MVPMONO(viz_offset);
+    auto V_mono = stcams->VMONO();
     auto MV_mono = (viz_offset * V_mono);
     fmtx4 IMV_mono;
     IMV_mono.inverseOf(MV_mono);
@@ -851,8 +853,9 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
     inv_view_mono.inverseOf(V_mono);
     znormal = inv_view_mono.GetZNormal().Normal();
   } else {
-    const fmtx4& PMTX_mono = RCFD->cameraMatrices().mPMatrix;
-    const fmtx4& VMTX_mono = RCFD->cameraMatrices().mVMatrix;
+    auto mcams = CPD._cameraMatrices;
+    const fmtx4& PMTX_mono = mcams->_pmatrix;
+    const fmtx4& VMTX_mono = mcams->_vmatrix;
     auto MV_mono = (viz_offset * VMTX_mono);
     auto MVP = MV_mono * PMTX_mono;
     MVPL = MVP;

@@ -105,10 +105,15 @@ ObserverCamControllerInst::ObserverCamControllerInst(const ObserverCamController
 	, mpTarget(0)
 	, mpEye(0)
 {
-	mCameraData.Persp( 0.1f, 1.0f, 45.0f );
-	mCameraData.Lookat( fvec3(0.0f,0.0f,0.0f), fvec3(0.0f,0.0f,1.0f), fvec3(0.0f,1.0f,0.0f) );
+  _cameraData = new lev2::CameraData;
+	_cameraData->Persp( 0.1f, 1.0f, 45.0f );
+	_cameraData->Lookat( fvec3(0.0f,0.0f,0.0f), fvec3(0.0f,0.0f,1.0f), fvec3(0.0f,1.0f,0.0f) );
 
-	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, & mCameraData, mCameraData.getEditorCamera() );
+	printf( "OCCI<%p> camdat<%p> l2cam<%p>\n", this, _cameraData, _cameraData->getEditorCamera() );
+}
+
+ObserverCamControllerInst::~ObserverCamControllerInst(){
+  delete _cameraData;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -127,7 +132,7 @@ bool ObserverCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 		const ent::EntData& ED = GetEntity()->GetEntData();
 		PoolString name = ED.GetName();
 		std::string Name = CreateFormattedString( "%s", name.c_str() );
- 		psi->setCameraData( AddPooledString(Name.c_str()), & mCameraData );
+ 		psi->setCameraData( AddPooledString(Name.c_str()), _cameraData );
 
 
 	}
@@ -174,8 +179,8 @@ void ObserverCamControllerInst::DoUpdate( Simulation* psi )
 
 		fvec3 N = (cam_TGT-cam_EYE).Normal();
 
-		mCameraData.Persp( fnear, ffar, faper );
-		mCameraData.Lookat( cam_EYE, cam_TGT, cam_UP );
+		_cameraData->Persp( fnear, ffar, faper );
+		_cameraData->Lookat( cam_EYE, cam_TGT, cam_UP );
 
 		//orkprintf( "ocam eye<%f %f %f>\n", cam_EYE.GetX(), cam_EYE.GetY(), cam_EYE.GetZ() );
 		//orkprintf( "ocam tgt<%f %f %f>\n", cam_TGT.GetX(), cam_TGT.GetY(), cam_TGT.GetZ() );

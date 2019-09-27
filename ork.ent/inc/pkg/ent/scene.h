@@ -27,13 +27,15 @@
 namespace ork {
 
 class Opq;
-class CameraData;
 class Application;
 
-namespace lev2 { class XgmModel; }
-namespace lev2 { class XgmModelInst; }
-namespace lev2 { class IRenderer; }
-namespace lev2 { class LightManager; }
+namespace lev2 {
+class XgmModel;
+class XgmModelInst;
+class IRenderer;
+class LightManager;
+class CameraData;
+}
 
 namespace ent {
 

@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <ork/lev2/gfx/renderer/drawable.h>
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Simulation is all the work data associated with running a scene
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,8 +108,8 @@ public:
 
 	///////////////////////////////////////////////////
 
-	void setCameraData(const PoolString& name, const CameraData*camdat);
-	const CameraData* cameraData(const PoolString& name ) const;
+	void setCameraData(const PoolString& name, const lev2::CameraData*camdat);
+	const lev2::CameraData* cameraData(const PoolString& name ) const;
 
 	///////////////////////////////////////////////////
 
@@ -166,7 +168,7 @@ public:
 	template <typename T >
 	T* findSystem() const;
 
-	typedef orklut<PoolString,const CameraData*> CameraLut;
+	typedef lev2::CameraDataLut CameraDataLut;
 
 	void AddLayer( const PoolString& name, lev2::Layer*player );
 	lev2::Layer* GetLayer( const PoolString& name );
@@ -230,7 +232,7 @@ protected:
 	float									mfAvgDtCtr;
 	size_t 									mEntityUpdateCount;
 
-	CameraLut								_cameraDataLUT;		// camera list
+	CameraDataLut								_cameraDataLUT;		// camera list
 	//////////////////////////////////////////////////////////
 	ActiveComponentType						mActiveEntityComponents;
 	orkvector<EntityActivationQueueItem>	mEntityActivateQueue;

@@ -23,7 +23,7 @@
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/kernel/opq.h>
 
-namespace ork { 
+namespace ork {
 
 using namespace lev2;
 
@@ -145,7 +145,7 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
         const FnBallArchetype* parch;
         Entity *pent;
 
-        static void doit(   RenderContextInstData& rcid, 
+        static void doit(   RenderContextInstData& rcid,
                             GfxTarget* targ,
                             const CallbackRenderable* pren )
         {
@@ -159,7 +159,7 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 
             if( fd.mpMaterial && false==IsPickState )
             {
-                    
+
                 auto& vtxbuf = GfxEnv::GetSharedDynamicVB2();
                 VtxWriter<vertex_t> vw;
 
@@ -218,17 +218,17 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
                     do_tri( vbot, vner, vlft );
                     do_tri( vbot, vlft, vfar );
                 }
-                vw.UnLock(targ);            
+                vw.UnLock(targ);
 
                 ////////////////////////////////////////
                 auto mtx = fmtx4::Identity;
-                auto framedata = targ->GetRenderContextFrameData();
-                auto cdata = framedata->cameraMatrices();
+                auto RCFD = targ->GetRenderContextFrameData();
+                auto& cdata = RCFD->topCPD().cameraMatrices()->_camdat;
                 fmtx4 matrs( mtx );
                 matrs.SetTranslation( 0.0f, 0.0f, 0.0f );
                 matrs.Transpose();
-                fvec3 nx = cdata->GetXNormal().Transform( matrs );
-                fvec3 ny = cdata->GetYNormal().Transform( matrs );
+                fvec3 nx = cdata.xNormal().Transform( matrs );
+                fvec3 ny = cdata.yNormal().Transform( matrs );
 
                 fvec4 user0 = -(ny+nx);
                 fvec4 user1 =  (ny-nx);
@@ -245,9 +245,9 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
                 targ->BindMaterial( fd.mpMaterial );
                 targ->MTXI()->PushMMatrix(mtx);
                 if( use_tess )
-                    targ->GBI()->DrawPrimitive( vw, EPRIM_PATCHES, knumv ); 
+                    targ->GBI()->DrawPrimitive( vw, EPRIM_PATCHES, knumv );
                 else
-                    targ->GBI()->DrawPrimitive( vw, EPRIM_POINTS, knumv ); 
+                    targ->GBI()->DrawPrimitive( vw, EPRIM_POINTS, knumv );
                 targ->MTXI()->PopMMatrix();
                 targ->BindMaterial( 0 );
 

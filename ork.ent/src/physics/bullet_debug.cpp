@@ -148,7 +148,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
   //printf( "draw numlines<%d>\n", inumlines );
   auto prenderer = rcid.GetRenderer();
 
-  const ork::CameraData* pcamdata = ptarg->GetRenderContextFrameData()->cameraMatrices();
+  auto pcamdata = ptarg->GetRenderContextFrameData()->topCPD().cameraMatrices();
 
   fvec3 szn = 0;
 
@@ -171,7 +171,7 @@ void PhysicsDebugger::render(RenderContextInstData& rcid, GfxTarget* ptarg, line
     }
     vwriter.UnLock(ptarg);
 
-    auto cam_z = pcamdata->GetZNormal();
+    auto cam_z = pcamdata->_camdat.zNormal();
 
     static GfxMaterial3DSolid material(ptarg);
     material.mRasterState.SetZWriteMask(true);

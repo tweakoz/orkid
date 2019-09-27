@@ -49,7 +49,7 @@ class ObserverCamControllerData : public ent::ComponentData
 	float		mfAperature;
 	float		mfNear;
 	float		mfFar;
-	
+
 public:
 
 	ent::ComponentInst* createComponent(ent::Entity* pent) const final;
@@ -73,10 +73,10 @@ class ObserverCamControllerInst : public ent::ComponentInst
 	RttiDeclareAbstract( ObserverCamControllerInst, ent::ComponentInst );
 
 	const ObserverCamControllerData&		mCD;
-	Entity*									mpEye;
-	Entity*									mpTarget;
-	CameraData								mCameraData;
-	
+	Entity*									mpEye = nullptr;
+	Entity*									mpTarget = nullptr;
+	lev2::CameraData*				_cameraData = nullptr;
+
 	void DoUpdate(ent::Simulation* sinst) final;
     bool DoLink(Simulation *psi) final;
     bool DoStart(Simulation *psi, const fmtx4 &world) final;
@@ -85,6 +85,7 @@ public:
 	const ObserverCamControllerData&	GetCD() const { return mCD; }
 
 	ObserverCamControllerInst( const ObserverCamControllerData& cd, ork::ent::Entity* pent );
+  ~ObserverCamControllerInst();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

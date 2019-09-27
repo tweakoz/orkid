@@ -97,6 +97,9 @@ SequenceCamControllerInst::SequenceCamControllerInst(const SequenceCamController
 {
 }
 
+SequenceCamControllerInst::~SequenceCamControllerInst(){
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 bool SequenceCamControllerInst::DoLink(Simulation *psi)
@@ -114,7 +117,7 @@ bool SequenceCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 		const ent::EntData& ED = GetEntity()->GetEntData();
 		PoolString name = ED.GetName();
 		std::string Name = CreateFormattedString( "%s", name.c_str() );
- 		psi->setCameraData( AddPooledString(Name.c_str()), & mCameraData );
+ 		psi->setCameraData( AddPooledString(Name.c_str()), _cameraData );
 
 		for( orklut<PoolString,ork::Object*>::const_iterator it=GetCD().GetItemDatas().begin(); it!=GetCD().GetItemDatas().end(); it++ )
 		{
@@ -150,7 +153,7 @@ void SequenceCamControllerInst::DoUpdate( Simulation* psi )
 	{
 		//printf( "SequenceCamControllerInst<%p> ActiveItem<%s:%p>\n", this, ps.c_str(), mpActiveItem );
 		mpActiveItem->DoUpdate(psi);
-		mCameraData = mpActiveItem->cameraMatrices();
+		_cameraData = mpActiveItem->cameraData();
 	}
 }
 
@@ -205,7 +208,9 @@ SeqCamItemInstBase::SeqCamItemInstBase(const SeqCamItemDataBase& cd)
 	: mCD(cd)
 {
 }
+SeqCamItemInstBase::~SeqCamItemInstBase(){
 
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 void SpinnyCamControllerData::Describe()
@@ -259,12 +264,12 @@ SpinnyCamControllerInst::SpinnyCamControllerInst(const SpinnyCamControllerData& 
 	, mfPhase(0.0f)
 {
 }
-
+SpinnyCamControllerInst::~SpinnyCamControllerInst(){}
 void SpinnyCamControllerInst::DoUpdate(ent::Simulation* psi)
 {
 	mfPhase += mSCCD.GetSpinRate()*psi->GetDeltaTime();
 
-	mCameraData.Persp( mSCCD.GetNear(), mSCCD.GetFar(), mSCCD.GetAper() );
+	_cameraData->Persp( mSCCD.GetNear(), mSCCD.GetFar(), mSCCD.GetAper() );
 
 	float famp = mSCCD.GetRadius();
 	float fx = sinf(mfPhase)*famp;
@@ -273,7 +278,7 @@ void SpinnyCamControllerInst::DoUpdate(ent::Simulation* psi)
 	fvec3 eye(fx,mSCCD.GetElevation(),fy);
 	fvec3 tgt(0.0f,0.0f,0.0f);
 	fvec3 up(0.0f,1.0f,0.0f);
-	mCameraData.Lookat( eye,tgt,up );
+	_cameraData->Lookat( eye,tgt,up );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -334,12 +339,13 @@ CurvyCamControllerInst::CurvyCamControllerInst(const CurvyCamControllerData& cd,
 	, mfPhase(0.0f)
 {
 }
+CurvyCamControllerInst::~CurvyCamControllerInst(){}
 
 void CurvyCamControllerInst::DoUpdate(ent::Simulation* psi)
 {
 	mfPhase += mCCCD.GetAngle()*psi->GetDeltaTime();
 
-	mCameraData.Persp( mCCCD.GetNear(), mCCCD.GetFar(), mCCCD.GetAper() );
+	_cameraData->Persp( mCCCD.GetNear(), mCCCD.GetFar(), mCCCD.GetAper() );
 
 	float famp = mCCCD.GetRadius();
 	float fx = sinf(mfPhase)*famp;
@@ -348,7 +354,7 @@ void CurvyCamControllerInst::DoUpdate(ent::Simulation* psi)
 	fvec3 eye(fx,mCCCD.GetElevation(),fy);
 	fvec3 tgt(0.0f,0.0f,0.0f);
 	fvec3 up(0.0f,1.0f,0.0f);
-	mCameraData.Lookat( eye,tgt,up );
+	_cameraData->Lookat( eye,tgt,up );
 }
 
 }}

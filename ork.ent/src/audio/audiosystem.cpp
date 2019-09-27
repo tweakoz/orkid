@@ -88,20 +88,20 @@ void AudioSystem::DoUpdate(ork::ent::Simulation* inst){
 
 	if( camdat1 ){
 		auto ListenerPos = camdat1->GetEye();
-		auto ListenerUp = -camdat1->GetYNormal();
-		auto ListenerFw = camdat1->GetZNormal();
+		auto ListenerUp = -camdat1->yNormal();
+		auto ListenerFw = camdat1->zNormal();
 		pdev->SetListener1( ListenerPos, ListenerUp, ListenerFw );
 	}
 	if( camdat2 ){
 		auto ListenerPos = camdat2->GetEye();
-		auto ListenerUp = -camdat2->GetYNormal();
-		auto ListenerFw = camdat2->GetZNormal();
+		auto ListenerUp = -camdat2->yNormal();
+		auto ListenerFw = camdat2->zNormal();
 		pdev->SetListener2( ListenerPos, ListenerUp, ListenerFw );
 	}
 	else if( camdat1 ){
 		auto ListenerPos = camdat1->GetEye();
-		auto ListenerUp = -camdat1->GetYNormal();
-		auto ListenerFw = camdat1->GetZNormal();
+		auto ListenerUp = -camdat1->yNormal();
+		auto ListenerFw = camdat1->zNormal();
 		pdev->SetListener2( ListenerPos, ListenerUp, ListenerFw );
 	}
 

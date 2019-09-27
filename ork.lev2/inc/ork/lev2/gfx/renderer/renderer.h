@@ -24,11 +24,11 @@
 namespace ork {
 
 class PerformanceItem;
-class CameraData;
 
 namespace lev2 {
 
 class GfxTarget;
+class CameraData;
 
 class IRenderer {
 public:

@@ -195,7 +195,7 @@ const CameraData* DrawableBuffer::cameraData(int icam) const {
   if (icam >= 0 && inumscenecameras) {
     icam                     = icam % inumscenecameras;
     auto& itCAM              = _cameraDataLUT.GetItemAtIndex(icam);
-    const CameraData* pdata  = &itCAM.second;
+    const CameraData* pdata  = itCAM.second;
     const lev2::Camera* pcam = pdata->getEditorCamera();
     // printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
     return pdata;
@@ -209,7 +209,7 @@ const CameraData* DrawableBuffer::cameraData(const PoolString& named) const {
   int inumscenecameras = _cameraDataLUT.size();
   auto itCAM           = _cameraDataLUT.find(named);
   if (itCAM != _cameraDataLUT.end()) {
-    const CameraData* pdata = &itCAM->second;
+    const CameraData* pdata = itCAM->second;
     return pdata;
   }
   return 0;
