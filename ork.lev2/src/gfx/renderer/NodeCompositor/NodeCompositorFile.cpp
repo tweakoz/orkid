@@ -80,8 +80,8 @@ struct IMPL {
     FrameRenderer& fr_renderer        = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = fr_renderer.framedata();
     auto targ                         = framedata.GetTarget();
-    framedata.setLayerName(_node->_layername.c_str());
-    targ->debugMarker("File::beginFrame");
+    //framedata.setLayerName(_node->_layername.c_str());
+    //targ->debugMarker("File::beginFrame");
     drawdata._properties["OutputWidth"_crcu].Set<int>(targ->GetW());
     drawdata._properties["OutputHeight"_crcu].Set<int>(targ->GetH());
   }

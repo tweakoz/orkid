@@ -25,7 +25,7 @@ namespace ork { namespace lev2 {
 
 Grid3d::Grid3d() : mVisGridBase(0.3f), mVisGridDiv(10.0f), mVisGridHiliteDiv(100.0f) {}
 ///////////////////////////////////////////////////////////////////////////////
-void Grid3d::Calc(const CameraData& camdat) {
+void Grid3d::Calc(const CameraMatrices& camdat) {
   const fvec4& vn0 = camdat.GetFrustum().mNearCorners[0];
   const fvec4& vn1 = camdat.GetFrustum().mNearCorners[1];
   const fvec4& vn2 = camdat.GetFrustum().mNearCorners[2];

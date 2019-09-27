@@ -23,6 +23,7 @@
 #include <ork/reflect/enum_serializer.inl>
 #include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 
 ImplementReflectionX(ork::lev2::SeriesCompositingNode, "SeriesCompositingNode");
 
@@ -77,7 +78,6 @@ void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata)
 {
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.framedata();
-  orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
   auto target = framedata.GetTarget();
   auto fbi = target->FBI();
   auto gbi = target->GBI();

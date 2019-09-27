@@ -163,8 +163,9 @@ bool GfxMaterial3DSolid::IsUserFxOk() const {
 int GfxMaterial3DSolid::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
 
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  bool is_picking                    = RCFD ? RCFD->isPicking() : false;
-  bool is_stereo                     = RCFD ? RCFD->isStereoOnePass() : false;
+  const auto& CPD = RCFD->topCPD();
+  bool is_picking                    = CPD.isPicking();
+  bool is_stereo                     = CPD.isStereoOnePass();
 
   if (is_picking and _enablePick and hTekPick) {
     pTarg->FXI()->BindTechnique(hModFX, hTekPick);
@@ -216,8 +217,10 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  bool is_stereo                     = RCFD ? RCFD->isStereoOnePass() : false;
-  bool is_forcenoz                   = RCFD ? RCID->IsForceNoZWrite() : false;
+  const auto& CPD = RCFD->topCPD();
+  bool is_picking                    = CPD.isPicking();
+  bool is_stereo                     = CPD.isStereoOnePass();
+  bool is_forcenoz                   = RCID ? RCID->IsForceNoZWrite() : false;
 
   pTarg->RSI()->BindRasterState(mRasterState);
   pTarg->FXI()->BindPass(hModFX, iPass);
@@ -233,8 +236,10 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   FXI->BindParamMatrix(hModFX, hMatP, MTXI->RefPMatrix());
 
   if (is_stereo) {
-    auto MVPL = RCFD->_stereoCamera.MVPL(MTXI->RefMMatrix());
-    auto MVPR = RCFD->_stereoCamera.MVPR(MTXI->RefMMatrix());
+    auto stereomtx = CPD._stereoCameraMatrices;
+    const auto& world = MTXI->RefMMatrix();
+    auto MVPL = stereomtx->MVPL(world);
+    auto MVPR = stereomtx->MVPR(world);
     FXI->BindParamMatrix(hModFX, hMatMVPL, MVPL);
     FXI->BindParamMatrix(hModFX, hMatMVPR, MVPR);
   } else {

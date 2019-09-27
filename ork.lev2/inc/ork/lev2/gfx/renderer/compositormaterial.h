@@ -1,0 +1,77 @@
+////////////////////////////////////////////////////////////////
+// Orkid Media Engine
+// Copyright 1996-2012, Michael T. Mayers.
+// Distributed under the Boost Software License - Version 1.0 - August 17, 2003
+// see http://www.boost.org/LICENSE_1_0.txt
+////////////////////////////////////////////////////////////////
+
+#pragma once
+
+#include <ork/dataflow/dataflow.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/gfxmaterial.h>
+#include <ork/lev2/gfx/renderer/frametek.h>
+
+namespace ork::lev2 {
+///////////////////////////////////////////////////////////////////////////////
+
+class CompositingMaterial : public lev2::GfxMaterial {
+public:
+  CompositingMaterial();
+  ~CompositingMaterial();
+  /////////////////////////////////////////////////
+  virtual void Update(void) {}
+  virtual void Init(lev2::GfxTarget* pTarg);
+  virtual bool BeginPass(lev2::GfxTarget* pTARG, int iPass = 0);
+  virtual void EndPass(lev2::GfxTarget* pTARG);
+  virtual int BeginBlock(lev2::GfxTarget* pTARG, const lev2::RenderContextInstData& MatCtx);
+  virtual void EndBlock(lev2::GfxTarget* pTARG);
+  /////////////////////////////////////////////////
+  void SetTextureA(lev2::Texture* ptex) { mCurrentTextureA = ptex; }
+  void SetTextureB(lev2::Texture* ptex) { mCurrentTextureB = ptex; }
+  void SetTextureC(lev2::Texture* ptex) { mCurrentTextureC = ptex; }
+  void SetLevelA(const fvec4& la) { mLevelA = la; }
+  void SetLevelB(const fvec4& lb) { mLevelB = lb; }
+  void SetLevelC(const fvec4& lc) { mLevelC = lc; }
+  void SetBiasA(const fvec4& ba) { mBiasA = ba; }
+  void SetBiasB(const fvec4& bb) { mBiasB = bb; }
+  void SetBiasC(const fvec4& bc) { mBiasC = bc; }
+  void SetTechnique(const std::string& tek);
+  /////////////////////////////////////////////////
+  lev2::Texture* mCurrentTextureA;
+  lev2::Texture* mCurrentTextureB;
+  lev2::Texture* mCurrentTextureC;
+  fvec4 mLevelA;
+  fvec4 mLevelB;
+  fvec4 mLevelC;
+  fvec4 mBiasA;
+  fvec4 mBiasB;
+  fvec4 mBiasC;
+
+  const lev2::FxShaderTechnique* hTekOp2AmulB;
+  const lev2::FxShaderTechnique* hTekOp2AdivB;
+
+  const lev2::FxShaderTechnique* hTekBoverAplusC;
+  const lev2::FxShaderTechnique* hTekAplusBplusC;
+  const lev2::FxShaderTechnique* hTekAlerpBwithC;
+  const lev2::FxShaderTechnique* hTekAsolo;
+  const lev2::FxShaderTechnique* hTekBsolo;
+  const lev2::FxShaderTechnique* hTekCsolo;
+
+  const lev2::FxShaderTechnique* hTekCurrent;
+
+  const lev2::FxShaderParam* hMapA;
+  const lev2::FxShaderParam* hMapB;
+  const lev2::FxShaderParam* hLevelA;
+  const lev2::FxShaderParam* hLevelB;
+  const lev2::FxShaderParam* hLevelC;
+  const lev2::FxShaderParam* hBiasA;
+  const lev2::FxShaderParam* hBiasB;
+  const lev2::FxShaderParam* hBiasC;
+  const lev2::FxShaderParam* hMapC;
+  const lev2::FxShaderParam* hMatMVP;
+  lev2::FxShader* hModFX;
+};
+
+} //namespace ork::lev2 {

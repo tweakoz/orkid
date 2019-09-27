@@ -102,11 +102,32 @@ struct CameraMatrices {
   const fmtx4& GetIVPMatrix() const { return _ivpmatrix; }
   const fmtx4& GetVPMatrix() const { return _vpmatrix; }
   float GetAspect() const { return _aspectRatio; }
- //void (ork::lev2::GfxTarget* ptarg) { mpGfxTarget = ptarg; }
   ////////////////////////////////////////////////////////////////////
   void setCustomView(const ork::fmtx4& view);
   void setCustomProjection(const ork::fmtx4& proj);
-  //ork::lev2::GfxTarget* mpGfxTarget;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct StereoCameraMatrices {
+  const CameraMatrices* _left = nullptr;
+  const CameraMatrices* _right = nullptr;
+  const CameraMatrices* _mono = nullptr;
+
+  fmtx4 VL() const;
+  fmtx4 VR() const;
+  fmtx4 PL() const;
+  fmtx4 PR() const;
+  fmtx4 VPL() const;
+  fmtx4 VPR() const;
+  fmtx4 VMONO() const;
+  fmtx4 PMONO() const;
+  fmtx4 VPMONO() const;
+
+  fmtx4 MVPL(const fmtx4& M) const;
+  fmtx4 MVPR(const fmtx4& M) const;
+  fmtx4 MVPMONO(const fmtx4& M) const;
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////

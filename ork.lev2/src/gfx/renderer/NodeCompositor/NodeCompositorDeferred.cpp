@@ -10,6 +10,7 @@
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
@@ -51,6 +52,7 @@ struct IMPL {
   void _render(DeferredCompositingNode* node, CompositorDrawData& drawdata) {
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto CIMPL = drawdata._cimpl;
     auto targ                    = RCFD.GetTarget();
     auto& ddprops                = drawdata._properties;
     SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
@@ -70,25 +72,22 @@ struct IMPL {
     auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
 
-
-    auto outerRT = RCFD.GetRenderTarget();
-
     targ->debugPushGroup("Deferred::render");
 
     RtGroupRenderTarget rt(_rtg);
     {
       targ->SetRenderContextFrameData(&RCFD);
-      RCFD.SetDstRect(tgt_rect);
-      RCFD.PushRenderTarget(&rt);
       targ->FBI()->PushRtGroup(_rtg);
       targ->FBI()->SetAutoClear(false); // explicit clear
       targ->BeginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB         = RCFD.GetDB();
-      auto CPD = drawdata.mCompositingGroupStack.top();
+      auto CPD = CIMPL->topCPD();
       CPD._clearColor = node->_clearColor;
       CPD.mpLayerName = &_layername;
-      auto& CAMCCTX   = RCFD.cameraMatrices();
+      CPD._irendertarget = & rt;
+      CPD.SetDstRect(tgt_rect);
+      //auto cammatrices   = RCFD.cameraMatrices();
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
@@ -100,26 +99,28 @@ struct IMPL {
         }
         /////////////////////////////////////////////////
         auto MTXI = targ->MTXI();
-        drawdata.mCompositingGroupStack.push(CPD);
-
-        MTXI->PushPMatrix(CAMCCTX._pmatrix);
-        MTXI->PushVMatrix(CAMCCTX._vmatrix);
-        MTXI->PushMMatrix(fmtx4::Identity);
+        //drawdata.mCompositingGroupStack.push(CPD);
+        CIMPL->pushCPD(CPD);
+        //MTXI->PushPMatrix(cammatrices->_pmatrix);
+        //MTXI->PushVMatrix(cammatrices->_vmatrix);
+        //MTXI->PushMMatrix(fmtx4::Identity);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
         targ->FBI()->Clear(node->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         targ->debugPopGroup();
-        MTXI->PopPMatrix();
-        MTXI->PopVMatrix();
-        MTXI->PopMMatrix();
-        drawdata.mCompositingGroupStack.pop();
+        //MTXI->PopPMatrix();
+        //MTXI->PopVMatrix();
+        //MTXI->PopMMatrix();
+        //drawdata.mCompositingGroupStack.pop();
+        CIMPL->popCPD();
+
         /////////////////////////////////////////////////
       }
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->EndFrame();
       targ->FBI()->PopRtGroup();
-      RCFD.PopRenderTarget();
+      //RCFD.PopRenderTarget();
       targ->SetRenderContextFrameData(nullptr);
     }
     targ->debugPopGroup();

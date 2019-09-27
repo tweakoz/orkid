@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
@@ -42,7 +43,7 @@ struct IMPL {
     FrameRenderer& fr_renderer       = drawdata.mFrameRenderer;
     RenderContextFrameData& framedata = fr_renderer.framedata();
     auto targ                         = framedata.GetTarget();
-    framedata.setLayerName(_node->_layername.c_str());
+    //framedata.setLayerName(_node->_layername.c_str());
     targ->debugMarker("Screen::beginFrame");
     drawdata._properties["OutputWidth"_crcu].Set<int>(targ->GetW());
     drawdata._properties["OutputHeight"_crcu].Set<int>(targ->GetH());

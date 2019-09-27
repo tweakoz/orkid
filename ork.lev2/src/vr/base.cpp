@@ -87,11 +87,11 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
     _hmdinputgroup.setChannel("ceye.matrix").as<fmtx4>(cmv);
     _hmdinputgroup.setChannel("reye.matrix").as<fmtx4>(rmv);
 
-    _leftcamera->_camdat.SetView(lmv);
+    _leftcamera->setCustomView(lmv);
     _leftcamera->setCustomProjection(_posemap["projl"]);
-    _rightcamera->_camdat.SetView(rmv);
+    _rightcamera->setCustomView(rmv);
     _rightcamera->setCustomProjection(_posemap["projr"]);
-    _centercamera->_camdat.SetView(cmv);
+    _centercamera->setCustomView(cmv);
     _centercamera->setCustomProjection(_posemap["projc"]);
     // printf( "pose_classes<%s>\n", pose_classes.c_str() );
 }

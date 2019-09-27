@@ -10,16 +10,16 @@
 #include <ork/lev2/aud/audiodevice.h>
 #include <ork/lev2/gfx/gfxmodel.h>
 #include <ork/lev2/gfx/lighting/gfx_lighting.h>
+#include <ork/lev2/gfx/renderer/drawable.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/pch.h>
 #include <ork/reflect/DirectObjectMapPropertyType.h>
 #include <ork/reflect/DirectObjectMapPropertyType.hpp>
 #include <ork/reflect/RegisterProperty.h>
-#include <ork/lev2/gfx/renderer/drawable.h>
 
-#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/kernel/orklut.hpp>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/math/collision_test.h>
 #include <ork/stream/ResizableStringOutputStream.h>
 
@@ -48,64 +48,65 @@ void CallbackDrawable::Describe() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-RenderSyncToken DrawableBuffer::acquireRenderToken(){
-    lev2::RenderSyncToken syntok;
-    bool have_token = false;
-    Timer totim;
-    totim.Start();
-    while (false == have_token && (totim.SecsSinceStart() < 2.0f)) {
-      have_token = lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
-      usleep(1000);
-    }
-    return syntok;
+RenderSyncToken DrawableBuffer::acquireRenderToken() {
+  lev2::RenderSyncToken syntok;
+  bool have_token = false;
+  Timer totim;
+  totim.Start();
+  while (false == have_token && (totim.SecsSinceStart() < 2.0f)) {
+    have_token = lev2::DrawableBuffer::mOfflineRenderSynchro.try_pop(syntok);
+    usleep(1000);
+  }
+  return syntok;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableBuffer::setPreRenderCallback(int key,prerendercallback_t cb){
-  _preRenderCallbacks.AddSorted(key,cb);
-}
+void DrawableBuffer::setPreRenderCallback(int key, prerendercallback_t cb) { _preRenderCallbacks.AddSorted(key, cb); }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData&RCFD) const {
-  for( auto item : _preRenderCallbacks )
+void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD) const {
+  for (auto item : _preRenderCallbacks)
     item.second(RCFD);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName,lev2::IRenderer* renderer) const {
+void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const {
   lev2::GfxTarget* target                            = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD_PREV = target->GetRenderContextFrameData();
-  ork::lev2::RenderContextFrameData RCFD_TEMP        = *RCFD_PREV;
+  const auto& topCPD                                 = RCFD_PREV->topCPD();
+
+  ork::lev2::RenderContextFrameData RCFD_TEMP = *RCFD_PREV;
   /////////////////////////////////
   // push temporary mutable framedata
   /////////////////////////////////
   target->SetRenderContextFrameData(&RCFD_TEMP);
   {
-    if (RCFD_TEMP.cameraMatrices()) {
-      bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
-      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
-      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
+    bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
+    target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
+    target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
-      for (const auto& layer_item : mLayerLut) {
-        const PoolString& TestLayerName = layer_item.first;
-        const lev2::DrawableBufLayer* player  = layer_item.second;
+    for (const auto& layer_item : mLayerLut) {
+      const PoolString& TestLayerName      = layer_item.first;
+      const lev2::DrawableBufLayer* player = layer_item.second;
 
-        bool Match = (LayerName == TestLayerName);
+      bool Match = (LayerName == TestLayerName);
 
-        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>", TestLayerName.c_str(),player, int(Match)));
+      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
+                                       TestLayerName.c_str(),
+                                       player,
+                                       int(Match)));
 
-        if (DoAll || (Match && RCFD_PREV->HasLayer(TestLayerName))) {
-          target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->miItemIndex+1 ));
-          for (int id = 0; id <= player->miItemIndex; id++) {
-            const lev2::DrawableBufItem& item    = player->mDrawBufItems[id];
-            const lev2::Drawable* pdrw = item.GetDrawable();
-            target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw ));
-            if (pdrw)
-              pdrw->enqueueToRenderQueue(item, renderer);
-          }
+      if (DoAll || (Match && topCPD.HasLayer(TestLayerName))) {
+        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->miItemIndex + 1));
+        for (int id = 0; id <= player->miItemIndex; id++) {
+          const lev2::DrawableBufItem& item = player->mDrawBufItems[id];
+          const lev2::Drawable* pdrw        = item.GetDrawable();
+          target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
+          if (pdrw)
+            pdrw->enqueueToRenderQueue(item, renderer);
         }
       }
     }
@@ -370,14 +371,12 @@ void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer
 
 void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   AssertOnOpQ2(MainThreadOpQ());
-  const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
-  const lev2::XgmModel* Model                    = mModelInst->GetXgmModel();
-  const CameraData* camdat                       = fdata->cameraMatrices();
-  OrkAssert(camdat != 0);
+  auto RCFD          = renderer->GetTarget()->GetRenderContextFrameData();
+  const auto& topCPD = RCFD->topCPD();
 
-  const CameraMatrices& ccctx = fdata->cameraMatrices();
-
-  const Frustum& frus = ccctx.mFrustum;
+  const lev2::XgmModel* Model = mModelInst->GetXgmModel();
+  const CameraMatrices* ccctx = topCPD.cameraMatrices();
+  const Frustum& frus         = ccctx->_frustum;
 
   const ork::fmtx4& matw = item.mXfData.mWorldMatrix;
 
@@ -413,7 +412,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
 
   ork::lev2::LightMask mdl_lmask;
 
-  ork::lev2::LightManager* light_manager = fdata->GetLightManager();
+  ork::lev2::LightManager* light_manager = RCFD->GetLightManager();
 
   size_t inuml = 0;
 
@@ -605,9 +604,7 @@ void CallbackDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::I
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DrawableOwner::Describe(){
-
-}
+void DrawableOwner::Describe() {}
 DrawableOwner::DrawableOwner() {}
 DrawableOwner::~DrawableOwner() {
   for (LayerMap::const_iterator itL = mLayerMap.begin(); itL != mLayerMap.end(); itL++) {

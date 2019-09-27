@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "NodeCompositorFx3.h"
+#include <ork/application/application.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
@@ -87,14 +88,14 @@ bool Fx3CompositingTechnique::assemble(CompositorDrawData& drawdata) {
                                       const char* layername) {
       drawdata.target()->debugPushGroup(FormatString("Fx3CompositingNode::rend_lyr_2_comp_group layer<%s>",layername));
       lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-      lev2::RenderContextFrameData& framedata = the_renderer.framedata();
-      orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
-      auto node = pFT->createPassData(pCG);
-      the_renderer.framedata().setLayerName(layername);
-      cgSTACK.push(node);
-      pFT->Render(the_renderer);
-      cgSTACK.pop();
-      drawdata.target()->debugPopGroup();
+      lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
+      //orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
+      //auto node = pFT->createPassData(pCG);
+      //RCFD.setLayerName(layername);
+      //cgSTACK.push(node);
+      //pFT->Render(the_renderer);
+      //cgSTACK.pop();
+      //drawdata.target()->debugPopGroup();
     }
   };
 
@@ -244,18 +245,15 @@ void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   drawdata.target()->debugPushGroup("Fx3CompositingNode::DoRender");
   const CompositingGroup* pCG = mGroup;
   lev2::FrameRenderer& the_renderer = drawdata.mFrameRenderer;
-  lev2::RenderContextFrameData& framedata = the_renderer.framedata();
-  orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
-
-  CompositingPassData node;
-  node.mbDrawSource = (pCG != nullptr);
+  lev2::RenderContextFrameData& RCFD = the_renderer.framedata();
+  auto CIMPL = drawdata._cimpl;
 
   if (mFTEK) {
-    framedata.setLayerName("All");
     auto node = mFTEK->createPassData(pCG);
-    cgSTACK.push(node);
+    node.AddLayer("All"_pool);
+    CIMPL->pushCPD(node);
     mFTEK->Render(the_renderer);
-    cgSTACK.pop();
+    CIMPL->popCPD();
   }
   drawdata.target()->debugPopGroup();
 }

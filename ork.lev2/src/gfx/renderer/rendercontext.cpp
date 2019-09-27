@@ -21,6 +21,7 @@
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/ui/viewport.h>
@@ -34,46 +35,6 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 const RenderContextInstData RenderContextInstData::Default;
-
-///////////////////////////////////////////////////////////////////////////////
-
-fmtx4 StereoCamera::VL() const {
-  return _left->GetVMatrix();
-}
-fmtx4 StereoCamera::VR() const {
-  return _right->GetVMatrix();
-}
-fmtx4 StereoCamera::PL() const {
-  return _left->GetPMatrix();
-}
-fmtx4 StereoCamera::PR() const {
-  return _right->GetPMatrix();
-}
-fmtx4 StereoCamera::VPL() const {
-  return _left->GetVMatrix()*_left->GetPMatrix();
-}
-fmtx4 StereoCamera::VPR() const {
-  return _right->GetVMatrix()*_right->GetPMatrix();
-}
-fmtx4 StereoCamera::VMONO() const {
-  return _mono->GetVMatrix();
-}
-fmtx4 StereoCamera::PMONO() const {
-  return _mono->GetPMatrix();
-}
-fmtx4 StereoCamera::VPMONO() const {
-  return _mono->GetVMatrix()*_mono->GetPMatrix();
-}
-
-fmtx4 StereoCamera::MVPL(const fmtx4& M) const {
-  return (M*VL())*PL();
-}
-fmtx4 StereoCamera::MVPR(const fmtx4& M) const {
-  return (M*VR())*PR();
-}
-fmtx4 StereoCamera::MVPMONO(const fmtx4& M) const {
-  return (M*VMONO())*PMONO();
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -136,8 +97,7 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
 }*/
 
 RenderContextFrameData::RenderContextFrameData()
-    : mCameraData(0)
-    , mLightManager(0)
+    : _lightmgr(0)
     , mpTarget(0) {}
 
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
@@ -162,8 +122,6 @@ rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
   return rval;
 }
 
-bool RenderContextFrameData::isPicking() const { return mpTarget ? mpTarget->FBI()->IsPickState() : false; }
-
 void RenderContextFrameData::SetTarget(GfxTarget* ptarg) {
   mpTarget = ptarg;
   if (ptarg) {
@@ -171,53 +129,12 @@ void RenderContextFrameData::SetTarget(GfxTarget* ptarg) {
   }
 }
 
-void RenderContextFrameData::ClearLayers() { mLayers.clear(); }
-void RenderContextFrameData::AddLayer(const PoolString& layername) { mLayers.insert(layername); }
-bool RenderContextFrameData::HasLayer(const PoolString& layername) const { return (mLayers.find(layername) != mLayers.end()); }
-
 ///////////////////////////////////////////////////////////////////////////////
-
-void RenderContextFrameData::PushRenderTarget(IRenderTarget* ptarg) { mRenderTargetStack.push(ptarg); }
-IRenderTarget* RenderContextFrameData::GetRenderTarget() {
-  IRenderTarget* pt = mRenderTargetStack.top();
-  return pt;
-}
-void RenderContextFrameData::PopRenderTarget() { mRenderTargetStack.pop(); }
-
-void RenderContextFrameData::setLayerName(const char* layername) {
-  lev2::rendervar_t passdata;
-  passdata.Set<const char*>(layername);
-  setUserProperty("pass"_crc, passdata);
-}
 
 const DrawableBuffer* RenderContextFrameData::GetDB() const{
   lev2::rendervar_t pvdb   = getUserProperty("DB"_crc);
   const DrawableBuffer* DB = pvdb.Get<const DrawableBuffer*>();
   return DB;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-void RenderContextFrameData::addStandardLayers() {
-  AddLayer("Default"_pool);
-  AddLayer("A"_pool);
-  AddLayer("B"_pool);
-  AddLayer("C"_pool);
-  AddLayer("D"_pool);
-  AddLayer("E"_pool);
-  AddLayer("F"_pool);
-  AddLayer("G"_pool);
-  AddLayer("H"_pool);
-  AddLayer("I"_pool);
-  AddLayer("J"_pool);
-  AddLayer("K"_pool);
-  AddLayer("L"_pool);
-  AddLayer("M"_pool);
-  AddLayer("N"_pool);
-  AddLayer("O"_pool);
-  AddLayer("P"_pool);
-  AddLayer("Q"_pool);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////

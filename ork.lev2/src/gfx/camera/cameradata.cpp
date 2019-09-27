@@ -232,4 +232,44 @@ CameraMatrices CameraData::computeMatrices(& calcctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fmtx4 StereoCameraMatrices::VL() const {
+  return _left->GetVMatrix();
+}
+fmtx4 StereoCameraMatrices::VR() const {
+  return _right->GetVMatrix();
+}
+fmtx4 StereoCameraMatrices::PL() const {
+  return _left->GetPMatrix();
+}
+fmtx4 StereoCameraMatrices::PR() const {
+  return _right->GetPMatrix();
+}
+fmtx4 StereoCameraMatrices::VPL() const {
+  return _left->GetVMatrix()*_left->GetPMatrix();
+}
+fmtx4 StereoCameraMatrices::VPR() const {
+  return _right->GetVMatrix()*_right->GetPMatrix();
+}
+fmtx4 StereoCameraMatrices::VMONO() const {
+  return _mono->GetVMatrix();
+}
+fmtx4 StereoCameraMatrices::PMONO() const {
+  return _mono->GetPMatrix();
+}
+fmtx4 StereoCameraMatrices::VPMONO() const {
+  return _mono->GetVMatrix()*_mono->GetPMatrix();
+}
+
+fmtx4 StereoCameraMatrices::MVPL(const fmtx4& M) const {
+  return (M*VL())*PL();
+}
+fmtx4 StereoCameraMatrices::MVPR(const fmtx4& M) const {
+  return (M*VR())*PR();
+}
+fmtx4 StereoCameraMatrices::MVPMONO(const fmtx4& M) const {
+  return (M*VMONO())*PMONO();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } // namespace ork::lev2

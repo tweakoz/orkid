@@ -7,25 +7,25 @@
 
 #pragma once
 
-#include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/gfxenv.h>
-#include "rendercontext.h"
-#include "irendertarget.h"
-
 namespace ork::lev2 {
 
-  ///////////////////////////////////////////////////////////////////////////////
+struct RenderContextFrameData;
+struct CompositingPassData;
+struct RtGroup;
+struct GfxTarget;
 
-  struct FrameRenderer {
-    typedef std::function<void()> rendermisccb_t;
-    /////////////////////////////////////////////
-    FrameRenderer(RenderContextFrameData& RCFD,rendermisccb_t cb);
-    void renderMisc();
-    RenderContextFrameData& framedata() { return _framedata; }
-    /////////////////////////////////////////////
-    RenderContextFrameData& _framedata;
-    rendermisccb_t _rendermisccb;
-  };
+///////////////////////////////////////////////////////////////////////////////
+
+struct FrameRenderer {
+  typedef std::function<void()> rendermisccb_t;
+  /////////////////////////////////////////////
+  FrameRenderer(RenderContextFrameData& RCFD, rendermisccb_t cb);
+  void renderMisc();
+  RenderContextFrameData& framedata() { return _framedata; }
+  /////////////////////////////////////////////
+  RenderContextFrameData& _framedata;
+  rendermisccb_t _rendermisccb;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -53,4 +53,4 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} //namespace ork::lev2 {
+} // namespace ork::lev2

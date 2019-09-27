@@ -5,12 +5,15 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_GRID_H
-#define _ORK_LEV2_GRID_H
+#pragma once
 
 #include <ork/lev2/gfx/camera/cameradata.h>
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
+
+struct RenderContextFrameData;
+struct CameraMatrices;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class Grid3d
@@ -24,8 +27,8 @@ public:
 		EGRID_END,
 	};
 
-	void Calc( const ork::CameraData& camdat );
-	void Render( RenderContextFrameData& FrameData ) const;
+	void Calc( const CameraMatrices& matrices );
+	void Render( RenderContextFrameData& RCFD ) const;
 
 	void SetGridMode( EGrid egrid ) { meGridMode=egrid; }
 
@@ -72,7 +75,7 @@ public:
 	void				SetZoom( float fz );
 	void				SetExtent( float fz );
 	void				SetCenter( const fvec2& ctr );
-	
+
 	const fmtx4&		GetOrthoMatrix() const { return mMtxOrtho; }
 
 	const fvec2&		GetTopLeft() const { return mTopLeft; }
@@ -101,6 +104,4 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-}}
-
-#endif
+}

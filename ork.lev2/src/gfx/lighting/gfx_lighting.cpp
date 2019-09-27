@@ -488,7 +488,7 @@ LightingGroup::LightingGroup()
 HeadLightManager::HeadLightManager(RenderContextFrameData& FrameData)
     : mHeadLight(mHeadLightMatrix, &mHeadLightData)
     , mHeadLightManager(mHeadLightManagerData) {
-  auto cdata = FrameData.cameraMatrices();
+  auto cdata = FrameData.topCPD().cameraMatrices();
   /*
   auto camvd = cdata->computeMatrices();
     ork::fvec3 vZ = cdata->xNormal();
@@ -535,7 +535,7 @@ void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* rdata   = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
-  auto cammatrices                     = rfdata->cameraMatrices();
+  auto cammatrices                     = rfdata->topCPD().cameraMatrices();
 
   const lev2::LightingGroup* lgroup = rdata->GetLightingGroup();
 
@@ -583,7 +583,7 @@ void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
         if ((kmaxl - inumdl) > 0)
           switch (plight->LightType()) {
             case lev2::ELIGHTTYPE_SPOT: {
-              lev2::SpotLight* pspotlight = (lev2::SpotLight*)plight;
+              auto pspotlight = (lev2::SpotLight*)plight;
 
               DirLightDirs[inumdl]   = pspotlight->GetDirection();
               DirLightColors[inumdl] = LightColor;
@@ -599,7 +599,7 @@ void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
             }
             case lev2::ELIGHTTYPE_POINT: {
 
-              lev2::PointLight* ppointlight = (lev2::PointLight*)plight;
+              auto ppointlight = (lev2::PointLight*)plight;
 
               DirLightDirs[inumdl]   = ppointlight->GetDirection();
               DirLightColors[inumdl] = LightColor;
@@ -620,7 +620,7 @@ void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
               break;
             }
             case lev2::ELIGHTTYPE_DIRECTIONAL: {
-              lev2::DirectionalLight* pdirlight = (lev2::DirectionalLight*)plight;
+              auto pdirlight = (lev2::DirectionalLight*)plight;
 
               DirLightDirs[inumdl]   = pdirlight->GetDirection();
               DirLightColors[inumdl] = LightColor;
@@ -633,12 +633,12 @@ void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
               break;
             }
             case lev2::ELIGHTTYPE_AMBIENT: {
-              lev2::AmbientLight* phedlight = (lev2::AmbientLight*)plight;
+              auto phedlight = (lev2::AmbientLight*)plight;
               const ork::fmtx4& mativ       = pTarg->MTXI()->RefVITGMatrix();
 
-              const auto& camdat = cammatrices._camdat;
+              const auto& camdat = cammatrices->_camdat;
 
-              ork::fvec4 veye = ork::fvec4(cammatrices._camdat.GetEye());
+              ork::fvec4 veye = ork::fvec4(camdat.GetEye());
 
               auto hldir = phedlight->GetHeadlightDir();
 

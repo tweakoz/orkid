@@ -12,6 +12,7 @@
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
 #include <ork/lev2/gfx/renderer/compositor.h>
 #include <ork/lev2/gfx/renderer/drawable.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
@@ -46,8 +47,8 @@ struct ForwardTechnique final : public FrameTechniqueBase {
   void render(FrameRenderer& renderer,
               CompositorDrawData& drawdata,
               ForwardCompositingNode& node ) {
-    RenderContextFrameData& framedata = renderer.framedata();
-    GfxTarget* pTARG                  = framedata.GetTarget();
+    RenderContextFrameData& RCFD = renderer.framedata();
+    GfxTarget* pTARG                  = RCFD.GetTarget();
 
     //////////////////////////////////////////////////////
     // Resize RenderTargets
@@ -81,20 +82,20 @@ struct ForwardTechnique final : public FrameTechniqueBase {
     //////////////////////////////////////////////////////
 
     RtGroupRenderTarget rt(_rtg);
-    drawdata.mCompositingGroupStack.push(_CPD);
+    //drawdata.mCompositingGroupStack.push(_CPD);
     pTARG->debugPushGroup("ForwardCompositingNode::render");
     {
-      pTARG->SetRenderContextFrameData(&framedata);
-      framedata.SetDstRect(tgt_rect);
-      framedata.PushRenderTarget(&rt);
-      pTARG->FBI()->PushRtGroup(_rtg);
-      pTARG->BeginFrame();
-      renderer.renderMisc();
-      pTARG->EndFrame();
-      pTARG->FBI()->PopRtGroup();
-      framedata.PopRenderTarget();
-      pTARG->SetRenderContextFrameData(nullptr);
-      drawdata.mCompositingGroupStack.pop();
+      //pTARG->SetRenderContextFrameData(&framedata);
+      //framedata.SetDstRect(tgt_rect);
+      //framedata.PushRenderTarget(&rt);
+      //pTARG->FBI()->PushRtGroup(_rtg);
+      //pTARG->BeginFrame();
+      //renderer.renderMisc();
+      //pTARG->EndFrame();
+      //pTARG->FBI()->PopRtGroup();
+      //framedata.PopRenderTarget();
+      //pTARG->SetRenderContextFrameData(nullptr);
+      //drawdata.mCompositingGroupStack.pop();
     }
     pTARG->debugPopGroup();
   }
@@ -131,7 +132,7 @@ struct IMPL {
     auto targ                         = framedata.GetTarget();
     auto onode = drawdata._properties["final"_crcu].Get<const OutputCompositingNode*>();
     if (_frametek) {
-      framedata.setLayerName(_node->_layername.c_str());
+      //framedata.setLayerName(_node->_layername.c_str());
       _frametek->render(the_renderer, drawdata,*_node);
     }
   }

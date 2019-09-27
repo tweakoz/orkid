@@ -1072,8 +1072,9 @@ int GfxMaterialFx::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &Ma
 		pTarg->FXI()->BindTechnique( mEffectInstance.mpEffect, htek );
 		inumpasses = pTarg->FXI()->BeginBlock( mEffectInstance.mpEffect, MatCtx );
 
-		const ork::lev2::RenderContextFrameData* framedata = pTarg->GetRenderContextFrameData();
-		const auto& cdata = framedata->cameraMatrices()._camdat;
+		auto RCFD = pTarg->GetRenderContextFrameData();
+		const auto& CPD = RCFD->topCPD();
+		const auto& cdata = CPD.cameraMatrices()->_camdat;
 
 		mScreenZDir = cdata.zNormal();
 

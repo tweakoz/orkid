@@ -29,6 +29,7 @@ struct VRIMPL {
       , _layers(AddPooledString("All")) {
 
     _tmpcameramatrices = new CameraMatrices;
+    _stereomatrices = new StereoCameraMatrices;
   }
   ///////////////////////////////////////
   ~VRIMPL() { delete _tmpcameramatrices; }
@@ -95,6 +96,7 @@ struct VRIMPL {
     auto& ddprops                = drawdata._properties;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto CIMPL = drawdata._cimpl;
     auto DB                      = RCFD.GetDB();
     GfxTarget* targ              = drawdata.target();
 
@@ -124,7 +126,7 @@ struct VRIMPL {
 
     /////////////////////////////////////////////////////////////////////////////
 
-    RCFD.setLayerName("All");
+    _CPD.AddLayer("All"_pool);
 
     if (use_vr)
       orkidvr::gpuUpdate(RCFD);
@@ -148,12 +150,13 @@ struct VRIMPL {
     auto& VRDEV = orkidvr::device();
 
     if (use_vr and VRDEV._supportsStereo) {
-      RCFD.setStereoOnePass(true);
-      RCFD._stereoCamera._left  = VRDEV._leftcamera;
-      RCFD._stereoCamera._right = VRDEV._rightcamera;
-      RCFD._stereoCamera._mono  = VRDEV._centercamera;
-      RCFD.setCameraData(RCFD._stereoCamera._mono);
-      _CPD._impl.Set<const CameraMatrices*>(RCFD._stereoCamera._mono);
+      _stereomatrices->_left = VRDEV._leftcamera;
+      _stereomatrices->_right = VRDEV._rightcamera;
+      _stereomatrices->_mono = VRDEV._leftcamera;
+      _CPD.setStereoOnePass(true);
+      _CPD._stereoCameraMatrices = _stereomatrices;
+      _CPD._cameraMatrices = nullptr;
+      //_CPD._impl.Set<const CameraMatrices*>(RCFD._stereoCamera._mono);
     } else {
       ////////////////////////////////////////////////
       // no stereo cam support, override cam with center side of stereocam
@@ -163,31 +166,30 @@ struct VRIMPL {
         ddprops["selcamdat"_crcu].Set<const CameraMatrices*>(VRDEV._centercamera);
       }
       ////////////////////////////////////////////////
-      RCFD.setStereoOnePass(false);
-      RCFD.setCameraData(_tmpcameramatrices);
-      RCFD._stereoCamera._left  = _tmpcameramatrices;
-      RCFD._stereoCamera._right = _tmpcameramatrices;
-      RCFD._stereoCamera._mono  = _tmpcameramatrices;
-      _CPD._impl.Set<const CameraMatrices*>(_tmpcameramatrices);
+      _CPD.setStereoOnePass(false);
+      _CPD._stereoCameraMatrices = nullptr;
+      _CPD._cameraMatrices = _tmpcameramatrices;
+      //_CPD._impl.Set<const CameraMatrices*>(_tmpcameramatrices);
     }
 
     //////////////////////////////////////////////////////
 
-    drawdata.mCompositingGroupStack.push(_CPD);
     targ->SetRenderContextFrameData(&RCFD);
-    RCFD.SetDstRect(tgt_rect);
+    _CPD.SetDstRect(tgt_rect);
     drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
+    CIMPL->pushCPD(_CPD);
   }
   ///////////////////////////////////////
   void endAssemble(CompositorDrawData& drawdata) {
+    auto CIMPL = drawdata._cimpl;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     drawdata.target()->SetRenderContextFrameData(nullptr);
-    drawdata.mCompositingGroupStack.pop();
-    RCFD.setStereoOnePass(false);
+    CIMPL->popCPD();
   }
   ///////////////////////////////////////
+  StereoCameraMatrices* _stereomatrices = nullptr;
   PoolString _camname, _layers;
   VrCompositingNode* _vrnode = nullptr;
   CompositingPassData _CPD;

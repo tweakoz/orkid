@@ -305,7 +305,8 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
   auto framedata = mTargetGL.GetRenderContextFrameData();
   bool stereo = false;
   if( framedata ){
-      stereo = framedata->isStereoOnePass();
+      const auto& CPD = framedata->topCPD();
+      stereo = CPD.isStereoOnePass();
   }
 
   GL_ERRORCHECK();

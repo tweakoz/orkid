@@ -319,13 +319,14 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
+  const auto& CPD = RCFD->topCPD();
 
   bool bforcenoz = RCID->IsForceNoZWrite();
 
   const ork::lev2::XgmMaterialStateInst* matinst = RCID->GetMaterialInst();
 
-  bool is_picking                  = RCFD->isPicking();
-  bool is_stereo                   = RCFD->isStereoOnePass();
+  bool is_picking                  = CPD.isPicking();
+
   const TextureContext& DiffuseCtx = GetTexture(ETEXDEST_DIFFUSE);
 
   const Texture* diftexture = DiffuseCtx.mpTexture;
@@ -360,9 +361,11 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   FXI->BindParamCTex(hModFX, hDiffuseTEX, diftexture);
 
-  if (is_stereo) {
-    auto MVPL = RCFD->_stereoCamera.MVPL(MTXI->RefMMatrix());
-    auto MVPR = RCFD->_stereoCamera.MVPR(MTXI->RefMMatrix());
+  if (CPD.isStereoOnePass()) {
+    auto stereomtx = CPD._stereoCameraMatrices;
+    const auto& world = MTXI->RefMMatrix();
+    auto MVPL = stereomtx->MVPL(world);
+    auto MVPR = stereomtx->MVPR(world);
     FXI->BindParamMatrix(hModFX, hWVPLMatrix, MVPL);
     FXI->BindParamMatrix(hModFX, hWVPRMatrix, MVPR);
   } else {
@@ -402,9 +405,11 @@ void GfxMaterialWiiBasic::EndPass(GfxTarget* pTarg) { pTarg->FXI()->EndPass(hMod
 int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
   mRenderContexInstData              = &RCID;
   const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
-  const auto& cdata                  = RCFD->cameraMatrices()._camdat;
-  bool is_picking                    = RCFD->isPicking();
-  bool is_stereo                     = RCFD->isStereoOnePass();
+  const auto& CPD = RCFD->topCPD();
+
+  const auto& cdata                  = CPD.cameraMatrices()->_camdat;
+  bool is_picking                    = CPD.isPicking();
+  bool is_stereo                     = CPD.isStereoOnePass();
 
   const FxShaderTechnique* tek = hTekModVtxTex;
 

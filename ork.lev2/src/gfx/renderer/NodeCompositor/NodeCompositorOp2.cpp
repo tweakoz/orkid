@@ -108,7 +108,6 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   auto& the_renderer = drawdata.mFrameRenderer;
   auto& framedata = the_renderer.framedata();
-  auto& cgSTACK = drawdata.mCompositingGroupStack;
   auto target = framedata.GetTarget();
   auto fbi = target->FBI();
   auto gbi = target->GBI();

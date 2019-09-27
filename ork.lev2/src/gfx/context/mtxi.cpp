@@ -33,12 +33,10 @@ MatrixStackInterface::MatrixStackInterface( GfxTarget& target )
 void MatrixStackInterface::PushUIMatrix()
 {
 	const RenderContextFrameData* pfdata = mTarget.GetRenderContextFrameData();
-
-	float fw = pfdata ? float(pfdata->GetDstRect().miW) : (F32) mTarget.FBI()->GetVPW();
-	float fh = pfdata ? float(pfdata->GetDstRect().miH) : (F32) mTarget.FBI()->GetVPH();
-
-	//float fw = (F32) mTarget.FBI()->GetVPW();
-	//float fh = (F32) mTarget.FBI()->GetVPH();
+	assert(pfdata);
+	const auto& CPD = pfdata->topCPD();
+	float fw = float(CPD.GetDstRect().miW);
+	float fh = float(CPD.GetDstRect().miH);
 	ork::fmtx4 mtxMVP = mTarget.MTXI()->Ortho( 0.0f, fw, 0.0f, fh, 0.0f, 1.0f );
 	PushPMatrix( mtxMVP );
 	PushVMatrix( ork::fmtx4::Identity );

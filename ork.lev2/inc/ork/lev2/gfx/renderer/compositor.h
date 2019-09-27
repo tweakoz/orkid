@@ -8,10 +8,9 @@
 #pragma once
 
 #include <ork/dataflow/dataflow.h>
-#include <ork/lev2/gfx/renderer/renderer.h>
-#include <ork/lev2/gfx/renderer/rendercontext.h>
-#include <ork/lev2/gfx/gfxmaterial_test.h>
+#include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/renderer/frametek.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 
 namespace ork::lev2 {
 
@@ -24,6 +23,8 @@ struct CompositingData;
 struct CompositingMorphable;
 class DrawableBuffer;
 class LightManager;
+class GfxMaterial3DSolid;
+class IRenderTarget;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -46,66 +47,6 @@ struct CompositingMorphable : public dataflow::morphable {
   void WriteMorphTarget(dataflow::MorphKey name, float flerpval); // virtual
   void RecallMorphTarget(dataflow::MorphKey name);                // virtual
   void Morph1D(const dataflow::morph_event* pevent);              // virtual
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-class CompositingMaterial : public lev2::GfxMaterial {
-public:
-  CompositingMaterial();
-  ~CompositingMaterial();
-  /////////////////////////////////////////////////
-  virtual void Update(void) {}
-  virtual void Init(lev2::GfxTarget* pTarg);
-  virtual bool BeginPass(lev2::GfxTarget* pTARG, int iPass = 0);
-  virtual void EndPass(lev2::GfxTarget* pTARG);
-  virtual int BeginBlock(lev2::GfxTarget* pTARG, const lev2::RenderContextInstData& MatCtx);
-  virtual void EndBlock(lev2::GfxTarget* pTARG);
-  /////////////////////////////////////////////////
-  void SetTextureA(lev2::Texture* ptex) { mCurrentTextureA = ptex; }
-  void SetTextureB(lev2::Texture* ptex) { mCurrentTextureB = ptex; }
-  void SetTextureC(lev2::Texture* ptex) { mCurrentTextureC = ptex; }
-  void SetLevelA(const fvec4& la) { mLevelA = la; }
-  void SetLevelB(const fvec4& lb) { mLevelB = lb; }
-  void SetLevelC(const fvec4& lc) { mLevelC = lc; }
-  void SetBiasA(const fvec4& ba) { mBiasA = ba; }
-  void SetBiasB(const fvec4& bb) { mBiasB = bb; }
-  void SetBiasC(const fvec4& bc) { mBiasC = bc; }
-  void SetTechnique(const std::string& tek);
-  /////////////////////////////////////////////////
-  lev2::Texture* mCurrentTextureA;
-  lev2::Texture* mCurrentTextureB;
-  lev2::Texture* mCurrentTextureC;
-  fvec4 mLevelA;
-  fvec4 mLevelB;
-  fvec4 mLevelC;
-  fvec4 mBiasA;
-  fvec4 mBiasB;
-  fvec4 mBiasC;
-
-  const lev2::FxShaderTechnique* hTekOp2AmulB;
-  const lev2::FxShaderTechnique* hTekOp2AdivB;
-
-  const lev2::FxShaderTechnique* hTekBoverAplusC;
-  const lev2::FxShaderTechnique* hTekAplusBplusC;
-  const lev2::FxShaderTechnique* hTekAlerpBwithC;
-  const lev2::FxShaderTechnique* hTekAsolo;
-  const lev2::FxShaderTechnique* hTekBsolo;
-  const lev2::FxShaderTechnique* hTekCsolo;
-
-  const lev2::FxShaderTechnique* hTekCurrent;
-
-  const lev2::FxShaderParam* hMapA;
-  const lev2::FxShaderParam* hMapB;
-  const lev2::FxShaderParam* hLevelA;
-  const lev2::FxShaderParam* hLevelB;
-  const lev2::FxShaderParam* hLevelC;
-  const lev2::FxShaderParam* hBiasA;
-  const lev2::FxShaderParam* hBiasB;
-  const lev2::FxShaderParam* hBiasC;
-  const lev2::FxShaderParam* hMapC;
-  const lev2::FxShaderParam* hMatMVP;
-  lev2::FxShader* hModFX;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,7 +75,7 @@ class CompositingBuffer : public ork::Object {
 struct CompositingContext {
   int miWidth;
   int miHeight;
-  lev2::GfxMaterial3DSolid mUtilMaterial;
+  GfxMaterial3DSolid* _utilMaterial = nullptr;
   CompositingTechnique* _compositingTechnique = nullptr;
 
   CompositingContext();
@@ -148,19 +89,46 @@ struct CompositingContext {
 ///////////////////////////////////////////////////////////////////////////
 
 struct CompositingPassData {
+
+  CompositingPassData() {
+    _var.Set<void*>(nullptr);
+  }
+
+  ////////////////////////////////////////////////////
+
+  bool isStereoOnePass() const { return _stereo1pass; }
+  void setStereoOnePass(bool ena) { _stereo1pass=ena; }
+  const CameraMatrices* cameraMatrices() const { return _cameraMatrices; }
+  void setCameraMatrices(const CameraMatrices* m) { _cameraMatrices = m; }
+  static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
+  std::vector<PoolString> getLayerNames() const;
+  void updateCompositingSize(int w, int h);
+  bool isPicking() const;
+  const SRect& GetDstRect() const { return mDstRect; }
+  const SRect& GetMrtRect() const { return mMrtRect; }
+  void SetDstRect(const SRect& rect) { mDstRect = rect; }
+  void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
+  void ClearLayers();
+  void AddLayer(const PoolString& layername);
+  bool HasLayer(const PoolString& layername) const;
+  void addStandardLayers();
+
+  ////////////////////////////////////////////////////
+
+  IRenderTarget* _irendertarget = nullptr;
   const CompositingGroup* mpGroup = nullptr;
   lev2::FrameTechniqueBase* mpFrameTek = nullptr;
   bool mbDrawSource = true;
   const PoolString* mpCameraName = nullptr;
   const PoolString* mpLayerName = nullptr;
-  ork::svarp_t _impl;
   ork::fvec4 _clearColor;
-  CompositingPassData() {
-    _impl.Set<void*>(nullptr);
-  }
-  static CompositingPassData FromRCFD(const RenderContextFrameData& RCFD);
-  std::vector<PoolString> getLayerNames() const;
-  void updateCompositingSize(int w, int h);
+  bool _stereo1pass = false;
+  const CameraMatrices* _cameraMatrices = nullptr;
+  const StereoCameraMatrices* _stereoCameraMatrices = nullptr;
+  ork::svarp_t _var;
+  SRect mDstRect;
+  SRect mMrtRect;
+  orkset<PoolString> mLayers;
 };
 
 typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
@@ -169,10 +137,9 @@ typedef std::stack<lev2::CompositingPassData> compositingpassdatastack_t;
 
 struct CompositorDrawData {
   GfxTarget* target() const;
-  const CompositingImpl* _cimpl = nullptr;
+  CompositingImpl* _cimpl = nullptr;
   std::map<uint64_t,svar16_t> _properties;
   lev2::FrameRenderer& mFrameRenderer;
-  orkstack<CompositingPassData> mCompositingGroupStack;
 
   CompositorDrawData(lev2::FrameRenderer& renderer) : mFrameRenderer(renderer) {}
 };
@@ -235,6 +202,10 @@ public:
 
   void bindLighting(LightManager* lmgr) { _lightmgr=lmgr; }
 
+  const CompositingPassData& topCPD() const;
+  const CompositingPassData& pushCPD(const CompositingPassData& cpd);
+  const CompositingPassData& popCPD();
+
 private:
   const CompositingData& _compositingData;
 
@@ -247,6 +218,7 @@ private:
 
   int miActiveSceneItem;
   CompositingContext _compcontext;
+  compositingpassdatastack_t _stack;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

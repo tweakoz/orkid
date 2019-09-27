@@ -99,8 +99,11 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
   mfTimeAccum       = 0.0f;
   mfLastTime        = 0.0f;
   miActiveSceneItem = 0;
+  CompositingPassData topcpd;
+  _stack.push(topcpd);
 
   _cimplcamdat = new CameraData;
+
 }
 
 CompositingImpl::~CompositingImpl() {}
@@ -148,20 +151,16 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   auto the_renderer                      = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& RCFD     = the_renderer.framedata();
   lev2::GfxTarget* target                = RCFD.GetTarget();
-  orkstack<CompositingPassData>& cgSTACK = drawdata.mCompositingGroupStack;
-  drawdata._cimpl                        = this;
 
+  drawdata._cimpl                        = this;
   float aspectratio = float(target->GetW()) / float(target->GetH());
   // todo - compute CameraMatrices per rendertarget/pass !
-  auto& CAMCCTX = RCFD.cameraMatrices();
-
-  CAMCCTX._aspectRatio = aspectratio;
 
   SRect tgtrect = SRect(0, 0, target->GetW(), target->GetH());
 
-  lev2::rendervar_t passdata;
-  passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
-  RCFD.setUserProperty("nodes"_crc, passdata);
+  //lev2::rendervar_t passdata;
+  //passdata.Set<orkstack<CompositingPassData>*>(&cgSTACK);
+  //RCFD.setUserProperty("nodes"_crc, passdata);
 
   /////////////////////////////////////////////////////////
   // bind compositing technique
@@ -174,13 +173,14 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   // bind lighting
   /////////////////////////////////
 
-  if (_lightmgr) { // WIP
-    const auto& cmatrices = RCFD.cameraMatrices();
-    _lightmgr->EnumerateInFrustum(cmatrices.GetFrustum());
-    if (_lightmgr->mLightsInFrustum.size()) {
-      RCFD.SetLightManager(_lightmgr);
-    }
-  }
+  //auto cammatrices = RCFD.cameraMatrices();
+  //cammatrices->_aspectRatio = aspectratio;
+  //if (_lightmgr) { // WIP
+    //_lightmgr->EnumerateInFrustum(cammatrices->GetFrustum());
+    //if (_lightmgr->mLightsInFrustum.size()) {
+      //RCFD.SetLightManager(_lightmgr);
+    //}
+  //}
 
   /////////////////////////////////
   // Lock Drawable Buffer
@@ -201,8 +201,8 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
     auto l2cam  = spncam->getEditorCamera();
     if (l2cam) {
-      spncam->computeMatrices(CAMCCTX);
-      l2cam->_camcamdata.BindGfxTarget(target);
+      //spncam->computeMatrices(CAMCCTX);
+      //l2cam->_camcamdata.BindGfxTarget(target);
       //_tempcamdat = l2cam->mCameraData;
       ddprops["selcamdat"_crcu].Set<const CameraData*>(spncam);
     }
@@ -252,6 +252,19 @@ void CompositingImpl::update(float dt) {
 
   if (i1 != i0)
     miActiveSceneItem++;
+}
+
+const CompositingPassData& CompositingImpl::topCPD() const {
+  return _stack.top();
+}
+const CompositingPassData& CompositingImpl::pushCPD(const CompositingPassData& cpd){
+  const CompositingPassData& prev = topCPD();
+  _stack.push(cpd);
+  return prev;
+}
+const CompositingPassData& CompositingImpl::popCPD(){
+  _stack.pop();
+  return _stack.top();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

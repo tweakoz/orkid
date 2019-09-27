@@ -12,6 +12,7 @@
 #include <ork/lev2/lev2_asset.h>
 #include <ork/reflect/DirectObjectPropertyType.hpp>
 #include <ork/reflect/RegisterProperty.h>
+#include <ork/lev2/gfx/renderer/irendertarget.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 ImplementReflectionX(ork::lev2::PtxCompositingNode, "PtxCompositingNode");
@@ -120,7 +121,6 @@ void PtxCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
 {
   lev2::FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
   lev2::RenderContextFrameData& framedata = the_renderer.framedata();
-  orkstack<CompositingPassData>& cgSTACK  = drawdata.mCompositingGroupStack;
   auto target                             = framedata.GetTarget();
   auto fbi                                = target->FBI();
   auto gbi                                = target->GBI();

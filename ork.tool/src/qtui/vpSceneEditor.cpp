@@ -265,7 +265,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     _ctxbase = mpTarget->GetCtxBase();
   }
 
-
   int TARGW           = mpTarget->GetW();
   int TARGH           = mpTarget->GetH();
   const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
@@ -279,11 +278,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(this);
   auto FBI = mpTarget->FBI();
-
   /////////////////////////////////
   // We must have a compositor to continue...
   /////////////////////////////////
-
   auto compsys = compositingSystem();
   auto sim = simulation();
   if( nullptr == compsys or nullptr==sim){
@@ -301,16 +298,14 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->EndFrame();
     return;
   }
-
+  RCFD._cimpl = & compsys->_cimpl;
   auto simmode = sim->GetSimulationMode();
   bool running = (simmode==ent::ESCENEMODE_RUN);
-
   ////////////////////////////////////////////////
   // FrameRenderer (and content)
   // rendering callback will be invoked from within compositor
   //  assembly pass(es)
   ////////////////////////////////////////////////
-
   //////////////////////////////////////////////////
   // setup viewport (main) rendertarget at top of stack
   //  so we can composite into it..
@@ -328,17 +323,14 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       this->Clear();
   mpTarget->debugPopGroup();
   //////////////////////////////////////////////////
-
   lev2::FrameRenderer framerenderer(RCFD, [&]() {
       renderMisc(RCFD);
   });
-
   lev2::CompositorDrawData drawdata(framerenderer);
   drawdata._properties["primarycamindex"_crcu].Set<int>(miCameraIndex);
   drawdata._properties["cullcamindex"_crcu].Set<int>(miCullCameraIndex);
   drawdata._properties["irenderer"_crcu].Set<lev2::IRenderer*>(GetRenderer());
   drawdata._properties["simrunning"_crcu].Set<bool>(running);
-
   //////////////////////////////////////////////////
   // composite assembly:
   //   render (or assemble) content into pre-compositing buffers
@@ -348,8 +340,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   mpTarget->debugMarker(FormatString("toolvp::aok<%d>",int(aok)));
   mpTarget->debugPopGroup();
   //////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////
   // final compositing :
   //   combine previously assembled content
   //   into final image
@@ -358,12 +348,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       if( aok ) compsys->_impl.composite(drawdata);
   mpTarget->debugPopGroup();
   //////////////////////////////////////////////////
-
-  //////////////////////////////////////////////////
   // after composite:
   //  render hud and other 2d non-content layers
   //////////////////////////////////////////////////
-
   mpTarget->debugPushGroup("toolvp::DRAWEND");
       if (gtoggle_hud) {
         DrawHUD(RCFD);
@@ -378,18 +365,15 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       RCFD.SetDstRect(tgtrect);
       RCFD.PopRenderTarget();
   mpTarget->debugPopGroup();
-
   //////////////////////////////////////////////////
   // update editor camera (TODO - move to engine)
   //////////////////////////////////////////////////
-
   if( auto trycam = drawdata._properties["selcamdat"_crcu].TryAs<const CameraData*>() ){
       auto CAMDAT = trycam.value();
       _editorCamera = CAMDAT ? CAMDAT->getEditorCamera() : nullptr;
       ManipManager().SetActiveCamera(_editorCamera);
       mpTarget->debugMarker(FormatString("toolvp::_editorCamera<%p>", _editorCamera));
   }
-
   ///////////////////////////////////////////////////////
   // filth up the pick buffer
   ///////////////////////////////////////////////////////

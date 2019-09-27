@@ -63,6 +63,50 @@ void CompositingPassData::updateCompositingSize(int w, int h) {
     if( auto ftek = dynamic_cast<FrameTechniqueBase*>(mpFrameTek) )
         ftek->update(*this,w,h);
 }
+bool CompositingPassData::isPicking() const {
+  return false; //mpTarget ? mpTarget->FBI()->IsPickState() : false;
+}
+void CompositingPassData::ClearLayers() { mLayers.clear(); }
+void CompositingPassData::AddLayer(const PoolString& layername) { mLayers.insert(layername); }
+bool CompositingPassData::HasLayer(const PoolString& layername) const { return (mLayers.find(layername) != mLayers.end()); }
+
+//void RenderContextFrameData::PushRenderTarget(IRenderTarget* ptarg) { mRenderTargetStack.push(ptarg); }
+//IRenderTarget* RenderContextFrameData::GetRenderTarget() {
+//  IRenderTarget* pt = mRenderTargetStack.top();
+  //return pt;
+//}
+//void RenderContextFrameData::PopRenderTarget() { mRenderTargetStack.pop(); }
+
+//void RenderContextFrameData::setLayerName(const char* layername) {
+  //lev2::rendervar_t passdata;
+  //passdata.Set<const char*>(layername);
+  //setUserProperty("pass"_crc, passdata);
+//}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void CompositingPassData::addStandardLayers() {
+  AddLayer("Default"_pool);
+  AddLayer("A"_pool);
+  AddLayer("B"_pool);
+  AddLayer("C"_pool);
+  AddLayer("D"_pool);
+  AddLayer("E"_pool);
+  AddLayer("F"_pool);
+  AddLayer("G"_pool);
+  AddLayer("H"_pool);
+  AddLayer("I"_pool);
+  AddLayer("J"_pool);
+  AddLayer("K"_pool);
+  AddLayer("L"_pool);
+  AddLayer("M"_pool);
+  AddLayer("N"_pool);
+  AddLayer("O"_pool);
+  AddLayer("P"_pool);
+  AddLayer("Q"_pool);
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 void CompositingTechnique::Describe() {}
@@ -84,7 +128,8 @@ void CompositingContext::Init(lev2::GfxTarget* pTARG) {
     miWidth  = pTARG->GetW();
     miHeight = pTARG->GetH();
   }
-  mUtilMaterial.Init(pTARG);
+  _utilMaterial = new GfxMaterial3DSolid;
+  _utilMaterial->Init(pTARG);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

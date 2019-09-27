@@ -7,10 +7,11 @@
 
 #pragma once
 
+#include <ork/util/crc.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include "renderer_enum.h"
-#include <ork/util/crc.h>
+#include "compositor.h"
 
 namespace ork::lev2 {
 
@@ -35,8 +36,8 @@ class DrawableBuffer;
 //  ie, per renderable (or even finer grained than that)
 ///////////////////////////////////////////////////////////////////////////////
 
-class RenderContextInstData {
-public:
+struct RenderContextInstData {
+
   static const int kMaxEngineParamFloats = 4;
   static const int kmaxdirlights         = 4;
   static const int kmaxpntlights         = 4;
@@ -115,7 +116,6 @@ private:
   RenderGroupState mRenderGroupState;
 };
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // Rendering Context Data that can change per frame
 //  render modes, target, etc....
@@ -123,53 +123,15 @@ private:
 
 typedef svar64_t rendervar_t;
 
-struct StereoCamera {
-  const CameraMatrices* _left = nullptr;
-  const CameraMatrices* _right = nullptr;
-  const CameraMatrices* _mono = nullptr;
-
-  fmtx4 VL() const;
-  fmtx4 VR() const;
-  fmtx4 PL() const;
-  fmtx4 PR() const;
-  fmtx4 VPL() const;
-  fmtx4 VPR() const;
-  fmtx4 VMONO() const;
-  fmtx4 PMONO() const;
-  fmtx4 VPMONO() const;
-
-  fmtx4 MVPL(const fmtx4& M) const;
-  fmtx4 MVPR(const fmtx4& M) const;
-  fmtx4 MVPMONO(const fmtx4& M) const;
-
-};
-
 struct RenderContextFrameData {
 
   RenderContextFrameData();
 
   GfxTarget* GetTarget(void) const { return mpTarget; }
-  LightManager* GetLightManager() const { return mLightManager; }
+  LightManager* GetLightManager() const { return _lightmgr; }
 
-  const SRect& GetDstRect() const { return mDstRect; }
-  const SRect& GetMrtRect() const { return mMrtRect; }
-
-  void setCameraData(const CameraMatrices* data) { mCameraData = data; }
-  void SetLightManager(LightManager* lmgr) { mLightManager = lmgr; }
+  void SetLightManager(LightManager* lmgr) { _lightmgr = lmgr; }
   void SetTarget(GfxTarget* ptarg);
-  void SetDstRect(const SRect& rect) { mDstRect = rect; }
-  void SetMrtRect(const SRect& rect) { mMrtRect = rect; }
-  void setLayerName(const char* layername);
-  CameraMatrices& cameraMatrices() { return _cameraMatrices; }
-  const CameraMatrices& cameraMatrices() const { return _cameraMatrices; }
-
-  void ClearLayers();
-  void AddLayer(const PoolString& layername);
-  bool HasLayer(const PoolString& layername) const;
-
-  void PushRenderTarget(IRenderTarget* ptarg);
-  IRenderTarget* GetRenderTarget();
-  void PopRenderTarget();
 
   typedef orklut<CrcString, rendervar_t> usermap_t;
   const usermap_t& userProperties() const { return _userProperties; }
@@ -181,27 +143,15 @@ struct RenderContextFrameData {
 
   const DrawableBuffer* GetDB() const;
 
-  void addStandardLayers();
+  const CompositingPassData& topCPD() const;
+  CompositingPassData& topCPD();
 
   //////////////////////////////////////
 
-  bool isPicking() const;
-  bool isStereoOnePass() const { return _stereo1pass; }
-  void setStereoOnePass(bool ena) { _stereo1pass=ena; }
-
-  //////////////////////////////////////
-
-  StereoCamera _stereoCamera;
-  orkstack<IRenderTarget*> mRenderTargetStack;
+  CompositingImpl* _cimpl = nullptr;
+  LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
-  LightManager* mLightManager = nullptr;
   GfxTarget* mpTarget = nullptr;
-  const CameraMatrices* mCameraData = nullptr;
-  CameraMatrices _cameraMatrices;
-  SRect mDstRect;
-  SRect mMrtRect;
-  orkset<PoolString> mLayers;
-  bool _stereo1pass = false;
   const IRenderer* _renderer;
 };
 

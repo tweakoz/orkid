@@ -36,6 +36,8 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::particle::VolTexMaterial, "psys::VolTexM
 namespace ork { namespace lev2 { namespace particle {
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef ork::lev2::SVtxV12N12B12T8C4 vtx_t;
+
 void RendererModule::Describe()
 {	RegisterObjInpPlug ( RendererModule, Input );
 	//static const char* EdGrpStr =
@@ -368,9 +370,10 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 {
 	gtarg = targ;
 
-	const RenderContextFrameData* __restrict framedata = targ->GetRenderContextFrameData();
-	const CameraMatrices& cmtcs = framedata->cameraMatrices();
-	const CameraData& cdata = cmtcs._camdat;
+	auto RCFD = targ->GetRenderContextFrameData();
+	const auto& CPD = RCFD->topCPD();
+	const CameraMatrices* cmtcs = CPD.cameraMatrices();
+	const CameraData& cdata = cmtcs->_camdat;
 	MaterialBase* pMTLBASE = 0;
 	//////////////////////////////////////////
 	mpVB = & GfxEnv::GetSharedDynamicVB();
@@ -661,11 +664,12 @@ dataflow::outplugbase* StreakRenderer::GetOutput(int idx)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
-{	const RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-	const CameraMatrices& cmtcs = framedata->cameraMatrices();
-	const CameraData& cdata = cmtcs._camdat;
+{	const RenderContextFrameData* RCFD = targ->GetRenderContextFrameData();
+	const auto& CPD = RCFD->topCPD();
+	const CameraMatrices* cmtcs = CPD.cameraMatrices();
+	const CameraData& cdata = cmtcs->_camdat;
 	//////////////////////////////////////////
-	ork::lev2::CVtxBuffer<ork::lev2::SVtxV12N12B12T8C4>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2();
+	ork::lev2::CVtxBuffer<vtx_t>& vtxbuf = lev2::GfxEnv::GetSharedDynamicVB2();
 	float Scale = 1.0f;
 	ork::fmtx4 mtx_scale;
 	mtx_scale.SetScale( Scale,Scale,Scale );
@@ -681,7 +685,7 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 		mtx_iw.inverseOf(mtx);
 		fvec3 obj_nrmz = fvec4(cdata.zNormal(),0.0f).Transform(mtx_iw).Normal();
 		////////////////////////////////////////////////////////////////////////////
-		lev2::VtxWriter<SVtxV12N12B12T8C4> vw;
+		lev2::VtxWriter<vtx_t> vw;
 		vw.Lock( targ, &vtxbuf, icnt );
 		{
 
@@ -715,7 +719,7 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 					float flength = mPlugInpLength.GetValue();
 					fvec4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
 					////////////////////////////////////////////////
-					vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
+					vw.AddVertex( vtx_t( ptcl->mPosition,
 																obj_nrmz,
 																ptcl->mVelocity,
 																ork::fvec2( fwidth, flength ),
@@ -737,7 +741,7 @@ void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 					float flength = mPlugInpLength.GetValue();
 					fvec4 color = mGradient.Sample(mOutDataUnitAge)*fgi;
 					////////////////////////////////////////////////
-					vw.AddVertex( ork::lev2::SVtxV12N12B12T8C4( ptcl->mPosition,
+					vw.AddVertex( vtx_t( ptcl->mPosition,
 																obj_nrmz,
 																ptcl->mVelocity,
 																ork::fvec2( fwidth, flength ),
@@ -838,8 +842,9 @@ dataflow::outplugbase* ModelRenderer::GetOutput(int idx)
 ///////////////////////////////////////////////////////////////////////////////
 void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	if( 0 == GetModel() ) return;
-	const ork::lev2::RenderContextFrameData* framedata = targ->GetRenderContextFrameData();
-	auto cdata = framedata->cameraMatrices();
+	const ork::lev2::RenderContextFrameData* RCFD = targ->GetRenderContextFrameData();
+	const auto& CPD = RCFD->topCPD();
+	const CameraMatrices* cdata = CPD.cameraMatrices();
 	int icnt = buffer.miNumParticles;
 	static const int kmaxinstances = 1024;
 	static fmtx4 gmatrixblock[ kmaxinstances ];
@@ -909,8 +914,7 @@ void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& r
 		HeadLight.miInFrustumID = 1;
 		HeadLightGroup.mLightMask.AddLight( & HeadLight );
 		HeadLightGroup.mLightManager = & HeadLightManager;
-		const RenderContextFrameData& RCFD = *targ->GetRenderContextFrameData();
-		HeadLightMatrix = RCFD.cameraMatrices().GetIVMatrix();
+		HeadLightMatrix = cdata->GetIVMatrix();
 		HeadLightManager.mGlobalMovingLights.AddLight( & HeadLight );
 		HeadLightManager.mLightsInFrustum.push_back(& HeadLight);
 		MatCtx.SetLightingGroup( & HeadLightGroup );

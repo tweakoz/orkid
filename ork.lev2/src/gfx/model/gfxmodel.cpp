@@ -244,8 +244,9 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
                            const RenderContextInstData& RCID,
                            const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto framedata   = pTARG->GetRenderContextFrameData();
-  bool stereo1pass = framedata->isStereoOnePass();
+  auto RCFD   = pTARG->GetRenderContextFrameData();
+  const auto& CPD = RCFD->topCPD();
+  bool stereo1pass = CPD.isStereoOnePass();
   const XgmMesh& XgmMesh         = *mdlctx.mMesh;
   const XgmCluster& XgmClus      = *mdlctx.mCluster;
   const XgmSubMesh& XgmClusSet   = *mdlctx.mSubMesh;
@@ -385,10 +386,9 @@ void XgmModel::RenderMultipleRigid(const fcolor4& ModColor,
                                    const RenderContextInstData& RCID,
                                    const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto framedata   = pTARG->GetRenderContextFrameData();
-  bool stereo1pass = framedata->isStereoOnePass();
-  if (stereo1pass)
-    return;
+  auto RCFD   = pTARG->GetRenderContextFrameData();
+  const auto& CPD = RCFD->topCPD();
+  bool stereo1pass = CPD.isStereoOnePass();
 
   pTARG->MTXI()->SetMMatrix(pTARG->MTXI()->RefMMatrix());
   pTARG->PushModColor(ModColor);
@@ -455,10 +455,9 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
                              const RenderContextInstData& RCID,
                              const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto framedata   = pTARG->GetRenderContextFrameData();
-  bool stereo1pass = framedata->isStereoOnePass();
-  //if (stereo1pass)
-    //return;
+  auto RCFD   = pTARG->GetRenderContextFrameData();
+  const auto& CPD = RCFD->topCPD();
+  bool stereo1pass = CPD.isStereoOnePass();
 
   const XgmSkeleton& Skeleton = RefSkel();
 
@@ -593,10 +592,9 @@ void XgmModel::RenderMultipleSkinned(const XgmModelInst* minst,
                                      const RenderContextInstData& RCID,
                                      const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto framedata   = pTARG->GetRenderContextFrameData();
-  bool stereo1pass = framedata->isStereoOnePass();
-  //if (stereo1pass)
-    //return;
+  auto RCFD   = pTARG->GetRenderContextFrameData();
+  const auto& CPD = RCFD->topCPD();
+  bool stereo1pass = CPD.isStereoOnePass();
 
   const XgmSkeleton& Skeleton   = RefSkel();
   const XgmLocalPose& LocalPose = minst->RefLocalPose();

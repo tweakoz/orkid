@@ -464,8 +464,11 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 {
 	const ork::lev2::GfxTargetCreationParams& CreationParams = ork::lev2::GfxEnv::GetRef().GetCreationParams();
 
-	RenderContextFrameData&	FrameData = frenderer.framedata();
-	GfxTarget *pTARG = FrameData.GetTarget();
+	RenderContextFrameData&	RCFD = frenderer.framedata();
+	auto CIMPL = RCFD._cimpl;
+	const auto& topCPD = CIMPL->topCPD();
+
+	GfxTarget *pTARG = RCFD.GetTarget();
 
 	if( false == pTARG->IsDeviceAvailable() ) return;
 
@@ -474,33 +477,34 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 	bool bfeedback = true; //(CreationParams.miQuality>1);
 
 	/////////////////////////////////////////////////
-	SRect dst_rect = FrameData.GetDstRect();
-	SRect mrt_rect = FrameData.GetMrtRect();
+	SRect dst_rect = topCPD.GetDstRect();
+	SRect mrt_rect = topCPD.GetMrtRect();
 	/////////////////////////////////////////////////
-
-	IRenderTarget* pTopRenderTarget = FrameData.GetRenderTarget();
 
 	std::string dumpfname;
 	static int gdumpidx = 0;
 
 	gdumpidx++;
 
+	// TODO cleanup with CIMPL
 	if( mEffectName=="none" )
 	{
+		/*CompositingPassData CPD;
 		pTARG->FBI()->SetAutoClear(true);
-		pTARG->SetRenderContextFrameData( & FrameData );
-		FrameData.SetDstRect( dst_rect );
+		pTARG->SetRenderContextFrameData( & RCFD );
+		CPD.SetDstRect( dst_rect );
 		RtGroupRenderTarget rt(mpMrtFinalHD);
-		FrameData.PushRenderTarget(&rt);
+		CPD._irendertarget = &rt;
+		CIMPL->pushCPD(CPD);
 		pTARG->FBI()->PushRtGroup( mpMrtFinalHD );
 		pTARG->BeginFrame();
 			frenderer.renderMisc();
 		pTARG->EndFrame();
 		pTARG->FBI()->PopRtGroup();
-		FrameData.PopRenderTarget();
+		CIMPL->popCPD(CPD);
 		pTARG->SetRenderContextFrameData( 0 );
 
-		mOutputRt = mpMrtFinalHD;
+		mOutputRt = mpMrtFinalHD;*/
 	}
 	else
 	{
@@ -510,11 +514,12 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 
 		if( 1 )
 		{
+			/*
 			RtGroup* rtgroupFBW = GetNextWriteRtGroup();
 			pTARG->FBI()->SetAutoClear(true);
 			FrameData.SetDstRect( mrt_rect );
 			pTARG->FBI()->PushRtGroup( rtgroupFBW );
-			pTARG->SetRenderContextFrameData( & FrameData );
+			pTARG->SetRenderContextFrameData( & RCFD );
 			RtGroupRenderTarget rt(rtgroupFBW);
 			FrameData.PushRenderTarget(&rt);
 			pTARG->BeginFrame();
@@ -596,9 +601,10 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 			/////////////////////////////////////////////////
 			PreProcess( FrameData );	// Blured Mrt0 -> AuxBuffer1
 			FrameData.PopRenderTarget();
+			*/
 		}
 		if( 1 )
-		{
+		{/*
 			/////////////////////////////////////////////////
 			// postprocess into the Final Rt Group
 			/////////////////////////////////////////////////
@@ -657,6 +663,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 
 				SetReadRtGroup(rtgroupFBOUT);
 			}
+			*/
 		}
 
 		/////////////////////////////////////////////////
@@ -949,7 +956,8 @@ void BasicFrameTechnique::Render( FrameRenderer & frenderer )
 	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
-	FrameData.SetDstRect( tgt_rect );
+	//FrameData.SetDstRect( tgt_rect );
+	/*
 	IRenderTarget* pTopRenderTarget = FrameData.GetRenderTarget();
 	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->BeginFrame( frenderer );
@@ -958,6 +966,7 @@ void BasicFrameTechnique::Render( FrameRenderer & frenderer )
 	}
 	if( _shouldBeginAndEndFrame )
 		pTopRenderTarget->EndFrame( frenderer );
+		*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -975,9 +984,9 @@ void PickFrameTechnique::Render( FrameRenderer & frenderer )
 	RenderContextFrameData&	FrameData = frenderer.framedata();
 	GfxTarget *pTARG = FrameData.GetTarget();
 	SRect tgt_rect( 0, 0, pTARG->GetW(), pTARG->GetH() );
-	FrameData.SetDstRect( tgt_rect );
+	//FrameData.SetDstRect( tgt_rect );
 	{
-		frenderer.renderMisc();
+		//frenderer.renderMisc();
 	}
 }
 
