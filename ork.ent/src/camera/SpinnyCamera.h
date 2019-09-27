@@ -12,7 +12,7 @@
 #include <ork/math/TransformNode.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/lev2_asset.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/math/multicurve.h>
 
 ///////////////////////////////////////////////////////////////////////////////

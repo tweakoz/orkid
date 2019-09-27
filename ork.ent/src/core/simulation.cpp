@@ -262,7 +262,7 @@ void Simulation::setCameraData(const PoolString& name, const lev2::CameraData* c
     }
   }
 
-  lev2::Camera* pcam = (camdat != 0) ? camdat->getEditorCamera() : 0;
+  lev2::UiCamera* pcam = (camdat != 0) ? camdat->getEditorCamera() : 0;
 
   // orkprintf( "Simulation::setCameraData() name<%s> camdat<%p> l2cam<%p>\n",
   // name.c_str(), camdat, pcam );
@@ -916,7 +916,7 @@ static void CopyCameraData(const Simulation::CameraDataLut& srclut,
   for (Simulation::CameraDataLut::const_iterator itCAM = srclut.begin(); itCAM != srclut.end(); itCAM++) {
     const PoolString& CameraName  = itCAM->first;
     const lev2::CameraData* pcameradata = itCAM->second;
-    const lev2::Camera* pcam      = pcameradata ? pcameradata->getEditorCamera() : 0;
+    const lev2::UiCamera* pcam      = pcameradata ? pcameradata->getEditorCamera() : 0;
     // printf( "CopyCameraData Idx<%d> CamName<%s> pcamdata<%p> pcam<%p>\n",
     // idx, CameraName.c_str(), pcameradata, pcam );
     if (pcameradata) {

@@ -40,7 +40,7 @@ class FrameTechniqueBase;
 class IRenderer;
 class EzUiCam;
 class Camera_ortho;
-class Camera;
+class UiCamera;
 class CompositingGroup;
 class CompositingSceneItem;
 
@@ -136,7 +136,7 @@ public:
   EditorMainWindow& MainWindow() const { return mMainWindow; }
   ork::lev2::IRenderer* GetRenderer() const { return _renderer; }
   lev2::ManipManager& ManipManager() { return mEditor.ManipManager(); }
-  lev2::Camera* getActiveCamera() const { return _editorCamera; }
+  lev2::UiCamera* getActiveCamera() const { return _editorCamera; }
 
   ///////////////////////////////////////////////////
   bool isCompositorEnabled();
@@ -171,7 +171,7 @@ protected:
   int mGridMode;
   ork::ent::SceneEditorView mSceneView;
   lev2::IRenderer* _renderer;
-  lev2::Camera* _editorCamera;
+  lev2::UiCamera* _editorCamera;
   fvec3 mCursor;
   int miCameraIndex;
   int miCullCameraIndex;

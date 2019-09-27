@@ -11,7 +11,7 @@
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/pch.h>
 //
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxmaterial_ui.h>
 #include <ork/lev2/qtui/qtui.h>
 #include <ork/lev2/ui/viewport.h>

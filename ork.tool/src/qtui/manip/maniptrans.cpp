@@ -115,7 +115,7 @@ bool ManipTrans::UIEventHandler( const ui::Event& EV )
 
 void ManipTrans::HandleMouseDown(const ork::fvec2& pos)
 {
-	Camera *pcam = mManager.getActiveCamera();
+	UiCamera *pcam = mManager.getActiveCamera();
 
 	//printf( "ManipTrans::HandleMouseDown() pcam<%p>\n", pcam );
 	if( pcam )
@@ -289,7 +289,7 @@ void ManipSingleTrans::Draw( GfxTarget *pTARG ) const
 
 void ManipSingleTrans::HandleDrag(const ork::fvec2& pos)
 {
-	Camera *pcam = mManager.getActiveCamera();
+	UiCamera *pcam = mManager.getActiveCamera();
 
 	IntersectWithPlanes( pos );
 	bool bisect = CheckIntersect();

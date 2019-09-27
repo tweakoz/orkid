@@ -192,7 +192,7 @@ void Manip::CalcPlanes() {
 fvec3 Manip::IntersectWithPlanes(const ork::fvec2& posubp) {
   fvec3 rval;
 
-  const Camera* cam = mManager.getActiveCamera();
+  const UiCamera* cam = mManager.getActiveCamera();
   fmtx4 CurMatrix;
   mBaseTransform.GetMatrix(CurMatrix);
   /////////////////////////////

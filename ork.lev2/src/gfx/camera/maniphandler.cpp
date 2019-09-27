@@ -6,7 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include <math.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/math/polar.h>

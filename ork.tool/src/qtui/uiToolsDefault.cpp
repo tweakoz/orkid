@@ -27,7 +27,7 @@
 #include <pkg/ent/editor/edmainwin.h>
 #include <pkg/ent/scene.h>
 
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 
 #include "uiToolHandler.inl"
 

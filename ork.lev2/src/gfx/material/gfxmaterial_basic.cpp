@@ -8,7 +8,7 @@
 #include <ork/kernel/Array.hpp>
 #include <ork/kernel/orkpool.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxanim.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxmaterial_basic.h>

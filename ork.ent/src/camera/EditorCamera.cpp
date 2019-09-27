@@ -80,13 +80,13 @@ void EditorCamControllerInst::Describe() {}
 EditorCamControllerInst::EditorCamControllerInst(const EditorCamControllerData& occd, Entity* pent)
     : ComponentInst(&occd, pent)
     , mCD(occd) {
-  const lev2::Camera* pcam = mCD.GetCamera();
+  const lev2::UiCamera* pcam = mCD.GetCamera();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 bool EditorCamControllerInst::DoLink(Simulation* psi) {
-  const lev2::Camera* pcam = mCD.GetCamera();
+  const lev2::UiCamera* pcam = mCD.GetCamera();
   if (GetEntity()) {
     const ent::EntData& ED = GetEntity()->GetEntData();
     PoolString name        = ED.GetName();

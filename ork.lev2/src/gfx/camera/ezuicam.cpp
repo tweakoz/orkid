@@ -17,7 +17,7 @@
 #include <math.h>
 #include <ork/file/tinyxml/tinyxml.h>
 #include <ork/kernel/string/string.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/ui/touch.h>
 #include <ork/lev2/ui/viewport.h>
@@ -57,7 +57,7 @@ void EzUiCam::Describe() {
 ///////////////////////////////////////////////////////////////////////////////
 
 EzUiCam::EzUiCam()
-    : Camera()
+    : UiCamera()
     , aper(40.0f)
     , far_max(10000.0f)
     , near_min(0.1f)
@@ -181,7 +181,7 @@ void EzUiCam::PanUpdate(const CamEvTrackData& ed) {
   float fdx = float(esx - ipushx);
   float fdy = float(esy - ipushy);
 
-  mvCenter = ed.vPushCenter - (outx * fdx) - (outy * fdy);
+  mvCenter = ed.vPushCenter + (outx * fdx) + (outy * fdy);
 
   // QCursor::setPos(pmousepos);
 }
@@ -265,6 +265,8 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
 
   switch (filtev.miEventCode) {
     case UIEV_PUSH: {
+
+      QuatCPushed = QuatC;
 
       float fx   = float(esx) / _vpdim.x - 0.5f;
       float fy   = float(esy) / _vpdim.y - 0.5f;
@@ -402,32 +404,33 @@ bool EzUiCam::UIEventHandler(const ui::Event& EV) {
             float fesx   = float(esx);
             float fesy   = float(esy);
 
-            float fx0 = (fipx - fvpx) - fvpwd2;
-            float fy0 = (fipy - fvpy) - fvphd2;
-            float fx1 = (fesx - fvpx) - fvpwd2;
-            float fy1 = (fesy - fvpy) - fvphd2;
-            fvec4 v0(fx0, fy0, 0.0f);
-            fvec4 v1(fx1, fy1, 0.0f);
+            float fx0 = (fipx - fvpwd2) / fvpwd2;
+            float fy0 = (fipy - fvphd2) / fvphd2;
+            float fx1 = (fesx - fvpwd2) / fvpwd2;
+            float fy1 = (fesy - fvphd2) / fvphd2;
+            fvec2 v0(fx0, fy0);
+            fvec2 v1(fx1, fy1);
             v0.Normalize();
             v1.Normalize();
-            float ang0   = rect2pol_ang(v0.GetX(), v0.GetY());
-            float ang1   = rect2pol_ang(v1.GetX(), v1.GetY());
+            float ang0   = rect2pol_ang(v0.x, v0.y);
+            float ang1   = rect2pol_ang(v1.x, v1.y);
             float dangle = (ang1 - ang0);
             fvec4 rotz = fvec4(_pushNZ,dangle);
             fquat QuatZ;
             QuatZ.FromAxisAngle(rotz);
-            QuatC = QuatZ.Multiply(QuatC);
+            QuatC = QuatZ.Multiply(QuatCPushed);
+            printf( "v0 <%g %g> v1<%g %g>\n", v0.x, v0.y, v1.x, v1.y );
             printf( "ang0 <%g> ang1<%g>\n", ang0, ang1 );
-            printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
-            printf( "QuatZ <%g %g %g %g>\n", QuatZ.x, QuatZ.y, QuatZ.z, QuatZ.w );
-            printf( "QuatC <%g %g %g %g>\n", QuatC.x, QuatC.y, QuatC.z, QuatC.w );
+            //printf( "rotz <%g %g %g %g>\n", rotz.x, rotz.y, rotz.z, rotz.w );
+            //printf( "QuatZ <%g %g %g %g>\n", QuatZ.x, QuatZ.y, QuatZ.z, QuatZ.w );
+            //printf( "QuatC <%g %g %g %g>\n", QuatC.x, QuatC.y, QuatC.z, QuatC.w );
 
             break;
           }
           case EROT_SCREENXY: {
 
-            fvec4 rotx = fvec4(_pushNX,dy);
-            fvec4 roty = fvec4(_pushNY,-dx);
+            fvec4 rotx = fvec4(_pushNX,-dy);
+            fvec4 roty = fvec4(_pushNY,dx);
 
             fquat QuatX, QuatY;
 

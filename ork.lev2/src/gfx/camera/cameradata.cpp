@@ -24,7 +24,7 @@ CameraData::CameraData()
     , mUp(0.0f, 1.0f, 0.0f)
     , mpLev2Camera(nullptr) {}
 
-void CameraData::SetLev2Camera(lev2::Camera* pcam) {
+void CameraData::SetLev2Camera(lev2::UiCamera* pcam) {
   // printf( "CameraData::SetLev2Camera() this<%p> pcam<%p>\n", this, pcam );
   mpLev2Camera = pcam;
 }
@@ -80,14 +80,13 @@ CameraMatrices CameraData::computeMatrices(float faspect) const {
     target = mEye + fvec3::Blue();
   }
   ///////////////////////////////////////////////////
-  rval._pmatrix.Perspective(faper, faspect, fnear, ffar);
   rval._vmatrix.LookAt(mEye, mTarget, mUp);
-  ///////////////////////////////////////////////////
-  fmtx4 matgp_vp = rval._vmatrix * rval._pmatrix;
-  fmtx4 matgp_ivp;
-  matgp_ivp.inverseOf(matgp_vp);
-  // matgp_iv.inverseOf(matgp_view);
-  rval._frustum.Set(matgp_ivp);
+  rval._ivmatrix.inverseOf(rval._vmatrix);
+  rval._pmatrix.Perspective(faper, faspect, fnear, ffar);
+  rval._ipmatrix.inverseOf(rval._pmatrix);
+  rval._vpmatrix = rval._vmatrix * rval._pmatrix;
+  rval._ivpmatrix.inverseOf(rval._vpmatrix);
+  rval._frustum.Set(rval._ivpmatrix);
   ///////////////////////////////////////////////////
   rval._camdat = *this;
   return rval;

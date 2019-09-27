@@ -17,8 +17,8 @@ namespace ork::lev2 {
 
 class CameraData;
 class CameraMatrices;
+class UiCamera;
 class IRenderer;
-class Camera;
 class Texture;
 struct LightingGroup;
 class LightManager;

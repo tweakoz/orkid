@@ -8,7 +8,7 @@
 #include <ork/application/application.h>
 #include <ork/kernel/prop.h>
 #include <ork/kernel/prop.hpp>
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/dbgfontman.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/gfxenv_enum.h>

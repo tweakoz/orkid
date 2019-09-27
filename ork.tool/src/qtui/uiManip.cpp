@@ -26,7 +26,7 @@
 #include <QtGui/qclipboard.h>
 #include <QtCore/QSettings>
 #include <pkg/ent/scene.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 
 #include "uiToolHandler.inl"
 

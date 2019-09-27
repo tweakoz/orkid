@@ -183,7 +183,7 @@ const CameraData* DrawableBuffer::cameraData(int icam) const {
     icam                     = icam % inumscenecameras;
     auto& itCAM              = _cameraDataLUT.GetItemAtIndex(icam);
     const CameraData* pdata  = itCAM.second;
-    const lev2::Camera* pcam = pdata->getEditorCamera();
+    auto pcam = pdata->getEditorCamera();
     // printf( "icam<%d> pdata<%p> pcam<%p>\n", icam, pdata, pcam );
     return pdata;
   }

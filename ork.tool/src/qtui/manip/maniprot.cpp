@@ -190,9 +190,9 @@ bool ManipRot::UIEventHandler( const ui::Event& EV )
 
 	fvec2 posubp = EV.GetUnitCoordBP();
 
-	Camera *pcam = mManager.getActiveCamera();
+    UiCamera* pcam = mManager.getActiveCamera();
 
-	bool brval = false;
+    bool brval = false;
 
 	bool isshift = false; //OldSchool::IsKeyDepressed(VK_SHIFT );
 	bool isctrl = false; //OldSchool::IsKeyDepressed(VK_CONTROL );

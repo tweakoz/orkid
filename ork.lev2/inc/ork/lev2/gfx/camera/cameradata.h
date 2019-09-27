@@ -13,7 +13,7 @@
 
 namespace ork::lev2 {
 class GfxTarget;
-class Camera;
+class UiCamera;
 struct CameraMatrices;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,8 +41,8 @@ struct CameraData {
 
   void Lookat(const fvec3& eye, const fvec3& tgt, const fvec3& up);
 
-  lev2::Camera* getEditorCamera() const { return mpLev2Camera; }
-  void SetLev2Camera(lev2::Camera* pcam);
+  lev2::UiCamera* getEditorCamera() const { return mpLev2Camera; }
+  void SetLev2Camera(lev2::UiCamera* pcam);
 
   void Persp(float fnear, float ffar, float faper);
   void PerspH(float fnear, float ffar, float faperh);
@@ -55,7 +55,7 @@ struct CameraData {
   fvec3 _ynormal;
   fvec3 _znormal;
 
-  lev2::Camera* mpLev2Camera = nullptr;
+  lev2::UiCamera* mpLev2Camera = nullptr;
   float mAper = 0.0f;
   float mHorizAper = 0.0f;
   float mNear = 0.0f;
@@ -70,17 +70,13 @@ struct CameraMatrices {
   bool _explicitProjectionMatrix = false;
   bool _explicitViewMatrix = false;
   fmtx4 _vmatrix;
-  fmtx4 _ivmatrix;
   fmtx4 _pmatrix;
   fmtx4 _vpmatrix;
   fmtx4 _ivpmatrix;
+  fmtx4 _ivmatrix;
+  fmtx4 _ipmatrix;
   Frustum _frustum;
-  float _width = 1.0f;
-  float _height = 1.0f;
   float _aspectRatio = 1.0f;
-  ////////////////////////////////////////////////////////////////////
-  void SetWidth(float fv) { _width = fv; }
-  void SetHeight(float fv) { _height = fv; }
   ////////////////////////////////////////////////////////////////////
   const Frustum& GetFrustum() const { return _frustum; }
   Frustum& GetFrustum() { return _frustum; }

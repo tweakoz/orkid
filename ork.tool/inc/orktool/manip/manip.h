@@ -8,495 +8,434 @@
 #pragma once
 
 #include <ork/kernel/core/singleton.h>
-#include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxmodel.h>
-#include <ork/math/TransformNode.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
-#include <ork/rtti/RTTI.h>
+#include <ork/lev2/gfx/renderer/renderer.h>
 #include <ork/lev2/gfx/util/grid.h>
+#include <ork/math/TransformNode.h>
 #include <ork/object/AutoConnector.h>
+#include <ork/rtti/RTTI.h>
 
-namespace ork { namespace lev2
-{
+namespace ork { namespace lev2 {
 
 class ManipManager;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct IntersectionRecord
-{
-	fvec3	mIntersectionPoint;
-	fvec3	mOldIntersectionPoint;
-	fvec3	mBaseIntersectionPoint;
-    bool		mbHasItersected;
+struct IntersectionRecord {
+  fvec3 mIntersectionPoint;
+  fvec3 mOldIntersectionPoint;
+  fvec3 mBaseIntersectionPoint;
+  bool mbHasItersected;
 
-	IntersectionRecord();
+  IntersectionRecord();
 
-	fvec4 GetLocalSpaceDelta( const fmtx4 &InvLocalMatrix );
+  fvec4 GetLocalSpaceDelta(const fmtx4& InvLocalMatrix);
 };
 
-enum EPlaneRec
-{
-	EPLANE_XZ = 0,
-	EPLANE_YZ,
-	EPLANE_XY,
-	EPLANE_END,
+enum EPlaneRec {
+  EPLANE_XZ = 0,
+  EPLANE_YZ,
+  EPLANE_XY,
+  EPLANE_END,
 };
 
-
-class Manip : public ork::Object
-{
-	DECLARE_TRANSPARENT_CUSTOM_POLICY_RTTI(Manip, ork::Object, ork::rtti::AbstractPolicy)
+class Manip : public ork::Object {
+  DECLARE_TRANSPARENT_CUSTOM_POLICY_RTTI(Manip, ork::Object, ork::rtti::AbstractPolicy)
 
 public:
+  fmtx4 InvMatrix;
+  TransformNode mBaseTransform;
 
-	fmtx4				InvMatrix;
-	TransformNode			mBaseTransform;
+  IntersectionRecord mIntersection[EPLANE_END];
+  IntersectionRecord* mActiveIntersection;
 
-	IntersectionRecord		mIntersection[EPLANE_END];
-	IntersectionRecord*		mActiveIntersection;
+  fplane3 mPlaneXZ;
+  fplane3 mPlaneYZ;
+  fplane3 mPlaneXY;
 
-	fplane3					mPlaneXZ;
-	fplane3					mPlaneYZ;
-	fplane3					mPlaneXY;
+  ManipManager& mManager;
 
-	ManipManager&			mManager;
+  Manip(ManipManager& mgr);
 
-	Manip( ManipManager& mgr );
+  virtual void Draw(GfxTarget* pTARG) const        = 0;
+  virtual bool UIEventHandler(const ui::Event& EV) = 0;
 
-	virtual void Draw( GfxTarget *pTARG ) const = 0;
-	virtual bool UIEventHandler( const ui::Event& EV ) = 0;
+  fvec3 IntersectWithPlanes(const ork::fvec2& posubp);
+  void SelectBestPlane(const ork::fvec2& posubp);
+  void CalcPlanes();
 
-	fvec3 IntersectWithPlanes(const ork::fvec2& posubp);
-	void SelectBestPlane(const ork::fvec2& posubp);
-	void CalcPlanes();
+  bool CheckIntersect(void) const;
 
-	bool CheckIntersect( void ) const;
-
-	fcolor4 GetColor() const { return mColor; }
+  fcolor4 GetColor() const { return mColor; }
 
 protected:
-
-	fcolor4		mColor;
+  fcolor4 mColor;
 };
 
-class ManipTrans : public Manip
-{
-	RttiDeclareAbstract(ManipTrans,Manip);
+class ManipTrans : public Manip {
+  RttiDeclareAbstract(ManipTrans, Manip);
 
 public:
+  ManipTrans(ManipManager& mgr);
 
-    ManipTrans(ManipManager& mgr);
-
-	bool UIEventHandler( const ui::Event& EV ) final;
+  bool UIEventHandler(const ui::Event& EV) final;
 
 protected:
-
-	virtual void HandleMouseDown(const ork::fvec2& pos);
-	virtual void HandleMouseUp(const ork::fvec2& pos);
-	virtual void HandleDrag(const ork::fvec2& pos);
+  virtual void HandleMouseDown(const ork::fvec2& pos);
+  virtual void HandleMouseUp(const ork::fvec2& pos);
+  virtual void HandleDrag(const ork::fvec2& pos);
 };
 
-class ManipSingleTrans : public ManipTrans
-{
-	RttiDeclareAbstract(ManipSingleTrans, ManipTrans);
+class ManipSingleTrans : public ManipTrans {
+  RttiDeclareAbstract(ManipSingleTrans, ManipTrans);
 
 public:
+  ManipSingleTrans(ManipManager& mgr);
 
-	ManipSingleTrans(ManipManager& mgr);
-
-	virtual void DrawAxis(GfxTarget* pTARG) const;
+  virtual void DrawAxis(GfxTarget* pTARG) const;
 
 protected:
+  void Draw(GfxTarget* pTARG) const final;
+  void HandleDrag(const ork::fvec2& pos) final;
 
-    void Draw(GfxTarget* pTARG) const final;
-	void HandleDrag(const ork::fvec2& pos) final;
+  virtual ork::fvec3 GetNormal() const = 0;
 
-	virtual ork::fvec3 GetNormal() const = 0;
-
-	fmtx4			mmRotModel;
+  fmtx4 mmRotModel;
 };
 
-class ManipDualTrans : public ManipTrans
-{
-	RttiDeclareAbstract(ManipDualTrans, ManipTrans);
+class ManipDualTrans : public ManipTrans {
+  RttiDeclareAbstract(ManipDualTrans, ManipTrans);
 
 public:
+  ManipDualTrans(ManipManager& mgr);
 
-	ManipDualTrans(ManipManager& mgr);
-
-	void Draw(GfxTarget* pTARG ) const final;
+  void Draw(GfxTarget* pTARG) const final;
 
 protected:
+  virtual void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const = 0;
 
-	virtual void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
-		ork::fvec4& v2, ork::fvec4& v3) const = 0;
-
-	void HandleDrag(const ork::fvec2& pos) final;
+  void HandleDrag(const ork::fvec2& pos) final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipTX : public ManipSingleTrans
-{
-	RttiDeclareAbstract(ManipTX, ManipSingleTrans);
+class ManipTX : public ManipSingleTrans {
+  RttiDeclareAbstract(ManipTX, ManipSingleTrans);
 
 public:
-
-    ManipTX(ManipManager& mgr);
+  ManipTX(ManipManager& mgr);
 
 protected:
-
-	virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitX(); };
+  virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitX(); };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipTY : public ManipSingleTrans
-{
-	RttiDeclareAbstract(ManipTY, ManipSingleTrans);
+class ManipTY : public ManipSingleTrans {
+  RttiDeclareAbstract(ManipTY, ManipSingleTrans);
 
 public:
-
-    ManipTY(ManipManager& mgr);
+  ManipTY(ManipManager& mgr);
 
 protected:
-
-	virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitY(); };
+  virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitY(); };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipTZ : public ManipSingleTrans
-{
-	RttiDeclareAbstract(ManipTZ, ManipSingleTrans);
+class ManipTZ : public ManipSingleTrans {
+  RttiDeclareAbstract(ManipTZ, ManipSingleTrans);
 
 public:
-
-    ManipTZ(ManipManager& mgr);
+  ManipTZ(ManipManager& mgr);
 
 protected:
-
-	virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitZ(); };
+  virtual ork::fvec3 GetNormal() const final { return ork::fvec3::UnitZ(); };
 };
 
-class ManipTXY : public ManipDualTrans
-{
-	RttiDeclareAbstract(ManipTXY, ManipDualTrans);
+class ManipTXY : public ManipDualTrans {
+  RttiDeclareAbstract(ManipTXY, ManipDualTrans);
 
 public:
-
-	ManipTXY(ManipManager& mgr);
+  ManipTXY(ManipManager& mgr);
 
 protected:
-
-	void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
-		ork::fvec4& v2, ork::fvec4& v3) const final;
+  void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
-class ManipTXZ : public ManipDualTrans
-{
-	RttiDeclareAbstract(ManipTXZ, ManipDualTrans);
+class ManipTXZ : public ManipDualTrans {
+  RttiDeclareAbstract(ManipTXZ, ManipDualTrans);
 
 public:
-
-	ManipTXZ(ManipManager& mgr);
+  ManipTXZ(ManipManager& mgr);
 
 protected:
-
-	void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
-		ork::fvec4& v2, ork::fvec4& v3) const final;
+  void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
-class ManipTYZ : public ManipDualTrans
-{
-	RttiDeclareAbstract(ManipTYZ, ManipDualTrans);
+class ManipTYZ : public ManipDualTrans {
+  RttiDeclareAbstract(ManipTYZ, ManipDualTrans);
 
 public:
-
-	ManipTYZ(ManipManager& mgr);
+  ManipTYZ(ManipManager& mgr);
 
 protected:
-
-	void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1,
-		ork::fvec4& v2, ork::fvec4& v3) const final;
+  void GetQuad(float ext, ork::fvec4& v0, ork::fvec4& v1, ork::fvec4& v2, ork::fvec4& v3) const final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipRot : public Manip
-{
-	RttiDeclareAbstract(ManipRot, Manip);
+class ManipRot : public Manip {
+  RttiDeclareAbstract(ManipRot, Manip);
 
 public: //
+  ManipRot(ManipManager& mgr, const fvec4& LocRotMat);
 
-    ManipRot( ManipManager& mgr, const fvec4 &LocRotMat );
+  void Draw(GfxTarget* pTARG) const final;
+  bool UIEventHandler(const ui::Event& EV) final;
 
-	void Draw( GfxTarget *pTARG ) const final;
-	bool UIEventHandler( const ui::Event& EV ) final;
+  virtual F32 CalcAngle(fvec4& inv_isect, fvec4& inv_lisect) const = 0;
 
-	virtual F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const = 0;
+  ////////////////////////////////////////
 
-	////////////////////////////////////////
-
-	fmtx4			mmRotModel;
-	const fvec4		mLocalRotationAxis;
-
+  fmtx4 mmRotModel;
+  const fvec4 mLocalRotationAxis;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipRX : public ManipRot
-{
-	RttiDeclareAbstract(ManipRX,ManipRot);
+class ManipRX : public ManipRot {
+  RttiDeclareAbstract(ManipRX, ManipRot);
 
 public: //
+  ManipRX(ManipManager& mgr);
 
-    ManipRX(ManipManager& mgr);
-
-	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
-
+  F32 CalcAngle(fvec4& inv_isect, fvec4& inv_lisect) const final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipRY : public ManipRot
-{
-	RttiDeclareAbstract(ManipRY,ManipRot);
+class ManipRY : public ManipRot {
+  RttiDeclareAbstract(ManipRY, ManipRot);
 
 public: //
+  ManipRY(ManipManager& mgr);
 
-    ManipRY(ManipManager& mgr);
-
-	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
-
+  F32 CalcAngle(fvec4& inv_isect, fvec4& inv_lisect) const final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class ManipRZ : public ManipRot
-{
-	RttiDeclareAbstract(ManipRZ,ManipRot);
+class ManipRZ : public ManipRot {
+  RttiDeclareAbstract(ManipRZ, ManipRot);
 
-	public: //
+public: //
+  ManipRZ(ManipManager& mgr);
 
-    ManipRZ(ManipManager& mgr);
-
-	F32 CalcAngle( fvec4 & inv_isect, fvec4 & inv_lisect ) const final;
-
+  F32 CalcAngle(fvec4& inv_isect, fvec4& inv_lisect) const final;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-enum EManipEnable
-{
-	EMANIPMODE_OFF = 0,
-	EMANIPMODE_ON ,
+enum EManipEnable {
+  EMANIPMODE_OFF = 0,
+  EMANIPMODE_ON,
 };
 
-
-class GfxMaterialManip : public GfxMaterial
-{
-	ManipManager& mManager;
-
-	public:
-
-	GfxMaterialManip(GfxTarget*,ManipManager&mgr);
-	~GfxMaterialManip() final {};
-	void Init( GfxTarget *pTarg ) final;
-
-	int  BeginBlock( GfxTarget* pTarg,const RenderContextInstData &MatCtx ) final;
-	void EndBlock( GfxTarget* pTarg ) final;
-	void Update( void ) final {}
-	bool BeginPass( GfxTarget* pTarg,int iPass=0 ) final;
-	void EndPass( GfxTarget* pTarg ) final;
-	void UpdateMVPMatrix( GfxTarget *pTARG ) final;
-
-	protected:
-
-	FxShader*		hModFX;
-	const FxShaderTechnique*	hTekStd;
-	const FxShaderTechnique*	hTekLuc;
-	const FxShaderTechnique*	hTekPick;
-
-	//const FxShaderTechnique*	hTekCurrent;
-
-	const FxShaderParam*	hMVP;
-	const FxShaderParam*	hTEX;
-	const FxShaderParam*	hCOLOR;
-
-	fvec4		mColor;
-
-	bool			mbNoDepthTest;
-
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class ManipManager : public ork::AutoConnector
-{
-	RttiDeclareAbstract(ManipManager,ork::AutoConnector);
-
-	////////////////////////////////////////////////////////////
-	DeclarePublicAutoSlot( ObjectDeSelected );
-	DeclarePublicAutoSlot( ObjectSelected );
-	DeclarePublicAutoSlot( ObjectDeleted );
-	DeclarePublicAutoSlot( ClearSelection );
-	////////////////////////////////////////////////////////////
+class GfxMaterialManip : public GfxMaterial {
+  ManipManager& mManager;
 
 public:
+  GfxMaterialManip(GfxTarget*, ManipManager& mgr);
+  ~GfxMaterialManip() final{};
+  void Init(GfxTarget* pTarg) final;
 
-	////////////////////////////////////////////////////////////
-	void SlotObjectDeSelected( ork::Object* pOBJ );
-	void SlotObjectSelected( ork::Object* pOBJ );
-	void SlotObjectDeleted( ork::Object* pOBJ );
-	void SlotClearSelection();
-	////////////////////////////////////////////////////////////
+  int BeginBlock(GfxTarget* pTarg, const RenderContextInstData& MatCtx) final;
+  void EndBlock(GfxTarget* pTarg) final;
+  void Update(void) final {}
+  bool BeginPass(GfxTarget* pTarg, int iPass = 0) final;
+  void EndPass(GfxTarget* pTarg) final;
+  void UpdateMVPMatrix(GfxTarget* pTARG) final;
 
-	friend class ManipRX;
-	friend class ManipRY;
-	friend class ManipRZ;
-	friend class ManipTX;
-	friend class ManipTY;
-	friend class ManipTZ;
-	friend class ManipTXY;
-	friend class ManipTXZ;
-	friend class ManipTYZ;
-	friend class Manip;
-	friend class ManipRot;
-	friend class ManipTrans;
-	friend class ManipSingleTrans;
-	friend class ManipDualTrans;
+protected:
+  FxShader* hModFX;
+  const FxShaderTechnique* hTekStd;
+  const FxShaderTechnique* hTekLuc;
+  const FxShaderTechnique* hTekPick;
 
-	//////////////////////////////////
+  // const FxShaderTechnique*	hTekCurrent;
 
-	enum EManipMode
-	{
-		EMANIPMODE_WORLD_TRANS = 0,
-		EMANIPMODE_LOCAL_ROTATE ,
-	};
+  const FxShaderParam* hMVP;
+  const FxShaderParam* hTEX;
+  const FxShaderParam* hCOLOR;
 
-	enum EUIMode
-	{
-		EUIMODE_STD = 0,
-		EUIMODE_PLACE ,
-		EUIMODE_MANIP_WORLD_TRANSLATE,
-		EUIMODE_MANIP_LOCAL_TRANSLATE,
-		EUIMODE_MANIP_LOCAL_ROTATE,
-	};
+  fvec4 mColor;
 
-	EUIMode						meUIMode;
+  bool mbNoDepthTest;
+};
 
-	//////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-	ManipManager();
-	static void ClassInit();
-	void ManipObjects( void ) { mbDoComponents = false; }
-	void ManipComponents( void ) { mbDoComponents = true; }
+class ManipManager : public ork::AutoConnector {
+  RttiDeclareAbstract(ManipManager, ork::AutoConnector);
 
-	//////////////////////////////////
+  ////////////////////////////////////////////////////////////
+  DeclarePublicAutoSlot(ObjectDeSelected);
+  DeclarePublicAutoSlot(ObjectSelected);
+  DeclarePublicAutoSlot(ObjectDeleted);
+  DeclarePublicAutoSlot(ClearSelection);
+  ////////////////////////////////////////////////////////////
 
-	void SetManipMode( EManipMode emode ) { meManipMode=emode ; }
-	EManipMode GetManipMode( void ) { return meManipMode; }
-	bool IsVisible() { return meUIMode != EUIMODE_STD; }
-	EUIMode GetUIMode( void ) const { return meUIMode; }
-	void SetUIMode( EUIMode emode ) { meUIMode=emode; }
+public:
+  ////////////////////////////////////////////////////////////
+  void SlotObjectDeSelected(ork::Object* pOBJ);
+  void SlotObjectSelected(ork::Object* pOBJ);
+  void SlotObjectDeleted(ork::Object* pOBJ);
+  void SlotClearSelection();
+  ////////////////////////////////////////////////////////////
 
-	void AttachObject( ork::Object *pObject );
-	void ReleaseObject( void );
-	void DetachObject( void );
+  friend class ManipRX;
+  friend class ManipRY;
+  friend class ManipRZ;
+  friend class ManipTX;
+  friend class ManipTY;
+  friend class ManipTZ;
+  friend class ManipTXY;
+  friend class ManipTXZ;
+  friend class ManipTYZ;
+  friend class Manip;
+  friend class ManipRot;
+  friend class ManipTrans;
+  friend class ManipSingleTrans;
+  friend class ManipDualTrans;
 
-	void Setup( IRenderer* prend );
-	void Queue( IRenderer* prend );
+  //////////////////////////////////
 
-	void DrawManip(Manip* manip, GfxTarget* pTARG);
-	void DrawCurrentManipSet(GfxTarget* pTARG);
+  enum EManipMode {
+    EMANIPMODE_WORLD_TRANS = 0,
+    EMANIPMODE_LOCAL_ROTATE,
+  };
 
-	void SetHover(Manip* manip) { mpHoverManip = manip; }
-	Manip* GetHover() { return mpHoverManip; }
+  enum EUIMode {
+    EUIMODE_STD = 0,
+    EUIMODE_PLACE,
+    EUIMODE_MANIP_WORLD_TRANSLATE,
+    EUIMODE_MANIP_LOCAL_TRANSLATE,
+    EUIMODE_MANIP_LOCAL_ROTATE,
+  };
 
-	void SetDualAxis(bool dual) { mDualAxis = dual; }
-	bool IsDualAxis() { return mDualAxis; }
+  EUIMode meUIMode;
 
-	void ApplyTransform( const TransformNode &SetMat );
-	const TransformNode& GetCurTransform() { return mCurTransform; }
+  //////////////////////////////////
 
-	void EnableManip( Manip *pOBJ );
-	void DisableManip( void );
+  ManipManager();
+  static void ClassInit();
+  void ManipObjects(void) { mbDoComponents = false; }
+  void ManipComponents(void) { mbDoComponents = true; }
 
-	bool UIEventHandler( const ui::Event& EV );
+  //////////////////////////////////
 
-	Camera*			getActiveCamera( void ) const { return mpActiveCamera; }
-	void				SetActiveCamera( Camera*pCam ) { mpActiveCamera=pCam; }
+  void SetManipMode(EManipMode emode) { meManipMode = emode; }
+  EManipMode GetManipMode(void) { return meManipMode; }
+  bool IsVisible() { return meUIMode != EUIMODE_STD; }
+  EUIMode GetUIMode(void) const { return meUIMode; }
+  void SetUIMode(EUIMode emode) { meUIMode = emode; }
 
-	f32					GetManipScale( void  )  const { return mfManipScale; }
+  void AttachObject(ork::Object* pObject);
+  void ReleaseObject(void);
+  void DetachObject(void);
 
-	GfxMaterial *		GetMaterial( void ) { return mpManipMaterial; }
+  void Setup(IRenderer* prend);
+  void Queue(IRenderer* prend);
 
-	void				CalcObjectScale( void );
+  void DrawManip(Manip* manip, GfxTarget* pTARG);
+  void DrawCurrentManipSet(GfxTarget* pTARG);
 
-	void				SetWorldTrans( bool bv ) { mbWorldTrans=bv; }
-	void				SetGridSnap( bool bv ) { mbGridSnap=bv; }
+  void SetHover(Manip* manip) { mpHoverManip = manip; }
+  Manip* GetHover() { return mpHoverManip; }
 
-	void				RebaseMatrices( void );
+  void SetDualAxis(bool dual) { mDualAxis = dual; }
+  bool IsDualAxis() { return mDualAxis; }
 
-	Grid3d&				Grid() { return mGrid; }
+  void ApplyTransform(const TransformNode& SetMat);
+  const TransformNode& GetCurTransform() { return mCurTransform; }
 
-	void				SetViewScale( float fvs ) { mfViewScale=fvs; }
-	float				CalcViewScale( float fW, float fH, const CameraMatrices *camdat ) const;
+  void EnableManip(Manip* pOBJ);
+  void DisableManip(void);
 
-	void				SetDrawMode(int imode) { miDrawMode=imode; }
-	int					GetDrawMode() const { return miDrawMode; }
+  bool UIEventHandler(const ui::Event& EV);
+
+  UiCamera* getActiveCamera(void) const { return mpActiveCamera; }
+  void SetActiveCamera(UiCamera* pCam) { mpActiveCamera = pCam; }
+
+  f32 GetManipScale(void) const { return mfManipScale; }
+
+  GfxMaterial* GetMaterial(void) { return mpManipMaterial; }
+
+  void CalcObjectScale(void);
+
+  void SetWorldTrans(bool bv) { mbWorldTrans = bv; }
+  void SetGridSnap(bool bv) { mbGridSnap = bv; }
+
+  void RebaseMatrices(void);
+
+  Grid3d& Grid() { return mGrid; }
+
+  void SetViewScale(float fvs) { mfViewScale = fvs; }
+  float CalcViewScale(float fW, float fH, const CameraMatrices* camdat) const;
+
+  void SetDrawMode(int imode) { miDrawMode = imode; }
+  int GetDrawMode() const { return miDrawMode; }
 
 private:
+  bool mbWorldTrans;
+  bool mbGridSnap;
 
-	bool				mbWorldTrans;
-	bool				mbGridSnap;
+  bool mDualAxis;
 
-	bool				mDualAxis;
+  TransformNode mParentTransform;
 
-	TransformNode		mParentTransform;
+  GfxMaterialManip* mpManipMaterial;
+  Manip* mpTXManip;
+  Manip* mpTYManip;
+  Manip* mpTZManip;
+  Manip* mpTXYManip;
+  Manip* mpTXZManip;
+  Manip* mpTYZManip;
+  Manip* mpRXManip;
+  Manip* mpRYManip;
+  Manip* mpRZManip;
+  Manip* mpCurrentManip;
+  Manip* mpHoverManip;
+  EManipMode meManipMode;
+  EManipEnable meManipEnable;
+  float mfViewScale;
+  int miDrawMode;
 
-	GfxMaterialManip*	mpManipMaterial;
-	Manip*				mpTXManip;
-	Manip*				mpTYManip;
-	Manip*				mpTZManip;
-	Manip*				mpTXYManip;
-	Manip*				mpTXZManip;
-	Manip*				mpTYZManip;
-	Manip*				mpRXManip;
-	Manip*				mpRYManip;
-	Manip*				mpRZManip;
-	Manip*				mpCurrentManip;
-	Manip*				mpHoverManip;
-	EManipMode			meManipMode;
-	EManipEnable		meManipEnable;
-	float				mfViewScale;
-	int					miDrawMode;
+  ManipHandler mManipHandler;
+  UiCamera* mpActiveCamera;
 
-	ManipHandler		mManipHandler;
-	Camera*			mpActiveCamera;
+  fvec4 mPickCenter;
+  fvec4 mPickAccum;
 
-	fvec4			mPickCenter;
-	fvec4			mPickAccum;
+  bool mbDoComponents;
 
-	bool				mbDoComponents;
+  f32 mfManipScale;
 
-	f32					mfManipScale;
+  // float				mfGridSnap;
+  float mfBaseManipSize;
 
-	//float				mfGridSnap;
-	float				mfBaseManipSize;
+  IManipInterface* mpCurrentInterface;
+  Object* mpCurrentObject;
 
-	IManipInterface*	mpCurrentInterface;
-	Object*				mpCurrentObject;
+  TransformNode mOldTransform;
+  TransformNode mCurTransform;
 
-	TransformNode		mOldTransform;
-	TransformNode		mCurTransform;
+  float mObjScale;
+  float mObjInvScale;
 
-	float				mObjScale;
-	float				mObjInvScale;
-
-	Grid3d				mGrid;
+  Grid3d mGrid;
 };
 
-} }
+}} // namespace ork::lev2

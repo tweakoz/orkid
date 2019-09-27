@@ -83,8 +83,8 @@ public: //
   ///////////////////////////////////////////////////////////////////////////////
 };
 
-class Camera : public ork::Object {
-  RttiDeclareAbstract(Camera, ork::Object);
+class UiCamera : public ork::Object {
+  RttiDeclareAbstract(UiCamera, ork::Object);
 
 protected:
   std::string type_name;
@@ -93,7 +93,7 @@ protected:
 
 public:
   /////////////////////////////////////////////////////////////////////
-  Camera();
+  UiCamera();
   /////////////////////////////////////////////////////////////////////
 
   CameraData _camcamdata;
@@ -178,8 +178,8 @@ struct CamEvTrackData {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class EzUiCam : public Camera {
-  RttiDeclareConcrete(EzUiCam, Camera);
+class EzUiCam : public UiCamera {
+  RttiDeclareConcrete(EzUiCam, UiCamera);
 
 public: //
   enum erotmode {

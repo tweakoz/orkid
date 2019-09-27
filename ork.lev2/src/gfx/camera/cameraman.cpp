@@ -6,31 +6,31 @@
 ////////////////////////////////////////////////////////////////
 
 #include <math.h>
-#include <ork/lev2/gfx/camera/cameraman.h>
+#include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/ui/viewport.h>
 #include <ork/math/polar.h>
 #include <ork/pch.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::Camera, "Camera");
+INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::UiCamera, "UiCamera");
 
 namespace ork { namespace lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Camera::Describe() {
-  ork::reflect::RegisterProperty("Focus", &Camera::CamFocus);
-  ork::reflect::RegisterProperty("Center", &Camera::mvCenter);
-  ork::reflect::RegisterProperty("Loc", &Camera::mfLoc);
-  ork::reflect::RegisterProperty("QuatC", &Camera::QuatC);
+void UiCamera::Describe() {
+  ork::reflect::RegisterProperty("Focus", &UiCamera::CamFocus);
+  ork::reflect::RegisterProperty("Center", &UiCamera::mvCenter);
+  ork::reflect::RegisterProperty("Loc", &UiCamera::mfLoc);
+  ork::reflect::RegisterProperty("QuatC", &UiCamera::QuatC);
 
-  ork::reflect::AnnotatePropertyForEditor<Camera>("Loc", "editor.range.min", "0.1f");
-  ork::reflect::AnnotatePropertyForEditor<Camera>("Loc", "editor.range.max", "1000.0f");
+  ork::reflect::AnnotatePropertyForEditor<UiCamera>("Loc", "editor.range.min", "0.1f");
+  ork::reflect::AnnotatePropertyForEditor<UiCamera>("Loc", "editor.range.max", "1000.0f");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Camera::Camera()
+UiCamera::UiCamera()
     : CamFocus(0.0f, 0.0f, 0.0f)
     , mfLoc(3.0f)
     , mvCenter(0.0f, 0.0, 0.0f)
@@ -47,14 +47,14 @@ Camera::Camera()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string Camera::get_full_name(void) {
+std::string UiCamera::get_full_name(void) {
   std::string rval = type_name + (std::string) ":" + instance_name + (std::string) ":" + other_info;
   return rval;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Camera::IsXVertical() const {
+bool UiCamera::IsXVertical() const {
   const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(1.0f, 0.0f, 0.0f));
   return (float(fabs(dotY)) > float(0.707f));
@@ -62,7 +62,7 @@ bool Camera::IsXVertical() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Camera::IsYVertical() const {
+bool UiCamera::IsYVertical() const {
   const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(0.0f, 1.0f, 0.0f));
   return (float(fabs(dotY)) > float(0.707f));
@@ -70,7 +70,7 @@ bool Camera::IsYVertical() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Camera::IsZVertical() const {
+bool UiCamera::IsZVertical() const {
   const fvec3& yn = _camcamdata.yNormal();
   float dotY      = yn.Dot(fvec3(0.0f, 0.0f, 1.0f));
   return (float(fabs(dotY)) > float(0.707f));
@@ -78,7 +78,7 @@ bool Camera::IsZVertical() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fquat Camera::VerticalRot(float amt) const {
+fquat UiCamera::VerticalRot(float amt) const {
   fquat qrot;
 
   if (IsXVertical()) {
@@ -100,7 +100,7 @@ fquat Camera::VerticalRot(float amt) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-fquat Camera::HorizontalRot(float amt) const {
+fquat UiCamera::HorizontalRot(float amt) const {
   fquat qrot;
 
   if (IsYVertical()) {
@@ -118,7 +118,7 @@ fquat Camera::HorizontalRot(float amt) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Camera::CommonPostSetup(void) {
+void UiCamera::CommonPostSetup(void) {
 
   float aspect = _vpdim.x / _vpdim.y;
   _curMatrices = _camcamdata.computeMatrices(aspect);
@@ -142,10 +142,10 @@ void Camera::CommonPostSetup(void) {
   auto v3rt = vec_billboardRight.xyz();
   auto v3in = v3up.Cross(v3rt);
 
-  printf( "CPS: aspect<%g>\n", aspect );
-  printf( "CPS: v3up<%g %g %g>\n", v3up.x, v3up.y, v3up.z );
-  printf( "CPS: v3rt<%g %g %g>\n", v3rt.x, v3rt.y, v3rt.z );
-  printf( "CPS: v3in<%g %g %g>\n", v3in.x, v3in.y, v3in.z );
+  //printf( "CPS: aspect<%g>\n", aspect );
+  //printf( "CPS: v3up<%g %g %g>\n", v3up.x, v3up.y, v3up.z );
+  //printf( "CPS: v3rt<%g %g %g>\n", v3rt.x, v3rt.y, v3rt.z );
+  //printf( "CPS: v3in<%g %g %g>\n", v3in.x, v3in.y, v3in.z );
 
   ///////////////////////////////
   // generate frustum (useful for many things, like billboarding, clipping, LOD, etc.. )
@@ -162,6 +162,6 @@ void Camera::CommonPostSetup(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-float Camera::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) { return float(0.0f); }
+float UiCamera::ViewLengthToWorldLength(const fvec4& pos, float ViewLength) { return float(0.0f); }
 
 }} // namespace ork::lev2
