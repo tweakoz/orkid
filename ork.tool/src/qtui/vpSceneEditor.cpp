@@ -309,6 +309,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     return;
   }
   RCFD._cimpl = & compsys->_impl;
+  RCFD._cimpl->pushCPD(TOPCPD);
   auto simmode = sim->GetSimulationMode();
   bool running = (simmode==ent::ESCENEMODE_RUN);
   ////////////////////////////////////////////////
@@ -387,6 +388,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       miPickDirtyCount--;
     }
   }
+  RCFD._cimpl->popCPD();
   mpTarget->popRenderContextFrameData();
 }
 
