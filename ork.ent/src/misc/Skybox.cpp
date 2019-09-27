@@ -87,7 +87,7 @@ void SkyBoxArchetype::DoLinkEntity(Simulation* psi, Entity* pent) const {
         HeadLight.miInFrustumID = 1;
         HeadLightGroup.mLightMask.AddLight(&HeadLight);
         HeadLightGroup.mLightManager                  = &HeadLightManager;
-        auto RCFD = targ->GetRenderContextFrameData();
+        auto RCFD = targ->topRenderContextFrameData();
         const auto& CPD = RCFD->topCPD();
         HeadLightMatrix                               = CPD.cameraMatrices()->GetIVMatrix();
         HeadLightManager.mGlobalMovingLights.AddLight(&HeadLight);

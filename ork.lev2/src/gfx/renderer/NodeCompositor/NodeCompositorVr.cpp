@@ -174,7 +174,6 @@ struct VRIMPL {
 
     //////////////////////////////////////////////////////
 
-    targ->SetRenderContextFrameData(&RCFD);
     _CPD.SetDstRect(tgt_rect);
     drawdata._properties["OutputWidth"_crcu].Set<int>(_width);
     drawdata._properties["OutputHeight"_crcu].Set<int>(_height);
@@ -185,7 +184,6 @@ struct VRIMPL {
     auto CIMPL = drawdata._cimpl;
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
-    drawdata.target()->SetRenderContextFrameData(nullptr);
     CIMPL->popCPD();
   }
   ///////////////////////////////////////

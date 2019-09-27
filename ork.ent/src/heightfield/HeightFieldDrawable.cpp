@@ -788,7 +788,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   auto raw_drawable         = _hfdrawable->_rawdrawable;
   const IRenderer* renderer = RCID.GetRenderer();
   GfxTarget* targ           = renderer->GetTarget();
-  auto RCFD                 = targ->GetRenderContextFrameData();
+  auto RCFD                 = targ->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
   bool bpick                = CPD.isPicking();

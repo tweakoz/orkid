@@ -466,6 +466,7 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 
 	RenderContextFrameData&	RCFD = frenderer.framedata();
 	auto CIMPL = RCFD._cimpl;
+  assert(CIMPL!=nullptr);
 	const auto& topCPD = CIMPL->topCPD();
 
 	GfxTarget *pTARG = RCFD.GetTarget();
@@ -667,7 +668,6 @@ void BuiltinFrameTechniques::Render( FrameRenderer & frenderer )
 		}
 
 		/////////////////////////////////////////////////
-		pTARG->SetRenderContextFrameData( 0 );
 	}
 }
 

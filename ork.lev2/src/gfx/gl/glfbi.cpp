@@ -302,7 +302,7 @@ void GlFrameBufferInterface::SetViewport(int iX, int iY, int iW, int iH) {
   miCurVPH = iH;
   // printf( "SetViewport<%d %d %d %d>\n", iX, iY, iW, iH );
 
-  auto framedata = mTargetGL.GetRenderContextFrameData();
+  auto framedata = mTargetGL.topRenderContextFrameData();
   bool stereo = false;
   if( framedata ){
       const auto& CPD = framedata->topCPD();

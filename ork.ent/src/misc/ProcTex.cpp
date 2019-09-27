@@ -182,7 +182,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
     }
 
     auto mtl = quad->mMaterial;
-    auto RCFD = targ->GetRenderContextFrameData();
+    auto RCFD = targ->topRenderContextFrameData();
 
     auto ssci = pren->GetDrawableDataB().Get<ProcTexControllerInst*>();
     auto ent = ssci->GetEntity();
@@ -291,7 +291,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
         }
 
         auto mtl = skybox->mMaterial;
-        auto RCFD = targ->GetRenderContextFrameData();
+        auto RCFD = targ->topRenderContextFrameData();
         const auto& CPD = RCFD->topCPD();
         float fscale = skybox->mScale;
         float fphase = 0.0f;

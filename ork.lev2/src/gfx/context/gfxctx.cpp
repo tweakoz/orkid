@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/dbgfontman.h>
+#include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/kernel/string/string.h>
 #include <ork/lev2/ui/event.h>
 #include <ork/lev2/gfx/texman.h>
@@ -109,12 +110,19 @@ GfxTarget::GfxTarget()
 	, miH( 0 )
 	, miTargetFrame( 0 )
 	, mRenderContextInstData(nullptr)
-	, mRenderContextFrameData(nullptr)
 	, mbDeviceAvailable(true)
 	, miDrawLock(0)
 	, mPlatformHandle(nullptr)
 	, mpCurMaterial(nullptr)
 {
+
+  static CompositingData _gdata;
+  static CompositingImpl _gimpl(_gdata);
+  static auto RCFD = new RenderContextFrameData(this);
+  RCFD->_cimpl = & _gimpl;
+  _defaultrcfd = RCFD;
+  pushRenderContextFrameData(_defaultrcfd);
+
 	//PerformanceTracker::GetRef().AddItem( mFramePerfItem );
 	//ork::lev2::GfxEnv::GetRef().SetLoaderTarget( this ) ;
 }

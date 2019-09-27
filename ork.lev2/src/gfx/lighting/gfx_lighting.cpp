@@ -534,7 +534,7 @@ void LightingFxInterface::ApplyLighting(GfxTarget* pTarg, int iPass) {
   }
 
   const RenderContextInstData* rdata   = pTarg->GetRenderContextInstData();
-  const RenderContextFrameData* rfdata = pTarg->GetRenderContextFrameData();
+  const RenderContextFrameData* rfdata = pTarg->topRenderContextFrameData();
   auto cammatrices                     = rfdata->topCPD().cameraMatrices();
 
   const lev2::LightingGroup* lgroup = rdata->GetLightingGroup();

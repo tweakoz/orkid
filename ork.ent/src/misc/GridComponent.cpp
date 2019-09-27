@@ -88,7 +88,7 @@ void GridArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
             bool IsPickState = targ->FBI()->IsPickState();
             float fphase = ssci->GetPhase();
 
-            auto RCFD = targ->GetRenderContextFrameData();
+            auto RCFD = targ->topRenderContextFrameData();
             const auto& CPD = RCFD->topCPD();
             auto cammatrices = CPD.cameraMatrices();
             const auto& FRUS = cammatrices->GetFrustum();

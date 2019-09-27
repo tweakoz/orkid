@@ -1072,7 +1072,7 @@ int GfxMaterialFx::BeginBlock( GfxTarget *pTarg, const RenderContextInstData &Ma
 		pTarg->FXI()->BindTechnique( mEffectInstance.mpEffect, htek );
 		inumpasses = pTarg->FXI()->BeginBlock( mEffectInstance.mpEffect, MatCtx );
 
-		auto RCFD = pTarg->GetRenderContextFrameData();
+		auto RCFD = pTarg->topRenderContextFrameData();
 		const auto& CPD = RCFD->topCPD();
 		const auto& cdata = CPD.cameraMatrices()->_camdat;
 

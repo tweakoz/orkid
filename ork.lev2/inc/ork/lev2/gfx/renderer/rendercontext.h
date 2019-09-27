@@ -125,13 +125,15 @@ typedef svar64_t rendervar_t;
 
 struct RenderContextFrameData {
 
-  RenderContextFrameData();
+  RenderContextFrameData(GfxTarget* ptarg);
+
+  RenderContextFrameData(const RenderContextFrameData&) =delete;
+  RenderContextFrameData& operator=(const RenderContextFrameData&) =delete;
 
   GfxTarget* GetTarget(void) const { return mpTarget; }
   LightManager* GetLightManager() const { return _lightmgr; }
 
   void SetLightManager(LightManager* lmgr) { _lightmgr = lmgr; }
-  void SetTarget(GfxTarget* ptarg);
 
   typedef orklut<CrcString, rendervar_t> usermap_t;
   const usermap_t& userProperties() const { return _userProperties; }
@@ -150,7 +152,7 @@ struct RenderContextFrameData {
   CompositingImpl* _cimpl = nullptr;
   LightManager* _lightmgr = nullptr;
   usermap_t _userProperties;
-  GfxTarget* mpTarget = nullptr;
+  GfxTarget* const mpTarget = nullptr;
   const IRenderer* _renderer;
 };
 

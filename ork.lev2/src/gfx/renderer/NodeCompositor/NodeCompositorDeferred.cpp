@@ -76,7 +76,6 @@ struct IMPL {
 
     RtGroupRenderTarget rt(_rtg);
     {
-      targ->SetRenderContextFrameData(&RCFD);
       targ->FBI()->PushRtGroup(_rtg);
       targ->FBI()->SetAutoClear(false); // explicit clear
       targ->BeginFrame();
@@ -121,7 +120,6 @@ struct IMPL {
       targ->EndFrame();
       targ->FBI()->PopRtGroup();
       //RCFD.PopRenderTarget();
-      targ->SetRenderContextFrameData(nullptr);
     }
     targ->debugPopGroup();
   }

@@ -75,47 +75,34 @@ void DrawableBuffer::invokePreRenderCallbacks(lev2::RenderContextFrameData& RCFD
 
 void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2::IRenderer* renderer) const {
   lev2::GfxTarget* target                            = renderer->GetTarget();
-  const ork::lev2::RenderContextFrameData* RCFD_PREV = target->GetRenderContextFrameData();
-  const auto& topCPD                                 = RCFD_PREV->topCPD();
+  const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
+  const auto& topCPD                                 = RCFD->topCPD();
+  bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
+  target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
+  target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
 
-  ork::lev2::RenderContextFrameData RCFD_TEMP = *RCFD_PREV;
-  /////////////////////////////////
-  // push temporary mutable framedata
-  /////////////////////////////////
-  target->SetRenderContextFrameData(&RCFD_TEMP);
-  {
-    bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
-    target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
-    target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
+  for (const auto& layer_item : mLayerLut) {
+    const PoolString& TestLayerName      = layer_item.first;
+    const lev2::DrawableBufLayer* player = layer_item.second;
 
-    for (const auto& layer_item : mLayerLut) {
-      const PoolString& TestLayerName      = layer_item.first;
-      const lev2::DrawableBufLayer* player = layer_item.second;
+    bool Match = (LayerName == TestLayerName);
 
-      bool Match = (LayerName == TestLayerName);
+    target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
+                                     TestLayerName.c_str(),
+                                     player,
+                                     int(Match)));
 
-      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue TestLayerName<%s> player<%p> Match<%d>",
-                                       TestLayerName.c_str(),
-                                       player,
-                                       int(Match)));
-
-      if (DoAll || (Match && topCPD.HasLayer(TestLayerName))) {
-        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->miItemIndex + 1));
-        for (int id = 0; id <= player->miItemIndex; id++) {
-          const lev2::DrawableBufItem& item = player->mDrawBufItems[id];
-          const lev2::Drawable* pdrw        = item.GetDrawable();
-          target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
-          if (pdrw)
-            pdrw->enqueueToRenderQueue(item, renderer);
-        }
+    if (DoAll || (Match && topCPD.HasLayer(TestLayerName))) {
+      target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer itemcount<%d>", player->miItemIndex + 1));
+      for (int id = 0; id <= player->miItemIndex; id++) {
+        const lev2::DrawableBufItem& item = player->mDrawBufItems[id];
+        const lev2::Drawable* pdrw        = item.GetDrawable();
+        target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue layer item <%d> drw<%p>", id, pdrw));
+        if (pdrw)
+          pdrw->enqueueToRenderQueue(item, renderer);
       }
     }
   }
-  /////////////////////////////////
-  // pop previous framedata
-  /////////////////////////////////
-  target->SetRenderContextFrameData(RCFD_PREV);
-  ////////////////////////////////////////////////
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -371,7 +358,7 @@ void ModelDrawable::QueueToLayer(const DrawQueueXfData& xfdata, DrawableBufLayer
 
 void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRenderer* renderer) const {
   AssertOnOpQ2(MainThreadOpQ());
-  auto RCFD          = renderer->GetTarget()->GetRenderContextFrameData();
+  auto RCFD          = renderer->GetTarget()->topRenderContextFrameData();
   const auto& topCPD = RCFD->topCPD();
 
   const lev2::XgmModel* Model = mModelInst->GetXgmModel();

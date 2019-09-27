@@ -318,7 +318,7 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
   auto MTXI = pTarg->MTXI();
 
   const RenderContextInstData* RCID  = pTarg->GetRenderContextInstData();
-  const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
+  const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
 
   bool bforcenoz = RCID->IsForceNoZWrite();
@@ -404,7 +404,7 @@ void GfxMaterialWiiBasic::EndPass(GfxTarget* pTarg) { pTarg->FXI()->EndPass(hMod
 
 int GfxMaterialWiiBasic::BeginBlock(GfxTarget* pTarg, const RenderContextInstData& RCID) {
   mRenderContexInstData              = &RCID;
-  const RenderContextFrameData* RCFD = pTarg->GetRenderContextFrameData();
+  const RenderContextFrameData* RCFD = pTarg->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
 
   const auto& cdata                  = CPD.cameraMatrices()->_camdat;

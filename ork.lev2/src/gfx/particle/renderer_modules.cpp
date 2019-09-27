@@ -370,7 +370,7 @@ void SpriteRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& 
 {
 	gtarg = targ;
 
-	auto RCFD = targ->GetRenderContextFrameData();
+	auto RCFD = targ->topRenderContextFrameData();
 	const auto& CPD = RCFD->topCPD();
 	const CameraMatrices* cmtcs = CPD.cameraMatrices();
 	const CameraData& cdata = cmtcs->_camdat;
@@ -664,7 +664,7 @@ dataflow::outplugbase* StreakRenderer::GetOutput(int idx)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void StreakRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
-{	const RenderContextFrameData* RCFD = targ->GetRenderContextFrameData();
+{	const RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
 	const auto& CPD = RCFD->topCPD();
 	const CameraMatrices* cmtcs = CPD.cameraMatrices();
 	const CameraData& cdata = cmtcs->_camdat;
@@ -842,7 +842,7 @@ dataflow::outplugbase* ModelRenderer::GetOutput(int idx)
 ///////////////////////////////////////////////////////////////////////////////
 void ModelRenderer::Render(const fmtx4& mtx, ork::lev2::RenderContextInstData& rcid, const ParticlePoolRenderBuffer& buffer, ork::lev2::GfxTarget* targ)
 {	if( 0 == GetModel() ) return;
-	const ork::lev2::RenderContextFrameData* RCFD = targ->GetRenderContextFrameData();
+	const ork::lev2::RenderContextFrameData* RCFD = targ->topRenderContextFrameData();
 	const auto& CPD = RCFD->topCPD();
 	const CameraMatrices* cdata = CPD.cameraMatrices();
 	int icnt = buffer.miNumParticles;

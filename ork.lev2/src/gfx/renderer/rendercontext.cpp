@@ -96,9 +96,9 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
     return 0xffffffff-uval;
 }*/
 
-RenderContextFrameData::RenderContextFrameData()
+RenderContextFrameData::RenderContextFrameData(GfxTarget* ptarg)
     : _lightmgr(0)
-    , mpTarget(0) {}
+    , mpTarget(ptarg) {}
 
 void RenderContextFrameData::setUserProperty(CrcString key, rendervar_t val) {
   auto it = _userProperties.find(key);
@@ -122,13 +122,6 @@ rendervar_t RenderContextFrameData::getUserProperty(CrcString key) const {
   return rval;
 }
 
-void RenderContextFrameData::SetTarget(GfxTarget* ptarg) {
-  mpTarget = ptarg;
-  if (ptarg) {
-    ptarg->SetRenderContextFrameData(this);
-  }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 const DrawableBuffer* RenderContextFrameData::GetDB() const{
@@ -140,6 +133,7 @@ const DrawableBuffer* RenderContextFrameData::GetDB() const{
 ///////////////////////////////////////////////////////////////////////////////
 
 const CompositingPassData& RenderContextFrameData::topCPD() const{
+  assert(_cimpl!=nullptr);
   return _cimpl->topCPD();
 }
 

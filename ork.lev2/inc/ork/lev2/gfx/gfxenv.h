@@ -184,8 +184,10 @@ public:
 
   const RenderContextInstData* GetRenderContextInstData() const { return mRenderContextInstData; }
   void SetRenderContextInstData(const RenderContextInstData* data) { mRenderContextInstData = data; }
-  const RenderContextFrameData* GetRenderContextFrameData() const { return mRenderContextFrameData; }
-  void SetRenderContextFrameData(const RenderContextFrameData* data) { mRenderContextFrameData = data; }
+
+  const RenderContextFrameData* topRenderContextFrameData() const { return _rcfdstack.top(); }
+  void pushRenderContextFrameData(const RenderContextFrameData* rcfd) { return _rcfdstack.push(rcfd); }
+  void popRenderContextFrameData() { _rcfdstack.pop(); }
 
   //////////////////////////////////////////////
 
@@ -219,7 +221,6 @@ protected:
   int miTargetFrame;
   PerformanceItem mFramePerfItem;
   const RenderContextInstData* mRenderContextInstData;
-  const RenderContextFrameData* mRenderContextFrameData;
   GfxMaterial* mpCurMaterial;
   std::stack<GfxMaterial*> mMaterialStack;
   bool mbDeviceAvailable;
@@ -227,11 +228,15 @@ protected:
 
   static orkvector<DisplayMode*> mDisplayModes;
 
+  std::stack<const RenderContextFrameData*> _rcfdstack;
+
 private:
   virtual void DoBeginFrame(void) = 0;
   virtual void DoEndFrame(void)   = 0;
   virtual void* DoBeginLoad() { return nullptr; }
   virtual void DoEndLoad(void* ploadtok) {}
+
+  const RenderContextFrameData* _defaultrcfd = nullptr;
 };
 
 /// ////////////////////////////////////////////////////////////////////////////

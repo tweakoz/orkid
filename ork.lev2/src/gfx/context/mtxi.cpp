@@ -32,7 +32,7 @@ MatrixStackInterface::MatrixStackInterface( GfxTarget& target )
 
 void MatrixStackInterface::PushUIMatrix()
 {
-	const RenderContextFrameData* pfdata = mTarget.GetRenderContextFrameData();
+	const RenderContextFrameData* pfdata = mTarget.topRenderContextFrameData();
 	assert(pfdata);
 	const auto& CPD = pfdata->topCPD();
 	float fw = float(CPD.GetDstRect().miW);

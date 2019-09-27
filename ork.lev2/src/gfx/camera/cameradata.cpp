@@ -153,7 +153,7 @@ CameraMatrices CameraData::computeMatrices(& calcctx) {
 		// implicit: compute projection matrix (using GfxTarget)
 		////////////////////////////////////////////////////
 
-		else if (mpGfxTarget->GetRenderContextFrameData()) {
+		else if (mpGfxTarget->topRenderContextFrameData()) {
       mfAspect = fhdaspect * calcctx.mfAspectRatio;
 
       if (mHorizAper != 0)

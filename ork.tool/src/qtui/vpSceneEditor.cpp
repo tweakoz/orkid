@@ -272,8 +272,8 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   const SRect tgtrect = SRect(0, 0, TARGW, TARGH);
   _renderer->SetTarget(mpTarget);
   ////////////////////////////////////////////////
-  lev2::RenderContextFrameData RCFD;
-  RCFD.SetTarget(mpTarget);
+  lev2::RenderContextFrameData RCFD(mpTarget);
+  mpTarget->pushRenderContextFrameData(&RCFD);
   /////////////////////////////////////////////////////////////////////////////////
   bool compositor_enabled = isCompositorEnabled();
   /////////////////////////////////////////////////////////////////////////////////
@@ -290,6 +290,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   auto compsys = compositingSystem();
   auto sim = simulation();
   if( nullptr == compsys or nullptr==sim){
+    static CompositingData _gdata;
+    static CompositingImpl _gimpl(_gdata);
+    RCFD._cimpl = & _gimpl;
     // still want to draw something so we know the editor is alive..
     mpTarget->BeginFrame();
     // we must still consume DrawableBuffers (since the compositor cannot)
@@ -302,6 +305,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     DrawSpinner(RCFD);
     if (DB) { DrawableBuffer::releaseReadDB(DB); }  // release consumed DB
     mpTarget->EndFrame();
+    mpTarget->popRenderContextFrameData();
     return;
   }
   RCFD._cimpl = & compsys->_impl;
@@ -383,6 +387,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       miPickDirtyCount--;
     }
   }
+  mpTarget->popRenderContextFrameData();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -749,7 +754,6 @@ void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2
       case ManipManager::EUIMODE_MANIP_WORLD_TRANSLATE:
       case ManipManager::EUIMODE_MANIP_LOCAL_ROTATE: {
         GetRenderer()->SetTarget(pProxyTarg);
-        RCFD.SetTarget(pProxyTarg);
 
         ///////////////////////////////////////
         const fvec4& ScreenXNorm = pProxyTarg->MTXI()->GetScreenRightNormal();

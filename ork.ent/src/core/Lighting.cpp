@@ -158,7 +158,7 @@ LightingComponentInst::LightingComponentInst( const LightingComponentData& data,
 			if( pmodel )
 			{
 				const ork::TransformNode3D& xf = & pyo->mpEntity->GetEntData().GetDagNode().GetTransformNode();
-				//const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->GetRenderContextFrameData();
+				//const ork::lev2::RenderContextFrameData* fdata = renderer->GetTarget()->topRenderContextFrameData();
 				int inummeshes = pmodel->GetNumMeshes();
 				for( int imesh=0; imesh<inummeshes; imesh++ )
 				{	const ork::lev2::XgmMesh& mesh = * pmodel->GetMesh(imesh);

@@ -222,7 +222,7 @@ void FnBallArchetype::DoLinkEntity( Simulation* psi, Entity *pent ) const
 
                 ////////////////////////////////////////
                 auto mtx = fmtx4::Identity;
-                auto RCFD = targ->GetRenderContextFrameData();
+                auto RCFD = targ->topRenderContextFrameData();
                 auto& cdata = RCFD->topCPD().cameraMatrices()->_camdat;
                 fmtx4 matrs( mtx );
                 matrs.SetTranslation( 0.0f, 0.0f, 0.0f );

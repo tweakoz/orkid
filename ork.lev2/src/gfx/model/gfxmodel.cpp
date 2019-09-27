@@ -244,7 +244,7 @@ void XgmModel::RenderRigid(const fcolor4& ModColor,
                            const RenderContextInstData& RCID,
                            const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->GetRenderContextFrameData();
+  auto RCFD   = pTARG->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
   const XgmMesh& XgmMesh         = *mdlctx.mMesh;
@@ -386,7 +386,7 @@ void XgmModel::RenderMultipleRigid(const fcolor4& ModColor,
                                    const RenderContextInstData& RCID,
                                    const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->GetRenderContextFrameData();
+  auto RCFD   = pTARG->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
@@ -455,7 +455,7 @@ void XgmModel::RenderSkinned(const XgmModelInst* minst,
                              const RenderContextInstData& RCID,
                              const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->GetRenderContextFrameData();
+  auto RCFD   = pTARG->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 
@@ -592,7 +592,7 @@ void XgmModel::RenderMultipleSkinned(const XgmModelInst* minst,
                                      const RenderContextInstData& RCID,
                                      const RenderContextInstModelData& mdlctx) const {
   auto R           = RCID.GetRenderer();
-  auto RCFD   = pTARG->GetRenderContextFrameData();
+  auto RCFD   = pTARG->topRenderContextFrameData();
   const auto& CPD = RCFD->topCPD();
   bool stereo1pass = CPD.isStereoOnePass();
 

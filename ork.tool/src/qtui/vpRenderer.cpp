@@ -137,7 +137,7 @@ void Renderer::RenderModel(const lev2::ModelRenderable& ModelRen, ork::lev2::Ren
 
   // printf( "Renderer::RenderModel() rable<%p>\n", & ModelRen );
   lev2::LightingGroup lgrp;
-  lgrp.mLightManager = target->GetRenderContextFrameData()->GetLightManager();
+  lgrp.mLightManager = target->topRenderContextFrameData()->GetLightManager();
   lgrp.mLightMask    = ModelRen.GetLightMask();
   MatCtx.SetLightingGroup(&lgrp);
 
