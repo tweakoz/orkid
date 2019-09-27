@@ -1444,27 +1444,12 @@
                     </object>
                 </reference>
             </item>
-            <item key='ecam'>
-                <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='234'>
-                        <property name='Name'>"ecam"</property>
-                        <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='235'>
-                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
-                            </object>
-                        </property>
-                        <property name='Parent'>"scene"</property>
-                        <property name='Archetype'><backreference id='1'/></property>
-                        <property name='UserProperties'></property>
-                    </object>
-                </reference>
-            </item>
             <item key='psys1'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='236'>
+                    <object type='Ent3dEntData' id='234'>
                         <property name='Name'>"psys1"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='237'>
+                            <object type='Ent3dDagNode' id='235'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -1478,10 +1463,10 @@
             </item>
             <item key='psys2'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='238'>
+                    <object type='Ent3dEntData' id='236'>
                         <property name='Name'>"psys2"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='239'>
+                            <object type='Ent3dDagNode' id='237'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -1495,10 +1480,10 @@
             </item>
             <item key='psys3'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='240'>
+                    <object type='Ent3dEntData' id='238'>
                         <property name='Name'>"psys3"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='241'>
+                            <object type='Ent3dDagNode' id='239'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
@@ -1510,107 +1495,79 @@
                     </object>
                 </reference>
             </item>
+            <item key='spawncam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='240'>
+                        <property name='Name'>"spawncam"</property>
+                        <property name='DagNode'>
+                            <object type='Ent3dDagNode' id='241'>
+                                <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
+                            </object>
+                        </property>
+                        <property name='Parent'>"scene"</property>
+                        <property name='Archetype'><backreference id='1'/></property>
+                        <property name='UserProperties'></property>
+                    </object>
+                </reference>
+            </item>
         </property>
         <property name='ScriptFile'>""</property>
         <property name='SystemData'>
             <item key='CompositingSystemData'>
                 <reference category='SystemDataClass'>
                     <object type='CompositingSystemData' id='242'>
-                        <property name='ActiveItem'>"i1"</property>
-                        <property name='ActiveScene'>"s1"</property>
-                        <property name='Enable'>true</property>
-                        <property name='Groups'>
-                            <item key='A'>
-                                <reference category='ObjectClass'>
-                                    <object type='CompositingGroup' id='243'>
-                                        <property name='Camera'>"ecam"</property>
-                                        <property name='Effect'>
-                                            <object type='CompositingGroupEffect' id='244'>
-                                                <property name='Amount'>0.8</property>
-                                                <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                <property name='FeedbackAmount'>0</property>
-                                                <property name='FinalRezScale'>0.25</property>
-                                                <property name='FxRezScale'>0.5</property>
-                                                <property name='PostFxFeedback'>false</property>
-                                                <property name='Type'>"EFRAMEFX_STANDARD"</property>
+                        <property name='CompositorData'>
+                            <object type='CompositingData' id='243'>
+                                <property name='ActiveItem'>""</property>
+                                <property name='ActiveScene'>""</property>
+                                <property name='Enable'>true</property>
+                                <property name='Groups'></property>
+                                <property name='Scenes'>
+                                    <item key='s1'>
+                                        <reference category='ObjectClass'>
+                                            <object type='CompositingScene' id='244'>
+                                                <property name='Items'>
+                                                    <item key='i1'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='CompositingSceneItem' id='245'>
+                                                                <property name='Technique'>
+                                                                    <reference category='ObjectClass'>
+                                                                        <object type='NodeCompositingTechnique' id='246'>
+                                                                            <property name='OutputNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='ScreenOutputCompositingNode' id='247'>
+                                                                                        <property name='Layer'>"All"</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                            <property name='PostFxNode'><backreference id='-1'/></property>
+                                                                            <property name='RenderNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='ForwardCompositingNode' id='248'>
+                                                                                        <property name='ClearColor'>0 0 0 1</property>
+                                                                                        <property name='Layer'>"All"</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                        </object>
+                                                                    </reference>
+                                                                </property>
+                                                            </object>
+                                                        </reference>
+                                                    </item>
+                                                </property>
                                             </object>
-                                        </property>
-                                        <property name='Layers'>"A"</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='B'>
-                                <reference category='ObjectClass'>
-                                    <object type='CompositingGroup' id='245'>
-                                        <property name='Camera'>"ecam"</property>
-                                        <property name='Effect'>
-                                            <object type='CompositingGroupEffect' id='246'>
-                                                <property name='Amount'>0.7</property>
-                                                <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                <property name='FeedbackAmount'>0.8</property>
-                                                <property name='FinalRezScale'>0.5</property>
-                                                <property name='FxRezScale'>0.5</property>
-                                                <property name='PostFxFeedback'>true</property>
-                                                <property name='Type'>"EFRAMEFX_GLOW"</property>
-                                            </object>
-                                        </property>
-                                        <property name='Layers'>"B"</property>
-                                    </object>
-                                </reference>
-                            </item>
-                            <item key='C'>
-                                <reference category='ObjectClass'>
-                                    <object type='CompositingGroup' id='247'>
-                                        <property name='Camera'>"ecam"</property>
-                                        <property name='Effect'>
-                                            <object type='CompositingGroupEffect' id='248'>
-                                                <property name='Amount'>0.5</property>
-                                                <property name='FbUvTexture'><backreference id='-1'/></property>
-                                                <property name='FeedbackAmount'>0.5</property>
-                                                <property name='FinalRezScale'>0.5</property>
-                                                <property name='FxRezScale'>0.5</property>
-                                                <property name='PostFxFeedback'>false</property>
-                                                <property name='Type'>"EFRAMEFX_GHOSTLY"</property>
-                                            </object>
-                                        </property>
-                                        <property name='Layers'>"C"</property>
-                                    </object>
-                                </reference>
-                            </item>
+                                        </reference>
+                                    </item>
+                                </property>
+                            </object>
                         </property>
-                        <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
-                        <property name='OutputFrames'>false</property>
-                        <property name='OutputResBase'>"EOutputRes_1280x720"</property>
-                        <property name='OutputResMult'>"EOutputResMult_Full"</property>
-                        <property name='Scenes'>
-                            <item key='s1'>
-                                <reference category='ObjectClass'>
-                                    <object type='CompositingScene' id='249'>
-                                        <property name='Items'>
-                                            <item key='i1'>
-                                                <reference category='ObjectClass'>
-                                                    <object type='CompositingSceneItem' id='250'>
-                                                        <property name='Technique'>
-                                                            <reference category='ObjectClass'>
-                                                                <object type='Fx3CompositingTechnique' id='251'>
-                                                                    <property name='GroupA'>"A"</property>
-                                                                    <property name='GroupB'>"B"</property>
-                                                                    <property name='GroupC'>"C"</property>
-                                                                    <property name='LevelA'>0</property>
-                                                                    <property name='LevelB'>0</property>
-                                                                    <property name='LevelC'>-5</property>
-                                                                    <property name='Mode'>"BoverAplusC"</property>
-                                                                </object>
-                                                            </reference>
-                                                        </property>
-                                                    </object>
-                                                </reference>
-                                            </item>
-                                        </property>
-                                    </object>
-                                </reference>
-                            </item>
-                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='LightingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='VrSystemData' id='249'>
                     </object>
                 </reference>
             </item>

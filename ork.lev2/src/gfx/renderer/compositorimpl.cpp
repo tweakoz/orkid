@@ -197,14 +197,17 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
     /////////////////////////////////////////////////////////////////////////////
     // default camera selection
+    //  todo - create actual camera mgr and select default camera there
     /////////////////////////////////////////////////////////////////////////////
 
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
 
-    (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
+    if( spncam )
+      (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
+
     ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
 
-    if (spncam->getEditorCamera()) {
+    if (spncam and spncam->getEditorCamera()) {
       //spncam->computeMatrices(CAMCCTX);
       //l2cam->_camcamdata.BindGfxTarget(target);
       //_tempcamdat = l2cam->mCameraData;
