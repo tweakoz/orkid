@@ -361,15 +361,19 @@ bool GfxMaterialWiiBasic::BeginPass(GfxTarget* pTarg, int iPass) {
 
   FXI->BindParamCTex(hModFX, hDiffuseTEX, diftexture);
 
+  const auto& world = MTXI->RefMMatrix();
   if (CPD.isStereoOnePass()) {
     auto stereomtx = CPD._stereoCameraMatrices;
-    const auto& world = MTXI->RefMMatrix();
     auto MVPL = stereomtx->MVPL(world);
     auto MVPR = stereomtx->MVPR(world);
     FXI->BindParamMatrix(hModFX, hWVPLMatrix, MVPL);
     FXI->BindParamMatrix(hModFX, hWVPRMatrix, MVPR);
   } else {
-    FXI->BindParamMatrix(hModFX, hWVPMatrix, MTXI->RefMVPMatrix());
+    auto mcams = CPD._cameraMatrices;
+    auto MVP = world
+             * mcams->_vmatrix
+             * mcams->_pmatrix;
+    FXI->BindParamMatrix(hModFX, hWVPMatrix, MVP);
   }
   ////////////////////////////////////////////////////////////
 
