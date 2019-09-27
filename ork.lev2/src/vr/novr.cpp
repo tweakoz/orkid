@@ -72,7 +72,7 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   fmtx4 w;
   w.LookAt(fvec3(0, 0, 0), v3, fvec3(0, 1, 0));
   _posemap["hmd"] = w;
-   printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
+   //printf("v3<%g %g %g>\n", v3.x, v3.y, v3.z);
   auto vrroot = RCFD.getUserProperty("vrroot"_crc);
   if (auto as_mtx = vrroot.TryAs<fmtx4>()) {
     auto& CPD = RCFD.topCPD();

@@ -60,7 +60,7 @@ void Device::_updatePosesCommon(fmtx4 observermatrix){
     ///////////////////////////////////////////////////////////
 
     _hmdMatrix = hmd;
-    _hmdMatrix.dump("hmdmtx");
+    //_hmdMatrix.dump("hmdmtx");
 
     fmtx4 VVMTX = observermatrix;
 

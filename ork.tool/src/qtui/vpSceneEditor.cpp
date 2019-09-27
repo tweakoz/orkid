@@ -289,10 +289,11 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   auto compsys = compositingSystem();
   auto sim = simulation();
   auto FBI = mpTarget->FBI();
+  static CompositingData _gdata;
+  static CompositingImpl _gimpl(_gdata);
+  RCFD._cimpl = & _gimpl;
+  _gimpl.pushCPD(TOPCPD);
   if( nullptr == compsys or nullptr==sim){
-    static CompositingData _gdata;
-    static CompositingImpl _gimpl(_gdata);
-    RCFD._cimpl = & _gimpl;
     // still want to draw something so we know the editor is alive..
     mpTarget->BeginFrame();
     // we must still consume DrawableBuffers (since the compositor cannot)
@@ -306,6 +307,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     if (DB) { DrawableBuffer::releaseReadDB(DB); }  // release consumed DB
     mpTarget->EndFrame();
     mpTarget->popRenderContextFrameData();
+    _gimpl.popCPD();
     return;
   }
   RCFD._cimpl = & compsys->_impl;
@@ -355,6 +357,9 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   mpTarget->debugPushGroup("toolvp::composite");
       if( aok ) compsys->_impl.composite(drawdata);
   mpTarget->debugPopGroup();
+  // todo - lock sim
+  RCFD._cimpl->popCPD();
+  RCFD._cimpl = & _gimpl;
   //////////////////////////////////////////////////
   // after composite:
   //  render hud and other 2d non-content layers
@@ -388,7 +393,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
       miPickDirtyCount--;
     }
   }
-  RCFD._cimpl->popCPD();
+  _gimpl.popCPD();
   mpTarget->popRenderContextFrameData();
 }
 

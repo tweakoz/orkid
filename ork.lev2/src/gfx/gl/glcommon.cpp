@@ -26,7 +26,7 @@ static int _dbglevel = 0;
 void GfxTargetGL::debugPushGroup(const std::string str) {
  auto mstr = indent(_dbglevel++) + str;
   _prevgroup = mstr;
-  printf( "Group:: %s\n", _prevgroup.c_str() );
+  //printf( "Group:: %s\n", _prevgroup.c_str() );
   glPushGroupMarkerEXT(mstr.length(),mstr.c_str());
 }
 void GfxTargetGL::debugPopGroup() {
@@ -37,7 +37,7 @@ void GfxTargetGL::debugPopGroup() {
 }
 void GfxTargetGL::debugMarker(const std::string str) {
   auto mstr = indent(_dbglevel) + str;
-  printf( "Marker:: %s\n", mstr.c_str() );
+  //printf( "Marker:: %s\n", mstr.c_str() );
   glInsertEventMarkerEXT(mstr.length(),mstr.c_str());
 }
 

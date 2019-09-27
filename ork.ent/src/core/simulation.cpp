@@ -972,7 +972,7 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
 
   for (const auto& it : mEntities) {
     const ork::ent::Entity* pent = it.second;
-      printf("sim::enqueue ent<%p>\n", pent);
+     // printf("sim::enqueue ent<%p>\n", pent);
 
     const Entity::LayerMap& entlayers = pent->GetLayers();
 
@@ -987,17 +987,17 @@ void Simulation::enqueueDrawablesToBuffer(ork::lev2::DrawableBuffer& buffer) con
     for (auto L : entlayers) {
       const PoolString& layer_name = L.first;
 
-      printf("sim::enqueue layer_name<%s>\n", layer_name.c_str());
+      //printf("sim::enqueue layer_name<%s>\n", layer_name.c_str());
 
       const ent::Entity::DrawableVector* dv = L.second;
       lev2::DrawableBufLayer* buflayer      = buffer.MergeLayer(layer_name);
       if (dv && buflayer) {
         size_t inumdv = dv->size();
-        printf("sim::enqueue buflayer<%p> inumdv<%zu>\n", buflayer, inumdv);
+        //printf("sim::enqueue buflayer<%p> inumdv<%zu>\n", buflayer, inumdv);
         for (size_t i = 0; i < inumdv; i++) {
           lev2::Drawable* pdrw = dv->operator[](i);
           if (pdrw && pdrw->IsEnabled()) {
-            printf("queue drw<%p>\n", pdrw);
+            //printf("queue drw<%p>\n", pdrw);
             pdrw->QueueToLayer(xfdata, *buflayer);
           }
         }
