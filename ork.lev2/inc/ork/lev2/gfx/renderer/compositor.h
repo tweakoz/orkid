@@ -113,6 +113,11 @@ struct CompositingPassData {
   bool HasLayer(const PoolString& layername) const;
   void addStandardLayers();
 
+  bool isValid() const { return _cameraMatrices or _stereoCameraMatrices; }
+
+  const Frustum& monoCamFrustum() const;
+  const fvec3& monoCamZnormal() const;
+
   ////////////////////////////////////////////////////
 
   IRenderTarget* _irendertarget = nullptr;

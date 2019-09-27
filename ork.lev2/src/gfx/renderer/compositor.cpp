@@ -38,6 +38,20 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+const Frustum& CompositingPassData::monoCamFrustum() const {
+  static const Frustum gfrustum;
+  return _cameraMatrices ? _cameraMatrices->_frustum : gfrustum;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const fvec3& CompositingPassData::monoCamZnormal() const {
+  static const fvec3 gzn(0,0,1);
+  return _cameraMatrices ? _cameraMatrices->_camdat.zNormal() : gzn;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 std::vector<PoolString> CompositingPassData::getLayerNames() const {
   std::vector<PoolString> LayerNames;
   if (mpLayerName) {

@@ -722,24 +722,28 @@ void SceneEditorVP::DrawHUD(lev2::RenderContextFrameData& FrameData) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
+void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& RCFD) {
+  const auto& topCPD = RCFD.topCPD();
+  auto cammatrices = topCPD.cameraMatrices();
+  if( nullptr == cammatrices )
+    return;
+
   mpTarget->debugPushGroup("toolvp::DrawGrid");
-  const auto& topCPD = fdata.topCPD();
   auto& GRID = ManipManager().Grid();
   switch (mGridMode) {
     case 0:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
-      GRID.Calc(*topCPD.cameraMatrices());
+      GRID.Calc(*cammatrices);
       break;
     case 1:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XZ);
-      GRID.Calc(*topCPD.cameraMatrices());
-      GRID.Render(fdata);
+      GRID.Calc(*cammatrices);
+      GRID.Render(RCFD);
       break;
     case 2:
       GRID.SetGridMode(lev2::Grid3d::EGRID_XY);
-      GRID.Calc(*topCPD.cameraMatrices());
-      GRID.Render(fdata);
+      GRID.Calc(*cammatrices);
+      GRID.Render(RCFD);
       break;
   }
   mpTarget->debugPopGroup();
@@ -750,6 +754,8 @@ void SceneEditorVP::DrawGrid(ork::lev2::RenderContextFrameData& fdata) {
 void SceneEditorVP::DrawManip(ork::lev2::RenderContextFrameData& RCFD, ork::lev2::GfxTarget* pProxyTarg) {
   const auto& topCPD = RCFD.topCPD();
   auto cammatrices = topCPD.cameraMatrices();
+  if( nullptr == cammatrices )
+    return;
 
   ork::lev2::GfxTarget* pOutputTarget = RCFD.GetTarget();
   auto MTXI                           = pOutputTarget->MTXI();

@@ -77,6 +77,10 @@ void DrawableBuffer::enqueueLayerToRenderQueue(const PoolString& LayerName, lev2
   lev2::GfxTarget* target                            = renderer->GetTarget();
   const ork::lev2::RenderContextFrameData* RCFD = target->topRenderContextFrameData();
   const auto& topCPD                                 = RCFD->topCPD();
+
+  if(false==topCPD.isValid())
+    return;
+
   bool DoAll = (0 == strcmp(LayerName.c_str(), "All"));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue doall<%d>", int(DoAll)));
   target->debugMarker(FormatString("DrawableBuffer::enqueueLayerToRenderQueue numlayers<%zu>", mLayerLut.size()));
@@ -362,8 +366,10 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
   const auto& topCPD = RCFD->topCPD();
 
   const lev2::XgmModel* Model = mModelInst->GetXgmModel();
-  const CameraMatrices* ccctx = topCPD.cameraMatrices();
-  const Frustum& frus         = ccctx->_frustum;
+
+  const auto& monofrustum = topCPD.monoCamFrustum();
+
+  // TODO - resolve frustum in case of stereo camera
 
   const ork::fmtx4& matw = item.mXfData.mWorldMatrix;
 
@@ -382,7 +388,7 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
     frad = vwhd.GetZ();
   frad *= 0.6f;
 
-  bool bCenterInFrustum = frus.Contains(ctr);
+  bool bCenterInFrustum = monofrustum.Contains(ctr);
 
   //////////////////////////////////////////////////////////////////////
 
@@ -450,12 +456,12 @@ void ModelDrawable::enqueueToRenderQueue(const DrawableBufItem& item, lev2::IRen
           if (IsSkinned) {
             lmask = mdl_lmask;
 
-            float fdb = frus.mBottomPlane.GetPointDistance(ctr);
-            float fdt = frus.mTopPlane.GetPointDistance(ctr);
-            float fdl = frus.mLeftPlane.GetPointDistance(ctr);
-            float fdr = frus.mRightPlane.GetPointDistance(ctr);
-            float fdn = frus.mNearPlane.GetPointDistance(ctr);
-            float fdf = frus.mFarPlane.GetPointDistance(ctr);
+            float fdb = monofrustum.mBottomPlane.GetPointDistance(ctr);
+            float fdt = monofrustum.mTopPlane.GetPointDistance(ctr);
+            float fdl = monofrustum.mLeftPlane.GetPointDistance(ctr);
+            float fdr = monofrustum.mRightPlane.GetPointDistance(ctr);
+            float fdn = monofrustum.mNearPlane.GetPointDistance(ctr);
+            float fdf = monofrustum.mFarPlane.GetPointDistance(ctr);
 
             const float kdist = -5.0f;
             btest             = (fdb > kdist) && (fdt > kdist) && (fdl > kdist) && (fdr > kdist) &&
