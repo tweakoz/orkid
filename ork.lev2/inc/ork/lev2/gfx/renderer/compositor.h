@@ -215,7 +215,7 @@ private:
   LightManager* _lightmgr = nullptr;
   CameraData* _cimplcamdat = nullptr;
   CompositingMorphable _morphable;
-
+  CameraMatrices* _defaultCameraMatrices = nullptr;
   int miActiveSceneItem;
   CompositingContext _compcontext;
   compositingpassdatastack_t _stack;

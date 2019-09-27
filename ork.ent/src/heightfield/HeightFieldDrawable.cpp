@@ -861,6 +861,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
     MVPL = MVP;
     MVPC = MVP;
     MVPR = MVP;
+    MVPC.dump("MVPC");
     fmtx4 IMV_mono;
     IMV_mono.inverseOf(MV_mono);
     campos_mono = IMV_mono.GetTranslation();

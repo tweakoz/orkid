@@ -104,6 +104,7 @@ CompositingImpl::CompositingImpl(const CompositingData& data)
 
   _cimplcamdat = new CameraData;
 
+  _defaultCameraMatrices = new CameraMatrices;
 }
 
 CompositingImpl::~CompositingImpl() {}
@@ -195,11 +196,15 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   if (DB) {
 
     /////////////////////////////////////////////////////////////////////////////
-    // default camera selection (todo: hoist to cimpl so it can be shared across output nodes)
+    // default camera selection
     /////////////////////////////////////////////////////////////////////////////
 
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
     auto l2cam  = spncam->getEditorCamera();
+
+    (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
+    ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
+
     if (l2cam) {
       //spncam->computeMatrices(CAMCCTX);
       //l2cam->_camcamdata.BindGfxTarget(target);

@@ -278,7 +278,6 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   bool compositor_enabled = isCompositorEnabled();
   /////////////////////////////////////////////////////////////////////////////////
   lev2::UiViewportRenderTarget rt(this);
-  auto FBI = mpTarget->FBI();
   /////////////////////////////////
   lev2::CompositingPassData TOPCPD;
   TOPCPD.SetDstRect(tgtrect);
@@ -289,6 +288,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   /////////////////////////////////
   auto compsys = compositingSystem();
   auto sim = simulation();
+  auto FBI = mpTarget->FBI();
   if( nullptr == compsys or nullptr==sim){
     static CompositingData _gdata;
     static CompositingImpl _gimpl(_gdata);

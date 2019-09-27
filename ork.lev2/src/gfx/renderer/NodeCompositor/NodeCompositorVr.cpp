@@ -156,20 +156,17 @@ struct VRIMPL {
       _CPD.setStereoOnePass(true);
       _CPD._stereoCameraMatrices = _stereomatrices;
       _CPD._cameraMatrices = nullptr;
-      //_CPD._impl.Set<const CameraMatrices*>(RCFD._stereoCamera._mono);
     } else {
       ////////////////////////////////////////////////
       // no stereo cam support, override cam with center side of stereocam
       //  eg. when using mac VR emulation
       ////////////////////////////////////////////////
-      if (simrunning) {
-        ddprops["selcamdat"_crcu].Set<const CameraMatrices*>(VRDEV._centercamera);
-      }
-      ////////////////////////////////////////////////
       _CPD.setStereoOnePass(false);
       _CPD._stereoCameraMatrices = nullptr;
-      _CPD._cameraMatrices = _tmpcameramatrices;
-      //_CPD._impl.Set<const CameraMatrices*>(_tmpcameramatrices);
+      _CPD._cameraMatrices = simrunning
+                           ? VRDEV._centercamera
+                           : ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
+      ////////////////////////////////////////////////
     }
 
     //////////////////////////////////////////////////////

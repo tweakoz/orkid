@@ -56,24 +56,18 @@ struct IMPL {
     auto targ                    = RCFD.GetTarget();
     auto& ddprops                = drawdata._properties;
     SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
-
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
-
     int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
     int newheight = ddprops["OutputHeight"_crcu].Get<int>();
     if (_rtg->GetW() != newwidth or _rtg->GetH() != newheight) {
       _rtg->Resize(newwidth, newheight);
     }
-
     //////////////////////////////////////////////////////
-
     auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
     //////////////////////////////////////////////////////
-
     targ->debugPushGroup("Deferred::render");
-
     RtGroupRenderTarget rt(_rtg);
     {
       targ->FBI()->PushRtGroup(_rtg);
@@ -86,7 +80,6 @@ struct IMPL {
       CPD.mpLayerName = &_layername;
       CPD._irendertarget = & rt;
       CPD.SetDstRect(tgt_rect);
-      //auto cammatrices   = RCFD.cameraMatrices();
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
@@ -98,28 +91,17 @@ struct IMPL {
         }
         /////////////////////////////////////////////////
         auto MTXI = targ->MTXI();
-        //drawdata.mCompositingGroupStack.push(CPD);
         CIMPL->pushCPD(CPD);
-        //MTXI->PushPMatrix(cammatrices->_pmatrix);
-        //MTXI->PushVMatrix(cammatrices->_vmatrix);
-        //MTXI->PushMMatrix(fmtx4::Identity);
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
         targ->FBI()->Clear(node->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
         targ->debugPopGroup();
-        //MTXI->PopPMatrix();
-        //MTXI->PopVMatrix();
-        //MTXI->PopMMatrix();
-        //drawdata.mCompositingGroupStack.pop();
         CIMPL->popCPD();
-
-        /////////////////////////////////////////////////
       }
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->EndFrame();
       targ->FBI()->PopRtGroup();
-      //RCFD.PopRenderTarget();
     }
     targ->debugPopGroup();
   }
