@@ -57,8 +57,9 @@ private:
   FxShader* _shader = nullptr;
 
   const FxShaderTechnique* _tekBasic  = nullptr;
-  const FxShaderTechnique* _tekBasicDefGbuf1 = nullptr;
+  const FxShaderTechnique* _tekDefGbuf1 = nullptr;
   const FxShaderTechnique* _tekStereo = nullptr;
+  const FxShaderTechnique* _tekDefGbuf1Stereo = nullptr;
   const FxShaderTechnique* _tekPick   = nullptr;
 
   const FxShaderParam* _parMatVPL       = nullptr;
@@ -108,7 +109,8 @@ void TerrainMaterial::Init(GfxTarget* targ) {
   _tekBasic    = fxi->GetTechnique(_shader, "terrain");
   _tekStereo   = fxi->GetTechnique(_shader, "terrain_stereo");
   _tekPick     = fxi->GetTechnique(_shader, "pick");
-  _tekBasicDefGbuf1 = fxi->GetTechnique(_shader, "terrain_gbuf1");
+  _tekDefGbuf1 = fxi->GetTechnique(_shader, "terrain_gbuf1");
+  _tekDefGbuf1Stereo = fxi->GetTechnique(_shader, "terrain_gbuf1_stereo");
 
   _parMatVPL   = fxi->GetParameterH(_shader, "MatMVPL");
   _parMatVPC   = fxi->GetParameterH(_shader, "MatMVPC");
@@ -156,7 +158,7 @@ void TerrainMaterial::begin(const RenderContextInstData& RCID, const TerrainMate
 
   auto tek = stereo1pass ? _tekStereo : _tekBasic;
   if( CPD._passID == "defgbuffer1"_crcu ){
-    tek = _tekBasicDefGbuf1;
+    tek = stereo1pass ? _tekDefGbuf1Stereo : _tekDefGbuf1;
   }
 
   fxi->BindTechnique(_shader,tek);

@@ -102,7 +102,11 @@ fragment_shader ps_terrain
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_deferred : iface_fdefault {
-  layout(location = 0) out vec4 out_albedo_ao;
+  // todo (out_clr on 0 implicitly added)
+  //  and adding it here conflicts
+  //  so lets disable all implicit layout when
+  //   any explicit layout is performed
+  //layout(location = 0) out vec4 out_clr; // albedo ao
   layout(location = 1) out vec4 out_ruf_mtl;
   layout(location = 2) out vec4 out_norml_d;
 }
@@ -111,7 +115,7 @@ fragment_shader ps_terrain_gbuf1
   : lib_terrain_frg {
   vec3 n = normalize(frg_nrm);
   vec3 c = albedo(n);
-  out_albedo_ao = vec4(c,1);
+  out_clr = vec4(c,1);
   vec3 yo = (n+vec3(1,1,1))*0.5;
   out_ruf_mtl = vec4(yo*c,1);
   out_norml_d = vec4(n,frg_camdist);
@@ -170,6 +174,14 @@ technique terrain_gbuf1 {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader = vs_terrain;
+    fragment_shader = ps_terrain_gbuf1;
+    state_block = sb_default;
+  }
+}
+technique terrain_gbuf1_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain_stereo;
     fragment_shader = ps_terrain_gbuf1;
     state_block = sb_default;
   }

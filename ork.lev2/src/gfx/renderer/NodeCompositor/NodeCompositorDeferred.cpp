@@ -134,6 +134,7 @@ struct IMPL {
       CPD._irendertarget = & rtlaccum;
       CPD._cameraMatrices = nullptr;
       CPD._stereoCameraMatrices = nullptr;
+      CPD._stereo1pass = false;
       CIMPL->pushCPD(CPD);
       targ->debugPushGroup("PtxCompositingNode::to_output");
       targ->FBI()->SetAutoClear(false);

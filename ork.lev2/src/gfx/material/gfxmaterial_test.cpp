@@ -236,7 +236,7 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   FXI->BindParamMatrix(hModFX, hMatP, MTXI->RefPMatrix());
 
   const auto& world = MTXI->RefMMatrix();
-  if (is_stereo) {
+  if (is_stereo and CPD._stereoCameraMatrices) {
     auto stereomtx = CPD._stereoCameraMatrices;
     auto MVPL = stereomtx->MVPL(world);
     auto MVPR = stereomtx->MVPR(world);
