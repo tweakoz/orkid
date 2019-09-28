@@ -5,8 +5,6 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#include "NodeCompositorForward.h"
-
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
 #include <ork/lev2/gfx/renderer/builtin_frameeffects.h>
@@ -17,158 +15,119 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 
+#include "NodeCompositorForward.h"
+
 ImplementReflectionX(ork::lev2::ForwardCompositingNode, "ForwardCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::describeX(class_t* c) {
-  c->memberProperty("Layer",&ForwardCompositingNode::_layername);
-  c->memberProperty("ClearColor",&ForwardCompositingNode::_clearColor);
-}
+void ForwardCompositingNode::describeX(class_t* c) { c->memberProperty("ClearColor", &ForwardCompositingNode::_clearColor); }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
-struct ForwardTechnique final : public FrameTechniqueBase {
-  //////////////////////////////////////////////////////////////////////////////
-  ForwardTechnique(int w, int h)
-      : FrameTechniqueBase(w, h)
-      , _rtg(nullptr) {}
-  //////////////////////////////////////////////////////////////////////////////
-  void DoInit(GfxTarget* pTARG) final {
-    if (nullptr == _rtg) {
-      _rtg = new RtGroup(pTARG, miW, miH, NUMSAMPLES);
-      auto buf = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, miW, miH);
-      buf->_debugName = FormatString("ForwardCompositingNode::output");
-      _rtg->SetMrt(0,buf);
-      _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
-    }
-  }
-  //////////////////////////////////////////////////////////////////////////////
-  void render(FrameRenderer& renderer,
-              CompositorDrawData& drawdata,
-              ForwardCompositingNode& node ) {
-    RenderContextFrameData& RCFD = renderer.framedata();
-    GfxTarget* pTARG                  = RCFD.GetTarget();
-
-    //////////////////////////////////////////////////////
-    // Resize RenderTargets
-    //////////////////////////////////////////////////////
-
-    int newwidth = drawdata._properties["OutputWidth"_crcu].Get<int>();
-    int newheight = drawdata._properties["OutputHeight"_crcu].Get<int>();
-
-    if( _rtg->GetW()!=newwidth or _rtg->GetH()!=newheight ){
-      _rtg->Resize(newwidth,newheight);
-      miW = newwidth;
-      miH = newheight;
-    }
-
-    //////////////////////////////////////////////////////
-
-    SRect tgt_rect(0, 0, miW, miH);
-
-    CompositingPassData _CPD;
-
-    _CPD.mbDrawSource = true;
-    _CPD.mpFrameTek   = this;
-    _CPD.mpCameraName = nullptr;
-    _CPD.mpLayerName  = &node._layername;
-    _CPD._clearColor  = fvec4(0.61, 0.61, 0.75, 1);
-    //_CPD._impl.Set<const CameraData*>(lcam);
-
-    //////////////////////////////////////////////////////
-    pTARG->FBI()->SetAutoClear(false);
-    // clear will occur via _CPD
-    //////////////////////////////////////////////////////
-
-    RtGroupRenderTarget rt(_rtg);
-    //drawdata.mCompositingGroupStack.push(_CPD);
-    pTARG->debugPushGroup("ForwardCompositingNode::render");
-    {
-      //pTARG->SetRenderContextFrameData(&framedata);
-      //framedata.SetDstRect(tgt_rect);
-      //framedata.PushRenderTarget(&rt);
-      //pTARG->FBI()->PushRtGroup(_rtg);
-      //pTARG->BeginFrame();
-      //renderer.renderMisc();
-      //pTARG->EndFrame();
-      //pTARG->FBI()->PopRtGroup();
-      //framedata.PopRenderTarget();
-      //pTARG->SetRenderContextFrameData(nullptr);
-      //drawdata.mCompositingGroupStack.pop();
-    }
-    pTARG->debugPopGroup();
-  }
-
-  RtGroup* _rtg;
-  BuiltinFrameEffectMaterial _effect;
-  fmtx4 _viewOffsetMatrix;
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace forwardnode {
 struct IMPL {
   ///////////////////////////////////////
-  IMPL(ForwardCompositingNode*node)
-      : _node(node)
-      , _camname("Camera"_pool){}
-  ///////////////////////////////////////
-  ~IMPL() {
-    if (_frametek){
-      delete _frametek;
-      _frametek = nullptr;
-    }
+  IMPL()
+      : _camname(AddPooledString("Camera")) {
+    _layername = "All"_pool;
   }
+  ///////////////////////////////////////
+  ~IMPL() {}
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
-    _material.Init(pTARG);
-    _frametek = new ForwardTechnique(pTARG->GetW(),pTARG->GetH());
-    _frametek->Init(pTARG);
-  }
-  ///////////////////////////////////////
-  void _render(CompositorDrawData& drawdata) {
-    FrameRenderer& the_renderer       = drawdata.mFrameRenderer;
-    RenderContextFrameData& framedata = the_renderer.framedata();
-    auto targ                         = framedata.GetTarget();
-    auto onode = drawdata._properties["final"_crcu].Get<const OutputCompositingNode*>();
-    if (_frametek) {
-      //framedata.setLayerName(_node->_layername.c_str());
-      _frametek->render(the_renderer, drawdata,*_node);
+    pTARG->debugPushGroup("Forward::rendeinitr");
+    if (nullptr == _rtg) {
+      _material.Init(pTARG);
+      _rtg            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
+      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8);
+      buf->_debugName = "ForwardRt";
+      _rtg->SetMrt(0, buf);
+      _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
+    pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
-  PoolString _camname;
+  void _render(ForwardCompositingNode* node, CompositorDrawData& drawdata) {
+    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
+    RenderContextFrameData& RCFD = framerenderer.framedata();
+    auto CIMPL = drawdata._cimpl;
+    auto targ                    = RCFD.GetTarget();
+    auto& ddprops                = drawdata._properties;
+    SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
+    //////////////////////////////////////////////////////
+    // Resize RenderTargets
+    //////////////////////////////////////////////////////
+    int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
+    int newheight = ddprops["OutputHeight"_crcu].Get<int>();
+    if (_rtg->GetW() != newwidth or _rtg->GetH() != newheight) {
+      _rtg->Resize(newwidth, newheight);
+    }
+    //////////////////////////////////////////////////////
+    auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+    //////////////////////////////////////////////////////
+    targ->debugPushGroup("Forward::render");
+    RtGroupRenderTarget rt(_rtg);
+    {
+      targ->FBI()->PushRtGroup(_rtg);
+      targ->FBI()->SetAutoClear(false); // explicit clear
+      targ->BeginFrame();
+      /////////////////////////////////////////////////////////////////////////////////////////
+      auto DB         = RCFD.GetDB();
+      auto CPD = CIMPL->topCPD();
+      CPD._clearColor = node->_clearColor;
+      CPD.mpLayerName = &_layername;
+      CPD._irendertarget = & rt;
+      CPD.SetDstRect(tgt_rect);
+      ///////////////////////////////////////////////////////////////////////////
+      if (DB) {
+        ///////////////////////////////////////////////////////////////////////////
+        // DrawableBuffer -> RenderQueue enqueue
+        ///////////////////////////////////////////////////////////////////////////
+        for (const PoolString& layer_name : CPD.getLayerNames()) {
+          targ->debugMarker(FormatString("Forward::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
+          DB->enqueueLayerToRenderQueue(layer_name, irenderer);
+        }
+        /////////////////////////////////////////////////
+        auto MTXI = targ->MTXI();
+        CIMPL->pushCPD(CPD);
+        targ->debugPushGroup("toolvp::DrawEnqRenderables");
+        targ->FBI()->Clear(node->_clearColor, 1.0f);
+        irenderer->drawEnqueuedRenderables();
+        framerenderer.renderMisc();
+        targ->debugPopGroup();
+        CIMPL->popCPD();
+      }
+      /////////////////////////////////////////////////////////////////////////////////////////
+      targ->EndFrame();
+      targ->FBI()->PopRtGroup();
+    }
+    targ->debugPopGroup();
+  }
+  ///////////////////////////////////////
+  PoolString _camname, _layername;
   CompositingMaterial _material;
-  ForwardTechnique* _frametek = nullptr;
-  ForwardCompositingNode* _node;
+  RtGroup* _rtg = nullptr;
+  BuiltinFrameEffectMaterial _effect;
+  fmtx4 _viewOffsetMatrix;
 };
-typedef std::shared_ptr<IMPL> implptr_t;
-} //namespace forwardnode {
+} // namespace forwardnode
 
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::ForwardCompositingNode() : _layername("All"_pool) { _impl = std::make_shared<forwardnode::IMPL>(this); }
+ForwardCompositingNode::ForwardCompositingNode() { _impl = std::make_shared<forwardnode::IMPL>(); }
 ///////////////////////////////////////////////////////////////////////////////
-ForwardCompositingNode::~ForwardCompositingNode() {
-  _impl = nullptr;
-}
+ForwardCompositingNode::~ForwardCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
-void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
-{ auto impl = _impl.Get<forwardnode::implptr_t>();
-  if (nullptr == impl->_frametek) {
-    impl->init(pTARG);
-  }
+void ForwardCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+  _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata) {
-  _impl.Get<forwardnode::implptr_t>()->_render(drawdata);
+  auto impl = _impl.Get<std::shared_ptr<forwardnode::IMPL>>();
+  impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtGroup* ForwardCompositingNode::GetOutput() const {
-  auto impl = _impl.Get<forwardnode::implptr_t>();
-  if (impl->_frametek)
-    return impl->_frametek->_rtg;
-  else
-    return nullptr;
-}
+RtGroup* ForwardCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg; }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

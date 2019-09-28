@@ -202,15 +202,20 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 
     auto spncam = (CameraData*)DB->cameraData("spawncam"_pool);
 
-    if( spncam )
-      (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
+    target->debugMarker(FormatString("spncam<%p>",spncam));
 
+    if( spncam ){
+      (*_defaultCameraMatrices) = spncam->computeMatrices(aspectratio);
+    }
+
+    target->debugMarker(FormatString("defcammtx<%p>",_defaultCameraMatrices));
     ddprops["defcammtx"_crcu].Set<const CameraMatrices*>(_defaultCameraMatrices);
 
     if (spncam and spncam->getEditorCamera()) {
       //spncam->computeMatrices(CAMCCTX);
       //l2cam->_camcamdata.BindGfxTarget(target);
       //_tempcamdat = l2cam->mCameraData;
+      target->debugMarker(FormatString("seleditcam<%p>",spncam));
       ddprops["seleditcam"_crcu].Set<const CameraData*>(spncam);
     }
 

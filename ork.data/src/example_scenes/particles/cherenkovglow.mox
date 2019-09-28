@@ -1518,8 +1518,8 @@
                     <object type='CompositingSystemData' id='242'>
                         <property name='CompositorData'>
                             <object type='CompositingData' id='243'>
-                                <property name='ActiveItem'>""</property>
-                                <property name='ActiveScene'>""</property>
+                                <property name='ActiveItem'>"i1"</property>
+                                <property name='ActiveScene'>"s1"</property>
                                 <property name='Enable'>true</property>
                                 <property name='Groups'></property>
                                 <property name='Scenes'>
@@ -1544,8 +1544,7 @@
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='ForwardCompositingNode' id='248'>
-                                                                                        <property name='ClearColor'>0 0 0 1</property>
-                                                                                        <property name='Layer'>"All"</property>
+                                                                                        <property name='ClearColor'>0 0 0.3 1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
