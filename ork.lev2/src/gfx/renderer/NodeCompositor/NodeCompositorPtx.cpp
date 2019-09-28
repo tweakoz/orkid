@@ -71,6 +71,7 @@ struct PtxImpl {
     CPD.SetDstRect(vprect);
     CPD._cameraMatrices = nullptr;
     CPD._stereoCameraMatrices = nullptr;
+    CPD._stereo1pass = false;
 
     lev2::Texture* input_tex = nullptr;
 

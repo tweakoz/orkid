@@ -394,7 +394,7 @@
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
                                                 <object type='PerfAnalyzerControllerData' id='36'>
-                                                    <property name='EnableDisplay'>true</property>
+                                                    <property name='EnableDisplay'>false</property>
                                                 </object>
                                             </reference>
                                         </item>

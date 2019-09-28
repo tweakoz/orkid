@@ -196,7 +196,7 @@ void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
 RtBuffer* DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
-return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgLaccum->GetMrt(0);
+return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgGbuffer->GetMrt(2);
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
