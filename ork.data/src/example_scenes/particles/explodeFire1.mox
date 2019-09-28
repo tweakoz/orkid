@@ -1140,49 +1140,108 @@
                     </object>
                 </reference>
             </item>
-            <item key='EntData2'>
+            <item key='SceneObject1'><backreference id='3'/></item>
+            <item key='SceneObject2'>
                 <reference category='SceneObjectClass'>
-                    <object type='Ent3dEntData' id='193'>
-                        <property name='Name'>"EntData2"</property>
+                    <object type='EditorCamArchetype' id='193'>
+                        <property name='Name'>"SceneObject2"</property>
+                        <property name='Components'>
+                            <item key='camera'>
+                                <reference category='ComponentDataClass'>
+                                    <object type='EditorCamControllerData' id='194'>
+                                        <property name='Camera'>
+                                            <object type='EzUiCam' id='195'>
+                                                <property name='Center'>-0.571691 -0.714135 0.295893</property>
+                                                <property name='Focus'>0 0 0</property>
+                                                <property name='Loc'>16.0703</property>
+                                                <property name='QuatC'>0.918786 0.070536 0.3597 -0.146576</property>
+                                                <property name='Aperature'>40</property>
+                                                <property name='MaxFar'>10000</property>
+                                                <property name='MinNear'>0.1</property>
+                                            </object>
+                                        </property>
+                                    </object>
+                                </reference>
+                            </item>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='spawncam'>
+                <reference category='SceneObjectClass'>
+                    <object type='Ent3dEntData' id='196'>
+                        <property name='Name'>"spawncam"</property>
                         <property name='DagNode'>
-                            <object type='Ent3dDagNode' id='194'>
+                            <object type='Ent3dDagNode' id='197'>
                                 <property name='TransformNode'>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</property>
                             </object>
                         </property>
                         <property name='Parent'>"scene"</property>
-                        <property name='Archetype'>
-                            <reference category='SceneObjectClass'>
-                                <object type='EditorCamArchetype' id='195'>
-                                    <property name='Name'>"SceneObject2"</property>
-                                    <property name='Components'>
-                                        <item key='camera'>
-                                            <reference category='ComponentDataClass'>
-                                                <object type='EditorCamControllerData' id='196'>
-                                                    <property name='Camera'>
-                                                        <object type='CCamera_persp' id='197'>
-                                                            <property name='Center'>-0.571691 -0.714135 0.295893</property>
-                                                            <property name='Focus'>0 0 0</property>
-                                                            <property name='Loc'>16.0703</property>
-                                                            <property name='QuatC'>0.918786 0.070536 0.3597 -0.146576</property>
-                                                            <property name='Aperature'>40</property>
-                                                            <property name='MaxFar'>10000</property>
-                                                            <property name='MinNear'>0.1</property>
-                                                        </object>
-                                                    </property>
-                                                </object>
-                                            </reference>
-                                        </item>
-                                    </property>
-                                </object>
-                            </reference>
-                        </property>
+                        <property name='Archetype'><backreference id='193'/></property>
                         <property name='UserProperties'></property>
                     </object>
                 </reference>
             </item>
-            <item key='SceneObject1'><backreference id='3'/></item>
-            <item key='SceneObject2'><backreference id='195'/></item>
         </property>
         <property name='ScriptFile'>""</property>
+        <property name='SystemData'>
+            <item key='CompositingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='CompositingSystemData' id='198'>
+                        <property name='CompositorData'>
+                            <object type='CompositingData' id='199'>
+                                <property name='ActiveItem'>"item1"</property>
+                                <property name='ActiveScene'>"scene1"</property>
+                                <property name='Enable'>true</property>
+                                <property name='Groups'></property>
+                                <property name='Scenes'>
+                                    <item key='scene1'>
+                                        <reference category='ObjectClass'>
+                                            <object type='CompositingScene' id='200'>
+                                                <property name='Items'>
+                                                    <item key='item1'>
+                                                        <reference category='ObjectClass'>
+                                                            <object type='CompositingSceneItem' id='201'>
+                                                                <property name='Technique'>
+                                                                    <reference category='ObjectClass'>
+                                                                        <object type='NodeCompositingTechnique' id='202'>
+                                                                            <property name='OutputNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='ScreenOutputCompositingNode' id='203'>
+                                                                                        <property name='Layer'>"All"</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                            <property name='PostFxNode'><backreference id='-1'/></property>
+                                                                            <property name='RenderNode'>
+                                                                                <reference category='ObjectClass'>
+                                                                                    <object type='ForwardCompositingNode' id='204'>
+                                                                                        <property name='ClearColor'>0 0 0 1</property>
+                                                                                    </object>
+                                                                                </reference>
+                                                                            </property>
+                                                                        </object>
+                                                                    </reference>
+                                                                </property>
+                                                            </object>
+                                                        </reference>
+                                                    </item>
+                                                </property>
+                                            </object>
+                                        </reference>
+                                    </item>
+                                </property>
+                            </object>
+                        </property>
+                    </object>
+                </reference>
+            </item>
+            <item key='LightingSystemData'>
+                <reference category='SystemDataClass'>
+                    <object type='VrSystemData' id='205'>
+                    </object>
+                </reference>
+            </item>
+        </property>
     </object>
 </reference>
