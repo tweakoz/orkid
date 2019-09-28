@@ -39,7 +39,7 @@ namespace ork::lev2 {
     ~RenderCompositingNode();
     void Init(lev2::GfxTarget* pTARG, int w, int h);
     void Render(CompositorDrawData& drawdata);
-    virtual lev2::RtGroup* GetOutput() const { return nullptr; }
+    virtual lev2::RtBuffer* GetOutput() const { return nullptr; }
 
   private:
     virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
@@ -54,7 +54,7 @@ namespace ork::lev2 {
     ~PostCompositingNode();
     void Init(lev2::GfxTarget* pTARG, int w, int h);
     void Render(CompositorDrawData& drawdata);
-    virtual lev2::RtGroup* GetOutput() const { return nullptr; }
+    virtual lev2::RtBuffer* GetOutput() const { return nullptr; }
 
   private:
     virtual void DoInit(lev2::GfxTarget* pTARG, int w, int h) = 0;
@@ -79,11 +79,12 @@ namespace ork::lev2 {
     void GetNode(ork::rtti::ICastable*& val) const;
     void SetNode(ork::rtti::ICastable* const& val);
 
-    lev2::RtGroup* GetOutput() const final;
+    lev2::RtBuffer* GetOutput() const final;
 
     CompositingMaterial mCompositingMaterial;
-    PostCompositingNode* mNode;
-    lev2::RtGroup* mOutput;
+    PostCompositingNode* mNode = nullptr;
+    lev2::RtBuffer* mOutput = nullptr;
+    lev2::RtGroup* _rtg = nullptr;
     lev2::BuiltinFrameTechniques* mFTEK;
   };
   ///////////////////////////////////////////////////////////////////////////////
@@ -101,12 +102,13 @@ namespace ork::lev2 {
     void SetNodeA(ork::rtti::ICastable* const& val);
     void GetNodeB(ork::rtti::ICastable*& val) const;
     void SetNodeB(ork::rtti::ICastable* const& val);
-    lev2::RtGroup* GetOutput() const override { return mOutput; }
+    lev2::RtBuffer* GetOutput() const override { return mOutput; }
 
-    PostCompositingNode* mSubA;
-    PostCompositingNode* mSubB;
+    PostCompositingNode* mSubA = nullptr;
+    PostCompositingNode* mSubB = nullptr;
     CompositingMaterial mCompositingMaterial;
-    lev2::RtGroup* mOutput;
+    lev2::RtBuffer* mOutput = nullptr;
+    lev2::RtGroup* _rtg = nullptr;
     EOp2CompositeMode mMode;
     fvec4 mLevelA;
     fvec4 mLevelB;

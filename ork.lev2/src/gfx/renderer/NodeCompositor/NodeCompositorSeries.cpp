@@ -61,10 +61,10 @@ void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
   if (nullptr == mOutput) {
     mCompositingMaterial.Init(pTARG);
 
-    mOutput = new lev2::RtGroup(pTARG, iW, iH);
-    auto buf = new lev2::RtBuffer(mOutput, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA64, iW, iH);
-    buf->_debugName = FormatString("SeriesCompositingNode::output");
-    mOutput->SetMrt(0,buf);
+    _rtg = new lev2::RtGroup(pTARG, iW, iH);
+    mOutput = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA64, iW, iH);
+    mOutput->_debugName = FormatString("SeriesCompositingNode::output");
+    _rtg->SetMrt(0,mOutput);
 
     mFTEK = new lev2::BuiltinFrameTechniques(iW, iH);
     mFTEK->Init(pTARG);
@@ -91,10 +91,10 @@ void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata)
   SRect quadrect(0, ih - 1, iw - 1, 0);
   if (mOutput && mNode) {
     fbi->SetAutoClear(false);
-    fbi->PushRtGroup(mOutput);
+    fbi->PushRtGroup(_rtg);
     gbi->BeginFrame();
 
-    lev2::Texture* ptex = mNode->GetOutput()->GetMrt(0)->GetTexture();
+    lev2::Texture* ptex = mNode->GetOutput()->GetTexture();
 
     mCompositingMaterial.SetTextureA(ptex);
     mCompositingMaterial.SetTechnique("Asolo");
@@ -106,8 +106,8 @@ void SeriesCompositingNode::DoRender(CompositorDrawData& drawdata)
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::RtGroup* SeriesCompositingNode::GetOutput() const {
-  lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;
+lev2::RtBuffer* SeriesCompositingNode::GetOutput() const {
+  lev2::RtBuffer* pRT = mFTEK ? mFTEK->GetFinalRenderTarget()->GetMrt(0) : nullptr;
   return pRT;
 }
 ///////////////////////////////////////////////////////////////////////////////

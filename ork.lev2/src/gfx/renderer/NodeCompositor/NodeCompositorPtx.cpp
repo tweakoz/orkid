@@ -74,8 +74,8 @@ struct PtxImpl {
 
     lev2::Texture* input_tex = nullptr;
 
-    if (auto try_render = drawdata._properties["render_out"_crcu].TryAs<RtGroup*>()) {
-      auto buffer = try_render.value()->GetMrt(0);
+    if (auto try_render = drawdata._properties["render_out"_crcu].TryAs<RtBuffer*>()) {
+      auto buffer = try_render.value();
       if (buffer) {
         assert(buffer != nullptr);
         input_tex = buffer->GetTexture();
@@ -229,9 +229,9 @@ void PtxCompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   _impl.getShared<PtxImpl>()->_render(drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-lev2::RtGroup* PtxCompositingNode::GetOutput() const {
+lev2::RtBuffer* PtxCompositingNode::GetOutput() const {
   auto ptximpl       = _impl.getShared<PtxImpl>();
-  return ptximpl->_output;
+  return ptximpl->_output->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

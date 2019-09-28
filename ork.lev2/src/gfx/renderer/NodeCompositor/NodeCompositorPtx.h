@@ -28,7 +28,7 @@ public:
   void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
   ork::Object* _accessTemplate() { return &_template; }
 
-  lev2::RtGroup* GetOutput() const final;
+  lev2::RtBuffer* GetOutput() const final;
 
   ork::lev2::TextureAsset* mReturnTexture = nullptr;
   ork::lev2::TextureAsset* mSendTexture   = nullptr;

@@ -23,7 +23,7 @@ private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
   void DoRender(CompositorDrawData& drawdata) final; // virtual
 
-  lev2::RtGroup* GetOutput() const final;
+  lev2::RtBuffer* GetOutput() const final;
   svar256_t _impl;
 };
 

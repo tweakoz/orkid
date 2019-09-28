@@ -128,6 +128,6 @@ void ForwardCompositingNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtGroup* ForwardCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg; }
+RtBuffer* ForwardCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<forwardnode::IMPL>>()->_rtg->GetMrt(0); }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

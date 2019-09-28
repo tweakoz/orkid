@@ -100,6 +100,14 @@ void EditorMainWindow::SigNewObject( ork::Object* pOBJ ){
 void EditorMainWindow::ToggleFullscreen(){
 	_fullscreen = ! _fullscreen;
  	isFullScreen() ? showNormal() : showFullScreen();
+  if(isFullScreen()){
+	// setWindowFlags(Qt::Window);
+
+  }
+else {
+//setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+
+}
 }
 ///////////////////////////////////////////////////////////////////////////
 void EditorMainWindow::Exit(){

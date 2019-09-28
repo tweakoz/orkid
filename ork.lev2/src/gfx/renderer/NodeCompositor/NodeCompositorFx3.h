@@ -111,7 +111,7 @@ namespace ork::lev2 {
     void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;                          // virtual
     void DoRender(CompositorDrawData& drawdata) final; // virtual
 
-    lev2::RtGroup* GetOutput() const final;
+    lev2::RtBuffer* GetOutput() const final;
 
     CompositingMaterial mCompositingMaterial;
     CompositingGroup* mGroup;

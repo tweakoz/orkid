@@ -97,10 +97,10 @@ void Op2CompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) // virtu
   if (nullptr == mOutput) {
     mCompositingMaterial.Init(pTARG);
 
-    mOutput = new lev2::RtGroup(pTARG, iW, iH);
-    auto buf = new lev2::RtBuffer(mOutput, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA64, iW, iH);
-    buf->_debugName = FormatString("Op2CompositingNode::output");
-    mOutput->SetMrt(0,buf);
+    _rtg = new lev2::RtGroup(pTARG, iW, iH);
+    mOutput = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA64, iW, iH);
+    mOutput->_debugName = FormatString("Op2CompositingNode::output");
+    _rtg->SetMrt(0,mOutput);
   }
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,14 +122,14 @@ void Op2CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   }
 
   fbi->SetAutoClear(false);
-  fbi->PushRtGroup(mOutput);
+  fbi->PushRtGroup(_rtg);
   gbi->BeginFrame();
 
   SRect vprect(0, 0, iw - 1, ih - 1);
   SRect quadrect(0, ih - 1, iw - 1, 0);
   if (mOutput && mSubA && mSubB) {
-    lev2::Texture* ptexa = mSubA->GetOutput()->GetMrt(0)->GetTexture();
-    lev2::Texture* ptexb = mSubB->GetOutput()->GetMrt(0)->GetTexture();
+    lev2::Texture* ptexa = mSubA->GetOutput()->GetTexture();
+    lev2::Texture* ptexb = mSubB->GetOutput()->GetTexture();
     mCompositingMaterial.SetTextureA(ptexa);
     mCompositingMaterial.SetTextureB(ptexb);
     mCompositingMaterial.SetBiasA(mBiasA);

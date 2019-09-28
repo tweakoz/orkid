@@ -223,8 +223,8 @@ void VrCompositingNode::composite(CompositorDrawData& drawdata) {
   FrameRenderer& framerenderer      = drawdata.mFrameRenderer;
   RenderContextFrameData& framedata = framerenderer.framedata();
   GfxTarget* targ                   = framedata.GetTarget();
-  if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtGroup*>()) {
-    auto buffer = try_final.value()->GetMrt(0);
+  if (auto try_final = drawdata._properties["final_out"_crcu].TryAs<RtBuffer*>()) {
+    auto buffer = try_final.value();
     if (buffer) {
       assert(buffer != nullptr);
       auto tex = buffer->GetTexture();

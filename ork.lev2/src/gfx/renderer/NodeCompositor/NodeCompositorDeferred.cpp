@@ -36,6 +36,10 @@ struct IMPL {
   ///////////////////////////////////////
   ~IMPL() {}
   ///////////////////////////////////////
+  // deferred layout
+  // rt0/rgba32  - albedo,ao (primary color)
+  // rt1/rgba64  - nxny,mt,rf
+  ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     pTARG->debugPushGroup("Deferred::rendeinitr");
     if (nullptr == _rtg) {
@@ -80,6 +84,7 @@ struct IMPL {
       CPD.mpLayerName = &_layername;
       CPD._irendertarget = & rt;
       CPD.SetDstRect(tgt_rect);
+      CPD._passID = "deferred"_crcu;
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
@@ -128,6 +133,6 @@ void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtGroup* DeferredCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg; }
+RtBuffer* DeferredCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg->GetMrt(0); }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

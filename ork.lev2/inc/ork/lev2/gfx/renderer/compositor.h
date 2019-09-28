@@ -133,6 +133,7 @@ struct CompositingPassData {
   ork::svarp_t _var;
   SRect mDstRect;
   SRect mMrtRect;
+  uint32_t _passID = 0;
   orkset<PoolString> mLayers;
 };
 

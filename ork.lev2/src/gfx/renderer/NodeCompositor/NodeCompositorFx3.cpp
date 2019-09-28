@@ -258,9 +258,9 @@ void Fx3CompositingNode::DoRender(CompositorDrawData& drawdata) // virtual
   drawdata.target()->debugPopGroup();
 }
 
-lev2::RtGroup* Fx3CompositingNode::GetOutput() const {
+lev2::RtBuffer* Fx3CompositingNode::GetOutput() const {
   lev2::RtGroup* pRT = mFTEK ? mFTEK->GetFinalRenderTarget() : nullptr;
-  return pRT;
+  return pRT->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
