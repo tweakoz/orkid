@@ -987,7 +987,7 @@
                                                                             <property name='PostFxNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='PtxCompositingNode' id='117'>
-                                                                                        <property name='BufferDim'>512</property>
+                                                                                        <property name='BufferDim'>2048</property>
                                                                                         <property name='DynTexName'>"dt1"</property>
                                                                                         <property name='ReturnTexture'><backreference id='-1'/></property>
                                                                                         <property name='Template'>
@@ -1051,7 +1051,7 @@
                                                                                                                 <property name='FlipY'>false</property>
                                                                                                                 <property name='Input'>
                                                                                                                     <reference category='AssetClass'>
-                                                                                                                        "lev2tex" "data://effect_textures/NoiseKern"
+                                                                                                                        "lev2tex" "data://effect_textures/noise01"
                                                                                                                     </reference>
                                                                                                                 </property>
                                                                                                             </object>
@@ -1068,6 +1068,7 @@
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='DeferredCompositingNode' id='129'>
                                                                                         <property name='ClearColor'>0.62 0.62 0.75 1</property>
+                                                                                        <property name='FogColor'>0 0 0 1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

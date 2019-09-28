@@ -34,6 +34,7 @@ uniform_block ub_frg
   uniform sampler2D ColorMap;
   uniform sampler2D ColorMap2;
   uniform sampler2D ColorMap3;
+  uniform vec4 User0; // fog color
 }
 
 fragment_interface iface_fdefault
@@ -53,10 +54,14 @@ vertex_shader vs_std : iface_vdefault
 fragment_shader ps_std
   : iface_fdefault
 {
-	out_clr  = texture(ColorMap,frg_uv);
-	out_clr += texture(ColorMap2,frg_uv);
-	out_clr *= texture(ColorMap3,frg_uv);
-  //out_clr = vec4(frg_uv,0,1);
+	vec3 c  = texture(ColorMap,frg_uv).xyz;
+	c += texture(ColorMap2,frg_uv).xyz*0.1;
+  vec4 nd = texture(ColorMap3,frg_uv);
+  vec3 n = normalize(nd.xyz);
+  float ddd1 = clamp(1.0 - nd.w * 0.0012, 0, 1);
+	c *= 0.5+dot(n,vec3(0,1,0))*0.5;
+  c = mix(User0.xyz,c,ddd1);
+  out_clr = vec4(c,1);
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks

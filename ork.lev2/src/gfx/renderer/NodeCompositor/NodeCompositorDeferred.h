@@ -19,6 +19,7 @@ public:
   DeferredCompositingNode();
   ~DeferredCompositingNode();
   fvec4 _clearColor;
+  fvec4 _fogColor;
 
 private:
   void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;

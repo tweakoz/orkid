@@ -22,7 +22,10 @@ ImplementReflectionX(ork::lev2::DeferredCompositingNode, "DeferredCompositingNod
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::describeX(class_t* c) { c->memberProperty("ClearColor", &DeferredCompositingNode::_clearColor); }
+void DeferredCompositingNode::describeX(class_t* c) {
+c->memberProperty("ClearColor", &DeferredCompositingNode::_clearColor);
+c->memberProperty("FogColor", &DeferredCompositingNode::_fogColor);
+}
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,11 +141,12 @@ struct IMPL {
       targ->BeginFrame();
       targ->FBI()->Clear(fvec4(0.1,0.2,0.3,1), 1.0f);
       auto this_buf = targ->FBI()->GetThisBuffer();
-      fvec4 color(1.0f, 1.0f, 1.0f, 1.0f);
+      fvec4 vtxcolor(1.0f, 1.0f, 1.0f, 1.0f);
       _blit2screenmtl.SetAuxMatrix(fmtx4::Identity);
       _blit2screenmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
       _blit2screenmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
       _blit2screenmtl.SetTexture3(_rtgGbuffer->GetMrt(2)->GetTexture());
+    _blit2screenmtl.SetUser0(node->_fogColor);
       _blit2screenmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       _blit2screenmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _blit2screenmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
@@ -154,7 +158,7 @@ struct IMPL {
                                    1.0f,
                                    0.0f, // u1 v1
                                    nullptr,
-                                   color);
+                                   vtxcolor);
       targ->EndFrame();
       targ->FBI()->PopRtGroup();
       targ->debugPopGroup();
