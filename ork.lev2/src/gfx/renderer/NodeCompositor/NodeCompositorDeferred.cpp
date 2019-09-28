@@ -45,9 +45,12 @@ struct IMPL {
     if (nullptr == _rtg) {
       _material.Init(pTARG);
       _rtg            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8);
-      buf->_debugName = "DeferredRt";
-      _rtg->SetMrt(0, buf);
+      auto buf0        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8);
+      auto buf1        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA64, 8, 8);
+      buf0->_debugName = "DeferredRtAlbAo";
+      buf1->_debugName = "DeferredRtNxNyRuMl";
+      _rtg->SetMrt(0, buf0);
+      _rtg->SetMrt(1, buf1);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
     pTARG->debugPopGroup();
@@ -84,7 +87,7 @@ struct IMPL {
       CPD.mpLayerName = &_layername;
       CPD._irendertarget = & rt;
       CPD.SetDstRect(tgt_rect);
-      CPD._passID = "deferred"_crcu;
+      CPD._passID = "defgbuffer1"_crcu;
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
@@ -133,6 +136,10 @@ void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* DeferredCompositingNode::GetOutput() const { return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg->GetMrt(0); }
+RtBuffer* DeferredCompositingNode::GetOutput() const {
+  static int i = 0;
+  i++;
+return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg->GetMrt((i>>10)&1); 
+}
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

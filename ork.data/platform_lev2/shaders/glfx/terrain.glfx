@@ -90,35 +90,30 @@ vertex_shader vs_terrain_stereo
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_terrain
   : iface_fdefault
-  : lib_mmnoise {
+  : lib_terrain_frg {
+  vec3 n = normalize(frg_nrm);
+  vec3 c = albedo(n);
   const vec3 ambient = vec3(0.4);
   const vec3 side = vec3(0.2, 0.2, 0.25);
   const vec3 top = vec3(0.3, 0.3, 0.3);
-  vec3 n = normalize(frg_nrm);
-  float ddd1 = clamp(1.0 - frg_camdist * 0.0012, 0, 1);
-  float ddd2 = clamp(1.0 - frg_camdist * 0.002, 0, 1);
-  float ddd3 = clamp(1.0 - frg_camdist * 0.003, 0, 1);
-  vec3 tpw = abs(n);
-  tpw /= (tpw.x + tpw.y + tpw.z);
-
-  const vec3 grass = vec3(0.5,0.5,0.7);
-  const vec3 snow = vec3(1,1,1);
-  const vec3 rock1 = vec3(0.6,.6,0.8);
-  const vec3 rock2 = vec3(0.6,.6,0.7);
-
-  float gsblend = clamp(GBlendYBias+frg_wpos.y*GBlendYScale,0,1);
-  gsblend = smoothstep(GBlendStepLo,GBlendStepHi,gsblend);
-  vec3 hor = mix( GrassColor,
-                  SnowColor,
-                  gsblend );
-
-  vec3 c = hor*pow(tpw.y,testxxx)
-         + Rock1Color*pow(tpw.x,testxxx)
-         + Rock2Color*pow(tpw.z,testxxx);
-
   vec3 lightcol = ambient + mix(side, top, dot(n, vec3(0, 1, 0)));
   c = lightcol*mix(FogColor,c,ddd1);
   out_clr = vec4(c,1);
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_deferred : iface_fdefault {
+  layout(location = 0) out vec4 out_albedo_ao;
+  layout(location = 1) out vec4 out_nxy_ru_ml;
+}
+fragment_shader ps_terrain_gbuf1
+  : iface_deferred
+  : lib_terrain_frg {
+  vec3 n = normalize(frg_nrm);
+  vec3 c = albedo(n);
+  out_albedo_ao = vec4(c,1);
+  vec2 n2ch = encode_nsphenv(n);
+  vec3 n3ch = decode_nsphenv(n2ch);
+  out_nxy_ru_ml = vec4(n3ch.xyz,0.5);
 }
 ///////////////////////////////////////////////////////////////
 // pick
@@ -167,6 +162,14 @@ technique terrain_stereo {
   pass p0 {
     vertex_shader = vs_terrain_stereo;
     fragment_shader = ps_terrain;
+    state_block = sb_default;
+  }
+}
+technique terrain_gbuf1 {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_terrain;
+    fragment_shader = ps_terrain_gbuf1;
     state_block = sb_default;
   }
 }

@@ -57,6 +57,7 @@ private:
   FxShader* _shader = nullptr;
 
   const FxShaderTechnique* _tekBasic  = nullptr;
+  const FxShaderTechnique* _tekBasicDefGbuf1 = nullptr;
   const FxShaderTechnique* _tekStereo = nullptr;
   const FxShaderTechnique* _tekPick   = nullptr;
 
@@ -107,6 +108,8 @@ void TerrainMaterial::Init(GfxTarget* targ) {
   _tekBasic    = fxi->GetTechnique(_shader, "terrain");
   _tekStereo   = fxi->GetTechnique(_shader, "terrain_stereo");
   _tekPick     = fxi->GetTechnique(_shader, "pick");
+  _tekBasicDefGbuf1 = fxi->GetTechnique(_shader, "terrain_gbuf1");
+
   _parMatVPL   = fxi->GetParameterH(_shader, "MatMVPL");
   _parMatVPC   = fxi->GetParameterH(_shader, "MatMVPC");
   _parMatVPR   = fxi->GetParameterH(_shader, "MatMVPR");
@@ -151,7 +154,13 @@ void TerrainMaterial::begin(const RenderContextInstData& RCID, const TerrainMate
   auto fxi  = targ->FXI();
   auto rsi  = targ->RSI();
 
-  fxi->BindTechnique(_shader, stereo1pass ? _tekStereo : _tekBasic);
+  auto tek = stereo1pass ? _tekStereo : _tekBasic;
+  if( CPD._passID == "defgbuffer1"_crcu ){
+    tek = _tekBasicDefGbuf1;
+  }
+
+  fxi->BindTechnique(_shader,tek);
+
   int npasses = fxi->BeginBlock(_shader, RCID);
   rsi->BindRasterState(mRasterState);
   fxi->BindPass(_shader, 0);

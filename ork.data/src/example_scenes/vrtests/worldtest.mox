@@ -967,10 +967,6 @@
                                 <property name='ActiveScene'>"s1"</property>
                                 <property name='Enable'>true</property>
                                 <property name='Groups'></property>
-                                <property name='OutputFrameRate'>"EOutputTimeStep_RealTime"</property>
-                                <property name='OutputFrames'>false</property>
-                                <property name='OutputResBase'>"EOutputRes_1280x720"</property>
-                                <property name='OutputResMult'>"EOutputResMult_Full"</property>
                                 <property name='Scenes'>
                                     <item key='s1'>
                                         <reference category='ObjectClass'>
@@ -992,7 +988,7 @@
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='DeferredCompositingNode' id='117'>
-                                                                                        <property name='ClearColor'>0.62 0.62 0.75 1</property>
+                                                                                        <property name='ClearColor'>0 0 0 0</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>
@@ -1020,7 +1016,7 @@
             </item>
             <item key='LightingSystemData'>
                 <reference category='SystemDataClass'>
-                    <object type='LightingSystemSystemData' id='119'>
+                    <object type='VrSystemData' id='119'>
                     </object>
                 </reference>
             </item>
