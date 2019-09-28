@@ -1,0 +1,73 @@
+///////////////////////////////////////////////////////////////
+// FxConfigs
+///////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  glsl_version = "330";
+}
+///////////////////////////////////////////////////////////////
+// Interfaces
+///////////////////////////////////////////////////////////////
+uniform_block ub_vtx
+{
+  uniform mat4 MatMVP;
+  uniform mat4 MatMV;
+  uniform mat4 MatM;
+  uniform mat4 MatV;
+  uniform mat4 MatP;
+  uniform mat4 MatAux;
+  uniform vec4 modcolor;
+  uniform float Time;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vdefault
+	: ub_vtx
+{
+	in vec4 position : POSITION;
+	in vec2 uv0 : TEXCOORD0;
+	//
+	out vec2 frg_uv;
+}
+///////////////////////////////////////////////////////////////
+
+uniform_block ub_frg
+{
+  uniform sampler2D ColorMap;
+  uniform sampler2D ColorMap2;
+  uniform sampler2D ColorMap3;
+}
+
+fragment_interface iface_fdefault
+  : ub_frg
+{
+	in vec2 frg_uv;
+	//
+	out vec4 out_clr;
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_std : iface_vdefault
+{
+	gl_Position = MatMVP*position;
+	frg_uv = uv0;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_std
+  : iface_fdefault
+{
+	out_clr  = texture(ColorMap,frg_uv);
+	out_clr += texture(ColorMap2,frg_uv);
+	out_clr *= texture(ColorMap3,frg_uv);
+  //out_clr = vec4(frg_uv,0,1);
+}
+///////////////////////////////////////////////////////////////
+// StateBlocks
+///////////////////////////////////////////////////////////////
+state_block sb_default { inherits default; }
+///////////////////////////////////////////////////////////////
+technique deferred_test {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader = vs_std;
+    fragment_shader = ps_std;
+    state_block = sb_default;
+  }
+}
