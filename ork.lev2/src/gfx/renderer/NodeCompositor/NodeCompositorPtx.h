@@ -8,34 +8,35 @@
 #pragma once
 
 #include "NodeCompositor.h"
+#include <ork/lev2/gfx/proctex/proctex.h>
 
 namespace ork::lev2 {
 
-  class PtxCompositingNode : public PostCompositingNode {
-    DeclareConcreteX(PtxCompositingNode, PostCompositingNode);
+struct PtxCompositingNode : public PostCompositingNode {
+  DeclareConcreteX(PtxCompositingNode, PostCompositingNode);
 
-  public:
-    PtxCompositingNode();
-    ~PtxCompositingNode();
+public:
+  PtxCompositingNode();
+  ~PtxCompositingNode() final;
 
-  private:
-    void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
-    void DoRender(CompositorDrawData& drawdata) final;
+  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoRender(CompositorDrawData& drawdata) final;
+  proctex::ProcTex& getTemplate() const { return _template; }
+  int bufferDim() const { return _bufferDim; }
 
-    void GetNode(ork::rtti::ICastable*& val) const;
-    void SetNode(ork::rtti::ICastable* const& val);
-    void SetTextureAccessor(ork::rtti::ICastable* const& tex);
-    void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
+  void SetTextureAccessor(ork::rtti::ICastable* const& tex);
+  void GetTextureAccessor(ork::rtti::ICastable*& tex) const;
+  ork::Object* _accessTemplate() { return &_template; }
 
-    lev2::RtGroup* GetOutput() const final;
+  lev2::RtGroup* GetOutput() const final;
 
-    CompositingMaterial mCompositingMaterial;
-    PostCompositingNode* mNode = nullptr;
-    lev2::RtGroup* mOutput = nullptr;
-    lev2::BuiltinFrameTechniques* mFTEK = nullptr;
-    ork::lev2::TextureAsset* mReturnTexture = nullptr;
-    ork::lev2::TextureAsset* mSendTexture = nullptr;
-    ork::PoolString mDynTexPath;
-  };
+  ork::lev2::TextureAsset* mReturnTexture = nullptr;
+  ork::lev2::TextureAsset* mSendTexture   = nullptr;
+  ork::PoolString mDynTexPath;
+  mutable proctex::ProcTex _template;
+  int _bufferDim = 256;
 
-} //namespace ork::lev2 {
+  svar256_t _impl;
+};
+
+} // namespace ork::lev2

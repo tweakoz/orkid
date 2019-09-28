@@ -69,25 +69,6 @@ public:
 	mutable lev2::TextureAsset* mAsset;
 };
 
-class ProcTexOutputBake : public ProcTexOutputBase
-{
-	RttiDeclareConcrete( ProcTexOutputBake, ProcTexOutputBase );
-public:
-	ProcTexOutputBake();
-	void OnLinkEntity( Simulation* psi, Entity *pent ) final;
-	//int GetNumExportFrames() const { return mNumExportFrames; }
-	//bool IsBaking() const { return mPerformingBake; }
-	//void IncrementFrame() const;
-	//int GetFrameIndex() const { return mBakeFrameIndex; }
-	//const file::Path& GetWritePath() const { return mWritePath; }
-	ork::PoolString mDynTexPath;
-	int mNumExportFrames;
-	bool mPerformingBake;
-	int mBakeFrameIndex;
-	ork::PoolString mWritePath;
-
-};
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class ProcTexControllerData : public ent::ComponentData

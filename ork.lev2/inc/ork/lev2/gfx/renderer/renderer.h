@@ -80,8 +80,6 @@ public:
   /// Each Renderer implements this function as a helper for Renderables when composing their sort keys
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  virtual U32 ComposeSortKey(U32 texIndex, U32 depthIndex, U32 passIndex, U32 transIndex) const { return 0; }
-
   void drawEnqueuedRenderables();
 
   inline void SetPerformanceItem(PerformanceItem* perfitem) { mPerformanceItem = perfitem; }

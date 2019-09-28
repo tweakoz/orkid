@@ -40,7 +40,6 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputBase, "ProcTexOutputBase");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputQuad, "ProcTexOutputQuad");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputSkybox, "ProcTexOutputSkybox");
 INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputDynTex, "ProcTexOutputDynTex");
-INSTANTIATE_TRANSPARENT_RTTI(ork::ent::ProcTexOutputBake, "ProcTexOutputBake");
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 
@@ -254,7 +253,7 @@ void ProcTexOutputQuad::OnLinkEntity(Simulation* psi, Entity* pent) {
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_quad);
   pdrw->SetOwner(&pent->GetEntData());
-  pdrw->SetSortKey(0);
+  pdrw->SetSortKey(400000000);
   lev2::Drawable::var_t ap;
   ap.Set<const ProcTexOutputQuad*>(this);
   pdrw->SetUserDataA(ap);
@@ -337,7 +336,7 @@ void ProcTexOutputSkybox::OnLinkEntity(Simulation* psi, Entity* pent) {
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_render_skybox);
   pdrw->SetOwner(&pent->GetEntData());
-  pdrw->SetSortKey(0);
+  pdrw->SetSortKey(400000000);
   lev2::Drawable::var_t ap;
   ap.Set<ProcTexOutputSkybox*>(this);
   pdrw->SetUserDataA(ap);
@@ -445,56 +444,12 @@ void ProcTexOutputDynTex::OnLinkEntity(Simulation* psi, Entity* pent) {
   pent->addDrawableToDefaultLayer(pdrw);
   pdrw->SetRenderCallback(l_compute);
   pdrw->SetOwner(&pent->GetEntData());
-  pdrw->SetSortKey(0);
+  pdrw->SetSortKey(400000000);
   lev2::Drawable::var_t ap;
   ap.Set<ProcTexOutputDynTex*>(this);
   pdrw->SetUserDataA(ap);
   pdrw->SetUserDataB(ssci);
 }
-///////////////////////////////////////////////////////////////////////////////
-void ProcTexOutputBake::Describe() {
-  ork::reflect::RegisterProperty("NumFrames", &ProcTexOutputBake::mNumExportFrames);
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputBake>("NumFrames", "editor.range.min", "1");
-  ork::reflect::AnnotatePropertyForEditor<ProcTexOutputBake>("NumFrames", "editor.range.max", "3600");
-  // ork::reflect::RegisterProperty("DynTexName", &ProcTexOutputDynTex::mDynTexPath);
-
-  auto opm = new ork::reflect::OpMap;
-  opm->mLambdaMap["BakeProcTex"] = [=](Object* pobj) {
-    ProcTexOutputBake* as_ptcd = rtti::autocast(pobj);
-    if (as_ptcd) {
-      // Op([=](){}).QueueASync(MainThreadOpQ());
-      // assert(false);
-
-      auto fname = SaveFileRequester("Export ProcTex Image Sequence", "PNG (*.png)");
-
-      if (fname.length()) {
-        printf("Starting Bake num_frames<%d>\n", as_ptcd->mNumExportFrames);
-
-        // as_ptcd->mPerformingBake = true;
-        // as_ptcd->mBakeFrameIndex = 0;
-        // as_ptcd->mWritePath = fname.c_str();
-      }
-    }
-  };
-  reflect::AnnotateClassForEditor<ProcTexOutputBake>("editor.object.ops", opm);
-}
-///////////////////////////////////////////////////////////////////////////////
-ProcTexOutputBake::ProcTexOutputBake()
-    : mNumExportFrames(1), mPerformingBake(false), mBakeFrameIndex(0), mWritePath(AddPooledLiteral("yo.png")) {}
-#if 0
-void ProcTexControllerData::IncrementFrame() const
-{
-	mBakeFrameIndex++;
-	printf( "ProcTexControllerData::IncrementFrame() mBakeFrameIndex<%d>\n", mBakeFrameIndex );
-	if( mBakeFrameIndex>=mNumExportFrames )
-	{
-		printf( "bake done nframes<%d>\n", mNumExportFrames );
-		mPerformingBake = false;
-	}
-}
-#endif
-///////////////////////////////////////////////////////////////////////////////
-void ProcTexOutputBake::OnLinkEntity(Simulation* psi, Entity* pent) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 void ProcTexOutputBase::DoLinkEntity( Simulation* psi, Entity *pent ){

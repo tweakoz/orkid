@@ -70,32 +70,6 @@ float RenderContextInstData::GetEngineParamFloat(int idx) const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/*U32 Renderer::ComposeSortKey( U32 texIndex, U32 depthIndex, U32 passIndex, U32 transIndex ) const
-{
-    static const u32 ktexbits = 10;
-    static const u32 kpassbits = 3;
-    static const u32 kdepthbits = 18;
-    static const u32 ktransbits = 1;
-
-    static const u32 ktexmask = (1<<ktexbits)-1;
-    static const u32 kpassmask = (1<<kpassbits)-1;
-    static const u32 kdepthmask = (1<<kdepthbits)-1;
-    static const u32 ktransmask = (1<<ktransbits)-1;
-
-    static const u32 kdepthshift = 0;
-    static const u32 ktexshift = kdepthshift+kdepthbits;
-    static const u32 kpassshift = ktexshift+ktexbits;
-    static const u32 ktransshift = kpassshift+kpassbits;
-
-    U32 uval	= ((transIndex & ktransmask) << ktransshift)
-                | ((passIndex & kpassmask) << kpassshift)
-                | ((texIndex & ktexmask) << ktexshift)
-                | ((depthIndex & kdepthmask) << kdepthshift)
-                ;
-
-    return 0xffffffff-uval;
-}*/
-
 RenderContextFrameData::RenderContextFrameData(GfxTarget* ptarg)
     : _lightmgr(0)
     , mpTarget(ptarg) {}

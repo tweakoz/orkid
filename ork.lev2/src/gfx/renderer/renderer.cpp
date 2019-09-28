@@ -81,6 +81,11 @@ void IRenderer::drawEnqueuedRenderables() {
   _groupedModels.clear();
 
   for (size_t i = 0; i < renderQueueSize; i++) {
+    int sorted = mQueueSortKeys[i];
+    mpTarget->debugMarker(FormatString("IRenderer::drawEnqueuedRenderables sorting index<%zu> sorted<%d>",i,sorted));
+  }
+
+  for (size_t i = 0; i < renderQueueSize; i++) {
     int sorted = sortedRenderQueueIndices[i];
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = mQueueSortNodes[sorted];

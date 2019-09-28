@@ -37,8 +37,11 @@ struct SCRIMPL {
   }
   ///////////////////////////////////////
   void gpuInit(lev2::GfxTarget* pTARG) {
-      _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
-      _blit2screenmtl.Init(pTARG);
+      if( _needsinit ){
+        _blit2screenmtl.SetUserFx("orkshader://solid", "texcolor");
+        _blit2screenmtl.Init(pTARG);
+        _needsinit = false;
+    }
   }
   ///////////////////////////////////////
   void beginAssemble(CompositorDrawData& drawdata) {
@@ -78,6 +81,7 @@ _CPD._cameraMatrices = ddprops["defcammtx"_crcu].Get<const CameraMatrices*>();
   ScreenOutputCompositingNode* _node = nullptr;
   CompositingPassData _CPD;
   ork::lev2::GfxMaterial3DSolid _blit2screenmtl;
+bool _needsinit = true;
 };
 ///////////////////////////////////////////////////////////////////////////////
 ScreenOutputCompositingNode::ScreenOutputCompositingNode() { _impl = std::make_shared<SCRIMPL>(this); }
