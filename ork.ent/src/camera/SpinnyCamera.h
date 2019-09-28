@@ -113,7 +113,7 @@ private:
 	orklut<PoolString,SeqCamItemInstBase*>	mItemInsts;
 	SeqCamItemInstBase*						mpActiveItem;
 	const SequenceCamControllerData&		mCD;
-	lev2::CameraData*								_cameraData;
+	lev2::CameraData*								_cameraData = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

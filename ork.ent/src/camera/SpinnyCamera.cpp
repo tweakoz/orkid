@@ -112,7 +112,7 @@ bool SequenceCamControllerInst::DoLink(Simulation *psi)
 
 bool SequenceCamControllerInst::DoStart(Simulation *psi, const fmtx4 &world)
 {
-	if( GetEntity() )
+	if( GetEntity() and _cameraData)
 	{
 		const ent::EntData& ED = GetEntity()->GetEntData();
 		PoolString name = ED.GetName();
