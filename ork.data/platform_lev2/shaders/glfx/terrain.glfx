@@ -103,7 +103,8 @@ fragment_shader ps_terrain
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_deferred : iface_fdefault {
   layout(location = 0) out vec4 out_albedo_ao;
-  layout(location = 1) out vec4 out_nxy_ru_ml;
+  layout(location = 1) out vec4 out_ruf_mtl;
+  layout(location = 2) out vec4 out_norml_d;
 }
 fragment_shader ps_terrain_gbuf1
   : iface_deferred
@@ -111,9 +112,9 @@ fragment_shader ps_terrain_gbuf1
   vec3 n = normalize(frg_nrm);
   vec3 c = albedo(n);
   out_albedo_ao = vec4(c,1);
-  vec2 n2ch = encode_nsphenv(n);
-  vec3 n3ch = decode_nsphenv(n2ch);
-  out_nxy_ru_ml = vec4(n3ch.xyz,0.5);
+  vec3 yo = (n+vec3(1,1,1))*0.5;
+  out_ruf_mtl = vec4(yo*c,1);
+  out_norml_d = vec4(n,frg_camdist);
 }
 ///////////////////////////////////////////////////////////////
 // pick

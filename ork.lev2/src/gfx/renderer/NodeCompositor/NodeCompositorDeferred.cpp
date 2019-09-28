@@ -46,11 +46,14 @@ struct IMPL {
       _material.Init(pTARG);
       _rtg            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto buf0        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8);
-      auto buf1        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA64, 8, 8);
+      auto buf1        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA32, 8, 8);
+      auto buf2        = new RtBuffer(_rtg, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA64, 8, 8);
       buf0->_debugName = "DeferredRtAlbAo";
-      buf1->_debugName = "DeferredRtNxNyRuMl";
+      buf1->_debugName = "DeferredRRufMtl";
+      buf2->_debugName = "DeferredRtNormalDist";
       _rtg->SetMrt(0, buf0);
       _rtg->SetMrt(1, buf1);
+      _rtg->SetMrt(2, buf2);
       _effect.PostInit(pTARG, "orkshader://framefx", "frameeffect_standard");
     }
     pTARG->debugPopGroup();
@@ -139,7 +142,7 @@ void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
 RtBuffer* DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
-return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg->GetMrt((i>>10)&1); 
+return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtg->GetMrt(((i>>10)&7)%3);
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2
