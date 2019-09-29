@@ -68,8 +68,8 @@ public:
   void PtexBegin(lev2::GfxTarget* ptgt, bool push_full_vp, bool clear_all);
   void PtexEnd(bool pop_vp);
 
-  bool IsBuf32() const { return GetBufferFormat() == lev2::EBUFFMT_RGBA32; }
-  bool IsBuf64() const { return GetBufferFormat() == lev2::EBUFFMT_RGBA64; }
+  bool IsBuf32() const { return GetBufferFormat() == lev2::EBUFFMT_RGBA8; }
+  bool IsBuf64() const { return GetBufferFormat() == lev2::EBUFFMT_RGBA16F; }
 
   lev2::RtGroup* GetRtGroup(lev2::GfxTarget* pt);
 
@@ -80,12 +80,12 @@ public:
 class Buffer32 : public Buffer {
 public:
   Buffer32();
-  ork::lev2::EBufferFormat GetBufferFormat() const override { return lev2::EBUFFMT_RGBA32; }
+  ork::lev2::EBufferFormat GetBufferFormat() const override { return lev2::EBUFFMT_RGBA8; }
 };
 class Buffer64 : public Buffer {
 public:
   Buffer64();
-  ork::lev2::EBufferFormat GetBufferFormat() const override { return lev2::EBUFFMT_RGBA64; }
+  ork::lev2::EBufferFormat GetBufferFormat() const override { return lev2::EBUFFMT_RGBA16F; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

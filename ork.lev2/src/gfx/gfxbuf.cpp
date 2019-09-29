@@ -64,7 +64,7 @@ void GfxBuffer::Resize(int ix, int iy, int iw, int ih) {
 /////////////////////////////////////////////////////////////////////////
 
 GfxWindow::GfxWindow(int iX, int iY, int iW, int iH, const std::string& name, void* pdata)
-    : GfxBuffer(0, iX, iY, iW, iH, EBUFFMT_RGBA32, ETGTTYPE_WINDOW, name)
+    : GfxBuffer(0, iX, iY, iW, iH, EBUFFMT_RGBA8, ETGTTYPE_WINDOW, name)
     , mpCTXBASE(0) {
   gGfxEnv.SetMainWindow(this);
 }

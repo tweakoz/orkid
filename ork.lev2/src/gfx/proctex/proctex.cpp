@@ -120,7 +120,7 @@ lev2::RtGroup* Buffer::GetRtGroup( lev2::GfxTarget* ptgt )
 		auto mrt = new ork::lev2::RtBuffer(
 			mRtGroup,
 			lev2::ETGTTYPE_MRT0,
-			lev2::EBUFFMT_RGBA32,
+			lev2::EBUFFMT_RGBA8,
 			miW, miH );
 
     mrt->_debugName = FormatString("ptx::Reg32");
@@ -140,8 +140,8 @@ lev2::Texture* Buffer::OutputTexture()
 								: nullptr;
 }
 
-Buffer32::Buffer32() : Buffer( lev2::EBUFFMT_RGBA32 ) {}	// EBUFFMT_RGBA32
-Buffer64::Buffer64() : Buffer( lev2::EBUFFMT_RGBA64 ) {}	// EBUFFMT_RGBA64
+Buffer32::Buffer32() : Buffer( lev2::EBUFFMT_RGBA8 ) {}	// EBUFFMT_RGBA8
+Buffer64::Buffer64() : Buffer( lev2::EBUFFMT_RGBA16F ) {}	// EBUFFMT_RGBA16F
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

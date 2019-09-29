@@ -65,11 +65,11 @@ Texture *Texture::CreateBlank( int iw, int ih, EBufferFormat efmt )
 
 	switch( efmt )
 	{
-		case EBUFFMT_RGBA32:
-		case EBUFFMT_F32:
+		case EBUFFMT_RGBA8:
+		case EBUFFMT_R32F:
 			pTex->_data = calloc(iw*ih*4,1);
 			break;
-		case EBUFFMT_RGBA128:
+		case EBUFFMT_RGBA32F:
       pTex->_data = calloc(iw*ih*16,1);
 			break;
 		default:
@@ -103,16 +103,16 @@ MipChain::MipChain(int w, int h,EBufferFormat fmt,ETextureType typ){
     level->_width = w;
     level->_height = h;
     switch(fmt){
-      case EBUFFMT_RGBA128:
+      case EBUFFMT_RGBA32F:
         level->_length = w*h*4*sizeof(float);
         break;
-      case EBUFFMT_RGBA64:
+      case EBUFFMT_RGBA16F:
         level->_length = w*h*4*sizeof(uint16_t);
         break;
-      case EBUFFMT_RGBA32:
+      case EBUFFMT_RGBA8:
         level->_length = w*h*4*sizeof(uint8_t);
         break;
-      case EBUFFMT_F32:
+      case EBUFFMT_R32F:
       case EBUFFMT_Z24S8:
       case EBUFFMT_Z32:
         level->_length = w*h*4*sizeof(float);

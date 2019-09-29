@@ -1232,7 +1232,7 @@ Texture* GlTextureInterface::createFromMipChain( MipChain* from_chain ){
   tex->_texFormat = from_chain->_format;
   tex->_texType = from_chain->_type;
 
-  assert(tex->_texFormat==EBUFFMT_RGBA128);
+  assert(tex->_texFormat==EBUFFMT_RGBA32F);
   assert(tex->_texType==ETEXTYPE_2D);
 
   GLTextureObject* texobj = new GLTextureObject;

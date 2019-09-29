@@ -27,7 +27,7 @@ namespace ork { namespace lev2 {
 void PickBufferBase::Describe() {}
 
 PickBufferBase::PickBufferBase(lev2::GfxBuffer* Parent, int iX, int iY, int iW, int iH, EPickBufferType etyp)
-    : ork::lev2::GfxBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA32, lev2::ETGTTYPE_EXTBUFFER), meType(etyp), mbInitTex(true),
+    : ork::lev2::GfxBuffer(Parent, iX, iY, iW, iH, lev2::EBUFFMT_RGBA8, lev2::ETGTTYPE_EXTBUFFER), meType(etyp), mbInitTex(true),
       mpPickRtGroup(new lev2::RtGroup(GetContext(), iW, iH)) {
   mpUIMaterial = new ork::lev2::GfxMaterialUITextured(GetContext());
 }
@@ -45,8 +45,8 @@ ork::Object* PickBufferBase::GetObjectFromPickId(uint64_t pid) {
 }
 
 void PickBufferBase::Init() {
-  auto buf0 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA128, miWidth, miHeight);
-  auto buf1 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA128, miWidth, miHeight);
+  auto buf0 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
+  auto buf1 = new ork::lev2::RtBuffer(mpPickRtGroup, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA32F, miWidth, miHeight);
   buf0->_debugName = FormatString("Pickbuf::mrt0");
   buf0->_debugName = FormatString("Pickbuf::mrt1");
   mpPickRtGroup->SetMrt(0,buf0);

@@ -5,10 +5,9 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#ifndef _ORK_LEV2_GFXENV_ENUM_H_
-#define _ORK_LEV2_GFXENV_ENUM_H_
+#pragma once
 
-namespace ork { namespace lev2 {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 enum EField
@@ -92,10 +91,13 @@ enum ETextureType
 
 enum EBufferFormat
 {
-	EBUFFMT_RGBA32 = 0,
-	EBUFFMT_RGBA64 ,
-	EBUFFMT_RGBA128 ,
-	EBUFFMT_F32 ,
+	EBUFFMT_RGBA8 = 0,
+  EBUFFMT_RG16F,
+	EBUFFMT_RGBA16F ,
+	EBUFFMT_RGBA32F ,
+	EBUFFMT_RGB10A2 , // r10g10b10a2
+  EBUFFMT_RGB32UI,
+	EBUFFMT_R32F , 
 	EBUFFMT_Z16 ,
 	EBUFFMT_Z24S8 ,
 	EBUFFMT_Z32,
@@ -258,6 +260,4 @@ enum EVtxStreamFormat
 	EVTXSTREAMFMT_END,
 };
 ///////////////////////////////////////////////////////////////////////////////
-} }
-
-#endif // !_ORK_LEV2_GFXENV_ENUM_H_
+}

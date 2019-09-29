@@ -160,8 +160,8 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
   dblock->addItem<int>(MIPW);
   dblock->addItem<int>(MIPH);
 
-  auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
-  auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
+  auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
+  auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
 
   auto mipA0      = chainA->_levels[0];
   auto mipB0      = chainB->_levels[0];
@@ -353,8 +353,8 @@ void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t
   istr.GetItem<int>(MIPH);
   assert(MIPW==_heightfield->GetGridSizeX());
   assert(MIPH==_heightfield->GetGridSizeZ());
-  auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
-  auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA128, ETEXTYPE_2D);
+  auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
+  auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
   printf( "reloadCachedTextures ostr.len<%zu> nmips<%zu>\n", ostr.GetSize(), chainA->_levels.size() );
   int levindex = 0;
   while (MIPW >= 2 and MIPH >= 2) {

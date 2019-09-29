@@ -40,8 +40,10 @@ struct IMPL {
   ~IMPL() {}
   ///////////////////////////////////////
   // deferred layout
-  // rt0/rgba32  - albedo,ao (primary color)
-  // rt1/rgba64  - nxny,mt,rf
+  // rt0/GL_RGBA8    (32,32)  - albedo,ao (primary color)
+  // rt1/GL_RGB10_A2 (32,64)  - normal,model
+  // rt2/GL_RGBA8    (32,96)  - mtl,ruf,aux1,aux2
+  // rt3/GL_R32F     (32,128) - depth
   ///////////////////////////////////////
   void init(lev2::GfxTarget* pTARG) {
     pTARG->debugPushGroup("Deferred::rendeinitr");
@@ -49,9 +51,9 @@ struct IMPL {
       _blit2screenmtl.SetUserFx("orkshader://deferred", "deferred_test");
       _blit2screenmtl.Init(pTARG);
       _rtgGbuffer            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA32, 8, 8);
-      auto buf1        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA32, 8, 8);
-      auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA64, 8, 8);
+      auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
+      auto buf1        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA8, 8, 8);
+      auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGB10A2, 8, 8);
       buf0->_debugName = "DeferredRtAlbAo";
       buf1->_debugName = "DeferredRRufMtl";
       buf2->_debugName = "DeferredRtNormalDist";
@@ -60,7 +62,7 @@ struct IMPL {
       _rtgGbuffer->SetMrt(2, buf2);
 
       _rtgLaccum            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto bufLA        = new RtBuffer(_rtgLaccum, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA64, 8, 8);
+      auto bufLA        = new RtBuffer(_rtgLaccum, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, 8, 8);
       bufLA->_debugName = "DeferredLightAccum";
       _rtgLaccum->SetMrt(0, bufLA);
     }
@@ -147,7 +149,7 @@ struct IMPL {
       _blit2screenmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
       _blit2screenmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
       _blit2screenmtl.SetTexture3(_rtgGbuffer->GetMrt(2)->GetTexture());
-    _blit2screenmtl.SetUser0(node->_fogColor);
+      _blit2screenmtl.SetUser0(node->_fogColor);
       _blit2screenmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       _blit2screenmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _blit2screenmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
@@ -196,7 +198,7 @@ void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
 RtBuffer* DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
-return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgGbuffer->GetMrt(2);
+return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgLaccum->GetMrt(0);
 }
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

@@ -186,15 +186,15 @@ void GlFrameBufferInterface::_initializeContext(GfxBuffer* pBuf) {
   bool Zonly = false;
 
   switch (pBuf->GetBufferFormat()) {
-    case EBUFFMT_RGBA32:
+    case EBUFFMT_RGBA8:
       // efmt = D3DFMT_A8R8G8B8;
       ibytesperpix = 4;
       break;
-    case EBUFFMT_RGBA64:
+    case EBUFFMT_RGBA16F:
       // efmt = D3DFMT_A16B16G16R16F;
       ibytesperpix = 8;
       break;
-    case EBUFFMT_RGBA128:
+    case EBUFFMT_RGBA32F:
       // efmt = D3DFMT_A32B32G32R32F;
       ibytesperpix = 16;
       break;

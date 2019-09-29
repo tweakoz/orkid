@@ -62,7 +62,7 @@ void SeriesCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH)
     mCompositingMaterial.Init(pTARG);
 
     _rtg = new lev2::RtGroup(pTARG, iW, iH);
-    mOutput = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA64, iW, iH);
+    mOutput = new lev2::RtBuffer(_rtg, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, iW, iH);
     mOutput->_debugName = FormatString("SeriesCompositingNode::output");
     _rtg->SetMrt(0,mOutput);
 

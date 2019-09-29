@@ -87,7 +87,7 @@ void Surface::DoDraw(DrawEvent& drwev)
 		auto mrt0 = new lev2::RtBuffer(
 			mRtGroup,
 			lev2::ETGTTYPE_MRT0,
-			lev2::EBUFFMT_RGBA32,
+			lev2::EBUFFMT_RGBA8,
 			1280,720 );
 		mRtGroup->SetMrt( 0, mrt0 );
 	}

@@ -44,7 +44,7 @@ public:
 	void Init( ork::lev2::GfxTarget* pTARG ) // virtual
     {
         mtl.Init(pTARG);
-        tex = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBUFFMT_RGBA32);
+        tex = ork::lev2::Texture::CreateBlank(512, 512, ork::lev2::EBUFFMT_RGBA8);
         auto pu32 = (uint32_t*) tex->_data;
         uint32_t idx=0;
         for( int iw=0; iw<512; iw++ )

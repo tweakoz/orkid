@@ -270,7 +270,7 @@ public:
             int iY,
             int iW,
             int iH,
-            EBufferFormat efmt      = EBUFFMT_RGBA32,
+            EBufferFormat efmt      = EBUFFMT_RGBA8,
             ETargetType etype       = ETGTTYPE_EXTBUFFER,
             const std::string& name = "NoName");
 

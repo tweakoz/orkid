@@ -257,16 +257,16 @@ CaptureBuffer::~CaptureBuffer() {
 int CaptureBuffer::GetStride() const {
   int istride = 0;
   switch (meFormat) {
-    case EBUFFMT_RGBA32:
+    case EBUFFMT_RGBA8:
       istride = 4;
       break;
-    case EBUFFMT_RGBA64:
+    case EBUFFMT_RGBA16F:
       istride = 8;
       break;
-    case EBUFFMT_RGBA128:
+    case EBUFFMT_RGBA32F:
       istride = 16;
       break;
-    case EBUFFMT_F32:
+    case EBUFFMT_R32F:
       istride = 4;
       break;
     default:

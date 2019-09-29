@@ -162,22 +162,41 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       GLenum gltype           = 0;
 
       switch (pB->GetBufferFormat()) {
-        case EBUFFMT_RGBA32:
+        case EBUFFMT_R32F:
+          glformat = GL_RED;
+          glinternalformat = GL_R32F;
+          gltype           = GL_FLOAT;
+          break;
+        case EBUFFMT_RG16F:
+          glformat = GL_RG;
+          glinternalformat = GL_RG16F;
+          gltype           = GL_HALF_FLOAT;
+          break;
+        case EBUFFMT_RGBA8:
           glinternalformat = GL_RGBA8;
           gltype           = GL_UNSIGNED_BYTE;
           break;
-        case EBUFFMT_RGBA64:
+        case EBUFFMT_RGBA16F:
           glinternalformat = GL_RGBA16F;
           gltype           = GL_HALF_FLOAT;
           break;
-        case EBUFFMT_RGBA128:
+        case EBUFFMT_RGBA32F:
           glinternalformat = GL_RGBA32F;
           gltype           = GL_FLOAT;
+          break;
+        case EBUFFMT_RGB10A2:
+          glinternalformat = GL_RGB10_A2;
+          gltype           = GL_UNSIGNED_INT_10_10_10_2;
+          break;
+        case EBUFFMT_RGB32UI:
+          glformat = GL_RGB_INTEGER;
+          glinternalformat = GL_RGB32UI;
+          gltype           = GL_UNSIGNED_INT;
           break;
         default:
           OrkAssert(false);
           break;
-          // case EBUFFMT_RGBA128: glinternalformat = GL_RGBA32; break;
+          // case EBUFFMT_RGBA32F: glinternalformat = GL_RGBA32; break;
       }
       OrkAssert(glinternalformat != 0);
 

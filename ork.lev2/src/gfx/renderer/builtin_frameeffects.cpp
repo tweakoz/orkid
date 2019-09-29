@@ -145,7 +145,7 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 		auto grp = new RtGroup( pTARG, miW, miH, kmultisamplesH );
     auto buf = new RtBuffer( grp,
 												  lev2::ETGTTYPE_MRT0,
-												  lev2::EBUFFMT_RGBA64,
+												  lev2::EBUFFMT_RGBA16F,
 												   miW, miH );
 
     buf->_debugName = FormatString("BFTEK::PingPongBuf%d",i);
@@ -163,12 +163,12 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
   auto bufa = new RtBuffer(		mpMrtAux0,
 											lev2::ETGTTYPE_MRT0,
-											lev2::EBUFFMT_RGBA64,
+											lev2::EBUFFMT_RGBA16F,
 											kGLOWBUFSIZE, kGLOWBUFSIZE );
 
   auto bufb = new RtBuffer(		mpMrtAux1,
 											lev2::ETGTTYPE_MRT0,
-											lev2::EBUFFMT_RGBA64,
+											lev2::EBUFFMT_RGBA16F,
 											kGLOWBUFSIZE, kGLOWBUFSIZE );
 
   bufa->_debugName = FormatString("BFTEK::Aux0");
@@ -184,8 +184,8 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
 	//mpMrtAux0->GetMrt(0)->SetContext(pTARG);
 	//mpMrtAux1->GetMrt(0)->SetContext(pTARG);
-	mpAuxBuffer0 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA64, kGLOWBUFSIZE, kGLOWBUFSIZE );
-	mpAuxBuffer1 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA64, kGLOWBUFSIZE, kGLOWBUFSIZE );
+	mpAuxBuffer0 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE );
+	mpAuxBuffer1 = new TexBuffer( Parent, lev2::EBUFFMT_RGBA16F, kGLOWBUFSIZE, kGLOWBUFSIZE );
 
 	////////////////////////////////////////////////////////////////
 
@@ -193,7 +193,7 @@ void BuiltinFrameTechniques::DoInit( GfxTarget* pTARG )
 
   auto buff = new RtBuffer(	mpMrtFinalHD,
 											lev2::ETGTTYPE_MRT0,
-											lev2::EBUFFMT_RGBA64,
+											lev2::EBUFFMT_RGBA16F,
 											kFINALHDW, kFINALHDH );
 
 	mpMrtFinalHD->SetMrt( 0, buff );
