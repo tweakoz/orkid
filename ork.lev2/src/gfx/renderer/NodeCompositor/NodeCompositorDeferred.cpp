@@ -52,8 +52,8 @@ struct IMPL {
       _blit2screenmtl.Init(pTARG);
       _rtgGbuffer            = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
-      auto buf1        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGBA8, 8, 8);
-      auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGB10A2, 8, 8);
+      auto buf1        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGB10A2, 8, 8);
+      auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA32F, 8, 8);
       buf0->_debugName = "DeferredRtAlbAo";
       buf1->_debugName = "DeferredRRufMtl";
       buf2->_debugName = "DeferredRtNormalDist";
@@ -104,6 +104,7 @@ struct IMPL {
       CPD._irendertarget = & rtgbuf;
       CPD.SetDstRect(tgt_rect);
       CPD._passID = "defgbuffer1"_crcu;
+      fvec3 campos_mono = CPD.monoCamPos(fmtx4());
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
@@ -150,6 +151,7 @@ struct IMPL {
       _blit2screenmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
       _blit2screenmtl.SetTexture3(_rtgGbuffer->GetMrt(2)->GetTexture());
       _blit2screenmtl.SetUser0(node->_fogColor);
+      _blit2screenmtl.SetUser1(campos_mono);
       _blit2screenmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       _blit2screenmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _blit2screenmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);

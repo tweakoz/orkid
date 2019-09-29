@@ -836,22 +836,16 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   //////////////////////////
   //////////////////////////
   fmtx4 MVPL, MVPC, MVPR;
-  fvec3 campos_mono;
-  fvec3 znormal;
   //////////////////////////
+
+  fvec3 campos_mono = CPD.monoCamPos(viz_offset);
+  fvec3 znormal = CPD.monoCamZnormal();
+
   if (stereo1pass) {
     auto stcams = CPD._stereoCameraMatrices;
     MVPL     = stcams->MVPL(viz_offset);
     MVPR     = stcams->MVPR(viz_offset);
     MVPC = stcams->MVPMONO(viz_offset);
-    auto V_mono = stcams->VMONO();
-    auto MV_mono = (viz_offset * V_mono);
-    fmtx4 IMV_mono;
-    IMV_mono.inverseOf(MV_mono);
-    campos_mono = IMV_mono.GetTranslation();
-    fmtx4 inv_view_mono;
-    inv_view_mono.inverseOf(V_mono);
-    znormal = inv_view_mono.GetZNormal().Normal();
   } else {
     auto mcams = CPD._cameraMatrices;
     const fmtx4& PMTX_mono = mcams->_pmatrix;
@@ -861,13 +855,6 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
     MVPL = MVP;
     MVPC = MVP;
     MVPR = MVP;
-    //MVPC.dump("MVPC");
-    fmtx4 IMV_mono;
-    IMV_mono.inverseOf(MV_mono);
-    campos_mono = IMV_mono.GetTranslation();
-    fmtx4 inv_view_mono;
-    inv_view_mono.inverseOf(VMTX_mono);
-    znormal = inv_view_mono.GetZNormal().Normal();
   }
 
   //////////////////////////

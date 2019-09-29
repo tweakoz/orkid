@@ -107,8 +107,8 @@ fragment_interface iface_deferred : iface_fdefault {
   //  so lets disable all implicit layout when
   //   any explicit layout is performed
   //layout(location = 0) out vec4 out_clr; // albedo ao
-  layout(location = 1) out vec4 out_ruf_mtl;
-  layout(location = 2) out vec4 out_norml_d;
+  layout(location = 1) out vec4 out_norml_mdl;
+  layout(location = 2) out vec4 out_wpos_d;
 }
 fragment_shader ps_terrain_gbuf1
   : iface_deferred
@@ -117,8 +117,8 @@ fragment_shader ps_terrain_gbuf1
   vec3 c = albedo(n);
   out_clr = vec4(c,1);
   vec3 yo = (n+vec3(1,1,1))*0.5;
-  out_ruf_mtl = vec4(yo*c,1);
-  out_norml_d = vec4(n,frg_camdist);
+  out_norml_mdl = vec4(n,1);
+  out_wpos_d = vec4(frg_wpos,frg_camdist);
 }
 ///////////////////////////////////////////////////////////////
 // pick

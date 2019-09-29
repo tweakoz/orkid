@@ -160,15 +160,13 @@ libblock lib_terrain {
 
 libblock lib_terrain_frg {
 
-  vec2 encode_nsphenv(vec3 raw){
-      vec2 n2ch = raw.xy * (sqrt(-raw.z*0.5+0.5));
-      return (n2ch*0.5)+0.5;
+  vec2 encode_nsphenv(vec3 raw) {
+    vec2 n2ch = raw.xy * (sqrt(-raw.z * 0.5 + 0.5));
+    return (n2ch * 0.5) + 0.5;
   }
 
   vec3 decode_nsphenv(vec2 encoded) {
-    vec4 nn = vec4(encoded,0,0)
-            * vec4(2, 2, 0, 0)
-            + vec4(-1, -1, 1, -1);
+    vec4 nn = vec4(encoded, 0, 0) * vec4(2, 2, 0, 0) + vec4(-1, -1, 1, -1);
     float l = dot(nn.xyz, -nn.xyw);
     nn.z    = l;
     nn.xy *= sqrt(l);
@@ -192,5 +190,22 @@ libblock lib_terrain_frg {
 
     vec3 c = hor * pow(tpw.y, testxxx) + Rock1Color * pow(tpw.x, testxxx) + Rock2Color * pow(tpw.z, testxxx);
     return c;
+  }
+}
+
+libblock lib_pointlight {
+
+  vec3 pointlight(vec3 worldpos, vec3 worldnormal, vec3 lightpos, float lightradius, float cutoff, vec3 color) {
+    vec3 postolight = lightpos - worldpos;
+    float dis2light = length(postolight);
+    vec3 dir2light  = normalize(postolight);
+    float clampdist = max(dis2light - lightradius, 0);
+    postolight /= dis2light;
+    float denom = clampdist / lightradius + 1.0;
+    float atten = 1.0 / (denom * denom);
+    atten       = (atten - cutoff) / (1.0 - cutoff);
+    atten       = max(atten, 0.0);
+    atten *= max(dot(worldnormal, dir2light), 0);
+    return color * atten;
   }
 }

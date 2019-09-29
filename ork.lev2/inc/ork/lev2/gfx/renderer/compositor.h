@@ -117,7 +117,7 @@ struct CompositingPassData {
 
   const Frustum& monoCamFrustum() const;
   const fvec3& monoCamZnormal() const;
-
+  fvec3 monoCamPos(const fmtx4& vizoffsetmtx) const;
   ////////////////////////////////////////////////////
 
   IRenderTarget* _irendertarget = nullptr;

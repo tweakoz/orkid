@@ -38,6 +38,20 @@ CompositingPassData CompositingPassData::FromRCFD(const RenderContextFrameData& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+fvec3 CompositingPassData::monoCamPos(const fmtx4& vizoffsetmtx) const {
+  // vizoffsetmtx : use in visual offset cases such as the heightfield
+  //   (todo: elaborate on this subject)
+  fmtx4 vmono = isStereoOnePass()
+              ? _stereoCameraMatrices->VMONO()
+              : _cameraMatrices->_vmatrix;
+  auto mvmono = (vizoffsetmtx * vmono);
+  fmtx4 imvmono;
+  imvmono.inverseOf(mvmono);
+  return imvmono.GetTranslation();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 const Frustum& CompositingPassData::monoCamFrustum() const {
   static const Frustum gfrustum;
   return _cameraMatrices ? _cameraMatrices->_frustum : gfrustum;

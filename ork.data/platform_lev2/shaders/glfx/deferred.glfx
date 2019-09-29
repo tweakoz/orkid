@@ -3,12 +3,12 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "330";
+import "misctools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx
-{
+uniform_block ub_vtx {
   uniform mat4 MatMVP;
   uniform mat4 MatMV;
   uniform mat4 MatM;
@@ -19,49 +19,75 @@ uniform_block ub_vtx
   uniform float Time;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault
-	: ub_vtx
-{
-	in vec4 position : POSITION;
-	in vec2 uv0 : TEXCOORD0;
-	//
-	out vec2 frg_uv;
+vertex_interface iface_vdefault : ub_vtx {
+  in vec4 position : POSITION;
+  in vec2 uv0 : TEXCOORD0;
+  //
+  out vec2 frg_uv;
 }
 ///////////////////////////////////////////////////////////////
 
-uniform_block ub_frg
-{
+uniform_block ub_frg {
   uniform sampler2D ColorMap;
   uniform sampler2D ColorMap2;
   uniform sampler2D ColorMap3;
   uniform vec4 User0; // fog color
+  uniform vec4 User1; // campos
+  uniform float Time;
 }
 
-fragment_interface iface_fdefault
-  : ub_frg
-{
-	in vec2 frg_uv;
-	//
-	out vec4 out_clr;
+fragment_interface iface_fdefault : ub_frg {
+  in vec2 frg_uv;
+  //
+  out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_std : iface_vdefault
-{
-	gl_Position = MatMVP*position;
-	frg_uv = uv0;
+vertex_shader vs_std : iface_vdefault {
+  gl_Position = MatMVP * position;
+  frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_std
-  : iface_fdefault
-{
-	vec3 c  = texture(ColorMap,frg_uv).xyz;
-	c += texture(ColorMap2,frg_uv).xyz*0.1;
-  vec4 nd = texture(ColorMap3,frg_uv);
-  vec3 n = normalize(nd.xyz);
-  float ddd1 = clamp(1.0 - nd.w * 0.0012, 0, 1);
-	c *= 0.5+dot(n,vec3(0,1,0))*0.5;
+fragment_shader ps_std : iface_fdefault : lib_pointlight {
+  vec3 albedo = texture(ColorMap, frg_uv).xyz;
+  vec4 n_mdl  = texture(ColorMap2, frg_uv);
+  vec4 wpos_d = texture(ColorMap3, frg_uv);
+  albedo += texture(ColorMap2, frg_uv).xyz * 0.1;
+  vec3 n = normalize(n_mdl.xyz);
+
+  ///////////////////////////
+  // test lights (until we hook in the lightmgr lights)
+  ///////////////////////////
+
+  float ddd1 = clamp(1.0 - wpos_d.w * 0.0012, 0, 1);
+
+  ////////////////////
+  // start out with "sunlight"
+  ////////////////////
+  vec3 l = vec3((0.5 + dot(n, vec3(0, 1, 0)) * 0.5)) * 0.7;
+
+  ////////////////////
+  // headlight
+  ////////////////////
+
+  l += pointlight(wpos_d.xyz, n, User1.xyz, 30, 0.001, vec3(0.4, 0.3, 0.2));
+
+  ////////////////////
+
+  for (float ph = 0; ph <= 1.0; ph += 0.1) {
+
+    float lightx  = sin(ph * 6.28) * 400;
+    float lightz  = cos(ph * 6.28) * 400;
+    float lighty  = 150 + sin(6.28 * mod(Time, 100) * 0.1) * 250;
+    vec3 lightpos = vec3(lightx, lighty, lightz);
+    vec3 lcolor   = normalize(vec3(abs(lightx), 0, abs(lightz)));
+    l += pointlight(wpos_d.xyz, n, lightpos, 50, 0.001, lcolor);
+  }
+
+  ///////////////////////////
+
+  vec3 c = albedo * l;
   c = mix(User0.xyz,c,ddd1);
-  out_clr = vec4(c,1);
+  out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
@@ -71,8 +97,8 @@ state_block sb_default { inherits default; }
 technique deferred_test {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_std;
+    vertex_shader   = vs_std;
     fragment_shader = ps_std;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
