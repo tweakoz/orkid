@@ -691,6 +691,12 @@ bool GlslFxInterface::BindPass( FxShader* hfx, int ipass )
 					ppass->mSamplerCount++;
 					pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
 				}
+				else if( puni->mTypeName == "sampler2DShadow" )
+				{
+					pinst->mSubItemIndex = ppass->mSamplerCount;
+					ppass->mSamplerCount++;
+					pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+				}
 
 				const char* fshnam = pfrgshader->mName.c_str();
 
@@ -1065,10 +1071,11 @@ void GlslFxInterface::BindParamCTex( FxShader* hfx, const FxShaderParam* hpar, c
 			{
 				const GLTextureObject* pTEXOBJ = (GLTextureObject*) pTex->GetTexIH();
 				GLuint texID = pTEXOBJ ? pTEXOBJ->mObject : 0;
-				//printf( "Bind3 tex<%p> texobj<%d>\n", pTex, texID );
 				int itexunit = pinst->mSubItemIndex;
 
 				GLenum textgt = pinst->mPrivData.Get<GLenum>();
+
+				//printf( "Bind3 ISDEPTH<%d> tex<%p> texobj<%d> itexunit<%d> textgt<%d>\n", int(pTex->_isDepthTexture), pTex, texID, itexunit, int(textgt) );
 
 				GL_ERRORCHECK();
 				glActiveTexture( GL_TEXTURE0+itexunit );

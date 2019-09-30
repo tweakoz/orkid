@@ -69,6 +69,7 @@ public:
 
   void SetWRotMatrix(const fmtx3& wrot) { mRotMatrix = wrot; }
   void SetAuxMatrix(const fmtx4& mtx) { mMatAux = mtx; }
+  void SetAux2Matrix(const fmtx4& mtx) { mMatAux2 = mtx; }
 
   bool BeginPass(GfxTarget* pTARG, int iPass = 0) final;
   void EndPass(GfxTarget* pTARG) final;
@@ -100,6 +101,7 @@ protected:
   std::string mUserFxName;
   std::string mUserTekName;
   fmtx4 mMatAux;
+  fmtx4 mMatAux2;
   fmtx3 mRotMatrix;
   bool mUnManaged;
   bool mAllowCompileFailure;
@@ -124,6 +126,7 @@ protected:
   const FxShaderParam* hMatMVPR = nullptr;
   const FxShaderParam* hMatMVPC = nullptr;
   const FxShaderParam* hMatAux = nullptr;
+  const FxShaderParam* hMatAux2 = nullptr;
   const FxShaderParam* hMatRot = nullptr;
   const FxShaderParam* hVolumeMap = nullptr;
   const FxShaderParam* hColorMap = nullptr;

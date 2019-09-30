@@ -190,6 +190,7 @@ struct Texture
   mutable void*			_internalHandle = nullptr;
   GfxTarget*        _creatingTarget = nullptr;
   std::string       _debugName;
+  bool _isDepthTexture = false;
 
 };
 

@@ -114,19 +114,19 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class  PointLightData : public LightData
+struct  PointLightData : public LightData
 {
 	RttiDeclareConcrete(PointLightData, LightData);
-
-	float		mRadius;
-	float		mFalloff;
+ public:
+	float		_radius;
+	float		_falloff;
 
 public:
 
-	float GetRadius() const { return mRadius; }
-	float GetFalloff() const { return mFalloff; }
+	float GetRadius() const { return _radius; }
+	float GetFalloff() const { return _falloff; }
 
-	PointLightData() : mRadius(1.0f), mFalloff(1.0f) {}
+	PointLightData() : _radius(1.0f), _falloff(1.0f) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////

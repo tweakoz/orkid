@@ -205,4 +205,12 @@ libblock lib_pointlight {
     atten *= max(dot(worldnormal, dir2light), 0);
     return color*atten;
   }
+
+vec3 wposxyz(in vec3 inpos)
+{
+
+  mat4 ivpmtx = inverse( MatAux2 );
+  vec4 rr = ivpmtx*vec4(inpos,1);
+  return rr.xyz/rr.w;
+}
 }

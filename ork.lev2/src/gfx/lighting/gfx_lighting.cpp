@@ -72,12 +72,12 @@ void PointLight::Describe() {}
 ///////////////////////////////////////////////////////////////////////////////
 
 void PointLightData::Describe() {
-  ork::reflect::RegisterProperty("Radius", &PointLightData::mRadius);
+  ork::reflect::RegisterProperty("Radius", &PointLightData::_radius);
   ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.min", "1");
   ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.max", "3000.00");
   ork::reflect::AnnotatePropertyForEditor<PointLightData>("Radius", "editor.range.log", "true");
 
-  ork::reflect::RegisterProperty("Falloff", &PointLightData::mFalloff);
+  ork::reflect::RegisterProperty("Falloff", &PointLightData::_falloff);
   ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.min", "0");
   ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.max", "10.00");
   ork::reflect::AnnotatePropertyForEditor<PointLightData>("Falloff", "editor.range.log", "true");

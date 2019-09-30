@@ -60,7 +60,7 @@ struct IMPL {
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius  = 50.0f;
+      p._radius  = 25.0f;
       _pointlights.push_back(p);
     }
   }
@@ -86,13 +86,13 @@ struct IMPL {
       _rtgGbuffer      = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
       auto buf1        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGB10A2, 8, 8);
-      auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA32F, 8, 8);
+      //auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA32F, 8, 8);
       buf0->_debugName = "DeferredRtAlbAo";
       buf1->_debugName = "DeferredRRufMtl";
-      buf2->_debugName = "DeferredRtNormalDist";
+      //buf2->_debugName = "DeferredRtNormalDist";
       _rtgGbuffer->SetMrt(0, buf0);
       _rtgGbuffer->SetMrt(1, buf1);
-      _rtgGbuffer->SetMrt(2, buf2);
+      //_rtgGbuffer->SetMrt(2, buf2);
       //////////////////////////////////////////////////////////////
       _rtgLaccum        = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto bufLA        = new RtBuffer(_rtgLaccum, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, 8, 8);
@@ -133,6 +133,9 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB            = RCFD.GetDB();
       auto CPD           = CIMPL->topCPD();
+      const auto& IVP = CPD._cameraMatrices->_ivpmatrix;
+      const auto& V = CPD._cameraMatrices->_vmatrix;
+      const auto& P = CPD._cameraMatrices->_pmatrix;
       CPD._clearColor    = node->_clearColor;
       CPD.mpLayerName    = &_layername;
       CPD._irendertarget = &rtgbuf;
@@ -183,12 +186,14 @@ struct IMPL {
       // base lighting
       //////////////////////////////////////////////////////////////////
       fvec4 vtxcolor(1.0f, 1.0f, 1.0f, 1.0f);
-      _baselightmtl.SetAuxMatrix(fmtx4::Identity);
+      _baselightmtl.SetAuxMatrix(IVP);
+      _baselightmtl.SetAux2Matrix(V*P);
       _baselightmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
       _baselightmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
-      _baselightmtl.SetTexture3(_rtgGbuffer->GetMrt(2)->GetTexture());
+      _baselightmtl.SetTexture3(_rtgGbuffer->_depthTexture);
       _baselightmtl.SetUser0(node->_fogColor);
       _baselightmtl.SetUser1(campos_mono);
+      _baselightmtl.SetUser2(fvec4(1.0/float(_width),1.0f/float(_height),0,0));
       _baselightmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       _baselightmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _baselightmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
@@ -209,12 +214,16 @@ struct IMPL {
       CPD                = CIMPL->topCPD();
       CPD.SetDstRect(vprect);
       CPD._irendertarget        = &rtlaccum;
+
+
       CIMPL->pushCPD(CPD);
-      _pointlightmtl.SetAuxMatrix(fmtx4::Identity);
+
+
+      _pointlightmtl.SetAuxMatrix(IVP);
+      _pointlightmtl.SetAux2Matrix(V*P);
       _pointlightmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
       _pointlightmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
-      _pointlightmtl.SetTexture3(_rtgGbuffer->GetMrt(2)->GetTexture());
-      _pointlightmtl.SetUser0(node->_fogColor);
+      _pointlightmtl.SetTexture3(_rtgGbuffer->_depthTexture);
       _pointlightmtl.SetUser2(fvec4(1.0/float(_width),1.0f/float(_height),0,0));
       _pointlightmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       _pointlightmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
@@ -225,7 +234,6 @@ struct IMPL {
       for( auto& pl : _pointlights ){
         _pointlightmtl.SetUser0(pl._color);
         _pointlightmtl.SetUser1(fvec4(pl._pos, pl._radius));
-        _pointlightmtl.SetAuxMatrix(fmtx4::Identity);
         //////////////////////////
         fmtx4 LightMtx;
         LightMtx.ComposeMatrix(pl._pos, fquat(), pl._radius);

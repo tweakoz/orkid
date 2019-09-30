@@ -120,6 +120,7 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
   hTekPick = fxi->GetTechnique(hModFX, "tek_pick");
 
   hMatAux = fxi->GetParameterH(hModFX, "MatAux");
+  hMatAux2 = fxi->GetParameterH(hModFX, "MatAux2");
   hMatRot = fxi->GetParameterH(hModFX, "MatRotW");
 
   hMatMVPL       = fxi->GetParameterH(hModFX, "MatMVPL");
@@ -254,7 +255,11 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
     FXI->BindParamMatrix(hModFX, hMatMVP, MTXI->RefMVPMatrix());
   }
 
-  FXI->BindParamMatrix(hModFX, hMatAux, mMatAux);
+  if( hMatAux )
+    FXI->BindParamMatrix(hModFX, hMatAux, mMatAux);
+
+  if( hMatAux2 )
+    FXI->BindParamMatrix(hModFX, hMatAux2, mMatAux2);
 
   if (hMatV) {
     FXI->BindParamMatrix(hModFX, hMatV, MTXI->RefVMatrix());

@@ -59,6 +59,7 @@ struct GlFboObject {
   static const int kmaxrt = RtGroup::kmaxmrts;
   GLuint mFBOMaster;
   GLuint mDSBO;
+  GLuint _depthTexture;
   GLuint mTEX[kmaxrt];
   GlFboObject();
 };

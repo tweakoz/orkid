@@ -128,6 +128,16 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       pB->SetMaterial(pmtl);
       //////////////////////////////////////////
     }
+    Base->_depthTexture = new Texture;
+    Base->_depthTexture->_width          = iw;
+    Base->_depthTexture->_height         = ih;
+    GLTextureObject* depthtexobj = new GLTextureObject;
+    Base->_depthTexture->_internalHandle = (void*) depthtexobj;
+    GL_ERRORCHECK();
+
+
+
+
     Base->SetSizeDirty(true);
     mTargetGL.debugPopGroup();
   }
@@ -140,19 +150,33 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     GL_ERRORCHECK();
     glBindRenderbuffer(GL_RENDERBUFFER, FboObj->mDSBO);
     GL_ERRORCHECK();
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, iw, ih);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, iw, ih);
     GL_ERRORCHECK();
-
-    // glRenderbufferStorageMultisampleEXT( GL_RENDERBUFFER_EXT, 1, GL_DEPTH_COMPONENT24, iw, ih );
-
-    //////
-    // attach it to the FBO
-    //////
+    glGenTextures(1,&FboObj->_depthTexture);
+    glBindTexture(GL_TEXTURE_2D, FboObj->_depthTexture);
+    GL_ERRORCHECK();
+    std::string DepthTexName("RtgDepth");
+    glLabelObjectEXT(GL_TEXTURE,FboObj->_depthTexture, DepthTexName.length(), DepthTexName.c_str() );
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, iw, ih, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    //glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    GL_ERRORCHECK();
+    glBindTexture(GL_TEXTURE_2D, 0);
+    GL_ERRORCHECK();
     glBindFramebuffer(GL_FRAMEBUFFER, FboObj->mFBOMaster);
     GL_ERRORCHECK();
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, FboObj->mDSBO);
     GL_ERRORCHECK();
-
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, FboObj->_depthTexture, 0);
+    GL_ERRORCHECK();
+    Base->_depthTexture->setProperty<GLuint>("gltexobj", FboObj->_depthTexture);
+    mTargetGL.TXI()->ApplySamplingMode(Base->_depthTexture);
+    Base->_depthTexture->_isDepthTexture = true;
+    auto depthtexobj = (GLTextureObject*) Base->_depthTexture->_internalHandle;
+    depthtexobj->mObject =FboObj->_depthTexture;
     //////
     for (int it = 0; it < inumtargets; it++) {
       RtBuffer* pB = Base->GetMrt(it);

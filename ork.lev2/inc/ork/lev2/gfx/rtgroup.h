@@ -80,11 +80,11 @@ public:
 	int		GetSamples() const { return miSamples; }
 	/////////////////////////////////////////
 	static const int	kmaxmrts = 4;
-private:
 
 	GfxTarget* 			mParentTarget;
 	RtBuffer*			mMrt[kmaxmrts];
 	GfxBuffer*			mDepth;
+  Texture* _depthTexture = nullptr;
 	int					mNumMrts;
 	int					miW;
 	int					miH;
