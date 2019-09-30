@@ -39,11 +39,11 @@ struct PointLight {
   int _counter = 0;
 
   void next(){
-      float x = float((rand()%1024)-512);
-      float z = float((rand()%1024)-512);
-      float y = float(100+((rand()%100)-50));
+      float x = float((rand()%2048)-1024);
+      float z = float((rand()%2048)-1024);
+      float y = float(100+((rand()%200)-100));
       _dst     = fvec3(x, y, z);
-      _counter = 100+rand()%100;
+      _counter = 200+rand()%200;
   }
 };
 
