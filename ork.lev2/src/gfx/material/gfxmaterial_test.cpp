@@ -225,8 +225,10 @@ bool GfxMaterial3DSolid::BeginPass(GfxTarget* pTarg, int iPass) {
   pTarg->RSI()->BindRasterState(mRasterState);
   pTarg->FXI()->BindPass(hModFX, iPass);
 
-  if (hModFX->GetFailedCompile())
+  if (hModFX->GetFailedCompile()){
+    assert(false);
     return false;
+  }
 
   auto MTXI = pTarg->MTXI();
   auto FXI  = pTarg->FXI();

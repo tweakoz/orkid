@@ -10,6 +10,8 @@ import "misctools.i";
 ///////////////////////////////////////////////////////////////
 uniform_block ub_vtx {
   uniform mat4 MatMVP;
+  uniform mat4 MatMVPL;
+  uniform mat4 MatMVPR;
   uniform mat4 MatMV;
   uniform mat4 MatM;
   uniform mat4 MatV;
@@ -33,6 +35,7 @@ uniform_block ub_frg {
   uniform sampler2D ColorMap3;
   uniform vec4 User0; // fog color
   uniform vec4 User1; // campos
+  uniform vec4 User2; // inverse target size
   uniform float Time;
 }
 
@@ -45,6 +48,24 @@ fragment_interface iface_fdefault : ub_frg {
 vertex_shader vs_std : iface_vdefault {
   gl_Position = MatMVP * position;
   frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////
+vertex_interface iface_vstereo : iface_vdefault {
+  layout(secondary_view_offset=1) out highp int gl_Layer;
+}
+vertex_shader vs_std_stereo
+: iface_vstereo
+: extension(GL_NV_stereo_view_rendering)
+: extension(GL_NV_viewport_array2)
+{
+  frg_uv      = uv0;
+  ///////////////////////////
+  gl_Position = MatMVPL * position;
+  gl_SecondaryPositionNV = MatMVPR * position;
+  gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  ///////////////////////////
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight : iface_fdefault : lib_pointlight {
@@ -78,22 +99,35 @@ fragment_shader ps_baselight : iface_fdefault : lib_pointlight {
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pointlight : iface_vdefault {
-  vec4 hpos = MatMVP * position;
-  gl_Position = hpos;
-  vec3 vpos = hpos.xyz/hpos.w;
-  frg_uv      = 0.5*(vpos.xy+vec2(1,1));
+  gl_Position = MatMVP * position;
+  frg_uv      = vec2(0,0);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pointlight_stereo
+  : iface_vstereo
+  : extension(GL_NV_stereo_view_rendering)
+  : extension(GL_NV_viewport_array2) {
+  frg_uv      = vec2(0,0);
+  ///////////////////////////
+  gl_Position = MatMVPL * position;
+  gl_SecondaryPositionNV = MatMVPR * position;
+  gl_Layer = 0;
+  gl_ViewportMask[0] = 1;
+  gl_SecondaryViewportMaskNV[0] = 2;
+  ///////////////////////////
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight : iface_fdefault : lib_pointlight {
   vec3 lightcolor = User0.xyz;
   vec3 lightpos = User1.xyz;
   float lightradius = User1.w;
-  vec4 n_mdl  = texture(ColorMap2, frg_uv);
+  vec2 UV = gl_FragCoord.xy*User2.xy;
+  vec4 n_mdl  = texture(ColorMap2, UV);
   bool gotspot = length(n_mdl.xyz)>0.0;
   vec3 c = vec3(0,0,0);
   if( gotspot ){
-    vec3 albedo = texture(ColorMap, frg_uv).xyz;
-    vec4 wpos_d = texture(ColorMap3, frg_uv);
+    vec3 albedo = texture(ColorMap, UV).xyz;
+    vec4 wpos_d = texture(ColorMap3, UV);
     vec3 n = normalize(n_mdl.xyz);
     vec3 l = pointlight(wpos_d.xyz, n, lightpos, lightradius, lightcolor);
     c = l*albedo;
@@ -114,10 +148,28 @@ technique baselight {
   }
 }
 ///////////////////////////////////////////////////////////////
+technique baselight_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_std_stereo;
+    fragment_shader = ps_baselight;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
 technique pointlight {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_pointlight;
+    fragment_shader = ps_pointlight;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique pointlight_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_pointlight_stereo;
     fragment_shader = ps_pointlight;
     state_block     = sb_default;
   }

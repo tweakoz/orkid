@@ -207,19 +207,21 @@ struct IMPL {
       //////////////////////////////////////////////////////////////////
       static float ftime = 0.0f;
       CPD                = CIMPL->topCPD();
+      CPD.SetDstRect(vprect);
+      CPD._irendertarget        = &rtlaccum;
       CIMPL->pushCPD(CPD);
       _pointlightmtl.SetAuxMatrix(fmtx4::Identity);
       _pointlightmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
       _pointlightmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
       _pointlightmtl.SetTexture3(_rtgGbuffer->GetMrt(2)->GetTexture());
       _pointlightmtl.SetUser0(node->_fogColor);
+      _pointlightmtl.SetUser2(fvec4(1.0/float(_width),1.0f/float(_height),0,0));
       _pointlightmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
       _pointlightmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-      //_pointlightmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _pointlightmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       _pointlightmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
       targ->PushMaterial(&_pointlightmtl);
-
+      targ->FBI()->PushViewport(vprect); // stereo viewport
       for( auto& pl : _pointlights ){
         _pointlightmtl.SetUser0(pl._color);
         _pointlightmtl.SetUser1(fvec4(pl._pos, pl._radius));
@@ -240,6 +242,7 @@ struct IMPL {
           pl._counter --;
         }
       }
+      targ->FBI()->PopViewport();
       targ->PopMaterial();
       ftime += 0.01f;
       //////////////////////////////////////////////////////////////////
