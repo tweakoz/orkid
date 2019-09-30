@@ -92,7 +92,7 @@ void GlslFxStreamInterface::Inherit(const GlslFxStreamInterface& par) {
 
     const GlslFxAttribute* src = a.second;
 
-    printf( "Convert attributes conv_to_geo<%d>\n", int(conv_to_geo) );
+    //printf( "Convert attributes conv_to_geo<%d>\n", int(conv_to_geo) );
 
     if (conv_to_geo) {
       if (src->mDirection == "out") {

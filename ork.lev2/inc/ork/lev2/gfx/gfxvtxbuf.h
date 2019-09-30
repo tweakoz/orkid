@@ -193,7 +193,7 @@ template <typename T> class StaticVertexBuffer : public CVtxBuffer<T> {
 
 public:
   StaticVertexBuffer(int iMax, int iFlush, EPrimitiveType eType) : CVtxBuffer<T>(iMax, iFlush, eType) {
-    printf("StaticVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
+    //printf("StaticVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
   }
 };
 
@@ -204,7 +204,7 @@ template <typename T> class DynamicVertexBuffer : public CVtxBuffer<T> {
 
 public:
   DynamicVertexBuffer(int iMax, int iFlush, EPrimitiveType eType) : CVtxBuffer<T>(iMax, iFlush, eType) {
-    printf("DynamicVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
+    //printf("DynamicVertexBuffer max<%d> len<%zu>\n", iMax, iMax * sizeof(T));
   }
 };
 

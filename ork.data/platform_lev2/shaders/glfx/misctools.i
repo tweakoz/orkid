@@ -195,17 +195,14 @@ libblock lib_terrain_frg {
 
 libblock lib_pointlight {
 
-  vec3 pointlight(vec3 worldpos, vec3 worldnormal, vec3 lightpos, float lightradius, float cutoff, vec3 color) {
+  vec3 pointlight(vec3 worldpos, vec3 worldnormal, vec3 lightpos, float lightradius, vec3 color) {
     vec3 postolight = lightpos - worldpos;
     float dis2light = length(postolight);
+    float atten = dis2light/lightradius;
+    atten = 1.0-clamp(atten,0,1);
+    atten = atten*atten;
     vec3 dir2light  = normalize(postolight);
-    float clampdist = max(dis2light - lightradius, 0);
-    postolight /= dis2light;
-    float denom = clampdist / lightradius + 1.0;
-    float atten = 1.0 / (denom * denom);
-    atten       = (atten - cutoff) / (1.0 - cutoff);
-    atten       = max(atten, 0.0);
     atten *= max(dot(worldnormal, dir2light), 0);
-    return color * atten;
+    return color*atten;
   }
 }

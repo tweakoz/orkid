@@ -64,6 +64,8 @@ class GfxPrimitives : public NoRttiSingleton< GfxPrimitives >
 	static CVtxBuffer<SVtxV12C4T16>& GetAxisLineVB( void ) { return GetRef().mVtxBuf_AxisLine; }
 	static CVtxBuffer<SVtxV12C4T16>& GetAxisConeVB( void ) { return GetRef().mVtxBuf_AxisCone; }
 	static CVtxBuffer<SVtxV12C4T16>& GetAxisBoxVB( void ) { return GetRef().mVtxBuf_AxisBox; }
+	static CVtxBuffer<SVtxV12C4T16>& GetEQSphere( void ) { return GetRef().mVtxBuf_EQSphere; }
+	static CVtxBuffer<SVtxV12C4T16>& GetFullSphere( void ) { return GetRef().mVtxBuf_FullSphere; }
 
 	///////////////////////////////////////////////////////////////////////////////
 	// other types of prims
@@ -88,6 +90,7 @@ class GfxPrimitives : public NoRttiSingleton< GfxPrimitives >
 	StaticVertexBuffer<SVtxV12C4T16>			mVtxBuf_Diamond;
 	StaticVertexBuffer<SVtxV12C4T16>			mVtxBuf_EQSphere;
 	StaticVertexBuffer<SVtxV12C4T16>			mVtxBuf_SkySphere;
+	StaticVertexBuffer<SVtxV12C4T16>			mVtxBuf_FullSphere;
 	StaticVertexBuffer<SVtxV12C4T16>			mVtxBuf_GroundPlane;
 	StaticVertexBuffer<SVtxV12N12B12T8C4>	mVtxBuf_PerlinTerrain;
 	StaticVertexBuffer<SVtxV12C4T16>			mVtxBuf_CircleStrip;

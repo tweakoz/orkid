@@ -216,10 +216,10 @@
                                     <object type='EditorCamControllerData' id='18'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='19'>
-                                                <property name='Center'>-176.605 69.7779 -11.5297</property>
+                                                <property name='Center'>-126.186 110.231 23.5369</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>231.342</property>
-                                                <property name='QuatC'>0.0237617 -0.987975 0.0599707 0.143104</property>
+                                                <property name='Loc'>1269.65</property>
+                                                <property name='QuatC'>0.0860473 -0.642183 0.751733 0.12591</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
                                                 <property name='MinNear'>0.1</property>
@@ -394,7 +394,7 @@
                                         <item key='control'>
                                             <reference category='ComponentDataClass'>
                                                 <object type='PerfAnalyzerControllerData' id='36'>
-                                                    <property name='EnableDisplay'>false</property>
+                                                    <property name='EnableDisplay'>true</property>
                                                 </object>
                                             </reference>
                                         </item>
@@ -988,8 +988,8 @@
                                                                             <property name='RenderNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='DeferredCompositingNode' id='117'>
-                                                                                        <property name='ClearColor'>0.8 0.8 0.9 1</property>
-                                                                                        <property name='FogColor'>0.48 0.48 0.55 1</property>
+                                                                                        <property name='ClearColor'>0 0 0 0</property>
+                                                                                        <property name='FogColor'>0.43 0.43 0.48 1</property>
                                                                                     </object>
                                                                                 </reference>
                                                                             </property>

@@ -90,8 +90,8 @@ struct SectorLodInfo {
     vbuf->Reset();
     _vtxbuflist->push_back(vbuf);
 
-    printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
-    printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
+    //printf("sector<%p> triangle_count<%zu>\n", this, triangle_count);
+    //printf("sector<%p> vertex_count<%zu>\n", this, vertex_count);
   }
 };
 
@@ -258,7 +258,7 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
     auto nextlevA = chainA->_levels[levindex + 1];
     auto prevlevB = chainB->_levels[levindex];
     auto nextlevB = chainB->_levels[levindex + 1];
-    printf("levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlevA.get(), nextlevA.get());
+    //printf("levindex<%d> prevlev<%p> nextlev<%p>\n", levindex, prevlevA.get(), nextlevA.get());
     auto prevbasA = (float*)prevlevA->_data;
     auto nextbasA = (float*)nextlevA->_data;
     auto prevbasB = (float*)prevlevB->_data;
@@ -337,8 +337,8 @@ datablockptr_t HeightfieldRenderImpl::recomputeTextures(GfxTarget* ptarg) {
   delete chainB;
 
   float runtime = timer.SecsSinceStart();
-  printf( "recomputeTextures runtime<%g>\n", runtime );
-  printf( "recomputeTextures dblocklen<%zu>\n", dblock->_data.GetSize() );
+  //printf( "recomputeTextures runtime<%g>\n", runtime );
+  //printf( "recomputeTextures dblocklen<%zu>\n", dblock->_data.GetSize() );
 
   return dblock;
 }
@@ -355,7 +355,7 @@ void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t
   assert(MIPH==_heightfield->GetGridSizeZ());
   auto chainA = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
   auto chainB = new MipChain(MIPW, MIPH, EBUFFMT_RGBA32F, ETEXTYPE_2D);
-  printf( "reloadCachedTextures ostr.len<%zu> nmips<%zu>\n", ostr.GetSize(), chainA->_levels.size() );
+  //printf( "reloadCachedTextures ostr.len<%zu> nmips<%zu>\n", ostr.GetSize(), chainA->_levels.size() );
   int levindex = 0;
   while (MIPW >= 2 and MIPH >= 2) {
     int CHECKMIPW, CHECKMIPH;
@@ -368,7 +368,7 @@ void HeightfieldRenderImpl::reloadCachedTextures(GfxTarget* ptarg,datablockptr_t
     auto pb = (const float*) istr.GetCurrent();
     memcpy(levb->_data,pb,levlen);
     istr.advance(levlen);
-    printf( "reloadmip lev<%d> w<%d> h<%d> pa<%p> pb<%p>\n", levindex, MIPW, MIPH, pa, pb );
+    //printf( "reloadmip lev<%d> w<%d> h<%d> pa<%p> pb<%p>\n", levindex, MIPW, MIPH, pa, pb );
     MIPW >>= 1;
     MIPH >>= 1;
     levindex++;
@@ -403,7 +403,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   ork::Timer timer;
   timer.Start();
 
-  orkprintf("ComputingGeometry hashkey<0x%llx>\n", hashkey );
+  //orkprintf("ComputingGeometry hashkey<0x%llx>\n", hashkey );
 
   ////////////////////////////////////////////////////////////////
   // create and fill in gpu texture
@@ -432,11 +432,11 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   auto bbctr = (_aabbmin + _aabbmax) * 0.5f;
   auto bbdim = (_aabbmax - _aabbmin);
 
-  printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ);
-  printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(), _aabbmin.GetZ());
-  printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(), _aabbmax.GetZ());
-  printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
-  printf("bbdim<%f %f %f>\n", bbdim.GetX(), bbdim.GetY(), bbdim.GetZ());
+  //printf("IGLX<%d> IGLZ<%d> kworldsizeXZ<%f %f>\n", iglX, iglZ);
+  //printf("bbmin<%f %f %f>\n", _aabbmin.GetX(), _aabbmin.GetY(), _aabbmin.GetZ());
+  //printf("bbmax<%f %f %f>\n", _aabbmax.GetX(), _aabbmax.GetY(), _aabbmax.GetZ());
+  //printf("bbctr<%f %f %f>\n", bbctr.GetX(), bbctr.GetY(), bbctr.GetZ());
+  //printf("bbdim<%f %f %f>\n", bbdim.GetX(), bbdim.GetY(), bbdim.GetZ());
 
   auto sectorID = [&](int x, int z) -> int {
     int rval = 0;
@@ -571,7 +571,7 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   // iters.push_back(Iter{4, 128});
   // iters.push_back(Iter{5, 128});
 
-  printf("Generating Patches..\n");
+  //printf("Generating Patches..\n");
 
   int iprevouterd2 = 0;
 
@@ -772,12 +772,12 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   _aabbmin = geomin;
   _aabbmax = geomax;
 
-  printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
-  printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
-  printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
+  //printf("geomin<%f %f %f>\n", geomin.GetX(), geomin.GetY(), geomin.GetZ());
+  //printf("geomax<%f %f %f>\n", geomax.GetX(), geomax.GetY(), geomax.GetZ());
+  //printf("geosiz<%f %f %f>\n", geosiz.GetX(), geosiz.GetY(), geosiz.GetZ());
 
   float runtime = timer.SecsSinceStart();
-  printf( "runtime<%g>\n", runtime );
+  //printf( "runtime<%g>\n", runtime );
 
   _gpuDataDirty = false;
 }
