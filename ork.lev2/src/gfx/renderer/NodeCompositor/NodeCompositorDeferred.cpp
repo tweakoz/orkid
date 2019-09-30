@@ -39,8 +39,8 @@ struct PointLight {
   int _counter = 0;
 
   void next(){
-      float x = float((rand()%2048)-1024);
-      float z = float((rand()%2048)-1024);
+      float x = float((rand()%4096)-2048);
+      float z = float((rand()%4096)-2048);
       float y = float(100+((rand()%200)-100));
       _dst     = fvec3(x, y, z);
       _counter = 200+rand()%200;
@@ -53,14 +53,14 @@ struct IMPL {
       : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 128; i++) {
 
       PointLight p;
       p.next();
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius  = 25.0f;
+      p._radius  = 50.0f;
       _pointlights.push_back(p);
     }
   }
@@ -133,9 +133,9 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       auto DB            = RCFD.GetDB();
       auto CPD           = CIMPL->topCPD();
-      const auto& IVP = CPD._cameraMatrices->_ivpmatrix;
       const auto& V = CPD._cameraMatrices->_vmatrix;
       const auto& P = CPD._cameraMatrices->_pmatrix;
+      fmtx4 IVP; IVP.inverseOf(V*P);
       CPD._clearColor    = node->_clearColor;
       CPD.mpLayerName    = &_layername;
       CPD._irendertarget = &rtgbuf;
@@ -187,7 +187,7 @@ struct IMPL {
       //////////////////////////////////////////////////////////////////
       fvec4 vtxcolor(1.0f, 1.0f, 1.0f, 1.0f);
       _baselightmtl.SetAuxMatrix(IVP);
-      _baselightmtl.SetAux2Matrix(V*P);
+      _baselightmtl.SetAux2Matrix(IVP);
       _baselightmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
       _baselightmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
       _baselightmtl.SetTexture3(_rtgGbuffer->_depthTexture);
@@ -220,7 +220,7 @@ struct IMPL {
 
 
       _pointlightmtl.SetAuxMatrix(IVP);
-      _pointlightmtl.SetAux2Matrix(V*P);
+      _pointlightmtl.SetAux2Matrix(IVP);
       _pointlightmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
       _pointlightmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
       _pointlightmtl.SetTexture3(_rtgGbuffer->_depthTexture);

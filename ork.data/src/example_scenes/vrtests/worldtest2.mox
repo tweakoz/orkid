@@ -987,7 +987,7 @@
                                                                             <property name='PostFxNode'>
                                                                                 <reference category='ObjectClass'>
                                                                                     <object type='PtxCompositingNode' id='117'>
-                                                                                        <property name='BufferDim'>4096</property>
+                                                                                        <property name='BufferDim'>1024</property>
                                                                                         <property name='DynTexName'>"dt1"</property>
                                                                                         <property name='ReturnTexture'><backreference id='-1'/></property>
                                                                                         <property name='Template'>
@@ -1081,7 +1081,7 @@
                                                                                                                 </property>
                                                                                                                 <property name='Rotate'>
                                                                                                                     <object type='dflow/inplugxf<float,floatxf>' id='135'>
-                                                                                                                        <property name='value'>360</property>
+                                                                                                                        <property name='value'>0</property>
                                                                                                                         <property name='xf'>
                                                                                                                             <object type='dflow/floatxf' id='136'>
                                                                                                                                 <property name='Transforms'>
@@ -1134,14 +1134,14 @@
                                                                                                                 <property name='FlipY'>false</property>
                                                                                                                 <property name='Input'>
                                                                                                                     <reference category='AssetClass'>
-                                                                                                                        "lev2tex" "lev2://textures/skymap_sunset6"
+                                                                                                                        "lev2tex" "data://effect_textures/noise01"
                                                                                                                     </reference>
                                                                                                                 </property>
                                                                                                             </object>
                                                                                                         </reference>
                                                                                                     </item>
                                                                                                 </property>
-                                                                                                <property name='zzz_connections'>4 "m" "InputN" "inp" "ImgOut" "m" "InputR" "r" "ImgOut" "r" "Input" "tx2" "ImgOut" "r" "Rotate" "g" "Time"</property>
+                                                                                                <property name='zzz_connections'>3 "m" "InputN" "inp" "ImgOut" "m" "InputR" "r" "ImgOut" "r" "Input" "tx2" "ImgOut"</property>
                                                                                             </object>
                                                                                         </property>
                                                                                     </object>

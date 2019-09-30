@@ -209,7 +209,7 @@ libblock lib_pointlight {
 vec3 wposxyz(in vec3 inpos)
 {
 
-  mat4 ivpmtx = inverse( MatAux2 );
+  mat4 ivpmtx = MatAux2;
   vec4 rr = ivpmtx*vec4(inpos,1);
   return rr.xyz/rr.w;
 }
