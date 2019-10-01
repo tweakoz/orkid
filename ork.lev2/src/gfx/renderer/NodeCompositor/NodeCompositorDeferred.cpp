@@ -209,6 +209,8 @@ struct IMPL {
       CIMPL->popCPD();
       //////////////////////////////////////////////////////////////////
       // point lighting
+      //  todo : batch multiple lights together
+      //   compute screen aligned quad for batch..
       //////////////////////////////////////////////////////////////////
       static float ftime = 0.0f;
       CPD                = CIMPL->topCPD();
