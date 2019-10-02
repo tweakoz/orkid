@@ -14,11 +14,11 @@
 #include <pkg/ent/entity.hpp>
 #include <pkg/ent/scene.hpp>
 ///////////////////////////////////////////////////////////////////////////////
-#include "HeightFieldMaterial.inl"
 #include <ork/kernel/msgrouter.inl>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/pickbuffer.h>
 #include <ork/lev2/gfx/renderer/renderer.h>
+#include <ork/lev2/gfx/material_freestyle.inl>
 #include <ork/util/endian.h>
 #include <pkg/ent/HeightFieldDrawable.h>
 ///////////////////////////////////////////////////////////////////////////////
@@ -118,7 +118,32 @@ struct HeightfieldRenderImpl {
   hfptr_t _heightfield;
 
   bool _gpuDataDirty                = true;
-  TerrainMaterial* _terrainMaterial = nullptr;
+  FreestyleMaterial* _terrainMaterial = nullptr;
+  const FxShaderTechnique* _tekBasic  = nullptr;
+  const FxShaderTechnique* _tekDefGbuf1 = nullptr;
+  const FxShaderTechnique* _tekStereo = nullptr;
+  const FxShaderTechnique* _tekDefGbuf1Stereo = nullptr;
+  const FxShaderTechnique* _tekPick   = nullptr;
+
+  const FxShaderParam* _parMatVPL       = nullptr;
+  const FxShaderParam* _parMatVPC       = nullptr;
+  const FxShaderParam* _parMatVPR       = nullptr;
+  const FxShaderParam* _parCamPos       = nullptr;
+  const FxShaderParam* _parTexA         = nullptr;
+  const FxShaderParam* _parTexB         = nullptr;
+  const FxShaderParam* _parTexEnv       = nullptr;
+  const FxShaderParam* _parModColor     = nullptr;
+  const FxShaderParam* _parTime         = nullptr;
+  const FxShaderParam* _parTestXXX      = nullptr;
+  const FxShaderParam* _parFogColor     = nullptr;
+  const FxShaderParam* _parGrass        = nullptr;
+  const FxShaderParam* _parSnow         = nullptr;
+  const FxShaderParam* _parRock1        = nullptr;
+  const FxShaderParam* _parRock2        = nullptr;
+  const FxShaderParam* _parGblendYscale = nullptr;
+  const FxShaderParam* _parGblendYbias  = nullptr;
+  const FxShaderParam* _parGblendStepLo = nullptr;
+  const FxShaderParam* _parGblendStepHi = nullptr;
   Texture* _heightmapTextureA       = nullptr;
   Texture* _heightmapTextureB       = nullptr;
   fvec3 _aabbmin;
@@ -386,7 +411,39 @@ void HeightfieldRenderImpl::gpuUpdate(GfxTarget* ptarg) {
   if (false == _gpuDataDirty)
     return;
 
-    _terrainMaterial = new TerrainMaterial(ptarg);
+  if(nullptr==_terrainMaterial){
+    _terrainMaterial = new FreestyleMaterial;
+    _terrainMaterial->gpuInit(ptarg,"orkshader://terrain");
+    _tekBasic    = _terrainMaterial->technique("terrain");
+    _tekStereo   = _terrainMaterial->technique("terrain_stereo");
+    _tekPick     = _terrainMaterial->technique("pick");
+    _tekDefGbuf1 = _terrainMaterial->technique("terrain_gbuf1");
+    _tekDefGbuf1Stereo = _terrainMaterial->technique("terrain_gbuf1_stereo");
+
+    _parMatVPL   = _terrainMaterial->param("MatMVPL");
+    _parMatVPC   = _terrainMaterial->param("MatMVPC");
+    _parMatVPR   = _terrainMaterial->param("MatMVPR");
+    _parCamPos   = _terrainMaterial->param("CamPos");
+    _parTexA     = _terrainMaterial->param("HFAMap");
+    _parTexB     = _terrainMaterial->param("HFBMap");
+    _parTexEnv   = _terrainMaterial->param("EnvMap");
+    _parModColor = _terrainMaterial->param("ModColor");
+    _parTime     = _terrainMaterial->param("Time");
+    _parTestXXX  = _terrainMaterial->param("testxxx");
+
+    _parFogColor     = _terrainMaterial->param("FogColor");
+    _parGrass        = _terrainMaterial->param("GrassColor");
+    _parSnow         = _terrainMaterial->param("SnowColor");
+    _parRock1        = _terrainMaterial->param("Rock1Color");
+    _parRock2        = _terrainMaterial->param("Rock2Color");
+    _parGblendYscale = _terrainMaterial->param("GBlendYScale");
+    _parGblendYbias  = _terrainMaterial->param("GBlendYBias");
+    _parGblendStepLo = _terrainMaterial->param("GBlendStepLo");
+    _parGblendStepHi = _terrainMaterial->param("GBlendStepHi");
+  }
+
+
+
 
   auto hmap    = _heightfield;
   bool _loadok = hmap->Load(_hfdrawable->_hfpath);
@@ -857,27 +914,40 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
     MVPR = MVP;
   }
 
-  //////////////////////////
-  // fill out shader params
-  //////////////////////////
-  TerrainMaterialValues shadervals(_hfdrawable->_data);
-  shadervals._matMVPL    = MVPL;
-  shadervals._matMVPC    = MVPC;
-  shadervals._matMVPR    = MVPR;
-  shadervals._camPos     = campos_mono;
-  shadervals._modcolor   = color;
-  shadervals._hfTextureA = _heightmapTextureA;
-  shadervals._hfTextureB = _heightmapTextureB;
-
   ///////////////////////////////////////////////////////////////////
   // render
   ///////////////////////////////////////////////////////////////////
 
+  auto drawable = _hfdrawable;
+  const auto& HFDD = drawable->_data;
+
   // auto range = _aabbmax - _aabbmin;
 
   targ->PushMaterial(_terrainMaterial);
-  _terrainMaterial->begin(RCID,shadervals);
+  _terrainMaterial->bindTechnique(stereo1pass?_tekDefGbuf1Stereo:_tekDefGbuf1);
+  _terrainMaterial->begin(*RCFD);
+  _terrainMaterial->bindParamMatrix(_parMatVPL, MVPL);
+  _terrainMaterial->bindParamMatrix(_parMatVPC, MVPC);
+  _terrainMaterial->bindParamMatrix(_parMatVPR, MVPR);
+  _terrainMaterial->bindParamCTex(_parTexA, _heightmapTextureA);
+  _terrainMaterial->bindParamCTex(_parTexB, _heightmapTextureB);
+  _terrainMaterial->bindParamVec3(_parCamPos, campos_mono);
+  _terrainMaterial->bindParamVec4(_parModColor, color);
+  _terrainMaterial->bindParamFloat(_parTime, 0.0f);
 
+  //_terrainMaterial->bindParamTex(_parTexEnv, HFDD._sphericalenvmap);
+  _terrainMaterial->bindParamFloat(_parTestXXX, 0.0f);
+
+  _terrainMaterial->bindParamVec3(_parFogColor, fvec3(0,0,0));
+  _terrainMaterial->bindParamVec3(_parGrass, HFDD._grass);
+  _terrainMaterial->bindParamVec3(_parSnow, HFDD._snow);
+  _terrainMaterial->bindParamVec3(_parRock1, HFDD._rock1);
+  _terrainMaterial->bindParamVec3(_parRock2, HFDD._rock2);
+
+  _terrainMaterial->bindParamFloat(_parGblendYscale, HFDD._gblend_yscale);
+  _terrainMaterial->bindParamFloat(_parGblendYbias, HFDD._gblend_ybias);
+  _terrainMaterial->bindParamFloat(_parGblendStepLo, HFDD._gblend_steplo);
+  _terrainMaterial->bindParamFloat(_parGblendStepHi, HFDD._gblend_stephi);
 
   if (true) { // abs(znormal.y) > 0.8 ){ // looking up or down
     ////////////////////////////////
@@ -936,7 +1006,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
         gbi->DrawPrimitiveEML(*vertex_buf, EPRIM_TRIANGLES);
       }
     }
-    _terrainMaterial->end(RCID);
+    _terrainMaterial->end(*RCFD);
   }
 
   targ->PopMaterial();

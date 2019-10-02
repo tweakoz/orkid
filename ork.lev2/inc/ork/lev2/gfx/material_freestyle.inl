@@ -62,6 +62,10 @@ struct FreestyleMaterial : public GfxMaterial {
     auto fxi = _initialTarget->FXI();
     fxi->BindTechnique(_shader, tek);
   }
+  void bindParamFloat(const FxShaderParam* par, float value) {
+    auto fxi = _initialTarget->FXI();
+    fxi->BindParamFloat(_shader, par, value);
+  }
   void bindParamCTex(const FxShaderParam* par, const Texture* tex) {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamCTex(_shader, par, tex);
