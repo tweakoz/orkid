@@ -40,25 +40,30 @@ fragment_interface iface_fdefault : ub_frg {
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred {
   /////////////////////////////////////////////////////////
-  vec3 defwpos(vec2 UV, mat4 ivp) {
-    float depthtex = texture(MapDepth, UV).r;
-    vec2 scrxy     = UV * 2.0 - vec2(1, 1);
-    vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
-    vec4 rr        = ivp * vec4(inpos, 1);
-    return rr.xyz / rr.w;
-  }
-  /////////////////////////////////////////////////////////
   struct GBufData {
     vec2 _uv;
     vec3 _wpos;
     vec3 _wnrm;
     vec3 _albedo;
   };
+  struct WPosData {
+    vec2 _muv;
+    vec2 _scruv;
+    mat4 _ivp;
+  };
   /////////////////////////////////////////////////////////
-  GBufData decodeGBUF(mat4 ivp) {
+  vec3 defwpos(WPosData wpd) {
+    float depthtex = texture(MapDepth, wpd._muv).r;
+    vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
+    vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
+    vec4 rr        = wpd._ivp * vec4(inpos, 1);
+    return rr.xyz / rr.w;
+  }
+  /////////////////////////////////////////////////////////
+  GBufData decodeGBUF(WPosData wpd) {
     GBufData decoded;
-    decoded._uv     = gl_FragCoord.xy * InvViewportSize;
-    decoded._wpos   = defwpos(decoded._uv, ivp);
+    decoded._uv     = wpd._muv;
+    decoded._wpos   = defwpos(wpd);
     vec4 n_mdl      = texture(MapNormalL, decoded._uv);
     decoded._wnrm   = normalize(n_mdl.xyz);
     decoded._albedo = texture(MapAlbedoAo, decoded._uv).xyz;
@@ -76,20 +81,16 @@ libblock lib_deferred {
     return color * atten;
   }
   /////////////////////////////////////////////////////////
-  vec3 baselighting(mat4 ivp){
-    GBufData gbd = decodeGBUF(ivp);
-    vec3 l = pointlight( gbd,
-                        LightPosR.xyz,
-                        LightPosR.w, // radius
-                        LightColor);
+  vec3 baselighting(WPosData wpd){
+    GBufData gbd = decodeGBUF(wpd);
     // sunlight ///////////////
-    l += vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
+    vec3 l = vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
     ///////////////////////////
     return gbd._albedo*l;
   }
   /////////////////////////////////////////////////////////
-  vec3 pntlighting(mat4 ivp){
-    GBufData gbd = decodeGBUF(ivp);
+  vec3 pntlighting(WPosData wpd){
+    GBufData gbd = decodeGBUF(wpd);
     vec3 l       = pointlight(gbd, LightPosR.xyz, LightPosR.w, LightColor);
     return gbd._albedo*l;
   }
@@ -98,29 +99,39 @@ libblock lib_deferred {
 vertex_interface iface_vstereo : iface_vdefault { layout(secondary_view_offset = 1) out highp int gl_Layer; }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_std : iface_vdefault {
-  gl_Position = MVPC * position;
   frg_uv      = uv0;
+  ///////////////////////////
+  gl_Position = position;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_std_stereo : iface_vstereo : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) {
   frg_uv = uv0;
   ///////////////////////////
-  gl_Position                   = MVPL * position;
-  gl_SecondaryPositionNV        = MVPR * position;
+  gl_Position                   = position;
+  gl_SecondaryPositionNV        = position;
   gl_Layer                      = 0;
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight : iface_fdefault : lib_deferred {
-  vec3 c  = baselighting(IVPArray[0]);
+  WPosData wpd;
+  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._scruv = wpd._muv;
+  wpd._ivp = IVPArray[0];
+  vec3 c  = baselighting(wpd);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight_stereo : extension(GL_ARB_fragment_layer_viewport)
     : iface_fdefault : lib_deferred {
-  vec3 c  = baselighting(IVPArray[gl_Layer]);
+  WPosData wpd;
+  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._scruv = wpd._muv;
+  //wpd._scruv.x = mod(wpd._scruv.x*2,1);
+  wpd._ivp = IVPArray[gl_Layer];
+  vec3 c  = baselighting(wpd);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
@@ -141,13 +152,23 @@ vertex_shader vs_pointlight_stereo : iface_vstereo : extension(GL_NV_stereo_view
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight : iface_fdefault : lib_deferred {
-  vec3 c  = pntlighting(IVPArray[0]);
+  WPosData wpd;
+  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._scruv = wpd._muv;
+  wpd._ivp = IVPArray[0];
+  vec3 c  = pntlighting(wpd);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight_stereo : extension(GL_ARB_fragment_layer_viewport)
     : iface_fdefault : lib_deferred {
-  vec3 c  = pntlighting(IVPArray[gl_Layer]);
+  WPosData wpd;
+  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._scruv = wpd._muv;
+  wpd._scruv.x = mod(wpd._scruv.x*2,1);
+  wpd._ivp = IVPArray[gl_Layer];
+  vec3 c  = pntlighting(wpd);
+  vec2 uv = gl_FragCoord.xy * InvViewportSize;
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
@@ -168,7 +189,7 @@ technique baselight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_std_stereo;
-    fragment_shader = ps_baselight;
+    fragment_shader = ps_baselight_stereo;
     state_block     = sb_default;
   }
 }
@@ -186,7 +207,7 @@ technique pointlight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
     vertex_shader   = vs_pointlight_stereo;
-    fragment_shader = ps_pointlight;
+    fragment_shader = ps_pointlight_stereo;
     state_block     = sb_default;
   }
 }

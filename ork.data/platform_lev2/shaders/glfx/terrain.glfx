@@ -259,7 +259,7 @@ fragment_interface iface_fpick : ublock_frg {
 }
 vertex_shader vs_pick
   : iface_vpick
-  : lib_terrain {
+  : lib_terrain_vtx {
   TerOut tero = computeTerrain(CamPos);
   ///////////////////////////
   // apply to GL

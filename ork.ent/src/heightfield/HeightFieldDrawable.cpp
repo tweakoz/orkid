@@ -936,7 +936,7 @@ void HeightfieldRenderImpl::render(const RenderContextInstData& RCID) {
   _terrainMaterial->bindParamFloat(_parTime, 0.0f);
 
   //_terrainMaterial->bindParamTex(_parTexEnv, HFDD._sphericalenvmap);
-  _terrainMaterial->bindParamFloat(_parTestXXX, 0.0f);
+  _terrainMaterial->bindParamFloat(_parTestXXX, HFDD._testxxx);
 
   _terrainMaterial->bindParamVec3(_parFogColor, fvec3(0,0,0));
   _terrainMaterial->bindParamVec3(_parGrass, HFDD._grass);

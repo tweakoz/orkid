@@ -58,6 +58,12 @@ struct FreestyleMaterial : public GfxMaterial {
 
   ////////////////////////////////////////////
 
+  void commit() {
+    auto fxi = _initialTarget->FXI();
+    fxi->CommitParams();
+  }
+
+
   void bindTechnique(const FxShaderTechnique* tek) {
     auto fxi = _initialTarget->FXI();
     fxi->BindTechnique(_shader, tek);
