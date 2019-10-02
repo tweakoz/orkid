@@ -165,7 +165,7 @@ vertex_shader vs_terrain_stereo
   : extension(GL_NV_stereo_view_rendering)
   : extension(GL_NV_viewport_array2)
   : iface_vdefault
-  : lib_terrain {
+  : lib_terrain_vtx {
   TerOut tero = computeTerrain(CamPos);
   applyTerrain(tero,CamPos);
   ///////////////////////////
