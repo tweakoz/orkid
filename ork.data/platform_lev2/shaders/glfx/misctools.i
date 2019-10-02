@@ -193,21 +193,59 @@ libblock lib_terrain_frg {
   }
 }
 
-libblock lib_pointlight {
-
-  vec3 pointlight(vec3 worldpos, vec3 worldnormal, vec3 lightpos, float lightradius, vec3 color) {
-    vec3 postolight = lightpos - worldpos;
-    float dis2light = length(postolight);
-    float atten = dis2light/lightradius;
-    atten = 1.0-clamp(atten,0,1);
-    atten = atten*atten;
-    vec3 dir2light  = normalize(postolight);
-    atten *= max(dot(worldnormal, dir2light), 0);
-    return color*atten;
+libblock lib_deferred {
+  /////////////////////////////////////////////////////////
+  vec3 defwpos(vec2 UV, mat4 ivp) {
+    float depthtex = texture(MapDepth, UV).r;
+    vec2 scrxy     = UV * 2.0 - vec2(1, 1);
+    vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
+    vec4 rr        = ivp * vec4(inpos, 1);
+    return rr.xyz / rr.w;
   }
-
-vec3 wposxyz(in vec3 inpos)
-{ vec4 rr = IVPArray[gl_Layer]*vec4(inpos,1);
-  return rr.xyz/rr.w;
-}
+  /////////////////////////////////////////////////////////
+  struct GBufData {
+    vec2 _uv;
+    vec3 _wpos;
+    vec3 _wnrm;
+    vec3 _albedo;
+  };
+  /////////////////////////////////////////////////////////
+  GBufData decodeGBUF(mat4 ivp) {
+    GBufData decoded;
+    decoded._uv     = gl_FragCoord.xy * InvViewportSize;
+    decoded._wpos   = defwpos(decoded._uv, ivp);
+    vec4 n_mdl      = texture(MapNormalL, decoded._uv);
+    decoded._wnrm   = normalize(n_mdl.xyz);
+    decoded._albedo = texture(MapAlbedoAo, decoded._uv).xyz;
+    return decoded;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pointlight(GBufData gbd, vec3 lightpos, float lightradius, vec3 color) {
+    vec3 postolight = lightpos - gbd._wpos;
+    float dis2light = length(postolight);
+    float atten     = dis2light / lightradius;
+    atten           = 1.0 - clamp(atten, 0, 1);
+    atten           = atten * atten;
+    vec3 dir2light  = normalize(postolight);
+    atten *= max(dot(gbd._wnrm, dir2light), 0);
+    return color * atten;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 baselighting(mat4 ivp){
+    GBufData gbd = decodeGBUF(ivp);
+    vec3 l = pointlight( gbd,
+                        LightPosR.xyz,
+                        LightPosR.w, // radius
+                        LightColor);
+    // sunlight ///////////////
+    l += vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
+    ///////////////////////////
+    return gbd._albedo*l;
+  }
+  /////////////////////////////////////////////////////////
+  vec3 pntlighting(mat4 ivp){
+    GBufData gbd = decodeGBUF(ivp);
+    vec3 l       = pointlight(gbd, LightPosR.xyz, LightPosR.w, LightColor);
+    return gbd._albedo*l;
+  }
 }
