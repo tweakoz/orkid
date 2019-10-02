@@ -76,4 +76,17 @@ void GeometryBufferInterface::DrawPrimitive( const VtxWriterBase& VW, EPrimitive
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void GeometryBufferInterface::DrawPrimitiveEML( const VtxWriterBase& VW, EPrimitiveType eType, int icount )
+{
+	if( 0 == icount )
+	{
+		icount = VW.miWriteCounter;
+	}
+	//printf( "GBI::DrawPrim(VW) ibase<%d> icount<%d>\n", VW.miWriteBase, icount );
+	DrawPrimitiveEML( *VW.mpVB, eType, VW.miWriteBase, icount );
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 } }

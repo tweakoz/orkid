@@ -49,6 +49,7 @@ public:
   virtual void ReleaseIB(IndexBufferBase& VBuf) = 0;
 
   void DrawPrimitive(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
+  void DrawPrimitiveEML(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
 
   //////////////////////////////////////////////
 

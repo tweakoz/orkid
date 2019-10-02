@@ -15,14 +15,17 @@
 #include <ork/pch.h>
 #include <ork/reflect/RegisterProperty.h>
 
+#include "DeferredMaterial.inl"
 #include "NodeCompositorDeferred.h"
 
-ImplementReflectionX(ork::lev2::DeferredCompositingNode, "DeferredCompositingNode");
+ImplementReflectionX(ork::lev2::DeferredCompositingNode,
+                     "DeferredCompositingNode");
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork {
+namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::describeX(class_t* c) {
+void DeferredCompositingNode::describeX(class_t *c) {
   c->memberProperty("ClearColor", &DeferredCompositingNode::_clearColor);
   c->memberProperty("FogColor", &DeferredCompositingNode::_fogColor);
 }
@@ -38,19 +41,18 @@ struct PointLight {
   float _radius;
   int _counter = 0;
 
-  void next(){
-      float x = float((rand()%4096)-2048);
-      float z = float((rand()%4096)-2048);
-      float y = float(100+((rand()%200)-100));
-      _dst     = fvec3(x, y, z);
-      _counter = 200+rand()%200;
+  void next() {
+    float x = float((rand() % 4096) - 2048);
+    float z = float((rand() % 4096) - 2048);
+    float y = float(100 + ((rand() % 200) - 100));
+    _dst = fvec3(x, y, z);
+    _counter = 200 + rand() % 200;
   }
 };
 
 struct IMPL {
   ///////////////////////////////////////
-  IMPL()
-      : _camname(AddPooledString("Camera")) {
+  IMPL() : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
     for (int i = 0; i < 128; i++) {
@@ -60,7 +62,7 @@ struct IMPL {
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius  = 50.0f;
+      p._radius = 50.0f;
       _pointlights.push_back(p);
     }
   }
@@ -73,29 +75,29 @@ struct IMPL {
   // rt2/GL_RGBA8    (32,96)  - mtl,ruf,aux1,aux2
   // rt3/GL_R32F     (32,128) - depth
   ///////////////////////////////////////
-  void init(lev2::GfxTarget* pTARG) {
+  void init(lev2::GfxTarget *pTARG) {
     pTARG->debugPushGroup("Deferred::rendeinitr");
     if (nullptr == _rtgGbuffer) {
       //////////////////////////////////////////////////////////////
-      _baselightmtl.SetUserFx("orkshader://deferred", "baselight");
-      _baselightmtl.Init(pTARG);
+      _lightingmtl.Init(pTARG);
       //////////////////////////////////////////////////////////////
-      _pointlightmtl.SetUserFx("orkshader://deferred", "pointlight");
-      _pointlightmtl.Init(pTARG);
-      //////////////////////////////////////////////////////////////
-      _rtgGbuffer      = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto buf0        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA8, 8, 8);
-      auto buf1        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1, lev2::EBUFFMT_RGB10A2, 8, 8);
-      //auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2, lev2::EBUFFMT_RGBA32F, 8, 8);
+      _rtgGbuffer = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
+      auto buf0 = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0,
+                               lev2::EBUFFMT_RGBA8, 8, 8);
+      auto buf1 = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1,
+                               lev2::EBUFFMT_RGB10A2, 8, 8);
+      // auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2,
+      // lev2::EBUFFMT_RGBA32F, 8, 8);
       buf0->_debugName = "DeferredRtAlbAo";
       buf1->_debugName = "DeferredRRufMtl";
-      //buf2->_debugName = "DeferredRtNormalDist";
+      // buf2->_debugName = "DeferredRtNormalDist";
       _rtgGbuffer->SetMrt(0, buf0);
       _rtgGbuffer->SetMrt(1, buf1);
       //_rtgGbuffer->SetMrt(2, buf2);
       //////////////////////////////////////////////////////////////
-      _rtgLaccum        = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto bufLA        = new RtBuffer(_rtgLaccum, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, 8, 8);
+      _rtgLaccum = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
+      auto bufLA = new RtBuffer(_rtgLaccum, lev2::ETGTTYPE_MRT0,
+                                lev2::EBUFFMT_RGBA16F, 8, 8);
       bufLA->_debugName = "DeferredLightAccum";
       _rtgLaccum->SetMrt(0, bufLA);
       //////////////////////////////////////////////////////////////
@@ -103,26 +105,27 @@ struct IMPL {
     pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
-  void _render(DeferredCompositingNode* node, CompositorDrawData& drawdata) {
-    FrameRenderer& framerenderer = drawdata.mFrameRenderer;
-    RenderContextFrameData& RCFD = framerenderer.framedata();
-    auto CIMPL                   = drawdata._cimpl;
-    auto targ                    = RCFD.GetTarget();
-    auto& ddprops                = drawdata._properties;
+  void _render(DeferredCompositingNode *node, CompositorDrawData &drawdata) {
+    FrameRenderer &framerenderer = drawdata.mFrameRenderer;
+    RenderContextFrameData &RCFD = framerenderer.framedata();
+    auto CIMPL = drawdata._cimpl;
+    auto targ = RCFD.GetTarget();
+    auto FXI = targ->FXI();
+    auto &ddprops = drawdata._properties;
     SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
     //////////////////////////////////////////////////////
     // Resize RenderTargets
     //////////////////////////////////////////////////////
-    int newwidth  = ddprops["OutputWidth"_crcu].Get<int>();
+    int newwidth = ddprops["OutputWidth"_crcu].Get<int>();
     int newheight = ddprops["OutputHeight"_crcu].Get<int>();
     if (_rtgGbuffer->GetW() != newwidth or _rtgGbuffer->GetH() != newheight) {
       _rtgGbuffer->Resize(newwidth, newheight);
       _rtgLaccum->Resize(newwidth, newheight);
-      _width  = newwidth;
+      _width = newwidth;
       _height = newheight;
     }
     //////////////////////////////////////////////////////
-    auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer*>();
+    auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer *>();
     //////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
     RtGroupRenderTarget rtgbuf(_rtgGbuffer);
@@ -131,24 +134,34 @@ struct IMPL {
       targ->FBI()->SetAutoClear(false); // explicit clear
       targ->BeginFrame();
       /////////////////////////////////////////////////////////////////////////////////////////
-      auto DB            = RCFD.GetDB();
-      auto CPD           = CIMPL->topCPD();
-      const auto& V = CPD._cameraMatrices->_vmatrix;
-      const auto& P = CPD._cameraMatrices->_pmatrix;
-      fmtx4 IVP; IVP.inverseOf(V*P);
-      CPD._clearColor    = node->_clearColor;
-      CPD.mpLayerName    = &_layername;
+      auto DB = RCFD.GetDB();
+      auto CPD = CIMPL->topCPD();
+      bool is_stereo_1pass = CPD.isStereoOnePass();
+      CPD._clearColor = node->_clearColor;
+      CPD.mpLayerName = &_layername;
       CPD._irendertarget = &rtgbuf;
       CPD.SetDstRect(tgt_rect);
-      CPD._passID       = "defgbuffer1"_crcu;
+      CPD._passID = "defgbuffer1"_crcu;
       fvec3 campos_mono = CPD.monoCamPos(fmtx4());
+      fmtx4 IVPL, IVPR;
+      if (is_stereo_1pass) {
+        auto L = CPD._stereoCameraMatrices->_left;
+        auto R = CPD._stereoCameraMatrices->_right;
+        IVPL.inverseOf(L->_vmatrix * L->_pmatrix);
+        IVPR.inverseOf(R->_vmatrix * R->_pmatrix);
+      } else {
+        auto M = CPD._cameraMatrices;
+        IVPL.inverseOf(M->_vmatrix * M->_pmatrix);
+        IVPR.inverseOf(M->_vmatrix * M->_pmatrix);
+      }
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
         // DrawableBuffer -> RenderQueue enqueue
         ///////////////////////////////////////////////////////////////////////////
-        for (const PoolString& layer_name : CPD.getLayerNames()) {
-          targ->debugMarker(FormatString("Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
+        for (const PoolString &layer_name : CPD.getLayerNames()) {
+          targ->debugMarker(FormatString(
+              "Deferred::renderEnqueuedScene::layer<%s>", layer_name.c_str()));
           DB->enqueueLayerToRenderQueue(layer_name, irenderer);
         }
         /////////////////////////////////////////////////
@@ -171,10 +184,10 @@ struct IMPL {
       SRect vprect(0, 0, _width, _height);
       SRect quadrect(0, 0, _width, _height);
       CPD.SetDstRect(vprect);
-      CPD._irendertarget        = &rtlaccum;
-      CPD._cameraMatrices       = nullptr;
+      CPD._irendertarget = &rtlaccum;
+      CPD._cameraMatrices = nullptr;
       CPD._stereoCameraMatrices = nullptr;
-      CPD._stereo1pass          = false;
+      CPD._stereo1pass = false;
       CIMPL->pushCPD(CPD);
       targ->debugPushGroup("PtxCompositingNode::to_output");
       targ->FBI()->SetAutoClear(false);
@@ -186,26 +199,29 @@ struct IMPL {
       // base lighting
       //////////////////////////////////////////////////////////////////
       fvec4 vtxcolor(1.0f, 1.0f, 1.0f, 1.0f);
-      _baselightmtl.SetAuxMatrix(IVP);
-      _baselightmtl.SetAux2Matrix(IVP);
-      _baselightmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
-      _baselightmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
-      _baselightmtl.SetTexture3(_rtgGbuffer->_depthTexture);
-      _baselightmtl.SetUser0(node->_fogColor);
-      _baselightmtl.SetUser1(campos_mono);
-      _baselightmtl.SetUser2(fvec4(1.0/float(_width),1.0f/float(_height),0,0));
-      _baselightmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-      _baselightmtl.mRasterState.SetBlending(EBLENDING_OFF);
-      _baselightmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-      this_buf->RenderMatOrthoQuad(vprect,
-                                   quadrect,
-                                   &_baselightmtl,
-                                   0.0f,
-                                   1.0f, // u0 v0
-                                   1.0f,
-                                   0.0f, // u1 v1
-                                   nullptr,
-                                   vtxcolor);
+      _lightingmtl._ivp[0] = IVPL;
+      _lightingmtl._ivp[1] = IVPR;
+      _lightingmtl._albedoAoMap = _rtgGbuffer->GetMrt(0)->GetTexture();
+      _lightingmtl._normalLitmodelMap = _rtgGbuffer->GetMrt(1)->GetTexture();
+      _lightingmtl._depthMap = _rtgGbuffer->_depthTexture;
+      _lightingmtl._invviewsize =
+          fvec2(1.0 / float(_width), 1.0f / float(_height));
+      _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
+      _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
+      _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+      _lightingmtl._lightcolor = fvec3(0.8, 0.7, 0.2);
+      _lightingmtl._lightpos = campos_mono;
+      _lightingmtl._lightradius = 100.0f;
+      _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
+      _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
+      FXI->BindTechnique(_lightingmtl._shader,
+                         is_stereo_1pass ? _lightingmtl._tekBaseLightingStereo
+                                         : _lightingmtl._tekBaseLighting);
+      // fbi->PushViewport(ViewportRect);
+      // fbi->PushScissor(ViewportRect);
+      _lightingmtl.begin(RCFD);
+      this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
+      _lightingmtl.end(RCFD);
       CIMPL->popCPD();
       //////////////////////////////////////////////////////////////////
       // point lighting
@@ -213,45 +229,54 @@ struct IMPL {
       //   compute screen aligned quad for batch..
       //////////////////////////////////////////////////////////////////
       static float ftime = 0.0f;
-      CPD                = CIMPL->topCPD();
+      CPD = CIMPL->topCPD();
       CPD.SetDstRect(vprect);
-      CPD._irendertarget        = &rtlaccum;
-
+      CPD._irendertarget = &rtlaccum;
 
       CIMPL->pushCPD(CPD);
 
-
-      _pointlightmtl.SetAuxMatrix(IVP);
-      _pointlightmtl.SetAux2Matrix(IVP);
-      _pointlightmtl.SetTexture(_rtgGbuffer->GetMrt(0)->GetTexture());
-      _pointlightmtl.SetTexture2(_rtgGbuffer->GetMrt(1)->GetTexture());
-      _pointlightmtl.SetTexture3(_rtgGbuffer->_depthTexture);
-      _pointlightmtl.SetUser2(fvec4(1.0/float(_width),1.0f/float(_height),0,0));
-      _pointlightmtl.SetColorMode(GfxMaterial3DSolid::EMODE_USER);
-      _pointlightmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-      _pointlightmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-      _pointlightmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
-      targ->PushMaterial(&_pointlightmtl);
+      _lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
+      _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
+      _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+      targ->PushMaterial(&_lightingmtl);
       targ->FBI()->PushViewport(vprect); // stereo viewport
-      for( auto& pl : _pointlights ){
-        _pointlightmtl.SetUser0(pl._color);
-        _pointlightmtl.SetUser1(fvec4(pl._pos, pl._radius));
-        //////////////////////////
-        fmtx4 LightMtx;
-        LightMtx.ComposeMatrix(pl._pos, fquat(), pl._radius);
-        targ->MTXI()->PushMMatrix(LightMtx);
-        targ->GBI()->DrawPrimitive(GfxPrimitives::GetFullSphere());
-        targ->MTXI()->PopMMatrix();
-        //////////////////////////
-        if( pl._counter < 1 ){
-          pl.next();
+      FXI->BindTechnique(_lightingmtl._shader,
+                         is_stereo_1pass ? _lightingmtl._tekPointLightingStereo
+                                         : _lightingmtl._tekPointLighting);
+      _lightingmtl.begin(RCFD);
+      for (auto &pl : _pointlights) {
+        _lightingmtl._lightmatrix.ComposeMatrix(pl._pos, fquat(), pl._radius);
+        if (is_stereo_1pass) {
+          auto L = CPD._stereoCameraMatrices->_left;
+          auto R = CPD._stereoCameraMatrices->_right;
+          fmtx4 mvpL = _lightingmtl._lightmatrix * (L->_vmatrix * L->_pmatrix);
+          fmtx4 mvpR = _lightingmtl._lightmatrix * (R->_vmatrix * R->_pmatrix);
+          FXI->BindParamMatrix(_lightingmtl._shader, _lightingmtl._parMatMVPL,
+                               mvpL);
+          FXI->BindParamMatrix(_lightingmtl._shader, _lightingmtl._parMatMVPR,
+                               mvpR);
+        } else {
+          auto M = CPD._cameraMatrices;
+          fmtx4 mvp = _lightingmtl._lightmatrix * (M->_vmatrix * M->_pmatrix);
+          FXI->BindParamMatrix(_lightingmtl._shader, _lightingmtl._parMatMVPC,
+                               mvp);
         }
-        else {
-          fvec3 delta = pl._dst-pl._pos;
-          pl._pos += delta.Normal()*0.5;
-          pl._counter --;
+        FXI->BindParamVect4(_lightingmtl._shader, _lightingmtl._parLightPosR,
+                            fvec4(pl._pos, pl._radius));
+        FXI->BindParamVect3(_lightingmtl._shader, _lightingmtl._parLightColor,
+                            pl._color);
+        FXI->CommitParams();
+        targ->GBI()->DrawPrimitiveEML(GfxPrimitives::GetFullSphere());
+        //////////////////////////
+        if (pl._counter < 1) {
+          pl.next();
+        } else {
+          fvec3 delta = pl._dst - pl._pos;
+          pl._pos += delta.Normal() * 0.5;
+          pl._counter--;
         }
       }
+      _lightingmtl.end(RCFD);
       targ->FBI()->PopViewport();
       targ->PopMaterial();
       ftime += 0.01f;
@@ -266,35 +291,38 @@ struct IMPL {
   }
   ///////////////////////////////////////
   PoolString _camname, _layername;
-  ork::lev2::GfxMaterial3DSolid _baselightmtl;
-  ork::lev2::GfxMaterial3DSolid _pointlightmtl;
-  RtGroup* _rtgGbuffer = nullptr;
-  RtGroup* _rtgLaccum  = nullptr;
+  DeferredMaterial _lightingmtl;
+  RtGroup *_rtgGbuffer = nullptr;
+  RtGroup *_rtgLaccum = nullptr;
   fmtx4 _viewOffsetMatrix;
-  int _width  = 0;
+  int _width = 0;
   int _height = 0;
   std::vector<PointLight> _pointlights;
 };
 } // namespace deferrednode
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNode::DeferredCompositingNode() { _impl = std::make_shared<deferrednode::IMPL>(); }
+DeferredCompositingNode::DeferredCompositingNode() {
+  _impl = std::make_shared<deferrednode::IMPL>();
+}
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNode::~DeferredCompositingNode() {}
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoInit(lev2::GfxTarget* pTARG, int iW, int iH) {
+void DeferredCompositingNode::DoInit(lev2::GfxTarget *pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoRender(CompositorDrawData& drawdata) {
+void DeferredCompositingNode::DoRender(CompositorDrawData &drawdata) {
   auto impl = _impl.Get<std::shared_ptr<deferrednode::IMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer* DeferredCompositingNode::GetOutput() const {
+RtBuffer *DeferredCompositingNode::GetOutput() const {
   static int i = 0;
   i++;
-  return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgLaccum->GetMrt(0);
+  return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgLaccum->GetMrt(
+      0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-}} // namespace ork::lev2
+} // namespace lev2
+} // namespace ork

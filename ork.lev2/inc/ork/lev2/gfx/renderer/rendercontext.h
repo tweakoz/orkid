@@ -30,6 +30,7 @@ class XgmMaterialStateInst;
 class IRenderableDag;
 class IRenderTarget;
 class DrawableBuffer;
+struct RenderContextFrameData;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Rendering Context Data that can change per draw instance
@@ -45,7 +46,7 @@ struct RenderContextInstData {
   static const RenderContextInstData Default;
 
   RenderContextInstData();
-
+  RenderContextInstData(const RenderContextFrameData&RCFD);
   //////////////////////////////////////
   // renderer interface
   //////////////////////////////////////

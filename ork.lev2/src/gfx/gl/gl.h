@@ -51,6 +51,9 @@
 
 namespace ork { namespace lev2 {
 
+class GfxTargetGL;
+class GlslFxInterface;
+
 namespace dxt {
 struct DDS_HEADER;
 }

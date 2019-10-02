@@ -38,6 +38,12 @@ const RenderContextInstData RenderContextInstData::Default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+RenderContextInstData::RenderContextInstData(const RenderContextFrameData&RCFD)
+  : RenderContextInstData() {
+    mpActiveRenderer = RCFD._renderer;
+  }
+
+
 RenderContextInstData::RenderContextInstData()
     : miMaterialIndex(0)
     , miMaterialPassIndex(0)

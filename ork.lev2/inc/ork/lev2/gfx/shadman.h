@@ -11,128 +11,130 @@
 #include <ork/kernel/prop.h>
 #include <ork/lev2/gfx/gfxenv.h>
 
-namespace ork { namespace lev2 {
+namespace ork {
+namespace lev2 {
 
 struct FxShaderParam;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FxParamRec
-{
+class FxParamRec {
 public:
+  enum EBindingScope {
+    ESCOPE_CONSTANT = 0,
+    ESCOPE_PERFRAME,
+    ESCOPE_PERMATERIALINST,
+    ESCOPE_PEROBJECT,
+  };
 
-	enum EBindingScope
-	{
-		ESCOPE_CONSTANT = 0,
-		ESCOPE_PERFRAME,
-		ESCOPE_PERMATERIALINST,
-		ESCOPE_PEROBJECT,
-	};
+  FxParamRec();
 
-	FxParamRec();
+  std::string mParameterName;
+  std::string mParameterSemantic;
+  EPropType meParameterType;
 
-	std::string				mParameterName;
-	std::string				mParameterSemantic;
-	EPropType				meParameterType;
-
-	const FxShaderParam*	mParameterHandle;
-	EBindingScope			meBindingScope;
-	U32						mTargetHash;
+  const FxShaderParam *mParameterHandle;
+  EBindingScope meBindingScope;
+  U32 mTargetHash;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FxShaderPass
-{
-	std::string				mPassName;
-	void*					mInternalHandle;
-	bool					mbRestorePass;
+struct FxShaderPass {
+  std::string mPassName;
+  void *mInternalHandle;
+  bool mbRestorePass;
 
-	RenderQueueSortingData	mRenderQueueSortingData;
+  RenderQueueSortingData mRenderQueueSortingData;
 
-	FxShaderPass( void *ih=0 );
-	void* GetPlatformHandle( void ) const { return mInternalHandle; }
+  FxShaderPass(void *ih = 0);
+  void *GetPlatformHandle(void) const { return mInternalHandle; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FxShaderTechnique
-{
-	std::string					mTechniqueName;
-	const void*					mInternalHandle;
-	orkvector<FxShaderPass*>	mPasses;
-	bool						mbValidated;
+struct FxShaderTechnique {
+  std::string mTechniqueName;
+  const void *mInternalHandle;
+  orkvector<FxShaderPass *> mPasses;
+  bool mbValidated;
 
-	FxShaderTechnique( void *ih=0 );
+  FxShaderTechnique(void *ih = 0);
 
-	const void* GetPlatformHandle( void ) const { return mInternalHandle; }
+  const void *GetPlatformHandle(void) const { return mInternalHandle; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct FxShaderParam
-{
-	std::string						mParameterName;
-	std::string						mParameterSemantic;
-	std::string						mParameterType;
-	EPropType						meParamType;
-	void*							mInternalHandle;
-	bool							mBindable;
+struct FxShaderParam {
+  std::string mParameterName;
+  std::string mParameterSemantic;
+  std::string mParameterType;
+  EPropType meParamType;
+  void *mInternalHandle;
+  bool mBindable;
 
-	FxShaderParam*					mChildParam;
+  FxShaderParam *mChildParam;
 
-	orklut<std::string,std::string>	mAnnotations;
-	FxShaderParam( void *ih=0 );
-	void* GetPlatformHandle( void ) const { return mInternalHandle; }
+  orklut<std::string, std::string> mAnnotations;
+  FxShaderParam(void *ih = 0);
+  void *GetPlatformHandle(void) const { return mInternalHandle; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FxShader
-{
-	void*												mInternalHandle;
-	orkmap<std::string,const FxShaderTechnique*>		mTechniques;
-	orkmap<std::string,const FxShaderParam*>			mParameterByName;
-	//orkmap<std::string,const FxShaderParam*>			mParameterBySemantic;
-	bool												mAllowCompileFailure;
-	bool												mFailedCompile;
-	std::string mName;
+class FxShader {
+  void *mInternalHandle;
+  orkmap<std::string, const FxShaderTechnique *> mTechniques;
+  orkmap<std::string, const FxShaderParam *> mParameterByName;
+  // orkmap<std::string,const FxShaderParam*>
+  // mParameterBySemantic;
+  bool mAllowCompileFailure;
+  bool mFailedCompile;
+  std::string mName;
 
 public:
+  void OnReset();
 
-	void OnReset();
+  static void SetLoaderTarget(GfxTarget *targ);
 
-	static void SetLoaderTarget(GfxTarget*targ);
+  FxShader();
 
-	FxShader();
+  static void RegisterLoaders(const file::Path::NameType &base,
+                              const file::Path::NameType &ext);
 
-	static void RegisterLoaders( const file::Path::NameType & base, const file::Path::NameType & ext );
+  void SetInternalHandle(void *ph) { mInternalHandle = ph; }
+  void *GetInternalHandle(void) { return mInternalHandle; }
 
-	void SetInternalHandle( void* ph ) { mInternalHandle=ph; }
-	void* GetInternalHandle( void ) { return mInternalHandle; }
+  static const char *GetAssetTypeNameStatic(void) { return "fxshader"; }
 
-	static const char *GetAssetTypeNameStatic( void ) { return "fxshader"; }
+  void AddTechnique(const FxShaderTechnique *tek);
+  void AddParameter(const FxShaderParam *param);
 
-	void AddTechnique( const FxShaderTechnique* tek );
-	void AddParameter( const FxShaderParam* param );
+  const orkmap<std::string, const FxShaderTechnique *> &
+  GetTechniques(void) const {
+    return mTechniques;
+  }
+  const orkmap<std::string, const FxShaderParam *> &
+  GetParametersByName(void) const {
+    return mParameterByName;
+  }
+  // const orkmap<std::string,const FxShaderParam*>& 	GetParametersBySemantic(
+  // void ) const { return mParameterBySemantic; }
 
-	const orkmap<std::string,const FxShaderTechnique*>& GetTechniques( void ) const { return mTechniques; }
-	const orkmap<std::string,const FxShaderParam*>& 	GetParametersByName( void ) const { return mParameterByName; }
-	//const orkmap<std::string,const FxShaderParam*>& 	GetParametersBySemantic( void ) const { return mParameterBySemantic; }
+  FxShaderParam *FindParamByName(const std::string &named);
+  FxShaderTechnique *FindTechniqueByName(const std::string &named);
 
-	FxShaderParam* FindParamByName( const std::string& named );
-	FxShaderTechnique* FindTechniqueByName( const std::string& named );
+  void SetAllowCompileFailure(bool bv) { mAllowCompileFailure = bv; }
+  bool GetAllowCompileFailure() const { return mAllowCompileFailure; }
+  void SetFailedCompile(bool bv) { mFailedCompile = bv; }
+  bool GetFailedCompile() const { return mFailedCompile; }
 
-	void SetAllowCompileFailure( bool bv ) { mAllowCompileFailure=bv; }
-	bool GetAllowCompileFailure() const { return mAllowCompileFailure; }
-	void SetFailedCompile( bool bv ) { mFailedCompile=bv; }
-	bool GetFailedCompile() const { return mFailedCompile; }
-
-	void SetName(const char *);
-	const char *GetName();
+  void SetName(const char *);
+  const char *GetName();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
-} }
-
+} // namespace lev2
+} // namespace ork

@@ -22,8 +22,8 @@ public:
 
   virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival)                            = 0;
-  virtual void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec)                        = 0;
-  virtual void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec)                        = 0;
+  virtual void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec)                        = 0;
+  virtual void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec)                        = 0;
   virtual void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec)                        = 0;
   virtual void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) = 0;
   virtual void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt)   = 0;
