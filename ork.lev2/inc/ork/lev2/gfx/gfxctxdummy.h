@@ -128,7 +128,7 @@ public:
   virtual void SetScissor(int iX, int iY, int iW, int iH) {}
   virtual void Clear(const fcolor4& rCol, float fdepth) {}
 
-  virtual void GetPixel(const fvec4& rAt, GetPixelContext& ctx) {}
+  virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {}
 
   //////////////////////////////////////////////
 

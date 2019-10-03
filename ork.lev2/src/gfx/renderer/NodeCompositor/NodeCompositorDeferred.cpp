@@ -262,7 +262,22 @@ struct IMPL {
       _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
       _lightingmtl.bindParamVec3(_parLightColor, fvec3(0.8, 0.7, 0.2));
       _lightingmtl.bindParamVec4(_parLightPosR, fvec4(campos_mono, 100.0f));
+
+      ECullTest eprevculltest = ECULLTEST_OFF;
+
           for (auto& pl : _pointlights) {
+
+
+            float dist_to_light = (campos_mono-pl._pos).Mag();
+            bool cam_inside_light = dist_to_light<=pl._radius;
+            ECullTest cur_cull_test = cam_inside_light ? ECULLTEST_PASS_FRONT : ECULLTEST_PASS_BACK;
+
+            if( eprevculltest != cur_cull_test ){
+              _lightingmtl.mRasterState.SetCullTest(cur_cull_test);
+              RSI->BindRasterState(_lightingmtl.mRasterState);
+            }
+            eprevculltest = cur_cull_test;
+
             fmtx4 LIGHTMTX;
             LIGHTMTX.ComposeMatrix(pl._pos, fquat(), pl._radius);
             if (is_stereo_1pass) {

@@ -28,7 +28,7 @@ namespace ork::lev2 {
 
 /////////////////////////////////////////////////////////////////////////
 
-GetPixelContext::GetPixelContext() : mAsBuffer(nullptr), mRtGroup(nullptr), miMrtMask(0), mUserData(nullptr) {
+PixelFetchContext::PixelFetchContext() : mAsBuffer(nullptr), mRtGroup(nullptr), miMrtMask(0), mUserData(nullptr) {
   for (int i = 0; i < kmaxitems; i++) {
     mPickColors[i] = fcolor4(0.0f, 0.0f, 0.0f, 0.0f);
     mUsage[i] = EPU_FLOAT;
@@ -37,7 +37,7 @@ GetPixelContext::GetPixelContext() : mAsBuffer(nullptr), mRtGroup(nullptr), miMr
 
 /////////////////////////////////////////////////////////////////////////
 
-ork::rtti::ICastable* GetPixelContext::GetObject(PickBufferBase* pb, int ichan) const {
+ork::rtti::ICastable* PixelFetchContext::GetObject(PickBufferBase* pb, int ichan) const {
   if (nullptr == pb)
     return nullptr;
 
@@ -52,7 +52,7 @@ ork::rtti::ICastable* GetPixelContext::GetObject(PickBufferBase* pb, int ichan) 
 
 /////////////////////////////////////////////////////////////////////////
 
-void* GetPixelContext::GetPointer(int ichan) const {
+void* PixelFetchContext::GetPointer(int ichan) const {
   const fvec4& TestColor = mPickColors[ichan];
   uint64_t uobj = TestColor.GetRGBAU64();
   if (0 != uobj) {

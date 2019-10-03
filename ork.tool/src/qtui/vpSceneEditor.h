@@ -108,8 +108,8 @@ public:
   //////////////////////
   // lev2::PickBuffer<SceneEditorVP>* GetPickBuffer() { return (lev2::PickBuffer<SceneEditorVP>*)mpPickBuffer; }
   void IncPickDirtyCount(int icount);
-  void GetPixel(int ix, int iy, lev2::GetPixelContext& ctx);
-  ork::Object* GetObject(lev2::GetPixelContext& ctx, int ichan);
+  void GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx);
+  ork::Object* GetObject(lev2::PixelFetchContext& ctx, int ichan);
   //////////////////////
   ent::CompositingSystem* compositingSystem();
   const lev2::CompositingGroup* GetCompositingGroup(int igrp);

@@ -101,10 +101,10 @@ private:
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
-struct GetPixelContext {
+struct PixelFetchContext {
   ork::rtti::ICastable* GetObject(PickBufferBase* pb, int ichan) const;
   void* GetPointer(int ichan) const;
-  GetPixelContext();
+  PixelFetchContext();
 
   //////////////////////
 
@@ -130,6 +130,7 @@ struct GetPixelContext {
 #include "gbi.h"
 #include "fbi.h"
 #include "txi.h"
+#include "rsi.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

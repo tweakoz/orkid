@@ -82,8 +82,8 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
         pickctx->mState     = 1;
         auto& pixel_ctx     = pickctx->_pixelctx;
         pixel_ctx.miMrtMask = 3;
-        pixel_ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR64;
-        pixel_ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
+        pixel_ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
+        pixel_ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
         pixel_ctx.mUserData.Set<ork::lev2::RenderContextFrameData*>(&RCFD);
 
         viewport->GetPixel(pickctx->miX, pickctx->miY, pixel_ctx); // HERE<<<<<<
@@ -110,7 +110,7 @@ void OuterPickOp(DeferredPickOperationContext* pickctx) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVP::GetPixel(int ix, int iy, lev2::GetPixelContext& ctx) {
+void SceneEditorVP::GetPixel(int ix, int iy, lev2::PixelFetchContext& ctx) {
   if (nullptr == mpPickBuffer)
     return;
 
@@ -140,7 +140,7 @@ void SceneEditorVP::GetPixel(int ix, int iy, lev2::GetPixelContext& ctx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::GetPixelContext& ctx) {
+template <> void ork::lev2::PickBuffer<ork::ent::SceneEditorVP>::Draw(lev2::PixelFetchContext& ctx) {
   AssertOnOpQ2(MainThreadOpQ());
 
   const ent::Simulation* psi = mpViewport->simulation();

@@ -27,7 +27,7 @@ Surface::Surface( const std::string & name, int x, int y, int w, int h, CColor3 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Surface::GetPixel( int ix, int iy, lev2::GetPixelContext& ctx )
+void Surface::GetPixel( int ix, int iy, lev2::PixelFetchContext& ctx )
 {
 	int iW = GetW();
 	int iH = GetH();

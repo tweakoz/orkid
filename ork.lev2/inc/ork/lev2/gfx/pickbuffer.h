@@ -38,7 +38,7 @@ class PickBufferBase : public ork::lev2::GfxBuffer
     uint64_t        AssignPickId(ork::Object*);
     ork::Object*    GetObjectFromPickId(uint64_t);
 
-	virtual void Draw( lev2::GetPixelContext& ctx ) = 0;
+	virtual void Draw( lev2::PixelFetchContext& ctx ) = 0;
 
 	///////////////////////
 
@@ -62,7 +62,7 @@ template <typename VPT> class PickBuffer : public PickBufferBase
 					EPickBufferType etyp );
 
 
-	virtual void Draw( lev2::GetPixelContext& ctx );
+	virtual void Draw( lev2::PixelFetchContext& ctx );
 
 	VPT* mpViewport;
 };

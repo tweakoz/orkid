@@ -71,7 +71,7 @@ private:
 
 	DataFlowEditor& GetDataFlowEditor() { return mDflowEditor; }
 	void draw_connections( ork::lev2::GfxTarget* pTARG );
-	//void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
+	//void GetPixel( int ix, int iy, lev2::PixelFetchContext& ctx );
 
 	lev2::Grid2d								mGrid;
 	ork::lev2::Texture*							mpArrowTex;

@@ -52,7 +52,7 @@ public:
 
   virtual void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) {}
   virtual bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) { return false; }
-  virtual void GetPixel(const fvec4& rAt, GetPixelContext& ctx) = 0;
+  virtual void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) = 0;
 
   //////////////////////////////////////////////
 

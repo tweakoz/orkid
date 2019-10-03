@@ -21,7 +21,7 @@ template class ork::lev2::PickBuffer<ork::tool::ged::GedVP>;
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 template<>
-void PickBuffer<ork::tool::ged::GedVP>::Draw( lev2::GetPixelContext& ctx )
+void PickBuffer<ork::tool::ged::GedVP>::Draw( lev2::PixelFetchContext& ctx )
 {
     mPickIds.clear();
 
@@ -186,10 +186,10 @@ ui::HandlerResult GedVP::DoOnUiEvent( const ui::Event& EV )
 	int ilocx, ilocy;
 	RootToLocal(ix,iy,ilocx,ilocy);
 
-	lev2::GetPixelContext ctx;
+	lev2::PixelFetchContext ctx;
 	ctx.miMrtMask = (1<<0) | (1<<1); // ObjectID and ObjectUVD
-	ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR64;
-	ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
+	ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
+	ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
 
 	bool filt_kpush = (filtev.mAction=="keypush");
 

@@ -28,7 +28,7 @@ class SceneEditorVPToolHandler : public SceneEditorVPToolHandlerBase
 protected:
 	SceneEditorBase&	mEditor;
 
-	void setSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy);
+	void setSpawnLoc(const lev2::PixelFetchContext& ctx, float fx, float fy);
 
 public:
 	SceneEditorVPToolHandler( SceneEditorBase& editor );
@@ -61,7 +61,7 @@ struct DeferredPickOperationContext
 	SceneEditorVP*				mViewport;
 	on_pick_lambda_t 			mOnPick;
 	ork::atomic<int>			mState;
-  lev2::GetPixelContext _pixelctx;
+  lev2::PixelFetchContext _pixelctx;
 
 };
 

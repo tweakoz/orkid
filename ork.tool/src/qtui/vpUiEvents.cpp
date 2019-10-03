@@ -304,7 +304,7 @@ ui::HandlerResult SceneEditorVP::DoOnUiEvent(const ui::Event& EV) {
 
 ///////////////////////////////////////////////////////////////////////////
 
-void SceneEditorVPToolHandler::setSpawnLoc(const lev2::GetPixelContext& ctx, float fx, float fy) {
+void SceneEditorVPToolHandler::setSpawnLoc(const lev2::PixelFetchContext& ctx, float fx, float fy) {
 
   if (auto cam = GetViewport()->getActiveCamera()) {
 

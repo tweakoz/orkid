@@ -30,7 +30,7 @@ using namespace ork::asset;using namespace ork::dataflow;
 using namespace ork::lev2;
 
 namespace ork::lev2 {
-template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::GetPixelContext& ctx) {
+template <> void PickBuffer<ork::tool::GraphVP>::Draw(lev2::PixelFetchContext& ctx) {
   mPickIds.clear();
 
   auto tgt = GetContext();
@@ -560,10 +560,10 @@ ui::HandlerResult GraphVP::DoOnUiEvent(const ui::Event& EV) {
   float fx = float(ilocx) / float(GetW());
   float fy = float(ilocy) / float(GetH());
 
-  lev2::GetPixelContext ctx;
+  lev2::PixelFetchContext ctx;
   ctx.miMrtMask = (1 << 0) | (1 << 1); // ObjectID and ObjectUVD
-  ctx.mUsage[0] = lev2::GetPixelContext::EPU_PTR64;
-  ctx.mUsage[1] = lev2::GetPixelContext::EPU_FLOAT;
+  ctx.mUsage[0] = lev2::PixelFetchContext::EPU_PTR64;
+  ctx.mUsage[1] = lev2::PixelFetchContext::EPU_FLOAT;
 
   QInputEvent* qip = (QInputEvent*)EV.mpBlindEventData;
 

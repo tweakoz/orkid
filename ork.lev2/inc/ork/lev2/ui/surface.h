@@ -28,7 +28,7 @@ public:
 	void BeginSurface(lev2::FrameRenderer&frenderer);
 	void EndSurface(lev2::FrameRenderer&frenderer);
 
-	void GetPixel( int ix, int iy, lev2::GetPixelContext& ctx );
+	void GetPixel( int ix, int iy, lev2::PixelFetchContext& ctx );
 
 	void RePaintSurface(DrawEvent& drwev);
 

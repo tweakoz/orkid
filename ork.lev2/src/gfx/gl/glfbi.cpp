@@ -413,7 +413,7 @@ void GlFrameBufferInterface::Capture(const RtGroup& rtg, int irt, const file::Pa
 }*/
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlFrameBufferInterface::GetPixel(const fvec4& rAt, GetPixelContext& ctx) {
+void GlFrameBufferInterface::GetPixel(const fvec4& rAt, PixelFetchContext& ctx) {
   fcolor4 Color(0.0f, 0.0f, 0.0f, 0.0f);
 
   int sx = int((rAt.GetX()) * float(mTarget.GetW()));
