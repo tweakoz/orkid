@@ -63,6 +63,9 @@ fmtx4 VrProjFrustumPar::composeProjection() const
 
 OpenVrDevice::OpenVrDevice() {
 
+  _leftControllerDeviceIndex = 1;
+  _rightControllerDeviceIndex = 2;
+
   _ovr::EVRInitError error = _ovr::VRInitError_None;
   _hmd                     = _ovr::VR_Init(&error, _ovr::VRApplication_Scene);
   _active                  = (error == _ovr::VRInitError_None);
