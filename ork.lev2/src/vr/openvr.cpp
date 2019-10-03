@@ -3,6 +3,10 @@
 #include <ork/lev2/gfx/rtgroup.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/lev2/vr/vr.h>
+#include <rapidjson/reader.h>
+#include <rapidjson/document.h>
+#include <ork/kernel/environment.h>
+#include <boost/filesystem.hpp>
 
 #if defined(ENABLE_OPENVR)
 
@@ -65,6 +69,40 @@ OpenVrDevice::OpenVrDevice() {
 
   _leftControllerDeviceIndex = 1;
   _rightControllerDeviceIndex = 2;
+
+    ///////////////////////////////////////////////////////////
+    // override with controller.json
+    ///////////////////////////////////////////////////////////
+
+    std::string configpath;
+    genviron.get("OBT_STAGE",configpath);
+    configpath = configpath+"/controller.json";
+    if(boost::filesystem::exists(configpath)){
+    	FILE* fin = fopen(configpath.c_str(),"rt");
+      assert(fin!=nullptr);
+    	fseek(fin,0,SEEK_END);
+    	int size = ftell(fin);
+    	printf( "filesize<%d>\n", size );
+    	fseek(fin,0,SEEK_SET);
+    	auto jsondata = (char*) malloc(size+1);
+    	fread(jsondata,size,1,fin);
+    	jsondata[size] = 0;
+    	fclose(fin);
+
+    	rapidjson::Document document;
+    	document.Parse(jsondata);
+    	free((void*)jsondata);
+      assert(document.IsObject());
+    	assert(document.HasMember("ControllerIds"));
+      const auto& root = document["ControllerIds"];
+    	_leftControllerDeviceIndex = root["left"].GetInt();
+      _rightControllerDeviceIndex = root["right"].GetInt();
+      printf( "LeftId<%d>\n", _leftControllerDeviceIndex );
+      printf( "RightId<%d>\n", _rightControllerDeviceIndex );
+    }
+
+    ///////////////////////////////////////////////////////////
+
 
   _ovr::EVRInitError error = _ovr::VRInitError_None;
   _hmd                     = _ovr::VR_Init(&error, _ovr::VRApplication_Scene);
