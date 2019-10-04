@@ -104,6 +104,7 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Container::AddConfig(Config* pcfg) { mConfigs[pcfg->mName] = pcfg; }
+void Container::addUniformBlock(UniformBlock* pif) { _uniformBlocks[pif->_name] = pif; }
 void Container::addUniformSet(UniformSet* pif) { _uniformSets[pif->_name] = pif; }
 void Container::AddVertexInterface(StreamInterface* pif) { mVertexInterfaces[pif->mName] = pif; }
 void Container::AddTessCtrlInterface(StreamInterface* pif) { mTessCtrlInterfaces[pif->mName] = pif; }
@@ -144,6 +145,10 @@ ShaderGeo* Container::GetGeometryProgram(const std::string& name) const {
 ShaderFrg* Container::GetFragmentProgram(const std::string& name) const {
   const auto& it = mFragmentPrograms.find(name);
   return (it == mFragmentPrograms.end()) ? nullptr : it->second;
+}
+UniformBlock* Container::uniformBlock(const std::string& name) const {
+  const auto& it = _uniformBlocks.find(name);
+  return (it == _uniformBlocks.end()) ? nullptr : it->second;
 }
 UniformSet* Container::uniformSet(const std::string& name) const {
   const auto& it = _uniformSets.find(name);
@@ -953,6 +958,59 @@ void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Te
           }
           GL_ERRORCHECK();
   */
+}
+
+UniformBlockItem UniformBlockBinding::findUniform(std::string named) const {
+  UniformBlockItem rval;
+  assert(_pass!=nullptr);
+
+
+
+  return rval;
+}
+
+UniformBlockBinding Pass::findUniformBlock(std::string blockname){
+  UniformBlockBinding rval;
+  rval._blockIndex = glGetUniformBlockIndex( mProgramObjectId, blockname.c_str() );
+  rval._pass = this;
+  rval._name = blockname;
+
+  GLint blocksize = 0;
+  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_DATA_SIZE,&blocksize);
+
+  GLint numunis = 0;
+  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS,&numunis);
+
+  auto uniindices = new GLuint[numunis];
+  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES,(GLint*)uniindices);
+
+  auto uniblkidcs = new GLint[numunis];
+  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_INDEX,uniblkidcs);
+
+  auto unioffsets = new GLint[numunis];
+  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_OFFSET, unioffsets );
+
+  auto unitypes = new GLint[numunis];
+  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_TYPE, unioffsets );
+
+  auto unisizes = new GLint[numunis];
+  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_SIZE, unioffsets );
+
+  auto uniarystrides = new GLint[numunis];
+  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_ARRAY_STRIDE, unioffsets );
+
+  auto unimtxstrides = new GLint[numunis];
+  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_MATRIX_STRIDE, unioffsets );
+
+  delete[] unimtxstrides;
+  delete[] uniarystrides;
+  delete[] unisizes;
+  delete[] unitypes;
+  delete[] unioffsets;
+  delete[] uniblkidcs;
+  delete[] uniindices;
+
+  return rval;
 }
 
 } // namespace ork::lev2::glslfx

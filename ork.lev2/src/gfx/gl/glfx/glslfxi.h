@@ -24,6 +24,8 @@ struct Container;
 struct Scanner;
 struct ScannerView;
 struct ScanViewFilter;
+struct Pass;
+struct UniformBlockBinding;
 
 struct Config {
   std::string mName;
@@ -81,6 +83,39 @@ struct UniformSet {
   uniform_map_t _uniforms;
 };
 
+struct UniformBlock {
+  typedef std::map<std::string, Uniform*> uniform_map_t;
+
+  UniformBlock() {}
+
+  std::string _name;
+  uniform_map_t _uniforms;
+};
+struct UniformBlockItem {
+  UniformBlockBinding* _binding = nullptr;
+  size_t _offset = 0;
+};
+struct UniformBlockBinding {
+  Pass* _pass = nullptr; // program to which this binding is bound
+  GLuint _blockIndex = 0xffffffff;
+  std::string _name;
+  UniformBlockItem findUniform(std::string named) const;
+};
+struct UniformBlockMapping {
+   UniformBlockBinding* _binding = nullptr;
+   uint8_t* _mapaddr = nullptr;
+};
+struct UniformBlockLayout {
+
+  template <typename T> UniformBlockItem alloc(){
+    size_t index = _counter;
+     _counter += sizeof(T);
+    return UniformBlockItem{index};
+ }
+
+  size_t _counter = 0;
+};
+
 struct StreamInterface {
   StreamInterface();
 
@@ -92,6 +127,7 @@ struct StreamInterface {
   GLenum mInterfaceType;
   preamble_t mPreamble;
   int mGsPrimSize;
+  std::set<UniformBlock*> _uniformBlocks;
   std::set<UniformSet*> _uniformSets;
 
   void Inherit(const StreamInterface& par);
@@ -193,6 +229,9 @@ struct Pass {
   }
   bool HasUniformInstance(UniformInstance* puni) const;
   const UniformInstance* GetUniformInstance(Uniform* puni) const;
+
+  UniformBlockBinding findUniformBlock(std::string blockname);
+
 };
 
 struct Technique {
@@ -209,6 +248,7 @@ struct Container {
   const Technique* mActiveTechnique;
   std::map<std::string, Config*> mConfigs;
   std::map<std::string, UniformSet*> _uniformSets;
+  std::map<std::string, UniformBlock*> _uniformBlocks;
   std::map<std::string, StreamInterface*> mVertexInterfaces;
   std::map<std::string, StreamInterface*> mTessCtrlInterfaces;
   std::map<std::string, StreamInterface*> mTessEvalInterfaces;
@@ -234,6 +274,7 @@ struct Container {
 
   void AddConfig(Config* pcfg);
   void addUniformSet(UniformSet* pif);
+  void addUniformBlock(UniformBlock* pif);
   void AddVertexInterface(StreamInterface* pif);
   void AddTessCtrlInterface(StreamInterface* pif);
   void AddTessEvalInterface(StreamInterface* pif);
@@ -256,6 +297,7 @@ struct Container {
   ShaderTsE* GetTessEvalProgram(const std::string& name) const;
   ShaderGeo* GetGeometryProgram(const std::string& name) const;
   ShaderFrg* GetFragmentProgram(const std::string& name) const;
+  UniformBlock* uniformBlock(const std::string& name) const;
   UniformSet* uniformSet(const std::string& name) const;
   StreamInterface* GetVertexInterface(const std::string& name) const;
   StreamInterface* GetTessCtrlInterface(const std::string& name) const;
