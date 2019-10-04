@@ -21,6 +21,26 @@ std::string indent(int count){
   return rval;
 }
 
+#if defined(__APPLE__)
+void GfxTargetGL::debugPushGroup(const std::string str) {
+}
+void GfxTargetGL::debugPopGroup() {
+}
+void GfxTargetGL::debugMarker(const std::string str) {
+}
+void GfxTargetGL::debugLabel(GLenum target, GLuint object, std::string name){
+    glLabelObjectEXT(target,
+                  object,
+                  name.length(),
+                  name.c_str() );
+}
+#else
+void GfxTargetGL::debugLabel(GLenum target, GLuint object, std::string name){
+    glObjectLabel(target,
+                  object,
+                  name.length(),
+                  name.c_str() );
+}
 static thread_local std::stack<std::string> _groupstack;
 static thread_local int _dbglevel = 0;
 static thread_local ork::Timer timer;
@@ -65,6 +85,8 @@ void GfxTargetGL::debugMarker(const std::string str) {
                        mstr.length(),mstr.c_str());
                        GL_ERRORCHECK();
 }
+#endif
+
 
 bool GfxTargetGL::SetDisplayMode(DisplayMode *mode)
 {

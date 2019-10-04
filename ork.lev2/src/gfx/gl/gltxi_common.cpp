@@ -854,7 +854,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	glBindTexture( TARGET, pTEXOBJ->mObject );
 	GL_ERRORCHECK();
   if( ptex->_debugName.length() ){
-    glObjectLabel(GL_TEXTURE,pTEXOBJ->mObject, ptex->_debugName.length(), ptex->_debugName.c_str() );
+    mTargetGL.debugLabel(GL_TEXTURE, pTEXOBJ->mObject, ptex->_debugName );
   }
 
 	auto infname = TextureFile.msFileName;
@@ -1155,8 +1155,11 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 
 		//printf( "linmiplin inummips<%d>\n", inummips );
 
+#if defined(__APPLE__)
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+#else
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
-
+#endif
 
 	}
 

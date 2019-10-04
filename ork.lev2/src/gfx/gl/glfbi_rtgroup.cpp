@@ -107,7 +107,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       glGenTextures(1, (GLuint*)&FboObj->mTEX[it]);
       glBindTexture(GL_TEXTURE_2D,FboObj->mTEX[it]);
       if( pB->_debugName.length() ){
-        glObjectLabel(GL_TEXTURE,FboObj->mTEX[it], pB->_debugName.length(), pB->_debugName.c_str() );
+        mTargetGL.debugLabel(GL_TEXTURE,FboObj->mTEX[it], pB->_debugName );
       }
       glBindTexture(GL_TEXTURE_2D,0);
       GL_ERRORCHECK();
@@ -155,7 +155,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     glBindTexture(GL_TEXTURE_2D, FboObj->_depthTexture);
     GL_ERRORCHECK();
     std::string DepthTexName("RtgDepth");
-    glObjectLabel(GL_TEXTURE,FboObj->_depthTexture, DepthTexName.length(), DepthTexName.c_str() );
+    mTargetGL.debugLabel(GL_TEXTURE,FboObj->_depthTexture, DepthTexName );
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, iw, ih, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);

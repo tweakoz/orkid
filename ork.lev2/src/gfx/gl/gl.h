@@ -16,8 +16,11 @@
 #include <map>
 #include <ork/kernel/svariant.h>
 #include <ork/lev2/gfx/gfxenv.h>
+#if defined(__APPLE__)
+#include <ork/lev2/gfx/glheaders.h>
+#else
 #include "glad/glad.h"
-//#include <ork/lev2/gfx/glheaders.h>
+#endif
 #include <set>
 #include <string>
 #include <vector>
@@ -332,6 +335,8 @@ public:
   //////////////////////////////////////////////
 
   void makeCurrentContext(void) final;
+
+  void debugLabel(GLenum target, GLuint object, std::string name);
 
   //////////////////////////////////////////////
 
