@@ -141,7 +141,7 @@ void GfxTargetGL::SwapGLContext( CTXBASE *pCTFL )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::MakeCurrentContext( void )
+void GfxTargetGL::makeCurrentContext( void )
 {
 	GlWinPlatformObject* plato = (GlWinPlatformObject*) mPlatformHandle;
 

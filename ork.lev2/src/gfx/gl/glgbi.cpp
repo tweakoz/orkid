@@ -38,7 +38,7 @@ static edynvbopath gDynVboPath = EVB_MAP_BUFFER_RANGE;
 
 void GfxTargetGL::TakeThreadOwnership()
 {
-	MakeCurrentContext();
+	makeCurrentContext();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -267,7 +267,7 @@ static void ClearVao()
 
 void* GlGeometryBufferInterface::LockVB( VertexBufferBase & VBuf, int ibase, int icount )
 {
-	mTargetGL.MakeCurrentContext();
+	mTargetGL.makeCurrentContext();
 
 	GL_ERRORCHECK();
 

@@ -21,24 +21,49 @@ std::string indent(int count){
   return rval;
 }
 
-static std::string _prevgroup;
-static int _dbglevel = 0;
+static thread_local std::stack<std::string> _groupstack;
+static thread_local int _dbglevel = 0;
+static thread_local ork::Timer timer;
 void GfxTargetGL::debugPushGroup(const std::string str) {
  auto mstr = indent(_dbglevel++) + str;
-  _prevgroup = mstr;
-  //printf( "Group:: %s\n", _prevgroup.c_str() );
-  glPushGroupMarkerEXT(mstr.length(),mstr.c_str());
+  _groupstack.push(mstr);
+  //printf( "BEG:: %s\n", mstr.c_str() );
+  if( mstr == "toolvp::assemble" ){
+      timer.Start();
+  }
+  GL_ERRORCHECK();
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0,
+                   mstr.length(),mstr.c_str());
+                   GL_ERRORCHECK();
+  timer.Start();
 }
 void GfxTargetGL::debugPopGroup() {
  //auto mstr = indent(_dbglevel--) + _prevgroup;
-  //printf( "END:: %s\n", _prevgroup.c_str() );
-  glPopGroupMarkerEXT();
+  std::string top = _groupstack.top();
+  if( top == "toolvp::assemble" ){
+    static int counter = 0;
+    //printf( "toolvp::assemble counter<%d> timer<%f>\n", counter, timer.SecsSinceStart() );
+    //if( timer.SecsSinceStart()>1.0 or (counter==3) )
+      //assert(false);
+    counter++;
+  }
+  _groupstack.pop();
+  //printf( "END:: %s\n", top.c_str() );
+  GL_ERRORCHECK();
+  glPopDebugGroup();
+  GL_ERRORCHECK();
   _dbglevel--;
 }
 void GfxTargetGL::debugMarker(const std::string str) {
   auto mstr = indent(_dbglevel) + str;
   //printf( "Marker:: %s\n", mstr.c_str() );
-  glInsertEventMarkerEXT(mstr.length(),mstr.c_str());
+
+  GL_ERRORCHECK();
+  glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION,
+                       GL_DEBUG_TYPE_MARKER, 0,
+                       GL_DEBUG_SEVERITY_NOTIFICATION,
+                       mstr.length(),mstr.c_str());
+                       GL_ERRORCHECK();
 }
 
 bool GfxTargetGL::SetDisplayMode(DisplayMode *mode)

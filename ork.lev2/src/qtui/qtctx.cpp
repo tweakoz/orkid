@@ -559,6 +559,7 @@ void CTQT::SlotRepaint() {
     if (this->mDrawLock == 1) {
       // printf( "CTQT::SlotRepaint() mpTarget<%p>\n", mpTarget );
       if (this->mpTarget) {
+        mpTarget->makeCurrentContext();
         auto& uiev  = this->mUIEvent;
         auto gfxwin = uiev.mpGfxWin;
         auto vp     = gfxwin ? gfxwin->GetRootWidget() : nullptr;

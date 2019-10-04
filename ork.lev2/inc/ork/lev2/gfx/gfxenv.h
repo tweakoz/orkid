@@ -120,6 +120,8 @@ public:
   virtual void debugPopGroup() {}
   virtual void debugMarker(const std::string str) {}
 
+  virtual void makeCurrentContext() {}
+
   ///////////////////////////////////////////////////////////////////////
 
   virtual void InitializeContext(GfxWindow *pWin, CTXBASE *pctxbase) = 0;

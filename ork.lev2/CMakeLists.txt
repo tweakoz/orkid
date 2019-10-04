@@ -54,9 +54,11 @@ ELSE()
   set( src_apple )
 ENDIF()
 
+file(GLOB_RECURSE src_glad ${SRCD}/gfx/gl/glad/*.c)
+
 set( orksrcs ${src_aud} ${src_gfx} ${src_input} )
 list( APPEND orksrcs ${src_qtui} ${src_ui} ${src_lev2} )
-list( APPEND orksrcs ${src_apple} ${src_ovr} )
+list( APPEND orksrcs ${src_apple} ${src_ovr} ${src_glad} )
 
 ###################################
 

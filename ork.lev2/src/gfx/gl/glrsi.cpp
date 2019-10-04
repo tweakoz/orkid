@@ -159,7 +159,7 @@ void GlRasterStateInterface::SetScissorTest( EScissorTest eVal )
 
 void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool bForce )
 {
-	_target.debugPushGroup("GlRasterStateInterface::BindRasterState");
+	//_target.debugPushGroup("GlRasterStateInterface::BindRasterState");
 	bForce = true;
 	bool bAlphaTestChanged =	(newstate.GetAlphaTest()	!=	mLastState.GetAlphaTest()		);
 //	bool bTextureModeChanged =	(newstate.GetTextureMode()	!=	rLast.GetTextureMode()		);
@@ -262,7 +262,7 @@ void GlRasterStateInterface::BindRasterState( SRasterState const &newstate, bool
 		}
 	}
 	GL_ERRORCHECK();
-	_target.debugPopGroup();
+//	_target.debugPopGroup();
 
 }
 

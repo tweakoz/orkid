@@ -16,7 +16,8 @@
 #include <map>
 #include <ork/kernel/svariant.h>
 #include <ork/lev2/gfx/gfxenv.h>
-#include <ork/lev2/gfx/glheaders.h>
+#include "glad/glad.h"
+//#include <ork/lev2/gfx/glheaders.h>
 #include <set>
 #include <string>
 #include <vector>
@@ -330,7 +331,7 @@ public:
 
   //////////////////////////////////////////////
 
-  void MakeCurrentContext(void);
+  void makeCurrentContext(void) final;
 
   //////////////////////////////////////////////
 

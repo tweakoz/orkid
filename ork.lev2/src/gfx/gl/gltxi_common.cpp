@@ -818,7 +818,7 @@ bool GlTextureInterface::LoadVDSTexture( const AssetPath& infname, Texture *ptex
 
 void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 {
-	mTargetGL.MakeCurrentContext();
+	mTargetGL.makeCurrentContext();
 
 	dxt::DDS_HEADER* ddsh = req.ddsh;
 	Texture* ptex = req.ptex;
@@ -854,7 +854,7 @@ void GlTextureInterface::LoadDDSTextureMainThreadPart(const GlTexLoadReq& req)
 	glBindTexture( TARGET, pTEXOBJ->mObject );
 	GL_ERRORCHECK();
   if( ptex->_debugName.length() ){
-    glLabelObjectEXT(GL_TEXTURE,pTEXOBJ->mObject, ptex->_debugName.length(), ptex->_debugName.c_str() );
+    glObjectLabel(GL_TEXTURE,pTEXOBJ->mObject, ptex->_debugName.length(), ptex->_debugName.c_str() );
   }
 
 	auto infname = TextureFile.msFileName;
@@ -1133,7 +1133,7 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 	GLTextureObject* pTEXOBJ = (GLTextureObject*) ptex->GetTexIH();
     if( pTEXOBJ )
     {
-   		mTargetGL.MakeCurrentContext();
+   		mTargetGL.makeCurrentContext();
 
 		const auto& texmode = ptex->TexSamplingMode();
 
@@ -1155,7 +1155,7 @@ void GlTextureInterface::ApplySamplingMode( Texture *ptex )
 
 		//printf( "linmiplin inummips<%d>\n", inummips );
 
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
 
 
 	}

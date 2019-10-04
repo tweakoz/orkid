@@ -46,6 +46,12 @@
 #include "vpRenderer.h"
 #include "vpSceneEditor.h"
 
+#define GL_ERRORCHECK()                                                                                                            \
+  {                                                                                                                                \
+    int iErr = GetGlError();                                                                                                       \
+    OrkAssert(iErr == 0);                                                                                                          \
+  }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 extern bool gtoggle_hud;
@@ -293,9 +299,12 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   static CompositingImpl _gimpl(_gdata);
   RCFD._cimpl = & _gimpl;
   _gimpl.pushCPD(TOPCPD);
+  GL_ERRORCHECK();
   if( nullptr == compsys or nullptr==sim){
     // still want to draw something so we know the editor is alive..
+    GL_ERRORCHECK();
     mpTarget->BeginFrame();
+    GL_ERRORCHECK();
     // we must still consume DrawableBuffers (since the compositor cannot)
     const DrawableBuffer* DB = DrawableBuffer::acquireReadDB(7);
     FBI->SetAutoClear(true);
@@ -308,6 +317,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
     mpTarget->EndFrame();
     mpTarget->popRenderContextFrameData();
     _gimpl.popCPD();
+    GL_ERRORCHECK();
     return;
   }
   RCFD._cimpl = & compsys->_impl;
@@ -323,15 +333,26 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   // setup viewport (main) rendertarget at top of stack
   //  so we can composite into it..
   //////////////////////////////////////////////////
+  GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
       _renderer->SetTarget(mpTarget);
       SetRect(mpTarget->GetX(), mpTarget->GetY(), mpTarget->GetW(), mpTarget->GetH());
       FBI->SetAutoClear(true);
       FBI->SetViewport(0, 0, TARGW, TARGH);
       FBI->SetScissor(0, 0, TARGW, TARGH);
+      mpTarget->debugPopGroup();
+      GL_ERRORCHECK();
+      mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
       mpTarget->BeginFrame();
+      mpTarget->debugPopGroup();
+      GL_ERRORCHECK();
+      mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
       this->Clear();
+      mpTarget->debugPopGroup();
+      GL_ERRORCHECK();
+      mpTarget->debugPushGroup("toolvp::DRAWBEGIN");
   mpTarget->debugPopGroup();
+  GL_ERRORCHECK();
   //////////////////////////////////////////////////
   lev2::FrameRenderer framerenderer(RCFD, [&]() {
       renderMisc(RCFD);
@@ -345,10 +366,14 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   // composite assembly:
   //   render (or assemble) content into pre-compositing buffers
   //////////////////////////////////////////////////
+  GL_ERRORCHECK();
   mpTarget->debugPushGroup("toolvp::assemble");
   bool aok = compsys->_impl.assemble(drawdata);
+  GL_ERRORCHECK();
   mpTarget->debugMarker(FormatString("toolvp::aok<%d>",int(aok)));
+  GL_ERRORCHECK();
   mpTarget->debugPopGroup();
+  GL_ERRORCHECK();
   //////////////////////////////////////////////////
   // final compositing :
   //   combine previously assembled content
@@ -360,6 +385,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   // todo - lock sim
   RCFD._cimpl->popCPD();
   RCFD._cimpl = & _gimpl;
+  GL_ERRORCHECK();
   //////////////////////////////////////////////////
   // after composite:
   //  render hud and other 2d non-content layers
@@ -395,6 +421,7 @@ void SceneEditorVP::DoDraw(ui::DrawEvent& drwev) {
   }
   _gimpl.popCPD();
   mpTarget->popRenderContextFrameData();
+  GL_ERRORCHECK();
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -421,13 +448,6 @@ const ent::Simulation* SceneEditorVP::simulation() {
 //  this may go to the onscreen or pickbuffer targets
 ///////////////////////////////////////////////////////////////////////////////
 
-#define GL_ERRORCHECK()                                                                                                            \
-  {                                                                                                                                \
-    int iErr = GetGlError();                                                                                                       \
-    OrkAssert(iErr == 0);                                                                                                          \
-  }
-
-///////////////////////////////////////////////////////////////////////////
 
 struct ScopedSimFramer {
   ScopedSimFramer(const Simulation* sim)

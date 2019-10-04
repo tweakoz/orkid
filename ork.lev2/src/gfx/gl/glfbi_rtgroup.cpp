@@ -18,9 +18,8 @@ namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
-  mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
-
-  mTargetGL.MakeCurrentContext();
+  mTargetGL.makeCurrentContext();
+  //mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup");
 
   if (0 == Base) {
     if (mCurrentRtGroup) {
@@ -50,7 +49,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     ////////////////////////////////////////////////
     _setAsRenderTarget();
     mCurrentRtGroup = 0;
-    mTargetGL.debugPopGroup();
+    //mTargetGL.debugPopGroup();
     return;
   }
 
@@ -84,7 +83,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
   GL_ERRORCHECK();
 
   if (0 == FboObj) {
-    mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::newFbo");
+    //mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::newFbo");
     FboObj = new GlFboObject;
 
     Base->SetInternalHandle(FboObj);
@@ -108,7 +107,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       glGenTextures(1, (GLuint*)&FboObj->mTEX[it]);
       glBindTexture(GL_TEXTURE_2D,FboObj->mTEX[it]);
       if( pB->_debugName.length() ){
-        glLabelObjectEXT(GL_TEXTURE,FboObj->mTEX[it], pB->_debugName.length(), pB->_debugName.c_str() );
+        glObjectLabel(GL_TEXTURE,FboObj->mTEX[it], pB->_debugName.length(), pB->_debugName.c_str() );
       }
       glBindTexture(GL_TEXTURE_2D,0);
       GL_ERRORCHECK();
@@ -139,12 +138,12 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
 
 
     Base->SetSizeDirty(true);
-    mTargetGL.debugPopGroup();
+    //mTargetGL.debugPopGroup();
   }
   GL_ERRORCHECK();
 
   if (Base->IsSizeDirty()) {
-    mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::SizeDirty");
+    //mTargetGL.debugPushGroup("GlFrameBufferInterface::SetRtGroup::SizeDirty");
     //////////////////////////////////////////
     // initialize depth renderbuffer
     GL_ERRORCHECK();
@@ -156,7 +155,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     glBindTexture(GL_TEXTURE_2D, FboObj->_depthTexture);
     GL_ERRORCHECK();
     std::string DepthTexName("RtgDepth");
-    glLabelObjectEXT(GL_TEXTURE,FboObj->_depthTexture, DepthTexName.length(), DepthTexName.c_str() );
+    glObjectLabel(GL_TEXTURE,FboObj->_depthTexture, DepthTexName.length(), DepthTexName.c_str() );
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, iw, ih, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
@@ -245,7 +244,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
       GL_ERRORCHECK();
 
       pB->SetSizeDirty(false);
-      mTargetGL.debugPopGroup();
+      //mTargetGL.debugPopGroup();
     }
     Base->SetSizeDirty(false);
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -284,7 +283,7 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     GL_ERRORCHECK();
   }
-  mTargetGL.debugPopGroup();
+  //mTargetGL.debugPopGroup();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -404,7 +404,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::MakeCurrentContext( void )
+void GfxTargetGL::makeCurrentContext( void )
 {
 	GlOsxPlatformObject* plato = (GlOsxPlatformObject*) mPlatformHandle;
 

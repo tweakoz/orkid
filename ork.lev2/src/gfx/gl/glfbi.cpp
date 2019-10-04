@@ -36,24 +36,25 @@ GlFrameBufferInterface::~GlFrameBufferInterface() {}
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::_setAsRenderTarget(void) {
-  mTargetGL.debugPushGroup("GlFrameBufferInterface::_setAsRenderTarget");
+  mTargetGL.makeCurrentContext();
+  //mTargetGL.debugPushGroup("GlFrameBufferInterface::_setAsRenderTarget");
   GL_ERRORCHECK();
-  mTargetGL.MakeCurrentContext();
   GL_ERRORCHECK();
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   GL_ERRORCHECK();
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   GL_ERRORCHECK();
   GL_ERRORCHECK();
-  mTargetGL.debugPopGroup();
+  //mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::DoBeginFrame(void) {
-  mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrame");
 
-  mTargetGL.MakeCurrentContext();
+  mTargetGL.makeCurrentContext();
+
+  //mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameA");
   // glFinish();
   GL_ERRORCHECK();
 
@@ -69,6 +70,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
     PushViewport(extents);
     PushScissor(extents);
     // printf( "BEGINFRAME<RtGroup>\n" );
+    //mTargetGL.debugPopGroup();
   }
   ////////////////////////////////
   else if (IsOffscreenTarget())
@@ -79,6 +81,7 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
     // printf( "OST begin x<%d> y<%d> w<%d> h<%d>\n", mTarget.GetX(), mTarget.GetY(), mTarget.GetW(), mTarget.GetH() );
     PushViewport(extents);
     PushScissor(extents);
+    //mTargetGL.debugPopGroup();
   }
   /////////////////////////////////////////////////
   else // window (On Screen Target)
@@ -111,21 +114,27 @@ void GlFrameBufferInterface::DoBeginFrame(void) {
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       GL_ERRORCHECK();
     }
+    //mTargetGL.debugPopGroup();
   }
 
   /////////////////////////////////////////////////
   // Set Initial Rendering States
   GL_ERRORCHECK();
 
+  //mTargetGL.debugPushGroup("GlFrameBufferInterface::DoBeginFrameB");
+
   const SRasterState defstate;
   mTarget.RSI()->BindRasterState(defstate, true);
-  mTargetGL.debugPopGroup();
+  //mTargetGL.debugPopGroup();
+
+  GL_ERRORCHECK();
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 void GlFrameBufferInterface::DoEndFrame(void) {
-  mTargetGL.debugPushGroup("GlFrameBufferInterface::DoEndFrame");
+  //mTargetGL.debugPushGroup("GlFrameBufferInterface::DoEndFrame");
   GL_ERRORCHECK();
 
   ///////////////////////////////////////////
@@ -171,7 +180,7 @@ void GlFrameBufferInterface::DoEndFrame(void) {
   GL_ERRORCHECK();
   ////////////////////////////////
   glBindTexture(GL_TEXTURE_2D, 0);
-  mTargetGL.debugPopGroup();
+  //mTargetGL.debugPopGroup();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

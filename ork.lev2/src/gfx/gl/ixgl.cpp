@@ -10,7 +10,6 @@
 #include <ork/lev2/gfx/gfxenv.h>
 #include "gl.h"
 
-
 #if defined( ORK_CONFIG_OPENGL ) && defined( LINUX )
 
 #include <ork/lev2/qtui/qtui.h>
@@ -24,6 +23,7 @@ INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
 extern "C"
 {
 	extern bool gbVSYNC;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -138,10 +138,10 @@ static glXcca_proc_t GLXCCA = nullptr;
 PFNGLPATCHPARAMETERIPROC GLPPI = nullptr;
 
 
-static int gl3_context_attribs[] =
+static int gl46_context_attribs[] =
 {
     GLX_CONTEXT_MAJOR_VERSION_ARB, 4,
-    GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+    GLX_CONTEXT_MINOR_VERSION_ARB, 6,
     GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 #if 1
     GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_DEBUG_BIT_ARB,
@@ -160,7 +160,7 @@ void check_debug_log()
     GLsizei lengths[count];
     GLchar messageLog[bufsize];
 
-    auto retVal = glGetDebugMessageLogARB( count, bufsize, sources, types,
+    auto retVal = glGetDebugMessageLog( count, bufsize, sources, types,
                                            ids, severities, lengths, messageLog);
     if(retVal > 0)
     {
@@ -233,6 +233,7 @@ void GfxTargetGL::GLinit()
     ///////////////////////////////////////////////////////////////
     // create oldschool context just to determine if the newschool method
     //  is available
+		///////////////////////////////////////////////////////////////
 
     GLXContext old_school = glXCreateContext(x_dpy, GlIxPlatformObject::gVisInfo, nullptr, GL_TRUE);
 
@@ -256,7 +257,7 @@ void GfxTargetGL::GLinit()
     ///////////////////////////////////////////////////////////////
 
 
-    GlIxPlatformObject::gShareMaster = GLXCCA(x_dpy, gl_this_fb_config, NULL, true, gl3_context_attribs);
+    GlIxPlatformObject::gShareMaster = GLXCCA(x_dpy, gl_this_fb_config, NULL, true, gl46_context_attribs);
 
     glXMakeCurrent(x_dpy, dummy_win, GlIxPlatformObject::gShareMaster);
 
@@ -264,12 +265,37 @@ void GfxTargetGL::GLinit()
 
 	printf( "display<%p> screen<%d> rootwin<%d> numcfgs<%d> gsharemaster<%p>\n", x_dpy, x_screen, g_rootwin, inumconfigs, GlIxPlatformObject::gShareMaster );
 
+	///////////////////////////////////////////////////////////////
+
+	if(!gladLoadGL()) { exit(-1); }
+
+ 	printf("OpenGL Version %d.%d loaded\n", GLVersion.major, GLVersion.minor);
+
+	printf( "glad_glDrawMeshTasksNV<%p>\n", glad_glDrawMeshTasksNV );
+	printf( "glad_glDrawMeshTasksIndirectNV<%p>\n", glad_glDrawMeshTasksIndirectNV );
+	printf( "glad_glMultiDrawMeshTasksIndirectNV<%p>\n", glad_glMultiDrawMeshTasksIndirectNV );
+	printf( "glad_glMultiDrawMeshTasksIndirectCountNV<%p>\n", glad_glMultiDrawMeshTasksIndirectCountNV );
+
+	printf( "glObjectLabel<%p>\n", glObjectLabel );
+	printf( "glPushDebugGroup<%p>\n", glPushDebugGroup );
+	printf( "glPopDebugGroup<%p>\n", glPopDebugGroup );
+
+	printf( "glad_glInsertEventMarkerEXT<%p>\n", glad_glInsertEventMarkerEXT );
+
+	glInsertEventMarkerEXT = glad_glInsertEventMarkerEXT;
+	//glPushGroupMarkerEXT = glad_glPushDebugGroup;
+	//glPopGroupMarkerEXT = glad_glPopDebugGroup;
+
+	printf( "GLAD_GL_EXT_debug_label<%d>\n", int(GLAD_GL_EXT_debug_label) );
+	printf( "GLAD_GL_EXT_debug_marker<%d>\n", int(GLAD_GL_EXT_debug_marker) );
+	printf( "GLAD_GL_NV_mesh_shader<%d>\n", int(GLAD_GL_NV_mesh_shader) );
+	printf( "GLAD_GL_KHR_debug<%d>\n", int(GLAD_GL_KHR_debug));
 
 	for( int i=0; i<1; i++ )
 	{
 		GlxLoadContext* loadctx = new GlxLoadContext;
 
-        GLXContext gctx = GLXCCA(x_dpy,gl_this_fb_config,GlIxPlatformObject::gShareMaster,GL_TRUE,gl3_context_attribs);
+        GLXContext gctx = GLXCCA(x_dpy,gl_this_fb_config,GlIxPlatformObject::gShareMaster,GL_TRUE,gl46_context_attribs);
 
 		loadctx->mGlxContext = gctx;
 		loadctx->mWindow = g_rootwin;
@@ -361,13 +387,13 @@ void GfxTargetGL::InitializeContext( GfxWindow *pWin, CTXBASE* pctxbase  )
 
 	printf( "GfxTargetGL<%p> dpy<%p> screen<%d> vis<%p>\n", this, x_dpy, x_screen, vinfo );
 
-	plato->mGlxContext = GLXCCA(x_dpy,gl_this_fb_config,plato->gShareMaster,GL_TRUE,gl3_context_attribs);
+	plato->mGlxContext = GLXCCA(x_dpy,gl_this_fb_config,plato->gShareMaster,GL_TRUE,gl46_context_attribs);
 
 	plato->mDisplay = x_dpy;
 	plato->mXWindowId = pctxW->winId();
 	printf( "ctx<%p>\n", plato->mGlxContext );
 
-	MakeCurrentContext();
+	makeCurrentContext();
 
 	PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT;
   PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA;
@@ -433,7 +459,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 	pmtl->SetTexture( ETEXDEST_DIFFUSE, pTexture );
 	pBuf->SetTexture(pTexture);
 
-//	MakeCurrentContext();
+//	makeCurrentContext();
 
 	//////////////////////////////////////////////
 
@@ -445,7 +471,7 @@ void GfxTargetGL::InitializeContext( GfxBuffer *pBuf )
 
 /////////////////////////////////////////////////////////////////////////
 
-void GfxTargetGL::MakeCurrentContext( void )
+void GfxTargetGL::makeCurrentContext( void )
 {
 	GlIxPlatformObject* plato = (GlIxPlatformObject*) mPlatformHandle;
 	OrkAssert(plato);
