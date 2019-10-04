@@ -245,7 +245,7 @@ void ConfigureFxMaterial( CColladaModel *ColModel, SColladaMatGroup *ColMatGroup
 
 			if( ptexture )
 			{
-				ptexture->GetTexture()->setProperty<std::string>( "usage", param->GetRecord().mParameterName );
+				ptexture->GetTexture()->setProperty<std::string>( "usage", param->GetRecord()._name );
 				ColModel->AddTexture( ptexture );
 				paramf->mValue = ptexture->GetTexture();
 			}

@@ -15,6 +15,8 @@ namespace ork {
 namespace lev2 {
 
 struct FxShaderParam;
+struct FxShaderParamBlock;
+struct FxShaderParamBlockMapping;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -29,7 +31,7 @@ public:
 
   FxParamRec();
 
-  std::string mParameterName;
+  std::string _name;
   std::string mParameterSemantic;
   EPropType meParameterType;
 
@@ -67,7 +69,7 @@ struct FxShaderTechnique {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct FxShaderParam {
-  std::string mParameterName;
+  std::string _name;
   std::string mParameterSemantic;
   std::string mParameterType;
   EPropType meParamType;
@@ -81,14 +83,32 @@ struct FxShaderParam {
   void *GetPlatformHandle(void) const { return mInternalHandle; }
 };
 
+struct FxShaderParamBlock {
+  std::string _name;
+  FxShaderParam *param(const std::string &name) const;
+  FxShaderParamBlockMapping *map() const;
+};
+
+struct FxShaderParamBlockMapping {
+  ~FxShaderParamBlockMapping();
+  FxShaderParamBlock *_block = nullptr;
+  void setMatrix(const FxShaderParam *par, const fmtx4 &m);
+  void unmap();
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class FxShader {
   void *mInternalHandle;
-  orkmap<std::string, const FxShaderTechnique *> mTechniques;
-  orkmap<std::string, const FxShaderParam *> mParameterByName;
-  // orkmap<std::string,const FxShaderParam*>
-  // mParameterBySemantic;
+
+  typedef orkmap<std::string, const FxShaderParam *> parambynamemap_t;
+  typedef orkmap<std::string, const FxShaderParamBlock *> paramblockbynamemap_t;
+  typedef orkmap<std::string, const FxShaderTechnique *> techniquebynamemap_t;
+
+  techniquebynamemap_t _techniques;
+  parambynamemap_t _parameterByName;
+  paramblockbynamemap_t _parameterBlockByName;
+
   bool mAllowCompileFailure;
   bool mFailedCompile;
   std::string mName;
@@ -108,21 +128,21 @@ public:
 
   static const char *GetAssetTypeNameStatic(void) { return "fxshader"; }
 
-  void AddTechnique(const FxShaderTechnique *tek);
-  void AddParameter(const FxShaderParam *param);
+  void addTechnique(const FxShaderTechnique *tek);
+  void addParameter(const FxShaderParam *param);
+  void addParameterBlock(const FxShaderParamBlock *block);
 
-  const orkmap<std::string, const FxShaderTechnique *> &
-  GetTechniques(void) const {
-    return mTechniques;
+  const techniquebynamemap_t &GetTechniques(void) const { return _techniques; }
+  const parambynamemap_t &paramByName(void) const { return _parameterByName; }
+  const paramblockbynamemap_t &paramBlockByName(void) const {
+    return _parameterBlockByName;
   }
-  const orkmap<std::string, const FxShaderParam *> &
-  GetParametersByName(void) const {
-    return mParameterByName;
-  }
+
   // const orkmap<std::string,const FxShaderParam*>& 	GetParametersBySemantic(
   // void ) const { return mParameterBySemantic; }
 
   FxShaderParam *FindParamByName(const std::string &named);
+  FxShaderParamBlock *FindParamBlockByName(const std::string &named);
   FxShaderTechnique *FindTechniqueByName(const std::string &named);
 
   void SetAllowCompileFailure(bool bv) { mAllowCompileFailure = bv; }

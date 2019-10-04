@@ -12,6 +12,10 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
 
+#if ! defined(__APPLE__)
+#define ENABLE_NVMESH_SHADERS
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
@@ -27,9 +31,30 @@ struct ScanViewFilter;
 struct Pass;
 struct UniformBlockBinding;
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct Config {
   std::string mName;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+constexpr const char* token_regex =
+  "(fxconfig|uniform_set|uniform_block|"
+  "libblock|state_block|"
+  "vertex_interface|"
+  "vertex_shader|"
+  "tessctrl_interface|tesseval_interface|"
+  "tessctrl_shader|tesseval_shader|"
+  "geometry_interface|fragment_interface|"
+  "geometry_shader|fragment_shader|"
+  #if defined(ENABLE_NVMESH_SHADERS)
+  "nvtask_shader|nvmesh_shader|"
+  "nvtask_interface|nvmesh_interface|"
+  #endif
+  "technique|pass)";
+///////////////////////////////////////////////////////////////////////////////
+
 struct Uniform {
   std::string mName;
   std::string mTypeName;
@@ -43,6 +68,9 @@ struct Uniform {
       , meType(GL_ZERO)
       , mArraySize(0) {}
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct UniformInstance {
   GLint mLocation;
   Uniform* mpUniform;
@@ -54,6 +82,8 @@ struct UniformInstance {
       , mpUniform(nullptr)
       , mSubItemIndex(0) {}
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct Attribute {
   std::string mName;
@@ -73,6 +103,8 @@ struct Attribute {
       , mArraySize(0) {}
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct UniformSet {
 
   typedef std::map<std::string, Uniform*> uniform_map_t;
@@ -83,6 +115,8 @@ struct UniformSet {
   uniform_map_t _uniforms;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct UniformBlock {
   typedef std::map<std::string, Uniform*> uniform_map_t;
 
@@ -91,20 +125,32 @@ struct UniformBlock {
   std::string _name;
   uniform_map_t _uniforms;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct UniformBlockItem {
   UniformBlockBinding* _binding = nullptr;
   size_t _offset = 0;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct UniformBlockBinding {
   Pass* _pass = nullptr; // program to which this binding is bound
   GLuint _blockIndex = 0xffffffff;
   std::string _name;
   UniformBlockItem findUniform(std::string named) const;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct UniformBlockMapping {
    UniformBlockBinding* _binding = nullptr;
    uint8_t* _mapaddr = nullptr;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct UniformBlockLayout {
 
   template <typename T> UniformBlockItem alloc(){
@@ -115,6 +161,8 @@ struct UniformBlockLayout {
 
   size_t _counter = 0;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct StreamInterface {
   StreamInterface();
@@ -133,7 +181,11 @@ struct StreamInterface {
   void Inherit(const StreamInterface& par);
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 typedef std::function<void(GfxTarget*)> state_applicator_t;
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct StateBlock {
   std::string mName;
@@ -142,6 +194,8 @@ struct StateBlock {
 
   void addStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct Shader {
   std::string mName;
@@ -167,28 +221,59 @@ struct Shader {
   bool IsCompiled() const;
   void requireExtension(std::string ext) { _requiredExtensions.insert(ext); }
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// VTG prim pipeline
+///////////////////////////////////////////////////////////////////////////////
+
 struct ShaderVtx : Shader {
   ShaderVtx(const std::string& nam = "")
       : Shader(nam, GL_VERTEX_SHADER) {}
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ShaderFrg : Shader {
   ShaderFrg(const std::string& nam = "")
       : Shader(nam, GL_FRAGMENT_SHADER) {}
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ShaderGeo : Shader {
   ShaderGeo(const std::string& nam = "")
       : Shader(nam, GL_GEOMETRY_SHADER) {}
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ShaderTsC : Shader {
   ShaderTsC(const std::string& nam = "")
       : Shader(nam, GL_TESS_CONTROL_SHADER) {}
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct ShaderTsE : Shader {
   ShaderTsE(const std::string& nam = "")
       : Shader(nam, GL_TESS_EVALUATION_SHADER) {}
 };
-#if ! defined(__APPLE__)
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct PrimPipelineVTG {
+  ShaderVtx* _vertexShader = nullptr;
+  ShaderTsC* _tessCtrlShader = nullptr;
+  ShaderTsE* _tessEvalShader = nullptr;
+  ShaderGeo* _geometryShader = nullptr;
+  ShaderFrg* _fragmentShader = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// NvMeshShader prim pipeline
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_NVMESH_SHADERS)
 struct ShaderNvMesh : Shader {
   ShaderNvMesh(const std::string& nam = "")
       : Shader(nam, GL_MESH_SHADER_NV) {}
@@ -197,8 +282,13 @@ struct ShaderNvTask : Shader {
   ShaderNvTask(const std::string& nam = "")
       : Shader(nam, GL_TASK_SHADER_NV) {}
 };
-
+struct PrimPipelineNVMT {
+  ShaderNvTask* _nvTaskShader = nullptr;
+  ShaderNvMesh* _nvMeshShader = nullptr;
+};
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct LibBlock {
   LibBlock(const Scanner& s);
@@ -208,48 +298,38 @@ struct LibBlock {
   ScannerView* mView;
 };
 
-struct PrimPipelineVTG {
-  ShaderVtx* _vertexShader = nullptr;
-  ShaderTsC* _tessCtrlShader = nullptr;
-  ShaderTsE* _tessEvalShader = nullptr;
-  ShaderGeo* _geometryShader = nullptr;
-  ShaderFrg* _fragmentShader = nullptr;
-};
-#if ! defined(__APPLE__)
+///////////////////////////////////////////////////////////////////////////////
 
-struct PrimPipelineNVMT {
-  ShaderNvTask* _nvTaskShader = nullptr;
-  ShaderNvMesh* _nvMeshShader = nullptr;
-};
-#endif
 struct Pass {
   typedef std::map<std::string, UniformInstance*> uni_map_t;
   typedef std::map<std::string, Attribute*> attr_map_t;
 
   static const int kmaxattrID = 16;
   svar64_t _primpipe;
-  std::string mName;
-  StateBlock* mStateBlock;
-  GLuint mProgramObjectId;
-  uni_map_t mUniformInstances;
-  attr_map_t mVtxAttributesBySemantic;
-  Attribute* mVtxAttributeById[kmaxattrID];
-  int mSamplerCount;
+  std::string _name;
+  StateBlock* _stateBlock;
+  GLuint _programObjectId;
+  uni_map_t _uniformInstances;
+  attr_map_t _vtxAttributesBySemantic;
+  Attribute* _vtxAttributeById[kmaxattrID];
+  int _samplerCount;
 
   Pass(const std::string& name)
-      : mName(name)
-      , mProgramObjectId(0)
-      , mStateBlock(nullptr)
-      , mSamplerCount(0) {
+      : _name(name)
+      , _programObjectId(0)
+      , _stateBlock(nullptr)
+      , _samplerCount(0) {
     for (int i = 0; i < kmaxattrID; i++)
-      mVtxAttributeById[i] = nullptr;
+      _vtxAttributeById[i] = nullptr;
   }
-  bool HasUniformInstance(UniformInstance* puni) const;
-  const UniformInstance* GetUniformInstance(Uniform* puni) const;
+  bool hasUniformInstance(UniformInstance* puni) const;
+  const UniformInstance* uniformInstance(Uniform* puni) const;
 
   UniformBlockBinding findUniformBlock(std::string blockname);
 
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct Technique {
   orkvector<Pass*> mPasses;
@@ -260,37 +340,11 @@ struct Technique {
   void addPass(Pass* pps) { mPasses.push_back(pps); }
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct Container {
-  std::string mEffectName;
-  const Technique* mActiveTechnique;
-  std::map<std::string, Config*> mConfigs;
-  std::map<std::string, UniformSet*> _uniformSets;
-  std::map<std::string, UniformBlock*> _uniformBlocks;
-  // vtg //
-  std::map<std::string, ShaderVtx*> _vertexShaders;
-  std::map<std::string, ShaderTsC*> _tessCtrlShaders;
-  std::map<std::string, ShaderTsE*> _tessEvalShaders;
-  std::map<std::string, ShaderGeo*> _geometryShaders;
-  std::map<std::string, ShaderFrg*> _fragmentShaders;
-  std::map<std::string, StreamInterface*> _vertexInterfaces;
-  std::map<std::string, StreamInterface*> _tessCtrlInterfaces;
-  std::map<std::string, StreamInterface*> _tessEvalInterfaces;
-  std::map<std::string, StreamInterface*> _geometryInterfaces;
-  std::map<std::string, StreamInterface*> _fragmentInterfaces;
-  // task/mesh //
-  std::map<std::string, ShaderNvTask*> _nvTaskShaders;
-  std::map<std::string, ShaderNvMesh*> _nvMeshShaders;
-  std::map<std::string, StreamInterface*> _nvTaskInterfaces;
-  std::map<std::string, StreamInterface*> _nvMeshInterfaces;
-  //
-  std::map<std::string, StateBlock*> mStateBlocks;
-  std::map<std::string, Uniform*> mUniforms;
-  std::map<std::string, Technique*> mTechniqueMap;
-  std::map<std::string, LibBlock*> mLibBlocks;
-  const Pass* mActivePass;
-  int mActiveNumPasses;
-  const FxShader* mFxShader;
-  bool mShaderCompileFailed;
+
+  Container(const std::string& nam);
 
   // bool Load( const AssetPath& filename, FxShader*pfxshader );
   void Destroy(void);
@@ -300,7 +354,36 @@ struct Container {
   void addUniformSet(UniformSet* pif);
   void addUniformBlock(UniformBlock* pif);
 
+  Uniform* MergeUniform(const std::string& name);
+  void addStateBlock(StateBlock* pSB);
+  void addTechnique(Technique* ptek);
+
+  void addLibBlock(LibBlock* plb);
+
+  StateBlock* GetStateBlock(const std::string& name) const;
+  Uniform* GetUniform(const std::string& name) const;
+  UniformBlock* uniformBlock(const std::string& name) const;
+  UniformSet* uniformSet(const std::string& name) const;
+
+  std::string mEffectName;
+  const Technique* mActiveTechnique;
+  std::map<std::string, Config*> mConfigs;
+  std::map<std::string, UniformSet*> _uniformSets;
+  std::map<std::string, UniformBlock*> _uniformBlocks;
+  //
+  std::map<std::string, StateBlock*> _stateBlocks;
+  std::map<std::string, Uniform*> _uniforms;
+  std::map<std::string, Technique*> _techniqueMap;
+  std::map<std::string, LibBlock*> _libBlocks;
+  const Pass* mActivePass;
+  int mActiveNumPasses;
+  const FxShader* mFxShader;
+  bool mShaderCompileFailed;
+
+  ///////////////////////////////////////////////////////
   // vtg //
+  ///////////////////////////////////////////////////////
+
   void addVertexInterface(StreamInterface* sif);
   void addTessCtrlInterface(StreamInterface* sif);
   void addTessEvalInterface(StreamInterface* sif);
@@ -322,9 +405,22 @@ struct Container {
   StreamInterface* geometryInterface(const std::string& name) const;
   StreamInterface* fragmentInterface(const std::string& name) const;
 
-  // nvtask/nvmesh //
+  std::map<std::string, ShaderVtx*> _vertexShaders;
+  std::map<std::string, ShaderTsC*> _tessCtrlShaders;
+  std::map<std::string, ShaderTsE*> _tessEvalShaders;
+  std::map<std::string, ShaderGeo*> _geometryShaders;
+  std::map<std::string, ShaderFrg*> _fragmentShaders;
+  std::map<std::string, StreamInterface*> _vertexInterfaces;
+  std::map<std::string, StreamInterface*> _tessCtrlInterfaces;
+  std::map<std::string, StreamInterface*> _tessEvalInterfaces;
+  std::map<std::string, StreamInterface*> _geometryInterfaces;
+  std::map<std::string, StreamInterface*> _fragmentInterfaces;
 
-#if ! defined(__APPLE__)
+  ///////////////////////////////////////////////////////
+  // nvtask/nvmesh //
+  ///////////////////////////////////////////////////////
+#if defined(ENABLE_NVMESH_SHADERS)
+
   void addNvTaskInterface(StreamInterface* sif);
   void addNvMeshInterface(StreamInterface* sif);
   void addNvTaskShader(ShaderNvTask* shader);
@@ -333,54 +429,52 @@ struct Container {
   StreamInterface* nvMeshInterface(const std::string& name) const;
   ShaderNvTask* nvTaskShader(const std::string& name) const;
   ShaderNvMesh* nvMeshShader(const std::string& name) const;
+
+  std::map<std::string, ShaderNvTask*> _nvTaskShaders;
+  std::map<std::string, ShaderNvMesh*> _nvMeshShaders;
+  std::map<std::string, StreamInterface*> _nvTaskInterfaces;
+  std::map<std::string, StreamInterface*> _nvMeshInterfaces;
+
 #endif
 
-  Uniform* MergeUniform(const std::string& name);
-  void addStateBlock(StateBlock* pSB);
-  void addTechnique(Technique* ptek);
+///////////////////////////////////////////////////////
 
-  void addLibBlock(LibBlock* plb);
-
-  StateBlock* GetStateBlock(const std::string& name) const;
-  Uniform* GetUniform(const std::string& name) const;
-  UniformBlock* uniformBlock(const std::string& name) const;
-  UniformSet* uniformSet(const std::string& name) const;
-
-  Container(const std::string& nam);
 };
 
+///////////////////////////////////////////////////////////////////////////////
 
 class Interface : public FxInterface {
 public:
   virtual void DoBeginFrame();
 
-  virtual int BeginBlock(FxShader* hfx, const RenderContextInstData& data);
-  virtual bool BindPass(FxShader* hfx, int ipass);
-  virtual bool BindTechnique(FxShader* hfx, const FxShaderTechnique* htek);
-  virtual void EndPass(FxShader* hfx);
-  virtual void EndBlock(FxShader* hfx);
-  virtual void CommitParams(void);
+  int BeginBlock(FxShader* hfx, const RenderContextInstData& data) final;
+  bool BindPass(FxShader* hfx, int ipass) final;
+  bool BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) final;
+  void EndPass(FxShader* hfx) final;
+  void EndBlock(FxShader* hfx) final;
+  void CommitParams(void) final;
 
-  virtual const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name);
-  virtual const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name);
+  const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name) final;
+  const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name) final;
+  const FxShaderParamBlock* GetParameterBlockH(FxShader* hfx, const std::string& name) final;
 
-  virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval);
-  virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival);
-  virtual void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec);
-  virtual void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec);
-  virtual void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec);
-  virtual void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount);
-  virtual void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt);
-  virtual void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA);
-  virtual void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB);
-  virtual void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC);
-  virtual void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD);
-  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat);
-  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat);
-  virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount);
-  virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval);
-  virtual void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex);
-  virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex);
+  void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) final;
+  void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) final;
+  void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) final;
+  void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) final;
+  void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) final;
+  void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) final;
+  void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) final;
+  void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) final;
+  void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) final;
+  void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) final;
+  void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) final;
+  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) final;
+  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) final;
+  void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final;
+  void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval) final;
+  void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) final;
+  bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
 
   Interface(GfxTargetGL& glctx);
 
@@ -389,7 +483,6 @@ public:
   Container* GetActiveEffect() const { return mpActiveEffect; }
 
 protected:
-  // static CGcontext					mCgContext;
   Container* mpActiveEffect;
   const Pass* mLastPass;
   FxShaderTechnique* mhCurrentTek;

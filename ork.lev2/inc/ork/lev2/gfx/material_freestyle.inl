@@ -40,6 +40,7 @@ struct FreestyleMaterial : public GfxMaterial {
 
   std::set<const FxShaderTechnique*> _techniques;
   std::set<const FxShaderParam*> _params;
+  std::set<const FxShaderParamBlock*> _paramBlocks;
 
   const FxShaderTechnique* technique(std::string named) {
     auto fxi = _initialTarget->FXI();
@@ -53,6 +54,13 @@ struct FreestyleMaterial : public GfxMaterial {
     auto par = fxi->GetParameterH(_shader, named);
     if (par != nullptr)
       _params.insert(par);
+    return par;
+  }
+  const FxShaderParamBlock* paramBlock(std::string named) {
+    auto fxi = _initialTarget->FXI();
+    auto par = fxi->GetParameterBlockH(_shader, named);
+    if (par != nullptr)
+      _paramBlocks.insert(par);
     return par;
   }
 

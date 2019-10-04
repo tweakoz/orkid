@@ -5,7 +5,7 @@
 // see http://www.boost.org/LICENSE_1_0.txt
 ////////////////////////////////////////////////////////////////
 
-#pragma once 
+#pragma once
 
 #include <ork/lev2/gfx/gfxmaterial.h>
 #include <ork/lev2/gfx/shadman.h>
@@ -18,6 +18,7 @@ namespace lev2 {
 
 class FxShader;
 struct FxShaderParam;
+struct FxShaderParamBlock;
 
 struct VertexConfig
 {
@@ -250,7 +251,7 @@ public:
     ///////////////////////////////////////////////////////////////
 
 private:
-	void ApplyToTarget( GfxTarget *pTARG ) final; 
+	void ApplyToTarget( GfxTarget *pTARG ) final;
 
 
 };

@@ -39,17 +39,17 @@ void Interface::DoBeginFrame() { mLastPass = 0; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Pass::HasUniformInstance(UniformInstance* puni) const {
+bool Pass::hasUniformInstance(UniformInstance* puni) const {
   Uniform* pun                                               = puni->mpUniform;
-  std::map<std::string, UniformInstance*>::const_iterator it = mUniformInstances.find(pun->mName);
-  return it != mUniformInstances.end();
+  std::map<std::string, UniformInstance*>::const_iterator it = _uniformInstances.find(pun->mName);
+  return it != _uniformInstances.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const UniformInstance* Pass::GetUniformInstance(Uniform* puni) const {
-  std::map<std::string, UniformInstance*>::const_iterator it = mUniformInstances.find(puni->mName);
-  return (it != mUniformInstances.end()) ? it->second : nullptr;
+const UniformInstance* Pass::uniformInstance(Uniform* puni) const {
+  std::map<std::string, UniformInstance*>::const_iterator it = _uniformInstances.find(puni->mName);
+  return (it != _uniformInstances.end()) ? it->second : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -83,21 +83,21 @@ bool Interface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
-  for (const auto& ittek : pcont->mTechniqueMap) {
+  for (const auto& ittek : pcont->_techniqueMap) {
     Technique* ptek            = ittek.second;
     FxShaderTechnique* ork_tek = new FxShaderTechnique((void*)ptek);
     ork_tek->mTechniqueName    = ittek.first;
     // pabstek->mPasses = ittek->first;
     ork_tek->mbValidated = true;
-    fxh->AddTechnique(ork_tek);
+    fxh->addTechnique(ork_tek);
   }
-  for (const auto& itp : pcont->mUniforms) {
+  for (const auto& itp : pcont->_uniforms) {
     Uniform* puni                = itp.second;
     FxShaderParam* ork_parm      = new FxShaderParam;
-    ork_parm->mParameterName     = itp.first;
+    ork_parm->_name     = itp.first;
     ork_parm->mParameterSemantic = puni->mSemantic;
     ork_parm->mInternalHandle    = (void*)puni;
-    fxh->AddParameter(ork_parm);
+    fxh->addParameter(ork_parm);
   }
 }
 
@@ -111,9 +111,9 @@ void Container::addTessCtrlInterface(StreamInterface* pif) { _tessCtrlInterfaces
 void Container::addTessEvalInterface(StreamInterface* pif) { _tessEvalInterfaces[pif->mName] = pif; }
 void Container::addGeometryInterface(StreamInterface* pif) { _geometryInterfaces[pif->mName] = pif; }
 void Container::addFragmentInterface(StreamInterface* pif) { _fragmentInterfaces[pif->mName] = pif; }
-void Container::addStateBlock(StateBlock* psb) { mStateBlocks[psb->mName] = psb; }
-void Container::addLibBlock(LibBlock* plb) { mLibBlocks[plb->mName] = plb; }
-void Container::addTechnique(Technique* ptek) { mTechniqueMap[ptek->mName] = ptek; }
+void Container::addStateBlock(StateBlock* psb) { _stateBlocks[psb->mName] = psb; }
+void Container::addLibBlock(LibBlock* plb) { _libBlocks[plb->mName] = plb; }
+void Container::addTechnique(Technique* ptek) { _techniqueMap[ptek->mName] = ptek; }
 void Container::addVertexShader(ShaderVtx* psha) { _vertexShaders[psha->mName] = psha; }
 void Container::addTessCtrlShader(ShaderTsC* psha) { _tessCtrlShaders[psha->mName] = psha; }
 void Container::addTessEvalShader(ShaderTsE* psha) { _tessEvalShaders[psha->mName] = psha; }
@@ -123,8 +123,8 @@ void Container::addFragmentShader(ShaderFrg* psha) { _fragmentShaders[psha->mNam
 ///////////////////////////////////////////////////////////////////////////////
 
 StateBlock* Container::GetStateBlock(const std::string& name) const {
-  const auto& it = mStateBlocks.find(name);
-  return (it == mStateBlocks.end()) ? nullptr : it->second;
+  const auto& it = _stateBlocks.find(name);
+  return (it == _stateBlocks.end()) ? nullptr : it->second;
 }
 ShaderVtx* Container::vertexShader(const std::string& name) const {
   const auto& it = _vertexShaders.find(name);
@@ -176,11 +176,11 @@ StreamInterface* Container::fragmentInterface(const std::string& name) const {
   return (it == _fragmentInterfaces.end()) ? nullptr : it->second;
 }
 Uniform* Container::GetUniform(const std::string& name) const {
-  const auto& it = mUniforms.find(name);
-  return (it == mUniforms.end()) ? nullptr : it->second;
+  const auto& it = _uniforms.find(name);
+  return (it == _uniforms.end()) ? nullptr : it->second;
 }
 
-#if ! defined(__APPLE__)
+#if defined(ENABLE_NVMESH_SHADERS)
 void Container::addNvTaskShader(ShaderNvTask* psha) { _nvTaskShaders[psha->mName] = psha; }
 void Container::addNvMeshShader(ShaderNvMesh* psha) { _nvMeshShaders[psha->mName] = psha; }
 ShaderNvTask* Container::nvTaskShader(const std::string& name) const {
@@ -205,10 +205,10 @@ StreamInterface* Container::nvMeshInterface(const std::string& name) const {
 
 Uniform* Container::MergeUniform(const std::string& name) {
   Uniform* pret  = nullptr;
-  const auto& it = mUniforms.find(name);
-  if (it == mUniforms.end()) {
+  const auto& it = _uniforms.find(name);
+  if (it == _uniforms.end()) {
     pret            = new Uniform(name);
-    mUniforms[name] = pret;
+    _uniforms[name] = pret;
   } else {
     pret = it->second;
   }
@@ -256,14 +256,14 @@ void Interface::EndBlock(FxShader* hfx) { mpActiveFxShader = 0; }
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::CommitParams(void) {
-  if (mpActiveEffect && mpActiveEffect->mActivePass && mpActiveEffect->mActivePass->mStateBlock) {
-    const auto& items = mpActiveEffect->mActivePass->mStateBlock->mApplicators;
+  if (mpActiveEffect && mpActiveEffect->mActivePass && mpActiveEffect->mActivePass->_stateBlock) {
+    const auto& items = mpActiveEffect->mActivePass->_stateBlock->mApplicators;
 
     for (const auto& item : items) {
       item(&mTarget);
     }
     // const SRasterState& rstate =
-    // mpActiveEffect->mActivePass->mStateBlock->mState;
+    // mpActiveEffect->mActivePass->_stateBlock->mState;
     // mTarget.RSI()->BindRasterState(rstate);
   }
   // if( (mpActiveEffect->mActivePass != mLastPass) ||
@@ -374,7 +374,7 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
   Pass* ppass            = const_cast<Pass*>(container->mActivePass);
 
   GL_ERRORCHECK();
-  if (0 == container->mActivePass->mProgramObjectId) {
+  if (0 == container->mActivePass->_programObjectId) {
 
     auto& pipeVTG = container->mActivePass->_primpipe.Get<PrimPipelineVTG>();
 
@@ -410,7 +410,7 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
     if (pvtxshader->IsCompiled() && pfrgshader->IsCompiled()) {
       GL_ERRORCHECK();
       GLuint prgo             = glCreateProgram();
-      ppass->mProgramObjectId = prgo;
+      ppass->_programObjectId = prgo;
 
       //////////////
       // attach shaders
@@ -485,8 +485,8 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
         // pattr->mSemantic.c_str() );
         glBindAttribLocation(prgo, iloc, pattr->mName.c_str());
         GL_ERRORCHECK();
-        ppass->mVtxAttributeById[iloc]                    = pattr;
-        ppass->mVtxAttributesBySemantic[pattr->mSemantic] = pattr;
+        ppass->_vtxAttributeById[iloc]                    = pattr;
+        ppass->_vtxAttributesBySemantic[pattr->mSemantic] = pattr;
       }
 
       //////////////////////////
@@ -567,7 +567,7 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
       glGetProgramiv(prgo, GL_ACTIVE_UNIFORMS, &numunis);
       GL_ERRORCHECK();
 
-      ppass->mSamplerCount = 0;
+      ppass->_samplerCount = 0;
 
       for (int i = 0; i < numunis; i++) {
         GLsizei namlen = 0;
@@ -589,8 +589,8 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
             // printf( "nnam<%s>\n", str_name.c_str() );
           }
         }
-        const auto& it = container->mUniforms.find(str_name);
-        OrkAssert(it != container->mUniforms.end());
+        const auto& it = container->_uniforms.find(str_name);
+        OrkAssert(it != container->_uniforms.end());
         Uniform* puni = it->second;
 
         puni->meType = unityp;
@@ -602,16 +602,16 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
         pinst->mLocation = uniloc;
 
         if (puni->mTypeName == "sampler2D") {
-          pinst->mSubItemIndex = ppass->mSamplerCount;
-          ppass->mSamplerCount++;
+          pinst->mSubItemIndex = ppass->_samplerCount;
+          ppass->_samplerCount++;
           pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
         } else if (puni->mTypeName == "sampler3D") {
-          pinst->mSubItemIndex = ppass->mSamplerCount;
-          ppass->mSamplerCount++;
+          pinst->mSubItemIndex = ppass->_samplerCount;
+          ppass->_samplerCount++;
           pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
         } else if (puni->mTypeName == "sampler2DShadow") {
-          pinst->mSubItemIndex = ppass->mSamplerCount;
-          ppass->mSamplerCount++;
+          pinst->mSubItemIndex = ppass->_samplerCount;
+          ppass->_samplerCount++;
           pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
         }
 
@@ -620,13 +620,13 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
         // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
         // (int) uniloc );
 
-        const_cast<Pass*>(container->mActivePass)->mUniformInstances[puni->mName] = pinst;
+        const_cast<Pass*>(container->mActivePass)->_uniformInstances[puni->mName] = pinst;
       }
     }
   }
 
   GL_ERRORCHECK();
-  glUseProgram(container->mActivePass->mProgramObjectId);
+  glUseProgram(container->mActivePass->_programObjectId);
   GL_ERRORCHECK();
 
   return true;
@@ -646,9 +646,19 @@ void Interface::EndPass(FxShader* hfx) {
 
 const FxShaderParam* Interface::GetParameterH(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  const auto& parammap        = hfx->GetParametersByName();
+  const auto& parammap        = hfx->paramByName();
   const auto& it              = parammap.find(name);
   const FxShaderParam* hparam = (it != parammap.end()) ? it->second : 0;
+  return hparam;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+const FxShaderParamBlock* Interface::GetParameterBlockH(FxShader* hfx, const std::string& name) {
+  OrkAssert(0 != hfx);
+  const auto& parammap        = hfx->paramBlockByName();
+  const auto& it              = parammap.find(name);
+  const FxShaderParamBlock* hparam = (it != parammap.end()) ? it->second : 0;
   return hparam;
 }
 
@@ -661,7 +671,7 @@ void Interface::BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bo
 void Interface::BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int iv) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -684,7 +694,7 @@ void Interface::BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int
 void Interface::BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -703,7 +713,7 @@ void Interface::BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const f
 void Interface::BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -722,7 +732,7 @@ void Interface::BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const f
 void Interface::BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -756,7 +766,7 @@ void Interface::BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, co
 void Interface::BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -850,7 +860,7 @@ void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const 
   Container* container = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni        = static_cast<Uniform*>(hpar->GetPlatformHandle());
   assert(container->mActivePass != nullptr);
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -869,7 +879,7 @@ void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const 
 void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -888,7 +898,7 @@ void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const 
 void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* Mat, int iCount) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -923,7 +933,7 @@ void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, c
 void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
   // printf( "Bind1 Tex<%p> par<%s> pinst<%p>\n",
   // pTex,hpar->mParameterName.c_str(), pinst );
   if (pinst) {
@@ -996,36 +1006,36 @@ UniformBlockItem UniformBlockBinding::findUniform(std::string named) const {
 
 UniformBlockBinding Pass::findUniformBlock(std::string blockname){
   UniformBlockBinding rval;
-  rval._blockIndex = glGetUniformBlockIndex( mProgramObjectId, blockname.c_str() );
+  rval._blockIndex = glGetUniformBlockIndex( _programObjectId, blockname.c_str() );
   rval._pass = this;
   rval._name = blockname;
 
   GLint blocksize = 0;
-  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_DATA_SIZE,&blocksize);
+  glGetActiveUniformBlockiv(_programObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_DATA_SIZE,&blocksize);
 
   GLint numunis = 0;
-  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS,&numunis);
+  glGetActiveUniformBlockiv(_programObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS,&numunis);
 
   auto uniindices = new GLuint[numunis];
-  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES,(GLint*)uniindices);
+  glGetActiveUniformBlockiv(_programObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES,(GLint*)uniindices);
 
   auto uniblkidcs = new GLint[numunis];
-  glGetActiveUniformBlockiv(mProgramObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_INDEX,uniblkidcs);
+  glGetActiveUniformBlockiv(_programObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_INDEX,uniblkidcs);
 
   auto unioffsets = new GLint[numunis];
-  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_OFFSET, unioffsets );
+  glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_OFFSET, unioffsets );
 
   auto unitypes = new GLint[numunis];
-  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_TYPE, unioffsets );
+  glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_TYPE, unioffsets );
 
   auto unisizes = new GLint[numunis];
-  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_SIZE, unioffsets );
+  glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_SIZE, unioffsets );
 
   auto uniarystrides = new GLint[numunis];
-  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_ARRAY_STRIDE, unioffsets );
+  glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_ARRAY_STRIDE, unioffsets );
 
   auto unimtxstrides = new GLint[numunis];
-  glGetActiveUniformsiv( mProgramObjectId, numunis, uniindices, GL_UNIFORM_MATRIX_STRIDE, unioffsets );
+  glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_MATRIX_STRIDE, unioffsets );
 
   delete[] unimtxstrides;
   delete[] uniarystrides;

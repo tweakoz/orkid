@@ -241,7 +241,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
         mEffectInstance.mParameterInstances;
 
     const orkmap<std::string, const FxShaderParam *> &ParamNameMap =
-        mEffectInstance.mpEffect->GetParametersByName();
+        mEffectInstance.mpEffect->paramByName();
     // const orkmap<std::string,const FxShaderParam*> & ParamSemMap =
     // mEffectInstance.mpEffect->GetParametersBySemantic();
 
@@ -249,7 +249,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
              ParamInstanceMap.begin();
          iti != ParamInstanceMap.end(); iti++) {
       GfxMaterialFxParamBase *ParamInst = (*iti).second;
-      const std::string &ParamName = ParamInst->GetRecord().mParameterName;
+      const std::string &ParamName = ParamInst->GetRecord()._name;
       // const std::string & ParamSem		=
       // ParamInst->GetRecord().mParameterSemantic;
       orkmap<std::string, const FxShaderParam *>::const_iterator itp =
@@ -678,8 +678,8 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
       ////////////////////////////////////
       if (param) {
         // printf( "   FxParam<%p> pname2<%s>\n", FxParam,
-        // FxParam->mParameterName.c_str() );
-        param->GetRecord().mParameterName = FxParam->mParameterName;
+        // FxParam->_name.c_str() );
+        param->GetRecord()._name = FxParam->_name;
         param->GetRecord().mParameterSemantic = Semantic;
         param->GetRecord().mParameterHandle = FxParam;
         param->SetBindable(true);
@@ -803,11 +803,11 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
 
 void GfxMaterialFxEffectInstance::ReplaceParameter(
     GfxMaterialFxParamBase *param) {
-  mParameterInstances.Replace(param->GetRecord().mParameterName, param);
+  mParameterInstances.Replace(param->GetRecord()._name, param);
 }
 
 void GfxMaterialFxEffectInstance::AddParameter(GfxMaterialFxParamBase *param) {
-  mParameterInstances.AddSorted(param->GetRecord().mParameterName, param);
+  mParameterInstances.AddSorted(param->GetRecord()._name, param);
 }
 
 std::string
@@ -1042,7 +1042,7 @@ void GfxMaterialFxParam<bool>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 template <>
 void GfxMaterialFxParam<int>::Bind(FxShader *fxh, GfxTarget *ptarg) {
   OrkAssert(false);
-  // const std::string& paramname = GetRecord().mParameterName;
+  // const std::string& paramname = GetRecord()._name;
   // ptarg->FXI()->BindParamFloat( fxh, GetRecord().mParameterHandle,
   // GetValue(ptarg) );
 }
@@ -1051,7 +1051,7 @@ void GfxMaterialFxParam<int>::Bind(FxShader *fxh, GfxTarget *ptarg) {
 
 template <>
 void GfxMaterialFxParam<float>::Bind(FxShader *fxh, GfxTarget *ptarg) {
-  const std::string &paramname = GetRecord().mParameterName;
+  const std::string &paramname = GetRecord()._name;
   ptarg->FXI()->BindParamFloat(fxh, GetRecord().mParameterHandle,
                                GetValue(ptarg));
 }
@@ -1103,7 +1103,7 @@ void GfxMaterialFxParam<lev2::Texture *>::Bind(FxShader *fxh,
                                                GfxTarget *ptarg) {
   Texture *ptex = GetValue(ptarg);
 
-  // const char* paramname = GetRecord().mParameterName.c_str();
+  // const char* paramname = GetRecord()._name.c_str();
   // const std::string texfname = ptex->GetProperty( "filename" );
   // const char* ptexfname = texfname.c_str();
   // if( strstr( ptexfname, "flare" ) != 0 )
@@ -1298,7 +1298,7 @@ void GfxMaterialFx::SetMaterialProperty(const char *prop,
     std::string descstr = ork::CreateFormattedString("morkshader<%s>", val);
     paramstr->mValue = descstr;
     paramstr->SetBindable(false);
-    paramstr->GetRecord().mParameterName = "description";
+    paramstr->GetRecord()._name = "description";
     paramstr->GetRecord().meParameterType = EPROPTYPE_STRING;
     AddParameter(paramstr);
 
@@ -1307,13 +1307,13 @@ void GfxMaterialFx::SetMaterialProperty(const char *prop,
         new GfxMaterialFxParamArtist<std::string>;
     paramstr->mValue = val;
     paramstr->SetBindable(false);
-    paramstr->GetRecord().mParameterName = "technique";
+    paramstr->GetRecord()._name = "technique";
     paramstr->GetRecord().meParameterType = EPROPTYPE_STRING;
     AddParameter(paramstr);
   } else {
 
     const orkmap<std::string, const FxShaderParam *> &ParamNameMap =
-        mEffectInstance.mpEffect->GetParametersByName();
+        mEffectInstance.mpEffect->paramByName();
 
     orkmap<std::string, const FxShaderParam *>::const_iterator itparam =
         ParamNameMap.find(prop);

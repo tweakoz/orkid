@@ -26,6 +26,10 @@ namespace ork { namespace lev2 {
 class TextureAsset;
 class Texture;
 class RenderContextFrameData;
+class FxShader;
+class FxShaderParam;
+class FxShaderParamBlock;
+class GfxTarget;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -429,10 +433,6 @@ struct HeadLightManager
 
 	HeadLightManager( RenderContextFrameData & FrameData );
 };
-
-class FxShader;
-class FxShaderParam;
-class GfxTarget;
 
 struct LightingFxInterface
 {

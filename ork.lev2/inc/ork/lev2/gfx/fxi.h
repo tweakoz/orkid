@@ -19,6 +19,7 @@ public:
 
   virtual const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name) = 0;
   virtual const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name)    = 0;
+  virtual const FxShaderParamBlock* GetParameterBlockH(FxShader* hfx, const std::string& name)    = 0;
 
   virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival)                            = 0;

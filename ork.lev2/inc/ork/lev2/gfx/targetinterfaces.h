@@ -35,6 +35,7 @@ namespace ork { namespace lev2 {
 class FxShader;
 struct FxShaderTechnique;
 struct FxShaderParam;
+struct FxShaderParamBlock;
 class RenderContextInstData;
 class GfxMaterial;
 class VertexBufferBase;

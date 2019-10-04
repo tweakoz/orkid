@@ -17,36 +17,37 @@ namespace ork { namespace lev2 {
 
 class DummyFxInterface : public FxInterface {
 public:
-  virtual void DoBeginFrame() {}
+  void DoBeginFrame() final {}
 
-  virtual int BeginBlock(FxShader* hfx, const RenderContextInstData& data) { return 0; }
-  virtual bool BindPass(FxShader* hfx, int ipass) { return false; }
-  virtual bool BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) { return false; }
-  virtual void EndPass(FxShader* hfx) {}
-  virtual void EndBlock(FxShader* hfx) {}
-  virtual void CommitParams(void) {}
+  int BeginBlock(FxShader* hfx, const RenderContextInstData& data) final { return 0; }
+  bool BindPass(FxShader* hfx, int ipass) final { return false; }
+  bool BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) final { return false; }
+  void EndPass(FxShader* hfx) final {}
+  void EndBlock(FxShader* hfx) final {}
+  void CommitParams(void) final {}
 
-  virtual const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name) { return 0; }
-  virtual const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name) { return 0; }
+  const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name) final { return nullptr; }
+  const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name) final { return nullptr; }
+  const FxShaderParamBlock* GetParameterBlockH(FxShader* hfx, const std::string& name) final { return nullptr; }
 
-  virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) {}
-  virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) {}
-  virtual void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) {}
-  virtual void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) {}
-  virtual void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {}
-  virtual void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) {}
-  virtual void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) {}
-  virtual void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) {}
-  virtual void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) {}
-  virtual void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) {}
-  virtual void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) {}
-  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) {}
-  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) {}
-  virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) {}
-  virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval) {}
-  virtual void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) {}
+  void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) final {}
+  void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) final {}
+  void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) final {}
+  void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) final {}
+  void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) final {}
+  void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) final {}
+  void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) final {}
+  void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) final {}
+  void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) final {}
+  void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) final {}
+  void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) final {}
+  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) final {}
+  void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) final {}
+  void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final {}
+  void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval) final {}
+  void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) final {}
 
-  virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex);
+  bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
 
   DummyFxInterface() {}
 };

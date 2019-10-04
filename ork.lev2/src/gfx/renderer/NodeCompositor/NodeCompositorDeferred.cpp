@@ -20,6 +20,8 @@
 
 ImplementReflectionX(ork::lev2::DeferredCompositingNode, "DeferredCompositingNode");
 
+constexpr bool USE_UBO = false;
+
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,9 +86,17 @@ struct IMPL {
       _tekPointLighting       = _lightingmtl.technique("pointlight");
       _tekPointLightingStereo = _lightingmtl.technique("pointlight_stereo");
       //////////////////////////////////////////////////////////////
-      _parMatMVPC      = _lightingmtl.param("MVPC");
-      _parMatMVPL      = _lightingmtl.param("MVPL");
-      _parMatMVPR      = _lightingmtl.param("MVPR");
+      if( USE_UBO ){
+        auto block = _lightingmtl.paramBlock("ub_vtx");
+        _parMatMVPC      = block->param("MVPC");
+        _parMatMVPL      = block->param("MVPL");
+        _parMatMVPR      = block->param("MVPR");
+      }
+      else{
+        _parMatMVPC      = _lightingmtl.param("MVPC");
+        _parMatMVPL      = _lightingmtl.param("MVPL");
+        _parMatMVPR      = _lightingmtl.param("MVPR");
+      }
       _parMatIVPArray  = _lightingmtl.param("IVPArray");
       _parLightColor   = _lightingmtl.param("LightColor");
       _parLightPosR    = _lightingmtl.param("LightPosR");
@@ -219,9 +229,20 @@ struct IMPL {
       _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
       _lightingmtl.begin(RCFD);
-          _lightingmtl.bindParamMatrix(_parMatMVPL, fmtx4());
-          _lightingmtl.bindParamMatrix(_parMatMVPC, fmtx4());
-          _lightingmtl.bindParamMatrix(_parMatMVPR, fmtx4());
+          //////////////////////////////////////////////////////
+          if( USE_UBO ){
+            auto map_block = _lightingmtl.paramBlock("ub_vtx")->map();
+            map_block->setMatrix(_parMatMVPL, fmtx4());
+            map_block->setMatrix(_parMatMVPC, fmtx4());
+            map_block->setMatrix(_parMatMVPR, fmtx4());
+            map_block->unmap();
+          }
+          else {
+            _lightingmtl.bindParamMatrix(_parMatMVPL, fmtx4());
+            _lightingmtl.bindParamMatrix(_parMatMVPC, fmtx4());
+            _lightingmtl.bindParamMatrix(_parMatMVPR, fmtx4());
+          }
+          //////////////////////////////////////////////////////
           _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
           _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->GetTexture());
           _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->GetTexture());
@@ -252,9 +273,20 @@ struct IMPL {
       _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
       _lightingmtl.bindTechnique(is_stereo_1pass ? _tekPointLightingStereo : _tekPointLighting);
       _lightingmtl.begin(RCFD);
-      _lightingmtl.bindParamMatrix(_parMatMVPL, fmtx4());
-      _lightingmtl.bindParamMatrix(_parMatMVPC, fmtx4());
-      _lightingmtl.bindParamMatrix(_parMatMVPR, fmtx4());
+      //////////////////////////////////////////////////////
+      if( USE_UBO ){
+          auto mapped_block = _lightingmtl.paramBlock("ub_vtx")->map();
+          mapped_block->setMatrix(_parMatMVPL, fmtx4());
+          mapped_block->setMatrix(_parMatMVPC, fmtx4());
+          mapped_block->setMatrix(_parMatMVPR, fmtx4());
+          mapped_block->unmap();
+        }
+        else {
+          _lightingmtl.bindParamMatrix(_parMatMVPL, fmtx4());
+          _lightingmtl.bindParamMatrix(_parMatMVPC, fmtx4());
+          _lightingmtl.bindParamMatrix(_parMatMVPR, fmtx4());
+        }
+      //////////////////////////////////////////////////////
       _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
       _lightingmtl.bindParamCTex(_parMapGBufAlbAo, _rtgGbuffer->GetMrt(0)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapGBufNrmL, _rtgGbuffer->GetMrt(1)->GetTexture());

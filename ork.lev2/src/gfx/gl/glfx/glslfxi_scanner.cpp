@@ -18,62 +18,62 @@ ScanViewRegex::ScanViewRegex(const char* pr,bool inverse)
 {
 
 }
-bool ScanViewRegex::Test(const token& t)
+bool ScanViewRegex::Test(const Token& t)
 {
 	bool match = std::regex_match(t.text,mRegex);
 	return match xor mInverse;
 }
 
 ScannerView::ScannerView( const Scanner& s, ScanViewFilter& f  )
-	: mScanner(s)
-	, mFilter(f)
-	, mBlockTerminators( "(fxconfig|uniform_set|vertex_interface|tessctrl_interface|tesseval_interface|geometry_interface|fragment_interface|libblock|state_block|vertex_shader|tessctrl_shader|tesseval_shader|fragment_shader|geometry_shader|technique|pass)")
-	, mStart(0)
-	, mEnd(0)
-	, mBlockType(0)
-	, mBlockName(0)
-	, mBlockOk(false)
+	: _scanner(s)
+	, _filter(f)
+	, _blockTerminators( token_regex )
+	, _start(0)
+	, _end(0)
+	, _blockType(0)
+	, _blockName(0)
+	, _blockOk(false)
 {
 }
 
-void ScannerView::ScanRange( size_t ist, size_t ien )
+void ScannerView::scanRange( size_t ist, size_t ien )
 {
 	for( size_t i=ist; i<=ien; i++ )
 	{
-		const token& t = mScanner.tokens[i];
-		bool bt = mFilter.Test(t);
+		const Token& t = _scanner.tokens[i];
+		bool bt = _filter.Test(t);
 		if( bt )
 		{
-			mIndices.push_back(i);
+			_indices.push_back(i);
 		}
 	}
 }
 
-size_t ScannerView::GetBlockEnd() const
+size_t ScannerView::blockEnd() const
 {
-	return GetTokenIndex(mEnd);
+	return tokenIndex(_end);
 }
 
-std::string ScannerView::GetBlockName() const
+std::string ScannerView::blockName() const
 {
-	return GetToken(mBlockName)->text;
+	return token(_blockName)->text;
 }
 
-void ScannerView::ScanBlock( size_t is )
+void ScannerView::scanBlock( size_t is )
 {
-	size_t max_t = mScanner.tokens.size();
+	size_t max_t = _scanner.tokens.size();
 
 	int ibracelev = 0;
 	int istate = 0;
 
-	const token& block_name = mScanner.tokens[is];
-	mBlockName = is;
+	const Token& block_name = _scanner.tokens[is];
+	_blockName = is;
 
 	//printf( "ScanBlock name<%s> is<%zu>\n", block_name.text.c_str(), is );
 
 	for( size_t i=is; i<max_t; i++ )
-	{	const token& t = mScanner.tokens[i];
-		bool is_term = std::regex_match(t.text,mBlockTerminators);
+	{	const Token& t = _scanner.tokens[i];
+		bool is_term = std::regex_match(t.text,_blockTerminators);
 
 		bool is_open = ( t.text == "{" );
 		bool is_close = ( t.text == "}" );
@@ -89,14 +89,14 @@ void ScannerView::ScanBlock( size_t is )
 			{
 				if( is_term )
 				{
-					mBlockType = mIndices.size();
-					mBlockName = mBlockType+1;
+					_blockType = _indices.size();
+					_blockName = _blockType+1;
 					istate = 1;
-					mIndices.push_back(i);
+					_indices.push_back(i);
 				}
 				else
 				{
-					mIndices.push_back(i);
+					_indices.push_back(i);
 					assert( false==is_open && false==is_close );
 				}
 				break;
@@ -105,43 +105,43 @@ void ScannerView::ScanBlock( size_t is )
 			{	bool is_deco = ( t.text == ":" );
 				if( is_open )
 				{	assert(ibracelev==0);
-					mStart = mIndices.size();
+					_start = _indices.size();
 					ibracelev++;
 					istate=2;
-					mIndices.push_back(i);
+					_indices.push_back(i);
 				}
 				else if( is_deco )
 				{
 					i++;
-					mBlockDecorators.push_back(i);
+					_blockDecorators.push_back(i);
 				}
 				else
 				{	assert(false==is_close);
 					if( is_term )
 						assert(i>is);
-					if( mFilter.Test(t) )
-						mIndices.push_back(i);
+					if( _filter.Test(t) )
+						_indices.push_back(i);
 				}
 				break;
 			}
 			case 2:	// content
 				if( is_open )
 				{	ibracelev++;
-					mIndices.push_back(i);
+					_indices.push_back(i);
 				}
 				else if( is_close )
 				{	ibracelev--;
-					mIndices.push_back(i);
+					_indices.push_back(i);
 					if( ibracelev==0 )
-					{	mEnd = mIndices.size()-1;
-						mBlockOk = true;
+					{	_end = _indices.size()-1;
+						_blockOk = true;
 						return;
 					}
 				}
 				else
 				{
-					if( mFilter.Test(t) )
-						mIndices.push_back(i);
+					if( _filter.Test(t) )
+						_indices.push_back(i);
 				}
 				break;
 
@@ -149,32 +149,32 @@ void ScannerView::ScanBlock( size_t is )
 	}
 }
 
-void ScannerView::Dump()
+void ScannerView::dump()
 {
 	printf( "ScannerView<%p>::Dump()\n",this);
 
-	printf( " mBlockOk<%d>\n",int(mBlockOk));
-	printf( " mStart<%d>\n",int(mStart));
-	printf( " mEnd<%d>\n",int(mEnd));
-	printf( " mBlockType<%d>\n",int(mBlockType));
-	printf( " mBlockName<%d>\n",int(mBlockName));
+	printf( " _blockOk<%d>\n",int(_blockOk));
+	printf( " _start<%d>\n",int(_start));
+	printf( " _end<%d>\n",int(_end));
+	printf( " _blockType<%d>\n",int(_blockType));
+	printf( " _blockName<%d>\n",int(_blockName));
 
 	int i = 0;
-	for( int tokidx : mIndices )
+	for( int tokidx : _indices )
 	{
-		if( tokidx < mScanner.tokens.size() )
+		if( tokidx < _scanner.tokens.size() )
 		{
 			printf( "tok<%d> idx<%d> val<%s>\n",
 				i, tokidx,
-				mScanner.tokens[tokidx].text.c_str() );
+				_scanner.tokens[tokidx].text.c_str() );
 		}
 		i++;
 	}
 }
 
-const token* Scanner::GetToken(size_t i) const
+const Token* Scanner::token(size_t i) const
 {
-	const token* pt = nullptr;
+	const Token* pt = nullptr;
 	if( i < tokens.size() )
 	{
 		pt = & tokens[i];
@@ -182,35 +182,35 @@ const token* Scanner::GetToken(size_t i) const
 	return pt;
 }
 
-const token* ScannerView::GetToken(size_t i) const
+const Token* ScannerView::token(size_t i) const
 {
-	const token* pt = nullptr;
-	if( i<mIndices.size() )
-	{	int tokidx = mIndices[i];
-		pt = mScanner.GetToken(tokidx);
+	const Token* pt = nullptr;
+	if( i<_indices.size() )
+	{	int tokidx = _indices[i];
+		pt = _scanner.token(tokidx);
 	}
 
 	return pt;
 }
 
-const token* ScannerView::GetBlockDecorator(size_t i) const
+const Token* ScannerView::blockDecorator(size_t i) const
 {
-	const token* pt = nullptr;
+	const Token* pt = nullptr;
 
-	if( i<mBlockDecorators.size() )
+	if( i<_blockDecorators.size() )
 	{
-		int tokidx = mBlockDecorators[i];
-		pt = mScanner.GetToken(tokidx);
+		int tokidx = _blockDecorators[i];
+		pt = _scanner.token(tokidx);
 	}
 	return pt;
 }
 
-size_t ScannerView::GetTokenIndex(size_t i) const
+size_t ScannerView::tokenIndex(size_t i) const
 {
 	size_t ret = ~0;
-	if( i<mIndices.size() )
+	if( i<_indices.size() )
 	{
-		ret = mIndices[i];
+		ret = _indices[i];
 	}
 	return ret;
 }
@@ -232,7 +232,7 @@ void Scanner::FlushToken()
 	ss=ESTA_NONE;
 }
 /////////////////////////////////////////
-void Scanner::AddToken( const token& tok )
+void Scanner::AddToken( const Token& tok )
 {
 	tokens.push_back(tok);
 	cur_token.text="";
@@ -283,7 +283,7 @@ void Scanner::Scan()
 				else if( is_spc(CH) ) { ss=ESTA_WSPACE; }
 				else if( CH=='\n' )
 				{
-					AddToken( token( "\n", iline, icol ) );
+					AddToken( Token( "\n", iline, icol ) );
 					adv_lin = 1;
 				}
 				else if( is_septok(CH) )
@@ -303,11 +303,11 @@ void Scanner::Scan()
 						ch_buf2[0] = CH;
 						ch_buf2[1] = NCH;
 						ch_buf2[2] = 0;
-						AddToken( token( ch_buf2, iline, icol ) );
+						AddToken( Token( ch_buf2, iline, icol ) );
 						i++;
 					}
 					else
-						AddToken( token( ch_buf, iline, icol ) );
+						AddToken( Token( ch_buf, iline, icol ) );
 
 				}
 				else

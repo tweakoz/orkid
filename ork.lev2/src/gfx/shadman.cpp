@@ -26,7 +26,7 @@ FxShader::FxShader()
 ///////////////////////////////////////////////////////////////////////////////
 
 FxParamRec::FxParamRec()
-	: mParameterName("")
+	: _name("")
 	, mParameterSemantic("")
 	, meParameterType(ork::EPROPTYPE_END)
 	, mParameterHandle(0)
@@ -62,19 +62,41 @@ FxShaderParam::FxShaderParam( void *ih )
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void FxShader::AddTechnique( const FxShaderTechnique * tek )
-{
-	mTechniques[ tek->mTechniqueName ] = tek;
+FxShaderParam* FxShaderParamBlock::param(const std::string&name) const {
+	assert(false);
+	return nullptr;
 }
 
-void FxShader::AddParameter( const FxShaderParam * param )
+FxShaderParamBlockMapping* FxShaderParamBlock::map() const {
+	assert(false);
+	return nullptr;
+}
+
+void FxShaderParamBlockMapping::setMatrix(const FxShaderParam* par, const fmtx4& m) {
+
+}
+void FxShaderParamBlockMapping::unmap(){
+}
+FxShaderParamBlockMapping::~FxShaderParamBlockMapping(){
+		unmap();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void FxShader::addTechnique( const FxShaderTechnique * tek )
 {
-	mParameterByName[ param->mParameterName ] = param;
-	
-	/*if( param->mParameterSemantic.length() )
-	{
-		mParameterBySemantic[ param->mParameterSemantic ] = param;
-	}*/
+	_techniques[ tek->mTechniqueName ] = tek;
+}
+
+void FxShader::addParameter( const FxShaderParam * param )
+{
+	_parameterByName[ param->_name ] = param;
+
+}
+void FxShader::addParameterBlock( const FxShaderParamBlock * block )
+{
+	_parameterBlockByName[ block->_name ] = block;
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +110,7 @@ void FxShader::RegisterLoaders( const file::Path::NameType & base, const file::P
 	gShaderFileContext1.SetFilesystemBaseAbs( MorkCtx.GetFilesystemBaseRel()+"/"+base );
 	gShaderFileContext1.SetFilesystemBaseEnable( true );
 	file::Path::NameType fsbase1 = gShaderFileContext1.GetFilesystemBaseAbs();
-	
+
 	const FileDevContext& DataCtx = FileEnv::UrlBaseToContext( "data" );
 	gShaderFileContext2.SetFilesystemBaseAbs( DataCtx.GetFilesystemBaseRel()+"/"+base );
 	gShaderFileContext2.SetFilesystemBaseEnable( true );
@@ -107,7 +129,7 @@ void FxShader::OnReset()
 {
 	GfxTarget* pTARG = GfxEnv::GetRef().GetLoaderTarget();
 
-	for( orkmap<std::string,const FxShaderParam*>::const_iterator it=mParameterByName.begin(); it!=mParameterByName.end(); it++ )
+	for( orkmap<std::string,const FxShaderParam*>::const_iterator it=_parameterByName.begin(); it!=_parameterByName.end(); it++ )
 	{
 		const FxShaderParam* param = it->second;
 		const std::string& type = param->mParameterType;
@@ -117,8 +139,8 @@ void FxShader::OnReset()
 		}
 
 	}
-	//mTechniques.clear();
-	//mParameterByName.clear();
+	//_techniques.clear();
+	//_parameterByName.clear();
 	//mParameterBySemantic.clear();
 }
 
@@ -126,16 +148,16 @@ void FxShader::OnReset()
 
 FxShaderParam* FxShader::FindParamByName( const std::string& named )
 {
-	orkmap<std::string,const FxShaderParam*>::iterator it=mParameterByName.find(named);
-	return const_cast<FxShaderParam*>((it!=mParameterByName.end()) ? it->second : 0);
+	orkmap<std::string,const FxShaderParam*>::iterator it=_parameterByName.find(named);
+	return const_cast<FxShaderParam*>((it!=_parameterByName.end()) ? it->second : 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShaderTechnique* FxShader::FindTechniqueByName( const std::string& named )
 {
-	orkmap<std::string,const FxShaderTechnique*>::iterator it=mTechniques.find(named);
-	return const_cast<FxShaderTechnique*>((it!=mTechniques.end()) ? it->second : 0);
+	orkmap<std::string,const FxShaderTechnique*>::iterator it=_techniques.find(named);
+	return const_cast<FxShaderTechnique*>((it!=_techniques.end()) ? it->second : 0);
 }
 
 void FxShader::SetName(const char *name)

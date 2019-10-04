@@ -113,7 +113,7 @@ struct StandardEffectTexGetter
 
 					std::string wildcard = CreateFormattedString("%s.*.%s",BaseName.c_str(),ext.c_str());
 					orkset<file::Path::NameType> files = FileEnv::filespec_search_sorted( wildcard.c_str(), ImgBasePath.c_str() );
-					
+
 					for( orkset<file::Path::NameType>::const_iterator it=files.begin(); it!=files.end(); it++ )
 					{
 						const file::Path::NameType& filename = (*it);
@@ -122,7 +122,7 @@ struct StandardEffectTexGetter
 					}
 				}
 			}
-			
+
 		}
 
 		///////////////////////////////////////////////////////////
@@ -136,8 +136,8 @@ struct StandardEffectTexGetter
 			const FCDENode *RepeatUNode = TexMayaTek->FindChildNode( "repeatU" );
 			const FCDENode *RepeatVNode = TexMayaTek->FindChildNode( "repeatV" );
 
-			const fchar *prpU = RepeatUNode ? RepeatUNode->GetContent() : "1.0f"; 
-			const fchar *prpV = RepeatVNode ? RepeatVNode->GetContent() : "1.0f"; 
+			const fchar *prpU = RepeatUNode ? RepeatUNode->GetContent() : "1.0f";
+			const fchar *prpV = RepeatVNode ? RepeatVNode->GetContent() : "1.0f";
 
 			RepeatU = float(atof( prpU ));
 			RepeatV = float(atof( prpV ));
@@ -154,7 +154,7 @@ struct StandardEffectTexGetter
 
 		if( isubtex < TexCount )
 		{
-			const FCDTexture* ptex = StdProf->GetTexture(texbucket,isubtex); 
+			const FCDTexture* ptex = StdProf->GetTexture(texbucket,isubtex);
 			GetTexData( ptex, RefMatCh.mTextureName, RefMatCh.mRepeatU, RefMatCh.mRepeatV );
 		}
 	}
@@ -443,7 +443,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 				{
 					///////////////////////////////////////////////
 					std::string CgFxParamName = ParamReference.c_str();
-					
+
 					std::string::size_type icolon = CgFxParamName.find( ":" );
 					if( icolon != std::string::npos )
 					{
@@ -459,7 +459,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 					FCDEffectParameterSampler *ParamSampler = (FCDEffectParameterSampler*) Param;
 					FCDEffectParameterSampler::SamplerType SamplerType = ParamSampler->GetSamplerType();
 					FCDEffectParameterSurface * Surface = ParamSampler->GetSurface();
-					
+
 					FCDImage *pimage = Surface->GetImage();
 					const fm::string& ImageEntName = pimage->GetName();
 					const fm::string& SurfaceRefName = Surface->GetReference();
@@ -477,16 +477,16 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 					{
 						case FCDEffectParameterSampler::SAMPLER1D:
 							param->AddAnnotation( "sampler_type", "1d" );
-							break;	
+							break;
 						case FCDEffectParameterSampler::SAMPLER2D:
 							param->AddAnnotation( "sampler_type", "2d" );
-							break;	
+							break;
 						case FCDEffectParameterSampler::SAMPLER3D:
 							param->AddAnnotation( "sampler_type", "3d" );
-							break;	
+							break;
 						case FCDEffectParameterSampler::SAMPLERCUBE:
 							param->AddAnnotation( "sampler_type", "cube" );
-							break;	
+							break;
 					}
 
 					break;
@@ -496,7 +496,7 @@ void SColladaMaterial::ParseFxMaterial( FCDMaterial *FxProf )
 
 			if( param )
 			{
-				param->GetRecord().mParameterName = parameter_name;
+				param->GetRecord()._name = parameter_name;
 				FxMaterial->AddParameter( param );
 			}
 		}
@@ -526,7 +526,7 @@ void SColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & Shadi
 	{
 		itm = smaterial_note.find( "(" )+1;
 		u32 itm2 = smaterial_note.find( ")" );
-		
+
 		if( itm2 != std::string::npos )
 		{
 			material_object = smaterial_note.substr( itm, (itm2-itm) );
@@ -539,7 +539,7 @@ void SColladaMaterial::ParseMaterial( FCDocument* doc, const std::string & Shadi
 
 
 		}
-		
+
 	}*/
 
 	mShadingGroupName = ShadingGroupName;

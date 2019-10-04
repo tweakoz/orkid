@@ -527,8 +527,8 @@ struct vtx_config
 		uint32_t rval = 0;
 		if( mPass != pfxpass )
 		{
-			const auto& it = pfxpass->mVtxAttributesBySemantic.find(mSemantic);
-			if(it!=pfxpass->mVtxAttributesBySemantic.end())
+			const auto& it = pfxpass->_vtxAttributesBySemantic.find(mSemantic);
+			if(it!=pfxpass->_vtxAttributesBySemantic.end())
 			{
 				//printf( "gbi::bind_attr pass<%p> attr_sem<%s> istride<%d> found!\n", pfxpass, mSemantic.c_str(), istride );
 				mAttr = it->second;

@@ -6,12 +6,12 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct token
+struct Token
 {
 	int iline;
 	int icol;
 	std::string text;
-	token( const std::string& txt, int il, int ic ) : text(txt), iline(il), icol(ic) {}
+	Token( const std::string& txt, int il, int ic ) : text(txt), iline(il), icol(ic) {}
 };
 
 enum scan_state
@@ -54,28 +54,28 @@ struct Scanner
 	bool is_content( char ch ) { return is_alfnum(ch)||(ch=='_')||(ch=='.'); }
 	/////////////////////////////////////////
 	void FlushToken();
-	void AddToken( const token& tok );
+	void AddToken( const Token& tok );
 	void Scan();
 	/////////////////////////////////////////
-	const token* GetToken(size_t i) const;
+	const Token* token(size_t i) const;
 	/////////////////////////////////////////
 	static const int kmaxfxblen = 64<<10;
 	char fxbuffer[ kmaxfxblen ];
 	size_t ifilelen;
-	std::vector<token> tokens;
-	token cur_token;
+	std::vector<Token> tokens;
+	Token cur_token;
 	scan_state ss;
 };
 
 struct ScanViewFilter
 {
-	virtual bool Test(const token& t) { return true; }
+	virtual bool Test(const Token& t) { return true; }
 };
 struct ScanViewRegex : public ScanViewFilter
 {
 	ScanViewRegex(const char*, bool inverse);
 
-	bool Test(const token& t) override;
+	bool Test(const Token& t) override;
 
 	std::regex mRegex;
 	bool mInverse;
@@ -92,29 +92,29 @@ struct ScannerView
 {
 	ScannerView( const Scanner& s, ScanViewFilter& f  );
 
-	size_t GetNumTokens() const { return mIndices.size(); }
-	const token* GetToken(size_t i) const;
-	size_t GetTokenIndex(size_t i) const;
-	void ScanRange( size_t is, size_t ie );
-	void ScanBlock( size_t is );
-	void Dump();
-	size_t GetBlockEnd() const;
-	std::string GetBlockName() const;
+	size_t numTokens() const { return _indices.size(); }
+	const Token* token(size_t i) const;
+	size_t tokenIndex(size_t i) const;
+	void scanRange( size_t is, size_t ie );
+	void scanBlock( size_t is );
+	void dump();
+	size_t blockEnd() const;
+	std::string blockName() const;
 
-	const int GetNumBlockDecorators() const { return mBlockDecorators.size(); }
-	const token* GetBlockDecorator(size_t i) const;
+	const int numBlockDecorators() const { return _blockDecorators.size(); }
+	const Token* blockDecorator(size_t i) const;
 
-	std::vector<int> mIndices;
-	ScanViewFilter& mFilter;
-	const Scanner& mScanner;
-	std::regex mBlockTerminators;
+	std::vector<int> _indices;
+	ScanViewFilter& _filter;
+	const Scanner& _scanner;
+	std::regex _blockTerminators;
 
-	size_t mStart; // will point to lev0 { if exists in blockmode
-	size_t mEnd; // will point to lev0 } if exists in blockmode
-	std::vector<int> mBlockDecorators;
-	size_t mBlockType;
-	size_t mBlockName;
-	bool   mBlockOk;
+	size_t _start; // will point to lev0 { if exists in blockmode
+	size_t _end; // will point to lev0 } if exists in blockmode
+	std::vector<int> _blockDecorators;
+	size_t _blockType;
+	size_t _blockName;
+	bool   _blockOk;
 
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////

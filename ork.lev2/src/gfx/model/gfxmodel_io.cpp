@@ -392,7 +392,7 @@ bool XgmModel::LoadUnManaged(XgmModel* mdl, const AssetPath& Filename) {
               break;
           }
           if (param) {
-            param->GetRecord().mParameterName = paramname;
+            param->GetRecord()._name = paramname;
             pmatfx->AddParameter(param);
           }
         }
