@@ -8,7 +8,7 @@ import "misctools.i";
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx {
+uniform_set ub_vtx {
   uniform mat4 MVPC;
   uniform mat4 MVPL;
   uniform mat4 MVPR;
@@ -21,7 +21,7 @@ vertex_interface iface_vdefault : ub_vtx {
   out vec2 frg_uv;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg {
+uniform_set ub_frg {
   uniform mat4 IVPArray[2];
   uniform sampler2D MapAlbedoAo;
   uniform sampler2D MapNormalL;

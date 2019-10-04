@@ -8,7 +8,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx
+uniform_set ub_vtx
 {
 	uniform mat4 MatM;
 	uniform mat4 MatMV;
@@ -39,7 +39,7 @@ fragment_interface iface_fdefault
 	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg
+uniform_set ub_frg
 {
 	uniform mat4 MatAux;
 	uniform vec4 User0;
@@ -108,7 +108,7 @@ fragment_shader ps_texcolor : iface_fmt
 	out_clr = vec4(texc.xyz,texc.r);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_downsample16 
+fragment_shader ps_downsample16
 	: iface_fmt
 	: ptex_tools
 {
@@ -121,7 +121,7 @@ fragment_shader ps_downsample16
 		{	float fy = float(j)*o;
 			vec2 tc = frg_uv.xy+vec2(fx,fy);
 			vec2 tc2 = vec2( tc.x, tc.y );
-			outp += pointsampletex2d( ColorMap, tc2 ).xyzw*(1.0/16.0);	
+			outp += pointsampletex2d( ColorMap, tc2 ).xyzw*(1.0/16.0);
 		}
 	}
 	out_clr=outp;
@@ -145,7 +145,7 @@ vertex_shader vs_uvxf : iface_vdefault
 	gl_Position = npos;
 	frg_uv = uvxf;
 }
-fragment_shader ps_octave 
+fragment_shader ps_octave
 	: iface_fmt
 	: ptex_tools
 {
@@ -199,7 +199,7 @@ libblock h2n_tools
 		return dir;
 	}
 
-	vec3 compnormal( vec2 fuv ) 
+	vec3 compnormal( vec2 fuv )
 	{
 		float ftexdim = User0.w;
 		float yscal = User0.y;
@@ -214,9 +214,9 @@ libblock h2n_tools
 
 
 		for( int idx=-12; idx<12; idx++ )
-		{			
+		{
 			int iU = iuv.x+idx;
-			
+
 			for( int idy=-12; idy<12; idy++ )
 			{
 				int iV = iuv.y+idy;
@@ -229,19 +229,19 @@ libblock h2n_tools
 
 				float nx = hlf-hthis;
 				float ny = hup-hthis;
-				float nz = sqrt(1 - nx*nx - ny * ny); 
+				float nz = sqrt(1 - nx*nx - ny * ny);
 				nrm += vec3(nx,nz,ny);
 			}
 		}
 		nrm = normalize(nrm);
-	
-		
+
+
 		//////////////////////////////////////
-	    
+
 	    return nrm;
 	}
 }
-fragment_shader ps_h2n 
+fragment_shader ps_h2n
 	: iface_fmt
 	: ptex_tools
 	: h2n_tools
@@ -293,25 +293,25 @@ technique uvmap
 	}
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_sphmap 
+fragment_shader ps_sphmap
 	: iface_fmt
 	: ptex_tools
 {
 	vec4 PixOut;
-	
+
 	float dir = User0.z;
-	
+
 	vec2 uspos = (frg_uv.xy-vec2(0.5,0.5))*2.0;
-	
+
 	vec3 xyz = normalize(mix(vec3(0.0,1.0,0.0), vec3( uspos.x, 0.01, uspos.y ), dir ));
-	
-	
+
+
 	vec3 objn = normalize((texture( ColorMap, frg_uv ).xyz*2.0)-vec3(1.0,1.0,1.0));
     vec3 objrefl = normalize(reflect(xyz,objn));
     vec3 uvt = (objrefl.xyz*0.5)+vec3(0.5,0.5,0.5);
 
 	vec3 texB = texture( ColorMap2, uvt.xz ).xyz;
-		
+
 	out_clr = vec4(texB,1.0);
 }
 technique sphmap
@@ -329,21 +329,21 @@ fragment_shader ps_sphrefract
 	: ptex_tools
 {
 	vec4 PixOut;
-	
+
 	float ior = User0.z;
 	float dir = User0.y;
-	
+
 	vec2 uspos = (frg_uv.xy-vec2(0.5,0.5))*2.0;
-	
+
 	vec3 xyz = normalize(mix(vec3(0.0,1.0,0.0), vec3( uspos.x, 0.01, uspos.y ), dir ));
-	
-	
+
+
 	vec3 objn = normalize((texture( ColorMap, frg_uv ).xyz*2.0)-vec3(1.0,1.0,1.0));
     vec3 objrefl = normalize(refract(xyz,objn,ior));
     vec3 uvt = (objrefl.xyz*0.5)+vec3(0.5,0.5,0.5);
 
 	vec3 texB = texture( ColorMap2, uvt.xz ).xyz;
-		
+
 	out_clr = vec4(texB,1.0);
 }
 technique sphrefract

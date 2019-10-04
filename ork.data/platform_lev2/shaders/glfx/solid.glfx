@@ -5,7 +5,7 @@ fxconfig fxcfg_default { glsl_version = "330"; }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ublock_vtx {
+uniform_set ublock_vtx {
   uniform mat4 MatMVP;
   uniform mat4 MatMV;
   uniform mat4 MatM;
@@ -17,7 +17,7 @@ uniform_block ublock_vtx {
   uniform float Time;
 }
 
-uniform_block ublock_frg {
+uniform_set ublock_frg {
   uniform vec4 modcolor;
   uniform sampler2D ColorMap;
   uniform sampler2D ColorMap2;

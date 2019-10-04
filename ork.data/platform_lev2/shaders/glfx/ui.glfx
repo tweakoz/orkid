@@ -9,11 +9,11 @@ fxconfig fxcfg_default
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-uniform_block ublock_vtx
+uniform_set ublock_vtx
 {
 	uniform mat4 mvp;
 }
-uniform_block ublock_frg
+uniform_set ublock_frg
 {
 	uniform vec4 ModColor;
 	uniform sampler2D ColorMap;

@@ -8,7 +8,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Uniform Blocks
 ///////////////////////////////////////////////////////////////
-uniform_block ublock_vtx
+uniform_set ublock_vtx
 {
 	uniform mat4        MatM;
 	uniform mat4        MatV;
@@ -27,17 +27,17 @@ uniform_block ublock_vtx
 	uniform vec4		NoiseAmp;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ublock_geo
+uniform_set ublock_geo
 {
-	uniform mat4 MatP;	
-	uniform mat4 MatV;	
-	uniform mat4 MatMVP;	
+	uniform mat4 MatP;
+	uniform mat4 MatV;
+	uniform mat4 MatMVP;
 	uniform vec4 User0;
 	uniform vec4 User1;
 	uniform vec4 User2;
 	uniform vec4 User3;
 }
-uniform_block ublock_frg
+uniform_set ublock_frg
 {
 	uniform vec4 User3;
 	uniform vec4 modcolor;
@@ -95,7 +95,7 @@ vertex_shader vs_fbp
 	frg_uv0 = uv0;
 }
 
-libblock lb1 
+libblock lb1
 {
 }
 libblock fns
@@ -139,7 +139,7 @@ tessctrl_interface tcface_base
 	layout (location = 2) out vec4 tec_clr[3];
 	layout (location = 3) out vec4 tec_uv0[3];
 }
-tessctrl_shader tcs_fb1 
+tessctrl_shader tcs_fb1
 	: tcface_base
 	: lb1
 	: fns
@@ -233,17 +233,17 @@ tesseval_shader tes_fb1
 
 	tee_pos = vec4(pb+n*displacement,1.0);
 	tee_clr = vec4(n.xyz,1.0);
-	
+
 	tee_patchdist = vec4( tessc.xyz, 1.0 );
 
 }
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_base 
+geometry_interface gface_base
 	: ublock_geo
 {
 	layout (triangles) in;
-	layout (triangle_strip, max_vertices=3) out; 
+	layout (triangle_strip, max_vertices=3) out;
 	//
 	layout (location = 0) in vec4 tee_pos[];
 	layout (location = 1) in vec4 tee_clr[];
@@ -254,7 +254,7 @@ geometry_interface gface_base
 	layout (location = 3) out vec3 geo_patchdist;
 	layout (location = 4) out vec3 geo_tridist;
 }
-geometry_shader gs_identity 
+geometry_shader gs_identity
 	: gface_base
 {
 	for( int n=0; n<gl_in.length(); n++ )
@@ -300,7 +300,7 @@ fragment_interface fface_fb1
 	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fb1 
+fragment_shader ps_fb1
 	: fface_fb1
 	: fns
 {

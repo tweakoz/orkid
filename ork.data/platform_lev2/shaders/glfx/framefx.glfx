@@ -8,7 +8,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx
+uniform_set ub_vtx
 {
 	uniform mat4 mvp;
 	uniform vec4 modcolor;
@@ -35,7 +35,7 @@ fragment_interface iface_fdefault
 	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg
+uniform_set ub_frg
 {
 	uniform vec4 ModColor;
 	uniform float time;
@@ -100,7 +100,7 @@ libblock color_tools
 		vec3 rgb;
 		if ( hsv.y == 0.0 )
 		{
-			// Grayscale 
+			// Grayscale
 			rgb.r = rgb.g = rgb.b = hsv.z;
 		}
 		else
@@ -154,15 +154,15 @@ libblock color_tools
 	}
 
 	vec3 rgb2hsv(vec3 rgb)
-	 {   
+	 {
 	     vec4 ret = vec4(0.0,0.0,0.0,0.0); //vec4)0;
 	     vec3 hsv;
-	     
+
 	     // RGB 2 HSV
 	     float mmax = max(rgb.r, max(rgb.g, rgb.b));
 	     float mmin = min(rgb.r, min(rgb.g, rgb.b));
 	     float delta = mmax - mmin;
-	 
+
 	     hsv.z = mmax; // v
 	     if (mmax != 0.0)
 		 {
@@ -172,7 +172,7 @@ libblock color_tools
 		 {
 	         hsv.y = 0.0;//s
 	     }
-	     
+
 	       if ( rgb.r == mmax )
 		   {
 	           hsv.x =     (rgb.g - rgb.b) / delta;// h
@@ -187,10 +187,10 @@ libblock color_tools
 	       }
 	       hsv.x /= 6.0;
 	       if (hsv.x < 0) hsv.x += 1.0;
-	     
+
 	     //hsv.x += fShift;                                // F‘Š•â³
 	     //if (1.0 <= hsv.x) hsv.x -= 1.0;
-	     
+
 		return hsv;
 	 }
 
@@ -259,11 +259,11 @@ fragment_shader ps_standard : iface_fmt
 	out_clr = vec4(texc.xyz,texc.w);
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_blur
+uniform_set ub_blur
 {
 	uniform float BlurFactor;
 	uniform int BlurFactorI;
-	uniform sampler2D MrtMap0;	
+	uniform sampler2D MrtMap0;
 	uniform sampler2D AuxMap0;
 }
 fragment_interface iface_blurx
@@ -274,7 +274,7 @@ fragment_interface iface_blurx
 	//
 	in vec2 frg_uv;
 }
-fragment_shader ps_blurx 
+fragment_shader ps_blurx
 	: iface_fmt
 	: lib_cmn_funs
 {
@@ -310,7 +310,7 @@ fragment_interface iface_blury
 	//
 	in vec2 frg_uv;
 }
-fragment_shader ps_blury 
+fragment_shader ps_blury
 	: iface_fmt
 	: lib_cmn_funs
 {
@@ -343,14 +343,14 @@ fragment_shader ps_hdr_join : iface_fmt
 	vec4 base = texture( MrtMap0, frg_uv );
 	vec4 glow = texture( AuxMap1, frg_uv );
     vec3 full = mix(base.xyz,glow.xyz,EffectAmount).xyz;
-	out_clr = vec4(full.xyz,1.0); 
+	out_clr = vec4(full.xyz,1.0);
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_ghost
+uniform_set ub_ghost
 {
 	uniform float EffectAmount;
 	uniform sampler2D MrtMap0;
-	uniform sampler2D AuxMap1;	
+	uniform sampler2D AuxMap1;
 }
 fragment_interface iface_hdr_join_ghost
 	: ub_ghost
@@ -359,7 +359,7 @@ fragment_interface iface_hdr_join_ghost
 	//
 	in vec2 frg_uv;
 }
-fragment_shader ps_hdr_join_ghost 
+fragment_shader ps_hdr_join_ghost
 	: iface_fmt
 	: lib_cmn_funs
 {
@@ -367,21 +367,21 @@ fragment_shader ps_hdr_join_ghost
     vec3 glow = pointsampletex2d( AuxMap1, frg_uv.xy ).xyz;
     float diff = distance( glow,base );
 	float dist = pow( clamp( diff, 0.0, 1.0 ), 1.2 );
-	
+
 	vec3 black = vec3(0.0,0.0,0.0);
 	vec3 blue = vec3(0.0,0.0,1.0);
 	vec3 white = vec3(1.0,1.0,1.0);
-	
+
 	vec3	outc3 = mix( black, blue, dist );
 			outc3 = mix( outc3, white, dist );
-			
+
 	outc3 = mix( base, outc3, EffectAmount );
-			
-	out_clr = vec4( outc3, 1.0 ); 
+
+	out_clr = vec4( outc3, 1.0 );
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-fragment_shader ps_comic 
+fragment_shader ps_comic
 	: iface_fmt
 	: color_tools
 {
@@ -391,7 +391,7 @@ fragment_shader ps_comic
 	const float knumsteps = 6.0;
 	const float knumstepsHSV = 5.0;
 	float fphase = 6.283*kf*time;
-		
+
 	/////////////////////////////////////////////////////////
 	const float kaadim = 2.0;
 	const float ksc = (1.0/(kaadim*kaadim)); // 9 16 25 49
@@ -410,7 +410,7 @@ fragment_shader ps_comic
 	for( float fy=0.0f; fy<kaadim; fy+=1.0f )
 	{
 		float fya = kfb+(fy*kfed);
-		
+
 		for( float fx=0.0f; fx<kaadim; fx+=1.0 )
 		{
 			float fxa = kfb+(fx*kfed);
@@ -421,21 +421,21 @@ fragment_shader ps_comic
 			dist += distance(ThisPix,PixCtr);
 		}
 	}
-	/////////////////////////////////////////////////////////    
+	/////////////////////////////////////////////////////////
     float idist = 1.0-clamp(dist,0.0,1.0);
     idist = clamp(pow(idist,2.0),0.0,1.0);
-	/////////////////////////////////////////////////////////	
+	/////////////////////////////////////////////////////////
 	vec3 HsvOut = HsvOri;
     HsvOut.z = HsvOri.z*idist;
-	/////////////////////////////////////////////////////////	
+	/////////////////////////////////////////////////////////
 	HsvOut = quantizeHSV( HsvOut, knumstepsHSV);
 	HsvOut = mix( HsvOri, HsvOut, EffectAmount );
-	/////////////////////////////////////////////////////////	
+	/////////////////////////////////////////////////////////
     out_clr = vec4(hsv2rgb(HsvOut),1.0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fbout 
-	: iface_fmt 
+fragment_shader ps_fbout
+	: iface_fmt
 {
 	out_clr = texture( MrtMap0, frg_uv );
 }

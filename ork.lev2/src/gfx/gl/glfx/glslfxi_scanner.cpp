@@ -9,25 +9,25 @@
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-GlslFxScanViewRegex::GlslFxScanViewRegex(const char* pr,bool inverse)
+ScanViewRegex::ScanViewRegex(const char* pr,bool inverse)
 	: mRegex(pr)
 	, mInverse(inverse)
 {
 
 }
-bool GlslFxScanViewRegex::Test(const token& t)
+bool ScanViewRegex::Test(const token& t)
 {
 	bool match = std::regex_match(t.text,mRegex);
 	return match xor mInverse;
 }
 
-GlslFxScannerView::GlslFxScannerView( const GlslFxScanner& s, GlslFxScanViewFilter& f  )
+ScannerView::ScannerView( const Scanner& s, ScanViewFilter& f  )
 	: mScanner(s)
 	, mFilter(f)
-	, mBlockTerminators( "(fxconfig|uniform_block|vertex_interface|tessctrl_interface|tesseval_interface|geometry_interface|fragment_interface|libblock|state_block|vertex_shader|tessctrl_shader|tesseval_shader|fragment_shader|geometry_shader|technique|pass)")
+	, mBlockTerminators( "(fxconfig|uniform_set|vertex_interface|tessctrl_interface|tesseval_interface|geometry_interface|fragment_interface|libblock|state_block|vertex_shader|tessctrl_shader|tesseval_shader|fragment_shader|geometry_shader|technique|pass)")
 	, mStart(0)
 	, mEnd(0)
 	, mBlockType(0)
@@ -36,7 +36,7 @@ GlslFxScannerView::GlslFxScannerView( const GlslFxScanner& s, GlslFxScanViewFilt
 {
 }
 
-void GlslFxScannerView::ScanRange( size_t ist, size_t ien )
+void ScannerView::ScanRange( size_t ist, size_t ien )
 {
 	for( size_t i=ist; i<=ien; i++ )
 	{
@@ -49,17 +49,17 @@ void GlslFxScannerView::ScanRange( size_t ist, size_t ien )
 	}
 }
 
-size_t GlslFxScannerView::GetBlockEnd() const
+size_t ScannerView::GetBlockEnd() const
 {
 	return GetTokenIndex(mEnd);
 }
 
-std::string GlslFxScannerView::GetBlockName() const
+std::string ScannerView::GetBlockName() const
 {
-	return GetToken(mBlockName)->text;	
+	return GetToken(mBlockName)->text;
 }
 
-void GlslFxScannerView::ScanBlock( size_t is )
+void ScannerView::ScanBlock( size_t is )
 {
 	size_t max_t = mScanner.tokens.size();
 
@@ -74,7 +74,7 @@ void GlslFxScannerView::ScanBlock( size_t is )
 	for( size_t i=is; i<max_t; i++ )
 	{	const token& t = mScanner.tokens[i];
 		bool is_term = std::regex_match(t.text,mBlockTerminators);
-		
+
 		bool is_open = ( t.text == "{" );
 		bool is_close = ( t.text == "}" );
 
@@ -88,7 +88,7 @@ void GlslFxScannerView::ScanBlock( size_t is )
 			case 0:	// have not yet found block type
 			{
 				if( is_term )
-				{	
+				{
 					mBlockType = mIndices.size();
 					mBlockName = mBlockType+1;
 					istate = 1;
@@ -118,7 +118,7 @@ void GlslFxScannerView::ScanBlock( size_t is )
 				else
 				{	assert(false==is_close);
 					if( is_term )
-						assert(i>is);				
+						assert(i>is);
 					if( mFilter.Test(t) )
 						mIndices.push_back(i);
 				}
@@ -139,7 +139,7 @@ void GlslFxScannerView::ScanBlock( size_t is )
 					}
 				}
 				else
-				{	
+				{
 					if( mFilter.Test(t) )
 						mIndices.push_back(i);
 				}
@@ -149,9 +149,9 @@ void GlslFxScannerView::ScanBlock( size_t is )
 	}
 }
 
-void GlslFxScannerView::Dump()
+void ScannerView::Dump()
 {
-	printf( "GlslFxScannerView<%p>::Dump()\n",this);
+	printf( "ScannerView<%p>::Dump()\n",this);
 
 	printf( " mBlockOk<%d>\n",int(mBlockOk));
 	printf( " mStart<%d>\n",int(mStart));
@@ -172,7 +172,7 @@ void GlslFxScannerView::Dump()
 	}
 }
 
-const token* GlslFxScanner::GetToken(size_t i) const
+const token* Scanner::GetToken(size_t i) const
 {
 	const token* pt = nullptr;
 	if( i < tokens.size() )
@@ -182,7 +182,7 @@ const token* GlslFxScanner::GetToken(size_t i) const
 	return pt;
 }
 
-const token* GlslFxScannerView::GetToken(size_t i) const
+const token* ScannerView::GetToken(size_t i) const
 {
 	const token* pt = nullptr;
 	if( i<mIndices.size() )
@@ -193,7 +193,7 @@ const token* GlslFxScannerView::GetToken(size_t i) const
 	return pt;
 }
 
-const token* GlslFxScannerView::GetBlockDecorator(size_t i) const
+const token* ScannerView::GetBlockDecorator(size_t i) const
 {
 	const token* pt = nullptr;
 
@@ -205,7 +205,7 @@ const token* GlslFxScannerView::GetBlockDecorator(size_t i) const
 	return pt;
 }
 
-size_t GlslFxScannerView::GetTokenIndex(size_t i) const
+size_t ScannerView::GetTokenIndex(size_t i) const
 {
 	size_t ret = ~0;
 	if( i<mIndices.size() )
@@ -215,14 +215,14 @@ size_t GlslFxScannerView::GetTokenIndex(size_t i) const
 	return ret;
 }
 
-GlslFxScanner::GlslFxScanner()
+Scanner::Scanner()
 	: ss(ESTA_NONE)
 	, cur_token("",0,0)
 	, ifilelen(0)
 {
 
 }
-void GlslFxScanner::FlushToken()
+void Scanner::FlushToken()
 {
 	if( cur_token.text.length() )
 		tokens.push_back( cur_token );
@@ -232,7 +232,7 @@ void GlslFxScanner::FlushToken()
 	ss=ESTA_NONE;
 }
 /////////////////////////////////////////
-void GlslFxScanner::AddToken( const token& tok )
+void Scanner::AddToken( const token& tok )
 {
 	tokens.push_back(tok);
 	cur_token.text="";
@@ -241,38 +241,38 @@ void GlslFxScanner::AddToken( const token& tok )
 	ss=ESTA_NONE;
 }
 /////////////////////////////////////////
-void GlslFxScanner::Scan()
+void Scanner::Scan()
 {
-	
+
 	int iscanst_cpp_comment = 0;
 	int iscanst_c_comment = 0;
 	int iscanst_whitespace = 0;
 	int iscanst_dqstring = 0;
 	int iscanst_sqstring = 0;
-	
+
 	int iline = 0;
 	int icol = 0;
-	
+
 	int itoksta_line = 0;
 	int itoksta_colm = 0;
-	
+
 	bool b_in_number = false;
-	
+
 	for( size_t i=0; i<ifilelen; i++ )
 	{
 		char PCH = (i==0) ? 0 : fxbuffer[i-1];
 		char CH = fxbuffer[i];
 		char NCH = (i<ifilelen-1) ? fxbuffer[i+1] : 0;
-		
+
 		char ch_buf[2];
 		ch_buf[0] = CH;
 		ch_buf[1] = 0;
-		
+
 		bool benctok = false;
-		
+
 		int adv_col = 1;
 		int adv_lin = 0;
-		
+
 		switch( ss )
 		{
 			case ESTA_NONE:
@@ -308,7 +308,7 @@ void GlslFxScanner::Scan()
 					}
 					else
 						AddToken( token( ch_buf, iline, icol ) );
-					
+
 				}
 				else
 				{	ss = ESTA_CONTENT;
@@ -371,9 +371,9 @@ void GlslFxScanner::Scan()
 			iline++;
 			icol=0;
 		}
-		
+
 	}
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-}} //namespace ork { namespace lev2 {
+} //namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////

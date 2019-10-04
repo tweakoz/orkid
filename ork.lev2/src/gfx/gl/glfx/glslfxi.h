@@ -7,45 +7,53 @@
 
 #pragma once
 
-#include <ork/pch.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
+#include <ork/pch.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {
-
-struct GlslFxContainer;
-struct GlslFxScanner;
-struct GlslFxScannerView;
-struct GlslFxScanViewFilter;
 class GfxTargetGL;
+}
 
-struct GlslFxConfig {
+namespace ork::lev2::glslfx {
+
+struct Container;
+struct Scanner;
+struct ScannerView;
+struct ScanViewFilter;
+
+struct Config {
   std::string mName;
 };
-struct GlslFxUniform {
+struct Uniform {
   std::string mName;
   std::string mTypeName;
   GLenum meType;
   std::string mSemantic;
   int mArraySize;
 
-  GlslFxUniform(const std::string &nam, const std::string &sem = "")
-      : mName(nam), mSemantic(sem), meType(GL_ZERO), mArraySize(0) {}
+  Uniform(const std::string& nam, const std::string& sem = "")
+      : mName(nam)
+      , mSemantic(sem)
+      , meType(GL_ZERO)
+      , mArraySize(0) {}
 };
-struct GlslFxUniformInstance {
+struct UniformInstance {
   GLint mLocation;
-  GlslFxUniform *mpUniform;
+  Uniform* mpUniform;
   int mSubItemIndex;
   svar16_t mPrivData;
 
-  GlslFxUniformInstance()
-      : mLocation(-1), mpUniform(nullptr), mSubItemIndex(0) {}
+  UniformInstance()
+      : mLocation(-1)
+      , mpUniform(nullptr)
+      , mSubItemIndex(0) {}
 };
 
-struct GlslFxAttribute {
+struct Attribute {
   std::string mName;
   std::string mTypeName;
   std::string mDirection;
@@ -55,24 +63,28 @@ struct GlslFxAttribute {
   std::string mComment;
   int mArraySize;
 
-  GlslFxAttribute(const std::string &nam, const std::string &sem = "")
-      : mName(nam), mSemantic(sem), meType(GL_ZERO), mLocation(-1),
-        mArraySize(0) {}
+  Attribute(const std::string& nam, const std::string& sem = "")
+      : mName(nam)
+      , mSemantic(sem)
+      , meType(GL_ZERO)
+      , mLocation(-1)
+      , mArraySize(0) {}
 };
 
-struct GlslUniformBlock {
-  typedef std::map<std::string, GlslFxUniform *> UniMap;
+struct UniformSet {
 
-  GlslUniformBlock() {}
+  typedef std::map<std::string, Uniform*> uniform_map_t;
 
-  std::string mName;
-  UniMap mUniforms;
+  UniformSet() {}
+
+  std::string _name;
+  uniform_map_t _uniforms;
 };
 
-struct GlslFxStreamInterface {
-  GlslFxStreamInterface();
+struct StreamInterface {
+  StreamInterface();
 
-  typedef std::map<std::string, GlslFxAttribute *> AttrMap;
+  typedef std::map<std::string, Attribute*> AttrMap;
   typedef std::vector<std::string> preamble_t;
 
   std::string mName;
@@ -80,238 +92,230 @@ struct GlslFxStreamInterface {
   GLenum mInterfaceType;
   preamble_t mPreamble;
   int mGsPrimSize;
-  std::set<GlslUniformBlock *> mUniformBlockSet;
+  std::set<UniformSet*> _uniformSets;
 
-  void Inherit(const GlslFxStreamInterface &par);
+  void Inherit(const StreamInterface& par);
 };
 
-typedef std::function<void(GfxTarget *)> state_applicator_t;
+typedef std::function<void(GfxTarget*)> state_applicator_t;
 
-struct GlslFxStateBlock {
+struct StateBlock {
   std::string mName;
   // SRasterState	mState;
   std::vector<state_applicator_t> mApplicators;
 
-  void AddStateFn(const state_applicator_t &f) { mApplicators.push_back(f); }
+  void AddStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
 };
 
-struct GlslFxShader {
+struct Shader {
   std::string mName;
   std::string mShaderText;
-  GlslFxStreamInterface *mpInterface;
-  GlslFxContainer *mpContainer;
+  StreamInterface* mpInterface;
+  Container* mpContainer;
   GLuint mShaderObjectId;
   GLenum mShaderType;
   bool mbCompiled;
   bool mbError;
   std::set<std::string> _requiredExtensions;
 
-  GlslFxShader(const std::string &nam, GLenum etyp)
-      : mName(nam), mShaderObjectId(0), mShaderType(etyp), mbCompiled(false),
-        mbError(false), mpInterface(nullptr), mpContainer(nullptr) {}
+  Shader(const std::string& nam, GLenum etyp)
+      : mName(nam)
+      , mShaderObjectId(0)
+      , mShaderType(etyp)
+      , mbCompiled(false)
+      , mbError(false)
+      , mpInterface(nullptr)
+      , mpContainer(nullptr) {}
 
   bool Compile();
   bool IsCompiled() const;
   void requireExtension(std::string ext) { _requiredExtensions.insert(ext); }
 };
-struct GlslFxShaderVtx : GlslFxShader {
-  GlslFxShaderVtx(const std::string &nam = "")
-      : GlslFxShader(nam, GL_VERTEX_SHADER) {}
+struct ShaderVtx : Shader {
+  ShaderVtx(const std::string& nam = "")
+      : Shader(nam, GL_VERTEX_SHADER) {}
 };
-struct GlslFxShaderFrg : GlslFxShader {
-  GlslFxShaderFrg(const std::string &nam = "")
-      : GlslFxShader(nam, GL_FRAGMENT_SHADER) {}
+struct ShaderFrg : Shader {
+  ShaderFrg(const std::string& nam = "")
+      : Shader(nam, GL_FRAGMENT_SHADER) {}
 };
-struct GlslFxShaderGeo : GlslFxShader {
-  GlslFxShaderGeo(const std::string &nam = "")
-      : GlslFxShader(nam, GL_GEOMETRY_SHADER) {}
+struct ShaderGeo : Shader {
+  ShaderGeo(const std::string& nam = "")
+      : Shader(nam, GL_GEOMETRY_SHADER) {}
 };
-struct GlslFxShaderTsC : GlslFxShader {
-  GlslFxShaderTsC(const std::string &nam = "")
-      : GlslFxShader(nam, GL_TESS_CONTROL_SHADER) {}
+struct ShaderTsC : Shader {
+  ShaderTsC(const std::string& nam = "")
+      : Shader(nam, GL_TESS_CONTROL_SHADER) {}
 };
-struct GlslFxShaderTsE : GlslFxShader {
-  GlslFxShaderTsE(const std::string &nam = "")
-      : GlslFxShader(nam, GL_TESS_EVALUATION_SHADER) {}
+struct ShaderTsE : Shader {
+  ShaderTsE(const std::string& nam = "")
+      : Shader(nam, GL_TESS_EVALUATION_SHADER) {}
 };
 
-struct GlslFxLibBlock {
-  GlslFxLibBlock(const GlslFxScanner &s);
+struct LibBlock {
+  LibBlock(const Scanner& s);
 
   std::string mName;
-  GlslFxScanViewFilter *mFilter;
-  GlslFxScannerView *mView;
+  ScanViewFilter* mFilter;
+  ScannerView* mView;
 };
 
-struct GlslFxPass {
-  typedef std::map<std::string, GlslFxUniformInstance *> uni_map_t;
-  typedef std::map<std::string, GlslFxAttribute *> attr_map_t;
+struct Pass {
+  typedef std::map<std::string, UniformInstance*> uni_map_t;
+  typedef std::map<std::string, Attribute*> attr_map_t;
 
   static const int kmaxattrID = 16;
   std::string mName;
-  GlslFxShaderVtx *mVertexProgram;
-  GlslFxShaderTsC *mTessCtrlProgram;
-  GlslFxShaderTsE *mTessEvalProgram;
-  GlslFxShaderGeo *mGeometryProgram;
-  GlslFxShaderFrg *mFragmentProgram;
-  GlslFxStateBlock *mStateBlock;
+  ShaderVtx* mVertexProgram;
+  ShaderTsC* mTessCtrlProgram;
+  ShaderTsE* mTessEvalProgram;
+  ShaderGeo* mGeometryProgram;
+  ShaderFrg* mFragmentProgram;
+  StateBlock* mStateBlock;
   GLuint mProgramObjectId;
   uni_map_t mUniformInstances;
   attr_map_t mVtxAttributesBySemantic;
-  GlslFxAttribute *mVtxAttributeById[kmaxattrID];
+  Attribute* mVtxAttributeById[kmaxattrID];
   int mSamplerCount;
 
-  GlslFxPass(const std::string &name)
-      : mName(name), mVertexProgram(nullptr), mTessCtrlProgram(nullptr),
-        mTessEvalProgram(nullptr), mGeometryProgram(nullptr),
-        mFragmentProgram(nullptr), mProgramObjectId(0), mStateBlock(nullptr),
-        mSamplerCount(0) {
+  Pass(const std::string& name)
+      : mName(name)
+      , mVertexProgram(nullptr)
+      , mTessCtrlProgram(nullptr)
+      , mTessEvalProgram(nullptr)
+      , mGeometryProgram(nullptr)
+      , mFragmentProgram(nullptr)
+      , mProgramObjectId(0)
+      , mStateBlock(nullptr)
+      , mSamplerCount(0) {
     for (int i = 0; i < kmaxattrID; i++)
       mVtxAttributeById[i] = nullptr;
   }
-  bool HasUniformInstance(GlslFxUniformInstance *puni) const;
-  const GlslFxUniformInstance *GetUniformInstance(GlslFxUniform *puni) const;
+  bool HasUniformInstance(UniformInstance* puni) const;
+  const UniformInstance* GetUniformInstance(Uniform* puni) const;
 };
 
-struct GlslFxTechnique {
-  orkvector<GlslFxPass *> mPasses;
+struct Technique {
+  orkvector<Pass*> mPasses;
   std::string mName;
 
-  GlslFxTechnique(const std::string &nam) { mName = nam; }
+  Technique(const std::string& nam) { mName = nam; }
 
-  void AddPass(GlslFxPass *pps) { mPasses.push_back(pps); }
+  void AddPass(Pass* pps) { mPasses.push_back(pps); }
 };
 
-struct GlslFxContainer {
+struct Container {
   std::string mEffectName;
-  const GlslFxTechnique *mActiveTechnique;
-  std::map<std::string, GlslFxConfig *> mConfigs;
-  std::map<std::string, GlslUniformBlock *> mUniformBlocks;
-  std::map<std::string, GlslFxStreamInterface *> mVertexInterfaces;
-  std::map<std::string, GlslFxStreamInterface *> mTessCtrlInterfaces;
-  std::map<std::string, GlslFxStreamInterface *> mTessEvalInterfaces;
-  std::map<std::string, GlslFxStreamInterface *> mGeometryInterfaces;
-  std::map<std::string, GlslFxStreamInterface *> mFragmentInterfaces;
-  std::map<std::string, GlslFxStateBlock *> mStateBlocks;
-  std::map<std::string, GlslFxUniform *> mUniforms;
-  std::map<std::string, GlslFxShaderVtx *> mVertexPrograms;
-  std::map<std::string, GlslFxShaderTsC *> mTessCtrlPrograms;
-  std::map<std::string, GlslFxShaderTsE *> mTessEvalPrograms;
-  std::map<std::string, GlslFxShaderGeo *> mGeometryPrograms;
-  std::map<std::string, GlslFxShaderFrg *> mFragmentPrograms;
-  std::map<std::string, GlslFxTechnique *> mTechniqueMap;
-  std::map<std::string, GlslFxLibBlock *> mLibBlocks;
-  const GlslFxPass *mActivePass;
+  const Technique* mActiveTechnique;
+  std::map<std::string, Config*> mConfigs;
+  std::map<std::string, UniformSet*> _uniformSets;
+  std::map<std::string, StreamInterface*> mVertexInterfaces;
+  std::map<std::string, StreamInterface*> mTessCtrlInterfaces;
+  std::map<std::string, StreamInterface*> mTessEvalInterfaces;
+  std::map<std::string, StreamInterface*> mGeometryInterfaces;
+  std::map<std::string, StreamInterface*> mFragmentInterfaces;
+  std::map<std::string, StateBlock*> mStateBlocks;
+  std::map<std::string, Uniform*> mUniforms;
+  std::map<std::string, ShaderVtx*> mVertexPrograms;
+  std::map<std::string, ShaderTsC*> mTessCtrlPrograms;
+  std::map<std::string, ShaderTsE*> mTessEvalPrograms;
+  std::map<std::string, ShaderGeo*> mGeometryPrograms;
+  std::map<std::string, ShaderFrg*> mFragmentPrograms;
+  std::map<std::string, Technique*> mTechniqueMap;
+  std::map<std::string, LibBlock*> mLibBlocks;
+  const Pass* mActivePass;
   int mActiveNumPasses;
-  const FxShader *mFxShader;
+  const FxShader* mFxShader;
   bool mShaderCompileFailed;
 
   // bool Load( const AssetPath& filename, FxShader*pfxshader );
   void Destroy(void);
   bool IsValid(void);
 
-  void AddConfig(GlslFxConfig *pcfg);
-  void AddUniformBlock(GlslUniformBlock *pif);
-  void AddVertexInterface(GlslFxStreamInterface *pif);
-  void AddTessCtrlInterface(GlslFxStreamInterface *pif);
-  void AddTessEvalInterface(GlslFxStreamInterface *pif);
-  void AddGeometryInterface(GlslFxStreamInterface *pif);
-  void AddFragmentInterface(GlslFxStreamInterface *pif);
-  GlslFxUniform *MergeUniform(const std::string &name);
-  void AddStateBlock(GlslFxStateBlock *pSB);
-  void AddTechnique(GlslFxTechnique *ptek);
-  void AddVertexProgram(GlslFxShaderVtx *psha);
-  void AddTessCtrlProgram(GlslFxShaderTsC *psha);
-  void AddTessEvalProgram(GlslFxShaderTsE *psha);
-  void AddGeometryProgram(GlslFxShaderGeo *psha);
-  void AddFragmentProgram(GlslFxShaderFrg *psha);
-  void AddLibBlock(GlslFxLibBlock *plb);
+  void AddConfig(Config* pcfg);
+  void addUniformSet(UniformSet* pif);
+  void AddVertexInterface(StreamInterface* pif);
+  void AddTessCtrlInterface(StreamInterface* pif);
+  void AddTessEvalInterface(StreamInterface* pif);
+  void AddGeometryInterface(StreamInterface* pif);
+  void AddFragmentInterface(StreamInterface* pif);
+  Uniform* MergeUniform(const std::string& name);
+  void AddStateBlock(StateBlock* pSB);
+  void AddTechnique(Technique* ptek);
+  void AddVertexProgram(ShaderVtx* psha);
+  void AddTessCtrlProgram(ShaderTsC* psha);
+  void AddTessEvalProgram(ShaderTsE* psha);
+  void AddGeometryProgram(ShaderGeo* psha);
+  void AddFragmentProgram(ShaderFrg* psha);
+  void AddLibBlock(LibBlock* plb);
 
-  GlslFxStateBlock *GetStateBlock(const std::string &name) const;
-  GlslFxUniform *GetUniform(const std::string &name) const;
-  GlslFxShaderVtx *GetVertexProgram(const std::string &name) const;
-  GlslFxShaderTsC *GetTessCtrlProgram(const std::string &name) const;
-  GlslFxShaderTsE *GetTessEvalProgram(const std::string &name) const;
-  GlslFxShaderGeo *GetGeometryProgram(const std::string &name) const;
-  GlslFxShaderFrg *GetFragmentProgram(const std::string &name) const;
-  GlslUniformBlock *GetUniformBlock(const std::string &name) const;
-  GlslFxStreamInterface *GetVertexInterface(const std::string &name) const;
-  GlslFxStreamInterface *GetTessCtrlInterface(const std::string &name) const;
-  GlslFxStreamInterface *GetTessEvalInterface(const std::string &name) const;
-  GlslFxStreamInterface *GetGeometryInterface(const std::string &name) const;
-  GlslFxStreamInterface *GetFragmentInterface(const std::string &name) const;
+  StateBlock* GetStateBlock(const std::string& name) const;
+  Uniform* GetUniform(const std::string& name) const;
+  ShaderVtx* GetVertexProgram(const std::string& name) const;
+  ShaderTsC* GetTessCtrlProgram(const std::string& name) const;
+  ShaderTsE* GetTessEvalProgram(const std::string& name) const;
+  ShaderGeo* GetGeometryProgram(const std::string& name) const;
+  ShaderFrg* GetFragmentProgram(const std::string& name) const;
+  UniformSet* uniformSet(const std::string& name) const;
+  StreamInterface* GetVertexInterface(const std::string& name) const;
+  StreamInterface* GetTessCtrlInterface(const std::string& name) const;
+  StreamInterface* GetTessEvalInterface(const std::string& name) const;
+  StreamInterface* GetGeometryInterface(const std::string& name) const;
+  StreamInterface* GetFragmentInterface(const std::string& name) const;
 
-  GlslFxContainer(const std::string &nam);
+  Container(const std::string& nam);
 };
 
-class GfxTargetGL;
 
-class GlslFxInterface : public FxInterface {
+class Interface : public FxInterface {
 public:
   virtual void DoBeginFrame();
 
-  virtual int BeginBlock(FxShader *hfx, const RenderContextInstData &data);
-  virtual bool BindPass(FxShader *hfx, int ipass);
-  virtual bool BindTechnique(FxShader *hfx, const FxShaderTechnique *htek);
-  virtual void EndPass(FxShader *hfx);
-  virtual void EndBlock(FxShader *hfx);
+  virtual int BeginBlock(FxShader* hfx, const RenderContextInstData& data);
+  virtual bool BindPass(FxShader* hfx, int ipass);
+  virtual bool BindTechnique(FxShader* hfx, const FxShaderTechnique* htek);
+  virtual void EndPass(FxShader* hfx);
+  virtual void EndBlock(FxShader* hfx);
   virtual void CommitParams(void);
 
-  virtual const FxShaderTechnique *GetTechnique(FxShader *hfx,
-                                                const std::string &name);
-  virtual const FxShaderParam *GetParameterH(FxShader *hfx,
-                                             const std::string &name);
+  virtual const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name);
+  virtual const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name);
 
-  virtual void BindParamBool(FxShader *hfx, const FxShaderParam *hpar,
-                             const bool bval);
-  virtual void BindParamInt(FxShader *hfx, const FxShaderParam *hpar,
-                            const int ival);
-  virtual void BindParamVect2(FxShader *hfx, const FxShaderParam *hpar,
-                              const fvec2 &Vec);
-  virtual void BindParamVect3(FxShader *hfx, const FxShaderParam *hpar,
-                              const fvec3 &Vec);
-  virtual void BindParamVect4(FxShader *hfx, const FxShaderParam *hpar,
-                              const fvec4 &Vec);
-  virtual void BindParamVect4Array(FxShader *hfx, const FxShaderParam *hpar,
-                                   const fvec4 *Vec, const int icount);
-  virtual void BindParamFloatArray(FxShader *hfx, const FxShaderParam *hpar,
-                                   const float *pfA, const int icnt);
-  virtual void BindParamFloat(FxShader *hfx, const FxShaderParam *hpar,
-                              float fA);
-  virtual void BindParamFloat2(FxShader *hfx, const FxShaderParam *hpar,
-                               float fA, float fB);
-  virtual void BindParamFloat3(FxShader *hfx, const FxShaderParam *hpar,
-                               float fA, float fB, float fC);
-  virtual void BindParamFloat4(FxShader *hfx, const FxShaderParam *hpar,
-                               float fA, float fB, float fC, float fD);
-  virtual void BindParamMatrix(FxShader *hfx, const FxShaderParam *hpar,
-                               const fmtx4 &Mat);
-  virtual void BindParamMatrix(FxShader *hfx, const FxShaderParam *hpar,
-                               const fmtx3 &Mat);
-  virtual void BindParamMatrixArray(FxShader *hfx, const FxShaderParam *hpar,
-                                    const fmtx4 *MatArray, int iCount);
-  virtual void BindParamU32(FxShader *hfx, const FxShaderParam *hpar, U32 uval);
-  virtual void BindParamCTex(FxShader *hfx, const FxShaderParam *hpar,
-                             const Texture *pTex);
-  virtual bool LoadFxShader(const AssetPath &pth, FxShader *ptex);
+  virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval);
+  virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival);
+  virtual void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec);
+  virtual void BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec);
+  virtual void BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec);
+  virtual void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount);
+  virtual void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt);
+  virtual void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA);
+  virtual void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB);
+  virtual void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC);
+  virtual void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD);
+  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat);
+  virtual void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat);
+  virtual void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount);
+  virtual void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval);
+  virtual void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex);
+  virtual bool LoadFxShader(const AssetPath& pth, FxShader* ptex);
 
-  GlslFxInterface(GfxTargetGL &glctx);
+  Interface(GfxTargetGL& glctx);
 
-  void BindContainerToAbstract(GlslFxContainer *pcont, FxShader *fxh);
+  void BindContainerToAbstract(Container* pcont, FxShader* fxh);
 
-  GlslFxContainer *GetActiveEffect() const { return mpActiveEffect; }
+  Container* GetActiveEffect() const { return mpActiveEffect; }
 
 protected:
   // static CGcontext					mCgContext;
-  GlslFxContainer *mpActiveEffect;
-  const GlslFxPass *mLastPass;
-  FxShaderTechnique *mhCurrentTek;
+  Container* mpActiveEffect;
+  const Pass* mLastPass;
+  FxShaderTechnique* mhCurrentTek;
 
-  GfxTargetGL &mTarget;
+  GfxTargetGL& mTarget;
 };
 
-GlslFxContainer *LoadFxFromFile(const AssetPath &pth);
+Container* LoadFxFromFile(const AssetPath& pth);
 
-} // namespace ork::lev2
+} // namespace ork::lev2::glslfx
 
 ///////////////////////////////////////////////////////////////////////////////

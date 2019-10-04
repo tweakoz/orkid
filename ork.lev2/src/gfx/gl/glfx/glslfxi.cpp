@@ -11,11 +11,7 @@
 #include <ork/kernel/prop.h>
 #include <ork/kernel/string/string.h>
 
-namespace ork {
-namespace lev2 {
-
-GlslFxContainer *GenPlat2SolidFx(const AssetPath &pth);
-GlslFxContainer *GenPlat2UiFx(const AssetPath &pth);
+namespace ork::lev2 {
 
 ///////////////////////////////////////////////////////////////////////////////
 // FX Interface
@@ -30,43 +26,48 @@ void GfxTargetGL::FxInit() {
   }
 }
 
+}
+
+namespace ork::lev2::glslfx {
+
+Container* GenPlat2SolidFx(const AssetPath& pth);
+Container* GenPlat2UiFx(const AssetPath& pth);
+
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::DoBeginFrame() { mLastPass = 0; }
+void Interface::DoBeginFrame() { mLastPass = 0; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlslFxPass::HasUniformInstance(GlslFxUniformInstance *puni) const {
-  GlslFxUniform *pun = puni->mpUniform;
-  std::map<std::string, GlslFxUniformInstance *>::const_iterator it =
-      mUniformInstances.find(pun->mName);
+bool Pass::HasUniformInstance(UniformInstance* puni) const {
+  Uniform* pun                                               = puni->mpUniform;
+  std::map<std::string, UniformInstance*>::const_iterator it = mUniformInstances.find(pun->mName);
   return it != mUniformInstances.end();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const GlslFxUniformInstance *
-GlslFxPass::GetUniformInstance(GlslFxUniform *puni) const {
-  std::map<std::string, GlslFxUniformInstance *>::const_iterator it =
-      mUniformInstances.find(puni->mName);
+const UniformInstance* Pass::GetUniformInstance(Uniform* puni) const {
+  std::map<std::string, UniformInstance*>::const_iterator it = mUniformInstances.find(puni->mName);
   return (it != mUniformInstances.end()) ? it->second : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlslFxInterface::GlslFxInterface(GfxTargetGL &glctx) : mTarget(glctx) {}
+Interface::Interface(GfxTargetGL& glctx)
+    : mTarget(glctx) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlslFxInterface::LoadFxShader(const AssetPath &pth, FxShader *pfxshader) {
+bool Interface::LoadFxShader(const AssetPath& pth, FxShader* pfxshader) {
   // printf( "GLSLFXI LoadShader<%s>\n", pth.c_str() );
   GL_ERRORCHECK();
   bool bok = false;
   pfxshader->SetInternalHandle(0);
 
-  GlslFxContainer *pcontainer = LoadFxFromFile(pth);
+  Container* pcontainer = LoadFxFromFile(pth);
   OrkAssert(pcontainer != nullptr);
-  pfxshader->SetInternalHandle((void *)pcontainer);
+  pfxshader->SetInternalHandle((void*)pcontainer);
   bok = pcontainer->IsValid();
 
   pcontainer->mFxShader = pfxshader;
@@ -81,148 +82,105 @@ bool GlslFxInterface::LoadFxShader(const AssetPath &pth, FxShader *pfxshader) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::BindContainerToAbstract(GlslFxContainer *pcont,
-                                              FxShader *fxh) {
-  for (const auto &ittek : pcont->mTechniqueMap) {
-    GlslFxTechnique *ptek = ittek.second;
-    FxShaderTechnique *ork_tek = new FxShaderTechnique((void *)ptek);
-    ork_tek->mTechniqueName = ittek.first;
+void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
+  for (const auto& ittek : pcont->mTechniqueMap) {
+    Technique* ptek            = ittek.second;
+    FxShaderTechnique* ork_tek = new FxShaderTechnique((void*)ptek);
+    ork_tek->mTechniqueName    = ittek.first;
     // pabstek->mPasses = ittek->first;
     ork_tek->mbValidated = true;
     fxh->AddTechnique(ork_tek);
   }
-  for (const auto &itp : pcont->mUniforms) {
-    GlslFxUniform *puni = itp.second;
-    FxShaderParam *ork_parm = new FxShaderParam;
-    ork_parm->mParameterName = itp.first;
+  for (const auto& itp : pcont->mUniforms) {
+    Uniform* puni                = itp.second;
+    FxShaderParam* ork_parm      = new FxShaderParam;
+    ork_parm->mParameterName     = itp.first;
     ork_parm->mParameterSemantic = puni->mSemantic;
-    ork_parm->mInternalHandle = (void *)puni;
+    ork_parm->mInternalHandle    = (void*)puni;
     fxh->AddParameter(ork_parm);
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxContainer::AddConfig(GlslFxConfig *pcfg) {
-  mConfigs[pcfg->mName] = pcfg;
-}
-void GlslFxContainer::AddUniformBlock(GlslUniformBlock *pif) {
-  mUniformBlocks[pif->mName] = pif;
-}
-void GlslFxContainer::AddVertexInterface(GlslFxStreamInterface *pif) {
-  mVertexInterfaces[pif->mName] = pif;
-}
-void GlslFxContainer::AddTessCtrlInterface(GlslFxStreamInterface *pif) {
-  mTessCtrlInterfaces[pif->mName] = pif;
-}
-void GlslFxContainer::AddTessEvalInterface(GlslFxStreamInterface *pif) {
-  mTessEvalInterfaces[pif->mName] = pif;
-}
-void GlslFxContainer::AddGeometryInterface(GlslFxStreamInterface *pif) {
-  mGeometryInterfaces[pif->mName] = pif;
-}
-void GlslFxContainer::AddFragmentInterface(GlslFxStreamInterface *pif) {
-  mFragmentInterfaces[pif->mName] = pif;
-}
-void GlslFxContainer::AddStateBlock(GlslFxStateBlock *psb) {
-  mStateBlocks[psb->mName] = psb;
-}
-void GlslFxContainer::AddLibBlock(GlslFxLibBlock *plb) {
-  mLibBlocks[plb->mName] = plb;
-}
-void GlslFxContainer::AddTechnique(GlslFxTechnique *ptek) {
-  mTechniqueMap[ptek->mName] = ptek;
-}
-void GlslFxContainer::AddVertexProgram(GlslFxShaderVtx *psha) {
-  mVertexPrograms[psha->mName] = psha;
-}
-void GlslFxContainer::AddTessCtrlProgram(GlslFxShaderTsC *psha) {
-  mTessCtrlPrograms[psha->mName] = psha;
-}
-void GlslFxContainer::AddTessEvalProgram(GlslFxShaderTsE *psha) {
-  mTessEvalPrograms[psha->mName] = psha;
-}
-void GlslFxContainer::AddGeometryProgram(GlslFxShaderGeo *psha) {
-  mGeometryPrograms[psha->mName] = psha;
-}
-void GlslFxContainer::AddFragmentProgram(GlslFxShaderFrg *psha) {
-  mFragmentPrograms[psha->mName] = psha;
-}
+void Container::AddConfig(Config* pcfg) { mConfigs[pcfg->mName] = pcfg; }
+void Container::addUniformSet(UniformSet* pif) { _uniformSets[pif->_name] = pif; }
+void Container::AddVertexInterface(StreamInterface* pif) { mVertexInterfaces[pif->mName] = pif; }
+void Container::AddTessCtrlInterface(StreamInterface* pif) { mTessCtrlInterfaces[pif->mName] = pif; }
+void Container::AddTessEvalInterface(StreamInterface* pif) { mTessEvalInterfaces[pif->mName] = pif; }
+void Container::AddGeometryInterface(StreamInterface* pif) { mGeometryInterfaces[pif->mName] = pif; }
+void Container::AddFragmentInterface(StreamInterface* pif) { mFragmentInterfaces[pif->mName] = pif; }
+void Container::AddStateBlock(StateBlock* psb) { mStateBlocks[psb->mName] = psb; }
+void Container::AddLibBlock(LibBlock* plb) { mLibBlocks[plb->mName] = plb; }
+void Container::AddTechnique(Technique* ptek) { mTechniqueMap[ptek->mName] = ptek; }
+void Container::AddVertexProgram(ShaderVtx* psha) { mVertexPrograms[psha->mName] = psha; }
+void Container::AddTessCtrlProgram(ShaderTsC* psha) { mTessCtrlPrograms[psha->mName] = psha; }
+void Container::AddTessEvalProgram(ShaderTsE* psha) { mTessEvalPrograms[psha->mName] = psha; }
+void Container::AddGeometryProgram(ShaderGeo* psha) { mGeometryPrograms[psha->mName] = psha; }
+void Container::AddFragmentProgram(ShaderFrg* psha) { mFragmentPrograms[psha->mName] = psha; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlslFxStateBlock *
-GlslFxContainer::GetStateBlock(const std::string &name) const {
-  const auto &it = mStateBlocks.find(name);
+StateBlock* Container::GetStateBlock(const std::string& name) const {
+  const auto& it = mStateBlocks.find(name);
   return (it == mStateBlocks.end()) ? nullptr : it->second;
 }
-GlslFxShaderVtx *
-GlslFxContainer::GetVertexProgram(const std::string &name) const {
-  const auto &it = mVertexPrograms.find(name);
+ShaderVtx* Container::GetVertexProgram(const std::string& name) const {
+  const auto& it = mVertexPrograms.find(name);
   return (it == mVertexPrograms.end()) ? nullptr : it->second;
 }
-GlslFxShaderTsC *
-GlslFxContainer::GetTessCtrlProgram(const std::string &name) const {
-  const auto &it = mTessCtrlPrograms.find(name);
+ShaderTsC* Container::GetTessCtrlProgram(const std::string& name) const {
+  const auto& it = mTessCtrlPrograms.find(name);
   return (it == mTessCtrlPrograms.end()) ? nullptr : it->second;
 }
-GlslFxShaderTsE *
-GlslFxContainer::GetTessEvalProgram(const std::string &name) const {
-  const auto &it = mTessEvalPrograms.find(name);
+ShaderTsE* Container::GetTessEvalProgram(const std::string& name) const {
+  const auto& it = mTessEvalPrograms.find(name);
   return (it == mTessEvalPrograms.end()) ? nullptr : it->second;
 }
-GlslFxShaderGeo *
-GlslFxContainer::GetGeometryProgram(const std::string &name) const {
-  const auto &it = mGeometryPrograms.find(name);
+ShaderGeo* Container::GetGeometryProgram(const std::string& name) const {
+  const auto& it = mGeometryPrograms.find(name);
   return (it == mGeometryPrograms.end()) ? nullptr : it->second;
 }
-GlslFxShaderFrg *
-GlslFxContainer::GetFragmentProgram(const std::string &name) const {
-  const auto &it = mFragmentPrograms.find(name);
+ShaderFrg* Container::GetFragmentProgram(const std::string& name) const {
+  const auto& it = mFragmentPrograms.find(name);
   return (it == mFragmentPrograms.end()) ? nullptr : it->second;
 }
-GlslUniformBlock *
-GlslFxContainer::GetUniformBlock(const std::string &name) const {
-  const auto &it = mUniformBlocks.find(name);
-  return (it == mUniformBlocks.end()) ? nullptr : it->second;
+UniformSet* Container::uniformSet(const std::string& name) const {
+  const auto& it = _uniformSets.find(name);
+  return (it == _uniformSets.end()) ? nullptr : it->second;
 }
-GlslFxStreamInterface *
-GlslFxContainer::GetVertexInterface(const std::string &name) const {
-  const auto &it = mVertexInterfaces.find(name);
+StreamInterface* Container::GetVertexInterface(const std::string& name) const {
+  const auto& it = mVertexInterfaces.find(name);
   return (it == mVertexInterfaces.end()) ? nullptr : it->second;
 }
-GlslFxStreamInterface *
-GlslFxContainer::GetTessCtrlInterface(const std::string &name) const {
-  const auto &it = mTessCtrlInterfaces.find(name);
+StreamInterface* Container::GetTessCtrlInterface(const std::string& name) const {
+  const auto& it = mTessCtrlInterfaces.find(name);
   return (it == mTessCtrlInterfaces.end()) ? nullptr : it->second;
 }
-GlslFxStreamInterface *
-GlslFxContainer::GetTessEvalInterface(const std::string &name) const {
-  const auto &it = mTessEvalInterfaces.find(name);
+StreamInterface* Container::GetTessEvalInterface(const std::string& name) const {
+  const auto& it = mTessEvalInterfaces.find(name);
   return (it == mTessEvalInterfaces.end()) ? nullptr : it->second;
 }
-GlslFxStreamInterface *
-GlslFxContainer::GetGeometryInterface(const std::string &name) const {
-  const auto &it = mGeometryInterfaces.find(name);
+StreamInterface* Container::GetGeometryInterface(const std::string& name) const {
+  const auto& it = mGeometryInterfaces.find(name);
   return (it == mGeometryInterfaces.end()) ? nullptr : it->second;
 }
-GlslFxStreamInterface *
-GlslFxContainer::GetFragmentInterface(const std::string &name) const {
-  const auto &it = mFragmentInterfaces.find(name);
+StreamInterface* Container::GetFragmentInterface(const std::string& name) const {
+  const auto& it = mFragmentInterfaces.find(name);
   return (it == mFragmentInterfaces.end()) ? nullptr : it->second;
 }
-GlslFxUniform *GlslFxContainer::GetUniform(const std::string &name) const {
-  const auto &it = mUniforms.find(name);
+Uniform* Container::GetUniform(const std::string& name) const {
+  const auto& it = mUniforms.find(name);
   return (it == mUniforms.end()) ? nullptr : it->second;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlslFxUniform *GlslFxContainer::MergeUniform(const std::string &name) {
-  GlslFxUniform *pret = nullptr;
-  const auto &it = mUniforms.find(name);
+Uniform* Container::MergeUniform(const std::string& name) {
+  Uniform* pret  = nullptr;
+  const auto& it = mUniforms.find(name);
   if (it == mUniforms.end()) {
-    pret = new GlslFxUniform(name);
+    pret            = new Uniform(name);
     mUniforms[name] = pret;
   } else {
     pret = it->second;
@@ -233,31 +191,32 @@ GlslFxUniform *GlslFxContainer::MergeUniform(const std::string &name) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlslFxContainer::GlslFxContainer(const std::string &nam)
-    : mEffectName(nam), mActiveTechnique(nullptr), mActivePass(nullptr),
-      mActiveNumPasses(0), mShaderCompileFailed(false) {
-  GlslFxStateBlock *pdefsb = new GlslFxStateBlock;
-  pdefsb->mName = "default";
+Container::Container(const std::string& nam)
+    : mEffectName(nam)
+    , mActiveTechnique(nullptr)
+    , mActivePass(nullptr)
+    , mActiveNumPasses(0)
+    , mShaderCompileFailed(false) {
+  StateBlock* pdefsb = new StateBlock;
+  pdefsb->mName      = "default";
   this->AddStateBlock(pdefsb);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxContainer::Destroy(void) {}
+void Container::Destroy(void) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlslFxContainer::IsValid(void) { return true; }
+bool Container::IsValid(void) { return true; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-int GlslFxInterface::BeginBlock(FxShader *hfx,
-                                const RenderContextInstData &data) {
+int Interface::BeginBlock(FxShader* hfx, const RenderContextInstData& data) {
   mTarget.SetRenderContextInstData(&data);
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  mpActiveEffect = container;
-  mpActiveFxShader = hfx;
+  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
+  mpActiveEffect       = container;
+  mpActiveFxShader     = hfx;
   if (nullptr == container->mActiveTechnique)
     return 0;
   return container->mActiveTechnique->mPasses.size();
@@ -265,16 +224,15 @@ int GlslFxInterface::BeginBlock(FxShader *hfx,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::EndBlock(FxShader *hfx) { mpActiveFxShader = 0; }
+void Interface::EndBlock(FxShader* hfx) { mpActiveFxShader = 0; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::CommitParams(void) {
-  if (mpActiveEffect && mpActiveEffect->mActivePass &&
-      mpActiveEffect->mActivePass->mStateBlock) {
-    const auto &items = mpActiveEffect->mActivePass->mStateBlock->mApplicators;
+void Interface::CommitParams(void) {
+  if (mpActiveEffect && mpActiveEffect->mActivePass && mpActiveEffect->mActivePass->mStateBlock) {
+    const auto& items = mpActiveEffect->mActivePass->mStateBlock->mApplicators;
 
-    for (const auto &item : items) {
+    for (const auto& item : items) {
       item(&mTarget);
     }
     // const SRasterState& rstate =
@@ -293,37 +251,32 @@ void GlslFxInterface::CommitParams(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderTechnique *
-GlslFxInterface::GetTechnique(FxShader *hfx, const std::string &name) {
+const FxShaderTechnique* Interface::GetTechnique(FxShader* hfx, const std::string& name) {
   // orkprintf( "Get cgtek<%s> hfx<%x>\n", name.c_str(), hfx );
   OrkAssert(hfx != 0);
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
+  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
   OrkAssert(container != 0);
   /////////////////////////////////////////////////////////////
 
-  const auto &tekmap = hfx->GetTechniques();
-  const auto &it = tekmap.find(name);
-  const FxShaderTechnique *htek = (it != tekmap.end()) ? it->second : 0;
+  const auto& tekmap            = hfx->GetTechniques();
+  const auto& it                = tekmap.find(name);
+  const FxShaderTechnique* htek = (it != tekmap.end()) ? it->second : 0;
 
   return htek;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlslFxInterface::BindTechnique(FxShader *hfx,
-                                    const FxShaderTechnique *htek) {
+bool Interface::BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) {
   if (nullptr == hfx)
     return false;
   if (nullptr == htek)
     return false;
 
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  const GlslFxTechnique *ptekcont =
-      static_cast<const GlslFxTechnique *>(htek->GetPlatformHandle());
+  Container* container        = static_cast<Container*>(hfx->GetInternalHandle());
+  const Technique* ptekcont   = static_cast<const Technique*>(htek->GetPlatformHandle());
   container->mActiveTechnique = ptekcont;
-  container->mActivePass = 0;
+  container->mActivePass      = 0;
 
   // orkprintf( "binding cgtek<%s:%x>\n", ptekcont->mName.c_str(), ptekcont );
 
@@ -332,7 +285,7 @@ bool GlslFxInterface::BindTechnique(FxShader *hfx,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlslFxShader::Compile() {
+bool Shader::Compile() {
   GL_NF_ERRORCHECK();
   mShaderObjectId = glCreateShader(mShaderType);
 
@@ -343,7 +296,7 @@ bool GlslFxShader::Compile() {
   shadertext += "void main() { ";
   shadertext += mName;
   shadertext += "(); }\n";
-  const char *c_str = shadertext.c_str();
+  const char* c_str = shadertext.c_str();
 
   // printf( "Shader<%s>\n/////////////\n%s\n///////////////////\n",
   // mName.c_str(), c_str );
@@ -379,33 +332,32 @@ bool GlslFxShader::Compile() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlslFxShader::IsCompiled() const { return mbCompiled; }
+bool Shader::IsCompiled() const { return mbCompiled; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
+bool Interface::BindPass(FxShader* hfx, int ipass) {
+  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
   if (container->mShaderCompileFailed)
     return false;
 
   assert(container->mActiveTechnique != nullptr);
 
   container->mActivePass = container->mActiveTechnique->mPasses[ipass];
-  GlslFxPass *ppass = const_cast<GlslFxPass *>(container->mActivePass);
+  Pass* ppass            = const_cast<Pass*>(container->mActivePass);
 
   GL_ERRORCHECK();
   if (0 == container->mActivePass->mProgramObjectId) {
-    GlslFxShader *pvtxshader = container->mActivePass->mVertexProgram;
-    GlslFxShader *ptecshader = container->mActivePass->mTessCtrlProgram;
-    GlslFxShader *pteeshader = container->mActivePass->mTessEvalProgram;
-    GlslFxShader *pgeoshader = container->mActivePass->mGeometryProgram;
-    GlslFxShader *pfrgshader = container->mActivePass->mFragmentProgram;
+    Shader* pvtxshader = container->mActivePass->mVertexProgram;
+    Shader* ptecshader = container->mActivePass->mTessCtrlProgram;
+    Shader* pteeshader = container->mActivePass->mTessEvalProgram;
+    Shader* pgeoshader = container->mActivePass->mGeometryProgram;
+    Shader* pfrgshader = container->mActivePass->mFragmentProgram;
 
     OrkAssert(pvtxshader != nullptr);
     OrkAssert(pfrgshader != nullptr);
 
-    auto l_compile = [&](GlslFxShader *psh) {
+    auto l_compile = [&](Shader* psh) {
       bool compile_ok = true;
       if (psh && psh->IsCompiled() == false)
         compile_ok = psh->Compile();
@@ -427,7 +379,7 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
 
     if (pvtxshader->IsCompiled() && pfrgshader->IsCompiled()) {
       GL_ERRORCHECK();
-      GLuint prgo = glCreateProgram();
+      GLuint prgo             = glCreateProgram();
       ppass->mProgramObjectId = prgo;
 
       //////////////
@@ -459,8 +411,8 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
       // link
       //////////////
 
-      GlslFxStreamInterface *vtx_iface = pvtxshader->mpInterface;
-      GlslFxStreamInterface *frg_iface = pfrgshader->mpInterface;
+      StreamInterface* vtx_iface = pvtxshader->mpInterface;
+      StreamInterface* frg_iface = pfrgshader->mpInterface;
 
       /*printf( "//////////////////////////////////\n");
 
@@ -480,13 +432,11 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
 */
 
       if (nullptr == vtx_iface) {
-        printf("	vtxshader<%s> has no interface!\n",
-               pvtxshader->mName.c_str());
+        printf("	vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str());
         OrkAssert(false);
       }
       if (nullptr == frg_iface) {
-        printf("	frgshader<%s> has no interface!\n",
-               pfrgshader->mName.c_str());
+        printf("	frgshader<%s> has no interface!\n", pfrgshader->mName.c_str());
         OrkAssert(false);
       }
 
@@ -497,15 +447,15 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
       // Bind Vertex Attributes
       //////////////////////////
 
-      for (const auto &itp : vtx_iface->mAttributes) {
-        GlslFxAttribute *pattr = itp.second;
-        int iloc = pattr->mLocation;
+      for (const auto& itp : vtx_iface->mAttributes) {
+        Attribute* pattr = itp.second;
+        int iloc         = pattr->mLocation;
         // printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
         // pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
         // pattr->mSemantic.c_str() );
         glBindAttribLocation(prgo, iloc, pattr->mName.c_str());
         GL_ERRORCHECK();
-        ppass->mVtxAttributeById[iloc] = pattr;
+        ppass->mVtxAttributeById[iloc]                    = pattr;
         ppass->mVtxAttributesBySemantic[pattr->mSemantic] = pattr;
       }
 
@@ -516,14 +466,14 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
       /*if( nullptr == pgeoshader )
       {
               for( const auto& itp : frg_iface->mAttributes )
-              {	const GlslFxAttribute* pfrgattr = itp.second;
+              {	const Attribute* pfrgattr = itp.second;
                       if( pfrgattr->mDirection=="in" )
                       {
                               int iloc = pfrgattr->mLocation;
                               const std::string& name = pfrgattr->mName;
                               //printf( "frgattr<%s> loc<%d> dir<%s>\n",
       pfrgattr->mName.c_str(), iloc, pfrgattr->mDirection.c_str() ); const auto&
-      itf=vtx_iface->mAttributes.find(name); const GlslFxAttribute* pvtxattr =
+      itf=vtx_iface->mAttributes.find(name); const Attribute* pvtxattr =
       (itf!=vtx_iface->mAttributes.end()) ? itf->second : nullptr; OrkAssert(
       pfrgattr != nullptr ); OrkAssert( pvtxattr != nullptr ); OrkAssert(
       pvtxattr->mTypeName == pfrgattr->mTypeName );
@@ -563,16 +513,15 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
       for (int i = 0; i < numattr; i++) {
         GLchar nambuf[256];
         GLsizei namlen = 0;
-        GLint atrsiz = 0;
-        GLenum atrtyp = GL_ZERO;
+        GLint atrsiz   = 0;
+        GLenum atrtyp  = GL_ZERO;
         GL_ERRORCHECK();
-        glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atrtyp,
-                          nambuf);
+        glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atrtyp, nambuf);
         OrkAssert(namlen < sizeof(nambuf));
         GL_ERRORCHECK();
-        const auto &it = vtx_iface->mAttributes.find(nambuf);
+        const auto& it = vtx_iface->mAttributes.find(nambuf);
         OrkAssert(it != vtx_iface->mAttributes.end());
-        GlslFxAttribute *pattr = it->second;
+        Attribute* pattr = it->second;
         // printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf
         // );
         pattr->meType = atrtyp;
@@ -592,14 +541,13 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
 
       for (int i = 0; i < numunis; i++) {
         GLsizei namlen = 0;
-        GLint unisiz = 0;
-        GLenum unityp = GL_ZERO;
+        GLint unisiz   = 0;
+        GLenum unityp  = GL_ZERO;
         std::string str_name;
 
         {
           GLchar nambuf[256];
-          glGetActiveUniform(prgo, i, sizeof(nambuf), &namlen, &unisiz, &unityp,
-                             nambuf);
+          glGetActiveUniform(prgo, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
           OrkAssert(namlen < sizeof(nambuf));
           // printf( "find uni<%s>\n", nambuf );
           GL_ERRORCHECK();
@@ -611,16 +559,16 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
             // printf( "nnam<%s>\n", str_name.c_str() );
           }
         }
-        const auto &it = container->mUniforms.find(str_name);
+        const auto& it = container->mUniforms.find(str_name);
         OrkAssert(it != container->mUniforms.end());
-        GlslFxUniform *puni = it->second;
+        Uniform* puni = it->second;
 
         puni->meType = unityp;
 
-        GlslFxUniformInstance *pinst = new GlslFxUniformInstance;
-        pinst->mpUniform = puni;
+        UniformInstance* pinst = new UniformInstance;
+        pinst->mpUniform       = puni;
 
-        GLint uniloc = glGetUniformLocation(prgo, str_name.c_str());
+        GLint uniloc     = glGetUniformLocation(prgo, str_name.c_str());
         pinst->mLocation = uniloc;
 
         if (puni->mTypeName == "sampler2D") {
@@ -637,13 +585,12 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
           pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
         }
 
-        const char *fshnam = pfrgshader->mName.c_str();
+        const char* fshnam = pfrgshader->mName.c_str();
 
         // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
         // (int) uniloc );
 
-        const_cast<GlslFxPass *>(container->mActivePass)
-            ->mUniformInstances[puni->mName] = pinst;
+        const_cast<Pass*>(container->mActivePass)->mUniformInstances[puni->mName] = pinst;
       }
     }
   }
@@ -657,9 +604,8 @@ bool GlslFxInterface::BindPass(FxShader *hfx, int ipass) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::EndPass(FxShader *hfx) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
+void Interface::EndPass(FxShader* hfx) {
+  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
   GL_ERRORCHECK();
   glUseProgram(0);
   GL_ERRORCHECK();
@@ -668,35 +614,30 @@ void GlslFxInterface::EndPass(FxShader *hfx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderParam *GlslFxInterface::GetParameterH(FxShader *hfx,
-                                                    const std::string &name) {
+const FxShaderParam* Interface::GetParameterH(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  const auto &parammap = hfx->GetParametersByName();
-  const auto &it = parammap.find(name);
-  const FxShaderParam *hparam = (it != parammap.end()) ? it->second : 0;
+  const auto& parammap        = hfx->GetParametersByName();
+  const auto& it              = parammap.find(name);
+  const FxShaderParam* hparam = (it != parammap.end()) ? it->second : 0;
   return hparam;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::BindParamBool(FxShader *hfx, const FxShaderParam *hpar,
-                                    const bool bv) {}
+void Interface::BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bv) {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::BindParamInt(FxShader *hfx, const FxShaderParam *hpar,
-                                   const int iv) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int iv) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_INT);
 
       GL_ERRORCHECK();
@@ -710,19 +651,16 @@ void GlslFxInterface::BindParamInt(FxShader *hfx, const FxShaderParam *hpar,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::BindParamVect2(FxShader *hfx, const FxShaderParam *hpar,
-                                     const fvec2 &Vec) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_FLOAT_VEC2);
 
       GL_ERRORCHECK();
@@ -732,19 +670,16 @@ void GlslFxInterface::BindParamVect2(FxShader *hfx, const FxShaderParam *hpar,
   }
 }
 
-void GlslFxInterface::BindParamVect3(FxShader *hfx, const FxShaderParam *hpar,
-                                     const fvec3 &Vec) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_FLOAT_VEC3);
 
       GL_ERRORCHECK();
@@ -754,19 +689,16 @@ void GlslFxInterface::BindParamVect3(FxShader *hfx, const FxShaderParam *hpar,
   }
 }
 
-void GlslFxInterface::BindParamVect4(FxShader *hfx, const FxShaderParam *hpar,
-                                     const fvec4 &Vec) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_FLOAT_VEC4);
 
       GL_ERRORCHECK();
@@ -776,11 +708,9 @@ void GlslFxInterface::BindParamVect4(FxShader *hfx, const FxShaderParam *hpar,
   }
 }
 
-void GlslFxInterface::BindParamVect4Array(FxShader *hfx,
-                                          const FxShaderParam *hpar,
-                                          const fvec4 *Vec, const int icount) {
-  /*GlslFxContainer* container = static_cast<GlslFxContainer*>(
-  hfx->GetInternalHandle() ); GlslFxUniform* puni = static_cast<GlslFxUniform*>(
+void Interface::BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) {
+  /*Container* container = static_cast<Container*>(
+  hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
           const char* psem = puni->mSemantic.c_str();
@@ -793,19 +723,16 @@ void GlslFxInterface::BindParamVect4Array(FxShader *hfx,
   }*/
 }
 
-void GlslFxInterface::BindParamFloat(FxShader *hfx, const FxShaderParam *hpar,
-                                     float fA) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_FLOAT);
 
       GL_ERRORCHECK();
@@ -814,11 +741,9 @@ void GlslFxInterface::BindParamFloat(FxShader *hfx, const FxShaderParam *hpar,
     }
   }
 }
-void GlslFxInterface::BindParamFloatArray(FxShader *hfx,
-                                          const FxShaderParam *hpar,
-                                          const float *pfa, const int icount) {
-  /*GlslFxContainer* container = static_cast<GlslFxContainer*>(
-  hfx->GetInternalHandle() ); GlslFxUniform* puni = static_cast<GlslFxUniform*>(
+void Interface::BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfa, const int icount) {
+  /*Container* container = static_cast<Container*>(
+  hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
           const char* psem = puni->mSemantic.c_str();
@@ -831,10 +756,9 @@ void GlslFxInterface::BindParamFloatArray(FxShader *hfx,
   }*/
 }
 
-void GlslFxInterface::BindParamFloat2(FxShader *hfx, const FxShaderParam *hpar,
-                                      float fA, float fB) {
-  /*GlslFxContainer* container = static_cast<GlslFxContainer*>(
-  hfx->GetInternalHandle() ); GlslFxUniform* puni = static_cast<GlslFxUniform*>(
+void Interface::BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) {
+  /*Container* container = static_cast<Container*>(
+  hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
           const char* psem = puni->mSemantic.c_str();
@@ -849,10 +773,9 @@ void GlslFxInterface::BindParamFloat2(FxShader *hfx, const FxShaderParam *hpar,
   }*/
 }
 
-void GlslFxInterface::BindParamFloat3(FxShader *hfx, const FxShaderParam *hpar,
-                                      float fA, float fB, float fC) {
-  /*GlslFxContainer* container = static_cast<GlslFxContainer*>(
-  hfx->GetInternalHandle() ); GlslFxUniform* puni = static_cast<GlslFxUniform*>(
+void Interface::BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) {
+  /*Container* container = static_cast<Container*>(
+  hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
           const char* psem = puni->mSemantic.c_str();
@@ -867,10 +790,9 @@ void GlslFxInterface::BindParamFloat3(FxShader *hfx, const FxShaderParam *hpar,
   }*/
 }
 
-void GlslFxInterface::BindParamFloat4(FxShader *hfx, const FxShaderParam *hpar,
-                                      float fA, float fB, float fC, float fD) {
-  /*GlslFxContainer* container = static_cast<GlslFxContainer*>(
-  hfx->GetInternalHandle() ); GlslFxUniform* puni = static_cast<GlslFxUniform*>(
+void Interface::BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) {
+  /*Container* container = static_cast<Container*>(
+  hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
           const char* psem = puni->mSemantic.c_str();
@@ -885,8 +807,7 @@ void GlslFxInterface::BindParamFloat4(FxShader *hfx, const FxShaderParam *hpar,
   }*/
 }
 
-void GlslFxInterface::BindParamU32(FxShader *hfx, const FxShaderParam *hpar,
-                                   U32 uval) {
+void Interface::BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval) {
   /*
           CgFxContainer* container = static_cast<CgFxContainer*>(
      hfx->GetInternalHandle() ); CGeffect cgeffect = container->mCgEffect;
@@ -895,20 +816,17 @@ void GlslFxInterface::BindParamU32(FxShader *hfx, const FxShaderParam *hpar,
   */
 }
 
-void GlslFxInterface::BindParamMatrix(FxShader *hfx, const FxShaderParam *hpar,
-                                      const fmtx4 &Mat) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
+void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) {
+  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni        = static_cast<Uniform*>(hpar->GetPlatformHandle());
   assert(container->mActivePass != nullptr);
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_FLOAT_MAT4);
 
       GL_ERRORCHECK();
@@ -918,19 +836,16 @@ void GlslFxInterface::BindParamMatrix(FxShader *hfx, const FxShaderParam *hpar,
   }
 }
 
-void GlslFxInterface::BindParamMatrix(FxShader *hfx, const FxShaderParam *hpar,
-                                      const fmtx3 &Mat) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_FLOAT_MAT3);
 
       GL_ERRORCHECK();
@@ -940,31 +855,27 @@ void GlslFxInterface::BindParamMatrix(FxShader *hfx, const FxShaderParam *hpar,
   }
 }
 
-void GlslFxInterface::BindParamMatrixArray(FxShader *hfx,
-                                           const FxShaderParam *hpar,
-                                           const fmtx4 *Mat, int iCount) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* Mat, int iCount) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       OrkAssert(etyp == GL_FLOAT_MAT4);
 
       // printf( "pnam<%s>\n", pnam );
       GL_ERRORCHECK();
-      glUniformMatrix4fv(iloc, iCount, GL_FALSE, (const float *)Mat);
+      glUniformMatrix4fv(iloc, iCount, GL_FALSE, (const float*)Mat);
       GL_ERRORCHECK();
     }
   }
 
-  /*GlslFxContainer* container = static_cast<GlslFxContainer*>(
-  hfx->GetInternalHandle() ); GlslFxUniform* puni = static_cast<GlslFxUniform*>(
+  /*Container* container = static_cast<Container*>(
+  hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
           const char* psem = puni->mSemantic.c_str();
@@ -979,32 +890,29 @@ void GlslFxInterface::BindParamMatrixArray(FxShader *hfx,
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void GlslFxInterface::BindParamCTex(FxShader *hfx, const FxShaderParam *hpar,
-                                    const Texture *pTex) {
-  GlslFxContainer *container =
-      static_cast<GlslFxContainer *>(hfx->GetInternalHandle());
-  GlslFxUniform *puni = static_cast<GlslFxUniform *>(hpar->GetPlatformHandle());
-  const GlslFxUniformInstance *pinst =
-      container->mActivePass->GetUniformInstance(puni);
+void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) {
+  Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
+  Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
+  const UniformInstance* pinst = container->mActivePass->GetUniformInstance(puni);
   // printf( "Bind1 Tex<%p> par<%s> pinst<%p>\n",
   // pTex,hpar->mParameterName.c_str(), pinst );
   if (pinst) {
     int iloc = pinst->mLocation;
 
-    const char *teknam = container->mActiveTechnique->mName.c_str();
+    const char* teknam = container->mActiveTechnique->mName.c_str();
 
     // printf( "Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n",
     // pTex,hpar->mParameterName.c_str(), iloc, teknam );
     if (iloc >= 0) {
-      const char *psem = puni->mSemantic.c_str();
-      const char *pnam = puni->mName.c_str();
-      GLenum etyp = puni->meType;
+      const char* psem = puni->mSemantic.c_str();
+      const char* pnam = puni->mName.c_str();
+      GLenum etyp      = puni->meType;
       // OrkAssert( etyp == GL_FLOAT_MAT4 );
 
       if (pTex != 0) {
-        const GLTextureObject *pTEXOBJ = (GLTextureObject *)pTex->GetTexIH();
-        GLuint texID = pTEXOBJ ? pTEXOBJ->mObject : 0;
-        int itexunit = pinst->mSubItemIndex;
+        const GLTextureObject* pTEXOBJ = (GLTextureObject*)pTex->GetTexIH();
+        GLuint texID                   = pTEXOBJ ? pTEXOBJ->mObject : 0;
+        int itexunit                   = pinst->mSubItemIndex;
 
         GLenum textgt = pinst->mPrivData.Get<GLenum>();
 
@@ -1047,5 +955,4 @@ void GlslFxInterface::BindParamCTex(FxShader *hfx, const FxShaderParam *hpar,
   */
 }
 
-} // namespace lev2
-} // namespace ork
+} // namespace ork::lev2::glslfx

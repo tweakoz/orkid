@@ -9,7 +9,7 @@ fxconfig fxcfg_default {
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-uniform_block ub_vtx {
+uniform_set ub_vtx {
   uniform mat4 WVPMatrix;
   uniform mat4 WVPMatrixL;
   uniform mat4 WVPMatrixR;
@@ -69,7 +69,7 @@ fragment_interface iface_fdefault {
 }
 ///////////////////////////////////////////////////////////////
 
-uniform_block ub_frg {
+uniform_set ub_frg {
   uniform vec4 modcolor;
   uniform sampler2D DiffuseMap;
 }

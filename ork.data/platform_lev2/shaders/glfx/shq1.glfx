@@ -8,7 +8,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx
+uniform_set ub_vtx
 {
 	uniform mat4        MatMVP;
 	uniform mat4        MatMV;
@@ -20,7 +20,7 @@ uniform_block ub_vtx
 
 	uniform vec4        modcolor;
 	uniform float       Time;
-	
+
 }
 vertex_interface iface_vdefault
 	: ub_vtx
@@ -34,12 +34,12 @@ vertex_interface iface_vdefault
 	out vec2 frg_uv;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg
+uniform_set ub_frg
 {
 	uniform vec4 ModColor;
 	uniform sampler2D ColorMap;
 	uniform sampler2D ColorMap2;
-	uniform sampler2D ColorMap3;	
+	uniform sampler2D ColorMap3;
 	uniform vec4   		User0; // buffersize
 	uniform float       Time;
 }
@@ -76,7 +76,7 @@ libblock shq_tools
 
 	float de_sphere( vec3 p, vec3 ctr, float radius )
 	{
-		
+
 		vec3 pp = p*vec3(1.0,1.0,1.0);
 		vec3 dir = (pp-ctr);
 		vec3 normal = normalize(dir);
@@ -85,7 +85,7 @@ libblock shq_tools
 		float angv = atan(opos.z,opos.y);
 		float dyn_radius = radius+sin(Time*3.0+angh*User0.x)*0.01;
 		dyn_radius += sin(angv*10.0)*0.01;
-		
+
 		return length(pp-ctr)-dyn_radius;
 	}
 
@@ -95,7 +95,7 @@ libblock shq_tools
 	{
 		float fs = 2.0+sin(Time*1.7)*0.1;
 		float fc = 2.0+cos(Time)*0.1;
-		
+
 		vec2 rep = vec2(fs,fc);
 		vec2 q = mod(p.xz,rep)-0.5*rep;
 	    //vec3 q = mod(p,rep)-0.5*rep;
@@ -107,14 +107,14 @@ libblock shq_tools
 	float de( vec3 p )
 	{
 		float d = rep_sphere( p );
-		
+
 		return min( dmax,d );
-		
+
 	}
 
 	vec3 getnormal(in vec3 p) {
 		vec2 e = vec2(0.0, 0.001);
-		
+
 		return normalize(vec3(
 			de(p + e.yxx) - de(p - e.yxx),
 			de(p + e.xyx) - de(p - e.xyx),
@@ -122,7 +122,7 @@ libblock shq_tools
 	}
 
 	vec4 raymarch(vec2 uvctr, vec3 rayOrigin, vec3 rayDirection) {
-	    
+
 		vec4 sky_color = texture( ColorMap, uvctr ); //vec4(rayDirection,1.0);
 
 		float t = 0.0;
@@ -130,9 +130,9 @@ libblock shq_tools
 			vec3 p = rayOrigin + rayDirection * t;
 	        float d = de(p);
 	        if(d < epsilon) {
-				
+
 				vec3 n = getnormal(p);
-							
+
 				vec3 out_color = mix(n,sky_color.xyz,clamp(t*0.03,0.0,1.0));
 				return vec4(out_color,1.0);
 	        }
@@ -144,7 +144,7 @@ libblock shq_tools
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_shq1 
+vertex_shader vs_shq1
 	: iface_vdefault
 {
 	gl_Position = MatMVP*position;
@@ -178,8 +178,7 @@ technique shaderquad
 	{	vertex_shader=vs_shq1;
 		fragment_shader=ps_shq1;
 		state_block=sb_m1;
-	}	
+	}
 }
 
 ///////////////////////////////////////////////////////////////
-

@@ -3,7 +3,7 @@
 #include <regex>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-namespace ork { namespace lev2 {
+namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct token
@@ -23,12 +23,12 @@ enum scan_state
 	ESTA_SQ_STRING,
 	ESTA_WSPACE,
 	ESTA_CONTENT
-	
+
 };
 
-struct GlslFxScanner
+struct Scanner
 {
-	GlslFxScanner();
+	Scanner();
 	/////////////////////////////////////////
 	char to_lower( char ch ) { return ((ch>='A')&&(ch<='Z')) ? (ch-'A'+'a') : ch; }
 	/////////////////////////////////////////
@@ -67,13 +67,13 @@ struct GlslFxScanner
 	scan_state ss;
 };
 
-struct GlslFxScanViewFilter
+struct ScanViewFilter
 {
 	virtual bool Test(const token& t) { return true; }
 };
-struct GlslFxScanViewRegex : public GlslFxScanViewFilter
+struct ScanViewRegex : public ScanViewFilter
 {
-	GlslFxScanViewRegex(const char*, bool inverse);
+	ScanViewRegex(const char*, bool inverse);
 
 	bool Test(const token& t) override;
 
@@ -81,16 +81,16 @@ struct GlslFxScanViewRegex : public GlslFxScanViewFilter
 	bool mInverse;
 };
 
-struct GlslFxScanRange
+struct ScanRange
 {
-	GlslFxScanRange() : mStart(0), mEnd(0) {}
+	ScanRange() : mStart(0), mEnd(0) {}
 	size_t mStart;
 	size_t mEnd;
 };
 
-struct GlslFxScannerView
+struct ScannerView
 {
-	GlslFxScannerView( const GlslFxScanner& s, GlslFxScanViewFilter& f  );
+	ScannerView( const Scanner& s, ScanViewFilter& f  );
 
 	size_t GetNumTokens() const { return mIndices.size(); }
 	const token* GetToken(size_t i) const;
@@ -105,8 +105,8 @@ struct GlslFxScannerView
 	const token* GetBlockDecorator(size_t i) const;
 
 	std::vector<int> mIndices;
-	GlslFxScanViewFilter& mFilter;
-	const GlslFxScanner& mScanner;
+	ScanViewFilter& mFilter;
+	const Scanner& mScanner;
 	std::regex mBlockTerminators;
 
 	size_t mStart; // will point to lev0 { if exists in blockmode
@@ -118,5 +118,5 @@ struct GlslFxScannerView
 
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////
-}} //namespace ork { namespace lev2 {
+} //namespace ork { namespace lev2 {
 /////////////////////////////////////////////////////////////////////////////////////////////////

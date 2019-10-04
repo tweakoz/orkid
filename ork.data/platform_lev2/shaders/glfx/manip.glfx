@@ -8,11 +8,11 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx
+uniform_set ub_vtx
 {
 	uniform mat4        mvp;
 	uniform vec4        modcolor;
-	
+
 }
 vertex_interface iface_vdefault
 	: ub_vtx
@@ -27,7 +27,7 @@ vertex_interface iface_vdefault
 	out vec2 frg_uv;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg
+uniform_set ub_frg
 {
 	uniform vec4 modcolor;
 }
@@ -48,7 +48,7 @@ state_block sb_default
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor 
+vertex_shader vs_vtxcolor
 	: iface_vdefault
 {
 	gl_Position = mvp*position;
@@ -56,17 +56,17 @@ vertex_shader vs_vtxcolor
 	frg_uv = uv0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr 
+fragment_shader ps_modclr
 	: iface_fmt
 {
 	out_clr = modcolor;
 }
-fragment_shader ps_modclrd2 
+fragment_shader ps_modclrd2
 	: iface_fmt
 {
 	out_clr = vec4(modcolor.xyz*0.5,0.5);
 }
-fragment_shader ps_modclrd3 
+fragment_shader ps_modclrd3
 	: iface_fmt
 {
 	out_clr = vec4(modcolor.xyz*0.3,1.0);
@@ -114,7 +114,7 @@ technique std
 	{	vertex_shader=vs_vtxcolor;
 		fragment_shader=ps_modclr;
 		state_block=sb_m1;
-	}	
+	}
 }
 technique pick {
 	fxconfig=fxcfg_default;
@@ -129,7 +129,7 @@ technique pick {
 	{	vertex_shader=vs_vtxcolor;
 		fragment_shader=ps_modclrd2;
 		state_block=sb_m2;
-	}	
+	}
 	pass p2
 	{	vertex_shader=vs_vtxcolor;
 		fragment_shader=ps_modclrd3;

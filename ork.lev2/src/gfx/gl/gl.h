@@ -163,6 +163,26 @@ private:
                                int ivbase           = 0,
                                int ivcount          = 0) final;
 
+  //////////////////////////////////////////////
+  // nvidia mesh shaders
+  //////////////////////////////////////////////
+
+  #if ! defined(__APPLE__)
+  void DrawMeshTasksNV(uint32_t first, uint32_t count) final;
+
+  void DrawMeshTasksIndirectNV(int32_t* indirect) final;
+
+  void MultiDrawMeshTasksIndirectNV(int32_t* indirect,
+                                    uint32_t drawcount,
+                                    uint32_t stride) final;
+
+  void MultiDrawMeshTasksIndirectCountNV( int32_t* indirect,
+                                          int32_t* drawcount,
+                                          uint32_t maxdrawcount,
+                                          uint32_t stride) final;
+  #endif
+  //////////////////////////////////////////////
+
   GfxTargetGL& mTargetGL;
 
   uint32_t mLastComponentMask;
@@ -387,7 +407,7 @@ public:
   ///////////////////////////////////////////////////////////////////////////
 
   GlImiInterface mImI;
-  GlslFxInterface mFxI;
+  glslfx::Interface mFxI;
   GlRasterStateInterface mRsI;
   GlMatrixStackInterface mMtxI;
   GlGeometryBufferInterface mGbI;

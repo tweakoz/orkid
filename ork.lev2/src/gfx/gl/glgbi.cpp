@@ -519,10 +519,10 @@ struct vtx_config
 	const GLenum      		mType;
 	const bool        		mNormalize;
 	const int         		mOffset;
-	const GlslFxPass*		mPass;
-	GlslFxAttribute* 		mAttr;
+	const glslfx::Pass*		mPass;
+	glslfx::Attribute* 		mAttr;
 
-	uint32_t bind_to_attr(const GlslFxPass* pfxpass, int istride)
+	uint32_t bind_to_attr(const glslfx::Pass* pfxpass, int istride)
 	{
 		uint32_t rval = 0;
 		if( mPass != pfxpass )
@@ -581,7 +581,7 @@ static bool EnableVtxBufComponents(const VertexBufferBase& VBuf,const svarp_t pr
 	//printf( "EnableVtxBufComponents\n");
 	bool rval = false;
 	//////////////////////////////////////////////
-	auto pfxpass = priv_data.Get<const GlslFxPass*>();
+	auto pfxpass = priv_data.Get<const glslfx::Pass*>();
 	//////////////////////////////////////////////
 	#if defined(WIN32)
 	const GLenum kGLVTXCOLS = GL_BGRA;
@@ -712,10 +712,10 @@ bool GlGeometryBufferInterface::BindVertexStreamSource( const VertexBufferBase& 
 {
 	svarp_t evb_priv;
 	////////////////////////////////////////////////////////////////////
-	GlslFxInterface* pFXI = static_cast<GlslFxInterface*>(mTargetGL.FXI());
-	const GlslFxPass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
+	glslfx::Interface* pFXI = static_cast<glslfx::Interface*>(mTargetGL.FXI());
+	const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
 	OrkAssert( pfxpass!=nullptr );
-	evb_priv.Set<const GlslFxPass*>(pfxpass);
+	evb_priv.Set<const glslfx::Pass*>(pfxpass);
 	////////////////////////////////////////////////////////////////////
 	// setup VBO or DL
 	GLVtxBufHandle* hBuf = reinterpret_cast<GLVtxBufHandle*>(VBuf.GetHandle());
@@ -753,10 +753,10 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 
 	svarp_t evb_priv;
 
-	GlslFxInterface* pFXI = static_cast<GlslFxInterface*>(mTargetGL.FXI());
-	const GlslFxPass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
+	glslfx::Interface* pFXI = static_cast<glslfx::Interface*>(mTargetGL.FXI());
+	const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
 	OrkAssert( pfxpass!=nullptr );
-	evb_priv.Set<const GlslFxPass*>(pfxpass);
+	evb_priv.Set<const glslfx::Pass*>(pfxpass);
 
 	////////////////////////////////////////////////////////////////////
 
@@ -1142,6 +1142,30 @@ void GlGeometryBufferInterface::ReleaseIB( IndexBufferBase& IdxBuf )
 		delete plat_handle;
 
 	IdxBuf.SetHandle(0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void GlGeometryBufferInterface::DrawMeshTasksNV(uint32_t first, uint32_t count) {
+  glDrawMeshTasksNV((GLuint)first,(GLuint)count);
+}
+
+void GlGeometryBufferInterface::DrawMeshTasksIndirectNV(int32_t* indirect) {
+  glDrawMeshTasksIndirectNV((GLintptr)indirect);
+}
+
+void GlGeometryBufferInterface::MultiDrawMeshTasksIndirectNV(int32_t* indirect,
+                                  uint32_t drawcount,
+                                  uint32_t stride) {
+  glMultiDrawMeshTasksIndirectNV((GLintptr)indirect,(GLsizei)drawcount,(GLsizei)stride);
+}
+
+void GlGeometryBufferInterface::MultiDrawMeshTasksIndirectCountNV( int32_t* indirect,
+                                        int32_t* drawcount,
+                                        uint32_t maxdrawcount,
+                                        uint32_t stride) {
+  glMultiDrawMeshTasksIndirectCountNV((GLintptr)indirect,(GLintptr)drawcount,
+                                      (GLsizei)maxdrawcount,(GLsizei)stride);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

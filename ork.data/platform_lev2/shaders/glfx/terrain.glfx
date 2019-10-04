@@ -8,7 +8,7 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ublock_vtx {
+uniform_set ublock_vtx {
   uniform mat4 MatMVPL;
   uniform mat4 MatMVPC;
   uniform mat4 MatMVPR;
@@ -18,7 +18,7 @@ uniform_block ublock_vtx {
   uniform sampler2D HFAMap; // technically a heightmap
   uniform sampler2D HFBMap; // technically a heightmap
 }
-uniform_block ublock_frg {
+uniform_set ublock_frg {
   uniform vec4 modcolor;
   uniform sampler2D EnvMap;
   uniform float testxxx;

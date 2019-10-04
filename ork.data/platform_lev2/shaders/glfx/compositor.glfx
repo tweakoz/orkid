@@ -8,7 +8,7 @@ fxconfig fxcfg_default
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx
+uniform_set ub_vtx
 {
 	uniform mat4 MatMVP;
 }
@@ -32,7 +32,7 @@ fragment_interface iface_fdefault
 	out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-uniform_block ub_frg
+uniform_set ub_frg
 {
 	uniform vec4 BiasA;
 	uniform vec4 BiasB;
@@ -114,7 +114,7 @@ fragment_shader ps_aplusbplusc : iface_fmt
 	vec4 texc = texture( MapC, frg_uv );
 	out_clr = (BiasA+texa*LevelA)+(BiasB+texb*LevelB)+(BiasC+texc*LevelC);
 }
-fragment_shader ps_boveraplusc 
+fragment_shader ps_boveraplusc
 	: iface_fmt
 	: comp_tools
 {
@@ -124,7 +124,7 @@ fragment_shader ps_boveraplusc
 	float fl = max4(texb);
 	out_clr = mix(texa,texb,fl)+texc;
 }
-fragment_shader ps_alerpbwithc 
+fragment_shader ps_alerpbwithc
 	: iface_fmt
 	: comp_tools
 {

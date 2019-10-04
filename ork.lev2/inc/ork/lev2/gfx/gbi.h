@@ -52,6 +52,25 @@ public:
   void DrawPrimitiveEML(const VtxWriterBase& VW, EPrimitiveType eType, int icount = 0);
 
   //////////////////////////////////////////////
+  // nvidia mesh shaders
+  //////////////////////////////////////////////
+
+  #if ! defined(__APPLE__)
+  virtual void DrawMeshTasksNV(uint32_t first, uint32_t count) {}
+
+  virtual void DrawMeshTasksIndirectNV(int32_t* indirect) {}
+
+  virtual void MultiDrawMeshTasksIndirectNV(int32_t* indirect,
+                                            uint32_t drawcount,
+                                            uint32_t stride) {}
+
+  virtual void MultiDrawMeshTasksIndirectCountNV( int32_t* indirect,
+                                                  int32_t* drawcount,
+                                                  uint32_t maxdrawcount,
+                                                  uint32_t stride) {}
+  #endif
+
+  //////////////////////////////////////////////
 
   int GetNumTrianglesRendered(void) { return miTrianglesRendered; }
 
