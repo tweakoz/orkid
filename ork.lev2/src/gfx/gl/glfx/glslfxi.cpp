@@ -103,22 +103,22 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Container::AddConfig(Config* pcfg) { mConfigs[pcfg->mName] = pcfg; }
+void Container::addConfig(Config* pcfg) { mConfigs[pcfg->mName] = pcfg; }
 void Container::addUniformBlock(UniformBlock* pif) { _uniformBlocks[pif->_name] = pif; }
 void Container::addUniformSet(UniformSet* pif) { _uniformSets[pif->_name] = pif; }
-void Container::AddVertexInterface(StreamInterface* pif) { mVertexInterfaces[pif->mName] = pif; }
-void Container::AddTessCtrlInterface(StreamInterface* pif) { mTessCtrlInterfaces[pif->mName] = pif; }
-void Container::AddTessEvalInterface(StreamInterface* pif) { mTessEvalInterfaces[pif->mName] = pif; }
-void Container::AddGeometryInterface(StreamInterface* pif) { mGeometryInterfaces[pif->mName] = pif; }
-void Container::AddFragmentInterface(StreamInterface* pif) { mFragmentInterfaces[pif->mName] = pif; }
-void Container::AddStateBlock(StateBlock* psb) { mStateBlocks[psb->mName] = psb; }
-void Container::AddLibBlock(LibBlock* plb) { mLibBlocks[plb->mName] = plb; }
-void Container::AddTechnique(Technique* ptek) { mTechniqueMap[ptek->mName] = ptek; }
-void Container::AddVertexProgram(ShaderVtx* psha) { mVertexPrograms[psha->mName] = psha; }
-void Container::AddTessCtrlProgram(ShaderTsC* psha) { mTessCtrlPrograms[psha->mName] = psha; }
-void Container::AddTessEvalProgram(ShaderTsE* psha) { mTessEvalPrograms[psha->mName] = psha; }
-void Container::AddGeometryProgram(ShaderGeo* psha) { mGeometryPrograms[psha->mName] = psha; }
-void Container::AddFragmentProgram(ShaderFrg* psha) { mFragmentPrograms[psha->mName] = psha; }
+void Container::addVertexInterface(StreamInterface* pif) { _vertexInterfaces[pif->mName] = pif; }
+void Container::addTessCtrlInterface(StreamInterface* pif) { _tessCtrlInterfaces[pif->mName] = pif; }
+void Container::addTessEvalInterface(StreamInterface* pif) { _tessEvalInterfaces[pif->mName] = pif; }
+void Container::addGeometryInterface(StreamInterface* pif) { _geometryInterfaces[pif->mName] = pif; }
+void Container::addFragmentInterface(StreamInterface* pif) { _fragmentInterfaces[pif->mName] = pif; }
+void Container::addStateBlock(StateBlock* psb) { mStateBlocks[psb->mName] = psb; }
+void Container::addLibBlock(LibBlock* plb) { mLibBlocks[plb->mName] = plb; }
+void Container::addTechnique(Technique* ptek) { mTechniqueMap[ptek->mName] = ptek; }
+void Container::addVertexShader(ShaderVtx* psha) { _vertexShaders[psha->mName] = psha; }
+void Container::addTessCtrlShader(ShaderTsC* psha) { _tessCtrlShaders[psha->mName] = psha; }
+void Container::addTessEvalShader(ShaderTsE* psha) { _tessEvalShaders[psha->mName] = psha; }
+void Container::addGeometryShader(ShaderGeo* psha) { _geometryShaders[psha->mName] = psha; }
+void Container::addFragmentShader(ShaderFrg* psha) { _fragmentShaders[psha->mName] = psha; }
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -126,26 +126,27 @@ StateBlock* Container::GetStateBlock(const std::string& name) const {
   const auto& it = mStateBlocks.find(name);
   return (it == mStateBlocks.end()) ? nullptr : it->second;
 }
-ShaderVtx* Container::GetVertexProgram(const std::string& name) const {
-  const auto& it = mVertexPrograms.find(name);
-  return (it == mVertexPrograms.end()) ? nullptr : it->second;
+ShaderVtx* Container::vertexShader(const std::string& name) const {
+  const auto& it = _vertexShaders.find(name);
+  return (it == _vertexShaders.end()) ? nullptr : it->second;
 }
-ShaderTsC* Container::GetTessCtrlProgram(const std::string& name) const {
-  const auto& it = mTessCtrlPrograms.find(name);
-  return (it == mTessCtrlPrograms.end()) ? nullptr : it->second;
+ShaderTsC* Container::tessCtrlShader(const std::string& name) const {
+  const auto& it = _tessCtrlShaders.find(name);
+  return (it == _tessCtrlShaders.end()) ? nullptr : it->second;
 }
-ShaderTsE* Container::GetTessEvalProgram(const std::string& name) const {
-  const auto& it = mTessEvalPrograms.find(name);
-  return (it == mTessEvalPrograms.end()) ? nullptr : it->second;
+ShaderTsE* Container::tessEvalShader(const std::string& name) const {
+  const auto& it = _tessEvalShaders.find(name);
+  return (it == _tessEvalShaders.end()) ? nullptr : it->second;
 }
-ShaderGeo* Container::GetGeometryProgram(const std::string& name) const {
-  const auto& it = mGeometryPrograms.find(name);
-  return (it == mGeometryPrograms.end()) ? nullptr : it->second;
+ShaderGeo* Container::geometryShader(const std::string& name) const {
+  const auto& it = _geometryShaders.find(name);
+  return (it == _geometryShaders.end()) ? nullptr : it->second;
 }
-ShaderFrg* Container::GetFragmentProgram(const std::string& name) const {
-  const auto& it = mFragmentPrograms.find(name);
-  return (it == mFragmentPrograms.end()) ? nullptr : it->second;
+ShaderFrg* Container::fragmentShader(const std::string& name) const {
+  const auto& it = _fragmentShaders.find(name);
+  return (it == _fragmentShaders.end()) ? nullptr : it->second;
 }
+
 UniformBlock* Container::uniformBlock(const std::string& name) const {
   const auto& it = _uniformBlocks.find(name);
   return (it == _uniformBlocks.end()) ? nullptr : it->second;
@@ -154,30 +155,51 @@ UniformSet* Container::uniformSet(const std::string& name) const {
   const auto& it = _uniformSets.find(name);
   return (it == _uniformSets.end()) ? nullptr : it->second;
 }
-StreamInterface* Container::GetVertexInterface(const std::string& name) const {
-  const auto& it = mVertexInterfaces.find(name);
-  return (it == mVertexInterfaces.end()) ? nullptr : it->second;
+StreamInterface* Container::vertexInterface(const std::string& name) const {
+  const auto& it = _vertexInterfaces.find(name);
+  return (it == _vertexInterfaces.end()) ? nullptr : it->second;
 }
-StreamInterface* Container::GetTessCtrlInterface(const std::string& name) const {
-  const auto& it = mTessCtrlInterfaces.find(name);
-  return (it == mTessCtrlInterfaces.end()) ? nullptr : it->second;
+StreamInterface* Container::tessCtrlInterface(const std::string& name) const {
+  const auto& it = _tessCtrlInterfaces.find(name);
+  return (it == _tessCtrlInterfaces.end()) ? nullptr : it->second;
 }
-StreamInterface* Container::GetTessEvalInterface(const std::string& name) const {
-  const auto& it = mTessEvalInterfaces.find(name);
-  return (it == mTessEvalInterfaces.end()) ? nullptr : it->second;
+StreamInterface* Container::tessEvalInterface(const std::string& name) const {
+  const auto& it = _tessEvalInterfaces.find(name);
+  return (it == _tessEvalInterfaces.end()) ? nullptr : it->second;
 }
-StreamInterface* Container::GetGeometryInterface(const std::string& name) const {
-  const auto& it = mGeometryInterfaces.find(name);
-  return (it == mGeometryInterfaces.end()) ? nullptr : it->second;
+StreamInterface* Container::geometryInterface(const std::string& name) const {
+  const auto& it = _geometryInterfaces.find(name);
+  return (it == _geometryInterfaces.end()) ? nullptr : it->second;
 }
-StreamInterface* Container::GetFragmentInterface(const std::string& name) const {
-  const auto& it = mFragmentInterfaces.find(name);
-  return (it == mFragmentInterfaces.end()) ? nullptr : it->second;
+StreamInterface* Container::fragmentInterface(const std::string& name) const {
+  const auto& it = _fragmentInterfaces.find(name);
+  return (it == _fragmentInterfaces.end()) ? nullptr : it->second;
 }
 Uniform* Container::GetUniform(const std::string& name) const {
   const auto& it = mUniforms.find(name);
   return (it == mUniforms.end()) ? nullptr : it->second;
 }
+
+#if ! defined(__APPLE__)
+void Container::addNvTaskShader(ShaderNvTask* psha) { _nvTaskShaders[psha->mName] = psha; }
+void Container::addNvMeshShader(ShaderNvMesh* psha) { _nvMeshShaders[psha->mName] = psha; }
+ShaderNvTask* Container::nvTaskShader(const std::string& name) const {
+  const auto& it = _nvTaskShaders.find(name);
+  return (it == _nvTaskShaders.end()) ? nullptr : it->second;
+}
+ShaderNvMesh* Container::nvMeshShader(const std::string& name) const {
+  const auto& it = _nvMeshShaders.find(name);
+  return (it == _nvMeshShaders.end()) ? nullptr : it->second;
+}
+StreamInterface* Container::nvTaskInterface(const std::string& name) const {
+  const auto& it = _nvTaskInterfaces.find(name);
+  return (it == _nvTaskInterfaces.end()) ? nullptr : it->second;
+}
+StreamInterface* Container::nvMeshInterface(const std::string& name) const {
+  const auto& it = _nvMeshInterfaces.find(name);
+  return (it == _nvMeshInterfaces.end()) ? nullptr : it->second;
+}
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -204,7 +226,7 @@ Container::Container(const std::string& nam)
     , mShaderCompileFailed(false) {
   StateBlock* pdefsb = new StateBlock;
   pdefsb->mName      = "default";
-  this->AddStateBlock(pdefsb);
+  this->addStateBlock(pdefsb);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -353,11 +375,14 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
 
   GL_ERRORCHECK();
   if (0 == container->mActivePass->mProgramObjectId) {
-    Shader* pvtxshader = container->mActivePass->mVertexProgram;
-    Shader* ptecshader = container->mActivePass->mTessCtrlProgram;
-    Shader* pteeshader = container->mActivePass->mTessEvalProgram;
-    Shader* pgeoshader = container->mActivePass->mGeometryProgram;
-    Shader* pfrgshader = container->mActivePass->mFragmentProgram;
+
+    auto& pipeVTG = container->mActivePass->_primpipe.Get<PrimPipelineVTG>();
+
+    Shader* pvtxshader = pipeVTG._vertexShader;
+    Shader* ptecshader = pipeVTG._tessCtrlShader;
+    Shader* pteeshader = pipeVTG._tessEvalShader;
+    Shader* pgeoshader = pipeVTG._geometryShader;
+    Shader* pfrgshader = pipeVTG._fragmentShader;
 
     OrkAssert(pvtxshader != nullptr);
     OrkAssert(pfrgshader != nullptr);

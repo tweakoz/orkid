@@ -294,16 +294,16 @@ struct GlSlFxParser {
       if (it_ub != mpContainer->_uniformSets.end()) {
         psi->_uniformSets.insert(it_ub->second);
       } else if (is_vtx) {
-        auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
-        assert(it_vi != mpContainer->mVertexInterfaces.end());
+        auto it_vi = mpContainer->_vertexInterfaces.find(ptok->text);
+        assert(it_vi != mpContainer->_vertexInterfaces.end());
         psi->Inherit(*it_vi->second);
       } else if (is_geo) {
-        auto it_fig = mpContainer->mGeometryInterfaces.find(ptok->text);
-        auto it_fiv = mpContainer->mVertexInterfaces.find(ptok->text);
-        auto it_fie = mpContainer->mTessEvalInterfaces.find(ptok->text);
-        bool is_geo = (it_fig != mpContainer->mGeometryInterfaces.end());
-        bool is_vtx = (it_fiv != mpContainer->mVertexInterfaces.end());
-        bool is_tee = (it_fie != mpContainer->mTessEvalInterfaces.end());
+        auto it_fig = mpContainer->_geometryInterfaces.find(ptok->text);
+        auto it_fiv = mpContainer->_vertexInterfaces.find(ptok->text);
+        auto it_fie = mpContainer->_tessEvalInterfaces.find(ptok->text);
+        bool is_geo = (it_fig != mpContainer->_geometryInterfaces.end());
+        bool is_vtx = (it_fiv != mpContainer->_vertexInterfaces.end());
+        bool is_tee = (it_fie != mpContainer->_tessEvalInterfaces.end());
         assert(is_geo || is_vtx || is_tee);
 
         auto par = is_geo ? it_fig->second
@@ -318,8 +318,8 @@ struct GlSlFxParser {
 
         psi->Inherit(*par);
       } else {
-        auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
-        assert(it_fi != mpContainer->mFragmentInterfaces.end());
+        auto it_fi = mpContainer->_fragmentInterfaces.find(ptok->text);
+        assert(it_fi != mpContainer->_fragmentInterfaces.end());
         psi->Inherit(*it_fi->second);
       }
     }
@@ -463,7 +463,7 @@ struct GlSlFxParser {
 
     StateBlock *psb = new StateBlock;
     psb->mName = v.GetBlockName();
-    mpContainer->AddStateBlock(psb);
+    mpContainer->addStateBlock(psb);
     //////////////////////
 
     auto &apptors = psb->mApplicators;
@@ -499,15 +499,15 @@ struct GlSlFxParser {
       } else if (vt_tok->text == "CullTest") {
         const std::string &mode = v.GetToken(i + 2)->text;
         if (mode == "OFF")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetCullTest(lev2::ECULLTEST_OFF);
           });
         else if (mode == "PASS_FRONT")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_FRONT);
           });
         else if (mode == "PASS_BACK")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_BACK);
           });
 
@@ -515,48 +515,48 @@ struct GlSlFxParser {
       } else if (vt_tok->text == "DepthMask") {
         const std::string &mode = v.GetToken(i + 2)->text;
         bool bena = (mode == "true");
-        psb->AddStateFn([=](GfxTarget *t) { t->RSI()->SetZWriteMask(bena); });
+        psb->addStateFn([=](GfxTarget *t) { t->RSI()->SetZWriteMask(bena); });
         // printf( "DepthMask<%d>\n", int(bena) );
         i += 4;
       } else if (vt_tok->text == "DepthTest") {
         const std::string &mode = v.GetToken(i + 2)->text;
         if (mode == "OFF")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetDepthTest(lev2::EDEPTHTEST_OFF);
           });
         else if (mode == "LESS")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LESS);
           });
         else if (mode == "LEQUALS")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LEQUALS);
           });
         else if (mode == "GREATER")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GREATER);
           });
         else if (mode == "GEQUALS")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GEQUALS);
           });
         else if (mode == "EQUALS")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetDepthTest(lev2::EDEPTHTEST_EQUALS);
           });
         i += 4;
       } else if (vt_tok->text == "BlendMode") {
         const std::string &mode = v.GetToken(i + 2)->text;
         if (mode == "ADDITIVE")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetBlending(lev2::EBLENDING_ADDITIVE);
           });
         else if (mode == "ALPHA_ADDITIVE")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetBlending(lev2::EBLENDING_ALPHA_ADDITIVE);
           });
         else if (mode == "ALPHA")
-          psb->AddStateFn([=](GfxTarget *t) {
+          psb->addStateFn([=](GfxTarget *t) {
             t->RSI()->SetBlending(lev2::EBLENDING_ALPHA);
           });
         i += 4;
@@ -619,39 +619,39 @@ struct GlSlFxParser {
         int block_deco_index = v.mBlockDecorators[ideco];
 
         auto it_lib = mpContainer->mLibBlocks.find(ptok->text);
-        auto it_vi = mpContainer->mVertexInterfaces.find(ptok->text);
-        auto it_tc = mpContainer->mTessCtrlInterfaces.find(ptok->text);
-        auto it_te = mpContainer->mTessEvalInterfaces.find(ptok->text);
-        auto it_gi = mpContainer->mGeometryInterfaces.find(ptok->text);
-        auto it_fi = mpContainer->mFragmentInterfaces.find(ptok->text);
+        auto it_vi = mpContainer->_vertexInterfaces.find(ptok->text);
+        auto it_tc = mpContainer->_tessCtrlInterfaces.find(ptok->text);
+        auto it_te = mpContainer->_tessEvalInterfaces.find(ptok->text);
+        auto it_gi = mpContainer->_geometryInterfaces.find(ptok->text);
+        auto it_fi = mpContainer->_fragmentInterfaces.find(ptok->text);
 
         if (it_lib != mpContainer->mLibBlocks.end()) {
           auto plibblock = it_lib->second;
           lib_blocks.push_back(plibblock);
           // printf( "LIBBLOCK <%s>\n", ptok->text.c_str() );
         } else if (is_vertex_shader &&
-                   it_vi != (mpContainer->mVertexInterfaces.end())) {
-          iface = mpContainer->GetVertexInterface(ptok->text);
+                   it_vi != (mpContainer->_vertexInterfaces.end())) {
+          iface = mpContainer->vertexInterface(ptok->text);
           pshader->mpInterface = iface;
           // printf( "VINF <%s>\n", ptok->text.c_str() );
         } else if (is_tessctrl_shader &&
-                   (it_tc != mpContainer->mTessCtrlInterfaces.end())) {
-          iface = mpContainer->GetTessCtrlInterface(ptok->text);
+                   (it_tc != mpContainer->_tessCtrlInterfaces.end())) {
+          iface = mpContainer->tessCtrlInterface(ptok->text);
           pshader->mpInterface = iface;
           // printf( "TCINF <%s>\n", ptok->text.c_str() );
         } else if (is_tesseval_shader &&
-                   (it_te != mpContainer->mTessEvalInterfaces.end())) {
-          iface = mpContainer->GetTessEvalInterface(ptok->text);
+                   (it_te != mpContainer->_tessEvalInterfaces.end())) {
+          iface = mpContainer->tessEvalInterface(ptok->text);
           pshader->mpInterface = iface;
           // printf( "TEINF <%s>\n", ptok->text.c_str() );
         } else if (is_geometry_shader &&
-                   (it_gi != mpContainer->mGeometryInterfaces.end())) {
-          iface = mpContainer->GetGeometryInterface(ptok->text);
+                   (it_gi != mpContainer->_geometryInterfaces.end())) {
+          iface = mpContainer->geometryInterface(ptok->text);
           pshader->mpInterface = iface;
           // printf( "GINF <%s>\n", ptok->text.c_str() );
         } else if (is_fragment_shader &&
-                   (it_fi != mpContainer->mFragmentInterfaces.end())) {
-          iface = mpContainer->GetFragmentInterface(ptok->text);
+                   (it_fi != mpContainer->_fragmentInterfaces.end())) {
+          iface = mpContainer->fragmentInterface(ptok->text);
           pshader->mpInterface = iface;
           // printf( "FINF <%s>\n", ptok->text.c_str() );
         } else if (ptok->text == "extension") {
@@ -874,6 +874,18 @@ struct GlSlFxParser {
     itokidx = ParseFxShaderCommon(pshader);
     return pshader;
   }
+#if ! defined(__APPLE__)
+  ShaderNvTask *ParseFxNvTaskShader() {
+    auto pshader = new ShaderNvTask();
+    itokidx = ParseFxShaderCommon(pshader);
+    return pshader;
+  }
+  ShaderNvMesh *ParseFxNvMeshShader() {
+    auto pshader = new ShaderNvMesh();
+    itokidx = ParseFxShaderCommon(pshader);
+    return pshader;
+  }
+#endif
   ///////////////////////////////////////////////////////////
   Technique *ParseFxTechnique() {
     ScanViewRegex r("(\n)", true);
@@ -938,35 +950,58 @@ struct GlSlFxParser {
 
       if (vt_tok->text == "vertex_shader") {
         std::string vsnam = v.GetToken(i + 2)->text;
-        auto pshader = mpContainer->GetVertexProgram(vsnam);
+        auto pshader = mpContainer->vertexShader(vsnam);
         OrkAssert(pshader != nullptr);
-        ppass->mVertexProgram = pshader;
+        auto& primvtg = ppass->_primpipe.Make<PrimPipelineVTG>();
+        primvtg._vertexShader = pshader;
         i += 4;
       } else if (vt_tok->text == "tessctrl_shader") {
         std::string fsnam = v.GetToken(i + 2)->text;
-        auto pshader = mpContainer->GetTessCtrlProgram(fsnam);
+        auto pshader = mpContainer->tessCtrlShader(fsnam);
         OrkAssert(pshader != nullptr);
-        ppass->mTessCtrlProgram = pshader;
+        auto& primvtg = ppass->_primpipe.Get<PrimPipelineVTG>();
+        primvtg._tessCtrlShader = pshader;
         i += 4;
       } else if (vt_tok->text == "tesseval_shader") {
         std::string fsnam = v.GetToken(i + 2)->text;
-        auto pshader = mpContainer->GetTessEvalProgram(fsnam);
+        auto pshader = mpContainer->tessEvalShader(fsnam);
         OrkAssert(pshader != nullptr);
-        ppass->mTessEvalProgram = pshader;
+        auto& primvtg = ppass->_primpipe.Get<PrimPipelineVTG>();
+        primvtg._tessEvalShader = pshader;
         i += 4;
       } else if (vt_tok->text == "geometry_shader") {
         std::string fsnam = v.GetToken(i + 2)->text;
-        auto pshader = mpContainer->GetGeometryProgram(fsnam);
+        auto pshader = mpContainer->geometryShader(fsnam);
         OrkAssert(pshader != nullptr);
-        ppass->mGeometryProgram = pshader;
+        auto& primvtg = ppass->_primpipe.Get<PrimPipelineVTG>();
+        primvtg._geometryShader = pshader;
         i += 4;
       } else if (vt_tok->text == "fragment_shader") {
         std::string fsnam = v.GetToken(i + 2)->text;
-        auto pshader = mpContainer->GetFragmentProgram(fsnam);
+        auto pshader = mpContainer->fragmentShader(fsnam);
         OrkAssert(pshader != nullptr);
-        ppass->mFragmentProgram = pshader;
+        auto& primvtg = ppass->_primpipe.Get<PrimPipelineVTG>();
+        primvtg._fragmentShader = pshader;
         i += 4;
-      } else if (vt_tok->text == "state_block") {
+      }
+  #if ! defined(__APPLE__)
+      else if (vt_tok->text == "nvtask_shader") {
+        std::string fsnam = v.GetToken(i + 2)->text;
+        auto pshader = mpContainer->nvTaskShader(fsnam);
+        OrkAssert(pshader != nullptr);
+        auto& primnvmt = ppass->_primpipe.Get<PrimPipelineNVMT>();
+        primnvmt._nvTaskShader = pshader;
+        i += 4;
+      } else if (vt_tok->text == "nvmesh_shader") {
+        std::string fsnam = v.GetToken(i + 2)->text;
+        auto pshader = mpContainer->nvMeshShader(fsnam);
+        OrkAssert(pshader != nullptr);
+        auto& primnvmt = ppass->_primpipe.Get<PrimPipelineNVMT>();
+        primnvmt._nvMeshShader = pshader;
+        i += 4;
+}
+#endif
+        else if (vt_tok->text == "state_block") {
         std::string sbnam = v.GetToken(i + 2)->text;
         StateBlock *psb = mpContainer->GetStateBlock(sbnam);
         OrkAssert(psb != nullptr);
@@ -980,7 +1015,7 @@ struct GlSlFxParser {
     }
     /////////////////////////////////////////////
     /////////////////////////////////////////////
-    ptek->AddPass(ppass);
+    ptek->addPass(ppass);
     /////////////////////////////////////////////
     return v.GetBlockEnd() + 1;
   }
@@ -1013,50 +1048,60 @@ struct GlSlFxParser {
         itokidx++;
       } else if (tok.text == "fxconfig") {
         Config *pconfig = ParseFxConfig();
-        mpContainer->AddConfig(pconfig);
+        mpContainer->addConfig(pconfig);
       } else if (tok.text == "libblock") {
         auto lb = ParseLibraryBlock();
-        mpContainer->AddLibBlock(lb);
+        mpContainer->addLibBlock(lb);
       } else if (tok.text == "uniform_set") {
         auto pif = parseUniformSet();
         mpContainer->addUniformSet(pif);
       } else if (tok.text == "vertex_interface") {
         StreamInterface *pif = ParseFxInterface(GL_VERTEX_SHADER);
-        mpContainer->AddVertexInterface(pif);
+        mpContainer->addVertexInterface(pif);
       } else if (tok.text == "tessctrl_interface") {
         StreamInterface *pif = ParseFxInterface(GL_TESS_CONTROL_SHADER);
-        mpContainer->AddTessCtrlInterface(pif);
+        mpContainer->addTessCtrlInterface(pif);
       } else if (tok.text == "tesseval_interface") {
         StreamInterface *pif =
             ParseFxInterface(GL_TESS_EVALUATION_SHADER);
-        mpContainer->AddTessEvalInterface(pif);
+        mpContainer->addTessEvalInterface(pif);
       } else if (tok.text == "geometry_interface") {
         StreamInterface *pif = ParseFxInterface(GL_GEOMETRY_SHADER);
-        mpContainer->AddGeometryInterface(pif);
+        mpContainer->addGeometryInterface(pif);
       } else if (tok.text == "fragment_interface") {
         StreamInterface *pif = ParseFxInterface(GL_FRAGMENT_SHADER);
-        mpContainer->AddFragmentInterface(pif);
+        mpContainer->addFragmentInterface(pif);
       } else if (tok.text == "state_block") {
         StateBlock *psblock = ParseFxStateBlock();
-        mpContainer->AddStateBlock(psblock);
+        mpContainer->addStateBlock(psblock);
       } else if (tok.text == "vertex_shader") {
         ShaderVtx *pshader = ParseFxVertexShader();
-        mpContainer->AddVertexProgram(pshader);
+        mpContainer->addVertexShader(pshader);
       } else if (tok.text == "tessctrl_shader") {
         ShaderTsC *pshader = ParseFxTessCtrlShader();
-        mpContainer->AddTessCtrlProgram(pshader);
+        mpContainer->addTessCtrlShader(pshader);
       } else if (tok.text == "tesseval_shader") {
         ShaderTsE *pshader = ParseFxTessEvalShader();
-        mpContainer->AddTessEvalProgram(pshader);
+        mpContainer->addTessEvalShader(pshader);
       } else if (tok.text == "geometry_shader") {
         ShaderGeo *pshader = ParseFxGeometryShader();
-        mpContainer->AddGeometryProgram(pshader);
+        mpContainer->addGeometryShader(pshader);
       } else if (tok.text == "fragment_shader") {
         ShaderFrg *pshader = ParseFxFragmentShader();
-        mpContainer->AddFragmentProgram(pshader);
-      } else if (tok.text == "technique") {
+        mpContainer->addFragmentShader(pshader);
+      }
+  #if ! defined (__APPLE__)
+      else if (tok.text == "nvtask_shader") {
+        ShaderNvTask *pshader = ParseFxNvTaskShader();
+        mpContainer->addNvTaskShader(pshader);
+      } else if (tok.text == "nvmesh_shader") {
+        ShaderNvMesh *pshader = ParseFxNvMeshShader();
+        mpContainer->addNvMeshShader(pshader);
+      }
+#endif
+else if (tok.text == "technique") {
         Technique *ptek = ParseFxTechnique();
-        mpContainer->AddTechnique(ptek);
+        mpContainer->addTechnique(ptek);
       } else {
         printf("Unknown Token<%s>\n", tok.text.c_str());
         OrkAssert(false);

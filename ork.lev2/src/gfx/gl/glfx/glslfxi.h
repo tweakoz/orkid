@@ -140,7 +140,7 @@ struct StateBlock {
   // SRasterState	mState;
   std::vector<state_applicator_t> mApplicators;
 
-  void AddStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
+  void addStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
 };
 
 struct Shader {
@@ -187,6 +187,18 @@ struct ShaderTsE : Shader {
   ShaderTsE(const std::string& nam = "")
       : Shader(nam, GL_TESS_EVALUATION_SHADER) {}
 };
+#if ! defined(__APPLE__)
+
+struct ShaderNvMesh : Shader {
+  ShaderNvMesh(const std::string& nam = "")
+      : Shader(nam, GL_MESH_SHADER_NV) {}
+};
+struct ShaderNvTask : Shader {
+  ShaderNvTask(const std::string& nam = "")
+      : Shader(nam, GL_TASK_SHADER_NV) {}
+};
+
+#endif
 
 struct LibBlock {
   LibBlock(const Scanner& s);
@@ -196,17 +208,27 @@ struct LibBlock {
   ScannerView* mView;
 };
 
+struct PrimPipelineVTG {
+  ShaderVtx* _vertexShader = nullptr;
+  ShaderTsC* _tessCtrlShader = nullptr;
+  ShaderTsE* _tessEvalShader = nullptr;
+  ShaderGeo* _geometryShader = nullptr;
+  ShaderFrg* _fragmentShader = nullptr;
+};
+#if ! defined(__APPLE__)
+
+struct PrimPipelineNVMT {
+  ShaderNvTask* _nvTaskShader = nullptr;
+  ShaderNvMesh* _nvMeshShader = nullptr;
+};
+#endif
 struct Pass {
   typedef std::map<std::string, UniformInstance*> uni_map_t;
   typedef std::map<std::string, Attribute*> attr_map_t;
 
   static const int kmaxattrID = 16;
+  svar64_t _primpipe;
   std::string mName;
-  ShaderVtx* mVertexProgram;
-  ShaderTsC* mTessCtrlProgram;
-  ShaderTsE* mTessEvalProgram;
-  ShaderGeo* mGeometryProgram;
-  ShaderFrg* mFragmentProgram;
   StateBlock* mStateBlock;
   GLuint mProgramObjectId;
   uni_map_t mUniformInstances;
@@ -216,11 +238,6 @@ struct Pass {
 
   Pass(const std::string& name)
       : mName(name)
-      , mVertexProgram(nullptr)
-      , mTessCtrlProgram(nullptr)
-      , mTessEvalProgram(nullptr)
-      , mGeometryProgram(nullptr)
-      , mFragmentProgram(nullptr)
       , mProgramObjectId(0)
       , mStateBlock(nullptr)
       , mSamplerCount(0) {
@@ -240,7 +257,7 @@ struct Technique {
 
   Technique(const std::string& nam) { mName = nam; }
 
-  void AddPass(Pass* pps) { mPasses.push_back(pps); }
+  void addPass(Pass* pps) { mPasses.push_back(pps); }
 };
 
 struct Container {
@@ -249,18 +266,25 @@ struct Container {
   std::map<std::string, Config*> mConfigs;
   std::map<std::string, UniformSet*> _uniformSets;
   std::map<std::string, UniformBlock*> _uniformBlocks;
-  std::map<std::string, StreamInterface*> mVertexInterfaces;
-  std::map<std::string, StreamInterface*> mTessCtrlInterfaces;
-  std::map<std::string, StreamInterface*> mTessEvalInterfaces;
-  std::map<std::string, StreamInterface*> mGeometryInterfaces;
-  std::map<std::string, StreamInterface*> mFragmentInterfaces;
+  // vtg //
+  std::map<std::string, ShaderVtx*> _vertexShaders;
+  std::map<std::string, ShaderTsC*> _tessCtrlShaders;
+  std::map<std::string, ShaderTsE*> _tessEvalShaders;
+  std::map<std::string, ShaderGeo*> _geometryShaders;
+  std::map<std::string, ShaderFrg*> _fragmentShaders;
+  std::map<std::string, StreamInterface*> _vertexInterfaces;
+  std::map<std::string, StreamInterface*> _tessCtrlInterfaces;
+  std::map<std::string, StreamInterface*> _tessEvalInterfaces;
+  std::map<std::string, StreamInterface*> _geometryInterfaces;
+  std::map<std::string, StreamInterface*> _fragmentInterfaces;
+  // task/mesh //
+  std::map<std::string, ShaderNvTask*> _nvTaskShaders;
+  std::map<std::string, ShaderNvMesh*> _nvMeshShaders;
+  std::map<std::string, StreamInterface*> _nvTaskInterfaces;
+  std::map<std::string, StreamInterface*> _nvMeshInterfaces;
+  //
   std::map<std::string, StateBlock*> mStateBlocks;
   std::map<std::string, Uniform*> mUniforms;
-  std::map<std::string, ShaderVtx*> mVertexPrograms;
-  std::map<std::string, ShaderTsC*> mTessCtrlPrograms;
-  std::map<std::string, ShaderTsE*> mTessEvalPrograms;
-  std::map<std::string, ShaderGeo*> mGeometryPrograms;
-  std::map<std::string, ShaderFrg*> mFragmentPrograms;
   std::map<std::string, Technique*> mTechniqueMap;
   std::map<std::string, LibBlock*> mLibBlocks;
   const Pass* mActivePass;
@@ -272,38 +296,55 @@ struct Container {
   void Destroy(void);
   bool IsValid(void);
 
-  void AddConfig(Config* pcfg);
+  void addConfig(Config* pcfg);
   void addUniformSet(UniformSet* pif);
   void addUniformBlock(UniformBlock* pif);
-  void AddVertexInterface(StreamInterface* pif);
-  void AddTessCtrlInterface(StreamInterface* pif);
-  void AddTessEvalInterface(StreamInterface* pif);
-  void AddGeometryInterface(StreamInterface* pif);
-  void AddFragmentInterface(StreamInterface* pif);
+
+  // vtg //
+  void addVertexInterface(StreamInterface* sif);
+  void addTessCtrlInterface(StreamInterface* sif);
+  void addTessEvalInterface(StreamInterface* sif);
+  void addGeometryInterface(StreamInterface* sif);
+  void addFragmentInterface(StreamInterface* sif);
+  void addVertexShader(ShaderVtx* shader);
+  void addTessCtrlShader(ShaderTsC* shader);
+  void addTessEvalShader(ShaderTsE* shader);
+  void addGeometryShader(ShaderGeo* shader);
+  void addFragmentShader(ShaderFrg* shader);
+  ShaderVtx* vertexShader(const std::string& name) const;
+  ShaderTsC* tessCtrlShader(const std::string& name) const;
+  ShaderTsE* tessEvalShader(const std::string& name) const;
+  ShaderGeo* geometryShader(const std::string& name) const;
+  ShaderFrg* fragmentShader(const std::string& name) const;
+  StreamInterface* vertexInterface(const std::string& name) const;
+  StreamInterface* tessCtrlInterface(const std::string& name) const;
+  StreamInterface* tessEvalInterface(const std::string& name) const;
+  StreamInterface* geometryInterface(const std::string& name) const;
+  StreamInterface* fragmentInterface(const std::string& name) const;
+
+  // nvtask/nvmesh //
+
+#if ! defined(__APPLE__)
+  void addNvTaskInterface(StreamInterface* sif);
+  void addNvMeshInterface(StreamInterface* sif);
+  void addNvTaskShader(ShaderNvTask* shader);
+  void addNvMeshShader(ShaderNvMesh* shader);
+  StreamInterface* nvTaskInterface(const std::string& name) const;
+  StreamInterface* nvMeshInterface(const std::string& name) const;
+  ShaderNvTask* nvTaskShader(const std::string& name) const;
+  ShaderNvMesh* nvMeshShader(const std::string& name) const;
+#endif
+
   Uniform* MergeUniform(const std::string& name);
-  void AddStateBlock(StateBlock* pSB);
-  void AddTechnique(Technique* ptek);
-  void AddVertexProgram(ShaderVtx* psha);
-  void AddTessCtrlProgram(ShaderTsC* psha);
-  void AddTessEvalProgram(ShaderTsE* psha);
-  void AddGeometryProgram(ShaderGeo* psha);
-  void AddFragmentProgram(ShaderFrg* psha);
-  void AddLibBlock(LibBlock* plb);
+  void addStateBlock(StateBlock* pSB);
+  void addTechnique(Technique* ptek);
+
+  void addLibBlock(LibBlock* plb);
 
   StateBlock* GetStateBlock(const std::string& name) const;
   Uniform* GetUniform(const std::string& name) const;
-  ShaderVtx* GetVertexProgram(const std::string& name) const;
-  ShaderTsC* GetTessCtrlProgram(const std::string& name) const;
-  ShaderTsE* GetTessEvalProgram(const std::string& name) const;
-  ShaderGeo* GetGeometryProgram(const std::string& name) const;
-  ShaderFrg* GetFragmentProgram(const std::string& name) const;
   UniformBlock* uniformBlock(const std::string& name) const;
   UniformSet* uniformSet(const std::string& name) const;
-  StreamInterface* GetVertexInterface(const std::string& name) const;
-  StreamInterface* GetTessCtrlInterface(const std::string& name) const;
-  StreamInterface* GetTessEvalInterface(const std::string& name) const;
-  StreamInterface* GetGeometryInterface(const std::string& name) const;
-  StreamInterface* GetFragmentInterface(const std::string& name) const;
 
   Container(const std::string& nam);
 };
