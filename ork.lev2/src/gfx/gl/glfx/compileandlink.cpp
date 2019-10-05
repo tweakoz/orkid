@@ -27,8 +27,8 @@ bool Shader::Compile() {
   shadertext += "(); }\n";
   const char *c_str = shadertext.c_str();
 
-  // printf( "Shader<%s>\n/////////////\n%s\n///////////////////\n",
-  // mName.c_str(), c_str );
+  printf( "Shader<%s>\n/////////////\n%s\n///////////////////\n",
+  mName.c_str(), c_str );
 
   GL_NF_ERRORCHECK();
   glShaderSource(mShaderObjectId, 1, &c_str, NULL);
@@ -75,7 +75,7 @@ bool Interface::compileAndLink(Container* container) {
   OrkAssert(pvtxshader != nullptr);
   OrkAssert(pfrgshader != nullptr);
 
-  auto l_compile = [&](Shader *psh) {
+  auto l_compile = [&](Shader *psh) ->bool {
     bool compile_ok = true;
     if (psh && psh->IsCompiled() == false)
       compile_ok = psh->Compile();
@@ -83,13 +83,26 @@ bool Interface::compileAndLink(Container* container) {
     if (false == compile_ok) {
       container->mShaderCompileFailed = true;
     }
+    return compile_ok;
   };
 
-  l_compile(pvtxshader);
-  l_compile(ptecshader);
-  l_compile(pteeshader);
-  l_compile(pgeoshader);
-  l_compile(pfrgshader);
+  bool vok = l_compile(pvtxshader);
+  bool tcok = l_compile(ptecshader);
+  bool teok = l_compile(pteeshader);
+  bool gok = l_compile(pgeoshader);
+  bool fok = l_compile(pfrgshader);
+
+ if( false == vok )
+  printf( "vsh<%s> compile failed\n", pvtxshader->mName.c_str() );
+ if( false == tcok )
+  printf( "tcsh<%s> compile failed\n", ptecshader->mName.c_str() );
+ if( false == teok )
+  printf( "tesh<%s> compile failed\n", pteeshader->mName.c_str() );
+ if( false == gok )
+  printf( "gsh<%s> compile failed\n", pgeoshader->mName.c_str() );
+ if( false == fok )
+  printf( "fsh<%s> compile failed\n", pfrgshader->mName.c_str() );
+
 
   if (container->mShaderCompileFailed)
     return false;
@@ -131,23 +144,6 @@ bool Interface::compileAndLink(Container* container) {
     StreamInterface *vtx_iface = pvtxshader->mpInterface;
     StreamInterface *frg_iface = pfrgshader->mpInterface;
 
-    /*printf( "//////////////////////////////////\n");
-
-    printf( "Linking pass<%p> {\n", pass );
-
-    if( pvtxshader )
-            printf( "	vtxshader<%s:%p> compiled<%d>\n",
-    pvtxshader->mName.c_str(), pvtxshader, pvtxshader->IsCompiled() ); if(
-    ptecshader ) printf( "	tecshader<%s:%p> compiled<%d>\n",
-    ptecshader->mName.c_str(), ptecshader, ptecshader->IsCompiled() ); if(
-    pteeshader ) printf( "	teeshader<%s:%p> compiled<%d>\n",
-    pteeshader->mName.c_str(), pteeshader, pteeshader->IsCompiled() ); if(
-    pgeoshader ) printf( "	geoshader<%s:%p> compiled<%d>\n",
-    pgeoshader->mName.c_str(), pgeoshader, pgeoshader->IsCompiled() ); if(
-    pfrgshader ) printf( "	frgshader<%s:%p> compiled<%d>\n",
-    pfrgshader->mName.c_str(), pfrgshader, pfrgshader->IsCompiled() );
-*/
-
     if (nullptr == vtx_iface) {
       printf("	vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str());
       OrkAssert(false);
@@ -157,12 +153,12 @@ bool Interface::compileAndLink(Container* container) {
       OrkAssert(false);
     }
 
-    // printf( "	binding vertex attributes count<%d>\n",
-    // int(vtx_iface->mAttributes.size()) );
-
     //////////////////////////
     // Bind Vertex Attributes
     //////////////////////////
+
+    // printf( "	binding vertex attributes count<%d>\n",
+    // int(vtx_iface->mAttributes.size()) );
 
     for (const auto &itp : vtx_iface->mAttributes) {
       Attribute *pattr = itp.second;
@@ -260,6 +256,7 @@ bool Interface::compileAndLink(Container* container) {
         assert(it==flatunimap.end());
         flatunimap[s.first]=s.second;
       }
+      pass->uniformBlockBinding(b.first);
     }
 
     //////////////////////////
@@ -299,7 +296,7 @@ bool Interface::compileAndLink(Container* container) {
 
           Uniform *puni = it->second;
 
-          puni->meType = unityp;
+          puni->_type = unityp;
 
           UniformInstance *pinst = new UniformInstance;
           pinst->mpUniform = puni;
@@ -307,15 +304,15 @@ bool Interface::compileAndLink(Container* container) {
           GLint uniloc = glGetUniformLocation(prgo, str_name.c_str());
           pinst->mLocation = uniloc;
 
-          if (puni->mTypeName == "sampler2D") {
+          if (puni->_typeName == "sampler2D") {
             pinst->mSubItemIndex = pass->_samplerCount;
             pass->_samplerCount++;
             pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
-          } else if (puni->mTypeName == "sampler3D") {
+          } else if (puni->_typeName == "sampler3D") {
             pinst->mSubItemIndex = pass->_samplerCount;
             pass->_samplerCount++;
             pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
-          } else if (puni->mTypeName == "sampler2DShadow") {
+          } else if (puni->_typeName == "sampler2DShadow") {
             pinst->mSubItemIndex = pass->_samplerCount;
             pass->_samplerCount++;
             pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
@@ -326,7 +323,7 @@ bool Interface::compileAndLink(Container* container) {
           // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
           // (int) uniloc );
 
-          pass->_uniformInstances[puni->mName] = pinst;
+          pass->_uniformInstances[puni->_name] = pinst;
       }
       else {
         it = flatunimap.find(str_name);

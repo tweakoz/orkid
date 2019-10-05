@@ -77,7 +77,7 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
     Uniform* puni                = itp.second;
     FxShaderParam* ork_parm      = new FxShaderParam;
     ork_parm->_name     = itp.first;
-    ork_parm->mParameterSemantic = puni->mSemantic;
+    ork_parm->mParameterSemantic = puni->_semantic;
     ork_parm->mInternalHandle    = (void*)puni;
     fxh->addParameter(ork_parm);
   }

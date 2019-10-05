@@ -101,7 +101,7 @@ vertex_interface iface_vstereo : iface_vdefault { layout(secondary_view_offset =
 vertex_shader vs_std : iface_vdefault {
   frg_uv      = uv0;
   ///////////////////////////
-  gl_Position = position;
+  gl_Position = position*MVPC;
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_std_stereo : iface_vstereo : extension(GL_NV_stereo_view_rendering)

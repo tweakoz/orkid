@@ -157,17 +157,8 @@ int GlSlFxParser::ParseFxShaderCommon(Shader *pshader) {
   for (const auto &ub : iface->_uniformSets) {
     for (auto itu : ub->_uniforms) {
       prline();
-      Uniform *pu = itu.second;
       shaderbody += "uniform ";
-      shaderbody += pu->mTypeName + " ";
-      shaderbody += pu->mName;
-
-      if (pu->mArraySize) {
-        ork::FixedString<32> fxs;
-        fxs.format("[%d]", pu->mArraySize);
-        shaderbody += std::string(fxs.c_str());
-      }
-
+      shaderbody += itu.second->genshaderbody();
       shaderbody += ";\n";
     }
   }
@@ -181,16 +172,7 @@ int GlSlFxParser::ParseFxShaderCommon(Shader *pshader) {
     shaderbody += FormatString("uniform %s {\n",ub->_name.c_str() );
     for (auto itsub : ub->_subuniforms) {
       prline();
-      Uniform *pu = itsub.second;
-      shaderbody += pu->mTypeName + " ";
-      shaderbody += pu->mName;
-
-      if (pu->mArraySize) {
-        ork::FixedString<32> fxs;
-        fxs.format("[%d]", pu->mArraySize);
-        shaderbody += std::string(fxs.c_str());
-      }
-
+      shaderbody += itsub.second->genshaderbody();
       shaderbody += ";\n";
     }
     prline();

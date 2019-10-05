@@ -56,17 +56,31 @@ constexpr const char* token_regex =
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Uniform {
-  std::string mName;
-  std::string mTypeName;
-  GLenum meType;
-  std::string mSemantic;
-  int mArraySize;
+  std::string _name;
+  std::string _typeName;
+  GLenum _type;
+  std::string _semantic;
+  int _arraySize;
 
   Uniform(const std::string& nam, const std::string& sem = "")
-      : mName(nam)
-      , mSemantic(sem)
-      , meType(GL_ZERO)
-      , mArraySize(0) {}
+      : _name(nam)
+      , _semantic(sem)
+      , _type(GL_ZERO)
+      , _arraySize(0) {}
+
+
+  std::string genshaderbody() const {
+    std::string rval;
+    rval += _typeName + " ";
+    rval += _name;
+
+    if (_arraySize) {
+        ork::FixedString<32> fxs;
+        fxs.format("[%d]", _arraySize);
+        rval += std::string(fxs.c_str());
+    }
+    return rval;
+  }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -342,7 +356,7 @@ struct Pass {
   bool hasUniformInstance(UniformInstance* puni) const;
   const UniformInstance* uniformInstance(Uniform* puni) const;
 
-  UniformBlockBinding findUniformBlock(std::string blockname);
+  UniformBlockBinding uniformBlockBinding(std::string blockname);
 
 };
 

@@ -62,18 +62,18 @@ UniformBlock *GlSlFxParser::parseUniformBlock() {
     } else {
 
       auto puni = new Uniform(nam_tok->text);
-      puni->mTypeName = dt_tok->text;
+      puni->_typeName = dt_tok->text;
       pret->_subuniforms[nam_tok->text] = puni;
       printf("uniname<%s> typename<%s>\n", nam_tok->text.c_str(),
-             puni->mTypeName.c_str());
+             puni->_typeName.c_str());
 
       bool is_array = false;
       if (v.token(i + 2)->text == "[") {
         assert(v.token(i + 4)->text == "]");
-        puni->mArraySize = atoi(v.token(i + 3)->text.c_str());
+        puni->_arraySize = atoi(v.token(i + 3)->text.c_str());
         printf("uniname<%s> typename<%s> arraysize<%d>\n",
-               nam_tok->text.c_str(), puni->mTypeName.c_str(),
-               puni->mArraySize);
+               nam_tok->text.c_str(), puni->_typeName.c_str(),
+               puni->_arraySize);
         is_array = true;
       }
 
@@ -136,19 +136,19 @@ UniformSet *GlSlFxParser::parseUniformSet() {
           pret->_uniforms.end()); // make sure there are no duplicate uniforms
 
       Uniform *puni = mpContainer->MergeUniform(nam_tok->text);
-      puni->mTypeName = dt_tok->text;
+      puni->_typeName = dt_tok->text;
       pret->_uniforms[nam_tok->text] = puni;
       printf("uniname<%s> typename<%s>\n", nam_tok->text.c_str(),
-             puni->mTypeName.c_str());
+             puni->_typeName.c_str());
 
       bool is_array = false;
 
       if (v.token(i + 3)->text == "[") {
         assert(v.token(i + 5)->text == "]");
-        puni->mArraySize = atoi(v.token(i + 4)->text.c_str());
+        puni->_arraySize = atoi(v.token(i + 4)->text.c_str());
         printf("uniname<%s> typename<%s> arraysize<%d>\n",
-               nam_tok->text.c_str(), puni->mTypeName.c_str(),
-               puni->mArraySize);
+               nam_tok->text.c_str(), puni->_typeName.c_str(),
+               puni->_arraySize);
 
         is_array = true;
       }

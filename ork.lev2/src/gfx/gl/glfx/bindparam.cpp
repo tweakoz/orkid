@@ -25,9 +25,9 @@ void Interface::BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_INT);
 
       GL_ERRORCHECK();
@@ -48,9 +48,9 @@ void Interface::BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const f
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_FLOAT_VEC2);
 
       GL_ERRORCHECK();
@@ -67,9 +67,9 @@ void Interface::BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const f
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_FLOAT_VEC3);
 
       GL_ERRORCHECK();
@@ -86,9 +86,9 @@ void Interface::BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const f
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_FLOAT_VEC4);
 
       GL_ERRORCHECK();
@@ -103,9 +103,9 @@ void Interface::BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, co
   hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
-          const char* psem = puni->mSemantic.c_str();
-          const char* pnam = puni->mName.c_str();
-          GLenum etyp = puni->meType;
+          const char* psem = puni->_semantic.c_str();
+          const char* pnam = puni->_name.c_str();
+          GLenum etyp = puni->_type;
           OrkAssert( etyp == 	GL_FLOAT_VEC4 );
 
           glUniform4fv( iloc, icount, (float*) Vec );
@@ -120,9 +120,9 @@ void Interface::BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float f
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_FLOAT);
 
       GL_ERRORCHECK();
@@ -136,9 +136,9 @@ void Interface::BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, co
   hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
-          const char* psem = puni->mSemantic.c_str();
-          const char* pnam = puni->mName.c_str();
-          GLenum etyp = puni->meType;
+          const char* psem = puni->_semantic.c_str();
+          const char* pnam = puni->_name.c_str();
+          GLenum etyp = puni->_type;
           OrkAssert( etyp == GL_FLOAT );
 
           glUniform1fv( iloc, icount, pfa );
@@ -151,9 +151,9 @@ void Interface::BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float 
   hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
-          const char* psem = puni->mSemantic.c_str();
-          const char* pnam = puni->mName.c_str();
-          GLenum etyp = puni->meType;
+          const char* psem = puni->_semantic.c_str();
+          const char* pnam = puni->_name.c_str();
+          GLenum etyp = puni->_type;
           OrkAssert( etyp == 	GL_FLOAT_VEC2 );
 
           fvec2 v2( fA, fB );
@@ -168,9 +168,9 @@ void Interface::BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float 
   hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
-          const char* psem = puni->mSemantic.c_str();
-          const char* pnam = puni->mName.c_str();
-          GLenum etyp = puni->meType;
+          const char* psem = puni->_semantic.c_str();
+          const char* pnam = puni->_name.c_str();
+          GLenum etyp = puni->_type;
           OrkAssert( etyp == 	GL_FLOAT_VEC3 );
 
           fvec3 v3( fA, fB, fC );
@@ -185,9 +185,9 @@ void Interface::BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float 
   hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
-          const char* psem = puni->mSemantic.c_str();
-          const char* pnam = puni->mName.c_str();
-          GLenum etyp = puni->meType;
+          const char* psem = puni->_semantic.c_str();
+          const char* pnam = puni->_name.c_str();
+          GLenum etyp = puni->_type;
           OrkAssert( etyp == 	GL_FLOAT_VEC4 );
 
           fvec4 v4( fA, fB, fC, fD );
@@ -214,9 +214,9 @@ void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const 
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_FLOAT_MAT4);
 
       GL_ERRORCHECK();
@@ -233,9 +233,9 @@ void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const 
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_FLOAT_MAT3);
 
       GL_ERRORCHECK();
@@ -252,9 +252,9 @@ void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, c
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       OrkAssert(etyp == GL_FLOAT_MAT4);
 
       // printf( "pnam<%s>\n", pnam );
@@ -268,9 +268,9 @@ void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, c
   hfx->GetInternalHandle() ); Uniform* puni = static_cast<Uniform*>(
   hpar->GetPlatformHandle() ); int iloc = puni->mLocation; if( iloc>=0 )
   {
-          const char* psem = puni->mSemantic.c_str();
-          const char* pnam = puni->mName.c_str();
-          GLenum etyp = puni->meType;
+          const char* psem = puni->_semantic.c_str();
+          const char* pnam = puni->_name.c_str();
+          GLenum etyp = puni->_type;
           OrkAssert( etyp == GL_FLOAT_MAT4 );
 
           glUniformMatrix4fv( iloc, iCount, GL_FALSE, (float*) Mat );
@@ -294,9 +294,9 @@ void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Te
     // printf( "Bind2 Tex<%p> par<%s> iloc<%d> teknam<%s>\n",
     // pTex,hpar->mParameterName.c_str(), iloc, teknam );
     if (iloc >= 0) {
-      const char* psem = puni->mSemantic.c_str();
-      const char* pnam = puni->mName.c_str();
-      GLenum etyp      = puni->meType;
+      const char* psem = puni->_semantic.c_str();
+      const char* pnam = puni->_name.c_str();
+      GLenum etyp      = puni->_type;
       // OrkAssert( etyp == GL_FLOAT_MAT4 );
 
       if (pTex != 0) {
