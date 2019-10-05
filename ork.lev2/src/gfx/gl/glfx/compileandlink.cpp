@@ -256,9 +256,11 @@ bool Interface::compileAndLink(Container* container) {
         assert(it==flatunimap.end());
         flatunimap[s.first]=s.second;
       }
-      pass->uniformBlockBinding(b.first);
+      auto binding = pass->uniformBlockBinding(b.first);
     }
-
+    if( pass->_uboBindingMap.size() ){
+      assert(false);
+    }
     //////////////////////////
     // query unis
     //////////////////////////

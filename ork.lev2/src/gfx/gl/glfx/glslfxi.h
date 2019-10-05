@@ -149,10 +149,24 @@ struct UniformBlockItem {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 struct UniformBlockBinding {
+
+  struct Item {
+    GLuint _actuniindex = 0;
+    GLint _blockindex = 0;
+    GLint _offset = 0;
+    GLint _type = 0;
+    GLint _size = 0;
+    GLint _arraystride = 0;
+    GLint _matrixstride = 0;
+  };
+
   Pass* _pass = nullptr; // program to which this binding is bound
   GLuint _blockIndex = 0xffffffff;
   std::string _name;
+  GLint _blockSize = 0;
+  std::vector<Item> _ubbitems;
   UniformBlockItem findUniform(std::string named) const;
 };
 
@@ -334,6 +348,7 @@ struct LibBlock {
 struct Pass {
   typedef std::map<std::string, UniformInstance*> uni_map_t;
   typedef std::map<std::string, Attribute*> attr_map_t;
+  typedef std::map<std::string,UniformBlockBinding> ubb_map_t;
 
   static const int kmaxattrID = 16;
   svar64_t _primpipe;
@@ -342,6 +357,7 @@ struct Pass {
   GLuint _programObjectId;
   uni_map_t _uniformInstances;
   attr_map_t _vtxAttributesBySemantic;
+  ubb_map_t _uboBindingMap;
   Attribute* _vtxAttributeById[kmaxattrID];
   int _samplerCount;
 

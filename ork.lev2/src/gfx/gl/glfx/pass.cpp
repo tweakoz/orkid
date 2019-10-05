@@ -42,9 +42,8 @@ namespace ork::lev2::glslfx {
       return rval;
     }
 
-    GLint blocksize = 0;
-    glGetActiveUniformBlockiv(_programObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_DATA_SIZE,&blocksize);
-    printf( "block<%s> blocksize<%d>\n", blockname.c_str(), blocksize );
+    glGetActiveUniformBlockiv(_programObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_DATA_SIZE,&rval._blockSize);
+    printf( "block<%s> blocksize<%d>\n", blockname.c_str(), rval._blockSize );
 
     GLint numunis = 0;
     glGetActiveUniformBlockiv(_programObjectId,rval._blockIndex,GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS,&numunis);
@@ -60,16 +59,40 @@ namespace ork::lev2::glslfx {
     glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_OFFSET, unioffsets );
 
     auto unitypes = new GLint[numunis];
-    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_TYPE, unioffsets );
+    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_TYPE, unitypes );
 
     auto unisizes = new GLint[numunis];
-    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_SIZE, unioffsets );
+    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_SIZE, unisizes );
 
     auto uniarystrides = new GLint[numunis];
-    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_ARRAY_STRIDE, unioffsets );
+    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_ARRAY_STRIDE, uniarystrides );
 
     auto unimtxstrides = new GLint[numunis];
-    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_MATRIX_STRIDE, unioffsets );
+    glGetActiveUniformsiv( _programObjectId, numunis, uniindices, GL_UNIFORM_MATRIX_STRIDE, unimtxstrides );
+
+    //////////////////////////////////////////////
+
+    for( int i=0; i<numunis; i++ ){
+      UniformBlockBinding::Item item;
+      item._actuniindex = uniindices[i];
+      item._blockindex = uniblkidcs[i];
+      item._offset = unioffsets[i];
+      item._type = unitypes[i];
+      item._size = unisizes[i];
+      item._arraystride = uniarystrides[i];
+      item._matrixstride = unimtxstrides[i];
+      rval._ubbitems.push_back(item);
+      printf( "block<%s> uni<%d> actidx<%d>\n", blockname.c_str(), i, uniindices[i] );
+      printf( "block<%s> uni<%d> blkidx<%d>\n", blockname.c_str(), i, uniblkidcs[i] );
+      printf( "block<%s> uni<%d> offset<%d>\n", blockname.c_str(), i, unioffsets[i] );
+      printf( "block<%s> uni<%d> type<%d>\n", blockname.c_str(), i, unitypes[i] );
+      printf( "block<%s> uni<%d> size<%d>\n", blockname.c_str(), i, unisizes[i] );
+      printf( "block<%s> uni<%d> arystride<%d>\n", blockname.c_str(), i, uniarystrides[i] );
+      printf( "block<%s> uni<%d> mtxstride<%d>\n", blockname.c_str(), i, unimtxstrides[i] );
+    }
+
+
+    //////////////////////////////////////////////
 
     delete[] unimtxstrides;
     delete[] uniarystrides;
@@ -79,7 +102,8 @@ namespace ork::lev2::glslfx {
     delete[] uniblkidcs;
     delete[] uniindices;
 
-    assert(false);
+    _uboBindingMap[blockname] = rval;
+
     return rval;
   }
 } // namespace ork::lev2::glslfx {
