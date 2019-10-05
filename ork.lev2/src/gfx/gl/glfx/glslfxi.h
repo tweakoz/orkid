@@ -156,7 +156,7 @@ struct UniformBlockLayout {
   template <typename T> UniformBlockItem alloc(){
     size_t index = _counter;
      _counter += sizeof(T);
-    return UniformBlockItem{index};
+    return UniformBlockItem{nullptr,index};
  }
 
   size_t _counter = 0;

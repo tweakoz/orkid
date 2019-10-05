@@ -1146,6 +1146,8 @@ void GlGeometryBufferInterface::ReleaseIB( IndexBufferBase& IdxBuf )
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_NVMESH_SHADERS)
+
 void GlGeometryBufferInterface::DrawMeshTasksNV(uint32_t first, uint32_t count) {
   glDrawMeshTasksNV((GLuint)first,(GLuint)count);
 }
@@ -1168,6 +1170,7 @@ void GlGeometryBufferInterface::MultiDrawMeshTasksIndirectCountNV( int32_t* indi
                                       (GLsizei)maxdrawcount,(GLsizei)stride);
 }
 
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 } } //namespace ork::lev2
