@@ -211,6 +211,7 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
   auto ublock = container->uniformBlock(name);
   if( ublock != nullptr and fxsblock == nullptr){
     fxsblock = new FxShaderParamBlock;
+     fxsblock->_fxi = this;
      fxsblock->_impl.Set<UniformBlock*>(ublock);
      parammap[name]=fxsblock;
     for( auto u : ublock->_subuniforms ){
@@ -223,6 +224,13 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
   }
   return fxsblock;
 }
+
+paramblockmappingptr_t Interface::mapParamBlock(const FxShaderParamBlock*b,size_t base, size_t length) {
+    auto mapping = std::make_shared<FxShaderParamBlockMapping>(base,length);
+    mapping->_fxi = this;
+   	return mapping;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

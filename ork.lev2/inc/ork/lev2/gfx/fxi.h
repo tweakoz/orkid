@@ -1,10 +1,14 @@
 #pragma once
 
+struct FxShaderParamBlockMapping;
+typedef std::shared_ptr<FxShaderParamBlockMapping> paramblockmappingptr_t;
+
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 /// FxInterface (interface for dealing with FX materials)
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
+
 
 class FxInterface {
 public:
@@ -56,6 +60,8 @@ public:
   GfxMaterial* GetLastFxMaterial(void) const { return mpLastFxMaterial; }
 
   static void Reset();
+
+  virtual paramblockmappingptr_t mapParamBlock(const FxShaderParamBlock*b,size_t base, size_t length) { return nullptr; }
 
 protected:
   FxInterface();

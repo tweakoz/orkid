@@ -259,7 +259,6 @@ bool Interface::compileAndLink(Container* container) {
       auto binding = pass->uniformBlockBinding(b.first);
     }
     if( pass->_uboBindingMap.size() ){
-      assert(false);
     }
     //////////////////////////
     // query unis

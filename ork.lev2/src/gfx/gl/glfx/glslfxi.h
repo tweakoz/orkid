@@ -538,6 +538,8 @@ public:
 
   bool compileAndLink(Container* container);
 
+  paramblockmappingptr_t mapParamBlock(const FxShaderParamBlock*b,size_t base, size_t length)  final;
+
 protected:
   Container* mpActiveEffect;
   const Pass* mLastPass;

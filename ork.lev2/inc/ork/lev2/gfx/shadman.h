@@ -17,6 +17,7 @@ namespace lev2 {
 struct FxShaderParam;
 struct FxShaderParamBlock;
 struct FxShaderParamBlockMapping;
+typedef std::shared_ptr<FxShaderParamBlockMapping> paramblockmappingptr_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -83,13 +84,13 @@ struct FxShaderParam {
   void *GetPlatformHandle(void) const { return mInternalHandle; }
 };
 
-typedef std::shared_ptr<FxShaderParamBlockMapping> paramblockmappingptr_t;
 struct FxShaderParamBlock {
   std::string _name;
   FxShaderParam *param(const std::string &name) const;
   paramblockmappingptr_t map(size_t base=0, size_t length=0) const;
   std::map<std::string,FxShaderParam*> _subparams;
   svarp_t _impl;
+  FxInterface* _fxi = nullptr;
 };
 
 struct FxShaderParamBlockMapping {
@@ -101,6 +102,7 @@ struct FxShaderParamBlockMapping {
   FxShaderParamBlock *_block = nullptr;
   size_t _base = 0;
   size_t _length = 0;
+  FxInterface* _fxi = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
