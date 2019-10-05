@@ -83,19 +83,24 @@ struct FxShaderParam {
   void *GetPlatformHandle(void) const { return mInternalHandle; }
 };
 
+typedef std::shared_ptr<FxShaderParamBlockMapping> paramblockmappingptr_t;
 struct FxShaderParamBlock {
   std::string _name;
   FxShaderParam *param(const std::string &name) const;
-  FxShaderParamBlockMapping *map() const;
+  paramblockmappingptr_t map(size_t base=0, size_t length=0) const;
   std::map<std::string,FxShaderParam*> _subparams;
   svarp_t _impl;
 };
 
 struct FxShaderParamBlockMapping {
+  FxShaderParamBlockMapping(size_t base, size_t length);
   ~FxShaderParamBlockMapping();
-  FxShaderParamBlock *_block = nullptr;
   void setMatrix(const FxShaderParam *par, const fmtx4 &m);
   void unmap();
+
+  FxShaderParamBlock *_block = nullptr;
+  size_t _base = 0;
+  size_t _length = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

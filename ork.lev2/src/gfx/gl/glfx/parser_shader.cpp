@@ -151,7 +151,7 @@ int GlSlFxParser::ParseFxShaderCommon(Shader *pshader) {
   }
 
   ///////////////////////
-  // UNIFORMS
+  // UNIFORM Set
   ///////////////////////
 
   for (const auto &ub : iface->_uniformSets) {
@@ -171,6 +171,32 @@ int GlSlFxParser::ParseFxShaderCommon(Shader *pshader) {
       shaderbody += ";\n";
     }
   }
+
+  ///////////////////////
+  // UNIFORM Block
+  ///////////////////////
+
+  for (const auto &ub : iface->_uniformBlocks) {
+    prline();
+    shaderbody += FormatString("uniform %s {\n",ub->_name.c_str() );
+    for (auto itsub : ub->_subuniforms) {
+      prline();
+      Uniform *pu = itsub.second;
+      shaderbody += pu->mTypeName + " ";
+      shaderbody += pu->mName;
+
+      if (pu->mArraySize) {
+        ork::FixedString<32> fxs;
+        fxs.format("[%d]", pu->mArraySize);
+        shaderbody += std::string(fxs.c_str());
+      }
+
+      shaderbody += ";\n";
+    }
+    prline();
+    shaderbody += "};\n";
+  }
+
   ///////////////////////
   // ATTRIBUTES
   ///////////////////////

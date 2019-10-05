@@ -63,13 +63,13 @@ FxShaderParam::FxShaderParam( void *ih )
 ///////////////////////////////////////////////////////////////////////////////
 
 FxShaderParam* FxShaderParamBlock::param(const std::string&name) const {
-	assert(false);
-	return nullptr;
+  auto it = _subparams.find(name);
+  return (it!=_subparams.end()) ? it->second : nullptr;
 }
 
-FxShaderParamBlockMapping* FxShaderParamBlock::map() const {
-	assert(false);
-	return nullptr;
+paramblockmappingptr_t FxShaderParamBlock::map(size_t base, size_t length) const {
+  auto mapping = std::make_shared<FxShaderParamBlockMapping>(base,length);
+ 	return mapping;
 }
 
 void FxShaderParamBlockMapping::setMatrix(const FxShaderParam* par, const fmtx4& m) {
@@ -77,6 +77,12 @@ void FxShaderParamBlockMapping::setMatrix(const FxShaderParam* par, const fmtx4&
 }
 void FxShaderParamBlockMapping::unmap(){
 }
+FxShaderParamBlockMapping::FxShaderParamBlockMapping(size_t base, size_t length)
+  : _base(base)
+  , _length(length){
+  
+}
+
 FxShaderParamBlockMapping::~FxShaderParamBlockMapping(){
 		unmap();
 }
@@ -116,7 +122,7 @@ FxShaderStorageBlockMapping::~FxShaderStorageBlockMapping(){
 	unmap();
 }
 void FxShaderStorageBlockMapping::unmap(){
-	
+
 }
 
 #endif

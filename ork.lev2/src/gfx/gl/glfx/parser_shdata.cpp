@@ -63,7 +63,7 @@ UniformBlock *GlSlFxParser::parseUniformBlock() {
 
       auto puni = new Uniform(nam_tok->text);
       puni->mTypeName = dt_tok->text;
-      pret->_uniforms[nam_tok->text] = puni;
+      pret->_subuniforms[nam_tok->text] = puni;
       printf("uniname<%s> typename<%s>\n", nam_tok->text.c_str(),
              puni->mTypeName.c_str());
 

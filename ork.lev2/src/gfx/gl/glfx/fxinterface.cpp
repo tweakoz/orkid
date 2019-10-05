@@ -203,13 +203,24 @@ const FxShaderParam* Interface::parameter(FxShader* hfx, const std::string& name
 
 const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  const auto& parammap        = hfx->namedParamBlocks();
+  auto& parammap        = hfx->_parameterBlockByName;
   auto it              = parammap.find(name);
-  auto fxsblock = (FxShaderParamBlock*) (it != parammap.end()) ? it->second : nullptr;
+  auto fxsblock = (FxShaderParamBlock*) ((it != parammap.end()) ? it->second : nullptr);
   auto container = static_cast<Container*>(hfx->GetInternalHandle());
 
-  auto ublk = container->uniformBlock(name);
+  auto ublock = container->uniformBlock(name);
+  if( ublock != nullptr and fxsblock == nullptr){
+    fxsblock = new FxShaderParamBlock;
+     fxsblock->_impl.Set<UniformBlock*>(ublock);
+     parammap[name]=fxsblock;
+    for( auto u : ublock->_subuniforms ){
+      auto p = new FxShaderParam;
+      p->mInternalHandle = (void*) u.second;
+      p->_name = u.first;
+     fxsblock->_subparams[p->_name]=p;
+    }
 
+  }
   return fxsblock;
 }
 

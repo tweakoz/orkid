@@ -247,6 +247,22 @@ bool Interface::compileAndLink(Container* container) {
     }
 
     //////////////////////////
+
+    std::map<std::string,Uniform*> flatunimap;
+
+    for( auto u : container->_uniforms ){
+      flatunimap[u.first] = u.second;
+    }
+    for( auto b : container->_uniformBlocks ){
+      UniformBlock* block = b.second;
+      for( auto s : block->_subuniforms ){
+        auto it = flatunimap.find(s.first);
+        assert(it==flatunimap.end());
+        flatunimap[s.first]=s.second;
+      }
+    }
+
+    //////////////////////////
     // query unis
     //////////////////////////
 
@@ -278,38 +294,45 @@ bool Interface::compileAndLink(Container* container) {
           // printf( "nnam<%s>\n", str_name.c_str() );
         }
       }
-      const auto &it = container->_uniforms.find(str_name);
-      OrkAssert(it != container->_uniforms.end());
-      Uniform *puni = it->second;
+      auto it = container->_uniforms.find(str_name);
+      if( it != container->_uniforms.end() ){
 
-      puni->meType = unityp;
+          Uniform *puni = it->second;
 
-      UniformInstance *pinst = new UniformInstance;
-      pinst->mpUniform = puni;
+          puni->meType = unityp;
 
-      GLint uniloc = glGetUniformLocation(prgo, str_name.c_str());
-      pinst->mLocation = uniloc;
+          UniformInstance *pinst = new UniformInstance;
+          pinst->mpUniform = puni;
 
-      if (puni->mTypeName == "sampler2D") {
-        pinst->mSubItemIndex = pass->_samplerCount;
-        pass->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
-      } else if (puni->mTypeName == "sampler3D") {
-        pinst->mSubItemIndex = pass->_samplerCount;
-        pass->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
-      } else if (puni->mTypeName == "sampler2DShadow") {
-        pinst->mSubItemIndex = pass->_samplerCount;
-        pass->_samplerCount++;
-        pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+          GLint uniloc = glGetUniformLocation(prgo, str_name.c_str());
+          pinst->mLocation = uniloc;
+
+          if (puni->mTypeName == "sampler2D") {
+            pinst->mSubItemIndex = pass->_samplerCount;
+            pass->_samplerCount++;
+            pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+          } else if (puni->mTypeName == "sampler3D") {
+            pinst->mSubItemIndex = pass->_samplerCount;
+            pass->_samplerCount++;
+            pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
+          } else if (puni->mTypeName == "sampler2DShadow") {
+            pinst->mSubItemIndex = pass->_samplerCount;
+            pass->_samplerCount++;
+            pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+          }
+
+          const char *fshnam = pfrgshader->mName.c_str();
+
+          // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
+          // (int) uniloc );
+
+          pass->_uniformInstances[puni->mName] = pinst;
       }
-
-      const char *fshnam = pfrgshader->mName.c_str();
-
-      // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
-      // (int) uniloc );
-
-      pass->_uniformInstances[puni->mName] = pinst;
+      else {
+        it = flatunimap.find(str_name);
+        assert(it!=flatunimap.end());
+        // prob a UBO uni
+      }
     }
   }
   return true;
