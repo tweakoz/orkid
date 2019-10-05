@@ -485,7 +485,7 @@ public:
 
   Container* GetActiveEffect() const { return mpActiveEffect; }
 
-  bool link(Container* container);
+  bool compileAndLink(Container* container);
 
 protected:
   Container* mpActiveEffect;

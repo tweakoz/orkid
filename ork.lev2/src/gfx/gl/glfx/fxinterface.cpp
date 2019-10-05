@@ -169,8 +169,8 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
   container->mActivePass = container->mActiveTechnique->mPasses[ipass];
   GL_ERRORCHECK();
   if (0 == container->mActivePass->_programObjectId){
-    bool linkok = link(container);
-    hfx->SetFailedCompile(false==linkok);
+    bool complinkok = compileAndLink(container);
+    hfx->SetFailedCompile(false==complinkok);
   }
   GL_ERRORCHECK();
   glUseProgram(container->mActivePass->_programObjectId);

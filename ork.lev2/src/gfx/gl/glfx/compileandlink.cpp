@@ -61,7 +61,7 @@ bool Shader::Compile() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool Interface::link(Container* container) {
+bool Interface::compileAndLink(Container* container) {
   auto pass = const_cast<Pass*>(container->mActivePass);
 
   auto &pipeVTG = pass->_primpipe.Get<PrimPipelineVTG>();
