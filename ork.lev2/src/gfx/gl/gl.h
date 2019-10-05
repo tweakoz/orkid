@@ -167,7 +167,7 @@ private:
   // nvidia mesh shaders
   //////////////////////////////////////////////
 
-  #if ! defined(__APPLE__)
+  #if defined(ENABLE_NVMESH_SHADERS)
   void DrawMeshTasksNV(uint32_t first, uint32_t count) final;
 
   void DrawMeshTasksIndirectNV(int32_t* indirect) final;
