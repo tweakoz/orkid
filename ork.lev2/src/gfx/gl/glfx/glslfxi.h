@@ -485,6 +485,8 @@ public:
 
   Container* GetActiveEffect() const { return mpActiveEffect; }
 
+  bool link(Container* container);
+
 protected:
   Container* mpActiveEffect;
   const Pass* mLastPass;
