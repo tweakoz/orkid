@@ -182,7 +182,7 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::EndPass(FxShader* hfx) {
-  Container* container = static_cast<Container*>(hfx->GetInternalHandle());
+  auto container = static_cast<Container*>(hfx->GetInternalHandle());
   GL_ERRORCHECK();
   glUseProgram(0);
   GL_ERRORCHECK();
@@ -204,9 +204,13 @@ const FxShaderParam* Interface::parameter(FxShader* hfx, const std::string& name
 const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
   const auto& parammap        = hfx->namedParamBlocks();
-  const auto& it              = parammap.find(name);
-  const FxShaderParamBlock* hparam = (it != parammap.end()) ? it->second : 0;
-  return hparam;
+  auto it              = parammap.find(name);
+  auto fxsblock = (FxShaderParamBlock*) (it != parammap.end()) ? it->second : nullptr;
+  auto container = static_cast<Container*>(hfx->GetInternalHandle());
+
+  auto ublk = container->uniformBlock(name);
+
+  return fxsblock;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -217,8 +221,12 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
   OrkAssert(0 != hfx);
   const auto& storagemap        = hfx->namedStorageBlocks();
   const auto& it              = storagemap.find(name);
-  const FxShaderStorageBlock* block = (it != storagemap.end()) ? it->second : 0;
-  return block;
+  auto fxsblock = (FxShaderStorageBlock*) (it != storagemap.end()) ? it->second : nullptr;
+
+  auto container = static_cast<Container*>(hfx->GetInternalHandle());
+  auto ublk = container->storageBlock(name);
+
+  return fxsblock;
 }
 
 #endif

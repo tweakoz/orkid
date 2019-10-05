@@ -87,6 +87,7 @@ struct FxShaderParamBlock {
   std::string _name;
   FxShaderParam *param(const std::string &name) const;
   FxShaderParamBlockMapping *map() const;
+  std::map<std::string,FxShaderParam*> _subparams;
   svarp_t _impl;
 };
 

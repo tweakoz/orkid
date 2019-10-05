@@ -49,6 +49,9 @@ void StreamInterface::Inherit(const StreamInterface &par) {
 
     for (const auto &ub : par._uniformSets)
       _uniformSets.insert(ub);
+
+    for (const auto &ub : par._uniformBlocks)
+      _uniformBlocks.insert(ub);
   }
 
   if (is_geo && (types_match || geoinhvtx || geoinhtee)) {

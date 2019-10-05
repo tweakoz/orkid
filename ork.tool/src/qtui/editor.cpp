@@ -250,6 +250,7 @@ void SceneEditorBase::RunLoop() {
         auto& R = event.Get<BarrierSyncReq>();
         R.mFuture.Signal<bool>(true);
       } else if (event.IsA<LoadSceneReq>()) {
+        usleep(2<<20);
         const auto& R = event.Get<LoadSceneReq>();
         auto& DFLOWG  = tool::GetGlobalDataFlowScheduler()->GraphSet();
         DFLOWG.LockForWrite().clear();

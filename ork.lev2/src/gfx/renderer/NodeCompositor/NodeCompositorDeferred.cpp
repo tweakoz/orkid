@@ -20,7 +20,7 @@
 
 ImplementReflectionX(ork::lev2::DeferredCompositingNode, "DeferredCompositingNode");
 
-constexpr bool USE_UBO = false;
+constexpr bool USE_UBO = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork { namespace lev2 {

@@ -50,10 +50,13 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
   for (size_t ideco = 0; ideco < inumdecos; ideco++) {
     auto ptok = v.blockDecorator(ideco);
 
-    auto it_ub = mpContainer->_uniformSets.find(ptok->text);
+    auto it_uniformset = mpContainer->_uniformSets.find(ptok->text);
+    auto it_uniformblk = mpContainer->_uniformBlocks.find(ptok->text);
 
-    if (it_ub != mpContainer->_uniformSets.end()) {
-      psi->_uniformSets.insert(it_ub->second);
+    if (it_uniformset != mpContainer->_uniformSets.end()) {
+      psi->_uniformSets.insert(it_uniformset->second);
+    } else if (it_uniformblk != mpContainer->_uniformBlocks.end()) {
+      psi->_uniformBlocks.insert(it_uniformblk->second);
     } else if (is_vtx) {
       auto it_vi = mpContainer->_vertexInterfaces.find(ptok->text);
       assert(it_vi != mpContainer->_vertexInterfaces.end());
@@ -216,5 +219,5 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
   return psi;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} //namespace ork::lev2::glslfx {
+} // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

@@ -164,6 +164,23 @@ struct UniformBlockLayout {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_SHADER_STORAGE)
+  struct StorageBlock {
+    std::string _name;
+  };
+  struct StorageBlockBinding {
+    Pass* _pass = nullptr; // program to which this binding is bound
+    GLuint _blockIndex = 0xffffffff;
+    std::string _name;
+    //StorageBlockItem findUniform(std::string named) const;
+  };
+  struct StorageBlockMapping {
+     StorageBlockBinding* _binding = nullptr;
+     uint8_t* _mapaddr = nullptr;
+  };
+#endif
+///////////////////////////////////////////////////////////////////////////////
+
 struct StreamInterface {
   StreamInterface();
 
@@ -420,7 +437,6 @@ struct Container {
   // nvtask/nvmesh //
   ///////////////////////////////////////////////////////
 #if defined(ENABLE_NVMESH_SHADERS)
-
   void addNvTaskInterface(StreamInterface* sif);
   void addNvMeshInterface(StreamInterface* sif);
   void addNvTaskShader(ShaderNvTask* shader);
@@ -434,9 +450,14 @@ struct Container {
   std::map<std::string, ShaderNvMesh*> _nvMeshShaders;
   std::map<std::string, StreamInterface*> _nvTaskInterfaces;
   std::map<std::string, StreamInterface*> _nvMeshInterfaces;
-
 #endif
 
+///////////////////////////////////////////////////////
+#if defined(ENABLE_SHADER_STORAGE)
+std::map<std::string, StorageBlock*> _storageBlocks;
+StorageBlock* storageBlock(const std::string& name) const;
+void addStorageBlock(StorageBlock* pif);
+#endif
 ///////////////////////////////////////////////////////
 
 };

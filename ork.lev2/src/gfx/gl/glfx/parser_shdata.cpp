@@ -84,7 +84,7 @@ UniformBlock *GlSlFxParser::parseUniformBlock() {
     printf("ni<%d> ien<%d> done<%d> dt_tok<%s>\n", int(i), int(ien), int(done),
            dt_tok->text.c_str());
   }
-  assert(false);
+  itokidx = v.blockEnd() + 1;
   return pret;
 }
 
