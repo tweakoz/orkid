@@ -331,23 +331,23 @@ void BuiltinFrameEffectMaterial::PostInit( GfxTarget* pTarg, const char *FxFile,
 		hFX = asset->GetFxShader();
 		OrkAssert( hFX!=0 );
 
-		hTek = pTarg->FXI()->GetTechnique( hFX, mTekName.c_str() );
+		hTek = pTarg->FXI()->technique( hFX, mTekName.c_str() );
 
 		OrkAssert( hTek!=0 );
-		hMVP = pTarg->FXI()->GetParameterH( hFX, "mvp" );
-		hModColor = pTarg->FXI()->GetParameterH( hFX, "modcolor" );
-		hMrtMap0 = pTarg->FXI()->GetParameterH( hFX, "MrtMap0" );
-		hMrtMap1 = pTarg->FXI()->GetParameterH( hFX, "MrtMap1" );
-		hMrtMap2 = pTarg->FXI()->GetParameterH( hFX, "MrtMap2" );
-		hMrtMap3 = pTarg->FXI()->GetParameterH( hFX, "MrtMap3" );
-		hAuxMap0 = pTarg->FXI()->GetParameterH( hFX, "AuxMap0" );
-		hAuxMap1 = pTarg->FXI()->GetParameterH( hFX, "AuxMap1" );
-		hNoiseMap = pTarg->FXI()->GetParameterH( hFX, "NoiseMap" );
-		hTime = pTarg->FXI()->GetParameterH( hFX, "time" );
-		hBlurFactor = pTarg->FXI()->GetParameterH( hFX, "BlurFactor" );
-		hBlurFactorI = pTarg->FXI()->GetParameterH( hFX, "BlurFactorI" );
-		hViewportDim = pTarg->FXI()->GetParameterH( hFX, "viewportdim" );
-		hEffectAmount = pTarg->FXI()->GetParameterH( hFX, "EffectAmount" );
+		hMVP = pTarg->FXI()->parameter( hFX, "mvp" );
+		hModColor = pTarg->FXI()->parameter( hFX, "modcolor" );
+		hMrtMap0 = pTarg->FXI()->parameter( hFX, "MrtMap0" );
+		hMrtMap1 = pTarg->FXI()->parameter( hFX, "MrtMap1" );
+		hMrtMap2 = pTarg->FXI()->parameter( hFX, "MrtMap2" );
+		hMrtMap3 = pTarg->FXI()->parameter( hFX, "MrtMap3" );
+		hAuxMap0 = pTarg->FXI()->parameter( hFX, "AuxMap0" );
+		hAuxMap1 = pTarg->FXI()->parameter( hFX, "AuxMap1" );
+		hNoiseMap = pTarg->FXI()->parameter( hFX, "NoiseMap" );
+		hTime = pTarg->FXI()->parameter( hFX, "time" );
+		hBlurFactor = pTarg->FXI()->parameter( hFX, "BlurFactor" );
+		hBlurFactorI = pTarg->FXI()->parameter( hFX, "BlurFactorI" );
+		hViewportDim = pTarg->FXI()->parameter( hFX, "viewportdim" );
+		hEffectAmount = pTarg->FXI()->parameter( hFX, "EffectAmount" );
 
 		mpNoiseMap = ork::asset::AssetManager<ork::lev2::TextureAsset>::Load( "data://effect_textures/colornoise" )->GetTexture();
 	}

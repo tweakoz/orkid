@@ -20,6 +20,10 @@ class FxShader;
 struct FxShaderParam;
 struct FxShaderParamBlock;
 
+#if defined(ENABLE_SHADER_STORAGE)
+struct FxShaderStorageBlock;
+#endif
+
 struct VertexConfig
 {
 	std::string Name;

@@ -32,10 +32,10 @@ GfxMaterialManip::GfxMaterialManip(GfxTarget* pTARG,ManipManager&mgr)
 
 void GfxMaterialManip::Init(ork::lev2::GfxTarget *pTarg)
 {
-	hTekStd = pTarg->FXI()->GetTechnique( hModFX, "std" );
-	hTekPick = pTarg->FXI()->GetTechnique( hModFX, "pick" );
-	hMVP = pTarg->FXI()->GetParameterH( hModFX, "mvp" );
-	hCOLOR = pTarg->FXI()->GetParameterH( hModFX, "modcolor" );
+	hTekStd = pTarg->FXI()->technique( hModFX, "std" );
+	hTekPick = pTarg->FXI()->technique( hModFX, "pick" );
+	hMVP = pTarg->FXI()->parameter( hModFX, "mvp" );
+	hCOLOR = pTarg->FXI()->parameter( hModFX, "modcolor" );
 	//hTekCurrent = hTekModColor;
 }
 

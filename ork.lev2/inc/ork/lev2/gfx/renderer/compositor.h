@@ -235,7 +235,7 @@ class CompositingSceneItem : public ork::Object {
 public:
   CompositingSceneItem();
 
-  CompositingTechnique* GetTechnique() const { return mpTechnique; }
+  CompositingTechnique* technique() const { return mpTechnique; }
   void _readTech(ork::rtti::ICastable*& val) const;
   void _writeTech(ork::rtti::ICastable* const& val);
 

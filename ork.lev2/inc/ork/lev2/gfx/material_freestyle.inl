@@ -44,21 +44,21 @@ struct FreestyleMaterial : public GfxMaterial {
 
   const FxShaderTechnique* technique(std::string named) {
     auto fxi = _initialTarget->FXI();
-    auto tek = fxi->GetTechnique(_shader, named);
+    auto tek = fxi->technique(_shader, named);
     if (tek != nullptr)
       _techniques.insert(tek);
     return tek;
   }
   const FxShaderParam* param(std::string named) {
     auto fxi = _initialTarget->FXI();
-    auto par = fxi->GetParameterH(_shader, named);
+    auto par = fxi->parameter(_shader, named);
     if (par != nullptr)
       _params.insert(par);
     return par;
   }
   const FxShaderParamBlock* paramBlock(std::string named) {
     auto fxi = _initialTarget->FXI();
-    auto par = fxi->GetParameterBlockH(_shader, named);
+    auto par = fxi->parameterBlock(_shader, named);
     if (par != nullptr)
       _paramBlocks.insert(par);
     return par;

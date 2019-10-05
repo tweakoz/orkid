@@ -104,51 +104,51 @@ void GfxMaterial3DSolid::Init(ork::lev2::GfxTarget* pTarg) {
     return;
   }
   if (mUserTekName.length()) {
-    hTekUser       = fxi->GetTechnique(hModFX, mUserTekName);
-    hTekUserStereo = fxi->GetTechnique(hModFX, mUserTekName + "_stereo");
+    hTekUser       = fxi->technique(hModFX, mUserTekName);
+    hTekUserStereo = fxi->technique(hModFX, mUserTekName + "_stereo");
   }
   if (meColorMode != EMODE_USER) {
-    hTekVertexColor    = fxi->GetTechnique(hModFX, "vtxcolor");
-    hTekVertexModColor = fxi->GetTechnique(hModFX, "vtxmodcolor");
-    hTekModColor       = fxi->GetTechnique(hModFX, "mmodcolor");
-    hTekTexColor       = fxi->GetTechnique(hModFX, "texcolor");
-    hTekTexModColor    = fxi->GetTechnique(hModFX, "texmodcolor");
-    hTekTexTexModColor = fxi->GetTechnique(hModFX, "textexmodcolor");
-    hTekTexVertexColor = fxi->GetTechnique(hModFX, "texvtxcolor");
+    hTekVertexColor    = fxi->technique(hModFX, "vtxcolor");
+    hTekVertexModColor = fxi->technique(hModFX, "vtxmodcolor");
+    hTekModColor       = fxi->technique(hModFX, "mmodcolor");
+    hTekTexColor       = fxi->technique(hModFX, "texcolor");
+    hTekTexModColor    = fxi->technique(hModFX, "texmodcolor");
+    hTekTexTexModColor = fxi->technique(hModFX, "textexmodcolor");
+    hTekTexVertexColor = fxi->technique(hModFX, "texvtxcolor");
   }
 
-  hTekPick = fxi->GetTechnique(hModFX, "tek_pick");
+  hTekPick = fxi->technique(hModFX, "tek_pick");
 
-  hMatAux = fxi->GetParameterH(hModFX, "MatAux");
-  hMatAux2 = fxi->GetParameterH(hModFX, "MatAux2");
-  hMatRot = fxi->GetParameterH(hModFX, "MatRotW");
+  hMatAux = fxi->parameter(hModFX, "MatAux");
+  hMatAux2 = fxi->parameter(hModFX, "MatAux2");
+  hMatRot = fxi->parameter(hModFX, "MatRotW");
 
-  hMatMVPL       = fxi->GetParameterH(hModFX, "MatMVPL");
-  hMatMVPR       = fxi->GetParameterH(hModFX, "MatMVPR");
-  hMatMVPC       = fxi->GetParameterH(hModFX, "MatMVPC");
-  hMatMVP        = fxi->GetParameterH(hModFX, "MatMVP");
-  hMatMV         = fxi->GetParameterH(hModFX, "MatMV");
-  hMatV          = fxi->GetParameterH(hModFX, "MatV");
-  hMatM          = fxi->GetParameterH(hModFX, "MatM");
-  hMatP          = fxi->GetParameterH(hModFX, "MatP");
-  hParamModColor = fxi->GetParameterH(hModFX, "modcolor");
+  hMatMVPL       = fxi->parameter(hModFX, "MatMVPL");
+  hMatMVPR       = fxi->parameter(hModFX, "MatMVPR");
+  hMatMVPC       = fxi->parameter(hModFX, "MatMVPC");
+  hMatMVP        = fxi->parameter(hModFX, "MatMVP");
+  hMatMV         = fxi->parameter(hModFX, "MatMV");
+  hMatV          = fxi->parameter(hModFX, "MatV");
+  hMatM          = fxi->parameter(hModFX, "MatM");
+  hMatP          = fxi->parameter(hModFX, "MatP");
+  hParamModColor = fxi->parameter(hModFX, "modcolor");
 
-  hVolumeMap = fxi->GetParameterH(hModFX, "VolumeMap");
-  hColorMap  = fxi->GetParameterH(hModFX, "ColorMap");
-  hColorMap2 = fxi->GetParameterH(hModFX, "ColorMap2");
-  hColorMap3 = fxi->GetParameterH(hModFX, "ColorMap3");
-  hColorMap4 = fxi->GetParameterH(hModFX, "ColorMap4");
+  hVolumeMap = fxi->parameter(hModFX, "VolumeMap");
+  hColorMap  = fxi->parameter(hModFX, "ColorMap");
+  hColorMap2 = fxi->parameter(hModFX, "ColorMap2");
+  hColorMap3 = fxi->parameter(hModFX, "ColorMap3");
+  hColorMap4 = fxi->parameter(hModFX, "ColorMap4");
 
-  hParamUser0 = fxi->GetParameterH(hModFX, "User0");
-  hParamUser1 = fxi->GetParameterH(hModFX, "User1");
-  hParamUser2 = fxi->GetParameterH(hModFX, "User2");
-  hParamUser3 = fxi->GetParameterH(hModFX, "User3");
+  hParamUser0 = fxi->parameter(hModFX, "User0");
+  hParamUser1 = fxi->parameter(hModFX, "User1");
+  hParamUser2 = fxi->parameter(hModFX, "User2");
+  hParamUser3 = fxi->parameter(hModFX, "User3");
 
-  hParamTime = fxi->GetParameterH(hModFX, "Time");
+  hParamTime = fxi->parameter(hModFX, "Time");
 
-  hParamNoiseAmp   = fxi->GetParameterH(hModFX, "NoiseAmp");
-  hParamNoiseFreq  = fxi->GetParameterH(hModFX, "NoiseFreq");
-  hParamNoiseShift = fxi->GetParameterH(hModFX, "NoiseShift");
+  hParamNoiseAmp   = fxi->parameter(hModFX, "NoiseAmp");
+  hParamNoiseFreq  = fxi->parameter(hModFX, "NoiseFreq");
+  hParamNoiseShift = fxi->parameter(hModFX, "NoiseShift");
 }
 
 /////////////////////////////////////////////////////////////////////////

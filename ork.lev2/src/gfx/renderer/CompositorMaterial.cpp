@@ -52,29 +52,29 @@ void CompositingMaterial::Init(lev2::GfxTarget* pTarg) {
 
     auto fxi = pTarg->FXI();
 
-    hMatMVP = fxi->GetParameterH(hModFX, "MatMVP");
-    hBiasA  = fxi->GetParameterH(hModFX, "BiasA");
-    hBiasB  = fxi->GetParameterH(hModFX, "BiasB");
-    hBiasC  = fxi->GetParameterH(hModFX, "BiasC");
+    hMatMVP = fxi->parameter(hModFX, "MatMVP");
+    hBiasA  = fxi->parameter(hModFX, "BiasA");
+    hBiasB  = fxi->parameter(hModFX, "BiasB");
+    hBiasC  = fxi->parameter(hModFX, "BiasC");
 
-    hLevelA = fxi->GetParameterH(hModFX, "LevelA");
-    hLevelB = fxi->GetParameterH(hModFX, "LevelB");
-    hLevelC = fxi->GetParameterH(hModFX, "LevelC");
+    hLevelA = fxi->parameter(hModFX, "LevelA");
+    hLevelB = fxi->parameter(hModFX, "LevelB");
+    hLevelC = fxi->parameter(hModFX, "LevelC");
 
-    hMapA = fxi->GetParameterH(hModFX, "MapA");
-    hMapB = fxi->GetParameterH(hModFX, "MapB");
-    hMapC = fxi->GetParameterH(hModFX, "MapC");
+    hMapA = fxi->parameter(hModFX, "MapA");
+    hMapB = fxi->parameter(hModFX, "MapB");
+    hMapC = fxi->parameter(hModFX, "MapC");
 
-    hTekOp2AmulB = fxi->GetTechnique(hModFX, "Op2AmulB");
-    hTekOp2AdivB = fxi->GetTechnique(hModFX, "Op2AdivB");
+    hTekOp2AmulB = fxi->technique(hModFX, "Op2AmulB");
+    hTekOp2AdivB = fxi->technique(hModFX, "Op2AdivB");
 
-    hTekBoverAplusC = fxi->GetTechnique(hModFX, "BoverAplusC");
-    hTekAplusBplusC = fxi->GetTechnique(hModFX, "AplusBplusC");
-    hTekAlerpBwithC = fxi->GetTechnique(hModFX, "AlerpBwithC");
+    hTekBoverAplusC = fxi->technique(hModFX, "BoverAplusC");
+    hTekAplusBplusC = fxi->technique(hModFX, "AplusBplusC");
+    hTekAlerpBwithC = fxi->technique(hModFX, "AlerpBwithC");
 
-    hTekAsolo = fxi->GetTechnique(hModFX, "Asolo");
-    hTekBsolo = fxi->GetTechnique(hModFX, "Bsolo");
-    hTekCsolo = fxi->GetTechnique(hModFX, "Csolo");
+    hTekAsolo = fxi->technique(hModFX, "Asolo");
+    hTekBsolo = fxi->technique(hModFX, "Bsolo");
+    hTekCsolo = fxi->technique(hModFX, "Csolo");
 
     mRasterState.SetCullTest(ork::lev2::ECULLTEST_OFF);
     mRasterState.SetAlphaTest(ork::lev2::EALPHATEST_OFF);

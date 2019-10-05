@@ -98,7 +98,27 @@ struct FxShaderParamBlockMapping {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FxShader {
+#if defined(ENABLE_SHADER_STORAGE)
+
+struct FxShaderStorageBlock;
+struct FxShaderStorageBlockMapping;
+
+struct FxShaderStorageBlock {
+  std::string _name;
+  //FxShaderParam *param(const std::string &name) const;
+  FxShaderStorageBlockMapping *map() const;
+};
+struct FxShaderStorageBlockMapping {
+  ~FxShaderStorageBlockMapping();
+  FxShaderStorageBlock *_block = nullptr;
+  void unmap();
+};
+
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct FxShader {
   void *mInternalHandle;
 
   typedef orkmap<std::string, const FxShaderParam *> parambynamemap_t;
@@ -113,7 +133,6 @@ class FxShader {
   bool mFailedCompile;
   std::string mName;
 
-public:
   void OnReset();
 
   static void SetLoaderTarget(GfxTarget *targ);
@@ -132,9 +151,9 @@ public:
   void addParameter(const FxShaderParam *param);
   void addParameterBlock(const FxShaderParamBlock *block);
 
-  const techniquebynamemap_t &GetTechniques(void) const { return _techniques; }
-  const parambynamemap_t &paramByName(void) const { return _parameterByName; }
-  const paramblockbynamemap_t &paramBlockByName(void) const {
+  const techniquebynamemap_t &techniques(void) const { return _techniques; }
+  const parambynamemap_t &namedParams(void) const { return _parameterByName; }
+  const paramblockbynamemap_t &namedParamBlocks(void) const {
     return _parameterBlockByName;
   }
 
@@ -152,6 +171,23 @@ public:
 
   void SetName(const char *);
   const char *GetName();
+
+  ////////////////////////////////////////////////////
+  // SSBO support
+  ////////////////////////////////////////////////////
+
+  #if defined(ENABLE_SHADER_STORAGE)
+  typedef orkmap<std::string, const FxShaderStorageBlock *> storageblockbynamemap_t;
+  storageblockbynamemap_t _storageBlockByName;
+  const storageblockbynamemap_t &namedStorageBlocks(void) const {
+    return _storageBlockByName;
+  }
+  void addStorageBlock(const FxShaderStorageBlock *block);
+  FxShaderStorageBlock *storageBlockByName(const std::string &named);
+  #endif
+
+  ////////////////////////////////////////////////////
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -168,7 +168,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
   /////////////////////////////////////////////////////////
   int scene_item = 0;
   if (auto item = compositingItem(0, scene_item)) {
-    _compcontext._compositingTechnique = item->GetTechnique();
+    _compcontext._compositingTechnique = item->technique();
   }
   /////////////////////////////////
   // bind lighting
@@ -233,7 +233,7 @@ bool CompositingImpl::assemble(lev2::CompositorDrawData& drawdata) {
 void CompositingImpl::composite(lev2::CompositorDrawData& drawdata) {
   int scene_item = 0;
   if (auto pCSI = compositingItem(0, scene_item)) {
-    _compcontext._compositingTechnique = pCSI->GetTechnique();
+    _compcontext._compositingTechnique = pCSI->technique();
     _compcontext.composite(drawdata);
   }
 }

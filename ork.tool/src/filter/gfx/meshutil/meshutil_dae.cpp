@@ -414,10 +414,10 @@ FCDMaterial* PreserveMaterial(const toolmesh& tmesh, FCDocument& daedoc, const s
 			DaeMat->SetDaeId( CreateFormattedString( "%s", omatname.c_str() ).c_str() );
 			DaeMat->SetEffect( DaeEfx );
 		
-			/*size_t numtek = pcfx->GetTechniqueCount();
+			/*size_t numtek = pcfx->techniqueCount();
 			for( size_t t=0; t<numtek; t++ )
 			{
-				FCDEffectTechnique* ptemptek = pcfx->GetTechnique(t);
+				FCDEffectTechnique* ptemptek = pcfx->technique(t);
 				FCDEffectTechnique* pnewtek = pcfx->AddTechnique();
 
 				size_t npasses = ptemptek->GetPassCount();

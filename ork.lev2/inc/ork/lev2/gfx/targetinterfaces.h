@@ -13,6 +13,12 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if ! defined(__APPLE__)
+  #define ENABLE_SHADER_STORAGE
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
@@ -36,6 +42,9 @@ class FxShader;
 struct FxShaderTechnique;
 struct FxShaderParam;
 struct FxShaderParamBlock;
+#if defined(ENABLE_SHADER_STORAGE)
+struct FxShaderStorageBlock;
+#endif
 class RenderContextInstData;
 class GfxMaterial;
 class VertexBufferBase;

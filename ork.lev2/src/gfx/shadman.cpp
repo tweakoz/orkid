@@ -99,6 +99,28 @@ void FxShader::addParameterBlock( const FxShaderParamBlock * block )
 
 }
 
+#if defined(ENABLE_SHADER_STORAGE)
+void FxShader::addStorageBlock(const FxShaderStorageBlock *block) {
+	_storageBlockByName[ block->_name ] = block;
+}
+FxShaderStorageBlock *FxShader::storageBlockByName(const std::string &named){
+	auto it=_storageBlockByName.find(named);
+	return const_cast<FxShaderStorageBlock*>((it!=_storageBlockByName.end()) ? it->second : nullptr);
+
+}
+FxShaderStorageBlockMapping *FxShaderStorageBlock::map() const {
+	assert(false);
+	return nullptr;
+}
+FxShaderStorageBlockMapping::~FxShaderStorageBlockMapping(){
+	unmap();
+}
+void FxShaderStorageBlockMapping::unmap(){
+	
+}
+
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 
 static FileDevContext gShaderFileContext1;

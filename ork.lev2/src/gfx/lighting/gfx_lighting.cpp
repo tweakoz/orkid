@@ -688,14 +688,14 @@ void LightingFxInterface::Init(FxShader* pshader) {
   mpShader = pshader;
 
   FxInterface* pfxi       = GfxEnv::GetRef().GetLoaderTarget()->FXI();
-  hAmbientLight           = pfxi->GetParameterH(pshader, "AmbientLight");
-  hNumDirectionalLights   = pfxi->GetParameterH(pshader, "NumDirectionalLights");
-  hDirectionalLightDirs   = pfxi->GetParameterH(pshader, "DirectionalLightDir");
-  hDirectionalLightColors = pfxi->GetParameterH(pshader, "DirectionalLightColor");
-  hDirectionalLightPos    = pfxi->GetParameterH(pshader, "DirectionalLightPos");
-  hDirectionalAttenA      = pfxi->GetParameterH(pshader, "DirectionalAttenA");
-  hDirectionalAttenK      = pfxi->GetParameterH(pshader, "DirectionalAttenK");
-  hLightMode              = pfxi->GetParameterH(pshader, "LightMode");
+  hAmbientLight           = pfxi->parameter(pshader, "AmbientLight");
+  hNumDirectionalLights   = pfxi->parameter(pshader, "NumDirectionalLights");
+  hDirectionalLightDirs   = pfxi->parameter(pshader, "DirectionalLightDir");
+  hDirectionalLightColors = pfxi->parameter(pshader, "DirectionalLightColor");
+  hDirectionalLightPos    = pfxi->parameter(pshader, "DirectionalLightPos");
+  hDirectionalAttenA      = pfxi->parameter(pshader, "DirectionalAttenA");
+  hDirectionalAttenK      = pfxi->parameter(pshader, "DirectionalAttenK");
+  hLightMode              = pfxi->parameter(pshader, "LightMode");
 
   mbHasLightingInterface = true;
 

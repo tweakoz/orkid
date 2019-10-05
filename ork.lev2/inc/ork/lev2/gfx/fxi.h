@@ -17,9 +17,13 @@ public:
   virtual void EndBlock(FxShader* hfx)                                     = 0;
   virtual void CommitParams(void)                                          = 0;
 
-  virtual const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name) = 0;
-  virtual const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name)    = 0;
-  virtual const FxShaderParamBlock* GetParameterBlockH(FxShader* hfx, const std::string& name)    = 0;
+  virtual const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) = 0;
+  virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)    = 0;
+  virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name)    = 0;
+
+  #if defined(ENABLE_SHADER_STORAGE)
+  virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
+  #endif
 
   virtual void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval)                          = 0;
   virtual void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival)                            = 0;

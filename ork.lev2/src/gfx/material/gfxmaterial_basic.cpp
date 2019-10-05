@@ -125,54 +125,54 @@ void GfxMaterialWiiBasic::Init(ork::lev2::GfxTarget* pTarg) {
 
     printf("GfxMaterialWiiBasic<%p> btek<%s> ptek<%s>\n", this, itb->second.c_str(), itp->second.c_str());
 
-    hTekModVtxTex       = pTarg->FXI()->GetTechnique(hModFX, itb->second);
-    hTekModVtxTexStereo = pTarg->FXI()->GetTechnique(hModFX, (itb->second + "_stereo"));
-    hTekMod             = pTarg->FXI()->GetTechnique(hModFX, itp->second);
+    hTekModVtxTex       = pTarg->FXI()->technique(hModFX, itb->second);
+    hTekModVtxTexStereo = pTarg->FXI()->technique(hModFX, (itb->second + "_stereo"));
+    hTekMod             = pTarg->FXI()->technique(hModFX, itp->second);
 
     //////////////////////////////////////////
     // matrices
 
-    hWMatrix  = pTarg->FXI()->GetParameterH(hModFX, "WMatrix");
-    hIWMatrix = pTarg->FXI()->GetParameterH(hModFX, "IWMatrix");
-    hVMatrix  = pTarg->FXI()->GetParameterH(hModFX, "VMatrix");
-    hMatP     = pTarg->FXI()->GetParameterH(hModFX, "PMatrix");
-    hMatMV    = pTarg->FXI()->GetParameterH(hModFX, "WVMatrix");
-    hVPMatrix = pTarg->FXI()->GetParameterH(hModFX, "VPMatrix");
+    hWMatrix  = pTarg->FXI()->parameter(hModFX, "WMatrix");
+    hIWMatrix = pTarg->FXI()->parameter(hModFX, "IWMatrix");
+    hVMatrix  = pTarg->FXI()->parameter(hModFX, "VMatrix");
+    hMatP     = pTarg->FXI()->parameter(hModFX, "PMatrix");
+    hMatMV    = pTarg->FXI()->parameter(hModFX, "WVMatrix");
+    hVPMatrix = pTarg->FXI()->parameter(hModFX, "VPMatrix");
 
-    hWVPMatrix  = pTarg->FXI()->GetParameterH(hModFX, "WVPMatrix");
-    hWVPLMatrix = pTarg->FXI()->GetParameterH(hModFX, "WVPMatrixL");
-    hWVPRMatrix = pTarg->FXI()->GetParameterH(hModFX, "WVPMatrixR");
+    hWVPMatrix  = pTarg->FXI()->parameter(hModFX, "WVPMatrix");
+    hWVPLMatrix = pTarg->FXI()->parameter(hModFX, "WVPMatrixL");
+    hWVPRMatrix = pTarg->FXI()->parameter(hModFX, "WVPMatrixR");
 
-    hWRotMatrix        = pTarg->FXI()->GetParameterH(hModFX, "WRotMatrix");
-    hDiffuseMapMatrix  = pTarg->FXI()->GetParameterH(hModFX, "DiffuseMapMatrix");
-    hNormalMapMatrix   = pTarg->FXI()->GetParameterH(hModFX, "NormalMapMatrix");
-    hSpecularMapMatrix = pTarg->FXI()->GetParameterH(hModFX, "SpecularMapMatrix");
+    hWRotMatrix        = pTarg->FXI()->parameter(hModFX, "WRotMatrix");
+    hDiffuseMapMatrix  = pTarg->FXI()->parameter(hModFX, "DiffuseMapMatrix");
+    hNormalMapMatrix   = pTarg->FXI()->parameter(hModFX, "NormalMapMatrix");
+    hSpecularMapMatrix = pTarg->FXI()->parameter(hModFX, "SpecularMapMatrix");
 
-    hBoneMatrices = pTarg->FXI()->GetParameterH(hModFX, "BoneMatrices");
+    hBoneMatrices = pTarg->FXI()->parameter(hModFX, "BoneMatrices");
 
     //////////////////////////////////////////
     // Textures
 
-    hDiffuseTEX  = pTarg->FXI()->GetParameterH(hModFX, "DiffuseMap");
-    hSpecularTEX = pTarg->FXI()->GetParameterH(hModFX, "SpecularMap");
-    hAmbientTEX  = pTarg->FXI()->GetParameterH(hModFX, "AmbientMap");
-    hNormalTEX   = pTarg->FXI()->GetParameterH(hModFX, "NormalMap");
+    hDiffuseTEX  = pTarg->FXI()->parameter(hModFX, "DiffuseMap");
+    hSpecularTEX = pTarg->FXI()->parameter(hModFX, "SpecularMap");
+    hAmbientTEX  = pTarg->FXI()->parameter(hModFX, "AmbientMap");
+    hNormalTEX   = pTarg->FXI()->parameter(hModFX, "NormalMap");
 
-    hTopEnvTEX = pTarg->FXI()->GetParameterH(hModFX, "TopEnvMap");
-    hBotEnvTEX = pTarg->FXI()->GetParameterH(hModFX, "BotEnvMap");
+    hTopEnvTEX = pTarg->FXI()->parameter(hModFX, "TopEnvMap");
+    hBotEnvTEX = pTarg->FXI()->parameter(hModFX, "BotEnvMap");
 
     //////////////////////////////////////////
     // data driven material props
 
-    hEmissiveColor = pTarg->FXI()->GetParameterH(hModFX, "EmissiveColor");
+    hEmissiveColor = pTarg->FXI()->parameter(hModFX, "EmissiveColor");
 
     //////////////////////////////////////////
     // misc
 
-    hWCamLoc       = pTarg->FXI()->GetParameterH(hModFX, "WCamLoc");
-    hSpecularPower = pTarg->FXI()->GetParameterH(hModFX, "SpecularPower");
-    hMODCOLOR      = pTarg->FXI()->GetParameterH(hModFX, "modcolor");
-    hTIME          = pTarg->FXI()->GetParameterH(hModFX, "time");
+    hWCamLoc       = pTarg->FXI()->parameter(hModFX, "WCamLoc");
+    hSpecularPower = pTarg->FXI()->parameter(hModFX, "SpecularPower");
+    hMODCOLOR      = pTarg->FXI()->parameter(hModFX, "modcolor");
+    hTIME          = pTarg->FXI()->parameter(hModFX, "time");
 
     mLightingInterface.Init(hModFX);
   }

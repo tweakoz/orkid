@@ -66,15 +66,15 @@ void GfxMaterialUI::Init(ork::lev2::GfxTarget *pTarg)
 {
 	//printf( "hModFX<%p>\n", hModFX );
 
-	hTekMod = pTarg->FXI()->GetTechnique( hModFX, "uidev_modcolor" );
+	hTekMod = pTarg->FXI()->technique( hModFX, "uidev_modcolor" );
 
 	//OrkAssert(hTekMod);
-	hTekVtx = pTarg->FXI()->GetTechnique( hModFX, "ui_vtx" );
-	hTekModVtx = pTarg->FXI()->GetTechnique( hModFX, "ui_vtxmod" );
-	hTekCircle = pTarg->FXI()->GetTechnique( hModFX, "uicircle" );
+	hTekVtx = pTarg->FXI()->technique( hModFX, "ui_vtx" );
+	hTekModVtx = pTarg->FXI()->technique( hModFX, "ui_vtxmod" );
+	hTekCircle = pTarg->FXI()->technique( hModFX, "uicircle" );
 
-	hTransform = pTarg->FXI()->GetParameterH( hModFX, "mvp" );
-	hModColor = pTarg->FXI()->GetParameterH( hModFX, "ModColor" );
+	hTransform = pTarg->FXI()->parameter( hModFX, "mvp" );
+	hModColor = pTarg->FXI()->parameter( hModFX, "ModColor" );
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -178,11 +178,11 @@ GfxMaterialUIText::GfxMaterialUIText(GfxTarget *pTarg)
 
 void GfxMaterialUIText::Init(ork::lev2::GfxTarget *pTarg)
 {
-	hTek = pTarg->FXI()->GetTechnique( hModFX, "uitext" );
+	hTek = pTarg->FXI()->technique( hModFX, "uitext" );
 
-	hTransform = pTarg->FXI()->GetParameterH( hModFX, "mvp" );
-	hModColor = pTarg->FXI()->GetParameterH( hModFX, "ModColor" );
-	hColorMap = pTarg->FXI()->GetParameterH( hModFX, "ColorMap" );
+	hTransform = pTarg->FXI()->parameter( hModFX, "mvp" );
+	hModColor = pTarg->FXI()->parameter( hModFX, "ModColor" );
+	hColorMap = pTarg->FXI()->parameter( hModFX, "ColorMap" );
 
 	mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_OFF );
 }
@@ -277,11 +277,11 @@ void GfxMaterialUITextured::Init(ork::lev2::GfxTarget *pTarg)
 {
 	hModFX = asset::AssetManager<FxShaderAsset>::Load( "orkshader://ui" )->GetFxShader();
 
-	hTek = pTarg->FXI()->GetTechnique( hModFX, mTechniqueName );
+	hTek = pTarg->FXI()->technique( hModFX, mTechniqueName );
 
-	hTransform = pTarg->FXI()->GetParameterH( hModFX, "mvp" );
-	hModColor = pTarg->FXI()->GetParameterH( hModFX, "ModColor" );
-	hColorMap = pTarg->FXI()->GetParameterH( hModFX, "ColorMap" );
+	hTransform = pTarg->FXI()->parameter( hModFX, "mvp" );
+	hModColor = pTarg->FXI()->parameter( hModFX, "ModColor" );
+	hColorMap = pTarg->FXI()->parameter( hModFX, "ColorMap" );
 }
 
 /////////////////////////////////////////////////////////////////////////

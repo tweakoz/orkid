@@ -121,7 +121,7 @@ void GfxMaterialFx::SetEffect(FxShader *pshader) {
   mEffectInstance.mpEffect = pshader;
 
   if (mEffectInstance.mpEffect) {
-    mBonesParam = GfxEnv::GetRef().GetLoaderTarget()->FXI()->GetParameterH(
+    mBonesParam = GfxEnv::GetRef().GetLoaderTarget()->FXI()->parameter(
         mEffectInstance.mpEffect, "BoneMatrices");
   }
 
@@ -240,8 +240,8 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
     orklut<std::string, GfxMaterialFxParamBase *> &ParamInstanceMap =
         mEffectInstance.mParameterInstances;
 
-    const orkmap<std::string, const FxShaderParam *> &ParamNameMap =
-        mEffectInstance.mpEffect->paramByName();
+    const auto& ParamNameMap =
+        mEffectInstance.mpEffect->namedParams();
     // const orkmap<std::string,const FxShaderParam*> & ParamSemMap =
     // mEffectInstance.mpEffect->GetParametersBySemantic();
 
@@ -713,7 +713,7 @@ void GfxMaterialFx::Init(GfxTarget *pTARG) {
     // set the active technique
     ////////////////////////////////
     const orkmap<std::string, const FxShaderTechnique *> &TekMap =
-        mEffectInstance.mpEffect->GetTechniques();
+        mEffectInstance.mpEffect->techniques();
     orkmap<std::string, const FxShaderTechnique *>::const_iterator itt =
         TekMap.find(TekName);
     if (itt != TekMap.end()) {
@@ -1312,8 +1312,8 @@ void GfxMaterialFx::SetMaterialProperty(const char *prop,
     AddParameter(paramstr);
   } else {
 
-    const orkmap<std::string, const FxShaderParam *> &ParamNameMap =
-        mEffectInstance.mpEffect->paramByName();
+    const auto &ParamNameMap =
+        mEffectInstance.mpEffect->namedParams();
 
     orkmap<std::string, const FxShaderParam *>::const_iterator itparam =
         ParamNameMap.find(prop);

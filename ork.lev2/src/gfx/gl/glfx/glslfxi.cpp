@@ -278,14 +278,14 @@ void Interface::CommitParams(void) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderTechnique* Interface::GetTechnique(FxShader* hfx, const std::string& name) {
+const FxShaderTechnique* Interface::technique(FxShader* hfx, const std::string& name) {
   // orkprintf( "Get cgtek<%s> hfx<%x>\n", name.c_str(), hfx );
   OrkAssert(hfx != 0);
   Container* container = static_cast<Container*>(hfx->GetInternalHandle());
   OrkAssert(container != 0);
   /////////////////////////////////////////////////////////////
 
-  const auto& tekmap            = hfx->GetTechniques();
+  const auto& tekmap            = hfx->techniques();
   const auto& it                = tekmap.find(name);
   const FxShaderTechnique* htek = (it != tekmap.end()) ? it->second : 0;
 
@@ -644,9 +644,9 @@ void Interface::EndPass(FxShader* hfx) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderParam* Interface::GetParameterH(FxShader* hfx, const std::string& name) {
+const FxShaderParam* Interface::parameter(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  const auto& parammap        = hfx->paramByName();
+  const auto& parammap        = hfx->namedParams();
   const auto& it              = parammap.find(name);
   const FxShaderParam* hparam = (it != parammap.end()) ? it->second : 0;
   return hparam;
@@ -654,13 +654,27 @@ const FxShaderParam* Interface::GetParameterH(FxShader* hfx, const std::string& 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const FxShaderParamBlock* Interface::GetParameterBlockH(FxShader* hfx, const std::string& name) {
+const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  const auto& parammap        = hfx->paramBlockByName();
+  const auto& parammap        = hfx->namedParamBlocks();
   const auto& it              = parammap.find(name);
   const FxShaderParamBlock* hparam = (it != parammap.end()) ? it->second : 0;
   return hparam;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_SHADER_STORAGE)
+
+const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::string& name) {
+  OrkAssert(0 != hfx);
+  const auto& storagemap        = hfx->namedStorageBlocks();
+  const auto& it              = storagemap.find(name);
+  const FxShaderStorageBlock* block = (it != storagemap.end()) ? it->second : 0;
+  return block;
+}
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

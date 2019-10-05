@@ -454,9 +454,12 @@ public:
   void EndBlock(FxShader* hfx) final;
   void CommitParams(void) final;
 
-  const FxShaderTechnique* GetTechnique(FxShader* hfx, const std::string& name) final;
-  const FxShaderParam* GetParameterH(FxShader* hfx, const std::string& name) final;
-  const FxShaderParamBlock* GetParameterBlockH(FxShader* hfx, const std::string& name) final;
+  const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
+  const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
+  const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
+  #if defined(ENABLE_SHADER_STORAGE)
+  const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
+  #endif
 
   void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) final;
   void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) final;
