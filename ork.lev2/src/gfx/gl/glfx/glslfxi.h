@@ -147,6 +147,12 @@ struct UniformBlockItem {
   size_t _offset = 0;
 };
 
+struct UniformBuffer {
+    FxShaderParamBuffer* _fxspb = nullptr;
+    GLuint _glbufid = 0;
+    size_t _length = 0;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -163,6 +169,7 @@ struct UniformBlockBinding {
   };
 
   Pass* _pass = nullptr; // program to which this binding is bound
+  UniformBlock* _block = nullptr;
   GLuint _blockIndex = 0xffffffff;
   std::string _name;
   GLint _blockSize = 0;
@@ -348,7 +355,7 @@ struct LibBlock {
 struct Pass {
   typedef std::map<std::string, UniformInstance*> uni_map_t;
   typedef std::map<std::string, Attribute*> attr_map_t;
-  typedef std::map<std::string,UniformBlockBinding> ubb_map_t;
+  typedef std::unordered_map<UniformBlock*,UniformBlockBinding*> ubb_map_t;
 
   static const int kmaxattrID = 16;
   svar64_t _primpipe;
@@ -372,7 +379,11 @@ struct Pass {
   bool hasUniformInstance(UniformInstance* puni) const;
   const UniformInstance* uniformInstance(Uniform* puni) const;
 
-  UniformBlockBinding uniformBlockBinding(std::string blockname);
+  UniformBlockBinding* uniformBlockBinding(UniformBlock* block);
+
+  void bindUniformBlockBuffer( UniformBlock* block, UniformBuffer* buffer );
+
+  std::vector<UniformBuffer*> _ubobindings;
 
 };
 
@@ -422,7 +433,7 @@ struct Container {
   std::map<std::string, Uniform*> _uniforms;
   std::map<std::string, Technique*> _techniqueMap;
   std::map<std::string, LibBlock*> _libBlocks;
-  const Pass* mActivePass;
+  Pass* _activePass;
   int mActiveNumPasses;
   const FxShader* mFxShader;
   bool mShaderCompileFailed;
@@ -538,7 +549,12 @@ public:
 
   bool compileAndLink(Container* container);
 
-  paramblockmappingptr_t mapParamBlock(const FxShaderParamBlock*b,size_t base, size_t length)  final;
+  // ubo
+  FxShaderParamBuffer* createParamBuffer( size_t length ) final;
+  parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer*b,size_t base, size_t length) final;
+  void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
+  void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
+
 
 protected:
   Container* mpActiveEffect;

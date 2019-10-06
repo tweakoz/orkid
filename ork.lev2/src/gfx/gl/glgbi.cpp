@@ -713,7 +713,7 @@ bool GlGeometryBufferInterface::BindVertexStreamSource( const VertexBufferBase& 
 	svarp_t evb_priv;
 	////////////////////////////////////////////////////////////////////
 	glslfx::Interface* pFXI = static_cast<glslfx::Interface*>(mTargetGL.FXI());
-	const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
+	const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->_activePass;
 	OrkAssert( pfxpass!=nullptr );
 	evb_priv.Set<const glslfx::Pass*>(pfxpass);
 	////////////////////////////////////////////////////////////////////
@@ -754,7 +754,7 @@ bool GlGeometryBufferInterface::BindStreamSources( const VertexBufferBase& VBuf,
 	svarp_t evb_priv;
 
 	glslfx::Interface* pFXI = static_cast<glslfx::Interface*>(mTargetGL.FXI());
-	const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->mActivePass;
+	const glslfx::Pass* pfxpass = pFXI->GetActiveEffect()->_activePass;
 	OrkAssert( pfxpass!=nullptr );
 	evb_priv.Set<const glslfx::Pass*>(pfxpass);
 

@@ -67,23 +67,15 @@ FxShaderParam* FxShaderParamBlock::param(const std::string&name) const {
   return (it!=_subparams.end()) ? it->second : nullptr;
 }
 
-paramblockmappingptr_t FxShaderParamBlock::map(size_t base, size_t length) const {
-  return _fxi->mapParamBlock(this,base,length);
-}
+/*void FxShaderParamBlockMapping::setMatrix(const FxShaderParam* par, const fmtx4& m) {
 
-void FxShaderParamBlockMapping::setMatrix(const FxShaderParam* par, const fmtx4& m) {
-
+}*/
+FxShaderParamBufferMapping::FxShaderParamBufferMapping(){}
+FxShaderParamBufferMapping::~FxShaderParamBufferMapping(){
+	assert(_mappedaddr==nullptr);
 }
-void FxShaderParamBlockMapping::unmap(){
-}
-FxShaderParamBlockMapping::FxShaderParamBlockMapping(size_t base, size_t length)
-  : _base(base)
-  , _length(length){
-
-}
-
-FxShaderParamBlockMapping::~FxShaderParamBlockMapping(){
-		unmap();
+void FxShaderParamBufferMapping::unmap(){
+	_fxi->unmapParamBuffer(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

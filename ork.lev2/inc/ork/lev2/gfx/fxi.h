@@ -1,7 +1,9 @@
 #pragma once
 
-struct FxShaderParamBlockMapping;
-typedef std::shared_ptr<FxShaderParamBlockMapping> paramblockmappingptr_t;
+struct FxShaderParamBlock;
+struct FxShaderParamBuffer;
+struct FxShaderParamBufferMapping;
+typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
 
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
@@ -61,7 +63,11 @@ public:
 
   static void Reset();
 
-  virtual paramblockmappingptr_t mapParamBlock(const FxShaderParamBlock*b,size_t base, size_t length) { return nullptr; }
+
+  virtual FxShaderParamBuffer* createParamBuffer( size_t length ) { return nullptr; }
+  virtual parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer*b,size_t base=0, size_t length=0) { return nullptr; }
+  virtual void unmapParamBuffer(FxShaderParamBufferMapping* mapping) {}
+  virtual void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {}
 
 protected:
   FxInterface();

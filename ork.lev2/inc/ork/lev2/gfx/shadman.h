@@ -17,7 +17,7 @@ namespace lev2 {
 struct FxShaderParam;
 struct FxShaderParamBlock;
 struct FxShaderParamBlockMapping;
-typedef std::shared_ptr<FxShaderParamBlockMapping> paramblockmappingptr_t;
+typedef std::shared_ptr<FxShaderParamBufferMapping> parambuffermappingptr_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,6 +69,10 @@ struct FxShaderTechnique {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct FxShaderParamInBlockInfo {
+  FxShaderParamBlock* _parent = nullptr;
+};
+
 struct FxShaderParam {
   std::string _name;
   std::string mParameterSemantic;
@@ -76,7 +80,7 @@ struct FxShaderParam {
   EPropType meParamType;
   void *mInternalHandle;
   bool mBindable;
-
+  FxShaderParamInBlockInfo* _blockinfo = nullptr;
   FxShaderParam *mChildParam;
 
   orklut<std::string, std::string> mAnnotations;
@@ -87,22 +91,35 @@ struct FxShaderParam {
 struct FxShaderParamBlock {
   std::string _name;
   FxShaderParam *param(const std::string &name) const;
-  paramblockmappingptr_t map(size_t base=0, size_t length=0) const;
   std::map<std::string,FxShaderParam*> _subparams;
   svarp_t _impl;
   FxInterface* _fxi = nullptr;
 };
-
-struct FxShaderParamBlockMapping {
-  FxShaderParamBlockMapping(size_t base, size_t length);
-  ~FxShaderParamBlockMapping();
-  void setMatrix(const FxShaderParam *par, const fmtx4 &m);
-  void unmap();
-
-  FxShaderParamBlock *_block = nullptr;
-  size_t _base = 0;
+struct FxShaderParamBuffer {
   size_t _length = 0;
+  svarp_t _impl;
+};
+struct FxShaderParamBufferMapping {
+  FxShaderParamBufferMapping();
+  ~FxShaderParamBufferMapping();
+  void unmap();
+  FxShaderParamBuffer* _buffer = nullptr;
   FxInterface* _fxi = nullptr;
+  size_t _offset = 0;
+  size_t _length = 0;
+  svarp_t _impl;
+
+  template <typename T> T& ref(size_t offset) {
+    size_t end = offset + sizeof(T);
+    assert(end<=_length);
+    auto tstar = (T*) (((char*)_mappedaddr)+offset);
+    return *tstar;
+  }
+
+
+  void* _mappedaddr = nullptr;
+
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -103,23 +103,23 @@ void Interface::EndBlock(FxShader* hfx) { mpActiveFxShader = 0; }
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::CommitParams(void) {
-  if (mpActiveEffect && mpActiveEffect->mActivePass && mpActiveEffect->mActivePass->_stateBlock) {
-    const auto& items = mpActiveEffect->mActivePass->_stateBlock->mApplicators;
+  if (mpActiveEffect && mpActiveEffect->_activePass && mpActiveEffect->_activePass->_stateBlock) {
+    const auto& items = mpActiveEffect->_activePass->_stateBlock->mApplicators;
 
     for (const auto& item : items) {
       item(&mTarget);
     }
     // const SRasterState& rstate =
-    // mpActiveEffect->mActivePass->_stateBlock->mState;
+    // mpActiveEffect->_activePass->_stateBlock->mState;
     // mTarget.RSI()->BindRasterState(rstate);
   }
-  // if( (mpActiveEffect->mActivePass != mLastPass) ||
+  // if( (mpActiveEffect->_activePass != mLastPass) ||
   // (mTarget.GetCurMaterial()!=mpLastFxMaterial) )
   {
     // orkprintf( "CgFxInterface::CommitParams() activepass<%p>\n",
-    // mpActiveEffect->mActivePass ); cgSetPassState( mpActiveEffect->mActivePass
+    // mpActiveEffect->_activePass ); cgSetPassState( mpActiveEffect->_activePass
     // ); mpLastFxMaterial = mTarget.GetCurMaterial(); mLastPass =
-    // mpActiveEffect->mActivePass;
+    // mpActiveEffect->_activePass;
   }
 }
 
@@ -150,7 +150,7 @@ bool Interface::BindTechnique(FxShader* hfx, const FxShaderTechnique* htek) {
   Container* container        = static_cast<Container*>(hfx->GetInternalHandle());
   const Technique* ptekcont   = static_cast<const Technique*>(htek->GetPlatformHandle());
   container->mActiveTechnique = ptekcont;
-  container->mActivePass      = 0;
+  container->_activePass      = 0;
 
   // orkprintf( "binding cgtek<%s:%x>\n", ptekcont->mName.c_str(), ptekcont );
 
@@ -166,14 +166,14 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
 
   assert(container->mActiveTechnique != nullptr);
 
-  container->mActivePass = container->mActiveTechnique->mPasses[ipass];
+  container->_activePass = container->mActiveTechnique->mPasses[ipass];
   GL_ERRORCHECK();
-  if (0 == container->mActivePass->_programObjectId){
+  if (0 == container->_activePass->_programObjectId){
     bool complinkok = compileAndLink(container);
     hfx->SetFailedCompile(false==complinkok);
   }
   GL_ERRORCHECK();
-  glUseProgram(container->mActivePass->_programObjectId);
+  glUseProgram(container->_activePass->_programObjectId);
   GL_ERRORCHECK();
 
   return true;
@@ -186,7 +186,7 @@ void Interface::EndPass(FxShader* hfx) {
   GL_ERRORCHECK();
   glUseProgram(0);
   GL_ERRORCHECK();
-  // cgResetPassState( container->mActivePass );
+  // cgResetPassState( container->_activePass );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -197,6 +197,80 @@ const FxShaderParam* Interface::parameter(FxShader* hfx, const std::string& name
   const auto& it              = parammap.find(name);
   const FxShaderParam* hparam = (it != parammap.end()) ? it->second : 0;
   return hparam;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// UBO mgmt
+///////////////////////////////////////////////////////////////////////////////
+
+FxShaderParamBuffer* Interface::createParamBuffer( size_t length ) {
+    assert(length<=65536);
+    auto ub = new UniformBuffer;
+    ub->_fxspb = new FxShaderParamBuffer;
+    ub->_fxspb->_impl.Set<UniformBuffer*>(ub);
+    ub->_length = length;
+    ub->_fxspb->_length = length;
+    GL_ERRORCHECK();
+    glGenBuffers(1,&ub->_glbufid);
+    glBindBuffer(GL_UNIFORM_BUFFER,ub->_glbufid);
+    glBufferData(GL_UNIFORM_BUFFER,length,nullptr, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER,0);
+    GL_ERRORCHECK();
+    return ub->_fxspb;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct UniformBufferMapping {};
+
+///////////////////////////////////////////////////////////////////////////////
+
+parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer*b,size_t base, size_t length) {
+    auto mapping = std::make_shared<FxShaderParamBufferMapping>();
+    auto ub = b->_impl.Get<UniformBuffer*>();
+    if( length == 0 ){
+      assert(base==0);
+      length = b->_length;
+    }
+
+    mapping->_offset = base;
+    mapping->_length = length;
+    mapping->_fxi = this;
+    mapping->_buffer = b;
+    mapping->_impl.Make<UniformBufferMapping>();
+    GL_ERRORCHECK();
+    glBindBuffer(GL_UNIFORM_BUFFER,ub->_glbufid);
+    mapping->_mappedaddr = glMapBufferRange(GL_UNIFORM_BUFFER,base,length,GL_MAP_WRITE_BIT|GL_MAP_INVALIDATE_RANGE_BIT);
+    assert(mapping->_mappedaddr!=nullptr);
+    glBindBuffer(GL_UNIFORM_BUFFER,0);
+    GL_ERRORCHECK();
+   	return mapping;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
+  assert(mapping->_impl.IsA<UniformBufferMapping>());
+  auto ub = mapping->_buffer->_impl.Get<UniformBuffer*>();
+  GL_ERRORCHECK();
+  glBindBuffer(GL_UNIFORM_BUFFER,ub->_glbufid);
+  glUnmapBuffer(GL_UNIFORM_BUFFER);
+  glBindBuffer(GL_UNIFORM_BUFFER,0);
+  GL_ERRORCHECK();
+  mapping->_impl.Make<void*>(nullptr);
+  mapping->_mappedaddr = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Interface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
+  auto uniblock = block->_impl.Get<UniformBlock*>();
+  auto unibuffer = buffer->_impl.Get<UniformBuffer*>();
+  assert(uniblock!=nullptr);
+  assert(unibuffer!=nullptr);
+  auto pass = mpActiveEffect->_activePass;
+  assert(pass!=nullptr);
+  pass->bindUniformBlockBuffer(uniblock,unibuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,6 +290,8 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
      parammap[name]=fxsblock;
     for( auto u : ublock->_subuniforms ){
       auto p = new FxShaderParam;
+      p->_blockinfo = new FxShaderParamInBlockInfo;
+      p->_blockinfo->_parent = fxsblock;
       p->mInternalHandle = (void*) u.second;
       p->_name = u.first;
      fxsblock->_subparams[p->_name]=p;
@@ -224,13 +300,6 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
   }
   return fxsblock;
 }
-
-paramblockmappingptr_t Interface::mapParamBlock(const FxShaderParamBlock*b,size_t base, size_t length) {
-    auto mapping = std::make_shared<FxShaderParamBlockMapping>(base,length);
-    mapping->_fxi = this;
-   	return mapping;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 

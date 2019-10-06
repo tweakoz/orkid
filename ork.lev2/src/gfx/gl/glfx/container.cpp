@@ -181,7 +181,7 @@ namespace ork::lev2::glslfx {
   Container::Container(const std::string& nam)
       : mEffectName(nam)
       , mActiveTechnique(nullptr)
-      , mActivePass(nullptr)
+      , _activePass(nullptr)
       , mActiveNumPasses(0)
       , mShaderCompileFailed(false) {
     StateBlock* pdefsb = new StateBlock;

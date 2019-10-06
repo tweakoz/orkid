@@ -62,7 +62,7 @@ bool Shader::Compile() {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Interface::compileAndLink(Container* container) {
-  auto pass = const_cast<Pass*>(container->mActivePass);
+  auto pass = const_cast<Pass*>(container->_activePass);
 
   auto &pipeVTG = pass->_primpipe.Get<PrimPipelineVTG>();
 
@@ -256,7 +256,6 @@ bool Interface::compileAndLink(Container* container) {
         assert(it==flatunimap.end());
         flatunimap[s.first]=s.second;
       }
-      auto binding = pass->uniformBlockBinding(b.first);
     }
     if( pass->_uboBindingMap.size() ){
     }

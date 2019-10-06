@@ -21,7 +21,7 @@ void Interface::BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bo
 void Interface::BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int iv) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -44,7 +44,7 @@ void Interface::BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int
 void Interface::BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -63,7 +63,7 @@ void Interface::BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const f
 void Interface::BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const fvec3& Vec) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -82,7 +82,7 @@ void Interface::BindParamVect3(FxShader* hfx, const FxShaderParam* hpar, const f
 void Interface::BindParamVect4(FxShader* hfx, const FxShaderParam* hpar, const fvec4& Vec) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -116,7 +116,7 @@ void Interface::BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, co
 void Interface::BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -209,8 +209,8 @@ void Interface::BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval)
 void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) {
   Container* container = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni        = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  assert(container->mActivePass != nullptr);
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  assert(container->_activePass != nullptr);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -229,7 +229,7 @@ void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const 
 void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -248,7 +248,7 @@ void Interface::BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const 
 void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* Mat, int iCount) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   if (pinst) {
     int iloc = pinst->mLocation;
     if (iloc >= 0) {
@@ -283,7 +283,7 @@ void Interface::BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, c
 void Interface::BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) {
   Container* container         = static_cast<Container*>(hfx->GetInternalHandle());
   Uniform* puni                = static_cast<Uniform*>(hpar->GetPlatformHandle());
-  const UniformInstance* pinst = container->mActivePass->uniformInstance(puni);
+  const UniformInstance* pinst = container->_activePass->uniformInstance(puni);
   // printf( "Bind1 Tex<%p> par<%s> pinst<%p>\n",
   // pTex,hpar->mParameterName.c_str(), pinst );
   if (pinst) {
