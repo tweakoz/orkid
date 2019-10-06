@@ -8,10 +8,10 @@ fxconfig fxcfg_default {
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
-uniform_block ub_vtx {
-  mat4 MVPC;
-  mat4 MVPL;
-  mat4 MVPR;
+uniform_set ub_vtx {
+  uniform mat4 MVPC;
+  uniform mat4 MVPL;
+  uniform mat4 MVPR;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ub_vtx {
@@ -26,13 +26,18 @@ uniform_set ub_frg {
   uniform sampler2D MapAlbedoAo;
   uniform sampler2D MapNormalL;
   uniform sampler2D MapDepth;
-  uniform vec3 LightColor;
-  uniform vec4 LightPosR;
   uniform vec2 InvViewportSize; // inverse target size
   uniform float Time;
+  uniform int NumLights;
+}
+uniform_block ub_light {
+  vec3 LightColor[256]; // 4KiB
+  vec4 LightPosR[256];  // 4KiB
+  mat4 LightMvpL[256];  // 16KiB
+  mat4 LightMvpR[256];  // 16KiB
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault : ub_frg {
+fragment_interface iface_fdefault : ub_frg  {
   in vec2 frg_uv;
   //
   out vec4 out_clr;
@@ -91,7 +96,10 @@ libblock lib_deferred {
   /////////////////////////////////////////////////////////
   vec3 pntlighting(WPosData wpd){
     GBufData gbd = decodeGBUF(wpd);
-    vec3 l       = pointlight(gbd, LightPosR.xyz, LightPosR.w, LightColor);
+    vec3 l = vec3(0,0,0);
+    for( int i=0; i<NumLights; i++ ){
+      l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColor[i]);
+    }
     return gbd._albedo*l;
   }
 }
@@ -135,23 +143,24 @@ fragment_shader ps_baselight_stereo : extension(GL_ARB_fragment_layer_viewport)
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_pointlight : iface_vdefault {
-  gl_Position = MVPC * position;
+vertex_shader vs_pointlight : iface_vdefault : ub_light {
+  gl_Position = LightMvpL[0] * position;
   frg_uv      = vec2(0, 0);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pointlight_stereo : iface_vstereo : extension(GL_NV_stereo_view_rendering)
-    : extension(GL_NV_viewport_array2) {
+    : extension(GL_NV_viewport_array2)
+    : ub_light {
   frg_uv = vec2(0, 0);
   ///////////////////////////
-  gl_Position                   = MVPL * position;
-  gl_SecondaryPositionNV        = MVPR * position;
+  gl_Position                   = LightMvpL[0] * position;
+  gl_SecondaryPositionNV        = LightMvpR[0] * position;
   gl_Layer                      = 0;
   gl_ViewportMask[0]            = 1;
   gl_SecondaryViewportMaskNV[0] = 2;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight : iface_fdefault : lib_deferred {
+fragment_shader ps_pointlight : iface_fdefault : lib_deferred : ub_light {
   WPosData wpd;
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
   wpd._scruv = wpd._muv;
@@ -161,7 +170,7 @@ fragment_shader ps_pointlight : iface_fdefault : lib_deferred {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight_stereo : extension(GL_ARB_fragment_layer_viewport)
-    : iface_fdefault : lib_deferred {
+    : iface_fdefault : lib_deferred : ub_light {
   WPosData wpd;
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
   wpd._scruv = wpd._muv;
