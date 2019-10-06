@@ -328,12 +328,12 @@ struct IMPL {
           auto R = CPD._stereoCameraMatrices->_right;
           fmtx4 mvpL = LIGHTMTX * (L->_vmatrix * L->_pmatrix);
           fmtx4 mvpR = LIGHTMTX * (R->_vmatrix * R->_pmatrix);
-          _lightingmtl.bindParamMatrix(_parMatMVPL, mvpL);
-          _lightingmtl.bindParamMatrix(_parMatMVPR, mvpR);
+          //_lightingmtl.bindParamMatrix(_parMatMVPL, mvpL);
+          //_lightingmtl.bindParamMatrix(_parMatMVPR, mvpR);
         } else {
           auto M = CPD._cameraMatrices;
           fmtx4 mvp = LIGHTMTX * (M->_vmatrix * M->_pmatrix);
-          _lightingmtl.bindParamMatrix(_parMatMVPC, mvp);
+          //_lightingmtl.bindParamMatrix(_parMatMVPC, mvp);
         }
         _lightingmtl.bindParamVec4(_parLightPosR, fvec4(pl._pos, pl._radius));
         _lightingmtl.bindParamVec3(_parLightColor, pl._color);

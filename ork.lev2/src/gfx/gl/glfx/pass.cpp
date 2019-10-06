@@ -123,6 +123,7 @@ namespace ork::lev2::glslfx {
 
     if( _ubobindings.size() < (ubo_bindingindex+1) ){
       _ubobindings.resize(ubo_bindingindex+1);
+      printf( "RESIZEUBOB<%zu>\n", ubo_bindingindex+1 );
     }
 
     if( _ubobindings[ubo_bindingindex] != buffer ){
@@ -134,6 +135,7 @@ namespace ork::lev2::glslfx {
                         buffer->_glbufid, // buffer objid
                         ubo_offset,          // offset
                         ubo_size);           // length
+      printf( "glBindBufferRange\n" );
       GL_ERRORCHECK();
       _ubobindings[ubo_bindingindex] = buffer;
     }
