@@ -49,6 +49,7 @@ public:
   T MagSquared(void) const;                            // return magnitude of this vector squared
   Vector4 Transform(const Matrix44<T>& matrix) const; // transform this vector
   void PerspectiveDivide(void);
+  Vector4 perspectiveDivided(void) const;
 
   void Lerp(const Vector4& from, const Vector4& to, T par);
   void Serp(const Vector4& PA, const Vector4& PB, const Vector4& PC, const Vector4& PD, T Par);

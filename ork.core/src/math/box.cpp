@@ -3,7 +3,7 @@
 // Copyright 1996-2012, Michael T. Mayers.
 // Distributed under the Boost Software License - Version 1.0 - August 17, 2003
 // see http://www.boost.org/LICENSE_1_0.txt
-//////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -13,8 +13,6 @@
 #include <ork/math/sphere.h>
 #include <ork/reflect/RegisterProperty.h>
 
-INSTANTIATE_TRANSPARENT_RTTI(ork::AABox,"AABox");
-
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,13 +21,6 @@ Sphere::Sphere( const fvec3& boxmin, const fvec3& boxmax )
 {
 	mCenter = (boxmin+boxmax)*0.5f;
 	mRadius = (boxmax-mCenter).Mag();
-}
-
-void ork::AABox::Describe()
-{
-	reflect::RegisterProperty("Min", &AABox::mMin);
-	reflect::RegisterProperty("Max", &AABox::mMax);
-
 }
 
 AABox::AABox()
@@ -76,18 +67,18 @@ bool AABox::Intersect( const fray3& ray, fvec3& isect_in, fvec3& isect_out ) con
     tmax = (bndix.GetX() - ori.GetX()) * ray.mInverseDirection.GetX();
     tymin = (bndy.GetY() - ori.GetY()) * ray.mInverseDirection.GetY();
     tymax = (bndiy.GetY() - ori.GetY()) * ray.mInverseDirection.GetY();
-   
+
     if ( (tmin > tymax) || (tymin > tmax) )
         return false;
-   
+
     if (tymin > tmin)
         tmin = tymin;
     if (tymax < tmax)
         tmax = tymax;
-   
+
     tzmin = (bndz.GetZ() - ori.GetZ()) * ray.mInverseDirection.GetZ();
     tzmax = (bndiz.GetZ() - ori.GetZ()) * ray.mInverseDirection.GetZ();
-   
+
     if ( (tmin > tzmax) || (tzmin > tmax) )
         return false;
 
@@ -197,7 +188,7 @@ bool AABox::Contains(const float test_point_X, const float test_point_Z) const
         test_point_Z = mMin.GetZ();
 
  }
- 
+
  ///////////////////////////////////////////////////////////////////////////////
 
  bool AABox::Contains(const fvec3& test_point) const
@@ -223,7 +214,7 @@ bool AABox::Contains(const float test_point_X, const float test_point_Z) const
 
     return true;
  }
- 
+
 void AABox::Constrain(fvec3& test_point) const
 {
     if (test_point.GetX() > mMax.GetX())
@@ -254,16 +245,6 @@ fvec3 AABox::Corner( int idx ) const
     rval.SetZ( ((idx & 4) == 1) ? mMax.GetZ() : mMin.GetZ() );
     return rval;
 }
-
-///////////////////////////////////////////////////////////////////////////////
-
-bool AABox::PostDeserialize(reflect::IDeserializer &)
-{
-	ComputePlanes();
-    return(true);
-}
-
-
 
 }
 ///////////////////////////////////////////////////////////////////////////////

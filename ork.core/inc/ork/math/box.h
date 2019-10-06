@@ -14,8 +14,7 @@
 namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 
-class AABox : public ork::Object {
-  RttiDeclareConcrete(AABox, ork::Object);
+class AABox {
 
   fvec3 mMin;
   fvec3 mMax;
@@ -52,8 +51,6 @@ public:
 
   void SetMinMax(const fvec3 &vmin, const fvec3 &vmax);
 
-private:
-  bool PostDeserialize(reflect::IDeserializer &) final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

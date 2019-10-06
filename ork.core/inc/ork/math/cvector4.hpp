@@ -344,6 +344,16 @@ template <typename T> void Vector4<T>::PerspectiveDivide(void) {
   w = T(1.0f);
 }
 
+template <typename T> Vector4<T> Vector4<T>::perspectiveDivided(void) const {
+  Vector4<T> rval;
+  T iw = T(1.0f) / w;
+  rval.x = x*iw;
+  rval.y = y*iw;
+  rval.z = z*iw;
+  rval.w = T(1.0);
+  return rval;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename T> Vector4<T>::Vector4(const Vector4<T>& vec) {

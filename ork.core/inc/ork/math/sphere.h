@@ -10,6 +10,7 @@
 #include <ork/math/box.h>
 #include <ork/math/cmatrix4.h>
 #include <ork/math/cvector3.h>
+#include <ork/math/cvector4.h>
 #include <ork/math/line.h>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -27,7 +28,7 @@ struct Sphere {
 
   bool Intersect(const fray3 &ray, fvec3 &isect_in, fvec3 &isect_out,
                  fvec3 &sphnormal) const;
-  // AABox2D projectedBounds(const fmtx4& mvp) const;
+  AABox projectedBounds(const fmtx4& mvp) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,28 +53,40 @@ inline bool Sphere::Intersect(const fray3 &ray, fvec3 &isect_in,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-/*
-AABox Sphere::projectedBounds(const fmtx4& mvp) const {
 
-    float d2 = mCenter.Dot(mCenter);
-    float a = 1.0f/sqrt(d2 - mRadius * mRadius);
-    fvec3 right = (mRadius*a) * vec3(-mCenter.z, 0, mCenter.x);
-    fvec3 up = fvec3(0,mRadius,0);
+inline AABox Sphere::projectedBounds(const fmtx4& mvp) const {
 
-    fvec4 ctr = fvec4(center,1).Transform(mvp);
-    fvec4 right  = fvec4(right,0).Transform(mvp);
-    fvec4 up     = fvec4(up,0).Transform(mvp);
+    fvec3 c0 = mCenter+fvec3(-mRadius,-mRadius,-mRadius);
+    fvec3 c1 = mCenter+fvec3(-mRadius,-mRadius,+mRadius);
+    fvec3 c2 = mCenter+fvec3(-mRadius,+mRadius,-mRadius);
+    fvec3 c3 = mCenter+fvec3(-mRadius,+mRadius,+mRadius);
+    fvec3 c4 = mCenter+fvec3(+mRadius,-mRadius,-mRadius);
+    fvec3 c5 = mCenter+fvec3(+mRadius,-mRadius,+mRadius);
+    fvec3 c6 = mCenter+fvec3(+mRadius,+mRadius,-mRadius);
+    fvec3 c7 = mCenter+fvec3(+mRadius,+mRadius,+mRadius);
 
-    AABox2D rval;
+    fvec4 c0x = fvec4(c0,1).Transform(mvp);
+    fvec4 c1x = fvec4(c1,1).Transform(mvp);
+    fvec4 c2x = fvec4(c2,1).Transform(mvp);
+    fvec4 c3x = fvec4(c3,1).Transform(mvp);
+    fvec4 c4x = fvec4(c4,1).Transform(mvp);
+    fvec4 c5x = fvec4(c5,1).Transform(mvp);
+    fvec4 c6x = fvec4(c6,1).Transform(mvp);
+    fvec4 c7x = fvec4(c7,1).Transform(mvp);
+
+    AABox rval;
     rval.BeginGrow();
-      rval.Grow((ctr+up).PerspectiveDivide().xyz());
-      rval.Grow((ctr+right).PerspectiveDivide().xyz());
-      rval.Grow((ctr-up).PerspectiveDivide().xyz());
-      rval.Grow((ctr-right).PerspectiveDivide().xyz());
+      rval.Grow(c0x.perspectiveDivided().xyz());
+      rval.Grow(c1x.perspectiveDivided().xyz());
+      rval.Grow(c2x.perspectiveDivided().xyz());
+      rval.Grow(c3x.perspectiveDivided().xyz());
+      rval.Grow(c4x.perspectiveDivided().xyz());
+      rval.Grow(c5x.perspectiveDivided().xyz());
+      rval.Grow(c6x.perspectiveDivided().xyz());
+      rval.Grow(c7x.perspectiveDivided().xyz());
     rval.EndGrow();
-
     return rval;
-}*/
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
