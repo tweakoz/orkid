@@ -24,22 +24,22 @@ namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////
-StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
+StreamInterface* GlSlFxParser::ParseFxInterface(GLenum iftype) {
   ScanViewRegex r("(\n)", true);
   ScannerView v(scanner, r);
   v.scanBlock(itokidx);
 
   ////////////////////////
 
-  StreamInterface *psi = new StreamInterface;
-  psi->mName = v.blockName();
-  psi->mInterfaceType = iftype;
+  StreamInterface* psi = new StreamInterface;
+  psi->mName           = v.blockName();
+  psi->mInterfaceType  = iftype;
 
   ////////////////////////
 
   const std::string BlockType = v.token(v._blockType)->text;
-  bool is_vtx = BlockType == "vertex_interface";
-  bool is_geo = BlockType == "geometry_interface";
+  bool is_vtx                 = BlockType == "vertex_interface";
+  bool is_geo                 = BlockType == "geometry_interface";
 
   /////////////////////////////
   // interface inheritance
@@ -54,9 +54,9 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
     auto it_uniformblk = mpContainer->_uniformBlocks.find(ptok->text);
 
     if (it_uniformset != mpContainer->_uniformSets.end()) {
-      psi->_uniformSets.insert(it_uniformset->second);
+      psi->_uniformSets.push_back(it_uniformset->second);
     } else if (it_uniformblk != mpContainer->_uniformBlocks.end()) {
-      psi->_uniformBlocks.insert(it_uniformblk->second);
+      psi->_uniformBlocks.push_back(it_uniformblk->second);
     } else if (is_vtx) {
       auto it_vi = mpContainer->_vertexInterfaces.find(ptok->text);
       assert(it_vi != mpContainer->_vertexInterfaces.end());
@@ -70,9 +70,7 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
       bool is_tee = (it_fie != mpContainer->_tessEvalInterfaces.end());
       assert(is_geo || is_vtx || is_tee);
 
-      auto par =
-          is_geo ? it_fig->second
-                 : is_vtx ? it_fiv->second : is_tee ? it_fie->second : nullptr;
+      auto par = is_geo ? it_fig->second : is_vtx ? it_fiv->second : is_tee ? it_fie->second : nullptr;
 
       assert(par != nullptr);
 
@@ -94,23 +92,23 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
   size_t ien = v._end - 1;
 
   for (size_t i = ist; i <= ien;) {
-    const Token *vt_tok = v.token(i);
-    const Token *dt_tok = v.token(i + 1);
-    const Token *nam_tok = v.token(i + 2);
+    const Token* vt_tok  = v.token(i);
+    const Token* dt_tok  = v.token(i + 1);
+    const Token* nam_tok = v.token(i + 2);
 
     // printf( "  ParseFxInterface Tok<%s>\n", vt_tok->text.c_str() );
 
     if (vt_tok->text == "layout") {
       std::string layline;
-      bool done = false;
-      bool is_input = false;
-      bool has_punc = false;
+      bool done      = false;
+      bool is_input  = false;
+      bool has_punc  = false;
       bool is_points = false;
-      bool is_lines = false;
-      bool is_tris = false;
+      bool is_lines  = false;
+      bool is_tris   = false;
 
       while (false == done) {
-        const auto &txt = vt_tok->text;
+        const auto& txt = vt_tok->text;
 
         is_input |= (txt == "in");
         is_points |= (txt == "points");
@@ -143,12 +141,11 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
 
     } else if (vt_tok->text == "in") {
       auto it = psi->mAttributes.find(nam_tok->text);
-      assert(it ==
-             psi->mAttributes.end()); // make sure there are no duplicate attrs
+      assert(it == psi->mAttributes.end()); // make sure there are no duplicate attrs
 
-      int iloc = int(psi->mAttributes.size());
-      Attribute *pattr = new Attribute(nam_tok->text);
-      pattr->mTypeName = dt_tok->text;
+      int iloc          = int(psi->mAttributes.size());
+      Attribute* pattr  = new Attribute(nam_tok->text);
+      pattr->mTypeName  = dt_tok->text;
       pattr->mDirection = "in";
 
       psi->mAttributes[nam_tok->text] = pattr;
@@ -167,11 +164,11 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
       pattr->mLocation = int(psi->mAttributes.size());
 
     } else if (vt_tok->text == "out") {
-      int iloc = int(psi->mAttributes.size());
-      Attribute *pattr = new Attribute(nam_tok->text);
-      pattr->mTypeName = dt_tok->text;
-      pattr->mDirection = "out";
-      pattr->mLocation = iloc;
+      int iloc                        = int(psi->mAttributes.size());
+      Attribute* pattr                = new Attribute(nam_tok->text);
+      pattr->mTypeName                = dt_tok->text;
+      pattr->mDirection               = "out";
+      pattr->mLocation                = iloc;
       psi->mAttributes[nam_tok->text] = pattr;
 
       if (v.token(i + 3)->text == ";") {
@@ -196,11 +193,11 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
   //  http://stackoverflow.com/questions/16415037/opengl-core-profile-incredible-slowdown-on-os-x)
   ////////////////////////
 
-  std::multimap<int, Attribute *> attr_sort_map;
-  for (const auto &it : psi->mAttributes) {
-    auto attr = it.second;
+  std::multimap<int, Attribute*> attr_sort_map;
+  for (const auto& it : psi->mAttributes) {
+    auto attr  = it.second;
     auto itloc = gattrsorter.find(attr->mSemantic);
-    int isort = 100;
+    int isort  = 100;
     if (itloc != gattrsorter.end()) {
       isort = itloc->second;
     }
@@ -209,8 +206,8 @@ StreamInterface *GlSlFxParser::ParseFxInterface(GLenum iftype) {
   }
 
   int isort = 0;
-  for (const auto &it : attr_sort_map) {
-    auto attr = it.second;
+  for (const auto& it : attr_sort_map) {
+    auto attr       = it.second;
     attr->mLocation = isort++;
   }
 

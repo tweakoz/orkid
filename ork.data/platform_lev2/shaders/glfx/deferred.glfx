@@ -30,20 +30,19 @@ uniform_set ub_frg {
   uniform float Time;
   uniform int NumLights;
 }
+///////////////////////////////////////////////////////////////
 uniform_block ub_light {
-  vec3 LightColor[256]; // 4KiB
-  vec4 LightPosR[256];  // 4KiB
-  mat4 LightMvpL[256];  // 16KiB
-  mat4 LightMvpR[256];  // 16KiB
+  vec3 LightColor[2048]; // 32KiB
+  vec4 LightPosR[2048];  // 32KiB
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault : ub_frg  {
+fragment_interface iface_fdefault {
   in vec2 frg_uv;
   //
   out vec4 out_clr;
 }
 ///////////////////////////////////////////////////////////////
-libblock lib_deferred {
+libblock lib_deferred : ub_light : ub_frg {
   /////////////////////////////////////////////////////////
   struct GBufData {
     vec2 _uv;
@@ -104,80 +103,53 @@ libblock lib_deferred {
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vstereo : iface_vdefault { layout(secondary_view_offset = 1) out highp int gl_Layer; }
-///////////////////////////////////////////////////////////////
 vertex_shader vs_std : iface_vdefault {
   frg_uv      = uv0;
-  ///////////////////////////
-  gl_Position = position*MVPC;
+  gl_Position = position;
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_std_stereo : iface_vstereo : extension(GL_NV_stereo_view_rendering)
-    : extension(GL_NV_viewport_array2) {
-  frg_uv = uv0;
-  ///////////////////////////
-  gl_Position                   = position;
-  gl_SecondaryPositionNV        = position;
-  gl_Layer                      = 0;
-  gl_ViewportMask[0]            = 1;
-  gl_SecondaryViewportMaskNV[0] = 2;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight : iface_fdefault : lib_deferred {
+fragment_shader ps_baselight : iface_fdefault : lib_deferred  {
   WPosData wpd;
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
   wpd._scruv = wpd._muv;
-  wpd._ivp = IVPArray[0];
+  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
   vec3 c  = baselighting(wpd);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight_stereo : extension(GL_ARB_fragment_layer_viewport)
-    : iface_fdefault : lib_deferred {
+fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred  {
   WPosData wpd;
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._scruv = wpd._muv;
-  //wpd._scruv.x = mod(wpd._scruv.x*2,1);
-  wpd._ivp = IVPArray[gl_Layer];
-  vec3 c  = baselighting(wpd);
-  out_clr = vec4(c, 1);
-}
-///////////////////////////////////////////////////////////////
-vertex_shader vs_pointlight : iface_vdefault : ub_light {
-  gl_Position = LightMvpL[0] * position;
-  frg_uv      = vec2(0, 0);
-}
-///////////////////////////////////////////////////////////////
-vertex_shader vs_pointlight_stereo : iface_vstereo : extension(GL_NV_stereo_view_rendering)
-    : extension(GL_NV_viewport_array2)
-    : ub_light {
-  frg_uv = vec2(0, 0);
-  ///////////////////////////
-  gl_Position                   = LightMvpL[0] * position;
-  gl_SecondaryPositionNV        = LightMvpR[0] * position;
-  gl_Layer                      = 0;
-  gl_ViewportMask[0]            = 1;
-  gl_SecondaryViewportMaskNV[0] = 2;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight : iface_fdefault : lib_deferred : ub_light {
-  WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._scruv = wpd._muv;
-  wpd._ivp = IVPArray[0];
-  vec3 c  = pntlighting(wpd);
-  out_clr = vec4(c, 1);
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_stereo : extension(GL_ARB_fragment_layer_viewport)
-    : iface_fdefault : lib_deferred : ub_light {
-  WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
   wpd._scruv = wpd._muv;
   wpd._scruv.x = mod(wpd._scruv.x*2,1);
-  wpd._ivp = IVPArray[gl_Layer];
+  vec3 c  = baselighting(wpd);
+  out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+vertex_shader vs_pointlight : iface_vdefault {
+  frg_uv      = vec2(0, 0);
+  gl_Position = position;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight : iface_fdefault : lib_deferred  {
+  WPosData wpd;
+  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._scruv = wpd._muv;
+  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
   vec3 c  = pntlighting(wpd);
-  vec2 uv = gl_FragCoord.xy * InvViewportSize;
+  //c = vec3(wpd._muv,0);
+  out_clr = vec4(c, 1);
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred  {
+  WPosData wpd;
+  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
+  wpd._scruv = wpd._muv;
+  wpd._scruv.x = mod(wpd._scruv.x*2,1);
+  vec3 c  = pntlighting(wpd);
+  //c = vec3(wpd._muv,0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
@@ -194,15 +166,6 @@ technique baselight {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique baselight_stereo {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_std_stereo;
-    fragment_shader = ps_baselight_stereo;
-    state_block     = sb_default;
-  }
-}
-///////////////////////////////////////////////////////////////
 technique pointlight {
   fxconfig = fxcfg_default;
   pass p0 {
@@ -212,10 +175,19 @@ technique pointlight {
   }
 }
 ///////////////////////////////////////////////////////////////
+technique baselight_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_std;
+    fragment_shader = ps_baselight_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
 technique pointlight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_pointlight_stereo;
+    vertex_shader   = vs_pointlight;
     fragment_shader = ps_pointlight_stereo;
     state_block     = sb_default;
   }

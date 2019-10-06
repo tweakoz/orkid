@@ -8,6 +8,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <deque>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
@@ -228,8 +229,8 @@ struct StreamInterface {
   GLenum mInterfaceType;
   preamble_t mPreamble;
   int mGsPrimSize;
-  std::set<UniformBlock*> _uniformBlocks;
-  std::set<UniformSet*> _uniformSets;
+  std::vector<UniformBlock*> _uniformBlocks;
+  std::vector<UniformSet*> _uniformSets;
 
   void Inherit(const StreamInterface& par);
 };
@@ -250,29 +251,46 @@ struct StateBlock {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct Shader {
+struct LibBlock {
+  LibBlock(const Scanner& s);
+
+  std::vector<UniformBlock*> _uniformBlocks;
+  std::vector<UniformSet*> _uniformSets;
+
   std::string mName;
-  std::string mShaderText;
-  StreamInterface* mpInterface;
-  Container* mpContainer;
-  GLuint mShaderObjectId;
-  GLenum mShaderType;
-  bool mbCompiled;
-  bool mbError;
-  std::set<std::string> _requiredExtensions;
+  ScanViewFilter* mFilter;
+  ScannerView* mView;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct Shader {
 
   Shader(const std::string& nam, GLenum etyp)
       : mName(nam)
-      , mShaderObjectId(0)
       , mShaderType(etyp)
-      , mbCompiled(false)
-      , mbError(false)
-      , mpInterface(nullptr)
-      , mpContainer(nullptr) {}
+  {}
 
   bool Compile();
   bool IsCompiled() const;
   void requireExtension(std::string ext) { _requiredExtensions.insert(ext); }
+  void addLibBlock(LibBlock*);
+  void addUniformSet(UniformSet*);
+  void addUniformBlock(UniformBlock*);
+  void setInputInterface(StreamInterface*iface);
+
+  std::string mName;
+  std::string mShaderText;
+  StreamInterface* _inputInterface = nullptr;
+  Container* mpContainer = nullptr;
+  GLuint mShaderObjectId = 0;
+  GLenum mShaderType;
+  bool mbCompiled = false;
+  bool mbError = false;
+  std::set<std::string> _requiredExtensions;
+  std::vector<UniformBlock*> _uniblocks;
+  std::vector<UniformSet*> _unisets;
+  std::vector<LibBlock*> _libblocks;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -340,16 +358,6 @@ struct PrimPipelineNVMT {
   ShaderNvMesh* _nvMeshShader = nullptr;
 };
 #endif
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct LibBlock {
-  LibBlock(const Scanner& s);
-
-  std::string mName;
-  ScanViewFilter* mFilter;
-  ScannerView* mView;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 

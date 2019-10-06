@@ -53,12 +53,12 @@ struct PointLight {
 };
 
 struct IMPL {
-  static constexpr size_t KMAXLIGHTS = 256;
+  static constexpr size_t KMAXLIGHTS = 2048;
   ///////////////////////////////////////
   IMPL() : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
-    for (int i = 0; i < 512; i++) {
+    for (int i = 0; i < 32; i++) {
 
       PointLight p;
       p.next();
@@ -85,32 +85,24 @@ struct IMPL {
       //////////////////////////////////////////////////////////////
       _lightingmtl.gpuInit(pTARG, "orkshader://deferred");
       _tekBaseLighting = _lightingmtl.technique("baselight");
-      _tekBaseLightingStereo = _lightingmtl.technique("baselight_stereo");
       _tekPointLighting = _lightingmtl.technique("pointlight");
+      _tekBaseLightingStereo = _lightingmtl.technique("baselight_stereo");
       _tekPointLightingStereo = _lightingmtl.technique("pointlight_stereo");
       //////////////////////////////////////////////////////////////
       // init lightblock
       //////////////////////////////////////////////////////////////
-      _lightbuffer = pTARG->FXI()->createParamBuffer(65536);
-      _lightblock = _lightingmtl.paramBlock("ub_vtx");
+      _lightbuffer = pTARG->FXI()->createParamBuffer(KMAXLIGHTS*32);
+      _lightblock = _lightingmtl.paramBlock("ub_light");
       auto mapped = FXI->mapParamBuffer(_lightbuffer);
           size_t base = 0;
           for(int i=0; i<KMAXLIGHTS; i++)
-            mapped->ref<fvec4>(base+i*sizeof(fvec4)) = fvec4(0,0,0,0);
+            mapped->ref<fvec3>(base+i*sizeof(fvec4)) = fvec3(0,0,0);
           base += KMAXLIGHTS*sizeof(fvec4);
           for(int i=0; i<KMAXLIGHTS; i++)
-            mapped->ref<fmtx4>(base+i*sizeof(fmtx4)) = fmtx4();
-          base += KMAXLIGHTS*sizeof(fmtx4);
-          for(int i=0; i<KMAXLIGHTS; i++)
-            mapped->ref<fmtx4>(base+i*sizeof(fmtx4)) = fmtx4();
+            mapped->ref<fvec4>(base+i*sizeof(fvec4)) = fvec4();
       mapped->unmap();
       //////////////////////////////////////////////////////////////
-      _parMatMVPC = _lightingmtl.param("MVPC");
-      _parMatMVPL = _lightingmtl.param("MVPL");
-      _parMatMVPR = _lightingmtl.param("MVPR");
       _parMatIVPArray = _lightingmtl.param("IVPArray");
-      _parLightColor = _lightingmtl.param("LightColor");
-      _parLightPosR = _lightingmtl.param("LightPosR");
       _parMapGBufAlbAo = _lightingmtl.param("MapAlbedoAo");
       _parMapGBufNrmL = _lightingmtl.param("MapNormalL");
       _parMapDepth = _lightingmtl.param("MapDepth");
@@ -229,7 +221,7 @@ struct IMPL {
       CPD._stereoCameraMatrices = nullptr;
       CPD._stereo1pass = false;
       CIMPL->pushCPD(CPD);
-      targ->debugPushGroup("PtxCompositingNode::to_output");
+      targ->debugPushGroup("Deferred::Lighting");
       FBI->SetAutoClear(false);
       FBI->PushRtGroup(_rtgLaccum);
       targ->BeginFrame();
@@ -238,18 +230,14 @@ struct IMPL {
       //////////////////////////////////////////////////////////////////
       // base lighting
       //////////////////////////////////////////////////////////////////
+      targ->debugPushGroup("Deferred::BaseLighting");
       _ivp[0] = IVPL;
       _ivp[1] = IVPR;
-      _lightingmtl.bindTechnique(is_stereo_1pass ? _tekBaseLightingStereo
-                                                 : _tekBaseLighting);
+      _lightingmtl.bindTechnique(is_stereo_1pass?_tekBaseLightingStereo:_tekBaseLighting);
       _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
       _lightingmtl.begin(RCFD);
-      //////////////////////////////////////////////////////
-      _lightingmtl.bindParamMatrix(_parMatMVPL, fmtx4());
-      _lightingmtl.bindParamMatrix(_parMatMVPC, fmtx4());
-      _lightingmtl.bindParamMatrix(_parMatMVPR, fmtx4());
       //////////////////////////////////////////////////////
       _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
       _lightingmtl.bindParamCTex(_parMapGBufAlbAo,
@@ -263,34 +251,20 @@ struct IMPL {
       this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
       _lightingmtl.end(RCFD);
       CIMPL->popCPD();
+      targ->debugPopGroup(); // BaseLighting
       //////////////////////////////////////////////////////////////////
       // point lighting
       //  todo : batch multiple lights together
       //   compute screen aligned quad for batch..
       // accumulate pointlights
       //////////////////////////////////////////////////////////////////
-      //_lightingmtl.bindParamVec3(_parLightColor, fvec3(0.8, 0.7, 0.2));
-      //_lightingmtl.bindParamVec4(_parLightPosR, fvec4(campos_mono, 100.0f));
-
+      targ->debugPushGroup("Deferred::PointLighting");
       static float ftime = 0.0f;
-      CPD = CIMPL->topCPD();
-      CPD.SetDstRect(vprect);
-      CPD._irendertarget = &rtlaccum;
       CIMPL->pushCPD(CPD);
-      FBI->PushViewport(vprect); // stereo viewport
-      _lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-      //_lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
-      _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-      _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
-      _lightingmtl.bindTechnique(is_stereo_1pass ? _tekPointLightingStereo
-                                                 : _tekPointLighting);
+      _lightingmtl.bindTechnique(is_stereo_1pass?_tekPointLightingStereo:_tekPointLighting);
       _lightingmtl.begin(RCFD);
       //////////////////////////////////////////////////////
       FXI->bindParamBlockBuffer(_lightblock, _lightbuffer);
-      //////////////////////////////////////////////////////
-      _lightingmtl.bindParamMatrix(_parMatMVPL, fmtx4());
-      _lightingmtl.bindParamMatrix(_parMatMVPC, fmtx4());
-      _lightingmtl.bindParamMatrix(_parMatMVPR, fmtx4());
       //////////////////////////////////////////////////////
       _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
       _lightingmtl.bindParamCTex(_parMapGBufAlbAo,
@@ -300,66 +274,32 @@ struct IMPL {
       _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
       _lightingmtl.bindParamVec2(
           _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
-      _lightingmtl.bindParamVec3(_parLightColor, fvec3(0.8, 0.7, 0.2));
-      _lightingmtl.bindParamVec4(_parLightPosR, fvec4(campos_mono, 100.0f));
-
-      fixedvector<size_t,1024> inside_lights;
-      fixedvector<size_t,1024> outside_lights;
-
-      //////////////////////////////////////////////////
-      // classify lights as camera inside or camera outside
-      //////////////////////////////////////////////////
-
-      for (size_t ip=0; ip<_pointlights.size(); ip++){
-        const auto& pl = _pointlights[ip];
-        float dist_to_light = (campos_mono - pl._pos).Mag();
-        bool cam_inside_light = dist_to_light <= pl._radius;
-        if(cam_inside_light)
-          inside_lights.push_back(ip);
-        else
-          outside_lights.push_back(ip);
-      }
-
       //////////////////////////////////////////////////
       // outside lights
       //////////////////////////////////////////////////
-
+      _lightingmtl.mRasterState.SetCullTest(ECULLTEST_OFF);
+      _lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
+      _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
       RSI->BindRasterState(_lightingmtl.mRasterState);
+      size_t posbase = KMAXLIGHTS*sizeof(fvec4);
       auto mapped = FXI->mapParamBuffer(_lightbuffer);
-      size_t lmtxbase = KMAXLIGHTS*sizeof(fvec4);
-      size_t rmtxbase = lmtxbase + KMAXLIGHTS*sizeof(fmtx4);
-      size_t lidx = 0;
-      for( auto p : outside_lights ){
-        auto& pl = _pointlights[p];
-        fmtx4 LIGHTMTX;
-        LIGHTMTX.ComposeMatrix(pl._pos, fquat(), pl._radius);
-        if (is_stereo_1pass) {
-          auto L = CPD._stereoCameraMatrices->_left;
-          auto R = CPD._stereoCameraMatrices->_right;
-          fmtx4 mvpL = LIGHTMTX * (L->_vmatrix * L->_pmatrix);
-          fmtx4 mvpR = LIGHTMTX * (R->_vmatrix * R->_pmatrix);
-          mapped->ref<fmtx4>(lmtxbase+lidx*sizeof(fmtx4)) = mvpL;
-          mapped->ref<fmtx4>(rmtxbase+lidx*sizeof(fmtx4)) = mvpR;
-        } else {
-          auto M = CPD._cameraMatrices;
-          fmtx4 mvp = LIGHTMTX * (M->_vmatrix * M->_pmatrix);
-          mapped->ref<fmtx4>(lmtxbase+lidx*sizeof(fmtx4)) = mvp;
-        }
-        _lightingmtl.bindParamVec4(_parLightPosR, fvec4(pl._pos, pl._radius));
-        _lightingmtl.bindParamVec3(_parLightColor, pl._color);
-        _lightingmtl.commit();
-      }
+          for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
+            const auto& light = _pointlights[lidx];
+            mapped->ref<fvec4>(lidx*sizeof(fvec4)) = light._color;
+            mapped->ref<fvec4>(posbase+lidx*sizeof(fvec4)) = fvec4(light._pos,light._radius);
+          }
       mapped->unmap();
-      //GBI->DrawPrimitiveEML(GfxPrimitives::GetFullSphere());
+      _lightingmtl.bindParamInt(_parNumLights,_pointlights.size());
+      _lightingmtl.commit();
+      this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
       _lightingmtl.end(RCFD);
-      FBI->PopViewport();
-      ftime += 0.01f;
+      targ->debugPopGroup(); // PointLighting
       //////////////////////////////////////////////////////////////////
-      // targ->EndFrame();
+      ftime += 0.01f;
       targ->EndFrame();
       FBI->PopRtGroup();
-      targ->debugPopGroup();
+      targ->debugPopGroup(); // Lighting
       CIMPL->popCPD();
       //////////////////////////////////////////////////////////////////
       // update pointlights
@@ -385,9 +325,6 @@ struct IMPL {
   const FxShaderTechnique *_tekPointLighting = nullptr;
   const FxShaderTechnique *_tekBaseLightingStereo = nullptr;
   const FxShaderTechnique *_tekPointLightingStereo = nullptr;
-  const FxShaderParam *_parMatMVPC = nullptr;
-  const FxShaderParam *_parMatMVPL = nullptr;
-  const FxShaderParam *_parMatMVPR = nullptr;
   const FxShaderParam *_parMatIVPArray = nullptr;
   const FxShaderParam *_parMapGBufAlbAo = nullptr;
   const FxShaderParam *_parMapGBufNrmL = nullptr;
@@ -395,9 +332,6 @@ struct IMPL {
   const FxShaderParam *_parTime = nullptr;
   const FxShaderParam *_parInvViewSize = nullptr;
   const FxShaderParam *_parInvVpDim = nullptr;
-  const FxShaderParam *_parLightPosR = nullptr;
-  const FxShaderParam *_parLightColor = nullptr;
-  const FxShaderParam *_parLightPos = nullptr;
   const FxShaderParam *_parNumLights = nullptr;
   const FxShaderParamBlock *_lightblock = nullptr;
   FxShaderParamBuffer *_lightbuffer = nullptr;

@@ -25,10 +25,9 @@ bool Shader::Compile() {
   shadertext += "void main() { ";
   shadertext += mName;
   shadertext += "(); }\n";
-  const char *c_str = shadertext.c_str();
+  const char* c_str = shadertext.c_str();
 
-  //printf( "Shader<%s>\n/////////////\n%s\n///////////////////\n",
-  //mName.c_str(), c_str );
+  printf("Shader<%s>\n/////////////\n%s\n///////////////////\n", mName.c_str(), c_str);
 
   GL_NF_ERRORCHECK();
   glShaderSource(mShaderObjectId, 1, &c_str, NULL);
@@ -64,18 +63,18 @@ bool Shader::Compile() {
 bool Interface::compileAndLink(Container* container) {
   auto pass = const_cast<Pass*>(container->_activePass);
 
-  auto &pipeVTG = pass->_primpipe.Get<PrimPipelineVTG>();
+  auto& pipeVTG = pass->_primpipe.Get<PrimPipelineVTG>();
 
-  Shader *pvtxshader = pipeVTG._vertexShader;
-  Shader *ptecshader = pipeVTG._tessCtrlShader;
-  Shader *pteeshader = pipeVTG._tessEvalShader;
-  Shader *pgeoshader = pipeVTG._geometryShader;
-  Shader *pfrgshader = pipeVTG._fragmentShader;
+  Shader* pvtxshader = pipeVTG._vertexShader;
+  Shader* ptecshader = pipeVTG._tessCtrlShader;
+  Shader* pteeshader = pipeVTG._tessEvalShader;
+  Shader* pgeoshader = pipeVTG._geometryShader;
+  Shader* pfrgshader = pipeVTG._fragmentShader;
 
   OrkAssert(pvtxshader != nullptr);
   OrkAssert(pfrgshader != nullptr);
 
-  auto l_compile = [&](Shader *psh) ->bool {
+  auto l_compile = [&](Shader* psh) -> bool {
     bool compile_ok = true;
     if (psh && psh->IsCompiled() == false)
       compile_ok = psh->Compile();
@@ -86,30 +85,29 @@ bool Interface::compileAndLink(Container* container) {
     return compile_ok;
   };
 
-  bool vok = l_compile(pvtxshader);
+  bool vok  = l_compile(pvtxshader);
   bool tcok = l_compile(ptecshader);
   bool teok = l_compile(pteeshader);
-  bool gok = l_compile(pgeoshader);
-  bool fok = l_compile(pfrgshader);
+  bool gok  = l_compile(pgeoshader);
+  bool fok  = l_compile(pfrgshader);
 
- if( false == vok )
-  printf( "vsh<%s> compile failed\n", pvtxshader->mName.c_str() );
- if( false == tcok )
-  printf( "tcsh<%s> compile failed\n", ptecshader->mName.c_str() );
- if( false == teok )
-  printf( "tesh<%s> compile failed\n", pteeshader->mName.c_str() );
- if( false == gok )
-  printf( "gsh<%s> compile failed\n", pgeoshader->mName.c_str() );
- if( false == fok )
-  printf( "fsh<%s> compile failed\n", pfrgshader->mName.c_str() );
-
+  if (false == vok)
+    printf("vsh<%s> compile failed\n", pvtxshader->mName.c_str());
+  if (false == tcok)
+    printf("tcsh<%s> compile failed\n", ptecshader->mName.c_str());
+  if (false == teok)
+    printf("tesh<%s> compile failed\n", pteeshader->mName.c_str());
+  if (false == gok)
+    printf("gsh<%s> compile failed\n", pgeoshader->mName.c_str());
+  if (false == fok)
+    printf("fsh<%s> compile failed\n", pfrgshader->mName.c_str());
 
   if (container->mShaderCompileFailed)
     return false;
 
   if (pvtxshader->IsCompiled() && pfrgshader->IsCompiled()) {
     GL_ERRORCHECK();
-    GLuint prgo = glCreateProgram();
+    GLuint prgo            = glCreateProgram();
     pass->_programObjectId = prgo;
 
     //////////////
@@ -141,8 +139,8 @@ bool Interface::compileAndLink(Container* container) {
     // link
     //////////////
 
-    StreamInterface *vtx_iface = pvtxshader->mpInterface;
-    StreamInterface *frg_iface = pfrgshader->mpInterface;
+    StreamInterface* vtx_iface = pvtxshader->_inputInterface;
+    StreamInterface* frg_iface = pfrgshader->_inputInterface;
 
     if (nullptr == vtx_iface) {
       printf("	vtxshader<%s> has no interface!\n", pvtxshader->mName.c_str());
@@ -160,15 +158,15 @@ bool Interface::compileAndLink(Container* container) {
     // printf( "	binding vertex attributes count<%d>\n",
     // int(vtx_iface->mAttributes.size()) );
 
-    for (const auto &itp : vtx_iface->mAttributes) {
-      Attribute *pattr = itp.second;
-      int iloc = pattr->mLocation;
+    for (const auto& itp : vtx_iface->mAttributes) {
+      Attribute* pattr = itp.second;
+      int iloc         = pattr->mLocation;
       // printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
       // pattr->mName.c_str(), iloc, pattr->mDirection.c_str(),
       // pattr->mSemantic.c_str() );
       glBindAttribLocation(prgo, iloc, pattr->mName.c_str());
       GL_ERRORCHECK();
-      pass->_vtxAttributeById[iloc] = pattr;
+      pass->_vtxAttributeById[iloc]                    = pattr;
       pass->_vtxAttributesBySemantic[pattr->mSemantic] = pattr;
     }
 
@@ -226,16 +224,15 @@ bool Interface::compileAndLink(Container* container) {
     for (int i = 0; i < numattr; i++) {
       GLchar nambuf[256];
       GLsizei namlen = 0;
-      GLint atrsiz = 0;
-      GLenum atrtyp = GL_ZERO;
+      GLint atrsiz   = 0;
+      GLenum atrtyp  = GL_ZERO;
       GL_ERRORCHECK();
-      glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atrtyp,
-                        nambuf);
+      glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atrtyp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
       GL_ERRORCHECK();
-      const auto &it = vtx_iface->mAttributes.find(nambuf);
+      const auto& it = vtx_iface->mAttributes.find(nambuf);
       OrkAssert(it != vtx_iface->mAttributes.end());
-      Attribute *pattr = it->second;
+      Attribute* pattr = it->second;
       // printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf
       // );
       pattr->meType = atrtyp;
@@ -244,20 +241,20 @@ bool Interface::compileAndLink(Container* container) {
 
     //////////////////////////
 
-    std::map<std::string,Uniform*> flatunimap;
+    std::map<std::string, Uniform*> flatunimap;
 
-    for( auto u : container->_uniforms ){
+    for (auto u : container->_uniforms) {
       flatunimap[u.first] = u.second;
     }
-    for( auto b : container->_uniformBlocks ){
+    for (auto b : container->_uniformBlocks) {
       UniformBlock* block = b.second;
-      for( auto s : block->_subuniforms ){
+      for (auto s : block->_subuniforms) {
         auto it = flatunimap.find(s.first);
-        assert(it==flatunimap.end());
-        flatunimap[s.first]=s.second;
+        assert(it == flatunimap.end());
+        flatunimap[s.first] = s.second;
       }
     }
-    if( pass->_uboBindingMap.size() ){
+    if (pass->_uboBindingMap.size()) {
     }
     //////////////////////////
     // query unis
@@ -272,14 +269,13 @@ bool Interface::compileAndLink(Container* container) {
 
     for (int i = 0; i < numunis; i++) {
       GLsizei namlen = 0;
-      GLint unisiz = 0;
-      GLenum unityp = GL_ZERO;
+      GLint unisiz   = 0;
+      GLenum unityp  = GL_ZERO;
       std::string str_name;
 
       {
         GLchar nambuf[256];
-        glGetActiveUniform(prgo, i, sizeof(nambuf), &namlen, &unisiz, &unityp,
-                           nambuf);
+        glGetActiveUniform(prgo, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
         OrkAssert(namlen < sizeof(nambuf));
         // printf( "find uni<%s>\n", nambuf );
         GL_ERRORCHECK();
@@ -292,42 +288,41 @@ bool Interface::compileAndLink(Container* container) {
         }
       }
       auto it = container->_uniforms.find(str_name);
-      if( it != container->_uniforms.end() ){
+      if (it != container->_uniforms.end()) {
 
-          Uniform *puni = it->second;
+        Uniform* puni = it->second;
 
-          puni->_type = unityp;
+        puni->_type = unityp;
 
-          UniformInstance *pinst = new UniformInstance;
-          pinst->mpUniform = puni;
+        UniformInstance* pinst = new UniformInstance;
+        pinst->mpUniform       = puni;
 
-          GLint uniloc = glGetUniformLocation(prgo, str_name.c_str());
-          pinst->mLocation = uniloc;
+        GLint uniloc     = glGetUniformLocation(prgo, str_name.c_str());
+        pinst->mLocation = uniloc;
 
-          if (puni->_typeName == "sampler2D") {
-            pinst->mSubItemIndex = pass->_samplerCount;
-            pass->_samplerCount++;
-            pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
-          } else if (puni->_typeName == "sampler3D") {
-            pinst->mSubItemIndex = pass->_samplerCount;
-            pass->_samplerCount++;
-            pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
-          } else if (puni->_typeName == "sampler2DShadow") {
-            pinst->mSubItemIndex = pass->_samplerCount;
-            pass->_samplerCount++;
-            pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
-          }
+        if (puni->_typeName == "sampler2D") {
+          pinst->mSubItemIndex = pass->_samplerCount;
+          pass->_samplerCount++;
+          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+        } else if (puni->_typeName == "sampler3D") {
+          pinst->mSubItemIndex = pass->_samplerCount;
+          pass->_samplerCount++;
+          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
+        } else if (puni->_typeName == "sampler2DShadow") {
+          pinst->mSubItemIndex = pass->_samplerCount;
+          pass->_samplerCount++;
+          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+        }
 
-          const char *fshnam = pfrgshader->mName.c_str();
+        const char* fshnam = pfrgshader->mName.c_str();
 
-          // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
-          // (int) uniloc );
+        // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
+        // (int) uniloc );
 
-          pass->_uniformInstances[puni->_name] = pinst;
-      }
-      else {
+        pass->_uniformInstances[puni->_name] = pinst;
+      } else {
         it = flatunimap.find(str_name);
-        assert(it!=flatunimap.end());
+        assert(it != flatunimap.end());
         // prob a UBO uni
       }
     }
@@ -335,4 +330,4 @@ bool Interface::compileAndLink(Container* container) {
   return true;
 }
 
-} // namespace ork::lev2 {
+} // namespace ork::lev2::glslfx

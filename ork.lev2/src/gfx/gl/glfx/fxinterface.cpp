@@ -22,7 +22,7 @@ void GfxTargetGL::FxInit() {
     FxShader::RegisterLoaders("shaders/glfx/", "glfx");
   }
 }
-}
+} // namespace ork::lev2
 
 ///////////////////////////////////////////////////////////////////////////////
 // implementation
@@ -76,13 +76,12 @@ void Interface::BindContainerToAbstract(Container* pcont, FxShader* fxh) {
   for (const auto& itp : pcont->_uniforms) {
     Uniform* puni                = itp.second;
     FxShaderParam* ork_parm      = new FxShaderParam;
-    ork_parm->_name     = itp.first;
+    ork_parm->_name              = itp.first;
     ork_parm->mParameterSemantic = puni->_semantic;
     ork_parm->mInternalHandle    = (void*)puni;
     fxh->addParameter(ork_parm);
   }
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -168,9 +167,9 @@ bool Interface::BindPass(FxShader* hfx, int ipass) {
 
   container->_activePass = container->mActiveTechnique->mPasses[ipass];
   GL_ERRORCHECK();
-  if (0 == container->_activePass->_programObjectId){
+  if (0 == container->_activePass->_programObjectId) {
     bool complinkok = compileAndLink(container);
-    hfx->SetFailedCompile(false==complinkok);
+    hfx->SetFailedCompile(false == complinkok);
   }
   GL_ERRORCHECK();
   glUseProgram(container->_activePass->_programObjectId);
@@ -203,25 +202,25 @@ const FxShaderParam* Interface::parameter(FxShader* hfx, const std::string& name
 // UBO mgmt
 ///////////////////////////////////////////////////////////////////////////////
 
-FxShaderParamBuffer* Interface::createParamBuffer( size_t length ) {
-    assert(length<=65536);
-    auto ub = new UniformBuffer;
-    ub->_fxspb = new FxShaderParamBuffer;
-    ub->_fxspb->_impl.Set<UniformBuffer*>(ub);
-    ub->_length = length;
-    ub->_fxspb->_length = length;
-    GL_ERRORCHECK();
-    glGenBuffers(1,&ub->_glbufid);
-    printf( "Create UBO<%p> glid<%d>\n", ub,ub->_glbufid );
-    glBindBuffer(GL_UNIFORM_BUFFER,ub->_glbufid);
-    auto mem = new char[length];
-    for( int i=0; i<length; i++ )
-      mem[i] = 0;
-    glBufferData(GL_UNIFORM_BUFFER,length,mem, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER,0);
-    delete[] mem;
-    GL_ERRORCHECK();
-    return ub->_fxspb;
+FxShaderParamBuffer* Interface::createParamBuffer(size_t length) {
+  assert(length <= 65536);
+  auto ub    = new UniformBuffer;
+  ub->_fxspb = new FxShaderParamBuffer;
+  ub->_fxspb->_impl.Set<UniformBuffer*>(ub);
+  ub->_length         = length;
+  ub->_fxspb->_length = length;
+  GL_ERRORCHECK();
+  glGenBuffers(1, &ub->_glbufid);
+  printf("Create UBO<%p> glid<%d>\n", ub, ub->_glbufid);
+  glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
+  auto mem = new char[length];
+  for (int i = 0; i < length; i++)
+    mem[i] = 0;
+  glBufferData(GL_UNIFORM_BUFFER, length, mem, GL_DYNAMIC_DRAW);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  delete[] mem;
+  GL_ERRORCHECK();
+  return ub->_fxspb;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -230,33 +229,30 @@ struct UniformBufferMapping {};
 
 ///////////////////////////////////////////////////////////////////////////////
 
-parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer*b,size_t base, size_t length) {
-    auto mapping = std::make_shared<FxShaderParamBufferMapping>();
-    auto ub = b->_impl.Get<UniformBuffer*>();
-    if( length == 0 ){
-      assert(base==0);
-      length = b->_length;
-    }
+parambuffermappingptr_t Interface::mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) {
+  auto mapping = std::make_shared<FxShaderParamBufferMapping>();
+  auto ub      = b->_impl.Get<UniformBuffer*>();
+  if (length == 0) {
+    assert(base == 0);
+    length = b->_length;
+  }
 
-    mapping->_offset = base;
-    mapping->_length = length;
-    mapping->_fxi = this;
-    mapping->_buffer = b;
-    mapping->_impl.Make<UniformBufferMapping>();
-    GL_ERRORCHECK();
-    glBindBuffer(GL_UNIFORM_BUFFER,ub->_glbufid);
-    //mapping->_mappedaddr = malloc(length);
-    //glMapBuffer(GL_UNIFORM_BUFFER,
-      //                                      GL_WRITE_ONLY);
-    mapping->_mappedaddr = glMapBufferRange(GL_UNIFORM_BUFFER,
-                                            base,length,
-                                            GL_MAP_WRITE_BIT|
-                                            GL_MAP_INVALIDATE_BUFFER_BIT|
-                                            GL_MAP_UNSYNCHRONIZED_BIT);
-    assert(mapping->_mappedaddr!=nullptr);
-    glBindBuffer(GL_UNIFORM_BUFFER,0);
-    GL_ERRORCHECK();
-   	return mapping;
+  mapping->_offset = base;
+  mapping->_length = length;
+  mapping->_fxi    = this;
+  mapping->_buffer = b;
+  mapping->_impl.Make<UniformBufferMapping>();
+  GL_ERRORCHECK();
+  glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
+  // mapping->_mappedaddr = malloc(length);
+  // glMapBuffer(GL_UNIFORM_BUFFER,
+  //                                      GL_WRITE_ONLY);
+  mapping->_mappedaddr = glMapBufferRange(
+      GL_UNIFORM_BUFFER, base, length, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+  assert(mapping->_mappedaddr != nullptr);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  GL_ERRORCHECK();
+  return mapping;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -265,11 +261,11 @@ void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
   assert(mapping->_impl.IsA<UniformBufferMapping>());
   auto ub = mapping->_buffer->_impl.Get<UniformBuffer*>();
   GL_ERRORCHECK();
-  glBindBuffer(GL_UNIFORM_BUFFER,ub->_glbufid);
-  //glBufferData(GL_UNIFORM_BUFFER,ub->_length,mapping->_mappedaddr, GL_STATIC_DRAW);
+  glBindBuffer(GL_UNIFORM_BUFFER, ub->_glbufid);
+  // glBufferData(GL_UNIFORM_BUFFER,ub->_length,mapping->_mappedaddr, GL_STATIC_DRAW);
   glUnmapBuffer(GL_UNIFORM_BUFFER);
-  //free(mapping->_mappedaddr);
-  glBindBuffer(GL_UNIFORM_BUFFER,0);
+  // free(mapping->_mappedaddr);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
   GL_ERRORCHECK();
   mapping->_impl.Make<void*>(nullptr);
   mapping->_mappedaddr = nullptr;
@@ -278,39 +274,38 @@ void Interface::unmapParamBuffer(FxShaderParamBufferMapping* mapping) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void Interface::bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) {
-  auto uniblock = block->_impl.Get<UniformBlock*>();
+  auto uniblock  = block->_impl.Get<UniformBlock*>();
   auto unibuffer = buffer->_impl.Get<UniformBuffer*>();
-  assert(uniblock!=nullptr);
-  assert(unibuffer!=nullptr);
+  assert(uniblock != nullptr);
+  assert(unibuffer != nullptr);
   auto pass = mpActiveEffect->_activePass;
-  assert(pass!=nullptr);
-  pass->bindUniformBlockBuffer(uniblock,unibuffer);
+  assert(pass != nullptr);
+  pass->bindUniformBlockBuffer(uniblock, unibuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
 const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  auto& parammap        = hfx->_parameterBlockByName;
-  auto it              = parammap.find(name);
-  auto fxsblock = (FxShaderParamBlock*) ((it != parammap.end()) ? it->second : nullptr);
+  auto& parammap = hfx->_parameterBlockByName;
+  auto it        = parammap.find(name);
+  auto fxsblock  = (FxShaderParamBlock*)((it != parammap.end()) ? it->second : nullptr);
   auto container = static_cast<Container*>(hfx->GetInternalHandle());
 
   auto ublock = container->uniformBlock(name);
-  if( ublock != nullptr and fxsblock == nullptr){
-    fxsblock = new FxShaderParamBlock;
-     fxsblock->_fxi = this;
-     fxsblock->_impl.Set<UniformBlock*>(ublock);
-     parammap[name]=fxsblock;
-    for( auto u : ublock->_subuniforms ){
-      auto p = new FxShaderParam;
-      p->_blockinfo = new FxShaderParamInBlockInfo;
-      p->_blockinfo->_parent = fxsblock;
-      p->mInternalHandle = (void*) u.second;
-      p->_name = u.first;
-     fxsblock->_subparams[p->_name]=p;
+  if (ublock != nullptr and fxsblock == nullptr) {
+    fxsblock       = new FxShaderParamBlock;
+    fxsblock->_fxi = this;
+    fxsblock->_impl.Set<UniformBlock*>(ublock);
+    parammap[name] = fxsblock;
+    for (auto u : ublock->_subuniforms) {
+      auto p                         = new FxShaderParam;
+      p->_blockinfo                  = new FxShaderParamInBlockInfo;
+      p->_blockinfo->_parent         = fxsblock;
+      p->mInternalHandle             = (void*)u.second;
+      p->_name                       = u.first;
+      fxsblock->_subparams[p->_name] = p;
     }
-
   }
   return fxsblock;
 }
@@ -321,18 +316,16 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
 
 const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::string& name) {
   OrkAssert(0 != hfx);
-  const auto& storagemap        = hfx->namedStorageBlocks();
-  const auto& it              = storagemap.find(name);
-  auto fxsblock = (FxShaderStorageBlock*) (it != storagemap.end()) ? it->second : nullptr;
+  const auto& storagemap = hfx->namedStorageBlocks();
+  const auto& it         = storagemap.find(name);
+  auto fxsblock          = (FxShaderStorageBlock*)(it != storagemap.end()) ? it->second : nullptr;
 
   auto container = static_cast<Container*>(hfx->GetInternalHandle());
-  auto ublk = container->storageBlock(name);
+  auto ublk      = container->storageBlock(name);
 
   return fxsblock;
 }
 
 #endif
-
-
 
 } // namespace ork::lev2::glslfx
