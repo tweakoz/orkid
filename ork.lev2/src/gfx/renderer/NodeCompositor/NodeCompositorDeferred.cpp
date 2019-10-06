@@ -21,7 +21,7 @@
 ImplementReflectionX(ork::lev2::DeferredCompositingNode,
                      "DeferredCompositingNode");
 
-constexpr bool USE_UBO = false;
+constexpr bool USE_UBO = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -57,7 +57,7 @@ struct IMPL {
   IMPL() : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < 512; i++) {
 
       PointLight p;
       p.next();
@@ -246,6 +246,11 @@ struct IMPL {
       //////////////////////////////////////////////////////
       if (USE_UBO) {
         FXI->bindParamBlockBuffer(_mvpblock, _mvpbuf);
+        auto mapped = FXI->mapParamBuffer(_mvpbuf);
+        mapped->ref<fmtx4>(0) = fmtx4();
+        mapped->ref<fmtx4>(64) = fmtx4();
+        mapped->ref<fmtx4>(128) = fmtx4();
+        mapped->unmap();
       } else {
         _lightingmtl.bindParamMatrix(_parMatMVPL, fmtx4());
         _lightingmtl.bindParamMatrix(_parMatMVPC, fmtx4());
@@ -330,7 +335,6 @@ struct IMPL {
           fmtx4 mvpR = LIGHTMTX * (R->_vmatrix * R->_pmatrix);
           if(USE_UBO){
             auto mapped = FXI->mapParamBuffer(_mvpbuf);
-            mapped->ref<fmtx4>(0) = fmtx4();
             mapped->ref<fmtx4>(64) = mvpL;
             mapped->ref<fmtx4>(128) = mvpR;
             mapped->unmap();
@@ -342,7 +346,14 @@ struct IMPL {
         } else {
           auto M = CPD._cameraMatrices;
           fmtx4 mvp = LIGHTMTX * (M->_vmatrix * M->_pmatrix);
+          if(USE_UBO){
+            auto mapped = FXI->mapParamBuffer(_mvpbuf);
+            mapped->ref<fmtx4>(0) = mvp;
+            mapped->unmap();
+          }
+          else {
           _lightingmtl.bindParamMatrix(_parMatMVPC, mvp);
+          }
         }
         _lightingmtl.bindParamVec4(_parLightPosR, fvec4(pl._pos, pl._radius));
         _lightingmtl.bindParamVec3(_parLightColor, pl._color);
