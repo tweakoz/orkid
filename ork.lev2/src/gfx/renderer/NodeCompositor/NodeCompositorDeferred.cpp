@@ -21,7 +21,7 @@
 ImplementReflectionX(ork::lev2::DeferredCompositingNode,
                      "DeferredCompositingNode");
 
-constexpr bool USE_UBO = true;
+constexpr bool USE_UBO = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace ork {
@@ -89,7 +89,7 @@ struct IMPL {
       _tekPointLightingStereo = _lightingmtl.technique("pointlight_stereo");
       //////////////////////////////////////////////////////////////
       if (USE_UBO) {
-        _mvpbuf = pTARG->FXI()->createParamBuffer(4 << 10);
+        _mvpbuf = pTARG->FXI()->createParamBuffer(256);
 
         _mvpblock = _lightingmtl.paramBlock("ub_vtx");
         _parMatMVPC = _mvpblock->param("MVPC");
@@ -328,12 +328,21 @@ struct IMPL {
           auto R = CPD._stereoCameraMatrices->_right;
           fmtx4 mvpL = LIGHTMTX * (L->_vmatrix * L->_pmatrix);
           fmtx4 mvpR = LIGHTMTX * (R->_vmatrix * R->_pmatrix);
-          //_lightingmtl.bindParamMatrix(_parMatMVPL, mvpL);
-          //_lightingmtl.bindParamMatrix(_parMatMVPR, mvpR);
+          if(USE_UBO){
+            auto mapped = FXI->mapParamBuffer(_mvpbuf);
+            mapped->ref<fmtx4>(0) = fmtx4();
+            mapped->ref<fmtx4>(64) = mvpL;
+            mapped->ref<fmtx4>(128) = mvpR;
+            mapped->unmap();
+          }
+          else{
+            _lightingmtl.bindParamMatrix(_parMatMVPL, mvpL);
+            _lightingmtl.bindParamMatrix(_parMatMVPR, mvpR);
+          }
         } else {
           auto M = CPD._cameraMatrices;
           fmtx4 mvp = LIGHTMTX * (M->_vmatrix * M->_pmatrix);
-          //_lightingmtl.bindParamMatrix(_parMatMVPC, mvp);
+          _lightingmtl.bindParamMatrix(_parMatMVPC, mvp);
         }
         _lightingmtl.bindParamVec4(_parLightPosR, fvec4(pl._pos, pl._radius));
         _lightingmtl.bindParamVec3(_parLightColor, pl._color);

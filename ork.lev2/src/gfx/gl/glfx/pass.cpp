@@ -39,6 +39,7 @@ namespace ork::lev2::glslfx {
 
     auto rval = new UniformBlockBinding;
 
+
     rval->_blockIndex = glGetUniformBlockIndex( _programObjectId, block->_name.c_str() );
     rval->_pass = this;
     rval->_block = block;
@@ -48,6 +49,8 @@ namespace ork::lev2::glslfx {
       printf( "perhaps the UBO is not referenced...\n");
       return rval;
     }
+
+    glUniformBlockBinding(_programObjectId,rval->_blockIndex,0);
 
     glGetActiveUniformBlockiv(_programObjectId,rval->_blockIndex,GL_UNIFORM_BLOCK_DATA_SIZE,&rval->_blockSize);
     printf( "block<%s> blocksize<%d>\n", block->_name.c_str(), rval->_blockSize );
@@ -130,12 +133,15 @@ namespace ork::lev2::glslfx {
       GLintptr ubo_offset = 0;
       GLintptr ubo_size = buffer->_length;
       GL_ERRORCHECK();
-      glBindBufferRange(GL_UNIFORM_BUFFER,   // target
+      //glBindBufferRange(GL_UNIFORM_BUFFER,   // target
+        //                ubo_bindingindex,    // index
+          //              buffer->_glbufid, // buffer objid
+            //            ubo_offset,          // offset
+              //          ubo_size);           // length
+      glBindBufferBase(GL_UNIFORM_BUFFER,   // target
                         ubo_bindingindex,    // index
-                        buffer->_glbufid, // buffer objid
-                        ubo_offset,          // offset
-                        ubo_size);           // length
-      printf( "glBindBufferRange\n" );
+                        buffer->_glbufid); // buffer objid
+      printf( "glBindBufferRange bidx<%d> bufid<%d>\n", int(ubo_bindingindex), int(buffer->_glbufid) );
       GL_ERRORCHECK();
       _ubobindings[ubo_bindingindex] = buffer;
     }

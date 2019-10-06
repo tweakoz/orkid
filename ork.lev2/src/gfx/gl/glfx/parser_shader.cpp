@@ -169,7 +169,7 @@ int GlSlFxParser::ParseFxShaderCommon(Shader *pshader) {
 
   for (const auto &ub : iface->_uniformBlocks) {
     prline();
-    shaderbody += FormatString("layout (std140) uniform %s {\n",ub->_name.c_str() );
+    shaderbody += FormatString("layout(shared) uniform %s {\n",ub->_name.c_str() );
     for (auto itsub : ub->_subuniforms) {
       prline();
       shaderbody += itsub.second->genshaderbody();
