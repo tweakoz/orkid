@@ -77,12 +77,14 @@ libblock lib_deferred : ub_light : ub_frg {
   vec3 pointlight(GBufData gbd, vec3 lightpos, float lightradius, vec3 color) {
     vec3 postolight = lightpos - gbd._wpos;
     float dis2light = length(postolight);
-    float atten     = dis2light / lightradius;
-    atten           = 1.0 - clamp(atten, 0, 1);
-    atten           = atten * atten;
-    vec3 dir2light  = normalize(postolight);
-    atten *= max(dot(gbd._wnrm, dir2light), 0);
-    return color * atten;
+    float atten     = float(dis2light<lightradius);
+    //atten           = 1.0 - clamp(atten, 0, 1);
+    //atten           = atten * atten;
+    if( atten>0 ){
+      vec3 dir2light  = normalize(postolight);
+      atten *= max(dot(gbd._wnrm, dir2light), 0);
+    }
+    return color* atten;
   }
   /////////////////////////////////////////////////////////
   vec3 baselighting(WPosData wpd){
@@ -96,10 +98,10 @@ libblock lib_deferred : ub_light : ub_frg {
   vec3 pntlighting(WPosData wpd){
     GBufData gbd = decodeGBUF(wpd);
     vec3 l = vec3(0,0,0);
-    for( int i=0; i<NumLights; i++ ){
-      l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColor[i]);
-    }
-    return gbd._albedo*l;
+    //for( int i=0; i<NumLights; i++ ){
+      //l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColor[i]);
+    //}
+    return mod(gbd._wpos,100)*0.01;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -150,6 +152,7 @@ fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred  {
   wpd._scruv.x = mod(wpd._scruv.x*2,1);
   vec3 c  = pntlighting(wpd);
   //c = vec3(wpd._muv,0);
+  //vec3 c = vec3(frg_uv,0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////

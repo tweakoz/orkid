@@ -62,14 +62,14 @@ struct IMPL {
   IMPL() : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < 128; i++) {
 
       PointLight p;
       p.next();
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius = 25.0f;
+      p._radius = 15.0f;
       _pointlights.push_back(p);
     }
   }
@@ -86,8 +86,9 @@ struct IMPL {
     pTARG->debugPushGroup("Deferred::rendeinitr");
     auto FXI = pTARG->FXI();
     if (nullptr == _rtgGbuffer) {
-      for( int i=0; i<KTILECOUNT; i++ )
+      for( int i=0; i<KTILECOUNT; i++ ){
         _lighttiles.push_back(pllist_t());
+      }
       //////////////////////////////////////////////////////////////
       _lightingmtl.gpuInit(pTARG, "orkshader://deferred");
       _tekBaseLighting = _lightingmtl.technique("baselight");
@@ -182,18 +183,22 @@ struct IMPL {
       CPD.SetDstRect(tgt_rect);
       CPD._passID = "defgbuffer1"_crcu;
       fvec3 campos_mono = CPD.monoCamPos(fmtx4());
-      fmtx4 IVPL, IVPR;
-      fmtx4 VPL, VPR;
+      fmtx4 IVPL, IVPR, IVPM;
+      fmtx4 VPL, VPR, VPM;
       if (is_stereo_1pass) {
         auto L = CPD._stereoCameraMatrices->_left;
         auto R = CPD._stereoCameraMatrices->_right;
+        auto M = CPD._stereoCameraMatrices->_mono;
         VPL = L->_vmatrix * L->_pmatrix;
         VPR = R->_vmatrix * R->_pmatrix;
+        VPM = M->_vmatrix * M->_pmatrix;
       } else {
         auto M = CPD._cameraMatrices;
-        VPL = M->_vmatrix * M->_pmatrix;
-        VPR = VPL;
+        VPM = M->_vmatrix * M->_pmatrix;
+        VPL = VPM;
+        VPR = VPM;
       }
+      IVPM.inverseOf(VPM);
       IVPL.inverseOf(VPL);
       IVPR.inverseOf(VPR);
       ///////////////////////////////////////////////////////////////////////////
@@ -288,8 +293,8 @@ struct IMPL {
       // outside lights
       //////////////////////////////////////////////////
       _lightingmtl.mRasterState.SetCullTest(ECULLTEST_OFF);
-      _lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-      //_lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
+      //_lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
+      _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       RSI->BindRasterState(_lightingmtl.mRasterState);
       constexpr size_t KPOSPASE = KMAXLIGHTS*sizeof(fvec4);
@@ -298,38 +303,39 @@ struct IMPL {
       constexpr int KTILEMAXY = KTILEDIMY-1;
       if(true){ // tiled lighting
         size_t tilelights = 0;
+        _timer.Start();
         for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
           const auto& light = _pointlights[lidx];
           Sphere sph(light._pos,light._radius);
-          if (is_stereo_1pass) {
-            auto projL = sph.projectedBounds(VPL);
-            auto projR = sph.projectedBounds(VPR);
-          } else {
-            auto box = sph.projectedBounds(VPL);
-            auto bmin = ((box.Min()+fvec3(1,1,1))*0.5);
-            auto bmax = ((box.Max()+fvec3(1,1,1))*0.5);
-            int minX = int(floor(bmin.x*(KTILEDIMX-1)));
-            int maxX = int(ceil(bmax.x*(KTILEDIMX-1)));
-            int minY = int(floor(bmin.y*(KTILEDIMY-1)));
-            int maxY = int(ceil(bmax.y*(KTILEDIMY-1)));
-            for( int iy=minY; iy<=maxY; iy++ ){
+          auto box = sph.projectedBounds(VPL);
+          auto bmin = ((box.Min()+fvec3(1,1,1))*0.5);
+          auto bmax = ((box.Max()+fvec3(1,1,1))*0.5);
+          int minX = int(floor(bmin.x*(KTILEDIMX-1)));
+          int maxX = int(ceil(bmax.x*(KTILEDIMX-1)));
+          int minY = int(floor(bmin.y*(KTILEDIMY-1)));
+          int maxY = int(ceil(bmax.y*(KTILEDIMY-1)));
+          if( (box.Min().z>=-1 and box.Min().z<=1) or
+              (box.Max().z>=-1 and box.Max().z<=1) ) {
+              for( int iy=minY; iy<=maxY; iy++ ){
                 if( iy>=0 and iy<KTILEDIMY ) {
                   for( int ix=minX; ix<=maxX; ix++ ){
-                      if( ix>=0 and ix<KTILEDIMX )
-                        _lighttiles[iy*KTILEDIMX+ix].push_back(&light);
+                    if( ix>=0 and ix<KTILEDIMX )
+                      _lighttiles[iy*KTILEDIMX+ix].push_back(&light);
                   }
                 }
-            }
-            //printf( "LIGHT<%zu> l<%d> r<%d> t<%d> b<%d>\n", lidx, minX, maxX, minY, maxY );
-          }
-        }
-        constexpr float KTILESIZX = 2.0f/float(KTILEDIMX);
-        constexpr float KTILESIZY = 2.0f/float(KTILEDIMY);
+              }
+          } // if( (box.Min().z>=-1 and box.Min().z<=1) or
+        } // for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
+        float pht1 = _timer.SecsSinceStart();
+        printf( "pht1<%g>\n", pht1 );
+        const float KTILESIZX = 2.0f/float(KTILEDIMX);
+        const float KTILESIZY = 2.0f/float(KTILEDIMY);
         for( int iy=0; iy<KTILEDIMY; iy++ ){
             float T = float(iy)*KTILESIZY-1.0f;
             for( int ix=0; ix<KTILEDIMX; ix++ ){
               auto& lightlist = _lighttiles[iy*KTILEDIMX+ix];
               size_t numl = lightlist.size();
+              printf( "TILE <%d %d> numl<%zu>\n", ix, iy, numl );
               if( numl ) {
                   //////////////////////////////////////////////////
                   // update light colors for tile
@@ -357,13 +363,21 @@ struct IMPL {
                   //////////////////////////////////////////////////
                   // accumulate light for tile
                   //////////////////////////////////////////////////
-                  float L = float(ix)*KTILESIZX-1.0f;
-                  this_buf->Render2dQuadEML(fvec4(L,T,KTILESIZX,KTILESIZY),
+                  if( is_stereo_1pass ) {
+                    float L = (float(ix)/float(KTILEDIMX));
+                    this_buf->Render2dQuadEML(fvec4(L-1.0f,T,KTILESIZX*0.5,KTILESIZY),
+                                              fvec4(0, 0, 1, 1));
+                    this_buf->Render2dQuadEML(fvec4(L,T,KTILESIZX*0.5,KTILESIZY),
                                             fvec4(0, 0, 1, 1));
+                  }
+                  else {
+                    float L = float(ix)*KTILESIZX-1.0f;
+                    this_buf->Render2dQuadEML(fvec4(L,T,KTILESIZX,KTILESIZY),
+                                              fvec4(0, 0, 1, 1));
+                  }
                 } // if numl
             } // for ix
         } // for iy
-        //printf( "TILELIGHTS<%zu>\n", tilelights );
       }
       /////////////////////////////////////
       else {
@@ -384,8 +398,9 @@ struct IMPL {
       //////////////////////////////////////////////////////////////////
       // clear lighttiles
       //////////////////////////////////////////////////////////////////
-      for( int i=0; i<KTILECOUNT; i++ )
+      for( int i=0; i<KTILECOUNT; i++ ){
         _lighttiles[i].clear();
+      }
       //////////////////////////////////////////////////////////////////
       // update pointlights
       //////////////////////////////////////////////////////////////////
@@ -436,7 +451,7 @@ struct IMPL {
   int _height = 0;
   fmtx4 _ivp[2];
   std::vector<PointLight> _pointlights;
-
+  Timer _timer;
   typedef std::vector<const PointLight*> pllist_t;
   ork::fixedvector<pllist_t,KTILECOUNT> _lighttiles;
 };
