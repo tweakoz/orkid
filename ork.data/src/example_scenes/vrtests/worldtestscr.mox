@@ -216,10 +216,10 @@
                                     <object type='EditorCamControllerData' id='18'>
                                         <property name='Camera'>
                                             <object type='EzUiCam' id='19'>
-                                                <property name='Center'>290.475 647.178 38.4897</property>
+                                                <property name='Center'>26.7705 265.486 281.235</property>
                                                 <property name='Focus'>0 0 0</property>
-                                                <property name='Loc'>350.554</property>
-                                                <property name='QuatC'>0.356687 -0.668814 0.337752 0.558721</property>
+                                                <property name='Loc'>146.24</property>
+                                                <property name='QuatC'>0.0746855 -0.904034 0.330555 0.262035</property>
                                                 <property name='Aperature'>40</property>
                                                 <property name='MaxFar'>100000</property>
                                                 <property name='MinNear'>0.1</property>

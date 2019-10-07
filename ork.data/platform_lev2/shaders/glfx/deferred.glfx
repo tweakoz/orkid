@@ -114,11 +114,11 @@ libblock lib_deferred : ub_light : ub_frg {
     vec3 l = vec3(0,0,0);
     for( int i=0; i<NumLights; i++ ){
        float lightcamdepth = LightColorD[i].w;
-       bool sphere_intersects_depth = abs(lightcamdepth-gbd._zeye)<LightPosR[i].w;
+       bool sphere_intersects_depth = (gbd._zeye-lightcamdepth)<LightPosR[i].w;
        if( sphere_intersects_depth )
           l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColorD[i].xyz);
     }
-    return l; //mod(gbd._wpos,100.0)*0.01;
+    return gbd._albedo*l;
   }
 }
 ///////////////////////////////////////////////////////////////

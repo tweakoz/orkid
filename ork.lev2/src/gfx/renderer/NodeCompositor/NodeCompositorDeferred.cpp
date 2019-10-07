@@ -72,7 +72,7 @@ struct IMPL {
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius = 20.0f;
+      p._radius = 40.0f;
       _pointlights.push_back(p);
     }
   }
