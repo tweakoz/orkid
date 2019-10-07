@@ -141,6 +141,8 @@ namespace ork::lev2::glslfx {
   }
 
   #if defined(ENABLE_NVMESH_SHADERS)
+  void Container::addNvTaskInterface(StreamInterface* pif) { _nvTaskInterfaces[pif->mName] = pif; }
+  void Container::addNvMeshInterface(StreamInterface* pif) { _nvMeshInterfaces[pif->mName] = pif; }
   void Container::addNvTaskShader(ShaderNvTask* psha) { _nvTaskShaders[psha->mName] = psha; }
   void Container::addNvMeshShader(ShaderNvMesh* psha) { _nvMeshShaders[psha->mName] = psha; }
   ShaderNvTask* Container::nvTaskShader(const std::string& name) const {
@@ -196,5 +198,22 @@ namespace ork::lev2::glslfx {
   ///////////////////////////////////////////////////////////////////////////////
 
   bool Container::IsValid(void) { return true; }
+
+  std::map<std::string, Uniform*> Container::flatUniMap() const {
+    std::map<std::string, Uniform*> flatunimap;
+    for (auto u : this->_uniforms) {
+      flatunimap[u.first] = u.second;
+    }
+    for (auto b : this->_uniformBlocks) {
+      UniformBlock* block = b.second;
+      for (auto s : block->_subuniforms) {
+        auto it = flatunimap.find(s.first);
+        assert(it == flatunimap.end());
+        flatunimap[s.first] = s.second;
+      }
+    }
+    return flatunimap;
+  }
+
 
 } // namespace ork::lev2::glslfx {

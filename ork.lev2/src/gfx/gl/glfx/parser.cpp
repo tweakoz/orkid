@@ -327,8 +327,12 @@ int GlSlFxParser::ParseFxPass(int istart, Technique* ptek) {
       std::string fsnam = v.token(i + 2)->text;
       auto pshader      = mpContainer->fragmentShader(fsnam);
       OrkAssert(pshader != nullptr);
-      auto& primvtg           = ppass->_primpipe.Get<PrimPipelineVTG>();
-      primvtg._fragmentShader = pshader;
+      if( auto as_vtg = ppass->_primpipe.TryAs<PrimPipelineVTG>() )
+        as_vtg.value()._fragmentShader = pshader;
+      #if defined(ENABLE_NVMESH_SHADERS)
+      else if( auto as_nvtm = ppass->_primpipe.TryAs<PrimPipelineNVTM>() )
+        as_nvtm.value()._fragmentShader = pshader;
+      #endif
       i += 4;
     }
 #if defined(ENABLE_NVMESH_SHADERS)
@@ -336,14 +340,15 @@ int GlSlFxParser::ParseFxPass(int istart, Technique* ptek) {
       std::string fsnam = v.token(i + 2)->text;
       auto pshader      = mpContainer->nvTaskShader(fsnam);
       OrkAssert(pshader != nullptr);
-      auto& primnvmt         = ppass->_primpipe.Get<PrimPipelineNVMT>();
+      auto& primnvmt         = ppass->_primpipe.Make<PrimPipelineNVTM>();
       primnvmt._nvTaskShader = pshader;
       i += 4;
     } else if (vt_tok->text == "nvmesh_shader") {
       std::string fsnam = v.token(i + 2)->text;
       auto pshader      = mpContainer->nvMeshShader(fsnam);
       OrkAssert(pshader != nullptr);
-      auto& primnvmt         = ppass->_primpipe.Get<PrimPipelineNVMT>();
+      auto& primnvmt = ppass->_primpipe.IsA<PrimPipelineNVTM>() ? ppass->_primpipe.Get<PrimPipelineNVTM>()
+                                                                : ppass->_primpipe.Make<PrimPipelineNVTM>();
       primnvmt._nvMeshShader = pshader;
       i += 4;
     }
@@ -438,17 +443,21 @@ Container* GlSlFxParser::Parse(const std::string& fxname) {
     } else if (tok.text == "fragment_shader") {
       ShaderFrg* pshader = ParseFxFragmentShader();
       mpContainer->addFragmentShader(pshader);
-    }
 #if defined(ENABLE_NVMESH_SHADERS)
-    else if (tok.text == "nvtask_shader") {
+    } else if (tok.text == "nvtask_shader") {
       ShaderNvTask* pshader = ParseFxNvTaskShader();
       mpContainer->addNvTaskShader(pshader);
     } else if (tok.text == "nvmesh_shader") {
       ShaderNvMesh* pshader = ParseFxNvMeshShader();
       mpContainer->addNvMeshShader(pshader);
-    }
+    } else if (tok.text == "nvtask_interface") {
+      StreamInterface* pif = ParseFxInterface(GL_TASK_SHADER_NV);
+      mpContainer->addNvTaskInterface(pif);
+    } else if (tok.text == "nvmesh_interface") {
+      StreamInterface* pif = ParseFxInterface(GL_MESH_SHADER_NV);
+      mpContainer->addNvMeshInterface(pif);
 #endif
-    else if (tok.text == "technique") {
+    } else if (tok.text == "technique") {
       Technique* ptek = ParseFxTechnique();
       mpContainer->addTechnique(ptek);
     } else {
@@ -461,7 +470,7 @@ Container* GlSlFxParser::Parse(const std::string& fxname) {
     mpContainer = nullptr;
   }
   return mpContainer;
-}
+} // namespace ork::lev2::glslfx
 
 LibBlock::LibBlock(const Scanner& s)
     : mFilter(nullptr)

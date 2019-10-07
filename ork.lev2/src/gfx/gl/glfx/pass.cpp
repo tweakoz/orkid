@@ -148,4 +148,73 @@ namespace ork::lev2::glslfx {
 
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+
+  void Pass::postProc(const Container* container) {
+    auto flatunimap = container->flatUniMap();
+    //////////////////////////
+    // query unis
+    //////////////////////////
+
+    GLint numunis = 0;
+    GL_ERRORCHECK();
+    glGetProgramiv(_programObjectId, GL_ACTIVE_UNIFORMS, &numunis);
+    GL_ERRORCHECK();
+
+    _samplerCount = 0;
+
+    for (int i = 0; i < numunis; i++) {
+      GLsizei namlen = 0;
+      GLint unisiz   = 0;
+      GLenum unityp  = GL_ZERO;
+      std::string str_name;
+
+      {
+        GLchar nambuf[256];
+        glGetActiveUniform(_programObjectId, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
+        OrkAssert(namlen < sizeof(nambuf));
+        // printf( "find uni<%s>\n", nambuf );
+        GL_ERRORCHECK();
+
+        str_name = nambuf;
+        auto its = str_name.find('[');
+        if (its != str_name.npos) {
+          str_name = str_name.substr(0, its);
+          // printf( "nnam<%s>\n", str_name.c_str() );
+        }
+      }
+      auto it = container->_uniforms.find(str_name);
+      if (it != container->_uniforms.end()) {
+
+        Uniform* puni = it->second;
+
+        puni->_type = unityp;
+
+        UniformInstance* pinst = new UniformInstance;
+        pinst->mpUniform       = puni;
+
+        GLint uniloc     = glGetUniformLocation(_programObjectId, str_name.c_str());
+        pinst->mLocation = uniloc;
+
+        if (puni->_typeName == "sampler2D") {
+          pinst->mSubItemIndex = this->_samplerCount++;
+          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+        } else if (puni->_typeName == "sampler3D") {
+          pinst->mSubItemIndex = this->_samplerCount++;
+          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
+        } else if (puni->_typeName == "sampler2DShadow") {
+          pinst->mSubItemIndex = this->_samplerCount++;
+          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
+        }
+
+        this->_uniformInstances[puni->_name] = pinst;
+      } else {
+        it = flatunimap.find(str_name);
+        assert(it != flatunimap.end());
+        // prob a UBO uni
+      }
+    }
+
+  }
+
 } // namespace ork::lev2::glslfx {

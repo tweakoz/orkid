@@ -110,6 +110,8 @@ struct Attribute {
   std::string mSemantic;
   std::string mComment;
   int mArraySize;
+  bool _typeIsInlineStruct = false;
+  std::vector<std::string> _inlineStructToks;
 
   Attribute(const std::string& nam, const std::string& sem = "")
       : mName(nam)
@@ -119,11 +121,11 @@ struct Attribute {
       , mArraySize(0) {}
 };
 
+typedef std::map<std::string, Uniform*> uniform_map_t;
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformSet {
-
-  typedef std::map<std::string, Uniform*> uniform_map_t;
 
   UniformSet() {}
 
@@ -134,7 +136,6 @@ struct UniformSet {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBlock {
-  typedef std::map<std::string, Uniform*> uniform_map_t;
 
   UniformBlock() {}
 
@@ -353,9 +354,10 @@ struct ShaderNvTask : Shader {
   ShaderNvTask(const std::string& nam = "")
       : Shader(nam, GL_TASK_SHADER_NV) {}
 };
-struct PrimPipelineNVMT {
+struct PrimPipelineNVTM {
   ShaderNvTask* _nvTaskShader = nullptr;
   ShaderNvMesh* _nvMeshShader = nullptr;
+  ShaderFrg* _fragmentShader = nullptr;
 };
 #endif
 
@@ -369,13 +371,13 @@ struct Pass {
   static const int kmaxattrID = 16;
   svar64_t _primpipe;
   std::string _name;
-  StateBlock* _stateBlock;
-  GLuint _programObjectId;
+  StateBlock* _stateBlock = nullptr;
+  GLuint _programObjectId = 0;
   uni_map_t _uniformInstances;
   attr_map_t _vtxAttributesBySemantic;
   ubb_map_t _uboBindingMap;
   Attribute* _vtxAttributeById[kmaxattrID];
-  int _samplerCount;
+  int _samplerCount = 0;
 
   Pass(const std::string& name)
       : _name(name)
@@ -385,6 +387,9 @@ struct Pass {
     for (int i = 0; i < kmaxattrID; i++)
       _vtxAttributeById[i] = nullptr;
   }
+
+  void postProc(const Container* c);
+
   bool hasUniformInstance(UniformInstance* puni) const;
   const UniformInstance* uniformInstance(Uniform* puni) const;
 
@@ -446,6 +451,8 @@ struct Container {
   int mActiveNumPasses;
   const FxShader* mFxShader;
   bool mShaderCompileFailed;
+
+  uniform_map_t flatUniMap() const;
 
   ///////////////////////////////////////////////////////
   // vtg //
@@ -557,6 +564,8 @@ public:
   Container* GetActiveEffect() const { return mpActiveEffect; }
 
   bool compileAndLink(Container* container);
+  bool compilePipelineVTG(Container* container);
+  bool compilePipelineNVTM(Container* container);
 
   // ubo
   FxShaderParamBuffer* createParamBuffer( size_t length ) final;

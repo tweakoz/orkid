@@ -146,9 +146,45 @@ fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred  {
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_pointlight : iface_vdefault {
-  frg_uv      = uv0;
-  gl_Position = position;
+nvtask_interface iface_task : ub_light {
+  layout(local_size_x=32) in;
+}
+nvtask_shader task_pointlight : iface_task {
+}
+nvmesh_interface iface_mesh : ub_light {
+  layout(local_size_x=32) in;
+
+    // the primitive type (points,lines or triangles)
+    layout(triangles) out;
+    // maximum allocation size for each meshlet
+    layout(max_vertices=64, max_primitives=126) out;
+
+    // the actual amount of primitives the workgroup outputs ( <= max_primitives)
+    out uint gl_PrimitiveCountNV;
+    // an index buffer, using list type indices (strips are not supported here)
+    out uint gl_PrimitiveIndicesNV[]; // [max_primitive* 3 for triangles]
+    out gl_MeshPerVertexNV {
+         vec4  gl_Position;
+         float gl_PointSize;
+         float gl_ClipDistance[];
+         float gl_CullDistance[];
+    }
+    gl_MeshVerticesNV[]; // [max_vertices]
+
+    // define your own vertex output blocks as usual
+    out Interpolant { vec2 uv; }
+    OUT[]; // [max_vertices]
+
+    // special purpose per-primitive outputs
+    perprimitiveNV out gl_MeshPerPrimitiveNV {
+      int gl_PrimitiveID;
+      int gl_Layer;
+      int gl_ViewportIndex;
+      int gl_ViewportMask[]; // [1]
+    }
+    gl_MeshPrimitivesNV[]; // [max_primitives]
+}
+nvmesh_shader mesh_pointlight : iface_mesh {
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight : iface_fdefault : lib_deferred  {
@@ -185,15 +221,6 @@ technique baselight {
   }
 }
 ///////////////////////////////////////////////////////////////
-technique pointlight {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_pointlight;
-    fragment_shader = ps_pointlight;
-    state_block     = sb_default;
-  }
-}
-///////////////////////////////////////////////////////////////
 technique baselight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
@@ -203,10 +230,21 @@ technique baselight_stereo {
   }
 }
 ///////////////////////////////////////////////////////////////
+technique pointlight {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    nvtask_shader   = task_pointlight;
+    nvmesh_shader   = mesh_pointlight;
+    fragment_shader = ps_pointlight;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
 technique pointlight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_pointlight;
+    nvtask_shader   = task_pointlight;
+    nvmesh_shader   = mesh_pointlight;
     fragment_shader = ps_pointlight_stereo;
     state_block     = sb_default;
   }

@@ -58,9 +58,10 @@ bool Shader::Compile() {
   return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-bool Interface::compileAndLink(Container* container) {
+bool Interface::compilePipelineVTG(Container* container) {
+
   auto pass = const_cast<Pass*>(container->_activePass);
 
   auto& pipeVTG = pass->_primpipe.Get<PrimPipelineVTG>();
@@ -85,27 +86,16 @@ bool Interface::compileAndLink(Container* container) {
     return compile_ok;
   };
 
-  bool vok  = l_compile(pvtxshader);
-  bool tcok = l_compile(ptecshader);
-  bool teok = l_compile(pteeshader);
-  bool gok  = l_compile(pgeoshader);
-  bool fok  = l_compile(pfrgshader);
+  bool OK = true;
+  OK &= l_compile(pvtxshader);
+  OK &= l_compile(ptecshader);
+  OK &= l_compile(pteeshader);
+  OK &= l_compile(pgeoshader);
+  OK &= l_compile(pfrgshader);
 
-  if (false == vok)
-    printf("vsh<%s> compile failed\n", pvtxshader->mName.c_str());
-  if (false == tcok)
-    printf("tcsh<%s> compile failed\n", ptecshader->mName.c_str());
-  if (false == teok)
-    printf("tesh<%s> compile failed\n", pteeshader->mName.c_str());
-  if (false == gok)
-    printf("gsh<%s> compile failed\n", pgeoshader->mName.c_str());
-  if (false == fok)
-    printf("fsh<%s> compile failed\n", pfrgshader->mName.c_str());
+  container->mShaderCompileFailed = (false == OK);
 
-  if (container->mShaderCompileFailed)
-    return false;
-
-  if (pvtxshader->IsCompiled() && pfrgshader->IsCompiled()) {
+  if (OK) {
     GL_ERRORCHECK();
     GLuint prgo            = glCreateProgram();
     pass->_programObjectId = prgo;
@@ -203,7 +193,7 @@ bool Interface::compileAndLink(Container* container) {
       char infoLog[1 << 16];
       glGetProgramInfoLog(prgo, sizeof(infoLog), NULL, infoLog);
       printf("\n\n//////////////////////////////////\n");
-      printf("program InfoLog<%s>\n", infoLog);
+      printf("program VTG InfoLog<%s>\n", infoLog);
       printf("//////////////////////////////////\n\n");
       OrkAssert(false);
     }
@@ -240,94 +230,84 @@ bool Interface::compileAndLink(Container* container) {
     }
 
     //////////////////////////
-
-    std::map<std::string, Uniform*> flatunimap;
-
-    for (auto u : container->_uniforms) {
-      flatunimap[u.first] = u.second;
-    }
-    for (auto b : container->_uniformBlocks) {
-      UniformBlock* block = b.second;
-      for (auto s : block->_subuniforms) {
-        auto it = flatunimap.find(s.first);
-        assert(it == flatunimap.end());
-        flatunimap[s.first] = s.second;
-      }
-    }
-    if (pass->_uboBindingMap.size()) {
-    }
+    pass->postProc(container);
     //////////////////////////
-    // query unis
-    //////////////////////////
-
-    GLint numunis = 0;
-    GL_ERRORCHECK();
-    glGetProgramiv(prgo, GL_ACTIVE_UNIFORMS, &numunis);
-    GL_ERRORCHECK();
-
-    pass->_samplerCount = 0;
-
-    for (int i = 0; i < numunis; i++) {
-      GLsizei namlen = 0;
-      GLint unisiz   = 0;
-      GLenum unityp  = GL_ZERO;
-      std::string str_name;
-
-      {
-        GLchar nambuf[256];
-        glGetActiveUniform(prgo, i, sizeof(nambuf), &namlen, &unisiz, &unityp, nambuf);
-        OrkAssert(namlen < sizeof(nambuf));
-        // printf( "find uni<%s>\n", nambuf );
-        GL_ERRORCHECK();
-
-        str_name = nambuf;
-        auto its = str_name.find('[');
-        if (its != str_name.npos) {
-          str_name = str_name.substr(0, its);
-          // printf( "nnam<%s>\n", str_name.c_str() );
-        }
-      }
-      auto it = container->_uniforms.find(str_name);
-      if (it != container->_uniforms.end()) {
-
-        Uniform* puni = it->second;
-
-        puni->_type = unityp;
-
-        UniformInstance* pinst = new UniformInstance;
-        pinst->mpUniform       = puni;
-
-        GLint uniloc     = glGetUniformLocation(prgo, str_name.c_str());
-        pinst->mLocation = uniloc;
-
-        if (puni->_typeName == "sampler2D") {
-          pinst->mSubItemIndex = pass->_samplerCount;
-          pass->_samplerCount++;
-          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
-        } else if (puni->_typeName == "sampler3D") {
-          pinst->mSubItemIndex = pass->_samplerCount;
-          pass->_samplerCount++;
-          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_3D);
-        } else if (puni->_typeName == "sampler2DShadow") {
-          pinst->mSubItemIndex = pass->_samplerCount;
-          pass->_samplerCount++;
-          pinst->mPrivData.Set<GLenum>(GL_TEXTURE_2D);
-        }
-
-        const char* fshnam = pfrgshader->mName.c_str();
-
-        // printf("fshnam<%s> uninam<%s> loc<%d>\n", fshnam, str_name.c_str(),
-        // (int) uniloc );
-
-        pass->_uniformInstances[puni->_name] = pinst;
-      } else {
-        it = flatunimap.find(str_name);
-        assert(it != flatunimap.end());
-        // prob a UBO uni
-      }
-    }
   }
-  return true;
+  return OK;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool Interface::compilePipelineNVTM(Container* container) {
+  auto pass = const_cast<Pass*>(container->_activePass);
+  auto& pipeNVTM = pass->_primpipe.Get<PrimPipelineNVTM>();
+  Shader* ptaskshader = pipeNVTM._nvTaskShader;
+  Shader* pmeshhader  = pipeNVTM._nvMeshShader;
+  // OrkAssert(ptaskshader != nullptr);
+  OrkAssert(pmeshhader != nullptr);
+  auto l_compile = [&](Shader* psh) -> bool {
+    bool compile_ok = true;
+    if (psh && psh->IsCompiled() == false)
+      compile_ok = psh->Compile();
+    if (false == compile_ok) {
+      container->mShaderCompileFailed = true;
+    }
+    return compile_ok;
+  };
+  bool OK = true;
+  OK &= l_compile(ptaskshader);
+  OK &= l_compile(pmeshhader);
+  container->mShaderCompileFailed = (false == OK);
+  if (OK) {
+    GL_ERRORCHECK();
+    GLuint prgo            = glCreateProgram();
+    pass->_programObjectId = prgo;
+    //////////////
+    // attach shaders
+    //////////////
+    if (ptaskshader && ptaskshader->IsCompiled()) {
+      glAttachShader(prgo, ptaskshader->mShaderObjectId);
+      GL_ERRORCHECK();
+    }
+    glAttachShader(prgo, pmeshhader->mShaderObjectId);
+    GL_ERRORCHECK();
+    //////////////////////////
+    // link
+    //////////////////////////
+    GL_ERRORCHECK();
+    glLinkProgram(prgo);
+    GL_ERRORCHECK();
+    GLint linkstat = 0;
+    glGetProgramiv(prgo, GL_LINK_STATUS, &linkstat);
+    if (linkstat != GL_TRUE) {
+      char infoLog[1 << 16];
+      glGetProgramInfoLog(prgo, sizeof(infoLog), NULL, infoLog);
+      printf("\n\n//////////////////////////////////\n");
+      printf("program NVTM InfoLog<%s>\n", infoLog);
+      printf("//////////////////////////////////\n\n");
+      OrkAssert(false);
+    }
+    OrkAssert(linkstat == GL_TRUE);
+    //////////////////////////
+    // post process pass
+    //////////////////////////
+    pass->postProc(container);
+    //////////////////////////
+  }
+  assert(false);
+  return OK;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+bool Interface::compileAndLink(Container* container) {
+  bool OK   = false;
+  auto pass = const_cast<Pass*>(container->_activePass);
+  if (pass->_primpipe.IsA<PrimPipelineVTG>())
+    OK = compilePipelineVTG(container);
+  else if (pass->_primpipe.IsA<PrimPipelineNVTM>())
+    OK = compilePipelineNVTM(container);
+  return OK;
 }
 
 } // namespace ork::lev2::glslfx

@@ -84,21 +84,30 @@ StreamInterface* GlSlFxParser::ParseFxInterface(GLenum iftype) {
       assert(it_fi != mpContainer->_fragmentInterfaces.end());
       psi->Inherit(*it_fi->second);
     }
-  }
+  } // for (size_t ideco = 0; ideco < inumdecos; ideco++) {
 
   ////////////////////////
 
   size_t ist = v._start + 1;
   size_t ien = v._end - 1;
 
+
+  std::set<std::string> output_decorators;
+
   for (size_t i = ist; i <= ien;) {
+    const Token* prv_tok  = (i>0) ? v.token(i-1) : nullptr;
     const Token* vt_tok  = v.token(i);
     const Token* dt_tok  = v.token(i + 1);
     const Token* nam_tok = v.token(i + 2);
 
-    // printf( "  ParseFxInterface Tok<%s>\n", vt_tok->text.c_str() );
+     printf( "  ParseFxInterface VtTok<%s>\n", vt_tok->text.c_str() );
+     printf( "  ParseFxInterface DtTok<%s>\n", dt_tok->text.c_str() );
+     printf( "  ParseFxInterface NamTok<%s>\n", nam_tok->text.c_str() );
 
+    ////////////////////////////////////////////////////////////////////////////
     if (vt_tok->text == "layout") {
+      ////////////////////////////////////////////////////////////////////////////
+
       std::string layline;
       bool done      = false;
       bool is_input  = false;
@@ -130,7 +139,9 @@ StreamInterface* GlSlFxParser::ParseFxInterface(GLenum iftype) {
       layline += "\n";
       psi->mPreamble.push_back(layline);
 
+      ////////////////////////////////////////////////////////////////////////////
       if (has_punc && is_input) {
+        ////////////////////////////////////////////////////////////////////////////
         if (is_points)
           psi->mGsPrimSize = 1;
         if (is_lines)
@@ -138,8 +149,10 @@ StreamInterface* GlSlFxParser::ParseFxInterface(GLenum iftype) {
         if (is_tris)
           psi->mGsPrimSize = 3;
       }
-
-    } else if (vt_tok->text == "in") {
+    }
+    ////////////////////////////////////////////////////////////////////////////
+    else if (vt_tok->text == "in") {
+      ////////////////////////////////////////////////////////////////////////////
       auto it = psi->mAttributes.find(nam_tok->text);
       assert(it == psi->mAttributes.end()); // make sure there are no duplicate attrs
 
@@ -162,7 +175,11 @@ StreamInterface* GlSlFxParser::ParseFxInterface(GLenum iftype) {
         assert(false);
       }
       pattr->mLocation = int(psi->mAttributes.size());
-
+      ////////////////////////////////////////////////////////////////////////////
+      else if (vt_tok->text == "perprimitiveNV") {
+        output_decorators.insert("perprimitiveNV");
+      }
+    ////////////////////////////////////////////////////////////////////////////
     } else if (vt_tok->text == "out") {
       int iloc                        = int(psi->mAttributes.size());
       Attribute* pattr                = new Attribute(nam_tok->text);
@@ -171,22 +188,68 @@ StreamInterface* GlSlFxParser::ParseFxInterface(GLenum iftype) {
       pattr->mLocation                = iloc;
       psi->mAttributes[nam_tok->text] = pattr;
 
+      ///////////////////////////////////////////
+
+      auto parse_array = [&](int j) -> int {
+        if (v.token(j)->text == "[") {
+          if (v.token(j + 1)->text == "]") {
+            // unsized array
+            pattr->mArraySize = -1;
+            j += 2;
+          } else {
+            assert(v.token(j + 3)->text == "]");
+            pattr->mArraySize = atoi(v.token(j + 2)->text.c_str());
+            j += 3;
+          }
+        }
+        return j;
+      };
+
+      ///////////////////////////////////////////
+      // inline struct type ?
+      ///////////////////////////////////////////
+
+      const Token* structend_tok = nullptr;
+      if (v.token(i + 2)->text == "{") {
+        pattr->_typeIsInlineStruct = true;
+        // struct output
+        int closer = -1;
+        for (int s = 1; (s < 100) and (closer == -1); s++) {
+          const Token* test_tok = v.token(i + s);
+          if (test_tok->text == "}"){
+            closer = s;
+          }
+          pattr->_inlineStructToks.push_back(test_tok->text);
+        }
+        assert(closer > 0);
+        int j = parse_array(i+closer+2);
+        if( j>(i+closer+2)){ // array of inline struct
+          i += closer +5; // i now points
+        }
+        else {
+          i += closer +3; // i now points
+        }
+        structend_tok = v.token(i);
+      }
+
+      ///////////////////////////////////////////
+
       if (v.token(i + 3)->text == ";") {
         i += 4;
       } else if (v.token(i + 3)->text == "[") {
-        pattr->mArraySize = atoi(v.token(i + 4)->text.c_str());
-        i += 7;
-      } else {
-        assert(false);
+        i = parse_array(i + 3);
+        assert(i > 0);
       }
-    } else if (vt_tok->text == "\n") {
+      output_decorators.clear();
+      ////////////////////////////////////////////////////////////////////////////
+    } else if (vt_tok->text == "\n" or vt_tok->text == ";") {
       i++;
     } else {
+      ////////////////////////////////////////////////////////////////////////////
       printf("invalid token<%s>\n", vt_tok->text.c_str());
       OrkAssert(false);
     }
   }
-
   ////////////////////////
   // sort attributes for performance
   //  (see

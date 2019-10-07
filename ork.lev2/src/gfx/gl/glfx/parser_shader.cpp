@@ -67,6 +67,10 @@ int GlSlFxParser::ParseFxShaderCommon(Shader* pshader) {
   bool is_tesseval_shader = pshader->mShaderType == GL_TESS_EVALUATION_SHADER;
   bool is_geometry_shader = pshader->mShaderType == GL_GEOMETRY_SHADER;
   bool is_fragment_shader = pshader->mShaderType == GL_FRAGMENT_SHADER;
+  #if defined(ENABLE_NVMESH_SHADERS)
+  bool is_nvtask_shader = pshader->mShaderType == GL_TASK_SHADER_NV;
+  bool is_nvmesh_shader = pshader->mShaderType == GL_MESH_SHADER_NV;
+  #endif
 
   {
     size_t inumdecos = v.numBlockDecorators();
@@ -83,6 +87,11 @@ int GlSlFxParser::ParseFxShaderCommon(Shader* pshader) {
       auto it_te   = mpContainer->_tessEvalInterfaces.find(ptok->text);
       auto it_gi   = mpContainer->_geometryInterfaces.find(ptok->text);
       auto it_fi   = mpContainer->_fragmentInterfaces.find(ptok->text);
+
+      #if defined(ENABLE_NVMESH_SHADERS)
+      auto it_nvt   = mpContainer->_nvTaskInterfaces.find(ptok->text);
+      auto it_nvm   = mpContainer->_nvMeshInterfaces.find(ptok->text);
+      #endif
 
       if (it_lib != mpContainer->_libBlocks.end()) {
         auto plibblock = it_lib->second;
@@ -110,6 +119,12 @@ int GlSlFxParser::ParseFxShaderCommon(Shader* pshader) {
         pshader->setInputInterface(it_gi->second);
       } else if (is_fragment_shader && (it_fi != mpContainer->_fragmentInterfaces.end())) {
         pshader->setInputInterface(it_fi->second);
+      #if defined(ENABLE_NVMESH_SHADERS)
+      } else if (is_nvtask_shader && (it_nvt != mpContainer->_nvTaskInterfaces.end())) {
+        pshader->setInputInterface(it_nvt->second);
+      } else if (is_nvmesh_shader && (it_nvm != mpContainer->_nvMeshInterfaces.end())) {
+        pshader->setInputInterface(it_nvm->second);
+      #endif
       } else {
         printf("bad shader interface decorator!\n");
         printf("shader<%s>\n", shadername.c_str());
