@@ -35,7 +35,7 @@ void DeferredCompositingNodeNvMs::describeX(class_t *c) {
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
-namespace deferrednode {
+namespace deferrednodenvms {
 
 struct PointLight {
   fvec3 _pos;
@@ -43,7 +43,6 @@ struct PointLight {
   fvec3 _color;
   float _radius;
   int _counter = 0;
-  float _mindepth = 0;
 
   void next() {
     float x = float((rand() % 4096) - 2048);
@@ -306,9 +305,7 @@ struct IMPL {
       //   compute screen aligned quad for batch..
       // accumulate pointlights
       //////////////////////////////////////////////////////////////////
-      /*targ->debugPushGroup("Deferred::PointLighting");
-      static float ftime = 0.0f;
-      //CIMPL->pushCPD(CPD);
+      targ->debugPushGroup("Deferred::PointLighting");
       _lightingmtl.bindTechnique(is_stereo_1pass?_tekPointLightingStereo:_tekPointLighting);
       _lightingmtl.begin(RCFD);
       //////////////////////////////////////////////////////
@@ -332,121 +329,27 @@ struct IMPL {
       _lightingmtl.bindParamVec2(
           _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
       //////////////////////////////////////////////////
-      // outside lights
-      //////////////////////////////////////////////////
       _lightingmtl.mRasterState.SetCullTest(ECULLTEST_OFF);
       _lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-      //_lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       RSI->BindRasterState(_lightingmtl.mRasterState);
       constexpr size_t KPOSPASE = KMAXLIGHTS*sizeof(fvec4);
-      /////////////////////////////////////
-      constexpr int KTILEMAXX = KTILEDIMX-1;
-      constexpr int KTILEMAXY = KTILEDIMY-1;
-      if(true){ // tiled lighting
-        size_t tilelights = 0;
-        _timer.Start();
-        for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
-          auto& light = _pointlights[lidx];
-          Sphere sph(light._pos,light._radius);
-          auto box = sph.projectedBounds(VPL);
-          auto bmin = ((box.Min()+fvec3(1,1,1))*0.5);
-          auto bmax = ((box.Max()+fvec3(1,1,1))*0.5);
-
-          light._mindepth = (light._pos-campos_mono).Mag();
-          //printf( "light._mindepth<%g>\n", light._mindepth );
-          int minX = int(floor(bmin.x*(KTILEDIMX-1)));
-          int maxX = int(ceil(bmax.x*(KTILEDIMX-1)));
-          int minY = int(floor(bmin.y*(KTILEDIMY-1)));
-          int maxY = int(ceil(bmax.y*(KTILEDIMY-1)));
-          if( (box.Min().z>=-1 and box.Min().z<=1) or
-              (box.Max().z>=-1 and box.Max().z<=1) ) {
-              for( int iy=minY; iy<=maxY; iy++ ){
-                if( iy>=0 and iy<KTILEDIMY ) {
-                  for( int ix=minX; ix<=maxX; ix++ ){
-                    if( ix>=0 and ix<KTILEDIMX )
-                      _lighttiles[iy*KTILEDIMX+ix].push_back(&light);
-                  }
-                }
-              }
-          } // if( (box.Min().z>=-1 and box.Min().z<=1) or
-        } // for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
-        float pht1 = _timer.SecsSinceStart();
-        //printf( "pht1<%g>\n", pht1 );
-        const float KTILESIZX = 2.0f/float(KTILEDIMX);
-        const float KTILESIZY = 2.0f/float(KTILEDIMY);
-        float fnumltot = 0.0f;
-        float fnumlcnt = 0.0f;
-        for( int iy=0; iy<KTILEDIMY; iy++ ){
-            float T = float(iy)*KTILESIZY-1.0f;
-            for( int ix=0; ix<KTILEDIMX; ix++ ){
-              auto& lightlist = _lighttiles[iy*KTILEDIMX+ix];
-              size_t numl = lightlist.size();
-              fnumltot += float(numl);
-              fnumlcnt += 1.0f;
-              //printf( "TILE <%d %d> numl<%zu>\n", ix, iy, numl );
-              if( numl ) {
-                  //////////////////////////////////////////////////
-                  // update light colors for tile
-                  //////////////////////////////////////////////////
-                  auto mapped = FXI->mapParamBuffer(_lightbuffer,0,numl*sizeof(fvec4));
-                      for( size_t lidx=0; lidx<lightlist.size(); lidx++ ){
-                        const auto light = lightlist[lidx];
-                        fvec4 colord(light->_color,light->_mindepth);
-                        mapped->ref<fvec4>(lidx*sizeof(fvec4)) = colord;
-                      }
-                  mapped->unmap();
-                  //////////////////////////////////////////////////
-                  // update light positions for tile
-                  //////////////////////////////////////////////////
-                  mapped = FXI->mapParamBuffer(_lightbuffer,KPOSPASE,numl*sizeof(fvec4));
-                  for( size_t lidx=0; lidx<lightlist.size(); lidx++ ){
-                    const auto light = lightlist[lidx];
-                    mapped->ref<fvec4>(lidx*sizeof(fvec4)) = fvec4(light->_pos,light->_radius);
-                  }
-                  mapped->unmap();
-                  //////////////////////////////////////////////////
-                  // set number of lights for tile
-                  //////////////////////////////////////////////////
-                  _lightingmtl.bindParamInt(_parNumLights,numl);
-                  _lightingmtl.commit();
-                  //////////////////////////////////////////////////
-                  // accumulate light for tile
-                  //////////////////////////////////////////////////
-                  if( is_stereo_1pass ) {
-                    float L = (float(ix)/float(KTILEDIMX));
-                    this_buf->Render2dQuadEML(fvec4(L-1.0f,T,KTILESIZX*0.5,KTILESIZY),
-                                              fvec4(0, 0, 1, 1));
-                    this_buf->Render2dQuadEML(fvec4(L,T,KTILESIZX*0.5,KTILESIZY),
-                                            fvec4(0, 0, 1, 1));
-                  }
-                  else {
-                    float L = float(ix)*KTILESIZX-1.0f;
-                    this_buf->Render2dQuadEML(fvec4(L,T,KTILESIZX,KTILESIZY),
-                                              fvec4(0, 0, 1, 1));
-                  }
-                } // if numl
-            } // for ix
-        } // for iy
-        float avg = fnumltot/fnumlcnt;
-        printf( "TILE avg lcnt<%g>\n", avg );
-      }
-      /////////////////////////////////////
-      else {
-        auto mapped = FXI->mapParamBuffer(_lightbuffer);
-            for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
-              const auto& light = _pointlights[lidx];
-              mapped->ref<fvec4>(lidx*sizeof(fvec4)) = light._color;
-              mapped->ref<fvec4>(KPOSPASE+lidx*sizeof(fvec4)) = fvec4(light._pos,light._radius);
-            }
-        mapped->unmap();
-        _lightingmtl.bindParamInt(_parNumLights,_pointlights.size());
-        _lightingmtl.commit();
-        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
-      }
-      /////////////////////////////////////
+      //////////////////////////////////////////////////
+      // upload lights
+      //////////////////////////////////////////////////
+      auto mapped = FXI->mapParamBuffer(_lightbuffer,0,_pointlights.size()*32);
+          for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
+            const auto& light = _pointlights[lidx];
+            float mindepth = (light._pos-campos_mono).Mag();
+            fvec4 colord(light._color,mindepth);
+            mapped->ref<fvec4>(lidx*sizeof(fvec4)) = colord;
+          }
+      mapped->unmap();
+      //////////////////////////////////////////////////
+      // launch nvmeshshader
+      //////////////////////////////////////////////////
       _lightingmtl.end(RCFD);
-      targ->debugPopGroup(); // PointLighting*/
+      targ->debugPopGroup(); // PointLighting
       //////////////////////////////////////////////////////////////////
       // clear lighttiles
       //////////////////////////////////////////////////////////////////
@@ -512,28 +415,28 @@ struct IMPL {
   typedef std::vector<const PointLight*> pllist_t;
   ork::fixedvector<pllist_t,KTILECOUNT> _lighttiles;
 };
-} // namespace deferrednode
+} // namespace deferrednodenvms
 
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodeNvMs::DeferredCompositingNodeNvMs() {
-  _impl = std::make_shared<deferrednode::IMPL>();
+  _impl = std::make_shared<deferrednodenvms::IMPL>();
 }
 ///////////////////////////////////////////////////////////////////////////////
 DeferredCompositingNodeNvMs::~DeferredCompositingNodeNvMs() {}
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::DoInit(lev2::GfxTarget *pTARG, int iW, int iH) {
-  _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->init(pTARG);
+  _impl.Get<std::shared_ptr<deferrednodenvms::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::DoRender(CompositorDrawData &drawdata) {
-  auto impl = _impl.Get<std::shared_ptr<deferrednode::IMPL>>();
+  auto impl = _impl.Get<std::shared_ptr<deferrednodenvms::IMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
 RtBuffer *DeferredCompositingNodeNvMs::GetOutput() const {
   static int i = 0;
   i++;
-  return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgLaccum->GetMrt(
+  return _impl.Get<std::shared_ptr<deferrednodenvms::IMPL>>()->_rtgLaccum->GetMrt(
       0);
 }
 ///////////////////////////////////////////////////////////////////////////////
