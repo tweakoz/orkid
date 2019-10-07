@@ -43,6 +43,7 @@ struct PointLight {
   fvec3 _color;
   float _radius;
   int _counter = 0;
+  float _mindepth = 0;
 
   void next() {
     float x = float((rand() % 4096) - 2048);
@@ -55,21 +56,23 @@ struct PointLight {
 
 struct IMPL {
   static constexpr size_t KMAXLIGHTS = 2048;
-  static constexpr int KTILEDIMX = 32;
-  static constexpr int KTILEDIMY = 16;
+  static constexpr int KTILEDIMX = 16;
+  static constexpr int KTILEDIMY = 8;
   static constexpr int KTILECOUNT = KTILEDIMX*KTILEDIMY;
+  static constexpr float KNEAR = 0.1f;
+  static constexpr float KFAR = 100000.0f;
   ///////////////////////////////////////
   IMPL() : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < 1024; i++) {
 
       PointLight p;
       p.next();
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius = 15.0f;
+      p._radius = 20.0f;
       _pointlights.push_back(p);
     }
   }
@@ -110,12 +113,16 @@ struct IMPL {
       mapped->unmap();
       //////////////////////////////////////////////////////////////
       _parMatIVPArray = _lightingmtl.param("IVPArray");
+      _parMatVArray = _lightingmtl.param("VArray");
+      _parMatPArray = _lightingmtl.param("PArray");
       _parMapGBufAlbAo = _lightingmtl.param("MapAlbedoAo");
       _parMapGBufNrmL = _lightingmtl.param("MapNormalL");
       _parMapDepth = _lightingmtl.param("MapDepth");
       _parInvViewSize = _lightingmtl.param("InvViewportSize");
       _parTime = _lightingmtl.param("Time");
       _parNumLights = _lightingmtl.param("NumLights");
+      _parNearFar = _lightingmtl.param("NearFar");
+      _parZndc2eye = _lightingmtl.param("Zndc2eye");
       //////////////////////////////////////////////////////////////
       _rtgGbuffer = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto buf0 = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT0,
@@ -148,6 +155,7 @@ struct IMPL {
     auto targ = RCFD.GetTarget();
     auto FBI = targ->FBI();
     auto FXI = targ->FXI();
+    auto TXI = targ->TXI();
     auto RSI = targ->RSI();
     auto GBI = targ->GBI();
     auto &ddprops = drawdata._properties;
@@ -184,23 +192,46 @@ struct IMPL {
       CPD._passID = "defgbuffer1"_crcu;
       fvec3 campos_mono = CPD.monoCamPos(fmtx4());
       fmtx4 IVPL, IVPR, IVPM;
+      fmtx4 VL, VR, VM;
+      fmtx4 PL, PR, PM;
       fmtx4 VPL, VPR, VPM;
       if (is_stereo_1pass) {
         auto L = CPD._stereoCameraMatrices->_left;
         auto R = CPD._stereoCameraMatrices->_right;
         auto M = CPD._stereoCameraMatrices->_mono;
-        VPL = L->_vmatrix * L->_pmatrix;
-        VPR = R->_vmatrix * R->_pmatrix;
-        VPM = M->_vmatrix * M->_pmatrix;
+        VL = L->_vmatrix;
+        VR = R->_vmatrix;
+        VM = M->_vmatrix;
+        PL = L->_pmatrix;
+        PR = R->_pmatrix;
+        PM = M->_pmatrix;
+        VPL = VL * PL;
+        VPR = VR * PR;
+        VPM = VM * PM;
       } else {
         auto M = CPD._cameraMatrices;
-        VPM = M->_vmatrix * M->_pmatrix;
+        VM = M->_vmatrix;
+        PM = M->_pmatrix;
+        VL = VM;
+        VR = VM;
+        PL = PM;
+        PR = PM;
+        VPM = VM*PM;
         VPL = VPM;
         VPR = VPM;
       }
       IVPM.inverseOf(VPM);
       IVPL.inverseOf(VPL);
       IVPR.inverseOf(VPR);
+      _v[0] = VL;
+      _v[1] = VR;
+      _p[0] = PL; //_p[0].Transpose();
+      _p[1] = PR; //_p[1].Transpose();
+      _ivp[0] = IVPL;
+      _ivp[1] = IVPR;
+      fmtx4 IVL; IVL.inverseOf(VL);
+      campos_mono = IVL.GetColumn(3).xyz();
+      //printf( "campos<%g %g %g>\n", campos_mono.x, campos_mono.y, campos_mono.z );
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
@@ -224,6 +255,7 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->EndFrame();
       FBI->PopRtGroup();
+      //TXI->generateMipMaps(_rtgGbuffer->_depthTexture);
       /////////////////////////////////////////////////////////////////////////////////////////
       // Light Accumulation
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -246,8 +278,6 @@ struct IMPL {
       // base lighting
       //////////////////////////////////////////////////////////////////
       targ->debugPushGroup("Deferred::BaseLighting");
-      _ivp[0] = IVPL;
-      _ivp[1] = IVPR;
       _lightingmtl.bindTechnique(is_stereo_1pass?_tekBaseLightingStereo:_tekBaseLighting);
       _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
@@ -255,11 +285,14 @@ struct IMPL {
       _lightingmtl.begin(RCFD);
       //////////////////////////////////////////////////////
       _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
+      _lightingmtl.bindParamMatrixArray(_parMatVArray, _v, 2);
+      _lightingmtl.bindParamMatrixArray(_parMatPArray, _p, 2);
       _lightingmtl.bindParamCTex(_parMapGBufAlbAo,
                                  _rtgGbuffer->GetMrt(0)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapGBufNrmL,
                                  _rtgGbuffer->GetMrt(1)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+      _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
       _lightingmtl.bindParamVec2(
           _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
       _lightingmtl.commit();
@@ -281,20 +314,29 @@ struct IMPL {
       //////////////////////////////////////////////////////
       FXI->bindParamBlockBuffer(_lightblock, _lightbuffer);
       //////////////////////////////////////////////////////
+      auto Zndc2eye = fvec2(
+        _p[0].GetElemXY(3,2),
+        _p[0].GetElemXY(2,2)
+      );
+      //////////////////////////////////////////////////////
       _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
+      _lightingmtl.bindParamMatrixArray(_parMatVArray, _v, 2);
+      _lightingmtl.bindParamMatrixArray(_parMatPArray, _p, 2);
       _lightingmtl.bindParamCTex(_parMapGBufAlbAo,
                                  _rtgGbuffer->GetMrt(0)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapGBufNrmL,
                                  _rtgGbuffer->GetMrt(1)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+      _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
+      _lightingmtl.bindParamVec2(_parZndc2eye,Zndc2eye);
       _lightingmtl.bindParamVec2(
           _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
       //////////////////////////////////////////////////
       // outside lights
       //////////////////////////////////////////////////
       _lightingmtl.mRasterState.SetCullTest(ECULLTEST_OFF);
-      //_lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-      _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
+      _lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
+      //_lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       RSI->BindRasterState(_lightingmtl.mRasterState);
       constexpr size_t KPOSPASE = KMAXLIGHTS*sizeof(fvec4);
@@ -305,11 +347,14 @@ struct IMPL {
         size_t tilelights = 0;
         _timer.Start();
         for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
-          const auto& light = _pointlights[lidx];
+          auto& light = _pointlights[lidx];
           Sphere sph(light._pos,light._radius);
           auto box = sph.projectedBounds(VPL);
           auto bmin = ((box.Min()+fvec3(1,1,1))*0.5);
           auto bmax = ((box.Max()+fvec3(1,1,1))*0.5);
+
+          light._mindepth = (light._pos-campos_mono).Mag();
+          //printf( "light._mindepth<%g>\n", light._mindepth );
           int minX = int(floor(bmin.x*(KTILEDIMX-1)));
           int maxX = int(ceil(bmax.x*(KTILEDIMX-1)));
           int minY = int(floor(bmin.y*(KTILEDIMY-1)));
@@ -327,15 +372,19 @@ struct IMPL {
           } // if( (box.Min().z>=-1 and box.Min().z<=1) or
         } // for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
         float pht1 = _timer.SecsSinceStart();
-        printf( "pht1<%g>\n", pht1 );
+        //printf( "pht1<%g>\n", pht1 );
         const float KTILESIZX = 2.0f/float(KTILEDIMX);
         const float KTILESIZY = 2.0f/float(KTILEDIMY);
+        float fnumltot = 0.0f;
+        float fnumlcnt = 0.0f;
         for( int iy=0; iy<KTILEDIMY; iy++ ){
             float T = float(iy)*KTILESIZY-1.0f;
             for( int ix=0; ix<KTILEDIMX; ix++ ){
               auto& lightlist = _lighttiles[iy*KTILEDIMX+ix];
               size_t numl = lightlist.size();
-              printf( "TILE <%d %d> numl<%zu>\n", ix, iy, numl );
+              fnumltot += float(numl);
+              fnumlcnt += 1.0f;
+              //printf( "TILE <%d %d> numl<%zu>\n", ix, iy, numl );
               if( numl ) {
                   //////////////////////////////////////////////////
                   // update light colors for tile
@@ -343,7 +392,8 @@ struct IMPL {
                   auto mapped = FXI->mapParamBuffer(_lightbuffer,0,numl*sizeof(fvec4));
                       for( size_t lidx=0; lidx<lightlist.size(); lidx++ ){
                         const auto light = lightlist[lidx];
-                        mapped->ref<fvec4>(lidx*sizeof(fvec4)) = light->_color;
+                        fvec4 colord(light->_color,light->_mindepth);
+                        mapped->ref<fvec4>(lidx*sizeof(fvec4)) = colord;
                       }
                   mapped->unmap();
                   //////////////////////////////////////////////////
@@ -378,6 +428,8 @@ struct IMPL {
                 } // if numl
             } // for ix
         } // for iy
+        float avg = fnumltot/fnumlcnt;
+        printf( "TILE avg lcnt<%g>\n", avg );
       }
       /////////////////////////////////////
       else {
@@ -434,10 +486,14 @@ struct IMPL {
   const FxShaderTechnique *_tekBaseLightingStereo = nullptr;
   const FxShaderTechnique *_tekPointLightingStereo = nullptr;
   const FxShaderParam *_parMatIVPArray = nullptr;
+  const FxShaderParam *_parMatPArray = nullptr;
+  const FxShaderParam *_parMatVArray = nullptr;
+  const FxShaderParam *_parZndc2eye = nullptr;
   const FxShaderParam *_parMapGBufAlbAo = nullptr;
   const FxShaderParam *_parMapGBufNrmL = nullptr;
   const FxShaderParam *_parMapDepth = nullptr;
   const FxShaderParam *_parTime = nullptr;
+  const FxShaderParam *_parNearFar = nullptr;
   const FxShaderParam *_parInvViewSize = nullptr;
   const FxShaderParam *_parInvVpDim = nullptr;
   const FxShaderParam *_parNumLights = nullptr;
@@ -450,6 +506,8 @@ struct IMPL {
   int _width = 0;
   int _height = 0;
   fmtx4 _ivp[2];
+  fmtx4 _v[2];
+  fmtx4 _p[2];
   std::vector<PointLight> _pointlights;
   Timer _timer;
   typedef std::vector<const PointLight*> pllist_t;
