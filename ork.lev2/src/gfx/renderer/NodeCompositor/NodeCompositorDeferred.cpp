@@ -56,8 +56,8 @@ struct PointLight {
 
 struct IMPL {
   static constexpr size_t KMAXLIGHTS = 2048;
-  static constexpr int KTILEDIMX = 16;
-  static constexpr int KTILEDIMY = 8;
+  static constexpr int KTILEDIMX = 32;
+  static constexpr int KTILEDIMY = 16;
   static constexpr int KTILECOUNT = KTILEDIMX*KTILEDIMY;
   static constexpr float KNEAR = 0.1f;
   static constexpr float KFAR = 100000.0f;
@@ -65,14 +65,14 @@ struct IMPL {
   IMPL() : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < 256; i++) {
 
       PointLight p;
       p.next();
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius = 40.0f;
+      p._radius = 50.0f;
       _pointlights.push_back(p);
     }
   }
