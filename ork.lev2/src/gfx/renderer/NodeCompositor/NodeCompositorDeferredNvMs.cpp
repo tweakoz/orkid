@@ -19,8 +19,8 @@
 
 #include "NodeCompositorDeferred.h"
 
-ImplementReflectionX(ork::lev2::DeferredCompositingNode,
-                     "DeferredCompositingNode");
+ImplementReflectionX(ork::lev2::DeferredCompositingNodeNvMs,
+                     "DeferredCompositingNodeNvMs");
 
 // fvec3 LightColor
 // fvec4 LightPosR 16byte
@@ -28,9 +28,9 @@ ImplementReflectionX(ork::lev2::DeferredCompositingNode,
 namespace ork {
 namespace lev2 {
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::describeX(class_t *c) {
-  c->memberProperty("ClearColor", &DeferredCompositingNode::_clearColor);
-  c->memberProperty("FogColor", &DeferredCompositingNode::_fogColor);
+void DeferredCompositingNodeNvMs::describeX(class_t *c) {
+  c->memberProperty("ClearColor", &DeferredCompositingNodeNvMs::_clearColor);
+  c->memberProperty("FogColor", &DeferredCompositingNodeNvMs::_fogColor);
 }
 ///////////////////////////////////////////////////////////////////////////
 constexpr int NUMSAMPLES = 1;
@@ -65,14 +65,14 @@ struct IMPL {
   IMPL() : _camname(AddPooledString("Camera")) {
     _layername = "All"_pool;
 
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 256; i++) {
 
       PointLight p;
       p.next();
       p._color.x = float(rand() & 0xff) / 128.0;
       p._color.y = float(rand() & 0xff) / 128.0;
       p._color.z = float(rand() & 0xff) / 128.0;
-      p._radius = 128.0f;
+      p._radius = 50.0f;
       _pointlights.push_back(p);
     }
   }
@@ -93,7 +93,7 @@ struct IMPL {
         _lighttiles.push_back(pllist_t());
       }
       //////////////////////////////////////////////////////////////
-      _lightingmtl.gpuInit(pTARG, "orkshader://deferred");
+      _lightingmtl.gpuInit(pTARG, "orkshader://deferrednvms");
       _tekBaseLighting = _lightingmtl.technique("baselight");
       _tekPointLighting = _lightingmtl.technique("pointlight");
       _tekBaseLightingStereo = _lightingmtl.technique("baselight_stereo");
@@ -148,7 +148,7 @@ struct IMPL {
     pTARG->debugPopGroup();
   }
   ///////////////////////////////////////
-  void _render(DeferredCompositingNode *node, CompositorDrawData &drawdata) {
+  void _render(DeferredCompositingNodeNvMs *node, CompositorDrawData &drawdata) {
     FrameRenderer &framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData &RCFD = framerenderer.framedata();
     auto CIMPL = drawdata._cimpl;
@@ -268,37 +268,37 @@ struct IMPL {
       CPD._stereoCameraMatrices = nullptr;
       CPD._stereo1pass = false;
       CIMPL->pushCPD(CPD);
-      targ->debugPushGroup("Deferred::Lighting");
-      FBI->SetAutoClear(false);
-      FBI->PushRtGroup(_rtgLaccum);
-      targ->BeginFrame();
-      FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
-      auto this_buf = FBI->GetThisBuffer();
-      //////////////////////////////////////////////////////////////////
-      // base lighting
-      //////////////////////////////////////////////////////////////////
-      targ->debugPushGroup("Deferred::BaseLighting");
-      _lightingmtl.bindTechnique(is_stereo_1pass?_tekBaseLightingStereo:_tekBaseLighting);
-      _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
-      _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-      _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
-      _lightingmtl.begin(RCFD);
-      //////////////////////////////////////////////////////
-      _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
-      _lightingmtl.bindParamMatrixArray(_parMatVArray, _v, 2);
-      _lightingmtl.bindParamMatrixArray(_parMatPArray, _p, 2);
-      _lightingmtl.bindParamCTex(_parMapGBufAlbAo,
-                                 _rtgGbuffer->GetMrt(0)->GetTexture());
-      _lightingmtl.bindParamCTex(_parMapGBufNrmL,
-                                 _rtgGbuffer->GetMrt(1)->GetTexture());
-      _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
-      _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
-      _lightingmtl.bindParamVec2(
-          _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
-      _lightingmtl.commit();
-      this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
-      _lightingmtl.end(RCFD);
-      CIMPL->popCPD();
+        targ->debugPushGroup("Deferred::Lighting");
+          FBI->SetAutoClear(false);
+          FBI->PushRtGroup(_rtgLaccum);
+          targ->BeginFrame();
+          FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
+          auto this_buf = FBI->GetThisBuffer();
+          //////////////////////////////////////////////////////////////////
+          // base lighting
+          //////////////////////////////////////////////////////////////////
+          targ->debugPushGroup("Deferred::BaseLighting");
+          _lightingmtl.bindTechnique(is_stereo_1pass?_tekBaseLightingStereo:_tekBaseLighting);
+          _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
+          _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
+          _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+          _lightingmtl.begin(RCFD);
+          //////////////////////////////////////////////////////
+          _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
+          _lightingmtl.bindParamMatrixArray(_parMatVArray, _v, 2);
+          _lightingmtl.bindParamMatrixArray(_parMatPArray, _p, 2);
+          _lightingmtl.bindParamCTex(_parMapGBufAlbAo,
+                                     _rtgGbuffer->GetMrt(0)->GetTexture());
+          _lightingmtl.bindParamCTex(_parMapGBufNrmL,
+                                     _rtgGbuffer->GetMrt(1)->GetTexture());
+          _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+          _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
+          _lightingmtl.bindParamVec2(
+              _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
+          _lightingmtl.commit();
+          this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
+          _lightingmtl.end(RCFD);
+        CIMPL->popCPD();
       targ->debugPopGroup(); // BaseLighting
       //////////////////////////////////////////////////////////////////
       // point lighting
@@ -306,9 +306,9 @@ struct IMPL {
       //   compute screen aligned quad for batch..
       // accumulate pointlights
       //////////////////////////////////////////////////////////////////
-      targ->debugPushGroup("Deferred::PointLighting");
+      /*targ->debugPushGroup("Deferred::PointLighting");
       static float ftime = 0.0f;
-      CIMPL->pushCPD(CPD);
+      //CIMPL->pushCPD(CPD);
       _lightingmtl.bindTechnique(is_stereo_1pass?_tekPointLightingStereo:_tekPointLighting);
       _lightingmtl.begin(RCFD);
       //////////////////////////////////////////////////////
@@ -446,7 +446,7 @@ struct IMPL {
       }
       /////////////////////////////////////
       _lightingmtl.end(RCFD);
-      targ->debugPopGroup(); // PointLighting
+      targ->debugPopGroup(); // PointLighting*/
       //////////////////////////////////////////////////////////////////
       // clear lighttiles
       //////////////////////////////////////////////////////////////////
@@ -468,11 +468,10 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       // end frame
       /////////////////////////////////////////////////////////////////////////////////////////
-      ftime += 0.01f;
       targ->EndFrame();
       FBI->PopRtGroup();
       targ->debugPopGroup(); // Lighting
-      CIMPL->popCPD();
+      //CIMPL->popCPD();
       /////////////////////////////////////////////////////////////////////////////////////////
     }
     targ->debugPopGroup();
@@ -516,22 +515,22 @@ struct IMPL {
 } // namespace deferrednode
 
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNode::DeferredCompositingNode() {
+DeferredCompositingNodeNvMs::DeferredCompositingNodeNvMs() {
   _impl = std::make_shared<deferrednode::IMPL>();
 }
 ///////////////////////////////////////////////////////////////////////////////
-DeferredCompositingNode::~DeferredCompositingNode() {}
+DeferredCompositingNodeNvMs::~DeferredCompositingNodeNvMs() {}
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoInit(lev2::GfxTarget *pTARG, int iW, int iH) {
+void DeferredCompositingNodeNvMs::DoInit(lev2::GfxTarget *pTARG, int iW, int iH) {
   _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->init(pTARG);
 }
 ///////////////////////////////////////////////////////////////////////////////
-void DeferredCompositingNode::DoRender(CompositorDrawData &drawdata) {
+void DeferredCompositingNodeNvMs::DoRender(CompositorDrawData &drawdata) {
   auto impl = _impl.Get<std::shared_ptr<deferrednode::IMPL>>();
   impl->_render(this, drawdata);
 }
 ///////////////////////////////////////////////////////////////////////////////
-RtBuffer *DeferredCompositingNode::GetOutput() const {
+RtBuffer *DeferredCompositingNodeNvMs::GetOutput() const {
   static int i = 0;
   i++;
   return _impl.Get<std::shared_ptr<deferrednode::IMPL>>()->_rtgLaccum->GetMrt(

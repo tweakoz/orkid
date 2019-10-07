@@ -29,5 +29,22 @@ private:
   svar256_t _impl;
 };
 
+class DeferredCompositingNodeNvMs : public RenderCompositingNode {
+  DeclareConcreteX(DeferredCompositingNodeNvMs, RenderCompositingNode);
+
+public:
+  DeferredCompositingNodeNvMs();
+  ~DeferredCompositingNodeNvMs();
+  fvec4 _clearColor;
+  fvec4 _fogColor;
+
+private:
+  void DoInit(lev2::GfxTarget* pTARG, int w, int h) final;
+  void DoRender(CompositorDrawData& drawdata) final;
+
+  lev2::RtBuffer* GetOutput() const final;
+  svar256_t _impl;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2 {

@@ -132,6 +132,7 @@ void Init(const std::string& gfxlayer)
 	RegisterClassX(RenderCompositingNode);
 	RegisterClassX(ForwardCompositingNode);
 	RegisterClassX(DeferredCompositingNode);
+	RegisterClassX(DeferredCompositingNodeNvMs);
 
 	RegisterClassX(CompositingScene);
 	RegisterClassX(CompositingData);
