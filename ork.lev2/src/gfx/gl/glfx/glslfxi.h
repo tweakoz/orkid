@@ -112,7 +112,7 @@ struct Attribute {
   int mArraySize;
   bool _typeIsInlineStruct = false;
   std::vector<std::string> _inlineStructToks;
-
+  std::set<std::string> _decorators;
   Attribute(const std::string& nam, const std::string& sem = "")
       : mName(nam)
       , mSemantic(sem)

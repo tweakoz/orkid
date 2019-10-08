@@ -11,12 +11,12 @@ fxconfig fxcfg_default
 
 uniform_set ublock_vtx
 {
-	uniform mat4 mvp;
+	mat4 mvp;
 }
 uniform_set ublock_frg
 {
-	uniform vec4 ModColor;
-	uniform sampler2D ColorMap;
+	vec4 ModColor;
+	sampler2D ColorMap;
 }
 
 vertex_interface iface_vdefault
