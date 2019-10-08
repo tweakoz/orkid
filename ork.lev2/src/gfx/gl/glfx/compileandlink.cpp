@@ -238,6 +238,7 @@ bool Interface::compilePipelineVTG(Container* container) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_NVMESH_SHADERS)
 bool Interface::compilePipelineNVTM(Container* container) {
   auto pass = const_cast<Pass*>(container->_activePass);
   auto& pipeNVTM = pass->_primpipe.Get<PrimPipelineNVTM>();
@@ -297,7 +298,7 @@ bool Interface::compilePipelineNVTM(Container* container) {
   assert(false);
   return OK;
 }
-
+#endif
 ///////////////////////////////////////////////////////////////////////////////
 
 bool Interface::compileAndLink(Container* container) {
@@ -305,8 +306,10 @@ bool Interface::compileAndLink(Container* container) {
   auto pass = const_cast<Pass*>(container->_activePass);
   if (pass->_primpipe.IsA<PrimPipelineVTG>())
     OK = compilePipelineVTG(container);
+#if defined(ENABLE_NVMESH_SHADERS)
   else if (pass->_primpipe.IsA<PrimPipelineNVTM>())
     OK = compilePipelineNVTM(container);
+#endif
   return OK;
 }
 

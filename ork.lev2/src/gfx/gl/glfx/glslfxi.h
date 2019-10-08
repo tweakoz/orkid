@@ -14,10 +14,6 @@
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
 
-#if ! defined(__APPLE__)
-#define ENABLE_NVMESH_SHADERS
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace ork::lev2 {

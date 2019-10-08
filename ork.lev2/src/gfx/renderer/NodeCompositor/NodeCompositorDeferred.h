@@ -29,6 +29,8 @@ private:
   svar256_t _impl;
 };
 
+#if defined(ENABLE_NVMESH_SHADERS)
+
 class DeferredCompositingNodeNvMs : public RenderCompositingNode {
   DeclareConcreteX(DeferredCompositingNodeNvMs, RenderCompositingNode);
 
@@ -45,6 +47,8 @@ private:
   lev2::RtBuffer* GetOutput() const final;
   svar256_t _impl;
 };
+
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 } //namespace ork::lev2 {

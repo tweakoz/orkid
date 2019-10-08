@@ -132,7 +132,10 @@ void Init(const std::string& gfxlayer)
 	RegisterClassX(RenderCompositingNode);
 	RegisterClassX(ForwardCompositingNode);
 	RegisterClassX(DeferredCompositingNode);
+
+  #if defined(ENABLE_NVMESH_SHADERS)
 	RegisterClassX(DeferredCompositingNodeNvMs);
+  #endif
 
 	RegisterClassX(CompositingScene);
 	RegisterClassX(CompositingData);

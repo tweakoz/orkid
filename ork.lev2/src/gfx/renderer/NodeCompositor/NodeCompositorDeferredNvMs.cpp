@@ -19,14 +19,15 @@
 
 #include "NodeCompositorDeferred.h"
 
+#if defined(ENABLE_NVMESH_SHADERS)
+
 ImplementReflectionX(ork::lev2::DeferredCompositingNodeNvMs,
                      "DeferredCompositingNodeNvMs");
 
 // fvec3 LightColor
 // fvec4 LightPosR 16byte
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork {
-namespace lev2 {
+namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::describeX(class_t *c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodeNvMs::_clearColor);
@@ -442,5 +443,6 @@ RtBuffer *DeferredCompositingNodeNvMs::GetOutput() const {
       0);
 }
 ///////////////////////////////////////////////////////////////////////////////
-} // namespace lev2
-} // namespace ork
+} // namespace ork::lev2
+
+#endif

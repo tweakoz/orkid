@@ -14,6 +14,8 @@
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
+#include <ork/lev2/gfx/config.h>
+
 #include "gfxenv_enum.h"
 #include "gfxvtxbuf.h"
 #include "targetinterfaces.h"
