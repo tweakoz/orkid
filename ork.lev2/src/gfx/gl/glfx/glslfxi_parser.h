@@ -105,6 +105,7 @@ struct DecoBlockNode  : public AstNode {
 
 struct InterfaceLayoutNode : public AstNode {
   InterfaceLayoutNode(ContainerNode* cnode) : AstNode(cnode) {}
+  int parse(const ScannerView& view);
   std::vector<const Token*> _tokens;
 };
 
@@ -137,8 +138,13 @@ struct InterfaceNode  : public DecoBlockNode {
   InterfaceNode(ContainerNode* cnode) : DecoBlockNode(cnode) {}
 
   void parse(const ScannerView& view);
+  void parseInputs(const ScannerView& view);
+  void parseOutputs(const ScannerView& view);
+
+
   StreamInterface* _generate(Container*, GLenum type);
-  std::vector<InterfaceLayoutNode*> _layouts;
+  std::vector<InterfaceLayoutNode*> _inputlayouts;
+  std::vector<InterfaceLayoutNode*> _outputlayouts;
   std::vector<InterfaceInputNode*> _inputs;
   std::vector<InterfaceOutputNode*> _outputs;
   std::set<std::string> _inputdupecheck;
@@ -158,9 +164,12 @@ struct VertexInterfaceNode  : public InterfaceNode {
   VertexInterfaceNode(ContainerNode* cnode) : InterfaceNode(cnode) {}
   StreamInterface* generate(Container*);
 };
+struct FragmentInterfaceNode  : public InterfaceNode {
+  FragmentInterfaceNode(ContainerNode* cnode) : InterfaceNode(cnode) {}
+  StreamInterface* generate(Container*);
+};
 
 struct VertexShaderNode : public ShaderNode {};
-struct FragmentInterfaceNode  : public InterfaceNode {};
 struct FragmentShaderNode : public ShaderNode {};
 struct TessCtrlInterfaceNode  : public InterfaceNode {};
 struct TessCtrlShaderNode : public ShaderNode {};
@@ -231,6 +240,7 @@ struct ContainerNode : public AstNode {
 
   bool validateTypeName(const std::string typeName) const;
   bool validateMemberName(const std::string typeName) const;
+  bool isOutputDecorator(const std::string typeName) const;
 
   Container* createContainer() const;
   int itokidx = 0;
@@ -244,6 +254,7 @@ struct ContainerNode : public AstNode {
   std::map<std::string,TechniqueNode*> _techniqueNodes;
 
   std::set<std::string> _validTypeNames;
+  std::set<std::string> _validOutputDecorators;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

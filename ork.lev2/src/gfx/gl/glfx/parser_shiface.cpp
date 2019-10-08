@@ -23,6 +23,167 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+int InterfaceLayoutNode::parse(const ScannerView& view) {
+  int i               = view._start;
+  const Token* vt_tok = view.token(i);
+  bool done           = false;
+  while (false == done) {
+    done = vt_tok->text == ";";
+    if (false == done) {
+      this->_tokens.push_back(vt_tok);
+    }
+    i++;
+    vt_tok = view.token(i);
+  }
+  return i;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+void InterfaceNode::parseInputs(const ScannerView& view) {
+  size_t ist = view._start + 1;
+  size_t ien = view._end - 1;
+  for (size_t i = ist; i <= ien;) {
+    const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
+    const Token* dt_tok  = view.token(i);
+    const Token* nam_tok = view.token(i + 1);
+    std::string named = nam_tok ? nam_tok->text : "";
+    printf("  parseInputs DtTok<%s>\n", dt_tok->text.c_str());
+    printf("  parseInputs named<%s>\n", named.c_str());
+
+    if (dt_tok->text == "layout") {
+      std::string layline;
+      auto layout = new InterfaceLayoutNode(_container);
+      int j       = layout->parse(view);
+      assert(j > i);
+      i = j;
+      _inputlayouts.push_back(layout);
+      continue;
+    }
+
+    bool typeok = _container->validateTypeName(dt_tok->text);
+    bool nameok = _container->validateMemberName(named);
+
+
+    assert(typeok and nameok);
+    auto it = _inputdupecheck.find(named);
+    assert(it == _inputdupecheck.end()); // make sure there are no duplicate attrs
+    _inputdupecheck.insert(named);
+    auto input = new InterfaceInputNode(_container);
+    _inputs.push_back(input);
+    input->_name     = named;
+    input->_typeName = dt_tok->text;
+    if (view.token(i + 2)->text == ":") {
+      input->_semantic = view.token(i + 3)->text;
+      i += 5;
+    } else if (view.token(i + 2)->text == ";") {
+      i += 3;
+    } else if (view.token(i + 2)->text == "[") {
+      input->_arraySize = atoi(view.token(i + 3)->text.c_str());
+      i += 6;
+    } else {
+      assert(false);
+    }
+  }
+}
+void InterfaceNode::parseOutputs(const ScannerView& view) {
+  size_t ist = view._start + 1;
+  size_t ien = view._end - 1;
+  std::set<std::string> outputdecos;
+  for (size_t i = ist; i <= ien;) {
+    const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
+    const Token* dt_tok  = view.token(i );
+    const Token* nam_tok = view.token(i + 1);
+
+    //////////////////////////////////
+    // layout
+    //////////////////////////////////
+
+    if (dt_tok->text == "layout") {
+      std::string layline;
+      auto layout = new InterfaceLayoutNode(_container);
+      int j       = layout->parse(view);
+      assert(j > i);
+      i = j;
+      _outputlayouts.push_back(layout);
+      continue;
+    }
+
+    //////////////////////////////////
+    // check for output decorators
+    //////////////////////////////////
+
+    if(_container->isOutputDecorator(dt_tok->text)){
+      outputdecos.insert(dt_tok->text);
+      i++;
+      continue;
+    }
+
+    std::string named = nam_tok ? nam_tok->text : "";
+    printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
+    printf("  parseOutputs named<%s>\n", named.c_str());
+    auto it = _outputdupecheck.find(named);
+    assert(it == _outputdupecheck.end()); // make sure there are no duplicate attrs
+    _outputdupecheck.insert(named);
+    auto output = new InterfaceOutputNode(_container);
+    _outputs.push_back(output);
+    output->_name              = named;
+    output->_typeName          = dt_tok->text;
+    output->_output_decorators = outputdecos;
+    outputdecos.clear();
+    ///////////////////////////////////////////
+    auto parse_array = [&](int j) -> int {
+      if (view.token(j)->text == "[") {
+        if (view.token(j + 1)->text == "]") {
+          // unsized array
+          output->_arraySize = -1;
+          j += 2;
+        } else {
+          assert(view.token(j + 3)->text == "]");
+          output->_arraySize = atoi(view.token(j + 2)->text.c_str());
+          j += 3;
+        }
+      }
+      return j;
+    };
+    ///////////////////////////////////////////
+    // inline struct type ?
+    ///////////////////////////////////////////
+
+    if (view.token(i + 2)->text == "{") {
+      output->_inlineStruct = new InterfaceInlineStructNode(_container);
+      // struct output
+      int closer = -1;
+      for (int s = 1; (s < 100) and (closer == -1); s++) {
+        const Token* test_tok = view.token(i + s);
+        if (test_tok->text == "}") {
+          closer = s;
+        }
+        output->_inlineStruct->_tokens.push_back(test_tok);
+      }
+      assert(closer > 0);
+      int j = parse_array(i + closer + 2);
+      if (j > (i + closer + 2)) { // array of inline struct
+        i += closer + 5;          // i now points
+      } else {
+        i += closer + 3; // i now points
+      }
+    }
+
+    ///////////////////////////////////////////
+
+    if (view.token(i + 2)->text == ";") {
+      i += 3;
+    } else if (view.token(i + 2)->text == "[") {
+      i = parse_array(i + 2);
+      assert(i > 0);
+    }
+    ////////////////////////////////////////////////////////////////////////////
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 void InterfaceNode::parse(const ScannerView& view) {
   DecoBlockNode::parse(view);
   ////////////////////////
@@ -37,117 +198,28 @@ void InterfaceNode::parse(const ScannerView& view) {
     const Token* vt_tok  = view.token(i);
     const Token* dt_tok  = view.token(i + 1);
     const Token* nam_tok = view.token(i + 2);
-    const auto& named = nam_tok->text;
-    printf("  ParseFxInterface VtTok<%s>\n", vt_tok->text.c_str());
+    const auto& named    = nam_tok->text;
+    printf("  ParseFxInterface VtTok<%zu:%s>\n", i, vt_tok->text.c_str());
     printf("  ParseFxInterface DtTok<%s>\n", dt_tok->text.c_str());
     printf("  ParseFxInterface named<%s>\n", named.c_str());
     ////////////////////////////////////////////////////////////////////////////
-    if (vt_tok->text == "layout") {
-      std::string layline;
-      bool done      = false;
-      auto layout = new InterfaceLayoutNode(_container);
-      while (false == done) {
-        done = vt_tok->text == ";";
-        if( false == done ){
-          layout->_tokens.push_back(vt_tok);
-        }
-        i++;
-        vt_tok = view.token(i);
-      }
-      _layouts.push_back(layout);
-    }
+
     ////////////////////////////////////////////////////////////////////////////
-    else if (vt_tok->text == "in") {
-      auto it = _inputdupecheck.find(named);
-      assert(it == _inputdupecheck.end()); // make sure there are no duplicate attrs
-      _inputdupecheck.insert(named);
-      auto input = new InterfaceInputNode(_container);
-      _inputs.push_back(input);
-      input->_name = named;
-      input->_typeName  = dt_tok->text;
-
-      if (view.token(i + 3)->text == ":") {
-        input->_semantic = view.token(i + 4)->text;
-        i += 6;
-      } else if (view.token(i + 3)->text == ";") {
-        i += 4;
-      } else if (view.token(i + 3)->text == "[") {
-        input->_arraySize = atoi(view.token(i + 4)->text.c_str());
-        i += 7;
-      } else {
-        assert(false);
-      }
+    if (vt_tok->text == "inputs") {
+      assert(view.token(i + 1)->text == "{");
+      ScannerView inputsview(view,i+1);
+      i += inputsview.numTokens() + 1;
+      parseInputs(inputsview);
+    } else if (vt_tok->text == "outputs") {
+      assert(view.token(i + 1)->text == "{");
+      ScannerView outputsview(view,i+1);
+      i += outputsview.numTokens() + 1;
+      parseOutputs(outputsview);
     }
-    ////////////////////////////////////////////////////////////////////////////
-    else if (vt_tok->text == "perprimitiveNV") {
-      output_decorators.insert("perprimitiveNV");
-      i++;
-    }
-    ////////////////////////////////////////////////////////////////////////////
-    else if (vt_tok->text == "out") {
-      auto it = _outputdupecheck.find(named);
-      assert(it == _outputdupecheck.end()); // make sure there are no duplicate attrs
-      _outputdupecheck.insert(named);
-      auto output = new InterfaceOutputNode(_container);
-      _outputs.push_back(output);
-      output->_name = named;
-      output->_typeName  = dt_tok->text;
-      output->_output_decorators = output_decorators;
-      output_decorators.clear();
-      ///////////////////////////////////////////
-      auto parse_array = [&](int j) -> int {
-        if (view.token(j)->text == "[") {
-          if (view.token(j + 1)->text == "]") {
-            // unsized array
-            output->_arraySize = -1;
-            j += 2;
-          } else {
-            assert(view.token(j + 3)->text == "]");
-            output->_arraySize = atoi(view.token(j + 2)->text.c_str());
-            j += 3;
-          }
-        }
-        return j;
-      };
-      ///////////////////////////////////////////
-      // inline struct type ?
-      ///////////////////////////////////////////
-
-      if (view.token(i + 2)->text == "{") {
-        output->_inlineStruct = new InterfaceInlineStructNode(_container);
-        // struct output
-        int closer = -1;
-        for (int s = 1; (s < 100) and (closer == -1); s++) {
-          const Token* test_tok = view.token(i + s);
-          if (test_tok->text == "}") {
-            closer = s;
-          }
-          output->_inlineStruct->_tokens.push_back(test_tok);
-        }
-        assert(closer > 0);
-        int j = parse_array(i + closer + 2);
-        if (j > (i + closer + 2)) { // array of inline struct
-          i += closer + 5;          // i now points
-        } else {
-          i += closer + 3; // i now points
-        }
-      }
-
-      ///////////////////////////////////////////
-
-      if (view.token(i + 3)->text == ";") {
-        i += 4;
-      } else if (view.token(i + 3)->text == "[") {
-        i = parse_array(i + 3);
-        assert(i > 0);
-      }
-      ////////////////////////////////////////////////////////////////////////////
-    } else if (vt_tok->text == "\n" or vt_tok->text == ";") {
-      i++;
-    } else {
+    else {
       ////////////////////////////////////////////////////////////////////////////
       printf("invalid token<%s>\n", vt_tok->text.c_str());
-      OrkAssert(false);
+      assert(false);
     }
   }
 }
@@ -155,7 +227,6 @@ void InterfaceNode::parse(const ScannerView& view) {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
-
 
   ////////////////////////
 
@@ -165,14 +236,14 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
 
   ////////////////////////
 
-  bool is_vtx                 = iftype == GL_VERTEX_SHADER;
-  bool is_geo                 = iftype == GL_GEOMETRY_SHADER;
+  bool is_vtx = iftype == GL_VERTEX_SHADER;
+  bool is_geo = iftype == GL_GEOMETRY_SHADER;
 
   /////////////////////////////
   // interface inheritance
   /////////////////////////////
 
-  for( auto deconame : _deconames ){
+  for (auto deconame : _deconames) {
 
     auto it_uniformset = c->_uniformSets.find(deconame);
     auto it_uniformblk = c->_uniformBlocks.find(deconame);
@@ -205,7 +276,7 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
 
   ////////////////////////
 
-  for( auto layout : _layouts ){
+  //for (auto layout : _layouts) {
     /*
     std::string layline;
     bool done      = false;
@@ -248,24 +319,24 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
       if (is_tris)
         psi->mGsPrimSize = 3;
     }*/
-    }
-  for( auto input : _inputs ){
-    int iloc          = int(psi->mAttributes.size());
-    Attribute* pattr  = new Attribute(input->_name);
-    pattr->mTypeName  = input->_typeName;
-    pattr->mDirection = "in";
-    pattr->mSemantic = input->_semantic;
+  //}
+  for (auto input : _inputs) {
+    int iloc                       = int(psi->mAttributes.size());
+    Attribute* pattr               = new Attribute(input->_name);
+    pattr->mTypeName               = input->_typeName;
+    pattr->mDirection              = "in";
+    pattr->mSemantic               = input->_semantic;
     psi->mAttributes[input->_name] = pattr;
-    pattr->mLocation = int(psi->mAttributes.size());
+    pattr->mLocation               = int(psi->mAttributes.size());
   }
-  for( auto output : _outputs ){
+  for (auto output : _outputs) {
     int iloc                        = int(psi->mAttributes.size());
     Attribute* pattr                = new Attribute(output->_name);
     pattr->mTypeName                = output->_typeName;
     pattr->mDirection               = "out";
     pattr->mLocation                = iloc;
     psi->mAttributes[output->_name] = pattr;
-    pattr->_decorators = output->_output_decorators;
+    pattr->_decorators              = output->_output_decorators;
   }
 
   ////////////////////////
@@ -296,12 +367,14 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
 
   assert(false);
   return psi;
-
 }
 
-StreamInterface* VertexInterfaceNode::generate(Container*c) {
-  return InterfaceNode::_generate(c,GL_VERTEX_SHADER);
-}
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+StreamInterface* VertexInterfaceNode::generate(Container* c) { return InterfaceNode::_generate(c, GL_VERTEX_SHADER); }
+StreamInterface* FragmentInterfaceNode::generate(Container* c) { return InterfaceNode::_generate(c, GL_FRAGMENT_SHADER); }
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx
 /////////////////////////////////////////////////////////////////////////////////////////////////

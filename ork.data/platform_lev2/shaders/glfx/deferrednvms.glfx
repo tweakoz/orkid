@@ -9,41 +9,45 @@ fxconfig fxcfg_default {
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
-  uniform mat4 MVPC;
-  uniform mat4 MVPL;
-  uniform mat4 MVPR;
+  mat4 MVPC;
+  mat4 MVPL;
+  mat4 MVPR;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ub_vtx {
-  in vec4 position : POSITION;
-  in vec2 uv0 : TEXCOORD0;
-  //
-  out vec2 frg_uv;
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs { vec2 frg_uv; }
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-  uniform mat4 IVPArray[2];
-  uniform mat4 VArray[2];
-  uniform mat4 PArray[2];
-  uniform sampler2D MapAlbedoAo;
-  uniform sampler2D MapNormalL;
-  uniform sampler2D MapDepth;
-  uniform vec2 InvViewportSize; // inverse target size
-  uniform float Time;
-  uniform vec2 NearFar;
-  uniform int NumLights;
-  uniform vec2 Zndc2eye;
+  mat4 IVPArray[2];
+  mat4 VArray[2];
+  mat4 PArray[2];
+  sampler2D MapAlbedoAo;
+  sampler2D MapNormalL;
+  sampler2D MapDepth;
+  vec2 InvViewportSize; // inverse target size
+  float Time;
+  vec2 NearFar;
+  int NumLights;
+  vec2 Zndc2eye;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
   vec4 LightColorD[2048]; // 32KiB
-  vec4 LightPosR[2048];  // 32KiB
+  vec4 LightPosR[2048];   // 32KiB
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault {
-  in vec2 frg_uv;
-  //
-  out vec4 out_clr;
+  inputs {
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred : ub_light : ub_frg {
@@ -61,10 +65,10 @@ libblock lib_deferred : ub_light : ub_frg {
     mat4 _ivp;
   };
   /////////////////////////////////////////////////////////
-  float eyedepth(vec2 depthuv){
+  float eyedepth(vec2 depthuv) {
     float depthtex = texture(MapDepth, depthuv).r;
-    float ndc = depthtex*2.0-1.0;
-    return Zndc2eye.x/(ndc - Zndc2eye.y);
+    float ndc      = depthtex * 2.0 - 1.0;
+    return Zndc2eye.x / (ndc - Zndc2eye.y);
   }
   /////////////////////////////////////////////////////////
   vec4 defwpos(WPosData wpd) {
@@ -72,9 +76,9 @@ libblock lib_deferred : ub_light : ub_frg {
     vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
     vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
     vec4 rr        = wpd._ivp * vec4(inpos, 1);
-    float ndc = depthtex*2.0-1.0;
-    float zeye = Zndc2eye.x/(ndc - Zndc2eye.y);
-    return vec4(rr.xyz / rr.w,zeye);
+    float ndc      = depthtex * 2.0 - 1.0;
+    float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
+    return vec4(rr.xyz / rr.w, zeye);
   }
   /////////////////////////////////////////////////////////
   GBufData decodeGBUF(WPosData wpd) {
@@ -101,24 +105,24 @@ libblock lib_deferred : ub_light : ub_frg {
     return color * atten;
   }
   /////////////////////////////////////////////////////////
-  vec3 baselighting(WPosData wpd){
+  vec3 baselighting(WPosData wpd) {
     GBufData gbd = decodeGBUF(wpd);
     // sunlight ///////////////
     vec3 l = vec3((0.5 + dot(gbd._wnrm, vec3(0, 1, 0)) * 0.5)) * 0.25;
     ///////////////////////////
-    return gbd._albedo*l;
+    return gbd._albedo * l;
   }
   /////////////////////////////////////////////////////////
-  vec3 pntlighting(WPosData wpd){
+  vec3 pntlighting(WPosData wpd) {
     GBufData gbd = decodeGBUF(wpd);
-    vec3 l = vec3(0,0,0);
-    for( int i=0; i<NumLights; i++ ){
-       float lightcamdepth = LightColorD[i].w;
-       bool sphere_intersects_depth = (gbd._zeye-lightcamdepth)<LightPosR[i].w;
-       if( sphere_intersects_depth )
-          l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColorD[i].xyz);
+    vec3 l       = vec3(0, 0, 0);
+    for (int i = 0; i < NumLights; i++) {
+      float lightcamdepth          = LightColorD[i].w;
+      bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightPosR[i].w;
+      if (sphere_intersects_depth)
+        l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColorD[i].xyz);
     }
-    return gbd._albedo*l;
+    return gbd._albedo * l;
   }
 }
 ///////////////////////////////////////////////////////////////
@@ -127,84 +131,87 @@ vertex_shader vs_std : iface_vdefault {
   gl_Position = position;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight : iface_fdefault : lib_deferred  {
+fragment_shader ps_baselight : iface_fdefault : lib_deferred {
   WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
+  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   wpd._scruv = wpd._muv;
-  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
-  vec3 c  = baselighting(wpd);
-  out_clr = vec4(c, 1);
+  wpd._ivp   = IVPArray[int(wpd._muv.x >= 0.5)];
+  vec3 c     = baselighting(wpd);
+  out_clr    = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred  {
+fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred {
   WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
-  wpd._scruv = wpd._muv;
-  wpd._scruv.x = mod(wpd._scruv.x*2,1);
-  vec3 c  = baselighting(wpd);
-  out_clr = vec4(c, 1);
+  wpd._muv     = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
+  wpd._scruv   = wpd._muv;
+  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+  vec3 c       = baselighting(wpd);
+  out_clr      = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
 nvtask_interface iface_task : ub_light {
-  layout(local_size_x=32) in;
+  inputs {
+    layout(local_size_x = 32);
+  }
 }
-nvtask_shader task_pointlight : iface_task {
-}
+nvtask_shader task_pointlight : iface_task {}
 nvmesh_interface iface_mesh : ub_light {
-  layout(local_size_x=32) in;
-
-    // the primitive type (points,lines or triangles)
-    layout(triangles) out;
+  inputs {
+    layout(local_size_x = 32);
+  }
+  outputs {
+    layout(triangles);
     // maximum allocation size for each meshlet
-    layout(max_vertices=64, max_primitives=126) out;
+    layout(max_vertices = 64, max_primitives = 126);
+    // the primitive type (points,lines or triangles)
 
     // the actual amount of primitives the workgroup outputs ( <= max_primitives)
-    out uint gl_PrimitiveCountNV;
+    uint gl_PrimitiveCountNV;
     // an index buffer, using list type indices (strips are not supported here)
-    out uint gl_PrimitiveIndicesNV[]; // [max_primitive* 3 for triangles]
-    out gl_MeshPerVertexNV {
-         vec4  gl_Position;
-         float gl_PointSize;
-         float gl_ClipDistance[];
-         float gl_CullDistance[];
+    uint gl_PrimitiveIndicesNV[]; // [max_primitive* 3 for triangles]
+
+    gl_MeshPerVertexNV {
+      vec4 gl_Position;
+      float gl_PointSize;
+      float gl_ClipDistance[];
+      float gl_CullDistance[];
     }
     gl_MeshVerticesNV[]; // [max_vertices]
 
     // define your own vertex output blocks as usual
-    out Interpolant { vec2 uv; }
-    OUT[]; // [max_vertices]
+    Interpolant { vec2 uv; } OUT[]; // [max_vertices]
 
     // special purpose per-primitive outputs
-    perprimitiveNV out gl_MeshPerPrimitiveNV {
+    perprimitiveNV gl_MeshPerPrimitiveNV {
       int gl_PrimitiveID;
       int gl_Layer;
       int gl_ViewportIndex;
       int gl_ViewportMask[]; // [1]
-    }
-    gl_MeshPrimitivesNV[]; // [max_primitives]
+    } gl_MeshPrimitivesNV[]; // [max_primitives]
+
+  }
 }
-nvmesh_shader mesh_pointlight : iface_mesh {
+nvmesh_shader mesh_pointlight : iface_mesh {}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_pointlight : iface_fdefault : lib_deferred {
+  WPosData wpd;
+  wpd._muv   = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp   = IVPArray[0];
+  wpd._scruv = wpd._muv;
+  vec3 c     = pntlighting(wpd);
+  out_clr    = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight : iface_fdefault : lib_deferred  {
+fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred {
   WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp = IVPArray[0];
-  wpd._scruv = wpd._muv;
-  vec3 c  = pntlighting(wpd);
-  out_clr = vec4(c, 1);
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred  {
-  WPosData wpd;
-  wpd._muv = gl_FragCoord.xy * InvViewportSize;
-  wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
-  wpd._scruv = wpd._muv;
-  wpd._scruv.x = mod(wpd._scruv.x*2,1);
-  vec3 c  = pntlighting(wpd);
-  //c = vec3(wpd._muv,0);
-  //vec3 c = vec3(frg_uv,0);
+  wpd._muv     = gl_FragCoord.xy * InvViewportSize;
+  wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
+  wpd._scruv   = wpd._muv;
+  wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
+  vec3 c       = pntlighting(wpd);
+  // c = vec3(wpd._muv,0);
+  // vec3 c = vec3(frg_uv,0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////

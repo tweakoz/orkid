@@ -1,151 +1,135 @@
 ///////////////////////////////////////////////////////////////
 // FxConfigs
 ///////////////////////////////////////////////////////////////
-fxconfig fxcfg_default
-{
-	glsl_version = "150";
-}
+fxconfig fxcfg_default { glsl_version = "150"; }
 ///////////////////////////////////////////////////////////////
 // Interfaces
 ///////////////////////////////////////////////////////////////
 
-uniform_set ublock_vtx
-{
-	mat4 mvp;
-}
-uniform_set ublock_frg
-{
-	vec4 ModColor;
-	sampler2D ColorMap;
+uniform_set ublock_vtx { mat4 mvp; }
+uniform_set ublock_frg {
+  vec4 ModColor;
+  sampler2D ColorMap;
 }
 
-vertex_interface iface_vdefault
-	: ublock_vtx
-{
-	in vec4 position : POSITION;
-	in vec4 vtxcolor : COLOR0;
-	in vec2 uv0 : TEXCOORD0;
-	in vec2 uv1 : TEXCOORD1;
-	//
-	out vec4 frg_clr;
-	out vec2 frg_uv;
+vertex_interface iface_vdefault : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv;
+  }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault
-{
-	in vec4 frg_clr;
-	in vec2 frg_uv;
-	//
-	out vec4 out_clr;
+fragment_interface iface_fdefault {
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fmt
-	: ublock_frg
-{
-	out vec4 out_clr;
-	//
-	in vec2 frg_uv;
+fragment_interface iface_fmt : ublock_frg {
+  inputs {
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default
-{
-	inherits default;
-	DepthTest=OFF;
-	CullTest=OFF;
+state_block sb_default {
+  inherits default;
+  DepthTest = OFF;
+  CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend
-{
-	inherits sb_default;
-	BlendMode = ALPHA;
-	CullTest=OFF;
+state_block sb_lerpblend {
+  inherits sb_default;
+  BlendMode = ALPHA;
+  CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_additive
-{
-	inherits sb_default;
-	BlendMode = ADDITIVE;
-	CullTest=OFF;
+state_block sb_additive {
+  inherits sb_default;
+  BlendMode = ADDITIVE;
+  CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_uitext : iface_vdefault
-{
-	gl_Position = mvp*position;
-	frg_clr = vtxcolor;
-	frg_uv = uv0;
+vertex_shader vs_uitext : iface_vdefault {
+  gl_Position = mvp * position;
+  frg_clr     = vtxcolor;
+  frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_uitext : iface_fmt
-{
-	float texv = texture( ColorMap, frg_uv ).r;
-	if( texv==0.0f ) discard;
-	out_clr = vec4(ModColor.xyz,texv);
-
+fragment_shader ps_uitext : iface_fmt {
+  float texv = texture(ColorMap, frg_uv).r;
+  if (texv == 0.0f)
+    discard;
+  out_clr = vec4(ModColor.xyz, texv);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_uitextured : iface_fmt
-{
-	vec4 texc = texture( ColorMap, frg_uv );
-	out_clr = vec4(texc.xyz,texc.w);
+fragment_shader ps_uitextured : iface_fmt {
+  vec4 texc = texture(ColorMap, frg_uv);
+  out_clr   = vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_vtxcolor : iface_vdefault
-{
-	gl_Position = mvp*position;
-	frg_clr = vtxcolor;
-	frg_uv = uv0;
+vertex_shader vs_vtxcolor : iface_vdefault {
+  gl_Position = mvp * position;
+  frg_clr     = vtxcolor;
+  frg_uv      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_fragclr : iface_fdefault
-{
-	out_clr = frg_clr;
-	//out_clr = vec4(1.0,0.0,1.0,1.0);
+fragment_shader ps_fragclr : iface_fdefault {
+  out_clr = frg_clr;
+  // out_clr = vec4(1.0,0.0,1.0,1.0);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_modclr : iface_fmt
-{
-	out_clr = ModColor;
+fragment_shader ps_modclr : iface_fmt { out_clr = ModColor; }
+///////////////////////////////////////////////////////////////
+technique uitext {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitext;
+    state_block     = sb_lerpblend;
+  }
 }
 ///////////////////////////////////////////////////////////////
-technique uitext
-{
-	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_uitext;
-		fragment_shader=ps_uitext;
-		state_block=sb_lerpblend;
-	}
+technique uitextured {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_uitext;
+    fragment_shader = ps_uitextured;
+    state_block     = sb_default;
+  }
 }
 ///////////////////////////////////////////////////////////////
-technique uitextured
-{
-	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_uitext;
-		fragment_shader=ps_uitextured;
-		state_block=sb_default;
-	}
+technique ui_vtx {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_fragclr;
+    state_block     = sb_default;
+  }
 }
 ///////////////////////////////////////////////////////////////
-technique ui_vtx
-{	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_fragclr;
-		state_block=sb_default;
-	}
-}
-///////////////////////////////////////////////////////////////
-technique uidev_modcolor
-{	fxconfig=fxcfg_default;
-	pass p0
-	{	vertex_shader=vs_vtxcolor;
-		fragment_shader=ps_modclr;
-		state_block=sb_default;
-	}
+technique uidev_modcolor {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_modclr;
+    state_block     = sb_default;
+  }
 }
 ///////////////////////////////////////////////////////////////

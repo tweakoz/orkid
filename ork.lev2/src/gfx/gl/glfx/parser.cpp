@@ -62,6 +62,7 @@ ContainerNode::ContainerNode(const AssetPath &pth, const Scanner &s)
     for( auto item : SplitString(typenames, ' ') )
       _validTypeNames.insert(item);
 
+    _validOutputDecorators.insert("perprimitiveNV");
 }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::validateTypeName(const std::string typeName) const {
@@ -70,6 +71,10 @@ bool ContainerNode::validateTypeName(const std::string typeName) const {
 }
 bool ContainerNode::validateMemberName(const std::string typeName) const {
   return true;
+}
+bool ContainerNode::isOutputDecorator(const std::string typeName) const {
+  auto it = _validOutputDecorators.find(typeName);
+  return (it!=_validOutputDecorators.end());
 }
 
 ///////////////////////////////////////////////////////////
@@ -144,9 +149,6 @@ void ContainerNode::parse() {
       auto sif = new VertexInterfaceNode(this);
       sif->parse(scanview);
       itokidx = scanview.blockEnd() + 1;
-      assert(false);
-      //StreamInterface* pif = ParseFxInterface();
-      //mpContainer->addVertexInterface(pif);
     } else if (tok.text == "tessctrl_interface") {
       //StreamInterface* pif = ParseFxInterface(GL_TESS_CONTROL_SHADER);
       //mpContainer->addTessCtrlInterface(pif);
@@ -157,8 +159,10 @@ void ContainerNode::parse() {
       //StreamInterface* pif = ParseFxInterface(GL_GEOMETRY_SHADER);
       //mpContainer->addGeometryInterface(pif);
     } else if (tok.text == "fragment_interface") {
-      //StreamInterface* pif = ParseFxInterface(GL_FRAGMENT_SHADER);
-      //mpContainer->addFragmentInterface(pif);
+      auto sif = new FragmentInterfaceNode(this);
+      sif->parse(scanview);
+      itokidx = scanview.blockEnd() + 1;
+      assert(false);
     } else if (tok.text == "state_block") {
       //StateBlock* psblock = ParseFxStateBlock();
       //mpContainer->addStateBlock(psblock);

@@ -92,12 +92,12 @@ struct ScanRange
 struct ScannerView
 {
 	ScannerView( const Scanner& s, ScanViewFilter& f  );
+	ScannerView( const ScannerView& oth,int start_offset  );
 
 	size_t numTokens() const { return _indices.size(); }
 	const Token* token(size_t i) const;
 	size_t tokenIndex(size_t i) const;
-	void scanRange( size_t is, size_t ie );
-	void scanBlock( size_t is );
+	void scanBlock( size_t is, bool checkterm=true, bool checkdecos=true );
 	void dump();
 	size_t blockEnd() const;
 	std::string blockName() const;
