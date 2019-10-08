@@ -162,13 +162,15 @@ void ContainerNode::parse() {
       auto sif = new FragmentInterfaceNode(this);
       sif->parse(scanview);
       itokidx = scanview.blockEnd() + 1;
-      assert(false);
     } else if (tok.text == "state_block") {
-      //StateBlock* psblock = ParseFxStateBlock();
+      auto sblock = new StateBlockNode(this);
+      sblock->parse(scanview);
+      itokidx = scanview.blockEnd() + 1;
       //mpContainer->addStateBlock(psblock);
     } else if (tok.text == "vertex_shader") {
       //ShaderVtx* pshader = ParseFxVertexShader();
       //mpContainer->addVertexShader(pshader);
+      assert(false);
     } else if (tok.text == "tessctrl_shader") {
       //ShaderTsC* pshader = ParseFxTessCtrlShader();
       //mpContainer->addTessCtrlShader(pshader);
@@ -211,97 +213,6 @@ void ContainerNode::parse() {
 }
 
 
-///////////////////////////////////////////////////////////
-StateBlock* GlSlFxParser::ParseFxStateBlock() {
-  ScanViewRegex r("(\n)", true);
-  ScannerView v(scanner, r);
-  v.scanBlock(itokidx);
-
-  StateBlock* psb = new StateBlock;
-  psb->mName      = v.blockName();
-  mpContainer->addStateBlock(psb);
-  //////////////////////
-
-  auto& apptors = psb->mApplicators;
-
-  //////////////////////
-
-  size_t inumdecos = v.numBlockDecorators();
-
-  assert(inumdecos < 2);
-
-  for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-    auto ptok        = v.blockDecorator(ideco);
-    StateBlock* ppar = mpContainer->GetStateBlock(ptok->text);
-    OrkAssert(ppar != nullptr);
-    psb->mApplicators = ppar->mApplicators;
-  }
-
-  //////////////////////
-
-  int ist = v._start + 1;
-  int ien = v._end - 1;
-
-  for (size_t i = ist; i <= ien;) {
-
-    const Token* vt_tok = v.token(i);
-    // printf( "  ParseFxStateBlock Tok<%s>\n", vt_tok.text.c_str() );
-    if (vt_tok->text == "inherits") {
-      const Token* parent_tok = v.token(i + 1);
-      StateBlock* ppar        = mpContainer->GetStateBlock(parent_tok->text);
-      OrkAssert(ppar != nullptr);
-      psb->mApplicators = ppar->mApplicators;
-      i += 3;
-    } else if (vt_tok->text == "CullTest") {
-      const std::string& mode = v.token(i + 2)->text;
-      if (mode == "OFF")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_OFF); });
-      else if (mode == "PASS_FRONT")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_FRONT); });
-      else if (mode == "PASS_BACK")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetCullTest(lev2::ECULLTEST_PASS_BACK); });
-
-      i += 4;
-    } else if (vt_tok->text == "DepthMask") {
-      const std::string& mode = v.token(i + 2)->text;
-      bool bena               = (mode == "true");
-      psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetZWriteMask(bena); });
-      // printf( "DepthMask<%d>\n", int(bena) );
-      i += 4;
-    } else if (vt_tok->text == "DepthTest") {
-      const std::string& mode = v.token(i + 2)->text;
-      if (mode == "OFF")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_OFF); });
-      else if (mode == "LESS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LESS); });
-      else if (mode == "LEQUALS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_LEQUALS); });
-      else if (mode == "GREATER")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GREATER); });
-      else if (mode == "GEQUALS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_GEQUALS); });
-      else if (mode == "EQUALS")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetDepthTest(lev2::EDEPTHTEST_EQUALS); });
-      i += 4;
-    } else if (vt_tok->text == "BlendMode") {
-      const std::string& mode = v.token(i + 2)->text;
-      if (mode == "ADDITIVE")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ADDITIVE); });
-      else if (mode == "ALPHA_ADDITIVE")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA_ADDITIVE); });
-      else if (mode == "ALPHA")
-        psb->addStateFn([=](GfxTarget* t) { t->RSI()->SetBlending(lev2::EBLENDING_ALPHA); });
-      i += 4;
-    } else if (vt_tok->text == "\n") {
-      i++;
-    } else {
-      OrkAssert(false);
-    }
-  }
-  //////////////////////
-  itokidx = v.blockEnd() + 1;
-  return psb;
-}
 ///////////////////////////////////////////////////////////
 LibBlock* GlSlFxParser::ParseLibraryBlock() {
   int cachetokidx = itokidx;

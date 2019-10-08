@@ -46,20 +46,17 @@ fragment_interface iface_fmt : ublock_frg {
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default {
-  inherits default;
+state_block sb_default : default {
   DepthTest = OFF;
   CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend {
-  inherits sb_default;
+state_block sb_lerpblend : sb_default {
   BlendMode = ALPHA;
   CullTest  = OFF;
 }
 ///////////////////////////////////////////////////////////////
-state_block sb_additive {
-  inherits sb_default;
+state_block sb_additive : sb_default {
   BlendMode = ADDITIVE;
   CullTest  = OFF;
 }

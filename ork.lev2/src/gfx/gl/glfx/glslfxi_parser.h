@@ -160,12 +160,24 @@ struct ShaderNode : public DecoBlockNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct StateBlockNode : public DecoBlockNode {
+  explicit StateBlockNode(ContainerNode* cnode) : DecoBlockNode(cnode) {}
+  void parse(const ScannerView& view);
+  StateBlock* generate(Container* c) const;
+  std::string _culltest;
+  std::string _depthmask;
+  std::string _depthtest;
+  std::string _blendmode;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct VertexInterfaceNode  : public InterfaceNode {
-  VertexInterfaceNode(ContainerNode* cnode) : InterfaceNode(cnode) {}
+  explicit VertexInterfaceNode(ContainerNode* cnode) : InterfaceNode(cnode) {}
   StreamInterface* generate(Container*);
 };
 struct FragmentInterfaceNode  : public InterfaceNode {
-  FragmentInterfaceNode(ContainerNode* cnode) : InterfaceNode(cnode) {}
+  explicit FragmentInterfaceNode(ContainerNode* cnode) : InterfaceNode(cnode) {}
   StreamInterface* generate(Container*);
 };
 
