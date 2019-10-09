@@ -52,12 +52,12 @@ StateBlock* StateBlockNode::generate(Container* c) const {
   // inherit stateblock
   //////////////////////
 
-  size_t inumdecos = _deconames.size();
+  size_t inumdecos = _decorators.size();
 
   assert(inumdecos < 2);
 
-  for (const auto deco : _deconames ) {
-    StateBlock* parent = c->GetStateBlock(deco);
+  for (const auto deco : _decorators ) {
+    StateBlock* parent = c->GetStateBlock(deco->text);
     assert(parent != nullptr);
     psb->mApplicators = parent->mApplicators; // inherit applicators
   }
@@ -102,6 +102,8 @@ StateBlock* StateBlockNode::generate(Container* c) const {
   //////////////////////
 
   c->addStateBlock(psb);
+  
+  return psb;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

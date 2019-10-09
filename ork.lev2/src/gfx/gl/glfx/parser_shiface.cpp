@@ -243,8 +243,10 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
   // interface inheritance
   /////////////////////////////
 
-  for (auto deconame : _deconames) {
-
+  for (auto decotok : _decorators) {
+    
+    auto deconame = decotok->text;
+    
     auto it_uniformset = c->_uniformSets.find(deconame);
     auto it_uniformblk = c->_uniformBlocks.find(deconame);
 

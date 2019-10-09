@@ -257,6 +257,8 @@ void Scanner::Scan() {
         } else if (CH == '\n') {
           AddToken(Token("\n", iline, icol));
           adv_lin = 1;
+        } else if (CH == '.' and not is_num(PCH) ) {
+          AddToken(Token(".", iline, icol));
         } else if (is_septok(CH)) {
           if (((CH == '=') && (NCH == '=')) || ((CH == '!') && (NCH == '=')) || ((CH == '*') && (NCH == '=')) ||
               ((CH == '/') && (NCH == '=')) || ((CH == '&') && (NCH == '=')) || ((CH == '|') && (NCH == '=')) ||
@@ -320,12 +322,15 @@ void Scanner::Scan() {
       case ESTA_CONTENT: {
         if (is_septok(CH)) {
           FlushToken();
-          i--;
+          i--; // put sep back
         } else if (CH == '\n') {
           FlushToken();
           adv_lin = 1;
         } else if (is_spc(CH)) {
           FlushToken();
+        } else if (CH=='.') {
+          FlushToken();
+          i--; // put . back
         } else if (is_content(CH)) {
           benctok = true;
         }
