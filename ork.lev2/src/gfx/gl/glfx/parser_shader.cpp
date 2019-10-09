@@ -365,7 +365,10 @@ ShaderNvMesh* NvMeshShaderNode::generate(Container* c) {
 #endif
 
 ///////////////////////////////////////////////////////////
-void LibraryBlockNode::parse(const ScannerView& view) { _body.parse(view); }
+void LibraryBlockNode::parse(const ScannerView& view) {
+  DecoBlockNode::parse(view);
+  _body.parse(view);
+}
 
 //////////////////////////////////////////////////////////////////////////////////
 

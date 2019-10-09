@@ -129,7 +129,6 @@ void ContainerNode::parse() {
     } else if (tok.text == "libblock") {
       auto lb = new LibraryBlockNode(this);
       lb->parse(scanview);
-      assert(false);
     } else if (tok.text == "uniform_set") {
       auto uniset = new UniformSetNode(this);
       uniset->parse(scanview);
