@@ -80,11 +80,18 @@ void DecoBlockNode::parse(const ScannerView& view) {
   for (size_t ideco = 0; ideco < inumdecos; ideco++) {
     auto decotok = view.blockDecorator(ideco);
     auto decoref = decotok->text;
-    bool name_ok = _container->validateMemberName(decoref);
-    auto it = _decodupecheck.find(decoref);
-    assert(it==_decodupecheck.end() or decoref=="extension");
-    _decodupecheck.insert(decoref);
-    _decorators.push_back(decotok);
+    if( decoref=="extension"){
+      int decoglobidx = view._blockDecorators[ideco];
+      auto extname = view._scanner.token(decoglobidx+2)->text;
+      _requiredExtensions.push_back(extname);
+    }
+    else {
+      bool name_ok = _container->validateMemberName(decoref);
+      auto it = _decodupecheck.find(decoref);
+      assert(it==_decodupecheck.end() or decoref=="extension");
+      _decodupecheck.insert(decoref);
+      _decorators.push_back(decotok);
+    }
   }
 
 }

@@ -93,6 +93,10 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   bool is_nvmesh_shader = pshader->mShaderType == GL_MESH_SHADER_NV;
 #endif
 
+  for( auto ext : _requiredExtensions ) {
+      pshader->requireExtension(ext);
+  }
+
   //////////////////////////////////////////////
   // enumerate lib blocks / interfaces
   //////////////////////////////////////////////
@@ -128,14 +132,6 @@ void ShaderNode::_generateCommon(Shader* pshader) {
     } else if (it_uset != (c->_uniformSets.end())) {
       auto uset = it_uset->second;
       pshader->addUniformSet(uset);
-    } else if (deco == "extension") {
-      auto lparen = _decorators[i + 1];
-      auto rparen = _decorators[i + 3];
-      assert(lparen->text == "(");
-      assert(rparen->text == ")");
-      auto extid = _decorators[i + 2];
-      pshader->requireExtension(extid->text);
-      i += 3; // eat parens and extensionid
     } else if (is_vertex_shader && it_vi != (c->_vertexInterfaces.end())) {
       pshader->setInputInterface(it_vi->second);
     } else if (is_tessctrl_shader && (it_tc != c->_tessCtrlInterfaces.end())) {

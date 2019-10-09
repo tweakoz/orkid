@@ -208,6 +208,7 @@ Scanner::Scanner(std::string blockregex)
 void Scanner::FlushToken() {
   if (cur_token.text.length())
     tokens.push_back(cur_token);
+  assert(cur_token.text!=".0");
   cur_token.text  = "";
   cur_token.iline = 0;
   cur_token.icol  = 0;
@@ -215,6 +216,7 @@ void Scanner::FlushToken() {
 }
 /////////////////////////////////////////
 void Scanner::AddToken(const Token& tok) {
+  assert(tok.text!=".0");
   tokens.push_back(tok);
   cur_token.text  = "";
   cur_token.iline = 0;
@@ -336,7 +338,13 @@ void Scanner::Scan() {
         }
         break;
       case ESTA_CONTENT: {
-        if (is_septok(CH)) {
+        if( CH=='.' and is_num(PCH) ){
+          benctok = true;
+        }
+        else if( PCH=='.' and is_num(CH) ){
+          benctok = true;
+        }
+        else if (is_septok(CH) ) {
           FlushToken();
           i--; // put sep back
         } else if (CH == '\n') {

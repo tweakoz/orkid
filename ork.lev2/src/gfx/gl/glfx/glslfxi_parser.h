@@ -92,7 +92,8 @@ struct DecoBlockNode : public NamedBlockNode {
       : NamedBlockNode(cnode) {}
 
   void parse(const ScannerView& view);
-  
+
+    std::vector<std::string> _requiredExtensions;
 };
 
 
