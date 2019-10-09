@@ -115,9 +115,9 @@ void ContainerNode::parse() {
 
      ScannerView scanview(_scanner, r);
      scanview.scanBlock(itokidx);
-     
+
      bool advance_block = true;
-     
+
     if (tok.text == "\n") {
       itokidx++;
       advance_block = false;
@@ -206,7 +206,7 @@ void ContainerNode::parse() {
 //////////////////////////////////////////////////////////////////////////////////
 
 void ContainerNode::generate(Container*c) const {
-  
+
     generateBlocks<LibraryBlockNode>(c);
     generateBlocks<ShaderDataNode>(c);
 
@@ -215,20 +215,25 @@ void ContainerNode::generate(Container*c) const {
     generateBlocks<TessCtrlInterfaceNode>(c);
     generateBlocks<GeometryInterfaceNode>(c);
     generateBlocks<FragmentInterfaceNode>(c);
+#if defined(ENABLE_NVMESH_SHADERS)
     generateBlocks<NvTaskInterfaceNode>(c);
     generateBlocks<NvMeshInterfaceNode>(c);
+#endif
 
     generateBlocks<VertexShaderNode>(c);
     generateBlocks<TessCtrlShaderNode>(c);
     generateBlocks<TessEvalShaderNode>(c);
     generateBlocks<GeometryShaderNode>(c);
     generateBlocks<FragmentShaderNode>(c);
+
+#if defined(ENABLE_NVMESH_SHADERS)
     generateBlocks<NvTaskShaderNode>(c);
     generateBlocks<NvMeshShaderNode>(c);
+#endif
 
     generateBlocks<StateBlockNode>(c);
     generateBlocks<TechniqueNode>(c);
-  
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////

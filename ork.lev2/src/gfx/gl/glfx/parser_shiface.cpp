@@ -262,9 +262,9 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
   /////////////////////////////
 
   for (auto decotok : _decorators) {
-    
+
     auto deconame = decotok->text;
-    
+
     auto it_uniformset = c->_uniformSets.find(deconame);
     auto it_uniformblk = c->_uniformBlocks.find(deconame);
 
@@ -415,6 +415,7 @@ StreamInterface* GeometryInterfaceNode::generate(Container* c) {
   c->addGeometryInterface(sif);
   return sif;
 }
+#if defined(ENABLE_NVMESH_SHADERS)
 StreamInterface* NvTaskInterfaceNode::generate(Container* c) {
   auto sif = InterfaceNode::_generate(c, GL_TASK_SHADER_NV);
   c->addNvTaskInterface(sif);
@@ -425,6 +426,7 @@ StreamInterface* NvMeshInterfaceNode::generate(Container* c) {
   c->addNvMeshInterface(sif);
   return sif;
 }
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
