@@ -36,11 +36,11 @@ ScannerView::ScannerView( const ScannerView& oth, int startingpoint )
   , _blockName(0)
   , _blockOk(false){
 
-  size_t idx = oth.tokenIndex(startingpoint);
+  size_t idx = oth.globalTokenIndex(startingpoint);
   scanBlock(idx,false,false);
 }
 
-size_t ScannerView::blockEnd() const { return tokenIndex(_end); }
+size_t ScannerView::blockEnd() const { return globalTokenIndex(_end); }
 
 std::string ScannerView::blockName() const { return token(_blockName)->text; }
 
@@ -128,6 +128,21 @@ void ScannerView::scanBlock(size_t is,bool checkterm, bool checkdecos ) {
   }
 }
 
+void ScannerView::scanUntil( size_t start, std::string terminator, bool includeterminator ){
+  size_t max_t = _scanner.tokens.size();
+  size_t i = start;
+  bool done = false;
+  while( not done ){
+    const auto& tok = _scanner.tokens[i].text;
+    done = ( tok == terminator );
+    if( (not done) or includeterminator )
+        _indices.push_back(i);
+    i++;
+  }
+  _start = 0;
+  _end = _indices.size()-1;
+}
+
 void ScannerView::dump() {
   printf("ScannerView<%p>::Dump()\n", this);
 
@@ -174,7 +189,7 @@ const Token* ScannerView::blockDecorator(size_t i) const {
   return pt;
 }
 
-size_t ScannerView::tokenIndex(size_t i) const {
+size_t ScannerView::globalTokenIndex(size_t i) const {
   size_t ret = ~0;
   if (i < _indices.size()) {
     ret = _indices[i];

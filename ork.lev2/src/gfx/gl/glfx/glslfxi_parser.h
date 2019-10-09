@@ -131,6 +131,7 @@ struct InterfaceLayoutNode : public AstNode {
       : AstNode(cnode) {}
   int parse(const ScannerView& view);
   std::vector<const Token*> _tokens;
+  bool _standaloneLayout = false;
 };
 
 struct InterfaceInlineStructNode : public AstNode {
@@ -155,6 +156,7 @@ struct InterfaceOutputNode : public AstNode {
   std::string _typeName;
   InterfaceInlineStructNode* _inlineStruct = nullptr;
   std::string _semantic;
+  InterfaceLayoutNode* _layout = nullptr;
   std::set<std::string> _output_decorators;
   int _arraySize = 0;
 };
@@ -171,7 +173,8 @@ struct InterfaceNode : public DecoBlockNode {
 
   StreamInterface* _generate(Container*, GLenum type);
   std::vector<InterfaceLayoutNode*> _inputlayouts;
-  std::vector<InterfaceLayoutNode*> _outputlayouts;
+  std::vector<InterfaceLayoutNode*> _interfacelayouts;
+  InterfaceLayoutNode* _outputlayout = nullptr;
   std::vector<InterfaceInputNode*> _inputs;
   std::vector<InterfaceOutputNode*> _outputs;
   std::set<std::string> _inputdupecheck;

@@ -34,7 +34,8 @@ void Init();
 }
 
 namespace lev2 {
-void Init(const std::string& gfxlayer);
+void ClassInit();
+void GfxInit(const std::string& gfxlayer);
 }
 
 namespace tool {
@@ -185,8 +186,9 @@ tokenlist Init(int argc, char** argv) {
   FileEnv::RegisterUrlBase("data://", DataDirContext);
   FileEnv::RegisterUrlBase("lev2://", MiniorkDirContext);
 
-  ork::lev2::Init("");
+  ork::lev2::ClassInit();
   ork::rtti::Class::InitializeClasses();
+  ork::lev2::GfxInit("");
 
   //	xmlInitParser(); // must init libxml in main thread
 

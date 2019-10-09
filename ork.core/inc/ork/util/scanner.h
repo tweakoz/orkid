@@ -97,8 +97,9 @@ struct ScannerView
 
 	size_t numTokens() const { return _indices.size(); }
 	const Token* token(size_t i) const;
-	size_t tokenIndex(size_t i) const;
+	size_t globalTokenIndex(size_t i) const;
 	void scanBlock( size_t is, bool checkterm=true, bool checkdecos=true );
+    void scanUntil( size_t start, std::string terminator, bool includeterminator );
 	void dump();
 	size_t blockEnd() const;
 	std::string blockName() const;

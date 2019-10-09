@@ -57,7 +57,7 @@ void PreferOpenGL()
 	gbPREFEROPENGL=true;
 }
 
-void Init(const std::string& gfxlayer)
+void ClassInit()
 {
 	AllocationLabel label("ork::lev2::Init");
 
@@ -158,6 +158,12 @@ void Init(const std::string& gfxlayer)
 
 	DummyGfxTargetInit();
 
+
+	//////////////////////////////////////////
+}
+
+void GfxInit(const std::string& gfxlayer)
+{
 	if( gfxlayer != "dummy" )
 	{
 		#if defined(ORK_CONFIG_OPENGL)
@@ -165,9 +171,7 @@ void Init(const std::string& gfxlayer)
 		#endif
 	}
 
-	//////////////////////////////////////////
 }
-
 } // namespace lev2
 
 

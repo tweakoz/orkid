@@ -42,10 +42,14 @@ int InterfaceLayoutNode::parse(const ScannerView& view) {
   const Token* vt_tok = view.token(i);
   bool done           = false;
   while (false == done) {
-    done = vt_tok->text == ";";
-    if (false == done) {
+    done = (vt_tok->text == ";");
+
+    if( done )
+        this->_standaloneLayout = true;
+    else
       this->_tokens.push_back(vt_tok);
-    }
+    done |= (vt_tok->text == ")");
+
     i++;
     vt_tok = view.token(i);
   }
@@ -120,10 +124,16 @@ void InterfaceNode::parseOutputs(const ScannerView& view) {
       //  then the layout scope is for the following output tokens
       //  otherwise it must be block scope
       auto layout = new InterfaceLayoutNode(_container);
-      int j       = layout->parse(view);
-      assert(j > i);
-      i = j;
-      _outputlayouts.push_back(layout);
+      ScannerView subview(view._scanner,view._filter);
+      subview.scanUntil(view.globalTokenIndex(i),")",true);
+      layout->parse(subview);
+      i += subview.numTokens();
+      if(layout->_standaloneLayout)
+          _interfacelayouts.push_back(layout);
+      else{
+          assert(_outputlayout==nullptr);
+          _outputlayout = layout;
+      }
       continue;
     }
 
@@ -140,6 +150,7 @@ void InterfaceNode::parseOutputs(const ScannerView& view) {
     std::string named = nam_tok ? nam_tok->text : "";
     printf("  parseOutputs DtTok<%s>\n", dt_tok->text.c_str());
     printf("  parseOutputs named<%s>\n", named.c_str());
+    _container->validateTypeName(dt_tok->text);
     auto it = _outputdupecheck.find(named);
     assert(it == _outputdupecheck.end()); // make sure there are no duplicate attrs
     _outputdupecheck.insert(named);
@@ -149,6 +160,10 @@ void InterfaceNode::parseOutputs(const ScannerView& view) {
     output->_typeName          = dt_tok->text;
     output->_output_decorators = outputdecos;
     outputdecos.clear();
+    if( _outputlayout ) {
+        output->_layout = _outputlayout;
+        _outputlayout = nullptr;
+    }
     ///////////////////////////////////////////
     auto parse_array = [&](int j) -> int {
       if (view.token(j)->text == "[") {

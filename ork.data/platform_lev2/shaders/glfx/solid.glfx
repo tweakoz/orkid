@@ -70,8 +70,8 @@ fragment_interface iface_fpick : ublock_frg {
     vec4 frg_nrmd;
   }
   outputs {
-    layout(location = 0) out vec4 out_clr;
-    layout(location = 1) out vec4 out_nrmd;
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_nrmd;
   }
 }
 ///////////////////////////////////////////////////////////////

@@ -32,7 +32,7 @@ void TechniqueNode::parse(const ScannerView& view) {
       // i is in view space, we need the globspace index to
       //  start the pass parse
       auto passnode         = new PassNode(_container);
-      int globspac_passtoki = view.tokenIndex(i);
+      int globspac_passtoki = view.globalTokenIndex(i);
       ScannerView subview(view._scanner, view._filter);
       subview.scanBlock(globspac_passtoki);
       passnode->parse(subview, globspac_passtoki);
