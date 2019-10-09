@@ -199,8 +199,8 @@ namespace ork::lev2::glslfx {
 
   bool Container::IsValid(void) { return true; }
 
-  std::map<std::string, Uniform*> Container::flatUniMap() const {
-    std::map<std::string, Uniform*> flatunimap;
+  std::unordered_map<std::string, Uniform*> Container::flatUniMap() const {
+    std::unordered_map<std::string, Uniform*> flatunimap;
     for (auto u : this->_uniforms) {
       flatunimap[u.first] = u.second;
     }

@@ -121,7 +121,7 @@ struct TechniqueNode : public DecoBlockNode {
   void parse(const ScannerView& view);
   Technique* generate(Container* c) const;
   std::string _fxconfig;
-  std::map<std::string, PassNode*> _passNodes;
+  std::unordered_map<std::string, PassNode*> _passNodes;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -338,8 +338,8 @@ struct LibraryStructNode : public AstNode {
 struct LibraryBlockNode : public DecoBlockNode {
   explicit LibraryBlockNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
-  // std::map<std::string, LibraryFunctionNode*> _functionNodes;
-  // std::map<std::string, LibraryStructNode*> _structNodes;
+  // std::unordered_map<std::string, LibraryFunctionNode*> _functionNodes;
+  // std::unordered_map<std::string, LibraryStructNode*> _structNodes;
   void parse(const ScannerView& view);
   LibBlock* generate(Container* c) const;
   ShaderBody _body;
@@ -373,8 +373,8 @@ struct ContainerNode : public AstNode {
 
   std::vector<DecoBlockNode*> _orderedBlockNodes;
 
-  std::map<std::string, DecoBlockNode*> _blockNodes;
-  std::map<std::string, TechniqueNode*> _techniqueNodes;
+  std::unordered_map<std::string, DecoBlockNode*> _blockNodes;
+  std::unordered_map<std::string, TechniqueNode*> _techniqueNodes;
 
   std::set<std::string> _validTypeNames;
   std::set<std::string> _validOutputDecorators;

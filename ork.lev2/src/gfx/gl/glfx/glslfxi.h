@@ -120,7 +120,7 @@ struct Attribute {
       , mArraySize(0) {}
 };
 
-typedef std::map<std::string, Uniform*> uniform_map_t;
+typedef std::unordered_map<std::string, Uniform*> uniform_map_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -221,7 +221,7 @@ struct UniformBlockLayout {
 struct StreamInterface {
   StreamInterface();
 
-  typedef std::map<std::string, Attribute*> AttrMap;
+  typedef std::unordered_map<std::string, Attribute*> AttrMap;
   typedef std::vector<std::string> preamble_t;
 
   std::string mName;
@@ -363,8 +363,8 @@ struct PrimPipelineNVTM {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Pass {
-  typedef std::map<std::string, UniformInstance*> uni_map_t;
-  typedef std::map<std::string, Attribute*> attr_map_t;
+  typedef std::unordered_map<std::string, UniformInstance*> uni_map_t;
+  typedef std::unordered_map<std::string, Attribute*> attr_map_t;
   typedef std::unordered_map<UniformBlock*,UniformBlockBinding*> ubb_map_t;
 
   static const int kmaxattrID = 16;
@@ -438,14 +438,14 @@ struct Container {
 
   std::string mEffectName;
   const Technique* mActiveTechnique;
-  std::map<std::string, Config*> mConfigs;
-  std::map<std::string, UniformSet*> _uniformSets;
-  std::map<std::string, UniformBlock*> _uniformBlocks;
+  std::unordered_map<std::string, Config*> mConfigs;
+  std::unordered_map<std::string, UniformSet*> _uniformSets;
+  std::unordered_map<std::string, UniformBlock*> _uniformBlocks;
   //
-  std::map<std::string, StateBlock*> _stateBlocks;
-  std::map<std::string, Uniform*> _uniforms;
-  std::map<std::string, Technique*> _techniqueMap;
-  std::map<std::string, LibBlock*> _libBlocks;
+  std::unordered_map<std::string, StateBlock*> _stateBlocks;
+  std::unordered_map<std::string, Uniform*> _uniforms;
+  std::unordered_map<std::string, Technique*> _techniqueMap;
+  std::unordered_map<std::string, LibBlock*> _libBlocks;
   Pass* _activePass;
   int mActiveNumPasses;
   const FxShader* mFxShader;
@@ -478,16 +478,16 @@ struct Container {
   StreamInterface* geometryInterface(const std::string& name) const;
   StreamInterface* fragmentInterface(const std::string& name) const;
 
-  std::map<std::string, ShaderVtx*> _vertexShaders;
-  std::map<std::string, ShaderTsC*> _tessCtrlShaders;
-  std::map<std::string, ShaderTsE*> _tessEvalShaders;
-  std::map<std::string, ShaderGeo*> _geometryShaders;
-  std::map<std::string, ShaderFrg*> _fragmentShaders;
-  std::map<std::string, StreamInterface*> _vertexInterfaces;
-  std::map<std::string, StreamInterface*> _tessCtrlInterfaces;
-  std::map<std::string, StreamInterface*> _tessEvalInterfaces;
-  std::map<std::string, StreamInterface*> _geometryInterfaces;
-  std::map<std::string, StreamInterface*> _fragmentInterfaces;
+  std::unordered_map<std::string, ShaderVtx*> _vertexShaders;
+  std::unordered_map<std::string, ShaderTsC*> _tessCtrlShaders;
+  std::unordered_map<std::string, ShaderTsE*> _tessEvalShaders;
+  std::unordered_map<std::string, ShaderGeo*> _geometryShaders;
+  std::unordered_map<std::string, ShaderFrg*> _fragmentShaders;
+  std::unordered_map<std::string, StreamInterface*> _vertexInterfaces;
+  std::unordered_map<std::string, StreamInterface*> _tessCtrlInterfaces;
+  std::unordered_map<std::string, StreamInterface*> _tessEvalInterfaces;
+  std::unordered_map<std::string, StreamInterface*> _geometryInterfaces;
+  std::unordered_map<std::string, StreamInterface*> _fragmentInterfaces;
 
   ///////////////////////////////////////////////////////
   // nvtask/nvmesh //
@@ -502,15 +502,15 @@ struct Container {
   ShaderNvTask* nvTaskShader(const std::string& name) const;
   ShaderNvMesh* nvMeshShader(const std::string& name) const;
 
-  std::map<std::string, ShaderNvTask*> _nvTaskShaders;
-  std::map<std::string, ShaderNvMesh*> _nvMeshShaders;
-  std::map<std::string, StreamInterface*> _nvTaskInterfaces;
-  std::map<std::string, StreamInterface*> _nvMeshInterfaces;
+  std::unordered_map<std::string, ShaderNvTask*> _nvTaskShaders;
+  std::unordered_map<std::string, ShaderNvMesh*> _nvMeshShaders;
+  std::unordered_map<std::string, StreamInterface*> _nvTaskInterfaces;
+  std::unordered_map<std::string, StreamInterface*> _nvMeshInterfaces;
 #endif
 
 ///////////////////////////////////////////////////////
 #if defined(ENABLE_SHADER_STORAGE)
-std::map<std::string, StorageBlock*> _storageBlocks;
+std::unordered_map<std::string, StorageBlock*> _storageBlocks;
 StorageBlock* storageBlock(const std::string& name) const;
 void addStorageBlock(StorageBlock* pif);
 #endif

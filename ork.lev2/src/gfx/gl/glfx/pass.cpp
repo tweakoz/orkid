@@ -17,14 +17,14 @@ namespace ork::lev2::glslfx {
 
   bool Pass::hasUniformInstance(UniformInstance* puni) const {
     Uniform* pun                                               = puni->mpUniform;
-    std::map<std::string, UniformInstance*>::const_iterator it = _uniformInstances.find(pun->_name);
+    auto it = _uniformInstances.find(pun->_name);
     return it != _uniformInstances.end();
   }
 
   ///////////////////////////////////////////////////////////////////////////////
 
   const UniformInstance* Pass::uniformInstance(Uniform* puni) const {
-    std::map<std::string, UniformInstance*>::const_iterator it = _uniformInstances.find(puni->_name);
+    auto it = _uniformInstances.find(puni->_name);
     return (it != _uniformInstances.end()) ? it->second : nullptr;
   }
 

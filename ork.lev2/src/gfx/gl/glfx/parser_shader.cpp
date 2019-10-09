@@ -42,22 +42,22 @@ void Shader::addUniformBlock(UniformBlock* ublk) { _uniblocks.push_back(ublk); }
 
 void ShaderBody::parse(const ScannerView& view) {
   ShaderLine* out_line = nullptr;
-  int ist = view._start + 1;
-  int ien = view._end - 1;
-  bool bnewline = true;
-  int indent    = 1;
+  int ist              = view._start + 1;
+  int ien              = view._end - 1;
+  bool bnewline        = true;
+  int indent           = 1;
   for (size_t i = ist; i <= ien; i++) {
     ////////////////////////
     // create a new line if its a new line...
     ////////////////////////
     if (bnewline) {
-      out_line = new ShaderLine;
+      out_line          = new ShaderLine;
       out_line->_indent = indent;
       _lines.push_back(out_line);
     }
     bnewline = false;
     ////////////////////////
-    auto ptok = view.token(i);
+    auto ptok                  = view.token(i);
     const std::string& cur_tok = ptok->text;
     ////////////////////////
     if (cur_tok != "\n")
@@ -79,9 +79,9 @@ void ShaderNode::parse(const ScannerView& view) {
 }
 ///////////////////////////////////////////////////////////
 void ShaderNode::_generateCommon(Shader* pshader) {
-  pshader->mName = _name;
+  pshader->mName      = _name;
   LibBlock* plibblock = nullptr;
-  Container* c   = pshader->mpContainer;
+  Container* c        = pshader->mpContainer;
 
   bool is_vertex_shader   = pshader->mShaderType == GL_VERTEX_SHADER;
   bool is_tessctrl_shader = pshader->mShaderType == GL_TESS_CONTROL_SHADER;
@@ -165,7 +165,7 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   assert(iface != nullptr);
   //////////////////////////////////////////////
 
-   std::string shaderbody;
+  std::string shaderbody;
 
   size_t iline = 1;
   FixedString<64> fxstr;
@@ -179,7 +179,7 @@ void ShaderNode::_generateCommon(Shader* pshader) {
 
   shaderbody += "#version 410 core\n";
 
-    ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
   // declare required extensions
   ////////////////////////////////////////////////////////////////////////////
 
@@ -188,7 +188,7 @@ void ShaderNode::_generateCommon(Shader* pshader) {
     shaderbody += FormatString("#extension %s : enable\n", extension.c_str());
   }
 
-    ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
 
   for (const auto& preamble_line : iface->mPreamble) {
     prline();
@@ -250,15 +250,15 @@ void ShaderNode::_generateCommon(Shader* pshader) {
 
     shaderbody += "\n";
   }
-  
+
   ///////////////////////
   // code
   ///////////////////////
 
-  for( auto blockitem : _container->_blockNodes ) {
-    auto block = blockitem.second;
+  for (auto blockitem : _container->_blockNodes) {
+    auto block    = blockitem.second;
     auto libblock = dynamic_cast<LibraryBlockNode*>(block);
-    if( libblock ) {
+    if (libblock) {
       prline();
       shaderbody += "// libblock<" + libblock->_name + "> ///////////////////////////////////\n";
 
@@ -274,14 +274,17 @@ void ShaderNode::_generateCommon(Shader* pshader) {
       }
     }
   }
-  
+
   shaderbody += "///////////////////////////////////////////////////////////////////\n";
 
-  for( auto l : _body._lines ){
+  prline();
+  shaderbody += "void " + _name + "()\n{";
+
+  for (auto l : _body._lines) {
     prline();
     for (int in = 0; in < l->_indent; in++)
       shaderbody += "\t";
-    for( auto t : l->_tokens ){
+    for (auto t : l->_tokens) {
       shaderbody += t->text;
       shaderbody += " ";
     }
@@ -290,8 +293,6 @@ void ShaderNode::_generateCommon(Shader* pshader) {
 
   ///////////////////////////////////
 
-  prline();
-  shaderbody += "void " + _name + "()\n{";
   shaderbody += "}\n";
 
   ///////////////////////////////////
@@ -304,7 +305,6 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   // printf( "///////////////////////////////\n" );
   // printf( "%s", shaderbody.c_str() );
   // printf( "///////////////////////////////\n" );
-
 }
 
 ///////////////////////////////////////////////////////////
@@ -349,14 +349,14 @@ ShaderFrg* FragmentShaderNode::generate(Container* c) {
 }
 #if defined(ENABLE_NVMESH_SHADERS)
 ShaderNvTask* NvTaskShaderNode::generate(Container* c) {
-  auto pshader = new ShaderNvTask();
+  auto pshader         = new ShaderNvTask();
   pshader->mpContainer = c;
   _generateCommon(pshader);
   c->addNvTaskShader(pshader);
   return pshader;
 }
 ShaderNvMesh* NvMeshShaderNode::generate(Container* c) {
-  auto pshader = new ShaderNvMesh();
+  auto pshader         = new ShaderNvMesh();
   pshader->mpContainer = c;
   _generateCommon(pshader);
   c->addNvMeshShader(pshader);
@@ -364,11 +364,8 @@ ShaderNvMesh* NvMeshShaderNode::generate(Container* c) {
 }
 #endif
 
-
 ///////////////////////////////////////////////////////////
-void LibraryBlockNode::parse(const ScannerView& view) {
-  _body.parse(view);
-}
+void LibraryBlockNode::parse(const ScannerView& view) { _body.parse(view); }
 
 //////////////////////////////////////////////////////////////////////////////////
 

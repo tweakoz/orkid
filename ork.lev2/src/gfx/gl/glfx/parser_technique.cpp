@@ -92,6 +92,7 @@ Technique* TechniqueNode::generate(Container* c) const {
     auto pass = item.second->generate(c);
     ptek->addPass(pass);
   }
+  c->addTechnique(ptek);
   return ptek;
 }
 

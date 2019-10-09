@@ -94,7 +94,9 @@ void DecoBlockNode::parse(const ScannerView& view) {
 void ContainerNode::addBlockNode(DecoBlockNode*node) {
   auto it = _blockNodes.find(node->_name);
   assert(it==_blockNodes.end());
-  _blockNodes[node->_name]=node;
+  auto status = _blockNodes.insert(std::make_pair(node->_name,node));
+  size_t bncount = _blockNodes.size();
+  assert(status.second);
   _orderedBlockNodes.push_back(node);
 }
 
