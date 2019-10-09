@@ -23,6 +23,20 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+const std::map<std::string, int> gattrsorter = {
+    {"POSITION", 0},
+    {"NORMAL", 1},
+    {"COLOR0", 2},
+    {"COLOR1", 3},
+    {"TEXCOORD0", 4},
+    {"TEXCOORD0", 5},
+    {"TEXCOORD1", 6},
+    {"TEXCOORD2", 7},
+    {"TEXCOORD3", 8},
+    {"BONEINDICES", 9},
+    {"BONEWEIGHTS", 10},
+};
+
 int InterfaceLayoutNode::parse(const ScannerView& view) {
   int i               = view._start;
   const Token* vt_tok = view.token(i);
@@ -101,6 +115,10 @@ void InterfaceNode::parseOutputs(const ScannerView& view) {
 
     if (dt_tok->text == "layout") {
       std::string layline;
+      // todo PARSE layout until closing )
+      //  if tokens follow layout before the ;
+      //  then the layout scope is for the following output tokens
+      //  otherwise it must be block scope
       auto layout = new InterfaceLayoutNode(_container);
       int j       = layout->parse(view);
       assert(j > i);
@@ -350,9 +368,9 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
   std::multimap<int, Attribute*> attr_sort_map;
   for (const auto& it : psi->mAttributes) {
     auto attr  = it.second;
-    auto itloc = GlSlFxParser::gattrsorter.find(attr->mSemantic);
+    auto itloc = gattrsorter.find(attr->mSemantic);
     int isort  = 100;
-    if (itloc != GlSlFxParser::gattrsorter.end()) {
+    if (itloc != gattrsorter.end()) {
       isort = itloc->second;
     }
     attr_sort_map.insert(std::make_pair(isort, attr));
@@ -367,14 +385,46 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
 
   ////////////////////////
 
-  assert(false);
   return psi;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-StreamInterface* VertexInterfaceNode::generate(Container* c) { return InterfaceNode::_generate(c, GL_VERTEX_SHADER); }
-StreamInterface* FragmentInterfaceNode::generate(Container* c) { return InterfaceNode::_generate(c, GL_FRAGMENT_SHADER); }
+StreamInterface* VertexInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_VERTEX_SHADER);
+  c->addVertexInterface(sif);
+  return sif;
+}
+StreamInterface* FragmentInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_FRAGMENT_SHADER);
+  c->addFragmentInterface(sif);
+  return sif;
+}
+StreamInterface* TessCtrlInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_TESS_CONTROL_SHADER);
+  c->addTessCtrlInterface(sif);
+  return sif;
+}
+StreamInterface* TessEvalInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_TESS_EVALUATION_SHADER);
+  c->addTessEvalInterface(sif);
+  return sif;
+}
+StreamInterface* GeometryInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_GEOMETRY_SHADER);
+  c->addGeometryInterface(sif);
+  return sif;
+}
+StreamInterface* NvTaskInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_TASK_SHADER_NV);
+  c->addNvTaskInterface(sif);
+  return sif;
+}
+StreamInterface* NvMeshInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_MESH_SHADER_NV);
+  c->addNvMeshInterface(sif);
+  return sif;
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

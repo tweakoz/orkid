@@ -1,14 +1,11 @@
-#include "../gl.h"
-#include "glslfxi.h"
-#include "glslfxi_scanner.h"
-#include <ork/file/file.h>
-#include <ork/lev2/gfx/gfxenv.h>
-#include <ork/pch.h>
 #include <regex>
 #include <stdlib.h>
+#include <ork/pch.h>
+#include <ork/file/file.h>
+#include <ork/util/scanner.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-namespace ork::lev2::glslfx {
+namespace ork {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 ScanViewRegex::ScanViewRegex(const char* pr, bool inverse)
@@ -22,7 +19,7 @@ bool ScanViewRegex::Test(const Token& t) {
 ScannerView::ScannerView(const Scanner& s, ScanViewFilter& f)
     : _scanner(s)
     , _filter(f)
-    , _blockTerminators(token_regex)
+    , _blockTerminators(s._blockregex.c_str())
     , _start(0)
     , _end(0)
     , _blockType(0)
@@ -32,7 +29,7 @@ ScannerView::ScannerView(const Scanner& s, ScanViewFilter& f)
 ScannerView::ScannerView( const ScannerView& oth, int startingpoint )
   : _scanner(oth._scanner)
   , _filter(oth._filter)
-  , _blockTerminators(token_regex)
+  , _blockTerminators(_scanner._blockregex.c_str())
   , _start(0)
   , _end(0)
   , _blockType(0)
@@ -185,10 +182,14 @@ size_t ScannerView::tokenIndex(size_t i) const {
   return ret;
 }
 
-Scanner::Scanner()
+Scanner::Scanner(std::string blockregex)
     : ss(ESTA_NONE)
     , cur_token("", 0, 0)
-    , ifilelen(0) {}
+    , ifilelen(0)
+    , _blockregex(blockregex) {
+  
+}
+
 void Scanner::FlushToken() {
   if (cur_token.text.length())
     tokens.push_back(cur_token);
@@ -350,5 +351,5 @@ void Scanner::Scan() {
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-} // namespace ork::lev2::glslfx
+} // namespace ork
 /////////////////////////////////////////////////////////////////////////////////////////////////

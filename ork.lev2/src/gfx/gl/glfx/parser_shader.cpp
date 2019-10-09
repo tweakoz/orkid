@@ -73,9 +73,13 @@ void ShaderBody::parse(const ScannerView& view) {
   }
 }
 ///////////////////////////////////////////////////////////
-void ShaderNode::parse(const ScannerView& view) { _body.parse(view); }
+void ShaderNode::parse(const ScannerView& view) {
+  DecoBlockNode::parse(view);
+  _body.parse(view);
+}
 ///////////////////////////////////////////////////////////
 void ShaderNode::_generateCommon(Shader* pshader) {
+  pshader->mName = _name;
   LibBlock* plibblock = nullptr;
   Container* c   = pshader->mpContainer;
 
@@ -308,6 +312,7 @@ ShaderVtx* VertexShaderNode::generate(Container* c) {
   auto pshader         = new ShaderVtx();
   pshader->mpContainer = c;
   _generateCommon(pshader);
+  c->addVertexShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
@@ -315,6 +320,7 @@ ShaderTsC* TessCtrlShaderNode::generate(Container* c) {
   auto pshader         = new ShaderTsC();
   pshader->mpContainer = c;
   _generateCommon(pshader);
+  c->addTessCtrlShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
@@ -322,6 +328,7 @@ ShaderTsE* TessEvalShaderNode::generate(Container* c) {
   auto pshader         = new ShaderTsE();
   pshader->mpContainer = c;
   _generateCommon(pshader);
+  c->addTessEvalShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
@@ -329,6 +336,7 @@ ShaderGeo* GeometryShaderNode::generate(Container* c) {
   auto pshader         = new ShaderGeo();
   pshader->mpContainer = c;
   _generateCommon(pshader);
+  c->addGeometryShader(pshader);
   return pshader;
 }
 ///////////////////////////////////////////////////////////
@@ -336,6 +344,7 @@ ShaderFrg* FragmentShaderNode::generate(Container* c) {
   auto pshader         = new ShaderFrg();
   pshader->mpContainer = c;
   _generateCommon(pshader);
+  c->addFragmentShader(pshader);
   return pshader;
 }
 #if defined(ENABLE_NVMESH_SHADERS)
@@ -343,12 +352,14 @@ ShaderNvTask* NvTaskShaderNode::generate(Container* c) {
   auto pshader = new ShaderNvTask();
   pshader->mpContainer = c;
   _generateCommon(pshader);
+  c->addNvTaskShader(pshader);
   return pshader;
 }
 ShaderNvMesh* NvMeshShaderNode::generate(Container* c) {
   auto pshader = new ShaderNvMesh();
   pshader->mpContainer = c;
   _generateCommon(pshader);
+  c->addNvMeshShader(pshader);
   return pshader;
 }
 #endif

@@ -18,8 +18,9 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConfigNode::parse(ScannerView view) {
-  _name  = view.blockName();
+void ConfigNode::parse(const ScannerView& view) {
+  NamedBlockNode::parse(view);
+  ///////////////////////////////////
   int ist = view._start + 1;
   int ien = view._end - 1;
   std::vector<std::string> imports;
@@ -37,7 +38,7 @@ void ConfigNode::parse(ScannerView view) {
   // handle imports
   ///////////////////////////////////
   for (const auto& imp : imports) {
-    Scanner scanner2;
+    Scanner import_scanner(block_regex);
     file::Path::NameType a, b;
     _container->_path.Split(a, b, ':');
     ork::FixedString<256> fxs;
@@ -46,22 +47,22 @@ void ConfigNode::parse(ScannerView view) {
     ///////////////////////////////////
     File fx_file(imppath.c_str(), EFM_READ);
     OrkAssert(fx_file.IsOpen());
-    EFileErrCode eFileErr = fx_file.GetLength(scanner2.ifilelen);
-    OrkAssert(scanner2.ifilelen < scanner2.kmaxfxblen);
-    eFileErr                             = fx_file.Read(scanner2.fxbuffer, scanner2.ifilelen);
-    scanner2.fxbuffer[scanner2.ifilelen] = 0;
+    EFileErrCode eFileErr = fx_file.GetLength(import_scanner.ifilelen);
+    OrkAssert(import_scanner.ifilelen < import_scanner.kmaxfxblen);
+    eFileErr                             = fx_file.Read(import_scanner.fxbuffer, import_scanner.ifilelen);
+    import_scanner.fxbuffer[import_scanner.ifilelen] = 0;
     ///////////////////////////////////
-    scanner2.Scan();
-    const auto& stoks = scanner2.tokens;
+    import_scanner.Scan();
+    const auto& stoks = import_scanner.tokens;
     //auto& dtoks       = scanner.tokens;
     //dtoks.insert(dtoks.begin() + itokidx, stoks.begin(), stoks.end());
   }
 }
 
-Config* ConfigNode::generate() const {
+void ConfigNode::generate(Container* c) const {
   Config* pcfg = new Config;
   pcfg->mName  = _name;
-  return pcfg;
+  c->addConfig(pcfg);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

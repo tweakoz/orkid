@@ -23,7 +23,7 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ShaderDataNode::parse(ScannerView view) {
+void ShaderDataNode::parse(const ScannerView& view) {
   DecoBlockNode::parse(view);
 
   ////////////////////////
@@ -69,6 +69,8 @@ void ShaderDataNode::parse(ScannerView view) {
         unidecl->_arraySize = atoi(view.token(i + 4)->text.c_str());
         is_array = true;
       }
+      
+      _uniformdecls.push_back(unidecl);
 
       i += is_array ? 6 : 3;
 
@@ -80,7 +82,7 @@ void ShaderDataNode::parse(ScannerView view) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-UniformSet* UniformSetNode::generate(Container* outcon) const {
+void UniformSetNode::generate(Container* outcon) const {
 
     assert(_blocktype == "uniform_set");
 
@@ -94,12 +96,12 @@ UniformSet* UniformSetNode::generate(Container* outcon) const {
       puni->_arraySize = item->_arraySize;
       uset->_uniforms[item->_name] = puni;
     }
-    return uset;
+    outcon->addUniformSet(uset);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-UniformBlock* UniformBlockNode::generate(Container* outcon) const {
+void UniformBlockNode::generate(Container* outcon) const {
 
     assert(_blocktype == "uniform_block");
 
@@ -113,7 +115,7 @@ UniformBlock* UniformBlockNode::generate(Container* outcon) const {
       puni->_arraySize = item->_arraySize;
       ublk->_subuniforms[item->_name] = puni;
     }
-    return ublk;
+    outcon->addUniformBlock(ublk);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

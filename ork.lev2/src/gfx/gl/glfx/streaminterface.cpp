@@ -12,7 +12,6 @@
 
 #include "../gl.h"
 #include "glslfxi.h"
-#include "glslfxi_scanner.h"
 #include <ork/file/file.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/pch.h>

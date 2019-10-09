@@ -46,6 +46,8 @@ void StateBlockNode::parse(const ScannerView& view) {
 
 StateBlock* StateBlockNode::generate(Container* c) const {
   auto psb      = new StateBlock;
+  
+  psb->mName = _name;
   auto& apptors = psb->mApplicators;
 
   //////////////////////

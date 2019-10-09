@@ -16,7 +16,7 @@ namespace ork::lev2::glslfx {
 ///////////////////////////////////////////////////////////////////////////////
 
 void TechniqueNode::parse(const ScannerView& view) {
-  NamedBlockNode::parse(view);
+  DecoBlockNode::parse(view);
 
   int ist = view._start + 1;
   int ien = view._end - 1;
@@ -50,11 +50,7 @@ void TechniqueNode::parse(const ScannerView& view) {
 
 int PassNode::parse(const ScannerView& view, int istart) {
   NamedBlockNode::parse(view);
-
-  ////////////////////////////////////////
-  // OrkAssert( scanner.tokens[istart+2].text == "{" );
-  /////////////////////////////////////////////
-
+  
   int ist = view._start + 1;
   int ien = view._end - 1;
 

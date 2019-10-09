@@ -9,28 +9,28 @@ import "misctools.i";
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ublock_vtx {
-  uniform mat4 MatMVPL;
-  uniform mat4 MatMVPC;
-  uniform mat4 MatMVPR;
-  uniform vec3 CamPos;
-  uniform vec4 ModColor;
-  uniform float Time;
-  uniform sampler2D HFAMap; // technically a heightmap
-  uniform sampler2D HFBMap; // technically a heightmap
+  mat4 MatMVPL;
+  mat4 MatMVPC;
+  mat4 MatMVPR;
+  vec3 CamPos;
+  vec4 ModColor;
+  float Time;
+  sampler2D HFAMap; // technically a heightmap
+  sampler2D HFBMap; // technically a heightmap
 }
 uniform_set ublock_frg {
-  uniform vec4 modcolor;
-  uniform sampler2D EnvMap;
-  uniform float testxxx;
-  uniform vec3 FogColor;
-  uniform vec3 GrassColor;
-  uniform vec3 SnowColor;
-  uniform vec3 Rock1Color;
-  uniform vec3 Rock2Color;
-  uniform float GBlendYScale;
-  uniform float GBlendYBias;
-  uniform float GBlendStepLo;
-  uniform float GBlendStepHi;
+  vec4 modcolor;
+  sampler2D EnvMap;
+  float testxxx;
+  vec3 FogColor;
+  vec3 GrassColor;
+  vec3 SnowColor;
+  vec3 Rock1Color;
+  vec3 Rock2Color;
+  float GBlendYScale;
+  float GBlendYBias;
+  float GBlendStepLo;
+  float GBlendStepHi;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ublock_vtx {
@@ -266,7 +266,7 @@ fragment_shader ps_pick : iface_fpick {
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default { inherits default; }
+state_block sb_default : default {  }
 ///////////////////////////////////////////////////////////////
 technique terrain {
   fxconfig = fxcfg_default;

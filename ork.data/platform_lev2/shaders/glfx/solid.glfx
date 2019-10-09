@@ -6,107 +6,110 @@ fxconfig fxcfg_default { glsl_version = "330"; }
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ublock_vtx {
-  uniform mat4 MatMVP;
-  uniform mat4 MatMV;
-  uniform mat4 MatM;
-  uniform mat4 MatV;
-  uniform mat4 MatP;
-  uniform mat4 MatAux;
+  mat4 MatMVP;
+  mat4 MatMV;
+  mat4 MatM;
+  mat4 MatV;
+  mat4 MatP;
+  mat4 MatAux;
 
-  uniform vec4 modcolor;
-  uniform float Time;
+  vec4 modcolor;
+  float Time;
 }
-
+///////////////////////////////////////////////////////////////
 uniform_set ublock_frg {
-  uniform vec4 modcolor;
-  uniform sampler2D ColorMap;
-  uniform sampler2D ColorMap2;
-  uniform sampler2D ColorMap3;
+  vec4 modcolor;
+  sampler2D ColorMap;
+  sampler2D ColorMap2;
+  sampler2D ColorMap3;
 }
-
+///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ublock_vtx {
-  //
-  in vec4 position : POSITION;
-  in vec4 vtxcolor : COLOR0;
-  in vec2 uv0 : TEXCOORD0;
-  //
-  out vec4 frg_clr;
-  out vec2 frg_uv0;
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault : ublock_frg {
-  in vec4 frg_clr;
-  in vec2 frg_uv0;
-  //
-  layout(location = 0) out vec4 out_clr;
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+  }
+  outputs { layout(location = 0) vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fmt : ublock_frg {
-  in vec2 frg_uv0;
-  //
-  layout(location = 0) out vec4 out_clr;
+  inputs { vec2 frg_uv0; }
+  outputs { layout(location = 0) vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vpick : ublock_vtx {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
   //
-  in vec4 position : POSITION;
-  in vec4 vtxcolor : COLOR0;
-  in vec2 uv0 : TEXCOORD0;
-  //
-  out vec4 frg_clr;
-  out vec2 frg_uv0;
-  out vec4 frg_nrmd;
+  outputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+  }
 }
+///////////////////////////////////////////////////////////////
 fragment_interface iface_fpick : ublock_frg {
-  in vec4 frg_clr;
-  in vec2 frg_uv0;
-  in vec4 frg_nrmd;
-
-  layout(location = 0) out vec4 out_clr;
-  layout(location = 1) out vec4 out_nrmd;
+  inputs {
+    vec4 frg_clr;
+    vec2 frg_uv0;
+    vec4 frg_nrmd;
+  }
+  outputs {
+    layout(location = 0) out vec4 out_clr;
+    layout(location = 1) out vec4 out_nrmd;
+  }
 }
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default { inherits default; }
+state_block sb_default : default {}
 ///////////////////////////////////////////////////////////////
-state_block sb_lerpblend {
-  inherits sb_default;
-  BlendMode = ALPHA;
-}
+state_block sb_lerpblend : sb_default { BlendMode = ALPHA; }
 ///////////////////////////////////////////////////////////////
-state_block sb_additive {
-  inherits sb_default;
-  BlendMode = ADDITIVE;
-}
+state_block sb_additive : sb_default { BlendMode = ADDITIVE; }
 ///////////////////////////////////////////////////////////////
 // shaders
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_texcolor : iface_fmt {
   vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr = vec4(texc.xyz, texc.w);
+  out_clr   = vec4(texc.xyz, texc.w);
 }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_vtxcolor : iface_vdefault {
   gl_Position = MatMVP * position;
-  frg_clr = vtxcolor;
-  frg_uv0 = uv0;
+  frg_clr     = vtxcolor;
+  frg_uv0     = uv0;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_texvtxcolor : iface_fdefault {
   vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr = vec4(texc.xyz * frg_clr.xyz, texc.r);
+  out_clr   = vec4(texc.xyz * frg_clr.xyz, texc.r);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_distortedfeedback : iface_fdefault {
   // vec2 uvl = texture( ColorMap2, frg_uv0 ).xy;
   vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr = vec4(texc.xyz * frg_clr.xyz, texc.r);
+  out_clr   = vec4(texc.xyz * frg_clr.xyz, texc.r);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_feedbackatten : iface_fdefault {
   vec4 texc = texture(ColorMap, frg_uv0);
-  out_clr = vec4(0, 0, 0, frg_clr.w);
+  out_clr   = vec4(0, 0, 0, frg_clr.w);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_fragclr : iface_fdefault {
@@ -120,79 +123,79 @@ fragment_shader ps_modclr : iface_fmt { out_clr = modcolor; }
 ///////////////////////////////////////////////////////////////
 vertex_shader vs_pick : iface_vpick {
   gl_Position = MatMVP * position;
-  vec4 cpos = MatMV * position;
-  vec3 wnorm = normalize(vec3(0,1,0));
-  frg_clr = vtxcolor;
-  frg_uv0 = uv0;
-  frg_nrmd = vec4(wnorm,-cpos.z);
+  vec4 cpos   = MatMV * position;
+  vec3 wnorm  = normalize(vec3(0, 1, 0));
+  frg_clr     = vtxcolor;
+  frg_uv0     = uv0;
+  frg_nrmd    = vec4(wnorm, -cpos.z);
 }
 fragment_shader ps_pick : iface_fpick {
-  out_clr = modcolor;
+  out_clr  = modcolor;
   out_nrmd = frg_nrmd;
 }
 ///////////////////////////////////////////////////////////////
 technique vtxcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_vtxcolor;
+    vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_fragclr;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique vtxmodcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_vtxcolor;
+    vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_fragclr;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique mmodcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_vtxcolor;
+    vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_modclr;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique texcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_vtxcolor;
+    vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_texcolor;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique tek_pick {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_pick;
+    vertex_shader   = vs_pick;
     fragment_shader = ps_pick;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique distortedfeedback {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_vtxcolor;
+    vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_distortedfeedback;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique feedbackatten {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_vtxcolor;
+    vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_feedbackatten;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique texvtxcolor {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader = vs_vtxcolor;
+    vertex_shader   = vs_vtxcolor;
     fragment_shader = ps_texvtxcolor;
-    state_block = sb_default;
+    state_block     = sb_default;
   }
 }
 technique texcolorwrap {}

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "glslfxi_scanner.h"
+#include <ork/util/scanner.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::glslfx {
@@ -56,17 +56,6 @@ struct LibraryStructMemberNode : public AstNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct ConfigNode : public AstNode {
-  ConfigNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
-
-  std::string _name;
-  void parse(ScannerView view);
-  Config* generate() const;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct NamedBlockNode : public AstNode {
 
   NamedBlockNode(ContainerNode* cnode)
@@ -83,17 +72,24 @@ struct NamedBlockNode : public AstNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct ConfigNode : public NamedBlockNode {
+  ConfigNode(ContainerNode* cnode)
+      : NamedBlockNode(cnode) {}
+
+  std::string _name;
+  void parse(const ScannerView& view);
+  void generate(Container *c) const;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct DecoBlockNode : public NamedBlockNode {
 
   DecoBlockNode(ContainerNode* cnode)
       : NamedBlockNode(cnode) {}
 
   void parse(const ScannerView& view);
-
-  std::string _blocktype;
-
-  std::vector<const Token*> _decorators;
-  std::set<std::string> _decodupecheck;
+  
 };
 
 
@@ -119,9 +115,9 @@ struct PassNode : public NamedBlockNode {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct TechniqueNode : public NamedBlockNode {
+struct TechniqueNode : public DecoBlockNode {
   TechniqueNode(ContainerNode* cnode)
-      : NamedBlockNode(cnode) {}
+      : DecoBlockNode(cnode) {}
   void parse(const ScannerView& view);
   Technique* generate(Container* c) const;
   std::string _fxconfig;
@@ -306,9 +302,10 @@ struct UniformDeclNode : public AstNode {
 struct ShaderDataNode : public DecoBlockNode {
   ShaderDataNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
-  void parse(ScannerView view);
+  void parse(const ScannerView& view);
   std::vector<UniformDeclNode*> _uniformdecls;
   std::set<std::string> _dupenamecheck;
+  virtual void generate(Container* outcon) const = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -316,7 +313,7 @@ struct ShaderDataNode : public DecoBlockNode {
 struct UniformSetNode : public ShaderDataNode {
   UniformSetNode(ContainerNode* cnode)
       : ShaderDataNode(cnode) {}
-  UniformSet* generate(Container* outcon) const;
+  void generate(Container* outcon) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -324,7 +321,7 @@ struct UniformSetNode : public ShaderDataNode {
 struct UniformBlockNode : public ShaderDataNode {
   UniformBlockNode(ContainerNode* cnode)
       : ShaderDataNode(cnode) {}
-  UniformBlock* generate(Container* outcon) const;
+  void generate(Container* outcon) const final;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -359,6 +356,10 @@ struct ContainerNode : public AstNode {
   bool isOutputDecorator(const std::string typeName) const;
 
   Container* createContainer() const;
+  
+  template <typename T> void generateBlocks(Container* c) const;
+  void generate(Container*c) const;
+  
   int itokidx = 0;
 
   void addBlockNode(DecoBlockNode* node);
@@ -366,6 +367,9 @@ struct ContainerNode : public AstNode {
   const Scanner& _scanner;
   const AssetPath _path;
   ConfigNode* _configNode = nullptr;
+
+  std::vector<DecoBlockNode*> _orderedBlockNodes;
+
   std::map<std::string, DecoBlockNode*> _blockNodes;
   std::map<std::string, TechniqueNode*> _techniqueNodes;
 
@@ -375,14 +379,20 @@ struct ContainerNode : public AstNode {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+template <typename T> void ContainerNode::generateBlocks(Container* c) const {
+   for( auto blocknode : _orderedBlockNodes )
+     if( auto as_t = dynamic_cast<T*>(blocknode) )
+         as_t->generate(c);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 typedef std::shared_ptr<AstNode> astnode_t;
 
 struct GlSlFxParser {
 
   GlSlFxParser(const AssetPath& pth, const Scanner& s);
-  // LibBlock* ParseLibraryBlock();
-  // Technique* ParseFxTechnique();
-  // int ParseFxPass(int istart, Technique* ptek);
+
   void DumpAllTokens();
 
   const AssetPath mPath;
@@ -391,8 +401,6 @@ struct GlSlFxParser {
   int itokidx              = 0;
   Container* mpContainer   = nullptr;
   ContainerNode* _rootNode = nullptr;
-
-  static const std::map<std::string, int> gattrsorter;
 };
 /////////////////////////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2::glslfx

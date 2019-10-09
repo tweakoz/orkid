@@ -24,30 +24,9 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-const std::map<std::string, int> GlSlFxParser::gattrsorter = {
-    {"POSITION", 0},
-    {"NORMAL", 1},
-    {"COLOR0", 2},
-    {"COLOR1", 3},
-    {"TEXCOORD0", 4},
-    {"TEXCOORD0", 5},
-    {"TEXCOORD1", 6},
-    {"TEXCOORD2", 7},
-    {"TEXCOORD3", 8},
-    {"BONEINDICES", 9},
-    {"BONEWEIGHTS", 10},
-};
-
-///////////////////////////////////////////////////////////
-GlSlFxParser::GlSlFxParser(const AssetPath& pth, const Scanner& s)
-  : mPath(pth)
-  , scanner(s) {
-  _rootNode = new ContainerNode(pth,s);
-  _rootNode->parse();
-}
 ///////////////////////////////////////////////////////////
 bool ContainerNode::IsTokenOneOfTheBlockTypes(const Token& tok) {
-  std::regex regex_block(token_regex);
+  static const std::regex regex_block(block_regex);
   return std::regex_match(tok.text, regex_block);
 }
 ///////////////////////////////////////////////////////////
@@ -69,9 +48,11 @@ bool ContainerNode::validateTypeName(const std::string typeName) const {
   auto it = _validTypeNames.find(typeName);
   return (it!=_validTypeNames.end());
 }
+///////////////////////////////////////////////////////////
 bool ContainerNode::validateMemberName(const std::string typeName) const {
   return true;
 }
+///////////////////////////////////////////////////////////
 bool ContainerNode::isOutputDecorator(const std::string typeName) const {
   auto it = _validOutputDecorators.find(typeName);
   return (it!=_validOutputDecorators.end());
@@ -114,6 +95,7 @@ void ContainerNode::addBlockNode(DecoBlockNode*node) {
   auto it = _blockNodes.find(node->_name);
   assert(it==_blockNodes.end());
   _blockNodes[node->_name]=node;
+  _orderedBlockNodes.push_back(node);
 }
 
 ///////////////////////////////////////////////////////////
@@ -221,7 +203,53 @@ void ContainerNode::parse() {
   //return mpContainer;
 }
 
+//////////////////////////////////////////////////////////////////////////////////
+
+void ContainerNode::generate(Container*c) const {
+  
+    generateBlocks<LibraryBlockNode>(c);
+    generateBlocks<ShaderDataNode>(c);
+
+    generateBlocks<VertexInterfaceNode>(c);
+    generateBlocks<TessEvalInterfaceNode>(c);
+    generateBlocks<TessCtrlInterfaceNode>(c);
+    generateBlocks<GeometryInterfaceNode>(c);
+    generateBlocks<FragmentInterfaceNode>(c);
+    generateBlocks<NvTaskInterfaceNode>(c);
+    generateBlocks<NvMeshInterfaceNode>(c);
+
+    generateBlocks<VertexShaderNode>(c);
+    generateBlocks<TessCtrlShaderNode>(c);
+    generateBlocks<TessEvalShaderNode>(c);
+    generateBlocks<GeometryShaderNode>(c);
+    generateBlocks<FragmentShaderNode>(c);
+    generateBlocks<NvTaskShaderNode>(c);
+    generateBlocks<NvMeshShaderNode>(c);
+
+    generateBlocks<StateBlockNode>(c);
+    generateBlocks<TechniqueNode>(c);
+  
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+
+Container* ContainerNode::createContainer() const {
+  auto container = new Container(_path.c_str());
+  this->generate(container);
+  return container;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+GlSlFxParser::GlSlFxParser(const AssetPath& pth, const Scanner& s)
+  : mPath(pth)
+  , scanner(s) {
+  _rootNode = new ContainerNode(pth,s);
+  _rootNode->parse();
+}
+
 ///////////////////////////////////////////////////////////
+
 void GlSlFxParser::DumpAllTokens() {
   size_t itokidx     = 0;
   const auto& tokens = scanner.tokens;
@@ -231,19 +259,10 @@ void GlSlFxParser::DumpAllTokens() {
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////
-
-Container* ContainerNode::createContainer() const {
-  assert(false);
-  //mpContainer = new Container(fxname.c_str());
-  //bool bOK    = true;
-  return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 Container* LoadFxFromFile(const AssetPath& pth) {
-  Scanner scanner;
+  Scanner scanner(block_regex);
   ///////////////////////////////////
   File fx_file(pth, EFM_READ);
   OrkAssert(fx_file.IsOpen());

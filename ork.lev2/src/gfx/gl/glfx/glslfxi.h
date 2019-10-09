@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/shadman.h>
 #include <ork/lev2/gfx/texman.h>
 #include <ork/pch.h>
+#include <ork/util/scanner.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -22,10 +23,11 @@ class GfxTargetGL;
 
 namespace ork::lev2::glslfx {
 
+using Scanner = ork::Scanner;
+using ScannerView = ork::ScannerView;
+using ScanViewFilter = ork::ScanViewFilter;
+
 struct Container;
-struct Scanner;
-struct ScannerView;
-struct ScanViewFilter;
 struct Pass;
 struct UniformBlockBinding;
 
@@ -37,7 +39,7 @@ struct Config {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr const char* token_regex =
+constexpr const char* block_regex =
   "(fxconfig|uniform_set|uniform_block|"
   "libblock|state_block|"
   "vertex_interface|"
@@ -51,6 +53,7 @@ constexpr const char* token_regex =
   "nvtask_interface|nvmesh_interface|"
   #endif
   "technique|pass)";
+
 ///////////////////////////////////////////////////////////////////////////////
 
 struct Uniform {
