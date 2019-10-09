@@ -42,7 +42,7 @@ uniform_set ub_frg {
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fmt : ub_frg {
-  inputs { in vec2 frg_uv; }
+  inputs { vec2 frg_uv; }
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
@@ -73,7 +73,7 @@ vertex_shader vs_uitext : iface_vdefault {
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_uitext : iface_fmt {
   vec4 texc = texture(ColorMap, frg_uv);
-  if (texc.r == 0.0f)
+  if (texc.r == 0.0)
     discard;
   out_clr = vec4(texc.xyz * ModColor.xyz, texc.r);
 }

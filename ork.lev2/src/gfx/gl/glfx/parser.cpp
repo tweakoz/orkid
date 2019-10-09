@@ -142,7 +142,6 @@ void ContainerNode::parse() {
     } else if (tok.text == "uniform_block") {
       auto uniblk = new UniformBlockNode(this);
       uniblk->parse(scanview);
-      assert(false);
     } else if (tok.text == "vertex_interface") {
       auto sif = new VertexInterfaceNode(this);
       sif->parse(scanview);

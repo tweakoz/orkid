@@ -124,6 +124,19 @@ void ShaderNode::_generateCommon(Shader* pshader) {
 #endif
 
     if (auto as_lib = dynamic_cast<LibraryBlockNode*>(blocknode)) {
+      for( auto tok_deco : as_lib->_decorators ){
+        auto lib_deco = tok_deco->text;
+        auto it_usetl = c->_uniformSets.find(lib_deco);
+         auto it_ublkl = c->_uniformBlocks.find(lib_deco);
+          if( it_ublkl != (c->_uniformBlocks.end())) {
+           auto ublk = it_ublkl->second;
+           pshader->addUniformBlock(ublk);
+         }
+          if( it_usetl != (c->_uniformSets.end())) {
+           auto uset = it_usetl->second;
+           pshader->addUniformSet(uset);
+         }
+      }
       //assert(false);
       //pshader->addLibBlock(plibblock);
     } else if (it_ublk != (c->_uniformBlocks.end())) {
@@ -247,17 +260,22 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   for (auto block : _container->_orderedBlockNodes) {
     auto libblock = dynamic_cast<LibraryBlockNode*>(block);
     if (libblock) {
-      lines.add("// libblock<" + libblock->_name + "> ///////////////////////////////////");
+      bool present = false;
+      for( auto b : _decorators ){
+          if(b->text == libblock->_name ){
+            lines.add("// libblock<" + libblock->_name + "> ///////////////////////////////////");
 
-      for (auto l : libblock->_body._lines) {
-        std::string ol;
-        for (int in = 0; in < l->_indent; in++)
-          ol += "\t";
-        for (auto t : l->_tokens) {
-          ol += t->text;
-          ol += " ";
-        }
-        lines.add(ol);
+            for (auto l : libblock->_body._lines) {
+              std::string ol;
+              for (int in = 0; in < l->_indent; in++)
+                ol += "\t";
+              for (auto t : l->_tokens) {
+                ol += t->text;
+                ol += " ";
+              }
+              lines.add(ol);
+            }
+          }
       }
     }
   }

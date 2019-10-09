@@ -9,30 +9,33 @@ fxconfig fxcfg_default {
 // Interfaces
 ///////////////////////////////////////////////////////////////
 uniform_set ub_vtx {
-  uniform mat4 MVPC;
-  uniform mat4 MVPL;
-  uniform mat4 MVPR;
+  mat4 MVPC;
+  mat4 MVPL;
+  mat4 MVPR;
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ub_vtx {
-  in vec4 position : POSITION;
-  in vec2 uv0 : TEXCOORD0;
-  //
-  out vec2 frg_uv;
+  inputs {
+    vec4 position : POSITION;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+  }
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
-  uniform mat4 IVPArray[2];
-  uniform mat4 VArray[2];
-  uniform mat4 PArray[2];
-  uniform sampler2D MapAlbedoAo;
-  uniform sampler2D MapNormalL;
-  uniform sampler2D MapDepth;
-  uniform vec2 InvViewportSize; // inverse target size
-  uniform float Time;
-  uniform vec2 NearFar;
-  uniform int NumLights;
-  uniform vec2 Zndc2eye;
+  mat4 IVPArray[2];
+  mat4 VArray[2];
+  mat4 PArray[2];
+  sampler2D MapAlbedoAo;
+  sampler2D MapNormalL;
+  sampler2D MapDepth;
+  vec2 InvViewportSize; // inverse target size
+  float Time;
+  vec2 NearFar;
+  int NumLights;
+  vec2 Zndc2eye;
 }
 ///////////////////////////////////////////////////////////////
 uniform_block ub_light {
@@ -41,9 +44,12 @@ uniform_block ub_light {
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault {
-  in vec2 frg_uv;
-  //
-  out vec4 out_clr;
+  inputs {
+    vec2 frg_uv;
+  }
+  outputs {
+    vec4 out_clr;
+  }
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred : ub_light : ub_frg {
@@ -174,7 +180,7 @@ fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred  {
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default { inherits default; }
+state_block sb_default : default { }
 ///////////////////////////////////////////////////////////////
 technique baselight {
   fxconfig = fxcfg_default;

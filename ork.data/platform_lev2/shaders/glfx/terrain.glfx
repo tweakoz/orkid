@@ -34,27 +34,32 @@ uniform_set ublock_frg {
 }
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vdefault : ublock_vtx {
-  //
-  in vec4 position : POSITION;
-  in vec4 vtxcolor : COLOR0;
-  in vec2 uv0 : TEXCOORD0;
-  //
-  out vec3 frg_nrm;
-  out vec2 frg_uvxp;
-  out vec2 frg_uvyp;
-  out vec2 frg_uvzp;
-  out vec3 frg_wpos;
-  out float frg_camdist;
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
 }
 fragment_interface iface_fdefault : ublock_frg {
-  in vec3 frg_nrm;
-  in vec2 frg_uvxp;
-  in vec2 frg_uvyp;
-  in vec2 frg_uvzp;
-  in vec3 frg_wpos;
-  in float frg_camdist;
-  //
-  layout(location = 0) out vec4 out_clr;
+  inputs {
+    vec3 frg_nrm;
+    vec2 frg_uvxp;
+    vec2 frg_uvyp;
+    vec2 frg_uvzp;
+    vec3 frg_wpos;
+    float frg_camdist;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+  }
 }
 libblock lib_terrain_vtx {
 
@@ -159,7 +164,9 @@ vertex_shader vs_terrain : iface_vdefault : lib_terrain_vtx {
 // stereo1pass
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vstereo : iface_vdefault {
-  layout(secondary_view_offset = 1) out highp int gl_Layer;
+  outputs {
+    layout(secondary_view_offset = 1) int gl_Layer;
+  }
 }
 vertex_shader vs_terrain_stereo : extension(GL_NV_stereo_view_rendering)
     : extension(GL_NV_viewport_array2) : iface_vdefault : lib_terrain_vtx {
@@ -227,7 +234,9 @@ fragment_interface iface_deferred : iface_fdefault {
   //  so lets disable all implicit layout when
   //   any explicit layout is performed
   // layout(location = 0) out vec4 out_clr; // albedo ao
-  layout(location = 1) out vec4 out_norml_mdl;
+  outputs {
+    layout(location = 1) vec4 out_norml_mdl;
+  }
 }
 fragment_shader ps_terrain_gbuf1 : iface_deferred : lib_terrain_frg {
   vec3 n = normalize(frg_nrm);
@@ -240,16 +249,21 @@ fragment_shader ps_terrain_gbuf1 : iface_deferred : lib_terrain_frg {
 // pick
 ///////////////////////////////////////////////////////////////
 vertex_interface iface_vpick : ublock_vtx {
-  //
-  in vec4 position : POSITION;
-  //
-  out vec4 frg_nrmd;
+  inputs {
+    vec4 position : POSITION;
+  }
+  outputs {
+    vec4 frg_nrmd;
+  }
 }
 fragment_interface iface_fpick : ublock_frg {
-  in vec4 frg_nrmd;
-
-  layout(location = 0) out vec4 out_clr;
-  layout(location = 1) out vec4 out_nrmd;
+  inputs {
+    vec4 frg_nrmd;
+  }
+  outputs {
+    layout(location = 0) vec4 out_clr;
+    layout(location = 1) vec4 out_nrmd;
+  }
 }
 vertex_shader vs_pick : iface_vpick : lib_terrain_vtx {
   TerOut tero = computeTerrain(CamPos);

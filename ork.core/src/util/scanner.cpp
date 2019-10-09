@@ -275,7 +275,7 @@ void Scanner::Scan() {
         } else if (CH == '\n') {
           AddToken(Token("\n", iline, icol));
           adv_lin = 1;
-        } else if (CH == '.' and not is_num(PCH) ) {
+        } else if (CH == '.' and not is_num(PCH) and not is_num(NCH) ) {
           AddToken(Token(".", iline, icol));
         } else if (is_septok(CH)) {
           if (((CH == '=') && (NCH == '=')) || ((CH == '!') && (NCH == '=')) || ((CH == '*') && (NCH == '=')) ||
