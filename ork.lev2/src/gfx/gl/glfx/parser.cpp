@@ -82,7 +82,7 @@ void DecoBlockNode::parse(const ScannerView& view) {
     auto decoref = decotok->text;
     bool name_ok = _container->validateMemberName(decoref);
     auto it = _decodupecheck.find(decoref);
-    assert(it==_decodupecheck.end());
+    assert(it==_decodupecheck.end() or decoref=="extension");
     _decodupecheck.insert(decoref);
     _decorators.push_back(decotok);
   }
@@ -247,7 +247,7 @@ Container* ContainerNode::createContainer() const {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-GlSlFxParser::GlSlFxParser(const AssetPath& pth, const Scanner& s)
+GlSlFxParser::GlSlFxParser(const std::string& pth, const Scanner& s)
   : mPath(pth)
   , scanner(s) {
   _rootNode = new ContainerNode(pth,s);
@@ -279,7 +279,7 @@ Container* LoadFxFromFile(const AssetPath& pth) {
   ///////////////////////////////////
   scanner.Scan();
   ///////////////////////////////////
-  GlSlFxParser parser(pth, scanner);
+  GlSlFxParser parser(pth.c_str(), scanner);
   Container* pcont = parser._rootNode->createContainer();
   ///////////////////////////////////
   return pcont;

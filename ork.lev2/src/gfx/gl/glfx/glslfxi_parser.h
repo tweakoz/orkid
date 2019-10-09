@@ -7,6 +7,7 @@ namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct ContainerNode;
+struct GlSlFxParser;
 
 struct AstNode {
   AstNode(ContainerNode* cnode = nullptr)
@@ -77,6 +78,8 @@ struct ConfigNode : public NamedBlockNode {
       : NamedBlockNode(cnode) {}
 
   std::string _name;
+  std::vector<GlSlFxParser*> _imports;
+
   void parse(const ScannerView& view);
   void generate(Container *c) const;
 };
@@ -341,7 +344,7 @@ struct LibraryBlockNode : public DecoBlockNode {
   // std::unordered_map<std::string, LibraryFunctionNode*> _functionNodes;
   // std::unordered_map<std::string, LibraryStructNode*> _structNodes;
   void parse(const ScannerView& view);
-  LibBlock* generate(Container* c) const;
+  void generate(Container* c) const;
   ShaderBody _body;
 };
 
@@ -394,11 +397,11 @@ typedef std::shared_ptr<AstNode> astnode_t;
 
 struct GlSlFxParser {
 
-  GlSlFxParser(const AssetPath& pth, const Scanner& s);
+  GlSlFxParser(const std::string& pth, const Scanner& s);
 
   void DumpAllTokens();
 
-  const AssetPath mPath;
+  const std::string mPath;
   const Scanner& scanner;
 
   int itokidx              = 0;

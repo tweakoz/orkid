@@ -57,19 +57,20 @@ void ShaderDataNode::parse(const ScannerView& view) {
 
       bool typeok = _container->validateTypeName(dt_tok->text);
       bool nameok = _container->validateMemberName(nam_tok->text);
-      assert(typeok);
-      assert(nameok);
 
       auto unidecl = new UniformDeclNode;
       unidecl->_name = nam_tok->text;
       unidecl->_typeName = dt_tok->text;
       bool is_array = false;
-      if (view.token(i + 3)->text == "[") {
-        assert(view.token(i + 5)->text == "]");
-        unidecl->_arraySize = atoi(view.token(i + 4)->text.c_str());
+      if (view.token(i + 2)->text == "[") {
+        assert(view.token(i + 4)->text == "]");
+        unidecl->_arraySize = atoi(view.token(i + 3)->text.c_str());
         is_array = true;
       }
       
+      assert(typeok);
+      assert(nameok);
+
       _uniformdecls.push_back(unidecl);
 
       i += is_array ? 6 : 3;

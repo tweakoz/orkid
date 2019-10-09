@@ -18,13 +18,13 @@
 namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Shader::addLibBlock(LibBlock* lib) {
+/*void Shader::addLibBlock(LibBlock* lib) {
   _libblocks.push_back(lib);
   for (auto uset : lib->_uniformSets)
     addUniformSet(uset);
   for (auto ublk : lib->_uniformBlocks)
     addUniformBlock(ublk);
-}
+}*/
 /////////////////////////////////////////////////////////////////////////////////////////////////
 void Shader::setInputInterface(StreamInterface* iface) {
   _inputInterface = iface;
@@ -80,7 +80,7 @@ void ShaderNode::parse(const ScannerView& view) {
 ///////////////////////////////////////////////////////////
 void ShaderNode::_generateCommon(Shader* pshader) {
   pshader->mName      = _name;
-  LibBlock* plibblock = nullptr;
+  //LibBlock* plibblock = nullptr;
   Container* c        = pshader->mpContainer;
 
   bool is_vertex_shader   = pshader->mShaderType == GL_VERTEX_SHADER;
@@ -102,10 +102,12 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   for (size_t i = 0; i < inumdecos; i++) {
 
     auto deco = _decorators[i]->text;
-
+    auto it_nodedeco  = _container->_blockNodes.find(deco);
+    DecoBlockNode* blocknode = (it_nodedeco!=_container->_blockNodes.end())
+                             ? it_nodedeco->second
+                             : nullptr;
     auto it_uset = c->_uniformSets.find(deco);
     auto it_ublk = c->_uniformBlocks.find(deco);
-    auto it_lib  = c->_libBlocks.find(deco);
     auto it_vi   = c->_vertexInterfaces.find(deco);
     auto it_tc   = c->_tessCtrlInterfaces.find(deco);
     auto it_te   = c->_tessEvalInterfaces.find(deco);
@@ -117,9 +119,9 @@ void ShaderNode::_generateCommon(Shader* pshader) {
     auto it_nvm = c->_nvMeshInterfaces.find(deco);
 #endif
 
-    if (it_lib != c->_libBlocks.end()) {
-      auto plibblock = it_lib->second;
-      pshader->addLibBlock(plibblock);
+    if (auto as_lib = dynamic_cast<LibraryBlockNode*>(blocknode)) {
+      //assert(false);
+      //pshader->addLibBlock(plibblock);
     } else if (it_ublk != (c->_uniformBlocks.end())) {
       auto ublk = it_ublk->second;
       pshader->addUniformBlock(ublk);
@@ -165,34 +167,30 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   assert(iface != nullptr);
   //////////////////////////////////////////////
 
-  std::string shaderbody;
-
-  size_t iline = 1;
-  FixedString<64> fxstr;
-  auto prline = [&]() {
-    fxstr.format("/*%03d*/", int(iline));
-    shaderbody += fxstr.c_str();
-    iline++;
+  struct ShaderLine {
+      ShaderLine(std::string l) : _text(l) {}
+      std::string _text;
   };
+  struct ShaderLines {
+    void add(std::string l) { _lines.push_back(new ShaderLine(l)); }
+    std::vector<ShaderLine*> _lines;
+  };
+  ShaderLines lines;
 
-  prline();
-
-  shaderbody += "#version 410 core\n";
+  lines.add("#version 410 core");
 
   ////////////////////////////////////////////////////////////////////////////
   // declare required extensions
   ////////////////////////////////////////////////////////////////////////////
 
   for (auto extension : pshader->_requiredExtensions) {
-    prline();
-    shaderbody += FormatString("#extension %s : enable\n", extension.c_str());
+    lines.add(FormatString("#extension %s : enable", extension.c_str()));
   }
 
   ////////////////////////////////////////////////////////////////////////////
 
   for (const auto& preamble_line : iface->mPreamble) {
-    prline();
-    shaderbody += preamble_line;
+    lines.add(preamble_line);
   }
 
   ///////////////////////
@@ -201,10 +199,10 @@ void ShaderNode::_generateCommon(Shader* pshader) {
 
   for (const auto& ub : pshader->_unisets) {
     for (auto itu : ub->_uniforms) {
-      prline();
-      shaderbody += "uniform ";
-      shaderbody += itu.second->genshaderbody();
-      shaderbody += ";\n";
+      std::string l = "uniform ";
+      l += itu.second->genshaderbody();
+      l += ";";
+      lines.add(l);
     }
   }
 
@@ -213,98 +211,96 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   ///////////////////////
 
   for (const auto& ub : pshader->_uniblocks) {
-    prline();
-    shaderbody += FormatString("layout(std140) uniform %s {\n", ub->_name.c_str());
+    lines.add(FormatString("layout(std140) uniform %s {", ub->_name.c_str()));
     for (auto itsub : ub->_subuniforms) {
-      prline();
-      shaderbody += itsub.second->genshaderbody();
-      shaderbody += ";\n";
+      lines.add(itsub.second->genshaderbody()+";");
     }
-    prline();
-    shaderbody += "};\n";
+    lines.add("};");
   }
 
   ///////////////////////
   // ATTRIBUTES
   ///////////////////////
   for (StreamInterface::AttrMap::const_iterator ita = iface->mAttributes.begin(); ita != iface->mAttributes.end(); ita++) {
-    prline();
     Attribute* pa = ita->second;
 
-    shaderbody += pa->mDirection + " ";
-    shaderbody += pa->mTypeName + " ";
+    std::string l;
+    l += pa->mDirection + " ";
+    l += pa->mTypeName + " ";
 
     if (pa->mArraySize) {
       ork::FixedString<128> fxs;
       // fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
       fxs.format("%s[]", pa->mName.c_str());
-      shaderbody += fxs.c_str();
+      l += fxs.c_str();
     } else
-      shaderbody += pa->mName;
+      l += pa->mName;
 
-    shaderbody += ";";
+    l += ";";
 
     if (pa->mComment.length()) {
-      shaderbody += pa->mComment;
+      l += pa->mComment;
     }
-
-    shaderbody += "\n";
+    lines.add(l);
   }
 
   ///////////////////////
   // code
   ///////////////////////
 
-  for (auto blockitem : _container->_blockNodes) {
-    auto block    = blockitem.second;
+  for (auto block : _container->_orderedBlockNodes) {
     auto libblock = dynamic_cast<LibraryBlockNode*>(block);
     if (libblock) {
-      prline();
-      shaderbody += "// libblock<" + libblock->_name + "> ///////////////////////////////////\n";
+      lines.add("// libblock<" + libblock->_name + "> ///////////////////////////////////");
 
       for (auto l : libblock->_body._lines) {
-        prline();
+        std::string ol;
         for (int in = 0; in < l->_indent; in++)
-          shaderbody += "\t";
+          ol += "\t";
         for (auto t : l->_tokens) {
-          shaderbody += t->text;
-          shaderbody += " ";
+          ol += t->text;
+          ol += " ";
         }
-        shaderbody += "\n";
+        lines.add(ol);
       }
     }
   }
 
-  shaderbody += "///////////////////////////////////////////////////////////////////\n";
+  lines.add("///////////////////////////////////////////////////////////////////");
 
-  prline();
-  shaderbody += "void " + _name + "()\n{";
+  lines.add("void " + _name + "(){");
 
   for (auto l : _body._lines) {
-    prline();
+    std::string ol;
     for (int in = 0; in < l->_indent; in++)
-      shaderbody += "\t";
+      ol += "\t";
     for (auto t : l->_tokens) {
-      shaderbody += t->text;
-      shaderbody += " ";
+      ol += t->text;
+      ol += " ";
     }
-    shaderbody += "\n";
+    lines.add(ol);
   }
 
-  ///////////////////////////////////
-
-  shaderbody += "}\n";
+  lines.add("}");
 
   ///////////////////////////////////
 
   pshader->mName       = _name;
+
+  std::string shaderbody;
+  int iline = 0;
+  for( auto l : lines._lines ){
+    shaderbody += FormatString("/*%03d*/ ",iline++);
+    shaderbody += l->_text;
+    shaderbody += "\n";
+  }
   pshader->mShaderText = shaderbody;
 
   ///////////////////////////////////
-  // printf( "shaderbody\n" );
-  // printf( "///////////////////////////////\n" );
-  // printf( "%s", shaderbody.c_str() );
-  // printf( "///////////////////////////////\n" );
+  printf( "shaderbody\n" );
+  printf( "///////////////////////////////\n" );
+  printf( "%s", shaderbody.c_str() );
+  printf( "///////////////////////////////\n" );
 }
 
 ///////////////////////////////////////////////////////////
@@ -371,17 +367,24 @@ void LibraryBlockNode::parse(const ScannerView& view) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-
+/*
 LibBlock::LibBlock(const Scanner& s)
     : mFilter(nullptr)
     , mView(nullptr) {
   mFilter = new ScanViewFilter();
   mView   = new ScannerView(s, *mFilter);
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////////////////
 
-LibBlock* LibraryBlockNode::generate(Container* c) const {
+void LibraryBlockNode::generate(Container* c) const {
+
+  for (auto l : _body._lines) {
+    for (auto t : l->_tokens) {
+    }
+  }
+
+
   /*int cachetokidx = itokidx;
   ////////////////////////////////////////////
   // scan library block code
@@ -410,8 +413,8 @@ LibBlock* LibraryBlockNode::generate(Container* c) const {
     }
   }
   ////////////////////////////////////////////
-  return libblock;*/
-  return nullptr;
+  return libblock;
+   */
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////

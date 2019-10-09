@@ -38,24 +38,34 @@ void ConfigNode::parse(const ScannerView& view) {
   // handle imports
   ///////////////////////////////////
   for (const auto& imp : imports) {
-    Scanner import_scanner(block_regex);
     file::Path::NameType a, b;
     _container->_path.Split(a, b, ':');
     ork::FixedString<256> fxs;
     fxs.format("%s://%s", a.c_str(), imp.c_str());
     file::Path imppath = fxs.c_str();
+    auto importscanner = new Scanner(block_regex);
     ///////////////////////////////////
     File fx_file(imppath.c_str(), EFM_READ);
     OrkAssert(fx_file.IsOpen());
-    EFileErrCode eFileErr = fx_file.GetLength(import_scanner.ifilelen);
-    OrkAssert(import_scanner.ifilelen < import_scanner.kmaxfxblen);
-    eFileErr                             = fx_file.Read(import_scanner.fxbuffer, import_scanner.ifilelen);
-    import_scanner.fxbuffer[import_scanner.ifilelen] = 0;
+    EFileErrCode eFileErr = fx_file.GetLength(importscanner->ifilelen);
+    OrkAssert(importscanner->ifilelen < importscanner->kmaxfxblen);
+    eFileErr                             = fx_file.Read(importscanner->fxbuffer, importscanner->ifilelen);
+    importscanner->fxbuffer[importscanner->ifilelen] = 0;
+    importscanner->Scan();
     ///////////////////////////////////
-    import_scanner.Scan();
-    const auto& stoks = import_scanner.tokens;
-    //auto& dtoks       = scanner.tokens;
-    //dtoks.insert(dtoks.begin() + itokidx, stoks.begin(), stoks.end());
+    auto childparser = new GlSlFxParser(imppath.c_str(),*importscanner);
+    _imports.push_back(childparser);
+
+    auto childnode = childparser->_rootNode;
+
+    for( auto n : childnode->_orderedBlockNodes ){
+      _container->_orderedBlockNodes.push_back(n);
+    }
+    for( auto i : childnode->_blockNodes ){
+      auto k = i.first;
+      auto v = i.second;
+      _container->_blockNodes[k]=v;
+    }
   }
 }
 

@@ -251,6 +251,7 @@ struct StateBlock {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/*
 struct LibBlock {
   LibBlock(const Scanner& s);
 
@@ -260,7 +261,7 @@ struct LibBlock {
   std::string mName;
   ScanViewFilter* mFilter;
   ScannerView* mView;
-};
+};*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -274,7 +275,7 @@ struct Shader {
   bool Compile();
   bool IsCompiled() const;
   void requireExtension(std::string ext) { _requiredExtensions.insert(ext); }
-  void addLibBlock(LibBlock*);
+  //void addLibBlock(LibBlock*);
   void addUniformSet(UniformSet*);
   void addUniformBlock(UniformBlock*);
   void setInputInterface(StreamInterface*iface);
@@ -290,7 +291,7 @@ struct Shader {
   std::set<std::string> _requiredExtensions;
   std::vector<UniformBlock*> _uniblocks;
   std::vector<UniformSet*> _unisets;
-  std::vector<LibBlock*> _libblocks;
+  //std::vector<LibBlock*> _libblocks;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -429,7 +430,7 @@ struct Container {
   void addStateBlock(StateBlock* pSB);
   void addTechnique(Technique* ptek);
 
-  void addLibBlock(LibBlock* plb);
+  //void addLibBlock(LibBlock* plb);
 
   StateBlock* GetStateBlock(const std::string& name) const;
   Uniform* GetUniform(const std::string& name) const;
@@ -445,7 +446,7 @@ struct Container {
   std::unordered_map<std::string, StateBlock*> _stateBlocks;
   std::unordered_map<std::string, Uniform*> _uniforms;
   std::unordered_map<std::string, Technique*> _techniqueMap;
-  std::unordered_map<std::string, LibBlock*> _libBlocks;
+  //std::unordered_map<std::string, LibBlock*> _libBlocks;
   Pass* _activePass;
   int mActiveNumPasses;
   const FxShader* mFxShader;

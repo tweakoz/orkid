@@ -66,28 +66,23 @@ state_block sb_default : default {
     CullTest=OFF;
 }
 
-libblock ptex_tools
-{
-    vec4 pointsampletex2di( sampler2D s, ivec2 uv )
-{
-    vec4 r = texelFetch(s, uv, 0);
-    return r;
-}
-vec4 pointsampletex2d(sampler2D s, vec2 uv)
-{
-    ivec2 ts = textureSize(s, 0);
-    vec2 fts = vec2(float(ts.x)*uv.x, float(ts.y)*uv.y);
-    ts.x = int(fts.x);
-    ts.y = int(fts.y);
-    vec4 r = texelFetch(s, ts, 0);
-    //vec4 r = texture(s,uv);
-    return r;
-}
-
-float max4(vec4 inp)
-{
-    return max(inp.w, max(inp.z, max(inp.x, inp.y)));
-}
+libblock ptex_tools {
+    vec4 pointsampletex2di( sampler2D s, ivec2 uv ) {
+        vec4 r = texelFetch(s, uv, 0);
+        return r;
+    }
+    vec4 pointsampletex2d(sampler2D s, vec2 uv) {
+        ivec2 ts = textureSize(s, 0);
+        vec2 fts = vec2(float(ts.x)*uv.x, float(ts.y)*uv.y);
+        ts.x = int(fts.x);
+        ts.y = int(fts.y);
+        vec4 r = texelFetch(s, ts, 0);
+        //vec4 r = texture(s,uv);
+        return r;
+    }
+    float max4(vec4 inp) {
+        return max(inp.w, max(inp.z, max(inp.x, inp.y)));
+    }
 }
 ///////////////////////////////////////////////////////////////
 // shaders

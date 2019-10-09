@@ -24,7 +24,7 @@ namespace ork::lev2::glslfx {
   void Container::addGeometryInterface(StreamInterface* pif) { _geometryInterfaces[pif->mName] = pif; }
   void Container::addFragmentInterface(StreamInterface* pif) { _fragmentInterfaces[pif->mName] = pif; }
   void Container::addStateBlock(StateBlock* psb) { _stateBlocks[psb->mName] = psb; }
-  void Container::addLibBlock(LibBlock* plb) { _libBlocks[plb->mName] = plb; }
+  //void Container::addLibBlock(LibBlock* plb) { _libBlocks[plb->mName] = plb; }
   void Container::addTechnique(Technique* ptek) { _techniqueMap[ptek->mName] = ptek; }
   void Container::addVertexShader(ShaderVtx* psha) { _vertexShaders[psha->mName] = psha; }
   void Container::addTessCtrlShader(ShaderTsC* psha) { _tessCtrlShaders[psha->mName] = psha; }
