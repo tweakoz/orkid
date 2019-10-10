@@ -123,6 +123,7 @@ void ShaderNode::_generateCommon(Shader* pshader) {
     auto it_nvm = c->_nvMeshInterfaces.find(deco);
 #endif
 
+
     if (auto as_lib = dynamic_cast<LibraryBlockNode*>(blocknode)) {
       for( auto tok_deco : as_lib->_decorators ){
         auto lib_deco = tok_deco->text;

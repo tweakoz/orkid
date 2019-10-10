@@ -365,6 +365,7 @@ struct ContainerNode : public AstNode {
   Container* createContainer() const;
   
   template <typename T> void generateBlocks(Container* c) const;
+  template <typename T> void forEachBlockOfType(std::function<void(T*)> operation) const;
   void generate(Container*c) const;
   
   int itokidx = 0;
@@ -386,10 +387,15 @@ struct ContainerNode : public AstNode {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T> void ContainerNode::generateBlocks(Container* c) const {
+
+template <typename T> void ContainerNode::forEachBlockOfType(std::function<void(T*)> operation) const {
    for( auto blocknode : _orderedBlockNodes )
      if( auto as_t = dynamic_cast<T*>(blocknode) )
-         as_t->generate(c);
+         operation(as_t);
+}
+
+template <typename T> void ContainerNode::generateBlocks(Container* c) const {
+   forEachBlockOfType<T>([&](T*as_t){as_t->generate(c);});
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
