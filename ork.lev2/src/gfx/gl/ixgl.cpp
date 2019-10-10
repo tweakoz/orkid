@@ -16,7 +16,8 @@
 #include <QtCore/QMetaObject>
 #include <QtX11Extras/QX11Info>
 #include <GL/glx.h>
-#include <QtGui/5.12.2/QtGui/qpa/qplatformnativeinterface.h>
+
+#include <QtGui/qpa/qplatformnativeinterface.h>
 
 INSTANTIATE_TRANSPARENT_RTTI(ork::lev2::GfxTargetGL, "GfxTargetGL")
 

@@ -20,6 +20,8 @@ add_definitions(-DIX -DLINUX -DGCC)
 add_compile_options(-D_REENTRANT -DQT_NO_EXCEPTIONS -D_LARGEFILE64_SOURCE -D_LARGEFILE_SOURCE -DQT_GUI_LIB -DQT_CORE_LIB)
 ENDIF()
 
+add_compile_definitions(QTVER=$ENV{QTVER})
+
 add_compile_options(-Wno-deprecated -Wno-register -fexceptions)
 add_compile_options(-Wno-unused-command-line-argument)
 add_compile_options(-fPIE -fPIC -fno-common -fno-strict-aliasing -g -Wno-switch-enum)
@@ -41,6 +43,35 @@ link_directories($ENV{OBT_STAGE}/orkid/ork.ent )
 link_directories($ENV{OBT_STAGE}/orkid/ork.tool )
 
 
+###################################
+
+IF(${APPLE})
+set(QT5BASE /usr/local/opt/qt/lib/cmake)
+set(CMAKE_MACOSX_RPATH 1)
+ELSE()
+set(QT5BASE $ENV{OBT_STAGE}/qt5/lib/cmake)
+ENDIF()
+
+###################################
+
+set(Qt5Widgets_DIR ${QT5BASE}/Qt5Widgets)
+set(Qt5Test_DIR ${QT5BASE}/Qt5Test)
+set(Qt5Core_DIR ${QT5BASE}/Qt5Core)
+set(Qt5_DIR ${QT5BASE})
+set(Qt5Concurrent_DIR ${QT5BASE}/Qt5Concurrent)
+set(Qt5Gui_DIR ${QT5BASE}/Qt5Gui)
+set(Qt5Network_DIR ${QT5BASE}/Qt5Network)
+
+find_package(Qt5 COMPONENTS Core Widgets Gui REQUIRED)
+
+if(${APPLE})
+else()
+find_package(Qt5X11Extras REQUIRED)
+endif()
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
 ##############################
 

@@ -39,6 +39,8 @@ if debug:
 else:
     cmd += ["-DCMAKE_BUILD_TYPE=Release"]
 
+cmd += ["-DCMAKE_FIND_DEBUG_MODE=ON"]
+
 cmd += [prj_root]
 
 Command(cmd).exec()
