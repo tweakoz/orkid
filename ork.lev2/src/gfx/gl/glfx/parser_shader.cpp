@@ -229,35 +229,38 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   }
 
   ///////////////////////
-  // ATTRIBUTES
+  // input ATTRIBUTES
   ///////////////////////
-  for (StreamInterface::AttrMap::const_iterator ita = iface->mAttributes.begin(); ita != iface->mAttributes.end(); ita++) {
-    Attribute* pa = ita->second;
+  auto do_attrs = [&](const StreamInterface::attrmap_t& attrmap) {
+    for (auto ita : attrmap ) {
+      Attribute* pa = ita.second;
 
-    std::string l;
-  
-    if( pa->mLayout.length() )
-      l += pa->mLayout + " ";
-  
-    l += pa->mDirection + " ";
-    l += pa->mTypeName + " ";
+      std::string l;
 
-    if (pa->mArraySize) {
-      ork::FixedString<128> fxs;
-      // fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
-      fxs.format("%s[]", pa->mName.c_str());
-      l += fxs.c_str();
-    } else
-      l += pa->mName;
+      if (pa->mLayout.length())
+        l += pa->mLayout + " ";
 
-    l += ";";
+      l += pa->mDirection + " ";
+      l += pa->mTypeName + " ";
 
-    if (pa->mComment.length()) {
-      l += pa->mComment;
+      if (pa->mArraySize) {
+        ork::FixedString<128> fxs;
+        // fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
+        fxs.format("%s[]", pa->mName.c_str());
+        l += fxs.c_str();
+      } else
+        l += pa->mName;
+
+      l += ";";
+
+      if (pa->mComment.length()) {
+        l += pa->mComment;
+      }
+      lines.add(l);
     }
-    lines.add(l);
-  }
-
+  };
+  do_attrs(iface->_inputAttributes);
+  do_attrs(iface->_outputAttributes);
   ///////////////////////
   // code
   ///////////////////////

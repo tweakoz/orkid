@@ -148,7 +148,7 @@ bool Interface::compilePipelineVTG(Container* container) {
     // printf( "	binding vertex attributes count<%d>\n",
     // int(vtx_iface->mAttributes.size()) );
 
-    for (const auto& itp : vtx_iface->mAttributes) {
+    for (const auto& itp : vtx_iface->_inputAttributes) {
       Attribute* pattr = itp.second;
       int iloc         = pattr->mLocation;
       // printf( "	vtxattr<%s> loc<%d> dir<%s> sem<%s>\n",
@@ -220,8 +220,8 @@ bool Interface::compilePipelineVTG(Container* container) {
       glGetActiveAttrib(prgo, i, sizeof(nambuf), &namlen, &atrsiz, &atrtyp, nambuf);
       OrkAssert(namlen < sizeof(nambuf));
       GL_ERRORCHECK();
-      const auto& it = vtx_iface->mAttributes.find(nambuf);
-      OrkAssert(it != vtx_iface->mAttributes.end());
+      const auto& it = vtx_iface->_inputAttributes.find(nambuf);
+      OrkAssert(it != vtx_iface->_inputAttributes.end());
       Attribute* pattr = it->second;
       // printf( "qattr<%d> loc<%d> name<%s>\n", i, pattr->mLocation, nambuf
       // );

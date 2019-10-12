@@ -356,21 +356,22 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
     }*/
   //}
   for (auto input : _inputs) {
-    int iloc                       = int(psi->mAttributes.size());
+    int iloc                       = int(psi->_inputAttributes.size());
     Attribute* pattr               = new Attribute(input->_name);
     pattr->mTypeName               = input->_typeName;
     pattr->mDirection              = "in";
     pattr->mSemantic               = input->_semantic;
-    psi->mAttributes[input->_name] = pattr;
-    pattr->mLocation               = int(psi->mAttributes.size());
+    psi->_inputAttributes[input->_name] = pattr;
+    pattr->mLocation               = int(psi->_inputAttributes.size());
   }
   for (auto output : _outputs) {
-    int iloc                        = int(psi->mAttributes.size());
+    
+    int iloc                        = int(psi->_outputAttributes.size());
     Attribute* pattr                = new Attribute(output->_name);
     pattr->mTypeName                = output->_typeName;
     pattr->mDirection               = "out";
     pattr->mLocation                = iloc;
-    psi->mAttributes[output->_name] = pattr;
+    psi->_outputAttributes[output->_name] = pattr;
     pattr->_decorators              = output->_output_decorators;
     
     if( output->_layout ){
@@ -388,7 +389,7 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
   ////////////////////////
 
   std::multimap<int, Attribute*> attr_sort_map;
-  for (const auto& it : psi->mAttributes) {
+  for (const auto& it : psi->_inputAttributes) {
     auto attr  = it.second;
     auto itloc = gattrsorter.find(attr->mSemantic);
     int isort  = 100;

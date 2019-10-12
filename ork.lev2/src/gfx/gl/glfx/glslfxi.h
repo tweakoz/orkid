@@ -222,11 +222,13 @@ struct UniformBlockLayout {
 struct StreamInterface {
   StreamInterface();
 
-  typedef std::unordered_map<std::string, Attribute*> AttrMap;
+  
+  typedef std::unordered_map<std::string, Attribute*> attrmap_t;
   typedef std::vector<std::string> preamble_t;
 
   std::string mName;
-  AttrMap mAttributes;
+  attrmap_t _inputAttributes;
+  attrmap_t _outputAttributes;
   GLenum mInterfaceType;
   preamble_t mPreamble;
   int mGsPrimSize;
