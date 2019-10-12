@@ -53,7 +53,7 @@ bool ContainerNode::validateMemberName(const std::string typeName) const {
   return true;
 }
 ///////////////////////////////////////////////////////////
-bool ContainerNode::isOutputDecorator(const std::string typeName) const {
+bool ContainerNode::isIoAttrDecorator(const std::string typeName) const {
   auto it = _validOutputDecorators.find(typeName);
   return (it!=_validOutputDecorators.end());
 }

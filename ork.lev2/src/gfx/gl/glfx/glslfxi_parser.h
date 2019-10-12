@@ -144,25 +144,18 @@ struct InterfaceInlineStructNode : public AstNode {
   std::vector<const Token*> _tokens;
 };
 
-struct InterfaceInputNode : public AstNode {
-  InterfaceInputNode(ContainerNode* cnode)
+struct InterfaceIoNode : public AstNode {
+  InterfaceIoNode(ContainerNode* cnode)
       : AstNode(cnode) {}
-  std::string _name;
-  std::string _typeName;
-  std::string _semantic;
-  int _arraySize = 0;
-};
-
-struct InterfaceOutputNode : public AstNode {
-  InterfaceOutputNode(ContainerNode* cnode)
-      : AstNode(cnode) {}
+      
   std::string _name;
   std::string _typeName;
   InterfaceInlineStructNode* _inlineStruct = nullptr;
   std::string _semantic;
   InterfaceLayoutNode* _layout = nullptr;
-  std::set<std::string> _output_decorators;
+  std::set<std::string> _decorators;
   int _arraySize = 0;
+  
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -171,18 +164,24 @@ struct InterfaceNode : public DecoBlockNode {
   InterfaceNode(ContainerNode* cnode)
       : DecoBlockNode(cnode) {}
 
+      
+  typedef std::vector<InterfaceIoNode*> ionodevect_t;
+  
+  struct IoContainer {
+    ionodevect_t _nodes;
+    std::set<std::string> _dupecheck;
+    InterfaceLayoutNode* _pendinglayout = nullptr;
+    std::vector<InterfaceLayoutNode*> _layouts;
+  };
+      
+  
   void parse(const ScannerView& view);
-  void parseInputs(const ScannerView& view);
-  void parseOutputs(const ScannerView& view);
+  void parseIos(const ScannerView& view,IoContainer& ioc);
 
   StreamInterface* _generate(Container*, GLenum type);
-  std::vector<InterfaceLayoutNode*> _inputlayouts;
   std::vector<InterfaceLayoutNode*> _interfacelayouts;
-  InterfaceLayoutNode* _outputlayout = nullptr;
-  std::vector<InterfaceInputNode*> _inputs;
-  std::vector<InterfaceOutputNode*> _outputs;
-  std::set<std::string> _inputdupecheck;
-  std::set<std::string> _outputdupecheck;
+  IoContainer _inputs;
+  IoContainer _outputs;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -360,7 +359,7 @@ struct ContainerNode : public AstNode {
 
   bool validateTypeName(const std::string typeName) const;
   bool validateMemberName(const std::string typeName) const;
-  bool isOutputDecorator(const std::string typeName) const;
+  bool isIoAttrDecorator(const std::string typeName) const;
 
   Container* createContainer() const;
   
