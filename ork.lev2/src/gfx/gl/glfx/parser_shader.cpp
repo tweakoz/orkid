@@ -187,7 +187,11 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   };
   ShaderLines lines;
 
+#if defined(__APPLE__)
   lines.add("#version 410 core");
+#else
+  lines.add("#version 460 core");
+#endif
 
   ////////////////////////////////////////////////////////////////////////////
   // declare required extensions
@@ -229,7 +233,7 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   }
 
   ///////////////////////
-  // input ATTRIBUTES
+  // ATTRIBUTES
   ///////////////////////
   auto do_attrs = [&](const StreamInterface::attrmap_t& attrmap) {
     for (auto ita : attrmap ) {
@@ -240,16 +244,34 @@ void ShaderNode::_generateCommon(Shader* pshader) {
       if (pa->mLayout.length())
         l += pa->mLayout + " ";
 
+      if (pa->mDecorators.length())
+        l += pa->mDecorators + " ";
+        
       l += pa->mDirection + " ";
       l += pa->mTypeName + " ";
 
-      if (pa->mArraySize) {
-        ork::FixedString<128> fxs;
-        // fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
-        fxs.format("%s[]", pa->mName.c_str());
-        l += fxs.c_str();
-      } else
-        l += pa->mName;
+      if (pa->mInlineStruct.length())
+        l += pa->mInlineStruct + " ";
+      
+      ork::FixedString<128> fxs;
+
+      switch( pa->mArraySize ){
+        case 0: { // no array
+          l += pa->mName;
+          break;
+        }
+        case -1: { // unsized array
+          fxs.format("%s[]", pa->mName.c_str());
+          l += fxs.c_str();
+          break;
+        }
+        default: { // sized array
+          fxs.format("%s[%d]", pa->mName.c_str(), pa->mArraySize );
+          l += fxs.c_str();
+          break;
+        }
+        
+      }
 
       l += ";";
 

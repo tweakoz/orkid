@@ -79,6 +79,7 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
       ScannerView subview(view._scanner,view._filter);
       subview.scanUntil(view.globalTokenIndex(i),")",true);
       layout->parse(subview);
+      layout->_direction = ioc._direction;
       i += subview.numTokens(); // advance layout
       auto try_semicolon = view.token(i)->text;
       if( try_semicolon == ";") {
@@ -127,20 +128,19 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
     auto try_struct = view.token(i)->text;
     
     if (try_struct == "{") {
-      i += 1; // advance {
       io->_inlineStruct = new InterfaceInlineStructNode(_container);
+      io->_inlineStruct->_tokens.push_back(view.token(i));
+      i += 1; // advance {
       // struct io
       int closer = -1;
-      for (int s = 1; (s < 100) and (closer == -1); s++) {
-        const Token* test_tok = view.token(i + s);
+      for (int s = 0; (s < 100) and (closer == -1); s++) {
+        const Token* test_tok = view.token(i++);
         if (test_tok->text == "}") {
           closer = s;
         }
         io->_inlineStruct->_tokens.push_back(test_tok);
       }
       assert(closer > 0);
-      i += closer; // advance past }
-    
     }
 
     ///////////////////////////////////////////
@@ -209,7 +209,7 @@ void InterfaceNode::parse(const ScannerView& view) {
   size_t ien = view._end - 1;
 
   std::set<std::string> output_decorators;
-
+  
   for (size_t i = ist; i <= ien;) {
     const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
     const Token* vt_tok  = view.token(i);
@@ -260,9 +260,19 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
   // interface scoped layouts
   ////////////////////////
 
+  psi->mPreamble.push_back("/*begin SIF preamble*/");
+  std::string line;
   for( auto iflayout : _interfacelayouts ){
     for (auto item : iflayout->_tokens ) {
       const auto& tok = item->text;
+      line += tok;
+      if( tok == ")" ) {
+        line += " " + iflayout->_direction;
+        line += ";";
+        psi->mPreamble.push_back(line);
+        line = "";
+      }
+      
       // GS primtype
       if( tok == "points" )
         psi->mGsPrimSize = 1;
@@ -272,6 +282,7 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
         psi->mGsPrimSize = 3;
     }
   }
+  psi->mPreamble.push_back("/*end SIF preamble*/");
 
   /////////////////////////////
   // interface inheritance
@@ -322,6 +333,7 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
     pattr->mSemantic               = input->_semantic;
     psi->_inputAttributes[input->_name] = pattr;
     pattr->mLocation               = int(psi->_inputAttributes.size());
+    pattr->mArraySize = input->_arraySize;
     if( input->_layout ){
       for (auto item : input->_layout->_tokens ) {
         const auto& tok = item->text;
@@ -339,7 +351,16 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
     pattr->mLocation                = iloc;
     psi->_outputAttributes[output->_name] = pattr;
     pattr->_decorators              = output->_decorators;
+    pattr->mArraySize = output->_arraySize;
     
+    for( auto deco : output->_decorators )
+        pattr->mDecorators += deco + " ";
+    
+    if( output->_inlineStruct ) {
+      for (auto tok : output->_inlineStruct->_tokens )
+        pattr->mInlineStruct += tok->text + " ";
+    }
+
     if( output->_layout ){
       for (auto item : output->_layout->_tokens )
         pattr->mLayout+=item->text;

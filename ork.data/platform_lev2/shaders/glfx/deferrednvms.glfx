@@ -3,7 +3,7 @@
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "330";
-  import "misctools.i";
+import "misctools.i";
 }
 ///////////////////////////////////////////////////////////////
 // Interfaces
@@ -42,12 +42,8 @@ uniform_block ub_light {
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdefault {
-  inputs {
-    vec2 frg_uv;
-  }
-  outputs {
-    vec4 out_clr;
-  }
+  inputs { vec2 frg_uv; }
+  outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
 libblock lib_deferred : ub_light : ub_frg {
@@ -151,15 +147,18 @@ fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred {
 }
 ///////////////////////////////////////////////////////////////
 nvtask_interface iface_task : ub_light {
-  inputs {
-    layout(local_size_x = 32);
+  inputs { layout(local_size_x = 32); }
+  outputs {
+    
+    taskNV Task {
+      uint baseID;
+      uint8_t subIDs[1];
+    }
+    OUT;
   }
 }
-nvtask_shader task_pointlight : iface_task {}
 nvmesh_interface iface_mesh : ub_light {
-  inputs {
-    layout(local_size_x = 32);
-  }
+  inputs { layout(local_size_x = 32); }
   outputs {
     layout(triangles);
     // maximum allocation size for each meshlet
@@ -180,7 +179,8 @@ nvmesh_interface iface_mesh : ub_light {
     gl_MeshVerticesNV[]; // [max_vertices]
 
     // define your own vertex output blocks as usual
-    Interpolant { vec2 uv; } OUT[]; // [max_vertices]
+    Interpolant { vec2 uv; }
+    OUT[]; // [max_vertices]
 
     // special purpose per-primitive outputs
     perprimitiveNV gl_MeshPerPrimitiveNV {
@@ -188,11 +188,23 @@ nvmesh_interface iface_mesh : ub_light {
       int gl_Layer;
       int gl_ViewportIndex;
       int gl_ViewportMask[]; // [1]
-    } gl_MeshPrimitivesNV[]; // [max_primitives]
-
+    }
+    gl_MeshPrimitivesNV[]; // [max_primitives]
   }
 }
-nvmesh_shader mesh_pointlight : iface_mesh {}
+///////////////////////////////////////////////////////////////
+nvtask_shader task_pointlight : extension(GL_NV_mesh_shader)
+    : extension(GL_NV_gpu_shader5)
+    : iface_task {
+
+  gl_TaskCountNV = 0;
+}
+nvmesh_shader mesh_pointlight : extension(GL_NV_mesh_shader)
+    : extension(GL_NV_gpu_shader5)
+    : iface_mesh {
+
+  gl_PrimitiveCountNV = 0;
+}
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight : iface_fdefault : lib_deferred {
   WPosData wpd;
@@ -217,7 +229,7 @@ fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred {
 ///////////////////////////////////////////////////////////////
 // StateBlocks
 ///////////////////////////////////////////////////////////////
-state_block sb_default : default { }
+state_block sb_default : default {}
 ///////////////////////////////////////////////////////////////
 technique baselight {
   fxconfig = fxcfg_default;

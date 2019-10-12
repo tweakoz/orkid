@@ -35,13 +35,17 @@ ContainerNode::ContainerNode(const AssetPath &pth, const Scanner &s)
   , _scanner(s) {
 
     std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
-                            "float double half int "
+                            "float double half int uint "
+                            "uint8_t uint16_t uint32_t "
                             "sampler2D sampler3D sampler2DShadow";
 
     for( auto item : SplitString(typenames, ' ') )
       _validTypeNames.insert(item);
 
     _validOutputDecorators.insert("perprimitiveNV");
+    _validOutputDecorators.insert("taskNV");
+
+
 }
 ///////////////////////////////////////////////////////////
 bool ContainerNode::validateTypeName(const std::string typeName) const {

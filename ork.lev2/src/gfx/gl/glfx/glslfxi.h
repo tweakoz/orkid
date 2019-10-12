@@ -105,6 +105,8 @@ struct Attribute {
   std::string mTypeName;
   std::string mDirection;
   std::string mLayout;
+  std::string mInlineStruct;
+  std::string mDecorators;
   GLenum meType;
   GLint mLocation;
   std::string mSemantic;
@@ -149,6 +151,8 @@ struct UniformBlockItem {
   UniformBlockBinding* _binding = nullptr;
   size_t _offset = 0;
 };
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBuffer {
     FxShaderParamBuffer* _fxspb = nullptr;
@@ -246,25 +250,10 @@ typedef std::function<void(GfxTarget*)> state_applicator_t;
 
 struct StateBlock {
   std::string mName;
-  // SRasterState	mState;
   std::vector<state_applicator_t> mApplicators;
 
   void addStateFn(const state_applicator_t& f) { mApplicators.push_back(f); }
 };
-
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-struct LibBlock {
-  LibBlock(const Scanner& s);
-
-  std::vector<UniformBlock*> _uniformBlocks;
-  std::vector<UniformSet*> _uniformSets;
-
-  std::string mName;
-  ScanViewFilter* mFilter;
-  ScannerView* mView;
-};*/
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -278,7 +267,6 @@ struct Shader {
   bool Compile();
   bool IsCompiled() const;
   void requireExtension(std::string ext) { _requiredExtensions.insert(ext); }
-  //void addLibBlock(LibBlock*);
   void addUniformSet(UniformSet*);
   void addUniformBlock(UniformBlock*);
   void setInputInterface(StreamInterface*iface);
@@ -294,7 +282,6 @@ struct Shader {
   std::set<std::string> _requiredExtensions;
   std::vector<UniformBlock*> _uniblocks;
   std::vector<UniformSet*> _unisets;
-  //std::vector<LibBlock*> _libblocks;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -421,7 +408,6 @@ struct Container {
 
   Container(const std::string& nam);
 
-  // bool Load( const AssetPath& filename, FxShader*pfxshader );
   void Destroy(void);
   bool IsValid(void);
 
@@ -432,9 +418,7 @@ struct Container {
   Uniform* MergeUniform(const std::string& name);
   void addStateBlock(StateBlock* pSB);
   void addTechnique(Technique* ptek);
-
-  //void addLibBlock(LibBlock* plb);
-
+  
   StateBlock* GetStateBlock(const std::string& name) const;
   Uniform* GetUniform(const std::string& name) const;
   UniformBlock* uniformBlock(const std::string& name) const;
@@ -449,7 +433,7 @@ struct Container {
   std::unordered_map<std::string, StateBlock*> _stateBlocks;
   std::unordered_map<std::string, Uniform*> _uniforms;
   std::unordered_map<std::string, Technique*> _techniqueMap;
-  //std::unordered_map<std::string, LibBlock*> _libBlocks;
+
   Pass* _activePass;
   int mActiveNumPasses;
   const FxShader* mFxShader;

@@ -244,8 +244,9 @@ bool Interface::compilePipelineNVTM(Container* container) {
   auto& pipeNVTM = pass->_primpipe.Get<PrimPipelineNVTM>();
   Shader* ptaskshader = pipeNVTM._nvTaskShader;
   Shader* pmeshhader  = pipeNVTM._nvMeshShader;
-  // OrkAssert(ptaskshader != nullptr);
+  Shader* pfragshader  = pipeNVTM._fragmentShader;
   OrkAssert(pmeshhader != nullptr);
+  OrkAssert(pfragshader != nullptr);
   auto l_compile = [&](Shader* psh) -> bool {
     bool compile_ok = true;
     if (psh && psh->IsCompiled() == false)
@@ -258,6 +259,7 @@ bool Interface::compilePipelineNVTM(Container* container) {
   bool OK = true;
   OK &= l_compile(ptaskshader);
   OK &= l_compile(pmeshhader);
+  OK &= l_compile(pfragshader);
   container->mShaderCompileFailed = (false == OK);
   if (OK) {
     GL_ERRORCHECK();
@@ -271,6 +273,8 @@ bool Interface::compilePipelineNVTM(Container* container) {
       GL_ERRORCHECK();
     }
     glAttachShader(prgo, pmeshhader->mShaderObjectId);
+    GL_ERRORCHECK();
+    glAttachShader(prgo, pfragshader->mShaderObjectId);
     GL_ERRORCHECK();
     //////////////////////////
     // link
@@ -295,7 +299,6 @@ bool Interface::compilePipelineNVTM(Container* container) {
     pass->postProc(container);
     //////////////////////////
   }
-  assert(false);
   return OK;
 }
 #endif

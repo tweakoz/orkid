@@ -101,6 +101,9 @@ Technique* TechniqueNode::generate(Container* c) const {
 Pass* PassNode::generate(Container* c) const {
   Pass* ppass = new Pass(_name);
 
+  /////////////////////////////////////////////////////////////
+  // VTG pipe
+  /////////////////////////////////////////////////////////////
   if (_vertexshader != "") {
     auto pshader = c->vertexShader(_vertexshader);
     OrkAssert(pshader != nullptr);
@@ -125,17 +128,10 @@ Pass* PassNode::generate(Container* c) const {
     auto& primvtg           = ppass->_primpipe.Get<PrimPipelineVTG>();
     primvtg._geometryShader = pshader;
   }
-  if (_fragmentshader != "") {
-    auto pshader = c->fragmentShader(_fragmentshader);
-    OrkAssert(pshader != nullptr);
-    if (auto as_vtg = ppass->_primpipe.TryAs<PrimPipelineVTG>())
-      as_vtg.value()._fragmentShader = pshader;
-#if defined(ENABLE_NVMESH_SHADERS)
-    else if (auto as_nvtm = ppass->_primpipe.TryAs<PrimPipelineNVTM>())
-      as_nvtm.value()._fragmentShader = pshader;
-#endif
-  }
-#if defined(ENABLE_NVMESH_SHADERS)
+  /////////////////////////////////////////////////////////////
+  // NVTM pipe
+  /////////////////////////////////////////////////////////////
+  #if defined(ENABLE_NVMESH_SHADERS)
   if (_nvtaskshader != "") {
     auto pshader = c->nvTaskShader(_nvtaskshader);
     OrkAssert(pshader != nullptr);
@@ -149,12 +145,26 @@ Pass* PassNode::generate(Container* c) const {
                                                               : ppass->_primpipe.Make<PrimPipelineNVTM>();
     primnvmt._nvMeshShader = pshader;
   }
+  #endif
+  /////////////////////////////////////////////////////////////
+  // do frag last so we already know pipe type
+  /////////////////////////////////////////////////////////////
+  if (_fragmentshader != "") {
+    auto pshader = c->fragmentShader(_fragmentshader);
+    OrkAssert(pshader != nullptr);
+    if (auto as_vtg = ppass->_primpipe.TryAs<PrimPipelineVTG>())
+      as_vtg.value()._fragmentShader = pshader;
+    #if defined(ENABLE_NVMESH_SHADERS)
+    else if (auto as_nvtm = ppass->_primpipe.TryAs<PrimPipelineNVTM>())
+      as_nvtm.value()._fragmentShader = pshader;
+    #endif
+  }
+  /////////////////////////////////////////////////////////////
   if (_stateblock != "") {
     StateBlock* psb = c->GetStateBlock(_stateblock);
     OrkAssert(psb != nullptr);
     ppass->_stateBlock = psb;
   }
-#endif
   return ppass;
 }
 

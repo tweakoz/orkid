@@ -135,6 +135,7 @@ struct InterfaceLayoutNode : public AstNode {
       : AstNode(cnode) {}
   int parse(const ScannerView& view);
   std::vector<const Token*> _tokens;
+  std::string _direction;
   bool _standaloneLayout = false;
 };
 
@@ -162,7 +163,10 @@ struct InterfaceIoNode : public AstNode {
 
 struct InterfaceNode : public DecoBlockNode {
   InterfaceNode(ContainerNode* cnode)
-      : DecoBlockNode(cnode) {}
+      : DecoBlockNode(cnode) {
+    _inputs._direction = "in";
+    _outputs._direction = "out";
+  }
 
       
   typedef std::vector<InterfaceIoNode*> ionodevect_t;
@@ -172,6 +176,7 @@ struct InterfaceNode : public DecoBlockNode {
     std::set<std::string> _dupecheck;
     InterfaceLayoutNode* _pendinglayout = nullptr;
     std::vector<InterfaceLayoutNode*> _layouts;
+    std::string _direction;
   };
       
   
