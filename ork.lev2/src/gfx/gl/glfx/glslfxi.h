@@ -23,8 +23,8 @@ class GfxTargetGL;
 
 namespace ork::lev2::glslfx {
 
-using Scanner = ork::Scanner;
-using ScannerView = ork::ScannerView;
+using Scanner        = ork::Scanner;
+using ScannerView    = ork::ScannerView;
 using ScanViewFilter = ork::ScanViewFilter;
 
 struct Container;
@@ -39,20 +39,19 @@ struct Config {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-constexpr const char* block_regex =
-  "(fxconfig|uniform_set|uniform_block|"
-  "libblock|state_block|"
-  "vertex_interface|"
-  "vertex_shader|"
-  "tessctrl_interface|tesseval_interface|"
-  "tessctrl_shader|tesseval_shader|"
-  "geometry_interface|fragment_interface|"
-  "geometry_shader|fragment_shader|"
-  #if defined(ENABLE_NVMESH_SHADERS)
-  "nvtask_shader|nvmesh_shader|"
-  "nvtask_interface|nvmesh_interface|"
-  #endif
-  "technique|pass)";
+constexpr const char* block_regex = "(fxconfig|uniform_set|uniform_block|"
+                                    "libblock|state_block|"
+                                    "vertex_interface|"
+                                    "vertex_shader|"
+                                    "tessctrl_interface|tesseval_interface|"
+                                    "tessctrl_shader|tesseval_shader|"
+                                    "geometry_interface|fragment_interface|"
+                                    "geometry_shader|fragment_shader|"
+#if defined(ENABLE_NVMESH_SHADERS)
+                                    "nvtask_shader|nvmesh_shader|"
+                                    "nvtask_interface|nvmesh_interface|"
+#endif
+                                    "technique|pass)";
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,16 +68,15 @@ struct Uniform {
       , _type(GL_ZERO)
       , _arraySize(0) {}
 
-
   std::string genshaderbody() const {
     std::string rval;
     rval += _typeName + " ";
     rval += _name;
 
     if (_arraySize) {
-        ork::FixedString<32> fxs;
-        fxs.format("[%d]", _arraySize);
-        rval += std::string(fxs.c_str());
+      ork::FixedString<32> fxs;
+      fxs.format("[%d]", _arraySize);
+      rval += std::string(fxs.c_str());
     }
     return rval;
   }
@@ -149,35 +147,34 @@ struct UniformBlock {
 
 struct UniformBlockItem {
   UniformBlockBinding* _binding = nullptr;
-  size_t _offset = 0;
+  size_t _offset                = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBuffer {
-    FxShaderParamBuffer* _fxspb = nullptr;
-    GLuint _glbufid = 0;
-    size_t _length = 0;
+  FxShaderParamBuffer* _fxspb = nullptr;
+  GLuint _glbufid             = 0;
+  size_t _length              = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 
 struct UniformBlockBinding {
 
   struct Item {
     GLuint _actuniindex = 0;
-    GLint _blockindex = 0;
-    GLint _offset = 0;
-    GLint _type = 0;
-    GLint _size = 0;
-    GLint _arraystride = 0;
+    GLint _blockindex   = 0;
+    GLint _offset       = 0;
+    GLint _type         = 0;
+    GLint _size         = 0;
+    GLint _arraystride  = 0;
     GLint _matrixstride = 0;
   };
 
-  Pass* _pass = nullptr; // program to which this binding is bound
+  Pass* _pass          = nullptr; // program to which this binding is bound
   UniformBlock* _block = nullptr;
-  GLuint _blockIndex = 0xffffffff;
+  GLuint _blockIndex   = 0xffffffff;
   std::string _name;
   GLint _blockSize = 0;
   std::vector<Item> _ubbitems;
@@ -187,19 +184,19 @@ struct UniformBlockBinding {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBlockMapping {
-   UniformBlockBinding* _binding = nullptr;
-   uint8_t* _mapaddr = nullptr;
+  UniformBlockBinding* _binding = nullptr;
+  uint8_t* _mapaddr             = nullptr;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 
 struct UniformBlockLayout {
 
-  template <typename T> UniformBlockItem alloc(){
+  template <typename T> UniformBlockItem alloc() {
     size_t index = _counter;
-     _counter += sizeof(T);
-    return UniformBlockItem{nullptr,index};
- }
+    _counter += sizeof(T);
+    return UniformBlockItem{nullptr, index};
+  }
 
   size_t _counter = 0;
 };
@@ -207,26 +204,25 @@ struct UniformBlockLayout {
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ENABLE_SHADER_STORAGE)
-  struct StorageBlock {
-    std::string _name;
-  };
-  struct StorageBlockBinding {
-    Pass* _pass = nullptr; // program to which this binding is bound
-    GLuint _blockIndex = 0xffffffff;
-    std::string _name;
-    //StorageBlockItem findUniform(std::string named) const;
-  };
-  struct StorageBlockMapping {
-     StorageBlockBinding* _binding = nullptr;
-     uint8_t* _mapaddr = nullptr;
-  };
+struct StorageBlock {
+  std::string _name;
+};
+struct StorageBlockBinding {
+  Pass* _pass        = nullptr; // program to which this binding is bound
+  GLuint _blockIndex = 0xffffffff;
+  std::string _name;
+  // StorageBlockItem findUniform(std::string named) const;
+};
+struct StorageBlockMapping {
+  StorageBlockBinding* _binding = nullptr;
+  uint8_t* _mapaddr             = nullptr;
+};
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
 struct StreamInterface {
   StreamInterface();
 
-  
   typedef std::unordered_map<std::string, Attribute*> attrmap_t;
   typedef std::vector<std::string> preamble_t;
 
@@ -262,24 +258,23 @@ struct Shader {
 
   Shader(const std::string& nam, GLenum etyp)
       : mName(nam)
-      , mShaderType(etyp)
-  {}
+      , mShaderType(etyp) {}
 
   bool Compile();
   bool IsCompiled() const;
   void requireExtension(std::string ext) { _requiredExtensions.insert(ext); }
   void addUniformSet(UniformSet*);
   void addUniformBlock(UniformBlock*);
-  void setInputInterface(StreamInterface*iface);
+  void setInputInterface(StreamInterface* iface);
 
   std::string mName;
   std::string mShaderText;
   StreamInterface* _inputInterface = nullptr;
-  Container* mpContainer = nullptr;
-  GLuint mShaderObjectId = 0;
+  Container* mpContainer           = nullptr;
+  GLuint mShaderObjectId           = 0;
   GLenum mShaderType;
   bool mbCompiled = false;
-  bool mbError = false;
+  bool mbError    = false;
   std::set<std::string> _requiredExtensions;
   std::vector<UniformBlock*> _uniblocks;
   std::vector<UniformSet*> _unisets;
@@ -325,7 +320,7 @@ struct ShaderTsE : Shader {
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PrimPipelineVTG {
-  ShaderVtx* _vertexShader = nullptr;
+  ShaderVtx* _vertexShader   = nullptr;
   ShaderTsC* _tessCtrlShader = nullptr;
   ShaderTsE* _tessEvalShader = nullptr;
   ShaderGeo* _geometryShader = nullptr;
@@ -348,7 +343,7 @@ struct ShaderNvTask : Shader {
 struct PrimPipelineNVTM {
   ShaderNvTask* _nvTaskShader = nullptr;
   ShaderNvMesh* _nvMeshShader = nullptr;
-  ShaderFrg* _fragmentShader = nullptr;
+  ShaderFrg* _fragmentShader  = nullptr;
 };
 #endif
 
@@ -357,7 +352,7 @@ struct PrimPipelineNVTM {
 struct Pass {
   typedef std::unordered_map<std::string, UniformInstance*> uni_map_t;
   typedef std::unordered_map<std::string, Attribute*> attr_map_t;
-  typedef std::unordered_map<UniformBlock*,UniformBlockBinding*> ubb_map_t;
+  typedef std::unordered_map<UniformBlock*, UniformBlockBinding*> ubb_map_t;
 
   static const int kmaxattrID = 16;
   svar64_t _primpipe;
@@ -386,10 +381,9 @@ struct Pass {
 
   UniformBlockBinding* uniformBlockBinding(UniformBlock* block);
 
-  void bindUniformBlockBuffer( UniformBlock* block, UniformBuffer* buffer );
+  void bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer);
 
   std::vector<UniformBuffer*> _ubobindings;
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -419,7 +413,7 @@ struct Container {
   Uniform* MergeUniform(const std::string& name);
   void addStateBlock(StateBlock* pSB);
   void addTechnique(Technique* ptek);
-  
+
   StateBlock* GetStateBlock(const std::string& name) const;
   Uniform* GetUniform(const std::string& name) const;
   UniformBlock* uniformBlock(const std::string& name) const;
@@ -499,12 +493,11 @@ struct Container {
 
 ///////////////////////////////////////////////////////
 #if defined(ENABLE_SHADER_STORAGE)
-std::unordered_map<std::string, StorageBlock*> _storageBlocks;
-StorageBlock* storageBlock(const std::string& name) const;
-void addStorageBlock(StorageBlock* pif);
+  std::unordered_map<std::string, StorageBlock*> _storageBlocks;
+  StorageBlock* storageBlock(const std::string& name) const;
+  void addStorageBlock(StorageBlock* pif);
 #endif
-///////////////////////////////////////////////////////
-
+  ///////////////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -523,10 +516,10 @@ public:
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
   const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
-  #if defined(ENABLE_SHADER_STORAGE)
+#if defined(ENABLE_SHADER_STORAGE)
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
-  #endif
-
+#endif
+  
   void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) final;
   void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) final;
   void BindParamVect2(FxShader* hfx, const FxShaderParam* hpar, const fvec2& Vec) final;
@@ -535,14 +528,16 @@ public:
   void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) final;
   void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) final;
   void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) final;
-  void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) final;
-  void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) final;
-  void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) final;
   void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) final;
   void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) final;
   void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final;
-  void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, U32 uval) final;
+  void BindParamU32(FxShader* hfx, const FxShaderParam* hpar, uint32_t uval) final;
   void BindParamCTex(FxShader* hfx, const FxShaderParam* hpar, const Texture* pTex) final;
+
+#if ! defined(__APPLE__)
+  void BindParamU64(FxShader* hfx, const FxShaderParam* hpar, uint64_t uval) final;
+#endif
+
   bool LoadFxShader(const AssetPath& pth, FxShader* ptex) final;
 
   Interface(GfxTargetGL& glctx);
@@ -556,13 +551,17 @@ public:
   bool compilePipelineNVTM(Container* container);
 
   // ubo
-  FxShaderParamBuffer* createParamBuffer( size_t length ) final;
-  parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer*b,size_t base, size_t length) final;
+  FxShaderParamBuffer* createParamBuffer(size_t length) final;
+  parambuffermappingptr_t mapParamBuffer(FxShaderParamBuffer* b, size_t base, size_t length) final;
   void unmapParamBuffer(FxShaderParamBufferMapping* mapping) final;
   void bindParamBlockBuffer(const FxShaderParamBlock* block, FxShaderParamBuffer* buffer) final;
 
+private:
+  
+  typedef std::function<void(int iloc,GLenum checktype)> stdparambinder_t;
 
-protected:
+  void _stdbindparam(FxShader* hfx, const FxShaderParam* hpar, const stdparambinder_t& binder);
+
   Container* mpActiveEffect;
   const Pass* mLastPass;
   FxShaderTechnique* mhCurrentTek;

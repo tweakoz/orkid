@@ -35,8 +35,18 @@ ContainerNode::ContainerNode(const AssetPath &pth, const Scanner &s)
   , _scanner(s) {
 
     std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
-                            "float double half int uint "
-                            "uint8_t uint16_t uint32_t "
+                            "float double half "
+#if ! defined(__APPLE__)
+                            "int int8_t int16_t int32_t int64_t "
+                            "uint uint8_t uint16_t uint32_t uint64_t "
+                            "i8vec2 i8vec3 i8vec4 "
+                            "i16vec2 i16vec3 i16vec4 "
+                            "i32vec2 i32vec3 i32vec4 "
+                            "i64vec2 i64vec3 i64vec4 "
+                            "u16vec2 u16vec3 u16vec4 "
+                            "u32vec2 u32vec3 u32vec4 "
+                            "u64vec2 u64vec3 u64vec4 "
+#endif
                             "sampler2D sampler3D sampler2DShadow";
 
     for( auto item : SplitString(typenames, ' ') )

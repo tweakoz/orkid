@@ -41,9 +41,6 @@ public:
   void BindParamVect4Array(FxShader* hfx, const FxShaderParam* hpar, const fvec4* Vec, const int icount) final {}
   void BindParamFloatArray(FxShader* hfx, const FxShaderParam* hpar, const float* pfA, const int icnt) final {}
   void BindParamFloat(FxShader* hfx, const FxShaderParam* hpar, float fA) final {}
-  void BindParamFloat2(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB) final {}
-  void BindParamFloat3(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC) final {}
-  void BindParamFloat4(FxShader* hfx, const FxShaderParam* hpar, float fA, float fB, float fC, float fD) final {}
   void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx4& Mat) final {}
   void BindParamMatrix(FxShader* hfx, const FxShaderParam* hpar, const fmtx3& Mat) final {}
   void BindParamMatrixArray(FxShader* hfx, const FxShaderParam* hpar, const fmtx4* MatArray, int iCount) final {}

@@ -398,7 +398,7 @@ bool BuiltinFrameEffectMaterial::BeginPass( GfxTarget* pTarg,int iPass )
 	fxi->BindParamMatrix( hFX, hMVP, MatP );
 	fxi->BindParamVect4( hFX, hModColor, pTarg->RefModColor() );
 	fxi->BindParamFloat( hFX, hTime, (float)OldSchool::GetRef().GetLoResRelTime() );
-	fxi->BindParamFloat2( hFX, hViewportDim, float(Dims.GetX()), float(Dims.GetY()) );
+	fxi->BindParamVect2( hFX, hViewportDim, fvec2(Dims.GetX(),Dims.GetY()) );
 
 	Texture* ptex0 = 0;
 	Texture* ptex1 = 0;
