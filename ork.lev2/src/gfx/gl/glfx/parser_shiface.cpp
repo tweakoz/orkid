@@ -372,6 +372,13 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
     pattr->mLocation                = iloc;
     psi->mAttributes[output->_name] = pattr;
     pattr->_decorators              = output->_output_decorators;
+    
+    if( output->_layout ){
+      for (auto item : output->_layout->_tokens )
+        pattr->mLayout+=item->text;
+    }
+    
+    
   }
 
   ////////////////////////

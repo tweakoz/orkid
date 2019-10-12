@@ -235,6 +235,10 @@ void ShaderNode::_generateCommon(Shader* pshader) {
     Attribute* pa = ita->second;
 
     std::string l;
+  
+    if( pa->mLayout.length() )
+      l += pa->mLayout + " ";
+  
     l += pa->mDirection + " ";
     l += pa->mTypeName + " ";
 

@@ -104,6 +104,7 @@ struct Attribute {
   std::string mName;
   std::string mTypeName;
   std::string mDirection;
+  std::string mLayout;
   GLenum meType;
   GLint mLocation;
   std::string mSemantic;
