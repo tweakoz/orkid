@@ -167,15 +167,12 @@ void ContainerNode::parse() {
     } else if (tok.text == "tessctrl_shader") {
       auto sh = new TessCtrlShaderNode(this);
       sh->parse(scanview);
-      assert(false);
     } else if (tok.text == "tesseval_shader") {
       auto sh = new TessEvalShaderNode(this);
       sh->parse(scanview);
-      assert(false);
     } else if (tok.text == "geometry_shader") {
       auto sh = new GeometryShaderNode(this);
       sh->parse(scanview);
-      assert(false);
     } else if (tok.text == "fragment_shader") {
       auto sh = new FragmentShaderNode(this);
       sh->parse(scanview);

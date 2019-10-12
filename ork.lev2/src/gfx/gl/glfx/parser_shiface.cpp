@@ -44,12 +44,7 @@ int InterfaceLayoutNode::parse(const ScannerView& view) {
   const Token* vt_tok = view.token(i);
   bool done           = false;
   while (false == done) {
-    done = (vt_tok->text == ";");
-
-    if( done )
-        this->_standaloneLayout = true;
-    else
-      this->_tokens.push_back(vt_tok);
+    _tokens.push_back(vt_tok);
     done |= (vt_tok->text == ")");
 
     i++;
@@ -59,53 +54,7 @@ int InterfaceLayoutNode::parse(const ScannerView& view) {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-void InterfaceNode::parseInputs(const ScannerView& view) {
-  size_t ist = view._start + 1;
-  size_t ien = view._end - 1;
-  for (size_t i = ist; i <= ien;) {
-    const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
-    const Token* dt_tok  = view.token(i);
-    const Token* nam_tok = view.token(i + 1);
-    std::string named = nam_tok ? nam_tok->text : "";
-    printf("  parseInputs DtTok<%s>\n", dt_tok->text.c_str());
-    printf("  parseInputs named<%s>\n", named.c_str());
 
-    if (dt_tok->text == "layout") {
-      std::string layline;
-      auto layout = new InterfaceLayoutNode(_container);
-      int j       = layout->parse(view);
-      assert(j > i);
-      i = j;
-      _inputlayouts.push_back(layout);
-      continue;
-    }
-
-    bool typeok = _container->validateTypeName(dt_tok->text);
-    bool nameok = _container->validateMemberName(named);
-
-
-    assert(typeok and nameok);
-    auto it = _inputdupecheck.find(named);
-    assert(it == _inputdupecheck.end()); // make sure there are no duplicate attrs
-    _inputdupecheck.insert(named);
-    auto input = new InterfaceInputNode(_container);
-    _inputs.push_back(input);
-    input->_name     = named;
-    input->_typeName = dt_tok->text;
-    if (view.token(i + 2)->text == ":") {
-      input->_semantic = view.token(i + 3)->text;
-      i += 5;
-    } else if (view.token(i + 2)->text == ";") {
-      i += 3;
-    } else if (view.token(i + 2)->text == "[") {
-      input->_arraySize = atoi(view.token(i + 3)->text.c_str());
-      i += 6;
-    } else {
-      assert(false);
-    }
-  }
-}*/
 void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
   size_t ist = view._start + 1;
   size_t ien = view._end - 1;
@@ -114,7 +63,12 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
   for (size_t i = ist; i <= ien;) {
     const Token* prv_tok = (i > 0) ? view.token(i - 1) : nullptr;
     const Token* dt_tok  = view.token(i);
-    
+
+    if (dt_tok->text == ";") {
+      i++;
+      continue;
+    }
+
     //////////////////////////////////
     // layout
     //////////////////////////////////
@@ -126,8 +80,11 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
       subview.scanUntil(view.globalTokenIndex(i),")",true);
       layout->parse(subview);
       i += subview.numTokens(); // advance layout
-      if(layout->_standaloneLayout)
-          _interfacelayouts.push_back(layout);
+      auto try_semicolon = view.token(i)->text;
+      if( try_semicolon == ";") {
+        layout->_standaloneLayout = true;
+        _interfacelayouts.push_back(layout);
+      }
       else{
           assert(ioc._pendinglayout==nullptr);
           ioc._pendinglayout = layout;
@@ -153,16 +110,16 @@ void InterfaceNode::parseIos(const ScannerView& view,IoContainer& ioc) {
     bool typeisvalid = _container->validateTypeName(dt_tok->text);
     auto io = new InterfaceIoNode(_container);
     ioc._nodes.push_back(io);
-    io->_typeName          = dt_tok->text;
+    io->_typeName   = dt_tok->text;
     io->_decorators = decos;
     decos.clear();
-    if( ioc._pendinglayout ) {
-        io->_layout = ioc._pendinglayout;
-        ioc._pendinglayout = nullptr;
+    if (ioc._pendinglayout) {
+      io->_layout        = ioc._pendinglayout;
+      ioc._pendinglayout = nullptr;
     }
-    
-    i++; // advance typename
 
+    i++; // advance typename
+    
     ///////////////////////////////////////////
     // inline struct type ?
     ///////////////////////////////////////////
@@ -299,6 +256,23 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
   bool is_vtx = iftype == GL_VERTEX_SHADER;
   bool is_geo = iftype == GL_GEOMETRY_SHADER;
 
+  ////////////////////////
+  // interface scoped layouts
+  ////////////////////////
+
+  for( auto iflayout : _interfacelayouts ){
+    for (auto item : iflayout->_tokens ) {
+      const auto& tok = item->text;
+      // GS primtype
+      if( tok == "points" )
+        psi->mGsPrimSize = 1;
+      else if( tok == "lines" )
+        psi->mGsPrimSize = 2;
+      else if( tok == "triangles" )
+        psi->mGsPrimSize = 3;
+    }
+  }
+
   /////////////////////////////
   // interface inheritance
   /////////////////////////////
@@ -335,53 +309,11 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
       psi->Inherit(*it_fi->second);
     }
   } // for (size_t ideco = 0; ideco < inumdecos; ideco++) {
-
+  
   ////////////////////////
-
-  //for (auto layout : _layouts) {
-    /*
-    std::string layline;
-    bool done      = false;
-    bool is_input  = false;
-    bool has_punc  = false;
-    bool is_points = false;
-    bool is_lines  = false;
-    bool is_tris   = false;
-
-    while (false == done) {
-      const auto& txt = vt_tok->text;
-
-      is_input |= (txt == "in");
-      is_points |= (txt == "points");
-      is_lines |= (txt == "lines");
-      is_tris |= (txt == "triangles");
-
-      bool is_punc = (txt == "(") || (txt == ")") || (txt == ",");
-      has_punc |= is_punc;
-
-      // if( is_punc )
-      layline += " ";
-      layline += vt_tok->text;
-      // if( is_punc )
-      layline += " ";
-      done = vt_tok->text == ";";
-      i++;
-      vt_tok = v.token(i);
-    }
-    layline += "\n";
-    psi->mPreamble.push_back(layline);
-
-    ////////////////////////////////////////////////////////////////////////////
-    if (has_punc && is_input) {
-      ////////////////////////////////////////////////////////////////////////////
-      if (is_points)
-        psi->mGsPrimSize = 1;
-      if (is_lines)
-        psi->mGsPrimSize = 2;
-      if (is_tris)
-        psi->mGsPrimSize = 3;
-    }*/
-  //}
+  // attribute scoped layouts
+  ////////////////////////
+  
   for (auto input : _inputs._nodes) {
     int iloc                       = int(psi->_inputAttributes.size());
     Attribute* pattr               = new Attribute(input->_name);
@@ -391,10 +323,13 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
     psi->_inputAttributes[input->_name] = pattr;
     pattr->mLocation               = int(psi->_inputAttributes.size());
     if( input->_layout ){
-      for (auto item : input->_layout->_tokens )
-        pattr->mLayout+=item->text;
+      for (auto item : input->_layout->_tokens ) {
+        const auto& tok = item->text;
+        pattr->mLayout += tok;
+      }
     }
   }
+  //
   for (auto output : _outputs._nodes) {
     
     int iloc                        = int(psi->_outputAttributes.size());
@@ -409,8 +344,6 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
       for (auto item : output->_layout->_tokens )
         pattr->mLayout+=item->text;
     }
-    
-    
   }
 
   ////////////////////////
