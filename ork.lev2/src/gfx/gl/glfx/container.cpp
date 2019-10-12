@@ -207,9 +207,9 @@ namespace ork::lev2::glslfx {
     for (auto b : this->_uniformBlocks) {
       UniformBlock* block = b.second;
       for (auto s : block->_subuniforms) {
-        auto it = flatunimap.find(s.first);
+        auto it = flatunimap.find(s->_name);
         assert(it == flatunimap.end());
-        flatunimap[s.first] = s.second;
+        flatunimap[s->_name] = s;
       }
     }
     return flatunimap;

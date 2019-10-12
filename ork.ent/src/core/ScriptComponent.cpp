@@ -217,6 +217,9 @@ ScriptSystem::ScriptSystem(const ScriptSystemData& data, ork::ent::Simulation* p
   auto luasys = new LuaSystem(pinst);
   mLuaManager.Set<LuaSystem*>(luasys);
 
+  auto luapath = getenv("LUA_PATH");
+  assert(luapath!=nullptr);
+  
   ///////////////////////////////////////////////
 
   auto AppendPath = [&](const char* pth) {

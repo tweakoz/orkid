@@ -114,7 +114,7 @@ void UniformBlockNode::generate(Container* outcon) const {
       auto puni = new Uniform(item->_name);
       puni->_typeName = item->_typeName;
       puni->_arraySize = item->_arraySize;
-      ublk->_subuniforms[item->_name] = puni;
+      ublk->_subuniforms.push_back(puni);
     }
     outcon->addUniformBlock(ublk);
 }

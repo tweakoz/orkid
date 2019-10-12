@@ -222,8 +222,8 @@ void ShaderNode::_generateCommon(Shader* pshader) {
 
   for (const auto& ub : pshader->_uniblocks) {
     lines.add(FormatString("layout(std140) uniform %s {", ub->_name.c_str()));
-    for (auto itsub : ub->_subuniforms) {
-      lines.add(itsub.second->genshaderbody()+";");
+    for (auto sub : ub->_subuniforms) {
+      lines.add(sub->genshaderbody()+";");
     }
     lines.add("};");
   }

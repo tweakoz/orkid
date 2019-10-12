@@ -139,7 +139,7 @@ struct UniformBlock {
   UniformBlock() {}
 
   std::string _name;
-  uniform_map_t _subuniforms;
+  std::vector<Uniform*> _subuniforms;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

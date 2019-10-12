@@ -305,8 +305,8 @@ const FxShaderParamBlock* Interface::parameterBlock(FxShader* hfx, const std::st
       auto p                         = new FxShaderParam;
       p->_blockinfo                  = new FxShaderParamInBlockInfo;
       p->_blockinfo->_parent         = fxsblock;
-      p->mInternalHandle             = (void*)u.second;
-      p->_name                       = u.first;
+      p->mInternalHandle             = (void*)u;
+      p->_name                       = u->_name;
       fxsblock->_subparams[p->_name] = p;
     }
   }
