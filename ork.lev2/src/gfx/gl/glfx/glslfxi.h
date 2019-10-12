@@ -235,7 +235,8 @@ struct StreamInterface {
   attrmap_t _outputAttributes;
   GLenum mInterfaceType;
   preamble_t mPreamble;
-  int mGsPrimSize;
+  int _gspriminpsize = 0;
+  int _gsprimoutsize = 0;
   std::vector<UniformBlock*> _uniformBlocks;
   std::vector<UniformSet*> _uniformSets;
 

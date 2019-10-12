@@ -255,15 +255,6 @@ geometry_shader gs_billboardquad_stereo : gface_bill_stereo : extension(GL_NV_st
   EndPrimitive();
 }
 ///////////////////////////////////////////////////////////////
-tessctrl_interface tcface_base {
-  outputs { layout(vertices = 4); }
-}
-///////////////////////////////////////////////////////////////
-tessctrl_shader tcs_passthru : tcface_base {
-  int invid                 = gl_InvocationID;
-  gl_out[invid].gl_Position = gl_in[invid].gl_Position;
-}
-///////////////////////////////////////////////////////////////
 vertex_interface vface_streak : ublock_vtx {
   inputs {
     vec4 position : POSITION;
@@ -288,8 +279,12 @@ vertex_shader vs_streak : vface_streak {
   geo_lw      = uv0;
 }
 ///////////////////////////////////////////////////////////////
-geometry_interface gface_streak : gface_base : vface_streak // import vtxshader outputs
+geometry_interface gface_streak
+  : gface_base
+  : vface_streak // import vtxshader outputs
 {
+  // inputs passed from vertex shader
+
   outputs {
     vec4 frg_clr;
     vec4 frg_uv0;

@@ -23,7 +23,7 @@ namespace ork::lev2::glslfx {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 StreamInterface::StreamInterface()
     : mInterfaceType(GL_NONE)
-    , mGsPrimSize(0) {}
+    , _gspriminpsize(0) {}
 
 void StreamInterface::Inherit(const StreamInterface& par) {
   bool is_vtx = mInterfaceType == GL_VERTEX_SHADER;
@@ -56,16 +56,17 @@ void StreamInterface::Inherit(const StreamInterface& par) {
   }
 
   if (is_geo && (types_match || geoinhvtx || geoinhtee)) {
-    // printf( "pre_inherit mGsPrimSize<%d>\n", mGsPrimSize );
-    if (mGsPrimSize == 0 && par.mGsPrimSize != 0)
-      mGsPrimSize = par.mGsPrimSize;
-    // printf( "inherit mGsPrimSize<%d>\n", mGsPrimSize );
+    // printf( "pre_inherit _gspriminpsize<%d>\n", _gspriminpsize );
+    if (_gspriminpsize == 0 && par._gspriminpsize != 0)
+      _gspriminpsize = par._gspriminpsize;
+    // printf( "inherit _gspriminpsize<%d>\n", _gspriminpsize );
   }
   
   ////////////////////////////////
   // inherit input attributes
   ////////////////////////////////
-  
+
+  if( types_match )
   for (const auto& a : par._inputAttributes) {
     const Attribute* src = a.second;
     auto it = _inputAttributes.find(a.first);
@@ -82,6 +83,7 @@ void StreamInterface::Inherit(const StreamInterface& par) {
   // inherit output attributes
   ////////////////////////////////
   
+  if( types_match )
   for (const auto& a : par._outputAttributes) {
     const Attribute* src = a.second;
     auto it = _outputAttributes.find(a.first);
@@ -116,8 +118,8 @@ void StreamInterface::Inherit(const StreamInterface& par) {
         cpy->mTypeName  = src->mTypeName;
         cpy->mDirection = "in";
         cpy->meType     = src->meType;
-        assert(mGsPrimSize != 0);
-        cpy->mArraySize = mGsPrimSize;
+        assert(_gspriminpsize != 0);
+        cpy->mArraySize = _gspriminpsize;
         cpy->mLocation  = int(_inputAttributes.size());
         cpy->mComment   = "// (vtx/tee)->geo";
 

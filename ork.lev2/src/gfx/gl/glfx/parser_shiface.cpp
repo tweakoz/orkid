@@ -274,12 +274,24 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
       }
       
       // GS primtype
+      int primsize = 0;
       if( tok == "points" )
-        psi->mGsPrimSize = 1;
+        primsize = 1;
       else if( tok == "lines" )
-        psi->mGsPrimSize = 2;
+        primsize = 2;
       else if( tok == "triangles" )
-        psi->mGsPrimSize = 3;
+        primsize = 3;
+      else if( tok == "triangle_strip" )
+        primsize = 4;
+
+      if(primsize!=0){
+        if(iflayout->_direction=="in"){
+            psi->_gspriminpsize = primsize;
+        }
+        else {
+            psi->_gsprimoutsize = primsize;
+        }
+      }
     }
   }
   psi->mPreamble.push_back("/*end SIF preamble*/");
@@ -351,8 +363,14 @@ StreamInterface* InterfaceNode::_generate(Container* c, GLenum iftype) {
     pattr->mLocation                = iloc;
     psi->_outputAttributes[output->_name] = pattr;
     pattr->_decorators              = output->_decorators;
-    pattr->mArraySize = output->_arraySize;
-    
+
+    int arysiz = output->_arraySize;
+    arysiz  = (arysiz==0)
+            ? psi->_gsprimoutsize
+            : arysiz;
+
+    pattr->mArraySize = arysiz;
+
     for( auto deco : output->_decorators )
         pattr->mDecorators += deco + " ";
     
