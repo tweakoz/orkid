@@ -76,12 +76,14 @@ libblock lib_deferred : ub_light : ub_frg {
   /////////////////////////////////////////////////////////
   vec4 defwpos(WPosData wpd) {
     float depthtex = texture(MapDepth, wpd._muv).r;
+    vec2 minmax = texture(MapDepthMinMax,wpd._muv).rg;
     vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
     vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
     vec4 rr        = wpd._ivp * vec4(inpos, 1);
     float ndc = depthtex*2.0-1.0;
     float zeye = Zndc2eye.x/(ndc - Zndc2eye.y);
-    return vec4(rr.xyz / rr.w,zeye);
+    vec3 wpos = vec3(rr.xyz / rr.w);
+    return vec4(wpos,zeye+minmax.x);
   }
   /////////////////////////////////////////////////////////
   GBufData decodeGBUF(WPosData wpd) {

@@ -322,8 +322,6 @@ struct IMPL {
       _lightingmtl.bindParamCTex(_parMapGBufNrmL,
                                  _rtgGbuffer->GetMrt(1)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
-      _lightingmtl.bindParamCTex(_parMapDepthMinMax,
-                                 _rtgMinMaxD->GetMrt(0)->GetTexture());
       _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
       _lightingmtl.bindParamVec2(
           _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
@@ -359,6 +357,8 @@ struct IMPL {
       _lightingmtl.bindParamCTex(_parMapGBufNrmL,
                                  _rtgGbuffer->GetMrt(1)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+      _lightingmtl.bindParamCTex(_parMapDepthMinMax,
+                                 _rtgMinMaxD->GetMrt(0)->GetTexture());
       _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
       _lightingmtl.bindParamVec2(_parZndc2eye,Zndc2eye);
       _lightingmtl.bindParamVec2(
