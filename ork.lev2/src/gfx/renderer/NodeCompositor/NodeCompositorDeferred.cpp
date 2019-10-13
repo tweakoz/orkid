@@ -118,6 +118,7 @@ struct IMPL {
       _parMapGBufAlbAo = _lightingmtl.param("MapAlbedoAo");
       _parMapGBufNrmL = _lightingmtl.param("MapNormalL");
       _parMapDepth = _lightingmtl.param("MapDepth");
+      _parMapDepthMinMax = _lightingmtl.param("MapDepthMinMax");
       _parInvViewSize = _lightingmtl.param("InvViewportSize");
       _parTime = _lightingmtl.param("Time");
       _parNumLights = _lightingmtl.param("NumLights");
@@ -129,14 +130,16 @@ struct IMPL {
                                lev2::EBUFFMT_RGBA8, 8, 8);
       auto buf1 = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT1,
                                lev2::EBUFFMT_RGB10A2, 8, 8);
-      // auto buf2        = new RtBuffer(_rtgGbuffer, lev2::ETGTTYPE_MRT2,
-      // lev2::EBUFFMT_RGBA32F, 8, 8);
       buf0->_debugName = "DeferredRtAlbAo";
-      buf1->_debugName = "DeferredRRufMtl";
-      // buf2->_debugName = "DeferredRtNormalDist";
+      buf1->_debugName = "DeferredRtNormalDist";
       _rtgGbuffer->SetMrt(0, buf0);
       _rtgGbuffer->SetMrt(1, buf1);
-      //_rtgGbuffer->SetMrt(2, buf2);
+      //////////////////////////////////////////////////////////////
+      _rtgMinMaxD = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
+      auto bufD = new RtBuffer(_rtgMinMaxD, lev2::ETGTTYPE_MRT0,
+                               lev2::EBUFFMT_RG32F, 8, 8);
+      bufD->_debugName = "DeferredMinMaxD";
+      _rtgMinMaxD->SetMrt(0, bufD);
       //////////////////////////////////////////////////////////////
       _rtgLaccum = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
       auto bufLA = new RtBuffer(_rtgLaccum, lev2::ETGTTYPE_MRT0,
@@ -166,10 +169,13 @@ struct IMPL {
     int newwidth = ddprops["OutputWidth"_crcu].Get<int>();
     int newheight = ddprops["OutputHeight"_crcu].Get<int>();
     if (_rtgGbuffer->GetW() != newwidth or _rtgGbuffer->GetH() != newheight) {
-      _rtgGbuffer->Resize(newwidth, newheight);
-      _rtgLaccum->Resize(newwidth, newheight);
       _width = newwidth;
       _height = newheight;
+      _minmaxW = (newwidth+31)/32;
+      _minmaxH = (newheight+31)/32;
+      _rtgGbuffer->Resize(newwidth, newheight);
+      _rtgLaccum->Resize(newwidth, newheight);
+      _rtgMinMaxD->Resize( _minmaxW, _minmaxH );
     }
     //////////////////////////////////////////////////////
     auto irenderer = ddprops["irenderer"_crcu].Get<lev2::IRenderer *>();
@@ -255,13 +261,36 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->EndFrame();
       FBI->PopRtGroup();
-      //TXI->generateMipMaps(_rtgGbuffer->_depthTexture);
+      /////////////////////////////////////////////////////////////////////////////////////////
+      // gen minmax tile depth image
+      /////////////////////////////////////////////////////////////////////////////////////////
+
+      RtGroupRenderTarget rtlminmaxd(_rtgMinMaxD);
+      auto vprect = SRect(0, 0, _minmaxW, _minmaxH);
+      auto quadrect = SRect(0, 0, _minmaxW, _minmaxH);
+      CPD.SetDstRect(vprect);
+      CPD._irendertarget        = &rtlminmaxd;
+      CPD._cameraMatrices       = nullptr;
+      CPD._stereoCameraMatrices = nullptr;
+      CPD._stereo1pass          = false;
+      CIMPL->pushCPD(CPD);
+      targ->debugPushGroup("Deferred::minmaxd");
+      {
+        FBI->PushRtGroup(_rtgMinMaxD);
+        targ->BeginFrame();
+        targ->EndFrame();
+        FBI->PopRtGroup();
+      }
+      targ->debugPopGroup(); // MinMaxD
+      CIMPL->popCPD();       // MinMaxD
+      // TXI->generateMipMaps(_rtgGbuffer->_depthTexture);
+
       /////////////////////////////////////////////////////////////////////////////////////////
       // Light Accumulation
       /////////////////////////////////////////////////////////////////////////////////////////
       RtGroupRenderTarget rtlaccum(_rtgLaccum);
-      SRect vprect(0, 0, _width, _height);
-      SRect quadrect(0, 0, _width, _height);
+      vprect = SRect(0, 0, _width, _height);
+      quadrect = SRect(0, 0, _width, _height);
       CPD.SetDstRect(vprect);
       CPD._irendertarget = &rtlaccum;
       CPD._cameraMatrices = nullptr;
@@ -271,6 +300,7 @@ struct IMPL {
       targ->debugPushGroup("Deferred::Lighting");
       FBI->SetAutoClear(false);
       FBI->PushRtGroup(_rtgLaccum);
+      FBI->SetAutoClear(true);
       targ->BeginFrame();
       FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
       auto this_buf = FBI->GetThisBuffer();
@@ -292,6 +322,8 @@ struct IMPL {
       _lightingmtl.bindParamCTex(_parMapGBufNrmL,
                                  _rtgGbuffer->GetMrt(1)->GetTexture());
       _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+      _lightingmtl.bindParamCTex(_parMapDepthMinMax,
+                                 _rtgMinMaxD->GetMrt(0)->GetTexture());
       _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
       _lightingmtl.bindParamVec2(
           _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
@@ -503,6 +535,7 @@ struct IMPL {
   const FxShaderParam *_parMapGBufAlbAo = nullptr;
   const FxShaderParam *_parMapGBufNrmL = nullptr;
   const FxShaderParam *_parMapDepth = nullptr;
+  const FxShaderParam *_parMapDepthMinMax = nullptr;
   const FxShaderParam *_parTime = nullptr;
   const FxShaderParam *_parNearFar = nullptr;
   const FxShaderParam *_parInvViewSize = nullptr;
@@ -512,10 +545,13 @@ struct IMPL {
   FxShaderParamBuffer *_lightbuffer = nullptr;
 
   RtGroup *_rtgGbuffer = nullptr;
+  RtGroup *_rtgMinMaxD = nullptr;
   RtGroup *_rtgLaccum = nullptr;
   fmtx4 _viewOffsetMatrix;
   int _width = 0;
   int _height = 0;
+  int _minmaxW = 0;
+  int _minmaxH = 0;
   fmtx4 _ivp[2];
   fmtx4 _v[2];
   fmtx4 _p[2];

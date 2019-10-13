@@ -77,7 +77,6 @@ set(CMAKE_AUTORCC ON)
 
 add_subdirectory (ork.tuio)
 add_subdirectory (ork.utpp)
-add_subdirectory (ork.fcollada305)
 add_subdirectory (ork.core)
 add_subdirectory (ork.lev2)
 add_subdirectory (ork.ent)
