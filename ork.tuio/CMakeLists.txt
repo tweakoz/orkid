@@ -49,22 +49,12 @@ add_custom_target(mkoschdrdir ALL
 add_custom_target(mkiphdrdir ALL
   COMMAND ${CMAKE_COMMAND} -E make_directory ${IP_DEST_HEADERDIR})
 
-add_custom_command(
-  TARGET ork_tuio
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy ${SRCD}/*.h ${TUIO_DEST_HEADERDIR}
-)
-
-add_custom_command(
-  TARGET ork_tuio
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy ${SRCD}/oscpack/osc/*.h ${OSC_DEST_HEADERDIR}
-)
-
-add_custom_command(
-  TARGET ork_tuio
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy ${SRCD}/oscpack/ip/*.h ${IP_DEST_HEADERDIR}
-)
-
 install(TARGETS ork_tuio LIBRARY DESTINATION $ENV{OBT_STAGE}/lib )
+
+file(GLOB tuiohdrs "${SRCD}/*.h")
+file(GLOB oschdrs "${SRCD}/oscpack/osc/*.h")
+file(GLOB iphdrs "${SRCD}/oscpack/ip/*.h")
+
+install(FILES ${tuiohdrs} DESTINATION ${TUIO_DEST_HEADERDIR})
+install(FILES ${oschdrs} DESTINATION ${TUIO_DEST_HEADERDIR}/oscpack/osc)
+install(FILES ${iphdrs} DESTINATION ${TUIO_DEST_HEADERDIR}/oscpack/ip)

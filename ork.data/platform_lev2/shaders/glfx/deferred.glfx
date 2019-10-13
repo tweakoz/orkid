@@ -133,9 +133,22 @@ libblock lib_deferred : ub_light : ub_frg {
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_std : iface_vdefault {
+vertex_shader vs_passthru : iface_vdefault {
   frg_uv      = uv0;
   gl_Position = position;
+}
+///////////////////////////////////////////////////////////////
+fragment_interface iface_fdownsampledepthminmax {
+  inputs {
+    vec2 frg_uv;
+  }
+  outputs {
+    vec2 out_minmax;
+  }
+}
+fragment_shader ps_downsampledepthminmax : iface_fdownsampledepthminmax : lib_deferred  {
+  float minmax = texture(MapDepth,frg_uv).x;
+  out_minmax = vec2(minmax,minmax+1);
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight : iface_fdefault : lib_deferred  {
@@ -155,11 +168,6 @@ fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred  {
   wpd._scruv.x = mod(wpd._scruv.x*2,1);
   vec3 c  = baselighting(wpd);
   out_clr = vec4(c, 1);
-}
-///////////////////////////////////////////////////////////////
-vertex_shader vs_pointlight : iface_vdefault {
-  frg_uv      = uv0;
-  gl_Position = position;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_pointlight : iface_fdefault : lib_deferred  {
@@ -190,7 +198,7 @@ state_block sb_default : default { }
 technique baselight {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_std;
+    vertex_shader   = vs_passthru;
     fragment_shader = ps_baselight;
     state_block     = sb_default;
   }
@@ -199,7 +207,7 @@ technique baselight {
 technique pointlight {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_pointlight;
+    vertex_shader   = vs_passthru;
     fragment_shader = ps_pointlight;
     state_block     = sb_default;
   }
@@ -208,7 +216,7 @@ technique pointlight {
 technique baselight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_std;
+    vertex_shader   = vs_passthru;
     fragment_shader = ps_baselight_stereo;
     state_block     = sb_default;
   }
@@ -217,8 +225,17 @@ technique baselight_stereo {
 technique pointlight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_pointlight;
+    vertex_shader   = vs_passthru;
     fragment_shader = ps_pointlight_stereo;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique downsampledepthminmax {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru;
+    fragment_shader = ps_downsampledepthminmax;
     state_block     = sb_default;
   }
 }

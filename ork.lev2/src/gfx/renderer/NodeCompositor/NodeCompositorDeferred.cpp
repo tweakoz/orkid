@@ -98,6 +98,7 @@ struct IMPL {
       _tekPointLighting = _lightingmtl.technique("pointlight");
       _tekBaseLightingStereo = _lightingmtl.technique("baselight_stereo");
       _tekPointLightingStereo = _lightingmtl.technique("pointlight_stereo");
+      _tekDownsampleDepthMinMax = _lightingmtl.technique("downsampledepthminmax");
       //////////////////////////////////////////////////////////////
       // init lightblock
       //////////////////////////////////////////////////////////////
@@ -162,6 +163,7 @@ struct IMPL {
     auto RSI = targ->RSI();
     auto GBI = targ->GBI();
     auto &ddprops = drawdata._properties;
+    auto this_buf = FBI->GetThisBuffer();
     SRect tgt_rect(0, 0, targ->GetW(), targ->GetH());
     //////////////////////////////////////////////////////
     // Resize RenderTargets
@@ -265,6 +267,8 @@ struct IMPL {
       // gen minmax tile depth image
       /////////////////////////////////////////////////////////////////////////////////////////
 
+
+
       RtGroupRenderTarget rtlminmaxd(_rtgMinMaxD);
       auto vprect = SRect(0, 0, _minmaxW, _minmaxH);
       auto quadrect = SRect(0, 0, _minmaxW, _minmaxH);
@@ -278,6 +282,18 @@ struct IMPL {
       {
         FBI->PushRtGroup(_rtgMinMaxD);
         targ->BeginFrame();
+        _lightingmtl.bindTechnique(_tekDownsampleDepthMinMax);
+        _lightingmtl.begin(RCFD);
+        _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
+        _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
+        _lightingmtl.bindParamVec2(
+            _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
+        _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
+        _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
+        _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
+        _lightingmtl.commit();
+        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
+        _lightingmtl.end(RCFD);
         targ->EndFrame();
         FBI->PopRtGroup();
       }
@@ -303,7 +319,6 @@ struct IMPL {
       FBI->SetAutoClear(true);
       targ->BeginFrame();
       FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
-      auto this_buf = FBI->GetThisBuffer();
       //////////////////////////////////////////////////////////////////
       // base lighting
       //////////////////////////////////////////////////////////////////
@@ -528,6 +543,7 @@ struct IMPL {
   const FxShaderTechnique *_tekPointLighting = nullptr;
   const FxShaderTechnique *_tekBaseLightingStereo = nullptr;
   const FxShaderTechnique *_tekPointLightingStereo = nullptr;
+  const FxShaderTechnique* _tekDownsampleDepthMinMax = nullptr;
   const FxShaderParam *_parMatIVPArray = nullptr;
   const FxShaderParam *_parMatPArray = nullptr;
   const FxShaderParam *_parMatVArray = nullptr;
