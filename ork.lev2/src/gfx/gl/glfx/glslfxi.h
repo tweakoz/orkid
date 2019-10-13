@@ -597,6 +597,7 @@ private:
   GfxTargetGL& mTarget;
 };
 
+#if defined (ENABLE_COMPUTE_SHADERS)
 
 struct ComputeInterface : public lev2::ComputeInterface {
 
@@ -613,6 +614,7 @@ struct ComputeInterface : public lev2::ComputeInterface {
     void dispatchComputeIndirect(FxComputeShader* shader,int32_t* indirect) final;
 
 };
+#endif
 
 Container* LoadFxFromFile(const AssetPath& pth);
 

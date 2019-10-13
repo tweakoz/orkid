@@ -191,11 +191,13 @@ const char *FxShader::GetName()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_COMPUTE_SHADER)
 FxComputeShader* FxShader::findComputeShader(const std::string &named) {
     FxComputeShader* rval = nullptr;
     assert(false);
     return rval;
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 

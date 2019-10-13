@@ -35,10 +35,10 @@ ContainerNode::ContainerNode(const AssetPath &pth, const Scanner &s)
   , _scanner(s) {
 
     std::string typenames = "mat2 mat3 mat4 vec2 vec3 vec4 "
-                            "float double half "
+                            "float double half uint int "
 #if ! defined(__APPLE__)
-                            "int int8_t int16_t int32_t int64_t "
-                            "uint uint8_t uint16_t uint32_t uint64_t "
+                            "int8_t int16_t int32_t int64_t "
+                            "uint8_t uint16_t uint32_t uint64_t "
                             "i8vec2 i8vec3 i8vec4 "
                             "i16vec2 i16vec3 i16vec4 "
                             "i32vec2 i32vec3 i32vec4 "

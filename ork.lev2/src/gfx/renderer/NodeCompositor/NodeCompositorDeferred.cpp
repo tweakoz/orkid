@@ -343,7 +343,7 @@ struct IMPL {
       /////////////////////////////////////
       constexpr int KTILEMAXX = KTILEDIMX-1;
       constexpr int KTILEMAXY = KTILEDIMY-1;
-      if(true){ // tiled lighting
+      if(false){ // tiled lighting
         size_t tilelights = 0;
         _timer.Start();
         for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
@@ -372,7 +372,7 @@ struct IMPL {
           } // if( (box.Min().z>=-1 and box.Min().z<=1) or
         } // for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
         float pht1 = _timer.SecsSinceStart();
-        //printf( "pht1<%g>\n", pht1 );
+        printf( "pht1<%g>\n", pht1 );
         const float KTILESIZX = 2.0f/float(KTILEDIMX);
         const float KTILESIZY = 2.0f/float(KTILEDIMY);
         float fnumltot = 0.0f;
@@ -428,6 +428,8 @@ struct IMPL {
                 } // if numl
             } // for ix
         } // for iy
+        float pht2 = _timer.SecsSinceStart();
+        printf( "pht2<%g>\n", pht2-pht1 );
         float avg = fnumltot/fnumlcnt;
         printf( "TILE avg lcnt<%g>\n", avg );
       }
