@@ -104,7 +104,8 @@ libblock lib_deferred : ub_light : ub_frg {
     atten           = atten * atten;
     vec3 dir2light  = normalize(postolight);
     atten *= max(dot(gbd._wnrm, dir2light), 0);
-    return color * atten;
+    //return color * atten;
+    return vec3(float(dis2light<lightradius)/32.0f);
   }
   /////////////////////////////////////////////////////////
   vec3 baselighting(WPosData wpd){
@@ -123,6 +124,7 @@ libblock lib_deferred : ub_light : ub_frg {
        bool sphere_intersects_depth = (gbd._zeye-lightcamdepth)<LightPosR[i].w;
        if( sphere_intersects_depth )
           l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColorD[i].xyz);
+
     }
     return gbd._albedo*l;
   }

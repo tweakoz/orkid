@@ -435,10 +435,19 @@ struct IMPL {
       }
       /////////////////////////////////////
       else {
+        for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ) {
+          auto& light = _pointlights[lidx];
+          Sphere sph(light._pos, light._radius);
+          auto box  = sph.projectedBounds(VPL);
+          auto bmin = ((box.Min() + fvec3(1, 1, 1)) * 0.5);
+          auto bmax = ((box.Max() + fvec3(1, 1, 1)) * 0.5);
+
+          light._mindepth = (light._pos - campos_mono).Mag();
+        }
         auto mapped = FXI->mapParamBuffer(_lightbuffer);
             for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
               const auto& light = _pointlights[lidx];
-              mapped->ref<fvec4>(lidx*sizeof(fvec4)) = light._color;
+              mapped->ref<fvec4>(lidx*sizeof(fvec4)) = fvec4(light._color,light._mindepth);
               mapped->ref<fvec4>(KPOSPASE+lidx*sizeof(fvec4)) = fvec4(light._pos,light._radius);
             }
         mapped->unmap();
