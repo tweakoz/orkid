@@ -332,6 +332,7 @@ GfxTargetGL::GfxTargetGL()
 	, mFbI( *this )
 	, mTxI( *this )
 	, mMtxI( *this )
+	, mCI( *this )
 {
 	GfxTargetGL::GLinit();
 

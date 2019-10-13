@@ -188,6 +188,15 @@ const char *FxShader::GetName()
 {
 	return mName.c_str();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+FxComputeShader* FxShader::findComputeShader(const std::string &named) {
+    FxComputeShader* rval = nullptr;
+    assert(false);
+    return rval;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 }

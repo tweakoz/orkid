@@ -347,7 +347,10 @@ public:
   GeometryBufferInterface* GBI() final { return &mGbI; }
   FrameBufferInterface* FBI() final { return &mFbI; }
   TextureInterface* TXI() final { return &mTxI; }
-
+#if defined(ENABLE_COMPUTE_SHADERS)
+  ComputeInterface* CI() final { return &mCI; };
+#endif
+  
   ///////////////////////////////////////////////////////////////////////
 
   ~GfxTargetGL();
@@ -413,6 +416,11 @@ public:
   GlGeometryBufferInterface mGbI;
   GlFrameBufferInterface mFbI;
   GlTextureInterface mTxI;
+  
+#if defined(ENABLE_COMPUTE_SHADERS)
+  glslfx::ComputeInterface mCI;
+#endif
+  
   bool mTargetDrawableSizeDirty;
 };
 

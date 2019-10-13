@@ -319,6 +319,15 @@ struct ShaderTsE : Shader {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined(ENABLE_COMPUTE_SHADERS)
+struct ShaderCompute : Shader {
+  ShaderCompute(const std::string& nam = "")
+      : Shader(nam, GL_COMPUTE_SHADER) {}
+};
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct PrimPipelineVTG {
   ShaderVtx* _vertexShader   = nullptr;
   ShaderTsC* _tessCtrlShader = nullptr;
@@ -349,10 +358,29 @@ struct PrimPipelineNVTM {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+typedef std::unordered_map<std::string, UniformInstance*> uni_map_t;
+typedef std::unordered_map<UniformBlock*, UniformBlockBinding*> ubb_map_t;
+typedef std::unordered_map<std::string, Attribute*> attr_map_t;
+
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+struct PipelineCompute {
+  ShaderCompute* _computeShader  = nullptr;
+  uni_map_t _uniformInstances;
+  GLuint _programObjectId = 0;
+  ubb_map_t _uboBindingMap;
+  //void bindUniformBlockBuffer(UniformBlock* block, UniformBuffer* buffer);
+  std::vector<UniformBuffer*> _ubobindings;
+
+  #if defined(ENABLE_SHADER_STORAGE)
+  std::vector<StorageBlock*> _storagebindings;
+  #endif
+};
+#endif
+///////////////////////////////////////////////////////////////////////////////
+
 struct Pass {
-  typedef std::unordered_map<std::string, UniformInstance*> uni_map_t;
-  typedef std::unordered_map<std::string, Attribute*> attr_map_t;
-  typedef std::unordered_map<UniformBlock*, UniformBlockBinding*> ubb_map_t;
 
   static const int kmaxattrID = 16;
   svar64_t _primpipe;
@@ -567,6 +595,23 @@ private:
   FxShaderTechnique* mhCurrentTek;
 
   GfxTargetGL& mTarget;
+};
+
+
+struct ComputeInterface : public lev2::ComputeInterface {
+
+    ComputeInterface(GfxTargetGL& glctx);
+    GfxTargetGL& _targetGL;
+    Interface*   _fxi = nullptr;
+    PipelineCompute* _currentComputePipeline = nullptr;
+    
+    void dispatchCompute(FxComputeShader* shader,
+                         uint32_t numgroups_x,
+                         uint32_t numgroups_y,
+                         uint32_t numgroups_z ) final;
+
+    void dispatchComputeIndirect(FxComputeShader* shader,int32_t* indirect) final;
+
 };
 
 Container* LoadFxFromFile(const AssetPath& pth);

@@ -69,6 +69,11 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct DuComputeInterface : public ComputeInterface {
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
 class DuMatrixStackInterface : public MatrixStackInterface {
   virtual fmtx4 Ortho(float left, float right, float top, float bottom, float fnear, float ffar);
 
@@ -182,6 +187,10 @@ public:
   TextureInterface* TXI() final { return &mTxI; }
   FrameBufferInterface* FBI() final { return &mFbI; }
 
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  ComputeInterface* CI() final { return &mCI; }
+  #endif
+  
   //////////////////////////////////////////////
 
 private:
@@ -205,6 +214,10 @@ private:
   DuGeometryBufferInterface mGbI;
   DuTextureInterface mTxI;
   DuFrameBufferInterface mFbI;
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+  DuComputeInterface mCI;
+#endif
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -13,6 +13,8 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "config.h"
+
 #include <ork/kernel/core/singleton.h>
 #include <ork/kernel/timer.h>
 
@@ -135,6 +137,9 @@ struct PixelFetchContext {
 #include "fbi.h"
 #include "txi.h"
 #include "rsi.h"
+#include "ci.h"
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 }} // namespace ork::lev2

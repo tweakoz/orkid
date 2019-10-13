@@ -118,6 +118,10 @@ public:
   virtual FrameBufferInterface *FBI() = 0;    // FrameBuffer/Control Interface
   virtual TextureInterface *TXI() = 0;        // Texture Interface
 
+#if defined (ENABLE_COMPUTE_SHADERS)
+  virtual ComputeInterface* CI() = 0;        // ComputeShader Interface
+#endif
+  
   virtual void debugPushGroup(const std::string str) {}
   virtual void debugPopGroup() {}
   virtual void debugMarker(const std::string str) {}

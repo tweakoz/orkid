@@ -144,6 +144,14 @@ struct FxShaderStorageBlockMapping {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#if defined (ENABLE_COMPUTE_SHADERS)
+struct FxComputeShader {
+    svar64_t _impl;
+};
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct FxShader {
   void *mInternalHandle;
 
@@ -182,14 +190,15 @@ struct FxShader {
   const paramblockbynamemap_t &namedParamBlocks(void) const {
     return _parameterBlockByName;
   }
-
-  // const orkmap<std::string,const FxShaderParam*>& 	GetParametersBySemantic(
-  // void ) const { return mParameterBySemantic; }
-
+  
   FxShaderParam *FindParamByName(const std::string &named);
   FxShaderParamBlock *FindParamBlockByName(const std::string &named);
   FxShaderTechnique *FindTechniqueByName(const std::string &named);
 
+  #if defined (ENABLE_COMPUTE_SHADERS)
+  FxComputeShader* findComputeShader(const std::string &named);
+  #endif
+  
   void SetAllowCompileFailure(bool bv) { mAllowCompileFailure = bv; }
   bool GetAllowCompileFailure() const { return mAllowCompileFailure; }
   void SetFailedCompile(bool bv) { mFailedCompile = bv; }

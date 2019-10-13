@@ -72,7 +72,8 @@ public:
 
 protected:
   FxInterface();
-
+  virtual ~FxInterface() {}
+  
   FxShader* mpActiveFxShader;
   GfxMaterial* mpLastFxMaterial;
   GfxMaterial* mpGroupMaterial;
