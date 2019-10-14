@@ -76,14 +76,13 @@ libblock lib_deferred : ub_light : ub_frg {
   /////////////////////////////////////////////////////////
   vec4 defwpos(WPosData wpd) {
     float depthtex = texture(MapDepth, wpd._muv).r;
-    vec2 minmax = texture(MapDepthMinMax,wpd._muv).rg;
     vec2 scrxy     = wpd._scruv * 2.0 - vec2(1, 1);
     vec3 inpos     = vec3(scrxy.x, scrxy.y, depthtex * 2 - 1.0);
     vec4 rr        = wpd._ivp * vec4(inpos, 1);
     float ndc = depthtex*2.0-1.0;
     float zeye = Zndc2eye.x/(ndc - Zndc2eye.y);
     vec3 wpos = vec3(rr.xyz / rr.w);
-    return vec4(wpos,zeye+minmax.x);
+    return vec4(wpos,zeye);
   }
   /////////////////////////////////////////////////////////
   GBufData decodeGBUF(WPosData wpd) {
@@ -147,8 +146,20 @@ fragment_interface iface_fdownsampledepthminmax {
   }
 }
 fragment_shader ps_downsampledepthminmax : iface_fdownsampledepthminmax : lib_deferred  {
-  float minmax = texture(MapDepth,frg_uv).x;
-  out_minmax = vec2(minmax,minmax+1);
+  vec2 base = (gl_FragCoord.xy-vec2(0.5,0.5)) * 16.0;
+  vec2 rval = vec2(1e6,-1e6);
+  for( int iy=0; iy<16; iy++ ){
+    for( int ix=0; ix<16; ix++ ){
+      vec2 uv = base + vec2(ix,iy);
+      uv = uv * InvViewportSize;
+      float depthtex = texture(MapDepth,uv).x;
+      float ndc = depthtex*2.0-1.0;
+      float zeye = Zndc2eye.x/(ndc - Zndc2eye.y);
+      rval.x = min(rval.x,zeye);
+      rval.y = max(rval.y,zeye);
+    }
+  }
+  out_minmax = rval;
 }
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_baselight : iface_fdefault : lib_deferred  {

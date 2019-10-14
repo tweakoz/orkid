@@ -173,8 +173,8 @@ struct IMPL {
     if (_rtgGbuffer->GetW() != newwidth or _rtgGbuffer->GetH() != newheight) {
       _width = newwidth;
       _height = newheight;
-      _minmaxW = (newwidth+31)/32;
-      _minmaxH = (newheight+31)/32;
+      _minmaxW = (newwidth+15)/16;
+      _minmaxH = (newheight+15)/16;
       _rtgGbuffer->Resize(newwidth, newheight);
       _rtgLaccum->Resize(newwidth, newheight);
       _rtgMinMaxD->Resize( _minmaxW, _minmaxH );
@@ -263,12 +263,14 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       targ->EndFrame();
       FBI->PopRtGroup();
+      //////////////////////////////////////////////////////
+      auto Zndc2eye = fvec2(
+        _p[0].GetElemXY(3,2),
+        _p[0].GetElemXY(2,2)
+      );
       /////////////////////////////////////////////////////////////////////////////////////////
       // gen minmax tile depth image
       /////////////////////////////////////////////////////////////////////////////////////////
-
-
-
       RtGroupRenderTarget rtlminmaxd(_rtgMinMaxD);
       auto vprect = SRect(0, 0, _minmaxW, _minmaxH);
       auto quadrect = SRect(0, 0, _minmaxW, _minmaxH);
@@ -280,12 +282,14 @@ struct IMPL {
       CIMPL->pushCPD(CPD);
       targ->debugPushGroup("Deferred::minmaxd");
       {
+        FBI->SetAutoClear(true);
         FBI->PushRtGroup(_rtgMinMaxD);
         targ->BeginFrame();
         _lightingmtl.bindTechnique(_tekDownsampleDepthMinMax);
         _lightingmtl.begin(RCFD);
         _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
         _lightingmtl.bindParamVec2(_parNearFar,fvec2(KNEAR,KFAR));
+        _lightingmtl.bindParamVec2(_parZndc2eye,Zndc2eye);
         _lightingmtl.bindParamVec2(
             _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
         _lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
@@ -341,6 +345,7 @@ struct IMPL {
       _lightingmtl.bindParamVec2(
           _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
       _lightingmtl.commit();
+      RSI->BindRasterState(_lightingmtl.mRasterState);
       this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
       _lightingmtl.end(RCFD);
       CIMPL->popCPD();
@@ -358,11 +363,6 @@ struct IMPL {
       _lightingmtl.begin(RCFD);
       //////////////////////////////////////////////////////
       FXI->bindParamBlockBuffer(_lightblock, _lightbuffer);
-      //////////////////////////////////////////////////////
-      auto Zndc2eye = fvec2(
-        _p[0].GetElemXY(3,2),
-        _p[0].GetElemXY(2,2)
-      );
       //////////////////////////////////////////////////////
       _lightingmtl.bindParamMatrixArray(_parMatIVPArray, _ivp, 2);
       _lightingmtl.bindParamMatrixArray(_parMatVArray, _v, 2);
