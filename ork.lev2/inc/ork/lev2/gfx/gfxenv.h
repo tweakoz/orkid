@@ -349,7 +349,8 @@ public:
                           float fu1 = 1.0f, float fv1 = 1.0f, float *uv2 = NULL,
                           const fcolor4 &clr = fcolor4::White());
 
-  void Render2dQuadEML(const fvec4 &QuadRect, const fvec4 &UvRect );
+  void Render2dQuadEML(const fvec4 &QuadRect, const fvec4 &UvRect, const fvec4 &UvRect2 );
+  void Render2dQuadsEML(size_t count, const fvec4* QuadRects, const fvec4* UvRects, const fvec4* UvRect2s );
 
   void RenderMatOrthoQuads(const OrthoQuads &oquads);
 

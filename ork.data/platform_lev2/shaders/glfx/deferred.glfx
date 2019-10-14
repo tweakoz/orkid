@@ -187,8 +187,9 @@ fragment_shader ps_pointlight : iface_fdefault : lib_deferred  {
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
   wpd._ivp = IVPArray[0];
   wpd._scruv = wpd._muv;
-  vec3 c  = pntlighting(wpd);
-  //vec3 c = vec3(frg_uv,0);
+  vec3 c = vec3(0); //pntlighting(wpd);
+  float dp5 = distance(frg_uv,vec2(.5,.5));
+  c += vec3(pow(dp5,17)*256.0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////

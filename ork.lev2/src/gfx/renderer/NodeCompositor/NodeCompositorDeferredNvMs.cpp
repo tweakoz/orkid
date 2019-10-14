@@ -296,7 +296,7 @@ struct IMPL {
           _lightingmtl.bindParamVec2(
               _parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
           _lightingmtl.commit();
-          this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
+          //this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1));
           _lightingmtl.end(RCFD);
         CIMPL->popCPD();
       targ->debugPopGroup(); // BaseLighting

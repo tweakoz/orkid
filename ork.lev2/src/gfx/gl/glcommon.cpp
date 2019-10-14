@@ -139,10 +139,9 @@ int GetGlError( void )
 {
 	int err = glGetError();
 
-	std::string errstr = GetGlErrorString( err );
-
 	if( err != GL_NO_ERROR )
 	{
+    	std::string errstr = GetGlErrorString( err );
 		orkprintf( "GLERROR [%s]\n", errstr.c_str() );
 		check_debug_log();
 	}
