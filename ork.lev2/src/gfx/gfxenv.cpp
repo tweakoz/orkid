@@ -93,13 +93,20 @@ static const std::string VertexFormatStrings[EVTXSTREAMFMT_END + 2] = {
 
     "EVTXSTREAMFMT_XP_VCNT",      "EVTXSTREAMFMT_XP_VCNTI",
     "EVTXSTREAMFMT_END",          ""};
-static const std::string PrimTypeStrings[EPRIM_END + 2] = {"EPRIM_NONE",        "EPRIM_POINTS",
-                                                           "EPRIM_LINES",       "EPRIM_LINESTRIP",
-                                                           "EPRIM_LINELOOP",    "EPRIM_TRIANGLES",
-                                                           "EPRIM_QUADS",       "EPRIM_TRIANGLESTRIP",
-                                                           "EPRIM_TRIANGLEFAN", "EPRIM_QUADSTRIP",
-                                                           "EPRIM_MULTI",       "EPRIM_POINTSPRITES",
-                                                           "EPRIM_END",         ""};
+static const std::string PrimTypeStrings[EPRIM_END + 2]     = {"EPRIM_NONE",
+                                                           "EPRIM_POINTS",
+                                                           "EPRIM_LINES",
+                                                           "EPRIM_LINESTRIP",
+                                                           "EPRIM_LINELOOP",
+                                                           "EPRIM_TRIANGLES",
+                                                           "EPRIM_QUADS",
+                                                           "EPRIM_TRIANGLESTRIP",
+                                                           "EPRIM_TRIANGLEFAN",
+                                                           "EPRIM_QUADSTRIP",
+                                                           "EPRIM_MULTI",
+                                                           "EPRIM_POINTSPRITES",
+                                                           "EPRIM_END",
+                                                           ""};
 static const std::string BlendingStrings[EBLENDING_END + 2] = {"EBLENDING_OFF",
                                                                "EBLENDING_ALPHA",
                                                                "EBLENDING_DSTALPHA",
@@ -115,12 +122,12 @@ namespace ork {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 template <> const EPropType PropType<EVtxStreamFormat>::meType = EPROPTYPE_ENUM;
-template <> const EPropType PropType<EPrimitiveType>::meType = EPROPTYPE_ENUM;
-template <> const EPropType PropType<EBlending>::meType = EPROPTYPE_ENUM;
+template <> const EPropType PropType<EPrimitiveType>::meType   = EPROPTYPE_ENUM;
+template <> const EPropType PropType<EBlending>::meType        = EPROPTYPE_ENUM;
 ///////////////////////////////////////////////////////////////////////////////
 template <> const char* PropType<EVtxStreamFormat>::mstrTypeName = "GfxEnv::EVtxStreamFormat";
-template <> const char* PropType<EPrimitiveType>::mstrTypeName = "GfxEnv::EPrimitiveType";
-template <> const char* PropType<EBlending>::mstrTypeName = "GfxEnv::EBlending";
+template <> const char* PropType<EPrimitiveType>::mstrTypeName   = "GfxEnv::EPrimitiveType";
+template <> const char* PropType<EBlending>::mstrTypeName        = "GfxEnv::EBlending";
 ///////////////////////////////////////////////////////////////////////////////
 template <> EVtxStreamFormat PropType<EVtxStreamFormat>::FromString(const PropTypeString& String) {
   return PropType::FindValFromStrings<EVtxStreamFormat>(String.c_str(), VertexFormatStrings, EVTXSTREAMFMT_END);
@@ -143,15 +150,15 @@ template <> void PropType<EBlending>::ToString(const EBlending& e, PropTypeStrin
 }
 ///////////////////////////////////////////////////////////////////////////////
 template <> void PropType<EVtxStreamFormat>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
-  NumStrings = EVTXSTREAMFMT_END + 1;
+  NumStrings   = EVTXSTREAMFMT_END + 1;
   ValueStrings = VertexFormatStrings;
 }
 template <> void PropType<EPrimitiveType>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
-  NumStrings = EPRIM_END + 1;
+  NumStrings   = EPRIM_END + 1;
   ValueStrings = PrimTypeStrings;
 }
 template <> void PropType<EBlending>::GetValueSet(const std::string*& ValueStrings, int& NumStrings) {
-  NumStrings = EBLENDING_END + 1;
+  NumStrings   = EBLENDING_END + 1;
   ValueStrings = BlendingStrings;
 }
 }; // namespace ork
@@ -199,12 +206,15 @@ DynamicVertexBuffer<SVtxV12N12B12T8C4>& GfxEnv::GetSharedDynamicVB2() { return G
 DynamicVertexBuffer<SVtxV16T16C16>& GfxEnv::GetSharedDynamicV16T16C16() { return GetRef()._vtxBufSharedV16T16C16; }
 
 GfxEnv::GfxEnv()
-    : NoRttiSingleton<GfxEnv>(), mpMainWindow(nullptr), mpUIMaterial(nullptr), mp3DMaterial(nullptr),
-      mGfxEnvMutex("GfxEnvGlobalMutex"), gLoaderTarget(nullptr),
-      mVtxBufSharedVect(256 << 10, 0, EPRIM_TRIANGLES) // SVtxV12C4T16==32bytes
-      ,
-      mVtxBufSharedVect2(256 << 10, 0, EPRIM_TRIANGLES) // SvtxV12N12B12T8C4==48bytes
-      , _vtxBufSharedV16T16C16(1 << 20, 0, EPRIM_TRIANGLES) // SvtxV12N12B12T8C4==48bytes
+    : NoRttiSingleton<GfxEnv>()
+    , mpMainWindow(nullptr)
+    , mpUIMaterial(nullptr)
+    , mp3DMaterial(nullptr)
+    , mGfxEnvMutex("GfxEnvGlobalMutex")
+    , gLoaderTarget(nullptr)
+    , mVtxBufSharedVect(256 << 10, 0, EPRIM_TRIANGLES)    // SVtxV12C4T16==32bytes
+    , mVtxBufSharedVect2(256 << 10, 0, EPRIM_TRIANGLES)   // SvtxV12N12B12T8C4==48bytes
+    , _vtxBufSharedV16T16C16(1 << 20, 0, EPRIM_TRIANGLES) // SvtxV12N12B12T8C4==48bytes
 {
   mVtxBufSharedVect.SetRingLock(true);
   mVtxBufSharedVect2.SetRingLock(true);
@@ -248,10 +258,12 @@ void GfxEnv::SetLoaderTarget(GfxTarget* target) {
 
 /////////////////////////////////////////////////////////////////////////
 
-CaptureBuffer::CaptureBuffer() : mpData(0), meFormat(EBUFFMT_END) {}
+CaptureBuffer::CaptureBuffer()
+    : _data(0)
+    , meFormat(EBUFFMT_END) {}
 CaptureBuffer::~CaptureBuffer() {
-  if (mpData) {
-    delete[](char*)(mpData);
+  if (_data) {
+    free(_data);
   }
 }
 int CaptureBuffer::GetStride() const {
@@ -278,30 +290,40 @@ int CaptureBuffer::GetStride() const {
 int CaptureBuffer::CalcDataIndex(int ix, int iy) const { return ix + (iy * miW); }
 void CaptureBuffer::SetWidth(int iw) { miW = iw; }
 void CaptureBuffer::SetHeight(int ih) { miH = ih; }
-int CaptureBuffer::GetWidth() const { return miW; }
-int CaptureBuffer::GetHeight() const { return miH; }
-void CaptureBuffer::SetFormat(EBufferFormat efmt) {
-  if ((efmt != meFormat) || (mpData == 0)) {
-    meFormat = efmt;
-
-    int inumpix = miW * miH;
-
-    if (inumpix) {
-      if (mpData) {
-        delete[](char*)(mpData);
-      }
-      int idatasize = inumpix * GetStride();
-      mpData = (void*)new char[idatasize];
-    } else {
-      if (mpData) {
-        delete[](char*)(mpData);
-      }
-    }
-  }
-}
-EBufferFormat CaptureBuffer::GetFormat() const { return meFormat; }
+int CaptureBuffer::width() const { return miW; }
+int CaptureBuffer::height() const { return miH; }
+EBufferFormat CaptureBuffer::format() const { return meFormat; }
 void CaptureBuffer::CopyData(const void* pfrom, int isize) {
   int icapsize = GetStride() * miW * miH;
   OrkAssert(isize == icapsize);
-  memcpy(mpData, pfrom, isize);
+  memcpy(_data, pfrom, isize);
+}
+
+void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
+  if (_data != nullptr)
+    free(_data);
+
+  int bytesperpix = 0;
+  switch (fmt) {
+
+    case EBUFFMT_RGBA8:
+    case EBUFFMT_R32F:
+      bytesperpix = 4;
+      break;
+    case EBUFFMT_RGBA16F:
+    case EBUFFMT_RG32F:
+      bytesperpix = 8;
+      break;
+    case EBUFFMT_RGBA32F:
+      bytesperpix = 16;
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  assert(bytesperpix!=0);
+  _data = malloc(bytesperpix*w*h);
+  meFormat = fmt;
+  miW = w;
+  miH = h;
 }

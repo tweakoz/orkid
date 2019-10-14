@@ -207,6 +207,7 @@ public:
   void PushScissor(const SRect& rScissorRect) final;
   void DoBeginFrame(void) final;
   void DoEndFrame(void) final;
+  bool capture(const RtGroup& inpbuf, int irt, CaptureBuffer* buffer) final;
   void Capture(const RtGroup& inpbuf, int irt, const file::Path& pth) final;
   bool CaptureToTexture(const CaptureBuffer& capbuf, Texture& tex) final { return false; }
   void GetPixel(const fvec4& rAt, PixelFetchContext& ctx) final;

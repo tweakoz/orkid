@@ -813,7 +813,7 @@ void ShaderQuad::compute(ProcTex& ptex) {
 
     mShader->SetUser0(fvec4(mPlugInpUser0X.GetValue(), mPlugInpUser0Y.GetValue(), mPlugInpUser0Z.GetValue(), float(buffer.miW)));
     ////////////////////////////////////////////////////////////////
-    // float ftexw = GetTexture() ? GetTexture()->GetWidth() : 1.0f;
+    // float ftexw = GetTexture() ? GetTexture()->width() : 1.0f;
     // pTARG->PushModColor( ork::fvec4( ftexw, ftexw, ftexw, ftexw ) );
     ////////////////////////////////////////////////////////////////
     buffer.PtexBegin(pTARG, true, false);

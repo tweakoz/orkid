@@ -36,6 +36,7 @@ uniform_set ub_frg {
   float Time;
   vec2 NearFar;
   int NumLights;
+  int TileDim;
   vec2 Zndc2eye;
 }
 ///////////////////////////////////////////////////////////////
@@ -106,8 +107,8 @@ libblock lib_deferred : ub_light : ub_frg {
     atten           = atten * atten;
     vec3 dir2light  = normalize(postolight);
     atten *= max(dot(gbd._wnrm, dir2light), 0);
-    //return color * atten;
-    return vec3(1,.8,.6)*(float(dis2light<lightradius)/32.0);
+    return color * atten;
+    //return vec3(1,.8,.6)*(float(dis2light<lightradius)/32.0);
   }
   /////////////////////////////////////////////////////////
   vec3 baselighting(WPosData wpd){
@@ -146,10 +147,10 @@ fragment_interface iface_fdownsampledepthminmax {
   }
 }
 fragment_shader ps_downsampledepthminmax : iface_fdownsampledepthminmax : lib_deferred  {
-  vec2 base = (gl_FragCoord.xy-vec2(0.5,0.5)) * 16.0;
+  vec2 base = (gl_FragCoord.xy-vec2(0.5,0.5)) * float(TileDim);
   vec2 rval = vec2(1e6,-1e6);
-  for( int iy=0; iy<16; iy++ ){
-    for( int ix=0; ix<16; ix++ ){
+  for( int iy=0; iy<TileDim; iy++ ){
+    for( int ix=0; ix<TileDim; ix++ ){
       vec2 uv = base + vec2(ix,iy);
       uv = uv * InvViewportSize;
       float depthtex = texture(MapDepth,uv).x;
@@ -187,6 +188,7 @@ fragment_shader ps_pointlight : iface_fdefault : lib_deferred  {
   wpd._ivp = IVPArray[0];
   wpd._scruv = wpd._muv;
   vec3 c  = pntlighting(wpd);
+  //vec3 c = vec3(frg_uv,0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////

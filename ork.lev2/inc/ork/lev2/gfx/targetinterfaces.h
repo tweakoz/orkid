@@ -75,28 +75,27 @@ public:
 /// ////////////////////////////////////////////////////////////////////////////
 /// ////////////////////////////////////////////////////////////////////////////
 
-class CaptureBuffer {
-public:
+struct CaptureBuffer {
+
   int GetStride() const;
   int CalcDataIndex(int ix, int iy) const;
   void SetWidth(int iw);
   void SetHeight(int ih);
-  int GetWidth() const;
-  int GetHeight() const;
-  void SetFormat(EBufferFormat efmt);
-  EBufferFormat GetFormat() const;
-  const void* GetData() const { return mpData; }
+  int width() const;
+  int height() const;
+  EBufferFormat format() const;
+  const void* GetData() const { return _data; }
   void CopyData(const void* pfrom, int isize);
+  ////////////////////////////
+  void setFormatAndSize(EBufferFormat fmt,int w, int h);
   ////////////////////////////
   CaptureBuffer();
   ~CaptureBuffer();
   ////////////////////////////
-private:
-  ////////////////////////////
   EBufferFormat meFormat;
   int miW;
   int miH;
-  void* mpData;
+  void* _data;
   ////////////////////////////
 };
 

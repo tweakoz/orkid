@@ -310,7 +310,7 @@ public:
   const fcolor4 &GetClearColor() const { return mClearColor; }
   GfxBuffer *GetParent(void) const { return mParent; }
   ETargetType GetTargetType(void) const { return meTargetType; }
-  EBufferFormat GetBufferFormat(void) const { return meFormat; }
+  EBufferFormat format(void) const { return meFormat; }
   Texture *GetTexture() const { return mpTexture; }
   GfxMaterial *GetMaterial() const { return mpMaterial; }
   GfxTarget *GetContext(void) const;

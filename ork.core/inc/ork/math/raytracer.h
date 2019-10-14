@@ -360,8 +360,8 @@ public:
   const Primitive* RenderRay(fvec3 screenpos, fvec3& acc);
   bool Render(const AABox& aab, const std::string& OutputName);
   bool Bake(const AABox& bbox, const std::string& OutputName);
-  int GetHeight() const { return miH; }
-  int GetWidth() const { return miW; }
+  int height() const { return miH; }
+  int width() const { return miW; }
   void Resize(int iw, int ih) {
     miW = iw;
     miH = ih;
