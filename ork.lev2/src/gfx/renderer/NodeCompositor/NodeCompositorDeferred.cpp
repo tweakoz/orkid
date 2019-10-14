@@ -462,7 +462,7 @@ struct IMPL {
           bool chunk_done = false;
           auto mapping    = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
           int chunksize   = 0;
-          _chunktiles.clear();
+          //_chunktiles.clear();
           _chunktiles_pos.clear();
           _chunktiles_uva.clear();
           _chunktiles_uvb.clear();
@@ -473,9 +473,13 @@ struct IMPL {
             int iy          = index / _minmaxW;
             int ix          = index % _minmaxW;
             float T         = float(iy) * KTILESIZY - 1.0f;
+            float L = float(ix) * KTILESIZX - 1.0f;
             size_t numl     = lightlist.size();
             if ((numl + chunksize) <= 2048) {
-              _chunktiles.push_back(index);
+              //_chunktiles.push_back(index);
+              _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
+              _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));
+              _chunktiles_uvb.push_back(fvec4(chunksize,numl,0,0));
               for (size_t lidx = 0; (lidx < numl) and (false == chunk_done); lidx++) {
                 size_t chunk_offset                          = chunksize * sizeof(fvec4);
                 const auto light                             = lightlist[lidx];
@@ -504,20 +508,11 @@ struct IMPL {
             // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
             // this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
           } else {
-            for( int i=0; i<_chunktiles.size(); i++ ){
-                int index = _chunktiles[i];
-                int iy          = index / _minmaxW;
-                int ix          = index % _minmaxW;
-                float T         = float(iy) * KTILESIZY - 1.0f;
-                float L = float(ix) * KTILESIZX - 1.0f;
-                _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
-                _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));
-                _chunktiles_uvb.push_back(fvec4(0,0,0,0));
-            }
-            this_buf->Render2dQuadsEML(_chunktiles.size(),
-                                       _chunktiles_pos.data(),
-                                       _chunktiles_uva.data(),
-                                       _chunktiles_uvb.data());
+            if( _chunktiles_pos.size() )
+              this_buf->Render2dQuadsEML(_chunktiles_pos.size(),
+                                         _chunktiles_pos.data(),
+                                         _chunktiles_uva.data(),
+                                         _chunktiles_uvb.data());
           }
           /////////////////////////////////////
           numactive = _activetiles.size() - actindex;
