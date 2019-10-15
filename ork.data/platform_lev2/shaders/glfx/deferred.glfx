@@ -14,16 +14,6 @@ uniform_set ub_vtx {
   mat4 MVPR;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault : ub_vtx {
-  inputs {
-    vec4 position : POSITION;
-    vec2 uv0 : TEXCOORD0;
-  }
-  outputs {
-    vec2 frg_uv;
-  }
-}
-///////////////////////////////////////////////////////////////
 vertex_interface iface_v2uv : ub_vtx {
   inputs {
     vec4 position : POSITION;
@@ -55,15 +45,6 @@ uniform_set ub_frg {
 uniform_block ub_light {
   vec4 LightColorD[2048]; // 32KiB
   vec4 LightPosR[2048];  // 32KiB
-}
-///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault {
-  inputs {
-    vec2 frg_uv;
-  }
-  outputs {
-    vec4 out_clr;
-  }
 }
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_f2uv {
@@ -124,12 +105,14 @@ libblock lib_deferred : ub_light : ub_frg {
   vec3 pointlight(GBufData gbd, vec3 lightpos, float lightradius, vec3 color) {
     vec3 postolight = lightpos - gbd._wpos;
     float dis2light = length(postolight);
-    float atten     = dis2light / lightradius;
-    atten           = 1.0 - clamp(atten, 0, 1);
-    atten           = atten * atten;
-    vec3 dir2light  = normalize(postolight);
-    atten *= max(dot(gbd._wnrm, dir2light), 0);
-    return color * atten;
+    //float atten     = dis2light / lightradius;
+    //atten           = 1.0 - clamp(atten, 0, 1);
+    //atten           = atten * atten;
+    //vec3 dir2light  = normalize(postolight);
+    //atten *= max(dot(gbd._wnrm, dir2light), 0);
+    float dis2rad = clamp(1-abs(dis2light-lightradius),0,1);
+    //return color * atten;
+    return color * pow(dis2rad,10);
     //return vec3(1,.8,.6)*(float(dis2light<lightradius)/32.0);
   }
   /////////////////////////////////////////////////////////
@@ -158,11 +141,6 @@ libblock lib_deferred : ub_light : ub_frg {
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_passthru : iface_vdefault {
-  frg_uv      = uv0;
-  gl_Position = position;
-}
-///////////////////////////////////////////////////////////////
 vertex_shader vs_passthru2uv : iface_v2uv {
   frg_uva      = uv0;
   frg_uvb      = uv1;
@@ -171,7 +149,8 @@ vertex_shader vs_passthru2uv : iface_v2uv {
 ///////////////////////////////////////////////////////////////
 fragment_interface iface_fdownsampledepthminmax {
   inputs {
-    vec2 frg_uv;
+    vec2 frg_uva;
+    vec2 frg_uvb;
   }
   outputs {
     vec2 out_minmax;
@@ -194,7 +173,7 @@ fragment_shader ps_downsampledepthminmax : iface_fdownsampledepthminmax : lib_de
   out_minmax = rval;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight : iface_fdefault : lib_deferred  {
+fragment_shader ps_baselight : iface_f2uv : lib_deferred  {
   WPosData wpd;
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
   wpd._scruv = wpd._muv;
@@ -203,7 +182,7 @@ fragment_shader ps_baselight : iface_fdefault : lib_deferred  {
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred  {
+fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred  {
   WPosData wpd;
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
   wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
@@ -224,7 +203,7 @@ fragment_shader ps_pointlight : iface_f2uv : lib_deferred  {
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred  {
+fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred  {
   WPosData wpd;
   wpd._muv = gl_FragCoord.xy * InvViewportSize;
   wpd._ivp = IVPArray[int(wpd._muv.x>=0.5)];
@@ -232,7 +211,7 @@ fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred  {
   wpd._scruv.x = mod(wpd._scruv.x*2,1);
   vec3 c  = pntlighting(wpd);
   //c = vec3(wpd._muv,0);
-  //vec3 c = vec3(frg_uv,0);
+  //vec3 c = vec3(frg_uva,0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
@@ -243,7 +222,7 @@ state_block sb_default : default { }
 technique baselight {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_passthru;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_baselight;
     state_block     = sb_default;
   }
@@ -261,7 +240,7 @@ technique pointlight {
 technique baselight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_passthru;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_baselight_stereo;
     state_block     = sb_default;
   }
@@ -270,7 +249,7 @@ technique baselight_stereo {
 technique pointlight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_passthru;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_pointlight_stereo;
     state_block     = sb_default;
   }
@@ -279,7 +258,7 @@ technique pointlight_stereo {
 technique downsampledepthminmax {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_passthru;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_downsampledepthminmax;
     state_block     = sb_default;
   }

@@ -75,7 +75,9 @@ struct IMPL {
     const int knumlights = 128;
 #endif
 
-    for (int i = 0; i < 2048; i++) {
+    assert(knumlights<=KMAXLIGHTS);
+    
+    for (int i = 0; i < knumlights; i++) {
 
       PointLight p;
       p.next();
