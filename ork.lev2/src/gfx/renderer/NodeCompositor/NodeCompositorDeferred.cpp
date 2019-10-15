@@ -49,8 +49,8 @@ struct PointLight {
   float _minZ, _maxZ;
 
   void next() {
-    float x  = float((rand() & 0x7fff) - 0x4000);
-    float z  = float((rand() & 0x7fff) - 0x4000);
+    float x  = float((rand() & 0x3fff) - 0x2000);
+    float z  = float((rand() & 0x3fff) - 0x2000);
     float y  = float((rand() & 0x1fff) - 0x1000);
     _dst     = fvec3(x, y, z);
     _counter = 256 + rand() & 0xff;
@@ -58,12 +58,13 @@ struct PointLight {
 };
 
 struct IMPL {
-  static constexpr size_t KMAXLIGHTS = 2048;
+  static constexpr size_t KMAXLIGHTS = 4096;
 #if defined(ENABLE_COMPUTE_SHADERS)
   static constexpr int KTILEDIMXY = 64;
 #else
   static constexpr int KTILEDIMXY = 128;
 #endif
+  static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
   static constexpr int KMAXNUMTILESX = 512;
   static constexpr int KMAXNUMTILESY = 256;
   static constexpr int KMAXTILECOUNT = KMAXNUMTILESX * KMAXNUMTILESY;
@@ -75,7 +76,7 @@ struct IMPL {
     _layername = "All"_pool;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-    const int knumlights = 2048;
+    const int knumlights = KMAXLIGHTS;
 #else
     const int knumlights = 128;
 #endif
@@ -119,14 +120,14 @@ struct IMPL {
       //////////////////////////////////////////////////////////////
       // init lightblock
       //////////////////////////////////////////////////////////////
-      _lightbuffer = pTARG->FXI()->createParamBuffer(KMAXLIGHTS * 32);
+      _lightbuffer = pTARG->FXI()->createParamBuffer(65536);
       _lightblock  = _lightingmtl.paramBlock("ub_light");
       auto mapped  = FXI->mapParamBuffer(_lightbuffer);
       size_t base  = 0;
-      for (int i = 0; i < KMAXLIGHTS; i++)
+      for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
         mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
-      base += KMAXLIGHTS * sizeof(fvec4);
-      for (int i = 0; i < KMAXLIGHTS; i++)
+      base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+      for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
         mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
       mapped->unmap();
       //////////////////////////////////////////////////////////////
@@ -393,7 +394,7 @@ struct IMPL {
       //_lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
       _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
       RSI->BindRasterState(_lightingmtl.mRasterState);
-      constexpr size_t KPOSPASE = KMAXLIGHTS * sizeof(fvec4);
+      constexpr size_t KPOSPASE = KMAXLIGHTSPERCHUNK * sizeof(fvec4);
       /////////////////////////////////////
       const int KTILEMAXX = _minmaxW - 1;
       const int KTILEMAXY = _minmaxH - 1;
@@ -402,7 +403,7 @@ struct IMPL {
         //_timer.Start();
         for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
           auto& light = _pointlights[lidx];
-          Sphere sph(light._pos, light._radius * 0.707);
+          Sphere sph(light._pos, light._radius);
           light._aabox = sph.projectedBounds(VPL);
           const auto& boxmin = light._aabox.Min();
           const auto& boxmax = light._aabox.Max();
@@ -470,7 +471,6 @@ struct IMPL {
         size_t actindex  = 0;
 
         /////////////////////////////////////
-        static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
         size_t numchunks                           = 0;
         /////////////////////////////////////
         while (numactive) {
@@ -490,7 +490,7 @@ struct IMPL {
             float T         = float(iy) * KTILESIZY - 1.0f;
             float L         = float(ix) * KTILESIZX - 1.0f;
             size_t numl     = lightlist.size();
-            if ((numl + chunksize) <= 2048) {
+            if ((numl + chunksize) <= KMAXLIGHTSPERCHUNK) {
               //_chunktiles.push_back(index);
               _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
               _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));

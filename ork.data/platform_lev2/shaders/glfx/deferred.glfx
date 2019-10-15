@@ -105,15 +105,14 @@ libblock lib_deferred : ub_light : ub_frg {
   vec3 pointlight(GBufData gbd, vec3 lightpos, float lightradius, vec3 color) {
     vec3 postolight = lightpos - gbd._wpos;
     float dis2light = length(postolight);
-    //float atten     = dis2light / lightradius;
-    //atten           = 1.0 - clamp(atten, 0, 1);
-    //atten           = atten * atten;
-    //vec3 dir2light  = normalize(postolight);
-    //atten *= max(dot(gbd._wnrm, dir2light), 0);
-    float dis2rad = clamp(1-abs(dis2light-lightradius),0,1);
-    //return color * atten;
-    return color * pow(dis2rad,10);
-    //return vec3(1,.8,.6)*(float(dis2light<lightradius)/32.0);
+    float atten     = dis2light / lightradius;
+    atten           = 1.0 - clamp(atten, 0, 1);
+    atten           = atten * atten;
+    vec3 dir2light  = normalize(postolight);
+    atten *= max(dot(gbd._wnrm, dir2light), 0);
+    return color * atten;
+    //float dis2rad = clamp(1-abs(dis2light-lightradius),0,1);
+    //return color * pow(dis2rad,10);
   }
   /////////////////////////////////////////////////////////
   vec3 baselighting(WPosData wpd){
