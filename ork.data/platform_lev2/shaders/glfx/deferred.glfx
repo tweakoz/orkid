@@ -165,8 +165,8 @@ fragment_shader ps_downsampledepthminmax : iface_fdownsampledepthminmax : lib_de
       float depthtex = texture(MapDepth,uv).x;
       float ndc = depthtex*2.0-1.0;
       float zeye = Zndc2eye.x/(ndc - Zndc2eye.y);
-      int zz = int(log2(zeye));
-      rval = rval | (1<<zz);
+      uint zz = uint(log2(zeye));
+      rval = rval | (1u<<zz);
     }
   }
   out_minmax = rval;

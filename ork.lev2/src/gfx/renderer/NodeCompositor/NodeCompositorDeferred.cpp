@@ -62,7 +62,7 @@ struct IMPL {
 #if defined(ENABLE_COMPUTE_SHADERS)
   static constexpr int KTILEDIMXY = 64;
 #else
-  static constexpr int KTILEDIMXY = 128;
+  static constexpr int KTILEDIMXY = 64;
 #endif
   static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
   static constexpr int KMAXNUMTILESX = 512;
@@ -78,7 +78,7 @@ struct IMPL {
 #if defined(ENABLE_COMPUTE_SHADERS)
     const int knumlights = KMAXLIGHTS;
 #else
-    const int knumlights = 128;
+    const int knumlights = KMAXLIGHTS;
 #endif
 
     assert(knumlights <= KMAXLIGHTS);
