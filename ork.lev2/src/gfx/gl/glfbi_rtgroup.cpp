@@ -190,6 +190,11 @@ void GlFrameBufferInterface::SetRtGroup(RtGroup* Base) {
           glinternalformat = GL_R32F;
           gltype           = GL_FLOAT;
           break;
+        case EBUFFMT_R32UI:
+          glformat = GL_RED_INTEGER;
+          glinternalformat = GL_R32UI;
+          gltype           = GL_UNSIGNED_INT;
+          break;
         case EBUFFMT_RG16F:
           glformat = GL_RG;
           glinternalformat = GL_RG16F;

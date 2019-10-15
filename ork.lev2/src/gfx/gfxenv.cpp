@@ -279,6 +279,7 @@ int CaptureBuffer::GetStride() const {
       istride = 16;
       break;
     case EBUFFMT_R32F:
+    case EBUFFMT_R32UI:
       istride = 4;
       break;
     default:
@@ -308,6 +309,7 @@ void CaptureBuffer::setFormatAndSize(EBufferFormat fmt, int w, int h) {
 
     case EBUFFMT_RGBA8:
     case EBUFFMT_R32F:
+    case EBUFFMT_R32UI:
       bytesperpix = 4;
       break;
     case EBUFFMT_RGBA16F:

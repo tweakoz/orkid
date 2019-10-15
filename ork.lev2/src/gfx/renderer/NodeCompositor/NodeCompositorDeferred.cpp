@@ -42,6 +42,11 @@ struct PointLight {
   float _radius;
   int _counter    = 0;
   float _mindepth = 0;
+  AABox _aabox;
+  fvec3 _aamin, _aamax;
+  int _minX, _minY;
+  int _maxX, _maxY;
+  float _minZ, _maxZ;
 
   void next() {
     float x  = float((rand() & 0x7fff) - 0x4000);
@@ -75,8 +80,8 @@ struct IMPL {
     const int knumlights = 128;
 #endif
 
-    assert(knumlights<=KMAXLIGHTS);
-    
+    assert(knumlights <= KMAXLIGHTS);
+
     for (int i = 0; i < knumlights; i++) {
 
       PointLight p;
@@ -148,7 +153,7 @@ struct IMPL {
       _rtgGbuffer->SetMrt(1, buf1);
       //////////////////////////////////////////////////////////////
       _rtgMinMaxD      = new RtGroup(pTARG, 8, 8, NUMSAMPLES);
-      auto bufD        = new RtBuffer(_rtgMinMaxD, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RG32F, 8, 8);
+      auto bufD        = new RtBuffer(_rtgMinMaxD, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_R32UI, 8, 8);
       bufD->_debugName = "DeferredMinMaxD";
       _rtgMinMaxD->SetMrt(0, bufD);
       //////////////////////////////////////////////////////////////
@@ -261,12 +266,12 @@ struct IMPL {
         }
         /////////////////////////////////////////////////
         auto MTXI = targ->MTXI();
-        CIMPL->pushCPD(CPD);
+        CIMPL->pushCPD(CPD); // drawenq
         targ->debugPushGroup("toolvp::DrawEnqRenderables");
         FBI->Clear(node->_clearColor, 1.0f);
         irenderer->drawEnqueuedRenderables();
         framerenderer.renderMisc();
-        targ->debugPopGroup();
+        targ->debugPopGroup(); // drawenq
         CIMPL->popCPD();
       }
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -285,7 +290,7 @@ struct IMPL {
       CPD._cameraMatrices       = nullptr;
       CPD._stereoCameraMatrices = nullptr;
       CPD._stereo1pass          = false;
-      CIMPL->pushCPD(CPD);
+      CIMPL->pushCPD(CPD); // MinMaxD
       targ->debugPushGroup("Deferred::minmaxd");
       {
         FBI->SetAutoClear(true);
@@ -302,9 +307,7 @@ struct IMPL {
         _lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
         _lightingmtl.mRasterState.SetCullTest(ECULLTEST_PASS_BACK);
         _lightingmtl.commit();
-        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2),
-                                  fvec4(0, 0, 1, 1),
-                                  fvec4(0,0,0,0));
+        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
         _lightingmtl.end(RCFD);
         targ->EndFrame();
         FBI->PopRtGroup();
@@ -314,11 +317,7 @@ struct IMPL {
 
       bool captureok = FBI->capture(*_rtgMinMaxD, 0, &_depthcapture);
       assert(captureok);
-      struct rg32f {
-        float _min;
-        float _max;
-      };
-      auto minmaxdepthbase = (const rg32f*)_depthcapture._data;
+      auto minmaxdepthbase = (const uint32_t*)_depthcapture._data;
       /////////////////////////////////////////////////////////////////////////////////////////
       // Light Accumulation
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -330,8 +329,8 @@ struct IMPL {
       CPD._cameraMatrices       = nullptr;
       CPD._stereoCameraMatrices = nullptr;
       CPD._stereo1pass          = false;
-      CIMPL->pushCPD(CPD);
-      targ->debugPushGroup("Deferred::Lighting");
+      CIMPL->pushCPD(CPD); // base lighting
+      targ->debugPushGroup("Deferred::LightAccum");
       FBI->SetAutoClear(false);
       FBI->PushRtGroup(_rtgLaccum);
       FBI->SetAutoClear(true);
@@ -357,18 +356,17 @@ struct IMPL {
       _lightingmtl.bindParamVec2(_parInvViewSize, fvec2(1.0 / float(_width), 1.0f / float(_height)));
       _lightingmtl.commit();
       RSI->BindRasterState(_lightingmtl.mRasterState);
-      this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2),
-                                fvec4(0, 0, 1, 1),
-                                fvec4(0,0,0,0));
+      this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       _lightingmtl.end(RCFD);
-      CIMPL->popCPD();
+      CIMPL->popCPD();       // base lighting
       targ->debugPopGroup(); // BaseLighting
-      //////////////////////////////////////////////////////////////////
-      // point lighting
-      //  todo : batch multiple lights together
-      //   compute screen aligned quad for batch..
-      // accumulate pointlights
-      //////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
+// point lighting
+//  todo : batch multiple lights together
+//   compute screen aligned quad for batch..
+// accumulate pointlights
+//////////////////////////////////////////////////////////////////
+#if 1
       targ->debugPushGroup("Deferred::PointLighting");
       static float ftime = 0.0f;
       CIMPL->pushCPD(CPD);
@@ -400,42 +398,57 @@ struct IMPL {
       const int KTILEMAXX = _minmaxW - 1;
       const int KTILEMAXY = _minmaxH - 1;
       if (true) { // tiled lighting
-        size_t tilelights = 0;
+        size_t numltiles = 0;
         //_timer.Start();
         for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
           auto& light = _pointlights[lidx];
           Sphere sph(light._pos, light._radius * 0.707);
-          auto box           = sph.projectedBounds(VPL);
-          const auto& boxmin = box.Min();
-          const auto& boxmax = box.Max();
-
-          // float ndc = depthtex*2.0-1.0;
-          float boxminz = Zndc2eye.x / (boxmin.z - Zndc2eye.y);
-          float boxmaxz = Zndc2eye.x / (boxmax.z - Zndc2eye.y);
-
-          auto bmin = ((boxmin + fvec3(1, 1, 1)) * 0.5);
-          auto bmax = ((boxmax + fvec3(1, 1, 1)) * 0.5);
-
+          light._aabox = sph.projectedBounds(VPL);
+          const auto& boxmin = light._aabox.Min();
+          const auto& boxmax = light._aabox.Max();
+          light._aamin       = ((boxmin + fvec3(1, 1, 1)) * 0.5);
+          light._aamax       = ((boxmax + fvec3(1, 1, 1)) * 0.5);
+          light._minX = int(floor(light._aamin.x * KTILEMAXX));
+          light._maxX = int(ceil(light._aamax.x * KTILEMAXX));
+          light._minY = int(floor(light._aamin.y * KTILEMAXY));
+          light._maxY = int(ceil(light._aamax.y * KTILEMAXY));
+          light._minZ = Zndc2eye.x / (light._aabox.Min().z - Zndc2eye.y);
+          light._maxZ = Zndc2eye.x / (light._aabox.Max().z - Zndc2eye.y);
           light._mindepth = (light._pos - campos_mono).Mag();
-          // printf( "light._mindepth<%g>\n", light._mindepth );
-          int minX = int(floor(bmin.x * (_minmaxW - 1)));
-          int maxX = int(ceil(bmax.x * (_minmaxW - 1)));
-          int minY = int(floor(bmin.y * (_minmaxH - 1)));
-          int maxY = int(ceil(bmax.y * (_minmaxH - 1)));
-          for (int iy = minY; iy <= maxY; iy++) {
-            if (iy >= 0 and iy < _minmaxH) {
-              for (int ix = minX; ix <= maxX; ix++) {
-                if (ix >= 0 and ix < _minmaxW) {
-                  int mmpixindex = iy * _minmaxW + ix;
-                  const auto& mm = minmaxdepthbase[mmpixindex];
-                  bool overlap   = std::max(boxminz, mm._min) <= std::min(boxmaxz, mm._max);
-                  if (overlap)
+        }
+
+        for (int iy = 0; iy <= _minmaxH; iy++) {
+          for (int ix = 0; ix <= _minmaxW; ix++) {
+            int mmpixindex       = iy * _minmaxW + ix;
+            for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
+              auto& light = _pointlights[lidx];
+              bool overlapx      = (ix>=light._minX) and (ix<=light._maxX);
+              if (overlapx) {
+                bool overlapy      = (iy>=light._minY) and (iy<=light._maxY);
+                if (overlapy) {
+                  uint32_t depthsample = minmaxdepthbase[mmpixindex];
+                  uint32_t bitindex    = 0;
+                  bool overlapZ = false;
+                  while (depthsample != 0 and (false==overlapZ) ) {
+                    bool have_bit = (depthsample & 1);
+                    if (have_bit) {
+                      float bitshiftedLO = float(1 << bitindex);
+                      float bitshiftedHI = bitshiftedLO + bitshiftedLO;
+                      overlapZ      |= std::max(light._minZ, bitshiftedLO) <= std::min(light._maxZ, bitshiftedHI);
+                    } // if (have_bit) {
+                    depthsample >>= 1;
+                    bitindex++;
+                  } // while(depthsample)
+                  if (overlapZ) {
                     _lighttiles[mmpixindex].push_back(&light);
-                }
-              }
-            }
-          }
-        } // for( size_t lidx=0; lidx<_pointlights.size(); lidx++ ){
+                    numltiles++;
+                  } // if( overlapZ )
+                } // if( overlapY )
+              } // if( overlapX) {
+            } // for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
+          } // for (int ix = 0; ix <= _minmaxW; ix++) {
+        } // for (int iy = 0; iy <= _minmaxH; iy++) {
+        //printf("numltiles<%zu>\n", numltiles);
         // float pht1 = _timer.SecsSinceStart();
         // printf( "pht1<%g>\n", pht1 );
         const float KTILESIZX = 2.0f / float(_minmaxW);
@@ -458,7 +471,7 @@ struct IMPL {
 
         /////////////////////////////////////
         static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
-        size_t numchunks = 0;
+        size_t numchunks                           = 0;
         /////////////////////////////////////
         while (numactive) {
           bool chunk_done = false;
@@ -475,13 +488,13 @@ struct IMPL {
             int iy          = index / _minmaxW;
             int ix          = index % _minmaxW;
             float T         = float(iy) * KTILESIZY - 1.0f;
-            float L = float(ix) * KTILESIZX - 1.0f;
+            float L         = float(ix) * KTILESIZX - 1.0f;
             size_t numl     = lightlist.size();
             if ((numl + chunksize) <= 2048) {
               //_chunktiles.push_back(index);
               _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
               _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));
-              _chunktiles_uvb.push_back(fvec4(chunksize,numl,0,0));
+              _chunktiles_uvb.push_back(fvec4(chunksize, numl, 0, 0));
               for (size_t lidx = 0; (lidx < numl) and (false == chunk_done); lidx++) {
                 size_t chunk_offset                          = chunksize * sizeof(fvec4);
                 const auto light                             = lightlist[lidx];
@@ -510,18 +523,16 @@ struct IMPL {
             // this_buf->Render2dQuadEML(fvec4(L - 1.0f, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
             // this_buf->Render2dQuadEML(fvec4(L, T, KTILESIZX * 0.5, KTILESIZY), fvec4(0, 0, 1, 1));
           } else {
-            if( _chunktiles_pos.size() )
-              this_buf->Render2dQuadsEML(_chunktiles_pos.size(),
-                                         _chunktiles_pos.data(),
-                                         _chunktiles_uva.data(),
-                                         _chunktiles_uvb.data());
+            if (_chunktiles_pos.size())
+              this_buf->Render2dQuadsEML(
+                  _chunktiles_pos.size(), _chunktiles_pos.data(), _chunktiles_uva.data(), _chunktiles_uvb.data());
           }
           /////////////////////////////////////
           numactive = _activetiles.size() - actindex;
           numchunks++;
           /////////////////////////////////////
         }
-        //printf( "numchunks<%zu>\n", numchunks );
+        // printf( "numchunks<%zu>\n", numchunks );
       }
       /////////////////////////////////////
       else {
@@ -543,13 +554,12 @@ struct IMPL {
         mapped->unmap();
         _lightingmtl.bindParamInt(_parNumLights, _pointlights.size());
         _lightingmtl.commit();
-        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2),
-                                  fvec4(0, 0, 1, 1),
-                                  fvec4(0,0,0,0));
+        this_buf->Render2dQuadEML(fvec4(-1, -1, 2, 2), fvec4(0, 0, 1, 1), fvec4(0, 0, 0, 0));
       }
       /////////////////////////////////////
       _lightingmtl.end(RCFD);
       targ->debugPopGroup(); // PointLighting
+#endif
       //////////////////////////////////////////////////////////////////
       // clear lighttiles
       //////////////////////////////////////////////////////////////////
@@ -572,14 +582,14 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
       // end frame
       /////////////////////////////////////////////////////////////////////////////////////////
-      ftime += 0.01f;
+      // ftime += 0.01f;
       targ->EndFrame();
-      FBI->PopRtGroup();
-      targ->debugPopGroup(); // Lighting
+      FBI->PopRtGroup();     // deferredRtg
+      targ->debugPopGroup(); // "Deferred::LightAccum"
       CIMPL->popCPD();
       /////////////////////////////////////////////////////////////////////////////////////////
     }
-    targ->debugPopGroup();
+    targ->debugPopGroup(); // "Deferred::render"
   }
   ///////////////////////////////////////
   PoolString _camname, _layername;
@@ -628,7 +638,7 @@ struct IMPL {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
-};
+}; // namespace deferrednode
 } // namespace deferrednode
 
 ///////////////////////////////////////////////////////////////////////////////

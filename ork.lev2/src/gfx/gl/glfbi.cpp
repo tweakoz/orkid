@@ -471,6 +471,9 @@ bool GlFrameBufferInterface::capture(const RtGroup& rtg, int irt, CaptureBuffer*
     case EBUFFMT_R32F:
       glReadPixels(0, 0, w, h, GL_RED, GL_FLOAT, capbuf->_data);
       break;
+    case EBUFFMT_R32UI:
+      glReadPixels(0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);
+      break;
     case EBUFFMT_RG32F:
       glReadPixels(0, 0, w, h, GL_RG, GL_FLOAT, capbuf->_data);
       break;

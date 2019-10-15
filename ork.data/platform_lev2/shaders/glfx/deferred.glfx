@@ -153,12 +153,12 @@ fragment_interface iface_fdownsampledepthminmax {
     vec2 frg_uvb;
   }
   outputs {
-    vec2 out_minmax;
+    uint out_minmax;
   }
 }
 fragment_shader ps_downsampledepthminmax : iface_fdownsampledepthminmax : lib_deferred  {
   vec2 base = (gl_FragCoord.xy-vec2(0.5,0.5)) * float(TileDim);
-  vec2 rval = vec2(1e6,-1e6);
+  uint rval = 0;
   for( int iy=0; iy<TileDim; iy++ ){
     for( int ix=0; ix<TileDim; ix++ ){
       vec2 uv = base + vec2(ix,iy);
@@ -166,8 +166,8 @@ fragment_shader ps_downsampledepthminmax : iface_fdownsampledepthminmax : lib_de
       float depthtex = texture(MapDepth,uv).x;
       float ndc = depthtex*2.0-1.0;
       float zeye = Zndc2eye.x/(ndc - Zndc2eye.y);
-      rval.x = min(rval.x,zeye);
-      rval.y = max(rval.y,zeye);
+      int zz = int(log2(zeye));
+      rval = rval | (1<<zz);
     }
   }
   out_minmax = rval;
