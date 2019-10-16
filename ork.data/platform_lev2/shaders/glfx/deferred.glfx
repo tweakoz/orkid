@@ -107,11 +107,11 @@ libblock lib_deferred : ub_light : ub_frg {
     float dis2light = length(postolight);
     float atten     = dis2light / lightradius;
     atten           = 1.0 - clamp(atten, 0, 1);
-    atten           = atten * atten;
+    atten           = pow(atten,1.4); // * atten;
     vec3 dir2light  = normalize(postolight);
     atten *= max(dot(gbd._wnrm, dir2light), 0);
-    return color * atten;
-    //float dis2rad = clamp(1-abs(dis2light-lightradius),0,1);
+    float dis2rad = clamp(1-abs(dis2light-lightradius),0,1);
+    return color * atten + vec3(pow(dis2rad,4)*0.2);
     //return color * pow(dis2rad,10);
   }
   /////////////////////////////////////////////////////////

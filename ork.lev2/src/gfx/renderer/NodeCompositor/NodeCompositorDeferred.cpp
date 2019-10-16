@@ -38,12 +38,14 @@ constexpr int NUMSAMPLES = 1;
 namespace deferrednode {
 
 struct PointLight {
+
+  PointLight() {}
   fvec3 _pos;
   fvec3 _dst;
   fvec3 _color;
   float _radius;
   int _counter    = 0;
-  float _mindepth = 0;
+  float dist2cam = 0;
   AABox _aabox;
   fvec3 _aamin, _aamax;
   int _minX, _minY;
@@ -51,8 +53,8 @@ struct PointLight {
   float _minZ, _maxZ;
 
   void next() {
-    float x  = float((rand() & 0x3fff) - 0x2000);
-    float z  = float((rand() & 0x3fff) - 0x2000);
+    float x  = float((rand() & 0x1fff) - 0x1000);
+    float z  = float((rand() & 0x1fff) - 0x1000);
     float y  = float((rand() & 0x1fff) - 0x1000);
     _dst     = fvec3(x, y, z);
     _counter = 256 + rand() & 0xff;
@@ -89,12 +91,12 @@ struct IMPL {
 
     for (int i = 0; i < knumlights; i++) {
 
-      PointLight p;
-      p.next();
-      p._color.x = float(rand() & 0xff) / 256.0;
-      p._color.y = float(rand() & 0xff) / 256.0;
-      p._color.z = float(rand() & 0xff) / 256.0;
-      p._radius  = 16 + float(rand() & 0xff) / 2.0;
+      auto p = new PointLight;
+      p->next();
+      p->_color.x = float(rand() & 0xff) / 256.0;
+      p->_color.y = float(rand() & 0xff) / 256.0;
+      p->_color.z = float(rand() & 0xff) / 256.0;
+      p->_radius  = 16 + float(rand() & 0xff) / 2.0;
       _pointlights.push_back(p);
     }
   }
@@ -218,7 +220,7 @@ struct IMPL {
       CPD._irendertarget   = &rtgbuf;
       CPD.SetDstRect(tgt_rect);
       CPD._passID       = "defgbuffer1"_crcu;
-      fvec3 campos_mono = CPD.monoCamPos(fmtx4());
+      _camposmono = CPD.monoCamPos(fmtx4());
       fmtx4 IVPL, IVPR, IVPM;
       fmtx4 VL, VR, VM;
       fmtx4 PL, PR, PM;
@@ -259,8 +261,8 @@ struct IMPL {
       _ivp[1] = IVPR;
       fmtx4 IVL;
       IVL.inverseOf(VL);
-      campos_mono = IVL.GetColumn(3).xyz();
-      // printf( "campos<%g %g %g>\n", campos_mono.x, campos_mono.y, campos_mono.z );
+      _camposmono = IVL.GetColumn(3).xyz();
+      // printf( "campos<%g %g %g>\n", _camposmono.x, _camposmono.y, _camposmono.z );
       ///////////////////////////////////////////////////////////////////////////
       if (DB) {
         ///////////////////////////////////////////////////////////////////////////
@@ -409,20 +411,20 @@ struct IMPL {
 
         size_t numltiles = 0;
         for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
-          auto& light = _pointlights[lidx];
-          Sphere sph(light._pos, light._radius);
-          light._aabox       = sph.projectedBounds(VPL);
-          const auto& boxmin = light._aabox.Min();
-          const auto& boxmax = light._aabox.Max();
-          light._aamin       = ((boxmin + fvec3(1, 1, 1)) * 0.5);
-          light._aamax       = ((boxmax + fvec3(1, 1, 1)) * 0.5);
-          light._minX        = int(floor(light._aamin.x * KTILEMAXX));
-          light._maxX        = int(ceil(light._aamax.x * KTILEMAXX));
-          light._minY        = int(floor(light._aamin.y * KTILEMAXY));
-          light._maxY        = int(ceil(light._aamax.y * KTILEMAXY));
-          light._minZ        = Zndc2eye.x / (light._aabox.Min().z - Zndc2eye.y);
-          light._maxZ        = Zndc2eye.x / (light._aabox.Max().z - Zndc2eye.y);
-          light._mindepth    = (light._pos - campos_mono).Mag();
+          auto light = _pointlights[lidx];
+          Sphere sph(light->_pos, light->_radius);
+          light->_aabox       = sph.projectedBounds(VPL);
+          const auto& boxmin = light->_aabox.Min();
+          const auto& boxmax = light->_aabox.Max();
+          light->_aamin       = ((boxmin + fvec3(1, 1, 1)) * 0.5);
+          light->_aamax       = ((boxmax + fvec3(1, 1, 1)) * 0.5);
+          light->_minX        = int(floor(light->_aamin.x * KTILEMAXX));
+          light->_maxX        = int(ceil(light->_aamax.x * KTILEMAXX));
+          light->_minY        = int(floor(light->_aamin.y * KTILEMAXY));
+          light->_maxY        = int(ceil(light->_aamax.y * KTILEMAXY));
+          light->dist2cam     = (light->_pos - _camposmono).Mag();
+          light->_minZ        = light->dist2cam - light->_radius; //Zndc2eye.x / (light->_aabox.Min().z - Zndc2eye.y);
+          light->_maxZ        = light->dist2cam + light->_radius; //Zndc2eye.x / (light->_aabox.Max().z - Zndc2eye.y);
         }
 
         /////////////////////////////////////
@@ -432,24 +434,26 @@ struct IMPL {
         _lightjobcount = 0;
 
         for (int iy = 0; iy <= _minmaxH; iy++) {
+            auto job = [this,iy,&minmaxdepthbase,&numltiles]() {
           for (int ix = 0; ix <= _minmaxW; ix++) {
             int mmpixindex = iy * _minmaxW + ix;
-            auto job = [this,mmpixindex,ix,iy,&minmaxdepthbase,&numltiles]() {
               for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
-                auto& light   = _pointlights[lidx];
-                bool overlapx = (ix >= light._minX) and (ix <= light._maxX);
+                auto light   = _pointlights[lidx];
+                bool overlapx = std::max(ix, light->_minX) <= std::min(ix, light->_maxX);
                 if (overlapx) {
-                  bool overlapy = (iy >= light._minY) and (iy <= light._maxY);
+                  bool overlapy = std::max(iy, light->_minY) <= std::min(iy, light->_maxY);
                   if (overlapy) {
                     uint32_t depthsample = minmaxdepthbase[mmpixindex];
                     uint32_t bitindex    = 0;
                     bool overlapZ        = false;
+                    int highest_bit = 0;
                     while (depthsample != 0 and (false == overlapZ)) {
-                      bool have_bit = (depthsample & 1);
-                      if (have_bit) {
+                      bool has_bit = (depthsample & 1);
+                      if (has_bit) {
                         float bitshiftedLO = float(1 << bitindex);
                         float bitshiftedHI = bitshiftedLO + bitshiftedLO;
-                        overlapZ |= std::max(light._minZ, bitshiftedLO) <= std::min(light._maxZ, bitshiftedHI);
+                        overlapZ |= std::max(light->_minZ, bitshiftedLO) <= std::min(light->_maxZ, bitshiftedHI);
+                        highest_bit = bitindex;
                       } // if (have_bit) {
                       depthsample >>= 1;
                       bitindex++;
@@ -457,7 +461,7 @@ struct IMPL {
                     if (overlapZ) {
                       _actlmutex.Lock();
                       auto& lt = _lighttiles[mmpixindex];
-                      lt.push_back(&light);
+                      lt.push_back(light);
                       if (lt.size() == 1)
                         _activetiles.push_back(mmpixindex);
                       _actlmutex.UnLock();
@@ -466,12 +470,12 @@ struct IMPL {
                   }   // if( overlapY )
                 }     // if( overlapX) {
               }       // for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
+          }         // for (int ix = 0; ix <= _minmaxW; ix++) {
               _lightjobcount--;
             }; // job =
             int jobindex = _lightjobcount++;
             //job();
             ParallelOpQ().push(job);
-          }         // for (int ix = 0; ix <= _minmaxW; ix++) {
         }           // for (int iy = 0; iy <= _minmaxH; iy++) {
 
         /////////////////////////////////////
@@ -536,7 +540,7 @@ struct IMPL {
               /////////////////////////////////////////////////////////
               // embed chunk's lights into lighting UBO
               /////////////////////////////////////////////////////////
-              mapping->ref<fvec4>(chunk_offset)            = fvec4(light->_color, light->_mindepth);
+              mapping->ref<fvec4>(chunk_offset)            = fvec4(light->_color, light->dist2cam);
               mapping->ref<fvec4>(KPOSPASE + chunk_offset) = fvec4(light->_pos, light->_radius);
               chunk_offset += sizeof(fvec4);
             }
@@ -587,19 +591,19 @@ struct IMPL {
       /////////////////////////////////////
       else {
         for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
-          auto& light = _pointlights[lidx];
-          Sphere sph(light._pos, light._radius);
+          auto light = _pointlights[lidx];
+          Sphere sph(light->_pos, light->_radius);
           auto box  = sph.projectedBounds(VPL);
           auto bmin = ((box.Min() + fvec3(1, 1, 1)) * 0.5);
           auto bmax = ((box.Max() + fvec3(1, 1, 1)) * 0.5);
 
-          light._mindepth = (light._pos - campos_mono).Mag();
+          light->dist2cam = (light->_pos - _camposmono).Mag();
         }
         auto mapped = FXI->mapParamBuffer(_lightbuffer);
         for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
-          const auto& light                                   = _pointlights[lidx];
-          mapped->ref<fvec4>(lidx * sizeof(fvec4))            = fvec4(light._color, light._mindepth);
-          mapped->ref<fvec4>(KPOSPASE + lidx * sizeof(fvec4)) = fvec4(light._pos, light._radius);
+          const auto light                                   = _pointlights[lidx];
+          mapped->ref<fvec4>(lidx * sizeof(fvec4))            = fvec4(light->_color, light->dist2cam);
+          mapped->ref<fvec4>(KPOSPASE + lidx * sizeof(fvec4)) = fvec4(light->_pos, light->_radius);
         }
         mapped->unmap();
         _lightingmtl.bindParamInt(_parNumLights, _pointlights.size());
@@ -620,13 +624,13 @@ struct IMPL {
       //////////////////////////////////////////////////////////////////
       // update pointlights
       //////////////////////////////////////////////////////////////////
-      for (auto& pl : _pointlights) {
-        if (pl._counter < 1) {
-          pl.next();
+      for (auto pl : _pointlights) {
+        if (pl->_counter < 1) {
+          pl->next();
         } else {
-          fvec3 delta = pl._dst - pl._pos;
-          pl._pos += delta.Normal() * 2.0f;
-          pl._counter--;
+          fvec3 delta = pl->_dst - pl->_pos;
+          pl->_pos += delta.Normal() * 2.0f;
+          pl->_counter--;
         }
       }
       /////////////////////////////////////////////////////////////////////////////////////////
@@ -678,10 +682,12 @@ struct IMPL {
   int _height  = 0;
   int _minmaxW = 0;
   int _minmaxH = 0;
+  int _sequence = 0;
   fmtx4 _ivp[2];
   fmtx4 _v[2];
   fmtx4 _p[2];
-  std::vector<PointLight> _pointlights;
+  fvec3 _camposmono;
+  std::vector<PointLight*> _pointlights;
   typedef std::vector<const PointLight*> pllist_t;
   ork::fixedvector<pllist_t, KMAXTILECOUNT> _lighttiles;
   ork::fixedvector<int, KMAXTILECOUNT> _activetiles;

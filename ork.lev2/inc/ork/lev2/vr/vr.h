@@ -5,7 +5,7 @@
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/math/cmatrix4.h>
 
-#if !defined(__APPLE__)
+#if false //!defined(__APPLE__)
 #define ENABLE_OPENVR
 #include <openvr/openvr.h>
 namespace _ovr = ::vr;

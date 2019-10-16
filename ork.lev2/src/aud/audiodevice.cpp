@@ -52,7 +52,7 @@ AudioDevice *AudioDevice::GetDevice( void )
 {
 	if( 0 == gpDevice )
 	{
-		if( gb_audio_filter )
+		if( true ) //gb_audio_filter )
 		{
 			gpDevice = new AudioDeviceNULL;
 		}
