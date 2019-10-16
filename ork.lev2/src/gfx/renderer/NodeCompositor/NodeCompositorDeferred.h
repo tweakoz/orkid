@@ -90,6 +90,8 @@ struct DeferredContext {
   void renderUpdate(CompositorDrawData& drawdata);
   void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
   void renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD);
+  void beginPointLighting(CompositorDrawData& drawdata, const ViewData& VD);
+  void endPointLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
   RenderCompositingNode* _node;
   FreestyleMaterial _lightingmtl;

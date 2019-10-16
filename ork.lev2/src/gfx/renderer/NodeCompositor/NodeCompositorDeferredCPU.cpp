@@ -87,33 +87,7 @@ struct IMPL {
     auto this_buf                = FBI->GetThisBuffer();
     auto RSI                     = targ->RSI();
     /////////////////////////////////////////////////////////////////
-     targ->debugPushGroup("Deferred::PointLighting");
-    CIMPL->pushCPD(_context._accumCPD);
-    FBI->SetAutoClear(false);
-    FBI->PushRtGroup(_context._rtgLaccum);
-    targ->BeginFrame();
-    _context._lightingmtl.bindTechnique(VD._isStereo ? _context._tekPointLightingStereo : _context._tekPointLighting);
-    _context._lightingmtl.begin(RCFD);
-    //////////////////////////////////////////////////////
-    FXI->bindParamBlockBuffer(_context._lightblock, _context._lightbuffer);
-    //////////////////////////////////////////////////////
-    _context._lightingmtl.bindParamMatrixArray(_context._parMatIVPArray, VD._ivp, 2);
-    _context._lightingmtl.bindParamMatrixArray(_context._parMatVArray, VD._v, 2);
-    _context._lightingmtl.bindParamMatrixArray(_context._parMatPArray, VD._p, 2);
-    _context._lightingmtl.bindParamCTex(_context._parMapGBufAlbAo, _context._rtgGbuffer->GetMrt(0)->GetTexture());
-    _context._lightingmtl.bindParamCTex(_context._parMapGBufNrmL, _context._rtgGbuffer->GetMrt(1)->GetTexture());
-    _context._lightingmtl.bindParamCTex(_context._parMapDepth, _context._rtgGbuffer->_depthTexture);
-    _context._lightingmtl.bindParamCTex(_context._parMapDepthCluster, _context._rtgDepthCluster->GetMrt(0)->GetTexture());
-    _context._lightingmtl.bindParamVec2(_context._parNearFar, fvec2(DeferredContext::KNEAR, DeferredContext::KFAR));
-    _context._lightingmtl.bindParamVec2(_context._parZndc2eye, VD._zndc2eye);
-    _context._lightingmtl.bindParamVec2(_context._parInvViewSize,
-                                        fvec2(1.0 / float(_context._width), 1.0f / float(_context._height)));
-    //////////////////////////////////////////////////
-    _context._lightingmtl.mRasterState.SetCullTest(ECULLTEST_OFF);
-    _context._lightingmtl.mRasterState.SetBlending(EBLENDING_ADDITIVE);
-    //_context._lightingmtl.mRasterState.SetBlending(EBLENDING_OFF);
-    _context._lightingmtl.mRasterState.SetDepthTest(EDEPTHTEST_OFF);
-    RSI->BindRasterState(_context._lightingmtl.mRasterState);
+    _context.beginPointLighting(drawdata,VD);
     constexpr size_t KPOSPASE = DeferredContext::KMAXLIGHTSPERCHUNK * sizeof(fvec4);
     /////////////////////////////////////
     // float time_tile_cpa = _timer.SecsSinceStart();
@@ -274,11 +248,7 @@ struct IMPL {
     // printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
     // printf( "numchunks<%zu>\n", numchunks );
     /////////////////////////////////////
-    _context._lightingmtl.end(RCFD);
-    CIMPL->popCPD();
-    targ->debugPopGroup(); // PointLighting
-    targ->EndFrame();
-    FBI->PopRtGroup();     // deferredRtg
+    _context.endPointLighting(drawdata,VD);
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PoolString _camname;
