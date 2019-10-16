@@ -21,13 +21,13 @@
 
 #if defined(ENABLE_NVMESH_SHADERS)
 
-ImplementReflectionX(ork::lev2::DeferredCompositingNodeNvMs,
+ImplementReflectionX(ork::lev2::deferrednode::DeferredCompositingNodeNvMs,
                      "DeferredCompositingNodeNvMs");
 
 // fvec3 LightColor
 // fvec4 LightPosR 16byte
 ///////////////////////////////////////////////////////////////////////////////
-namespace ork::lev2 {
+namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 void DeferredCompositingNodeNvMs::describeX(class_t *c) {
   c->memberProperty("ClearColor", &DeferredCompositingNodeNvMs::_clearColor);
@@ -37,22 +37,6 @@ void DeferredCompositingNodeNvMs::describeX(class_t *c) {
 constexpr int NUMSAMPLES = 1;
 ///////////////////////////////////////////////////////////////////////////////
 namespace deferrednodenvms {
-
-struct PointLight {
-  fvec3 _pos;
-  fvec3 _dst;
-  fvec3 _color;
-  float _radius;
-  int _counter = 0;
-
-  void next() {
-    float x = float((rand() % 4096) - 2048);
-    float z = float((rand() % 4096) - 2048);
-    float y = float(100 + ((rand() % 800) - 400));
-    _dst = fvec3(x, y, z);
-    _counter = 200 + rand() % 200;
-  }
-};
 
 struct IMPL {
   static constexpr size_t KMAXLIGHTS = 2048;

@@ -34,11 +34,10 @@
 
 namespace ork {
 
-
 namespace lev2 {
 
 static FileDevContext LocPlatformLevel2FileContext;
-const FileDevContext & PlatformLevel2FileContext = LocPlatformLevel2FileContext;
+const FileDevContext& PlatformLevel2FileContext = LocPlatformLevel2FileContext;
 
 #if defined(_WIN32)
 static bool gbPREFEROPENGL = false;
@@ -51,281 +50,265 @@ void WiiGfxTargetInit();
 void OpenGlGfxTargetInit();
 void DummyGfxTargetInit();
 
-void PreferOpenGL()
-{
-	ork::lev2::OpenGlGfxTargetInit();
-	gbPREFEROPENGL=true;
+void PreferOpenGL() {
+  ork::lev2::OpenGlGfxTargetInit();
+  gbPREFEROPENGL = true;
 }
 
-void ClassInit()
-{
-	AllocationLabel label("ork::lev2::Init");
+void ClassInit() {
+  AllocationLabel label("ork::lev2::Init");
 
-	GfxEnv::GetRef();
-	GfxPrimitives::GetRef();
+  GfxEnv::GetRef();
+  GfxPrimitives::GetRef();
 
-	GfxMaterialWiiBasic::StaticInit();
+  GfxMaterialWiiBasic::StaticInit();
 
-	//////////////////////////////////////////
-	// touch of class
+  //////////////////////////////////////////
+  // touch of class
 
-	particle::ParticleModule::GetClassStatic();
-	particle::ParticlePool::GetClassStatic();
-	particle::ExtConnector::GetClassStatic();
+  particle::ParticleModule::GetClassStatic();
+  particle::ParticlePool::GetClassStatic();
+  particle::ExtConnector::GetClassStatic();
 
-	particle::Constants::GetClassStatic();
-	particle::FloatOp2Module::GetClassStatic();
-	particle::Vec3Op2Module::GetClassStatic();
-	particle::Vec3SplitModule::GetClassStatic();
+  particle::Constants::GetClassStatic();
+  particle::FloatOp2Module::GetClassStatic();
+  particle::Vec3Op2Module::GetClassStatic();
+  particle::Vec3SplitModule::GetClassStatic();
 
-	particle::Global::GetClassStatic();
+  particle::Global::GetClassStatic();
 
-	particle::RingEmitter::GetClassStatic();
-	particle::ReEmitter::GetClassStatic();
+  particle::RingEmitter::GetClassStatic();
+  particle::ReEmitter::GetClassStatic();
 
-	particle::GravityModule::GetClassStatic();
-	particle::TurbulenceModule::GetClassStatic();
-	particle::VortexModule::GetClassStatic();
+  particle::GravityModule::GetClassStatic();
+  particle::TurbulenceModule::GetClassStatic();
+  particle::VortexModule::GetClassStatic();
 
-	particle::RendererModule::GetClassStatic();
-	particle::SpriteRenderer::GetClassStatic();
-	particle::SpriteRenderer::GetClassStatic();
+  particle::RendererModule::GetClassStatic();
+  particle::SpriteRenderer::GetClassStatic();
+  particle::SpriteRenderer::GetClassStatic();
 
-	ork::dataflow::floatxfitembase::GetClassStatic();
-	ork::dataflow::floatxfmsbcurve::GetClassStatic();
+  ork::dataflow::floatxfitembase::GetClassStatic();
+  ork::dataflow::floatxfmsbcurve::GetClassStatic();
 
-	dataflow::outplug<proctex::ImgBase>::GetClassStatic();
-	dataflow::inplug<proctex::ImgBase>::GetClassStatic();
+  dataflow::outplug<proctex::ImgBase>::GetClassStatic();
+  dataflow::inplug<proctex::ImgBase>::GetClassStatic();
 
-	proctex::ProcTex::GetClassStatic();
-	proctex::ImgModule::GetClassStatic();
-	proctex::Img32Module::GetClassStatic();
-	proctex::Img64Module::GetClassStatic();
-	proctex::Module::GetClassStatic();
+  proctex::ProcTex::GetClassStatic();
+  proctex::ImgModule::GetClassStatic();
+  proctex::Img32Module::GetClassStatic();
+  proctex::Img64Module::GetClassStatic();
+  proctex::Module::GetClassStatic();
 
-	proctex::Periodic::GetClassStatic();
-	proctex::RotSolid::GetClassStatic();
-	proctex::Colorize::GetClassStatic();
-	proctex::SolidColor::GetClassStatic();
-	proctex::ImgOp2::GetClassStatic();
-	proctex::ImgOp3::GetClassStatic();
-	proctex::Transform::GetClassStatic();
-	proctex::Texture::GetClassStatic();
-	proctex::Gradient::GetClassStatic();
-	proctex::Curve1D::GetClassStatic();
-	proctex::Global::GetClassStatic();
-	proctex::Group::GetClassStatic();
+  proctex::Periodic::GetClassStatic();
+  proctex::RotSolid::GetClassStatic();
+  proctex::Colorize::GetClassStatic();
+  proctex::SolidColor::GetClassStatic();
+  proctex::ImgOp2::GetClassStatic();
+  proctex::ImgOp3::GetClassStatic();
+  proctex::Transform::GetClassStatic();
+  proctex::Texture::GetClassStatic();
+  proctex::Gradient::GetClassStatic();
+  proctex::Curve1D::GetClassStatic();
+  proctex::Global::GetClassStatic();
+  proctex::Group::GetClassStatic();
 
-	proctex::Cells::GetClassStatic();
-	proctex::Octaves::GetClassStatic();
+  proctex::Cells::GetClassStatic();
+  proctex::Octaves::GetClassStatic();
 
-	proctex::SphMap::GetClassStatic();
-	proctex::SphRefract::GetClassStatic();
-	proctex::H2N::GetClassStatic();
-	proctex::UvMap::GetClassStatic();
-	proctex::Kaled::GetClassStatic();
+  proctex::SphMap::GetClassStatic();
+  proctex::SphRefract::GetClassStatic();
+  proctex::H2N::GetClassStatic();
+  proctex::UvMap::GetClassStatic();
+  proctex::Kaled::GetClassStatic();
 
-	RegisterClassX(OutputCompositingNode);
-	RegisterClassX(VrCompositingNode);
-	RegisterClassX(ScreenOutputCompositingNode);
+  RegisterClassX(OutputCompositingNode);
+  RegisterClassX(VrCompositingNode);
+  RegisterClassX(ScreenOutputCompositingNode);
 
-	RegisterClassX(RenderCompositingNode);
-	RegisterClassX(ForwardCompositingNode);
-	RegisterClassX(DeferredCompositingNode);
+  RegisterClassX(RenderCompositingNode);
+  RegisterClassX(ForwardCompositingNode);
+  RegisterClassX(deferrednode::DeferredCompositingNode);
 
-  #if defined(ENABLE_NVMESH_SHADERS)
-	RegisterClassX(DeferredCompositingNodeNvMs);
-  #endif
+#if defined(ENABLE_NVMESH_SHADERS)
+  RegisterClassX(deferrednode::DeferredCompositingNodeNvMs);
+#endif
 
-	RegisterClassX(CompositingScene);
-	RegisterClassX(CompositingData);
-	RegisterClassX(CompositingGroupEffect);
-	RegisterClassX(CompositingGroup);
-	RegisterClassX(CompositingSceneItem);
+  RegisterClassX(CompositingScene);
+  RegisterClassX(CompositingData);
+  RegisterClassX(CompositingGroupEffect);
+  RegisterClassX(CompositingGroup);
+  RegisterClassX(CompositingSceneItem);
 
-	RegisterClassX(PostCompositingNode);
-	RegisterClassX(Fx3CompositingTechnique);
-	RegisterClassX(Fx3CompositingNode);
-	RegisterClassX(ScaleBiasCompositingNode);
-	RegisterClassX(SeriesCompositingNode);
-	RegisterClassX(PtxCompositingNode);
-	RegisterClassX(Op2CompositingNode);
-	RegisterClassX(NodeCompositingTechnique);
+  RegisterClassX(PostCompositingNode);
+  RegisterClassX(Fx3CompositingTechnique);
+  RegisterClassX(Fx3CompositingNode);
+  RegisterClassX(ScaleBiasCompositingNode);
+  RegisterClassX(SeriesCompositingNode);
+  RegisterClassX(PtxCompositingNode);
+  RegisterClassX(Op2CompositingNode);
+  RegisterClassX(NodeCompositingTechnique);
 
+  //////////////////////////////////////////
+  // register lev2 graphics target classes
 
-	//////////////////////////////////////////
-	// register lev2 graphics target classes
+  DummyGfxTargetInit();
 
-	DummyGfxTargetInit();
-
-
-	//////////////////////////////////////////
+  //////////////////////////////////////////
 }
 
-void GfxInit(const std::string& gfxlayer)
-{
-	if( gfxlayer != "dummy" )
-	{
-		#if defined(ORK_CONFIG_OPENGL)
-		OpenGlGfxTargetInit();
-		#endif
-	}
-
+void GfxInit(const std::string& gfxlayer) {
+  if (gfxlayer != "dummy") {
+#if defined(ORK_CONFIG_OPENGL)
+    OpenGlGfxTargetInit();
+#endif
+  }
 }
 } // namespace lev2
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
-class sortperfpred
-{
+class sortperfpred {
 public:
+  bool operator()(const PerformanceItem* t1, const PerformanceItem* t2) const // comparison predicate for map sorting
+  {
+    bool bval = true;
 
-	bool operator()( const PerformanceItem* t1, const PerformanceItem* t2 ) const // comparison predicate for map sorting
-	{
-		bool bval = true;
+    const PerformanceItem* RootU = PerformanceTracker::GetRef().mRoots[PerformanceTracker::EPS_UPDTHREAD];
+    const PerformanceItem* RootG = PerformanceTracker::GetRef().mRoots[PerformanceTracker::EPS_GFXTHREAD];
 
-		const PerformanceItem* RootU = PerformanceTracker::GetRef().mRoots[ PerformanceTracker::EPS_UPDTHREAD];
-		const PerformanceItem* RootG = PerformanceTracker::GetRef().mRoots[ PerformanceTracker::EPS_GFXTHREAD];
+    if ((t1 == RootU) || (t1 == RootG)) {
+      return true;
+    } else if ((t2 == RootU) || (t2 == RootG)) {
+      return false;
+    }
 
+    if (t1->miAvgCycle <= t2->miAvgCycle) {
+      bval = false;
+    }
 
-		if( (t1==RootU)||(t1==RootG) )
-		{
-			return true;
-		}
-		else if( (t2==RootU)||(t2==RootG) )
-		{
-			return false;
-		}
-
-		if( t1->miAvgCycle <= t2->miAvgCycle )
-		{
-			bval = false;
-		}
-
-		return bval;
-	}
+    return bval;
+  }
 };
 
-void PerformanceTracker::Draw( ork::lev2::GfxTarget *pTARG )
-{
-	//return; //
-	//orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
-	/*s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;
+void PerformanceTracker::Draw(ork::lev2::GfxTarget* pTARG) {
+  // return; //
+  // orklist<PerformanceItem*>* PerfItemList = PerformanceTracker::GetItemList();
+  /*s64 PerfTotal = PerformanceTracker::GetRef().mpRoot->miAvgCycle;
 
-	int itX = pTARG->GetX();
-	int itY = pTARG->GetY();
-	int itW = pTARG->GetW();
-	int itH = pTARG->GetH();
+  int itX = pTARG->GetX();
+  int itY = pTARG->GetY();
+  int itW = pTARG->GetW();
+  int itH = pTARG->GetH();
 
-	int iih = 16;
+  int iih = 16;
 
-	int ipY2 = itH-8;
-	int ipY = ipY2-iih;
-	int iSX = 8;
-	int iSW = itW-iSX;
+  int ipY2 = itH-8;
+  int ipY = ipY2-iih;
+  int iSX = 8;
+  int iSW = itW-iSX;
 
-	//////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////
-	ork::lev2::GfxMaterial3DSolid Material(pTARG);
-	Material.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
-	Material.mRasterState.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
-	Material.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
-	Material.mRasterState.SetZWriteMask( false );
-	pTARG->BindMaterial( & Material );
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  ork::lev2::GfxMaterial3DSolid Material(pTARG);
+  Material.mRasterState.SetDepthTest( ork::lev2::EDEPTHTEST_ALWAYS );
+  Material.mRasterState.SetBlending( ork::lev2::EBLENDING_ADDITIVE );
+  Material.SetColorMode( lev2::GfxMaterial3DSolid::EMODE_MOD_COLOR );
+  Material.mRasterState.SetZWriteMask( false );
+  pTARG->BindMaterial( & Material );
 
-	pTARG->PushModColor( fcolor4(0.0f,0.5f,0.0f) );
+  pTARG->PushModColor( fcolor4(0.0f,0.5f,0.0f) );
 
-	//////////////////////////////////////////////////////////////////////
-	orkstack<PerformanceItem*> PerfItemStack;
-	PerfItemStack.push(PerformanceTracker::GetRef().mpRoot);
-	orkvector<PerformanceItem*> SortedPerfVect;
-	while( false == PerfItemStack.empty() )
-	{
-		PerformanceItem* pItem = PerfItemStack.top();
-		PerfItemStack.pop();
+  //////////////////////////////////////////////////////////////////////
+  orkstack<PerformanceItem*> PerfItemStack;
+  PerfItemStack.push(PerformanceTracker::GetRef().mpRoot);
+  orkvector<PerformanceItem*> SortedPerfVect;
+  while( false == PerfItemStack.empty() )
+  {
+      PerformanceItem* pItem = PerfItemStack.top();
+      PerfItemStack.pop();
 
-		SortedPerfVect.push_back( pItem );
-		orklist<PerformanceItem*>* ChildList = pItem->GetChildrenList();
-		for( orklist<PerformanceItem*>::iterator itc=ChildList->begin(); itc!=ChildList->end(); itc++ )
-		{
-			PerfItemStack.push(*itc);
-		}
-	}
+      SortedPerfVect.push_back( pItem );
+      orklist<PerformanceItem*>* ChildList = pItem->GetChildrenList();
+      for( orklist<PerformanceItem*>::iterator itc=ChildList->begin(); itc!=ChildList->end(); itc++ )
+      {
+          PerfItemStack.push(*itc);
+      }
+  }
 
-	std::sort( SortedPerfVect.begin(), SortedPerfVect.end(), sortperfpred() );
+  std::sort( SortedPerfVect.begin(), SortedPerfVect.end(), sortperfpred() );
 
-	//////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
 
-	for( int i=0; i<int(SortedPerfVect.size()); i++ )
-	{
-		PerformanceItem* pItem = SortedPerfVect[i];
+  for( int i=0; i<int(SortedPerfVect.size()); i++ )
+  {
+      PerformanceItem* pItem = SortedPerfVect[i];
 
-		s64 fvalue = pItem->miAvgCycle;
+      s64 fvalue = pItem->miAvgCycle;
 
-		if( fvalue )
-		{
-			std::string name = pItem->GetName();
+      if( fvalue )
+      {
+          std::string name = pItem->GetName();
 
-			f64 fpercent = 0.0;
-			if(PerfTotal)
-				fpercent = f64(fvalue) / f64(PerfTotal);
+          f64 fpercent = 0.0;
+          if(PerfTotal)
+              fpercent = f64(fvalue) / f64(PerfTotal);
 
-			f32 fx = (f32) iSX+1;
-			f32 fx2 = (f32) (iSX + (fpercent*iSW))-1;
-			fvec4 Vertices[6];
-			Vertices[0].SetXYZ( fx, (f32) ipY+1, 0.5f );
-			Vertices[1].SetXYZ( fx, (f32) ipY2-1, 0.5f );
-			Vertices[2].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
-			Vertices[3].SetXYZ( fx, (f32) ipY+1, 0.5f );
-			Vertices[4].SetXYZ( fx2, (f32) ipY+1, 0.5f );
-			Vertices[5].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
+          f32 fx = (f32) iSX+1;
+          f32 fx2 = (f32) (iSX + (fpercent*iSW))-1;
+          fvec4 Vertices[6];
+          Vertices[0].SetXYZ( fx, (f32) ipY+1, 0.5f );
+          Vertices[1].SetXYZ( fx, (f32) ipY2-1, 0.5f );
+          Vertices[2].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
+          Vertices[3].SetXYZ( fx, (f32) ipY+1, 0.5f );
+          Vertices[4].SetXYZ( fx2, (f32) ipY+1, 0.5f );
+          Vertices[5].SetXYZ( fx2, (f32) ipY2-1, 0.5f );
 
-			pTARG->IMI()->DrawPrim( Vertices, 6, ork::lev2::EPRIM_TRIANGLES );
+          pTARG->IMI()->DrawPrim( Vertices, 6, ork::lev2::EPRIM_TRIANGLES );
 
-			ipY -= iih;
-			ipY2 -= iih;
-		}
+          ipY -= iih;
+          ipY2 -= iih;
+      }
 
-	}
-	pTARG->IMI()->QueFlush();
-	pTARG->PopModColor();
+  }
+  pTARG->IMI()->QueFlush();
+  pTARG->PopModColor();
 
-	//////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////
-	ipY2 = (itH-8)+2;
-	ipY = ipY2-iih;
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  ipY2 = (itH-8)+2;
+  ipY = ipY2-iih;
 
-	pTARG->PushModColor( fcolor4::White() );
-	for( int i=0; i<int(SortedPerfVect.size()); i++ )
-	{
-		PerformanceItem* pItem = SortedPerfVect[i];
+  pTARG->PushModColor( fcolor4::White() );
+  for( int i=0; i<int(SortedPerfVect.size()); i++ )
+  {
+      PerformanceItem* pItem = SortedPerfVect[i];
 
-		s64 fvalue = pItem->miAvgCycle;
+      s64 fvalue = pItem->miAvgCycle;
 
-		if( fvalue )
-		{
-			std::string name = pItem->GetName();
+      if( fvalue )
+      {
+          std::string name = pItem->GetName();
 
-			f64 fpercent = 0.0;
-			if(PerfTotal)
-				fpercent = f64(fvalue) / f64(PerfTotal);
+          f64 fpercent = 0.0;
+          if(PerfTotal)
+              fpercent = f64(fvalue) / f64(PerfTotal);
 
-			f64 ftime = fvalue/OldSchool::GetRef().mfClockRate;
-			int ix = iSX+4;
+          f64 ftime = fvalue/OldSchool::GetRef().mfClockRate;
+          int ix = iSX+4;
 
-			int fps = int(1.0f/ftime);
+          int fps = int(1.0f/ftime);
 #ifndef WII
-			ork::lev2::FontMan::DrawText( pTARG, ix, ipY, (char*) CreateFormattedString( "%s <%02d fps> <%2.2f msec>", (char *) name.c_str(), fps, ftime*1000.0f ).c_str() );
-#endif
+          ork::lev2::FontMan::DrawText( pTARG, ix, ipY, (char*) CreateFormattedString( "%s <%02d fps> <%2.2f msec>", (char *)
+name.c_str(), fps, ftime*1000.0f ).c_str() ); #endif
 
-			ipY -= iih;
-			ipY2 -= iih;
-		}
-	}
+          ipY -= iih;
+          ipY2 -= iih;
+      }
+  }
 
-	pTARG->IMI()->QueFlush();
-	pTARG->PopModColor();*/
+  pTARG->IMI()->QueFlush();
+  pTARG->PopModColor();*/
 }
 
 } // namespace ork

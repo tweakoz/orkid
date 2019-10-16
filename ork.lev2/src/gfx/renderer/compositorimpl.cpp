@@ -69,7 +69,7 @@ void CompositingData::defaultSetup() {
   auto t1 = new NodeCompositingTechnique;
   // auto o1 = new ScreenOutputCompositingNode;
   auto o1 = new VrCompositingNode;
-  auto r1 = new DeferredCompositingNode;
+  auto r1 = new deferrednode::DeferredCompositingNode;
   t1->_writeOutputNode(o1);
   t1->_writeRenderNode(r1);
   // t1->_writePostFxNode(p1);
