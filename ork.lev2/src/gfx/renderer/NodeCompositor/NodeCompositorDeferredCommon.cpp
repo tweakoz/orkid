@@ -64,9 +64,6 @@ void DeferredContext::gpuInit(GfxTarget* target) {
   target->debugPushGroup("Deferred::rendeinitr");
   auto FXI = target->FXI();
   if (nullptr == _rtgGbuffer) {
-    for (int i = 0; i < KMAXTILECOUNT; i++) {
-      _lighttiles.push_back(pllist_t());
-    }
     //////////////////////////////////////////////////////////////
     _lightingmtl.gpuInit(target, "orkshader://deferred");
     _tekBaseLighting           = _lightingmtl.technique("baselight");
@@ -77,16 +74,7 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
-    _lightbuffer = target->FXI()->createParamBuffer(65536);
     _lightblock  = _lightingmtl.paramBlock("ub_light");
-    auto mapped  = FXI->mapParamBuffer(_lightbuffer);
-    size_t base  = 0;
-    for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-      mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
-    base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-    for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-      mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-    mapped->unmap();
     //////////////////////////////////////////////////////////////
     _parMatIVPArray    = _lightingmtl.param("IVPArray");
     _parMatVArray      = _lightingmtl.param("VArray");
@@ -258,13 +246,6 @@ void DeferredContext::update(const ViewData& VD) {
     const int KTILEMAXX = _clusterW - 1;
     const int KTILEMAXY = _clusterH - 1;
       //////////////////////////////////////////////////////////////////
-      // clear lighttiles
-      //////////////////////////////////////////////////////////////////
-      int numtiles = _clusterW * _clusterH;
-      for (int i = 0; i < numtiles; i++)
-        _lighttiles[i].clear();
-      _pendingtiles.clear();
-      //////////////////////////////////////////////////////////////////
       // update pointlights
       //////////////////////////////////////////////////////////////////
       for (auto pl : _pointlights) {
@@ -416,8 +397,6 @@ void DeferredContext::beginPointLighting(CompositorDrawData& drawdata, const Vie
     targ->BeginFrame();
     _lightingmtl.bindTechnique(VD._isStereo ? _tekPointLightingStereo : _tekPointLighting);
     _lightingmtl.begin(RCFD);
-    //////////////////////////////////////////////////////
-    FXI->bindParamBlockBuffer(_lightblock, _lightbuffer);
     //////////////////////////////////////////////////////
     _lightingmtl.bindParamMatrixArray(_parMatIVPArray, VD._ivp, 2);
     _lightingmtl.bindParamMatrixArray(_parMatVArray, VD._v, 2);

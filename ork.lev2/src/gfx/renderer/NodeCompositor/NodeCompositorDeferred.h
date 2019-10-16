@@ -71,10 +71,6 @@ struct DeferredContext {
 #else
   static constexpr int KTILEDIMXY = 64;
 #endif
-  static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
-  static constexpr int KMAXNUMTILESX         = 512;
-  static constexpr int KMAXNUMTILESY         = 256;
-  static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;
   static constexpr float KNEAR               = 0.1f;
   static constexpr float KFAR                = 100000.0f;
   ////////////////////////////////////////////////////////////////////
@@ -104,13 +100,6 @@ struct DeferredContext {
   int _clusterH = 0;
   ////////////////////////////////////////////////////////////////////
   std::vector<PointLight*> _pointlights;
-  typedef std::vector<const PointLight*> pllist_t;
-  ork::fixedvector<pllist_t, KMAXTILECOUNT> _lighttiles;
-  ork::fixedvector<int, KMAXTILECOUNT> _pendingtiles;
-  ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
-  ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
-  ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
-  ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
 
   ////////////////////////////////////////////////////////////////////
 
@@ -141,7 +130,6 @@ struct DeferredContext {
   RtGroupRenderTarget* _gbuffRT  = nullptr;
   RtGroupRenderTarget* _clusterRT = nullptr;
 
-  FxShaderParamBuffer* _lightbuffer = nullptr;
   CaptureBuffer _clustercapture;
   RtGroup* _rtgGbuffer = nullptr;
   RtGroup* _rtgDepthCluster = nullptr;
