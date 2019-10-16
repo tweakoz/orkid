@@ -5,6 +5,7 @@
 #include <ork/kernel/debug.h>
 #include <ork/kernel/future.hpp>
 #include <ork/kernel/opq.h>
+#include <ork/kernel/csystem.h>
 #include <ork/kernel/string/string.h>
 #include <ork/pch.h>
 #include <ork/util/Context.hpp>
@@ -373,12 +374,15 @@ int OpqSynchro::NumOps() const { return int(mOpCounter); }
 ///////////////////////////////////////////////////////////////////////
 static Opq gmainupdateq(0, "MainUpdateQ");
 static Opq gmainthrq(0, "MainThreadQ");
+static Opq gparallelq(OldSchool::GetNumCores()-2, "ParallelQ");
 ///////////////////////////////////////////////////////////////////////////
 Opq& UpdateSerialOpQ() { return gmainupdateq; }
 ///////////////////////////////////////////////////////////////////////
 Opq& EditorOpQ() { return gmainupdateq; }
 ///////////////////////////////////////////////////////////////////////
 Opq& MainThreadOpQ() { return gmainthrq; }
+///////////////////////////////////////////////////////////////////////
+Opq& ParallelOpQ() { return gparallelq; }
 ///////////////////////////////////////////////////////////////////////
 std::shared_ptr<Opq::InternalLock> Opq::scopedLock() {
   auto l = std::make_shared<InternalLock>(*this);

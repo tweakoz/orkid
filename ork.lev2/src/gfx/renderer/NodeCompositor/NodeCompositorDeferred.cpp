@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <ork/pch.h>
+#include <ork/kernel/opq.h>
+#include <ork/kernel/mutex.h>
 #include <ork/reflect/RegisterProperty.h>
 #include <ork/application/application.h>
 #include <ork/lev2/gfx/gfxprimitives.h>
@@ -58,21 +60,23 @@ struct PointLight {
 };
 
 struct IMPL {
-  static constexpr size_t KMAXLIGHTS = 4096;
+  static constexpr size_t KMAXLIGHTS = 2048;
 #if defined(ENABLE_COMPUTE_SHADERS)
   static constexpr int KTILEDIMXY = 64;
 #else
   static constexpr int KTILEDIMXY = 64;
 #endif
   static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
-  static constexpr int KMAXNUMTILESX = 512;
-  static constexpr int KMAXNUMTILESY = 256;
-  static constexpr int KMAXTILECOUNT = KMAXNUMTILESX * KMAXNUMTILESY;
-  static constexpr float KNEAR       = 0.1f;
-  static constexpr float KFAR        = 100000.0f;
+  static constexpr int KMAXNUMTILESX         = 512;
+  static constexpr int KMAXNUMTILESY         = 256;
+  static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;
+  static constexpr float KNEAR               = 0.1f;
+  static constexpr float KFAR                = 100000.0f;
   ///////////////////////////////////////
   IMPL()
-      : _camname(AddPooledString("Camera")) {
+      : _camname(AddPooledString("Camera"))
+      , _actlmutex("activelightsmutex")
+      {
     _layername = "All"_pool;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
@@ -168,6 +172,7 @@ struct IMPL {
   }
   ///////////////////////////////////////
   void _render(DeferredCompositingNode* node, CompositorDrawData& drawdata) {
+    //_timer.Start();
     FrameRenderer& framerenderer = drawdata.mFrameRenderer;
     RenderContextFrameData& RCFD = framerenderer.framedata();
     auto CIMPL                   = drawdata._cimpl;
@@ -399,115 +404,154 @@ struct IMPL {
       const int KTILEMAXX = _minmaxW - 1;
       const int KTILEMAXY = _minmaxH - 1;
       if (true) { // tiled lighting
+
+        //float time_tile_in = _timer.SecsSinceStart();
+
         size_t numltiles = 0;
-        //_timer.Start();
         for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
           auto& light = _pointlights[lidx];
           Sphere sph(light._pos, light._radius);
-          light._aabox = sph.projectedBounds(VPL);
+          light._aabox       = sph.projectedBounds(VPL);
           const auto& boxmin = light._aabox.Min();
           const auto& boxmax = light._aabox.Max();
           light._aamin       = ((boxmin + fvec3(1, 1, 1)) * 0.5);
           light._aamax       = ((boxmax + fvec3(1, 1, 1)) * 0.5);
-          light._minX = int(floor(light._aamin.x * KTILEMAXX));
-          light._maxX = int(ceil(light._aamax.x * KTILEMAXX));
-          light._minY = int(floor(light._aamin.y * KTILEMAXY));
-          light._maxY = int(ceil(light._aamax.y * KTILEMAXY));
-          light._minZ = Zndc2eye.x / (light._aabox.Min().z - Zndc2eye.y);
-          light._maxZ = Zndc2eye.x / (light._aabox.Max().z - Zndc2eye.y);
-          light._mindepth = (light._pos - campos_mono).Mag();
+          light._minX        = int(floor(light._aamin.x * KTILEMAXX));
+          light._maxX        = int(ceil(light._aamax.x * KTILEMAXX));
+          light._minY        = int(floor(light._aamin.y * KTILEMAXY));
+          light._maxY        = int(ceil(light._aamax.y * KTILEMAXY));
+          light._minZ        = Zndc2eye.x / (light._aabox.Min().z - Zndc2eye.y);
+          light._maxZ        = Zndc2eye.x / (light._aabox.Max().z - Zndc2eye.y);
+          light._mindepth    = (light._pos - campos_mono).Mag();
         }
+
+        /////////////////////////////////////
+        //float time_tile_cpa = _timer.SecsSinceStart();
+        //printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
+        /////////////////////////////////////
+        _lightjobcount = 0;
 
         for (int iy = 0; iy <= _minmaxH; iy++) {
           for (int ix = 0; ix <= _minmaxW; ix++) {
-            int mmpixindex       = iy * _minmaxW + ix;
-            for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
-              auto& light = _pointlights[lidx];
-              bool overlapx      = (ix>=light._minX) and (ix<=light._maxX);
-              if (overlapx) {
-                bool overlapy      = (iy>=light._minY) and (iy<=light._maxY);
-                if (overlapy) {
-                  uint32_t depthsample = minmaxdepthbase[mmpixindex];
-                  uint32_t bitindex    = 0;
-                  bool overlapZ = false;
-                  while (depthsample != 0 and (false==overlapZ) ) {
-                    bool have_bit = (depthsample & 1);
-                    if (have_bit) {
-                      float bitshiftedLO = float(1 << bitindex);
-                      float bitshiftedHI = bitshiftedLO + bitshiftedLO;
-                      overlapZ      |= std::max(light._minZ, bitshiftedLO) <= std::min(light._maxZ, bitshiftedHI);
-                    } // if (have_bit) {
-                    depthsample >>= 1;
-                    bitindex++;
-                  } // while(depthsample)
-                  if (overlapZ) {
-                    _lighttiles[mmpixindex].push_back(&light);
-                    numltiles++;
-                  } // if( overlapZ )
-                } // if( overlapY )
-              } // if( overlapX) {
-            } // for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
-          } // for (int ix = 0; ix <= _minmaxW; ix++) {
-        } // for (int iy = 0; iy <= _minmaxH; iy++) {
-        //printf("numltiles<%zu>\n", numltiles);
+            int mmpixindex = iy * _minmaxW + ix;
+            auto job = [this,mmpixindex,ix,iy,&minmaxdepthbase,&numltiles]() {
+              for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
+                auto& light   = _pointlights[lidx];
+                bool overlapx = (ix >= light._minX) and (ix <= light._maxX);
+                if (overlapx) {
+                  bool overlapy = (iy >= light._minY) and (iy <= light._maxY);
+                  if (overlapy) {
+                    uint32_t depthsample = minmaxdepthbase[mmpixindex];
+                    uint32_t bitindex    = 0;
+                    bool overlapZ        = false;
+                    while (depthsample != 0 and (false == overlapZ)) {
+                      bool have_bit = (depthsample & 1);
+                      if (have_bit) {
+                        float bitshiftedLO = float(1 << bitindex);
+                        float bitshiftedHI = bitshiftedLO + bitshiftedLO;
+                        overlapZ |= std::max(light._minZ, bitshiftedLO) <= std::min(light._maxZ, bitshiftedHI);
+                      } // if (have_bit) {
+                      depthsample >>= 1;
+                      bitindex++;
+                    } // while(depthsample)
+                    if (overlapZ) {
+                      _actlmutex.Lock();
+                      auto& lt = _lighttiles[mmpixindex];
+                      lt.push_back(&light);
+                      if (lt.size() == 1)
+                        _activetiles.push_back(mmpixindex);
+                      _actlmutex.UnLock();
+                      numltiles++;
+                    } // if( overlapZ )
+                  }   // if( overlapY )
+                }     // if( overlapX) {
+              }       // for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
+              _lightjobcount--;
+            }; // job =
+            int jobindex = _lightjobcount++;
+            ParallelOpQ().push(job);
+          }         // for (int ix = 0; ix <= _minmaxW; ix++) {
+        }           // for (int iy = 0; iy <= _minmaxH; iy++) {
+
+        while(_lightjobcount){
+          usleep(0);
+        }
+        // printf("numltiles<%zu>\n", numltiles);
         // float pht1 = _timer.SecsSinceStart();
         // printf( "pht1<%g>\n", pht1 );
         const float KTILESIZX = 2.0f / float(_minmaxW);
         const float KTILESIZY = 2.0f / float(_minmaxH);
-        float fnumltot        = 0.0f;
-        float fnumlcnt        = 0.0f;
-        for (int iy = 0; iy < _minmaxH; iy++) {
-          float T = float(iy) * KTILESIZY - 1.0f;
-          for (int ix = 0; ix < _minmaxW; ix++) {
-            int index       = iy * _minmaxW + ix;
-            auto& lightlist = _lighttiles[index];
-            size_t numl     = lightlist.size();
-            if (numl) {
-              _activetiles.push_back(index);
-            }
-          }
-        }
+
         size_t numactive = _activetiles.size();
         size_t actindex  = 0;
 
         /////////////////////////////////////
-        size_t numchunks                           = 0;
+        //float time_tile_cpb = _timer.SecsSinceStart();
+        //printf( "Deferred::_render tilecpb time<%g>\n", time_tile_cpb-time_tile_cpa );
+        /////////////////////////////////////
+        size_t numchunks = 0;
+        size_t lidxbase  = 0;
         /////////////////////////////////////
         while (numactive) {
-          bool chunk_done = false;
-          auto mapping    = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
-          int chunksize   = 0;
-          //_chunktiles.clear();
+          /////////////////////////////////////
+          // process a chunk
+          /////////////////////////////////////
+          bool chunk_done     = false;
+          auto mapping        = FXI->mapParamBuffer(_lightbuffer, 0, 65536);
+          int chunksize       = 0;
+          size_t chunk_offset = 0;
           _chunktiles_pos.clear();
           _chunktiles_uva.clear();
           _chunktiles_uvb.clear();
           /////////////////////////////////////
           while (false == chunk_done) {
-            int index       = _activetiles[actindex++];
-            auto& lightlist = _lighttiles[index];
-            int iy          = index / _minmaxW;
-            int ix          = index % _minmaxW;
-            float T         = float(iy) * KTILESIZY - 1.0f;
-            float L         = float(ix) * KTILESIZX - 1.0f;
-            size_t numl     = lightlist.size();
-            if ((numl + chunksize) <= KMAXLIGHTSPERCHUNK) {
-              //_chunktiles.push_back(index);
-              _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
-              _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));
-              _chunktiles_uvb.push_back(fvec4(chunksize, numl, 0, 0));
-              for (size_t lidx = 0; (lidx < numl) and (false == chunk_done); lidx++) {
-                size_t chunk_offset                          = chunksize * sizeof(fvec4);
-                const auto light                             = lightlist[lidx];
-                mapping->ref<fvec4>(chunk_offset)            = fvec4(light->_color, light->_mindepth);
-                mapping->ref<fvec4>(KPOSPASE + chunk_offset) = fvec4(light->_pos, light->_radius);
-                chunksize++;
-                chunk_done = chunksize >= KMAXLIGHTSPERCHUNK;
-                chunk_done |= (actindex >= _activetiles.size());
-              }
-            } else {
-              chunk_done = true;
+            int index              = _activetiles[actindex];
+            auto& lightlist        = _lighttiles[index];
+            int iy                 = index / _minmaxW;
+            int ix                 = index % _minmaxW;
+            float T                = float(iy) * KTILESIZY - 1.0f;
+            float L                = float(ix) * KTILESIZX - 1.0f;
+            size_t numlightsintile = lightlist.size();
+            size_t remainingintile = numlightsintile - lidxbase;
+            size_t countthisiter   = remainingintile;
+            /////////////////////////////////////////////////////////
+            // clamp number of lights to that which will
+            //  fit into the current chunk
+            /////////////////////////////////////////////////////////
+            if ((countthisiter + chunksize) > KMAXLIGHTSPERCHUNK) {
+              countthisiter = KMAXLIGHTSPERCHUNK - chunksize;
+            }
+            /////////////////////////////////////////////////////////
+            // add item to current chunk
+            /////////////////////////////////////////////////////////
+            _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
+            _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));
+            _chunktiles_uvb.push_back(fvec4(chunksize, countthisiter, 0, 0));
+            /////////////////////////////////////////////////////////
+            for (size_t lidx = 0; lidx < countthisiter; lidx++) {
+              const auto light                             = lightlist[lidxbase+lidx];
+              /////////////////////////////////////////////////////////
+              // embed chunk's lights into lighting UBO
+              /////////////////////////////////////////////////////////
+              mapping->ref<fvec4>(chunk_offset)            = fvec4(light->_color, light->_mindepth);
+              mapping->ref<fvec4>(KPOSPASE + chunk_offset) = fvec4(light->_pos, light->_radius);
+              chunk_offset += sizeof(fvec4);
+            }
+            /////////////////////////////////////////////////////////
+            chunksize+=countthisiter;
+            chunk_done = chunksize >= KMAXLIGHTSPERCHUNK;
+            /////////////////////////////////////////////////////////
+            // advance tile ?
+            /////////////////////////////////////////////////////////
+            lidxbase += countthisiter;
+            if( lidxbase == lightlist.size()) {
+              actindex++;
+              lidxbase = 0;
+              chunk_done |= (actindex >= _activetiles.size());
             }
           }
+          /////////////////////////////////////
+          // chunk ready, fire it off..
           /////////////////////////////////////
           FXI->unmapParamBuffer(mapping.get());
           //////////////////////////////////////////////////
@@ -532,6 +576,9 @@ struct IMPL {
           numchunks++;
           /////////////////////////////////////
         }
+        //float time_tile_out = _timer.SecsSinceStart();
+        //printf( "Deferred::_render tiletime<%g>\n", time_tile_out-time_tile_in );
+
         // printf( "numchunks<%zu>\n", numchunks );
       }
       /////////////////////////////////////
@@ -590,6 +637,8 @@ struct IMPL {
       /////////////////////////////////////////////////////////////////////////////////////////
     }
     targ->debugPopGroup(); // "Deferred::render"
+    //float totaltime = _timer.SecsSinceStart();
+    //printf( "Deferred::_render totaltime<%g>\n", totaltime );
   }
   ///////////////////////////////////////
   PoolString _camname, _layername;
@@ -630,7 +679,6 @@ struct IMPL {
   fmtx4 _v[2];
   fmtx4 _p[2];
   std::vector<PointLight> _pointlights;
-  Timer _timer;
   typedef std::vector<const PointLight*> pllist_t;
   ork::fixedvector<pllist_t, KMAXTILECOUNT> _lighttiles;
   ork::fixedvector<int, KMAXTILECOUNT> _activetiles;
@@ -638,6 +686,9 @@ struct IMPL {
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
+  std::atomic<int> _lightjobcount;
+  ork::Timer _timer;
+  ork::mutex _actlmutex;
 }; // namespace deferrednode
 } // namespace deferrednode
 
