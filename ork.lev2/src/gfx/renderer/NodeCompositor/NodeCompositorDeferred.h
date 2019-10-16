@@ -74,41 +74,33 @@ struct DeferredContext {
   static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;
   static constexpr float KNEAR               = 0.1f;
   static constexpr float KFAR                = 100000.0f;
-
   ////////////////////////////////////////////////////////////////////
-
   DeferredContext(DeferredCompositingNode* node);
   ~DeferredContext();
-
-  ViewData computeViewData(CompositorDrawData& drawdata);
-
-  void gpuInit(GfxTarget* target);
-
-  void update();
   ////////////////////////////////////////////////////////////////////
-  const uint32_t* captureMinMax(CompositorDrawData& drawdata, const ViewData& VD);
+  ViewData computeViewData(CompositorDrawData& drawdata);
+  ////////////////////////////////////////////////////////////////////
+  void update(const ViewData& VD);
+  ////////////////////////////////////////////////////////////////////
+  void gpuInit(GfxTarget* target);
+  const uint32_t* captureDepthClusters(CompositorDrawData& drawdata, const ViewData& VD);
   void renderUpdate(CompositorDrawData& drawdata);
   void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
   void renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
-
   DeferredCompositingNode* _node;
   FreestyleMaterial _lightingmtl;
   CompositingPassData _accumCPD;
-
   ////////////////////////////////////////////////////////////////////
-
   int _width   = 0;
   int _height  = 0;
-  int _minmaxW = 0;
-  int _minmaxH = 0;
-
+  int _clusterW = 0;
+  int _clusterH = 0;
   ////////////////////////////////////////////////////////////////////
-
   std::vector<PointLight*> _pointlights;
   typedef std::vector<const PointLight*> pllist_t;
   ork::fixedvector<pllist_t, KMAXTILECOUNT> _lighttiles;
-  ork::fixedvector<int, KMAXTILECOUNT> _activetiles;
+  ork::fixedvector<int, KMAXTILECOUNT> _pendingtiles;
   ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
@@ -120,7 +112,7 @@ struct DeferredContext {
   const FxShaderTechnique* _tekPointLighting         = nullptr;
   const FxShaderTechnique* _tekBaseLightingStereo    = nullptr;
   const FxShaderTechnique* _tekPointLightingStereo   = nullptr;
-  const FxShaderTechnique* _tekDownsampleDepthMinMax = nullptr;
+  const FxShaderTechnique* _tekDownsampleDepthCluster = nullptr;
   const FxShaderParam* _parMatIVPArray               = nullptr;
   const FxShaderParam* _parMatPArray                 = nullptr;
   const FxShaderParam* _parMatVArray                 = nullptr;
@@ -128,7 +120,7 @@ struct DeferredContext {
   const FxShaderParam* _parMapGBufAlbAo              = nullptr;
   const FxShaderParam* _parMapGBufNrmL               = nullptr;
   const FxShaderParam* _parMapDepth                  = nullptr;
-  const FxShaderParam* _parMapDepthMinMax            = nullptr;
+  const FxShaderParam* _parMapDepthCluster           = nullptr;
   const FxShaderParam* _parTime                      = nullptr;
   const FxShaderParam* _parNearFar                   = nullptr;
   const FxShaderParam* _parInvViewSize               = nullptr;
@@ -141,12 +133,12 @@ struct DeferredContext {
 
   RtGroupRenderTarget* _accumRT  = nullptr;
   RtGroupRenderTarget* _gbuffRT  = nullptr;
-  RtGroupRenderTarget* _minmaxRT = nullptr;
+  RtGroupRenderTarget* _clusterRT = nullptr;
 
   FxShaderParamBuffer* _lightbuffer = nullptr;
-  CaptureBuffer _depthcapture;
+  CaptureBuffer _clustercapture;
   RtGroup* _rtgGbuffer = nullptr;
-  RtGroup* _rtgMinMaxD = nullptr;
+  RtGroup* _rtgDepthCluster = nullptr;
   RtGroup* _rtgLaccum  = nullptr;
 
   PoolString _layername;

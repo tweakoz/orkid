@@ -69,11 +69,11 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     }
     //////////////////////////////////////////////////////////////
     _lightingmtl.gpuInit(target, "orkshader://deferred");
-    _tekBaseLighting          = _lightingmtl.technique("baselight");
-    _tekPointLighting         = _lightingmtl.technique("pointlight");
-    _tekBaseLightingStereo    = _lightingmtl.technique("baselight_stereo");
-    _tekPointLightingStereo   = _lightingmtl.technique("pointlight_stereo");
-    _tekDownsampleDepthMinMax = _lightingmtl.technique("downsampledepthminmax");
+    _tekBaseLighting           = _lightingmtl.technique("baselight");
+    _tekPointLighting          = _lightingmtl.technique("pointlight");
+    _tekBaseLightingStereo     = _lightingmtl.technique("baselight_stereo");
+    _tekPointLightingStereo    = _lightingmtl.technique("pointlight_stereo");
+    _tekDownsampleDepthCluster = _lightingmtl.technique("downsampledepthcluster");
     //////////////////////////////////////////////////////////////
     // init lightblock
     //////////////////////////////////////////////////////////////
@@ -94,7 +94,7 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _parMapGBufAlbAo   = _lightingmtl.param("MapAlbedoAo");
     _parMapGBufNrmL    = _lightingmtl.param("MapNormalL");
     _parMapDepth       = _lightingmtl.param("MapDepth");
-    _parMapDepthMinMax = _lightingmtl.param("MapDepthMinMax");
+    _parMapDepthCluster = _lightingmtl.param("MapDepthCluster");
     _parInvViewSize    = _lightingmtl.param("InvViewportSize");
     _parTime           = _lightingmtl.param("Time");
     _parNumLights      = _lightingmtl.param("NumLights");
@@ -111,11 +111,11 @@ void DeferredContext::gpuInit(GfxTarget* target) {
     _rtgGbuffer->SetMrt(1, buf1);
     _gbuffRT = new RtGroupRenderTarget(_rtgGbuffer);
     //////////////////////////////////////////////////////////////
-    _rtgMinMaxD      = new RtGroup(target, 8, 8, 1);
-    auto bufD        = new RtBuffer(_rtgMinMaxD, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_R32UI, 8, 8);
-    bufD->_debugName = "DeferredMinMaxD";
-    _rtgMinMaxD->SetMrt(0, bufD);
-    _minmaxRT = new RtGroupRenderTarget(_rtgMinMaxD);
+    _rtgDepthCluster      = new RtGroup(target, 8, 8, 1);
+    auto bufD        = new RtBuffer(_rtgDepthCluster, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_R32UI, 8, 8);
+    bufD->_debugName = "DeferredDepthCluster";
+    _rtgDepthCluster->SetMrt(0, bufD);
+    _clusterRT = new RtGroupRenderTarget(_rtgDepthCluster);
     //////////////////////////////////////////////////////////////
     _rtgLaccum        = new RtGroup(target, 8, 8, 1);
     auto bufLA        = new RtBuffer(_rtgLaccum, lev2::ETGTTYPE_MRT0, lev2::EBUFFMT_RGBA16F, 8, 8);
@@ -179,15 +179,15 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-const uint32_t* DeferredContext::captureMinMax(CompositorDrawData& drawdata,const ViewData& VD) {
+const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawdata,const ViewData& VD) {
   auto CIMPL                   = drawdata._cimpl;
   FrameRenderer& framerenderer = drawdata.mFrameRenderer;
   RenderContextFrameData& RCFD = framerenderer.framedata();
   auto targ                    = RCFD.GetTarget();
   auto FBI                     = targ->FBI();
     auto this_buf                = FBI->GetThisBuffer();
-  auto vprect   = SRect(0, 0, _minmaxW, _minmaxH);
-  auto quadrect = SRect(0, 0, _minmaxW, _minmaxH);
+  auto vprect   = SRect(0, 0, _clusterW, _clusterH);
+  auto quadrect = SRect(0, 0, _clusterW, _clusterH);
   auto tgt_rect = SRect(0, 0, targ->GetW(), targ->GetH());
 
   const auto TOPCPD = CIMPL->topCPD();
@@ -195,19 +195,19 @@ const uint32_t* DeferredContext::captureMinMax(CompositorDrawData& drawdata,cons
   CPD._clearColor      = _node->_clearColor;
   CPD.mpLayerName      = &_layername;
   CPD.SetDstRect(tgt_rect);
-  CPD._passID       = "defgbuffer1"_crcu;
+  CPD._passID       = "defcluster"_crcu;
   CPD.SetDstRect(vprect);
-  CPD._irendertarget        = _minmaxRT;
+  CPD._irendertarget        = _clusterRT;
   CPD._cameraMatrices       = nullptr;
   CPD._stereoCameraMatrices = nullptr;
   CPD._stereo1pass          = false;
-  CIMPL->pushCPD(CPD); // MinMaxD
-  targ->debugPushGroup("Deferred::minmaxd");
+  CIMPL->pushCPD(CPD); // findclusters
+  targ->debugPushGroup("Deferred::findclusters");
   {
     FBI->SetAutoClear(true);
-    FBI->PushRtGroup(_rtgMinMaxD);
+    FBI->PushRtGroup(_rtgDepthCluster);
     targ->BeginFrame();
-    _lightingmtl.bindTechnique(_tekDownsampleDepthMinMax);
+    _lightingmtl.bindTechnique(_tekDownsampleDepthCluster);
     _lightingmtl.begin(RCFD);
     _lightingmtl.bindParamInt(_parTileDim, KTILEDIMXY);
     _lightingmtl.bindParamCTex(_parMapDepth, _rtgGbuffer->_depthTexture);
@@ -223,13 +223,12 @@ const uint32_t* DeferredContext::captureMinMax(CompositorDrawData& drawdata,cons
     targ->EndFrame();
     FBI->PopRtGroup();
   }
-  targ->debugPopGroup(); // MinMaxD
-  CIMPL->popCPD();       // MinMaxD
+  targ->debugPopGroup(); // findclusters
+  CIMPL->popCPD();       // findclusters
 
-  bool captureok = FBI->capture(*_rtgMinMaxD, 0, &_depthcapture);
+  bool captureok = FBI->capture(*_rtgDepthCluster, 0, &_clustercapture);
   assert(captureok);
-  auto minmaxdepthbase = (const uint32_t*)_depthcapture._data;
-  return (const uint32_t*)_depthcapture._data;
+  return (const uint32_t*)_clustercapture._data;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,25 +243,27 @@ void DeferredContext::renderUpdate(CompositorDrawData& drawdata) {
   if (_rtgGbuffer->GetW() != newwidth or _rtgGbuffer->GetH() != newheight) {
     _width   = newwidth;
     _height  = newheight;
-    _minmaxW = (newwidth + KTILEDIMXY - 1) / KTILEDIMXY;
-    _minmaxH = (newheight + KTILEDIMXY - 1) / KTILEDIMXY;
+    _clusterW = (newwidth + KTILEDIMXY - 1) / KTILEDIMXY;
+    _clusterH = (newheight + KTILEDIMXY - 1) / KTILEDIMXY;
     _rtgGbuffer->Resize(newwidth, newheight);
     _rtgLaccum->Resize(newwidth, newheight);
-    _rtgMinMaxD->Resize(_minmaxW, _minmaxH);
+    _rtgDepthCluster->Resize(_clusterW, _clusterH);
   }
 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void DeferredContext::update() {
+void DeferredContext::update(const ViewData& VD) {
+    const int KTILEMAXX = _clusterW - 1;
+    const int KTILEMAXY = _clusterH - 1;
       //////////////////////////////////////////////////////////////////
       // clear lighttiles
       //////////////////////////////////////////////////////////////////
-      int numtiles = _minmaxW * _minmaxH;
+      int numtiles = _clusterW * _clusterH;
       for (int i = 0; i < numtiles; i++)
         _lighttiles[i].clear();
-      _activetiles.clear();
+      _pendingtiles.clear();
       //////////////////////////////////////////////////////////////////
       // update pointlights
       //////////////////////////////////////////////////////////////////
@@ -274,6 +275,19 @@ void DeferredContext::update() {
           pl->_pos += delta.Normal() * 2.0f;
           pl->_counter--;
         }
+      Sphere sph(pl->_pos, pl->_radius);
+      pl->_aabox      = sph.projectedBounds(VD.VPL);
+      const auto& boxmin = pl->_aabox.Min();
+      const auto& boxmax = pl->_aabox.Max();
+      pl->_aamin      = ((boxmin + fvec3(1, 1, 1)) * 0.5);
+      pl->_aamax      = ((boxmax + fvec3(1, 1, 1)) * 0.5);
+      pl->_minX       = int(floor(pl->_aamin.x * KTILEMAXX));
+      pl->_maxX       = int(ceil(pl->_aamax.x * KTILEMAXX));
+      pl->_minY       = int(floor(pl->_aamin.y * KTILEMAXY));
+      pl->_maxY       = int(ceil(pl->_aamax.y * KTILEMAXY));
+      pl->dist2cam    = (pl->_pos - VD._camposmono).Mag();
+      pl->_minZ       = pl->dist2cam - pl->_radius; // Zndc2eye.x / (pl->_aabox.Min().z - Zndc2eye.y);
+      pl->_maxZ       = pl->dist2cam + pl->_radius; // Zndc2eye.x / (pl->_aabox.Max().z - Zndc2eye.y);
       }
 
 }
@@ -352,9 +366,8 @@ void DeferredContext::renderBaseLighting( CompositorDrawData& drawdata,
     _accumCPD._stereoCameraMatrices = nullptr;
     _accumCPD._stereo1pass          = false;
     CIMPL->pushCPD(_accumCPD); // base lighting
-      FBI->SetAutoClear(false);
-      FBI->PushRtGroup(_rtgLaccum);
       FBI->SetAutoClear(true);
+      FBI->PushRtGroup(_rtgLaccum);
       targ->BeginFrame();
       FBI->Clear(fvec4(0.1, 0.2, 0.3, 1), 1.0f);
       //////////////////////////////////////////////////////////////////
@@ -381,6 +394,8 @@ void DeferredContext::renderBaseLighting( CompositorDrawData& drawdata,
       _lightingmtl.end(RCFD);
     CIMPL->popCPD();       // base lighting
     targ->debugPopGroup(); // BaseLighting
+    targ->EndFrame();
+    FBI->PopRtGroup();     // deferredRtg
 
 }
 
