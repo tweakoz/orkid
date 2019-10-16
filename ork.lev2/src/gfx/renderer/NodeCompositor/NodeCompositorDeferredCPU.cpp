@@ -34,7 +34,7 @@ void DeferredCompositingNode::describeX(class_t* c) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
-  static constexpr size_t KMAXLIGHTS = 1024;
+  static constexpr size_t KMAXLIGHTS = 4096;
   static constexpr int KMAXNUMTILESX         = 512;
   static constexpr int KMAXNUMTILESY         = 256;
   static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;

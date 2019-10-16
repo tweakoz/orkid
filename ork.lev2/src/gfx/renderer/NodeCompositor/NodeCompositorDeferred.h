@@ -38,8 +38,8 @@ struct PointLight {
   float _minZ, _maxZ;
 
   void next() {
-    float x  = float((rand() & 0x1fff) - 0x1000);
-    float z  = float((rand() & 0x1fff) - 0x1000);
+    float x  = float((rand() & 0x3fff) - 0x2000);
+    float z  = float((rand() & 0x3fff) - 0x2000);
     float y  = float((rand() & 0x1fff) - 0x1000);
     _dst     = fvec3(x, y, z);
     _counter = 256 + rand() & 0xff;
