@@ -24,19 +24,11 @@
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 
-DeferredContext::DeferredContext(RenderCompositingNode* node) : _node(node) {
+DeferredContext::DeferredContext(RenderCompositingNode* node, int numlights) : _node(node) {
 
   _layername = "All"_pool;
 
-  #if defined(ENABLE_COMPUTE_SHADERS)
-  const int knumlights = KMAXLIGHTS;
-#else
-  const int knumlights = KMAXLIGHTS;
-#endif
-
-  assert(knumlights <= KMAXLIGHTS);
-
-  for (int i = 0; i < knumlights; i++) {
+  for (int i = 0; i < numlights; i++) {
 
     auto p = new PointLight;
     p->next();

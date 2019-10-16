@@ -65,7 +65,6 @@ struct ViewData {
 
 struct DeferredContext {
 
-  static constexpr size_t KMAXLIGHTS = 2048;
 #if defined(ENABLE_COMPUTE_SHADERS)
   static constexpr int KTILEDIMXY = 64;
 #else
@@ -74,7 +73,7 @@ struct DeferredContext {
   static constexpr float KNEAR               = 0.1f;
   static constexpr float KFAR                = 100000.0f;
   ////////////////////////////////////////////////////////////////////
-  DeferredContext(RenderCompositingNode* node);
+  DeferredContext(RenderCompositingNode* node, int numlights);
   ~DeferredContext();
   ////////////////////////////////////////////////////////////////////
   ViewData computeViewData(CompositorDrawData& drawdata);

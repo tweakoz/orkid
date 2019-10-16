@@ -36,33 +36,36 @@ void DeferredCompositingNodeNvMs::describeX(class_t* c) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 struct IMPL {
+  static constexpr size_t KMAXLIGHTS = 2048;
   static constexpr int KMAXNUMTILESX         = 512;
   static constexpr int KMAXNUMTILESY         = 256;
   static constexpr int KMAXTILECOUNT         = KMAXNUMTILESX * KMAXNUMTILESY;
   static constexpr size_t KMAXLIGHTSPERCHUNK = 32768 / sizeof(fvec4);
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   IMPL(DeferredCompositingNodeNvMs* node)
       : _camname(AddPooledString("Camera"))
-      , _actlmutex("activelightsmutex")
-      , _context(node) {
-    for (int i = 0; i < KMAXTILECOUNT; i++) {
-      _lighttiles.push_back(pllist_t());
-    }
+      , _context(node,KMAXLIGHTS)
+      , _lighttiles(KMAXTILECOUNT)\
+      , _lightbuffer(nullptr){
+    
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ~IMPL() {}
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void init(lev2::GfxTarget* target) {
     _context.gpuInit(target);
-    _lightbuffer = target->FXI()->createParamBuffer(65536);
-    auto mapped  = target->FXI()->mapParamBuffer(_lightbuffer);
-    size_t base  = 0;
-    for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-      mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
-    base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
-    for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
-      mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
-    mapped->unmap();
+    if( nullptr == _lightbuffer ) {
+      _lightbuffer = target->FXI()->createParamBuffer(65536);
+      auto mapped  = target->FXI()->mapParamBuffer(_lightbuffer);
+      size_t base  = 0;
+      for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
+        mapped->ref<fvec3>(base + i * sizeof(fvec4)) = fvec3(0, 0, 0);
+      base += KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+      for (int i = 0; i < KMAXLIGHTSPERCHUNK; i++)
+        mapped->ref<fvec4>(base + i * sizeof(fvec4)) = fvec4();
+      mapped->unmap();
+    }
   }
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void _render(DeferredCompositingNodeNvMs* node, CompositorDrawData& drawdata) {
@@ -80,8 +83,7 @@ struct IMPL {
     //////////////////////////////////////////////////////////////////
     int numtiles = _context._clusterW * _context._clusterH;
     for (int i = 0; i < numtiles; i++)
-      _lighttiles[i].clear();
-    _pendingtiles.clear();
+      _lighttiles[i].atomicOp([](pllist_t&item){ item.clear(); });
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
       _context.renderGbuffer(drawdata, VD);
@@ -102,7 +104,6 @@ struct IMPL {
     auto FXI                     = framerenderer.framedata().GetTarget()->FXI();
     auto this_buf                = framerenderer.framedata().GetTarget()->FBI()->GetThisBuffer();
     /////////////////////////////////////////////////////////////////
-    constexpr size_t KPOSPASE = KMAXLIGHTSPERCHUNK * sizeof(fvec4);
     _context.beginPointLighting(drawdata,VD);
     FXI->bindParamBlockBuffer(_context._lightblock, _lightbuffer);
     /////////////////////////////////////
@@ -110,11 +111,11 @@ struct IMPL {
     // printf( "Deferred::_render tilecpa time<%g>\n", time_tile_cpa-time_tile_in );
     /////////////////////////////////////
     _lightjobcount = 0;
-    size_t numltiles = 0;
+    _pendingtilecounter.store(0);
     auto depthclusterbase = (const uint32_t*)_context._clustercapture._data;
     for (int iy = 0; iy <= _context._clusterH; iy++) {
-      auto job = [this, iy, &depthclusterbase, &numltiles]() {
-        for (int ix = 0; ix <= _context._clusterW; ix++) {
+      for (int ix = 0; ix <= _context._clusterW; ix++) {
+        auto job = [this, ix, iy, &depthclusterbase]() {
           int tileindex = iy * _context._clusterW + ix;
           for (size_t lightindex = 0; lightindex < _context._pointlights.size(); lightindex++) {
             auto light    = _context._pointlights[lightindex];
@@ -125,36 +126,35 @@ struct IMPL {
                 uint32_t depthclustersample = depthclusterbase[tileindex];
                 uint32_t bitindex    = 0;
                 bool overlapZ        = false;
-                int highest_bit      = 0;
                 while (depthclustersample != 0 and (false == overlapZ)) {
                   bool has_bit = (depthclustersample & 1);
                   if (has_bit) {
                     float bitshiftedLO = float(1 << bitindex);
                     float bitshiftedHI = bitshiftedLO + bitshiftedLO;
                     overlapZ |= doRangesOverlap(light->_minZ, light->_maxZ, bitshiftedLO, bitshiftedHI);
-                    highest_bit = bitindex;
-                  } // if (have_bit) {
+                  } // if (has_bit) {
                   depthclustersample >>= 1;
                   bitindex++;
                 } // while(depthsample)
                 if (overlapZ) {
-                  _actlmutex.Lock();
-                  auto& lt = _lighttiles[tileindex];
-                  lt.push_back(light);
-                  if (lt.size() == 1)
-                    _pendingtiles.push_back(tileindex);
-                  _actlmutex.UnLock();
-                  numltiles++;
+                  int numlintile = 0;
+                  _lighttiles[tileindex].atomicOp([&](pllist_t&item){
+                      item.push_back(light);
+                      numlintile = item.size();
+                  });
+                  if (numlintile==1) {
+                    _pendingtiles[_pendingtilecounter.fetch_add(1)] = tileindex;
+                  }
                 } // if( overlapZ )
               }   // if( overlapY )
             }     // if( overlapX) {
           }       // for (size_t lightindex = 0; lightindex < _pointlights.size(); lightindex++) {
-        }         // for (int ix = 0; ix <= _clusterW; ix++) {
-        _lightjobcount--;
-      }; // job =
-      int jobindex = _lightjobcount++;
-      // job();
-      ParallelOpQ().push(job);
+          _lightjobcount--;
+        }; // job =
+        int jobindex = _lightjobcount++;
+        //job();
+        ParallelOpQ().push(job);
+      }         // for (int ix = 0; ix <= _clusterW; ix++) {
     } // for (int iy = 0; iy <= _clusterH; iy++) {
     /////////////////////////////////////
     // float time_tile_cpb = _timer.SecsSinceStart();
@@ -165,7 +165,7 @@ struct IMPL {
     }
     const float KTILESIZX = 2.0f / float(_context._clusterW);
     const float KTILESIZY = 2.0f / float(_context._clusterH);
-    size_t num_pending_tiles = _pendingtiles.size();
+    size_t num_pending_tiles = _pendingtilecounter.load();
     size_t actindex  = 0;
     /////////////////////////////////////
     // float time_tile_cpc = _timer.SecsSinceStart();
@@ -188,49 +188,51 @@ struct IMPL {
       /////////////////////////////////////
       while (false == chunk_done) {
         int index              = _pendingtiles[actindex];
-        auto& lightlist        = _lighttiles[index];
-        int iy                 = index / _context._clusterW;
-        int ix                 = index % _context._clusterW;
-        float T                = float(iy) * KTILESIZY - 1.0f;
-        float L                = float(ix) * KTILESIZX - 1.0f;
-        size_t numlightsintile = lightlist.size();
-        size_t remainingintile = numlightsintile - lidxbase;
-        size_t countthisiter   = remainingintile;
-        /////////////////////////////////////////////////////////
-        // clamp number of lights to that which will
-        //  fit into the current chunk
-        /////////////////////////////////////////////////////////
-        if ((countthisiter + chunksize) > KMAXLIGHTSPERCHUNK) {
-          countthisiter = KMAXLIGHTSPERCHUNK - chunksize;
-        }
-        /////////////////////////////////////////////////////////
-        // add item to current chunk
-        /////////////////////////////////////////////////////////
-        _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
-        _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));
-        _chunktiles_uvb.push_back(fvec4(chunksize, countthisiter, 0, 0));
-        /////////////////////////////////////////////////////////
-        for (size_t lidx = 0; lidx < countthisiter; lidx++) {
-          const auto light = lightlist[lidxbase + lidx];
+        _lighttiles[index].atomicOp([&](pllist_t& lightlist){
+          int iy                 = index / _context._clusterW;
+          int ix                 = index % _context._clusterW;
+          float T                = float(iy) * KTILESIZY - 1.0f;
+          float L                = float(ix) * KTILESIZX - 1.0f;
+          size_t numlightsintile = lightlist.size();
+          size_t remainingintile = numlightsintile - lidxbase;
+          size_t countthisiter   = remainingintile;
           /////////////////////////////////////////////////////////
-          // embed chunk's lights into lighting UBO
+          // clamp number of lights to that which will
+          //  fit into the current chunk
           /////////////////////////////////////////////////////////
-          mapping->ref<fvec4>(chunk_offset)            = fvec4(light->_color, light->dist2cam);
-          mapping->ref<fvec4>(KPOSPASE + chunk_offset) = fvec4(light->_pos, light->_radius);
-          chunk_offset += sizeof(fvec4);
-        }
-        /////////////////////////////////////////////////////////
-        chunksize += countthisiter;
-        chunk_done = chunksize >= KMAXLIGHTSPERCHUNK;
-        /////////////////////////////////////////////////////////
-        // advance tile ?
-        /////////////////////////////////////////////////////////
-        lidxbase += countthisiter;
-        if (lidxbase == lightlist.size()) {
-          actindex++;
-          lidxbase = 0;
-          chunk_done |= (actindex >= _pendingtiles.size());
-        }
+          if ((countthisiter + chunksize) > KMAXLIGHTSPERCHUNK) {
+            countthisiter = KMAXLIGHTSPERCHUNK - chunksize;
+          }
+          /////////////////////////////////////////////////////////
+          // add item to current chunk
+          /////////////////////////////////////////////////////////
+          _chunktiles_pos.push_back(fvec4(L, T, KTILESIZX, KTILESIZY));
+          _chunktiles_uva.push_back(fvec4(0, 0, 1, 1));
+          _chunktiles_uvb.push_back(fvec4(chunksize, countthisiter, 0, 0));
+          /////////////////////////////////////////////////////////
+          constexpr size_t KPOSPASE = KMAXLIGHTSPERCHUNK * sizeof(fvec4);
+          for (size_t lidx = 0; lidx < countthisiter; lidx++) {
+            const auto light = lightlist[lidxbase + lidx];
+            /////////////////////////////////////////////////////////
+            // embed chunk's lights into lighting UBO
+            /////////////////////////////////////////////////////////
+            mapping->ref<fvec4>(chunk_offset)            = fvec4(light->_color, light->dist2cam);
+            mapping->ref<fvec4>(KPOSPASE + chunk_offset) = fvec4(light->_pos, light->_radius);
+            chunk_offset += sizeof(fvec4);
+          }
+          /////////////////////////////////////////////////////////
+          chunksize += countthisiter;
+          chunk_done = chunksize >= KMAXLIGHTSPERCHUNK;
+          /////////////////////////////////////////////////////////
+          // advance tile ?
+          /////////////////////////////////////////////////////////
+          lidxbase += countthisiter;
+          if (lidxbase == lightlist.size()) {
+            actindex++;
+            lidxbase = 0;
+            chunk_done |= (actindex >= _pendingtilecounter.load());
+          }
+        }); // _lighttiles[index].atomicOp
       }
       /////////////////////////////////////
       // chunk ready, fire it off..
@@ -256,7 +258,7 @@ struct IMPL {
                                      _chunktiles_uvb.data());
       }
       /////////////////////////////////////
-      num_pending_tiles = _pendingtiles.size() - actindex;
+      num_pending_tiles = _pendingtilecounter.load() - actindex;
       numchunks++;
       /////////////////////////////////////
     } // while (num_pending_tiles) {
@@ -269,19 +271,20 @@ struct IMPL {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   PoolString _camname;
   typedef std::vector<const PointLight*> pllist_t;
+  typedef ork::LockedResource<pllist_t> locked_pllist_t;
 
   DeferredContext _context;
   int _sequence = 0;
   std::atomic<int> _lightjobcount;
   ork::Timer _timer;
-  ork::mutex _actlmutex;
-  ork::fixedvector<pllist_t, KMAXTILECOUNT> _lighttiles;
-  ork::fixedvector<int, KMAXTILECOUNT> _pendingtiles;
+  ork::fixedvector<locked_pllist_t, KMAXTILECOUNT> _lighttiles;
+  int  _pendingtiles[KMAXTILECOUNT];
   ork::fixedvector<int, KMAXTILECOUNT> _chunktiles;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_pos;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uva;
   ork::fixedvector<fvec4, KMAXTILECOUNT> _chunktiles_uvb;
   FxShaderParamBuffer* _lightbuffer = nullptr;
+  std::atomic<int> _pendingtilecounter;
 }; // IMPL
 
 ///////////////////////////////////////////////////////////////////////////////
