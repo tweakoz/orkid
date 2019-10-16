@@ -20,7 +20,7 @@ void Future::Clear()
 
 void Future::WaitForSignal() const
 {
-	while(mState.load()==0) usleep(100);
+	while(mState.load()==0) sched_yield();
 }
 const Future::var_t& Future::GetResult() const
 {

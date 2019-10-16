@@ -15,6 +15,18 @@
 template class ork::util::ContextTLS<ork::OpqTest>;
 ///////////////////////////////////////////////////////////////////////
 namespace ork {
+void dispersed_sleep(int idx, int iquantausec )
+{
+	static const int ktabsize = 16;
+	static const int ktab[ktabsize] =
+	{
+		0, 1, 3, 5,
+		17, 19, 21, 23,
+		35, 37, 39, 41,
+		53, 55, 57, 59,
+	};
+	usleep(ktab[idx&0xf]*iquantausec);
+}
 ////////////////////////////////////////////////////////////////////////////////
 Op::Op(const void_lambda_t& op, const std::string& name)
     : mName(name) {
@@ -85,13 +97,18 @@ void OpqThread::run() // virtual
 
   OpqTest opqtest(popq);
 
+  int slindex = 0;
+  
   while (EPOQSTATE_OK2KILL != _state.load()) {
-    popq->mSemaphore.wait(); // wait for an op (without spinning)
+    dispersed_sleep(slindex++,10); // semaphores are slowing us down
+    //popq->mSemaphore.wait(); // wait for an op (without spinning)
 
     switch( _state.load() ){
 
       case EPOQSTATE_RUNNING:{
         bool item_processed = popq->Process();
+        if( item_processed )
+          slindex = 0;
         break;
       }
       case EPOQSTATE_LOCKED:
@@ -125,7 +142,7 @@ void Opq::_internalBeginLock() {
     for( auto thread : thset )
       while( thread->_state.load() != EPOQSTATE_LOCKED ){
         mSemaphore.notify();
-        usleep(100);
+        usleep(0);
       }
   });
   printf( "Opq<%s> Locked!\n", _name.c_str());
@@ -143,60 +160,65 @@ void Opq::_internalEndLock() {
     for( auto thread : thset )
       while( thread->_state.load() != EPOQSTATE_RUNNING ){
         mSemaphore.notify();
-        usleep(100);
+        usleep(0);
       }
   });
   printf( "Opq<%s> Unlocked!\n", _name.c_str());
 }
 ///////////////////////////////////////////////////////////////////////////
 bool Opq::Process() {
-  bool rval = false;
 
-  Op the_op;
+  bool keep_going = true;
+  while( keep_going ) {
 
-  OpGroup* pexecgrp = nullptr;
+    Op the_op;
 
-  int num_groups   = mGroupCounter;
-  OpGroup* ptstgrp = nullptr;
-  for (auto& grp : mOpGroups) {
-    int ioif    = grp->mOpsInFlightCounter;
-    int imax    = grp->mLimitMaxOpsInFlight;
-    int inumops = grp->mSynchro.NumOps();
+    OpGroup* pexecgrp = nullptr;
 
-    if ((inumops > 0) && ((imax == 0) || (ioif < imax))) {
-      if (grp->try_pop(the_op)) {
-        pexecgrp = grp;
-        break;
+    int num_groups   = mGroupCounter;
+    OpGroup* ptstgrp = nullptr;
+    for (auto& grp : mOpGroups) {
+      int ioif    = grp->mOpsInFlightCounter;
+      int imax    = grp->mLimitMaxOpsInFlight;
+      int inumops = grp->mSynchro.NumOps();
+
+      if ((inumops > 0) && ((imax == 0) || (ioif < imax))) {
+        if (grp->try_pop(the_op)) {
+          pexecgrp = grp;
+          break;
+        }
       }
     }
-  }
 
-  if (pexecgrp) {
-    pexecgrp->mOpsInFlightCounter++;
+    if (pexecgrp) {
+      pexecgrp->mOpsInFlightCounter++;
 
-    // printf( "  runop OIF<%d>\n", int(pexecgrp->mOpsInFlightCounter) );
-    const char* ppnam = "opx";
+      // printf( "  runop OIF<%d>\n", int(pexecgrp->mOpsInFlightCounter) );
+      const char* ppnam = "opx";
 
-    if (the_op.mName.length()) {
-      ppnam = the_op.mName.c_str();
+      if (the_op.mName.length()) {
+        ppnam = the_op.mName.c_str();
+      }
+
+      if (the_op.mWrapped.IsA<void_lambda_t>()) {
+        the_op.mWrapped.Get<void_lambda_t>()();
+      } else if (the_op.mWrapped.IsA<BarrierSyncReq>()) {
+        auto& R = the_op.mWrapped.Get<BarrierSyncReq>();
+        R.mFuture.Signal<bool>(true);
+      } else {
+        printf("unknown opq invokable type\n");
+      }
+
+      this->mSynchro.RemItem();
+      pexecgrp->mSynchro.RemItem();
+
+      pexecgrp->mOpsInFlightCounter--;
     }
-
-    if (the_op.mWrapped.IsA<void_lambda_t>()) {
-      the_op.mWrapped.Get<void_lambda_t>()();
-    } else if (the_op.mWrapped.IsA<BarrierSyncReq>()) {
-      auto& R = the_op.mWrapped.Get<BarrierSyncReq>();
-      R.mFuture.Signal<bool>(true);
-    } else {
-      printf("unknown opq invokable type\n");
+    else {
+      keep_going = false;
     }
-
-    this->mSynchro.RemItem();
-    pexecgrp->mSynchro.RemItem();
-
-    pexecgrp->mOpsInFlightCounter--;
-    rval = true;
   }
-  return rval;
+  return keep_going;
 }
 ///////////////////////////////////////////////////////////////////////////
 void Opq::push(const Op& the_op) {
@@ -287,7 +309,7 @@ _goingdown = true;
         thset.erase(thread);
       }
     });
-    usleep(10);
+    usleep(0);
   }
 
   printf( "Opq<%s> joined\n", _name.c_str());
@@ -374,7 +396,8 @@ int OpqSynchro::NumOps() const { return int(mOpCounter); }
 ///////////////////////////////////////////////////////////////////////
 static Opq gmainupdateq(0, "MainUpdateQ");
 static Opq gmainthrq(0, "MainThreadQ");
-static Opq gparallelq(OldSchool::GetNumCores()-2, "ParallelQ");
+static Opq gparallelq((OldSchool::GetNumCores()/2)-2, "ParallelQ");
+//static Opq gparallelq(4, "ParallelQ");
 ///////////////////////////////////////////////////////////////////////////
 Opq& UpdateSerialOpQ() { return gmainupdateq; }
 ///////////////////////////////////////////////////////////////////////

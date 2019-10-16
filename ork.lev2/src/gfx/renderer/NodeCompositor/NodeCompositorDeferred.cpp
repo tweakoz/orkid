@@ -469,16 +469,19 @@ struct IMPL {
               _lightjobcount--;
             }; // job =
             int jobindex = _lightjobcount++;
+            //job();
             ParallelOpQ().push(job);
           }         // for (int ix = 0; ix <= _minmaxW; ix++) {
         }           // for (int iy = 0; iy <= _minmaxH; iy++) {
 
+        /////////////////////////////////////
+        //float time_tile_cpb = _timer.SecsSinceStart();
+        //printf( "Deferred::_render tilecpb time<%g>\n", time_tile_cpb-time_tile_cpa );
+        /////////////////////////////////////
+
         while(_lightjobcount){
-          usleep(0);
+             ParallelOpQ().sync();
         }
-        // printf("numltiles<%zu>\n", numltiles);
-        // float pht1 = _timer.SecsSinceStart();
-        // printf( "pht1<%g>\n", pht1 );
         const float KTILESIZX = 2.0f / float(_minmaxW);
         const float KTILESIZY = 2.0f / float(_minmaxH);
 
@@ -486,8 +489,8 @@ struct IMPL {
         size_t actindex  = 0;
 
         /////////////////////////////////////
-        //float time_tile_cpb = _timer.SecsSinceStart();
-        //printf( "Deferred::_render tilecpb time<%g>\n", time_tile_cpb-time_tile_cpa );
+        //float time_tile_cpc = _timer.SecsSinceStart();
+        //printf( "Deferred::_render tilecpc time<%g>\n", time_tile_cpc-time_tile_cpb );
         /////////////////////////////////////
         size_t numchunks = 0;
         size_t lidxbase  = 0;
