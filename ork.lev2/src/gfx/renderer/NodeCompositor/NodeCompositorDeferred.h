@@ -17,6 +17,9 @@ namespace ork::lev2::deferrednode {
 
 class DeferredCompositingNode;
 
+template <typename T> inline bool doRangesOverlap(T amin, T amax, T bmin, T bmax){
+  return std::max(amin, bmin) <= std::min(amax, bmax);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 struct PointLight {

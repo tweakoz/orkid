@@ -124,14 +124,14 @@ struct IMPL {
     for (int iy = 0; iy <= _context._clusterH; iy++) {
       auto job = [this, iy, &depthclusterbase, &numltiles]() {
         for (int ix = 0; ix <= _context._clusterW; ix++) {
-          int mmpixindex = iy * _context._clusterW + ix;
-          for (size_t lidx = 0; lidx < _context._pointlights.size(); lidx++) {
-            auto light    = _context._pointlights[lidx];
-            bool overlapx = std::max(ix, light->_minX) <= std::min(ix, light->_maxX);
+          int tileindex = iy * _context._clusterW + ix;
+          for (size_t lightindex = 0; lightindex < _context._pointlights.size(); lightindex++) {
+            auto light    = _context._pointlights[lightindex];
+            bool overlapx = doRangesOverlap(ix, ix, light->_minX, light->_maxX);
             if (overlapx) {
-              bool overlapy = std::max(iy, light->_minY) <= std::min(iy, light->_maxY);
+              bool overlapy = doRangesOverlap(iy, iy, light->_minY, light->_maxY);
               if (overlapy) {
-                uint32_t depthclustersample = depthclusterbase[mmpixindex];
+                uint32_t depthclustersample = depthclusterbase[tileindex];
                 uint32_t bitindex    = 0;
                 bool overlapZ        = false;
                 int highest_bit      = 0;
@@ -140,7 +140,7 @@ struct IMPL {
                   if (has_bit) {
                     float bitshiftedLO = float(1 << bitindex);
                     float bitshiftedHI = bitshiftedLO + bitshiftedLO;
-                    overlapZ |= std::max(light->_minZ, bitshiftedLO) <= std::min(light->_maxZ, bitshiftedHI);
+                    overlapZ |= doRangesOverlap(light->_minZ, light->_maxZ, bitshiftedLO, bitshiftedHI);
                     highest_bit = bitindex;
                   } // if (have_bit) {
                   depthclustersample >>= 1;
@@ -148,16 +148,16 @@ struct IMPL {
                 } // while(depthsample)
                 if (overlapZ) {
                   _actlmutex.Lock();
-                  auto& lt = _context._lighttiles[mmpixindex];
+                  auto& lt = _context._lighttiles[tileindex];
                   lt.push_back(light);
                   if (lt.size() == 1)
-                    _context._pendingtiles.push_back(mmpixindex);
+                    _context._pendingtiles.push_back(tileindex);
                   _actlmutex.UnLock();
                   numltiles++;
                 } // if( overlapZ )
               }   // if( overlapY )
             }     // if( overlapX) {
-          }       // for (size_t lidx = 0; lidx < _pointlights.size(); lidx++) {
+          }       // for (size_t lightindex = 0; lightindex < _pointlights.size(); lightindex++) {
         }         // for (int ix = 0; ix <= _clusterW; ix++) {
         _lightjobcount--;
       }; // job =
