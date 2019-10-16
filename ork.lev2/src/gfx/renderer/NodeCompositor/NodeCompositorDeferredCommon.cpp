@@ -24,7 +24,7 @@
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 
-DeferredContext::DeferredContext(DeferredCompositingNode* node) : _node(node) {
+DeferredContext::DeferredContext(RenderCompositingNode* node) : _node(node) {
 
   _layername = "All"_pool;
 
@@ -146,7 +146,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
   ///////////////////////////////////////////////////////////////////////////
   const auto TOPCPD = CIMPL->topCPD();
   auto CPD = TOPCPD;
-  CPD._clearColor      = _node->_clearColor;
+  CPD._clearColor      = _clearColor;
   CPD.mpLayerName      = &_layername;
   CPD._irendertarget   = _gbuffRT;
   CPD.SetDstRect(tgt_rect);
@@ -165,7 +165,7 @@ void DeferredContext::renderGbuffer(CompositorDrawData& drawdata, const ViewData
     auto MTXI = targ->MTXI();
     CIMPL->pushCPD(CPD); // drawenq
     targ->debugPushGroup("toolvp::DrawEnqRenderables");
-    FBI->Clear(_node->_clearColor, 1.0f);
+    FBI->Clear(_clearColor, 1.0f);
     irenderer->drawEnqueuedRenderables();
     framerenderer.renderMisc();
     targ->debugPopGroup(); // drawenq
@@ -192,7 +192,7 @@ const uint32_t* DeferredContext::captureDepthClusters(CompositorDrawData& drawda
 
   const auto TOPCPD = CIMPL->topCPD();
   auto CPD = TOPCPD;
-  CPD._clearColor      = _node->_clearColor;
+  CPD._clearColor      = _clearColor;
   CPD.mpLayerName      = &_layername;
   CPD.SetDstRect(tgt_rect);
   CPD._passID       = "defcluster"_crcu;

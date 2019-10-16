@@ -78,7 +78,7 @@ struct DeferredContext {
   static constexpr float KNEAR               = 0.1f;
   static constexpr float KFAR                = 100000.0f;
   ////////////////////////////////////////////////////////////////////
-  DeferredContext(DeferredCompositingNode* node);
+  DeferredContext(RenderCompositingNode* node);
   ~DeferredContext();
   ////////////////////////////////////////////////////////////////////
   ViewData computeViewData(CompositorDrawData& drawdata);
@@ -91,9 +91,10 @@ struct DeferredContext {
   void renderGbuffer(CompositorDrawData& drawdata, const ViewData& VD);
   void renderBaseLighting(CompositorDrawData& drawdata, const ViewData& VD);
   ////////////////////////////////////////////////////////////////////
-  DeferredCompositingNode* _node;
+  RenderCompositingNode* _node;
   FreestyleMaterial _lightingmtl;
   CompositingPassData _accumCPD;
+  fvec4 _clearColor;
   ////////////////////////////////////////////////////////////////////
   int _width   = 0;
   int _height  = 0;

@@ -61,6 +61,7 @@ struct IMPL {
     _context.renderUpdate(drawdata);
     auto VD = _context.computeViewData(drawdata);
     _context.update(VD);
+    _context._clearColor = node->_clearColor;
     /////////////////////////////////////////////////////////////////////////////////////////
     targ->debugPushGroup("Deferred::render");
       _context.renderGbuffer(drawdata, VD);
