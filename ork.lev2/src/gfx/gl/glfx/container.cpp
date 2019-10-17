@@ -163,6 +163,14 @@ namespace ork::lev2::glslfx {
   }
   #endif
 
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  void Container::addComputeShader(ComputeShader* psha) { _computeShaders[psha->mName] = psha; }
+  ComputeShader* Container::computeShader(const std::string& name) const {
+    const auto& it = _computeShaders.find(name);
+    return (it == _computeShaders.end()) ? nullptr : it->second;
+  }
+  #endif
+
   ///////////////////////////////////////////////////////////////////////////////
 
   Uniform* Container::MergeUniform(const std::string& name) {

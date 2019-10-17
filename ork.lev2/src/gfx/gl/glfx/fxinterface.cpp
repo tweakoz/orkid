@@ -331,38 +331,13 @@ const FxShaderStorageBlock* Interface::storageBlock(FxShader* hfx, const std::st
 
 #endif
 
-#if defined (ENABLE_COMPUTE_SHADERS)
+#if defined(ENABLE_COMPUTE_SHADERS)
 
-ComputeInterface::ComputeInterface(GfxTargetGL& glctx)
-  : _targetGL(glctx)
-  {
-  _fxi = dynamic_cast<Interface*>(glctx.FXI());
-
-}
-
-void ComputeInterface::dispatchCompute(FxComputeShader* shader,
-                                       uint32_t numgroups_x,
-                                       uint32_t numgroups_y,
-                                       uint32_t numgroups_z ){
-  
-    assert(_currentComputePipeline!=nullptr);
-  
-    GL_ERRORCHECK();
-    glDispatchCompute(numgroups_x, numgroups_y, numgroups_z);
-    GL_ERRORCHECK();
-  
-}
-
-void ComputeInterface::dispatchComputeIndirect(FxComputeShader* shader,int32_t* indirect) {
-
-    assert(_currentComputePipeline!=nullptr);
-
-    GL_ERRORCHECK();
-    glDispatchComputeIndirect((GLintptr)indirect);
-    GL_ERRORCHECK();
+const FxComputeShader* Interface::computeShader(FxShader* hfx, const std::string& name) {
+  assert(false);
+  return nullptr;
 }
 
 #endif
-
 
 } // namespace ork::lev2::glslfx

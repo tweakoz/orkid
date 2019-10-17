@@ -190,6 +190,14 @@ void ContainerNode::parse() {
     } else if (tok.text == "fragment_shader") {
       auto sh = new FragmentShaderNode(this);
       sh->parse(scanview);
+#if defined(ENABLE_COMPUTE_SHADERS)
+    } else if (tok.text == "compute_shader") {
+      auto sh = new ComputeShaderNode(this);
+      sh->parse(scanview);
+    } else if (tok.text == "compute_interface") {
+      auto sif = new ComputeInterfaceNode(this);
+      sif->parse(scanview);
+#endif
 #if defined(ENABLE_NVMESH_SHADERS)
     } else if (tok.text == "nvtask_shader") {
       auto sh = new NvTaskShaderNode(this);
@@ -247,6 +255,10 @@ void ContainerNode::generate(Container*c) const {
 #if defined(ENABLE_NVMESH_SHADERS)
     generateBlocks<NvTaskShaderNode>(c);
     generateBlocks<NvMeshShaderNode>(c);
+#endif
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+    generateBlocks<ComputeShaderNode>(c);
 #endif
 
     generateBlocks<StateBlockNode>(c);

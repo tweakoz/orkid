@@ -232,6 +232,11 @@ void InterfaceNode::parse(const ScannerView& view) {
       ScannerView outputsview(view,i+1);
       i += outputsview.numTokens() + 1;
       parseIos(outputsview,_outputs);
+    } else if (vt_tok->text == "storage") {
+      assert(view.token(i + 1)->text == "{");
+      ScannerView storageview(view,i+1);
+      i += storageview.numTokens() + 1;
+      parseIos(storageview,_storage);
     }
     else {
       ////////////////////////////////////////////////////////////////////////////
@@ -451,6 +456,15 @@ StreamInterface* NvMeshInterfaceNode::generate(Container* c) {
   auto sif = InterfaceNode::_generate(c, GL_MESH_SHADER_NV);
   c->addNvMeshInterface(sif);
   return sif;
+}
+#endif
+#if defined(ENABLE_COMPUTE_SHADERS)
+StreamInterface* ComputeInterfaceNode::generate(Container* c) {
+  auto sif = InterfaceNode::_generate(c, GL_COMPUTE_SHADER);
+  //c->addComputeInterface(sif);
+  //return sif;
+  assert(false);
+  return nullptr;
 }
 #endif
 

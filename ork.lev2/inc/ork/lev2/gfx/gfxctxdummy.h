@@ -32,6 +32,9 @@ public:
   #if defined(ENABLE_SHADER_STORAGE)
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final { return nullptr; }
   #endif
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final { return nullptr; }
+  #endif
 
   void BindParamBool(FxShader* hfx, const FxShaderParam* hpar, const bool bval) final {}
   void BindParamInt(FxShader* hfx, const FxShaderParam* hpar, const int ival) final {}

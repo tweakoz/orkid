@@ -41,7 +41,7 @@ struct FreestyleMaterial : public GfxMaterial {
   std::set<const FxShaderTechnique*> _techniques;
   std::set<const FxShaderParam*> _params;
   std::set<const FxShaderParamBlock*> _paramBlocks;
-
+  
   inline const FxShaderTechnique* technique(std::string named) {
     auto fxi = _initialTarget->FXI();
     auto tek = fxi->technique(_shader, named);
@@ -109,6 +109,17 @@ struct FreestyleMaterial : public GfxMaterial {
     auto fxi = _initialTarget->FXI();
     fxi->BindParamMatrixArray(_shader, par, m, len);
   }
+
+#if defined (ENABLE_COMPUTE_SHADERS)
+  std::set<const FxComputeShader*> _computeShaders;
+  inline const FxComputeShader* computeShader(std::string named) {
+    auto fxi = _initialTarget->FXI();
+    auto tek = fxi->computeShader(_shader, named);
+    if (tek != nullptr)
+      _computeShaders.insert(tek);
+    return tek;
+  }
+#endif
 
   ////////////////////////////////////////////
 

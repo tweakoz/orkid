@@ -24,8 +24,9 @@
 namespace ork::lev2::deferrednode {
 ///////////////////////////////////////////////////////////////////////////////
 
-DeferredContext::DeferredContext(RenderCompositingNode* node, int numlights) : _node(node) {
+DeferredContext::DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights) : _node(node) {
 
+  _shadername = shadername;
   _layername = "All"_pool;
 
   for (int i = 0; i < numlights; i++) {
@@ -57,7 +58,7 @@ void DeferredContext::gpuInit(GfxTarget* target) {
   auto FXI = target->FXI();
   if (nullptr == _rtgGbuffer) {
     //////////////////////////////////////////////////////////////
-    _lightingmtl.gpuInit(target, "orkshader://deferred");
+    _lightingmtl.gpuInit(target, _shadername);
     _tekBaseLighting           = _lightingmtl.technique("baselight");
     _tekPointLighting          = _lightingmtl.technique("pointlight");
     _tekBaseLightingStereo     = _lightingmtl.technique("baselight_stereo");

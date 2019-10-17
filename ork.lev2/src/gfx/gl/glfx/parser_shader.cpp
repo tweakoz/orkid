@@ -92,6 +92,9 @@ void ShaderNode::_generateCommon(Shader* pshader) {
   bool is_nvtask_shader = pshader->mShaderType == GL_TASK_SHADER_NV;
   bool is_nvmesh_shader = pshader->mShaderType == GL_MESH_SHADER_NV;
 #endif
+#if defined(ENABLE_COMPUTE_SHADERS)
+  bool is_compute_shader = pshader->mShaderType == GL_COMPUTE_SHADER;
+#endif
 
   for( auto ext : _requiredExtensions ) {
       pshader->requireExtension(ext);
@@ -400,6 +403,17 @@ ShaderNvMesh* NvMeshShaderNode::generate(Container* c) {
   pshader->mpContainer = c;
   _generateCommon(pshader);
   c->addNvMeshShader(pshader);
+  return pshader;
+}
+#endif
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+ComputeShader* ComputeShaderNode::generate(Container* c) {
+  auto pshader         = new ComputeShader();
+  pshader->mpContainer = c;
+  _generateCommon(pshader);
+  c->addComputeShader(pshader);
+  assert(false);
   return pshader;
 }
 #endif

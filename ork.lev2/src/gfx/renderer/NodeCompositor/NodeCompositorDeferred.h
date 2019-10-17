@@ -73,7 +73,7 @@ struct DeferredContext {
   static constexpr float KNEAR               = 0.1f;
   static constexpr float KFAR                = 100000.0f;
   ////////////////////////////////////////////////////////////////////
-  DeferredContext(RenderCompositingNode* node, int numlights);
+  DeferredContext(RenderCompositingNode* node, std::string shadername, int numlights);
   ~DeferredContext();
   ////////////////////////////////////////////////////////////////////
   ViewData computeViewData(CompositorDrawData& drawdata);
@@ -92,6 +92,7 @@ struct DeferredContext {
   FreestyleMaterial _lightingmtl;
   CompositingPassData _accumCPD;
   fvec4 _clearColor;
+  std::string _shadername;
   ////////////////////////////////////////////////////////////////////
   int _width   = 0;
   int _height  = 0;
@@ -107,6 +108,12 @@ struct DeferredContext {
   const FxShaderTechnique* _tekBaseLightingStereo    = nullptr;
   const FxShaderTechnique* _tekPointLightingStereo   = nullptr;
   const FxShaderTechnique* _tekDownsampleDepthCluster = nullptr;
+  
+  
+#if defined(ENABLE_COMPUTE_SHADERS)
+  FxComputeShader* _lightcollectcomputeshader = nullptr;
+#endif
+
   const FxShaderParam* _parMatIVPArray               = nullptr;
   const FxShaderParam* _parMatPArray                 = nullptr;
   const FxShaderParam* _parMatVArray                 = nullptr;

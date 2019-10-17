@@ -14,12 +14,16 @@ uniform_set ub_vtx {
   mat4 MVPR;
 }
 ///////////////////////////////////////////////////////////////
-vertex_interface iface_vdefault : ub_vtx {
+vertex_interface iface_v2uv : ub_vtx {
   inputs {
     vec4 position : POSITION;
     vec2 uv0 : TEXCOORD0;
+    vec2 uv1 : TEXCOORD1;
   }
-  outputs { vec2 frg_uv; }
+  outputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
 }
 ///////////////////////////////////////////////////////////////
 uniform_set ub_frg {
@@ -28,11 +32,13 @@ uniform_set ub_frg {
   mat4 PArray[2];
   sampler2D MapAlbedoAo;
   sampler2D MapNormalL;
+  sampler2D MapDepthCluster;
   sampler2D MapDepth;
   vec2 InvViewportSize; // inverse target size
   float Time;
   vec2 NearFar;
   int NumLights;
+  int TileDim;
   vec2 Zndc2eye;
 }
 ///////////////////////////////////////////////////////////////
@@ -41,8 +47,11 @@ uniform_block ub_light {
   vec4 LightPosR[2048];   // 32KiB
 }
 ///////////////////////////////////////////////////////////////
-fragment_interface iface_fdefault {
-  inputs { vec2 frg_uv; }
+fragment_interface iface_f2uv {
+  inputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
   outputs { vec4 out_clr; }
 }
 ///////////////////////////////////////////////////////////////
@@ -74,7 +83,8 @@ libblock lib_deferred : ub_light : ub_frg {
     vec4 rr        = wpd._ivp * vec4(inpos, 1);
     float ndc      = depthtex * 2.0 - 1.0;
     float zeye     = Zndc2eye.x / (ndc - Zndc2eye.y);
-    return vec4(rr.xyz / rr.w, zeye);
+    vec3 wpos      = vec3(rr.xyz / rr.w);
+    return vec4(wpos, zeye);
   }
   /////////////////////////////////////////////////////////
   GBufData decodeGBUF(WPosData wpd) {
@@ -95,9 +105,11 @@ libblock lib_deferred : ub_light : ub_frg {
     float dis2light = length(postolight);
     float atten     = dis2light / lightradius;
     atten           = 1.0 - clamp(atten, 0, 1);
-    atten           = atten * atten;
+    atten           = pow(atten, 1.4); // * atten;
     vec3 dir2light  = normalize(postolight);
     atten *= max(dot(gbd._wnrm, dir2light), 0);
+    //float dis2rad = clamp(1 - abs(dis2light - lightradius), 0, 1);
+    //return color * atten + vec3(pow(dis2rad, 4) * 0.2);
     return color * atten;
   }
   /////////////////////////////////////////////////////////
@@ -112,22 +124,50 @@ libblock lib_deferred : ub_light : ub_frg {
   vec3 pntlighting(WPosData wpd) {
     GBufData gbd = decodeGBUF(wpd);
     vec3 l       = vec3(0, 0, 0);
-    for (int i = 0; i < NumLights; i++) {
-      float lightcamdepth          = LightColorD[i].w;
-      bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightPosR[i].w;
+    int lbas     = int(frg_uvb.x);
+    int numl     = int(frg_uvb.y);
+    for (int i = 0; i < numl; i++) {
+      int lidx                     = lbas + i;
+      float lightcamdepth          = LightColorD[lidx].w;
+      bool sphere_intersects_depth = (gbd._zeye - lightcamdepth) < LightPosR[lidx].w;
       if (sphere_intersects_depth)
-        l += pointlight(gbd, LightPosR[i].xyz, LightPosR[i].w, LightColorD[i].xyz);
+        l += pointlight(gbd, LightPosR[lidx].xyz, LightPosR[lidx].w, LightColorD[lidx].xyz);
     }
     return gbd._albedo * l;
   }
 }
 ///////////////////////////////////////////////////////////////
-vertex_shader vs_std : iface_vdefault {
-  frg_uv      = uv0;
+vertex_shader vs_passthru2uv : iface_v2uv {
+  frg_uva     = uv0;
+  frg_uvb     = uv1;
   gl_Position = position;
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight : iface_fdefault : lib_deferred {
+fragment_interface iface_fdownsampledepthcluster {
+  inputs {
+    vec2 frg_uva;
+    vec2 frg_uvb;
+  }
+  outputs { uint out_depthclusters; }
+}
+fragment_shader ps_downsampledepthcluster : iface_fdownsampledepthcluster : lib_deferred {
+  vec2 base       = (gl_FragCoord.xy - vec2(0.5, 0.5)) * float(TileDim);
+  uint clusterset = 0;
+  for (int iy = 0; iy < TileDim; iy++) {
+    for (int ix = 0; ix < TileDim; ix++) {
+      vec2 uv              = base + vec2(ix, iy);
+      uv                   = uv * InvViewportSize;
+      float depthtex       = texture(MapDepth, uv).x;
+      float ndc            = depthtex * 2.0 - 1.0;
+      float zeye           = Zndc2eye.x / (ndc - Zndc2eye.y);
+      uint clusterbitindex = uint(log2(zeye));
+      clusterset           = clusterset | (1u << clusterbitindex);
+    }
+  }
+  out_depthclusters = clusterset;
+}
+///////////////////////////////////////////////////////////////
+fragment_shader ps_baselight : iface_f2uv : lib_deferred {
   WPosData wpd;
   wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   wpd._scruv = wpd._muv;
@@ -136,7 +176,7 @@ fragment_shader ps_baselight : iface_fdefault : lib_deferred {
   out_clr    = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred {
+fragment_shader ps_baselight_stereo : iface_f2uv : lib_deferred {
   WPosData wpd;
   wpd._muv     = gl_FragCoord.xy * InvViewportSize;
   wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
@@ -146,76 +186,18 @@ fragment_shader ps_baselight_stereo : iface_fdefault : lib_deferred {
   out_clr      = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-nvtask_interface iface_task : ub_light {
-  inputs { layout(local_size_x = 32); }
-  outputs {
-    
-    taskNV Task {
-      uint baseID;
-      uint8_t subIDs[1];
-    }
-    OUT;
-  }
-}
-nvmesh_interface iface_mesh : ub_light {
-  inputs { layout(local_size_x = 32); }
-  outputs {
-    layout(triangles);
-    // maximum allocation size for each meshlet
-    layout(max_vertices = 64, max_primitives = 126);
-    // the primitive type (points,lines or triangles)
-
-    // the actual amount of primitives the workgroup outputs ( <= max_primitives)
-    uint gl_PrimitiveCountNV;
-    // an index buffer, using list type indices (strips are not supported here)
-    uint gl_PrimitiveIndicesNV[]; // [max_primitive* 3 for triangles]
-
-    gl_MeshPerVertexNV {
-      vec4 gl_Position;
-      float gl_PointSize;
-      float gl_ClipDistance[];
-      float gl_CullDistance[];
-    }
-    gl_MeshVerticesNV[]; // [max_vertices]
-
-    // define your own vertex output blocks as usual
-    Interpolant { vec2 uv; }
-    OUT[]; // [max_vertices]
-
-    // special purpose per-primitive outputs
-    perprimitiveNV gl_MeshPerPrimitiveNV {
-      int gl_PrimitiveID;
-      int gl_Layer;
-      int gl_ViewportIndex;
-      int gl_ViewportMask[]; // [1]
-    }
-    gl_MeshPrimitivesNV[]; // [max_primitives]
-  }
-}
-///////////////////////////////////////////////////////////////
-nvtask_shader task_pointlight : extension(GL_NV_mesh_shader)
-    : extension(GL_NV_gpu_shader5)
-    : iface_task {
-
-  gl_TaskCountNV = 0;
-}
-nvmesh_shader mesh_pointlight : extension(GL_NV_mesh_shader)
-    : extension(GL_NV_gpu_shader5)
-    : iface_mesh {
-
-  gl_PrimitiveCountNV = 0;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight : iface_fdefault : lib_deferred {
+fragment_shader ps_pointlight : iface_f2uv : lib_deferred {
   WPosData wpd;
   wpd._muv   = gl_FragCoord.xy * InvViewportSize;
   wpd._ivp   = IVPArray[0];
   wpd._scruv = wpd._muv;
   vec3 c     = pntlighting(wpd);
-  out_clr    = vec4(c, 1);
+  float dp5  = distance(frg_uva, vec2(.5, .5));
+  c += vec3(pow(dp5, 17) * 256.0);
+  out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred {
+fragment_shader ps_pointlight_stereo : iface_f2uv : lib_deferred {
   WPosData wpd;
   wpd._muv     = gl_FragCoord.xy * InvViewportSize;
   wpd._ivp     = IVPArray[int(wpd._muv.x >= 0.5)];
@@ -223,7 +205,7 @@ fragment_shader ps_pointlight_stereo : iface_fdefault : lib_deferred {
   wpd._scruv.x = mod(wpd._scruv.x * 2, 1);
   vec3 c       = pntlighting(wpd);
   // c = vec3(wpd._muv,0);
-  // vec3 c = vec3(frg_uv,0);
+  // vec3 c = vec3(frg_uva,0);
   out_clr = vec4(c, 1);
 }
 ///////////////////////////////////////////////////////////////
@@ -234,17 +216,8 @@ state_block sb_default : default {}
 technique baselight {
   fxconfig = fxcfg_default;
   pass p0 {
-    vertex_shader   = vs_std;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_baselight;
-    state_block     = sb_default;
-  }
-}
-///////////////////////////////////////////////////////////////
-technique baselight_stereo {
-  fxconfig = fxcfg_default;
-  pass p0 {
-    vertex_shader   = vs_std;
-    fragment_shader = ps_baselight_stereo;
     state_block     = sb_default;
   }
 }
@@ -252,9 +225,17 @@ technique baselight_stereo {
 technique pointlight {
   fxconfig = fxcfg_default;
   pass p0 {
-    nvtask_shader   = task_pointlight;
-    nvmesh_shader   = mesh_pointlight;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_pointlight;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+technique baselight_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_baselight_stereo;
     state_block     = sb_default;
   }
 }
@@ -262,9 +243,40 @@ technique pointlight {
 technique pointlight_stereo {
   fxconfig = fxcfg_default;
   pass p0 {
-    nvtask_shader   = task_pointlight;
-    nvmesh_shader   = mesh_pointlight;
+    vertex_shader   = vs_passthru2uv;
     fragment_shader = ps_pointlight_stereo;
     state_block     = sb_default;
   }
+}
+///////////////////////////////////////////////////////////////
+technique downsampledepthcluster {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_passthru2uv;
+    fragment_shader = ps_downsampledepthcluster;
+    state_block     = sb_default;
+  }
+}
+///////////////////////////////////////////////////////////////
+compute_interface iface_compute {
+    inputs { layout(local_size_x = 1, local_size_y = 1, local_size_z = 1); }
+    storage {
+      layout(std430, binding = 3) buffer {
+        int foo;
+        float bar[42];
+        float baz[8];
+      } ssbo_io_data;
+    }
+};
+///////////////////////////////////////////////////////////////
+compute_shader compute_collectlights : iface_compute {
+    void main(){
+      foo = 1;
+      for(int i=0; i<42; i++){
+        bar[i] = float(i);
+      }
+      for(int i=0; i<8; i++){
+        baz[i] = float(i);
+      }
+    }
 }

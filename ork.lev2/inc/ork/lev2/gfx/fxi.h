@@ -1,5 +1,8 @@
 #pragma once
 
+struct FxComputeShader;
+struct FxShaderStorageBuffer;
+
 struct FxShaderParamBlock;
 struct FxShaderParamBuffer;
 struct FxShaderParamBufferMapping;
@@ -27,6 +30,10 @@ public:
   virtual const FxShaderParam* parameter(FxShader* hfx, const std::string& name)    = 0;
   virtual const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name)    = 0;
 
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  virtual const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) = 0;
+  #endif
+ 
   #if defined(ENABLE_SHADER_STORAGE)
   virtual const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) = 0;
   #endif

@@ -105,15 +105,12 @@ FxShaderStorageBlock *FxShader::storageBlockByName(const std::string &named){
 	return const_cast<FxShaderStorageBlock*>((it!=_storageBlockByName.end()) ? it->second : nullptr);
 
 }
-FxShaderStorageBlockMapping *FxShaderStorageBlock::map() const {
-	assert(false);
-	return nullptr;
+FxShaderStorageBufferMapping::FxShaderStorageBufferMapping() {}
+FxShaderStorageBufferMapping::~FxShaderStorageBufferMapping(){
+	assert(_mappedaddr==nullptr);
 }
-FxShaderStorageBlockMapping::~FxShaderStorageBlockMapping(){
-	unmap();
-}
-void FxShaderStorageBlockMapping::unmap(){
-
+void FxShaderStorageBufferMapping::unmap(){
+  _ci->unmapStorageBuffer(this);
 }
 
 #endif

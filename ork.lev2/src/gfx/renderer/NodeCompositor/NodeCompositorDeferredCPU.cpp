@@ -43,7 +43,7 @@ struct IMPL {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   IMPL(DeferredCompositingNode* node)
       : _camname(AddPooledString("Camera"))
-      , _context(node,KMAXLIGHTS)
+      , _context(node,"orkshader://deferred",KMAXLIGHTS)
       , _lighttiles(KMAXTILECOUNT)\
       , _lightbuffer(nullptr){
     

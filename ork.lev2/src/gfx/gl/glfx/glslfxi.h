@@ -47,6 +47,9 @@ constexpr const char* block_regex = "(fxconfig|uniform_set|uniform_block|"
                                     "tessctrl_shader|tesseval_shader|"
                                     "geometry_interface|fragment_interface|"
                                     "geometry_shader|fragment_shader|"
+#if defined(ENABLE_COMPUTE_SHADERS)
+                                    "compute_shader|compute_interface|"
+#endif
 #if defined(ENABLE_NVMESH_SHADERS)
                                     "nvtask_shader|nvmesh_shader|"
                                     "nvtask_interface|nvmesh_interface|"
@@ -157,6 +160,14 @@ struct UniformBuffer {
   GLuint _glbufid             = 0;
   size_t _length              = 0;
 };
+
+#if defined(ENABLE_COMPUTE_SHADERS)
+struct ShaderStorageBuffer {
+  FxShaderStorageBuffer* _fxssb = nullptr;
+  GLuint _glbufid             = 0;
+  size_t _length              = 0;
+};
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -320,9 +331,10 @@ struct ShaderTsE : Shader {
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(ENABLE_COMPUTE_SHADERS)
-struct ShaderCompute : Shader {
-  ShaderCompute(const std::string& nam = "")
+struct ComputeShader : Shader {
+  ComputeShader(const std::string& nam = "")
       : Shader(nam, GL_COMPUTE_SHADER) {}
+
 };
 #endif
 
@@ -366,7 +378,7 @@ typedef std::unordered_map<std::string, Attribute*> attr_map_t;
 
 #if defined(ENABLE_COMPUTE_SHADERS)
 struct PipelineCompute {
-  ShaderCompute* _computeShader  = nullptr;
+  ComputeShader* _computeShader  = nullptr;
   uni_map_t _uniformInstances;
   GLuint _programObjectId = 0;
   ubb_map_t _uboBindingMap;
@@ -526,6 +538,12 @@ struct Container {
   void addStorageBlock(StorageBlock* pif);
 #endif
   ///////////////////////////////////////////////////////
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  std::unordered_map<std::string, ComputeShader*> _computeShaders;
+  ComputeShader* computeShader(const std::string& name) const;
+  void addComputeShader(ComputeShader* pif);
+#endif
+  ///////////////////////////////////////////////////////
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -544,6 +562,9 @@ public:
   const FxShaderTechnique* technique(FxShader* hfx, const std::string& name) final;
   const FxShaderParam* parameter(FxShader* hfx, const std::string& name) final;
   const FxShaderParamBlock* parameterBlock(FxShader* hfx, const std::string& name) final;
+  #if defined(ENABLE_COMPUTE_SHADERS)
+  const FxComputeShader* computeShader(FxShader* hfx, const std::string& name) final;
+  #endif
 #if defined(ENABLE_SHADER_STORAGE)
   const FxShaderStorageBlock* storageBlock(FxShader* hfx, const std::string& name) final;
 #endif
@@ -606,13 +627,17 @@ struct ComputeInterface : public lev2::ComputeInterface {
     Interface*   _fxi = nullptr;
     PipelineCompute* _currentComputePipeline = nullptr;
     
-    void dispatchCompute(FxComputeShader* shader,
+    void dispatchCompute(const FxComputeShader* shader,
                          uint32_t numgroups_x,
                          uint32_t numgroups_y,
                          uint32_t numgroups_z ) final;
 
-    void dispatchComputeIndirect(FxComputeShader* shader,int32_t* indirect) final;
+    void dispatchComputeIndirect(const FxComputeShader* shader,int32_t* indirect) final;
 
+    FxShaderStorageBuffer* createStorageBuffer(size_t length) final;
+    storagebuffermappingptr_t mapStorageBuffer(FxShaderStorageBuffer*b,size_t base=0, size_t length=0) final;
+    void unmapStorageBuffer(FxShaderStorageBufferMapping* mapping) final;
+    void bindStorageBuffer(const FxShaderStorageBlock* block, FxShaderStorageBuffer* buffer) final;
 };
 #endif
 

@@ -166,6 +166,7 @@ struct InterfaceNode : public DecoBlockNode {
       : DecoBlockNode(cnode) {
     _inputs._direction = "in";
     _outputs._direction = "out";
+    _storage._direction = "storage";
   }
 
       
@@ -187,6 +188,7 @@ struct InterfaceNode : public DecoBlockNode {
   std::vector<InterfaceLayoutNode*> _interfacelayouts;
   IoContainer _inputs;
   IoContainer _outputs;
+  IoContainer _storage;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -276,6 +278,19 @@ struct GeometryInterfaceNode : public InterfaceNode {
       : InterfaceNode(cnode) {}
   StreamInterface* generate(Container*);
 };
+
+#if defined ENABLE_COMPUTE_SHADERS
+struct ComputeShaderNode : public ShaderNode {
+  explicit ComputeShaderNode(ContainerNode* cnode)
+      : ShaderNode(cnode) {}
+  ComputeShader* generate(Container*);
+};
+struct ComputeInterfaceNode : public InterfaceNode {
+  explicit ComputeInterfaceNode(ContainerNode* cnode)
+      : InterfaceNode(cnode) {}
+  StreamInterface* generate(Container*);
+};
+#endif
 
 #if defined ENABLE_NVMESH_SHADERS
 struct NvTaskInterfaceNode : public InterfaceNode {

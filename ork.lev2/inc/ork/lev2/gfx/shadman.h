@@ -127,17 +127,36 @@ struct FxShaderParamBufferMapping {
 #if defined(ENABLE_SHADER_STORAGE)
 
 struct FxShaderStorageBlock;
-struct FxShaderStorageBlockMapping;
+struct FxShaderStorageBufferMapping;
 
 struct FxShaderStorageBlock {
   std::string _name;
   //FxShaderParam *param(const std::string &name) const;
-  FxShaderStorageBlockMapping *map() const;
+  //FxShaderStorageBufferMapping *map() const;
 };
-struct FxShaderStorageBlockMapping {
-  ~FxShaderStorageBlockMapping();
-  FxShaderStorageBlock *_block = nullptr;
+struct FxShaderStorageBuffer {
+  size_t _length = 0;
+  svarp_t _impl;
+};
+struct FxShaderStorageBufferMapping {
+  FxShaderStorageBufferMapping();
+  ~FxShaderStorageBufferMapping();
   void unmap();
+  FxShaderStorageBuffer* _buffer = nullptr;
+  ComputeInterface* _ci = nullptr;
+  size_t _offset = 0;
+  size_t _length = 0;
+  svarp_t _impl;
+
+  template <typename T> T& ref(size_t offset) {
+    size_t end = offset + sizeof(T);
+    assert(end<=_length);
+    auto tstar = (T*) (((char*)_mappedaddr)+offset);
+    return *tstar;
+  }
+
+
+  void* _mappedaddr = nullptr;
 };
 
 #endif
